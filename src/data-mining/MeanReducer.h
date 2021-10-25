@@ -31,6 +31,7 @@
 
 #include "CoRegReducer.h"
 #include "DataMiningUtils.h"
+
 namespace GPlatesDataMining
 {
 	class MeanReducer : public CoRegReducer

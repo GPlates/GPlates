@@ -85,13 +85,25 @@ namespace GPlatesQtWidgets
 					const QString &absolute_file_path_,
 					const QString &file_name_,
 					unsigned width_,
-					unsigned height_) :
+					unsigned height_,
+					bool remove_cache_files_) :
 				depth(depth_),
 				absolute_file_path(absolute_file_path_),
 				file_name(file_name_),
 				width(width_),
-				height(height_)
+				height(height_),
+				remove_cache_files(remove_cache_files_)
 			{  }
+
+			/**
+			 * Remove cache files (if they didn't already exist prior to import).
+			 *
+			 * Once we've generated the 3D scalar field file we don't need the depth layer rasters anymore.
+			 * So cleaning up the cache files saves disk space - but it's only done if we created the
+			 * cache files during import (otherwise user might be using them to view the depth rasters in GPlates).
+			 */
+			void
+			clear_cache_files();
 
 			//! Depth in Kms.
 			boost::optional<double> depth;
@@ -99,6 +111,7 @@ namespace GPlatesQtWidgets
 			QString file_name;
 			unsigned int width;
 			unsigned int height;
+			bool remove_cache_files;
 		};
 
 		typedef FileInfo element_type;
@@ -106,6 +119,12 @@ namespace GPlatesQtWidgets
 
 		const sequence_type &
 		get_sequence() const
+		{
+			return d_sequence;
+		}
+
+		sequence_type &
+		get_sequence()
 		{
 			return d_sequence;
 		}
@@ -119,7 +138,8 @@ namespace GPlatesQtWidgets
 				const QString &absolute_file_path,
 				const QString &file_name,
 				unsigned int width,
-				unsigned int height);
+				unsigned int height,
+				bool remove_cache_files);
 
 		void
 		add_all(
@@ -127,6 +147,16 @@ namespace GPlatesQtWidgets
 
 		void
 		clear();
+
+		/**
+		 * Remove cache files of the depth layer rasters (if they didn't already exist prior to import).
+		 *
+		 * Once we've generated the 3D scalar field file we don't need the depth layer rasters anymore.
+		 * So cleaning up the cache files saves disk space - but it's only done if we created the
+		 * cache files during import (otherwise user might be using them to view the depth rasters in GPlates).
+		 */
+		void
+		clear_cache_files();
 
 		void
 		erase(
@@ -175,11 +205,41 @@ namespace GPlatesQtWidgets
 
 	private:
 
+		/**
+		 * Wizard page ids.
+		 */
+		enum PageId
+		{
+			DEPTH_LAYERS_PAGE_ID,
+			GEOREFERENCING_PAGE_ID,
+			SCALAR_FIELD_COLLECTION_PAGE_ID
+		};
+
+
+		/**
+		 * Override the next page id so we can skip georeferencing page if raster has inbuilt georeferencing.
+		 */
+		virtual
+		int
+		nextId() const;
+
 		GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLRenderer>::non_null_ptr_type
 		create_gl_renderer() const;
 
 		bool
 		is_scalar_field_import_supported() const;
+
+		/**
+		 * Import georeferencing and spatial reference system (if any) from first depth layer raster.
+		 *
+		 * Returns true if imported (if found in first depth layer raster).
+		 */
+		bool
+		import_georeferencing_and_spatial_reference_system() const;
+
+		void
+		import_scalar_field_3d(
+				GPlatesFileIO::ReadErrorAccumulation *read_errors);
 
 		bool
 		generate_scalar_field(
@@ -213,13 +273,9 @@ namespace GPlatesQtWidgets
 		unsigned int d_raster_width;
 		unsigned int d_raster_height;
 		ScalarField3DDepthLayersSequence d_depth_layers_sequence;
-		GPlatesPropertyValues::Georeferencing::non_null_ptr_type d_georeferencing;
-		GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type d_coordinate_transformation;
+		mutable GPlatesPropertyValues::Georeferencing::non_null_ptr_type d_georeferencing;
+		mutable GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_type d_coordinate_transformation;
 		bool d_save_after_finish;
-
-		int d_depth_layers_page_id;
-		int d_georeferencing_page_id;
-		int d_scalar_field_feature_collection_page_id;
 	};
 }
 

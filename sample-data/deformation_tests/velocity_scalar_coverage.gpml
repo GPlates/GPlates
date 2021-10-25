@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0328" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
+    <gml:featureMember>
+        <gpml:ScalarCoverage>
+            <gpml:identity>GPlates-ebf03aab-212d-4dc6-9da0-2161e58ad3c3</gpml:identity>
+            <gpml:revision>GPlates-70d5a8d2-04d1-4f4d-ba58-3d4855bd8258</gpml:revision>
+            <gpml:domainSet>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:MultiPoint>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>90 0</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>90 0</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>90 0</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>90 0</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>90 0</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>90 0</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>29.999999999999996 -180</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>29.999999999999996 -119.99999999999999</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>29.999999999999996 -59.999999999999993</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>29.999999999999996 0</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>29.999999999999996 59.999999999999993</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>29.999999999999996 119.99999999999999</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>-29.999999999999996 -180</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>-29.999999999999996 -119.99999999999999</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>-29.999999999999996 -59.999999999999993</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>-29.999999999999996 0</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>-29.999999999999996 59.999999999999993</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>-29.999999999999996 119.99999999999999</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>-90 0</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>-90 0</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>-90 0</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>-90 0</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>-90 0</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                            <gml:pointMember>
+                                <gml:Point>
+                                    <gml:pos>-90 0</gml:pos>
+                                </gml:Point>
+                            </gml:pointMember>
+                        </gml:MultiPoint>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:MultiPoint</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:domainSet>
+            <gpml:rangeSet>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:DataBlock>
+                            <gml:rangeParameters>
+                                <gml:CompositeValue>
+                                    <gml:valueComponent>
+                                        <gpml:VelocityColat gpml:uom="urn:x-si:v1999:uom:cm_per_year">template</gpml:VelocityColat>
+                                    </gml:valueComponent>
+                                    <gml:valueComponent>
+                                        <gpml:VelocityLon gpml:uom="urn:x-si:v1999:uom:cm_per_year">template</gpml:VelocityLon>
+                                    </gml:valueComponent>
+                                </gml:CompositeValue>
+                            </gml:rangeParameters>
+                            <gml:tupleList>-1.65471401400903,0.36624235773366343 -1.65471401400903,0.36624235773366343 -1.65471401400903,0.36624235773366326 -1.65471401400903,0.36624235773366326 -1.65471401400903,0.36624235773366326 -1.65471401400903,0.36624235773366343 -2.8589412552982205,-7.8361360716202153 -2.9344133930053209,-6.1637386387657047 -1.1445321927437757,-1.7696804284855425 -1.478546825437824,1.3080908284415955 0.49022998633813691,1.5943628497051261 1.3788681298996821,1.0548006994292622 -3.5290365573392268,0.29882145952800204 -2.9344133930053209,-7.7707752830879473 -1.3208865896100082,-1.7113368939769067 -1.478546825437824,1.3633403142522436 -0.35199840527204207,0.8968617480094192 -5.5044278751493092,2.906558020434086 -0.30308909257410072,-0.95004225936358744 -0.30308909257410077,-0.95004225936358744 -0.30308909257410077,-0.95004225936358744 -0.30308909257410072,-0.95004225936358744 -0.3030890925741006,-0.95004225936358744 -0.3030890925741006,-0.95004225936358744 </gml:tupleList>
+                        </gml:DataBlock>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:DataBlock</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:rangeSet>
+        </gpml:ScalarCoverage>
+    </gml:featureMember>
+</gpml:FeatureCollection>

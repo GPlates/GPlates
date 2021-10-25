@@ -5,7 +5,7 @@
  * $Revision: 254 $
  * $Date: 2012-03-01 13:00:21 +0100 (Thu, 01 Mar 2012) $
  *
- * Copyright (C) 2011, 2012, 2013, 2014 Geological Survey of Norway
+ * Copyright (C) 2011, 2012, 2013, 2014, 2016 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -28,18 +28,18 @@
 
 #include <vector>
 
-#include <QDialog>
-#include <QItemSelection>
-#include <QWidget>
-
 #include "gui/Colour.h"
 #include "gui/Symbol.h"
 #include "model/types.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "GPlatesDialog.h"
+#include "HellingerConfigurationWidget.h"
 #include "HellingerModel.h"
 #include "HellingerDialogUi.h"
 #include "HellingerThread.h"
+#include "OpenDirectoryDialog.h"
+
+
 
 namespace GPlatesPresentation
 {
@@ -54,10 +54,14 @@ namespace GPlatesViewOperations
 namespace GPlatesQtWidgets
 {
 
-	class HellingerEditPointDialog;
-	class HellingerEditSegmentDialog;
+	class HellingerConfigurationDialog;
+	class HellingerPointDialog;
+	class HellingerSegmentDialog;
+	class HellingerFitWidget;
+	class HellingerPickWidget;
 	class HellingerStatsDialog;
 	class HellingerModel;
+	class HellingerThread;
 	class ReadErrorAccumulationDialog;
 
 
@@ -69,6 +73,31 @@ namespace GPlatesQtWidgets
 		NEW_SEGMENT_OPERATION
 	};
 
+	const HellingerConfigurationWidget::HellingerColour INITIAL_BEST_FIT_POLE_COLOUR =
+			HellingerConfigurationWidget::RED;
+	const float INITIAL_POLE_SIZE = 1.;
+	const HellingerConfigurationWidget::HellingerColour INITIAL_ELLIPSE_COLOUR =
+			HellingerConfigurationWidget::RED;
+	const int INITIAL_ELLIPSE_THICKNESS = 2;
+	const float INITIAL_POLE_ARROW_HEIGHT = 0.3f;
+	const float INITIAL_POLE_ARROW_RADIUS = 0.12f;
+	const GPlatesGui::Symbol::SymbolType INITIAL_PLATE_ONE_PICK_SYMBOL = GPlatesGui::Symbol::CROSS;
+	const GPlatesGui::Symbol::SymbolType INITIAL_PLATE_TWO_PICK_SYMBOL = GPlatesGui::Symbol::SQUARE;
+	const GPlatesGui::Symbol::SymbolType INITIAL_PLATE_THREE_PICK_SYMBOL = GPlatesGui::Symbol::TRIANGLE;
+	const int INITIAL_PLATE_ONE_PICK_SYMBOL_SIZE = 2;
+	const int INITIAL_PLATE_TWO_PICK_SYMBOL_SIZE = 2;
+	const int INITIAL_PLATE_THREE_PICK_SYMBOL_SIZE = 2;
+
+	// Initial colours - control this from the settings dialog eventually.
+	const HellingerConfigurationWidget::HellingerColour POLE_12_COLOUR = HellingerConfigurationWidget::RED;
+	const HellingerConfigurationWidget::HellingerColour POLE_13_COLOUR = HellingerConfigurationWidget::YELLOW;
+	const HellingerConfigurationWidget::HellingerColour POLE_23_COLOUR = HellingerConfigurationWidget::GREEN;
+
+	const HellingerConfigurationWidget::HellingerColour POLE_ESTIMATE_12_COLOUR = HellingerConfigurationWidget::AQUA;
+	const HellingerConfigurationWidget::HellingerColour POLE_ESTIMATE_13_COLOUR = HellingerConfigurationWidget::TEAL;
+
+
+
 	class HellingerDialog:
 			public GPlatesDialog,
 			protected Ui_HellingerDialog
@@ -76,9 +105,47 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 	public:
 
+
+
+		struct Configuration
+		{
+			Configuration():
+//				d_best_fit_pole_symbol(INITIAL_BEST_FIT_POLE_SYMBOL),
+				d_best_fit_pole_colour(INITIAL_BEST_FIT_POLE_COLOUR),
+				d_best_fit_pole_size(INITIAL_POLE_SIZE),
+				d_ellipse_colour(INITIAL_ELLIPSE_COLOUR),
+				d_ellipse_line_thickness(INITIAL_ELLIPSE_THICKNESS),
+				d_initial_estimate_pole_colour(POLE_ESTIMATE_12_COLOUR),
+				d_pole_arrow_height(INITIAL_POLE_ARROW_HEIGHT),
+				d_pole_arrow_radius(INITIAL_POLE_ARROW_RADIUS),
+				d_plate_one_pick_symbol(INITIAL_PLATE_ONE_PICK_SYMBOL),
+				d_plate_two_pick_symbol(INITIAL_PLATE_TWO_PICK_SYMBOL),
+				d_plate_three_pick_symbol(INITIAL_PLATE_THREE_PICK_SYMBOL),
+				d_plate_one_pick_symbol_size(INITIAL_PLATE_ONE_PICK_SYMBOL_SIZE),
+				d_plate_two_pick_symbol_size(INITIAL_PLATE_TWO_PICK_SYMBOL_SIZE),
+				d_plate_three_pick_symbol_size(INITIAL_PLATE_THREE_PICK_SYMBOL_SIZE)
+			{}
+
+//			SYMBOL_TYPE d_best_fit_pole_symbol;
+			GPlatesQtWidgets::HellingerConfigurationWidget::HellingerColour d_best_fit_pole_colour;
+			float d_best_fit_pole_size;
+			GPlatesQtWidgets::HellingerConfigurationWidget::HellingerColour d_ellipse_colour;
+			int d_ellipse_line_thickness;
+			GPlatesQtWidgets::HellingerConfigurationWidget::HellingerColour d_initial_estimate_pole_colour;
+			float d_pole_arrow_height;
+			float d_pole_arrow_radius;
+			GPlatesGui::Symbol::SymbolType d_plate_one_pick_symbol;
+			GPlatesGui::Symbol::SymbolType d_plate_two_pick_symbol;
+			GPlatesGui::Symbol::SymbolType d_plate_three_pick_symbol;
+			int d_plate_one_pick_symbol_size;
+			int d_plate_two_pick_symbol_size;
+			int d_plate_three_pick_symbol_size;
+
+
+		};
+
 		typedef std::map<int,bool> expanded_status_map_type;
 		typedef std::vector<hellinger_model_type::const_iterator > geometry_to_model_map_type;
-		typedef std::vector<QTreeWidgetItem*> geometry_to_tree_item_map_type;
 
 		HellingerDialog(
 				GPlatesPresentation::ViewState &view_state,
@@ -91,28 +158,11 @@ namespace GPlatesQtWidgets
 		void
 		restore();
 
-		void
-		set_default_widget_values();
-
 		/**
 		 * Update whole dialog from model, and then update the canvas
 		 */
 		void
-		update_from_model();
-
-		/**
-		 * @brief update_tree_from_model
-		 * Update pick-widget from model, and then update the canvas
-		 */
-		void
-		update_tree_from_model();
-
-		void
-		restore_expanded_status();
-
-		void
-		expand_segment(
-				const unsigned int segment_number);
+		update_widgets_from_model();
 
 		GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 		get_pick_layer();
@@ -135,15 +185,7 @@ namespace GPlatesQtWidgets
 				const unsigned int index);
 
 		void
-		set_selected_pick(
-				const hellinger_model_type::const_iterator &it);
-
-		void
-		set_selected_segment(
-				const unsigned int segment);
-
-		void
-		clear_hovered_layer();
+		clear_hovered_layer_and_table();
 
 		void
 		clear_selection_layer();
@@ -194,12 +236,12 @@ namespace GPlatesQtWidgets
 				const GPlatesMaths::PointOnSphere &pos);
 
 		void
-		update_after_new_pick(
+		update_after_new_or_edited_pick(
 				const hellinger_model_type::const_iterator &it,
 				const int segment_number);
 
 		void
-		update_after_new_segment(
+		update_after_new_or_edited_segment(
 				const int segment_number);
 
 		void
@@ -207,41 +249,69 @@ namespace GPlatesQtWidgets
 				bool enable);
 
 		void
-		set_layer_and_checkbox_state_for_active_pole_tool(
+		set_layer_state_for_active_pole_tool(
 				bool pole_tool_is_active);
 
 		const GPlatesMaths::LatLonPoint &
-		get_pole_estimate_lat_lon();
+		get_pole_estimate_12_lat_lon();
 
 		const double &
-		get_pole_estimate_angle();
+		get_pole_estimate_12_angle();
+
+		const GPlatesMaths::LatLonPoint &
+		get_pole_estimate_13_lat_lon();
+
+		const double &
+		get_pole_estimate_13_angle();
 
 		void
-		update_pole_estimate_spinboxes_and_layer(
-				const GPlatesMaths::PointOnSphere &point, double rho);
+		update_pole_estimates(
+				const GPlatesMaths::PointOnSphere &point_12,
+				double &angle_12,
+				const GPlatesMaths::PointOnSphere &point_13,
+				double &angle_13);
+
+		bool
+		adjust_pole_tool_is_active()
+		{
+			return d_adjust_pole_tool_is_active;
+		}
+
 
 		void
-		update_pole_estimate_spinboxes(
-				const GPlatesMaths::PointOnSphere &point, double rho);
+		set_adjust_pole_tool_is_active(
+				bool active)
+		{
+			d_adjust_pole_tool_is_active = active;
+		}
 
 		void
-		update_pole_estimate_angle_spinbox(
-				double &angle);
+		set_state_for_pole_adjustment_tool(
+				bool pole_adjustment_tool_is_active);
 
-		void
-		update_pole_estimate_lat_lon_spinboxes(
-				const GPlatesMaths::PointOnSphere &point);
+		QString
+		output_file_path() const
+		{
+			return d_output_file_path;
+		}
+
+		bool
+		output_file_path_is_valid() const
+		{
+			return d_output_path_is_valid;
+		}
+
+		const HellingerFitType &
+		get_fit_type();
+
+		const Configuration &
+		configuration()
+		{
+			return d_configuration;
+		}
 
 	public Q_SLOTS:
 
-		/**
-		 * Renumber segments so that they are contiguous.
-		 */
-		void
-		renumber_segments();
-
-		void
-		store_expanded_status();
 
 		void
 		close();
@@ -258,18 +328,36 @@ namespace GPlatesQtWidgets
 	Q_SIGNALS:
 
 		void
-		pole_estimate_lat_lon_changed(
+		begin_edit_pick();
+
+		void
+		begin_new_pick();
+
+		void
+		finished_editing();
+
+		void
+		pole_estimate_12_lat_lon_changed(
 				double,
 				double);
 
 		void
-		pole_estimate_angle_changed(
+		pole_estimate_12_angle_changed(
+				double);
+
+		void
+		pole_estimate_13_lat_lon_changed(
+				double,
+				double);
+
+		void
+		pole_estimate_13_angle_changed(
 				double);
 
 	private:
 
 		void
-		update_model_with_com_data();
+		check_and_highlight_output_path();
 
 		void
 		set_up_connections();
@@ -285,23 +373,7 @@ namespace GPlatesQtWidgets
 		clear_rendered_geometries();
 
 		void
-		add_point(
-				const QString &add_value);
-
-		void
-		add_segment(
-				const QStringList &add_list);
-
-		void
-		update_pick_and_segment_buttons();
-
-
-		void
-		load_pick_file_to_model(
-				const QString &filename,
-				const GPlatesModel::integer_plate_id_type &moving_plate_id,
-				const GPlatesModel::integer_plate_id_type &fixed_plate_id,
-				const double &chron_time);
+		clear_pick_geometries();
 
 		void
 		highlight_selected_pick(
@@ -314,19 +386,18 @@ namespace GPlatesQtWidgets
 		void
 		draw_pole_result(
 				const double &lat,
-				const double &lon);
-
-		// TODO: This appears to update the fit from the model, and also to draw the fit point on the
-		// canvas. Check this, and perhaps separate out the functionality.
-		void
-		update_result();
+				const double &lon,
+				const HellingerConfigurationWidget::HellingerColour &colour);
 
 		void
-		draw_error_ellipse();
+		update_results_on_canvas();
 
 		void
-		update_pole_estimate_from_model();
+		update_estimates_on_canvas();
 
+		void
+		draw_error_ellipse(
+				const GPlatesQtWidgets::HellingerPlatePairType &type = GPlatesQtWidgets::PLATES_1_2_PAIR_TYPE);
 
 
 		/**
@@ -337,19 +408,16 @@ namespace GPlatesQtWidgets
 		create_feature_collection();
 
 		void
-		draw_fixed_picks();
-
-		void
-		draw_moving_picks();
+		draw_picks_of_plate_index(
+				const HellingerPlateIndex &fixed_plate_index);
 
 		void
 		draw_picks();
 
-		/**
-		 * @brief draw_estimate - draw the initial estimate of the pole.
-		 */
 		void
-		draw_pole_estimate();
+		draw_pole_estimate(
+				const HellingerPoleEstimate &estimate,
+				const HellingerConfigurationWidget::HellingerColour &colour);
 
 		void
 		hide_child_dialogs();
@@ -361,19 +429,21 @@ namespace GPlatesQtWidgets
 		void
 		update_chron_time();
 
+		void
+		update_model_from_file_related_data();
+
+		void
+		enable_pole_estimate_signals(
+				bool enable);
+
 
 	private Q_SLOTS:
 
 		void
-		handle_estimate_checkbox_toggled(
-				bool);
+		handle_show_estimate_checkboxes_clicked();
 
 		void
-		handle_result_checkbox_toggled(
-				bool);
-
-		void
-		handle_clear();
+		handle_show_result_checkboxes_clicked();
 
 		void
 		handle_thread_finished();
@@ -382,7 +452,7 @@ namespace GPlatesQtWidgets
 		handle_calculate_fit();
 
 		void
-		import_hellinger_file();
+		handle_import_hellinger_file();
 
 		void
 		handle_show_details();
@@ -398,19 +468,7 @@ namespace GPlatesQtWidgets
 		handle_export_com_file();
 
 		void
-		handle_expand_all();
-
-		void
-		handle_collapse_all();
-
-		void
 		handle_edit_pick();
-
-		void
-		handle_remove_pick();
-
-		void
-		handle_remove_segment();
 
 		void
 		handle_add_new_segment();
@@ -419,28 +477,22 @@ namespace GPlatesQtWidgets
 		handle_edit_segment();
 
 		void
-		handle_calculate_stats();
-
-		void
-		handle_pick_state_changed();
+		handle_calculate_uncertainties();
 
 		void
 		handle_close();
 
 		void
-		handle_checkbox_grid_search_changed();
+		handle_pole_estimate_12_changed(double, double);
 
 		void
-		handle_spinbox_radius_changed();
+		handle_pole_estimate_12_angle_changed(double);
 
 		void
-		handle_spinbox_confidence_changed();
+		handle_pole_estimate_13_changed(double, double);
 
 		void
-		handle_pole_estimate_lat_lon_changed();
-
-		void
-		handle_pole_estimate_angle_changed();
+		handle_pole_estimate_13_angle_changed(double);
 
 		void
 		handle_chron_time_changed(
@@ -455,12 +507,7 @@ namespace GPlatesQtWidgets
 				const int &value);
 
 		void
-		handle_fit_spinboxes_changed();
-
-		void
-		handle_selection_changed(
-				const QItemSelection &,
-				const QItemSelection &);
+		handle_pick_dialog_updated();
 
 		void
 		handle_cancel();
@@ -476,6 +523,24 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_active_age_model_changed();
+
+		void
+		handle_settings_clicked();
+
+		void
+		handle_configuration_changed();
+
+		void
+		handle_tab_changed(int);
+
+		void
+		handle_output_path_button_clicked();
+
+		void
+		handle_output_path_changed();
+
+		void
+		handle_output_path_editing_finished();
 
 	private:
 
@@ -502,23 +567,6 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		reconstruct_picks();
-
-		void
-		determine_selected_picks_and_segments();
-
-		bool
-		picks_loaded();
-
-		void
-		update_pick_enable_disable_buttons();
-
-		void
-		update_fit_buttons();
-
-		void
-		update_hovered_item(
-				boost::optional<QTreeWidgetItem*> item = boost::none,
-				bool current_state = true);
 
 		GPlatesPresentation::ViewState &d_view_state;
 
@@ -547,29 +595,21 @@ namespace GPlatesQtWidgets
 		child_layer_ptr_type d_pole_estimate_layer_ptr;
 
 		ReadErrorAccumulationDialog &d_read_error_accumulation_dialog;
-		HellingerModel *d_hellinger_model;
+		HellingerModel d_hellinger_model;
 		HellingerStatsDialog *d_hellinger_stats_dialog;
-		HellingerEditPointDialog *d_hellinger_edit_point_dialog;
-		HellingerEditPointDialog *d_hellinger_new_point_dialog;
-		HellingerEditSegmentDialog *d_hellinger_edit_segment_dialog;
-		HellingerEditSegmentDialog *d_hellinger_new_segment_dialog;
+		HellingerPointDialog *d_hellinger_edit_point_dialog;
+		HellingerPointDialog *d_hellinger_new_point_dialog;
+		HellingerSegmentDialog *d_hellinger_edit_segment_dialog;
+		HellingerSegmentDialog *d_hellinger_new_segment_dialog;
 		HellingerThread *d_hellinger_thread;
-
-		/**
-		 * Various temporary filenames used to exchange data between GPlates and the python scripts.
-		 */
-		QString d_path;
-		QString d_file_name;
-		QString d_filename_dat;
-		QString d_filename_up;
-		QString d_filename_down;
 
 		/**
 		 * @brief For storing moving and fixed plate IDs for later insertion of rotation pole into model.
 		 * Not currently used.
 		 */
-		GPlatesModel::integer_plate_id_type d_moving_plate_id;
-		GPlatesModel::integer_plate_id_type d_fixed_plate_id;
+		GPlatesModel::integer_plate_id_type d_plate_1_id;
+		GPlatesModel::integer_plate_id_type d_plate_2_id;
+		GPlatesModel::integer_plate_id_type d_plate_3_id;
 
 		double d_recon_time;
 		double d_chron_time;
@@ -597,30 +637,22 @@ namespace GPlatesQtWidgets
 		QString d_python_file;
 
 		/**
-		 * @brief d_temporary_path - location for storing temporary files used for passing data between the python scripts and GPlates.
+		 * @brief d_path_for_temporary_files - location for storing temporary files used for passing data between the python scripts and GPlates.
 		 */
-		QString d_temporary_path;
+		QString d_path_for_temporary_files;
 
-		/**
-		 * @brief d_segment_expanded_status - map storing the status of expanded/collapsed parts of the tree widget, so
-		 * that this can be restored when necessary.
-		 */
-		expanded_status_map_type d_segment_expanded_status;
+		QString d_output_file_path;
+
 		geometry_to_model_map_type d_geometry_to_model_map;
-		geometry_to_tree_item_map_type d_geometry_to_tree_item_map;
-
-		boost::optional<QTreeWidgetItem*> d_hovered_item;
-		bool d_hovered_item_original_state;
-
-		boost::optional<unsigned int> d_selected_segment;
-		boost::optional<hellinger_model_type::const_iterator> d_selected_pick;
 
 		bool d_edit_point_is_enlarged;
 
 		CanvasOperationType d_canvas_operation_type;
 
-		GPlatesMaths::LatLonPoint d_current_pole_estimate_llp;
-		double d_current_pole_estimate_angle;
+		GPlatesMaths::LatLonPoint d_pole_estimate_12_llp;
+		GPlatesMaths::LatLonPoint d_pole_estimate_13_llp;
+		double d_pole_estimate_12_angle;
+		double d_pole_estimate_13_angle;
 
 		/**
 		 * @brief d_spin_box_palette - the palette used in begin/end spinboxes. Stored so that we can
@@ -628,7 +660,27 @@ namespace GPlatesQtWidgets
 		 */
 		QPalette d_spin_box_palette;
 
-		bool d_input_values_ok;
+		/**
+		 * @brief d_settings_dialog - Dialog for changing configuration
+		 */
+		HellingerConfigurationDialog *d_configuration_dialog;
+
+		/**
+		 * @brief d_configuration - instance of structure holding settings for rendering of
+		 * certain hellinger-related geometries
+		 */
+		Configuration d_configuration;
+
+		HellingerPickWidget *d_pick_widget;
+		HellingerFitWidget *d_fit_widget;
+
+		bool d_adjust_pole_tool_is_active;
+
+		OpenDirectoryDialog d_open_directory_dialog;
+
+		bool d_output_path_is_valid;
+
+		bool d_three_way_fitting_is_enabled;
 
 	};
 }

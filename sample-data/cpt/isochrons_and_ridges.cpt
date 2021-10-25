@@ -5,7 +5,7 @@
 # types are coloured grey.
 #
 # The format for categorical CPT files is described here:
-# http://www.soest.hawaii.edu/gmt/gmt/doc/gmt/html/GMT_Docs/node69.html
+# http://gmt.soest.hawaii.edu/doc/latest/GMT_Docs.html#categorical-cpt-files
 #
 # In GPlates, categorical CPT files that assign colours to non-numerical values
 # are interpreted as follows:

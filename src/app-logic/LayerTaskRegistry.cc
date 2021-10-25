@@ -35,6 +35,7 @@
 #include "RasterLayerTask.h"
 #include "ReconstructionLayerTask.h"
 #include "ReconstructLayerTask.h"
+#include "ReconstructScalarCoverageLayerTask.h"
 #include "ScalarField3DLayerTask.h"
 #include "TopologyGeometryResolverLayerTask.h"
 #include "TopologyNetworkResolverLayerTask.h"
@@ -218,4 +219,10 @@ GPlatesAppLogic::register_default_layer_task_types(
 			&CoRegistrationLayerTask::create_layer_task,
 			&CoRegistrationLayerTask::can_process_feature_collection,
 			GPlatesAppLogic::LayerTaskType::CO_REGISTRATION);
+
+	// Layer task to reconstruct scalar coverages.
+	layer_task_registry.register_layer_task_type(
+			&ReconstructScalarCoverageLayerTask::create_layer_task,
+			&ReconstructScalarCoverageLayerTask::can_process_feature_collection,
+			GPlatesAppLogic::LayerTaskType::RECONSTRUCT_SCALAR_COVERAGE);
 }

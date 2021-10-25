@@ -170,6 +170,9 @@ namespace GPlatesApi
 				PythonStyleAdapter* template_adapter = new PythonStyleAdapter(style, *sc);
 				mgr->register_template_style(sc, template_adapter); 
 
+				// Register variants according to what the Python class suggests as 'built ins'
+				template_adapter->register_alternative_draw_styles(*mgr);
+
 				//register all built-in variants
 				BOOST_FOREACH(StyleAdapter* adapter, mgr->get_built_in_styles(*sc))
 				{

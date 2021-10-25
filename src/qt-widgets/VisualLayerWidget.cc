@@ -1107,14 +1107,14 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::set_data(
 	}
 	else
 	{
-		const boost::optional< std::vector<GPlatesAppLogic::LayerTaskType::Type> > &input_data_types =
-				layer_input_channel_type.get_layer_input_data_types();
-		if (input_data_types)
+		const boost::optional< std::vector<GPlatesAppLogic::LayerInputChannelType::InputLayerType> > &
+				input_layer_types = layer_input_channel_type.get_input_layer_types();
+		if (input_layer_types)
 		{
 			populate_with_layers(
 					layer,
 					layer_input_channel_type.get_input_channel_name(),
-					input_data_types.get());
+					input_layer_types.get());
 		}
 		else
 		{
@@ -1220,7 +1220,7 @@ void
 GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_layers(
 		const GPlatesAppLogic::Layer &layer,
 		const GPlatesAppLogic::LayerInputChannelName::Type input_data_channel,
-		const std::vector<GPlatesAppLogic::LayerTaskType::Type> &input_data_types)
+		const std::vector<GPlatesAppLogic::LayerInputChannelType::InputLayerType> &input_layer_types)
 {
 	d_add_new_connection_menu->clear();
 
@@ -1231,30 +1231,34 @@ GPlatesQtWidgets::VisualLayerWidgetInternals::InputChannelWidget::populate_with_
 	BOOST_FOREACH(const GPlatesAppLogic::Layer &outputting_layer, reconstruct_graph)
 	{
 		// If the current layer matches one of the types in the list of supported input data types.
-		if (std::find(input_data_types.begin(), input_data_types.end(), outputting_layer.get_type()) !=
-			input_data_types.end())
+		for (unsigned int input_layer_index = 0; input_layer_index < input_layer_types.size(); ++input_layer_index)
 		{
-			boost::weak_ptr<GPlatesPresentation::VisualLayer> outputting_visual_layer =
-				d_visual_layers.get_visual_layer(outputting_layer);
-			if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_outputting_visual_layer =
-					outputting_visual_layer.lock())
+			if (input_layer_types[input_layer_index].layer_type == outputting_layer.get_type())
 			{
-				QString outputting_layer_name = locked_outputting_visual_layer->get_name();
-				QAction *action = new QAction(outputting_layer_name, d_add_new_connection_menu);
-				boost::function<void ()> fn = boost::bind(
-						&GPlatesAppLogic::Layer::connect_input_to_layer_output,
-						layer,
-						outputting_layer,
-						input_data_channel);
-				QVariant qv;
-				qv.setValue(fn);
-				action->setData(qv);
-				action->setIcon(
-						visual_layer_registry.get_icon(
-							locked_outputting_visual_layer->get_layer_type()));
-				d_add_new_connection_menu->addAction(action);
+				boost::weak_ptr<GPlatesPresentation::VisualLayer> outputting_visual_layer =
+					d_visual_layers.get_visual_layer(outputting_layer);
+				if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_outputting_visual_layer =
+						outputting_visual_layer.lock())
+				{
+					QString outputting_layer_name = locked_outputting_visual_layer->get_name();
+					QAction *action = new QAction(outputting_layer_name, d_add_new_connection_menu);
+					boost::function<void ()> fn = boost::bind(
+							&GPlatesAppLogic::Layer::connect_input_to_layer_output,
+							layer,
+							outputting_layer,
+							input_data_channel);
+					QVariant qv;
+					qv.setValue(fn);
+					action->setData(qv);
+					action->setIcon(
+							visual_layer_registry.get_icon(
+								locked_outputting_visual_layer->get_layer_type()));
+					d_add_new_connection_menu->addAction(action);
 
-				++count;
+					++count;
+				}
+
+				break;
 			}
 		}
 	}

@@ -113,7 +113,10 @@ namespace GPlatesAppLogic
 	 * default value (one cached tree) means it won't get created each time you call it with
 	 * the same parameters (reconstruction time and anchor plate id).
 	 *
-	 * NOTE: The reconstruction feature collection weak refs are copied internally.
+	 * If @a clone_reconstruction_features is true then the reconstruction features are first cloned
+	 * internally. This ensures any subsequent modifications to the original features will not affect
+	 * any subsequently generated reconstruction trees. This is not necessary if you know the original
+	 * feature collections will not be modified during the scope of the returned ReconstructionTreeCreator.
 	 *
 	 * @throws @a PreconditionViolationError if @a reconstruction_tree_cache_size is zero.
 	 */
@@ -121,7 +124,8 @@ namespace GPlatesAppLogic
 	create_cached_reconstruction_tree_creator(
 			const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
 			GPlatesModel::integer_plate_id_type default_anchor_plate_id = 0,
-			unsigned int reconstruction_tree_cache_size = 1);
+			unsigned int reconstruction_tree_cache_size = 1,
+			bool clone_reconstruction_features = true);
 
 	/**
 	 * Similar to @a create_cached_reconstruction_tree_creator but instead of directly creating
@@ -148,12 +152,18 @@ namespace GPlatesAppLogic
 	 *
 	 * The main use of this function is for the client to obtain direct access to the implementation
 	 * so they can change the default reconstruction time and anchor plate id and change the cache size.
+	 *
+	 * If @a clone_reconstruction_features is true then the reconstruction features are first cloned
+	 * internally. This ensures any subsequent modifications to the original features will not affect
+	 * any subsequently generated reconstruction trees. This is not necessary if you know the original
+	 * feature collections will not be modified during the scope of the returned ReconstructionTreeCreator.
 	 */
 	GPlatesUtils::non_null_intrusive_ptr<CachedReconstructionTreeCreatorImpl>
 	create_cached_reconstruction_tree_creator_impl(
 			const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
 			GPlatesModel::integer_plate_id_type default_anchor_plate_id = 0,
-			unsigned int reconstruction_tree_cache_size = 1);
+			unsigned int reconstruction_tree_cache_size = 1,
+			bool clone_reconstruction_features = true);
 
 	/**
 	 * Similar to @a create_cached_reconstruction_tree_adaptor but returns the implementation object
@@ -179,12 +189,16 @@ namespace GPlatesAppLogic
 	 * This is currently used in @a ReconstructedFeatureGeometry to directly create reconstruction
 	 * trees when it didn't have a shared cached reconstruction tree creator passed into it.
 	 *
-	 * The reconstruction feature collection weak refs are copied internally.
+	 * If @a clone_reconstruction_features is true then the reconstruction features are first cloned
+	 * internally. This ensures any subsequent modifications to the original features will not affect
+	 * any subsequently generated reconstruction trees. This is not necessary if you know the original
+	 * feature collections will not be modified during the scope of the returned ReconstructionTreeCreator.
 	 */
 	ReconstructionTreeCreator
 	create_uncached_reconstruction_tree_creator(
 			const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
-			GPlatesModel::integer_plate_id_type default_anchor_plate_id = 0);
+			GPlatesModel::integer_plate_id_type default_anchor_plate_id = 0,
+			bool clone_reconstruction_features = true);
 
 
 	/**
@@ -239,19 +253,26 @@ namespace GPlatesAppLogic
 		 * Creates a cache that will generate reconstruction trees.
 		 *
 		 * The maximum number of cached reconstruction trees is @a max_num_reconstruction_trees_in_cache.
+		 *
+		 * If @a clone_reconstruction_features is true then the reconstruction features are first cloned
+		 * internally. This ensures any subsequent modifications to the original features will not affect
+		 * any subsequently generated reconstruction trees. This is not necessary if you know the original
+		 * feature collections will not be modified during the scope of the returned ReconstructionTreeCreator.
 		 */
 		static
 		non_null_ptr_type
 		create(
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
 				GPlatesModel::integer_plate_id_type default_anchor_plate_id,
-				unsigned int reconstruction_tree_cache_size)
+				unsigned int reconstruction_tree_cache_size,
+				bool clone_reconstruction_features)
 		{
 			return non_null_ptr_type(
 					new CachedReconstructionTreeCreatorImpl(
 							reconstruction_features_collection,
 							default_anchor_plate_id,
-							reconstruction_tree_cache_size));
+							reconstruction_tree_cache_size,
+							clone_reconstruction_features));
 		}
 
 
@@ -328,6 +349,9 @@ namespace GPlatesAppLogic
 
 		GPlatesModel::integer_plate_id_type d_default_anchor_plate_id;
 
+		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> d_cloned_reconstruction_features_collection;
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> d_cloned_reconstruction_features_collection_refs;
+
 		create_reconstruction_tree_function_type d_create_reconstruction_tree_function;
 		cache_type d_cache;
 
@@ -335,7 +359,8 @@ namespace GPlatesAppLogic
 		CachedReconstructionTreeCreatorImpl(
 				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_features_collection,
 				GPlatesModel::integer_plate_id_type default_anchor_plate_id,
-				unsigned int reconstruction_tree_cache_size);
+				unsigned int reconstruction_tree_cache_size,
+				bool clone_reconstruction_features);
 
 		CachedReconstructionTreeCreatorImpl(
 				const ReconstructionTreeCreator &reconstruction_tree_creator,

@@ -111,6 +111,9 @@ namespace GPlatesQtWidgets
 		void
 		reset_widget_to_default_values();
 		
+		/**
+		 * @a gpml_array must have a value type of 'gml:TimePeriod'.
+		 */
 		void
 		update_widget_from_time_period_array(
 			GPlatesPropertyValues::GpmlArray &gpml_array);

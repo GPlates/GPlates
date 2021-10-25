@@ -36,4 +36,3 @@ GPlatesPropertyValues::XsBoolean::print_to(
 {
 	return os << (d_value ? "true" : "false");
 }
-

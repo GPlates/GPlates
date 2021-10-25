@@ -29,7 +29,9 @@
 #define GPLATES_PROPERTYVALUES_GPMLCONSTANTVALUE_H
 
 #include "StructuralType.h"
+
 #include "feature-visitors/PropertyValueFinder.h"
+
 #include "model/FeatureVisitor.h"
 #include "model/PropertyValue.h"
 
@@ -49,14 +51,12 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlConstantValue>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlConstantValue>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlConstantValue> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlConstantValue>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlConstantValue>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlConstantValue> non_null_ptr_to_const_type;
 
@@ -65,26 +65,15 @@ namespace GPlatesPropertyValues
 		~GpmlConstantValue()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
 				GPlatesModel::PropertyValue::non_null_ptr_type value_,
 				const StructuralType &value_type_)
 		{
-			non_null_ptr_type ptr(new GpmlConstantValue(value_, value_type_));
-			return ptr;
+			return non_null_ptr_type(new GpmlConstantValue(value_, value_type_));
 		}
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
@@ -92,18 +81,16 @@ namespace GPlatesPropertyValues
 				const StructuralType &value_type_,
 				const GPlatesUtils::UnicodeString &description_)
 		{
-			non_null_ptr_type ptr(new GpmlConstantValue(value_, value_type_, description_));
-			return ptr;
+			return non_null_ptr_type(new GpmlConstantValue(value_, value_type_, description_));
 		}
 
-		const GpmlConstantValue::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlConstantValue::non_null_ptr_type dup(new GpmlConstantValue(*this));
-			return dup;
+			return non_null_ptr_type(new GpmlConstantValue(*this));
 		}
 
-		const GpmlConstantValue::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const;
 
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
@@ -114,23 +101,18 @@ namespace GPlatesPropertyValues
 			return d_value;
 		}
 
-		// Note that, because the copy-assignment operator of PropertyValue is private,
-		// the PropertyValue referenced by the return-value of this function cannot be
-		// assigned-to, which means that this function does not provide a means to directly
-		// switch the PropertyValue within this GpmlConstantValue instance.  (This
-		// restriction is intentional.)
-		//
-		// To switch the PropertyValue within this GpmlConstantValue instance, use the
-		// function @a set_value below.
-		//
-		// (This overload is provided to allow the referenced PropertyValue instance to
-		// accept a FeatureVisitor instance.)
+		/**
+		 * Returns the 'non-const' property value.
+		 */
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		value()
 		{
 			return d_value;
 		}
 
+		/**
+		 * Sets the internal property value.
+		 */
 		void
 		set_value(
 				GPlatesModel::PropertyValue::non_null_ptr_type v)

@@ -589,7 +589,7 @@ GPlatesViewOperations::MoveVertexGeometryOperation::update_secondary_geometries(
 		{
 			const boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg =
 					GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-							const GPlatesAppLogic::ReconstructedFeatureGeometry>(recon_geom.get());
+							const GPlatesAppLogic::ReconstructedFeatureGeometry *>(recon_geom.get());
 			if (rfg)
 			{
 				boost::optional<GPlatesModel::integer_plate_id_type> plate_id =

@@ -224,20 +224,19 @@ namespace GPlatesFileIO
 				static const GPlatesModel::PropertyName old_plates_header_property_name =
 					GPlatesModel::PropertyName::create_gpml("oldPlatesHeader");
 
-				const GPlatesPropertyValues::GpmlOldPlatesHeader *old_plates_header;
-
-				if ( GPlatesFeatureVisitors::get_property_value(
-						feature,
-						old_plates_header_property_name,
-						old_plates_header ) )
+				boost::optional<GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_to_const_type> old_plates_header =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlOldPlatesHeader>(
+								feature,
+								old_plates_header_property_name);
+				if (old_plates_header)
 				{
-					if ( old_plates_header->data_type_code() == "sL" )
+					if ( old_plates_header.get()->data_type_code() == "sL" )
 					{
 						// set the type
 						d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_LEFT;
 					}
 
-					if ( old_plates_header->data_type_code() == "sR" )
+					if ( old_plates_header.get()->data_type_code() == "sR" )
 					{
 						// set the type
 						d_sub_segment_type = SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_RIGHT;
@@ -447,11 +446,13 @@ GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl::get_slab_sub_segmen
 	QString slabEdgeType;
 	static const GPlatesModel::PropertyName property_name =
 			GPlatesModel::PropertyName::create_gpml("slabEdgeType");
-	const GPlatesPropertyValues::XsString *property_value = NULL;
 
-	if ( GPlatesFeatureVisitors::get_property_value( feature, property_name, property_value) )
+	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> property_value =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+					feature, property_name);
+	if (property_value)
 	{
-		slabEdgeType = GPlatesUtils::make_qstring_from_icu_string( property_value->value().get() );
+		slabEdgeType = GPlatesUtils::make_qstring_from_icu_string( property_value.get()->value().get() );
 
 		if (slabEdgeType == QString("Leading") ) 
 		{

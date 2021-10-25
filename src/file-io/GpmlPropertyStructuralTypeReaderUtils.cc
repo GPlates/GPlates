@@ -10,7 +10,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2010 The University of Sydney, Australia
+ * Copyright (C) 2008, 2010, 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -65,11 +65,12 @@
 #include "model/XmlNodeUtils.h"
 
 #include "property-values/Enumeration.h"
+#include "property-values/GmlDataBlockCoordinateList.h"
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPolygon.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
 #include "property-values/StructuralType.h"
+#include "property-values/ValueObjectType.h"
 
 #include "utils/Parse.h"
 #include "utils/UnicodeStringUtils.h"
@@ -95,8 +96,47 @@ namespace
 			return boost::none;
 		}
 	}
-}
+	
+	/**
+	 * Given an XML element and attribute name, look for that attribute and attempt to convert it to a double.
+	 * Returns boost::none if no attribute exists or the double conversion does not work.
+	 */	
+	boost::optional<double>
+	get_attribute_as_double(
+			GPlatesModel::XmlElementNode::non_null_ptr_to_const_type elem,
+			const GPlatesModel::XmlAttributeName &attr_name)
+	{
+		GPlatesModel::XmlElementNode::attribute_const_iterator end = elem->attributes_end();
+		GPlatesModel::XmlElementNode::attribute_const_iterator it = elem->get_attribute_by_name(attr_name);
+		if (it != end) {
+			bool conv_ok = false;
+			GPlatesModel::XmlAttributeValue value = it->second;
+			double converted = value.get().qstring().toDouble(&conv_ok);
+			if (conv_ok) {
+				return converted;
+			}
+		}
+		return boost::none;
+	}
 
+	/**
+	 * Given an XML element and attribute name, look for that attribute and return it as a QString.
+	 * Returns boost::none if no attribute exists.
+	 */	
+	boost::optional<QString>
+	get_attribute_as_qstring(
+			GPlatesModel::XmlElementNode::non_null_ptr_to_const_type elem,
+			const GPlatesModel::XmlAttributeName &attr_name)
+	{
+		GPlatesModel::XmlElementNode::attribute_const_iterator end = elem->attributes_end();
+		GPlatesModel::XmlElementNode::attribute_const_iterator it = elem->get_attribute_by_name(attr_name);
+		if (it != end) {
+			GPlatesModel::XmlAttributeValue value = it->second;
+			return value.get().qstring();
+		}
+		return boost::none;
+	}
+}
 
 //
 // Please keep these ordered alphabetically (within the XSI, GML and GPML groups)...
@@ -144,6 +184,59 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_xs_string(
 }
 
 
+GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type
+GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gml_data_block(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		const GPlatesModel::GpgimVersion &gpml_version,
+		ReadErrorAccumulation &read_errors)
+{
+	using namespace GPlatesPropertyValues;
+
+	static const GPlatesModel::XmlElementName
+		STRUCTURAL_TYPE = GPlatesModel::XmlElementName::create_gml("DataBlock"),
+		RANGE_PARAMETERS = GPlatesModel::XmlElementName::create_gml("rangeParameters"),
+		TUPLE_LIST = GPlatesModel::XmlElementName::create_gml("tupleList");
+
+	GPlatesModel::XmlElementNode::non_null_ptr_type elem =
+		get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	// <gml:rangeParameters>
+	composite_value_type range_parameters =
+		find_and_create_one(elem, &create_gml_composite_value,
+				RANGE_PARAMETERS, gpml_version, read_errors);
+
+	// <gml:tupleList>
+	std::vector<coordinate_list_type> tuple_lists =
+			find_and_create_one(
+					elem, &create_tuple_list, TUPLE_LIST, gpml_version, read_errors);
+
+	if (range_parameters.size() != tuple_lists.size())
+	{
+		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
+				parent, GPlatesFileIO::ReadErrors::MismatchingRangeParametersSizeAndTupleSize,
+				EXCEPTION_SOURCE);
+	}
+
+	GmlDataBlock::non_null_ptr_type gml_data_block = GmlDataBlock::create();
+
+	for (unsigned int tuple_list_index = 0; tuple_list_index < tuple_lists.size(); ++tuple_list_index)
+	{
+		coordinate_list_type &tuple_list = tuple_lists[tuple_list_index];
+		const value_component_type &value_component = range_parameters[tuple_list_index];
+
+		GmlDataBlockCoordinateList::non_null_ptr_type gml_data_block_coordinate_list =
+				GmlDataBlockCoordinateList::create_swap(
+						value_component.first,
+						value_component.second,
+						tuple_list);
+
+		gml_data_block->tuple_list_push_back(gml_data_block_coordinate_list);
+	}
+
+	return gml_data_block;
+}
+
+
 GPlatesPropertyValues::GmlFile::non_null_ptr_type
 GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gml_file(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
@@ -164,8 +257,8 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gml_file(
 		get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	// <gml:rangeParameters>
-	GmlFile::composite_value_type range_parameters =
-		find_and_create_one(elem, &create_gml_file_composite_value,
+	composite_value_type range_parameters =
+		find_and_create_one(elem, &create_gml_composite_value,
 				RANGE_PARAMETERS, gpml_version, read_errors);
 	
 	// <gml:fileName>
@@ -310,19 +403,31 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gml_polygon(
 	GPlatesModel::XmlElementNode::non_null_ptr_type
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
+	typedef boost::shared_ptr< std::vector<GPlatesMaths::PointOnSphere> > ring_type;
+
 	// GmlPolygon has exactly one exterior gml:LinearRing
-	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
-		exterior = find_and_create_one(elem, &create_linear_ring, EXTERIOR, gpml_version, read_errors);
+	ring_type exterior_ring = find_and_create_one(elem, &create_linear_ring, EXTERIOR, gpml_version, read_errors);
 
 	// GmlPolygon has zero or more interior gml:LinearRing
-	std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> interiors;
-	find_and_create_zero_or_more(
-			elem, &create_linear_ring, INTERIOR, interiors, gpml_version, read_errors);
+	std::vector<ring_type> interior_rings;
+	find_and_create_zero_or_more(elem, &create_linear_ring, INTERIOR, interior_rings, gpml_version, read_errors);
+
+	const std::vector<GPlatesMaths::PointOnSphere> &exterior = *exterior_ring;
+
+	// 'PolygonOnSphere::create_on_heap()' requires interior rings that are sequences (not intrusive_ptrs of sequence)
+	// so convert without copying all the interior points (instead swap them).
+	std::vector< std::vector<GPlatesMaths::PointOnSphere> > interiors(interior_rings.size());
+	for (unsigned int interior_index = 0; interior_index < interior_rings.size(); ++interior_index)
+	{
+		interiors[interior_index].swap(*interior_rings[interior_index]);
+	}
+
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon =
+			GPlatesMaths::PolygonOnSphere::create_on_heap(exterior, interiors);
 
 	// FIXME: We need to give the srsName et al. attributes from the posList 
 	// (or the gml:FeatureCollection tag?) to the GmlPolygon (or the FeatureCollection)!
-	return GPlatesPropertyValues::GmlPolygon::create<
-			std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> >(exterior, interiors);
+	return GPlatesPropertyValues::GmlPolygon::create(polygon);
 }
 
 
@@ -417,6 +522,63 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gml_time_period(
 }
 
 
+GPlatesPropertyValues::GpmlAge::non_null_ptr_type
+GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_age(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		const GPlatesModel::GpgimVersion &gpml_version,
+		ReadErrorAccumulation &read_errors)
+{
+	static const GPlatesModel::XmlElementName 
+			STRUCTURAL_TYPE = GPlatesModel::XmlElementName::create_gpml("Age"),
+			TIMESCALE = GPlatesModel::XmlElementName::create_gpml("timescale"),
+			ABSOLUTE_AGE = GPlatesModel::XmlElementName::create_gpml("absoluteAge"),
+			NAMED_AGE = GPlatesModel::XmlElementName::create_gpml("namedAge"),
+			UNCERTAINTY = GPlatesModel::XmlElementName::create_gpml("uncertainty");
+	static const GPlatesModel::XmlAttributeName
+			PLUSMINUS_VALUE = GPlatesModel::XmlAttributeName::create_gpml("value"),
+			RANGE_OLDEST = GPlatesModel::XmlAttributeName::create_gpml("oldest"),
+			RANGE_YOUNGEST = GPlatesModel::XmlAttributeName::create_gpml("youngest");
+	
+	// Find the root gpml:Age element.
+	GPlatesModel::XmlElementNode::non_null_ptr_type
+			elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
+
+	// The principal components of the age are easy. Note that both an absolute age and named age
+	// can coexist in a gpml:Age according to the spec.
+	boost::optional<QString>
+			timescale = find_and_create_optional(elem, &create_string, TIMESCALE, gpml_version, read_errors);
+	boost::optional<double>
+			absolute_age = find_and_create_optional(elem, &create_double, ABSOLUTE_AGE, gpml_version, read_errors);
+	boost::optional<QString>
+			named_age = find_and_create_optional(elem, &create_string, NAMED_AGE, gpml_version, read_errors);
+	
+	// The uncertainty component has several attributes, some of which may conflict with each other.
+	// And there may not be an <uncertainty> element at all.
+	boost::optional<double> unc_plusminus, unc_y_abs, unc_o_abs;
+	boost::optional<QString> unc_y_named, unc_o_named;
+	boost::optional<GPlatesModel::XmlElementNode::non_null_ptr_type> uncertainty_maybe = 
+			elem->get_child_by_name(UNCERTAINTY);
+	if (uncertainty_maybe) {
+		unc_plusminus = get_attribute_as_double(*uncertainty_maybe, PLUSMINUS_VALUE);
+		unc_y_abs = get_attribute_as_double(*uncertainty_maybe, RANGE_YOUNGEST);
+		if ( ! unc_y_abs) {
+			// If we cannot interpret the gpml:youngest attribute as a double, consider it to be a named age.
+			// (of course, the attribute might just not exist at all)
+			unc_y_named = get_attribute_as_qstring(*uncertainty_maybe, RANGE_YOUNGEST);
+		}
+		unc_o_abs = get_attribute_as_double(*uncertainty_maybe, RANGE_OLDEST);
+		if ( ! unc_o_abs) {
+			// If we cannot interpret the gpml:oldest attribute as a double, consider it to be a named age.
+			// (of course, the attribute might just not exist at all)
+			unc_o_named = get_attribute_as_qstring(*uncertainty_maybe, RANGE_OLDEST);
+		}
+	}
+
+	return GPlatesPropertyValues::GpmlAge::create(absolute_age, named_age, timescale,
+			unc_plusminus, unc_y_abs, unc_y_named, unc_o_abs, unc_o_named);
+}
+
+
 GPlatesPropertyValues::GpmlArray::non_null_ptr_type
 GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_array(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
@@ -444,35 +606,6 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_array(
 }
 
 
-#if 0
-GPlatesPropertyValues::GpmlArrayMember
-GPlatesFileIO::GpmlStructuralTypeReaderUtils::create_gpml_array_member(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
-		const GpmlPropertyStructuralTypeReader &structural_type_reader,
-		const GPlatesModel::GpgimVersion &gpml_version,
-		ReadErrorAccumulation &read_errors)
-{
-	static const GPlatesModel::XmlElementName
-		STRUCTURAL_TYPE = GPlatesModel::XmlElementName::create_gpml("ArrayMember"),
-		VALUE_TYPE = GPlatesModel::XmlElementName::create_gpml("valueType"),
-		VALUE = GPlatesModel::XmlElementName::create_gpml("value");
-
-
-	GPlatesModel::XmlElementNode::non_null_ptr_type 
-		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
-
-	GPlatesPropertyValues::StructuralType
-		type = find_and_create_one(elem, &create_template_type_parameter_type,
-				VALUE_TYPE, gpml_version, read_errors);
-	GPlatesModel::PropertyValue::non_null_ptr_type 
-		value = find_and_create_from_type(elem, type, VALUE,
-				structural_type_reader, gpml_version, read_errors);
-
-	return GPlatesPropertyValues::GpmlArrayMember(value, type);
-}
-#endif
-
-
 GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type
 GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_constant_value(
 		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
@@ -490,7 +623,7 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_constant_value
 		elem = get_structural_type_element(parent, STRUCTURAL_TYPE);
 
 	boost::optional<QString> 
-		description = find_and_create_optional(elem, &create_string,
+		description_string = find_and_create_optional(elem, &create_string,
 				DESCRIPTION, gpml_version, read_errors);
 	GPlatesPropertyValues::StructuralType 
 		type = find_and_create_one(elem, &create_template_type_parameter_type,
@@ -499,11 +632,15 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_constant_value
 		find_and_create_from_type(elem, type, VALUE,
 				structural_type_reader, gpml_version, read_errors);
 
-	if (description) {
-		return GPlatesPropertyValues::GpmlConstantValue::create(value, type, 
-				GPlatesUtils::make_icu_string_from_qstring(*description));
+	if (!description_string)
+	{
+		return GPlatesPropertyValues::GpmlConstantValue::create(value, type);
 	}
-	return GPlatesPropertyValues::GpmlConstantValue::create(value, type);
+
+	const GPlatesUtils::UnicodeString description =
+			GPlatesUtils::make_icu_string_from_qstring(description_string.get());
+
+	return GPlatesPropertyValues::GpmlConstantValue::create(value, type, description);
 }
 
 
@@ -593,28 +730,9 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_feature_snapsh
 			GPlatesModel::FeatureType(value_type));
 }
 
-const GPlatesMaths::FiniteRotation
-GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_finite_rotation(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &xml_elem,
-		const GPlatesModel::GpgimVersion &gpml_version,
-		GPlatesFileIO::ReadErrorAccumulation &read_errors)
-{
-	static const GPlatesModel::XmlElementName
-			EULER_POLE = GPlatesModel::XmlElementName::create_gpml("eulerPole"),
-			ANGLE = GPlatesModel::XmlElementName::create_gpml("angle");
-		
-		GPlatesPropertyValues::GmlPoint::non_null_ptr_type euler_pole =
-				find_and_create_one(xml_elem, &create_gml_point,
-						EULER_POLE, gpml_version, read_errors);
-		GPlatesPropertyValues::GpmlMeasure::non_null_ptr_type angle =
-				find_and_create_one(xml_elem, &create_gpml_measure,
-						ANGLE, gpml_version, read_errors);
-		return GPlatesPropertyValues::GpmlFiniteRotation::create(euler_pole, angle)->finite_rotation();
-}
-
 GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type
 GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_finite_rotation(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &parent,
+		GPlatesModel::XmlElementNode::non_null_ptr_type parent,
 		const GPlatesModel::GpgimVersion &gpml_version,
 		ReadErrorAccumulation &read_errors)
 {
@@ -623,59 +741,60 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_finite_rotatio
 			GPlatesModel::XmlElementName::create_gpml("AxisAngleFiniteRotation"),
 		ZERO_FINITE_ROTATION = 
 			GPlatesModel::XmlElementName::create_gpml("ZeroFiniteRotation"),
-		TRP = 
+		TOTAL_RECONSTRUCTION_POLE = 
 			GPlatesModel::XmlElementName::create_gpml("TotalReconstructionPole");
 	
-	if (parent->number_of_children() > 1) {
+	if (parent->number_of_children() > 1)
+	{
 		// Too many children!
 		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
 				parent, GPlatesFileIO::ReadErrors::TooManyChildrenInElement,
 				EXCEPTION_SOURCE);
 	}
 
-	bool is_trp = false;
-	GPlatesModel::XmlElementNode::non_null_ptr_type xml_elem = parent; 
-	boost::optional< GPlatesModel::XmlElementNode::non_null_ptr_type > structural_elem = 
-		parent->get_child_by_name(TRP);
-	if (structural_elem) {
-		is_trp = true;
-		xml_elem = *structural_elem;
+	GPlatesModel::MetadataContainer metadata;
+
+	// Determine if a 'gpml:TotalReconstructionPole' (contains rotation metadata).
+	boost::optional<GPlatesModel::XmlElementNode::non_null_ptr_type> total_reconstruction_pole = 
+		parent->get_child_by_name(TOTAL_RECONSTRUCTION_POLE);
+	if (total_reconstruction_pole)
+	{
+		metadata = create_metadata_from_gpml(total_reconstruction_pole.get());
+
+		// 'gpml:ZeroFiniteRotation' or 'gpml:AxisAngleFiniteRotation' are inside the
+		// total reconstruction pole.
+		parent = total_reconstruction_pole.get();
 	}
 
-	boost::optional<GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type> finate_rotation;
-
-	structural_elem = xml_elem->get_child_by_name(ZERO_FINITE_ROTATION);
-	if (structural_elem) {
-		finate_rotation = GPlatesPropertyValues::GpmlFiniteRotation::create_zero_rotation();
-	}else
+	boost::optional<GPlatesModel::XmlElementNode::non_null_ptr_type> zero_finite_rotation =
+			parent->get_child_by_name(ZERO_FINITE_ROTATION);
+	if (zero_finite_rotation)
 	{
-		structural_elem = xml_elem->get_child_by_name(AXIS_ANGLE_FINITE_ROTATION);
-		if (structural_elem)
-		{
-			finate_rotation = GPlatesPropertyValues::GpmlFiniteRotation::create(
-					create_finite_rotation(*structural_elem,gpml_version,read_errors));
-		}
+		return GPlatesPropertyValues::GpmlFiniteRotation::create_zero_rotation(metadata);
 	}
 
-	if(!finate_rotation)
+	boost::optional<GPlatesModel::XmlElementNode::non_null_ptr_type> axis_angle_finite_rotation =
+			parent->get_child_by_name(AXIS_ANGLE_FINITE_ROTATION);
+	if (axis_angle_finite_rotation)
 	{
-		// Invalid child!
-		throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
-				parent, GPlatesFileIO::ReadErrors::UnrecognisedChildFound,
-				EXCEPTION_SOURCE);
-	}else
-	{
-		if(is_trp)
-		{
-			return new GPlatesPropertyValues::GpmlTotalReconstructionPole(
-					(*finate_rotation)->finite_rotation(),
-					*parent->get_child_by_name(TRP));
-		}
-		else
-		{
-			return *finate_rotation;
-		}
+		static const GPlatesModel::XmlElementName
+				EULER_POLE = GPlatesModel::XmlElementName::create_gpml("eulerPole"),
+				ANGLE = GPlatesModel::XmlElementName::create_gpml("angle");
+		
+		GPlatesPropertyValues::GmlPoint::non_null_ptr_type euler_pole =
+				find_and_create_one(axis_angle_finite_rotation.get(), &create_gml_point,
+						EULER_POLE, gpml_version, read_errors);
+		GPlatesPropertyValues::GpmlMeasure::non_null_ptr_type angle =
+				find_and_create_one(axis_angle_finite_rotation.get(), &create_gpml_measure,
+						ANGLE, gpml_version, read_errors);
+
+		return GPlatesPropertyValues::GpmlFiniteRotation::create(euler_pole, angle, metadata);
 	}
+
+	// Invalid child!
+	throw GpmlReaderException(GPLATES_EXCEPTION_SOURCE,
+			parent, GPlatesFileIO::ReadErrors::UnrecognisedChildFound,
+			EXCEPTION_SOURCE);
 }
 
 
@@ -784,6 +903,17 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_measure(
 	std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
 		xml_attrs(elem->attributes_begin(), elem->attributes_end());
 	return GPlatesPropertyValues::GpmlMeasure::create(quantity, xml_attrs);
+}
+
+
+GPlatesPropertyValues::GpmlMetadata::non_null_ptr_type
+GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_metadata(
+		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
+		const GPlatesModel::GpgimVersion &gpml_version,
+		ReadErrorAccumulation &read_errors)
+{
+	GPlatesModel::FeatureCollectionMetadata meta(elem);
+	return GPlatesPropertyValues::GpmlMetadata::create(meta);
 }
 
 
@@ -1111,16 +1241,3 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_topological_po
 			exterior_sections.begin(),
 			exterior_sections.end());
 }
-
-
-GPlatesPropertyValues::GpmlMetadata::non_null_ptr_type
-GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_metadata(
-		const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
-		const GPlatesModel::GpgimVersion &gpml_version,
-		ReadErrorAccumulation &read_errors)
-{
-	GPlatesModel::FeatureCollectionMetadata meta(elem);
-	return GPlatesPropertyValues::GpmlMetadata::create(meta);
-}
-
-

@@ -56,10 +56,10 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlScalarField3DFile> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlScalarField3DFile>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlScalarField3DFile>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlScalarField3DFile> non_null_ptr_to_const_type;
+
 
 		virtual
 		~GpmlScalarField3DFile()
@@ -78,8 +78,7 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		clone() const
 		{
-			non_null_ptr_type dup(new GpmlScalarField3DFile(*this));
-			return dup;
+			return non_null_ptr_type(new GpmlScalarField3DFile(*this));
 		}
 
 		const non_null_ptr_type

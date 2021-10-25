@@ -26,9 +26,12 @@ set(srcs
     ConfigBundleUtils.h
     ConfigInterface.h
     CopyConst.h
+    CopyOnWrite.h
     Counter64.h
     DeferredCallEvent.cc
     DeferredCallEvent.h
+    Earth.cc
+    Earth.h
     Endian.h
     Environment.cc
     Environment.h
@@ -38,6 +41,7 @@ set(srcs
     GeometryCreationUtils.h
     GetPropertyAsPythonObjVisitor.cc
     GetPropertyAsPythonObjVisitor.h
+    HasFunction.h
     IdStringSet.cc
     IdStringSet.h
     IntrusiveSinglyLinkedList.h

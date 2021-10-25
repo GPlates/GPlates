@@ -27,8 +27,13 @@
 
 #ifndef GPLATES_MODEL_STRINGCONTENTTYPEGENERATOR_H
 #define GPLATES_MODEL_STRINGCONTENTTYPEGENERATOR_H
-#include "utils/UnicodeString.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/StringSet.h"
+#include "utils/UnicodeString.h"
+
 namespace GPlatesModel
 {
 	/**
@@ -96,6 +101,22 @@ namespace GPlatesModel
 
 		GPlatesUtils::StringSet::SharedIterator d_ss_iter;
 
+	private: // Transcribe for sessions/projects...
+
+		friend class GPlatesScribe::Access;
+
+		// NOTE: Implementation is in "TranscribeStringContentTypeGenerator.h" to avoid including "Scribe.h" here.
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject< StringContentTypeGenerator<SingletonType> > &string_content);
+
+		// NOTE: Implementation is in "TranscribeStringContentTypeGenerator.h" to avoid including "Scribe.h" here.
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 

@@ -40,7 +40,8 @@
 
 namespace GPlatesAppLogic
 {
-	class ReconstructedFeatureGeometry;
+	class ReconstructionGeometry;
+	class ResolvedTopologicalSection;
 }
 
 namespace GPlatesFileIO
@@ -77,20 +78,20 @@ namespace GPlatesFileIO
 
 
 		/**
-		 * Exports @a ResolvedTopologicalGeometry objects.
+		 * Exports resolved topology objects (includes @a ResolvedTopologicalLine,
+		 * @a ResolvedTopologicalBoundary and @a ResolvedTopologicalNetwork).
 		 *
 		 * @param export_format specifies which format to write.
-		 * @param export_single_output_file specifies whether to write all reconstruction geometries
-		 *        to a single file.
+		 * @param export_single_output_file specifies whether to write all resolved topologies to a single file.
 		 * @param export_per_input_file specifies whether to group
-		 *        reconstruction geometries according to the input files their features came from
+		 *        resolved topologies according to the input files their features came from
 		 *        and write to corresponding output files.
 		 * @param export_separate_output_directory_per_input_file
 		 *        Save each exported file to a different directory based on the file basename.
 		 *        Only applies if @a export_per_input_file is 'true'.
 		 * @param force_polygon_orientation
 		 *        Optionally force polygon orientation (clockwise or counter-clockwise).
-		 *        Only applies to resolved topological *polygons*.
+		 *        Only applies to resolved topological boundaries and networks (their polygon boundaries).
 		 * @param wrap_to_dateline if true then exported geometries are wrapped/clipped to
 		 *        the dateline (currently only applies to @a SHAPEFILE format).
 		 *
@@ -104,7 +105,7 @@ namespace GPlatesFileIO
 		export_resolved_topological_geometries(
 				const QString &filename,
 				Format export_format,
-				const std::vector<const GPlatesAppLogic::ResolvedTopologicalGeometry *> &resolved_topological_geom_seq,
+				const std::vector<const GPlatesAppLogic::ReconstructionGeometry *> &resolved_topologies,
 				const std::vector<const File::Reference *> &active_files,
 				const std::vector<const File::Reference *> &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
@@ -114,6 +115,41 @@ namespace GPlatesFileIO
 				bool export_separate_output_directory_per_input_file,
 				boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
 						force_polygon_orientation = boost::none,
+				bool wrap_to_dateline = true);
+
+
+		/**
+		 * Exports resolved topological sections (@a ResolvedTopologicalSection and its
+		 * @a ResolvedTopologicalSharedSubSegment instances).
+		 *
+		 * @param export_format specifies which format to write.
+		 * @param export_single_output_file specifies whether to write all resolved sections to a single file.
+		 * @param export_per_input_file specifies whether to group resolved sections according to the
+		 *        input files their features came from and write to corresponding output files.
+		 * @param export_separate_output_directory_per_input_file
+		 *        Save each exported file to a different directory based on the file basename.
+		 *        Only applies if @a export_per_input_file is 'true'.
+		 * @param wrap_to_dateline if true then exported geometries are wrapped/clipped to
+		 *        the dateline (currently only applies to @a SHAPEFILE format).
+		 *
+		 * Note that both @a export_single_output_file and @a export_per_input_file can be true
+		 * in which case both a single output file is exported as well as grouped output files.
+		 *
+		 * @throws ErrorOpeningFileForWritingException if file is not writable.
+		 * @throws FileFormatNotSupportedException if file format not supported.
+		 */
+		void
+		export_resolved_topological_sections(
+				const QString &filename,
+				Format export_format,
+				const std::vector<const GPlatesAppLogic::ResolvedTopologicalSection *> &resolved_topological_sections,
+				const std::vector<const File::Reference *> &active_files,
+				const std::vector<const File::Reference *> &active_reconstruction_files,
+				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
+				const double &reconstruction_time,
+				bool export_single_output_file,
+				bool export_per_input_file,
+				bool export_separate_output_directory_per_input_file,
 				bool wrap_to_dateline = true);
 	}
 }

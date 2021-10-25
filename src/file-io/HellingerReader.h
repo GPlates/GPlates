@@ -26,12 +26,8 @@
 #ifndef GPLATES_FILEIO_PICKFILEREADER_H
 #define GPLATES_FILEIO_PICKFILEREADER_H
 
+#include "qt-widgets/HellingerModel.h"
 #include "ReadErrorAccumulation.h"
-
-namespace GPlatesQtWidgets
-{
-	class HellingerModel;
-}
 
 namespace GPlatesFileIO
 {
@@ -45,24 +41,41 @@ namespace GPlatesFileIO
 	public:
 		HellingerReader();
 
+		/**
+		 * @brief read_pick_file - Read and parse the contents of a text .pick file,
+		 * putting the contents into @a hellinger_model.
+		 * The file can be a 2-way or 3-way pick file. We do some guess work based on the
+		 * presence of an initial n-value (in 3-way files) and on the range of indices
+		 * in the first column (1 and 2 only => 2-way pick file; 1,2 and 3 => 3-way file).
+		 *
+		 * @param filename
+		 * @param hellinger_model
+		 * @param read_errors
+		 */
 		static
-		void
+		bool
 		read_pick_file(
 				const QString &filename,
 				GPlatesQtWidgets::HellingerModel &hellinger_model,
 				ReadErrorAccumulation &read_errors);
 
 		static
-		void
+		bool
 		read_com_file(
 				const QString &filename,
 				GPlatesQtWidgets::HellingerModel& hellinger_model,
 				ReadErrorAccumulation &read_errors);
 
-		// TODO: Implement. Reading the error ellipse is done by the HellingerModel class.
 		static
 		void
 		read_error_ellipse(
+				const QString &filename,
+				GPlatesQtWidgets::HellingerModel& hellinger_model,
+				const GPlatesQtWidgets::HellingerPlatePairType &type = GPlatesQtWidgets::PLATES_1_2_PAIR_TYPE);
+
+		static
+		void
+		read_fit_results_from_temporary_fit_file(
 				const QString &filename,
 				GPlatesQtWidgets::HellingerModel& hellinger_model);
 	};

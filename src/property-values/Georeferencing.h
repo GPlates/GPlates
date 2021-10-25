@@ -69,9 +69,6 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<Georeferencing> non_null_ptr_type;
 		typedef GPlatesUtils::non_null_intrusive_ptr<const Georeferencing> non_null_ptr_to_const_type;
 
-		typedef boost::intrusive_ptr<Georeferencing> maybe_null_ptr_type;
-		typedef boost::intrusive_ptr<const Georeferencing> maybe_null_ptr_to_const_type;
-
 		/**
 		 * The parameters that specify the affine transform.
 		 *

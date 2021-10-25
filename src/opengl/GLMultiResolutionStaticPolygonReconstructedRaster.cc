@@ -313,7 +313,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::GLMultiResolut
 		GLRenderer &renderer,
 		const double &reconstruction_time,
 		const GLMultiResolutionCubeRaster::non_null_ptr_type &source_raster,
-		boost::optional<GLReconstructedStaticPolygonMeshes::non_null_ptr_type> reconstructed_static_polygon_meshes,
+		const std::vector<GLReconstructedStaticPolygonMeshes::non_null_ptr_type> &reconstructed_static_polygon_meshes,
 		boost::optional<GLMultiResolutionCubeMesh::non_null_ptr_to_const_type> multi_resolution_cube_mesh,
 		boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> age_grid_raster,
 		boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> normal_map_raster,
@@ -321,6 +321,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::GLMultiResolut
 	d_reconstruction_time(reconstruction_time),
 	d_source_raster(source_raster),
 	d_reconstructed_static_polygon_meshes(reconstructed_static_polygon_meshes),
+	d_reconstructed_static_polygon_meshes_observer_tokens(reconstructed_static_polygon_meshes.size()),
 	d_multi_resolution_cube_mesh(multi_resolution_cube_mesh),
 	d_source_raster_tile_texel_dimension(source_raster->get_tile_texel_dimension()),
 	d_source_raster_inverse_tile_texel_dimension(1.0f / source_raster->get_tile_texel_dimension()),
@@ -341,7 +342,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::GLMultiResolut
 	// the multi-resolution cube mesh), so one (and only one) must be valid.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			// Essentially the equivalent of boolean XOR (the extra NOT's ensure boolean comparison)...
-			!d_reconstructed_static_polygon_meshes != !d_multi_resolution_cube_mesh,
+			d_reconstructed_static_polygon_meshes.empty() != !d_multi_resolution_cube_mesh,
 			GPLATES_ASSERTION_SOURCE);
 
 	if (d_light)
@@ -402,15 +403,22 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::get_subject_to
 	}
 
 	// If the reconstructed polygons have changed (a new reconstruction).
-	if (d_reconstructed_static_polygon_meshes)
+	if (!d_reconstructed_static_polygon_meshes.empty())
 	{
-		if (!d_reconstructed_static_polygon_meshes.get()->get_subject_token().is_observer_up_to_date(
-					d_reconstructed_static_polygon_meshes_observer_token))
-		{
-			d_subject_token.invalidate();
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				d_reconstructed_static_polygon_meshes.size() == d_reconstructed_static_polygon_meshes_observer_tokens.size(),
+				GPLATES_ASSERTION_SOURCE);
 
-			d_reconstructed_static_polygon_meshes.get()->get_subject_token().update_observer(
-					d_reconstructed_static_polygon_meshes_observer_token);
+		for (unsigned int n = 0; n < d_reconstructed_static_polygon_meshes.size(); ++n)
+		{
+			if (!d_reconstructed_static_polygon_meshes[n]->get_subject_token().is_observer_up_to_date(
+						d_reconstructed_static_polygon_meshes_observer_tokens[n]))
+			{
+				d_subject_token.invalidate();
+
+				d_reconstructed_static_polygon_meshes[n]->get_subject_token().update_observer(
+						d_reconstructed_static_polygon_meshes_observer_tokens[n]);
+			}
 		}
 	}
 
@@ -684,45 +692,54 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 	// If we're reconstructing the raster (using static polygon meshes) ...
 	if (reconstructing_raster())
 	{
-		// Get the transform groups of reconstructed polygon meshes that are visible in the view frustum.
-		reconstructed_polygon_mesh_transform_groups_type::non_null_ptr_to_const_type
-				reconstructed_polygon_mesh_transform_groups =
-						d_reconstructed_static_polygon_meshes.get()->get_reconstructed_polygon_meshes(renderer);
-
-		// The polygon mesh drawables and polygon mesh cube quad tree node intersections.
-		const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables =
-				d_reconstructed_static_polygon_meshes.get()->get_present_day_polygon_mesh_drawables();
-		const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections =
-				d_reconstructed_static_polygon_meshes.get()->get_present_day_polygon_mesh_node_intersections();
-
-		// Iterate over the transform groups and traverse the cube quad tree separately for each transform.
-		BOOST_FOREACH(
-				const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
-				reconstructed_polygon_mesh_transform_groups->get_transform_groups())
+		// Iterate over the reconstructed static polygon meshes (that came from different app-logic layers).
+		for (unsigned int reconstructed_static_polygon_meshes_index = 0;
+			reconstructed_static_polygon_meshes_index < d_reconstructed_static_polygon_meshes.size();
+			++reconstructed_static_polygon_meshes_index)
 		{
-			// Make sure we leave the OpenGL state the way it was.
-			// We do this for each iteration of the transform groups loop.
-			GLRenderer::StateBlockScope save_restore_state_transform_group(renderer);
+			const GLReconstructedStaticPolygonMeshes::non_null_ptr_type &reconstructed_static_polygon_meshes =
+					d_reconstructed_static_polygon_meshes[reconstructed_static_polygon_meshes_index];
 
-			// Push the current finite rotation transform.
-			const GLMatrix finite_rotation(reconstructed_polygon_mesh_transform_group.get_finite_rotation());
-			renderer.gl_mult_matrix(GL_MODELVIEW, finite_rotation);
+			// Get the transform groups of reconstructed polygon meshes that are visible in the view frustum.
+			reconstructed_polygon_mesh_transform_groups_type::non_null_ptr_to_const_type
+					reconstructed_polygon_mesh_transform_groups =
+							reconstructed_static_polygon_meshes->get_reconstructed_polygon_meshes(renderer);
 
-			render_transform_group(
-					renderer,
-					*render_traversal_cube_quad_tree,
-					*client_cache_cube_quad_tree,
-					reconstructed_polygon_mesh_transform_group,
-					polygon_mesh_drawables,
-					polygon_mesh_node_intersections,
-					*source_raster_cube_subdivision_cache,
-					age_grid_cube_subdivision_cache,
-					normal_map_cube_subdivision_cache,
-					*clip_cube_subdivision_cache,
-					source_raster_render_cube_quad_tree_depth,
-					age_grid_render_cube_quad_tree_depth,
-					normal_map_render_cube_quad_tree_depth,
-					num_tiles_rendered_to_scene);
+			// The polygon mesh drawables and polygon mesh cube quad tree node intersections.
+			const present_day_polygon_mesh_drawables_seq_type &polygon_mesh_drawables =
+					reconstructed_static_polygon_meshes->get_present_day_polygon_mesh_drawables();
+			const present_day_polygon_meshes_node_intersections_type &polygon_mesh_node_intersections =
+					reconstructed_static_polygon_meshes->get_present_day_polygon_mesh_node_intersections();
+
+			// Iterate over the transform groups and traverse the cube quad tree separately for each transform.
+			BOOST_FOREACH(
+					const reconstructed_polygon_mesh_transform_group_type &reconstructed_polygon_mesh_transform_group,
+					reconstructed_polygon_mesh_transform_groups->get_transform_groups())
+			{
+				// Make sure we leave the OpenGL state the way it was.
+				// We do this for each iteration of the transform groups loop.
+				GLRenderer::StateBlockScope save_restore_state_transform_group(renderer);
+
+				// Push the current finite rotation transform.
+				const GLMatrix finite_rotation(reconstructed_polygon_mesh_transform_group.get_finite_rotation());
+				renderer.gl_mult_matrix(GL_MODELVIEW, finite_rotation);
+
+				render_transform_group(
+						renderer,
+						*render_traversal_cube_quad_tree,
+						*client_cache_cube_quad_tree,
+						reconstructed_polygon_mesh_transform_group,
+						polygon_mesh_drawables,
+						polygon_mesh_node_intersections,
+						*source_raster_cube_subdivision_cache,
+						age_grid_cube_subdivision_cache,
+						normal_map_cube_subdivision_cache,
+						*clip_cube_subdivision_cache,
+						source_raster_render_cube_quad_tree_depth,
+						age_grid_render_cube_quad_tree_depth,
+						normal_map_render_cube_quad_tree_depth,
+						num_tiles_rendered_to_scene);
+			}
 		}
 	}
 	else // *not* reconstructing raster...

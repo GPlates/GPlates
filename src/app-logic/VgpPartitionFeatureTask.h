@@ -39,6 +39,14 @@ namespace GPlatesAppLogic
 			public PartitionFeatureTask
 	{
 	public:
+
+		/**
+		 * If 'verify_information_model' is true then feature property types are only added if they don't not violate the GPGIM.
+		 */
+		explicit
+		VgpPartitionFeatureTask(
+				bool verify_information_model);
+
 		virtual
 		bool
 		can_partition_feature(
@@ -51,7 +59,12 @@ namespace GPlatesAppLogic
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
 				const GeometryCookieCutter &geometry_cookie_cutter,
+				const ReconstructMethodInterface::Context &reconstruct_method_context,
+				const double &reconstruction_time,
 				bool respect_feature_time_period);
+
+	private:
+		bool d_verify_information_model;
 	};
 }
 

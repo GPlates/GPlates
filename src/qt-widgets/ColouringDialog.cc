@@ -109,9 +109,10 @@ namespace
 
 		void
 		publisher_deactivated(
+				const GPlatesModel::WeakReference<const GPlatesModel::FeatureCollectionHandle> &reference,
 				const deactivated_event_type &event)
 		{
-			GPlatesModel::FeatureCollectionHandle::const_weak_ref deactivated = event.reference();
+			GPlatesModel::FeatureCollectionHandle::const_weak_ref deactivated = reference;
 
 			for (int i = 0; i < d_combobox->count(); ++i)
 			{

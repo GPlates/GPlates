@@ -140,7 +140,7 @@ namespace GPlatesViewOperations
 
 						case GPlatesGui::Symbol::STRAIN_MARKER:
 						d_rendered_geom = create_rendered_strain_marker_symbol(
-							*point_on_sphere, d_colour, d_symbol->d_size, d_line_width_hint, 
+							*point_on_sphere, d_symbol->d_size,
 							d_symbol->d_scale_x.get(), d_symbol->d_scale_y.get(), d_symbol->d_angle.get());
 						break;
 
@@ -293,12 +293,16 @@ GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_edge_surface_mesh(
 		const RenderedColouredEdgeSurfaceMesh::edge_seq_type &mesh_edges,
 		const RenderedColouredEdgeSurfaceMesh::vertex_seq_type &mesh_vertices,
+		const RenderedColouredEdgeSurfaceMesh::colour_seq_type &mesh_colours,
+		bool use_vertex_colours,
 		float line_width_hint)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(
 			new RenderedColouredEdgeSurfaceMesh(
 					mesh_edges.begin(), mesh_edges.end(),
 					mesh_vertices.begin(), mesh_vertices.end(),
+					mesh_colours.begin(), mesh_colours.end(),
+					use_vertex_colours,
 					line_width_hint));
 
 	return RenderedGeometry(rendered_geom_impl);
@@ -308,12 +312,18 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_edge_su
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_triangle_surface_mesh(
 		const RenderedColouredTriangleSurfaceMesh::triangle_seq_type &mesh_triangles,
-		const RenderedColouredTriangleSurfaceMesh::vertex_seq_type &mesh_vertices)
+		const RenderedColouredTriangleSurfaceMesh::vertex_seq_type &mesh_vertices,
+		const RenderedColouredTriangleSurfaceMesh::colour_seq_type &mesh_colours,
+		bool use_vertex_colours,
+		const GPlatesGui::Colour &fill_modulate_colour)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(
 			new RenderedColouredTriangleSurfaceMesh(
 					mesh_triangles.begin(), mesh_triangles.end(),
-					mesh_vertices.begin(), mesh_vertices.end()));
+					mesh_vertices.begin(), mesh_vertices.end(),
+					mesh_colours.begin(), mesh_colours.end(),
+					use_vertex_colours,
+					fill_modulate_colour));
 
 	return RenderedGeometry(rendered_geom_impl);
 }
@@ -321,7 +331,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_coloured_triangl
 
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
-		const GPlatesAppLogic::resolved_raster_non_null_ptr_to_const_type &resolved_raster,
+		const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type &resolved_raster,
 		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
 		const GPlatesGui::Colour &raster_modulate_colour,
 		float normal_map_height_field_scale_factor)
@@ -339,7 +349,7 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_raster(
 
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_resolved_scalar_field_3d(
-		const GPlatesAppLogic::resolved_scalar_field_3d_non_null_ptr_to_const_type &resolved_scalar_field,
+		const GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_to_const_type &resolved_scalar_field,
 		const ScalarField3DRenderParameters &scalar_field_render_parameters)
 {
 	RenderedGeometry::impl_ptr_type rendered_geom_impl(
@@ -557,16 +567,14 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_cross_symbol(
 GPlatesViewOperations::RenderedGeometry
 GPlatesViewOperations::RenderedGeometryFactory::create_rendered_strain_marker_symbol(
 	const GPlatesMaths::PointOnSphere &centre,
-	const GPlatesGui::ColourProxy &colour,
 	const unsigned int size,
-	const float line_width_hint,
 	const double scale_x,
 	const double scale_y,
 	const double angle)
 {
     RenderedGeometry::impl_ptr_type rendered_geom_impl(
 		new RenderedStrainMarkerSymbol(
-	    	centre,colour,size,line_width_hint,
+	    	centre, size,
 			scale_x, scale_y, angle));
 
     return RenderedGeometry(rendered_geom_impl);

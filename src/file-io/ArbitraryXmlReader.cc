@@ -40,8 +40,6 @@ void
 GPlatesFileIO::ArbitraryXmlReader::read_file(
 		File::Reference &file_ref,
 		boost::shared_ptr<ArbitraryXmlProfile> profile,
-		GPlatesModel::ModelInterface &model,
-		const GPlatesModel::Gpgim &gpgim,
 		ReadErrorAccumulation &read_errors,
 		bool &contains_unsaved_changes)
 {
@@ -49,7 +47,7 @@ GPlatesFileIO::ArbitraryXmlReader::read_file(
 
 	contains_unsaved_changes = false;
 
-	SetXmlProfileAccess xml_profile_access(&gpgim, &read_errors, this);
+	SetXmlProfileAccess xml_profile_access(&read_errors, this);
 	profile->populate(file_ref);
 }
 
@@ -58,13 +56,11 @@ void
 GPlatesFileIO::ArbitraryXmlReader::read_xml_data(
 		File::Reference &file_ref,
 		boost::shared_ptr<ArbitraryXmlProfile> profile,
-		GPlatesModel::ModelInterface &model,
 		QByteArray& data,
-		const GPlatesModel::Gpgim &gpgim,
 		ReadErrorAccumulation &read_errors)
 {
 // qDebug() << "GPlatesFileIO::ArbitraryXmlReader::read_xml_data()";
-	SetXmlProfileAccess xml_profile_access(&gpgim, &read_errors, this);
+	SetXmlProfileAccess xml_profile_access(&read_errors, this);
 	profile->populate(
 			data,
 			file_ref.get_feature_collection());
@@ -76,11 +72,10 @@ int
 GPlatesFileIO::ArbitraryXmlReader::count_features(
 		boost::shared_ptr<ArbitraryXmlProfile> profile,
 		QByteArray& data,
-		const GPlatesModel::Gpgim &gpgim,
 		ReadErrorAccumulation &read_errors)
 {
 // qDebug() << "GPlatesFileIO::ArbitraryXmlReader::count_features()";
-	SetXmlProfileAccess xml_profile_access(&gpgim, &read_errors, this);
+	SetXmlProfileAccess xml_profile_access(&read_errors, this);
 	return profile->count_features(data);
 }
 

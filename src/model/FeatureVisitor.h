@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2006, 2007, 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2006, 2007, 2008, 2009, 2010, 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -58,6 +58,7 @@ namespace GPlatesPropertyValues
 	class GmlRectifiedGrid;
 	class GmlTimeInstant;
 	class GmlTimePeriod;
+	class GpmlAge;
 	class GpmlArray;
 	class GpmlConstantValue;
 	class GpmlFeatureReference;
@@ -78,7 +79,6 @@ namespace GPlatesPropertyValues
 	class GpmlRevisionId;
 	class GpmlScalarField3DFile;
 	class GpmlStringList;
-	class GpmlTotalReconstructionPole;
 	class GpmlTopologicalNetwork;
 	class GpmlTopologicalInterior;
 	class GpmlTopologicalPolygon;
@@ -197,6 +197,7 @@ namespace GPlatesModel
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlRectifiedGrid>::type gml_rectified_grid_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlTimeInstant>::type gml_time_instant_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GmlTimePeriod>::type gml_time_period_type;
+		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlAge>::type gpml_age_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlArray>::type gpml_array_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlConstantValue>::type gpml_constant_value_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlFeatureReference>::type gpml_feature_reference_type;
@@ -227,7 +228,6 @@ namespace GPlatesModel
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::XsDouble>::type xs_double_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::XsInteger>::type xs_integer_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::XsString>::type xs_string_type;
-		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlTotalReconstructionPole>::type gpml_total_reconstruction_pole_type;
 		typedef typename GPlatesUtils::CopyConst<feature_handle_type, GPlatesPropertyValues::GpmlMetadata>::type gpml_metadata_type;
 		/**
 		 * Destructor.
@@ -469,6 +469,13 @@ namespace GPlatesModel
 
 		virtual
 		void
+		visit_gpml_age(
+				gpml_age_type &gpml_age)
+		{  }
+
+
+		virtual
+		void
 		visit_gpml_array(
 				gpml_array_type &gpml_array)
 		{  }
@@ -652,12 +659,6 @@ namespace GPlatesModel
 		void
 		visit_xs_string(
 				xs_string_type &xs_string)
-		{  }
-
-		virtual
-		void
-		visit_gpml_total_reconstruction_pole(
-				gpml_total_reconstruction_pole_type &trs)
 		{  }
 
 	private:

@@ -86,19 +86,16 @@ GLEW
      and the 'lib/Release/Win32/' files to 'lib/'.
 
 Python
-  1. Download, and extract, the latest 2.7 release source code (eg, 'http://www.python.org/download/releases/2.7.5/').
-  2. In the 'PCBuild' (for Visual Studio 9.0) or 'PC/VS8.0' open the 'pcbuild.sln' Visual Studio solution.
-  3. Build both release and debug configurations (build solution 'F7').
-     * Note that not all projects will compile (eg, sqlite and some others) but they are not needed.
-  4. Copy the relevant 'pyconfig.h' file (eg, from 'PC' directory) to the 'Include' directory.
-  5. Copy the ".exp", ".lib" and ".pyd" files from the build directory (eg, 'PC/VS8.0') to a new 'libs/' directory.
-     * Note that boost expects '.lib' files to be in 'libs/' when boost's bjam builds boost-python.
-  6. Copy 'python.exe', 'python_d.exe', 'pythonw.exe', 'pythonw_d.exe', 'python27.dll' and 'python27_d.dll' to the base python directory.
-  7. Add the base python directory and 'libs/' and 'Scripts/' sub-directories to the PATH environment variable.
-  8. Add the 'libs/' directory to the PYTHONPATH environment variable.
-  9. Add the 'Include/' directory to the CMAKE_INCLUDE_PATH environment variable.
-  10. Add the 'libs/' directory to the CMAKE_LIBRARY_PATH environment variable.
-      * CMAKE_INCLUDE_PATH and CMAKE_LIBRARY_PATH prevent GPlates finding a different python installation such as inside ArcGIS.
+  1. Download, and install, the latest 2.7 Windows MSI installer (eg, 'http://www.python.org/downloads/').
+     * Note that GPlates (and pygplates) currently only support the Python 2 series (not Python 3).
+     * Ideally you should install 2.7.9 (or later in the Python 2 series) since it includes 'pip' by default
+       which is in turn useful for the pygplates documentation (see 'doc-python-api/README' in the GPlates source code).
+  2. Add the base Python directory and 'libs/' and 'Scripts/' sub-directories to the PATH environment variable.
+  3. Add the base Python directory to the PYTHONHOME environment variable.
+  4. Add the 'libs/' sub-directory to the PYTHONPATH environment variable.
+  5. Add the 'include/' sub-directory to the CMAKE_INCLUDE_PATH environment variable.
+  6. Add the 'libs/' sub-directory to the CMAKE_LIBRARY_PATH environment variable.
+     * CMAKE_INCLUDE_PATH and CMAKE_LIBRARY_PATH prevent GPlates finding a different Python installation such as inside ArcGIS.
 
 Boost
 

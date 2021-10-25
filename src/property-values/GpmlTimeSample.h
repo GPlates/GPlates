@@ -29,10 +29,11 @@
 #define GPLATES_PROPERTYVALUES_GPMLTIMESAMPLE_H
 
 #include "GmlTimeInstant.h"
-#include "model/PropertyValue.h"
-#include "XsString.h"
+
 #include "StructuralType.h"
-#include "model/FeatureVisitor.h"
+#include "XsString.h"
+
+#include "model/PropertyValue.h"
 
 
 namespace GPlatesPropertyValues
@@ -44,7 +45,6 @@ namespace GPlatesPropertyValues
 	// copy-construction or copy-assignment operations for this class should throw.
 	class GpmlTimeSample
 	{
-
 	public:
 
 		GpmlTimeSample(
@@ -72,23 +72,18 @@ namespace GPlatesPropertyValues
 		const GpmlTimeSample
 		deep_clone() const;
 
+		/**
+		 * Returns the 'const' time-dependent property value.
+		 */
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
 		value() const
 		{
 			return d_value;
 		}
 
-		// Note that, because the copy-assignment operator of PropertyValue is private,
-		// the PropertyValue referenced by the return-value of this function cannot be
-		// assigned-to, which means that this function does not provide a means to directly
-		// switch the PropertyValue within this GpmlTimeSample instance.  (This
-		// restriction is intentional.)
-		//
-		// To switch the PropertyValue within this GpmlTimeSample instance, use the
-		// function @a set_value below.
-		//
-		// (This overload is provided to allow the referenced PropertyValue instance to
-		// accept a FeatureVisitor instance.)
+		/**
+		 * Returns the 'non-const' time-dependent property value.
+		 */
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		value()
 		{
@@ -102,23 +97,18 @@ namespace GPlatesPropertyValues
 			d_value = v;
 		}
 
+		/**
+		 * Returns the 'const' time instant.
+		 */
 		const GmlTimeInstant::non_null_ptr_to_const_type
 		valid_time() const
 		{
 			return d_valid_time;
 		}
 
-		// Note that, because the copy-assignment operator of GmlTimeInstant is private,
-		// the GmlTimeInstant referenced by the return-value of this function cannot be
-		// assigned-to, which means that this function does not provide a means to directly
-		// switch the GmlTimeInstant within this GpmlTimeSample instance.  (This
-		// restriction is intentional.)
-		//
-		// To switch the GmlTimeInstant within this GpmlTimeSample instance, use the
-		// function @a set_valid_time below.
-		//
-		// (This overload is provided to allow the referenced GmlTimeInstant instance to
-		// accept a FeatureVisitor instance.)
+		/**
+		 * Returns the 'non-const' time instant.
+		 */
 		const GmlTimeInstant::non_null_ptr_type
 		valid_time()
 		{
@@ -138,17 +128,9 @@ namespace GPlatesPropertyValues
 			return d_description;
 		}
 
-		// Note that, because the copy-assignment operator of XsString is private, the
-		// XsString referenced by the return-value of this function cannot be assigned-to,
-		// which means that this function does not provide a means to directly switch the
-		// XsString within this GpmlTimeSample instance.  (This restriction is
-		// intentional.)
-		//
-		// To switch the XsString within this GpmlTimeSample instance, use the function
-		// @a set_value below.
-		//
-		// (This overload is provided to allow the referenced XsString instance to accept a
-		// FeatureVisitor instance.)
+		/**
+		 * Returns the 'non-const' description.
+		 */
 		const boost::intrusive_ptr<XsString>
 		description()
 		{
@@ -200,7 +182,6 @@ namespace GPlatesPropertyValues
 
 		bool d_is_disabled;
 	};
-
 }
 
 #endif  // GPLATES_PROPERTYVALUES_GPMLTIMESAMPLE_H

@@ -45,6 +45,8 @@ set(srcs
     GmlTimeInstant.h
     GmlTimePeriod.cc
     GmlTimePeriod.h
+    GpmlAge.cc
+    GpmlAge.h
     GpmlArray.cc
     GpmlArray.h
     GpmlConstantValue.cc
@@ -103,7 +105,6 @@ set(srcs
     GpmlTopologicalPolygon.h
     GpmlTopologicalSection.cc
     GpmlTopologicalSection.h
-    GpmlTotalReconstructionPole.h
     OldVersionPropertyValue.cc
     OldVersionPropertyValue.h
     PropertyValues.cc
@@ -119,10 +120,13 @@ set(srcs
     RawRaster.h
     RawRasterUtils.cc
     RawRasterUtils.h
+    ScalarCoverageStatistics.h
     SpatialReferenceSystem.cc
     SpatialReferenceSystem.h
     StructuralType.h
     TextContent.h
+    TimescaleBand.h
+    TimescaleName.h
     UninterpretedPropertyValue.cc
     UninterpretedPropertyValue.h
     ValueObjectType.h

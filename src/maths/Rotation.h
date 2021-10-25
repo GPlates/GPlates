@@ -108,6 +108,14 @@ namespace GPlatesMaths
 				const UnitVector3D &final);
 
 
+		/**
+		 * Create an identity rotation.
+		 */
+		static
+		const Rotation
+		create_identity_rotation();
+
+
 		const UnitVector3D &
 		axis() const
 		{

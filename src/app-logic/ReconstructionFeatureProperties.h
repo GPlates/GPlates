@@ -48,42 +48,37 @@ namespace GPlatesAppLogic
 	{
 	public:
 
-		/**
-		 * Constructs a visitor that retrieves reconstruction parameters from a
-		 * feature's property values at the given @a reconstruction_time.
-		 */
-		ReconstructionFeatureProperties(
-				const double &reconstruction_time);
-
-		/**
-		 * Constructs a visitor that retrieves reconstruction parameters from a
-		 * feature's property values that are independent of reconstruction time.
-		 */
-		ReconstructionFeatureProperties();
-
-
-		/**
-		 * Returns the reconstruction time passed into constructor, or boost::none if none passed in.
-		 */
-		const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &
-		get_reconstruction_time() const
+		//! A valid time period.
+		struct TimePeriod
 		{
-			return d_recon_time;
-		}
+			/**
+			 * Returns true if @a reconstruction_time lies within the appearance/disappearance range or
+			 * if there's no time of appearance/disappearance (meaning valid for all time).
+			 */
+			bool
+			is_valid_at_recon_time(
+					const double &reconstruction_time) const;
+
+			// Either both are valid or both are invalid.
+			boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_appearance;
+			boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_disappearance;
+		};
 
 
 		/**
 		 * Returns true unless a "gml:validTime" property in the feature has
-		 * a time period that does not include the time passed into constructor
-		 * taking a reconstruction time.
+		 * a time period that does not include the specified time.
 		 *
-		 * If this visitor was constructed without a reconstruction time, this
-		 * function always returns true.
+		 * The return value defaults to true; it's only set to false if
+		 * both: (i) a "gml:validTime" property is encountered which contains a
+		 * "gml:TimePeriod" structural type; and (ii) the reconstruction time lies
+		 * outside the range of the valid time.
 		 */
 		bool
-		is_feature_defined_at_recon_time() const
+		is_feature_defined_at_recon_time(
+				const double &reconstruction_time) const
 		{
-			return d_feature_is_defined_at_recon_time;
+			return d_valid_time.is_valid_at_recon_time(reconstruction_time);
 		}
 
 
@@ -138,24 +133,53 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Returns the time period if a "gml:validTime" property is found.
+		 *
+		 * This is the equivalent of calling @a get_time_of_appearance and @a get_time_of_disappearance.
+		 */
+		const TimePeriod &
+		get_valid_time() const
+		{
+			return d_valid_time;
+		}
+
+		/**
 		 * Returns optional time of appearance if a "gml:validTime" property is found.
+		 *
+		 * Note: If @a get_time_of_appearance is valid then so is @a get_time_of_disappearance.
 		 */
 		const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &
 		get_time_of_appearance() const
 		{
-			return d_time_of_appearance;
+			return d_valid_time.time_of_appearance;
+		}
+
+		/**
+		 * Returns optional time of disappearance if a "gml:validTime" property is found.
+		 *
+		 * Note: If @a get_time_of_disappearance is valid then so is @a get_time_of_appearance.
+		 */
+		const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &
+		get_time_of_disappearance() const
+		{
+			return d_valid_time.time_of_disappearance;
 		}
 
 
 		/**
-		 * Returns optional time of dissappearance if a "gml:validTime" property is found.
+		 * Returns optional time that the geometry was imported if a "gpml:geometryImportTime" property is found.
 		 */
 		const boost::optional<GPlatesPropertyValues::GeoTimeInstant> &
-		get_time_of_dissappearance() const
+		get_geometry_import_time() const
 		{
-			return d_time_of_dissappearance;
+			return d_geometry_import_time;
 		}
 
+
+		virtual
+		void
+		visit_gml_time_instant(
+				const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant);
 
 		virtual
 		void
@@ -189,27 +213,14 @@ namespace GPlatesAppLogic
 
 	private:
 
-		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_recon_time;
-
-		/**
-		 * Whether or not the current feature is defined at this reconstruction
-		 * time.
-		 *
-		 * The value of this member defaults to true; it's only set to false if
-		 * both: (i) a "gml:validTime" property is encountered which contains a
-		 * "gml:TimePeriod" structural type; and (ii) the reconstruction time lies
-		 * outside the range of the valid time.
-		 */
-		bool d_feature_is_defined_at_recon_time;
-
 		boost::optional<GPlatesModel::integer_plate_id_type> d_recon_plate_id;
-		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_appearance;
-		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_dissappearance;
+		TimePeriod d_valid_time;
 
 		boost::optional<GPlatesPropertyValues::EnumerationContent> d_recon_method;
 		boost::optional<GPlatesModel::integer_plate_id_type> d_right_plate_id;
 		boost::optional<GPlatesModel::integer_plate_id_type> d_left_plate_id;
 		boost::optional<double> d_spreading_asymmetry;
+		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_geometry_import_time;
 	};
 }
 

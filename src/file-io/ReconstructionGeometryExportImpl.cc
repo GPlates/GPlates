@@ -81,6 +81,8 @@ GPlatesFileIO::ReconstructionGeometryExportImpl::populate_feature_handle_to_coll
 		feature_handle_to_collection_map_type &feature_handle_to_collection_map,
 		const std::vector<const File::Reference *> &reconstructable_files)
 {
+	unsigned int feature_order = 0;
+
 	// Iterate through the feature collections of the active reconstructable files.
 	std::vector<const File::Reference *>::const_iterator reconstructable_files_iter;
 	for (reconstructable_files_iter = reconstructable_files.begin();
@@ -89,7 +91,7 @@ GPlatesFileIO::ReconstructionGeometryExportImpl::populate_feature_handle_to_coll
 	{
 		const GPlatesFileIO::File::Reference *recon_file = *reconstructable_files_iter;
 
-		const GPlatesModel::FeatureCollectionHandle::const_weak_ref &feature_collection_handle =
+		const GPlatesModel::FeatureCollectionHandle::const_weak_ref feature_collection_handle =
 				recon_file->get_feature_collection();
 
 		if (!feature_collection_handle.is_valid())
@@ -106,7 +108,9 @@ GPlatesFileIO::ReconstructionGeometryExportImpl::populate_feature_handle_to_coll
 			const GPlatesModel::FeatureHandle *feature_handle_ptr = (*features_iter).get();
 
 			// Add feature handle key to our mapping.
-			feature_handle_to_collection_map[feature_handle_ptr] = recon_file;
+			feature_handle_to_collection_map[feature_handle_ptr] =
+					std::make_pair(recon_file, feature_order);
+			++feature_order;
 		}
 	}
 }

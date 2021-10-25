@@ -304,8 +304,8 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::initialise_cube_quad_trees()
 	cube_subdivision_cache_type::non_null_ptr_type
 			cube_subdivision_cache =
 					cube_subdivision_cache_type::create(
-							GPlatesOpenGL::GLCubeSubdivision::create(
-									GPlatesOpenGL::GLCubeSubdivision::get_expand_frustum_ratio(
+							GLCubeSubdivision::create(
+									GLCubeSubdivision::get_expand_frustum_ratio(
 											d_tile_texel_dimension,
 											0.5/* half a texel */)));
 

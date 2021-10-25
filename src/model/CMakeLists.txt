@@ -43,6 +43,7 @@ set(srcs
     GpgimProperty.cc
     GpgimProperty.h
     GpgimStructuralType.h
+    GpgimTemplateStructuralType.h
     GpgimVersion.cc
     GpgimVersion.h
     HandleTraits.h
@@ -73,11 +74,13 @@ set(srcs
     TopLevelPropertyInline.h
     TopLevelPropertyRef.cc
     TopLevelPropertyRef.h
+    TranscribeQualifiedXmlName.h
+    TranscribeStringContentTypeGenerator.h
     types.h
     WeakObserver.h
     WeakObserverPublisher.h
+    WeakObserverVisitor.cc
     WeakObserverVisitor.h
-    WeakReference.cc
     WeakReference.h
     WeakReferenceCallback.h
     WeakReferenceVisitors.h

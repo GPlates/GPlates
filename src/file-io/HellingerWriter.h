@@ -40,16 +40,14 @@ namespace GPlatesFileIO
 	public:
 		HellingerWriter();
 
-		/**
-	 *
-	 */
+
+
 		static
 		void
 		write_pick_file(QString &filename,
 						GPlatesQtWidgets::HellingerModel& hellinger_model,
 						bool export_disabled_picks = true,
 						bool add_missing_pick_extension = false);
-
 
 		static
 		void

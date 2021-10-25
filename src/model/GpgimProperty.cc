@@ -65,3 +65,22 @@ GPlatesModel::GpgimProperty::set_default_structural_type(
 		d_structural_types.insert(d_structural_types.begin(), default_structural_type);
 	}
 }
+
+
+void
+GPlatesModel::GpgimProperty::set_has_geometry_structural_type()
+{
+	// Iterate over the structural types.
+	BOOST_FOREACH(
+			const GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type &structural_type,
+			d_structural_types)
+	{
+		if (structural_type->is_geometry_structural_type())
+		{
+			d_has_geometry_structural_type = true;
+			return;
+		}
+	}
+
+	d_has_geometry_structural_type = false;
+}

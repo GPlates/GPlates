@@ -43,4 +43,3 @@ GPlatesPropertyValues::GpmlStringList::print_to(
 	os << "}";
 	return os;
 }
-

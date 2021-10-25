@@ -113,13 +113,6 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::initialise_pre_pr
 	const GPlatesGui::TreeWidgetBuilder::item_handle_type item_handle =
 			add_child_to_current_item(d_tree_widget_builder, name);
 
-#if 0
-	XmlOutputInterface::ElementPairStackFrame f1(d_output,
-			top_level_property_inline.property_name().get(),
-			top_level_property_inline.xml_attributes().begin(),
-			top_level_property_inline.xml_attributes().end());
-#endif
-
 	// If the current property is the focused geometry then scroll to it
 	// so the user can see it.
 	if (d_focused_geometry == current_top_level_propiter())
@@ -291,15 +284,8 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_orienta
 						true));
 	}
 
-	// FIXME:  Ensure that 'gml_orientable_curve.base_curve()' is not NULL.
 	add_child_then_visit_value(QObject::tr("gml:baseCurve"), QString(),
 			*gml_orientable_curve.base_curve());
-#if 0
-	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gml:OrientableCurve",
-			gml_orientable_curve.xml_attributes().begin(),
-			gml_orientable_curve.xml_attributes().end());
-	XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:baseCurve");
-#endif
 }
 
 
@@ -307,16 +293,6 @@ void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point)
 {
-#if 0
-	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gml:Point");
-	XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:pos");
-
-	const GPlatesMaths::PointOnSphere &pos = *gml_point.point();
-	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(pos);
-
-	d_output.write_line_of_decimal_duple_content(llp.longitude().dval(), llp.latitude().dval());
-#endif
-
 	// Call QTreeWidgetItem::setExpanded(true) on the current item, but do it later
 	// when the item is attached to the QTreeWidget otherwise it will have no effect.
 	add_function_to_current_item(d_tree_widget_builder,
@@ -333,10 +309,6 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_point(
 	// "gml:posList" branch.
 
 	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*(gml_point.point()));
-#if 0
-	GPlatesMaths::LatLonPoint llp =
-			GPlatesMaths::LatLonPointConversions::convertPointOnSphereToLatLonPoint(*(gml_point.point()));
-#endif
 	QLocale locale;
 
 	QString point_id(QObject::tr("#"));
@@ -387,30 +359,32 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_polygon
 
 	d_tree_widget_builder.push_current_item(exterior_item_handle);
 
-	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr =
-			gml_polygon.exterior();
+	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr = gml_polygon.polygon();
 
-	write_polygon_ring(polygon_ptr);
+	write_polygon_ring(
+			polygon_ptr->exterior_ring_vertex_begin(),
+			polygon_ptr->exterior_ring_vertex_end());
 
 	d_tree_widget_builder.pop_current_item();
 
 	// Now handle any internal rings.
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator iter = gml_polygon.interiors_begin();
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator end = gml_polygon.interiors_end();
-
-	for (unsigned ring_number = 1; iter != end ; ++iter, ++ring_number)
+	for (unsigned int interior_ring_index = 0;
+		interior_ring_index < polygon_ptr->number_of_interior_rings();
+		++interior_ring_index)
 	{
 		QString interior;
 		interior.append(QObject::tr("gml:interior"));
 		interior.append(QObject::tr(" #"));
-		interior.append(QString().setNum(ring_number));
+		interior.append(QString().setNum(interior_ring_index + 1));
 
 		const GPlatesGui::TreeWidgetBuilder::item_handle_type interior_item_handle =
 				add_child_to_current_item(d_tree_widget_builder, interior);
 
 		d_tree_widget_builder.push_current_item(interior_item_handle);
 
-		write_polygon_ring(*iter);
+		write_polygon_ring(
+				polygon_ptr->interior_ring_vertex_begin(interior_ring_index),
+				polygon_ptr->interior_ring_vertex_end(interior_ring_index));
 
 		d_tree_widget_builder.pop_current_item();
 	}
@@ -436,21 +410,6 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_time_in
 
 	// This assumes that the stack is non-empty.
 	get_current_qtree_widget_item(d_tree_widget_builder)->setText(which_column, qstring);
-#if 0
-	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gml:TimeInstant");
-	XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:timePosition",
-			gml_time_instant.time_position_xml_attributes().begin(),
-			gml_time_instant.time_position_xml_attributes().end());
-
-	const GPlatesPropertyValues::GeoTimeInstant &time_position = gml_time_instant.time_position();
-	if (time_position.is_real()) {
-		d_output.write_line_of_single_decimal_content(time_position.value());
-	} else if (time_position.is_distant_past()) {
-		d_output.write_line_of_string_content("http://gplates.org/times/distantPast");
-	} else if (time_position.is_distant_future()) {
-		d_output.write_line_of_string_content("http://gplates.org/times/distantFuture");
-	}
-#endif
 }
 
 
@@ -477,77 +436,6 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_consta
 		const GPlatesPropertyValues::GpmlConstantValue &gpml_constant_value)
 {
 	gpml_constant_value.value()->accept_visitor(*this);
-}
-
-
-void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_finite_rotation(
-		const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
-{
-#if 0
-	if (gpml_finite_rotation.is_zero_rotation()) {
-		d_output.write_empty_element("gpml:ZeroFiniteRotation");
-	} else {
-		XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:AxisAngleFiniteRotation");
-		{
-			XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:eulerPole");
-			GPlatesPropertyValues::GmlPoint::non_null_ptr_type gml_point =
-					::GPlatesPropertyValues::calculate_euler_pole(gpml_finite_rotation);
-			visit_gml_point(*gml_point);
-		}
-		{
-			XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:angle");
-			GPlatesMaths::real_t angle_in_radians =
-					::GPlatesPropertyValues::calculate_angle(gpml_finite_rotation);
-			double angle_in_degrees =
-					::GPlatesMaths::degreesToRadians(angle_in_radians).dval();
-			d_output.write_line_of_single_decimal_content(angle_in_degrees);
-		}
-	}
-#endif
-}
-
-
-void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_finite_rotation_slerp(
-		const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp)
-{
-#if 0
-	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:FiniteRotationSlerp");
-	{
-		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:valueType");
-		d_output.write_line_of_string_content(gpml_finite_rotation_slerp.value_type().get());
-	}
-#endif
-}
-
-
-void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_irregular_sampling(
-		const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling)
-{
-#if 0
-	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:IrregularSampling");
-	{
-		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:timeSamples");
-		std::vector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator iter =
-				gpml_irregular_sampling.time_samples().begin();
-		std::vector<GPlatesPropertyValues::GpmlTimeSample>::const_iterator end =
-				gpml_irregular_sampling.time_samples().end();
-		for ( ; iter != end; ++iter) {
-			iter->accept_visitor(*this);
-		}
-	}
-	// The interpolation function is optional.
-	if (gpml_irregular_sampling.interpolation_function() != NULL) {
-		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:interpolationFunction");
-		gpml_irregular_sampling.interpolation_function()->accept_visitor(*this);
-	}
-	{
-		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:valueType");
-		d_output.write_line_of_string_content(gpml_irregular_sampling.value_type().get());
-	}
-#endif
 }
 
 void
@@ -598,33 +486,6 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_measur
 	get_current_qtree_widget_item(d_tree_widget_builder)->setText(which_column, qstring);
 }
 
-#if 0
-void
-GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_time_sample(
-		GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample)
-{
-	XmlOutputInterface::ElementPairStackFrame f1(d_output, "gpml:TimeSample");
-	{
-		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:value");
-		gpml_time_sample.value()->accept_visitor(*this);
-	}
-	{
-		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:validTime");
-		gpml_time_sample.valid_time()->accept_visitor(*this);
-	}
-	{
-		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gml:description");
-		// The description is optional.
-		if (gpml_time_sample.description() != NULL) {
-			gpml_time_sample.description()->accept_visitor(*this);
-		}
-	}
-	{
-		XmlOutputInterface::ElementPairStackFrame f2(d_output, "gpml:valueType");
-		d_output.write_line_of_string_content(gpml_time_sample.value_type().get());
-	}
-}
-#endif
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_old_plates_header(
@@ -782,7 +643,8 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::add_gpml_key_valu
 
 void
 GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::write_polygon_ring(
-	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr)
+		const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_begin,
+		const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_end)
 {
 	const GPlatesGui::TreeWidgetBuilder::item_handle_type item_handle =
 			add_child_to_current_item(d_tree_widget_builder, QObject::tr("gml:posList"));
@@ -790,11 +652,10 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::write_polygon_rin
 	// Now, hang the coords (in (lon, lat) format, since that is how GML does things) off the
 	// "gml:posList" branch.
 
-	GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = polygon_ptr->vertex_begin();
-	GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon_ptr->vertex_end();
-
-	for (unsigned point_number = 1; iter != end; ++iter, ++point_number) {
-		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter);
+	GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator ring_iter = ring_begin;
+	for (unsigned point_number = 1; ring_iter != ring_end; ++ring_iter, ++point_number)
+	{
+		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*ring_iter);
 
 		QLocale locale;
 

@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QDebug>
 #include <QDir>
 #include <QFile>
 #include <QFileInfo>
@@ -32,6 +33,32 @@
 
 #include "HellingerWriter.h"
 
+namespace
+{
+	GPlatesQtWidgets::HellingerPlateIndex
+	get_plate_index(
+			const GPlatesQtWidgets::HellingerPlateIndex index,
+			bool enabled)
+	{
+		if ((index == GPlatesQtWidgets::PLATE_ONE_PICK_TYPE) ||
+				(index == GPlatesQtWidgets::DISABLED_PLATE_ONE_PICK_TYPE))
+		{
+			return enabled ? GPlatesQtWidgets::PLATE_ONE_PICK_TYPE : GPlatesQtWidgets::DISABLED_PLATE_ONE_PICK_TYPE;
+		}
+		else if ((index == GPlatesQtWidgets::PLATE_TWO_PICK_TYPE) ||
+				 (index == GPlatesQtWidgets::DISABLED_PLATE_TWO_PICK_TYPE))
+		{
+			return enabled ? GPlatesQtWidgets::PLATE_TWO_PICK_TYPE : GPlatesQtWidgets::DISABLED_PLATE_TWO_PICK_TYPE;
+		}
+		else if ((index == GPlatesQtWidgets::PLATE_THREE_PICK_TYPE) ||
+				 (index == GPlatesQtWidgets::DISABLED_PLATE_THREE_PICK_TYPE))
+		{
+			return enabled ? GPlatesQtWidgets::PLATE_THREE_PICK_TYPE : GPlatesQtWidgets::DISABLED_PLATE_THREE_PICK_TYPE;
+		}
+		return index;
+	}
+
+}
 
 void
 GPlatesFileIO::HellingerWriter::write_pick_file(
@@ -55,52 +82,54 @@ GPlatesFileIO::HellingerWriter::write_pick_file(
 	QFile file(filename);
 	QTextStream out(&file);
 
-	// TODO: Refactor this. Probably cleaner to grab the raw data from the model and convert to string as we go.
+
 	if (file.open(QIODevice::WriteOnly))
 	{
-		QStringList load_data = hellinger_model.get_data_as_string();
-		QString pick_state;
-		if (!load_data.isEmpty())
+		GPlatesQtWidgets::hellinger_model_type::const_iterator it = hellinger_model.begin();
+
+
+		for (; it != hellinger_model.end() ; ++it)
 		{
-			int a = 0;
-			for (int i=0; i < (load_data.size()/6); i++)
+			int segment = it->first;
+			GPlatesQtWidgets::HellingerPick pick = it->second;
+
+			bool enabled = pick.d_is_enabled;
+
+			// Skip export of the pick if it's disabled, and the caller has requested that
+			// disabled picks are not exported.
+			if (!enabled && !export_disabled_picks)
 			{
-				bool should_export = true;
-				bool ok;
-				if (!load_data.at(a+5).toInt(&ok))
-				{
-					if (!export_disabled_picks)
-					{
-						should_export = false;
-					}
-					if (load_data.at(a+1).toInt() == GPlatesQtWidgets::MOVING_PICK_TYPE)
-					{
-						pick_state = QString("%1").arg(GPlatesQtWidgets::DISABLED_MOVING_PICK_TYPE);
-					}
-					else if (load_data.at(a+1).toInt() == GPlatesQtWidgets::FIXED_PICK_TYPE)
-					{
-						pick_state = QString("%1").arg(GPlatesQtWidgets::DISABLED_FIXED_PICK_TYPE);
-					}
-				}
-				else if (load_data.at(a+5).toInt(&ok))
-				{
-					pick_state = load_data.at(a+1);
-				}
-				if (should_export)
-				{
-					out << pick_state<<" "<<load_data.at(a)<<" "<<load_data.at(a+2)
-						<<" "<<load_data.at(a+3)<<" "<<load_data.at(a+4)<<"\n";
-					//					qDebug() << pick_state<<" "<<load_data.at(a)<<" "<<load_data.at(a+2)
-					//							 <<" "<<load_data.at(a+3)<<" "<<load_data.at(a+4)<<"\n";
-				}
-				a=a+6;
+				continue;
 			}
+
+			QString line;
+
+			GPlatesQtWidgets::HellingerPlateIndex index = get_plate_index(pick.d_segment_type,pick.d_is_enabled);
+			line.append(QString::number(index));
+			line.append(" ");
+
+			line.append(QString::number(segment));
+			line.append(" ");
+
+			line.append(QString::number(pick.d_lat));
+			line.append(" ");
+
+			line.append(QString::number(pick.d_lon));
+			line.append(" ");
+
+			line.append(QString::number(pick.d_uncertainty));
+			line.append("\n");
+
+			out << line;
+
 		}
+		file.close();
 	}
 	else
 	{
 		qWarning() << "HellingerWriter: Failed to open file " << filename << "for writing.";
 	}
+
 }
 
 void
@@ -112,7 +141,7 @@ GPlatesFileIO::HellingerWriter::write_com_file(
 	// FORTRAN routines, leave things as they are for now.
 	// Later we can export to one of 2 versions (or both):
 	//		- legacy .com file for FORTRAN compliance
-	//		- GPlates .com (or some other suitable extension) for use with GPlates. Here we would have free reign
+	//		- GPlates .com (or some other suitable extension) for use with GPlates. Here we would have free rein
 	//			on the format, content etc.
 	boost::optional<GPlatesQtWidgets::HellingerComFileStructure> com_struct = hellinger_model.get_com_file();
 	if (com_struct)
@@ -140,7 +169,7 @@ GPlatesFileIO::HellingerWriter::write_com_file(
 		//		- but what do we do with the pick filepath in this situation??
 		QFile pick_file(com_struct->d_pick_file);
 		QFileInfo pick_fileinfo(pick_file);
-#if 0
+#if 1
 		// Use the existing pick filename if it exists, else use the .com filename as basis for pick filename.
 		QString pick_filename = pick_fileinfo.fileName();
 
@@ -158,10 +187,10 @@ GPlatesFileIO::HellingerWriter::write_com_file(
 			out << pick_filename << '\n';
 
 			// Initial guess: lat, lon, rho
-			out << com_struct->d_lat << " " << com_struct->d_lon << " " << com_struct->d_rho << '\n';
+			out << com_struct->d_estimate_12.d_lat << " " << com_struct->d_estimate_12.d_lon << " " << com_struct->d_estimate_12.d_angle << '\n';
 
 			// Search radius
-			out << com_struct->d_search_radius << '\n';
+			out << com_struct->d_search_radius_degrees << '\n';
 
 			// Perform grid search
 			QString grid_string = "n";
@@ -191,9 +220,9 @@ GPlatesFileIO::HellingerWriter::write_com_file(
 			out << graphics_string << '\n';
 
 			// Dat file names
-			out << com_struct->d_data_filename << '\n';
-			out << com_struct->d_up_filename << '\n';
-			out << com_struct->d_down_filename << '\n';
+			out << com_struct->d_error_ellipse_filename_12 << '\n';
+			out << com_struct->d_upper_surface_filename_12 << '\n';
+			out << com_struct->d_lower_surface_filename_12 << '\n';
 
 		}
 		else

@@ -24,9 +24,11 @@
  */
 
 #include <ostream>
+
 #include "UnicodeString.h"
 
 #include "scribe/Scribe.h"
+#include "scribe/TranscribeDelegateProtocol.h"
 
 
 boost::int32_t
@@ -110,12 +112,11 @@ GPlatesUtils::UnicodeString::transcribe(
 		GPlatesScribe::Scribe &scribe,
 		bool transcribed_construct_data)
 {
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_qstring, "d_qstring"))
-	{
-		return scribe.get_transcribe_result();
-	}
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+	//
+	// Using transcribe delegate protocol so that UnicodeString and QString
+	// can be used interchangeably (ie, are transcription compatible).
+	//
+	return transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, d_qstring);
 }
 
 

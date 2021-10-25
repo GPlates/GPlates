@@ -145,9 +145,10 @@ namespace GPlatesFileIO
 				// then use the geographic description in the old plates header instead.
 				static const GPlatesModel::PropertyName name_property_name =
 					GPlatesModel::PropertyName::create_gml("name");
-				const GPlatesPropertyValues::XsString *feature_name = NULL;
-				if (!GPlatesFeatureVisitors::get_property_value(
-						feature, name_property_name, feature_name))
+				boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> feature_name =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+								feature, name_property_name);
+				if (!feature_name)
 				{
 					if (gpml_old_plates_header == NULL)
 					{
@@ -160,7 +161,7 @@ namespace GPlatesFileIO
 					return true;
 				}
 
-				name = GPlatesUtils::make_qstring_from_icu_string(feature_name->value().get());
+				name = GPlatesUtils::make_qstring_from_icu_string(feature_name.get()->value().get());
 
 				return true;
 			}
@@ -178,15 +179,16 @@ namespace GPlatesFileIO
 				// to help generate the header line. 
 				static const GPlatesModel::PropertyName name_property_name =
 					GPlatesModel::PropertyName::create_gml("name");
-				const GPlatesPropertyValues::XsString *feature_name = NULL;
-				if (!GPlatesFeatureVisitors::get_property_value(
-						feature, name_property_name, feature_name))
+				boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> feature_name =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+								feature, name_property_name);
+				if (!feature_name)
 				{
 					name = "Unknown";
 					return false;
 				}
 
-				name = GPlatesUtils::make_qstring_from_icu_string(feature_name->value().get());
+				name = GPlatesUtils::make_qstring_from_icu_string(feature_name.get()->value().get());
 				return true;
 			}
 
@@ -202,13 +204,15 @@ namespace GPlatesFileIO
 			{
 				static const GPlatesModel::PropertyName property_name =
 					GPlatesModel::PropertyName::create_gpml("subductionZoneAge");
-				const GPlatesPropertyValues::XsDouble *property_value = NULL;
 
-				if (!GPlatesFeatureVisitors::get_property_value( feature, property_name, property_value))
+				boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> property_value =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+								feature, property_name);
+				if (!property_value)
 				{
 					return false;
 				}
-				double d = property_value->value();
+				double d = property_value.get()->value();
 				std::string s = GPlatesUtils::formatted_double_to_string(d, 9, 1);
 				QString qs( s.c_str() );
 				age = qs;
@@ -226,13 +230,15 @@ namespace GPlatesFileIO
 			{
 				static const GPlatesModel::PropertyName property_name =
 					GPlatesModel::PropertyName::create_gpml("subductionZoneConvergence");
-				const GPlatesPropertyValues::XsDouble *property_value = NULL;
 
-				if (!GPlatesFeatureVisitors::get_property_value( feature, property_name, property_value))
+				boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> property_value =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+								feature, property_name);
+				if (!property_value)
 				{
 					return false;
 				}
-				double d = property_value->value();
+				double d = property_value.get()->value();
 				std::string s = GPlatesUtils::formatted_double_to_string(d, 9, 1);
 				QString qs( s.c_str() );
 				age = qs;
@@ -251,13 +257,15 @@ namespace GPlatesFileIO
 			{
 				static const GPlatesModel::PropertyName property_name =
 					GPlatesModel::PropertyName::create_gpml("subductionZoneDeepDip");
-				const GPlatesPropertyValues::XsDouble *property_value = NULL;
 
-				if (!GPlatesFeatureVisitors::get_property_value( feature, property_name, property_value))
+				boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> property_value =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+								feature, property_name);
+				if (!property_value)
 				{
 					return false;
 				}
-				double d = property_value->value();
+				double d = property_value.get()->value();
 				std::string s = GPlatesUtils::formatted_double_to_string(d, 9, 1);
 				QString qs( s.c_str() );
 				dip = qs;
@@ -275,14 +283,16 @@ namespace GPlatesFileIO
 			{
 				static const GPlatesModel::PropertyName property_name =
 					GPlatesModel::PropertyName::create_gpml("subductionZoneDepth");
-				const GPlatesPropertyValues::XsDouble *property_value = NULL;
 
-				if (!GPlatesFeatureVisitors::get_property_value( feature, property_name, property_value))
+				boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> property_value =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+								feature, property_name);
+				if (!property_value)
 				{
 					return false;
 				}
 
-				double d = property_value->value();
+				double d = property_value.get()->value();
 				QString d_as_str( GPlatesUtils::formatted_double_to_string(d, 6, 1).c_str() );
 				depth = d_as_str;
 
@@ -300,14 +310,17 @@ namespace GPlatesFileIO
 			{
 				static const GPlatesModel::PropertyName property_name =
 					GPlatesModel::PropertyName::create_gpml("subductionZoneSystem");
-				const GPlatesPropertyValues::XsString *property_value = NULL;
-				if (!GPlatesFeatureVisitors::get_property_value( feature, property_name, property_value))
+
+				boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> property_value =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+								feature, property_name);
+				if (!property_value)
 				{
                     system = "Unknown";
 					return false;
 				}
 
-                system = GPlatesUtils::make_qstring_from_icu_string(property_value->value().get());
+                system = GPlatesUtils::make_qstring_from_icu_string(property_value.get()->value().get());
 				return true;
 			}
 
@@ -323,15 +336,17 @@ namespace GPlatesFileIO
 			{
 				static const GPlatesModel::PropertyName property_name =
 					GPlatesModel::PropertyName::create_gpml("subductionZoneSystemOrder");
-				const GPlatesPropertyValues::XsInteger *property_value = NULL;
 
-				if (!GPlatesFeatureVisitors::get_property_value( feature, property_name, property_value))
+				boost::optional<GPlatesPropertyValues::XsInteger::non_null_ptr_to_const_type> property_value =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsInteger>(
+								feature, property_name);
+				if (!property_value)
 				{
                     order = "Unknown";
 					return false;
 				}
 
-				int i = property_value->value();
+				int i = property_value.get()->value();
 				QString i_as_str( GPlatesUtils::formatted_int_to_string(i, 2).c_str() );
 				order = i_as_str;
 				return true;
@@ -349,15 +364,17 @@ namespace GPlatesFileIO
 			{
 				static const GPlatesModel::PropertyName property_name =
 					GPlatesModel::PropertyName::create_gpml("rheaFault");
-				const GPlatesPropertyValues::XsString *property_value = NULL;
-				if (!GPlatesFeatureVisitors::get_property_value(
-						feature, property_name, property_value))
+
+				boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> property_value =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+								feature, property_name);
+				if (!property_value)
 				{
 					rhea_fault = "Unknown";
 					return false;
 				}
 
-				rhea_fault = GPlatesUtils::make_qstring_from_icu_string(property_value->value().get());
+				rhea_fault = GPlatesUtils::make_qstring_from_icu_string(property_value.get()->value().get());
 				return true;
 			}
 
@@ -372,13 +389,15 @@ namespace GPlatesFileIO
 			{
 				static const GPlatesModel::PropertyName property_name =
 					GPlatesModel::PropertyName::create_gpml("slabFlatLying");
-				const GPlatesPropertyValues::XsBoolean *property_value = NULL;
 
-				if (!GPlatesFeatureVisitors::get_property_value( feature, property_name, property_value))
+				boost::optional<GPlatesPropertyValues::XsBoolean::non_null_ptr_to_const_type> property_value =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsBoolean>(
+								feature, property_name);
+				if (!property_value)
 				{
 					return false;
 				}
-				flat = property_value->value() ? QString("True") : QString("False");
+				flat = property_value.get()->value() ? QString("True") : QString("False");
 				return true;
 			}
 
@@ -393,13 +412,15 @@ namespace GPlatesFileIO
 			{
 				static const GPlatesModel::PropertyName property_name =
 					GPlatesModel::PropertyName::create_gpml("slabFlatLyingDepth");
-				const GPlatesPropertyValues::XsDouble *property_value = NULL;
 
-				if (!GPlatesFeatureVisitors::get_property_value( feature, property_name, property_value))
+				boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> property_value =
+						GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+								feature, property_name);
+				if (!property_value)
 				{
 					return false;
 				}
-				double d = property_value->value();
+				double d = property_value.get()->value();
 				std::string s = GPlatesUtils::formatted_double_to_string(d, 9, 1);
 				QString qs( s.c_str() );
 				value = qs;
@@ -457,18 +478,18 @@ namespace GPlatesFileIO
 				static const GPlatesModel::PropertyName old_plates_header_property_name =
 					GPlatesModel::PropertyName::create_gpml("oldPlatesHeader");
 
-				const GPlatesPropertyValues::GpmlOldPlatesHeader *source_feature_old_plates_header = NULL;
-				GPlatesFeatureVisitors::get_property_value(
-						source_feature,
-						old_plates_header_property_name,
-						source_feature_old_plates_header);
+				boost::optional<GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_to_const_type>
+						source_feature_old_plates_header =
+								GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlOldPlatesHeader>(
+										source_feature,
+										old_plates_header_property_name);
 
 				// The type is not a subduction left or right so just output the plates
 				// data type code if there is an old plates header.
 				if (source_feature_old_plates_header)
 				{
 					return GPlatesUtils::make_qstring_from_icu_string(
-							source_feature_old_plates_header->data_type_code());
+							source_feature_old_plates_header.get()->data_type_code());
 				}
 
 				// It's not a subduction zone and it doesn't have an old plates header
@@ -1025,7 +1046,7 @@ GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_resolve
 		// Get the resolved boundary subsegments.
 		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment> &> boundary_sub_segments =
 				GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_sub_segment_sequence(resolved_geom);
-		// If not a ResolvedTopologicalGeometry (containing a polygon) or ResolvedTopologicalNetwork then skip.
+		// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
 		if (!boundary_sub_segments)
 		{
 			continue;
@@ -1033,7 +1054,7 @@ GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_resolve
 
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> boundary_polygon =
 				GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_polygon(resolved_geom);
-		// If not a ResolvedTopologicalGeometry (containing a polygon) or ResolvedTopologicalNetwork then skip.
+		// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
 		if (!boundary_polygon)
 		{
 			continue;
@@ -1114,7 +1135,7 @@ GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_sub_seg
 		// The topological geometry feature.
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> resolved_geom_feature_ref =
 				GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
-						sub_segment_group.resolved_topological_geometry);
+						sub_segment_group.resolved_topology);
 		if (!resolved_geom_feature_ref || !resolved_geom_feature_ref->is_valid())
 		{
 			continue;

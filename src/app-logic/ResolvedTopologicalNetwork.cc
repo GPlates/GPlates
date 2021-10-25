@@ -25,8 +25,9 @@
  */
 
 
+// FIXME: does not work ; need to fix references to triangulation
 // NOTE: use with caution: this can cause the Log window to lag during resize events.
-//#define DEBUG_FILE
+// #define DEBUG_FILE
 
 
 #include <QDebug>
@@ -46,7 +47,7 @@
 #include "global/IntrusivePointerZeroRefCountException.h"
 #include "global/NotYetImplementedException.h"
 
-#include "maths/ProjectionUtils.h"
+#include "maths/AzimuthalEqualAreaProjection.h"
 
 #include "model/PropertyName.h"
 #include "model/WeakObserverVisitor.h"
@@ -71,12 +72,12 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::get_feature_ref() const
 void
 GPlatesAppLogic::ResolvedTopologicalNetwork::report_deformation_to_file() const
 {
-#ifdef DEBUG_FILE
+#if 0
 	// Get the current reconstruction time 
 	const double t = get_reconstruction_time();
 
 	// Compute the centroid of the boundary polygon and get lat lon for projection
-	const GPlatesMaths::ProjectionUtils::AzimuthalEqualArea &projection =
+	const GPlatesMaths::AzimuthalEqualArea &projection =
 			get_delaunay_triangulation_2().get_projection();
 
 	// create and open a file and set up a Q text stream to write 
@@ -112,28 +113,28 @@ GPlatesAppLogic::ResolvedTopologicalNetwork::report_deformation_to_file() const
 		debug_qts << "# face_index = " << finite_faces_2_iter->get_face_index() << "\n";
 
 		debug_qts << "# ux1 = "
-			<< finite_faces_2_iter->vertex(0)->get_velocity_colat_lon().get_vector_longitude().dval()
+			<< finite_faces_2_iter->vertex(0)->calc_velocity_colat_lon().get_vector_longitude().dval()
 			<< "(cm/yr)\n";
 		debug_qts << "# uy1 = "
-			<< finite_faces_2_iter->vertex(0)->get_velocity_colat_lon().get_vector_colatitude().dval()
+			<< finite_faces_2_iter->vertex(0)->calc_velocity_colat_lon().get_vector_colatitude().dval()
 			<< "(cm/yr)\n";
 
 		debug_qts << "# ux1 = "
-			<< finite_faces_2_iter->vertex(1)->get_velocity_colat_lon().get_vector_longitude().dval()
+			<< finite_faces_2_iter->vertex(1)->calc_velocity_colat_lon().get_vector_longitude().dval()
 			<< "(cm/yr)\n";
 		debug_qts << "# uy1 = "
-			<< finite_faces_2_iter->vertex(1)->get_velocity_colat_lon().get_vector_colatitude().dval()
+			<< finite_faces_2_iter->vertex(1)->calc_velocity_colat_lon().get_vector_colatitude().dval()
 			<< "(cm/yr)\n";
 
 		debug_qts << "# ux1 = "
-			<< finite_faces_2_iter->vertex(2)->get_velocity_colat_lon().get_vector_longitude().dval()
+			<< finite_faces_2_iter->vertex(2)->calc_velocity_colat_lon().get_vector_longitude().dval()
 			<< "(cm/yr)\n";
 		debug_qts << "# uy1 = "
-			<< finite_faces_2_iter->vertex(2)->get_velocity_colat_lon().get_vector_colatitude().dval()
+			<< finite_faces_2_iter->vertex(2)->v().get_vector_colatitude().dval()
 			<< "(cm/yr)\n";
 
-		const ResolvedTriangulation::Delaunay_2::Face::DeformationInfo &deformation_info =
-				finite_faces_2_iter->get_deformation_info();
+		const ResolvedTriangulation::DeformationInfo &deformation_info =
+				finite_faces_2_iter->get_deformation_info();  // DEBUG_FILE
 
 		debug_qts << "# SR22 = " << deformation_info.SR22 << "(1/s)\n";
 		debug_qts << "# SR33 = " << deformation_info.SR33 << "(1/s)\n";

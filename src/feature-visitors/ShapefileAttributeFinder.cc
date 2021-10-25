@@ -70,7 +70,8 @@ GPlatesFeatureVisitors::ShapefileAttributeFinder::initialise_pre_property_values
 		const GPlatesModel::TopLevelPropertyInline &top_level_property_inline)
 {
 	// FIXME:  Why are we comparing QString to string literal rather than PropertyName to (static) PropertyName?
-	QString property_name = GPlatesUtils::make_qstring_from_icu_string(top_level_property_inline.property_name().get_name());
+	QString property_name = GPlatesUtils::make_qstring_from_icu_string(
+			top_level_property_inline.property_name().get_name());
 
 	if (property_name != "shapefileAttributes") 
 	{

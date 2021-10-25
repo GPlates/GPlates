@@ -29,15 +29,12 @@
 
 #include <utility>
 #include <boost/shared_ptr.hpp>
-#include <QString>
 #include <QObject>
+#include <QString>
 
+#include "CoRegistrationLayerParams.h"
 #include "CoRegistrationLayerProxy.h"
 #include "LayerTask.h"
-#include "LayerTaskParams.h"
-
-#include "data-mining/CoRegConfigurationTable.h"
-#include "data-mining/DataTable.h"
 
 #include "model/FeatureCollectionHandle.h"
 
@@ -47,56 +44,12 @@ namespace GPlatesAppLogic
 	 * A layer task that co-registers reconstructed seed geometries with reconstructed target features.
 	 */
 	class CoRegistrationLayerTask :
+			public QObject,
 			public LayerTask
 	{
+		Q_OBJECT
+
 	public:
-		/**
-		 * App-logic parameters for a co-registration layer.
-		 */
-		class Params :
-				public LayerTaskParams
-		{
-		public:
-			void
-			set_cfg_table(
-					const GPlatesDataMining::CoRegConfigurationTable& table)
-			{
-				// Copy the updated configuration table.
-				d_cfg_table = table;
-
-				// Let the owning @a CoRegistrationLayerTask object know the configuration has changed.
-				d_set_cfg_table_called = true;
-
-				// FIXME: Should probably call 'emit_modified()'.
-				// Currently this seems to update properly because
-				// 'CoRegistrationLayerConfigurationDialog::update_cfg_table()' and
-				// 'CoRegistrationLayerConfigurationDialog::update()', which are the two places
-				// that call this method 'Params::set_cfg_table(), also explicitly do a reconstruction
-				// which ensures an update after this modification is made.
-				// TODO: Remove those calls to 'ApplicationState::reconstruct()' and call
-				// 'emit_modified()' here instead. However, 'CoRegistrationLayerConfigurationDialog::update_cfg_table()'
-				// does a reconstruction even if the cfg table has not changed, so that needs to be handled with care.
-			}
-
-		private:
-			GPlatesDataMining::CoRegConfigurationTable d_cfg_table;
-
-			/**
-			 * Is true @a set_cfg_table has been called.
-			 *
-			 * Used to let CoRegistrationLayerTask know that an external client has modified this state.
-			 *
-			 * CoRegistrationLayerTask will reset this explicitly.
-			 */
-			bool d_set_cfg_table_called;
-
-			Params() :
-				d_set_cfg_table_called(false)
-			{  }
-
-			friend class CoRegistrationLayerTask;
-		};
-
 
 		static
 		bool
@@ -183,14 +136,20 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		LayerTaskParams &
-		get_layer_task_params()
+		LayerParams::non_null_ptr_type
+		get_layer_params()
 		{
-			return d_layer_task_params;
+			return d_layer_params;
 		}
 
+	private Q_SLOTS:
+
+		void
+		handle_cfg_table_modified(
+				GPlatesAppLogic::CoRegistrationLayerParams &layer_params);
+
 	private:
-		Params d_layer_task_params;
+		CoRegistrationLayerParams::non_null_ptr_type d_layer_params;
 
 		/**
 		 * Does the co-registration.
@@ -199,9 +158,7 @@ namespace GPlatesAppLogic
 
 
 		//! Constructor.
-		CoRegistrationLayerTask() :
-				d_coregistration_layer_proxy(CoRegistrationLayerProxy::create())
-		{  }
+		CoRegistrationLayerTask();
 	};
 }
 

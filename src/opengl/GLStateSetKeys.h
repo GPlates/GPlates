@@ -27,7 +27,9 @@
 #define GPLATES_OPENGL_GLSTATESETKEYS_H
 
 #include <opengl/OpenGL.h>
+
 #include "utils/ReferenceCount.h"
+
 
 namespace GPlatesOpenGL
 {

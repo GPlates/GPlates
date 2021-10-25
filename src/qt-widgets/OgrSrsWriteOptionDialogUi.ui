@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>OgrSrsWriteOptionDialog</class>
+ <widget class="QDialog" name="OgrSrsWriteOptionDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>360</width>
+    <height>313</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Choose output SRS </string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="5" column="3">
+    <widget class="QPushButton" name="button_cancel">
+     <property name="text">
+      <string>&amp;Cancel</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="5">
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="leftMargin">
+      <number>10</number>
+     </property>
+     <item>
+      <widget class="QRadioButton" name="radio_wgs84_srs">
+       <property name="text">
+        <string>Use &amp;WGS84 spatial reference system</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">button_group</string>
+       </attribute>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="radio_original_srs">
+       <property name="text">
+        <string>Convert &amp;back to original spatial reference system</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">button_group</string>
+       </attribute>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item row="5" column="0" colspan="3">
+    <spacer name="horizontalSpacer">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>144</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item row="1" column="0" colspan="5">
+    <widget class="QLabel" name="label_filename">
+     <property name="text">
+      <string>&lt;filename placeholder&gt;</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="0" colspan="5">
+    <widget class="QPlainTextEdit" name="plain_text_wkt"/>
+   </item>
+   <item row="5" column="4">
+    <widget class="QPushButton" name="button_ok">
+     <property name="text">
+      <string>&amp;OK</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="label_file">
+     <property name="text">
+      <string>The file</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="0" colspan="5">
+    <widget class="QLabel" name="label_info">
+     <property name="text">
+      <string>Some text about the original SRS</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+ <buttongroups>
+  <buttongroup name="button_group"/>
+ </buttongroups>
+</ui>

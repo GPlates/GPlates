@@ -39,12 +39,15 @@
 #include "app-logic/FeatureCollectionFileState.h"
 #include "app-logic/Layer.h"
 
+#include "gui/Symbol.h"
+
 #include "view-operations/RenderedGeometryCollection.h"
 
 
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
+	class LayerParams;
 	class ReconstructGraph;
 }
 
@@ -167,6 +170,18 @@ namespace GPlatesPresentation
 		 */
 		const_iterator
 		order_end() const;
+
+		/**
+		 * Set visibility of all visual layers to true
+		 */
+		void
+		show_all();
+
+		/**
+		 * Set visibility of all visual layers to false
+		 */
+		void
+		hide_all();
 
 	public Q_SLOTS:
 
@@ -351,6 +366,12 @@ namespace GPlatesPresentation
 				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
 				GPlatesAppLogic::Layer layer,
 				bool activation);
+
+		void
+		handle_layer_params_changed(
+				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
+				GPlatesAppLogic::Layer layer,
+				GPlatesAppLogic::LayerParams &layer_params);
 
 		void
 		handle_layer_added_input_connection(

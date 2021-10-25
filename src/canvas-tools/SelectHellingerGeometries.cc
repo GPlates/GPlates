@@ -49,12 +49,13 @@ GPlatesCanvasTools::SelectHellingerGeometries::SelectHellingerGeometries(
 	d_mouse_is_over_editable_pick(false),
 	d_pick_is_being_dragged(false)
 {
+	set_up_connections();
 }
 
 void
 GPlatesCanvasTools::SelectHellingerGeometries::handle_activation()
 {
-	set_status_bar_message(QT_TR_NOOP("Click to select a pick. Shift+click to edit a pick."));
+	set_default_tool_status_message();
 }
 
 void
@@ -101,8 +102,6 @@ GPlatesCanvasTools::SelectHellingerGeometries::handle_left_click(
 
 	if (d_hellinger_dialog_ptr->is_in_new_point_state())
 	{
-		//Place the new point here.
-		qDebug() << "HLC: updating edit layer";
 		d_hellinger_dialog_ptr->update_edit_layer(point_on_sphere);
 	}
 }
@@ -185,7 +184,7 @@ GPlatesCanvasTools::SelectHellingerGeometries::handle_move_without_drag(
 	}
 	else
 	{
-		d_hellinger_dialog_ptr->clear_hovered_layer();
+		d_hellinger_dialog_ptr->clear_hovered_layer_and_table();
 	}
 }
 
@@ -215,7 +214,7 @@ GPlatesCanvasTools::SelectHellingerGeometries::handle_shift_left_click(
 
 	if (!d_hellinger_dialog_ptr->is_in_new_point_state())
 	{
-		// Check the hellinger pick layer. The shift-left-click action takes us direct to
+		// Check the hellinger pick layer. The shift-left-click action takes us directly to
 		// editing mode.
 		std::vector<GPlatesViewOperations::RenderedGeometryProximityHit> sorted_hits;
 		if (GPlatesViewOperations::test_proximity(
@@ -226,7 +225,8 @@ GPlatesCanvasTools::SelectHellingerGeometries::handle_shift_left_click(
 			const unsigned int index = sorted_hits.front().d_rendered_geom_index;
 			d_hellinger_dialog_ptr->set_selected_pick(index);
 			d_hellinger_dialog_ptr->edit_current_pick();
-
+			set_status_bar_message(
+						QT_TR_NOOP("Click and drag the highlighted pick on the canvas."));
 		}
 		else
 		{
@@ -360,5 +360,41 @@ GPlatesCanvasTools::SelectHellingerGeometries::paint()
 #endif
 }
 
+void
+GPlatesCanvasTools::SelectHellingerGeometries::set_up_connections()
+{
+	QObject::connect(d_hellinger_dialog_ptr,SIGNAL(finished_editing()),
+					 this,SLOT(handle_finished_editing()));
+	QObject::connect(d_hellinger_dialog_ptr,SIGNAL(begin_new_pick()),
+					 this,SLOT(handle_begin_new_pick()));
+	QObject::connect(d_hellinger_dialog_ptr,SIGNAL(begin_edit_pick()),
+					 this,SLOT(handle_begin_editing()));
+}
+
+void
+GPlatesCanvasTools::SelectHellingerGeometries::handle_finished_editing()
+{
+	set_default_tool_status_message();
+}
+
+void
+GPlatesCanvasTools::SelectHellingerGeometries::handle_begin_editing()
+{
+	set_status_bar_message(
+				QT_TR_NOOP("Click and drag the highlighted pick on the canvas."));
+}
+
+void
+GPlatesCanvasTools::SelectHellingerGeometries::handle_begin_new_pick()
+{
+	set_status_bar_message(
+				QT_TR_NOOP("Click to select coordinates of a new pick. Shift-click to use an existing feature."));
+}
+
+void
+GPlatesCanvasTools::SelectHellingerGeometries::set_default_tool_status_message()
+{
+	set_status_bar_message(QT_TR_NOOP("Click to select a pick. Shift+click to edit a pick."));
+}
 
 

@@ -84,13 +84,14 @@ namespace
 			GPlatesModel::FeatureHandle::weak_ref feature_ref,
 			const GPlatesModel::PropertyName &property_name)
 	{
-		const GPlatesPropertyValues::GpmlPlateId *plate_id;
-		if (GPlatesFeatureVisitors::get_property_value(
-				feature_ref, property_name, plate_id))
+		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> plate_id =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+						feature_ref, property_name);
+		if (plate_id)
 		{
 			// The feature has a plate ID of the desired kind.
 			
-			field->setText(QString::number(plate_id->value()));
+			field->setText(QString::number(plate_id.get()->value()));
 		}
 	}
 	
@@ -275,13 +276,15 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 	static const GPlatesModel::PropertyName name_property_name = 
 		GPlatesModel::PropertyName::create_gml("name");
 
-	const GPlatesPropertyValues::XsString *name;
-	if (GPlatesFeatureVisitors::get_property_value(feature_ref, name_property_name, name))
+	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+					feature_ref, name_property_name);
+	if (name)
 	{
 		// The feature has one or more name properties. Use the first one for now.
-		lineedit_name->setText(GPlatesUtils::make_qstring(name->value()));
+		lineedit_name->setText(GPlatesUtils::make_qstring(name.get()->value()));
 		lineedit_name->setCursorPosition(0);
-		lineedit_name->setToolTip(GPlatesUtils::make_qstring(name->value()));
+		lineedit_name->setToolTip(GPlatesUtils::make_qstring(name.get()->value()));
 	}
 
 	// Plate ID.
@@ -312,14 +315,15 @@ GPlatesQtWidgets::FeatureSummaryWidget::display_feature(
 	static const GPlatesModel::PropertyName valid_time_property_name =
 		GPlatesModel::PropertyName::create_gml("validTime");
 
-	const GPlatesPropertyValues::GmlTimePeriod *time_period;
-	if (GPlatesFeatureVisitors::get_property_value(
-			feature_ref, valid_time_property_name, time_period))
+	boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+					feature_ref, valid_time_property_name);
+	if (time_period)
 	{
 		// The feature has a gml:validTime property.
 		
-		lineedit_time_of_appearance->setText(format_time_instant(*(time_period->begin())));
-		lineedit_time_of_disappearance->setText(format_time_instant(*(time_period->end())));
+		lineedit_time_of_appearance->setText(format_time_instant(*(time_period.get()->begin())));
+		lineedit_time_of_disappearance->setText(format_time_instant(*(time_period.get()->end())));
 	}
 
 	if (associated_rg)

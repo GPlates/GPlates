@@ -35,6 +35,7 @@
 #include "Layer.h"
 #include "LayerInputChannelName.h"
 #include "LayerInputChannelType.h"
+#include "LayerParams.h"
 #include "LayerProxy.h"
 #include "LayerTaskType.h"
 #include "Reconstruction.h"
@@ -45,8 +46,6 @@
 
 namespace GPlatesAppLogic
 {
-	class LayerTaskParams;
-
 	/**
 	 * Abstract interface for processing input feature collections and/or the outputs
 	 * of other layers (each layer has a layer proxy at its output).
@@ -188,12 +187,11 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns a reference to the additional parameters and configuration
-		 * options of this layer task.
+		 * Returns the additional parameters and configuration options of this layer.
 		 */
 		virtual
-		LayerTaskParams &
-		get_layer_task_params() = 0;
+		LayerParams::non_null_ptr_type
+		get_layer_params() = 0;
 	};
 }
 

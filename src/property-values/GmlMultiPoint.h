@@ -39,8 +39,8 @@
 
 #include "model/PropertyValue.h"
 
-#include "maths/PointOnSphere.h"
 #include "maths/MultiPointOnSphere.h"
+#include "maths/PointOnSphere.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -65,15 +65,16 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GmlMultiPoint> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlMultiPoint>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GmlMultiPoint>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlMultiPoint> non_null_ptr_to_const_type;
+
 
 		/**
 		 * A convenience typedef for the internal multipoint representation.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::MultiPointOnSphere> internal_multipoint_type;
+
 
 		virtual
 		~GmlMultiPoint()
@@ -102,11 +103,10 @@ namespace GPlatesPropertyValues
 				const internal_multipoint_type &multipoint_,
 				const std::vector<GmlPoint::GmlProperty> &gml_properties_);
 
-		const GmlMultiPoint::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GmlMultiPoint::non_null_ptr_type dup(new GmlMultiPoint(*this));
-			return dup;
+			return non_null_ptr_type(new GmlMultiPoint(*this));
 		}
 
 		const GmlMultiPoint::non_null_ptr_type
@@ -122,12 +122,6 @@ namespace GPlatesPropertyValues
 		/**
 		 * Access the GPlatesMaths::MultiPointOnSphere which encodes the geometry of this
 		 * instance.
-		 *
-		 * Note that there is no accessor provided which returns a boost::intrusive_ptr to
-		 * a non-const GPlatesMaths::MultiPointOnSphere.  The GPlatesMaths::MultiPointOnSphere
-		 * within this instance should not be modified directly; to alter the
-		 * GPlatesMaths::MultiPointOnSphere within this instance, set a new value using the
-		 * function @a set_multipoint below.
 		 */
 		const internal_multipoint_type
 		multipoint() const

@@ -39,14 +39,12 @@
 #include "ReadErrorAccumulation.h"
 #include "RotationAttributesRegistry.h"
 #include "maths/FiniteRotation.h"
-#include "model/ModelInterface.h"
 #include "model/FeatureCollectionHandle.h"
 #include "model/Metadata.h"
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlKeyValueDictionaryElement.h"
 #include "property-values/GpmlMetadata.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
 
 namespace GPlatesFileIO
 {
@@ -66,7 +64,7 @@ namespace GPlatesFileIO
 		{ }
 
 		RotationPoleData(
-				GPlatesMaths::FiniteRotation fr,
+				const GPlatesMaths::FiniteRotation &fr,
 				int m_plate_id,
 				int f_plate_id,
 				double time_,
@@ -81,7 +79,7 @@ namespace GPlatesFileIO
 			const GPlatesMaths::UnitQuaternion3D &quat =fr.unit_quat();
 			if (GPlatesMaths::represents_identity_rotation(quat)) 
 			{
-				lat = 0;
+				lat = 90;
 				lon = 0;
 				angle = 0;
 			} 
@@ -626,7 +624,6 @@ namespace GPlatesFileIO
 		void
 		read_file(
 				File::Reference &file,
-				GPlatesModel::ModelInterface &model,
 				ReadErrorAccumulation &read_errors,
 				bool &contains_unsaved_changes);
 		
@@ -764,11 +761,9 @@ namespace GPlatesFileIO
 	public:
 		explicit
 		GrotWriterWithCfg(
-				File::Reference &file_ref,
-				const GPlatesModel::Gpgim& gpgim) : 
-			PlatesRotationFormatWriter(file_ref.get_file_info(), gpgim),
+				File::Reference &file_ref) : 
+			PlatesRotationFormatWriter(file_ref.get_file_info()),
 			d_file_ref(file_ref)
-			
 		{ }
 			
 		bool
@@ -810,9 +805,8 @@ namespace GPlatesFileIO
 	public:
 		explicit
 		GrotWriterWithoutCfg(
-				File::Reference &file_ref,
-				const GPlatesModel::Gpgim& gpgim) : 
-			PlatesRotationFormatWriter(file_ref.get_file_info(), gpgim),
+				File::Reference &file_ref) : 
+			PlatesRotationFormatWriter(file_ref.get_file_info()),
 			d_file_ref(file_ref),
 			d_mprs_id(0)
 		{ }
@@ -828,9 +822,6 @@ namespace GPlatesFileIO
 		visit_gpml_key_value_dictionary(
 				const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
 
-		void
-		visit_gpml_total_reconstruction_pole(
-				const GPlatesPropertyValues::GpmlTotalReconstructionPole &trs);
 	private:
 		File::Reference& d_file_ref;
 		unsigned d_mprs_id;
@@ -888,11 +879,10 @@ namespace GPlatesFileIO
 
 		boost::shared_ptr<GrotWriterWithCfg>
 		create_file_writer(
-				File::Reference &file_ref,
-				const GPlatesModel::Gpgim& gpgim)
+				File::Reference &file_ref)
 		{
 			//qWarning() << "TODO: create writer according to the file version.";
-			return boost::shared_ptr<GrotWriterWithCfg>(new GrotWriterWithCfg(file_ref, gpgim));
+			return boost::shared_ptr<GrotWriterWithCfg>(new GrotWriterWithCfg(file_ref));
 		}
 
 		void
@@ -985,6 +975,7 @@ namespace GPlatesFileIO
 
 			void
 			publisher_modified(
+					const weak_reference_type &reference,
 					const modified_event_type &event)
 			{
 				qDebug() << "TODO: feature collection modified."; 
@@ -992,6 +983,7 @@ namespace GPlatesFileIO
 
 			void
 			publisher_added(
+					const weak_reference_type &reference,
 					const added_event_type &event)
 			{
 				qDebug() << "TODO: new feature is added into this feature collection."; 
@@ -1000,6 +992,7 @@ namespace GPlatesFileIO
 		
 			void
 			publisher_deactivated(
+					const weak_reference_type &reference,
 					const deactivated_event_type &event)
 			{
 				//qDebug() << "TODO: feature is deleted from this feature collection."; 

@@ -82,6 +82,7 @@ GPlatesQtWidgets::ConfigureGraticulesDialog::populate(
 	longitude_delta_spinbox->setValue(
 			GPlatesMaths::convert_rad_to_deg(settings.get_delta_lon()));
 	d_colour_button->set_colour(settings.get_colour());
+	line_width_hint_spinbox->setValue(settings.get_line_width_hint());
 }
 
 
@@ -94,5 +95,5 @@ GPlatesQtWidgets::ConfigureGraticulesDialog::save(
 	settings.set_delta_lon(
 			GPlatesMaths::convert_deg_to_rad(longitude_delta_spinbox->value()));
 	settings.set_colour(d_colour_button->get_colour());
+	settings.set_line_width_hint(line_width_hint_spinbox->value());
 }
-

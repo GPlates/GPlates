@@ -106,7 +106,7 @@ namespace
 		visit_polygon_on_sphere(
 				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 		{
-			d_number_of_points = polygon_on_sphere->number_of_vertices() + 1;
+			d_number_of_points = polygon_on_sphere->number_of_vertices_in_exterior_ring() + 1;
 		}
 
 		virtual
@@ -132,8 +132,7 @@ namespace
 
 
 GPlatesFileIO::PlatesLineFormatWriter::PlatesLineFormatWriter(
-		const FileInfo &file_info,
-		const GPlatesModel::Gpgim &gpgim)
+		const FileInfo &file_info)
 {
 	// Open the file.
 	d_output_file.reset( new QFile(file_info.get_qfileinfo().filePath()) );
@@ -166,11 +165,10 @@ GPlatesFileIO::PlatesLineFormatWriter::finalise_post_feature_properties(
 	OldPlatesHeader old_plates_header;
 
 	// Delegate formating of feature header.
-	const bool valid_header = d_feature_header.get_old_plates_header(
-		feature_handle.reference(), old_plates_header);
+	d_feature_header.get_old_plates_header(feature_handle.reference(), old_plates_header);
 
-	// If we have a valid header and at least one geometry then we can output for the current feature.
-	if (valid_header && d_feature_accumulator.have_geometry())
+	// If we have at least one geometry then we can output for the current feature.
+	if (d_feature_accumulator.have_geometry())
 	{
 		// Calculate total number of geometry points in the current feature.
 		const unsigned int number_points_in_feature = std::accumulate(
@@ -295,8 +293,7 @@ void
 GPlatesFileIO::PlatesLineFormatWriter::visit_gml_polygon(
 	const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
-	// FIXME: Handle interior rings. Requires a bit of restructuring.
-	d_feature_accumulator.add_geometry(gml_polygon.exterior());
+	d_feature_accumulator.add_geometry(gml_polygon.polygon());
 }
 
 void

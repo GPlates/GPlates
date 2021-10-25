@@ -71,7 +71,7 @@ namespace GPlatesScribe
 	 *			bool transcribed_construct_data)
 	 *   {
 	 *		// Still loads/saves even though A::get_x() is 'const'...
-	 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a.get_x(), "x"))
+	 *		if (!scribe.transcribe(TRANSCRIBE_SOURCE, a.get_x(), "x", GPlatesScribe::TRACK))
 	 *		{
 	 *			return scribe.get_transcribe_result();
 	 *		}
@@ -99,7 +99,7 @@ namespace GPlatesScribe
 	 *				GPlatesScribe::Scribe &scribe,
 	 *				bool transcribed_construct_data)
 	 *		{
-	 *			if (!scribe.transcribe(TRANSCRIBE_SOURCE, x, "x"))
+	 *			if (!scribe.transcribe(TRANSCRIBE_SOURCE, x, "x", GPlatesScribe::TRACK))
 	 *			{
 	 *				return scribe.get_transcribe_result();
 	 *			}
@@ -112,7 +112,7 @@ namespace GPlatesScribe
 	 * The parameter @a transcribed_construct_data indicates whether the function
 	 * 'transcribe_construct_data()' has been called for @a object. This helps determine whether
 	 * some data members of @a object have already been transcribed and hence do not need to be
-	 * transcribed again. See function 'transcribe_construct_data()' for more details.
+	 * transcribed again.
 	 *
 	 * The following examples illustrates this:
 	 *
@@ -138,14 +138,14 @@ namespace GPlatesScribe
 	 *			// then transcribe it here...
 	 *			if (!transcribed_construct_data)
 	 *			{
-	 *				if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_x, "x"))
+	 *				if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_x, "x", GPlatesScribe::TRACK))
 	 *				{
 	 *					return scribe.get_transcribe_result();
 	 *				}
 	 *			}
 	 *
 	 *			// Transcribe 'd_y' as normal (it's not a constructor parameter)...
-	 *			if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_y, "y"))
+	 *			if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_y, "y", GPlatesScribe::TRACK))
 	 *			{
 	 *				return scribe.get_transcribe_result();
 	 *			}
@@ -161,12 +161,12 @@ namespace GPlatesScribe
 	 *		{
 	 *			if (scribe.is_saving())
 	 *			{
-	 *				scribe.save(TRANSCRIBE_SOURCE, b->d_x, "x");
+	 *				scribe.save(TRANSCRIBE_SOURCE, b->d_x, "x", GPlatesScribe::TRACK);
 	 *			}
 	 *			else // loading
 	 *			{
 	 *				// Load 'x'.
-	 *				GPlatesScribe::LoadRef<X> x = scribe.load<X>(TRANSCRIBE_SOURCE, "x");
+	 *				GPlatesScribe::LoadRef<X> x = scribe.load<X>(TRANSCRIBE_SOURCE, "x", GPlatesScribe::TRACK);
 	 *				if (!x.is_valid())
 	 *				{
 	 *					return scribe.get_transcribe_result();
@@ -177,7 +177,7 @@ namespace GPlatesScribe
 	 *				b.construct_object(x);
 	 *		
 	 *				// The transcribed 'x' now has a new address (inside 'b').
-	 *				// NOTE: It's OK to dereference 'a' here (since is has been constructed above).
+	 *				// NOTE: It's OK to dereference 'b' here (since is has been constructed above).
 	 *				scribe.relocated(TRANSCRIBE_SOURCE, b->d_x, x);
 	 *			}
 	 *		
@@ -235,11 +235,11 @@ namespace GPlatesScribe
 	 *   {
 	 *		if (scribe.is_saving())
 	 *		{
-	 *			scribe.save(TRANSCRIBE_SOURCE, a->d_x, "x");
+	 *			scribe.save(TRANSCRIBE_SOURCE, a->d_x, "x", GPlatesScribe::TRACK);
 	 *		}
 	 *		else // loading
 	 *		{
-	 *			GPlatesScribe::LoadRef<X> x = scribe.load<X>(TRANSCRIBE_SOURCE, "x");
+	 *			GPlatesScribe::LoadRef<X> x = scribe.load<X>(TRANSCRIBE_SOURCE, "x", GPlatesScribe::TRACK);
 	 *			if (!x.is_valid())
 	 *			{
 	 *				return scribe.get_transcribe_result();
@@ -284,7 +284,7 @@ namespace GPlatesScribe
 	 *			if (scribe.is_saving())
 	 *			{
 	 *				scribe.save_reference(TRANSCRIBE_SOURCE, b->d_x, "x");
-	 *				scribe.save(TRANSCRIBE_SOURCE, b->d_y, "y");
+	 *				scribe.save(TRANSCRIBE_SOURCE, b->d_y, "y", GPlatesScribe::TRACK);
 	 *			}
 	 *			else // loading
 	 *			{
@@ -296,7 +296,7 @@ namespace GPlatesScribe
 	 *				}
 	 *		
 	 *				// Load 'y'.
-	 *				GPlatesScribe::LoadRef<Y> y = scribe.load<Y>(TRANSCRIBE_SOURCE, "y");
+	 *				GPlatesScribe::LoadRef<Y> y = scribe.load<Y>(TRANSCRIBE_SOURCE, "y", GPlatesScribe::TRACK);
 	 *				if (!y.is_valid())
 	 *				{
 	 *					return scribe.get_transcribe_result();
@@ -416,8 +416,8 @@ namespace GPlatesScribe
 	 *   A transcribed_a;
 	 *   RefA ref_a(transcribed_a);
 	 *   ...
-	 *   scribe.transcribe(TRANSCRIBE_SOURCE, transcribed_a, "a");
-	 *   scribe.transcribe(TRANSCRIBE_SOURCE, ref_a, "ref_a");
+	 *   scribe.transcribe(TRANSCRIBE_SOURCE, transcribed_a, "a", GPlatesScribe::TRACK);
+	 *   scribe.transcribe(TRANSCRIBE_SOURCE, ref_a, "ref_a", GPlatesScribe::TRACK);
 	 *   assert(ref_a.p == &transcribed_a.a);
 	 *   A relocated_a(transcribed_a);
 	 *   assert(ref_a.p != &relocated_a.a);
@@ -433,8 +433,8 @@ namespace GPlatesScribe
 	 *   B transcribed_b;
 	 *   RefB ref_b(transcribed_b);
 	 *   ...
-	 *   scribe.transcribe(TRANSCRIBE_SOURCE, transcribed_b, "b");
-	 *   scribe.transcribe(TRANSCRIBE_SOURCE, refb, "ref_b");
+	 *   scribe.transcribe(TRANSCRIBE_SOURCE, transcribed_b, "b", GPlatesScribe::TRACK);
+	 *   scribe.transcribe(TRANSCRIBE_SOURCE, refb, "ref_b", GPlatesScribe::TRACK);
 	 *   assert(ref_b.p == transcribed_b.b);
 	 *   B relocated_b(transcribed_b);
 	 *   assert(ref_b.p == relocated_b.b);
@@ -451,8 +451,8 @@ namespace GPlatesScribe
 	 *   C transcribed_c;
 	 *   RefC ref_c(transcribed_c);
 	 *   ...
-	 *   scribe.transcribe(TRANSCRIBE_SOURCE, transcribed_c, "c");
-	 *   scribe.transcribe(TRANSCRIBE_SOURCE, ref_c, "ref_c");
+	 *   scribe.transcribe(TRANSCRIBE_SOURCE, transcribed_c, "c", GPlatesScribe::TRACK);
+	 *   scribe.transcribe(TRANSCRIBE_SOURCE, ref_c, "ref_c", GPlatesScribe::TRACK);
 	 *   assert(ref_c.p == transcribed_c.c);
 	 *   C relocated_c(transcribed_c);
 	 *   assert(ref_c.p != relocated_c.c);

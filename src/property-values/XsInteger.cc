@@ -36,4 +36,3 @@ GPlatesPropertyValues::XsInteger::print_to(
 {
 	return os << d_value;
 }
-

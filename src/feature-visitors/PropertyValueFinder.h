@@ -28,19 +28,24 @@
 #define GPLATES_FEATUREVISITORS_PROPERTYVALUEFINDER_H
 
 #include <algorithm>  // std::find
+#include <typeinfo>
 #include <utility>
 #include <vector>
 #include <boost/bind.hpp>
+#include <boost/optional.hpp>
+#include <boost/type_traits/add_const.hpp>
+#include <boost/type_traits/remove_const.hpp>
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "model/PropertyValue.h"
-#include "model/TopLevelPropertyInline.h"
 #include "model/types.h"
 
 #include "property-values/GeoTimeInstant.h"
+
+#include "utils/CopyConst.h"
 
 
 namespace GPlatesFeatureVisitors
@@ -50,30 +55,34 @@ namespace GPlatesFeatureVisitors
 	///////////////
 
 	/**
-	 * Returns true if @a property_value_base is a property value of type @a PropertyValueType.
-	 *
-	 * If true then the derived class (@a PropertyValueType) property value is returned in @a property_value.
-	 *
-	 * NOTE: @a PropertyValueType must be 'const' due to the way the 'non-const' feature visitor
-	 * is implemented (see the DECLARE_PROPERTY_VALUE_FINDER macro below for more details).
+	 * Returns the derived property value of type @a PropertValueType if @a property_value_base is
+	 * an instance of that type.
 	 *
 	 * @a reconstruction_time only applies to time-dependent properties in which case the
 	 * value of the property at the specified time is returned.
-	 * It is effectively ignored for constant-valued properties.
+	 * It is effectively ignored for GpmlConstantValue properties.
+	 *
+	 * Note that only *const* property values are handled.
+	 * This is because the returned property value might be a newly created object which, if modified,
+	 * would not affect the original property value.
+	 * An example of this is a time-dependent property where a new *interpolated* property value
+	 * (sample) is returned for an irregularly sampled property value (when the reconstruction time does
+	 * not match any of the sample times) - and modifying that would not insert the new interpolated
+	 * property value into the irregularly sampled sequence.
 	 *
 	 * For example:
-	 *    GPlatesModel::PropertyValue &property_value_base = ...;
-	 *    const GPlatesPropertyValues::Enumeration *property_value;
-	 *    if (get_property_value(property_value_base, property_value))
+	 *    const GPlatesModel::PropertyValue &property_value_base = ...;
+	 *    boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> property_value =
+	 *        get_property_value<GPlatesPropertyValues::Enumeration>(property_value_base);
+	 *    if (property_value)
 	 *    {
 	 *       ...
 	 *    }
 	 */
 	template <class PropertyValueType>
-	bool
+	boost::optional<typename PropertyValueType::non_null_ptr_to_const_type>
 	get_property_value(
 			const GPlatesModel::PropertyValue &property_value_base,
-			PropertyValueType *&property_value,
 			const double &reconstruction_time = 0);
 
 	/**
@@ -83,8 +92,8 @@ namespace GPlatesFeatureVisitors
 	 * If true then property value is returned in @a property_value.
 	 * If has more than one property matching criteria then only first is returned.
 	 *
-	 * NOTE: @a PropertyValueType must be 'const' due to the way the 'non-const' feature visitor
-	 * is implemented (see the DECLARE_PROPERTY_VALUE_FINDER macro below for more details).
+	 * @a PropertyValueType and @a FeatureOrPropertyType can be either const or non-const types
+	 * but, of course, you cannot get a non-const PropertyValueType from a const FeatureOrPropertyType.
 	 *
 	 * @a FeatureOrPropertyType can be any of the following types:
 	 *
@@ -99,20 +108,28 @@ namespace GPlatesFeatureVisitors
 	 * value of the property at the specified time is returned.
 	 * It is effectively ignored for constant-valued properties.
 	 *
+	 * Note that only *const* property values are handled.
+	 * This is because the returned property value might be a newly created object which, if modified,
+	 * would not affect the original property value.
+	 * An example of this is a time-dependent property where a new *interpolated* property value
+	 * (sample) is returned for an irregularly sampled property value (when the reconstruction time does
+	 * not match any of the sample times) - and modifying that would not insert the new interpolated
+	 * property value into the irregularly sampled sequence.
+	 *
 	 * For example:
 	 *    GPlatesModel::FeatureHandle::weak_ref feature_weak_ref = ...;
-	 *    const GPlatesPropertyValues::Enumeration *property_value;
-	 *    if (get_property_value(feature_weak_ref, property_name, property_value))
+	 *    boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> property_value =
+	 *        get_property_value<GPlatesPropertyValues::Enumeration>(feature_weak_ref, property_name);
+	 *    if (property_value)
 	 *    {
 	 *       ...
 	 *    }
 	 */
 	template <class PropertyValueType, class FeatureOrPropertyType>
-	bool
+	boost::optional<typename PropertyValueType::non_null_ptr_to_const_type>
 	get_property_value(
 			const FeatureOrPropertyType &feature_or_property,
 			const GPlatesModel::PropertyName &property_name,
-			PropertyValueType *&property_value,
 			const double &reconstruction_time = 0);
 
 	/**
@@ -122,8 +139,8 @@ namespace GPlatesFeatureVisitors
 	 * If true then property value is returned in @a property_value.
 	 * If has more than one property matching criteria then only first is returned.
 	 *
-	 * NOTE: @a PropertyValueType must be 'const' due to the way the 'non-const' feature visitor
-	 * is implemented (see the DECLARE_PROPERTY_VALUE_FINDER macro below for more details).
+	 * @a PropertyValueType and @a FeatureOrPropertyType can be either const or non-const types
+	 * but, of course, you cannot get a non-const PropertyValueType from a const FeatureOrPropertyType.
 	 *
 	 * @a FeatureOrPropertyType can be any of the following types:
 	 *
@@ -138,23 +155,32 @@ namespace GPlatesFeatureVisitors
 	 * value of the property at the specified time is returned.
 	 * It is effectively ignored for constant-valued properties.
 	 *
+	 * Note that only *const* property values are handled.
+	 * This is because the returned property value might be a newly created object which, if modified,
+	 * would not affect the original property value.
+	 * An example of this is a time-dependent property where a new *interpolated* property value
+	 * (sample) is returned for an irregularly sampled property value (when the reconstruction time does
+	 * not match any of the sample times) - and modifying that would not insert the new interpolated
+	 * property value into the irregularly sampled sequence.
+	 *
 	 * For example:
 	 *    GPlatesModel::FeatureHandle::weak_ref feature_weak_ref = ...;
-	 *    const GPlatesPropertyValues::Enumeration *property_value;
 	 *    std::vector<GPlatesModel::PropertyName> property_names;
 	 *    ...
-	 *    if (get_property_value(feature_weak_ref, property_names.begin(), property_names.end(), property_value))
+	 *    boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> property_value =
+	 *        get_property_value<GPlatesPropertyValues::Enumeration>(
+	 *            feature_weak_ref, property_names.begin(), property_names.end());
+	 *    if (property_value)
 	 *    {
 	 *       ...
 	 *    }
 	 */
 	template <class PropertyValueType, class FeatureOrPropertyType, typename PropertyNamesForwardIter>
-	bool
+	boost::optional<typename PropertyValueType::non_null_ptr_to_const_type>
 	get_property_value(
 			const FeatureOrPropertyType &feature_or_property,
 			PropertyNamesForwardIter property_names_begin,
 			PropertyNamesForwardIter property_names_end,
-			PropertyValueType *&property_value,
 			const double &reconstruction_time = 0);
 
 	/**
@@ -163,8 +189,8 @@ namespace GPlatesFeatureVisitors
 	 *
 	 * If so then the property values are returned in @a property_values.
 	 *
-	 * NOTE: @a PropertyValueType must be 'const' due to the way the 'non-const' feature visitor
-	 * is implemented (see the DECLARE_PROPERTY_VALUE_FINDER macro below for more details).
+	 * @a PropertyValueType and @a FeatureOrPropertyType can be either const or non-const types
+	 * but, of course, you cannot get a non-const PropertyValueType from a const FeatureOrPropertyType.
 	 *
 	 * @a FeatureOrPropertyType can be any of the following types:
 	 *
@@ -179,20 +205,28 @@ namespace GPlatesFeatureVisitors
 	 * value of the property at the specified time is returned.
 	 * It is effectively ignored for constant-valued properties.
 	 *
+	 * Note that only *const* property values are handled.
+	 * This is because the returned property value might be a newly created object which, if modified,
+	 * would not affect the original property value.
+	 * An example of this is a time-dependent property where a new *interpolated* property value
+	 * (sample) is returned for an irregularly sampled property value (when the reconstruction time does
+	 * not match any of the sample times) - and modifying that would not insert the new interpolated
+	 * property value into the irregularly sampled sequence.
+	 *
 	 * For example:
 	 *    GPlatesModel::FeatureHandle::weak_ref feature_weak_ref = ...;
-	 *    std::vector<const GPlatesPropertyValues::Enumeration *> property_values;
-	 *    if (get_property_values(feature_weak_ref, property_name, property_values))
+	 *    std::vector<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> property_values =
+	 *        get_property_values<GPlatesPropertyValues::Enumeration>(feature_weak_ref, property_name);
+	 *    if (!property_values.empty())
 	 *    {
 	 *       ...
 	 *    }
 	 */
 	template <class PropertyValueType, class FeatureOrPropertyType>
-	bool
+	std::vector<typename PropertyValueType::non_null_ptr_to_const_type>
 	get_property_values(
 			const FeatureOrPropertyType &feature_or_property,
 			const GPlatesModel::PropertyName &property_name,
-			std::vector<PropertyValueType *> &property_values,
 			const double &reconstruction_time = 0);
 
 	/**
@@ -201,8 +235,8 @@ namespace GPlatesFeatureVisitors
 	 *
 	 * If so then the property values are returned in @a property_values.
 	 *
-	 * NOTE: @a PropertyValueType must be 'const' due to the way the 'non-const' feature visitor
-	 * is implemented (see the DECLARE_PROPERTY_VALUE_FINDER macro below for more details).
+	 * @a PropertyValueType and @a FeatureOrPropertyType can be either const or non-const types
+	 * but, of course, you cannot get a non-const PropertyValueType from a const FeatureOrPropertyType.
 	 *
 	 * @a FeatureOrPropertyType can be any of the following types:
 	 *
@@ -213,23 +247,32 @@ namespace GPlatesFeatureVisitors
 	 *     GPlatesModel::FeatureHandle::const_iterator, or
 	 *     GPlatesModel::FeatureHandle::iterator.
 	 *
+	 * Note that only *const* property values are handled.
+	 * This is because the returned property value might be a newly created object which, if modified,
+	 * would not affect the original property value.
+	 * An example of this is a time-dependent property where a new *interpolated* property value
+	 * (sample) is returned for an irregularly sampled property value (when the reconstruction time does
+	 * not match any of the sample times) - and modifying that would not insert the new interpolated
+	 * property value into the irregularly sampled sequence.
+	 *
 	 * For example:
 	 *    GPlatesModel::FeatureHandle::weak_ref feature_weak_ref = ...;
-	 *    std::vector<const GPlatesPropertyValues::Enumeration *> property_values;
 	 *    std::vector<GPlatesModel::PropertyName> property_names;
 	 *    ...
-	 *    if (get_property_values(feature_weak_ref, property_names.begin(), property_names.end(), property_values))
+	 *    std::vector<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> property_values =
+	 *        get_property_values<GPlatesPropertyValues::Enumeration>(
+	 *            feature_weak_ref, property_names.begin(), property_names.end());
+	 *    if (!property_values.empty())
 	 *    {
 	 *       ...
 	 *    }
 	 */
 	template <class PropertyValueType, class FeatureOrPropertyType, typename PropertyNamesForwardIter>
-	bool
+	std::vector<typename PropertyValueType::non_null_ptr_to_const_type>
 	get_property_values(
 			const FeatureOrPropertyType &feature_or_property,
 			PropertyNamesForwardIter property_names_begin,
 			PropertyNamesForwardIter property_names_end,
-			std::vector<PropertyValueType *> &property_values,
 			const double &reconstruction_time = 0);
 
 
@@ -239,36 +282,23 @@ namespace GPlatesFeatureVisitors
 	namespace Implementation
 	{
 		//
-		// NOTE: These function are templates purely so they can be defined in the ".cc" file to avoid
+		// NOTE: These function are not templates purely so they can be defined in the ".cc" file to avoid
 		// cyclic header dependencies including headers for irregular sampling and piecewise aggregation.
 		//
 		void
 		visit_gpml_constant_value(
 				GPlatesModel::ConstFeatureVisitor::gpml_constant_value_type &gpml_constant_value,
-				GPlatesModel::ConstFeatureVisitor &visitor);
-		void
-		visit_gpml_constant_value(
-				GPlatesModel::FeatureVisitor::gpml_constant_value_type &gpml_constant_value,
-				GPlatesModel::FeatureVisitor &visitor);
+				GPlatesModel::ConstFeatureVisitor &property_value_finder_visitor);
 		void
 		visit_gpml_irregular_sampling_at_reconstruction_time(
 				GPlatesModel::ConstFeatureVisitor::gpml_irregular_sampling_type &gpml_irregular_sampling,
-				GPlatesModel::ConstFeatureVisitor &visitor,
-				const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time);
-		void
-		visit_gpml_irregular_sampling_at_reconstruction_time(
-				GPlatesModel::FeatureVisitor::gpml_irregular_sampling_type &gpml_irregular_sampling,
-				GPlatesModel::FeatureVisitor &visitor,
-				const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time);
+				GPlatesModel::ConstFeatureVisitor &property_value_finder_visitor,
+				const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+				const std::type_info &property_value_type_info);
 		void
 		visit_gpml_piecewise_aggregation_at_reconstruction_time(
 				GPlatesModel::ConstFeatureVisitor::gpml_piecewise_aggregation_type &gpml_piecewise_aggregation,
-				GPlatesModel::ConstFeatureVisitor &visitor,
-				const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time);
-		void
-		visit_gpml_piecewise_aggregation_at_reconstruction_time(
-				GPlatesModel::FeatureVisitor::gpml_piecewise_aggregation_type &gpml_piecewise_aggregation,
-				GPlatesModel::FeatureVisitor &visitor,
+				GPlatesModel::ConstFeatureVisitor &property_value_finder_visitor,
 				const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time);
 
 
@@ -280,9 +310,9 @@ namespace GPlatesFeatureVisitors
 		 * NOTE: The property values can be constant over time or time-dependent - in the latter
 		 * case the reconstruction time is used to lookup the property value.
 		 */
-		template <class FeatureVisitorType>
+		template <class PropertyValueType>
 		class PropertyValueFinderBase :
-				public FeatureVisitorType
+				public GPlatesModel::ConstFeatureVisitor
 		{
 		public:
 			virtual
@@ -300,7 +330,7 @@ namespace GPlatesFeatureVisitors
 			virtual
 			bool
 			initialise_pre_property_values(
-					typename FeatureVisitorType::top_level_property_inline_type &top_level_property_inline)
+					top_level_property_inline_type &top_level_property_inline)
 			{
 				const GPlatesModel::PropertyName &curr_prop_name = top_level_property_inline.property_name();
 
@@ -320,7 +350,7 @@ namespace GPlatesFeatureVisitors
 			virtual
 			void
 			visit_gpml_constant_value(
-					typename FeatureVisitorType::gpml_constant_value_type &gpml_constant_value)
+					gpml_constant_value_type &gpml_constant_value)
 			{
 				Implementation::visit_gpml_constant_value(gpml_constant_value, *this);
 			}
@@ -329,18 +359,24 @@ namespace GPlatesFeatureVisitors
 			virtual
 			void
 			visit_gpml_irregular_sampling(
-					typename FeatureVisitorType::gpml_irregular_sampling_type &gpml_irregular_sampling)
+					gpml_irregular_sampling_type &gpml_irregular_sampling)
 			{
 				Implementation::visit_gpml_irregular_sampling_at_reconstruction_time(
-						gpml_irregular_sampling, *this, d_reconstruction_time);
+						gpml_irregular_sampling, *this, d_reconstruction_time,
+						// Optimisation to avoid interpolating a property value when it's the
+						// wrong type and will just get discarded anyway...
+						typeid(PropertyValueType));
 			}
 
 			// In case property value is time-dependent.
 			virtual
 			void
 			visit_gpml_piecewise_aggregation(
-					typename FeatureVisitorType::gpml_piecewise_aggregation_type &gpml_piecewise_aggregation) 
+					gpml_piecewise_aggregation_type &gpml_piecewise_aggregation) 
 			{
+				// No optimisation here (like with 'visit_gpml_irregular_sampling') because
+				// nested property value type could be another time-dependent wrapper type.
+
 				Implementation::visit_gpml_piecewise_aggregation_at_reconstruction_time(
 						gpml_piecewise_aggregation, *this, d_reconstruction_time);
 			}
@@ -369,8 +405,7 @@ namespace GPlatesFeatureVisitors
 
 
 		// Declare template class PropertyValueFinder but never define it.
-		// We will rely on specialisations of this class for each property value type and
-		// feature visitor type.
+		// We will rely on specialisations of this class for each property value type.
 		template <class PropertyValueType>
 		class PropertyValueFinder;
 
@@ -380,11 +415,9 @@ namespace GPlatesFeatureVisitors
 		// of 'visit_gpml_plate_id' for example - in which case a simple template class would suffice.
 		// However having "visit" methods named as they are probably help readability and avoids needing
 		// 'using ConstFeatureVisitor::visit;" declarations in derived visitor classes.
-		//
 #define DECLARE_PROPERTY_VALUE_FINDER_CLASS( \
 			property_value_type, \
-			visit_property_value_method, \
-			feature_visitor_type \
+			visit_property_value_method \
 		) \
 		namespace GPlatesFeatureVisitors \
 		{ \
@@ -392,39 +425,31 @@ namespace GPlatesFeatureVisitors
 			{ \
 				template <> \
 				class PropertyValueFinder<property_value_type> : \
-						public PropertyValueFinderBase<feature_visitor_type> \
+						public PropertyValueFinderBase<property_value_type> \
 				{ \
 				public: \
-					typedef std::vector<property_value_type *> property_value_container_type; \
+					typedef std::vector<GPlatesUtils::non_null_intrusive_ptr<property_value_type> > property_value_container_type; \
 					typedef property_value_container_type::const_iterator property_value_container_const_iterator; \
 					typedef std::pair<property_value_container_const_iterator, property_value_container_const_iterator> \
 							property_value_container_range; \
 					\
 					PropertyValueFinder( \
 							const double &reconstruction_time = 0) : \
-						PropertyValueFinderBase<feature_visitor_type>(reconstruction_time) \
+						PropertyValueFinderBase<property_value_type>(reconstruction_time) \
 					{  } \
 			 \
 					explicit \
 					PropertyValueFinder( \
 							const GPlatesModel::PropertyName &property_name_to_allow, \
 							const double &reconstruction_time = 0) : \
-						PropertyValueFinderBase<feature_visitor_type>(property_name_to_allow, reconstruction_time) \
+						PropertyValueFinderBase<property_value_type>(property_name_to_allow, reconstruction_time) \
 					{ \
 					} \
 			 \
 					/* Returns begin/end iterator to any found property values. */ \
 					property_value_container_range \
 					find_property_values( \
-							const GPlatesModel::FeatureHandle::const_weak_ref &feature_weak_ref) \
-					{ \
-						d_found_property_values.clear(); \
-						visit_feature(feature_weak_ref); \
-						return std::make_pair(d_found_property_values.begin(), d_found_property_values.end()); \
-					} \
-					property_value_container_range \
-					find_property_values( \
-							const GPlatesModel::FeatureHandle::weak_ref &feature_weak_ref) \
+							const feature_weak_ref_type &feature_weak_ref) \
 					{ \
 						d_found_property_values.clear(); \
 						visit_feature(feature_weak_ref); \
@@ -434,15 +459,7 @@ namespace GPlatesFeatureVisitors
 					/* Returns begin/end iterator to any found property values. */ \
 					property_value_container_range \
 					find_property_values( \
-							const GPlatesModel::FeatureCollectionHandle::const_iterator &feature_collection_iterator) \
-					{ \
-						d_found_property_values.clear(); \
-						visit_feature(feature_collection_iterator); \
-						return std::make_pair(d_found_property_values.begin(), d_found_property_values.end()); \
-					} \
-					property_value_container_range \
-					find_property_values( \
-							const GPlatesModel::FeatureCollectionHandle::iterator &feature_collection_iterator) \
+							const feature_collection_iterator_type &feature_collection_iterator) \
 					{ \
 						d_found_property_values.clear(); \
 						visit_feature(feature_collection_iterator); \
@@ -452,15 +469,7 @@ namespace GPlatesFeatureVisitors
 					/* Returns begin/end iterator to any found property values. */ \
 					property_value_container_range \
 					find_property_values( \
-							const GPlatesModel::FeatureHandle::const_iterator &feature_iterator) \
-					{ \
-						d_found_property_values.clear(); \
-						visit_feature_property(feature_iterator); \
-						return std::make_pair(d_found_property_values.begin(), d_found_property_values.end()); \
-					} \
-					property_value_container_range \
-					find_property_values( \
-							const GPlatesModel::FeatureHandle::iterator &feature_iterator) \
+							const feature_iterator_type &feature_iterator) \
 					{ \
 						d_found_property_values.clear(); \
 						visit_feature_property(feature_iterator); \
@@ -470,15 +479,8 @@ namespace GPlatesFeatureVisitors
 					/* Returns begin/end iterator to any found property values. */ \
 					property_value_container_range \
 					find_property_values( \
-							const GPlatesModel::PropertyValue &property_value_base) \
-					{ \
-						d_found_property_values.clear(); \
-						property_value_base.accept_visitor(*this); \
-						return std::make_pair(d_found_property_values.begin(), d_found_property_values.end()); \
-					} \
-					property_value_container_range \
-					find_property_values( \
-							GPlatesModel::PropertyValue &property_value_base) \
+							/* Using PropertyValue instead of derived property value type to avoid undefined class error... */ \
+							GPlatesUtils::CopyConst<property_value_type, GPlatesModel::PropertyValue>::type &property_value_base) \
 					{ \
 						d_found_property_values.clear(); \
 						property_value_base.accept_visitor(*this); \
@@ -514,48 +516,19 @@ namespace GPlatesFeatureVisitors
 #define DECLARE_PROPERTY_VALUE_FINDER(property_value_type, visit_property_value_method) \
 		/* for const property-value */ \
 		DECLARE_PROPERTY_VALUE_FINDER_CLASS( \
-				const property_value_type, \
-				visit_property_value_method, \
-				GPlatesModel::ConstFeatureVisitor) \
-
-		// NOTE: Currently removing the version that returns a non-const property-value.
-		//
-		// When using a non-const feature visitor the top-level properties are currently deep cloned in
-		// visit_feature_properties() so that changes to the model can be tracked (for JC's unsaved changes).
-		// The result is references cannot be kept to the property values because they are released when
-		// committed back the model inside visit_feature_properties().
-		// The function 'get_property_value()' uses both non-const and const visitors internally to
-		// retrieve property values and return them to the caller.
-		// And for the non-const visitor the property value raw pointer that 'get_property_value()'
-		// returns to its caller is pointing to an object that has been deallocated.
-		// The design of 'get_property_value()' itself is ok in that it's returning a raw pointer to
-		// the caller with the understanding that the pointer only be used locally by the caller.
-		// However the new way of keeping track of changes to the model means that property value
-		// references now become invalid immediately after visiting that property value with a
-		// non-const visitor which is necessary to track changes to the model.
-		// The const visitor does not clone because const property values cannot be modified and
-		// so it doesn't exhibit this problem.
-		//
-		// So this only breaks for the non-const version of 'get_property_value()' so
-		// it is disabled to prevent caller's using it.
-		// There's currently no code that uses the non-const version.
-		//
-		// // For non-const property-value.
-		//DECLARE_PROPERTY_VALUE_FINDER_CLASS(
-		//		property_value_type,
-		//		visit_property_value_method,
-		//		GPlatesModel::FeatureVisitor)
+				boost::add_const<property_value_type>::type, \
+				visit_property_value_method)
 	}
 
 
 	template <class PropertyValueType>
-	bool
+	boost::optional<typename PropertyValueType::non_null_ptr_to_const_type>
 	get_property_value(
 			const GPlatesModel::PropertyValue &property_value_base,
-			PropertyValueType *&property_value,
 			const double &reconstruction_time)
 	{
-		typedef Implementation::PropertyValueFinder<PropertyValueType> property_value_finder_type;
+		typedef Implementation::PropertyValueFinder<typename boost::add_const<PropertyValueType>::type>
+				property_value_finder_type;
 
 		property_value_finder_type property_value_finder(reconstruction_time);
 
@@ -564,50 +537,45 @@ namespace GPlatesFeatureVisitors
 
 		if (property_value_range.first == property_value_range.second)
 		{
-			property_value = NULL;
-			return false;
+			return boost::none;
 		}
 
 		// Return first property value to caller.
-		property_value = *property_value_range.first;
-
-		return true;
+		return *property_value_range.first;
 	}
 
 
 	template <class PropertyValueType, class FeatureOrPropertyType>
-	bool
+	std::vector<typename PropertyValueType::non_null_ptr_to_const_type>
 	get_property_values(
 			const FeatureOrPropertyType &feature_or_property,
 			const GPlatesModel::PropertyName &property_name,
-			std::vector<PropertyValueType *> &property_values,
 			const double &reconstruction_time)
 	{
-		typedef Implementation::PropertyValueFinder<PropertyValueType> property_value_finder_type;
+		typedef Implementation::PropertyValueFinder<typename boost::add_const<PropertyValueType>::type>
+				property_value_finder_type;
 
 		property_value_finder_type property_value_finder(property_name, reconstruction_time);
 
 		typename property_value_finder_type::property_value_container_range property_value_range =
 				property_value_finder.find_property_values(feature_or_property);
 
-		property_values.insert(property_values.end(),
+		return std::vector<typename PropertyValueType::non_null_ptr_to_const_type>(
 				property_value_range.first,
 				property_value_range.second);
-
-		return !property_values.empty();
 	}
 
 
 	template <class PropertyValueType, class FeatureOrPropertyType, typename PropertyNamesForwardIter>
-	bool
+	std::vector<typename PropertyValueType::non_null_ptr_to_const_type>
 	get_property_values(
 			const FeatureOrPropertyType &feature_or_property,
 			PropertyNamesForwardIter property_names_begin,
 			PropertyNamesForwardIter property_names_end,
-			std::vector<PropertyValueType *> &property_values,
 			const double &reconstruction_time)
 	{
-		typedef Implementation::PropertyValueFinder<PropertyValueType> property_value_finder_type;
+		typedef Implementation::PropertyValueFinder<typename boost::add_const<PropertyValueType>::type>
+				property_value_finder_type;
 
 		property_value_finder_type property_value_finder(reconstruction_time);
 
@@ -621,23 +589,21 @@ namespace GPlatesFeatureVisitors
 		typename property_value_finder_type::property_value_container_range property_value_range =
 				property_value_finder.find_property_values(feature_or_property);
 
-		property_values.insert(property_values.end(),
+		return std::vector<typename PropertyValueType::non_null_ptr_to_const_type>(
 				property_value_range.first,
 				property_value_range.second);
-
-		return !property_values.empty();
 	}
 
 
 	template <class PropertyValueType, class FeatureOrPropertyType>
-	bool
+	boost::optional<typename PropertyValueType::non_null_ptr_to_const_type>
 	get_property_value(
 			const FeatureOrPropertyType &feature_or_property,
 			const GPlatesModel::PropertyName &property_name,
-			PropertyValueType *&property_value,
 			const double &reconstruction_time)
 	{
-		typedef Implementation::PropertyValueFinder<PropertyValueType> property_value_finder_type;
+		typedef Implementation::PropertyValueFinder<typename boost::add_const<PropertyValueType>::type>
+				property_value_finder_type;
 
 		property_value_finder_type property_value_finder(property_name, reconstruction_time);
 
@@ -646,27 +612,24 @@ namespace GPlatesFeatureVisitors
 
 		if (property_value_range.first == property_value_range.second)
 		{
-			property_value = NULL;
-			return false;
+			return boost::none;
 		}
 
 		// Return first property value to caller.
-		property_value = *property_value_range.first;
-
-		return true;
+		return *property_value_range.first;
 	}
 
 
 	template <class PropertyValueType, class FeatureOrPropertyType, typename PropertyNamesForwardIter>
-	bool
+	boost::optional<typename PropertyValueType::non_null_ptr_to_const_type>
 	get_property_value(
 			const FeatureOrPropertyType &feature_or_property,
 			PropertyNamesForwardIter property_names_begin,
 			PropertyNamesForwardIter property_names_end,
-			PropertyValueType *&property_value,
 			const double &reconstruction_time)
 	{
-		typedef Implementation::PropertyValueFinder<PropertyValueType> property_value_finder_type;
+		typedef Implementation::PropertyValueFinder<typename boost::add_const<PropertyValueType>::type>
+				property_value_finder_type;
 
 		property_value_finder_type property_value_finder(reconstruction_time);
 
@@ -682,14 +645,11 @@ namespace GPlatesFeatureVisitors
 
 		if (property_value_range.first == property_value_range.second)
 		{
-			property_value = NULL;
-			return false;
+			return boost::none;
 		}
 
 		// Return first property value to caller.
-		property_value = *property_value_range.first;
-
-		return true;
+		return *property_value_range.first;
 	}
 }
 

@@ -65,8 +65,6 @@ set(srcs
     ScribeTestSuite.h
     SmartNodeLinkedListTest.cc
     SmartNodeLinkedListTest.h
-    SphericalDistanceTest.cc
-    SphericalDistanceTest.h
     StringSetTest.cc
     StringSetTest.h
     TestSuiteFilter.cc

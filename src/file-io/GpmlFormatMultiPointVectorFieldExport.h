@@ -40,7 +40,6 @@ namespace GPlatesAppLogic
 
 namespace GPlatesModel
 {
-	class Gpgim;
 	class ModelInterface;
 }
 
@@ -68,7 +67,6 @@ namespace GPlatesFileIO
 		export_velocity_vector_fields(
 				const std::list<multi_point_vector_field_group_type> &velocity_vector_field_group_seq,
 				const QFileInfo& file_info,
-				const GPlatesModel::Gpgim &gpgim,
 				GPlatesModel::ModelInterface &model,
 				const referenced_files_collection_type &referenced_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,

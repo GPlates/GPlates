@@ -29,8 +29,6 @@
 
 #include "model/Model.h"
 
-#include "scribe/Scribe.h"
-
 
 GPlatesFileIO::File::non_null_ptr_type
 GPlatesFileIO::File::create_file(
@@ -93,24 +91,4 @@ GPlatesFileIO::File::Reference::Reference(
 	d_file_info(file_info),
 	d_file_configuration(file_configuration)
 {
-}
-
-
-GPlatesScribe::TranscribeResult
-GPlatesFileIO::File::Reference::transcribe(
-		GPlatesScribe::Scribe &scribe,
-		bool transcribed_construct_data)
-{
-	if (
-		// NOTE: Although we transcribe 'd_feature_collection' this does not transcribe the features
-		// contained in the collection (that's what loading GPML, etc, files is for).
-		// This just enables the Scribe to link references to the same feature collection.
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_feature_collection, "d_feature_collection") ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_file_info, "d_file_info") ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_file_configuration, "d_file_configuration"))
-	{
-		return scribe.get_transcribe_result();
-	}
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

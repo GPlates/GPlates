@@ -58,37 +58,32 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GmlTimeInstant> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlTimeInstant>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GmlTimeInstant>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlTimeInstant> non_null_ptr_to_const_type;
+
+
+		//! Typedef for an XML attribute (name/value) map.
+		typedef std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attribute_map_type;
+
 
 		virtual
 		~GmlTimeInstant()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
 				const GeoTimeInstant &time_position_,
-				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
-						time_position_xml_attributes_)
+				const xml_attribute_map_type &time_position_xml_attributes_ = xml_attribute_map_type())
 		{
-			non_null_ptr_type ptr(
-					new GmlTimeInstant(time_position_, time_position_xml_attributes_));
-			return ptr;
+			return non_null_ptr_type(new GmlTimeInstant(time_position_, time_position_xml_attributes_));
 		}
 
-		const GmlTimeInstant::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GmlTimeInstant::non_null_ptr_type dup(new GmlTimeInstant(*this));
-			return dup;
+			return non_null_ptr_type(new GmlTimeInstant(*this));
 		}
 
 		const GmlTimeInstant::non_null_ptr_type
@@ -102,8 +97,7 @@ namespace GPlatesPropertyValues
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 		/**
-		 * Access the GeoTimeInstant which encodes the temporal position of this
-		 * GmlTimeInstant.
+		 * Access the GeoTimeInstant which encodes the temporal position of this GmlTimeInstant.
 		 *
 		 * Note that there is no accessor provided which returns a non-const
 		 * GeoTimeInstant. This is intentional. To modify this GmlTimeInstant,
@@ -117,10 +111,6 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Set the temporal position of this GmlTimeInstant to @a tp.
-		 *
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_time_position(
@@ -133,7 +123,7 @@ namespace GPlatesPropertyValues
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map?  (For consistency with the non-const
 		// overload...)
-		const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
+		const xml_attribute_map_type &
 		time_position_xml_attributes() const
 		{
 			return d_time_position_xml_attributes;
@@ -142,7 +132,7 @@ namespace GPlatesPropertyValues
 		// @b FIXME:  Should this function be replaced with per-index const-access to
 		// elements of the XML attribute map, as well as per-index assignment (setter) and
 		// removal operations?  This would ensure that revisioning is correctly handled...
-		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
+		xml_attribute_map_type &
 		time_position_xml_attributes()
 		{
 			return d_time_position_xml_attributes;
@@ -198,7 +188,7 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		GmlTimeInstant(
 				const GeoTimeInstant &time_position_,
-				const std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> &
+				const xml_attribute_map_type &
 						time_position_xml_attributes_);
 
 		// This constructor should not be public, because we don't want to allow
@@ -217,8 +207,7 @@ namespace GPlatesPropertyValues
 	private:
 
 		GeoTimeInstant d_time_position;
-		std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue>
-				d_time_position_xml_attributes;
+		xml_attribute_map_type d_time_position_xml_attributes;
 
 		// This operator should never be defined, because we don't want/need to allow
 		// copy-assignment:  All copying should use the virtual copy-constructor 'clone'

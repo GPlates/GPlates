@@ -36,20 +36,26 @@ namespace GPlatesGlobal
 	 * Should be thrown when a function or call path not YET been
 	 * implemented is called.
 	 */
-	class NotYetImplementedException : public Exception
+	class NotYetImplementedException :
+			public Exception
 	{
-		public:
-			NotYetImplementedException(
-					const GPlatesUtils::CallStack::Trace &exception_source) :
-				Exception(exception_source)
-			{  }
+	public:
 
-		protected:
-			virtual const char *
-			exception_name() const {
+		NotYetImplementedException(
+				const GPlatesUtils::CallStack::Trace &exception_source) :
+			Exception(exception_source)
+		{  }
 
-				return "NotYetImplementedException";
-			}
+		~NotYetImplementedException() throw() { }
+
+	protected:
+
+		virtual
+		const char *
+		exception_name() const
+		{
+			return "NotYetImplementedException";
+		}
 	};
 }
 

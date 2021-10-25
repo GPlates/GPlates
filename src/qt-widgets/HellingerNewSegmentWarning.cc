@@ -1,10 +1,10 @@
 /* $Id: HellingerNewSegmentError.cc 161 2012-01-30 15:42:19Z juraj.cirbus $ */
 
 /**
- * \file 
+ * \file
  * $Revision: 161 $
- * $Date: 2012-01-30 16:42:19 +0100 (Mon, 30 Jan 2012) $ 
- * 
+ * $Date: 2012-01-30 16:42:19 +0100 (Mon, 30 Jan 2012) $
+ *
  * Copyright (C) 2012, 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -25,18 +25,15 @@
 
 #include <QButtonGroup>
 #include <QDebug>
-#include <QFileDialog>
 #include <QLabel>
-#include <QLocale>
 #include <QRadioButton>
-#include <QTextStream>
 
 #include "HellingerNewSegmentWarning.h"
 #include "HellingerNewSegmentWarningUi.h"
 #include "QtWidgetUtils.h"
 
 GPlatesQtWidgets::HellingerNewSegmentWarning::HellingerNewSegmentWarning(QWidget *parent_):
-    QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
+	QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
 	d_type_error_new_segment(0)
 {
 	setupUi(this);
@@ -52,7 +49,6 @@ GPlatesQtWidgets::HellingerNewSegmentWarning::HellingerNewSegmentWarning(QWidget
 	QObject::connect(button_cancel, SIGNAL(clicked()), this, SLOT(handle_cancel()));
 	QObject::connect(&d_radio_button_group, SIGNAL(buttonClicked(QAbstractButton*)),this,SLOT(handle_radio_button_clicked()));
 
-	button_ok->setEnabled(false);
 }
 
 
@@ -60,18 +56,17 @@ void
 GPlatesQtWidgets::HellingerNewSegmentWarning::handle_ok()
 {
 	if (radio_add->isChecked())
-    {
+	{
 		d_type_error_new_segment = ACTION_ADD_TO_EXISTING_SEGMENT;
-    }
+	}
 	else if (radio_replace->isChecked())
-    {
+	{
 		d_type_error_new_segment = ACTION_REPLACE_SEGMENT;
-    }
+	}
 	else if (radio_insert->isChecked())
-    {
+	{
 		d_type_error_new_segment = ACTION_INSERT_NEW_SEGMENT;
-    }
-
+	}
 }
 
 int
@@ -85,9 +80,8 @@ GPlatesQtWidgets::HellingerNewSegmentWarning::initialise(
 		int segment_number)
 {
 	radio_add->setChecked(false);
-	radio_insert->setChecked(false);
+	radio_insert->setChecked(true);
 	radio_replace->setChecked(false);
-	button_ok->setEnabled(false);
 
 
 	QString warning_text = QObject::tr("There already exists a segment with number %1.").arg(segment_number);

@@ -41,8 +41,6 @@
 
 #include "maths/GeometryOnSphere.h"
 
-#include "feature-visitors/GeometryTypeFinder.h"
-
 
 class QDialogButtonBox;
 class QFile;

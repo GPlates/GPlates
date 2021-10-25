@@ -99,6 +99,18 @@ GPlatesGui::VisualLayersProxy::get_visual_layer(
 	return d_visual_layers.get_visual_layer(layer);
 }
 
+void
+GPlatesGui::VisualLayersProxy::show_all()
+{
+	d_visual_layers.show_all();
+}
+
+void
+GPlatesGui::VisualLayersProxy::hide_all()
+{
+	d_visual_layers.hide_all();
+}
+
 
 void
 GPlatesGui::VisualLayersProxy::handle_layer_order_changed(

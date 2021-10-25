@@ -34,6 +34,9 @@
 
 #include "Colour.h"
 
+#include "scribe/Scribe.h"
+
+
 // Undefine the min and max macros as they can interfere with the min and
 // max functions in std::numeric_limits<T>, on Visual Studio.
 #if defined(_MSC_VER)
@@ -176,6 +179,32 @@ GPlatesGui::convert_rgba8_to_argb32(
 }
 
 
+GPlatesGui::rgba8_t
+GPlatesGui::pre_multiply_alpha(
+		rgba8_t rgba8_color)
+{
+	const unsigned int alpha = rgba8_color.alpha;
+
+	unsigned int red = rgba8_color.red;
+	unsigned int green = rgba8_color.green;
+	unsigned int blue = rgba8_color.blue;
+
+	// Avoid using floating-point arithmetic, and especially float-to-integer conversion - it's much faster.
+	// Also avoid integer division by 255 (division is also slow) by using ((x+1)*257)>>16
+	// (see http://research.swtch.com/divmult).
+	// So instead of '(rgb * alpha) / 255' we have '(((rgb * alpha) + 1) * 257) >> 16'
+	red = (((red * alpha) + 1) * 257) >> 16;
+	green = (((green * alpha) + 1) * 257) >> 16;
+	blue = (((blue * alpha) + 1) * 257) >> 16;
+
+	return rgba8_t(
+			static_cast<boost::uint8_t>(red),
+			static_cast<boost::uint8_t>(green),
+			static_cast<boost::uint8_t>(blue),
+			rgba8_color.alpha);
+}
+
+
 GPlatesGui::Colour::Colour(
 		const GLfloat &red_,
 		const GLfloat &green_,
@@ -286,6 +315,18 @@ GPlatesGui::Colour::modulate(
 
 
 GPlatesGui::Colour
+GPlatesGui::Colour::pre_multiply_alpha(
+		const Colour &colour)
+{
+	return GPlatesGui::Colour(
+			colour.red() * colour.alpha(),
+			colour.green() * colour.alpha(),
+			colour.blue() * colour.alpha(),
+			colour.alpha());
+}
+
+
+GPlatesGui::Colour
 GPlatesGui::Colour::from_cmyk(
 		const CMYKColour &cmyk)
 {
@@ -359,8 +400,10 @@ GPlatesGui::Colour::to_hsv(
 
 namespace
 {
-	static const GLfloat FLOAT_TO_UINT8 = static_cast<GLfloat>(std::numeric_limits<boost::uint8_t>::max());
-	static const boost::uint8_t UINT8_MAX_VALUE = std::numeric_limits<boost::uint8_t>::max();
+	// The parentheses around min/max are to prevent the windows min/max macros
+	// from stuffing numeric_limits' min/max.
+	static const GLfloat FLOAT_TO_UINT8 = static_cast<GLfloat>((std::numeric_limits<boost::uint8_t>::max)());
+	static const boost::uint8_t UINT8_MAX_VALUE = (std::numeric_limits<boost::uint8_t>::max)();
 
 	inline
 	boost::uint8_t
@@ -426,3 +469,17 @@ GPlatesGui::Colour::to_qrgb(
 	return qcolor.rgba();
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesGui::Colour::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// Transcribe native array (of floats).
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_rgba, "rgba"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

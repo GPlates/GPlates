@@ -50,13 +50,6 @@
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 
-#include "scribe/Transcribe.h"
-
-
-namespace GPlatesModel
-{
-	class Gpgim;
-}
 
 namespace GPlatesFileIO
 {
@@ -100,8 +93,7 @@ namespace GPlatesFileIO
 		explicit
 		GMTFormatWriter(
 				File::Reference &file_ref,
-				const boost::shared_ptr<const FeatureCollectionFileFormat::GMTConfiguration> &default_gmt_file_configuration,
-				const GPlatesModel::Gpgim &gpgim);
+				const boost::shared_ptr<const FeatureCollectionFileFormat::GMTConfiguration> &default_gmt_file_configuration);
 
 		virtual
 		~GMTFormatWriter();
@@ -198,14 +190,6 @@ namespace GPlatesFileIO
 		FeatureAccumulator d_feature_accumulator;
 		GMTHeaderPrinter d_header_printer;
 	};
-
-
-	//! Transcribe header format enum.
-	GPlatesScribe::TranscribeResult
-	transcribe(
-			GPlatesScribe::Scribe &scribe,
-			GMTFormatWriter::HeaderFormat &header_format,
-			bool transcribed_construct_data);
 }
 
 #endif // GPLATES_FILEIO_GMTFORMATWRITER_H

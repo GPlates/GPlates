@@ -34,7 +34,7 @@ const GPlatesPropertyValues::GpmlRasterBandNames::non_null_ptr_type
 GPlatesPropertyValues::GpmlRasterBandNames::create(
 		const band_names_list_type &band_names_)
 {
-	return new GpmlRasterBandNames(band_names_);
+	return non_null_ptr_type(new GpmlRasterBandNames(band_names_));
 }
 
 
@@ -44,4 +44,3 @@ GPlatesPropertyValues::GpmlRasterBandNames::print_to(
 {
 	return os << "GpmlRasterBandNames";
 }
-

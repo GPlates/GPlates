@@ -600,22 +600,6 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupBox_10">
-     <property name="title">
-      <string>Step 4: Provide comment</string>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout">
-      <item>
-       <widget class="QLineEdit" name="line_comment">
-        <property name="text">
-         <string>Calculated interactively by GPlates</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item>
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>

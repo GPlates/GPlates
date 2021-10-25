@@ -131,6 +131,72 @@ namespace
 
 
 	/**
+	 * Gets the number of points in a derived @a GeometryOnSphere.
+	 */
+	class GetNumGeometryOnSpherePoints :
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+
+		explicit
+		GetNumGeometryOnSpherePoints(
+				bool exterior_points_only) :
+			d_exterior_points_only(exterior_points_only),
+			d_num_geometry_points(0)
+		{  }
+
+
+		unsigned int
+		get_num_geometry_points() const
+		{
+			return d_num_geometry_points;
+		}
+
+
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		{
+			d_num_geometry_points = 1;
+		}
+
+
+		virtual
+		void
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{
+			d_num_geometry_points = multi_point_on_sphere->number_of_points();
+		}
+
+
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			d_num_geometry_points = d_exterior_points_only
+					? polygon_on_sphere->number_of_vertices_in_exterior_ring()
+					: polygon_on_sphere->number_of_vertices_in_all_rings();
+		}
+
+
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			d_num_geometry_points = polyline_on_sphere->number_of_vertices();
+		}
+
+	private:
+		bool d_exterior_points_only;
+		unsigned int d_num_geometry_points;
+	};
+
+
+	/**
 	 * Retrieves points in a derived @a GeometryOnSphere.
 	 *
 	 * When a @a GeometryOnSphere is visited its points are appended to the
@@ -140,11 +206,14 @@ namespace
 			public GPlatesMaths::ConstGeometryOnSphereVisitor
 	{
 	public:
+
 		GetGeometryOnSpherePoints(
 				std::vector<GPlatesMaths::PointOnSphere> &points,
-				bool reverse_points) :
+				bool reverse_points,
+				bool exterior_points_only) :
 			d_point_seq(points),
 			d_reverse_points(reverse_points),
+			d_exterior_points_only(exterior_points_only),
 			d_geometry_type(GPlatesMaths::GeometryType::NONE)
 		{  }
 
@@ -202,23 +271,54 @@ namespace
 			d_geometry_type = GPlatesMaths::GeometryType::POLYGON;
 
 			// Avoid excessive re-allocations when the number of points is large.
-			d_point_seq.reserve(polygon_on_sphere->number_of_vertices());
+			d_point_seq.reserve(d_exterior_points_only
+					? polygon_on_sphere->number_of_vertices_in_exterior_ring()
+					: polygon_on_sphere->number_of_vertices_in_all_rings());
 
 			if (d_reverse_points)
 			{
+				if (!d_exterior_points_only)
+				{
+					const unsigned int num_interior_rings = polygon_on_sphere->number_of_interior_rings();
+					for (unsigned int interior_ring_index = 0;
+						interior_ring_index < num_interior_rings;
+						++interior_ring_index)
+					{
+						// Start with last interior ring and progress to first interior ring.
+						// And reverse the points in each ring.
+						std::reverse_copy(
+								polygon_on_sphere->interior_ring_vertex_begin(num_interior_rings - interior_ring_index - 1),
+								polygon_on_sphere->interior_ring_vertex_end(num_interior_rings - interior_ring_index - 1),
+								std::back_inserter(d_point_seq));
+					}
+				}
+
 				std::reverse_copy(
-						polygon_on_sphere->vertex_begin(),
-						polygon_on_sphere->vertex_end(),
+						polygon_on_sphere->exterior_ring_vertex_begin(),
+						polygon_on_sphere->exterior_ring_vertex_end(),
 						std::back_inserter(d_point_seq));
 			}
 			else
 			{
 				std::copy(
-						polygon_on_sphere->vertex_begin(),
-						polygon_on_sphere->vertex_end(),
+						polygon_on_sphere->exterior_ring_vertex_begin(),
+						polygon_on_sphere->exterior_ring_vertex_end(),
 						std::back_inserter(d_point_seq));
-			}
 
+				if (!d_exterior_points_only)
+				{
+					const unsigned int num_interior_rings = polygon_on_sphere->number_of_interior_rings();
+					for (unsigned int interior_ring_index = 0;
+						interior_ring_index < num_interior_rings;
+						++interior_ring_index)
+					{
+						std::copy(
+								polygon_on_sphere->interior_ring_vertex_begin(interior_ring_index),
+								polygon_on_sphere->interior_ring_vertex_end(interior_ring_index),
+								std::back_inserter(d_point_seq));
+					}
+				}
+			}
 		}
 
 
@@ -254,6 +354,9 @@ namespace
 
 		//! Whether to reverse the visiting geometry points before appending.
 		bool d_reverse_points;
+
+		//! Whether to only consider exterior ring points in polygons.
+		bool d_exterior_points_only;
 
 		GPlatesMaths::GeometryType::Value d_geometry_type;
 	};
@@ -335,13 +438,13 @@ namespace
 		{
 			if (d_reverse_points)
 			{
-				d_start_point = *--polygon_on_sphere->vertex_end();
-				d_end_point = *polygon_on_sphere->vertex_begin();
+				d_start_point = *--polygon_on_sphere->exterior_ring_vertex_end();
+				d_end_point = *polygon_on_sphere->exterior_ring_vertex_begin();
 			}
 			else
 			{
-				d_start_point = *polygon_on_sphere->vertex_begin();
-				d_end_point = *--polygon_on_sphere->vertex_end();
+				d_start_point = *polygon_on_sphere->exterior_ring_vertex_begin();
+				d_end_point = *--polygon_on_sphere->exterior_ring_vertex_end();
 			}
 		}
 
@@ -424,6 +527,13 @@ namespace
 	{
 	public:
 
+		explicit
+		ConvertGeometryToMultiPoint(
+				bool include_polygon_interior_ring_points) :
+			d_include_polygon_interior_ring_points(include_polygon_interior_ring_points)
+		{  }
+
+
 		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
 		get_multi_point() const
 		{
@@ -464,9 +574,40 @@ namespace
 		visit_polygon_on_sphere(
 				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 		{
-			d_multi_point = GPlatesMaths::MultiPointOnSphere::create_on_heap(
-					polygon_on_sphere->vertex_begin(),
-					polygon_on_sphere->vertex_end());
+			if (d_include_polygon_interior_ring_points &&
+				polygon_on_sphere->number_of_interior_rings() > 0)
+			{
+				// Copy points from all rings into one sequence.
+				// We could have used boost::join, but it's not supported in boost version 1.34.
+				std::vector<GPlatesMaths::PointOnSphere> all_rings_points;
+				all_rings_points.reserve(polygon_on_sphere->number_of_vertices_in_all_rings());
+
+				all_rings_points.insert(
+						all_rings_points.end(),
+						polygon_on_sphere->exterior_ring_vertex_begin(),
+						polygon_on_sphere->exterior_ring_vertex_end());
+
+				for (unsigned int interior_ring_index = 0;
+					interior_ring_index < polygon_on_sphere->number_of_interior_rings();
+					++interior_ring_index)
+				{
+					all_rings_points.insert(
+							all_rings_points.end(),
+							polygon_on_sphere->interior_ring_vertex_begin(interior_ring_index),
+							polygon_on_sphere->interior_ring_vertex_end(interior_ring_index));
+				}
+
+				// Create multipoint from single sequence containing points from all rings.
+				d_multi_point = GPlatesMaths::MultiPointOnSphere::create_on_heap(
+						all_rings_points.begin(),
+						all_rings_points.end());
+			}
+			else
+			{
+				d_multi_point = GPlatesMaths::MultiPointOnSphere::create_on_heap(
+						polygon_on_sphere->exterior_ring_vertex_begin(),
+						polygon_on_sphere->exterior_ring_vertex_end());
+			}
 		}
 
 		virtual
@@ -480,7 +621,83 @@ namespace
 		}
 
 	private:
+		bool d_include_polygon_interior_ring_points;
 		boost::optional<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> d_multi_point;
+	};
+
+
+	/**
+	 * Uses the points in a derived @a GeometryOnSphere object to create a polyline.
+	 */
+	class ConvertGeometryToPolyline :
+			public GPlatesMaths::ConstGeometryOnSphereVisitor
+	{
+	public:
+
+		explicit
+		ConvertGeometryToPolyline(
+				bool exclude_polygons_with_interior_rings) :
+			d_exclude_polygons_with_interior_rings(exclude_polygons_with_interior_rings)
+		{  }
+
+
+		const boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &
+		get_polyline() const
+		{
+			return d_polyline;
+		}
+
+
+		virtual
+		void
+		visit_point_on_sphere(
+				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		{
+			// Cannot form a polyline from a point.
+		}
+
+		virtual
+		void
+		visit_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
+		{
+			if (multi_point_on_sphere->number_of_points() >= 2)
+			{
+				d_polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(
+						multi_point_on_sphere->begin(),
+						multi_point_on_sphere->end());
+			}
+		}
+
+		virtual
+		void
+		visit_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+		{
+			// If the polygon has interior rings and we've been asked to exclude them then return early.
+			if (d_exclude_polygons_with_interior_rings &&
+				polygon_on_sphere->number_of_interior_rings() > 0)
+			{
+				return;
+			}
+
+			// A polygon has at least three points - enough for a polyline.
+			d_polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(
+					polygon_on_sphere->exterior_ring_vertex_begin(),
+					polygon_on_sphere->exterior_ring_vertex_end());
+		}
+
+		virtual
+		void
+		visit_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+		{
+			d_polyline = polyline_on_sphere;
+		}
+
+	private:
+		bool d_exclude_polygons_with_interior_rings;
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> d_polyline;
 	};
 
 
@@ -567,6 +784,19 @@ namespace
 		}
 
 		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+		get_geometry_from_property(
+				const GPlatesModel::TopLevelProperty::non_null_ptr_type &property,
+				const double &reconstruction_time)
+		{
+			d_reconstruction_time = GPlatesPropertyValues::GeoTimeInstant(reconstruction_time);
+			d_geometry = boost::none;
+
+			property->accept_visitor(*this);
+
+			return d_geometry;
+		}
+
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 		get_geometry_from_property_value(
 				const GPlatesModel::PropertyValue &property_value,
 				const double &reconstruction_time)
@@ -648,7 +878,7 @@ namespace
 		visit_gml_polygon(
 				const gml_polygon_type &gml_polygon)
 		{
-			d_geometry = gml_polygon.exterior();
+			d_geometry = gml_polygon.polygon();
 		}
 
 
@@ -664,7 +894,7 @@ namespace
 			public GPlatesMaths::ConstGeometryOnSphereVisitor
 	{
 	public:
-		boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
+		GPlatesModel::PropertyValue::non_null_ptr_type
 		create_geometry_property(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry)
 		{
@@ -672,7 +902,12 @@ namespace
 
 			geometry->accept_visitor(*this);
 
-			return d_geometry_property;
+			// We visit all the GeometryOnSphere derived types so we should have a geometry property.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					d_geometry_property,
+					GPLATES_ASSERTION_SOURCE);
+
+			return d_geometry_property.get();
 		}
 
 	protected:
@@ -798,24 +1033,69 @@ GPlatesAppLogic::GeometryUtils::get_polygon_on_sphere(
 }
 
 
+unsigned int
+GPlatesAppLogic::GeometryUtils::get_num_geometry_points(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
+{
+	GetNumGeometryOnSpherePoints get_num_geometry_on_sphere_points(false/*exterior_points_only*/);
+
+	geometry_on_sphere.accept_visitor(get_num_geometry_on_sphere_points);
+
+	return get_num_geometry_on_sphere_points.get_num_geometry_points();
+}
+
+
+unsigned int
+GPlatesAppLogic::GeometryUtils::get_num_geometry_exterior_points(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
+{
+	GetNumGeometryOnSpherePoints get_num_geometry_on_sphere_points(true/*exterior_points_only*/);
+
+	geometry_on_sphere.accept_visitor(get_num_geometry_on_sphere_points);
+
+	return get_num_geometry_on_sphere_points.get_num_geometry_points();
+}
+
+
 GPlatesMaths::GeometryType::Value
 GPlatesAppLogic::GeometryUtils::get_geometry_points(
 		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
 		std::vector<GPlatesMaths::PointOnSphere> &points,
 		bool reverse_points)
 {
-	GetGeometryOnSpherePoints get_geometry_on_sphere_points(points, reverse_points);
+	GetGeometryOnSpherePoints get_geometry_on_sphere_points(
+			points,
+			reverse_points,
+			false/*exterior_points_only*/);
 
 	geometry_on_sphere.accept_visitor(get_geometry_on_sphere_points);
 
 	return get_geometry_on_sphere_points.get_geometry_type();
 }
 
+
+GPlatesMaths::GeometryType::Value
+GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
+		std::vector<GPlatesMaths::PointOnSphere> &points,
+		bool reverse_points)
+{
+	GetGeometryOnSpherePoints get_geometry_on_sphere_points(
+			points,
+			reverse_points,
+			true/*exterior_points_only*/);
+
+	geometry_on_sphere.accept_visitor(get_geometry_on_sphere_points);
+
+	return get_geometry_on_sphere_points.get_geometry_type();
+}
+
+
 std::pair<
 GPlatesMaths::PointOnSphere/*start point*/,
 GPlatesMaths::PointOnSphere/*end point*/
 >
-GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
+GPlatesAppLogic::GeometryUtils::get_geometry_exterior_end_points(
 		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
 		bool reverse_points)
 {
@@ -840,13 +1120,58 @@ GPlatesAppLogic::GeometryUtils::get_geometry_bounding_small_circle(
 
 GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
 GPlatesAppLogic::GeometryUtils::convert_geometry_to_multi_point(
-		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
+		bool include_polygon_interior_ring_points)
 {
-	ConvertGeometryToMultiPoint visitor;
+	ConvertGeometryToMultiPoint visitor(include_polygon_interior_ring_points);
 
 	geometry_on_sphere.accept_visitor(visitor);
 
 	return visitor.get_multi_point();
+}
+
+
+boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
+GPlatesAppLogic::GeometryUtils::convert_geometry_to_polyline(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
+		bool exclude_polygons_with_interior_rings)
+{
+	ConvertGeometryToPolyline visitor(exclude_polygons_with_interior_rings);
+
+	geometry_on_sphere.accept_visitor(visitor);
+
+	return visitor.get_polyline();
+}
+
+
+GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::GeometryUtils::force_convert_geometry_to_polyline(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
+{
+	boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> polyline_on_sphere =
+			convert_geometry_to_polyline(
+					geometry_on_sphere,
+					false/*exclude_polygons_with_interior_rings*/);
+	if (polyline_on_sphere)
+	{
+		return polyline_on_sphere.get();
+	}
+
+	// There were less than two points.
+	// 
+	// Retrieve the point.
+	std::vector<GPlatesMaths::PointOnSphere> geometry_points;
+	get_geometry_exterior_points(geometry_on_sphere, geometry_points);
+
+	// There should be a single point.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			!geometry_points.empty(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Duplicate the last point so that we have two points.
+	geometry_points.push_back(geometry_points.back());
+
+	return GPlatesMaths::PolylineOnSphere::create_on_heap(geometry_points);
 }
 
 
@@ -863,36 +1188,151 @@ GPlatesAppLogic::GeometryUtils::convert_geometry_to_polygon(
 
 
 GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::GeometryUtils::force_convert_geometry_to_polygon(
+		const GPlatesMaths::GeometryOnSphere &geometry_on_sphere)
+{
+	boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon_on_sphere =
+			convert_geometry_to_polygon(geometry_on_sphere);
+	if (polygon_on_sphere)
+	{
+		return polygon_on_sphere.get();
+	}
+
+	// There were less than three points.
+	// 
+	// Retrieve the points.
+	std::vector<GPlatesMaths::PointOnSphere> geometry_points;
+	get_geometry_exterior_points(geometry_on_sphere, geometry_points);
+
+	// There should be one or two points.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			!geometry_points.empty(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// Duplicate the last point until we have three points.
+	while (geometry_points.size() < 3)
+	{
+		geometry_points.push_back(geometry_points.back());
+	}
+
+	return GPlatesMaths::PolygonOnSphere::create_on_heap(geometry_points);
+}
+
+
+GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
 GPlatesAppLogic::GeometryUtils::convert_polygon_to_oriented_polygon(
 		const GPlatesMaths::PolygonOnSphere &polygon_on_sphere,
-		GPlatesMaths::PolygonOrientation::Orientation polygon_orientation)
+		GPlatesMaths::PolygonOrientation::Orientation polygon_orientation,
+		bool ensure_interior_ring_orientation_opposite_to_exterior_ring)
 {
-	// If the polygon's orientation matches then just return the polygon.
-	if (polygon_on_sphere.get_orientation() == polygon_orientation)
+	const bool reverse_exterior_ring_orientation = (polygon_on_sphere.get_orientation() != polygon_orientation);
+
+	// Handle common case of no interior rings first.
+	const unsigned int num_interior_rings = polygon_on_sphere.number_of_interior_rings();
+	if (num_interior_rings == 0)
 	{
+		if (reverse_exterior_ring_orientation)
+		{
+			// Return a reversed version.
+			return GPlatesMaths::PolygonOnSphere::create_on_heap(
+					std::reverse_iterator<GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator>(
+							polygon_on_sphere.exterior_ring_vertex_end()),
+					std::reverse_iterator<GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator>(
+							polygon_on_sphere.exterior_ring_vertex_begin()));
+		}
+
+		// Return original polygon.
 		return &polygon_on_sphere;
 	}
 
-	// Return a reversed version.
+	// If the polygon's orientation matches and the caller doesn't care about the interior ring
+	// orientations then just return the polygon.
+	if (!reverse_exterior_ring_orientation &&
+		!ensure_interior_ring_orientation_opposite_to_exterior_ring)
+	{
+		// Return original polygon.
+		return &polygon_on_sphere;
+	}
+
+	std::vector< std::vector<GPlatesMaths::PointOnSphere> > interior_rings(num_interior_rings);
+
+	if (ensure_interior_ring_orientation_opposite_to_exterior_ring)
+	{
+		const GPlatesMaths::PolygonOrientation::Orientation exterior_ring_orientation =
+				GPlatesMaths::PolygonOrientation::calculate_polygon_exterior_ring_orientation(polygon_on_sphere);
+
+		for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+		{
+			const GPlatesMaths::PolygonOrientation::Orientation interior_ring_orientation =
+					GPlatesMaths::PolygonOrientation::calculate_polygon_interior_ring_orientation(
+							polygon_on_sphere,
+							interior_ring_index);
+
+			// Reverse the interior ring points if the interior ring orientation matches the exterior ring.
+			if (interior_ring_orientation == exterior_ring_orientation)
+			{
+				interior_rings[interior_ring_index].insert(
+						interior_rings[interior_ring_index].end(),
+						std::reverse_iterator<GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator>(
+								polygon_on_sphere.interior_ring_vertex_end(interior_ring_index)),
+						std::reverse_iterator<GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator>(
+								polygon_on_sphere.interior_ring_vertex_begin(interior_ring_index)));
+			}
+			else
+			{
+				interior_rings[interior_ring_index].insert(
+						interior_rings[interior_ring_index].end(),
+						polygon_on_sphere.interior_ring_vertex_begin(interior_ring_index),
+						polygon_on_sphere.interior_ring_vertex_end(interior_ring_index));
+			}
+		}
+	}
+	else
+	{
+		for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+		{
+			interior_rings[interior_ring_index].insert(
+					interior_rings[interior_ring_index].end(),
+					polygon_on_sphere.interior_ring_vertex_begin(interior_ring_index),
+					polygon_on_sphere.interior_ring_vertex_end(interior_ring_index));
+		}
+	}
+
+	if (reverse_exterior_ring_orientation)
+	{
+		// Return a reversed version of exterior ring.
+		return GPlatesMaths::PolygonOnSphere::create_on_heap(
+				std::reverse_iterator<GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator>(
+						polygon_on_sphere.exterior_ring_vertex_end()),
+				std::reverse_iterator<GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator>(
+						polygon_on_sphere.exterior_ring_vertex_begin()),
+				interior_rings.begin(),
+				interior_rings.end());
+	}
+
 	return GPlatesMaths::PolygonOnSphere::create_on_heap(
-			std::reverse_iterator<GPlatesMaths::PolygonOnSphere::vertex_const_iterator>(
-					polygon_on_sphere.vertex_end()),
-			std::reverse_iterator<GPlatesMaths::PolygonOnSphere::vertex_const_iterator>(
-					polygon_on_sphere.vertex_begin()));
+			polygon_on_sphere.exterior_ring_vertex_end(),
+			polygon_on_sphere.exterior_ring_vertex_begin(),
+			interior_rings.begin(),
+			interior_rings.end());
 }
 
 
 GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 GPlatesAppLogic::GeometryUtils::convert_geometry_to_oriented_geometry(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-		GPlatesMaths::PolygonOrientation::Orientation polygon_orientation)
+		GPlatesMaths::PolygonOrientation::Orientation polygon_orientation,
+		bool ensure_interior_ring_orientation_opposite_to_exterior_ring)
 {
 	// See if geometry is a polygon.
 	boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon =
 			get_polygon_on_sphere(*geometry);
 	if (polygon)
 	{
-		return convert_polygon_to_oriented_polygon(*polygon.get(), polygon_orientation);
+		return convert_polygon_to_oriented_polygon(
+				*polygon.get(),
+				polygon_orientation,
+				ensure_interior_ring_orientation_opposite_to_exterior_ring);
 	}
 
 	return geometry;
@@ -910,6 +1350,16 @@ GPlatesAppLogic::GeometryUtils::get_geometry_from_property(
 
 
 boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+GPlatesAppLogic::GeometryUtils::get_geometry_from_property(
+		const GPlatesModel::TopLevelProperty::non_null_ptr_type &property,
+		const double &reconstruction_time)
+{
+	GetGeometryFromPropertyVisitor visitor;
+	return visitor.get_geometry_from_property(property, reconstruction_time);
+}
+
+
+boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 GPlatesAppLogic::GeometryUtils::get_geometry_from_property_value(
 		const GPlatesModel::PropertyValue &property_value,
 		const double &reconstruction_time)
@@ -919,7 +1369,7 @@ GPlatesAppLogic::GeometryUtils::get_geometry_from_property_value(
 }
 
 
-boost::optional<GPlatesModel::PropertyValue::non_null_ptr_type>
+GPlatesModel::PropertyValue::non_null_ptr_type
 GPlatesAppLogic::GeometryUtils::create_geometry_property_value(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry)
 {
@@ -971,7 +1421,7 @@ GPlatesAppLogic::GeometryUtils::remove_geometry_properties_from_feature(
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 {
 	// Merge model events across this scope to avoid excessive number of model callbacks.
-	GPlatesModel::NotificationGuard model_notification_guard(feature_ref->model_ptr());
+	GPlatesModel::NotificationGuard model_notification_guard(*feature_ref->model_ptr());
 
 	// Iterate over the feature properties of the feature.
 	GPlatesModel::FeatureHandle::iterator feature_properties_iter =

@@ -36,4 +36,3 @@ GPlatesPropertyValues::GpmlFeatureReference::print_to(
 {
 	return os << d_feature.get();
 }
-

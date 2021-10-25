@@ -39,10 +39,8 @@ namespace GPlatesUtils
 			DATA_MINING = 0,
 			PYTHON,
 			SYMBOLOGY,
-			HELLINGER,
-			DEFORMATION,
-			SCALAR_FIELD_IMPORT,
-			NUM_COMPONENTS
+			HELLINGER_THREE_PLATE,
+			COMP_NUM
 		};
 
 	public:
@@ -70,28 +68,12 @@ namespace GPlatesUtils
 				return Component(ComponentManager::SYMBOLOGY);
 			}
 
-
 			static
 			Component
-			hellinger()
+			hellinger_three_plate()
 			{
-				return Component(ComponentManager::HELLINGER);
+				return Component(ComponentManager::HELLINGER_THREE_PLATE);
 			}
-
-			static
-			Component
-			deformation()
-			{
-				return Component(ComponentManager::DEFORMATION);
-			}
-
-			static
-			Component
-			scalar_field_import()
-			{
-				return Component(ComponentManager::SCALAR_FIELD_IMPORT);
-			}
-
 
 			operator 
 			ComponentManager::ComponentTypes()
@@ -147,7 +129,7 @@ namespace GPlatesUtils
 		ComponentManager(const ComponentManager&);
 		ComponentManager& operator=(const ComponentManager&);
 		
-                std::bitset<NUM_COMPONENTS> d_switchs;
+		std::bitset<COMP_NUM> d_switchs;
 	};
 
 	

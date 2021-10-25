@@ -34,10 +34,13 @@
 #include <QValidator>
 
 #include "MetadataDialog.h"
-#include "property-values/GpmlMetadata.h"
-#include "property-values/GpmlIrregularSampling.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
+
 #include "model/ModelUtils.h"
+
+#include "property-values/GpmlFiniteRotation.h"
+#include "property-values/GpmlIrregularSampling.h"
+#include "property-values/GpmlMetadata.h"
+
 
 class RejectAllEdit : 
 	public QValidator
@@ -812,7 +815,7 @@ namespace
 
 	std::vector<boost::shared_ptr<Metadata> >
 	convert_mprs_metadata_to_vector(
-			GpmlKeyValueDictionary::non_null_ptr_type dict)
+			GpmlKeyValueDictionary::non_null_ptr_to_const_type dict)
 	{
 		std::vector<boost::shared_ptr<Metadata> > ret;
 		BOOST_FOREACH(const GpmlKeyValueDictionaryElement& ele, dict->elements())
@@ -823,7 +826,7 @@ namespace
 			{
 				QString name = ele.key()->value().get().qstring();
 				ret.push_back(boost::shared_ptr<Metadata>(
-						new PoleMetadata(
+						new Metadata(
 								name, 
 								val->value().get().qstring())));
 			}
@@ -873,11 +876,8 @@ GPlatesQtWidgets::MetadataDialog::set_data(
 			dynamic_cast<const GpmlKeyValueDictionary*>((*p_inline->begin()).get());
 		if(const_dictionary)
 		{
-			GpmlKeyValueDictionary* dictionary = 
-				const_cast<GpmlKeyValueDictionary*>(const_dictionary);
 			std::vector<boost::shared_ptr<Metadata> > data_ =
-				convert_mprs_metadata_to_vector(
-						GpmlKeyValueDictionary::non_null_ptr_type(dictionary));
+				convert_mprs_metadata_to_vector(const_dictionary);
 			d_mprs_data = data_;
 			refresh();
 		}
@@ -915,17 +915,14 @@ GPlatesQtWidgets::MetadataDialog::set_data(
 					dynamic_cast<const GpmlKeyValueDictionary*>((*p_inline->begin()).get());
 				if(const_dictionary)
 				{
-					GpmlKeyValueDictionary* dictionary = 
-						const_cast<GpmlKeyValueDictionary*>(const_dictionary);
-					d_mprs_data = convert_mprs_metadata_to_vector(
-							GpmlKeyValueDictionary::non_null_ptr_type(dictionary));
+					d_mprs_data = convert_mprs_metadata_to_vector(const_dictionary);
 					break;
 				}
 			}
 		}
 	}
 
-	std::vector<FeatureHandle::iterator> iters = ModelUtils::get_top_level_property_ref(
+	std::vector<FeatureHandle::iterator> iters = ModelUtils::get_top_level_properties(
 			PropertyName::create_gpml(QString("totalReconstructionPole")),
 			d_feature_ref);
 	if(iters.size()!=1)
@@ -933,8 +930,8 @@ GPlatesQtWidgets::MetadataDialog::set_data(
 		qWarning() << "There should be always one totalReconstructionPole in the feature.";
 		return;
 	}
-	GPlatesPropertyValues::GpmlTotalReconstructionPole *trs = 
-		get_gpml_total_reconstruction_pole(*ModelUtils::get_property_value(**iters[0]));
+	GPlatesPropertyValues::GpmlFiniteRotation *trs = 
+		get_gpml_finite_rotation(*ModelUtils::get_property_value(**iters[0]));
 	if(trs)
 	{
 		d_pole_data = trs->metadata();
@@ -1052,7 +1049,7 @@ void
 GPlatesQtWidgets::MetadataDialog::save_pole_meta()
 {
 	using namespace GPlatesModel;
-	std::vector<FeatureHandle::iterator> iters = ModelUtils::get_top_level_property_ref(
+	std::vector<FeatureHandle::iterator> iters = ModelUtils::get_top_level_properties(
 			PropertyName::create_gpml(QString("totalReconstructionPole")),
 			d_feature_ref);
 	if(iters.size()!=1)
@@ -1062,8 +1059,8 @@ GPlatesQtWidgets::MetadataDialog::save_pole_meta()
 	}
 	TopLevelProperty::non_null_ptr_type trp_copy = (*iters[0])->deep_clone();
 	
-	GPlatesPropertyValues::GpmlTotalReconstructionPole *gpml_trp = 
-		get_gpml_total_reconstruction_pole(*ModelUtils::get_property_value(*trp_copy));
+	GPlatesPropertyValues::GpmlFiniteRotation *gpml_trp = 
+		get_gpml_finite_rotation(*ModelUtils::get_property_value(*trp_copy));
 	if(!gpml_trp)
 	{
 		qWarning() << "There is no metadata associated with this pole.";
@@ -1078,7 +1075,7 @@ GPlatesQtWidgets::MetadataDialog::save_pole_meta()
 		}
 	}
 	//update model
-	gpml_trp->metadata() = not_empty_data;
+	gpml_trp->set_metadata(not_empty_data);
 	
 	//update grot proxy for grot file.
 	if(d_grot_proxy)
@@ -1098,8 +1095,8 @@ GPlatesQtWidgets::MetadataDialog::save_pole_meta()
 }
 
 
-GPlatesPropertyValues::GpmlTotalReconstructionPole*
-GPlatesQtWidgets::MetadataDialog::get_gpml_total_reconstruction_pole(
+GPlatesPropertyValues::GpmlFiniteRotation *
+GPlatesQtWidgets::MetadataDialog::get_gpml_finite_rotation(
 		GPlatesModel::PropertyValue::non_null_ptr_to_const_type val)
 {
 	using namespace GPlatesPropertyValues;
@@ -1119,15 +1116,15 @@ GPlatesQtWidgets::MetadataDialog::get_gpml_total_reconstruction_pole(
 		end = irreg_sampling->time_samples().end();
 	
 	static const double EPSILON = 1.0e-6; // I have to use a less tight precision because of qt.
-	GpmlTotalReconstructionPole *trs = NULL;
+	GpmlFiniteRotation *trs = NULL;
 	for ( ; iter != end; ++iter) 
 	{
 		if(std::fabs(iter->valid_time()->time_position().value() - time.toDouble()) < EPSILON)
 		{
-			trs = dynamic_cast<GpmlTotalReconstructionPole *>(iter->value().get());
+			trs = dynamic_cast<GpmlFiniteRotation *>(iter->value().get());
 			if(!trs)
 			{
-				qWarning() << "The time sample is not GpmlTotalReconstructionPole type.";
+				qWarning() << "The time sample is not GpmlFiniteRotation type.";
 				return NULL;
 			}
 			GPlatesFileIO::RotationPoleData pole_data(trs->finite_rotation(), 0, 0, time.toDouble());

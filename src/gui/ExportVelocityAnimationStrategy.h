@@ -26,6 +26,7 @@
 #ifndef GPLATES_GUI_EXPORTVELOCITYANIMATIONSTRATEGY_H
 #define GPLATES_GUI_EXPORTVELOCITYANIMATIONSTRATEGY_H
 
+#include <vector>
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
 #include <QString>
@@ -92,10 +93,10 @@ namespace GPlatesGui
 			Configuration(
 					const QString &filename_template_,
 					FileFormat file_format_,
-					const ExportOptionsUtils::ExportVelocitySmoothingOptions &velocity_smoothing_options_) :
+					const ExportOptionsUtils::ExportVelocityCalculationOptions &velocity_calculation_options_) :
 				ConfigurationBase(filename_template_),
 				file_format(file_format_),
-				velocity_smoothing_options(velocity_smoothing_options_)
+				velocity_calculation_options(velocity_calculation_options_)
 			{  }
 
 			virtual
@@ -106,7 +107,7 @@ namespace GPlatesGui
 			}
 
 			FileFormat file_format;
-			ExportOptionsUtils::ExportVelocitySmoothingOptions velocity_smoothing_options;
+			ExportOptionsUtils::ExportVelocityCalculationOptions velocity_calculation_options;
 		};
 
 		//! Typedef for a shared pointer to const @a Configuration.
@@ -126,9 +127,9 @@ namespace GPlatesGui
 			explicit
 			GpmlConfiguration(
 					const QString &filename_template_,
-					const ExportOptionsUtils::ExportVelocitySmoothingOptions &export_velocity_smoothing_options_,
+					const ExportOptionsUtils::ExportVelocityCalculationOptions &export_velocity_calculation_options_,
 					const ExportOptionsUtils::ExportFileOptions &file_options_) :
-				Configuration(filename_template_, GPML, export_velocity_smoothing_options_),
+				Configuration(filename_template_, GPML, export_velocity_calculation_options_),
 				file_options(file_options_)
 			{  }
 
@@ -160,7 +161,7 @@ namespace GPlatesGui
 			explicit
 			GMTConfiguration(
 					const QString &filename_template_,
-					const ExportOptionsUtils::ExportVelocitySmoothingOptions &export_velocity_smoothing_options_,
+					const ExportOptionsUtils::ExportVelocityCalculationOptions &export_velocity_calculation_options_,
 					const ExportOptionsUtils::ExportFileOptions &file_options_,
 					GPlatesFileIO::MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format_,
 					double velocity_scale_,
@@ -169,7 +170,7 @@ namespace GPlatesGui
 					bool include_plate_id_,
 					bool include_domain_point_,
 					bool include_domain_meta_data_) :
-				Configuration(filename_template_, GMT, export_velocity_smoothing_options_),
+				Configuration(filename_template_, GMT, export_velocity_calculation_options_),
 				file_options(file_options_),
 				velocity_vector_format(velocity_vector_format_),
 				velocity_scale(velocity_scale_),
@@ -218,14 +219,10 @@ namespace GPlatesGui
 			explicit
 			TerraTextConfiguration(
 					const QString &filename_template_,
-					const ExportOptionsUtils::ExportVelocitySmoothingOptions &export_velocity_smoothing_options_,
-					const QString &terra_grid_filename_template_,
-					bool is_boundary_smoothing_enabled_ = false,
-					const double &boundary_smoothing_angular_half_extent_degrees_ = 1.0) :
-				Configuration(filename_template_, TERRA_TEXT, export_velocity_smoothing_options_),
-				terra_grid_filename_template(terra_grid_filename_template_),
-				is_boundary_smoothing_enabled(is_boundary_smoothing_enabled_),
-				boundary_smoothing_angular_half_extent_degrees(boundary_smoothing_angular_half_extent_degrees_)
+					const ExportOptionsUtils::ExportVelocityCalculationOptions &export_velocity_calculation_options_,
+					const QString &terra_grid_filename_template_) :
+				Configuration(filename_template_, TERRA_TEXT, export_velocity_calculation_options_),
+				terra_grid_filename_template(terra_grid_filename_template_)
 			{  }
 
 			virtual
@@ -236,8 +233,6 @@ namespace GPlatesGui
 			}
 
 			QString terra_grid_filename_template;
-			bool is_boundary_smoothing_enabled;
-			double boundary_smoothing_angular_half_extent_degrees;
 		};
 
 
@@ -259,12 +254,12 @@ namespace GPlatesGui
 			explicit
 			CitcomsGlobalConfiguration(
 					const QString &filename_template_,
-					const ExportOptionsUtils::ExportVelocitySmoothingOptions &export_velocity_smoothing_options_,
+					const ExportOptionsUtils::ExportVelocityCalculationOptions &export_velocity_calculation_options_,
 					const QString &citcoms_grid_filename_template_,
 					bool include_gmt_export_,
 					double gmt_velocity_scale_,
 					unsigned int gmt_velocity_stride_) :
-				Configuration(filename_template_, CITCOMS_GLOBAL, export_velocity_smoothing_options_),
+				Configuration(filename_template_, CITCOMS_GLOBAL, export_velocity_calculation_options_),
 				citcoms_grid_filename_template(citcoms_grid_filename_template_),
 				include_gmt_export(include_gmt_export_),
 				gmt_velocity_scale(gmt_velocity_scale_),
@@ -343,11 +338,6 @@ namespace GPlatesGui
 		ExportVelocityAnimationStrategy(
 				GPlatesGui::ExportAnimationContext &export_animation_context,
 				const const_configuration_ptr &export_configuration);
-
-		void
-		export_velocity_fields_to_file(
-				const vector_field_seq_type &velocity_fields,
-				QString filename);
 		
 	private:
 		/**

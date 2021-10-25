@@ -138,7 +138,8 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::has_renderable_sub_surface_g
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::cache_handle_type
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint_surface(
 		GPlatesOpenGL::GLRenderer &renderer,
-		const double &viewport_zoom_factor)
+		const double &viewport_zoom_factor,
+		boost::optional<Colour> vector_geometries_override_colour)
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_globe_state_scope(renderer);
@@ -147,7 +148,8 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint_surface(
 	d_paint_params = PaintParams(
 			renderer,
 			viewport_zoom_factor,
-			GlobeRenderedGeometryLayerPainter::PAINT_SURFACE);
+			GlobeRenderedGeometryLayerPainter::PAINT_SURFACE,
+			vector_geometries_override_colour);
 
 	// Draw the layers.
 	d_rendered_geometry_collection.accept_visitor(*this);
@@ -177,6 +179,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint_sub_surface(
 			renderer,
 			viewport_zoom_factor,
 			GlobeRenderedGeometryLayerPainter::PAINT_SUB_SURFACE,
+			boost::none/*vector_geometries_override_colour*/,
 			surface_occlusion_texture,
 			improve_performance_reduce_quality_hint);
 
@@ -222,6 +225,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 			d_visibility_tester,
 			d_colour_scheme,
 			d_paint_params->d_paint_region,
+			d_paint_params->d_vector_geometries_override_colour,
 			d_paint_params->d_surface_occlusion_texture,
 			d_paint_params->d_improve_performance_reduce_quality_hint);
 	rendered_geom_layer_painter.set_scale(d_scale);
@@ -295,11 +299,13 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::PaintParams::PaintParams(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const double &viewport_zoom_factor,
 		GlobeRenderedGeometryLayerPainter::PaintRegionType paint_region,
+		boost::optional<Colour> vector_geometries_override_colour,
 		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture,
 		bool improve_performance_reduce_quality_hint) :
 	d_renderer(&renderer),
 	d_inverse_viewport_zoom_factor(1.0 / viewport_zoom_factor),
 	d_paint_region(paint_region),
+	d_vector_geometries_override_colour(vector_geometries_override_colour),
 	d_surface_occlusion_texture(surface_occlusion_texture),
 	d_improve_performance_reduce_quality_hint(improve_performance_reduce_quality_hint),
 	d_cache_handle(new std::vector<cache_handle_type>()),

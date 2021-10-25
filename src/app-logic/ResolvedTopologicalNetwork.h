@@ -32,7 +32,6 @@
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
 
-#include "AppLogicFwd.h"
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionGeometry.h"
 #include "ResolvedTopologicalGeometrySubSegment.h"
@@ -66,7 +65,7 @@ namespace GPlatesAppLogic
 		//! A convenience typedef for the polygon boundary of this @a ResolvedTopologicalNetwork.
 		typedef GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type boundary_polygon_ptr_type;
 
-		//! Typedef for a sequence of @a ResolvedTopologicalBoundarySubSegment objects.
+		//! Typedef for a sequence of @a ResolvedTopologicalGeometrySubSegment objects.
 		typedef sub_segment_seq_type boundary_sub_segment_seq_type;
 
 		/**

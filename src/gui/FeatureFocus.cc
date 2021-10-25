@@ -31,6 +31,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/GeometryUtils.h"
+#include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructGraph.h"
 #include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionGeometry.h"
@@ -38,6 +39,8 @@
 #include "app-logic/ReconstructionGeometryFinder.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionGeometryVisitor.h"
+#include "app-logic/ResolvedTopologicalGeometry.h"
+#include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/GeometryUtils.h"
 
 #include "feature-visitors/GeometryFinder.h"
@@ -77,6 +80,7 @@ namespace
 
 		void
 		publisher_deactivated(
+				const weak_reference_type &,
 				const deactivated_event_type &)
 		{
 			d_feature_focus.unset_focus();
@@ -106,20 +110,20 @@ namespace
 
 
 		// Derivations of ReconstructedFeatureGeometry default to its implementation...
-
 		virtual
 		void
 		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
 		{
 			std::vector<GPlatesMaths::PointOnSphere> points;
-			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rfg->reconstructed_geometry(), points);
+			GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(*rfg->reconstructed_geometry(), points);
 			if (!points.empty())
 			{
 				d_location = GPlatesMaths::make_lat_lon_point(points.front());
 			}
 		}
 
+		// Derivations of ResolvedTopologicalGeometry default to its implementation...
 		virtual
 		void
 		visit(
@@ -127,7 +131,7 @@ namespace
 		{
 			// We want the first vertex.
 			std::vector<GPlatesMaths::PointOnSphere> points;
-			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rtg->resolved_topology_geometry(), points);
+			GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(*rtg->resolved_topology_geometry(), points);
 
 			if (!points.empty())
 			{
@@ -141,7 +145,7 @@ namespace
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 		{
 			std::vector<GPlatesMaths::PointOnSphere> points;
-			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rtn->boundary_polygon(), points);
+			GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(*rtn->boundary_polygon(), points);
 
 			if (!points.empty())
 			{

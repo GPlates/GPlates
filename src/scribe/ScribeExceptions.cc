@@ -59,7 +59,7 @@ void
 GPlatesScribe::Exceptions::ScribeLibraryError::write_message(
 		std::ostream &os) const
 {
-	os << "Internal error in Scribe library: " << d_message;
+	os << "Internal error in Scribe library (or incorrect scribe usage): " << d_message;
 }
 
 
@@ -168,8 +168,16 @@ GPlatesScribe::Exceptions::AlreadyTranscribedObject::write_message(
 		std::ostream &os) const
 {
 	os << "Incorrect Scribe usage: "
-		<< "Attempted to transcribe an object of type '" << d_object_type_name
-		<< "' that has already been transcribed at the same memory address.";
+		<< "Attempted to transcribe a tracked object of type '" << d_object_type_name;
+
+	if (d_scribe_is_saving)
+	{
+		os << "' that has already been saved at the same memory address.";
+	}
+	else // loading...
+	{
+		os << "' that has already been loaded (at the same object tag location in transcription).";
+	}
 }
 
 
@@ -200,8 +208,9 @@ GPlatesScribe::Exceptions::UntrackingObjectWithReferences::write_message(
 {
 	os << "Incorrect Scribe usage: "
 		<< "An *untracked* object of type '" << d_object_type_name
-		<< "' has transcribed pointers or references referencing it - try either tracking the object "
-		"or avoid transcribing pointers/references to it.";
+		<< "' has transcribed pointers or references referencing it "
+		"(or, if being discarded, has references or *untracked* pointers to it) "
+		"- try either tracking the object or avoid transcribing pointers/references to it.";
 }
 
 
@@ -314,4 +323,15 @@ GPlatesScribe::Exceptions::ExportRegisteredMultipleClassNamesWithSameClassType::
 	os << "Incorrect Scribe usage: "
 		<< "Attempted to export register, for transcribing, two class names '" << d_class_name1
 		<< "' and '" << d_class_name2 << "' using the same class type '" << d_class_type << "'.";
+}
+
+
+void
+GPlatesScribe::Exceptions::UnregisteredQVariantMetaType::write_message(
+		std::ostream &os) const
+{
+	os << "Incorrect Scribe usage: "
+		<< "Attempted to transcribe a QVariant whose stored type '" << d_type_name
+		<< "' was not registered using 'qRegisterMetaType()' and 'qRegisterMetaTypeStreamOperators()' "
+		"(or a type it depends on was not registered).";
 }

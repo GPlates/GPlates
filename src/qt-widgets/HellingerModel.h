@@ -33,15 +33,33 @@
 #include "maths/PointOnSphere.h"
 
 
+const QString DEFAULT_OUTPUT_FILE_EXTENSION(".dat");
+const double INITIAL_AMOEBA_TWO_WAY_RESIDUAL = 1e-10;
+const double INITIAL_AMOEBA_THREE_WAY_RESIDUAL = 0.005;
+
 namespace GPlatesQtWidgets
 {
-
-	enum HellingerPickType
+	enum HellingerFitType
 	{
-		MOVING_PICK_TYPE = 1,
-		FIXED_PICK_TYPE,
-		DISABLED_MOVING_PICK_TYPE = 31,
-		DISABLED_FIXED_PICK_TYPE
+		TWO_PLATE_FIT_TYPE,
+		THREE_PLATE_FIT_TYPE
+	};
+
+	enum HellingerPlateIndex
+	{
+		PLATE_ONE_PICK_TYPE = 1,
+		PLATE_TWO_PICK_TYPE,
+		PLATE_THREE_PICK_TYPE,
+		DISABLED_PLATE_ONE_PICK_TYPE = 31,
+		DISABLED_PLATE_TWO_PICK_TYPE,
+		DISABLED_PLATE_THREE_PICK_TYPE
+	};
+
+	enum HellingerPlatePairType
+	{
+		PLATES_1_2_PAIR_TYPE,
+		PLATES_1_3_PAIR_TYPE,
+		PLATES_2_3_PAIR_TYPE,
 	};
 
 	// NOTE: should the pick structure contain its segment number? Bear in mind that picks can be re-allocated to
@@ -49,11 +67,10 @@ namespace GPlatesQtWidgets
 	// FIXME: the "d_is_enabled" field is not strictly necessary as we encode this already in the
 	// HellingerSegmentType. Having both is a little ugly actually, as we need to update both, and there's always
 	// the potential for them being out of sync.
-	// FIXME: we could of course use a GPlates llp here.
 
 	struct HellingerPick{
 		HellingerPick(
-				const HellingerPickType &type,
+				const HellingerPlateIndex &type,
 				const double &lat,
 				const double &lon,
 				const double &uncertainty,
@@ -64,11 +81,30 @@ namespace GPlatesQtWidgets
 			d_uncertainty(uncertainty),
 			d_is_enabled(enabled){};
 		HellingerPick(){};
-		HellingerPickType d_segment_type;
+		HellingerPlateIndex d_segment_type;
 		double d_lat;
 		double d_lon;
 		double d_uncertainty;
 		bool d_is_enabled;
+	};
+
+	struct HellingerPoleEstimate{
+		HellingerPoleEstimate():
+			d_lat(0.),
+			d_lon(0.),
+			d_angle(5.)
+		{}
+		HellingerPoleEstimate(
+				const double &lat,
+				const double &lon,
+				const double &angle):
+			d_lat(lat),
+			d_lon(lon),
+			d_angle(angle)
+		{}
+		double d_lat;
+		double d_lon;
+		double d_angle;
 	};
 
 	typedef std::multimap<int,HellingerPick> hellinger_model_type;
@@ -84,71 +120,55 @@ namespace GPlatesQtWidgets
 	/**
 	 * @brief The HellingerComFileStructure struct
 	 * This structure mirrors the content of a Hellinger .com file. The Hellinger .com file contains
-	 * a list of input parameters to the hellinger1 FORTRAN code.
+	 * a list of input parameters to the hellinger1 or hellinger3 FORTRAN code.
 	 *
-	 *
-	 * NOTE: The search radius is in RADIANS. (Although the interactive FORTRAN code asks for a
-	 * value in degrees, the input value is then converted from radians to degrees).
-	 *
-	 * The python code behaves as per the fortran code.
-	 *
-	 * It's probably cleaner to use degrees here, but some of the .com files floating around provide
-	 * this value in radians.
-	 *
-	 * So we maintain radians for now.
-	 *
-	 * TODO: 1) indicate somewhere on the interface that it's radians that is expected.
-	 *		 2) sometime, somehow...let the user choose between the two.
-	 *
-	 * TODO: consider if "estimate kappa" and "output graphics" should be ditched / phased out / ignored.
-	 * We should probably just take these two booleans as TRUE and go ahead and calculate stuff. It'll
-	 * save a bit of space in the UI too.
+	 * The "estimate kappa" and "output graphics" fields are read into the com structure, but in effect
+	 * are not used - the python routines always estimate kappa and generate output graphics.
+	 * ("Output graphics" here means the generation of text files containing lat-lon cords of
+	 * for example error ellipses)
 	 */
 	struct HellingerComFileStructure{
-		HellingerComFileStructure(
-				const QString &file,
-				const double &lat,
-				const double &lon,
-				const double &rho,
-				const double &radius,
-				const bool &grid_search,
-				const double &significance,
-				const bool &kappa,
-				const bool &graphics,
-				const QString &file_dat,
-				const QString &file_up,
-				const QString &file_down):
-			d_pick_file(file),
-			d_lat(lat),
-			d_lon(lon),
-			d_rho(rho),
-			d_search_radius(radius),
-			d_perform_grid_search(grid_search),
-			d_significance_level(significance),
-			d_estimate_kappa(kappa),
-			d_generate_output_files(graphics),
-			d_data_filename(file_dat),
-			d_up_filename(file_up),
-			d_down_filename(file_down){};
+
 		HellingerComFileStructure():
-			d_pick_file(QString()),
-			d_lat(0.),
-			d_lon(0.),
-			d_rho(5.)
-		{};
+			d_perform_grid_search(false),
+			d_use_amoeba_iteration_limit(false),
+			d_use_amoeba_tolerance(false),
+			d_amoeba_two_way_tolerance(INITIAL_AMOEBA_TWO_WAY_RESIDUAL),
+			d_amoeba_three_way_tolerance(INITIAL_AMOEBA_THREE_WAY_RESIDUAL),
+			d_estimate_kappa(true),
+			d_generate_output_files(true)
+		{}
 		QString d_pick_file;
-		double d_lat;	// initial estimate
-		double d_lon; // initial estimate
-		double d_rho; // initial estimate
-		double d_search_radius; //km
+		HellingerPoleEstimate d_estimate_12;
+		HellingerPoleEstimate d_estimate_13;
+		double d_search_radius_degrees;
 		bool d_perform_grid_search;
+		unsigned int d_number_of_grid_iterations;
+		bool d_use_amoeba_iteration_limit;
+		unsigned int d_number_amoeba_iterations;
+		bool d_use_amoeba_tolerance;
+		double d_amoeba_two_way_tolerance;
+		double d_amoeba_three_way_tolerance;
 		double d_significance_level;
 		bool d_estimate_kappa;
 		bool d_generate_output_files;
-		QString d_data_filename;
-		QString d_up_filename;
-		QString d_down_filename;
 
+		// NOTE: for three-way fitting results, we have the 3 combinations of
+		// plate-pairs (12,13,23) and for each pair we have both simultaneous and individual
+		// results. And for each of these combinations we have 3 types of output: ellipse,
+		// upper surface and lower surface. That makes 18 files in total. Rather than keep track
+		// of 18 user-provided output filenames,it is simpler to take a file root name
+		// (based on the input pick file name for example, or provided by the user in the UI)
+		// and add suitable extensions to differentiate the various output forms.
+		QString d_error_ellipse_filename_12;
+		QString d_upper_surface_filename_12;
+		QString d_lower_surface_filename_12;
+		QString d_error_ellipse_filename_13;
+		QString d_upper_surface_filename_13;
+		QString d_lower_surface_filename_13;
+		QString d_error_ellipse_filename_23;
+		QString d_upper_surface_filename_23;
+		QString d_lower_surface_filename_23;
 	};
 
 	// The result of the fit.
@@ -180,31 +200,15 @@ namespace GPlatesQtWidgets
 
 	public:
 
-		HellingerModel(
-				const QString &temporary_file_path);
-
-		hellinger_model_type::const_iterator
-		add_pick(
-				const QStringList &HellingerPick);
+		HellingerModel();
 
 		hellinger_model_type::const_iterator
 		add_pick(const HellingerPick &pick,
 				 const unsigned int &segment_number);
 
-		GPlatesMaths::LatLonPoint
-		get_initial_pole_llp();
-
-		double
-		get_initial_pole_angle();
-
 		void
 		add_segment(hellinger_segment_type &picks,
 					const unsigned int &segment_number);
-
-		QStringList
-		get_pick_as_string(
-				const unsigned int &segment,
-				const unsigned int &row) const;
 
 		//		boost::optional<const HellingerPick &> get_pick(
 		//			const unsigned int &index) const;
@@ -224,11 +228,6 @@ namespace GPlatesQtWidgets
 				const unsigned int &segment,
 				const unsigned int &row,
 				bool enabled);
-
-
-		QStringList
-		get_segment_as_string(
-				const unsigned int &segment) const;
 
 		hellinger_segment_type
 		get_segment(
@@ -258,12 +257,22 @@ namespace GPlatesQtWidgets
 		clear_all_picks();
 
 		void
-		set_fit(
-				const QStringList &fields);
+		clear_fit_results();
 
 		void
-		set_fit(
-				const HellingerFitStructure &fields);
+		clear_uncertainty_results();
+
+		void
+		set_fit_12(
+				const HellingerFitStructure &fit_12);
+
+		void
+		set_fit_13(
+				const HellingerFitStructure &fit_12);
+
+		void
+		set_fit_23(
+				const HellingerFitStructure &fit_12);
 
 		void
 		set_com_file_structure(
@@ -279,31 +288,218 @@ namespace GPlatesQtWidgets
 		}
 
 		boost::optional<HellingerFitStructure>
-		get_fit();
+		get_fit_12();
+
+		boost::optional<HellingerFitStructure>
+		get_fit_13();
+
+		boost::optional<HellingerFitStructure>
+		get_fit_23();
+
+		std::vector<GPlatesMaths::LatLonPoint> &
+		error_ellipse_points(
+				const HellingerPlatePairType &type = PLATES_1_2_PAIR_TYPE);
+
+		HellingerPoleEstimate
+		get_initial_guess_12() const;
+
+		HellingerPoleEstimate
+		get_initial_guess_13() const;
 
 		void
-		read_error_ellipse_points();
-
-		const std::vector<GPlatesMaths::LatLonPoint> &
-		get_error_ellipse_points() const;
-
-		// TODO: this seems to be redundant now. Check this.
-		void
-		set_initial_guess(
-				const QStringList &com_list_fields);
+		set_initial_guess_12(
+				const HellingerPoleEstimate &estimate);
 
 		void
-		set_initial_guess(
+		set_initial_guess_13(
+				const HellingerPoleEstimate &estimate);
+
+
+		void
+		set_initial_guess_12(
 				const double &lat,
 				const double &lon,
-				const double &rho,
+				const double &rho);
+
+		void
+		set_initial_guess_13(
+				const double &lat,
+				const double &lon,
+				const double &rho);
+
+		void
+		set_search_radius(
 				const double &radius);
 
+		double
+		get_search_radius() const
+		{
+			return d_active_com_file_struct.d_search_radius_degrees;
+		}
+
+
+
+		void
+		set_confidence_level(const double &conf)
+		{
+			d_active_com_file_struct.d_significance_level = conf;
+		}
+
+		double
+		get_confidence_level() const
+		{
+			return d_active_com_file_struct.d_significance_level;
+		}
+
+		int
+		get_grid_iterations() const
+		{
+			return d_active_com_file_struct.d_number_of_grid_iterations;
+		}
+
+		bool
+		get_grid_search() const
+		{
+			return d_active_com_file_struct.d_perform_grid_search;
+		}
+
+		void
+		set_number_of_amoeba_iterations(
+				const unsigned int &iterations)
+		{
+			d_active_com_file_struct.d_number_amoeba_iterations = iterations;
+		}
+
+		unsigned int
+		get_amoeba_iterations() const
+		{
+			return d_active_com_file_struct.d_number_amoeba_iterations;
+		}
+
+		double
+		get_amoeba_tolerance() const
+		{
+			return (d_fit_type == TWO_PLATE_FIT_TYPE) ?
+						d_active_com_file_struct.d_amoeba_two_way_tolerance :
+						d_active_com_file_struct.d_amoeba_three_way_tolerance;
+		}
+
+		double
+		get_amoeba_two_way_tolerance() const
+		{
+			return d_active_com_file_struct.d_amoeba_two_way_tolerance;
+		}
+
+		double
+		get_amoeba_three_way_tolerance() const
+		{
+			return d_active_com_file_struct.d_amoeba_three_way_tolerance;
+		}
+
+		void
+		set_amoeba_two_way_tolerance(
+				const double &tolerance)
+		{
+			d_active_com_file_struct.d_amoeba_two_way_tolerance = tolerance;
+		}
+
+		void
+		set_amoeba_three_way_tolerance(
+				const double &tolerance)
+		{
+			d_active_com_file_struct.d_amoeba_three_way_tolerance = tolerance;
+		}
+
+		void
+		set_amoeba_tolerance(
+				const double &tolerance)
+		{
+			switch(d_fit_type)
+			{
+			case TWO_PLATE_FIT_TYPE:
+				d_active_com_file_struct.d_amoeba_two_way_tolerance = tolerance;
+				break;
+			case THREE_PLATE_FIT_TYPE:
+				d_active_com_file_struct.d_amoeba_three_way_tolerance = tolerance;
+				break;
+			default:
+				d_active_com_file_struct.d_amoeba_two_way_tolerance = tolerance;
+			}
+		}
+
+		void
+		set_amoeba_tolerance(
+				const double &tolerance,
+				const HellingerFitType &type)
+		{
+			switch(type)
+			{
+			case TWO_PLATE_FIT_TYPE:
+				d_active_com_file_struct.d_amoeba_two_way_tolerance = tolerance;
+				break;
+			case THREE_PLATE_FIT_TYPE:
+				d_active_com_file_struct.d_amoeba_three_way_tolerance = tolerance;
+				break;
+			default:
+				d_active_com_file_struct.d_amoeba_two_way_tolerance = tolerance;
+			}
+		}
+
+		bool
+		get_use_amoeba_iterations() const
+		{
+			return d_active_com_file_struct.d_use_amoeba_iteration_limit;
+		}
+
+		void
+		set_use_amoeba_iterations(
+				bool use)
+		{
+			d_active_com_file_struct.d_use_amoeba_iteration_limit = use;
+		}
+
+		bool
+		get_use_amoeba_tolerance() const
+		{
+			return d_active_com_file_struct.d_use_amoeba_tolerance;
+		}
+
+		void
+		set_use_amoeba_tolerance(
+				bool use)
+		{
+			d_active_com_file_struct.d_use_amoeba_tolerance = use;
+		}
+
+
+		void
+		set_estimate_kappa(bool estimate)
+		{
+			d_active_com_file_struct.d_estimate_kappa = estimate;
+		}
+
+		void
+		set_input_pick_filename(
+				const QString &input_filename);
+
+		void
+		set_fit_type(
+				const HellingerFitType &type);
+
+
+		const HellingerFitType &
+		get_fit_type(
+				bool update = false);
+
+		// TODO: don't think we need this as optional.... check.
 		boost::optional<HellingerComFileStructure>
 		get_com_file() const;
 
-		QStringList
-		get_data_as_string() const;
+		QString
+		get_pick_filename() const
+		{
+			return d_active_com_file_struct.d_pick_file;
+		}
 
 		QString
 		get_chron_string() const
@@ -349,31 +545,73 @@ namespace GPlatesQtWidgets
 		void
 		renumber_segments();
 
+		int
+		number_of_segments() const;
+
 		bool
 		segments_are_ordered() const;
+
+		void
+		clear_error_ellipse(
+				const HellingerPlatePairType &type = PLATES_1_2_PAIR_TYPE);
+
+		void clear_error_ellipses();
+
+		QString
+		error_ellipse_filename() const;
+
+		QString
+		error_ellipse_filename(
+				const HellingerPlatePairType &type) const;
+
+		bool
+		picks_are_valid() const;
+
+		void
+		set_output_file_root(
+				const QString &root);
+
+		QString
+		output_file_root() const;
+
+		const hellinger_model_type &
+		model_data() const
+		{
+			return d_model_data;
+		}
+
+		void
+		set_model_data(
+				const hellinger_model_type &model_data_)
+		{
+			d_model_data = model_data_;
+		}
 
 	private:
 
 		void
-		reset_com_file_struct();
-
-		void
-		reset_fit_struct();
-
-		void
-		reset_error_ellipse_points();
-
-
+		clear_com_file_struct();
 
 		HellingerComFileStructure d_active_com_file_struct;
-		boost::optional<HellingerFitStructure> d_last_result;
-		hellinger_model_type d_model;
+
+		boost::optional<HellingerFitStructure> d_last_fit_12_result;
+		boost::optional<HellingerFitStructure> d_last_fit_13_result;
+		boost::optional<HellingerFitStructure> d_last_fit_23_result;
+		hellinger_model_type d_model_data;
 		std::vector<GPlatesMaths::LatLonPoint> d_error_ellipse_points;
+		std::vector<GPlatesMaths::LatLonPoint> d_error_ellipse_12_points;
+		std::vector<GPlatesMaths::LatLonPoint> d_error_ellipse_13_points;
+		std::vector<GPlatesMaths::LatLonPoint> d_error_ellipse_23_points;
+
 		QString d_chron_string;
 
-		// TODO: check if this path is required.
-		// Required until we have shifted file-io to the reader class.
-		QString d_temporary_file_path;
+		/**
+		 * @brief d_fit_type. The desired type of fit - 2-plate or 3-plate.
+		 */
+		HellingerFitType d_fit_type;
+
+		QString d_output_file_root;
+
 	};
 }
 

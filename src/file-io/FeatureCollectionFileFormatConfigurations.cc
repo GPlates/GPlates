@@ -25,39 +25,36 @@
 
 #include "FeatureCollectionFileFormatConfigurations.h"
 
-#include "scribe/Scribe.h"
+
+const std::string GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::FEATURE_COLLECTION_TAG(
+		"model_to_attribute_mapping");
 
 
-GPlatesScribe::TranscribeResult
-GPlatesFileIO::FeatureCollectionFileFormat::GMTConfiguration::transcribe(
-		GPlatesScribe::Scribe &scribe,
-		bool transcribed_construct_data)
+GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::model_to_attribute_map_type &
+GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::get_model_to_attribute_map(
+		GPlatesModel::FeatureCollectionHandle &feature_collection)
 {
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_header_format, "d_header_format") ||
-		// Transcribe base class - it has no data members so we just register conversion casts
-		// between this class and base class.
-		!scribe.transcribe_base<Configuration, GMTConfiguration>(TRANSCRIBE_SOURCE))
+	// Look for the model-to-attribute-map tag in the feature collection.
+	boost::any &model_to_attribute_map_tag = feature_collection.tags()[FEATURE_COLLECTION_TAG];
+
+	// If first time tag added then set it to an empty model-to-attribute map.
+	if (model_to_attribute_map_tag.empty())
 	{
-		return scribe.get_transcribe_result();
+		model_to_attribute_map_tag = model_to_attribute_map_type();
 	}
 
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+	return boost::any_cast<model_to_attribute_map_type &>(model_to_attribute_map_tag);
 }
 
-
-GPlatesScribe::TranscribeResult
-GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::transcribe(
-		GPlatesScribe::Scribe &scribe,
-		bool transcribed_construct_data)
+boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type>
+GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::get_original_file_srs() const
 {
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_wrap_to_dateline, "d_wrap_to_dateline") ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_model_to_attribute_map, "d_model_to_attribute_map") ||
-		// Transcribe base class - it has no data members so we just register conversion casts
-		// between this class and base class.
-		!scribe.transcribe_base<Configuration, OGRConfiguration>(TRANSCRIBE_SOURCE))
-	{
-		return scribe.get_transcribe_result();
-	}
+	return d_original_file_srs;
+}
 
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+void
+GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::set_original_file_srs(
+		const GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type &srs)
+{
+	d_original_file_srs.reset(srs);
 }

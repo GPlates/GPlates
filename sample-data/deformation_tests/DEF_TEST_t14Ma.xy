@@ -1,0 +1,16 @@
+>HEADER LINES:
+>point index number 
+>lat lon dilitation_from_triangle
+>
+>point index: 0
+4.51833 -10.4587 -8.5139e-16 
+>point index: 1
+6.10179 -5.73926 -8.5139e-16 
+>point index: 2
+8.10237 -2.6463 -8.5139e-16 
+>point index: 3
+6.92619 0.665088 3.37e-15 
+>point index: 4
+5.37556 1.81392 3.37e-15 
+>point index: 5
+3.82865 2.83929 3.37e-15 

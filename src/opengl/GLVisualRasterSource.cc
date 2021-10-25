@@ -543,7 +543,7 @@ GPlatesOpenGL::GLVisualRasterSource::render_error_text_into_texture(
 				QColor(255, 0, 0, 255)/*red text*/);
 
 		// Convert to ARGB32 format so it's easier to load into a texture.
-		error_text_image.convertToFormat(QImage::Format_ARGB32);
+		error_text_image = error_text_image.convertToFormat(QImage::Format_ARGB32);
 	}
 
 	// Most tiles will be the tile texel dimension - it's just the stragglers around the

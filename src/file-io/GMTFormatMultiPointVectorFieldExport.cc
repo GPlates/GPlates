@@ -77,27 +77,7 @@ namespace GPlatesFileIO
 				header_lines.push_back(
 						QString("reconstructionTime ") + QString::number(reconstruction_time));
 
-				// Print the list of feature collection filenames that the exported
-				// vector fields came from.
-				QStringList filenames;
-				referenced_files_collection_type::const_iterator file_iter;
-				for (file_iter = referenced_files.begin();
-					file_iter != referenced_files.end();
-					++file_iter)
-				{
-					const File::Reference *file = *file_iter;
-
-					// Some files might not actually exist yet if the user created a new
-					// feature collection internally and hasn't saved it to file yet.
-					if (!GPlatesFileIO::file_exists(file->get_file_info()))
-					{
-						continue;
-					}
-
-					filenames << file->get_file_info().get_display_name(false/*use_absolute_path_name*/);
-				}
-
-				header_lines.push_back(filenames.join(" "));
+				GMTFormatHeader::add_filenames_to_header(header_lines, referenced_files);
 			}
 
 
@@ -180,7 +160,7 @@ namespace GPlatesFileIO
 
 				switch (velocity_vector_format)
 				{
-				case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D:
+				case MultiPointVectorFieldExport::VELOCITY_VECTOR_3D:
 					{
 						const std::string velocity_x_str = GPlatesUtils::formatted_double_to_string(
 								velocity_vector.x().dval(),
@@ -199,7 +179,7 @@ namespace GPlatesFileIO
 					}
 					break;
 
-				case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON:
+				case MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON:
 					{
 						GPlatesMaths::VectorColatitudeLongitude velocity_colat_lon =
 								GPlatesMaths::convert_vector_from_xyz_to_colat_lon(domain_point, velocity_vector);
@@ -217,7 +197,7 @@ namespace GPlatesFileIO
 					}
 					break;
 
-				case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE:
+				case MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE:
 					{
 						std::pair<GPlatesMaths::real_t, GPlatesMaths::real_t> velocity_magnitude_angle =
 								GPlatesMaths::calculate_vector_components_magnitude_angle(domain_point, velocity_vector);
@@ -235,7 +215,7 @@ namespace GPlatesFileIO
 					}
 					break;
 
-				case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_AZIMUTH:
+				case MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_AZIMUTH:
 					{
 						std::pair<GPlatesMaths::real_t, GPlatesMaths::real_t> velocity_magnitude_azimuth =
 								GPlatesMaths::calculate_vector_components_magnitude_and_azimuth(domain_point, velocity_vector);
@@ -259,7 +239,10 @@ namespace GPlatesFileIO
 					break;
 				}
 
+				//
 				// Output the final line.
+				//
+
 				const std::string gmt_line_string = gmt_line.str();
 				output_stream << gmt_line_string.c_str() << endl;
 			}

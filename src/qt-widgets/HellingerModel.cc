@@ -23,20 +23,16 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <algorithm> // copy
-#include <map>
 #include <set>
-#include <vector>
 
 #include "boost/foreach.hpp"
 
 #include <QDebug>
-#include <QDir> // TODO: remove this when file-io moved out of this class.
-#include <QFile>
-#include <QTextStream>
 
 #include "maths/PointOnSphere.h"
 #include "HellingerModel.h"
+
+
 
 namespace{
 
@@ -53,57 +49,39 @@ namespace{
 
 		return static_cast<int>(set.size());
 	}
-}
 
-GPlatesQtWidgets::HellingerModel::HellingerModel(
-		const QString &temporary_file_path):
-	d_temporary_file_path(temporary_file_path)
-{     
-}
-
-QStringList
-GPlatesQtWidgets::HellingerModel::get_pick_as_string(
-		const unsigned int &segment, const unsigned int &row) const
-{
-
-	hellinger_model_const_range_type pair =
-			d_model.equal_range(segment);
-
-	hellinger_model_type::const_iterator iter = pair.first;
-
-	QStringList get_data_line;
-	for (unsigned int n = 0;  iter != pair.second ; ++iter, ++n)
+	/**
+	 * @brief determine_fit_type_from_model - determine the fit type (i.e. two-way or
+	 * three-way) of the model. Returns three-way if it finds any PLATE_THREE pick types
+	 * (disabled or not), otherwise returns two-way - i.e. does not explicitly check for
+	 * presence of PLATE_ONE or PLATE_TWO picks.
+	 * @param model_data
+	 * @return
+	 */
+	GPlatesQtWidgets::HellingerFitType
+	determine_fit_type_from_model(
+			const GPlatesQtWidgets::hellinger_model_type &model_data)
 	{
-		if (n == row)
+		// TODO: consider making a similar std::set part of the HellingerModel and updating
+		// it after each pick addition.
+		std::set<GPlatesQtWidgets::HellingerPlateIndex> set;
+		BOOST_FOREACH(GPlatesQtWidgets::hellinger_model_pair_type pair, model_data)
 		{
-			HellingerPick segment_num = iter->second;
-			GPlatesQtWidgets::HellingerPickType move_fix = segment_num.d_segment_type;
-			double lat = segment_num.d_lat;
-			double lon = segment_num.d_lon;
-			double uncert = segment_num.d_uncertainty;
-			QString segment_str = QString("%1").arg(iter->first);
-			QString move_fix_str = QString("%1").arg(move_fix);
-			QString lat_str = QString("%1").arg(lat);
-			QString lon_str = QString("%1").arg(lon);
-			QString uncert_str = QString("%1").arg(uncert);
-			get_data_line << segment_str << move_fix_str << lat_str << lon_str << uncert_str;
+			set.insert(pair.second.d_segment_type);
 		}
+		if ((set.find(GPlatesQtWidgets::PLATE_THREE_PICK_TYPE) != set.end() ||
+			 (set.find(GPlatesQtWidgets::DISABLED_PLATE_THREE_PICK_TYPE) != set.end())))
+		{
+			return GPlatesQtWidgets::THREE_PLATE_FIT_TYPE;
+		}
+		return GPlatesQtWidgets::TWO_PLATE_FIT_TYPE;
 	}
-	return get_data_line;
 }
 
-//boost::optional<const GPlatesQtWidgets::HellingerPick &>
-//GPlatesQtWidgets::HellingerModel::get_pick(
-//		const unsigned int &index) const
-//{
-//	if (index >= d_model.size())
-//	{
-//		return boost::none;
-//	}
-//	hellinger_model_type::const_iterator it = d_model.begin();
-//	std::advance(it, index);
-//	return it->second;
-//}
+GPlatesQtWidgets::HellingerModel::HellingerModel():
+	d_fit_type(GPlatesQtWidgets::TWO_PLATE_FIT_TYPE)
+{
+}
 
 void
 GPlatesQtWidgets::HellingerModel::set_pick_state(
@@ -112,7 +90,7 @@ GPlatesQtWidgets::HellingerModel::set_pick_state(
 		bool enabled)
 {
 	hellinger_model_range_type pair =
-			d_model.equal_range(segment);
+			d_model_data.equal_range(segment);
 
 	hellinger_model_type::iterator iter = pair.first;
 
@@ -129,7 +107,7 @@ GPlatesQtWidgets::HellingerModel::pick_is_enabled(
 		const unsigned int &segment, const unsigned int &row) const
 {
 	hellinger_model_const_range_type pair =
-			d_model.equal_range(segment);
+			d_model_data.equal_range(segment);
 
 	hellinger_model_type::const_iterator iter = pair.first;
 
@@ -147,36 +125,7 @@ int
 GPlatesQtWidgets::HellingerModel::num_rows_in_segment(
 		const unsigned int &segment) const
 {
-	return d_model.count(segment);
-}
-
-QStringList
-GPlatesQtWidgets::HellingerModel::get_segment_as_string(
-		const unsigned int &segment) const
-{
-	hellinger_model_const_range_type pair =
-			d_model.equal_range(segment);
-
-	hellinger_model_type::const_iterator iter = pair.first;
-	QStringList segment_data_values;
-	for (; iter != pair.second; ++iter )
-	{
-		HellingerPick segment_values = iter->second;
-
-		GPlatesQtWidgets::HellingerPickType move_fix = segment_values.d_segment_type;
-		double lat = segment_values.d_lat;
-		double lon = segment_values.d_lon;
-		double uncert = segment_values.d_uncertainty;
-		bool is_activated = segment_values.d_is_enabled;
-		QString move_fix_str = QString("%1").arg(move_fix);
-		QString lat_str = QString("%1").arg(lat);
-		QString lon_str = QString("%1").arg(lon);
-		QString uncert_str = QString("%1").arg(uncert);
-		QString is_activated_str = QString("%1").arg(is_activated);
-
-		segment_data_values << move_fix_str << lat_str << lon_str << uncert_str<< is_activated_str;
-	}
-	return segment_data_values;
+	return d_model_data.count(segment);
 }
 
 void
@@ -184,7 +133,7 @@ GPlatesQtWidgets::HellingerModel::remove_pick(
 		unsigned const int &segment, unsigned const int &row)
 {
 	hellinger_model_range_type pair =
-			d_model.equal_range(segment);
+			d_model_data.equal_range(segment);
 
 	hellinger_model_type::iterator iter = pair.first;
 
@@ -192,7 +141,7 @@ GPlatesQtWidgets::HellingerModel::remove_pick(
 	{
 		if (n == row)
 		{
-			d_model.erase(iter);
+			d_model_data.erase(iter);
 			return;
 		}
 	}
@@ -202,70 +151,7 @@ void
 GPlatesQtWidgets::HellingerModel::remove_segment(
 		const unsigned int &segment)
 {
-	d_model.erase(segment);
-}
-
-QStringList
-GPlatesQtWidgets::HellingerModel::get_data_as_string() const
-{
-	hellinger_model_type::const_iterator iter;
-	QStringList load_data;
-	for (iter=d_model.begin(); iter != d_model.end(); ++iter) {
-		HellingerPick s = iter->second;
-		GPlatesQtWidgets::HellingerPickType move_fix = s.d_segment_type;
-		double lat = s.d_lat;
-		double lon = s.d_lon;
-		double uncert = s.d_uncertainty;
-		bool is_enabled = s.d_is_enabled;
-		QString segment_str = QString("%1").arg(iter->first);
-		QString move_fix_str = QString("%1").arg(move_fix);
-		QString lat_str = QString("%1").arg(lat);
-		QString lon_str = QString("%1").arg(lon);
-		QString uncert_str = QString("%1").arg(uncert);
-		QString is_enabled_str = QString("%1").arg(is_enabled);
-		load_data << segment_str << move_fix_str << lat_str << lon_str << uncert_str << is_enabled_str;
-	}
-
-	return load_data;
-}
-
-
-
-GPlatesQtWidgets::hellinger_model_type::const_iterator
-GPlatesQtWidgets::HellingerModel::add_pick(const QStringList &pick)
-{
-	HellingerPick new_pick;
-	if (pick.at(0).toInt() == DISABLED_MOVING_PICK_TYPE)
-	{
-		new_pick.d_segment_type = MOVING_PICK_TYPE;
-	}
-	else if (pick.at(0).toInt()== DISABLED_FIXED_PICK_TYPE)
-	{
-		new_pick.d_segment_type=FIXED_PICK_TYPE;
-	}
-	else
-	{
-		new_pick.d_segment_type = static_cast<GPlatesQtWidgets::HellingerPickType>(pick.at(0).toInt());
-	}
-	new_pick.d_lat = pick.at(2).toDouble();
-	new_pick.d_lon = pick.at(3).toDouble();
-	new_pick.d_uncertainty = pick.at(4).toDouble();
-	if (pick.at(0).toInt() == DISABLED_MOVING_PICK_TYPE)
-	{
-		new_pick.d_is_enabled = false;
-	}
-	else if (pick.at(0).toInt() == DISABLED_FIXED_PICK_TYPE)
-	{
-		new_pick.d_is_enabled = false;
-	}
-	else
-	{
-		new_pick.d_is_enabled = true;
-	}
-
-	return d_model.insert(hellinger_model_pair_type(pick.at(1).toInt(), new_pick));
-
-
+	d_model_data.erase(segment);
 }
 
 GPlatesQtWidgets::hellinger_model_type::const_iterator
@@ -273,93 +159,125 @@ GPlatesQtWidgets::HellingerModel::add_pick(
 		const HellingerPick &pick,
 		const unsigned int &segment_number)
 {
-	return d_model.insert(hellinger_model_pair_type(segment_number,pick));
+	return d_model_data.insert(hellinger_model_pair_type(segment_number,pick));
 }
 
-GPlatesMaths::LatLonPoint
-GPlatesQtWidgets::HellingerModel::get_initial_pole_llp()
+GPlatesQtWidgets::HellingerPoleEstimate
+GPlatesQtWidgets::HellingerModel::get_initial_guess_12() const
 {
-	double lat = d_active_com_file_struct.d_lat;
-	double lon = d_active_com_file_struct.d_lon;
-	return GPlatesMaths::LatLonPoint(lat,lon);
+	return d_active_com_file_struct.d_estimate_12;
 }
 
-double
-GPlatesQtWidgets::HellingerModel::get_initial_pole_angle()
+GPlatesQtWidgets::HellingerPoleEstimate
+GPlatesQtWidgets::HellingerModel::get_initial_guess_13() const
 {
-	return d_active_com_file_struct.d_rho;
+	return d_active_com_file_struct.d_estimate_13;
+}
+
+void GPlatesQtWidgets::HellingerModel::set_initial_guess_12(
+		const GPlatesQtWidgets::HellingerPoleEstimate &estimate)
+{
+	d_active_com_file_struct.d_estimate_12 = estimate;
+}
+
+void GPlatesQtWidgets::HellingerModel::set_initial_guess_13(
+		const GPlatesQtWidgets::HellingerPoleEstimate &estimate)
+{
+	d_active_com_file_struct.d_estimate_13 = estimate;
+}
+
+
+void
+GPlatesQtWidgets::HellingerModel::set_fit_12(
+		const GPlatesQtWidgets::HellingerFitStructure &fit_12)
+{
+	d_last_fit_12_result.reset(fit_12);
 }
 
 void
-GPlatesQtWidgets::HellingerModel::set_fit(const QStringList &fields)
-{	
-	d_last_result.reset(HellingerFitStructure(fields.at(0).toDouble(),
-											  fields.at(1).toDouble(),
-											  fields.at(2).toDouble()));
+GPlatesQtWidgets::HellingerModel::set_fit_13(
+		const GPlatesQtWidgets::HellingerFitStructure &fit_13)
+{
+	d_last_fit_13_result.reset(fit_13);
 }
 
 void
-GPlatesQtWidgets::HellingerModel::set_fit(
-		const HellingerFitStructure &fit)
+GPlatesQtWidgets::HellingerModel::set_fit_23(
+		const GPlatesQtWidgets::HellingerFitStructure &fit_23)
 {
-	d_last_result.reset(fit);
+	d_last_fit_23_result.reset(fit_23);
+}
+
+
+boost::optional<GPlatesQtWidgets::HellingerFitStructure>
+GPlatesQtWidgets::HellingerModel::get_fit_12()
+{
+	return d_last_fit_12_result;
 }
 
 boost::optional<GPlatesQtWidgets::HellingerFitStructure>
-GPlatesQtWidgets::HellingerModel::get_fit()
+GPlatesQtWidgets::HellingerModel::get_fit_13()
 {
-	return d_last_result;
+	return d_last_fit_13_result;
+}
+
+boost::optional<GPlatesQtWidgets::HellingerFitStructure>
+GPlatesQtWidgets::HellingerModel::get_fit_23()
+{
+	return d_last_fit_23_result;
 }
 
 void
-GPlatesQtWidgets::HellingerModel::set_initial_guess(const QStringList &com_list_fields)
-{
-	d_active_com_file_struct.d_pick_file = com_list_fields.at(0);
-	d_active_com_file_struct.d_lat = com_list_fields.at(1).toDouble();
-	d_active_com_file_struct.d_lon = com_list_fields.at(2).toDouble();
-	d_active_com_file_struct.d_rho = com_list_fields.at(3).toDouble();
-	d_active_com_file_struct.d_search_radius = com_list_fields.at(4).toDouble();
-	if (com_list_fields.at(5).toStdString()=="y")
-	{
-		d_active_com_file_struct.d_perform_grid_search = true;
-	}
-	else if (com_list_fields.at(5).toStdString()=="n")
-	{
-		d_active_com_file_struct.d_perform_grid_search = false;
-	}
-	d_active_com_file_struct.d_significance_level = com_list_fields.at(6).toDouble();
-	if (com_list_fields.at(7).toStdString()=="y")
-	{
-		d_active_com_file_struct.d_estimate_kappa = true;
-	}
-	else if (com_list_fields.at(7).toStdString()=="n")
-	{
-		d_active_com_file_struct.d_estimate_kappa = false;
-	}
-	if (com_list_fields.at(8)=="y")
-	{
-		d_active_com_file_struct.d_generate_output_files = true;
-	}
-	else if (com_list_fields.at(8)=="n")
-	{
-		d_active_com_file_struct.d_generate_output_files = false;
-	}
-	d_active_com_file_struct.d_data_filename = com_list_fields.at(9);
-	d_active_com_file_struct.d_up_filename = com_list_fields.at(10);
-	d_active_com_file_struct.d_down_filename = com_list_fields.at(11);
-}
-
-void
-GPlatesQtWidgets::HellingerModel::set_initial_guess(
+GPlatesQtWidgets::HellingerModel::set_initial_guess_12(
 		const double &lat,
 		const double &lon,
-		const double &rho,
+		const double &rho)
+{
+	d_active_com_file_struct.d_estimate_12.d_lat = lat;
+	d_active_com_file_struct.d_estimate_12.d_lon = lon;
+	d_active_com_file_struct.d_estimate_12.d_angle = rho;
+}
+
+void
+GPlatesQtWidgets::HellingerModel::set_initial_guess_13(
+		const double &lat,
+		const double &lon,
+		const double &rho)
+{
+	d_active_com_file_struct.d_estimate_13.d_lat = lat;
+	d_active_com_file_struct.d_estimate_13.d_lon = lon;
+	d_active_com_file_struct.d_estimate_13.d_angle = rho;
+}
+
+void
+GPlatesQtWidgets::HellingerModel::set_search_radius(
 		const double &radius)
 {
-	d_active_com_file_struct.d_lat = lat;
-	d_active_com_file_struct.d_lon = lon;
-	d_active_com_file_struct.d_rho = rho;
-	d_active_com_file_struct.d_search_radius = radius;
+	d_active_com_file_struct.d_search_radius_degrees = radius;
+}
+
+void
+GPlatesQtWidgets::HellingerModel::set_input_pick_filename(
+		const QString &input_filename)
+{
+	d_active_com_file_struct.d_pick_file = input_filename;
+}
+
+void
+GPlatesQtWidgets::HellingerModel::set_fit_type(
+		const GPlatesQtWidgets::HellingerFitType &type)
+{
+	d_fit_type = type;
+}
+
+const GPlatesQtWidgets::HellingerFitType &
+GPlatesQtWidgets::HellingerModel::get_fit_type(
+		bool update)
+{
+	if (update){
+		d_fit_type = determine_fit_type_from_model(d_model_data);
+	}
+	return d_fit_type;
 }
 
 boost::optional<GPlatesQtWidgets::HellingerComFileStructure>
@@ -368,82 +286,145 @@ GPlatesQtWidgets::HellingerModel::get_com_file() const
 	return d_active_com_file_struct;
 }
 
-void
-GPlatesQtWidgets::HellingerModel::read_error_ellipse_points()
+std::vector<GPlatesMaths::LatLonPoint> &
+GPlatesQtWidgets::HellingerModel::error_ellipse_points(
+		const GPlatesQtWidgets::HellingerPlatePairType &type)
 {
-	// TODO:The file-io aspect of this should probably be moved out to
-	// the HellingerReader.
-	QString path = d_temporary_file_path + QDir::separator() + d_active_com_file_struct.d_data_filename;
-	QFile data_file(path);
-
-	d_error_ellipse_points.clear();
-	if (data_file.open(QFile::ReadOnly))
+	switch(type)
 	{
-		QTextStream in(&data_file);
-		in.readLine();
-		while (!in.atEnd())
-		{
-			QString line = in.readLine();
-			QStringList fields = line.split(" ",QString::SkipEmptyParts);
-			GPlatesMaths::LatLonPoint llp(fields.at(1).toDouble(),fields.at(0).toDouble());
-			d_error_ellipse_points.push_back(llp);
-		}
+	case PLATES_1_2_PAIR_TYPE:
+		return d_error_ellipse_12_points;
+		break;
+	case PLATES_1_3_PAIR_TYPE:
+		return d_error_ellipse_13_points;
+		break;
+	case PLATES_2_3_PAIR_TYPE:
+		return d_error_ellipse_23_points;
+		break;
+	default:
+		return d_error_ellipse_12_points;
 	}
-
-}
-
-const std::vector <GPlatesMaths::LatLonPoint> &
-GPlatesQtWidgets::HellingerModel::get_error_ellipse_points() const
-{
-	return d_error_ellipse_points;
 }
 
 void
-GPlatesQtWidgets::HellingerModel::reset_error_ellipse_points()
+GPlatesQtWidgets::HellingerModel::clear_error_ellipse(
+		const GPlatesQtWidgets::HellingerPlatePairType &type)
 {
-	if (!d_error_ellipse_points.empty())
+	switch(type)
 	{
-		d_error_ellipse_points.clear();
+	case PLATES_1_2_PAIR_TYPE:
+		d_error_ellipse_12_points.clear();
+		break;
+	case PLATES_1_3_PAIR_TYPE:
+		d_error_ellipse_13_points.clear();
+		break;
+	case PLATES_2_3_PAIR_TYPE:
+		d_error_ellipse_23_points.clear();
+		break;
 	}
+}
+
+void
+GPlatesQtWidgets::HellingerModel::clear_error_ellipses()
+{
+	d_error_ellipse_12_points.clear();
+	d_error_ellipse_13_points.clear();
+	d_error_ellipse_23_points.clear();
+}
+
+QString
+GPlatesQtWidgets::HellingerModel::error_ellipse_filename() const
+{
+	return QString(d_output_file_root + "_ellipse"+DEFAULT_OUTPUT_FILE_EXTENSION);
+}
+
+QString
+GPlatesQtWidgets::HellingerModel::error_ellipse_filename(
+		const HellingerPlatePairType &type) const
+{
+	switch(type)
+	{
+	case PLATES_1_2_PAIR_TYPE:
+		return QString(d_output_file_root + "_ellipse_12_sim" + DEFAULT_OUTPUT_FILE_EXTENSION);
+		break;
+	case PLATES_1_3_PAIR_TYPE:
+		return QString(d_output_file_root + "_ellipse_13_sim" + DEFAULT_OUTPUT_FILE_EXTENSION);
+		break;
+	case PLATES_2_3_PAIR_TYPE:
+		return QString(d_output_file_root + "_ellipse_23_sim" + DEFAULT_OUTPUT_FILE_EXTENSION);
+		break;
+	}
+	return QString();
+}
+
+bool
+GPlatesQtWidgets::HellingerModel::picks_are_valid() const
+{
+	//TODO: apply more stringent conditions here, e.g.
+	// min no. of segments, picks-per-segment etc...
+	return !d_model_data.empty();
+}
+
+void
+GPlatesQtWidgets::HellingerModel::set_output_file_root(
+		const QString &root)
+{
+	d_output_file_root = root;
+}
+
+QString
+GPlatesQtWidgets::HellingerModel::output_file_root() const
+{
+	return d_output_file_root;
 }
 
 void
 GPlatesQtWidgets::HellingerModel::reset_model()
 {
-	d_model.clear();
-	d_error_ellipse_points.clear();
-	reset_com_file_struct();
-	reset_fit_struct();
+	d_model_data.clear();
+	clear_fit_results();
+	clear_uncertainty_results();
 }
 
 void GPlatesQtWidgets::HellingerModel::clear_all_picks()
 {
-	d_model.clear();
+	d_model_data.clear();
 }
 
 void
-GPlatesQtWidgets::HellingerModel::reset_com_file_struct()
+GPlatesQtWidgets::HellingerModel::clear_fit_results()
+{
+	d_last_fit_12_result.reset();
+	d_last_fit_13_result.reset();
+	d_last_fit_23_result.reset();
+}
+
+void
+GPlatesQtWidgets::HellingerModel::clear_uncertainty_results()
+{
+	clear_error_ellipses();
+}
+
+void
+GPlatesQtWidgets::HellingerModel::clear_com_file_struct()
 {
 	d_active_com_file_struct.d_pick_file = "";
-	d_active_com_file_struct.d_lat = 0;
-	d_active_com_file_struct.d_lon = 0;
-	d_active_com_file_struct.d_rho = 5.;
 
 
-	d_active_com_file_struct.d_search_radius = 0.2;
+	d_active_com_file_struct.d_estimate_12.d_lat = 0;
+	d_active_com_file_struct.d_estimate_12.d_lon = 0;
+	d_active_com_file_struct.d_estimate_12.d_angle = 5.;
+
+	d_active_com_file_struct.d_estimate_13.d_lat = 0;
+	d_active_com_file_struct.d_estimate_13.d_lon = 0;
+	d_active_com_file_struct.d_estimate_13.d_angle = 5.;
+
+
+	d_active_com_file_struct.d_search_radius_degrees = 0.2;
 	d_active_com_file_struct.d_perform_grid_search = false;
 	d_active_com_file_struct.d_significance_level = 0.95;
 	d_active_com_file_struct.d_estimate_kappa = true;
 	d_active_com_file_struct.d_generate_output_files = false;
-	d_active_com_file_struct.d_data_filename = "";
-	d_active_com_file_struct.d_up_filename = "";
-	d_active_com_file_struct.d_down_filename = "";
-}
-
-void
-GPlatesQtWidgets::HellingerModel::reset_fit_struct()
-{
-	d_last_result.reset();
 }
 
 void
@@ -453,7 +434,7 @@ GPlatesQtWidgets::HellingerModel::renumber_segments()
 
 	int last_segment_number = 0;
 	int new_segment_number = 0;
-	BOOST_FOREACH(GPlatesQtWidgets::hellinger_model_pair_type pair, d_model)
+	BOOST_FOREACH(GPlatesQtWidgets::hellinger_model_pair_type pair, d_model_data)
 	{
 		if (pair.first != last_segment_number)
 		{
@@ -463,15 +444,21 @@ GPlatesQtWidgets::HellingerModel::renumber_segments()
 		result.insert(hellinger_model_pair_type(new_segment_number,pair.second));
 	}
 
-	d_model = result;
+	d_model_data = result;
+}
+
+int
+GPlatesQtWidgets::HellingerModel::number_of_segments() const
+{
+	return	unique_keys(d_model_data);
 }
 
 bool GPlatesQtWidgets::HellingerModel::segments_are_ordered() const
 {
 
-	for (int i = 1; i <= unique_keys(d_model) ; ++i)
+	for (int i = 1; i <= unique_keys(d_model_data) ; ++i)
 	{
-		if (d_model.find(i) == d_model.end())
+		if (d_model_data.find(i) == d_model_data.end())
 		{
 			return false;
 		}
@@ -483,24 +470,24 @@ void
 GPlatesQtWidgets::HellingerModel::make_space_for_new_segment(int segment)
 {
 	hellinger_model_type result;
-	hellinger_model_range_type range = d_model.equal_range(segment-1);
+	hellinger_model_range_type range = d_model_data.equal_range(segment-1);
 
 	hellinger_model_type::const_iterator
-			iter = d_model.begin(),
+			iter = d_model_data.begin(),
 			iter_end = range.second;
 	for (; iter != iter_end; ++iter)
 	{
 		result.insert(*iter);
 	}
 
-	iter = d_model.find(segment);
+	iter = d_model_data.find(segment);
 
-	for (; iter != d_model.end(); ++iter)
+	for (; iter != d_model_data.end(); ++iter)
 	{
 		result.insert(hellinger_model_pair_type(iter->first+1, iter->second));
 	}
 
-	d_model = result;
+	d_model_data = result;
 }
 
 
@@ -510,7 +497,7 @@ GPlatesQtWidgets::HellingerModel::get_pick(
 		const unsigned int &row) const
 {
 	hellinger_model_const_range_type range =
-			d_model.equal_range(segment);
+			d_model_data.equal_range(segment);
 
 	hellinger_model_type::const_iterator iter = range.first;
 	for (unsigned int n = 0; iter != range.second; ++iter, ++n)
@@ -520,7 +507,7 @@ GPlatesQtWidgets::HellingerModel::get_pick(
 			return iter;
 		}
 	}
-	return d_model.end();
+	return d_model_data.end();
 }
 
 GPlatesQtWidgets::hellinger_segment_type
@@ -541,39 +528,39 @@ GPlatesQtWidgets::HellingerModel::get_segment(
 GPlatesQtWidgets::hellinger_model_const_range_type
 GPlatesQtWidgets::HellingerModel::get_segment_as_range(const unsigned int &segment) const
 {
-	return d_model.equal_range(segment);
+	return d_model_data.equal_range(segment);
 }
 
 GPlatesQtWidgets::hellinger_model_type::const_iterator
 GPlatesQtWidgets::HellingerModel::begin() const
 {
-	return d_model.begin();
+	return d_model_data.begin();
 }
 
 GPlatesQtWidgets::hellinger_model_type::const_iterator
 GPlatesQtWidgets::HellingerModel::end() const
 {
-	return d_model.end();
+	return d_model_data.end();
 }
 
 
 bool
 GPlatesQtWidgets::HellingerModel::segment_number_exists(int segment_num) const
 {
-	return d_model.count(segment_num) > 0;
+	return d_model_data.count(segment_num) > 0;
 }
 
 GPlatesQtWidgets::hellinger_model_type::const_iterator
 GPlatesQtWidgets::HellingerModel::segment_begin(
 		const int &segment) const
 {
-	if (d_model.count(segment) > 0)
+	if (d_model_data.count(segment) > 0)
 	{
-		return d_model.equal_range(segment).first;
+		return d_model_data.equal_range(segment).first;
 	}
 	else
 	{
-		return d_model.end();
+		return d_model_data.end();
 	}
 }
 
@@ -581,13 +568,13 @@ GPlatesQtWidgets::hellinger_model_type::const_iterator
 GPlatesQtWidgets::HellingerModel::segment_end(
 		const int &segment) const
 {
-	if (d_model.count(segment) > 0)
+	if (d_model_data.count(segment) > 0)
 	{
-		return d_model.equal_range(segment).second;
+		return d_model_data.equal_range(segment).second;
 	}
 	else
 	{
-		return d_model.end();
+		return d_model_data.end();
 	}
 }
 

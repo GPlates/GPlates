@@ -25,8 +25,7 @@
 
 #include <algorithm>
 #include <iterator>
-#include <boost/bind.hpp>
-#include <boost/mem_fn.hpp>
+#include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QFileInfo>
 #include <QString>
@@ -40,7 +39,8 @@
 #include "app-logic/AppLogicUtils.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/Reconstruction.h"
-#include "app-logic/ResolvedTopologicalGeometry.h"
+#include "app-logic/ResolvedTopologicalBoundary.h"
+#include "app-logic/ResolvedTopologicalNetwork.h"
 
 #include "presentation/ViewState.h"
 
@@ -74,30 +74,33 @@ GPlatesGui::ExportCitcomsResolvedTopologyAnimationStrategy::ExportCitcomsResolve
 			d_export_animation_context_ptr->view_state().get_application_state().get_reconstruct_graph();
 
 	// Check all the active reconstruction layers, and get their input files.
-	GPlatesAppLogic::ReconstructGraph::const_iterator it = reconstruct_graph.begin(),
-													end = reconstruct_graph.end();
-	for (; it != end ; ++it)
+	GPlatesAppLogic::ReconstructGraph::const_iterator layers_iter = reconstruct_graph.begin();
+	GPlatesAppLogic::ReconstructGraph::const_iterator layers_end = reconstruct_graph.end();
+	for ( ; layers_iter != layers_end; ++layers_iter)
 	{
-		if ((it->get_type() == GPlatesAppLogic::LayerTaskType::RECONSTRUCTION) && it->is_active())
+		const GPlatesAppLogic::Layer layer = *layers_iter;
+
+		if (layer.get_type() == GPlatesAppLogic::LayerTaskType::RECONSTRUCTION &&
+			layer.is_active())
 		{
 
-			// The 'reconstruct geometries' layer has input feature collections on its main input channel.
+			// The 'reconstruction tree' layer has input feature collections on its main input channel.
 			const GPlatesAppLogic::LayerInputChannelName::Type main_input_channel =
-					it->get_main_input_feature_collection_channel();
+					layer.get_main_input_feature_collection_channel();
 			const std::vector<GPlatesAppLogic::Layer::InputConnection> main_inputs =
-					it->get_channel_inputs(main_input_channel);
+					layer.get_channel_inputs(main_input_channel);
 
 			// Loop over all input connections to get the files (feature collections) for the current target layer.
 			BOOST_FOREACH(const GPlatesAppLogic::Layer::InputConnection& main_input_connection, main_inputs)
 			{
-				boost::optional<GPlatesAppLogic::Layer::InputFile> input_file =
-						main_input_connection.get_input_file();
+				boost::optional<GPlatesAppLogic::Layer::InputFile> input_file = main_input_connection.get_input_file();
 				// If it's not a file (ie, it's a layer) then continue to the next file.
-				if(!input_file)
+				// This shouldn't happen for 'reconstruction tree' layers though.
+				if (!input_file)
 				{
 					continue;
 				}
-				d_loaded_reconstruction_files.push_back(&(input_file->get_file().get_file()));
+				d_loaded_reconstruction_files.push_back(&input_file->get_file().get_file());
 			}
 		}
 	}
@@ -162,26 +165,20 @@ GPlatesGui::ExportCitcomsResolvedTopologyAnimationStrategy::do_export_iteration(
 			// Don't want to export a duplicate resolved topology if one is currently in focus...
 			GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER);
 
-	// Get any ReconstructionGeometry objects that are of type ResolvedTopologicalGeometry or
+	// Get any ReconstructionGeometry objects that are of type ResolvedTopologicalBoundary or
 	// ResolvedTopologicalNetwork since both these types have topological boundaries.
 	resolved_geom_seq_type resolved_topological_geometries;
 
-	// Get the ResolvedTopologicalGeometry objects...
-	std::vector<const GPlatesAppLogic::ResolvedTopologicalGeometry *> resolved_topological_boundaries;
+	// Get the ResolvedTopologicalBoundary objects...
+	std::vector<const GPlatesAppLogic::ResolvedTopologicalBoundary *> resolved_topological_boundaries;
 	GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
 			reconstruction_geom_seq.begin(),
 			reconstruction_geom_seq.end(),
 			resolved_topological_boundaries);
-	// Only copy those resolved topological geometries containing a *polygon*.
-	// They are the resolved boundaries (as opposed to resolved lines).
-	std::remove_copy_if(
+	std::copy(
 			resolved_topological_boundaries.begin(),
 			resolved_topological_boundaries.end(),
-			std::back_inserter(resolved_topological_geometries),
-			// The explicit template parameter and boost::mem_fn were added to avoid MSVC2005 compile error...
-			boost::bind< boost::optional<GPlatesAppLogic::ResolvedTopologicalGeometry::resolved_topology_line_ptr_type> >(
-					boost::mem_fn(&GPlatesAppLogic::ResolvedTopologicalGeometry::resolved_topology_line),
-					_1));
+			std::back_inserter(resolved_topological_geometries));
 
 	// Get the ResolvedTopologicalNetwork objects...
 	std::vector<const GPlatesAppLogic::ResolvedTopologicalNetwork *> resolved_topological_networks;

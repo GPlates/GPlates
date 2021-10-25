@@ -193,7 +193,7 @@ GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder::visit_gml_time_period(
 		    // Oh no!  This feature instance is not defined at the recon time!
 		    d_feature_is_defined_at_recon_time = false;
 	    }
-	    // Also, cache the time of appearance/dissappearance.
+	    // Also, cache the time of appearance/disappearance.
 	    d_time_of_appearance = gml_time_period.begin()->time_position();
 	    d_time_of_dissappearance = gml_time_period.end()->time_position();
 	}

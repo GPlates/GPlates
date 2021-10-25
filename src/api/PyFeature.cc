@@ -100,7 +100,7 @@ GPlatesApi::Feature::get_properties_by_name(
 	
 	if(!p_name)
 	{
-		qDebug() << "invalid property name: " << q_property_name;
+		//qDebug() << "invalid property name: " << q_property_name;
 		return ret;
 	}
 

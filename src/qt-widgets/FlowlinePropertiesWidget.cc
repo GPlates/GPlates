@@ -107,7 +107,9 @@ GPlatesQtWidgets::FlowlinePropertiesWidget::do_geometry_tasks(
 			reconstruction_tree_creator =
 					GPlatesAppLogic::create_cached_reconstruction_tree_creator(
 							default_reconstruction_tree->get_reconstruction_features(),
-							default_reconstruction_tree->get_anchor_plate_id());
+							default_reconstruction_tree->get_anchor_plate_id(),
+							// We're not going to modify the reconstruction features so no need to clone...
+							false/*clone_reconstruction_features*/);
 
 
     return GPlatesAppLogic::FlowlineUtils::correct_end_point_to_centre(

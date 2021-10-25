@@ -49,21 +49,12 @@ namespace GPlatesViewOperations
 			public GPlatesUtils::ReferenceCount<RenderedGeometryImpl>
 	{
 	public:
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<RenderedGeometryImpl,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<RenderedGeometryImpl,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
 
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const RenderedGeometryImpl,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const RenderedGeometryImpl,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_to_const_type;
+		//! A convenience typedef for a shared pointer to a non-const @a RenderedGeometryImpl.
+		typedef GPlatesUtils::non_null_intrusive_ptr<RenderedGeometryImpl> non_null_ptr_type;
+
+		//! A convenience typedef for a shared pointer to a const @a RenderedGeometryImpl.
+		typedef GPlatesUtils::non_null_intrusive_ptr<const RenderedGeometryImpl> non_null_ptr_to_const_type;
 
 		virtual
 		~RenderedGeometryImpl()

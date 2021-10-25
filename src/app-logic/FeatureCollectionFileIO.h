@@ -34,7 +34,6 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
-#include <QUrl>
 #include <QList>
 #include <QtGlobal>
 
@@ -44,8 +43,8 @@
 #include "file-io/File.h"
 #include "file-io/FileInfo.h"
 
-#include "model/ModelInterface.h"
 #include "model/FeatureCollectionHandle.h"
+#include "model/ModelInterface.h"
 
 
 namespace GPlatesFileIO
@@ -56,11 +55,6 @@ namespace GPlatesFileIO
 	}
 
 	struct ReadErrorAccumulation;
-}
-
-namespace GPlatesModel
-{
-	class Gpgim;
 }
 
 namespace GPlatesAppLogic
@@ -80,7 +74,6 @@ namespace GPlatesAppLogic
 
 	public:
 		FeatureCollectionFileIO(
-				const GPlatesModel::Gpgim &gpgim,
 				GPlatesModel::ModelInterface &model,
 				GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 				FeatureCollectionFileState &file_state);
@@ -118,18 +111,6 @@ namespace GPlatesAppLogic
 		FeatureCollectionFileState::file_reference
 		load_file(
 				const QString &filename);
-
-
-		/**
-		 * As @a load_files, but for QUrl instances of file:// urls.
-		 * Included for drag and drop support.
-		 *
-		 * The file is read using the default file configuration options for its file format
-		 * as currently set at GPlatesFileIO::FeatureCollectionFileFormat::Registry.
-		 */
-		std::vector<FeatureCollectionFileState::file_reference>
-		load_urls(
-				const QList<QUrl> &urls);
 
 
 		/**
@@ -210,15 +191,12 @@ namespace GPlatesAppLogic
 
 		void
 		handle_read_errors(
-				GPlatesAppLogic::FeatureCollectionFileIO &,
 				const GPlatesFileIO::ReadErrorAccumulation &read_errors);
 
 	private:
 		//! Typedef for a sequence of file shared refs.
 		typedef std::vector<GPlatesFileIO::File::non_null_ptr_type> file_seq_type;
 
-
-		const GPlatesModel::Gpgim &d_gpgim;
 
 		GPlatesModel::ModelInterface d_model;
 

@@ -44,26 +44,6 @@ namespace GPlatesMaths
 		class SphericalLuneTree;
 
 		/**
-		 * The result of testing where a point is located relative to a polygon.
-		 *
-		 * Note that "point *on* polygon" is not available due to the use of floating-point
-		 * numbers instead of exact arithmetic.
-		 * In any case point-on-polygon typically isn't required - it might be required if we
-		 * want to find which polygon, in a non-overlapping set, a point is contained by -
-		 * in which case a point on the edge of one polygon should not be on the corresponding
-		 * edge of the adjacent polygon (this could happen for the velocity calculations
-		 * against dynamic plate polygons) - however this sort of situation, normally handled
-		 * by edge rules and exact arithmetic, can be handled by finding the first polygon
-		 * the point is in and using that polygon - to get consistent results from frame-to-frame
-		 * the point-in-polygon tests could be sorted by some polygon attribute such as plate id.
-		 */
-		enum Result
-		{
-			POINT_OUTSIDE_POLYGON,
-			POINT_INSIDE_POLYGON
-		};
-
-		/**
 		 * Some profile timings (on Intel 6750 Dual-core compiled in MSVC2005) running
 		 * global topological plate polygon set with 12 caps files at 33x33 resolution:
 		 *
@@ -86,8 +66,16 @@ namespace GPlatesMaths
 		 */
 
 		/**
-		 * Tests if @a point is outside or inside @a polygon which can be a
-		 * non-simple (eg, self-intersecting) polygon.
+		 * Tests if @a point is inside @a polygon which can be a non-simple (eg, self-intersecting) polygon.
+		 *
+		 * The point-in-polygon test is done by counting the number of polygon edges crossed
+		 * (in the exterior ring and any interior rings) from the polygon's antipodal centroid to
+		 * the point being tested. This means that if an interior ring intersects the exterior ring
+		 * then it is possible for a test point, that is outside the exterior ring but inside the
+		 * interior ring, to pass the point-in-polygon test. This might not be desirable but it is
+		 * similar to how filled polygons are currently rendered and so at least there is some
+		 * consistency there (and reconstructed rasters use the point-in-polygon test when generating
+		 * a polygon mesh so it's consistent too).
 		 *
 		 * This is useful *only* when testing fewer than a handful of points against a specific polygon
 		 * (determined by profiling). Unless you know this for sure it is best to use
@@ -96,8 +84,19 @@ namespace GPlatesMaths
 		 * It is O(n) in the number of polygon edges and has no bounds testing but it requires less
 		 * preprocessing than @a Polygon but this is only beneficial if a handful or fewer points
 		 * are tested against a specific polygon.
+		 *
+		 * Note that "point *on* polygon" is not available due to the use of floating-point
+		 * numbers instead of exact arithmetic.
+		 * In any case point-on-polygon typically isn't required - it might be required if we
+		 * want to find which polygon, in a non-overlapping set, a point is contained by -
+		 * in which case a point on the edge of one polygon should not be on the corresponding
+		 * edge of the adjacent polygon (this could happen for the velocity calculations
+		 * against dynamic plate polygons) - however this sort of situation, normally handled
+		 * by edge rules and exact arithmetic, can be handled by finding the first polygon
+		 * the point is in and using that polygon - to get consistent results from frame-to-frame
+		 * the point-in-polygon tests could be sorted by some polygon attribute such as plate id.
 		 */
-		Result
+		bool
 		is_point_in_polygon(
 				const PointOnSphere &point,
 				const PolygonOnSphere &polygon);
@@ -144,9 +143,29 @@ namespace GPlatesMaths
 
 
 			/**
-			 * Tests if @a point is outside or inside the polygon passed into the constructor.
+			 * Tests if @a point is inside the polygon passed into the constructor.
+			 *
+			 * The point-in-polygon test is done by counting the number of polygon edges crossed
+			 * (in the exterior ring and any interior rings) from the polygon's antipodal centroid to
+			 * the point being tested. This means that if an interior ring intersects the exterior ring
+			 * then it is possible for a test point, that is outside the exterior ring but inside the
+			 * interior ring, to pass the point-in-polygon test. This might not be desirable but it is
+			 * similar to how filled polygons are currently rendered and so at least there is some
+			 * consistency there (and reconstructed rasters use the point-in-polygon test when generating
+			 * a polygon mesh so it's consistent too).
+			 *
+			 * Note that "point *on* polygon" is not available due to the use of floating-point
+			 * numbers instead of exact arithmetic.
+			 * In any case point-on-polygon typically isn't required - it might be required if we
+			 * want to find which polygon, in a non-overlapping set, a point is contained by -
+			 * in which case a point on the edge of one polygon should not be on the corresponding
+			 * edge of the adjacent polygon (this could happen for the velocity calculations
+			 * against dynamic plate polygons) - however this sort of situation, normally handled
+			 * by edge rules and exact arithmetic, can be handled by finding the first polygon
+			 * the point is in and using that polygon - to get consistent results from frame-to-frame
+			 * the point-in-polygon tests could be sorted by some polygon attribute such as plate id.
 			 */
-			Result
+			bool
 			is_point_in_polygon(
 					const PointOnSphere &point) const;
 

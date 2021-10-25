@@ -30,6 +30,7 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "Colour.h"
 #include "ColourScheme.h"
 #include "GlobeRenderedGeometryLayerPainter.h"
 #include "GlobeVisibilityTester.h"
@@ -107,11 +108,14 @@ namespace GPlatesGui
 		 * This includes rendered direction arrows.
 		 *
 		 * @param viewport_zoom_factor is used for rendering view-dependent geometries.
+		 * @param vector_geometries_override_colour is used to optionally override the colour of
+		 *        vector geometries (this is useful when rendering geometries gray on rear of globe).
 		 */
 		cache_handle_type
 		paint_surface(
 				GPlatesOpenGL::GLRenderer &renderer,
-				const double &viewport_zoom_factor);
+				const double &viewport_zoom_factor,
+				boost::optional<Colour> vector_geometries_override_colour = boost::none);
 
 		/**
 		 * Draw globe sub-surface rendered geometries that exist below the surface of the globe.
@@ -172,6 +176,9 @@ namespace GPlatesGui
 					GPlatesOpenGL::GLRenderer &renderer,
 					const double &viewport_zoom_factor,
 					GlobeRenderedGeometryLayerPainter::PaintRegionType paint_region,
+					// Used for PAINT_SURFACE...
+					boost::optional<Colour> vector_geometries_override_colour = boost::none,
+					// Used for PAINT_SUB_SURFACE...
 					boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type>
 							surface_occlusion_texture = boost::none,
 					bool improve_performance_reduce_quality_hint = false);
@@ -179,6 +186,11 @@ namespace GPlatesGui
 			GPlatesOpenGL::GLRenderer *d_renderer;
 			double d_inverse_viewport_zoom_factor;
 			GlobeRenderedGeometryLayerPainter::PaintRegionType d_paint_region;
+
+			// Used for PAINT_SURFACE...
+			boost::optional<Colour> d_vector_geometries_override_colour;
+
+			// Used for PAINT_SUB_SURFACE...
 			boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> d_surface_occlusion_texture;
 			bool d_improve_performance_reduce_quality_hint;
 

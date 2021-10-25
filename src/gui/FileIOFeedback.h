@@ -30,16 +30,17 @@
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
+#include <QList>
 #include <QObject>
 #include <QPointer>
 #include <QString>
-#include <QList>
 #include <QUrl>
 
 #include "app-logic/FeatureCollectionFileState.h"
 
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/FeatureCollectionFileFormatConfiguration.h"
+#include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/File.h"
 
 #include "model/FeatureCollectionHandle.h"
@@ -67,9 +68,10 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
-	class FilesNotLoadedWarningDialog;
-	class GpgimVersionWarningDialog;
 	class ManageFeatureCollectionsDialog;
+	class MissingSessionFilesDialog;
+	class OgrSrsWriteOptionDialog;
+	class OpenProjectRelativeOrAbsoluteDialog;
 	// Forward declaration of ViewportWindow and MFCD to avoid spaghetti.
 	// Yes, this is ViewportWindow, not the "View State"; we need
 	// this to pop dialogs up from, and maybe some progress bars.
@@ -96,7 +98,13 @@ namespace GPlatesGui
 		Q_OBJECT
 		
 	public:
-	
+
+		/**
+		 * Filename extension for project files.
+		 */
+		static const QString PROJECT_FILENAME_EXTENSION;
+
+
 		explicit
 		FileIOFeedback(
 				GPlatesAppLogic::ApplicationState &app_state_,
@@ -108,17 +116,6 @@ namespace GPlatesGui
 		virtual
 		~FileIOFeedback()
 		{  }
-
-
-		/**
-		 * Opens the specified project file and restores to a previously saved GPlates session,
-		 * handling any exceptions thrown by popping up appropriate error dialogs.
-		 *
-		 * See the slot open_project() for the version which pops up a project selection dialog.
-		 */
-		void
-		open_project(
-				const QString &project_filename);
 
 		/**
 		 * Opens the specified files, handling any exceptions thrown by popping up
@@ -134,17 +131,6 @@ namespace GPlatesGui
 				const QStringList &filenames);
 
 		/**
-		 * As @a open_files(QStringList), but for a list of QUrl. For drag-and-drop
-		 * functionality.
-		 *
-		 * The file is read using the default file configuration options for its file format
-		 * as currently set at GPlatesFileIO::FeatureCollectionFileFormat::Registry.
-		 */
-		void
-		open_urls(
-				const QList<QUrl> &urls);
-
-		/**
 		 * Reloads the file given by FileState file_reference @a file and handles any
 		 * exceptions thrown by popping up appropriate error dialogs.
 		 */
@@ -154,12 +140,23 @@ namespace GPlatesGui
 
 
 		/**
+		 * Opens the specified project file and restores to a previously saved GPlates session,
+		 * handling any exceptions thrown by popping up appropriate error dialogs.
+		 *
+		 * See the slot open_project() for the version which pops up a project selection dialog.
+		 */
+		void
+		open_project(
+				const QString &project_filename);
+
+
+		/**
 		 * Saves the current GPlates session state to the specified project file,
 		 * handling any exceptions thrown by popping up appropriate error dialogs.
 		 *
 		 * Returns false if there are unsaved changes or there was an error generating the project file.
 		 *
-		 * See the slot save_project() for the version which pops up a project selection dialog.
+		 * See the slots save_project() and save_project_as() for the methods which pop up a project selection dialog.
 		 */
 		bool
 		save_project(
@@ -260,6 +257,26 @@ namespace GPlatesGui
 		create_file(
 				const GPlatesFileIO::File::non_null_ptr_type &file);
 
+
+		/**
+		 * Returns those URLs that are project files.
+		 *
+		 * This is useful for drag'n'drop functionality.
+		 */
+		QStringList
+		extract_project_filenames_from_file_urls(
+				const QList<QUrl> &urls);
+
+
+		/**
+		 * Returns those URLs that are filenames with extensions registered as feature collection file formats.
+		 *
+		 * This is useful for drag'n'drop functionality.
+		 */
+		QStringList
+		extract_feature_collection_filenames_from_file_urls(
+				const QList<QUrl> &urls);
+
 	public Q_SLOTS:
 
 		/**
@@ -311,13 +328,23 @@ namespace GPlatesGui
 
 
 		/**
+		 * Saves the current GPlates session state to the current project if the current session is a
+		 * project, or calls @a save_project_as to first ask the user to select a project file to save to.
+		 *
+		 * Returns false if there are unsaved changes or there was an error generating the project file.
+		 */
+		bool
+		save_project();
+
+
+		/**
 		 * Opens an Save Project dialog allowing the user to select a project file to save
 		 * the current GPlates session state to.
 		 *
 		 * Returns false if there are unsaved changes or there was an error generating the project file.
 		 */
 		bool
-		save_project();
+		save_project_as();
 
 
 	private:
@@ -338,12 +365,23 @@ namespace GPlatesGui
 
 
 		/**
+		 * Opens a project without first checking for unsaved changes.
+		 *
+		 * If @a save_current_session is true then the current session is saved first.
+		 */
+		void
+		open_project_internal(
+				const QString &project_filename,
+				bool save_current_session);
+
+
+		/**
 		 * Allows calling multiple functions that throw the same types of exceptions and
 		 * handles those exceptions in one place.
 		 */
-		void
+		bool
 		try_catch_file_or_session_load_with_feedback(
-				boost::function<void ()> file_or_session_load_func,
+				boost::function<bool ()> file_or_session_load_func,
 				boost::optional<QString> filename = boost::none);
 
 
@@ -414,6 +452,11 @@ namespace GPlatesGui
 		GPlatesAppLogic::FeatureCollectionFileIO *d_feature_collection_file_io_ptr;
 
 		/**
+		 * The registry of file formats.
+		 */
+		GPlatesFileIO::FeatureCollectionFileFormat::Registry *d_file_format_registry_ptr;
+
+		/**
 		 * Stores the notion of which feature has the focus.
 		 */
 		FeatureFocus &d_feature_focus;
@@ -446,16 +489,26 @@ namespace GPlatesGui
 		GPlatesQtWidgets::OpenFileDialog d_open_project_dialog;
 
 		/**
-		 * Pointer to the dialog we use to notify users of files that were not loaded during
-		 * session/project restore.
-		 */
-		GPlatesQtWidgets::FilesNotLoadedWarningDialog *d_files_not_loaded_warning_dialog_ptr;
-
-		/**
-		 * Pointer to the dialog we use to notify users of files with different GPGIM versions .
+		 * Pointer to the dialog we use to ask users whether to load data files relative to the
+		 * loaded project (or use absolute paths) when it's ambiguous.
+		 *
 		 * This dialog is parented to ViewportWindow so Qt takes care of the cleanup.
 		 */
-		GPlatesQtWidgets::GpgimVersionWarningDialog *d_gpgim_version_warning_dialog_ptr;
+		GPlatesQtWidgets::OpenProjectRelativeOrAbsoluteDialog *d_open_project_relative_or_absolute_dialog_ptr;
+
+		/**
+		 * Pointer to the dialog we use to ask users to locate the missing data files when a project/session is loaded.
+		 *
+		 * This dialog is parented to ViewportWindow so Qt takes care of the cleanup.
+		 */
+		GPlatesQtWidgets::MissingSessionFilesDialog *d_missing_session_files_dialog_ptr;
+
+		/**
+		 * Pointer to the dialog we use to notify users of a non-WGS84 SRS associated
+		 * an original file on disk, and to obtain the users SRS behaviour preference.
+		 * This dialog is parented to ViewportWindow so Qt takes care of the cleanup.
+		 */
+		GPlatesQtWidgets::OgrSrsWriteOptionDialog *d_ogr_srs_write_option_dialog_ptr;
 	};
 
 

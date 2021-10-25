@@ -36,4 +36,3 @@ GPlatesPropertyValues::GpmlFeatureSnapshotReference::print_to(
 {
 	return os << d_feature.get() << "@" << d_revision.get();
 }
-

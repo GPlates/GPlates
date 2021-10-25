@@ -495,10 +495,7 @@ namespace GPlatesOpenGL
 			 */
 			void
 			add(
-					const GPlatesMaths::PolygonOnSphere &polygon)
-			{
-				add(polygon.begin(), polygon.end());
-			}
+					const GPlatesMaths::PolygonOnSphere &polygon);
 
 
 			/**
@@ -526,7 +523,7 @@ namespace GPlatesOpenGL
 
 
 			/**
-			 * Returns the oriented box bounding all points added so far.
+			 * Returns the oriented box bounding of all points added so far.
 			 *
 			 * It's possible some dimensions of the returned oriented bounding box are degenerate.
 			 * A degenerate dimension happens when all bounded points project to the same

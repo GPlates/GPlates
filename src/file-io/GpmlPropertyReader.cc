@@ -632,7 +632,7 @@ GPlatesFileIO::GpmlPropertyReader::get_time_dependent_wrapped_structural_type(
 	{
 		// Shouldn't happen if 'structural_xml_element' is a time-dependent structural type
 		// (such as 'gpml:ConstantValue').
-		return false;
+		return boost::none;
 	}
 
 	// The allowed structural types.

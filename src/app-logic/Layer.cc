@@ -34,8 +34,6 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-#include "scribe/Scribe.h"
-
 
 GPlatesAppLogic::Layer::Layer(
 		const boost::weak_ptr<ReconstructGraphImpl::Layer> &layer_impl) :
@@ -326,8 +324,8 @@ GPlatesAppLogic::Layer::get_all_inputs() const
 }
 
 
-GPlatesAppLogic::LayerTaskParams &
-GPlatesAppLogic::Layer::get_layer_task_params()
+GPlatesAppLogic::LayerParams::non_null_ptr_type
+GPlatesAppLogic::Layer::get_layer_params() const
 {
 	// Throw our own exception to track location of throw.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -336,7 +334,7 @@ GPlatesAppLogic::Layer::get_layer_task_params()
 
 	boost::shared_ptr<ReconstructGraphImpl::Layer> layer_impl(d_impl);
 
-	return layer_impl->get_layer_task_params();
+	return layer_impl->get_layer_params();
 }
 
 
@@ -425,20 +423,6 @@ GPlatesAppLogic::Layer::set_auto_created(
 }
 
 
-GPlatesScribe::TranscribeResult
-GPlatesAppLogic::Layer::transcribe(
-		GPlatesScribe::Scribe &scribe,
-		bool transcribed_construct_data)
-{
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_impl, "d_impl"))
-	{
-		return scribe.get_transcribe_result();
-	}
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
-}
-
-
 GPlatesAppLogic::FeatureCollectionFileState::file_reference
 GPlatesAppLogic::Layer::InputFile::get_file() const
 {
@@ -458,20 +442,6 @@ GPlatesAppLogic::Layer::InputFile::get_file() const
 		GPLATES_ASSERTION_SOURCE);
 
 	return input_file.get();
-}
-
-
-GPlatesScribe::TranscribeResult
-GPlatesAppLogic::Layer::InputFile::transcribe(
-		GPlatesScribe::Scribe &scribe,
-		bool transcribed_construct_data)
-{
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_impl, "d_impl"))
-	{
-		return scribe.get_transcribe_result();
-	}
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 
@@ -582,18 +552,4 @@ GPlatesAppLogic::Layer::InputConnection::disconnect()
 
 	// Get the ReconstructGraph to emit another signal.
 	reconstruct_graph.emit_layer_removed_input_connection(layer);
-}
-
-
-GPlatesScribe::TranscribeResult
-GPlatesAppLogic::Layer::InputConnection::transcribe(
-		GPlatesScribe::Scribe &scribe,
-		bool transcribed_construct_data)
-{
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_impl, "d_impl"))
-	{
-		return scribe.get_transcribe_result();
-	}
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

@@ -23,9 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "app-logic/ScribeExportAppLogic.h"
-
-#include "file-io/ScribeExportFileIO.h"
+#include "data-mining/ScribeExportDataMining.h"
 
 #include "scribe/ScribeExportExternal.h"
 #include "scribe/ScribeExportRegistration.h"
@@ -37,8 +35,7 @@
  * See "ScribeExportRegistration.h" for more details.
  */
 #define SCRIBE_EXPORT_GPLATES \
-		SCRIBE_EXPORT_APP_LOGIC \
-		SCRIBE_EXPORT_FILE_IO \
+		SCRIBE_EXPORT_DATA_MINING \
 		SCRIBE_EXPORT_EXTERNAL
 
 

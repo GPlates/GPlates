@@ -128,9 +128,18 @@ GPlatesQtWidgets::ManageFeatureCollections::ShapefileEditConfiguration::edit_con
 				GPlatesFileIO::OgrReader::read_field_names(file, d_model, read_errors);
 
 		// This is the model-to-attribute map that will be modified.
-		// NOTE: We're modifying the new file configuration in-place.
+		//
+		// NOTE: The model-to-attribute map is no longer stored in the new file configuration.
+		// Instead it's stored in the feature collection itself.
+		//
+		// If, for some reason, the feature collection is invalid then just return the configuration passed to us.
+		if (!file.get_feature_collection().is_valid())
+		{
+			return original_configuration;
+		}
 		QMap<QString,QString> &model_to_attribute_map =
-				current_ogr_configuration.get()->get_model_to_attribute_map();
+				GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::get_model_to_attribute_map(
+						*file.get_feature_collection());
 
 		ShapefileFileFormatConfigurationDialog dialog(parent_widget);
 		dialog.setup(wrap_to_dateline, filename, field_names, model_to_attribute_map);

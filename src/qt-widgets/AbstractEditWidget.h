@@ -46,9 +46,11 @@ namespace GPlatesQtWidgets
 	 * and add references to the new edit widget in the following places:-
 	 *
 	 * EditWidgetGroupBox.h:
+	 *  - make forward declarations for the property value type and the edit widget class.
 	 *  - add a member which is a pointer to an instance of the edit widget.
 	 *  - declare an activate_edit_*_widget() function.
 	 * EditWidgetGroupBox.cc:
+	 *  - #include your edit widget header, of course.
 	 *  - add initialiser to constructor.
 	 *  - add widget to edit_layout in constructor.
 	 *  - connect widget's commit_me() signal in constructor.

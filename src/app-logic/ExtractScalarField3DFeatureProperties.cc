@@ -39,13 +39,13 @@ namespace
 	public:
 
 		CanResolveScalarField3DFeature() :
-			d_has_raster_feature(false)
+			d_has_scalar_field_feature(false)
 		{  }
 
 		bool
 		has_scalar_field_3d_feature() const
 		{
-			return d_has_raster_feature;
+			return d_has_scalar_field_feature;
 		}
 
 		virtual
@@ -65,7 +65,7 @@ namespace
 		{
 			if (d_seen_gpml_scalar_field_3d_file)
 			{
-				d_has_raster_feature = true;
+				d_has_scalar_field_feature = true;
 			}
 		}
 
@@ -119,7 +119,7 @@ namespace
 		bool d_inside_constant_value;
 		bool d_inside_piecewise_aggregation;
 
-		bool d_has_raster_feature;
+		bool d_has_scalar_field_feature;
 	};
 }
 
@@ -197,7 +197,7 @@ GPlatesAppLogic::ExtractScalarField3DFeatureProperties::visit_gpml_piecewise_agg
 				time_window.valid_time();
 
 		// If the time window period contains the current reconstruction time then visit.
-		// The time periods should be mutually exclusive - if we happen to be it
+		// The time periods should be mutually exclusive - if we happen to be in
 		// two time periods then we're probably right on the boundary between the two
 		// and then it doesn't really matter which one we choose.
 		if (time_period->contains(d_reconstruction_time))

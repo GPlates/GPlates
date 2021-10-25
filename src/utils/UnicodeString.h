@@ -33,6 +33,7 @@
 
 #include "QtStreamable.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
 #include "scribe/Transcribe.h"
 
 
@@ -165,14 +166,14 @@ namespace GPlatesUtils
 	private:
 		QString d_qstring;
 
-		//! Transcribe to/from serialization archives.
+	private: // Transcribe for sessions/projects...
+
+		friend class GPlatesScribe::Access;
+
 		GPlatesScribe::TranscribeResult
 		transcribe(
 				GPlatesScribe::Scribe &scribe,
 				bool transcribed_construct_data);
-
-		// Only the scribe system should be able to transcribe.
-		friend class GPlatesScribe::Access;
 	};
 
 

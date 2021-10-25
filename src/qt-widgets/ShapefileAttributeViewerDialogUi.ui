@@ -1,7 +1,8 @@
-<ui version="4.0" >
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
  <class>ShapefileAttributeViewerDialog</class>
- <widget class="QDialog" name="ShapefileAttributeViewerDialog" >
-  <property name="geometry" >
+ <widget class="QDialog" name="ShapefileAttributeViewerDialog">
+  <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
@@ -9,32 +10,32 @@
     <height>496</height>
    </rect>
   </property>
-  <property name="windowTitle" >
-   <string>Shapefile Attributes</string>
+  <property name="windowTitle">
+   <string>Attribute Table</string>
   </property>
-  <property name="windowIcon" >
-   <iconset resource="../qt-resources/qt_widgets.qrc" >
+  <property name="windowIcon">
+   <iconset resource="../qt-resources/qt_widgets.qrc">
     <normaloff>:/GPlates-icon-160x160-opaque.png</normaloff>:/GPlates-icon-160x160-opaque.png</iconset>
   </property>
-  <layout class="QGridLayout" >
-   <item row="0" column="0" >
-    <layout class="QHBoxLayout" >
+  <layout class="QGridLayout">
+   <item row="0" column="0">
+    <layout class="QHBoxLayout">
      <item>
-      <widget class="QLabel" name="label_collection" >
-       <property name="text" >
+      <widget class="QLabel" name="label_collection">
+       <property name="text">
         <string>Feature Collection:</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QComboBox" name="combo_feature_collections" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Fixed" hsizetype="Expanding" >
+      <widget class="QComboBox" name="combo_feature_collections">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
          <horstretch>3</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
        </property>
-       <property name="minimumSize" >
+       <property name="minimumSize">
         <size>
          <width>230</width>
          <height>0</height>
@@ -43,9 +44,9 @@
       </widget>
      </item>
      <item>
-      <widget class="QWidget" native="1" name="widget" >
-       <property name="sizePolicy" >
-        <sizepolicy vsizetype="Preferred" hsizetype="Expanding" >
+      <widget class="QWidget" name="widget" native="true">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
          <horstretch>2</horstretch>
          <verstretch>0</verstretch>
         </sizepolicy>
@@ -54,15 +55,15 @@
      </item>
     </layout>
    </item>
-   <item row="1" column="0" >
-    <widget class="QTableWidget" name="table_attributes" >
-     <property name="alternatingRowColors" >
+   <item row="1" column="0">
+    <widget class="QTableWidget" name="table_attributes">
+     <property name="alternatingRowColors">
       <bool>true</bool>
      </property>
-     <property name="rowCount" >
+     <property name="rowCount">
       <number>10</number>
      </property>
-     <property name="columnCount" >
+     <property name="columnCount">
       <number>5</number>
      </property>
      <row/>
@@ -82,14 +83,14 @@
      <column/>
     </widget>
    </item>
-   <item row="2" column="0" >
-    <layout class="QHBoxLayout" >
+   <item row="2" column="0">
+    <layout class="QHBoxLayout">
      <item>
       <spacer>
-       <property name="orientation" >
+       <property name="orientation">
         <enum>Qt::Horizontal</enum>
        </property>
-       <property name="sizeHint" stdset="0" >
+       <property name="sizeHint" stdset="0">
         <size>
          <width>40</width>
          <height>20</height>
@@ -98,11 +99,11 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="button_close" >
-       <property name="text" >
+      <widget class="QPushButton" name="button_close">
+       <property name="text">
         <string>Close</string>
        </property>
-       <property name="default" >
+       <property name="default">
         <bool>true</bool>
        </property>
       </widget>
@@ -112,8 +113,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
-  <include location="../qt-resources/qt_widgets.qrc" />
+  <include location="../qt-resources/qt_widgets.qrc"/>
  </resources>
  <connections>
   <connection>
@@ -122,11 +122,11 @@
    <receiver>ShapefileAttributeViewerDialog</receiver>
    <slot>reject()</slot>
    <hints>
-    <hint type="sourcelabel" >
+    <hint type="sourcelabel">
      <x>465</x>
      <y>385</y>
     </hint>
-    <hint type="destinationlabel" >
+    <hint type="destinationlabel">
      <x>470</x>
      <y>413</y>
     </hint>

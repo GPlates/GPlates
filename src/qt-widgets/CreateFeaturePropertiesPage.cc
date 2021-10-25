@@ -158,11 +158,9 @@ Q_DECLARE_METATYPE(DefaultConstructibleNonNullPtrType<const GPlatesModel::GpgimP
 
 
 GPlatesQtWidgets::CreateFeaturePropertiesPage::CreateFeaturePropertiesPage(
-		const GPlatesModel::Gpgim &gpgim,
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
 	QWidget(parent_),
-	d_gpgim(gpgim),
 	// Start off with the most basic feature type.
 	// It's actually an 'abstract' feature but it'll get reset to a 'concrete' feature...
 	d_feature_type(GPlatesModel::FeatureType::create_gml("AbstractFeature")),
@@ -240,7 +238,8 @@ void
 GPlatesQtWidgets::CreateFeaturePropertiesPage::initialise(
 		const GPlatesModel::FeatureType &feature_type,
 		const property_seq_type &feature_properties,
-		const property_name_seq_type &reserved_feature_properties)
+		const property_name_seq_type &reserved_feature_properties,
+        const QString &adjective)
 {
 	d_feature_type = feature_type;
 	d_reserved_feature_properties = reserved_feature_properties;
@@ -250,11 +249,13 @@ GPlatesQtWidgets::CreateFeaturePropertiesPage::initialise(
 	//
 
 	available_properties_label->setText(
-			tr("Properties available to add to the '%1' feature:").arg(
-					convert_qualified_xml_name_to_qstring(feature_type)));
+			tr("Properties available to add to the %1'%2' feature:")
+					.arg(adjective)
+					.arg(convert_qualified_xml_name_to_qstring(feature_type)) );
 	existing_properties_label->setText(
-			tr("Properties added to the '%1' feature:").arg(
-					convert_qualified_xml_name_to_qstring(feature_type)));
+			tr("Properties added to the %1'%2' feature:")
+					.arg(adjective)
+					.arg(convert_qualified_xml_name_to_qstring(feature_type)) );
 
 	// First initialise the existing properties table using the feature properties.
 	initialise_existing_properties_table(feature_properties);
@@ -333,7 +334,7 @@ GPlatesQtWidgets::CreateFeaturePropertiesPage::update_available_properties_table
 
 	// Query the GPGIM for the feature class associated with the feature type.
 	boost::optional<GPlatesModel::GpgimFeatureClass::non_null_ptr_to_const_type> gpgim_feature_class =
-			d_gpgim.get_feature_class(d_feature_type);
+			GPlatesModel::Gpgim::instance().get_feature_class(d_feature_type);
 	if (!gpgim_feature_class)
 	{
 		QMessageBox::warning(this,

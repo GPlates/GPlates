@@ -30,22 +30,54 @@
 
 #include "GeoTimeInstant.h"
 
+#include "global/GPlatesAssert.h"
+
 #include "maths/MathsUtils.h"
+#include "maths/Real.h"
 
 #include "scribe/Scribe.h"
+#include "scribe/TranscribeDelegateProtocol.h"
 
 
 const GPlatesPropertyValues::GeoTimeInstant
 GPlatesPropertyValues::GeoTimeInstant::create_distant_past()
 {
-	return GeoTimeInstant(TimePositionTypes::DistantPast);
+	return GeoTimeInstant(
+			TimePositionTypes::DistantPast,
+			GPlatesMaths::positive_infinity<double>());
 }
 
 
 const GPlatesPropertyValues::GeoTimeInstant
 GPlatesPropertyValues::GeoTimeInstant::create_distant_future()
 {
-	return GeoTimeInstant(TimePositionTypes::DistantFuture);
+	return GeoTimeInstant(
+			TimePositionTypes::DistantFuture,
+			GPlatesMaths::negative_infinity<double>());
+}
+
+
+GPlatesPropertyValues::GeoTimeInstant::GeoTimeInstant(
+		const double &value_) :
+	d_value(value_)
+{
+	if (GPlatesMaths::is_finite(d_value))
+	{
+		d_type = TimePositionTypes::Real;
+	}
+	else if (GPlatesMaths::is_positive_infinity(d_value))
+	{
+		d_type = TimePositionTypes::DistantPast;
+	}
+	else if (GPlatesMaths::is_negative_infinity(d_value))
+	{
+		d_type = TimePositionTypes::DistantFuture;
+	}
+	else
+	{
+		// Encountered a NaN.
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+	}
 }
 
 
@@ -129,18 +161,22 @@ GPlatesPropertyValues::GeoTimeInstant::is_coincident_with(
 		// they're not the same sort of "distant"), so there's no chance that these two
 		// time-instants can be equal.
 		return false;
+	} else if (d_type != TimePositionTypes::Real) {
+		// Both types are either "distant past" or "distant future".
+		//
+		// Note:  For now, if we encounter two time-instants which are both in the "distant past",
+		// we're going to consider them equal.  (Even though we don't actually know what the times
+		// in the "distant past" were, I think that it will be appropriate for the program to treat
+		// the two time-instants in the same way, so we'll call them equal.)  Similarly for two
+		// time-instants which are both in the "distant future".
+		// Note: Comparing two "distant past" time instants (or two "distant future") as equal also
+		// matches up with our current use of boost::equivalent to create "operator==" from
+		// "operator<" and "operator>".
+		return true;
+	} else {
+		// Both types are "real"; hence, the geo-times must be compared by "value".
+		return GPlatesMaths::are_geo_times_approximately_equal(d_value, other.d_value);
 	}
-
-	// Note:  For now, if we encounter two time-instants which are both in the "distant past",
-	// we're going to consider them equal.  (Even though we don't actually know what the times
-	// in the "distant past" were, I think that it will be appropriate for the program to treat
-	// the two time-instants in the same way, so we'll call them equal.)  Similarly for two
-	// time-instants which are both in the "distant future".
-	//
-	// Note that all geo-times in the distant past and the distant future have their "value"s
-	// initialised to 0.0, so all geo-times in the distant past will compare equal by
-	// comparison of "value", as will all geo-times in the distant future.
-	return (GPlatesMaths::are_geo_times_approximately_equal(d_value, other.d_value));
 }
 
 
@@ -183,17 +219,58 @@ GPlatesPropertyValues::GeoTimeInstant::operator<(
 
 
 GPlatesScribe::TranscribeResult
-GPlatesPropertyValues::GeoTimeInstant::transcribe(
+GPlatesPropertyValues::GeoTimeInstant::transcribe_construct_data(
 		GPlatesScribe::Scribe &scribe,
-		bool transcribed_construct_data)
+		GPlatesScribe::ConstructObject<GeoTimeInstant> &geo_time_instant)
 {
-	if (!transcribed_construct_data)
+	//
+	// Using transcribe delegate protocol so that GeoTimeInstant, Real and double/float
+	// can be used interchangeably (ie, are transcription compatible) except NaN is not
+	// supported by GeoTimeInstant (+/- Infinity is OK though).
+	//
+	// So we only transcribe the value. The type can be inferred from the value.
+	//
+	// Note that +/- Infinity and NaN (float and double) are handled properly by the
+	// scribe archive writers/readers.
+	//
+	if (scribe.is_saving())
 	{
-		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_type, "d_type") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, d_value, "d_value"))
+		transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, geo_time_instant->d_value);
+	}
+	else // loading...
+	{
+		double value;
+
+		const GPlatesScribe::TranscribeResult transcribe_result =
+				transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, value);
+		if (transcribe_result != GPlatesScribe::TRANSCRIBE_SUCCESS)
 		{
-			return scribe.get_transcribe_result();
+			return transcribe_result;
 		}
+
+		//
+		// Set the 'type' to distant past/future if value is +/- Infinity, otherwise real.
+		//
+		TimePositionTypes::TimePositionType type;
+		if (GPlatesMaths::is_finite(value))
+		{
+			type = TimePositionTypes::Real;
+		}
+		else if (GPlatesMaths::is_positive_infinity(value))
+		{
+			type = TimePositionTypes::DistantPast;
+		}
+		else if (GPlatesMaths::is_negative_infinity(value))
+		{
+			type = TimePositionTypes::DistantFuture;
+		}
+		else // NaN ...
+		{
+			// NaN is not supported for GeoTimeInstant.
+			return GPlatesScribe::TRANSCRIBE_INCOMPATIBLE;
+		}
+
+		geo_time_instant.construct_object(type, value);
 	}
 
 	return GPlatesScribe::TRANSCRIBE_SUCCESS;
@@ -201,43 +278,53 @@ GPlatesPropertyValues::GeoTimeInstant::transcribe(
 
 
 GPlatesScribe::TranscribeResult
-GPlatesPropertyValues::GeoTimeInstant::transcribe_construct_data(
+GPlatesPropertyValues::GeoTimeInstant::transcribe(
 		GPlatesScribe::Scribe &scribe,
-		GPlatesScribe::ConstructObject<GeoTimeInstant> &geo_time_instant)
+		bool transcribed_construct_data)
 {
-	if (scribe.is_saving())
+	// If not already transcribed in 'transcribe_construct_data()'.
+	if (!transcribed_construct_data)
 	{
-		scribe.save(TRANSCRIBE_SOURCE, geo_time_instant->d_type, "d_type");
-		scribe.save(TRANSCRIBE_SOURCE, geo_time_instant->d_value, "d_value");
-	}
-	else // loading...
-	{
-		GPlatesScribe::LoadRef<TimePositionTypes::TimePositionType> type =
-				scribe.load<TimePositionTypes::TimePositionType>(TRANSCRIBE_SOURCE, "d_type");
-		if (!type.is_valid())
+		//
+		// Using transcribe delegate protocol so that GeoTimeInstant, Real and double/float
+		// can be used interchangeably (ie, are transcription compatible) except NaN is not
+		// supported by GeoTimeInstant (+/- Infinity is OK though).
+		//
+		// So we only transcribe the value. The type can be inferred from the value.
+		//
+		// Note that +/- Infinity and NaN (float and double) are handled properly by the
+		// scribe archive writers/readers.
+		//
+		const GPlatesScribe::TranscribeResult transcribe_result =
+				transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, d_value);
+		if (transcribe_result != GPlatesScribe::TRANSCRIBE_SUCCESS)
 		{
-			return scribe.get_transcribe_result();
+			return transcribe_result;
 		}
 
-		GPlatesScribe::LoadRef<double> value = scribe.load<double>(TRANSCRIBE_SOURCE, "d_value");
-		if (!value.is_valid())
+		if (scribe.is_loading())
 		{
-			return scribe.get_transcribe_result();
+			//
+			// Set the 'type' to distant past/future if value is +/- Infinity, otherwise real.
+			//
+			if (GPlatesMaths::is_finite(d_value))
+			{
+				d_type = TimePositionTypes::Real;
+			}
+			else if (GPlatesMaths::is_positive_infinity(d_value))
+			{
+				d_type = TimePositionTypes::DistantPast;
+			}
+			else if (GPlatesMaths::is_negative_infinity(d_value))
+			{
+				d_type = TimePositionTypes::DistantFuture;
+			}
+			else // NaN ...
+			{
+				// NaN is not supported for GeoTimeInstant.
+				return GPlatesScribe::TRANSCRIBE_INCOMPATIBLE;
+			}
 		}
-
-		if (type == TimePositionTypes::Real)
-		{
-			geo_time_instant.construct_object(value);
-			geo_time_instant->d_type = type;
-		}
-		else
-		{
-			geo_time_instant.construct_object(type);
-			geo_time_instant->d_value = value;
-		}
-
-		scribe.relocated(TRANSCRIBE_SOURCE, geo_time_instant->d_type, type);
-		scribe.relocated(TRANSCRIBE_SOURCE, geo_time_instant->d_value, value);
 	}
 
 	return GPlatesScribe::TRANSCRIBE_SUCCESS;

@@ -30,21 +30,22 @@
 #include <boost/optional.hpp>
 
 #include "FiniteRotation.h"
+
+#include "ConstGeometryOnSphereVisitor.h"
+#include "GreatCircleArc.h"
+#include "GreatCircle.h"
 #include "HighPrecision.h"
-#include "UnitVector3D.h"
-#include "Vector3D.h"
+#include "IndeterminateResultException.h"
+#include "InvalidOperationException.h"
+#include "LatLonPoint.h"
 #include "MathsUtils.h"
 #include "MultiPointOnSphere.h"
 #include "PointOnSphere.h"
-#include "PolylineOnSphere.h"
 #include "PolygonOnSphere.h"
-#include "GreatCircleArc.h"
-#include "GreatCircle.h"
+#include "PolylineOnSphere.h"
 #include "SmallCircle.h"
-#include "LatLonPoint.h"
-#include "InvalidOperationException.h"
-#include "IndeterminateResultException.h"
-#include "ConstGeometryOnSphereVisitor.h"
+#include "UnitVector3D.h"
+#include "Vector3D.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -167,6 +168,24 @@ GPlatesMaths::FiniteRotation::create(
 	return FiniteRotation(uq, axis);
 }
 
+const GPlatesMaths::FiniteRotation
+GPlatesMaths::FiniteRotation::create(
+		const PointOnSphere &from_point,
+		const PointOnSphere &to_point)
+{
+	const Vector3D rotation_axis = cross(from_point.position_vector(), to_point.position_vector());
+
+	// If the points are the same or antipodal then there are an infinite number of rotation axes
+	// possible, so we just pick one arbitrarily.
+	const PointOnSphere pole = (rotation_axis.magSqrd() == 0)
+			? PointOnSphere(generate_perpendicular(from_point.position_vector()))
+			: PointOnSphere(rotation_axis.get_normalisation());
+
+	const real_t angle = acos(dot(from_point.position_vector(), to_point.position_vector()));
+
+	return create(pole, angle);
+}
+
 
 const GPlatesMaths::FiniteRotation
 GPlatesMaths::FiniteRotation::create(
@@ -174,6 +193,13 @@ GPlatesMaths::FiniteRotation::create(
 		const boost::optional<UnitVector3D> &axis_hint_)
 {
 	return FiniteRotation(uq, axis_hint_);
+}
+
+
+const GPlatesMaths::FiniteRotation
+GPlatesMaths::FiniteRotation::create_identity_rotation()
+{
+	return FiniteRotation(UnitQuaternion3D::create_identity_rotation(), boost::none);
 }
 
 
@@ -191,13 +217,8 @@ const GPlatesMaths::UnitVector3D
 GPlatesMaths::FiniteRotation::operator*(
 		const UnitVector3D &unit_vect) const
 {
-	Vector3D v(unit_vect);
-	const Vector3D &uq_v = d_unit_quat.vector_part();
-
-	Vector3D v_rot =
-	 d_d * v +
-	 (2.0 * dot(uq_v, v)) * uq_v +
-	 cross(d_e, v);
+	// Re-use the operator associated with 'Vector3D'.
+	Vector3D v_rot = operator*(Vector3D(unit_vect));
 
 	// FIXME: This both sucks *and* blows.  All this stuff needs a cleanup.
 	real_t mag_sqrd = v_rot.magSqrd();
@@ -228,6 +249,16 @@ GPlatesMaths::FiniteRotation::operator*(
 }
 
 
+const GPlatesMaths::Vector3D
+GPlatesMaths::FiniteRotation::operator*(
+		const Vector3D &vect) const
+{
+	const Vector3D &uq_v = d_unit_quat.vector_part();
+
+	return d_d * vect + (2.0 * dot(uq_v, vect)) * uq_v + cross(d_e, vect);
+}
+
+
 namespace {
 
 	const GPlatesMaths::UnitQuaternion3D
@@ -244,8 +275,8 @@ namespace {
 
 		real_t cos_theta = dot(q1, q2);
 
-		// Since q and -q map to the same rotation (where 'q' is any quaternion) it's possible that
-		// q1 and q2 could be separated by a longer path than are q1 and -q2 (or -q1 and q2).
+		// Since q and -q both rotate a point to the same final position (where 'q' is any quaternion)
+		// it's possible that q1 and q2 could be separated by a longer path than are q1 and -q2 (or -q1 and q2).
 		// So check if we're using the longer path and negate either quaternion in order to
 		// take the shorter path.
 		//
@@ -440,16 +471,39 @@ GPlatesMaths::operator*(
 		const FiniteRotation &r,
 		const GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere> &p)
 {
-	std::vector<PointOnSphere> rotated_points;
-	rotated_points.reserve(p->number_of_vertices());
+	std::vector<PointOnSphere> rotated_exterior_ring;
+	rotated_exterior_ring.reserve(p->number_of_vertices_in_exterior_ring());
 
-	PolygonOnSphere::vertex_const_iterator iter = p->vertex_begin();
-	PolygonOnSphere::vertex_const_iterator end = p->vertex_end();
-	for ( ; iter != end; ++iter) {
-		rotated_points.push_back(PointOnSphere(r * iter->position_vector()));
+	// Rotate the exterior ring.
+	PolygonOnSphere::ring_vertex_const_iterator exterior_iter = p->exterior_ring_vertex_begin();
+	PolygonOnSphere::ring_vertex_const_iterator exterior_end = p->exterior_ring_vertex_end();
+	for ( ; exterior_iter != exterior_end; ++exterior_iter)
+	{
+		rotated_exterior_ring.push_back(PointOnSphere(r * exterior_iter->position_vector()));
 	}
 
-	return PolygonOnSphere::create_on_heap(rotated_points);
+	const unsigned int num_interior_rings = p->number_of_interior_rings();
+	if (num_interior_rings == 0)
+	{
+		return PolygonOnSphere::create_on_heap(rotated_exterior_ring);
+	}
+
+	std::vector< std::vector<PointOnSphere> > rotated_interior_rings(num_interior_rings);
+
+	// Rotate the interior rings.
+	for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; interior_ring_index++)
+	{
+		rotated_interior_rings[interior_ring_index].reserve(p->number_of_vertices_in_interior_ring(interior_ring_index));
+
+		PolygonOnSphere::ring_vertex_const_iterator interior_iter = p->interior_ring_vertex_begin(interior_ring_index);
+		PolygonOnSphere::ring_vertex_const_iterator interior_end = p->interior_ring_vertex_end(interior_ring_index);
+		for ( ; interior_iter != interior_end; ++interior_iter)
+		{
+			rotated_interior_rings[interior_ring_index].push_back(PointOnSphere(r * interior_iter->position_vector()));
+		}
+	} // loop over interior rings
+
+	return PolygonOnSphere::create_on_heap(rotated_exterior_ring, rotated_interior_rings);
 }
 
 

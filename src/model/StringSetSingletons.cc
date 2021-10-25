@@ -75,6 +75,26 @@ GPlatesModel::StringSetSingletons::text_content_instance()
 }
 
 GPlatesUtils::StringSet &
+GPlatesModel::StringSetSingletons::timescale_band_instance()
+{
+	return GPlatesUtils::Singleton<
+		GPlatesUtils::StringSet,
+		GPlatesUtils::CreateUsingNew,
+		GPlatesUtils::DefaultLifetime,
+		TimescaleBandInstance>::instance();
+}
+
+GPlatesUtils::StringSet &
+GPlatesModel::StringSetSingletons::timescale_name_instance()
+{
+	return GPlatesUtils::Singleton<
+		GPlatesUtils::StringSet,
+		GPlatesUtils::CreateUsingNew,
+		GPlatesUtils::DefaultLifetime,
+		TimescaleNameInstance>::instance();
+}
+
+GPlatesUtils::StringSet &
 GPlatesModel::StringSetSingletons::xml_attribute_name_instance()
 {
 	return GPlatesUtils::Singleton<

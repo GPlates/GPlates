@@ -61,6 +61,14 @@ namespace Loki
         {
             dismissed_ = true;
         }
+
+		// Calling this avoids the 'unused variable' warning on some compilers.
+		// It is only needed if Dismiss() is not called - which is essentially
+		// what LOKI_ON_BLOCK_EXIT does - but LOKI_ON_BLOCK_EXIT does not
+		// currently silence this warning so an explicit ScopeGuard reference
+		// variable, followed by a call to this method, is needed.
+		void silence_unused_variable_warning() const
+		{ }
     };
     
     ////////////////////////////////////////////////////////////////
@@ -357,8 +365,8 @@ namespace Loki
 #define LOKI_CONCATENATE(s1, s2)         LOKI_CONCATENATE_DIRECT(s1, s2)
 #define LOKI_ANONYMOUS_VARIABLE(str)     LOKI_CONCATENATE(str, __LINE__)
 
-#define LOKI_ON_BLOCK_EXIT      ScopeGuard LOKI_ANONYMOUS_VARIABLE(scopeGuard) = MakeGuard
-#define LOKI_ON_BLOCK_EXIT_OBJ  ScopeGuard LOKI_ANONYMOUS_VARIABLE(scopeGuard) = MakeObjGuard
+#define LOKI_ON_BLOCK_EXIT      Loki::ScopeGuard LOKI_ANONYMOUS_VARIABLE(scopeGuard) = Loki::MakeGuard
+#define LOKI_ON_BLOCK_EXIT_OBJ  Loki::ScopeGuard LOKI_ANONYMOUS_VARIABLE(scopeGuard) = Loki::MakeObjGuard
 
 #endif //LOKI_SCOPEGUARD_H_
 

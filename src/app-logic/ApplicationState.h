@@ -27,13 +27,11 @@
 #define GPLATES_APP_LOGIC_APPLICATIONSTATE_H
 
 #include <list>
-#include <map>
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QObject>
-#include <QString>
 
 #include "FeatureCollectionFileState.h"
 #include "Layer.h"
@@ -51,20 +49,12 @@
 #include "model/types.h"
 #include "model/WeakReferenceCallback.h"
 
-#include "scribe/ScribeExceptions.h"
-#include "scribe/Transcribe.h"
-
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // NOTE: Please use forward declarations (and boost::scoped_ptr) instead of including headers
 // where possible.
 // This header gets included in a lot of other files and we want to reduce compile times.
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-namespace GPlatesModel
-{
-	class Gpgim;
-}
 
 namespace GPlatesFileIO
 {
@@ -105,15 +95,6 @@ namespace GPlatesAppLogic
 		 */
 		typedef std::map<QString,std::pair<double,double> > chron_to_time_interval_map_type;
 
-		/**
-		 * Returns the centralised query point for the GPGIM.
-		 */
-		const GPlatesModel::Gpgim &
-		get_gpgim()
-		{
-			return *d_gpgim;
-		}
-
 		GPlatesModel::ModelInterface &
 		get_model_interface()
 		{
@@ -145,11 +126,19 @@ namespace GPlatesAppLogic
 		FeatureCollectionFileState &
 		get_feature_collection_file_state();
 
+		//! Const overload.
+		const FeatureCollectionFileState &
+		get_feature_collection_file_state() const;
+
 		/**
 		 * Handling file formats for reading and/or writing feature collection files.
 		 */
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry &
 		get_feature_collection_file_format_registry();
+
+		//! Const overload.
+		const GPlatesFileIO::FeatureCollectionFileFormat::Registry &
+		get_feature_collection_file_format_registry() const;
 
 		/**
 		 * Handling reading/writing feature collection files and notification of read errors.
@@ -157,12 +146,20 @@ namespace GPlatesAppLogic
 		FeatureCollectionFileIO &
 		get_feature_collection_file_io();
 
+		//! Const overload.
+		const FeatureCollectionFileIO &
+		get_feature_collection_file_io() const;
+
 		/**
 		 * Responsible for all persistent GPlates session storage including user preferences.
 		 */
 		UserPreferences &
 		get_user_preferences();
-		
+
+		//! Const overload.
+		const UserPreferences &
+		get_user_preferences() const;
+
 
 		/**
 		 * Returns the registry of various ways to reconstruct a feature
@@ -173,17 +170,29 @@ namespace GPlatesAppLogic
 		ReconstructMethodRegistry &
 		get_reconstruct_method_registry();
 
+		//! Const overload.
+		const ReconstructMethodRegistry &
+		get_reconstruct_method_registry() const;
+
 		/**
 		 * Returns the layer task registry used to create layer tasks.
 		 */
 		LayerTaskRegistry &
 		get_layer_task_registry();
 
+		//! Const overload.
+		const LayerTaskRegistry &
+		get_layer_task_registry() const;
+
 		/**
 		 * The Log Model is a Qt Model/View class that does the back-end work for the LogDialog.
 		 */
 		LogModel &
 		get_log_model();
+
+		//! Const overload.
+		const LogModel &
+		get_log_model() const;
 
 		/**
 		 * Returns the reconstruct graph containing the connected layer tasks.
@@ -193,6 +202,10 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructGraph &
 		get_reconstruct_graph();
+
+		//! Const overload.
+		const ReconstructGraph &
+		get_reconstruct_graph() const;
 
 		/**
 		 * If @a update_default is true, this updates the default reconstruction tree
@@ -403,22 +416,22 @@ namespace GPlatesAppLogic
 
 			void
 			publisher_modified(
+					const weak_reference_type &reference,
 					const modified_event_type &event)
 			{
-				// Perform a reconstruction every time the model (feature store) is modified.
-				// We'll need to put model notification guards in the appropriate places to
-				// avoid excessive reconstructions.
-				d_application_state->reconstruct();
+				// Perform a reconstruction every time the model (feature store) is modified,
+				// unless we are already inside a reconstruction (avoid infinite cycle).
+				if (!d_application_state->d_currently_reconstructing)
+				{
+					// Clients should put model notification guards in the appropriate places to
+					// avoid excessive reconstructions.
+					d_application_state->reconstruct();
+				}
 			}
 
 			ApplicationState *d_application_state;
 		};
 
-
-		/**
-		 * The GPGIM.
-		 */
-		GPlatesGlobal::PointerTraits<const GPlatesModel::Gpgim>::non_null_ptr_type d_gpgim;
 
 		//! The model store.
 		GPlatesModel::ModelInterface d_model;
@@ -506,6 +519,16 @@ namespace GPlatesAppLogic
 		bool d_reconstruct_on_scope_exit;
 
 		/**
+		 * Is true if we are currently inside/executing the @a reconstruct method.
+		 *
+		 * This is used to avoid re-entering @a reconstruct (due to a model notification event
+		 * happening inside the @a reconstruct method). Clients still need to make sure they
+		 * don't call @a reconstruct if they form part of the @a reconstruct implementation -
+		 * ie, it obviously makes no sense for @a ReconstructGraph to call @a reconstruct.
+		 */
+		bool d_currently_reconstructing;
+
+		/**
 		 * Suppress the normal auto-creation of layers upon file load in handle_file_state_files_added(),
 		 * which would normally be triggered by a call to FeatureCollectionFileIO::load_files().
 		 */
@@ -529,6 +552,8 @@ namespace GPlatesAppLogic
 		 *
 		 */
 		chron_to_time_interval_map_type d_chron_to_time_interval_map;
+
+		boost::scoped_ptr<AgeModelCollection> d_age_model_collection;
 
 
 		/**
@@ -554,35 +579,6 @@ namespace GPlatesAppLogic
 
 		// Make friend so can call @a begin_reconstruct_on_scope_exit and @a end_reconstruct_on_scope_exit.
 		friend class ScopedReconstructGuard;
-
-	private: 
-
-		boost::scoped_ptr<AgeModelCollection> d_age_model_collection;
-
-		// Transcribing...
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				bool transcribed_construct_data);
-
-		static
-		GPlatesScribe::TranscribeResult
-		transcribe_construct_data(
-				GPlatesScribe::Scribe &scribe,
-				GPlatesScribe::ConstructObject<ApplicationState> &application_state)
-		{
-			// Shouldn't construct object - always transcribe existing object.
-			GPlatesGlobal::Assert<GPlatesScribe::Exceptions::ConstructNotAllowed>(
-					false,
-					GPLATES_ASSERTION_SOURCE,
-					typeid(ApplicationState));
-
-			// Shouldn't be able to get here - keep compiler happy.
-			return GPlatesScribe::TRANSCRIBE_INCOMPATIBLE;
-		}
-
-		// Only the scribe system should be able to transcribe.
-		friend class GPlatesScribe::Access;
 	};
 }
 

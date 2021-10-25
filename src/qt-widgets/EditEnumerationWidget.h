@@ -36,10 +36,6 @@
 
 #include "EditEnumerationWidgetUi.h"
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
 
 namespace GPlatesQtWidgets
 {
@@ -52,7 +48,6 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		EditEnumerationWidget(
-				const GPlatesModel::Gpgim &gpgim,
 				QWidget *parent_ = NULL);
 		
 		virtual
@@ -87,8 +82,6 @@ namespace GPlatesQtWidgets
 		}
 	
 	private:
-		
-		const GPlatesModel::Gpgim &d_gpgim;
 
 		/**
 		 * The type of the PropertyValue which this widget is currently configured to produce.

@@ -134,21 +134,6 @@ namespace GPlatesFeatureVisitors
 
 		virtual
 		void
-		visit_gpml_finite_rotation(
-				const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
-
-		virtual
-		void
-		visit_gpml_finite_rotation_slerp(
-				const GPlatesPropertyValues::GpmlFiniteRotationSlerp &gpml_finite_rotation_slerp);
-
-		virtual
-		void
-		visit_gpml_irregular_sampling(
-				const GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
-
-		virtual
-		void
 		visit_gpml_key_value_dictionary(
 				const GPlatesPropertyValues::GpmlKeyValueDictionary &gpml_key_value_dictionary);
 
@@ -220,7 +205,8 @@ namespace GPlatesFeatureVisitors
 
 		void
 		write_polygon_ring(
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr);
+				const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_begin,
+				const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_end);
 
 		void
 		write_multipoint_member(

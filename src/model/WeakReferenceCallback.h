@@ -36,38 +36,15 @@
 
 namespace GPlatesModel
 {
+	// Forward declaration of weak reference.
 	template<typename H> class WeakReference;
 
-	/**
-	 * Base class of event objects emitted by WeakReference to attached callback.
-	 */
-	template<typename H>
-	class WeakReferenceEvent
-	{
-	public:
-		WeakReferenceEvent(
-				const WeakReference<H> &reference_) :
-			d_reference(reference_)
-		{
-		}
-
-		const WeakReference<H> &
-		reference() const
-		{
-			return d_reference;
-		}
-
-	private:
-		//! The WeakReference that is emitting the event.
-		const WeakReference<H> &d_reference;
-	};
 
 	/**
 	 * Parameter of publisher_modified() function in WeakReferenceCallback<H>.
 	 */
 	template<typename H>
-	class WeakReferencePublisherModifiedEvent :
-			public WeakReferenceEvent<H>
+	class WeakReferencePublisherModifiedEvent
 	{
 	public:
 		enum Type
@@ -99,9 +76,7 @@ namespace GPlatesModel
 
 		explicit
 		WeakReferencePublisherModifiedEvent(
-				const WeakReference<H> &reference_,
 				Type type_) :
-			WeakReferenceEvent<H>(reference_),
 			d_type(type_)
 		{
 		}
@@ -121,8 +96,7 @@ namespace GPlatesModel
 	 * Parameter of publisher_added() function in WeakReferenceCallback<H>.
 	 */
 	template<typename H>
-	class WeakReferencePublisherAddedEvent :
-			public WeakReferenceEvent<H>
+	class WeakReferencePublisherAddedEvent
 	{
 	private:
 
@@ -145,9 +119,7 @@ namespace GPlatesModel
 
 		explicit
 		WeakReferencePublisherAddedEvent(
-				const WeakReference<H> &reference_,
 				const new_children_container_type &new_children_) :
-			WeakReferenceEvent<H>(reference_),
 			d_new_children(new_children_)
 		{
 		}
@@ -167,48 +139,27 @@ namespace GPlatesModel
 	 * Parameter of publisher_deactivated() function in WeakReferenceCallback<H>.
 	 */
 	template<typename H>
-	class WeakReferencePublisherDeactivatedEvent :
-			public WeakReferenceEvent<H>
+	class WeakReferencePublisherDeactivatedEvent
 	{
 	public:
-		explicit
-		WeakReferencePublisherDeactivatedEvent(
-				const WeakReference<H> &reference_) :
-			WeakReferenceEvent<H>(reference_)
-		{
-		}
 	};
 
 	/**
 	 * Parameter of publisher_reactivated() function in WeakReferenceCallback<H>.
 	 */
 	template<typename H>
-	class WeakReferencePublisherReactivatedEvent :
-			public WeakReferenceEvent<H>
+	class WeakReferencePublisherReactivatedEvent
 	{
 	public:
-		explicit
-		WeakReferencePublisherReactivatedEvent(
-				const WeakReference<H> &reference_) :
-			WeakReferenceEvent<H>(reference_)
-		{
-		}
 	};
 
 	/**
 	 * Parameter of publisher_about_to_be_destroyed() function in WeakReferenceCallback<H>.
 	 */
 	template<typename H>
-	class WeakReferencePublisherAboutToBeDestroyedEvent :
-			public WeakReferenceEvent<H>
+	class WeakReferencePublisherAboutToBeDestroyedEvent
 	{
 	public:
-		explicit
-		WeakReferencePublisherAboutToBeDestroyedEvent(
-				const WeakReference<H> &reference_) :
-			WeakReferenceEvent<H>(reference_)
-		{
-		}
 	};
 
 	/**
@@ -223,6 +174,11 @@ namespace GPlatesModel
 	{
 	
 	public:
+
+		/**
+		 * A convenience typedef for weak reference.
+		 */
+		typedef WeakReference<H> weak_reference_type;
 
 		/**
 		 * A convenience typedef for boost::intrusive_ptr<WeakReferenceCallback<H> >.
@@ -248,6 +204,7 @@ namespace GPlatesModel
 		virtual
 		void
 		publisher_modified(
+				const weak_reference_type &reference,
 				const modified_event_type &event)
 		{
 		}
@@ -259,6 +216,7 @@ namespace GPlatesModel
 		virtual
 		void
 		publisher_added(
+				const weak_reference_type &reference,
 				const added_event_type &event)
 		{
 		}
@@ -272,6 +230,7 @@ namespace GPlatesModel
 		virtual
 		void
 		publisher_deactivated(
+				const weak_reference_type &reference,
 				const deactivated_event_type &event)
 		{
 		}
@@ -285,6 +244,7 @@ namespace GPlatesModel
 		virtual
 		void
 		publisher_reactivated(
+				const weak_reference_type &reference,
 				const reactivated_event_type &event)
 		{
 		}
@@ -299,6 +259,7 @@ namespace GPlatesModel
 		virtual
 		void
 		publisher_about_to_be_destroyed(
+				const weak_reference_type &reference,
 				const about_to_be_destroyed_event_type &event)
 		{
 		}

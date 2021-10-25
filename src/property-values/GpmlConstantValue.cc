@@ -67,4 +67,3 @@ GPlatesPropertyValues::GpmlConstantValue::directly_modifiable_fields_equal(
 		return false;
 	}
 }
-

@@ -98,6 +98,12 @@ namespace GPlatesGui
 		get_visual_layer(
 				const GPlatesAppLogic::Layer &layer);
 
+		void
+		show_all();
+
+		void
+		hide_all();
+
 	private Q_SLOTS:
 
 		void

@@ -293,7 +293,7 @@ GPlatesQtWidgets::GenerateVelocityDomainCitcomsDialog::gen_mesh()
 
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many as we incrementally modify the feature below.
-	GPlatesModel::NotificationGuard model_notification_guard(model.access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(*model.access_model());
 
 	// Block any signaled calls to 'ApplicationState::reconstruct' until we exit this scope.
 	GPlatesAppLogic::ApplicationState::ScopedReconstructGuard scoped_reconstruct_guard(

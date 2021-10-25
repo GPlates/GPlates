@@ -55,6 +55,7 @@ namespace GPlatesPropertyValues
 		//! A convenience typedef for a shared pointer to a const @a GpmlTopologicalLineSection.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalLineSection> non_null_ptr_to_const_type;
 
+
 		virtual
 		~GpmlTopologicalLineSection()
 		{  }
@@ -71,7 +72,7 @@ namespace GPlatesPropertyValues
 							reverse_order));
 		}
 
-		const GpmlTopologicalLineSection::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
 			return non_null_ptr_type(new GpmlTopologicalLineSection(*this));

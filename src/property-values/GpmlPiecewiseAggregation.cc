@@ -80,4 +80,3 @@ GPlatesPropertyValues::GpmlPiecewiseAggregation::directly_modifiable_fields_equa
 		return false;
 	}
 }
-

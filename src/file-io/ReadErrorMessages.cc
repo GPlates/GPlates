@@ -232,12 +232,9 @@ namespace
 		{ GPlatesFileIO::ReadErrors::InvalidPointsInPolygon,
 				QT_TR_NOOP("Invalid points in polygon"),
 				QT_TR_NOOP("The points of the polygon are invalid (No specific error message is available).") },
-		{ GPlatesFileIO::ReadErrors::InvalidPolygonEndPoint,
-				QT_TR_NOOP("Invalid polygon end point"),
-				QT_TR_NOOP("GML Polygons' terminating point must be identical to their starting point.") },
 		{ GPlatesFileIO::ReadErrors::InsufficientPointsInPolygon,
 				QT_TR_NOOP("Insufficient points in polygon"),
-				QT_TR_NOOP("GML Polygons must be defined with at least four points (which includes the identical start and end point).") },
+				QT_TR_NOOP("Polygons must be defined with at least three points.") },
 		{ GPlatesFileIO::ReadErrors::InsufficientDistinctPointsInPolygon,
 				QT_TR_NOOP("Insufficient distinct points in polygon"),
 				QT_TR_NOOP("Polygons must be defined with at least three distinct points.") },
@@ -256,6 +253,9 @@ namespace
 		{ GPlatesFileIO::ReadErrors::InvalidUnsignedLong,
 				QT_TR_NOOP("Invalid unsigned long integer"),
 				QT_TR_NOOP("An unsigned (positive) long integer value was expected, but the supplied value could not be interpreted as an unsigned long integer.") },
+		{ GPlatesFileIO::ReadErrors::InvalidTupleList,
+				QT_TR_NOOP("Invalid tuple list"),
+				QT_TR_NOOP("A tuple of lists of floating-point numbers was expected.") },
 		{ GPlatesFileIO::ReadErrors::MissingNamespaceAlias,
 				QT_TR_NOOP("Missing XML namespace alias"),
 				QT_TR_NOOP("An XML namespace alias was referred to which has not been defined at the start of the FeatureCollection element.") },
@@ -271,6 +271,9 @@ namespace
 		{ GPlatesFileIO::ReadErrors::UnexpectedPropertyStructuralElement,
 				QT_TR_NOOP("Expected property structural element not found"),
 				QT_TR_NOOP("A property's structural element was found, but was not one of its expected structural types.") },
+		{ GPlatesFileIO::ReadErrors::PropertyNameNotRecognisedInFeatureType,
+				QT_TR_NOOP("Property name does not belong to the feature type"),
+				QT_TR_NOOP("A property name was found, but was not in the list of names associated with the feature's type.") },
 		{ GPlatesFileIO::ReadErrors::PropertyNameNotRecognisedInFeatureType,
 				QT_TR_NOOP("Property name does not belong to the feature type"),
 				QT_TR_NOOP("A property name was found, but was not in the list of names associated with the feature's type.") },
@@ -321,6 +324,9 @@ namespace
 		{ GPlatesFileIO::ReadErrors::DuplicateRasterBandName,
 				QT_TR_NOOP("Duplicate raster band name found"),
 				QT_TR_NOOP("The list of band names in a raster Feature element contained duplicates.") },
+		{ GPlatesFileIO::ReadErrors::MismatchingRangeParametersSizeAndTupleSize,
+				QT_TR_NOOP("Mismatching range parameters size and tuple size"),
+				QT_TR_NOOP("The number of value components in range parameters does not match the number of lists in tuple.") },
 
 		// The following descriptions are related to ESRI shapefiles and other OGR-supported vector formats:
 		{ GPlatesFileIO::ReadErrors::NoLayersFoundInFile,
@@ -492,12 +498,18 @@ namespace
 		{ GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,
 				QT_TR_NOOP("Error opening file."),
 				QT_TR_NOOP("Error opening the file for reading.") },
+		{ GPlatesFileIO::ReadErrors::FileFormatNotSupported,
+				QT_TR_NOOP("File format not supported."),
+				QT_TR_NOOP("Loading files in this format is currently not supported.") },
 		{ GPlatesFileIO::ReadErrors::FileIsEmpty,
 				QT_TR_NOOP("File is empty."),
 				QT_TR_NOOP("The file contains no data.") },
 		{ GPlatesFileIO::ReadErrors::NoFeaturesFoundInFile,
 				QT_TR_NOOP("No features in file."),
-				QT_TR_NOOP("The file contains no features.") }
+				QT_TR_NOOP("The file contains no features.") },
+		{ GPlatesFileIO::ReadErrors::ErrorReadingFile,
+				QT_TR_NOOP("Error reading file."),
+				QT_TR_NOOP("The was an error reading the file.") }
 	};
 	
 	/**
@@ -595,7 +607,6 @@ namespace
 		{ GPlatesFileIO::ReadErrors::HellingerPickIgnored,
 				QT_TR_NOOP("The pick was ignored.") },
 
-
 		// Generic file-related errors:
 		{ GPlatesFileIO::ReadErrors::FileNotLoaded,
 				QT_TR_NOOP("The file was not loaded.") },
@@ -661,7 +672,7 @@ namespace
 }
 
 
-const QString &
+QString
 GPlatesFileIO::ReadErrorMessages::get_short_description_as_string(
 		GPlatesFileIO::ReadErrors::Description code)
 {
@@ -677,7 +688,7 @@ GPlatesFileIO::ReadErrorMessages::get_short_description_as_string(
 }
 
 
-const QString &
+QString
 GPlatesFileIO::ReadErrorMessages::get_full_description_as_string(
 		GPlatesFileIO::ReadErrors::Description code)
 {
@@ -693,7 +704,7 @@ GPlatesFileIO::ReadErrorMessages::get_full_description_as_string(
 }
 
 
-const QString &
+QString
 GPlatesFileIO::ReadErrorMessages::get_result_as_string(
 		GPlatesFileIO::ReadErrors::Result code)
 {

@@ -41,7 +41,7 @@ namespace GPlatesScribe
 
 		// The object was not transcribed because it was incompatible with the loaded transcription.
 		// This can happen when:
-		//   1) The tag/version of the transcribed object (or one of its nested objects, etc) was
+		//   1) The tag name/version of the transcribed object (or one of its nested objects, etc) was
 		//      not found in the transcription, or
 		//   2) A (potentially nested) transcribed primitive (integer/float/string) was the wrong
 		//      type. For example, if transcription had a string and but we attempted to transcribe

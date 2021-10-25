@@ -741,10 +741,14 @@ IF (QT4_QMAKE_FOUND)
 
      GET_FILENAME_COMPONENT(infile ${infile} ABSOLUTE)
 
+	 # The -DBOOST... options avoid problems that Qt's moc has with the BOOST_JOIN macro.
+	 # This was apparently fixed in Qt5 (but not in Qt4).
+	 # Avoids problem by specifying boost header include guards so the code inside them is not compiled.
      ADD_CUSTOM_COMMAND(OUTPUT ${outfile}
         COMMAND ${QT_MOC_EXECUTABLE}
-        ARGS ${moc_includes} -o ${outfile} ${infile}
-        DEPENDS ${infile})
+        ARGS -DBOOST_TT_HAS_OPERATOR_HPP_INCLUDED -DBOOST_NEXT_PRIOR_HPP_INCLUDED -DBOOST_LEXICAL_CAST_DETAIL_CONVERTER_LEXICAL_HPP -DBOOST_VF2_SUB_GRAPH_ISO_HPP ${moc_includes} -o ${outfile} ${infile}
+        DEPENDS ${infile}
+        VERBATIM)
 
      MACRO_ADD_FILE_DEPENDENCIES(${infile} ${outfile})
   ENDMACRO (QT4_GENERATE_MOC)
@@ -762,10 +766,14 @@ IF (QT4_QMAKE_FOUND)
       GET_FILENAME_COMPONENT(outfile ${it} NAME_WE)
 
       SET(outfile ${CMAKE_CURRENT_BINARY_DIR}/moc_${outfile}.cc)
+	  # The -DBOOST... options avoid problems that Qt's moc has with the BOOST_JOIN macro.
+	  # This was apparently fixed in Qt5 (but not in Qt4).
+	  # Avoids problem by specifying boost header include guards so the code inside them is not compiled.
       ADD_CUSTOM_COMMAND(OUTPUT ${outfile}
         COMMAND ${QT_MOC_EXECUTABLE}
-        ARGS ${moc_includes} -o ${outfile} ${it}
-        DEPENDS ${it})
+        ARGS -DBOOST_TT_HAS_OPERATOR_HPP_INCLUDED -DBOOST_NEXT_PRIOR_HPP_INCLUDED -DBOOST_LEXICAL_CAST_DETAIL_CONVERTER_LEXICAL_HPP -DBOOST_VF2_SUB_GRAPH_ISO_HPP ${moc_includes} -o ${outfile} ${it}
+        DEPENDS ${it}
+        VERBATIM)
       SET(${outfiles} ${${outfiles}} ${outfile})
     ENDFOREACH(it)
 
@@ -850,9 +858,12 @@ IF (QT4_QMAKE_FOUND)
    #               SET(_header ${CMAKE_CURRENT_SOURCE_DIR}/${_basename}.h)
                   SET(_header ${_abs_PATH}/${_basename}.h)
                   SET(_moc    ${CMAKE_CURRENT_BINARY_DIR}/${_current_MOC})
+				  # The -DBOOST... options avoid problems that Qt's moc has with the BOOST_JOIN macro.
+				  # This was apparently fixed in Qt5 (but not in Qt4).
+				  # Avoids problem by specifying boost header include guards so the code inside them is not compiled.
                   ADD_CUSTOM_COMMAND(OUTPUT ${_moc}
                      COMMAND ${QT_MOC_EXECUTABLE}
-                     ARGS ${_moc_INCS} ${_header} -o ${_moc}
+                     ARGS -DBOOST_TT_HAS_OPERATOR_HPP_INCLUDED -DBOOST_NEXT_PRIOR_HPP_INCLUDED -DBOOST_LEXICAL_CAST_DETAIL_CONVERTER_LEXICAL_HPP -DBOOST_VF2_SUB_GRAPH_ISO_HPP ${_moc_INCS} ${_header} -o ${_moc}
                      DEPENDS ${_header}
                   )
 

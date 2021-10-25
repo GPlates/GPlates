@@ -6,7 +6,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008 The University of Sydney, Australia
+ * Copyright (C) 2008, 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -42,10 +42,9 @@ using GPlatesPropertyValues::StructuralType;
 
 
 GPlatesFileIO::GpmlPropertyStructuralTypeReader::non_null_ptr_type
-GPlatesFileIO::GpmlPropertyStructuralTypeReader::create(
-		const GPlatesModel::Gpgim &gpgim)
+GPlatesFileIO::GpmlPropertyStructuralTypeReader::create()
 {
-	non_null_ptr_type gpml_property_structural_type_reader = create_empty(gpgim);
+	non_null_ptr_type gpml_property_structural_type_reader = create_empty();
 
 	// Add all property structural types.
 	gpml_property_structural_type_reader->add_all_structural_types();
@@ -54,9 +53,7 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReader::create(
 }
 
 
-GPlatesFileIO::GpmlPropertyStructuralTypeReader::GpmlPropertyStructuralTypeReader(
-		const GPlatesModel::Gpgim &gpgim) :
-	d_gpgim(&gpgim)
+GPlatesFileIO::GpmlPropertyStructuralTypeReader::GpmlPropertyStructuralTypeReader()
 {
 	// In ".cc" file because constructor of GPlatesUtils::non_null_intrusive_ptr requires complete type.
 }
@@ -98,7 +95,7 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReader::add_all_structural_types()
 	// This actually includes the enumerations defined by the GPGIM so, strictly speaking, we don't
 	// need to test them against the GPGIM but it's easier just to loop over all structural types.
 	const GPlatesModel::Gpgim::property_structural_type_seq_type &gpgim_property_structural_types =
-			d_gpgim->get_property_structural_types();
+			GPlatesModel::Gpgim::instance().get_property_structural_types();
 
 	BOOST_FOREACH(
 		const GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type &gpgim_property_structural_type,
@@ -179,6 +176,10 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReader::add_native_structural_types()
 	//
 	// Please keep these ordered alphabetically (by structural type name)...
 
+	d_structural_type_reader_map[StructuralType::create_gml("DataBlock")] =
+			boost::bind<GPlatesModel::PropertyValue::non_null_ptr_type>(
+					&GpmlPropertyStructuralTypeReaderUtils::create_gml_data_block, _1, _2, _3);
+
 	d_structural_type_reader_map[StructuralType::create_gml("File")] =
 			boost::bind<GPlatesModel::PropertyValue::non_null_ptr_type>(
 					&GpmlPropertyStructuralTypeReaderUtils::create_gml_file, _1, _2, _3);
@@ -219,6 +220,10 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReader::add_native_structural_types()
 	// GPML namespace (non-enumeration types).
 	//
 	// Please keep these ordered alphabetically (by structural type name)...
+
+	d_structural_type_reader_map[StructuralType::create_gpml("Age")] =
+			boost::bind<GPlatesModel::PropertyValue::non_null_ptr_type>(
+					&GpmlPropertyStructuralTypeReaderUtils::create_gpml_age, _1, _2, _3);
 
 	d_structural_type_reader_map[StructuralType::create_gpml("Array")] =
 			boost::bind<GPlatesModel::PropertyValue::non_null_ptr_type>(
@@ -298,7 +303,7 @@ void
 GPlatesFileIO::GpmlPropertyStructuralTypeReader::add_enumeration_structural_types()
 {
 	const GPlatesModel::Gpgim::property_enumeration_type_seq_type &gpgim_property_enumeration_types =
-			d_gpgim->get_property_enumeration_types();
+			GPlatesModel::Gpgim::instance().get_property_enumeration_types();
 
 	BOOST_FOREACH(
 			const GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type &gpgim_property_enumeration_type,

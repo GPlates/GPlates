@@ -34,8 +34,7 @@ const GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type
 GPlatesPropertyValues::GmlOrientableCurve::deep_clone() const
 {
 	GmlOrientableCurve::non_null_ptr_type dup = clone();
-	GPlatesModel::PropertyValue::non_null_ptr_type cloned_base_curve =
-			d_base_curve->deep_clone_as_prop_val();
+	GmlLineString::non_null_ptr_type cloned_base_curve = d_base_curve->deep_clone();
 	dup->d_base_curve = cloned_base_curve;
 
 	return dup;
@@ -67,4 +66,3 @@ GPlatesPropertyValues::GmlOrientableCurve::directly_modifiable_fields_equal(
 		return false;
 	}
 }
-

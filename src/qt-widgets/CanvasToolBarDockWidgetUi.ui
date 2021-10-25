@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>103</width>
+    <width>108</width>
     <height>507</height>
    </rect>
   </property>
@@ -399,12 +399,6 @@
        </layout>
       </widget>
       <widget class="QWidget" name="tab_hellinger">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
        <attribute name="icon">
         <iconset resource="../qt-resources/qt_widgets.qrc">
          <normaloff>:/hellinger_35.png</normaloff>:/hellinger_35.png</iconset>
@@ -416,30 +410,8 @@
         <string>Hellinger 7</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_8">
-        <property name="spacing">
-         <number>0</number>
-        </property>
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
-         <number>0</number>
-        </property>
         <item>
-         <widget class="QWidget" name="hellinger_toolbar_placeholder" native="true">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-         </widget>
+         <widget class="QWidget" name="hellinger_toolbar_placeholder" native="true"/>
         </item>
         <item>
          <spacer name="hellinger_spacer">
@@ -449,7 +421,7 @@
           <property name="sizeHint" stdset="0">
            <size>
             <width>20</width>
-            <height>498</height>
+            <height>476</height>
            </size>
           </property>
          </spacer>
@@ -916,45 +888,6 @@
     <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
-  <action name="action_Select_Hellinger_Geometries">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/focus_feature_35.png</normaloff>:/focus_feature_35.png</iconset>
-   </property>
-   <property name="text">
-    <string>Select Hellinger Geometries</string>
-   </property>
-   <property name="toolTip">
-    <string>Select Hellinger Geometries Q</string>
-   </property>
-   <property name="shortcut">
-    <string>Q</string>
-   </property>
-   <property name="shortcutContext">
-    <enum>Qt::ApplicationShortcut</enum>
-   </property>
-  </action>
-  <action name="action_Adjust_Pole_Estimate">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="icon">
-    <iconset resource="../qt-resources/qt_widgets.qrc">
-     <normaloff>:/plate_pole_modification_35.png</normaloff>:/plate_pole_modification_35.png</iconset>
-   </property>
-   <property name="text">
-    <string>Adjust Pole Estimate</string>
-   </property>
-   <property name="toolTip">
-    <string>Adjust Pole Estimate R</string>
-   </property>
-   <property name="shortcut">
-    <string>R</string>
-   </property>
-  </action>
   <action name="action_Change_Lighting">
    <property name="checkable">
     <bool>true</bool>
@@ -1001,6 +934,42 @@
    </property>
    <property name="shortcutContext">
     <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="action_Adjust_Pole_Estimate">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../qt-resources/qt_widgets.qrc">
+     <normaloff>:/plate_pole_modification_35.png</normaloff>:/plate_pole_modification_35.png</iconset>
+   </property>
+   <property name="text">
+    <string>Adjust Pole Estimate</string>
+   </property>
+   <property name="toolTip">
+    <string>Adjust Pole Estimate R</string>
+   </property>
+   <property name="shortcut">
+    <string>R</string>
+   </property>
+  </action>
+  <action name="action_Select_Hellinger_Geometries">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="../qt-resources/qt_widgets.qrc">
+     <normaloff>:/focus_feature_35.png</normaloff>:/focus_feature_35.png</iconset>
+   </property>
+   <property name="text">
+    <string>Select Hellinger Geometries</string>
+   </property>
+   <property name="toolTip">
+    <string>Select Hellinger Geometries Q</string>
+   </property>
+   <property name="shortcut">
+    <string>Q</string>
    </property>
   </action>
  </widget>

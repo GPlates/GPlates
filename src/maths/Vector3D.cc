@@ -35,12 +35,14 @@
 #include "global/GPlatesAssert.h"
 
 
-GPlatesMaths::Vector3D::Vector3D(
-		const UnitVector3D &u) :
-	d_x(u.x()),
-	d_y(u.y()),
-	d_z(u.z())
-{  }
+bool
+GPlatesMaths::Vector3D::is_zero_magnitude() const
+{
+	real_t mag_sqrd = (d_x * d_x) + (d_y * d_y) + (d_z * d_z);
+
+	// Mirror the code in 'get_normalisation()'.
+	return (mag_sqrd > 0.0) ? false : true;
+}
 
 
 GPlatesMaths::UnitVector3D
@@ -50,8 +52,7 @@ GPlatesMaths::Vector3D::get_normalisation() const
 
 	GPlatesGlobal::Assert<UnableToNormaliseZeroVectorException>(
 			mag_sqrd > 0.0,
-			GPLATES_EXCEPTION_SOURCE,
-			*this);
+			GPLATES_EXCEPTION_SOURCE);
 
 	real_t scale = 1 / sqrt(mag_sqrd);
 	return UnitVector3D(d_x * scale, d_y * scale, d_z * scale);

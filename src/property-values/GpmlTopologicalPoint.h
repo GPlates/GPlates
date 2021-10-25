@@ -28,8 +28,8 @@
 #ifndef GPLATES_PROPERTYVALUES_GPMLTOPOLOGICALPOINT_H
 #define GPLATES_PROPERTYVALUES_GPMLTOPOLOGICALPOINT_H
 
-#include "GpmlTopologicalSection.h"
 #include "GpmlPropertyDelegate.h"
+#include "GpmlTopologicalSection.h"
 
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
@@ -47,43 +47,33 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalPoint>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalPoint>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalPoint> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalPoint>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalPoint>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalPoint> non_null_ptr_to_const_type;
+
 
 		virtual
 		~GpmlTopologicalPoint()
 		{  }
 
-		// This creation function is here purely for the simple, hard-coded construction of
-		// features.  It may not be necessary or appropriate later on when we're doing
-		// everything properly, so don't look at this function and think "Uh oh, this
-		// function doesn't look like it should be here, but I'm sure it's here for a
-		// reason..."
 		static
 		const non_null_ptr_type
 		create(
 				GpmlPropertyDelegate::non_null_ptr_type source_geometry) 
 		{
-			non_null_ptr_type ptr(
-				new GpmlTopologicalPoint(
-					source_geometry));
-			return ptr;
+			return non_null_ptr_type(new GpmlTopologicalPoint(source_geometry));
 		}
 
-		const GpmlTopologicalPoint::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlTopologicalPoint::non_null_ptr_type dup(
+			return non_null_ptr_type(
 					new GpmlTopologicalPoint(*this));
-			return dup;
 		}
 
 		const GpmlTopologicalPoint::non_null_ptr_type

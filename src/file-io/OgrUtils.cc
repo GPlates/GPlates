@@ -224,8 +224,6 @@ GPlatesFileIO::OgrUtils::add_plate_id_to_kvd(
 	static const GPlatesModel::PropertyName plate_id_property_name =
 		GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
-	const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
-
 	// Shapefile attribute field names are limited to 10 characters in length
 	// and should not contain spaces.
 	GPlatesPropertyValues::XsString::non_null_ptr_type key =
@@ -235,9 +233,12 @@ GPlatesFileIO::OgrUtils::add_plate_id_to_kvd(
 	GPlatesModel::integer_plate_id_type plate_id_value = 0;
 
 	// If we found a plate id, add it. 
-	if (GPlatesFeatureVisitors::get_property_value(feature,plate_id_property_name,recon_plate_id))
+	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> recon_plate_id =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					feature, plate_id_property_name);
+	if (recon_plate_id)
     {
-		plate_id_value = recon_plate_id->value();
+		plate_id_value = recon_plate_id.get()->value();
     }
 
 	GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
@@ -462,18 +463,18 @@ GPlatesFileIO::OgrUtils::add_begin_and_end_time_to_kvd(
     static const GPlatesModel::PropertyName valid_time_property_name =
         GPlatesModel::PropertyName::create_gml("validTime");
 
-    const GPlatesPropertyValues::GmlTimePeriod *time_period;
-
 	// Set up default begin and end times in case we don't find any in the feature.
 	double begin_time = 999.;
 
 	double end_time = -999.;
 
-    if (GPlatesFeatureVisitors::get_property_value(
-        feature,valid_time_property_name,time_period))
+	boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+					feature, valid_time_property_name);
+    if (time_period)
     {
-		begin_time = get_time_from_time_period(*(time_period->begin()));
-		end_time = get_time_from_time_period(*(time_period->end()));
+		begin_time = get_time_from_time_period(*(time_period.get()->begin()));
+		end_time = get_time_from_time_period(*(time_period.get()->end()));
     }
 
 	GPlatesPropertyValues::XsDouble::non_null_ptr_type begin_value =
@@ -511,16 +512,16 @@ GPlatesFileIO::OgrUtils::add_name_to_kvd(
     static const GPlatesModel::PropertyName name_property_name =
         GPlatesModel::PropertyName::create_gml("name");
 
-    const GPlatesPropertyValues::XsString *name;
-
 	// Default string
 	GPlatesPropertyValues::XsString::non_null_ptr_type value =
 			GPlatesPropertyValues::XsString::create("");
 
-    if (GPlatesFeatureVisitors::get_property_value(
-            feature,name_property_name,name))
+	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+					feature, name_property_name);
+    if (name)
     {
-		value = name->clone();
+		value = name.get()->clone();
     }
 
 	GPlatesPropertyValues::XsString::non_null_ptr_type key =
@@ -542,16 +543,16 @@ GPlatesFileIO::OgrUtils::add_description_to_kvd(
 	static const GPlatesModel::PropertyName desc_property_name =
 		GPlatesModel::PropertyName::create_gml("description");
 
-	const GPlatesPropertyValues::XsString *description;
-
 	// Default string
 	GPlatesPropertyValues::XsString::non_null_ptr_type value =
 			GPlatesPropertyValues::XsString::create("");
 
-	if (GPlatesFeatureVisitors::get_property_value(
-			feature,desc_property_name,description))
+	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> description =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+					feature, desc_property_name);
+	if (description)
 	{
-		value = description->clone();
+		value = description.get()->clone();
 	}
 
 	GPlatesPropertyValues::XsString::non_null_ptr_type key =
@@ -595,8 +596,6 @@ GPlatesFileIO::OgrUtils::add_conjugate_plate_id_to_kvd(
 	static const GPlatesModel::PropertyName property_name =
 		GPlatesModel::PropertyName::create_gpml("conjugatePlateId");
 
-	const GPlatesPropertyValues::GpmlPlateId *plate_id;
-
 	GPlatesPropertyValues::XsString::non_null_ptr_type key =
 		GPlatesPropertyValues::XsString::create("PLATEID2");
 
@@ -604,9 +603,12 @@ GPlatesFileIO::OgrUtils::add_conjugate_plate_id_to_kvd(
 	GPlatesModel::integer_plate_id_type plate_id_value = 0;
 
 	// If we found a plate id, add it.
-	if (GPlatesFeatureVisitors::get_property_value(feature,property_name,plate_id))
+	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> plate_id =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					feature, property_name);
+	if (plate_id)
 	{
-		plate_id_value = plate_id->value();
+		plate_id_value = plate_id.get()->value();
 	}
 
 	GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
@@ -629,8 +631,6 @@ GPlatesFileIO::OgrUtils::add_left_plate_to_kvd(
 	static const GPlatesModel::PropertyName property_name =
 		GPlatesModel::PropertyName::create_gpml("leftPlate");
 
-	const GPlatesPropertyValues::GpmlPlateId *plate_id;
-
 	GPlatesPropertyValues::XsString::non_null_ptr_type key =
 		GPlatesPropertyValues::XsString::create("L_PLATE");
 
@@ -638,9 +638,12 @@ GPlatesFileIO::OgrUtils::add_left_plate_to_kvd(
 	GPlatesModel::integer_plate_id_type plate_id_value = 0;
 
 	// If we found a plate id, add it.
-	if (GPlatesFeatureVisitors::get_property_value(feature,property_name,plate_id))
+	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> plate_id =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					feature, property_name);
+	if (plate_id)
 	{
-		plate_id_value = plate_id->value();
+		plate_id_value = plate_id.get()->value();
 	}
 
 	GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
@@ -661,8 +664,6 @@ GPlatesFileIO::OgrUtils::add_right_plate_to_kvd(
 	static const GPlatesModel::PropertyName property_name =
 		GPlatesModel::PropertyName::create_gpml("rightPlate");
 
-	const GPlatesPropertyValues::GpmlPlateId *plate_id;
-
 	GPlatesPropertyValues::XsString::non_null_ptr_type key =
 		GPlatesPropertyValues::XsString::create("R_PLATE");
 
@@ -670,9 +671,12 @@ GPlatesFileIO::OgrUtils::add_right_plate_to_kvd(
 	GPlatesModel::integer_plate_id_type plate_id_value = 0;
 
 	// If we found a plate id, add it.
-	if (GPlatesFeatureVisitors::get_property_value(feature,property_name,plate_id))
+	boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> plate_id =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+					feature, property_name);
+	if (plate_id)
 	{
-		plate_id_value = plate_id->value();
+		plate_id_value = plate_id.get()->value();
 	}
 
 	GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
@@ -694,15 +698,16 @@ GPlatesFileIO::OgrUtils::add_reconstruction_method_to_kvd(
 	static const GPlatesModel::PropertyName reconstruction_method_property_name =
 		GPlatesModel::PropertyName::create_gpml("reconstructionMethod");
 
-	const GPlatesPropertyValues::Enumeration  *reconstruction_method;
-
 	// Default string.
 	GPlatesPropertyValues::XsString::non_null_ptr_type value = GPlatesPropertyValues::XsString::create("");
 
 	// If we found a reconstruction method, add it.
-	if (GPlatesFeatureVisitors::get_property_value(feature,reconstruction_method_property_name,reconstruction_method))
+	boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> reconstruction_method =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(
+					feature, reconstruction_method_property_name);
+	if (reconstruction_method)
 	{
-		value = GPlatesPropertyValues::XsString::create(reconstruction_method->value().get());
+		value = GPlatesPropertyValues::XsString::create(reconstruction_method.get()->value().get());
 	}
 	GPlatesPropertyValues::XsString::non_null_ptr_type key =
 		GPlatesPropertyValues::XsString::create("RECON_METH");
@@ -722,15 +727,16 @@ GPlatesFileIO::OgrUtils::add_spreading_asymmetry_to_kvd(
 	static const GPlatesModel::PropertyName spreading_asymmetry_property_name =
 			GPlatesModel::PropertyName::create_gpml("spreadingAsymmetry");
 
-	const GPlatesPropertyValues::XsDouble  *spreading_asymmetry;
-
 	// Default string.
 	GPlatesPropertyValues::XsDouble::non_null_ptr_type value = GPlatesPropertyValues::XsDouble::create(0.);
 
 	// If we found a spreading asymmetry, add it.
-	if (GPlatesFeatureVisitors::get_property_value(feature,spreading_asymmetry_property_name,spreading_asymmetry))
+	boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> spreading_asymmetry =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+					feature, spreading_asymmetry_property_name);
+	if (spreading_asymmetry)
 	{
-		value = GPlatesPropertyValues::XsDouble::create(spreading_asymmetry->value());
+		value = GPlatesPropertyValues::XsDouble::create(spreading_asymmetry.get()->value());
 	}
 	GPlatesPropertyValues::XsString::non_null_ptr_type key =
 			GPlatesPropertyValues::XsString::create("SPREAD_ASY");

@@ -162,7 +162,7 @@ namespace GPlatesMaths
 	/**
 	 * \f$ \frac{\pi}{2} \f$.
 	 */
-	static const double HALF_PI = 1.57079632679489661923;
+	static const double HALF_PI = 1.57079632679489661923132169;
 
 
 	namespace Implementation

@@ -242,6 +242,13 @@ namespace GPlatesQtWidgets
 		void
 		update_cfg_table();
 
+		/**
+		 * Handle config table modified via the layer params (instead of via this dialog).
+		 */
+		void
+		get_configuration_table_from_layer(
+				GPlatesAppLogic::CoRegistrationLayerParams &);
+
 	private:
 	
 		/**
@@ -259,6 +266,7 @@ namespace GPlatesQtWidgets
 
 			void
 			publisher_modified(
+					const weak_reference_type &reference,
 					const modified_event_type &event)
 			{
 				// Update the GUI (mainly the attribute list) every time the model
@@ -306,6 +314,18 @@ namespace GPlatesQtWidgets
 				const GPlatesAppLogic::LayerTaskType::Type target_layer_type);
 
 		void
+		setup_reducer_relational_combobox(
+				const QString& attribute_name,	
+				QComboBox* combo,
+				const GPlatesAppLogic::LayerTaskType::Type target_layer_type);
+
+		void
+		setup_reducer_non_relational_combobox(
+				const QString& attribute_name,	
+				QComboBox* combo,
+				const GPlatesAppLogic::LayerTaskType::Type target_layer_type);
+
+		void
 		setup_association_type_combobox(
 				QComboBox* combo);
 
@@ -348,7 +368,8 @@ namespace GPlatesQtWidgets
 
 		const GPlatesPresentation::VisualLayers &d_visual_layers;
 
-		std::multimap< QString, GPlatesDataMining::AttributeTypeEnum >  d_attr_name_type_map;
+		typedef std::multimap< QString, GPlatesDataMining::AttributeTypeEnum > AttrTypeNameMap;
+		AttrTypeNameMap d_attr_name_type_map;
 
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> d_visual_layer;
 

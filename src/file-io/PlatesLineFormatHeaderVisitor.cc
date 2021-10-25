@@ -55,7 +55,7 @@ namespace
 	* "distant future" to the magic numbers 999.0 and -999.0 which are used in the PLATES4
 	* line-format.
 	*/
-	const double &
+	double
 		convert_geotimeinstant_to_double(
 		const GPlatesPropertyValues::GeoTimeInstant &geo_time)
 	{
@@ -148,7 +148,7 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::PlatesLineFormatHeaderVisitor()
 {
 }
 
-bool
+void
 GPlatesFileIO::PlatesLineFormatHeaderVisitor::get_old_plates_header(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 		OldPlatesHeader& old_plates_header,
@@ -218,9 +218,6 @@ GPlatesFileIO::PlatesLineFormatHeaderVisitor::get_old_plates_header(
 		old_plates_header.age_of_disappearance = 
 			convert_geotimeinstant_to_double(*d_accum.age_of_disappearance);
 	}
-
-	// Need at least an old plates header or plate id to be able to output header+geometry.
-	return d_accum.plate_id;
 }
 
 

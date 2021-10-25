@@ -45,7 +45,9 @@
 
 #include "FriendlyLineEdit.h"
 #include "ImportScalarField3DDialog.h"
+#include "ProgressDialog.h"
 
+#include "file-io/RasterFileCacheFormat.h"
 #include "file-io/RasterReader.h"
 
 #include "maths/MathsUtils.h"
@@ -483,6 +485,15 @@ GPlatesQtWidgets::ScalarField3DDepthLayersPage::remove_selected_from_table()
 	if (ranges.count() == 1)
 	{
 		const QTableWidgetSelectionRange &range = ranges.at(0);
+
+		// First clear any cache files generated for the depth layers we're about to remove.
+		ScalarField3DDepthLayersSequence::sequence_type &sequence = d_depth_layers_sequence.get_sequence();
+		for (int i = range.topRow(); i != range.bottomRow() + 1; ++i)
+		{
+			sequence[i].clear_cache_files();
+		}
+
+		// Remove the depth layers.
 		d_depth_layers_sequence.erase(
 				range.topRow(),
 				range.bottomRow() + 1);
@@ -754,44 +765,104 @@ GPlatesQtWidgets::ScalarField3DDepthLayersPage::populate_table()
 
 void
 GPlatesQtWidgets::ScalarField3DDepthLayersPage::add_files_to_sequence(
-		const QFileInfoList &file_infos)
+		QFileInfoList file_infos)
 {
-	if (!file_infos.count())
+	//
+	// Not all files will necessarily be raster files (especially when an entire directory was added).
+	// So we reduce the list to supported rasters - also makes the progress dialog more accurate
+	//
+	const std::map<QString, GPlatesFileIO::RasterReader::FormatInfo> &raster_formats =
+			GPlatesFileIO::RasterReader::get_supported_formats();
+	for (int n = 0; n < file_infos.size(); )
+	{
+		// If filename extension not supported then remove file from list.
+		if (raster_formats.find(file_infos[n].suffix()) == raster_formats.end())
+		{
+			file_infos.erase(file_infos.begin() + n);
+		}
+		else
+		{
+			++n;
+		}
+	}
+
+	const int num_files = file_infos.size();
+
+	if (num_files == 0)
 	{
 		return;
 	}
 
 	ScalarField3DDepthLayersSequence new_sequence;
 
-	BOOST_FOREACH(const QFileInfo &file_info, file_infos)
+	// Setup a progress dialog.
+	ProgressDialog *progress_dialog = new ProgressDialog(this);
+	const QString progress_dialog_text = tr("Caching depth layer sequence...");
+	// Make progress dialog modal so cannot interact with import dialog
+	// until processing finished or cancel button pressed.
+	progress_dialog->setWindowModality(Qt::WindowModal);
+	progress_dialog->setRange(0, num_files);
+	progress_dialog->setValue(0);
+	progress_dialog->show();
+
+	for (int file_index = 0; file_index < num_files; ++file_index)
 	{
-		// Attempt to read the raster file.
-		QString absolute_file_path = file_info.absoluteFilePath();
-		GPlatesFileIO::RasterReader::non_null_ptr_type reader =
-			GPlatesFileIO::RasterReader::create(absolute_file_path);
-		if (!reader->can_read())
+		progress_dialog->update_progress(file_index, progress_dialog_text);
+
+		const QFileInfo &file_info = file_infos[file_index];
+		const QString absolute_file_path = file_info.absoluteFilePath();
+
+		// Before we create a depth layer raster (which creates cache files) we'll see if
+		// any of its cache files already exist. If they do then we won't remove them when
+		// the import process finishes.
+		//
+		// We only test the first band (currently the import only considers the first band anyway)
+		// because to determine the number of bands we have to create the raster which creates the cache files.
+		const bool remove_cache_files =
+				!GPlatesFileIO::RasterFileCacheFormat::get_existing_source_cache_filename(absolute_file_path, 1/*band_number*/) &&
+				!GPlatesFileIO::RasterFileCacheFormat::get_existing_mipmap_cache_filename(absolute_file_path, 1/*band_number*/);
+
+		// Put raster reader in a block scope so it gets destroyed before we attempt to clear the cache file
+		// (if user cancels progress dialog) since otherwise the reader will still have the cache file open
+		// (preventing its removal).
 		{
-			continue;
+			// Attempt to read the raster file.
+			GPlatesFileIO::RasterReader::non_null_ptr_type reader =
+				GPlatesFileIO::RasterReader::create(absolute_file_path);
+			if (!reader->can_read())
+			{
+				continue;
+			}
+
+			// Check that there's at least one band.
+			unsigned int number_of_bands = reader->get_number_of_bands();
+			if (number_of_bands == 0)
+			{
+				continue;
+			}
+
+			std::pair<unsigned int, unsigned int> raster_size = reader->get_size();
+			if (raster_size.first != 0 && raster_size.second != 0)
+			{
+				new_sequence.push_back(
+						deduce_depth(file_info),
+						absolute_file_path,
+						file_info.fileName(),
+						raster_size.first,
+						raster_size.second,
+						remove_cache_files);
+			}
 		}
 
-		// Check that there's at least one band.
-		unsigned int number_of_bands = reader->get_number_of_bands();
-		if (number_of_bands == 0)
+		if (progress_dialog->canceled())
 		{
-			continue;
-		}
-
-		std::pair<unsigned int, unsigned int> raster_size = reader->get_size();
-		if (raster_size.first != 0 && raster_size.second != 0)
-		{
-			new_sequence.push_back(
-					deduce_depth(file_info),
-					absolute_file_path,
-					file_info.fileName(),
-					raster_size.first,
-					raster_size.second);
+			progress_dialog->close();
+			new_sequence.clear_cache_files();
+			return;
 		}
 	}
+
+	progress_dialog->close();
 
 	new_sequence.sort_by_depth();
 	d_depth_layers_sequence.add_all(new_sequence);

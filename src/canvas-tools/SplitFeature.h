@@ -48,11 +48,6 @@ namespace GPlatesGui
 	class CanvasToolWorkflows;
 }
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesQtWidgets
 {
 	class ViewportWindow;
@@ -86,7 +81,6 @@ namespace GPlatesCanvasTools
 		create(
 				const status_bar_callback_type &status_bar_callback,
 				GPlatesGui::FeatureFocus &feature_focus,
-				const GPlatesModel::Gpgim &gpgim,
 				GPlatesModel::ModelInterface model_interface,
 				GPlatesViewOperations::GeometryBuilder &geometry_builder,
 				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,
@@ -98,7 +92,6 @@ namespace GPlatesCanvasTools
 			return new SplitFeature(
 					status_bar_callback,
 					feature_focus,
-					gpgim,
 					model_interface,
 					geometry_builder,
 					geometry_operation_state,
@@ -152,7 +145,6 @@ namespace GPlatesCanvasTools
 		SplitFeature(
 				const status_bar_callback_type &status_bar_callback,
 				GPlatesGui::FeatureFocus &feature_focus,
-				const GPlatesModel::Gpgim &gpgim,
 				GPlatesModel::ModelInterface model_interface,
 				GPlatesViewOperations::GeometryBuilder &geometry_builder,
 				GPlatesCanvasTools::GeometryOperationState &geometry_operation_state,

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2007, 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009, 2010, 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -42,11 +42,6 @@
 
 #include "property-values/GpmlTopologicalNetwork.h"
 
-
-namespace GPlatesModel
-{
-	class Gpgim;
-}
 
 namespace GPlatesPropertyValues
 {
@@ -84,7 +79,6 @@ namespace GPlatesFileIO
 		GpmlOutputVisitor(
 				const FileInfo &file_info,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-				const GPlatesModel::Gpgim &gpgim,
 				bool use_gzip);
 
 
@@ -101,8 +95,7 @@ namespace GPlatesFileIO
 		explicit
 		GpmlOutputVisitor(
 				QIODevice *target,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-				const GPlatesModel::Gpgim &gpgim);
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref);
 
 
 		virtual
@@ -116,8 +109,7 @@ namespace GPlatesFileIO
 		void
 		start_writing_document(
 				XmlWriter &writer,
-				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-				const GPlatesModel::Gpgim &gpgim);
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref);
 
 	protected:
 
@@ -193,6 +185,11 @@ namespace GPlatesFileIO
 
 		virtual
 		void
+		visit_gpml_age(
+				const GPlatesPropertyValues::GpmlAge &gpml_age);
+
+		virtual
+		void
 		visit_gpml_array(
 				const GPlatesPropertyValues::GpmlArray &gpml_array);
 
@@ -215,11 +212,6 @@ namespace GPlatesFileIO
 		void
 		visit_gpml_finite_rotation(
 				const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
-
-		virtual
-		void
-		visit_gpml_total_reconstruction_pole(
-				const GPlatesPropertyValues::GpmlTotalReconstructionPole &pole);
 
 		virtual
 		void

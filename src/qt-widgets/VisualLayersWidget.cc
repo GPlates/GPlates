@@ -85,6 +85,19 @@ GPlatesQtWidgets::VisualLayersWidget::VisualLayersWidget(
 				this,
 				SLOT(handle_colouring_button_clicked()));
 	}
+
+	QObject::connect(
+				button_show_all,
+				SIGNAL(clicked()),
+				this,
+				SLOT(handle_show_all_button_clicked()));
+
+	QObject::connect(
+				button_hide_all,
+				SIGNAL(clicked()),
+				this,
+				SLOT(handle_hide_all_button_clicked()));
+
 }
 
 
@@ -112,5 +125,17 @@ void
 GPlatesQtWidgets::VisualLayersWidget::handle_colouring_button_clicked()
 {
 	d_viewport_window->dialogs().pop_up_colouring_dialog();
+}
+
+void
+GPlatesQtWidgets::VisualLayersWidget::handle_show_all_button_clicked()
+{
+	d_visual_layers.show_all();
+}
+
+void
+GPlatesQtWidgets::VisualLayersWidget::handle_hide_all_button_clicked()
+{
+	d_visual_layers.hide_all();
 }
 

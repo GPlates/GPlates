@@ -58,10 +58,10 @@ namespace GPlatesPropertyValues
 		//! A convenience typedef for a shared pointer to a const @a UninterpretedPropertyValue.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const UninterpretedPropertyValue> non_null_ptr_to_const_type;
 
+
 		virtual
 		~UninterpretedPropertyValue()
 		{  }
-
 
 		static
 		const non_null_ptr_type
@@ -71,13 +71,13 @@ namespace GPlatesPropertyValues
 			return non_null_ptr_type(new UninterpretedPropertyValue(value));
 		}
 
-		const UninterpretedPropertyValue::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
 			return non_null_ptr_type(new UninterpretedPropertyValue(*this));
 		}
 
-		const UninterpretedPropertyValue::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const
 		{
 			// This class doesn't reference any mutable objects by pointer, so there's

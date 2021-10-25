@@ -87,7 +87,7 @@ namespace GPlatesGui
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const double &inverse_viewport_zoom_factor,
-				const GPlatesGui::RenderSettings &render_settings,
+				const RenderSettings &render_settings,
 				ColourScheme::non_null_ptr_type colour_scheme);
 
 
@@ -215,32 +215,52 @@ namespace GPlatesGui
 		{
 		public:
 
+			/**
+			 * Add a vertex to the current geometry.
+			 *
+			 * Set @a is_original_point to true if the vertex is from the original geometry.
+			 * Set to false if vertex is a dateline wrapped vertex or a new tessellated vertex.
+			 */
 			void
 			add_vertex(
-					const QPointF &vertex)
+					const QPointF &vertex,
+					bool is_original_point)
 			{
 				d_vertices.push_back(vertex);
+				d_is_original_point_flags.push_back(is_original_point);
 			}
 
-			//! Call this *after* adding the great circle arc's vertices.
+			/**
+			 * Call this *after* adding a part of a line geometry's vertices.
+			 *
+			 * For polylines there is only one part per geometry (polyline).
+			 * For polygons there is one part per ring (exterior and interiors).
+			 *
+			 * Any vertices added after this call will contribute to the next geometry part.
+			 */
 			void
-			add_great_circle_arc()
+			add_geometry_part()
 			{
-				d_great_circle_arcs.push_back(d_vertices.size());
+				d_geometry_parts.push_back(d_vertices.size());
 			}
 
-			//! Call this *after* adding the geometry's great circle arcs.
+			/**
+			 * Call this *after* adding the last geometry part for a geometry.
+			 *
+			 * For polylines there is only one part per geometry (polyline).
+			 * For polygons there is one part per ring (exterior and interiors).
+			 *
+			 * Any vertices added after this call will contribute to the next geometry part.
+			 */
 			void
 			add_geometry()
 			{
-				d_geometries.push_back(d_great_circle_arcs.size());
+				d_geometries.push_back(d_geometry_parts.size());
 			}
 
 
 			/**
-			 * Returns vertices in all geometries (and in all great circle arcs).
-			 *
-			 * These are indexed by the indices returned in @a get_great_circle_arcs.
+			 * Returns vertices in all geometries.
 			 */
 			const std::vector<QPointF> &
 			get_vertices() const
@@ -249,20 +269,28 @@ namespace GPlatesGui
 			}
 
 			/**
-			 * Returns a vertex index (into @a get_vertices) for each great circle arc (in all geometries)
-			 * that represents 'one past' the last vertex in that great circle arc.
-			 *
-			 * These are indexed by the indices returned in @a get_geometries.
+			 * Returns the boolean flags indicating whether vertices in @a get_vertices (at same indices)
+			 * are original (unwrapped and untessellated) vertices (see @a add_vertex).
 			 */
-			const std::vector<unsigned int> &
-			get_great_circle_arcs()
+			const std::vector<bool> &
+			get_is_original_point_flags()
 			{
-				return d_great_circle_arcs;
+				return d_is_original_point_flags;
 			}
 
 			/**
-			 * Returns a great circle arc index (into @a get_great_circle_arcs) for each geometry
-			 * that represents 'one past' the last great circle arc in that geometry.
+			 * Returns a vertex index (into @a get_vertices) for each geometry part
+			 * that represents 'one past' the last vertex in that geometry part.
+			 */
+			const std::vector<unsigned int> &
+			get_geometry_parts()
+			{
+				return d_geometry_parts;
+			}
+
+			/**
+			 * Returns a vertex index (into @a get_vertices) for each geometry
+			 * that represents 'one past' the last vertex in the last part in that geometry.
 			 */
 			const std::vector<unsigned int> &
 			get_geometries()
@@ -273,7 +301,9 @@ namespace GPlatesGui
 		private:
 
 			std::vector<QPointF> d_vertices;
-			std::vector<unsigned int> d_great_circle_arcs;
+			std::vector<bool> d_is_original_point_flags;
+
+			std::vector<unsigned int> d_geometry_parts;
 			std::vector<unsigned int> d_geometries;
 		};
 
@@ -291,9 +321,6 @@ namespace GPlatesGui
 
 		//! Typedef for a primitives stream containing coloured vertices.
 		typedef LayerPainter::stream_primitives_type stream_primitives_type;
-
-		//! Typedef for a wrapped line geometry (polyline or polygon) containing lat/lon points.
-		typedef boost::shared_ptr<GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type> lat_lon_line_geometry_type;
 
 
 		//! Used to project vertices of rendered geometries to the map.
@@ -321,12 +348,6 @@ namespace GPlatesGui
 		 * Wraps polylines/polygons to [-180,180] longitude about the central meridian of the map projection.
 		 */
 		GPlatesMaths::DateLineWrapper::non_null_ptr_type d_dateline_wrapper;
-
-		/**
-		 * Rotation for central meridian (of map projection) with non-zero longitude to place geometries
-		 * in a reference frame centred at longitude zero (where the dateline wrapper can be used).
-		 */
-		GPlatesMaths::Rotation d_central_meridian_reference_frame_rotation;
 
 		/**
 		 * Used to paint when the @a paint method is called.
@@ -360,33 +381,72 @@ namespace GPlatesGui
 				const T &geom);
 
 		/**
-		 * Dateline wraps and map projects line geometries (polylines and polygons).
+		 * Dateline wraps and map projects polylines.
 		 */
-		template <typename LineGeometryType>
 		void
 		dateline_wrap_and_project_line_geometry(
 				DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
-				const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry);
+				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline_on_sphere);
 
 		/**
-		 * Project and tessellate *wrapped* line geometries (polylines and polygons).
+		 * Dateline wraps and map projects polygons.
 		 */
-		template <typename LatLonPointForwardIter>
 		void
-		project_and_tessellate_wrapped_line_geometry(
+		dateline_wrap_and_project_line_geometry(
 				DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
-				const LatLonPointForwardIter &begin_lat_lon_points,
-				const LatLonPointForwardIter &end_lat_lon_points);
+				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon_on_sphere);
 
 		/**
-		 * Project and tessellate great circle arcs of *unwrapped* polylines and polygons.
+		 * Project and tessellate great circle arcs of an *unwrapped* polyline.
+		 */
+		void
+		project_and_tessellate_unwrapped_polyline(
+				DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
+				const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline_on_sphere);
+
+		/**
+		 * Project and tessellate great circle arcs of an *unwrapped* polygon.
+		 */
+		void
+		project_and_tessellate_unwrapped_polygon(
+				DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
+				const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon_on_sphere);
+
+		/**
+		 * Project and tessellate great circle arcs of an *unwrapped* polyline, or ring (part) of a polygon.
 		 */
 		template <typename GreatCircleArcForwardIter>
 		void
-		project_and_tessellate_unwrapped_line_geometry(
+		project_and_tessellate_unwrapped_geometry_part(
 				DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
 				const GreatCircleArcForwardIter &begin_arcs,
 				const GreatCircleArcForwardIter &end_arcs);
+
+		/**
+		 * Project and tessellate a *wrapped* polyline.
+		 */
+		void
+		project_tessellated_wrapped_polyline(
+				DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
+				const GPlatesMaths::DateLineWrapper::LatLonPolyline &wrapped_polyline);
+
+		/**
+		 * Project and tessellate a *wrapped* polygon.
+		 */
+		void
+		project_tessellated_wrapped_polygon(
+				DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
+				const GPlatesMaths::DateLineWrapper::LatLonPolygon &wrapped_polygon);
+
+		/**
+		 * Project and tessellate a *wrapped* polyline, or ring (part) of a polygon.
+		 */
+		void
+		project_tessellated_wrapped_geometry_part(
+				DatelineWrappedProjectedLineGeometry &dateline_wrapped_projected_line_geometry,
+				const GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type &lat_lon_points,
+				const std::vector<bool> &is_original_point_flags,
+				bool is_polygon_ring);
 
 		/**
 		 * Paints a *filled* line geometry (polyline or polygon) as a filled polygon.
@@ -396,7 +456,7 @@ namespace GPlatesGui
 		paint_fill_geometry(
 				GPlatesOpenGL::GLFilledPolygonsMapView::filled_drawables_type &filled_polygons,
 				const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry,
-				const Colour &colour);
+				rgba8_t rgba8_color);
 
 		/**
 		 * Paints a line geometry (polyline or polygon).
@@ -405,7 +465,7 @@ namespace GPlatesGui
 		void
 		paint_line_geometry(
 				const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry,
-				const Colour &colour,
+				rgba8_t rgba8_color,
 				stream_primitives_type &lines_stream,
 				boost::optional<double> arrow_head_size = boost::none);
 
@@ -417,12 +477,11 @@ namespace GPlatesGui
 				rgba8_t rgba8_color);
 
 		/**
-		 * Returns the map projected screen coordinates of the specified point
-		 * (in the central meridian reference frame).
+		 * Returns the map projected screen coordinates of the specified point.
 		 */
 		QPointF
 		get_projected_wrapped_position(
-				const GPlatesMaths::LatLonPoint &central_meridian_reference_frame_point) const;
+				const GPlatesMaths::LatLonPoint &lat_lon_point) const;
 
 		/**
 		 * Returns the map projected screen coordinates of the specified point.

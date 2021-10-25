@@ -85,13 +85,13 @@ namespace GPlatesPropertyValues
 			return non_null_ptr_type(new OldVersionPropertyValue(structural_type, value_));
 		}
 
-		const OldVersionPropertyValue::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
 			return non_null_ptr_type(new OldVersionPropertyValue(*this));
 		}
 
-		const OldVersionPropertyValue::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const
 		{
 			// This class doesn't reference any mutable objects by pointer, so there's
@@ -102,6 +102,11 @@ namespace GPlatesPropertyValues
 		DEFINE_FUNCTION_DEEP_CLONE_AS_PROP_VAL()
 
 
+		/**
+		 * Returns the value.
+		 *
+		 * Note: Since there are no setters methods on this class we don't need revisioning.
+		 */
 		const value_type &
 		value() const
 		{

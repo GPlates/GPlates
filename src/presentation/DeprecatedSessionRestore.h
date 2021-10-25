@@ -32,29 +32,22 @@
 #include <QStringList>
 
 
-namespace GPlatesAppLogic
-{
-	class ApplicationState;
-}
-
 namespace GPlatesPresentation
 {
 	namespace DeprecatedSessionRestore
 	{
 		/**
-		 * Handles the old way of restoring sessions before the general scribe system was
-		 * introduced in session version 4.
+		 * Handles the old way of restoring sessions before the general scribe system was introduced.
 		 *
-		 * Returns a list of feature collection files that don't exist (ones that exist
+		 * Any files that don't exist get reported in the read errors dialog (ones that exist
 		 * but fail to load will result in an exception and a partial restore).
 		 */
-		QStringList
+		void
 		restore_session(
 				int version,
 				const QDateTime &time,
 				const QStringList &loaded_files,
-				const QString &layers_state,
-				GPlatesAppLogic::ApplicationState &app_state);
+				const QString &layers_state);
 	}
 }
 

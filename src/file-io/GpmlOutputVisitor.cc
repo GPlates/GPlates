@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date $
  * 
- * Copyright (C) 2007, 2008, 2009, 2010 The University of Sydney, Australia
+ * Copyright (C) 2007, 2008, 2009, 2010, 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -37,6 +37,7 @@
 #include <QProcess>
 #include <QtCore/QUuid>
 #include <QtGlobal> 
+#include <QLocale>
 
 #include "ErrorOpeningFileForWritingException.h"
 #include "ErrorOpeningPipeToGzipException.h"
@@ -62,6 +63,7 @@
 #include "property-values/GpmlPropertyDelegate.h"
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlAge.h"
 #include "property-values/GpmlArray.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlFeatureReference.h"
@@ -87,7 +89,6 @@
 #include "property-values/GpmlTopologicalPoint.h"
 #include "property-values/GpmlTopologicalPolygon.h"
 #include "property-values/GpmlTopologicalSection.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
 #include "property-values/GpmlOldPlatesHeader.h"
 #include "property-values/OldVersionPropertyValue.h"
 #include "property-values/UninterpretedPropertyValue.h"
@@ -171,12 +172,13 @@ namespace
 	
 	
 	/**
-	 * Convenience function to help write GmlPolygon's exterior and interior rings.
+	 * Convenience function to help write PolygonOnSphere's exterior and interior rings.
 	 */
 	void
 	write_gml_linear_ring(
 			GPlatesFileIO::XmlWriter &xml_output,
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr)
+			const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_begin,
+			const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_end)
 	{
 		xml_output.writeStartGmlElement("LinearRing");
 	
@@ -208,14 +210,12 @@ namespace
 		//   (one for each segment start-point, plus one for the final end-point
 		//   (all other end-points are the start-point of the next segment, so are not counted)),
 		//   times two, since each point is a (lat, lon) duple.
-		pos_list.reserve((polygon_ptr->number_of_segments() + 1) * 2);
+		pos_list.reserve((std::distance(ring_begin, ring_end) + 1) * 2);
 	
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator begin = polygon_ptr->vertex_begin();
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = begin;
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon_ptr->vertex_end();
-		for ( ; iter != end; ++iter) 
+		GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator ring_iter = ring_begin;
+		for ( ; ring_iter != ring_end; ++ring_iter) 
 		{
-			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*iter);
+			GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*ring_iter);
 	
 			// NOTE: We are assuming GPML is using (lat,lon) ordering.
 			// See http://trac.gplates.org/wiki/CoordinateReferenceSystem for details.
@@ -224,9 +224,14 @@ namespace
 		}
 		// When writing gml:Polygons, the last point must be identical to the first point,
 		// because the format wasn't verbose enough.
-		GPlatesMaths::LatLonPoint begin_llp = GPlatesMaths::make_lat_lon_point(*begin);
-		pos_list.push_back(begin_llp.latitude());
-		pos_list.push_back(begin_llp.longitude());
+		GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator ring_last_point_iter = ring_end;
+		--ring_last_point_iter;
+		if (*ring_last_point_iter != *ring_begin)
+		{
+			GPlatesMaths::LatLonPoint begin_llp = GPlatesMaths::make_lat_lon_point(*ring_begin);
+			pos_list.push_back(begin_llp.latitude());
+			pos_list.push_back(begin_llp.longitude());
+		}
 		
 		// Now that we have assembled the coordinates, write them into the XML.
 		xml_output.writeNumericalSequence(pos_list.begin(), pos_list.end());
@@ -372,7 +377,8 @@ namespace
 		coordinates_iterator_ranges.reserve(std::distance(tuple_list_begin, tuple_list_end));
 
 		TupleListIter tuple_list_iter = tuple_list_begin;
-		for ( ; tuple_list_iter != tuple_list_end; ++tuple_list_iter) {
+		for ( ; tuple_list_iter != tuple_list_end; ++tuple_list_iter)
+		{
 			coordinates_iterator_ranges.push_back(std::make_pair(
 						(*tuple_list_iter)->coordinates_begin(),
 						(*tuple_list_iter)->coordinates_end()));
@@ -465,7 +471,8 @@ namespace
 		typedef std::pair<coordinates_iterator, coordinates_iterator> coordinates_iterator_range;
 
 		// Handle the situation when the tuple-list is empty.
-		if (tuple_list_begin == tuple_list_end) {
+		if (tuple_list_begin == tuple_list_end)
+		{
 			// Nothing to output.
 			return;
 		}
@@ -511,8 +518,7 @@ GPlatesFileIO::GpmlOutputVisitor::gzip_program()
 GPlatesFileIO::GpmlOutputVisitor::GpmlOutputVisitor(
 		const FileInfo &file_info,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-		const GPlatesModel::Gpgim &gpgim,
-		bool use_gzip):
+		bool use_gzip) :
 	d_qfile_ptr(new QFile(file_info.get_qfileinfo().filePath())),
 	d_qprocess_ptr(new QProcess),
 	d_gzip_afterwards(false),
@@ -577,49 +583,47 @@ GPlatesFileIO::GpmlOutputVisitor::GpmlOutputVisitor(
 		
 	}
 	
-	start_writing_document(d_output, feature_collection_ref, gpgim);
+	start_writing_document(d_output, feature_collection_ref);
 }
 
 
 GPlatesFileIO::GpmlOutputVisitor::GpmlOutputVisitor(
 		QIODevice *target,
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-		const GPlatesModel::Gpgim &gpgim):
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref) :
 	d_qfile_ptr(),
 	d_qprocess_ptr(),
 	d_output(target),
 	d_gzip_afterwards(false)
 {
-	start_writing_document(d_output, feature_collection_ref, gpgim);
+	start_writing_document(d_output, feature_collection_ref);
 }
 
 
 void
 GPlatesFileIO::GpmlOutputVisitor::start_writing_document(
 		XmlWriter &writer,
-		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
-		const GPlatesModel::Gpgim &gpgim)
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref)
 {
 	writer.writeStartDocument();
 
 	writer.writeNamespace(
-			GPlatesUtils::XmlNamespaces::GPML_NAMESPACE_QSTRING,
-			GPlatesUtils::XmlNamespaces::GPML_STANDARD_ALIAS_QSTRING);
+			GPlatesUtils::XmlNamespaces::get_gpml_namespace_qstring(),
+			GPlatesUtils::XmlNamespaces::get_gpml_standard_alias_qstring());
 	writer.writeNamespace(
-			GPlatesUtils::XmlNamespaces::GML_NAMESPACE_QSTRING,
-			GPlatesUtils::XmlNamespaces::GML_STANDARD_ALIAS_QSTRING);
+			GPlatesUtils::XmlNamespaces::get_gml_namespace_qstring(),
+			GPlatesUtils::XmlNamespaces::get_gml_standard_alias_qstring());
 	writer.writeNamespace(
-			GPlatesUtils::XmlNamespaces::XSI_NAMESPACE_QSTRING,
-			GPlatesUtils::XmlNamespaces::XSI_STANDARD_ALIAS_QSTRING);
+			GPlatesUtils::XmlNamespaces::get_xsi_namespace_qstring(),
+			GPlatesUtils::XmlNamespaces::get_xsi_standard_alias_qstring());
 
 	writer.writeStartGpmlElement("FeatureCollection");
 
 	// The version of the GPGIM built into the current GPlates.
-	const GPlatesModel::GpgimVersion &gpgim_version = gpgim.get_version();
+	const GPlatesModel::GpgimVersion &gpgim_version = GPlatesModel::Gpgim::instance().get_version();
 
 	writer.writeGpmlAttribute("version", gpgim_version.version_string());
 	writer.writeAttribute(
-			GPlatesUtils::XmlNamespaces::XSI_NAMESPACE_QSTRING,
+			GPlatesUtils::XmlNamespaces::get_xsi_namespace_qstring(),
 			"schemaLocation",
 			"http://www.gplates.org/gplates ../xsd/gpml.xsd "\
 			"http://www.opengis.net/gml ../../../gml/current/base");
@@ -991,17 +995,23 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_polygon(
 {
 	d_output.writeStartGmlElement("Polygon");
 	
-	// GmlPolygon has exactly one exterior ring.
+	const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon = gml_polygon.polygon();
+
+	// The polygon has exactly one exterior ring.
 	d_output.writeStartGmlElement("exterior");
-	write_gml_linear_ring(d_output, gml_polygon.exterior());
+	write_gml_linear_ring(d_output, polygon->exterior_ring_vertex_begin(), polygon->exterior_ring_vertex_end());
 	d_output.writeEndElement(); // </gml:exterior>
 	
-	// GmlPolygon has zero or more interior rings.
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator it = gml_polygon.interiors_begin();
-	GPlatesPropertyValues::GmlPolygon::ring_const_iterator end = gml_polygon.interiors_end();
-	for ( ; it != end; ++it) {
+	// The polygon has zero or more interior rings.
+	for (unsigned int interior_ring_index = 0;
+		interior_ring_index < polygon->number_of_interior_rings();
+		++interior_ring_index)
+	{
 		d_output.writeStartGmlElement("interior");
-		write_gml_linear_ring(d_output, *it);
+		write_gml_linear_ring(
+				d_output,
+				polygon->interior_ring_vertex_begin(interior_ring_index),
+				polygon->interior_ring_vertex_end(interior_ring_index));
 		d_output.writeEndElement(); // </gml:interior>
 	}
 
@@ -1090,6 +1100,49 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gml_time_period(
 
 
 void
+GPlatesFileIO::GpmlOutputVisitor::visit_gpml_age(
+		const GPlatesPropertyValues::GpmlAge &gpml_age) 
+{
+	d_output.writeStartGpmlElement("Age");
+	if (gpml_age.get_timescale()) {
+		d_output.writeStartGpmlElement("timescale");
+		d_output.writeText(*gpml_age.get_timescale());
+		d_output.writeEndElement();
+	}
+	if (gpml_age.get_age_absolute()) {
+		d_output.writeStartGpmlElement("absoluteAge");
+		d_output.writeDecimal(*gpml_age.get_age_absolute());
+		d_output.writeEndElement();
+	}
+	if (gpml_age.get_age_named()) {
+		d_output.writeStartGpmlElement("namedAge");
+		d_output.writeText(*gpml_age.get_age_named());
+		d_output.writeEndElement();
+	}
+	if (gpml_age.uncertainty_type() == GPlatesPropertyValues::GpmlAge::UncertaintyDefinition::UNC_PLUS_OR_MINUS) {
+		d_output.writeStartGpmlElement("uncertainty");
+		d_output.writeGpmlAttribute("value", QLocale::c().toString(*gpml_age.get_uncertainty_plusminus()));
+		d_output.writeEndElement();
+	}
+	if (gpml_age.uncertainty_type() == GPlatesPropertyValues::GpmlAge::UncertaintyDefinition::UNC_RANGE) {
+		d_output.writeStartGpmlElement("uncertainty");
+		if (gpml_age.get_uncertainty_oldest_absolute()) {
+			d_output.writeGpmlAttribute("oldest", QLocale::c().toString(*gpml_age.get_uncertainty_oldest_absolute()));
+		} else if (gpml_age.get_uncertainty_oldest_named()) {
+			d_output.writeGpmlAttribute("oldest", gpml_age.get_uncertainty_oldest_named()->get().qstring());
+		}
+		if (gpml_age.get_uncertainty_youngest_absolute()) {
+			d_output.writeGpmlAttribute("youngest", QLocale::c().toString(*gpml_age.get_uncertainty_youngest_absolute()));
+		} else if (gpml_age.get_uncertainty_youngest_named()) {
+			d_output.writeGpmlAttribute("youngest", gpml_age.get_uncertainty_youngest_named()->get().qstring());
+		}
+		d_output.writeEndElement();
+	}
+	d_output.writeEndElement();
+}
+
+
+void
 GPlatesFileIO::GpmlOutputVisitor::visit_gpml_array(
 		const GPlatesPropertyValues::GpmlArray &gpml_array)
 {
@@ -1146,6 +1199,9 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_constant_value(
 			gpml_constant_value.value()->accept_visitor(*this);
 		d_output.writeEndElement();
 
+		d_output.writeStartGmlElement("description");
+			d_output.writeText(gpml_constant_value.description());
+		d_output.writeEndElement();
 
 		d_output.writeStartGpmlElement("valueType");
 			writeTemplateTypeParameterType(d_output, gpml_constant_value.value_type());
@@ -1215,43 +1271,54 @@ void
 GPlatesFileIO::GpmlOutputVisitor::visit_gpml_finite_rotation(
 		const GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation) 
 {
-	if (gpml_finite_rotation.is_zero_rotation()) {
+	const GPlatesModel::MetadataContainer &metadata = gpml_finite_rotation.metadata();
+
+	// Write out in a parent 'gpml:TotalReconstructionPole' structural type if rotation pole has metadata.
+	const bool is_total_reconstruction_pole = !metadata.empty();
+
+	if (is_total_reconstruction_pole)
+	{
+		d_output.writeStartGpmlElement("TotalReconstructionPole");
+
+		BOOST_FOREACH(boost::shared_ptr<GPlatesModel::Metadata> metadata_entry, metadata)
+		{
+			d_output.writeStartGpmlElement("meta");
+			d_output.writeAttribute("","name", metadata_entry->get_name());
+			d_output.writeText(metadata_entry->get_content());
+			d_output.writeEndElement();
+		}
+	}
+
+	if (gpml_finite_rotation.is_zero_rotation())
+	{
 		d_output.writeEmptyGpmlElement("ZeroFiniteRotation");
-	} else {
+	}
+	else
+	{
 		d_output.writeStartGpmlElement("AxisAngleFiniteRotation");
+
+			GPlatesMaths::UnitQuaternion3D::RotationParams rp =
+					gpml_finite_rotation.finite_rotation().unit_quat().get_rotation_params(
+							gpml_finite_rotation.finite_rotation().axis_hint());
 
 			d_output.writeStartGpmlElement("eulerPole");
 				GPlatesPropertyValues::GmlPoint::non_null_ptr_type gml_point =
-						GPlatesPropertyValues::calculate_euler_pole(gpml_finite_rotation);
+						GPlatesPropertyValues::GmlPoint::create(GPlatesMaths::PointOnSphere(rp.axis));
 				visit_gml_point(*gml_point);
 			d_output.writeEndElement();
 
 			d_output.writeStartGpmlElement("angle");
-				GPlatesMaths::real_t angle_in_degrees =
-						GPlatesPropertyValues::calculate_angle(gpml_finite_rotation);
+				GPlatesMaths::real_t angle_in_degrees = GPlatesMaths::convert_rad_to_deg(rp.angle);
 				d_output.writeDecimal(angle_in_degrees.dval());
 			d_output.writeEndElement();
 
 		d_output.writeEndElement();  // </gpml:AxisAngleFiniteRotation>
 	}
-}
 
-
-void
-GPlatesFileIO::GpmlOutputVisitor::visit_gpml_total_reconstruction_pole(
-		const GPlatesPropertyValues::GpmlTotalReconstructionPole &pole)
-{
-	d_output.writeStartGpmlElement("TotalReconstructionPole");
-	const std::vector<boost::shared_ptr<GPlatesModel::Metadata> >& meta_data= pole.metadata();
-	BOOST_FOREACH(boost::shared_ptr<GPlatesModel::Metadata> data, meta_data)
+	if (is_total_reconstruction_pole)
 	{
-		d_output.writeStartGpmlElement("meta");
-		d_output.writeAttribute("","name", data->get_name());
-		d_output.writeText(data->get_content());
 		d_output.writeEndElement();
 	}
-	visit_gpml_finite_rotation(pole);
-	d_output.writeEndElement();
 }
 
 
@@ -1378,9 +1445,9 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_line(
 {
 	d_output.writeStartGpmlElement("TopologicalLine");
 
-	GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator iter =
+	GPlatesPropertyValues::GpmlTopologicalLine::sections_const_iterator iter =
 			gpml_toplogical_line.sections_begin();
-	GPlatesPropertyValues::GpmlTopologicalPolygon::sections_const_iterator end =
+	GPlatesPropertyValues::GpmlTopologicalLine::sections_const_iterator end =
 			gpml_toplogical_line.sections_end();
 	for ( ; iter != end; ++iter) 
 	{
@@ -1574,32 +1641,32 @@ GPlatesFileIO::GpmlOutputVisitor::write_gpml_time_sample(
 		const GPlatesPropertyValues::GpmlTimeSample &gpml_time_sample) 
 {
 	d_output.writeStartGpmlElement("TimeSample");
-	d_output.writeStartGpmlElement("value");
-	gpml_time_sample.value()->accept_visitor(*this);
-	d_output.writeEndElement();
-
-	d_output.writeStartGpmlElement("validTime");
-	gpml_time_sample.valid_time()->accept_visitor(*this);
-	d_output.writeEndElement();
-
-	// The description is optional.
-	if (gpml_time_sample.description() != NULL) 
-	{
-		d_output.writeStartGmlElement("description");
-		gpml_time_sample.description()->accept_visitor(*this);
+		d_output.writeStartGpmlElement("value");
+			gpml_time_sample.value()->accept_visitor(*this);
 		d_output.writeEndElement();
-	}
 
-	if(gpml_time_sample.is_disabled())
-	{
-		d_output.writeStartGpmlElement("isDisabled");
-		d_output.writeBoolean(true);
+		d_output.writeStartGpmlElement("validTime");
+			gpml_time_sample.valid_time()->accept_visitor(*this);
 		d_output.writeEndElement();
-	}
 
-	d_output.writeStartGpmlElement("valueType");
-	writeTemplateTypeParameterType(d_output, gpml_time_sample.value_type());
-	d_output.writeEndElement();
+		// The description is optional.
+		if (gpml_time_sample.description())
+		{
+			d_output.writeStartGmlElement("description");
+				gpml_time_sample.description().get()->accept_visitor(*this);
+			d_output.writeEndElement();
+		}
+
+		if (gpml_time_sample.is_disabled())
+		{
+			d_output.writeStartGpmlElement("isDisabled");
+			d_output.writeBoolean(true);
+			d_output.writeEndElement();
+		}
+
+		d_output.writeStartGpmlElement("valueType");
+			writeTemplateTypeParameterType(d_output, gpml_time_sample.value_type());
+		d_output.writeEndElement();
 
 	d_output.writeEndElement();  // </gpml:TimeSample>
 }

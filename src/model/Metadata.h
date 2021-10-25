@@ -31,6 +31,7 @@
 #include <vector>
 
 #include <boost/foreach.hpp>
+#include <boost/operators.hpp>
 
 #include <QString>
 
@@ -563,7 +564,8 @@ namespace GPlatesModel
 			if(qualified_name(reader) == name)
 			{
 				(this->*func)(reader.readElementText());
-			}else
+			}
+			else
 			{
 				qWarning() << QString("Expecting xml element %2, but got %1.").arg(
 					qualified_name(reader)).arg(name);
@@ -571,48 +573,69 @@ namespace GPlatesModel
 		}
 	};
 		
-	class Metadata
+	class Metadata :
+			public boost::equality_comparable<Metadata>
 	{
 	public:
 		typedef boost::shared_ptr<GPlatesModel::Metadata> shared_ptr_type;
-		typedef boost::shared_ptr<const GPlatesModel::Metadata> shared_const_ptr_type;
+		typedef boost::shared_ptr<const GPlatesModel::Metadata> shared_ptr_to_const_type;
+
 		Metadata(
-				const QString& name,
-				const QString& content):
+				const QString &name,
+				const QString &content) :
 			d_name(name),
 			d_content(content)
-			{ }
+		{ }
 
-		virtual
+		Metadata(
+				const Metadata &other) :
+			d_name(other.d_name),
+			d_content(other.d_content)
+		{ }
+
+		const shared_ptr_type
+		clone() const
+		{
+			return shared_ptr_type(new Metadata(*this));
+		}
+
 		QString
 		get_name() const 
 		{
 			return d_name;
 		}
 
-		virtual
 		QString&
 		get_name()  
 		{
 			return d_name;
 		}
 
-		virtual
 		const QString&
 		get_content() const 
 		{
 			return d_content;
 		}
 
-		virtual
 		QString&
 		get_content()  
 		{
 			return d_content;
 		}
 
-		virtual
-		~Metadata(){ }
+		/**
+		 * Equality comparison operator.
+		 *
+		 * Inequality provided by boost equality_comparable.
+		 */
+		bool
+		operator==(
+				const Metadata &other) const
+		{
+			return d_name == other.d_name &&
+					d_content == other.d_content;
+		}
+
 
 		static const QString DISABLED_SEQUENCE_FLAG;
 		static const QString DELETE_MARK;
@@ -623,17 +646,13 @@ namespace GPlatesModel
 
 	typedef std::vector<Metadata::shared_ptr_type> MetadataContainer;
 
-	class PoleMetadata:
-		public Metadata
-	{
-	public:
-		PoleMetadata(
-				const QString& name,
-				const QString& content):
-			Metadata(name, content)
-			{ }
-	};
 
+	/**
+	 * Read rotation pole metadata from a 'gpml:TotalReconstructionPole' structural element.
+	 */
+	MetadataContainer
+	create_metadata_from_gpml(
+			XmlElementNode::non_null_ptr_type total_reconstruction_pole_element);
 
 	inline
 	MetadataContainer::iterator 

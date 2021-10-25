@@ -11,6 +11,12 @@ include_directories(${SYSTEM_INCLUDE_FLAG} ${external_INCLUDE_DIRS})
 include_directories(${internal_INCLUDE_DIRS})
 
 set(srcs
+    AngularDistance.cc
+    AngularDistance.h
+    AngularExtent.cc
+    AngularExtent.h
+    AzimuthalEqualAreaProjection.cc
+    AzimuthalEqualAreaProjection.h
     CalculateVelocity.cc
     CalculateVelocity.h
     CartesianConvMatrix3D.cc
@@ -33,15 +39,22 @@ set(srcs
     FiniteRotation.h
     FiniteRotationSnapshotTable.h
     FunctionDomainException.h
+    GeneratePoints.cc
+    GeneratePoints.h
     GenericVectorOps3D.h
+    GeometryDistance.cc
+    GeometryDistance.h
     GeometryForwardDeclarations.h
+    GeometryInterpolation.cc
+    GeometryInterpolation.h
     GeometryOnSphere.h
     GeometryType.h
+    GnomonicProjection.cc
+    GnomonicProjection.h
     GreatCircle.cc
     GreatCircle.h
     GreatCircleArc.cc
     GreatCircleArc.h
-    HierarchicalTriangularMesh.h
     HighPrecision.h
     IndeterminateArcRotationAxisException.h
     IndeterminateResultException.h
@@ -57,7 +70,6 @@ set(srcs
     LatLonPoint.cc
     LatLonPoint.h
     MathematicalException.h
-    MathsFwd.h
     MathsUtils.cc
     MathsUtils.h
     MultiPointOnSphere.cc
@@ -81,14 +93,13 @@ set(srcs
     PolygonOrientation.cc
     PolygonOrientation.h
     PolygonProximityHitDetail.h
+    PolyGreatCircleArcBoundingTree.h
     PolylineEquivalencePredicates.h
     PolylineIntersections.cc
     PolylineIntersections.h
     PolylineOnSphere.cc
     PolylineOnSphere.h
     PolylineProximityHitDetail.h
-    ProjectionUtils.cc
-    ProjectionUtils.h
     ProximityCriteria.cc
     ProximityCriteria.h
     ProximityHitDetail.cc
@@ -108,12 +119,10 @@ set(srcs
     SmallCircleCoverageMesh.cc
     SmallCircleCoverageMesh.h
     SmallCircleProximityHitDetail.h
-    SphereSettings.h
     SphericalArea.cc
     SphericalArea.h
-    SphericalCollection.h
-    SphericalDistance.cc
-    SphericalDistance.h
+    SphericalSubdivision.cc
+    SphericalSubdivision.h
     TrailingLatLonCoordinateException.cc
     TrailingLatLonCoordinateException.h
     types.h

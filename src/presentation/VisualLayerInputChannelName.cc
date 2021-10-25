@@ -44,8 +44,8 @@ GPlatesPresentation::VisualLayerInputChannelName::get_input_channel_name(
 	case GPlatesAppLogic::LayerInputChannelName::RECONSTRUCTABLE_FEATURES:
 		return "Reconstructable features";
 
-	case GPlatesAppLogic::LayerInputChannelName::DEFORMATION_SURFACES:
-		return "Deformation surfaces (topological networks)";
+	case GPlatesAppLogic::LayerInputChannelName::TOPOLOGY_SURFACES:
+		return "Topology surfaces";
 
 	case GPlatesAppLogic::LayerInputChannelName::TOPOLOGICAL_GEOMETRY_FEATURES:
 		return "Topological geometry features";
@@ -88,6 +88,9 @@ GPlatesPresentation::VisualLayerInputChannelName::get_input_channel_name(
 
 	case GPlatesAppLogic::LayerInputChannelName::CO_REGISTRATION_TARGET_GEOMETRIES:
 		return "Reconstructed target geometries/rasters";
+
+	case GPlatesAppLogic::LayerInputChannelName::RECONSTRUCTED_SCALAR_COVERAGE_DOMAINS:
+		return "Reconstructed coverage domains";
 
 	default:
 		break;

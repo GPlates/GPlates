@@ -51,8 +51,13 @@ if(MSVC)
 	# On a 32-bit Windows OS this won't help because only 2Gb (by default) is accessible
 	# (the 2-4Gb process address range is reserved for the system).
 	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /LARGEADDRESSAWARE")
-    #set(CMAKE_SHARED_LINKER_FLAGS )
-    #set(CMAKE_MODULE_LINKER_FLAGS )
+	# The following are mainly for the pygplates DLL/pyd.
+	# But it doesn't seem to be needed since '/LARGEADDRESSAWARE' only needs to be built into the
+	# 'python.exe' (if building Python from source code) - which it isn't set anyway
+	# (in the Python 2.7 source code) - so it doesn't matter.
+	# We'll set it on the pygplates DLL anyway in case any of the above changes.
+	set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} /LARGEADDRESSAWARE")
+    set(CMAKE_MODULE_LINKER_FLAGS "${CMAKE_MODULE_LINKER_FLAGS} /LARGEADDRESSAWARE")
 	
 	# Increase pre-compiled header memory allocation limit to avoid compile error.
 	# Error happens on 12-core Windows 8.1 machine (in Visual Studio 2005).
@@ -166,17 +171,24 @@ if(CMAKE_COMPILER_IS_GNUCXX)
 			if (CXX_MINOR_VERSION STRLESS "4")
 				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-uninitialized")
 			endif (CXX_MINOR_VERSION STRLESS "4")
-                        if ((CXX_MINOR_VERSION EQUAL "7") OR (CXX_MINOR_VERSION EQUAL "8") OR (CXX_MINOR_VERSION EQUAL "9"))
-                                #The gcc 4.7, 4.8.1 and 4.9.1 report maybe-uninitialized warning when the default boost::optional<> declaration is present.
-                                #The boost::optional<> has been used widely throughout gplates. So supress the error for now.
-                                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
-                        endif ((CXX_MINOR_VERSION EQUAL "7") OR (CXX_MINOR_VERSION EQUAL "8") OR (CXX_MINOR_VERSION EQUAL "9"))
-                        if (CXX_MINOR_VERSION EQUAL "9")
-                                # gcc 4.9.1 reports warnings on unused functions. We prefer to keep unused functions available,
-                                # so suppress the warning.
-                                set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function -Wno-clobbered")
-                        endif (CXX_MINOR_VERSION EQUAL "9")
+			if ((CXX_MINOR_VERSION EQUAL "7") OR (CXX_MINOR_VERSION EQUAL "8") OR (CXX_MINOR_VERSION EQUAL "9"))
+				#The gcc 4.7, 4.8.1 and 4.9.1 report maybe-uninitialized warning when the default boost::optional<> declaration is present.
+				#The boost::optional<> has been used widely throughout gplates. So supress the error for now.
+				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
+			endif ((CXX_MINOR_VERSION EQUAL "7") OR (CXX_MINOR_VERSION EQUAL "8") OR (CXX_MINOR_VERSION EQUAL "9"))
+			if (CXX_MINOR_VERSION EQUAL "9")
+				# gcc 4.9.1 reports warnings on unused functions. We prefer to keep unused functions available,
+				# so suppress the warning.
+				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function -Wno-clobbered")
+			endif (CXX_MINOR_VERSION EQUAL "9")
 		endif (CXX_MAJOR_VERSION EQUAL "4")
+		if (CXX_MAJOR_VERSION EQUAL "5")
+			# gcc 5.x reports warnings on unused functions. We prefer to keep unused functions available,
+			# so suppress the warning.
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-function")
+			# boost::optional<> is used widely throughout GPlates. So supress the error for now.
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
+		endif (CXX_MAJOR_VERSION EQUAL "5")
     endif (GPLATES_PUBLIC_RELEASE)
 
     #set(CMAKE_EXE_LINKER_FLAGS )
@@ -215,11 +227,26 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     # where '*' is EXE, SHARED and MODULE.
 endif(CMAKE_COMPILER_IS_GNUCXX)
 
+# Suppress warnings under clang (at least under Apple LLVM 5.1)
+# Otherwise we get a lot of redeclared-class-member warnings from boost (from boost 1.47 at least), related to BOOST_BIMAP, and
+# unused argument warnings -L/Library/Frameworks - possibly due to multiple installations of python, an unused one
+# of which may be in /Library/Frameworks
+if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    message(STATUS "Using ${CMAKE_CXX_COMPILER_ID}")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-redeclared-class-member -Qunused-arguments")
+endif()
+
+
 # The 64-bit C99 macro UINT64_C macro fails to compile on Visual Studio 2005 using boost 1.36.
 # Boost 1.42 defines __STDC_CONSTANT_MACROS in <boost/cstdint.hpp> but prior to that the application
 # is required to define it and it needs to be defined before any header inclusion to ensure it is defined
 # before it is accessed (which means before pre-compiled headers). So we define it on the compiler command-line.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_CONSTANT_MACROS")
+
+# Boost 1.58 introduced a breaking change in boost::variant that does compile-time with boost::get<U>(variant)
+# to see if U is one of the variant types. However it seems to generate compile errors for references and boost::optional.
+# So we'll default to using the old relaxed (run-time) method.
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_VARIANT_USE_RELAXED_GET_BY_DEFAULT")
 
 # Create our own build type for profiling with GPlates inbuilt profiler.
 # Use '-DCMAKE_BUILD_TYPE:STRING=profilegplates' option to 'cmake' to generate a gplates profile

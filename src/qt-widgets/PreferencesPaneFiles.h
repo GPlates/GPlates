@@ -6,6 +6,7 @@
  * $Date$ 
  * 
  * Copyright (C) 2011 The University of Sydney, Australia
+ * Copyright (C) 2016 Geological Survey of Norway
  *
  * This file is part of GPlates.
  *
@@ -27,6 +28,8 @@
 #define GPLATES_QTWIDGETS_PREFERENCESPANEFILES_H
 
 #include <QWidget>
+
+#include "gui/ConfigGuiUtils.h"
 
 #include "PreferencesPaneFilesUi.h"
 
@@ -61,6 +64,26 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 		
 	public:
+
+		enum FileBehaviour
+		{
+			ALWAYS_DEFAULT_BEHAVIOUR,
+			DEFAULT_THEN_LAST_USED_BEHAVIOUR,
+			ALWAYS_LAST_USED_BEHAVIOUR,
+
+			NUM_BEHAVIOURS
+		};
+
+		static const GPlatesGui::ConfigGuiUtils::ConfigButtonGroupAdapter::button_enum_to_description_map_type &
+		build_file_behaviour_description_map()
+		{
+			static GPlatesGui::ConfigGuiUtils::ConfigButtonGroupAdapter::button_enum_to_description_map_type map;
+			//TODO: settle on decent names for these prior to 2.0; consider also if 3 options is overkill.
+			map[ALWAYS_DEFAULT_BEHAVIOUR] = "Always_default";
+			map[DEFAULT_THEN_LAST_USED_BEHAVIOUR] = "Default_then_last_used";
+			map[ALWAYS_LAST_USED_BEHAVIOUR] = "Always_last_used";
+			return map;
+		}
 
 		explicit
 		PreferencesPaneFiles(

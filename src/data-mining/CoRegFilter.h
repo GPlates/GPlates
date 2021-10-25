@@ -35,6 +35,9 @@
 
 #include "global/LogException.h" 
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -142,6 +145,15 @@ namespace GPlatesDataMining
 			}
 
 			~Config(){}
+
+		private: // Transcribe for sessions/projects...
+
+			friend class GPlatesScribe::Access;
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
 		};
 
 		void

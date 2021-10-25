@@ -38,6 +38,7 @@
 
 #include "MathsUtils.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
 #include "scribe/Transcribe.h"
 
 #include "utils/QtStreamable.h"
@@ -74,7 +75,8 @@ namespace GPlatesMaths
 			: _dval(0.0)
 		{  }
 
-		Real(double d)
+		Real(
+				const double &d)
 			: _dval(d)
 		{  }
 
@@ -85,41 +87,47 @@ namespace GPlatesMaths
 		}
 
 		Real &
-		operator+=(Real other)
+		operator+=(
+				const Real &other)
 		{
 			_dval += other._dval;
 			return *this;
 		}
 
 		Real &
-		operator-=(Real other)
+		operator-=(
+				const Real &other)
 		{
 			_dval -= other._dval;
 			return *this;
 		}
 
 		Real &
-		operator*=(Real other)
+		operator*=(
+				const Real &other)
 		{
 			_dval *= other._dval;
 			return *this;
 		}
 
 		Real &
-		operator/=(Real other)
+		operator/=(
+				const Real &other)
 		{
 			_dval /= other._dval;
 			return *this;
 		}
 
 		bool
-		is_precisely_greater_than(double d) const
+		is_precisely_greater_than(
+				const double &d) const
 		{
 			return _dval > d;
 		}
 
 		bool
-		is_precisely_less_than(double d) const
+		is_precisely_less_than(
+				const double &d) const
 		{
 			return _dval < d;
 		}
@@ -162,15 +170,14 @@ namespace GPlatesMaths
 		friend std::ostream &operator<<(std::ostream &, const Real &);
 		friend std::istream &operator>>(std::istream &, Real &);
 
-	private: // Transcribing...
+	private: // Transcribe for sessions/projects...
+
+		friend class GPlatesScribe::Access;
 
 		GPlatesScribe::TranscribeResult
 		transcribe(
 				GPlatesScribe::Scribe &scribe,
 				bool transcribed_construct_data);
-
-		// Only the scribe system should be able to transcribe.
-		friend class GPlatesScribe::Access;
 	};
 
 

@@ -44,10 +44,10 @@ namespace GPlatesPresentation
 		static
 		non_null_ptr_type
 		create(
-			GPlatesAppLogic::LayerTaskParams &layer_task_params,
-			const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters)
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
+				const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters)
 		{
-			return new VelocityFieldCalculatorVisualLayerParams(layer_task_params, rendered_geometry_parameters);
+			return new VelocityFieldCalculatorVisualLayerParams(layer_params, rendered_geometry_parameters);
 		}
 
 
@@ -124,9 +124,9 @@ namespace GPlatesPresentation
 
 		explicit 
 		VelocityFieldCalculatorVisualLayerParams( 
-				GPlatesAppLogic::LayerTaskParams &layer_task_params,
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
 				const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters) :
-			VisualLayerParams(layer_task_params),
+			VisualLayerParams(layer_params),
 			d_arrow_spacing(rendered_geometry_parameters
 					.get_reconstruction_layer_arrow_spacing()),
 			d_arrow_body_scale(rendered_geometry_parameters

@@ -39,7 +39,8 @@
 
 namespace GPlatesAppLogic
 {
-	class ResolvedTopologicalGeometry;
+	class ReconstructionGeometry;
+	class ResolvedTopologicalSection;
 }
 
 namespace GPlatesFileIO
@@ -47,9 +48,9 @@ namespace GPlatesFileIO
 	namespace OgrFormatResolvedTopologicalGeometryExport
 	{
 		/**
-		 * Typedef for a feature geometry group of @a ResolvedTopologicalGeometry objects.
+		 * Typedef for a feature geometry group of reconstruction geometries.
 		 */
-		typedef ReconstructionGeometryExportImpl::FeatureGeometryGroup<GPlatesAppLogic::ResolvedTopologicalGeometry>
+		typedef ReconstructionGeometryExportImpl::FeatureGeometryGroup<GPlatesAppLogic::ReconstructionGeometry>
 				feature_geometry_group_type;
 
 		/**
@@ -60,7 +61,14 @@ namespace GPlatesFileIO
 
 
 		/**
-		 * Exports @a ResolvedTopologicalGeometry objects to OGR format.
+		 * Exports resolved topology objects to OGR format.
+		 *
+		 * This includes @a ResolvedTopologicalLine, @a ResolvedTopologicalBoundary and @a ResolvedTopologicalNetwork.
+		 *
+		 * If @a export_per_collection is true then the shapefile attributes from the original features are retained.
+		 * Otherwise the shapefile attributes from the original features are ignored, which is necessary if the
+		 * features came from multiple input files (which might have different attribute field names making it
+		 * difficult to merge into a single output).
 		 *
 		 * If @a force_polygon_orientation is not none then polygon are exported to the specified
 		 * orientation (clockwise or counter-clockwise).
@@ -71,7 +79,8 @@ namespace GPlatesFileIO
 		 * If @a wrap_to_dateline is true then exported polyline/polygon geometries are wrapped/clipped to the dateline.
 		 */
 		void
-		export_geometries(
+		export_resolved_topological_geometries(
+				bool export_per_collection,
 				const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
@@ -82,27 +91,28 @@ namespace GPlatesFileIO
 						force_polygon_orientation = boost::none,
 				bool wrap_to_dateline = true);
 
+
 		/**
-		 * Exports @a ResolvedTopologicalGeometry objects to OGR format.
+		 * Exports resolved topological sections to OGR format.
 		 *
-		 * If @a force_polygon_orientation is not none then polygon are exported to the specified
-		 * orientation (clockwise or counter-clockwise).
-		 * NOTE: This option is essentially ignored for the *Shapefile* OGR format because the
-		 * OGR Shapefile driver will overwrite our orientation (if counter-clockwise) and just
-		 * store exterior rings as clockwise and interior rings as counter-clockwise.
+		 * This includes @a ResolvedTopologicalSection and its @a ResolvedTopologicalSharedSubSegment instances.
 		 *
-		 * If @a wrap_to_dateline is true then exported polyline/polygon geometries are wrapped/clipped to the dateline.
+		 * If @a export_per_collection is true then the shapefile attributes from the original features are retained.
+		 * Otherwise the shapefile attributes from the original features are ignored, which is necessary if the
+		 * features came from multiple input files (which might have different attribute field names making it
+		 * difficult to merge into a single output).
+		 *
+		 * If @a wrap_to_dateline is true then exported polyline geometries are wrapped/clipped to the dateline.
 		 */
 		void
-		export_geometries_per_collection(
-				const std::list<feature_geometry_group_type> &feature_geometry_group_seq,
+		export_resolved_topological_sections(
+				bool export_per_collection,
+				const std::vector<const GPlatesAppLogic::ResolvedTopologicalSection *> &resolved_topological_sections,
 				const QFileInfo& file_info,
-				const std::vector<const File::Reference *> &referenced_files,
-				const std::vector<const File::Reference *> &active_reconstruction_files,
+				const referenced_files_collection_type &referenced_files,
+				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
-						force_polygon_orientation = boost::none,
 				bool wrap_to_dateline = true);
 
 
@@ -113,7 +123,7 @@ namespace GPlatesFileIO
 		*/
 		void
 		export_citcoms_resolved_topological_boundaries(
-				const CitcomsResolvedTopologicalBoundaryExportImpl::resolved_geom_seq_type &resolved_topological_geometries,
+				const CitcomsResolvedTopologicalBoundaryExportImpl::resolved_topologies_seq_type &resolved_topological_geometries,
 				const QFileInfo& file_info,
 				const referenced_files_collection_type &referenced_files,
 				const referenced_files_collection_type &active_reconstruction_files,

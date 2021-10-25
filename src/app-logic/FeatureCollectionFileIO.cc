@@ -34,6 +34,7 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+#include "global/GPlatesException.h"
 #include "global/InvalidFeatureCollectionException.h"
 #include "global/UnexpectedEmptyFeatureCollectionException.h"
 
@@ -42,33 +43,10 @@
 #include "model/Model.h"
 
 
-namespace
-{
-	/**
-	 * Transforms a list of file:// urls into a list of pathnames in string form.
-	 * Ignores any non-file url.
-	 */
-	QStringList
-	extract_pathnames_from_file_urls(
-			const QList<QUrl> &urls)
-	{
-		QStringList pathnames;
-		Q_FOREACH(const QUrl &url, urls) {
-			if (url.scheme() == "file") {
-				pathnames.push_back(url.toLocalFile());
-			}
-		}
-		return pathnames;	// QStringList implicitly shares data and uses pimpl idiom, return by value is fine.
-	}
-}
-
-
 GPlatesAppLogic::FeatureCollectionFileIO::FeatureCollectionFileIO(
-		const GPlatesModel::Gpgim &gpgim,
 		GPlatesModel::ModelInterface &model,
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry &file_format_registry,
 		FeatureCollectionFileState &file_state) :
-	d_gpgim(gpgim),
 	d_model(model),
 	d_file_format_registry(file_format_registry),
 	d_file_state(file_state)
@@ -83,7 +61,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_files(
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many in case we incrementally modify the features below.
 	// Probably won't be modifying the model so much when loading but we should keep this anyway.
-	GPlatesModel::NotificationGuard model_notification_guard(d_model.access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(*d_model.access_model());
 
 	// Read all the files before we add them to the application state.
 	file_seq_type loaded_files = read_feature_collections(filenames);
@@ -105,7 +83,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_file(
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many in case we incrementally modify the features below.
 	// Probably won't be modifying the model so much when loading but we should keep this anyway.
-	GPlatesModel::NotificationGuard model_notification_guard(d_model.access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(*d_model.access_model());
 
 	const GPlatesFileIO::FileInfo file_info(filename);
 
@@ -116,23 +94,6 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_file(
 	read_feature_collection(file->get_reference());
 
 	return d_file_state.add_file(file);
-}
-
-
-std::vector<GPlatesAppLogic::FeatureCollectionFileState::file_reference>
-GPlatesAppLogic::FeatureCollectionFileIO::load_urls(
-		const QList<QUrl> &urls)
-{
-	// Transform file:// urls into pathnames; ignore any http:// etc urls.
-	// Read all the files before we add them to the application state.
-	QStringList filenames = extract_pathnames_from_file_urls(urls);
-	if (filenames.isEmpty())
-	{
-		return std::vector<FeatureCollectionFileState::file_reference>();
-	}
-	
-	// Then proceed exactly as though we had called load_files(QStringList).
-	return load_files(filenames);
 }
 
 
@@ -147,7 +108,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::reload_file(
 			d_model.access_model(),
 			"reload " + file.get_file().get_file_info().get_qfileinfo().fileName().toStdString());
 	// Also want to merge model events across this scope.
-	GPlatesModel::NotificationGuard model_notification_guard(d_model.access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(*d_model.access_model());
 
 	//
 	// By removing all features and then reading new features from the file
@@ -208,7 +169,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::save_file(
 {
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many in case we incrementally modify the features below.
-	GPlatesModel::NotificationGuard model_notification_guard(d_model.access_model());
+	GPlatesModel::NotificationGuard model_notification_guard(*d_model.access_model());
 
 	// The following check is commented out because it fails in certain circumstances
 	// on newer versions of Windows. We'll just try and open the file for writing
@@ -269,7 +230,6 @@ GPlatesAppLogic::FeatureCollectionFileIO::count_features_in_xml_data(
 	int i = ArbitraryXmlReader::instance()->count_features(
 			boost::shared_ptr<ArbitraryXmlProfile>(new GeoscimlProfile()), 
 			data,
-			d_gpgim,
 			read_errors);
 
 	emit_handle_read_errors_signal(read_errors);
@@ -298,9 +258,7 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data(
 	ArbitraryXmlReader::instance()->read_xml_data(
 			file->get_reference(), 
 			boost::shared_ptr<ArbitraryXmlProfile>(new GeoscimlProfile()), 
-			d_model,
 			data,
-			d_gpgim,
 			read_errors);
 	d_file_state.add_file(file);
 
@@ -332,7 +290,21 @@ GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collections(
 		// Read new features from the file into the feature collection.
 		// Both the filename and target feature collection are in 'file'.
 		bool contains_unsaved_changes;
-		d_file_format_registry.read_feature_collection(file->get_reference(), read_errors, contains_unsaved_changes);
+		try
+		{
+			d_file_format_registry.read_feature_collection(file->get_reference(), read_errors, contains_unsaved_changes);
+		}
+		catch (GPlatesGlobal::Exception &)
+		{
+			// Emit any read errors before re-throwing (otherwise we'll lose them).
+			emit_handle_read_errors_signal(read_errors);
+
+			// Rethrow the exception to let caller know that an error occurred.
+			// This is important because the caller is expecting a valid feature collection
+			// unless an exception is thrown so if we don't throw one then the caller
+			// will try to dereference the feature collection and crash.
+			throw;
+		}
 
 		// The file has been freshly loaded from disk.
 		// If no model changes were needed (eg, to make it compatible with GPGIM) then it's clean.
@@ -365,7 +337,21 @@ GPlatesAppLogic::FeatureCollectionFileIO::read_feature_collection(
 	// Read new features from the file into the feature collection.
 	// Both the filename and target feature collection are in 'file_ref'.
 	bool contains_unsaved_changes;
-	d_file_format_registry.read_feature_collection(file_ref, read_errors, contains_unsaved_changes);
+	try
+	{
+		d_file_format_registry.read_feature_collection(file_ref, read_errors, contains_unsaved_changes);
+	}
+	catch (GPlatesGlobal::Exception &)
+	{
+		// Emit any read errors before re-throwing (otherwise we'll lose them).
+		emit_handle_read_errors_signal(read_errors);
+
+		// Rethrow the exception to let caller know that an error occurred.
+		// This is important because the caller is expecting a valid feature collection
+		// unless an exception is thrown so if we don't throw one then the caller
+		// will try to dereference the feature collection and crash.
+		throw;
+	}
 
 	// The file has been freshly loaded from disk.
 	// If no model changes were needed during loading (eg, to make it compatible with GPGIM) then it's clean.
@@ -391,6 +377,6 @@ GPlatesAppLogic::FeatureCollectionFileIO::emit_handle_read_errors_signal(
 	// This is useful for client code interested in displaying errors to the user.
 	if (!read_errors.is_empty())
 	{
-		Q_EMIT handle_read_errors(*this, read_errors);
+		Q_EMIT handle_read_errors(read_errors);
 	}
 }

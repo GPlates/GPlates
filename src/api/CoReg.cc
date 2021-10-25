@@ -262,7 +262,6 @@ namespace
 			qDebug() << t; qDebug() << r; qDebug() << s_id;
 
 			ReconstructMethodRegistry reconstruct_method_registry;
-			register_default_reconstruct_method_types(reconstruct_method_registry);
 
 			ReconstructionTreeCreator reconstruction_tree_creator =
 				get_cached_reconstruction_tree_creator(
@@ -369,7 +368,6 @@ namespace
 		gen_data(double time)
 		{
 			ReconstructMethodRegistry reconstruct_method_registry;
-			register_default_reconstruct_method_types(reconstruct_method_registry);
 
 			ReconstructionTreeCreator reconstruction_tree_creator =
 				get_cached_reconstruction_tree_creator(

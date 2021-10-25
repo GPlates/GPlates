@@ -56,6 +56,13 @@
        </widget>
       </item>
       <item>
+       <widget class="QCheckBox" name="export_resolved_networks_checkbox">
+        <property name="text">
+         <string>Export resolved topological networks</string>
+        </property>
+       </widget>
+      </item>
+      <item>
        <widget class="QWidget" name="polygon_options" native="true">
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <property name="spacing">

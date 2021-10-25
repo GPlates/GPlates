@@ -37,8 +37,6 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
 
-#include "scribe/Transcribe.h"
-
 #include "utils/SubjectObserverToken.h"
 
 
@@ -303,23 +301,6 @@ namespace GPlatesAppLogic
 		 */
 		void
 		invalidate();
-
-	private: // Transcribing...
-
-		ReconstructionLayerProxy() :
-			d_current_reconstruction_time(0),
-			d_current_anchor_plate_id(0),
-			d_default_max_num_reconstruction_trees_in_cache(1),
-			d_current_max_num_reconstruction_trees_in_cache(1)
-		{  }
-
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				bool transcribed_construct_data);
-
-		// Only the scribe system should be able to transcribe.
-		friend class GPlatesScribe::Access;
 	};
 }
 

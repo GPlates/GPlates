@@ -28,14 +28,17 @@
 #include <iostream>
 
 #include "GmlMultiPoint.h"
-#include "maths/MultiPointOnSphere.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
+#include "maths/MultiPointOnSphere.h"
 
 const GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type
 GPlatesPropertyValues::GmlMultiPoint::create(
 		const internal_multipoint_type &multipoint_)
 {
-	return new GmlMultiPoint(multipoint_);
+	return non_null_ptr_type(new GmlMultiPoint(multipoint_));
 }
 
 
@@ -51,9 +54,7 @@ GPlatesPropertyValues::GmlMultiPoint::create(
 	// Because MultiPointOnSphere can only ever be handled via a non_null_ptr_to_const_type,
 	// there is no way a MultiPointOnSphere instance can be changed.  Hence, it is safe to store
 	// a pointer to the instance which was passed into this 'create' function.
-	GmlMultiPoint::non_null_ptr_type gml_multi_point_ptr(
-			new GmlMultiPoint(multipoint_, gml_properties_));
-	return gml_multi_point_ptr;
+	return GmlMultiPoint::non_null_ptr_type(new GmlMultiPoint(multipoint_, gml_properties_));
 }
 
 

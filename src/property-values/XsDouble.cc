@@ -36,4 +36,3 @@ GPlatesPropertyValues::XsDouble::print_to(
 {
 	return os << d_value;
 }
-

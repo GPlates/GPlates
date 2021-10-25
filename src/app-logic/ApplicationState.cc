@@ -47,9 +47,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-#include "model/Gpgim.h"
-
-#include "scribe/Scribe.h"
+#include "model/NotificationGuard.h"
 
 #include "utils/Profile.h"
 
@@ -77,14 +75,12 @@ namespace
 
 
 GPlatesAppLogic::ApplicationState::ApplicationState() :
-	d_gpgim(GPlatesModel::Gpgim::create()),
 	d_feature_collection_file_format_registry(
 			new GPlatesFileIO::FeatureCollectionFileFormat::Registry()),
 	d_feature_collection_file_state(
 			new FeatureCollectionFileState(d_model)),
 	d_feature_collection_file_io(
 			new FeatureCollectionFileIO(
-					*d_gpgim,
 					d_model,
 					*d_feature_collection_file_format_registry,
 					*d_feature_collection_file_state)),
@@ -101,16 +97,11 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 			Reconstruction::create(d_reconstruction_time, d_anchored_plate_id)),
 	d_scoped_reconstruct_nesting_count(0),
 	d_reconstruct_on_scope_exit(false),
+	d_currently_reconstructing(false),
 	d_suppress_auto_layer_creation(false),
 	d_callback_feature_store(d_model->root()),
 	d_age_model_collection(new AgeModelCollection())
 {
-	// Register the default file formats for reading and/or writing feature collections.
-	register_default_file_formats(*d_feature_collection_file_format_registry, d_model, *d_gpgim);
-
-	// Register default reconstruct method types with the reconstruct method registry.
-	register_default_reconstruct_method_types(*d_reconstruct_method_registry);
-
 	// Register default layer task types with the layer task registry.
 	register_default_layer_task_types(*d_layer_task_registry, *this);
 
@@ -189,6 +180,45 @@ GPlatesAppLogic::ApplicationState::reconstruct()
 		return;
 	}
 
+	// Ensure that our model notification event does not cause 'reconstruct()' to be called again
+	// (re-entered) since this can create an infinite cycle.
+	class ScopedReentrantGuard
+	{
+	public:
+		explicit
+		ScopedReentrantGuard(
+				ApplicationState &application_state) :
+			d_application_state(application_state)
+		{
+			d_application_state.d_currently_reconstructing = true;
+		}
+
+		~ScopedReentrantGuard()
+		{
+			d_application_state.d_currently_reconstructing = false;
+		}
+
+	private:
+		ApplicationState &d_application_state;
+	};
+	ScopedReentrantGuard scoped_reentrant_guard(*this);
+
+	// We want to merge model events across this scope to avoid any interference during the
+	// reconstruction process. This currently can happen when visiting features with a *non-const*
+	// feature visitor which currently sets visited cloned properties on the feature if they differ
+	// from the original ones (and this can happen when a property's instance ID is updated even
+	// if the property is not actually modified). This model event in turn can cause the
+	// reconstruction tree layer to invalidate its reconstruction tree cache while its still being
+	// used thus resulting in a crash. This will no longer be a problem once the new model
+	// (for pygplates) is complete. In the meantime model notification guards and using the hacked
+	// feature visitor FeatureVisitorThatGuaranteesNotToModify (eg, on ReconstructionTreePopulator)
+	// are the best alternatives.
+	//
+	// Note: We also do this *after* the above scoped re-entrant guard so that any model events do
+	// not cause a recursive reconstruction.
+	GPlatesModel::NotificationGuard model_notification_guard(*d_model.access_model());
+
+
 	// Get each layer to update itself in response to any changes that caused this
 	// 'reconstruct' method to get called.
 	d_reconstruction = d_reconstruct_graph->update_layer_tasks(d_reconstruction_time, d_anchored_plate_id);
@@ -262,14 +292,34 @@ GPlatesAppLogic::ApplicationState::get_feature_collection_file_state()
 	return *d_feature_collection_file_state;
 }
 
+const GPlatesAppLogic::FeatureCollectionFileState &
+GPlatesAppLogic::ApplicationState::get_feature_collection_file_state() const
+{
+	return *d_feature_collection_file_state;
+}
+
+
 GPlatesFileIO::FeatureCollectionFileFormat::Registry &
 GPlatesAppLogic::ApplicationState::get_feature_collection_file_format_registry()
 {
 	return *d_feature_collection_file_format_registry;
 }
 
+const GPlatesFileIO::FeatureCollectionFileFormat::Registry &
+GPlatesAppLogic::ApplicationState::get_feature_collection_file_format_registry() const
+{
+	return *d_feature_collection_file_format_registry;
+}
+
+
 GPlatesAppLogic::FeatureCollectionFileIO &
 GPlatesAppLogic::ApplicationState::get_feature_collection_file_io()
+{
+	return *d_feature_collection_file_io;
+}
+
+const GPlatesAppLogic::FeatureCollectionFileIO &
+GPlatesAppLogic::ApplicationState::get_feature_collection_file_io() const
 {
 	return *d_feature_collection_file_io;
 }
@@ -281,9 +331,21 @@ GPlatesAppLogic::ApplicationState::get_user_preferences()
 	return *d_user_preferences_ptr;
 }
 
+const GPlatesAppLogic::UserPreferences &
+GPlatesAppLogic::ApplicationState::get_user_preferences() const
+{
+	return *d_user_preferences_ptr;
+}
+
 
 GPlatesAppLogic::ReconstructMethodRegistry &
 GPlatesAppLogic::ApplicationState::get_reconstruct_method_registry()
+{
+	return *d_reconstruct_method_registry;
+}
+
+const GPlatesAppLogic::ReconstructMethodRegistry &
+GPlatesAppLogic::ApplicationState::get_reconstruct_method_registry() const
 {
 	return *d_reconstruct_method_registry;
 }
@@ -295,6 +357,12 @@ GPlatesAppLogic::ApplicationState::get_layer_task_registry()
 	return *d_layer_task_registry;
 }
 
+const GPlatesAppLogic::LayerTaskRegistry &
+GPlatesAppLogic::ApplicationState::get_layer_task_registry() const
+{
+	return *d_layer_task_registry;
+}
+
 
 GPlatesAppLogic::LogModel &
 GPlatesAppLogic::ApplicationState::get_log_model()
@@ -302,9 +370,21 @@ GPlatesAppLogic::ApplicationState::get_log_model()
 	return *d_log_model;
 }
 
+const GPlatesAppLogic::LogModel &
+GPlatesAppLogic::ApplicationState::get_log_model() const
+{
+	return *d_log_model;
+}
+
 
 GPlatesAppLogic::ReconstructGraph &
 GPlatesAppLogic::ApplicationState::get_reconstruct_graph()
+{
+	return *d_reconstruct_graph;
+}
+
+const GPlatesAppLogic::ReconstructGraph &
+GPlatesAppLogic::ApplicationState::get_reconstruct_graph() const
 {
 	return *d_reconstruct_graph;
 }
@@ -363,6 +443,14 @@ GPlatesAppLogic::ApplicationState::mediate_signal_slot_connections()
 			SLOT(reconstruct()));
 	QObject::connect(
 			d_reconstruct_graph.get(),
+			SIGNAL(layer_params_changed(
+					GPlatesAppLogic::ReconstructGraph &,
+					GPlatesAppLogic::Layer,
+					GPlatesAppLogic::LayerParams &)),
+			this,
+			SLOT(reconstruct()));
+	QObject::connect(
+			d_reconstruct_graph.get(),
 			SIGNAL(default_reconstruction_tree_layer_changed(
 					GPlatesAppLogic::ReconstructGraph &,
 					GPlatesAppLogic::Layer,
@@ -400,31 +488,4 @@ GPlatesAppLogic::ApplicationState::end_reconstruct_on_scope_exit(
 
 		reconstruct();
 	}
-}
-
-
-GPlatesScribe::TranscribeResult
-GPlatesAppLogic::ApplicationState::transcribe(
-		GPlatesScribe::Scribe &scribe,
-		bool transcribed_construct_data)
-{
-	if (
-		// Note that we transcribe the 'existing' FeatureCollectionFileState rather than load a new one.
-		// We do this by transcribing the 'dereferenced' pointer rather than the scoped pointer...
-		!scribe.transcribe(TRANSCRIBE_SOURCE, *d_feature_collection_file_state, "d_feature_collection_file_state") ||
-		// Note that we transcribe the 'existing' ReconstructGraph rather than load a new one.
-		// We do this by transcribing the 'dereferenced' pointer rather than the scoped pointer...
-		!scribe.transcribe(TRANSCRIBE_SOURCE, *d_reconstruct_graph, "d_reconstruct_graph") ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_update_default_reconstruction_tree_layer, "d_update_default_reconstruction_tree_layer") ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_reconstruction_time, "d_reconstruction_time") ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_anchored_plate_id, "d_anchored_plate_id"))
-	{
-		return scribe.get_transcribe_result();
-	}
-
-	d_scoped_reconstruct_nesting_count = 0;
-	d_reconstruct_on_scope_exit = false;
-	d_suppress_auto_layer_creation = false;
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

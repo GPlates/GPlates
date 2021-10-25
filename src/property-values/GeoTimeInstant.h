@@ -31,8 +31,8 @@
 #include <iosfwd>
 #include <boost/operators.hpp>
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
 #include "scribe/Transcribe.h"
-#include "scribe/TranscribeEnumProtocol.h"
 
 #include "utils/QtStreamable.h"
 
@@ -51,85 +51,18 @@ namespace GPlatesPropertyValues
 	class GeoTimeInstant :
 			public boost::less_than_comparable<GeoTimeInstant>,
 			public boost::equality_comparable<GeoTimeInstant>,
+			public boost::equivalent<GeoTimeInstant>,
 			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
 			public GPlatesUtils::QtStreamable<GeoTimeInstant>
 	{
-		/*
-		 * Implementation note:
-		 *
-		 * Previously, class GeoTimeInstant contained only a single member datum of type
-		 * 'double'.  The time-positions for the distant past and the distant future were
-		 * represented using the floating-point values for infinity and minus-infinity
-		 * (respectively).
-		 * 
-		 * However, when Glen was porting to Windows (specifically, the Microsoft Visual
-		 * Studio C++ compiler), he pointed out that:
-		 *
-		 * > 1. INFINITY, isinf(), and std::isfinite() are all non-standard: and MSVC
-		 * > does not have them.
-		 * >
-		 * > It does have _finite() and _isnan(), unless we can find some portable way
-		 * > of doing things instead.
-		 * >
-		 * > 2. My understand was that you are not intended to store positive infinity,
-		 * > negative infinity, or NaN in double or float variables - only test
-		 * > variables for them with functions like isnan, isinf (which unfortunately
-		 * > are non-standard).
-		 * >
-		 * > This is because on a particular implementation it is not required that
-		 * > double/float can store these values.
-		 * >
-		 * > Is this correct? If so, the use of INFINITY and -INFINITY in GeoTimeInstant
-		 * > would need to change.
-		 *
-		 * I looked into this issue, and determined that Glen was correct.  Specifically,
-		 *  1. The macros and functions 'INFINITY', 'isinf' and 'isfinite' are part of
-		 *     C99, which of course is not part of the C++ standard.
-		 *  2. While the IEEE 754 floating-point standard does indeed define infinity,
-		 *     etc., the C++ standard doesn't require that a C++ implementation use IEEE
-		 *     754 for floating-point numbers.
-		 *
-		 * For more info, take a look at these links which Google found for me:
-		 *  http://groups.google.com/group/comp.lang.c++/browse_thread/thread/e1cea36d29c4b708/0149a9483297f8e8
-		 *  http://www.thescripts.com/forum/thread165462.html
-		 *  http://gcc.gnu.org/ml/libstdc++/2002-09/msg00038.html
-		 *
-		 * Hence, I modified class GeoTimeInstant to use the TimePositionType enumeration
-		 * instead.
-		 */
 		struct TimePositionTypes
 		{
 			enum TimePositionType
 			{
-				Real,
-				DistantPast,
-				DistantFuture
+				Real,         // Finite
+				DistantPast,  // +Infinity
+				DistantFuture // -Infinity
 			};
-
-
-			// Use friend function (injection) so can access private 'TimePositionTypes'.
-			friend
-			GPlatesScribe::TranscribeResult
-			transcribe(
-					GPlatesScribe::Scribe &scribe,
-					TimePositionType &type_,
-					bool transcribed_construct_data)
-			{
-				// WARNING: Changing the string ids will break backward/forward compatibility.
-				static const GPlatesScribe::EnumValue enum_values[] =
-				{
-					GPlatesScribe::EnumValue("Real", Real),
-					GPlatesScribe::EnumValue("DistantPast", DistantPast),
-					GPlatesScribe::EnumValue("DistantFuture", DistantFuture)
-				};
-
-				return GPlatesScribe::transcribe_enum_protocol(
-						TRANSCRIBE_SOURCE,
-						scribe,
-						type_,
-						enum_values,
-						enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
-			}
 		};
 
 	public:
@@ -168,13 +101,15 @@ namespace GPlatesPropertyValues
 		 *
 		 * Note that positive values represent times in the past; negative values represent
 		 * times in the future.
+		 *
+		 * Note that the specified value can be positive or negative infinity
+		 * (or you could use @a create_distant_past and @a create_distant_future instead).
+		 *
+		 * Note that the value cannot be NaN.
 		 */
 		explicit
 		GeoTimeInstant(
-				const double &value_):
-			d_type(TimePositionTypes::Real),
-			d_value(value_)
-		{  }
+				const double &value_);
 
 		/**
 		 * Access the floating-point representation of the time-position of this instance.
@@ -182,9 +117,10 @@ namespace GPlatesPropertyValues
 		 * Note that positive values represent times in the past; negative values represent
 		 * times in the future.
 		 *
-		 * Note that this value may not be meaningful if @a is_real returns false.
+		 * If @a is_real is false then the value returned is positive infinity if
+		 * @a is_distant_past is true or negative infinity if @a is_distant_future is true.
 		 */
-		const double &
+		double
 		value() const
 		{
 			return d_value;
@@ -267,6 +203,8 @@ namespace GPlatesPropertyValues
 		/**
 		 * Return true if this instance is temporally-coincident with @a other; false
 		 * otherwise.
+		 *
+		 * This is essentially the same as 'operator==' (provided by Boost).
 		 */
 		bool
 		is_coincident_with(
@@ -274,22 +212,12 @@ namespace GPlatesPropertyValues
 
 
 		/**
-		 * Equality comparison operator.
-		 */
-		bool
-		operator==(
-				const GeoTimeInstant &rhs) const
-		{
-			return is_coincident_with(rhs);
-		}
-
-
-		/**
-		 * Less than comparison operator.
+		 * Less than comparison operator - all other operators supplied by Boost.
 		 *
-		 * NOTE: This is *not* implemented by delegating to @a is_earlier_than_or_coincident_with
-		 * because it is not a strict weak ordering "if x < y then !(y < x)" and so cannot be
-		 * used in std::map for example.
+		 * Note: This is used (by boost::equivalent) to implement the equivalence relation:
+		 *   !(x < y) && !(y < x)
+		 * ...which holds for two values that are within epsilon of each other.
+		 * This is also used, for example, by std::map to find elements (using above equivalence relation).
 		 */
 		bool
 		operator<(
@@ -302,26 +230,18 @@ namespace GPlatesPropertyValues
 
 		/**
 		 * Create a GeoTimeInstant instance for a time-position type @a type_.
-		 *
-		 * This constructor should only be used to instantiate GeoTimeInstant instances in
-		 * which the time-position type is @em not "Real".  Hence, this constructor is
-		 * private:  The static member functions @a create_distant_past and
-		 * @a create_distant_future are used to invoke this constructor with the
-		 * appropriate value.
 		 */
 		explicit
 		GeoTimeInstant(
-				TimePositionTypes::TimePositionType type_):
+				TimePositionTypes::TimePositionType type_,
+				const double &value_) :
 			d_type(type_),
-			d_value(0.0)
+			d_value(value_)
 		{  }
 
-	private: // Transcribing...
+	private: // Transcribe for sessions/projects...
 
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				bool transcribed_construct_data);
+		friend class GPlatesScribe::Access;
 
 		static
 		GPlatesScribe::TranscribeResult
@@ -329,9 +249,10 @@ namespace GPlatesPropertyValues
 				GPlatesScribe::Scribe &scribe,
 				GPlatesScribe::ConstructObject<GeoTimeInstant> &geo_time_instant);
 
-		// Only the scribe system should be able to transcribe.
-		friend class GPlatesScribe::Access;
-
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 

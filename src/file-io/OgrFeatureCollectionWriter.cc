@@ -515,18 +515,18 @@ namespace
 		static const GPlatesModel::PropertyName old_plates_header_property_name =
 				GPlatesModel::PropertyName::create_gpml("oldPlatesHeader");
 
-		const GPlatesPropertyValues::GpmlOldPlatesHeader *old_plates_header;
-
-		if (GPlatesFeatureVisitors::get_property_value(feature_handle.reference(),old_plates_header_property_name,
-													   old_plates_header))
+		boost::optional<GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_to_const_type> old_plates_header =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlOldPlatesHeader>(
+						feature_handle.reference(), old_plates_header_property_name);
+		if (old_plates_header)
 		{
-			add_region_to_kvd(old_plates_header,dictionary);
-			add_reference_number_to_kvd(old_plates_header,dictionary);
-			add_string_number_to_kvd(old_plates_header,dictionary);
-			add_data_type_code_number_to_kvd(old_plates_header,dictionary);
-			add_data_type_code_number_additional_to_kvd(old_plates_header,dictionary);
-			add_colour_code_to_kvd(old_plates_header,dictionary);
-			add_number_of_points_to_kvd(old_plates_header,dictionary);
+			add_region_to_kvd(old_plates_header.get().get(), dictionary);
+			add_reference_number_to_kvd(old_plates_header.get().get(), dictionary);
+			add_string_number_to_kvd(old_plates_header.get().get(), dictionary);
+			add_data_type_code_number_to_kvd(old_plates_header.get().get(), dictionary);
+			add_data_type_code_number_additional_to_kvd(old_plates_header.get().get(), dictionary);
+			add_colour_code_to_kvd(old_plates_header.get().get(), dictionary);
+			add_number_of_points_to_kvd(old_plates_header.get().get(), dictionary);
 		}
 	}
 
@@ -584,25 +584,6 @@ namespace
 		add_spreading_asymmetry_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
 	}
 
-
-	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
-	create_multi_point_from_points(
-			const std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> &points)
-	{
-		std::vector<GPlatesMaths::PointOnSphere> vector_of_points;
-		
-		std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>::const_iterator
-				it = points.begin(),
-				end = points.end();
-
-		for (; it != end ; ++it)
-		{
-			vector_of_points.push_back(**it);
-		}
-		
-		return GPlatesMaths::MultiPointOnSphere::create_on_heap(vector_of_points);
-
-	}
 	
 	/*!
 	 * \brief add_or_replace_model_kvd - Add @a kvd to the feature given by @a feature_handle.
@@ -675,15 +656,16 @@ namespace
 		static const GPlatesModel::PropertyName plate_id_property_name =
 				GPlatesModel::PropertyName::create_gpml("reconstructionPlateId");
 
-		const GPlatesPropertyValues::GpmlPlateId *recon_plate_id;
-
-		if (GPlatesFeatureVisitors::get_property_value(feature,plate_id_property_name,recon_plate_id))
+		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> recon_plate_id =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+						feature, plate_id_property_name);
+		if (recon_plate_id)
 		{
 			// The feature has a reconstruction plate ID.
 			//qDebug() << "fill_kvd: found plate-id " << recon_plate_id->value();
 
 			GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
-					GPlatesPropertyValues::XsInteger::create(recon_plate_id->value());
+					GPlatesPropertyValues::XsInteger::create(recon_plate_id.get()->value());
 
 			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 						ShapefileAttributes::model_properties[ShapefileAttributes::PLATEID]);
@@ -715,13 +697,14 @@ namespace
 		static const GPlatesModel::PropertyName conjugate_plate_id_property_name =
 				GPlatesModel::PropertyName::create_gpml("conjugatePlateId");
 
-		const GPlatesPropertyValues::GpmlPlateId *conjugate_plate_id;
-
-		if (GPlatesFeatureVisitors::get_property_value(feature,conjugate_plate_id_property_name,conjugate_plate_id))
+		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> conjugate_plate_id =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+						feature, conjugate_plate_id_property_name);
+		if (conjugate_plate_id)
 		{
 			// The feature has a conjugate plate ID
 			GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
-					GPlatesPropertyValues::XsInteger::create(conjugate_plate_id->value());
+					GPlatesPropertyValues::XsInteger::create(conjugate_plate_id.get()->value());
 
 			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 						ShapefileAttributes::model_properties[ShapefileAttributes::CONJUGATE_PLATE_ID]);
@@ -753,13 +736,14 @@ namespace
 		static const GPlatesModel::PropertyName left_plate_id_property_name =
 				GPlatesModel::PropertyName::create_gpml("leftPlate");
 
-		const GPlatesPropertyValues::GpmlPlateId *left_plate_id;
-
-		if (GPlatesFeatureVisitors::get_property_value(feature,left_plate_id_property_name,left_plate_id))
+		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> left_plate_id =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+						feature, left_plate_id_property_name);
+		if (left_plate_id)
 		{
 			// The feature has a left plate ID
 			GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
-					GPlatesPropertyValues::XsInteger::create(left_plate_id->value());
+					GPlatesPropertyValues::XsInteger::create(left_plate_id.get()->value());
 
 			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 						ShapefileAttributes::model_properties[ShapefileAttributes::LEFT_PLATE]);
@@ -790,13 +774,14 @@ namespace
 		static const GPlatesModel::PropertyName right_plate_id_property_name =
 				GPlatesModel::PropertyName::create_gpml("rightPlate");
 
-		const GPlatesPropertyValues::GpmlPlateId *right_plate_id;
-
-		if (GPlatesFeatureVisitors::get_property_value(feature,right_plate_id_property_name,right_plate_id))
+		boost::optional<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_to_const_type> right_plate_id =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GpmlPlateId>(
+						feature, right_plate_id_property_name);
+		if (right_plate_id)
 		{
 			// The feature has a right plate ID
 			GPlatesPropertyValues::XsInteger::non_null_ptr_type value =
-					GPlatesPropertyValues::XsInteger::create(right_plate_id->value());
+					GPlatesPropertyValues::XsInteger::create(right_plate_id.get()->value());
 
 			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 						ShapefileAttributes::model_properties[ShapefileAttributes::RIGHT_PLATE]);
@@ -829,13 +814,12 @@ namespace
 		static const GPlatesModel::PropertyName recon_method_property_name =
 				GPlatesModel::PropertyName::create_gpml("reconstructionMethod");
 
-		const GPlatesPropertyValues::Enumeration *recon_method;
-
-		if (GPlatesFeatureVisitors::get_property_value(
-					feature,recon_method_property_name,recon_method)) {
-
-			GPlatesModel::PropertyValue::non_null_ptr_type value =
-					recon_method->clone();
+		boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> recon_method =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(
+						feature, recon_method_property_name);
+		if (recon_method)
+		{
+			GPlatesModel::PropertyValue::non_null_ptr_type value = recon_method.get()->clone();
 
 			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 						ShapefileAttributes::model_properties[ShapefileAttributes::RECONSTRUCTION_METHOD]);
@@ -869,13 +853,12 @@ namespace
 		static const GPlatesModel::PropertyName spreading_asymmetry_property_name =
 				GPlatesModel::PropertyName::create_gpml("spreadingAsymmetry");
 
-		const GPlatesPropertyValues::XsDouble *spreading_asymmetry;
-
-		if (GPlatesFeatureVisitors::get_property_value(
-					feature,spreading_asymmetry_property_name,spreading_asymmetry)) {
-
-			GPlatesModel::PropertyValue::non_null_ptr_type value =
-					spreading_asymmetry->clone();
+		boost::optional<GPlatesPropertyValues::XsDouble::non_null_ptr_to_const_type> spreading_asymmetry =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsDouble>(
+						feature, spreading_asymmetry_property_name);
+		if (spreading_asymmetry)
+		{
+			GPlatesModel::PropertyValue::non_null_ptr_type value = spreading_asymmetry.get()->clone();
 
 			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 						ShapefileAttributes::model_properties[ShapefileAttributes::SPREADING_ASYMMETRY]);
@@ -985,14 +968,14 @@ namespace
 		static const GPlatesModel::PropertyName valid_time_property_name =
 				GPlatesModel::PropertyName::create_gml("validTime");
 
-		const GPlatesPropertyValues::GmlTimePeriod *time_period;
-
-		if (GPlatesFeatureVisitors::get_property_value(
-					feature,valid_time_property_name,time_period))
+		boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+						feature, valid_time_property_name);
+		if (time_period)
 		{
 
-			double begin_time = get_time_from_time_period(*(time_period->begin()));
-			double end_time = get_time_from_time_period(*(time_period->end()));
+			double begin_time = get_time_from_time_period(*(time_period.get()->begin()));
+			double end_time = get_time_from_time_period(*(time_period.get()->end()));
 
 			GPlatesPropertyValues::XsDouble::non_null_ptr_type begin_value =
 					GPlatesPropertyValues::XsDouble::create(begin_time);
@@ -1051,13 +1034,12 @@ namespace
 		static const GPlatesModel::PropertyName name_property_name =
 				GPlatesModel::PropertyName::create_gml("name");
 
-		const GPlatesPropertyValues::XsString *name;
-
-		if (GPlatesFeatureVisitors::get_property_value(
-					feature,name_property_name,name)) {
-
-			GPlatesModel::PropertyValue::non_null_ptr_type value =
-					name->clone();
+		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+						feature, name_property_name);
+		if (name)
+		{
+			GPlatesModel::PropertyValue::non_null_ptr_type value = name.get()->clone();
 
 			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 						ShapefileAttributes::model_properties[ShapefileAttributes::NAME]);
@@ -1091,13 +1073,12 @@ namespace
 		static const GPlatesModel::PropertyName description_property_name =
 				GPlatesModel::PropertyName::create_gml("description");
 
-		const GPlatesPropertyValues::XsString *description;
-
-		if (GPlatesFeatureVisitors::get_property_value(
-					feature,description_property_name,description)) {
-
-			GPlatesModel::PropertyValue::non_null_ptr_type value =
-					description->clone();
+		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> description =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+						feature, description_property_name);
+		if (description)
+		{
+			GPlatesModel::PropertyValue::non_null_ptr_type value = description.get()->clone();
 
 			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
 						ShapefileAttributes::model_properties[ShapefileAttributes::DESCRIPTION]);
@@ -1395,28 +1376,26 @@ namespace
 	void
 	write_point_geometries(
 			GPlatesFileIO::OgrWriter *ogr_writer,
-			const std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> &point_geometries,
+			const std::vector<GPlatesMaths::PointOnSphere> &point_geometries,
 			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
 	{
+		if (point_geometries.empty())
+		{
+			return;
+		}
+
 		if (point_geometries.size() > 1)
 		{
 			// We have more than one point in the feature, so we should handle this as a multi-point.
-			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point =
-					create_multi_point_from_points(point_geometries);
-
-			ogr_writer->write_multi_point_feature(multi_point,key_value_dictionary);
+			ogr_writer->write_multi_point_feature(
+					GPlatesMaths::MultiPointOnSphere::create_on_heap(
+							point_geometries.begin(),
+							point_geometries.end()),
+					key_value_dictionary);
 		}
 		else
 		{
-			std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>::const_iterator
-					iter = point_geometries.begin(),
-					end = point_geometries.end();
-
-			for ( ; iter != end ; ++iter)
-			{
-				ogr_writer->write_point_feature(*iter,key_value_dictionary);
-			}
-
+			ogr_writer->write_point_feature(point_geometries.front(), key_value_dictionary);
 		}
 	}
 
@@ -1480,9 +1459,8 @@ namespace
 }
 
 GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
-	File::Reference &file_ref,
-	const FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &default_ogr_file_configuration,
-	const GPlatesModel::Gpgim &gpgim)
+		File::Reference &file_ref,
+		const FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &default_ogr_file_configuration)
 {
 
 	/**
@@ -1540,13 +1518,19 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 					file_info.get_qfileinfo().filePath(),
 					finder.has_found_multiple_geometry_types(),
 					// Should polyline/polygon geometries be wrapped/clipped to the dateline...
-					ogr_file_configuration.get()->get_wrap_to_dateline()));
+					ogr_file_configuration.get()->get_wrap_to_dateline(),
+					// The original SRS, if one was provided.
+					ogr_file_configuration.get()->get_original_file_srs(),
+					ogr_file_configuration.get()->get_ogr_srs_write_behaviour()));
 
 	// The file_info might not have a model_to_shapefile_map - the feature collection
 	// might have originated from a plates file, for example. If we don't have one,
 	// create a default map, using the names define in PropertyMapper.h
 
-	d_model_to_shapefile_map = ogr_file_configuration.get()->get_model_to_attribute_map();
+	d_model_to_shapefile_map =
+			FeatureCollectionFileFormat::OGRConfiguration::get_model_to_attribute_map(
+					*file_ref.get_feature_collection());
+
 
 	if (d_model_to_shapefile_map.isEmpty())
 	{
@@ -1612,14 +1596,30 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 											 d_model_to_shapefile_map);
 
 
-	// Store the (potentially) modified model-to-shapefile map back to the file configuration on the file reference.
-	// Store the map back into the file configuration.
-	ogr_file_configuration.get()->get_model_to_attribute_map() = d_model_to_shapefile_map;
+	// Store the (potentially) modified model-to-shapefile map back to the feature collection in the
+	// file reference - assign through the reference returned by 'get_model_to_attribute_map()'.
+	FeatureCollectionFileFormat::OGRConfiguration::get_model_to_attribute_map(
+			*file_ref.get_feature_collection()) =
+					d_model_to_shapefile_map;
 
+	// If we have instructed the OgrWriter to overwrite in WGS84, then update the OgrConfiguration too.
+	boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> original_srs =
+		ogr_file_configuration.get()->get_original_file_srs();
+	if (original_srs)
+	{
+		if (!original_srs.get()->is_wgs84() &&
+			(ogr_file_configuration.get()->get_ogr_srs_write_behaviour() == FeatureCollectionFileFormat::OGRConfiguration::WRITE_AS_WGS84_BEHAVIOUR))
+		{
+			ogr_file_configuration.get()->set_original_file_srs(
+						GPlatesPropertyValues::SpatialReferenceSystem::get_WGS84());
+		}
+
+	}
 	// Store the file configuration in the file reference.
 	FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type
 			file_configuration = ogr_file_configuration.get();
 	file_ref.set_file_info(file_info, file_configuration);
+
 }
 
 
@@ -1714,7 +1714,7 @@ void
 GPlatesFileIO::OgrFeatureCollectionWriter::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point)
 {
-	d_point_geometries.push_back(gml_point.point());
+	d_point_geometries.push_back(*gml_point.point());
 }
 
 void
@@ -1742,8 +1742,7 @@ void
 GPlatesFileIO::OgrFeatureCollectionWriter::visit_gml_polygon(
 		const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
-	// FIXME: Do something about interior rings....
-	d_polygon_geometries.push_back(gml_polygon.exterior());
+	d_polygon_geometries.push_back(gml_polygon.polygon());
 }
 
 void

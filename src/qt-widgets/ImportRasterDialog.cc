@@ -429,7 +429,7 @@ GPlatesQtWidgets::ImportRasterDialog::display(
 		// We want to merge model events across this scope so that only one model event
 		// is generated instead of many as we incrementally modify the feature below.
 		GPlatesModel::NotificationGuard model_notification_guard(
-				d_application_state.get_model_interface().access_model());
+				*d_application_state.get_model_interface().access_model());
 
 		// By the time that we got up to here, we would've collected all the
 		// information we need to create the raster feature.
@@ -621,7 +621,8 @@ namespace
 		}
 
 		static const XsString::non_null_ptr_to_const_type EMPTY_FILE_STRUCTURE =
-			XsString::create(GPlatesUtils::UnicodeString());
+				XsString::create(GPlatesUtils::UnicodeString());
+
 		return GmlFile::create(
 				range_parameters,
 				XsString::create(GPlatesUtils::make_icu_string_from_qstring(file_info.absolute_file_path)),
@@ -844,7 +845,7 @@ GPlatesQtWidgets::ImportRasterDialog::create_gpml_file_path(
 	if (time_dependent_raster)
 	{
 		// Strip off the time from the file name if it is there.
-		QStringList tokens = base_name.split("-");
+		QStringList tokens = base_name.split(QRegExp("[_-]"), QString::SkipEmptyParts);
 
 		if (tokens.count() >= 2)
 		{

@@ -29,13 +29,14 @@
 #define GPLATES_MATHS_MULTIPOINTONSPHERE_H
 
 #include <vector>
-#include <algorithm>  // std::swap
+#include <algorithm>
 #include <iterator>   // std::distance
 #include <boost/intrusive_ptr.hpp>
 
 #include "GeometryOnSphere.h"
 #include "PointOnSphere.h"
 
+#include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
 
@@ -64,33 +65,25 @@ namespace GPlatesMaths
 	 * element, enabling the creation of a multi-point composed of at least
 	 * one point.
 	 *
-	 * Note that MultiPointOnSphere does have mutators (non-const member
-	 * functions which enable the modification of the class internals), in
-	 * particular the copy-assignment operator.
+	 * Note that MultiPointOnSphere does *not* have mutators (non-const member
+	 * functions which enable the modification of the class internals).
 	 */
 	class MultiPointOnSphere:
 			public GeometryOnSphere
 	{
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<MultiPointOnSphere,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<MultiPointOnSphere>.
 		 * 
 		 * Note that this typedef is indeed meant to be private.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<MultiPointOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<MultiPointOnSphere> non_null_ptr_type;
 
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const MultiPointOnSphere> non_null_ptr_to_const_type;
 
 
 		/**
@@ -138,7 +131,7 @@ namespace GPlatesMaths
 		 * get an exception thrown back at you.
 		 *
 		 * It's not terribly difficult to obtain a collection which
-		 * qualifias as valid parameters (at least one point in the
+		 * qualifies as valid parameters (at least one point in the
 		 * collection -- nothing particularly unreasonable) but the
 		 * creation functions are fairly unsympathetic if your
 		 * parameters @em do turn out to be invalid.
@@ -153,23 +146,6 @@ namespace GPlatesMaths
 
 		/**
 		 * Evaluate the validity of the construction-parameters.
-		 *
-		 * What this actually means in plain(er) English is that you
-		 * can use this function to check whether you would be able to
-		 * construct a multi-point instance from a given set of parameters
-		 * (ie, your collection of points in @a coll).
-		 *
-		 * If you pass this function what turns out to be invalid
-		 * construction-parameters, it will politely return an error
-		 * diagnostic.  If you were to pass these same invalid
-		 * parameters to the creation functions down below, you would
-		 * get an exception thrown back at you.
-		 *
-		 * It's not terribly difficult to obtain a collection which
-		 * qualifias as valid parameters (at least one point in the
-		 * collection -- nothing particularly unreasonable) but the
-		 * creation functions are fairly unsympathetic if your
-		 * parameters @em do turn out to be invalid.
 		 *
 		 * @a coll should be a sequential STL container (list, vector,
 		 * ...) of PointOnSphere.
@@ -229,10 +205,7 @@ namespace GPlatesMaths
 		const GeometryOnSphere::non_null_ptr_to_const_type
 		clone_as_geometry() const
 		{
-			GeometryOnSphere::non_null_ptr_to_const_type dup(
-					new MultiPointOnSphere(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return dup;
+			return GeometryOnSphere::non_null_ptr_to_const_type(new MultiPointOnSphere(*this));
 		}
 
 
@@ -245,10 +218,7 @@ namespace GPlatesMaths
 		const non_null_ptr_to_const_type
 		clone_as_multi_point() const
 		{
-			non_null_ptr_to_const_type dup(
-					new MultiPointOnSphere(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return dup;
+			return non_null_ptr_to_const_type(new MultiPointOnSphere(*this));
 		}
 
 
@@ -305,20 +275,6 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Copy-assign the value of @a other to this.
-		 *
-		 * This function is strongly exception-safe and exception-neutral.
-		 *
-		 * This copy-assignment operator should act exactly the same as the default
-		 * (auto-generated) copy-assignment operator would, except that it should not
-		 * assign the ref-count of @a other to this.
-		 */
-		MultiPointOnSphere &
-		operator=(
-				const MultiPointOnSphere &other);
-
-
-		/**
 		 * Return the "begin" const_iterator to iterate over the
 		 * container of points which defines this multi-point.
 		 */
@@ -351,6 +307,21 @@ namespace GPlatesMaths
 
 
 		/**
+		 * Return the point in this multi-point at the specified index.
+		 */
+		const PointOnSphere &
+		get_point(
+				size_type point_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					point_index < number_of_points(),
+					GPLATES_ASSERTION_SOURCE);
+
+			return d_points[point_index];
+		}
+
+
+		/**
 		 * Return the start-point of this multi-point.
 		 */
 		const PointOnSphere &
@@ -373,21 +344,6 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Swap the contents of this multi-point with @a other.
-		 *
-		 * This function does not throw.
-		 */
-		void
-		swap(
-				MultiPointOnSphere &other)
-		{
-			// Obviously, we should not swap the ref-counts of the instances.
-			d_points.swap(other.d_points);
-			d_cached_calculations.swap(other.d_cached_calculations);
-		}
-
-
-		/**
 		 * Evaluate whether @a test_point is "close" to this multi-point.
 		 *
 		 * The measure of what is "close" is provided by
@@ -406,12 +362,27 @@ namespace GPlatesMaths
 				const real_t &closeness_inclusion_threshold,
 				real_t &closeness) const;
 
+
+		/**
+		 * Equality operator compares points in order.
+		 */
 		bool
 		operator==(
 				const MultiPointOnSphere &other) const
 		{
 			return d_points == other.d_points;
 		}
+
+		/**
+		 * Inequality operator.
+		 */
+		bool
+		operator!=(
+				const MultiPointOnSphere &other) const
+		{
+			return !operator==(other);
+		}
+
 
 		//
 		// The following are cached calculations on the geometry data.
@@ -466,6 +437,13 @@ namespace GPlatesMaths
 		 * copy-constructor would, except that it should initialise the ref-count to zero.
 		 */
 		MultiPointOnSphere(
+				const MultiPointOnSphere &other);
+
+
+		// This operator should never be defined, because we don't want/need to allow
+		// copy-assignment.
+		MultiPointOnSphere &
+		operator=(
 				const MultiPointOnSphere &other);
 
 
@@ -564,37 +542,11 @@ namespace GPlatesMaths
 			throw InsufficientPointsForMultiPointConstructionError(GPLATES_EXCEPTION_SOURCE);
 		}
 
-		MultiPointOnSphere::non_null_ptr_type ptr(new MultiPointOnSphere(),
-				GPlatesUtils::NullIntrusivePointerHandler());
+		non_null_ptr_type ptr(new MultiPointOnSphere());
 		ptr->d_points.reserve(std::distance(begin, end));
 		ptr->d_points.assign(begin, end);
 
 		return ptr;
-	}
-
-
-	/**
-	 * This routine exports the Python wrapper class and associated functionality
-	 */
-	void export_MultiPointOnSphere();
-
-}
-
-namespace std
-{
-	/**
-	 * This is a template specialisation of the standard function @a swap.
-	 *
-	 * See Josuttis, section 4.4.2, "Swapping Two Values", for more information.
-	 */
-	template<>
-	inline
-	void
-	swap<GPlatesMaths::MultiPointOnSphere>(
-			GPlatesMaths::MultiPointOnSphere &mp1,
-			GPlatesMaths::MultiPointOnSphere &mp2)
-	{
-		mp1.swap(mp2);
 	}
 }
 

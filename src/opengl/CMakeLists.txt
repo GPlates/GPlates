@@ -169,7 +169,6 @@ set(srcs
     OpenGL.h
     OpenGLBadAllocException.h
     OpenGLException.h
-    OpenGLFwd.h
 )
 
 

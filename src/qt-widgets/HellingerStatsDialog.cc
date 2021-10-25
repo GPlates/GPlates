@@ -31,12 +31,10 @@
 #include "QtWidgetUtils.h"
 
 GPlatesQtWidgets::HellingerStatsDialog::HellingerStatsDialog(
-		const QString &python_path,
-		const QString &parameter_file_name,
+		const QString &results_file,
 		QWidget *parent_):
 	QDialog(parent_,Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint),
-	d_python_path(python_path),
-	d_parameter_file_name(parameter_file_name)
+	d_results_file(results_file)
 {
 	setupUi(this);
 	QObject::connect(button_export, SIGNAL(clicked()), this, SLOT(handle_export()));
@@ -46,8 +44,8 @@ void
 GPlatesQtWidgets::HellingerStatsDialog::update()
 {
 	textEdit->clear();
-	QString filepath = d_python_path + QDir::separator() + d_parameter_file_name;
-	QFile dataFile(filepath);
+
+	QFile dataFile(d_results_file);
 
 	QString line;
 
@@ -67,18 +65,17 @@ GPlatesQtWidgets::HellingerStatsDialog::update()
 void
 GPlatesQtWidgets::HellingerStatsDialog::handle_export()
 {
-	QString file_name = QFileDialog::getSaveFileName(this, tr("Export File"), "",
+	QString output_file_name = QFileDialog::getSaveFileName(this, tr("Export File"), "",
 													 tr("Text Files (*.txt)"));
-	QString path = file_name;
-	QFile file_out(path);
-	QString filepath = d_python_path + QDir::separator() + d_parameter_file_name;
-	QFile dataFile(filepath);
+	QFile file_out(output_file_name);
+
+	QFile file_in(d_results_file);
 	QString line;
-	if (dataFile.open(QFile::ReadOnly))
+	if (file_in.open(QFile::ReadOnly))
 	{
 		if (file_out.open(QIODevice::WriteOnly))
 		{
-			QTextStream in(&dataFile);
+			QTextStream in(&file_in);
 			QTextStream out(&file_out);
 			do
 			{

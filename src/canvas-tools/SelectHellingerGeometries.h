@@ -45,12 +45,6 @@
 #include "view-operations/RenderedTriangleSymbol.h"
 
 
-// TODO: Check if we need any of these "inherited" includes/forward-declarations.
-namespace GPlatesGui
-{
-	class Colour;
-}
-
 namespace GPlatesMaths
 {
 	class PointOnSphere;
@@ -59,11 +53,6 @@ namespace GPlatesMaths
 namespace GPlatesQtWidgets
 {
 	class HellingerDialog;
-}
-
-namespace GPlatesViewOperations
-{
-	class RenderedGeometryLayer;
 }
 
 namespace GPlatesCanvasTools
@@ -268,7 +257,27 @@ namespace GPlatesCanvasTools
 	private:
 
 		void
+		set_default_tool_status_message();
+
+		void
 		paint();
+
+		void
+		set_up_connections();
+
+	private Q_SLOTS:
+
+		void
+		handle_finished_editing();
+
+		void
+		handle_begin_editing();
+
+		void
+		handle_begin_new_pick();
+
+
+	private:
 
 		SelectHellingerGeometries(
 				const status_bar_callback_type &status_bar_callback,

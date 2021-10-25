@@ -59,4 +59,3 @@ GPlatesPropertyValues::GpmlTopologicalPoint::directly_modifiable_fields_equal(
 		return false;
 	}
 }
-

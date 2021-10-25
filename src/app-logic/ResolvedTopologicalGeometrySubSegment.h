@@ -42,22 +42,22 @@ namespace GPlatesAppLogic
 	 *
 	 * A subsegment can come from a reconstructed feature geometry or a resolved topological *line*.
 	 *
-	 * A subsegment is the subset of a reconstructed topological section's
-	 * vertices that are used to form part of the geometry of a resolved topological polygon/polyline
-	 * or boundary of a topological network.
+	 * A subsegment is the subset of a reconstructed topological section's vertices that are used to form
+	 * part of the geometry of a resolved topological polygon/polyline or boundary of a topological network.
 	 */
 	class ResolvedTopologicalGeometrySubSegment
 	{
 	public:
 		ResolvedTopologicalGeometrySubSegment(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &sub_segment_geometry,
-				const ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry,
-				const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref,
+				const ReconstructionGeometry::non_null_ptr_to_const_type &segment_reconstruction_geometry,
+				const GPlatesModel::FeatureHandle::const_weak_ref &segment_feature_ref,
 				bool use_reverse) :
 			d_sub_segment_geometry(sub_segment_geometry),
-			d_reconstruction_geometry(reconstruction_geometry),
-			d_feature_ref(feature_ref),
-			d_use_reverse(use_reverse)
+			d_segment_reconstruction_geometry(segment_reconstruction_geometry),
+			d_segment_feature_ref(segment_feature_ref),
+			d_use_reverse(use_reverse),
+			d_joined_adjacent_deforming_points(false)
 		{  }
 
 		/**
@@ -82,14 +82,14 @@ namespace GPlatesAppLogic
 		const ReconstructionGeometry::non_null_ptr_to_const_type &
 		get_reconstruction_geometry() const
 		{
-			return d_reconstruction_geometry;
+			return d_segment_reconstruction_geometry;
 		}
 
 		//! Reference to the feature referenced by the topological section.
 		const GPlatesModel::FeatureHandle::const_weak_ref &
 		get_feature_ref() const
 		{
-			return d_feature_ref;
+			return d_segment_feature_ref;
 		}
 
 		/**
@@ -103,22 +103,48 @@ namespace GPlatesAppLogic
 		}
 
 	private:
+
 		//! The subsegment geometry.
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_sub_segment_geometry;
 
 		/**
-		 * The subsegment reconstruction geometry.
+		 * The segment reconstruction geometry.
 		 *
 		 * This is either a reconstructed feature geometry or a resolved topological *line*.
 		 */
-		ReconstructionGeometry::non_null_ptr_to_const_type d_reconstruction_geometry;
+		ReconstructionGeometry::non_null_ptr_to_const_type d_segment_reconstruction_geometry;
 
 		//! Reference to the source feature handle of the topological section.
-		GPlatesModel::FeatureHandle::const_weak_ref d_feature_ref;
+		GPlatesModel::FeatureHandle::const_weak_ref d_segment_feature_ref;
 
 		//! Indicates if geometry direction was reversed when assembling topology.
 		bool d_use_reverse;
+
+
+	// This was meant to be a temporary hack to be removed when resolved *line* topologies were
+	// implemented. However, unfortunately it seems we need to keep this hack in place for any
+	// old data files that use the old method.
+	//
+	// The hack involves joining adjacent deforming points that are spread along a deforming zone
+	// boundary such that exported sub-segments are lines instead of a sequence of points.
+	public:
+
+		void
+		set_joined_adjacent_deforming_points()
+		{
+			d_joined_adjacent_deforming_points = true;
+		}
+
+		bool
+		get_joined_adjacent_deforming_points() const
+		{
+			return d_joined_adjacent_deforming_points;
+		}
+
+	private:
+		bool d_joined_adjacent_deforming_points;
 	};
+
 
 	//! Typedef for a sequence of @a ResolvedTopologicalGeometrySubSegment objects.
 	typedef std::vector<ResolvedTopologicalGeometrySubSegment> sub_segment_seq_type;

@@ -1,10 +1,10 @@
 /* $Id: HellingerNewSegmentError.h 132 2012-01-24 15:39:28Z juraj.cirbus $ */
 
 /**
- * \file 
+ * \file
  * $Revision: 132 $
- * $Date: 2012-01-24 16:39:28 +0100 (Tue, 24 Jan 2012) $ 
- * 
+ * $Date: 2012-01-24 16:39:28 +0100 (Tue, 24 Jan 2012) $
+ *
  * Copyright (C) 2012. 2013 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -22,11 +22,11 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
- 
+
 #ifndef GPLATES_QTWIDGETS_HELLINGERNEWSEGMENTWARNING_H
 #define GPLATES_QTWIDGETS_HELLINGERNEWSEGMENTWARNING_H
 
-#include <QWidget>
+//#include <QWidget>
 
 #include "HellingerNewSegmentWarningUi.h"
 
@@ -34,14 +34,14 @@
 namespace GPlatesQtWidgets
 {   
 	enum NewSegmentActionType
-    {
+	{
 		ACTION_ADD_TO_EXISTING_SEGMENT = 0,
 		ACTION_REPLACE_SEGMENT,
 		ACTION_INSERT_NEW_SEGMENT,
 		ACTION_CANCEL
-    };
+	};
 
-    class HellingerDialog;
+	class HellingerDialog;
 	class HellingerNewSegmentWarning:
 			public QDialog,
 			protected Ui_HellingerNewSegmentWarning
@@ -52,8 +52,8 @@ namespace GPlatesQtWidgets
 		HellingerNewSegmentWarning(
 				QWidget *parent_ = NULL);
 
-        int
-        error_type_new_segment();
+		int
+		error_type_new_segment();
 
 		/**
 		 * @brief initialise_buttons
@@ -65,9 +65,9 @@ namespace GPlatesQtWidgets
 
 
 
-	private Q_SLOTS: 
+	private Q_SLOTS:
 
-        void
+		void
 		handle_ok();
 
 		void
@@ -78,7 +78,7 @@ namespace GPlatesQtWidgets
 
 	private:
 
-        int d_type_error_new_segment;
+		int d_type_error_new_segment;
 
 		QButtonGroup d_radio_button_group;
 	};

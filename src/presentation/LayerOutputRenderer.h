@@ -73,6 +73,11 @@ namespace GPlatesPresentation
 		virtual
 		void
 		visit(
+				const GPlatesUtils::non_null_intrusive_ptr<reconstruct_scalar_coverage_layer_proxy_type> &layer_proxy);
+
+		virtual
+		void
+		visit(
 				const GPlatesUtils::non_null_intrusive_ptr<reconstruction_layer_proxy_type> &layer_proxy);
 
 		virtual

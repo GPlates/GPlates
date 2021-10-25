@@ -26,6 +26,7 @@
  */
 
 #include "ReconstructedFeatureGeometry.h"
+
 #include "ReconstructionGeometryVisitor.h"
 
 #include "global/AssertionFailureException.h"
@@ -87,6 +88,27 @@ GPlatesAppLogic::ReconstructedFeatureGeometry::ReconstructedFeatureGeometry(
 }
 
 
+GPlatesAppLogic::ReconstructedFeatureGeometry::ReconstructedFeatureGeometry(
+		const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
+		const ReconstructionTreeCreator &reconstruction_tree_creator_,
+		GPlatesModel::FeatureHandle &feature_handle_,
+		GPlatesModel::FeatureHandle::iterator property_iterator_,
+		boost::optional<ReconstructMethod::Type> reconstruct_method_type_,
+		boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_,
+		boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_,
+		boost::optional<ReconstructHandle::type> reconstruct_handle_) :
+	ReconstructionGeometry(reconstruction_tree_->get_reconstruction_time(), reconstruct_handle_),
+	WeakObserverType(feature_handle_),
+	d_reconstruction_tree(reconstruction_tree_),
+	d_reconstruction_tree_creator(reconstruction_tree_creator_),
+	d_property_iterator(property_iterator_),
+	d_reconstruct_method_type(reconstruct_method_type_),
+	d_reconstruction_plate_id(reconstruction_plate_id_),
+	d_time_of_formation(time_of_formation_)
+{
+}
+
+
 const GPlatesModel::FeatureHandle::weak_ref
 GPlatesAppLogic::ReconstructedFeatureGeometry::get_feature_ref() const
 {
@@ -98,7 +120,7 @@ GPlatesAppLogic::ReconstructedFeatureGeometry::get_feature_ref() const
 }
 
 
-const GPlatesAppLogic::ReconstructedFeatureGeometry::geometry_ptr_type &
+GPlatesAppLogic::ReconstructedFeatureGeometry::geometry_ptr_type
 GPlatesAppLogic::ReconstructedFeatureGeometry::reconstructed_geometry() const
 {
 	// If there's no reconstructed geometry then it means we have a reconstruction instead -

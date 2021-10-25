@@ -32,12 +32,19 @@
 #include <boost/foreach.hpp>
 #include <boost/ref.hpp>
 #include <map>
+#include <vector>
 #include <QObject>
 #include <QVariant>
-#include <vector>
-#include "model/FeatureHandle.h"
+
 #include "DrawStyleAdapters.h"
+
+#include "api/PythonInterpreterLocker.h"
+
 #include "app-logic/UserPreferences.h"
+
+#include "global/python.h" // GPLATES_NO_PYTHON
+
+#include "model/FeatureHandle.h"
 
 namespace GPlatesGui
 {
@@ -202,6 +209,10 @@ namespace GPlatesGui
 
 		~DrawStyleManager()
 		{
+#if !defined(GPLATES_NO_PYTHON)
+			// Deleting the styles also destroys Python objects.
+			GPlatesApi::PythonInterpreterLocker interpreter_locker;
+#endif
 			save_user_defined_styles();
 			clear_container(d_styles);
 			clear_container(d_catagories);

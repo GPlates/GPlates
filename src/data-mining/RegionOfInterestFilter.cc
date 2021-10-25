@@ -24,3 +24,53 @@
  */
 
 #include "RegionOfInterestFilter.h"
+
+#include "scribe/Scribe.h"
+
+
+GPlatesScribe::TranscribeResult
+GPlatesDataMining::RegionOfInterestFilter::Config::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<Config> &config)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, config->d_range, "range");
+	}
+	else // loading...
+	{
+		GPlatesScribe::LoadRef<double> range_ref =
+				scribe.load<double>(TRANSCRIBE_SOURCE, "range");
+		if (!range_ref.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		config.construct_object(range_ref);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesDataMining::RegionOfInterestFilter::Config::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_range, "range"))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	// Transcribe abstract base class.
+	if (!scribe.transcribe_base<CoRegFilter::Config, Config>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

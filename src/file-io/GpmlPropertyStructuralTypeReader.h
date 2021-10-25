@@ -42,7 +42,6 @@
 
 namespace GPlatesModel
 {
-	class Gpgim;
 	class GpgimVersion;
 }
 
@@ -86,13 +85,11 @@ namespace GPlatesFileIO
 
 		/**
 		 * Creates a @a GpmlPropertyStructuralTypeReader object containing all structural types specified
-		 * in the specified GPGIM (including the time-dependent wrapper structural types such as
-		 * 'gpml:ConstantValue').
+		 * in the GPGIM (including the time-dependent wrapper structural types such as 'gpml:ConstantValue').
 		 */
 		static
 		non_null_ptr_type
-		create(
-				const GPlatesModel::Gpgim &gpgim);
+		create();
 
 
 		/**
@@ -100,10 +97,9 @@ namespace GPlatesFileIO
 		 */
 		static
 		non_null_ptr_type
-		create_empty(
-				const GPlatesModel::Gpgim &gpgim)
+		create_empty()
 		{
-			return non_null_ptr_type(new GpmlPropertyStructuralTypeReader(gpgim));
+			return non_null_ptr_type(new GpmlPropertyStructuralTypeReader());
 		}
 
 
@@ -184,13 +180,9 @@ namespace GPlatesFileIO
 
 		structural_type_reader_map_type d_structural_type_reader_map;
 
-		//! Ensure the GPGIM remains alive since we refer to some of its property definitions.
-		GPlatesGlobal::PointerTraits<const GPlatesModel::Gpgim>::non_null_ptr_type d_gpgim;
-
 
 		explicit
-		GpmlPropertyStructuralTypeReader(
-				const GPlatesModel::Gpgim &gpgim);
+		GpmlPropertyStructuralTypeReader();
 
 
 		void

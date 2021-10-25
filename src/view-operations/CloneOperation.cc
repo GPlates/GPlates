@@ -93,7 +93,7 @@ GPlatesViewOperations::CloneOperation::clone_focused_feature(
 	// We want to merge model events across this scope so that only one model event
 	// is generated instead of many as we incrementally modify the feature below.
 	GPlatesModel::NotificationGuard model_notification_guard(
-			d_view_state.get_application_state().get_model_interface().access_model());
+			*d_view_state.get_application_state().get_model_interface().access_model());
 
 	GPlatesModel::FeatureHandle::weak_ref feature_ref = 
 			d_view_state.get_feature_focus().focused_feature();
@@ -110,14 +110,11 @@ GPlatesViewOperations::CloneOperation::clone_focused_feature(
 
 	GPlatesModel::FeatureHandle::non_null_ptr_type new_feature_ptr = feature_ref->clone();
 
-	// GPlatesModel::DummyTransactionHandle transaction(__FILE__, __LINE__);
 	target_feature_collection->add(new_feature_ptr);
 		
 	// We release the model notification guard which will cause a reconstruction to occur
 	// because we modified the model - provided there are no nested higher-level guards.
 	model_notification_guard.release_guard();
-
-	// transaction.commit();
 
 #if 0
 	//Since the clone_feature function only does a "shallow copy" of geometry property,

@@ -26,14 +26,20 @@
 #include "VelocityFieldCalculatorLayerTask.h"
 
 #include "AppLogicUtils.h"
+#include "LayerProxyUtils.h"
 #include "PlateVelocityUtils.h"
 #include "VelocityFieldCalculatorLayerProxy.h"
 
 
 GPlatesAppLogic::VelocityFieldCalculatorLayerTask::VelocityFieldCalculatorLayerTask() :
+	d_layer_params(VelocityFieldCalculatorLayerParams::create()),
 	d_velocity_field_calculator_layer_proxy(
 			VelocityFieldCalculatorLayerProxy::create())
 {
+	// Notify our layer output whenever the layer params are modified.
+	QObject::connect(
+			d_layer_params.get(), SIGNAL(modified_velocity_params(GPlatesAppLogic::VelocityFieldCalculatorLayerParams &)),
+			this, SLOT(handle_velocity_params_modified(GPlatesAppLogic::VelocityFieldCalculatorLayerParams &)));
 }
 
 
@@ -61,8 +67,12 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_input_channel_types() con
 	// Channel definition for velocity domain geometries.
 	// NOTE: Previously only accepted "MeshNode" features but now accept anything containing
 	// non-topological geometries (points, multi-points, polylines and polygons).
-	std::vector<LayerTaskType::Type> domain_input_channel_types;
-	domain_input_channel_types.push_back(LayerTaskType::RECONSTRUCT);
+	std::vector<LayerInputChannelType::InputLayerType> domain_input_channel_types;
+	domain_input_channel_types.push_back(
+			LayerInputChannelType::InputLayerType(
+					LayerTaskType::RECONSTRUCT,
+					// Auto-connect to the domain (local means associated with same input file)...
+					LayerInputChannelType::LOCAL_AUTO_CONNECT));
 	input_channel_types.push_back(
 			LayerInputChannelType(
 					LayerInputChannelName::VELOCITY_DOMAIN_LAYERS,
@@ -73,10 +83,18 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_input_channel_types() con
 	// - reconstructed static polygons, or
 	// - resolved topological dynamic polygons, or
 	// - resolved topological networks.
-	std::vector<LayerTaskType::Type> surfaces_input_channel_types;
+	std::vector<LayerInputChannelType::InputLayerType> surfaces_input_channel_types;
 	surfaces_input_channel_types.push_back(LayerTaskType::RECONSTRUCT);
-	surfaces_input_channel_types.push_back(LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER);
-	surfaces_input_channel_types.push_back(LayerTaskType::TOPOLOGY_NETWORK_RESOLVER);
+	surfaces_input_channel_types.push_back(
+			LayerInputChannelType::InputLayerType(
+					LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER,
+					// Auto connect to all TOPOLOGY_GEOMETRY_RESOLVER layers...
+					LayerInputChannelType::GLOBAL_AUTO_CONNECT));
+	surfaces_input_channel_types.push_back(
+			LayerInputChannelType::InputLayerType(
+					LayerTaskType::TOPOLOGY_NETWORK_RESOLVER,
+					// Auto connect to all TOPOLOGY_NETWORK_RESOLVER layers...
+					LayerInputChannelType::GLOBAL_AUTO_CONNECT));
 	input_channel_types.push_back(
 			LayerInputChannelType(
 					LayerInputChannelName::VELOCITY_SURFACE_LAYERS,
@@ -232,15 +250,6 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::update(
 {
 	d_velocity_field_calculator_layer_proxy->set_current_reconstruction_time(
 			reconstruction->get_reconstruction_time());
-
-	// If the layer task params have been modified then update our velocity layer proxy.
-	if (d_layer_task_params.d_set_velocity_params_called)
-	{
-		d_velocity_field_calculator_layer_proxy->set_current_velocity_params(
-				d_layer_task_params.d_velocity_params);
-
-		d_layer_task_params.d_set_velocity_params_called = false;
-	}
 }
 
 
@@ -251,25 +260,10 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerTask::get_layer_proxy()
 }
 
 
-GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::Params() :
-	d_set_velocity_params_called(false)
-{
-}
-
-
-const GPlatesAppLogic::VelocityParams &
-GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::get_velocity_params() const
-{
-	return d_velocity_params;
-}
-
-
 void
-GPlatesAppLogic::VelocityFieldCalculatorLayerTask::Params::set_velocity_params(
-		const VelocityParams &velocity_params)
+GPlatesAppLogic::VelocityFieldCalculatorLayerTask::handle_velocity_params_modified(
+		VelocityFieldCalculatorLayerParams &layer_params)
 {
-	d_velocity_params = velocity_params;
-
-	d_set_velocity_params_called = true;
-	emit_modified();
+	// Update our velocity layer proxy.
+	d_velocity_field_calculator_layer_proxy->set_current_velocity_params(layer_params.get_velocity_params());
 }

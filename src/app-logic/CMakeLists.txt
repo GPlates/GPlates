@@ -15,19 +15,21 @@ set(srcs
     AgeModelCollection.h
     ApplicationState.cc
     ApplicationState.h
-    AppLogicFwd.h
     AppLogicUtils.cc
     AppLogicUtils.h
     AssignPlateIds.cc
     AssignPlateIds.h
     CoRegistrationData.cc
     CoRegistrationData.h
+    CoRegistrationLayerParams.cc
+    CoRegistrationLayerParams.h
     CoRegistrationLayerProxy.cc
     CoRegistrationLayerProxy.h
     CoRegistrationLayerTask.cc
     CoRegistrationLayerTask.h
-    DeformedFeatureGeometry.cc
-    DeformedFeatureGeometry.h
+    DeformationStrain.h
+    DependentTopologicalSectionLayers.cc
+    DependentTopologicalSectionLayers.h
     ExtractRasterFeatureProperties.cc
     ExtractRasterFeatureProperties.h
     ExtractScalarField3DFeatureProperties.cc
@@ -48,8 +50,6 @@ set(srcs
     GenericPartitionFeatureTask.h
     GeometryCookieCutter.cc
     GeometryCookieCutter.h
-    GeometryDeformation.cc
-    GeometryDeformation.h
     GeometryUtils.cc
     GeometryUtils.h
     GPlatesQtMsgHandler.cc
@@ -59,14 +59,16 @@ set(srcs
     LayerInputChannelName.cc
     LayerInputChannelName.h
     LayerInputChannelType.h
+    LayerParams.h
+    LayerParamsVisitor.h
     LayerProxy.h
     LayerProxyUtils.cc
     LayerProxyUtils.h
     LayerProxyVisitor.h
     LayerTask.h
-    LayerTaskParams.h
     LayerTaskRegistry.cc
     LayerTaskRegistry.h
+    LayerTaskType.cc
     LayerTaskType.h
     LogModel.cc
     LogModel.h
@@ -78,6 +80,8 @@ set(srcs
     MotionPathUtils.h
     MultiPointVectorField.cc
     MultiPointVectorField.h
+    NetRotationUtils.cc
+    NetRotationUtils.h
     PalaeomagUtils.cc
     PalaeomagUtils.h
     PartitionFeatureTask.cc
@@ -88,6 +92,8 @@ set(srcs
     PlateVelocityUtils.h
     PropertyExtractors.cc
     PropertyExtractors.h
+    RasterLayerParams.cc
+    RasterLayerParams.h
     RasterLayerProxy.cc
     RasterLayerProxy.h
     RasterLayerTask.cc
@@ -102,6 +108,8 @@ set(srcs
     ReconstructedFlowline.h
     ReconstructedMotionPath.cc
     ReconstructedMotionPath.h
+    ReconstructedScalarCoverage.cc
+    ReconstructedScalarCoverage.h
     ReconstructedSmallCircle.cc
     ReconstructedSmallCircle.h
     ReconstructedVirtualGeomagneticPole.cc
@@ -120,6 +128,7 @@ set(srcs
     ReconstructionGeometryFinder.h
     ReconstructionGeometryUtils.cc
     ReconstructionGeometryUtils.h
+    ReconstructionGeometryVisitor.cc
     ReconstructionGeometryVisitor.h
     ReconstructionGraph.cc
     ReconstructionGraph.h
@@ -135,6 +144,8 @@ set(srcs
     ReconstructionTreeEdge.h
     ReconstructionTreePopulator.cc
     ReconstructionTreePopulator.h
+    ReconstructLayerParams.cc
+    ReconstructLayerParams.h
     ReconstructLayerProxy.cc
     ReconstructLayerProxy.h
     ReconstructLayerTask.cc
@@ -159,17 +170,28 @@ set(srcs
     ReconstructMethodVirtualGeomagneticPole.h
     ReconstructParams.cc
     ReconstructParams.h
+    ReconstructScalarCoverageLayerParams.cc
+    ReconstructScalarCoverageLayerParams.h
+    ReconstructScalarCoverageLayerProxy.cc
+    ReconstructScalarCoverageLayerProxy.h
+    ReconstructScalarCoverageLayerTask.cc
+    ReconstructScalarCoverageLayerTask.h
+    ReconstructScalarCoverageParams.cc
+    ReconstructScalarCoverageParams.h
     ReconstructUtils.cc
     ReconstructUtils.h
     ResolvedRaster.cc
     ResolvedRaster.h
     ResolvedScalarField3D.cc
     ResolvedScalarField3D.h
-    ResolvedTopologicalGeometry.cc
+    ResolvedTopologicalBoundary.h
     ResolvedTopologicalGeometry.h
     ResolvedTopologicalGeometrySubSegment.h
+    ResolvedTopologicalLine.h
     ResolvedTopologicalNetwork.cc
     ResolvedTopologicalNetwork.h
+    ResolvedTopologicalSection.h
+    ResolvedTopologicalSharedSubSegment.h
     ResolvedTriangulationConstrainedDelaunay2.cc
     ResolvedTriangulationConstrainedDelaunay2.h
     ResolvedTriangulationDelaunay2.cc
@@ -181,13 +203,22 @@ set(srcs
     ResolvedTriangulationUtils.h
     RotationUtils.cc
     RotationUtils.h
+    ScalarCoverageDeformation.cc
+    ScalarCoverageDeformation.h
+    ScalarCoverageEvolution.cc
+    ScalarCoverageEvolution.h
+    ScalarCoverageFeatureProperties.cc
+    ScalarCoverageFeatureProperties.h
+    ScalarField3DLayerParams.cc
+    ScalarField3DLayerParams.h
     ScalarField3DLayerProxy.cc
     ScalarField3DLayerProxy.h
     ScalarField3DLayerTask.cc
     ScalarField3DLayerTask.h
-    ScribeExportAppLogic.h
     SmallCircleGeometryPopulator.cc
     SmallCircleGeometryPopulator.h
+    TimeSpanUtils.cc
+    TimeSpanUtils.h
     TopologyGeometryResolver.cc
     TopologyGeometryResolver.h
     TopologyGeometryResolverLayerProxy.cc
@@ -199,22 +230,35 @@ set(srcs
     TopologyInternalUtils.h
     TopologyIntersections.cc
     TopologyIntersections.h
+    TopologyNetworkLayerParams.h
+    TopologyNetworkParams.cc
+    TopologyNetworkParams.h
     TopologyNetworkResolver.cc
     TopologyNetworkResolver.h
     TopologyNetworkResolverLayerProxy.cc
     TopologyNetworkResolverLayerProxy.h
     TopologyNetworkResolverLayerTask.cc
     TopologyNetworkResolverLayerTask.h
+    TopologyPointLocation.h
+    TopologyReconstruct.cc
+    TopologyReconstruct.h
+    TopologyReconstructedFeatureGeometry.cc
+    TopologyReconstructedFeatureGeometry.h
     TopologyUtils.cc
     TopologyUtils.h
     TRSUtils.cc
     TRSUtils.h
     UserPreferences.cc
     UserPreferences.h
+    VelocityDeltaTime.cc
+    VelocityDeltaTime.h
+    VelocityFieldCalculatorLayerParams.cc
+    VelocityFieldCalculatorLayerParams.h
     VelocityFieldCalculatorLayerProxy.cc
     VelocityFieldCalculatorLayerProxy.h
     VelocityFieldCalculatorLayerTask.cc
     VelocityFieldCalculatorLayerTask.h
+    VelocityParams.cc
     VelocityParams.h
     VgpPartitionFeatureTask.cc
     VgpPartitionFeatureTask.h

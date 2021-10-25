@@ -153,7 +153,7 @@ namespace GPlatesFileIO
 	/**
 	 * Default concrete class for reading a feature from a GPML file.
 	 *
-	 * This class defers completely to its associated GPGIM feature class in the @a Gpgim and then
+	 * This class defers completely to its associated GPGIM feature class in the GPGIM and then
 	 * delegates reading of the remaining properties of the feature to its parent GPGIM feature reader
 	 * (the reader associated with the parent feature class).
 	 */

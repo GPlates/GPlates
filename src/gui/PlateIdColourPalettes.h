@@ -41,11 +41,41 @@
 namespace GPlatesGui
 {
 	/**
+	 * Base class for colour palettes that colour by plate ID.
+	 *
+	 * This reduces the number of visit methods needed in colour palette visitor since
+	 * both derived classes DefaultPlateIdColourPalette and RegionalPlateIdColourPalette
+	 * do not add any extra non-virtual methods (ie, visiting them does not gain anything).
+	 */
+	class PlateIdColourPalette :
+			public ColourPalette<GPlatesModel::integer_plate_id_type>
+	{
+	public:
+
+		virtual
+		void
+		accept_visitor(
+				ConstColourPaletteVisitor &visitor) const
+		{
+			visitor.visit_plate_id_colour_palette(*this);
+		}
+
+		virtual
+		void
+		accept_visitor(
+				ColourPaletteVisitor &visitor)
+		{
+			visitor.visit_plate_id_colour_palette(*this);
+		}
+	};
+
+
+	/**
 	 * DefaultPlateIdColourPalette maps plate IDs to colours using a scheme that
 	 * aims to make adjacent plates stand out from each other.
 	 */
 	class DefaultPlateIdColourPalette :
-			public ColourPalette<GPlatesModel::integer_plate_id_type>
+			public PlateIdColourPalette
 	{
 	public:
 
@@ -57,22 +87,6 @@ namespace GPlatesGui
 		boost::optional<Colour>
 		get_colour(
 				value_type plate_id) const;
-
-		virtual
-		void
-		accept_visitor(
-				ConstColourPaletteVisitor &visitor) const
-		{
-			visitor.visit_default_plate_id_colour_palette(*this);
-		}
-
-		virtual
-		void
-		accept_visitor(
-				ColourPaletteVisitor &visitor)
-		{
-			visitor.visit_default_plate_id_colour_palette(*this);
-		}
 
 	private:
 
@@ -86,7 +100,7 @@ namespace GPlatesGui
 	 * colours plates belonging to the same region with similar colours.
 	 */
 	class RegionalPlateIdColourPalette :
-			public ColourPalette<GPlatesModel::integer_plate_id_type>
+			public PlateIdColourPalette
 	{
 	public:
 
@@ -98,22 +112,6 @@ namespace GPlatesGui
 		boost::optional<Colour>
 		get_colour(
 				value_type plate_id) const;
-
-		virtual
-		void
-		accept_visitor(
-				ConstColourPaletteVisitor &visitor) const
-		{
-			visitor.visit_regional_plate_id_colour_palette(*this);
-		}
-
-		virtual
-		void
-		accept_visitor(
-				ColourPaletteVisitor &visitor)
-		{
-			visitor.visit_regional_plate_id_colour_palette(*this);
-		}
 
 	private:
 

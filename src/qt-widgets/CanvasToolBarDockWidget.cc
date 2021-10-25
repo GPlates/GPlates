@@ -40,9 +40,6 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
-#include "utils/ComponentManager.h"
-
-
 namespace GPlatesQtWidgets
 {
 	namespace
@@ -358,7 +355,7 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_small_circle_workflow()
 	add_tool_action_to_workflow(
 			small_circle_workflow,
 			GPlatesGui::CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE,
-				action_Create_Small_Circle);
+			action_Create_Small_Circle);
 }
 
 void GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_hellinger_workflow()
@@ -468,15 +465,6 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::add_tool_action_to_workflow(
 	QObject::connect(
 			tool_action, SIGNAL(triggered()),
 			this, SLOT(handle_tool_action_triggered()));
-
-	// For the GPlates 1.5 *public* release we are disabling the 'Build New Network Topology' tool
-	// unless a command-line switch is activated.
-	if (original_tool_action == action_Build_Network_Topology &&
-		!GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::deformation()))
-	{
-		// Make invisible so user cannot select it.
-		tool_action->setVisible(false);
-	}
 }
 
 
@@ -538,21 +526,14 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_canvas_tool_shortcuts()
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_INSERT_VERTEX, action_Insert_Vertex);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_SPLIT_FEATURE, action_Split_Feature);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_MANIPULATE_POLE, action_Manipulate_Pole);
-	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_MOVE_POLE, action_Move_Pole);	
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_MOVE_POLE, action_Move_Pole);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES, action_Select_Hellinger_Geometries);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_ADJUST_FITTED_POLE_ESTIMATE, action_Adjust_Pole_Estimate);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_LINE_TOPOLOGY, action_Build_Line_Topology);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_BOUNDARY_TOPOLOGY, action_Build_Boundary_Topology);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_BUILD_NETWORK_TOPOLOGY, action_Build_Network_Topology);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_EDIT_TOPOLOGY, action_Edit_Topology);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE, action_Create_Small_Circle);
-
-	// For the GPlates 1.5 *public* release we are disabling the 'Build New Network Topology' tool
-	// unless a command-line switch is activated.
-	if (!GPlatesUtils::ComponentManager::instance().is_enabled(GPlatesUtils::ComponentManager::Component::deformation()))
-	{
-		// Disable action so the shortcut doesn't work.
-		action_Build_Network_Topology->setEnabled(false);
-	}
 }
 
 

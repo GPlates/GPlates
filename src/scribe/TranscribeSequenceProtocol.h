@@ -26,6 +26,7 @@
 #ifndef GPLATES_SCRIBE_TRANSCRIBESEQUENCEPROTOCOL_H
 #define GPLATES_SCRIBE_TRANSCRIBESEQUENCEPROTOCOL_H
 
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -57,8 +58,8 @@ namespace GPlatesScribe
 	 *
 	 * If you want to test elements for 'TRANSCRIBE_UNKNOWN_TYPE', to skip them for example,
 	 * then you can explicitly use the sequence protocol which is:
-	 *  (1) Load an integer with object tag "size", and
-	 *  (2) Load up to "size" number of elements with object tag "item".
+	 *  (1) Load an integer with an object tag specifying ObjectTag::sequence_size(), and
+	 *  (2) Load up to ObjectTag::sequence_size() number of elements using ObjectTag::sequence_item(index).
 	 */
 	template <typename SequenceType>
 	TranscribeResult
@@ -194,22 +195,22 @@ namespace GPlatesScribe
 		{
 			// 'sequence_size' won't be referenced by other objects.
 			const unsigned int sequence_size = TranscribeSequence<SequenceType>::get_length(sequence);
-			scribe.save(TRANSCRIBE_SOURCE, sequence_size, "size", DONT_TRACK);
+			scribe.save(TRANSCRIBE_SOURCE, sequence_size, ObjectTag().sequence_size());
 
 			const std::pair<sequence_iterator, sequence_iterator> items =
 					TranscribeSequence<SequenceType>::get_items(sequence);
 
-			unsigned int num_items_saved = 0;
+			unsigned int n = 0;
 			sequence_iterator items_iter = items.first;
-			for ( ; items_iter != items.second; ++items_iter, ++num_items_saved)
+			for ( ; items_iter != items.second; ++items_iter, ++n)
 			{
 				const item_type &item = *items_iter;
 
-				scribe.save(TRANSCRIBE_SOURCE, item, "item");
+				scribe.save(TRANSCRIBE_SOURCE, item, ObjectTag()[n], TRACK);
 			}
 
 			GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
-					num_items_saved == sequence_size,
+					n == sequence_size,
 					GPLATES_ASSERTION_SOURCE,
 					"Length of sequence does not match number of items saved.");
 		}
@@ -220,7 +221,7 @@ namespace GPlatesScribe
 
 			// 'sequence_size' won't be referenced by other objects.
 			LoadRef<unsigned int> sequence_size =
-					scribe.load<unsigned int>(TRANSCRIBE_SOURCE, "size", DONT_TRACK);
+					scribe.load<unsigned int>(TRANSCRIBE_SOURCE, ObjectTag().sequence_size());
 			if (!sequence_size.is_valid())
 			{
 				return scribe.get_transcribe_result();
@@ -236,7 +237,7 @@ namespace GPlatesScribe
 			unsigned int n;
 			for (n = 0; n < sequence_size.get(); ++n)
 			{
-				LoadRef<item_type> item = scribe.load<item_type>(TRANSCRIBE_SOURCE, "item");
+				LoadRef<item_type> item = scribe.load<item_type>(TRANSCRIBE_SOURCE, ObjectTag()[n], TRACK);
 				if (!item.is_valid())
 				{
 					// Clear the sequence in case caller tries to use it - which they shouldn't

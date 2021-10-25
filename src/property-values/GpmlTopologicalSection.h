@@ -66,26 +66,12 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for boost::intrusive_ptr<GpmlTopologicalSection>.
-		 */
-		typedef boost::intrusive_ptr<GpmlTopologicalSection>
-				maybe_null_ptr_type;
-
-		/**
-		 * A convenience typedef for boost::intrusive_ptr<const GpmlTopologicalSection>.
-		 */
-		typedef boost::intrusive_ptr<const GpmlTopologicalSection>
-				maybe_null_ptr_to_const_type;
-
-		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalSection>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalSection>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlTopologicalSection> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalSection>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalSection>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlTopologicalSection> non_null_ptr_to_const_type;
 
@@ -120,7 +106,7 @@ namespace GPlatesPropertyValues
 		{  }
 
 		virtual
-		const GpmlTopologicalSection::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone_as_topo_section() const = 0;
 
 		/**

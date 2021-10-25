@@ -241,46 +241,75 @@ GPlatesFileIO::GDALRasterWriter::get_supported_formats(
 			"nc", // filename_extension
 			"NetCDF grid data", // format_description
 			"application/x-netcdf", // format_mime_type
-			"netCDF"); // driver_name
+			InternalFormatInfo("netCDF"));
 
 	add_supported_format(
 			supported_formats,
 			"grd", // filename_extension
 			"GMT grid data", // format_description
 			"application/x-netcdf", // format_mime_type
-			"GMT"); // driver_name
+			InternalFormatInfo("GMT"));
+
+
+	InternalFormatInfo tiff_creation_options("GTiff");
+
+	// General compression options (for all raster types except floating-point).
+	std::vector<std::string> tiff_compression_creation_options;
+	tiff_compression_creation_options.push_back("COMPRESS=LZW");
+	tiff_compression_creation_options.push_back("PREDICTOR=2");
+	tiff_creation_options.set_compression_creation_options(tiff_compression_creation_options);
+
+	// Compression options specific to floating-point.
+	std::vector<std::string> tiff_float_compression_creation_options;
+	tiff_float_compression_creation_options.push_back("COMPRESS=LZW");
+	tiff_float_compression_creation_options.push_back("PREDICTOR=3"); // Use floating-point prediction.
+	tiff_creation_options.set_compression_creation_options(
+			tiff_float_compression_creation_options,
+			GPlatesPropertyValues::RasterType::FLOAT);
+	tiff_creation_options.set_compression_creation_options(
+			tiff_float_compression_creation_options,
+			GPlatesPropertyValues::RasterType::DOUBLE);
 
 	add_supported_format(
 			supported_formats,
 			"tif", // filename_extension
 			"TIFF image", // format_description
 			"image/tiff", // format_mime_type
-			"GTiff"); // driver_name
+			tiff_creation_options);
 
 	add_supported_format(
 			supported_formats,
 			"tiff", // filename_extension
 			"TIFF image", // format_description
 			"image/tiff", // format_mime_type
-			"GTiff"); // driver_name
+			tiff_creation_options);
+
 
 	// HFA driver does not export statistics by default.
-	std::vector<std::string> hfa_creation_options;
-	hfa_creation_options.push_back("STATISTICS=YES");
+	std::vector<std::string> hfa_general_creation_options;
+	hfa_general_creation_options.push_back("STATISTICS=YES");
+
+	InternalFormatInfo hfa_creation_options("HFA", hfa_general_creation_options);
+
+	// Compression options.
+	std::vector<std::string> hfa_compression_creation_options;
+	hfa_compression_creation_options.push_back("COMPRESSED=YES");
+	hfa_creation_options.set_compression_creation_options(hfa_compression_creation_options);
+
 	add_supported_format(
 			supported_formats,
 			"img", // filename_extension
 			"Erdas Imagine", // format_description
 			"application/x-erdas-hfa", // format_mime_type
-			"HFA", // driver_name
 			hfa_creation_options);
+
 
 	add_supported_format(
 			supported_formats,
 			"ers", // filename_extension
 			"ERMapper", // format_description
 			"application/x-ers", // format_mime_type
-			"ERS"); // driver_name
+			InternalFormatInfo("ERS"));
 }
 
 
@@ -290,18 +319,17 @@ GPlatesFileIO::GDALRasterWriter::add_supported_format(
 		const QString &filename_extension,
 		const QString &format_description,
 		const QString &format_mime_type,
-		const char *driver_name,
-		const std::vector<std::string> &creation_options)
+		const InternalFormatInfo &internal_format_info)
 {
 	// Return early if the driver does not support creation.
-	if (!does_driver_support_creation(driver_name))
+	if (!does_driver_support_creation(internal_format_info.driver_name.c_str()))
 	{
 		return;
 	}
 
 	// Return early if driver does not support any of our band types.
 	const std::vector<GPlatesPropertyValues::RasterType::Type> supported_band_types =
-			get_supported_band_types(driver_name);
+			get_supported_band_types(internal_format_info.driver_name.c_str());
 	if (supported_band_types.empty())
 	{
 		return;
@@ -317,12 +345,11 @@ GPlatesFileIO::GDALRasterWriter::add_supported_format(
 							format_description,
 							format_mime_type,
 							GPlatesFileIO::RasterWriter::GDAL,
-							supported_band_types)));
+							supported_band_types,
+							internal_format_info.has_option_to_compress())));
 
 	s_format_desc_to_internal_format_info_map.insert(
-			std::make_pair(
-					format_description,
-					InternalFormatInfo(driver_name, creation_options)));
+			std::make_pair(format_description, internal_format_info));
 }
 
 
@@ -347,10 +374,12 @@ GPlatesFileIO::GDALRasterWriter::GDALRasterWriter(
 		unsigned int raster_width,
 		unsigned int raster_height,
 		unsigned int num_raster_bands,
-		GPlatesPropertyValues::RasterType::Type raster_band_type) :
+		GPlatesPropertyValues::RasterType::Type raster_band_type,
+		bool compress) :
 	d_filename(filename),
 	d_num_raster_bands(num_raster_bands),
 	d_raster_band_type(raster_band_type),
+	d_compress(compress),
 	d_internal_format_info(get_internal_format_info(format_info)),
 	// A NULL value results in 'can_write()' returning false.
 	d_in_memory_dataset(NULL),
@@ -635,9 +664,12 @@ GPlatesFileIO::GDALRasterWriter::write_file()
 	std::vector< std::vector<char> > creation_options;
 	std::vector<char *> creation_option_pointers;
 	char **gdal_creation_option_pointers = NULL;
-	if (!d_internal_format_info.creation_options.empty())
+
+	std::vector<std::string> creation_option_strings;
+	d_internal_format_info.get_creation_options(creation_option_strings, d_raster_band_type, d_compress);
+	if (!creation_option_strings.empty())
 	{
-		BOOST_FOREACH(const std::string &creation_option, d_internal_format_info.creation_options)
+		BOOST_FOREACH(const std::string &creation_option, creation_option_strings)
 		{
 			std::vector<char> option(creation_option.begin(), creation_option.end());
 			option.push_back('\0'); // Null terminate the string.
@@ -887,4 +919,43 @@ GPlatesFileIO::GDALRasterWriter::WriteNumericalRegionDataVisitorImpl::write_nume
 	}
 
 	return true;
+}
+
+
+void
+GPlatesFileIO::GDALRasterWriter::InternalFormatInfo::get_creation_options(
+		std::vector<std::string> &creation_options,
+		GPlatesPropertyValues::RasterType::Type raster_band_type,
+		bool compress) const
+{
+	// General options.
+	creation_options.insert(
+			creation_options.end(),
+			d_general_creation_options.begin(),
+			d_general_creation_options.end());
+
+	// Compression options.
+	if (compress)
+	{
+		// If have any raster-type-specific compression options then use them, otherwise the general options.
+		raster_type_specific_creation_options_type::const_iterator specific_compression_options_iter =
+				d_specific_compression_creation_options.find(raster_band_type);
+		if (specific_compression_options_iter != d_specific_compression_creation_options.end())
+		{
+			const creation_options_type &specific_compression_creation_options =
+					specific_compression_options_iter->second;
+
+			creation_options.insert(
+					creation_options.end(),
+					specific_compression_creation_options.begin(),
+					specific_compression_creation_options.end());
+		}
+		else
+		{
+			creation_options.insert(
+					creation_options.end(),
+					d_compression_creation_options.begin(),
+					d_compression_creation_options.end());
+		}
+	}
 }

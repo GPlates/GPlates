@@ -31,6 +31,7 @@
 
 
 #include "CartesianConvMatrix3D.h"
+
 #include "LatLonPoint.h"
 #include "MathsUtils.h"
 
@@ -49,60 +50,112 @@ GPlatesMaths::CartesianConvMatrix3D::CartesianConvMatrix3D(
 	const real_t sin_phi = sin(phi);
 	const real_t cos_phi = cos(phi);
 
-	_nx = -sin_lam * cos_phi;
-	_ny = -sin_lam * sin_phi;
-	_nz =  cos_lam;
-	_ex = -sin_phi;
-	_ey =  cos_phi;
-	_ez =  0;
-	_dx = -cos_lam * cos_phi;
-	_dy = -cos_lam * sin_phi;
-	_dz = -sin_lam;
+	d_north = Vector3D(
+			-sin_lam * cos_phi,
+			-sin_lam * sin_phi,
+			cos_lam);
+	d_east = Vector3D(
+			-sin_phi,
+			cos_phi,
+			0);
+	d_down = Vector3D(
+			-cos_lam * cos_phi,
+			-cos_lam * sin_phi,
+			-sin_lam);
 }
 
 
 GPlatesMaths::Vector3D
-GPlatesMaths::operator*(
+GPlatesMaths::convert_from_geocentric_to_north_east_down(
 		const CartesianConvMatrix3D &ccm,
-		const Vector3D &v)
+		const Vector3D &geocentric_vec)
 {
-	real_t n = ccm.nx() * v.x() +
-	           ccm.ny() * v.y() +
-	           ccm.nz() * v.z();
-
-	real_t e = ccm.ex() * v.x() +
-	           ccm.ey() * v.y() +
-	           ccm.ez() * v.z();
-
-	real_t d = ccm.dx() * v.x() +
-	           ccm.dy() * v.y() +
-	           ccm.dz() * v.z();
-
-	return Vector3D(n, e, d);
+	return Vector3D(
+			dot(ccm.north(), geocentric_vec),
+			dot(ccm.east(), geocentric_vec),
+			dot(ccm.down(), geocentric_vec));
 }
 
 
 
 GPlatesMaths::Vector3D
-GPlatesMaths::inverse_multiply(
+GPlatesMaths::convert_from_north_east_down_to_geocentric(
 		const CartesianConvMatrix3D &ccm,
-		const Vector3D &v)
+		const Vector3D &north_east_down_vec)
 {
-	real_t n = v.x();
-	real_t e = v.y();
-	real_t d = v.z();
+	//
+	// The 3x3 matrix 'ccm' is purely a rotation, so its inverse is equal to its transpose.
+	//
 
-	real_t x = ccm.nx() * n +
-	           ccm.ex() * e +
-	           ccm.dx() * d;
+	return
+			north_east_down_vec.x() * ccm.north() +
+			north_east_down_vec.y() * ccm.east() +
+			north_east_down_vec.z() * ccm.down();
+}
 
-	real_t y = ccm.ny() * n +
-	           ccm.ey() * e +
-	           ccm.dy() * d;
 
-	real_t z = ccm.nz() * n +
-	           ccm.ez() * e +
-	           ccm.dz() * d;
+boost::tuple<
+		GPlatesMaths::real_t/*magnitude*/,
+		GPlatesMaths::real_t/*azimuth*/,
+		GPlatesMaths::real_t/*inclination*/>
+GPlatesMaths::convert_from_geocentric_to_magnitude_azimuth_inclination(
+		const CartesianConvMatrix3D &ccm,
+		const Vector3D &geocentric_vec)
+{
+	return convert_from_north_east_down_to_magnitude_azimuth_inclination(
+			convert_from_geocentric_to_north_east_down(ccm, geocentric_vec));
+}
 
-	return Vector3D(x, y, z);
+
+GPlatesMaths::Vector3D
+GPlatesMaths::convert_from_magnitude_azimuth_inclination_to_geocentric(
+		const CartesianConvMatrix3D &ccm,
+		const boost::tuple<real_t/*magnitude*/, real_t/*azimuth*/, real_t/*inclination*/> &magnitude_azimuth_inclination)
+{
+	return convert_from_north_east_down_to_geocentric(
+			ccm,
+			convert_from_magnitude_azimuth_inclination_to_north_east_down(magnitude_azimuth_inclination));
+}
+
+
+boost::tuple<
+		GPlatesMaths::real_t/*magnitude*/,
+		GPlatesMaths::real_t/*azimuth*/,
+		GPlatesMaths::real_t/*inclination*/>
+GPlatesMaths::convert_from_north_east_down_to_magnitude_azimuth_inclination(
+		const Vector3D &north_east_down_vec)
+{
+	const real_t magnitude = north_east_down_vec.magnitude();
+	if (magnitude == 0) // Epsilon test
+	{
+		return boost::tuple<real_t, real_t, real_t>(0, 0, 0);
+	}
+
+	real_t azimuth = atan2(north_east_down_vec.y() , north_east_down_vec.x());
+	// Convert [-PI, PI] to [0, 2*PI]...
+	if (azimuth.dval() < 0)
+	{
+		azimuth += 2 * PI;
+	}
+
+	const real_t inclination = asin(north_east_down_vec.z() / magnitude);
+
+	return boost::make_tuple(magnitude, azimuth, inclination);
+}
+
+
+GPlatesMaths::Vector3D
+GPlatesMaths::convert_from_magnitude_azimuth_inclination_to_north_east_down(
+		const boost::tuple<real_t/*magnitude*/, real_t/*azimuth*/, real_t/*inclination*/> &magnitude_azimuth_inclination)
+{
+	real_t magnitude = boost::get<0>(magnitude_azimuth_inclination);
+	real_t azimuth = boost::get<1>(magnitude_azimuth_inclination);
+	real_t inclination = boost::get<2>(magnitude_azimuth_inclination);
+
+	const real_t cos_inclination = cos(inclination);
+
+	return Vector3D(
+			magnitude * cos_inclination * cos(azimuth)/*North*/,
+			magnitude * cos_inclination * sin(azimuth)/*East*/,
+			magnitude * sin(inclination)/*Down*/);
 }

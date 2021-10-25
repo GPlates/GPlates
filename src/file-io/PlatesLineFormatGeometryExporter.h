@@ -129,6 +129,12 @@ namespace GPlatesFileIO
 		visit_polyline_on_sphere(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere);
 
+
+		void
+		write_polygon_ring(
+				const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_vertex_begin,
+				const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_vertex_end);
+
 		/**
 		 * Writes the terminating point to signal no more geometry(s) for a feature.
 		 */

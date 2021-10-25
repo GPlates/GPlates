@@ -29,10 +29,11 @@
 #define GPLATES_MATHS_POINTLIESONGREATCIRCLEARC_H
 
 #include <functional>  /* std::unary_function */
+
 #include "GreatCircleArc.h"
 
-namespace GPlatesMaths {
-
+namespace GPlatesMaths
+{
 	/**
 	 * This class instantiates to a function object which determines
 	 * whether a point lies on a given GreatCircleArc.
@@ -55,7 +56,8 @@ namespace GPlatesMaths {
 	 * for more information about @a std::unary_function.
 	 */
 	class PointLiesOnGreatCircleArc:
-	 public std::unary_function< PointOnSphere, bool > {
+			public std::unary_function< PointOnSphere, bool >
+	{
 
 	  public:
 
@@ -67,7 +69,7 @@ namespace GPlatesMaths {
 		PointLiesOnGreatCircleArc(
 				const GreatCircleArc &arc) :
 			d_arc_start(arc.start_point()),
-			d_arc_dot(arc.dot_of_endpoints())
+			d_arc_end(arc.end_point())
 		{
 			if (!arc.is_zero_length())
 			{
@@ -81,7 +83,7 @@ namespace GPlatesMaths {
 		 */
 		bool
 		operator()(
-		 const PointOnSphere &test_point) const;
+				const PointOnSphere &test_point) const;
 
 	  private:
 
@@ -91,19 +93,16 @@ namespace GPlatesMaths {
 		const PointOnSphere d_arc_start;
 
 		/**
+		 * The end-point of the arc.
+		 */
+		const PointOnSphere d_arc_end;
+
+		/**
 		 * The normal to the plane which contains the arc.
 		 *
 		 * Note that this might be an undefined boost::optional.
 		 */
 		boost::optional<UnitVector3D> d_arc_normal;
-
-		/**
-		 * The dot-product of the unit-vectors of the start-point and
-		 * end-point of the arc.  Since the angle of the arc must lie
-		 * in the open-range (0, PI), the value of the dot-product will
-		 * lie in the range (-1, 1).
-		 */
-		const real_t d_arc_dot;
 
 	 };
 

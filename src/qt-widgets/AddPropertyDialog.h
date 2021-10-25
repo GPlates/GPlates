@@ -46,7 +46,6 @@ namespace GPlatesGui
 
 namespace GPlatesModel
 {
-	class Gpgim;
 	class GpgimProperty;
 }
 
@@ -138,9 +137,6 @@ namespace GPlatesQtWidgets
 		const GPlatesModel::FeatureType &
 		get_default_feature_type();
 
-
-		//! Determines if a property name is valid for a feature type.
-		const GPlatesModel::Gpgim &d_gpgim;
 
 		//! Announce modifications to the focused feature.
 		GPlatesGui::FeatureFocus &d_feature_focus;

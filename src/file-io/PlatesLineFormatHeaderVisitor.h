@@ -121,7 +121,7 @@ namespace GPlatesFileIO
 		* @param old_plates_header old plates header information returned in this.
 		*/
 		virtual
-			bool
+			void
 			get_old_plates_header(
 					const GPlatesModel::FeatureHandle::const_weak_ref &feature,
 					OldPlatesHeader& old_plates_header,

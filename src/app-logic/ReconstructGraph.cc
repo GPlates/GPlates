@@ -36,9 +36,9 @@
 
 
 #include "ApplicationState.h"
+#include "LayerParams.h"
 #include "LayerProxyUtils.h"
 #include "LayerTask.h"
-#include "LayerTaskParams.h"
 #include "LayerTaskRegistry.h"
 #include "ReconstructGraph.h"
 #include "ReconstructGraphImpl.h"
@@ -50,160 +50,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-#include "scribe/Scribe.h"
-
 #include "utils/Profile.h"
-
-namespace
-{
-	/**
-	 * Connect the output of one layer to the input of another.
-	 */
-	void
-	connect_layer_input_to_layer_output(
-			GPlatesAppLogic::Layer& layer_receiving_input,
-			const GPlatesAppLogic::Layer& layer_giving_output)
-	{
-		const std::vector<GPlatesAppLogic::LayerInputChannelType> input_channel_types = 
-				layer_receiving_input.get_input_channel_types();
-
-		BOOST_FOREACH(
-				const GPlatesAppLogic::LayerInputChannelType &input_channel_type,
-				input_channel_types)
-		{
-			const boost::optional< std::vector<GPlatesAppLogic::LayerTaskType::Type> > &
-					supported_input_data_types =
-							input_channel_type.get_layer_input_data_types();
-			// If the current layer type (of layer giving output) matches the supported input types...
-			if (supported_input_data_types &&
-				std::find(
-					supported_input_data_types->begin(),
-					supported_input_data_types->end(),
-					layer_giving_output.get_type()) != supported_input_data_types->end())
-			{
-				layer_receiving_input.connect_input_to_layer_output(
-						layer_giving_output,
-						input_channel_type.get_input_channel_name());
-				break;
-			}
-		}
-	}
-
-
-	/**
-	 * The layer is a velocity field calculator layer so look for a reconstruct layer with the
-	 * same main channel input filename and connect its output to the velocity layer's domain input.
-	 *
-	 * This is because velocity layers now connect the domain input to reconstruct layers instead
-	 * of input files.
-	 */
-	template <typename LayerForwardIter>
-	void
-	connect_velocity_field_calculator_layer_input_to_domain_reconstruct_layer_output(
-			GPlatesAppLogic::Layer& velocity_layer,
-			LayerForwardIter layers_begin,
-			LayerForwardIter layers_end)
-	{
-		for (LayerForwardIter layer_iter = layers_begin; layer_iter != layers_end; layer_iter++)
-		{
-			if (layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::RECONSTRUCT)
-			{
-				continue;
-			}
-
-			// FIXME: This relies on the velocity layer having the same name input file as its
-			// associated domain layer. But the velocity layer no longer needs to connect to
-			// input files (connects to domain 'layer' instead).
-			// So this is somewhat flakey and likely to break in the future.
-
-			// See if the layer is connected to the same input file as the velocity layer.
-			const std::vector<GPlatesAppLogic::Layer::InputConnection> layer_input_connections =
-					layer_iter->get_channel_inputs(
-							layer_iter->get_main_input_feature_collection_channel());
-			const std::vector<GPlatesAppLogic::Layer::InputConnection> velocity_layer_input_connections =
-					velocity_layer.get_channel_inputs(
-							velocity_layer.get_main_input_feature_collection_channel());
-			// We're expecting only one input file connection.
-			if (layer_input_connections.size() != 1 ||
-				velocity_layer_input_connections.size() != 1)
-			{
-				continue;
-			}
-			// Make sure the input connects to a file rather than the output of another layer.
-			boost::optional<GPlatesAppLogic::Layer::InputFile> layer_main_channel_input_file =
-					layer_input_connections[0].get_input_file();
-			boost::optional<GPlatesAppLogic::Layer::InputFile> velocity_layer_main_channel_input_file =
-					velocity_layer_input_connections[0].get_input_file();
-			if (!layer_main_channel_input_file ||
-				!velocity_layer_main_channel_input_file)
-			{
-				continue;
-			}
-
-			if (layer_main_channel_input_file->get_file() !=
-				velocity_layer_main_channel_input_file->get_file())
-			{
-				continue;
-			}
-
-			GPlatesAppLogic::Layer domain_reconstruct_layer = *layer_iter;
-
-			connect_layer_input_to_layer_output(velocity_layer, domain_reconstruct_layer);
-
-			// There should only be one domain layer satifying the above conditions.
-			break;
-		}
-	}
-
-
-	/**
-	 * The layer is a velocity field calculator layer so look for any topology resolver layers
-	 * and connect their outputs to the velocity layer input.
-	 */
-	template <typename LayerForwardIter>
-	void
-	connect_velocity_field_calculator_layer_input_to_topology_resolver_layer_outputs(
-			GPlatesAppLogic::Layer& velocity_layer,
-			LayerForwardIter layers_begin,
-			LayerForwardIter layers_end)
-	{
-		for (LayerForwardIter layer_iter = layers_begin; layer_iter != layers_end; layer_iter++)
-		{
-			if (layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER &&
-			   layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER)
-			{
-				continue;
-			}
-			GPlatesAppLogic::Layer topology_layer = *layer_iter;
-
-			connect_layer_input_to_layer_output(velocity_layer, topology_layer);
-		}
-	}
-
-
-	/**
-	 * The layer is a topology resolver layer so look for any velocity field calculator layers
-	 * and connect the topology resolver output to the input of the velocity layers.
-	 */
-	template <typename LayerForwardIter>
-	void
-	connect_topology_resolver_layer_output_to_velocity_field_calculator_layer_inputs(
-			const GPlatesAppLogic::Layer& topology_layer,
-			LayerForwardIter layers_begin,
-			LayerForwardIter layers_end)
-	{
-		for (LayerForwardIter layer_iter = layers_begin; layer_iter != layers_end; layer_iter++)
-		{
-			if (layer_iter->get_type() != GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR)
-			{
-				continue;
-			}
-			GPlatesAppLogic::Layer velocity_layer = *layer_iter;
-
-			connect_layer_input_to_layer_output(velocity_layer, topology_layer);
-		}
-	}
-}
 
 
 GPlatesAppLogic::ReconstructGraph::ReconstructGraph(
@@ -243,6 +90,9 @@ GPlatesAppLogic::ReconstructGraph::add_files(
 			auto_create_layers_for_new_input_file(input_file, auto_create_layers.get());
 		}
 
+		// Now that all new layers have been created we can make auto-connections.
+		auto_connect_layers();
+
 		add_layers_group.end_add_or_remove_layers();
 	}
 }
@@ -258,6 +108,9 @@ GPlatesAppLogic::ReconstructGraph::add_file(
 	if (auto_create_layers)
 	{
 		auto_create_layers_for_new_input_file(input_file, auto_create_layers.get());
+
+		// Now that all new layers have been created we can make auto-connections.
+		auto_connect_layers();
 	}
 
 	return input_file;
@@ -365,10 +218,10 @@ GPlatesAppLogic::ReconstructGraph::add_layer(
 	// Let clients know of the new layer.
 	Q_EMIT layer_added(*this, layer);
 
-	// Ensure a full reconstruction each time the layer task parameters of this layer are modified.
+	// Emit signal each time the layer's task parameters are modified.
 	QObject::connect(
-			&layer_task->get_layer_task_params(), SIGNAL(modified()),
-			&d_application_state, SLOT(reconstruct()));
+			layer_task->get_layer_params().get(), SIGNAL(modified(GPlatesAppLogic::LayerParams &)),
+			this, SLOT(handle_layer_params_changed(GPlatesAppLogic::LayerParams &)));
 
 	// End the add layers group.
 	add_layers_group.end_add_or_remove_layers();
@@ -529,7 +382,7 @@ GPlatesAppLogic::ReconstructGraph::update_layer_tasks(
 	// In any case the layers now operate in a pull model where a layer directly makes requests
 	// to its dependencies layers and so on, whereas previously layers operated in a push model
 	// that required dependency layers to produce output before the executing layers that
-	// depended on them thus required layers to be executed in dependency order.
+	// depended on them thus requiring layers to be executed in dependency order.
 	BOOST_FOREACH(const layer_ptr_type &layer, d_layers)
 	{
 		// If this layer is not active then we don't add the layer proxy to the current reconstruction.
@@ -607,6 +460,7 @@ GPlatesAppLogic::ReconstructGraph::modified_input_file(
 	// contains non-topology features - hence a topology layer will need to be created.
 	//
 	
+	bool created_new_layers = false;
 	BOOST_FOREACH(LayerTaskRegistry::LayerTaskType new_layer_task_type, new_layer_task_types)
 	{
 		// If a layer task of the current type doesn't yet exist then create a layer for it.
@@ -615,13 +469,20 @@ GPlatesAppLogic::ReconstructGraph::modified_input_file(
 		{
 			const boost::shared_ptr<LayerTask> new_layer_task = new_layer_task_type.create_layer_task();
 
-			const Layer new_layer = auto_create_layer(
+			auto_create_layer(
 					input_file,
 					new_layer_task,
 					// We don't want to set a new default reconstruction tree layer if one gets
 					// created because it might surprise the user (ie, they're not loading a rotation file).
 					AutoCreateLayerParams(false/*update_default_reconstruction_tree_layer_*/));
+			created_new_layers = true;
 		}
+	}
+
+	if (created_new_layers)
+	{
+		// Now that all new layers have been created we can make auto-connections.
+		auto_connect_layers();
 	}
 }
 
@@ -647,7 +508,7 @@ GPlatesAppLogic::ReconstructGraph::auto_create_layers_for_new_input_file(
 	// Iterate over the compatible layer task types and create layers.
 	BOOST_FOREACH(LayerTaskRegistry::LayerTaskType layer_task_type, layer_task_types)
 	{
-		const boost::optional<boost::shared_ptr<GPlatesAppLogic::LayerTask> > layer_task =
+		const boost::optional<boost::shared_ptr<LayerTask> > layer_task =
 				layer_task_type.create_layer_task();
 		if (layer_task)
 		{
@@ -671,18 +532,29 @@ GPlatesAppLogic::ReconstructGraph::auto_create_layer(
 	// This will cause the layer to be auto-destroyed when 'input_file' is unloaded.
 	new_layer.set_auto_created(true);
 
-	// Make any auto-connections to/from this layer.
-	// This includes the connection of the input file and any other connections needed.
-	// NOTE: We don't really want to encourage the other connections so currently we only auto-connect
-	// velocity layers to topology layers and we will probably try to find a way to avoid this
-	// such as grouping layers to make it easier for the user to connect the twelve CitcomS
-	// mesh cap files to topologies in one go rather than twelve goes.
-	auto_connect_layer(new_layer, input_file);
+	//
+	// Connect the file to the input of the new layer.
+	//
+
+	// Get the main feature collection input channel for our layer.
+	const LayerInputChannelName::Type main_input_feature_collection_channel =
+			new_layer.get_main_input_feature_collection_channel();
+
+	// Connect the input file to the main input channel of the new layer.
+	//
+	// FIXME: This actually gives velocity (visual) layers the name of the input file that caused
+	// their auto-creation even though velocity layers no longer have input files (only input layers).
+	// This is because the input file connection is still there - just unused and undisplayed
+	// in the visual layer - but yet still used to determine the visual layer name.
+	// It's somewhat flakey and likely to break in the future.
+	new_layer.connect_input_to_file(
+			input_file,
+			main_input_feature_collection_channel);
 
 	// Set the new default reconstruction tree if we're updating the default *and*
 	// the new layer type is a reconstruction tree layer.
 	if (auto_create_layer_params.update_default_reconstruction_tree_layer &&
-		new_layer.get_type() == GPlatesAppLogic::LayerTaskType::RECONSTRUCTION)
+		new_layer.get_type() == LayerTaskType::RECONSTRUCTION)
 	{
 		set_default_reconstruction_tree_layer(new_layer);
 	}
@@ -692,28 +564,13 @@ GPlatesAppLogic::ReconstructGraph::auto_create_layer(
 
 
 void
-GPlatesAppLogic::ReconstructGraph::auto_connect_layer(
-		Layer layer,
-		const Layer::InputFile &main_input_channel_input_file)
+GPlatesAppLogic::ReconstructGraph::auto_connect_layers()
 {
-	//
-	// Connect the file to the input of the new layer.
-	//
-
-	// Get the main feature collection input channel for our layer.
-	const LayerInputChannelName::Type main_input_feature_collection_channel =
-			layer.get_main_input_feature_collection_channel();
-
-	// Connect the input file to the main input channel of the new layer.
-	//
-	// FIXME: This actually gives velocity (visual) layers the name of the input file that caused
-	// their auto-creation even though velocity layers no longer have input files (only input layers).
-	// This is because the input file connection is still there - just unused and undisplayed
-	// in the visual layer - but yet still used to determine the visual layer name.
-	// It's somewhat flakey and likely to break in the future.
-	layer.connect_input_to_file(
-			main_input_channel_input_file,
-			main_input_feature_collection_channel);
+	// Make any auto-connections to/from this layer.
+	// NOTE: We don't really want to encourage the other connections so currently we only auto-connect
+	// velocity layers to topology layers and we will probably try to find a way to avoid this
+	// such as grouping layers to make it easier for the user to connect the twelve CitcomS
+	// mesh cap files to topologies in one go rather than twelve goes.
 
 	//
 	// Do other layer-specific connections.
@@ -722,22 +579,133 @@ GPlatesAppLogic::ReconstructGraph::auto_connect_layer(
 	// that the user didn't want - eg, connecting *multiple* topologies to velocity layers.
 	//
 
-	// If the layer is a velocity field calculator then look for any topology resolver layers
-	// and connect their outputs to the velocity layer input.
-	// Also look for a topology resolver layers
-	// and connect their outputs to the velocity layer input.
-	if (layer.get_type() == GPlatesAppLogic::LayerTaskType::VELOCITY_FIELD_CALCULATOR)
+	// Iterate over all layers (receiving input).
+	iterator layer_receiving_input_iter = begin();
+	iterator layer_receiving_input_end = end();
+	for ( ; layer_receiving_input_iter != layer_receiving_input_end; layer_receiving_input_iter++)
 	{
-		connect_velocity_field_calculator_layer_input_to_domain_reconstruct_layer_output(layer, begin(), end());
-		connect_velocity_field_calculator_layer_input_to_topology_resolver_layer_outputs(layer, begin(), end());
-	}
+		Layer layer_receiving_input = *layer_receiving_input_iter;
+		const std::vector<LayerInputChannelType> input_channel_types = 
+				layer_receiving_input.get_input_channel_types();
 
-	// If the layer is a topology resolver then look for any velocity field calculator layers
-	// and connect the topology resolver output to the input of the velocity layers.
-	if (layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_GEOMETRY_RESOLVER ||
-		layer.get_type() == GPlatesAppLogic::LayerTaskType::TOPOLOGY_NETWORK_RESOLVER)
-	{
-		connect_topology_resolver_layer_output_to_velocity_field_calculator_layer_inputs(layer, begin(), end());
+		BOOST_FOREACH(const LayerInputChannelType &input_channel_type, input_channel_types)
+		{
+			const boost::optional< std::vector<LayerInputChannelType::InputLayerType> > &
+					input_channel_layer_types_opt = input_channel_type.get_input_layer_types();
+			if (!input_channel_layer_types_opt)
+			{
+				continue;
+			}
+			const std::vector<LayerInputChannelType::InputLayerType> &input_channel_layer_types =
+					input_channel_layer_types_opt.get();
+
+			const unsigned int num_input_channel_layer_types = input_channel_layer_types.size();
+			for (unsigned int input_channel_layer_index = 0;
+				input_channel_layer_index < num_input_channel_layer_types;
+				++input_channel_layer_index)
+			{
+				const LayerInputChannelType::InputLayerType &input_channel_layer_type =
+						input_channel_layer_types[input_channel_layer_index];
+
+				if (input_channel_layer_type.auto_connect == LayerInputChannelType::DONT_AUTO_CONNECT)
+				{
+					continue;
+				}
+
+				// Iterate over all layers (giving output).
+				iterator layer_giving_output_iter = begin();
+				iterator layer_giving_output_end = end();
+				for ( ; layer_giving_output_iter != layer_giving_output_end; layer_giving_output_iter++)
+				{
+					// A layer shouldn't receive input from itself.
+					if (layer_giving_output_iter == layer_receiving_input_iter)
+					{
+						continue;
+					}
+					const Layer layer_giving_output = *layer_giving_output_iter;
+
+					// Skip if the type of the layer giving output does not match the current input type.
+					if (input_channel_layer_type.layer_type != layer_giving_output.get_type())
+					{
+						continue;
+					}
+
+					// If can only connect to layers spawned from the same input file then check this.
+					if (input_channel_layer_type.auto_connect == LayerInputChannelType::LOCAL_AUTO_CONNECT)
+					{
+						// FIXME: This relies on the receiving layer having the same name input file as the
+						// giving layer. But the receiving layer might no longer need to connect to
+						// input files (since might just connect to giving layer instead).
+						// So this is somewhat flakey and likely to break in the future.
+
+						// See if both layers (receiving and giving) are connected to the same input file.
+						const std::vector<Layer::InputConnection>
+								layer_receiving_input_file_connections =
+										layer_receiving_input.get_channel_inputs(
+												layer_receiving_input.get_main_input_feature_collection_channel());
+						const std::vector<Layer::InputConnection>
+								layer_giving_output_file_connections =
+										layer_giving_output.get_channel_inputs(
+												layer_giving_output.get_main_input_feature_collection_channel());
+
+						// We're expecting only one input file connection.
+						if (layer_receiving_input_file_connections.size() != 1 ||
+							layer_giving_output_file_connections.size() != 1)
+						{
+							continue;
+						}
+
+						// Make sure the inputs connect to a file (rather than the output of another layer).
+						boost::optional<Layer::InputFile> layer_receiving_input_file =
+								layer_receiving_input_file_connections[0].get_input_file();
+						boost::optional<Layer::InputFile> layer_giving_output_file =
+								layer_giving_output_file_connections[0].get_input_file();
+						if (!layer_receiving_input_file ||
+							!layer_giving_output_file)
+						{
+							continue;
+						}
+
+						if (layer_receiving_input_file->get_file() != layer_giving_output_file->get_file())
+						{
+							continue;
+						}
+					}
+
+					const std::vector<Layer::InputConnection> input_channel_connections =
+							layer_receiving_input.get_channel_inputs(
+									input_channel_type.get_input_channel_name());
+
+					// See if the giving layer is already connected to the receiving layer on
+					// the current input channel.
+					std::vector<Layer::InputConnection>::const_iterator input_channel_connections_iter =
+							input_channel_connections.begin();
+					std::vector<Layer::InputConnection>::const_iterator input_channel_connections_end =
+							input_channel_connections.end();
+					for ( ;
+						input_channel_connections_iter != input_channel_connections_end;
+						++input_channel_connections_iter)
+					{
+						const Layer::InputConnection &input_channel_connection =
+								*input_channel_connections_iter;
+
+						if (layer_giving_output == input_channel_connection.get_input_layer())
+						{
+							// Already connected.
+							break;
+						}
+					}
+
+					// Connect the giving layer to the receiving layer (if not already connected).
+					if (input_channel_connections_iter == input_channel_connections_end)
+					{
+						layer_receiving_input.connect_input_to_layer_output(
+								layer_giving_output,
+								input_channel_type.get_input_channel_name());
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -871,6 +839,28 @@ GPlatesAppLogic::ReconstructGraph::handle_default_reconstruction_tree_layer_remo
 
 
 void
+GPlatesAppLogic::ReconstructGraph::handle_layer_params_changed(
+		LayerParams &layer_params)
+{
+	// Find the layer that owns the layer params.
+	BOOST_FOREACH(const layer_ptr_type &layer, d_layers)
+	{
+		if (layer->get_layer_params().get() == &layer_params)
+		{
+			emit_layer_params_changed(Layer(layer), layer_params);
+
+			return;
+		}
+	}
+
+	// Shouldn't really be able to get here.
+	//
+	// However we won't treat it as an error in case a layer's params get modified
+	// just as (or after) the layer is getting removed for some reason.
+}
+
+
+void
 GPlatesAppLogic::ReconstructGraph::debug_reconstruct_graph_state()
 {
 	qDebug() << "\nRECONSTRUCT GRAPH:-";
@@ -936,9 +926,18 @@ GPlatesAppLogic::ReconstructGraph::emit_layer_activation_changed(
 
 
 void
+GPlatesAppLogic::ReconstructGraph::emit_layer_params_changed(
+		const Layer &layer,
+		LayerParams &layer_params)
+{
+	Q_EMIT layer_params_changed(*this, layer, layer_params);
+}
+
+
+void
 GPlatesAppLogic::ReconstructGraph::emit_layer_added_input_connection(
-		GPlatesAppLogic::Layer layer,
-		GPlatesAppLogic::Layer::InputConnection input_connection)
+		Layer layer,
+		Layer::InputConnection input_connection)
 {
 	Q_EMIT layer_added_input_connection(*this, layer, input_connection);
 }
@@ -946,8 +945,8 @@ GPlatesAppLogic::ReconstructGraph::emit_layer_added_input_connection(
 
 void
 GPlatesAppLogic::ReconstructGraph::emit_layer_about_to_remove_input_connection(
-		GPlatesAppLogic::Layer layer,
-		GPlatesAppLogic::Layer::InputConnection input_connection)
+		Layer layer,
+		Layer::InputConnection input_connection)
 {
 	Q_EMIT layer_about_to_remove_input_connection(*this, layer, input_connection);
 }
@@ -955,124 +954,9 @@ GPlatesAppLogic::ReconstructGraph::emit_layer_about_to_remove_input_connection(
 
 void
 GPlatesAppLogic::ReconstructGraph::emit_layer_removed_input_connection(
-		GPlatesAppLogic::Layer layer)
+		Layer layer)
 {
 	Q_EMIT layer_removed_input_connection(*this, layer);
-}
-
-
-GPlatesScribe::TranscribeResult
-GPlatesAppLogic::ReconstructGraph::transcribe(
-		GPlatesScribe::Scribe &scribe,
-		bool transcribed_construct_data)
-{
-	//
-	// Set up some transcribe contexts to help construct/transcribe various objects.
-	//
-
-	// Set up transcribe context for InputFileInfo.
-	GPlatesScribe::TranscribeContext<InputFileInfo> input_file_info_transcribe_context(*this);
-	GPlatesScribe::Scribe::ScopedTranscribeContextGuard<InputFileInfo>
-			input_file_info_transcribe_context_guard(
-					scribe,
-					input_file_info_transcribe_context);
-	// Set up transcribe context for ReconstructGraphImpl::Layer.
-	GPlatesScribe::TranscribeContext<ReconstructGraphImpl::Layer> layer_impl_transcribe_context(*this);
-	GPlatesScribe::Scribe::ScopedTranscribeContextGuard<ReconstructGraphImpl::Layer>
-			layer_impl_transcribe_context_guard(
-					scribe,
-					layer_impl_transcribe_context);
-	// Set up transcribe context for ReconstructLayerProxy.
-	GPlatesScribe::TranscribeContext<ReconstructLayerProxy> reconstruct_layer_proxy_transcribe_context(
-			d_application_state.get_reconstruct_method_registry());
-	GPlatesScribe::Scribe::ScopedTranscribeContextGuard<ReconstructLayerProxy>
-			reconstruct_layer_proxy_transcribe_context_guard(
-					scribe,
-					reconstruct_layer_proxy_transcribe_context);
-
-
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_input_files, "d_input_files") ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_layers, "d_layers") ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_default_reconstruction_tree_layer_stack, "d_default_reconstruction_tree_layer_stack") ||
-		!scribe.transcribe(TRANSCRIBE_SOURCE, d_identity_rotation_reconstruction_layer_proxy, "d_identity_rotation_reconstruction_layer_proxy"))
-	{
-		return scribe.get_transcribe_result();
-	}
-
-	d_add_or_remove_layers_group_nested_count = 0;
-
-
-	// Make sure each layer addition is part of an add layers group.
-	AddOrRemoveLayersGroup add_layers_group(*this);
-	add_layers_group.begin_add_or_remove_layers();
-
-	BOOST_FOREACH(const layer_ptr_type &layer_impl, d_layers)
-	{
-		// Wrap in a weak ref for the caller and so we can use our own public interface.
-		const Layer layer(layer_impl);
-
-		// Let clients know of the new layer.
-		Q_EMIT layer_added(*this, layer);
-
-		// Ensure a full reconstruction each time the layer task parameters of this layer are modified.
-		QObject::connect(
-				&layer_impl->get_layer_task_params(), SIGNAL(modified()),
-				&d_application_state, SLOT(reconstruct()));
-	}
-
-	// End the add layers group.
-	add_layers_group.end_add_or_remove_layers();
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
-}
-
-
-GPlatesScribe::TranscribeResult
-GPlatesAppLogic::ReconstructGraph::InputFileInfo::transcribe(
-		GPlatesScribe::Scribe &scribe,
-		bool transcribed_construct_data)
-{
-	if (!transcribed_construct_data)
-	{
-		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_input_file_ptr, "d_input_file_ptr"))
-		{
-			return scribe.get_transcribe_result();
-		}
-	}
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
-}
-
-
-GPlatesScribe::TranscribeResult
-GPlatesAppLogic::ReconstructGraph::InputFileInfo::transcribe_construct_data(
-		GPlatesScribe::Scribe &scribe,
-		GPlatesScribe::ConstructObject<InputFileInfo> &input_file_info)
-{
-	if (scribe.is_saving())
-	{
-		scribe.save(TRANSCRIBE_SOURCE, input_file_info->d_input_file_ptr, "d_input_file_ptr");
-	}
-	else // loading...
-	{
-		GPlatesScribe::LoadRef<input_file_ptr_type> input_file_ptr =
-				scribe.load<input_file_ptr_type>(TRANSCRIBE_SOURCE, "d_input_file_ptr");
-		if (!input_file_ptr.is_valid())
-		{
-			return scribe.get_transcribe_result();
-		}
-
-		// Get information that is not transcribed into the archive.
-		GPlatesScribe::TranscribeContext<InputFileInfo> &transcribe_context = scribe.get_transcribe_context<InputFileInfo>();
-		ReconstructGraph &reconstruct_graph = transcribe_context.reconstruct_graph;
-
-		// Construct the object from the constructor data.
-		input_file_info.construct_object(boost::ref(reconstruct_graph), input_file_ptr);
-
-		scribe.relocated(TRANSCRIBE_SOURCE, input_file_info->d_input_file_ptr, input_file_ptr);
-	}
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

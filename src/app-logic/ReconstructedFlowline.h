@@ -1,4 +1,4 @@
-/* $Id: ReconstructedVirtualGeomagneticPole.h 9024 2010-07-30 10:47:35Z elau $ */
+/* $Id: ReconstructedFlowline.h 9024 2010-07-30 10:47:35Z elau $ */
 
 
 /**
@@ -86,26 +86,31 @@ namespace GPlatesAppLogic
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const seed_point_geom_ptr_type &present_day_seed_point_geometry_ptr,
-				const feature_geom_ptr_type &feature_geometry_ptr,
+				const seed_point_geom_ptr_type &reconstructed_seed_point_geometry_ptr,
 				const flowline_geom_ptr_type &left_flowline_points,
 				const flowline_geom_ptr_type &right_flowline_points,
 				const GPlatesModel::integer_plate_id_type &left_plate_id,
 				const GPlatesModel::integer_plate_id_type &right_plate_id,
 				GPlatesModel::FeatureHandle &feature_handle,
-				GPlatesModel::FeatureHandle::iterator property_iterator)
+				GPlatesModel::FeatureHandle::iterator property_iterator,
+				// All reconstructed seed points (not just the one referenced by this ReconstructedFlowline).
+				// This is the reconstructed geometry in the base RFG class.
+				// It needs to be *all* seed points otherwise the geometry modification tools (eg, MoveVertex) won't work...
+				const feature_geom_ptr_type &reconstructed_geometry_)
 		{
 			return non_null_ptr_type(
 					new ReconstructedFlowline(
 							reconstruction_tree,
 							reconstruction_tree_creator,
 							present_day_seed_point_geometry_ptr,
-							feature_geometry_ptr,
+							reconstructed_seed_point_geometry_ptr,
 							left_flowline_points,
 							right_flowline_points,
 							left_plate_id,
 							right_plate_id,
 							feature_handle,
-							property_iterator),
+							property_iterator,
+							reconstructed_geometry_),
 							GPlatesUtils::NullIntrusivePointerHandler());
 		}
 
@@ -148,15 +153,18 @@ namespace GPlatesAppLogic
 		}
 
 		seed_point_geom_ptr_type
-		seed_point() const
+		present_day_seed_point() const
 		{
 			return d_present_day_seed_point;
 		}
-		
-		feature_geom_ptr_type
-		feature_geometry() const
+
+		/**
+		 * The reconstructed version of @a present_day_seed_point.
+		 */
+		seed_point_geom_ptr_type
+		reconstructed_seed_point() const
 		{
-			return d_feature_geometry;
+			return d_reconstructed_seed_point;
 		}
 
 		GPlatesModel::integer_plate_id_type
@@ -181,34 +189,35 @@ namespace GPlatesAppLogic
 		ReconstructedFlowline(
 				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const seed_point_geom_ptr_type &present_day_seed_point,
-				const feature_geom_ptr_type &feature_geometry_ptr,
+				const seed_point_geom_ptr_type &present_day_seed_point_geometry_ptr,
+				const seed_point_geom_ptr_type &reconstructed_seed_point_geometry_ptr,
 				const flowline_geom_ptr_type &left_flowline_points_,
 				const flowline_geom_ptr_type &right_flowline_points_,
 				const GPlatesModel::integer_plate_id_type &left_plate_id_,
 				const GPlatesModel::integer_plate_id_type &right_plate_id_,
 				GPlatesModel::FeatureHandle &feature_handle,
-				GPlatesModel::FeatureHandle::iterator property_iterator):
+				GPlatesModel::FeatureHandle::iterator property_iterator,
+				const feature_geom_ptr_type &reconstructed_geometry_):
 			ReconstructedFeatureGeometry(
 				reconstruction_tree_,
 				reconstruction_tree_creator,
 				feature_handle,
 				property_iterator,
-				feature_geometry_ptr,
+				reconstructed_geometry_,
 				ReconstructMethod::FLOWLINE,
 				boost::none,
 				boost::none,
 				boost::none),
-			d_feature_geometry(feature_geometry_ptr),
-			d_present_day_seed_point(present_day_seed_point),
+			d_present_day_seed_point(present_day_seed_point_geometry_ptr),
+			d_reconstructed_seed_point(reconstructed_seed_point_geometry_ptr),
 			d_left_flowline_points(left_flowline_points_),
 			d_right_flowline_points(right_flowline_points_),
 			d_left_plate_id(left_plate_id_),
 			d_right_plate_id(right_plate_id_)
 		{  }
 
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type d_feature_geometry;
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type d_present_day_seed_point;
+		seed_point_geom_ptr_type d_present_day_seed_point;
+		seed_point_geom_ptr_type d_reconstructed_seed_point;
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_left_flowline_points;
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_right_flowline_points;
 

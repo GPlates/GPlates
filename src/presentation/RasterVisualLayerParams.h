@@ -29,12 +29,11 @@
 #include <boost/optional.hpp>
 #include <QString>
 
+#include "RemappedColourPaletteParameters.h"
 #include "VisualLayerParams.h"
 
 #include "gui/Colour.h"
 #include "gui/RasterColourPalette.h"
-
-#include "model/FeatureCollectionHandle.h"
 
 #include "property-values/RasterType.h"
 
@@ -52,9 +51,9 @@ namespace GPlatesPresentation
 		static
 		non_null_ptr_type
 		create(
-				GPlatesAppLogic::LayerTaskParams &layer_task_params)
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params)
 		{
-			return new RasterVisualLayerParams(layer_task_params);
+			return new RasterVisualLayerParams(layer_params);
 		}
 
 		/**
@@ -88,35 +87,20 @@ namespace GPlatesPresentation
 				const GPlatesAppLogic::Layer &layer);
 
 		/**
-		 * Returns the filename of the file from which the current colour
-		 * palette was loaded, if it was loaded from a file.
-		 * If the current colour palette is auto-generated, returns the empty string.
+		 * Returns the current colour palette.
 		 */
-		const QString &
-		get_colour_palette_filename() const;
+		const GPlatesPresentation::RemappedColourPaletteParameters &
+		get_colour_palette_parameters() const
+		{
+			return d_colour_palette_parameters;
+		}
 
 		/**
-		 * Sets the current colour palette to be one that is loaded from a file.
-		 * @a filename must not be the empty string.
+		 * Sets the current colour palette.
 		 */
 		void
-		set_colour_palette(
-				const QString &filename,
-				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette);
-
-		/**
-		 * Causes the current colour palette to be auto-generated from the
-		 * raster in the layer, and sets the filename field to be the empty string.
-		 */
-		void
-		use_auto_generated_colour_palette();
-
-		/**
-		 * Returns the current colour palette, whether explicitly set as loaded
-		 * from a file, or auto-generated.
-		 */
-		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type
-		get_colour_palette() const;
+		set_colour_palette_parameters(
+				const GPlatesPresentation::RemappedColourPaletteParameters &colour_palette_parameters);
 
 		/**
 		 * Returns the type of the raster as an enumeration.
@@ -185,30 +169,16 @@ namespace GPlatesPresentation
 
 		explicit
 		RasterVisualLayerParams(
-				GPlatesAppLogic::LayerTaskParams &layer_task_params);
+				GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params);
 
 	private:
-		/**
-		 * See if any pertinent properties have changed.
-		 */
-		void
-		update(
-				bool always_emit_modified_signal = false);
 
-
+		bool d_colour_palette_parameters_initialised_from_raster;
 		/**
-		 * If the current colour palette was loaded from a file (typically a
-		 * CPT file), then variable this holds that filename.
-		 * Otherwise, if the current colour palette was auto-generated, this is
-		 * the empty string.
+		 * The current colour palette for this layer, whether set explicitly as loaded from a file,
+		 * or auto-generated.
 		 */
-		QString d_colour_palette_filename;
-
-		/**
-		 * The current colour palette for this layer, whether set explicitly as
-		 * loaded from a file, or auto-generated.
-		 */
-		GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type d_colour_palette;
+		GPlatesPresentation::RemappedColourPaletteParameters d_colour_palette_parameters;
 
 		/**
 		 * The type of raster the last time we examined it.

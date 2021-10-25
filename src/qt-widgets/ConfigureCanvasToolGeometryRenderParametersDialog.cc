@@ -141,6 +141,13 @@ GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::ConfigureCa
 			this,
 			SLOT(react_reconstruction_layer_line_width_hint_spinbox_value_changed(double)));
 
+	// Also update our GUI when the render geometry parameters change.
+	QObject::connect(
+			&d_rendered_geometry_parameters,
+			SIGNAL(parameters_changed(GPlatesViewOperations::RenderedGeometryParameters &)),
+			this,
+			SLOT(handle_rendered_geometry_parameters_changed()));
+
 	QtWidgetUtils::resize_based_on_size_hint(this);
 }
 
@@ -148,7 +155,7 @@ GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::ConfigureCa
 void
 GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::react_focused_feature_clicked_geometry_colour_changed()
 {
-	d_rendered_geometry_parameters.set_choose_feature_toolr_clicked_geometry_of_focused_feature_colour(
+	d_rendered_geometry_parameters.set_choose_feature_tool_clicked_geometry_of_focused_feature_colour(
 			d_focused_feature_clicked_geometry_colour_button->get_colour());
 }
 
@@ -230,4 +237,46 @@ GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::react_recon
 		double value)
 {
 	d_rendered_geometry_parameters.set_reconstruction_layer_line_width_hint(value);
+}
+
+
+void
+GPlatesQtWidgets::ConfigureCanvasToolGeometryRenderParametersDialog::handle_rendered_geometry_parameters_changed()
+{
+	// Note: Calling 'ChooseColourButton::set_colour()' will only emit a signal if the colour changes and
+	// 'QDoubleSpinBox::setValue()' will only emit signal if value changed.
+	// So we shouldn't get infinite recursion.
+
+	d_focused_feature_clicked_geometry_colour_button->set_colour(
+			d_rendered_geometry_parameters.get_choose_feature_tool_clicked_geometry_of_focused_feature_colour());
+
+	focused_feature_point_size_hint_spinbox->setValue(
+			d_rendered_geometry_parameters.get_choose_feature_tool_point_size_hint());
+
+	focused_feature_line_width_hint_spinbox->setValue(
+			d_rendered_geometry_parameters.get_choose_feature_tool_line_width_hint());
+
+	d_topology_focus_colour_button->set_colour(
+			d_rendered_geometry_parameters.get_topology_tool_focused_geometry_colour());
+
+	topology_focus_point_size_hint_spinbox->setValue(
+			d_rendered_geometry_parameters.get_topology_tool_focused_geometry_point_size_hint());
+
+	topology_focus_line_width_hint_spinbox->setValue(
+			d_rendered_geometry_parameters.get_topology_tool_focused_geometry_line_width_hint());
+
+	d_topology_sections_colour_button->set_colour(
+			d_rendered_geometry_parameters.get_topology_tool_topological_sections_colour());
+
+	topology_sections_point_size_hint_spinbox->setValue(
+			d_rendered_geometry_parameters.get_topology_tool_topological_sections_point_size_hint());
+
+	topology_sections_line_width_hint_spinbox->setValue(
+			d_rendered_geometry_parameters.get_topology_tool_topological_sections_line_width_hint());
+
+	reconstruction_layer_point_size_hint_spinbox->setValue(
+			d_rendered_geometry_parameters.get_reconstruction_layer_point_size_hint());
+
+	reconstruction_layer_line_width_hint_spinbox->setValue(
+			d_rendered_geometry_parameters.get_reconstruction_layer_line_width_hint());
 }

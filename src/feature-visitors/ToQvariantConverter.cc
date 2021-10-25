@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -27,6 +27,7 @@
 
 #include <QString>
 #include <QList>
+#include <QLocale>
 #include <boost/optional.hpp>
 
 #include "ToQvariantConverter.h"
@@ -36,6 +37,7 @@
 
 #include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
+#include "property-values/GpmlAge.h"
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlPolarityChronId.h"
@@ -48,6 +50,7 @@
 #include "property-values/XsInteger.h"
 #include "property-values/XsString.h"
 
+#include "utils/UnicodeString.h"
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -87,6 +90,46 @@ namespace
 		}
 	}
 
+	
+	QString
+	stringify(
+			const QString &q_str)
+	{
+		return q_str;
+	}
+
+	QString
+	stringify(
+			const double &dbl)
+	{
+		return QLocale::c().toString(dbl);
+	}
+
+	QString
+	stringify(
+			const GPlatesUtils::UnicodeString &uni_str)
+	{
+		return uni_str.qstring();
+	}
+	
+	template <typename T>
+	QString
+	stringify(
+			const GPlatesModel::StringContentTypeGenerator<T> &stringcontent)
+	{
+		return stringcontent.get().qstring();
+	}
+
+	// You know what C++ really needs? A defined-or operator. Like Perl has had since 5.10.
+	// And nice easy stringification.
+	// And I'm sure templates could do this easily but my tamplate-fu is apparently not strong enough.
+	template <typename T>
+	QString
+	stringify(
+			const boost::optional<T> &optional_thing)
+	{
+		return optional_thing ? stringify(optional_thing.get()) : "";
+	}
 }
 
 
@@ -128,6 +171,42 @@ GPlatesFeatureVisitors::ToQvariantConverter::visit_gml_time_period(
 	}
 }
 
+
+void
+GPlatesFeatureVisitors::ToQvariantConverter::visit_gpml_age(
+		const GPlatesPropertyValues::GpmlAge &gpml_age)
+{
+	static const QChar plus_minus_symbol = QChar(0x00B1);
+	
+	GPlatesPropertyValues::GpmlAge::AgeDefinition::AgeDefinitionType age_type = gpml_age.age_type();
+	GPlatesPropertyValues::GpmlAge::UncertaintyDefinition::UncertaintyDefinitionType unc_type = gpml_age.uncertainty_type();
+	QString stringified = "";
+	
+	if (age_type == GPlatesPropertyValues::GpmlAge::AgeDefinition::AGE_ABSOLUTE) {
+		stringified = stringify(gpml_age.get_age_absolute());
+	} else if (age_type == GPlatesPropertyValues::GpmlAge::AgeDefinition::AGE_NAMED) {
+		stringified = stringify(gpml_age.get_age_named().get().get());
+	} else if (age_type == GPlatesPropertyValues::GpmlAge::AgeDefinition::AGE_BOTH) {
+		stringified = QString("%1 (%2)")
+				.arg(gpml_age.get_age_absolute().get())
+				.arg(gpml_age.get_age_named().get().get().qstring());
+	}
+	
+	if (unc_type == GPlatesPropertyValues::GpmlAge::UncertaintyDefinition::UNC_PLUS_OR_MINUS) {
+		stringified.append(QString(" %1%2").arg(plus_minus_symbol).arg(stringify(gpml_age.get_uncertainty_plusminus())));
+	} else if (unc_type == GPlatesPropertyValues::GpmlAge::UncertaintyDefinition::UNC_RANGE) {
+		stringified.append(" [");
+		stringified.append(stringify(gpml_age.get_uncertainty_youngest_absolute()));
+		stringified.append(stringify(gpml_age.get_uncertainty_youngest_named()));
+		stringified.append("-");
+		stringified.append(stringify(gpml_age.get_uncertainty_oldest_absolute()));
+		stringified.append(stringify(gpml_age.get_uncertainty_oldest_named()));
+		stringified.append("]");
+	}
+	
+	d_found_values.push_back(QVariant(stringified));
+}
+	
 
 void
 GPlatesFeatureVisitors::ToQvariantConverter::visit_gpml_constant_value(

@@ -29,6 +29,8 @@
 
 #include <QDir>
 #include <QFileInfoList>
+#include <QMap>
+#include <QStringList>
 #include <boost/foreach.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
@@ -138,18 +140,6 @@ namespace GPlatesGui
 			return inst;
 		}
 
-		/*
-		* This function is a little bit tricky.
-		* The boost python object could exist in embedded python interpreter. 
-		* When we destruct object in python interpreter, the python GIL must be obtained.
-		* However, boost::python::object is actually a "smart pointer". We don't exactly know when it will be acturally destructed.
-		* Instead of acquiring python GIL all over the source code, we do it in this function.
-		* Put all python object which is not needed anymore in this recycle bin.
-		*/
-		void
-		recycle_python_object(
-				const boost::python::object& obj);
-
 
 		void
 		init_python_interpreter(
@@ -164,12 +154,41 @@ namespace GPlatesGui
 		void 
 		register_utils_scripts();
 
-		QFileInfoList
-		get_scripts();
 
+		/**
+		 * Returns a list of built-in scripts (stored internally in Qt resource files).
+		 */
+		QMap<QString/*module name*/, QString/*module filename*/>
+		get_internal_scripts();
+
+		/**
+		 * Returns a unique list of scripts (based on their module name) found in the external file search paths.
+		 */
+		QMap<QString/*module name*/, QFileInfo/*module filename*/>
+		get_external_scripts();
+
+
+		/**
+		 * Register an internal script (stored in Qt resource files).
+		 *
+		 * This excludes modules found in the external file search paths.
+		 */
 		void
-		register_script(
-				const QString& name);
+		register_internal_script(
+				const QString &internal_module_name,
+				const QString &internal_module_filename);
+
+		/**
+		 * Register a script that was found in the external file search paths.
+		 *
+		 * This excludes internal modules (stored in Qt resource files).
+		 *
+		 * Note: The module file path must already have been added to 'sys.path'.
+		 */
+		void
+		register_external_script(
+				const QString &external_module_name);
+
 
 		/**
 		 * Returns a thread on which Python code can be run off the main thread.
@@ -361,7 +380,10 @@ namespace GPlatesGui
 		*/
 		GPlatesQtWidgets::PythonConsoleDialog* d_python_console_dialog_ptr;
 
-		std::vector<QDir> d_scripts_paths;
+		/**
+		 * Paths to external scripts.
+		 */
+		std::vector<QDir> d_external_scripts_paths;
 
 		/**
 		 * If true, we stopped the event blackout temporarily because the PythonRunner

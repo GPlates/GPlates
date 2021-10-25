@@ -7,7 +7,7 @@
 # 300 and 700 Ma.
 #
 # The format for regular CPT files is described here:
-# http://www.soest.hawaii.edu/gmt/gmt/doc/gmt/html/GMT_Docs/node70.html
+# http://gmt.soest.hawaii.edu/doc/latest/GMT_Docs.html#regular-cpt-files
 #
 0	170	204	255	300	211	141	95
 300	211	141	95	700	145	111	111

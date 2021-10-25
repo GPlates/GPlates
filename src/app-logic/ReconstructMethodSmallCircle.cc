@@ -193,7 +193,7 @@ GPlatesAppLogic::ReconstructMethodSmallCircle::reconstruct_geometry(
 		bool reverse_reconstruct)
 {
 	// Get the values of the properties at present day.
-	ReconstructionFeatureProperties reconstruction_feature_properties(0/*reconstruction_time*/);
+	ReconstructionFeatureProperties reconstruction_feature_properties;
 
 	reconstruction_feature_properties.visit_feature(get_feature_ref());
 

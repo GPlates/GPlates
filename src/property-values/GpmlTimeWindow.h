@@ -50,7 +50,6 @@ namespace GPlatesPropertyValues
 			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
 			public GPlatesUtils::QtStreamable<GpmlTimeWindow>
 	{
-
 	public:
 
 		GpmlTimeWindow(
@@ -72,23 +71,18 @@ namespace GPlatesPropertyValues
 		const GpmlTimeWindow
 		deep_clone() const;
 
+		/**
+		 * Returns the 'const' time-dependent property value.
+		 */
 		const GPlatesModel::PropertyValue::non_null_ptr_to_const_type
 		time_dependent_value() const
 		{
 			return d_time_dependent_value;
 		}
 
-		// Note that, because the copy-assignment operator of PropertyValue is private,
-		// the PropertyValue referenced by the return-value of this function cannot be
-		// assigned-to, which means that this function does not provide a means to directly
-		// switch the PropertyValue within this GpmlTimeWindow instance.  (This
-		// restriction is intentional.)
-		//
-		// To switch the PropertyValue within this GpmlTimeWindow instance, use the
-		// function @a set_time_dependent_value below.
-		//
-		// (This overload is provided to allow the referenced PropertyValue instance to
-		// accept a FeatureVisitor instance.)
+		/**
+		 * Returns the 'non-const' time-dependent property value.
+		 */
 		const GPlatesModel::PropertyValue::non_null_ptr_type
 		time_dependent_value()
 		{
@@ -102,23 +96,18 @@ namespace GPlatesPropertyValues
 			d_time_dependent_value = v;
 		}
 
+		/**
+		 * Returns the 'const' time period.
+		 */
 		const GmlTimePeriod::non_null_ptr_to_const_type
 		valid_time() const
 		{
 			return d_valid_time;
 		}
 
-		// Note that, because the copy-assignment operator of GmlTimePeriod is private,
-		// the GmlTimePeriod referenced by the return-value of this function cannot be
-		// assigned-to, which means that this function does not provide a means to directly
-		// switch the GmlTimePeriod within this GpmlTimeWindow instance.  (This
-		// restriction is intentional.)
-		//
-		// To switch the GmlTimePeriod within this GpmlTimeWindow instance, use the
-		// function @a set_valid_time below.
-		//
-		// (This overload is provided to allow the referenced GmlTimePeriod instance to
-		// accept a FeatureVisitor instance.)
+		/**
+		 * Returns the 'non-const' time period.
+		 */
 		const GmlTimePeriod::non_null_ptr_type
 		valid_time()
 		{

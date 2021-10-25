@@ -88,17 +88,6 @@ GPlatesMaths::MultiPointOnSphere::MultiPointOnSphere(
 }
 
 
-GPlatesMaths::MultiPointOnSphere &
-GPlatesMaths::MultiPointOnSphere::operator=(
-		const MultiPointOnSphere &other)
-{
-	// Use the copy+swap idiom to enable strong exception safety.
-	MultiPointOnSphere dup(other);
-	this->swap(dup);
-	return *this;
-}
-
-
 GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
 GPlatesMaths::MultiPointOnSphere::test_proximity(
 		const ProximityCriteria &criteria) const
@@ -220,16 +209,7 @@ GPlatesMaths::MultiPointOnSphere::get_centroid() const
 	// Calculate the centroid if it's not cached.
 	if (!d_cached_calculations->centroid)
 	{
-		// The centroid is also the bounding small circle centre so see if that's been generated.
-		if (d_cached_calculations->bounding_small_circle)
-		{
-			d_cached_calculations->centroid =
-					d_cached_calculations->bounding_small_circle->get_centre();
-		}
-		else
-		{
-			d_cached_calculations->centroid = Centroid::calculate_points_centroid(*this);
-		}
+		d_cached_calculations->centroid = Centroid::calculate_points_centroid(*this);
 	}
 
 	return d_cached_calculations->centroid.get();

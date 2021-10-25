@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GPlatesUnitsDictionary version="0.1">
+   <!-- ===============================================================
+
+                           GPlates Units Dictionary
+
+        In order for GPlates to provide appropriate UI elements when
+        defining the units of measure used for geological data, this
+        file defines a dictionary of SI and non-SI units commonly used
+        in geoscience. This file can also define the appropriate unit
+        identifiers used in various domains e.g. GeoSciML OGC URNs,
+        EPSG numbers, and so on - without commiting GPlates to one
+        standard or the other.
+
+        The ultimate intention is for it to one day be useful in
+        reading those rare data files where units are tagged
+        accordingly with some suitable ID, and for GPlates to be able
+        to track units in its GPML files without needing to parse some
+        massive collection of XML documents that can only be served
+        up via some web service that resolves a series of URNs that
+        are provided from some other XML document referenced by another
+        XML document using XLinks.
+
+        But generally speaking, it's for making the UI not hard-code
+        a bunch of units into a combobox somewhere.
+
+        This file could _almost_ be a simple table in CSV format, but
+        CSV sucks and wouldn't be easily extensible.
+
+        References:-
+        http://en.wikipedia.org/wiki/International_System_of_Units
+        http://en.wikipedia.org/wiki/Non-SI_units_mentioned_in_the_SI
+        http://ecp.iedadata.org/schema/earthchem_schema.xsd
+
+        XML Author: James Clark, 2014-11-26
+
+        =============================================================== -->
+
+   <UnitList>
+      <!-- Some of the easy SI units -->
+      <Unit usePrefixes="1">
+         <Id domain="gplates">metre</Id>
+         <Id domain="usa">meter</Id>   <!-- to try and avoid the inevitable problems -->
+         <Name lang="en">metre</Name>
+         <Name lang="en_US">meter</Name>  <!-- I honestly have no clue how locales would interact with i18n in this case. Don't they measure everything in hogsheads anyway? -->
+         <Symbol>m</Symbol>
+         <Measuring>linear distance</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">gram</Id>
+         <Name lang="en">gram</Name>
+         <Symbol>g</Symbol>
+         <Measuring>mass</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">second</Id>
+         <Name lang="en">second</Name>
+         <Symbol>s</Symbol>
+         <Measuring>time</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">ampere</Id>
+         <Name lang="en">ampere</Name>
+         <Symbol>A</Symbol>
+         <Measuring>electric current</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">kelvin</Id>
+         <Name lang="en">kelvin</Name>
+         <Symbol>K</Symbol>
+         <Measuring>temperature</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">mole</Id>
+         <Name lang="en">mole</Name>
+         <Symbol>mol</Symbol>
+         <Measuring>amount of (chemical) substance</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">candela</Id>
+         <Name lang="en">candela</Name>
+         <Symbol>cd</Symbol>
+         <Measuring>luminous intensity</Measuring>
+      </Unit>
+
+      <!-- Derived SI units -->
+      <Unit usePrefixes="1">
+         <Id domain="gplates">degree_radian</Id>
+         <Name lang="en">radian</Name>
+         <Symbol>rad</Symbol>
+         <Measuring>angle</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">degree_steradian</Id>
+         <Name lang="en">steradian</Name>
+         <Symbol>sr</Symbol>
+         <Measuring>solid angle</Measuring>
+         <Reference>http://en.wikipedia.org/wiki/Steradian</Reference>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">hertz</Id>
+         <Name lang="en">hertz</Name>
+         <Symbol>Hz</Symbol>
+         <Measuring>frequency</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">newton</Id>
+         <Name lang="en">newton</Name>
+         <Symbol>N</Symbol>
+         <Measuring>force, weight</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">pascal</Id>
+         <Name lang="en">pascal</Name>
+         <Symbol>Pa</Symbol>
+         <Measuring>pressure, stress</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">joule</Id>
+         <Name lang="en">joule</Name>
+         <Symbol>J</Symbol>
+         <Measuring>energy, work, heat</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">watt</Id>
+         <Name lang="en">watt</Name>
+         <Symbol>W</Symbol>
+         <Measuring>power</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">coulomb</Id>
+         <Name lang="en">coulomb</Name>
+         <Symbol>C</Symbol>
+         <Measuring>electric charge</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">volt</Id>
+         <Name lang="en">volt</Name>
+         <Symbol>V</Symbol>
+         <Measuring>electric voltage</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">farad</Id>
+         <Name lang="en">farad</Name>
+         <Symbol>F</Symbol>
+         <Measuring>electric capacitance</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">ohm</Id>
+         <Name lang="en">ohm</Name>
+         <Symbol>Ω</Symbol>
+         <Measuring>electric resistance</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">siemens</Id>
+         <Name lang="en">siemens</Name>
+         <Symbol>S</Symbol>
+         <Measuring>electric conductance</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">weber</Id>
+         <Name lang="en">weber</Name>
+         <Symbol>Wb</Symbol>
+         <Measuring>magnetic flux</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">tesla</Id>
+         <Name lang="en">tesla</Name>
+         <Symbol>T</Symbol>
+         <Measuring>magnetic field strength</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">henry</Id>
+         <Name lang="en">henry</Name>
+         <Symbol>H</Symbol>
+         <Measuring>inductance</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">lumen</Id>
+         <Name lang="en">lumen</Name>
+         <Symbol>lm</Symbol>
+         <Measuring>luminous flux</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">lux</Id>
+         <Name lang="en">lux</Name>
+         <Symbol>lx</Symbol>
+         <Measuring>illuminance</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">becquerel</Id>
+         <Name lang="en">becquerel</Name>
+         <Symbol>Bq</Symbol>
+         <Measuring>radioactivity (decays per unit time)</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">gray</Id>
+         <Name lang="en">gray</Name>
+         <Symbol>Gy</Symbol>
+         <Measuring>absorbed dose of ionising radiation</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">sievert</Id>
+         <Name lang="en">sievert</Name>
+         <Symbol>Sv</Symbol>
+         <Measuring>equivalent dose of ionising radiation</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">katal</Id>
+         <Name lang="en">katal</Name>
+         <Symbol>kat</Symbol>
+         <Measuring>catalytic activity</Measuring>
+      </Unit>
+
+      <!-- Common things that aren't strictly SI -->
+      <Unit usePrefixes="0">
+         <Id domain="gplates">degree_celsius</Id>
+         <Name lang="en">celsius</Name>
+         <Symbol>°C</Symbol>
+         <Measuring>temperature</Measuring>
+      </Unit>
+      <Unit usePrefixes="0">
+         <Id domain="gplates">minute</Id>
+         <Name lang="en">minute</Name>
+         <Symbol>min</Symbol>
+         <Measuring>time</Measuring>
+      </Unit>
+      <Unit usePrefixes="0">
+         <Id domain="gplates">hour</Id>
+         <Name lang="en">hour</Name>
+         <Symbol>h</Symbol>
+         <Measuring>time</Measuring>
+      </Unit>
+      <Unit usePrefixes="0">
+         <Id domain="gplates">day</Id>
+         <Name lang="en">day</Name>
+         <Symbol>d</Symbol>
+         <Measuring>time</Measuring>
+      </Unit>
+      <Unit usePrefixes="0">
+         <Id domain="gplates">degree_angle</Id>
+         <Name lang="en">degree</Name>
+         <Symbol>°</Symbol>
+         <Measuring>angle</Measuring>
+      </Unit>
+      <Unit usePrefixes="0">
+         <Id domain="gplates">arcminute</Id>
+         <Name lang="en">arcminute</Name>
+         <Symbol>′</Symbol>
+         <Measuring>angle</Measuring>
+      </Unit>
+      <Unit usePrefixes="0">
+         <Id domain="gplates">arcsecond</Id>
+         <Name lang="en">arcsecond</Name>
+         <Symbol>″</Symbol>
+         <Measuring>angle</Measuring>
+      </Unit>
+      <Unit usePrefixes="0">
+         <Id domain="gplates">hectare</Id>
+         <Name lang="en">hectare</Name>
+         <Symbol>ha</Symbol>
+         <Measuring>area</Measuring>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">litre</Id>
+         <Id domain="usa">liter</Id>   <!-- to try and avoid the inevitable problems -->
+         <Name lang="en">litre</Name>
+         <Name lang="en_US">liter</Name>  <!-- I honestly have no clue how locales would interact with i18n in this case. Don't they measure everything in hogsheads anyway? -->
+         <Symbol>L</Symbol>
+         <Measuring>volume</Measuring>
+      </Unit>
+      <Unit usePrefixes="0">
+         <Id domain="gplates">metric_tonne</Id>
+         <Name lang="en">tonne</Name>
+         <Symbol>t</Symbol>
+         <Measuring>mass</Measuring>
+      </Unit>
+
+      <!-- Some units specific to geochemistry, gravimetry etc -->
+      <Unit usePrefixes="0">
+         <Id domain="gplates">parts_per_million</Id>
+         <Id domain="earthchem">ppm</Id>
+         <Name lang="en">parts per million</Name>
+         <Symbol>ppm</Symbol>
+      </Unit>
+      <Unit usePrefixes="1">
+         <Id domain="gplates">gal</Id>
+         <Name lang="en">gal</Name>
+         <Symbol>Gal</Symbol>
+         <Measuring>gravitational acceleration</Measuring>
+         <Reference>http://en.wikipedia.org/wiki/Gal_%28unit%29</Reference>
+         <!-- Common for e.g. Free-Air Anomaly measurement -->
+      </Unit>
+   </UnitList>
+
+   <PrefixList>
+      <Prefix name="deca"  symbol="da" factor="1e1" />
+      <Prefix name="hecto" symbol="h"  factor="1e2" />
+      <Prefix name="kilo"  symbol="k"  factor="1e3" />
+      <Prefix name="mega"  symbol="M"  factor="1e6" />
+      <Prefix name="giga"  symbol="G"  factor="1e9" />
+      <Prefix name="tera"  symbol="Y"  factor="1e12" />
+      <Prefix name="peta"  symbol="P"  factor="1e15" />
+      <Prefix name="exa"   symbol="E"  factor="1e18" />
+      <Prefix name="zetta" symbol="Z"  factor="1e21" />
+      <Prefix name="yotta" symbol="Y"  factor="1e24" />
+
+      <Prefix name="deci"  symbol="d"  factor="1e-1" />
+      <Prefix name="centi" symbol="c"  factor="1e-2" />
+      <Prefix name="milli" symbol="m"  factor="1e-3" />
+      <Prefix name="micro" symbol="μ"  factor="1e-6" />
+      <Prefix name="nano"  symbol="n"  factor="1e-9" />
+      <Prefix name="pico"  symbol="p"  factor="1e-12" />
+      <Prefix name="femto" symbol="f"  factor="1e-15" />
+      <Prefix name="atto"  symbol="a"  factor="1e-18" />
+      <Prefix name="zepto" symbol="z"  factor="1e-21" />
+      <Prefix name="yocto" symbol="y"  factor="1e-24" />
+   </PrefixList>
+</GPlatesUnitsDictionary>

@@ -38,11 +38,6 @@
 #include "HTMLColourNames.h"
 
 
-namespace GPlatesModel
-{
-	class Gpgim;
-}
-
 namespace GPlatesGui
 {
 	class Colour;
@@ -59,8 +54,7 @@ namespace GPlatesGui
 		 */
 		static
 		non_null_ptr_type
-		create(
-				const GPlatesModel::Gpgim &gpgim);
+		create();
 
 		virtual
 		boost::optional<Colour>
@@ -85,8 +79,7 @@ namespace GPlatesGui
 
 	private:
 
-		FeatureTypeColourPalette(
-				const GPlatesModel::Gpgim &gpgim);
+		FeatureTypeColourPalette();
 
 		/**
 		 * A mapping of FeatureType to Colours.

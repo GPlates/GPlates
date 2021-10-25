@@ -65,8 +65,7 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<GmlRectifiedGrid> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GmlRectifiedGrid>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GmlRectifiedGrid>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GmlRectifiedGrid> non_null_ptr_to_const_type;
 
@@ -74,6 +73,7 @@ namespace GPlatesPropertyValues
 		typedef std::vector<double> offset_vector_type;
 		typedef std::vector<offset_vector_type> offset_vector_list_type;
 		typedef std::map<GPlatesModel::XmlAttributeName, GPlatesModel::XmlAttributeValue> xml_attributes_type;
+
 
 		virtual
 		~GmlRectifiedGrid()
@@ -114,8 +114,7 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		clone() const
 		{
-			non_null_ptr_type dup(new GmlRectifiedGrid(*this));
-			return dup;
+			return non_null_ptr_type(new GmlRectifiedGrid(*this));
 		}
 
 		const non_null_ptr_type
@@ -134,6 +133,9 @@ namespace GPlatesPropertyValues
 			return d_limits;
 		}
 
+		/**
+		 * Sets the internal limits.
+		 */
 		void
 		set_limits(
 				const GmlGridEnvelope::non_null_ptr_to_const_type &limits_)
@@ -142,12 +144,18 @@ namespace GPlatesPropertyValues
 			update_instance_id();
 		}
 
+		/**
+		 * Returns the axes.
+		 */
 		const axes_list_type &
 		axes() const
 		{
 			return d_axes;
 		}
 
+		/**
+		 * Sets the internal axes.
+		 */
 		void
 		set_axes(
 				const axes_list_type &axes_)
@@ -162,6 +170,9 @@ namespace GPlatesPropertyValues
 			return d_origin;
 		}
 
+		/**
+		 * Sets the internal origin.
+		 */
 		void
 		set_origin(
 				const GmlPoint::non_null_ptr_to_const_type &origin_)
@@ -174,6 +185,9 @@ namespace GPlatesPropertyValues
 			update_instance_id();
 		}
 
+		/**
+		 * Returns the offset vectors.
+		 */
 		const offset_vector_list_type &
 		offset_vectors() const
 		{
@@ -207,7 +221,7 @@ namespace GPlatesPropertyValues
 			update_instance_id();
 		}
 
-		const boost::optional<Georeferencing::non_null_ptr_to_const_type> &
+		const boost::optional<Georeferencing::non_null_ptr_to_const_type>
 		convert_to_georeferencing() const;
 
 		/**

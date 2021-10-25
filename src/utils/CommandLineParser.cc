@@ -110,11 +110,20 @@ namespace
 		// Setup the options to parse.
 		command_line_parser.options(cmdline_options).positional(positional_options);
 
-		// Mac OS X sometimes (not sure exactly when) adds the '-psn...' command-line argument to
-		// the applications argument list (for example '-psn_0_548998').
+		// Mac OS X sometimes (when invoking from Finder or 'open' command) adds the
+		// '-psn...' command-line argument to the applications argument list
+		// (for example '-psn_0_548998').
 		// To avoid an unknown argument exception we allow unrecognised options and explicitly
 		// throw an exception ourselves if any unrecognised option does not match '-psn'.
+		//
+		// If the caller specifies the '-p' option (ie, it's no longer an unrecognised option)
+		// then the caller will need to filter out the 'sn_*' values themselves - I tried
+		// to filter it out here but there doesn't appear to be an official way to do that -
+		// unofficially could do something similar to what 'boost::program_options::collect_unrecognized()'
+		// does but that's iterating over options whereas removing an option is non-obvious.
+		//
 		// Note that we end up ignoring the '-psn...' option.
+		// Also note that it doesn't actually appear in 'argv[]' for some reason.
 #if defined(__APPLE__)
 		command_line_parser.allow_unregistered();
 

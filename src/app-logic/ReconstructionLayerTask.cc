@@ -27,8 +27,6 @@
 
 #include "ReconstructUtils.h"
 
-#include "scribe/Scribe.h"
-
 
 bool
 GPlatesAppLogic::ReconstructionLayerTask::can_process_feature_collection(
@@ -104,22 +102,4 @@ GPlatesAppLogic::ReconstructionLayerTask::update(
 {
 	d_reconstruction_layer_proxy->set_current_reconstruction_time(reconstruction->get_reconstruction_time());
 	d_reconstruction_layer_proxy->set_current_anchor_plate_id(reconstruction->get_anchor_plate_id());
-}
-
-
-GPlatesScribe::TranscribeResult
-GPlatesAppLogic::ReconstructionLayerTask::transcribe(
-		GPlatesScribe::Scribe &scribe,
-		bool transcribed_construct_data)
-{
-	// No need to transcribe 'LayerTaskParams' since it's an empty (base) class that's only used
-	// if a layer task has no parameters.
-
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_reconstruction_layer_proxy, "d_reconstruction_layer_proxy") ||
-		!scribe.transcribe_base<LayerTask, ReconstructionLayerTask>(TRANSCRIBE_SOURCE))
-	{
-		return scribe.get_transcribe_result();
-	}
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

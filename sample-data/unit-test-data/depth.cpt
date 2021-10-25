@@ -8,7 +8,7 @@
 # plates with an ID greater than or equal to 900 are coloured white.
 #
 # The format for regular CPT files is described here:
-# http://www.soest.hawaii.edu/gmt/gmt/doc/gmt/html/GMT_Docs/node70.html
+# http://gmt.soest.hawaii.edu/doc/latest/GMT_Docs.html#regular-cpt-files
 #
 # COLOR_MODEL!=HSV
 

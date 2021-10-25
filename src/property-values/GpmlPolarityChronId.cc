@@ -48,4 +48,3 @@ GPlatesPropertyValues::GpmlPolarityChronId::print_to(
 	}
 	return os;
 }
-

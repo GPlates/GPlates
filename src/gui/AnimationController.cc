@@ -431,10 +431,6 @@ GPlatesGui::AnimationController::set_view_time(
 	if ( ! GPlatesMaths::are_geo_times_approximately_equal(view_time(), new_time)) {
 		// This will perform a new reconstruction.
 		d_application_state_ptr->set_reconstruction_time(new_time);
-		
-		Q_EMIT view_time_changed(new_time);
-		// FIXME: We could probably use the view_time_changed signal here. 
-		Q_EMIT send_time_to_stdout(new_time);
 	}
 }
 
@@ -592,13 +588,15 @@ GPlatesGui::AnimationController::react_animation_playback_step()
 
 void
 GPlatesGui::AnimationController::react_view_time_changed(
-		GPlatesAppLogic::ApplicationState &/*application_state*/)
+		GPlatesAppLogic::ApplicationState &application_state)
 {
 	// If we get here then the reconstruction time has changed.
 
 	if (d_adjust_bounds_to_contain_current_time) {
 		ensure_bounds_contain_current_time();
 	}
+
+	Q_EMIT view_time_changed(application_state.get_current_reconstruction_time());
 }
 
 

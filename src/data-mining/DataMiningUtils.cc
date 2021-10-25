@@ -26,20 +26,20 @@
 #include <utility>
 #include <boost/foreach.hpp>
 
-#include "app-logic/AppLogicFwd.h"
 #include "app-logic/ReconstructionLayerProxy.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "feature-visitors/ShapefileAttributeFinder.h"
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "global/LogException.h"
+#include "maths/GeometryDistance.h"
+#include "maths/MathsUtils.h"
+#include "utils/Earth.h"
 
 #include "CoRegConfigurationTable.h"
 #include "Types.h"
 #include "OpaqueDataToDouble.h"
 #include "DataMiningUtils.h"
-#include "DualGeometryVisitor.h"
 #include "GetValueFromPropertyVisitor.h"
-#include "IsCloseEnoughChecker.h"
 
 
 using namespace GPlatesUtils;
@@ -92,23 +92,29 @@ GPlatesDataMining::DataMiningUtils::shortest_distance(
 	if(seed_geos.empty())
 		throw GPlatesGlobal::LogException(GPLATES_EXCEPTION_SOURCE,"Invalid input");
 
-	double dist = -1;
+	// Start with the maximum possible distance (two antipodal points).
+	double min_distance = GPlatesMaths::PI * GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS;
+
 	BOOST_FOREACH(const GPlatesAppLogic::ReconstructedFeatureGeometry* seed, seed_geos)
 	{
-		//use (DEFAULT_RADIUS_OF_EARTH_KMS * PI) as range, so the distance can always be calculated.
-		IsCloseEnoughChecker checker((DEFAULT_RADIUS_OF_EARTH_KMS * PI), true);
-		DualGeometryVisitor< IsCloseEnoughChecker > dual_visitor(
-				*(geo->reconstructed_geometry()),
-				*(seed->reconstructed_geometry()),
-				&checker);
-		dual_visitor.apply();
-		boost::optional<double> tmp = checker.distance();
-		if(!tmp)
-			continue;
-	
-		dist = (0 > dist) ? *tmp : (*tmp < dist) ? *tmp : dist;
+		const GPlatesMaths::AngularDistance angular_dist_between_geos = minimum_distance(
+				*geo->reconstructed_geometry(),
+				*seed->reconstructed_geometry(),
+				// If either (or both) geometry is a polygon then the distance will be zero
+				// if the other geometry overlaps its interior...
+				true/*geometry1_interior_is_solid*/,
+				true/*geometry2_interior_is_solid*/);
+
+		const double dist_between_geos = angular_dist_between_geos.calculate_angle().dval() *
+				GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS;
+
+		if (dist_between_geos < min_distance)
+		{
+			min_distance = dist_between_geos;
+		}
 	}
-	return dist;
+
+	return min_distance;
 }
 
 double
@@ -119,13 +125,19 @@ GPlatesDataMining::DataMiningUtils::shortest_distance(
 	if(first.empty()||second.empty())
 		throw GPlatesGlobal::LogException(GPLATES_EXCEPTION_SOURCE,"Invalid input");
 
-	double dist = -1;
+	// Start with the maximum possible distance (two antipodal points).
+	double min_distance = GPlatesMaths::PI * GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS;
+
 	BOOST_FOREACH(const GPlatesAppLogic::ReconstructedFeatureGeometry* r, second)
 	{
-		double tmp = shortest_distance(first,r);
-		dist = (0 > dist) ? tmp : (tmp < dist) ? tmp : dist;
+		const double shortest_dist = shortest_distance(first, r);
+
+		if (shortest_dist < min_distance)
+		{
+			min_distance = shortest_dist;
+		}
 	}
-	return dist;
+	return min_distance;
 }
 
 

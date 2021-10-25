@@ -46,9 +46,13 @@ namespace GPlatesMaths
 	 * Can also be generated from a multipoint by considering the order of points to form the
 	 * concave circumference of a polygon.
 	 *
-	 * This differs from @a PolygonMesh which contains mesh triangles *only* in the interior region
+	 * This differs from @a PolygonMesh which contains mesh triangles *only* in the interior fill region
 	 * of the polygon. @a PolygonFan, on the other hand, can have overlapping triangles and triangles
-	 * *outside* the interior region of the polygon is the polygon is concave.
+	 * *outside* the interior region of the polygon if the polygon is concave.
+	 *
+	 * This can be used when rendering interior fill region masks (the same fill region you'd get
+	 * if you used the more expensive @a PolygonMesh) by rendering all triangles and using
+	 * graphics hardware stencil buffer to invert each pixel's stencil mask each time pixel is rendered.
 	 */
 	class PolygonFan :
 			public GPlatesUtils::ReferenceCount<PolygonFan>
@@ -121,6 +125,9 @@ namespace GPlatesMaths
 
 		/**
 		 * Creates a @a PolygonFan object from a @a PolygonOnSphere.
+		 *
+		 * If the polygon has any interior rings then they are also added to the fan as
+		 * separated rings.
 		 */
 		static
 		non_null_ptr_to_const_type
@@ -208,14 +215,13 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Creates, and initialises, this polygon fan mesh using the specified range
-		 * of points as the polygon boundary.
+		 * Adds a fan ring to this fan mesh using the specified range of points as the ring boundary.
 		 */
 		template <typename PointOnSphereForwardIter>
 		void
-		initialise(
-				const PointOnSphereForwardIter polygon_points_begin,
-				const unsigned int num_points,
+		add_fan_ring(
+				const PointOnSphereForwardIter ring_points_begin,
+				const unsigned int num_ring_points,
 				const GPlatesMaths::UnitVector3D &centroid);
 	};
 }

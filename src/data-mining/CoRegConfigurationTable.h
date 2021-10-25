@@ -40,6 +40,10 @@
 
 #include "model/FeatureHandle.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+#include "scribe/TranscribeContext.h"
+
 
 namespace GPlatesDataMining
 {
@@ -59,6 +63,15 @@ namespace GPlatesDataMining
 		unsigned int raster_level_of_detail; // Only used if target layer is a raster.
 		bool raster_fill_polygons; // Currently only used if target layer is a raster.
 		unsigned index;
+
+	private: // Transcribe for sessions/projects...
+
+		friend class GPlatesScribe::Access;
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 
@@ -208,6 +221,15 @@ namespace GPlatesDataMining
 	private:
 		std::vector< ConfigurationTableRow > d_rows;
 		bool d_optimized; // if the table has been optimized, the rows are readonly.
+
+	private: // Transcribe for sessions/projects...
+
+		friend class GPlatesScribe::Access;
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 	inline
@@ -223,6 +245,37 @@ namespace GPlatesDataMining
 		return o;
 	}
 }
+
+namespace GPlatesScribe
+{
+	/**
+	 * Used to convert a layer to a layer index when saving a 'ConfigurationTableRow' and
+	 * vice versa when loading.
+	 */
+	template <>
+	class TranscribeContext<GPlatesDataMining::ConfigurationTableRow>
+	{
+	public:
+
+		typedef std::vector<GPlatesAppLogic::Layer> layer_seq_type;
+
+		explicit
+		TranscribeContext(
+				const layer_seq_type &layers) :
+			d_layers(layers)
+		{  }
+
+		const layer_seq_type &
+		get_layers() const
+		{
+			return d_layers;
+		}
+
+	private:
+		layer_seq_type d_layers;
+	};
+}
+
 #endif //GPLATESDATAMINING_COREGCONFIGURATIONTABLE_H
 
 

@@ -58,16 +58,15 @@ namespace GPlatesPropertyValues
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<GpmlStringList>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<GpmlStringList>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<GpmlStringList> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const GpmlStringList>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const GpmlStringList>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GpmlStringList> non_null_ptr_to_const_type;
+
 
 		/**
 		 * The type used to contain the list of strings.
@@ -99,8 +98,7 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		create_empty()
 		{
-			non_null_ptr_type ptr(new GpmlStringList);
-			return ptr;
+			return non_null_ptr_type(new GpmlStringList);
 		}
 
 		/**
@@ -133,8 +131,7 @@ namespace GPlatesPropertyValues
 				StringIter strings_begin_,
 				StringIter strings_end_)
 		{
-			non_null_ptr_type ptr(new GpmlStringList(strings_begin_, strings_end_));
-			return ptr;
+			return non_null_ptr_type(new GpmlStringList(strings_begin_, strings_end_));
 		}
 
 		/**
@@ -152,11 +149,10 @@ namespace GPlatesPropertyValues
 			return ptr;
 		}
 
-		const GpmlStringList::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			GpmlStringList::non_null_ptr_type dup(new GpmlStringList(*this));
-			return dup;
+			return non_null_ptr_type(new GpmlStringList(*this));
 		}
 
 		const GpmlStringList::non_null_ptr_type

@@ -68,14 +68,15 @@ namespace GPlatesQtWidgets
 	class ExportAnimationDialog;
 	class FeaturePropertiesDialog;
 	class FiniteRotationCalculatorDialog;
+	class GenerateCrustalThicknessPointsDialog;
 	class GenerateVelocityDomainCitcomsDialog;
 	class GenerateVelocityDomainLatLonDialog;
 	class GenerateVelocityDomainTerraDialog;
+	class HellingerDialog;
 	class KinematicGraphsDialog;
 	class LicenseDialog;
 	class LogDialog;
 	class ManageFeatureCollectionsDialog;
-	class HellingerDialog;
 	class PreferencesDialog;
 	class ReadErrorAccumulationDialog;
 	class SetCameraViewpointDialog;
@@ -180,6 +181,9 @@ namespace GPlatesGui
 
 		GPlatesQtWidgets::FiniteRotationCalculatorDialog &
 		finite_rotation_calculator_dialog();
+
+		GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog &
+		generate_crustal_thickness_points_dialog();
 
 		GPlatesQtWidgets::HellingerDialog &
 		hellinger_dialog();
@@ -304,13 +308,16 @@ namespace GPlatesGui
 		pop_up_finite_rotation_calculator_dialog();
 
 		void
-		pop_up_kinematics_tool_dialog();
+		pop_up_generate_crustal_thickness_points_dialog();
 
 		void
 		pop_up_hellinger_dialog();
 
 		void
 		pop_up_and_reposition_hellinger_dialog();
+
+		void
+		pop_up_kinematics_tool_dialog();
 
 		void
 		pop_up_license_dialog();
@@ -395,7 +402,8 @@ namespace GPlatesGui
 			DIALOG_DRAW_STYLE,
 			DIALOG_EXPORT_ANIMATION,
 			DIALOG_FEATURE_PROPERTIES,
-			DIALOG_FINITE_ROTATION_CALCULATOR_DIALOG,
+			DIALOG_FINITE_ROTATION_CALCULATOR,
+			DIALOG_GENERATE_CRUSTAL_THICKNESS_POINTS,
 			DIALOG_HELLINGER,
 			DIALOG_KINEMATICS_TOOL,
 			DIALOG_LICENSE,

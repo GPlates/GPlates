@@ -31,15 +31,13 @@
 #include <boost/shared_ptr.hpp>
 #include <QString>
 
+#include "LayerParams.h"
 #include "LayerTask.h"
-#include "LayerTaskParams.h"
 #include "ReconstructionLayerProxy.h"
 
 #include "maths/types.h"
 
 #include "model/FeatureCollectionHandle.h"
-
-#include "scribe/Transcribe.h"
 
 
 namespace GPlatesAppLogic
@@ -138,15 +136,15 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		LayerTaskParams &
-		get_layer_task_params()
+		LayerParams::non_null_ptr_type
+		get_layer_params()
 		{
-			return d_layer_task_params;
+			return d_layer_params;
 		}
 
 	private:
 
-		LayerTaskParams d_layer_task_params;
+		LayerParams::non_null_ptr_type d_layer_params;
 
 		/**
 		 * The layer proxy at the output of the layer.
@@ -156,18 +154,9 @@ namespace GPlatesAppLogic
 
 		//! Constructor.
 		ReconstructionLayerTask() :
+				d_layer_params(LayerParams::create()),
 				d_reconstruction_layer_proxy(ReconstructionLayerProxy::create())
 		{  }
-
-	private: // Transcribing...
-
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				bool transcribed_construct_data);
-
-		// Only the scribe system should be able to transcribe.
-		friend class GPlatesScribe::Access;
 	};
 }
 

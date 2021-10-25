@@ -1,10 +1,10 @@
 /* $Id$ */
 
 /**
- * \file 
+ * \file
  * $Revision$
  * $Date$
- * 
+ *
  * Copyright (C) 2011 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -36,6 +36,8 @@
 #include <QSpinBox>
 #include <QDoubleSpinBox>
 
+//class QMultiMap;
+
 
 namespace GPlatesUtils
 {
@@ -51,6 +53,28 @@ namespace GPlatesGui
 {
 	namespace ConfigGuiUtils
 	{
+
+		class MapValueEquals:
+				public std::unary_function<QString,bool>
+		{
+		public:
+			explicit
+			MapValueEquals(
+					QString value):
+				d_value(value)
+			{}
+
+			bool
+			operator()(
+					const QString &value) const
+			{
+				return (value == d_value);
+			}
+		private:
+			QString d_value;
+		};
+
+
 		/**
 		 * Given a ConfigBundle (or UserPreferences) and parent widget, create a QTableView that
 		 * is linked to the ConfigBundle; changes in one will be reflected in the other.
@@ -100,12 +124,6 @@ namespace GPlatesGui
 				const QString &key,
 				QAbstractButton *reset_button);
 
-		void
-		link_button_group_to_preference(
-				QButtonGroup *button_group,
-				GPlatesUtils::ConfigInterface &config,
-				const QString &key,
-				QAbstractButton *reset_button);
 
 
 		class ConfigWidgetAdapter :
@@ -122,7 +140,7 @@ namespace GPlatesGui
 			virtual
 			~ConfigWidgetAdapter()
 			{  }
-		
+
 		Q_SIGNALS:
 			
 			void
@@ -140,13 +158,13 @@ namespace GPlatesGui
 			void
 			value_changed(
 					double value);
-		
+
 		public Q_SLOTS:
 			
 			void
 			handle_key_value_updated(
 					QString key);
-		
+
 			void
 			handle_widget_value_updated(
 					QString value);
@@ -188,11 +206,15 @@ namespace GPlatesGui
 		{
 			Q_OBJECT
 		public:
+
+			typedef QMap<int,QString> button_enum_to_description_map_type;
+
 			explicit
 			ConfigButtonGroupAdapter(
 					QButtonGroup *button_group,
 					GPlatesUtils::ConfigInterface &config,
-					const QString &key);
+					const QString &key,
+					const button_enum_to_description_map_type &button_to_description_map);
 
 			virtual
 			~ConfigButtonGroupAdapter()
@@ -228,7 +250,17 @@ namespace GPlatesGui
 			QPointer<QButtonGroup> d_button_group_ptr;
 			GPlatesUtils::ConfigInterface &d_config;
 			QString d_key;
+			const button_enum_to_description_map_type &d_button_to_description_map;
 		};
+
+
+		void
+		link_button_group_to_preference(
+				QButtonGroup *button_group,
+				GPlatesUtils::ConfigInterface &config,
+				const QString &key,
+				const GPlatesGui::ConfigGuiUtils::ConfigButtonGroupAdapter::button_enum_to_description_map_type &map,
+				QAbstractButton *reset_button);
 	}
 }
 

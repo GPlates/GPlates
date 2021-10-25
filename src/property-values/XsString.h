@@ -57,10 +57,10 @@ namespace GPlatesPropertyValues
 		typedef GPlatesUtils::non_null_intrusive_ptr<XsString> non_null_ptr_type;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const XsString>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const XsString>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<const XsString> non_null_ptr_to_const_type;
+
 
 		virtual
 		~XsString()
@@ -71,18 +71,16 @@ namespace GPlatesPropertyValues
 		create(
 				const GPlatesUtils::UnicodeString &s)
 		{
-			XsString::non_null_ptr_type ptr(new XsString(s));
-			return ptr;
+			return non_null_ptr_type(new XsString(s));
 		}
 
-		const XsString::non_null_ptr_type
+		const non_null_ptr_type
 		clone() const
 		{
-			XsString::non_null_ptr_type dup(new XsString(*this));
-			return dup;
+			return non_null_ptr_type(new XsString(*this));
 		}
 
-		const XsString::non_null_ptr_type
+		const non_null_ptr_type
 		deep_clone() const
 		{
 			// This class doesn't reference any mutable objects by pointer, so there's
@@ -109,10 +107,6 @@ namespace GPlatesPropertyValues
 		 * Set the TextContent contained within this XsString to @a tc.
 		 * TextContent can be created by passing a UnicodeString in to
 		 * TextContent's constructor.
-		 * 
-		 * FIXME: when we have undo/redo, this act should cause
-		 * a new revision to be propagated up to the Feature which
-		 * contains this PropertyValue.
 		 */
 		void
 		set_value(

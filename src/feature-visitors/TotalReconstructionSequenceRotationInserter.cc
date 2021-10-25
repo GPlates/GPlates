@@ -25,9 +25,9 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-#include <QDebug>
 
 #include <boost/none.hpp>  // boost::none
+#include <QDebug>
 
 #include "TotalReconstructionSequencePlateIdFinder.h"
 
@@ -49,7 +49,6 @@
 #include "property-values/GpmlIrregularSampling.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlTimeSample.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
 
 /*
 namespace
@@ -70,13 +69,11 @@ namespace
 
 GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::TotalReconstructionSequenceRotationInserter(
 		const double &recon_time,
-		const GPlatesMaths::Rotation &rotation_to_apply,
-		const QString &comment):
+		const GPlatesMaths::Rotation &rotation_to_apply) :
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
 	d_rotation_to_apply(rotation_to_apply),
 	d_is_expecting_a_finite_rotation(false),
 	d_trp_time_matches_exactly(false),
-	d_comment(comment),
 	d_grot_proxy(NULL),
 	d_moving_plate_id(0),
 	d_fixed_plate_id(0)
@@ -153,32 +150,22 @@ void
 GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_finite_rotation(
 		GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
 {
-	if (d_is_expecting_a_finite_rotation) {
+	if (d_is_expecting_a_finite_rotation)
+	{
 		// The visitor was expecting a FiniteRotation, which means the structure of the
 		// Total Reconstruction Sequence is (more or less) correct.
-		if (d_trp_time_matches_exactly) {
+		if (d_trp_time_matches_exactly)
+		{
 			// The time of the total reconstruction pole (TRP) matches exactly, so
 			// we'll update the finite rotation in place, right now.
-			GPlatesMaths::FiniteRotation updated_finite_rotation =
-					GPlatesMaths::compose(d_rotation_to_apply,
-							gpml_finite_rotation.finite_rotation());
-			gpml_finite_rotation.set_finite_rotation(updated_finite_rotation);
-			GPlatesFileIO::RotationPoleData 
-				new_pole(
-						updated_finite_rotation,
-						d_moving_plate_id,
-						d_fixed_plate_id,
-						d_recon_time.value()),
-				old_pole(
-						gpml_finite_rotation.finite_rotation(),
-						d_moving_plate_id,
-						d_fixed_plate_id,
-						d_recon_time.value());
-			if(d_grot_proxy)
-			{
-				d_grot_proxy->update_pole(old_pole, new_pole);
-			}
-		} else {
+			update_finite_rotation(gpml_finite_rotation);
+
+			// The time of the total reconstruction pole (TRP) matches exactly, so
+			// we'll update the pole metadata.
+			update_pole_metadata(gpml_finite_rotation);
+		}
+		else
+		{
 			// The finite rotation needs to be interpolated and a new time-sample needs
 			// to be inserted.  That means this function will be called twice by
 			// 'visit_gpml_irregular_sampling', first to obtain the finite rotation in
@@ -191,7 +178,9 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			d_finite_rotation = gpml_finite_rotation.finite_rotation();
 		}
 		d_is_expecting_a_finite_rotation = false;
-	} else {
+	}
+	else
+	{
 		// FIXME:  Should we complain?
 	}
 }
@@ -265,10 +254,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 		d_trp_time_matches_exactly = true;
 		iter->value()->accept_visitor(*this);
 
-                // And update the comment field.
-                boost::intrusive_ptr<XsString> description =
-                        XsString::create(GPlatesUtils::make_icu_string_from_qstring(d_comment)).get();
-                iter->set_description(description);
+        // Note that we leave the comment unmodified.
 
 		// Did the visitor successfully collect the FiniteRotation?
 		if ( ! d_finite_rotation) {
@@ -370,23 +356,14 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 					GPlatesMaths::compose(d_rotation_to_apply, interpolated_finite_rotation);
 
 			// Create the new time-sample.
-			boost::optional<PropertyValue::non_null_ptr_type> value_opt;
-			if(dynamic_cast<GpmlTotalReconstructionPole*>(iter->value().get()))
-			{
-				//if the rotation feature is from a .grot file, 
-				//we need to create GpmlTotalReconstructionPole instead of GpmlFiniteRotation.
-				value_opt = GpmlTotalReconstructionPole::non_null_ptr_type(
-					new GpmlTotalReconstructionPole(updated_finite_rotation));
-			}
-			else
-			{
-				value_opt = GpmlFiniteRotation::create(updated_finite_rotation);
-			}
-			PropertyValue::non_null_ptr_type value = *value_opt;
+			GpmlFiniteRotation::non_null_ptr_type value = GpmlFiniteRotation::create(updated_finite_rotation);
+			// Set/modify the pole metadata (if needed) in the GpmlFiniteRotation.
+			set_pole_metadata(*value);
+
 			GmlTimeInstant::non_null_ptr_type valid_time =
 					ModelUtils::create_gml_time_instant(d_recon_time);
 			boost::intrusive_ptr<XsString> description =
-					XsString::create(GPlatesUtils::make_icu_string_from_qstring(d_comment)).get();
+					XsString::create(GPlatesUtils::UnicodeString()).get();
 			StructuralType value_type =
 					StructuralType::create_gpml("FiniteRotation");
 			GpmlTimeSample new_time_sample(value, valid_time, description, value_type);
@@ -418,10 +395,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 			d_trp_time_matches_exactly = true;
 			iter->value()->accept_visitor(*this);
 
-                        // Update the comment field too.
-                        boost::intrusive_ptr<XsString> description =
-                                        XsString::create(GPlatesUtils::make_icu_string_from_qstring(d_comment)).get();
-                        iter->set_description(description);
+            // Note that we leave the comment unmodified.
 
 			// Did the visitor successfully collect the FiniteRotation?
 			if ( ! d_finite_rotation) {
@@ -440,3 +414,45 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::visit_gpml_
 	// Should we complain?
 }
 
+
+void
+GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::update_finite_rotation(
+		GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
+{
+	const GPlatesMaths::FiniteRotation updated_finite_rotation =
+			GPlatesMaths::compose(d_rotation_to_apply, gpml_finite_rotation.finite_rotation());
+	gpml_finite_rotation.set_finite_rotation(updated_finite_rotation);
+
+	if (d_grot_proxy)
+	{
+		const GPlatesFileIO::RotationPoleData new_pole(
+				updated_finite_rotation,
+				d_moving_plate_id,
+				d_fixed_plate_id,
+				d_recon_time.value());
+		const GPlatesFileIO::RotationPoleData old_pole(
+				gpml_finite_rotation.finite_rotation(),
+				d_moving_plate_id,
+				d_fixed_plate_id,
+				d_recon_time.value());
+
+		d_grot_proxy->update_pole(old_pole, new_pole);
+	}
+}
+
+
+void
+GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::update_pole_metadata(
+		GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
+{
+	set_pole_metadata(gpml_finite_rotation);
+
+	// TODO: Update the GROT proxy.
+}
+
+
+void
+GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::set_pole_metadata(
+		GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation)
+{
+}

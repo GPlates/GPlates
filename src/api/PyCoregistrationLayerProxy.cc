@@ -30,7 +30,6 @@
 
 #if !defined(GPLATES_NO_PYTHON)
 
-#include "app-logic/AppLogicFwd.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "data-mining/DataMiningUtils.h"
 #include "opengl/GLContext.h"

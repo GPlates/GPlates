@@ -891,7 +891,7 @@ GPlatesViewOperations::GeometryBuilder::add_secondary_geometry(
 {
 	const boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> rfg =
 			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ReconstructedFeatureGeometry>(recon_geom.get());
+					const GPlatesAppLogic::ReconstructedFeatureGeometry *>(recon_geom.get());
 	if (rfg)
 	{
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = rfg.get()->reconstructed_geometry();

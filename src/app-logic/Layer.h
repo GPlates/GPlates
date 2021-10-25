@@ -42,6 +42,7 @@
 #include "FeatureCollectionFileState.h"
 #include "LayerInputChannelName.h"
 #include "LayerInputChannelType.h"
+#include "LayerParams.h"
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
 #include "LayerTaskType.h"
@@ -53,13 +54,10 @@
 
 #include "model/FeatureCollectionHandle.h"
 
-#include "scribe/Transcribe.h"
-
 
 namespace GPlatesAppLogic
 {
 	class LayerTask;
-	class LayerTaskParams;
 
 	/**
 	 * Wrapper around a layer of @a ReconstructGraph that can be used to query the layer.
@@ -143,16 +141,6 @@ namespace GPlatesAppLogic
 
 		private:
 			boost::weak_ptr<ReconstructGraphImpl::Data> d_impl;
-
-		private: // Transcribing...
-
-			GPlatesScribe::TranscribeResult
-			transcribe(
-					GPlatesScribe::Scribe &scribe,
-					bool transcribed_construct_data);
-
-			// Only the scribe system should be able to transcribe.
-			friend class GPlatesScribe::Access;
 		};
 
 
@@ -263,16 +251,6 @@ namespace GPlatesAppLogic
 
 		private:
 			boost::weak_ptr<ReconstructGraphImpl::LayerInputConnection> d_impl;
-
-		private: // Transcribing...
-
-			GPlatesScribe::TranscribeResult
-			transcribe(
-					GPlatesScribe::Scribe &scribe,
-					bool transcribed_construct_data);
-
-			// Only the scribe system should be able to transcribe.
-			friend class GPlatesScribe::Access;
 		};
 
 
@@ -536,10 +514,10 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Returns a non-const reference to the additional parameters and
-		 * configuration options of the associated layer task.
+		 * configuration options of this layer.
 		 */
-		LayerTaskParams &
-		get_layer_task_params();
+		LayerParams::non_null_ptr_type
+		get_layer_params() const;
 
 
 		/**
@@ -634,16 +612,6 @@ namespace GPlatesAppLogic
 		void
 		set_auto_created(
 				bool auto_created = true);
-
-	private: // Transcribing...
-
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				bool transcribed_construct_data);
-
-		// Only the scribe system should be able to transcribe.
-		friend class GPlatesScribe::Access;
 	};
 }
 

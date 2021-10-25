@@ -29,6 +29,7 @@
 #define GPLATES_MODEL_IDTYPEGENERATOR_H
 
 #include <vector>
+#include <boost/operators.hpp>
 #include <boost/scoped_ptr.hpp>
 
 #include "StringSetSingletons.h"
@@ -64,7 +65,11 @@ namespace GPlatesModel
 	 * use StringContentTypeGenerator.
 	 */
 	template<typename SingletonType, typename BackRefTargetType>
-	class IdTypeGenerator
+	class IdTypeGenerator :
+			// NOTE: Base class chaining is used to avoid increasing sizeof(IdTypeGenerator) due to multiple
+			// inheritance from several empty base classes...
+			public boost::less_than_comparable< IdTypeGenerator<SingletonType, BackRefTargetType>,
+					boost::equality_comparable< IdTypeGenerator<SingletonType, BackRefTargetType> > >
 	{
 	public:
 		typedef BackRefTargetType back_ref_target_type;
@@ -303,6 +308,27 @@ namespace GPlatesModel
 			return d_sh_iter == other.d_sh_iter;
 		}
 
+		/**
+		 * Equality comparison operator - inequality operator provided by 'boost::equality_comparable'.
+		 */
+		bool
+		operator==(
+				const IdTypeGenerator &other) const {
+			return is_equal_to(other);
+		}
+
+		/**
+		 * Less-than operator - provided so @a IdTypeGenerator can be used as a key in std::map.
+		 *
+		 * The other comparison operators are provided by boost::less_than_comparable.
+		 */
+		bool
+		operator<(
+				const IdTypeGenerator &other) const
+		{
+			return *d_sh_iter < *other.d_sh_iter;
+		}
+
 	private:
 
 		shared_iterator_type d_sh_iter;
@@ -319,24 +345,6 @@ namespace GPlatesModel
 	GPlatesModel::IdTypeGenerator<SingletonType, BackRefTargetType>::is_loaded(
 			const GPlatesUtils::UnicodeString &s) {
 		return SingletonType::instance().contains(s);
-	}
-
-	template<typename SingletonType, typename BackRefTargetType>
-	inline
-	bool
-	operator==(
-			const IdTypeGenerator<SingletonType, BackRefTargetType> &c1,
-			const IdTypeGenerator<SingletonType, BackRefTargetType> &c2) {
-		return c1.is_equal_to(c2);
-	}
-
-	template<typename SingletonType, typename BackRefTargetType>
-	inline
-	bool
-	operator!=(
-			const IdTypeGenerator<SingletonType, BackRefTargetType> &c1,
-			const IdTypeGenerator<SingletonType, BackRefTargetType> &c2) {
-		return ! c1.is_equal_to(c2);
 	}
 
 }

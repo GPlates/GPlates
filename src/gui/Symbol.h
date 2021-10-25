@@ -29,6 +29,10 @@
 
 #include "model/FeatureType.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
+
 namespace GPlatesGui
 {
 
@@ -42,6 +46,9 @@ namespace GPlatesGui
 	    CIRCLE,
 	    CROSS,
 	    STRAIN_MARKER,
+
+		// NOTE: Any new values should also be added to @a transcribe.
+
 	    NUM_SYMBOLS
 	};
 
@@ -66,6 +73,15 @@ namespace GPlatesGui
 		boost::optional<double> d_scale_x;
 		boost::optional<double> d_scale_y;
 		boost::optional<double> d_angle;
+
+	private: // Transcribe for sessions/projects...
+
+		friend class GPlatesScribe::Access;
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
     };
 
     typedef std::pair<GPlatesModel::FeatureType,Symbol> feature_type_symbol_pair_type;
@@ -78,6 +94,15 @@ namespace GPlatesGui
     get_symbol_type_from_string( 
 		const QString &symbol_string);
 
+
+	/**
+	 * Transcribe for sessions/projects.
+	 */
+	GPlatesScribe::TranscribeResult
+	transcribe(
+			GPlatesScribe::Scribe &scribe,
+			Symbol::SymbolType &symbol_type,
+			bool transcribed_construct_data);
 }
 
 #endif // GPLATES_GUI_SYMBOL_H

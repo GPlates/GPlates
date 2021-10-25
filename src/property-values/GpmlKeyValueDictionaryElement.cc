@@ -63,4 +63,3 @@ GPlatesPropertyValues::GpmlKeyValueDictionaryElement::operator==(
 		*d_value == *other.d_value &&
 		d_value_type == other.d_value_type;
 }
-

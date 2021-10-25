@@ -50,7 +50,6 @@
 
 #include "model/ChangesetHandle.h"
 #include "model/FeatureRevision.h"
-#include "model/Gpgim.h"
 #include "model/Model.h"
 #include "model/ModelUtils.h"
 #include "model/TopLevelPropertyInline.h"
@@ -389,14 +388,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		static const GPlatesModel::PropertyName valid_time_property_name =
 			GPlatesModel::PropertyName::create_gml("validTime");
 
-		const GPlatesPropertyValues::GmlTimePeriod *time_period;
-
-		GPlatesFeatureVisitors::get_property_value(
-			feature_ref, valid_time_property_name, time_period);
+		boost::optional<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type> time_period =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimePeriod>(
+				feature_ref, valid_time_property_name);
 	
 		// Casting time details
 		GPlatesPropertyValues::GmlTimePeriod* tp = 
-		const_cast<GPlatesPropertyValues::GmlTimePeriod *>( time_period );
+		const_cast<GPlatesPropertyValues::GmlTimePeriod *>( time_period.get().get() );
 	
 		// GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type ttpp =
 		GPlatesUtils::non_null_intrusive_ptr<
@@ -491,7 +489,6 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 	 */
 	GPlatesModel::FeatureHandle::weak_ref
 	create_feature(
-			GPlatesModel::ModelInterface &model, 
 			const GPlatesModel::FeatureType &feature_type,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header)
@@ -607,8 +604,6 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_common(
-			GPlatesModel::ModelInterface &model,
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq,
@@ -619,7 +614,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		using namespace GPlatesModel;
 
 		GPlatesModel::FeatureHandle::weak_ref feature_handle =
-				create_feature(model, feature_type, collection, header);
+				create_feature(feature_type, collection, header);
 
 		const integer_plate_id_type plate_id = header->plate_id_number();
 		const integer_plate_id_type conjugate_plate_id = header->conjugate_plate_id_number();
@@ -628,13 +623,20 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		const GeoTimeInstant geo_time_instant_end(
 				create_geo_time_instant(header->age_of_disappearance()));
 
-		// Wrap a "gpml:plateId" in a "gpml:ConstantValue" and append it as the
-		// "gpml:reconstructionPlateId" property.
-		GpmlPlateId::non_null_ptr_type recon_plate_id = GpmlPlateId::create(plate_id);
-		feature_handle->add(
-				TopLevelPropertyInline::create(
-					PropertyName::create_gpml("reconstructionPlateId"),
-					ModelUtils::create_gpml_constant_value(recon_plate_id)));
+		// Ignore a reconstruction plate id of 999 (it's a hard-coded default value for no-plate-id).
+		if (plate_id != 999)
+		{
+			// Attempt to add the reconstruction plate id to the feature.
+			// If the feature type does not support it (according to GPGIM) then it won't get added.
+			// Pretty much all feature types support a reconstruction plate id so should be no problem.
+			GPlatesModel::ModelUtils::add_property(
+					feature_handle,
+					GPlatesModel::PropertyName::create_gpml("reconstructionPlateId"),
+					GpmlPlateId::create(plate_id),
+					true/*check_property_name_allowed_for_feature_type*/,
+					false/*check_property_multiplicity*/,
+					false/*check_property_value_type*/);
+		}
 
 		// Ignore a conjugate plate id of 999 (it's a hard-coded default value for no-plate-id).
 		if (conjugate_plate_id != 999)
@@ -645,7 +647,9 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 					feature_handle,
 					GPlatesModel::PropertyName::create_gpml("conjugatePlateId"),
 					GpmlPlateId::create(conjugate_plate_id),
-					gpgim);
+					true/*check_property_name_allowed_for_feature_type*/,
+					false/*check_property_multiplicity*/,
+					false/*check_property_value_type*/);
 		}
 
 		// For each geometry in the feature append the appropriate geometry property value
@@ -691,13 +695,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 	 */
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_multi_point_feature(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
-			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
-			const geometry_seq_type &geometry_seq,
-			const GPlatesModel::FeatureType &feature_type,
-			const GPlatesModel::PropertyName &geometry_property_name)
+		GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
+		GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
+		const geometry_seq_type &geometry_seq,
+		const GPlatesModel::FeatureType &feature_type,
+		const GPlatesModel::PropertyName &geometry_property_name)
 	{
 		// Check that geometry_seq is appropriate for a multipoint. 
 		if (!sequence_is_valid_multipoint(geometry_seq))
@@ -706,7 +708,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		}
 		
 		// Assume create_common will do the right thing with append_appropriate_geometry.
-		return create_common(model, gpgim, collection, header, geometry_seq, feature_type, geometry_property_name);
+		return create_common(collection, header, geometry_seq, feature_type, geometry_property_name);
 		
 	}
 
@@ -716,8 +718,6 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 	 */
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_single_point_feature(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq,
@@ -735,19 +735,17 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			throw GPlatesFileIO::ReadErrors::MoreThanOneDistinctPoint;
 		}
 		// Assume create_common will do the right thing with append_appropriate_geometry.
-		return create_common(model, gpgim, collection, header, geometry_seq, feature_type, geometry_property_name);
+		return create_common(collection, header, geometry_seq, feature_type, geometry_property_name);
 	}
 
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_fault(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq, 
+		return create_common(collection, header, geometry_seq, 
 				GPlatesModel::FeatureType::create_gpml("Fault"), 
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
@@ -755,14 +753,12 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_normal_fault(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
-				create_fault(model, gpgim, collection, header, geometry_seq);
+				create_fault(collection, header, geometry_seq);
 		
 		const GPlatesPropertyValues::Enumeration::non_null_ptr_type dip_slip_property_value =
 				GPlatesPropertyValues::Enumeration::create(
@@ -779,14 +775,12 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_reverse_fault(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
-				create_fault(model, gpgim, collection, header, geometry_seq);
+				create_fault(collection, header, geometry_seq);
 		
 		const GPlatesPropertyValues::Enumeration::non_null_ptr_type dip_slip_property_value =
 				GPlatesPropertyValues::Enumeration::create(
@@ -803,14 +797,12 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_thrust_fault(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
-				create_reverse_fault(model, gpgim, collection, header, geometry_seq);
+				create_reverse_fault(collection, header, geometry_seq);
 
 		const GPlatesPropertyValues::XsString::non_null_ptr_type subcategory_property_value =
 				GPlatesPropertyValues::XsString::create("Thrust");
@@ -825,14 +817,12 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_strike_slip_fault(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
-				create_fault(model, gpgim, collection, header, geometry_seq);
+				create_fault(collection, header, geometry_seq);
 		
 		const GPlatesPropertyValues::Enumeration::non_null_ptr_type strike_slip_property_value =
 				GPlatesPropertyValues::Enumeration::create(
@@ -849,13 +839,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_unclassified_feature(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq, 
+		return create_common(collection, header, geometry_seq, 
 				GPlatesModel::FeatureType::create_gpml("UnclassifiedFeature"), 
 				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
 	}
@@ -863,13 +851,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_aseismic_ridge(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq, 
+		return create_common(collection, header, geometry_seq, 
 				GPlatesModel::FeatureType::create_gpml("AseismicRidge"), 
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
@@ -877,15 +863,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_bathymetry(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
 		// FIXME: Set up a method to construct gpml:Contours and use them as the geometry, sourcing
 		// the appropriate PLATES header data.
-		return create_common(model, gpgim, collection, header, geometry_seq, 
+		return create_common(collection, header, geometry_seq, 
 				GPlatesModel::FeatureType::create_gpml("Bathymetry"), 
 				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
@@ -893,13 +877,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_basin(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq, 
+		return create_common(collection, header, geometry_seq, 
 				GPlatesModel::FeatureType::create_gpml("Basin"), 
 				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
@@ -907,13 +889,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_coastline(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq, 
+		return create_common(collection, header, geometry_seq, 
 				GPlatesModel::FeatureType::create_gpml("Coastline"), 
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
@@ -921,13 +901,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_continental_boundary(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq, 
+		return create_common(collection, header, geometry_seq, 
 				GPlatesModel::FeatureType::create_gpml("PassiveContinentalBoundary"), 
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
@@ -935,13 +913,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_continental_fragment(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq, 
+		return create_common(collection, header, geometry_seq, 
 				GPlatesModel::FeatureType::create_gpml("ContinentalFragment"), 
 				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
@@ -949,13 +925,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_craton(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq, 
+		return create_common(collection, header, geometry_seq, 
 				GPlatesModel::FeatureType::create_gpml("Craton"), 
 				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
@@ -963,13 +937,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_extended_continental_crust(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq, 
+		return create_common(collection, header, geometry_seq, 
 				GPlatesModel::FeatureType::create_gpml("ExtendedContinentalCrust"), 
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
@@ -977,13 +949,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_fracture_zone(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq, 
+		return create_common(collection, header, geometry_seq, 
 				GPlatesModel::FeatureType::create_gpml("FractureZone"), 
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
@@ -991,15 +961,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_gravimetry(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
 		// FIXME: Set up a method to construct gpml:Contours and use them as the geometry, sourcing
 		// the appropriate PLATES header data.
-		return create_common(model, gpgim, collection, header, geometry_seq, 
+		return create_common(collection, header, geometry_seq, 
 				GPlatesModel::FeatureType::create_gpml("Gravimetry"), 
 				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
@@ -1007,15 +975,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_grid_mark(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
 		// FIXME: This will create lots of gpml:OldPlatesGridMarks if the source GR feature uses
 		// lots of pen up pen down commands. A way to specify use of gml:MultiCurve would be nice.
-		return create_common(model, gpgim, collection, header, geometry_seq, 
+		return create_common(collection, header, geometry_seq, 
 				GPlatesModel::FeatureType::create_gpml("OldPlatesGridMark"), 
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
@@ -1023,15 +989,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_heat_flow(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
 		// FIXME: Set up a method to construct gpml:Contours and use them as the geometry, sourcing
 		// the appropriate PLATES header data.
-		return create_common(model, gpgim, collection, header, geometry_seq, 
+		return create_common(collection, header, geometry_seq, 
 				GPlatesModel::FeatureType::create_gpml("HeatFlow"), 
 				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
@@ -1039,8 +1003,6 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_hot_spot(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
@@ -1050,13 +1012,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		if (geometry_seq.size() > 1)
 		{
 #if 1
-			return create_multi_point_feature(model,gpgim,collection,header,geometry_seq,
+			return create_multi_point_feature(collection,header,geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("HotSpot"),
 				GPlatesModel::PropertyName::create_gpml("multiPosition"));
 #else
 			// create_common will create a feature with distinct multiple point geometries,
 			// as opposed to a multipoint.
-			return create_common(model, gpgim,collection,header,geometry_seq,
+			return create_common(collection,header,geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("HotSpot"),
 				GPlatesModel::PropertyName::create_gpml("position"));
 #endif
@@ -1065,7 +1027,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		{
 			// Zero geometries, or a geometry containing more than one point, 
 			// will get caught in the create_single_point_feature function. 
-			return create_single_point_feature(model,gpgim,collection,header,geometry_seq,
+			return create_single_point_feature(collection,header,geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("HotSpot"),
 				GPlatesModel::PropertyName::create_gpml("position"));
 		}	
@@ -1074,13 +1036,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_hot_spot_trail(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("HotSpotTrail"),
 				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
 	}
@@ -1088,13 +1048,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_inferred_paleo_boundary(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("InferredPaleoBoundary"),
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
@@ -1102,15 +1060,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_island_arc(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq,
 			bool is_active)
 	{
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
-			create_common(model, gpgim, collection, header, geometry_seq,
+			create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("IslandArc"),
 				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 		
@@ -1127,37 +1083,31 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_island_arc_active(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_island_arc(model, gpgim, collection, header, geometry_seq, true);
+		return create_island_arc(collection, header, geometry_seq, true);
 	}
 
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_island_arc_inactive(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_island_arc(model, gpgim, collection, header, geometry_seq, false);
+		return create_island_arc(collection, header, geometry_seq, false);
 	}
 
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_isochron(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("Isochron"),
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
@@ -1165,15 +1115,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_isopach(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
 		// FIXME: Set up a method to construct gpml:Contours and use them as the geometry, sourcing
 		// the appropriate PLATES header data.
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("SedimentThickness"),
 				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
@@ -1181,13 +1129,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_geological_lineation(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("GeologicalLineation"),
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
@@ -1195,15 +1141,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_magnetics(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
 		// FIXME: Set up a method to construct gpml:Contours and use them as the geometry, sourcing
 		// the appropriate PLATES header data.
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("Magnetics"),
 				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
@@ -1211,8 +1155,6 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_magnetic_pick(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
@@ -1225,13 +1167,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		if (geometry_seq.size() > 1)
 		{
 #if 1
-			return create_multi_point_feature(model,gpgim,collection,header,geometry_seq,
+			return create_multi_point_feature(collection,header,geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("MagneticAnomalyIdentification"),
 				GPlatesModel::PropertyName::create_gpml("multiPosition"));
 #else
 			// create_common will create a feature with distinct multiple point geometries,
 			// as opposed to a multipoint.
-			return create_common(model, gpgim,collection,header,geometry_seq,
+			return create_common(collection,header,geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("MagneticAnomalyIdentification"),
 				GPlatesModel::PropertyName::create_gpml("position"));
 #endif
@@ -1240,7 +1182,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		{
 			// Zero geometries, or a geometry containing more than one point, 
 			// will get caught in the create_single_point_feature function. 
-			return create_single_point_feature(model,gpgim,collection,header,geometry_seq,
+			return create_single_point_feature(collection,header,geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("MagneticAnomalyIdentification"),
 				GPlatesModel::PropertyName::create_gpml("position"));
 		}
@@ -1249,15 +1191,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_mid_ocean_ridge(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq,
 			bool is_active)
 	{
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
-			create_common(model, gpgim, collection, header, geometry_seq,
+			create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("MidOceanRidge"),
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 		
@@ -1278,38 +1218,32 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_ridge_segment(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_mid_ocean_ridge(model, gpgim, collection, header, geometry_seq, true);
+		return create_mid_ocean_ridge(collection, header, geometry_seq, true);
 	}
 
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_extinct_ridge(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_mid_ocean_ridge(model, gpgim, collection, header, geometry_seq, false);
+		return create_mid_ocean_ridge(collection, header, geometry_seq, false);
 	}
 
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_ophiolite_belt(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
-				create_common(model, gpgim, collection, header, geometry_seq,
+				create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("BasicRockUnit"),
 				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 
@@ -1326,13 +1260,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_orogenic_belt(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("OrogenicBelt"),
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
@@ -1340,34 +1272,28 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_seamount(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("Seamount"),
 				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
 	}
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_slab(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("Slab"),
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_subduction_zone(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq,
@@ -1375,7 +1301,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 			const char *subduction_polarity_enumeration_content = "Unknown")
 	{
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
-				create_common(model, gpgim, collection, header, geometry_seq,
+				create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("SubductionZone"),
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	
@@ -1411,61 +1337,51 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_subduction_zone_active(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_subduction_zone(model, gpgim, collection, header, geometry_seq, true);
+		return create_subduction_zone(collection, header, geometry_seq, true);
 	}
 
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_subduction_zone_inactive(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_subduction_zone(model, gpgim, collection, header, geometry_seq, false);
+		return create_subduction_zone(collection, header, geometry_seq, false);
 	}
 
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_subduction_zone_left(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_subduction_zone(model, gpgim, collection, header, geometry_seq, false, "Left");
+		return create_subduction_zone(collection, header, geometry_seq, false, "Left");
 	}
 
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_subduction_zone_right(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_subduction_zone(model, gpgim, collection, header, geometry_seq, false, "Right");
+		return create_subduction_zone(collection, header, geometry_seq, false, "Right");
 	}
 
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_suture(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("Suture"),
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
@@ -1473,13 +1389,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_terrane_boundary(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("TerraneBoundary"),
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
@@ -1487,13 +1401,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_transitional_crust(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("TransitionalCrust"),
 				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
@@ -1501,13 +1413,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_transform(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("Transform"),
 				GPlatesModel::PropertyName::create_gpml("centerLineOf"));
 	}
@@ -1515,15 +1425,13 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_topography(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
 		// FIXME: Set up a method to construct gpml:Contours and use them as the geometry, sourcing
 		// the appropriate PLATES header data.
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("Topography"),
 				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
@@ -1531,39 +1439,33 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_volcano(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("Volcano"),
 				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
 	}
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_pluton(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("Pluton"),
 				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
 	}
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_political_boundary(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq, 
+		return create_common(collection, header, geometry_seq, 
 				GPlatesModel::FeatureType::create_gpml("PoliticalBoundary"), 
 				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
 	}
@@ -1571,13 +1473,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_large_igneous_province(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("LargeIgneousProvince"),
 				GPlatesModel::PropertyName::create_gpml("outlineOf"));
 	}
@@ -1585,26 +1485,22 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_navdat_1(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("NavdatSampleMafic"),
 				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
 	}
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_navdat_2(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("NavdatSampleIntermediate"),
 				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
 	}
@@ -1612,13 +1508,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_navdat_3(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("NavdatSampleFelsicLow"),
 				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
 	}
@@ -1626,13 +1520,11 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_navdat_4(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
-		return create_common(model, gpgim, collection, header, geometry_seq,
+		return create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("NavdatSampleFelsicHigh"),
 				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
 	}
@@ -1640,14 +1532,12 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	GPlatesModel::FeatureHandle::weak_ref	
 	create_topological_closed_plate_boundary(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &header,
 			const geometry_seq_type &geometry_seq)
 	{
 		GPlatesModel::FeatureHandle::weak_ref feature_handle = 
-				create_common(model, gpgim, collection, header, geometry_seq,
+				create_common(collection, header, geometry_seq,
 				GPlatesModel::FeatureType::create_gpml("TopologicalClosedPlateBoundary"),
 				GPlatesModel::PropertyName::create_gpml("unclassifiedGeometry"));
 
@@ -1656,8 +1546,6 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 
 	typedef GPlatesModel::FeatureHandle::weak_ref (*creation_function_type)(
-			GPlatesModel::ModelInterface &,
-			const GPlatesModel::Gpgim &,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &,
 			GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type &,
 			const geometry_seq_type &);
@@ -1952,8 +1840,6 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	void
 	create_feature_with_geometries(
-			GPlatesModel::ModelInterface &model, 
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesFileIO::LineReader &in,
 			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -1971,7 +1857,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 		try
 		{
-			creation_function(model, gpgim, collection, old_plates_header, geometry_seq);
+			creation_function(collection, old_plates_header, geometry_seq);
 		}
 		catch (std::exception &exc)
 		{
@@ -1999,10 +1885,9 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 		// We want to return a different ReadError Description for each possible return
 		// value of evaluate_construction_parameter_validity().
-		std::pair<point_seq_type::const_iterator, point_seq_type::const_iterator> invalid_points;
 		GPlatesMaths::PolylineOnSphere::ConstructionParameterValidity polyline_validity =
 				GPlatesMaths::PolylineOnSphere::evaluate_construction_parameter_validity(
-						point_seq.begin(), point_seq.end(), invalid_points);
+						point_seq.begin(), point_seq.end());
 
 		if (polyline_validity == GPlatesMaths::PolylineOnSphere::VALID)
 		{
@@ -2105,8 +1990,6 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 
 	void
 	read_feature(
-			GPlatesModel::ModelInterface &model,
-			const GPlatesModel::Gpgim &gpgim,
 			GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
 			GPlatesFileIO::LineReader &in,
 			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
@@ -2170,7 +2053,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 					// NOTE: this will call 'create_common'
 					GPlatesModel::FeatureHandle::weak_ref feature_ref = 
 						create_topological_closed_plate_boundary(
-							model, gpgim, collection, old_plates_header, geometry_seq);
+							collection, old_plates_header, geometry_seq);
 		
 					// Create the Gpml Piecewise Aggregation from the boundary list
 					GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type agg =
@@ -2229,7 +2112,7 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 		}
 
 		// Now that we've read one or more geometries we can create the feature.
-		create_feature_with_geometries(model, gpgim, collection, in, source,
+		create_feature_with_geometries(collection, in, source,
 				creation_function, old_plates_header, geometry_seq, errors);
 	}
 }
@@ -2238,8 +2121,6 @@ std::cout << "use_tail_next = " << use_tail_next << std::endl;
 void
 GPlatesFileIO::PlatesLineFormatReader::read_file(
 		File::Reference &file,
-		GPlatesModel::ModelInterface &model,
-		const GPlatesModel::Gpgim &gpgim,
 		ReadErrorAccumulation &read_errors,
 		bool &contains_unsaved_changes)
 {
@@ -2248,13 +2129,6 @@ GPlatesFileIO::PlatesLineFormatReader::read_file(
 	contains_unsaved_changes = false;
 
 	const FileInfo &fileinfo = file.get_file_info();
-
-	// By placing all changes to the model under the one changeset, we ensure that
-	// feature revision ids don't get changed from what was loaded from file no
-	// matter what we do to the features.
-	GPlatesModel::ChangesetHandle changeset(
-			model.access_model(),
-			"open " + fileinfo.get_qfileinfo().fileName().toStdString());
 
 	QString filename = fileinfo.get_qfileinfo().absoluteFilePath();
 
@@ -2274,7 +2148,7 @@ GPlatesFileIO::PlatesLineFormatReader::read_file(
 	LineReader in(input);
 	while (in) {
 		try {
-			read_feature(model, gpgim, collection, in, source, read_errors);
+			read_feature(collection, in, source, read_errors);
 		} catch (GPlatesFileIO::ReadErrors::Description error) {
 			const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> location(
 					new GPlatesFileIO::LineNumber(in.line_number()));

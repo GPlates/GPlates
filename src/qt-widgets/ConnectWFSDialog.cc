@@ -37,12 +37,15 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileIO.h"
+#include "app-logic/GeometryUtils.h"
 #include "app-logic/UserPreferences.h"
+
 #include "file-io/ArbitraryXmlReader.h"
 #include "file-io/File.h"
 #include "file-io/GeoscimlProfile.h"
 
 #include "maths/LatLonPoint.h"
+
 #include "utils/NetworkUtils.h"
 
 #include "ConnectWFSDialog.h"
@@ -139,19 +142,16 @@ GPlatesQtWidgets::ConnectWFSDialog::set_request_geometry(
 
 	//qDebug() << "ConnectWFSDialog::set_request_geometry(): ";
 	// double check on geom type 
-	GPlatesFeatureVisitors::GeometryTypeFinder finder;
-	geometry_ptr->accept_visitor(finder);
-	if ( ( finder.found_polyline_geometries() ) || ( finder.found_point_geometries() ) )
-	{
-		QErrorMessage *e = new QErrorMessage( this );
-		e->showMessage("Please use the Polygon digitization tool for WFS queries");
-		return;
-	}
-	else if ( finder.found_polygon_geometries() )
+	const GPlatesMaths::GeometryType::Value geometry_type =
+			GPlatesAppLogic::GeometryUtils::get_geometry_type(*geometry_ptr);
+
+	if (geometry_type == GPlatesMaths::GeometryType::POLYGON)
 	{
 		geom_str.append("?&polygon=");
 
-		std::vector<GPlatesMaths::PointOnSphere> points = finder.get_points();
+		std::vector<GPlatesMaths::PointOnSphere> points;
+		GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(*geometry_ptr, points);
+
 		std::vector<GPlatesMaths::PointOnSphere>::iterator itr = points.begin();
 		std::vector<GPlatesMaths::PointOnSphere>::iterator end = points.end();
 		std::vector<GPlatesMaths::PointOnSphere>::iterator last = points.end();
@@ -174,9 +174,8 @@ GPlatesQtWidgets::ConnectWFSDialog::set_request_geometry(
 	}
 	else
 	{
-		//qDebug() << "ConnectWFSDialog::set_request_geometry(): NO GEOM = ";
 		QErrorMessage *e = new QErrorMessage( this );
-		e->showMessage("No valid geometry found from digitization tool?");
+		e->showMessage("Please use the Polygon digitization tool for WFS queries");
 		return;
 	}
 	

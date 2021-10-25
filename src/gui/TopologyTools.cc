@@ -1866,7 +1866,7 @@ GPlatesGui::TopologyTools::draw_focused_geometry(
 	// See if focused reconstruction geometry is an RFG.
 	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> focused_rfg =
 			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ReconstructedFeatureGeometry>(focused_recon_geom);
+					const GPlatesAppLogic::ReconstructedFeatureGeometry *>(focused_recon_geom);
 	if (focused_rfg)
 	{
 		// Get the geometry on sphere from the RFG.
@@ -1876,7 +1876,7 @@ GPlatesGui::TopologyTools::draw_focused_geometry(
 	// See if focused reconstruction geometry is an RTG.
 	boost::optional<const GPlatesAppLogic::ResolvedTopologicalGeometry *> focused_rtg =
 			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ResolvedTopologicalGeometry>(focused_recon_geom);
+					const GPlatesAppLogic::ResolvedTopologicalGeometry *>(focused_recon_geom);
 	if (focused_rtg)
 	{
 		focused_geometry = focused_rtg.get()->resolved_topology_geometry();
@@ -1916,7 +1916,7 @@ GPlatesGui::TopologyTools::draw_focused_geometry(
 		GPlatesMaths::PointOnSphere/*start point*/,
 		GPlatesMaths::PointOnSphere/*end point*/>
 			focus_feature_end_points =
-				GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
+				GPlatesAppLogic::GeometryUtils::get_geometry_exterior_end_points(
 						*focused_geometry.get());
 
 	//
@@ -2341,7 +2341,7 @@ GPlatesGui::TopologyTools::reconstruct_boundary_sections()
 	if (d_topology_geometry_type == GPlatesAppLogic::TopologyGeometry::BOUNDARY ||
 		d_topology_geometry_type == GPlatesAppLogic::TopologyGeometry::NETWORK)
 	{
-		std::vector<GPlatesAppLogic::ResolvedTopologicalGeometry::non_null_ptr_type> resolved_topological_lines;
+		std::vector<GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type> resolved_topological_lines;
 		GPlatesAppLogic::LayerProxyUtils::get_resolved_topological_lines(
 				resolved_topological_lines,
 				topological_section_reconstruct_handles,
@@ -3324,7 +3324,7 @@ GPlatesGui::TopologyTools::assign_boundary_segment(
 		GPlatesMaths::PointOnSphere/*start point*/,
 		GPlatesMaths::PointOnSphere/*end point*/>
 			section_geometry_end_points =
-				GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
+				GPlatesAppLogic::GeometryUtils::get_geometry_exterior_end_points(
 						**visible_section.d_section_geometry_unreversed,
 						get_boundary_section_info(visible_section).d_table_row.get_reverse());
 	// Set the section start and end points.
@@ -3385,7 +3385,7 @@ GPlatesGui::TopologyTools::assign_interior_segment(
 		GPlatesMaths::PointOnSphere/*start point*/,
 		GPlatesMaths::PointOnSphere/*end point*/>
 			section_geometry_end_points =
-				GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
+				GPlatesAppLogic::GeometryUtils::get_geometry_exterior_end_points(
 						**visible_section.d_section_geometry_unreversed,
 						get_interior_section_info(visible_section).d_table_row.get_reverse());
 
@@ -3569,7 +3569,7 @@ GPlatesGui::TopologyTools::get_boundary_geometry_end_points(
 					get_unreversed_sub_segment(reverse_order);
 
 	// Return the start and end points of the current boundary subsegment.
-	return GPlatesAppLogic::GeometryUtils::get_geometry_end_points(
+	return GPlatesAppLogic::GeometryUtils::get_geometry_exterior_end_points(
 			*geometry, reverse_order);
 }
 
@@ -3662,11 +3662,12 @@ GPlatesGui::TopologyTools::show_numbers()
 		static const GPlatesModel::PropertyName name_property_name = 
 			GPlatesModel::PropertyName::create_gml("name");
 
-		const GPlatesPropertyValues::XsString *name;
-		if ( GPlatesFeatureVisitors::get_property_value(
-			d_feature_focus_ptr->focused_feature(), name_property_name, name) )
+		boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> name =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
+						d_feature_focus_ptr->focused_feature(), name_property_name);
+		if (name)
 		{
-			qDebug() << "d_feature_focus_ptr name = " << GPlatesUtils::make_qstring(name->value());
+			qDebug() << "d_feature_focus_ptr name = " << GPlatesUtils::make_qstring(name.get()->value());
 		}
 		else 
 		{
@@ -3711,7 +3712,7 @@ GPlatesGui::TopologyTools::update_boundary_vertices()
 
 		// Get the vertices from the possibly clipped section geometry
 		// and add them to the list of topology vertices.
-		GPlatesAppLogic::GeometryUtils::get_geometry_points(
+		GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(
 				*visible_section.d_final_boundary_segment_unreversed_geom.get(),
 				d_topology_vertices,
 				get_boundary_section_info(visible_section).d_table_row.get_reverse());
@@ -3782,7 +3783,7 @@ GPlatesGui::TopologyTools::update_interior_vertices()
 
 		// Get the vertices from the possibly clipped section geometry
 		// and add them to the list of topology vertices.
-		GPlatesAppLogic::GeometryUtils::get_geometry_points(
+		GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(
 				*visible_section.d_final_boundary_segment_unreversed_geom.get(),
 				d_topology_vertices,
 				get_interior_section_info(visible_section).d_table_row.get_reverse());
@@ -3790,7 +3791,7 @@ GPlatesGui::TopologyTools::update_interior_vertices()
 		// Get the vertices for just this section
 		section_vertices.clear();
 
-		GPlatesAppLogic::GeometryUtils::get_geometry_points(
+		GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(
 				*visible_section.d_final_boundary_segment_unreversed_geom.get(),
 				section_vertices,
 				get_interior_section_info(visible_section).d_table_row.get_reverse());
@@ -3888,7 +3889,7 @@ GPlatesGui::TopologyTools::SectionInfo::reconstruct_section_info_from_table_row(
 	// See if topological section is an RFG.
 	boost::optional<const GPlatesAppLogic::ReconstructedFeatureGeometry *> section_rfg =
 			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ReconstructedFeatureGeometry>(section_rg.get());
+					const GPlatesAppLogic::ReconstructedFeatureGeometry *>(section_rg.get());
 	if (section_rfg)
 	{
 		// Get the geometry on sphere from the RFG.
@@ -3901,7 +3902,7 @@ GPlatesGui::TopologyTools::SectionInfo::reconstruct_section_info_from_table_row(
 	// See if topological section is an RTG.
 	boost::optional<const GPlatesAppLogic::ResolvedTopologicalGeometry *> section_rtg =
 			GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-					const GPlatesAppLogic::ResolvedTopologicalGeometry>(section_rg.get());
+					const GPlatesAppLogic::ResolvedTopologicalGeometry *>(section_rg.get());
 	if (section_rtg)
 	{
 		// Get the geometry on sphere from the RTG.

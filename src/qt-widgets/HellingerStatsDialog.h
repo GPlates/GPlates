@@ -42,8 +42,7 @@ namespace GPlatesQtWidgets
 	public:
 
 		HellingerStatsDialog(
-				const QString &python_path,
-				const QString &parameter_file_name,
+				const QString &results_file,
 				QWidget *parent_ = NULL);
 
 		void
@@ -56,8 +55,7 @@ namespace GPlatesQtWidgets
 		handle_export();
 
 	private:
-		QString d_python_path;
-		QString d_parameter_file_name;
+		QString d_results_file;
 
 	};
 }

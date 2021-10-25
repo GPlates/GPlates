@@ -41,6 +41,13 @@
 #include "utils/UnicodeStringUtils.h"
 
 
+GPlatesAppLogic::VgpPartitionFeatureTask::VgpPartitionFeatureTask(
+		bool verify_information_model) :
+	d_verify_information_model(verify_information_model)
+{
+}
+
+
 bool
 GPlatesAppLogic::VgpPartitionFeatureTask::can_partition_feature(
 		const GPlatesModel::FeatureHandle::const_weak_ref &feature_ref) const
@@ -58,15 +65,19 @@ GPlatesAppLogic::VgpPartitionFeatureTask::partition_feature(
 		const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
 		const GPlatesAppLogic::GeometryCookieCutter &geometry_cookie_cutter,
+		const ReconstructMethodInterface::Context &reconstruct_method_context,
+		const double &reconstruction_time,
 		// 'respect_feature_time_period' is ignored for VGP features...
 		bool /*respect_feature_time_period*/)
 {
 	// Look for the 'gpml:averageSampleSitePosition' property.
 	static const GPlatesModel::PropertyName sample_site_property_name =
 			GPlatesModel::PropertyName::create_gpml("averageSampleSitePosition");
-	const GPlatesPropertyValues::GmlPoint *sample_site_gml_point = NULL;
-	if (!GPlatesFeatureVisitors::get_property_value(
-			feature_ref, sample_site_property_name, sample_site_gml_point))
+	boost::optional<GPlatesPropertyValues::GmlPoint::non_null_ptr_to_const_type> sample_site_gml_point =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlPoint>(
+					feature_ref,
+					sample_site_property_name);
+	if (!sample_site_gml_point)
 	{
 		qDebug() << "WARNING: Unable to find 'gpml:averageSampleSitePosition' property "
 				"in 'VirtualGeomagneticPole' with feature id = ";
@@ -74,7 +85,7 @@ GPlatesAppLogic::VgpPartitionFeatureTask::partition_feature(
 				feature_ref->feature_id().get());
 		return;
 	}
-	const GPlatesMaths::PointOnSphere &sample_site_point = *sample_site_gml_point->point();
+	const GPlatesMaths::PointOnSphere &sample_site_point = *sample_site_gml_point.get()->point();
 
 	// Find a partitioning polygon boundary that contains the sample site.
 	const boost::optional<const ReconstructionGeometry *> partitioning_polygon =
@@ -109,7 +120,7 @@ GPlatesAppLogic::VgpPartitionFeatureTask::partition_feature(
 
 	// Now assign the reconstruction plate id to the feature.
 	PartitionFeatureUtils::assign_reconstruction_plate_id_to_feature(
-			reconstruction_plate_id, feature_ref);
+			reconstruction_plate_id, feature_ref, d_verify_information_model);
 
 	// NOTE: This paleomag data is present day data - even though the VGP
 	// has an age (corresponding to the rock sample age) the location of the sample

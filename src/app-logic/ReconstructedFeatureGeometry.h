@@ -38,6 +38,7 @@
 #include "ReconstructMethodType.h"
 
 #include "maths/GeometryOnSphere.h"
+#include "maths/PointOnSphere.h"
 
 #include "model/FeatureHandle.h"
 #include "model/WeakObserver.h"
@@ -72,6 +73,9 @@ namespace GPlatesAppLogic
 
 		//! Typedef for a non-null shared pointer to a non-const @a GeometryOnSphere.
 		typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_ptr_type;
+
+		//! Typedef for a sequence of points.
+		typedef std::vector<GPlatesMaths::PointOnSphere> point_seq_type;
 
 
 		/**
@@ -320,7 +324,8 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns the reconstructed geometry.
 		 */
-		const geometry_ptr_type &
+		virtual
+		geometry_ptr_type
 		reconstructed_geometry() const;
 
 
@@ -420,6 +425,22 @@ namespace GPlatesAppLogic
 				// NOTE: This is the *unreconstructed* geometry...
 				const geometry_ptr_type &resolved_geometry_,
 				const ReconstructMethodFiniteRotation::non_null_ptr_to_const_type &reconstruct_method_transform_,
+				boost::optional<ReconstructMethod::Type> reconstruct_method_type_,
+				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_ = boost::none,
+				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none,
+				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none);
+
+		/**
+		 * Used by derived class TopologyReconstructedFeatureGeometry.
+		 *
+		 * Note that we don't initialise @a d_reconstructed_geometry or @a d_finite_rotation_reconstruction.
+		 * Instead the virtual method @a reconstructed_geometry is overridden in class TopologyReconstructedFeatureGeometry.
+		 */
+		ReconstructedFeatureGeometry(
+				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
+				const ReconstructionTreeCreator &reconstruction_tree_creator_,
+				GPlatesModel::FeatureHandle &feature_handle_,
+				GPlatesModel::FeatureHandle::iterator property_iterator_,
 				boost::optional<ReconstructMethod::Type> reconstruct_method_type_,
 				boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id_ = boost::none,
 				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none,

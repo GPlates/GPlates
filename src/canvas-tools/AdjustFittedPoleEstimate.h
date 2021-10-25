@@ -49,12 +49,6 @@
 #include "view-operations/RenderedTriangleSymbol.h"
 
 
-// TODO: Check if we need any of these "inherited" includes/forward-declarations.
-namespace GPlatesGui
-{
-	class Colour;
-}
-
 namespace GPlatesMaths
 {
 	class PointOnSphere;
@@ -65,15 +59,10 @@ namespace GPlatesQtWidgets
 	class HellingerDialog;
 }
 
-namespace GPlatesViewOperations
-{
-	class RenderedGeometryLayer;
-}
-
 namespace GPlatesCanvasTools
 {
 	/**
-	 * Canvas tool used for adjusting the initial pole estimate for the hellinger tool.
+	 * Canvas tool used for adjusting the initial pole estimates for the hellinger tool.
 	 */
 	class AdjustFittedPoleEstimate :
 			public QObject,
@@ -83,11 +72,22 @@ namespace GPlatesCanvasTools
 
 	public:
 
+		enum ActivePoleType{
+			PLATES_1_2_POLE_TYPE,
+			PLATES_1_3_POLE_TYPE,
+
+			NO_ACTIVE_POLE_TYPE
+		};
+
 		/**
 		 * Visitor to find a rendered geometry's underlying geometry-on-sphere, if it has one.
-		 * TODO: this class has been copied from SelectHellingerGeometry tool; it
-		 * is probably required here too, in which case we want to put it somewhere
-		 * else accessible by both tools.
+		 * TODO: this class has been copied from SelectHellingerGeometry tool; we may want to
+		 * put it somewhere accessible by both tools.
+		 *
+		 * There are several variations of GeometryFinders in different parts of GPlates, with
+		 * subtly different modes of use - I'm sure there was a reason for me making a new one
+		 * here (and in SelectHellingerGeometry....), but TODO: check if we can use existing
+		 * finders.
 		 */
 		class GeometryFinder:
 			public GPlatesViewOperations::ConstRenderedGeometryVisitor
@@ -198,7 +198,8 @@ namespace GPlatesCanvasTools
 		};
 
 
-
+		//! Convenience typedef for GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
+		typedef GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type child_layer_ptr_type;
 
 		/**
 		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<AdjustFittedPoleEstimate>.
@@ -270,31 +271,48 @@ namespace GPlatesCanvasTools
 	private Q_SLOTS:
 
 		void
-		handle_pole_estimate_lat_lon_changed(
+		handle_pole_estimate_12_lat_lon_changed(
 				double lat,
 				double lon);
 
 		void
-		handle_pole_estimate_angle_changed(
+		handle_pole_estimate_12_angle_changed(
+				double angle);
+
+		void
+		handle_pole_estimate_13_lat_lon_changed(
+				double lat,
+				double lon);
+
+		void
+		handle_pole_estimate_13_angle_changed(
 				double angle);
 
 
 	private:
-		//! Convenience typedef for GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
-		typedef GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type child_layer_ptr_type;
+
 
 		// This enum is used in keeping track of which geometry in the pole_estimate_layer we're hovered over.
 		enum GeometryTypeIndex
 		{
-			POLE_GEOMETRY_INDEX,
-			REFERENCE_ARC_ENDPOINT_GEOMETRY_INDEX,
-			RELATIVE_ARC_ENDPOINT_GEOMETRY_INDEX,
-			REFERENCE_ARC_GEOMETRY_INDEX,
-			RELATIVE_ARC_GEOMETRY_INDEX
+			POLE_12_GEOMETRY_INDEX,
+			REFERENCE_ARC_ENDPOINT_12_GEOMETRY_INDEX,
+			RELATIVE_ARC_ENDPOINT_12_GEOMETRY_INDEX,
+			REFERENCE_ARC_12_GEOMETRY_INDEX,
+			RELATIVE_ARC_12_GEOMETRY_INDEX,
+
+			POLE_13_GEOMETRY_INDEX,
+			REFERENCE_ARC_ENDPOINT_13_GEOMETRY_INDEX,
+			RELATIVE_ARC_ENDPOINT_13_GEOMETRY_INDEX,
+			REFERENCE_ARC_13_GEOMETRY_INDEX,
+			RELATIVE_ARC_13_GEOMETRY_INDEX,
 		};
 
 		void
 		update_local_values_from_hellinger_dialog();
+
+		void
+		update_hellinger_dialog_from_local_values();
 
 		void
 		update_current_pole_arrow_layer();
@@ -304,11 +322,14 @@ namespace GPlatesCanvasTools
 
 		void
 		update_pole_estimate_and_arc_highlight(
-				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &point);
+				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &pole,
+				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &reference_arc_end_point,
+				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &relative_arc_end_point);
 
 		void
 		update_arc_and_end_point_highlight(
-				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &point);
+				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &end_point,
+				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &pole);
 
 		void
 		update_angle();
@@ -361,13 +382,27 @@ namespace GPlatesCanvasTools
 		 */
 		child_layer_ptr_type d_highlight_layer_ptr;
 
-		GPlatesMaths::PointOnSphere d_current_pole;
-		double d_current_angle;
+		// Coordinates, angles etc of geometries related to the initial pole estimates.
+		// "12" denotes variables associated with the pole representing the rotation between
+		// plate indices 1 and 2
+		// "13" denotes those related to plate indices 1 and 3.
+		GPlatesMaths::PointOnSphere d_current_pole_12;
+		double d_current_angle_12;
+		GPlatesMaths::PointOnSphere d_end_point_of_reference_arc_12;
+		GPlatesMaths::PointOnSphere d_end_point_of_relative_arc_12;
 
-		GPlatesMaths::PointOnSphere d_end_point_of_reference_arc;
-		GPlatesMaths::PointOnSphere d_end_point_of_relative_arc;
+		GPlatesMaths::PointOnSphere d_current_pole_13;
+		double d_current_angle_13;
+		GPlatesMaths::PointOnSphere d_end_point_of_reference_arc_13;
+		GPlatesMaths::PointOnSphere d_end_point_of_relative_arc_13;
 
 		bool d_has_been_activated;
+
+		/**
+		 * @brief d_active_pole_type - the pole type which is currently or most recently
+		 * selected/highlighted/dragged.
+		 */
+		ActivePoleType d_active_pole_type;
 
 	};
 }

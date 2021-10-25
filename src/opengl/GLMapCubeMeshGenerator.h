@@ -35,7 +35,6 @@
 
 #include "gui/MapProjection.h"
 
-#include "maths/MathsFwd.h"
 #include "maths/CubeCoordinateFrame.h"
 #include "maths/UnitVector3D.h"
 

@@ -402,7 +402,7 @@ GPlatesGui::ExternalSyncController::process_open_file_command(
 	const QStringList &commands)
 {
 	QStringList filenames = get_filenames_from_argument_list(commands);
-	d_viewport_window_ptr->load_files(filenames);
+	d_viewport_window_ptr->load_feature_collections(filenames);
 }
 
 void
@@ -609,7 +609,7 @@ GPlatesGui::ExternalSyncController::connect_message_signals()
 
     QObject::connect(
 	    d_animation_controller_ptr,
-	    SIGNAL(send_time_to_stdout(double)),
+	    SIGNAL(view_time_changed(double)),
 	    this,
 	    SLOT(send_external_time_command(double)));
 

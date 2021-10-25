@@ -38,7 +38,7 @@ namespace GPlatesFileIO
 		/**
 		 * Converts a ReadErrors::Description enum to a translated QString (short form).
 		 */
-		const QString &
+		QString
 		get_short_description_as_string(
 				ReadErrors::Description code);
 
@@ -46,7 +46,7 @@ namespace GPlatesFileIO
 		/**
 		 * Converts a ReadErrors::Description enum to a translated QString (full text).
 		 */
-		const QString &
+		QString
 		get_full_description_as_string(
 				ReadErrors::Description code);
 
@@ -54,7 +54,7 @@ namespace GPlatesFileIO
 		/**
 		 * Converts a ReadErrors::Result enum to a translated QString.
 		 */
-		const QString &
+		QString
 		get_result_as_string(
 				ReadErrors::Result code);
 	}

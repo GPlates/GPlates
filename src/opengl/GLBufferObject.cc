@@ -457,11 +457,7 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_stream(
 		// Only used for write access - otherwise caller should be using 'gl_map_buffer_static'.
 		// 'GL_MAP_FLUSH_EXPLICIT_BIT' means the buffer will need to be explicitly flushed
 		// (using 'gl_flush_buffer_stream').
-		// 'GL_MAP_UNSYNCHRONIZED_BIT' stops OpenGL from blocking (otherwise the GPU might block
-		// until it is finished using any data currently in the buffer) - note that this shouldn't
-		// be necessary when using GL_MAP_INVALIDATE_BUFFER_BIT but apparently some ATI hardware
-		// will block otherwise (see http://hacksoflife.blogspot.com.au/2012/04/beyond-glmapbuffer.html).
-		GLbitfield range_access = (GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
+		GLbitfield range_access = (GL_MAP_WRITE_BIT | GL_MAP_FLUSH_EXPLICIT_BIT);
 
 		// We're either:
 		//  1) discarding/orphaning the buffer to get a new buffer allocation of same size, or
@@ -482,7 +478,17 @@ GPlatesOpenGL::GLBufferObject::gl_map_buffer_stream(
 		}
 		else // client is going to write to un-initialised memory in current buffer...
 		{
-			range_access |= GL_MAP_INVALIDATE_RANGE_BIT;
+			// 'GL_MAP_UNSYNCHRONIZED_BIT' stops OpenGL from blocking, otherwise the GPU might block
+			// until it is finished using any data currently in the buffer.
+			// Note that we don't specify 'GL_MAP_UNSYNCHRONIZED_BIT' when discarding (with
+			// 'GL_MAP_INVALIDATE_BUFFER_BIT') because it's possible OpenGL could return the
+			// same buffer (rather than internally keeping the existing buffer for its pending GPU
+			// operations and returning a fresh new buffer to us) and hence we could be overwriting
+			// data that hasn't been consumed by the GPU yet. I've seen this happen when specifying
+			// 'GL_MAP_UNSYNCHRONIZED_BIT' with 'GL_MAP_INVALIDATE_BUFFER_BIT' (on nVidia 780Ti using
+			// 364.96 driver) - manifested as flickering cross-sections and surface masks when using
+			// them with 3D scalar fields.
+			range_access |= (GL_MAP_INVALIDATE_RANGE_BIT | GL_MAP_UNSYNCHRONIZED_BIT);
 		}
 
 		// We only need to map the un-initialised region at the end of the buffer.

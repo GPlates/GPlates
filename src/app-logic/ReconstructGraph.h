@@ -54,14 +54,11 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/WeakReferenceCallback.h"
 
-#include "scribe/ScribeExceptions.h"
-#include "scribe/Transcribe.h"
-#include "scribe/TranscribeContext.h"
-
 
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
+	class LayerParams;
 	class LayerTask;
 	class LayerTaskRegistry;
 
@@ -455,6 +452,15 @@ namespace GPlatesAppLogic
 				bool activation);
 
 		/**
+		 * Emitted when layer @a layer has been activated or deactivated.
+		 */
+		void
+		layer_params_changed(
+				GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
+				GPlatesAppLogic::Layer layer,
+				GPlatesAppLogic::LayerParams &layer_params);
+
+		/**
 		 * Emitted when layer @a layer has added a new input connection.
 		 */
 		void
@@ -504,6 +510,9 @@ namespace GPlatesAppLogic
 				GPlatesAppLogic::Layer new_default_reconstruction_tree_layer);
 
 	public Q_SLOTS:
+		// NOTE: all signals/slots should use namespace scope for all arguments
+		//       otherwise differences between signals and slots will cause Qt
+		//       to not be able to connect them at runtime.
 
 		/**
 		 * Used by GuiDebug to print out current reconstruct graph state.
@@ -511,6 +520,18 @@ namespace GPlatesAppLogic
 		void
 		debug_reconstruct_graph_state();
 
+
+	private Q_SLOTS:
+		// NOTE: all signals/slots should use namespace scope for all arguments
+		//       otherwise differences between signals and slots will cause Qt
+		//       to not be able to connect them at runtime.
+
+		/**
+		 * Handles changes to the layer params of a layer.
+		 */
+		void
+		handle_layer_params_changed(
+				GPlatesAppLogic::LayerParams &layer_params);
 
 	private:
 
@@ -528,22 +549,28 @@ namespace GPlatesAppLogic
 				const Layer &layer,
 				bool activation);
 
+		//! Emits the @a layer_params_changed signal.
+		void
+		emit_layer_params_changed(
+				const Layer &layer,
+				LayerParams &layer_params);
+
 		//! Emits the @a layer_added_input_connection signal.
 		void
 		emit_layer_added_input_connection(
-				GPlatesAppLogic::Layer layer,
-				GPlatesAppLogic::Layer::InputConnection input_connection);
+				Layer layer,
+				Layer::InputConnection input_connection);
 
 		//! Emits the @a layer_about_to_remove_input_connection signal.
 		void
 		emit_layer_about_to_remove_input_connection(
-				GPlatesAppLogic::Layer layer,
-				GPlatesAppLogic::Layer::InputConnection input_connection);
+				Layer layer,
+				Layer::InputConnection input_connection);
 
 		//! Emits the @a layer_removed_input_connection signal.
 		void
 		emit_layer_removed_input_connection(
-				GPlatesAppLogic::Layer layer);
+				Layer layer);
 
 		friend class Layer;
 
@@ -594,6 +621,7 @@ namespace GPlatesAppLogic
 
 				void
 				publisher_modified(
+						const weak_reference_type &reference,
 						const modified_event_type &event)
 				{
 					d_reconstruct_graph->modified_input_file(d_input_file);
@@ -616,23 +644,6 @@ namespace GPlatesAppLogic
 			 * copies of the callback thus allowing it to get called more than once per modification.
 			 */
 			GPlatesModel::FeatureCollectionHandle::const_weak_ref d_callback_input_feature_collection;
-
-		private: // Transcribing...
-
-			GPlatesScribe::TranscribeResult
-			transcribe(
-					GPlatesScribe::Scribe &scribe,
-					bool transcribed_construct_data);
-
-			static
-			GPlatesScribe::TranscribeResult
-			transcribe_construct_data(
-					GPlatesScribe::Scribe &scribe,
-					GPlatesScribe::ConstructObject<InputFileInfo> &input_file_info);
-
-			// Only the scribe system should be able to transcribe.
-			friend class GPlatesScribe::Access;
-
 		};
 
 
@@ -719,14 +730,10 @@ namespace GPlatesAppLogic
 				const AutoCreateLayerParams &auto_create_layer_params);
 
 		/**
-		 * Connects the input file to the main input channel of the layer.
-		 *
-		 * Also makes other auto-connections such as between velocity and topology layers.
+		 * Ensures auto-connections such as between velocity and topology layers.
 		 */
 		void
-		auto_connect_layer(
-				Layer layer,
-				const Layer::InputFile &main_input_channel_input_file);
+		auto_connect_layers();
 
 		/**
 		 * Auto-destroyes layers that were auto-created from the specified input file.
@@ -744,52 +751,6 @@ namespace GPlatesAppLogic
 		void
 		handle_default_reconstruction_tree_layer_removal(
 				const Layer &layer_being_removed);
-
-	private: // Transcribing...
-
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				bool transcribed_construct_data);
-
-		static
-		GPlatesScribe::TranscribeResult
-		transcribe_construct_data(
-				GPlatesScribe::Scribe &scribe,
-				GPlatesScribe::ConstructObject<ReconstructGraph> &input_file_info)
-		{
-			// Shouldn't construct object - always transcribe existing object.
-			GPlatesGlobal::Assert<GPlatesScribe::Exceptions::ConstructNotAllowed>(
-					false,
-					GPLATES_ASSERTION_SOURCE,
-					typeid(ReconstructGraph));
-
-			// Shouldn't be able to get here - keep compiler happy.
-			return GPlatesScribe::TRANSCRIBE_INCOMPATIBLE;
-		}
-
-		// Only the scribe system should be able to transcribe.
-		friend class GPlatesScribe::Access;
-	};
-}
-
-namespace GPlatesScribe
-{
-	//
-	// ReconstructGraph::InputFileInfo ...
-	//
-
-	template <>
-	class TranscribeContext<GPlatesAppLogic::ReconstructGraph::InputFileInfo>
-	{
-	public:
-		explicit
-		TranscribeContext(
-				GPlatesAppLogic::ReconstructGraph &reconstruct_graph_) :
-			reconstruct_graph(reconstruct_graph_)
-		{  }
-
-		GPlatesAppLogic::ReconstructGraph &reconstruct_graph;
 	};
 }
 

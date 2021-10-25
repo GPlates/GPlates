@@ -151,9 +151,6 @@ namespace GPlatesViewOperations
 			SMALL_CIRCLE_CANVAS_TOOL_WORKFLOW_LAYER,
 			HELLINGER_CANVAS_TOOL_WORKFLOW_LAYER,
 
-			// TODO: Remove this layer when we have switched over to a hellinger workflow.
-			HELLINGER_TOOL_LAYER,
-
 			NUM_LAYERS // Must be the last enum.
 		};
 

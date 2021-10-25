@@ -121,7 +121,7 @@ namespace
 		const GPlatesAppLogic::ReconstructedMotionPath &rf)
 	{
 		GPlatesAppLogic::ReconstructedMotionPath::seed_point_geom_ptr_type seed_point =
-			rf.seed_point();
+			rf.present_day_seed_point();
 
 		GPlatesMaths::LatLonPoint llp = make_lat_lon_point(*seed_point);
 		text_stream << "> ";

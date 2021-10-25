@@ -90,8 +90,7 @@ namespace GPlatesPropertyValues
 		const non_null_ptr_type
 		clone() const
 		{
-			non_null_ptr_type dup(new GpmlRasterBandNames(*this));
-			return dup;
+			return non_null_ptr_type(new GpmlRasterBandNames(*this));
 		}
 
 		const non_null_ptr_type
@@ -110,6 +109,9 @@ namespace GPlatesPropertyValues
 			return d_band_names;
 		}
 
+		/**
+		 * Sets the internal band names.
+		 */
 		void
 		set_band_names(
 				const band_names_list_type &band_names_)

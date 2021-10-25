@@ -33,6 +33,7 @@
 #include <utility>
 #include <QtXml/QXmlStreamWriter>
 #include <QTextStream>
+#include "model/StringContentTypeGenerator.h"
 #include "model/QualifiedXmlName.h"
 #include "utils/XmlNamespaces.h"
 #include "utils/UnicodeStringUtils.h"
@@ -129,14 +130,14 @@ namespace GPlatesFileIO
 		void
 		writeEmptyGpmlElement(
 				const QString &name) {
-			d_writer.writeEmptyElement(GPlatesUtils::XmlNamespaces::GPML_NAMESPACE_QSTRING, name);
+			d_writer.writeEmptyElement(GPlatesUtils::XmlNamespaces::get_gpml_namespace_qstring(), name);
 		}
 
 
 		void
 		writeEmptyGmlElement(
 				const QString &name) {
-			d_writer.writeEmptyElement(GPlatesUtils::XmlNamespaces::GML_NAMESPACE_QSTRING, name);
+			d_writer.writeEmptyElement(GPlatesUtils::XmlNamespaces::get_gml_namespace_qstring(), name);
 		}
 
 
@@ -157,14 +158,14 @@ namespace GPlatesFileIO
 		void
 		writeStartGpmlElement(
 				const QString &elem_name) {
-			d_writer.writeStartElement(GPlatesUtils::XmlNamespaces::GPML_NAMESPACE_QSTRING, elem_name);
+			d_writer.writeStartElement(GPlatesUtils::XmlNamespaces::get_gpml_namespace_qstring(), elem_name);
 		}
 
 
 		void
 		writeStartGmlElement(
 				const QString &elem_name) {
-			d_writer.writeStartElement(GPlatesUtils::XmlNamespaces::GML_NAMESPACE_QSTRING, elem_name);
+			d_writer.writeStartElement(GPlatesUtils::XmlNamespaces::get_gml_namespace_qstring(), elem_name);
 		}
 
 
@@ -186,6 +187,14 @@ namespace GPlatesFileIO
 			writeText(GPlatesUtils::make_qstring_from_icu_string(text));
 		}
 
+		
+		template <typename T>
+		void
+		writeText(
+				const GPlatesModel::StringContentTypeGenerator<T> &text) {
+			writeText(GPlatesUtils::make_qstring_from_icu_string(text.get()));
+		}
+		
 
 		void
 		writeDecimal(
@@ -280,7 +289,7 @@ namespace GPlatesFileIO
 		writeGpmlAttribute(
 				const QString &name,
 				const QString &value) {
-			writeAttribute(GPlatesUtils::XmlNamespaces::GPML_NAMESPACE_QSTRING, name, value);
+			writeAttribute(GPlatesUtils::XmlNamespaces::get_gpml_namespace_qstring(), name, value);
 		}
 
 
@@ -288,7 +297,7 @@ namespace GPlatesFileIO
 		writeGmlAttribute(
 				const QString &name,
 				const QString &value) {
-			writeAttribute(GPlatesUtils::XmlNamespaces::GML_NAMESPACE_QSTRING, name, value);
+			writeAttribute(GPlatesUtils::XmlNamespaces::get_gml_namespace_qstring(), name, value);
 		}
 
 

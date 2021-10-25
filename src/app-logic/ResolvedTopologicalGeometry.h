@@ -35,24 +35,26 @@
 #include <boost/optional.hpp>
 
 #include "ReconstructionGeometry.h"
+#include "ReconstructionGeometryVisitor.h"
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeCreator.h"
-#include "ResolvedTopologicalGeometrySubSegment.h"
 
 #include "maths/GeometryOnSphere.h"
-#include "maths/PolygonOnSphere.h"
-#include "maths/PolylineOnSphere.h"
 
 #include "model/FeatureHandle.h"
 #include "model/types.h"
 #include "model/WeakObserver.h"
+#include "model/WeakObserverVisitor.h"
 
 #include "property-values/GeoTimeInstant.h"
 
 
 namespace GPlatesAppLogic
 {
-	class ResolvedTopologicalGeometry:
+	/**
+	 * Abstract base class for @a ResolvedTopologicalBoundary and @a ResolvedTopologicalLine.
+	 */
+	class ResolvedTopologicalGeometry :
 			public ReconstructionGeometry,
 			public GPlatesModel::WeakObserver<GPlatesModel::FeatureHandle>
 	{
@@ -75,97 +77,24 @@ namespace GPlatesAppLogic
 		//! A convenience typedef for the geometry of this @a ResolvedTopologicalGeometry.
 		typedef GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type resolved_topology_geometry_ptr_type;
 
-		//! A convenience typedef for a resolved topological polygon geometry.
-		typedef GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type resolved_topology_boundary_ptr_type;
-
-		//! A convenience typedef for a resolved topological polyline geometry.
-		typedef GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type resolved_topology_line_ptr_type;
-
-
-		/**
-		 * Create a resolved topological *boundary* with an optional plate ID and an optional time of formation.
-		 *
-		 * For instance, a @a ResolvedTopologicalGeometry might be created without a plate ID
-		 * if no plate ID is found amongst the properties of the feature whose topological
-		 * geometry was resolved.
-		 */
-		template<typename SubSegmentForwardIter>
-		static
-		const non_null_ptr_type
-		create(
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
-				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const resolved_topology_boundary_ptr_type &resolved_topology_geometry_ptr,
-				GPlatesModel::FeatureHandle &feature_handle,
-				GPlatesModel::FeatureHandle::iterator property_iterator_,
-				SubSegmentForwardIter sub_segment_sequence_begin,
-				SubSegmentForwardIter sub_segment_sequence_end,
-				boost::optional<GPlatesModel::integer_plate_id_type> plate_id_ = boost::none,
-				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none,
-				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none)
-		{
-			return non_null_ptr_type(
-					new ResolvedTopologicalGeometry(
-							reconstruction_tree,
-							reconstruction_tree_creator,
-							resolved_topology_geometry_ptr,
-							feature_handle,
-							property_iterator_,
-							sub_segment_sequence_begin,
-							sub_segment_sequence_end,
-							plate_id_,
-							time_of_formation_,
-							reconstruct_handle_));
-		}
-
-
-		/**
-		 * Create a resolved topological *line* with an optional plate ID and an optional time of formation.
-		 *
-		 * For instance, a @a ResolvedTopologicalGeometry might be created without a plate ID
-		 * if no plate ID is found amongst the properties of the feature whose topological
-		 * geometry was resolved.
-		 */
-		template<typename SubSegmentForwardIter>
-		static
-		const non_null_ptr_type
-		create(
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree,
-				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const resolved_topology_line_ptr_type &resolved_topology_line_ptr,
-				GPlatesModel::FeatureHandle &feature_handle,
-				GPlatesModel::FeatureHandle::iterator property_iterator_,
-				SubSegmentForwardIter sub_segment_sequence_begin,
-				SubSegmentForwardIter sub_segment_sequence_end,
-				boost::optional<GPlatesModel::integer_plate_id_type> plate_id_ = boost::none,
-				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_ = boost::none,
-				boost::optional<ReconstructHandle::type> reconstruct_handle_ = boost::none)
-		{
-			return non_null_ptr_type(
-					new ResolvedTopologicalGeometry(
-							reconstruction_tree,
-							reconstruction_tree_creator,
-							resolved_topology_line_ptr,
-							feature_handle,
-							property_iterator_,
-							sub_segment_sequence_begin,
-							sub_segment_sequence_end,
-							plate_id_,
-							time_of_formation_,
-							reconstruct_handle_));
-		}
 
 		virtual
 		~ResolvedTopologicalGeometry()
 		{  }
 
 		/**
+		 * Access the resolved topology geometry.
+		 *
+		 * This is a polygon for @a ResolvedTopologicalBoundary subclass or a polyline for
+		 * @a ResolvedTopologicalLine subclass.
+		 */
+		virtual
+		const resolved_topology_geometry_ptr_type
+		resolved_topology_geometry() const = 0;
+
+		/**
 		 * Get a non-null pointer to a const @a ResolvedTopologicalGeometry which points to this
 		 * instance.
-		 *
-		 * Since the @a ResolvedTopologicalGeometry constructors are private, it should never
-		 * be the case that a @a ResolvedTopologicalGeometry instance has been constructed on
-		 * the stack.
 		 */
 		const non_null_ptr_to_const_type
 		get_non_null_pointer_to_const() const
@@ -176,10 +105,6 @@ namespace GPlatesAppLogic
 		/**
 		 * Get a non-null pointer to a @a ResolvedTopologicalGeometry which points to this
 		 * instance.
-		 *
-		 * Since the @a ResolvedTopologicalGeometry constructors are private, it should never
-		 * be the case that a @a ResolvedTopologicalGeometry instance has been constructed on
-		 * the stack.
 		 */
 		const non_null_ptr_type
 		get_non_null_pointer()
@@ -250,7 +175,12 @@ namespace GPlatesAppLogic
 		 * dereferenced.
 		 */
 		const GPlatesModel::FeatureHandle::weak_ref
-		get_feature_ref() const;
+		get_feature_ref() const
+		{
+			return is_valid()
+					? feature_handle_ptr()->reference()
+					: GPlatesModel::FeatureHandle::weak_ref();
+		}
 
 		/**
 		 * Access the topological geometry feature property used to generate
@@ -261,31 +191,6 @@ namespace GPlatesAppLogic
 		{
 			return d_property_iterator;
 		}
-
-		/**
-		 * Access the resolved topology geometry.
-		 *
-		 * This is a polygon for topological boundaries or a polyline for topological lines.
-		 */
-		const resolved_topology_geometry_ptr_type
-		resolved_topology_geometry() const
-		{
-			return d_resolved_topology_geometry_ptr;
-		}
-
-		/**
-		 * Returns the resolved topology geometry as a polygon boundary, or boost::none
-		 * if it's not a polygon (in which case @a resolved_topology_line will return a polyline).
-		 */
-		boost::optional<resolved_topology_boundary_ptr_type>
-		resolved_topology_boundary() const;
-
-		/**
-		 * Returns the resolved topology geometry as a polyline, or boost::none
-		 * if it's not a polyline (in which case @a resolved_topology_boundary will return a polygon).
-		 */
-		boost::optional<resolved_topology_line_ptr_type>
-		resolved_topology_line() const;
 
 		/**
 		 * Access the cached plate ID, if it exists.
@@ -311,22 +216,16 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Returns the internal sequence of @a SubSegment objects.
-		 */
-		const sub_segment_seq_type &
-		get_sub_segment_sequence() const
-		{
-			return d_sub_segment_seq;
-		}
-
-
-		/**
 		 * Accept a ConstReconstructionGeometryVisitor instance.
 		 */
 		virtual
 		void
 		accept_visitor(
-				ConstReconstructionGeometryVisitor &visitor) const;
+				ConstReconstructionGeometryVisitor &visitor) const
+		{
+			visitor.visit(this->get_non_null_pointer_to_const());
+		}
+
 
 		/**
 		 * Accept a ReconstructionGeometryVisitor instance.
@@ -334,7 +233,10 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		accept_visitor(
-				ReconstructionGeometryVisitor &visitor);
+				ReconstructionGeometryVisitor &visitor)
+		{
+			visitor.visit(this->get_non_null_pointer());
+		}
 
 		/**
 		 * Accept a WeakObserverVisitor instance.
@@ -342,7 +244,33 @@ namespace GPlatesAppLogic
 		virtual
 		void
 		accept_weak_observer_visitor(
-				GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle> &visitor);
+				GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle> &visitor)
+		{
+			visitor.visit_resolved_topological_geometry(*this);
+		}
+
+	protected:
+
+		/**
+		 * Instantiate a resolved topological geometry with an optional reconstruction
+		 * plate ID and an optional time of formation.
+		 */
+		ResolvedTopologicalGeometry(
+				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				GPlatesModel::FeatureHandle &feature_handle,
+				GPlatesModel::FeatureHandle::iterator property_iterator_,
+				boost::optional<GPlatesModel::integer_plate_id_type> plate_id_,
+				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_,
+				boost::optional<ReconstructHandle::type> reconstruct_handle_):
+			ReconstructionGeometry(reconstruction_tree_->get_reconstruction_time(), reconstruct_handle_),
+			WeakObserverType(feature_handle),
+			d_reconstruction_tree(reconstruction_tree_),
+			d_reconstruction_tree_creator(reconstruction_tree_creator),
+			d_property_iterator(property_iterator_),
+			d_plate_id(plate_id_),
+			d_time_of_formation(time_of_formation_)
+		{  }
 
 	private:
 
@@ -356,11 +284,6 @@ namespace GPlatesAppLogic
 		 * reconstruction geometry (the only difference being the reconstruction time).
 		 */
 		ReconstructionTreeCreator d_reconstruction_tree_creator;
-
-		/**
-		 * The resolved topology geometry.
-		 */
-		resolved_topology_geometry_ptr_type d_resolved_topology_geometry_ptr;
 
 		/**
 		 * This is an iterator to the (topological-geometry-valued) property from which
@@ -388,45 +311,6 @@ namespace GPlatesAppLogic
 		 * feature geometries by age.
 		 */
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> d_time_of_formation;
-
-		/**
-		 * The sequence of @a SubSegment objects that form the resolved topology geometry.
-		 *
-		 * This contains the subset of vertices of each reconstructed topological section
-		 * used to generate the resolved topology geometry.
-		 */
-		sub_segment_seq_type d_sub_segment_seq;
-
-
-		/**
-		 * Instantiate a resolved topological geometry with an optional reconstruction
-		 * plate ID and an optional time of formation.
-		 *
-		 * This constructor should not be public, because we don't want to allow
-		 * instantiation of this type on the stack.
-		 */
-		template<typename SubSegmentForwardIter>
-		ResolvedTopologicalGeometry(
-				const ReconstructionTree::non_null_ptr_to_const_type &reconstruction_tree_,
-				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				resolved_topology_geometry_ptr_type resolved_topology_geometry_ptr,
-				GPlatesModel::FeatureHandle &feature_handle,
-				GPlatesModel::FeatureHandle::iterator property_iterator_,
-				SubSegmentForwardIter sub_segment_sequence_begin,
-				SubSegmentForwardIter sub_segment_sequence_end,
-				boost::optional<GPlatesModel::integer_plate_id_type> plate_id_,
-				boost::optional<GPlatesPropertyValues::GeoTimeInstant> time_of_formation_,
-				boost::optional<ReconstructHandle::type> reconstruct_handle_):
-			ReconstructionGeometry(reconstruction_tree_->get_reconstruction_time(), reconstruct_handle_),
-			WeakObserverType(feature_handle),
-			d_reconstruction_tree(reconstruction_tree_),
-			d_reconstruction_tree_creator(reconstruction_tree_creator),
-			d_resolved_topology_geometry_ptr(resolved_topology_geometry_ptr),
-			d_property_iterator(property_iterator_),
-			d_plate_id(plate_id_),
-			d_time_of_formation(time_of_formation_),
-			d_sub_segment_seq(sub_segment_sequence_begin, sub_segment_sequence_end)
-		{  }
 	};
 }
 

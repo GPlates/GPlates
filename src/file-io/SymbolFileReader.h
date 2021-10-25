@@ -37,16 +37,16 @@ namespace GPlatesFileIO
      * as appropriate.
      *
      */
-	class SymbolFileReader
-	{
-	public:
+    class SymbolFileReader
+    {
+    public:
 
-		static
-		void
-		read_file(
-				const QString &filename,
-				GPlatesGui::symbol_map_type &symbol_map);
-	};
+       static
+       void
+       read_file(
+	   const QString &filename,
+	   GPlatesGui::symbol_map_type &symbol_map);
+    };
 
 }
 

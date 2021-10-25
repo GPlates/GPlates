@@ -35,6 +35,8 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "maths/Real.h"
+
 
 GPlatesScribe::TextArchiveWriter::TextArchiveWriter(
 		std::ostream &output_stream) :
@@ -90,9 +92,9 @@ GPlatesScribe::TextArchiveWriter::write_transcription(
 	const unsigned int num_object_tags = transcription.get_num_object_tags();
 	write(num_object_tags);
 
-	for (unsigned int object_tag_id = 0; object_tag_id < num_object_tags; ++object_tag_id)
+	for (unsigned int object_tag_name_id = 0; object_tag_name_id < num_object_tags; ++object_tag_name_id)
 	{
-		write(transcription.get_object_tag(object_tag_id));
+		write(transcription.get_object_tag_name(object_tag_name_id));
 	}
 
 
@@ -294,10 +296,29 @@ GPlatesScribe::TextArchiveWriter::write(
 {
 	d_output_stream.put(' ');
 
-	// Ensure enough precision is written out.
-	d_output_stream << std::setprecision(std::numeric_limits<float>::digits10 + 2);
+	if (GPlatesMaths::is_finite(object))
+	{
+		// Ensure enough precision is written out.
+		d_output_stream << std::setprecision(std::numeric_limits<float>::digits10 + 2);
 
-	d_output_stream << object;
+		d_output_stream << object;
+	}
+	else if (GPlatesMaths::is_positive_infinity(object))
+	{
+		d_output_stream << ArchiveCommon::TEXT_POSITIVE_INFINITY_VALUE;
+	}
+	else if (GPlatesMaths::is_negative_infinity(object))
+	{
+		d_output_stream << ArchiveCommon::TEXT_NEGATIVE_INFINITY_VALUE;
+	}
+	else
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				GPlatesMaths::is_nan(object),
+				GPLATES_ASSERTION_SOURCE);
+
+		d_output_stream << ArchiveCommon::TEXT_NAN_VALUE;
+	}
 
 	GPlatesGlobal::Assert<Exceptions::ArchiveStreamError>(
 			d_output_stream,
@@ -312,10 +333,29 @@ GPlatesScribe::TextArchiveWriter::write(
 {
 	d_output_stream.put(' ');
 
-	// Ensure enough precision is written out.
-	d_output_stream << std::setprecision(std::numeric_limits<double>::digits10 + 2);
+	if (GPlatesMaths::is_finite(object))
+	{
+		// Ensure enough precision is written out.
+		d_output_stream << std::setprecision(std::numeric_limits<double>::digits10 + 2);
 
-	d_output_stream << object;
+		d_output_stream << object;
+	}
+	else if (GPlatesMaths::is_positive_infinity(object))
+	{
+		d_output_stream << ArchiveCommon::TEXT_POSITIVE_INFINITY_VALUE;
+	}
+	else if (GPlatesMaths::is_negative_infinity(object))
+	{
+		d_output_stream << ArchiveCommon::TEXT_NEGATIVE_INFINITY_VALUE;
+	}
+	else
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				GPlatesMaths::is_nan(object),
+				GPLATES_ASSERTION_SOURCE);
+
+		d_output_stream << ArchiveCommon::TEXT_NAN_VALUE;
+	}
 
 	GPlatesGlobal::Assert<Exceptions::ArchiveStreamError>(
 			d_output_stream,

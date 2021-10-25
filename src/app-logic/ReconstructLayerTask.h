@@ -28,19 +28,20 @@
 #define GPLATES_APP_LOGIC_RECONSTRUCTLAYERTASK_H
 
 #include <utility>
+#include <vector>
 #include <boost/shared_ptr.hpp>
+#include <QObject>
 #include <QString>
 
 #include "LayerTask.h"
-#include "LayerTaskParams.h"
 #include "ReconstructLayerProxy.h"
-#include "ReconstructParams.h"
+#include "ReconstructLayerParams.h"
+#include "TopologyGeometryResolverLayerProxy.h"
+#include "TopologyNetworkResolverLayerProxy.h"
 
 #include "maths/types.h"
 
 #include "model/FeatureCollectionHandle.h"
-
-#include "scribe/Transcribe.h"
 
 
 namespace GPlatesAppLogic
@@ -51,60 +52,12 @@ namespace GPlatesAppLogic
 	 * A layer task that reconstructs geometries of features from feature collection(s).
 	 */
 	class ReconstructLayerTask :
+			public QObject,
 			public LayerTask
 	{
+		Q_OBJECT
+
 	public:
-		/**
-		 * App-logic parameters for a reconstruct layer.
-		 */
-		class Params :
-				public LayerTaskParams
-		{
-		public:
-
-			/**
-			 * Returns the 'const' reconstruct parameters.
-			 */
-			const ReconstructParams &
-			get_reconstruct_params() const;
-
-			/**
-			 * Returns the reconstruct parameters for modification.
-			 *
-			 * NOTE: This will flush any cached reconstructed feature geometries in this layer.
-			 */
-			ReconstructParams &
-			get_reconstruct_params();
-
-		private:
-
-			ReconstructParams d_reconstruct_params;
-
-			/**
-			 * Is true if the non-const version of @a get_reconstruct_params has been called.
-			 *
-			 * Used to let ReconstructLayerTask know that an external client has modified this state.
-			 *
-			 * ReconstructLayerTask will reset this explicitly.
-			 */
-			bool d_non_const_get_reconstruct_params_called;
-
-			Params();
-
-			// Make friend so can access constructor and @a d_non_const_get_reconstruct_params_called.
-			friend class ReconstructLayerTask;
-
-		private: // Transcribing...
-
-			GPlatesScribe::TranscribeResult
-			transcribe(
-					GPlatesScribe::Scribe &scribe,
-					bool transcribed_construct_data);
-
-			// Only the scribe system should be able to transcribe.
-			friend class GPlatesScribe::Access;
-		};
-
 
 		static
 		bool
@@ -189,18 +142,24 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		LayerTaskParams &
-		get_layer_task_params()
+		LayerParams::non_null_ptr_type
+		get_layer_params()
 		{
-			return d_layer_task_params;
+			return d_layer_params;
 		}
+
+	private Q_SLOTS:
+
+		void
+		handle_reconstruct_params_modified(
+				GPlatesAppLogic::ReconstructLayerParams &layer_params);
 
 	private:
 
 		/**
 		 * Parameters used when reconstructing.
 		 */
-		Params d_layer_task_params;
+		ReconstructLayerParams::non_null_ptr_type d_layer_params;
 
 		/**
 		 * Keep track of the default reconstruction layer proxy.
@@ -210,48 +169,49 @@ namespace GPlatesAppLogic
 		//! Are we using the default reconstruction layer proxy.
 		bool d_using_default_reconstruction_layer_proxy;
 
+		//! Any currently connected 'resolved boundary' topology surface layers.
+		std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type>
+				d_current_resolved_boundary_topology_surface_layer_proxies;
+		//! Any currently connected 'resolved network' topology surface layers.
+		std::vector<TopologyNetworkResolverLayerProxy::non_null_ptr_type>
+				d_current_resolved_network_topology_surface_layer_proxies;
+
+
 		/**
 		 * Does all the reconstructing.
 		 *
-		 * NOTE: Should be declared after @a d_layer_task_params.
+		 * NOTE: Should be declared after @a d_layer_params.
 		 */
 		ReconstructLayerProxy::non_null_ptr_type d_reconstruct_layer_proxy;
 
 
 		//! Constructor.
 		ReconstructLayerTask(
-				const ReconstructMethodRegistry &reconstruct_method_registry) :
-				d_default_reconstruction_layer_proxy(ReconstructionLayerProxy::create()),
-				d_using_default_reconstruction_layer_proxy(true),
-				d_reconstruct_layer_proxy(
-						ReconstructLayerProxy::create(
-								reconstruct_method_registry,
-								d_layer_task_params.d_reconstruct_params))
-		{  }
+				const ReconstructMethodRegistry &reconstruct_method_registry);
 
-	private: // Transcribing...
+		/**
+		 * Returns true if any topology surface layers are currently connected.
+		 */
+		bool
+		connected_to_topology_surface_layers() const;
 
-		ReconstructLayerTask(
-				const ReconstructionLayerProxy::non_null_ptr_type &default_reconstruction_layer_proxy,
-				const ReconstructLayerProxy::non_null_ptr_type &reconstruct_layer_proxy) :
-				d_default_reconstruction_layer_proxy(default_reconstruction_layer_proxy),
-				d_using_default_reconstruction_layer_proxy(true),
-				d_reconstruct_layer_proxy(reconstruct_layer_proxy)
-		{  }
+		/**
+		 * Returns the 'resolved boundary' topology surface layers.
+		 */
+		void
+		get_resolved_boundary_topology_surface_layer_proxies(
+				std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type> &
+						resolved_boundary_topology_surface_layer_proxies,
+				const Reconstruction::non_null_ptr_type &reconstruction) const;
 
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				bool transcribed_construct_data);
-
-		static
-		GPlatesScribe::TranscribeResult
-		transcribe_construct_data(
-				GPlatesScribe::Scribe &scribe,
-				GPlatesScribe::ConstructObject<ReconstructLayerTask> &reconstruct_layer_task);
-
-		// Only the scribe system should be able to transcribe.
-		friend class GPlatesScribe::Access;
+		/**
+		 * Returns the 'resolved network' topology surface layers.
+		 */
+		void
+		get_resolved_network_topology_surface_layer_proxies(
+				std::vector<TopologyNetworkResolverLayerProxy::non_null_ptr_type> &
+						resolved_network_topology_surface_layer_proxies,
+				const Reconstruction::non_null_ptr_type &reconstruction) const;
 	};
 }
 

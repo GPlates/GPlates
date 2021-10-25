@@ -133,8 +133,6 @@ GPlatesFileIO::GMTFormatGeometryExporter::export_geometry(
 {
 	// Write the coordinate list of the geometry.
 	geometry_ptr->accept_visitor(*this);
-	// Write the final terminating symbol.
-	print_gmt_feature_termination_line(*d_stream_ptr);
 }
 
 
@@ -151,6 +149,9 @@ GPlatesFileIO::GMTFormatGeometryExporter::visit_multi_point_on_sphere(
 	{
 		print_gmt_coordinate_line(*d_stream_ptr, *iter, d_reverse_coordinate_order);
 	}
+
+	// Write the final terminating symbol.
+	print_gmt_feature_termination_line(*d_stream_ptr);
 }
 
 
@@ -159,6 +160,9 @@ GPlatesFileIO::GMTFormatGeometryExporter::visit_point_on_sphere(
 		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
 {
 	print_gmt_coordinate_line(*d_stream_ptr, *point_on_sphere, d_reverse_coordinate_order);
+
+	// Write the final terminating symbol.
+	print_gmt_feature_termination_line(*d_stream_ptr);
 }
 
 
@@ -166,22 +170,23 @@ void
 GPlatesFileIO::GMTFormatGeometryExporter::visit_polygon_on_sphere(
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 {
-	// Write out each point of the polygon.
-	GPlatesMaths::PolygonOnSphere::vertex_const_iterator iter = polygon_on_sphere->vertex_begin();
-	GPlatesMaths::PolygonOnSphere::vertex_const_iterator end = polygon_on_sphere->vertex_end();
+	// Write out the exterior ring.
+	write_polygon_ring(
+			polygon_on_sphere->exterior_ring_vertex_begin(),
+			polygon_on_sphere->exterior_ring_vertex_end());
 
-	// Output all the points of the polygon.
-	for ( ; iter != end; ++iter)
-	{
-		print_gmt_coordinate_line(*d_stream_ptr, *iter, d_reverse_coordinate_order);
-	}
+	// Write a terminating symbol after each ring.
+	print_gmt_feature_termination_line(*d_stream_ptr);
 
-	// Finally, to produce a closed polygon ring, we should return to the initial point
-	// (Assuming that option was specified, which it is by default).
-	if (d_polygon_terminating_point)
+	const unsigned int num_interior_rings = polygon_on_sphere->number_of_interior_rings();
+	for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
 	{
-		print_gmt_coordinate_line(*d_stream_ptr, *polygon_on_sphere->vertex_begin(),
-			d_reverse_coordinate_order);
+		write_polygon_ring(
+				polygon_on_sphere->interior_ring_vertex_begin(interior_ring_index),
+				polygon_on_sphere->interior_ring_vertex_end(interior_ring_index));
+
+		// Write a terminating symbol after each ring.
+		print_gmt_feature_termination_line(*d_stream_ptr);
 	}
 }
 
@@ -198,5 +203,29 @@ GPlatesFileIO::GMTFormatGeometryExporter::visit_polyline_on_sphere(
 	for ( ; iter != end; ++iter)
 	{
 		print_gmt_coordinate_line(*d_stream_ptr, *iter, d_reverse_coordinate_order);
+	}
+
+	// Write the final terminating symbol.
+	print_gmt_feature_termination_line(*d_stream_ptr);
+}
+
+
+void
+GPlatesFileIO::GMTFormatGeometryExporter::write_polygon_ring(
+		const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_vertex_begin,
+		const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_vertex_end)
+{
+	// Output all the points of the ring.
+	GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator ring_vertex_iter = ring_vertex_begin;
+	for (++ring_vertex_iter; ring_vertex_iter != ring_vertex_end; ++ring_vertex_iter)
+	{
+		print_gmt_coordinate_line(*d_stream_ptr, *ring_vertex_iter, d_reverse_coordinate_order);
+	}
+
+	// Finally, to produce a closed polygon ring, we should return to the initial point
+	// (Assuming that option was specified, which it is by default).
+	if (d_polygon_terminating_point)
+	{
+		print_gmt_coordinate_line(*d_stream_ptr, *ring_vertex_begin, d_reverse_coordinate_order);
 	}
 }

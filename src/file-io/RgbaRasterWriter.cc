@@ -97,7 +97,10 @@ GPlatesFileIO::RgbaRasterWriter::RgbaRasterWriter(
 		unsigned int raster_width,
 		unsigned int raster_height,
 		unsigned int num_raster_bands,
-		GPlatesPropertyValues::RasterType::Type raster_band_type) :
+		GPlatesPropertyValues::RasterType::Type raster_band_type,
+		// Currently ignoring 'compress' but could be used with formats that support compression
+		// via QImageWriter::setCompression()...
+		bool compress) :
 	d_filename(filename)
 {
 	// We only support a single colour (RGBA) band.

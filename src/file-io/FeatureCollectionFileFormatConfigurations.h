@@ -26,6 +26,7 @@
 #ifndef GPLATES_FILE_IO_FEATURECOLLECTIONFILEFORMATCONFIGURATIONS_H
 #define GPLATES_FILE_IO_FEATURECOLLECTIONFILEFORMATCONFIGURATIONS_H
 
+#include <string>
 #include <boost/shared_ptr.hpp>
 #include <QMap>
 #include <QString>
@@ -34,7 +35,8 @@
 #include "FeatureCollectionFileFormatRegistry.h"
 #include "GMTFormatWriter.h"
 
-#include "scribe/Transcribe.h"
+#include "model/FeatureCollectionHandle.h"
+#include "property-values/SpatialReferenceSystem.h"
 
 
 namespace GPlatesFileIO
@@ -76,15 +78,6 @@ namespace GPlatesFileIO
 
 		private:
 			GPlatesFileIO::GMTFormatWriter::HeaderFormat d_header_format;
-
-			//! Transcribe to/from serialization archives.
-			GPlatesScribe::TranscribeResult
-			transcribe(
-					GPlatesScribe::Scribe &scribe,
-					bool transcribed_construct_data);
-
-			// Only the scribe system should be able to transcribe.
-			friend class GPlatesScribe::Access;
 		};
 
 
@@ -98,11 +91,18 @@ namespace GPlatesFileIO
 			typedef boost::shared_ptr<const OGRConfiguration> shared_ptr_to_const_type;
 			typedef boost::shared_ptr<OGRConfiguration> shared_ptr_type;
 
+			enum OgrSrsWriteBehaviour
+			{
+				WRITE_AS_WGS84_BEHAVIOUR,
+				WRITE_AS_ORIGINAL_SRS_BEHAVIOUR
+			};
+
 			//! Typedef for a model-to-attribute mapping.
 			typedef QMap<QString, QString> model_to_attribute_map_type;
 
+
 			/**
-			 * Constructor - the default model-to-attribute map is empty.
+			 * Constructor.
 			 *
                          * NOTE: @a file_format must currently be one of:
                          * OGRGMT
@@ -114,10 +114,9 @@ namespace GPlatesFileIO
 			explicit
 			OGRConfiguration(
 					Format file_format,
-					bool wrap_to_dateline = true,
-					const model_to_attribute_map_type model_to_shapefile_map = model_to_attribute_map_type()) :
+					bool wrap_to_dateline = true) :
 				d_wrap_to_dateline(wrap_to_dateline),
-				d_model_to_attribute_map(model_to_shapefile_map)
+				d_ogr_srs_write_behaviour(WRITE_AS_WGS84_BEHAVIOUR)
 			{  }
 
 
@@ -136,38 +135,73 @@ namespace GPlatesFileIO
 				d_wrap_to_dateline = wrap_to_dateline;
 			}
 
-
-			//! Returns the 'const' model-to-attribute map.
-			const model_to_attribute_map_type &
-			get_model_to_attribute_map() const
+			OgrSrsWriteBehaviour
+			get_ogr_srs_write_behaviour() const
 			{
-				return d_model_to_attribute_map;
+				return d_ogr_srs_write_behaviour;
 			}
 
-			//! Returns the 'non-const' model-to-attribute map.
+			void
+			set_ogr_srs_write_behaviour(
+					const OgrSrsWriteBehaviour &behaviour)
+			{
+				d_ogr_srs_write_behaviour = behaviour;
+			}
+
+
+			/**
+			 * Returns the model-to-attribute map.
+			 *
+			 * NOTE: The model-to-attribute map is no longer stored in the file configuration,
+			 * but in the feature collection itself (as a tag).
+			 * This ensures the mapping is retained when the feature collection gets separated
+			 * from its file container.
+			 * Also the model-to-attribute map is persistent (stored in shapefile mapping file)
+			 * whereas the file configuration parameters specified by the user within GPlates and
+			 * not stored to disk.
+			 */
+			static
 			model_to_attribute_map_type &
-			get_model_to_attribute_map()
-			{
-				return d_model_to_attribute_map;
-			}
+			get_model_to_attribute_map(
+					GPlatesModel::FeatureCollectionHandle &feature_collection);
+
+			/**
+			 * @brief get_original_file_srs
+			 * @return the original SRS of the OGR data source, if one was provided.
+			 */
+			boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type>
+			get_original_file_srs() const;
+
+			/**
+			 * @brief set_original_file_srs
+			 * Sets the original SRS of the OGR data source.
+			 */
+			void
+			set_original_file_srs(
+					const GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type &srs);
 
 		private:
+
+			/**
+			 * The key string used when storing the model-to-attribute map as a tag in a FeatureCollectionHandle.
+			 */
+			static const std::string FEATURE_COLLECTION_TAG;
+
+
 			bool d_wrap_to_dateline;
-			model_to_attribute_map_type d_model_to_attribute_map;
 
-		private: // Transcribing...
+			/**
+			 * @brief d_original_file_srs - The original SRS of the OGR data source, if one was provided.
+			 */
+			boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type>
+				d_original_file_srs;
 
-			OGRConfiguration()
-			{  }
+			/**
+			 * @brief d_ogr_srs_write_behaviour - enum for controlling how the SRS is handled on output.
+			 */
+			OgrSrsWriteBehaviour d_ogr_srs_write_behaviour;
 
-			//! Transcribe to/from serialization archives.
-			GPlatesScribe::TranscribeResult
-			transcribe(
-					GPlatesScribe::Scribe &scribe,
-					bool transcribed_construct_data);
 
-			// Only the scribe system should be able to transcribe.
-			friend class GPlatesScribe::Access;
 		};
 	}
 }

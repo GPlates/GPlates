@@ -66,6 +66,7 @@
 #include "qt-widgets/CreateVGPDialog.h"
 #include "qt-widgets/DrawStyleDialog.h"
 #include "qt-widgets/ExportAnimationDialog.h"
+#include "qt-widgets/GenerateCrustalThicknessPointsDialog.h"
 #include "qt-widgets/GenerateVelocityDomainCitcomsDialog.h"
 #include "qt-widgets/GenerateVelocityDomainLatLonDialog.h"
 #include "qt-widgets/GenerateVelocityDomainTerraDialog.h"
@@ -121,7 +122,6 @@ GPlatesGui::Dialogs::about_dialog()
 	{
 		d_dialogs[dialog_type] = new dialog_typename(
 				*this,
-				application_state().get_gpgim(),
 				&viewport_window());
 	}
 
@@ -402,7 +402,11 @@ GPlatesGui::Dialogs::draw_style_dialog()
 
 	if (d_dialogs[dialog_type].isNull())
 	{
-		d_dialogs[dialog_type] = new dialog_typename(view_state(), &viewport_window());
+		d_dialogs[dialog_type] = new dialog_typename(
+				view_state(),
+				// Parent on the visual layers dialog instead of the main window to help
+				// minimise blocking of the main window...
+				&visual_layers_dialog());
 	}
 
 	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
@@ -413,8 +417,11 @@ GPlatesGui::Dialogs::pop_up_draw_style_dialog()
 {
 	GPlatesQtWidgets::DrawStyleDialog &dialog = draw_style_dialog();
 
-	dialog.init_category_table();
 	dialog.pop_up();
+
+	// Need to prepare the dialog based on its current state
+	// (whether it is currently focused on a layer or on 'all' layers).
+	dialog.reset();
 }
 
 
@@ -465,13 +472,11 @@ GPlatesGui::Dialogs::pop_up_feature_properties_dialog()
 	feature_properties_dialog().pop_up();
 }
 
-
-
 GPlatesQtWidgets::FiniteRotationCalculatorDialog &
 GPlatesGui::Dialogs::finite_rotation_calculator_dialog()
 {
 	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
-	const DialogType dialog_type = DIALOG_FINITE_ROTATION_CALCULATOR_DIALOG;
+	const DialogType dialog_type = DIALOG_FINITE_ROTATION_CALCULATOR;
 	typedef GPlatesQtWidgets::FiniteRotationCalculatorDialog dialog_typename;
 
 	if (d_dialogs[dialog_type].isNull())
@@ -487,6 +492,34 @@ GPlatesGui::Dialogs::pop_up_finite_rotation_calculator_dialog()
 {
 	finite_rotation_calculator_dialog().pop_up();
 }
+
+
+GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog &
+GPlatesGui::Dialogs::generate_crustal_thickness_points_dialog()
+{
+	// Putting this upfront reduces chance of error when copy'n'pasting for a new dialog function.
+	const DialogType dialog_type = DIALOG_GENERATE_CRUSTAL_THICKNESS_POINTS;
+	typedef GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog dialog_typename;
+
+	if (d_dialogs[dialog_type].isNull())
+	{
+		d_dialogs[dialog_type] = new dialog_typename(view_state(), &viewport_window());
+	}
+
+	return dynamic_cast<dialog_typename &>(*d_dialogs[dialog_type]);
+}
+
+void
+GPlatesGui::Dialogs::pop_up_generate_crustal_thickness_points_dialog()
+{
+	GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog &dialog = generate_crustal_thickness_points_dialog();
+
+	if (dialog.initialise())
+	{
+		dialog.exec();
+	}
+}
+
 
 GPlatesQtWidgets::HellingerDialog &
 GPlatesGui::Dialogs::hellinger_dialog()

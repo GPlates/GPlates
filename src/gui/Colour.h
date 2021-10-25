@@ -40,6 +40,9 @@
 
 #include "maths/MathsUtils.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/Endian.h"
 #include "utils/QtStreamable.h"
 
@@ -241,6 +244,16 @@ namespace GPlatesGui
 				reinterpret_cast<char *>(rgba8_pixels),
 				num_pixels * sizeof(rgba8_t));
 	}
+
+
+	/**
+	 * Return a colour with the RGB components multiplied by the alpha component.
+	 *
+	 * This is used in some alpha-blended rendering scenarios to avoid double-blending artifacts.
+	 */
+	rgba8_t
+	pre_multiply_alpha(
+			rgba8_t rgba8_color);
 
 
 	/**
@@ -467,6 +480,8 @@ namespace GPlatesGui
 		 * @param position A value between 0.0 and 1.0 (inclusive), which can be
 		 * interpreted as where the returned colour lies in the range between the
 		 * first colour and the second colour.
+		 *
+		 * NOTE: The alpha values are ignored (the alpha of the returned colour is 1.0).
 		 */
 		static
 		Colour
@@ -483,6 +498,16 @@ namespace GPlatesGui
 		modulate(
 				const Colour &first,
 				const Colour &second);
+
+		/**
+		 * Return a colour with the RGB components multiplied by the alpha component.
+		 *
+		 * This is used in some alpha-blended rendering scenarios to avoid double-blending artifacts.
+		 */
+		static
+		Colour
+		pre_multiply_alpha(
+				const Colour &colour);
 
 		/**
 		 * Converts a CMYK colour to a Colour (which is RGBA). The cyan,
@@ -584,6 +609,15 @@ namespace GPlatesGui
 					GPlatesMaths::are_almost_exactly_equal(lhs.blue(), rhs.blue()) &&
 					GPlatesMaths::are_almost_exactly_equal(lhs.alpha(), rhs.alpha());
 		}
+
+	private: // Transcribe for sessions/projects...
+
+		friend class GPlatesScribe::Access;
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 	std::ostream &

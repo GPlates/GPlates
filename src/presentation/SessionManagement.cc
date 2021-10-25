@@ -52,9 +52,6 @@ GPlatesPresentation::SessionManagement::SessionManagement(
 void
 GPlatesPresentation::SessionManagement::initialise()
 {
-// For now we just clear the session state by unloading all files and layers.
-// When session save/restore gets more involved we can bring this back.
-#if 0
 	// Saving the current session may generate a serialization error...
 	try
 	{
@@ -67,12 +64,30 @@ GPlatesPresentation::SessionManagement::initialise()
 		// Log the detailed error message.
 		qWarning() << "Unable to generate the clear session state at application startup: " << scribe_exception;
 	}
-#endif
 }
 
 
 void
-GPlatesPresentation::SessionManagement::clear_session()
+GPlatesPresentation::SessionManagement::clear_session(
+		bool save_current_session)
+{
+	if (save_current_session)
+	{
+		// Save the current session so user can return to it after clearing the session.
+		save_session_state();
+	}
+
+	// Clear the current session so there's no files loaded and
+	// no auto-created or user-created layers left.
+	clear_session_state();
+
+	// The current session is no longer a project.
+	set_project(boost::none);
+}
+
+
+void
+GPlatesPresentation::SessionManagement::clear_session_state()
 {
 	// Block any signaled calls to 'ApplicationState::reconstruct' until we exit this scope.
 	// Blocking calls to 'reconstruct' during this scope prevents multiple calls caused by
@@ -103,7 +118,6 @@ GPlatesPresentation::SessionManagement::clear_session()
 	// End the remove layers group.
 	remove_layers_group.end_add_or_remove_layers();
 
-#if 0
 	// To ensure that everything is restored to the way it was at application startup we also
 	// load the default clear session state using the Scribe.
 	if (d_clear_session_state)
@@ -113,59 +127,42 @@ GPlatesPresentation::SessionManagement::clear_session()
 		// stream or archive version issue).
 		d_clear_session_state.get()->restore_session();
 	}
-#endif
 }
 
 
-QStringList
-GPlatesPresentation::SessionManagement::load_session(
-		const Session::non_null_ptr_to_const_type &session_to_load)
+void
+GPlatesPresentation::SessionManagement::load_session_state(
+		const SessionInfo &session_to_load,
+		bool save_current_session)
 {
 	// Block any signaled calls to 'ApplicationState::reconstruct' until we exit this scope.
 	// This prevents multiple calls to 'reconstruct' caused by layer signals, etc.
 	GPlatesAppLogic::ApplicationState::ScopedReconstructGuard scoped_reconstruct_guard(
 			*d_app_state_ptr, true/*reconstruct_on_scope_exit*/);
 
-	//
-	// Note that we reload the session even if it contains the same set of files.
-	// This is because the user may have changed layer settings or connections but then
-	// wants to essentially undo that by reloading the original settings/connections in the
-	// saved session state.
-	//
-
-	//
-	// User is attempting to load a new session. Should we replace the old one?
-	// For now, the answer is yes - always unload the original files first and clear the session state.
-	// However, before we do that, save the current session.
-	//
-	// UPDATE: Now restoring a session essentially overwrites the previous session anyway.
-	// It's conceivable that two sessions could be merged but this would be difficult especially
-	// if both sessions had some files in common but the layers connected to them (from different
-	// sessions) had different state resulting in a conflict (unless the files were duplicated to
-	// effectively make both sessions have independent files and layers).
-	//
-
-	// Save the current session.
-	// We get boost::none if there was a Scribe exception whilst saving the session.
-	const boost::optional<InternalSession::non_null_ptr_to_const_type> current_session = save_session();
+	// Save the current session first (if requested).
+	boost::optional<InternalSession::non_null_ptr_type> current_session;
+	if (save_current_session)
+	{
+		// We get boost::none if there was a Scribe exception whilst saving the session.
+		current_session = save_session_state();
+	}
 
 	// Clear the current session so there's no files loaded and
 	// no auto-created or user-created layers left.
-	clear_session();
-
-	QStringList feature_collection_files_not_loaded;
+	clear_session_state();
 
 	// Load the requested session.
 	try
 	{
-		feature_collection_files_not_loaded = session_to_load->restore_session();
+		session_to_load.get_session()->restore_session();
 	}
 	catch (const GPlatesScribe::Exceptions::BaseException &/*scribe_exception*/)
 	{
 		// We failed to restore the session...
 
 		// Clear the session since it could be partially restored.
-		clear_session();
+		clear_session_state();
 
 		// If the current session was successfully saved before we tried to load a session then
 		// attempt to restore that session, otherwise clear the session and re-throw.
@@ -179,7 +176,7 @@ GPlatesPresentation::SessionManagement::load_session(
 			catch (const GPlatesScribe::Exceptions::BaseException &/*scribe_exception*/)
 			{
 				// Clear the session since it could be partially restored.
-				clear_session();
+				clear_session_state();
 
 				// Re-throw the exception so the error can get reported in the GUI.
 				throw;
@@ -190,15 +187,13 @@ GPlatesPresentation::SessionManagement::load_session(
 		// We do this even if we managed to restore things back to the way they were.
 		throw;
 	}
-
-	return feature_collection_files_not_loaded;
 }
 
 
-QList<GPlatesPresentation::InternalSession::non_null_ptr_to_const_type>
+QList<GPlatesPresentation::SessionManagement::InternalSessionInfo>
 GPlatesPresentation::SessionManagement::get_recent_session_list()
 {
-	QList<InternalSession::non_null_ptr_to_const_type> session_list;
+	QList<InternalSessionInfo> session_list;
 
 	// Sessions are stored as an "array" in the Qt style, so first read the 'size' of that array.
 	GPlatesAppLogic::UserPreferences &prefs = d_app_state_ptr->get_user_preferences();
@@ -218,25 +213,31 @@ GPlatesPresentation::SessionManagement::get_recent_session_list()
 	{
 		// Session number i is stored in a 'directory' named i.
 		QString session_path = QString("session/recent/sessions/%1").arg(i);
-		// The "loaded_files" key exists for all deprecated session versions and
-		// the "serialized_session_state" key exists for all non-deprecated versions
-		// so we use these to test for the existence of a session.
- 		if (prefs.exists(session_path + "/serialized_session_state") ||
- 			prefs.exists(session_path + "/loaded_files"))
+
+		const GPlatesAppLogic::UserPreferences::KeyValueMap session_state = prefs.get_keyvalues_as_map(session_path);
+
+		// Test for the existence of a session (see if has valid/recognised session keys).
+		if (InternalSession::has_valid_session_keys(session_state))
 		{
-			const GPlatesAppLogic::UserPreferences::KeyValueMap session_state =
-					prefs.get_keyvalues_as_map(session_path);
+			try
+			{
+				// Note that we add the current session to the list even if GPlates cannot restore it
+				// (because, for example, it has been created by a future incompatible version of GPlates)
+				// in which case it will just fail to load if the user selects it.
+				// This is because all versions of GPlates share the same logical session list and anytime
+				// one version of GPlates saves a session then it should appear in the list regardless of
+				// whether other versions of GPlates can read it or not.
+				session_list << InternalSessionInfo(InternalSession::create_restore_session(session_state));
+			}
+			catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
+			{
+				qWarning() << scribe_exception; // Log the detailed error message.
 
-			// Deprecated sessions don't have the "serialized_session_state" key.
-			const bool is_deprecated_session = !prefs.exists(session_path + "/serialized_session_state");
-
-			// Note that we add the current session to the list even if GPlates cannot restore it
-			// (because, for example, it has been created by a future incompatible version of GPlates)
-			// in which case it will just fail to load if the user selects it.
-			// This is because all versions of GPlates share the same logical session list and anytime
-			// one version of GPlates saves a session then it should appear in the list regardless of
-			// whether other versions of GPlates can read it or not.
-			session_list << InternalSession::create_restore_session(session_state, is_deprecated_session);
+				// Skip the current session.
+				// Either we couldn't read it (eg, was created by a version of GPlates too far in
+				// the future, or the session archive got corrupted somehow.
+				continue;
+			}
 		}
 	}
 
@@ -260,8 +261,10 @@ GPlatesPresentation::SessionManagement::get_recent_session_list()
 		// whether other versions of GPlates can read it or not.
 		const GPlatesAppLogic::UserPreferences::KeyValueMap deprecated_session_state =
 				prefs.get_keyvalues_as_map(deprecated_session_path);
-		InternalSession::non_null_ptr_to_const_type deprecated_session =
-				InternalSession::create_restore_session(deprecated_session_state, true/*is_deprecated_session*/);
+		// Note that we don't need to catch scribe exceptions here because deprecated sessions
+		// don't use the scribe system.
+		InternalSession::non_null_ptr_type deprecated_session =
+				InternalSession::create_restore_session(deprecated_session_state);
 
 		// Search for a session, if any, that matches the deprecated session (has same loaded files).
 		// If there's a match and the deprecated session is more recent then remove the session
@@ -269,11 +272,11 @@ GPlatesPresentation::SessionManagement::get_recent_session_list()
 		bool matches_existing_session_but_is_older = false;
 		for (int session_index = 0; session_index < session_list.size(); ++session_index)
 		{
-			if (deprecated_session->has_same_loaded_files_as(*session_list[session_index]))
+			if (deprecated_session->has_same_loaded_files_as(*session_list[session_index].get_session()))
 			{
 				// Matching session already in storage.
 				// If deprecated session is more recent, then remove the session already in storage.
-				if (session_list[session_index]->get_time() < deprecated_session->get_time())
+				if (session_list[session_index].get_time() < deprecated_session->get_time())
 				{
 					session_list.removeAt(session_index);
 				}
@@ -298,9 +301,9 @@ GPlatesPresentation::SessionManagement::get_recent_session_list()
 		for (int session_index = 0; session_index < session_list.size(); ++session_index)
 		{
 			// If deprecated session is more recent, then insert it into the session list.
-			if (session_list[session_index]->get_time() < deprecated_session->get_time())
+			if (session_list[session_index].get_time() < deprecated_session->get_time())
 			{
-				session_list.insert(session_index, deprecated_session);
+				session_list.insert(session_index, InternalSessionInfo(deprecated_session));
 				inserted_deprecated_session = true;
 
 				// Make sure the list does not exceed the maximum number of session entries.
@@ -324,7 +327,7 @@ GPlatesPresentation::SessionManagement::get_recent_session_list()
 		// So just append it to the end of the list (least recent) if there's room.
 		if (session_list.size() < sessions_max_size)
 		{
-			session_list.append(deprecated_session);
+			session_list.append(InternalSessionInfo(deprecated_session));
 		}
 	}
 	
@@ -332,32 +335,116 @@ GPlatesPresentation::SessionManagement::get_recent_session_list()
 }
 
 
-QStringList
-GPlatesPresentation::SessionManagement::load_previous_session(
-		int session_slot_to_load)
+boost::optional<GPlatesPresentation::SessionManagement::InternalSessionInfo>
+GPlatesPresentation::SessionManagement::get_previous_session_info(
+		int session_slot)
 {
-	QList<InternalSession::non_null_ptr_to_const_type> sessions = get_recent_session_list();
-	if (session_slot_to_load >= sessions.size() || session_slot_to_load < 0) {
-		// Nothing to load.
-		return QStringList();
+	QList<InternalSessionInfo> sessions = get_recent_session_list();
+	if (session_slot >= sessions.size() || session_slot < 0)
+	{
+		// No session to retrieve.
+		return boost::none;
 	}
 
-	const Session::non_null_ptr_to_const_type session_to_load = sessions.at(session_slot_to_load);
-
-	// Load it, potentially saving the previous session.
-	return load_session(session_to_load);
+	return sessions.at(session_slot);
 }
 
 
-QStringList
-GPlatesPresentation::SessionManagement::load_project_session(
+void
+GPlatesPresentation::SessionManagement::load_previous_session(
+		const InternalSessionInfo &session,
+		bool save_current_session)
+{
+	// Load the session, potentially saving the previous session.
+	load_session_state(session, save_current_session);
+
+	// The current session is no longer a project.
+	set_project(boost::none);
+}
+
+
+boost::optional<GPlatesPresentation::SessionManagement::ProjectInfo>
+GPlatesPresentation::SessionManagement::is_current_session_a_project() const
+{
+	return d_project;
+}
+
+
+bool
+GPlatesPresentation::SessionManagement::is_current_session_a_project_with_unsaved_changes() const
+{
+	const boost::optional<ProjectInfo> project_info = is_current_session_a_project();
+	if (!project_info)
+	{
+		return false;
+	}
+
+	return project_info->has_session_state_changed();
+}
+
+
+void
+GPlatesPresentation::SessionManagement::set_project(
+		boost::optional<ProjectInfo> project)
+{
+	// Previous project filename (if any).
+	boost::optional<QString> previous_project_filename;
+	if (d_project)
+	{
+		previous_project_filename = d_project->get_project_filename();
+	}
+
+	d_project = project;
+
+	// Current project filename (if any).
+	boost::optional<QString> current_project_filename;
+	if (d_project)
+	{
+		current_project_filename = d_project->get_project_filename();
+	}
+
+	// Emit signal if project filename changed.
+	if (current_project_filename != previous_project_filename)
+	{
+		Q_EMIT changed_project_filename(current_project_filename);
+	}
+}
+
+
+GPlatesPresentation::SessionManagement::ProjectInfo
+GPlatesPresentation::SessionManagement::get_project_info(
 		const QString &project_filename)
 {
-	// Create a Session object that can be used to restore the session from the project file.
-	const Session::non_null_ptr_to_const_type project_session =
+	// Create a project session that can be used to restore the session from the project file.
+	ProjectSession::non_null_ptr_type project_session =
 			ProjectSession::create_restore_session(project_filename);
 
-	return load_session(project_session);
+	return ProjectInfo(project_session);
+}
+
+
+void
+GPlatesPresentation::SessionManagement::load_project(
+		const ProjectInfo &project,
+		bool save_current_session)
+{
+	load_session_state(project, save_current_session);
+
+	// Set the current project.
+	set_project(project);
+}
+
+
+void
+GPlatesPresentation::SessionManagement::save_project(
+		const QString &project_filename)
+{
+	// Save the current session to the project file.
+	ProjectSession::non_null_ptr_type project_session =
+			ProjectSession::save_session(project_filename);
+
+	// Set the current project.
+	set_project(ProjectInfo(project_session));
 }
 
 
@@ -417,23 +504,34 @@ GPlatesPresentation::SessionManagement::close_event_hook()
 	// if user wants to auto-save at end (default), save.
 	GPlatesAppLogic::UserPreferences &prefs = d_app_state_ptr->get_user_preferences();
 	if (prefs.get_value("session/auto_save_on_quit").toBool()) {
-		// Note that we ALWAYS save_session on (normal) exit, to ensure that any old sessions
+		// Note that we ALWAYS save_session_state on (normal) exit, to ensure that any old sessions
 		// get updated to new versions, to update the timestamp, and to ensure that if a
 		// user was only opening GPlates to mess with some Layers state, that it will be
 		// preserved.
-		save_session();
+		save_session_state();
 	}
 }
 
 
-boost::optional<GPlatesPresentation::InternalSession::non_null_ptr_to_const_type>
+bool
 GPlatesPresentation::SessionManagement::save_session()
 {
+	return save_session_state();
+}
+
+
+boost::optional<GPlatesPresentation::InternalSession::non_null_ptr_type>
+GPlatesPresentation::SessionManagement::save_session_state()
+{
+	// Unload all empty-filename feature collections, triggering the removal of their layer info,
+	// so that the Session we record as being the user's previous session is self-consistent.
+	unload_all_unnamed_files();
+
 	// Saving the current session may generate a serialization error...
 	try
 	{
 		// Create a Session object that matches the current GPlates session.
-		InternalSession::non_null_ptr_to_const_type current_session = InternalSession::save_session();
+		InternalSession::non_null_ptr_type current_session = InternalSession::save_session();
 
 		// If session is not empty then save it to the recent session lists.
 		// We don't save empty sessions to the recent sessions list.
@@ -441,12 +539,12 @@ GPlatesPresentation::SessionManagement::save_session()
 		{
 			// In order to save this current session, we must first check the existing
 			// session list to see where it belongs.
-			QList<InternalSession::non_null_ptr_to_const_type> session_list = get_recent_session_list();
+			QList<InternalSessionInfo> session_list = get_recent_session_list();
 
 			// Search for a session that matches the current session.
 			for (int session_index = 0; session_index < session_list.size(); ++session_index)
 			{
-				if (current_session->has_same_loaded_files_as(*session_list[session_index]))
+				if (current_session->has_same_loaded_files_as(*session_list[session_index].get_session()))
 				{
 					// Matching session already in storage, we should remove that one before
 					// we put the current one onto the top (head) of the list.
@@ -458,7 +556,7 @@ GPlatesPresentation::SessionManagement::save_session()
 			// No duplicate entry on the session list now, we can put the current one
 			// at the head of the list. This will have the appropriate effect if we
 			// are "bumping" the old session entry to the top.
-			session_list.prepend(current_session);
+			session_list.prepend(InternalSessionInfo(current_session));
 
 			// Store the modified list to persistent storage, cropping it to the max size
 			// as necessary.
@@ -476,14 +574,6 @@ GPlatesPresentation::SessionManagement::save_session()
 }
 
 
-GPlatesPresentation::ProjectSession::non_null_ptr_to_const_type
-GPlatesPresentation::SessionManagement::save_session_to_project(
-		const QString &project_filename)
-{
-	return ProjectSession::save_session(project_filename);
-}
-
-
 void
 GPlatesPresentation::SessionManagement::debug_session_state()
 {
@@ -498,6 +588,13 @@ GPlatesPresentation::SessionManagement::debug_session_state()
 		{
 			qDebug() << fi;
 		}
+	
+		qDebug() << "Recent sessions:-";
+		QList<InternalSessionInfo> sessions = get_recent_session_list();
+		Q_FOREACH(const InternalSessionInfo &recent_session, sessions)
+		{
+			qDebug() << recent_session.get_description();
+		}
 	}
 	catch (const GPlatesScribe::Exceptions::BaseException &scribe_exception)
 	{
@@ -506,19 +603,12 @@ GPlatesPresentation::SessionManagement::debug_session_state()
 		// Return early without changing the session list.
 		return;
 	}
-	
-	qDebug() << "Recent sessions:-";
-	QList<InternalSession::non_null_ptr_to_const_type> sessions = get_recent_session_list();
-	Q_FOREACH(const InternalSession::non_null_ptr_to_const_type &recent_session, sessions)
-	{
-		qDebug() << recent_session->get_description();
-	}
 }
 
 
 void
 GPlatesPresentation::SessionManagement::store_recent_session_list(
-		const QList<InternalSession::non_null_ptr_to_const_type> &session_list)
+		const QList<InternalSessionInfo> &session_list)
 {
 	GPlatesAppLogic::UserPreferences &prefs = d_app_state_ptr->get_user_preferences();
 
@@ -539,7 +629,7 @@ GPlatesPresentation::SessionManagement::store_recent_session_list(
 	// When the Scribe system was introduced this was rectified by storing the entire session state
 	// including all key/value pairs in a session entry (this makes storing the recent session list
 	// work when sessions, saved by future versions of GPlates, are encountered).
-	// Also prior versions prior would attempt to restore sessions created by future versions
+	// Also prior versions would attempt to restore sessions created by future versions
 	// which would fail - and this has also been rectified.
 	// So to avoid problems with GPlates versions prior to this we now store the sessions
 	// in a separate area under 'session/recent/sessions/' instead of 'session/recent/'.
@@ -556,12 +646,35 @@ GPlatesPresentation::SessionManagement::store_recent_session_list(
 	for (int i = 1; i <= sessions_size; ++i)
 	{
 		// Session number i is stored in a 'directory' named i.
-		const InternalSession::non_null_ptr_to_const_type &session = session_list.at(i-1);
+		const InternalSessionInfo &session = session_list.at(i-1);
 		QString session_path = QString("session/recent/sessions/%1").arg(i);
 
-		prefs.set_keyvalues_from_map(session_path, session->get_session_key_value_map());
+		prefs.set_keyvalues_from_map(session_path, session.get_internal_session()->get_session_key_value_map());
 	}
 
 	// Ensure menu is updated.
 	Q_EMIT session_list_updated();
+}
+
+
+GPlatesPresentation::SessionManagement::SessionInfo::SessionInfo(
+		Session::non_null_ptr_type session) :
+	d_session(session)
+{
+}
+
+
+GPlatesPresentation::SessionManagement::InternalSessionInfo::InternalSessionInfo(
+		InternalSession::non_null_ptr_type internal_session) :
+	SessionInfo(internal_session),
+	d_internal_session(internal_session)
+{
+}
+
+
+GPlatesPresentation::SessionManagement::ProjectInfo::ProjectInfo(
+		ProjectSession::non_null_ptr_type project_session) :
+	SessionInfo(project_session),
+	d_project_session(project_session)
+{
 }

@@ -296,6 +296,28 @@ namespace GPlatesModel
 
 
 		/**
+		 * Returns true if any of the structural types represents a geometry.
+		 *
+		 * Usually if one type represents a geometry then they all will.
+		 *
+		 * Geometry structural types include:
+		 *   - gml:Point
+		 *   - gml:MultiPoint
+		 *   - gml:Polygon
+		 *   - gml:LineString
+		 *   - gml:OrientableCurve
+		 *   - gpml:TopologicalLine
+		 *   - gpml:TopologicalNetwork
+		 *   - gpml:TopologicalPolygon
+		 */
+		bool
+		has_geometry_structural_type() const
+		{
+			return d_has_geometry_structural_type;
+		}
+
+
+		/**
 		 * Sets the structural types.
 		 *
 		 * @param structural_types_begin begin iterator over the allowed structural types for this property.
@@ -318,6 +340,7 @@ namespace GPlatesModel
 			d_structural_types.clear();
 			d_structural_types.insert(d_structural_types.end(), structural_types_begin, structural_types_end);
 			set_default_structural_type(default_structural_type_index);
+			set_has_geometry_structural_type();
 		}
 
 
@@ -390,6 +413,9 @@ namespace GPlatesModel
 		//! The allowed structural types for this property.
 		structural_type_seq_type d_structural_types;
 
+		//! Do any of the structural types represent a geoemtry?
+		bool d_has_geometry_structural_type;
+
 		//! The allowed time-dependent types, if any, for this property.
 		time_dependent_flags_type d_time_dependent_types;
 
@@ -397,6 +423,9 @@ namespace GPlatesModel
 		void
 		set_default_structural_type(
 				unsigned int default_structural_type_index);
+
+		void
+		set_has_geometry_structural_type();
 
 		//! Constructor.
 		template <typename StructuralTypeForwardIter>
@@ -414,9 +443,11 @@ namespace GPlatesModel
 			d_property_description(property_description),
 			d_multiplicity(multiplicity),
 			d_structural_types(structural_types_begin, structural_types_end),
+			d_has_geometry_structural_type(false),
 			d_time_dependent_types(time_dependent_types)
 		{
 			set_default_structural_type(default_structural_type_index);
+			set_has_geometry_structural_type();
 		}
 
 	};

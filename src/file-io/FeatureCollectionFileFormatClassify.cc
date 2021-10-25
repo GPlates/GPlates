@@ -31,6 +31,7 @@
 #include "app-logic/ExtractRasterFeatureProperties.h"
 #include "app-logic/ExtractScalarField3DFeatureProperties.h"
 #include "app-logic/ReconstructMethodRegistry.h"
+#include "app-logic/ScalarCoverageFeatureProperties.h"
 #include "app-logic/TopologyUtils.h"
 
 #include "feature-visitors/TotalReconstructionSequencePlateIdFinder.h"
@@ -97,6 +98,15 @@ namespace GPlatesFileIO
 					if (GPlatesAppLogic::is_raster_feature(feature))
 					{
 						classifications.set(RASTER);
+					}
+				}
+
+				// Check if the feature is a scalar coverage.
+				if (!classifications.test(SCALAR_COVERAGE)) // Only test if not classified already...
+				{
+					if (GPlatesAppLogic::ScalarCoverageFeatureProperties::is_scalar_coverage_feature(feature))
+					{
+						classifications.set(SCALAR_COVERAGE);
 					}
 				}
 

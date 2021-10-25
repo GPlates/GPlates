@@ -1031,7 +1031,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 	renderer.gl_load_matrix(GL_MODELVIEW, d_gl_model_view_transform);
 
 	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
-	const float scale = calculate_scale();
+	const float scale = calculate_scale(paint_device_width, paint_device_height);
 	//
 	// Paint the globe and its contents.
 	//
@@ -1498,11 +1498,22 @@ GPlatesQtWidgets::GlobeCanvas::reset_camera_orientation()
 }
 
 float
-GPlatesQtWidgets::GlobeCanvas::calculate_scale()
+GPlatesQtWidgets::GlobeCanvas::calculate_scale(
+		int paint_device_width,
+		int paint_device_height)
 {
-	int min_dimension = (std::min)(size().width(), size().height());
-	return static_cast<float>(min_dimension) /
-		static_cast<float>(d_view_state.get_main_viewport_min_dimension());
+	const int paint_device_dimension = (std::min)(paint_device_width, paint_device_height);
+	const int min_viewport_dimension = d_view_state.get_main_viewport_min_dimension();
+
+	// If paint device is larger than the viewport then don't scale - this avoids having
+	// too large point/line sizes when exporting large screenshots.
+	if (paint_device_dimension >= min_viewport_dimension)
+	{
+		return 1.0f;
+	}
+
+	// This is useful when rendering the small colouring previews - avoids too large point/line sizes.
+	return static_cast<float>(paint_device_dimension) / static_cast<float>(min_viewport_dimension);
 }
 
 void

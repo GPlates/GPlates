@@ -40,12 +40,12 @@ GPlatesPropertyValues::GmlRectifiedGrid::create(
 		const offset_vector_list_type &offset_vectors_,
 		const xml_attributes_type &xml_attributes_)
 {
-	return new GmlRectifiedGrid(
+	return non_null_ptr_type(new GmlRectifiedGrid(
 			limits_,
 			axes_,
 			origin_,
 			offset_vectors_,
-			xml_attributes_);
+			xml_attributes_));
 }
 
 
@@ -111,7 +111,7 @@ GPlatesPropertyValues::GmlRectifiedGrid::print_to(
 }
 
 
-const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type> &
+const boost::optional<GPlatesPropertyValues::Georeferencing::non_null_ptr_to_const_type>
 GPlatesPropertyValues::GmlRectifiedGrid::convert_to_georeferencing() const
 {
 	if (d_cached_georeferencing)

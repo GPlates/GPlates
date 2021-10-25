@@ -177,6 +177,16 @@
        </item>
       </layout>
      </widget>
+     <widget class="QWidget" name="page_conjugate_properties">
+      <layout class="QVBoxLayout" name="verticalLayout_4">
+       <property name="margin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QWidget" name="widget_conjugate_properties_page_placeholder" native="true"/>
+       </item>
+      </layout>
+     </widget>
      <widget class="QWidget" name="page_feature_collection">
       <layout class="QVBoxLayout">
        <property name="margin">
@@ -209,6 +219,10 @@
        <property name="text">
         <string>Pre&amp;vious</string>
        </property>
+       <property name="icon">
+        <iconset resource="../qt-resources/qt_widgets.qrc">
+         <normaloff>:/gnome_go_previous_16.png</normaloff>:/gnome_go_previous_16.png</iconset>
+       </property>
        <property name="autoDefault">
         <bool>false</bool>
        </property>
@@ -218,6 +232,10 @@
       <widget class="QPushButton" name="button_next">
        <property name="text">
         <string>Ne&amp;xt</string>
+       </property>
+       <property name="icon">
+        <iconset resource="../qt-resources/qt_widgets.qrc">
+         <normaloff>:/gnome_go_next_16.png</normaloff>:/gnome_go_next_16.png</iconset>
        </property>
       </widget>
      </item>

@@ -80,14 +80,11 @@ namespace GPlatesViewOperations
 			// If the polygon is filled then see if the test point is inside the polygon's interior.
 			if (get_is_filled())
 			{
-				const GPlatesMaths::PointInPolygon::Result point_in_polygon_result =
-						d_polygon_on_sphere->is_point_in_polygon(
-								criteria.test_point(),
-								// We don't need anything fast since this is typically a user click point
-								// (ie, a single point tested against the polygon)...
-								GPlatesMaths::PolygonOnSphere::LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE);
-
-				if (point_in_polygon_result == GPlatesMaths::PointInPolygon::POINT_INSIDE_POLYGON)
+				if (d_polygon_on_sphere->is_point_in_polygon(
+						criteria.test_point(),
+						// We don't need anything fast since this is typically a user click point
+						// (ie, a single point tested against the polygon)...
+						GPlatesMaths::PolygonOnSphere::LOW_SPEED_NO_SETUP_NO_MEMORY_USAGE))
 				{
 					// The point is inside the polygon, hence it touches the polygon and therefore
 					// has a closeness distance of zero (which is a dot product closeness of 1.0).

@@ -7,7 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2008, 2009, 2010, 2011 The University of Sydney, Australia
+ * Copyright (C) 2008, 2009, 2010, 2011, 2014, 2015 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -31,6 +31,7 @@
 #include "EditWidgetGroupBox.h"
 
 #include "AbstractEditWidget.h"
+#include "EditAgeWidget.h"
 #include "EditAngleWidget.h"
 #include "EditBooleanWidget.h"
 #include "EditDoubleWidget.h"
@@ -66,27 +67,26 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 		GPlatesPresentation::ViewState &view_state_,
 		QWidget *parent_) :
 	QGroupBox(parent_),
-	d_gpgim(view_state_.get_application_state().get_gpgim()),
 	d_active_widget_ptr(NULL),
-	d_edit_time_instant_widget_ptr(new EditTimeInstantWidget(this)),
-	d_edit_time_period_widget_ptr(new EditTimePeriodWidget(this)),
-	d_edit_old_plates_header_widget_ptr(new EditOldPlatesHeaderWidget(this)),
+	d_edit_age_widget_ptr(new EditAgeWidget(this)),
+	d_edit_angle_widget_ptr(new EditAngleWidget(this)),
+	d_edit_boolean_widget_ptr(new EditBooleanWidget(this)),
 	d_edit_double_widget_ptr(new EditDoubleWidget(this)),
-	d_edit_enumeration_widget_ptr(new EditEnumerationWidget(d_gpgim, this)),
+	d_edit_enumeration_widget_ptr(new EditEnumerationWidget(this)),
 	d_edit_geometry_widget_ptr(new EditGeometryWidget(this)),
 	d_edit_integer_widget_ptr(new EditIntegerWidget(this)),
+	d_edit_old_plates_header_widget_ptr(new EditOldPlatesHeaderWidget(this)),
 	d_edit_plate_id_widget_ptr(new EditPlateIdWidget(this)),
 	d_edit_polarity_chron_id_widget_ptr(new EditPolarityChronIdWidget(this)),
-	d_edit_angle_widget_ptr(new EditAngleWidget(this)),
+	d_edit_shapefile_attributes_widget_ptr(new EditShapefileAttributesWidget(this)),
 	d_edit_string_list_widget_ptr(new EditStringListWidget(this)),
 	d_edit_string_widget_ptr(new EditStringWidget(this)),
-	d_edit_boolean_widget_ptr(new EditBooleanWidget(this)),
-	d_edit_shapefile_attributes_widget_ptr(new EditShapefileAttributesWidget(this)),
-    d_edit_time_sequence_widget_ptr(new EditTimeSequenceWidget(
-                view_state_.get_application_state(), this)),
+	d_edit_time_instant_widget_ptr(new EditTimeInstantWidget(this)),
+	d_edit_time_period_widget_ptr(new EditTimePeriodWidget(this)),
+	d_edit_time_sequence_widget_ptr(new EditTimeSequenceWidget(view_state_.get_application_state(), this)),
 	d_edit_verb(tr("Edit"))
 {
-	// Build the mapping of property structural types to edit widgets.
+	// Build the mapping of property value types to edit widgets.
 	build_widget_map();
 
 	// We stay invisible unless we are called on for a specific widget.
@@ -95,91 +95,79 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 	QVBoxLayout *edit_layout = new QVBoxLayout;
 	edit_layout->setSpacing(0);
 	edit_layout->setMargin(4);
-	edit_layout->addWidget(d_edit_time_instant_widget_ptr);
-	edit_layout->addWidget(d_edit_time_period_widget_ptr);
-	edit_layout->addWidget(d_edit_old_plates_header_widget_ptr);
+	edit_layout->addWidget(d_edit_age_widget_ptr);
+	edit_layout->addWidget(d_edit_angle_widget_ptr);
+	edit_layout->addWidget(d_edit_boolean_widget_ptr);
 	edit_layout->addWidget(d_edit_double_widget_ptr);
 	edit_layout->addWidget(d_edit_enumeration_widget_ptr);
 	edit_layout->addWidget(d_edit_geometry_widget_ptr);
 	edit_layout->addWidget(d_edit_integer_widget_ptr);
+	edit_layout->addWidget(d_edit_old_plates_header_widget_ptr);
 	edit_layout->addWidget(d_edit_plate_id_widget_ptr);
 	edit_layout->addWidget(d_edit_polarity_chron_id_widget_ptr);
-	edit_layout->addWidget(d_edit_angle_widget_ptr);
+	edit_layout->addWidget(d_edit_shapefile_attributes_widget_ptr);
 	edit_layout->addWidget(d_edit_string_list_widget_ptr);
 	edit_layout->addWidget(d_edit_string_widget_ptr);
-	edit_layout->addWidget(d_edit_boolean_widget_ptr);
-	edit_layout->addWidget(d_edit_shapefile_attributes_widget_ptr);
+	edit_layout->addWidget(d_edit_time_instant_widget_ptr);
+	edit_layout->addWidget(d_edit_time_period_widget_ptr);
 	edit_layout->addWidget(d_edit_time_sequence_widget_ptr);
 	setLayout(edit_layout);
-		
-	QObject::connect(d_edit_time_instant_widget_ptr, SIGNAL(commit_me()),
-			this, SLOT(edit_widget_wants_committing()));
-	QObject::connect(d_edit_time_period_widget_ptr, SIGNAL(commit_me()),
-			this, SLOT(edit_widget_wants_committing()));
-	QObject::connect(d_edit_old_plates_header_widget_ptr, SIGNAL(commit_me()),
-			this, SLOT(edit_widget_wants_committing()));
-	QObject::connect(d_edit_double_widget_ptr, SIGNAL(commit_me()),
-			this, SLOT(edit_widget_wants_committing()));
-	QObject::connect(d_edit_enumeration_widget_ptr, SIGNAL(commit_me()),
-			this, SLOT(edit_widget_wants_committing()));
-	QObject::connect(d_edit_geometry_widget_ptr, SIGNAL(commit_me()),
-			this, SLOT(edit_widget_wants_committing()));
-	QObject::connect(d_edit_integer_widget_ptr, SIGNAL(commit_me()),
-			this, SLOT(edit_widget_wants_committing()));
-	QObject::connect(d_edit_plate_id_widget_ptr, SIGNAL(commit_me()),
-			this, SLOT(edit_widget_wants_committing()));
-	QObject::connect(d_edit_polarity_chron_id_widget_ptr, SIGNAL(commit_me()),
-			this, SLOT(edit_widget_wants_committing()));
-	QObject::connect(d_edit_angle_widget_ptr, SIGNAL(commit_me()),
-			this, SLOT(edit_widget_wants_committing()));
-	QObject::connect(d_edit_string_list_widget_ptr, SIGNAL(commit_me()),
-			this, SLOT(edit_widget_wants_committing()));
-	QObject::connect(d_edit_string_widget_ptr, SIGNAL(commit_me()),
-			this, SLOT(edit_widget_wants_committing()));
-	QObject::connect(d_edit_boolean_widget_ptr, SIGNAL(commit_me()),
-			this, SLOT(edit_widget_wants_committing()));
-	QObject::connect(d_edit_shapefile_attributes_widget_ptr, SIGNAL(commit_me()),
-			this, SLOT(edit_widget_wants_committing()));
-	QObject::connect(d_edit_time_sequence_widget_ptr, SIGNAL(commit_me()),
-			this, SLOT(edit_widget_wants_committing()));	
-	QObject::connect(d_edit_time_sequence_widget_ptr, SIGNAL(commit_me()),
-			this, SLOT(edit_widget_wants_committing()));
+	
+	connect(d_edit_age_widget_ptr, SIGNAL(commit_me()), this, SLOT(edit_widget_wants_committing()));
+	connect(d_edit_angle_widget_ptr, SIGNAL(commit_me()), this, SLOT(edit_widget_wants_committing()));
+	connect(d_edit_boolean_widget_ptr, SIGNAL(commit_me()), this, SLOT(edit_widget_wants_committing()));
+	connect(d_edit_double_widget_ptr, SIGNAL(commit_me()), this, SLOT(edit_widget_wants_committing()));
+	connect(d_edit_enumeration_widget_ptr, SIGNAL(commit_me()), this, SLOT(edit_widget_wants_committing()));
+	connect(d_edit_geometry_widget_ptr, SIGNAL(commit_me()), this, SLOT(edit_widget_wants_committing()));
+	connect(d_edit_integer_widget_ptr, SIGNAL(commit_me()), this, SLOT(edit_widget_wants_committing()));
+	connect(d_edit_old_plates_header_widget_ptr, SIGNAL(commit_me()), this, SLOT(edit_widget_wants_committing()));
+	connect(d_edit_plate_id_widget_ptr, SIGNAL(commit_me()), this, SLOT(edit_widget_wants_committing()));
+	connect(d_edit_polarity_chron_id_widget_ptr, SIGNAL(commit_me()), this, SLOT(edit_widget_wants_committing()));
+	connect(d_edit_shapefile_attributes_widget_ptr, SIGNAL(commit_me()), this, SLOT(edit_widget_wants_committing()));
+	connect(d_edit_string_list_widget_ptr, SIGNAL(commit_me()), this, SLOT(edit_widget_wants_committing()));
+	connect(d_edit_string_widget_ptr, SIGNAL(commit_me()), this, SLOT(edit_widget_wants_committing()));
+	connect(d_edit_time_instant_widget_ptr, SIGNAL(commit_me()), this, SLOT(edit_widget_wants_committing()));
+	connect(d_edit_time_period_widget_ptr, SIGNAL(commit_me()), this, SLOT(edit_widget_wants_committing()));
+	connect(d_edit_time_sequence_widget_ptr, SIGNAL(commit_me()), this, SLOT(edit_widget_wants_committing()));
+	connect(d_edit_time_sequence_widget_ptr, SIGNAL(commit_me()), this, SLOT(edit_widget_wants_committing()));	
 }
 
 
 void
 GPlatesQtWidgets::EditWidgetGroupBox::build_widget_map()
 {
-	d_widget_map[GPlatesPropertyValues::StructuralType::create_gml("TimeInstant")] = d_edit_time_instant_widget_ptr;
-	d_widget_map[GPlatesPropertyValues::StructuralType::create_gml("TimePeriod")] = d_edit_time_period_widget_ptr;
-	d_widget_map[GPlatesPropertyValues::StructuralType::create_gpml("OldPlatesHeader")] = d_edit_old_plates_header_widget_ptr;
-	d_widget_map[GPlatesPropertyValues::StructuralType::create_xsi("double")] = d_edit_double_widget_ptr;
+	// Construct the map from property value *type* to which edit widget can be used to support it.
+	// This affects the drop-down menu in AddPropertyDialog that shows available property *names*.
 	d_widget_map[GPlatesPropertyValues::StructuralType::create_gml("LineString")] = d_edit_geometry_widget_ptr;
 	d_widget_map[GPlatesPropertyValues::StructuralType::create_gml("MultiPoint")] = d_edit_geometry_widget_ptr;
 	d_widget_map[GPlatesPropertyValues::StructuralType::create_gml("Point")] = d_edit_geometry_widget_ptr;
 	d_widget_map[GPlatesPropertyValues::StructuralType::create_gml("Polygon")] = d_edit_geometry_widget_ptr;
-	d_widget_map[GPlatesPropertyValues::StructuralType::create_xsi("integer")] = d_edit_integer_widget_ptr;
-	d_widget_map[GPlatesPropertyValues::StructuralType::create_gpml("plateId")] = d_edit_plate_id_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gml("TimeInstant")] = d_edit_time_instant_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gml("TimePeriod")] = d_edit_time_period_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gpml("Age")] = d_edit_age_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gpml("measure")] = d_edit_angle_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gpml("OldPlatesHeader")] = d_edit_old_plates_header_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gpml("plateId")] = d_edit_plate_id_widget_ptr;	// #### FIXME: Why is this lowercase 'p'?
 	d_widget_map[GPlatesPropertyValues::StructuralType::create_gpml("PolarityChronId")] = d_edit_polarity_chron_id_widget_ptr;
-	d_widget_map[GPlatesPropertyValues::StructuralType::create_gpml("angle")] = d_edit_angle_widget_ptr;
-	d_widget_map[GPlatesPropertyValues::StructuralType::create_xsi("string")] = d_edit_string_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_gpml("StringList")] = d_edit_string_list_widget_ptr;
 	d_widget_map[GPlatesPropertyValues::StructuralType::create_xsi("boolean")] = d_edit_boolean_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_xsi("double")] = d_edit_double_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_xsi("integer")] = d_edit_integer_widget_ptr;
+	d_widget_map[GPlatesPropertyValues::StructuralType::create_xsi("string")] = d_edit_string_widget_ptr;
 
 	// FIXME: check if IrregularSampling should correspond to the time-sequence-widget, 
 	// and if it should be included in this map.
 	//
 	// UPDATE:
-	// 'gpml:Array' is currently the only *template* type (besides the time-dependent wrappers).
-	// Currently GPlates assumes the template type is 'gml:TimePeriod' in the following ways:
-	// (1) Edit Feature Properties widget selects Edit Time Sequence widget when it visits a 'gpml:Array' property.
-	// (2) Add Property dialog selects Edit Time Sequence widget when it finds the 'gpml:Array' string (eg, specified here).
-	// Later, when other template types are supported for 'gpml:Array', we'll need to be able to
-	// select the appropriate edit widget based not only on'gpml:Array' but also on its template type
-	// (essentially both determine the actual type of the property).
+	// 'gpml:Array' is currently the only *value* type (besides the time-dependent wrappers).
 	//
-	// For now just hardwiring any template of 'gpml:Array' to the Edit Time Sequence widget.
-	d_widget_map[GPlatesPropertyValues::StructuralType::create_gpml("Array")] = d_edit_time_sequence_widget_ptr;
-	d_widget_map[GPlatesPropertyValues::StructuralType::create_gpml("StringList")] = d_edit_string_list_widget_ptr;
+	// Also currently GPlates only supports a 'gpml:Array' value type of 'gml:TimePeriod' which
+	// selects the Edit Time Sequence widget.
+	d_widget_map[
+			property_value_type(
+						GPlatesPropertyValues::StructuralType::create_gpml("Array"),
+						GPlatesPropertyValues::StructuralType::create_gml("TimePeriod"))]
+			= d_edit_time_sequence_widget_ptr;
 #if 0
 	// Keep the KeyValueDictionary out of the map until we have the
 	// ability to create one. 
@@ -193,7 +181,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::build_widget_map()
 	//
 
 	const GPlatesModel::Gpgim::property_enumeration_type_seq_type &gpgim_property_enumeration_types =
-			d_gpgim.get_property_enumeration_types();
+			GPlatesModel::Gpgim::instance().get_property_enumeration_types();
 	BOOST_FOREACH(
 			const GPlatesModel::GpgimEnumerationType::non_null_ptr_to_const_type &gpgim_property_enumeration_type,
 			gpgim_property_enumeration_types)
@@ -231,21 +219,20 @@ GPlatesQtWidgets::EditWidgetGroupBox::get_handled_property_types(
 			const GPlatesModel::GpgimStructuralType::non_null_ptr_to_const_type &gpgim_structural_type,
 			gpgim_structural_types)
 	{
-		const GPlatesPropertyValues::StructuralType structural_type =
-				gpgim_structural_type->get_structural_type();
-
 		static const GPlatesPropertyValues::StructuralType OLD_PLATES_HEADER_STRUCTURAL_TYPE =
 				GPlatesPropertyValues::StructuralType::create_gpml("OldPlatesHeader");
 
 		// Hack: Since OldPlatesHeaderWidget is no longer editable, we need to exclude this from the list
 		// of addable value types (despite it being a valid option for the EditWidgetGroupBox).
-		if (structural_type == OLD_PLATES_HEADER_STRUCTURAL_TYPE)
+		if (gpgim_structural_type->get_structural_type() == OLD_PLATES_HEADER_STRUCTURAL_TYPE)
 		{
 			continue;
 		}
 
-		// If the current structural type is implemented as an edit widget then add it to the list.
-		if (d_widget_map.find(structural_type) != d_widget_map.end())
+		const property_value_type instantiation_type = gpgim_structural_type->get_instantiation_type();
+
+		// If the current property type is implemented as an edit widget then add it to the list.
+		if (d_widget_map.find(instantiation_type) != d_widget_map.end())
 		{
 			// If the caller only needs to know that at least one property type is
 			// supported then return early.
@@ -254,7 +241,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::get_handled_property_types(
 				return true;
 			}
 
-			property_types->push_back(structural_type);
+			property_types->push_back(instantiation_type);
 		}
 	}
 
@@ -323,22 +310,32 @@ GPlatesQtWidgets::EditWidgetGroupBox::refresh_edit_widget(
 
 
 void
-GPlatesQtWidgets::EditWidgetGroupBox::activate_widget_by_property_value_type(
-		const GPlatesPropertyValues::StructuralType &property_value_type)
+GPlatesQtWidgets::EditWidgetGroupBox::activate_widget_by_property_type(
+		const property_value_type &type_of_property)
 {
 	deactivate_edit_widgets();
-	AbstractEditWidget *widget_ptr = get_widget_by_property_value_type(property_value_type);
+	AbstractEditWidget *widget_ptr = get_widget_by_property_type(type_of_property);
 	
 	if (widget_ptr != NULL)
 	{
 		// FIXME: Human readable property value name?
-		setTitle(tr("%1 %2")
-				.arg(d_edit_verb)
-				.arg(convert_qualified_xml_name_to_qstring(property_value_type)));
+		if (type_of_property.is_template())
+		{
+			setTitle(tr("%1 %2<%3>")
+					.arg(d_edit_verb)
+					.arg(convert_qualified_xml_name_to_qstring(type_of_property.get_structural_type()))
+					.arg(convert_qualified_xml_name_to_qstring(type_of_property.get_value_type().get())));
+		}
+		else
+		{
+			setTitle(tr("%1 %2")
+					.arg(d_edit_verb)
+					.arg(convert_qualified_xml_name_to_qstring(type_of_property.get_structural_type())));
+		}
 		show();
 		d_active_widget_ptr = widget_ptr;
 		widget_ptr->reset_widget_to_default_values();
-		widget_ptr->configure_for_property_value_type(property_value_type);
+		widget_ptr->configure_for_property_value_type(type_of_property.get_structural_type());
 		widget_ptr->show();
 	}
 }
@@ -424,6 +421,18 @@ GPlatesQtWidgets::EditWidgetGroupBox::set_dirty()
 	{
 		d_active_widget_ptr->set_dirty();
 	}
+}
+
+
+void
+GPlatesQtWidgets::EditWidgetGroupBox::activate_edit_age_widget(
+		GPlatesPropertyValues::GpmlAge &gpml_age)
+{
+	setTitle(tr("%1 Age").arg(d_edit_verb));
+	show();
+	d_edit_age_widget_ptr->update_widget_from_age(gpml_age);
+	d_active_widget_ptr = d_edit_age_widget_ptr;
+	d_edit_age_widget_ptr->show();
 }
 
 
@@ -643,12 +652,16 @@ GPlatesQtWidgets::EditWidgetGroupBox::deactivate_edit_widgets()
 {
 	hide();
 	d_active_widget_ptr = NULL;
-	d_edit_time_instant_widget_ptr->hide();
-	d_edit_time_instant_widget_ptr->reset_widget_to_default_values();
-	d_edit_time_period_widget_ptr->hide();
-	d_edit_time_period_widget_ptr->reset_widget_to_default_values();
-	d_edit_old_plates_header_widget_ptr->hide();
-	d_edit_old_plates_header_widget_ptr->reset_widget_to_default_values();
+	
+	// FIXME: Just noticed that time seq and shapefile attr widgets ->hide() but don't ->reset().
+	//        Is this intentional? If so, why? If we can treat them all the same way and they're
+	//        all present in d_widget_map, we could save some sanity and just loop over that.
+	d_edit_age_widget_ptr->hide();
+	d_edit_age_widget_ptr->reset_widget_to_default_values();
+	d_edit_angle_widget_ptr->hide();
+	d_edit_angle_widget_ptr->reset_widget_to_default_values();
+	d_edit_boolean_widget_ptr->hide();
+	d_edit_boolean_widget_ptr->reset_widget_to_default_values();
 	d_edit_double_widget_ptr->hide();
 	d_edit_double_widget_ptr->reset_widget_to_default_values();
 	d_edit_enumeration_widget_ptr->hide();
@@ -657,19 +670,21 @@ GPlatesQtWidgets::EditWidgetGroupBox::deactivate_edit_widgets()
 	d_edit_geometry_widget_ptr->reset_widget_to_default_values();
 	d_edit_integer_widget_ptr->hide();
 	d_edit_integer_widget_ptr->reset_widget_to_default_values();
+	d_edit_old_plates_header_widget_ptr->hide();
+	d_edit_old_plates_header_widget_ptr->reset_widget_to_default_values();
 	d_edit_plate_id_widget_ptr->hide();
 	d_edit_plate_id_widget_ptr->reset_widget_to_default_values();
 	d_edit_polarity_chron_id_widget_ptr->hide();
 	d_edit_polarity_chron_id_widget_ptr->reset_widget_to_default_values();
-	d_edit_angle_widget_ptr->hide();
-	d_edit_angle_widget_ptr->reset_widget_to_default_values();
-	d_edit_string_widget_ptr->hide();
-	d_edit_string_widget_ptr->reset_widget_to_default_values();
-	d_edit_boolean_widget_ptr->hide();
-	d_edit_boolean_widget_ptr->reset_widget_to_default_values();
+	d_edit_shapefile_attributes_widget_ptr->hide();
 	d_edit_string_list_widget_ptr->hide();
 	d_edit_string_list_widget_ptr->reset_widget_to_default_values();
-	d_edit_shapefile_attributes_widget_ptr->hide();
+	d_edit_string_widget_ptr->hide();
+	d_edit_string_widget_ptr->reset_widget_to_default_values();
+	d_edit_time_instant_widget_ptr->hide();
+	d_edit_time_instant_widget_ptr->reset_widget_to_default_values();
+	d_edit_time_period_widget_ptr->hide();
+	d_edit_time_period_widget_ptr->reset_widget_to_default_values();
 	d_edit_time_sequence_widget_ptr->hide();
 }
 
@@ -683,10 +698,10 @@ GPlatesQtWidgets::EditWidgetGroupBox::edit_widget_wants_committing()
 
 
 GPlatesQtWidgets::AbstractEditWidget *
-GPlatesQtWidgets::EditWidgetGroupBox::get_widget_by_property_value_type(
-		const GPlatesPropertyValues::StructuralType &property_value_type)
+GPlatesQtWidgets::EditWidgetGroupBox::get_widget_by_property_type(
+		const property_value_type &type_of_property)
 {
-	widget_map_const_iterator result = d_widget_map.find(property_value_type);
+	widget_map_const_iterator result = d_widget_map.find(type_of_property);
 
 	if (result != d_widget_map.end())
 	{

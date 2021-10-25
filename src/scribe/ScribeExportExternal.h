@@ -31,6 +31,8 @@
 #include <QString>
 #include <QStringList>
 
+#include "TranscribeUtils.h"
+
 
 /**
  * Scribe export registered classes/types for *external* libraries.
@@ -45,6 +47,8 @@
  * Note: Apparently 'char', 'signed char' and 'unsigned char' are three distinct types (unlike integer types).
  *
  * Note: The types 'short', 'int' and 'long' also pick up 'signed short', 'signed int' and 'signed long'.
+ *
+ * Also including scribe utility classes in this 'scribe' source sub-directory.
  *
  *******************************************************************************
  * WARNING: Changing the string ids will break backward/forward compatibility. *
@@ -78,6 +82,11 @@
 		((QByteArray, "QByteArray")) \
 		((QString, "QString")) \
 		((QStringList, "QStringList")) \
+		\
+		\
+		\
+		((GPlatesScribe::TranscribeUtils::FilePath, \
+			"GPlatesScribe::TranscribeUtils::FilePath")) \
 		\
 
 

@@ -27,6 +27,7 @@
 
 #include "FeatureVisitor.h"
 
+
 namespace GPlatesModel
 {
 
@@ -52,7 +53,6 @@ namespace GPlatesModel
 	{
 		(*feature_iterator)->accept_visitor(*this);
 	}
-
 }
 
 
@@ -79,4 +79,3 @@ GPlatesModel::FeatureVisitorThatGuaranteesNotToModify::visit_feature_property(
 
 	prop->accept_visitor(*this);
 }
-

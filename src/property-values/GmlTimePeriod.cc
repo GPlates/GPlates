@@ -30,6 +30,60 @@
 
 #include "GmlTimePeriod.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
+
+const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type
+GPlatesPropertyValues::GmlTimePeriod::create(
+		GmlTimeInstant::non_null_ptr_type begin_,
+		GmlTimeInstant::non_null_ptr_type end_,
+		bool check_begin_end_times)
+{
+	if (check_begin_end_times)
+	{
+		GPlatesGlobal::Assert<BeginTimeLaterThanEndTimeException>(
+				begin_->time_position() <= end_->time_position(),
+				GPLATES_ASSERTION_SOURCE);
+	}
+
+	return non_null_ptr_type(new GmlTimePeriod(begin_, end_));
+}
+
+
+void
+GPlatesPropertyValues::GmlTimePeriod::set_begin(
+		GmlTimeInstant::non_null_ptr_type begin_,
+		bool check_begin_end_times)
+{
+	if (check_begin_end_times)
+	{
+		GPlatesGlobal::Assert<BeginTimeLaterThanEndTimeException>(
+				begin_->time_position() <= end()->time_position(),
+				GPLATES_ASSERTION_SOURCE);
+	}
+
+	d_begin = begin_;
+	update_instance_id();
+}
+
+
+void
+GPlatesPropertyValues::GmlTimePeriod::set_end(
+		GmlTimeInstant::non_null_ptr_type end_,
+		bool check_begin_end_times)
+{
+	if (check_begin_end_times)
+	{
+		GPlatesGlobal::Assert<BeginTimeLaterThanEndTimeException>(
+				begin()->time_position() <= end_->time_position(),
+				GPLATES_ASSERTION_SOURCE);
+	}
+
+	d_end = end_;
+	update_instance_id();
+}
+
 
 const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type
 GPlatesPropertyValues::GmlTimePeriod::deep_clone() const

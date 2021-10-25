@@ -29,18 +29,36 @@
 
 #include "Model.h"
 
+
 GPlatesModel::NotificationGuard::NotificationGuard(
-		Model *model_ptr) :
-	d_model_ptr(model_ptr),
-	d_guard_released(false)
+		Model &model) :
+	d_model(model),
+	d_guard_released(true)
 {
-	model_ptr->increment_notification_guard_count();
+	acquire_guard();
+}
+
+
+GPlatesModel::NotificationGuard::NotificationGuard(
+		boost::optional<Model &> model) :
+	d_model(model),
+	d_guard_released(true)
+{
+	acquire_guard();
 }
 
 
 GPlatesModel::NotificationGuard::~NotificationGuard()
 {
-	release_guard();
+	// Since this is a destructor we cannot let any exceptions escape.
+	// If one is thrown we just have to lump it and continue on.
+	try
+	{
+		release_guard();
+	}
+	catch (...)
+	{
+	}
 }
 
 
@@ -49,7 +67,10 @@ GPlatesModel::NotificationGuard::release_guard()
 {
 	if (!d_guard_released)
 	{
-		d_model_ptr->decrement_notification_guard_count();
+		if (d_model)
+		{
+			d_model->decrement_notification_guard_count();
+		}
 
 		d_guard_released = true;
 	}
@@ -61,7 +82,10 @@ GPlatesModel::NotificationGuard::acquire_guard()
 {
 	if (d_guard_released)
 	{
-		d_model_ptr->increment_notification_guard_count();
+		if (d_model)
+		{
+			d_model->increment_notification_guard_count();
+		}
 
 		d_guard_released = false;
 	}

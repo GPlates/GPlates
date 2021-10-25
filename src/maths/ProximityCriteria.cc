@@ -33,9 +33,6 @@ GPlatesMaths::ProximityCriteria::ProximityCriteria(
 		const PointOnSphere &test_point_,
 		const double &closeness_inclusion_threshold_):
 	d_test_point(test_point_),
-	d_closeness_inclusion_threshold(closeness_inclusion_threshold_)
+	d_closeness_angular_extent_threshold(AngularExtent::create_from_cosine(closeness_inclusion_threshold_))
 {
-	// We assume that (d_proximity_inclusion_threshold < 1.0).
-	d_latitude_exclusion_threshold = std::sqrt(1.0 -
-			d_closeness_inclusion_threshold * d_closeness_inclusion_threshold);
 }

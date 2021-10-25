@@ -36,9 +36,7 @@
 #include "GLMultiResolutionRaster.h"
 #include "GLTexture.h"
 #include "GLTextureUtils.h"
-#include "OpenGLFwd.h"
 
-#include "maths/MathsFwd.h"
 #include "maths/CubeQuadTree.h"
 #include "maths/CubeQuadTreeLocation.h"
 

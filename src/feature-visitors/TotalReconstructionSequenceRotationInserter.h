@@ -31,12 +31,14 @@
 
 #include <boost/optional.hpp>
 
+#include "maths/FiniteRotation.h"
+
 #include "model/FeatureVisitor.h"
 #include "model/PropertyName.h"
 #include "model/types.h"
+
 #include "property-values/GeoTimeInstant.h"
-#include "property-values/GpmlTotalReconstructionPole.h"
-#include "maths/FiniteRotation.h"
+
 
 namespace GPlatesFileIO
 {
@@ -60,8 +62,7 @@ namespace GPlatesFeatureVisitors
 	public:
 		TotalReconstructionSequenceRotationInserter(
 				const double &recon_time,
-				const GPlatesMaths::Rotation &rotation_to_apply,
-				const QString &comment);
+				const GPlatesMaths::Rotation &rotation_to_apply);
 
 		virtual
 		~TotalReconstructionSequenceRotationInserter()
@@ -89,13 +90,6 @@ namespace GPlatesFeatureVisitors
 		visit_gpml_irregular_sampling(
 				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
 
-		void
-		visit_gpml_total_reconstruction_pole(
-				GPlatesPropertyValues::GpmlTotalReconstructionPole &pole)
-		{
-			visit_gpml_finite_rotation(pole);
-		}
-
 	private:
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
@@ -103,7 +97,6 @@ namespace GPlatesFeatureVisitors
 		bool d_is_expecting_a_finite_rotation;
 		bool d_trp_time_matches_exactly;
 		boost::optional<GPlatesMaths::FiniteRotation> d_finite_rotation;
-		QString d_comment;
 		GPlatesFileIO::PlatesRotationFileProxy* d_grot_proxy;
 		int d_moving_plate_id, d_fixed_plate_id;
 
@@ -117,6 +110,29 @@ namespace GPlatesFeatureVisitors
 		TotalReconstructionSequenceRotationInserter &
 		operator=(
 				const TotalReconstructionSequenceRotationInserter &);
+
+		/**
+		 * Update the finite rotation in an existing GpmlFiniteRotation time sample
+		 * (time coincides with existing time sample).
+		 */
+		void
+		update_finite_rotation(
+				GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
+
+		/**
+		 * Update the pole metadata in an existing GpmlFiniteRotation time sample
+		 * (time coincides with existing time sample).
+		 */
+		void
+		update_pole_metadata(
+				GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
+
+		/**
+		 * Set/modify the pole metadata in a GpmlFiniteRotation.
+		 */
+		void
+		set_pole_metadata(
+				GPlatesPropertyValues::GpmlFiniteRotation &gpml_finite_rotation);
 	};
 }
 

@@ -26,6 +26,7 @@
  */
 #include "ColourScheme.h"
 #include "DrawStyleAdapters.h"
+#include "DrawStyleManager.h"
 #include "api/PyFeature.h"
 #include "api/PythonUtils.h"
 #include "utils/Profile.h"
@@ -81,8 +82,12 @@ GPlatesGui::PythonStyleAdapter::PythonStyleAdapter(
 
 GPlatesGui::PythonStyleAdapter::~PythonStyleAdapter()
 {
-	GPlatesApi::PythonUtils::python_manager().recycle_python_object(d_py_obj);
-	//qDebug() << "Destructing PythonStyleAdapter....";
+	// If our Python object is going to be destroyed then do it while holding the Python GIL.
+	GPlatesApi::PythonInterpreterLocker interpreter_locker;
+
+	// If holding only reference to Python object then force its destruction at end of scope.
+	boost::python::object py_obj = d_py_obj;
+	d_py_obj = boost::python::object();
 }
 
 
@@ -136,6 +141,86 @@ GPlatesGui::PythonStyleAdapter::init_configuration()
 				d_cfg.set(cfg_name, create_cfg_item(cfg_map));
 				cfg_map.clear();
 			}
+		}
+	}
+	catch(const  boost::python::error_already_set&)
+	{
+		qWarning() << GPlatesApi::PythonUtils::get_error_message();
+	}
+	return;
+}
+
+
+void
+GPlatesGui::PythonStyleAdapter::register_alternative_draw_styles(
+		GPlatesGui::DrawStyleManager &dsm)
+{
+	// Query the Python object for a dict of dicts, providing alternative 'built in' styles
+	// for this PythonStyleAdapter. Rather than attempting to return them in C++, which sucks,
+	// we may as well go and register them with the DrawStyleManager directly.
+	try
+	{
+		GPlatesApi::PythonInterpreterLocker l;
+		// Test to see if we have declared the get_config_variants() function.
+		// Not having it declared is not an error.
+		//
+		// Use the Python C API to determine if attribute string is present.
+		// We could just get the attribute and catch the Python error, but then we'd need to
+		// call 'PyErr_Fetch()' to clear the error indicator (otherwise it'll just get raised again).
+		// Note that 'PythonUtils::get_error_message()' calls 'PyErr_Fetch()' internally which is
+		// why it works in other areas of the code (but we don't want to print an error message).
+		if (!PyObject_HasAttrString(d_py_obj.ptr(), "get_config_variants"))
+		{
+			return;
+		}
+
+		bp::object fun;
+		try {
+			fun = d_py_obj.attr("get_config_variants");
+		} catch (const  boost::python::error_already_set &) {
+			// Shouldn't get here - we already checked presence of attribute above.
+			qWarning() << GPlatesApi::PythonUtils::get_error_message();
+			return;
+		}
+
+		// Invoke the function get_config_variants() on the python object; expect it to return
+		// a dict where keys are variant draw style names and values are dicts of config settings.
+		bp::dict cfg_variants = bp::extract<bp::dict>(fun());
+		bp::list var_items = cfg_variants.items();
+		int num_var_items = bp::len(var_items);
+
+		for (int i = 0; i < num_var_items; i++) {
+			bp::tuple variant_tuple = bp::extract<bp::tuple>(var_items[i]);
+			QString variant_name = QString::fromUtf8(bp::extract<const char*>(variant_tuple[0]));
+			bp::dict variant_config = bp::extract<bp::dict>(variant_tuple[1]);
+
+			// Create a clone of this StyleAdapter to handle the config variant.
+			StyleAdapter* variant_style_adapter = this->deep_clone();
+			if( ! variant_style_adapter) {
+				return;
+			}
+			variant_style_adapter->set_name(variant_name);
+
+			// Get its Configuration object.
+			Configuration& variant_cfg = variant_style_adapter->configuration();
+
+			// Iterate through the key-value dict supplying the default config values.
+			bp::list variant_config_items = variant_config.items();
+			int num_variant_config_items = bp::len(variant_config_items);
+
+			for (int j = 0; j < num_variant_config_items; j++) {
+				bp::tuple var_cfg_tuple = bp::extract<bp::tuple>(variant_config_items[j]);
+				QString key = QString::fromUtf8(bp::extract<const char*>(var_cfg_tuple[0]));
+				QString val = QString::fromUtf8(bp::extract<const char*>(var_cfg_tuple[1]));
+
+				// Set the appropriate key-value on the Configuration.
+				ConfigurationItem* cfg_item = variant_cfg.get(key);
+				if (cfg_item) {
+					cfg_item->set_value(val);
+				}
+			}
+			// Now that we've configured it, register it with the DrawStyleManager.
+			dsm.register_style(variant_style_adapter, true);
 		}
 	}
 	catch(const  boost::python::error_already_set&)
