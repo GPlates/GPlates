@@ -170,6 +170,12 @@ namespace GPlatesMaths
 		 * If this arc is of zero length, it will not have a determinate rotation axis;
 		 * attempting to access the rotation axis will result in the
 		 * IndeterminateArcRotationAxisException being thrown.
+		 *
+		 * Implementation detail: This arc will be zero length if the dot product of its end points
+		 * exceeds approximately 'get_zero_length_threshold_cosine()'. It is approximate because the test
+		 * for zero length does not use a dot product (instead using GPlatesMaths::EPSILON as a threshold
+		 * when comparing the magnitude squared of cross product of start and end point vectors).
+		 * This is only noted for those classes that need to know the maximum length of a zero length arc.
 		 */
 		bool
 		is_zero_length() const;
@@ -287,6 +293,21 @@ namespace GPlatesMaths
 
 		void
 		calculate_rotation_info() const;
+
+	public:
+		/**
+		 * This is an estimate of the threshold of the dot product of an arc's start and end points that
+		 * distinguishes between non-zero length and zero length. It is approximate because the test for
+		 * zero length does not use a dot product (instead using GPlatesMaths::EPSILON as a threshold
+		 * when comparing the magnitude squared of cross product of start and end point vectors).
+		 *
+		 * NOTE: This should not be used to detect zero length arcs, it's only needed by some classes
+		 * that need to know the maximum length of a zero length arc. Hence it's public but somewhat
+		 * hidden down here at the bottom of the class.
+		 */
+		static
+		real_t
+		get_zero_length_threshold_cosine();
 	};
 
 

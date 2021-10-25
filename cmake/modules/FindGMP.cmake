@@ -21,6 +21,12 @@ FIND_LIBRARY(
 	/opt/lib
 	DOC "Looking for gmp library file.")
 
+# Fix cmake error finding GMP library on Windows.
+# The CGAL internal cmake modules already find GMP and set GMP_FOUND to TRUE, so we need to reset it.
+# Finding GMP is not actually required on Windows since recent versions of CGAL use DLLs
+# which have already linked to GMP and hence GPlates doesn't need to link to it.
+SET(GMP_FOUND FALSE)
+
 IF (GMP_INCLUDE_DIR AND GMP_LIBRARY)
    SET(GMP_FOUND TRUE)
 ENDIF (GMP_INCLUDE_DIR AND GMP_LIBRARY)

@@ -153,36 +153,34 @@ namespace GPlatesMaths
 
 
 		/**
-		 * This class enables const_iteration over the vertices of a
-		 * PolylineOnSphere.
+		 * This class enables const_iteration over the vertices of a sequence of GreatCircleArc.
 		 *
-		 * An instance of this class @em actually iterates over the
-		 * sequence of GreatCircleArc by which a PolylineOnSphere is
-		 * implemented, but it pretends it's iterating over a sequence
-		 * of PointOnSphere by additionally keeping track of whether
-		 * it's pointing at the "start-point" or "end-point" of the
-		 * current GreatCircleArc.
+		 * The number of vertices iterated is one larger than the number of GreatCircleArc.
 		 *
-		 * It is assumed that the sequence of GreatCircleArc over
-		 * which this iterator is iterating will always contain at
-		 * least one element (and thus, at least two vertices).  This
-		 * assumption should be fulfilled by the PolylineOnSphere
-		 * invariant.
+		 * An instance of this class @em actually iterates over a sequence of GreatCircleArc,
+		 * but pretends it's iterating over a sequence of PointOnSphere by additionally keeping track
+		 * of whether it's pointing at the "start-point" or "end-point" of the current GreatCircleArc.
+		 *
+		 * It is assumed that the sequence of GreatCircleArc over which this iterator is iterating
+		 * will always contain at least one element (and thus, at least two vertices).
+		 * This assumption should be fulfilled by the PolylineOnSphere invariant and
+		 * PolygonOnSphere ring invariant.
 		 */
+		template <typename GreatCircleArcConstIteratorType>
 		class VertexConstIterator :
 				public boost::iterator_facade<
-						VertexConstIterator,
+						VertexConstIterator<GreatCircleArcConstIteratorType>,
 						const PointOnSphere,
 						// Keep the iterator as "random access" so that std::advance can do fast indexing...
 						std::random_access_iterator_tag>
 		{
-
-			enum StartOrEnd {
+			enum StartOrEnd
+			{
 				START,
 				END
 			};
 
-			typedef PolylineOnSphere::const_iterator gca_const_iterator;
+			typedef GreatCircleArcConstIteratorType gca_const_iterator;
 
 		public:
 
@@ -197,9 +195,9 @@ namespace GPlatesMaths
 			static
 			VertexConstIterator
 			create_begin(
-					const PolylineOnSphere &poly)
+					gca_const_iterator begin)
 			{
-				return VertexConstIterator(poly, poly.begin(), START);
+				return VertexConstIterator(begin, begin, START);
 			}
 
 
@@ -214,40 +212,23 @@ namespace GPlatesMaths
 			static
 			VertexConstIterator
 			create_end(
-					const PolylineOnSphere &poly)
+					gca_const_iterator begin,
+					gca_const_iterator end)
 			{
-				return VertexConstIterator(poly, poly.end(), END);
+				return VertexConstIterator(begin, end, END);
 			}
 
 
 			/**
-			 * Default-construct a vertex iterator.
+			 * Default-construct a vertex iterator (mandated by the iterator interface).
 			 *
-			 * A default-constructed iterator will be
-			 * uninitialised.  (I don't @em like providing a
-			 * constructor which leaves an object in an
-			 * uninitialised state, but the presence of a default
-			 * constructor is mandated by the iterator interface.)
+			 * A default-constructed iterator will be uninitialised.
 			 *
-			 * If you attempt to dereference an uninitialised
-			 * iterator or access the members of a PointOnSphere
-			 * through an uninitialised iterator you will get a
-			 * GPlatesGlobal::UninitialisedIteratorException thrown
-			 * back at you.  (Hey, it's better than a segfault...)
-			 *
-			 * The following operations are OK for an uninitialised
-			 * iterator:
-			 *  - comparison for equality to another iterator;
-			 *  - comparison for inequality to another iterator;
-			 *  - being assigned-to by another iterator.
-			 *
-			 * The following operations are no-ops for an
-			 * uninitialised iterator:
-			 *  - increment;
-			 *  - decrement.
+			 * If you attempt to dereference an uninitialised iterator then the behaviour will
+			 * depend on the underlying standard library iterators (specifically for std::vector).
 			 */
 			VertexConstIterator():
-				d_poly_ptr(NULL), 
+				d_begin_gca(), 
 				d_curr_gca(), 
 				d_gca_start_or_end(END)
 			{  }
@@ -255,25 +236,21 @@ namespace GPlatesMaths
 		private:
 
 			/**
-			 * Construct a VertexConstIterator instance to iterate over the vertices of
-			 * @a poly.
+			 * Construct a VertexConstIterator instance to iterate over the vertices of @a poly.
 			 *
-			 * The current position of the iterator is described by @a curr_gca_ and
-			 * @a gca_start_or_end_.  Note that not all combinations of @a curr_gca_
-			 * and @a gca_start_or_end_ are valid.
+			 * The current position of the iterator is described by @a curr_gca_ and @a gca_start_or_end_.
+			 * Note that not all combinations of @a curr_gca_ and @a gca_start_or_end_ are valid.
 			 *
-			 * This constructor should only be invoked by the @a create_begin and
-			 * @a create_end static member functions.
+			 * This constructor should only be invoked by @a create_begin and @a create_end.
 			 */
 			VertexConstIterator(
-					const PolylineOnSphere &poly,
+					gca_const_iterator begin_gca_,
 					gca_const_iterator curr_gca_,
 					StartOrEnd gca_start_or_end_) :
-				d_poly_ptr(&poly),
+				d_begin_gca(begin_gca_),
 				d_curr_gca(curr_gca_),
 				d_gca_start_or_end(gca_start_or_end_)
 			{  }
-
 
 			/**
 			 * Iterator dereference - for boost::iterator_facade.
@@ -282,94 +259,174 @@ namespace GPlatesMaths
 			 * obtain the currently-pointed-at PointOnSphere.
 			 */
 			const PointOnSphere &
-			dereference() const;
-
+			dereference() const
+			{
+				if (d_curr_gca == d_begin_gca &&
+					d_gca_start_or_end == START)
+				{
+					return d_curr_gca->start_point();
+				}
+				else
+				{
+					return d_curr_gca->end_point();
+				}
+			}
 
 			/**
 			 * Iterator increment - for boost::iterator_facade.
 			 *
-			 * This function performs the magic which is used to
-			 * increment this iterator.
-			 *
-			 * If this iterator is uninitialised (ie, it was either
-			 * default-constructed or assigned-to by an iterator
-			 * which was default-constructed) this function will be
-			 * a no-op.
+			 * This function performs the magic which is used to increment this iterator.
 			 */
 			void
-			increment();
-
+			increment()
+			{
+				if (d_curr_gca == d_begin_gca &&
+					d_gca_start_or_end == START)
+				{
+					d_gca_start_or_end = END;
+				}
+				else
+				{
+					++d_curr_gca;
+				}
+			}
 
 			/**
 			 * Iterator decrement - for boost::iterator_facade.
 			 *
-			 * This function performs the magic which is used to
-			 * decrement this iterator.
-			 *
-			 * If this iterator is uninitialised (ie, it was either
-			 * default-constructed or assigned-to by an iterator
-			 * which was default-constructed) this function will be
-			 * a no-op.
+			 * This function performs the magic which is used to decrement this iterator.
 			 */
 			void
-			decrement();
+			decrement()
+			{
+				if (d_curr_gca == d_begin_gca &&
+					d_gca_start_or_end == END)
+				{
+					d_gca_start_or_end = START;
+				}
+				else
+				{
+					--d_curr_gca;
+				}
+			}
 
 			/**
 			 * Iterator equality comparison - for boost::iterator_facade.
 			 */
 			bool
 			equal(
-					const VertexConstIterator &other) const;
+					const VertexConstIterator &other) const
+			{
+				return d_curr_gca == other.d_curr_gca &&
+						d_gca_start_or_end == other.d_gca_start_or_end;
+			}
 
 			/**
 			 * Iterator advancement - for boost::iterator_facade.
 			 */
 			void
 			advance(
-					VertexConstIterator::difference_type n);
+					typename VertexConstIterator::difference_type n)
+			{
+				if (n > 0)
+				{
+					if (d_curr_gca == d_begin_gca &&
+						d_gca_start_or_end == START)
+					{
+						// Advance by one.
+ 						d_gca_start_or_end = END;
+ 						--n;
+
+						// Advance any remaining amount.
+						if (n > 0)
+						{
+							std::advance(d_curr_gca, n);
+						}
+					}
+					else
+					{
+						std::advance(d_curr_gca, n);
+					}
+				}
+				else if (n < 0)
+				{
+					if (d_curr_gca == d_begin_gca &&
+						d_gca_start_or_end == END)
+					{
+						// Advance by minus one.
+						d_gca_start_or_end = START;
+						++n;
+
+						// Advance any remaining amount.
+						//
+						// Actually this shouldn't be able to happen since we're already at the beginning
+						// of the sequence, but we'll advance as requested.
+						//
+						// TODO: Should we check and throw exception or assert ?
+						// The MSVC 'std' library only checks iterators in debug builds.
+						if (n < 0)
+						{
+							std::advance(d_curr_gca, n);
+						}
+					}
+					else
+					{
+						std::advance(d_curr_gca, n);
+					}
+				}
+			}
 
 			/**
 			 * Distance between two iterators - for boost::iterator_facade.
 			 */
-			VertexConstIterator::difference_type
+			typename VertexConstIterator::difference_type
 			distance_to(
-					const VertexConstIterator &other) const;
+					const VertexConstIterator &other) const
+			{
+				typename VertexConstIterator::difference_type difference = std::distance(d_curr_gca, other.d_curr_gca);
+
+				// Make adjustments if either, or both, iterators reference the first point in the sequence.
+				if (d_curr_gca == d_begin_gca &&
+					d_gca_start_or_end == START)
+				{
+					++difference;
+				}
+				if (other.d_curr_gca == other.d_begin_gca &&
+					other.d_gca_start_or_end == START)
+				{
+					--difference;
+				}
+
+				return difference;
+			}
+
 
 			// Give access to boost::iterator_facade.
 			friend class boost::iterator_core_access;
 
 
 			/**
-			 * This is the PolylineOnSphere instance which is being
-			 * traversed by this iterator.
-			 *
-			 * This pointer will be NULL in an uninitialised
-			 * (default-constructed) iterator.
+			 * Begin iterator of the sequence of GreatCircleArc being iterated over.
 			 */
-			const PolylineOnSphere *d_poly_ptr;
-
+			gca_const_iterator d_begin_gca;
 
 			/**
-			 * This points to the current GreatCircleArc in the
-			 * PolylineOnSphere.
+			 * This points to the current GreatCircleArc in the sequence.
 			 */
 			gca_const_iterator d_curr_gca;
 
-
 			/**
-			 * This keeps track of whether this iterator is
-			 * pointing at the "start-point" or "end-point" of the
-			 * current GreatCircleArc.
+			 * This keeps track of whether this iterator is pointing at the "start-point" or
+			 * "end-point" of the current GreatCircleArc.
 			 */
 			StartOrEnd d_gca_start_or_end;
-
 		};
 
 
 		/**
 		 * The type used to const_iterate over the vertices.
 		 */
-		typedef VertexConstIterator vertex_const_iterator;
+		typedef VertexConstIterator<const_iterator> vertex_const_iterator;
 
 
 		/**
@@ -584,6 +641,28 @@ namespace GPlatesMaths
 
 
 		/**
+		 * Return the const_iterator in this polyline at the specified segment index,
+		 * so can iterate over GreatCircleArc starting at that segment.
+		 *
+		 * @a segment_index can be one past the last segment, corresponding to @a end.
+		 */
+		const_iterator
+		segment_iterator(
+				size_type segment_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					segment_index <= number_of_segments(),
+					GPLATES_ASSERTION_SOURCE);
+
+			const_iterator segment_iter = begin();
+			// This should be fast since iterator type is random access...
+			std::advance(segment_iter, segment_index);
+
+			return segment_iter;
+		}
+
+
+		/**
 		 * Return the number of segments in this polyline.
 		 */
 		size_type
@@ -609,7 +688,7 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Return the "begin" const_iterator to iterate over the vertices of this polyline.
+		 * Return the "begin" vertex_const_iterator to iterate over the vertices of this polyline.
 		 *
 		 * Note that it's intentional that the instance returned is non-const: If the
 		 * instance were const, it would not be possible to write an expression like
@@ -618,12 +697,12 @@ namespace GPlatesMaths
 		vertex_const_iterator
 		vertex_begin() const
 		{
-			return vertex_const_iterator::create_begin(*this);
+			return vertex_const_iterator::create_begin(begin());
 		}
 
 
 		/**
-		 * Return the "end" const_iterator to iterate over the vertices of this polyline.
+		 * Return the "end" vertex_const_iterator to iterate over the vertices of this polyline.
 		 *
 		 * Note that it's intentional that the instance returned is non-const: If the
 		 * instance were const, it would not be possible to write an expression like
@@ -632,7 +711,28 @@ namespace GPlatesMaths
 		vertex_const_iterator
 		vertex_end() const
 		{
-			return vertex_const_iterator::create_end(*this);
+			return vertex_const_iterator::create_end(begin(), end());
+		}
+
+
+		/**
+		 * Return the vertex_const_iterator in this polyline at the specified vertex index.
+		 *
+		 * @a vertex_index can be one past the last vertex, corresponding to @a vertex_end.
+		 */
+		vertex_const_iterator
+		vertex_iterator(
+				size_type vertex_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					vertex_index <= number_of_vertices(),
+					GPLATES_ASSERTION_SOURCE);
+
+			vertex_const_iterator vertex_iter = vertex_begin();
+			// This should be fast since iterator type is random access...
+			std::advance(vertex_iter, vertex_index);
+
+			return vertex_iter;
 		}
 
 

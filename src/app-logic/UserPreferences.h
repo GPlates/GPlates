@@ -389,8 +389,49 @@ namespace GPlatesAppLogic
 		 * Why bother with const correctness at all on UserPreferences, an app-logic object?
 		 * because we share an interface with ConfigBundle, which might have a legitimate
 		 * reason to want const methods.
+		 *
+		 * **************************AMENDMENT***********************************************
+		 *
+		 * 20190717: michael.chin@sydney.edu.au removed "mutable" keyword and replace it with a "static" keyword.
+		 * Non-const static members of the class can already be modified by any (const and non-const) 
+		 * methods of the class. There's no need and no point in declaring it with mutable. That would 
+		 * achieve absolutely nothing. And the "static mutable" or "mutable static" would not compile.
+		 * https://stackoverflow.com/questions/3951686/static-mutable-member-variables-in-c
+		 *
+		 * The variable name is also modified to indicate it is a static variable.
+		 *
+		 * Why do we need a static variable here? We don't want to initialise the variable multiple times
+		 * when the UserPreferences object is constructed multiple times.
+		 *
+		 * Why is the UserPreferences object constructed multiple times? We have technical difficulties to 
+		 * ensure the UserPreferences object is constructed only once.
+		 *
+		 * Why do we care the "s_defaults" variable is initialised multiple times? Usually, we don't care. But
+		 * recently we have discovered a bug on MacOS. When the network interface appears active but in fact
+		 * the computer does not have a working network connection, the QNetworkProxyFactory::systemProxyForQuery() 
+		 * function will refuse to return and wait for a working network connection indefinitely. This bug causes
+		 * GPlates fails to launch. In order to workaround the nasty bug, we have to check the network availability
+		 * on MacOS before calling QNetworkProxyFactory::systemProxyForQuery(). Here comes the problem.
+		 * If the "s_defaults" variable is initialised multiple times, we have to check the network availability
+		 * multiple times. We rely on the "network timeout" to determine the network availability. So if we do it 
+		 * multiple times unnecessarily, it will take unnecessarily long time to finish. Although under this circumstance
+		 * GPlates will not hang indefinitely, it will take unreasonably long time to launch, which is undesirable.
+		 * In order to provide better user experience, we decided to ensure the "s_defaults" variable is initialised
+		 * only once and hence the "s_defaults" variable must be made "static" to prevent it from being destroyed
+		 * while the UserPreferences object is reconstructed repeatedly.
 		 */
-		mutable QSettings d_defaults;
+		static QSettings s_defaults;
+
+
+		/**
+		 * A static flag to indicate if the "s_defaults" member variable has already been initialised. 
+		 * If the "s_defaults" has been initialised before, we don't initialise it again because 
+		 * it is unnecessary to initialise the "s_defaults" variable multiple times.
+		 * The reason that the "s_defaults" variable is initialised multiple times is that the 
+		 * UserPreferences object has been constructed multiple times and it is difficult to ensure
+		 * the UserPreferences object is constructed only once.
+		 */
+		static bool s_is_defaults_initialised;
 	};
 }
 

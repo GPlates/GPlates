@@ -49,10 +49,8 @@ namespace GPlatesFileIO
 	 * Reads lines in a text file allowing client to peek ahead one line.
 	 *
 	 * NOTE: Using a 'QFile' instead of 'std::istream' in order to support filenames
-	 * with unicode characters.
-	 * But still returning lines as 'std::string' instead of 'QString' to introduce minimal
-	 * changes/bugs to clients of this class (currently the PLATES4 line and rotation format readers).
-	 * TODO: Use 'QString' instead of 'std::string'.
+	 * with unicode characters, and using QString instead of std::string to support
+	 * unicode characters within the files.
 	 *
 	 * TODO: Handles newline conventions for different platforms:
 	 *  - Window:  CR/LF
@@ -75,7 +73,7 @@ namespace GPlatesFileIO
 		 */
 		bool
 		getline(
-				std::string &line);
+				QString &line);
 
 					
 		/**
@@ -85,7 +83,7 @@ namespace GPlatesFileIO
 		 */
 		bool
 		peekline(
-				std::string &line);
+				QString &line);
 
 
 		/**
@@ -109,13 +107,13 @@ namespace GPlatesFileIO
 	private:
 		QTextStream d_text_stream;
 		unsigned int d_line_number;
-		std::string d_buffered_line;
+		QString d_buffered_line;
 		bool d_have_buffered_line;
 
 
 		bool
 		readline(
-				std::string &line);
+				QString &line);
 	};
 }
 

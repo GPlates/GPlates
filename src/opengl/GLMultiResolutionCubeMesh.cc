@@ -191,7 +191,7 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::create_cube_face_vertex_and_index_arra
 	// We only generate the vertices at the leaf nodes of the quad tree.
 	if (quad_tree_node_location.get_node_location()->quad_tree_depth == MESH_CUBE_QUAD_TREE_MAXIMUM_DEPTH)
 	{
-		const vertex_element_type base_vertex_index = mesh_vertices.size();
+		const vertex_element_type base_vertex_index = static_cast<vertex_element_type>(mesh_vertices.size());
 
 		const unsigned int node_x_offset = quad_tree_node_location.get_node_location()->x_node_offset;
 		const unsigned int node_y_offset = quad_tree_node_location.get_node_location()->y_node_offset;

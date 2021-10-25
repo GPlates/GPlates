@@ -24,9 +24,10 @@
  */
 
 #include <boost/optional.hpp>
-#include <ogr_spatialref.h>
 
 #include "SpatialReferenceSystem.h"
+
+#include "global/GdalVersion.h"
 
 
 GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type
@@ -38,6 +39,11 @@ GPlatesPropertyValues::SpatialReferenceSystem::get_WGS84()
 	{
 		OGRSpatialReference wgs84;
 		wgs84.SetWellKnownGeogCS("WGS84");
+#if GPLATES_GDAL_VERSION_NUM >= GPLATES_GDAL_COMPUTE_VERSION(3,0,0)
+		// GDAL >= 3.0 introduced a data-axis-to-CRS-axis mapping (that breaks backward compatibility).
+		// We need to set it to behave the same as before GDAL 3.0 (ie, longitude first, latitude second).
+		wgs84.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
+#endif
 		OGR_WGS84 = create(wgs84);
 	}
 
@@ -54,7 +60,7 @@ GPlatesPropertyValues::SpatialReferenceSystem::SpatialReferenceSystem(
 			// See http://lists.osgeo.org/pipermail/gdal-dev/2006-March/008204.html
 			//
 			static_cast<OGRSpatialReference *>(OSRNewSpatialReference(NULL)),
-			OGRSpatialReferenceDeleter())
+			OGRSpatialReferenceReleaser())
 {
 	*d_ogr_srs = ogr_srs; // Assignment operator clones SRS.
 }
@@ -86,8 +92,11 @@ GPlatesPropertyValues::SpatialReferenceSystem::is_wgs84() const
 
 
 void
-GPlatesPropertyValues::SpatialReferenceSystem::OGRSpatialReferenceDeleter::operator()(
+GPlatesPropertyValues::SpatialReferenceSystem::OGRSpatialReferenceReleaser::operator()(
 		OGRSpatialReference *ogr_srs)
 {
-	OSRDestroySpatialReference(ogr_srs);
+	// Decrement reference count (which destroys if count reaches zero).
+	// Our clients may have incremented reference count when our OGRSpatialReference was
+	// exposed via 'SpatialReferenceSystem::get_ogr_srs()'.
+	OSRRelease(ogr_srs);
 }

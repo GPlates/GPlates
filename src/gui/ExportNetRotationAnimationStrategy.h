@@ -26,6 +26,7 @@
 #ifndef GPLATES_GUI_EXPORTNETROTATIONANIMATIONSTRATEGY_H
 #define GPLATES_GUI_EXPORTNETROTATIONANIMATIONSTRATEGY_H
 
+#include <utility>
 #include <boost/optional.hpp>
 
 #include "ExportAnimationStrategy.h"
@@ -42,8 +43,6 @@
 
 #include "view-operations/VisibleReconstructionGeometryExport.h"
 
-typedef std::pair<GPlatesMaths::LatLonPoint,double> pole_type;
-typedef std::pair<double,pole_type> time_pole_pair_type;
 
 namespace GPlatesAppLogic
 {
@@ -70,13 +69,6 @@ namespace GPlatesGui
 		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ExportNetRotationAnimationStrategy>.
 		 */
 		typedef GPlatesUtils::non_null_intrusive_ptr<ExportNetRotationAnimationStrategy> non_null_ptr_type;
-
-
-		/**
-		 * @brief stage_pole_map_type - a map for storing stage poles (relative to anchor) per plate id.
-		 */
-		typedef std::map<GPlatesModel::integer_plate_id_type,GPlatesMaths::FiniteRotation> stage_pole_map_type;
-
 
 		typedef std::vector<const GPlatesFileIO::File::Reference *> file_collection_type;
 
@@ -173,6 +165,9 @@ namespace GPlatesGui
 		set_template_filename(
 				const QString &);
 
+		// Is public since used by anonymous functions in cpp file.
+		typedef std::pair<GPlatesMaths::LatLonPoint, double> pole_type;
+
 	protected:
 
 		// Required only if using existing velocity mesh for calculations.
@@ -211,6 +206,9 @@ namespace GPlatesGui
 				std::size_t frame_index);
 
 
+		typedef std::pair<double, pole_type> time_pole_pair_type;
+
+
 		/**
 		 * The list of currently loaded files that are active.
 		 *
@@ -227,8 +225,6 @@ namespace GPlatesGui
 		const_configuration_ptr d_configuration;
 
 		std::vector<time_pole_pair_type> d_total_poles;
-
-		stage_pole_map_type d_stage_poles;
 
 		/**
 		 * @brief d_referenced_files_set - Set of the referenced geometry files encountered during the whole export sequence.

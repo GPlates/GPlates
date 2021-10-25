@@ -39,13 +39,19 @@
 
 #include "file-io/FileInfo.h"
 
+#include "gui/AnimationController.h"
+
 #include "scribe/ScribeExceptions.h"
+
+#include "presentation/ViewState.h"
 
 
 GPlatesPresentation::SessionManagement::SessionManagement(
-		GPlatesAppLogic::ApplicationState &app_state) :
+		GPlatesAppLogic::ApplicationState &app_state,
+		GPlatesPresentation::ViewState &view_state) :
 	QObject(NULL),
-	d_app_state_ptr(&app_state)
+	d_app_state_ptr(&app_state),
+	d_view_state_ptr(&view_state)
 {  }
 
 
@@ -79,7 +85,11 @@ GPlatesPresentation::SessionManagement::clear_session(
 
 	// Clear the current session so there's no files loaded and
 	// no auto-created or user-created layers left.
-	clear_session_state();
+	//
+	// Don't preserve the current view time.
+	// The user is not loading a new internal/project session so just let the view time be clamped
+	// to the default time range.
+	clear_session_state(false/*preserve_current_view_time*/);
 
 	// The current session is no longer a project.
 	set_project(boost::none);
@@ -87,7 +97,8 @@ GPlatesPresentation::SessionManagement::clear_session(
 
 
 void
-GPlatesPresentation::SessionManagement::clear_session_state()
+GPlatesPresentation::SessionManagement::clear_session_state(
+		bool preserve_current_view_time)
 {
 	// Block any signaled calls to 'ApplicationState::reconstruct' until we exit this scope.
 	// Blocking calls to 'reconstruct' during this scope prevents multiple calls caused by
@@ -122,10 +133,25 @@ GPlatesPresentation::SessionManagement::clear_session_state()
 	// load the default clear session state using the Scribe.
 	if (d_clear_session_state)
 	{
+		// Remember the current view time since it might get changed when the clear session is restored
+		// if it's outside the clear session animation time range
+		// For example, if it's 500Ma and the range is 0-410Ma then it'll get clamped to 410Ma.
+		double current_view_time = 0.0;
+		if (preserve_current_view_time)
+		{
+			current_view_time = d_view_state_ptr->get_animation_controller().view_time();
+		}
+
 		// Note that we don't surround this with a try catch block because it should always
 		// succeed and if it doesn't then it's a program error (as opposed to a corrupt archive
 		// stream or archive version issue).
 		d_clear_session_state.get()->restore_session();
+
+		// Preserve the original view time prior to restoring the clear session, if requested.
+		if (preserve_current_view_time)
+		{
+			d_view_state_ptr->get_animation_controller().set_view_time(current_view_time);
+		}
 	}
 }
 
@@ -150,7 +176,12 @@ GPlatesPresentation::SessionManagement::load_session_state(
 
 	// Clear the current session so there's no files loaded and
 	// no auto-created or user-created layers left.
-	clear_session_state();
+	//
+	// Preserve the current view time.
+	// The user is loading a new internal/project session so we let that session's time range
+	// clamp the current view time. If we had clamped it here then it might get clamped to a
+	// shorter time range (if the default time range is smaller than the session about to be loaded).
+	clear_session_state(true/*preserve_current_view_time*/);
 
 	// Load the requested session.
 	try
@@ -162,7 +193,12 @@ GPlatesPresentation::SessionManagement::load_session_state(
 		// We failed to restore the session...
 
 		// Clear the session since it could be partially restored.
-		clear_session_state();
+		//
+		// Preserve the current view time if we're going to restore the current session.
+		// We'll let the current session's time range clamp the current view time.
+		// If we had clamped it here then it might get clamped to a shorter time range
+		// (if the default time range is smaller than the session about to be loaded).
+		clear_session_state(static_cast<bool>(current_session)/*preserve_current_view_time*/);
 
 		// If the current session was successfully saved before we tried to load a session then
 		// attempt to restore that session, otherwise clear the session and re-throw.
@@ -176,7 +212,11 @@ GPlatesPresentation::SessionManagement::load_session_state(
 			catch (const GPlatesScribe::Exceptions::BaseException &/*scribe_exception*/)
 			{
 				// Clear the session since it could be partially restored.
-				clear_session_state();
+				//
+				// Don't preserve the current view time.
+				// We failed to load a new internal/project session so just let the view time
+				// be clamped to the default time range.
+				clear_session_state(false/*preserve_current_view_time*/);
 
 				// Re-throw the exception so the error can get reported in the GUI.
 				throw;

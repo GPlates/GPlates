@@ -30,15 +30,68 @@
 
 #include "TopologyNetworkResolverLayerProxy.h"
 
+#include "GeometryUtils.h"
+#include "ReconstructionGeometryUtils.h"
 #include "ResolvedTopologicalLine.h"
 #include "ResolvedTopologicalNetwork.h"
+#include "ResolvedVertexSourceInfo.h"
 #include "TopologyInternalUtils.h"
 #include "TopologyUtils.h"
 
-#include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
 #include "maths/MathsUtils.h"
+
+
+namespace GPlatesAppLogic
+{
+	namespace
+	{
+		/**
+		 * Filter out features that are topological networks.
+		 *
+		 * This function is actually reasonably expensive, so it's best to only call this when
+		 * the layer input feature collections change.
+		 */
+		void
+		find_topological_network_features(
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_network_features,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &feature_collections)
+		{
+			PROFILE_FUNC();
+
+			// Iterate over the current feature collections.
+			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_iter =
+					feature_collections.begin();
+			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_end =
+					feature_collections.end();
+			for ( ; feature_collections_iter != feature_collections_end; ++feature_collections_iter)
+			{
+				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection = *feature_collections_iter;
+				if (feature_collection.is_valid())
+				{
+					GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection->begin();
+					GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection->end();
+					for ( ; features_iter != features_end; ++features_iter)
+					{
+						const GPlatesModel::FeatureHandle::weak_ref feature = (*features_iter)->reference();
+
+						if (!feature.is_valid())
+						{
+							continue;
+						}
+
+						if (TopologyUtils::is_topological_network_feature(feature))
+						{
+							topological_network_features.push_back(feature);
+						}
+					}
+				}
+			}
+		}
+	}
+}
 
 
 GPlatesAppLogic::TopologyNetworkResolverLayerProxy::TopologyNetworkResolverLayerProxy(
@@ -150,6 +203,122 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_network_time_sp
 }
 
 
+GPlatesAppLogic::ReconstructHandle::type
+GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_topological_network_velocities(
+		std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_network_velocities,
+		const TopologyNetworkParams &topology_network_params,
+		const double &reconstruction_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		const double &velocity_delta_time)
+{
+	// See if the reconstruction time has changed.
+	if (d_cached_resolved_networks.cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time) ||
+		d_cached_resolved_networks.cached_topology_network_params != topology_network_params)
+	{
+		// The resolved networks are now invalid.
+		d_cached_resolved_networks.invalidate();
+
+		// The new time and params that our cache will correspond to.
+		d_cached_resolved_networks.cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
+		d_cached_resolved_networks.cached_topology_network_params = topology_network_params;
+	}
+
+	// See if any input layer proxies have changed.
+	check_input_layer_proxies();
+
+	// If the velocity delta time parameters have changed then remove the velocities from the cache.
+	if (d_cached_resolved_networks.cached_velocity_delta_time_params !=
+		std::make_pair(velocity_delta_time_type, GPlatesMaths::real_t(velocity_delta_time)))
+	{
+		d_cached_resolved_networks.cached_resolved_topological_network_velocities = boost::none;
+
+		d_cached_resolved_networks.cached_velocity_delta_time_params =
+				std::make_pair(velocity_delta_time_type, GPlatesMaths::real_t(velocity_delta_time));
+	}
+
+	if (!d_cached_resolved_networks.cached_resolved_topological_network_velocities)
+	{
+		// First get/create the resolved topological networks.
+		cache_resolved_topological_networks(topology_network_params, reconstruction_time);
+
+		// Create empty vector of resolved topological network velocities.
+		d_cached_resolved_networks.cached_resolved_topological_network_velocities =
+				std::vector<MultiPointVectorField::non_null_ptr_type>();
+
+		// Create our topological network velocities.
+		d_cached_resolved_networks.cached_velocities_handle =
+				create_resolved_topological_network_velocities(
+						d_cached_resolved_networks.cached_resolved_topological_network_velocities.get(),
+						d_cached_resolved_networks.cached_resolved_topological_networks.get(),
+						reconstruction_time,
+						velocity_delta_time_type,
+						velocity_delta_time);
+	}
+
+	// Append our cached resolved topological network velocities to the caller's sequence.
+	resolved_topological_network_velocities.insert(
+			resolved_topological_network_velocities.end(),
+			d_cached_resolved_networks.cached_resolved_topological_network_velocities->begin(),
+			d_cached_resolved_networks.cached_resolved_topological_network_velocities->end());
+
+	return d_cached_resolved_networks.cached_velocities_handle.get();
+}
+
+
+void
+GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_current_topological_network_features(
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_network_features) const
+{
+	topological_network_features.insert(
+			topological_network_features.end(),
+			d_current_topological_network_features.begin(),
+			d_current_topological_network_features.end());
+}
+
+
+void
+GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_current_features(
+		std::vector<GPlatesModel::FeatureHandle::weak_ref> &features) const
+{
+	// Iterate over the current feature collections.
+	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_iter =
+			d_current_feature_collections.begin();
+	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>::const_iterator feature_collections_end =
+			d_current_feature_collections.end();
+	for ( ; feature_collections_iter != feature_collections_end; ++feature_collections_iter)
+	{
+		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection = *feature_collections_iter;
+		if (feature_collection.is_valid())
+		{
+			GPlatesModel::FeatureCollectionHandle::iterator features_iter = feature_collection->begin();
+			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection->end();
+			for ( ; features_iter != features_end; ++features_iter)
+			{
+				const GPlatesModel::FeatureHandle::weak_ref feature = (*features_iter)->reference();
+
+				if (feature.is_valid())
+				{
+					features.push_back(feature);
+				}
+			}
+		}
+	}
+}
+
+
+void
+GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_current_dependent_topological_sections(
+		std::set<GPlatesModel::FeatureId> &dependent_topological_sections) const
+{
+	// NOTE: We don't need to call 'check_input_layer_proxies()' because the feature IDs come from
+	// our topological features (not the dependent topological section layers).
+
+	dependent_topological_sections.insert(
+			d_dependent_topological_sections.get_topological_section_feature_ids().begin(),
+			d_dependent_topological_sections.get_topological_section_feature_ids().end());
+}
+
+
 const GPlatesUtils::SubjectToken &
 GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_subject_token()
 {
@@ -254,13 +423,18 @@ void
 GPlatesAppLogic::TopologyNetworkResolverLayerProxy::add_topological_network_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
-	d_current_topological_network_feature_collections.push_back(feature_collection);
+	d_current_feature_collections.push_back(feature_collection);
+
+	// Not all features will necessarily be topological, and those that are topological will not
+	// necessarily all be topological networks.
+	d_current_topological_network_features.clear();
+	find_topological_network_features(
+			d_current_topological_network_features,
+			d_current_feature_collections);
 
 	// Set the feature IDs of topological sections referenced by our resolved networks for *all* times.
 	d_dependent_topological_sections.set_topological_section_feature_ids(
-			d_current_topological_network_feature_collections,
-			// Only look at network features (in case file has a mixture of topology types and hence
-			// spawns more than one layer type)...
+			d_current_topological_network_features,
 			TopologyGeometry::NETWORK);
 
 	// The resolved topological networks are now invalid.
@@ -276,17 +450,22 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::remove_topological_network_f
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	// Erase the feature collection from our list.
-	d_current_topological_network_feature_collections.erase(
+	d_current_feature_collections.erase(
 			std::find(
-					d_current_topological_network_feature_collections.begin(),
-					d_current_topological_network_feature_collections.end(),
+					d_current_feature_collections.begin(),
+					d_current_feature_collections.end(),
 					feature_collection));
+
+	// Not all features will necessarily be topological, and those that are topological will not
+	// necessarily all be topological networks.
+	d_current_topological_network_features.clear();
+	find_topological_network_features(
+			d_current_topological_network_features,
+			d_current_feature_collections);
 
 	// Set the feature IDs of topological sections referenced by our resolved networks for *all* times.
 	d_dependent_topological_sections.set_topological_section_feature_ids(
-			d_current_topological_network_feature_collections,
-			// Only look at network features (in case file has a mixture of topology types and hence
-			// spawns more than one layer type)...
+			d_current_topological_network_features,
 			TopologyGeometry::NETWORK);
 
 	// The resolved topological networks are now invalid.
@@ -301,11 +480,16 @@ void
 GPlatesAppLogic::TopologyNetworkResolverLayerProxy::modified_topological_network_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
+	// Not all features will necessarily be topological, and those that are topological will not
+	// necessarily all be topological networks.
+	d_current_topological_network_features.clear();
+	find_topological_network_features(
+			d_current_topological_network_features,
+			d_current_feature_collections);
+
 	// Set the feature IDs of topological sections referenced by our resolved networks for *all* times.
 	d_dependent_topological_sections.set_topological_section_feature_ids(
-			d_current_topological_network_feature_collections,
-			// Only look at network features (in case file has a mixture of topology types and hence
-			// spawns more than one layer type)...
+			d_current_topological_network_features,
 			TopologyGeometry::NETWORK);
 
 	// The resolved topological networks are now invalid.
@@ -579,9 +763,9 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::create_resolved_topological_
 	d_dependent_topological_sections.get_dependent_topological_section_layers(dependent_reconstructed_geometry_topological_sections_layers);
 	d_dependent_topological_sections.get_dependent_topological_section_layers(dependent_resolved_line_topological_sections_layers);
 
-	// If we have no topological features or there are no topological section layers then we
+	// If we have no topological network features or there are no topological section layers then we
 	// can't get any topological sections and we can't resolve any topological networks.
-	if (d_current_topological_network_feature_collections.empty() ||
+	if (d_current_topological_network_features.empty() ||
 		(dependent_reconstructed_geometry_topological_sections_layers.empty() &&
 			dependent_resolved_line_topological_sections_layers.empty()))
 	{
@@ -600,16 +784,11 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::create_resolved_topological_
 	// This is an optimisation that avoids unnecessary reconstructions. Only those topological sections referenced
 	// by networks that exist at the current reconstruction time are reconstructed (this saves quite a bit of time).
 	std::set<GPlatesModel::FeatureId> topological_sections_referenced;
-	BOOST_FOREACH(
-			const GPlatesModel::FeatureCollectionHandle::weak_ref &topological_network_feature_collection,
-			d_current_topological_network_feature_collections)
-	{
-		TopologyInternalUtils::find_topological_sections_referenced(
-				topological_sections_referenced,
-				topological_network_feature_collection,
-				TopologyGeometry::NETWORK,
-				reconstruction_time);
-	}
+	TopologyInternalUtils::find_topological_sections_referenced(
+			topological_sections_referenced,
+			d_current_topological_network_features,
+			TopologyGeometry::NETWORK,
+			reconstruction_time);
 
 	// Topological boundary sections and/or interior geometries that are reconstructed static features...
 	// We're ensuring that all potential (reconstructed geometry) topological-referenced geometries are
@@ -661,7 +840,254 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::create_resolved_topological_
 	return TopologyUtils::resolve_topological_networks(
 			resolved_topological_networks,
 			reconstruction_time,
-			d_current_topological_network_feature_collections,
+			d_current_topological_network_features,
 			topological_geometry_reconstruct_handles,
 			topology_network_params);
+}
+
+
+GPlatesAppLogic::ReconstructHandle::type
+GPlatesAppLogic::TopologyNetworkResolverLayerProxy::create_resolved_topological_network_velocities(
+		std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_network_velocities,
+		const std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
+		const double &reconstruction_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		const double &velocity_delta_time)
+{
+	// Get the next global reconstruct handle - it'll be stored in each velocity field.
+	const ReconstructHandle::type reconstruct_handle = ReconstructHandle::get_next_reconstruct_handle();
+
+	// Iterate over the resolved topological networks.
+	BOOST_FOREACH(
+			const ResolvedTopologicalNetwork::non_null_ptr_type &resolved_topological_network,
+			resolved_topological_networks)
+	{
+		// Boundary sub-segment velocities.
+		create_resolved_topological_boundary_sub_segment_velocities(
+				resolved_topological_network_velocities,
+				resolved_topological_network->get_boundary_sub_segment_sequence(),
+				reconstruction_time,
+				velocity_delta_time_type,
+				velocity_delta_time,
+				reconstruct_handle,
+				ResolvedTopologicalNetwork::INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_NETWORK_BOUNDARY);
+
+		// Interior hole (rigid block polygon) velocities.
+		//
+		// We want to calculate velocities on the *boundary* or the network which includes its
+		// exterior boundary (ie, boundary sub-segments) and an interior rigid blocks.
+		create_resolved_topological_interior_hole_velocities(
+				resolved_topological_network_velocities,
+				resolved_topological_network->get_triangulation_network().get_rigid_blocks(),
+				reconstruction_time,
+				velocity_delta_time_type,
+				velocity_delta_time,
+				reconstruct_handle);
+	}
+
+	return reconstruct_handle;
+}
+
+
+void
+GPlatesAppLogic::TopologyNetworkResolverLayerProxy::create_resolved_topological_boundary_sub_segment_velocities(
+		std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_boundary_sub_segment_velocities,
+		const sub_segment_seq_type &sub_segments,
+		const double &reconstruction_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		const double &velocity_delta_time,
+		const ReconstructHandle::type &reconstruct_handle,
+		bool include_sub_segment_rubber_band_points)
+{
+	// Iterate over the sub-segments.
+	sub_segment_seq_type::const_iterator sub_segments_iter = sub_segments.begin();
+	sub_segment_seq_type::const_iterator sub_segments_end = sub_segments.end();
+	for ( ; sub_segments_iter != sub_segments_end; ++sub_segments_iter)
+	{
+		const ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &sub_segment = *sub_segments_iter;
+
+		// If the sub-segment has any of its own sub-segments in turn, then process those instead of the parent sub-segment.
+		// This essentially is the same as simply using the parent sub-segment except that the plate ID and
+		// reconstruction geometry (used for velocity colouring) will match the actual underlying reconstructed
+		// feature geometries (when the parent sub-segment belongs to a resolved topological *line* which in
+		// turn is a section of the boundary of the resolved topological *network*).
+		const boost::optional<sub_segment_seq_type> &sub_sub_segments = sub_segment->get_sub_sub_segments();
+		if (sub_sub_segments)
+		{
+			// Iterate over the sub-sub-segments and create velocities from them.
+			create_resolved_topological_boundary_sub_segment_velocities(
+					resolved_topological_boundary_sub_segment_velocities,
+					sub_sub_segments.get(),
+					reconstruction_time,
+					velocity_delta_time_type,
+					velocity_delta_time,
+					reconstruct_handle,
+					// Note the sub-sub-segments must belong to a resolved topological *line* since
+					// a topological *network* can be used as a topological section...
+					ResolvedTopologicalLine::INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_LINE);
+
+			// Continue onto the next sub-segment.
+			continue;
+		}
+
+		boost::optional<GPlatesModel::FeatureHandle::iterator> sub_segment_geometry_property =
+					ReconstructionGeometryUtils::get_geometry_property_iterator(
+							sub_segment->get_reconstruction_geometry());
+		if (!sub_segment_geometry_property)
+		{
+			// This shouldn't happen.
+			continue;
+		}
+
+		const ReconstructionGeometry::maybe_null_ptr_to_const_type sub_segment_plate_id_reconstruction_geometry(
+				sub_segment->get_reconstruction_geometry().get());
+		boost::optional<GPlatesModel::integer_plate_id_type> sub_segment_plate_id =
+				ReconstructionGeometryUtils::get_plate_id(sub_segment->get_reconstruction_geometry());
+
+		// Note that we're not interested in the reversal flag of sub-segment (ie, how it contributed
+		// to this resolved topological network, or to a resolved topological line that in turn
+		// contributed to this resolved topological network if sub-segment is a sub-sub-segment).
+		// This is because we're just putting velocities on points (so their order doesn't matter).
+		std::vector<GPlatesMaths::PointOnSphere> sub_segment_geometry_points;
+		sub_segment->get_sub_segment_points(
+				sub_segment_geometry_points,
+				// We only need points that match the resolved topological network boundary...
+				include_sub_segment_rubber_band_points/*include_rubber_band_points*/);
+		resolved_vertex_source_info_seq_type sub_segment_point_source_infos;
+		sub_segment->get_sub_segment_point_source_infos(
+				sub_segment_point_source_infos,
+				// We only need points that match the resolved topological network boundary...
+				include_sub_segment_rubber_band_points/*include_rubber_band_points*/);
+
+		// We should have the same number of points as velocities.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				sub_segment_geometry_points.size() == sub_segment_point_source_infos.size(),
+				GPLATES_ASSERTION_SOURCE);
+
+		// It's possible to have no sub-segment points if rubber band points were excluded.
+		// This can happen when a sub-sub-segment of a resolved line sub-segment is entirely
+		// within the start or end rubber band region of the sub-sub-segment (and hence the
+		// sub-sub-segment geometry is only made up of two rubber band points, which then get excluded).
+		if (sub_segment_geometry_points.empty())
+		{
+			continue;
+		}
+
+		// NOTE: This is slightly dodgy because we will end up creating a MultiPointVectorField
+		// that stores a multi-point domain and a corresponding velocity field but the
+		// geometry property iterator (referenced by the MultiPointVectorField) could be a
+		// non-multi-point geometry.
+		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type sub_segment_velocity_domain =
+				GPlatesMaths::MultiPointOnSphere::create_on_heap(
+						sub_segment_geometry_points.begin(),
+						sub_segment_geometry_points.end());
+
+		GPlatesMaths::MultiPointOnSphere::const_iterator domain_iter = sub_segment_velocity_domain->begin();
+		GPlatesMaths::MultiPointOnSphere::const_iterator domain_end = sub_segment_velocity_domain->end();
+
+		MultiPointVectorField::non_null_ptr_type vector_field =
+				MultiPointVectorField::create_empty(
+						reconstruction_time,
+						sub_segment_velocity_domain,
+						*sub_segment->get_feature_ref(),
+						sub_segment_geometry_property.get(),
+						reconstruct_handle);
+		MultiPointVectorField::codomain_type::iterator field_iter = vector_field->begin();
+
+		// Iterate over the domain points and calculate their velocities.
+		unsigned int velocity_index = 0;
+		for ( ; domain_iter != domain_end; ++domain_iter, ++field_iter, ++velocity_index)
+		{
+			// Calculate the velocity.
+			const GPlatesMaths::Vector3D vector_xyz =
+					sub_segment_point_source_infos[velocity_index]->get_velocity_vector(
+							*domain_iter,
+							reconstruction_time,
+							velocity_delta_time,
+							velocity_delta_time_type);
+
+			*field_iter = MultiPointVectorField::CodomainElement(
+					vector_xyz,
+					// Even though it's a resolved topological geometry it's still essentially a reconstructed geometry
+					// in that the velocities come from the reconstructed sections that make up the topology...
+					MultiPointVectorField::CodomainElement::ReconstructedDomainPoint,
+					sub_segment_plate_id,
+					sub_segment_plate_id_reconstruction_geometry);
+		}
+
+		resolved_topological_boundary_sub_segment_velocities.push_back(vector_field);
+	}
+}
+
+
+void
+GPlatesAppLogic::TopologyNetworkResolverLayerProxy::create_resolved_topological_interior_hole_velocities(
+		std::vector<MultiPointVectorField::non_null_ptr_type> &resolved_topological_interior_hole_velocities,
+		const ResolvedTriangulation::Network::rigid_block_seq_type &interior_holes,
+		const double &reconstruction_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		const double &velocity_delta_time,
+		const ReconstructHandle::type &reconstruct_handle)
+{
+	// Iterate over the interior holes.
+	ResolvedTriangulation::Network::rigid_block_seq_type::const_iterator interior_holes_iter = interior_holes.begin();
+	ResolvedTriangulation::Network::rigid_block_seq_type::const_iterator interior_holes_end = interior_holes.end();
+	for ( ; interior_holes_iter != interior_holes_end; ++interior_holes_iter)
+	{
+		const ResolvedTriangulation::Network::RigidBlock &interior_hole = *interior_holes_iter;
+
+		const ReconstructedFeatureGeometry::non_null_ptr_type interior_hole_rfg =
+				interior_hole.get_reconstructed_feature_geometry();
+
+		// NOTE: This is slightly dodgy because we will end up creating a MultiPointVectorField
+		// that stores a multi-point domain and a corresponding velocity field but the
+		// geometry property iterator (referenced by the MultiPointVectorField) could be a
+		// non-multi-point geometry.
+		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type interior_hole_velocity_domain =
+				GeometryUtils::convert_geometry_to_multi_point(
+						*interior_hole_rfg->reconstructed_geometry(),
+						false/*include_polygon_interior_ring_points*/);
+
+		GPlatesMaths::MultiPointOnSphere::const_iterator domain_iter = interior_hole_velocity_domain->begin();
+		GPlatesMaths::MultiPointOnSphere::const_iterator domain_end = interior_hole_velocity_domain->end();
+
+		MultiPointVectorField::non_null_ptr_type vector_field =
+				MultiPointVectorField::create_empty(
+						reconstruction_time,
+						interior_hole_velocity_domain,
+						*interior_hole_rfg->get_feature_ref(),
+						interior_hole_rfg->property(),
+						reconstruct_handle);
+		MultiPointVectorField::codomain_type::iterator field_iter = vector_field->begin();
+
+		const ReconstructionGeometry::maybe_null_ptr_to_const_type interior_plate_id_reconstruction_geometry(interior_hole_rfg.get());
+		boost::optional<GPlatesModel::integer_plate_id_type> interior_hole_plate_id = interior_hole_rfg->reconstruction_plate_id();
+
+		// Reconstruct information shared by all the points in the interior hole (since it's a
+		// ReconstructedFeatureGeometry and hence all its points come from the same reconstructed feature geometry).
+		const ResolvedVertexSourceInfo::non_null_ptr_to_const_type interior_hole_shared_source_info =
+				ResolvedVertexSourceInfo::create(interior_hole_rfg.get());
+
+		// Iterate over the domain points and calculate their velocities.
+		for ( ; domain_iter != domain_end; ++domain_iter, ++field_iter)
+		{
+			// Calculate the velocity.
+			const GPlatesMaths::Vector3D vector_xyz =
+					interior_hole_shared_source_info->get_velocity_vector(
+							*domain_iter,
+							reconstruction_time,
+							velocity_delta_time,
+							velocity_delta_time_type);
+
+			*field_iter = MultiPointVectorField::CodomainElement(
+					vector_xyz,
+					// Even though it's a resolved topological network it's still essentially a reconstructed geometry
+					// in that the velocities come from the reconstructed sections that make up the topology...
+					MultiPointVectorField::CodomainElement::ReconstructedDomainPoint,
+					interior_hole_plate_id,
+					interior_plate_id_reconstruction_geometry);
+		}
+
+		resolved_topological_interior_hole_velocities.push_back(vector_field);
+	}
 }

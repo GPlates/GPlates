@@ -223,61 +223,91 @@ namespace GPlatesAppLogic
 		set_current_velocity_params(
 				const VelocityParams &velocity_params);
 
-		/**
-		 * Add a velocity domain layer proxy.
-		 */
-		void
-		add_velocity_domain_layer_proxy(
-				const ReconstructLayerProxy::non_null_ptr_type &velocity_domain_layer_proxy);
 
 		/**
-		 * Remove a velocity domain layer proxy.
+		 * Add a domain reconstruct layer proxy.
 		 */
 		void
-		remove_velocity_domain_layer_proxy(
-				const ReconstructLayerProxy::non_null_ptr_type &velocity_domain_layer_proxy);
+		add_domain_reconstruct_layer_proxy(
+				const ReconstructLayerProxy::non_null_ptr_type &domain_reconstruct_layer_proxy);
 
 		/**
-		 * Add a reconstructed static polygons layer proxy.
+		 * Remove a domain reconstructed geometries layer proxy.
 		 */
 		void
-		add_reconstructed_polygons_layer_proxy(
-				const ReconstructLayerProxy::non_null_ptr_type &reconstructed_polygons_layer_proxy);
+		remove_domain_reconstruct_layer_proxy(
+				const ReconstructLayerProxy::non_null_ptr_type &domain_reconstruct_layer_proxy);
 
 		/**
-		 * Remove a reconstructed static polygons layer proxy.
+		 * Add a domain topological geometry resolver layer proxy.
 		 */
 		void
-		remove_reconstructed_polygons_layer_proxy(
-				const ReconstructLayerProxy::non_null_ptr_type &reconstructed_polygons_layer_proxy);
+		add_domain_topological_geometry_resolver_layer_proxy(
+				const TopologyGeometryResolverLayerProxy::non_null_ptr_type &domain_topological_geometry_resolver_layer_proxy);
 
 		/**
-		 * Add a topological boundary resolver layer proxy.
+		 * Remove a domain topological geometry resolver layer proxy.
 		 */
 		void
-		add_topological_boundary_resolver_layer_proxy(
-				const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
+		remove_domain_topological_geometry_resolver_layer_proxy(
+				const TopologyGeometryResolverLayerProxy::non_null_ptr_type &domain_topological_geometry_resolver_layer_proxy);
 
 		/**
-		 * Remove a topological boundary resolver layer proxy.
+		 * Add a domain topological network resolver layer proxy.
 		 */
 		void
-		remove_topological_boundary_resolver_layer_proxy(
-				const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy);
+		add_domain_topological_network_resolver_layer_proxy(
+				const TopologyNetworkResolverLayerProxy::non_null_ptr_type &domain_topological_network_resolver_layer_proxy);
 
 		/**
-		 * Add a topological network resolver layer proxy.
+		 * Remove a domain topological network resolver layer proxy.
 		 */
 		void
-		add_topological_network_resolver_layer_proxy(
-				const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy);
+		remove_domain_topological_network_resolver_layer_proxy(
+				const TopologyNetworkResolverLayerProxy::non_null_ptr_type &domain_topological_network_resolver_layer_proxy);
+
 
 		/**
-		 * Remove a topological network resolver layer proxy.
+		 * Add a surface reconstructed static polygons layer proxy.
 		 */
 		void
-		remove_topological_network_resolver_layer_proxy(
-				const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy);
+		add_surface_reconstructed_polygons_layer_proxy(
+				const ReconstructLayerProxy::non_null_ptr_type &surface_reconstructed_polygons_layer_proxy);
+
+		/**
+		 * Remove a surface reconstructed static polygons layer proxy.
+		 */
+		void
+		remove_surface_reconstructed_polygons_layer_proxy(
+				const ReconstructLayerProxy::non_null_ptr_type &surface_reconstructed_polygons_layer_proxy);
+
+		/**
+		 * Add a surface topological geometry resolver layer proxy.
+		 */
+		void
+		add_surface_topological_geometry_resolver_layer_proxy(
+				const TopologyGeometryResolverLayerProxy::non_null_ptr_type &surface_topological_geometry_resolver_layer_proxy);
+
+		/**
+		 * Remove a surface topological geometry resolver layer proxy.
+		 */
+		void
+		remove_surface_topological_geometry_resolver_layer_proxy(
+				const TopologyGeometryResolverLayerProxy::non_null_ptr_type &surface_topological_geometry_resolver_layer_proxy);
+
+		/**
+		 * Add a surface topological network resolver layer proxy.
+		 */
+		void
+		add_surface_topological_network_resolver_layer_proxy(
+				const TopologyNetworkResolverLayerProxy::non_null_ptr_type &surface_topological_network_resolver_layer_proxy);
+
+		/**
+		 * Remove a surface topological network resolver layer proxy.
+		 */
+		void
+		remove_surface_topological_network_resolver_layer_proxy(
+				const TopologyNetworkResolverLayerProxy::non_null_ptr_type &surface_topological_network_resolver_layer_proxy);
 
 	private:
 
@@ -308,28 +338,39 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Used to get reconstructed static polygon surfaces to calculate velocities on.
+		 * Used to get surface reconstructed static polygon surfaces to calculate velocities on.
 		 */
 		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy>
-				d_current_reconstructed_polygon_layer_proxies;
+				d_current_surface_reconstructed_polygon_layer_proxies;
 
 		/**
-		 * Used to get resolved topology boundary surfaces to calculate velocities on.
+		 * Used to get surface resolved topology boundary surfaces to calculate velocities *on*. 
 		 */
 		LayerProxyUtils::InputLayerProxySequence<TopologyGeometryResolverLayerProxy>
-				d_current_topological_boundary_resolver_layer_proxies;
+				d_current_surface_topological_geometry_resolver_layer_proxies;
 
 		/**
-		 * Used to get resolved topology network surfaces to calculate velocities on.
+		 * Used to get surface resolved topology network surfaces to calculate velocities on.
 		 */
 		LayerProxyUtils::InputLayerProxySequence<TopologyNetworkResolverLayerProxy>
-				d_current_topological_network_resolver_layer_proxies;
+				d_current_surface_topological_network_resolver_layer_proxies;
 
 		/**
-		 * Used to get velocity domain geometries to calculate velocities at.
+		 * Used to get domain reconstructed geometries to calculate velocities at.
 		 */
-		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy>
-				d_current_velocity_domain_layer_proxies;
+		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy> d_current_domain_reconstruct_layer_proxies;
+
+		/**
+		 * Used to get domain resolved topological geometries to calculate velocities at.
+		 */
+		LayerProxyUtils::InputLayerProxySequence<TopologyGeometryResolverLayerProxy>
+				d_current_domain_topological_geometry_resolver_layer_proxies;
+
+		/**
+		 * Used to get domain resolved topological network boundaries to calculate velocities at.
+		 */
+		LayerProxyUtils::InputLayerProxySequence<TopologyNetworkResolverLayerProxy>
+				d_current_domain_topological_network_resolver_layer_proxies;
 
 		/**
 		 * The current reconstruction time as set by the layer system.

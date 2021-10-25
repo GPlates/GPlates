@@ -31,6 +31,18 @@ IF(GDAL_INCLUDE_DIR)
   ENDIF (EXISTS "${GDAL_INCLUDE_DIR}/GDAL/gdal_version.h")
 ENDIF(GDAL_INCLUDE_DIR)
 
+IF(PROJ_INCLUDE_DIR)
+  # If have the Proj6 header ("proj.h").
+  IF (EXISTS "${PROJ_INCLUDE_DIR}/proj.h")
+    set(HAVE_PROJ_H 1)
+  ENDIF (EXISTS "${PROJ_INCLUDE_DIR}/proj.h")
+  
+  # If have the Proj4 header ("proj_api.h").
+  IF (EXISTS "${PROJ_INCLUDE_DIR}/proj_api.h")
+    set(HAVE_PROJ_API_H 1)
+  ENDIF (EXISTS "${PROJ_INCLUDE_DIR}/proj_api.h")
+ENDIF(PROJ_INCLUDE_DIR)
+
 # The following system header files are found in the "system-fixes" directory.
 # If they also exist in the expected places on the user's system, we set a
 # variable to indicate the path to the installed version of the header file.
@@ -48,13 +60,6 @@ SET (BOOST_CSTDINT_HPP_PATH "${Boost_INCLUDE_DIR}/boost/cstdint.hpp")
 IF (NOT EXISTS ${BOOST_CSTDINT_HPP_PATH})
 	SET (BOOST_CSTDINT_HPP_PATH "")
 ENDIF (NOT EXISTS ${BOOST_CSTDINT_HPP_PATH})
-
-# controls to find patched Constrained_Delaunay_triangulation_2.h 
-SET (GCAL_PATCH_CDT2_H_PATH "${CGAL_INCLUDE_DIR}/cgal/Constrained_Delaunay_triangulation_2.h") 
-IF (EXISTS ${GCAL_PATCH_CDT2_H_PATH}) 
-    # uncomment for CGAL 3.7
-    # SET (HAVE_GCAL_PATCH_CDT2_H 1) 
-ENDIF (EXISTS ${GCAL_PATCH_CDT2_H_PATH})
 
 # Tell GPlates that we have a valid 'global/config.h' file.
 add_definitions(-DHAVE_CONFIG_H)

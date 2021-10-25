@@ -57,10 +57,6 @@ namespace
 			for (; it != results.end() ; ++it)
 			{
 				GPlatesAppLogic::NetRotationUtils::NetRotationResult result = it->second;
-				if (it->first == 0)
-				{
-					continue;
-				}
 
 				if (GPlatesMaths::are_almost_exactly_equal(result.d_weighting_factor,0.)) return;
 				GPlatesMaths::Vector3D omega(result.d_rotation_component.x()/result.d_weighting_factor,

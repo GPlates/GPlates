@@ -31,6 +31,7 @@
 #include "ReconstructionGeometryRenderer.h"
 #include "VisualLayerRegistry.h"
 #include "VisualLayers.h"
+#include "ViewState.h"
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/Layer.h"
@@ -43,30 +44,29 @@
 
 
 GPlatesPresentation::VisualLayer::VisualLayer(
+		ViewState &view_state,
 		VisualLayers &visual_layers,
-		const VisualLayerRegistry &visual_layer_registry,
 		GPlatesAppLogic::Layer &layer,
-		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-		const GPlatesViewOperations::RenderedGeometryParameters &rendered_geometry_parameters,
-		const GPlatesGui::symbol_map_type &symbol_map,
 		int layer_number) :
 	d_visual_layers(visual_layers),
-	d_visual_layer_registry(visual_layer_registry),
-	d_rendered_geometry_parameters(rendered_geometry_parameters),
-	d_symbol_map(symbol_map),
+	d_visual_layer_registry(view_state.get_visual_layer_registry()),
+	d_rendered_geometry_parameters(view_state.get_rendered_geometry_parameters()),
+	d_render_settings(view_state.get_render_settings()),
+	d_symbol_map(view_state.get_feature_type_symbol_map()),
+	d_application_state(view_state.get_application_state()),
 	d_layer(layer),
 	// Create a child rendered geometry layer in the main RECONSTRUCTION layer.
 	d_rendered_geometry_layer_index(
-			rendered_geometry_collection.create_child_rendered_layer(
+			view_state.get_rendered_geometry_collection().create_child_rendered_layer(
 					GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)),
 	d_rendered_geometry_layer(
-			rendered_geometry_collection.transfer_ownership_of_child_rendered_layer(
+			view_state.get_rendered_geometry_collection().transfer_ownership_of_child_rendered_layer(
 					d_rendered_geometry_layer_index,
 					GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)),
 	d_visible(true),
 	d_layer_number(layer_number),
 	d_visual_layer_params(
-			visual_layer_registry.create_visual_layer_params(
+			d_visual_layer_registry.create_visual_layer_params(
 					get_layer_type(),
 					layer.get_layer_params()))
 {
@@ -149,6 +149,8 @@ GPlatesPresentation::VisualLayer::create_rendered_geometries()
 	d_visual_layer_params->accept_visitor(render_params_populator);
 	ReconstructionGeometryRenderer reconstruction_geometry_renderer(
 			render_params_populator.get_render_params(),
+			d_render_settings,
+			d_application_state.get_current_topological_sections(),
 			boost::none, // colour 
             boost::none, // rotation adjustment
 			d_symbol_map,

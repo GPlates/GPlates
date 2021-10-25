@@ -67,7 +67,9 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::get_velocity_multi_point_vec
 		const double &reconstruction_time)
 {
 	// If we have no velocity domains then there's no points at which to calculate velocities.
-	if (d_current_velocity_domain_layer_proxies.empty())
+	if (d_current_domain_reconstruct_layer_proxies.empty() &&
+		d_current_domain_topological_geometry_resolver_layer_proxies.empty() &&
+		d_current_domain_topological_network_resolver_layer_proxies.empty())
 	{
 		return;
 	}
@@ -135,10 +137,10 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::set_current_velocity_params(
 
 
 void
-GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::add_velocity_domain_layer_proxy(
-		const ReconstructLayerProxy::non_null_ptr_type &velocity_domain_layer_proxy)
+GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::add_domain_reconstruct_layer_proxy(
+		const ReconstructLayerProxy::non_null_ptr_type &domain_reconstruct_layer_proxy)
 {
-	d_current_velocity_domain_layer_proxies.add_input_layer_proxy(velocity_domain_layer_proxy);
+	d_current_domain_reconstruct_layer_proxies.add_input_layer_proxy(domain_reconstruct_layer_proxy);
 
 	// The velocities are now invalid.
 	reset_cache();
@@ -149,10 +151,10 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::add_velocity_domain_layer_pr
 
 
 void
-GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_velocity_domain_layer_proxy(
-		const ReconstructLayerProxy::non_null_ptr_type &velocity_domain_layer_proxy)
+GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_domain_reconstruct_layer_proxy(
+		const ReconstructLayerProxy::non_null_ptr_type &domain_reconstruct_layer_proxy)
 {
-	d_current_velocity_domain_layer_proxies.remove_input_layer_proxy(velocity_domain_layer_proxy);
+	d_current_domain_reconstruct_layer_proxies.remove_input_layer_proxy(domain_reconstruct_layer_proxy);
 
 	// The velocities are now invalid.
 	reset_cache();
@@ -163,10 +165,80 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_velocity_domain_layer
 
 
 void
-GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::add_reconstructed_polygons_layer_proxy(
+GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::add_domain_topological_geometry_resolver_layer_proxy(
+		const TopologyGeometryResolverLayerProxy::non_null_ptr_type &domain_topological_geometry_resolver_layer_proxy)
+{
+	d_current_domain_topological_geometry_resolver_layer_proxies.add_input_layer_proxy(domain_topological_geometry_resolver_layer_proxy);
+
+	// The velocities are now invalid.
+	reset_cache();
+
+	// Polling observers need to update themselves with respect to us.
+	d_subject_token.invalidate();
+}
+
+
+void
+GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_domain_topological_geometry_resolver_layer_proxy(
+		const TopologyGeometryResolverLayerProxy::non_null_ptr_type &domain_topological_geometry_resolver_layer_proxy)
+{
+	d_current_domain_topological_geometry_resolver_layer_proxies.remove_input_layer_proxy(domain_topological_geometry_resolver_layer_proxy);
+
+	// The velocities are now invalid.
+	reset_cache();
+
+	// Polling observers need to update themselves with respect to us.
+	d_subject_token.invalidate();
+}
+
+
+void
+GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::add_domain_topological_network_resolver_layer_proxy(
+		const TopologyNetworkResolverLayerProxy::non_null_ptr_type &domain_topological_network_resolver_layer_proxy)
+{
+	d_current_domain_topological_network_resolver_layer_proxies.add_input_layer_proxy(domain_topological_network_resolver_layer_proxy);
+
+	// The velocities are now invalid.
+	reset_cache();
+
+	// Polling observers need to update themselves with respect to us.
+	d_subject_token.invalidate();
+}
+
+
+void
+GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_domain_topological_network_resolver_layer_proxy(
+		const TopologyNetworkResolverLayerProxy::non_null_ptr_type &domain_topological_network_resolver_layer_proxy)
+{
+	d_current_domain_topological_network_resolver_layer_proxies.remove_input_layer_proxy(domain_topological_network_resolver_layer_proxy);
+
+	// The velocities are now invalid.
+	reset_cache();
+
+	// Polling observers need to update themselves with respect to us.
+	d_subject_token.invalidate();
+}
+
+
+void
+GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::add_surface_reconstructed_polygons_layer_proxy(
+		const ReconstructLayerProxy::non_null_ptr_type &surface_reconstructed_polygons_layer_proxy)
+{
+	d_current_surface_reconstructed_polygon_layer_proxies.add_input_layer_proxy(surface_reconstructed_polygons_layer_proxy);
+
+	// The velocities are now invalid.
+	reset_cache();
+
+	// Polling observers need to update themselves with respect to us.
+	d_subject_token.invalidate();
+}
+
+
+void
+GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_surface_reconstructed_polygons_layer_proxy(
 		const ReconstructLayerProxy::non_null_ptr_type &reconstructed_polygons_layer_proxy)
 {
-	d_current_reconstructed_polygon_layer_proxies.add_input_layer_proxy(reconstructed_polygons_layer_proxy);
+	d_current_surface_reconstructed_polygon_layer_proxies.remove_input_layer_proxy(reconstructed_polygons_layer_proxy);
 
 	// The velocities are now invalid.
 	reset_cache();
@@ -177,10 +249,10 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::add_reconstructed_polygons_l
 
 
 void
-GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_reconstructed_polygons_layer_proxy(
-		const ReconstructLayerProxy::non_null_ptr_type &reconstructed_polygons_layer_proxy)
+GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::add_surface_topological_geometry_resolver_layer_proxy(
+		const TopologyGeometryResolverLayerProxy::non_null_ptr_type &surface_topological_geometry_resolver_layer_proxy)
 {
-	d_current_reconstructed_polygon_layer_proxies.remove_input_layer_proxy(reconstructed_polygons_layer_proxy);
+	d_current_surface_topological_geometry_resolver_layer_proxies.add_input_layer_proxy(surface_topological_geometry_resolver_layer_proxy);
 
 	// The velocities are now invalid.
 	reset_cache();
@@ -191,10 +263,10 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_reconstructed_polygon
 
 
 void
-GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::add_topological_boundary_resolver_layer_proxy(
-		const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy)
+GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_surface_topological_geometry_resolver_layer_proxy(
+		const TopologyGeometryResolverLayerProxy::non_null_ptr_type &surface_topological_geometry_resolver_layer_proxy)
 {
-	d_current_topological_boundary_resolver_layer_proxies.add_input_layer_proxy(topological_boundary_resolver_layer_proxy);
+	d_current_surface_topological_geometry_resolver_layer_proxies.remove_input_layer_proxy(surface_topological_geometry_resolver_layer_proxy);
 
 	// The velocities are now invalid.
 	reset_cache();
@@ -205,10 +277,10 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::add_topological_boundary_res
 
 
 void
-GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_topological_boundary_resolver_layer_proxy(
-		const TopologyGeometryResolverLayerProxy::non_null_ptr_type &topological_boundary_resolver_layer_proxy)
+GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::add_surface_topological_network_resolver_layer_proxy(
+		const TopologyNetworkResolverLayerProxy::non_null_ptr_type &surface_topological_network_resolver_layer_proxy)
 {
-	d_current_topological_boundary_resolver_layer_proxies.remove_input_layer_proxy(topological_boundary_resolver_layer_proxy);
+	d_current_surface_topological_network_resolver_layer_proxies.add_input_layer_proxy(surface_topological_network_resolver_layer_proxy);
 
 	// The velocities are now invalid.
 	reset_cache();
@@ -219,24 +291,10 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_topological_boundary_
 
 
 void
-GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::add_topological_network_resolver_layer_proxy(
-		const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy)
+GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_surface_topological_network_resolver_layer_proxy(
+		const TopologyNetworkResolverLayerProxy::non_null_ptr_type &surface_topological_network_resolver_layer_proxy)
 {
-	d_current_topological_network_resolver_layer_proxies.add_input_layer_proxy(topological_network_resolver_layer_proxy);
-
-	// The velocities are now invalid.
-	reset_cache();
-
-	// Polling observers need to update themselves with respect to us.
-	d_subject_token.invalidate();
-}
-
-
-void
-GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::remove_topological_network_resolver_layer_proxy(
-		const TopologyNetworkResolverLayerProxy::non_null_ptr_type &topological_network_resolver_layer_proxy)
-{
-	d_current_topological_network_resolver_layer_proxies.remove_input_layer_proxy(topological_network_resolver_layer_proxy);
+	d_current_surface_topological_network_resolver_layer_proxies.remove_input_layer_proxy(surface_topological_network_resolver_layer_proxy);
 
 	// The velocities are now invalid.
 	reset_cache();
@@ -277,36 +335,52 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::check_input_layer_proxy(
 void
 GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::check_input_layer_proxies()
 {
-	// See if any reconstructed polygons layer proxies have changed.
+	// See if any surface reconstructed polygons layer proxies have changed.
 	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_polygons_layer_proxy,
-			d_current_reconstructed_polygon_layer_proxies)
+			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &surface_reconstructed_polygons_layer_proxy,
+			d_current_surface_reconstructed_polygon_layer_proxies)
 	{
-		check_input_layer_proxy(reconstructed_polygons_layer_proxy);
+		check_input_layer_proxy(surface_reconstructed_polygons_layer_proxy);
 	}
 
-	// See if any resolved boundaries layer proxies have changed.
+	// See if any surface resolved geometry layer proxies have changed.
 	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
-			d_current_topological_boundary_resolver_layer_proxies)
+			LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &surface_topological_geometry_resolver_layer_proxy,
+			d_current_surface_topological_geometry_resolver_layer_proxies)
 	{
-		check_input_layer_proxy(topological_boundary_resolver_layer_proxy);
+		check_input_layer_proxy(surface_topological_geometry_resolver_layer_proxy);
 	}
 
-	// See if the resolved networks layer proxies have changed.
+	// See if the surface resolved networks layer proxies have changed.
 	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<TopologyNetworkResolverLayerProxy> &topological_network_resolver_layer_proxy,
-			d_current_topological_network_resolver_layer_proxies)
+			LayerProxyUtils::InputLayerProxy<TopologyNetworkResolverLayerProxy> &surface_topological_network_resolver_layer_proxy,
+			d_current_surface_topological_network_resolver_layer_proxies)
 	{
-		check_input_layer_proxy(topological_network_resolver_layer_proxy);
+		check_input_layer_proxy(surface_topological_network_resolver_layer_proxy);
 	}
 
-	// See if the velocity domain layer proxies have changed.
+	// See if the domain reconstruct layer proxies have changed.
 	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &velocity_domain_layer_proxy,
-			d_current_velocity_domain_layer_proxies)
+			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &domain_reconstruct_layer_proxy,
+			d_current_domain_reconstruct_layer_proxies)
 	{
-		check_input_layer_proxy(velocity_domain_layer_proxy);
+		check_input_layer_proxy(domain_reconstruct_layer_proxy);
+	}
+
+	// See if the domain resolved topological geometry layer proxies have changed.
+	BOOST_FOREACH(
+			LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &domain_topological_geometry_resolver_layer_proxy,
+			d_current_domain_topological_geometry_resolver_layer_proxies)
+	{
+		check_input_layer_proxy(domain_topological_geometry_resolver_layer_proxy);
+	}
+
+	// See if the domain resolved topological network layer proxies have changed.
+	BOOST_FOREACH(
+			LayerProxyUtils::InputLayerProxy<TopologyNetworkResolverLayerProxy> &domain_topological_network_resolver_layer_proxy,
+			d_current_domain_topological_network_resolver_layer_proxies)
+	{
+		check_input_layer_proxy(domain_topological_network_resolver_layer_proxy);
 	}
 }
 
@@ -328,16 +402,38 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::cache_velocities(
 		VelocityParams::SOLVE_VELOCITIES_OF_DOMAIN_POINTS)
 	{
 		//
-		// Get the velocities of the reconstructed feature geometries in the velocity domain layers.
-		// This requires no surfaces and is essentially the velocities at the positions of the
-		// reconstructed feature geometries.
+		// Get the velocities of the reconstructed feature geometries and/or resolved topological geometries
+		// in the velocity domain layers. This requires no surfaces and is essentially the velocities at the
+		// positions of the reconstructed feature geometries and/or resolved topological geometries.
 		//
 
 		BOOST_FOREACH(
-				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &velocity_domains_layer_proxy,
-				d_current_velocity_domain_layer_proxies)
+				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &domains_reconstruct_layer_proxy,
+				d_current_domain_reconstruct_layer_proxies)
 		{
-			velocity_domains_layer_proxy.get_input_layer_proxy()->get_reconstructed_feature_velocities(
+			domains_reconstruct_layer_proxy.get_input_layer_proxy()->get_reconstructed_feature_velocities(
+					velocity_info.cached_multi_point_velocity_fields.get(),
+					reconstruction_time,
+					velocity_params.get_delta_time_type(),
+					velocity_params.get_delta_time());
+		}
+
+		BOOST_FOREACH(
+				LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &domains_topological_geometry_resolver_layer_proxy,
+				d_current_domain_topological_geometry_resolver_layer_proxies)
+		{
+			domains_topological_geometry_resolver_layer_proxy.get_input_layer_proxy()->get_resolved_topological_geometry_velocities(
+					velocity_info.cached_multi_point_velocity_fields.get(),
+					reconstruction_time,
+					velocity_params.get_delta_time_type(),
+					velocity_params.get_delta_time());
+		}
+
+		BOOST_FOREACH(
+				LayerProxyUtils::InputLayerProxy<TopologyNetworkResolverLayerProxy> &domains_topological_network_resolver_layer_proxy,
+				d_current_domain_topological_network_resolver_layer_proxies)
+		{
+			domains_topological_network_resolver_layer_proxy.get_input_layer_proxy()->get_resolved_topological_network_velocities(
 					velocity_info.cached_multi_point_velocity_fields.get(),
 					reconstruction_time,
 					velocity_params.get_delta_time_type(),
@@ -351,13 +447,13 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::cache_velocities(
 		// Get the domain geometries for the velocity calculation.
 		//
 
-		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> velocity_domains;
+		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> domains;
 		BOOST_FOREACH(
-				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &velocity_domains_layer_proxy,
-				d_current_velocity_domain_layer_proxies)
+				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &domains_reconstruct_layer_proxy,
+				d_current_domain_reconstruct_layer_proxies)
 		{
-			velocity_domains_layer_proxy.get_input_layer_proxy()->get_reconstructed_feature_geometries(
-					velocity_domains,
+			domains_reconstruct_layer_proxy.get_input_layer_proxy()->get_reconstructed_feature_geometries(
+					domains,
 					reconstruction_time);
 		}
 
@@ -366,36 +462,36 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::cache_velocities(
 		//
 
 		// Static polygons...
-		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_static_polygons;
+		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> surface_reconstructed_static_polygons;
 		BOOST_FOREACH(
-				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_polygons_layer_proxy,
-				d_current_reconstructed_polygon_layer_proxies)
+				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &surface_reconstructed_polygons_layer_proxy,
+				d_current_surface_reconstructed_polygon_layer_proxies)
 		{
-			reconstructed_polygons_layer_proxy.get_input_layer_proxy()->get_reconstructed_feature_geometries(
-					reconstructed_static_polygons,
+			surface_reconstructed_polygons_layer_proxy.get_input_layer_proxy()->get_reconstructed_feature_geometries(
+					surface_reconstructed_static_polygons,
 					reconstruction_time);
 		}
 
 		// Topological closed plate polygons...
-		std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> resolved_topological_boundaries;
+		std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> surface_resolved_topological_boundaries;
 
 		BOOST_FOREACH(
-				LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &topological_boundary_resolver_layer_proxy,
-				d_current_topological_boundary_resolver_layer_proxies)
+				LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &surface_topological_geometry_resolver_layer_proxy,
+				d_current_surface_topological_geometry_resolver_layer_proxies)
 		{
-			topological_boundary_resolver_layer_proxy.get_input_layer_proxy()->get_resolved_topological_boundaries(
-					resolved_topological_boundaries,
+			surface_topological_geometry_resolver_layer_proxy.get_input_layer_proxy()->get_resolved_topological_boundaries(
+					surface_resolved_topological_boundaries,
 					reconstruction_time);
 		}
 
 		// Topological networks...
-		std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> resolved_topological_networks;
+		std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> surface_resolved_topological_networks;
 		BOOST_FOREACH(
-				LayerProxyUtils::InputLayerProxy<TopologyNetworkResolverLayerProxy> &topological_network_resolver_layer_proxy,
-				d_current_topological_network_resolver_layer_proxies)
+				LayerProxyUtils::InputLayerProxy<TopologyNetworkResolverLayerProxy> &surface_topological_network_resolver_layer_proxy,
+				d_current_surface_topological_network_resolver_layer_proxies)
 		{
-			topological_network_resolver_layer_proxy.get_input_layer_proxy()->get_resolved_topological_networks(
-					resolved_topological_networks,
+			surface_topological_network_resolver_layer_proxy.get_input_layer_proxy()->get_resolved_topological_networks(
+					surface_resolved_topological_networks,
 					reconstruction_time);
 		}
 
@@ -419,10 +515,10 @@ GPlatesAppLogic::VelocityFieldCalculatorLayerProxy::cache_velocities(
 		PlateVelocityUtils::solve_velocities_on_surfaces(
 				velocity_info.cached_multi_point_velocity_fields.get(),
 				reconstruction_time,
-				velocity_domains,
-				reconstructed_static_polygons,
-				resolved_topological_boundaries,
-				resolved_topological_networks,
+				domains,
+				surface_reconstructed_static_polygons,
+				surface_resolved_topological_boundaries,
+				surface_resolved_topological_networks,
 				velocity_params.get_delta_time(),
 				velocity_params.get_delta_time_type(),
 				velocity_smoothing_options);

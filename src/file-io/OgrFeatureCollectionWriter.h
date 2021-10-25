@@ -143,7 +143,7 @@ namespace GPlatesFileIO
 		boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> d_key_value_dictionary;
 
 		// A default KeyValueDictionary used for features for which no KVD is found.
-		boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type> d_default_key_value_dictionary;
+		boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> d_default_key_value_dictionary;
 
 		// A model_to_shapefile_attribute map
 		QMap< QString,QString > d_model_to_shapefile_map;

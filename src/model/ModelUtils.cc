@@ -44,8 +44,6 @@
 
 #include "global/LogException.h"
 
-#include "presentation/Application.h"
-
 #include "property-values/GmlLineString.h"
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlOrientableCurve.h"

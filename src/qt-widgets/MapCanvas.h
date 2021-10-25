@@ -50,7 +50,6 @@
 
 namespace GPlatesGui
 {
-	class RenderSettings;
 	class TextOverlay;
 	class VelocityLegendOverlay;
 	class ViewportZoom;
@@ -91,7 +90,6 @@ namespace GPlatesQtWidgets
 				QGLWidget *gl_widget,
 				const GPlatesOpenGL::GLContext::non_null_ptr_type &gl_context,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
-				GPlatesGui::RenderSettings &render_settings,
 				GPlatesGui::ViewportZoom &viewport_zoom,
 				const GPlatesGui::ColourScheme::non_null_ptr_type &colour_scheme,
 				QWidget *parent_ = NULL);

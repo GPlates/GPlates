@@ -35,7 +35,6 @@
 
 #include "global/PointerTraits.h"
 
-#include "model/FeatureCollectionHandle.h"
 #include "model/FeatureHandle.h"
 #include "model/FeatureId.h"
 
@@ -66,8 +65,17 @@ namespace GPlatesAppLogic
 		 */
 		void
 		set_topological_section_feature_ids(
-				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_feature_collections,
+				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &topological_features,
 				boost::optional<TopologyGeometry::Type> topology_geometry_type = boost::none);
+
+		/**
+		 * Returns the topological section feature IDs referenced by the topological features for *all* times.
+		 */
+		const std::set<GPlatesModel::FeatureId> &
+		get_topological_section_feature_ids() const
+		{
+			return d_feature_ids;
+		}
 
 
 		/**
@@ -113,14 +121,14 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_dependent_topological_section_layers(
-				std::vector<ReconstructLayerProxy::non_null_ptr_type> &dependent_layers);
+				std::vector<ReconstructLayerProxy::non_null_ptr_type> &dependent_layers) const;
 
 		/**
 		 * Get the *reconstructed geometry* topological layers that the topological features depend on.
 		 */
 		void
 		get_dependent_topological_section_layers(
-				std::vector<GPlatesGlobal::PointerTraits<TopologyGeometryResolverLayerProxy>::non_null_ptr_type> &dependent_layers);
+				std::vector<GPlatesGlobal::PointerTraits<TopologyGeometryResolverLayerProxy>::non_null_ptr_type> &dependent_layers) const;
 
 	private:
 
@@ -152,7 +160,7 @@ namespace GPlatesAppLogic
 		void
 		get_dependent_topological_section_layers(
 				std::vector<typename LayerProxyType::non_null_ptr_type> &dependent_layers,
-				std::set<LayerProxyType *> &layers);
+				const std::set<LayerProxyType *> &layers) const;
 
 		/**
 		 * Checks if any topology depends on any of the specified topological section layer.

@@ -205,13 +205,6 @@ GPlatesModel::FeatureHandle::remove_properties_by_name(
 }
 
 
-const GPlatesModel::FeatureType &
-GPlatesModel::FeatureHandle::feature_type() const
-{
-	return d_feature_type;
-}
-
-
 void
 GPlatesModel::FeatureHandle::set_feature_type(
 		const FeatureType &feature_type_)
@@ -221,24 +214,10 @@ GPlatesModel::FeatureHandle::set_feature_type(
 }
 
 
-const GPlatesModel::FeatureId &
-GPlatesModel::FeatureHandle::feature_id() const
-{
-	return d_feature_id;
-}
-
-
 const GPlatesModel::RevisionId &
 GPlatesModel::FeatureHandle::revision_id() const
 {
 	return current_revision()->revision_id();
-}
-
-
-time_t
-GPlatesModel::FeatureHandle::creation_time() const
-{
-	return d_creation_time;
 }
 
 

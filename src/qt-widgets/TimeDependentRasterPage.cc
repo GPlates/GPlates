@@ -792,7 +792,7 @@ GPlatesQtWidgets::TimeDependentRasterPage::add_files_to_sequence(
 	for (int n = 0; n < file_infos.size(); )
 	{
 		// If filename extension not supported then remove file from list.
-		if (raster_formats.find(file_infos[n].suffix()) == raster_formats.end())
+		if (raster_formats.find(file_infos[n].suffix().toLower()) == raster_formats.end())
 		{
 			file_infos.erase(file_infos.begin() + n);
 		}

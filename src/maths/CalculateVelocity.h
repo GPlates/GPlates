@@ -37,8 +37,8 @@
 #include <utility>  /* std::pair */
 #include <boost/optional.hpp>
 
-#include "maths/FiniteRotation.h"
-#include "maths/types.h"
+#include "FiniteRotation.h"
+#include "types.h"
 
 
 namespace GPlatesMaths

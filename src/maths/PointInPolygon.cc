@@ -59,11 +59,11 @@ namespace GPlatesMaths
 		// This helps avoid cases such as a point exactly on the dateline not getting included
 		// by a polygon that has an edge exactly aligned with the dateline.
 		// So this value should be extremely small (unlike the other epsilons used in this source file).
-		const double TEST_POINT_ON_POLYGON_EDGE_PLANE_COSINE = 1 - 1e-12;
+		const double POINT_ON_POLYGON_OUTLINE_COSINE = 1 - 1e-12;
 
 		// Base epsilon calculations off a cosine since that usually has the least accuracy for small angles.
 		// '1 - 1e-12' in cosine corresponds to a displacement of about 1.4e-6 [=sin(acos(1 - 1e-12))].
-		const double TEST_POINT_ON_POLYGON_EDGE_PLANE_SINE = std::sin(std::acos(TEST_POINT_ON_POLYGON_EDGE_PLANE_COSINE));
+		const double POINT_ON_POLYGON_OUTLINE_SINE = std::sin(std::acos(POINT_ON_POLYGON_OUTLINE_COSINE));
 
 
 		/**
@@ -137,8 +137,7 @@ namespace GPlatesMaths
 		 * This implies that the crossing arc end point (ie, the point being tested for inclusion in the polygon)
 		 * lies "on" the polygon outline.
 		 *
-		 * @pre @a intersection_point_coincides_with_crossings_arc_end_point must lie on the great circle
-		 * of the crossing arc (within a suitable epsilon).
+		 * @pre @a intersection_point must lie on the great circle of the crossing arc (within a suitable epsilon).
 		 */
 		bool
 		does_polygon_edge_intersection_with_crossing_gc_lie_on_crossing_gca(
@@ -147,11 +146,12 @@ namespace GPlatesMaths
 				const UnitVector3D &crossings_arc_rotation_axis,
 				const double &dot_crossings_arc_end_points,
 				const UnitVector3D &intersection_point,
+				bool use_point_on_polygon_threshold,
 				bool &intersection_point_coincides_with_crossings_arc_end_point)
 		{
 			// First see if intersection point lies very close to the crossings arc end point.
-			if (dot(crossings_arc_end_point, intersection_point).dval() >
-				TEST_POINT_ON_POLYGON_EDGE_PLANE_COSINE)
+			if (use_point_on_polygon_threshold &&
+				dot(crossings_arc_end_point, intersection_point).dval() > POINT_ON_POLYGON_OUTLINE_COSINE)
 			{
 				// The crossing arc end point (ie, the point being tested
 				// for inclusion in the polygon) lies "on" the polygon outline
@@ -304,6 +304,7 @@ namespace GPlatesMaths
 				const UnitVector3D &crossings_arc_end_point,
 				const UnitVector3D &crossings_arc_plane_normal,
 				const double &dot_crossings_arc_end_points,
+				bool use_point_on_polygon_threshold,
 				bool &crossings_arc_end_point_lies_on_polygon_outline)
 		{
 			if (edges_begin == edges_end)
@@ -375,6 +376,7 @@ namespace GPlatesMaths
 								crossings_arc_plane_normal,
 								dot_crossings_arc_end_points,
 								edge_end_point/*intersection_point*/,
+								use_point_on_polygon_threshold,
 								crossings_arc_end_point_lies_on_polygon_outline))
 						{
 							++num_edges_crossed;
@@ -429,22 +431,32 @@ namespace GPlatesMaths
 								{
 									const double dot_edge_plane_normal_and_crossings_arc_end_point =
 											dot(edge_plane_normal, crossings_arc_end_point).dval();
-									if (dot_edge_plane_normal_and_crossings_arc_end_point <
-										// This allows the crossing arc end point (which is the point
-										// being tested for inclusion in the polygon) to lie "on" the
-										// polygon outline within a very tight numerical threshold...
-										TEST_POINT_ON_POLYGON_EDGE_PLANE_SINE)
+									if (use_point_on_polygon_threshold)
 									{
-										if (dot_edge_plane_normal_and_crossings_arc_end_point >
-											-TEST_POINT_ON_POLYGON_EDGE_PLANE_SINE)
+										if (dot_edge_plane_normal_and_crossings_arc_end_point <
+											// This allows the crossing arc end point (which is the point
+											// being tested for inclusion in the polygon) to lie "on" the
+											// polygon outline within a very tight numerical threshold...
+											POINT_ON_POLYGON_OUTLINE_SINE)
 										{
-											// The crossing arc end point (ie, the point being tested
-											// for inclusion in the polygon) lies "on" the polygon outline
-											// within a very tight numerical threshold.
-											crossings_arc_end_point_lies_on_polygon_outline = true;
-										}
+											if (dot_edge_plane_normal_and_crossings_arc_end_point >
+												-POINT_ON_POLYGON_OUTLINE_SINE)
+											{
+												// The crossing arc end point (ie, the point being tested
+												// for inclusion in the polygon) lies "on" the polygon outline
+												// within a very tight numerical threshold.
+												crossings_arc_end_point_lies_on_polygon_outline = true;
+											}
 
-										++num_edges_crossed;
+											++num_edges_crossed;
+										}
+									}
+									else // no point-on-polygon threshold 
+									{
+										if (dot_edge_plane_normal_and_crossings_arc_end_point <= 0)
+										{
+											++num_edges_crossed;
+										}
 									}
 								}
 							}
@@ -458,22 +470,32 @@ namespace GPlatesMaths
 								{
 									const double dot_edge_plane_normal_and_crossings_arc_end_point =
 											dot(edge_plane_normal, crossings_arc_end_point).dval();
-									if (dot_edge_plane_normal_and_crossings_arc_end_point >
-										// This allows the crossing arc end point (which is the point
-										// being tested for inclusion in the polygon) to lie "on" the
-										// polygon outline within a very tight numerical threshold...
-										-TEST_POINT_ON_POLYGON_EDGE_PLANE_SINE)
+									if (use_point_on_polygon_threshold)
 									{
-										if (dot_edge_plane_normal_and_crossings_arc_end_point <
-											TEST_POINT_ON_POLYGON_EDGE_PLANE_SINE)
+										if (dot_edge_plane_normal_and_crossings_arc_end_point >
+											// This allows the crossing arc end point (which is the point
+											// being tested for inclusion in the polygon) to lie "on" the
+											// polygon outline within a very tight numerical threshold...
+											-POINT_ON_POLYGON_OUTLINE_SINE)
 										{
-											// The crossing arc end point (ie, the point being tested
-											// for inclusion in the polygon) lies "on" the polygon outline
-											// within a very tight numerical threshold.
-											crossings_arc_end_point_lies_on_polygon_outline = true;
-										}
+											if (dot_edge_plane_normal_and_crossings_arc_end_point <
+												POINT_ON_POLYGON_OUTLINE_SINE)
+											{
+												// The crossing arc end point (ie, the point being tested
+												// for inclusion in the polygon) lies "on" the polygon outline
+												// within a very tight numerical threshold.
+												crossings_arc_end_point_lies_on_polygon_outline = true;
+											}
 
-										++num_edges_crossed;
+											++num_edges_crossed;
+										}
+									}
+									else // no point-on-polygon threshold 
+									{
+										if (dot_edge_plane_normal_and_crossings_arc_end_point >= 0)
+										{
+											++num_edges_crossed;
+										}
 									}
 								}
 							}
@@ -507,6 +529,7 @@ namespace GPlatesMaths
 									dot_crossings_arc_end_points,
 									// Intersection of polygon edge with great circle of crossings arc...
 									ring_edge_intersects_crossings_arc_plane/*intersection_point*/,
+									use_point_on_polygon_threshold,
 									crossings_arc_end_point_lies_on_polygon_outline))
 							{
 								++num_edges_crossed;
@@ -539,7 +562,8 @@ namespace GPlatesMaths
 		is_point_in_polygon(
 				const PolygonOnSphere &polygon,
 				const UnitVector3D &crossings_arc_start_point,
-				const UnitVector3D &crossings_arc_end_point)
+				const UnitVector3D &crossings_arc_end_point,
+				bool use_point_on_polygon_threshold)
 		{
 			const UnitVector3D crossings_arc_plane_normal = get_crossings_arc_plane_normal(
 					crossings_arc_start_point, crossings_arc_end_point);
@@ -556,7 +580,7 @@ namespace GPlatesMaths
 					polygon.exterior_ring_begin(), polygon.exterior_ring_end(),
 					crossings_arc_start_point, crossings_arc_end_point,
 					crossings_arc_plane_normal, dot_crossings_arc_end_points,
-					crossings_arc_end_point_lies_on_polygon_outline);
+					use_point_on_polygon_threshold, crossings_arc_end_point_lies_on_polygon_outline);
 			
 			for (unsigned int interior_ring_index = 0;
 				interior_ring_index < polygon.number_of_interior_rings();
@@ -567,7 +591,7 @@ namespace GPlatesMaths
 						polygon.interior_ring_end(interior_ring_index),
 						crossings_arc_start_point, crossings_arc_end_point,
 						crossings_arc_plane_normal, dot_crossings_arc_end_points,
-						crossings_arc_end_point_lies_on_polygon_outline);
+						use_point_on_polygon_threshold, crossings_arc_end_point_lies_on_polygon_outline);
 			}
 
 			// If the test point lies *on* any polygon outline (exterior or interior) then it's
@@ -614,7 +638,8 @@ namespace GPlatesMaths
 				const edge_sequence_list_type::const_iterator &edge_sequences_begin,
 				const edge_sequence_list_type::const_iterator &edge_sequences_end,
 				const UnitVector3D &crossings_arc_start_point,
-				const UnitVector3D &crossings_arc_end_point)
+				const UnitVector3D &crossings_arc_end_point,
+				bool use_point_on_polygon_threshold)
 		{
 			const UnitVector3D crossings_arc_plane_normal = get_crossings_arc_plane_normal(
 					crossings_arc_start_point, crossings_arc_end_point);
@@ -635,7 +660,7 @@ namespace GPlatesMaths
 						edge_sequence.begin, edge_sequence.end,
 						crossings_arc_start_point, crossings_arc_end_point,
 						crossings_arc_plane_normal, dot_crossings_arc_end_points,
-						crossings_arc_end_point_lies_on_polygon_outline);
+						use_point_on_polygon_threshold, crossings_arc_end_point_lies_on_polygon_outline);
 			}
 
 
@@ -815,7 +840,8 @@ namespace GPlatesMaths
 
 			bool
 			is_point_in_polygon(
-					const UnitVector3D &test_point) const;
+					const UnitVector3D &test_point,
+					bool use_point_on_polygon_threshold) const;
 
 		private:
 			//! Typedef for an index into a sequence of @a EdgeSequence objects.
@@ -1074,7 +1100,8 @@ namespace GPlatesMaths
 			bool
 			is_point_in_polygon(
 					const InternalNode &node,
-					const UnitVector3D &test_point) const;
+					const UnitVector3D &test_point,
+					bool use_point_on_polygon_threshold) const;
 		};
 
 
@@ -1091,7 +1118,7 @@ namespace GPlatesMaths
 			// Only build a tree if we've been asked to *and* there are enough polygon edges
 			// to make it worthwhile.
 			if (!build_ologn_hint ||
-				polygon->number_of_segments_in_all_rings() <= TreeBuilder::AVERAGE_NUM_EDGES_PER_LEAF_NODE)
+				polygon->number_of_segments() <= TreeBuilder::AVERAGE_NUM_EDGES_PER_LEAF_NODE)
 			{
 				// Don't build a spherical lune tree.
 				// But can still benefit from the bounds data.
@@ -1144,7 +1171,8 @@ namespace GPlatesMaths
 
 		bool
 		SphericalLuneTree::is_point_in_polygon(
-				const UnitVector3D &test_point) const
+				const UnitVector3D &test_point,
+				bool use_point_on_polygon_threshold) const
 		{
 			//
 			// First determine if we can get an early result to avoid testing the polygon edges.
@@ -1179,20 +1207,25 @@ namespace GPlatesMaths
 				const UnitVector3D &crossings_arc_end_point = test_point;
 
 				return GPlatesMaths::PointInPolygon::is_point_in_polygon(
-							d_polygon, crossings_arc_start_point, crossings_arc_end_point);
+							d_polygon,
+							crossings_arc_start_point,
+							crossings_arc_end_point,
+							use_point_on_polygon_threshold);
 			}
 
 			// Start by recursing into the root node.
 			return is_point_in_polygon(
 					d_tree_data->d_internal_nodes[d_tree_data->d_root_node_index],
-					test_point);
+					test_point,
+					use_point_on_polygon_threshold);
 		}
 
 
 		bool
 		SphericalLuneTree::is_point_in_polygon(
 				const InternalNode &node,
-				const UnitVector3D &test_point) const
+				const UnitVector3D &test_point,
+				bool use_point_on_polygon_threshold) const
 		{
 			// Determine which side of the splitting plane the test point is on.
 			// The positive side of the plane maps to child index 0.
@@ -1206,7 +1239,8 @@ namespace GPlatesMaths
 				// The child node is an internal node so recurse into it.
 				return is_point_in_polygon(
 						d_tree_data->d_internal_nodes[child_node_index],
-						test_point);
+						test_point,
+						use_point_on_polygon_threshold);
 			}
 
 			// We've reached a leaf node...
@@ -1257,7 +1291,8 @@ namespace GPlatesMaths
 					edge_sequence_list_begin,
 					edge_sequence_list_end,
 					crossings_arc_start_point,
-					crossings_arc_end_point);
+					crossings_arc_end_point,
+					use_point_on_polygon_threshold);
 		}
 
 
@@ -1276,7 +1311,8 @@ namespace GPlatesMaths
 					GPlatesMaths::PointInPolygon::is_point_in_polygon(
 							polygon,
 							crossings_arc_start_point,
-							crossings_arc_end_point);
+							crossings_arc_end_point,
+							false/*use_point_on_polygon_threshold*/);
 		}
 
 
@@ -1302,7 +1338,7 @@ namespace GPlatesMaths
 			d_polygon_centroid_antipodal(polygon_centroid_antipodal),
 			d_polygon_centroid(-polygon_centroid_antipodal)
 		{
-			const unsigned int num_polygon_edges = polygon.number_of_segments_in_all_rings();
+			const unsigned int num_polygon_edges = polygon.number_of_segments();
 			const double num_leaf_nodes = double(num_polygon_edges) / AVERAGE_NUM_EDGES_PER_LEAF_NODE;
 			// The tree depth is less log2(num_leaf_nodes) rounded up.
 			// For example if 'num_leaf_nodes' is 65 then 'max_tree_depth' is 7 which supports
@@ -1680,7 +1716,8 @@ namespace GPlatesMaths
 bool
 GPlatesMaths::PointInPolygon::is_point_in_polygon(
 		const PointOnSphere &point,
-		const PolygonOnSphere &polygon)
+		const PolygonOnSphere &polygon,
+		bool use_point_on_polygon_threshold)
 {
 	// Get the point that is antipodal to the polygon centroid.
 	// This point is deemed to be outside the polygon (FIXME: which might not be true).
@@ -1688,7 +1725,7 @@ GPlatesMaths::PointInPolygon::is_point_in_polygon(
 
 	const UnitVector3D &crossings_arc_end_point = point.position_vector();
 
-	return is_point_in_polygon(polygon, crossings_arc_start_point, crossings_arc_end_point);
+	return is_point_in_polygon(polygon, crossings_arc_start_point, crossings_arc_end_point, use_point_on_polygon_threshold);
 }
 
 
@@ -1705,8 +1742,11 @@ GPlatesMaths::PointInPolygon::Polygon::Polygon(
 
 bool
 GPlatesMaths::PointInPolygon::Polygon::is_point_in_polygon(
-		const PointOnSphere &test_point) const
+		const PointOnSphere &test_point,
+		bool use_point_on_polygon_threshold) const
 {
 	// Query the O(log(N)) spherical lune tree.
-	return d_spherical_lune_tree->is_point_in_polygon(test_point.position_vector());
+	return d_spherical_lune_tree->is_point_in_polygon(
+			test_point.position_vector(),
+			use_point_on_polygon_threshold);
 }

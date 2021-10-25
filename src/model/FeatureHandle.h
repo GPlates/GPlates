@@ -232,7 +232,10 @@ namespace GPlatesModel
 		 * Returns the feature type of this feature.
 		 */
 		const FeatureType &
-		feature_type() const;
+		feature_type() const
+		{
+			return d_feature_type;
+		}
 
 		/**
 		 * Changes the feature type of this feature to @a feature_type_.
@@ -248,7 +251,10 @@ namespace GPlatesModel
 		 * never be changed.
 		 */
 		const FeatureId &
-		feature_id() const;
+		feature_id() const
+		{
+			return d_feature_id;
+		}
 
 		/**
 		 * Returns the revision ID of the current revision of this feature.
@@ -265,7 +271,10 @@ namespace GPlatesModel
 		 * The time returned is the time as reported by the C function @a time().
 		 */
 		time_t
-		creation_time() const;
+		creation_time() const
+		{
+			return d_creation_time;
+		}
 
 	private:
 

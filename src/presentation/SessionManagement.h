@@ -46,6 +46,7 @@ namespace GPlatesAppLogic
 
 namespace GPlatesPresentation
 {
+	class ViewState;
 
 	/**
 	 * As a first-cut implementation of a Projects system, get GPlates to remember
@@ -311,7 +312,8 @@ namespace GPlatesPresentation
 		//! Constructor.
 		explicit
 		SessionManagement(
-				GPlatesAppLogic::ApplicationState &app_state);
+				GPlatesAppLogic::ApplicationState &app_state,
+				GPlatesPresentation::ViewState &view_state);
 
 		virtual
 		~SessionManagement()
@@ -518,7 +520,8 @@ namespace GPlatesPresentation
 		 * no auto-created or user-created layers left.
 		 */
 		void
-		clear_session_state();
+		clear_session_state(
+				bool preserve_current_view_time);
 
 		/**
 		 * Load files (and re-link Layer relationships) corresponding to the stored session.
@@ -561,9 +564,17 @@ namespace GPlatesPresentation
 		 * Guarded pointer back to ApplicationState so we can interact with the rest
 		 * of GPlates. Since ApplicationState is a QObject, we don't have to worry
 		 * about a dangling pointer (even though ApplicationState should never be
-		 * destroyed before we are)
+		 * destroyed before we are).
 		 */
 		QPointer<GPlatesAppLogic::ApplicationState> d_app_state_ptr;
+
+		/**
+		 * Guarded pointer back to ViewState so we can interact with the rest
+		 * of GPlates. Since ViewState is a QObject, we don't have to worry
+		 * about a dangling pointer (even though ViewState should never be
+		 * destroyed before we are).
+		 */
+		QPointer<GPlatesPresentation::ViewState> d_view_state_ptr;
 
 		/**
 		 * The session state that represents GPlates at application startup (with no files loaded).

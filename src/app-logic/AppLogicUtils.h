@@ -27,16 +27,9 @@
 #define GPLATES_APP_LOGIC_APPLOGICUTILS_H
 
 #include "model/FeatureCollectionHandle.h"
+#include "model/FeatureHandle.h"
+#include "model/FeatureVisitor.h"
 
-
-namespace GPlatesModel
-{
-	// Forward declarations.
-	class FeatureHandle;
-	template<class FeatureHandleType> class FeatureVisitorBase;
-	typedef FeatureVisitorBase<FeatureHandle> FeatureVisitor;
-	typedef FeatureVisitorBase<const FeatureHandle> ConstFeatureVisitor;
-}
 
 namespace GPlatesAppLogic
 {
@@ -73,6 +66,55 @@ namespace GPlatesAppLogic
 		visit_feature_collection(
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection,
 				GPlatesModel::ConstFeatureVisitor &visitor);
+
+
+		/**
+		 * A convenience function for iterating over a sequence of
+		 * @a GPlatesModel::FeatureHandle::weak_ref
+		 * visiting them with a @a GPlatesModel::FeatureVisitor.
+		 */
+		template< typename FeatureWeakRefIterator >
+		void
+		visit_features(
+				FeatureWeakRefIterator features_begin,
+				FeatureWeakRefIterator features_end,
+				GPlatesModel::FeatureVisitor &visitor)
+		{
+			// We visit each of the features.
+			FeatureWeakRefIterator features_iter = features_begin;
+			for ( ; features_iter != features_end; ++features_iter)
+			{
+				// 'visit_feature' method checks for valid iterator.
+				visitor.visit_feature(*features_iter);
+			}
+		}
+
+		/**
+		 * A convenience function for iterating over a sequence of
+		 * @a GPlatesModel::FeatureHandle::weak_ref or
+		 * @a GPlatesModel::FeatureHandle::const_weak_ref objects and
+		 * visiting them with a @a GPlatesModel::ConstFeatureVisitor.
+		 */
+		template< typename FeatureWeakRefIterator >
+		void
+		visit_features(
+				FeatureWeakRefIterator features_begin,
+				FeatureWeakRefIterator features_end,
+				GPlatesModel::ConstFeatureVisitor &visitor)
+		{
+			// We visit each of the features.
+			FeatureWeakRefIterator features_iter = features_begin;
+			for ( ; features_iter != features_end; ++features_iter)
+			{
+				// 'visit_feature' method checks for valid iterator.
+				//
+				// NOTE: 'features_iter' can reference either a
+				// 'GPlatesModel::FeatureHandle::weak_ref' or a
+				// 'GPlatesModel::FeatureHandle::const_weak_ref' depending on
+				// the type of the template parameter 'FeatureWeakRefIterator'.
+				visitor.visit_feature(*features_iter);
+			}
+		}
 
 
 		/**

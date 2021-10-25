@@ -25,6 +25,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
 #include <sstream>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
@@ -311,6 +312,33 @@ namespace GPlatesMaths
 			return distance_to_arc_end;
 		}
 	}
+}
+
+
+//
+// This is an estimate of the threshold of the dot product of an arc's start and end points that
+// distinguishes between non-zero length and zero length. It is approximate because the test for
+// zero length does not use a dot product (instead using GPlatesMaths::EPSILON as a threshold
+// when comparing the magnitude squared of cross product of start and end point vectors).
+//
+// The magnitude of a cross product of unit vectors is the sine of the angle between them, and
+// since we compare the square of magnitude with GPlatesMaths::EPSILON that is equivalent to:
+//
+//   sin(angle)^2 < EPSILON
+//
+// ...or...
+// 
+//   sin(angle) < sqrt(EPSILON)
+//   angle      < asin(sqrt(EPSILON))
+//   cos(angle) < cos(asin(sqrt(EPSILON)))
+//
+GPlatesMaths::real_t
+GPlatesMaths::GreatCircleArc::get_zero_length_threshold_cosine()
+{
+	static const real_t ZERO_LENGTH_THRESHOLD_COSINE(
+			std::cos(std::asin(std::sqrt(GPlatesMaths::EPSILON))));
+
+	return ZERO_LENGTH_THRESHOLD_COSINE;
 }
 
 

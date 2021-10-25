@@ -1890,7 +1890,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::initialise_deformation_t
 
 		if (!current_geometry_sample)
 		{
-			most_recent_geometry_sample = current_geometry_sample.get();
+			most_recent_geometry_sample = boost::none;
 			// Skip the current geometry sample - all its points are inactive.
 			continue;
 		}

@@ -214,7 +214,6 @@ extern "C" {
 #include <list>
 #include <QUndoStack>
 #include <QUndoCommand>
-#include <proj_api.h>
 #include <iterator>
 #include <QtGui/QCheckBox>
 #include <QtGui/QGridLayout>

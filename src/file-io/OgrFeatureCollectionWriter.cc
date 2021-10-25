@@ -1164,8 +1164,7 @@ namespace
 			const QMap< QString,QString > &model_to_shapefile_map,
 			const GPlatesModel::FeatureHandle::const_weak_ref &feature)
 	{
-
-		GPlatesModel::PropertyValue::non_null_ptr_type feature_id_value =
+		GPlatesModel::PropertyValue::non_null_ptr_type value =
 				GPlatesPropertyValues::XsString::create(feature->feature_id().get());
 
 		QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
@@ -1174,29 +1173,18 @@ namespace
 		if (it != model_to_shapefile_map.end())
 		{
 
-			QString element_key = it.value();
+			QString key_string = it.value();
 
-			//qDebug() << "Element key: " << element_key;
+			GPlatesPropertyValues::XsString::non_null_ptr_type key =
+					GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(key_string));
 
-			std::vector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::iterator element =
-					find_element_by_key(element_key,dictionary);
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement new_element(
+						key,
+						value,
+						GPlatesPropertyValues::StructuralType::create_xsi("string"));
 
-			if (element != dictionary->elements().end())
-			{
-				// We've found an element corresponding to the description; replace it with
-				// a new element containing the value extracted from the feature.
-				GPlatesPropertyValues::XsString::non_null_ptr_type key = element->key();
-				GPlatesPropertyValues::StructuralType type = element->value_type();
-
-				GPlatesPropertyValues::GpmlKeyValueDictionaryElement new_element(
-							key,
-							feature_id_value,
-							type);
-
-				*element = new_element;
-			}
+			add_or_replace_kvd_element(new_element, key_string, dictionary);
 		}
-
 	}
 	
 	
@@ -1448,7 +1436,8 @@ namespace
 	write_point_geometries(
 			GPlatesFileIO::OgrWriter *ogr_writer,
 			const std::vector<GPlatesMaths::PointOnSphere> &point_geometries,
-			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
+			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_names_key_value_dictionary,
+			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_values_key_value_dictionary)
 	{
 		if (point_geometries.empty())
 		{
@@ -1462,11 +1451,12 @@ namespace
 					GPlatesMaths::MultiPointOnSphere::create_on_heap(
 							point_geometries.begin(),
 							point_geometries.end()),
-					key_value_dictionary);
+					field_names_key_value_dictionary,
+					field_values_key_value_dictionary);
 		}
 		else
 		{
-			ogr_writer->write_point_feature(point_geometries.front(), key_value_dictionary);
+			ogr_writer->write_point_feature(point_geometries.front(), field_names_key_value_dictionary, field_values_key_value_dictionary);
 		}
 	}
 
@@ -1474,7 +1464,8 @@ namespace
 	write_multi_point_geometries(
 			GPlatesFileIO::OgrWriter *ogr_writer,
 			const std::vector<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> &multi_point_geometries,
-			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
+			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_names_key_value_dictionary,
+			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_values_key_value_dictionary)
 	{
 		std::vector<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type>::const_iterator
 				iter = multi_point_geometries.begin(),
@@ -1482,7 +1473,7 @@ namespace
 
 		for ( ; iter != end ; ++iter)
 		{
-			ogr_writer->write_multi_point_feature(*iter,key_value_dictionary);
+			ogr_writer->write_multi_point_feature(*iter, field_names_key_value_dictionary, field_values_key_value_dictionary);
 		}
 	}
 
@@ -1490,7 +1481,8 @@ namespace
 	write_polyline_geometries(
 			GPlatesFileIO::OgrWriter *ogr_writer,
 			const std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> &polyline_geometries,
-			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
+			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_names_key_value_dictionary,
+			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_values_key_value_dictionary)
 	{
 		if (polyline_geometries.empty())
 		{
@@ -1498,11 +1490,11 @@ namespace
 		}
 		if (polyline_geometries.size() > 1)
 		{
-			ogr_writer->write_multi_polyline_feature(polyline_geometries,key_value_dictionary);
+			ogr_writer->write_multi_polyline_feature(polyline_geometries, field_names_key_value_dictionary, field_values_key_value_dictionary);
 		}
 		else
 		{
-			ogr_writer->write_polyline_feature(polyline_geometries.front(),key_value_dictionary);
+			ogr_writer->write_polyline_feature(polyline_geometries.front(), field_names_key_value_dictionary, field_values_key_value_dictionary);
 		}
 
 	}
@@ -1511,7 +1503,8 @@ namespace
 	write_polygon_geometries(
 			GPlatesFileIO::OgrWriter *ogr_writer,
 			const std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> &polygon_geometries,
-			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
+			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_names_key_value_dictionary,
+			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &field_values_key_value_dictionary)
 	{
 		if (polygon_geometries.empty())
 		{
@@ -1519,11 +1512,11 @@ namespace
 		}
 		if (polygon_geometries.size() > 1)
 		{
-			ogr_writer->write_multi_polygon_feature(polygon_geometries,key_value_dictionary);
+			ogr_writer->write_multi_polygon_feature(polygon_geometries, field_names_key_value_dictionary, field_values_key_value_dictionary);
 		}
 		else
 		{
-			ogr_writer->write_polygon_feature(polygon_geometries.front(),key_value_dictionary);
+			ogr_writer->write_polygon_feature(polygon_geometries.front(), field_names_key_value_dictionary, field_values_key_value_dictionary);
 		}
 
 	}
@@ -1641,19 +1634,20 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 	// The only other place in GPlates where a kvd could be modified is here in the ogr export workflow.
 	//
 	// So grabbing the first (existing) kvd from a collection should give us an appropriate kvd in any case.
-	OgrUtils::create_default_kvd_from_collection(feature_collection_ref,d_default_key_value_dictionary);
-	
-
-	if (d_default_key_value_dictionary)
+	boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type> non_const_default_key_value_dictionary;
+	OgrUtils::create_default_kvd_from_collection(feature_collection_ref, non_const_default_key_value_dictionary);
+	if (non_const_default_key_value_dictionary)
 	{
-		add_missing_keys_to_kvd(*d_default_key_value_dictionary,d_model_to_shapefile_map);
+		add_missing_keys_to_kvd(*non_const_default_key_value_dictionary, d_model_to_shapefile_map);
 	}
 	else
 		// We didn't find one, so make one from the model-to-attribute-map.
 	{
-		create_default_kvd_from_map(d_default_key_value_dictionary,
-									d_model_to_shapefile_map);
+		create_default_kvd_from_map(non_const_default_key_value_dictionary, d_model_to_shapefile_map);
 	}
+	d_default_key_value_dictionary.reset(
+			GPlatesPropertyValues::GpmlKeyValueDictionary::create(
+					non_const_default_key_value_dictionary.get()->elements()));
 
 	// Export the newly created map as a .gplates.xml file.
 	QString ogr_xml_filename = OgrUtils::make_ogr_xml_filename(file_info.get_qfileinfo());
@@ -1717,37 +1711,34 @@ GPlatesFileIO::OgrFeatureCollectionWriter::finalise_post_feature_properties(
 {
 	if (!d_key_value_dictionary)
 	{
-		// We haven't found a kvd, so create one based on the default.
-		if (d_default_key_value_dictionary)
-		{
-			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary =
-					GPlatesPropertyValues::GpmlKeyValueDictionary::create(
-						(*d_default_key_value_dictionary)->elements());
+		// Start with an empty dictionary, we don't use the default kvd because we don't want
+		// any (default) entries for common fields which don't have model properties from the feature.
+		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary =
+				GPlatesPropertyValues::GpmlKeyValueDictionary::create();
 
-			// Fill the kvd. Any fields which don't have model properties will not have their
-			// kvd element changed, so the default values in the default kvd will be used.
-			fill_kvd_values_from_feature(dictionary,
-										 d_model_to_shapefile_map,
-										 feature_handle);
+		// Fill the kvd. Any fields which don't have model properties will not have a
+		// kvd element, so these values will be missing from the kvd.
+		fill_kvd_values_from_feature(dictionary,
+									 d_model_to_shapefile_map,
+									 feature_handle);
 
-			// If we don't have a kvd, then we don't have any old-plates-header fields in it either.
-			// So we'll add them in here.
-			// This only adds in the "additional" header fields, i.e. ones that aren't already mapped
-			// to the model through the attribute-mapping process.
-			add_plates_header_values_to_kvd(dictionary,feature_handle);
+		// If we don't have a kvd, then we don't have any old-plates-header fields in it either.
+		// So we'll add them in here.
+		// This only adds in the "additional" header fields, i.e. ones that aren't already mapped
+		// to the model through the attribute-mapping process.
+		add_plates_header_values_to_kvd(dictionary,feature_handle);
 
-			// Add the dictionary to the model.
-			// Make the feature handle non-const so I can append to it.
-			GPlatesModel::FeatureHandle &non_const_feature_handle = const_cast<GPlatesModel::FeatureHandle &>(feature_handle);
+		// Add the dictionary to the model.
+		// Make the feature handle non-const so I can append to it.
+		GPlatesModel::FeatureHandle &non_const_feature_handle = const_cast<GPlatesModel::FeatureHandle &>(feature_handle);
 
-			GPlatesModel::WeakReference<GPlatesModel::FeatureHandle>  feature_weak_ref(non_const_feature_handle);
-			feature_weak_ref->add(
-						GPlatesModel::TopLevelPropertyInline::create(
-							GPlatesModel::PropertyName::create_gpml("shapefileAttributes"),
-							dictionary));
+		GPlatesModel::WeakReference<GPlatesModel::FeatureHandle>  feature_weak_ref(non_const_feature_handle);
+		feature_weak_ref->add(
+					GPlatesModel::TopLevelPropertyInline::create(
+						GPlatesModel::PropertyName::create_gpml("shapefileAttributes"),
+						dictionary));
 
-			d_key_value_dictionary.reset(dictionary);
-		}
+		d_key_value_dictionary.reset(dictionary);
 	}
 	else
 	{
@@ -1758,25 +1749,28 @@ GPlatesFileIO::OgrFeatureCollectionWriter::finalise_post_feature_properties(
 		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary =
 				GPlatesPropertyValues::GpmlKeyValueDictionary::create((*d_key_value_dictionary)->elements());
 
-		add_missing_keys_to_kvd(dictionary,d_model_to_shapefile_map);
+		// For now, let's not add any missing mapping keys, we'll only add keys for those mapped properties
+		// existing in the feature (using 'fill_kvd_values_from_feature()').
+		//add_missing_keys_to_kvd(dictionary,d_model_to_shapefile_map);
 
-		fill_kvd_values_from_feature(dictionary,
-									 d_model_to_shapefile_map,feature_handle);
+		fill_kvd_values_from_feature(dictionary, d_model_to_shapefile_map,feature_handle);
 
-		add_or_replace_model_kvd(feature_handle,
-						  dictionary);
+		add_or_replace_model_kvd(feature_handle, dictionary);
 
 		d_key_value_dictionary.reset(dictionary);
 	}
+
+	//qDebug() << "Field names dictionary: " << *d_default_key_value_dictionary.get();
+	//qDebug() << "Field values dictionary: " << *d_key_value_dictionary.get();
 
 	// If a feature contains different geometry types, the geometries will be exported to
 	// the appropriate file of the shapefile set.
 	// This means that we're potentially splitting up a feature across different files.
 
-	write_point_geometries(d_ogr_writer.get(),d_point_geometries,d_key_value_dictionary);
-	write_multi_point_geometries(d_ogr_writer.get(),d_multi_point_geometries,d_key_value_dictionary);
-	write_polyline_geometries(d_ogr_writer.get(),d_polyline_geometries,d_key_value_dictionary);
-	write_polygon_geometries(d_ogr_writer.get(),d_polygon_geometries,d_key_value_dictionary);
+	write_point_geometries(d_ogr_writer.get(), d_point_geometries, d_default_key_value_dictionary, d_key_value_dictionary);
+	write_multi_point_geometries(d_ogr_writer.get(), d_multi_point_geometries, d_default_key_value_dictionary, d_key_value_dictionary);
+	write_polyline_geometries(d_ogr_writer.get(), d_polyline_geometries, d_default_key_value_dictionary, d_key_value_dictionary);
+	write_polygon_geometries(d_ogr_writer.get(), d_polygon_geometries, d_default_key_value_dictionary, d_key_value_dictionary);
 
 }
 

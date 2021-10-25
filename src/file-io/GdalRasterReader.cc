@@ -56,6 +56,7 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/LogException.h"
+#include "global/GdalVersion.h"
 
 #include "maths/MathsUtils.h"
 #include "maths/Real.h"
@@ -1109,6 +1110,12 @@ GPlatesFileIO::GDALRasterReader::get_spatial_reference_system()
 	{
 		return boost::none;
 	}
+
+#if GPLATES_GDAL_VERSION_NUM >= GPLATES_GDAL_COMPUTE_VERSION(3,0,0)
+	// GDAL >= 3.0 introduced a data-axis-to-CRS-axis mapping (that breaks backward compatibility).
+	// We need to set it to behave the same as before GDAL 3.0 (ie, longitude first, latitude second).
+	ogr_srs.SetAxisMappingStrategy(OAMS_TRADITIONAL_GIS_ORDER);
+#endif
 
 	boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_type>
 			srs = GPlatesPropertyValues::SpatialReferenceSystem::create(ogr_srs);

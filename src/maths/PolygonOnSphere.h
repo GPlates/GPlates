@@ -35,11 +35,13 @@
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
 #include <boost/intrusive_ptr.hpp>
-#include <boost/iterator/transform_iterator.hpp>
+#include <boost/iterator/iterator_adaptor.hpp>
+#include <boost/iterator/iterator_facade.hpp>
 
 #include "GeometryOnSphere.h"
 #include "GreatCircleArc.h"
 #include "PolygonOrientation.h"
+#include "PolylineOnSphere.h"
 
 #include "global/PreconditionViolationError.h"
 
@@ -155,27 +157,273 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Typedef for the bounding tree of great circle arcs.
+		 * This class enables const_iteration over vertices in an exterior or interior ring of PolygonOnSphere.
+		 *
+		 * An instance of this class @em actually iterates over the sequence of GreatCircleArc by which
+		 * a PolygonOnSphere is implemented, but it pretends it's iterating over a sequence of PointOnSphere.
 		 */
-		typedef PolyGreatCircleArcBoundingTree<ring_const_iterator, true/*RequireRandomAccessIterator*/>
-				bounding_tree_type;
+		class RingVertexConstIterator :
+				public boost::iterator_adaptor<
+						RingVertexConstIterator,
+						ring_const_iterator,
+						const PointOnSphere>
+		{
+		public:
 
-	private:
+			/**
+			 * Default-construct a vertex iterator (mandated by iterator interface).
+			 */
+			RingVertexConstIterator() :
+				iterator_adaptor_(ring_const_iterator())
+			{  }
+
+			/**
+			 * Construct a vertex iterator from a ring iterator.
+			 */
+			explicit
+			RingVertexConstIterator(
+					const ring_const_iterator &ring_const_iter) :
+				iterator_adaptor_(ring_const_iter)
+			{  }
+
+		private:
+
+			const PointOnSphere &
+			dereference() const
+			{
+				return base_reference()->start_point();
+			}
+
+			// Give access to boost::iterator_adaptor.
+			friend class boost::iterator_core_access;
+		};
 
 		/**
-		 * The type of a function that returns the start point of a GCA.
+		 * The type used to const_iterate over the vertices in a ring.
 		 */
-		typedef boost::function<
-				const GPlatesMaths::PointOnSphere & (const GreatCircleArc &)>
-						gca_start_point_fn_type;
+		typedef RingVertexConstIterator ring_vertex_const_iterator;
 
-	public:
 
 		/**
-		 * The type used to const-iterate over the vertices in a ring.
+		 * The type used to const_iterate over the vertices in a ring as if it was a polyline.
+		 *
+		 * This means the last vertex iterated over is the end vertex of the last segment in the ring
+		 * (which is also the first vertex in the ring).
 		 */
-		typedef boost::transform_iterator<gca_start_point_fn_type, ring_const_iterator> ring_vertex_const_iterator;
-		typedef ring_vertex_const_iterator VertexConstIterator;
+		typedef PolylineOnSphere::VertexConstIterator<ring_const_iterator> polyline_vertex_const_iterator;
+
+
+		/**
+		 * This class enables const_iteration over *all* arcs of PolygonOnSphere.
+		 *
+		 * Iteration starts with the exterior ring and continues with the interior rings, in that order.
+		 */
+		class ConstIterator :
+				public boost::iterator_facade<
+						ConstIterator,
+						const GreatCircleArc,
+						// Keep the iterator as "random access" so that std::advance can do fast indexing...
+						std::random_access_iterator_tag>
+		{
+		public:
+
+			/**
+			 * Create the "begin" iterator over *all* arcs in @a polygon.
+			 */
+			static
+			ConstIterator
+			create_begin(
+					const PolygonOnSphere &polygon)
+			{
+				return ConstIterator(polygon, 0/*exterior ring id*/, polygon.d_exterior_ring.begin());
+			}
+
+			/**
+			 * Create the "end" iterator over *all* arcs in @a polygon.
+			 */
+			static
+			ConstIterator
+			create_end(
+					const PolygonOnSphere &polygon)
+			{
+				return ConstIterator(
+						polygon,
+						polygon.d_interior_rings.size(), // Id of last ring (either exterior, or interior if any).
+						// "End" ring is either the exterior ring (if no interior rings), or the last interior ring.
+						// And "end" ring iterator is the end of that ring.
+						(polygon.d_interior_rings.empty()
+								? polygon.d_exterior_ring
+								: polygon.d_interior_rings.back()
+								).end());
+			}
+
+
+			/**
+			 * Default-construct an iterator (mandated by iterator interface).
+			 */
+			ConstIterator() :
+				d_polygon_ptr(NULL),
+				d_current_ring_id(0),
+				d_current_ring_ptr(NULL),
+				d_current_ring_iter(ring_const_iterator())
+			{  }
+
+		private:
+
+			const PolygonOnSphere *d_polygon_ptr;
+
+			/**
+			 * Ring identifier.
+			 *
+			 * 0 is the exterior ring and 1, 2, ... are the interior rings.
+			 */
+			unsigned int d_current_ring_id;
+
+			/**
+			 * The current ring (associated with @a d_current_ring_id).
+			 */
+			const ring_type *d_current_ring_ptr;
+
+			/**
+			 * Current iterator into the current ring.
+			 */
+			ring_const_iterator d_current_ring_iter;
+
+
+			/**
+			 * Construct a ConstIterator instance to iterate over *all* arcs of @a polygon.
+			 *
+			 * Should only be invoked by @a create_begin and @a create_end.
+			 */
+			ConstIterator(
+					const PolygonOnSphere &polygon,
+					unsigned int current_ring_id,
+					const ring_const_iterator &current_ring_iter) :
+				d_polygon_ptr(&polygon),
+				d_current_ring_id(current_ring_id),
+				d_current_ring_ptr(&(
+					current_ring_id == 0
+						? polygon.d_exterior_ring
+						: polygon.d_interior_rings[current_ring_id - 1])),
+				d_current_ring_iter(current_ring_iter)
+			{  }
+
+			/**
+			 * Iterator dereference - for boost::iterator_facade.
+			 *
+			 * Returns the currently-pointed-at GreatCircleArc.
+			 */
+			const GreatCircleArc &
+			dereference() const;
+
+			/**
+			 * Iterator increment - for boost::iterator_facade.
+			 */
+			void
+			increment();
+
+			/**
+			 * Iterator decrement - for boost::iterator_facade.
+			 */
+			void
+			decrement();
+
+			/**
+			 * Iterator equality comparison - for boost::iterator_facade.
+			 */
+			bool
+			equal(
+					const ConstIterator &other) const;
+
+			/**
+			 * Iterator advancement - for boost::iterator_facade.
+			 */
+			void
+			advance(
+					ConstIterator::difference_type n);
+
+			/**
+			 * Distance between two iterators - for boost::iterator_facade.
+			 */
+			ConstIterator::difference_type
+			distance_to(
+					const ConstIterator &other) const;
+
+
+			// Give access to boost::iterator_adaptor.
+			friend class boost::iterator_core_access;
+		};
+
+		/**
+		 * The type used to const_iterate over *all* arcs.
+		 *
+		 * Iteration starts with the exterior ring and continues with interior rings, in that order.
+		 */
+		typedef ConstIterator const_iterator;
+
+
+		/**
+		 * This class enables const_iteration over vertices in *all* arcs of PolygonOnSphere (exterior and interior).
+		 *
+		 * Iteration starts with the exterior ring and continues with the interior rings, in that order.
+		 *
+		 * An instance of this class @em actually iterates over the sequence of GreatCircleArc by which
+		 * a PolygonOnSphere is implemented, but it pretends it's iterating over a sequence of PointOnSphere.
+		 */
+		class VertexConstIterator :
+				public boost::iterator_adaptor<
+						VertexConstIterator,
+						const_iterator,
+						const PointOnSphere>
+		{
+		public:
+
+			/**
+			 * Default-construct a vertex iterator (mandated by iterator interface).
+			 */
+			VertexConstIterator() :
+				iterator_adaptor_(const_iterator())
+			{  }
+
+			/**
+			 * Construct a vertex iterator from a segment iterator.
+			 */
+			explicit
+			VertexConstIterator(
+					const const_iterator &const_iter) :
+				iterator_adaptor_(const_iter)
+			{  }
+
+		private:
+
+			const PointOnSphere &
+			dereference() const
+			{
+				return base_reference()->start_point();
+			}
+
+			// Give access to boost::iterator_adaptor.
+			friend class boost::iterator_core_access;
+		};
+
+		/**
+		 * The type used to const_iterate over vertices in *all* arcs of PolygonOnSphere (exterior and interior).
+		 */
+		typedef VertexConstIterator vertex_const_iterator;
+
+
+		/**
+		 * Typedef for the bounding tree of great circle arcs within a ring.
+		 */
+		typedef PolyGreatCircleArcBoundingTree<ring_const_iterator, true/*RequireRandomAccessIterator*/> ring_bounding_tree_type;
+
+		/**
+		 * Typedef for the bounding tree of *all* great circle arcs in polygon.
+		 *
+		 * NOTE: This means all segments in the exterior and interior rings.
+		 */
+		typedef PolyGreatCircleArcBoundingTree<const_iterator, true/*RequireRandomAccessIterator*/> bounding_tree_type;
+
 
 		/**
 		 * The possible return values from the construction-parameter validation function
@@ -496,6 +744,179 @@ namespace GPlatesMaths
 
 
 		/**
+		 * Return the 'begin' const_iterator over *all* GreatCircleArc of this polygon.
+		 *
+		 * NOTE: This means all segments in the exterior and interior rings.
+		 * Iteration starts with the exterior ring and continues with the interior rings, in that order.
+		 */
+		const_iterator
+		begin() const
+		{
+			return const_iterator::create_begin(*this);
+		}
+
+		/**
+		 * Return the 'end' const_iterator over *all* GreatCircleArc of this polygon.
+		 *
+		 * NOTE: This means all segments in the exterior and interior rings.
+		 * Iteration starts with the exterior ring and continues with the interior rings, in that order.
+		 */
+		const_iterator
+		end() const
+		{
+			return const_iterator::create_end(*this);
+		}
+
+		/**
+		 * Return the const_iterator in this polygon at the specified segment index (which can be in
+		 * an exterior or interior ring), so can iterate over GreatCircleArc starting at that segment.
+		 *
+		 * NOTE: This can iterate over *all* segments in exterior and interior rings.
+		 * Iteration starts with the exterior ring and continues with the interior rings, in that order.
+		 *
+		 * @a segment_index can be one past the last segment, corresponding to @a end.
+		 */
+		const_iterator
+		segment_iterator(
+				size_type segment_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					segment_index <= number_of_segments(),
+					GPLATES_ASSERTION_SOURCE);
+
+			const_iterator segment_iter = begin();
+			// This should be fast since iterator type is random access...
+			std::advance(segment_iter, segment_index);
+
+			return segment_iter;
+		}
+
+		/**
+		 * Return the number of segments in this polygon.
+		 *
+		 * NOTE: This includes all segments in the exterior and interior rings.
+		 */
+		size_type
+		number_of_segments() const
+		{
+			// Exterior ring.
+			size_type num_segments = d_exterior_ring.size();
+
+			// Interior rings.
+			ring_sequence_const_iterator ring_seq_iter = d_interior_rings.begin();
+			ring_sequence_const_iterator ring_seq_end = d_interior_rings.end();
+			for ( ; ring_seq_iter != ring_seq_end; ++ring_seq_iter)
+			{
+				num_segments += ring_seq_iter->size();
+			}
+
+			return num_segments;
+		}
+
+		/**
+		 * Return the segment in this polygon at the specified index.
+		 *
+		 * NOTE: @a segment_index can reference an exterior or interior ring segment, and as such
+		 * can be greater than or equal to @a number_of_segments_in_exterior_ring.
+		 */
+		const GreatCircleArc &
+		get_segment(
+				size_type segment_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					segment_index < number_of_segments(),
+					GPLATES_ASSERTION_SOURCE);
+
+			const_iterator segment_iter = begin();
+			// This should be fast since iterator type is random access...
+			std::advance(segment_iter, segment_index);
+
+			return *segment_iter;
+		}
+
+
+		/**
+		 * Return the 'begin' vertex_const_iterator over *all* vertices of this polygon.
+		 *
+		 * NOTE: This means all vertices in the exterior and interior rings.
+		 * Iteration starts with the exterior ring and continues with the interior rings, in that order.
+		 */
+		vertex_const_iterator
+		vertex_begin() const
+		{
+			return vertex_const_iterator(begin());
+		}
+
+		/**
+		 * Return the 'end' vertex_const_iterator over *all* vertices of this polygon.
+		 *
+		 * NOTE: This means all vertices in the exterior and interior rings.
+		 * Iteration starts with the exterior ring and continues with the interior rings, in that order.
+		 */
+		vertex_const_iterator
+		vertex_end() const
+		{
+			return vertex_const_iterator(end());
+		}
+
+		/**
+		 * Return the vertex_const_iterator in this polygon at the specified vertex index
+		 * (which can be in an exterior or interior ring).
+		 *
+		 * NOTE: @a vertex_index can reference an exterior or interior ring vertex, and as such
+		 * can be greater than or equal to @a number_of_vertices_in_exterior_ring.
+		 *
+		 * @a vertex_index can be one past the last vertex, corresponding to @a vertex_end.
+		 */
+		vertex_const_iterator
+		vertex_iterator(
+				size_type vertex_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					vertex_index <= number_of_vertices(),
+					GPLATES_ASSERTION_SOURCE);
+
+			vertex_const_iterator vertex_iter = vertex_begin();
+			// This should be fast since iterator type is random access...
+			std::advance(vertex_iter, vertex_index);
+
+			return vertex_iter;
+		}
+
+		/**
+		 * Return the number of vertices in this polygon.
+		 *
+		 * NOTE: This includes all vertices in the exterior and interior rings.
+		 */
+		size_type
+		number_of_vertices() const
+		{
+			return number_of_segments();
+		}
+
+		/**
+		 * Return the vertex in this polygon at the specified index.
+		 *
+		 * NOTE: @a vertex_index can reference an exterior or interior ring vertex, and as such
+		 * can be greater than or equal to @a number_of_vertices_in_exterior_ring.
+		 */
+		const PointOnSphere &
+		get_vertex(
+				size_type vertex_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					vertex_index < number_of_vertices(),
+					GPLATES_ASSERTION_SOURCE);
+
+			vertex_const_iterator vertex_iter = vertex_begin();
+			// This should be fast since iterator type is random access...
+			std::advance(vertex_iter, vertex_index);
+
+			return *vertex_iter;
+		}
+
+
+		/**
 		 * Return the 'begin' ring_const_iterator over the sequence of GreatCircleArc
 		 * which defines the exterior of this polygon.
 		 */
@@ -514,7 +935,26 @@ namespace GPlatesMaths
 		{
 			return d_exterior_ring.end();
 		}
-		
+
+		/**
+		 * Return the ring_const_iterator at the specified segment index in the exterior ring.
+		 *
+		 * @a exterior_segment_index can be one past the last segment, corresponding to @a exterior_ring_end.
+		 */
+		ring_const_iterator
+		exterior_ring_iterator(
+				size_type exterior_segment_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					exterior_segment_index <= number_of_segments_in_exterior_ring(),
+					GPLATES_ASSERTION_SOURCE);
+
+			ring_const_iterator exterior_segment_iter = exterior_ring_begin();
+			// This should be fast since iterator type is random access...
+			std::advance(exterior_segment_iter, exterior_segment_index);
+
+			return exterior_segment_iter;
+		}
 
 		/**
 		 * Return the exterior ring of this polygon.
@@ -525,7 +965,6 @@ namespace GPlatesMaths
 			return d_exterior_ring;
 		}
 
-
 		/**
 		 * Return the number of segments in the exterior ring in this polygon.
 		 */
@@ -534,7 +973,6 @@ namespace GPlatesMaths
 		{
 			return d_exterior_ring.size();
 		}
-
 
 		/**
 		 * Return the exterior segment in this polygon at the specified index.
@@ -557,12 +995,8 @@ namespace GPlatesMaths
 		ring_vertex_const_iterator
 		exterior_ring_vertex_begin() const
 		{
-			return boost::make_transform_iterator(
-					d_exterior_ring.begin(),
-					gca_start_point_fn_type(
-						boost::bind(&GreatCircleArc::start_point, _1)));
+			return ring_vertex_const_iterator(d_exterior_ring.begin());
 		}
-
 
 		/**
 		 * Return the 'end' ring_vertex_const_iterator over the exterior vertices of this polygon.
@@ -570,12 +1004,28 @@ namespace GPlatesMaths
 		ring_vertex_const_iterator
 		exterior_ring_vertex_end() const
 		{
-			return boost::make_transform_iterator(
-					d_exterior_ring.end(),
-					gca_start_point_fn_type(
-						boost::bind(&GreatCircleArc::start_point, _1)));
+			return ring_vertex_const_iterator(d_exterior_ring.end());
 		}
 
+		/**
+		 * Return the ring_vertex_const_iterator at the specified vertex index in the exterior ring.
+		 *
+		 * @a exterior_vertex_index can be one past the last vertex, corresponding to @a exterior_ring_vertex_end.
+		 */
+		ring_vertex_const_iterator
+		exterior_ring_vertex_iterator(
+				size_type exterior_vertex_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					exterior_vertex_index <= number_of_vertices_in_exterior_ring(),
+					GPLATES_ASSERTION_SOURCE);
+
+			ring_vertex_const_iterator exterior_vertex_iter = exterior_ring_vertex_begin();
+			// This should be fast since iterator type is random access...
+			std::advance(exterior_vertex_iter, exterior_vertex_index);
+
+			return exterior_vertex_iter;
+		}
 
 		/**
 		 * Return the number of vertices in the exterior ring in this polygon.
@@ -585,7 +1035,6 @@ namespace GPlatesMaths
 		{
 			return number_of_segments_in_exterior_ring();
 		}
-
 
 		/**
 		 * Return the exterior vertex in this polygon at the specified index.
@@ -605,7 +1054,6 @@ namespace GPlatesMaths
 			return *exterior_vertex_iter;
 		}
 
-
 		/**
 		 * Return the first exterior vertex in this polygon.
 		 *
@@ -617,7 +1065,6 @@ namespace GPlatesMaths
 			const GreatCircleArc &first_exterior_gca = *(exterior_ring_begin());
 			return first_exterior_gca.start_point();
 		}
-
 
 		/**
 		 * Return the last exterior vertex in this polygon.
@@ -631,7 +1078,72 @@ namespace GPlatesMaths
 			const GreatCircleArc &last_exterior_gca = *(--(exterior_ring_end()));
 			return last_exterior_gca.end_point();
 		}
-		
+
+
+		/**
+		 * Return the 'begin' polyline_vertex_const_iterator over the exterior ring as if it was a polyline.
+		 *
+		 * NOTE: This iterates over one extra vertex compared to ring_vertex_const_iterator since
+		 * it treats the sequence of GreatCircleArc in the ring as a polyline and hence the last
+		 * vertex is the end point of the last ring segment (which is also the first vertex of ring).
+		 */
+		polyline_vertex_const_iterator
+		exterior_polyline_vertex_begin() const
+		{
+			return polyline_vertex_const_iterator::create_begin(d_exterior_ring.begin());
+		}
+
+		/**
+		 * Return the 'end' polyline_vertex_const_iterator over the exterior ring as if it was a polyline.
+		 *
+		 * NOTE: This iterates over one extra vertex compared to ring_vertex_const_iterator since
+		 * it treats the sequence of GreatCircleArc in the ring as a polyline and hence the last
+		 * vertex is the end point of the last ring segment (which is also the first vertex of ring).
+		 */
+		polyline_vertex_const_iterator
+		exterior_polyline_vertex_end() const
+		{
+			return polyline_vertex_const_iterator::create_end(d_exterior_ring.begin(), d_exterior_ring.end());
+		}
+
+		/**
+		 * Return the polyline_vertex_const_iterator at the specified vertex index in the exterior ring
+		 * behaving as if it was a polyline.
+		 *
+		 * @a exterior_vertex_index can be one past the last vertex, corresponding to @a exterior_polyline_vertex_end.
+		 *
+		 * NOTE: This iterates over one extra vertex compared to ring_vertex_const_iterator since
+		 * it treats the sequence of GreatCircleArc in the ring as a polyline and hence the last
+		 * vertex is the end point of the last ring segment (which is also the first vertex of ring).
+		 */
+		polyline_vertex_const_iterator
+		exterior_polyline_vertex_iterator(
+				size_type exterior_vertex_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					exterior_vertex_index <= number_of_vertices_in_exterior_polyline(),
+					GPLATES_ASSERTION_SOURCE);
+
+			polyline_vertex_const_iterator exterior_vertex_iter = exterior_polyline_vertex_begin();
+			// This should be fast since iterator type is random access...
+			std::advance(exterior_vertex_iter, exterior_vertex_index);
+
+			return exterior_vertex_iter;
+		}
+
+		/**
+		 * Return the number of vertices in the exterior ring as if it was a polyline.
+		 *
+		 * NOTE: There is one extra vertex compared to the exterior ring since we treat the sequence
+		 * of GreatCircleArc in the ring as a polyline and hence the last vertex is the end point of the
+		 * last ring segment (which is also the first vertex of ring).
+		 */
+		size_type
+		number_of_vertices_in_exterior_polyline() const
+		{
+			return number_of_vertices_in_exterior_ring() + 1;
+		}
+
 
 		/**
 		 * Return the "begin" const iterator over the interior rings of this polygon.
@@ -655,7 +1167,6 @@ namespace GPlatesMaths
 			return d_interior_rings.end();
 		}
 		
-
 		/**
 		 * Return the sequence of interior rings of this polygon.
 		 *
@@ -667,7 +1178,6 @@ namespace GPlatesMaths
 			return d_interior_rings;
 		}
 
-
 		/**
 		 * Return the number of interior rings in this polygon.
 		 */
@@ -676,7 +1186,6 @@ namespace GPlatesMaths
 		{
 			return d_interior_rings.size();
 		}
-
 
 		/**
 		 * Return the 'begin' ring_const_iterator over the sequence of GreatCircleArc
@@ -708,6 +1217,32 @@ namespace GPlatesMaths
 			return d_interior_rings[interior_ring_index].end();
 		}
 
+		/**
+		 * Return the ring_const_iterator at the specified segment index in the specified interior ring.
+		 *
+		 * @a segment_index can be one past the last segment, corresponding to @a interior_ring_end.
+		 */
+		ring_const_iterator
+		interior_ring_iterator(
+				size_type interior_ring_index,
+				size_type segment_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					interior_ring_index < number_of_interior_rings(),
+					GPLATES_ASSERTION_SOURCE);
+
+			const ring_type &interior_ring = d_interior_rings[interior_ring_index];
+
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					segment_index <= interior_ring.size(),
+					GPLATES_ASSERTION_SOURCE);
+
+			ring_const_iterator interior_segment_iter = interior_ring.begin();
+			// This should be fast since iterator type is random access...
+			std::advance(interior_segment_iter, segment_index);
+
+			return interior_segment_iter;
+		}
 
 		/**
 		 * Return the number of segments in the interior ring in this polygon at the specified interior ring index.
@@ -722,7 +1257,6 @@ namespace GPlatesMaths
 
 			return d_interior_rings[interior_ring_index].size();
 		}
-
 
 		/**
 		 * Return the segment of the interior ring in this polygon at the specified segment index
@@ -758,15 +1292,8 @@ namespace GPlatesMaths
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					interior_ring_index < number_of_interior_rings(),
 					GPLATES_ASSERTION_SOURCE);
-
-			const ring_type &interior_ring = d_interior_rings[interior_ring_index];
-
-			return boost::make_transform_iterator(
-					interior_ring.begin(),
-					gca_start_point_fn_type(
-						boost::bind(&GreatCircleArc::start_point, _1)));
+			return ring_vertex_const_iterator(d_interior_rings[interior_ring_index].begin());
 		}
-
 
 		/**
 		 * Return the 'end' ring_vertex_const_iterator over the vertices of the interior ring
@@ -779,15 +1306,37 @@ namespace GPlatesMaths
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 					interior_ring_index < number_of_interior_rings(),
 					GPLATES_ASSERTION_SOURCE);
+			return ring_vertex_const_iterator(d_interior_rings[interior_ring_index].end());
+		}
+
+		/**
+		 * Return the ring_vertex_const_iterator at the specified vertex index in the specified interior ring.
+		 *
+		 * @a vertex_index can be one past the last vertex, corresponding to @a interior_ring_vertex_end.
+		 */
+		ring_vertex_const_iterator
+		interior_ring_vertex_iterator(
+				size_type interior_ring_index,
+				size_type vertex_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					interior_ring_index < number_of_interior_rings(),
+					GPLATES_ASSERTION_SOURCE);
 
 			const ring_type &interior_ring = d_interior_rings[interior_ring_index];
 
-			return boost::make_transform_iterator(
-					interior_ring.end(),
-					gca_start_point_fn_type(
-						boost::bind(&GreatCircleArc::start_point, _1)));
-		}
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					// A ring contains same number of vertices and segments,
+					// so we can compare with number of segments in ring...
+					vertex_index <= interior_ring.size(),
+					GPLATES_ASSERTION_SOURCE);
 
+			ring_vertex_const_iterator interior_vertex_iter(interior_ring.begin());
+			// This should be fast since iterator type is random access...
+			std::advance(interior_vertex_iter, vertex_index);
+
+			return interior_vertex_iter;
+		}
 
 		/**
 		 * Return the number of vertices in the interior ring in this polygon
@@ -800,7 +1349,6 @@ namespace GPlatesMaths
 			return number_of_segments_in_interior_ring(interior_ring_index);
 		}
 
-
 		/**
 		 * Return the vertex of the interior ring in this polygon at the specified vertex index
 		 * in the specified interior ring index.
@@ -810,13 +1358,24 @@ namespace GPlatesMaths
 				size_type interior_ring_index,
 				size_type vertex_index) const
 		{
-			ring_vertex_const_iterator interior_vertex_iter = interior_ring_vertex_begin(interior_ring_index);
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					interior_ring_index < number_of_interior_rings(),
+					GPLATES_ASSERTION_SOURCE);
+
+			const ring_type &interior_ring = d_interior_rings[interior_ring_index];
+
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					// A ring contains same number of vertices and segments,
+					// so we can compare with number of segments in ring...
+					vertex_index < interior_ring.size(),
+					GPLATES_ASSERTION_SOURCE);
+
+			ring_vertex_const_iterator interior_vertex_iter(interior_ring.begin());
 			// This should be fast since iterator type is random access...
 			std::advance(interior_vertex_iter, vertex_index);
 
 			return *interior_vertex_iter;
 		}
-
 
 		/**
 		 * Return the first vertex in the interior ring in this polygon at the specified interior ring index.
@@ -828,7 +1387,6 @@ namespace GPlatesMaths
 			const GreatCircleArc &first_interior_gca = *(interior_ring_begin(interior_ring_index));
 			return first_interior_gca.start_point();
 		}
-
 
 		/**
 		 * Return the last vertex in the interior ring in this polygon at the specified interior ring index.
@@ -846,36 +1404,87 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Return the total number of segments in the exterior ring and interiors rings in this polygon.
+		 * Return the 'begin' polyline_vertex_const_iterator over an interior ring as if it was a polyline.
+		 *
+		 * NOTE: This iterates over one extra vertex compared to ring_vertex_const_iterator since
+		 * it treats the sequence of GreatCircleArc in the ring as a polyline and hence the last
+		 * vertex is the end point of the last ring segment (which is also the first vertex of ring).
 		 */
-		size_type
-		number_of_segments_in_all_rings() const
+		polyline_vertex_const_iterator
+		interior_polyline_vertex_begin(
+				size_type interior_ring_index) const
 		{
-			size_type num_segments = number_of_segments_in_exterior_ring();
-
-			for (unsigned int i = 0; i < number_of_interior_rings(); ++i)
-			{
-				num_segments += number_of_segments_in_interior_ring(i);
-			}
-
-			return num_segments;
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					interior_ring_index < number_of_interior_rings(),
+					GPLATES_ASSERTION_SOURCE);
+			return polyline_vertex_const_iterator::create_begin(d_interior_rings[interior_ring_index].begin());
 		}
 
+		/**
+		 * Return the 'end' polyline_vertex_const_iterator over an interior ring as if it was a polyline.
+		 *
+		 * NOTE: This iterates over one extra vertex compared to ring_vertex_const_iterator since
+		 * it treats the sequence of GreatCircleArc in the ring as a polyline and hence the last
+		 * vertex is the end point of the last ring segment (which is also the first vertex of ring).
+		 */
+		polyline_vertex_const_iterator
+		interior_polyline_vertex_end(
+				size_type interior_ring_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					interior_ring_index < number_of_interior_rings(),
+					GPLATES_ASSERTION_SOURCE);
+			return polyline_vertex_const_iterator::create_end(
+					d_interior_rings[interior_ring_index].begin(),
+					d_interior_rings[interior_ring_index].end());
+		}
 
 		/**
-		 * Return the total number of vertices in the exterior ring and interiors rings in this polygon.
+		 * Return the polyline_vertex_const_iterator at the specified vertex index in an interior ring
+		 * behaving as if it was a polyline.
+		 *
+		 * @a vertex_index can be one past the last vertex, corresponding to @a interior_polyline_vertex_end.
+		 *
+		 * NOTE: This iterates over one extra vertex compared to ring_vertex_const_iterator since
+		 * it treats the sequence of GreatCircleArc in the ring as a polyline and hence the last
+		 * vertex is the end point of the last ring segment (which is also the first vertex of ring).
+		 */
+		polyline_vertex_const_iterator
+		interior_polyline_vertex_iterator(
+				size_type interior_ring_index,
+				size_type vertex_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					interior_ring_index < number_of_interior_rings(),
+					GPLATES_ASSERTION_SOURCE);
+
+			const ring_type &interior_ring = d_interior_rings[interior_ring_index];
+
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					// A polyline contains one extra vertex compared to number of ring segments/vertices...
+					vertex_index <= interior_ring.size() + 1,
+					GPLATES_ASSERTION_SOURCE);
+
+			polyline_vertex_const_iterator interior_vertex_iter =
+					polyline_vertex_const_iterator::create_begin(d_interior_rings[interior_ring_index].begin());
+			// This should be fast since iterator type is random access...
+			std::advance(interior_vertex_iter, vertex_index);
+
+			return interior_vertex_iter;
+		}
+
+		/**
+		 * Return the number of vertices in an interior ring as if it was a polyline.
+		 *
+		 * NOTE: There is one extra vertex compared to the interior ring since we treat the sequence
+		 * of GreatCircleArc in the ring as a polyline and hence the last vertex is the end point of the
+		 * last ring segment (which is also the first vertex of ring).
 		 */
 		size_type
-		number_of_vertices_in_all_rings() const
+		number_of_vertices_in_interior_polyline(
+				size_type interior_ring_index) const
 		{
-			size_type num_vertices = number_of_vertices_in_exterior_ring();
-
-			for (unsigned int i = 0; i < number_of_interior_rings(); ++i)
-			{
-				num_vertices += number_of_vertices_in_interior_ring(i);
-			}
-
-			return num_vertices;
+			return number_of_vertices_in_interior_ring(interior_ring_index) + 1;
 		}
 
 
@@ -1033,6 +1642,15 @@ namespace GPlatesMaths
 		 * longer to set up for the higher speed tests and reducing back to lower speeds
 		 * would effectively remove any advantages gained.
 		 *
+		 * If @a use_point_on_polygon_threshold is true then the point is considered *on* the outline
+		 * (and hence classified as *inside* the polygon) if it is within an (extremely small) threshold
+		 * distance from the polygon's outline. An example where this is useful is avoiding a point
+		 * exactly on the dateline not getting included by a polygon that has an edge exactly aligned
+		 * with the dateline.
+		 * So usually this should be true (the default) and only turned off for some specific cases
+		 * (such as the polyline intersections code where a point extremely close to a polygon,
+		 * but still outside it, should not be considered inside it).
+		 *
 		 * The point-in-polygon test is done by counting the number of polygon edges crossed
 		 * (in the exterior ring and any interior rings) from the polygon's antipodal centroid to
 		 * the point being tested. This means that if an interior ring intersects the exterior ring
@@ -1045,7 +1663,8 @@ namespace GPlatesMaths
 		bool
 		is_point_in_polygon(
 				const PointOnSphere &point,
-				PointInPolygonSpeedAndMemory speed_and_memory = ADAPTIVE) const;
+				PointInPolygonSpeedAndMemory speed_and_memory = ADAPTIVE,
+				bool use_point_on_polygon_threshold = true) const;
 
 
 		/**
@@ -1126,12 +1745,22 @@ namespace GPlatesMaths
 
 
 		/**
+		 * Returns the small circle bounding tree over *all* great circle arc segments.
+		 *
+		 * NOTE: This means all segments in the exterior and interior rings.
+		 *
+		 * The result is cached on first call.
+		 */
+		const bounding_tree_type &
+		get_bounding_tree() const;
+
+		/**
 		 * Returns the exterior ring small circle bounding tree over the great circle arc segments
 		 * of the exterior ring of this polygon.
 		 *
 		 * The result is cached on first call.
 		 */
-		const bounding_tree_type &
+		const ring_bounding_tree_type &
 		get_exterior_ring_bounding_tree() const;
 
 		/**
@@ -1141,7 +1770,7 @@ namespace GPlatesMaths
 		 *
 		 * The result is cached on first call.
 		 */
-		const bounding_tree_type &
+		const ring_bounding_tree_type &
 		get_interior_ring_bounding_tree(
 				size_type interior_ring_index) const;
 

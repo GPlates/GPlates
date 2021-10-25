@@ -191,7 +191,7 @@ namespace GPlatesGui
 			{ }
 
 			Key(const int k) :
-			d_data(static_cast<const long>(k))
+			d_data(static_cast<long>(k))
 			{ }
 
 			Key(const double k) :
@@ -199,7 +199,7 @@ namespace GPlatesGui
 			{ }
 
 			Key(const float k) :
-				d_data(static_cast<const double>(k))
+				d_data(static_cast<double>(k))
 			{ }
 
 			Key(const char* k) :

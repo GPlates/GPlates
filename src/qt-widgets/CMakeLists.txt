@@ -277,9 +277,9 @@ set(srcs
     FlowlinePropertiesWidgetUi.ui
     FriendlyLineEdit.cc
     FriendlyLineEdit.h
-    GenerateCrustalThicknessPointsDialog.cc
-    GenerateCrustalThicknessPointsDialog.h
-    GenerateCrustalThicknessPointsDialogUi.ui
+    GenerateDeformingMeshPointsDialog.cc
+    GenerateDeformingMeshPointsDialog.h
+    GenerateDeformingMeshPointsDialogUi.ui
     GenerateVelocityDomainCitcomsDialog.cc
     GenerateVelocityDomainCitcomsDialog.h
     GenerateVelocityDomainCitcomsDialogUi.ui

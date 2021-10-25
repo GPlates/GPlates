@@ -29,10 +29,12 @@
 #define GPLATES_APP_LOGIC_RESOLVEDTOPOLOGICALBOUNDARY_H
 
 #include <vector>
+#include <boost/optional.hpp>
 
 #include "ReconstructionGeometryVisitor.h"
 #include "ResolvedTopologicalGeometry.h"
 #include "ResolvedTopologicalGeometrySubSegment.h"
+#include "ResolvedVertexSourceInfo.h"
 
 #include "maths/PolygonOnSphere.h"
 
@@ -148,6 +150,16 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Returns the per-vertex source reconstructed feature geometries.
+		 *
+		 * Each vertex returned by @a resolved_topology_boundary references a source reconstructed feature geometry.
+		 * This method returns the same number of vertex sources as vertices returned by @a resolved_topology_boundary.
+		 */
+		const resolved_vertex_source_info_seq_type &
+		get_vertex_source_infos() const;
+
+
+		/**
 		 * Returns the internal sequence of @a SubSegment objects.
 		 */
 		const sub_segment_seq_type &
@@ -191,6 +203,18 @@ namespace GPlatesAppLogic
 			visitor.visit_resolved_topological_boundary(*this);
 		}
 
+
+		/**
+		 * Whether rubber band points of this resolved topological boundary's sub-segments contributed to its boundary geometry.
+		 *
+		 * They're not really needed since they don't change the shape of the boundary geometry (because they're halfway between
+		 * adjacent sub-segments), but they are needed for the individual sub-segments that make up the boundary geometry
+		 * (in order to delineate the individual sub-segments).
+		 *
+		 * Note that sub-segments can be resolved topological *lines* (as well as reconstructed feature geometries).
+		 */
+		static const bool INCLUDE_SUB_SEGMENT_RUBBER_BAND_POINTS_IN_RESOLVED_BOUNDARY = false;
+
 	private:
 
 		/**
@@ -205,6 +229,15 @@ namespace GPlatesAppLogic
 		 * used to generate the resolved topology boundary.
 		 */
 		sub_segment_seq_type d_sub_segment_seq;
+
+
+		/**
+		 * Each point in the resolved topological line can potentially reference a different
+		 * source reconstructed feature geometry.
+		 *
+		 * As an optimisation, this is only created when first requested.
+		 */
+		mutable boost::optional<resolved_vertex_source_info_seq_type> d_vertex_source_infos;
 
 
 		/**
@@ -237,6 +270,9 @@ namespace GPlatesAppLogic
 			d_resolved_topology_boundary_ptr(resolved_topology_boundary_ptr),
 			d_sub_segment_seq(sub_segment_sequence_begin, sub_segment_sequence_end)
 		{  }
+
+		void
+		calc_vertex_source_infos() const;
 	};
 }
 

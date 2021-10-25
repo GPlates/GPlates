@@ -25,6 +25,12 @@ message(STATUS "Using ${CMAKE_CXX_COMPILER_ID} compiler ${CMAKE_CXX_COMPILER_VER
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC") 
     # Automatically adds compiler definitions to all subdirectories too.
     add_definitions(/D__WINDOWS__ /D_CRT_SECURE_NO_DEPRECATE)
+    
+    # Disable warning C4503: 'identifier' : decorated name length exceeded, name was truncated
+	# Apparently a hash is applied to truncated names, so program correctness is unaffected.
+	# However debugging and linking are possibly affected.
+	# But this warning no longer occurs in Visual Studio 2017 and later compilers.
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /wd4503")
 
     # Flags common to all build types.
     #       The default warning level /W3 seems sufficient (/W4 generates informational warnings which are not necessary to write good code).
@@ -36,7 +42,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_NO_WARNINGS} /w")
 		add_definitions(/DGPLATES_PUBLIC_RELEASE)
     else (GPLATES_PUBLIC_RELEASE)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /WX")
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3")
     endif (GPLATES_PUBLIC_RELEASE)
     
     # If we've been asked to output a list of header files included by source files.
@@ -94,24 +100,34 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
                 "Try using 'cmake -DCMAKE_CXX_COMPILER=/usr/bin/g++-4.2 ...'.")
     endif ()
 
-    # Use C++11 standard for g++ 4.8.1 and above (these vesions all have full support).
+    # Use C++11 standard for g++ 4.8.1 and above (these versions all have full support).
     # GDAL 2.3 and above require a minimum of C++11.
-    if (NOT (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.1"))
+    if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.8.1")
+        # '-ansi' is equivalent to '-std=c++98'
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ansi")
+    else()
         message(STATUS "...using C++11")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+		#
+		# TODO: Remove when using C++11 as a minimum requirement for GPlates.
+		#
+        # Temporariy disable deprecated declaration warnings.
+        # Since removing "-ansi" (when using "-std=c++11") we get a ton of warnings
+        # about deprecated std::auto_ptr, which we'll switch over to std::unique_ptr
+        # in the next release or two when we have C++11 as a minimum requirement.
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
     endif ()
 
     if(APPLE)
         # The compilers under OSX seem to behave oddly with '-isystem'.
         # Headers in system include paths (and '-isystem' paths) should not generate warnings.
-        # However on OSX they do and because we have '-Werror' they become errors.
         # FIXME: temporary solution is to turn off warnings for OSX.
         # All GPlates developers currently use Linux or Windows.
         set(warnings_flags_list )
     else(APPLE)
         # Use a list instead of a string so we can have multiple lines (instead of one giant line).
         set(warnings_flags_list
-            -W -Wall -Werror -Wcast-align -Wwrite-strings -Wfloat-equal
+            -W -Wall -Wcast-align -Wwrite-strings -Wfloat-equal
             -Wno-unused-parameter -Wpointer-arith -Wshadow -Wnon-virtual-dtor
             -Woverloaded-virtual -Wno-long-long -Wold-style-cast)
  	
@@ -123,7 +139,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         set(warnings_flags "${warnings_flags} ${warning}")
     endforeach(warning ${warnings_flags_list})
 	
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -ansi -fno-strict-aliasing")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-strict-aliasing")
 
     # Flags common to all build types.
     if (GPLATES_PUBLIC_RELEASE)
@@ -139,7 +155,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.7")
             # gcc 4.7 onwards reports maybe-uninitialized warning when the default
             # boost::optional<> declaration is present.
-            # It has been used widely throughout gplates, so supress the error for now.
+            # It has been used widely throughout gplates, so suppress the warning for now.
             set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-maybe-uninitialized")
         endif ()
         if (NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS "4.9")
@@ -190,7 +206,7 @@ endif()
 # unused argument warnings -L/Library/Frameworks - possibly due to multiple installations of python, an unused one
 # of which may be in /Library/Frameworks
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang") 
-    # Use C++11 standard for Clang 3.3 and above (these vesions all have full support).
+    # Use C++11 standard for Clang 3.3 and above (these versions all have full support).
     # GDAL 2.3 and above require a minimum of C++11.
     if (NOT (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "3.3"))
         message(STATUS "...using C++11")
@@ -225,6 +241,11 @@ if(APPLE)
 
     # Automatically adds compiler definitions to all subdirectories too.
     add_definitions(-D__APPLE__)
+
+    # Avoid a bunch of OpenGL deprecation warnings when compiling on macOS mojave (10.14).
+    # We will eventually replace OpenGL with Vulkan, but not for a while since
+    # Apple are unlikely to 'remove' OpenGL in their drivers anytime soon.
+    add_definitions(-DGL_SILENCE_DEPRECATION)
 endif(APPLE)
 
 # The 64-bit C99 macro UINT64_C macro fails to compile on Visual Studio 2005 using boost 1.36.
@@ -237,6 +258,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__STDC_CONSTANT_MACROS")
 # to see if U is one of the variant types. However it seems to generate compile errors for references and boost::optional.
 # So we'll default to using the old relaxed (run-time) method.
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_VARIANT_USE_RELAXED_GET_BY_DEFAULT")
+
+# Temporary avoidance of warning in Boost due to bug in version 1.69 caused by using deprecated "boost/pending/integer_log2.hpp".
+# Apparently it wasn't fixed in 1.69 (only 1.70 and above).
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DBOOST_ALLOW_DEPRECATED_HEADERS")
 
 # Create our own build type for profiling with GPlates inbuilt profiler.
 # Use '-DCMAKE_BUILD_TYPE:STRING=profilegplates' option to 'cmake' to generate a gplates profile

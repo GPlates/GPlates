@@ -1,3 +1,26 @@
+//
+// Workaround for a bug in <CGAL/Delaunay_triangulation_2.h>.
+//
+// http://cgal-discuss.949826.n4.nabble.com/Natural-neighbor-coordinates-infinite-loop-tp4659522p4664137.html
+//
+// By defining CGAL_DT2_USE_RECURSIVE_PROPAGATE_CONFLICTS we can use an alternative piece of code
+// in that file to avoid the bug. The alternate code uses recursive propagation for all depths and
+// does not switch to non-recursive code at depth 100. However there is a risk that we could exceed
+// our C stack memory doing this if the conflict region is large enough (spans many faces).
+// But typical deforming networks in GPlates are not really large enough for this to be a problem.
+//
+// In any case, this workaround is only employed for CGAL < 4.12.2 and CGAL 4.13.0.
+// The bug was fixed in 4.12.2, 4.13.1 and 4.14 (according to the link above).
+//
+// NOTE: This workaround needs to be placed at the top of ".cc" file to prior to any direct or
+//       indirect include of <CGAL/Delaunay_triangulation_2.h>.
+//       It should also be placed at the top of the PCH header used for this (app-logic) project.
+//
+#include <CGAL/config.h>
+#if (CGAL_VERSION_NR < CGAL_VERSION_NUMBER(4, 12, 2)) || (CGAL_VERSION_NR == CGAL_VERSION_NUMBER(4, 13, 0))
+#	define CGAL_DT2_USE_RECURSIVE_PROPAGATE_CONFLICTS
+#endif
+
 #ifdef __WINDOWS__
 #include <boost/foreach.hpp>
 #endif // __WINDOWS__

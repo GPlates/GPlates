@@ -1,5 +1,5 @@
 # Find our required libraries.
-set(required_libs "Qt4" "OpenGL" "GLEW" "GDAL" "GZIP" "PROJ4" "CGAL" "Qwt")
+set(required_libs "Qt4" "OpenGL" "GLEW" "GDAL" "GZIP" "PROJ" "CGAL" "Qwt")
 foreach(lib ${required_libs})
 	find_package(${lib} REQUIRED)
 endforeach(lib)
@@ -8,7 +8,18 @@ endforeach(lib)
 set(Boost_USE_STATIC_LIBS FALSE)
 set(boost_components program_options thread system)
 if(NOT GPLATES_NO_PYTHON)
-	set(boost_components ${boost_components} python)
+	# Boost 1.67 and later require that boost python components have a Python version suffix, e.g. ``python27``.
+	# But first we need to determine the boost library version.
+	# To do this we do the simplest boost library find which is just to find the headers.
+	find_package("Boost" 1.34.1)
+	if (NOT Boost_FOUND)
+		message(FATAL_ERROR "Boost headers not found - please make sure Boost library is installed.")
+	endif ()
+	if(NOT Boost_VERSION VERSION_LESS 106700)
+		set(boost_components ${boost_components} python27)
+	else()
+		set(boost_components ${boost_components} python)
+	endif()
 endif(NOT GPLATES_NO_PYTHON)
 find_package("Boost" 1.34.1 REQUIRED ${boost_components})
 
@@ -225,7 +236,7 @@ set(external_INCLUDE_DIRS
 	${GDAL_PORT_INCLUDE_DIR}
 	${GDAL_FRMTS_INCLUDE_DIR}
 	${Boost_INCLUDE_DIR}
-        ${PROJ4_INCLUDE_DIR}
+        ${PROJ_INCLUDE_DIR}
         ${QWT_INCLUDE_DIR})
 if(NOT GPLATES_NO_PYTHON)
 	set(external_INCLUDE_DIRS
@@ -296,7 +307,6 @@ add_dependencies(canvas-tools qt-widgets)
 add_dependencies(view-operations qt-widgets)
 add_dependencies(presentation qt-widgets)
 add_dependencies(gui qt-widgets)
-add_dependencies(utils qt-widgets) #Need more investigation
 if(NOT GPLATES_NO_PYTHON)
 add_dependencies(api gui)
 endif(NOT GPLATES_NO_PYTHON)
@@ -404,7 +414,7 @@ set(dependency_LIBS
 	${QT_LIBRARIES}
 	${GLEW_LIBRARY}
 	${OPENGL_LIBRARIES}
-        ${PROJ4_LIBRARY}
+        ${PROJ_LIBRARY}
         ${QWT_LIBRARY})
 	
 if(NOT GPLATES_NO_PYTHON)

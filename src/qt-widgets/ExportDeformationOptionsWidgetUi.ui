@@ -216,6 +216,13 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QCheckBox" name="include_strain_rate_style_check_box">
+        <property name="text">
+         <string>Include strain rate style</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>

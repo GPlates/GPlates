@@ -58,15 +58,11 @@ namespace GPlatesFileIO
 
 			SubSegmentType
 			get_sub_segment_feature_type(
-					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment)
+					const GPlatesModel::FeatureHandle::const_weak_ref &sub_segment_feature_ref)
 			{
 				d_sub_segment_type = SUB_SEGMENT_TYPE_OTHER;
 
-				const GPlatesModel::FeatureHandle::const_weak_ref &feature =
-						sub_segment.get_feature_ref();
-
-				
-				visit_feature(feature);
+				visit_feature(sub_segment_feature_ref);
 
 				// We just visited 'feature' looking for:
 				// - a feature type of "SubductionZone",
@@ -79,7 +75,7 @@ namespace GPlatesFileIO
 				//
 				if (d_sub_segment_type == SUB_SEGMENT_TYPE_SUBDUCTION_ZONE_UNKNOWN)
 				{
-					get_sub_segment_feature_type_from_old_plates_header(feature);
+					get_sub_segment_feature_type_from_old_plates_header(sub_segment_feature_ref);
 				}
 
 # if 0
@@ -278,15 +274,11 @@ namespace GPlatesFileIO
 
 			SubSegmentType
 			get_slab_sub_segment_feature_type(
-					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment)
+					const GPlatesModel::FeatureHandle::const_weak_ref &sub_segment_feature_ref)
 			{
 				d_sub_segment_type = SUB_SEGMENT_TYPE_OTHER;
 
-				const GPlatesModel::FeatureHandle::const_weak_ref &feature =
-						sub_segment.get_feature_ref();
-
-				
-				visit_feature(feature);
+				visit_feature(sub_segment_feature_ref);
 
 				// We just visited 'feature' looking for:
 				// - a property named "subductionPolarity",
@@ -426,22 +418,19 @@ namespace GPlatesFileIO
 
 GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl::SubSegmentType
 GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl::get_sub_segment_type(
-		const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment,
+		const GPlatesModel::FeatureHandle::const_weak_ref &sub_segment_feature_ref,
 		const double &recon_time)
 {
-	return DetermineSubSegmentFeatureType(recon_time).get_sub_segment_feature_type(sub_segment);
+	return DetermineSubSegmentFeatureType(recon_time).get_sub_segment_feature_type(sub_segment_feature_ref);
 }
 
 
 GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl::SubSegmentType
 GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl::get_slab_sub_segment_type(
-		const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment,
+		const GPlatesModel::FeatureHandle::const_weak_ref &sub_segment_feature_ref,
 		const double &recon_time)
 {
 	SubSegmentType d_sub_segment_type = SUB_SEGMENT_TYPE_OTHER;
-
-	const GPlatesModel::FeatureHandle::const_weak_ref &feature =
-		sub_segment.get_feature_ref();
 
 	QString slabEdgeType;
 	static const GPlatesModel::PropertyName property_name =
@@ -449,14 +438,14 @@ GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl::get_slab_sub_segmen
 
 	boost::optional<GPlatesPropertyValues::XsString::non_null_ptr_to_const_type> property_value =
 			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::XsString>(
-					feature, property_name);
+					sub_segment_feature_ref, property_name);
 	if (property_value)
 	{
 		slabEdgeType = GPlatesUtils::make_qstring_from_icu_string( property_value.get()->value().get() );
 
 		if (slabEdgeType == QString("Leading") ) 
 		{
-			return DetermineSlabSubSegmentFeatureType(recon_time).get_slab_sub_segment_feature_type(sub_segment);
+			return DetermineSlabSubSegmentFeatureType(recon_time).get_slab_sub_segment_feature_type(sub_segment_feature_ref);
 		}
 		else if (slabEdgeType == QString("Trench") )  
 		{ 

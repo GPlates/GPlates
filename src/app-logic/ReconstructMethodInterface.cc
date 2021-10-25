@@ -102,6 +102,8 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 						reconstruction_plate_id,
 						reconstruction_feature_properties.get_time_of_appearance(),
 						reconstruct_handle);
+		const ReconstructionGeometry::maybe_null_ptr_to_const_type
+				plate_id_reconstruction_geometry(plate_id_rfg.get());
 
 		GPlatesMaths::MultiPointOnSphere::const_iterator domain_iter = velocity_domain->begin();
 		GPlatesMaths::MultiPointOnSphere::const_iterator domain_end = velocity_domain->end();
@@ -132,7 +134,7 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 					vector_xyz,
 					MultiPointVectorField::CodomainElement::ReconstructedDomainPoint,
 					reconstruction_plate_id,
-					ReconstructionGeometry::maybe_null_ptr_to_const_type(plate_id_rfg.get()));
+					plate_id_reconstruction_geometry);
 		}
 
 		reconstructed_feature_velocities.push_back(vector_field);

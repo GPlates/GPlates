@@ -32,14 +32,13 @@
 
 #include "PolygonIntersections.h"
 
+#include "ConstGeometryOnSphereVisitor.h"
 #include "GreatCircleArc.h"
 #include "PointInPolygon.h"
 #include "PolylineIntersections.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
-
-#include "maths/ConstGeometryOnSphereVisitor.h"
 
 
 namespace
@@ -422,47 +421,44 @@ GPlatesMaths::PolygonIntersections::partition_polyline(
 		boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_outside) const
 {
 	// Partition the geometry to be partitioned against the partitioning polygon.
-	// NOTE: The first argument is the partitioning polygon - this means it corresponds
-	// to the first sequence in the returned graph.
-	boost::shared_ptr<const PolylineIntersections::Graph> partitioned_polylines_graph =
-			PolylineIntersections::partition_intersecting_geometries(
-					*d_partitioning_polygon, *polyline_to_be_partitioned);
-
+	//
 	// If there were no intersections then the polyline to be partitioned must be either
 	// fully inside or fully outside the partitioning polygon - find out which.
-	if (!partitioned_polylines_graph)
+	PolylineIntersections::Graph partitioned_polylines_graph;
+	if (!PolylineIntersections::partition(
+			partitioned_polylines_graph,
+			// NOTE: The first geometry specified is the partitioning polygon.
+			// This means it corresponds to the first sequence in the returned graph...
+			*d_partitioning_polygon,
+			*polyline_to_be_partitioned))
 	{
-		// Choose any two points on the polyline and to see if it's inside the
-		// partitioning polygon. Any points will do. Pick the first and second points.
-		// It's a polyline so we know it has at least two vertices.
-		Result result = partition_polyline_or_polygon_fully_inside_or_outside(
-				*polyline_to_be_partitioned->vertex_begin(),
-				*++polyline_to_be_partitioned->vertex_begin());
+		// Choose any point on the polyline and to see if it's inside the partitioning polygon.
+		// Any point will do. Pick the first point.
+		if (is_non_intersecting_polyline_or_polygon_fully_inside_partitioning_polygon(
+				*polyline_to_be_partitioned->vertex_begin()))
+		{
+			if (partitioned_polylines_inside)
+			{
+				partitioned_polylines_inside->push_back(polyline_to_be_partitioned);
+			}
 
-		if (result == GEOMETRY_OUTSIDE)
+			return GEOMETRY_INSIDE;
+		}
+		else
 		{
 			if (partitioned_polylines_outside)
 			{
 				partitioned_polylines_outside->push_back(polyline_to_be_partitioned);
 			}
+
+			return GEOMETRY_OUTSIDE;
 		}
-		else
-		{
-			// Count intersecting as inside even though it shouldn't have intersected
-			// otherwise we'd have an intersection graph.
-			if (partitioned_polylines_inside)
-			{
-				partitioned_polylines_inside->push_back(polyline_to_be_partitioned);
-			}
-			result = GEOMETRY_INSIDE;
-		}
-		return result;
 	}
 
 	// Determine which partitioned polylines are inside/outside the partitioning polygon
 	// and add to the appropriate lists.
 	partition_intersecting_geometry(
-			*partitioned_polylines_graph,
+			partitioned_polylines_graph,
 			partitioned_polylines_inside,
 			partitioned_polylines_outside);
 
@@ -478,32 +474,34 @@ GPlatesMaths::PolygonIntersections::partition_polygon(
 		boost::optional<partitioned_polyline_seq_type &> partitioned_polylines_outside) const
 {
 	// Partition the geometry to be partitioned against the partitioning polygon.
-	// NOTE: The first argument is the partitioning polygon - this means it corresponds
-	// to the first sequence in the returned graph.
-	boost::shared_ptr<const PolylineIntersections::Graph> partitioned_polylines_graph =
-			PolylineIntersections::partition_intersecting_geometries(
-					*d_partitioning_polygon, *polygon_to_be_partitioned);
-
+	//
 	// If there were no intersections then the polygon to be partitioned must be either
 	// fully inside or fully outside the partitioning polygon - find out which.
-	if (!partitioned_polylines_graph)
+	PolylineIntersections::Graph partitioned_polylines_graph;
+	if (!PolylineIntersections::partition(
+			partitioned_polylines_graph,
+			// NOTE: The first argument is the partitioning polygon.
+			// This means it corresponds to the first sequence in the returned graph...
+			*d_partitioning_polygon,
+			*polygon_to_be_partitioned))
 	{
-		// Choose any two points on the polygon and to see if it's inside the
-		// partitioning polygon. Any points will do. Pick the first and second points.
-		// It's a polygon so we know it has at least three vertices.
-		const Result result = partition_polyline_or_polygon_fully_inside_or_outside(
-				*polygon_to_be_partitioned->exterior_ring_vertex_begin(),
-				*++polygon_to_be_partitioned->exterior_ring_vertex_begin());
-
-		// Count intersecting (in this case just touching) as inside even though
-		// it shouldn't have intersected otherwise we'd have an intersection graph.
-		return (result == GEOMETRY_OUTSIDE) ? GEOMETRY_OUTSIDE : GEOMETRY_INSIDE;
+		// Choose any point on the polygon and to see if it's inside the partitioning polygon.
+		// Any point will do. Pick the first point.
+		if (is_non_intersecting_polyline_or_polygon_fully_inside_partitioning_polygon(
+				*polygon_to_be_partitioned->exterior_ring_vertex_begin()))
+		{
+			return GEOMETRY_INSIDE;
+		}
+		else
+		{
+			return GEOMETRY_OUTSIDE;
+		}
 	}
 
 	// Determine which partitioned polylines are inside/outside the partitioning polygon
 	// and add to the appropriate lists.
 	partition_intersecting_geometry(
-			*partitioned_polylines_graph,
+			partitioned_polylines_graph,
 			partitioned_polylines_inside,
 			partitioned_polylines_outside);
 
@@ -603,29 +601,20 @@ GPlatesMaths::PolygonIntersections::partition_multipoint(
 }
 
 
-GPlatesMaths::PolygonIntersections::Result
-GPlatesMaths::PolygonIntersections::partition_polyline_or_polygon_fully_inside_or_outside(
-		const PointOnSphere &arbitrary_point_on_geometry1,
-		const PointOnSphere &arbitrary_point_on_geometry2) const
+bool
+GPlatesMaths::PolygonIntersections::is_non_intersecting_polyline_or_polygon_fully_inside_partitioning_polygon(
+		const PointOnSphere &arbitrary_point_on_geometry) const
 {
-	// Choose any point in the polygon and see if it's inside the
-	// partitioning polygon. Any point will do - we choose the start point.
-	// Note: We don't add the polyline to either inside/outside list
-	// because that is used only if an intersection occurred.
-	Result result = partition_point(arbitrary_point_on_geometry1);
-
-	// Determine which caller's partitioned polygon list to append to.
-	if (result == GEOMETRY_INTERSECTING)
-	{
-		// The first vertex touched the partitioning polygon.
-		// This should have been picked up by PolylineIntersections so we
-		// probably wouldn't get here but just in case test another point
-		// - of course the next point might also be touching in which case
-		// we might be returning an incorrect result (unlikely though).
-		result = partition_point(arbitrary_point_on_geometry2);
-	}
-
-	return result;
+	// PolylineIntersections has guaranteed there are no intersections within an extremely small
+	// threshold distance of the partitioning polygon. So we know the polyline (or polygon) to be
+	// partitioned is either fully inside or fully outside the partitioning polygon. If it's fully
+	// outside then we don't want the point-in-polygon test to return true if the point is *very*
+	// close to the partitioning polygon, so we turn of point-on-polygon threshold testing.
+	return d_partitioning_polygon->is_point_in_polygon(
+					arbitrary_point_on_geometry,
+					d_partition_point_speed_and_memory,
+					// Note we turned off point-on-polygon outline threshold testing...
+					false/*use_point_on_polygon_threshold*/);
 }
 
 
@@ -650,78 +639,20 @@ GPlatesMaths::PolygonIntersections::partition_intersecting_geometry(
 
 	// Iterate over the partitioned polylines of the geometry being partitioned.
 	// NOTE: The geometry that was partitioned is the second sequence in the graph.
-	PolylineIntersections::Graph::partitioned_polyline_ptr_to_const_seq_type::const_iterator
+	PolylineIntersections::partitioned_polyline_ptr_to_const_seq_type::const_iterator
 			partitioned_polyline_iter = partitioned_polylines_graph.partitioned_polylines2.begin();
-	PolylineIntersections::Graph::partitioned_polyline_ptr_to_const_seq_type::const_iterator
+	PolylineIntersections::partitioned_polyline_ptr_to_const_seq_type::const_iterator
 			partitioned_polyline_end = partitioned_polylines_graph.partitioned_polylines2.end();
 	for ( ; partitioned_polyline_iter != partitioned_polyline_end; ++partitioned_polyline_iter)
 	{
-		const PolylineIntersections::Graph::partitioned_polyline_ptr_to_const_type &
+		const PolylineIntersections::PartitionedPolyline::non_null_ptr_to_const_type &
 				partitioned_poly = *partitioned_polyline_iter;
-
-		if (partitioned_poly->is_overlapping)
-		{
-			// If the partitioned polyline overlaps with the partitioning polygon
-			// then we classify that as inside the polygon.
-			if (inside_partitioned_polyline_merger)
-			{
-				inside_partitioned_polyline_merger->add_inside_polyline(partitioned_poly->polyline);
-			}
-			continue;
-		}
-
-		// Whether the partitioned polyline if previous to the intersection point.
-		//
-		// By default (when has a previous intersection) the partitioned polyline is
-		// the next polyline after the intersection (which means it's not the previous).
-		bool is_prev_partitioned_polyline = false;
-
-		const PolylineIntersections::Graph::Intersection *intersection = partitioned_poly->prev_intersection;
-		// If no previous intersection...
-		if (intersection == NULL)
-		{
-			// We must be the first polyline of the sequence and it doesn't start at a T-junction.
-			// Use the intersection at the end of the partitioned polyline instead.
-			intersection = partitioned_poly->next_intersection;
-
-			// It's not possible for a partitioned polyline to have no intersections at either end.
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					intersection != NULL,
-					GPLATES_ASSERTION_SOURCE);
-
-			// The end of the partitioned polyline is now touching the intersection point
-			// instead of the start touching it.
-			is_prev_partitioned_polyline = true;
-		}
-
-		// Get the partitioning polyline just prior to the intersection point.
-		// NOTE: The partitioning polygon is the first sequence in the graph.
-		const PolylineIntersections::Graph::PartitionedPolyline &prev_partitioning_polygon =
-				intersection->prev_partitioned_polyline1
-						? *intersection->prev_partitioned_polyline1
-						// There's no previous polyline in the partitioning polygon so the
-						// intersection point must coincide with the polygon's start point.
-						// Use the last polyline in the partitioning polygon instead.
-						: *partitioned_polylines_graph.partitioned_polylines1.back();
-
-		// Get the partitioning polyline just after the intersection point.
-		// NOTE: The partitioning polygon is the first sequence in the graph.
-		const PolylineIntersections::Graph::PartitionedPolyline &next_partitioning_polygon =
-				intersection->next_partitioned_polyline1
-						? *intersection->next_partitioned_polyline1
-						// There's no next polyline in the partitioning polygon so the
-						// intersection point must coincide with the polygon's end point.
-						// Use the first polyline in the partitioning polygon instead.
-						: *partitioned_polylines_graph.partitioned_polylines1.front();
 
 		// Determine if the current partitioned polyline is inside or outside the partitioning polygon.
 		const bool is_partitioned_poly_inside =
 				is_partitioned_polyline_inside_partitioning_polygon(
-						intersection->intersection_point,
-						*prev_partitioning_polygon.polyline,
-						*next_partitioning_polygon.polyline,
-						*partitioned_poly->polyline,
-						is_prev_partitioned_polyline);
+						partitioned_polylines_graph,
+						*partitioned_poly);
 
 		if (is_partitioned_poly_inside)
 		{
@@ -760,31 +691,126 @@ GPlatesMaths::PolygonIntersections::partition_intersecting_geometry(
 
 bool
 GPlatesMaths::PolygonIntersections::is_partitioned_polyline_inside_partitioning_polygon(
-		const PointOnSphere &intersection_point,
-		const PolylineOnSphere &prev_partitioning_polygon,
-		const PolylineOnSphere &next_partitioning_polygon,
-		const PolylineOnSphere &partitioned_polyline,
-		bool is_prev_partitioned_polyline) const
+		const PolylineIntersections::Graph &partitioned_polylines_graph,
+		const PolylineIntersections::PartitionedPolyline &partitioned_poly) const
 {
+	// Whether the partitioned polyline if previous to the intersection point.
+	//
+	// By default (when has a previous intersection) the partitioned polyline is
+	// the next polyline after the intersection (which means it's not the previous).
+	bool is_prev_partitioned_polyline = false;
+
+	const PolylineIntersections::Intersection *intersection = partitioned_poly.prev_intersection;
+	// If no previous intersection...
+	if (intersection == NULL)
+	{
+		// We must be the first polyline of the sequence and it doesn't start at a T-junction.
+		// Use the intersection at the end of the partitioned polyline instead.
+		intersection = partitioned_poly.next_intersection;
+
+		// It's not possible for a partitioned polyline to have no intersections at either end.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				intersection != NULL,
+				GPLATES_ASSERTION_SOURCE);
+
+		// The end of the partitioned polyline is now touching the intersection point
+		// instead of the start touching it.
+		is_prev_partitioned_polyline = true;
+	}
+
+	//
+	// Get the previous and next non-zero-length GCA of the partitioning polygon (at the intersection).
+	//
+
+	// Get the non-zero-length great circle arc of the partitioning polygon just prior to the intersection point.
+	// NOTE: The partitioning polygon is the first sequence in the graph.
+	boost::optional<const GPlatesMaths::GreatCircleArc &> prev_partitioning_polygon_gca;
+
+	// It's possible the an entire partitioned polyline of the partitioning polygon is made up of zero-length arcs,
+	// in which case we consider the previous partitioned polyline (until we've searched all its partitioned polylines).
+	const PolylineIntersections::PartitionedPolyline *prev_partitioning_polygon = intersection->prev_partitioned_polyline1;
+	for (unsigned int p = 0; p < partitioned_polylines_graph.partitioned_polylines1.size(); ++p)
+	{
+		if (prev_partitioning_polygon == NULL)
+		{
+			// There's no previous polyline in the partitioning polygon so the current intersection point must
+			// coincide with the polygon's start point. Use the last polyline in the partitioning polygon instead.
+			prev_partitioning_polygon = partitioned_polylines_graph.partitioned_polylines1.back().get();
+		}
+
+		prev_partitioning_polygon_gca = get_first_or_last_non_zero_great_circle_arc(
+				*prev_partitioning_polygon->polyline,
+				false/*get_first*/);
+		if (prev_partitioning_polygon_gca)
+		{
+			break;
+		}
+
+		// Get previous polyline in the partitioning polygon.
+		const PolylineIntersections::Intersection *prev_intersection = prev_partitioning_polygon->prev_intersection;
+		if (prev_intersection)
+		{
+			prev_partitioning_polygon = prev_intersection->prev_partitioned_polyline1;
+		}
+		else
+		{
+			// There's no previous intersection in the partitioning polygon so use the last polyline.
+			prev_partitioning_polygon = partitioned_polylines_graph.partitioned_polylines1.back().get();
+		}
+	}
+
+	// Get the non-zero-length great circle arc of the partitioning polygon just past to the intersection point.
+	// NOTE: The partitioning polygon is the first sequence in the graph.
+	boost::optional<const GPlatesMaths::GreatCircleArc &> next_partitioning_polygon_gca;
+
+	// It's possible the an entire partitioned polyline of the partitioning polygon is made up of zero-length arcs,
+	// in which case we consider the next partitioned polyline (until we've searched all its partitioned polylines).
+	const PolylineIntersections::PartitionedPolyline *next_partitioning_polygon = intersection->next_partitioned_polyline1;
+	for (unsigned int p = 0; p < partitioned_polylines_graph.partitioned_polylines1.size(); ++p)
+	{
+		if (next_partitioning_polygon == NULL)
+		{
+			// There's no next polyline in the partitioning polygon so the current intersection point must
+			// coincide with the polygon's end point. Use the first polyline in the partitioning polygon instead.
+			next_partitioning_polygon = partitioned_polylines_graph.partitioned_polylines1.front().get();
+		}
+
+		next_partitioning_polygon_gca = get_first_or_last_non_zero_great_circle_arc(
+				*next_partitioning_polygon->polyline,
+				true/*get_first*/);
+		if (next_partitioning_polygon_gca)
+		{
+			break;
+		}
+
+		// Get next polyline in the partitioning polygon.
+		const PolylineIntersections::Intersection *next_intersection = next_partitioning_polygon->next_intersection;
+		if (next_intersection)
+		{
+			next_partitioning_polygon = next_intersection->next_partitioned_polyline1;
+		}
+		else
+		{
+			// There's no next intersection in the partitioning polygon so use the first polyline.
+			next_partitioning_polygon = partitioned_polylines_graph.partitioned_polylines1.front().get();
+		}
+	}
+
+	//
 	// Get first (or last) non-zero length GCA of the partitioning and partitioned polylines.
-
-	boost::optional<const GPlatesMaths::GreatCircleArc &> prev_partitioning_polygon_gca =
-			get_first_or_last_non_zero_great_circle_arc(
-					prev_partitioning_polygon,
-					false/*get_first*/);
-
-	boost::optional<const GPlatesMaths::GreatCircleArc &> next_partitioning_polygon_gca =
-			get_first_or_last_non_zero_great_circle_arc(
-					next_partitioning_polygon,
-					true/*get_first*/);
+	//
 
 	boost::optional<const GPlatesMaths::GreatCircleArc &> partitioned_polyline_gca =
 			get_first_or_last_non_zero_great_circle_arc(
-					partitioned_polyline,
+					*partitioned_poly.polyline,
 					!is_prev_partitioned_polyline/*get_first*/);
 
-	// If any polyline is coincident with a point then consider the partitioned polyline inside.
-	// It shouldn't really happen anyway.
+	// If a non-zero great circle arc cannot be found for either the previous or next polyline of the
+	// partitioning polygon (at intersection point) then there's not much we can do (so just return true).
+	// This shouldn't really happen anyway.
+	// 
+	// However if the *partitioned* polyline is coincident with a point then consider it inside the polygon
+	// (since we know it is *on* the polygon).
 	if (!prev_partitioning_polygon_gca ||
 		!next_partitioning_polygon_gca ||
 		!partitioned_polyline_gca)
@@ -816,7 +842,7 @@ GPlatesMaths::PolygonIntersections::is_partitioned_polyline_inside_partitioning_
 	if (do_adjacent_great_circle_arcs_bend_left(
 			prev_partitioning_polygon_gca.get(),
 			next_partitioning_polygon_gca.get(),
-			intersection_point))
+			intersection->intersection_point))
 	{
 		// If the adjacent arcs on the partitioning polygon bend to the left then
 		// left is the narrowest region.
@@ -831,12 +857,12 @@ GPlatesMaths::PolygonIntersections::is_partitioned_polyline_inside_partitioning_
 				do_adjacent_great_circle_arcs_bend_left(
 						prev_partitioning_polygon_gca.get(),
 						partitioned_polyline_gca.get(),
-						intersection_point)) &&
+						intersection->intersection_point)) &&
 			(is_prev_partitioned_polyline ^
 				do_adjacent_great_circle_arcs_bend_left(
 						next_partitioning_polygon_gca.get(),
 						partitioned_polyline_gca.get(),
-						intersection_point)))
+						intersection->intersection_point)))
 		{
 			// The polyline GCA is in the narrow region to the left.
 			return d_partitioning_polygon_orientation == PolygonOrientation::COUNTERCLOCKWISE;
@@ -862,12 +888,12 @@ GPlatesMaths::PolygonIntersections::is_partitioned_polyline_inside_partitioning_
 			!do_adjacent_great_circle_arcs_bend_left(
 					prev_partitioning_polygon_gca.get(),
 					partitioned_polyline_gca.get(),
-					intersection_point)) &&
+					intersection->intersection_point)) &&
 		(is_prev_partitioned_polyline ^
 			!do_adjacent_great_circle_arcs_bend_left(
 					next_partitioning_polygon_gca.get(),
 					partitioned_polyline_gca.get(),
-					intersection_point)))
+					intersection->intersection_point)))
 	{
 		// The polyline GCA is in the narrow region to the right.
 		return d_partitioning_polygon_orientation == PolygonOrientation::CLOCKWISE;

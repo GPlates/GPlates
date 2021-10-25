@@ -89,7 +89,8 @@ namespace GPlatesGui
 					const GPlatesFileIO::DeformationExport::PrincipalStrainOptions &principal_strain_options_,
 					bool include_dilatation_strain_,
 					bool include_dilatation_strain_rate_,
-					bool include_second_invariant_strain_rate_) :
+					bool include_second_invariant_strain_rate_,
+					bool include_strain_rate_style_) :
 				ConfigurationBase(filename_template_),
 				file_format(file_format_),
 				file_options(file_options_),
@@ -97,7 +98,8 @@ namespace GPlatesGui
 				principal_strain_options(principal_strain_options_),
 				include_dilatation_strain(include_dilatation_strain_),
 				include_dilatation_strain_rate(include_dilatation_strain_rate_),
-				include_second_invariant_strain_rate(include_second_invariant_strain_rate_)
+				include_second_invariant_strain_rate(include_second_invariant_strain_rate_),
+				include_strain_rate_style(include_strain_rate_style_)
 			{  }
 
 			virtual
@@ -114,6 +116,7 @@ namespace GPlatesGui
 			bool include_dilatation_strain;
 			bool include_dilatation_strain_rate;
 			bool include_second_invariant_strain_rate;
+			bool include_strain_rate_style;
 		};
 
 		//! Typedef for a shared pointer to const @a Configuration.
@@ -139,7 +142,8 @@ namespace GPlatesGui
 					const GPlatesFileIO::DeformationExport::PrincipalStrainOptions &principal_strain_options_,
 					bool include_dilatation_strain_,
 					bool include_dilatation_strain_rate_,
-					bool include_second_invariant_strain_rate_) :
+					bool include_second_invariant_strain_rate_,
+					bool include_strain_rate_style_) :
 				Configuration(
 						filename_template_,
 						GPML,
@@ -148,7 +152,8 @@ namespace GPlatesGui
 						principal_strain_options_,
 						include_dilatation_strain_,
 						include_dilatation_strain_rate_,
-						include_second_invariant_strain_rate_)
+						include_second_invariant_strain_rate_,
+						include_strain_rate_style_)
 			{  }
 
 			virtual
@@ -184,7 +189,8 @@ namespace GPlatesGui
 					const GPlatesFileIO::DeformationExport::PrincipalStrainOptions &principal_strain_options_,
 					bool include_dilatation_strain_,
 					bool include_dilatation_strain_rate_,
-					bool include_second_invariant_strain_rate_) :
+					bool include_second_invariant_strain_rate_,
+					bool include_strain_rate_style_) :
 				Configuration(
 						filename_template_,
 						GMT,
@@ -193,7 +199,8 @@ namespace GPlatesGui
 						principal_strain_options_,
 						include_dilatation_strain_,
 						include_dilatation_strain_rate_,
-						include_second_invariant_strain_rate_),
+						include_second_invariant_strain_rate_,
+						include_strain_rate_style_),
 				domain_point_format(domain_point_format_)
 			{  }
 

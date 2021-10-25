@@ -587,7 +587,7 @@ GPlatesQtWidgets::ColouringDialog::open_cpt_files(
 		case GPlatesGui::ColourSchemeCategory::FEATURE_AGE:
 			open_cpt_files<GPlatesFileIO::RegularCptReader>(
 					file_list,
-					GPlatesAppLogic::AgePropertyExtractor());
+					GPlatesAppLogic::AgePropertyExtractor(d_application_state));
 			break;
 
 		case GPlatesGui::ColourSchemeCategory::FEATURE_TYPE:

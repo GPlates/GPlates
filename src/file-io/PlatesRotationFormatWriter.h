@@ -137,6 +137,12 @@ namespace GPlatesFileIO
 			std::list< ReconstructionPoleData > reconstruction_poles;
 			boost::optional<GPlatesModel::integer_plate_id_type> moving_plate_id;
 			boost::optional<GPlatesModel::integer_plate_id_type> fixed_plate_id;
+			bool d_is_expecting_a_time_sample;
+
+
+			PlatesRotationFormatAccumulator() :
+				d_is_expecting_a_time_sample(false)
+			{  }
 
 			/**
 			 * Return a reference to the reconstruction pole that is currently

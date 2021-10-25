@@ -56,6 +56,10 @@ namespace GPlatesMaths
 	 * the returned distance will be the minimum distance between the two geometries.
 	 * NOTE: @a geometry1_interior_is_solid (@a geometry2_interior_is_solid) is ignored if
 	 * @a geometry1 (@a geometry2) is not a PolygonOnSphere.
+	 * Also note that the solid polygon interior region is defined similarly to point-in-polygon tests,
+	 * that is crossing from outside the polygon to an interior region crosses an odd number of polygon
+	 * edges (including edges of any polygon interior rings), and this holds even when the exterior and
+	 * interior rings intersect each other.
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
@@ -63,9 +67,9 @@ namespace GPlatesMaths
 	 * (even if it's not none) and the closest indices are not stored in @a closest_indices
 	 * (even if it's not none).
 	 *
-	 * If @a closest_positions is specified then the closest point on each geometry (for polygons
-	 * this means the polygon boundary or outline) is stored in the unit vectors it references
-	 * (unless the threshold is exceeded, if specified).
+	 * If @a closest_positions is specified then the closest point on each geometry (for polygons this means
+	 * the polygon's exterior/interior rings, which we'll call *outline* to distinguish from the solid interior
+	 * region) is stored in the unit vectors it references (unless the threshold is exceeded, if specified).
 	 * Note that the closest points on polylines and polygon outlines can be anywhere on segments of
 	 * the polyline/polygon (ie, it's not the nearest vertices of the polyline/polygon - it's the
 	 * nearest points *on* the polyline/polygon).
@@ -87,7 +91,8 @@ namespace GPlatesMaths
 	 * references (unless the threshold is exceeded, if specified).
 	 * Note that for PointOnSphere geometries the index will always be zero.
 	 * The point indices can be used with MultiPointOnSphere::get_point().
-	 * The segment indices can be used with PolylineOnSphere::get_segment() or PolygonOnSphere::get_exterior_ring_segment().
+	 * The segment indices can be used with PolylineOnSphere::get_segment() or PolygonOnSphere::get_segment()
+	 * (where, for polygons, the segment index can refer to an interior ring).
 	 * Note that if @a geometry1_interior_is_solid is true and @a geometry1 is a polygon and @a geometry2
 	 * is entirely inside the polygon (without intersecting its outline) then the threshold is not exceeded
 	 * and hence @a closest_indices (if specified) will always store indices.
@@ -181,6 +186,10 @@ namespace GPlatesMaths
 	 *
 	 * If @a polygon_interior_is_solid is true then anything overlapping the interior of @a polygon
 	 * has a distance of zero (and AngularDistance::ZERO), otherwise the distance to the polygon outline.
+	 * Note that the solid polygon interior region is defined similarly to point-in-polygon tests,
+	 * that is crossing from outside the polygon to an interior region crosses an odd number of polygon
+	 * edges (including edges of any polygon interior rings), and this holds even when the exterior and
+	 * interior rings intersect each other.
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
@@ -199,7 +208,8 @@ namespace GPlatesMaths
 	 * If @a closest_segment_index_in_polygon is specified then the index of the closest segment
 	 * (great circle arc on which the closest point on polygon *outline* lies) in the polygon is
 	 * stored in the integer it references (unless the threshold is exceeded, if specified).
-	 * The index can be used with PolygonOnSphere::get_exterior_ring_segment().
+	 * The index can be used with PolygonOnSphere::get_segment().
+	 * Note that the segment index can refer to an interior ring.
 	 * Note that if @a polygon_interior_is_solid is true and the point is inside the polygon then
 	 * the threshold is not exceeded and hence @a closest_segment_index_in_polygon (if specified)
 	 * will always store the index of the closest segment in the polygon.
@@ -306,6 +316,10 @@ namespace GPlatesMaths
 	 *
 	 * If @a polygon_interior_is_solid is true then anything overlapping the interior of @a polygon
 	 * has a distance of zero (and AngularDistance::ZERO), otherwise the distance to the polygon outline.
+	 * Note that the solid polygon interior region is defined similarly to point-in-polygon tests,
+	 * that is crossing from outside the polygon to an interior region crosses an odd number of polygon
+	 * edges (including edges of any polygon interior rings), and this holds even when the exterior and
+	 * interior rings intersect each other.
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
@@ -330,7 +344,8 @@ namespace GPlatesMaths
 	 * closest point on polygon *outline* lies) is stored in the integers it references (unless the
 	 * threshold is exceeded, if specified).
 	 * The multi-point index can be used with MultiPointOnSphere::get_point().
-	 * The polygon index can be used with PolygonOnSphere::get_exterior_ring_segment().
+	 * The polygon index can be used with PolygonOnSphere::get_segment().
+	 * Note that the segment index can refer to an interior ring.
 	 * Note that if @a polygon_interior_is_solid is true and any point is inside the polygon then
 	 * the threshold is not exceeded and hence @a closest_indices (if specified) will always store
 	 * the index of the closest point in the multi-point and the index of the closest segment on
@@ -435,6 +450,10 @@ namespace GPlatesMaths
 	 *
 	 * If @a polygon_interior_is_solid is true then anything overlapping the interior of @a polygon
 	 * has a distance of zero (AngularDistance::ZERO), otherwise the distance to the polygon outline.
+	 * Note that the solid polygon interior region is defined similarly to point-in-polygon tests,
+	 * that is crossing from outside the polygon to an interior region crosses an odd number of polygon
+	 * edges (including edges of any polygon interior rings), and this holds even when the exterior and
+	 * interior rings intersect each other.
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
@@ -462,7 +481,8 @@ namespace GPlatesMaths
 	 * The closest point on the polyline lies on the closest segment on the polyline.
 	 * The closest point on the polygon outline lies on the closest segment on the polygon outline.
 	 * The polyline segment index can be used with PolylineOnSphere::get_segment().
-	 * The polygon segment index can be used with PolygonOnSphere::get_exterior_ring_segment().
+	 * The polygon segment index can be used with PolygonOnSphere::get_segment() - note that the
+	 * segment index can refer to an interior ring.
 	 * Note that if @a polygon_interior_is_solid is true and the polyline is entirely inside the
 	 * polygon interior (without intersecting its outline) then the threshold is not exceeded and
 	 * hence @a closest_segment_indices (if specified) will always store the closest segment on the
@@ -553,6 +573,10 @@ namespace GPlatesMaths
 	 * if @a polygon2_interior_is_solid is true and the boundary of @a polygon1 overlaps the interior
 	 * of @a polygon2 then the returned distance will be zero, otherwise...
 	 * the returned distance will be the minimum distance between the polygon outlines.
+	 * Note that the solid polygon interior region is defined similarly to point-in-polygon tests,
+	 * that is crossing from outside the polygon to an interior region crosses an odd number of polygon
+	 * edges (including edges of any polygon interior rings), and this holds even when the exterior and
+	 * interior rings intersect each other.
 	 *
 	 * If @a minimum_distance_threshold is specified then the returned distance will either be less
 	 * than the threshold or AngularDistance::PI (maximum possible distance) to signify threshold exceeded.
@@ -576,7 +600,8 @@ namespace GPlatesMaths
 	 * If @a closest_segment_indices is specified then the index of the closest *segment* on each polygon
 	 * is stored in the integers it references (unless the threshold is exceeded, if specified).
 	 * The closest point on each polygon outline lies on the closest segment of each polygon.
-	 * The segment indices can be used with PolygonOnSphere::get_exterior_ring_segment().
+	 * The segment indices can be used with PolygonOnSphere::get_segment().
+	 * Note that the segment indices can refer to interior rings.
 	 * Note that if @a polygon1_interior_is_solid is true and @a polyline2 is entirely inside @a polygon1
 	 * (without intersecting its outline) then the threshold is not exceeded and hence @a closest_segment_indices
 	 * (if specified) will always store the closest segment on each polygon.

@@ -24,8 +24,32 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+//
+// Workaround for a bug in <CGAL/Delaunay_triangulation_2.h>.
+//
+// http://cgal-discuss.949826.n4.nabble.com/Natural-neighbor-coordinates-infinite-loop-tp4659522p4664137.html
+//
+// By defining CGAL_DT2_USE_RECURSIVE_PROPAGATE_CONFLICTS we can use an alternative piece of code
+// in that file to avoid the bug. The alternate code uses recursive propagation for all depths and
+// does not switch to non-recursive code at depth 100. However there is a risk that we could exceed
+// our C stack memory doing this if the conflict region is large enough (spans many faces).
+// But typical deforming networks in GPlates are not really large enough for this to be a problem.
+//
+// In any case, this workaround is only employed for CGAL < 4.12.2 and CGAL 4.13.0.
+// The bug was fixed in 4.12.2, 4.13.1 and 4.14 (according to the link above).
+//
+// NOTE: This workaround needs to be placed at the top of ".cc" file to prior to any direct or
+//       indirect include of <CGAL/Delaunay_triangulation_2.h>.
+//       It should also be placed at the top of the PCH header used for this (app-logic) project.
+//
+#include <CGAL/config.h>
+#if (CGAL_VERSION_NR < CGAL_VERSION_NUMBER(4, 12, 2)) || (CGAL_VERSION_NR == CGAL_VERSION_NUMBER(4, 13, 0))
+#	define CGAL_DT2_USE_RECURSIVE_PROPAGATE_CONFLICTS
+#endif
+
 #include "ResolvedTriangulationDelaunay2.h"
 
+#include "ResolvedTriangulationNetwork.h"
 #include "ResolvedTriangulationUtils.h"
 
 #include "utils/Earth.h"
@@ -38,6 +62,23 @@ namespace GPlatesAppLogic
 	{
 		const double EARTH_RADIUS_METRES = 1e3 * GPlatesUtils::Earth::MEAN_RADIUS_KMS;
 		const double INVERSE_EARTH_RADIUS_METRES = 1.0 / EARTH_RADIUS_METRES;
+	}
+}
+
+
+GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Delaunay_2(
+		const Network &network,
+		const double &reconstruction_time) :
+	d_network(network),
+	d_reconstruction_time(reconstruction_time),
+	// Modifications to triangulation (such as inserting vertices) continue after constructor
+	// until 'set_finished_modifying_triangulation()' is called by owner class Network...
+	d_finished_modifying_triangulation(false)
+{
+	// See if strain rate clamping requested.
+	if (network.get_strain_rate_clamping().enable_clamping)
+	{
+		d_clamp_total_strain_rate = network.get_strain_rate_clamping().max_total_strain_rate;
 	}
 }
 
@@ -237,6 +278,21 @@ else
 }
 
 
+const GPlatesMaths::AzimuthalEqualAreaProjection &
+GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::get_projection() const
+{
+	return d_network.get_projection();
+}
+
+
+bool
+GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::is_point_in_deforming_region(
+		const GPlatesMaths::PointOnSphere &point) const
+{
+	return d_network.is_point_in_deforming_region(point);
+}
+
+
 GPlatesAppLogic::ResolvedTriangulation::DeformationInfo
 GPlatesAppLogic::ResolvedTriangulation::calculate_face_deformation_info(
 		const Delaunay_2 &delaunay_2,
@@ -344,7 +400,8 @@ GPlatesAppLogic::ResolvedTriangulation::calculate_face_deformation_info(
 	//
 	// This is the velocity spatial gradient tensor L in
 	// chapter 4 of "Introduction to the mechanics of a continuous medium" by Malvern)
-	// which is defined in spherical coordinates in appendix II in equation (II.4.S8).
+	// which is defined in spherical coordinates in appendix II in equation
+	// (equation II.4.S8 - but note it has a typo - incorrectly specifies cot(phi) instead of cot(theta)).
 	const double ugrad_theta_theta = INVERSE_EARTH_RADIUS_METRES * dutheta_dtheta;
 	const double ugrad_theta_phi = INVERSE_EARTH_RADIUS_METRES * inv_sin_theta_centroid * (
 			dutheta_dphi -

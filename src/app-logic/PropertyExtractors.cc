@@ -26,7 +26,7 @@
  */
 
 #include "PropertyExtractors.h"
-#include "presentation/Application.h"
+
 
 const boost::optional<GPlatesAppLogic::PlateIdPropertyExtractor::return_type>
 GPlatesAppLogic::PlateIdPropertyExtractor::operator()(
@@ -71,7 +71,7 @@ GPlatesAppLogic::AgePropertyExtractor::operator()(
 	{
 		// Has a real time of formation.
 		return GPlatesMaths::Real(
-				geo_time->value() - GPlatesPresentation::Application::instance().get_application_state().get_current_reconstruction_time());
+				geo_time->value() - d_application_state.get_current_reconstruction_time());
 	}
 }
 

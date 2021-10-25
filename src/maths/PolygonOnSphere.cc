@@ -44,7 +44,6 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
-#include "global/IntrusivePointerZeroRefCountException.h"
 #include "global/InvalidParametersException.h"
 #include "global/UninitialisedIteratorException.h"
 
@@ -88,8 +87,9 @@ namespace GPlatesMaths
 			PolygonOnSphere::PointInPolygonSpeedAndMemory point_in_polygon_speed_and_memory;
 			unsigned int num_point_in_polygon_calls;
 			boost::optional<PointInPolygon::Polygon> point_in_polygon_tester;
-			boost::optional<PolygonOnSphere::bounding_tree_type> exterior_polygon_bounding_tree;
-			boost::optional< std::vector< boost::shared_ptr<PolygonOnSphere::bounding_tree_type> > > interior_polygon_bounding_trees;
+			boost::optional<PolygonOnSphere::bounding_tree_type> polygon_bounding_tree;
+			boost::optional<PolygonOnSphere::ring_bounding_tree_type> exterior_polygon_bounding_tree;
+			boost::optional< std::vector< boost::shared_ptr<PolygonOnSphere::ring_bounding_tree_type> > > interior_polygon_bounding_trees;
 		};
 
 
@@ -512,7 +512,8 @@ GPlatesMaths::PolygonOnSphere::get_orientation() const
 bool
 GPlatesMaths::PolygonOnSphere::is_point_in_polygon(
 		const PointOnSphere &point,
-		PointInPolygonSpeedAndMemory speed_and_memory) const
+		PointInPolygonSpeedAndMemory speed_and_memory,
+		bool use_point_on_polygon_threshold) const
 {
 	if (!d_cached_calculations)
 	{
@@ -576,7 +577,7 @@ GPlatesMaths::PolygonOnSphere::is_point_in_polygon(
 	// If we have an optimised point-in-polygon tester then use it.
 	if (d_cached_calculations->point_in_polygon_tester)
 	{
-		return d_cached_calculations->point_in_polygon_tester->is_point_in_polygon(point);
+		return d_cached_calculations->point_in_polygon_tester->is_point_in_polygon(point, use_point_on_polygon_threshold);
 	}
 
 	// Since the low-speed test does not include a bounds test we will perform one here
@@ -592,7 +593,7 @@ GPlatesMaths::PolygonOnSphere::is_point_in_polygon(
 	}
 
 	// The low speed test doesn't have any cached structures - it's just a function call.
-	return PointInPolygon::is_point_in_polygon(point, *this);
+	return PointInPolygon::is_point_in_polygon(point, *this, use_point_on_polygon_threshold);
 }
 
 
@@ -699,6 +700,61 @@ GPlatesMaths::PolygonOnSphere::get_inner_outer_bounding_small_circle() const
 
 
 const GPlatesMaths::PolygonOnSphere::bounding_tree_type &
+GPlatesMaths::PolygonOnSphere::get_bounding_tree() const
+{
+	if (!d_cached_calculations)
+	{
+		d_cached_calculations = new PolygonOnSphereImpl::CachedCalculations();
+	}
+
+	// Calculate the small circle bounding tree for *all* rings, if it's not cached.
+	if (!d_cached_calculations->polygon_bounding_tree)
+	{
+		// Since our 'const_iterator' covers all rings (exterior and interior) we need to partition
+		// the sequence into separate disconnected partitions (rings) to get a good bounding tree.
+		//
+		// We only need separators *between* partitions (rings) which means we only need to insert
+		// separators at the beginning of interior rings. Note that the beginning of the first
+		// interior ring is the same as the end of the exterior ring. So we advance our 'const_iterator'
+		// to the beginning of each interior ring and copy those iterators as partition separators.
+		boost::optional<const bounding_tree_type::partition_separator_seq_type &> partition_separators;
+		bounding_tree_type::partition_separator_seq_type partition_separators_storage;
+		if (!d_interior_rings.empty())
+		{
+			// The first partition separator is at the end of the exterior ring
+			// (which is also the beginning of the first interior ring).
+			const_iterator partition_separator = begin();
+			std::advance(partition_separator, d_exterior_ring.size());
+
+			ring_sequence_const_iterator interior_ring_seq_iter = d_interior_rings.begin();
+			ring_sequence_const_iterator interior_ring_seq_end = d_interior_rings.end();
+			for ( ; interior_ring_seq_iter != interior_ring_seq_end; ++interior_ring_seq_iter)
+			{
+				partition_separators_storage.push_back(partition_separator);
+
+				// Advance to the beginning of the next interior ring.
+				const ring_type &interior_ring = *interior_ring_seq_iter;
+				std::advance(partition_separator, interior_ring.size());
+			}
+
+			// We're using partitions (since have interior rings).
+			partition_separators = partition_separators_storage;
+		}
+		// else not using partitions, so leave 'partition_separators' as none.
+
+		// Pass the PolyGreatCircleArcBoundingTree constructor parameters to construct a new object
+		// directly in-place inside the boost::optional since PolyGreatCircleArcBoundingTree is non-copyable.
+		//
+		// Note that we *don't* ask the bounding tree to keep a shared reference to us
+		// otherwise we get circular shared pointer references and a memory leak.
+		d_cached_calculations->polygon_bounding_tree = boost::in_place(begin(), end(), partition_separators);
+	}
+
+	return d_cached_calculations->polygon_bounding_tree.get();
+}
+
+
+const GPlatesMaths::PolygonOnSphere::ring_bounding_tree_type &
 GPlatesMaths::PolygonOnSphere::get_exterior_ring_bounding_tree() const
 {
 	if (!d_cached_calculations)
@@ -721,7 +777,7 @@ GPlatesMaths::PolygonOnSphere::get_exterior_ring_bounding_tree() const
 }
 
 
-const GPlatesMaths::PolygonOnSphere::bounding_tree_type &
+const GPlatesMaths::PolygonOnSphere::ring_bounding_tree_type &
 GPlatesMaths::PolygonOnSphere::get_interior_ring_bounding_tree(
 		size_type interior_ring_index) const
 {
@@ -735,7 +791,7 @@ GPlatesMaths::PolygonOnSphere::get_interior_ring_bounding_tree(
 	// Calculate the small circle bounding tree of each interior ring if they're not cached.
 	if (!d_cached_calculations->interior_polygon_bounding_trees)
 	{
-		typedef std::vector< boost::shared_ptr<bounding_tree_type> > bounding_tree_seq_type;
+		typedef std::vector< boost::shared_ptr<ring_bounding_tree_type> > bounding_tree_seq_type;
 
 		d_cached_calculations->interior_polygon_bounding_trees = bounding_tree_seq_type();
 		bounding_tree_seq_type &interior_polygon_bounding_trees =
@@ -748,8 +804,8 @@ GPlatesMaths::PolygonOnSphere::get_interior_ring_bounding_tree(
 			// Note that we *don't* ask the bounding tree to keep a shared reference to us
 			// otherwise we get circular shared pointer references and a memory leak.
 			interior_polygon_bounding_trees.push_back(
-					boost::shared_ptr<bounding_tree_type>(
-							new bounding_tree_type(
+					boost::shared_ptr<ring_bounding_tree_type>(
+							new ring_bounding_tree_type(
 									interior_ring_begin(i),
 									interior_ring_end(i))));
 		}
@@ -760,6 +816,258 @@ GPlatesMaths::PolygonOnSphere::get_interior_ring_bounding_tree(
 			GPLATES_ASSERTION_SOURCE);
 
 	return *d_cached_calculations->interior_polygon_bounding_trees.get()[interior_ring_index];
+}
+
+
+const GPlatesMaths::GreatCircleArc &
+GPlatesMaths::PolygonOnSphere::ConstIterator::dereference() const
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::UninitialisedIteratorException>(
+			d_polygon_ptr,
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to dereference an uninitialised iterator.");
+
+	return *d_current_ring_iter;
+}
+
+
+void
+GPlatesMaths::PolygonOnSphere::ConstIterator::increment()
+{
+	if (d_polygon_ptr == NULL)
+	{
+		// This iterator is uninitialised, so this function will be a no-op.
+		return;
+	}
+
+	// Make sure caller not attempting to increment beyond last ring.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_current_ring_iter != d_current_ring_ptr->end(),
+			GPLATES_ASSERTION_SOURCE);
+
+	++d_current_ring_iter;
+
+	if (d_current_ring_iter == d_current_ring_ptr->end())
+	{
+		if (d_current_ring_id < d_polygon_ptr->d_interior_rings.size())
+		{
+			// Advance to an interior ring (from either the exterior ring or an interior ring).
+			++d_current_ring_id;
+
+			// Note: Ring id and interior ring index are offset by one.
+			d_current_ring_ptr = &d_polygon_ptr->d_interior_rings[d_current_ring_id - 1];
+			d_current_ring_iter = d_current_ring_ptr->begin();
+		}
+		else
+		{
+			// We're at end of all rings so just leave current iterator pointing to end
+			// of current ring (which is either the exterior ring, or last interior ring if any).
+			return;
+		}
+	}
+}
+
+
+void
+GPlatesMaths::PolygonOnSphere::ConstIterator::decrement()
+{
+	if (d_polygon_ptr == NULL)
+	{
+		// This iterator is uninitialised, so this function will be a no-op.
+		return;
+	}
+
+	if (d_current_ring_iter == d_current_ring_ptr->begin())
+	{
+		// Make sure caller not attempting to decrement prior to first (exterior) ring.
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				d_current_ring_id > 0,
+				GPLATES_ASSERTION_SOURCE);
+
+		--d_current_ring_id;
+
+		if (d_current_ring_id == 0)
+		{
+			// We've moved into the exterior ring (from the first interior ring).
+			d_current_ring_ptr = &d_polygon_ptr->d_exterior_ring;
+		}
+		else
+		{
+			// Note: Ring id and interior ring index are offset by one.
+			d_current_ring_ptr = &d_polygon_ptr->d_interior_rings[d_current_ring_id - 1];
+		}
+
+		d_current_ring_iter = d_current_ring_ptr->end();
+	}
+
+	--d_current_ring_iter;
+}
+
+
+bool
+GPlatesMaths::PolygonOnSphere::ConstIterator::equal(
+		const ConstIterator &other) const
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::UninitialisedIteratorException>(
+			d_polygon_ptr && other.d_polygon_ptr,
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to compare an uninitialised iterator.");
+
+	return d_current_ring_id == other.d_current_ring_id &&
+			d_current_ring_iter == other.d_current_ring_iter;
+}
+
+
+void
+GPlatesMaths::PolygonOnSphere::ConstIterator::advance(
+		ConstIterator::difference_type n)
+{
+	if (d_polygon_ptr == NULL)
+	{
+		// This iterator is uninitialised, so this function will be a no-op.
+		return;
+	}
+
+	if (n > 0)
+	{
+		// Advance forward through the rings if necessary.
+		while (n >= d_current_ring_ptr->end() - d_current_ring_iter)
+		{
+			// Advance forward through all remaining elements in the current ring.
+			n -= d_current_ring_ptr->end() - d_current_ring_iter;
+
+			if (d_current_ring_id < d_polygon_ptr->d_interior_rings.size())
+			{
+				// Advance to an interior ring (from either the exterior ring or an interior ring).
+				++d_current_ring_id;
+
+				// Note: Ring id and interior ring index are offset by one.
+				d_current_ring_ptr = &d_polygon_ptr->d_interior_rings[d_current_ring_id - 1];
+				d_current_ring_iter = d_current_ring_ptr->begin();
+			}
+			else
+			{
+				// Make sure we've not been asked to advance *past* the end of all rings.
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						n == 0,
+						GPLATES_ASSERTION_SOURCE);
+
+				// We're at end of all rings so just leave current iterator pointing to end
+				// of current ring (which is either the exterior ring, or last interior ring if any).
+				d_current_ring_iter = d_current_ring_ptr->end();
+				return;
+			}
+		}
+		
+		// The desired iterator is now in the current ring, so advance (forward) within the current ring.
+		std::advance(d_current_ring_iter, n);
+	}
+	else if (n < 0)
+	{
+		// Advance backward through the rings if necessary.
+		while (n < d_current_ring_ptr->begin() - d_current_ring_iter)
+		{
+			// Advance backward through all remaining elements in the current ring.
+			//
+			// Note: This might subtract zero if current iterator at beginning of current ring.
+			// In this case we will just be advancing (backward) to the previous ring with
+			// no change in 'n' until the next look iteration.
+			n -= d_current_ring_ptr->begin() - d_current_ring_iter;
+
+			// Make sure we've not been asked to advance *before* the beginning of all rings.
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					d_current_ring_id > 0,
+					GPLATES_ASSERTION_SOURCE);
+
+			--d_current_ring_id;
+
+			if (d_current_ring_id == 0)
+			{
+				// We've moved into the exterior ring (from the first interior ring).
+				d_current_ring_ptr = &d_polygon_ptr->d_exterior_ring;
+			}
+			else
+			{
+				// Note: Ring id and interior ring index are offset by one.
+				d_current_ring_ptr = &d_polygon_ptr->d_interior_rings[d_current_ring_id - 1];
+			}
+
+			d_current_ring_iter = d_current_ring_ptr->end();
+		}
+		
+		// The desired iterator is now in the current ring, so advance (backward) within the current ring.
+		std::advance(d_current_ring_iter, n);
+	}
+}
+
+
+GPlatesMaths::PolygonOnSphere::ConstIterator::difference_type
+GPlatesMaths::PolygonOnSphere::ConstIterator::distance_to(
+		const ConstIterator &other) const
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::UninitialisedIteratorException>(
+			d_polygon_ptr && other.d_polygon_ptr,
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to compare an uninitialised iterator.");
+
+	const int ring_id_difference = other.d_current_ring_id - d_current_ring_id;
+
+	if (ring_id_difference == 0)
+	{
+		// Both iterators reference the same ring, so just return the difference.
+		return std::distance(d_current_ring_iter, other.d_current_ring_iter);
+	}
+
+	difference_type difference = 0;
+
+	// Ring iteration variables for going forward or backward through the rings.
+	int ring_id_increment;
+	unsigned int num_rings_to_difference;
+	if (ring_id_difference > 0)
+	{
+		ring_id_increment = 1;
+		num_rings_to_difference = ring_id_difference;
+
+		// Add in the difference from current iterator to the beginning of the current ring.
+		// We use begin of current ring since we'll be adding current ring size to go to next ring.
+		difference += std::distance(d_current_ring_iter, d_current_ring_ptr->begin());
+
+		// Add in the difference from beginning of current ring (in 'other' iterator) to
+		// current ring iterator (in 'other' iterator).
+		// We use begin of ring since we used begin above.
+		difference += std::distance(other.d_current_ring_ptr->begin(), other.d_current_ring_iter);
+	}
+	else // ring_id_difference < 0 ...
+	{
+		ring_id_increment = -1;
+		num_rings_to_difference = -ring_id_difference;
+
+		// Add in the difference from current iterator to the end of the current ring.
+		// We use end of current ring since we'll be subtracting current ring size to go to previous ring.
+		difference += std::distance(d_current_ring_iter, d_current_ring_ptr->end());
+
+		// Add in the difference from end of current ring (in 'other' iterator) to
+		// current ring iterator (in 'other' iterator).
+		// We use end of ring since we used end above.
+		difference += std::distance(other.d_current_ring_ptr->end(), other.d_current_ring_iter);
+	}
+
+	// Advance (forward or backward) through the rings.
+	unsigned int ring_id = d_current_ring_id;
+	for (unsigned int n = 0; n < num_rings_to_difference; ++n, ring_id += ring_id_increment)
+	{
+		if (ring_id == 0)
+		{
+			difference += ring_id_increment * d_polygon_ptr->d_exterior_ring.size();
+		}
+		else
+		{
+			// Note: Ring id and interior ring index are offset by one.
+			difference += ring_id_increment * d_polygon_ptr->d_interior_rings[ring_id - 1].size();
+		}
+	}
+
+	return difference;
 }
 
 

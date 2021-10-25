@@ -53,7 +53,6 @@
 #include "file-io/GpmlOutputVisitor.h"
 #include "file-io/GpmlPropertyStructuralTypeReader.h"
 #include "file-io/PlatesLineFormatWriter.h"
-#include "file-io/XmlOutputInterface.h"
 
 #include "file-io/GpmlReader.h"
 #include "file-io/ReadErrorAccumulation.h"

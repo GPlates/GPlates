@@ -30,7 +30,7 @@
 #include <QMessageBox>
 #include <QVBoxLayout>
 
-#include "GenerateCrustalThicknessPointsDialog.h"
+#include "GenerateDeformingMeshPointsDialog.h"
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FeatureCollectionFileState.h"
@@ -126,19 +126,19 @@ namespace
 
 
 const GPlatesPropertyValues::ValueObjectType
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::GPML_CRUSTAL_THICKNESS =
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::GPML_CRUSTAL_THICKNESS =
 		GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThickness");
 
 const GPlatesPropertyValues::ValueObjectType
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::GPML_CRUSTAL_STRETCHING_FACTOR =
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::GPML_CRUSTAL_STRETCHING_FACTOR =
 		GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalStretchingFactor");
 
 const GPlatesPropertyValues::ValueObjectType
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::GPML_CRUSTAL_THINNING_FACTOR =
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::GPML_CRUSTAL_THINNING_FACTOR =
 		GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThinningFactor");
 
 
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::GenerateCrustalThicknessPointsDialog(
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::GenerateDeformingMeshPointsDialog(
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_) :
 	GPlatesDialog(
@@ -198,7 +198,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::GenerateCrustalThickness
 
 
 void
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::initialise()
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::initialise()
 {
 	d_focused_boundary_polygon = boost::none;
 
@@ -211,7 +211,12 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::initialise()
 		// can still specify a lat/lon extent.
 		d_focused_boundary_polygon =
 				GPlatesAppLogic::ReconstructionGeometryUtils::get_boundary_polygon(
-						d_feature_focus.associated_reconstruction_geometry());
+						d_feature_focus.associated_reconstruction_geometry(),
+						false/*include_network_rigid_block_holes*/),
+		d_focused_boundary_polygon_with_rigid_block_holes =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_boundary_polygon(
+						d_feature_focus.associated_reconstruction_geometry(),
+						true/*include_network_rigid_block_holes*/);
 	}
 
 	initialise_widgets();
@@ -219,7 +224,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::initialise()
 
 
 void
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::initialise_widgets()
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::initialise_widgets()
 {
 	// Default to plate ID zero.
 	GPlatesModel::integer_plate_id_type reconstruction_plate_id = 0;
@@ -302,7 +307,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::initialise_widgets()
 
 
 void
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_create()
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::handle_create()
 {
 	// When a new crustal thickness feature is added to a new feature collection it will trigger the
 	// creation of a new layer. However a new layer could be created from anywhere, so we only look
@@ -337,14 +342,19 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_create()
 		if (focused_feature_radio_button->isChecked())
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					d_focused_boundary_polygon,
+					d_focused_boundary_polygon &&
+						d_focused_boundary_polygon_with_rigid_block_holes,
 					GPLATES_ASSERTION_SOURCE);
 
 			GPlatesMaths::GeneratePoints::create_uniform_points_in_polygon(
 						domain_points,
 						point_density_level,
 						point_random_offset,
-						*d_focused_boundary_polygon.get());
+						include_points_in_rigid_blocks_checkbox->isChecked()
+								? *d_focused_boundary_polygon.get()
+								// Points will *not* be generated inside rigid blocks because they are
+								// actually outside the *filled* polygon (they are not filled)...
+								: *d_focused_boundary_polygon_with_rigid_block_holes.get());
 		}
 		else // points in lat/lon extent ...
 		{
@@ -503,17 +513,18 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_create()
 
 
 void
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_cancel()
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::handle_cancel()
 {
 	reject();
 }
 
 
 void
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::setup_pages()
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::setup_pages()
 {
 	// Radio buttons to select focus feature boundary or lat/lon extent.
 	focused_feature_radio_button->setEnabled(false);
+	include_points_in_rigid_blocks_checkbox->setEnabled(false);
 	lat_lon_extent_radio_button->setChecked(true);
 	points_region_lat_lon_group_box->setEnabled(true);
 	QObject::connect(
@@ -522,6 +533,9 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::setup_pages()
 	QObject::connect(
 			lat_lon_extent_radio_button, SIGNAL(toggled(bool)),
 			this, SLOT(handle_points_region_mode_button(bool)));
+
+	// Don't generate points inside network interior rigid blocks (by default).
+	include_points_in_rigid_blocks_checkbox->setChecked(false);
 
 	//
 	// Lat/lon extent.
@@ -632,7 +646,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::setup_pages()
 
 
 void
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_previous()
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::handle_previous()
 {
 	if (stacked_widget->currentIndex() == COLLECTION_PAGE)
 	{
@@ -646,7 +660,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_previous()
 
 
 void
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_next()
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::handle_next()
 {
 	if (stacked_widget->currentIndex() == GENERATE_POINTS_PAGE)
 	{
@@ -660,7 +674,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_next()
 
 
 void
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_points_region_mode_button(
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::handle_points_region_mode_button(
 		bool checked)
 {
 	// All radio buttons in the group are connected to the same slot (this method).
@@ -678,6 +692,10 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_points_region_mod
 	focused_feature_radio_button->setEnabled(
 			static_cast<bool>(d_focused_boundary_polygon));
 
+	// Include-rigid-blocks only enabled when focused feature button checked.
+	include_points_in_rigid_blocks_checkbox->setEnabled(
+			focused_feature_radio_button->isChecked());
+
 	// Lat/lon extents only enabled when lat/lon extent button checked.
 	points_region_lat_lon_group_box->setEnabled(
 			lat_lon_extent_radio_button->isChecked());
@@ -685,7 +703,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_points_region_mod
 
 
 void
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_left_extents_spin_box_value_changed(
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::handle_left_extents_spin_box_value_changed(
 		double value)
 {
 	const double left = value;
@@ -716,7 +734,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_left_extents_spin
 
 
 void
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_right_extents_spin_box_value_changed(
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::handle_right_extents_spin_box_value_changed(
 		double value)
 {
 	const double right = value;
@@ -747,7 +765,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_right_extents_spi
 
 
 void
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_use_global_extents_button_clicked()
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::handle_use_global_extents_button_clicked()
 {
 	// Global coverage.
 	top_extents_spinbox->setValue(90.0);
@@ -758,7 +776,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_use_global_extent
 
 
 void
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_point_density_spin_box_value_changed(
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::handle_point_density_spin_box_value_changed(
 		int)
 {
 	display_point_density_spacing();
@@ -766,7 +784,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_point_density_spi
 
 
 void
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_visual_layer_added(
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::handle_visual_layer_added(
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer)
 {
 	// Only interested in new layers created as a result of us.
@@ -784,7 +802,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::handle_visual_layer_adde
 
 
 void
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::make_generate_points_page_current()
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::make_generate_points_page_current()
 {
 	button_previous->setEnabled(false);
 	button_next->setEnabled(true);
@@ -796,7 +814,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::make_generate_points_pag
 
 
 void
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::make_properties_page_current()
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::make_properties_page_current()
 {
 	button_previous->setEnabled(true);
 	button_next->setEnabled(true);
@@ -808,7 +826,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::make_properties_page_cur
 
 
 void
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::make_feature_collection_page_current()
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::make_feature_collection_page_current()
 {
 	button_previous->setEnabled(true);
 	button_next->setEnabled(false);
@@ -821,7 +839,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::make_feature_collection_
 
 
 void
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::display_point_density_spacing()
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::display_point_density_spacing()
 {
 	const unsigned int point_density_level = point_density_spin_box->value();
 
@@ -834,7 +852,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::display_point_density_sp
 
 
 GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::reverse_reconstruct_geometry(
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::reverse_reconstruct_geometry(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geom,
 		const double &reconstruction_time,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref)
@@ -876,7 +894,7 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::reverse_reconstruct_geom
 
 
 void
-GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::open_topology_reconstruction_parameters_dialog(
+GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::open_topology_reconstruction_parameters_dialog(
 		boost::weak_ptr<GPlatesPresentation::VisualLayer> reconstruct_visual_layer)
 {
 	if (!d_set_topology_reconstruction_parameters_dialog)
@@ -907,19 +925,20 @@ GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog::open_topology_reconstruc
 
 			// This dialog is shown modally.
 			// Note that the user may change various layer parameters here.
-			d_set_topology_reconstruction_parameters_dialog->exec();
-
 			//
-			// Note that user only has option to accept dialog.
-			// So we'll go ahead and turn on "reconstruct using topologies" (it starts out turned off by default).
-			// This will then trigger the lengthy generation of the history of topologically-reconstructed crustal thicknesses
-			// using the parameters configured above by the user.
-			//
-			// Switch to using topologies.
-			// Note that we reload the reconstruct parameters since user may have modified them.
-			reconstruct_params = layer_params->get_reconstruct_params();
-			reconstruct_params.set_reconstruct_using_topologies(true);
-			layer_params->set_reconstruct_params(reconstruct_params);
+			// Since we've disabled the 'cancel' button, the user should only have the option to accept the dialog.
+			// However they can still press the Escape key to reject the dialog, so we'll only turn on
+			// "reconstruct using topologies" (it starts out turned off by default) if they accepted.
+			// This will then trigger the lengthy generation of the history of topologically-reconstructed
+			// crustal thicknesses using the parameters configured by the user.
+			if (d_set_topology_reconstruction_parameters_dialog->exec()== QDialog::Accepted)
+			{
+				// Switch to using topologies.
+				// Note that we reload the reconstruct parameters since user may have modified them.
+				reconstruct_params = layer_params->get_reconstruct_params();
+				reconstruct_params.set_reconstruct_using_topologies(true);
+				layer_params->set_reconstruct_params(reconstruct_params);
+			}
 		}
 	}
 }

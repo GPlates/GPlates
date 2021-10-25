@@ -83,6 +83,12 @@ GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::ExportResolvedTopologyOpt
 			? Qt::Checked
 			: Qt::Unchecked);
 
+	// Topological sections.
+	export_resolved_boundary_segments_checkbox->setCheckState(
+		d_export_configuration.export_topological_sections
+		? Qt::Checked
+		: Qt::Unchecked);
+
 	// Enable polygons options only if exporting resolved polygons or networks.
 	polygon_options->setEnabled(
 			d_export_configuration.export_topological_polygons ||
@@ -159,6 +165,11 @@ GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::make_signal_slot_connecti
 			this,
 			SLOT(react_export_resolved_geometry_check_box_state_changed(int)));
 	QObject::connect(
+		export_resolved_boundary_segments_checkbox,
+		SIGNAL(stateChanged(int)),
+		this,
+		SLOT(react_export_resolved_geometry_check_box_state_changed(int)));
+	QObject::connect(
 			force_polygon_orientation_checkbox,
 			SIGNAL(stateChanged(int)),
 			this,
@@ -178,6 +189,7 @@ GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::react_export_resolved_geo
 	d_export_configuration.export_topological_lines = export_resolved_lines_checkbox->isChecked();
 	d_export_configuration.export_topological_polygons = export_resolved_polygons_checkbox->isChecked();
 	d_export_configuration.export_topological_networks = export_resolved_networks_checkbox->isChecked();
+	d_export_configuration.export_topological_sections = export_resolved_boundary_segments_checkbox->isChecked();
 
 	// Enable polygons options only if exporting resolved polygons or networks.
 	polygon_options->setEnabled(

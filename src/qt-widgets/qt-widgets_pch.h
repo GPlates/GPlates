@@ -171,7 +171,6 @@
 #include <boost/checked_delete.hpp>
 #endif // __WINDOWS__
 #include <QtGui/QRadioButton>
-#include <proj_api.h>
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QFocusEvent>

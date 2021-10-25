@@ -56,9 +56,6 @@
 
 #include "presentation/ViewState.h"
 
-#include "qt-widgets/TaskPanel.h"
-#include "qt-widgets/ViewportWindow.h"
-
 
 
 GPlatesViewOperations::MoveVertexGeometryOperation::MoveVertexGeometryOperation(

@@ -28,8 +28,8 @@
 
 #include <set>
 #include <utility>
+#include <vector>
 #include <boost/optional.hpp>
-#include <boost/tuple/tuple.hpp>
 #include <QString>
 
 #include "ReconstructedFeatureGeometry.h"
@@ -147,7 +147,7 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Finds all topological section features referenced by the topological feature
+		 * Inserts all topological section features referenced by the topological feature
 		 * @a topology_feature_ref (which can be a topological line, boundary or network).
 		 *
 		 * If @a topology_geometry_type is specified then only matching topology geometries in
@@ -173,6 +173,17 @@ namespace GPlatesAppLogic
 		find_topological_sections_referenced(
 				std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &topology_feature_collection_ref,
+				boost::optional<TopologyGeometry::Type> topology_geometry_type = boost::none,
+				boost::optional<double> reconstruction_time = boost::none);
+
+		/**
+		 * An overload of @a find_topological_sections_referenced accepting a vector of
+		 * topological features instead of a feature collection.
+		 */
+		void
+		find_topological_sections_referenced(
+				std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
+				const std::vector<GPlatesModel::FeatureHandle::weak_ref> &topology_features,
 				boost::optional<TopologyGeometry::Type> topology_geometry_type = boost::none,
 				boost::optional<double> reconstruction_time = boost::none);
 
@@ -260,225 +271,6 @@ namespace GPlatesAppLogic
 				const GPlatesModel::FeatureHandle::iterator &geometry_property,
 				const double &reconstruction_time,
 				boost::optional<const std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none);
-
-
-		/**
-		 * Intersects geometries @a first_section_reconstructed_geometry and
-		 * @a second_section_reconstructed_geometry if they are intersectable
-		 * (see @a get_polylines_for_intersection) and returns the two intersected
-		 * head and tail segments for each section.
-		 *
-		 * If the geometries are not intersectable (eg, point/multi-point) then false is returned.
-		 * If the geometries are intersectable but do not intersect then false is returned.
-		 *
-		 * The returned @a PointOnSphere is the intersection point if the sections
-		 * intersected.
-		 *
-		 * It's possible for the intersection to form a T-junction where
-		 * one polyline is divided into two but the other meets at either
-		 * its own start or end point - which will result in one of the sections
-		 * returning a head and tail while the other returning either a head or a tail
-		 * depending on whether the T-junction is a regular T or an upside-down T respectively.
-		 *
-		 * Or even a V-junction where each polyline meets at one of its endpoints
-		 * (either begin or end). Again there are various possible combinations
-		 * leading to different head/tail combinations in the returned result:
-		 *    first section's start point meets second section's start point or,
-		 *    first section's start point meets second section's end point or,
-		 *    first section's end point meets second section's start point or,
-		 *    first section's end point meets second section's end point.
-		 *
-		 * It is guaranteed that if there's an intersection then each section will
-		 * return at least either a head or a tail.
-		 *
-		 * If there is more than one intersection then only the first intersection is
-		 * considered such that this function still divides the two input sections into
-		 * (up to) two segments each (instead of several segments each).
-		 * It does this by concatenating divided segments (of each section) before or after
-		 * the intersection point into a single segment.
-		 */
-		boost::optional<
-			boost::tuple<
-				/*intersection point*/
-				GPlatesMaths::PointOnSphere,
-				/*head_first_section*/
-				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
-				/*tail_first_section*/
-				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
-				/*head_second_section*/
-				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
-				/*tail_second_section*/
-				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> > >
-		intersect_topological_sections(
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type first_section_reconstructed_geometry,
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type second_section_reconstructed_geometry);
-
-
-		/**
-		 * Same as above overload of @a intersect_topological_sections but accepts and
-		 * returns @a PolylineOnSphere objects instead of @a GeometryOnSphere objects.
-		 *
-		 * The above overload of @a intersect_topological_sections basically calls
-		 * @a get_polylines_for_intersection and then calls this function internally.
-		 *
-		 * This method is useful when you need to know whether the two geometries are even
-		 * intersectable (eg, consist of polylines and/or polygons).
-		 * 
-		 */
-		boost::optional<
-			boost::tuple<
-				/*intersection point*/
-				GPlatesMaths::PointOnSphere,
-				/*head_first_section*/
-				boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
-				/*tail_first_section*/
-				boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
-				/*head_second_section*/
-				boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
-				/*tail_second_section*/
-				boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> > >
-		intersect_topological_sections(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type first_section_reconstructed_geometry,
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_section_reconstructed_geometry);
-
-
-		/**
-		 * Intersects geometries @a first_section_reconstructed_geometry and
-		 * @a second_section_reconstructed_geometry if they are intersectable
-		 * (see @a get_polylines_for_intersection) allowing up to two intersections
-		 * and returns optional head, tail and middle segments for each section.
-		 *
-		 * If the geometries are not intersectable (eg, point/multi-point) then false is returned.
-		 * If the geometries are intersectable but do not intersect then false is returned.
-		 *
-		 * The first @a PointOnSphere returned is if there's one intersection.
-		 * The second optional @a PointOnSphere returned is if there's a second intersection.
-		 *
-		 * The middle segments will be null unless there is a second intersection.
-		 *
-		 * If there are two intersections then it's possible to form a circle where
-		 * the endpoints of both sections meet - which will result in the head and tail segments
-		 * of each section returning null. There are various other combinations that involve
-		 * some head and tail segments being non-null all the way to the general case of
-		 * all head, tail and middle segments being non-null.
-		 *
-		 * If there is one intersection it is guaranteed that each section will
-		 * return at least either a head or a tail segment.
-		 *
-		 * If there are two intersections it is guaranteed that each section will
-		 * return at least a middle segment.
-		 *
-		 * If there are more than two intersections then only the first two intersections
-		 * are considered such that this function still divides the two input sections into
-		 * (up to) three segments each (instead of several segments each).
-		 * It does this by concatenating divided segments (of each section) before the first
-		 * intersection point or after the second intersection point into a single segment.
-		 */
-		boost::optional<
-			boost::tuple<
-				/*first intersection point*/
-				GPlatesMaths::PointOnSphere,
-				/*optional second intersection point*/
-				boost::optional<GPlatesMaths::PointOnSphere>,
-				/*optional info if two intersections and middle segments form a cycle*/
-				boost::optional<bool>,
-				/*optional head_first_section*/
-				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
-				/*optional middle_first_section*/
-				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
-				/*optional tail_first_section*/
-				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
-				/*optional head_second_section*/
-				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
-				/*optional middle_second_section*/
-				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
-				/*optional tail_second_section*/
-				boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> > >
-		intersect_topological_sections_allowing_two_intersections(
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type first_section_reconstructed_geometry,
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type second_section_reconstructed_geometry);
-
-
-		/**
-		 * Same as above overload of @a intersect_topological_sections_allowing_two_intersections
-		 * but accepts and returns @a PolylineOnSphere objects instead of @a GeometryOnSphere objects.
-		 *
-		 * The above overload of @a intersect_topological_sections_allowing_two_intersections
-		 * basically calls @a get_polylines_for_intersection and then calls this function internally.
-		 */
-		boost::optional<
-			boost::tuple<
-				/*first intersection point*/
-				GPlatesMaths::PointOnSphere,
-				/*optional second intersection point*/
-				boost::optional<GPlatesMaths::PointOnSphere>,
-				/*optional info if two intersections and middle segments form a cycle*/
-				boost::optional<bool>,
-				/*optional head_first_section*/
-				boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
-				/*optional middle_first_section*/
-				boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
-				/*optional tail_first_section*/
-				boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
-				/*optional head_second_section*/
-				boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
-				/*optional middle_second_section*/
-				boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>,
-				/*optional tail_second_section*/
-				boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> > >
-		intersect_topological_sections_allowing_two_intersections(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type first_section_reconstructed_geometry,
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type second_section_reconstructed_geometry);
-
-
-		/**
-		 * Returns geometries @a first_geometry and @a second_geometry as @a PolylineOnSphere
-		 * geometries if they are intersectable, otherwise returns false.
-		 *
-		 * If either geometries is a point or multi-point then the geometries are
-		 * not intersectable and false is returned. If the two geometries consist of polylines
-		 * and/or polygons then the polygon geometries get converted to polylines before returning
-		 * (however only the exterior rings of polygons are used - interior rings are ignored).
-		 *
-		 * The output of this function is designed to be used with
-		 * @a PolylineIntersections::partition_intersecting_polylines.
-		 */
-		boost::optional<
-			std::pair<
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> >
-		get_polylines_for_intersection(
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type first_section_geometry,
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type second_section_geometry);
-
-
-		/**
-		 * Join adjacent deforming points that are spread along a deforming zone.
-		 *
-		 * Contiguous sub-segments, each whose feature contains a 'gpml:unclassifiedGeometry' point
-		 * geometry, are combined into a single sub-segment. If none are found then the original
-		 * sub-segment sequence is returned. The combined sub-segment is joined with the end point
-		 * of the previous (non-joined) sub-segment and with the start point of the next (non-joined)
-		 * sub-segment - unless *all* sub-segments are joined.
-		 * The feature reference and reconstruction geometry associated with each joined sub-segment
-		 * is that of the *first* sub-segment in the sequence that were joined - this is a bit
-		 * arbitrary but highlights that this joining is a hack (see below).
-		 *
-		 * This was meant to be a temporary hack to be removed now that resolved *line* topologies
-		 * have been implemented. However, unfortunately it seems we need to keep this hack in place
-		 * for any old data files that use the old method.
-		 *
-		 * Prior to the ability to have resolved *line* topologies, a deforming zone was deformed by
-		 * individually moving point geometries spread out along the deforming zone (each moving
-		 * according to a separate Plate ID). Exporting these required joining adjacent deforming
-		 * point geometries into one deforming polyline subsegment. That's no longer needed now that
-		 * resolved *line* topologies can be used.
-		 */
-		void
-		join_adjacent_deforming_points(
-				sub_segment_seq_type &merged_sub_segments,
-				const sub_segment_seq_type &sub_segments,
-				const double &reconstruction_time);
 
 		
 		/**

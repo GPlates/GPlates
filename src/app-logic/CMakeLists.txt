@@ -186,23 +186,29 @@ set(srcs
     ResolvedRaster.h
     ResolvedScalarField3D.cc
     ResolvedScalarField3D.h
+    ResolvedSubSegmentRangeInSection.cc
+    ResolvedSubSegmentRangeInSection.h
+    ResolvedTopologicalBoundary.cc
     ResolvedTopologicalBoundary.h
     ResolvedTopologicalGeometry.h
+    ResolvedTopologicalGeometrySubSegment.cc
     ResolvedTopologicalGeometrySubSegment.h
+    ResolvedTopologicalLine.cc
     ResolvedTopologicalLine.h
     ResolvedTopologicalNetwork.cc
     ResolvedTopologicalNetwork.h
     ResolvedTopologicalSection.h
+    ResolvedTopologicalSharedSubSegment.cc
     ResolvedTopologicalSharedSubSegment.h
-    ResolvedTriangulationConstrainedDelaunay2.cc
-    ResolvedTriangulationConstrainedDelaunay2.h
+    ResolvedTopologicalSubSegmentImpl.cc
+    ResolvedTopologicalSubSegmentImpl.h
     ResolvedTriangulationDelaunay2.cc
     ResolvedTriangulationDelaunay2.h
-    ResolvedTriangulationDelaunay3.cc
-    ResolvedTriangulationDelaunay3.h
     ResolvedTriangulationNetwork.cc
     ResolvedTriangulationNetwork.h
     ResolvedTriangulationUtils.h
+    ResolvedVertexSourceInfo.cc
+    ResolvedVertexSourceInfo.h
     RotationUtils.cc
     RotationUtils.h
     ScalarCoverageDeformation.cc
