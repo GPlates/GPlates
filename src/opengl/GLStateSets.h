@@ -74,23 +74,23 @@ namespace GPlatesOpenGL
 				GLenum active_texture);
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GLenum d_active_texture;
@@ -117,23 +117,23 @@ namespace GPlatesOpenGL
 		}
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GLenum d_target;
@@ -165,23 +165,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		boost::optional<GLFramebuffer::shared_ptr_type> d_draw_framebuffer;
@@ -212,23 +212,23 @@ namespace GPlatesOpenGL
 		}
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GLenum d_target;
@@ -249,23 +249,23 @@ namespace GPlatesOpenGL
 				boost::optional<GLSampler::shared_ptr_type> sampler);
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GLuint d_unit;
@@ -287,23 +287,23 @@ namespace GPlatesOpenGL
 				boost::optional<GLTexture::shared_ptr_type> texture);
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GLenum d_texture_target;
@@ -328,23 +328,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		boost::optional<GLVertexArray::shared_ptr_type> d_array;
@@ -370,23 +370,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GPlatesMaths::real_t d_red;
@@ -420,23 +420,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GLenum d_mode_RGB;
@@ -487,23 +487,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		Func d_RGB_func;
@@ -524,23 +524,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GLenum d_target;
@@ -565,23 +565,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GPlatesMaths::real_t d_red;
@@ -603,23 +603,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GPlatesMaths::real_t d_depth;
@@ -638,23 +638,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GLint d_stencil;
@@ -706,23 +706,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		std::vector<Mask> d_masks;
 		bool d_all_masks_equal;
@@ -741,23 +741,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GLenum d_mode;
@@ -776,23 +776,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GLenum d_depth_func;
@@ -811,23 +811,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GLboolean d_flag;
@@ -850,23 +850,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		GPlatesMaths::real_t d_n;
 		GPlatesMaths::real_t d_f;
@@ -895,23 +895,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		std::vector<GLenum> d_draw_buffers;
 		GLenum d_default_draw_buffer;
@@ -931,23 +931,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		//! Utility function to return the default for the specified capability.
 		static
@@ -985,23 +985,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		GLenum d_cap;
 		std::vector<bool> d_indices;
@@ -1021,23 +1021,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GLenum d_dir;
@@ -1057,23 +1057,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GLenum d_target;
@@ -1093,23 +1093,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GPlatesMaths::real_t d_width;
@@ -1139,23 +1139,23 @@ namespace GPlatesOpenGL
 				GLint param);
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		static
 		GLint
@@ -1179,23 +1179,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GPlatesMaths::real_t d_size;
@@ -1216,23 +1216,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GLenum d_mode;
@@ -1252,23 +1252,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GPlatesMaths::real_t d_factor;
@@ -1288,23 +1288,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GLuint d_index;
@@ -1325,23 +1325,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		GLenum d_read_buffer;
 		GLenum d_default_read_buffer;
@@ -1362,23 +1362,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		GPlatesMaths::real_t d_value;
 		GLboolean d_invert;
@@ -1399,23 +1399,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		std::vector<GLbitfield> d_masks;
 	};
@@ -1434,23 +1434,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GLViewport d_scissor_rectangle;
@@ -1502,23 +1502,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		Func d_front_func;
@@ -1550,23 +1550,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GLuint d_front_mask;
@@ -1618,23 +1618,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		Op d_front_op;
 		Op d_back_op;
@@ -1662,23 +1662,23 @@ namespace GPlatesOpenGL
 		}
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		boost::optional<GLProgram::shared_ptr_type> d_program;
@@ -1699,23 +1699,23 @@ namespace GPlatesOpenGL
 		{  }
 
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
-				const GLState &current_state) const;
+				const GLState &current_state) const override;
 
 
 		GLViewport d_viewport;

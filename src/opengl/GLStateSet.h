@@ -59,8 +59,8 @@ namespace GPlatesOpenGL
 		 * Applies the internal state (of derived class instance) directly to OpenGL if a state change
 		 * is detected when compared to @a current_state_set.
 		 *
-		 * If it is difficult or costly (or otherwise doesn't serve any gain) to detect if the
-		 * state set has changed then simply apply the internal state without comparison.
+		 * If it is difficult or costly (or otherwise doesn't serve any gain) to detect if the state set
+		 * has changed then simply apply the internal state without comparison (and return true).
 		 * In that case 'this' state set will get applied - so if it hasn't changed then the worst
 		 * is a redundant state is set to OpenGL (which logically does nothing).
 		 *
@@ -68,9 +68,11 @@ namespace GPlatesOpenGL
 		 * The caller guarantees they are of the same type.
 		 *
 		 * @a current_state enables querying other state sets in the current state.
+		 *
+		 * Returns true if this state was applied, otherwise returns false (because no change was detected).
 		 */
 		virtual
-		void
+		bool
 		apply_state(
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
@@ -98,9 +100,11 @@ namespace GPlatesOpenGL
 		 *
 		 * Note that this method is 'const' since 'this' object should not change because if it
 		 * gets called again later it should apply the same state to OpenGL.
+		 *
+		 * Returns true if this state was applied, otherwise returns false (because already matches default state).
 		 */
 		virtual
-		void
+		bool
 		apply_from_default_state(
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const = 0;
@@ -121,13 +125,12 @@ namespace GPlatesOpenGL
 		 * Note that this method is 'const' since 'this' object should not change because if it
 		 * gets called again later it should apply the same state to OpenGL.
 		 *
-		 * NOTE: If the internal state of 'this' instance is already in the default state then
-		 * nothing needs to be applied.
-		 *
 		 * @a current_state enables querying other state sets in the current state.
+		 *
+		 * Returns true if this state was applied, otherwise returns false (because already matches default state).
 		 */
 		virtual
-		void
+		bool
 		apply_to_default_state(
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const = 0;

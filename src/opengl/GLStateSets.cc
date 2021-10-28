@@ -49,7 +49,7 @@ GPlatesOpenGL::GLActiveTextureStateSet::GLActiveTextureStateSet(
 }
 
 
-void
+bool
 GPlatesOpenGL::GLActiveTextureStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -60,13 +60,15 @@ GPlatesOpenGL::GLActiveTextureStateSet::apply_state(
 			// Throws exception if downcast fails...
 			dynamic_cast<const GLActiveTextureStateSet &>(current_state_set).d_active_texture)
 	{
-		return;
+		return false;
 	}
 
 	glActiveTexture(d_active_texture);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLActiveTextureStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -74,13 +76,15 @@ GPlatesOpenGL::GLActiveTextureStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_active_texture == GL_TEXTURE0)
 	{
-		return;
+		return false;
 	}
 
 	glActiveTexture(d_active_texture);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLActiveTextureStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -88,14 +92,16 @@ GPlatesOpenGL::GLActiveTextureStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (GL_TEXTURE0 == d_active_texture)
 	{
-		return;
+		return false;
 	}
 
 	glActiveTexture(GL_TEXTURE0);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLBindBufferStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -106,14 +112,16 @@ GPlatesOpenGL::GLBindBufferStateSet::apply_state(
 			// Throws exception if downcast fails...
 			dynamic_cast<const GLBindBufferStateSet &>(current_state_set).d_buffer_resource)
 	{
-		return;
+		return false;
 	}
 
 	// Bind the buffer object (can be zero).
 	glBindBuffer(d_target, d_buffer_resource);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLBindBufferStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -121,14 +129,16 @@ GPlatesOpenGL::GLBindBufferStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_buffer_resource == 0)
 	{
-		return;
+		return false;
 	}
 
 	// Bind the buffer object.
 	glBindBuffer(d_target, d_buffer_resource);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLBindBufferStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -136,15 +146,17 @@ GPlatesOpenGL::GLBindBufferStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_buffer_resource == 0)
 	{
-		return;
+		return false;
 	}
 
 	// The default is zero (no buffer object).
 	glBindBuffer(d_target, 0);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLBindFramebufferStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -152,6 +164,8 @@ GPlatesOpenGL::GLBindFramebufferStateSet::apply_state(
 {
 	// Throws exception if downcast fails...
 	const GLBindFramebufferStateSet &current = dynamic_cast<const GLBindFramebufferStateSet &>(current_state_set);
+
+	bool applied_state = false;
 
 	// Bind the framebuffer object (can be zero) to the draw or read target (or both).
 	if (d_draw_framebuffer_resource == d_read_framebuffer_resource)
@@ -162,6 +176,7 @@ GPlatesOpenGL::GLBindFramebufferStateSet::apply_state(
 			// Both draw/read targets are the same so bind them in one call
 			// (even though it's possible only one of the targets has changed).
 			glBindFramebuffer(GL_FRAMEBUFFER, d_draw_framebuffer_resource);
+			applied_state = true;
 		}
 	}
 	else // Draw and read targets are bound to different framebuffers...
@@ -169,19 +184,25 @@ GPlatesOpenGL::GLBindFramebufferStateSet::apply_state(
 		if (d_draw_framebuffer_resource != current.d_draw_framebuffer_resource)
 		{
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, d_draw_framebuffer_resource);
+			applied_state = true;
 		}
 		if (d_read_framebuffer_resource != current.d_read_framebuffer_resource)
 		{
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, d_read_framebuffer_resource);
+			applied_state = true;
 		}
 	}
+
+	return applied_state;
 }
 
-void
+bool
 GPlatesOpenGL::GLBindFramebufferStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
+	bool applied_state = false;
+
 	// Bind the framebuffer object to the draw or read target (or both).
 	if (d_draw_framebuffer_resource == d_read_framebuffer_resource)
 	{
@@ -189,6 +210,7 @@ GPlatesOpenGL::GLBindFramebufferStateSet::apply_from_default_state(
 		{
 			// Both draw/read targets are the same (and non-zero) so bind them in one call.
 			glBindFramebuffer(GL_FRAMEBUFFER, d_draw_framebuffer_resource);
+			applied_state = true;
 		}
 	}
 	else // Draw and read targets are bound to different framebuffers...
@@ -196,19 +218,25 @@ GPlatesOpenGL::GLBindFramebufferStateSet::apply_from_default_state(
 		if (d_draw_framebuffer_resource != 0)
 		{
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, d_draw_framebuffer_resource);
+			applied_state = true;
 		}
 		if (d_read_framebuffer_resource != 0)
 		{
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, d_read_framebuffer_resource);
+			applied_state = true;
 		}
 	}
+
+	return applied_state;
 }
 
-void
+bool
 GPlatesOpenGL::GLBindFramebufferStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
+	bool applied_state = false;
+
 	// Bind the framebuffer object to the draw or read target (or both).
 	if (d_draw_framebuffer_resource == d_read_framebuffer_resource)
 	{
@@ -216,6 +244,7 @@ GPlatesOpenGL::GLBindFramebufferStateSet::apply_to_default_state(
 		{
 			// Both draw/read targets are the same (and non-zero) so bind them in one call.
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+			applied_state = true;
 		}
 	}
 	else // Draw and read targets are bound to different framebuffers...
@@ -223,16 +252,20 @@ GPlatesOpenGL::GLBindFramebufferStateSet::apply_to_default_state(
 		if (d_draw_framebuffer_resource != 0)
 		{
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+			applied_state = true;
 		}
 		if (d_read_framebuffer_resource != 0)
 		{
 			glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+			applied_state = true;
 		}
 	}
+
+	return applied_state;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLBindRenderbufferStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -243,14 +276,16 @@ GPlatesOpenGL::GLBindRenderbufferStateSet::apply_state(
 			// Throws exception if downcast fails...
 			dynamic_cast<const GLBindRenderbufferStateSet &>(current_state_set).d_renderbuffer_resource)
 	{
-		return;
+		return false;
 	}
 
 	// Bind the renderbuffer object (can be zero).
 	glBindRenderbuffer(d_target, d_renderbuffer_resource);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLBindRenderbufferStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -258,14 +293,16 @@ GPlatesOpenGL::GLBindRenderbufferStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_renderbuffer_resource == 0)
 	{
-		return;
+		return false;
 	}
 
 	// Bind the renderbuffer object.
 	glBindRenderbuffer(d_target, d_renderbuffer_resource);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLBindRenderbufferStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -273,11 +310,13 @@ GPlatesOpenGL::GLBindRenderbufferStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_renderbuffer_resource == 0)
 	{
-		return;
+		return false;
 	}
 
 	// The default is zero (no renderbuffer object).
 	glBindRenderbuffer(d_target, 0);
+
+	return true;
 }
 
 
@@ -299,7 +338,7 @@ GPlatesOpenGL::GLBindSamplerStateSet::GLBindSamplerStateSet(
 	}
 }
 
-void
+bool
 GPlatesOpenGL::GLBindSamplerStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -313,14 +352,16 @@ GPlatesOpenGL::GLBindSamplerStateSet::apply_state(
 			// Throws exception if downcast fails...
 			dynamic_cast<const GLBindSamplerStateSet &>(current_state_set).d_sampler_resource)
 	{
-		return;
+		return false;
 	}
 
 	// Bind the sampler object (can be zero).
 	glBindSampler(d_unit, d_sampler_resource);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLBindSamplerStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -328,14 +369,16 @@ GPlatesOpenGL::GLBindSamplerStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_sampler_resource == 0)
 	{
-		return;
+		return false;
 	}
 
 	// Bind the sampler object.
 	glBindSampler(d_unit, d_sampler_resource);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLBindSamplerStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -343,11 +386,13 @@ GPlatesOpenGL::GLBindSamplerStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_sampler_resource == 0)
 	{
-		return;
+		return false;
 	}
 
 	// The default is zero (no sampler object).
 	glBindSampler(d_unit, 0);
+
+	return true;
 }
 
 
@@ -372,7 +417,7 @@ GPlatesOpenGL::GLBindTextureStateSet::GLBindTextureStateSet(
 	}
 }
 
-void
+bool
 GPlatesOpenGL::GLBindTextureStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -386,7 +431,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_state(
 			// Throws exception if downcast fails...
 			dynamic_cast<const GLBindTextureStateSet &>(current_state_set).d_texture_resource)
 	{
-		return;
+		return false;
 	}
 
 	// Make sure the correct texture unit is currently active when binding texture.
@@ -404,9 +449,11 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_state(
 	{
 		glActiveTexture(current_active_texture);
 	}
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLBindTextureStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -414,7 +461,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_texture_resource == 0)
 	{
-		return;
+		return false;
 	}
 
 	// Make sure the correct texture unit is currently active when binding texture.
@@ -432,9 +479,11 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_from_default_state(
 	{
 		glActiveTexture(current_active_texture);
 	}
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLBindTextureStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -442,7 +491,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_texture_resource == 0)
 	{
-		return;
+		return false;
 	}
 
 	// Make sure the correct texture unit is currently active when unbinding texture.
@@ -460,10 +509,12 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_to_default_state(
 	{
 		glActiveTexture(current_active_texture);
 	}
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLBindVertexArrayStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -474,14 +525,16 @@ GPlatesOpenGL::GLBindVertexArrayStateSet::apply_state(
 			// Throws exception if downcast fails...
 			dynamic_cast<const GLBindVertexArrayStateSet &>(current_state_set).d_array_resource)
 	{
-		return;
+		return false;
 	}
 
 	// Bind the vertex array object (can be zero).
 	glBindVertexArray(d_array_resource);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLBindVertexArrayStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -489,14 +542,16 @@ GPlatesOpenGL::GLBindVertexArrayStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_array_resource == 0)
 	{
-		return;
+		return false;
 	}
 
 	// Bind the vertex array object.
 	glBindVertexArray(d_array_resource);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLBindVertexArrayStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -504,15 +559,17 @@ GPlatesOpenGL::GLBindVertexArrayStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_array_resource == 0)
 	{
-		return;
+		return false;
 	}
 
 	// The default is zero (no vertex array object).
     glBindVertexArray(0);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLBlendColorStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -528,7 +585,7 @@ GPlatesOpenGL::GLBlendColorStateSet::apply_state(
 		d_blue == current.d_blue &&
 		d_alpha == current.d_alpha)
 	{
-		return;
+		return false;
 	}
 
 	glBlendColor(
@@ -536,9 +593,11 @@ GPlatesOpenGL::GLBlendColorStateSet::apply_state(
 			static_cast<GLclampf>(d_green.dval()),
 			static_cast<GLclampf>(d_blue.dval()),
 			static_cast<GLclampf>(d_alpha.dval()));
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLBlendColorStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -547,7 +606,7 @@ GPlatesOpenGL::GLBlendColorStateSet::apply_from_default_state(
 	// Note that these are epsilon comparisons.
 	if (d_red == 0 && d_green == 0 && d_blue == 0 && d_alpha == 0)
 	{
-		return;
+		return false;
 	}
 
 	glBlendColor(
@@ -555,9 +614,11 @@ GPlatesOpenGL::GLBlendColorStateSet::apply_from_default_state(
 			static_cast<GLclampf>(d_green.dval()),
 			static_cast<GLclampf>(d_blue.dval()),
 			static_cast<GLclampf>(d_alpha.dval()));
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLBlendColorStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -566,16 +627,18 @@ GPlatesOpenGL::GLBlendColorStateSet::apply_to_default_state(
 	// Note that these are epsilon comparisons.
 	if (d_red == 0 && d_green == 0 && d_blue == 0 && d_alpha == 0)
 	{
-		return;
+		return false;
 	}
 
 	glBlendColor(0, 0, 0, 0);
+
+	return true;
 }
 
 
 const GLenum GPlatesOpenGL::GLBlendEquationStateSet::DEFAULT_MODE = GL_FUNC_ADD;
 
-void
+bool
 GPlatesOpenGL::GLBlendEquationStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -583,6 +646,8 @@ GPlatesOpenGL::GLBlendEquationStateSet::apply_state(
 {
 	// Throws exception if downcast fails...
 	const GLBlendEquationStateSet &current = dynamic_cast<const GLBlendEquationStateSet &>(current_state_set);
+
+	bool applied_state = false;
 
 	if (d_mode_RGB == d_mode_alpha)
 	{
@@ -593,6 +658,7 @@ GPlatesOpenGL::GLBlendEquationStateSet::apply_state(
 			// Both RGB/alpha modes are the same so set them in one call
 			// (even though it's possible only one of the modes has changed).
 			glBlendEquation(d_mode_RGB);
+			applied_state = true;
 		}
 	}
 	else // RGB and alpha modes are different...
@@ -601,55 +667,70 @@ GPlatesOpenGL::GLBlendEquationStateSet::apply_state(
 			d_mode_alpha != current.d_mode_alpha)
 		{
 			glBlendEquationSeparate(d_mode_RGB, d_mode_alpha);
+			applied_state = true;
 		}
 	}
+
+	return applied_state;
 }
 
-void
+bool
 GPlatesOpenGL::GLBlendEquationStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
+	bool applied_state = false;
+
 	if (d_mode_RGB == d_mode_alpha)
 	{
 		if (d_mode_RGB != DEFAULT_MODE)
 		{
 			// Both RGB/alpha modes are the same so set them in one call.
 			glBlendEquation(d_mode_RGB);
+			applied_state = true;
 		}
 	}
 	else // RGB and alpha modes are different...
 	{
 		// Both RGB and alpha modes are different, so they both cannot be the default state.
 		glBlendEquationSeparate(d_mode_RGB, d_mode_alpha);
+		applied_state = true;
 	}
+
+	return applied_state;
 }
 
-void
+bool
 GPlatesOpenGL::GLBlendEquationStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
+	bool applied_state = false;
+
 	if (d_mode_RGB == d_mode_alpha)
 	{
 		if (d_mode_RGB != DEFAULT_MODE)
 		{
 			// Both RGB/alpha modes are the same so set them in one call.
 			glBlendEquation(DEFAULT_MODE);
+			applied_state = true;
 		}
 	}
 	else // RGB and alpha modes are different...
 	{
 		// Both RGB and alpha modes are different, so they both cannot be the default state.
 		glBlendEquationSeparate(DEFAULT_MODE, DEFAULT_MODE);
+		applied_state = true;
 	}
+
+	return applied_state;
 }
 
 
 const GPlatesOpenGL::GLBlendFuncStateSet::Func
 GPlatesOpenGL::GLBlendFuncStateSet::DEFAULT_FUNC{ GL_ONE, GL_ZERO };
 
-void
+bool
 GPlatesOpenGL::GLBlendFuncStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -657,6 +738,8 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_state(
 {
 	// Throws exception if downcast fails...
 	const GLBlendFuncStateSet &current = dynamic_cast<const GLBlendFuncStateSet &>(current_state_set);
+
+	bool applied_state = false;
 
 	if (d_RGB_func == d_alpha_func)
 	{
@@ -667,6 +750,7 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_state(
 			// Both RGB/alpha funcs are the same so set them in one call
 			// (even though it's possible only one of the funcs has changed).
 			glBlendFunc(d_RGB_func.src, d_RGB_func.dst);
+			applied_state = true;
 		}
 	}
 	else // RGB and alpha blend funcs are different...
@@ -675,52 +759,67 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_state(
 			d_alpha_func != current.d_alpha_func)
 		{
 			glBlendFuncSeparate(d_RGB_func.src, d_RGB_func.dst, d_alpha_func.src, d_alpha_func.dst);
+			applied_state = true;
 		}
 	}
+
+	return applied_state;
 }
 
-void
+bool
 GPlatesOpenGL::GLBlendFuncStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
+	bool applied_state = false;
+
 	if (d_RGB_func == d_alpha_func)
 	{
 		if (d_RGB_func != DEFAULT_FUNC)
 		{
 			// Both RGB/alpha funcs are the same so set them in one call.
 			glBlendFunc(d_RGB_func.src, d_RGB_func.dst);
+			applied_state = true;
 		}
 	}
 	else // RGB and alpha blend funcs are different...
 	{
 		// Both RGB and alpha funcs are different, so they both cannot be the default state.
 		glBlendFuncSeparate(d_RGB_func.src, d_RGB_func.dst, d_alpha_func.src, d_alpha_func.dst);
+		applied_state = true;
 	}
+
+	return applied_state;
 }
 
-void
+bool
 GPlatesOpenGL::GLBlendFuncStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
+	bool applied_state = false;
+
 	if (d_RGB_func == d_alpha_func)
 	{
 		if (d_RGB_func != DEFAULT_FUNC)
 		{
 			// Both RGB/alpha funcs are the same so set them in one call.
 			glBlendFunc(DEFAULT_FUNC.src, DEFAULT_FUNC.dst);
+			applied_state = true;
 		}
 	}
 	else // RGB and alpha blend funcs are different...
 	{
 		// Both RGB and alpha funcs are different, so they both cannot be the default state.
 		glBlendFuncSeparate(DEFAULT_FUNC.src, DEFAULT_FUNC.dst, DEFAULT_FUNC.src, DEFAULT_FUNC.dst);
+		applied_state = true;
 	}
+
+	return applied_state;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLClampColorStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -732,13 +831,15 @@ GPlatesOpenGL::GLClampColorStateSet::apply_state(
 	// Return early if no state change...
 	if (d_clamp == current.d_clamp)
 	{
-		return;
+		return false;
 	}
 
 	glClampColor(d_target, d_clamp);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLClampColorStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -746,13 +847,15 @@ GPlatesOpenGL::GLClampColorStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_clamp == GL_FIXED_ONLY)
 	{
-		return;
+		return false;
 	}
 
 	glClampColor(d_target, d_clamp);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLClampColorStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -760,14 +863,16 @@ GPlatesOpenGL::GLClampColorStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_clamp == GL_FIXED_ONLY)
 	{
-		return;
+		return false;
 	}
 
 	glClampColor(d_target, GL_FIXED_ONLY);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLClearColorStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -783,7 +888,7 @@ GPlatesOpenGL::GLClearColorStateSet::apply_state(
 		d_blue == current.d_blue &&
 		d_alpha == current.d_alpha)
 	{
-		return;
+		return false;
 	}
 
 	glClearColor(
@@ -791,9 +896,11 @@ GPlatesOpenGL::GLClearColorStateSet::apply_state(
 			static_cast<GLclampf>(d_green.dval()),
 			static_cast<GLclampf>(d_blue.dval()),
 			static_cast<GLclampf>(d_alpha.dval()));
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLClearColorStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -802,7 +909,7 @@ GPlatesOpenGL::GLClearColorStateSet::apply_from_default_state(
 	// Note that these are epsilon comparisons.
 	if (d_red == 0 && d_green == 0 && d_blue == 0 && d_alpha == 0)
 	{
-		return;
+		return false;
 	}
 
 	glClearColor(
@@ -810,9 +917,11 @@ GPlatesOpenGL::GLClearColorStateSet::apply_from_default_state(
 			static_cast<GLclampf>(d_green.dval()),
 			static_cast<GLclampf>(d_blue.dval()),
 			static_cast<GLclampf>(d_alpha.dval()));
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLClearColorStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -821,14 +930,16 @@ GPlatesOpenGL::GLClearColorStateSet::apply_to_default_state(
 	// Note that these are epsilon comparisons.
 	if (d_red == 0 && d_green == 0 && d_blue == 0 && d_alpha == 0)
 	{
-		return;
+		return false;
 	}
 
 	glClearColor(0, 0, 0, 0);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLClearDepthStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -841,13 +952,15 @@ GPlatesOpenGL::GLClearDepthStateSet::apply_state(
 	// Note that these are epsilon comparisons.
 	if (d_depth == current.d_depth)
 	{
-		return;
+		return false;
 	}
 
 	glClearDepth(static_cast<GLclampd>(d_depth.dval()));
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLClearDepthStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -856,13 +969,15 @@ GPlatesOpenGL::GLClearDepthStateSet::apply_from_default_state(
 	// Note that these are epsilon comparisons.
 	if (d_depth == 1.0)
 	{
-		return;
+		return false;
 	}
 
 	glClearDepth(static_cast<GLclampd>(d_depth.dval()));
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLClearDepthStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -871,14 +986,16 @@ GPlatesOpenGL::GLClearDepthStateSet::apply_to_default_state(
 	// Note that these are epsilon comparisons.
 	if (d_depth == 1.0)
 	{
-		return;
+		return false;
 	}
 
 	glClearDepth(1.0);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLClearStencilStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -891,13 +1008,15 @@ GPlatesOpenGL::GLClearStencilStateSet::apply_state(
 	// Note that these are epsilon comparisons.
 	if (d_stencil == current.d_stencil)
 	{
-		return;
+		return false;
 	}
 
 	glClearStencil(d_stencil);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLClearStencilStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -906,13 +1025,15 @@ GPlatesOpenGL::GLClearStencilStateSet::apply_from_default_state(
 	// Note that these are epsilon comparisons.
 	if (d_stencil == 0)
 	{
-		return;
+		return false;
 	}
 
 	glClearStencil(d_stencil);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLClearStencilStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -921,17 +1042,19 @@ GPlatesOpenGL::GLClearStencilStateSet::apply_to_default_state(
 	// Note that these are epsilon comparisons.
 	if (d_stencil == 0)
 	{
-		return;
+		return false;
 	}
 
 	glClearStencil(0);
+
+	return true;
 }
 
 
 const GPlatesOpenGL::GLColorMaskStateSet::Mask
 GPlatesOpenGL::GLColorMaskStateSet::DEFAULT_MASK{ GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE };
 
-void
+bool
 GPlatesOpenGL::GLColorMaskStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -940,12 +1063,15 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_state(
 	// Throws exception if downcast fails...
 	const GLColorMaskStateSet &current = dynamic_cast<const GLColorMaskStateSet &>(current_state_set);
 
+	bool applied_state = false;
+
 	if (d_all_masks_equal && current.d_all_masks_equal)
 	{
 		// If state changed...
 		if (d_masks[0] != current.d_masks[0])
 		{
 			glColorMask(d_masks[0].red, d_masks[0].green, d_masks[0].blue, d_masks[0].alpha);
+			applied_state = true;
 		}
 	}
 	else
@@ -957,22 +1083,28 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_state(
 			if (d_masks[i] != current.d_masks[i])
 			{
 				glColorMaski(i, d_masks[i].red, d_masks[i].green, d_masks[i].blue, d_masks[i].alpha);
+				applied_state = true;
 			}
 		}
 	}
+
+	return applied_state;
 }
 
-void
+bool
 GPlatesOpenGL::GLColorMaskStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
+	bool applied_state = false;
+
 	if (d_all_masks_equal)
 	{
 		// If state changed...
 		if (d_masks[0] != DEFAULT_MASK)
 		{
 			glColorMask(d_masks[0].red, d_masks[0].green, d_masks[0].blue, d_masks[0].alpha);
+			applied_state = true;
 		}
 	}
 	else
@@ -984,22 +1116,28 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_from_default_state(
 			if (d_masks[i] != DEFAULT_MASK)
 			{
 				glColorMaski(i, d_masks[i].red, d_masks[i].green, d_masks[i].blue, d_masks[i].alpha);
+				applied_state = true;
 			}
 		}
 	}
+
+	return applied_state;
 }
 
-void
+bool
 GPlatesOpenGL::GLColorMaskStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
+	bool applied_state = false;
+
 	if (d_all_masks_equal)
 	{
 		// If state changed...
 		if (d_masks[0] != DEFAULT_MASK)
 		{
 			glColorMask(DEFAULT_MASK.red, DEFAULT_MASK.green, DEFAULT_MASK.blue, DEFAULT_MASK.alpha);
+			applied_state = true;
 		}
 	}
 	else
@@ -1011,13 +1149,16 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_to_default_state(
 			if (d_masks[i] != DEFAULT_MASK)
 			{
 				glColorMaski(i, DEFAULT_MASK.red, DEFAULT_MASK.green, DEFAULT_MASK.blue, DEFAULT_MASK.alpha);
+				applied_state = true;
 			}
 		}
 	}
+
+	return applied_state;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLCullFaceStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -1029,13 +1170,15 @@ GPlatesOpenGL::GLCullFaceStateSet::apply_state(
 	// Return early if no state change...
 	if (d_mode == current.d_mode)
 	{
-		return;
+		return false;
 	}
 
 	glCullFace(d_mode);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLCullFaceStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1043,13 +1186,15 @@ GPlatesOpenGL::GLCullFaceStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_mode == GL_BACK)
 	{
-		return;
+		return false;
 	}
 
 	glCullFace(d_mode);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLCullFaceStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1057,14 +1202,16 @@ GPlatesOpenGL::GLCullFaceStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_mode == GL_BACK)
 	{
-		return;
+		return false;
 	}
 
 	glCullFace(GL_BACK);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLDepthFuncStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -1076,13 +1223,15 @@ GPlatesOpenGL::GLDepthFuncStateSet::apply_state(
 	// Return early if no state change...
 	if (d_depth_func == current.d_depth_func)
 	{
-		return;
+		return false;
 	}
 
 	glDepthFunc(d_depth_func);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLDepthFuncStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1090,13 +1239,15 @@ GPlatesOpenGL::GLDepthFuncStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_depth_func == GL_LESS)
 	{
-		return;
+		return false;
 	}
 
 	glDepthFunc(d_depth_func);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLDepthFuncStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1104,14 +1255,16 @@ GPlatesOpenGL::GLDepthFuncStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_depth_func == GL_LESS)
 	{
-		return;
+		return false;
 	}
 
 	glDepthFunc(GL_LESS);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLDepthMaskStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -1123,13 +1276,15 @@ GPlatesOpenGL::GLDepthMaskStateSet::apply_state(
 	// Return early if no state change...
 	if (d_flag == current.d_flag)
 	{
-		return;
+		return false;
 	}
 
 	glDepthMask(d_flag);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLDepthMaskStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1137,13 +1292,15 @@ GPlatesOpenGL::GLDepthMaskStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_flag == GL_TRUE)
 	{
-		return;
+		return false;
 	}
 
 	glDepthMask(d_flag);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLDepthMaskStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1151,14 +1308,16 @@ GPlatesOpenGL::GLDepthMaskStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_flag == GL_TRUE)
 	{
-		return;
+		return false;
 	}
 
 	glDepthMask(GL_TRUE);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLDepthRangeStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -1170,13 +1329,15 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_state(
 	// Return early if no state change...
 	if (d_n == current.d_n && d_f == current.d_f)  // epsilon tests
 	{
-		return;
+		return false;
 	}
 
 	glDepthRange(d_n.dval(), d_f.dval());
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLDepthRangeStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1184,13 +1345,15 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_n == 0.0 && d_f == 1.0)  // epsilon tests
 	{
-		return;
+		return false;
 	}
 
 	glDepthRange(d_n.dval(), d_f.dval());
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLDepthRangeStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1198,14 +1361,16 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_n == 0.0 && d_f == 1.0)  // epsilon tests
 	{
-		return;
+		return false;
 	}
 
 	glDepthRange(0.0, 1.0);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLDrawBuffersStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -1217,13 +1382,15 @@ GPlatesOpenGL::GLDrawBuffersStateSet::apply_state(
 	// Return early if no state change...
 	if (d_draw_buffers == current.d_draw_buffers)
 	{
-		return;
+		return false;
 	}
 
 	glDrawBuffers(d_draw_buffers.size(), d_draw_buffers.data());
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLDrawBuffersStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1232,13 +1399,15 @@ GPlatesOpenGL::GLDrawBuffersStateSet::apply_from_default_state(
 	if (d_draw_buffers.size() == 1 &&
 		d_draw_buffers[0] == d_default_draw_buffer)
 	{
-		return;
+		return false;
 	}
 
 	glDrawBuffers(d_draw_buffers.size(), d_draw_buffers.data());
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLDrawBuffersStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1247,14 +1416,16 @@ GPlatesOpenGL::GLDrawBuffersStateSet::apply_to_default_state(
 	if (d_draw_buffers.size() == 1 &&
 		d_draw_buffers[0] == d_default_draw_buffer)
 	{
-		return;
+		return false;
 	}
 
 	glDrawBuffer(d_default_draw_buffer);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLEnableStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -1265,7 +1436,7 @@ GPlatesOpenGL::GLEnableStateSet::apply_state(
 			// Throws exception if downcast fails...
 			dynamic_cast<const GLEnableStateSet &>(current_state_set).d_enable)
 	{
-		return;
+		return false;
 	}
 
 	if (d_enable)
@@ -1276,9 +1447,11 @@ GPlatesOpenGL::GLEnableStateSet::apply_state(
 	{
 		glDisable(d_cap);
 	}
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLEnableStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1288,7 +1461,7 @@ GPlatesOpenGL::GLEnableStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_enable == enable_default)
 	{
-		return;
+		return false;
 	}
 
 	if (d_enable)
@@ -1299,9 +1472,11 @@ GPlatesOpenGL::GLEnableStateSet::apply_from_default_state(
 	{
 		glDisable(d_cap);
 	}
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLEnableStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1311,7 +1486,7 @@ GPlatesOpenGL::GLEnableStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_enable == enable_default)
 	{
-		return;
+		return false;
 	}
 
 	if (enable_default)
@@ -1322,6 +1497,8 @@ GPlatesOpenGL::GLEnableStateSet::apply_to_default_state(
 	{
 		glDisable(d_cap);
 	}
+
+	return true;
 }
 
 bool
@@ -1333,7 +1510,7 @@ GPlatesOpenGL::GLEnableStateSet::get_default(
 }
 
 
-void
+bool
 GPlatesOpenGL::GLEnableIndexedStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -1341,6 +1518,8 @@ GPlatesOpenGL::GLEnableIndexedStateSet::apply_state(
 {
 	// Throws exception if downcast fails...
 	const GLEnableIndexedStateSet &current = dynamic_cast<const GLEnableIndexedStateSet &>(current_state_set);
+
+	bool applied_state = false;
 
 	if (d_all_indices_equal && current.d_all_indices_equal)
 	{
@@ -1356,6 +1535,7 @@ GPlatesOpenGL::GLEnableIndexedStateSet::apply_state(
 			{
 				glDisable(d_cap);
 			}
+			applied_state = true;
 		}
 	}
 	else
@@ -1374,17 +1554,22 @@ GPlatesOpenGL::GLEnableIndexedStateSet::apply_state(
 				{
 					glDisablei(d_cap, i);
 				}
+				applied_state = true;
 			}
 		}
 	}
+
+	return applied_state;
 }
 
-void
+bool
 GPlatesOpenGL::GLEnableIndexedStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
 	const bool default_ = GLEnableStateSet::get_default(d_cap);
+
+	bool applied_state = false;
 
 	if (d_all_indices_equal)
 	{
@@ -1400,6 +1585,7 @@ GPlatesOpenGL::GLEnableIndexedStateSet::apply_from_default_state(
 			{
 				glDisable(d_cap);
 			}
+			applied_state = true;
 		}
 	}
 	else
@@ -1418,17 +1604,22 @@ GPlatesOpenGL::GLEnableIndexedStateSet::apply_from_default_state(
 				{
 					glDisablei(d_cap, i);
 				}
+				applied_state = true;
 			}
 		}
 	}
+
+	return applied_state;
 }
 
-void
+bool
 GPlatesOpenGL::GLEnableIndexedStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
 	const bool default_ = GLEnableStateSet::get_default(d_cap);
+
+	bool applied_state = false;
 
 	if (d_all_indices_equal)
 	{
@@ -1444,6 +1635,7 @@ GPlatesOpenGL::GLEnableIndexedStateSet::apply_to_default_state(
 			{
 				glDisable(d_cap);
 			}
+			applied_state = true;
 		}
 	}
 	else
@@ -1462,13 +1654,16 @@ GPlatesOpenGL::GLEnableIndexedStateSet::apply_to_default_state(
 				{
 					glDisablei(d_cap, i);
 				}
+				applied_state = true;
 			}
 		}
 	}
+
+	return applied_state;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLFrontFaceStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -1478,13 +1673,15 @@ GPlatesOpenGL::GLFrontFaceStateSet::apply_state(
 	// Throws exception if downcast fails...
 	if (d_dir == dynamic_cast<const GLFrontFaceStateSet &>(current_state_set).d_dir)
 	{
-		return;
+		return false;
 	}
 
 	glFrontFace(d_dir);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLFrontFaceStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1492,13 +1689,15 @@ GPlatesOpenGL::GLFrontFaceStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_dir == GL_CCW)
 	{
-		return;
+		return false;
 	}
 
 	glFrontFace(d_dir);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLFrontFaceStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1506,14 +1705,16 @@ GPlatesOpenGL::GLFrontFaceStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_dir == GL_CCW)
 	{
-		return;
+		return false;
 	}
 
 	glFrontFace(GL_CCW);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLHintStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -1523,13 +1724,15 @@ GPlatesOpenGL::GLHintStateSet::apply_state(
 	// Throws exception if downcast fails...
 	if (d_hint == dynamic_cast<const GLHintStateSet &>(current_state_set).d_hint)
 	{
-		return;
+		return false;
 	}
 
 	glHint(d_target, d_hint);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLHintStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1537,13 +1740,15 @@ GPlatesOpenGL::GLHintStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_hint == GL_DONT_CARE)
 	{
-		return;
+		return false;
 	}
 
 	glHint(d_target, d_hint);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLHintStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1551,14 +1756,16 @@ GPlatesOpenGL::GLHintStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_hint == GL_DONT_CARE)
 	{
-		return;
+		return false;
 	}
 
 	glHint(d_target, GL_DONT_CARE);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLLineWidthStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -1569,13 +1776,15 @@ GPlatesOpenGL::GLLineWidthStateSet::apply_state(
 	// NOTE: This is an epsilon test.
 	if (d_width == dynamic_cast<const GLLineWidthStateSet &>(current_state_set).d_width)
 	{
-		return;
+		return false;
 	}
 
 	glLineWidth(d_width.dval());
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLLineWidthStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1584,13 +1793,15 @@ GPlatesOpenGL::GLLineWidthStateSet::apply_from_default_state(
 	// NOTE: This is an epsilon test.
 	if (d_width == 1.0)
 	{
-		return;
+		return false;
 	}
 
 	glLineWidth(d_width.dval());
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLLineWidthStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1599,10 +1810,12 @@ GPlatesOpenGL::GLLineWidthStateSet::apply_to_default_state(
 	// NOTE: This is an epsilon test.
 	if (d_width == 1.0)
 	{
-		return;
+		return false;
 	}
 
 	glLineWidth(GLfloat(1));
+
+	return true;
 }
 
 
@@ -1656,7 +1869,7 @@ GPlatesOpenGL::GLPixelStoreStateSet::GLPixelStoreStateSet(
 }
 
 
-void
+bool
 GPlatesOpenGL::GLPixelStoreStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -1670,14 +1883,16 @@ GPlatesOpenGL::GLPixelStoreStateSet::apply_state(
 			// Throws exception if downcast fails...
 			dynamic_cast<const GLPixelStoreStateSet &>(current_state_set).d_param)
 	{
-		return;
+		return false;
 	}
 
 	// We're not using glPixelStoref (since all parameter types are boolean or integer).
 	glPixelStorei(d_pname, d_param);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLPixelStoreStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1687,14 +1902,16 @@ GPlatesOpenGL::GLPixelStoreStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_param == param_default)
 	{
-		return;
+		return false;
 	}
 
 	// We're not using glPixelStoref (since all parameter types are boolean or integer).
 	glPixelStorei(d_pname, d_param);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLPixelStoreStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1704,11 +1921,13 @@ GPlatesOpenGL::GLPixelStoreStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_param == param_default)
 	{
-		return;
+		return false;
 	}
 
 	// We're not using glPixelStoref (since all parameter types are boolean or integer).
 	glPixelStorei(d_pname, param_default);
+
+	return true;
 }
 
 GLint
@@ -1758,7 +1977,7 @@ GPlatesOpenGL::GLPixelStoreStateSet::get_default(
 }
 
 
-void
+bool
 GPlatesOpenGL::GLPointSizeStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -1769,13 +1988,15 @@ GPlatesOpenGL::GLPointSizeStateSet::apply_state(
 	// NOTE: This is an epsilon test.
 	if (d_size == dynamic_cast<const GLPointSizeStateSet &>(current_state_set).d_size)
 	{
-		return;
+		return false;
 	}
 
 	glPointSize(d_size.dval());
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLPointSizeStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1784,13 +2005,15 @@ GPlatesOpenGL::GLPointSizeStateSet::apply_from_default_state(
 	// NOTE: This is an epsilon test.
 	if (d_size == 1.0)
 	{
-		return;
+		return false;
 	}
 
 	glPointSize(d_size.dval());
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLPointSizeStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1799,14 +2022,16 @@ GPlatesOpenGL::GLPointSizeStateSet::apply_to_default_state(
 	// NOTE: This is an epsilon test.
 	if (d_size == 1.0)
 	{
-		return;
+		return false;
 	}
 
 	glPointSize(GLfloat(1));
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLPolygonModeStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -1816,13 +2041,15 @@ GPlatesOpenGL::GLPolygonModeStateSet::apply_state(
 	// Throws exception if downcast fails...
 	if (d_mode == dynamic_cast<const GLPolygonModeStateSet &>(current_state_set).d_mode)
 	{
-		return;
+		return false;
 	}
 
 	glPolygonMode(GL_FRONT_AND_BACK, d_mode);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLPolygonModeStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1830,13 +2057,15 @@ GPlatesOpenGL::GLPolygonModeStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_mode == GL_FILL)
 	{
-		return;
+		return false;
 	}
 
 	glPolygonMode(GL_FRONT_AND_BACK, d_mode);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLPolygonModeStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1844,14 +2073,16 @@ GPlatesOpenGL::GLPolygonModeStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_mode == GL_FILL)
 	{
-		return;
+		return false;
 	}
 
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLPolygonOffsetStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -1864,13 +2095,15 @@ GPlatesOpenGL::GLPolygonOffsetStateSet::apply_state(
 	// NOTE: This is an epsilon test.
 	if (d_factor == current.d_factor && d_units == current.d_units)
 	{
-		return;
+		return false;
 	}
 
 	glPolygonOffset(d_factor.dval(), d_units.dval());
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLPolygonOffsetStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1879,13 +2112,15 @@ GPlatesOpenGL::GLPolygonOffsetStateSet::apply_from_default_state(
 	// NOTE: This is an epsilon test.
 	if (d_factor == 0 && d_units == 0)
 	{
-		return;
+		return false;
 	}
 
 	glPolygonOffset(d_factor.dval(), d_units.dval());
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLPolygonOffsetStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1894,14 +2129,16 @@ GPlatesOpenGL::GLPolygonOffsetStateSet::apply_to_default_state(
 	// NOTE: This is an epsilon test.
 	if (d_factor == 0 && d_units == 0)
 	{
-		return;
+		return false;
 	}
 
 	glPolygonMode(GLfloat(0), GLfloat(0));
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLPrimitiveRestartIndexStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -1913,13 +2150,15 @@ GPlatesOpenGL::GLPrimitiveRestartIndexStateSet::apply_state(
 	// Return early if no state change...
 	if (d_index == current.d_index)
 	{
-		return;
+		return false;
 	}
 
 	glPrimitiveRestartIndex(d_index);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLPrimitiveRestartIndexStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1927,27 +2166,31 @@ GPlatesOpenGL::GLPrimitiveRestartIndexStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_index == 0)
 	{
-		return;
+		return false;
 	}
 
 	glPrimitiveRestartIndex(d_index);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLPrimitiveRestartIndexStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
 	// Return early if no 0.d_index)
 	{
-		return;
+		return false;
 	}
 
 	glPrimitiveRestartIndex(0);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLReadBufferStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -1959,13 +2202,15 @@ GPlatesOpenGL::GLReadBufferStateSet::apply_state(
 	// Return early if no state change...
 	if (d_read_buffer == current.d_read_buffer)
 	{
-		return;
+		return false;
 	}
 
 	glReadBuffer(d_read_buffer);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLReadBufferStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1973,13 +2218,15 @@ GPlatesOpenGL::GLReadBufferStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_read_buffer == d_default_read_buffer)
 	{
-		return;
+		return false;
 	}
 
 	glReadBuffer(d_read_buffer);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLReadBufferStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -1987,14 +2234,16 @@ GPlatesOpenGL::GLReadBufferStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_read_buffer == d_default_read_buffer)
 	{
-		return;
+		return false;
 	}
 
 	glReadBuffer(d_default_read_buffer);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLSampleCoverageStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -2007,15 +2256,17 @@ GPlatesOpenGL::GLSampleCoverageStateSet::apply_state(
 	if (d_value == current.d_value /*epsilon test*/ &&
 		d_invert == current.d_invert)
 	{
-		return;
+		return false;
 	}
 
 	glSampleCoverage(
 			static_cast<GLclampf>(d_value.dval()),
 			d_invert);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLSampleCoverageStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -2024,15 +2275,17 @@ GPlatesOpenGL::GLSampleCoverageStateSet::apply_from_default_state(
 	if (d_value == 1 /*epsilon test*/ &&
 		d_invert == GL_FALSE)
 	{
-		return;
+		return false;
 	}
 
 	glSampleCoverage(
 			static_cast<GLclampf>(d_value.dval()),
 			d_invert);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLSampleCoverageStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -2041,16 +2294,18 @@ GPlatesOpenGL::GLSampleCoverageStateSet::apply_to_default_state(
 	if (d_value == 1 /*epsilon test*/ &&
 		d_invert == GL_FALSE)
 	{
-		return;
+		return false;
 	}
 
 	glSampleCoverage(1, GL_FALSE);
+
+	return true;
 }
 
 
 const GLbitfield GPlatesOpenGL::GLSampleMaskStateSet::DEFAULT_MASK = ~GLbitfield(0)/*all ones*/;
 
-void
+bool
 GPlatesOpenGL::GLSampleMaskStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -2059,6 +2314,8 @@ GPlatesOpenGL::GLSampleMaskStateSet::apply_state(
 	// Throws exception if downcast fails...
 	const GLSampleMaskStateSet &current = dynamic_cast<const GLSampleMaskStateSet &>(current_state_set);
 
+	bool applied_state = false;
+
 	const GLuint num_masks = capabilities.gl_max_sample_mask_words;
 	for (GLuint i = 0; i < num_masks; ++i)
 	{
@@ -2066,15 +2323,20 @@ GPlatesOpenGL::GLSampleMaskStateSet::apply_state(
 		if (d_masks[i] != current.d_masks[i])
 		{
 			glSampleMaski(i, d_masks[i]);
+			applied_state = true;
 		}
 	}
+
+	return applied_state;
 }
 
-void
+bool
 GPlatesOpenGL::GLSampleMaskStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
+	bool applied_state = false;
+
 	const GLuint num_masks = capabilities.gl_max_sample_mask_words;
 	for (GLuint i = 0; i < num_masks; ++i)
 	{
@@ -2082,15 +2344,20 @@ GPlatesOpenGL::GLSampleMaskStateSet::apply_from_default_state(
 		if (d_masks[i] != DEFAULT_MASK)
 		{
 			glSampleMaski(i, d_masks[i]);
+			applied_state = true;
 		}
 	}
+
+	return applied_state;
 }
 
-void
+bool
 GPlatesOpenGL::GLSampleMaskStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
+	bool applied_state = false;
+
 	const GLuint num_masks = capabilities.gl_max_sample_mask_words;
 	for (GLuint i = 0; i < num_masks; ++i)
 	{
@@ -2098,12 +2365,15 @@ GPlatesOpenGL::GLSampleMaskStateSet::apply_to_default_state(
 		if (d_masks[i] != DEFAULT_MASK)
 		{
 			glSampleMaski(i, DEFAULT_MASK);
+			applied_state = true;
 		}
 	}
+
+	return applied_state;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLScissorStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -2115,15 +2385,17 @@ GPlatesOpenGL::GLScissorStateSet::apply_state(
 	// Return early if no state change...
 	if (d_scissor_rectangle == current.d_scissor_rectangle)
 	{
-		return;
+		return false;
 	}
 
 	glScissor(
 			d_scissor_rectangle.x(), d_scissor_rectangle.y(),
 			d_scissor_rectangle.width(), d_scissor_rectangle.height());
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLScissorStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -2131,15 +2403,17 @@ GPlatesOpenGL::GLScissorStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_scissor_rectangle == d_default_scissor_rectangle)
 	{
-		return;
+		return false;
 	}
 
 	glScissor(
 			d_scissor_rectangle.x(), d_scissor_rectangle.y(),
 			d_scissor_rectangle.width(), d_scissor_rectangle.height());
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLScissorStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -2147,19 +2421,21 @@ GPlatesOpenGL::GLScissorStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_scissor_rectangle == d_default_scissor_rectangle)
 	{
-		return;
+		return false;
 	}
 
 	glScissor(
 			d_default_scissor_rectangle.x(), d_default_scissor_rectangle.y(),
 			d_default_scissor_rectangle.width(), d_default_scissor_rectangle.height());
+
+	return true;
 }
 
 
 const GPlatesOpenGL::GLStencilFuncStateSet::Func
 GPlatesOpenGL::GLStencilFuncStateSet::DEFAULT_FUNC{ GL_ALWAYS, 0, ~GLuint(0) };
 
-void
+bool
 GPlatesOpenGL::GLStencilFuncStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -2167,6 +2443,8 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_state(
 {
 	// Throws exception if downcast fails...
 	const GLStencilFuncStateSet &current = dynamic_cast<const GLStencilFuncStateSet &>(current_state_set);
+
+	bool applied_state = false;
 
 	if (d_front_func == d_back_func)
 	{
@@ -2177,6 +2455,7 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_state(
 			// Both front/back funcs are the same so set them in one call
 			// (even though it's possible only one of the faces has changed).
 			glStencilFunc(d_front_func.func, d_front_func.ref, d_front_func.mask);
+			applied_state = true;
 		}
 	}
 	else // Front and back stencil funcs are different...
@@ -2184,25 +2463,32 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_state(
 		if (d_front_func != current.d_front_func)
 		{
 			glStencilFuncSeparate(GL_FRONT, d_front_func.func, d_front_func.ref, d_front_func.mask);
+			applied_state = true;
 		}
 		if (d_back_func != current.d_back_func)
 		{
 			glStencilFuncSeparate(GL_BACK, d_back_func.func, d_back_func.ref, d_back_func.mask);
+			applied_state = true;
 		}
 	}
+
+	return applied_state;
 }
 
-void
+bool
 GPlatesOpenGL::GLStencilFuncStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
+	bool applied_state = false;
+
 	if (d_front_func == d_back_func)
 	{
 		if (d_front_func != DEFAULT_FUNC)
 		{
 			// Both front/back funcs are the same so set them in one call.
 			glStencilFunc(d_front_func.func, d_front_func.ref, d_front_func.mask);
+			applied_state = true;
 		}
 	}
 	else // Front and back stencil funcs are different...
@@ -2210,25 +2496,32 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_from_default_state(
 		if (d_front_func != DEFAULT_FUNC)
 		{
 			glStencilFuncSeparate(GL_FRONT, d_front_func.func, d_front_func.ref, d_front_func.mask);
+			applied_state = true;
 		}
 		if (d_back_func != DEFAULT_FUNC)
 		{
 			glStencilFuncSeparate(GL_BACK, d_back_func.func, d_back_func.ref, d_back_func.mask);
+			applied_state = true;
 		}
 	}
+
+	return applied_state;
 }
 
-void
+bool
 GPlatesOpenGL::GLStencilFuncStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
+	bool applied_state = false;
+
 	if (d_front_func == d_back_func)
 	{
 		if (d_front_func != DEFAULT_FUNC)
 		{
 			// Both front/back funcs are the same so set them in one call.
 			glStencilFunc(DEFAULT_FUNC.func, DEFAULT_FUNC.ref, DEFAULT_FUNC.mask);
+			applied_state = true;
 		}
 	}
 	else // Front and back stencil funcs are different...
@@ -2236,18 +2529,22 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_to_default_state(
 		if (d_front_func != DEFAULT_FUNC)
 		{
 			glStencilFuncSeparate(GL_FRONT, DEFAULT_FUNC.func, DEFAULT_FUNC.ref, DEFAULT_FUNC.mask);
+			applied_state = true;
 		}
 		if (d_back_func != DEFAULT_FUNC)
 		{
 			glStencilFuncSeparate(GL_BACK, DEFAULT_FUNC.func, DEFAULT_FUNC.ref, DEFAULT_FUNC.mask);
+			applied_state = true;
 		}
 	}
+
+	return applied_state;
 }
 
 
 const GLuint GPlatesOpenGL::GLStencilMaskStateSet::DEFAULT_MASK = ~GLuint(0)/*all ones*/;
 
-void
+bool
 GPlatesOpenGL::GLStencilMaskStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -2255,6 +2552,8 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_state(
 {
 	// Throws exception if downcast fails...
 	const GLStencilMaskStateSet &current = dynamic_cast<const GLStencilMaskStateSet &>(current_state_set);
+
+	bool applied_state = false;
 
 	if (d_front_mask == d_back_mask)
 	{
@@ -2265,6 +2564,7 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_state(
 			// Both front/back masks are the same so set them in one call
 			// (even though it's possible only one of the faces has changed).
 			glStencilMask(d_front_mask);
+			applied_state = true;
 		}
 	}
 	else // Front and back stencil masks are different...
@@ -2272,25 +2572,32 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_state(
 		if (d_front_mask != current.d_front_mask)
 		{
 			glStencilMaskSeparate(GL_FRONT, d_front_mask);
+			applied_state = true;
 		}
 		if (d_back_mask != current.d_back_mask)
 		{
 			glStencilMaskSeparate(GL_BACK, d_back_mask);
+			applied_state = true;
 		}
 	}
+
+	return applied_state;
 }
 
-void
+bool
 GPlatesOpenGL::GLStencilMaskStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
+	bool applied_state = false;
+
 	if (d_front_mask == d_back_mask)
 	{
 		if (d_front_mask != DEFAULT_MASK)
 		{
 			// Both front/back masks are the same so set them in one call.
 			glStencilMask(d_front_mask);
+			applied_state = true;
 		}
 	}
 	else // Front and back stencil masks are different...
@@ -2298,25 +2605,32 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_from_default_state(
 		if (d_front_mask != DEFAULT_MASK)
 		{
 			glStencilMaskSeparate(GL_FRONT, d_front_mask);
+			applied_state = true;
 		}
 		if (d_back_mask != DEFAULT_MASK)
 		{
 			glStencilMaskSeparate(GL_BACK, d_back_mask);
+			applied_state = true;
 		}
 	}
+
+	return applied_state;
 }
 
-void
+bool
 GPlatesOpenGL::GLStencilMaskStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
+	bool applied_state = false;
+
 	if (d_front_mask == d_back_mask)
 	{
 		if (d_front_mask != DEFAULT_MASK)
 		{
 			// Both front/back masks are the same so set them in one call.
 			glStencilMask(DEFAULT_MASK);
+			applied_state = true;
 		}
 	}
 	else // Front and back stencil masks are different...
@@ -2324,19 +2638,23 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_to_default_state(
 		if (d_front_mask != DEFAULT_MASK)
 		{
 			glStencilMaskSeparate(GL_FRONT, DEFAULT_MASK);
+			applied_state = true;
 		}
 		if (d_back_mask != DEFAULT_MASK)
 		{
 			glStencilMaskSeparate(GL_BACK, DEFAULT_MASK);
+			applied_state = true;
 		}
 	}
+
+	return applied_state;
 }
 
 
 const GPlatesOpenGL::GLStencilOpStateSet::Op
 GPlatesOpenGL::GLStencilOpStateSet::DEFAULT_OP{ GL_KEEP, GL_KEEP, GL_KEEP };
 
-void
+bool
 GPlatesOpenGL::GLStencilOpStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -2344,6 +2662,8 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_state(
 {
 	// Throws exception if downcast fails...
 	const GLStencilOpStateSet &current = dynamic_cast<const GLStencilOpStateSet &>(current_state_set);
+
+	bool applied_state = false;
 
 	if (d_front_op == d_back_op)
 	{
@@ -2354,6 +2674,7 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_state(
 			// Both front/back ops are the same so set them in one call
 			// (even though it's possible only one of the faces has changed).
 			glStencilOp(d_front_op.sfail, d_front_op.dpfail, d_front_op.dppass);
+			applied_state = true;
 		}
 	}
 	else // Front and back stencil ops are different...
@@ -2361,25 +2682,32 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_state(
 		if (d_front_op != current.d_front_op)
 		{
 			glStencilOpSeparate(GL_FRONT, d_front_op.sfail, d_front_op.dpfail, d_front_op.dppass);
+			applied_state = true;
 		}
 		if (d_back_op != current.d_back_op)
 		{
 			glStencilOpSeparate(GL_BACK, d_back_op.sfail, d_back_op.dpfail, d_back_op.dppass);
+			applied_state = true;
 		}
 	}
+
+	return applied_state;
 }
 
-void
+bool
 GPlatesOpenGL::GLStencilOpStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
+	bool applied_state = false;
+
 	if (d_front_op == d_back_op)
 	{
 		if (d_front_op != DEFAULT_OP)
 		{
 			// Both front/back ops are the same so set them in one call.
 			glStencilOp(d_front_op.sfail, d_front_op.dpfail, d_front_op.dppass);
+			applied_state = true;
 		}
 	}
 	else // Front and back stencil ops are different...
@@ -2387,25 +2715,32 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_from_default_state(
 		if (d_front_op != DEFAULT_OP)
 		{
 			glStencilOpSeparate(GL_FRONT, d_front_op.sfail, d_front_op.dpfail, d_front_op.dppass);
+			applied_state = true;
 		}
 		if (d_back_op != DEFAULT_OP)
 		{
 			glStencilOpSeparate(GL_BACK, d_back_op.sfail, d_back_op.dpfail, d_back_op.dppass);
+			applied_state = true;
 		}
 	}
+
+	return applied_state;
 }
 
-void
+bool
 GPlatesOpenGL::GLStencilOpStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
+	bool applied_state = false;
+
 	if (d_front_op == d_back_op)
 	{
 		if (d_front_op != DEFAULT_OP)
 		{
 			// Both front/back ops are the same so set them in one call.
 			glStencilOp(DEFAULT_OP.sfail, DEFAULT_OP.dpfail, DEFAULT_OP.dppass);
+			applied_state = true;
 		}
 	}
 	else // Front and back stencil ops are different...
@@ -2413,16 +2748,20 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_to_default_state(
 		if (d_front_op != DEFAULT_OP)
 		{
 			glStencilOpSeparate(GL_FRONT, DEFAULT_OP.sfail, DEFAULT_OP.dpfail, DEFAULT_OP.dppass);
+			applied_state = true;
 		}
 		if (d_back_op != DEFAULT_OP)
 		{
 			glStencilOpSeparate(GL_BACK, DEFAULT_OP.sfail, DEFAULT_OP.dpfail, DEFAULT_OP.dppass);
+			applied_state = true;
 		}
 	}
+
+	return applied_state;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLUseProgramStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -2433,14 +2772,16 @@ GPlatesOpenGL::GLUseProgramStateSet::apply_state(
 			// Throws exception if downcast fails...
 			dynamic_cast<const GLUseProgramStateSet &>(current_state_set).d_program_resource)
 	{
-		return;
+		return false;
 	}
 
 	// Use the program.
 	glUseProgram(d_program_resource);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLUseProgramStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -2448,14 +2789,16 @@ GPlatesOpenGL::GLUseProgramStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_program_resource == 0)
 	{
-		return;
+		return false;
 	}
 
 	// Use the program.
 	glUseProgram(d_program_resource);
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLUseProgramStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -2463,15 +2806,17 @@ GPlatesOpenGL::GLUseProgramStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_program_resource == 0)
 	{
-		return;
+		return false;
 	}
 
 	// The default is zero (no program in use).
     glUseProgram(0);
+
+	return true;
 }
 
 
-void
+bool
 GPlatesOpenGL::GLViewportStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
@@ -2483,15 +2828,17 @@ GPlatesOpenGL::GLViewportStateSet::apply_state(
 	// Return early if no state change...
 	if (d_viewport == current.d_viewport)
 	{
-		return;
+		return false;
 	}
 
 	glViewport(
 			d_viewport.x(), d_viewport.y(),
 			d_viewport.width(), d_viewport.height());
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLViewportStateSet::apply_from_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -2499,15 +2846,17 @@ GPlatesOpenGL::GLViewportStateSet::apply_from_default_state(
 	// Return early if no state change...
 	if (d_viewport == d_default_viewport)
 	{
-		return;
+		return false;
 	}
 
 	glViewport(
 			d_viewport.x(), d_viewport.y(),
 			d_viewport.width(), d_viewport.height());
+
+	return true;
 }
 
-void
+bool
 GPlatesOpenGL::GLViewportStateSet::apply_to_default_state(
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
@@ -2515,10 +2864,12 @@ GPlatesOpenGL::GLViewportStateSet::apply_to_default_state(
 	// Return early if no state change...
 	if (d_viewport == d_default_viewport)
 	{
-		return;
+		return false;
 	}
 
 	glViewport(
 			d_default_viewport.x(), d_default_viewport.y(),
 			d_default_viewport.width(), d_default_viewport.height());
+
+	return true;
 }

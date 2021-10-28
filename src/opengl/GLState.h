@@ -897,17 +897,27 @@ namespace GPlatesOpenGL
 			// Apply the new state set.
 			if (current_state_set)
 			{
-				// Both state sets exist - this is a transition from an existing state to another
-				// (possibly different) existing state - if the two states are the same then it's
-				// possible for this to do nothing.
-				new_state_set->apply_state(d_capabilities, *current_state_set, *this/*current_state*/);
+				// Both state sets exist - this is a transition from an existing state to a new (possibly different) state.
+				if (!new_state_set->apply_state(d_capabilities, *current_state_set, *this/*current_state*/))
+				{
+					// Return early if no change was detected (ie, new state matches existing state).
+					return;
+				}
 			}
 			else
 			{
 				// Only the new state set exists - get it to apply its internal state.
 				// This is a transition from the default state to a new state.
-				new_state_set->apply_from_default_state(d_capabilities, *this/*current_state*/);
+				if (!new_state_set->apply_from_default_state(d_capabilities, *this/*current_state*/))
+				{
+					// Return early if no change was detected (ie, new state represents the default state).
+					return;
+				}
 			}
+
+			//
+			// If we get here then the new state is different from the existing state, and we need to record this.
+			//
 
 			// Store the new state set.
 			d_current_state->state_sets[state_set_key] = new_state_set;
