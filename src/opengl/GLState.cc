@@ -40,11 +40,12 @@ GPlatesOpenGL::GLState::GLState(
 		const GLCapabilities &capabilities,
 		const GLStateStore::non_null_ptr_type &state_store) :
 	d_capabilities(capabilities),
-	d_state_set_store(state_store->get_state_set_store()),
 	d_state_set_keys(state_store->get_state_set_keys()),
-	d_current_state(Snapshot::create(*state_store->get_state_set_keys())),
-	// Note that default state is empty (and remains so)...
-	d_default_state(Snapshot::create(*state_store->get_state_set_keys()))
+	d_state_set_store(state_store->get_state_set_store()),
+	// The root state scope is initially empty (which represents the default OpenGL state)...
+	d_root_state_scope(d_state_scope_pool.add_with_auto_release(boost::in_place())),
+	// The current state scope is initially the root state scope (until a GL::StateScope is entered)...
+	d_current_state_scope(d_root_state_scope)
 {
 }
 
@@ -52,12 +53,10 @@ GPlatesOpenGL::GLState::GLState(
 void
 GPlatesOpenGL::GLState::reset_to_default()
 {
-	// Apply the default state so that it becomes the current state.
-	apply_state(
-			*d_default_state,
-			// The state slots that change between the current state and default state are actually all
-			// the non-null state set slots of the current state because the default state is all nulls...
-			d_current_state->state_set_slots);
+	PROFILE_FUNC();
+
+	// Reset the current state to the default OpenGL state.
+	d_current_state_scope->apply_default_state(*this/*current_state*/, d_capabilities);
 
 	//
 	// Special case: Generic vertex attribute values
@@ -83,224 +82,60 @@ GPlatesOpenGL::GLState::reset_to_default()
 
 
 void
-GPlatesOpenGL::GLState::save() const
+GPlatesOpenGL::GLState::save()
 {
 	PROFILE_FUNC();
 
-	// Allocate an empty snapshot.
-	Snapshot::shared_ptr_type saved_snapshot = Snapshot::create(*d_state_set_keys);
-
-	//
-	// Next copy the current state to the snapshot.
-	//
-	// This includes the GLStateSet object pointers and the flags indicating non-null slots.
-	//
-	// NOTE: This code is written for optimisation, not simplicity, since it registers high on the CPU profile.
-	//
-
-	// Saved state.
-	state_set_ptr_type *const saved_state_sets = &saved_snapshot->state_sets[0];
-	state_set_slot_flag32_type *const saved_state_set_slots = &saved_snapshot->state_set_slots[0];
-
-	// Current state.
-	const state_set_ptr_type *const current_state_sets = &d_current_state->state_sets[0];
-	const state_set_slot_flag32_type *const current_state_set_slots = &d_current_state->state_set_slots[0];
-
-	// Iterate over groups of 32 slots.
-	const unsigned int num_state_set_slot_flag32s = get_num_state_set_slot_flag32s(*d_state_set_keys);
-	for (unsigned int state_set_slot_flag32_index = 0;
-		state_set_slot_flag32_index < num_state_set_slot_flag32s;
-		++state_set_slot_flag32_index)
+	// Allocate an empty state scope as the new current state scope.
+	if (d_save_restore_state.empty())
 	{
-		const state_set_slot_flag32_type current_state_set_slot_flag32 =
-				current_state_set_slots[state_set_slot_flag32_index];
-
-		// Are any of the current 32 slots non-null?
-		if (current_state_set_slot_flag32 != 0)
-		{
-			const state_set_key_type state_set_slot32 = (state_set_slot_flag32_index << 5);
-
-			state_set_slot_flag32_type byte_mask = 0xff;
-			// Iterate over the 4 groups of 8 slots each.
-			for (int i = 0; i < 4; ++i, byte_mask <<= 8)
-			{
-				// Are any of the current 8 slots non-null?
-				if ((current_state_set_slot_flag32 & byte_mask) != 0)
-				{
-					unsigned int bit32 = (i << 3);
-					state_set_slot_flag32_type flag32 = (1 << bit32);
-
-					// Iterate over 8 slots.
-					for (int j = 8; --j >= 0; ++bit32, flag32 <<= 1)
-					{
-						// Is the current slot non-null?
-						if ((current_state_set_slot_flag32 & flag32) != 0)
-						{
-							const state_set_key_type state_set_slot = state_set_slot32 + bit32;
-
-							// Copy the slot's state-set pointer.
-							saved_state_sets[state_set_slot] = current_state_sets[state_set_slot];
-						}
-					}
-				}
-			}
-
-			// Copy the 32 slot flags.
-			saved_state_set_slots[state_set_slot_flag32_index] = current_state_set_slots[state_set_slot_flag32_index];
-		}
+		// Parent is the root state scope (since there are no saved state scopes).
+		d_current_state_scope = d_state_scope_pool.add_with_auto_release(
+				boost::in_place(d_root_state_scope));
+	}
+	else
+	{
+		// Parent is the most recently saved/pushed state scope.
+		d_current_state_scope = d_state_scope_pool.add_with_auto_release(
+				boost::in_place(d_save_restore_state.top()));
 	}
 
-	// We also need to copy the flags indicating which state set slots have been changed between now
-	// and the *previous* save (if there wasn't a previous save then it means the change since the
-	// default startup state).
-	//
-	// Similarly we need to reset all the *changed* flags in the current state since it now
-	// represents changes since the *current* save (and there are no changes yet).
-	//
-	// Both these objectives can be achieved with a swap (noting that the *changed* flags in
-	// 'saved_snapshot' are currently all disabled).
-	saved_snapshot->state_set_slots_changed_since_last_snapshot.swap(
-			d_current_state->state_set_slots_changed_since_last_snapshot);
-
-	// Push the saved state onto the save/restore stack.
-	d_save_restore_state.push(saved_snapshot);
+	// Push the new current state scope onto the save/restore stack.
+	d_save_restore_state.push(d_current_state_scope);
 }
 
 
 void
 GPlatesOpenGL::GLState::restore()
 {
-	// There should be at least one saved snapshot one the stack.
-	// If not then save/restore has been used incorrectly by the caller.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			!d_save_restore_state.empty(),
-			GPLATES_ASSERTION_SOURCE);
-
-	// Get the most recently saved snapshot (and pop it off the stack).
-	Snapshot::shared_ptr_type saved_snapshot = d_save_restore_state.top();
-	d_save_restore_state.pop();
-
-	// Apply the state of the saved snapshot so that it becomes the current state.
-	apply_state(
-			*saved_snapshot,
-			// Only those state slots that changed (between saving the snapshot and now) need to be applied...
-			d_current_state->state_set_slots_changed_since_last_snapshot);
-
-	// We also need to restore the flags identifying which state set slots have been changed
-	// between the most recent save (that we just restored) and the save before that
-	// (if there wasn't a save before that then it means the change since the default startup state).
-	//
-	// Use a swap to copy from saved snapshot to current snapshot.
-	// The swap copies current to saved as well (but we're about to discard 'saved_snapshot' anyway).
-	d_current_state->state_set_slots_changed_since_last_snapshot.swap(
-			saved_snapshot->state_set_slots_changed_since_last_snapshot);
-}
-
-
-void
-GPlatesOpenGL::GLState::apply_state(
-		const Snapshot &new_state,
-		const state_set_slot_flags_type &state_set_slots_changed)
-{
 	PROFILE_FUNC();
 
-	//
-	// NOTE: This code is written for optimisation, not simplicity, since it registers high on the CPU profile.
-	//
+	// There should be at least one saved state on the stack - if not then save/restore
+	// has been used incorrectly by the caller.
+	// Also the top of the save/restore stack should be the current state scope.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			!d_save_restore_state.empty() &&
+				d_current_state_scope == d_save_restore_state.top(),
+			GPLATES_ASSERTION_SOURCE);
 
-	// New state.
-	const state_set_ptr_type *const new_state_sets = &new_state.state_sets[0];
-	const state_set_slot_flag32_type *const new_state_set_slots = &new_state.state_set_slots[0];
+	// Revert the state changed since the start of the current scope.
+	d_current_state_scope->apply_state_at_scope_start(
+			*this/*current_state*/,
+			d_capabilities);
 
-	// Current state.
-	state_set_ptr_type *const current_state_sets = &d_current_state->state_sets[0];
-	state_set_slot_flag32_type *const current_state_set_slots = &d_current_state->state_set_slots[0];
+	// Pop the current state scope off the save/restore stack.
+	d_save_restore_state.pop();
 
-	// State slots changed.
-	const state_set_slot_flag32_type *const state_set_slots_changed_array = &state_set_slots_changed[0];
-
-	// Iterate over the state set slots that have changed (between current and new states).
-	//
-	// Iterate over groups of 32 slots.
-	const unsigned int num_state_set_slot_flag32s = get_num_state_set_slot_flag32s(*d_state_set_keys);
-	for (unsigned int state_set_slot_flag32_index = 0;
-		state_set_slot_flag32_index < num_state_set_slot_flag32s;
-		++state_set_slot_flag32_index)
+	// The new current state scope is the parent state scope.
+	if (d_save_restore_state.empty())
 	{
-		const state_set_slot_flag32_type state_set_slots_changed_flag32 =
-				state_set_slots_changed_array[state_set_slot_flag32_index];
-
-		// Have any of the 32 slots changed state?
-		if (state_set_slots_changed_flag32 != 0)
-		{
-			state_set_slot_flag32_type &current_state_set_slot_flag32 =
-					current_state_set_slots[state_set_slot_flag32_index];
-
-			const state_set_key_type state_set_slot32 = (state_set_slot_flag32_index << 5);
-
-			state_set_slot_flag32_type byte_mask = 0xff;
-			// Iterate over the 4 groups of 8 slots each.
-			for (int i = 0; i < 4; ++i, byte_mask <<= 8)
-			{
-				// Have any of these 8 slots changed state?
-				if ((state_set_slots_changed_flag32 & byte_mask) != 0)
-				{
-					unsigned int bit32 = (i << 3);
-					state_set_slot_flag32_type flag32 = (1 << bit32);
-
-					// Iterate over 8 slots.
-					for (int j = 8; --j >= 0; ++bit32, flag32 <<= 1)
-					{
-						// Has this slot changed state?
-						if ((state_set_slots_changed_flag32 & flag32) != 0)
-						{
-							const state_set_key_type state_set_slot = state_set_slot32 + bit32;
-
-							// Note that either of these could be NULL.
-							const state_set_ptr_type &new_state_set = new_state_sets[state_set_slot];
-							state_set_ptr_type &current_state_set = current_state_sets[state_set_slot];
-
-							if (current_state_set && new_state_set)
-							{
-								// Both state sets exist.
-
-								// This is a transition from an existing state to another (possibly different)
-								// existing state - if the two states compare equal then it's possible for this
-								// to do nothing.
-								new_state_set->apply_state(d_capabilities, *current_state_set, *this/*current_state*/);
-
-								// Update the current state so subsequent state-sets can see it.
-								current_state_set = new_state_set;
-							}
-							else if (current_state_set)
-							{
-								// Only the current state set exists - get it to set the default state.
-								// This is a transition from an existing state to the default state.
-								current_state_set->apply_to_default_state(d_capabilities, *this/*current_state*/);
-
-								// Update the current state so subsequent state-sets can see it since
-								// they may wish to query the current state.
-								current_state_set.reset();
-								current_state_set_slot_flag32 &= ~flag32;  // Clear the bit flag.
-							}
-							else if (new_state_set)
-							{
-								// Only the new state set exists - get it to apply its internal state.
-								// This is a transition from the default state to a new state.
-								new_state_set->apply_from_default_state(d_capabilities, *this/*current_state*/);
-
-								// Update the current state so subsequent state-sets can see it since
-								// they may wish to query the current state.
-								current_state_set = new_state_set;
-								current_state_set_slot_flag32 |= flag32;  // Set the bit flag.
-							}
-							// ...note that both state set slots should not be null since
-							// we recorded a state change (between current and new).
-						}
-					}
-				}
-			}
-		}
+		// Parent is the root state scope (since there are no more saved state scopes).
+		d_current_state_scope = d_root_state_scope;
+	}
+	else
+	{
+		// Parent is the next most recently saved/pushed state scope.
+		d_current_state_scope = d_save_restore_state.top();
 	}
 }
 
@@ -361,7 +196,7 @@ GPlatesOpenGL::GLState::bind_framebuffer(
 		}
 	}
 
-	set_and_apply_state_set(
+	apply_state_set(
 			d_state_set_store->bind_framebuffer_state_sets,
 			GLStateSetKeys::KEY_BIND_FRAMEBUFFER,
 			boost::in_place(
@@ -396,7 +231,7 @@ GPlatesOpenGL::GLState::color_maski(
 	masks[buf] = {red, green, blue, alpha};
 
 	// Apply modified copy of current state.
-	set_and_apply_state_set(
+	apply_state_set(
 			d_state_set_store->color_mask_state_sets,
 			GLStateSetKeys::KEY_COLOR_MASK,
 			boost::in_place(boost::cref(d_capabilities), masks));
@@ -418,7 +253,7 @@ GPlatesOpenGL::GLState::enable(
 		//   that capability for all indices, respectively.
 
 		// Apply to indexed state.
-		set_and_apply_state_set(
+		apply_state_set(
 				d_state_set_store->enable_indexed_state_sets,
 				state_set_key,
 				boost::in_place(cap, enable_, d_state_set_keys->get_num_capability_indices(cap)));
@@ -426,7 +261,7 @@ GPlatesOpenGL::GLState::enable(
 	else // not an indexed capability ...
 	{
 		// Apply to non-indexed state.
-		set_and_apply_state_set(
+		apply_state_set(
 				d_state_set_store->enable_state_sets,
 				state_set_key,
 				boost::in_place(cap, enable_));
@@ -465,7 +300,7 @@ GPlatesOpenGL::GLState::enablei(
 
 		// Apply modified copy of current state.
 		// Apply to indexed state.
-		set_and_apply_state_set(
+		apply_state_set(
 				d_state_set_store->enable_indexed_state_sets,
 				state_set_key,
 				boost::in_place(cap, enable_indices));
@@ -482,7 +317,7 @@ GPlatesOpenGL::GLState::enablei(
 				GPLATES_ASSERTION_SOURCE);
 
 		// Apply to non-indexed state.
-		set_and_apply_state_set(
+		apply_state_set(
 				d_state_set_store->enable_state_sets,
 				state_set_key,
 				boost::in_place(cap, enable_));
@@ -513,7 +348,7 @@ GPlatesOpenGL::GLState::sample_maski(
 	masks[mask_number] = mask;
 
 	// Apply modified copy of current state.
-	set_and_apply_state_set(
+	apply_state_set(
 			d_state_set_store->sample_mask_state_sets,
 			GLStateSetKeys::KEY_SAMPLE_MASK,
 			boost::in_place(masks));
@@ -562,7 +397,7 @@ GPlatesOpenGL::GLState::stencil_func_separate(
 	}
 
 	// Apply modified copy of current state.
-	set_and_apply_state_set(
+	apply_state_set(
 			d_state_set_store->stencil_func_state_sets,
 			GLStateSetKeys::KEY_STENCIL_FUNC,
 			boost::in_place(front_stencil_func, back_stencil_func));
@@ -607,7 +442,7 @@ GPlatesOpenGL::GLState::stencil_mask_separate(
 	}
 
 	// Apply modified copy of current state.
-	set_and_apply_state_set(
+	apply_state_set(
 			d_state_set_store->stencil_mask_state_sets,
 			GLStateSetKeys::KEY_STENCIL_MASK,
 			boost::in_place(front_mask, back_mask));
@@ -656,7 +491,7 @@ GPlatesOpenGL::GLState::stencil_op_separate(
 	}
 
 	// Apply modified copy of current state.
-	set_and_apply_state_set(
+	apply_state_set(
 			d_state_set_store->stencil_op_state_sets,
 			GLStateSetKeys::KEY_STENCIL_OP,
 			boost::in_place(front_stencil_op, back_stencil_op));
@@ -735,4 +570,201 @@ GPlatesOpenGL::GLState::is_capability_enabled(
 			return GLEnableStateSet::get_default(cap);
 		}
 	}
+}
+
+
+GPlatesOpenGL::GLState::StateScope::StateScope(
+		shared_ptr_to_const_type parent_state_scope) :
+	d_state_at_scope_start(parent_state_scope->d_state_at_scope_start)
+{
+	// The state at the start of the new scope is the state at the start of the parent scope
+	// plus the state that's changed *during* the parent scope.
+	for (const auto &parent_state_set_key_value : parent_state_scope->d_state_changed_since_scope_start)
+	{
+		const state_set_key_type state_set_key = parent_state_set_key_value.first;
+		const boost::optional<state_set_ptr_type> &parent_state_set = parent_state_set_key_value.second;
+
+		if (parent_state_set)
+		{
+			d_state_at_scope_start[state_set_key] = parent_state_set.get();
+		}
+		else
+		{
+			// Parent state set is in the default state, which is the equivalent of no state set,
+			// so make sure there's no state set recorded at the start of the new scope.
+			d_state_at_scope_start.erase(state_set_key);
+		}
+	}
+}
+
+
+boost::optional<GPlatesOpenGL::GLState::state_set_ptr_type>
+GPlatesOpenGL::GLState::StateScope::get_current_state_set(
+		state_set_key_type state_set_key) const
+{
+	// First search the state that *changed* since the start of the scope.
+	auto search_state_changed = d_state_changed_since_scope_start.find(state_set_key);
+	if (search_state_changed != d_state_changed_since_scope_start.end())
+	{
+		const boost::optional<state_set_ptr_type> &state_set = search_state_changed->second;
+
+		// Either the state set exists or is none (ie, has been explicitly set to the default state
+		// since the start of scope). Either way it's the current state, so return it.
+		return state_set;
+	}
+
+	// Next search the state *at* the start of the scope.
+	auto search_state_at_start = d_state_at_scope_start.find(state_set_key);
+	if (search_state_at_start != d_state_at_scope_start.end())
+	{
+		const state_set_ptr_type &state_set = search_state_at_start->second;
+
+		return state_set;
+	}
+
+	// State set not found at all, so its absence means it's in the default OpenGL state.
+	return boost::none;
+}
+
+
+void
+GPlatesOpenGL::GLState::StateScope::apply_state_set(
+		const GLState &current_state,
+		const GLCapabilities &capabilities,
+		state_set_key_type state_set_key,
+		boost::optional<state_set_ptr_type> state_set_ptr)
+{
+	// Get the current state.
+	boost::optional<state_set_ptr_type> current_state_set = get_current_state_set(state_set_key);
+
+	if (state_set_ptr && current_state_set)
+	{
+		// Both state sets exist - this is a transition from the current state to the new state.
+		if (state_set_ptr.get()->apply_state(capabilities, *current_state_set.get(), current_state))
+		{
+			// The new state is different than the current state, so record as the new current state.
+			d_state_changed_since_scope_start[state_set_key] = state_set_ptr;
+		}
+	}
+	else if (state_set_ptr)
+	{
+		// Only the new state set exists - get it to apply its internal state.
+		// This is a transition from the current *default* state to the new state.
+		if (state_set_ptr.get()->apply_from_default_state(capabilities, current_state))
+		{
+			// The new state is different than the *default* state, so record as the new current state.
+			d_state_changed_since_scope_start[state_set_key] = state_set_ptr;
+		}
+	}
+	else if (current_state_set)
+	{
+		// Only the current state set exists - get it to apply the default state.
+		// This is a transition from the current state to the *default* state.
+		if (current_state_set.get()->apply_to_default_state(capabilities, current_state))
+		{
+			// The *default* state is different than the current state, so record as the new current state.
+			d_state_changed_since_scope_start[state_set_key] = boost::none;
+		}
+	}
+	// else neither state exists (so no state change since both are the default state).
+}
+
+
+void
+GPlatesOpenGL::GLState::StateScope::apply_default_state(
+		const GLState &current_state,
+		const GLCapabilities &capabilities)
+{
+	// First iterate over the state that *changed* since the start of the scope.
+	//
+	// This represents the part of the current state that has changed since the start of the scope.
+	for (auto &state_changed : d_state_changed_since_scope_start)
+	{
+		boost::optional<state_set_ptr_type> &state_set = state_changed.second;
+		if (state_set)
+		{
+			// A state set exists (meaning it's *not* the default state).
+			//
+			// Change the state from the current state to the default state.
+			state_set.get()->apply_to_default_state(capabilities, current_state);
+
+			// Record the state as the default state.
+			state_set = boost::none;
+		}
+		// else already in default state.
+	}
+
+	// Next iterate over the state *at* the start of the scope
+	// (but ignore state already set to default in the loop above).
+	//
+	// This represents the part of the current state *at* the start of the scope that has *not*
+	// changed since the start of the scope.
+	for (const auto &state_at_start : d_state_at_scope_start)
+	{
+		const state_set_key_type state_set_key = state_at_start.first;
+		const state_set_ptr_type &state_set = state_at_start.second;
+
+		// Search for the equivalent state set (with same key) in the state that *changed* since the start of the scope.
+		auto insert_state_change = d_state_changed_since_scope_start.insert({state_set_key, state_set});
+		// If the insertion was successful then it means the current state set has not changed since start of the scope.
+		if (insert_state_change.second)
+		{
+			// Change the state from the current state to the default state.
+			state_set->apply_to_default_state(capabilities, current_state);
+
+			// Record the state as the default state.
+			insert_state_change.first->second = boost::none;
+		}
+	}
+}
+
+
+void
+GPlatesOpenGL::GLState::StateScope::apply_state_at_scope_start(
+		const GLState &current_state,
+		const GLCapabilities &capabilities)
+{
+	// Iterate over the state sets representing state that changed since the start of the scope and
+	// revert them (by comparing with the state at the start of the scope).
+	for (const auto &changed_state : d_state_changed_since_scope_start)
+	{
+		const state_set_key_type state_set_key = changed_state.first;
+		const boost::optional<state_set_ptr_type> &changed_state_set = changed_state.second;
+
+		// Search for the equivalent state set (with same key) in the state *at* the start of the scope.
+		auto search_state_at_start = d_state_at_scope_start.find(state_set_key);
+		if (search_state_at_start != d_state_at_scope_start.end())
+		{
+			// A state set existed at the start of the scope (meaning it's *not* in the default state).
+			const state_set_ptr_type &state_set_at_start = search_state_at_start->second;
+
+			if (changed_state_set)
+			{
+				// Change the state from the current state to the state at the start of the scope.
+				state_set_at_start->apply_state(capabilities, *changed_state_set.get(), current_state);
+			}
+			else
+			{
+				// No state set exists for the current state (meaning it's the default state).
+				//
+				// Change the state from the default state to the state at the start of the scope.
+				state_set_at_start->apply_from_default_state(capabilities, current_state);
+			}
+		}
+		else // in default state at start of scope...
+		{
+			if (changed_state_set)
+			{
+				// No state set existed at the start of the scope (meaning it's the default state).
+				//
+				// Change the state from the current state to the default state (at the start of the scope).
+				changed_state_set.get()->apply_to_default_state(capabilities, current_state);
+			}
+			// else neither state exists (so no state change since both are the default state). 
+		}
+	}
+
+	// Since we're reverted to the state at the start of the scope, there's no state changes since
+	// the start of the scope.
+	d_state_changed_since_scope_start.clear();
 }
