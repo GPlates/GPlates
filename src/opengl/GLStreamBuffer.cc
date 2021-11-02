@@ -183,6 +183,9 @@ GPlatesOpenGL::GLStreamBuffer::MapScope::unmap(
 		// Note that the offset is zero and not 'd_uninitialised_offset' since the mapped region
 		// was not the entire buffer (only the uninitialised region at the end of the buffer).
 		glFlushMappedBufferRange(d_target, 0, bytes_written);
+
+		// Advance the offset into un-initialised memory.
+		d_stream_buffer.d_uninitialised_offset += bytes_written;
 	}
 
 	if (!glUnmapBuffer(d_target))
