@@ -56,9 +56,21 @@
 
 namespace
 {
-	// Vertex and fragment shader source code to render background sphere in the 3D globe views (perspective and orthographic).
-	const QString VERTEX_SHADER = ":/opengl/globe/render_background_sphere_vertex_shader.glsl";
-	const QString FRAGMENT_SHADER = ":/opengl/globe/render_background_sphere_fragment_shader.glsl";
+	//
+	// Shader source code to render background sphere in the 3D globe views (perspective and orthographic).
+	//
+
+	const char *VERTEX_SHADER_SOURCE =
+		R"(
+			layout (location = 0) in vec4 position;
+
+			void main()
+			{
+				gl_Position = position;
+			}
+		)";
+
+	const QString FRAGMENT_SHADER_SOURCE_FILE_NAME = ":/opengl/globe/render_background_sphere_fragment_shader.glsl";
 
 
 	void
@@ -69,7 +81,7 @@ namespace
 		// Vertex shader source.
 		GPlatesOpenGL::GLShaderSource vertex_shader_source;
 		vertex_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
-		vertex_shader_source.add_code_segment_from_file(VERTEX_SHADER);
+		vertex_shader_source.add_code_segment(VERTEX_SHADER_SOURCE);
 
 		// Vertex shader.
 		GPlatesOpenGL::GLShader::shared_ptr_type vertex_shader = GPlatesOpenGL::GLShader::create(gl, GL_VERTEX_SHADER);
@@ -79,7 +91,7 @@ namespace
 		// Fragment shader source.
 		GPlatesOpenGL::GLShaderSource fragment_shader_source;
 		fragment_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
-		fragment_shader_source.add_code_segment_from_file(FRAGMENT_SHADER);
+		fragment_shader_source.add_code_segment_from_file(FRAGMENT_SHADER_SOURCE_FILE_NAME);
 
 		// Fragment shader.
 		GPlatesOpenGL::GLShader::shared_ptr_type fragment_shader = GPlatesOpenGL::GLShader::create(gl, GL_FRAGMENT_SHADER);
