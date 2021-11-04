@@ -214,27 +214,36 @@ GPlatesOpenGL::GLState::color_maski(
 		GLboolean alpha)
 {
 	// Get the current state.
-	boost::optional<const GLColorMaskStateSet &> color_mask_state_set =
+	boost::optional<const GLColorMaskStateSet &> current_state_set =
 			query_state_set<GLColorMaskStateSet>(GLStateSetKeys::KEY_COLOR_MASK);
 
-	// Copy of current state.
-	std::vector<GLColorMaskStateSet::Mask> masks = color_mask_state_set
-			? color_mask_state_set->d_masks
-			// Default state...
-			: std::vector<GLColorMaskStateSet::Mask>(d_capabilities.gl_max_draw_buffers, GLColorMaskStateSet::DEFAULT_MASK);
+	// Copy the current state.
+	boost::shared_ptr<GLColorMaskStateSet> new_state_set;
+	if (current_state_set)
+	{
+		new_state_set = create_state_set(
+				d_state_set_store->color_mask_state_sets,
+				// Copy construction...
+				boost::in_place(boost::cref(current_state_set.get())));
+	}
+	else
+	{
+		new_state_set = create_state_set(
+				d_state_set_store->color_mask_state_sets,
+				// Default state...
+				boost::in_place(boost::cref(d_capabilities), boost::cref(GLColorMaskStateSet::DEFAULT_MASK)));
+	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			buf < d_capabilities.gl_max_draw_buffers,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Set the requested state (in copy of current state).
-	masks[buf] = {red, green, blue, alpha};
+	new_state_set->d_masks[buf] = {red, green, blue, alpha};
+	new_state_set->d_all_masks_equal = false;
 
 	// Apply modified copy of current state.
-	apply_state_set(
-			d_state_set_store->color_mask_state_sets,
-			GLStateSetKeys::KEY_COLOR_MASK,
-			boost::in_place(boost::cref(d_capabilities), masks));
+	apply_state_set(GLStateSetKeys::KEY_COLOR_MASK, new_state_set);
 }
 
 
@@ -282,28 +291,39 @@ GPlatesOpenGL::GLState::enablei(
 		const GLuint num_capability_indices = d_state_set_keys->get_num_capability_indices(cap);
 
 		// Get the current state.
-		boost::optional<const GLEnableIndexedStateSet &> enable_indexed_state_set =
+		boost::optional<const GLEnableIndexedStateSet &> current_state_set =
 				query_state_set<GLEnableIndexedStateSet>(state_set_key);
 
-		// Copy of current state.
-		std::vector<bool> enable_indices = enable_indexed_state_set
-				? enable_indexed_state_set->d_indices
-				// Default state...
-				: std::vector<bool>(num_capability_indices, GLEnableStateSet::get_default(cap));
+		// Copy the current state.
+		boost::shared_ptr<GLEnableIndexedStateSet> new_state_set;
+		if (current_state_set)
+		{
+			new_state_set = create_state_set(
+					d_state_set_store->enable_indexed_state_sets,
+					// Copy construction...
+					boost::in_place(boost::cref(current_state_set.get())));
+		}
+		else
+		{
+			new_state_set = create_state_set(
+					d_state_set_store->enable_indexed_state_sets,
+					// Default state...
+					boost::in_place(
+							cap,
+							GLEnableStateSet::get_default(cap),
+							num_capability_indices));
+		}
 
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 				index < num_capability_indices,
 				GPLATES_ASSERTION_SOURCE);
 
 		// Set the requested state (in copy of current state).
-		enable_indices[index] = enable_;
+		new_state_set->d_indices[index] = enable_;
+		new_state_set->d_all_indices_equal = false;
 
 		// Apply modified copy of current state.
-		// Apply to indexed state.
-		apply_state_set(
-				d_state_set_store->enable_indexed_state_sets,
-				state_set_key,
-				boost::in_place(cap, enable_indices));
+		apply_state_set(state_set_key, new_state_set);
 	}
 	else // not an indexed capability ...
 	{
@@ -331,27 +351,35 @@ GPlatesOpenGL::GLState::sample_maski(
 		GLbitfield mask)
 {
 	// Get the current state.
-	boost::optional<const GLSampleMaskStateSet &> sample_mask_state_set =
+	boost::optional<const GLSampleMaskStateSet &> current_state_set =
 			query_state_set<GLSampleMaskStateSet>(GLStateSetKeys::KEY_SAMPLE_MASK);
 
-	// Copy of current state.
-	std::vector<GLbitfield> masks = sample_mask_state_set
-			? sample_mask_state_set->d_masks
-			// Default state...
-			: std::vector<GLbitfield>(d_capabilities.gl_max_sample_mask_words, GLSampleMaskStateSet::DEFAULT_MASK);
+	// Copy the current state.
+	boost::shared_ptr<GLSampleMaskStateSet> new_state_set;
+	if (current_state_set)
+	{
+		new_state_set = create_state_set(
+				d_state_set_store->sample_mask_state_sets,
+				// Copy construction...
+				boost::in_place(boost::cref(current_state_set.get())));
+	}
+	else
+	{
+		new_state_set = create_state_set(
+				d_state_set_store->sample_mask_state_sets,
+				// Default state...
+				boost::in_place(boost::cref(d_capabilities), boost::cref(GLSampleMaskStateSet::DEFAULT_MASK)));
+	}
 
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			mask_number < d_capabilities.gl_max_sample_mask_words,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Set the requested state (in copy of current state).
-	masks[mask_number] = mask;
+	new_state_set->d_masks[mask_number] = mask;
 
 	// Apply modified copy of current state.
-	apply_state_set(
-			d_state_set_store->sample_mask_state_sets,
-			GLStateSetKeys::KEY_SAMPLE_MASK,
-			boost::in_place(masks));
+	apply_state_set(GLStateSetKeys::KEY_SAMPLE_MASK, new_state_set);
 }
 
 
@@ -362,31 +390,47 @@ GPlatesOpenGL::GLState::stencil_func_separate(
 		GLint ref,
 		GLuint mask)
 {
+	// Stencil func to set.
 	const GLStencilFuncStateSet::Func stencil_func{ func, ref, mask };
 
-	// Get the current state.
-	boost::optional<const GLStencilFuncStateSet &> stencil_func_state_set =
-			query_state_set<GLStencilFuncStateSet>(GLStateSetKeys::KEY_STENCIL_FUNC);
-
-	// Copy of current state.
-	GLStencilFuncStateSet::Func front_stencil_func = GLStencilFuncStateSet::DEFAULT_FUNC;
-	GLStencilFuncStateSet::Func back_stencil_func = GLStencilFuncStateSet::DEFAULT_FUNC;
-	if (stencil_func_state_set)
-	{
-		front_stencil_func = stencil_func_state_set->d_front_func;
-		back_stencil_func = stencil_func_state_set->d_back_func;
-	}
+	// Front and back state (starts out uninitialized).
+	GLStencilFuncStateSet::Func front_stencil_func;
+	GLStencilFuncStateSet::Func back_stencil_func;
 
 	// Set the requested state (in copy of current state).
 	if (face == GL_FRONT)
 	{
 		front_stencil_func = stencil_func;
+
+		// Get the current state.
+		boost::optional<const GLStencilFuncStateSet &> stencil_func_state_set =
+				query_state_set<GLStencilFuncStateSet>(GLStateSetKeys::KEY_STENCIL_FUNC);
+		if (stencil_func_state_set)
+		{
+			back_stencil_func = stencil_func_state_set->d_back_func;
+		}
+		else // default state
+		{
+			back_stencil_func = GLStencilFuncStateSet::DEFAULT_FUNC;
+		}
 	}
 	else if (face == GL_BACK)
 	{
 		back_stencil_func = stencil_func;
+
+		// Get the current state.
+		boost::optional<const GLStencilFuncStateSet &> stencil_func_state_set =
+				query_state_set<GLStencilFuncStateSet>(GLStateSetKeys::KEY_STENCIL_FUNC);
+		if (stencil_func_state_set)
+		{
+			front_stencil_func = stencil_func_state_set->d_front_func;
+		}
+		else // default state
+		{
+			front_stencil_func = GLStencilFuncStateSet::DEFAULT_FUNC;
+		}
 	}
-	else
+	else // GL_FRONT_AND_BACK
 	{
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 				face == GL_FRONT_AND_BACK,
@@ -409,29 +453,44 @@ GPlatesOpenGL::GLState::stencil_mask_separate(
 		GLenum face,
 		GLuint mask)
 {
-	// Get the current state.
-	boost::optional<const GLStencilMaskStateSet &> stencil_mask_state_set =
-			query_state_set<GLStencilMaskStateSet>(GLStateSetKeys::KEY_STENCIL_MASK);
-
-	// Copy of current state.
-	GLuint front_mask = GLStencilMaskStateSet::DEFAULT_MASK;
-	GLuint back_mask = GLStencilMaskStateSet::DEFAULT_MASK;
-	if (stencil_mask_state_set)
-	{
-		front_mask = stencil_mask_state_set->d_front_mask;
-		back_mask = stencil_mask_state_set->d_back_mask;
-	}
+	// Front and back state (starts out uninitialized).
+	GLuint front_mask;
+	GLuint back_mask;
 
 	// Set the requested state (in copy of current state).
 	if (face == GL_FRONT)
 	{
 		front_mask = mask;
+
+		// Get the current state.
+		boost::optional<const GLStencilMaskStateSet &> stencil_mask_state_set =
+				query_state_set<GLStencilMaskStateSet>(GLStateSetKeys::KEY_STENCIL_MASK);
+		if (stencil_mask_state_set)
+		{
+			back_mask = stencil_mask_state_set->d_back_mask;
+		}
+		else // default state
+		{
+			back_mask = GLStencilMaskStateSet::DEFAULT_MASK;
+		}
 	}
 	else if (face == GL_BACK)
 	{
 		back_mask = mask;
+
+		// Get the current state.
+		boost::optional<const GLStencilMaskStateSet &> stencil_mask_state_set =
+				query_state_set<GLStencilMaskStateSet>(GLStateSetKeys::KEY_STENCIL_MASK);
+		if (stencil_mask_state_set)
+		{
+			front_mask = stencil_mask_state_set->d_front_mask;
+		}
+		else // default state
+		{
+			front_mask = GLStencilMaskStateSet::DEFAULT_MASK;
+		}
 	}
-	else
+	else // GL_FRONT_AND_BACK
 	{
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 				face == GL_FRONT_AND_BACK,
@@ -456,31 +515,47 @@ GPlatesOpenGL::GLState::stencil_op_separate(
 		GLenum dpfail,
 		GLenum dppass)
 {
+	// Stencil op to set.
 	const GLStencilOpStateSet::Op stencil_op{ sfail, dpfail, dppass };
 
-	// Get the current state.
-	boost::optional<const GLStencilOpStateSet &> stencil_op_state_set =
-			query_state_set<GLStencilOpStateSet>(GLStateSetKeys::KEY_STENCIL_OP);
-
-	// Copy of current state.
-	GLStencilOpStateSet::Op front_stencil_op = GLStencilOpStateSet::DEFAULT_OP;
-	GLStencilOpStateSet::Op back_stencil_op = GLStencilOpStateSet::DEFAULT_OP;
-	if (stencil_op_state_set)
-	{
-		front_stencil_op = stencil_op_state_set->d_front_op;
-		back_stencil_op = stencil_op_state_set->d_back_op;
-	}
+	// Front and back state (starts out uninitialized).
+	GLStencilOpStateSet::Op front_stencil_op;
+	GLStencilOpStateSet::Op back_stencil_op;
 
 	// Set the requested state (in copy of current state).
 	if (face == GL_FRONT)
 	{
 		front_stencil_op = stencil_op;
+
+		// Get the current state.
+		boost::optional<const GLStencilOpStateSet &> stencil_op_state_set =
+				query_state_set<GLStencilOpStateSet>(GLStateSetKeys::KEY_STENCIL_OP);
+		if (stencil_op_state_set)
+		{
+			back_stencil_op = stencil_op_state_set->d_back_op;
+		}
+		else // default state
+		{
+			back_stencil_op = GLStencilOpStateSet::DEFAULT_OP;
+		}
 	}
 	else if (face == GL_BACK)
 	{
 		back_stencil_op = stencil_op;
+
+		// Get the current state.
+		boost::optional<const GLStencilOpStateSet &> stencil_op_state_set =
+				query_state_set<GLStencilOpStateSet>(GLStateSetKeys::KEY_STENCIL_OP);
+		if (stencil_op_state_set)
+		{
+			front_stencil_op = stencil_op_state_set->d_front_op;
+		}
+		else // default state
+		{
+			front_stencil_op = GLStencilOpStateSet::DEFAULT_OP;
+		}
 	}
-	else
+	else // GL_FRONT_AND_BACK
 	{
 		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 				face == GL_FRONT_AND_BACK,
@@ -517,7 +592,7 @@ GPlatesOpenGL::GLState::get_bind_framebuffer(
 				target == GL_READ_FRAMEBUFFER,
 				GPLATES_ASSERTION_SOURCE);
 
-		// Return the GL_DRAW_FRAMEBUFFER framebuffer.
+		// Return the GL_READ_FRAMEBUFFER framebuffer.
 		framebuffer = &GLBindFramebufferStateSet::d_read_framebuffer;
 	}
 

@@ -27,8 +27,6 @@
 #ifndef GPLATES_OPENGL_GLSTATESET_H
 #define GPLATES_OPENGL_GLSTATESET_H
 
-#include <boost/noncopyable.hpp>
-	
 
 namespace GPlatesOpenGL
 {
@@ -46,8 +44,7 @@ namespace GPlatesOpenGL
 	 * (although this does need the object to be bound to the OpenGL context which means setting
 	 * a global state - the binding state for the type of object).
 	 */
-	class GLStateSet :
-			private boost::noncopyable
+	class GLStateSet
 	{
 	public:
 		virtual

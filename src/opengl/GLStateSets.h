@@ -1003,6 +1003,15 @@ namespace GPlatesOpenGL
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
+		//! Utility function to return the default for the specified capability.
+		static
+		bool
+		get_default(
+				GLenum cap)
+		{
+			return GLEnableStateSet::get_default(cap);
+		}
+
 		GLenum d_cap;
 		std::vector<bool> d_indices;
 		bool d_all_indices_equal;
@@ -1391,6 +1400,12 @@ namespace GPlatesOpenGL
 			public GLStateSet
 	{
 		static const GLbitfield DEFAULT_MASK;
+
+		GLSampleMaskStateSet(
+				const GLCapabilities &capabilities,
+				const GLbitfield &mask) :
+			d_masks(capabilities.gl_max_sample_mask_words, mask)
+		{  }
 
 		explicit
 		GLSampleMaskStateSet(

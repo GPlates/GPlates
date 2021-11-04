@@ -897,7 +897,34 @@ namespace GPlatesOpenGL
 				const GLStateStore::non_null_ptr_type &state_store);
 
 		/**
+		 * Create a new GLStateSet of appropriate derived type and store as an immutable state set.
+		 *
+		 * Note: The use of boost::in_place_factory means the derived state set object is created
+		 *       directly in the object pool.
+		 */
+		template <class GLStateSetType, class InPlaceFactoryType>
+		boost::shared_ptr<GLStateSetType>
+		create_state_set(
+				GPlatesUtils::ObjectPool<GLStateSetType> &state_set_pool,
+				const InPlaceFactoryType &state_set_constructor_args)
+		{
+			return state_set_pool.add_with_auto_release(state_set_constructor_args);
+		}
+
+		/**
 		 * Applies the specified state set to OpenGL if a state change is detected.
+		 */
+		void
+		apply_state_set(
+				state_set_key_type state_set_key,
+				const state_set_ptr_type &state_set)
+		{
+			// Apply the new current state set to OpenGL (if a state change is detected).
+			d_current_state_scope->apply_state_set(*this/*current_state*/, d_capabilities, state_set_key, state_set);
+		}
+
+		/**
+		 * Creates a new state set and applies it to OpenGL if a state change is detected.
 		 *
 		 * The constructor arguments of the derived @a GLStateSet type are passed in
 		 * @a state_set_constructor_args and it is created in the @a state_set_pool object pool.
@@ -909,19 +936,8 @@ namespace GPlatesOpenGL
 				state_set_key_type state_set_key,
 				const InPlaceFactoryType &state_set_constructor_args)
 		{
-			// Create a new GLStateSet of appropriate derived type and store as an immutable state set.
-			// If there's an existing state set in the current slot then it gets thrown out.
-			//
-			// Note: The use of boost::in_place_factory means the derived state set object is created
-			//       directly in the object pool.
-			state_set_ptr_type new_current_state_set = state_set_pool.add_with_auto_release(state_set_constructor_args);
-
-			// Apply the new current state set to OpenGL (if a state change is detected).
-			d_current_state_scope->apply_state_set(
-					*this/*current_state*/,
-					d_capabilities,
-					state_set_key,
-					new_current_state_set);
+			// Create a new state set and apply to OpenGL (if a state change is detected).
+			apply_state_set(state_set_key, create_state_set(state_set_pool, state_set_constructor_args));
 		}
 
 
