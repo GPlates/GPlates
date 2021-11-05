@@ -141,6 +141,190 @@ GPlatesOpenGL::GLState::restore()
 
 
 void
+GPlatesOpenGL::GLState::bind_buffer(
+		GLenum target,
+		boost::optional<GLBuffer::shared_ptr_type> buffer)
+{
+	if (target == GL_UNIFORM_BUFFER ||
+		target == GL_TRANSFORM_FEEDBACK_BUFFER)
+	{
+		//
+		// Indexed buffer target.
+		//
+
+		const state_set_key_type state_set_key = d_state_set_keys->get_bind_buffer_key(target);
+
+		// Get the current state.
+		boost::optional<const GLBindBufferIndexedStateSet &> current_state_set =
+				query_state_set<GLBindBufferIndexedStateSet>(state_set_key);
+
+		// Copy the current state.
+		boost::shared_ptr<GLBindBufferIndexedStateSet> new_state_set;
+		if (current_state_set)
+		{
+			new_state_set = create_state_set(
+					d_state_set_store->bind_buffer_indexed_state_sets,
+					// Copy construction...
+					boost::in_place(boost::cref(current_state_set.get())));
+		}
+		else
+		{
+			new_state_set = create_state_set(
+					d_state_set_store->bind_buffer_indexed_state_sets,
+					// Default state...
+					boost::in_place(target));
+		}
+
+		// Set the requested state (in copy of current state).
+		//
+		// Bind/unbind the general binding point - but leave the indexed binding points as they are.
+		if (buffer)
+		{
+			new_state_set->d_general_buffer = buffer.get();
+			new_state_set->d_general_buffer_resource = buffer.get()->get_resource_handle();
+		}
+		else // unbind
+		{
+			new_state_set->d_general_buffer = boost::none;
+			new_state_set->d_general_buffer_resource = 0;
+		}
+
+		// Apply modified copy of current state.
+		apply_state_set(state_set_key, new_state_set);
+	}
+	else
+	{
+		//
+		// Non-indexed buffer target.
+		//
+		apply_state_set(
+				d_state_set_store->bind_buffer_state_sets,
+				d_state_set_keys->get_bind_buffer_key(target),
+				boost::in_place(target, buffer));
+	}
+}
+
+
+void
+GPlatesOpenGL::GLState::bind_buffer_base(
+		GLenum target,
+		GLuint index,
+		boost::optional<GLBuffer::shared_ptr_type> buffer)
+{
+	// Should only be called for an *indexed* target.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			target == GL_UNIFORM_BUFFER || target == GL_TRANSFORM_FEEDBACK_BUFFER,
+			GPLATES_ASSERTION_SOURCE);
+
+	const state_set_key_type state_set_key = d_state_set_keys->get_bind_buffer_key(target);
+
+	// Get the current state.
+	boost::optional<const GLBindBufferIndexedStateSet &> current_state_set =
+			query_state_set<GLBindBufferIndexedStateSet>(state_set_key);
+
+	// Copy the current state.
+	boost::shared_ptr<GLBindBufferIndexedStateSet> new_state_set;
+	if (current_state_set)
+	{
+		new_state_set = create_state_set(
+				d_state_set_store->bind_buffer_indexed_state_sets,
+				// Copy construction...
+				boost::in_place(boost::cref(current_state_set.get())));
+	}
+	else
+	{
+		new_state_set = create_state_set(
+				d_state_set_store->bind_buffer_indexed_state_sets,
+				// Default state...
+				boost::in_place(target));
+	}
+
+	// Set the requested state (in copy of current state).
+	//
+	// Bind/unbind the general binding point as well as the indexed binding point at 'index'.
+	if (buffer)
+	{
+		new_state_set->d_general_buffer = buffer.get();
+		new_state_set->d_general_buffer_resource = buffer.get()->get_resource_handle();
+
+		new_state_set->d_indexed_buffers[index] = { buffer.get(), buffer.get()->get_resource_handle(), boost::none };
+	}
+	else // unbind
+	{
+		new_state_set->d_general_buffer = boost::none;
+		new_state_set->d_general_buffer_resource = 0;
+
+		new_state_set->d_indexed_buffers.erase(index);
+	}
+
+	// Apply modified copy of current state.
+	apply_state_set(state_set_key, new_state_set);
+}
+
+
+void
+GPlatesOpenGL::GLState::bind_buffer_range(
+		GLenum target,
+		GLuint index,
+		boost::optional<GLBuffer::shared_ptr_type> buffer,
+		GLintptr offset,
+		GLsizeiptr size)
+{
+	// Should only be called for an *indexed* target.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			target == GL_UNIFORM_BUFFER || target == GL_TRANSFORM_FEEDBACK_BUFFER,
+			GPLATES_ASSERTION_SOURCE);
+
+	const state_set_key_type state_set_key = d_state_set_keys->get_bind_buffer_key(target);
+
+	// Get the current state.
+	boost::optional<const GLBindBufferIndexedStateSet &> current_state_set =
+			query_state_set<GLBindBufferIndexedStateSet>(state_set_key);
+
+	// Copy the current state.
+	boost::shared_ptr<GLBindBufferIndexedStateSet> new_state_set;
+	if (current_state_set)
+	{
+		new_state_set = create_state_set(
+				d_state_set_store->bind_buffer_indexed_state_sets,
+				// Copy construction...
+				boost::in_place(boost::cref(current_state_set.get())));
+	}
+	else
+	{
+		new_state_set = create_state_set(
+				d_state_set_store->bind_buffer_indexed_state_sets,
+				// Default state...
+				boost::in_place(target));
+	}
+
+	// Set the requested state (in copy of current state).
+	//
+	// Bind/unbind the general binding point as well as the indexed binding point at 'index'.
+	if (buffer)
+	{
+		new_state_set->d_general_buffer = buffer.get();
+		new_state_set->d_general_buffer_resource = buffer.get()->get_resource_handle();
+
+		new_state_set->d_indexed_buffers[index] = {
+				buffer.get(),
+				buffer.get()->get_resource_handle(),
+				GLBindBufferIndexedStateSet::Range{ offset, size } };
+	}
+	else // unbind
+	{
+		new_state_set->d_general_buffer = boost::none;
+		new_state_set->d_general_buffer_resource = 0;
+
+		new_state_set->d_indexed_buffers.erase(index);
+	}
+
+	// Apply modified copy of current state.
+	apply_state_set(state_set_key, new_state_set);
+}
+
+
+void
 GPlatesOpenGL::GLState::bind_framebuffer(
 		GLenum target,
 		boost::optional<GLFramebuffer::shared_ptr_type> framebuffer,
@@ -570,6 +754,28 @@ GPlatesOpenGL::GLState::stencil_op_separate(
 			d_state_set_store->stencil_op_state_sets,
 			GLStateSetKeys::KEY_STENCIL_OP,
 			boost::in_place(front_stencil_op, back_stencil_op));
+}
+
+
+boost::optional<GPlatesOpenGL::GLBuffer::shared_ptr_type>
+GPlatesOpenGL::GLState::get_bind_buffer(
+		GLenum target) const
+{
+	if (target == GL_UNIFORM_BUFFER ||
+		target == GL_TRANSFORM_FEEDBACK_BUFFER)
+	{
+		// Indexed buffer target.
+		return query_state_set<GLBuffer::shared_ptr_type>(
+				d_state_set_keys->get_bind_buffer_key(target),
+				&GLBindBufferIndexedStateSet::d_general_buffer);
+	}
+	else
+	{
+		// Non-indexed buffer target.
+		return query_state_set<GLBuffer::shared_ptr_type>(
+				d_state_set_keys->get_bind_buffer_key(target),
+				&GLBindBufferStateSet::d_buffer);
+	}
 }
 
 

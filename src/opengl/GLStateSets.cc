@@ -157,6 +157,181 @@ GPlatesOpenGL::GLBindBufferStateSet::apply_to_default_state(
 
 
 bool
+GPlatesOpenGL::GLBindBufferIndexedStateSet::apply_state(
+		const GLCapabilities &capabilities,
+		const GLStateSet &current_state_set,
+		const GLState &current_state) const
+{
+	// Throws exception if downcast fails...
+	const GLBindBufferIndexedStateSet &current = dynamic_cast<const GLBindBufferIndexedStateSet &>(current_state_set);
+
+	bool applied_state = false;
+
+	// The current buffer object bound to the *general* binding point can change below when
+	// calling glBindBufferBase or glBindBufferRange.
+	GLuint current_general_buffer_resource = current.d_general_buffer_resource;
+
+	// Iterate over the *new* non-default state (any indices not present represent the default unbound state)
+	// and bind to the indexed binding point (if a state change detected).
+	for (const auto &indexed_slot : d_indexed_buffers)
+	{
+		const GLuint index = indexed_slot.first;
+		const IndexedBuffer &indexed_buffer = indexed_slot.second;
+
+		// See if there was a state change (between current and new states).
+		auto search_current_index_slot = current.d_indexed_buffers.find(index);
+		if (search_current_index_slot != current.d_indexed_buffers.end())
+		{
+			const IndexedBuffer &current_indexed_buffer = search_current_index_slot->second;
+			if (indexed_buffer == current_indexed_buffer)
+			{
+				// No state change detected, so skip to the next index (if any).
+				continue;
+			}
+		}
+
+		// Bind either the entire buffer object or a sub-range to the current indexed binding point.
+		//
+		// Note that, unlike the *general* buffer resource, the *indexed* buffer resource is non-zero.
+		if (indexed_buffer.range)
+		{
+			const Range &range = indexed_buffer.range.get();
+			glBindBufferRange(d_target, index, indexed_buffer.buffer_resource, range.offset, range.size);
+		}
+		else
+		{
+			glBindBufferBase(d_target, index, indexed_buffer.buffer_resource);
+		}
+
+		// Calling glBindBufferBase or glBindBufferRange also changes the *general* binding point.
+		current_general_buffer_resource = indexed_buffer.buffer_resource;
+
+		applied_state = true;
+	}
+
+	// Next iterate over the *current* state (but ignore indices already handled in the loop above).
+	// These are indices bound in the current state but unbound in the new state.
+	for (const auto &current_indexed_slot : current.d_indexed_buffers)
+	{
+		const GLuint current_index = current_indexed_slot.first;
+
+		// Look at the new state.
+		auto search_index_slot = d_indexed_buffers.find(current_index);
+		if (search_index_slot != d_indexed_buffers.end())
+		{
+			// This has already been handled in the loop above, so skip to the next index (if any).
+			continue;
+		}
+
+		// Unbind the current indexed binding point.
+		glBindBufferBase(d_target, current_index, 0);
+
+		// Calling glBindBufferBase also changes the *general* binding point.
+		current_general_buffer_resource = 0;
+
+		applied_state = true;
+	}
+
+	// Bind the buffer object at the *general* binding point (if a state change detected).
+	if (d_general_buffer_resource != current_general_buffer_resource)
+	{
+		// Note: 'd_general_buffer_resource' can be zero.
+		glBindBuffer(d_target, d_general_buffer_resource);
+
+		applied_state = true;
+	}
+
+	return applied_state;
+}
+
+bool
+GPlatesOpenGL::GLBindBufferIndexedStateSet::apply_from_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	bool applied_state = false;
+
+	// The current buffer object bound to the *general* binding point can change below when
+	// calling glBindBufferBase or glBindBufferRange.
+	GLuint current_general_buffer_resource = 0;
+
+	// Iterate over the *new* non-default state (any indices not present represent the default unbound state)
+	// and bind to the indexed binding point.
+	for (const auto &indexed_slot : d_indexed_buffers)
+	{
+		const GLuint index = indexed_slot.first;
+		const IndexedBuffer &indexed_buffer = indexed_slot.second;
+
+		// Bind either the entire buffer object or a sub-range to the current indexed binding point.
+		//
+		// Note that, unlike the *general* buffer resource, the *indexed* buffer resource is non-zero.
+		if (indexed_buffer.range)
+		{
+			const Range &range = indexed_buffer.range.get();
+			glBindBufferRange(d_target, index, indexed_buffer.buffer_resource, range.offset, range.size);
+		}
+		else
+		{
+			glBindBufferBase(d_target, index, indexed_buffer.buffer_resource);
+		}
+
+		// Calling glBindBufferBase or glBindBufferRange also changes the *general* binding point.
+		current_general_buffer_resource = indexed_buffer.buffer_resource;
+
+		applied_state = true;
+	}
+
+	// Bind the buffer object at the *general* binding point (if a state change detected).
+	if (d_general_buffer_resource != current_general_buffer_resource)
+	{
+		// Note: 'd_general_buffer_resource' can be zero.
+		glBindBuffer(d_target, d_general_buffer_resource);
+
+		applied_state = true;
+	}
+
+	return applied_state;
+}
+
+bool
+GPlatesOpenGL::GLBindBufferIndexedStateSet::apply_to_default_state(
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	bool applied_state = false;
+
+	// The current buffer object bound to the *general* binding point can change below when
+	// calling glBindBufferBase or glBindBufferRange.
+	GLuint current_general_buffer_resource = d_general_buffer_resource;
+
+	// Iterate over the *current* non-default state (any indices not present represent the default unbound state)
+	// and unbind from the indexed binding point.
+	for (const auto &indexed_slot : d_indexed_buffers)
+	{
+		const GLuint index = indexed_slot.first;
+
+		// Unbind the current indexed binding point.
+		glBindBufferBase(d_target, index, 0);
+
+		// Calling glBindBufferBase also changes the *general* binding point.
+		current_general_buffer_resource = 0;
+
+		applied_state = true;
+	}
+
+	// Unbind the buffer object at the *general* binding point (if a state change detected).
+	if (0 != current_general_buffer_resource)
+	{
+		glBindBuffer(d_target, 0);
+
+		applied_state = true;
+	}
+
+	return applied_state;
+}
+
+
+bool
 GPlatesOpenGL::GLBindFramebufferStateSet::apply_state(
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,

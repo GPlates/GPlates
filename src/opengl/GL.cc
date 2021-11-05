@@ -90,6 +90,30 @@ GPlatesOpenGL::GL::BindBuffer(
 
 
 void
+GPlatesOpenGL::GL::BindBufferBase(
+		GLenum target,
+		GLuint index,
+		boost::optional<GLBuffer::shared_ptr_type> buffer)
+{
+	// Only used for targets GL_UNIFORM_BUFFER and GL_TRANSFORM_FEEDBACK_BUFFER.
+	d_current_state->bind_buffer_base(target, index, buffer);
+}
+
+
+void
+GPlatesOpenGL::GL::BindBufferRange(
+		GLenum target,
+		GLuint index,
+		boost::optional<GLBuffer::shared_ptr_type> buffer,
+		GLintptr offset,
+		GLsizeiptr size)
+{
+	// Only used for targets GL_UNIFORM_BUFFER and GL_TRANSFORM_FEEDBACK_BUFFER.
+	d_current_state->bind_buffer_range(target, index, buffer, offset, size);
+}
+
+
+void
 GPlatesOpenGL::GL::BindFramebuffer(
 		GLenum target,
 		boost::optional<GLFramebuffer::shared_ptr_type> framebuffer)

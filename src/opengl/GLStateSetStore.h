@@ -65,6 +65,7 @@ namespace GPlatesOpenGL
 		// Alphabetically ordered...
 		GPlatesUtils::ObjectPool<GLActiveTextureStateSet> active_texture_state_sets;
 		GPlatesUtils::ObjectPool<GLBindBufferStateSet> bind_buffer_state_sets;
+		GPlatesUtils::ObjectPool<GLBindBufferIndexedStateSet> bind_buffer_indexed_state_sets;
 		GPlatesUtils::ObjectPool<GLBindFramebufferStateSet> bind_framebuffer_state_sets;
 		GPlatesUtils::ObjectPool<GLBindRenderbufferStateSet> bind_renderbuffer_state_sets;
 		GPlatesUtils::ObjectPool<GLBindSamplerStateSet> bind_sampler_state_sets;

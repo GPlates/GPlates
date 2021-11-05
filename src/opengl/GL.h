@@ -209,6 +209,22 @@ namespace GPlatesOpenGL
 				GLenum target,
 				boost::optional<GLBuffer::shared_ptr_type> buffer);
 
+		//! Bind entire buffer object to indexed target (none means unbind).
+		void
+		BindBufferBase(
+				GLenum target,
+				GLuint index,
+				boost::optional<GLBuffer::shared_ptr_type> buffer);
+
+		//! Bind sub-range of buffer object to indexed target (none means unbind).
+		void
+		BindBufferRange(
+				GLenum target,
+				GLuint index,
+				boost::optional<GLBuffer::shared_ptr_type> buffer,
+				GLintptr offset,
+				GLsizeiptr size);
+
 		//! Bind framebuffer target to framebuffer object (none means bind to default framebuffer).
 		void
 		BindFramebuffer(

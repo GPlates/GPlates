@@ -26,6 +26,7 @@
 #ifndef GPLATES_OPENGL_GLSTATESETS_H
 #define GPLATES_OPENGL_GLSTATESETS_H
 
+#include <unordered_map>
 #include <vector>
 #include <boost/mpl/assert.hpp>
 #include <boost/mpl/contains.hpp>
@@ -97,7 +98,11 @@ namespace GPlatesOpenGL
 	};
 
 	/**
-	 * Used to bind a buffer object.
+	 * Used to bind a buffer object (to a non-indexed target).
+	 *
+	 * This only applies to non-indexed targets (ie, excludes GL_UNIFORM_BUFFER and GL_TRANSFORM_FEEDBACK_BUFFER).
+	 *
+	 * This is used with glBindBuffer only (not glBindBufferBase and glBindBufferRange).
 	 */
 	struct GLBindBufferStateSet :
 			public GLStateSet
@@ -139,6 +144,106 @@ namespace GPlatesOpenGL
 		GLenum d_target;
 		boost::optional<GLBuffer::shared_ptr_type> d_buffer;
 		GLuint d_buffer_resource;
+	};
+
+	/**
+	 * Used to bind a buffer object to an *indexed* target.
+	 *
+	 * This only applies to targets GL_UNIFORM_BUFFER and GL_TRANSFORM_FEEDBACK_BUFFER.
+	 *
+	 * This is used with glBindBuffer, glBindBufferBase and glBindBufferRange for those two targets
+	 * (since glBindBufferBase and glBindBufferRange affect both the indexed target *and* the
+	 * general target, the latter of which is also affected by glBindBuffer).
+	 */
+	struct GLBindBufferIndexedStateSet :
+			public GLStateSet
+	{
+		/**
+		 * Default state.
+		 */
+		GLBindBufferIndexedStateSet(
+				GLenum target) :
+			d_target(target),
+			d_general_buffer_resource(0)
+		{  }
+
+		virtual
+		bool
+		apply_state(
+				const GLCapabilities &capabilities,
+				const GLStateSet &current_state_set,
+				const GLState &current_state) const override;
+
+		virtual
+		bool
+		apply_from_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const override;
+
+		virtual
+		bool
+		apply_to_default_state(
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const override;
+
+
+		//! Used by glBindBufferRange.
+		struct Range
+		{
+			GLintptr offset;
+			GLsizeiptr size;
+
+			bool
+			operator==(
+					const Range &rhs) const
+			{
+				return offset == rhs.offset && size == rhs.size;
+			}
+
+			bool
+			operator!=(
+					const Range &rhs) const
+			{
+				return !(*this == rhs);
+			}
+		};
+
+		//! Used by glBindBufferBase and glBindBufferRange.
+		struct IndexedBuffer
+		{
+			GLBuffer::shared_ptr_type buffer;
+			GLuint buffer_resource;
+
+			boost::optional<Range> range;  // Used by glBindBufferRange.
+
+			bool
+			operator==(
+					const IndexedBuffer &rhs) const
+			{
+				return buffer_resource == rhs.buffer_resource && range == rhs.range;
+			}
+
+			bool
+			operator!=(
+					const IndexedBuffer &rhs) const
+			{
+				return !(*this == rhs);
+			}
+		};
+
+		//! GL_UNIFORM_BUFFER or GL_TRANSFORM_FEEDBACK_BUFFER.
+		GLenum d_target;
+
+		// General binding point - used by glBindBuffer, glBindBufferBase and glBindBufferRange.
+		boost::optional<GLBuffer::shared_ptr_type> d_general_buffer;
+		GLuint d_general_buffer_resource;
+
+		/**
+		 * Indexed binding points - used by glBindBufferBase and glBindBufferRange.
+		 *
+		 * Those indices not present in mapping are in default state (unbound).
+		 */
+		std::unordered_map<GLuint/*index*/, IndexedBuffer> d_indexed_buffers;
 	};
 
 	/**
@@ -689,20 +794,11 @@ namespace GPlatesOpenGL
 		static const Mask DEFAULT_MASK;
 
 
-		// glColorMask
 		GLColorMaskStateSet(
 				const GLCapabilities &capabilities,
 				const Mask &mask) :
 			d_masks(capabilities.gl_max_draw_buffers, mask),
 			d_all_masks_equal(true)
-		{  }
-
-		// glColorMaski
-		GLColorMaskStateSet(
-				const GLCapabilities &capabilities,
-				const std::vector<Mask> &masks) :
-			d_masks(masks),
-			d_all_masks_equal(false)
 		{  }
 
 		virtual
@@ -973,15 +1069,6 @@ namespace GPlatesOpenGL
 			d_cap(cap),
 			d_indices(num_capability_indices, enable),
 			d_all_indices_equal(true)
-		{  }
-
-		// Enable/disable each index individually in the specified capability.
-		GLEnableIndexedStateSet(
-				GLenum cap,
-				const std::vector<bool> &enable_indices) :
-			d_cap(cap),
-			d_indices(enable_indices),
-			d_all_indices_equal(false)
 		{  }
 
 		virtual
@@ -1405,12 +1492,6 @@ namespace GPlatesOpenGL
 				const GLCapabilities &capabilities,
 				const GLbitfield &mask) :
 			d_masks(capabilities.gl_max_sample_mask_words, mask)
-		{  }
-
-		explicit
-		GLSampleMaskStateSet(
-				const std::vector<GLbitfield> &masks) :
-			d_masks(masks)
 		{  }
 
 		virtual

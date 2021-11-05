@@ -136,13 +136,23 @@ namespace GPlatesOpenGL
 		void
 		bind_buffer(
 				GLenum target,
-				boost::optional<GLBuffer::shared_ptr_type> buffer)
-		{
-			apply_state_set(
-					d_state_set_store->bind_buffer_state_sets,
-					d_state_set_keys->get_bind_buffer_key(target),
-					boost::in_place(target, buffer));
-		}
+				boost::optional<GLBuffer::shared_ptr_type> buffer);
+
+		//! Binds the entire buffer object (at the specified *indexed* target) to the active OpenGL context.
+		void
+		bind_buffer_base(
+				GLenum target,
+				GLuint index,
+				boost::optional<GLBuffer::shared_ptr_type> buffer);
+
+		//! Binds a sub-range of the buffer object (at the specified *indexed* target) to the active OpenGL context.
+		void
+		bind_buffer_range(
+				GLenum target,
+				GLuint index,
+				boost::optional<GLBuffer::shared_ptr_type> buffer,
+				GLintptr offset,
+				GLsizeiptr size);
 
 		/**
 		 * Binds the target to the framebuffer object on the active OpenGL context
@@ -644,12 +654,7 @@ namespace GPlatesOpenGL
 		//! Returns the bound buffer object, or boost::none if no object bound.
 		boost::optional<GLBuffer::shared_ptr_type>
 		get_bind_buffer(
-				GLenum target) const
-		{
-			return query_state_set<GLBuffer::shared_ptr_type>(
-					d_state_set_keys->get_bind_buffer_key(target),
-					&GLBindBufferStateSet::d_buffer);
-		}
+				GLenum target) const;
 
 		//! Returns the currently bound framebuffer object - boost::none implies the default framebuffer.
 		boost::optional<GLFramebuffer::shared_ptr_type>
