@@ -35,13 +35,6 @@
 DISABLE_GCC_WARNING("-Wold-style-cast")
 
 
-// Set the GL_COLOR_ATTACHMENT0 constant.
-const GLenum GPlatesOpenGL::GLCapabilities::gl_COLOR_ATTACHMENT0 = GL_COLOR_ATTACHMENT0;
-
-// Set the GL_TEXTURE0 constant.
-const GLenum GPlatesOpenGL::GLCapabilities::gl_TEXTURE0 = GL_TEXTURE0;
-
-
 GPlatesOpenGL::GLCapabilities::GLCapabilities() :
 	//
 	// Note: Non-zero values represent the minimum required by OpenGL 3.3 (core) for all implementations.

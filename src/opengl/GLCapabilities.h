@@ -55,14 +55,6 @@ namespace GPlatesOpenGL
 		// Framebuffer
 		//
 
-		/**
-		 * Simply GL_COLOR_ATTACHMENT0.
-		 *
-		 * Note that GL_COLOR_ATTACHMENT0 is not defined in <opengl/OpenGL1.h>, so this definition is here solely
-		 * to avoid forcing the include of <opengl/OpenGL3.h> which cannot be included from header files.
-		 */
-		static const GLenum gl_COLOR_ATTACHMENT0; // GL_COLOR_ATTACHMENT0
-
 		GLuint gl_max_color_attachments; // GL_MAX_COLOR_ATTACHMENTS query result
 
 		GLuint gl_max_renderbuffer_size; // GL_MAX_RENDERBUFFER_SIZE query result
@@ -110,14 +102,6 @@ namespace GPlatesOpenGL
 		//
 		// Texture
 		//
-
-		/**
-		 * Simply GL_TEXTURE0.
-		 *
-		 * Note that GL_TEXTURE0 is not defined in <opengl/OpenGL1.h>, so this definition is here solely
-		 * to avoid forcing the include of <opengl/OpenGL3.h> which cannot be included from header files.
-		 */
-		static const GLenum gl_TEXTURE0; // GL_TEXTURE0
 
 		GLuint gl_max_texture_size; // GL_MAX_TEXTURE_SIZE query result
 

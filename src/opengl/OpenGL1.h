@@ -44,8 +44,8 @@
 //
 // So, since GPlates relies on the OpenGL 3.3 core profile, this header is only useful for providing
 // basic types (like 'GLenum') in header files. For example, in the declaration of a function that
-// has a parameter of type 'GLenum' - the implementation of that function, in a ".cc" file, then
-// includes <opengl/OpenGL3.h> (at the TOP) to access core OpenGL 3.3 functionality.
+// has a parameter of type 'GLenum', in a ".h" file. The implementation of that function, in a ".cc" file,
+// then includes <opengl/OpenGL3.h> (at the TOP) to access core OpenGL 3.3 functionality.
 
 #include <QtGlobal>
 
@@ -75,6 +75,31 @@ extern "C"
 		/* Other platforms */
 		#define __CONVENTION__ 
 		#include <GL/gl.h>
+	#endif
+
+
+	//
+	// The following declarations might not be in <gl.h> since it might only declare OpenGL 1.1 (eg, on Windows).
+	// So here we declare those (above OpenGL 1.1) that we use in our *header* files, solely to avoid
+	// forcing the include of <glew.h> which cannot be included from header files.
+	//
+	// Note that if <glew.h> has already been included (eg, a ".cc" file included <glew.h> and then later included
+	// a ".h" which included us) then these declarations will not get re-declared (due to their "#ifndef" guards).
+	// Also note that <gl.h> has its own include guards which <glew.h> explicitly defines so that <gl.h> essentially
+	// does nothing if it is included after <glew.h>.
+	// In which case no new declarations will be added by *this* file (everything will be added by <glew.h>).
+	//
+
+	#ifndef GL_TEXTURE0
+	#	define GL_TEXTURE0 0x84C0
+	#endif
+
+	#ifndef GL_COLOR_ATTACHMENT0
+	#	define GL_COLOR_ATTACHMENT0 0x8CE0
+	#endif
+
+	#ifndef GL_INVALID_INDEX
+	#	define GL_INVALID_INDEX 0xFFFFFFFFu
 	#endif
 }
 

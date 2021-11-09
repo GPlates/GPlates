@@ -648,7 +648,7 @@ namespace GPlatesOpenGL
 							GLStateSetKeys::KEY_ACTIVE_TEXTURE,
 							&GLActiveTextureStateSet::d_active_texture);
 			// The default of no active texture unit means the default unit GL_TEXTURE0 is active.
-			return active_texture_ ? active_texture_.get() : GLCapabilities::gl_TEXTURE0;
+			return active_texture_ ? active_texture_.get() : GL_TEXTURE0;
 		}
 
 		//! Returns the bound buffer object, or boost::none if no object bound.

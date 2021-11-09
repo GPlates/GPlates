@@ -320,9 +320,9 @@ namespace GPlatesOpenGL
 					GLuint max_color_attachments) :
 				// Default draw buffers state is GL_NONE for all buffers except first (which is GL_COLOR_ATTACHMENT0).
 				// We only record the number of buffers specified in 'glDrawBuffers' (which is one for 'glDrawBuffer')...
-				draw_buffers_(1, GLCapabilities::gl_COLOR_ATTACHMENT0),
+				draw_buffers_(1, GL_COLOR_ATTACHMENT0),
 				// Default read buffer state is GL_COLOR_ATTACHMENT0...
-				read_buffer_(GLCapabilities::gl_COLOR_ATTACHMENT0)
+				read_buffer_(GL_COLOR_ATTACHMENT0)
 			{
 				color_attachments.resize(max_color_attachments);
 			}
