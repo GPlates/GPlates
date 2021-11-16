@@ -33,15 +33,12 @@
 #include <opengl/OpenGL1.h>
 #include <QString>
 
-#include "GLCompiledDrawState.h"
 #include "GLCubeSubdivision.h"
 #include "GLFramebuffer.h"
 #include "GLLight.h"
 #include "GLProgram.h"
-#include "GLScreenRenderTarget.h"
-#include "GLShader.h"
-#include "GLShaderProgramUtils.h"
-#include "GLShaderSource.h"
+#include "GLRenderbuffer.h"
+#include "GLSampler.h"
 #include "GLStreamBuffer.h"
 #include "GLStreamPrimitives.h"
 #include "GLTexture.h"
@@ -67,6 +64,8 @@
 namespace GPlatesOpenGL
 {
 	class GL;
+	class GLMatrix;
+	class GLViewProjection;
 
 	/**
 	 * A 3D sub-surface scalar field represented as a cube map of concentric depth layers.
@@ -124,39 +123,16 @@ namespace GPlatesOpenGL
 			SurfaceFillMask(
 					const surface_polygons_mask_seq_type &surface_polygons_mask_,
 					bool treat_polylines_as_polygons_,
-					boost::optional<ShowWalls> show_walls_ = boost::none);
+					boost::optional<ShowWalls> show_walls_ = boost::none) :
+				surface_polygons_mask(surface_polygons_mask_),
+				treat_polylines_as_polygons(treat_polylines_as_polygons_),
+				show_walls(show_walls_)
+			{  }
 
 			surface_polygons_mask_seq_type surface_polygons_mask;
 			bool treat_polylines_as_polygons;
 			boost::optional<ShowWalls> show_walls;
 		};
-
-
-		/**
-		 * Returns true if rendering (ray-tracing) of 3D scalar fields are supported on the runtime system.
-		 *
-		 * This essentially requires graphics hardware supporting OpenGL 3.0.
-		 */
-		static
-		bool
-		is_supported(
-				GLRenderer &renderer);
-
-
-		/**
-		 * Returns true if surface polygons masking of 3D scalar fields is supported on the runtime system.
-		 *
-		 * This determines whether @a SurfaceFillMask can be passed into @a render_iso_surface and
-		 * @a render_cross-sections.
-		 *
-		 * Some runtime graphics hardware supports the necessary features for this but then fails
-		 * a framebuffer completeness test. So this test is here to detect that case so that the
-		 * client can, for example, disable this in the user interface or popup a warning message.
-		 */
-		static
-		bool
-		supports_surface_fill_mask(
-				GLRenderer &renderer);
 
 
 		/**
@@ -169,7 +145,7 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				GLRenderer &renderer,
+				GL &gl,
 				const QString &scalar_field_filename,
 				const GLLight::non_null_ptr_type &light);
 
@@ -181,7 +157,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		set_colour_palette(
-				GLRenderer &renderer,
+				GL &gl,
 				const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &colour_palette,
 				const std::pair<double, double> &colour_palette_value_range);
 
@@ -197,7 +173,7 @@ namespace GPlatesOpenGL
 		 */
 		bool
 		change_scalar_field(
-				GLRenderer &renderer,
+				GL &gl,
 				const QString &scalar_field_filename);
 
 
@@ -211,9 +187,7 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Renders the scalar field as an iso-surface visible in the view frustum
-		 * (determined by the current model-view/projection transforms of @a renderer).
-		 *
-		 * @a render_mode must an isosurface mode (ie, not 'RENDER_MODE_CROSS_SECTIONS').
+		 * (determined by the specified viewport and view/projection transforms in @a view_projection).
 		 *
 		 * @a surface_fill_mask contains the optional surface polygon geometries that limit rendering
 		 * of the isosurface to regions underneath the filled surface geometries.
@@ -240,13 +214,14 @@ namespace GPlatesOpenGL
 		 * always output by the fragment shader, during rendering, to the draw buffer at index 1
 		 * (the scalar field colour is output to draw buffer index 0).
 		 * By default this is ignored since default state of glDrawBuffers is NONE for indices >= 1.
-		 * But if you attach a viewport-size floating-point texture to a GLFramebuffer,
-		 * and call GLFramebuffer::gl_draw_buffers(), then depth will get written to the
-		 * texture for those pixels on the rendered iso-surface (or cross-section).
+		 * But if you attach a viewport-size floating-point texture to a GLFramebuffer, and call
+		 * GL::DrawBuffers(), then depth will get written to the texture for those pixels on the
+		 * rendered iso-surface (or cross-section).
 		 */
 		void
 		render_iso_surface(
-				GLRenderer &renderer,
+				GL &gl,
+				const GLViewProjection &view_projection,
 				cache_handle_type &cache_handle,
 				GPlatesViewOperations::ScalarField3DRenderParameters::IsosurfaceDeviationWindowMode deviation_window_mode,
 				GPlatesViewOperations::ScalarField3DRenderParameters::IsosurfaceColourMode colour_mode,
@@ -256,12 +231,12 @@ namespace GPlatesOpenGL
 				const GPlatesViewOperations::ScalarField3DRenderParameters::QualityPerformance &quality_performance,
 				const std::vector<float> &test_variables,
 				boost::optional<SurfaceFillMask> surface_fill_mask = boost::none,
-				boost::optional<GLTexture::shared_ptr_to_const_type> depth_read_texture = boost::none);
+				boost::optional<GLTexture::shared_ptr_type> depth_read_texture = boost::none);
 
 
 		/**
 		 * Renders the scalar field as cross-section(s) visible in the view frustum
-		 * (determined by the current model-view/projection transforms of @a renderer).
+		 * (determined by the specified viewport and view/projection transforms in @a view_projection).
 		 *
 		 * The cross-section geometry is formed by vertically extruded the specified cross section
 		 * geometry from the maximum scalar field depth to the minimum depth.
@@ -285,13 +260,14 @@ namespace GPlatesOpenGL
 		 * always output by the fragment shader, during rendering, to the draw buffer at index 1
 		 * (the scalar field colour is output to draw buffer index 0).
 		 * By default this is ignored since default state of glDrawBuffers is NONE for indices >= 1.
-		 * But if you attach a viewport-size floating-point texture to a GLFramebuffer,
-		 * and call GLFramebuffer::gl_draw_buffers(), then depth will get written to the
-		 * texture for those pixels on the rendered iso-surface (or cross-section).
+		 * But if you attach a viewport-size floating-point texture to a GLFramebuffer, and call
+		 * GL::DrawBuffers(), then depth will get written to the texture for those pixels on the
+		 * rendered iso-surface (or cross-section).
 		 */
 		void
 		render_cross_sections(
-				GLRenderer &renderer,
+				GL &gl,
+				const GLViewProjection &view_projection,
 				cache_handle_type &cache_handle,
 				const cross_sections_seq_type &cross_sections,
 				GPlatesViewOperations::ScalarField3DRenderParameters::CrossSectionColourMode colour_mode,
@@ -300,20 +276,6 @@ namespace GPlatesOpenGL
 				boost::optional<SurfaceFillMask> surface_fill_mask = boost::none);
 
 	private:
-
-		/**
-		 * The version of GLSL shading language to use in our shaders.
-		 *
-		 * We're currently leaving this as the default version (1.2) since, although we use OpenGL 3.0
-		 * features (GLSL 1.3), we're not currently sure whether MacOS Snow Leopard officially
-		 * supports OpenGL 3.0 (and associated GLSL 1.3) so we use the shader '#extension' mechanism
-		 * where possible instead. This works for GL_EXT_texture_array but may need to up the GLSL version
-		 * if start using other features that don't have GLSL '#extension's.
-		 *
-		 * Also GLSL 1.2 supports 'gl_FragData' (part of GL_ARB_draw_buffers) so we don't
-		 * need to declare '#extension GL_ARB_draw_buffers : enable' in the fragment shader.
-		 */
-		static const GLShaderSource::ShaderVersion SHADER_VERSION = GLShaderSource::DEFAULT_SHADER_VERSION;
 
 		/**
 		 * The resolution of the 1D texture for converting depth radii to layer indices.
@@ -347,59 +309,6 @@ namespace GPlatesOpenGL
 		static const unsigned int SURFACE_FILL_MASK_RESOLUTION = 512;
 
 		/**
-		 * The most texture image units used for any shader program.
-		 *
-		 * The maximum used is currently in the isosurface shader program:
-		 *
-		 *  1) sampler2DArray tile_meta_data_sampler;
-		 *  2) sampler2DArray field_data_sampler;
-		 *  3) sampler2DArray mask_data_sampler;
-		 *  4) sampler1D depth_radius_to_layer_sampler;
-		 *  5) sampler1D colour_palette_sampler;
-		 *  6) sampler2D depth_texture_sampler;
-		 *  7) sampler2DArray surface_fill_mask_sampler;
-		 *  8) sampler2D volume_fill_depth_range_sampler;
-		 *  9) sampler2D volume_fill_walls_sampler;
-		 */
-		static const unsigned int MAX_TEXTURE_IMAGE_UNITS_USED = 10;
-
-		/**
-		 * The maximum number of vertices output by the surface fill mask geometry shader.
-		 *
-		 * This is one triangle per cube face and 3 vertices per triangle...
-		 */
-		static const unsigned int SURFACE_FILL_MASK_GEOMETRY_SHADER_MAX_OUTPUT_VERTICES = 6 * 3;
-
-#if 0 // Not currently used...
-		/**
-		 * We will tessellate a great circle arc, when rendering spherical caps,
-		 * if either line segment endpoint is far enough away from the polygon centroid.
-		 *
-		 * In that case this is the number of subdivisions done (at the globe's surface).
-		 * Fewer subdivisions are performed at smaller depths.
-		 *
-		 * The tessellation is performed using a geometry shader.
-		 */
-		static const unsigned int SPHERICAL_CAP_NUM_SUBDIVISIONS = 6;
-
-		/**
-		 * The maximum number of vertices output by the volume fill spherical cap geometry shaders.
-		 *
-		 * This is a triangle strip resulting from subdividing an input triangle equally along two
-		 * of its edges (but not the third edge)...
-		 */
-		static const unsigned int VOLUME_FILL_SPHERICAL_CAP_GEOMETRY_SHADER_MAX_OUTPUT_VERTICES =
-				2 * SPHERICAL_CAP_NUM_SUBDIVISIONS + 1;
-#endif
-
-		/**
-		 * The maximum number of vertices output by the volume fill wall geometry shaders.
-		 *
-		 * This is one quad (two triangles in a triangle strip)...
-		 */
-		static const unsigned int VOLUME_FILL_WALL_GEOMETRY_SHADER_MAX_OUTPUT_VERTICES = 4;
-
-		/**
 		 * The number of bytes in the vertex buffer used to stream.
 		 */
 		static const unsigned int NUM_BYTES_IN_STREAMING_VERTEX_BUFFER = 4 * 1024 * 1024;
@@ -423,6 +332,54 @@ namespace GPlatesOpenGL
 				NUM_BYTES_IN_STREAMING_VERTEX_ELEMENT_BUFFER / 8;
 
 
+		/**
+		 * All texture samplers used by any shader program.
+		 *
+		 * Each sampler is bound to its own texture unit (the value of the respective enum).
+		 *
+		 * Not all shader programs will use all samplers.
+		 */
+		struct Samplers
+		{
+			enum
+			{
+				TILE_META_DATA_SAMPLER,
+				FIELD_DATA_SAMPLER,
+				MASK_DATA_SAMPLER,
+				DEPTH_RADIUS_TO_LAYER_SAMPLER,
+				COLOUR_PALETTE_SAMPLER,
+				DEPTH_TEXTURE_SAMPLER,
+				SURFACE_FILL_MASK_SAMPLER,
+				VOLUME_FILL_SAMPLER,
+
+				NUM_SAMPLERS
+			};
+		};
+
+		/**
+		 * The uniform buffer object binding points
+		 * (used with glUniformBlockBinding and gl.BindBufferBase/gl.BindBufferRange).
+		 *
+		 * There is a limit to how many binding points we can have (queried with GL_MAX_*_UNIFORM_BLOCKS)
+		 * but it is required to be at least 12, so as long as we don't go above 12 we should be fine.
+		 */
+		struct UniformBlockBinding
+		{
+			enum
+			{
+				CUBE_FACE_COORDINATE_FRAMES,
+				VIEW_PROJECTION,
+				SCALAR_FIELD,
+				DEPTH,
+				SURFACE_FILL,
+				LIGHTING,
+				TEST,
+
+				NUM_BLOCKS
+			};
+		};
+
+
 		//! Typedef for vertex elements (indices) used for streaming vertex array.
 		typedef GLuint streaming_vertex_element_type;
 
@@ -433,13 +390,6 @@ namespace GPlatesOpenGL
 		struct CrossSectionVertex
 		{
 			GLfloat surface_point[3];
-			GLfloat depth_weight;
-			// Used to calculate cross-section normal for 2D cross-sections.
-			// It is not used for 1D cross-sections.
-			GLfloat neighbour_surface_point[3];
-			// Is 0.0 for 1D cross-sections.
-			// Is -1 or 1 for 2D cross-sections to ensure calculated normal faces forward.
-			GLfloat normal_weight;
 		};
 
 		//! Typedef for a static stream of cross-section vertices.
@@ -632,7 +582,6 @@ namespace GPlatesOpenGL
 		struct VolumeFillBoundaryVertex
 		{
 			GLfloat surface_point[3];
-			GLfloat centroid_point[3]; // Polygon (or polyline) centroid - only used for spherical caps.
 		};
 
 		//! Typedef for a static stream of volume fill boundary geometry vertices.
@@ -682,8 +631,7 @@ namespace GPlatesOpenGL
 			void
 			render_volume_fill_boundary_segment(
 					const GPlatesMaths::UnitVector3D &start_surface_point,
-					const GPlatesMaths::UnitVector3D &end_surface_point,
-					VolumeFillBoundaryVertex &vertex);
+					const GPlatesMaths::UnitVector3D &end_surface_point);
 
 			void
 			render_stream();
@@ -703,9 +651,8 @@ namespace GPlatesOpenGL
 		public:
 			//! Constructor.
 			SphereMeshBuilder(
-					std::vector<GLVertexUtils::ColourVertex> &vertices,
+					std::vector<GLVertexUtils::Vertex> &vertices,
 					std::vector<GLuint> &vertex_elements,
-					const GPlatesGui::rgba8_t &colour,
 					unsigned int recursion_depth_to_generate_mesh);
 
 			void
@@ -715,9 +662,8 @@ namespace GPlatesOpenGL
 
 		private:
 
-			std::vector<GLVertexUtils::ColourVertex> &d_vertices;
+			std::vector<GLVertexUtils::Vertex> &d_vertices;
 			std::vector<GLuint> &d_vertex_elements;
-			GPlatesGui::rgba8_t d_colour;
 			unsigned int d_recursion_depth_to_generate_mesh;
 		};
 
@@ -795,15 +741,17 @@ namespace GPlatesOpenGL
 		 */
 		GLTexture::shared_ptr_type d_mask_data_texture_array;
 
-		/**
-		 * 1D texture to map layer depth radii to layer indices (into texture array).
-		 */
+		//
+		// 1D texture to map layer depth radii to layer indices (into texture array).
+		//
 		GLTexture::shared_ptr_type d_depth_radius_to_layer_texture;
+		unsigned int d_depth_radius_to_layer_resolution;
 
-		/**
-		 * 1D texture to map scalar values (or gradient magnitudes) to colour.
-		 */
+		//
+		// 1D texture to map scalar values (or gradient magnitudes) to colour.
+		//
 		GLTexture::shared_ptr_type d_colour_palette_texture;
+		unsigned int d_colour_palette_resolution;
 
 		/**
 		 * The current range of the colour palette.
@@ -811,41 +759,134 @@ namespace GPlatesOpenGL
 		std::pair<double, double> d_colour_palette_value_range;
 
 		/**
-		 * Shader program for rendering an iso-surface.
+		 * Uniform buffer for shader programs.
 		 */
-		boost::optional<GLProgram::shared_ptr_type> d_render_iso_surface_program;
+		GLBuffer::shared_ptr_type d_uniform_buffer;
 
 		/**
-		 * Shader program for rendering a cross-section of an iso-surface.
+		 * Ranges to bind uniform blocks with gl.BindBufferRange.
+		 *
+		 * These are indexed by the enum values in @a UniformBlockBinding.
 		 */
-		boost::optional<GLProgram::shared_ptr_type> d_render_cross_section_program;
+		std::pair<GLintptr/*offset*/, GLsizeiptr/*size*/> d_uniform_buffer_ranges[UniformBlockBinding::NUM_BLOCKS];
+
+		/**
+		 * Shader program for rendering an iso-surface.
+		 */
+		GLProgram::shared_ptr_type d_iso_surface_program;
+
+		/**
+		 * Shader program for rendering 1D cross-sections (vertical lines) of an iso-surface.
+		 */
+		GLProgram::shared_ptr_type d_cross_section_1d_program;
+
+		/**
+		 * Shader program for rendering 2D cross-sections (vertical quads) of an iso-surface.
+		 */
+		GLProgram::shared_ptr_type d_cross_section_2d_program;
+
+		/**
+		 * Used to contain cross-section geometries.
+		 */
+		GLVertexArray::shared_ptr_type d_cross_section_vertex_array;
 
 		/**
 		 * Shader program for rendering surface fill mask as optional preliminary step to rendering isosurface.
 		 */
-		boost::optional<GLProgram::shared_ptr_type> d_render_surface_fill_mask_program;
-
-#if 0 // Not currently used...
-		/**
-		 * Shader program for rendering volume fill spherical cap (depth range).
-		 */
-		boost::optional<GLProgram::shared_ptr_type> d_render_volume_fill_spherical_cap_depth_range_program;
-#endif
+		GLProgram::shared_ptr_type d_surface_fill_mask_program;
 
 		/**
-		 * Shader program for rendering volume fill walls (depth range).
+		 * Used to contain surface geometries (when rendering surface fill mask).
 		 */
-		boost::optional<GLProgram::shared_ptr_type> d_render_volume_fill_wall_depth_range_program;
+		GLVertexArray::shared_ptr_type d_surface_fill_mask_vertex_array;
 
 		/**
-		 * Shader program for rendering volume fill wall surface normals.
+		 * Texture array defining the surface fill area on surface of globe.
+		 *
+		 * Essentially a cube map (6 layers) to capture the area inside surface polygons.
 		 */
-		boost::optional<GLProgram::shared_ptr_type> d_render_volume_fill_wall_surface_normals_program;
+		GLTexture::shared_ptr_type d_surface_fill_mask_texture;
+
+		/**
+		 * Framebuffer object used to render to the surface fill mask texture array.
+		 */
+		GLFramebuffer::shared_ptr_type d_surface_fill_mask_framebuffer;
 
 		/**
 		 * The (square) texture dimension of the textures in the surface fill mask texture array.
 		 */
 		unsigned int d_surface_fill_mask_resolution;
+
+		/**
+		 * Shader program for rendering volume fill walls (depth range).
+		 */
+		GLProgram::shared_ptr_type d_volume_fill_wall_depth_range_program;
+
+		/**
+		 * Shader program for rendering volume fill wall surface normals.
+		 */
+		GLProgram::shared_ptr_type d_volume_fill_wall_surface_normal_program;
+
+		/**
+		 * Used to contain surface geometries (when rendering volume fill boundary).
+		 */
+		GLVertexArray::shared_ptr_type d_volume_fill_boundary_vertex_array;
+
+		/**
+		 * Sampler object used to sample volume fill texture.
+		 *
+		 * We could have instead just stored the sampler state in the texture object.
+		 * But it's a little cleaner this way because we don't allocate the texture storage when we
+		 * first create the texture object (we delay allocation until it's first used or resized).
+		 */
+		GLSampler::shared_ptr_type d_volume_fill_texture_sampler;
+
+		/**
+		 * Screen-size texture to render volume fill into.
+		 */
+		GLTexture::shared_ptr_type d_volume_fill_texture;
+
+		/**
+		 * Screen-size depth buffer used to render volume fill.
+		 */
+		GLRenderbuffer::shared_ptr_type d_volume_fill_depth_buffer;
+
+		/**
+		 * Framebuffer object used to render to screen-size volume fill texture.
+		 */
+		GLFramebuffer::shared_ptr_type d_volume_fill_framebuffer;
+
+		/**
+		 * The screen dimensions last used to render to volume fill texture.
+		 *
+		 * These are initially none and set to the screen viewport dimensions on first render, but
+		 * can change if the screen viewport dimensions change (eg, user resizes main viewport).
+		 */
+		unsigned int d_volume_fill_screen_width;
+		unsigned int d_volume_fill_screen_height;
+
+		//
+		// Vertex array for white inner sphere.
+		//
+		GLVertexArray::shared_ptr_type d_inner_sphere_vertex_array;
+		GLBuffer::shared_ptr_type d_inner_sphere_vertex_buffer;
+		GLBuffer::shared_ptr_type d_inner_sphere_vertex_element_buffer;
+		unsigned int d_inner_sphere_num_vertex_indices;
+
+		/**
+		 * Shader program for rendering white inner sphere (with lighting).
+		 */
+		GLProgram::shared_ptr_type d_white_inner_sphere_program;
+
+		/**
+		 * Shader program for rendering inner sphere as screen-space depth.
+		 */
+		GLProgram::shared_ptr_type d_depth_range_inner_sphere_program;
+
+		/**
+		 * Used to draw a full-screen quad.
+		 */
+		GLVertexArray::shared_ptr_type d_full_screen_quad;
 
 		/**
 		 * Used to stream indices (vertex elements) for cross-section geometry and surface fill masks.
@@ -857,189 +898,180 @@ namespace GPlatesOpenGL
 		 */
 		GLStreamBuffer::shared_ptr_type d_streaming_vertex_buffer;
 
-		/**
-		 * Used to contain cross-section geometries.
-		 */
-		GLVertexArray::shared_ptr_type d_cross_section_vertex_array;
-
-		/**
-		 * Used to contain surface geometries (when rendering surface fill mask).
-		 */
-		GLVertexArray::shared_ptr_type d_surface_fill_mask_vertex_array;
-
-		/**
-		 * Used to contain surface geometries (when rendering volume fill boundary).
-		 */
-		GLVertexArray::shared_ptr_type d_volume_fill_boundary_vertex_array;
-
-		/**
-		 * Vertex array for white inner sphere.
-		 */
-		GLVertexArray::shared_ptr_type d_white_inner_sphere_vertex_array;
-
-		/**
-		 * Compiled draw state for white inner sphere.
-		 */
-		boost::optional<GLCompiledDrawState::non_null_ptr_to_const_type> d_white_inner_sphere_compiled_draw_state;
-
-		/**
-		 * Shader program for rendering white inner sphere (with lighting).
-		 */
-		boost::optional<GLProgram::shared_ptr_type> d_render_white_inner_sphere_program;
-
-		/**
-		 * Shader program for rendering inner sphere as screen-space depth.
-		 */
-		boost::optional<GLProgram::shared_ptr_type> d_render_depth_range_inner_sphere_program;
-
-
-		static
-		GLTexture::shared_ptr_to_const_type
-		acquire_surface_fill_mask_texture(
-				GLRenderer &renderer,
-				unsigned int surface_fill_mask_resolution);
-
 
 		//! Constructor.
 		GLScalarField3D(
-				GLRenderer &renderer,
+				GL &gl,
 				const QString &scalar_field_filename,
 				const GLLight::non_null_ptr_type &light);
 
 		void
+		initialise_uniform_buffer(
+				GL &gl);
+
+		void
 		initialise_inner_sphere(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		initialise_cross_section_rendering(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		initialise_iso_surface_rendering(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		initialise_surface_fill_mask_rendering(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		initialise_volume_fill_boundary_rendering(
-				GLRenderer &renderer);
+				GL &gl);
 
-		void
-		initialise_shader_utils(
-				GLRenderer &renderer,
-				const GLProgram::shared_ptr_type &program);
-
-		boost::optional<GLProgram::shared_ptr_type>
+		GLProgram::shared_ptr_type
 		create_shader_program(
-				GLRenderer &renderer,
-				const QString &vertex_shader_source_file_name,
-				const QString &fragment_shader_source_file_name,
-				// Optional geometry shader source file name and program parameters...
-				boost::optional< std::pair<QString, GLShaderProgramUtils::GeometryShaderProgramParameters> > geometry_shader = boost::none,
-				const char *shader_defines = "");
+				GL &gl,
+				const QString &vertex_shader_source_string_or_file_name,
+				const QString &fragment_shader_source_string_or_file_name,
+				// Optional geometry shader source...
+				boost::optional<QString> geometry_shader_source_string_or_file_name = boost::none,
+				// Optional preprocessor defines...
+				boost::optional<const char *> shader_defines = boost::none);
 
 		void
 		create_tile_meta_data_texture_array(
-				GLRenderer &renderer);
+				GL &gl);
 		void
 		create_field_data_texture_array(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		create_mask_data_texture_array(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		create_depth_radius_to_layer_texture(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		create_colour_palette_texture(
-				GLRenderer &renderer);
+				GL &gl);
+
+		void
+		create_surface_fill_mask_texture(
+				GL &gl);
+
+		void
+		create_surface_fill_mask_framebuffer(
+				GL &gl);
+
+		void
+		create_volume_fill_texture_sampler(
+				GL &gl);
+
+		void
+		update_volume_fill_framebuffer(
+				GL &gl);
 
 		void
 		load_scalar_field(
-				GLRenderer &renderer,
+				GL &gl,
 				const GPlatesFileIO::ScalarField3DFileFormat::Reader &scalar_field_reader);
 
 		void
 		load_depth_radius_to_layer_texture(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		load_colour_palette_texture(
-				GLRenderer &renderer,
+				GL &gl,
 				const GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type &colour_palette,
 				const std::pair<double, double> &colour_palette_value_range);
 
 		void
-		set_iso_surface_and_cross_sections_shader_common_variables(
-				GLRenderer &renderer,
-				const GLProgram::shared_ptr_type &program,
-				unsigned int &current_texture_unit,
+		update_shared_uniform_buffer_blocks(
+				GL &gl,
+				const GLViewProjection &view_projection,
 				const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction,
-				const std::vector<float> &test_variables);
+				const std::vector<float> &test_variables,
+				boost::optional<SurfaceFillMask> surface_fill_mask);
 
 		void
-		set_shader_test_variables(
-				GLRenderer &renderer,
-				const GLProgram::shared_ptr_type &program,
-				const std::vector<float> &test_variables);
+		update_uniform_variables_for_iso_surface(
+				GL &gl,
+				const GLViewProjection &view_projection,
+				GPlatesViewOperations::ScalarField3DRenderParameters::IsosurfaceDeviationWindowMode deviation_window_mode,
+				GPlatesViewOperations::ScalarField3DRenderParameters::IsosurfaceColourMode colour_mode,
+				const GPlatesViewOperations::ScalarField3DRenderParameters::IsovalueParameters &isovalue_parameters,
+				const GPlatesViewOperations::ScalarField3DRenderParameters::DeviationWindowRenderOptions &deviation_window_render_options,
+				const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction,
+				const GPlatesViewOperations::ScalarField3DRenderParameters::QualityPerformance &quality_performance,
+				const std::vector<float> &test_variables,
+				boost::optional<SurfaceFillMask> surface_fill_mask,
+				boost::optional<GLTexture::shared_ptr_type> depth_read_texture);
 
-		//! Returns true if rendered successfully - should always return true but just in case.
-		bool
+		void
+		update_uniform_variables_for_cross_sections(
+				GL &gl,
+				const GLViewProjection &view_projection,
+				GPlatesViewOperations::ScalarField3DRenderParameters::CrossSectionColourMode colour_mode,
+				const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction,
+				const std::vector<float> &test_variables,
+				boost::optional<SurfaceFillMask> surface_fill_mask);
+
+		void
+		bind_uniform_buffer_blocks_in_program(
+				GL &gl,
+				const GLProgram::shared_ptr_type &program);
+
+		void
+		initialise_samplers_in_program(
+				GL &gl,
+				const GLProgram::shared_ptr_type &program);
+
+		void
 		render_surface_fill_mask(
-				GLRenderer &renderer,
+				GL &gl,
 				const surface_polygons_mask_seq_type &surface_polygons_mask,
-				bool include_polylines,
-				GLTexture::shared_ptr_to_const_type &surface_fill_mask_texture);
+				bool include_polylines);
 
-		//! Returns true if rendered successfully - should always return true but just in case.
-		bool
-		render_volume_fill_wall_depth_range(
-				GLRenderer &renderer,
+		void
+		render_volume_fill_depth_range(
+				GL &gl,
+				const GLViewProjection &view_projection,
 				const surface_polygons_mask_seq_type &surface_polygons_mask,
-				bool include_polylines,
-				const GLTexture::shared_ptr_to_const_type &surface_fill_mask_texture,
-				const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction,
-				boost::optional<GLScreenRenderTarget::shared_ptr_type> &volume_fill_depth_range_screen_render_target);
+				bool include_polylines);
 
-		//! Returns true if rendered successfully - should always return true but just in case.
-		bool
-		render_volume_fill_wall_surface_normal_and_depth(
-				GLRenderer &renderer,
+		void
+		render_volume_fill_walls(
+				GL &gl,
+				const GLViewProjection &view_projection,
 				const surface_polygons_mask_seq_type &surface_polygons_mask,
 				bool include_polylines,
-				bool only_show_boundary_walls,
-				const GLTexture::shared_ptr_to_const_type &surface_fill_mask_texture,
-				const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction,
-				boost::optional<GLScreenRenderTarget::shared_ptr_type> &volume_fill_surface_normals_screen_render_target);
+				bool only_show_boundary_walls);
 
 		void
 		render_cross_sections_1d(
-				GLRenderer &renderer,
+				GL &gl,
 				const GLStreamBuffer::shared_ptr_type &streaming_vertex_element_buffer,
 				const GLStreamBuffer::shared_ptr_type &streaming_vertex_buffer,
 				const cross_sections_seq_type &cross_sections);
 
 		void
 		render_cross_sections_2d(
-				GLRenderer &renderer,
+				GL &gl,
 				const GLStreamBuffer::shared_ptr_type &streaming_vertex_element_buffer,
 				const GLStreamBuffer::shared_ptr_type &streaming_vertex_buffer,
 				const cross_sections_seq_type &cross_sections);
 
 		void
 		render_white_inner_sphere(
-				GLRenderer &renderer,
-				const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction);
+				GL &gl);
 
 		void
 		render_inner_sphere_depth_range(
-				GLRenderer &renderer,
-				const GPlatesViewOperations::ScalarField3DRenderParameters::DepthRestriction &depth_restriction);
+				GL &gl);
 	};
 }
 

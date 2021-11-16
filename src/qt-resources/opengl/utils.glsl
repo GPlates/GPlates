@@ -159,9 +159,9 @@ lambert_diffuse_lighting(
 	// vertices (no normal map) or bilinearly interpolated during texture (normal map) lookup.
 	// We can save one expensive 'normalize' by rearranging...
 	// Lambert = dot(normalize(N),normalize(L))
-	//		 = dot(N/|N|,L/|L|) 
-	//		 = dot(N,L) / (|N| * |L|) 
-	//		 = dot(N,L) / sqrt(dot(N,N) * dot(L,L)) 
+	//		   = dot(N/|N|,L/|L|) 
+	//		   = dot(N,L) / (|N| * |L|) 
+	//		   = dot(N,L) / sqrt(dot(N,N) * dot(L,L)) 
 	// NOTE: Using float instead of integer parameters to 'max' otherwise driver compiler
 	// crashes on some systems complaining cannot find (integer overload of) function in 'stdlib'.
 	return max(0.0,

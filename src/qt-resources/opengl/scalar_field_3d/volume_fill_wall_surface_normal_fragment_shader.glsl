@@ -24,33 +24,51 @@
  */
 
 //
-// Fragment shader source code to render volume fill walls (vertically extruded quads).
+// Fragment shader source code to render volume fill wall surface normals (and depth) with vertically extruded quads.
 //
 
-#ifdef SURFACE_NORMALS_AND_DEPTH
-	// The surface fill mask texture.
-	uniform sampler2DArray surface_fill_mask_sampler;
-	uniform int surface_fill_mask_resolution;
+// The surface fill mask texture.
+uniform sampler2DArray surface_fill_mask_sampler;
 
-	// Is true if we should only should walls extruded from the boundary of the 2D surface fill mask.
-	uniform bool only_show_boundary_walls;
+layout(std140) uniform SurfaceFill
+{
+	// If using a surface mask to limit regions of scalar field to render
+	// (e.g. Africa, see Static Polygons connected with Scalar Field).
+	bool using_surface_fill_mask;
 
+	// If this is *true* (and 'using_surface_fill_mask' is true) then we're rendering the walls of the extruded fill volume.
+	// The volume fill (screen-size) texture contains the surface normal and depth of the walls.
+	//
+	// If this is *false* (and 'using_surface_fill_mask' is true) then we're using the min/max depth range of walls
+	// of extruded fill volume to limit raytracing traversal (but we're not rendering the walls as visible).
+	// The volume fill (screen-size) texture will contain the min/max depth range of the walls.
+	// This enables us to reduce the length along each ray that is sampled/traversed.
+	// We don't need this if the walls are going to be drawn because there are already good
+	// optimisations in place to limit ray sampling based on the fact that the walls are opaque.
+	bool show_volume_fill_walls;
+
+	// Is true if we should only render walls extruded from the *boundary* of the 2D surface fill mask.
+	bool only_show_boundary_volume_fill_walls;
+} surface_fill_block;
+
+in VertexData
+{
 	// The world-space coordinates are interpolated across the wall geometry.
-	varying vec3 world_position;
+	vec3 world_position;
 
 	// The surface normal for the front-face of the wall.
-	varying vec3 front_surface_normal;
-#endif
+	vec3 front_surface_normal;
+} fs_in;
+
+layout (location = 0) out vec4 surface_normal_and_depth;
 
 void main (void)
 {
-#ifdef SURFACE_NORMALS_AND_DEPTH
-	// This branches on a uniform variable and hence is efficient since all pixels follow same path.
-	if (only_show_boundary_walls)
+	if (surface_fill_block.only_show_boundary_volume_fill_walls)
 	{
 		// Project the world position onto the cube face and determine the cube face that it projects onto.
 		int cube_face_index;
-		vec3 projected_world_position = project_world_position_onto_cube_face(world_position, cube_face_index);
+		vec3 projected_world_position = project_world_position_onto_cube_face(fs_in.world_position, cube_face_index);
 
 		// Transform the world position (projected onto a cube face) into that cube face's local coordinate frame.
 		vec2 cube_face_coordinate_xy = convert_projected_world_position_to_local_cube_face_coordinate_frame(
@@ -64,7 +82,6 @@ void main (void)
 		// This emulates a pre-processing dilation of the surface fill mask.
 		float surface_fill_mask = sample_dilated_surface_fill_mask_texture_array(
 				surface_fill_mask_sampler,
-				surface_fill_mask_resolution,
 				cube_face_index,
 				cube_face_coordinate_uv);
 
@@ -85,25 +102,16 @@ void main (void)
 	}
 
 	// Choose between the front and back facing surface normal.
-	vec3 normal = mix(-front_surface_normal/*back*/, front_surface_normal/*front*/, float(gl_FrontFacing));
+	vec3 normal = mix(-fs_in.front_surface_normal/*back*/, fs_in.front_surface_normal/*front*/, float(gl_FrontFacing));
 
 	// The normal gets stored in RGB channels of fragment colour.
 	// The normal will get stored to a floating-point texture so no need for convert to unsigned.
-	gl_FragColor.xyz = normal;
+	surface_normal_and_depth.xyz = normal;
 	
 	// Write the screen-space depth to the alpha channel.
 	// The  *screen-space* depth (ie, depth range [-1,1] and not [0,1]).
 	// This is what's used in the ray-tracing shader since it uses inverse model-view-proj matrix on the depth
 	// to get world space position and that requires normalised device coordinates not window coordinates).
 	// Ideally this should also consider the effects of glDepthRange but we'll assume it's set to [0,1].
-	gl_FragColor.w = 2 * gl_FragCoord.z - 1;
-#endif
-
-#ifdef DEPTH_RANGE
-	// Write *screen-space* depth (ie, depth range [-1,1] and not [0,1]).
-	// This is what's used in the ray-tracing shader since it uses inverse model-view-proj matrix on the depth
-	// to get world space position and that requires normalised device coordinates not window coordinates).
-	// Ideally this should also consider the effects of glDepthRange but we'll assume it's set to [0,1].
-	gl_FragColor = vec4(2 * gl_FragCoord.z - 1);
-#endif
+	surface_normal_and_depth.w = 2 * gl_FragCoord.z - 1;
 }

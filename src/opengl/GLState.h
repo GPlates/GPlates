@@ -832,6 +832,10 @@ namespace GPlatesOpenGL
 			/**
 			 * The state *at* the start of this scope.
 			 *
+			 * NOTE: The absence of a state set here means the default OpenGL state (for that state set).
+			 *       This is unlike 'd_state_changed_since_scope_start' where absence means no state *changed*
+			 *       (since the start of the scope).
+			 *
 			 * Note: For the root state scope this is empty and hence represents the default OpenGL state.
 			 */
 			std::unordered_map<state_set_key_type, state_set_ptr_type> d_state_at_scope_start;
@@ -839,11 +843,14 @@ namespace GPlatesOpenGL
 			/**
 			 * The state that's *changed* since the start of this scope.
 			 *
-			 * Note: The state sets are optional here (unlike the state sets at scope start) so that state
-			 *       can be set to the default state (which is equivalent to the absence of a state set).
+			 * NOTE: The absence of a state set here means there was no state *change* since the start of scope (for that state set).
+			 *       This is unlike 'd_state_at_scope_start' where absence means the default OpenGL state.
+			 *
+			 * Note: The state sets are boost::optional here (unlike the state sets at scope start) so that
+			 *       a state change can register a change *to* the default state (as boost::none).
 			 *       This way we know to revert from the default state when restoring state, otherwise
-			 *       we wouldn't know the state had been explicitly set to the default state
-			 *       (ie, we would have just assumed the state did not change).
+			 *       we wouldn't know the state had been explicitly changed to the default state
+			 *       (ie, we would have just assumed that the state did not change at all).
 			 */
 			std::unordered_map<state_set_key_type, boost::optional<state_set_ptr_type>> d_state_changed_since_scope_start;
 		};

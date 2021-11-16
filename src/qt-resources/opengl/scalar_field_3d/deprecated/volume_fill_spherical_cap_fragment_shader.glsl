@@ -29,7 +29,6 @@
 
 // The surface fill mask texture.
 uniform sampler2DArray surface_fill_mask_sampler;
-uniform int surface_fill_mask_resolution;
 
 // The world-space coordinates are interpolated across the spherical cap geometry.
 varying vec3 world_position;
@@ -50,7 +49,6 @@ void main (void)
 	// Sample the surface fill mask texture array.
 	float surface_fill_mask = sample_surface_fill_mask_texture_array(
 			surface_fill_mask_sampler,
-			surface_fill_mask_resolution,
 			cube_face_index,
 			cube_face_coordinate_uv);
 

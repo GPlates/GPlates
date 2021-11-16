@@ -27,11 +27,6 @@
 // Various utility structures/functions used for ray-tracing, or rendering cross-sections of, 3D scalar fields.
 //
 
-// GPlates currently moves this to start of *first* source code string passed into glShaderSource.
-// This is because extension lines must not occur *after* any non-preprocessor source code.
-//
-// NOTE: Do not comment this out with a /**/ comment spanning multiple lines since GPlates does not detect that.
-#extension GL_EXT_texture_array : enable
 
 // A local orthonormal coordinate frame for a particular cube face.
 struct CubeFaceCoordinateFrame
@@ -44,9 +39,12 @@ struct CubeFaceCoordinateFrame
 // The local coordinate frames for each cube face.
 //
 // NOTE: This used to be a constant array (not using uniform variables)
-// but MacOS (Snow Leopard) has not fully implemented the GLSL 1.2 specification
-// so we use a uniform array instead (and set the values using C++ code).
-uniform CubeFaceCoordinateFrame cube_face_coordinate_frames[6];
+//       but was converted to uniform variables to support macOS (prior to using OpenGL 3.3 core).
+//       However 
+layout (std140) uniform CubeFaceCoordinateFrames
+{
+	CubeFaceCoordinateFrame cube_face_coordinate_frames[6];
+};
 
 
 // Look up a 1D texture using 'input_value'.
@@ -54,11 +52,12 @@ uniform CubeFaceCoordinateFrame cube_face_coordinate_frames[6];
 vec4
 look_up_table_1D(
 		sampler1D table_sampler,
-		float table_resolution,
 		float input_lower_bound,
 		float input_upper_bound,
 		float input_value)
 {
+	int table_resolution = textureSize(surface_fill_mask_sampler, 0).x/*square texture*/;
+	
 	// Map the range [input_lower_bound, input_upper_bound] to [0,1].
 	float table_coordinate_u = (input_value - input_lower_bound) / (input_upper_bound - input_lower_bound);
 
@@ -66,7 +65,7 @@ look_up_table_1D(
 	// Everything in between is linearly interpolated.
 	table_coordinate_u = ((table_resolution - 1) * table_coordinate_u + 0.5) / table_resolution;
 
-	return texture1D(table_sampler, table_coordinate_u);
+	return texture(table_sampler, table_coordinate_u);
 }
 
 // Project the world position onto the cube face and determine the cube face that it projects onto.
@@ -187,7 +186,7 @@ get_tile_meta_data_from_tile_uv_coordinates(
 		out vec2 tile_meta_data_min_max_scalar)
 {
 	// access tile meta data and get tile ID (contained in r - component)
-	vec3 tile_meta_data = texture2DArray(tile_meta_data_sampler, vec3(tile_meta_data_coordinate_uv,cube_face_index)).rgb;
+	vec3 tile_meta_data = texture(tile_meta_data_sampler, vec3(tile_meta_data_coordinate_uv, cube_face_index)).rgb;
 	
 	// get tile ID
 	tile_ID = tile_meta_data.r;
@@ -201,13 +200,14 @@ get_tile_meta_data_from_cube_face_coordinates(
 		in int cube_face_index,
 		in vec2 cube_face_coordinate_uv,
 		in sampler2DArray tile_meta_data_sampler,
-		in int tile_meta_data_resolution,
 		in int tile_resolution,
 		out vec2 tile_offset_uv,
 		out vec2 tile_coordinate_uv,
 		out float tile_ID,
 		out vec2 tile_meta_data_min_max_scalar)
 {
+	int tile_meta_data_resolution = textureSize(tile_meta_data_sampler, 0).x/*square texture*/;
+
 	// get tile coordinates
 	vec2 tile_meta_data_coordinate_uv;
 	get_tile_uv_coordinates(
@@ -224,7 +224,6 @@ void
 get_tile_meta_data_from_position(
 		in vec3 position,
 		in sampler2DArray tile_meta_data_sampler,
-		in int tile_meta_data_resolution,
 		in int tile_resolution,
 		out vec2 tile_offset_uv,
 		out vec2 tile_coordinate_uv,
@@ -237,7 +236,7 @@ get_tile_meta_data_from_position(
 	
 	get_tile_meta_data_from_cube_face_coordinates(
 			cube_face_index, cube_face_coordinate_uv,
-			tile_meta_data_sampler, tile_meta_data_resolution, tile_resolution,
+			tile_meta_data_sampler, tile_resolution,
 			tile_offset_uv, tile_coordinate_uv, tile_ID, tile_meta_data_min_max_scalar);
 }
 
@@ -261,7 +260,7 @@ is_valid_field_data_sample(
 	}
 		
 	// Sample the mask data texture array.
-	float mask_data = texture2DArray(mask_data_sampler, vec3(tile_coordinate_uv, tile_ID)).r;
+	float mask_data = texture(mask_data_sampler, vec3(tile_coordinate_uv, tile_ID)).r;
 	
 	// If any sample in the bilinear filter is zero then return false.
 	// If all bilinear samples are valid then the bilinear filter will return 1.0.
@@ -275,16 +274,16 @@ bool
 is_valid_field_data_sample(
 		vec3 position,
 		sampler2DArray tile_meta_data_sampler,
-		int tile_meta_data_resolution,
-		int tile_resolution,
 		sampler2DArray mask_data_sampler)
 {
+	int tile_resolution = textureSize(mask_data_sampler, 0).x/*square texture*/;
+
 	vec2 tile_offset_uv;
 	vec2 tile_coordinate_uv;
 	float tile_ID;
 	vec2 tile_meta_data_min_max_scalar;
 	get_tile_meta_data_from_position(
-			position, tile_meta_data_sampler, tile_meta_data_resolution,
+			position, tile_meta_data_sampler,
 			tile_resolution, tile_offset_uv, tile_coordinate_uv,
 			tile_ID, tile_meta_data_min_max_scalar);
 			
@@ -297,7 +296,6 @@ void
 get_depth_layer(
 		in float depth_radius,
 		in sampler1D depth_radius_to_layer_sampler,
-		in int depth_radius_to_layer_resolution,
 		in vec2 min_max_depth_radius,
 		out int lower_depth_layer,
 		out int upper_depth_layer,
@@ -309,8 +307,7 @@ get_depth_layer(
 	// but that can only be reduced by increasing the resolution of the 1D texture.
 	// Note that 'depth_layer' is not an integer layer index.
 	float depth_layer = look_up_table_1D(
-			depth_radius_to_layer_sampler, depth_radius_to_layer_resolution,
-			min_max_depth_radius.x, min_max_depth_radius.y, depth_radius).r;
+			depth_radius_to_layer_sampler, min_max_depth_radius.x, min_max_depth_radius.y, depth_radius).r;
 	
 	// Get the two nearest depth layers so we can interpolate them.
 	lower_depth_layer = int(floor(depth_layer));
@@ -365,8 +362,8 @@ sample_field_data_texture_array(
 		sampler2DArray field_data_sampler)
 {
 	// Sample the field data texture array at the two nearest depth layers and interpolate them.
-	vec4 lower_field_data = texture2DArray(field_data_sampler, lower_field_data_uvw);
-	vec4 upper_field_data = texture2DArray(field_data_sampler, upper_field_data_uvw);
+	vec4 lower_field_data = texture(field_data_sampler, lower_field_data_uvw);
+	vec4 upper_field_data = texture(field_data_sampler, upper_field_data_uvw);
 
 	// Bilinearly interpolate between the two depth layers.
 	// According to the GLSL spec the layer selected is:
@@ -390,7 +387,6 @@ get_scalar_field_data_from_cube_face_coordinates(
 		in float tile_ID,
 		in sampler2DArray field_data_sampler,
 		in sampler1D depth_radius_to_layer_sampler,
-		in int depth_radius_to_layer_resolution,
 		in int num_depth_layers,
 		in vec2 min_max_depth_radius,
 		inout float field_scalar,
@@ -401,8 +397,7 @@ get_scalar_field_data_from_cube_face_coordinates(
 	int upper_depth_layer;
 	float frac_depth_layer;
 	get_depth_layer(
-			depth_radius,
-			depth_radius_to_layer_sampler, depth_radius_to_layer_resolution, min_max_depth_radius,
+			depth_radius, depth_radius_to_layer_sampler, min_max_depth_radius,
 			lower_depth_layer, upper_depth_layer, frac_depth_layer);
 
 	// Find the location of the tile within the field data texture array.
@@ -440,12 +435,9 @@ bool
 get_scalar_field_data_from_position(
 		in vec3 position,
 		in sampler2DArray tile_meta_data_sampler,
-		in int tile_meta_data_resolution,
 		in sampler2DArray mask_data_sampler,
-		in int tile_resolution,
 		in sampler2DArray field_data_sampler,
 		in sampler1D depth_radius_to_layer_sampler,
-		in int depth_radius_to_layer_resolution,
 		in int num_depth_layers,
 		in vec2 min_max_depth_radius,
 		inout int cube_face_index,
@@ -465,7 +457,7 @@ get_scalar_field_data_from_position(
 	vec2 tile_meta_data_min_max_scalar;
 	get_tile_meta_data_from_cube_face_coordinates(
 			cube_face_index, cube_face_coordinate_uv,
-			tile_meta_data_sampler, tile_meta_data_resolution, tile_resolution,
+			tile_meta_data_sampler, tile_resolution,
 			tile_offset_uv, tile_coordinate_uv, tile_ID, tile_meta_data_min_max_scalar);
 
 	// Return false if the current tile (or field position) has no valid data.
@@ -480,7 +472,7 @@ get_scalar_field_data_from_position(
 			depth_radius, cube_face_index, cube_face_coordinate_uv,
 			tile_offset_uv, tile_coordinate_uv, tile_ID,
 			field_data_sampler, depth_radius_to_layer_sampler,
-			depth_radius_to_layer_resolution, num_depth_layers, min_max_depth_radius,
+			num_depth_layers, min_max_depth_radius,
 			field_scalar, field_gradient);
 	
 	// Field position contains valid field data.
@@ -491,10 +483,11 @@ get_scalar_field_data_from_position(
 float
 sample_surface_fill_mask_texture_array(
 		sampler2DArray surface_fill_mask_sampler,
-		int surface_fill_mask_resolution,
 		int cube_face_index,
 		vec2 cube_face_coordinate_uv)
 {
+	int surface_fill_mask_resolution = textureSize(surface_fill_mask_sampler, 0).x/*square texture*/;
+	
 	// The surface fill mask has only one texture layer per cube face.
 
 	// Adjust for (one-and-a)-half pixel around surface fill mask boundary to avoid texture seams.
@@ -509,7 +502,7 @@ sample_surface_fill_mask_texture_array(
 		((surface_fill_mask_resolution - 3) * cube_face_coordinate_uv + 1.5) / surface_fill_mask_resolution;
 
 	// Sample the surface fill mask texture array (an 8-bit RGBA with the mask value in RGB).
-	float surface_fill_mask = texture2DArray(
+	float surface_fill_mask = texture(
 			surface_fill_mask_sampler,
 			vec3(surface_fill_mask_coordinate_uv, cube_face_index)).r;
 
@@ -521,14 +514,12 @@ sample_surface_fill_mask_texture_array(
 bool
 projects_into_surface_fill_mask(
 		sampler2DArray surface_fill_mask_sampler,
-		int surface_fill_mask_resolution,
 		int cube_face_index,
 		vec2 cube_face_coordinate_uv)
 {
 	// Sample the surface fill mask texture array.
 	float surface_fill_mask = sample_surface_fill_mask_texture_array(
 			surface_fill_mask_sampler,
-			surface_fill_mask_resolution,
 			cube_face_index,
 			cube_face_coordinate_uv);
 
@@ -544,10 +535,11 @@ projects_into_surface_fill_mask(
 float
 sample_dilated_surface_fill_mask_texture_array(
 		sampler2DArray surface_fill_mask_sampler,
-		int surface_fill_mask_resolution,
 		int cube_face_index,
 		vec2 cube_face_coordinate_uv)
 {
+	int surface_fill_mask_resolution = textureSize(surface_fill_mask_sampler, 0).x/*square texture*/;
+	
 	// The surface fill mask has only one texture layer per cube face.
 	
 	float delta_uv_texel = 1.0 / surface_fill_mask_resolution;
@@ -578,15 +570,15 @@ sample_dilated_surface_fill_mask_texture_array(
 	// Note that each of these texture samples is a bilinear filtering of nearest 2x2 texels.
 	// This gives a radial reach of about 1.5 texels (instead of 1 texel).
 	float surface_fill_mask = 0;
-	surface_fill_mask += texture2DArray(surface_fill_mask_sampler, uvw_00).r;
-	surface_fill_mask += texture2DArray(surface_fill_mask_sampler, uvw_01).r;
-	surface_fill_mask += texture2DArray(surface_fill_mask_sampler, uvw_02).r;
-	surface_fill_mask += texture2DArray(surface_fill_mask_sampler, uvw_10).r;
-	surface_fill_mask += texture2DArray(surface_fill_mask_sampler, uvw_11).r;
-	surface_fill_mask += texture2DArray(surface_fill_mask_sampler, uvw_12).r;
-	surface_fill_mask += texture2DArray(surface_fill_mask_sampler, uvw_20).r;
-	surface_fill_mask += texture2DArray(surface_fill_mask_sampler, uvw_21).r;
-	surface_fill_mask += texture2DArray(surface_fill_mask_sampler, uvw_22).r;
+	surface_fill_mask += texture(surface_fill_mask_sampler, uvw_00).r;
+	surface_fill_mask += texture(surface_fill_mask_sampler, uvw_01).r;
+	surface_fill_mask += texture(surface_fill_mask_sampler, uvw_02).r;
+	surface_fill_mask += texture(surface_fill_mask_sampler, uvw_10).r;
+	surface_fill_mask += texture(surface_fill_mask_sampler, uvw_11).r;
+	surface_fill_mask += texture(surface_fill_mask_sampler, uvw_12).r;
+	surface_fill_mask += texture(surface_fill_mask_sampler, uvw_20).r;
+	surface_fill_mask += texture(surface_fill_mask_sampler, uvw_21).r;
+	surface_fill_mask += texture(surface_fill_mask_sampler, uvw_22).r;
 	
 	// Return the average of the 3x3 samples.
 	return (1.0 / 9.0) * surface_fill_mask;
@@ -597,14 +589,12 @@ sample_dilated_surface_fill_mask_texture_array(
 bool
 projects_into_dilated_surface_fill_mask(
 		sampler2DArray surface_fill_mask_sampler,
-		int surface_fill_mask_resolution,
 		int cube_face_index,
 		vec2 cube_face_coordinate_uv)
 {
 	// Sample the surface fill mask texture array.
 	float surface_fill_mask = sample_dilated_surface_fill_mask_texture_array(
 			surface_fill_mask_sampler,
-			surface_fill_mask_resolution,
 			cube_face_index,
 			cube_face_coordinate_uv);
 

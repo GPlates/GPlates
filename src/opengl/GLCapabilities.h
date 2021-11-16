@@ -73,6 +73,12 @@ namespace GPlatesOpenGL
 
 
 		//
+		// Buffer
+		//
+
+		GLuint gl_uniform_buffer_offset_alignment; // GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT query result
+
+		//
 		// Shader
 		//
 
@@ -82,14 +88,17 @@ namespace GPlatesOpenGL
 
 		//! Maximum number of texture image units available to vertex/geometry/fragment shaders combined.
 		GLuint gl_max_combined_texture_image_units; // GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS query result
+		GLuint gl_max_combined_uniform_blocks; // GL_MAX_COMBINED_UNIFORM_BLOCKS
 
 		//! Maximum number of texture image units available to fragment shader.
 		GLuint gl_max_texture_image_units; // GL_MAX_TEXTURE_IMAGE_UNITS query result
 		GLuint gl_max_fragment_uniform_components; // GL_MAX_FRAGMENT_UNIFORM_COMPONENTS query result
+		GLuint gl_max_fragment_uniform_blocks; // GL_MAX_FRAGMENT_UNIFORM_BLOCKS
 
 		GLuint gl_max_vertex_texture_image_units; // GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS query result
 		GLuint gl_max_vertex_output_components; // GL_MAX_VERTEX_OUTPUT_COMPONENTS query result
 		GLuint gl_max_vertex_uniform_components; // GL_MAX_VERTEX_UNIFORM_COMPONENTS query result
+		GLuint gl_max_vertex_uniform_blocks; // GL_MAX_VERTEX_UNIFORM_BLOCKS
 
 		GLuint gl_max_geometry_texture_image_units; // GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS query result
 		GLuint gl_max_geometry_output_vertices; // GL_MAX_GEOMETRY_OUTPUT_VERTICES query result
@@ -97,6 +106,7 @@ namespace GPlatesOpenGL
 		GLuint gl_max_geometry_output_components; // GL_MAX_GEOMETRY_OUTPUT_COMPONENTS query result
 		GLuint gl_max_geometry_total_output_components; // GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS query result
 		GLuint gl_max_geometry_uniform_components; // GL_MAX_GEOMETRY_UNIFORM_COMPONENTS query result
+		GLuint gl_max_geometry_uniform_blocks; // GL_MAX_GEOMETRY_UNIFORM_BLOCKS
 
 		
 		//

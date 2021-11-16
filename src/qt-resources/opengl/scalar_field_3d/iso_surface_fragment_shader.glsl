@@ -27,40 +27,9 @@
 // Fragment shader for rendering a single iso-surface.
 //
 
-// GPlates currently moves this to start of *first* source code string passed into glShaderSource.
-// This is because extension lines must not occur *after* any non-preprocessor source code.
 //
-// NOTE: Do not comment this out with a /**/ comment spanning multiple lines since GPlates does not detect that.
-#extension GL_EXT_texture_array : enable
-// Shouldn't need this since '#version 120' (in separate source string) supports 'gl_FragData', but just in case...
-#extension GL_ARB_draw_buffers : enable
-
+// Samplers.
 //
-// Uniform variables default to zero according to the GLSL spec:
-//
-// "The link time initial value is either the value of the
-// variable's initializer, if present, or 0 if no initializer is present."
-//
-
-// Test variables (in range [0,1]) set via the scalar field visual layer GUI.
-// Initial values are zero.
-uniform float test_variable_0;
-uniform float test_variable_1;
-uniform float test_variable_2;
-uniform float test_variable_3;
-uniform float test_variable_4;
-uniform float test_variable_5;
-uniform float test_variable_6;
-uniform float test_variable_7;
-uniform float test_variable_8;
-uniform float test_variable_9;
-uniform float test_variable_10;
-uniform float test_variable_11;
-uniform float test_variable_12;
-uniform float test_variable_13;
-uniform float test_variable_14;
-uniform float test_variable_15;
-
 // data contains tile id from given face number and face uv coordinate
 uniform sampler2DArray tile_meta_data_sampler;
 // whole scalar field data containing scalar and gradient for every voxel
@@ -71,34 +40,12 @@ uniform sampler2DArray mask_data_sampler;
 uniform sampler1D depth_radius_to_layer_sampler;
 // colour palette from isovalue
 uniform sampler1D colour_palette_sampler;
-
-// resolutions of sampler states
-uniform int tile_meta_data_resolution;
-uniform int tile_resolution;
-uniform int depth_radius_to_layer_resolution;
-uniform int num_depth_layers;
-uniform int colour_palette_resolution;
-
-// The min/max range of values used to map to colour whether that mapping is a look up
-// of the colour palette (eg, colouring by scalar value or gradient magnitude) or by using
-// a hard-wired mapping in the shader code.
-uniform vec2 min_max_colour_mapping_range;
-
-// constriction of scalar value
-uniform vec2 min_max_scalar_value;
-// constriction of gradient value
-uniform vec2 min_max_gradient_magnitude;
-
-
-//
-// Lighting options.
-//
-uniform bool lighting_enabled;
-uniform vec3 world_space_light_direction;
-uniform float light_ambient_contribution;
-
-// For testing purposes
-// float light_ambient_contribution = test_variable_0;
+// The depth texture used for early ray termination.
+uniform sampler2D depth_texture_sampler;
+// cube map array (6 layers) of surface mask
+uniform sampler2DArray surface_fill_mask_sampler;
+// either surface-normal/depth or depth-range of volume fill walls
+uniform sampler2D volume_fill_sampler;
 
 
 //
@@ -107,18 +54,21 @@ uniform float light_ambient_contribution;
 
 // If using the depth texture for early ray termination.
 uniform bool read_from_depth_texture;
-// The depth texture used for early ray termination.
-uniform sampler2D depth_texture_sampler;
 
 
 //
-// "Colour mode" options.
+// Colour options.
 //
+
 // NOTE: Only one of these is true.
-//
 uniform bool colour_mode_depth;
 uniform bool colour_mode_isovalue;
 uniform bool colour_mode_gradient;
+
+// The min/max range of values used to map to colour whether that mapping is a look up
+// of the colour palette (eg, colouring by scalar value or gradient magnitude) or by using
+// a hard-wired mapping in the shader code.
+uniform vec2 min_max_colour_mapping_range;
 
 
 //
@@ -151,45 +101,6 @@ uniform bool surface_deviation_window;
 uniform float surface_deviation_isoline_frequency;
 
 
-//
-// Surface fill mask options.
-//
-
-// If using a surface mask to limit regions of scalar field to render. (e.g. Africa, see Static Polygons connected with Scalar Field)
-uniform bool using_surface_fill_mask;
-uniform sampler2DArray surface_fill_mask_sampler;
-uniform int surface_fill_mask_resolution;
-
-// If using surface mask *and* rendering the walls of the extruded fill volume.
-uniform bool show_volume_fill_walls;
-uniform sampler2D volume_fill_wall_surface_normal_and_depth_sampler;
-
-// If using surface mask *and* using min/max depth range of walls of extruded fill volume
-// (but not rendering walls).
-//
-// If we have a surface fill mask, but we are not drawing the volume fill walls (surface normal and depth),
-// then the min/max depth range of the volume fill walls has been generated (stored in screen-size texture).
-// This enables us to reduce the length along each ray that is sampled/traversed.
-// We don't need this if the walls are going to be drawn because there are already good
-// optimisations in place to limit ray sampling based on the fact that the walls are opaque.
-uniform bool using_volume_fill_wall_depth_range;
-uniform sampler2D volume_fill_wall_depth_range_sampler;
-
-//
-// Depth range options.
-//
-
-// The actual minimum and maximum depth radii of the scalar field.
-uniform vec2 min_max_depth_radius;
-// The depth range rendering is restricted to.
-// If depth range is not restricted then this is the same as 'min_max_depth_radius'.
-// Also the following conditions hold:
-//	render_min_max_depth_radius_restriction.x >= min_max_depth_radius.x
-//	render_min_max_depth_radius_restriction.y <= min_max_depth_radius.y
-// ...in other words the depth range for rendering is always within the actual depth range.
-uniform vec2 render_min_max_depth_radius_restriction;
-
-
 // Quality/performance options.
 //
 // Sampling rate along ray.
@@ -199,8 +110,81 @@ uniform vec2 sampling_rate;
 uniform int bisection_iterations;
 
 
-// Screen-space coordinates are post-projection coordinates in the range [-1,1].
-varying vec2 screen_coord;
+layout (std140) uniform ViewProjection
+{
+	// Combined view-projection transform, and inverse of view and projection transforms.
+	mat4 view_projection;
+	mat4 view_inverse;
+	mat4 projection_inverse;
+
+	// Viewport (used to convert window-space coordinates gl_FragCoord.xy to NDC space [-1,1]).
+	vec4 viewport;
+} view_projection_block;
+
+layout (std140) uniform ScalarField
+{
+	// min/max scalar value across the entire scalar field
+	vec2 min_max_scalar_value;
+
+	// min/max gradient magnitude across the entire scalar field
+	vec2 min_max_gradient_magnitude;
+} scalar_field_block;
+
+layout(std140) uniform Depth
+{
+    // The actual minimum and maximum depth radii of the scalar field.
+    vec2 min_max_depth_radius;
+
+    // The depth range rendering is restricted to.
+    // If depth range is not restricted then this is the same as 'min_max_depth_radius'.
+    // Also the following conditions hold:
+    //	min_max_depth_radius_restriction.x >= min_max_depth_radius.x
+    //	min_max_depth_radius_restriction.y <= min_max_depth_radius.y
+    // ...in other words the depth range for rendering is always within the actual depth range.
+    vec2 min_max_depth_radius_restriction;
+
+	// Number of depth layers in scalar field.
+	int num_depth_layers;
+} depth_block;
+
+layout(std140) uniform SurfaceFill
+{
+	// If using a surface mask to limit regions of scalar field to render
+	// (e.g. Africa, see Static Polygons connected with Scalar Field).
+	bool using_surface_fill_mask;
+
+	// If this is *true* (and 'using_surface_fill_mask' is true) then we're rendering the walls of the extruded fill volume.
+	// The volume fill (screen-size) texture contains the surface normal and depth of the walls.
+	//
+	// If this is *false* (and 'using_surface_fill_mask' is true) then we're using the min/max depth range of walls
+	// of extruded fill volume to limit raytracing traversal (but we're not rendering the walls as visible).
+	// The volume fill (screen-size) texture will contain the min/max depth range of the walls.
+	// This enables us to reduce the length along each ray that is sampled/traversed.
+	// We don't need this if the walls are going to be drawn because there are already good
+	// optimisations in place to limit ray sampling based on the fact that the walls are opaque.
+	bool show_volume_fill_walls;
+
+	// Is true if we should only render walls extruded from the *boundary* of the 2D surface fill mask.
+	bool only_show_boundary_volume_fill_walls;
+} surface_fill_block;
+
+layout (std140) uniform Lighting
+{
+	bool enabled;
+	float ambient;
+	vec3 world_space_light_direction;
+} lighting_block;
+
+layout (std140) uniform Test
+{
+	// Test variables (in range [0,1]).
+	// Initial values are zero.
+	float variable[16];
+} test_block;
+
+
+layout (location = 0) out vec4 colour;
+layout (location = 1) out vec4 depth;
 
 
 // Determine the crossing level ID for specified field scalar.
@@ -263,8 +247,7 @@ contract_interval_to_valid_region(
 		lambda_center -= lambda_increment;
 
 		bool valid_center = is_valid_field_data_sample(
-				ray_sample_position_center, tile_meta_data_sampler, tile_meta_data_resolution,
-				tile_resolution, mask_data_sampler);
+				ray_sample_position_center, tile_meta_data_sampler, mask_data_sampler);
 		if (valid_center)
 		{
 			ray_sample_position_valid = ray_sample_position_center;
@@ -300,9 +283,8 @@ contract_interval_to_valid_region(
 		vec3 field_gradient_valid;
 		get_scalar_field_data_from_position(
 				ray_sample_position_valid,
-				tile_meta_data_sampler, tile_meta_data_resolution, mask_data_sampler,
-				tile_resolution, field_data_sampler, depth_radius_to_layer_sampler,
-				depth_radius_to_layer_resolution, num_depth_layers, min_max_depth_radius,
+				tile_meta_data_sampler, mask_data_sampler, field_data_sampler, depth_radius_to_layer_sampler,
+				depth_block.num_depth_layers, depth_block.min_max_depth_radius,
 				cube_face_index_valid, cube_face_coordinate_uv_valid,
 				field_scalar_valid, field_gradient_valid);
 		
@@ -315,11 +297,10 @@ contract_interval_to_valid_region(
 			// Change the 'back' of the interval - it now has a valid position.
 			valid_back = true;
 			active_back = true;
-			if (using_surface_fill_mask)
+			if (surface_fill_block.using_surface_fill_mask)
 			{
 				active_back = projects_into_surface_fill_mask(
-						surface_fill_mask_sampler, surface_fill_mask_resolution,
-						cube_face_index_valid, cube_face_coordinate_uv_valid);
+						surface_fill_mask_sampler, cube_face_index_valid, cube_face_coordinate_uv_valid);
 			}
 			crossing_level_back = get_crossing_level(field_scalar_valid);
 		}
@@ -333,11 +314,10 @@ contract_interval_to_valid_region(
 			// Change the 'front' of the interval - it now has a valid position.
 			valid_front = true;
 			active_front = true;
-			if (using_surface_fill_mask)
+			if (surface_fill_block.using_surface_fill_mask)
 			{
 				active_front = projects_into_surface_fill_mask(
-						surface_fill_mask_sampler, surface_fill_mask_resolution,
-						cube_face_index_valid, cube_face_coordinate_uv_valid);
+						surface_fill_mask_sampler, cube_face_index_valid, cube_face_coordinate_uv_valid);
 			}
 			crossing_level_front = get_crossing_level(field_scalar_valid);
 			
@@ -384,10 +364,8 @@ isosurface_bisection_correction(
 		// the field valid regions (essentially georeferencing) are unlikely to have concavities.
 		if (!get_scalar_field_data_from_position(
 				ray_sample_position, 
-				tile_meta_data_sampler, tile_meta_data_resolution,
-				mask_data_sampler, tile_resolution, field_data_sampler,
-				depth_radius_to_layer_sampler, depth_radius_to_layer_resolution,
-				num_depth_layers, min_max_depth_radius,
+				tile_meta_data_sampler, mask_data_sampler, field_data_sampler,
+				depth_radius_to_layer_sampler, depth_block.num_depth_layers, depth_block.min_max_depth_radius,
 				cube_face_index, cube_face_coordinate_uv,
 				field_scalar, field_gradient))
 		{
@@ -395,11 +373,10 @@ isosurface_bisection_correction(
 		}
 		
 		bool active_center = true;
-		if (using_surface_fill_mask)
+		if (surface_fill_block.using_surface_fill_mask)
 		{
 			active_center = projects_into_surface_fill_mask(
-					surface_fill_mask_sampler, surface_fill_mask_resolution,
-					cube_face_index, cube_face_coordinate_uv);
+					surface_fill_mask_sampler, cube_face_index, cube_face_coordinate_uv);
 		}
 		
 		int crossing_level_center = get_crossing_level(field_scalar);
@@ -451,12 +428,12 @@ get_blended_crossing_colour(
 		
 		// Colour order of surfaces in deviation window zone around isovalue1.
 		colour_matrix[0] = vec4(1,1,1,alpha) * look_up_table_1D(
-				colour_palette_sampler, colour_palette_resolution,
+				colour_palette_sampler,
 				min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 				field_gradient_magnitude);
 		colour_matrix[1] = vec4(1);
 		colour_matrix[2] = vec4(1,1,1,alpha) * look_up_table_1D(
-				colour_palette_sampler, colour_palette_resolution,
+				colour_palette_sampler,
 				min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 				-field_gradient_magnitude);
 		
@@ -473,8 +450,8 @@ get_blended_crossing_colour(
 	if (colour_mode_depth)
 	{
 		// Relative depth: 0 -> core , 1 -> surface (for restricted max/min depth range)
-		float depth_relative = (ray_sample_depth_radius - render_min_max_depth_radius_restriction.x) /
-				(render_min_max_depth_radius_restriction.y - render_min_max_depth_radius_restriction.x);
+		float depth_relative = (ray_sample_depth_radius - depth_block.min_max_depth_radius_restriction.x) /
+				(depth_block.min_max_depth_radius_restriction.y - depth_block.min_max_depth_radius_restriction.x);
 		
 		// Colour order of surfaces in deviation window zone around isovalue1.
 		colour_matrix[0] = vec4(1, depth_relative, 0, alpha);
@@ -505,13 +482,13 @@ get_blended_crossing_colour(
 
 	float diffuse = 1;
 
-	if (lighting_enabled)
+	if (lighting_block.enabled)
 	{
 		// The Lambert term in diffuse lighting.
-		float lambert = lambert_diffuse_lighting(world_space_light_direction, normal);
+		float lambert = lambert_diffuse_lighting(lighting_block.world_space_light_direction, normal);
 
 		// Blend between ambient and diffuse lighting - when ambient is 1.0 there is no diffuse.
-		diffuse = mix(lambert, 1.0, light_ambient_contribution);
+		diffuse = mix(lambert, 1.0, lighting_block.ambient);
 	}
 
 	vec4 colour_crossing = vec4(0,0,0,0);
@@ -564,7 +541,7 @@ get_volume_colour(
 		// Map -||gradient|| to colour.
 		
 		colour_volume = look_up_table_1D(
-				colour_palette_sampler, colour_palette_resolution,
+				colour_palette_sampler,
 				min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 				colour_sign * length(field_gradient));
 
@@ -578,8 +555,8 @@ get_volume_colour(
 	{
 		colour_volume = vec4(
 			int(crossing_level_front_mod==1),
-			(ray_sample_depth_radius - render_min_max_depth_radius_restriction.x) /
-				(render_min_max_depth_radius_restriction.y - render_min_max_depth_radius_restriction.x),
+			(ray_sample_depth_radius - depth_block.min_max_depth_radius_restriction.x) /
+				(depth_block.min_max_depth_radius_restriction.y - depth_block.min_max_depth_radius_restriction.x),
 			int(crossing_level_front_mod==2),
 			1);
 	
@@ -591,7 +568,7 @@ get_volume_colour(
 	if (colour_mode_isovalue)
 	{
 		colour_volume = look_up_table_1D(
-				colour_palette_sampler, colour_palette_resolution,
+				colour_palette_sampler,
 				min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 				field_scalar);
 	
@@ -623,7 +600,7 @@ get_surface_entry_colour(
 		// Map -||gradient|| to colour.
 		
 		colour_surface = look_up_table_1D(
-				colour_palette_sampler, colour_palette_resolution,
+				colour_palette_sampler,
 				min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 				colour_sign * length(field_gradient));
 
@@ -653,7 +630,7 @@ get_surface_entry_colour(
 	if (colour_mode_isovalue)
 	{
 		colour_surface = look_up_table_1D(
-				colour_palette_sampler, colour_palette_resolution,
+				colour_palette_sampler,
 				min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 				field_scalar);
 
@@ -686,7 +663,7 @@ get_wall_entry_colour(
 		// Map -||gradient|| to colour.
 		
 		colour_wall = look_up_table_1D(
-				colour_palette_sampler, colour_palette_resolution,
+				colour_palette_sampler,
 				min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 				colour_sign * length(field_gradient));
 
@@ -732,8 +709,8 @@ get_wall_entry_colour(
 	// Mapping according to colourmap.
 	if (colour_mode_isovalue)
 	{
-		colour_wall = look_up_table_1D(colour_palette_sampler,
-							colour_palette_resolution,
+		colour_wall = look_up_table_1D(
+							colour_palette_sampler,
 							min_max_colour_mapping_range.x, // input_lower_bound
 							min_max_colour_mapping_range.y, // input_upper_bound
 							field_scalar);
@@ -765,10 +742,8 @@ quick_test_if_ray_intersects_isosurface(
 	vec3 field_gradient_current = vec3(0);
 	get_scalar_field_data_from_position(
 			at(ray, lambda_min_max.x), 
-			tile_meta_data_sampler, tile_meta_data_resolution,
-			mask_data_sampler, tile_resolution, field_data_sampler,
-			depth_radius_to_layer_sampler, depth_radius_to_layer_resolution,
-			num_depth_layers, min_max_depth_radius,
+			tile_meta_data_sampler, mask_data_sampler, field_data_sampler,
+			depth_radius_to_layer_sampler, depth_block.num_depth_layers, depth_block.min_max_depth_radius,
 			cube_face_index_current, cube_face_coordinate_uv_current,
 			field_scalar_current, field_gradient_current);
 	
@@ -807,10 +782,8 @@ quick_test_if_ray_intersects_isosurface(
 			// If the field sample is valid then look for a level crossing.
 			if (get_scalar_field_data_from_position(
 					ray_sample_position_current, 
-					tile_meta_data_sampler, tile_meta_data_resolution,
-					mask_data_sampler, tile_resolution, field_data_sampler,
-					depth_radius_to_layer_sampler, depth_radius_to_layer_resolution,
-					num_depth_layers, min_max_depth_radius,
+					tile_meta_data_sampler, mask_data_sampler, field_data_sampler,
+					depth_radius_to_layer_sampler, depth_block.num_depth_layers, depth_block.min_max_depth_radius,
 					cube_face_index_current, cube_face_coordinate_uv_current,
 					field_scalar_current, field_gradient_current))
 			{
@@ -836,6 +809,7 @@ quick_test_if_ray_intersects_isosurface(
 // the active surface fill region (and hence either misses a wall or hits an opaque wall).
 bool
 render_volume_fill_walls(
+		vec2 screen_coord,
 		Ray ray,
 		float lambda_outer_sphere_entry_point,
 		inout vec4 colour_background,
@@ -858,11 +832,10 @@ render_volume_fill_walls(
 	// These artifacts are due to discarded rays by the wall depth range code because the ray slips between the cracks
 	// and hits neither the wall nor the surface fill mask.
 	bool active_surface_fill_mask_at_ray_entry_point = projects_into_dilated_surface_fill_mask(
-			surface_fill_mask_sampler, surface_fill_mask_resolution,
-			cube_face_index_ray_entry, cube_face_coordinate_uv_ray_entry);
+			surface_fill_mask_sampler, cube_face_index_ray_entry, cube_face_coordinate_uv_ray_entry);
 	
 	// Access the wall normal/depth (if present for the current screen pixel).
-	vec4 wall_sample = texture2D(volume_fill_wall_surface_normal_and_depth_sampler, 0.5 * screen_coord + 0.5);
+	vec4 wall_sample = texture(volume_fill_sampler, 0.5 * screen_coord + 0.5);
 	float screen_space_wall_depth = wall_sample.a;
 	vec3 wall_normal = wall_sample.rgb;
 
@@ -877,9 +850,8 @@ render_volume_fill_walls(
 	}
 	
 	vec4 colour_wall = vec4(1,1,1,1);
-	// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 	float lambda_wall = convert_screen_space_depth_to_ray_lambda(
-			screen_space_wall_depth, screen_coord, gl_ModelViewMatrixInverse, gl_ProjectionMatrixInverse, ray.origin);
+			screen_space_wall_depth, screen_coord, view_projection_block.view_inverse, view_projection_block.projection_inverse, ray.origin);
 	vec3 ray_sample_position_wall = at(ray, lambda_wall);
 
 	int cube_face_index_wall;
@@ -896,7 +868,7 @@ render_volume_fill_walls(
 	vec2 tile_meta_data_min_max_scalar_wall;
 	get_tile_meta_data_from_cube_face_coordinates(
 			cube_face_index_wall, cube_face_coordinate_uv_wall,
-			tile_meta_data_sampler, tile_meta_data_resolution, tile_resolution,
+			tile_meta_data_sampler, textureSize(field_data_sampler, 0).x/*square texture*/,
 			tile_offset_uv_wall, tile_coordinate_uv_wall,
 			tile_ID_wall, tile_meta_data_min_max_scalar_wall);
 
@@ -913,15 +885,14 @@ render_volume_fill_walls(
 		get_scalar_field_data_from_cube_face_coordinates(
 				ray_sample_depth_radius_wall, cube_face_index_wall, cube_face_coordinate_uv_wall,
 				tile_offset_uv_wall, tile_coordinate_uv_wall, tile_ID_wall,
-				field_data_sampler, depth_radius_to_layer_sampler,
-				depth_radius_to_layer_resolution, num_depth_layers, min_max_depth_radius,
+				field_data_sampler, depth_radius_to_layer_sampler, depth_block.num_depth_layers, depth_block.min_max_depth_radius,
 				field_scalar_wall, field_gradient_wall);
 		
 		int crossing_level_wall = get_crossing_level(field_scalar_wall);
 
 		// Relative depth: 0 -> core, 1 -> surface (for restrictd max/min depth range)
-		float depth_relative_wall = (ray_sample_depth_radius_wall - render_min_max_depth_radius_restriction.x) /
-				(render_min_max_depth_radius_restriction.y - render_min_max_depth_radius_restriction.x);
+		float depth_relative_wall = (ray_sample_depth_radius_wall - depth_block.min_max_depth_radius_restriction.x) /
+				(depth_block.min_max_depth_radius_restriction.y - depth_block.min_max_depth_radius_restriction.x);
 		// isoline frequency pattern
 		float isoline_frequency = 0;
 
@@ -972,11 +943,11 @@ render_volume_fill_walls(
 	}
 
 	// diffuse shading
-	if (lighting_enabled)
+	if (lighting_block.enabled)
 	{
-		float lambert = lambert_diffuse_lighting(world_space_light_direction, wall_normal);
+		float lambert = lambert_diffuse_lighting(lighting_block.world_space_light_direction, wall_normal);
 
-		float diffuse = mix(lambert, 1.0, light_ambient_contribution);
+		float diffuse = mix(lambert, 1.0, lighting_block.ambient);
 
 		colour_wall.rgb *= diffuse;
 	}
@@ -1012,6 +983,7 @@ render_volume_fill_walls(
 // optimisations in place to limit ray sampling based on the fact that the walls are opaque.
 bool
 reduce_depth_range_to_volume_fill_walls(
+		vec2 screen_coord,
 		Ray ray,
 		float lambda_outer_sphere_entry_point,
 		float lambda_outer_sphere_exit_point,
@@ -1038,11 +1010,9 @@ reduce_depth_range_to_volume_fill_walls(
 	// These artifacts are due to discarded rays by the wall depth range code because the ray slips between the cracks
 	// and hits neither the wall nor the surface fill mask.
 	bool active_surface_fill_mask_at_ray_entry_point = projects_into_dilated_surface_fill_mask(
-			surface_fill_mask_sampler, surface_fill_mask_resolution,
-			cube_face_index_ray_entry, cube_face_coordinate_uv_ray_entry);
+			surface_fill_mask_sampler, cube_face_index_ray_entry, cube_face_coordinate_uv_ray_entry);
 	bool active_surface_fill_mask_at_ray_exit_point = projects_into_dilated_surface_fill_mask(
-			surface_fill_mask_sampler, surface_fill_mask_resolution,
-			cube_face_index_ray_exit, cube_face_coordinate_uv_ray_exit);
+			surface_fill_mask_sampler, cube_face_index_ray_exit, cube_face_coordinate_uv_ray_exit);
 	
 	// If the ray both enters and exits an active zone then we should not limit its depth range.
 	// Otherwise we can limit its depth range and even discard the current ray.
@@ -1053,7 +1023,7 @@ reduce_depth_range_to_volume_fill_walls(
 	}
 	
 	// Access the wall min/max depth range (if present for the current screen pixel).
-	vec4 wall_or_inner_sphere_sample = texture2D(volume_fill_wall_depth_range_sampler, 0.5 * screen_coord + 0.5);
+	vec4 wall_or_inner_sphere_sample = texture(volume_fill_sampler, 0.5 * screen_coord + 0.5);
 	
 	// If the red (or green) channel is 2.0 then it means a wall (or inner sphere) was not rendered at that pixel.
 	// So anything less than 2.0 (more specifically the screen-space depth range is [-1, 1]) will have a depth range.
@@ -1067,18 +1037,16 @@ reduce_depth_range_to_volume_fill_walls(
 		// If ray does not enter an active zone then we can skip the first part of the ray.
 		if (!active_surface_fill_mask_at_ray_entry_point)
 		{
-			// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 			float lambda_min_depth = convert_screen_space_depth_to_ray_lambda(
-					min_depth, screen_coord, gl_ModelViewMatrixInverse, gl_ProjectionMatrixInverse, ray.origin);
+					min_depth, screen_coord, view_projection_block.view_inverse, view_projection_block.projection_inverse, ray.origin);
 			lambda_min_max.x = max(lambda_min_max.x, lambda_min_depth);
 		}
 		
 		// If ray does not exit an active zone then we can skip the last part of the ray.
 		if (!active_surface_fill_mask_at_ray_exit_point)
 		{
-			// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 			float lambda_max_depth = convert_screen_space_depth_to_ray_lambda(
-					max_depth, screen_coord, gl_ModelViewMatrixInverse, gl_ProjectionMatrixInverse, ray.origin);
+					max_depth, screen_coord, view_projection_block.view_inverse, view_projection_block.projection_inverse, ray.origin);
 			lambda_min_max.y = min(lambda_min_max.y, lambda_max_depth);
 		}
 	}
@@ -1118,7 +1086,7 @@ render_surface_deviation_window(
 	vec2 tile_meta_data_min_max_scalar_ray_entry;
 	get_tile_meta_data_from_cube_face_coordinates(
 			cube_face_index_ray_entry, cube_face_coordinate_uv_ray_entry,
-			tile_meta_data_sampler, tile_meta_data_resolution, tile_resolution,
+			tile_meta_data_sampler, textureSize(field_data_sampler, 0).x/*square texture*/,
 			tile_offset_uv_ray_entry, tile_coordinate_uv_ray_entry,
 			tile_ID_ray_entry, tile_meta_data_min_max_scalar_ray_entry);
 
@@ -1131,11 +1099,10 @@ render_surface_deviation_window(
 	
 	// If the ray entry point is outside an active *surface fill* mask zone
 	// then we don't draw the surface deviation window.
-	if (using_surface_fill_mask)
+	if (surface_fill_block.using_surface_fill_mask)
 	{
 		if (!projects_into_surface_fill_mask(
-				surface_fill_mask_sampler, surface_fill_mask_resolution,
-				cube_face_index_ray_entry, cube_face_coordinate_uv_ray_entry))
+				surface_fill_mask_sampler, cube_face_index_ray_entry, cube_face_coordinate_uv_ray_entry))
 		{
 			return;
 		}
@@ -1146,8 +1113,7 @@ render_surface_deviation_window(
 	get_scalar_field_data_from_cube_face_coordinates(
 			length(ray_outer_sphere_entry_point), cube_face_index_ray_entry, cube_face_coordinate_uv_ray_entry,
 			tile_offset_uv_ray_entry, tile_coordinate_uv_ray_entry, tile_ID_ray_entry, 
-			field_data_sampler, depth_radius_to_layer_sampler, depth_radius_to_layer_resolution,
-			num_depth_layers, min_max_depth_radius,
+			field_data_sampler, depth_radius_to_layer_sampler, depth_block.num_depth_layers, depth_block.min_max_depth_radius,
 			field_scalar_ray_entry, field_gradient_ray_entry);
 	
 	int crossing_level_ray_entry = get_crossing_level(field_scalar_ray_entry);
@@ -1231,7 +1197,9 @@ sample_ray_at_tile_exit(
 	// create the four tile planes for given face and tile offsets
 	create_plane_normals_from_vectors(
 			cube_face_matrix_edge[cube_face_index],
-			tile_meta_data_resolution, tile_offset_uv, plane_normals);
+			textureSize(tile_meta_data_sampler, 0).x/*square texture*/,
+			tile_offset_uv,
+			plane_normals);
 
 	// calculate lambda for every four planes
 	for (int i = 0; i < 4; i++)
@@ -1264,11 +1232,11 @@ sample_ray_at_tile_exit(
 		lambda = lambda_min_max.y;
 		ray_sample_position = at(ray,lambda);
 		// for debugging
-		//if (test_variable_1 > 0.02) colour = vec4(0,length(ray_sample_position),0,1);
+		//if (test_block.variable[1] > 0.02) colour = vec4(0,length(ray_sample_position),0,1);
 	}
 
 	// for visualisation of tile intersection points
-	if (test_variable_3 > 0) 
+	if (test_block.variable[3] > 0) 
 	{
 		colour.rgb += vec3(length(ray_sample_position),0,length(ray_sample_position));
 		colour.a += (1 - colour.a) * 1;
@@ -1331,6 +1299,7 @@ blend_isosurface_sample(
 // Raycasting process
 bool
 raycasting(
+		vec2 screen_coord,
 		out vec4 colour,
 		out vec3 iso_surface_position)
 {
@@ -1350,37 +1319,37 @@ raycasting(
 
 	// colour of front deviation window (-) in relation to isovalue1
 	colour_matrix_iso[0] = look_up_table_1D(
-								colour_palette_sampler, colour_palette_resolution,
+								colour_palette_sampler,
 								min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 								isovalue1.y); 
 
 	// colour of isosurface isovalue1
 	colour_matrix_iso[1] = look_up_table_1D(
-								colour_palette_sampler, colour_palette_resolution,
+								colour_palette_sampler,
 								min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 								isovalue1.x); 
 
 	// colour of back deviation window (+) in relation to isovalue1
 	colour_matrix_iso[2] = look_up_table_1D(
-								colour_palette_sampler, colour_palette_resolution,
+								colour_palette_sampler,
 								min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 								isovalue1.z);
 
 	// colour of front deviation window (-) in relation to isovalue2
 	colour_matrix_iso[3] = look_up_table_1D(
-								colour_palette_sampler, colour_palette_resolution,
+								colour_palette_sampler,
 								min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 								isovalue2.y); 
 
 	// colour of isosurface isovalue2
 	colour_matrix_iso[4] = look_up_table_1D(
-								colour_palette_sampler, colour_palette_resolution,
+								colour_palette_sampler,
 								min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 								isovalue2.x); 
 
 	// colour of back deviation window (+) in relation to isovalue2
 	colour_matrix_iso[5] = look_up_table_1D(
-								colour_palette_sampler, colour_palette_resolution,
+								colour_palette_sampler,
 								min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 								isovalue2.z);
 	
@@ -1428,16 +1397,14 @@ raycasting(
 	// Create the ray starting on the near plane and moving towards the far plane.
 	//
 	// For our purposes it doesn't really matter where, along the ray, the ray origin is. As long as the ray line is correct.
-	//
-	// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
-	Ray ray = get_ray(screen_coord, gl_ModelViewMatrixInverse, gl_ProjectionMatrixInverse);
+	Ray ray = get_ray(screen_coord, view_projection_block.view_inverse, view_projection_block.projection_inverse);
 	
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Determine lambda min and max interval using inner and outer spheres
 
-	// declare outer_sphere radius, maximum given in "render_min_max_depth_radius_restriction".y component
-	Sphere outer_sphere = Sphere(render_min_max_depth_radius_restriction.y);
+	// declare outer_sphere radius, maximum given in "depth_block.min_max_depth_radius_restriction".y component
+	Sphere outer_sphere = Sphere(depth_block.min_max_depth_radius_restriction.y);
 	Interval outer_sphere_interval;
 
 	// check for intersection points (at which point does the ray enter the sphere and at which does it leave the sphere)
@@ -1450,7 +1417,7 @@ raycasting(
 	lambda_min_max.x = outer_sphere_interval.from;
 	lambda_min_max.y = outer_sphere_interval.to;
 
-	Sphere inner_sphere = Sphere(render_min_max_depth_radius_restriction.x);
+	Sphere inner_sphere = Sphere(depth_block.min_max_depth_radius_restriction.x);
 	Interval inner_sphere_interval;
 
 	if (intersect_line(inner_sphere,ray,inner_sphere_interval))
@@ -1461,12 +1428,12 @@ raycasting(
 		lambda_min_max.y = min(inner_sphere_interval.from,lambda_min_max.y);
 		iso_surface_position = at(ray,lambda_min_max.y);
 
-		if (lighting_enabled)
+		if (lighting_block.enabled)
 		{
 			// lambert diffuse shading
 			vec3 normal = normalize(at(ray,lambda_min_max.y));
-			float lambert = lambert_diffuse_lighting(world_space_light_direction,normal);
-			float diffuse = mix(lambert,1.0,light_ambient_contribution);
+			float lambert = lambert_diffuse_lighting(lighting_block.world_space_light_direction, normal);
+			float diffuse = mix(lambert, 1.0, lighting_block.ambient);
 
 			background_colour.rgb *= diffuse;
 		}
@@ -1475,15 +1442,15 @@ raycasting(
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// Reject ray if it does not intersect isosurface(s).
 	
-	if (test_variable_4 > 0)
+	if (test_block.variable[4] > 0)
 	{
 		// number of trace steps along the ray for every ray section
-		int trace_steps = int(test_variable_4 * 100.0f / 2.0f); // 0.02 -> 8 Samplings | 0.04 -> 16 Samplings ...
+		int trace_steps = int(test_block.variable[4] * 100.0f / 2.0f); // 0.02 -> 8 Samplings | 0.04 -> 16 Samplings ...
 		
 		// if no iso surface was found during algorithm, no further sampling has to be done
 		if (!quick_test_if_ray_intersects_isosurface(ray, trace_steps, lambda_min_max))
 		{
-			if (test_variable_5 > 0)
+			if (test_block.variable[5] > 0)
 				colour = vec4(1,0,0.5,1);
 			
 			return colour.a > 0;
@@ -1515,10 +1482,9 @@ raycasting(
 		// The depth texture might reduce the maximum ray length enabling early ray termination.
 		// Convert [-1,1] range to [0,1] for texture coordinates.
 		// Depth texture is a single-channel floating-point texture (GL_R32F).
-		float depth_texture_screen_space_depth = texture2D(depth_texture_sampler, 0.5 * screen_coord + 0.5).r;
-		// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
+		float depth_texture_screen_space_depth = texture(depth_texture_sampler, 0.5 * screen_coord + 0.5).r;
 		float depth_texture_lambda = convert_screen_space_depth_to_ray_lambda(
-				depth_texture_screen_space_depth, screen_coord, gl_ModelViewMatrixInverse, gl_ProjectionMatrixInverse, ray.origin);
+				depth_texture_screen_space_depth, screen_coord, view_projection_block.view_inverse, view_projection_block.projection_inverse, ray.origin);
 		lambda_min_max.y = min(lambda_min_max.y, depth_texture_lambda);
 	}
 
@@ -1528,10 +1494,10 @@ raycasting(
 	// NOTE: This is done after the lambda increment has been calculated.
 	// Should the interval be reduced before calculating lambda increment?
 	
-	if (using_surface_fill_mask && using_volume_fill_wall_depth_range)
+	if (surface_fill_block.using_surface_fill_mask && !surface_fill_block.show_volume_fill_walls)
 	{
 		if (reduce_depth_range_to_volume_fill_walls(
-				ray, outer_sphere_interval.from, outer_sphere_interval.to, lambda_min_max))
+				screen_coord, ray, outer_sphere_interval.from, outer_sphere_interval.to, lambda_min_max))
 		{
 			// Force separate else clause to avoid Nvidia GLSL compiler bug (tested driver version 320.18)
 			// where 'lambda_min_max' is not copied back from function call.
@@ -1553,10 +1519,10 @@ raycasting(
 	// NOTE: This is done after the lambda increment has been calculated since max lambda can be reduced here.
 	// Should the interval be reduced before calculating lambda increment?
 	
-	if (using_surface_fill_mask && show_volume_fill_walls)
+	if (surface_fill_block.using_surface_fill_mask && surface_fill_block.show_volume_fill_walls)
 	{
 		if (!render_volume_fill_walls(
-				ray, outer_sphere_interval.from, background_colour, iso_surface_position, lambda_min_max))
+				screen_coord, ray, outer_sphere_interval.from, background_colour, iso_surface_position, lambda_min_max))
 		{
 			// There is no need to ray-trace, so set the colour and return.
 			colour = background_colour;
@@ -1625,18 +1591,15 @@ raycasting(
 	// Sample the field at the initial ray sample position.
 	valid_front = get_scalar_field_data_from_position(
 			ray_sample_position, 
-			tile_meta_data_sampler, tile_meta_data_resolution,
-			mask_data_sampler, tile_resolution, field_data_sampler,
-			depth_radius_to_layer_sampler, depth_radius_to_layer_resolution,
-			num_depth_layers, min_max_depth_radius,
+			tile_meta_data_sampler, mask_data_sampler, field_data_sampler,
+			depth_radius_to_layer_sampler, depth_block.num_depth_layers, depth_block.min_max_depth_radius,
 			cube_face_index, cube_face_coordinate_uv,
 			field_scalar, field_gradient);
 	active_front = valid_front;
-	if (using_surface_fill_mask)
+	if (surface_fill_block.using_surface_fill_mask)
 	{
 		active_front = active_front && projects_into_surface_fill_mask(
-				surface_fill_mask_sampler, surface_fill_mask_resolution,
-				cube_face_index, cube_face_coordinate_uv);
+				surface_fill_mask_sampler, cube_face_index, cube_face_coordinate_uv);
 	}
 	if (valid_front)
 	{
@@ -1715,12 +1678,14 @@ raycasting(
 		//////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// If ray position is within the same tile then no tile meta data lookups are needed.
 		
-		if (test_variable_6 > 0)
+		if (test_block.variable[6] > 0)
 		{
 			// always calculate current uv coordinates of the tile
 			vec2 tile_meta_data_coordinate_uv;
 			get_tile_uv_coordinates(
-					cube_face_coordinate_uv, tile_meta_data_resolution, tile_resolution,
+					cube_face_coordinate_uv,
+					textureSize(tile_meta_data_sampler, 0).x/*square texture*/,
+					textureSize(field_data_sampler, 0).x/*square texture*/,
 					tile_offset_uv, tile_meta_data_coordinate_uv, tile_coordinate_uv);
 
 			// if we sample into a new cube face or a different tile, then get new tile id
@@ -1739,7 +1704,8 @@ raycasting(
 		{
 			get_tile_meta_data_from_cube_face_coordinates(
 					cube_face_index, cube_face_coordinate_uv,
-					tile_meta_data_sampler, tile_meta_data_resolution, tile_resolution,
+					textureSize(tile_meta_data_sampler, 0).x/*square texture*/,
+					textureSize(field_data_sampler, 0).x/*square texture*/,
 					tile_offset_uv, tile_coordinate_uv, tile_ID, tile_meta_data_min_max_scalar);
 		}
 
@@ -1761,9 +1727,9 @@ raycasting(
 					vec3(lessThanEqual(isovalue2, vec3(tile_meta_data_min_max_scalar.y)))));
 		
 		// DEBUGGING 
-		//if (test_variable_9 > 0) isovalue_in_tile_bounds = true;
+		//if (test_block.variable[9] > 0) isovalue_in_tile_bounds = true;
 
-		if (test_variable_2 > 0)
+		if (test_block.variable[2] > 0)
 		{
 			// if isovalue is not in tile scalar value range, calculate plane intersection points and jump to the next tile
 			if (!isovalue_in_tile_bounds &&
@@ -1794,14 +1760,13 @@ raycasting(
 			continue;
 		}
 		
-		if (using_surface_fill_mask)
+		if (surface_fill_block.using_surface_fill_mask)
 		{
 			active_front = active_front && projects_into_surface_fill_mask(
-					surface_fill_mask_sampler, surface_fill_mask_resolution,
-					cube_face_index, cube_face_coordinate_uv);
+					surface_fill_mask_sampler, cube_face_index, cube_face_coordinate_uv);
 		}
 
-		if (test_variable_2 > 0)
+		if (test_block.variable[2] > 0)
 		{
 			if (!isovalue_in_tile_bounds)
 			{
@@ -1818,8 +1783,8 @@ raycasting(
 			get_scalar_field_data_from_cube_face_coordinates(
 					length(ray_sample_position), cube_face_index, cube_face_coordinate_uv,
 					tile_offset_uv, tile_coordinate_uv, tile_ID, 
-					field_data_sampler, depth_radius_to_layer_sampler, depth_radius_to_layer_resolution,
-					num_depth_layers, min_max_depth_radius,
+					field_data_sampler, depth_radius_to_layer_sampler,
+					depth_block.num_depth_layers, depth_block.min_max_depth_radius,
 					field_scalar, field_gradient);
 			
 			crossing_level_front = get_crossing_level(field_scalar);
@@ -1889,14 +1854,16 @@ raycasting(
 void
 main()
 {
+	// Get the current xy screen coordinate (in NDC space [-1,1]).
+	vec2 screen_coord = window_to_NDC_xy(gl_FragCoord.xy, view_projection_block.viewport);
+
 	// Return values after ray casting stopped
-	vec4 colour;
 	vec3 iso_surface_position;
 
 	// Start raycasting process.
 	// If raycasting does not return a colour or was not sucessful, discard pixel.
 	// Note: The output colour has pre-multiplied alpha in its RGB channels.
-	if (!raycasting(colour, iso_surface_position))
+	if (!raycasting(screen_coord, colour, iso_surface_position))
 	{
 		discard;
 	}
@@ -1904,7 +1871,7 @@ main()
 	// Note that we need to write to 'gl_FragDepth' because if we don't then the fixed-function
 	// depth will get written (if depth writes enabled) using the fixed-function depth which is that
 	// of our full-screen quad (not the actual ray-traced depth).
-	vec4 screen_space_iso_surface_position = gl_ModelViewProjectionMatrix * vec4(iso_surface_position, 1.0);
+	vec4 screen_space_iso_surface_position = view_projection_block.view_projection * vec4(iso_surface_position, 1.0);
 	float screen_space_iso_surface_depth = screen_space_iso_surface_position.z / screen_space_iso_surface_position.w;
 
 	// Convert normalised device coordinates (screen-space) to window coordinates which, for depth, is [-1,1] -> [0,1].
@@ -1924,23 +1891,13 @@ main()
 	// problem to solve - depth peeling.
 	//
 
-	// According to the GLSL spec...
+	// We write to both 'colour' and 'depth' with the latter being ignored if glDrawBuffers is NONE for draw buffer index 1 (the default).
 	//
-	// "If a shader statically assigns a value to gl_FragColor, it may not assign a value
-	// to any element of gl_FragData. If a shader statically writes a value to any element
-	// of gl_FragData, it may not assign a value to gl_FragColor. That is, a shader may
-	// assign values to either gl_FragColor or gl_FragData, but not both."
-	// "A shader contains a static assignment to a variable x if, after pre-processing,
-	// the shader contains a statement that would write to x, whether or not run-time flow
-	// of control will cause that statement to be executed."
+	// Note that 'colour' is render target 0 due to:
 	//
-	// ...so we can't branch on a uniform (boolean) variable here.
-	// So we write to both gl_FragData[0] and gl_FragData[1] with the latter output being ignored
-	// if glDrawBuffers is NONE for draw buffer index 1 (the default).
-
-	// Write colour to render target 0.
-	gl_FragData[0] = colour;
-
+	//   layout (location = 0) out vec4 colour;
+	//
+	//
 	// Write *screen-space* depth (ie, depth range [-1,1] and not [0,1]) to render target 1.
 	// This is what's used in the ray-tracing shader since it uses inverse model-view-proj matrix on the depth
 	// to get world space position and that requires normalised device coordinates not window coordinates).
@@ -1948,5 +1905,10 @@ main()
 	//
 	// NOTE: If this output is connected to a depth texture and 'read_from_depth_texture' is true then
 	// they cannot both be the same texture because a shader cannot write to the same texture it reads from.
-	gl_FragData[1] = vec4(screen_space_iso_surface_depth);
+	//
+	// Note the 'depth' is render target 1 due to:
+	//
+	//   layout (location = 1) out vec4 depth;
+	//
+	depth = vec4(screen_space_iso_surface_depth);
 }
