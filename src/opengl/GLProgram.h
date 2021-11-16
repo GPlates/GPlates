@@ -37,6 +37,7 @@
 #include <boost/weak_ptr.hpp>
 #include <opengl/OpenGL1.h>
 
+#include "GLCapabilities.h"
 #include "GLObject.h"
 #include "GLObjectResource.h"
 #include "GLObjectResourceManager.h"
@@ -163,7 +164,7 @@ namespace GPlatesOpenGL
 		 * Note that OpenGL will generate an error if this is called before @a link_program is first called.
 		 */
 		bool
-		is_active_uniform(
+		is_active_uniform_in_default_block(
 				const char *uniform_name) const
 		{
 			return get_uniform_location(uniform_name) >= 0;
@@ -185,7 +186,6 @@ namespace GPlatesOpenGL
 		 * subsequently re-linked (by another call to @a link_program) then the cache is cleared.
 		 * Caching is the only difference compared to using glGetUniformLocation directly as in:
 		 *
-		 *   gl.UseProgram(program);
 		 *   glUniform4f(glGetUniformLocation(program->get_resource_handle(), 'colour'), red, green, blue, alpha);
 		 *
 		 * Note that OpenGL will generate an error if this is called before @a link_program is first called.
@@ -193,6 +193,52 @@ namespace GPlatesOpenGL
 		GLint
 		get_uniform_location(
 				const char *uniform_name) const;
+
+
+		/**
+		 * Returns true if the specified uniform block name corresponds to an active named uniform block
+		 * in the most recent linking of this program (see @a link_program).
+		 *
+		 * Returns false for any of the following:
+		 *  (1) block name does not exist,
+		 *  (2) block name is not actively used in the linked program or
+		 *  (3) and error occurred.
+		 *
+		 * Note that OpenGL will generate an error if this is called before @a link_program is first called.
+		 */
+		bool
+		is_active_uniform_block(
+				const char *uniform_block_name) const
+		{
+			return get_uniform_block_index(uniform_block_name) != GL_INVALID_INDEX;
+		}
+
+		/**
+		 * Get the uniform block index of the specified named uniform block name.
+		 *
+		 * Returns GL_INVALID_INDEX if @a uniform_block_name is not an active named uniform block.
+		 *
+		 * You can use the returned block index with a native glUniformBlockBinding call. Such as:
+		 *
+		 *   glUniformBlockBinding(
+		 *       program->get_resource_handle(),
+		 *       program->get_uniform_block_index('Lighting'),
+		 *       2); // uniformBlockBinding
+		 *
+		 * Internally this calls glGetUniformBlockIndex and caches its results. If this program is
+		 * subsequently re-linked (by another call to @a link_program) then the cache is cleared.
+		 * Caching is the only difference compared to using glGetUniformBlockIndex directly as in:
+		 *
+		 *   glUniformBlockBinding(
+		 *       program->get_resource_handle(),
+		 *       glGetUniformBlockIndex(program->get_resource_handle(), 'Lighting'),
+		 *       2); // uniformBlockBinding
+		 *
+		 * Note that OpenGL will generate an error if this is called before @a link_program is first called.
+		 */
+		GLuint
+		get_uniform_block_index(
+				const char *uniform_block_name) const;
 
 
 		/**
@@ -230,8 +276,11 @@ namespace GPlatesOpenGL
 		//! Typedef for a sequence of shader objects.
 		typedef std::set<GLShader::shared_ptr_to_const_type> shader_seq_type;
 
-		//! Typedef for a map of uniform variable names to locations.
+		//! Typedef for a map of uniform variable names to locations (in default uniform block).
 		typedef std::map<std::string, GLint> uniform_location_map_type;
+
+		//! Typedef for a map of uniform block names to uniform block indices (for named uniform blocks).
+		typedef std::map<std::string, GLuint> uniform_block_index_map_type;
 
 
 		resource_type::non_null_ptr_to_const_type d_resource;
@@ -239,6 +288,7 @@ namespace GPlatesOpenGL
 		shader_seq_type d_shaders;
 
 		mutable uniform_location_map_type d_uniform_locations;
+		mutable uniform_block_index_map_type d_uniform_block_indices;
 
 
 		//! Constructor.

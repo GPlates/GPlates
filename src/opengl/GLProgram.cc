@@ -84,10 +84,13 @@ GPlatesOpenGL::GLProgram::detach_shader(
 void
 GPlatesOpenGL::GLProgram::link_program()
 {
-	// First clear our mapping of uniform names to uniform indices (locations).
-	// Linking (or re-linking) can change the indices.
-	// When the client sets uniforms variables, after (re)linking, they will get cached (again) as needed.
+	// First clear our mapping of uniform names to uniform locations (in default uniform block) and
+	// the mapping of uniform block names to uniform block indices (for named uniform blocks).
+	// Linking (or re-linking) can change these.
+	// They will get cached (again) as needed when the client subsequently calls
+	// 'get_uniform_location()' and 'get_uniform_block_index'.
 	d_uniform_locations.clear();
+	d_uniform_block_indices.clear();
 
 	const GLuint program_resource_handle = get_resource_handle();
 
@@ -143,10 +146,8 @@ GLint
 GPlatesOpenGL::GLProgram::get_uniform_location(
 		const char *uniform_name) const
 {
-	std::pair<uniform_location_map_type::iterator, bool> uniform_insert_result =
-			d_uniform_locations.insert(
-					uniform_location_map_type::value_type(std::string(uniform_name), 0/*dummy index*/));
-	if (uniform_insert_result.second)
+	auto uniform_location_insert_result = d_uniform_locations.insert({ std::string(uniform_name), 0/*dummy index*/ });
+	if (uniform_location_insert_result.second)
 	{
 		// The uniform name was inserted which means it didn't already exist.
 		// So find, and assign, its location index.
@@ -154,10 +155,30 @@ GPlatesOpenGL::GLProgram::get_uniform_location(
 		const GLint uniform_location = glGetUniformLocation(get_resource_handle(), uniform_name);
 
 		// Override the dummy index (location) with the correct one (or -1 for not-found).
-		uniform_insert_result.first->second = uniform_location;
+		uniform_location_insert_result.first->second = uniform_location;
 	}
 
-	return uniform_insert_result.first->second;
+	return uniform_location_insert_result.first->second;
+}
+
+
+GLuint
+GPlatesOpenGL::GLProgram::get_uniform_block_index(
+		const char *uniform_block_name) const
+{
+	auto uniform_block_index_insert_result = d_uniform_block_indices.insert({ std::string(uniform_block_name), 0/*dummy index*/ });
+	if (uniform_block_index_insert_result.second)
+	{
+		// The uniform block name was inserted which means it didn't already exist.
+		// So find, and assign, its block index.
+		// Note that the block index might be GL_INVALID_INDEX (indicating it's not an active named uniform block).
+		const GLuint uniform_block_index = glGetUniformBlockIndex(get_resource_handle(), uniform_block_name);
+
+		// Override the dummy uniform block index with the correct one (or GL_INVALID_INDEX for not-found).
+		uniform_block_index_insert_result.first->second = uniform_block_index;
+	}
+
+	return uniform_block_index_insert_result.first->second;
 }
 
 
