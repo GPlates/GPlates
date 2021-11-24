@@ -1397,6 +1397,7 @@ raycasting(
 	// Create the ray starting on the near plane and moving towards the far plane.
 	//
 	// For our purposes it doesn't really matter where, along the ray, the ray origin is. As long as the ray line is correct.
+	// The same position, in world space, somewhere on the ray will just have different lambdas for different ray origins.
 	Ray ray = get_ray(screen_coord, view_projection_block.view_inverse, view_projection_block.projection_inverse);
 	
 	
@@ -1874,9 +1875,11 @@ main()
 	vec4 screen_space_iso_surface_position = view_projection_block.view_projection * vec4(iso_surface_position, 1.0);
 	float screen_space_iso_surface_depth = screen_space_iso_surface_position.z / screen_space_iso_surface_position.w;
 
-	// Convert normalised device coordinates (screen-space) to window coordinates which, for depth, is [-1,1] -> [0,1].
-	// Ideally this should also consider the effects of glDepthRange but we'll assume it's set to [0,1].
-	gl_FragDepth = 0.5 * screen_space_iso_surface_depth + 0.5;
+	// Convert normalised device coordinates (z_ndc) to window coordinates (z_w) which, for depth, is:
+	//   [-1,1] -> [n,f]
+	// ...where [n,f] is set by glDepthRange (default is [0,1]). The conversion is:
+	//   z_w = z_ndc * (f-n)/2 + (n+f)/2
+	gl_FragDepth = (screen_space_iso_surface_depth * gl_DepthRange.diff + gl_DepthRange.near + gl_DepthRange.far) / 2.0;
 
 	//
 	// Using multiple render targets here.
@@ -1897,18 +1900,18 @@ main()
 	//
 	//   layout (location = 0) out vec4 colour;
 	//
+	// ...and 'depth' is render target 1 due to:
 	//
-	// Write *screen-space* depth (ie, depth range [-1,1] and not [0,1]) to render target 1.
+	//   layout (location = 1) out vec4 depth;
+	//
+	//
+	// Write *screen-space* depth (ie, depth range [-1,1] and not [n,f]) to render target 1.
 	// This is what's used in the ray-tracing shader since it uses inverse model-view-proj matrix on the depth
 	// to get world space position and that requires normalised device coordinates not window coordinates).
-	// Note that this does not need to consider the effects of glDepthRange.
+	// Note that this is screen-space depth [-1,1] and so does not need to consider the effects of glDepthRange.
 	//
 	// NOTE: If this output is connected to a depth texture and 'read_from_depth_texture' is true then
 	// they cannot both be the same texture because a shader cannot write to the same texture it reads from.
-	//
-	// Note the 'depth' is render target 1 due to:
-	//
-	//   layout (location = 1) out vec4 depth;
 	//
 	depth = vec4(screen_space_iso_surface_depth);
 }

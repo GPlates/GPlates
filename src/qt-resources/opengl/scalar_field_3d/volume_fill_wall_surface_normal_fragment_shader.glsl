@@ -88,13 +88,13 @@ void main (void)
 		// If the current world position projects *fully* into the surface mask then discard the current fragment
 		// because it means we're *completely* inside the surface fill mask (which is inside the fill volume).
 		// And this means we belong to a wall that is not on the boundary of a surface fill mask region.
-		// We only want to render the boundary walls (the interior walls provide to much viewing occlusion).
+		// We only want to render the boundary walls (the interior walls provide too much viewing occlusion).
 		// NOTE: We test against 1.0 instead of 0.5 (like 'projects_into_surface_fill_mask()' does) because this
 		// contracts the surface fill mask slightly (up to a half a texel) and we don't want to discard any part
 		// of walls that form part of the surface fill mask boundary.
 		// Also note that we get a further 1.5 texel reach by using the 'dilation' version of the mask sampling above.
 		// The upside is we don't mask out parts of the boundary walls (this artifact looks obvious in some places).
-		// The downside to this is we don't trim the interior walls as well (but it's not that noticeable).
+		// The downside to this is we don't fully trim the interior walls (but it's not that noticeable).
 		if (surface_fill_mask == 1.0)
 		{
 			discard;
@@ -109,9 +109,16 @@ void main (void)
 	surface_normal_and_depth.xyz = normal;
 	
 	// Write the screen-space depth to the alpha channel.
-	// The  *screen-space* depth (ie, depth range [-1,1] and not [0,1]).
+	// The *screen-space* depth (ie, depth range [-1,1] and not [n,f]).
 	// This is what's used in the ray-tracing shader since it uses inverse model-view-proj matrix on the depth
 	// to get world space position and that requires normalised device coordinates not window coordinates).
-	// Ideally this should also consider the effects of glDepthRange but we'll assume it's set to [0,1].
-	surface_normal_and_depth.w = 2 * gl_FragCoord.z - 1;
+	//
+	// Convert window coordinates (z_w) to normalised device coordinates (z_ndc) which, for depth, is:
+	//   [n,f] -> [-1,1]
+	// ...where [n,f] is set by glDepthRange (default is [0,1]). The conversion is:
+	//   z_w = z_ndc * (f-n)/2 + (n+f)/2
+	// ...which is equivalent to:
+	//   z_ndc = [2 * z_w - n - f)] / (f-n)
+	//
+	surface_normal_and_depth.w = (2 * gl_FragCoord.z - gl_DepthRange.near - gl_DepthRange.far) / gl_DepthRange.diff;
 }

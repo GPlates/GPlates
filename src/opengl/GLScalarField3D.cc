@@ -228,11 +228,18 @@ namespace GPlatesOpenGL
 
 				void main (void)
 				{
-					// Write *screen-space* depth (ie, depth range [-1,1] and not [0,1]).
+					// Write *screen-space* depth (ie, depth range [-1,1] and not [n,f]).
 					// This is what's used in the ray-tracing shader since it uses inverse model-view-proj matrix on the depth
 					// to get world space position and that requires normalised device coordinates not window coordinates).
-					// Ideally this should also consider the effects of glDepthRange but we'll assume it's set to [0,1].
-					depth = vec4(2 * gl_FragCoord.z - 1);
+					//
+					// Convert window coordinates (z_w) to normalised device coordinates (z_ndc) which, for depth, is:
+					//   [n,f] -> [-1,1]
+					// ...where [n,f] is set by glDepthRange (default is [0,1]). The conversion is:
+					//   z_w = z_ndc * (f-n)/2 + (n+f)/2
+					// ...which is equivalent to:
+					//   z_ndc = [2 * z_w - n - f)] / (f-n)
+					//
+					depth = vec4((2 * gl_FragCoord.z - gl_DepthRange.near - gl_DepthRange.far) / gl_DepthRange.diff);
 				}
 			)";
 
@@ -398,15 +405,22 @@ namespace GPlatesOpenGL
 
 		const char *DEPTH_RANGE_INNER_SPHERE_FRAGMENT_SHADER_SOURCE =
 			R"(
-				layout(location = 0) out vec4 colour;
+				layout(location = 0) out vec4 depth;
 
 				void main (void)
 				{
-					// Write *screen-space* depth (ie, depth range [-1,1] and not [0,1]).
+					// Write *screen-space* depth (ie, depth range [-1,1] and not [n,f]).
 					// This is what's used in the ray-tracing shader since it uses inverse model-view-proj matrix on the depth
 					// to get world space position and that requires normalised device coordinates not window coordinates).
-					// Ideally this should also consider the effects of glDepthRange but we'll assume it's set to [0,1].
-					colour = vec4(2 * gl_FragCoord.z - 1);
+					//
+					// Convert window coordinates (z_w) to normalised device coordinates (z_ndc) which, for depth, is:
+					//   [n,f] -> [-1,1]
+					// ...where [n,f] is set by glDepthRange (default is [0,1]). The conversion is:
+					//   z_w = z_ndc * (f-n)/2 + (n+f)/2
+					// ...which is equivalent to:
+					//   z_ndc = [2 * z_w - n - f)] / (f-n)
+					//
+					depth = vec4((2 * gl_FragCoord.z - gl_DepthRange.near - gl_DepthRange.far) / gl_DepthRange.diff);
 				}
 			)";
 

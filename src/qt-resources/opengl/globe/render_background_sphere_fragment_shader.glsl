@@ -97,7 +97,7 @@ void main (void)
 		//   [-1,1] -> [n,f]
 		// ...where [n,f] is set by glDepthRange (default is [0,1]). The conversion is:
 		//   z_w = z_ndc * (f-n)/2 + (n+f)/2
-		gl_FragDepth = (gl_DepthRange.diff * z_ndc + gl_DepthRange.near + gl_DepthRange.far) / 2.0;
+		gl_FragDepth = (z_ndc * gl_DepthRange.diff + gl_DepthRange.near + gl_DepthRange.far) / 2.0;
 	}
 
 	// If the globe is opaque then just set the fragment colour and return.
