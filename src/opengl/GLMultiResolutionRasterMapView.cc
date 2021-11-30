@@ -110,13 +110,10 @@ namespace GPlatesOpenGL
 		 */
 		const char *RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE =
 			R"(
-				uniform bool using_data_raster_for_tile;
 				uniform bool using_clip_texture;
 
 				uniform sampler2D tile_texture_sampler;
 				uniform sampler2D clip_texture_sampler;
-
-				uniform vec4 tile_texture_dimensions;
 
 				in vec4 tile_texture_coordinate;
 				in vec4 clip_texture_coordinate;
@@ -126,12 +123,6 @@ namespace GPlatesOpenGL
 				void main (void)
 				{
 					// Discard the pixel if it has been clipped by the clip texture.
-					//
-					// Note: Discarding is necessary for our 'data' floating-point textures,
-					//       as opposed to just modulating the alpha channel as you could with
-					//       fixed-point colour textures, because there is no alpha blending/testing
-					//       for floating-point textures (and also they store data in red channel and
-					//       coverage in green channel).
 					if (using_clip_texture)
 					{
 						float clip_mask = textureProj(clip_texture_sampler, clip_texture_coordinate).a;
@@ -141,37 +132,24 @@ namespace GPlatesOpenGL
 						}
 					}
 	
-					if (using_data_raster_for_tile)
+					//
+					// The source raster can be either a visual source raster (RGBA) or data raster (RG).
+					// A visual raster source has premultiplied alpha, and a data raster source has premultiplied coverage (from Green channel).
+					//
+					// Note: Data rasters use the 2-channel RG texture format with data in Red and coverage in Green.
+					//       Since there's no Alpha channel, the texture swizzle (set in texture object) copies coverage in the
+					//       Green channel into the Alpha channel. Also if we're outputting to an RG render-texture then Alpha gets
+					//       discarded (but still used by alpha-blender), however that's OK since coverage is still in the Green channel.
+					//
+					colour = textureProj(tile_texture_sampler, tile_texture_coordinate);
+
+					// Reject the pixel if its alpha (or coverage) is zero.
+					//
+					// Note that for data rasters the texture swizzle (set in texture object) copied the coverage from green channel to alpha channel.
+					if (colour.a == 0)
 					{
-						// Do the texture transform projective divide.
-						vec2 tile_texture_coords = tile_texture_coordinate.st / tile_texture_coordinate.q;
-						// Bilinearly filter the tile texture (data/coverage is in red/green channel).
-						// The texture access in 'bilinearly_interpolate' starts a new indirection phase.
-						tile_colour = bilinearly_interpolate_data_coverage_RG(
-							tile_texture_sampler, tile_texture_coords, tile_texture_dimensions);
-
-						// Reject the pixel if its coverage/alpha is zero.
-						//
-						// NOTE: For data textures we've placed the coverage/alpha in the green channel.
-						if (tile_colour.g == 0)
-						{
-							discard;
-						}
+						discard;
 					}
-					else
-					{
-						// Use hardware bilinear interpolation of fixed-point texture.
-						tile_colour = textureProj(tile_texture_sampler, tile_texture_coordinate);
-
-						// Reject the pixel if its coverage/alpha is zero.
-						if (tile_colour.a == 0)
-						{
-							discard;
-						}
-					}
-
-					// The final fragment colour.
-					colour = tile_colour;
 				}
 			)";
 
@@ -292,7 +270,6 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::GLMultiResolutionRasterMapView(
 	d_multi_resolution_cube_raster(multi_resolution_cube_raster),
 	d_multi_resolution_map_cube_mesh(multi_resolution_map_cube_mesh),
 	d_tile_texel_dimension(multi_resolution_cube_raster->get_tile_texel_dimension()),
-	d_inverse_tile_texel_dimension(1.0f / multi_resolution_cube_raster->get_tile_texel_dimension()),
 	d_map_projection_central_meridian_longitude(0),
 	d_render_tile_to_scene_program(GLProgram::create(gl))
 {
@@ -314,6 +291,31 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render(
 	// We only have one shader program (for rendering each tile to the scene).
 	// Bind it early since we'll be setting state in it as we traverse the cube quad tree.
 	gl.UseProgram(d_render_tile_to_scene_program);
+
+	// The shader program outputs colours for a visual source raster (or data and coverage for a data source raster)
+	// that have premultiplied alpha (or coverage) because the source raster itself has premultiplied alpha (or coverage).
+	//
+	// So we want the alpha blending source factor to be one instead of alpha (or coverage):
+	//
+	// For visual rasters this means:
+	//
+	//   RGB =     1 * RGB_src + (1-A_src) * RGB_dst
+	//     A =     1 *   A_src + (1-A_src) *   A_dst
+	//
+	// ..and for data rasters this means:
+	//
+	//   data(R)     =     1 * data_src(R)     + (1-coverage_src(A=G)) * data_dst(R)
+	//   coverage(G) =     1 * coverage_src(G) + (1-coverage_src(A=G)) * coverage_dst(G)
+	//
+	// Note: Data rasters use the 2-channel RG texture format with data in Red and coverage in Green.
+	//       Since there's no Alpha channel, the texture swizzle (set in texture object) copies coverage in the
+	//       Green channel into Alpha channel where the alpha blender can access it (with GL_ONE_MINUS_SRC_ALPHA).
+	//       The alpha blender output can then only store RG channels (if rendering a render target, such as cube map,
+	//       and not the final/main framebuffer) and so Alpha gets discarded (but still used by alpha-blender),
+	//       however that's OK since coverage is still in the Green channel.
+	//
+	gl.Enable(GL_BLEND);
+	gl.BlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
 	// Set view projection matrix in shader program.
 	GLfloat view_projection_float_matrix[16];
@@ -820,16 +822,4 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::compile_link_shader_program(
 	glUniform1i(
 			d_render_tile_to_scene_program->get_uniform_location("clip_texture_sampler"),
 			1/*texture unit*/);
-
-	// Set the tile tile texture dimensions (and inverse dimensions).
-	// This uniform is constant (only needs to be reloaded if shader program is re-linked).
-	glUniform4f(
-			d_render_tile_to_scene_program->get_uniform_location("tile_texture_dimensions"),
-			d_tile_texel_dimension, d_tile_texel_dimension,
-			d_inverse_tile_texel_dimension, d_inverse_tile_texel_dimension);
-
-	// Set whether tile raster is a data raster (ie, not visual).
-	glUniform1i(
-			d_render_tile_to_scene_program->get_uniform_location("using_data_raster_for_tile"),
-			!d_multi_resolution_cube_raster->tile_texture_is_visual());
 }

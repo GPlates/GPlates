@@ -288,35 +288,6 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::render_raster_data_into
 			tile_view_matrix,
 			tile.d_projection_transform->get_matrix());
 
-	if (tile_texture_is_visual())
-	{
-		//
-		// For alpha-blending we want:
-		//
-		//   RGB = A_src * RGB_src + (1-A_src) * RGB_dst
-		//     A =     1 *   A_src + (1-A_src) *   A_dst
-		//
-		// ...so we need to use separate (src,dst) blend factors for the RGB and alpha channels...
-		//
-		//   RGB uses (A_src, 1 - A_src)
-		//     A uses (    1, 1 - A_src)
-		//
-		// ...this enables the destination to be a texture that is subsequently blended into the final scene.
-		// In this case the destination alpha must be correct in order to properly blend the texture into the final scene.
-		// However if we're rendering directly into the scene (ie, no render-to-texture) then destination alpha is not
-		// actually used (since only RGB in the final scene is visible) and therefore could use same blend factors as RGB.
-		//
-		gl.BlendFuncSeparate(
-				GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
-				GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-	}
-	else // a data/numerical render target...
-	{
-		// A lot of graphics hardware does not support blending to floating-point targets so we don't enable it.
-		// And a floating-point render target is used for data rasters (ie, not coloured as fixed-point
-		// for visual display) - where the coverage (or alpha) is in the green channel instead of the alpha channel.
-	}
-
 	// Reconstruct source raster by rendering into the render target using the view frustum
 	// we have provided and the level-of-detail we have calculated.
 	GLMultiResolutionStaticPolygonReconstructedRaster::cache_handle_type source_cache_handle;
@@ -503,52 +474,31 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::create_tile_texture(
 	// unlike global rectangular lat/lon rasters that squash near the poles.
 	//
 
-	if (tile_texture_is_visual())
-	{
-		// Binlinear filtering for GL_TEXTURE_MIN_FILTER and GL_TEXTURE_MAG_FILTER.
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	// Binlinear filtering for GL_TEXTURE_MIN_FILTER and GL_TEXTURE_MAG_FILTER.
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
-		// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
-		// subsequently sampled non-isotropically.
-		//
-		// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
-		if (capabilities.gl_EXT_texture_filter_anisotropic)
-		{
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
-		}
-	}
-	else if (tile_texture_has_coverage())
+	// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
+	// subsequently sampled non-isotropically.
+	//
+	// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
+	if (capabilities.gl_EXT_texture_filter_anisotropic)
 	{
-		// Texture has data (red component) and coverage (green component), and so needs filtering
-		// to be implemented in shader program. Use 'nearest' filtering, and no anisotropic filtering.
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		if (capabilities.gl_EXT_texture_filter_anisotropic)
-		{
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1/*isotropic*/);
-		}
-	}
-	else // a data texture with no coverage ...
-	{
-		// Texture just has data (no coverage) and hence filtering can be done in hardware.
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
-		// subsequently sampled non-isotropically.
-		//
-		// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
-		if (capabilities.gl_EXT_texture_filter_anisotropic)
-		{
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
-		}
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
 	}
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	// If the source texture contains alpha or coverage and its not in the alpha channel then swizzle the texture
+	// so it is copied to the alpha channel (eg, a data RG texture copies coverage from G to A).
+	boost::optional<GLenum> texture_swizzle_alpha = d_reconstructed_raster->get_tile_texture_swizzle_alpha();
+	if (texture_swizzle_alpha)
+	{
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, texture_swizzle_alpha.get());
+	}
 
 	// Create the texture but don't load any data into it.
 	// Leave it uninitialised because we will be rendering into it to initialise it.

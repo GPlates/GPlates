@@ -427,12 +427,13 @@ get_blended_crossing_colour(
 		float field_gradient_magnitude = length(field_gradient);
 		
 		// Colour order of surfaces in deviation window zone around isovalue1.
-		colour_matrix[0] = vec4(1,1,1,alpha) * look_up_table_1D(
+		// Note that texture lookup has premultiplied alpha (and we premultiply 'alpha' as well).
+		colour_matrix[0] = vec4(alpha) * look_up_table_1D(
 				colour_palette_sampler,
 				min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 				field_gradient_magnitude);
 		colour_matrix[1] = vec4(1);
-		colour_matrix[2] = vec4(1,1,1,alpha) * look_up_table_1D(
+		colour_matrix[2] = vec4(alpha) * look_up_table_1D(
 				colour_palette_sampler,
 				min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 				-field_gradient_magnitude);
@@ -454,9 +455,10 @@ get_blended_crossing_colour(
 				(depth_block.min_max_depth_radius_restriction.y - depth_block.min_max_depth_radius_restriction.x);
 		
 		// Colour order of surfaces in deviation window zone around isovalue1.
-		colour_matrix[0] = vec4(1, depth_relative, 0, alpha);
+		// Note we premultiply 'alpha'.
+		colour_matrix[0] = vec4(alpha) * vec4(1, depth_relative, 0, 1);
 		colour_matrix[1] = vec4(1);
-		colour_matrix[2] = vec4(0, depth_relative, 1, alpha); 
+		colour_matrix[2] = vec4(alpha) * vec4(0, depth_relative, 1, 1);
 		
 		// Colour order of surfaces in deviation window zone around isovalue2.
 		colour_matrix[3] = colour_matrix[0];
@@ -471,13 +473,14 @@ get_blended_crossing_colour(
 		// Note: Factor in the alpha of the isovalue colour in case it's transparent.
 
 		// Colour order of surfaces in deviation window zone around isovalue1.
-		colour_matrix[0] = vec4(colour_matrix_iso[0].rgb, alpha * colour_matrix_iso[0].a);
+		// Note that 'colour_matrix_iso' has premultiplied alpha (and we premultiply 'alpha' as well).
+		colour_matrix[0] = vec4(alpha) * colour_matrix_iso[0];
 		colour_matrix[1] = vec4(1);
-		colour_matrix[2] = vec4(colour_matrix_iso[2].rgb, alpha * colour_matrix_iso[2].a);
+		colour_matrix[2] = vec4(alpha) * colour_matrix_iso[2];
 		// Colour order of surfaces in deviation window zone around isovalue2.
-		colour_matrix[3] = vec4(colour_matrix_iso[3].rgb, alpha * colour_matrix_iso[3].a);
+		colour_matrix[3] = vec4(alpha) * colour_matrix_iso[3];
 		colour_matrix[4] = vec4(1);
-		colour_matrix[5] = vec4(colour_matrix_iso[5].rgb, alpha * colour_matrix_iso[5].a);
+		colour_matrix[5] = vec4(alpha) * colour_matrix_iso[5];
 	}
 
 	float diffuse = 1;
@@ -491,7 +494,7 @@ get_blended_crossing_colour(
 		diffuse = mix(lambert, 1.0, lighting_block.ambient);
 	}
 
-	vec4 colour_crossing = vec4(0,0,0,0);
+	vec4 colour_crossing = vec4(0);
 	
 	// Blending of colours of surfaces in the deviation window zones for isovalue1 and isovalue2
 	if (positive_crossing)
@@ -499,7 +502,8 @@ get_blended_crossing_colour(
 		// Ray crosses surfaces in gradient direction: dot(ray.direction,gradient) > 0
 		for (int i = crossing_level_back; i < crossing_level_front; i++)
 		{
-			colour_crossing.rgb += (1-colour_crossing.a) * colour_matrix[i].rgb * colour_matrix[i].a * diffuse;
+			// Note that 'colour_matrix' has premultiplied alpha.
+			colour_crossing.rgb += (1-colour_crossing.a) * colour_matrix[i].rgb * diffuse;
 			colour_crossing.a += (1-colour_crossing.a) * colour_matrix[i].a;
 		}
 	}
@@ -508,7 +512,8 @@ get_blended_crossing_colour(
 		// Ray crosses surfaces in opposite gradient direction: dot(ray.direction,gradient) < 0
 		for (int i = crossing_level_back - 1; i >= crossing_level_front; i--)
 		{
-			colour_crossing.rgb += (1-colour_crossing.a) * colour_matrix[i].rgb * colour_matrix[i].a * diffuse;
+			// Note that 'colour_matrix' has premultiplied alpha.
+			colour_crossing.rgb += (1-colour_crossing.a) * colour_matrix[i].rgb * diffuse;
 			colour_crossing.a += (1-colour_crossing.a) * colour_matrix[i].a;
 		}
 	}
@@ -540,6 +545,7 @@ get_volume_colour(
 		// 'colour_sign == -1': sampling point in region with gradient pointing away from isosurface
 		// Map -||gradient|| to colour.
 		
+		// Note that texture lookup has premultiplied alpha.
 		colour_volume = look_up_table_1D(
 				colour_palette_sampler,
 				min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
@@ -560,6 +566,7 @@ get_volume_colour(
 			int(crossing_level_front_mod==2),
 			1);
 	
+		// Note that alpha is 1.0, so it effectively has premultiplied alpha without having to multiply by alpha.
 		return colour_volume;
 	}
 	
@@ -567,6 +574,7 @@ get_volume_colour(
 	// Mapping according to colourmap.
 	if (colour_mode_isovalue)
 	{
+		// Note that texture lookup has premultiplied alpha.
 		colour_volume = look_up_table_1D(
 				colour_palette_sampler,
 				min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
@@ -599,6 +607,7 @@ get_surface_entry_colour(
 		// 'colour_sign == -1': sampling point in region with gradient pointing away from isosurface
 		// Map -||gradient|| to colour.
 		
+		// Note that texture lookup has premultiplied alpha.
 		colour_surface = look_up_table_1D(
 				colour_palette_sampler,
 				min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
@@ -622,6 +631,7 @@ get_surface_entry_colour(
 			colour_surface = vec4(0,1,deviation_relative,1);
 		}
 		
+		// Note that alpha is 1.0, so it effectively has premultiplied alpha without having to multiply by alpha.
 		return colour_surface;
 	}
 
@@ -629,6 +639,7 @@ get_surface_entry_colour(
 	// Mapping according to colourmap.
 	if (colour_mode_isovalue)
 	{
+		// Note that texture lookup has premultiplied alpha.
 		colour_surface = look_up_table_1D(
 				colour_palette_sampler,
 				min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
@@ -662,6 +673,7 @@ get_wall_entry_colour(
 		// 'colour_sign == -1': sampling point in region with gradient pointing away from isosurface
 		// Map -||gradient|| to colour.
 		
+		// Note that texture lookup has premultiplied alpha.
 		colour_wall = look_up_table_1D(
 				colour_palette_sampler,
 				min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
@@ -702,6 +714,7 @@ get_wall_entry_colour(
 			}
 		}
 
+		// Note that alpha is 1.0, so it effectively has premultiplied alpha without having to multiply by alpha.
 		return colour_wall;
 	}
 
@@ -709,6 +722,7 @@ get_wall_entry_colour(
 	// Mapping according to colourmap.
 	if (colour_mode_isovalue)
 	{
+		// Note that texture lookup has premultiplied alpha.
 		colour_wall = look_up_table_1D(
 							colour_palette_sampler,
 							min_max_colour_mapping_range.x, // input_lower_bound
@@ -936,7 +950,6 @@ render_volume_fill_walls(
 			// depth position recorded in the wall (normal,depth) screen texture.
 			if (wall_entry_colour.a == 1.0)
 			{
-				// Note that when alpha is 1.0 the RBG channels do not need to be pre-multiplied with alpha.
 				colour_wall = wall_entry_colour;
 			}
 		}
@@ -1252,17 +1265,16 @@ blend_deviation_window_volume_sample(
 		vec3 field_gradient,
 		inout vec4 colour)
 {
-	int crossing_level_front_mod = int(mod(crossing_level_front,3));
+	int crossing_level_front_mod = int(mod(crossing_level_front, 3));
 
 	// Only draw in deviation window around isovalue1 (level 1 and 2) and isovalue2 (level 4 and 5).
-	if ((crossing_level_front_mod >= 1) && (crossing_level_front_mod <= 2))
+	if (crossing_level_front_mod > 0)
 	{
 		vec4 colour_volume = get_volume_colour(
 				ray_sample_depth_radius, crossing_level_front_mod, field_scalar, field_gradient);
 
-		// Factor in 'colour_volume.a' in case colour is transparent.
-		colour.rgb += (1-colour.a) * colour_volume.rgb * colour_volume.a * opacity_deviation_window_volume_rendering;
-		colour.a += (1-colour.a) * colour_volume.a * opacity_deviation_window_volume_rendering;	
+		// Note that 'colour_volume' has premultiplied alpha.
+		colour += (1-colour.a) * colour_volume * opacity_deviation_window_volume_rendering;
 	}
 }
 
@@ -1290,10 +1302,8 @@ blend_isosurface_sample(
 			length(ray_sample_position), ray, normal, crossing_level_back, crossing_level_front,
 			positive_crossing, colour_matrix_iso, field_gradient);
 
-	// Note: We don't multiply 'colour_crossing.rgb' with 'colour_crossing.a' since
-	// colour_crossing has already been pre-multiplied with alpha.
-	colour.rgb += (1 - colour.a) * colour_crossing.rgb;
-	colour.a += (1 - colour.a) * colour_crossing.a;
+	// Note that 'colour_crossing' has premultiplied alpha.
+	colour += (1 - colour.a) * colour_crossing;
 }
 
 // Raycasting process
@@ -1304,50 +1314,56 @@ raycasting(
 		out vec3 iso_surface_position)
 {
 	// background colour
-	vec4 background_colour = vec4(0,0,0,0);
+	vec4 background_colour = vec4(0);
 	// lambda min max limits
-	vec2 lambda_min_max = vec2(0,0);
+	vec2 lambda_min_max = vec2(0);
 
 	// final color of isosurface
-	colour = vec4(0,0,0,0);
+	colour = vec4(0);
 	// final position of our isosurface
-	iso_surface_position = vec3(0,0,0);
+	iso_surface_position = vec3(0);
 
 	// Colour matrix contains colour vectors for iso surfaces (including deviation window surfaces)
 	// using isovalue colour mapping.
 	vec4 colour_matrix_iso[6];
 
 	// colour of front deviation window (-) in relation to isovalue1
+	// Note that texture lookup has premultiplied alpha.
 	colour_matrix_iso[0] = look_up_table_1D(
 								colour_palette_sampler,
 								min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 								isovalue1.y); 
 
 	// colour of isosurface isovalue1
+	// Note that texture lookup has premultiplied alpha.
 	colour_matrix_iso[1] = look_up_table_1D(
 								colour_palette_sampler,
 								min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 								isovalue1.x); 
 
 	// colour of back deviation window (+) in relation to isovalue1
+	// Note that texture lookup has premultiplied alpha.
 	colour_matrix_iso[2] = look_up_table_1D(
 								colour_palette_sampler,
 								min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 								isovalue1.z);
 
 	// colour of front deviation window (-) in relation to isovalue2
+	// Note that texture lookup has premultiplied alpha.
 	colour_matrix_iso[3] = look_up_table_1D(
 								colour_palette_sampler,
 								min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 								isovalue2.y); 
 
 	// colour of isosurface isovalue2
+	// Note that texture lookup has premultiplied alpha.
 	colour_matrix_iso[4] = look_up_table_1D(
 								colour_palette_sampler,
 								min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,
 								isovalue2.x); 
 
 	// colour of back deviation window (+) in relation to isovalue2
+	// Note that texture lookup has premultiplied alpha.
 	colour_matrix_iso[5] = look_up_table_1D(
 								colour_palette_sampler,
 								min_max_colour_mapping_range.x, min_max_colour_mapping_range.y,

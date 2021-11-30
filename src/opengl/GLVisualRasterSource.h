@@ -62,6 +62,12 @@ namespace GPlatesOpenGL
 	 * such as JPEG.
 	 *
 	 * There is also support for modulating the opacity and intensity of the raster for visual purposes.
+	 *
+	 * Visual rasters have premultiplied alpha. So when alpha blending, the source factor should be
+	 * one instead of alpha:
+	 *
+	 *   RGB =     1 * RGB_src + (1-A_src) * RGB_dst
+	 *     A =     1 *   A_src + (1-A_src) *   A_dst
 	 */
 	class GLVisualRasterSource :
 			public GLMultiResolutionRasterSource
@@ -159,20 +165,6 @@ namespace GPlatesOpenGL
 		}
 
 
-		bool
-		tile_texture_is_visual() const override
-		{
-			return true;
-		}
-
-
-		bool
-		tile_texture_has_coverage() const override
-		{
-			return false;
-		}
-
-
 		cache_handle_type
 		load_tile(
 				unsigned int level,
@@ -213,10 +205,9 @@ namespace GPlatesOpenGL
 		GPlatesGui::Colour d_raster_modulate_colour;
 
 		/**
-		 * Uses as temporary space to duplicate a tile's vertical or horizontal edge when the data in
-		 * the tile does not consume the full @a d_tile_texel_dimension x @a d_tile_texel_dimension area.
+		 * Used as temporary space to premultiply alpha before loading texture.
 		 */
-		boost::scoped_array<GPlatesGui::rgba8_t> d_tile_edge_working_space;
+		boost::scoped_array<GPlatesGui::rgba8_t> d_tile_working_space;
 
 		/**
 		 * Images containing error messages when fail to load proxied raster tiles.

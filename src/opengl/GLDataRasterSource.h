@@ -59,6 +59,19 @@ namespace GPlatesOpenGL
 	 * The texture format of the data is 32-bit floating-point (GL_RG32F) with the red channel containing
 	 * the raster data value and the green channel containing the raster coverage value (the value that
 	 * specifies, at each pixel, how much of that pixel is not the sentinel value in the source raster).
+	 *
+	 * Data rasters have premultiplied coverage. So when alpha blending, the source factor should be
+	 * one instead of alpha (coverage):
+	 * 
+	 *   data(R)     =     1 * data_src(R)     + (1-coverage_src(A=G)) * data_dst(R)
+	 *   coverage(G) =     1 * coverage_src(G) + (1-coverage_src(A=G)) * coverage_dst(G)
+	 * 
+	 * Note: Since there's no Alpha channel, (in RG texture) the texture swizzle (set in texture object)
+	 *       should be set to copy the coverage in the Green channel into the Alpha channel where the
+	 *       alpha blender can access it (with GL_ONE_MINUS_SRC_ALPHA).
+	 *       Also note that if the alpha blender writes to an RG render-texture then it can then only
+	 *       store RG channels and so Alpha gets discarded, but that's OK since coverage is
+	 *       still in the Green channel.
 	 */
 	class GLDataRasterSource :
 			public GLMultiResolutionRasterSource
@@ -136,17 +149,17 @@ namespace GPlatesOpenGL
 		get_tile_texture_internal_format() const override;
 
 
-		bool
-		tile_texture_is_visual() const override
+		/**
+		 * Texture swizzle for the alpha channel (GL_TEXTURE_SWIZZLE_A).
+		 *
+		 * Since there's no Alpha channel, in RG texture the texture swizzle should be set to copy
+		 * the coverage in the Green channel into the Alpha channel.
+		 */
+		virtual
+		boost::optional<GLenum>
+		get_tile_texture_swizzle_alpha() const override
 		{
-			return false;
-		}
-
-
-		bool
-		tile_texture_has_coverage() const override
-		{
-			return true;
+			return GL_GREEN;
 		}
 
 
@@ -174,11 +187,6 @@ namespace GPlatesOpenGL
 		unsigned int d_raster_height;
 
 		/**
-		 * Texture internal format of tile textures.
-		 */
-		GLint d_tile_texture_internal_format;
-
-		/**
 		 * The number of texels along a tiles edge (horizontal or vertical since it's square).
 		 */
 		unsigned int d_tile_texel_dimension;
@@ -187,12 +195,6 @@ namespace GPlatesOpenGL
 		 * Used as temporary space to pack data and coverage into red/green channels before loading texture.
 		 */
 		boost::scoped_array<float> d_tile_pack_working_space;
-
-		/**
-		 * Used as temporary space to duplicate a tile's vertical or horizontal edge when the data in
-		 * the tile does not consume the full @a d_tile_texel_dimension x @a d_tile_texel_dimension area.
-		 */
-		boost::scoped_array<float> d_tile_edge_working_space;
 
 		/**
 		 * We log a load-tile-failure warning message only once for each data raster source.

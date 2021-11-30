@@ -110,10 +110,8 @@ GPlatesOpenGL::GLDataRasterSource::GLDataRasterSource(
 	d_proxied_raster_resolver(proxy_raster_resolver),
 	d_raster_width(raster_width),
 	d_raster_height(raster_height),
-	d_tile_texture_internal_format(GL_RG32F),  // Our requirement of OpenGL 3.3 supports this format
 	d_tile_texel_dimension(tile_texel_dimension),
 	d_tile_pack_working_space(new float[2/*RG format*/ * tile_texel_dimension * tile_texel_dimension]),
-	d_tile_edge_working_space(new float[2/*RG format*/ * tile_texel_dimension]),
 	d_logged_tile_load_failure_warning(false)
 {
 }
@@ -161,7 +159,8 @@ GPlatesOpenGL::GLDataRasterSource::change_raster(
 GLint
 GPlatesOpenGL::GLDataRasterSource::get_tile_texture_internal_format() const
 {
-	return d_tile_texture_internal_format;
+	// Our requirement of OpenGL 3.3 supports this format.
+	return GL_RG32F;
 }
 
 
@@ -246,88 +245,12 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 
 	// Load the packed data into the texture.
 	// Use RG-only format to pack raster data/coverage values.
+	//
+	// Note: We load the entire tile, not just the region. These can differ at the right and bottom edges
+	//       of the raster (if the raster width or height is not an integer multiple of the tile dimension).
 	glTexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
-			0/*xoffset*/, 0/*yoffset*/, texel_width, texel_height,
+			0/*xoffset*/, 0/*yoffset*/, d_tile_texel_dimension, d_tile_texel_dimension,
 			GL_RG, GL_FLOAT, d_tile_pack_working_space.get());
-
-	// If the region does not occupy the entire tile then it means we've reached the right edge
-	// of the raster - we duplicate the last column of texels into the adjacent column to ensure
-	// that subsequent sampling of the texture at the right edge of the last column of texels
-	// will generate the texel colour at the texel centres (for both nearest and bilinear filtering).
-	// This sampling happens when rendering a raster into a multi-resolution cube map that has
-	// an cube frustum overlap of half a texel - normally, for a full tile, the OpenGL clamp-to-edge
-	// filter will handle this - however for partially filled textures we need to duplicate the edge
-	// to achieve the same effect otherwise numerical precision in the graphics hardware and
-	// nearest neighbour filtering could sample a garbage texel.
-	//
-	// Note: We don't use anisotropic filtering for data textures (like we do for colour textures)
-	// since we want to explicitly multiply each texel's data value with its coverage value *before*
-	// filtering (we do this in the shader program). And so we don't have to worry about an
-	// anisotropic filter width sampling texels beyond our duplicated single row/column of border texels.
-	//
-	if (texel_width < d_tile_texel_dimension)
-	{
-		const unsigned int texel_size_in_floats = 2/*RG format*/;
-		// Copy the right edge of the region into the working space.
-		float *working_space = d_tile_edge_working_space.get();
-		// The last texel in the first row of the region.
-		const float *region_last_column = d_tile_pack_working_space.get() + texel_size_in_floats * (texel_width - 1);
-		for (unsigned int y = 0; y < texel_height; ++y)
-		{
-			for (unsigned int component = 0; component < texel_size_in_floats; ++component)
-			{
-				working_space[component] = region_last_column[component];
-			}
-			working_space += texel_size_in_floats;
-			region_last_column += texel_size_in_floats * texel_width;
-		}
-
-		// Load the one-texel wide column of data from column 'texel_width-1' into column 'texel_width'.
-		// Use RG-only format to pack raster data/coverage values.
-		glTexSubImage2D(
-				GL_TEXTURE_2D, 0/*level*/,
-				texel_width/*xoffset*/, 0/*yoffset*/, 1/*width*/, texel_height/*height*/,
-				GL_RG, GL_FLOAT, d_tile_edge_working_space.get());
-	}
-
-	// Same applies if we've reached the bottom edge of raster (and the raster height is not an
-	// integer multiple of the tile texel dimension).
-	if (texel_height < d_tile_texel_dimension)
-	{
-		const unsigned int texel_size_in_floats = 2/*RG format*/;
-		// Copy the bottom edge of the region into the working space.
-		float *working_space = d_tile_edge_working_space.get();
-		// The first texel in the last row of the region.
-		const float *region_last_row =
-				d_tile_pack_working_space.get() + texel_size_in_floats * (texel_height - 1) * texel_width;
-		for (unsigned int x = 0; x < texel_width; ++x)
-		{
-			for (unsigned int component = 0; component < texel_size_in_floats; ++component)
-			{
-				working_space[component] = region_last_row[component];
-			}
-			working_space += texel_size_in_floats;
-			region_last_row += texel_size_in_floats;
-		}
-		// Copy the corner texel, we want it to get copied to the texel at column 'texel_width' and row 'texel_height'.
-		unsigned int texels_in_last_row = texel_width;
-		if (texel_width < d_tile_texel_dimension)
-		{
-			const float *corner_texel = region_last_row - texel_size_in_floats;
-			for (unsigned int component = 0; component < texel_size_in_floats; ++component)
-			{
-				working_space[component] = corner_texel[component];
-			}
-			++texels_in_last_row;
-		}
-
-		// Load the one-texel wide row of data from row 'texel_height-1' into row 'texel_height'.
-		// Use RG-only format to pack raster data/coverage values.
-		glTexSubImage2D(
-				GL_TEXTURE_2D, 0/*level*/,
-				0/*xoffset*/, texel_height/*yoffset*/, texels_in_last_row/*width*/, 1/*height*/,
-				GL_RG, GL_FLOAT, d_tile_edge_working_space.get());
-	}
 
 	// Nothing needs caching.
 	return cache_handle_type();
@@ -360,11 +283,10 @@ GPlatesOpenGL::GLDataRasterSource::handle_error_loading_source_raster(
 
 	// Set the data/coverage values to zero for all pixels.
 	// Use RG-only format.
-	boost::scoped_array<GLfloat> fill_data_storage(new GLfloat[2 * texel_width * texel_height]);
-	std::fill_n(fill_data_storage.get(), 2 * texel_width * texel_height, GLfloat(0));
+	std::fill_n(d_tile_pack_working_space.get(), 2 * d_tile_texel_dimension * d_tile_texel_dimension, GLfloat(0));
 	glTexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
-			0/*xoffset*/, 0/*yoffset*/, texel_width, texel_height,
-			GL_RG, GL_FLOAT, fill_data_storage.get());
+			0/*xoffset*/, 0/*yoffset*/, d_tile_texel_dimension, d_tile_texel_dimension,
+			GL_RG, GL_FLOAT, d_tile_pack_working_space.get());
 }
 
 
@@ -377,27 +299,98 @@ GPlatesOpenGL::GLDataRasterSource::pack_raster_data_into_tile_working_space(
 		unsigned int texel_height,
 		GL &gl)
 {
-	float *tile_pack_working_space = d_tile_pack_working_space.get();
-	const unsigned int num_texels = texel_width * texel_height;
-
-	// Use RG-only format to pack raster data/coverage values.
-	for (unsigned int texel = 0; texel < num_texels; ++texel)
+	// Fill the requested region (and premultiply coverage).
+	for (unsigned int y = 0; y < texel_height; ++y)
 	{
-		// If we've sampled outside the coverage then we have no valid data value so
-		// just set it a valid floating-point value (ie, not NAN) so that the graphics hardware
-		// can still do valid operations on it - this makes it easy to do coverage-weighted
-		// calculations in order to avoid having to explicitly check that a texel coverage
-		// value is zero (multiplying by zero effectively disables it but multiplying zero
-		// will give NAN instead of zero). An example of this kind of calculation is
-		// mean which is M = sum(Ci * Xi) / sum(Ci) where Ci is coverage and Xi is data value.
-		const float coverage_data_texel = coverage_data[texel];
-		const RealType region_data_texel = (coverage_data_texel > 0) ? region_data[texel] : 0;
+		const RealType *src_region_data_row = region_data + y * texel_width;
+		const float *src_coverage_data_row = coverage_data + y * texel_width;
 
-		// Distribute the data/coverage values into the red/green channels.
-		tile_pack_working_space[0] = static_cast<GLfloat>(region_data_texel);
-		tile_pack_working_space[1] = coverage_data_texel;
+		// Use RG-only format to pack raster data/coverage values.
+		//
+		// Note: We use the tile dimension rather than the width of the region being loaded.
+		//       Usually they're the same except at the right and bottom edges of entire raster.
+		float *dst_row = d_tile_pack_working_space.get() + 2/*RG*/ * y * d_tile_texel_dimension;
 
-		tile_pack_working_space += 2;
+		for (unsigned int x = 0; x < texel_width; ++x)
+		{
+			const float coverage_data_texel = src_coverage_data_row[x];
+			// If we've sampled outside the coverage then we have no valid data value so set it to zero
+			// instead of NaN (noting that the data value is premultiplied by coverage).
+			//
+			// Premultiply coverage so that GPU filtering (eg, bilinear) does the right thing
+			// (filtered value is sum(Wi * Ci * Xi) where Wi is filter weight, Ci is coverage and Xi is data).
+			const float region_data_texel = (coverage_data_texel > 0)
+					? (coverage_data_texel * src_region_data_row[x])
+					: 0;
+
+			// Distribute the data/coverage values into the red/green channels.
+			dst_row[2/*RG*/ * x] = region_data_texel;
+			dst_row[2/*RG*/ * x + 1] = coverage_data_texel;
+		}
+	}
+
+	//
+	// If the region does not occupy the entire tile then it means we've reached the right edge
+	// of the raster - we duplicate the last column of texels into all columns to the right of it to
+	// ensure that subsequent sampling of the texture near at right edge of the last column of texels
+	// will generate the texel colour at the edge texel centres for both nearest and bilinear filtering
+	// (although only nearest filtering is used). Similarly for the bottom edge of the raster.
+	// Normally, for a full tile, the OpenGL clamp-to-edge filter will handle this - however for
+	// partially filled textures we need to emulate clamp-to-edge in a way that will work with wide
+	// filters like anisotropic filtering.
+	//
+
+	// Duplicate right edge.
+	if (texel_width < d_tile_texel_dimension)
+	{
+		for (unsigned int y = 0; y < texel_height; ++y)
+		{
+			float *dst_row = d_tile_pack_working_space.get() + 2/*RG*/ * y * d_tile_texel_dimension;
+			const float *src_row = dst_row;
+
+			const float *right_edge_texel = src_row + 2/*RG*/ * (texel_width - 1);
+			for (unsigned int x = texel_width; x < d_tile_texel_dimension; ++x)
+			{
+				dst_row[2/*RG*/ * x] = right_edge_texel[0];
+				dst_row[2/*RG*/ * x + 1] = right_edge_texel[1];
+			}
+		}
+	}
+
+	// Duplicate bottom edge.
+	if (texel_height < d_tile_texel_dimension)
+	{
+		const float *src_row = d_tile_pack_working_space.get() +
+				2/*RG*/ * (texel_height - 1) * d_tile_texel_dimension;
+		for (unsigned int x = 0; x < texel_width; ++x)
+		{
+			const float *bottom_edge_texel = src_row + 2/*RG*/ * x;
+			for (unsigned int y = texel_height; y < d_tile_texel_dimension; ++y)
+			{
+				float *dst_row = d_tile_pack_working_space.get() + 2/*RG*/ * y * d_tile_texel_dimension;
+				dst_row[2/*RG*/ * x] = bottom_edge_texel[0];
+				dst_row[2/*RG*/ * x + 1] = bottom_edge_texel[1];
+			}
+		}
+	}
+
+	// Duplicate bottom-right corner texel.
+	if (texel_width < d_tile_texel_dimension &&
+		texel_height < d_tile_texel_dimension)
+	{
+		const float *bottom_right_corner_texel = d_tile_pack_working_space.get() +
+				2/*RG*/ * ((texel_height - 1) * d_tile_texel_dimension + texel_width - 1);
+
+		for (unsigned int y = texel_height; y < d_tile_texel_dimension; ++y)
+		{
+			float *dst_row = d_tile_pack_working_space.get() + 2/*RG*/ * y * d_tile_texel_dimension;
+
+			for (unsigned int x = texel_width; x < d_tile_texel_dimension; ++x)
+			{
+				dst_row[2/*RG*/ * x] = bottom_right_corner_texel[0];
+				dst_row[2/*RG*/ * x + 1] = bottom_right_corner_texel[1];
+			}
+		}
 	}
 }
 

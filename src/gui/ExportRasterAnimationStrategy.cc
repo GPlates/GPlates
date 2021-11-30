@@ -780,16 +780,36 @@ namespace
 		{
 			for (unsigned int x = 0; x < tile_width; ++x)
 			{
-				// Each pixel is four floats (RGBA) where the first float (red channel) is the data
+				// Each pixel is two floats (RG) where the first float (red channel) is the data
 				// and the second float (green channel) is the coverage.
-				const GLfloat *pixel_data = band_tile_pixel_data + (y * tile_width + x) * 4;
+				const GLfloat *pixel_data = band_tile_pixel_data + (y * tile_width + x) * 2;
 				const GLfloat data = pixel_data[0];
 				const GLfloat coverage = pixel_data[1];
 
 				// If the coverage exceeds 0.5 then consider the pixel valid, otherwise invalid.
 				// Invalid pixels are no-data values in the raw raster.
-				band_tile_data_raster->data()[y * tile_width + x] =
-						(coverage> 0.5) ? data : no_data_value;
+				if (coverage > 0.5)
+				{
+					//
+					// The data value is premultiplied with coverage (so that bilinear/anisotropic
+					// GPU hardware filtering is correctly weighted).
+					// So now we need to un-premultiply coverage by dividing by coverage.
+					//
+					// The end result essentially amounts to:
+					//
+					//   data = sum(weight(i) * coverage(i) * data(i))
+					//          --------------------------------------
+					//               sum(weight(i) * coverage(i))
+					//
+					// ...where 'weight(i)' is the (accumulated) filtering weight due to GPU hardware
+					// filtering in the various rendering stages.
+					//
+					band_tile_data_raster->data()[y * tile_width + x] = data / coverage;
+				}
+				else // no coverage
+				{
+					band_tile_data_raster->data()[y * tile_width + x] = no_data_value;
+				}
 			}
 		}
 
@@ -882,20 +902,6 @@ namespace
 				pixel_registration_lat_lon_extents;
 		pixel_rendering_lat_lon_extents.left -= map_view_central_meridian;
 		pixel_rendering_lat_lon_extents.right -= map_view_central_meridian;
-
-		// Set up raster alpha blending for pre-multiplied alpha.
-		// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
-		// This is where the RGB channels have already been multiplied by the alpha channel.
-		// See class GLVisualRasterSource for why this is done.
-		//
-		// Note: The render target is fixed-point RGBA (and not floating-point) so we don't need to
-		// worry about alpha-blending not being available for floating-point render targets.
-		renderer.gl_enable(GL_BLEND);
-		renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
-		// Enable alpha testing as an optimisation for culling transparent raster pixels.
-		renderer.gl_enable(GL_ALPHA_TEST);
-		renderer.gl_alpha_func(GL_GREATER, GLclampf(0));
 
 		// Render the current raster band tile-by-tile.
 #if 0 // UPDATE: No longer caching since uses up too much memory...
@@ -1041,7 +1047,7 @@ namespace
 		boost::optional<GPlatesOpenGL::GLRenderTarget::shared_ptr_type> tile_render_target =
 				renderer.get_context().get_shared_state()->acquire_render_target(
 						renderer,
-						GL_RGBA32F_ARB,
+						GL_RG32F,
 						false/*include_depth_buffer*/,
 						false/*include_stencil_buffer*/,
 						tile_render_target_dimension,
@@ -1132,7 +1138,7 @@ namespace
 					current_tile_source_viewport.y(),
 					current_tile_source_viewport.width(),
 					current_tile_source_viewport.height(),
-					GL_RGBA,
+					GL_RG,
 					GL_FLOAT,
 					0);
 

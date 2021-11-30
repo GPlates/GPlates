@@ -115,7 +115,7 @@ GPlatesOpenGL::GLVisualRasterSource::GLVisualRasterSource(
 	d_raster_height(raster_height),
 	d_tile_texel_dimension(tile_texel_dimension),
 	d_raster_modulate_colour(raster_modulate_colour),
-	d_tile_edge_working_space(new GPlatesGui::rgba8_t[tile_texel_dimension]),
+	d_tile_working_space(new GPlatesGui::rgba8_t[tile_texel_dimension * tile_texel_dimension]),
 	d_logged_tile_load_failure_warning(false)
 {
 }
@@ -174,113 +174,90 @@ GPlatesOpenGL::GLVisualRasterSource::load_tile(
 		return cache_handle_type();
 	}
 
-	// Load the colours into the texture.
-	glTexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
-			0/*xoffset*/, 0/*yoffset*/, texel_width, texel_height,
-			GL_RGBA, GL_UNSIGNED_BYTE, raster_region_opt.get()->data());
+	const GPlatesGui::rgba8_t *src_region = raster_region_opt.get()->data();
 
-	// If the region does not occupy the entire tile then it means we've reached the right edge
-	// of the raster - we duplicate the last column of texels into the adjacent column to ensure
-	// that subsequent sampling of the texture at the right edge of the last column of texels
-	// will generate the texel colour at the texel centres (for both nearest and bilinear filtering).
-	// This sampling happens when rendering a raster into a multi-resolution cube map that has
-	// a cube frustum overlap of half a texel - normally, for a full tile, the OpenGL clamp-to-edge
-	// filter will handle this - however for partially filled textures we need to duplicate the edge
-	// to achieve the same effect otherwise numerical precision in the graphics hardware and
-	// nearest neighbour filtering could sample a garbage texel.
-	if (texel_width < d_tile_texel_dimension ||
-		texel_height < d_tile_texel_dimension)
+	// Fill the requested region in the tile texture (and premultiply alpha).
+	for (unsigned int y = 0; y < texel_height; ++y)
 	{
-		unsigned int duplication_size = 1;
+		const GPlatesGui::rgba8_t *src_region_row = src_region + y * texel_width;
 
-		// Anisotropic filtering can have a filter width greater than one (even for nearest neighbour filtering).
-		// And so we need to extend the duplicated region according to the maximum anisotropy.
-		const GLCapabilities &capabilities = gl.get_capabilities();
-		if (capabilities.gl_EXT_texture_filter_anisotropic)
+		// Note: We use the tile dimension rather than the width of the region being loaded.
+		//       Usually they're the same except at the right and bottom edges of entire raster.
+		GPlatesGui::rgba8_t *dst_row = d_tile_working_space.get() + y * d_tile_texel_dimension;
+
+		for (unsigned int x = 0; x < texel_width; ++x)
 		{
-			duplication_size = static_cast<unsigned int>(
-					// The '1 - 1e-4' rounds up to the next integer...
-					capabilities.gl_texture_max_anisotropy + 1 - 1e-4);
+			const GPlatesGui::rgba8_t src_texel = src_region_row[x];
+			// Premultiply alpha so that GPU filtering (eg, bilinear) does the right thing
+			// (filtered value is sum(Wi * Ai * RGBi) where Wi is filter weight).
+			dst_row[x] = pre_multiply_alpha(src_texel);
 		}
+	}
 
-		// Duplicate the last column into an extra 'duplication_size' columns.
-		unsigned int padded_texel_width = texel_width + duplication_size;
-		if (padded_texel_width > d_tile_texel_dimension)
+	//
+	// If the region does not occupy the entire tile then it means we've reached the right edge
+	// of the raster - we duplicate the last column of texels into all columns to the right of it to
+	// ensure that subsequent sampling of the texture near at right edge of the last column of texels
+	// will generate the texel colour at the edge texel centres for both nearest and bilinear filtering
+	// (although only nearest filtering is used). Similarly for the bottom edge of the raster.
+	// Normally, for a full tile, the OpenGL clamp-to-edge filter will handle this - however for
+	// partially filled textures we need to emulate clamp-to-edge in a way that will work with wide
+	// filters like anisotropic filtering.
+	//
+
+	// Duplicate right edge.
+	if (texel_width < d_tile_texel_dimension)
+	{
+		for (unsigned int y = 0; y < texel_height; ++y)
 		{
-			padded_texel_width = d_tile_texel_dimension;
-		}
+			GPlatesGui::rgba8_t *dst_row = d_tile_working_space.get() + y * d_tile_texel_dimension;
+			const GPlatesGui::rgba8_t *src_row = dst_row;
 
-		// See if we've reached the right edge of raster (and the raster width is not an
-		// integer multiple of the tile texel dimension).
-		if (texel_width < padded_texel_width)
-		{
-			// Copy the right edge of the region into the working space.
-			GPlatesGui::rgba8_t *const working_space = d_tile_edge_working_space.get();
-			// The last texel in the first row of the region.
-			const GPlatesGui::rgba8_t *region_last_column = raster_region_opt.get()->data() + texel_width - 1;
-			for (unsigned int y = 0; y < texel_height; ++y)
+			const GPlatesGui::rgba8_t right_edge_texel = src_row[texel_width - 1];
+			for (unsigned int x = texel_width; x < d_tile_texel_dimension; ++x)
 			{
-				working_space[y] = *region_last_column;
-				region_last_column += texel_width;
-			}
-
-			for (unsigned int texel_u_offset = texel_width;
-				texel_u_offset < padded_texel_width;
-				++texel_u_offset)
-			{
-				// Load the one-texel wide column of data from column 'texel_width-1' into column 'texel_u_offset'.
-				glTexSubImage2D(
-						GL_TEXTURE_2D, 0/*level*/,
-						texel_u_offset/*xoffset*/, 0/*yoffset*/, 1/*width*/, texel_height/*height*/,
-						GL_RGBA, GL_UNSIGNED_BYTE, d_tile_edge_working_space.get());
-			}
-		}
-
-		// Duplicate the last row into an extra 'duplication_size' rows.
-		unsigned int padded_texel_height = texel_height + duplication_size;
-		if (padded_texel_height > d_tile_texel_dimension)
-		{
-			padded_texel_height = d_tile_texel_dimension;
-		}
-
-		// See if we've reached the bottom edge of raster (and the raster height is not an
-		// integer multiple of the tile texel dimension).
-		if (texel_height < padded_texel_height)
-		{
-			// Copy the bottom edge of the region into the working space.
-			GPlatesGui::rgba8_t *const working_space = d_tile_edge_working_space.get();
-			// The first texel in the last row of the region.
-			const GPlatesGui::rgba8_t *const region_last_row =
-					raster_region_opt.get()->data() + (texel_height - 1) * texel_width;
-			unsigned int x = 0;
-			for ( ; x < texel_width; ++x)
-			{
-				working_space[x] = region_last_row[x];
-			}
-			// Also copy the corner texel to the right to cover the empty texels where:
-			//
-			//   texel_width  <= x < padded_texel_width
-			//   texel_height <= y < padded_texel_height
-			//
-			// ...this will ultimately duplicate the corner texel across that entire region.
-			const GPlatesGui::rgba8_t corner_texel = working_space[texel_width - 1];
-			for ( ; x < padded_texel_width; ++x)
-			{
-				working_space[x] = corner_texel;
-			}
-
-			for (unsigned int texel_v_offset = texel_height;
-				texel_v_offset < padded_texel_height;
-				++texel_v_offset)
-			{
-				// Load the one-texel wide row of data from row 'texel_height-1' into row 'texel_v_offset'.
-				glTexSubImage2D(
-						GL_TEXTURE_2D, 0/*level*/,
-						0/*xoffset*/, texel_v_offset/*yoffset*/, padded_texel_width/*width*/, 1/*height*/,
-						GL_RGBA, GL_UNSIGNED_BYTE, d_tile_edge_working_space.get());
+				dst_row[x] = right_edge_texel;
 			}
 		}
 	}
+
+	// Duplicate bottom edge.
+	if (texel_height < d_tile_texel_dimension)
+	{
+		const GPlatesGui::rgba8_t *src_row = d_tile_working_space.get() + (texel_height - 1) * d_tile_texel_dimension;
+		for (unsigned int x = 0; x < texel_width; ++x)
+		{
+			const GPlatesGui::rgba8_t bottom_edge_texel = src_row[x];
+			for (unsigned int y = texel_height; y < d_tile_texel_dimension; ++y)
+			{
+				GPlatesGui::rgba8_t *dst_row = d_tile_working_space.get() + y * d_tile_texel_dimension;
+				dst_row[x] = bottom_edge_texel;
+			}
+		}
+	}
+
+	// Duplicate bottom-right corner texel.
+	if (texel_width < d_tile_texel_dimension &&
+		texel_height < d_tile_texel_dimension)
+	{
+		const GPlatesGui::rgba8_t bottom_right_corner_texel = d_tile_working_space.get()[
+				(texel_height - 1) * d_tile_texel_dimension + texel_width - 1];
+
+		for (unsigned int y = texel_height; y < d_tile_texel_dimension; ++y)
+		{
+			GPlatesGui::rgba8_t *dst_row = d_tile_working_space.get() + y * d_tile_texel_dimension;
+
+			for (unsigned int x = texel_width; x < d_tile_texel_dimension; ++x)
+			{
+				dst_row[x] = bottom_right_corner_texel;
+			}
+		}
+	}
+
+	// Load the colours into the texture.
+	glTexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
+			0/*xoffset*/, 0/*yoffset*/, d_tile_texel_dimension, d_tile_texel_dimension,
+			GL_RGBA, GL_UNSIGNED_BYTE, d_tile_working_space.get());
 
 	// Nothing needs caching.
 	return cache_handle_type();
@@ -423,8 +400,6 @@ GPlatesOpenGL::GLVisualRasterSource::render_error_text_into_texture(
 				error_text_image_argb32.copy(0, 0, texel_width, texel_height),
 				error_text_rgba8_array);
 	}
-
-	gl.BindTexture(GL_TEXTURE_2D, target_texture);
 
 	// Load cached image into tile texture.
 	glTexSubImage2D(

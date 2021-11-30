@@ -151,20 +151,6 @@ namespace GPlatesOpenGL
 		get_tile_texture_internal_format() const override;
 
 
-		bool
-		tile_texture_is_visual() const override
-		{
-			return false;
-		}
-
-
-		bool
-		tile_texture_has_coverage() const override
-		{
-			return false;
-		}
-
-
 		cache_handle_type
 		load_tile(
 				unsigned int level,

@@ -158,6 +158,9 @@ void main()
 	colour = vec4(0);
 
 	// Look up the colour palette using scalar value (or gradient magnitude).
+	//
+	// Note: Since our 1D colour texture has premultiplied alpha we don't have the issue of
+	//       black RGB values (at transparent texels) corrupting its linear texture filtering.
 	if (colour_mode_scalar)
 	{
 		colour = look_up_table_1D(
@@ -183,23 +186,20 @@ void main()
 				length(field_gradient));
 	}
 
-#if 1
 	// If the current pixel is transparent then discard it.
 	//
 	// Note: We avoid final alpha values other than 0.0 or 1.0 in order
-	// to avoid order-dependent alpha-blending artifacts.
-	// These occur due to the fact that the cross sections are not drawn in
-	// back to front order (relative to the camera). If cross-section A
-	// partially occludes cross-section B, but A is drawn before B then
-	// A will write semi-transparent (border) pixels into the colour buffer
-	// (eg, blended with a black background) and the depth buffer will record
-	// the depth of these pixels. When B is then drawn it will not overwrite the
-	// A pixels (including the semi-transparent border pixels) and this leaves
-	// darkened edges around A (due to the black background).
-	// So instead we threshold alpha with 0.5 such that [0,0.5] -> 0.0 and [0.5,1] -> 1.0.
-	// This is essentially alpha cutouts. And since our 1D colour texture has been dilated
-	// one texel (for fully transparent texels neighbouring opaque texels) we don't have
-	// the issue of bilinear texture filtering including RGB black values in the final colour.
+	//       to avoid order-dependent alpha-blending artifacts.
+	//       These occur due to the fact that the cross sections are not drawn in
+	//       back to front order (relative to the camera). If cross-section A
+	//       partially occludes cross-section B, but A is drawn before B then
+	//       A will write semi-transparent (border) pixels into the colour buffer
+	//       (eg, blended with a black background) and the depth buffer will record
+	//       the depth of these pixels. When B is then drawn it will not overwrite the
+	//       A pixels (including the semi-transparent border pixels) and this leaves
+	//       darkened edges around A (due to the black background).
+	//       So instead we threshold alpha with 0.5 such that [0,0.5] -> 0.0 and [0.5,1] -> 1.0.
+	//       This is essentially alpha cutouts.
 	//
 	//      ---
 	//     | B |
@@ -213,21 +213,21 @@ void main()
 	{
 		discard;
 	}
-	colour.a = 1;
-#else
-	// If the current pixel is fully transparent then discard it.
-	if (colour.a == 0)
-	{
-		discard;
-	}
-#endif
 
-	// Output colour as pre-multiplied alpha.
-	// This enables alpha-blending to use (src,dst) blend factors of (1, 1-SrcAlpha) instead of
-	// (SrcAlpha, 1-SrcAlpha) which keeps alpha intact (avoids double-blending when rendering to
-	// a render-target and then, in turn, blending that into the main framebuffer).
-	// Note: We don't have semi-transparent cross-sections (yet).
-	colour.rgb *= colour.a;
+	// We've passed the alpha cutout test so set the alpha to fully oqaque.
+	//
+	// And since we're doing that, let's also un-premultiply alpha (so that RGB is no longer modulated by alpha).
+	//
+	// The end result amounts to:
+	//
+	//   RGB = sum(weight(i) * RGB(i) * Alpha(i))
+	//         ----------------------------------
+	//             sum(weight(i) * Alpha(i))
+	//
+	// ...where 'weight(i)' are the linear filtering weights.
+	//
+	colour.rgb /= colour.a
+	colour.a = 1;
 
 	// This branches on a uniform variable and hence is efficient since all pixels follow same path.
 	if (lighting_block.enabled)

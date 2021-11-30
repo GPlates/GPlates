@@ -808,6 +808,21 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 	// Bind the shader program for rendering iso-surface.
 	gl.UseProgram(d_iso_surface_program);
 
+	// The isosurface shader program outputs colours that have premultiplied alpha.
+	// So, since RGB has been premultiplied with alpha we want its source factor to be one (instead of alpha):
+	//
+	//   RGB =     1 * RGB_src + (1-A_src) * RGB_dst
+	//
+	// And for Alpha we want its source factor to be one (as usual):
+	//
+	//     A =     1 *   A_src + (1-A_src) *   A_dst
+	//
+	// ...this enables the destination to be a texture that is subsequently blended into the final scene.
+	// In this case the destination alpha must be correct in order to properly blend the texture into the final scene.
+	//
+	gl.Enable(GL_BLEND);
+	gl.BlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
 	// Draw the full screen quad.
 	gl.BindVertexArray(d_full_screen_quad);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -995,6 +1010,9 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_walls(
 	// Begin rendering to the volume fill texture.
 	gl.BindFramebuffer(GL_FRAMEBUFFER, d_volume_fill_framebuffer);
 
+	// NOTE: We don't need alpha-blending because we're rendering surface normals (xyz) and depth (w),
+	//       so there's no alpha.
+
 	// Enable depth testing and depth writes.
 	// NOTE: Depth writes must also be enabled for depth clears to work (same for colour buffers).
 	gl.Enable(GL_DEPTH_TEST);
@@ -1122,6 +1140,10 @@ GPlatesOpenGL::GLScalarField3D::render_cross_sections(
 	gl.Disable(GL_LINE_SMOOTH);
 	// Ensure lines are single-pixel wide.
 	gl.LineWidth(1);
+
+	// NOTE: We don't need alpha-blending because the cross-section shader program does alpha cutouts
+	//       where alpha [0,0.5] -> 0.0 (and is discarded) and alpha [0.5,1] -> 1.0 (and rgb is
+	//       un-premultiplied from the premultiplied alpha value sampled from 1D colour texture).
 
 	// Surface points/multi-points are vertically extruded to create 1D lines.
 	render_cross_sections_1d(
@@ -2155,35 +2177,24 @@ GPlatesOpenGL::GLScalarField3D::update_uniform_variables_for_cross_sections(
 		break;
 	}
 
-	// Bind the 1D cross-section shader program so that subsequent glUniform* calls target it.
-	gl.UseProgram(d_cross_section_1d_program);
+	// Need to update both the 1D and 2D cross section programs.
+	for (auto cross_section_program : {d_cross_section_1d_program, d_cross_section_2d_program})
+	{
+		// Bind the cross-section shader program so that subsequent glUniform* calls target it.
+		gl.UseProgram(cross_section_program);
 
-	glUniform2f(
-			d_cross_section_1d_program->get_uniform_location("min_max_colour_mapping_range"),
-			min_colour_mapping_range,
-			max_colour_mapping_range);
-	// Specify the colour mode.
-	glUniform1i(
-			d_cross_section_1d_program->get_uniform_location("colour_mode_scalar"),
-			colour_mode == GPlatesViewOperations::ScalarField3DRenderParameters::CROSS_SECTION_COLOUR_MODE_SCALAR);
-	glUniform1i(
-			d_cross_section_1d_program->get_uniform_location("colour_mode_gradient"),
-			colour_mode == GPlatesViewOperations::ScalarField3DRenderParameters::CROSS_SECTION_COLOUR_MODE_GRADIENT);
-
-	// Bind the 2D cross-section shader program so that subsequent glUniform* calls target it.
-	gl.UseProgram(d_cross_section_2d_program);
-
-	glUniform2f(
-			d_cross_section_2d_program->get_uniform_location("min_max_colour_mapping_range"),
-			min_colour_mapping_range,
-			max_colour_mapping_range);
-	// Specify the colour mode.
-	glUniform1i(
-			d_cross_section_2d_program->get_uniform_location("colour_mode_scalar"),
-			colour_mode == GPlatesViewOperations::ScalarField3DRenderParameters::CROSS_SECTION_COLOUR_MODE_SCALAR);
-	glUniform1i(
-			d_cross_section_2d_program->get_uniform_location("colour_mode_gradient"),
-			colour_mode == GPlatesViewOperations::ScalarField3DRenderParameters::CROSS_SECTION_COLOUR_MODE_GRADIENT);
+		glUniform2f(
+				cross_section_program->get_uniform_location("min_max_colour_mapping_range"),
+				min_colour_mapping_range,
+				max_colour_mapping_range);
+		// Specify the colour mode.
+		glUniform1i(
+				cross_section_program->get_uniform_location("colour_mode_scalar"),
+				colour_mode == GPlatesViewOperations::ScalarField3DRenderParameters::CROSS_SECTION_COLOUR_MODE_SCALAR);
+		glUniform1i(
+				cross_section_program->get_uniform_location("colour_mode_gradient"),
+				colour_mode == GPlatesViewOperations::ScalarField3DRenderParameters::CROSS_SECTION_COLOUR_MODE_GRADIENT);
+	}
 }
 
 
@@ -2955,6 +2966,11 @@ GPlatesOpenGL::GLScalarField3D::create_surface_fill_mask_texture(
 	// just use values that are compatible with all internal formats to avoid a possible error.
 
 	glTexImage3D(
+			// Note: We use a fixed-point internal format (which clamps to [0,1]) instead of
+			//       floating-point (which is un-clamped) such that our rendered surface mask texture
+			//       will have an accumulated value of 1.0 where two polygons overlap (instead of 2.0).
+			//       And that means we can use a value of 0.5 to separate areas covered by the surface
+			//       mask from areas not covered (noting that surface mask is bilinearly filtered).
 			GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8,
 			d_surface_fill_mask_resolution,
 			d_surface_fill_mask_resolution,
@@ -3229,10 +3245,6 @@ GPlatesOpenGL::GLScalarField3D::load_colour_palette_texture(
 	// The colours for the colour palette texture.
 	std::vector<GPlatesGui::Colour> colour_palette_texels;
 
-	// Flags to indicate which texels, if any, are fully transparent.
-	std::vector<bool> transparent_texels;
-	bool any_transparent_texels = false;
-
 	// Iterate over texels.
 	unsigned int texel;
 	for (texel = 0; texel < d_colour_palette_resolution; ++texel)
@@ -3257,95 +3269,9 @@ GPlatesOpenGL::GLScalarField3D::load_colour_palette_texture(
 		if (!colour)
 		{
 			colour = GPlatesGui::Colour(0, 0, 0, 0);
-			transparent_texels.push_back(true);
-			any_transparent_texels = true;
-		}
-		else
-		{
-			transparent_texels.push_back(false);
 		}
 
 		colour_palette_texels.push_back(colour.get());
-	}
-
-	// If there are any transparent texels then we need to avoid linear blending artifacts
-	// between a transparent texel and its neighbouring opaque texel in the 1D texture.
-	// This artifact manifests as a darkening of the pixel colour due to blending with the
-	// transparent texel's black RGB colour.
-	// In vertical cross-sections this is visible as a darkening at the boundaries of opaque regions.
-	//
-	// For example, if sampling halfway between transparent and opaque texel then the RGB colour
-	// would be:
-	//   RGB = 0.5 * OpaqueRGB + 0.5 * TransparentRGB = 0.5 * OpaqueRGB
-	// ...combined with the linearly interpolated alpha of:
-	//   Alpha = 0.5 * OpaqueAlpha + 0.5 * TransparentAlpha = 0.5 * OpaqueAlpha
-	// ...we get 0.25 * OpaqueAlpha * OpaqueRGB when instead we want 0.5 * OpaqueAlpha * OpaqueRGB.
-	//
-	// This is achieved by dilating the texture by one texel - that is each transparent texel that
-	// is next to an opaque texel will use the RGB colour of that opaque texel (but not its alpha).
-	// So now we get:
-	//   RGB = 0.5 * OpaqueRGB + 0.5 * OpaqueRGB = OpaqueRGB
-	// ...combined with the linearly interpolated alpha of:
-	//   Alpha = 0.5 * OpaqueAlpha + 0.5 * TransparentAlpha = 0.5 * OpaqueAlpha
-	// ...we get 0.5 * OpaqueAlpha * OpaqueRGB.
-	if (any_transparent_texels)
-	{
-		for (texel = 0; texel < d_colour_palette_resolution; ++texel)
-		{
-			// Skip opaque texels.
-			if (!transparent_texels[texel])
-			{
-				continue;
-			}
-
-			// Get the previous opaque texel if, any.
-			boost::optional<GPlatesGui::Colour> prev_opaque_texel;
-			if (texel > 0 &&
-				!transparent_texels[texel - 1])
-			{
-				prev_opaque_texel = colour_palette_texels[texel - 1];
-			}
-
-			// Get the next opaque texel if, any.
-			boost::optional<GPlatesGui::Colour> next_opaque_texel;
-			if (texel < d_colour_palette_resolution - 1 &&
-				!transparent_texels[texel + 1])
-			{
-				next_opaque_texel = colour_palette_texels[texel + 1];
-			}
-
-			// If the current transparent texel has no opaque neighbours then it will not cause
-			// linear interpolation artifacts and hence can be left with a black RGB.
-			if (!prev_opaque_texel && !next_opaque_texel)
-			{
-				continue;
-			}
-
-			boost::optional<GPlatesGui::Colour> opaque_texel;
-			if (prev_opaque_texel && next_opaque_texel)
-			{
-				// Both neighbouring texels are opaque so just average their colours.
-				opaque_texel =
-						GPlatesGui::Colour::linearly_interpolate(
-								prev_opaque_texel.get(),
-								next_opaque_texel.get(), 0.5);
-			}
-			else if (prev_opaque_texel)
-			{
-				opaque_texel = prev_opaque_texel.get();
-			}
-			else // next_opaque_texel ...
-			{
-				opaque_texel = next_opaque_texel.get();
-			}
-
-			// Use the neighbouring opaque texel(s) RGB colour but keep this texel transparent.
-			colour_palette_texels[texel] = GPlatesGui::Colour(
-					opaque_texel->red(),
-					opaque_texel->green(),
-					opaque_texel->blue(),
-					0/*alpha*/);
-		}
 	}
 
 	// The RGBA texels of the colour palette data.
@@ -3357,9 +3283,12 @@ GPlatesOpenGL::GLScalarField3D::load_colour_palette_texture(
 	{
 		const GPlatesGui::Colour &texel_colour = colour_palette_texels[texel];
 
-		colour_palette_data.push_back(texel_colour.red());
-		colour_palette_data.push_back(texel_colour.green());
-		colour_palette_data.push_back(texel_colour.blue());
+		// Premultiply alpha so that we don't have the issue of black RGB values (at transparent texels)
+		// corrupting the linear texture filtering (when texture is accessed).
+		colour_palette_data.push_back(texel_colour.red() * texel_colour.alpha());
+		colour_palette_data.push_back(texel_colour.green() * texel_colour.alpha());
+		colour_palette_data.push_back(texel_colour.blue() * texel_colour.alpha());
+
 		colour_palette_data.push_back(texel_colour.alpha());
 	}
 

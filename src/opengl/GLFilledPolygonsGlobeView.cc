@@ -134,14 +134,6 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Fragment shader source for rendering the tile texture to the scene.
-		 *
-		 * If we're near the edge of a polygon (and there's no adjacent polygon)
-		 * then the fragment alpha will not be 1.0 (also happens if clipped).
-		 * This reduces the anti-aliasing affect of the bilinear filtering since the bilinearly
-		 * filtered alpha will soften the edge (during the alpha-blend stage) but also the RGB colour
-		 * has been bilinearly filtered with black (RGB of zero) which is a double-reduction that
-		 * reduces the softness of the anti-aliasing.
-		 * To get around this we revert the effect of blending with black leaving only the alpha-blending.
 		 */
 		const char *RENDER_TILE_TO_SCENE_FRAGMENT_SHADER_SOURCE =
 			R"(
@@ -162,6 +154,7 @@ namespace GPlatesOpenGL
 				void main (void)
 				{
 					// Projective texturing to handle cube map projection.
+					// Tile texture has premultiplied alpha.
 					colour = textureProj(tile_texture_sampler, scene_tile_texture_coord);
 				
 					if (clip_to_tile_frustum)
@@ -170,18 +163,10 @@ namespace GPlatesOpenGL
 					}
 				
 					// As a small optimisation discard the pixel if the alpha is zero.
-					//
-					// Note: This would not work on our 'data' floating-point textures because
-					//       it stores data in red channel and coverage in green channel.
-					//       However we're using regular 'visual' colour textures so it's not an issue.
-					//       Just noting this in case this changes later for some reason.
 					if (colour.a == 0)
 					{
 						discard;
 					}
-				
-					// Revert effect of blending with black texels near polygon edge.
-					colour.rgb /= colour.a;
 				
 					if (lighting_enabled)
 					{
@@ -698,6 +683,37 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::set_tile_state(
 		const GLTransform &view_transform,
 		bool clip_to_tile_frustum)
 {
+	// The tile texture contains premultiplied alpha so that when we access it with a bilinear filter
+	// the bilinear samples with zero alpha do not contribute to the filtered texture value.
+	// This means if we're sampling near the edge of a polygon that was rendered into the tile texture,
+	// and there's no adjacent polygon, then the un-rendered (black) tile texels (RGBA all zero)
+	// will not corrupt the bilinearly filtered value.
+	//
+	// In other words the final result in the destination framebuffer (including alpha blending in []) is:
+	//
+	//    RGB = sum(weight(i) * RGB(i) * Alpha(i)) * [1]  // with blend src factor *1*
+	//
+	// ...instead of...
+	//
+	//    RGB = sum(weight(i) * RGB(i)) * [sum(weight(i) * Alpha(i))]  // with blend src factor *alpha*
+	//
+	// ...where 'weight(i)' are bilinear/anisotropic tile texture filtering weights (that sum to 1.0).
+	//
+	//
+	// So, since RGB has been premultiplied with alpha we want its source factor to be one (instead of alpha):
+	//
+	//   RGB =     1 * RGB_src + (1-A_src) * RGB_dst
+	//
+	// And for Alpha we want its source factor to be one (as usual):
+	//
+	//     A =     1 *   A_src + (1-A_src) *   A_dst
+	//
+	// ...this enables the destination to be a texture that is subsequently blended into the final scene.
+	// In this case the destination alpha must be correct in order to properly blend the texture into the final scene.
+	//
+	gl.Enable(GL_BLEND);
+	gl.BlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
 	// Bind the shader program for rendering *to* the tile texture.
 	gl.UseProgram(d_render_tile_to_scene_program);
 
@@ -932,8 +948,8 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_filled_drawables_to_tile_textur
 	//
 	// ...this enables the destination to be a texture that is subsequently blended into the final scene.
 	// In this case the destination alpha must be correct in order to properly blend the texture into the final scene.
-	// However if we're rendering directly into the scene (ie, no render-to-texture) then destination alpha is not
-	// actually used (since only RGB in the final scene is visible) and therefore could use same blend factors as RGB.
+	//
+	// Note: We enable/disable blending further below.
 	//
 	gl.BlendFuncSeparate(
 			GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
@@ -1379,7 +1395,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::FilledDrawables::add_filled_triangle_t
 
 	const drawable_vertex_element_type base_vertex_index = d_drawable_vertices.size();
 
-	// Alpha blending will be set up for pre-multiplied alpha.
+	// Alpha blending will be set up for premultiplied alpha.
 	d_drawable_vertices.push_back(drawable_vertex_type(vertex1.position_vector(), rgba8_vertex_color1));
 	d_drawable_vertices.push_back(drawable_vertex_type(vertex2.position_vector(), rgba8_vertex_color2));
 	d_drawable_vertices.push_back(drawable_vertex_type(vertex3.position_vector(), rgba8_vertex_color3));

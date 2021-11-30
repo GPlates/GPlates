@@ -74,6 +74,9 @@ namespace
 				// Inside near clip plane means:
 				//
 				//   -gl_Position.w <= gl_Position.z
+				//
+				// ...or:
+				//
 				//   gl_Position.z + gl_Position.w >= 0
 				//
 				gl_ClipDistance[0] = gl_Position.z + gl_Position.w;

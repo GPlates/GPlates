@@ -324,6 +324,34 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 	// Bind it early since we'll be setting state in it as we traverse the cube quad tree.
 	gl.UseProgram(d_render_tile_to_scene_program);
 
+	// The shader program outputs colours for a visual source raster (or data and coverage for a data source raster)
+	// that have premultiplied alpha (or coverage) because the source raster itself has premultiplied alpha (or coverage).
+	//
+	// So we want the alpha blending source factor to be one instead of alpha (or coverage):
+	//
+	// For visual rasters this means:
+	//
+	//   RGB =     1 * RGB_src + (1-A_src) * RGB_dst
+	//     A =     1 *   A_src + (1-A_src) *   A_dst
+	//
+	// ..and for data rasters this means:
+	//
+	//   data(R)     =     1 * data_src(R)     + (1-coverage_src(A=G)) * data_dst(R)
+	//   coverage(G) =     1 * coverage_src(G) + (1-coverage_src(A=G)) * coverage_dst(G)
+	//
+	// Note: Data rasters use the 2-channel RG texture format with data in Red and coverage in Green.
+	//       Since there's no Alpha channel, the texture swizzle (set in texture object) copies coverage in the
+	//       Green channel into Alpha channel where the alpha blender can access it (with GL_ONE_MINUS_SRC_ALPHA).
+	//       The alpha blender output can then only store RG channels (if rendering a render target, such as cube map,
+	//       and not the final/main framebuffer) and so Alpha gets discarded (but still used by alpha-blender),
+	//       however that's OK since coverage is still in the Green channel.
+	//
+	// Also note that while the shader program can take as input a normal map raster and an age grid raster
+	// (which is actually a data raster) the output is always visual (RGBA) or data (data + coverage).
+	//
+	gl.Enable(GL_BLEND);
+	gl.BlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+
 	// Make sure the source cube map raster has not been re-oriented via a non-identity world transform.
 	// This class assumes the cube map is in its default orientation (with identity world transform).
 	// If the cube map raster's world transform is already identity then this call does nothing.
@@ -1827,28 +1855,6 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::compile_link_s
 	glUniform1i(
 			d_render_tile_to_scene_program->get_uniform_location("light_direction_cube_texture_sampler_in_map_view_with_normal_map"),
 			4/*texture unit*/);
-
-	// Set the source tile texture dimensions (and inverse dimensions).
-	// This uniform is constant (only needs to be reloaded if shader program is re-linked).
-	glUniform4f(
-			d_render_tile_to_scene_program->get_uniform_location("source_texture_dimensions"),
-			d_source_raster_tile_texel_dimension, d_source_raster_tile_texel_dimension,
-			d_source_raster_inverse_tile_texel_dimension, d_source_raster_inverse_tile_texel_dimension);
-
-	// Set whether source raster is a data raster (ie, not visual).
-	glUniform1i(
-			d_render_tile_to_scene_program->get_uniform_location("using_data_raster_for_source"),
-			!d_source_raster->tile_texture_is_visual());
-
-	if (d_age_grid_cube_raster)
-	{
-		// Set the age grid tile texture dimensions (and inverse dimensions).
-		// This uniform is constant (only needs to be reloaded if shader program is re-linked).
-		glUniform4f(
-				d_render_tile_to_scene_program->get_uniform_location("age_grid_texture_dimensions"),
-				d_age_grid_cube_raster->tile_texel_dimension, d_age_grid_cube_raster->tile_texel_dimension,
-				d_age_grid_cube_raster->inverse_tile_texel_dimension, d_age_grid_cube_raster->inverse_tile_texel_dimension);
-	}
 }
 
 

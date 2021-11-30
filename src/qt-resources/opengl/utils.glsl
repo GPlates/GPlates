@@ -69,52 +69,6 @@ bilinearly_interpolate(
 	tex22 = texture(tex_sampler, st.zw);
 }
 
-/*
- * Bilinearly interpolate a data raster where the data is in the red channel and
- * the coverage is in the green channel.
- *
- * This function weights the bilinear filter according to the coverage texels:
- *
- *   V = sum(Wi * Ci * Vi)
- *       -----------------
- *         sum(Wi * Ci)
- *
- * ...where Wi is bilinear weight, Ci is coverage (in green channel) and Vi is value (in red channel).
- *
- * This RG format is used for data (numerical) rasters in GPlates.
- */
-vec4
-bilinearly_interpolate_data_coverage_RG(
-		sampler2D tex_sampler,
-		vec2 tex_coords,
-		vec4 tex_dimensions)
-{
-	// The 2x2 texture sample to interpolate.
-	vec4 tex11;
-	vec4 tex21;
-	vec4 tex12;
-	vec4 tex22;
-
-	// The bilinear interpolation coefficients.
-	vec2 interp;
-
-	// Sample texture as 4 nearest neighbour samples and get bilinear interpolation weights.
-	bilinearly_interpolate(
-		tex_sampler, tex_coords, tex_dimensions, tex11, tex21, tex12, tex22, interp);
-	
-	// Multiple the data (in red channel) by coverage (in green channel) for each sample.
-	tex11.r *= tex11.g;
-	tex21.r *= tex21.g;
-	tex12.r *= tex12.g;
-	tex22.r *= tex22.g;
-
-	// Bilinearly interpolate the four texels.
-	vec4 result = mix(mix(tex11, tex21, interp.x), mix(tex12, tex22, interp.x), interp.y);
-	
-	// Divide the interpolated data-times-coverage by the interpolated coverage.
-	return vec4(result.r / result.g, result.gba);
-}
-
 
 /*
  * Shader source code to rotate an (x,y,z) vector by a quaternion.

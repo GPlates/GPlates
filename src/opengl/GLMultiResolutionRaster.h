@@ -319,30 +319,27 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Returns the optional texture swizzle for the alpha channel (GL_TEXTURE_SWIZZLE_A).
+		 *
+		 * If not specified then the alpha swizzle is unchanged (ie, alpha value comes from alpha channel).
+		 * This is useful for data (RG) rasters where the data value is in the Red channel and the coverage (alpha)
+		 * value is in the Green channel (in which case a swizzle of GL_GREEN copies the green channel to alpha channel).
+		 */
+		boost::optional<GLenum>
+		get_tile_texture_swizzle_alpha() const override
+		{
+			return d_raster_source->get_tile_texture_swizzle_alpha();
+		}
+
+
+		/**
 		 * Returns true if the raster is displayed visually (as opposed to a data raster used
 		 * for numerical calculations).
 		 *
 		 * This is used to determine texture filtering for optimal display.
 		 */
 		bool
-		tile_texture_is_visual() const override
-		{
-			return d_raster_source->tile_texture_is_visual();
-		}
-
-
-		/**
-		 * Returns true if the raster is a data raster that has coverage.
-		 *
-		 * This is used to determine if texture filtering needs to be implemented in the shader program
-		 * (due to the data value being in the red component and coverage being in the green component).
-		 */
-		virtual
-		bool
-		tile_texture_has_coverage() const override
-		{
-			return d_raster_source->tile_texture_has_coverage();
-		}
+		tile_texture_is_visual() const override;
 
 
 		/**

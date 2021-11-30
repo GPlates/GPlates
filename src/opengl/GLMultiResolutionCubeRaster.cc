@@ -575,8 +575,6 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 	// Other raster types simply clear the colour buffer to a constant colour - usually RGBA(0,0,0,0).
 	d_multi_resolution_raster->clear_framebuffer(gl, tile_view_projection.get_view_projection_transform());
 
-	// NOTE: We don't really need alpha blending since the source raster tiles don't overlap.
-
 	// Get the source raster to render into the render target using the view frustum
 	// we have provided. We have already pre-calculated the list of visible source raster tiles
 	// that need to be rendered into our frustum to save it a bit of culling work.
@@ -668,6 +666,14 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_tile_texture(
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
+	// If the source texture contains alpha or coverage and its not in the alpha channel then swizzle the texture
+	// so it is copied to the alpha channel (eg, a data RG texture copies coverage from G to A).
+	boost::optional<GLenum> texture_swizzle_alpha = d_multi_resolution_raster->get_tile_texture_swizzle_alpha();
+	if (texture_swizzle_alpha)
+	{
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, texture_swizzle_alpha.get());
+	}
+
 	// Create the texture but don't load any data into it.
 	// Leave it uninitialised because we will be rendering into it to initialise it.
 	//
@@ -703,7 +709,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::set_tile_texture_filtering(
 	// unlike global rectangular lat/lon rasters that squash near the poles.
 	//
 
-	if (tile_texture_is_visual())
+	if (d_multi_resolution_raster->tile_texture_is_visual())
 	{
 		// Use nearest filtering for the 'min' filter since it displays a visually crisper image.
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -718,40 +724,20 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::set_tile_texture_filtering(
 		{
 			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		}
-
-		// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
-		// subsequently sampled non-isotropically.
-		//
-		// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
-		if (capabilities.gl_EXT_texture_filter_anisotropic)
-		{
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
-		}
 	}
-	else if (tile_texture_has_coverage())
+	else // a non-visual texture (eg, regular data, normal map or scalar field data)...
 	{
-		// Texture has data (red component) and coverage (green component), and so needs filtering
-		// to be implemented in shader program. Use 'nearest' filtering, and no anisotropic filtering.
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		if (capabilities.gl_EXT_texture_filter_anisotropic)
-		{
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1/*isotropic*/);
-		}
-	}
-	else // a data texture with no coverage ...
-	{
-		// Texture just has data (no coverage) and hence filtering can be done in hardware.
+		// Use binlinear filtering.
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	}
 
-		// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
-		// subsequently sampled non-isotropically.
-		//
-		// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
-		if (capabilities.gl_EXT_texture_filter_anisotropic)
-		{
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
-		}
+	// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
+	// subsequently sampled non-isotropically.
+	//
+	// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
+	if (capabilities.gl_EXT_texture_filter_anisotropic)
+	{
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
 	}
 }

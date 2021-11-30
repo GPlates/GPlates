@@ -100,7 +100,10 @@ namespace GPlatesOpenGL
 
 				void main (void)
 				{
-					colour = modulate_color * texture(source_texture_sampler, tex_coord);
+					// Note: Source texture has premultiplied alpha, so multiply by
+					//       a premultiplied-alpha version of the modulate colour.
+					colour = texture(source_texture_sampler, tex_coord);
+					colour *= vec4(modulate_color.rgb * modulate_color.a, modulate_color.a)
 				}
 			)";
 
@@ -129,7 +132,6 @@ namespace GPlatesOpenGL
 		const char *RENDER_DATA_RASTER_FRAGMENT_SHADER_SOURCE =
 			R"(
 				uniform sampler2D source_texture_sampler;
-				uniform vec4 source_texture_dimensions;
 
 				in vec2 tex_coord;
 			
@@ -137,9 +139,16 @@ namespace GPlatesOpenGL
 
 				void main (void)
 				{
-					// Bilinearly filter the tile texture (data/coverage is in red/green channel).
-					data = bilinearly_interpolate_data_coverage_RG(
-						 source_texture_sampler, tex_coord, source_texture_dimensions);
+					//
+					// The source raster is a data raster that uses the 2-channel RG texture format
+					// with data in Red and coverage in Green. Since there's no Alpha channel,
+					// the texture swizzle (set in texture object) copies coverage in the Green channel
+					// into the Alpha channel. Also if we're outputting to an RG render-texture then Alpha
+					// gets discarded, but that's OK since coverage is still in the Green channel.
+					//
+					// Also note that the data (Red) is premultiplied by coverage.
+					//
+					data = texture(source_texture_sampler, tex_coord);
 				}
 			)";
 
@@ -560,7 +569,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::clear_framebuffer(
 		const GLMatrix &view_projection_transform)
 {
 	// If not a normal map then just clear the colour buffer.
-	if (dynamic_cast<GLNormalMapSource *>(d_raster_source.get()) == NULL)
+	if (dynamic_cast<GLNormalMapSource *>(d_raster_source.get()) == nullptr)
 	{
 		gl.ClearColor(); // Clear colour to all zeros.
 		glClear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
@@ -633,41 +642,43 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 			d_render_raster_program->get_uniform_location("view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
-	if (const GLVisualRasterSource *visual_raster_source =
-		dynamic_cast<const GLVisualRasterSource *>(d_raster_source.get()))
+	if (const GLVisualRasterSource *visual_raster_source = dynamic_cast<const GLVisualRasterSource *>(d_raster_source.get()))
 	{
 		// Visual (colour) rasters require multiplying by their modulate colour.
 		const GPlatesGui::Colour &modulate_colour = visual_raster_source->get_modulate_colour();
 		glUniform4f(
 				d_render_raster_program->get_uniform_location("modulate_color"),
 				modulate_colour.red(), modulate_colour.green(), modulate_colour.blue(), modulate_colour.alpha());
-
-		//
-		// Visual (colour) rasters require alpha-blending.
-		//
-		// For alpha-blending we want:
-		//
-		//   RGB = A_src * RGB_src + (1-A_src) * RGB_dst
-		//     A =     1 *   A_src + (1-A_src) *   A_dst
-		//
-		// ...so we need to use separate (src,dst) blend factors for the RGB and alpha channels...
-		//
-		//   RGB uses (A_src, 1 - A_src)
-		//     A uses (    1, 1 - A_src)
-		//
-		// ...this enables the destination to be a texture that is subsequently blended into the final scene.
-		// In this case the destination alpha must be correct in order to properly blend the texture into the final scene.
-		// However if we're rendering directly into the scene (ie, no render-to-texture) then destination alpha is not
-		// actually used (since only RGB in the final scene is visible) and therefore could use same blend factors as RGB.
-		//
-		gl.Enable(GL_BLEND);
-		gl.BlendFuncSeparate(
-				GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
-				GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 	}
 
-	// We'll bind our tile texture to unit 0.
-	gl.ActiveTexture(GL_TEXTURE0);
+	// Set alpha blending for visual and data rasters (since visual rasters have alpha and data rasters have coverage).
+	// But don't set for normal map rasters or scalar field depth layer rasters (since they don't have alpha or coverage).
+	if (dynamic_cast<const GLVisualRasterSource *>(d_raster_source.get()) ||
+		dynamic_cast<const GLDataRasterSource *>(d_raster_source.get()))
+	{
+		// Visual rasters have premultiplied alpha (and data rasters have premultiplied coverage).
+		// So we want the alpha blending source factor to be one instead of alpha (or coverage):
+		//
+		// For visual rasters this means:
+		//
+		//   RGB =     1 * RGB_src + (1-A_src) * RGB_dst
+		//     A =     1 *   A_src + (1-A_src) *   A_dst
+		//
+		// ..and for data rasters this means:
+		//
+		//   data(R)     =     1 * data_src(R)     + (1-coverage_src(A=G)) * data_dst(R)
+		//   coverage(G) =     1 * coverage_src(G) + (1-coverage_src(A=G)) * coverage_dst(G)
+		//
+		// Note: Data rasters use the 2-channel RG texture format with data in Red and coverage in Green.
+		//       Since there's no Alpha channel, the texture swizzle (set in texture object) copies coverage in the
+		//       Green channel into Alpha channel where the alpha blender can access it (with GL_ONE_MINUS_SRC_ALPHA).
+		//       The alpha blender output can then only store RG channels (if rendering a render target, such as cube map,
+		//       and not the final/main framebuffer) and so Alpha gets discarded (but still used by alpha-blender),
+		//       however that's OK since coverage is still in the Green channel.
+		//
+		gl.Enable(GL_BLEND);
+		gl.BlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+	}
 
 #if 0
 	// Used to render as wire-frame meshes instead of filled textured meshes for
@@ -678,6 +689,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 	// The cached view is a sequence of tiles for the caller to keep alive until the next frame.
 	boost::shared_ptr<std::vector<ClientCacheTile> > cached_tiles(new std::vector<ClientCacheTile>());
 	cached_tiles->reserve(tiles.size());
+
+	// We'll bind our tile texture to unit 0.
+	gl.ActiveTexture(GL_TEXTURE0);
 
 	// Render each tile.
 	for (GLMultiResolutionRaster::tile_handle_type tile_handle : tiles)
@@ -803,6 +817,14 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_raster_data_into_tile_texture(
 }
 
 
+bool
+GPlatesOpenGL::GLMultiResolutionRaster::tile_texture_is_visual() const
+{
+	// Only a visual raster source is visual.
+	return dynamic_cast<const GLVisualRasterSource*>(d_raster_source.get()) != nullptr;
+}
+
+
 void
 GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 		GL &gl,
@@ -813,68 +835,33 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	// Bind the texture.
 	gl.BindTexture(GL_TEXTURE_2D, texture);
 
-	// If the auto-generate mipmaps OpenGL extension is supported then have mipmaps generated
-	// automatically for us and specify a mipmap minification filter,
-	// otherwise don't use mipmaps (and instead specify a non-mipmap minification filter).
-	// A lot of cards have support for this extension.
-	//
-	// UPDATE: Generating mipmaps is causing problems when the input source is an age grid mask.
-	// This is probably because that input is not a regularly loaded texture (loaded from CPU).
-	// Instead it is a texture that's been rendered to by the GPU (via a render target).
-	// In this case the auto generation of mipmaps is probably a little less clear since it
-	// interacts with other specifications on mipmap rendering such as the framebuffer object
-	// extension (used by GPlates for render targets) which has its own mipmap support.
-	// Best to avoid auto generation of mipmaps - we don't really need it anyway since
-	// our texture already matches pretty closely texel-to-pixel (texture -> viewport) since
-	// we have our own mipmapped raster tiles via proxied rasters. Also we turn on anisotropic
-	// filtering which will reduce any aliasing near the horizon of the globe.
-	// Turning off auto-mipmap-generation will also give us a small speed boost.
-	//
-
 	// Note: Currently all filtering is 'nearest' instead of 'bilinear'.
 	//       This is because the tiles do not overlap by border by half a texel (to avoid bilinear
 	//       seams between tiles). But this may change (though it would require significant changes).
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	if (tile_texture_is_visual())
-	{
-		// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
-		// subsequently sampled non-isotropically.
-		//
-		// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
-		if (capabilities.gl_EXT_texture_filter_anisotropic)
-		{
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
-		}
-	}
-	else if (tile_texture_has_coverage())
-	{
-		// Texture has data (red component) and coverage (green component), and so needs filtering
-		// to be implemented in shader program. So don't use anisotropic filtering.
-		if (capabilities.gl_EXT_texture_filter_anisotropic)
-		{
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 1/*isotropic*/);
-		}
-	}
-	else // a data texture with no coverage ...
-	{
-		// Texture just has data (no coverage) and hence filtering can be done in hardware.
-		//
-		// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
-		// subsequently sampled non-isotropically.
-		//
-		// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
-		if (capabilities.gl_EXT_texture_filter_anisotropic)
-		{
-			glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
-		}
-	}
-
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
+	// subsequently sampled non-isotropically.
+	//
+	// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
+	if (capabilities.gl_EXT_texture_filter_anisotropic)
+	{
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
+	}
+
+	// If the source texture contains alpha or coverage and its not in the alpha channel then swizzle the texture
+	// so it is copied to the alpha channel (eg, a data RG texture copies coverage from G to A).
+	boost::optional<GLenum> texture_swizzle_alpha = d_raster_source->get_tile_texture_swizzle_alpha();
+	if (texture_swizzle_alpha)
+	{
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, texture_swizzle_alpha.get());
+	}
 
 	// Create the texture in OpenGL - this actually creates the texture without any data.
 	// We'll be getting our raster source to load image data into the texture.
@@ -1686,18 +1673,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::compile_link_shader_program(
 	glUniform1i(
 			d_render_raster_program->get_uniform_location("source_texture_sampler"),
 			0/*texture unit*/);
-
-	if (dynamic_cast<GLDataRasterSource *>(d_raster_source.get()))
-	{
-		// For data raster (with data and coverage) we need to setup for bilinear filtering of
-		// floating-point texture in the fragment shader.
-		// Set the source tile texture dimensions (and inverse dimensions).
-		// This uniform is constant (only needs to be reloaded if shader program is re-linked).
-		glUniform4f(
-				d_render_raster_program->get_uniform_location("source_texture_dimensions"),
-				d_tile_texel_dimension, d_tile_texel_dimension,
-				d_inverse_tile_texel_dimension, d_inverse_tile_texel_dimension);
-	}
 }
 
 

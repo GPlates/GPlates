@@ -152,9 +152,6 @@ namespace GPlatesOpenGL
 		 */
 		unsigned int d_tile_texel_dimension;
 
-		//! 1.0 / 'd_tile_texel_dimension'.
-		float d_inverse_tile_texel_dimension;
-
 		/**
 		 * The map projection's central meridian longitude is used as a transform when
 		 * rendering the source raster (to align it with the map cube mesh).

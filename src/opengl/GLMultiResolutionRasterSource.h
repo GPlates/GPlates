@@ -27,6 +27,7 @@
 #ifndef GPLATES_OPENGL_GLMULTIRESOLUTIONRASTERSOURCE_H
 #define GPLATES_OPENGL_GLMULTIRESOLUTIONRASTERSOURCE_H
 
+#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "GLTexture.h"
@@ -105,43 +106,6 @@ namespace GPlatesOpenGL
 		get_tile_texel_dimension() const = 0;
 
 
-		////////////////////////////////////////////////////////////////////////////////////////////
-		//
-		// A NOTE REGARDING MIPMAPPING:
-		//
-		// ORIGINAL COMMENT:
-		// If the auto-generate mipmaps OpenGL extension is supported then have mipmaps generated
-		// automatically for us and specify a mipmap minification filter,
-		// otherwise don't use mipmaps (and instead specify a non-mipmap minification filter).
-		// A lot of cards have support for this extension.
-		//
-		// UPDATED COMMENT:
-		// Generating mipmaps is causing problems when the input source is an age grid mask.
-		// This is probably because that input is not a regularly loaded texture (loaded from CPU).
-		// Instead it is a texture that's been rendered to by the GPU (via a render target).
-		// In this case the auto generation of mipmaps is probably a little less clear since it
-		// interacts with other specifications on mipmap rendering such as the framebuffer object
-		// extension (used by GPlates where possible for render targets) which has its own
-		// mipmap support.
-		// Best to avoid auto generation of mipmaps - we don't really need it anyway since
-		// our texture already matches pretty closely texel-to-pixel (texture -> viewport) since
-		// we have our own mipmapped raster tiles via proxied rasters. Also we turn on anisotropic
-		// filtering which will reduce any aliasing near the horizon of the globe.
-		// Turning off auto-mipmap-generation will also give us a small speed boost.
-		//
-		// if (capabilities.texture.gl_SGIS_generate_mipmap)
-		// {
-		// 	// Mipmaps will be generated automatically when the level 0 image is modified.
-		// 	glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP_SGIS, GL_TRUE);
-		// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_LINEAR);
-		// }
-		// else
-		// {
-		// 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		// }
-		//
-		////////////////////////////////////////////////////////////////////////////////////////////
-
 		/**
 		 * Returns the texture internal format for the target textures passed to @a load_tile
 		 * (to store a tile's texture data).
@@ -155,25 +119,21 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns true if the raster is displayed visually (as opposed to a data raster used
-		 * for numerical calculations).
+		 * Returns the optional texture swizzle for the alpha channel (GL_TEXTURE_SWIZZLE_A)
+		 * for the target textures passed to @a load_tile (to store a tile's texture data).
 		 *
-		 * This is used to determine texture filtering for optimal display.
+		 * If not specified then the alpha swizzle is unchanged (ie, alpha value comes from alpha channel).
+		 * This is useful for data (RG) rasters where the data value is in the Red channel and the coverage (alpha)
+		 * value is in the Green channel (in which case a swizzle of GL_GREEN copies the green channel to alpha channel).
+		 *
+		 * The default is to leave alpha swizzle unchanged.
 		 */
 		virtual
-		bool
-		tile_texture_is_visual() const = 0;
-
-
-		/**
-		 * Returns true if the raster is a data raster that has coverage.
-		 *
-		 * This is used to determine if texture filtering needs to be implemented in the shader program
-		 * (due to the data value being in the red component and coverage being in the green component).
-		 */
-		virtual
-		bool
-		tile_texture_has_coverage() const = 0;
+		boost::optional<GLenum>
+		get_tile_texture_swizzle_alpha() const
+		{
+			return boost::none;
+		}
 
 
 		/**

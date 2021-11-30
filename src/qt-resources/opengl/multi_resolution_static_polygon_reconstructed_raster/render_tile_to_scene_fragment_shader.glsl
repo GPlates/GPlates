@@ -30,7 +30,6 @@
 // (due to earlier hardware lack of support) so we need to emulate bilinear filtering in the fragment shader.
 //
 
-uniform bool using_data_raster_for_source;
 uniform bool using_age_grid;
 uniform bool using_age_grid_active_polygons;
 uniform bool using_surface_lighting;
@@ -43,9 +42,6 @@ uniform sampler2D clip_texture_sampler;
 uniform sampler2D normal_map_texture_sampler;
 uniform sampler2D age_grid_texture_sampler;
 uniform samplerCube light_direction_cube_texture_sampler_in_map_view_with_normal_map;
-
-uniform vec4 age_grid_texture_dimensions;
-uniform vec4 source_texture_dimensions;
 
 uniform float reconstruction_time;
 uniform vec4 plate_rotation_quaternion;
@@ -79,30 +75,32 @@ void main (void)
 
 	if (using_age_grid)
 	{
-		// Do the texture transform projective divide.
-		vec2 age_grid_texture_coords = age_grid_texture_coordinate.st / age_grid_texture_coordinate.q;
-		vec4 age11, age21, age12, age22;
-		vec2 age_interp;
-		// Retrieve the 2x2 samples in the age grid texture and the bilinear interpolation coefficient.
-		bilinearly_interpolate(
-			age_grid_texture_sampler,
-			age_grid_texture_coords,
-			age_grid_texture_dimensions,
-			age11, age21, age12, age22, age_interp);
-		// The red channel contains the age value and the green channel contains the coverage.
-		vec4 age_vec = vec4(age11.r, age21.r, age12.r, age22.r);
-		vec4 age_coverage_vec = vec4(age11.g, age21.g, age12.g, age22.g);
-		// Do the age comparison test with the current reconstruction time.
-		vec4 age_test = step(reconstruction_time, age_vec);
-		// Multiply the coverage values into the age tests.
-		vec4 cov_age_test = age_test * age_coverage_vec;
-		// Bilinearly interpolate the four age test results and coverage.
-		float age_coverage_mask = mix(
-			mix(cov_age_test.x, cov_age_test.y, age_interp.x),
-			mix(cov_age_test.z, cov_age_test.w, age_interp.x), age_interp.y);
-		float age_coverage = mix(
-			mix(age_coverage_vec.x, age_coverage_vec.y, age_interp.x),
-			mix(age_coverage_vec.z, age_coverage_vec.w, age_interp.x), age_interp.y);
+		vec4 age_data = textureProj(age_grid_texture_sampler, age_grid_texture_coordinate);
+
+		// Age grid coverage in alpha channel is 1 inside age grid (oceanic) and 0 outside (continental).
+		float age_coverage = age_data.a
+
+		// If the current fragment is covered by the age grid then we're on oceanic crust, so do the age comparison test.
+		// Otherwise we're on continental crust, and the age test result effectively gets ignored (since age coverage is zero).
+		float age_test = 0;
+		if (age_coverage > 0)
+		{
+			// The data value (age) is in the red channel and is premultiplied with coverage
+			// (so that bilinear/anisotropic GPU hardware filtering is correctly weighted).
+			// So now we need to un-premultiply coverage by dividing by coverage.
+			//
+			// The end result essentially amounts to:
+			//
+			//   age = sum(weight(i) * coverage(i) * age(i))
+			//         -------------------------------------
+			//              sum(weight(i) * coverage(i))
+			//
+			// ...where 'weight(i)' is the texture filtering weight (eg, bilinear/anisotropic).
+			float age = age_data.r / age_coverage;
+
+			// Do the age comparison test with the current reconstruction time.
+			age_test = step(reconstruction_time, age);
+		}
 
 		// For continental crust (where there's no age grid coverage) the age is determined by the active polygon time of appearance.
 		// For oceanic crust (where there is age grid coverage) the age is determined by the age grid
@@ -120,7 +118,7 @@ void main (void)
 			// Note that continental crust is always '1' here, however we are rendering with *active* polygons and so they
 			// will disappear when the reconstruction time is earlier than the continental polygon's time of appearance
 			// (not that continental polygons should ever disappear, but they do have finite begin times, such as 600Ma).
-			age_factor = (1 - age_coverage) + age_coverage_mask;
+			age_factor = mix(1, age_test, age_coverage);  // Same as (1 - age_coverage) + age_coverage * age_test
 		}
 		else // inactive polygons (where polygon time of appearance is after/younger than reconstruction time)...
 		{
@@ -130,7 +128,7 @@ void main (void)
 			//
 			// Which is always '0' for continental crust.
 			// For oceanic crust, it is '1' when 'age >= reconstruction_time' and '0' when 'age < reconstruction_time'.
-			age_factor = age_coverage_mask;
+			age_factor = age_coverage * age_test;
 		}
 
 		// Early reject if the age factor is zero (because the age test failed and so we don't want to overwrite valid data).
@@ -140,50 +138,33 @@ void main (void)
 		}
 	}
 
-	vec4 tile_colour;
-	
-	if (using_data_raster_for_source)
+	// Sample the source raster.
+	//
+	// It can be either a visual source raster (RGBA) or data raster (RG).
+	// A visual raster source has premultiplied alpha, and a data raster source has premultiplied coverage (from Green channel).
+	//
+	// Note: Data rasters use the 2-channel RG texture format with data in Red and coverage in Green.
+	//       Since there's no Alpha channel, the texture swizzle (set in texture object) copies coverage in the
+	//       Green channel into the Alpha channel. Also if we're outputting to an RG render-texture then Alpha gets
+	//       discarded (but still used by alpha-blender), however that's OK since coverage is still in the Green channel.
+	vec4 tile_colour = textureProj(source_texture_sampler, source_texture_coordinate);
+
+	// Modulate the source texture's coverage with the age test result (which is 1.0 if not using age grid).
+	//
+	// Premultiply the age factor.
+	// For a visual raster with premultiplied alpha this means multiplying into all RGBA channels.
+	// For a data raster with premultiplied coverage this means multiplying into the RG channels (data and coverage) as well
+	// as the Alpha channel (since texture swizzle copied Green channel to Alpha channel) - the Blue channel is unused.
+	//
+	// So the easiest is to just multiply into all RGBA channels (works for visual and data rasters).
+	tile_colour *= age_factor;
+
+	// Reject the pixel if its alpha (or coverage) is zero.
+	//
+	// Note that for data rasters the texture swizzle (set in texture object) copied the coverage from green channel to alpha channel.
+	if (tile_colour.a == 0)
 	{
-		// Do the texture transform projective divide.
-		vec2 source_texture_coords = source_texture_coordinate.st / source_texture_coordinate.q;
-		// Bilinearly filter the tile texture (data/coverage is in red/green channel).
-		// The texture access in 'bilinearly_interpolate' starts a new indirection phase.
-		tile_colour = bilinearly_interpolate_data_coverage_RG(
-			source_texture_sampler, source_texture_coords, source_texture_dimensions);
-
-		// Modulate the source texture's coverage with the age test result (whic is 1.0 if not using age grid).
-		//
-		// NOTE: For data textures we've placed the coverage/alpha in the green channel.
-		// And they don't have pre-multiplied alpha like RGBA fixed-point textures because
-		// alpha-blending not supported for floating-point render targets.
-		tile_colour.g *= age_factor;
-
-		// Reject the pixel if its coverage/alpha is zero.
-		//
-		// NOTE: For data textures we've placed the coverage/alpha in the green channel.
-		if (tile_colour.g == 0)
-		{
-			discard;
-		}
-	}
-	else
-	{
-		// Use hardware bilinear interpolation of fixed-point texture.
-		tile_colour = textureProj(source_texture_sampler, source_texture_coordinate);
-
-		// Modulate the source texture's coverage with the age test result (whic is 1.0 if not using age grid).
-		//
-		// NOTE: All RGBA raster data has pre-multiplied alpha (for alpha-blending to render targets)
-		// The source raster already has pre-multiplied alpha (see GLVisualRasterSource).
-		// However we still need to pre-multiply the age factor (alpha).
-		// (RGB * A, A) -> (RGB * A * age_factor, A * age_factor).
-		tile_colour *= age_factor;
-
-		// Reject the pixel if its coverage/alpha is zero.
-		if (tile_colour.a == 0)
-		{
-			discard;
-		}
+		discard;
 	}
 
 	// Surface lighting only needs to be applied to visualised raster sources.
@@ -211,7 +192,7 @@ void main (void)
 				else
 				{
 					// Get the world-space light direction from the light direction cube texture.
-					world_space_light_direction_in_map_view = textureCube(
+					world_space_light_direction_in_map_view = texture(
 							light_direction_cube_texture_sampler_in_map_view_with_normal_map,
 							world_space_sphere_normal).xyz;
 					// Need to convert the x/y/z components from unsigned to signed ([0,1] -> [-1,1]).

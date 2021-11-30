@@ -56,7 +56,7 @@ look_up_table_1D(
 		float input_upper_bound,
 		float input_value)
 {
-	int table_resolution = textureSize(surface_fill_mask_sampler, 0).x/*square texture*/;
+	int table_resolution = textureSize(table_sampler, 0).x/*square texture*/;
 	
 	// Map the range [input_lower_bound, input_upper_bound] to [0,1].
 	float table_coordinate_u = (input_value - input_lower_bound) / (input_upper_bound - input_lower_bound);
@@ -68,7 +68,7 @@ look_up_table_1D(
 	return texture(table_sampler, table_coordinate_u);
 }
 
-// Project the world position onto the cube face and determine the cube face that it projects onto.
+// Project the world position onto a cube face and determine the cube face that it projects onto.
 vec3
 project_world_position_onto_cube_face(
 		vec3 world_position,
@@ -389,8 +389,8 @@ get_scalar_field_data_from_cube_face_coordinates(
 		in sampler1D depth_radius_to_layer_sampler,
 		in int num_depth_layers,
 		in vec2 min_max_depth_radius,
-		inout float field_scalar,
-		inout vec3 field_gradient)
+		out float field_scalar,
+		out vec3 field_gradient)
 {
 	// Convert depth radius to depth layer.
 	int lower_depth_layer;
@@ -442,7 +442,7 @@ get_scalar_field_data_from_position(
 		in vec2 min_max_depth_radius,
 		inout int cube_face_index,
 		inout vec2 cube_face_coordinate_uv,
-		inout float field_scalar, 
+		inout float field_scalar,
 		inout vec3 field_gradient)
 {
 	calculate_cube_face_coordinates(position, cube_face_index, cube_face_coordinate_uv);
@@ -581,7 +581,7 @@ sample_dilated_surface_fill_mask_texture_array(
 	surface_fill_mask += texture(surface_fill_mask_sampler, uvw_22).r;
 	
 	// Return the average of the 3x3 samples.
-	return (1.0 / 9.0) * surface_fill_mask;
+	return surface_fill_mask / 9.0;
 }
 
 // Same as 'projects_into_surface_fill_mask()' except emulates a dilated surface fill mask by also sampling

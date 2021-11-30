@@ -424,6 +424,9 @@ GPlatesGui::LayerPainter::end_painting(
 	cache_handle->push_back(rasters_cache_handle);
 
 
+#if 0 // TODO: Remove this commented-out code once we're sure that each type of primitive being rendered
+	  //       should decide itself whether to pre-multiply alpha in shader program or using alpha blending.
+	  //       This means all rendering can assume the default state of no alpha blending.
 	// Set up alpha blending for pre-multiplied alpha.
 	// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
 	// This is where the RGB channels have already been multiplied by the alpha channel.
@@ -451,6 +454,7 @@ GPlatesGui::LayerPainter::end_painting(
 		renderer.gl_enable(GL_BLEND);
 		renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	}
+#endif
 
 	// Set the alpha-test state to reject pixels where alpha is zero (they make no
 	// change or contribution to the framebuffer) - this is an optimisation.
@@ -556,18 +560,6 @@ GPlatesGui::LayerPainter::paint_scalar_fields(
 
 	// Turn on depth writes for correct depth sorting of sub-surface geometries/fields.
 	renderer.gl_depth_mask(GL_TRUE);
-
-	// Set up scalar field alpha blending for pre-multiplied alpha.
-	// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
-	// This is where the RGB channels have already been multiplied by the alpha channel.
-	// See class GLVisualRasterSource for why this is done (not that we use that for 3D scalar fields).
-	//
-	// Note: The render target (main framebuffer) is fixed-point RGBA (and not floating-point) so we
-	// don't need to worry about alpha-blending not being available for floating-point render targets.
-	renderer.gl_enable(GL_BLEND, GL_TRUE);
-	renderer.gl_blend_func(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-
-	// No need for alpha-testing - transparent rays are culled in shader program by discarding pixel.
 
 	// The cached view is a sequence of raster caches for the caller to keep alive until the next frame.
 	boost::shared_ptr<std::vector<GPlatesOpenGL::GLVisualLayers::cache_handle_type> > cache_handle(
