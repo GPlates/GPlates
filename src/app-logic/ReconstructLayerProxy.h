@@ -58,6 +58,11 @@
 #include "utils/SubjectObserverToken.h"
 
 
+namespace GPlatesOpenGL
+{
+	class GL;
+}
+
 namespace GPlatesAppLogic
 {
 	class ReconstructParams;
@@ -589,7 +594,7 @@ namespace GPlatesAppLogic
 				bool reconstructing_with_age_grid)
 		{
 			return get_reconstructed_static_polygon_meshes(
-					renderer, reconstructing_with_age_grid, d_current_reconstruction_time);
+					gl, reconstructing_with_age_grid, d_current_reconstruction_time);
 		}
 
 

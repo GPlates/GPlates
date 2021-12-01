@@ -87,7 +87,8 @@ namespace GPlatesAppLogic
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
+	class GLViewProjection;
 
 	/**
 	 * Keeps track of any OpenGL-related objects that are persistent beyond one rendering frame.
@@ -95,8 +96,8 @@ namespace GPlatesOpenGL
 	 * Until now there have been no such objects, but rasters are now persistent otherwise
 	 * it would be far too expensive to rebuild them each time they need to be rendered.
 	 *
-	 * Each OpenGL context that does not share list objects, such as textures and display lists,
-	 * will require a separate instance of this class.
+	 * Each OpenGL context that does not share list objects, such as textures, will require a
+	 * separate instance of this class.
 	 */
 	class GLVisualLayers :
 			public QObject,
@@ -137,9 +138,9 @@ namespace GPlatesOpenGL
 		 * and only shares the list objects if @a objects_from_another_context uses a context
 		 * that shares the same shared state as @a opengl_context.
 		 *
-		 * This basically allows objects that use textures and display lists to be shared
-		 * across QGLWidgets objects (or whatever objects have different OpenGL contexts).
-		 * The sharing depends on whether the two OpenGL contexts allow shared textures/display-lists.
+		 * This basically allows objects that use textures to be shared across QGLWidgets objects
+		 * (or whatever objects have different OpenGL contexts).
+		 * The sharing depends on whether the two OpenGL contexts allow shared textures.
 		 */
 		static
 		non_null_ptr_type
@@ -154,13 +155,13 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the light used for surface lighting or false if not supported on run-time system.
+		 * Returns the light used for surface lighting.
 		 *
 		 * NOTE: This must be called when an OpenGL context is currently active.
 		 */
-		boost::optional<GLLight::non_null_ptr_type>
+		GLLight::non_null_ptr_type
 		get_light(
-				GLRenderer &renderer) const;
+				GL &gl) const;
 
 
 		/**
@@ -174,7 +175,7 @@ namespace GPlatesOpenGL
 		 *
 		 * @a normal_map_height_field_scale_factor alters the surface lighting if a normal map is used.
 		 *
-		 * The raster is rendered with lighting (if supported and currently enabled) using @a get_light
+		 * The raster is rendered with lighting (if currently enabled) using @a get_light
 		 * (and it's current lighting parameters).
 		 *
 		 * If @a map_projection is specified then the raster is rendered using the specified
@@ -182,7 +183,8 @@ namespace GPlatesOpenGL
 		 */
 		cache_handle_type
 		render_raster(
-				GLRenderer &renderer,
+				GL &gl,
+				const GLViewProjection &view_projection,
 				const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type &source_resolved_raster,
 				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &source_raster_colour_palette,
 				const GPlatesGui::Colour &source_raster_modulate_colour = GPlatesGui::Colour::get_white(),
@@ -195,12 +197,13 @@ namespace GPlatesOpenGL
 		 *
 		 * @a render_parameters determines how to render the scalar field.
 		 *
-		 * The scalar field is rendered with lighting (if supported and currently enabled) using @a get_light
+		 * The scalar field is rendered with lighting (if currently enabled) using @a get_light
 		 * (and it's current lighting parameters).
 		 */
 		cache_handle_type
 		render_scalar_field_3d(
-				GLRenderer &renderer,
+				GL &gl,
+				const GLViewProjection &view_projection,
 				const GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_to_const_type &source_resolved_scalar_field,
 				const GPlatesViewOperations::ScalarField3DRenderParameters &render_parameters);
 
@@ -216,12 +219,13 @@ namespace GPlatesOpenGL
 		 * polygon an odd numbers of times when a line is formed from the point (part) in question
 		 * to a point outside the exterior of the polygon. Same applies to polylines.
 		 *
-		 * Filled polygons are rendered with lighting (if supported and currently enabled)
-		 * using @a get_light (and it's current lighting parameters).
+		 * Filled polygons are rendered with lighting (if currently enabled) using @a get_light
+		 * (and it's current lighting parameters).
 		 */
 		void
 		render_filled_polygons(
-				GLRenderer &renderer,
+				GL &gl,
+				const GLViewProjection &view_projection,
 				const GLFilledPolygonsGlobeView::filled_drawables_type &filled_polygons);
 
 		/**
@@ -229,7 +233,8 @@ namespace GPlatesOpenGL
 		 */
 		void
 		render_filled_polygons(
-				GLRenderer &renderer,
+				GL &gl,
+				const GLViewProjection &view_projection,
 				const GLFilledPolygonsMapView::filled_drawables_type &filled_polygons);
 
 	public Q_SLOTS:
@@ -327,7 +332,7 @@ namespace GPlatesOpenGL
 			 */
 			boost::optional<GLScalarField3D::non_null_ptr_type>
 			get_scalar_field_3d(
-					GLRenderer &renderer,
+					GL &gl,
 					boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type> colour_palette,
 					boost::optional< std::pair<double, double> > colour_palette_value_range,
 					boost::optional<GLLight::non_null_ptr_type> light);
@@ -363,13 +368,13 @@ namespace GPlatesOpenGL
 			//! Sets the raster colour palette.
 			void
 			set_raster_colour_palette(
-					GLRenderer &renderer,
+					GL &gl,
 					const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette);
 
 			//! Sets the raster modulation colour.
 			void
 			set_raster_modulate_colour(
-					GLRenderer &renderer,
+					GL &gl,
 					const GPlatesGui::Colour &raster_modulate_colour);
 
 			/**
@@ -379,7 +384,7 @@ namespace GPlatesOpenGL
 			 */
 			boost::optional<GLMultiResolutionRaster::non_null_ptr_type>
 			get_multi_resolution_raster(
-					GLRenderer &renderer);
+					GL &gl);
 
 			virtual
 			bool
@@ -420,7 +425,7 @@ namespace GPlatesOpenGL
 			 */
 			boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type>
 			get_multi_resolution_cube_raster(
-					GLRenderer &renderer);
+					GL &gl);
 
 			virtual
 			bool
@@ -453,7 +458,7 @@ namespace GPlatesOpenGL
 			 */
 			boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type>
 			get_multi_resolution_age_grid_mask(
-					GLRenderer &renderer);
+					GL &gl);
 
 			virtual
 			bool
@@ -508,7 +513,7 @@ namespace GPlatesOpenGL
 				 */
 				boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type>
 				get_normal_map(
-						GLRenderer &renderer);
+						GL &gl);
 
 			private:
 				GPlatesAppLogic::RasterLayerProxy::non_null_ptr_type d_raster_layer_proxy;
@@ -542,7 +547,7 @@ namespace GPlatesOpenGL
 			 */
 			NormalRaster::shared_ptr_type
 			get_normal_map(
-					GLRenderer &renderer,
+					GL &gl,
 					float height_field_scale_factor);
 
 			virtual
@@ -579,7 +584,7 @@ namespace GPlatesOpenGL
 			 */
 			GLReconstructedStaticPolygonMeshes::non_null_ptr_type
 			get_reconstructed_static_polygon_meshes(
-					GLRenderer &renderer,
+					GL &gl,
 					bool reconstructing_with_age_grid,
 					const double &reconstruction_time);
 
@@ -614,7 +619,7 @@ namespace GPlatesOpenGL
 			 */
 			void
 			set_reconstructing_layer_inputs(
-					GLRenderer &renderer,
+					GL &gl,
 					const std::vector< GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> > &
 							reconstructed_polygon_meshes_layer_usages,
 					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > &age_grid_layer_usage,
@@ -630,7 +635,7 @@ namespace GPlatesOpenGL
 			 */
 			void
 			set_non_reconstructing_layer_inputs(
-					GLRenderer &renderer,
+					GL &gl,
 					const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh,
 					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > &age_grid_layer_usage,
 					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<NormalMapLayerUsage> > &normal_map_layer_usage,
@@ -645,7 +650,7 @@ namespace GPlatesOpenGL
 			 */
 			boost::optional<GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type>
 			get_static_polygon_reconstructed_raster(
-					GLRenderer &renderer,
+					GL &gl,
 					const double &reconstruction_time);
 
 			virtual
@@ -686,7 +691,7 @@ namespace GPlatesOpenGL
 
 			void
 			set_other_inputs(
-					GLRenderer &renderer,
+					GL &gl,
 					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > &age_grid_layer_usage,
 					const boost::optional<GPlatesUtils::non_null_intrusive_ptr<NormalMapLayerUsage> > &normal_map_layer_usage,
 					float height_field_scale_factor,
@@ -714,7 +719,7 @@ namespace GPlatesOpenGL
 			 */
 			boost::optional<GLMultiResolutionRasterMapView::non_null_ptr_type>
 			get_multi_resolution_raster_map_view(
-					GLRenderer &renderer,
+					GL &gl,
 					const GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type &multi_resolution_map_cube_mesh,
 					const double &reconstruction_time);
 
@@ -832,8 +837,8 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Any objects that do *not* use textures, display lists, vertex buffer objects, etc
-		 * can go here, otherwise use @a ListObjects.
+		 * Any objects that do *not* use textures, vertex buffer objects, etc can go here,
+		 * otherwise use @a ListObjects.
 		 *
 		 * These objects will be shared even if two OpenGL contexts don't share list objects.
 		 *
@@ -849,8 +854,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Any objects that use textures, display lists, vertex buffer objects, etc
-		 * should go here, otherwise use @a NonListObjects.
+		 * Any objects that use textures, vertex buffer objects, etc should go here, otherwise use @a NonListObjects.
 		 */
 		struct ListObjects
 		{
@@ -883,7 +887,7 @@ namespace GPlatesOpenGL
 			 */
 			GLMultiResolutionCubeMesh::non_null_ptr_to_const_type
 			get_multi_resolution_cube_mesh(
-					GLRenderer &renderer) const;
+					GL &gl) const;
 
 			/**
 			 * Returns the multi-resolution *map* cube mesh.
@@ -894,7 +898,7 @@ namespace GPlatesOpenGL
 			 */
 			GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type
 			get_multi_resolution_map_cube_mesh(
-					GLRenderer &renderer,
+					GL &gl,
 					const GPlatesGui::MapProjection &map_projection) const;
 
 			/**
@@ -904,7 +908,7 @@ namespace GPlatesOpenGL
 			 */
 			GLFilledPolygonsGlobeView::non_null_ptr_type
 			get_filled_polygons_globe_view(
-					GLRenderer &renderer) const;
+					GL &gl) const;
 
 			/**
 			 * Returns the 2D map view filled polygons renderer.
@@ -913,16 +917,16 @@ namespace GPlatesOpenGL
 			 */
 			GLFilledPolygonsMapView::non_null_ptr_type
 			get_filled_polygons_map_view(
-					GLRenderer &renderer) const;
+					GL &gl) const;
 
 			/**
-			 * Returns the light used for surface lighting or false if not supported on run-time system.
+			 * Returns the light used for surface lighting.
 			 *
 			 * NOTE: This must be called when an OpenGL context is currently active.
 			 */
-			boost::optional<GLLight::non_null_ptr_type>
+			GLLight::non_null_ptr_type
 			get_light(
-					GLRenderer &renderer) const;
+					GL &gl) const;
 
 		private:
 			const NonListObjects &d_non_list_objects;

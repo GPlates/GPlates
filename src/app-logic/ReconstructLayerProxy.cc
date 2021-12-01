@@ -502,7 +502,7 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_topological_sections(
 
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type
 GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_static_polygon_meshes(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		bool reconstructing_with_age_grid,
 		const double &reconstruction_time)
 {
@@ -518,7 +518,7 @@ GPlatesAppLogic::ReconstructLayerProxy::get_reconstructed_static_polygon_meshes(
 	{
 		GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type reconstructed_polygon_meshes =
 				GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create(
-						renderer,
+						gl,
 						get_present_day_polygon_meshes(),
 						get_present_day_geometries(),
 						reconstruction_time,

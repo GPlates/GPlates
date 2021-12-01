@@ -63,7 +63,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 }
 
 namespace GPlatesAppLogic
@@ -249,8 +249,7 @@ namespace GPlatesAppLogic
 		 * read back to the CPU or both - the raster co-registration client actually does both.
 		 *
 		 * NOTE: Returns boost::none if the raster does not contain *numerical* data (see
-		 * @a does_raster_band_contain_numerical_data). Also returns boost::none for various errors
-		 * such as lack of OpenGL floating-point texture support on the runtime system.
+		 * @a does_raster_band_contain_numerical_data). Also returns boost::none for various errors.
 		 * Raster *visualisation* is currently handled by @a get_resolved_raster in conjunction
 		 * with "GLVisualLayers::render_raster()" - ie, handled at the visualisation tier
 		 * because this is application logic code that knows nothing about presentation (nor should it).
@@ -267,9 +266,9 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type>
 		get_multi_resolution_data_raster(
-				GPlatesOpenGL::GLRenderer &renderer)
+				GPlatesOpenGL::GL &gl)
 		{
-			return get_multi_resolution_data_raster(renderer, d_current_reconstruction_time, d_current_raster_band_name);
+			return get_multi_resolution_data_raster(gl, d_current_reconstruction_time, d_current_raster_band_name);
 		}
 
 		/**
@@ -278,10 +277,10 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type>
 		get_multi_resolution_data_raster(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const GPlatesPropertyValues::TextContent &raster_band_name)
 		{
-			return get_multi_resolution_data_raster(renderer, d_current_reconstruction_time, raster_band_name);
+			return get_multi_resolution_data_raster(gl, d_current_reconstruction_time, raster_band_name);
 		}
 
 		/**
@@ -290,10 +289,10 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type>
 		get_multi_resolution_data_raster(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const double &reconstruction_time)
 		{
-			return get_multi_resolution_data_raster(renderer, reconstruction_time, d_current_raster_band_name);
+			return get_multi_resolution_data_raster(gl, reconstruction_time, d_current_raster_band_name);
 		}
 
 		/**
@@ -302,7 +301,7 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type>
 		get_multi_resolution_data_raster(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const double &reconstruction_time,
 				const GPlatesPropertyValues::TextContent &raster_band_name);
 
@@ -326,9 +325,9 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type>
 		get_multi_resolution_data_cube_raster(
-				GPlatesOpenGL::GLRenderer &renderer)
+				GPlatesOpenGL::GL &gl)
 		{
-			return get_multi_resolution_data_cube_raster(renderer, d_current_reconstruction_time, d_current_raster_band_name);
+			return get_multi_resolution_data_cube_raster(gl, d_current_reconstruction_time, d_current_raster_band_name);
 		}
 
 		/**
@@ -337,10 +336,10 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type>
 		get_multi_resolution_data_cube_raster(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const GPlatesPropertyValues::TextContent &raster_band_name)
 		{
-			return get_multi_resolution_data_cube_raster(renderer, d_current_reconstruction_time, raster_band_name);
+			return get_multi_resolution_data_cube_raster(gl, d_current_reconstruction_time, raster_band_name);
 		}
 
 		/**
@@ -349,10 +348,10 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type>
 		get_multi_resolution_data_cube_raster(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const double &reconstruction_time)
 		{
-			return get_multi_resolution_data_cube_raster(renderer, reconstruction_time, d_current_raster_band_name);
+			return get_multi_resolution_data_cube_raster(gl, reconstruction_time, d_current_raster_band_name);
 		}
 
 		/**
@@ -361,7 +360,7 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type>
 		get_multi_resolution_data_cube_raster(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const double &reconstruction_time,
 				const GPlatesPropertyValues::TextContent &raster_band_name);
 
@@ -375,9 +374,9 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
 		get_multi_resolution_age_grid_mask(
-				GPlatesOpenGL::GLRenderer &renderer)
+				GPlatesOpenGL::GL &gl)
 		{
-			return get_multi_resolution_age_grid_mask(renderer, d_current_raster_band_name);
+			return get_multi_resolution_age_grid_mask(gl, d_current_raster_band_name);
 		}
 
 		/**
@@ -385,7 +384,7 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
 		get_multi_resolution_age_grid_mask(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const GPlatesPropertyValues::TextContent &raster_band_name);
 
 

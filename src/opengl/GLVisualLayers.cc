@@ -23,15 +23,14 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
 
 #include "GLVisualLayers.h"
 
+#include "GL.h"
 #include "GLCubeSubdivisionCache.h"
 #include "GLMultiResolutionCubeReconstructedRaster.h"
-#include "GLRenderer.h"
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/ReconstructLayerProxy.h"
@@ -108,17 +107,18 @@ GPlatesOpenGL::GLVisualLayers::make_signal_slot_connections(
 }
 
 
-boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type>
+GPlatesOpenGL::GLLight::non_null_ptr_type
 GPlatesOpenGL::GLVisualLayers::get_light(
-		GLRenderer &renderer) const
+		GL &gl) const
 {
-	return d_list_objects->get_light(renderer);
+	return d_list_objects->get_light(gl);
 }
 
 
 GPlatesOpenGL::GLVisualLayers::cache_handle_type
 GPlatesOpenGL::GLVisualLayers::render_raster(
-		GLRenderer &renderer,
+		GL &gl,
+		const GLViewProjection &view_projection,
 		const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type &resolved_raster,
 		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &source_raster_colour_palette,
 		const GPlatesGui::Colour &source_raster_modulate_colour,
@@ -136,9 +136,9 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 			gl_raster_layer.get_raster_layer_usage();
 
 	// Set the colour palette.
-	raster_layer_usage->set_raster_colour_palette(renderer, source_raster_colour_palette);
+	raster_layer_usage->set_raster_colour_palette(gl, source_raster_colour_palette);
 	// Set the modulate colour.
-	raster_layer_usage->set_raster_modulate_colour(renderer, source_raster_modulate_colour);
+	raster_layer_usage->set_raster_modulate_colour(gl, source_raster_modulate_colour);
 
 	// The age grid layer usage comes from another layer.
 	boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > age_grid_layer_usage;
@@ -173,9 +173,7 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 		std::vector< GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> >
 				reconstructed_polygon_meshes_layer_usages;
 
-		BOOST_FOREACH(
-				const GPlatesAppLogic::ReconstructLayerProxy::non_null_ptr_type &reconstruct_layer_proxy,
-				resolved_raster->get_reconstructed_polygons_layer_proxies())
+		for (const auto &reconstruct_layer_proxy : resolved_raster->get_reconstructed_polygons_layer_proxies())
 		{
 			// The reconstructed static polygon meshes layer usage comes from another layer.
 			// Get the GL layer corresponding to the layer the reconstructed polygons came from.
@@ -187,23 +185,23 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 
 		// Set/update the layer usage inputs.
 		static_polygon_reconstructed_raster_layer_usage->set_reconstructing_layer_inputs(
-				renderer,
+				gl,
 				reconstructed_polygon_meshes_layer_usages,
 				age_grid_layer_usage,
 				normal_map_layer_usage,
 				normal_map_height_field_scale_factor,
-				d_list_objects->get_light(renderer));
+				d_list_objects->get_light(gl));
 	}
 	else // *not* reconstructing raster...
 	{
 		// Set/update the layer usage inputs.
 		static_polygon_reconstructed_raster_layer_usage->set_non_reconstructing_layer_inputs(
-				renderer,
-				d_list_objects->get_multi_resolution_cube_mesh(renderer),
+				gl,
+				d_list_objects->get_multi_resolution_cube_mesh(gl),
 				age_grid_layer_usage,
 				normal_map_layer_usage,
 				normal_map_height_field_scale_factor,
-				d_list_objects->get_light(renderer));
+				d_list_objects->get_light(gl));
 	}
 
 	// Get the map raster layer usage.
@@ -221,9 +219,9 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 		// Get the raster map view.
 		boost::optional<GLMultiResolutionRasterMapView::non_null_ptr_type> multi_resolution_raster_map_view =
 				map_raster_layer_usage->get_multi_resolution_raster_map_view(
-						renderer,
+						gl,
 						// The global map cube mesh shared by all layers...
-						d_list_objects->get_multi_resolution_map_cube_mesh(renderer, *map_projection.get()),
+						d_list_objects->get_multi_resolution_map_cube_mesh(gl, *map_projection.get()),
 						resolved_raster->get_reconstruction_time());
 
 		cache_handle_type cache_handle;
@@ -231,7 +229,7 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 		//  Render the map view of raster if successful.
 		if (multi_resolution_raster_map_view)
 		{
-			multi_resolution_raster_map_view.get()->render(renderer, cache_handle);
+			multi_resolution_raster_map_view.get()->render(gl, view_projection, cache_handle);
 		}
 
 		return cache_handle;
@@ -242,7 +240,7 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 	boost::optional<GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type>
 			globe_view_reconstructed_raster =
 					static_polygon_reconstructed_raster_layer_usage->get_static_polygon_reconstructed_raster(
-							renderer,
+							gl,
 							resolved_raster->get_reconstruction_time());
 	if (globe_view_reconstructed_raster)
 	{
@@ -250,7 +248,7 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 		// We are rendering a *reconstructed* raster in 3D globe view.
 		//
 		cache_handle_type cache_handle;
-		globe_view_reconstructed_raster.get()->render(renderer, cache_handle);
+		globe_view_reconstructed_raster.get()->render(gl, view_projection, cache_handle);
 
 		return cache_handle;
 	}
@@ -259,14 +257,14 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 	// We have a regular, unreconstructed raster - although it can still be a time-dependent raster.
 	// Get the multi-resolution raster.
 	boost::optional<GLMultiResolutionRaster::non_null_ptr_type> globe_view_multi_resolution_raster =
-			raster_layer_usage->get_multi_resolution_raster(renderer);
+			raster_layer_usage->get_multi_resolution_raster(gl);
 
 	cache_handle_type cache_handle;
 
 	// Render the multi-resolution raster, if we have one, in 3D globe view.
 	if (globe_view_multi_resolution_raster)
 	{
-		globe_view_multi_resolution_raster.get()->render(renderer, cache_handle);
+		globe_view_multi_resolution_raster.get()->render(gl, view_projection, cache_handle);
 	}
 
 	return cache_handle;
@@ -275,7 +273,8 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 
 GPlatesOpenGL::GLVisualLayers::cache_handle_type
 GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
-		GLRenderer &renderer,
+		GL &gl,
+		const GLViewProjection &view_projection,
 		const GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_to_const_type &resolved_scalar_field,
 		const GPlatesViewOperations::ScalarField3DRenderParameters &render_parameters)
 {
@@ -342,10 +341,10 @@ GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
 	// We have a regular, unreconstructed scalar field - although it can still be time-dependent.
 	boost::optional<GLScalarField3D::non_null_ptr_type> scalar_field =
 			scalar_field_layer_usage->get_scalar_field_3d(
-				renderer,
+				gl,
 				const_colour_palette,
 				colour_palette_value_range,
-				d_list_objects->get_light(renderer));
+				d_list_objects->get_light(gl));
 
 	// Render the scalar field if the runtime systems supports scalar field rendering.
 
@@ -393,7 +392,8 @@ GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
 		}
 
 		scalar_field.get()->render_iso_surface(
-				renderer,
+				gl,
+				view_projection,
 				cache_handle,
 				render_parameters.get_isosurface_deviation_window_mode(),
 				render_parameters.get_isosurface_colour_mode(),
@@ -414,7 +414,8 @@ GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
 					resolved_scalar_field->get_reconstruction_time()))
 			{
 				scalar_field.get()->render_cross_sections(
-						renderer,
+						gl,
+						view_projection,
 						cache_handle,
 						cross_section_geometries,
 						render_parameters.get_cross_section_colour_mode(),
@@ -437,19 +438,21 @@ GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
 
 void
 GPlatesOpenGL::GLVisualLayers::render_filled_polygons(
-		GLRenderer &renderer,
+		GL &gl,
+		const GLViewProjection &view_projection,
 		const GLFilledPolygonsGlobeView::filled_drawables_type &filled_polygons)
 {
-	d_list_objects->get_filled_polygons_globe_view(renderer)->render(renderer, filled_polygons);
+	d_list_objects->get_filled_polygons_globe_view(gl)->render(gl, view_projection, filled_polygons);
 }
 
 
 void
 GPlatesOpenGL::GLVisualLayers::render_filled_polygons(
-		GLRenderer &renderer,
+		GL &gl,
+		const GLViewProjection &view_projection,
 		const GLFilledPolygonsMapView::filled_drawables_type &filled_polygons)
 {
-	d_list_objects->get_filled_polygons_map_view(renderer)->render(renderer, filled_polygons);
+	d_list_objects->get_filled_polygons_map_view(gl)->render(gl, view_projection, filled_polygons);
 }
 
 
@@ -473,18 +476,12 @@ GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::ScalarField3DLayerUsage(
 
 boost::optional<GPlatesOpenGL::GLScalarField3D::non_null_ptr_type>
 GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::get_scalar_field_3d(
-		GLRenderer &renderer,
+		GL &gl,
 		boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_to_const_type> colour_palette,
 		boost::optional< std::pair<double, double> > colour_palette_value_range,
 		boost::optional<GLLight::non_null_ptr_type> light)
 {
 	PROFILE_FUNC();
-
-	// If scalar field rendering is not supported then return invalid.
-	if (!GLScalarField3D::is_supported(renderer))
-	{
-		return boost::none;
-	}
 
 	if (!d_scalar_field_layer_proxy->get_scalar_field_filename() ||
 		!light)
@@ -506,7 +503,7 @@ GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::get_scalar_field_3d(
 		if (d_scalar_field)
 		{
 			if (!d_scalar_field.get()->change_scalar_field(
-					renderer,
+					gl,
 					GPlatesUtils::make_qstring(*d_scalar_field_layer_proxy->get_scalar_field_filename())))
 			{
 				// Change scalar field was unsuccessful, so rebuild.
@@ -556,7 +553,7 @@ GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::get_scalar_field_3d(
 
 		const GLScalarField3D::non_null_ptr_type scalar_field =
 				GLScalarField3D::create(
-						renderer,
+						gl,
 						GPlatesUtils::make_qstring(*d_scalar_field_layer_proxy->get_scalar_field_filename()),
 						light.get());
 
@@ -567,7 +564,7 @@ GPlatesOpenGL::GLVisualLayers::ScalarField3DLayerUsage::get_scalar_field_3d(
 	if (load_colour_palette)
 	{
 		d_scalar_field.get()->set_colour_palette(
-				renderer,
+				gl,
 				d_colour_palette.get(),
 				d_colour_palette_value_range.get());
 	}
@@ -596,7 +593,7 @@ GPlatesOpenGL::GLVisualLayers::RasterLayerUsage::RasterLayerUsage(
 
 void
 GPlatesOpenGL::GLVisualLayers::RasterLayerUsage::set_raster_colour_palette(
-		GLRenderer &renderer,
+		GL &gl,
 		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette)
 {
 	if (raster_colour_palette == d_raster_colour_palette)
@@ -614,7 +611,7 @@ GPlatesOpenGL::GLVisualLayers::RasterLayerUsage::set_raster_colour_palette(
 
 void
 GPlatesOpenGL::GLVisualLayers::RasterLayerUsage::set_raster_modulate_colour(
-		GLRenderer &renderer,
+		GL &gl,
 		const GPlatesGui::Colour &raster_modulate_colour)
 {
 	if (raster_modulate_colour == d_raster_modulate_colour)
@@ -632,7 +629,7 @@ GPlatesOpenGL::GLVisualLayers::RasterLayerUsage::set_raster_modulate_colour(
 
 boost::optional<GPlatesOpenGL::GLMultiResolutionRaster::non_null_ptr_type>
 GPlatesOpenGL::GLVisualLayers::RasterLayerUsage::get_multi_resolution_raster(
-		GLRenderer &renderer)
+		GL &gl)
 {
 	PROFILE_FUNC();
 
@@ -663,7 +660,7 @@ GPlatesOpenGL::GLVisualLayers::RasterLayerUsage::get_multi_resolution_raster(
 		if (d_visual_raster_source)
 		{
 			if (d_visual_raster_source.get()->change_raster(
-					renderer,
+					gl,
 					d_raster_layer_proxy->get_proxied_raster().get(),
 					d_raster_colour_palette.get()))
 			{
@@ -691,7 +688,7 @@ GPlatesOpenGL::GLVisualLayers::RasterLayerUsage::get_multi_resolution_raster(
 		//qDebug() << "Rebuilding GLVisualRasterSource.";
 
 		d_visual_raster_source = GLVisualRasterSource::create(
-				renderer,
+				gl,
 				d_raster_layer_proxy->get_proxied_raster().get(),
 				d_raster_colour_palette.get(),
 				d_raster_modulate_colour);
@@ -710,7 +707,7 @@ GPlatesOpenGL::GLVisualLayers::RasterLayerUsage::get_multi_resolution_raster(
 	// Update the modulate colour if it's still dirty.
 	if (d_raster_modulate_colour_dirty)
 	{
-		d_visual_raster_source.get()->change_modulate_colour(renderer, d_raster_modulate_colour);
+		d_visual_raster_source.get()->change_modulate_colour(gl, d_raster_modulate_colour);
 		d_raster_modulate_colour_dirty = false;
 	}
 
@@ -732,11 +729,10 @@ GPlatesOpenGL::GLVisualLayers::RasterLayerUsage::get_multi_resolution_raster(
 
 		const GLMultiResolutionRaster::non_null_ptr_type multi_resolution_raster =
 				GLMultiResolutionRaster::create(
-						renderer,
+						gl,
 						d_raster_layer_proxy->get_georeferencing().get(),
 						d_raster_layer_proxy->get_coordinate_transformation(),
-						d_visual_raster_source.get(),
-						GLMultiResolutionRaster::DEFAULT_TEXTURE_FILTER);
+						d_visual_raster_source.get());
 
 		d_multi_resolution_raster = multi_resolution_raster;
 	}
@@ -762,13 +758,13 @@ GPlatesOpenGL::GLVisualLayers::CubeRasterLayerUsage::CubeRasterLayerUsage(
 
 boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
 GPlatesOpenGL::GLVisualLayers::CubeRasterLayerUsage::get_multi_resolution_cube_raster(
-		GLRenderer &renderer)
+		GL &gl)
 {
 	PROFILE_FUNC();
 
 	// Get the source multi-resolution raster.
 	const boost::optional<GLMultiResolutionRaster::non_null_ptr_type> multi_resolution_raster =
-			d_raster_layer_usage->get_multi_resolution_raster(renderer);
+			d_raster_layer_usage->get_multi_resolution_raster(gl);
 
 	// If source multi-resolution raster is a different object...
 	if (d_multi_resolution_raster != multi_resolution_raster)
@@ -792,7 +788,7 @@ GPlatesOpenGL::GLVisualLayers::CubeRasterLayerUsage::get_multi_resolution_cube_r
 		// Attempt to create the multi-resolution cube raster.
 		d_multi_resolution_cube_raster =
 				GLMultiResolutionCubeRaster::create(
-						renderer,
+						gl,
 						d_multi_resolution_raster.get());
 	}
 
@@ -817,9 +813,9 @@ GPlatesOpenGL::GLVisualLayers::AgeGridLayerUsage::AgeGridLayerUsage(
 
 boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
 GPlatesOpenGL::GLVisualLayers::AgeGridLayerUsage::get_multi_resolution_age_grid_mask(
-		GLRenderer &renderer)
+		GL &gl)
 {
-	return d_age_grid_raster_layer_proxy->get_multi_resolution_age_grid_mask(renderer);
+	return d_age_grid_raster_layer_proxy->get_multi_resolution_age_grid_mask(gl);
 }
 
 
@@ -840,7 +836,7 @@ GPlatesOpenGL::GLVisualLayers::NormalMapLayerUsage::NormalMapLayerUsage(
 
 GPlatesOpenGL::GLVisualLayers::NormalMapLayerUsage::NormalRaster::shared_ptr_type
 GPlatesOpenGL::GLVisualLayers::NormalMapLayerUsage::get_normal_map(
-		GLRenderer &renderer,
+		GL &gl,
 		float height_field_scale_factor)
 {
 	// First go through the sequence of mapped normal rasters and remove any expired entries.
@@ -888,7 +884,7 @@ GPlatesOpenGL::GLVisualLayers::NormalMapLayerUsage::is_required_direct_or_indire
 
 boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type>
 GPlatesOpenGL::GLVisualLayers::NormalMapLayerUsage::NormalRaster::get_normal_map(
-		GLRenderer &renderer)
+		GL &gl)
 {
 	if (!d_raster_layer_proxy->get_proxied_raster())
 	{
@@ -916,7 +912,7 @@ GPlatesOpenGL::GLVisualLayers::NormalMapLayerUsage::NormalRaster::get_normal_map
 		if (d_normal_map_raster_source)
 		{
 			if (!d_normal_map_raster_source.get()->change_raster(
-					renderer,
+					gl,
 					d_raster_layer_proxy->get_proxied_raster().get(),
 					d_height_field_scale_factor))
 			{
@@ -940,7 +936,7 @@ GPlatesOpenGL::GLVisualLayers::NormalMapLayerUsage::NormalRaster::get_normal_map
 		//qDebug() << "Rebuilding GLNormalMapSource.";
 
 		d_normal_map_raster_source = GLNormalMapSource::create(
-				renderer,
+				gl,
 				d_raster_layer_proxy->get_proxied_raster().get(),
 				GLNormalMapSource::DEFAULT_TILE_TEXEL_DIMENSION,
 				d_height_field_scale_factor);
@@ -972,7 +968,7 @@ GPlatesOpenGL::GLVisualLayers::NormalMapLayerUsage::NormalRaster::get_normal_map
 
 		const GLMultiResolutionRaster::non_null_ptr_type multi_resolution_raster =
 				GLMultiResolutionRaster::create(
-						renderer,
+						gl,
 						d_raster_layer_proxy->get_georeferencing().get(),
 						d_raster_layer_proxy->get_coordinate_transformation(),
 						d_normal_map_raster_source.get());
@@ -993,7 +989,7 @@ GPlatesOpenGL::GLVisualLayers::NormalMapLayerUsage::NormalRaster::get_normal_map
 		// Attempt to create the multi-resolution cube raster.
 		d_multi_resolution_cube_raster =
 				GLMultiResolutionCubeRaster::create(
-						renderer,
+						gl,
 						d_multi_resolution_raster.get());
 	}
 
@@ -1010,12 +1006,12 @@ GPlatesOpenGL::GLVisualLayers::ReconstructedStaticPolygonMeshesLayerUsage::Recon
 
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type
 GPlatesOpenGL::GLVisualLayers::ReconstructedStaticPolygonMeshesLayerUsage::get_reconstructed_static_polygon_meshes(
-		GLRenderer &renderer,
+		GL &gl,
 		bool reconstructing_with_age_grid,
 		const double &reconstruction_time)
 {
 	return d_reconstructed_static_polygon_meshes_layer_proxy->get_reconstructed_static_polygon_meshes(
-			renderer,
+			gl,
 			reconstructing_with_age_grid,
 			reconstruction_time);
 }
@@ -1038,7 +1034,7 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::Stati
 
 void
 GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::set_reconstructing_layer_inputs(
-		GLRenderer &renderer,
+		GL &gl,
 		const std::vector< GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> > &
 				reconstructed_polygon_meshes_layer_usages,
 		const boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > &age_grid_layer_usage,
@@ -1059,13 +1055,13 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::set_r
 		d_reconstructed_polygon_meshes_layer_usages = reconstructed_polygon_meshes_layer_usages;
 	}
 
-	set_other_inputs(renderer, age_grid_layer_usage, normal_map_layer_usage, height_field_scale_factor, light);
+	set_other_inputs(gl, age_grid_layer_usage, normal_map_layer_usage, height_field_scale_factor, light);
 }
 
 
 void
 GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::set_non_reconstructing_layer_inputs(
-		GLRenderer &renderer,
+		GL &gl,
 		const GLMultiResolutionCubeMesh::non_null_ptr_to_const_type &multi_resolution_cube_mesh,
 		const boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > &age_grid_layer_usage,
 		const boost::optional<GPlatesUtils::non_null_intrusive_ptr<NormalMapLayerUsage> > &normal_map_layer_usage,
@@ -1084,13 +1080,13 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::set_n
 		d_multi_resolution_cube_mesh = multi_resolution_cube_mesh;
 	}
 
-	set_other_inputs(renderer, age_grid_layer_usage, normal_map_layer_usage, height_field_scale_factor, light);
+	set_other_inputs(gl, age_grid_layer_usage, normal_map_layer_usage, height_field_scale_factor, light);
 }
 
 
 void
 GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::set_other_inputs(
-		GLRenderer &renderer,
+		GL &gl,
 		const boost::optional<GPlatesUtils::non_null_intrusive_ptr<AgeGridLayerUsage> > &age_grid_layer_usage,
 		const boost::optional<GPlatesUtils::non_null_intrusive_ptr<NormalMapLayerUsage> > &normal_map_layer_usage,
 		float height_field_scale_factor,
@@ -1123,7 +1119,7 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::set_o
 	if (d_normal_map_layer_usage)
 	{
 		d_normal_map_normal_raster =
-				d_normal_map_layer_usage.get()->get_normal_map(renderer, height_field_scale_factor);
+				d_normal_map_layer_usage.get()->get_normal_map(gl, height_field_scale_factor);
 	}
 
 	d_light = light;
@@ -1132,16 +1128,10 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::set_o
 
 boost::optional<GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type>
 GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::get_static_polygon_reconstructed_raster(
-		GLRenderer &renderer,
+		GL &gl,
 		const double &reconstruction_time)
 {
 	PROFILE_FUNC();
-
-	// If *reconstructed* rasters are not supported then return invalid.
-	if (!GLMultiResolutionStaticPolygonReconstructedRaster::is_supported(renderer))
-	{
-		return boost::none;
-	}
 
 	// If:
 	//  (1) we don't have reconstructed polygon meshes, and
@@ -1166,7 +1156,7 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::get_s
 
 	// Get the source multi-resolution cube raster.
 	const boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> multi_resolution_cube_raster =
-			d_cube_raster_layer_usage->get_multi_resolution_cube_raster(renderer);
+			d_cube_raster_layer_usage->get_multi_resolution_cube_raster(gl);
 
 	// If source multi-resolution cube raster is a different object...
 	if (d_multi_resolution_cube_raster != multi_resolution_cube_raster)
@@ -1187,14 +1177,11 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::get_s
 	std::vector<GLReconstructedStaticPolygonMeshes::non_null_ptr_type> reconstructed_polygon_meshes;
 	if (!d_reconstructed_polygon_meshes_layer_usages.empty())
 	{
-		BOOST_FOREACH(
-				const GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> &
-						reconstructed_polygon_meshes_layer_usage,
-				d_reconstructed_polygon_meshes_layer_usages)
+		for (const auto &reconstructed_polygon_meshes_layer_usage : d_reconstructed_polygon_meshes_layer_usages)
 		{
 			GLReconstructedStaticPolygonMeshes::non_null_ptr_type reconstructed_polygon_meshes_in_layer =
 					reconstructed_polygon_meshes_layer_usage->get_reconstructed_static_polygon_meshes(
-							renderer,
+							gl,
 							static_cast<bool>(d_age_grid_layer_usage)/*reconstructing_with_age_grid*/,
 							reconstruction_time);
 
@@ -1216,7 +1203,7 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::get_s
 	if (d_age_grid_layer_usage)
 	{
 		// Get the age grid mask.
-		age_grid_mask_cube_raster = d_age_grid_layer_usage.get()->get_multi_resolution_age_grid_mask(renderer);
+		age_grid_mask_cube_raster = d_age_grid_layer_usage.get()->get_multi_resolution_age_grid_mask(gl);
 
 		if (!age_grid_mask_cube_raster)
 		{
@@ -1236,11 +1223,10 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::get_s
 
 	// If we are using a normal map to enhance surface lighting detail and normal maps are supported...
 	boost::optional<GLMultiResolutionCubeRaster::non_null_ptr_type> normal_map_cube_raster;
-	if (d_normal_map_layer_usage &&
-		GLMultiResolutionStaticPolygonReconstructedRaster::supports_normal_map(renderer))
+	if (d_normal_map_layer_usage)
 	{
 		// Get the normal map.
-		normal_map_cube_raster = d_normal_map_normal_raster.get()->get_normal_map(renderer);
+		normal_map_cube_raster = d_normal_map_normal_raster.get()->get_normal_map(gl);
 
 		if (!normal_map_cube_raster)
 		{
@@ -1269,7 +1255,7 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::get_s
 		{
 			d_reconstructed_raster =
 					GLMultiResolutionStaticPolygonReconstructedRaster::create(
-							renderer,
+							gl,
 							reconstruction_time,
 							d_multi_resolution_cube_raster.get(),
 							d_reconstructed_polygon_meshes,
@@ -1285,7 +1271,7 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::get_s
 
 			d_reconstructed_raster =
 					GLMultiResolutionStaticPolygonReconstructedRaster::create(
-							renderer,
+							gl,
 							reconstruction_time,
 							d_multi_resolution_cube_raster.get(),
 							d_multi_resolution_cube_mesh.get(),
@@ -1319,10 +1305,7 @@ GPlatesOpenGL::GLVisualLayers::StaticPolygonReconstructedRasterLayerUsage::remov
 	// If we're using reconstructed polygons and it depends on the layer about to be removed then stop using it.
 	if (!d_reconstructed_polygon_meshes_layer_usages.empty())
 	{
-		BOOST_FOREACH(
-				const GPlatesUtils::non_null_intrusive_ptr<ReconstructedStaticPolygonMeshesLayerUsage> &
-						reconstructed_polygon_meshes_layer_usage,
-				d_reconstructed_polygon_meshes_layer_usages)
+		for (const auto &reconstructed_polygon_meshes_layer_usage : d_reconstructed_polygon_meshes_layer_usages)
 		{
 			if (reconstructed_polygon_meshes_layer_usage->is_required_direct_or_indirect_dependency(layer_proxy_handle))
 			{
@@ -1376,7 +1359,7 @@ GPlatesOpenGL::GLVisualLayers::MapRasterLayerUsage::MapRasterLayerUsage(
 
 boost::optional<GPlatesOpenGL::GLMultiResolutionRasterMapView::non_null_ptr_type>
 GPlatesOpenGL::GLVisualLayers::MapRasterLayerUsage::get_multi_resolution_raster_map_view(
-		GLRenderer &renderer,
+		GL &gl,
 		const GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type &multi_resolution_map_cube_mesh,
 		const double &reconstruction_time)
 {
@@ -1386,7 +1369,7 @@ GPlatesOpenGL::GLVisualLayers::MapRasterLayerUsage::get_multi_resolution_raster_
 	const boost::optional<GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type>
 			reconstructed_raster =
 					d_reconstructed_raster_layer_usage->get_static_polygon_reconstructed_raster(
-							renderer,
+							gl,
 							reconstruction_time);
 
 	// If reconstructed raster is a different object...
@@ -1411,7 +1394,7 @@ GPlatesOpenGL::GLVisualLayers::MapRasterLayerUsage::get_multi_resolution_raster_
 			// make use (or need) a cube reconstructed raster.
 			GLMultiResolutionCubeRasterInterface::non_null_ptr_type multi_resolution_cube_reconstructed_raster =
 					GLMultiResolutionCubeReconstructedRaster::create(
-							renderer,
+							gl,
 							d_reconstructed_raster.get());
 
 			//qDebug() << "Rebuilding GLMultiResolutionRasterMapView for reconstructed raster.";
@@ -1419,7 +1402,7 @@ GPlatesOpenGL::GLVisualLayers::MapRasterLayerUsage::get_multi_resolution_raster_
 			// Attempt to create the multi-resolution raster map view.
 			d_multi_resolution_raster_map_view =
 					GLMultiResolutionRasterMapView::create(
-							renderer,
+							gl,
 							multi_resolution_cube_reconstructed_raster.get(),
 							multi_resolution_map_cube_mesh.get());
 		}
@@ -1429,7 +1412,7 @@ GPlatesOpenGL::GLVisualLayers::MapRasterLayerUsage::get_multi_resolution_raster_
 
 	// Try getting the regular (unreconstructed) raster.
 	const boost::optional<GLMultiResolutionRaster::non_null_ptr_type> raster =
-			d_raster_layer_usage->get_multi_resolution_raster(renderer);
+			d_raster_layer_usage->get_multi_resolution_raster(gl);
 
 	// If (unreconstructed) raster is a different object...
 	if (d_raster != raster)
@@ -1451,7 +1434,7 @@ GPlatesOpenGL::GLVisualLayers::MapRasterLayerUsage::get_multi_resolution_raster_
 			// be shared with the globe (non-map) view where the central meridian is always zero.
 			GLMultiResolutionCubeRasterInterface::non_null_ptr_type multi_resolution_cube_raster =
 					GLMultiResolutionCubeRaster::create(
-							renderer,
+							gl,
 							d_raster.get());
 
 			//qDebug() << "Rebuilding GLMultiResolutionRasterMapView for raster.";
@@ -1459,7 +1442,7 @@ GPlatesOpenGL::GLVisualLayers::MapRasterLayerUsage::get_multi_resolution_raster_
 			// Attempt to create the multi-resolution raster map view.
 			d_multi_resolution_raster_map_view =
 					GLMultiResolutionRasterMapView::create(
-							renderer,
+							gl,
 							multi_resolution_cube_raster.get(),
 							multi_resolution_map_cube_mesh.get());
 		}
@@ -1678,10 +1661,9 @@ GPlatesOpenGL::GLVisualLayers::GLLayer::remove_references_to_layer(
 	// If other layers reference our layer usages (that are being removed) then they'll remove
 	// their references when it's their turn and when all is done there should be no more
 	// references to those layer usages being removed.
-	BOOST_FOREACH(
+	for (
 			// NOTE: This must be a reference and not a copy...
-			boost::optional<GPlatesUtils::non_null_intrusive_ptr<LayerUsage> > &layer_usage_opt,
-			d_layer_usages)
+			auto &layer_usage_opt : d_layer_usages)
 	{
 		if (!layer_usage_opt)
 		{
@@ -1749,7 +1731,7 @@ GPlatesOpenGL::GLVisualLayers::GLLayers::remove_layer(
 
 	// Iterate over all remaining layers and within each layer remove any individual layer usages
 	// that reference the layer proxy about to be removed.
-	BOOST_FOREACH(const layer_map_type::value_type &gl_layer_map_entry, d_layer_map)
+	for (const auto &gl_layer_map_entry : d_layer_map)
 	{
 		const GLLayer::non_null_ptr_type &gl_layer = gl_layer_map_entry.second;
 		gl_layer->remove_references_to_layer(layer_proxy_to_be_removed);
@@ -1768,13 +1750,13 @@ GPlatesOpenGL::GLVisualLayers::ListObjects::ListObjects(
 
 GPlatesOpenGL::GLMultiResolutionCubeMesh::non_null_ptr_to_const_type
 GPlatesOpenGL::GLVisualLayers::ListObjects::get_multi_resolution_cube_mesh(
-		GLRenderer &renderer) const
+		GL &gl) const
 {
 	if (!d_multi_resolution_cube_mesh)
 	{
 		d_multi_resolution_cube_mesh =
 				GLMultiResolutionCubeMesh::non_null_ptr_to_const_type(
-						GLMultiResolutionCubeMesh::create(renderer));
+						GLMultiResolutionCubeMesh::create(gl));
 	}
 
 	return d_multi_resolution_cube_mesh.get();
@@ -1783,7 +1765,7 @@ GPlatesOpenGL::GLVisualLayers::ListObjects::get_multi_resolution_cube_mesh(
 
 GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type
 GPlatesOpenGL::GLVisualLayers::ListObjects::get_multi_resolution_map_cube_mesh(
-		GLRenderer &renderer,
+		GL &gl,
 		const GPlatesGui::MapProjection &map_projection) const
 {
 	if (!d_multi_resolution_map_cube_mesh)
@@ -1791,12 +1773,12 @@ GPlatesOpenGL::GLVisualLayers::ListObjects::get_multi_resolution_map_cube_mesh(
 		d_multi_resolution_map_cube_mesh =
 				GLMultiResolutionMapCubeMesh::non_null_ptr_type(
 						GLMultiResolutionMapCubeMesh::create(
-								renderer,
+								gl,
 								map_projection));
 	}
 
 	// Update the map projection if it's changed.
-	d_multi_resolution_map_cube_mesh.get()->update_map_projection(renderer, map_projection);
+	d_multi_resolution_map_cube_mesh.get()->update_map_projection(gl, map_projection);
 
 	return d_multi_resolution_map_cube_mesh.get();
 }
@@ -1804,15 +1786,15 @@ GPlatesOpenGL::GLVisualLayers::ListObjects::get_multi_resolution_map_cube_mesh(
 
 GPlatesOpenGL::GLFilledPolygonsGlobeView::non_null_ptr_type
 GPlatesOpenGL::GLVisualLayers::ListObjects::get_filled_polygons_globe_view(
-		GLRenderer &renderer) const
+		GL &gl) const
 {
 	if (!d_filled_polygons_globe_view)
 	{
 		d_filled_polygons_globe_view =
 				GLFilledPolygonsGlobeView::create(
-						renderer,
-						get_multi_resolution_cube_mesh(renderer),
-						get_light(renderer));
+						gl,
+						get_multi_resolution_cube_mesh(gl),
+						get_light(gl));
 	}
 
 	return d_filled_polygons_globe_view.get();
@@ -1821,31 +1803,26 @@ GPlatesOpenGL::GLVisualLayers::ListObjects::get_filled_polygons_globe_view(
 
 GPlatesOpenGL::GLFilledPolygonsMapView::non_null_ptr_type
 GPlatesOpenGL::GLVisualLayers::ListObjects::get_filled_polygons_map_view(
-		GLRenderer &renderer) const
+		GL &gl) const
 {
 	if (!d_filled_polygons_map_view)
 	{
-		d_filled_polygons_map_view = GLFilledPolygonsMapView::create(renderer);
+		d_filled_polygons_map_view = GLFilledPolygonsMapView::create(gl);
 	}
 
 	return d_filled_polygons_map_view.get();
 }
 
 
-boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type>
+GPlatesOpenGL::GLLight::non_null_ptr_type
 GPlatesOpenGL::GLVisualLayers::ListObjects::get_light(
-		GLRenderer &renderer) const
+		GL &gl) const
 {
-	if (!GLLight::is_supported(renderer))
-	{
-		return boost::none;
-	}
-
 	// Create light if first time called.
 	if (!d_light)
 	{
-		d_light = GLLight::create(renderer);
+		d_light = GLLight::create(gl);
 	}
 
-	return d_light;
+	return d_light.get();
 }
