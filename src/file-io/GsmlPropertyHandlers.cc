@@ -538,7 +538,7 @@ GPlatesFileIO::GsmlPropertyHandlers::handle_occurrence_property(
 		XQuery::evaluate(
 				xml_data,
 				"/gsml:occurrence/gsml:MappedFeature/gsml:shape",
-				boost::bind(&XQuery::is_empty,_1));
+				boost::bind(&XQuery::is_empty, boost::placeholders::_1));
 #endif
 
 	std::vector<QByteArray> results = 

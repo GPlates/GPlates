@@ -326,7 +326,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			*d_geometry_operation_state_ptr,
 			*d_modify_geometry_state,
 			*d_measure_distance_state_ptr,
-			boost::bind(&canvas_tool_status_message, boost::ref(*this), _1),
+			boost::bind(&canvas_tool_status_message, boost::ref(*this), boost::placeholders::_1),
 			get_view_state(),
 			*this);
 
