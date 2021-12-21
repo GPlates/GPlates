@@ -274,6 +274,8 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_reconstruct_visual_layer_params(
 		const ReconstructVisualLayerParams &params)
 {
+	using namespace boost::placeholders;  // For _1, _2, etc
+
 	d_render_params.show_vgp = boost::bind(&ReconstructVisualLayerParams::show_vgp, &params, _1, _2);
 	d_render_params.vgp_draw_circular_error = params.get_vgp_draw_circular_error();
 	d_render_params.fill_polygons = params.get_fill_polygons();
