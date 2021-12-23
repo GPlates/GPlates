@@ -209,9 +209,9 @@ SET(CPACK_SOURCE_STRIP_FILES FALSE)
 #   This is a list of patterns, e.g., /CVS/;/\\.svn/;\\.swp$;\\.#;/#;.*~;cscope.*
 #
 # Skip:
-# - directories starting with '.', and
+# - directories and files starting with '.' (eg, '.git/' directory or '.git' file, and '.gitattributes' and '.gitignore'), and
 # - directories named '__pycache__'.
-SET(CPACK_SOURCE_IGNORE_FILES "/\\.[^/]+/" "/__pycache__/")
+SET(CPACK_SOURCE_IGNORE_FILES "/\\.[^/]+" "/__pycache__/")
 
 #   CPACK_VERBATIM_VARIABLES - If set to TRUE, values of variables prefixed with CPACK_ will be escaped before being written
 #                              to the configuration files, so that the cpack program receives them exactly as they were specified.

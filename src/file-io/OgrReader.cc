@@ -1097,6 +1097,8 @@ GPlatesFileIO::OgrReader::read_features(
 				QString feature_string = d_attributes[index].toString();
 				if (GPlatesFileIO::OgrUtils::feature_type_field_is_gpgim_type(d_model_to_attribute_map))
 				{
+					// Feature type string is expected to be the full GPGIM feature type (with or without "gpml:").
+					//
 					// We've loosened the GPGIM loading constraints to allow any feature type
 					// (even if it's not defined in the GPGIM). So there's no need to check it's in the GPGIM.
 					// It still has to be in "<namespace_alias>:<name>" format though (but that's checked below).
@@ -1104,6 +1106,8 @@ GPlatesFileIO::OgrReader::read_features(
 				}
 				else
 				{
+					// Feature type string is expected to be a 2-letter data type code (see OgrUtils::build_feature_map()),
+					// which we map to the full GPGIM feature type here.
 					OgrUtils::feature_map_const_iterator result = feature_map.find(feature_string);
 					if (result != feature_map.end()) {
 						d_feature_type_string = *result;
