@@ -1,0 +1,66 @@
+#
+# In any directory
+#
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+Debug
+Release
+MinSizeRel
+RelWithDebInfo
+*.sln
+*.ncb
+*.suo
+*.vcproj*
+*.vcxproj*
+*.user
+*.dir
+*.a
+*.exe
+*.deb
+*.dmg
+*.zip
+*.bz2
+*.cmake
+GPlates_log.txt
+
+#
+# /
+#
+/INSTALL
+/gmon.out
+/_CPack_Packages/
+/bin/
+/install_manifest*.txt
+/.vs/
+
+#
+# /cmake/modules/
+#
+# Exception to '*.cmake' above...
+!/cmake/modules/*.cmake
+# ...except for CMake generated...
+/cmake/modules/PackageGeneratorOverrides.cmake
+
+#
+# /doc/
+#
+/doc/doxygen.conf
+/doc/html
+/doc/*.tmp
+/doc/*.eps
+/doc/*.png
+
+#
+# /src/
+#
+/src/gplates*/
+/src/pygplates*/
+# CMake generated...
+/src/__init__.py
+/src/gplates.entitlements
+/src/qt.conf
+/src/global/License.cc
+/src/global/Version.cc
+/src/global/config.h

@@ -13,18 +13,9 @@
 ###############
 # Find OpenGL #
 #
+# Note: CMake 3.8 introduced import targets for OpenGL.
+#       So since our min CMake requirement exceeds this we don't need to add imported targets ourself.
 find_package(OpenGL REQUIRED)
-# CMake 3.8 introduced import targets for OpenGL. For prior versions we need to add the imported target ourself.
-if (NOT TARGET OpenGL::GL)
-	add_library(OpenGL::GL IMPORTED INTERFACE)
-	set_target_properties(OpenGL::GL PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "${OPENGL_INCLUDE_DIR}")
-	set_target_properties(OpenGL::GL PROPERTIES INTERFACE_LINK_LIBRARIES "${OPENGL_LIBRARIES}")
-endif()
-if (NOT TARGET OpenGL::GLU)
-	# We leave the GLU library target empty since the GLU library and include path are already handled by
-	# 'OPENGL_LIBRARIES' and 'OPENGL_INCLUDE_DIR'. We're only creating this because we need to provide a 'OpenGL::GLU' target.
-	add_library(OpenGL::GLU IMPORTED INTERFACE)
-endif()
 
 #############
 # Find GLEW #
@@ -230,9 +221,6 @@ find_package(Boost 1.35 REQUIRED
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
-if(CMAKE_VERSION VERSION_LESS 3.7)
-	set(CMAKE_INCLUDE_CURRENT_DIR ON)
-endif()
 # Require Qt 5.6 for the Qt::AA_EnableHighDpiScaling attribute (Bionic, our minimum supported Ubuntu, uses Qt 5.9).
 find_package(Qt5 5.6 REQUIRED COMPONENTS Core Gui Network OpenGL Svg Widgets Xml XmlPatterns)
 
@@ -478,13 +466,16 @@ add_subdirectory(pygplates)
 #
 # Also note that this avoids the problem of compile errors, when C++14 features are used (eg, by CGAL 5),
 # due to forcing C++11 by specifying '-std=c++11' directly on the compiler command-line.
+target_compile_features(gplates-lib PUBLIC cxx_std_11)
+target_compile_features(pygplates PUBLIC cxx_std_11)
 #
-# Note: This is also set in ConfigDefault.cmake (for CMake < 3.8) as the variable CMAKE_CXX_STANDARD.
-#       So that code can be removed once our minimum CMake requirement is 3.8.
-if (NOT CMAKE_VERSION VERSION_LESS 3.8)
-	target_compile_features(gplates-lib PUBLIC cxx_std_11)
-	target_compile_features(pygplates PUBLIC cxx_std_11)
-endif()
+# We also want to disable compiler-specific extensions (eg, for C++11 on GNU compilers we want '-std=c++11' instead of '-std=g++11').
+# However CMake policy CMP0128 is a bit confusing about how to do this using 'CMAKE_CXX_EXTENSIONS'.
+# It seems to indicate that, prior to CMake 3.22, 'CMAKE_CXX_EXTENSIONS' is ignored unless 'CMAKE_CXX_STANDARD' is also set.
+# So we'll go ahead and also include the old pre-CMake-3.8 approach to setting C++11 via target properties.
+# Apparently CMake will use the stronger requirement of cxx_std_11 and CXX_STANDARD=11 (which is just C++11 anyway).
+set_target_properties(gplates-lib PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
+set_target_properties(pygplates PROPERTIES CXX_STANDARD 11 CXX_STANDARD_REQUIRED ON CXX_EXTENSIONS OFF)
 
 
 #

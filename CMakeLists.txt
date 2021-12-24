@@ -1,13 +1,12 @@
-# Modern CMake requires version 3.
+# Modern CMake requires CMake version 3.
 #
-# Ubuntu Xenial (16.04 LTS) provides CMake 3.5.1, so we'll make this the minimum requirement.
-# Also CMake 3.5 introduced imported targets for the Boost library.
+# Ubuntu Bionic (18.04 LTS) provides CMake 3.10, so we'll make this the minimum requirement.
 #
 # Note: There's a "..." between min and max versions which means we need to use the minimum version
 #       but are safe to use with policies (see 'cmake_policy' command) up to the maximum version.
 #       Specifying a maximum version means we don't need 'cmake_policy' calls for running CMake versions
 #       in that [min, max] range. Note that CMake version prior to 3.12 apparently ignore the "...<max>" part.
-cmake_minimum_required(VERSION 3.5...3.21 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.10...3.22 FATAL_ERROR)
 
 # Set the minimum macOS version we support.
 # We select 10.13 because Qt5 currently supports 10.13+.

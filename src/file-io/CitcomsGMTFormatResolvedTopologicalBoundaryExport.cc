@@ -522,38 +522,58 @@ namespace GPlatesFileIO
 			};
 
 			/**
-			 * Formats GMT header using GPlates8 old feature id style that looks like:
-			 *
-			 * "> NAM;gplates_00_00_0000_NAM_101_   1.0_-999.0_PP_0001_000_"
+			 * Formats GMT header for Polygons (plate/slab/network)
 			 */
-			class GMTOldFeatureIdStyleHeader :
+			class ResolvedTopologyHeader :
 					public GMTExportHeader
 			{
 			public:
-				GMTOldFeatureIdStyleHeader(
-						const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+				ResolvedTopologyHeader(
+						const GPlatesModel::FeatureHandle::const_weak_ref &resolved_topology_feature,
+						ResolvedTopologyType resolved_topology_type)
 				{
 					// Get an OldPlatesHeader that contains attributes that are updated
 					// with GPlates properties where available.
 					GPlatesFileIO::OldPlatesHeader old_plates_header;
 					GPlatesFileIO::PlatesLineFormatHeaderVisitor plates_header_visitor;
 					plates_header_visitor.get_old_plates_header(
-							feature,
+							resolved_topology_feature,
 							old_plates_header,
 							false/*append_feature_id_to_geographic_description*/);
 
 					GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type gpml_old_plates_header =
 							old_plates_header.create_gpml_old_plates_header();
 
+					d_header_line = ' ';
+
+					QString unk = "Unknown";
+
 					QString name;
-					if (!get_feature_name(name, feature, gpml_old_plates_header.get()))
+					if ( get_feature_name(name, resolved_topology_feature, gpml_old_plates_header.get()) )
 					{
-						return;
+						d_header_line.append( name );
 					}
+					else { d_header_line.append( unk ); }
 
-					const QString old_feature_id = gpml_old_plates_header->old_feature_id().qstring();
+					if (resolved_topology_type == SLAB_POLYGON_TYPE)
+					{
+						QString flat;
+						d_header_line.append( " # slabFlatLying: " );
+						if ( get_feature_slab_flat_lying(flat, resolved_topology_feature) )
+						{
+							d_header_line.append( flat );
+						}
+						else { d_header_line.append( unk ); }
 
-					d_header_line = ' ' + name + ';' + old_feature_id;
+
+						QString flat_lying_depth;
+						d_header_line.append( " # slabFlatLyingDepth: " );
+						if ( get_feature_slab_flat_lying_depth(flat_lying_depth, resolved_topology_feature) )
+						{
+							d_header_line.append( flat_lying_depth );
+						}
+						else { d_header_line.append( unk ); }
+					}
 				}
 
 
@@ -570,19 +590,24 @@ namespace GPlatesFileIO
 			};
 
 			/**
-			 * Formats an export GMT header:
+			 * Formats an export GMT header for subsegments:
 			 *
 			 * ">sL # name: Trenched_on NAP_PAC_1 # ... # polygon: NAM # use_reverse: no # identity: GPlates-blah-blah-blah"
+			 *
+			 * TODO: Determine if CitcomS actually uses the 'polygon' field.
+			 *       If it doesn't then don't export it (since it restricts us from outputing *shared* sub-segments
+			 *       that remove duplication because it ties the segment to one of the polygons sharing it)
+			 *       and then look into exporting non-duplicated sub-segments.
 			 */
-			class PlatePolygonSubSegmentHeader :
+			class SubSegmentHeader :
 					public GMTExportHeader
 			{
 			public:
-				PlatePolygonSubSegmentHeader(
-						const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-						const GPlatesModel::FeatureHandle::const_weak_ref &platepolygon_feature,
-						const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment,
-						const SubSegmentType sub_segment_type)
+				SubSegmentHeader(
+						const GPlatesModel::FeatureHandle::const_weak_ref &sub_segment_feature,
+						const GPlatesModel::FeatureHandle::const_weak_ref &resolved_topology_feature,
+						const SubSegment &sub_segment,
+						ResolvedTopologyType resolved_topology_type)
 				{
 					d_header_line = "> ";
 
@@ -590,7 +615,7 @@ namespace GPlatesFileIO
 
 					// Feature name
 					QString feature_name;
-					if (!get_feature_name( feature_name, feature))
+					if (!get_feature_name( feature_name, sub_segment_feature))
 					{
 						feature_name = unk;
 					}
@@ -599,8 +624,8 @@ namespace GPlatesFileIO
 
 					// Get a two-letter PLATES data type code from the subsegment type 
 					const QString feature_type_code = get_feature_type_code(
-							feature,
-							sub_segment_type);
+							sub_segment_feature,
+							sub_segment.sub_segment_type);
 
 					// start up the header line
 					d_header_line =
@@ -612,26 +637,29 @@ namespace GPlatesFileIO
 					// Continue adding props and values to the header line
 					//
 
-					QString age;
-					d_header_line.append( " # subductionZoneAge: " );
-					if ( get_feature_sz_age(age, feature) )
+					if (resolved_topology_type == PLATE_POLYGON_TYPE ||
+						resolved_topology_type == NETWORK_POLYGON_TYPE)
 					{
-						d_header_line.append( age );
-					}
-					else { d_header_line.append( unk ); }
+						QString age;
+						d_header_line.append( " # subductionZoneAge: " );
+						if ( get_feature_sz_age(age, sub_segment_feature) )
+						{
+							d_header_line.append( age );
+						}
+						else { d_header_line.append( unk ); }
 
-					QString convergence;
-					d_header_line.append( " # subductionZoneConvergence: " );
-					if ( get_feature_sz_convergence(convergence, feature) )
-					{
-						d_header_line.append( convergence );
+						QString convergence;
+						d_header_line.append( " # subductionZoneConvergence: " );
+						if ( get_feature_sz_convergence(convergence, sub_segment_feature) )
+						{
+							d_header_line.append( convergence );
+						}
+						else { d_header_line.append( unk ); }
 					}
-					else { d_header_line.append( unk ); }
-
 
 					QString dip;
 					d_header_line.append( " # subductionZoneDeepDip: " );
-					if ( get_feature_sz_dip(dip, feature) )
+					if ( get_feature_sz_dip(dip, sub_segment_feature) )
 					{
 						d_header_line.append( dip );
 					}
@@ -640,7 +668,7 @@ namespace GPlatesFileIO
 
 					QString depth;
 					d_header_line.append( " # subductionZoneDepth: " );
-					if ( get_feature_sz_depth(depth, feature) )
+					if ( get_feature_sz_depth(depth, sub_segment_feature) )
 					{
 						d_header_line.append( depth );
 					}
@@ -648,7 +676,7 @@ namespace GPlatesFileIO
 
 					QString system;
 					d_header_line.append( " # subductionZoneSystem: " );
-					if ( get_feature_sz_system(system, feature) )
+					if ( get_feature_sz_system(system, sub_segment_feature) )
 					{
 						d_header_line.append( system );
 					}
@@ -656,39 +684,65 @@ namespace GPlatesFileIO
 
 					QString order;
 					d_header_line.append( " # subductionZoneSystemOrder: " );
-					if ( get_feature_sz_system_order(order, feature) )
+					if ( get_feature_sz_system_order(order, sub_segment_feature) )
 					{
 						d_header_line.append( order );
 					}
 					else { d_header_line.append( unk ); }
 
-
-					QString rhea_fault;
-					d_header_line.append( " # rheaFault: " );
-					if ( get_feature_rhea_fault(rhea_fault, feature) )
+					if (resolved_topology_type == PLATE_POLYGON_TYPE ||
+						resolved_topology_type == NETWORK_POLYGON_TYPE)
 					{
-						d_header_line.append( rhea_fault );
+						QString rhea_fault;
+						d_header_line.append( " # rheaFault: " );
+						if ( get_feature_rhea_fault(rhea_fault, sub_segment_feature) )
+						{
+							d_header_line.append( rhea_fault );
+						}
+						else { d_header_line.append( unk ); }
 					}
-					else { d_header_line.append( unk ); }
 
-
-					// Plate Polygon name 
-					QString platepolygon_feature_name;
-					if (!get_feature_name( platepolygon_feature_name, platepolygon_feature))
+					if (resolved_topology_type == SLAB_POLYGON_TYPE)
 					{
-						platepolygon_feature_name = unk;
+						QString flat;
+						d_header_line.append( " # slabFlatLying: " );
+						if ( get_feature_slab_flat_lying(flat, sub_segment_feature) )
+						{
+							d_header_line.append( flat );
+						}
+						else { d_header_line.append( unk ); }
+
+
+						QString flat_lying_depth;
+						d_header_line.append( " # slabFlatLyingDepth: " );
+						if ( get_feature_slab_flat_lying_depth(flat_lying_depth, sub_segment_feature) )
+						{
+							d_header_line.append( flat_lying_depth );
+						}
+						else { d_header_line.append( unk ); }
+					}
+
+
+					// Resolved topology name 
+					QString resolved_topology_feature_name;
+					if (!get_feature_name( resolved_topology_feature_name, resolved_topology_feature))
+					{
+						resolved_topology_feature_name = unk;
 					}
 
 					d_header_line.append( " # polygon: ");
-					d_header_line.append( platepolygon_feature_name );
+					d_header_line.append( resolved_topology_feature_name );
 
-					d_header_line.append( " # use_reverse: ");
-					d_header_line.append( sub_segment.get_use_reverse() ? "yes" : "no");
-
+					if (resolved_topology_type == PLATE_POLYGON_TYPE ||
+						resolved_topology_type == NETWORK_POLYGON_TYPE)
+					{
+						d_header_line.append(" # use_reverse: ");
+						d_header_line.append( sub_segment.sub_segment->get_use_reverse() ? "yes" : "no");
+					}
 
 					// Feature id 
 					QString id;
-					if (!get_feature_id( id, feature) ) { id = unk; }
+					if (!get_feature_id( id, sub_segment_feature) ) { id = unk; }
 					d_header_line.append( " # identity: ");
 					d_header_line.append( id );
 
@@ -708,242 +762,6 @@ namespace GPlatesFileIO
 
 
 			};
-
-
-			/**
-			 * Formats GMT header for Slab Polygon Sub Segments
-			 * ">sL # name: Trenched_on NAP_PAC_1 # ... # polygon: NAM # use_reverse: no # identity: GPlates-blah-blah-blah"
-			 */
-			class SlabPolygonSubSegmentHeader :
-					public GMTExportHeader
-			{
-			public:
-				SlabPolygonSubSegmentHeader(
-						const GPlatesModel::FeatureHandle::const_weak_ref &feature,
-						const GPlatesModel::FeatureHandle::const_weak_ref &platepolygon_feature,
-						const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment,
-						const SubSegmentType sub_segment_type)
-				{
-					d_header_line = "> ";
-
-					QString unk = "Unknown";
-
-					// Feature name
-					QString feature_name;
-					if (!get_feature_name( feature_name, feature))
-					{
-						feature_name = unk;
-					}
-
-					//qDebug() << "SlabPolygonSubSegmentHeader: name =" << feature_name;
-
-					// Get a two-letter PLATES data type code from the subsegment type 
-					const QString feature_type_code = get_feature_type_code(
-							feature,
-							sub_segment_type);
-
-					// start up the header line
-					d_header_line =
-							feature_type_code +
-							" # name: " +
-							feature_name;
-
-					// continue adding props and values to the header line
-					QString dip;
-					d_header_line.append( " # subductionZoneDeepDip: " );
-					if ( get_feature_sz_dip(dip, feature) )
-					{
-						d_header_line.append( dip );
-					}
-					else { d_header_line.append( unk ); }
-
-
-					QString depth;
-					d_header_line.append( " # subductionZoneDepth: " );
-					if ( get_feature_sz_depth(depth, feature) )
-					{
-						d_header_line.append( depth );
-					}
-					else { d_header_line.append( unk ); }
-
-					QString system;
-					d_header_line.append( " # subductionZoneSystem: " );
-					if ( get_feature_sz_system(system, feature) )
-					{
-						d_header_line.append( system );
-					}
-					else { d_header_line.append( unk ); }
-
-					QString order;
-					d_header_line.append( " # subductionZoneSystemOrder: " );
-					if ( get_feature_sz_system_order(order, feature) )
-					{
-						d_header_line.append( order );
-					}
-					else { d_header_line.append( unk ); }
-
-
-					QString flat;
-					d_header_line.append( " # slabFlatLying: " );
-					if ( get_feature_slab_flat_lying(flat, feature) )
-					{
-						d_header_line.append( flat );
-					}
-					else { d_header_line.append( unk ); }
-
-
-					QString flat_lying_depth;
-					d_header_line.append( " # slabFlatLyingDepth: " );
-					if ( get_feature_slab_flat_lying_depth(flat_lying_depth, feature) )
-					{
-						d_header_line.append( flat_lying_depth );
-					}
-					else { d_header_line.append( unk ); }
-
-					// Plate Polygon name 
-					QString platepolygon_feature_name;
-					if (!get_feature_name( platepolygon_feature_name, platepolygon_feature))
-					{
-						platepolygon_feature_name = unk;
-					}
-
-					d_header_line.append( " # polygon: ");
-					d_header_line.append( platepolygon_feature_name );
-
-					// Feature id 
-					QString id;
-					if (!get_feature_id( id, feature) ) { id = unk; }
-					d_header_line.append( " # identity: ");
-					d_header_line.append( id );
-
-				}
-
-				virtual
-				void
-				get_feature_header_lines(
-						std::vector<QString>& header_lines) const
-				{
-					header_lines.push_back(d_header_line);
-				}
-
-			private:
-				QString d_header_line;
-			};
-
-			/**
-			 * Formats GMT header for Slab Polygons
-			 */
-			class SlabPolygonStyleHeader :
-					public GMTExportHeader
-			{
-			public:
-				SlabPolygonStyleHeader(
-						const GPlatesModel::FeatureHandle::const_weak_ref &feature)
-				{
-
-					// Get an OldPlatesHeader that contains attributes that are updated
-					// with GPlates properties where available.
-					GPlatesFileIO::OldPlatesHeader old_plates_header;
-					GPlatesFileIO::PlatesLineFormatHeaderVisitor plates_header_visitor;
-					plates_header_visitor.get_old_plates_header(
-							feature,
-							old_plates_header,
-							false/*append_feature_id_to_geographic_description*/);
-
-					GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type gpml_old_plates_header =
-							old_plates_header.create_gpml_old_plates_header();
-
-					d_header_line = ' ';
-
-					QString unk = "Unknown";
-
-					QString name;
-					if ( get_feature_name(name, feature, gpml_old_plates_header.get()) )
-					{
-						d_header_line.append( name );
-					}
-					else { d_header_line.append( unk ); }
-
-					QString flat;
-					d_header_line.append( " # slabFlatLying: " );
-					if ( get_feature_slab_flat_lying(flat, feature) )
-					{
-						d_header_line.append( flat );
-					}
-					else { d_header_line.append( unk ); }
-
-
-					QString flat_lying_depth;
-					d_header_line.append( " # slabFlatLyingDepth: " );
-					if ( get_feature_slab_flat_lying_depth(flat_lying_depth, feature) )
-					{
-						d_header_line.append( flat_lying_depth );
-					}
-					else { d_header_line.append( unk ); }
-
-
-				}
-
-				virtual
-				void
-				get_feature_header_lines(
-						std::vector<QString>& header_lines) const
-				{
-					header_lines.push_back(d_header_line);
-				}
-
-			private:
-				QString d_header_line;
-			};
-
-
-			/**
-			 * Formats GMT header for Network 
-			 */
-			class NetworkBoundaryStyleHeader :
-					public GMTExportHeader
-			{
-			public:
-				NetworkBoundaryStyleHeader(
-						const GPlatesModel::FeatureHandle::const_weak_ref &feature)
-				{
-
-					// Get an OldPlatesHeader that contains attributes that are updated
-					// with GPlates properties where available.
-					GPlatesFileIO::OldPlatesHeader old_plates_header;
-					GPlatesFileIO::PlatesLineFormatHeaderVisitor plates_header_visitor;
-					plates_header_visitor.get_old_plates_header(
-							feature,
-							old_plates_header,
-							false/*append_feature_id_to_geographic_description*/);
-
-					GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type gpml_old_plates_header =
-							old_plates_header.create_gpml_old_plates_header();
-
-					d_header_line = ' ';
-
-					QString unk = "Unknown";
-
-					QString name;
-					if ( get_feature_name(name, feature, gpml_old_plates_header.get()) )
-					{
-						d_header_line.append( name );
-					}
-					else { d_header_line.append( unk ); }
-				}
-
-				virtual
-				void
-				get_feature_header_lines(
-						std::vector<QString>& header_lines) const
-				{
-					header_lines.push_back(d_header_line);
-				}
-
-			private:
-				QString d_header_line;
-			};
-
 
 
 			/**
@@ -1006,13 +824,11 @@ namespace GPlatesFileIO
 
 void
 GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_resolved_topological_boundaries(
-		const resolved_geom_seq_type &resolved_topological_geometries,
-		CitcomsResolvedTopologicalBoundaryExportImpl::ResolvedTopologicalBoundaryExportType export_type,
+		const resolved_topologies_seq_type &resolved_topologies,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const referenced_files_collection_type &active_reconstruction_files,
-		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
+		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id)
 {
 	// Open the file.
 	QFile output_file(file_info.filePath());
@@ -1027,63 +843,38 @@ GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_resolve
 	// This is because this format is specifically used as input to CitcomS which expects
 	// a certain format.
 	//
-	// TODO: Keep this CitcomS-specific format separate from a generalised GMT format
-	// (which will later be handled by the OGR library - just like Shapefiles).
-	//
 
 	// Used to write in GMT format.
 	GMTFeatureExporter geom_exporter(output_file);
 
-	// Iterate through the resolved topological geometries and write to output.
-	resolved_geom_seq_type::const_iterator resolved_geom_iter;
-	for (resolved_geom_iter = resolved_topological_geometries.begin();
-		resolved_geom_iter != resolved_topological_geometries.end();
-		++resolved_geom_iter)
+	// Iterate through the resolved topologies and write to output.
+	for (const ResolvedTopology &resolved_topology : resolved_topologies)
 	{
-		const GPlatesAppLogic::ReconstructionGeometry *resolved_geom = *resolved_geom_iter;
-
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> boundary_polygon =
-				GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_polygon(resolved_geom);
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_polygon(
+						resolved_topology.resolved_geom);
 		// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
 		if (!boundary_polygon)
 		{
 			continue;
 		}
 
-		boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
-				GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(resolved_geom);
-		if (!feature_ref || !feature_ref->is_valid())
+		boost::optional<GPlatesModel::FeatureHandle::weak_ref> resolved_topology_feature_ref =
+				GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
+						resolved_topology.resolved_geom);
+		if (!resolved_topology_feature_ref ||
+			!resolved_topology_feature_ref->is_valid())
 		{
 			continue;
 		}
 
-		// Choose the style of GMT header based on the type of topological polygon export.
-		boost::scoped_ptr<GMTExportHeader> gmt_export_header;
-		switch (export_type)
-		{
-		case ALL_POLYGON_EXPORT_TYPE:
-			// The file with all polygons (regardless of type) uses a different
-			// header format than the files with specific types of polygons.
-			gmt_export_header.reset(new GMTOldFeatureIdStyleHeader(feature_ref.get()));
-			break;
-		case PLATE_POLYGON_EXPORT_TYPE:
-			gmt_export_header.reset(new GMTOldFeatureIdStyleHeader(feature_ref.get()));
-			break;
-		case SLAB_POLYGON_EXPORT_TYPE:
-			gmt_export_header.reset(new SlabPolygonStyleHeader(feature_ref.get()));
-			break;
-		case NETWORK_POLYGON_EXPORT_TYPE:
-			gmt_export_header.reset(new NetworkBoundaryStyleHeader(feature_ref.get()));
-			break;
-		default:
-			// Shouldn't get here.
-			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-			continue;
-		}
+		const ResolvedTopologyHeader gmt_export_header(
+				resolved_topology_feature_ref.get(),
+				resolved_topology.resolved_topology_type);
 
 		// Write out the resolved topological boundary.
 		geom_exporter.print_gmt_header_and_geometry(
-				*gmt_export_header,
+				gmt_export_header,
 				boundary_polygon.get());
 	}
 }
@@ -1092,12 +883,10 @@ GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_resolve
 void
 GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_sub_segments(
 		const sub_segment_group_seq_type &sub_segments,
-		CitcomsResolvedTopologicalBoundaryExportImpl::SubSegmentExportType export_type,
 		const QFileInfo& file_info,
 		const referenced_files_collection_type &referenced_files,
 		const referenced_files_collection_type &active_reconstruction_files,
-		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
-		const double &reconstruction_time)
+		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id)
 {
 	// Open the file.
 	QFile output_file(file_info.filePath());
@@ -1112,82 +901,43 @@ GPlatesFileIO::CitcomsGMTFormatResolvedTopologicalBoundaryExport::export_sub_seg
 	// This is because this format is specifically used as input to CitcomS which expects
 	// a certain format.
 	//
-	// TODO: Keep this CitcomS-specific format separate from a generalised GMT format
-	// (which will later be handled by the OGR library - just like Shapefiles).
-	//
 
 	// Used to write in GMT format.
 	GMTFeatureExporter geom_exporter(output_file);
 
 	// Iterate through the subsegment groups and write them out.
-	sub_segment_group_seq_type::const_iterator sub_segment_group_iter;
-	for (sub_segment_group_iter = sub_segments.begin();
-		sub_segment_group_iter != sub_segments.end();
-		++sub_segment_group_iter)
+	for (const SubSegmentGroup &sub_segment_group : sub_segments)
 	{
-		const SubSegmentGroup &sub_segment_group = *sub_segment_group_iter;
-
 		// The topological geometry feature.
 		boost::optional<GPlatesModel::FeatureHandle::weak_ref> resolved_geom_feature_ref =
 				GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(
-						sub_segment_group.resolved_topology);
+						sub_segment_group.resolved_topology.resolved_geom);
 		if (!resolved_geom_feature_ref || !resolved_geom_feature_ref->is_valid())
 		{
 			continue;
 		}
 
 		// Iterate through the subsegment geometries of the current resolved topological geometry.
-		sub_segment_ptr_seq_type::const_iterator sub_segment_iter;
-		for (sub_segment_iter = sub_segment_group.sub_segments.begin();
-			sub_segment_iter != sub_segment_group.sub_segments.end();
-			++sub_segment_iter)
+		for (const SubSegment &sub_segment : sub_segment_group.sub_segments)
 		{
-			const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment *sub_segment = *sub_segment_iter;
-
 			// The subsegment feature.
 			const GPlatesModel::FeatureHandle::const_weak_ref subsegment_feature_ref =
-					sub_segment->get_feature_ref();
+					sub_segment.sub_segment->get_feature_ref();
 			if (!subsegment_feature_ref.is_valid())
 			{
 				continue;
 			}
 
-			// Choose the style of GMT header based on the type of subsegment type.
-			boost::scoped_ptr<GMTExportHeader> gmt_export_header;
-			switch (export_type)
-			{
-			case ALL_SUB_SEGMENTS_EXPORT_TYPE:
-				// The file with all subsegments (regardless of type) uses a different
-				// header format than the files with specific types of subsegments.
-				gmt_export_header.reset(new GMTOldFeatureIdStyleHeader(subsegment_feature_ref));
-				break;
-			case PLATE_POLYGON_SUB_SEGMENTS_EXPORT_TYPE:
-			case NETWORK_POLYGON_SUB_SEGMENTS_EXPORT_TYPE:
-				gmt_export_header.reset(
-						new PlatePolygonSubSegmentHeader(
-								subsegment_feature_ref,
-								resolved_geom_feature_ref.get(),
-								*sub_segment,
-								get_sub_segment_type(subsegment_feature_ref, reconstruction_time)));
-				break;
-			case SLAB_POLYGON_SUB_SEGMENTS_EXPORT_TYPE:
-				gmt_export_header.reset(
-						new SlabPolygonSubSegmentHeader(
-								subsegment_feature_ref,
-								resolved_geom_feature_ref.get(),
-								*sub_segment,
-								get_slab_sub_segment_type(subsegment_feature_ref, reconstruction_time)));
-				break;
-			default:
-				// Shouldn't get here.
-				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-				continue;
-			}
+			const SubSegmentHeader gmt_export_header(
+					subsegment_feature_ref,
+					resolved_geom_feature_ref.get(),
+					sub_segment,
+					sub_segment_group.resolved_topology.resolved_topology_type);
 
 			// Write out the subsegment.
 			geom_exporter.print_gmt_header_and_geometry(
-					*gmt_export_header,
-					sub_segment->get_sub_segment_geometry());
+					gmt_export_header,
+					sub_segment.sub_segment->get_sub_segment_geometry());
 		}
 	}
 }

@@ -80,10 +80,18 @@ Here we briefly describe how to install dependencies using Macports (http://www.
 
 A note about Python
 
-You may need to explicitly specify the location of the Macports Python otherwise the system Python will instead be found by CMake.
+You may need to explicitly specify the Macports Python location. Otherwise the Python framework bundled inside
+the XCode app will instead be found by CMake, which likely has a different Python minor version than the Macports Python
+you've compiled/activated Macports Boost for, causing CMake to be unable to find boost_python3[x].
 For example, if you installed Python 3.8 via Macports (and are running CMake 3.12 or greater) then build GPlates by typing (see BUILD.OSX):
 
-    cmake -D Python3_ROOT=/opt/local/Library/Frameworks/Python.framework/Python.framework/Versions/3.8 .
+    cmake -D Python3_ROOT=/opt/local/Library/Frameworks/Python.framework/Versions/3.8 .
+    make
+
+...or, equivalently, set the environment variable Python3_ROOT and then build GPlates:
+
+    export Python3_ROOT_DIR=/opt/local/Library/Frameworks/Python.framework/Versions/3.8
+    cmake .
     make
 
 A note about GDAL

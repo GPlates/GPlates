@@ -363,6 +363,31 @@ namespace GPlatesQtWidgets
 		 */
 		boost::optional<GPlatesModel::FeatureType> d_previously_selected_feature_type;
 		
+
+		////////////////////////////////////////////////////////////////////////////////////////////
+		//
+		// NOTE: Please order these widgets in the tab order for the common properties page
+		//       (ie, the desired order of focus as the user hits the TAB key).
+		//       It's possible, but difficult, to set up programmatically with QWidget::setTabOrder.
+		//       When tab order is not explicitly set then order of widget construction is used instead.
+		//
+		////////////////////////////////////////////////////////////////////////////////////////////
+
+		/**
+		 * Allows the user to pick the property that will store the geometry.
+		 */
+		ChoosePropertyWidget *d_listwidget_geometry_destinations;
+
+		/**
+		 * The reconstruction method widget (containing label and combobox).
+		 */
+		QWidget *d_recon_method_widget;
+
+		/**
+		 * reconstruction method combox
+		 */
+		QComboBox *d_recon_method_combobox;
+		
 		/**
 		 * The custom edit widget for reconstruction. Memory managed by Qt.
 		 */
@@ -377,6 +402,16 @@ namespace GPlatesQtWidgets
 		 * The custom edit widget for 'relative plate' id (for MotionPath feature type). Memory managed by Qt.
 		 */
 		EditPlateIdWidget *d_relative_plate_id_widget;
+		
+		/**
+		 * left plate id
+		 */
+		EditPlateIdWidget *d_left_plate_id;
+		
+		/**
+		 * right plate id
+		 */
+		EditPlateIdWidget *d_right_plate_id;
 
 		/**
 		 * The custom edit widget for GmlTimePeriod. Memory managed by Qt.
@@ -388,6 +423,11 @@ namespace GPlatesQtWidgets
 		 * Memory managed by Qt.
 		 */
 		EditStringWidget *d_name_widget;
+
+		/**
+		 *  Checkbox for creating a conjugate feature.                                                                    
+		 */
+		QCheckBox *d_create_conjugate_feature_checkbox;
 		
 		/**
 		 * Button added to buttonbox for the final feature creation step; takes the place
@@ -395,6 +435,7 @@ namespace GPlatesQtWidgets
 		 * Memory managed by Qt. This is a member so that we can enable and disable it as appropriate.
 		 */
 		QPushButton *d_button_create;
+
 
 		/**
 		 * The widget that allows the user to select the feature type of the new feature.
@@ -415,26 +456,6 @@ namespace GPlatesQtWidgets
 		ChooseFeatureCollectionWidget *d_choose_feature_collection_widget;
 
 		/**
-		 * The reconstruction method widget (containing label and combobox).
-		 */
-		QWidget *d_recon_method_widget;
-
-		/**
-		 * reconstruction method combox
-		 */
-		QComboBox *d_recon_method_combobox;
-		
-		/**
-		 * right plate id
-		 */
-		EditPlateIdWidget *d_right_plate_id;
-		
-		/**
-		* left plate id
-		*/
-		EditPlateIdWidget *d_left_plate_id;
-
-		/**
 		 * Abstract base widget for custom properties widgets.                                                                    
 		 * 
 		 * This widget handles special-case properties for specific feature types.
@@ -453,18 +474,8 @@ namespace GPlatesQtWidgets
 		 * can be modified and added for the conjugate feature, if one is to be created.
 		 */
 		CreateFeaturePropertiesPage *d_create_conjugate_properties_page;
-		
-		/**
-		 * Allows the user to pick the property that will store the geometry.
-		 */
-		ChoosePropertyWidget *d_listwidget_geometry_destinations;
 
 		GPlatesAppLogic::ReconstructMethod::Type d_recon_method;
-
-		/**
-		 *  Checkbox for creating a conjugate feature.                                                                    
-		 */
-		QCheckBox *d_create_conjugate_feature_checkbox;
 
 		/**
 		 * The index of the current stacked widget page.

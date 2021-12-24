@@ -298,27 +298,6 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${GPlates_BINARY_DIR}/bin")
 # Set default location for built (not installed) shared libraries on non-Windows platforms.
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${GPlates_BINARY_DIR}/bin")
 
-# Set the minimum C++ language standard to C++11.
-#
-# std::auto_ptr was deprecated in C++11 (and removed in C++17), so we now use std::unique_ptr introduced in C++11.
-# Also GDAL 2.3 and above require C++11.
-# And CGAL 5.x requires C++14, and this requirement is transitively passed to us via the CGAL::CGAL target
-# where CMake chooses the stricter requirement between our C++11 and CGAL's C++14 (which is C++14).
-#
-# Also note that this avoids the problem of compile errors, when C++14 features are used (eg, by CGAL 5),
-# due to forcing C++11 by specifying '-std=c++11' directly on the compiler command-line.
-#
-# Note: This is also set using 'target_compile_features()' in src/CMakeLists.txt (for CMake >= 3.8).
-#       So this can be removed once our minimum CMake requirement is 3.8.
-if (CMAKE_VERSION VERSION_LESS 3.8)
-	set(CMAKE_CXX_STANDARD 11)
-	set(CMAKE_CXX_STANDARD_REQUIRED ON)
-endif()
-
-# Disable compiler-specific extensions.
-# Eg, for C++11 on GNU compilers we want '-std=c++11' instead of '-std=g++11'.
-set(CMAKE_CXX_EXTENSIONS OFF)
-
 # Order the include directories so that directories which are in the source or build tree always
 # come before directories outside the project.
 set(CMAKE_INCLUDE_DIRECTORIES_PROJECT_BEFORE true)

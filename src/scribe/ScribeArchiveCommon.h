@@ -71,7 +71,7 @@ namespace GPlatesScribe
 		/**
 		 * Version of the *binary* archive format.
 		 *
-		 * This version gets incremented when modifications are made to the text archive format
+		 * This version gets incremented when modifications are made to the binary archive format
 		 * that break forward compatibility (when newly created archives cannot be read by older
 		 * archive readers built into older versions of GPlates).
 		 */

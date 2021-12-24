@@ -123,6 +123,8 @@ Changes since 2.2:
        * This also affected raster export (which uses rectangular map projection) where square sections would be missing from exported raster.
      * Fixed regional raster not getting exported with same extents as imported raster.
        * No longer change left and right longitude extents of imported raster when they are already in range [-360, 360].
+   * Fixed exporting CitcomS topological segments using a header format that CitcomS is unable to pre-process:
+     * This resulted in missing subduction polarities, for example.
    * Fixed dateline wrapping parameter not getting used for export to OGRGMT format.
    * Fixed one GROT file getting saved with the contents of another GROT file.
      * And also crashing when trying to save the first GROT file after unloading the second one.
