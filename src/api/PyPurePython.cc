@@ -131,7 +131,7 @@ export_pure_python_api()
 	// (2) add the file to the 'src/qt-resources/python.qrc' file,
 	// (3) add a call to 'export_pure_python_code()' below and use the ':/' prefix in the filename
 	//     (signals a Qt resource) plus the file's path relative to the 'src/qt-resources/' directory,
-	// (4) add/commit the changes to Subversion.
+	// (4) add/commit the changes.
 	//
 	// Note that since the pure python code is part of the 'pygplates' module, its source code
 	// does not need to prefix 'pygplates'. if it calls the GPlates python API.

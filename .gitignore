@@ -33,7 +33,7 @@ GPlates_log.txt
 /_CPack_Packages/
 /bin/
 /install_manifest*.txt
-/.vs/
+/.vs*
 
 #
 # /cmake/modules/

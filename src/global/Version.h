@@ -75,25 +75,6 @@ namespace GPlatesGlobal
 		 */
 		unsigned int
 		get_pyGPlates_revision();
-
-
-		/**
-		* Returns the source code control revision number.
-		*
-		* Returns an empty string if either GPLATES_PUBLIC_RELEASE is true (official public release), or
-		* there was an error retrieving the revision number.
-		*/
-		QString
-		get_working_copy_version_number();
-
-		/**
-		* Returns the name of the branch from which this was compiled.
-		*
-		* Returns an empty string if either GPLATES_PUBLIC_RELEASE is true (official public release), or
-		* there was an error retrieving the branch name.
-		*/
-		QString
-		get_working_copy_branch_name();
 	}
 }
 

@@ -264,26 +264,6 @@ find_package(PROJ REQUIRED)
 include (Utils)
 
 
-# Get the Subversion revision details (except for public releases) at the root GPlates source directory.
-#
-# We use ${GPlates_WC_*} which evaluate to empty strings for public releases (or if Subversion package not found).
-if (NOT GPLATES_PUBLIC_RELEASE)
-	find_package(Subversion)
-	if (SUBVERSION_FOUND)
-		if (CMAKE_VERSION VERSION_LESS 3.13)
-			Subversion_WC_INFO(${GPlates_SOURCE_DIR} GPlates)
-		else()
-			# CMake 3.13 added the IGNORE_SVN_FAILURE option which is useful to ignore errors due to Subversion not
-			# finding a working copy (eg, the '.svn' directory is missing due to exporting source code).
-			Subversion_WC_INFO(${GPlates_SOURCE_DIR} GPlates IGNORE_SVN_FAILURE)
-		endif()
-		# The branch name is the last part of the part of the working-copy URL.
-		if (GPlates_WC_URL)
-			string(REGEX MATCH "[^/]*$" GPlates_WC_BRANCH_NAME ${GPlates_WC_URL})
-		endif()
-	endif()
-endif()
-
 # Generate the version source file.
 #
 # This uses the ${GPlates_VERSION} set by project(), and ${GPlates_WC_*} queried from Subversion.

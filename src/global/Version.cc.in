@@ -73,15 +73,3 @@ GPlatesGlobal::Version::get_pyGPlates_revision()
 {
 	return @PYGPLATES_REVISION@;
 }
-
-QString
-GPlatesGlobal::Version::get_working_copy_version_number()
-{
-	return QString("@GPlates_WC_LAST_CHANGED_REV@");
-}
-
-QString
-GPlatesGlobal::Version::get_working_copy_branch_name()
-{
-	return QString("@GPlates_WC_BRANCH_NAME@");
-}

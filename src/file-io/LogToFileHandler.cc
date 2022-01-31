@@ -34,7 +34,6 @@
 
 #include "file-io/ErrorOpeningFileForWritingException.h"
 
-#include "global/config.h"  // GPLATES_PUBLIC_RELEASE
 #include "global/Version.h"
 
 #include "utils/Environment.h"
@@ -118,10 +117,6 @@ GPlatesFileIO::LogToFileHandler::LogToFileHandler(
 	// Print message with timestamp and version so we know what made this log.
 	*d_log_stream << "Log file created on " << QDateTime::currentDateTime().toString() << " by GPlates "
 			<< GPlatesGlobal::Version::get_GPlates_version()
-#if !defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
-			<< " (build:" << GPlatesGlobal::Version::get_working_copy_version_number()
-			<< " " << GPlatesGlobal::Version::get_working_copy_branch_name() << ")"
-#endif
 #if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
 			<< Qt::endl;
 #else
@@ -144,10 +139,6 @@ GPlatesFileIO::LogToFileHandler::LogToFileHandler(
 
 	*d_log_stream << "Logging to console started at " << QDateTime::currentDateTime().toString() << " by GPlates "
 			<< GPlatesGlobal::Version::get_GPlates_version()
-#if !defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
-			<< " (build:" << GPlatesGlobal::Version::get_working_copy_version_number()
-			<< " " << GPlatesGlobal::Version::get_working_copy_branch_name() << ")"
-#endif
 #if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
 			<< Qt::endl;
 #else
