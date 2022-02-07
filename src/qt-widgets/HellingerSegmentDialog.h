@@ -31,7 +31,7 @@
 #include <QItemDelegate> // for spinbox delegate
 #include <QStandardItemModel>
 
-#include "HellingerSegmentDialogUi.h"
+#include "ui_HellingerSegmentDialogUi.h"
 #include "HellingerDialog.h"
 #include "HellingerModel.h"
 

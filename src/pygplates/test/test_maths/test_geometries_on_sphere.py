@@ -308,9 +308,14 @@ class PolylineOnSphereCase(unittest.TestCase):
         self.assertEquals(
                 list(pygplates.PolylineOnSphere(pygplates.PolylineOnSphere(self.points)).get_points()),
                 self.points)
+        # When a polygon ring gets converted to a polyline the last/first ring vertex is added to create the last polyline arc.
+        # Hence the polyline has an extra vertex.
         self.assertEquals(
-                list(pygplates.PolylineOnSphere(pygplates.PolygonOnSphere(self.points)).get_points()),
+                list(pygplates.PolylineOnSphere(pygplates.PolygonOnSphere(self.points)).get_points())[:-1],
                 self.points)
+        self.assertEquals(
+                pygplates.PolylineOnSphere(pygplates.PolygonOnSphere(self.points))[-1],
+                self.points[0])
     
     def test_convert_geometry(self):
         # Need at least two points.
@@ -337,9 +342,10 @@ class PolylineOnSphereCase(unittest.TestCase):
                 == pygplates.PolylineOnSphere(
                     pygplates.PolylineOnSphere(pygplates.PointOnSphere(1, 0, 0))))
         # Convert polygon to polyline.
+        # Note that conversion from polygon to polyline gains an extra vertex (to generate last->first arc).
         self.assertTrue(
                 pygplates.PolylineOnSphere(
-                        [pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(1, 0, 0)])
+                        [pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(1, 0, 0)])
                 == pygplates.PolylineOnSphere(
                     pygplates.PolygonOnSphere(pygplates.PointOnSphere(1, 0, 0))))
     
@@ -351,21 +357,24 @@ class PolylineOnSphereCase(unittest.TestCase):
         # Should work on any GeometryOnSphere type.
         joined_polylines = pygplates.PolylineOnSphere.join(
                 [pygplates.PointOnSphere((0,10)),
-                    pygplates.PolygonOnSphere([(20,8), (10,8), (0,8)])],
+                    # Note: When converted to polyline, the first and last vertices will be (0,8)...
+                    pygplates.PolygonOnSphere([(0,8), (20,8), (10,8)])],
                 math.radians(2.1),
                 pygplates.PolylineConversion.convert_to_polyline)
         self.assertTrue(len(joined_polylines) == 1)
         self.assertTrue(isinstance(joined_polylines[0], pygplates.PolylineOnSphere))
         joined_polylines = pygplates.PolylineOnSphere.join(
                 [pygplates.MultiPointOnSphere([(0,0), (0,10)]),
-                    pygplates.PolygonOnSphere([(20,8), (10,8), (0,8)])],
+                    # Note: When converted to polyline, the first and last vertices will be (0,8)...
+                    pygplates.PolygonOnSphere([(0,8), (20,8), (10,8)])],
                 math.radians(2.1),
                 pygplates.PolylineConversion.convert_to_polyline)
         self.assertTrue(len(joined_polylines) == 1)
         self.assertTrue(isinstance(joined_polylines[0], pygplates.PolylineOnSphere))
         joined_polylines = pygplates.PolylineOnSphere.join(
                 [pygplates.MultiPointOnSphere([(0,0), (0,10)]),
-                    pygplates.PolygonOnSphere([(20,8), (10,8), (0,8)])],
+                    # Note: When converted to polyline, the first and last vertices will be (0,8)...
+                    pygplates.PolygonOnSphere([(0,8), (20,8), (10,8)])],
                 math.radians(0.1),
                 pygplates.PolylineConversion.convert_to_polyline)
         self.assertTrue(len(joined_polylines) == 2)
@@ -797,8 +806,11 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertEquals(self.points, list(self.polygon.get_points()))
      
     def test_convert_polygon_to_polyline(self):
-        polyline = pygplates.PolylineOnSphere(self.polygon.get_points())
-        self.assertEquals(list(polyline.get_points()), list(self.polygon.get_points()))
+        polyline1 = pygplates.PolylineOnSphere(self.polygon.get_points())
+        polyline2 = pygplates.PolylineOnSphere(self.polygon)
+		# Note that conversion from polygon to polyline gains an extra vertex (to generate last->first arc).
+        self.assertEquals(list(polyline1.get_points())[:-1], list(self.polygon.get_points()))
+        self.assertEquals(list(polyline2.get_points())[:-1], list(self.polygon.get_points()))
     
     def test_arcs_iter(self):
         iter(self.polygon.get_segments())

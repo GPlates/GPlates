@@ -40,8 +40,6 @@
 #include "property-values/GeoTimeInstant.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -684,5 +682,3 @@ export_geo_time_instant()
 	GPlatesApi::ConversionGPlatesApiGeoTimeInstant();
 	GPlatesApi::ConversionGPlatesPropertyValuesGeoTimeInstant();
 }
-
-#endif // GPLATES_NO_PYTHON

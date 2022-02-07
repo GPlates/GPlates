@@ -37,95 +37,37 @@
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
 
-#include "global/Constants.h"
-#include "global/LogException.h"
+#include "global/Version.h"
 
-
-#if !defined(GPLATES_NO_PYTHON)
 
 namespace bp = boost::python;
-
-
-namespace GPlatesApi
-{
-	namespace
-	{
-		unsigned int
-		convert_version_string_to_unsigned_int(
-				const char *version_string,
-				const char *error_message)
-		{
-			bool ok;
-			const int version = QString(version_string).toInt(&ok);
-			if (!ok ||
-				version < 0)
-			{
-				throw GPlatesGlobal::LogException(GPLATES_EXCEPTION_SOURCE, error_message);
-			}
-
-			return version;
-		}
-	}
-}
 
 
 unsigned int
 GPlatesApi::Version::get_imported_major()
 {
-	static boost::optional<unsigned int> major;
-	if (!major)
-	{
-		major = convert_version_string_to_unsigned_int(
-				GPlatesGlobal::GPlatesVersionMajor,
-				"Api::Version: major version should be a non-negative integer.");
-	}
-
-	return major.get();
+	return GPlatesGlobal::Version::get_GPlates_version_major();
 }
 
 
 unsigned int
 GPlatesApi::Version::get_imported_minor()
 {
-	static boost::optional<unsigned int> minor;
-	if (!minor)
-	{
-		minor = convert_version_string_to_unsigned_int(
-				GPlatesGlobal::GPlatesVersionMinor,
-				"Api::Version: minor version should be a non-negative integer.");
-	}
-
-	return minor.get();
+	return GPlatesGlobal::Version::get_GPlates_version_minor();
 }
 
 
 unsigned int
 GPlatesApi::Version::get_imported_patch()
 {
-	static boost::optional<unsigned int> patch;
-	if (!patch)
-	{
-		patch = convert_version_string_to_unsigned_int(
-				GPlatesGlobal::GPlatesVersionPatch,
-				"Api::Version: patch version should be a non-negative integer.");
-	}
-
-	return patch.get();
+	return GPlatesGlobal::Version::get_GPlates_version_patch();
 }
 
 
 unsigned int
 GPlatesApi::Version::get_imported_revision()
 {
-	static boost::optional<unsigned int> revision;
-	if (!revision)
-	{
-		revision = convert_version_string_to_unsigned_int(
-				GPlatesGlobal::PygplatesRevision,
-				"Api::Version: revision should be a non-negative integer.");
-	}
-
-	return revision.get();
+	return GPlatesGlobal::Version::get_pyGPlates_revision();
 }
 
 
@@ -167,14 +109,14 @@ export_version()
 			"has been incremented for each API change. So it can be used to ensure new API additions are "
 			"present in the imported pyGPlates library.\n"
 			"| For example, if we are using a new API function that was added in this revision (which is "
-			<< GPlatesGlobal::PygplatesRevision <<
+			<< GPlatesGlobal::Version::get_pyGPlates_revision() <<
 			") then we can ensure we are using a sufficient API version by checking "
 			"this at the beginning of our script:\n"
 			"\n"
 			"::\n"
 			"\n"
 			"  if pygplates.Version.get_imported_version() < pygplates.Version("
-			<< GPlatesGlobal::PygplatesRevision <<
+			<< GPlatesGlobal::Version::get_pyGPlates_revision() <<
 			"):\n"
 			"      print 'PyGPlates version %s is not supported' % "
 			"pygplates.Version.get_imported_version()\n"
@@ -185,29 +127,31 @@ export_version()
 			"  print 'imported pyGPlates version: %s' % pygplates.Version.get_imported_version()\n"
 			"\n"
 			"...which for pyGPlates revision "
-			<< GPlatesGlobal::PygplatesRevision <<
+			<< GPlatesGlobal::Version::get_pyGPlates_revision() <<
 			" (associated with GPlates version "
-			<< GPlatesGlobal::GPlatesVersion <<
+			<< GPlatesGlobal::Version::get_GPlates_version().toStdString() <<
 			") will print ``"
-			<< GPlatesGlobal::PygplatesRevision << " (GPlates " << GPlatesGlobal::GPlatesVersion <<
+			<< GPlatesGlobal::Version::get_pyGPlates_revision() << " (GPlates "
+			<< GPlatesGlobal::Version::get_GPlates_version().toStdString() <<
 			")``. However, note that the associated GPlates version is only printed "
 			"when using :meth:`get_imported_version`. So the following example only prints the "
 			"revision number ``"
-			<< GPlatesGlobal::PygplatesRevision <<
+			<< GPlatesGlobal::Version::get_pyGPlates_revision() <<
 			"``:\n"
 			"::\n"
 			"\n"
 			"  print 'PyGPlates version: %s' % pygplates.Version("
-			<< GPlatesGlobal::PygplatesRevision <<
+			<< GPlatesGlobal::Version::get_pyGPlates_revision() <<
 			")\n"
 			"\n"
 			"There is also a ``pygplates.__version__`` string equal to the concatenation of the GPlates "
 			"version and the pyGPlates revision of the imported pyGPlates library. For pyGPlates revision "
-			<< GPlatesGlobal::PygplatesRevision <<
+			<< GPlatesGlobal::Version::get_pyGPlates_revision() <<
 			" (associated with GPlates version "
-			<< GPlatesGlobal::GPlatesVersion <<
+			<< GPlatesGlobal::Version::get_GPlates_version().toStdString() <<
 			") this would be ``'"
-			<< GPlatesGlobal::GPlatesVersion << "." << GPlatesGlobal::PygplatesRevision <<
+			<< GPlatesGlobal::Version::get_GPlates_version().toStdString() << "."
+			<< GPlatesGlobal::Version::get_pyGPlates_revision() <<
 			"'``.\n";
 
 	std::stringstream version_init_docstring_stream;
@@ -219,12 +163,12 @@ export_version()
 			"  :type revision: int\n"
 			"\n"
 			"  To check if the imported pyGPlates library is revision "
-			<< GPlatesGlobal::PygplatesRevision <<
+			<< GPlatesGlobal::Version::get_pyGPlates_revision() <<
 			" or greater:\n"
 			"  ::\n"
 			"\n"
 			"    if pygplates.Version.get_imported_version() < pygplates.Version("
-			<< GPlatesGlobal::PygplatesRevision <<
+			<< GPlatesGlobal::Version::get_pyGPlates_revision() <<
 			"):\n"
 			"        print 'PyGPlates version %s is not supported' % "
 			"pygplates.Version.get_imported_version()\n";
@@ -242,12 +186,12 @@ export_version()
 			"  :rtype: :class:`Version`\n"
 			"\n"
 			"  To check if the imported pyGPlates library is revision "
-			<< GPlatesGlobal::PygplatesRevision <<
+			<< GPlatesGlobal::Version::get_pyGPlates_revision() <<
 			" or greater:\n"
 			"  ::\n"
 			"\n"
 			"    if pygplates.Version.get_imported_version() < pygplates.Version("
-			<< GPlatesGlobal::PygplatesRevision <<
+			<< GPlatesGlobal::Version::get_pyGPlates_revision() <<
 			"):\n"
 			"        print 'PyGPlates version %s is not supported' % "
 			"pygplates.Version.get_imported_version()\n";
@@ -299,5 +243,3 @@ export_version()
 							QString::number(GPlatesApi::Version::get_imported_revision()));
 
 }
-
-#endif // GPLATES_NO_PYTHON

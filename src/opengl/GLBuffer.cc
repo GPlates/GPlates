@@ -67,8 +67,8 @@ const GPlatesOpenGL::GLBuffer::access_type GPlatesOpenGL::GLBuffer::ACCESS_WRITE
 const GPlatesOpenGL::GLBuffer::access_type GPlatesOpenGL::GLBuffer::ACCESS_READ_WRITE = GL_READ_WRITE_ARB;
 
 
-std::auto_ptr<GPlatesOpenGL::GLBuffer>
-GPlatesOpenGL::GLBuffer::create_as_auto_ptr(
+std::unique_ptr<GPlatesOpenGL::GLBuffer>
+GPlatesOpenGL::GLBuffer::create_as_unique_ptr(
 		GLRenderer &renderer,
 		const buffers_type &buffer_types)
 {
@@ -85,19 +85,19 @@ GPlatesOpenGL::GLBuffer::create_as_auto_ptr(
 	if (buffer_types.test(VERTEX_BUFFER) &&
 		!capabilities.buffer.gl_ARB_vertex_buffer_object)
 	{
-		return std::auto_ptr<GPlatesOpenGL::GLBuffer>(
-				GLBufferImpl::create_as_auto_ptr(renderer));
+		return std::unique_ptr<GPlatesOpenGL::GLBuffer>(
+				GLBufferImpl::create_as_unique_ptr(renderer));
 	}
 
 	if (buffer_types.test(PIXEL_BUFFER) &&
 		!capabilities.buffer.gl_ARB_pixel_buffer_object)
 	{
-		return std::auto_ptr<GPlatesOpenGL::GLBuffer>(
-				GLBufferImpl::create_as_auto_ptr(renderer));
+		return std::unique_ptr<GPlatesOpenGL::GLBuffer>(
+				GLBufferImpl::create_as_unique_ptr(renderer));
 	}
 
-	return std::auto_ptr<GPlatesOpenGL::GLBuffer>(
-			GLBufferObject::create_as_auto_ptr(renderer, buffer_types));
+	return std::unique_ptr<GPlatesOpenGL::GLBuffer>(
+			GLBufferObject::create_as_unique_ptr(renderer, buffer_types));
 }
 
 

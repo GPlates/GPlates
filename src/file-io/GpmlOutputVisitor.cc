@@ -31,17 +31,15 @@
 #include <vector>
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
+#include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
 #include <QDir>
 #include <QFile>
-#include <QProcess>
-#include <QtCore/QUuid>
-#include <QtGlobal> 
 #include <QLocale>
+#include <QtGlobal> 
 
 #include "ErrorOpeningFileForWritingException.h"
 #include "ErrorOpeningPipeToGzipException.h"
-#include "ExternalProgram.h"
 
 #include "model/FeatureHandle.h"
 #include "model/FeatureRevision.h"
@@ -108,31 +106,6 @@
 
 namespace
 {
-	/**
-	 * Replace the q_file_ptr's filename with a unique temporary .gpml filename.
-	 */
-	void
-	set_temporary_filename(
-		boost::shared_ptr<QFile> q_file_ptr)
-	{
-		if (!q_file_ptr)
-		{
-			return;
-		}
-		// I'm using a uuid to generate a unique name... is this overkill?
-		QUuid uuid = QUuid::createUuid();
-		QString uuid_string = uuid.toString();
-
-		// The uuid string has braces around it, so remove them. 
-		uuid_string.remove(0,1);
-		uuid_string.remove(uuid_string.length()-1,1);
-
-		QFileInfo file_info(*q_file_ptr);
-
-		// And don't forget to put ".gpml" at the end. 
-		q_file_ptr->setFileName(file_info.absolutePath() + QDir::separator() + uuid_string + ".gpml");
-	}
-
 	typedef std::pair<
 		GPlatesModel::XmlAttributeName, 
 		GPlatesModel::XmlAttributeValue> 
@@ -484,34 +457,6 @@ namespace
 				coordinates_iterator_ranges.begin(),
 				coordinates_iterator_ranges.end());
 	}
-
-
-	template <typename T/*unused*/>
-	class GzipCreationPolicy
-	{
-	public:
-		static
-		GPlatesFileIO::ExternalProgram *
-		create_instance()
-		{
-			return new GPlatesFileIO::ExternalProgram("gzip", "gzip --version");
-		}
-
-		static
-		void
-		destroy_instance(
-				GPlatesFileIO::ExternalProgram *external_program)
-		{
-			boost::checked_delete(external_program);
-		}
-	};
-}
-
-
-const GPlatesFileIO::ExternalProgram &
-GPlatesFileIO::GpmlOutputVisitor::gzip_program()
-{
-	return GPlatesUtils::Singleton<ExternalProgram, GzipCreationPolicy>::instance();
 }
 
 
@@ -520,67 +465,84 @@ GPlatesFileIO::GpmlOutputVisitor::GpmlOutputVisitor(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
 		bool use_gzip) :
 	d_qfile_ptr(new QFile(file_info.get_qfileinfo().filePath())),
-	d_qprocess_ptr(new QProcess),
-	d_gzip_afterwards(false),
 	d_output_filename(file_info.get_qfileinfo().filePath())
 {
+	if (use_gzip)
+	{
+		// Gzip compression: 0 is no compression, 1 is best speed and 9 is best compression.
+		//                   -1 is default compression (a compromise between speed and compression at level 6).
+		//
+		// It takes a long time to write very large compressed GPML files.
+		// Here are some compression sizes versus times for all ten compression levels for a
+		// 464MB uncompressed GPML file that contains dense scalar coverages:
+		//
+		// Level  Compression-ratio   Compression-time
+		//   0          1.0                50.0 sec
+		//   1         12.89               40.0 sec
+		//   2         12.96               42.0 sec
+		//   3         13.03               43.0 sec
+		//   4         14.02               44.0 sec
+		//   5         14.14               44.2 sec
+		//   6         14.15               44.6 sec
+		//   7         14.15               44.7 sec
+		//   8         14.30               48.2 sec
+		//   9         14.47               49.6 sec
+		//
+		// ...for comparison it takes 46 seconds to load an "uncompressed" version of the file.
+		// 
+		// Note that no compression (level 0) is slower than best compression, presumably due to the
+		// fact that it has to write out over 12 times the amount of data.
+		//
+		// Also note that GPlates 2.2 used the gzip executable (as opposed to the zlib library that we currently use)
+		// and achieved a compression ratio of 14.1 in 34.7 seconds. So obviously it's about 20-25% faster,
+		// however we will eventually have a binary 'gdat' file format that is read/written using the scribe
+		// (similar to project files), as opposed to expanding our features as XML (GPML) and then compressing that,
+		// and will hopefully produce relatively small files fairly quickly.
+		//
+		// Here are some more measurements, this time for a global coastlines file, which should
+		// compress better than a dense scalar coverage file. Compression times have been excluded
+		// since they were all roughly around 2-3 seconds.
+		//
+		// Level  Compression-ratio
+		//   0          1.0        
+		//   1         11.01       
+		//   2         11.76       
+		//   3         12.80       
+		//   4         12.83       
+		//   5         14.19       
+		//   6         15.59       
+		//   7         16.06       
+		//   8         16.31       
+		//   9         16.98       
+		//
+		// So currently we just leave it at the default (-1) compression level (which corresponds to level 6).
+		const int gzip_compression_level = -1;
 
-// If we're on a Windows system, we have to treat the whole gzip thing differently. 
-//	The approach under Windows is:
-//	1. Produce uncompressed output.
-//	2. Gzip it.
-//
-//  To prevent us from overwriting any existing uncompressed file which the user may want preserved,
-//  we generate a temporary gpml file name. The desired output file name is stored in the member variable
-//  "d_output_filename". 
-//
-//	To implement this we do the following:
-//	1. If we're on Windows, AND compressed output is requested, then
-//		a. Set the "d_gzip_afterwards" flag to true. (We need to check the status of this flag in the destructor
-//			where we'll actually do the gzipping).
-//		b. Set "use_gzip" to false, so that uncompressed output will be produced.
-//		c. Replace the d_qfile_ptr's filename with a temporary .gpml filename. 
-//
-//	2. In the destructor, (i.e. after the uncompressed file has been written), check if the 
-//		"d_gzip_afterwards" flag is set. If so, gzip the uncompressed file, and rename it to 
-//		"d_output_filename". If not, do the normal wait-for-process-to-end stuff. 
-//																	
-#ifdef Q_WS_WIN
-	if (use_gzip) {
-		d_gzip_afterwards = true;
-		use_gzip = false;
-		set_temporary_filename(d_qfile_ptr);
-	}
-#endif
+		// The gzip file writes and compresses the gpmlz output file.
+		d_gzip_file = boost::in_place(d_qfile_ptr.get(), gzip_compression_level);
 
-	if ( ! d_qfile_ptr->open(QIODevice::WriteOnly | QIODevice::Text)) {
-		throw ErrorOpeningFileForWritingException(GPLATES_EXCEPTION_SOURCE,
+		// Open gzip file for writing.
+		// This automatically opens the compressed gzip output file 'd_qfile_ptr' for writing.
+		// The uncompressed data is written in text mode.
+		// The compressed output file is written in binary mode.
+		if (!d_gzip_file->open(QIODevice::WriteOnly | QIODevice::Text))
+		{
+			throw ErrorOpeningFileForWritingException(GPLATES_EXCEPTION_SOURCE,
 				file_info.get_qfileinfo().filePath());
-	}
-
-	if (use_gzip) {
-		// Using gzip; We already opened the file using d_qfile_ptr, but that's okay,
-		// since it verifies that we can actually write to that location.
-		// Now we've verified that, we can close the file.
-		d_qfile_ptr->close();
-		
-		// Set up the gzip process. Just like the QFile output, we need to keep it
-		// as a shared_ptr belonging to this class.
-		d_qprocess_ptr->setStandardOutputFile(file_info.get_qfileinfo().filePath());
-		// FIXME: Assuming gzip is in a standard place on the path. Not true on MS/Win32. Not true at all.
-		// In fact, it may need to be a user preference.
-		d_qprocess_ptr->start(gzip_program().command());
-		if ( ! d_qprocess_ptr->waitForStarted()) {
-			throw ErrorOpeningPipeToGzipException(GPLATES_EXCEPTION_SOURCE,
-					gzip_program().command(), file_info.get_qfileinfo().filePath());
 		}
+
 		// Use the newly-launched process as the device the XML writer writes to.
-		d_output.setDevice(d_qprocess_ptr.get());
-		
-	} else {
+		d_output.setDevice(&d_gzip_file.get());
+	}
+	else
+	{
 		// Not using gzip, just write to the file as normal.
+		if (!d_qfile_ptr->open(QIODevice::WriteOnly | QIODevice::Text))
+		{
+			throw ErrorOpeningFileForWritingException(GPLATES_EXCEPTION_SOURCE,
+				file_info.get_qfileinfo().filePath());
+		}
 		d_output.setDevice(d_qfile_ptr.get());
-		
 	}
 	
 	start_writing_document(d_output, feature_collection_ref);
@@ -591,9 +553,7 @@ GPlatesFileIO::GpmlOutputVisitor::GpmlOutputVisitor(
 		QIODevice *target,
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref) :
 	d_qfile_ptr(),
-	d_qprocess_ptr(),
-	d_output(target),
-	d_gzip_afterwards(false)
+	d_output(target)
 {
 	start_writing_document(d_output, feature_collection_ref);
 }
@@ -647,48 +607,13 @@ GPlatesFileIO::GpmlOutputVisitor::~GpmlOutputVisitor()
 {
 	// Wrap the entire body of the function in a 'try {  } catch(...)' block so that no
 	// exceptions can escape from the destructor.
-	try {
+	try
+	{
 		d_output.writeEndElement(); // </gpml:FeatureCollection>
 		d_output.writeEndDocument();
-
-
-		// d_gzip_aftewards should only be true if we're on Windows, and compressed output was requested. 
-		if (d_gzip_afterwards && d_qfile_ptr)
-		{
-			// Do the zipping now, but close the file first.
-			d_output.device()->close();
-
-			QStringList args;
-
-			args << d_qfile_ptr->fileName();
-
-			// The temporary gpml filename, and hence the corresponding .gpml.gz name, should be unique, 
-			// so we can just go ahead and compress the file. 
-			QProcess::execute(gzip_program().command(), args);
-			
-			// The requested output file may exist. If that is the case, at this stage the user has already
-			// confirmed that the file be overwritten. We can't rename a file if a file with the new name
-			// already exists, so remove it. 
-			if (QFile::exists(d_output_filename))
-			{
-				QFile::remove(d_output_filename);
-			}
-			QString gz_filename = d_qfile_ptr->fileName() + ".gz";
-			QFile::rename(gz_filename,d_output_filename);
-		}
-		else
-		{
-			// If we were using gzip compression, we must wait for the process to finish.
-			if (d_qprocess_ptr.get() != NULL) {
-				// in fact, we need to forcibly close the input to gzip, because
-				// if we wait for it to go out of scope to clean itself up, there seems
-				// to be a bit of data left in a buffer somewhere - either ours, or gzip's.
-				d_qprocess_ptr->closeWriteChannel();
-				d_qprocess_ptr->waitForFinished();
-			}
-		}
 	}
-	catch (...) {
+	catch (...)
+	{
 		// Nothing we can really do in here, I think... unless we want to log that we
 		// smothered an exception.  However, if we DO want to log that we smothered an
 		// exception, we need to wrap THAT code in a try-catch block also, to ensure that
@@ -1388,7 +1313,7 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_piecewise_aggregation(
 
 void
 GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_network(
-		const GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_toplogical_network)
+		const GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network)
 {
 	d_output.writeStartGpmlElement("TopologicalNetwork");
 
@@ -1396,32 +1321,35 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_network(
 		d_output.writeStartGpmlElement("boundary");
 			d_output.writeStartGpmlElement("TopologicalSections");
 				// Write the boundary topological sections.
-				const GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_seq_type &
-						boundary_sections = gpml_toplogical_network.get_boundary_sections();
-				GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_seq_type::const_iterator
-						boundary_sections_iter = boundary_sections.begin();
-				GPlatesPropertyValues::GpmlTopologicalNetwork::boundary_sections_seq_type::const_iterator
-						boundary_sections_end = boundary_sections.end();
-				for ( ; boundary_sections_iter != boundary_sections_end; ++boundary_sections_iter) 
+				const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection> &boundary_sections = gpml_topological_network.boundary_sections();
+				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator boundary_sections_iter = boundary_sections.begin();
+				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator boundary_sections_end = boundary_sections.end();
+				for ( ; boundary_sections_iter != boundary_sections_end; ++boundary_sections_iter)
 				{
+					GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = boundary_sections_iter->get();
+
 					d_output.writeStartGpmlElement("section");
-					boundary_sections_iter->get_source_section()->accept_visitor(*this);
+					topological_section->accept_visitor(*this);
 					d_output.writeEndElement();
 				}
 			d_output.writeEndElement();  // </gpml:TopologicalSections>
 		d_output.writeEndElement();  // </gpml:boundary>
 
 		// Write the network interior geometries.
-		const GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometry_seq_type &
-				interior_geometries = gpml_toplogical_network.get_interior_geometries();
-		GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometry_seq_type::const_iterator
-				interior_geometries_iter = interior_geometries.begin();
-		GPlatesPropertyValues::GpmlTopologicalNetwork::interior_geometry_seq_type::const_iterator
-				interior_geometries_end = interior_geometries.end();
+		const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate> &interior_geometries = gpml_topological_network.interior_geometries();
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate>::const_iterator interior_geometries_iter = interior_geometries.begin();
+		GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate>::const_iterator interior_geometries_end = interior_geometries.end();
 		for ( ; interior_geometries_iter != interior_geometries_end; ++interior_geometries_iter) 
 		{
+			GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_to_const_type interior_geometry = interior_geometries_iter->get();
+
 			d_output.writeStartGpmlElement("interior");
-			write_gpml_topological_network_interior(*interior_geometries_iter);
+				d_output.writeStartGpmlElement("TopologicalNetworkInterior");
+					d_output.writeStartGpmlElement("sourceGeometry");
+						// visit the delegate 
+						interior_geometry->accept_visitor(*this);
+					d_output.writeEndElement();
+				d_output.writeEndElement();  // </gpml:TopologicalNetworkInterior>
 			d_output.writeEndElement();
 		}
 
@@ -1430,23 +1358,22 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_network(
 
 void
 GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_polygon(
-	const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon)
+	const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_topological_polygon)
 {
 	d_output.writeStartGpmlElement("TopologicalPolygon");
 
 		// Write the exterior topological sections.
 		d_output.writeStartGpmlElement("exterior");
 			d_output.writeStartGpmlElement("TopologicalSections");
-				const GPlatesPropertyValues::GpmlTopologicalPolygon::sections_seq_type &
-						exterior_sections = gpml_toplogical_polygon.get_exterior_sections();
-				GPlatesPropertyValues::GpmlTopologicalPolygon::sections_seq_type::const_iterator iter =
-						exterior_sections.begin();
-				GPlatesPropertyValues::GpmlTopologicalPolygon::sections_seq_type::const_iterator end =
-						exterior_sections.end();
-				for ( ; iter != end; ++iter) 
+				const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection> &exterior_sections = gpml_topological_polygon.exterior_sections();
+				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator exterior_sections_iter = exterior_sections.begin();
+				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator exterior_sections_end = exterior_sections.end();
+				for ( ; exterior_sections_iter != exterior_sections_end; ++exterior_sections_iter)
 				{
+					GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = exterior_sections_iter->get();
+
 					d_output.writeStartGpmlElement("section");
-					iter->get_source_section()->accept_visitor(*this);
+					topological_section->accept_visitor(*this);
 					d_output.writeEndElement();
 				}
 			d_output.writeEndElement();  // </gpml:TopologicalSections>
@@ -1460,20 +1387,19 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_polygon(
 
 void
 GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_line(
-	const GPlatesPropertyValues::GpmlTopologicalLine &gpml_toplogical_line)
+	const GPlatesPropertyValues::GpmlTopologicalLine &gpml_topological_line)
 {
 	d_output.writeStartGpmlElement("TopologicalLine");
 
-	const GPlatesPropertyValues::GpmlTopologicalLine::sections_seq_type &sections =
-			gpml_toplogical_line.get_sections();
-	GPlatesPropertyValues::GpmlTopologicalLine::sections_seq_type::const_iterator iter =
-			sections.begin();
-	GPlatesPropertyValues::GpmlTopologicalLine::sections_seq_type::const_iterator end =
-			sections.end();
-	for ( ; iter != end; ++iter) 
+	const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection> &sections = gpml_topological_line.sections();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator sections_iter = sections.begin();
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::const_iterator sections_end = sections.end();
+	for ( ; sections_iter != sections_end; ++sections_iter)
 	{
+		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_to_const_type topological_section = sections_iter->get();
+
 		d_output.writeStartGpmlElement("section");
-		iter->get_source_section()->accept_visitor(*this);
+		topological_section->accept_visitor(*this);
 		d_output.writeEndElement();
 	}
 
@@ -1483,17 +1409,17 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_line(
 
 void
 GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_line_section(
-	const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section)
+	const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_topological_line_section)
 {  
 	d_output.writeStartGpmlElement("TopologicalLineSection");
 
 		d_output.writeStartGpmlElement("sourceGeometry");
 			// visit the delgate 
-			( gpml_toplogical_line_section.get_source_geometry() )->accept_visitor(*this); 
+			(gpml_topological_line_section.get_source_geometry() )->accept_visitor(*this);
 		d_output.writeEndElement();
 		
 		d_output.writeStartGpmlElement("reverseOrder");
-			d_output.writeBoolean( gpml_toplogical_line_section.get_reverse_order() );
+			d_output.writeBoolean(gpml_topological_line_section.get_reverse_order() );
 		d_output.writeEndElement();
 
 	d_output.writeEndElement();
@@ -1502,12 +1428,12 @@ GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_line_section(
 
 void
 GPlatesFileIO::GpmlOutputVisitor::visit_gpml_topological_point(
-	const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point)
+	const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_topological_point)
 {  
 	d_output.writeStartGpmlElement("TopologicalPoint");
 		d_output.writeStartGpmlElement("sourceGeometry");
 			// visit the delegate
-			( gpml_toplogical_point.get_source_geometry() )->accept_visitor(*this); 
+			( gpml_topological_point.get_source_geometry() )->accept_visitor(*this); 
 		d_output.writeEndElement();
 	d_output.writeEndElement();  
 }
@@ -1851,16 +1777,4 @@ GPlatesFileIO::GpmlOutputVisitor::write_gpml_key_value_dictionary_element(
 			element.value()->accept_visitor(*this);
 		d_output.writeEndElement();
 	d_output.writeEndElement();
-}
-
-void
-GPlatesFileIO::GpmlOutputVisitor::write_gpml_topological_network_interior(
-		const GPlatesPropertyValues::GpmlTopologicalNetwork::Interior &gpml_toplogical_network_interior)
-{
-	d_output.writeStartGpmlElement("TopologicalNetworkInterior");
-		d_output.writeStartGpmlElement("sourceGeometry");
-			// visit the delegate 
-			gpml_toplogical_network_interior.get_source_geometry()->accept_visitor(*this); 
-		d_output.writeEndElement();
-	d_output.writeEndElement();  // </gpml:TopologicalNetworkInterior>
 }

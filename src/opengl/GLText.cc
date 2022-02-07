@@ -105,6 +105,8 @@ namespace GPlatesOpenGL
 					qpaint_device,
 					GPLATES_ASSERTION_SOURCE);
 
+			const int qpaint_device_pixel_ratio = qpaint_device->devicePixelRatio();
+
 			// Set the identity world transform since our input position is specified in *window* coordinates
 			// and we don't want it transformed by the current world transform.
 			qpainter->setWorldTransform(QTransform()/*identity*/);
@@ -112,12 +114,18 @@ namespace GPlatesOpenGL
 			// Set the clip rectangle if the GLRenderer has scissor testing enabled.
 			if (scissor_rect)
 			{
+				// Note that the scissor rectangle is in OpenGL device pixel coordinates, but parameters to QPainter
+				// should be in device *independent* coordinates (hence the divide by device pixel ratio).
+				//
+				// Note: Using floating-point QRectF to avoid rounding to nearest 'qpaint_device_pixel_ratio' device pixel
+				//       if scissor rect has, for example, odd coordinates (and device pixel ratio is the integer 2).
 				qpainter->setClipRect(
-						scissor_rect->x(),
-						// Also need to convert scissor rectangle from OpenGL to Qt (ie, invert y-axis)...
-						qpaint_device->height() - scissor_rect->y() - scissor_rect->height(),
-						scissor_rect->width(),
-						scissor_rect->height());
+						QRectF(
+								scissor_rect->x() / qreal(qpaint_device_pixel_ratio),
+								// Also need to convert scissor rectangle from OpenGL to Qt (ie, invert y-axis)...
+								qpaint_device->height() - (scissor_rect->y() + scissor_rect->height()) / qreal(qpaint_device_pixel_ratio),
+								scissor_rect->width() / qreal(qpaint_device_pixel_ratio),
+								scissor_rect->height() / qreal(qpaint_device_pixel_ratio)));
 			}
 
 			// Set the font and colour.
@@ -125,9 +133,12 @@ namespace GPlatesOpenGL
 			qpainter->setFont(scale_font(font, scale));
 
 			// Get the Qt window coordinates at which to render text.
-			const float qt_win_x = x;
-			// Note that OpenGL and Qt y-axes are the reverse of each other.
-			const float qt_win_y = qpaint_device->height() - y;
+			//
+			// Note that x and y are in OpenGL device pixel coordinates, but parameters to QPainter
+			// should be in device *independent* coordinates (hence the divide by device pixel ratio).
+			const float qt_win_x = x / qpaint_device_pixel_ratio;
+			// Also note that OpenGL and Qt y-axes are the reverse of each other.
+			const float qt_win_y = qpaint_device->height() - y / qpaint_device_pixel_ratio;
 
 			qpainter->drawText(QPointF(qt_win_x, qt_win_y), string);
 

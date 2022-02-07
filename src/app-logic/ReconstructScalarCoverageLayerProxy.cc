@@ -407,8 +407,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_coverages()
 		// Note that we only consider non-topological features since a feature collection may contain a mixture
 		// of topological and non-topological (thus creating reconstruct layer and topological layer).
 		std::vector<GPlatesModel::FeatureHandle::weak_ref> domain_features;
-		reconstructed_domain_layer_proxy.get_input_layer_proxy()
-				->get_current_features(domain_features, true/*only_non_topological_features*/);
+		reconstructed_domain_layer_proxy.get_input_layer_proxy()->get_current_reconstructable_features(domain_features);
 
 		// Iterate over the domain features.
 		std::vector<GPlatesModel::FeatureHandle::weak_ref>::const_iterator
@@ -517,9 +516,7 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerProxy::cache_scalar_coverage_time
 			// Note that we only consider non-topological features since a feature collection may contain a mixture
 			// of topological and non-topological (thus creating reconstruct layer and topological layer).
 			std::vector<GPlatesModel::FeatureHandle::weak_ref> domain_features;
-			reconstructed_domain_layer_proxy.get_input_layer_proxy()->get_current_features(
-					domain_features,
-					true/*only_non_topological_features*/);
+			reconstructed_domain_layer_proxy.get_input_layer_proxy()->get_current_reconstructable_features(domain_features);
 
 			cache_non_topology_reconstructed_scalar_coverage_time_spans(scalar_type, domain_features);
 		}

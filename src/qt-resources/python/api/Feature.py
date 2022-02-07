@@ -163,14 +163,14 @@ def get_name(feature, default='', property_return=PropertyReturn.exactly_one):
     Test if there are any 'gml:name' properties:
     ::
     
-      names = feature.get_names(None, pygplates.PropertyReturn.all)
+      names = feature.get_name(None, pygplates.PropertyReturn.all)
       if names:
         ...
     
     Test if there are any 'gml:name' properties with a non-empty string:
     ::
     
-      names = feature.get_names(None, pygplates.PropertyReturn.all)
+      names = feature.get_name(None, pygplates.PropertyReturn.all)
       if names and any(names):
         ...
     

@@ -35,7 +35,7 @@
 #include <QString>
 #include <QStringList>
 
-#include "MissingSessionFilesDialogUi.h"
+#include "ui_MissingSessionFilesDialogUi.h"
 
 
 namespace GPlatesPresentation

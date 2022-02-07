@@ -28,7 +28,7 @@
 #include <QObject>
 #include <QSpinBox>
 
-#include "GenerateVelocityDomainTerraDialogUi.h"
+#include "ui_GenerateVelocityDomainTerraDialogUi.h"
 
 #include "GPlatesDialog.h"
 #include "InformationDialog.h"

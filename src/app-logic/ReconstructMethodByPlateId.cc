@@ -444,7 +444,7 @@ GPlatesAppLogic::ReconstructMethodByPlateId::reconstruct_feature_geometries(
 	// need to reconstruct according to the reconstruction plate ID.
 	const Transform::non_null_ptr_type reconstruction_rotation =
 			Transform::create(
-					reconstruction_tree->get_composed_absolute_rotation(reconstruction_info.reconstruction_plate_id).first,
+					reconstruction_tree->get_composed_absolute_rotation(reconstruction_info.reconstruction_plate_id),
 					reconstruction_info.reconstruction_plate_id);
 
 	// Iterate over the feature's present day geometries and rotate each one.

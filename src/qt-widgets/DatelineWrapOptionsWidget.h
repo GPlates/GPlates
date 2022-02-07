@@ -28,7 +28,7 @@
 
 #include <QWidget>
 
-#include "DatelineWrapOptionsWidgetUi.h"
+#include "ui_DatelineWrapOptionsWidgetUi.h"
 
 
 namespace GPlatesQtWidgets
@@ -45,7 +45,7 @@ namespace GPlatesQtWidgets
 		explicit
 		DatelineWrapOptionsWidget(
 				QWidget *parent_,
-				bool wrap_to_dateline = true);
+				bool wrap_to_dateline);
 
 		/**
 		 * Set the initial options.

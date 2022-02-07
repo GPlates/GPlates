@@ -91,7 +91,7 @@ GPlatesPresentation::ViewState::ViewState(
 	d_animation_controller(
 			new GPlatesGui::AnimationController(application_state)),
 	d_session_management_ptr(
-			new SessionManagement(application_state)),
+			new SessionManagement(application_state, *this)),
 	d_rendered_geometry_collection(
 			new GPlatesViewOperations::RenderedGeometryCollection()),
 	d_feature_focus(
@@ -123,16 +123,12 @@ GPlatesPresentation::ViewState::ViewState(
 	d_scene_lighting_parameters(
 			new GPlatesGui::SceneLightingParameters()),
 	d_visual_layers(
-			new VisualLayers(
-				d_application_state,
-				*this,
-				*d_rendered_geometry_collection)),
+			new VisualLayers(d_application_state, *this)),
 	d_visual_layer_registry(
 			new VisualLayerRegistry()),
 	d_map_transform(
 			new GPlatesGui::MapTransform(
 				*d_viewport_zoom)),
-	d_main_viewport_dimensions(0, 0),
 	d_file_io_directory_configurations(
 			new GPlatesGui::FileIODirectoryConfigurations(
 				*this)),
@@ -189,6 +185,17 @@ GPlatesPresentation::ViewState::initialise_from_user_preferences()
 	const GPlatesAppLogic::UserPreferences &prefs = get_application_state().get_user_preferences();
 	
 	d_show_stars = prefs.get_value("view/show_stars").toBool();
+
+	// By default, geometry visibility is enabled for all geometry types except topological sections
+	// (which are hidden, in "DefaultPreferences.conf").
+	//
+	// Topological sections are features referenced by topologies for *all* reconstruction times.
+	// As soon as a topology that references an already loaded feature is loaded, that feature then
+	// becomes a topological section. Most users don't want to see these 'dangling bits' around topologies
+	// (ie, they just want to see the topologies). The small percentage of users who actually build
+	// topologies will have to turn this on manually.
+	d_render_settings->set_show_topological_sections(
+			prefs.get_value("view/geometry_visibility/show_topological_sections").toBool());
 }
 
 
@@ -436,53 +443,6 @@ const GPlatesGui::MapTransform &
 GPlatesPresentation::ViewState::get_map_transform() const
 {
 	return *d_map_transform;
-}
-
-
-const std::pair<int, int> &
-GPlatesPresentation::ViewState::get_main_viewport_dimensions() const
-{
-	return d_main_viewport_dimensions;
-}
-
-
-void
-GPlatesPresentation::ViewState::set_main_viewport_dimensions(
-		const std::pair<int, int> &dimensions)
-{
-	d_main_viewport_dimensions = dimensions;
-}
-
-
-int
-GPlatesPresentation::ViewState::get_main_viewport_min_dimension() const
-{
-	int width = d_main_viewport_dimensions.first;
-	int height = d_main_viewport_dimensions.second;
-	if (width < height)
-	{
-		return width;
-	}
-	else
-	{
-		return height;
-	}
-}
-
-
-int
-GPlatesPresentation::ViewState::get_main_viewport_max_dimension() const
-{
-	int width = d_main_viewport_dimensions.first;
-	int height = d_main_viewport_dimensions.second;
-	if (width > height)
-	{
-		return width;
-	}
-	else
-	{
-		return height;
-	}
 }
 
 

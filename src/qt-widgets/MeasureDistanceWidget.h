@@ -32,7 +32,7 @@
 #include <QWidget>
 #include <QPalette>
 
-#include "MeasureDistanceWidgetUi.h"
+#include "ui_MeasureDistanceWidgetUi.h"
 #include "TaskPanelWidget.h"
 
 #include "maths/PointOnSphere.h"

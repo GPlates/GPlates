@@ -38,6 +38,7 @@
 #include "app-logic/ReconstructGraph.h"
 
 #include "gui/DrawStyleManager.h"
+#include "gui/RenderSettings.h"
 #include "gui/Symbol.h"
 
 #include "view-operations/RenderedGeometryLayer.h"
@@ -48,11 +49,10 @@
 
 GPlatesPresentation::VisualLayers::VisualLayers(
 		GPlatesAppLogic::ApplicationState &application_state,
-		ViewState &view_state,
-		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection) :
+		ViewState &view_state) :
 	d_application_state(application_state),
 	d_view_state(view_state),
-	d_rendered_geometry_collection(rendered_geometry_collection),
+	d_rendered_geometry_collection(view_state.get_rendered_geometry_collection()),
 	d_next_visual_layer_number(1)
 {
 	make_signal_slot_connections();
@@ -336,6 +336,13 @@ GPlatesPresentation::VisualLayers::make_signal_slot_connections()
 			this,
 			SLOT(create_rendered_geometries()));
 
+	// Create new rendered geometries when RenderSettings changes.
+	QObject::connect(
+			&d_view_state.get_render_settings(),
+			SIGNAL(settings_changed()),
+			this,
+			SLOT(create_rendered_geometries()));
+
 	// Connect to DrawStyleManager signals.
 	QObject::connect(
 			GPlatesGui::DrawStyleManager::instance(),
@@ -560,12 +567,9 @@ GPlatesPresentation::VisualLayers::create_visual_layer(
 	// Create a new visual layer.
 	boost::shared_ptr<VisualLayer> visual_layer(
 			new VisualLayer(
+				d_view_state,
 				*this,
-				d_view_state.get_visual_layer_registry(),
 				layer,
-				d_rendered_geometry_collection,
-				d_view_state.get_rendered_geometry_parameters(),
-				d_view_state.get_feature_type_symbol_map(),
 				d_next_visual_layer_number));
 
 	++d_next_visual_layer_number;

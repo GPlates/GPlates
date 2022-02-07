@@ -60,8 +60,8 @@ GPlatesQtWidgets::EditFeaturePropertiesWidget::EditFeaturePropertiesWidget(
 	
 	property_table->setModel(d_property_model_ptr);
 	property_table->verticalHeader()->hide();
-	property_table->horizontalHeader()->setResizeMode(0, QHeaderView::ResizeToContents);
-	property_table->horizontalHeader()->setResizeMode(1, QHeaderView::Stretch);
+	property_table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
+	property_table->horizontalHeader()->setSectionResizeMode(1, QHeaderView::Stretch);
 	property_table->horizontalHeader()->setHighlightSections(false);
 	QObject::connect(property_table->selectionModel(),
 			SIGNAL(selectionChanged(const QItemSelection &, const QItemSelection &)),

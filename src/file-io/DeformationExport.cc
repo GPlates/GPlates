@@ -125,6 +125,7 @@ GPlatesFileIO::DeformationExport::export_deformation_to_gpml_format(
 		bool include_dilatation_strain,
 		bool include_dilatation_strain_rate,
 		bool include_second_invariant_strain_rate,
+		bool include_strain_rate_style,
 		bool export_single_output_file,
 		bool export_per_input_file,
 		bool export_separate_output_directory_per_input_file)
@@ -155,7 +156,8 @@ GPlatesFileIO::DeformationExport::export_deformation_to_gpml_format(
 				include_principal_strain,
 				include_dilatation_strain,
 				include_dilatation_strain_rate,
-				include_second_invariant_strain_rate);
+				include_second_invariant_strain_rate,
+				include_strain_rate_style);
 	}
 
 	if (export_per_input_file)
@@ -187,7 +189,8 @@ GPlatesFileIO::DeformationExport::export_deformation_to_gpml_format(
 					include_principal_strain,
 					include_dilatation_strain,
 					include_dilatation_strain_rate,
-					include_second_invariant_strain_rate);
+					include_second_invariant_strain_rate,
+					include_strain_rate_style);
 		}
 	}
 }
@@ -205,6 +208,7 @@ GPlatesFileIO::DeformationExport::export_deformation_to_gmt_format(
 		bool include_dilatation_strain,
 		bool include_dilatation_strain_rate,
 		bool include_second_invariant_strain_rate,
+		bool include_strain_rate_style,
 		bool export_single_output_file,
 		bool export_per_input_file,
 		bool export_separate_output_directory_per_input_file)
@@ -238,7 +242,8 @@ GPlatesFileIO::DeformationExport::export_deformation_to_gmt_format(
 				include_principal_strain,
 				include_dilatation_strain,
 				include_dilatation_strain_rate,
-				include_second_invariant_strain_rate);
+				include_second_invariant_strain_rate,
+				include_strain_rate_style);
 	}
 
 	if (export_per_input_file)
@@ -273,7 +278,8 @@ GPlatesFileIO::DeformationExport::export_deformation_to_gmt_format(
 					include_principal_strain,
 					include_dilatation_strain,
 					include_dilatation_strain_rate,
-					include_second_invariant_strain_rate);
+					include_second_invariant_strain_rate,
+					include_strain_rate_style);
 		}
 	}
 }

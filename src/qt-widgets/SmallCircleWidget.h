@@ -31,7 +31,7 @@
 #include <QWidget>
 
 #include "maths/SmallCircle.h"
-#include "SmallCircleWidgetUi.h"
+#include "ui_SmallCircleWidgetUi.h"
 #include "TaskPanelWidget.h"
 
 namespace GPlatesAppLogic

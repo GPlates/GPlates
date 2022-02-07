@@ -36,8 +36,6 @@
 #include "model/RevisionId.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -204,5 +202,3 @@ export_ids()
 	export_feature_id();
 	export_revision_id();
 }
-
-#endif // GPLATES_NO_PYTHON

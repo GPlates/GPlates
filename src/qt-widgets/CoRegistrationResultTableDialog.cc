@@ -23,11 +23,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QDebug>
-#include <QtGui/QDialogButtonBox>
-#include <QtGui/QHeaderView>
-#include <QtGui/QPushButton>
 #include <boost/optional.hpp> 
+#include <QDebug>
+#include <QtWidgets/QDialogButtonBox>
+#include <QtWidgets/QHeaderView>
+#include <QtWidgets/QPushButton>
 
 #include "CoRegistrationResultTableDialog.h"
 #include "GlobeAndMapWidget.h"
@@ -71,7 +71,7 @@ GPlatesQtWidgets::CoRegistrationResultTableDialog::CoRegistrationResultTableDial
     table_view->setSelectionBehavior(QAbstractItemView::SelectRows);
     table_view->setVerticalScrollMode(QAbstractItemView::ScrollPerItem);
     table_view->setHorizontalScrollMode(QAbstractItemView::ScrollPerPixel);
-	table_view->horizontalHeader()->setResizeMode(QHeaderView::ResizeToContents);
+	table_view->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
 	table_view->horizontalHeader()->setStretchLastSection(false);
 	//table_view->setContextMenuPolicy(Qt::ActionsContextMenu);
 	table_view->resizeColumnsToContents(); 
@@ -87,7 +87,7 @@ GPlatesQtWidgets::CoRegistrationResultTableDialog::CoRegistrationResultTableDial
 	pushButton_close->setObjectName(QString::fromUtf8("pushButton_close"));
 	hboxLayout->addWidget(pushButton_close);
 	vboxLayout->addLayout(hboxLayout);
-	pushButton_close->setText(QApplication::translate("CoRegistrationResultTableDialog", "close", 0, QApplication::UnicodeUTF8));
+	pushButton_close->setText(QApplication::translate("CoRegistrationResultTableDialog", "close", 0));
 	QObject::connect(pushButton_close, SIGNAL(clicked()), this, SLOT(reject()));
 
 	connect_application_state_signals(view_state.get_application_state());

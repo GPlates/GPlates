@@ -26,7 +26,6 @@
 #ifndef GPLATES_OPENGL_GLMULTIRESOLUTIONRASTERINTERFACE_H
 #define GPLATES_OPENGL_GLMULTIRESOLUTIONRASTERINTERFACE_H
 
-#include <cstddef> // For std::size_t
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -85,7 +84,7 @@ namespace GPlatesOpenGL
 		 * resolution level is 'N-1' where 'N' is the number of levels.
 		 */
 		virtual
-		std::size_t
+		unsigned int
 		get_num_levels_of_detail() const = 0;
 
 

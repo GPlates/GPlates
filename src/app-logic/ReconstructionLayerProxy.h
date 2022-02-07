@@ -30,6 +30,7 @@
 #include <boost/optional.hpp>
 
 #include "LayerProxy.h"
+#include "ReconstructionParams.h"
 #include "ReconstructionTree.h"
 #include "ReconstructionTreeCreator.h"
 #include "ReconstructUtils.h"
@@ -163,12 +164,39 @@ namespace GPlatesAppLogic
 
 
 		/**
+		 * Gets the current reconstruction time as set by the layer system.
+		 */
+		double
+		get_current_reconstruction_time() const
+		{
+			return d_current_reconstruction_time.dval();
+		}
+
+		/**
 		 * Gets the current anchor plate id.
 		 */
 		GPlatesModel::integer_plate_id_type
 		get_current_anchor_plate_id() const
 		{
 			return d_current_anchor_plate_id;
+		}
+
+		/**
+		 * Gets the current parameters used for creating reconstruction trees.
+		 */
+		const ReconstructionParams &
+		get_current_reconstruction_params() const
+		{
+			return d_current_reconstruction_params;
+		}
+
+		/**
+		 * Get the reconstruction feature collections set by @a add_reconstruction_feature_collection, etc.
+		 */
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &
+		get_current_reconstruction_feature_collections() const
+		{
+			return d_current_reconstruction_feature_collections;
 		}
 
 
@@ -227,6 +255,13 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type anchor_plate_id);
 
 		/**
+		 * Sets the parameters used for creating reconstruction trees.
+		 */
+		void
+		set_current_reconstruction_params(
+				const ReconstructionParams &reconstruction_params);
+
+		/**
 		 * Add to the list of feature collections that are used to build reconstruction trees.
 		 */
 		void
@@ -265,6 +300,11 @@ namespace GPlatesAppLogic
 		GPlatesModel::integer_plate_id_type d_current_anchor_plate_id;
 
 		/**
+		 * The current reconstruction parameters as set by the layer system.
+		 */
+		ReconstructionParams d_current_reconstruction_params;
+
+		/**
 		 * Manages cached reconstruction trees for the most-recently requested reconstruction time/anchors.
 		 */
 		boost::optional<CachedReconstructionTreeCreatorImpl::non_null_ptr_type> d_cached_reconstruction_trees;
@@ -285,15 +325,9 @@ namespace GPlatesAppLogic
 		unsigned int d_current_max_num_reconstruction_trees_in_cache;
 
 
-		explicit
 		ReconstructionLayerProxy(
 				unsigned int default_max_num_reconstruction_trees_in_cache,
-				GPlatesModel::integer_plate_id_type initial_anchored_plate_id) :
-			d_current_reconstruction_time(0),
-			d_current_anchor_plate_id(initial_anchored_plate_id),
-			d_default_max_num_reconstruction_trees_in_cache(default_max_num_reconstruction_trees_in_cache),
-			d_current_max_num_reconstruction_trees_in_cache(default_max_num_reconstruction_trees_in_cache)
-		{  }
+				GPlatesModel::integer_plate_id_type initial_anchored_plate_id);
 
 
 		/**

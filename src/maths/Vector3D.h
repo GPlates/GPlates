@@ -112,7 +112,8 @@ namespace GPlatesMaths
 		real_t
 		magSqrd() const
 		{
-			return (d_x * d_x) + (d_y * d_y) + (d_z * d_z);
+			// Using double (dval()) instead of real_t generates more efficient assembly code.
+			return d_x.dval() * d_x.dval() + d_y.dval() * d_y.dval() + d_z.dval() * d_z.dval();
 		}
 
 		/**

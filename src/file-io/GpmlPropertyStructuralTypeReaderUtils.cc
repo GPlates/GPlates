@@ -1158,7 +1158,7 @@ GPlatesFileIO::GpmlPropertyStructuralTypeReaderUtils::create_gpml_topological_ne
 					BOUNDARY, gpml_version, read_errors);
 
 	// GpmlTopologicalNetwork has zero or more interiors.
-	std::vector<GPlatesPropertyValues::GpmlTopologicalNetwork::Interior> interiors;
+	std::vector<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> interiors;
 	find_and_create_zero_or_more(elem, &create_gpml_topological_network_interior,
 				INTERIOR, interiors, gpml_version, read_errors);
 

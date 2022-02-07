@@ -595,11 +595,11 @@ GPlatesQtWidgets::EditGeometryWidget::EditGeometryWidget(
 	setupUi(this);
 	// Set column widths and resizabilty.
 	EditTableActionWidget dummy(this, NULL);
-	table_points->horizontalHeader()->setResizeMode(COLUMN_LAT, QHeaderView::Stretch);
-	table_points->horizontalHeader()->setResizeMode(COLUMN_LON, QHeaderView::Stretch);
-	table_points->horizontalHeader()->setResizeMode(COLUMN_ACTION, QHeaderView::Fixed);
+	table_points->horizontalHeader()->setSectionResizeMode(COLUMN_LAT, QHeaderView::Stretch);
+	table_points->horizontalHeader()->setSectionResizeMode(COLUMN_LON, QHeaderView::Stretch);
+	table_points->horizontalHeader()->setSectionResizeMode(COLUMN_ACTION, QHeaderView::Fixed);
 	table_points->horizontalHeader()->resizeSection(COLUMN_ACTION, dummy.width());
-	table_points->horizontalHeader()->setMovable(true);
+	table_points->horizontalHeader()->setSectionsMovable(true);
 	// Set up a minimum row height as well, for the action widgets' sake.
 	table_points->verticalHeader()->setDefaultSectionSize(dummy.height());
 	

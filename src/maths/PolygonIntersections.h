@@ -43,6 +43,7 @@ namespace GPlatesMaths
 	namespace PolylineIntersections
 	{
 		class Graph;
+		class PartitionedPolyline;
 	}
 
 	class GreatCircleArc;
@@ -214,10 +215,9 @@ namespace GPlatesMaths
 				 const PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
 				 PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory);
 
-		Result
-		partition_polyline_or_polygon_fully_inside_or_outside(
-				const PointOnSphere &arbitrary_point_on_geometry1,
-				const PointOnSphere &arbitrary_point_on_geometry2) const;
+		bool
+		is_non_intersecting_polyline_or_polygon_fully_inside_partitioning_polygon(
+				const PointOnSphere &arbitrary_point_on_geometry) const;
 
 		/**
 		 * Determines which partitioned polylines are inside/outside the
@@ -231,11 +231,8 @@ namespace GPlatesMaths
 
 		bool
 		is_partitioned_polyline_inside_partitioning_polygon(
-				const PointOnSphere &intersection_point,
-				const PolylineOnSphere &prev_partitioning_polygon,
-				const PolylineOnSphere &next_partitioning_polygon,
-				const PolylineOnSphere &partitioned_polyline,
-				bool is_prev_partitioned_polyline) const;
+				const PolylineIntersections::Graph &partitioned_polylines_graph,
+				const PolylineIntersections::PartitionedPolyline &partitioned_poly) const;
 	};
 }
 

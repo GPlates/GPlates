@@ -71,7 +71,8 @@ namespace GPlatesFileIO
 		void
 		handle_qt_message(
 				QtMsgType msg_type,
-				const char *msg);
+				const QMessageLogContext &context,
+				const QString &msg);
 
 	private:
 

@@ -135,6 +135,7 @@ GPlatesUnitTest::CoregTest::test(double time)
 	ReconstructionTreeCreator reconstruction_tree_creator =
 			create_cached_reconstruction_tree_creator(
 					d_rotation_fc,
+					false/*extend_total_reconstruction_poles_to_distant_past*/,
 					0/*anchor plate*/);
 	
 	//seed

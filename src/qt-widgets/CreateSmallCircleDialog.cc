@@ -154,23 +154,16 @@ GPlatesQtWidgets::CreateSmallCircleDialog::handle_calculate()
 		return;
 	}
 
-	// To create new trees, we need to know which reconstruction features should be used.
-	// We'll use the same features that have been used for the default reconstruction tree. 
-	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type default_tree = 	
-		d_application_state.get_current_reconstruction()
-			.get_default_reconstruction_layer_output()->get_reconstruction_tree();
+	// The default reconstruction tree creator.
+	GPlatesAppLogic::ReconstructionTreeCreator tree_creator =
+			d_application_state.get_current_reconstruction()
+			.get_default_reconstruction_layer_output()->get_reconstruction_tree_creator();
 
-	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_1 = 
-		GPlatesAppLogic::create_reconstruction_tree(
-		t1,
-		d_application_state.get_current_anchored_plate_id(),
-		default_tree->get_reconstruction_features());
+	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_1 =
+			tree_creator.get_reconstruction_tree(t1);
 
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_2 = 
-		GPlatesAppLogic::create_reconstruction_tree(
-		t2,
-		d_application_state.get_current_anchored_plate_id(),
-		default_tree->get_reconstruction_features());
+			tree_creator.get_reconstruction_tree(t2);
 
 	// Get stage pole
 	GPlatesMaths::FiniteRotation stage_pole =

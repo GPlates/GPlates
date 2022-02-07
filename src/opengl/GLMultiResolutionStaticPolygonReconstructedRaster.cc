@@ -548,6 +548,13 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 	// Make sure we leave the OpenGL state the way it was.
 	GLRenderer::StateBlockScope save_restore_state(renderer);
 
+	// Make sure the source cube map raster has not been re-oriented via a non-identity world transform.
+	// This class assumes the cube map is in its default orientation (with identity world transform).
+	// If the cube map raster's world transform is already identity then this call does nothing.
+	// This is necessary since the cube map raster might have be re-oriented to align it with a non-zero
+	// central meridian in a map-projection (for the 2D map view or raster export).
+	d_source_raster->set_world_transform(GLMatrix());
+
 	const unsigned int num_levels_of_detail = get_num_levels_of_detail();
 
 	// The GLMultiResolutionRasterInterface interface says an exception is thrown if level-of-detail

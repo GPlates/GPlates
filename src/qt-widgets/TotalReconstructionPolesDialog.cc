@@ -46,7 +46,6 @@
 #include "app-logic/LayerTaskType.h"
 #include "app-logic/ReconstructionLayerProxy.h"
 #include "app-logic/ReconstructionTree.h"
-#include "app-logic/ReconstructionTreeEdge.h"
 
 #include "gui/CsvExport.h"
 
@@ -68,7 +67,7 @@ namespace ColumnNames
 	 */
 	enum ColumnName
 	{
-		PLATEID, LATITUDE, LONGITUDE, ANGLE, FIXED, INTERPOLATED
+		PLATEID, LATITUDE, LONGITUDE, ANGLE, FIXED
 	};
 }
 
@@ -179,24 +178,24 @@ namespace {
 	void
 	fill_tree_item(
 			QTreeWidgetItem* item,
-			GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge)
+			const GPlatesAppLogic::ReconstructionTree::Edge &edge)
 	{
 		int column = item->columnCount();
 		QString moving_string;
-		moving_string.setNum(edge->moving_plate());
+		moving_string.setNum(edge.get_moving_plate());
 		item->setText(column++,moving_string);
 
 		QString fixed_string;
-		fixed_string.setNum(edge->fixed_plate());
+		fixed_string.setNum(edge.get_fixed_plate());
 
 		QString edge_string;
 
 		edge_string.append(fixed_string);
 
-		GPlatesMaths::FiniteRotation relative_rotation = edge->relative_rotation();
+		GPlatesMaths::FiniteRotation relative_rotation = edge.get_relative_rotation();
 		QString relative_rotation_string = make_string_from_rotation(relative_rotation);
 
-		const GPlatesMaths::FiniteRotation &composed_rotation = edge->composed_absolute_rotation();
+		const GPlatesMaths::FiniteRotation &composed_rotation = edge.get_composed_absolute_rotation();
 		QString composed_rotation_string = make_string_from_rotation(composed_rotation);
 
 		item->setText(column++,edge_string);
@@ -207,15 +206,15 @@ namespace {
 
 	void
 	add_children_of_edge_to_tree_item(
-			GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge,
+			const GPlatesAppLogic::ReconstructionTree::Edge &edge,
 			QTreeWidgetItem *item)
 	{
-		std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::iterator 
-				it = edge->children_in_built_tree().begin();
-		std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::iterator 
-				end = edge->children_in_built_tree().end();
+		GPlatesAppLogic::ReconstructionTree::edge_list_type::const_iterator 
+				it = edge.get_child_edges().begin();
+		GPlatesAppLogic::ReconstructionTree::edge_list_type::const_iterator
+				end = edge.get_child_edges().end();
 
-		for( ; it != end ; it++)
+		for( ; it != end ; ++it)
 		{
 			QTreeWidgetItem* child_item = new QTreeWidgetItem(item,0);
 			fill_tree_item(child_item,*it);
@@ -307,10 +306,10 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::TotalReconstructionPolesDialog
 			new VisualLayersComboBox(
 				view_state.get_visual_layers(),
 				view_state.get_visual_layer_registry(),
-				std::bind1st(std::equal_to<GPlatesPresentation::VisualLayerType::Type>(),
-					static_cast<GPlatesPresentation::VisualLayerType::Type>(
-						GPlatesAppLogic::LayerTaskType::RECONSTRUCTION)),
-				this))
+				[] (GPlatesPresentation::VisualLayerType::Type layer_type)
+				{ return layer_type == GPlatesAppLogic::LayerTaskType::RECONSTRUCTION; },
+				this)),
+	d_need_to_update_when_visible(false)
 {
 	setupUi(this);
 	QtWidgetUtils::add_widget_to_placeholder(
@@ -320,31 +319,31 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::TotalReconstructionPolesDialog
 
 	QHeaderView *equivalent_header = table_equivalent->horizontalHeader();
 
-	equivalent_header->setResizeMode(ColumnNames::PLATEID, QHeaderView::Fixed);
-	equivalent_header->setResizeMode(ColumnNames::LONGITUDE, QHeaderView::Fixed);
-	equivalent_header->setResizeMode(ColumnNames::LATITUDE, QHeaderView::Fixed);
-	equivalent_header->setResizeMode(ColumnNames::ANGLE, QHeaderView::Fixed);
+	equivalent_header->setSectionResizeMode(ColumnNames::PLATEID, QHeaderView::Fixed);
+	equivalent_header->setSectionResizeMode(ColumnNames::LONGITUDE, QHeaderView::Fixed);
+	equivalent_header->setSectionResizeMode(ColumnNames::LATITUDE, QHeaderView::Fixed);
+	equivalent_header->setSectionResizeMode(ColumnNames::ANGLE, QHeaderView::Fixed);
 
 	QHeaderView *equivalent_vertical = table_equivalent->verticalHeader();
 	equivalent_vertical->hide();
 
 	QHeaderView *relative_header = table_relative->horizontalHeader();
 
-	relative_header->setResizeMode(ColumnNames::PLATEID, QHeaderView::Fixed);
-	relative_header->setResizeMode(ColumnNames::LONGITUDE, QHeaderView::Fixed);
-	relative_header->setResizeMode(ColumnNames::LATITUDE, QHeaderView::Fixed);
-	relative_header->setResizeMode(ColumnNames::ANGLE, QHeaderView::Fixed);
-	relative_header->setResizeMode(ColumnNames::FIXED, QHeaderView::Fixed);
+	relative_header->setSectionResizeMode(ColumnNames::PLATEID, QHeaderView::Fixed);
+	relative_header->setSectionResizeMode(ColumnNames::LONGITUDE, QHeaderView::Fixed);
+	relative_header->setSectionResizeMode(ColumnNames::LATITUDE, QHeaderView::Fixed);
+	relative_header->setSectionResizeMode(ColumnNames::ANGLE, QHeaderView::Fixed);
+	relative_header->setSectionResizeMode(ColumnNames::FIXED, QHeaderView::Fixed);
 
 	QHeaderView *relative_vertical = table_relative->verticalHeader();
 	relative_vertical->hide();
 
 	QHeaderView *tree_reconstruction_header = tree_reconstruction->header();
-	tree_reconstruction_header->setResizeMode(0,QHeaderView::ResizeToContents);
-	tree_reconstruction_header->setResizeMode(1,QHeaderView::Fixed);
-	tree_reconstruction_header->setResizeMode(2,QHeaderView::Fixed);
-	tree_reconstruction_header->setResizeMode(3,QHeaderView::Fixed);
-	tree_reconstruction_header->setMovable(false);
+	tree_reconstruction_header->setSectionResizeMode(0,QHeaderView::ResizeToContents);
+	tree_reconstruction_header->setSectionResizeMode(1,QHeaderView::Fixed);
+	tree_reconstruction_header->setSectionResizeMode(2,QHeaderView::Fixed);
+	tree_reconstruction_header->setSectionResizeMode(3,QHeaderView::Fixed);
+	tree_reconstruction_header->setSectionsMovable(false);
 
 	tree_reconstruction_header->resizeSection(1,100);
 	tree_reconstruction_header->resizeSection(2,270);
@@ -352,11 +351,11 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::TotalReconstructionPolesDialog
 
 
 	QHeaderView *tree_circuit_header = tree_circuit->header();
-	tree_circuit_header->setResizeMode(0,QHeaderView::ResizeToContents);
-	tree_circuit_header->setResizeMode(1,QHeaderView::Fixed);
-	tree_circuit_header->setResizeMode(2,QHeaderView::Fixed);
-	tree_circuit_header->setResizeMode(3,QHeaderView::Fixed);
-	tree_circuit_header->setMovable(false);
+	tree_circuit_header->setSectionResizeMode(0,QHeaderView::ResizeToContents);
+	tree_circuit_header->setSectionResizeMode(1,QHeaderView::Fixed);
+	tree_circuit_header->setSectionResizeMode(2,QHeaderView::Fixed);
+	tree_circuit_header->setSectionResizeMode(3,QHeaderView::Fixed);
+	tree_circuit_header->setSectionsMovable(false);
 
 	tree_circuit_header->resizeSection(1,100);
 	tree_circuit_header->resizeSection(2,270);
@@ -401,19 +400,17 @@ void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_equivalent_table(
 		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree)
 {
-	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it = 
-			reconstruction_tree.edge_map_begin();
-	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator end = 
-			reconstruction_tree.edge_map_end();
+	GPlatesAppLogic::ReconstructionTree::edge_map_type::const_iterator it = 
+			reconstruction_tree.get_all_edges().begin();
+	GPlatesAppLogic::ReconstructionTree::edge_map_type::const_iterator end =
+			reconstruction_tree.get_all_edges().end();
 
 	for( ; it != end ; ++it)
 	{
 		// Fill in a row of the table.
 		int num_row = table_equivalent->rowCount();
 		populate_rotation_table_row(table_equivalent, num_row, it->first,
-				it->second->composed_absolute_rotation());
+				it->second->get_composed_absolute_rotation());
 	}
 
 }
@@ -427,44 +424,25 @@ void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_relative_table(
 		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree)
 {
-	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it = 
-			reconstruction_tree.edge_map_begin();
-	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator end = 
-			reconstruction_tree.edge_map_end();
+	GPlatesAppLogic::ReconstructionTree::edge_map_type::const_iterator it = 
+			reconstruction_tree.get_all_edges().begin();
+	GPlatesAppLogic::ReconstructionTree::edge_map_type::const_iterator end =
+			reconstruction_tree.get_all_edges().end();
 
 	for( ; it != end ; ++it)
 	{
 		// Fill in a row of the table (or at least the first four fields).
 		int num_row = table_relative->rowCount();
 		populate_rotation_table_row(table_relative, num_row, it->first,
-				it->second->relative_rotation());
+				it->second->get_relative_rotation());
 
 		// Now insert the fixed plate ID into the second-last column of the table.
-		GPlatesModel::integer_plate_id_type fixed_id = it->second->fixed_plate();
+		GPlatesModel::integer_plate_id_type fixed_id = it->second->get_fixed_plate();
 		QString fixed_string;
 		fixed_string.setNum(fixed_id);
 		QTableWidgetItem* fixed_item = new QTableWidgetItem(fixed_string);
 		fixed_item->setFlags(Qt::ItemIsEnabled);
 		table_relative->setItem(num_row, ColumnNames::FIXED, fixed_item);
-
-		// Finally, state whether the pole was interpolated or not.
-
-		// Assume that these strings won't change after the first time this function
-		// is called, so we can keep the QStrings in static local vars.
-		static QString interp_tr_str = tr("interp");
-		static QString not_interp_tr_str = tr("not-interp");
-
-		if (it->second->finite_rotation_was_interpolated()) {
-			QTableWidgetItem* interp_item = new QTableWidgetItem(interp_tr_str);
-			interp_item->setFlags(Qt::ItemIsEnabled);
-			table_relative->setItem(num_row, ColumnNames::INTERPOLATED, interp_item);
-		} else {
-			QTableWidgetItem* not_interp_item = new QTableWidgetItem(not_interp_tr_str);
-			not_interp_item->setFlags(Qt::ItemIsEnabled);
-			table_relative->setItem(num_row, ColumnNames::INTERPOLATED, not_interp_item);
-		}
 	}
 
 }
@@ -477,14 +455,14 @@ void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_reconstruction_tree(
 		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree)
 {
-	std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it = 
-			reconstruction_tree.rootmost_edges_begin();
-	std::vector<GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator end = 
-			reconstruction_tree.rootmost_edges_end();
+	GPlatesAppLogic::ReconstructionTree::edge_list_type::const_iterator it = 
+			reconstruction_tree.get_anchor_plate_edges().begin();
+	GPlatesAppLogic::ReconstructionTree::edge_list_type::const_iterator end = 
+			reconstruction_tree.get_anchor_plate_edges().end();
 
 	for( ; it != end; ++it)
 	{
-		//std::cerr << (*it)->moving_plate() << std::endl;
+		//std::cerr << it->get_moving_plate() << std::endl;
 		
 		// Create a QTreeWidgetItem for each of the rootmost edges, and recursively
 		// add its children to the tree 
@@ -505,13 +483,10 @@ void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_circuit_tree(
 		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree)
 {
-	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator it = 
-			reconstruction_tree.edge_map_begin();
-	std::multimap<GPlatesModel::integer_plate_id_type,
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type>::const_iterator end = 
-			reconstruction_tree.edge_map_end();
-
+	GPlatesAppLogic::ReconstructionTree::edge_map_type::const_iterator it = 
+			reconstruction_tree.get_all_edges().begin();
+	GPlatesAppLogic::ReconstructionTree::edge_map_type::const_iterator end =
+			reconstruction_tree.get_all_edges().end();
 
 	for( ; it != end ; ++it)
 	{
@@ -526,19 +501,17 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::fill_circuit_tree(
 		// go up the rotation tree using the parent, until 
 		// we come to the stationary plate.
 	
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge = it->second;
+		const GPlatesAppLogic::ReconstructionTree::Edge *edge = it->second;
 
-		while (edge->parent_edge()) {
+		while (edge->get_parent_edge()) {
 			QTreeWidgetItem *child = new QTreeWidgetItem(item,0);
-			fill_tree_item(child,edge);
+			fill_tree_item(child, *edge);
 
-			edge = GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type(
-					edge->parent_edge(),
-					GPlatesUtils::NullIntrusivePointerHandler());
+			edge = edge->get_parent_edge();
 		}
 		// and finally add the edge from the last plate to the stationary plate
 		QTreeWidgetItem *child = new QTreeWidgetItem(item,0);
-		fill_tree_item(child,edge);		
+		fill_tree_item(child, *edge);		
 
 	}
 
@@ -553,7 +526,18 @@ void
 GPlatesQtWidgets::TotalReconstructionPolesDialog::showEvent(
 		QShowEvent *event_)
 {
-	update_if_layer_changed();
+	if (d_need_to_update_when_visible)
+	{
+		// If we ignored a previous update because we were not visible at the time,
+		// then update now that we've just become visible.
+		d_need_to_update_when_visible = false;
+		update();
+	}
+	else
+	{
+		// Otherwise just check if the user switched reconstruction layers.
+		update_if_layer_changed();
+	}
 }	
 
 
@@ -562,7 +546,13 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::update_if_visible()
 {
 	if (isVisible())
 	{
+		// Update immediately.
 		update();
+	}
+	else
+	{
+		// Delay update until next time we're visible.
+		d_need_to_update_when_visible = true;
 	}
 }
 
@@ -572,15 +562,13 @@ GPlatesQtWidgets::TotalReconstructionPolesDialog::update_if_layer_changed()
 {
 	boost::weak_ptr<GPlatesPresentation::VisualLayer> visual_layer =
 		d_visual_layers_combobox->get_selected_visual_layer();
-	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = visual_layer.lock())
+
+	boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = visual_layer.lock();
+	boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_curr_visual_layer = d_curr_visual_layer.lock();
+	if (locked_curr_visual_layer != locked_visual_layer)
 	{
-		if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_curr_visual_layer = d_curr_visual_layer.lock())
-		{
-			if (locked_curr_visual_layer != locked_visual_layer)
-			{
-				update();
-			}
-		}
+
+		update();
 	}
 }
 

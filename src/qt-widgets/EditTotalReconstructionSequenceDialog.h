@@ -31,7 +31,7 @@
 #include "model/FeatureHandle.h"
 #include "property-values/GpmlIrregularSampling.h"
 
-#include "EditTotalReconstructionSequenceDialogUi.h"
+#include "ui_EditTotalReconstructionSequenceDialogUi.h"
 
 namespace GPlatesQtWidgets
 {

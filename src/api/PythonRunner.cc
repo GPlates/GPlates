@@ -32,17 +32,21 @@
 
 #include "PythonExecutionMonitor.h"
 #include "PythonInterpreterLocker.h"
+
 #include "api/PythonUtils.h"
 #include "api/Sleeper.h"
+
 #include "app-logic/ApplicationState.h"
 
 #include "global/CompilerWarnings.h"
+#include "global/python.h"  // PY_MAJOR_VERSION
+
+#include "gui/PythonManager.h"
 
 #include "utils/DeferredCallEvent.h"
 #include "utils/StringUtils.h"
-#include "gui/PythonManager.h"
 
-#if !defined(GPLATES_NO_PYTHON)
+
 GPlatesApi::PythonRunner::PythonRunner(
 		const boost::python::object &main_namespace,
 		QObject *parent_) :
@@ -57,7 +61,12 @@ GPlatesApi::PythonRunner::PythonRunner(
 		d_console = eval("code.InteractiveConsole(locals())", d_namespace, d_namespace);
 		PyRun_SimpleString("del code");
 
-		object builtin_module = import("__builtin__");
+		object builtin_module =
+#if PY_MAJOR_VERSION >= 3
+			import("builtins");
+#else
+			import("__builtin__");
+#endif
 		d_compile = builtin_module.attr("compile");
 		d_eval = builtin_module.attr("eval");
 	}
@@ -456,7 +465,3 @@ GPlatesApi::PythonRunner::handle_system_exit(
 
 // See above.
 ENABLE_GCC_WARNING("-Wold-style-cast")
-#endif // GPLATES_NO_PYTHON
-
-
-

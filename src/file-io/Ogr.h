@@ -31,20 +31,13 @@
 #include "global/GdalVersion.h"
 
 
-#ifdef HAVE_CONFIG_H
-// We're building on a UNIX-y system, and can thus expect "global/config.h".
-
 // On some systems, it's <ogrsf_frmts.h>, on others, <gdal/ogrsf_frmts.h>.
 // The "CMake" script should have determined which one to use.
 #include "global/config.h"
-#ifdef HAVE_GDAL_OGRSF_FRMTS_H
+#ifdef GPLATES_HAVE_GDAL_OGRSF_FRMTS_H
 #include <gdal/ogrsf_frmts.h>
 #else
 #include <ogrsf_frmts.h>
 #endif
-
-#else  // We're not building on a UNIX-y system.  We'll have to assume it's <ogrsf_frmts.h>.
-#include <ogrsf_frmts.h>
-#endif  // HAVE_CONFIG_H
 
 #endif // GPLATES_FILEIO_OGR_H

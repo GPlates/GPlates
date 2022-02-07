@@ -247,7 +247,7 @@ namespace GPlatesAppLogic
 				// need to reconstruct according to the reconstruction plate ID.
 				d_reconstruction_rotation =
 						Transform::create(
-								d_reconstruction_tree->get_composed_absolute_rotation(reconstruction_plate_id).first,
+								d_reconstruction_tree->get_composed_absolute_rotation(reconstruction_plate_id),
 								reconstruction_plate_id);
 
 				// Now visit the feature to reconstruct any geometries we find.

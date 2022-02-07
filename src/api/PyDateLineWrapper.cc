@@ -40,8 +40,6 @@
 #include "maths/LatLonPoint.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -454,5 +452,3 @@ export_date_line_wrapper()
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesMaths::DateLineWrapper>();
 }
-
-#endif // GPLATES_NO_PYTHON

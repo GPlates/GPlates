@@ -25,11 +25,6 @@
 
 #include "PyRevisionedVector.h"
 
-#include "property-values/GpmlTimeSample.h"
-#include "property-values/GpmlTimeWindow.h"
-
-
-#if !defined(GPLATES_NO_PYTHON)
 
 namespace GPlatesApi
 {
@@ -74,18 +69,3 @@ namespace GPlatesApi
 		return python_list_docstring_stream.str();
 	}
 }
-
-
-void
-export_revisioned_vector()
-{
-	using namespace GPlatesModel;
-	using namespace GPlatesPropertyValues;
-
-	// Export all required instantiations of class template RevisionedVector...
-
-	GPlatesApi::Implementation::RevisionedVectorWrapper<GpmlTimeSample>::wrap("GpmlTimeSample");
-	GPlatesApi::Implementation::RevisionedVectorWrapper<GpmlTimeWindow>::wrap("GpmlTimeWindow");
-}
-
-#endif // GPLATES_NO_PYTHON

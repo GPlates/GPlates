@@ -252,6 +252,18 @@ namespace GPlatesGui
 				const double &max_log_spacing = 0.3);
 
 
+		/**
+		 * A multi-colour colour palette used to colour strain rate style in deformation networks.
+		 *
+		 * Subsequently visiting the returned colour palette will visit a @a RegularCptColourPalette
+		 * since the returned palette (which is actually a @a ColourPaletteAdapter) adapts one.
+		 */
+		ColourPalette<double>::non_null_ptr_type
+		create_strain_rate_strain_rate_style_colour_palette(
+				double min_strain_rate_style,
+				double max_strain_rate_style);
+
+
 		//
 		// Transcribe for sessions/projects.
 		//

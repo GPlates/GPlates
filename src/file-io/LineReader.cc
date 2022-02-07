@@ -31,12 +31,15 @@ GPlatesFileIO::LineReader::LineReader(
 	d_line_number(0),
 	d_have_buffered_line(false)
 {
+	// Assume input text file is UTF8 encoded (which includes the ASCII character set).
+	// If we don't specify this then UTF8 characters will not decoded correctly on reading.
+	d_text_stream.setCodec("UTF-8");
 }
 
 
 bool
 GPlatesFileIO::LineReader::getline(
-		std::string &line)
+		QString &line)
 {
 	if (d_have_buffered_line)
 	{
@@ -59,7 +62,7 @@ GPlatesFileIO::LineReader::getline(
 
 bool
 GPlatesFileIO::LineReader::peekline(
-		std::string &line)
+		QString &line)
 {
 	if (d_have_buffered_line)
 	{
@@ -81,38 +84,18 @@ GPlatesFileIO::LineReader::peekline(
 
 bool
 GPlatesFileIO::LineReader::readline(
-		std::string &line)
+		QString &line)
 {
 	if (d_text_stream.atEnd())
 	{
 		return false;
 	}
 
-	// Using QFile but still returning std::string to avoid introducing bugs into clients of this class.
-	// TODO: Change this class and clients to use 'QString' instead of 'std::string'.
-	line = d_text_stream.readLine().toStdString();
+	// Note that QTextStream::readLine() recognises both "\n" (used by Unix and Mac OS X) and
+	// "\r\n" (used by Windows). It doesn't recognise "\r" used by Macs prior to Mac OS X, but
+	// those are very old systems and hopefully we don't have any (or many) files around these
+	// days with just "\r".
+	line = d_text_stream.readLine();
 
 	return true;
-
-	//
-	// TODO: Handle mixtures of newline conventions.
-	//
-#if defined(__WINDOWS__)
-	// On windows std::getline:
-	// CR/LF -> NULL
-	// LF    -> NULL
-	// CR    -> CR
-	// 
-#elif defined(__APPLE__)
-	// On MacOS std::getline:
-	// CR/LF -> LF
-	// LF    -> LF
-	// CR    -> NULL
-#else
-	/* Other platforms - assume unix */
-	// On unix std::getline:
-	// CR/LF -> CR
-	// LF    -> NULL
-	// CR    -> CR
-#endif
 }

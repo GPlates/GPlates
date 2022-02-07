@@ -30,11 +30,6 @@
 
 #include "global/python.h"
 
-//#include "utils/ReferenceCount.h"
-//#include "utils/non_null_intrusive_ptr.h"
-
-#ifndef GPLATES_NO_PYTHON
-
 namespace bp=boost::python;
 
 namespace GPlatesApi
@@ -74,6 +69,6 @@ namespace GPlatesApi
 	};
 
 }
-#endif
+
 #endif  // GPLATES_API_COREGISTRATIONPROXY_H
 

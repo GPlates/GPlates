@@ -31,7 +31,7 @@
 #include <QBasicTimer>
 #include <QString>
 
-#include "PythonExecutionMonitorWidgetUi.h"
+#include "ui_PythonExecutionMonitorWidgetUi.h"
 
 
 namespace GPlatesApi

@@ -11,6 +11,8 @@ Create common feature types
 
 .. seealso:: :ref:`pygplates_query_common_feature_types`
 
+.. seealso:: :ref:`pygplates_create_topological_features`
+
 .. contents::
    :local:
    :depth: 2

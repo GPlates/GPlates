@@ -51,13 +51,24 @@
 #include "model/RevisionedVector.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	/**
-	 * Adds boost::python::class_ def methods that treat a python class as if it was a python list
-	 * by delegating to a RevisionedVector (which behaves like a python list).
+	 * Create a new python class (boost::python::class_) with a class name of
+	 * @a element_class_name with "List" appended that behaves like a list of @a RevisionableType.
+	 *
+	 * The new python class behaves as if it was a python list by wrapping a RevisionedVector<RevisionableType>
+	 * (which behaves like a python list).
+	 */
+	template <class RevisionableType>
+	void
+	create_python_class_as_revisioned_vector(
+			const char *element_class_name);
+
+
+	/**
+	 * Adds boost::python::class_ def methods to an existing python class, so that it looks like a
+	 * python list, by delegating to a RevisionedVector (which behaves like a python list).
 	 *
 	 * Template parameter 'ClassType' is the C++ class from which the revisioned vector is obtained
 	 * via template parameter function 'GetRevisionedVectorFunction'.
@@ -1160,7 +1171,7 @@ namespace GPlatesApi
 			{
 				return slice.get_indicies(revisioned_vector->begin(), revisioned_vector->end());
 			}
-			catch (std::invalid_argument)
+			catch (const std::invalid_argument &)
 			{
 				// The range was empty.
 			}
@@ -1522,6 +1533,15 @@ namespace GPlatesApi
 	}
 
 
+	template <class RevisionableType>
+	void
+	create_python_class_as_revisioned_vector(
+			const char *element_class_name)
+	{
+		Implementation::RevisionedVectorWrapper<RevisionableType>::wrap(element_class_name);
+	}
+
+
 	template <
 			class ClassType,
 			class RevisionableType,
@@ -1552,7 +1572,5 @@ namespace GPlatesApi
 						::wrap(python_class, class_name);
 	}
 }
-
-#endif // GPLATES_NO_PYTHON
 
 #endif // GPLATES_API_PYREVISIONEDVECTOR_H

@@ -574,7 +574,7 @@ GPlatesOpenGL::GLNormalMapSource::gpu_convert_height_field_to_normal_map(
 	{
 		// No unused texture so create a new one...
 		height_field_texture = d_height_field_texture_cache->allocate_object(
-				GLTexture::create_as_auto_ptr(renderer));
+				GLTexture::create_as_unique_ptr(renderer));
 
 		// The texture was just allocated so we need to create it in OpenGL.
 		create_height_tile_texture(renderer, height_field_texture.get());

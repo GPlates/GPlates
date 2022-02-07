@@ -42,8 +42,6 @@
 #include "model/TopLevelPropertyInline.h"
 #include "model/ModelUtils.h"
 
-#include "presentation/Application.h"
-
 #include "property-values/GpmlFiniteRotation.h"
 #include "property-values/GpmlFiniteRotationSlerp.h"
 #include "property-values/GpmlIrregularSampling.h"
@@ -69,7 +67,9 @@ namespace
 
 GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::TotalReconstructionSequenceRotationInserter(
 		const double &recon_time,
-		const GPlatesMaths::Rotation &rotation_to_apply) :
+		const GPlatesMaths::Rotation &rotation_to_apply,
+		GPlatesAppLogic::FeatureCollectionFileState &file_state) :
+	d_file_state(file_state),
 	d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time)),
 	d_rotation_to_apply(rotation_to_apply),
 	d_is_expecting_a_finite_rotation(false),
@@ -106,10 +106,7 @@ GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter::initialise_
 		d_fixed_plate_id = *fixed_plate_id;
 	}
 
-	FeatureCollectionFileState &file_state = 
-		GPlatesPresentation::Application::instance().get_application_state().get_feature_collection_file_state();
-	std::vector<FeatureCollectionFileState::file_reference> loaded_files =
-		file_state.get_loaded_files();
+	std::vector<FeatureCollectionFileState::file_reference> loaded_files = d_file_state.get_loaded_files();
 
 	std::vector<FeatureCollectionFileState::file_reference>::iterator 
 		iter = loaded_files.begin(),

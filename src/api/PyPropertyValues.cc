@@ -34,19 +34,24 @@
 
 #include "PyPropertyValues.h"
 
+#include "PyFeature.h"
 #include "PyInformationModel.h"
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PyQualifiedXmlNames.h"
 #include "PyRevisionedVector.h"
 
 #include "app-logic/GeometryUtils.h"
+#include "app-logic/ReconstructionFeatureProperties.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
 
 #include "global/python.h"
+
+#include "maths/GeometryOnSphere.h"
 
 #include "model/FeatureVisitor.h"
 #include "model/Gpgim.h"
@@ -79,8 +84,15 @@
 #include "property-values/GpmlPiecewiseAggregation.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/GpmlPolarityChronId.h"
+#include "property-values/GpmlPropertyDelegate.h"
 #include "property-values/GpmlTimeSample.h"
 #include "property-values/GpmlTimeWindow.h"
+#include "property-values/GpmlTopologicalLine.h"
+#include "property-values/GpmlTopologicalLineSection.h"
+#include "property-values/GpmlTopologicalNetwork.h"
+#include "property-values/GpmlTopologicalPoint.h"
+#include "property-values/GpmlTopologicalPolygon.h"
+#include "property-values/GpmlTopologicalSection.h"
 #include "property-values/TextContent.h"
 #include "property-values/XsBoolean.h"
 #include "property-values/XsDouble.h"
@@ -89,8 +101,6 @@
 
 #include "utils/UnicodeString.h"
 
-
-#if !defined(GPLATES_NO_PYTHON)
 
 namespace bp = boost::python;
 
@@ -164,6 +174,12 @@ export_property_value()
 					"* :class:`XsDouble`\n"
 					"* :class:`XsInteger`\n"
 					"* :class:`XsString`\n"
+					"\n"
+					"The following subset of derived property value classes are topological geometries:\n"
+					"\n"
+					"* :class:`GpmlTopologicalLine`\n"
+					"* :class:`GpmlTopologicalPolygon`\n"
+					"* :class:`GpmlTopologicalNetwork`\n"
 					"\n"
 					"The following subset of derived property value classes are time-dependent wrappers:\n"
 					"\n"
@@ -417,6 +433,11 @@ export_enumeration()
 				"\n"
 				"    dip_slip_enum.set_content('Extension')\n")
 	;
+
+#if 0  // Not registering Enumeration because it represents many different structural types (it stores an EnumerationType).
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::Enumeration>();
+#endif
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::Enumeration>();
@@ -894,6 +915,9 @@ export_gml_data_block()
 				"  .. note:: If *scalar_type* does not exist in the data block then it is ignored and nothing is done.\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GmlDataBlock>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlDataBlock>();
 }
@@ -944,6 +968,9 @@ export_gml_line_string()
 				"  :param polyline: the polyline geometry\n"
 				"  :type polyline: :class:`PolylineOnSphere`\n")
 	;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GmlLineString>();
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlLineString>();
@@ -1005,6 +1032,9 @@ export_gml_multi_point()
 				"  :param multi_point: the multi-point geometry\n"
 				"  :type multi_point: :class:`MultiPointOnSphere`\n")
 	;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GmlMultiPoint>();
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlMultiPoint>();
@@ -1080,6 +1110,9 @@ export_gml_orientable_curve()
 				"  :type base_curve: :class:`GmlLineString`\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GmlOrientableCurve>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlOrientableCurve>();
 }
@@ -1146,6 +1179,9 @@ export_gml_point()
 				", in degrees, or tuple (x,y,z)\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GmlPoint>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlPoint>();
 }
@@ -1209,6 +1245,9 @@ export_gml_polygon()
 				"  :param polygon: the polygon geometry\n"
 				"  :type polygon: :class:`PolygonOnSphere`\n")
 	;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GmlPolygon>();
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlPolygon>();
@@ -1277,6 +1316,9 @@ export_gml_time_instant()
 				"  :param time_position: the time position\n"
 				"  :type time_position: float or :class:`GeoTimeInstant`\n")
 	;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GmlTimeInstant>();
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlTimeInstant>();
@@ -1432,6 +1474,9 @@ export_gml_time_period()
 				"coincides with the :meth:`begin<get_begin_time>` or :meth:`end<get_end_time>` time.\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GmlTimePeriod>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GmlTimePeriod>();
 }
@@ -1553,7 +1598,7 @@ export_gpml_array()
 			"\n"
 			"    array = pygplates.GpmlArray(elements)\n");
 
-	// Used 'GPlatesApi::gpml_array_get_revisioned_vector()' to make 'GpmlArray' look like a python list (RevisionedVector).
+	// Make 'GpmlArray' look like a python list (RevisionedVector<PropertyValue>).
 	GPlatesApi::wrap_python_class_as_revisioned_vector<
 			GPlatesPropertyValues::GpmlArray,
 			GPlatesModel::PropertyValue,
@@ -1563,6 +1608,9 @@ export_gpml_array()
 			&GPlatesApi::gpml_array_get_revisioned_vector>(
 					gpml_array_class,
 					gpml_array_class_name);
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlArray>();
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlArray>();
@@ -1744,6 +1792,9 @@ export_gpml_finite_rotation()
 				"  :type finite_rotation: :class:`FiniteRotation`\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlFiniteRotation>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlFiniteRotation>();
 }
@@ -1792,11 +1843,11 @@ export_gpml_finite_rotation_slerp()
 				"    finite_rotation_slerp = pygplates.GpmlFiniteRotationSlerp()\n")
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class GpmlInterpolationFunction.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GpmlFiniteRotationSlerp,
-			GPlatesPropertyValues::GpmlInterpolationFunction>();
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlFiniteRotationSlerp>();
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlFiniteRotationSlerp>();
 #endif
 }
 
@@ -1828,11 +1879,11 @@ export_gpml_hot_spot_trail_mark()
 		.def("get_measured_age", measured_age)
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GpmlHotSpotTrailMark,
-			GPlatesModel::PropertyValue>();
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlHotSpotTrailMark>();
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlHotSpotTrailMark>();
 #endif
 }
 
@@ -1864,11 +1915,11 @@ export_gpml_interpolation_function()
 					bp::no_init)
 	;
 
-	// Enable boost::optional<non_null_intrusive_ptr<> > to be passed to and from python.
-	// Also registers various 'const' and 'non-const' conversions to base class PropertyValue.
-	GPlatesApi::PythonConverterUtils::register_optional_non_null_intrusive_ptr_and_implicit_conversions<
-			GPlatesPropertyValues::GpmlInterpolationFunction,
-			GPlatesModel::PropertyValue>();
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlInterpolationFunction>();
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlInterpolationFunction>();
 #endif
 }
 
@@ -2082,12 +2133,11 @@ export_gpml_irregular_sampling()
 		.def("get_time_samples",
 				&GPlatesApi::gpml_irregular_sampling_get_time_samples,
 				"get_time_samples()\n"
-				"  Returns the :class:`time samples<GpmlTimeSampleList>` in a sequence that behaves as a python ``list``.\n"
+				"  Returns the :class:`time samples<GpmlTimeSample>` in a sequence that behaves as a python ``list``.\n"
 				"\n"
 				"  :rtype: :class:`GpmlTimeSampleList`\n"
 				"\n"
-				"  Modifying the returned sequence will modify the internal state of the *GpmlIrregularSampling* "
-				"instance:\n"
+				"  Modifying the returned sequence will modify the internal state of the *GpmlIrregularSampling* instance:\n"
 				"  ::\n"
 				"\n"
 				"    time_samples = irregular_sampling.get_time_samples()\n"
@@ -2120,6 +2170,17 @@ export_gpml_irregular_sampling()
 				"  hence modifications to the ``list`` such as ``list.sort`` (as opposed to modifications to the list\n"
 				"  *elements*) will **not** modify the internal state of the :class:`GpmlIrregularSampling` instance\n"
 				"  (it only modifies the returned ``list``).\n")
+		.def("get_value_type",
+				&GPlatesPropertyValues::GpmlIrregularSampling::get_value_type,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_value_type()\n"
+				"  Returns the type of property value returned by :meth:`get_value`.\n"
+				"\n"
+				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
+				"\n"
+				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
+				"\n"
+				"  .. versionadded:: 21\n")
 		// Not including interpolation function since it is not really used (yet) in GPlates and hence
 		// is just extra baggage for the python API user (we can add it later though)...
 #if 0
@@ -2142,8 +2203,7 @@ export_gpml_irregular_sampling()
 #endif
 	;
 
-	// Used 'GPlatesApi::gpml_irregular_sampling_get_time_samples()' to make 'GpmlIrregularSampling'
-	// look like a python list (RevisionedVector).
+	// Make 'GpmlIrregularSampling' look like a python list (RevisionedVector<GpmlTimeSample>).
 	GPlatesApi::wrap_python_class_as_revisioned_vector<
 			GPlatesPropertyValues::GpmlIrregularSampling,
 			GPlatesPropertyValues::GpmlTimeSample,
@@ -2755,6 +2815,9 @@ export_gpml_key_value_dictionary()
 				"  If *key* does not exist in the dictionary then it is ignored and nothing is done.\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlKeyValueDictionary>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlKeyValueDictionary>();
 
@@ -3028,6 +3091,9 @@ export_gpml_old_plates_header()
 				"  :type number_of_points: int\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlOldPlatesHeader>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlOldPlatesHeader>();
 }
@@ -3169,12 +3235,11 @@ export_gpml_piecewise_aggregation()
 		.def("get_time_windows",
 				&GPlatesApi::gpml_piecewise_aggregation_get_time_windows,
 				"get_time_windows()\n"
-				"  Returns the :class:`time windows<GpmlTimeWindowList>` in a sequence that behaves as a python ``list``.\n"
+				"  Returns the :class:`time windows<GpmlTimeWindow>` in a sequence that behaves as a python ``list``.\n"
 				"\n"
 				"  :rtype: :class:`GpmlTimeWindowList`\n"
 				"\n"
-				"  Modifying the returned sequence will modify the internal state of the *GpmlPiecewiseAggregation* "
-				"instance:\n"
+				"  Modifying the returned sequence will modify the internal state of the *GpmlPiecewiseAggregation* instance:\n"
 				"  ::\n"
 				"\n"
 				"    time_windows = piecewise_aggregation.get_time_windows()\n"
@@ -3188,10 +3253,20 @@ export_gpml_piecewise_aggregation()
 				"\n"
 				"    # Sort windows by begin time.\n"
 				"    piecewise_aggregation.sort(key = lambda tw: tw.get_begin_time())\n")
+		.def("get_value_type",
+				&GPlatesPropertyValues::GpmlPiecewiseAggregation::get_value_type,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_value_type()\n"
+				"  Returns the type of property value returned by :meth:`get_value`.\n"
+				"\n"
+				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
+				"\n"
+				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
+				"\n"
+				"  .. versionadded:: 21\n")
 	;
 
-	// Used 'GPlatesApi::gpml_piecewise_aggregation_get_time_windows()' to make 'GpmlPiecewiseAggregation'
-	// look like a python list (RevisionedVector).
+	// Make 'GpmlPiecewiseAggregation' look like a python list (RevisionedVector<GpmlTimeWindow>).
 	GPlatesApi::wrap_python_class_as_revisioned_vector<
 			GPlatesPropertyValues::GpmlPiecewiseAggregation,
 			GPlatesPropertyValues::GpmlTimeWindow,
@@ -3254,6 +3329,9 @@ export_gpml_plate_id()
 				"  :param plate_id: integer plate id\n"
 				"  :type plate_id: int\n")
 	;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlPlateId>();
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlPlateId>();
@@ -3420,8 +3498,91 @@ export_gpml_polarity_chron_id()
 				"  :type minor_region: string\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlPolarityChronId>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlPolarityChronId>();
+}
+
+void
+export_gpml_property_delegate()
+{
+	//
+	// GpmlPropertyDelegate - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+			GPlatesPropertyValues::GpmlPropertyDelegate,
+			GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type,
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GpmlPropertyDelegate",
+					"A property value that represents a reference, or delegation, to a property in another feature.\n"
+					"\n"
+					"  .. versionadded:: 21\n",
+					// We need this (even though "__init__" is defined) since
+					// there is no publicly-accessible default constructor...
+					bp::no_init)
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesPropertyValues::GpmlPropertyDelegate::create,
+						bp::default_call_policies(),
+						(bp::arg("feature_id"),
+							bp::arg("property_name"),
+							bp::arg("property_type"))),
+				"__init__(feature_id, property_name, property_type)\n"
+				"  Create a reference, or delegation, to a property in another feature.\n"
+				"\n"
+				"  :param feature_id: the referenced feature\n"
+				"  :type feature_id: :class:`FeatureId`\n"
+				"  :param property_name: the name of the referenced property\n"
+				"  :type property_name: :class:`PropertyName`\n"
+				"  :param property_type: the type of the referenced property\n"
+				"  :type property_type: a class object of a property type (derived from :class:`PropertyValue`) "
+			"except :class:`Enumeration` and time-dependent wrappers :class:`GpmlConstantValue`, "
+			":class:`GpmlIrregularSampling` and :class:`GpmlPiecewiseAggregation`.\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    property_delegate = pygplates.GpmlPropertyDelegate(\n"
+				"        referenced_feature.get_feature_id(),\n"
+				"        pygplates.PropertyName.gpml_center_line_of,\n"
+				"        pygplates.GmlLineString)\n")
+		.def("get_feature_id",
+				&GPlatesPropertyValues::GpmlPropertyDelegate::get_feature_id,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_feature_id()\n"
+				"  Returns the feature ID of the feature containing the delegated property.\n"
+				"\n"
+				"  :rtype: :class:`FeatureId`\n")
+		.def("get_property_name",
+				&GPlatesPropertyValues::GpmlPropertyDelegate::get_target_property_name,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_property_name()\n"
+				"  Returns the property name of the delegated property.\n"
+				"\n"
+				"  :rtype: :class:`PropertyName`\n")
+		.def("get_property_type",
+				&GPlatesPropertyValues::GpmlPropertyDelegate::get_value_type,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_property_type()\n"
+				"  Returns the property type of the delegated property.\n"
+				"\n"
+				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
+				"\n"
+				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n")
+		;
+
+	// Create a python class "GpmlPropertyDelegateList" for RevisionedVector<GpmlPropertyDelegate> that behaves like a list of GpmlPropertyDelegate.
+	//
+	// This enables the RevisionedVector<GpmlPropertyDelegate> returned by 'GpmlTopologicalNetwork.get_interiors()' to be treated as a list.
+	GPlatesApi::create_python_class_as_revisioned_vector<GPlatesPropertyValues::GpmlPropertyDelegate>("GpmlPropertyDelegate");
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlPropertyDelegate>();
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlPropertyDelegate>();
 }
 
 
@@ -3569,6 +3730,17 @@ export_gpml_time_sample()
 				"  Returns the property value of this time sample.\n"
 				"\n"
 				"  :rtype: :class:`PropertyValue`\n")
+		.def("get_value_type",
+				&GPlatesPropertyValues::GpmlTimeSample::get_value_type,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_value_type()\n"
+				"  Returns the type of property value returned by :meth:`get_value`.\n"
+				"\n"
+				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
+				"\n"
+				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
+				"\n"
+				"  .. versionadded:: 21\n")
 		.def("set_value",
 				&GPlatesPropertyValues::GpmlTimeSample::set_value,
 				(bp::arg("property_value")),
@@ -3653,6 +3825,11 @@ export_gpml_time_sample()
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
 	;
+
+	// Create a python class "GpmlTimeSampleList" for RevisionedVector<GpmlTimeSample> that behaves like a list of GpmlTimeSample.
+	//
+	// This enables the RevisionedVector<GpmlTimeSample> returned by 'GpmlIrregularSampling.get_time_samples()' to be treated as a list.
+	GPlatesApi::create_python_class_as_revisioned_vector<GPlatesPropertyValues::GpmlTimeSample>("GpmlTimeSample");
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTimeSample>();
@@ -3771,6 +3948,17 @@ export_gpml_time_window()
 				"  Returns the property value of this time window.\n"
 				"\n"
 				"  :rtype: :class:`PropertyValue`\n")
+		.def("get_value_type",
+				&GPlatesPropertyValues::GpmlTimeWindow::get_value_type,
+				bp::return_value_policy<bp::copy_const_reference>(),
+				"get_value_type()\n"
+				"  Returns the type of property value returned by :meth:`get_value`.\n"
+				"\n"
+				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
+				"\n"
+				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
+				"\n"
+				"  .. versionadded:: 21\n")
 		.def("set_value",
 				&GPlatesPropertyValues::GpmlTimeWindow::set_time_dependent_value,
 				(bp::arg("property_value")),
@@ -3828,10 +4016,884 @@ export_gpml_time_window()
 		.def(bp::self != bp::self)
 	;
 
+	// Create a python class "GpmlTimeWindowList" for RevisionedVector<GpmlTimeWindow> that behaves like a list of GpmlTimeWindow.
+	//
+	// This enables the RevisionedVector<GpmlTimeWindow> returned by 'GpmlPiecewiseAggregation.get_time_windows()' to be treated as a list.
+	GPlatesApi::create_python_class_as_revisioned_vector<GPlatesPropertyValues::GpmlTimeWindow>("GpmlTimeWindow");
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTimeWindow>();
 }
 
+
+namespace GPlatesApi
+{
+	namespace
+	{
+		/**
+		 * If the section is used in a topological network then it can only be reconstructable by plate ID or half-stage rotation.
+		 *
+		 * These are the only supported reconstructable types inside the deforming network code (in Delaunay vertices).
+		 */
+		bool
+		can_use_as_topological_section_of_topological_network(
+				GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle)
+		{
+			// Get the feature's reconstruction method.
+			GPlatesAppLogic::ReconstructionFeatureProperties reconstruction_feature_properties;
+			reconstruction_feature_properties.visit_feature(feature_handle->reference());
+
+			// Note that no reconstruction method implies ByPlateId (which is allowed).
+			boost::optional<GPlatesPropertyValues::EnumerationContent> reconstruction_method =
+				reconstruction_feature_properties.get_reconstruction_method();
+			if (reconstruction_method)
+			{
+				const QString reconstruction_method_string = reconstruction_method->get().qstring();
+				if (reconstruction_method_string != "ByPlateId" &&
+					!reconstruction_method_string.startsWith("HalfStageRotation"))
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+	}
+
+	/**
+	 * Create a topological point or line section referencing the geometry of a feature.
+	 */
+	boost::optional<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type>
+	gpml_topological_section_create(
+			GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle,
+			boost::optional<GPlatesModel::PropertyName> geometry_property_name,
+			bool reverse_order,
+			boost::optional<GPlatesPropertyValues::StructuralType> topological_geometry_type)
+	{
+		// Make sure topological geometry type is a topological line, polygon or network.
+		if (topological_geometry_type)
+		{
+			if (topological_geometry_type.get() != GPlatesPropertyValues::GpmlTopologicalLine::STRUCTURAL_TYPE &&
+				topological_geometry_type.get() != GPlatesPropertyValues::GpmlTopologicalPolygon::STRUCTURAL_TYPE &&
+				topological_geometry_type.get() != GPlatesPropertyValues::GpmlTopologicalNetwork::STRUCTURAL_TYPE)
+			{
+				// Raise the 'ValueError' python exception if unexpected topological geometry type.
+				PyErr_SetString(
+					PyExc_ValueError,
+					"Topological geometry type should be GpmlTopologicalLine, GpmlTopologicalPolygon or GpmlTopologicalNetwork");
+				bp::throw_error_already_set();
+			}
+		}
+
+		// If a geometry property name is not specified then use the default geometry property of the feature's type.
+		if (!geometry_property_name)
+		{
+			geometry_property_name = get_default_geometry_property_name(feature_handle->feature_type());
+		}
+
+		bp::object feature_object(feature_handle);
+
+		// Find the geometry associated with the property name.
+		//
+		// Call python since Feature.get_geometry is implemented in python code...
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> feature_geometry =
+				bp::extract< boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> >(
+						feature_object.attr("get_geometry")(geometry_property_name));
+		if (feature_geometry)
+		{
+			// If the section is used in a topological network then it can only be reconstructable by plate ID or half-stage rotation.
+			// These are the only supported reconstructable types inside the deforming network code (in Delaunay vertices).
+			if (topological_geometry_type &&
+				topological_geometry_type.get() == GPlatesPropertyValues::GpmlTopologicalNetwork::STRUCTURAL_TYPE)
+			{
+				if (!can_use_as_topological_section_of_topological_network(feature_handle))
+				{
+					return boost::none;
+				}
+			}
+
+			// The geometry type should be a point or a polyline.
+			//
+			// The topology build tools in GPlates will also accept a polygon (interpreted a polyline)
+			// but we won't accept that here because it's pretty confusing to have a polygon form only part
+			// of a topological boundary (intuitively you might except it could only form the entire boundary).
+			const GPlatesMaths::GeometryType::Value geometry_type =
+					GPlatesAppLogic::GeometryUtils::get_geometry_type(*feature_geometry.get());
+			if (geometry_type == GPlatesMaths::GeometryType::POLYLINE)
+			{
+				const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type topological_section =
+					GPlatesPropertyValues::GpmlTopologicalLineSection::create(
+						GPlatesPropertyValues::GpmlPropertyDelegate::create(
+							feature_handle->feature_id(),
+							geometry_property_name.get(),
+							GPlatesPropertyValues::GmlLineString::STRUCTURAL_TYPE),
+						reverse_order);
+
+				return topological_section;
+			}
+			else if (geometry_type == GPlatesMaths::GeometryType::POINT)
+			{
+				const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type topological_section =
+					GPlatesPropertyValues::GpmlTopologicalPoint::create(
+						GPlatesPropertyValues::GpmlPropertyDelegate::create(
+							feature_handle->feature_id(),
+							geometry_property_name.get(),
+							GPlatesPropertyValues::GmlPoint::STRUCTURAL_TYPE));
+
+				return topological_section;
+			}
+		}
+		// else if a topological boundary or network was specified then we can also reference a topological line...
+		else if (topological_geometry_type &&
+				topological_geometry_type.get() != GPlatesPropertyValues::GpmlTopologicalLine::STRUCTURAL_TYPE)
+		{
+			// Find the topological geometry associated with the property name.
+			//
+			// Call python since Feature.get_topological_geometry is implemented in python code...
+			boost::optional<topological_geometry_property_value_type> feature_topological_geometry =
+					bp::extract< boost::optional<topological_geometry_property_value_type> >(
+							feature_object.attr("get_topological_geometry")(geometry_property_name));
+			if (feature_topological_geometry)
+			{
+				// It must be a topological *line*.
+				if (boost::get<GPlatesPropertyValues::GpmlTopologicalLine::non_null_ptr_type>(&feature_topological_geometry.get()))
+				{
+					// Ideally if the topological *line* is used in a topological network then its sub-segments can only be
+					// reconstructable by plate ID or half-stage rotation (since these are the only supported reconstructable types
+					// inside the deforming network code - in Delaunay vertices).
+					// However we only have the feature IDs of these sub-segment features (not the features themselves) and so
+					// we cannot inspect the features to ensure they are reconstructable by plate ID or half-stage rotation.
+
+					// Create a topological section referencing a topological line.
+					const GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type topological_section =
+						GPlatesPropertyValues::GpmlTopologicalLineSection::create(
+							GPlatesPropertyValues::GpmlPropertyDelegate::create(
+								feature_handle->feature_id(),
+								geometry_property_name.get(),
+								GPlatesPropertyValues::GpmlTopologicalLine::STRUCTURAL_TYPE),
+							reverse_order);
+
+					return topological_section;
+				}
+			}
+		}
+
+		return boost::none;
+	}
+
+	/**
+	 * Create a topological network interior referencing the geometry of a feature.
+	 */
+	boost::optional<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type>
+	gpml_topological_section_create_network_interior(
+			GPlatesModel::FeatureHandle::non_null_ptr_type feature_handle,
+			boost::optional<GPlatesModel::PropertyName> geometry_property_name)
+	{
+		// If a geometry property name is not specified then use the default geometry property of the feature's type.
+		if (!geometry_property_name)
+		{
+			geometry_property_name = get_default_geometry_property_name(feature_handle->feature_type());
+		}
+
+		bp::object feature_object(feature_handle);
+
+		// Find the geometry associated with the property name.
+		//
+		// Call python since Feature.get_geometry is implemented in python code...
+		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> feature_geometry =
+				bp::extract< boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> >(
+						feature_object.attr("get_geometry")(geometry_property_name));
+		if (feature_geometry)
+		{
+			// Sections in a topological network can only be reconstructable by plate ID or half-stage rotation.
+			// These are the only supported reconstructable types inside the deforming network code (in Delaunay vertices).
+			if (!can_use_as_topological_section_of_topological_network(feature_handle))
+			{
+				return boost::none;
+			}
+
+			// Any geometry type is allowed for a network interior (since only the points are used).
+			//
+			// However we still need to specify a property structural type that's appropriate for the geometry type.
+			boost::optional<GPlatesPropertyValues::StructuralType> structural_type;
+			const GPlatesMaths::GeometryType::Value geometry_type =
+					GPlatesAppLogic::GeometryUtils::get_geometry_type(*feature_geometry.get());
+			switch (geometry_type)
+			{
+			case GPlatesMaths::GeometryType::POLYLINE:
+				structural_type = GPlatesPropertyValues::GmlLineString::STRUCTURAL_TYPE;
+				break;
+			case GPlatesMaths::GeometryType::MULTIPOINT:
+				structural_type = GPlatesPropertyValues::GmlMultiPoint::STRUCTURAL_TYPE;
+				break;
+			case GPlatesMaths::GeometryType::POINT:
+				structural_type = GPlatesPropertyValues::GmlPoint::STRUCTURAL_TYPE;
+				break;
+			case GPlatesMaths::GeometryType::POLYGON:
+				{
+					static const GPlatesPropertyValues::StructuralType GML_LINEAR_RING =
+							GPlatesPropertyValues::StructuralType::create_gml("LinearRing");
+					structural_type = GML_LINEAR_RING;
+				}
+				break;
+			default:
+				return boost::none;
+			}
+
+			// Create a property delegate referencing the network interior geometry.
+			const GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type network_interior =
+				GPlatesPropertyValues::GpmlPropertyDelegate::create(
+					feature_handle->feature_id(),
+					geometry_property_name.get(),
+					structural_type.get());
+
+			return network_interior;
+		}
+		// we can also reference a topological line...
+		else
+		{
+			// Find the topological geometry associated with the property name.
+			//
+			// Call python since Feature.get_topological_geometry is implemented in python code...
+			boost::optional<topological_geometry_property_value_type> feature_topological_geometry =
+					bp::extract< boost::optional<topological_geometry_property_value_type> >(
+							feature_object.attr("get_topological_geometry")(geometry_property_name));
+			if (feature_topological_geometry)
+			{
+				// It must be a topological *line*.
+				if (boost::get<GPlatesPropertyValues::GpmlTopologicalLine::non_null_ptr_type>(&feature_topological_geometry.get()))
+				{
+					// Ideally since the topological *line* is used in a topological network then its sub-segments can only be
+					// reconstructable by plate ID or half-stage rotation (since these are the only supported reconstructable types
+					// inside the deforming network code - in Delaunay vertices).
+					// However we only have the feature IDs of these sub-segment features (not the features themselves) and so
+					// we cannot inspect the features to ensure they are reconstructable by plate ID or half-stage rotation.
+
+					// Create a property delegate referencing the network interior geometry (topological line).
+					const GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type network_interior =
+						GPlatesPropertyValues::GpmlPropertyDelegate::create(
+							feature_handle->feature_id(),
+							geometry_property_name.get(),
+							GPlatesPropertyValues::GpmlTopologicalLine::STRUCTURAL_TYPE);
+
+					return network_interior;
+				}
+			}
+		}
+
+		return boost::none;
+	}
+}
+
+void
+export_gpml_topological_section()
+{
+	// Use the 'non-const' overload so GpmlTopologicalSection can be modified via python...
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type
+			(GPlatesPropertyValues::GpmlTopologicalSection::*get_property_delegate)() =
+					&GPlatesPropertyValues::GpmlTopologicalSection::get_source_geometry;
+
+	/*
+	 * GpmlTopologicalSection - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	 *
+	 * Base class for topological section property values.
+	 *
+	 * Enables 'isinstance(obj, GpmlTopologicalSection)' in python - not that it's that useful.
+	 */
+	bp::class_<
+			GPlatesPropertyValues::GpmlTopologicalSection,
+			GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type,
+			bp::bases<GPlatesModel::PropertyValue>,
+			boost::noncopyable>(
+					"GpmlTopologicalSection",
+					"The base class inherited by all derived *topological section* property value classes.\n"
+					"\n"
+					"The list of derived topological section property value classes includes:\n"
+					"\n"
+					"* :class:`GpmlTopologicalPoint`\n"
+					"* :class:`GpmlTopologicalLineSection`\n"
+					"\n"
+					"  .. versionadded:: 21\n",
+					bp::no_init)
+		.def("create",
+			&GPlatesApi::gpml_topological_section_create,
+			(bp::arg("feature"),
+					bp::arg("geometry_property_name") = boost::optional<GPlatesModel::PropertyName>(),
+					bp::arg("reverse_order") = false,
+					bp::arg("topological_geometry_type") = boost::optional<GPlatesPropertyValues::StructuralType>()),
+			"create(feature, [geometry_property_name], [reverse_order], [topological_geometry_type])\n"
+			// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+			// (like it can a pure python function) and we cannot document it in first (signature) line
+			// because it messes up Sphinx's signature recognition...
+			"  [*staticmethod*] Create a topological section referencing a feature geometry.\n"
+			"\n"
+			"  :param feature: the feature referenced by the returned topological section\n"
+			"  :type feature: :class:`Feature`\n"
+			"  :param geometry_property_name: the optional geometry property name used to find the geometry "
+			"(topological or non-topological), if not specified then the default geometry property name associated "
+			"with the feature's :class:`type<FeatureType>` is used instead\n"
+			"  :type geometry_property_name: :class:`PropertyName`, or None\n"
+			"  :param reverse_order: whether to reverse the topological section when it's used to resolve a "
+			"topological geometry, this is ignored for *point* sections and only applies to a *line* section when "
+			"it does not intersect both its neighbours (when resolving the parent topology) - defaults to False\n"
+			"  :type reverse_order: bool\n"
+			"  :param topological_geometry_type: optional type of topological geometry that the returned section "
+			"will be used for (if specified, then used to determine what type of feature geometry can be used as a section)\n"
+			"  :type topological_geometry_type: :class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or "
+			":class:`GpmlTopologicalNetwork`, or None\n"
+			"  :rtype: :class:`GpmlTopologicalSection` (:class:`GpmlTopologicalLineSection` or :class:`GpmlTopologicalPoint`), or None\n"
+			"  :raises: ValueError if *topological_geometry_type* is specified but is not one of the accepted types "
+			"(:class:`GpmlTopologicalLine` or :class:`GpmlTopologicalPolygon` or :class:`GpmlTopologicalNetwork`)\n"
+			"\n"
+			"  If *geometry_property_name* is not specified then the default geometry property name is determined from the feature's :class:`type<FeatureType>` - "
+			"see :meth:`Feature.get_geometry` for more details.\n"
+			"\n"
+			"  A regular polyline or point can be referenced by any topological geometry (topological line, polygon or network). "
+			"However a topological *line* can only be referenced by a topological polygon or network.\n"
+			"\n"
+			"  .. note:: It's fine to ignore *reverse_order* (leave it as the default) since it is not used when resolving the topological geometry "
+			"provided it intersects both its neighbouring topological sections (in the topological geometry) - which applies only to line sections (not points). "
+			"When a line section does not intersect both neighbouring sections then its reverse flag determines its orientation when rubber-banding the topology geometry.\n"
+			"\n"
+			"  Returns ``None`` if:\n"
+			"\n"
+			"  * there is not exactly one geometry (topological or non-topological) property named *geometry_property_name* (or default) in *feature*, or\n"
+			"  * it's a regular geometry but it's not a point or polyline, or\n"
+			"  * it's a regular point/polyline and *topological_geometry_type* is a topological network but *feature* is not reconstructable by "
+			"plate ID or half-stage rotation (the only supported reconstructable types inside the deforming network Delaunay triangulation), or\n"
+			"  * it's a topological polygon or network, or\n"
+			"  * it's a topological line but *topological_geometry_type* is also a topological line (or not specified)\n"
+			"\n"
+			"  Create a topological section to be used in a :class:`GpmlTopologicalPolygon`:\n"
+			"  ::\n"
+			"\n"
+			"    boundary_sections = []\n"
+			"    \n"
+			"    boundary_section = pygplates.GpmlTopologicalSection.create(referenced_feature, "
+			"topological_geometry_type=pygplates.GpmlTopologicalPolygon)\n"
+			"    if boundary_section:\n"
+			"        boundary_sections.append(boundary_section)\n"
+			"    \n"
+			"    ...\n"
+			"    \n"
+			"    topological_boundary = pygplates.GpmlTopologicalPolygon(boundary_sections)\n"
+			"    \n"
+			"    topological_boundary_feature = pygplates.Feature(pygplates.FeatureType.gpml_topological_closed_plate_boundary)\n"
+			"    topological_boundary_feature.set_topological_geometry(topological_boundary)\n"
+			"\n"
+			"  .. seealso:: :meth:`GpmlTopologicalLine.get_sections`, :meth:`GpmlTopologicalPolygon.get_boundary_sections` and "
+			":meth:`GpmlTopologicalNetwork.get_boundary_sections`\n"
+			"\n"
+			"  .. versionadded:: 24\n")
+		.staticmethod("create")
+		.def("create_network_interior",
+			&GPlatesApi::gpml_topological_section_create_network_interior,
+			(bp::arg("feature"),
+					bp::arg("geometry_property_name") = boost::optional<GPlatesModel::PropertyName>()),
+			"create_network_interior(feature, [geometry_property_name])\n"
+			// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+			// (like it can a pure python function) and we cannot document it in first (signature) line
+			// because it messes up Sphinx's signature recognition...
+			"  [*staticmethod*] Create a topological network interior referencing a feature geometry.\n"
+			"\n"
+			"  :param feature: the feature referenced by the returned network interior\n"
+			"  :type feature: :class:`Feature`\n"
+			"  :param geometry_property_name: the optional geometry property name used to find the geometry "
+			"(topological or non-topological), if not specified then the default geometry property name associated "
+			"with the feature's :class:`type<FeatureType>` is used instead\n"
+			"  :type geometry_property_name: :class:`PropertyName`, or None\n"
+			"  :rtype: :class:`GpmlPropertyDelegate`, or None\n"
+			"\n"
+			"  If *geometry_property_name* is not specified then the default geometry property name is determined from the feature's :class:`type<FeatureType>` - "
+			"see :meth:`Feature.get_geometry` for more details.\n"
+			"\n"
+			"  Any regular geometry (point, multipoint, polyline, polygon) or topological *line* can be referenced by a topological network interior.\n"
+			"\n"
+			"  .. note:: If a regular *polygon* geometry is referenced then it will be treated as a *rigid* interior block in the topological network and will not be "
+			"part of the deforming region. Anything inside this interior polygon geometry will move rigidly using the plate ID of the referenced feature.\n"
+			"\n"
+			"  Returns ``None`` if:\n"
+			"\n"
+			"  * there is not exactly one geometry (topological or non-topological) property named *geometry_property_name* (or default) in *feature*, or\n"
+			"  * it's a regular geometry but *feature* is not reconstructable by plate ID or half-stage rotation "
+			"(the only supported reconstructable types inside the deforming network Delaunay triangulation), or\n"
+			"  * it's a topological polygon or network\n"
+			"\n"
+			"  Create a topological network interior:\n"
+			"  ::\n"
+			"\n"
+			"    network_interiors = []\n"
+			"    \n"
+			"    network_interior = pygplates.GpmlTopologicalSection.create_network_interior(referenced_interior_feature)\n"
+			"    if network_interior:\n"
+			"        network_interiors.append(network_interior)\n"
+			"    \n"
+			"    ...\n"
+			"    network_boundaries = []\n"
+			"    \n"
+			"    network_boundary = pygplates.GpmlTopologicalSection.create(referenced_boundary_feature)\n"
+			"    if network_boundary:\n"
+			"        network_boundaries.append(network_boundary)\n"
+			"    \n"
+			"    ...\n"
+			"    \n"
+			"    topological_network = pygplates.GpmlTopologicalNetwork(network_boundaries, network_interiors)\n"
+			"    \n"
+			"    topological_network_feature = pygplates.Feature(pygplates.FeatureType.gpml_topological_network)\n"
+			"    topological_network_feature.set_topological_geometry(topological_network)\n"
+			"\n"
+			"  .. seealso:: :meth:`GpmlTopologicalNetwork.get_interiors`\n"
+			"\n"
+			"  .. versionadded:: 24\n")
+		.staticmethod("create_network_interior")
+		.def("get_property_delegate",
+			get_property_delegate,
+			"get_property_delegate()\n"
+			"  Returns the property value that references/delegates the source geometry.\n"
+			"\n"
+			"  :rtype: :class:`GpmlPropertyDelegate`\n")
+		.def("get_reverse_orientation",
+			&GPlatesPropertyValues::GpmlTopologicalSection::get_reverse_order,
+			"get_reverse_orientation()\n"
+			"  Returns ``True`` if this topological section is a :class:`line <GpmlTopologicalLineSection>` "
+			"and it was reversed when contributing to the parent topology.\n"
+			"\n"
+			"  :rtype: bool\n"
+			"\n"
+			"  .. note:: If this topological section is a :class:`point <GpmlTopologicalPoint>` "
+			"then ``False`` will always be returned.\n")
+	;
+
+	// Create a python class "GpmlTopologicalSectionList" for RevisionedVector<GpmlTopologicalSection> that behaves like a list of GpmlTopologicalSection.
+	//
+	// This enables the RevisionedVector<GpmlTopologicalSection> returned by 'GpmlTopologicalLine.get_sections()',
+	// 'GpmlTopologicalPolygon.get_exterior_sections()' and 'GpmlTopologicalNetwork.get_boundary_sections()' to be treated as a list.
+	GPlatesApi::create_python_class_as_revisioned_vector<GPlatesPropertyValues::GpmlTopologicalSection>("GpmlTopologicalSection");
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTopologicalSection>();
+}
+
+
+namespace GPlatesApi
+{
+	GPlatesPropertyValues::GpmlTopologicalLine::non_null_ptr_type
+	gpml_topological_line_create(
+			bp::object sections) // Any python sequence (eg, list, tuple).
+	{
+		// Copy into a vector.
+		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> sections_vector;
+		PythonExtractUtils::extract_iterable(
+				sections_vector,
+				sections,
+				"Expected a sequence of sections (GpmlTopologicalSection)");
+
+		return GPlatesPropertyValues::GpmlTopologicalLine::create(sections_vector);
+	}
+
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::non_null_ptr_type
+	gpml_topological_line_get_sections(
+			GPlatesPropertyValues::GpmlTopologicalLine &gpml_topological_line)
+	{
+		return &gpml_topological_line.sections();
+	}
+}
+
+void
+export_gpml_topological_line()
+{
+	//
+	// GpmlTopologicalLine - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+		GPlatesPropertyValues::GpmlTopologicalLine,
+		GPlatesPropertyValues::GpmlTopologicalLine::non_null_ptr_type,
+		bp::bases<GPlatesModel::PropertyValue>,
+		boost::noncopyable>(
+			"GpmlTopologicalLine",
+			"A topological line geometry that is resolved from topological sections.\n"
+			"\n"
+			"  .. versionadded:: 21\n",
+			// We need this (even though "__init__" is defined) since
+			// there is no publicly-accessible default constructor...
+			bp::no_init)
+		.def("__init__",
+			bp::make_constructor(
+				&GPlatesApi::gpml_topological_line_create,
+				bp::default_call_policies(),
+				(bp::arg("sections"))),
+			"__init__(sections)\n"
+			"  Create a topological line made from topological sections.\n"
+			"\n"
+			"  :param sections: A sequence of :class:`GpmlTopologicalSection` elements\n"
+			"  :type sections: Any sequence such as a ``list`` or a ``tuple``\n"
+			"\n"
+			"  ::\n"
+			"\n"
+			"    topological_line = pygplates.GpmlTopologicalLine(topological_sections)\n")
+		.def("get_sections",
+			&GPlatesApi::gpml_topological_line_get_sections,
+			"get_sections()\n"
+			"  Returns the :class:`sections<GpmlTopologicalSection>` in a sequence that behaves as a python ``list``.\n"
+			"\n"
+			"  :rtype: :class:`GpmlTopologicalSectionList`\n"
+			"\n"
+			"  Modifying the returned sequence will modify the internal state of the *GpmlTopologicalLine* instance:\n"
+			"  ::\n"
+			"\n"
+			"    sections = topological_line.get_sections()\n"
+			"\n"
+			"    # Append a section\n"
+			"    sections.append(pygplates.GpmlTopologicalPoint(...))\n")
+		;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlTopologicalLine>();
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTopologicalLine>();
+}
+
+void
+export_gpml_topological_line_section()
+{
+	// Use the 'non-const' overload so GpmlTopologicalLineSection can be modified via python...
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type
+			(GPlatesPropertyValues::GpmlTopologicalLineSection::*get_property_delegate)() =
+					&GPlatesPropertyValues::GpmlTopologicalLineSection::get_source_geometry;
+
+	//
+	// GpmlTopologicalLineSection - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+		GPlatesPropertyValues::GpmlTopologicalLineSection,
+		GPlatesPropertyValues::GpmlTopologicalLineSection::non_null_ptr_type,
+		bp::bases<GPlatesPropertyValues::GpmlTopologicalSection>,
+		boost::noncopyable>(
+			"GpmlTopologicalLineSection",
+			"A topological section referencing a line geometry.\n"
+			"\n"
+			"  .. versionadded:: 21\n",
+			// We need this (even though "__init__" is defined) since
+			// there is no publicly-accessible default constructor...
+			bp::no_init)
+		.def("__init__",
+			bp::make_constructor(
+				&GPlatesPropertyValues::GpmlTopologicalLineSection::create,
+				bp::default_call_policies(),
+				(bp::arg("gpml_property_delegate"),
+					bp::arg("reverse_orientation"))),
+			"__init__(gpml_property_delegate, reverse_orientation)\n"
+			"  Create a topological point section property value that references a feature property containing a line geometry.\n"
+			"\n"
+			"  :param gpml_property_delegate: the line (polyline) property value\n"
+			"  :type gpml_property_delegate: :class:`GpmlPropertyDelegate`\n"
+			"  :param reverse_orientation: whether the line was reversed when contributing to the parent topology\n"
+			"  :type reverse_orientation: bool\n"
+			"\n"
+			"  ::\n"
+			"\n"
+			"    topological_line_section = pygplates.GpmlTopologicalLineSection(line_property_delegate, false)\n")
+		.def("get_property_delegate",
+			get_property_delegate,
+			"get_property_delegate()\n"
+			"  Returns the property value that references/delegates the source line geometry.\n"
+			"\n"
+			"  :rtype: :class:`GpmlPropertyDelegate`\n")
+		.def("set_property_delegate",
+			&GPlatesPropertyValues::GpmlTopologicalLineSection::set_source_geometry,
+			(bp::arg("gpml_property_delegate")),
+			"set_property_delegate(gpml_property_delegate)\n"
+			"  Sets the property value that references/delegates the source line geometry.\n"
+			"\n"
+			"  :param gpml_property_delegate: the line (polyline) delegate property value\n"
+			"  :type gpml_property_delegate: :class:`GpmlPropertyDelegate`\n")
+		.def("get_reverse_orientation",
+			&GPlatesPropertyValues::GpmlTopologicalLineSection::get_reverse_order,
+			"get_reverse_orientation()\n"
+			"  Returns ``True`` if the line was reversed when contributing to the parent topology.\n"
+			"\n"
+			"  :rtype: bool\n")
+		.def("set_reverse_orientation",
+			&GPlatesPropertyValues::GpmlTopologicalLineSection::set_reverse_order,
+			(bp::arg("reverse_orientation")),
+			"set_reverse_orientation(reverse_orientation)\n"
+			"  Sets the property value that references/delegates the source line geometry.\n"
+			"\n"
+			"  :param reverse_orientation: whether the line was reversed when contributing to the parent topology\n"
+			"  :type reverse_orientation: bool\n")
+		;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlTopologicalLineSection>();
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTopologicalLineSection>();
+}
+
+
+namespace GPlatesApi
+{
+	GPlatesPropertyValues::GpmlTopologicalNetwork::non_null_ptr_type
+	gpml_topological_network_create(
+			bp::object boundary_sections,   // Any python sequence (eg, list, tuple).
+			bp::object interiors) // Any python sequence (eg, list, tuple).
+	{
+		// Copy boundary sections into a vector.
+		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> boundary_sections_vector;
+		PythonExtractUtils::extract_iterable(
+				boundary_sections_vector,
+				boundary_sections,
+				"Expected a sequence of boundary sections (GpmlTopologicalSection)");
+
+		// Interior geometries are optional.
+		std::vector<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type> interiors_vector;
+		if (interiors != bp::object()/*Py_None*/)
+		{
+			// Copy interior geometries into a vector.
+			PythonExtractUtils::extract_iterable(
+					interiors_vector,
+					interiors,
+					"Expected a sequence of interior geometries (GpmlPropertyDelegate)");
+		}
+
+		return GPlatesPropertyValues::GpmlTopologicalNetwork::create(boundary_sections_vector, interiors_vector);
+	}
+
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::non_null_ptr_type
+	gpml_topological_network_get_boundary_sections(
+			GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network)
+	{
+		return &gpml_topological_network.boundary_sections();
+	}
+
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate>::non_null_ptr_type
+	gpml_topological_network_get_interiors(
+			GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network)
+	{
+		return &gpml_topological_network.interior_geometries();
+	}
+}
+
+void
+export_gpml_topological_network()
+{
+	//
+	// GpmlTopologicalNetwork - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+		GPlatesPropertyValues::GpmlTopologicalNetwork,
+		GPlatesPropertyValues::GpmlTopologicalNetwork::non_null_ptr_type,
+		bp::bases<GPlatesModel::PropertyValue>,
+		boost::noncopyable>(
+			"GpmlTopologicalNetwork",
+			"A topological deforming network that is resolved from boundary topological sections and interior geometries.\n"
+			"\n"
+			".. note:: If an interior geometry is a polygon then it becomes an interior rigid block.\n"
+			"\n"
+			"  .. versionadded:: 21\n",
+			// We need this (even though "__init__" is defined) since
+			// there is no publicly-accessible default constructor...
+			bp::no_init)
+		.def("__init__",
+			bp::make_constructor(
+				&GPlatesApi::gpml_topological_network_create,
+				bp::default_call_policies(),
+				(bp::arg("boundary_sections"),
+					bp::arg("interiors") = bp::object()/*Py_None*/)),
+			"__init__(boundary_sections, [interiors=None])\n"
+			"  Create a topological network made from boundary topological sections and interior geometries.\n"
+			"\n"
+			"  :param boundary_sections: A sequence of :class:`GpmlTopologicalSection` elements\n"
+			"  :type boundary_sections: Any sequence such as a ``list`` or a ``tuple``\n"
+			"  :param interiors: A sequence of :class:`GpmlPropertyDelegate` elements\n"
+			"  :type interiors: Any sequence such as a ``list`` or a ``tuple``\n"
+			"\n"
+			"  ::\n"
+			"\n"
+			"    topological_network = pygplates.GpmlTopologicalNetwork(boundary_sections, interiors)\n")
+		.def("get_boundary_sections",
+			&GPlatesApi::gpml_topological_network_get_boundary_sections,
+			"get_boundary_sections()\n"
+			"  Returns the :class:`boundary sections<GpmlTopologicalSection>` in a sequence that behaves as a python ``list``.\n"
+			"\n"
+			"  :rtype: :class:`GpmlTopologicalSectionList`\n"
+			"\n"
+			"  Modifying the returned sequence will modify the internal state of the *GpmlTopologicalNetwork* instance:\n"
+			"  ::\n"
+			"\n"
+			"    boundary_sections = topological_network.get_boundary_sections()\n"
+			"\n"
+			"    # Append a section\n"
+			"    boundary_sections.append(pygplates.GpmlTopologicalLineSection(...))\n")
+		.def("get_interiors",
+			&GPlatesApi::gpml_topological_network_get_interiors,
+			"get_interiors()\n"
+			"  Returns the :class:`interior geometries<GpmlPropertyDelegate>` in a sequence that behaves as a python ``list``.\n"
+			"\n"
+			"  :rtype: :class:`GpmlPropertyDelegateList`\n"
+			"\n"
+			"  Modifying the returned sequence will modify the internal state of the *GpmlTopologicalNetwork* instance:\n"
+			"  ::\n"
+			"\n"
+			"    interiors = topological_network.get_interiors()\n"
+			"\n"
+			"    # Append an interior\n"
+			"    interiors.append(pygplates.GpmlPropertyDelegate(...))\n")
+		;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlTopologicalNetwork>();
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTopologicalNetwork>();
+}
+
+void
+export_gpml_topological_point()
+{
+	// Use the 'non-const' overload so GpmlTopologicalPoint can be modified via python...
+	GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type
+			(GPlatesPropertyValues::GpmlTopologicalPoint::*get_property_delegate)() =
+					&GPlatesPropertyValues::GpmlTopologicalPoint::get_source_geometry;
+
+	//
+	// GpmlTopologicalPoint - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+		GPlatesPropertyValues::GpmlTopologicalPoint,
+		GPlatesPropertyValues::GpmlTopologicalPoint::non_null_ptr_type,
+		bp::bases<GPlatesPropertyValues::GpmlTopologicalSection>,
+		boost::noncopyable>(
+			"GpmlTopologicalPoint",
+			"A topological section referencing a point geometry.\n"
+			"\n"
+			"  .. versionadded:: 21\n",
+			// We need this (even though "__init__" is defined) since
+			// there is no publicly-accessible default constructor...
+			bp::no_init)
+		.def("__init__",
+			bp::make_constructor(
+				&GPlatesPropertyValues::GpmlTopologicalPoint::create,
+				bp::default_call_policies(),
+				(bp::arg("gpml_property_delegate"))),
+			"__init__(gpml_property_delegate)\n"
+			"  Create a topological point section property value that references a feature property containing a point geometry.\n"
+			"\n"
+			"  :param gpml_property_delegate: the point geometry property value\n"
+			"  :type gpml_property_delegate: :class:`GpmlPropertyDelegate`\n"
+			"\n"
+			"  ::\n"
+			"\n"
+			"    topological_point_section = pygplates.GpmlTopologicalPoint(point_property_delegate)\n")
+		.def("get_property_delegate",
+			get_property_delegate,
+			"get_property_delegate()\n"
+			"  Returns the property value that references/delegates the source point geometry.\n"
+			"\n"
+			"  :rtype: :class:`GpmlPropertyDelegate`\n")
+		.def("set_property_delegate",
+			&GPlatesPropertyValues::GpmlTopologicalPoint::set_source_geometry,
+			(bp::arg("gpml_property_delegate")),
+			"set_property_delegate(gpml_property_delegate)\n"
+			"  Sets the property value that references/delegates the source point geometry.\n"
+			"\n"
+			"  :param gpml_property_delegate: the point geometry property value\n"
+			"  :type gpml_property_delegate: :class:`GpmlPropertyDelegate`\n")
+		;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlTopologicalPoint>();
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTopologicalPoint>();
+}
+
+
+namespace GPlatesApi
+{
+	GPlatesPropertyValues::GpmlTopologicalPolygon::non_null_ptr_type
+	gpml_topological_polygon_create(
+			bp::object exterior_sections) // Any python sequence (eg, list, tuple).
+	{
+		// Copy into a vector.
+		std::vector<GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type> exterior_sections_vector;
+		PythonExtractUtils::extract_iterable(
+				exterior_sections_vector,
+				exterior_sections,
+				"Expected a sequence of exterior sections (GpmlTopologicalSection)");
+
+		return GPlatesPropertyValues::GpmlTopologicalPolygon::create(exterior_sections_vector);
+	}
+
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::non_null_ptr_type
+	gpml_topological_polygon_get_exterior_sections(
+			GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_topological_polygon)
+	{
+		return &gpml_topological_polygon.exterior_sections();
+	}
+}
+
+void
+export_gpml_topological_polygon()
+{
+	//
+	// GpmlTopologicalPolygon - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<
+		GPlatesPropertyValues::GpmlTopologicalPolygon,
+		GPlatesPropertyValues::GpmlTopologicalPolygon::non_null_ptr_type,
+		bp::bases<GPlatesModel::PropertyValue>,
+		boost::noncopyable>(
+			"GpmlTopologicalPolygon",
+			"A topological polygon geometry that is resolved from topological sections.\n"
+			"\n"
+			"  .. versionadded:: 21\n",
+			// We need this (even though "__init__" is defined) since
+			// there is no publicly-accessible default constructor...
+			bp::no_init)
+		.def("__init__",
+			bp::make_constructor(
+				&GPlatesApi::gpml_topological_polygon_create,
+				bp::default_call_policies(),
+				(bp::arg("exterior_sections"))),
+			"__init__(exterior_sections)\n"
+			"  Create a topological polygon made from topological sections.\n"
+			"\n"
+			"  :param exterior_sections: A sequence of :class:`GpmlTopologicalSection` elements\n"
+			"  :type exterior_sections: Any sequence such as a ``list`` or a ``tuple``\n"
+			"\n"
+			"  ::\n"
+			"\n"
+			"    topological_polygon = pygplates.GpmlTopologicalPolygon(topological_sections)\n")
+		.def("get_exterior_sections",
+			&GPlatesApi::gpml_topological_polygon_get_exterior_sections,
+			"get_exterior_sections()\n"
+			"  Same as :meth:`get_boundary_sections`.\n")
+		.def("get_boundary_sections",
+			&GPlatesApi::gpml_topological_polygon_get_exterior_sections,
+			"get_boundary_sections()\n"
+			"  Returns the :class:`boundary sections<GpmlTopologicalSection>` in a sequence that behaves as a python ``list``.\n"
+			"\n"
+			"  :rtype: :class:`GpmlTopologicalSectionList`\n"
+			"\n"
+			"  Modifying the returned sequence will modify the internal state of the *GpmlTopologicalPolygon* instance:\n"
+			"  ::\n"
+			"\n"
+			"    boundary_sections = topological_polygon.get_boundary_sections()\n"
+			"\n"
+			"    # Append a section\n"
+			"    boundary_sections.append(pygplates.GpmlTopologicalLineSection(...))\n"
+			"\n"
+			"  .. versionadded:: 24\n")
+		;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlTopologicalPolygon>();
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::GpmlTopologicalPolygon>();
+}
 
 void
 export_xs_boolean()
@@ -3880,6 +4942,9 @@ export_xs_boolean()
 				"  :param boolean_value: the boolean value\n"
 				"  :type boolean_value: bool\n")
 	;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::XsBoolean>();
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::XsBoolean>();
@@ -3935,6 +5000,9 @@ export_xs_double()
 				"  :type float_value: float\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::XsDouble>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::XsDouble>();
 }
@@ -3987,6 +5055,9 @@ export_xs_integer()
 				"  :param integer_value: the integer value\n"
 				"  :type integer_value: int\n")
 	;
+
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::XsInteger>();
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::XsInteger>();
@@ -4052,6 +5123,9 @@ export_xs_string()
 				"  :type string: string\n")
 	;
 
+	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
+	GPlatesApi::register_structural_type<GPlatesPropertyValues::XsString>();
+
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesPropertyValues::XsString>();
 }
@@ -4092,10 +5166,23 @@ export_property_values()
 	export_gpml_key_value_dictionary();
 	export_gpml_old_plates_header();
 	export_gpml_piecewise_aggregation();
-	export_gpml_polarity_chron_id();
 	export_gpml_plate_id();
+	export_gpml_polarity_chron_id();
+	export_gpml_property_delegate();
+
 	export_gpml_time_sample(); // Not actually a property value.
 	export_gpml_time_window(); // Not actually a property value.
+
+	// GpmlTopologicalSection and its derived classes.
+	// Since GpmlTopologicalSection is the base class it must be registered first to avoid runtime error.
+	export_gpml_topological_section();
+	export_gpml_topological_line_section();
+	export_gpml_topological_point();
+
+	// Topological line, polygon and network.
+	export_gpml_topological_line();
+	export_gpml_topological_polygon();
+	export_gpml_topological_network();
 
 	export_xs_boolean();
 	export_xs_double();
@@ -4106,5 +5193,3 @@ export_property_values()
 // This is here at the end of the layer because the problem appears to reside
 // in a template being instantiated at the end of the compilation unit.
 DISABLE_GCC_WARNING("-Wshadow")
-
-#endif // GPLATES_NO_PYTHON

@@ -626,7 +626,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile_texture(
 		{
 			// Create a new tile texture.
 			tile_texture = lod_tile.tile_texture->set_cached_object(
-					std::auto_ptr<TileTexture>(new TileTexture(renderer)),
+					std::unique_ptr<TileTexture>(new TileTexture(renderer)),
 					// Called whenever tile texture is returned to the cache...
 					boost::bind(&TileTexture::returned_to_cache, _1));
 
@@ -783,7 +783,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile_vertices(
 		if (!tile_vertices)
 		{
 			tile_vertices = lod_tile.tile_vertices->set_cached_object(
-					std::auto_ptr<TileVertices>(new TileVertices(renderer)));
+					std::unique_ptr<TileVertices>(new TileVertices(renderer)));
 
 			// Bind the new vertex buffer to the new vertex array.
 			// This only needs to be done once since the vertex buffer and vertex array

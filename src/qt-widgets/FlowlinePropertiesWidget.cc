@@ -98,19 +98,13 @@ GPlatesQtWidgets::FlowlinePropertiesWidget::do_geometry_tasks(
 		plate_2 = finder.get_left_plate().get();
     }
 
-	// The default reconstruction tree.
+	// The default reconstruction tree creator.
+	GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
+			d_application_state.get_current_reconstruction()
+					.get_default_reconstruction_layer_output()->get_reconstruction_tree_creator();
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type default_reconstruction_tree =
 			d_application_state.get_current_reconstruction()
 					.get_default_reconstruction_layer_output()->get_reconstruction_tree();
-	// A function to get reconstruction trees with.
-	GPlatesAppLogic::ReconstructionTreeCreator
-			reconstruction_tree_creator =
-					GPlatesAppLogic::create_cached_reconstruction_tree_creator(
-							default_reconstruction_tree->get_reconstruction_features(),
-							default_reconstruction_tree->get_anchor_plate_id(),
-							1, /* cache size 1 is enough - only accessing each flowline time once */
-							// We're not going to modify the reconstruction features so no need to clone...
-							false/*clone_reconstruction_features*/);
 
 
     return GPlatesAppLogic::FlowlineUtils::correct_end_point_to_centre(

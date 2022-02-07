@@ -26,6 +26,8 @@
 #ifndef GPLATES_MATHS_ANGULARDISTANCE_H
 #define GPLATES_MATHS_ANGULARDISTANCE_H
 
+#include <boost/operators.hpp>
+
 #include "MathsUtils.h"
 #include "types.h"
 
@@ -151,7 +153,6 @@ namespace GPlatesMaths
 		 * angular_extent = acos(dot(start_point_angular_extent, end_point_angular_extent))
 		 *
 		 * Note that 'dot' is significantly cheaper than 'acos'.
-		 *
 		 */
 		bool
 		operator<(

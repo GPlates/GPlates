@@ -36,8 +36,6 @@
 #include "maths/UnitVector3D.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -282,5 +280,3 @@ export_lat_lon_point()
 	// Enable boost::optional<LatLonPoint> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::LatLonPoint>();
 }
-
-#endif // GPLATES_NO_PYTHON

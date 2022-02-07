@@ -28,7 +28,7 @@
 
 #include <QWidget>
 
-#include "CalculateReconstructionPoleDialogUi.h"
+#include "ui_CalculateReconstructionPoleDialogUi.h"
 
 #include "GPlatesDialog.h"
 #include "ReconstructionPoleWidget.h"

@@ -36,8 +36,6 @@
 #include "global/python.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -124,5 +122,3 @@ GPlatesApi::PythonExtractUtils::Implementation::raise_type_error_if_iterator(
 
 	boost::python::throw_error_already_set();
 }
-
-#endif // GPLATES_NO_PYTHON

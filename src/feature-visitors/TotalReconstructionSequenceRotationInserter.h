@@ -40,6 +40,11 @@
 #include "property-values/GeoTimeInstant.h"
 
 
+namespace GPlatesAppLogic
+{
+	class FeatureCollectionFileState;
+}
+
 namespace GPlatesFileIO
 {
 	class PlatesRotationFileProxy;
@@ -54,7 +59,7 @@ namespace GPlatesFeatureVisitors
 	 * This is performed by applying (composing) the supplied Rotation to the finite rotation
 	 * found/interpolated in the sequence for that time.
 	 *
-	 * This class is based very strongly on 'GPlatesAppLogic::ReconstructionTreePopulator'.
+	 * This class is based very strongly on the old 'GPlatesAppLogic::ReconstructionTreePopulator'.
 	 */
 	class TotalReconstructionSequenceRotationInserter:
 			public GPlatesModel::FeatureVisitor
@@ -62,7 +67,8 @@ namespace GPlatesFeatureVisitors
 	public:
 		TotalReconstructionSequenceRotationInserter(
 				const double &recon_time,
-				const GPlatesMaths::Rotation &rotation_to_apply);
+				const GPlatesMaths::Rotation &rotation_to_apply,
+				GPlatesAppLogic::FeatureCollectionFileState &file_state);
 
 		virtual
 		~TotalReconstructionSequenceRotationInserter()
@@ -91,6 +97,8 @@ namespace GPlatesFeatureVisitors
 				GPlatesPropertyValues::GpmlIrregularSampling &gpml_irregular_sampling);
 
 	private:
+
+		GPlatesAppLogic::FeatureCollectionFileState &d_file_state;
 
 		const GPlatesPropertyValues::GeoTimeInstant d_recon_time;
 		GPlatesMaths::Rotation d_rotation_to_apply;

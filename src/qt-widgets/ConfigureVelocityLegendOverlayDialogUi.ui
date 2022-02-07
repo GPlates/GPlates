@@ -360,7 +360,6 @@
      </layout>
      <zorder>anchor_combobox</zorder>
      <zorder>anchor_label</zorder>
-     <zorder></zorder>
     </widget>
    </item>
    <item>

@@ -44,6 +44,7 @@
 #include "model/PropertyValue.h"
 #include "model/types.h"
 
+#include "utils/UnicodeString.h"
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -339,8 +340,7 @@ namespace GPlatesPropertyValues
 		* for example: 
 		# "gplates_00_00_0000_Front_Polygon_Rotates_About_X_BOUNDARY_LINE_101_ 999.0_-999.0_RI_0000_000_"
 		*/
-		// FIXME:  Make it return 'const UnicodeString' rather than 'std::string'.
-		std::string
+		GPlatesUtils::UnicodeString
 		old_feature_id() const;
 
 		virtual

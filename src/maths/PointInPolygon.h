@@ -85,21 +85,20 @@ namespace GPlatesMaths
 		 * preprocessing than @a Polygon but this is only beneficial if a handful or fewer points
 		 * are tested against a specific polygon.
 		 *
-		 * Note that "point *on* polygon" is not available due to the use of floating-point
-		 * numbers instead of exact arithmetic.
-		 * In any case point-on-polygon typically isn't required - it might be required if we
-		 * want to find which polygon, in a non-overlapping set, a point is contained by -
-		 * in which case a point on the edge of one polygon should not be on the corresponding
-		 * edge of the adjacent polygon (this could happen for the velocity calculations
-		 * against dynamic plate polygons) - however this sort of situation, normally handled
-		 * by edge rules and exact arithmetic, can be handled by finding the first polygon
-		 * the point is in and using that polygon - to get consistent results from frame-to-frame
-		 * the point-in-polygon tests could be sorted by some polygon attribute such as plate id.
+		 * If @a use_point_on_polygon_threshold is true then the point is considered *on* the outline
+		 * (and hence classified as *inside* the polygon) if it is within an (extremely small) threshold
+		 * distance from the polygon's outline. An example where this is useful is avoiding a point
+		 * exactly on the dateline not getting included by a polygon that has an edge exactly aligned
+		 * with the dateline.
+		 * So usually this should be true (the default) and only turned off for some specific cases
+		 * (such as the polyline intersections code where a point extremely close to a polygon,
+		 * but still outside it, should not be considered inside it).
 		 */
 		bool
 		is_point_in_polygon(
 				const PointOnSphere &point,
-				const PolygonOnSphere &polygon);
+				const PolygonOnSphere &polygon,
+				bool use_point_on_polygon_threshold = true);
 
 
 		/**
@@ -154,20 +153,19 @@ namespace GPlatesMaths
 			 * consistency there (and reconstructed rasters use the point-in-polygon test when generating
 			 * a polygon mesh so it's consistent too).
 			 *
-			 * Note that "point *on* polygon" is not available due to the use of floating-point
-			 * numbers instead of exact arithmetic.
-			 * In any case point-on-polygon typically isn't required - it might be required if we
-			 * want to find which polygon, in a non-overlapping set, a point is contained by -
-			 * in which case a point on the edge of one polygon should not be on the corresponding
-			 * edge of the adjacent polygon (this could happen for the velocity calculations
-			 * against dynamic plate polygons) - however this sort of situation, normally handled
-			 * by edge rules and exact arithmetic, can be handled by finding the first polygon
-			 * the point is in and using that polygon - to get consistent results from frame-to-frame
-			 * the point-in-polygon tests could be sorted by some polygon attribute such as plate id.
+			 * If @a use_point_on_polygon_threshold is true then the point is considered *on* the outline
+			 * (and hence classified as *inside* the polygon) if it is within an (extremely small) threshold
+			 * distance from the polygon's outline. An example where this is useful is avoiding a point
+			 * exactly on the dateline not getting included by a polygon that has an edge exactly aligned
+			 * with the dateline.
+			 * So usually this should be true (the default) and only turned off for some specific cases
+			 * (such as the polyline intersections code where a point extremely close to a polygon,
+			 * but still outside it, should not be considered inside it).
 			 */
 			bool
 			is_point_in_polygon(
-					const PointOnSphere &point) const;
+					const PointOnSphere &point,
+					bool use_point_on_polygon_threshold = true) const;
 
 		private:
 			/**

@@ -127,7 +127,7 @@ GPlatesQtWidgets::RasterPropertiesDialog::RasterPropertiesDialog(
 			georeferencing_placeholder_widget);
 #endif
 	invalid_cpt_file_label->hide();
-	properties_treewidget->header()->setResizeMode(QHeaderView::ResizeToContents);
+	properties_treewidget->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 	main_buttonbox->setFocus();
 
 	enable_all_groupboxes(false);

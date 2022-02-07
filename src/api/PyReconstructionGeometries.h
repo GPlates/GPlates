@@ -44,8 +44,6 @@
 #include "model/TopLevelProperty.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	/**
@@ -238,15 +236,20 @@ namespace GPlatesApi
 
 		explicit
 		ResolvedTopologicalGeometrySubSegmentWrapper(
-				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &resolved_topological_geometry_sub_segment) :
-			d_resolved_topological_geometry_sub_segment(resolved_topological_geometry_sub_segment),
-			d_reconstruction_geometry(resolved_topological_geometry_sub_segment.get_reconstruction_geometry())
+				GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_to_const_type
+						resolved_topological_geometry_sub_segment) :
+			d_resolved_topological_geometry_sub_segment(
+					// We wrap *non-const* sub-segments and hence cast away const
+					// (which is dangerous since Python user could modify)...
+					GPlatesUtils::const_pointer_cast<GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment>(
+							resolved_topological_geometry_sub_segment)),
+			d_reconstruction_geometry(resolved_topological_geometry_sub_segment->get_reconstruction_geometry())
 		{  }
 
 		/**
 		 * Get the sub-segment.
 		 */
-		const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &
+		GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type
 		get_resolved_topological_geometry_sub_segment() const
 		{
 			return d_resolved_topological_geometry_sub_segment;
@@ -274,7 +277,7 @@ namespace GPlatesApi
 	private:
 
 		//! The wrapped sub-segment itself.
-		GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment d_resolved_topological_geometry_sub_segment;
+		GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type d_resolved_topological_geometry_sub_segment;
 
 		/**
 		 * The reconstruction geometry that the sub-segment was obtained from.
@@ -300,9 +303,7 @@ namespace GPlatesApi
 	get_pointer(
 			const ResolvedTopologicalGeometrySubSegmentWrapper &wrapper)
 	{
-		// Boost-python wants a non-const return pointer (but wants a const wrapper).
-		return const_cast<GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment *>(
-				&wrapper.get_resolved_topological_geometry_sub_segment());
+		return wrapper.get_resolved_topological_geometry_sub_segment().get();
 	}
 
 
@@ -513,12 +514,12 @@ namespace GPlatesApi
 
 		explicit
 		ResolvedTopologicalSharedSubSegmentWrapper(
-				const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &resolved_topological_shared_sub_segment);
+				GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_to_const_type resolved_topological_shared_sub_segment);
 
 		/**
 		 * Get the shared sub-segment.
 		 */
-		const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &
+		GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type
 		get_resolved_topological_shared_sub_segment() const
 		{
 			return d_resolved_topological_shared_sub_segment;
@@ -552,7 +553,7 @@ namespace GPlatesApi
 	private:
 
 		//! The wrapped sub-segment itself.
-		GPlatesAppLogic::ResolvedTopologicalSharedSubSegment d_resolved_topological_shared_sub_segment;
+		GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type d_resolved_topological_shared_sub_segment;
 
 		/**
 		 * The reconstruction geometry that the sub-segment was obtained from.
@@ -586,9 +587,7 @@ namespace GPlatesApi
 	get_pointer(
 			const ResolvedTopologicalSharedSubSegmentWrapper &wrapper)
 	{
-		// Boost-python wants a non-const return pointer (but wants a const wrapper).
-		return const_cast<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment *>(
-				&wrapper.get_resolved_topological_shared_sub_segment());
+		return wrapper.get_resolved_topological_shared_sub_segment().get();
 	}
 
 
@@ -667,7 +666,5 @@ namespace GPlatesApi
 		return wrapper.get_resolved_topological_section().get();
 	}
 }
-
-#endif   // GPLATES_NO_PYTHON
 
 #endif // GPLATES_API_PYRECONSTRUCTIONGEOMETRIES_H

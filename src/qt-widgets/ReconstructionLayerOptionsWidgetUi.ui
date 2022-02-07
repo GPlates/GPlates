@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>330</width>
-    <height>101</height>
+    <height>116</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -25,6 +25,44 @@
    </item>
    <item>
     <widget class="QWidget" name="merge_reconstruction_tree_layers_placeholder_widget" native="true"/>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="extend_total_reconstruction_poles_to_distant_past_layout">
+     <property name="spacing">
+      <number>3</number>
+     </property>
+     <item>
+      <widget class="QCheckBox" name="extend_total_reconstruction_poles_to_distant_past_check_box">
+       <property name="text">
+        <string>Extend total rotation poles to distant past</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_4">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="push_button_help_extend_total_reconstruction_poles_to_distant_past">
+       <property name="text">
+        <string/>
+       </property>
+       <property name="icon">
+        <iconset resource="../qt-resources/qt_widgets.qrc">
+         <normaloff>:/human_help_browser_16.png</normaloff>:/human_help_browser_16.png</iconset>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
     <widget class="QCheckBox" name="keep_as_default_checkbox">

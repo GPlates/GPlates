@@ -33,6 +33,7 @@
 #include <utility>
 #include <vector>
 #include <boost/optional.hpp>
+#include <QtGlobal>
 #include <QDebug>
 #include <QDir>
 #include <QFileInfo>
@@ -47,10 +48,9 @@
 
 #include "cli/CliCommandDispatcher.h"
 
-#include "global/Constants.h"
 #include "global/NotYetImplementedException.h"
 #include "global/python.h"
-#include "global/SubversionInfo.h"
+#include "global/Version.h"
 
 #include "gui/DrawStyleManager.h"
 #include "gui/FileIOFeedback.h"
@@ -102,11 +102,7 @@ namespace
 			enable_data_mining(true),//Enable data mining by default
 			enable_symbol_table(false),
 			enable_hellinger_three_plate(false) // Disable three-plate fitting by default
-		{
-#if defined(GPLATES_NO_PYTHON)
-			enable_python = false;
-#endif
-		}
+		{  }
 
 		boost::optional<QString> project_filename;
 		QStringList feature_collection_filenames;
@@ -346,14 +342,14 @@ namespace
 		if (GPlatesUtils::CommandLineParser::is_version_requested(vm))
 		{
 			// Specify the major.minor version.
-			std::cout << GPlatesGlobal::VersionString << std::endl;
+			std::cout << GPlatesGlobal::Version::get_GPlates_version().toLatin1().constData() << std::endl;
 
 			// Specify the build revision (using the subversion info).
-			QString subversion_version_number = GPlatesGlobal::SubversionInfo::get_working_copy_version_number();
+			QString subversion_version_number = GPlatesGlobal::Version::get_working_copy_version_number();
 			if (!subversion_version_number.isEmpty())
 			{
 				QString subversion_info = "Build: " + subversion_version_number;
-				QString subversion_branch_name = GPlatesGlobal::SubversionInfo::get_working_copy_branch_name();
+				QString subversion_branch_name = GPlatesGlobal::Version::get_working_copy_branch_name();
 				if (!subversion_branch_name.isEmpty())
 				{
 					if (subversion_branch_name == "trunk")
@@ -365,7 +361,7 @@ namespace
 						subversion_info.append(" (").append(subversion_branch_name).append(" branch)");
 					}
 				}
-				std::cout << subversion_info.toAscii().constData() << std::endl;
+				std::cout << subversion_info.toLatin1().constData() << std::endl;
 			}
 
 			exit(0);
@@ -454,7 +450,7 @@ namespace
 					GPlatesGui::FileIOFeedback::PROJECT_FILENAME_EXTENSION,
 					Qt::CaseInsensitive))
 			{
-#if defined(__APPLE__)
+#if defined(Q_OS_MAC)
 				// Mac OS X sometimes (when invoking from Finder or 'open' command) adds the
 				// '-psn...' command-line argument to the applications argument list
 				// (for example '-psn_0_548998').
@@ -513,12 +509,10 @@ namespace
 		}
 
 		// Disable python if command line option specified.
-#if !defined(GPLATES_NO_PYTHON)
 		if (vm.count(NO_PYTHON_OPTION_NAME))
 		{
 			command_line_options.enable_python = false;
 		}
-#endif
 
 		return command_line_options;
 	}
@@ -724,7 +718,6 @@ namespace
 	{
 		using namespace GPlatesGui;
 		PythonManager* mgr = PythonManager::instance();
-#ifndef GPLATES_NO_PYTHON
 		try
 		{
 			mgr->initialize(argv,app);
@@ -748,7 +741,6 @@ namespace
 			GPlatesUtils::ComponentManager::instance().disable(
 				GPlatesUtils::ComponentManager::Component::python());
 		}
-#endif
 	}
 
 	void
@@ -762,9 +754,7 @@ namespace
 		if(GPlatesUtils::ComponentManager::instance().is_enabled(
 				GPlatesUtils::ComponentManager::Component::python()))
 		{
-	#if !defined(GPLATES_NO_PYTHON)
 			GPlatesApi::PythonInterpreterLocker lock;
-	#endif
 			delete GPlatesGui::DrawStyleManager::instance(); //delete draw style manager singleton.
 		}
 		delete GPlatesGui::PythonManager::instance();
@@ -832,7 +822,7 @@ internal_main(int argc, char* argv[])
 				GPlatesUtils::ComponentManager::Component::symbology());
 	}
 
-	// Enable or disable python as specified on command-line (and whether GPLATES_NO_PYTHON defined).
+	// Enable or disable python as specified on command-line.
 	if (gui_command_line_options->enable_python)
 	{
 		GPlatesUtils::ComponentManager::instance().enable(
@@ -857,12 +847,29 @@ internal_main(int argc, char* argv[])
 	}
 
 	// This will only install handler if any of the following conditions are satisfied:
-	//   1) GPLATES_PUBLIC_RELEASE is defined (automatically handled by CMake build system), or
+	//   1) GPLATES_PUBLIC_RELEASE is defined in 'global/config.h' (automatically handled by CMake build system), or
 	//   2) GPLATES_OVERRIDE_QT_MESSAGE_HANDLER environment variable is set to case-insensitive
 	//      "true", "1", "yes" or "on".
 	// Note: Installing handler overrides default Qt message handler.
 	//       And does not log messages to the console.
 	GPlatesAppLogic::GPlatesQtMsgHandler::install_qt_message_handler();
+
+	// Enable high DPI pixmaps (for high DPI displays like Apple Retina).
+	//
+	// For example this enables a QImage with a device pixel ratio of 2
+	// (and twice the dimensions of associated QIcon) to have the QIcon displayed
+	// as high DPI, when QImage is converted to QPixmap and then set on QIcon.
+	// Enabling this attribute allows this in our globe/map colouring previews
+	// (though we still have to manually render a QImage twice the icon dimensions
+	// and set the image's device pixel ratio to 2).
+	QCoreApplication::setAttribute(Qt::AA_UseHighDpiPixmaps);
+
+#if QT_VERSION >= QT_VERSION_CHECK(5,6,0)
+	// Enable high DPI scaling in Qt on supported platforms (X11 and Windows).
+	// Note that MacOS has its own native scaling (eg, for Retina), so this
+	// attribute does not affect MacOS.
+	QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
+#endif
 
 	// GPlatesQApplication is a QApplication that also handles uncaught exceptions in the Qt event thread.
 	GPlatesGui::GPlatesQApplication qapplication(argc, argv);

@@ -28,7 +28,7 @@
 
 #include "gui/ConfigGuiUtils.h"
 
-#include "KinematicGraphsConfigurationWidgetUi.h"
+#include "ui_KinematicGraphsConfigurationWidgetUi.h"
 
 namespace GPlatesQtWidgets
 {

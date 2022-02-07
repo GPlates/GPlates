@@ -10,5 +10,6 @@
     <file>python/api/PlatePartitioning.py</file>
     <file>python/api/Property.py</file>
     <file>python/api/PropertyValues.py</file>
+    <file>python/api/ReconstructionGeometries.py</file>
   </qresource>
 </RCC>

@@ -63,6 +63,7 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::ExportDeformationOptionsWidget
 	include_dilatation_strain_check_box->setChecked(d_export_configuration->include_dilatation_strain);
 	include_dilatation_strain_rate_check_box->setChecked(d_export_configuration->include_dilatation_strain_rate);
 	include_second_invariant_strain_rate_check_box->setChecked(d_export_configuration->include_second_invariant_strain_rate);
+	include_strain_rate_style_check_box->setChecked(d_export_configuration->include_strain_rate_style);
 
 	if (d_export_configuration->file_format == GPlatesGui::ExportDeformationAnimationStrategy::Configuration::GMT)
 	{
@@ -150,6 +151,9 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::make_signal_slot_connections()
 	QObject::connect(
 			include_second_invariant_strain_rate_check_box, SIGNAL(stateChanged(int)),
 			this, SLOT(react_include_second_invariant_strain_rate_check_box_clicked()));
+	QObject::connect(
+			include_strain_rate_style_check_box, SIGNAL(stateChanged(int)),
+			this, SLOT(react_include_strain_rate_style_check_box_clicked()));
 
 	//
 	// Principal strain options.
@@ -281,6 +285,15 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::react_include_second_invariant
 
 
 void
+GPlatesQtWidgets::ExportDeformationOptionsWidget::react_include_strain_rate_style_check_box_clicked()
+{
+	d_export_configuration->include_strain_rate_style = include_strain_rate_style_check_box->isChecked();
+
+	update_output_description_label();
+}
+
+
+void
 GPlatesQtWidgets::ExportDeformationOptionsWidget::update_output_description_label()
 {
 	QString output_description;
@@ -345,6 +358,11 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::update_output_description_labe
 			if (configuration.include_second_invariant_strain_rate)
 			{
 				output_description += tr("  TotalStrainRate\n");
+			}
+
+			if (configuration.include_strain_rate_style)
+			{
+				output_description += tr("  StrainRateStyle");
 			}
 		}
 		break;
@@ -415,6 +433,11 @@ GPlatesQtWidgets::ExportDeformationOptionsWidget::update_output_description_labe
 			if (configuration.include_second_invariant_strain_rate)
 			{
 				output_description += tr("  total_strain_rate");
+			}
+
+			if (configuration.include_strain_rate_style)
+			{
+				output_description += tr("  strain_rate_style");
 			}
 
 			output_description += "\n";

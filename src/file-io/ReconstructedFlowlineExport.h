@@ -106,7 +106,7 @@ namespace GPlatesFileIO
 				bool export_single_output_file,
 				bool export_per_input_file,
 				bool export_separate_output_directory_per_input_file,
-				bool wrap_to_dateline = true);
+				bool wrap_to_dateline);
 	}
 }
 

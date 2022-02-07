@@ -25,9 +25,10 @@
 
 #ifndef GPLATES_API_ABSTRACTCONSOLE_H
 #define GPLATES_API_ABSTRACTCONSOLE_H
+
 #include <QString>
+
 #include "global/python.h"
-#if !defined(GPLATES_NO_PYTHON)
 
 namespace GPlatesApi
 {
@@ -79,5 +80,5 @@ namespace GPlatesApi
 		read_line() = 0;
 	};
 }
-#endif   //GPLATES_NO_PYTHON
+
 #endif  // GPLATES_API_ABSTRACTCONSOLE_H

@@ -33,10 +33,7 @@
 #include <utility>
 #include <vector>
 #include <boost/optional.hpp>
-#include <boost/tuple/tuple.hpp>
-#include "boost/tuple/tuple_comparison.hpp"
 #include <boost/utility/in_place_factory.hpp>
-#include <boost/variant.hpp>
 
 #include <QDebug>
 
@@ -64,6 +61,7 @@ DISABLE_MSVC_WARNING( 4005 ) // For Boost 1.44 and Visual Studio 2010.
 #include <CGAL/Interpolation_gradient_fitting_traits_2.h>
 #include <CGAL/Interpolation_traits_2.h>
 #include <CGAL/natural_neighbor_coordinates_2.h>
+#include <CGAL/number_utils.h>
 #include <CGAL/sibson_gradient_fitting.h>
 #include <CGAL/Triangulation_face_base_2.h>
 #include <CGAL/Triangulation_hierarchy_2.h>
@@ -75,19 +73,12 @@ POP_MSVC_WARNINGS
 //POP_GCC_WARNINGS
 
 #include "DeformationStrainRate.h"
-#include "PlateVelocityUtils.h"
-#include "ReconstructionFeatureProperties.h"
-#include "ReconstructionGeometry.h"
-#include "ReconstructionGeometryUtils.h"
-#include "ReconstructionTree.h"
-#include "ReconstructionTreeCreator.h"
-#include "RotationUtils.h"
+#include "ResolvedVertexSourceInfo.h"
 #include "VelocityDeltaTime.h"
-
-#include "model/types.h"
 
 #include "maths/AzimuthalEqualAreaProjection.h"
 #include "maths/CalculateVelocity.h"
+#include "maths/Centroid.h"
 #include "maths/FiniteRotation.h"
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
@@ -190,327 +181,6 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Information, shared by all vertices of a geometry, that is used to reconstruct that geometry.
-		 *
-		 * This saves memory by avoiding duplication across all vertices.
-		 */
-		class VertexSharedReconstructInfo :
-				public GPlatesUtils::ReferenceCount<VertexSharedReconstructInfo>
-		{
-		public:
-			typedef GPlatesUtils::non_null_intrusive_ptr<VertexSharedReconstructInfo> non_null_ptr_type;
-			typedef GPlatesUtils::non_null_intrusive_ptr<const VertexSharedReconstructInfo> non_null_ptr_to_const_type;
-
-
-			static
-			const non_null_ptr_type
-			create(
-					const ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_properties)
-			{
-				return non_null_ptr_type(new VertexSharedReconstructInfo(reconstruction_properties));
-			}
-
-			/**
-			 * Get the stage rotation for the specified reconstruction time and velocity delta time.
-			 *
-			 * The result is cached in case the next vertex calls this method with the same parameters.
-			 * It's likely that multiple Delaunay vertices sharing us will all request the same stage rotation
-			 * at the same time.
-			 */
-			GPlatesMaths::FiniteRotation
-			get_stage_rotation(
-					const double &reconstruction_time,
-					const double &velocity_delta_time,
-					VelocityDeltaTime::Type velocity_delta_time_type) const
-			{
-				const stage_rotation_key_type stage_rotation_key = stage_rotation_key_type(
-						reconstruction_time,
-						velocity_delta_time,
-						velocity_delta_time_type);
-				// If first time called or key does not match then calculate and cache a new stage rotation.
-				if (!d_cached_stage_rotation ||
-					stage_rotation_key != d_cached_stage_rotation->first)
-				{
-					// Calculate the stage rotation.
-					d_cached_stage_rotation = std::make_pair(
-							stage_rotation_key,
-							calc_stage_rotation(reconstruction_time, velocity_delta_time, velocity_delta_time_type));
-				}
-
-				return d_cached_stage_rotation->second;
-			}
-
-			/**
-			 * Returns true if a vertex using 'other' shared reconstruct info has a higher preference
-			 * than the vertex, at the same position, that is using 'this' shared reconstruct info.
-			 *
-			 * We give preference to higher plate IDs in order to provide a consistent insert order.
-			 * This is needed because 'CGAL::spatial_sort()' can change the order of vertex insertion
-			 * along the topological sub-segments of the network boundary for example - which can result
-			 * in vertices at the intersection between two adjacent sub-segments switching order of
-			 * insertion from one reconstruction time to the next (since both sub-segments have the
-			 * same end point position) - and this can manifest as randomly switching end point velocities
-			 * (from one sub-segment plate ID to the other).
-			 */
-			bool
-			is_lower_preference_than(
-					const VertexSharedReconstructInfo &other) const
-			{
-				const ReconstructInfo &reconstruct_info = get_reconstruct_info();
-				const ReconstructInfo &other_reconstruct_info = other.get_reconstruct_info();
-
-				// See if 'this' and 'other' geometries reconstructed by plate ID or half stage rotation.
-				const ReconstructInfo::ByPlateIdProperties *by_plate_id_properties =
-						boost::get<ReconstructInfo::ByPlateIdProperties>(&reconstruct_info.properties);
-				const ReconstructInfo::ByPlateIdProperties *other_by_plate_id_properties =
-						boost::get<ReconstructInfo::ByPlateIdProperties>(&other_reconstruct_info.properties);
-				if (by_plate_id_properties)
-				{
-					if (other_by_plate_id_properties)
-					{
-						// Both by plate ID, so compare plate IDs.
-						return by_plate_id_properties->plate_id < other_by_plate_id_properties->plate_id;
-					}
-					else
-					{
-						// 'this' by plate ID preferred over 'other' half stage rotation.
-						return false;
-					}
-				}
-				else
-				{
-					if (other_by_plate_id_properties)
-					{
-						// 'other' by plate ID preferred over 'this' half stage rotation.
-						return true;
-					}
-					else
-					{
-						// Both by half stage rotation, so compare half stage properties.
-						const ReconstructInfo::HalfStageRotationProperties &half_stage_rotation_properties =
-								boost::get<ReconstructInfo::HalfStageRotationProperties>(reconstruct_info.properties);
-						const ReconstructInfo::HalfStageRotationProperties &other_half_stage_rotation_properties =
-								boost::get<ReconstructInfo::HalfStageRotationProperties>(other_reconstruct_info.properties);
-
-						if (half_stage_rotation_properties.reconstruction_params.get_left_plate_id() <
-							other_half_stage_rotation_properties.reconstruction_params.get_left_plate_id())
-						{
-							return true;
-						}
-						if (half_stage_rotation_properties.reconstruction_params.get_left_plate_id() >
-							other_half_stage_rotation_properties.reconstruction_params.get_left_plate_id())
-						{
-							return false;
-						}
-
-						return half_stage_rotation_properties.reconstruction_params.get_right_plate_id() <
-								other_half_stage_rotation_properties.reconstruction_params.get_right_plate_id();
-					}
-				}
-			}
-
-		private:
-			/**
-			 * The properties used to reconstruct are obtained from this reconstruction geometry.
-			 */
-			ReconstructionGeometry::non_null_ptr_to_const_type d_reconstruction_properties;
-
-			/**
-			 * Reconstruction information extracted from reconstruction properties.
-			 */
-			struct ReconstructInfo
-			{
-				//! Geometry was reconstructed by plate ID.
-				ReconstructInfo(
-						const ReconstructionTreeCreator &reconstruction_tree_creator_,
-						GPlatesModel::integer_plate_id_type plate_id_) :
-					reconstruction_tree_creator(reconstruction_tree_creator_),
-					properties(ByPlateIdProperties(plate_id_))
-				{  }
-
-				//! Geometry was reconstructed by half stage rotation.
-				ReconstructInfo(
-						const ReconstructionTreeCreator &reconstruction_tree_creator_,
-						const ReconstructionFeatureProperties &reconstruction_params_) :
-					reconstruction_tree_creator(reconstruction_tree_creator_),
-					properties(HalfStageRotationProperties(reconstruction_params_))
-				{  }
-
-				/**
-				 * The rotation tree generator used to create reconstruction trees for the
-				 * ReconstructedFeatureGeometry associated with the Delaunay vertex.
-				 */
-				ReconstructionTreeCreator reconstruction_tree_creator;
-
-				//
-				// Geometry was either reconstructed by plate ID or by half stage rotation.
-				//
-				struct ByPlateIdProperties
-				{
-					ByPlateIdProperties(
-							GPlatesModel::integer_plate_id_type plate_id_) :
-						plate_id(plate_id_)
-					{  }
-					GPlatesModel::integer_plate_id_type plate_id;
-				};
-				struct HalfStageRotationProperties
-				{
-					HalfStageRotationProperties(
-							const ReconstructionFeatureProperties &reconstruction_params_) :
-						reconstruction_params(reconstruction_params_)
-					{  }
-					ReconstructionFeatureProperties reconstruction_params;
-				};
-				typedef boost::variant<ByPlateIdProperties, HalfStageRotationProperties> properties_type;
-
-				properties_type properties;
-			};
-			mutable boost::optional<ReconstructInfo> d_reconstruct_info;
-
-			//
-			// Cache the stage rotation for a specific reconstruction time and velocity delta time.
-			// It's likely that multiple Delaunay vertices sharing us will all request the same stage rotation
-			// at the same time.
-			//
-			typedef boost::tuple<
-					GPlatesMaths::Real/*reconstruction_time*/,
-					GPlatesMaths::Real/*velocity_delta_time*/,
-					VelocityDeltaTime::Type>
-							stage_rotation_key_type;
-
-			/**
-			 * Stage rotation key (input parameters) and value (stage rotation).
-			 *
-			 * Initially is none.
-			 */
-			mutable boost::optional<
-					std::pair<
-							stage_rotation_key_type,
-							GPlatesMaths::FiniteRotation> > d_cached_stage_rotation;
-
-
-			explicit
-			VertexSharedReconstructInfo(
-					const ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_properties) :
-				d_reconstruction_properties(reconstruction_properties)
-			{  }
-
-			/**
-			 * Get the reconstruct information (and obtain from reconstruction properties one first call).
-			 */
-			const ReconstructInfo &
-			get_reconstruct_info() const
-			{
-				if (!d_reconstruct_info)
-				{
-					// The creator of reconstruction trees, and feature, used when reconstructing the recon geometry.
-					boost::optional<ReconstructionTreeCreator> reconstruction_tree_creator =
-							ReconstructionGeometryUtils::get_reconstruction_tree_creator(d_reconstruction_properties);
-					// Sub-segments are either reconstructed feature geometries or resolved topological geometries
-					// and both have reconstruction tree creators so this should always succeed.
-					GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-							reconstruction_tree_creator,
-							GPLATES_ASSERTION_SOURCE);
-
-					// Everything reconstructs by plate ID except if the reconstruction geometry is an RFG *and*
-					// it reconstructs using half stage rotations.
-					//
-					// This means resolved topological lines and any RFGs reconstructed other than half-stage-rotations are
-					// reconstructed by plate ID.
-					// Resolved topological lines are only involved if their sub-segment RFGs cannot be matched to clipped resolved line
-					// - see 'TopologyNetworkResolver::add_boundary_delaunay_points_from_resolved_topological_line()'
-					// - and, as noted in the function, this will more than likely give incorrect results.
-					// And the topology builder tools should not allow RFGs other than by-plate-id and half-stage-rotation,
-					// so these shouldn't occur in practice (but could if constructed outside GPlates somehow).
-					boost::optional<ReconstructedFeatureGeometry::non_null_ptr_to_const_type> rfg_properties =
-							ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
-									ReconstructedFeatureGeometry::non_null_ptr_to_const_type>(d_reconstruction_properties);
-					if (rfg_properties &&
-						rfg_properties.get()->get_reconstruct_method_type() == ReconstructMethod::HALF_STAGE_ROTATION)
-					{
-						//
-						// Reconstruct using half-stage rotations.
-						//
-
-						// Get the left/right plate IDs, etc.
-						ReconstructionFeatureProperties reconstruction_feature_properties;
-						reconstruction_feature_properties.visit_feature(rfg_properties.get()->get_feature_ref());
-
-						d_reconstruct_info = boost::in_place(
-								reconstruction_tree_creator.get(),
-								reconstruction_feature_properties);
-					}
-					else
-					{
-						//
-						// Reconstruct by plate ID.
-						//
-
-						// Get the reconstruction plate ID.
-						boost::optional<GPlatesModel::integer_plate_id_type> plate_id =
-								ReconstructionGeometryUtils::get_plate_id(d_reconstruction_properties);
-						if (!plate_id)
-						{
-							plate_id = 0;
-						}
-
-						d_reconstruct_info = boost::in_place(reconstruction_tree_creator.get(), plate_id.get());
-					}
-				}
-
-				return d_reconstruct_info.get();
-			}
-
-			/**
-			 * Calculate the stage rotation for the specified reconstruction time and velocity delta time.
-			 */
-			GPlatesMaths::FiniteRotation
-			calc_stage_rotation(
-					const double &reconstruction_time,
-					const double &velocity_delta_time,
-					VelocityDeltaTime::Type velocity_delta_time_type) const
-			{
-				const ReconstructInfo &reconstruct_info = get_reconstruct_info();
-
-				//
-				// See if geometry was reconstructed by plate ID.
-				//
-				const ReconstructInfo::ByPlateIdProperties *by_plate_id_properties =
-						boost::get<ReconstructInfo::ByPlateIdProperties>(&reconstruct_info.properties);
-				if (by_plate_id_properties)
-				{
-					return PlateVelocityUtils::calculate_stage_rotation(
-							by_plate_id_properties->plate_id,
-							reconstruct_info.reconstruction_tree_creator,
-							reconstruction_time,
-							velocity_delta_time,
-							velocity_delta_time_type);
-				}
-
-				//
-				// Geometry must have been reconstructed by half stage rotation.
-				//
-				const ReconstructInfo::HalfStageRotationProperties &half_stage_rotation_properties =
-						boost::get<ReconstructInfo::HalfStageRotationProperties>(reconstruct_info.properties);
-
-				const std::pair<double, double> time_range = VelocityDeltaTime::get_time_range(
-						velocity_delta_time_type, reconstruction_time, velocity_delta_time);
-
-				// Calculate the stage rotation.
-				return GPlatesMaths::calculate_stage_rotation(
-						RotationUtils::get_half_stage_rotation(
-								time_range.second/*young*/,
-								half_stage_rotation_properties.reconstruction_params,
-								reconstruct_info.reconstruction_tree_creator),
-						RotationUtils::get_half_stage_rotation(
-								time_range.first/*old*/,
-								half_stage_rotation_properties.reconstruction_params,
-								reconstruct_info.reconstruction_tree_creator));
-			}
-		};
-
-
-		/**
 		 * This class holds the extra info for each delaunay triangulation vertex.
 		 *
 		 * This is based on the rebind mechanism described in the 'flexibility' section of
@@ -587,7 +257,7 @@ namespace GPlatesAppLogic
 					unsigned int vertex_index,
 					const GPlatesMaths::PointOnSphere &point_on_sphere,
 					const GPlatesMaths::LatLonPoint &lat_lon_point,
-					const VertexSharedReconstructInfo::non_null_ptr_to_const_type &shared_reconstruct_info)
+					const ResolvedVertexSourceInfo::non_null_ptr_to_const_type &shared_source_info)
 			{
 				// NOTE: Can get initialised twice if an inserted vertex happens to be at the
 				// same position as an existing vertex - so we don't enforce only one initialisation.
@@ -597,7 +267,7 @@ namespace GPlatesAppLogic
 						vertex_index,
 						point_on_sphere,
 						lat_lon_point,
-						shared_reconstruct_info);
+						shared_source_info);
 			}
 
 			//! Returns index of this vertex within all vertices in the delaunay triangulation.
@@ -640,15 +310,15 @@ namespace GPlatesAppLogic
 			}
 
 			/**
-			 * Returns the shared vertex reconstruct info.
+			 * Returns the shared vertex source info.
 			 */
-			const VertexSharedReconstructInfo &
-			get_shared_reconstruct_info() const
+			const ResolvedVertexSourceInfo &
+			get_shared_source_info() const
 			{
 				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 						d_vertex_info,
 						GPLATES_ASSERTION_SOURCE);
-				return *d_vertex_info->shared_reconstruction_info;
+				return *d_vertex_info->shared_source_info;
 			}
 
 			//! Calculates the stage rotation of this vertex.
@@ -657,7 +327,7 @@ namespace GPlatesAppLogic
 					const double &velocity_delta_time = 1.0,
 					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T) const
 			{
-				return get_shared_reconstruct_info().get_stage_rotation(
+				return get_shared_source_info().get_stage_rotation(
 						get_reconstruction_time(),
 						velocity_delta_time,
 						velocity_delta_time_type);
@@ -669,11 +339,11 @@ namespace GPlatesAppLogic
 					const double &velocity_delta_time = 1.0,
 					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T) const
 			{
-				// Calculate the velocity from the stage rotation.
-				return GPlatesMaths::calculate_velocity_vector(
+				return get_shared_source_info().get_velocity_vector(
 						get_point_on_sphere(),
-						calc_stage_rotation(velocity_delta_time, velocity_delta_time_type),
-						velocity_delta_time);
+						get_reconstruction_time(),
+						velocity_delta_time,
+						velocity_delta_time_type);
 			}
 
 			//! Calculates the velocity colat/lon of this vertex.
@@ -704,6 +374,16 @@ namespace GPlatesAppLogic
 				return d_deformation_info.get();
 			}
 
+			//! Return Delaunay triangulation containg this vertex.
+			const Delaunay_2 &
+			get_delaunay_2() const
+			{
+				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+						d_vertex_info,
+						GPLATES_ASSERTION_SOURCE);
+				return d_vertex_info->delaunay_2;
+			}
+
 		private:
 
 			/**
@@ -716,19 +396,19 @@ namespace GPlatesAppLogic
 						unsigned int vertex_index_,
 						const GPlatesMaths::PointOnSphere &point_on_sphere_,
 						const GPlatesMaths::LatLonPoint &lat_lon_point_,
-						const VertexSharedReconstructInfo::non_null_ptr_to_const_type &shared_reconstruction_info_) :
+						const ResolvedVertexSourceInfo::non_null_ptr_to_const_type &shared_source_info_) :
 					delaunay_2(delaunay_2_),
 					vertex_index(vertex_index_),
 					point_on_sphere(point_on_sphere_),
 					lat_lon_point(lat_lon_point_),
-					shared_reconstruction_info(shared_reconstruction_info_)
+					shared_source_info(shared_source_info_)
 				{  }
 
 				const Delaunay_2 &delaunay_2;
 				unsigned int vertex_index;
 				GPlatesMaths::PointOnSphere point_on_sphere;
 				GPlatesMaths::LatLonPoint lat_lon_point;
-				VertexSharedReconstructInfo::non_null_ptr_to_const_type shared_reconstruction_info;
+				ResolvedVertexSourceInfo::non_null_ptr_to_const_type shared_source_info;
 			};
 
 			boost::optional<VertexInfo> d_vertex_info;
@@ -739,15 +419,6 @@ namespace GPlatesAppLogic
 			// Compute the deformation info for this vertex.
 			DeformationInfo
 			calculate_deformation_info() const;
-
-			const Delaunay_2 &
-			get_delaunay_2() const
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						d_vertex_info,
-						GPLATES_ASSERTION_SOURCE);
-				return d_vertex_info->delaunay_2;
-			}
 
 			Vertex_handle
 			get_handle() const
@@ -818,34 +489,20 @@ namespace GPlatesAppLogic
 			{ }
 
 
-			/**
-			 * Set all essential face information in one go.
-			 *
-			 * Any derived information can be calculated as needed.
-			 */
-			void
-			initialise(
-					const Delaunay_2 &delaunay_2,
-					unsigned int face_index,
-					bool is_in_deforming_region_)
-			{
-				// Make sure only gets initialised once.
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						!d_face_info,
-						GPLATES_ASSERTION_SOURCE);
+			//
+			// NOTE: We do not need to initialise faces (like we do vertices).
+			//
+			// This makes it easier to incrementally modify the Delaunay triangulation
+			// (such as adaptive subdivision of its edges) without having to subsequently iterate
+			// over all the faces and initialise those that haven't already been initialised.
+			//
+			// The Delaunay triangulation (required for face initialisation) is obtained from one
+			// of the vertices of a face. Also a face can detect when it has been modified due to a
+			// modification in the Delaunay triangulation (such as a vertex insertion splitting a
+			// face into 3 faces, two of which are new and the third being the existing face modified
+			// to reference the newly inserted vertex).
+			//
 
-				d_face_info = boost::in_place(delaunay_2, face_index, is_in_deforming_region_);
-			}
-
-			//! Returns index of this face within all faces in the delaunay triangulation.
-			unsigned int
-			get_face_index() const
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						d_face_info,
-						GPLATES_ASSERTION_SOURCE);
-				return d_face_info->face_index;
-			}
 
 			/**
 			 * Returns true if face is inside the deforming region.
@@ -864,10 +521,14 @@ namespace GPlatesAppLogic
 			bool
 			is_in_deforming_region() const
 			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						d_face_info,
-						GPLATES_ASSERTION_SOURCE);
-				return d_face_info->is_in_deforming_region;
+				check_face_vertices();
+
+				if (!d_is_in_deforming_region)
+				{
+					d_is_in_deforming_region = calculate_is_in_deforming_region();
+				}
+
+				return d_is_in_deforming_region.get();
 			}
 
 			/**
@@ -878,6 +539,8 @@ namespace GPlatesAppLogic
 			const DeformationInfo &
 			get_deformation_info() const
 			{
+				check_face_vertices();
+
 				if (!d_deformation_info)
 				{
 					d_deformation_info = calculate_deformation_info();
@@ -886,46 +549,139 @@ namespace GPlatesAppLogic
 				return d_deformation_info.get();
 			}
 
-		private:
-			
-			/**
-			 * All information passed into @a initialise goes here.
-			 */
-			struct FaceInfo
+			//! Return Delaunay triangulation containg this face.
+			const Delaunay_2 &
+			get_delaunay_2() const
 			{
-				FaceInfo(
-						const Delaunay_2 &delaunay_2_,
-						unsigned int face_index_,
-						bool is_in_deforming_region_) :
-					delaunay_2(delaunay_2_),
-					face_index(face_index_),
-					is_in_deforming_region(is_in_deforming_region_)
-				{  }
+				// Delegate to one of our vertices so we don't have to initialise this face with any info.
+				if (!d_delaunay_2)
+				{
+					// Using 'this->' to make 'vertex()' a dependent name and hence delay name lookup
+					// until instantiation - otherwise we get a compile error.
+					d_delaunay_2 = this->vertex(0)->get_delaunay_2();
+				}
 
-				const Delaunay_2 &delaunay_2;
-				unsigned int face_index;
-				bool is_in_deforming_region;
+				return d_delaunay_2.get();
+			}
+
+		private:
+
+			/**
+			 * Information to determine whether this face has been modified when the Delaunay
+			 * triangulation is modified.
+			 *
+			 * An example is inserting a new vertex into triangulation, which can split a face into
+			 * three faces with two new faces and one existing face that has one of its three vertices
+			 * changed to be the newly inserted vertex.
+			 *
+			 * The easiest way to detect this is to check the three vertex indices of this face because
+			 * we never modify a vertex once it is inserted into the triangulation
+			 */
+			struct CheckFaceVertices
+			{
+				/**
+				 * Constructor.
+				 *
+				 * Default constructor sets all vertex indices to zero which should not
+				 * correspond to any existing face.
+				 */
+				CheckFaceVertices(
+						unsigned int vertex_index_0 = 0,
+						unsigned int vertex_index_1 = 0,
+						unsigned int vertex_index_2 = 0)
+				{
+					vertex_indices[0] = vertex_index_0;
+					vertex_indices[1] = vertex_index_1;
+					vertex_indices[2] = vertex_index_2;
+				}
+
+				bool
+				operator==(
+						const CheckFaceVertices &other) const
+				{
+					return vertex_indices[0] == other.vertex_indices[0] &&
+							vertex_indices[1] == other.vertex_indices[1] &&
+							vertex_indices[2] == other.vertex_indices[2];
+				}
+
+				bool
+				operator!=(
+						const CheckFaceVertices &other) const
+				{
+					return !(*this == other);
+				}
+
+				unsigned int vertex_indices[3];
 			};
 
+			mutable CheckFaceVertices d_check_face_vertices;
 
-			// The extra info for the face
-			boost::optional<FaceInfo> d_face_info;
+			//! Delaunay triangulation containing this face.
+			mutable boost::optional<const Delaunay_2 &> d_delaunay_2;
+
+			//! Whether this face is inside the deforming region.
+			mutable boost::optional<bool> d_is_in_deforming_region;
 
 			// Derived values - these are mutable since they are calculated on first call.
 			mutable boost::optional<DeformationInfo> d_deformation_info;
 
+
+			/**
+			 * Reset any cached information for this face (except reference to Delaunay triangulation)
+			 * if any vertices of this face have changed (when the Delaunay triangulation is modified).
+			 */
+			void
+			check_face_vertices() const
+			{
+				const CheckFaceVertices current_check_face_vertices(
+						// Using 'this->' to make 'vertex()' a dependent name and hence delay name lookup
+						// until instantiation - otherwise we get a compile error.
+						this->vertex(0)->get_vertex_index(),
+						this->vertex(1)->get_vertex_index(),
+						this->vertex(2)->get_vertex_index());
+				if (current_check_face_vertices != d_check_face_vertices)
+				{
+					d_check_face_vertices = current_check_face_vertices;
+
+					// Reset cached information (that needs to be re-calculated).
+					d_is_in_deforming_region = boost::none;
+					d_deformation_info = boost::none;
+				}
+			}
+
+			bool
+			calculate_is_in_deforming_region() const
+			{
+				// Determine whether current face is inside the deforming region.
+				//
+				// The delaunay triangulation is the convex hull around the network boundary,
+				// so it includes faces outside the network boundary (and also faces inside any
+				// non-deforming interior blocks).
+				//
+				// If the centroid of this face is inside the deforming region then true is returned.
+				//
+				// TODO: Note that the delaunay triangulation is *not* constrained which means some
+				// delaunay faces can cross over network boundary edges or interior block edges.
+				// This is something that perhaps needs to be dealt with, but currently doesn't appear
+				// to be too much of a problem with current topological network datasets.
+				// Compute centroid of face.
+				const GPlatesMaths::PointOnSphere face_points[3] =
+				{
+					// Using 'this->' to make 'vertex()' a dependent name and hence delay name lookup
+					// until instantiation - otherwise we get a compile error.
+					this->vertex(0)->get_point_on_sphere(),
+					this->vertex(1)->get_point_on_sphere(),
+					this->vertex(2)->get_point_on_sphere()
+				};
+				const GPlatesMaths::PointOnSphere face_centroid(
+						GPlatesMaths::Centroid::calculate_points_centroid(face_points, face_points + 3));
+
+				return get_delaunay_2().is_point_in_deforming_region(face_centroid);
+			}
+
 			// Compute the deformation info for this face.
 			DeformationInfo
 			calculate_deformation_info() const;
-
-			const Delaunay_2 &
-			get_delaunay_2() const
-			{
-				GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-						d_face_info,
-						GPLATES_ASSERTION_SOURCE);
-				return d_face_info->delaunay_2;
-			}
 		};
 
 
@@ -980,6 +736,9 @@ namespace GPlatesAppLogic
 						delaunay_triangulation_data_structure_2_type;
 
 
+		// Forward declaration of class owning Delaunay_2.
+		class Network;
+
 		/**
 		 * 2D Delaunay triangulation.
 		 */
@@ -992,13 +751,8 @@ namespace GPlatesAppLogic
 		public:
 
 			Delaunay_2(
-					const GPlatesMaths::AzimuthalEqualAreaProjection &projection,
-					const double &reconstruction_time,
-					boost::optional<double> clamp_total_strain_rate = boost::none) :
-				d_projection(projection),
-				d_reconstruction_time(reconstruction_time),
-				d_clamp_total_strain_rate(clamp_total_strain_rate)
-			{  }
+					const Network &network,
+					const double &reconstruction_time);
 
 			/**
 			 * Returns the natural neighbor coordinates of @a point in the triangulation
@@ -1057,10 +811,7 @@ namespace GPlatesAppLogic
 			 * 2D points and vice versa.
 			 */
 			const GPlatesMaths::AzimuthalEqualAreaProjection &
-			get_projection() const
-			{
-				return d_projection;
-			}
+			get_projection() const;
 
 			/**
 			 * Returns the reconstruction time.
@@ -1080,11 +831,37 @@ namespace GPlatesAppLogic
 				return d_clamp_total_strain_rate;
 			}
 
+			/**
+			 * Delegates to the Network that owns this Delaunay triangulation.
+			 */
+			bool
+			is_point_in_deforming_region(
+					const GPlatesMaths::PointOnSphere &point) const;
+
 		private:
 
-			GPlatesMaths::AzimuthalEqualAreaProjection d_projection;
+			//! The Network that owns this Delaunay triangulation.
+			const Network &d_network;
+
 			double d_reconstruction_time;
 			boost::optional<double> d_clamp_total_strain_rate;
+
+		public: // Used by class Network...
+
+			void
+			set_finished_modifying_triangulation()
+			{
+				d_finished_modifying_triangulation = true;
+			}
+
+			bool
+			is_finished_modifying_triangulation() const
+			{
+				return d_finished_modifying_triangulation;
+			}
+
+		private:
+			bool d_finished_modifying_triangulation;
 		};
 	}
 
@@ -1105,6 +882,18 @@ namespace GPlatesAppLogic
 		DelaunayVertex_2<GT, Vb>::calculate_deformation_info() const
 		{
 			const Delaunay_2 &delaunay_2 = get_delaunay_2();
+
+			// Make sure all triangulation modifications have completed.
+			// We will be averaging the strain rates of the triangles incident to this vertex and
+			// caching that value, so we don't want to cache a value that uses triangles of an
+			// intermediate triangulation.
+			//
+			// Note that each face (triangle) can calculate strain rate (from its vertices) in an intermediate
+			// triangulation because each face (unlike each vertex) detects whether it has changed in the
+			// triangulation (eg, has a new vertex due to a vertex insertion in triangulation).
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					delaunay_2.is_finished_modifying_triangulation(),
+					GPLATES_ASSERTION_SOURCE);
 
 			DeformationInfo vertex_deformation_info;
 			double area_sum = 0.0;
@@ -1137,7 +926,7 @@ namespace GPlatesAppLogic
 				}
 
 				// Get the area of the face triangle.
-				const double area = std::fabs(delaunay_2.triangle(incident_face_circulator).area());
+				const double area = std::fabs(CGAL::to_double(delaunay_2.triangle(incident_face_circulator).area()));
 
 				// Get the deformation data for the current face.
 				const DeformationInfo &face_deformation_info = incident_face_circulator->get_deformation_info();
@@ -1165,7 +954,7 @@ namespace GPlatesAppLogic
 		DeformationInfo
 		DelaunayFace_2<GT, Fb>::calculate_deformation_info() const
 		{
-			if (!d_face_info->is_in_deforming_region)
+			if (!is_in_deforming_region())
 			{
 				// Not in the deforming region so return zero strain rates.
 				return DeformationInfo();
@@ -1209,8 +998,8 @@ namespace GPlatesAppLogic
 
 			// Face centroid.
 			const double inv_3 = 1.0 / 3.0;
-			const double x_centroid = inv_3 * (v1->point().x() + v2->point().x() + v3->point().x());
-			const double y_centroid = inv_3 * (v1->point().y() + v2->point().y() + v3->point().y());
+			const double x_centroid = inv_3 * CGAL::to_double(v1->point().x() + v2->point().x() + v3->point().x());
+			const double y_centroid = inv_3 * CGAL::to_double(v1->point().y() + v2->point().y() + v3->point().y());
 
 			const GPlatesMaths::AzimuthalEqualAreaProjection &projection = delaunay_2.get_projection();
 

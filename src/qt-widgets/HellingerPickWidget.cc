@@ -113,17 +113,17 @@ namespace{
 		const Qt::GlobalColor text_colour = enabled? Qt::black : Qt::gray;
 		static const Qt::GlobalColor background_colour = Qt::white;
 
-		item->setBackgroundColor(SEGMENT_NUMBER,background_colour);
-		item->setBackgroundColor(SEGMENT_TYPE,background_colour);
-		item->setBackgroundColor(LAT,background_colour);
-		item->setBackgroundColor(LON,background_colour);
-		item->setBackgroundColor(UNCERTAINTY,background_colour);
+		item->setBackground(SEGMENT_NUMBER,background_colour);
+		item->setBackground(SEGMENT_TYPE,background_colour);
+		item->setBackground(LAT,background_colour);
+		item->setBackground(LON,background_colour);
+		item->setBackground(UNCERTAINTY,background_colour);
 
-		item->setTextColor(SEGMENT_NUMBER,text_colour);
-		item->setTextColor(SEGMENT_TYPE,text_colour);
-		item->setTextColor(LAT,text_colour);
-		item->setTextColor(LON,text_colour);
-		item->setTextColor(UNCERTAINTY,text_colour);
+		item->setForeground(SEGMENT_NUMBER,text_colour);
+		item->setForeground(SEGMENT_TYPE,text_colour);
+		item->setForeground(LAT,text_colour);
+		item->setForeground(LON,text_colour);
+		item->setForeground(UNCERTAINTY,text_colour);
 	}
 
 	void
@@ -134,17 +134,17 @@ namespace{
 		static const Qt::GlobalColor text_colour = Qt::black;
 		static const Qt::GlobalColor background_colour = Qt::yellow;
 
-		item->setBackgroundColor(SEGMENT_NUMBER,background_colour);
-		item->setBackgroundColor(SEGMENT_TYPE,background_colour);
-		item->setBackgroundColor(LAT,background_colour);
-		item->setBackgroundColor(LON,background_colour);
-		item->setBackgroundColor(UNCERTAINTY,background_colour);
+		item->setBackground(SEGMENT_NUMBER,background_colour);
+		item->setBackground(SEGMENT_TYPE,background_colour);
+		item->setBackground(LAT,background_colour);
+		item->setBackground(LON,background_colour);
+		item->setBackground(UNCERTAINTY,background_colour);
 
-		item->setTextColor(SEGMENT_NUMBER,text_colour);
-		item->setTextColor(SEGMENT_TYPE,text_colour);
-		item->setTextColor(LAT,text_colour);
-		item->setTextColor(LON,text_colour);
-		item->setTextColor(UNCERTAINTY,text_colour);
+		item->setForeground(SEGMENT_NUMBER,text_colour);
+		item->setForeground(SEGMENT_TYPE,text_colour);
+		item->setForeground(LAT,text_colour);
+		item->setForeground(LON,text_colour);
+		item->setForeground(UNCERTAINTY,text_colour);
 	}
 
 	void
@@ -204,11 +204,11 @@ namespace{
 
 		if (!pick.d_is_enabled)
 		{
-			item->setTextColor(SEGMENT_NUMBER,Qt::gray);
-			item->setTextColor(SEGMENT_TYPE,Qt::gray);
-			item->setTextColor(LAT,Qt::gray);
-			item->setTextColor(LON,Qt::gray);
-			item->setTextColor(UNCERTAINTY,Qt::gray);
+			item->setForeground(SEGMENT_NUMBER,Qt::gray);
+			item->setForeground(SEGMENT_TYPE,Qt::gray);
+			item->setForeground(LAT,Qt::gray);
+			item->setForeground(LON,Qt::gray);
+			item->setForeground(UNCERTAINTY,Qt::gray);
 		}
 		if (pick.d_is_enabled)
 		{

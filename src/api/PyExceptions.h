@@ -33,8 +33,6 @@
 #include "global/PreconditionViolationError.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	//
@@ -202,7 +200,5 @@ namespace GPlatesApi
 		PyObject *d_traceback;
 	};
 }
-
-#endif   // GPLATES_NO_PYTHON
 
 #endif // GPLATES_API_PYEXCEPTIONS_H

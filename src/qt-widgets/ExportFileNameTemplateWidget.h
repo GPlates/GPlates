@@ -29,7 +29,7 @@
 #include <QString>
 #include <QWidget>
 
-#include "ExportFileNameTemplateWidgetUi.h"
+#include "ui_ExportFileNameTemplateWidgetUi.h"
 
 #include "gui/ExportAnimationType.h"
 

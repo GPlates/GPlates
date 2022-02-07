@@ -28,6 +28,7 @@
 #include "Dialogs.h"
 #include "FeatureFocus.h"
 
+#include "app-logic/ApplicationState.h"
 #include "app-logic/TopologyInternalUtils.h"
 #include "app-logic/TopologyUtils.h"
 
@@ -71,9 +72,9 @@ namespace GPlatesGui
 		 */
 		bool
 		is_active_and_enabled_tool(
-				const GPlatesGui::CanvasToolWorkflows &canvas_tool_workflows,
-				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
-				GPlatesGui::CanvasToolWorkflows::ToolType tool)
+				const CanvasToolWorkflows &canvas_tool_workflows,
+				CanvasToolWorkflows::WorkflowType workflow,
+				CanvasToolWorkflows::ToolType tool)
 		{
 			return canvas_tool_workflows.get_active_canvas_tool() == std::make_pair(workflow, tool) &&
 				canvas_tool_workflows.is_canvas_tool_enabled(workflow, tool);
@@ -96,7 +97,9 @@ GPlatesGui::TopologyCanvasToolWorkflow::TopologyCanvasToolWorkflow(
 	d_feature_focus(view_state.get_feature_focus()),
 	d_rendered_geom_collection(view_state.get_rendered_geometry_collection()),
 	d_rendered_geometry_parameters(view_state.get_rendered_geometry_parameters()),
-	d_symbol_map(view_state.get_feature_type_symbol_map())
+	d_render_settings(view_state.get_render_settings()),
+	d_symbol_map(view_state.get_feature_type_symbol_map()),
+	d_application_state(view_state.get_application_state())
 {
 	create_canvas_tools(
 			canvas_tool_workflows,
@@ -386,6 +389,8 @@ GPlatesGui::TopologyCanvasToolWorkflow::draw_feature_focus()
 			*d_rendered_geom_collection.get_main_rendered_layer(WORKFLOW_RENDER_LAYER),
 			d_rendered_geom_collection,
 			d_rendered_geometry_parameters,
+			d_render_settings,
+			d_application_state.get_current_topological_sections(),
 			d_symbol_map);
 }
 
@@ -440,7 +445,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::update_edit_topology_tool()
 		{
 			const GPlatesModel::FeatureHandle::const_weak_ref focused_feature = d_feature_focus.focused_feature();
 
-			if (GPlatesAppLogic::TopologyUtils::is_topological_geometry_feature(focused_feature))
+			if (GPlatesAppLogic::TopologyUtils::is_topological_feature(focused_feature))
 			{
 				enable_edit_topology_tool = true;
 			}

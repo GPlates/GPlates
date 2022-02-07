@@ -26,7 +26,6 @@
 #ifndef GPLATES_OPENGL_GLMULTIRESOLUTIONCUBERECONSTRUCTEDRASTER_H
 #define GPLATES_OPENGL_GLMULTIRESOLUTIONCUBERECONSTRUCTEDRASTER_H
 
-#include <cstddef> // For std::size_t
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -68,7 +67,7 @@ namespace GPlatesOpenGL
 					GLRenderer &renderer_,
 					const GLMultiResolutionStaticPolygonReconstructedRaster::cache_handle_type &source_cache_handle_ =
 							GLMultiResolutionStaticPolygonReconstructedRaster::cache_handle_type()) :
-				texture(GLTexture::create_as_auto_ptr(renderer_)),
+				texture(GLTexture::create_as_unique_ptr(renderer_)),
 				source_cache_handle(source_cache_handle_)
 			{  }
 
@@ -158,12 +157,7 @@ namespace GPlatesOpenGL
 		 */
 		virtual
 		const GPlatesUtils::SubjectToken &
-		get_subject_token() const
-		{
-			// We'll just use the subject token of the raster source - if they don't change then neither do we.
-			// If we had two input sources then we'd have to have our own subject token.
-			return d_reconstructed_raster->get_subject_token();
-		}
+		get_subject_token() const;
 
 
 		/**
@@ -194,7 +188,7 @@ namespace GPlatesOpenGL
 		 * Returns the tile texel dimension.
 		 */
 		virtual
-		std::size_t
+		unsigned int
 		get_tile_texel_dimension() const
 		{
 			return d_tile_texel_dimension;
@@ -360,6 +354,11 @@ namespace GPlatesOpenGL
 		 */
 		GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type d_reconstructed_raster;
 
+		/**
+		 * Keep track of changes to @a d_reconstructed_raster.
+		 */
+		mutable GPlatesUtils::ObserverToken d_reconstructed_raster_observer_token;
+
 
 		/**
 		 * If we increased the tile texel dimension then we need to adjust LOD correspondingly.
@@ -373,7 +372,7 @@ namespace GPlatesOpenGL
 		/**
 		 * The number of texels along a tiles edge (horizontal or vertical since it's square).
 		 */
-		std::size_t d_tile_texel_dimension;
+		unsigned int d_tile_texel_dimension;
 
 		/**
 		 * Cache of tile textures.
@@ -401,6 +400,11 @@ namespace GPlatesOpenGL
 		 * The transform to use when rendering into the cube quad tree tiles.
 		 */
 		GLMatrix d_world_transform;
+
+		/**
+		 * Used to inform clients that we have been updated.
+		 */
+		mutable GPlatesUtils::SubjectToken d_subject_token;
 
 
 		//! Constructor.

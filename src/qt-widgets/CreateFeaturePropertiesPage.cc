@@ -208,16 +208,16 @@ GPlatesQtWidgets::CreateFeaturePropertiesPage::CreateFeaturePropertiesPage(
 	// don't get clipped (ResizeToContents doesn't work on rows that are hidden due to a scrolling).
 	// Whereas for the 'existing properties' we stretch the second column to ensure the
 	// property value has the most room to be displayed.
-	available_properties_table_widget->horizontalHeader()->setResizeMode(
+	available_properties_table_widget->horizontalHeader()->setSectionResizeMode(
 			AVAILABLE_PROPERTIES_COLUMN_PROPERTY,
 			QHeaderView::Stretch);
-	available_properties_table_widget->horizontalHeader()->setResizeMode(
+	available_properties_table_widget->horizontalHeader()->setSectionResizeMode(
 			AVAILABLE_PROPERTIES_COLUMN_MULTIPLICITY,
 			QHeaderView::ResizeToContents);
-	existing_properties_table_widget->horizontalHeader()->setResizeMode(
+	existing_properties_table_widget->horizontalHeader()->setSectionResizeMode(
 			EXISTING_PROPERTIES_COLUMN_PROPERTY,
 			QHeaderView::ResizeToContents);
-	existing_properties_table_widget->horizontalHeader()->setResizeMode(
+	existing_properties_table_widget->horizontalHeader()->setSectionResizeMode(
 			EXISTING_PROPERTIES_COLUMN_VALUE,
 			QHeaderView::Stretch);
 

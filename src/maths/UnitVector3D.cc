@@ -46,7 +46,8 @@ GPlatesMaths::UnitVector3D::check_validity()
 	 * Calculate magnitude of vector to ensure that it actually _is_ 1.
 	 * For efficiency, don't bother sqrting yet.
 	 */
-	real_t mag_sqrd = (d_x * d_x) + (d_y * d_y) + (d_z * d_z);
+	// Using double (dval()) instead of real_t generates more efficient assembly code.
+	real_t mag_sqrd = d_x.dval() * d_x.dval() + d_y.dval() * d_y.dval() + d_z.dval() * d_z.dval();
 	if (mag_sqrd != 1.0)
 	{
 		// invariant has been violated
@@ -82,8 +83,13 @@ GPlatesMaths::UnitVector3D::check_validity()
 		d_z = -1.0;
 	}
 
-	mag_sqrd = (d_x * d_x) + (d_y * d_y) + (d_z * d_z);
-	if (std::fabs(mag_sqrd.dval() - 1.0) > 1.0e-13) {
+	// Using double (dval()) instead of real_t generates more efficient assembly code.
+	mag_sqrd = d_x.dval() * d_x.dval() + d_y.dval() * d_y.dval() + d_z.dval() * d_z.dval();
+
+	const double mag_sqrd_minus_1 = mag_sqrd.dval() - 1.0;
+	if (mag_sqrd_minus_1 > 1.0e-13 ||
+		mag_sqrd_minus_1 < -1.0e-13)
+	{
 		double mag = std::sqrt(mag_sqrd.dval());
 #if 0
 		qWarning() << "Renormalising unit-vector (current deviation from 1.0 = "

@@ -82,7 +82,7 @@ namespace GPlatesFileIO
 
 
 		/**
-                 * Configuration options for OGR-supported file formats.
+		 * Configuration options for OGR-supported file formats.
 		 */
 		class OGRConfiguration :
 				public Configuration
@@ -104,17 +104,18 @@ namespace GPlatesFileIO
 			/**
 			 * Constructor.
 			 *
-                         * NOTE: @a file_format must currently be one of:
-                         * OGRGMT
-                         * SHAPEFILE
-                         * GEOJSON
+			 * NOTE: @a file_format must currently be one of:
+			 * OGRGMT
+			 * SHAPEFILE
+			 * GEOJSON
+			 * GEOPACKAGE
 			 *
-			 * @a wrap_to_dateline enables wrapping of polyline/polygon geometries to dateline (disabled by default).
+			 * @a wrap_to_dateline enables wrapping of polyline/polygon geometries to dateline.
 			 */
 			explicit
 			OGRConfiguration(
 					Format file_format,
-					bool wrap_to_dateline = true) :
+					bool wrap_to_dateline) :
 				d_wrap_to_dateline(wrap_to_dateline),
 				d_ogr_srs_write_behaviour(WRITE_AS_WGS84_BEHAVIOUR)
 			{  }

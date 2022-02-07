@@ -920,11 +920,7 @@ def synchronise_crossovers(
             #
             # Also rotation modifications up to this point include the disabled synchronised-crossover time sample.
             # This ensures the rotation model does not take the synchronised-crossover rotation into account.
-            #
-            # NOTE: We won't be modifying the rotation features until we're finished using 'rotation_model'.
-            # So we can turn off 'clone_rotation_features'.
-            # This makes a *big* difference to the running time (since we're not cloning all the rotation features).
-            rotation_model = RotationModel(rotation_feature_sequence, clone_rotation_features=False)
+            rotation_model = RotationModel(rotation_feature_sequence)
             
             # The preserved-crossover is correct and we want to adjust the synchronised-crossover to match.
             # So we get the rotation relative to the synchronised-crossover fixed plate at the crossover time
@@ -938,13 +934,6 @@ def synchronise_crossovers(
             
             # Now that we've obtained the current synchronised-crossover rotation we can re-enable the
             # sample(s) at the crossover time that we disabled above.
-            #
-            # NOTE: We could do this immediately after constructing a RotationModel (and hence before
-            # calculating the current crossover rotation), but currently RotationModel can see changes
-            # to the rotation features *after* it is constructed.
-            # This will be fixed in pygplates soon by having RotationModel clone its input rotation
-            # features such that it won't see subsequent modifications to those features.
-            # For now we just place it after the rotation has been calculated.
             for time_sample in crossover_info.disabled_samples_at_crossover_time:
                 time_sample.set_enabled()
             

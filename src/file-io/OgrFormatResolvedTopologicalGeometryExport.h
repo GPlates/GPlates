@@ -87,9 +87,8 @@ namespace GPlatesFileIO
 				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				boost::optional<GPlatesMaths::PolygonOrientation::Orientation>
-						force_polygon_orientation = boost::none,
-				bool wrap_to_dateline = true);
+				boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
+				bool wrap_to_dateline);
 
 
 		/**
@@ -113,7 +112,7 @@ namespace GPlatesFileIO
 				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				bool wrap_to_dateline = true);
+				bool wrap_to_dateline);
 
 
 		/**
@@ -129,7 +128,7 @@ namespace GPlatesFileIO
 				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				bool wrap_to_dateline = true);
+				bool wrap_to_dateline);
 
 
 		/**
@@ -145,7 +144,7 @@ namespace GPlatesFileIO
 				const referenced_files_collection_type &active_reconstruction_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				bool wrap_to_dateline = true);
+				bool wrap_to_dateline);
 	}
 }
 

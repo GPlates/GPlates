@@ -36,7 +36,7 @@
 namespace
 {
 	const QString HELP_GRID_LINE_REGISTRATION_DIALOG_TITLE =
-			QObject::tr("Time to start topology reconstruction from");
+			QObject::tr("Grid line registration");
 	const QString HELP_GRID_LINE_REGISTRATION_DIALOG_TEXT = QObject::tr(
 			"<html><body>\n"
 			"<p>Grid line registration involves placing the pixel <b>centres</b> of border pixels on the "

@@ -65,6 +65,7 @@
 namespace GPlatesPropertyValues
 {
 	class GpmlKeyValueDictionaryElement;
+	class GpmlPropertyDelegate;
 	class GpmlTimeSample;
 	class GpmlTimeWindow;
 	class GpmlTopologicalSection;
@@ -107,31 +108,31 @@ namespace GPlatesFeatureVisitors
 		virtual
 		void
 		visit_gpml_topological_line(
-		 		const GPlatesPropertyValues::GpmlTopologicalLine &gpml_toplogical_line);
+		 		const GPlatesPropertyValues::GpmlTopologicalLine &gpml_topological_line);
 
 		virtual
 		void
 		visit_gpml_topological_network(
-				const GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_toplogical_network);
+				const GPlatesPropertyValues::GpmlTopologicalNetwork &gpml_topological_network);
 
 		void
 		visit_gpml_topological_network_interior(
-		 		const GPlatesPropertyValues::GpmlTopologicalNetwork::Interior &gpml_toplogical_network_interior);
+		 		const GPlatesPropertyValues::GpmlPropertyDelegate &gpml_topological_network_interior);
 
 		virtual
 		void
 		visit_gpml_topological_polygon(
-		 		const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_toplogical_polygon);
+		 		const GPlatesPropertyValues::GpmlTopologicalPolygon &gpml_topological_polygon);
 
 		virtual
 		void
 		visit_gpml_topological_line_section(
-				const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_toplogical_line_section);
+				const GPlatesPropertyValues::GpmlTopologicalLineSection &gpml_topological_line_section);
 
 		virtual
 		void
 		visit_gpml_topological_point(
-				const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_toplogical_point);
+				const GPlatesPropertyValues::GpmlTopologicalPoint &gpml_topological_point);
 
 		void
 		report();

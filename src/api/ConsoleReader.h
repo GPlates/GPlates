@@ -30,7 +30,6 @@
 
 #include "AbstractConsole.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 namespace GPlatesApi
 {
 	/**
@@ -64,5 +63,5 @@ namespace GPlatesApi
 		boost::python::object d_old_object;
 	};
 }
-#endif // GPLATES_NO_PYTHON
+
 #endif  // GPLATES_API_CONSOLEREADER_H

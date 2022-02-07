@@ -43,8 +43,6 @@
 #include "maths/Vector3D.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -425,5 +423,3 @@ export_great_circle_arc()
 	// Enable boost::optional<GreatCircleArc> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::GreatCircleArc>();
 }
-
-#endif // GPLATES_NO_PYTHON

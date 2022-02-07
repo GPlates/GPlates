@@ -111,6 +111,9 @@ namespace GPlatesFileIO
 		 * If @a include_second_invariant_strain_rate is true then an extra set of per-point scalars,
 		 * under 'gpml:TotalStrainRate', is exported as per-point second invariant strain rates (in units of 1/second).
 		 *
+		 * If @a include_strain_rate_style is true then an extra set of per-point scalars,
+		 * under 'gpml:StrainRateStyle', is exported as per-point strain rate styles (unitless).
+		 *
 		 * @param export_single_output_file specifies whether to write all deformed feature geometries to a single file.
 		 * @param export_per_input_file specifies whether to group deformed feature geometries according
 		 *        to the input files their features came from and write to corresponding output files.
@@ -133,6 +136,7 @@ namespace GPlatesFileIO
 				bool include_dilatation_strain,
 				bool include_dilatation_strain_rate,
 				bool include_second_invariant_strain_rate,
+				bool include_strain_rate_style,
 				bool export_single_output_file,
 				bool export_per_input_file,
 				bool export_separate_output_directory_per_input_file);
@@ -153,7 +157,8 @@ namespace GPlatesFileIO
 		 * are output (where strain/stretch is unitless and angle/azimuth is in degrees).
 		 * If @a include_dilatation_strain is true then dilatation strain is output (unitless).
 		 * If @a include_dilatation_strain_rate is true then dilatation strain rate is output (in units of 1/second).
-		 * If @a include_second_invariant_strain_rate is true second invariant strain rate is output (in units of 1/second).
+		 * If @a include_second_invariant_strain_rate is true then second invariant strain rate is output (in units of 1/second).
+		 * If @a include_strain_rate_style is true then strain rate style is output (unitless).
 		 *
 		 * If @a domain_point_lon_lat_format is true then the domain points are output as the
 		 * GMT default of (longitude latitude), otherwise they're output as (latitude longitude).
@@ -182,6 +187,7 @@ namespace GPlatesFileIO
 				bool include_dilatation_strain,
 				bool include_dilatation_strain_rate,
 				bool include_second_invariant_strain_rate,
+				bool include_strain_rate_style,
 				bool export_single_output_file,
 				bool export_per_input_file,
 				bool export_separate_output_directory_per_input_file);

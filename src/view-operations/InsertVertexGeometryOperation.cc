@@ -27,8 +27,9 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <memory>
 #include <iterator>
+#include <memory>
+#include <utility> // std::move
 #include <QUndoCommand>
 
 #include "InsertVertexGeometryOperation.h"
@@ -628,7 +629,7 @@ GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex(
 		const GPlatesMaths::PointOnSphere &insert_pos_on_sphere)
 {
 	// The command that does the actual inserting of vertex.
-	std::auto_ptr<QUndoCommand> insert_vertex_command(
+	std::unique_ptr<QUndoCommand> insert_vertex_command(
 			new GeometryBuilderInsertPointUndoCommand(
 					d_geometry_builder,
 					insert_vertex_index,
@@ -636,10 +637,10 @@ GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex(
 
 	// Command wraps insert vertex command with handing canvas tool choice and
 	// insert vertex tool activation.
-	std::auto_ptr<QUndoCommand> undo_command(
+	std::unique_ptr<QUndoCommand> undo_command(
 			new GeometryOperationUndoCommand(
 					QObject::tr("insert vertex"),
-					insert_vertex_command,
+					std::move(insert_vertex_command),
 					this,
 					d_canvas_tool_workflows));
 

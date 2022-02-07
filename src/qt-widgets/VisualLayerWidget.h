@@ -36,7 +36,7 @@
 #include <QMenu>
 #include <QStackedWidget>
 
-#include "VisualLayerWidgetUi.h"
+#include "ui_VisualLayerWidgetUi.h"
 
 #include "app-logic/Layer.h"
 

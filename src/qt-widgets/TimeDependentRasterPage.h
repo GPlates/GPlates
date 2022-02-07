@@ -35,7 +35,7 @@
 #include <QFileInfo>
 #include <QValidator>
 
-#include "TimeDependentRasterPageUi.h"
+#include "ui_TimeDependentRasterPageUi.h"
 
 #include "OpenDirectoryDialog.h"
 #include "OpenFileDialog.h"

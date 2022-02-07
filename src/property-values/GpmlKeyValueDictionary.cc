@@ -53,7 +53,7 @@ GPlatesPropertyValues::GpmlKeyValueDictionary::print_to(
 			elements_.end();
 	for ( ; elements_iter != elements_end; ++elements_iter)
 	{
-		os << *elements_iter->get();
+		os << *elements_iter->get() << ", ";
 	}
 
 	return os << " ]";

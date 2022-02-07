@@ -84,7 +84,8 @@ namespace GPlatesFileIO
 						referenced_files,
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
-						reconstruction_time);		
+						reconstruction_time,
+						wrap_to_dateline);
 					break;
 
 				case GMT:
@@ -133,7 +134,8 @@ namespace GPlatesFileIO
 						referenced_files,
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
-						reconstruction_time);
+						reconstruction_time,
+						wrap_to_dateline);
 					break;
 				case GMT:
 					GMTFormatReconstructedFeatureGeometryExport::export_geometries(

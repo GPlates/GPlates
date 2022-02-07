@@ -32,12 +32,14 @@
 #include "AppLogicUtils.h"
 #include "FeatureCollectionFileIO.h"
 #include "Layer.h"
+#include "LayerProxyUtils.h"
 #include "LayerTask.h"
 #include "LayerTaskRegistry.h"
 #include "LogModel.h"
 #include "ReconstructGraph.h"
 #include "ReconstructMethodRegistry.h"
 #include "ReconstructUtils.h"
+#include "TopologyInternalUtils.h"
 #include "UserPreferences.h"
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
@@ -98,6 +100,7 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_scoped_reconstruct_nesting_count(0),
 	d_reconstruct_on_scope_exit(false),
 	d_currently_reconstructing(false),
+	d_currently_creating_reconstruction(false),
 	d_suppress_auto_layer_creation(false),
 	d_callback_feature_store(d_model->root()),
 	d_age_model_collection(new AgeModelCollection())
@@ -108,7 +111,7 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	mediate_signal_slot_connections();
 
 	// Register a model callback so we can reconstruct whenever the feature store is modified.
-	d_callback_feature_store.attach_callback(new ReconstructWhenFeatureStoreIsModified(*this));
+	d_callback_feature_store.attach_callback(new FeatureStoreIsModified(*this));
 }
 
 
@@ -117,20 +120,17 @@ GPlatesAppLogic::ApplicationState::~ApplicationState()
 	// Need destructor defined in ".cc" file because boost::scoped_ptr destructor
 	// needs complete type.
 
-	// Disconnect from the file state remove file signal because we delegate to ReconstructGraph
-	// which is one of our data members and if we don't disconnect then it's possible
-	// that we'll delegate to an already destroyed ReconstructGraph as our other
+	// Disconnect from the file state signals.
+	//
+	// One reason is we need to disconnect from the file state 'remove file' signal because
+	// we delegate to ReconstructGraph which is one of our data members and if we don't disconnect
+	// then it's possible that we'll delegate to an already destroyed ReconstructGraph as our other
 	// data member, FeatureCollectionFileState, is being destroyed.
-	QObject::disconnect(
-			&get_feature_collection_file_state(),
-			SIGNAL(file_state_file_about_to_be_removed(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_reference)),
-			this,
-			SLOT(handle_file_state_file_about_to_be_removed(
-					GPlatesAppLogic::FeatureCollectionFileState &,
-					GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
-
+	//
+	// Another reason is we need to disconnect from the file state 'state changed' signal because
+	// it resets 'd_current_topological_sections' which is also destroyed by the time this happens and
+	// (on some systems such as Ubuntu 18.04+) this results in attempting to free the same memory twice.
+	QObject::disconnect(&get_feature_collection_file_state(), 0, this, 0);
 }
 
 
@@ -180,28 +180,11 @@ GPlatesAppLogic::ApplicationState::reconstruct()
 		return;
 	}
 
+	PROFILE_FUNC();
+
 	// Ensure that our model notification event does not cause 'reconstruct()' to be called again
 	// (re-entered) since this can create an infinite cycle.
-	class ScopedReentrantGuard
-	{
-	public:
-		explicit
-		ScopedReentrantGuard(
-				ApplicationState &application_state) :
-			d_application_state(application_state)
-		{
-			d_application_state.d_currently_reconstructing = true;
-		}
-
-		~ScopedReentrantGuard()
-		{
-			d_application_state.d_currently_reconstructing = false;
-		}
-
-	private:
-		ApplicationState &d_application_state;
-	};
-	ScopedReentrantGuard scoped_reentrant_guard(*this);
+	ScopedBooleanGuard scoped_reentrant_guard(*this, &ApplicationState::d_currently_reconstructing);
 
 	// We want to merge model events across this scope to avoid any interference during the
 	// reconstruction process. This currently can happen when visiting features with a *non-const*
@@ -211,19 +194,20 @@ GPlatesAppLogic::ApplicationState::reconstruct()
 	// reconstruction tree layer to invalidate its reconstruction tree cache while its still being
 	// used thus resulting in a crash. This will no longer be a problem once the new model
 	// (for 'pygplates') is complete. In the meantime model notification guards and using the hacked
-	// feature visitor FeatureVisitorThatGuaranteesNotToModify (eg, on ReconstructionTreePopulator)
+	// feature visitor FeatureVisitorThatGuaranteesNotToModify (eg, on ReconstructionGraphPopulator)
 	// are the best alternatives.
 	//
 	// Note: We also do this *after* the above scoped re-entrant guard so that any model events do
 	// not cause a recursive reconstruction.
 	GPlatesModel::NotificationGuard model_notification_guard(*d_model.access_model());
 
+	{
+		// Used to detect when clients call us during this scope.
+		ScopedBooleanGuard scoped_creating_reconstruction_guard(*this, &ApplicationState::d_currently_creating_reconstruction);
 
-	// Get each layer to update itself in response to any changes that caused this
-	// 'reconstruct' method to get called.
-	d_reconstruction = d_reconstruct_graph->update_layer_tasks(d_reconstruction_time, d_anchored_plate_id);
-
-	//PROFILE_BLOCK("ApplicationState::reconstruct: emit reconstructed");
+		// Get each layer to update itself in response to any changes that caused this 'reconstruct' method to get called.
+		d_reconstruction = d_reconstruct_graph->update_layer_tasks(d_reconstruction_time, d_anchored_plate_id);
+	}
 
 	Q_EMIT reconstructed(*this);
 }
@@ -276,6 +260,18 @@ GPlatesAppLogic::ApplicationState::handle_file_state_file_about_to_be_removed(
 	// We do this rather than connect it to the signal directly so we can control
 	// the order in which things happen.
 	d_reconstruct_graph->remove_file(file_about_to_be_removed);
+}
+
+
+void
+GPlatesAppLogic::ApplicationState::handle_file_state_changed(
+		FeatureCollectionFileState &file_state)
+{
+	// The set of referenced topological sections only changes when a file is loaded/removed/modified,
+	// so it makes sense to only recalculate when that happens rather than every time the view is rendered.
+	//
+	// Reset the cache so the next time they are requested they'll have to be recalculated.
+	d_current_topological_sections = boost::none;
 }
 
 
@@ -390,6 +386,61 @@ GPlatesAppLogic::ApplicationState::get_reconstruct_graph() const
 }
 
 
+const std::set<GPlatesModel::FeatureId> &
+GPlatesAppLogic::ApplicationState::get_current_topological_sections() const
+{
+	if (!d_current_topological_sections)
+	{
+		// Find the feature IDs of topological sections referenced for *all* times by all topologies
+		// (topological geometry and network) in all loaded files.
+		//
+		// The set of referenced topological sections only changes when a file is loaded/removed/modified,
+		// so it makes sense to only recalculate when that happens rather than every time the view is rendered.
+		// It's not hugely expensive to calculate (tens of milliseconds) but enough that it makes sense not
+		// to calculate it at every scene render.
+		find_current_topological_sections();
+	}
+
+	return d_current_topological_sections.get();
+}
+
+
+void
+GPlatesAppLogic::ApplicationState::find_current_topological_sections() const
+{
+	PROFILE_FUNC();
+
+	// Start with an empty set of topological sections.
+	d_current_topological_sections = std::set<GPlatesModel::FeatureId>();
+
+	//
+	// Iterate through the loaded files searching for topological features and
+	// the topological sections they reference.
+	//
+	// We could have used LayerProxyUtils::find_dependent_topological_sections() instead, and it is
+	// less expensive since the topological layers already keep track of dependent topological sections,
+	// but it is difficult to get the signaling right. In other words, sometimes a caller calls
+	// 'get_current_topological_sections()' just after a file is loaded but before the reconstruct
+	// graph has been updated, and hence the topology layers are not yet up-to-date.
+	// So instead we just search through all loaded files whenever a file is added/removed/modified.
+	// It's slower but at least this function isn't called for each reconstruction or globe/map view redraw.
+	//
+
+	// From the file state, obtain the list of all currently loaded files.
+	const std::vector<FeatureCollectionFileState::file_reference> loaded_files =
+			d_feature_collection_file_state->get_loaded_files();
+
+	// Iterate over the loaded files and find topological sections referenced in any of them.
+	BOOST_FOREACH(FeatureCollectionFileState::file_reference file_ref, loaded_files)
+	{
+		// Insert referenced topological section feature IDs (for *all* reconstruction times).
+		TopologyInternalUtils::find_topological_sections_referenced(
+				d_current_topological_sections.get(),
+				file_ref.get_file().get_feature_collection());
+	}
+}
+
+
 void
 GPlatesAppLogic::ApplicationState::mediate_signal_slot_connections()
 {
@@ -414,6 +465,13 @@ GPlatesAppLogic::ApplicationState::mediate_signal_slot_connections()
 			SLOT(handle_file_state_file_about_to_be_removed(
 					GPlatesAppLogic::FeatureCollectionFileState &,
 					GPlatesAppLogic::FeatureCollectionFileState::file_reference)));
+	QObject::connect(
+			&get_feature_collection_file_state(),
+			SIGNAL(file_state_changed(
+					GPlatesAppLogic::FeatureCollectionFileState &)),
+			this,
+			SLOT(handle_file_state_changed(
+					GPlatesAppLogic::FeatureCollectionFileState &)));
 
 	//
 	// Perform a new reconstruction whenever layers are modified.
@@ -457,6 +515,26 @@ GPlatesAppLogic::ApplicationState::mediate_signal_slot_connections()
 					GPlatesAppLogic::Layer)),
 			this,
 			SLOT(reconstruct()));
+}
+
+
+void
+GPlatesAppLogic::ApplicationState::feature_store_modified()
+{
+	// The set of referenced topological sections only changes when a file is loaded/removed/modified,
+	// so it makes sense to only recalculate when that happens rather than every time the view is rendered.
+	//
+	// Reset the cache so the next time they are requested they'll have to be recalculated.
+	d_current_topological_sections = boost::none;
+
+	// Perform a reconstruction every time the model (feature store) is modified,
+	// unless we are already inside a reconstruction (avoid infinite cycle).
+	if (!d_currently_reconstructing)
+	{
+		// Clients should put model notification guards in the appropriate places to
+		// avoid excessive reconstructions.
+		reconstruct();
+	}
 }
 
 

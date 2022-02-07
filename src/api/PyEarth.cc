@@ -30,8 +30,6 @@
 #include "utils/Earth.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -69,5 +67,3 @@ export_earth()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 }
-
-#endif // GPLATES_NO_PYTHON

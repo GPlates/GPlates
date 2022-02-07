@@ -26,7 +26,7 @@
 #ifndef GPLATES_QT_WIDGETS_EXPORTRASTEROPTIONSWIDGET_H
 #define GPLATES_QT_WIDGETS_EXPORTRASTEROPTIONSWIDGET_H
 
-#include "ExportRasterOptionsWidgetUi.h"
+#include "ui_ExportRasterOptionsWidgetUi.h"
 
 #include "ExportOptionsWidget.h"
 #include "InformationDialog.h"

@@ -385,9 +385,23 @@ GPlatesQtWidgets::GlobeAndMapWidget::resizeEvent(
 }
 
 
+QSize
+GPlatesQtWidgets::GlobeAndMapWidget::get_viewport_size() const
+{
+	return d_active_view_ptr->get_viewport_size();
+}
+
+
+QSize
+GPlatesQtWidgets::GlobeAndMapWidget::get_viewport_size_in_device_pixels() const
+{
+	return d_active_view_ptr->get_viewport_size_in_device_pixels();
+}
+
+
 QImage
 GPlatesQtWidgets::GlobeAndMapWidget::render_to_qimage(
-		boost::optional<QSize> image_size)
+		const QSize &image_size)
 {
 	return d_active_view_ptr->render_to_qimage(image_size);
 }

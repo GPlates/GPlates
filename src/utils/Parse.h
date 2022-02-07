@@ -28,8 +28,9 @@
 #ifndef GPLATES_UTILS_PARSE_H
 #define GPLATES_UTILS_PARSE_H
 
-#include <QString>
+#include <functional>
 #include <QLocale>
+#include <QString>
 
 
 namespace GPlatesUtils
@@ -88,30 +89,19 @@ namespace GPlatesUtils
 
 		template<typename T, typename FunctionType>
 		T
-		parse_using_qlocale(
-				const QLocale &loc,
+		parse_using_qstring(
 				const QString &s,
 				FunctionType fn,
 				int base)
 		{
 			bool ok;
 
-			// Attempt to parse using provided locale.
-			T result = (loc.*fn)(s, &ok, base);
+			// Parse using the QString.
+			// Locale-based "base" encoding does not make sense, and was removed in Qt5.
+			T result = (s.*fn)(&ok, base);
 			if (ok)
 			{
 				return result;
-			}
-
-			// Attempt to parse using "C" locale.
-			static const QLocale C_LOCALE = QLocale::c();
-			if (C_LOCALE != loc)
-			{
-				result = (C_LOCALE.*fn)(s, &ok, base);
-				if (ok)
-				{
-					return result;
-				}
 			}
 
 			throw ParseError();
@@ -157,7 +147,17 @@ namespace GPlatesUtils
 		operator()(
 				const QString &s) const
 		{
-			return ParseInternals::parse_using_qlocale<int>(d_locale, s, &QLocale::toInt, d_base);
+			// Locale-based "base" encoding does not make sense, and was removed in Qt5.
+			// Use QLocale for base 10, otherwise use QString.
+			if (d_base == 10)
+			{
+				int (QLocale::*mfp)(const QString &, bool *) const = &QLocale::toInt;  // Select correct overload
+				return ParseInternals::parse_using_qlocale<int>(d_locale, s, mfp);
+			}
+			else
+			{
+				return ParseInternals::parse_using_qstring<int>(s, &QString::toInt, d_base);
+			}
 		}
 	};
 
@@ -178,7 +178,17 @@ namespace GPlatesUtils
 		operator()(
 				const QString &s) const
 		{
-			return ParseInternals::parse_using_qlocale<unsigned int>(d_locale, s, &QLocale::toUInt, d_base);
+			// Locale-based "base" encoding does not make sense, and was removed in Qt5.
+			// Use QLocale for base 10, otherwise use QString.
+			if (d_base == 10)
+			{
+				uint (QLocale::*mfp)(const QString &, bool *) const = &QLocale::toUInt;  // Select correct overload
+				return ParseInternals::parse_using_qlocale<unsigned int>(d_locale, s, mfp);
+			}
+			else
+			{
+				return ParseInternals::parse_using_qstring<unsigned int>(s, &QString::toUInt, d_base);
+			}
 		}
 	};
 
@@ -222,7 +232,7 @@ namespace GPlatesUtils
 	 * Template specialisation of Parse for Int<Base, IntType>.
 	 */
 	template<int Base, typename IntType>
-	class Parse<Int<Base, IntType> >
+	struct Parse<Int<Base, IntType> >
 	{
 	public:
 
@@ -254,7 +264,8 @@ namespace GPlatesUtils
 		operator()(
 				const QString &s) const
 		{
-			return ParseInternals::parse_using_qlocale<float>(d_locale, s, &QLocale::toFloat);
+			float (QLocale::*mfp)(const QString &, bool *) const = &QLocale::toFloat;  // Select correct overload
+			return ParseInternals::parse_using_qlocale<float>(d_locale, s, mfp);
 		}
 	};
 
@@ -270,7 +281,8 @@ namespace GPlatesUtils
 		operator()(
 				const QString &s) const
 		{
-			return ParseInternals::parse_using_qlocale<double>(d_locale, s, &QLocale::toDouble);
+			double (QLocale::*mfp)(const QString &, bool *) const = &QLocale::toDouble;  // Select correct overload
+			return ParseInternals::parse_using_qlocale<double>(d_locale, s, mfp);
 		}
 	};
 

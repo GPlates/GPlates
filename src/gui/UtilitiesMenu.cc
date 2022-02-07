@@ -35,7 +35,6 @@
 #include "api/PythonInterpreterLocker.h"
 #include "api/Sleeper.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 
 Q_DECLARE_METATYPE( boost::function< void () > )
 
@@ -85,11 +84,7 @@ GPlatesGui::UtilitiesMenu::handle_action_triggered()
 	typedef boost::function< void () > callback_type;
 	callback_type callback = action->data().value<callback_type>();
 
-#if !defined(GPLATES_NO_PYTHON)
 	d_python_manager.get_python_execution_thread()->exec_function(callback);
-#else
-	callback();
-#endif
 }
 
 
@@ -111,5 +106,3 @@ GPlatesGui::UtilitiesMenu::get_category_menu(
 		return iter->second;
 	}
 }
-#endif
-

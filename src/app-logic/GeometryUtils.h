@@ -124,6 +124,22 @@ namespace GPlatesAppLogic
 				bool reverse_points = false);
 
 		/**
+		 * Same as @a get_geometry_points except only the points in the specified range are returned.
+		 *
+		 * Note that [@a start_vertex_index, @a end_vertex_index) is a half-range where @a end_vertex_index
+		 * is one past the last vertex to be returned (this is similar to begin/end iterators).
+		 *
+		 * If @a start_vertex_index and @a end_vertex_index are equal then no points are returned.
+		 */
+		GPlatesMaths::GeometryType::Value
+		get_geometry_points_range(
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
+				std::vector<GPlatesMaths::PointOnSphere> &points,
+				unsigned int start_vertex_index,
+				unsigned int end_vertex_index,
+				bool reverse_points = false);
+
+		/**
 		 * Same as @a get_geometry_points except, if @a geometry_on_sphere is a polygon then only
 		 * its *exterior* ring points are copied.
 		 */
@@ -131,6 +147,22 @@ namespace GPlatesAppLogic
 		get_geometry_exterior_points(
 				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
 				std::vector<GPlatesMaths::PointOnSphere> &points,
+				bool reverse_points = false);
+
+		/**
+		 * Same as @a get_geometry_exterior_points except only the points in the specified range are returned.
+		 *
+		 * Note that [@a start_vertex_index, @a end_vertex_index) is a half-range where @a end_vertex_index
+		 * is one past the last vertex to be returned (this is similar to begin/end iterators).
+		 *
+		 * If @a start_vertex_index and @a end_vertex_index are equal then no points are returned.
+		 */
+		GPlatesMaths::GeometryType::Value
+		get_geometry_exterior_points_range(
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
+				std::vector<GPlatesMaths::PointOnSphere> &points,
+				unsigned int start_vertex_index,
+				unsigned int end_vertex_index,
 				bool reverse_points = false);
 
 		/**
@@ -184,7 +216,9 @@ namespace GPlatesAppLogic
 		 * If @a exclude_polygons_with_interior_rings is true (default) and the geometry is a
 		 * polygon with interior rings then returns boost::none (since it is not obvious how to
 		 * create a polyline from multiple rings). If it is false then only the exterior ring
-		 * is converted to a polyline (the interior rings are ignored).
+		 * is converted to a polyline (the interior rings are ignored). If the last exterior ring
+		 * segment is *not* zero length (which is usually the case) then an extra segment from the
+		 * last vertex to first vertex of exterior ring is created as the final polyline segment.
 		 */
 		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
 		convert_geometry_to_polyline(

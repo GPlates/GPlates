@@ -30,7 +30,7 @@
 
 #include <utility>
 #include <QString>
-#include <QtXml/QXmlStreamReader>
+#include <QXmlStreamReader>
 #include "ReadErrorOccurrence.h"
 #include "ReadErrorAccumulation.h"
 #include "ReadErrors.h"

@@ -356,7 +356,7 @@ GPlatesAppLogic::FlowlineGeometryPopulator::reconstruct_seed_geometry_with_recon
 	if (d_flowline_property_finder->get_reconstruction_plate_id())
 	{
 		geom = reconstruction_tree->get_composed_absolute_rotation(
-				d_flowline_property_finder->get_reconstruction_plate_id().get()).first *
+				d_flowline_property_finder->get_reconstruction_plate_id().get()) *
 			    geom;
 	}
 
@@ -438,11 +438,11 @@ GPlatesAppLogic::FlowlineGeometryPopulator::create_flowline_geometry(
 		// current time. 
 		GPlatesMaths::FiniteRotation left_correction =
 			reconstruction_tree->get_composed_absolute_rotation(
-			d_flowline_property_finder->get_left_plate().get()).first;
+			d_flowline_property_finder->get_left_plate().get());
 
 		GPlatesMaths::FiniteRotation right_correction =
 			reconstruction_tree->get_composed_absolute_rotation(
-			d_flowline_property_finder->get_right_plate().get()).first;
+			d_flowline_property_finder->get_right_plate().get());
 
 
 		try{

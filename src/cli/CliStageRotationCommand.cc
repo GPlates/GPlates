@@ -57,6 +57,9 @@ namespace
 	//! Option name for loading reconstruction feature collection file(s) with short version.
 	const char *LOAD_RECONSTRUCTION_OPTION_NAME_WITH_SHORT_OPTION = "load-reconstruction,r";
 
+	//! Option name for extending total reconstruction poles back to distant past.
+	const char *EXTEND_TOTAL_RECONSTRUCTION_POLES_TO_DISTANT_PAST_OPTION_NAME = "extend-total-reconstruction-poles";
+
 	//! Option name for start time with short version.
 	const char *START_TIME_OPTION_NAME_WITH_SHORT_OPTION = "start-time,s";
 
@@ -92,6 +95,7 @@ namespace
 
 
 GPlatesCli::StageRotationCommand::StageRotationCommand() :
+	d_extend_total_reconstruction_poles_to_distant_past(false),
 	d_start_time(0),
 	d_end_time(0),
 	d_anchor_plate_id(0),
@@ -116,6 +120,12 @@ GPlatesCli::StageRotationCommand::add_options(
 			// 'composing()' allows merging of command-line and config files.
 			boost::program_options::value< std::vector<std::string> >()->composing(),
 			"load reconstruction feature collection (rotation) file (multiple options allowed)"
+		)
+		(
+			EXTEND_TOTAL_RECONSTRUCTION_POLES_TO_DISTANT_PAST_OPTION_NAME,
+			boost::program_options::value<bool>(&d_extend_total_reconstruction_poles_to_distant_past)->default_value(false),
+			"extend moving plate rotation sequences back to the distant past such that reconstructed geometries "
+			"are not snapped back to their present day positions (defaults to 'false')."
 		)
 		(
 			START_TIME_OPTION_NAME_WITH_SHORT_OPTION,
@@ -204,34 +214,35 @@ GPlatesCli::StageRotationCommand::run(
 			reconstruction_feature_collections, reconstruction_files);
 
 	// Create reconstruction trees from the rotation features.
-	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_type start_reconstruction_tree =
-			GPlatesAppLogic::create_reconstruction_tree(
+	const GPlatesAppLogic::ReconstructionGraph::non_null_ptr_to_const_type reconstruction_graph =
+			GPlatesAppLogic::create_reconstruction_graph(
+					reconstruction_feature_collections,
+					d_extend_total_reconstruction_poles_to_distant_past);
+	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type start_reconstruction_tree =
+			GPlatesAppLogic::ReconstructionTree::create(
+					reconstruction_graph,
 					d_start_time,
-					d_anchor_plate_id,
-					reconstruction_feature_collections);
-	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_type end_reconstruction_tree =
-			GPlatesAppLogic::create_reconstruction_tree(
+					d_anchor_plate_id);
+	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type end_reconstruction_tree =
+			GPlatesAppLogic::ReconstructionTree::create(
+					reconstruction_graph,
 					d_end_time,
-					d_anchor_plate_id,
-					reconstruction_feature_collections);
+					d_anchor_plate_id);
 
 	// Let's make sure the anchor/fixed/moving plate ids are actually in the rotation files.
-	if (start_reconstruction_tree->get_composed_absolute_rotation(d_anchor_plate_id).second ==
-		GPlatesAppLogic::ReconstructionTree::NoPlateIdMatchesFound)
+	if (!start_reconstruction_tree->get_composed_absolute_rotation_or_none(d_anchor_plate_id))
 	{
 		throw GPlatesGlobal::LogException(
 				GPLATES_EXCEPTION_SOURCE,
 				"Unable to find anchor plate id in rotation files.");
 	}
-	if (start_reconstruction_tree->get_composed_absolute_rotation(d_fixed_plate_id).second ==
-		GPlatesAppLogic::ReconstructionTree::NoPlateIdMatchesFound)
+	if (!start_reconstruction_tree->get_composed_absolute_rotation_or_none(d_fixed_plate_id))
 	{
 		throw GPlatesGlobal::LogException(
 				GPLATES_EXCEPTION_SOURCE,
 				"Unable to find fixed plate id in rotation files.");
 	}
-	if (start_reconstruction_tree->get_composed_absolute_rotation(d_moving_plate_id).second ==
-		GPlatesAppLogic::ReconstructionTree::NoPlateIdMatchesFound)
+	if (!start_reconstruction_tree->get_composed_absolute_rotation_or_none(d_moving_plate_id))
 	{
 		throw GPlatesGlobal::LogException(
 				GPLATES_EXCEPTION_SOURCE,
@@ -296,9 +307,9 @@ GPlatesCli::StageRotationCommand::run(
 		asymmetric_stage_rotation =
 				compose(
 						compose(
-								end_reconstruction_tree->get_composed_absolute_rotation(d_fixed_plate_id).first,
+								end_reconstruction_tree->get_composed_absolute_rotation(d_fixed_plate_id),
 								asymmetric_stage_rotation),
-						get_reverse(start_reconstruction_tree->get_composed_absolute_rotation(d_fixed_plate_id).first));
+						get_reverse(start_reconstruction_tree->get_composed_absolute_rotation(d_fixed_plate_id)));
 	}
 
 	// Output the stage rotation relative to the anchor plate.

@@ -120,16 +120,45 @@ void
 GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::set_world_transform(
 		const GLMatrix &world_transform)
 {
-	d_world_transform = world_transform;
-
-	// Iterate over all the nodes in the cube quad tree and reset the observer tokens.
-	// This will force an update when the textures are subsequently requested.
-	cube_quad_tree_type::iterator cube_quad_tree_node_iter = d_cube_quad_tree->get_iterator();
-	for ( ; !cube_quad_tree_node_iter.finished(); cube_quad_tree_node_iter.next())
+	// If the world transform has changed then set it, and mark all our texture tiles dirty.
+	if (d_world_transform != world_transform)
 	{
-		CubeQuadTreeNode &cube_quad_tree_node = cube_quad_tree_node_iter.get_element();
-		cube_quad_tree_node.d_source_texture_observer_token.reset();
+		d_world_transform = world_transform;
+
+		// Iterate over all the nodes in the cube quad tree and reset the observer tokens.
+		// This will force an update when the textures are subsequently requested.
+		cube_quad_tree_type::iterator cube_quad_tree_node_iter = d_cube_quad_tree->get_iterator();
+		for ( ; !cube_quad_tree_node_iter.finished(); cube_quad_tree_node_iter.next())
+		{
+			CubeQuadTreeNode &cube_quad_tree_node = cube_quad_tree_node_iter.get_element();
+			cube_quad_tree_node.d_source_texture_observer_token.reset();
+		}
+
+		// Let any clients know that they're now out-of-date (since our cube map texture has a new orientation).
+		d_subject_token.invalidate();
 	}
+}
+
+
+const GPlatesUtils::SubjectToken &
+GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_subject_token() const
+{
+	//
+	// This covers changes to the inputs that don't require completely re-creating the inputs.
+	// That is beyond our scope and is detected and managed by our owners (and owners of our inputs).
+	//
+
+	// If the source raster has changed.
+	if (!d_reconstructed_raster->get_subject_token().is_observer_up_to_date(
+				d_reconstructed_raster_observer_token))
+	{
+		d_subject_token.invalidate();
+
+		d_reconstructed_raster->get_subject_token().update_observer(
+				d_reconstructed_raster_observer_token);
+	}
+
+	return d_subject_token;
 }
 
 
@@ -157,7 +186,7 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_tile_texture(
 		{
 			// Create a new tile texture.
 			tile_texture = tile.d_tile_texture->set_cached_object(
-					std::auto_ptr<TileTexture>(new TileTexture(renderer)),
+					std::unique_ptr<TileTexture>(new TileTexture(renderer)),
 					// Called whenever tile texture is returned to the cache...
 					boost::bind(&TileTexture::returned_to_cache, _1));
 

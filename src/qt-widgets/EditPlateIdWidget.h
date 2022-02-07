@@ -31,7 +31,7 @@
 #include "property-values/GpmlPlateId.h"
 #include "model/types.h"
 
-#include "EditPlateIdWidgetUi.h"
+#include "ui_EditPlateIdWidgetUi.h"
 
 namespace GPlatesQtWidgets
 {

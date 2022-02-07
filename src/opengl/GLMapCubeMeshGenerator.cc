@@ -135,6 +135,18 @@ GPlatesOpenGL::GLMapCubeMeshGenerator::create_cube_face_quadrant_mesh_vertices(
 							// Change the point's longitude depending on which longitude range
 							// the quadrant is in.
 							//
+							// Note: We move an epsilon amount away from the dateline to avoid
+							// finite precision issues when the map projection forward transform
+							// subsequently subtracts the central meridian longitude we're just adding
+							// and then wraps a value slightly less than -180 to 180 (or wraps a value
+							// slightly larger than 180 to -180). For example, we might add '180 + central'
+							// and then map projection subtracts 'central' to get 180.0000000003 which
+							// exceeds 180 and so is wrapped to '180.0000000003 + 360 ~ -180'.
+							// To avoid this we move away from the dateline by 1e-6 degrees.
+							// This problem manifested as a small quad in GLMultiResolutionMapCubeMesh
+							// having two vertices at 180 and two at -180 resulting in it incorrectly
+							// stretching right across the map. First noticed when exporting rasters.
+							//
 							// Note: Also exporting of global grid-line-registered rasters depends
 							// on latitude and longitude extents being exactly [-90, 90] and [-180, 180]
 							// after subtracting central longitude in map forward projection since the
@@ -143,8 +155,8 @@ GPlatesOpenGL::GLMapCubeMeshGenerator::create_cube_face_quadrant_mesh_vertices(
 							// So if this code path changes then should check that those rasters are
 							// exported correctly.
 							map_point.x = quadrant_is_in_upper_longitude_range
-									? 180 + central_meridian_longitude
-									: -180 + central_meridian_longitude;
+									? 180 - 1e-6 + central_meridian_longitude
+									: -180 + 1e-6 + central_meridian_longitude;
 						}
 					}
 				}

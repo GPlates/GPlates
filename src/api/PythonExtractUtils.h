@@ -38,8 +38,6 @@
 #include <boost/python/stl_iterator.hpp>
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	namespace PythonExtractUtils
@@ -224,7 +222,5 @@ namespace GPlatesApi
 		}
 	}
 }
-
-#endif   //GPLATES_NO_PYTHON)
 
 #endif // GPLATES_API_PYTHONEXTRACTUTILS_H

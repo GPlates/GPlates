@@ -37,30 +37,6 @@ if (SPHINX_FOUND)
 
 	# HTML output directory
 	set(SPHINX_HTML_DIR "${CMAKE_CURRENT_BINARY_DIR}/html")
-
-	# Get the location of the 'pygplates' python module library.
-	# It gets added to the python path so Sphinx can find it and import it.
-	get_property(PYGPLATES_LIBRARY_LOCATION TARGET pygplates PROPERTY LOCATION)
-	get_filename_component(PYGPLATES_LIBRARY_LOCATION "${PYGPLATES_LIBRARY_LOCATION}" PATH)
-	# Fix ups for Visual Studio since, unlike makefile generators, it has build configurations that
-	# can be selected at build time (ie, after cmake processing).
-	# Although add_custom_command can determine the full build path (in CMake 2.6) we cannot
-	# get access to that path as a CMake variable. In CMake 2.8 "generator expressions" were added
-	# (see http://www.cmake.org/cmake/help/v2.8.11/cmake.html#command:add_custom_command)
-	# which would allow this but we still support CMake 2.6.
-	# So, for now, we'll just substitute the '$(Outdir)' that gets embedded in the path
-	# for the release build (assuming the user is doing a 'release' build).
-	if(MSVC)
-		# NOTE: If using Visual Studio, then manually change PYGPLATES_MSVC_BUILD_TYPE if you're not doing a 'release' build.
-		set(PYGPLATES_MSVC_BUILD_TYPE release)
-		string(REPLACE "$(OutDir)" "${PYGPLATES_MSVC_BUILD_TYPE}" PYGPLATES_LIBRARY_LOCATION "${PYGPLATES_LIBRARY_LOCATION}")
-	endif(MSVC)
-
-	# Configure the Sphinx configuration file using 'PYGPLATES_LIBRARY_LOCATION' (and any other CMake variables we've put in that file).
-	configure_file(
-		"${CMAKE_CURRENT_SOURCE_DIR}/conf.py.in"
-		"${BINARY_BUILD_DIR}/conf.py"
-		@ONLY)
 	
 	# Copy the ".rst" files from our source directory to our binary/output directory.
 	# This is because the sphinx 'autosummary' command (when used with ':toctree:') will generate a
@@ -83,15 +59,28 @@ if (SPHINX_FOUND)
 	# "WARNING: html_static_path entry '...doc-python-api/_build/_static' does not exist".
 	file(MAKE_DIRECTORY "${BINARY_BUILD_DIR}/_static")
 
-	# Add a dependency to the 'pygplates' library to ensure it gets built before Sphinx uses it to generate documentation.
+	# Configure the Sphinx configuration file using @VAR@ CMake variable substitutions.
+	configure_file(conf.py.in "${CMAKE_CURRENT_BINARY_DIR}/conf.py.intermediate" @ONLY)
+
+	# Convert the "$<TARGET_FILE_DIR:pygplates>" generator expression (in the 'configure_file' output file) to the directory
+	# containing pygplates target. Also the final Sphinx configuration file must be called 'conf.py', however file(GENERATE ...)
+	# creates a separate file for each build configuration (eg, Debug/Release/etc), since the above generator expression is
+	# build-specific, and so we place each generated file in a build-specific directory (using $<CONFIG>) - which we specify
+	# to sphinx-build with the '-c "${BINARY_BUILD_DIR}/$<CONFIG>"' option.
+	# Note that this is all done at 'generate' time (not during 'configure).
+	file(GENERATE
+		OUTPUT "${BINARY_BUILD_DIR}/$<CONFIG>/conf.py"
+		INPUT "${CMAKE_CURRENT_BINARY_DIR}/conf.py.intermediate")
+
 	# Note that the source directory for sphinx is our current binary/output directory (we've copied our source ".rst" files there).
 	add_custom_target(doc-python-api
-		${SPHINX_EXECUTABLE}
-		-q -b html
-		-c "${BINARY_BUILD_DIR}"
-		-d "${SPHINX_CACHE_DIR}"
-		"${CMAKE_CURRENT_BINARY_DIR}"
-		"${SPHINX_HTML_DIR}"
-		DEPENDS pygplates
+		COMMAND ${SPHINX_EXECUTABLE}
+			-q -b html
+			-c "${BINARY_BUILD_DIR}/$<CONFIG>"
+			-d "${SPHINX_CACHE_DIR}"
+			"${CMAKE_CURRENT_BINARY_DIR}"
+			"${SPHINX_HTML_DIR}"
 		COMMENT "Building HTML documentation with Sphinx")
+	# Make sure the 'pygplates' target is built before we build the 'doc-python-api' target (Sphinx generates documentation).
+	add_dependencies(doc-python-api pygplates)
 endif (SPHINX_FOUND)

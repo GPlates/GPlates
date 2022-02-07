@@ -528,6 +528,7 @@ class GpmlIrregularSamplingCase(unittest.TestCase):
         # is just extra baggage for the python API user (we can add it later though)...
         #self.assertTrue(isinstance(self.gpml_irregular_sampling.get_interpolation_function(), pygplates.GpmlInterpolationFunction))
         
+        self.assertTrue(self.gpml_irregular_sampling.get_value_type() == pygplates.XsInteger)
         self.assertTrue(list(self.gpml_irregular_sampling.get_time_samples()) == self.original_time_samples)
         self.assertTrue(list(self.gpml_irregular_sampling) == self.original_time_samples)
         self.assertTrue([time_sample for time_sample in self.gpml_irregular_sampling] == self.original_time_samples)
@@ -726,6 +727,7 @@ class GpmlPiecewiseAggregationCase(unittest.TestCase):
         self.gpml_piecewise_aggregation = pygplates.GpmlPiecewiseAggregation(self.original_time_windows)
 
     def test_get(self):
+        self.assertTrue(self.gpml_piecewise_aggregation.get_value_type() == pygplates.XsInteger)
         self.assertTrue(list(self.gpml_piecewise_aggregation.get_time_windows()) == self.original_time_windows)
         self.assertTrue(list(self.gpml_piecewise_aggregation) == self.original_time_windows)
         self.assertTrue([time_window for time_window in self.gpml_piecewise_aggregation] == self.original_time_windows)
@@ -811,6 +813,20 @@ class GpmlPolarityChronIdCase(unittest.TestCase):
         self.assertRaises(pygplates.InformationModelError, pygplates.GpmlPolarityChronId.set_era, self.gpml_polarity_chron_id, 'UnknownEra')
 
 
+class GpmlPropertyDelegateCase(unittest.TestCase):
+    def setUp(self):
+        self.feature_id = pygplates.FeatureId.create_unique_id()
+        self.property_name = pygplates.PropertyName.gpml_center_line_of
+        self.property_type = pygplates.GmlLineString
+        self.gpml_property_delegate = pygplates.GpmlPropertyDelegate(
+                self.feature_id, self.property_name, self.property_type)
+
+    def test_get(self):
+        self.assertTrue(self.gpml_property_delegate.get_feature_id() == self.feature_id)
+        self.assertTrue(self.gpml_property_delegate.get_property_name() == self.property_name)
+        self.assertTrue(self.gpml_property_delegate.get_property_type() == self.property_type)
+
+
 class GpmlTimeSampleCase(unittest.TestCase):
     def setUp(self):
         self.property_value1 = pygplates.GpmlPlateId(701)
@@ -826,11 +842,13 @@ class GpmlTimeSampleCase(unittest.TestCase):
 
     def test_get(self):
         self.assertTrue(self.gpml_time_sample1.get_value() == self.property_value1)
+        self.assertTrue(self.gpml_time_sample1.get_value_type() == pygplates.GpmlPlateId)
         self.assertTrue(self.gpml_time_sample1.get_time() == self.time1)
         self.assertTrue(self.gpml_time_sample1.get_description() == self.description1)
         self.assertTrue(self.gpml_time_sample1.is_disabled())
         
         self.assertTrue(self.gpml_time_sample2.get_value() == self.property_value2)
+        self.assertTrue(self.gpml_time_sample2.get_value_type() == pygplates.GpmlPlateId)
         self.assertTrue(self.gpml_time_sample2.get_time() == self.time2)
         self.assertTrue(self.gpml_time_sample2.get_description() is None)
         self.assertTrue(not self.gpml_time_sample2.is_disabled())
@@ -884,6 +902,7 @@ class GpmlTimeWindowCase(unittest.TestCase):
 
     def test_get(self):
         self.assertTrue(self.gpml_time_window.get_value() == self.property_value)
+        self.assertTrue(self.gpml_time_window.get_value_type() == pygplates.GpmlPlateId)
         self.assertTrue(self.gpml_time_window.get_begin_time() == self.begin_time)
         self.assertTrue(self.gpml_time_window.get_end_time() == self.end_time)
 
@@ -922,6 +941,227 @@ class GpmlTimeWindowCase(unittest.TestCase):
         # Same property value instance.
         self.gpml_time_window.set_value(self.gpml_time_window2.get_value())
         self.assertTrue(self.gpml_time_window == self.gpml_time_window2)
+
+
+class GpmlTopologicalSectionCase(unittest.TestCase):
+    def setUp(self):
+        self.line_property_delegate = pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_center_line_of,
+                pygplates.GmlLineString)
+        self.topological_line_section = pygplates.GpmlTopologicalLineSection(
+                self.line_property_delegate,
+                True)
+        
+        self.point_property_delegate = pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_position,
+                pygplates.GmlPoint)
+        self.topological_point_section = pygplates.GpmlTopologicalPoint(self.point_property_delegate)
+
+    def test_create(self):
+        # Create a topological section that references a line.
+        referenced_line_feature = pygplates.Feature.create_reconstructable_feature(
+                pygplates.FeatureType.gpml_subduction_zone,
+                pygplates.PolylineOnSphere([(0, 20), (10, 20)]))
+        boundary_section = pygplates.GpmlTopologicalSection.create(
+            referenced_line_feature, reverse_order=True, topological_geometry_type=pygplates.GpmlTopologicalPolygon)
+        self.assertTrue(isinstance(boundary_section, pygplates.GpmlTopologicalLineSection))
+        self.assertTrue(boundary_section.get_property_delegate().get_feature_id() == referenced_line_feature.get_feature_id())
+        self.assertTrue(boundary_section.get_property_delegate().get_property_name() == pygplates.PropertyName.gpml_center_line_of)
+        self.assertTrue(boundary_section.get_property_delegate().get_property_type() == pygplates.GmlLineString)
+        self.assertTrue(boundary_section.get_reverse_orientation() == True)
+        
+        # Create a topological section that references a point.
+        referenced_point_feature = pygplates.Feature.create_reconstructable_feature(
+            pygplates.FeatureType.gpml_unclassified_feature,
+            pygplates.PointOnSphere(10, 10))
+        line_section = pygplates.GpmlTopologicalSection.create(
+            referenced_point_feature, topological_geometry_type=pygplates.GpmlTopologicalLine)
+        self.assertTrue(isinstance(line_section, pygplates.GpmlTopologicalPoint))
+        self.assertTrue(line_section.get_property_delegate().get_feature_id() == referenced_point_feature.get_feature_id())
+        self.assertTrue(line_section.get_property_delegate().get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+        self.assertTrue(line_section.get_property_delegate().get_property_type() == pygplates.GmlPoint)
+        self.assertTrue(line_section.get_reverse_orientation() == False)
+        self.assertRaises(ValueError,
+            pygplates.GpmlTopologicalSection.create, referenced_point_feature, topological_geometry_type=pygplates.GmlLineString)
+        
+        # Cannot reference a multipoint geometry.
+        referenced_multipoint_feature = pygplates.Feature(pygplates.FeatureType.gpml_unclassified_feature)
+        referenced_multipoint_feature.set_geometry(pygplates.MultiPointOnSphere([(10, 10)]))
+        self.assertFalse(pygplates.GpmlTopologicalSection.create(
+            referenced_multipoint_feature, topological_geometry_type=pygplates.GpmlTopologicalLine))
+        
+        # Create a topological section that references a topological line.
+        topological_line = pygplates.GpmlTopologicalLine([line_section])
+        referenced_topological_line_feature = pygplates.Feature.create_topological_feature(
+                pygplates.FeatureType.gpml_subduction_zone,
+                topological_line)
+        another_boundary_section = pygplates.GpmlTopologicalSection.create(
+            referenced_topological_line_feature, reverse_order=True, topological_geometry_type=pygplates.GpmlTopologicalPolygon)
+        self.assertTrue(isinstance(another_boundary_section, pygplates.GpmlTopologicalLineSection))
+        self.assertTrue(another_boundary_section.get_property_delegate().get_feature_id() == referenced_topological_line_feature.get_feature_id())
+        self.assertTrue(another_boundary_section.get_property_delegate().get_property_name() == pygplates.PropertyName.gpml_center_line_of)
+        self.assertTrue(another_boundary_section.get_property_delegate().get_property_type() == pygplates.GpmlTopologicalLine)
+        self.assertTrue(another_boundary_section.get_reverse_orientation() == True)
+        
+        # Create a topological network interior that references a point.
+        network_point_interior = pygplates.GpmlTopologicalSection.create_network_interior(referenced_point_feature)
+        self.assertTrue(isinstance(network_point_interior, pygplates.GpmlPropertyDelegate))
+        self.assertTrue(network_point_interior.get_feature_id() == referenced_point_feature.get_feature_id())
+        self.assertTrue(network_point_interior.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+        self.assertTrue(network_point_interior.get_property_type() == pygplates.GmlPoint)
+        
+        # Create a topological network interior that references a polygon.
+        referenced_polygon_feature = pygplates.Feature.create_reconstructable_feature(
+            pygplates.FeatureType.gpml_unclassified_feature,
+            pygplates.PolygonOnSphere([(0, 0), (10, 10), (20, 20)]))
+        network_polygon_interior = pygplates.GpmlTopologicalSection.create_network_interior(referenced_polygon_feature)
+        self.assertTrue(isinstance(network_polygon_interior, pygplates.GpmlPropertyDelegate))
+        self.assertTrue(network_polygon_interior.get_feature_id() == referenced_polygon_feature.get_feature_id())
+        self.assertTrue(network_polygon_interior.get_property_name() == pygplates.PropertyName.gpml_unclassified_geometry)
+        # The property type is actually 'gml:LinearRing' but we don't have a Python equivalent for that (like we do 'gml:Polygon').
+        self.assertTrue(network_polygon_interior.get_property_type() is None)
+        
+        # Create a topological network interior that references a topological line.
+        network_topological_line_interior = pygplates.GpmlTopologicalSection.create_network_interior(referenced_topological_line_feature)
+        self.assertTrue(isinstance(network_topological_line_interior, pygplates.GpmlPropertyDelegate))
+        self.assertTrue(network_topological_line_interior.get_feature_id() == referenced_topological_line_feature.get_feature_id())
+        self.assertTrue(network_topological_line_interior.get_property_name() == pygplates.PropertyName.gpml_center_line_of)
+        self.assertTrue(network_topological_line_interior.get_property_type() == pygplates.GpmlTopologicalLine)
+
+    def test_get(self):
+        self.assertTrue(self.topological_line_section.get_property_delegate() == self.line_property_delegate)
+        self.assertTrue(self.topological_line_section.get_reverse_orientation() == True)
+        
+        self.assertTrue(self.topological_point_section.get_property_delegate() == self.point_property_delegate)
+        self.assertTrue(self.topological_point_section.get_reverse_orientation() == False)
+
+    def test_set(self):
+        self.topological_line_section.set_reverse_orientation(False)
+        self.assertTrue(self.topological_line_section.get_reverse_orientation() == False)
+        new_line_property_delegate = pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_unclassified_geometry,
+                pygplates.GmlLineString)
+        self.topological_line_section.set_property_delegate(new_line_property_delegate)
+        self.assertTrue(self.topological_line_section.get_property_delegate() == new_line_property_delegate)
+        
+        new_point_property_delegate = pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_unclassified_geometry,
+                pygplates.GmlPoint)
+        self.topological_point_section.set_property_delegate(new_point_property_delegate)
+        self.assertTrue(self.topological_point_section.get_property_delegate() == new_point_property_delegate)
+
+
+class GpmlTopologicalGeometryCase(unittest.TestCase):
+    def setUp(self):
+        # Topological line.
+        self.line_topological_sections = [
+            pygplates.GpmlTopologicalPoint(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_position,
+                    pygplates.GmlPoint)),
+            pygplates.GpmlTopologicalPoint(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_unclassified_geometry,
+                    pygplates.GmlPoint))]
+        self.topological_line = pygplates.GpmlTopologicalLine(self.line_topological_sections)
+        
+        # Topological polygon.
+        self.polygon_topological_sections = [
+            pygplates.GpmlTopologicalLineSection(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_center_line_of,
+                    pygplates.GmlLineString),
+                False),
+            pygplates.GpmlTopologicalLineSection(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_unclassified_geometry,
+                    pygplates.GmlLineString),
+                True)]
+        self.topological_polygon = pygplates.GpmlTopologicalPolygon(self.polygon_topological_sections)
+        
+        # Topological network.
+        self.network_boundary_sections = [
+            pygplates.GpmlTopologicalLineSection(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_center_line_of,
+                    pygplates.GmlLineString),
+                False),
+            pygplates.GpmlTopologicalLineSection(
+                pygplates.GpmlPropertyDelegate(
+                    pygplates.FeatureId.create_unique_id(),
+                    pygplates.PropertyName.gpml_unclassified_geometry,
+                    pygplates.GmlLineString),
+                False)]
+        self.network_interiors = [
+            pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_unclassified_geometry,
+                pygplates.GmlPoint),
+            pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_unclassified_geometry,
+                pygplates.GmlPoint)]
+        self.topological_network = pygplates.GpmlTopologicalNetwork(
+            self.network_boundary_sections,
+            self.network_interiors)
+
+    def test_get(self):
+        self.assertTrue(list(self.topological_line.get_sections()) == self.line_topological_sections)
+        self.assertTrue(list(self.topological_polygon.get_exterior_sections()) == self.polygon_topological_sections)
+        self.assertTrue(list(self.topological_network.get_boundary_sections()) == self.network_boundary_sections)
+        self.assertTrue(list(self.topological_network.get_interiors()) == self.network_interiors)
+
+    def test_set(self):
+        new_line_topological_section = pygplates.GpmlTopologicalLineSection(
+            pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_position,
+                pygplates.GmlPoint),
+            False)
+        self.topological_line.get_sections().append(new_line_topological_section)
+        self.assertTrue(self.topological_line.get_sections()[-1] == new_line_topological_section)
+        
+        new_polygon_topological_section = pygplates.GpmlTopologicalLineSection(
+            pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_center_line_of,
+                pygplates.GmlLineString),
+            True)
+        self.topological_polygon.get_exterior_sections().insert(1, new_polygon_topological_section)
+        self.assertTrue(self.topological_polygon.get_exterior_sections()[1] == new_polygon_topological_section)
+        
+        new_network_boundary_section = pygplates.GpmlTopologicalLineSection(
+            pygplates.GpmlPropertyDelegate(
+                pygplates.FeatureId.create_unique_id(),
+                pygplates.PropertyName.gpml_center_line_of,
+                pygplates.GmlLineString),
+            False)
+        self.topological_network.get_boundary_sections().insert(1, new_network_boundary_section)
+        self.topological_network.get_boundary_sections().pop(0)
+        self.assertTrue(self.topological_network.get_boundary_sections()[0] == new_network_boundary_section)
+        self.assertTrue(len(self.topological_network.get_boundary_sections()) == 2)
+        new_network_interior = pygplates.GpmlPropertyDelegate(
+            pygplates.FeatureId.create_unique_id(),
+            pygplates.PropertyName.gpml_unclassified_geometry,
+            pygplates.GmlPoint)
+        del self.topological_network.get_interiors()[-1]
+        self.topological_network.get_interiors().insert(0, new_network_interior)
+        self.assertTrue(self.topological_network.get_interiors()[0] == new_network_interior)
+        self.assertTrue(len(self.topological_network.get_interiors()) == 2)
+        
+        # Should be able to create a network without interiors.
+        topological_network_with_no_interiors = pygplates.GpmlTopologicalNetwork(self.network_boundary_sections)
+        self.assertTrue(list(topological_network_with_no_interiors.get_boundary_sections()) == self.network_boundary_sections)
+        self.assertFalse(topological_network_with_no_interiors.get_interiors())
 
 
 class XsBooleanCase(unittest.TestCase):
@@ -1009,8 +1249,11 @@ def suite():
             GpmlPiecewiseAggregationCase,
             GpmlPlateIdCase,
             GpmlPolarityChronIdCase,
+            GpmlPropertyDelegateCase,
             GpmlTimeSampleCase,
             GpmlTimeWindowCase,
+            GpmlTopologicalSectionCase,
+            GpmlTopologicalGeometryCase,
             XsBooleanCase,
             XsDoubleCase,
             XsIntegerCase,

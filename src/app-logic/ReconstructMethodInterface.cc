@@ -67,8 +67,8 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 
 	const ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
 			context.reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time);
-	const GPlatesMaths::FiniteRotation &finite_rotation =
-			reconstruction_tree->get_composed_absolute_rotation(reconstruction_plate_id).first;
+	const GPlatesMaths::FiniteRotation finite_rotation =
+			reconstruction_tree->get_composed_absolute_rotation(reconstruction_plate_id);
 
 	// Iterate over the feature's present day geometries and rotate each one.
 	std::vector<Geometry> present_day_geometries;
@@ -102,6 +102,8 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 						reconstruction_plate_id,
 						reconstruction_feature_properties.get_time_of_appearance(),
 						reconstruct_handle);
+		const ReconstructionGeometry::maybe_null_ptr_to_const_type
+				plate_id_reconstruction_geometry(plate_id_rfg.get());
 
 		GPlatesMaths::MultiPointOnSphere::const_iterator domain_iter = velocity_domain->begin();
 		GPlatesMaths::MultiPointOnSphere::const_iterator domain_end = velocity_domain->end();
@@ -132,7 +134,7 @@ GPlatesAppLogic::ReconstructMethodInterface::reconstruct_feature_velocities_by_p
 					vector_xyz,
 					MultiPointVectorField::CodomainElement::ReconstructedDomainPoint,
 					reconstruction_plate_id,
-					ReconstructionGeometry::maybe_null_ptr_to_const_type(plate_id_rfg.get()));
+					plate_id_reconstruction_geometry);
 		}
 
 		reconstructed_feature_velocities.push_back(vector_field);

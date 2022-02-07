@@ -37,8 +37,6 @@
 #include "global/PreconditionViolationError.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	/**
@@ -273,7 +271,5 @@ namespace GPlatesApi
 		return wrapper.get_geometry_cookie_cutter().get();
 	}
 }
-
-#endif   // GPLATES_NO_PYTHON
 
 #endif // GPLATES_API_PYPLATEPARTITIONER_H

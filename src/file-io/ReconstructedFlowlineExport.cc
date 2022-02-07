@@ -84,6 +84,7 @@ namespace GPlatesFileIO
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
+						true/*should_export_referenced_files*/,
 						wrap_to_dateline);		
 					break;
 
@@ -94,7 +95,9 @@ namespace GPlatesFileIO
 						referenced_files,
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
-						reconstruction_time);		
+						reconstruction_time,
+						true/*should_export_referenced_files*/,
+						wrap_to_dateline);
 					break;
 
 				default:
@@ -124,6 +127,7 @@ namespace GPlatesFileIO
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
+						true/*should_export_referenced_files*/,
 						wrap_to_dateline);
 					break;
 				case OGRGMT:
@@ -133,7 +137,9 @@ namespace GPlatesFileIO
 						referenced_files,
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
-						reconstruction_time);
+						reconstruction_time,
+						true/*should_export_referenced_files*/,
+						wrap_to_dateline);
 					break;
 				case GMT:
 					GMTFormatFlowlinesExport::export_flowlines(

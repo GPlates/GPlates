@@ -105,6 +105,22 @@ GPlatesMaths::UnitQuaternion3D::get_rotation_params(
 	 */
 	real_t theta_on_2 = acos(scalar_part());  // not a multiple of PI
 
+	// Previously we defined the axis as:
+	//
+	//    Vector3D axis_vector = (1 / sin(theta_on_2)) * vector_part();
+	//    UnitVector3D axis_unit_vector = axis_vector.get_normalisation();
+	//
+	// However we don't need the reciprocal sine term since we're normalising anyway and
+	// the *sign* of 'sin(theta_on_2)' will always be positive because 'acos()' returns
+	// the range [0,PI] and sine of that range is always positive.
+	//
+	// This is essentially a result of the fact that both (angle, axis) and (-angle, -axis) get mapped
+	// onto the exact same quaternion (they're actually the same rotation). So it's not possible to
+	// determine, just by looking at the quaternion, which angle/axis variant it was created from.
+	// So we always end up returning the positive angle variant.
+	// In other words, regardless of whether this quaternion was created with (angle, axis) or (-angle, -axis)
+	// we'll always return (angle, axis) unless 'axis_hint' is provided (see below).
+	//
 	UnitVector3D axis_unit_vector = vector_part().get_normalisation();
 
 	// Now, let's use the axis hint (if provided) to determine whether our rotation axis is
@@ -130,6 +146,19 @@ GPlatesMaths::UnitQuaternion3D::create_rotation(
 
 	real_t theta_on_two = angle / 2.0;
 
+	//
+	// If 'angle' is positive then 'get_rotation_params()' will return the original angle and axis.
+	// If 'angle' is negative then 'get_rotation_params()' will return negated versions of the original angle and axis.
+	//
+	// This is because if 'angle' is negative then it's effectively made positive by the fact that
+	// 'cos(-angle) = cos(angle)', and the axis is inverted (in direction) due to the fact that
+	// 'sin(-angle) = -sin(angle)'.
+	// This is essentially a result of the fact that both (angle, axis) and (-angle, -axis) get mapped
+	// onto the exact same quaternion (they're actually the same rotation). So it's not possible to
+	// determine, just by looking at the quaternion, which angle/axis variant it was created from.
+	// In other words, regardless of whether this quaternion was created with (angle, axis) or (-angle, -axis)
+	// 'get_rotation_params()' will always return (angle, axis) unless an axis hint is provided to it.
+	//
 	real_t   scalar_part = cos(theta_on_two);
 	Vector3D vector_part = sin(theta_on_two) * Vector3D(axis);
 

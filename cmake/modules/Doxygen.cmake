@@ -19,7 +19,7 @@ MACRO(GENERATE_DOCUMENTATION DOXYGEN_CONFIG_FILE_IN DOXYGEN_CONFIG_FILE)
             
             # Insert variables into the doxygen config file.
             SET(PACKAGE_NAME \"${GPLATES_PACKAGE_NAME}\")
-            SET(PACKAGE_VERSION \"${GPLATES_PACKAGE_VERSION}\")
+            SET(PACKAGE_VERSION \"${GPlates_VERSION}\")
             SET(DOXYGEN_INPUT ${GPLATES_DOXYGEN_INPUT})
             SET(HAVE_DOT NO)
             SET(DOT_PATH )

@@ -50,8 +50,6 @@
 #include "utils/non_null_intrusive_ptr.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	namespace PythonConverterUtils
@@ -733,13 +731,11 @@ namespace GPlatesApi
 			// Register a from-python converter from a reference-to-T to GPlatesUtils::non_null_intrusive_ptr<T>.
 			register_from_python_conversion_from_pointee_to_non_null_intrusive_ptr<T>();
 
-			// Enable boost::optional of const and non-const non_null_intrusive_ptrto be passed to/from python.
+			// Enable boost::optional of const and non-const non_null_intrusive_ptr to be passed to/from python.
 			register_optional_conversion< GPlatesUtils::non_null_intrusive_ptr<T> >();
 			register_optional_conversion< GPlatesUtils::non_null_intrusive_ptr<const T> >();
 		}
 	}
 }
-
-#endif   //GPLATES_NO_PYTHON)
 
 #endif // GPLATES_API_PYTHONCONVERTERUTILS_H

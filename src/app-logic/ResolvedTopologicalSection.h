@@ -72,7 +72,7 @@ namespace GPlatesAppLogic
 		 * The sequence of sub-segments of the topological section feature used as part of the *boundary*
 		 * of resolved topologies (@a ResolvedTopologicalBoundary and @a ResolvedTopologicalNetwork).
 		 */
-		const std::vector<ResolvedTopologicalSharedSubSegment> &
+		const shared_sub_segment_seq_type &
 		get_shared_sub_segments() const
 		{
 			return d_shared_sub_segments;
@@ -103,7 +103,7 @@ namespace GPlatesAppLogic
 		/**
 		 * The shared sub-segments that reference the @a ReconstructionGeometry of this topological section.
 		 */
-		std::vector<ResolvedTopologicalSharedSubSegment> d_shared_sub_segments;
+		shared_sub_segment_seq_type d_shared_sub_segments;
 
 		/**
 		 * The reconstruction geometry of the topological section feature.

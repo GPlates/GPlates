@@ -168,6 +168,28 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QLabel" name="label_5">
+        <property name="font">
+         <font>
+          <italic>true</italic>
+         </font>
+        </property>
+        <property name="text">
+         <string>On next GPlates startup and subsequent 'Clear Session's:-</string>
+        </property>
+        <property name="wordWrap">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkbox_show_topological_sections">
+        <property name="text">
+         <string>Show topological sections</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>

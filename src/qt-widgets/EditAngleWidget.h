@@ -30,7 +30,7 @@
 #include "AbstractEditWidget.h"
 #include "property-values/GpmlMeasure.h"
 
-#include "EditAngleWidgetUi.h"
+#include "ui_EditAngleWidgetUi.h"
 
 namespace GPlatesQtWidgets
 {

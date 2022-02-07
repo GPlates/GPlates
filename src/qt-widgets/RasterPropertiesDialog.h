@@ -32,7 +32,7 @@
 
 #include <QDialog>
 
-#include "RasterPropertiesDialogUi.h"
+#include "ui_RasterPropertiesDialogUi.h"
 
 namespace GPlatesPresentation
 {

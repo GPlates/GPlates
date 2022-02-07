@@ -38,8 +38,6 @@
 #include "model/FeatureCollectionHandle.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	/**
@@ -198,7 +196,5 @@ namespace GPlatesApi
 		std::vector<FeatureCollectionFunctionArgument> d_feature_collections;
 	};
 }
-
-#endif   // GPLATES_NO_PYTHON
 
 #endif // GPLATES_API_PYFEATURECOLLECTION_H

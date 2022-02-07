@@ -25,9 +25,6 @@
 
 #include "AppLogicUtils.h"
 
-#include "model/FeatureHandle.h"
-#include "model/FeatureVisitor.h"
-
 
 void
 GPlatesAppLogic::AppLogicUtils::visit_feature_collection(

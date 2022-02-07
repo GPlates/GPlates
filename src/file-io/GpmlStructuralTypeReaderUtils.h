@@ -209,7 +209,7 @@ namespace GPlatesFileIO
 				ReadErrorAccumulation &read_errors);
 
 
-		GPlatesPropertyValues::GpmlTopologicalNetwork::Interior
+		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type
 		create_gpml_topological_network_interior(
 				const GPlatesModel::XmlElementNode::non_null_ptr_type &elem,
 				const GPlatesModel::GpgimVersion &gpml_version,

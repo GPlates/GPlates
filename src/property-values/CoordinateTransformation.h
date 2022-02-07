@@ -31,14 +31,17 @@
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 
+#include "global/CompilerWarnings.h"
+PUSH_MSVC_WARNINGS
+// Avoid warning: "needs to have dll-interface to be used by clients of class" OGRSpatialReference and OGRCoordinateTransformationOptions.
+DISABLE_MSVC_WARNING(4251)
+#include <ogr_spatialref.h>
+POP_MSVC_WARNINGS
+
 #include "SpatialReferenceSystem.h"
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
-
-
-// Forward declarations.
-class OGRCoordinateTransformation;
 
 
 namespace GPlatesPropertyValues
@@ -233,7 +236,7 @@ namespace GPlatesPropertyValues
 		CoordinateTransformation(
 				const SpatialReferenceSystem::non_null_ptr_to_const_type &source_srs,
 				const SpatialReferenceSystem::non_null_ptr_to_const_type &target_srs,
-				std::auto_ptr<OGRCoordinateTransformation> ogr_coordinate_transformation);
+				std::unique_ptr<OGRCoordinateTransformation> ogr_coordinate_transformation);
 
 	};
 }

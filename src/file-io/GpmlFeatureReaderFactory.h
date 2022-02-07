@@ -40,6 +40,7 @@
 #include "global/PointerTraits.h"
 
 #include "model/FeatureType.h"
+#include "model/GpgimProperty.h"
 #include "model/GpgimVersion.h"
 
 
@@ -200,21 +201,37 @@ namespace GPlatesFileIO
 		create_upgrade_1_6_338_feature_reader_impl(
 				const GPlatesModel::FeatureType &feature_type) const;
 
+		//! Creates a feature reader that handles changes made in the GPGIM version (in the method's name).
+		boost::optional<GpmlFeatureReaderImpl::non_null_ptr_type>
+		create_upgrade_1_6_339_feature_reader_impl(
+				const GPlatesModel::FeatureType &feature_type) const;
+
 
 		//! Creates a feature reader that renames a single property.
 		boost::optional<GpmlFeatureReaderImpl::non_null_ptr_type>
-		create_upgrade_property_name_feature_reader_impl(
+		create_property_rename_feature_reader_impl(
 				const GPlatesModel::FeatureType &feature_type,
 				const GPlatesModel::PropertyName &from_property_name,
 				const GPlatesModel::PropertyName &to_property_name) const;
 
-
 		//! Creates a feature reader that renames multiple properties.
 		boost::optional<GpmlFeatureReaderImpl::non_null_ptr_type>
-		create_upgrade_property_name_feature_reader_impl(
+		create_property_rename_feature_reader_impl(
 				const GPlatesModel::FeatureType &feature_type,
 				const std::vector<GpmlUpgradeReaderUtils::PropertyRename> &property_rename_pairs) const;
 
+
+		//! Creates a feature reader that removes a single property.
+		boost::optional<GpmlFeatureReaderImpl::non_null_ptr_type>
+		create_property_remove_feature_reader_impl(
+				const GPlatesModel::FeatureType &feature_type,
+				const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &property) const;
+
+		//! Creates a feature reader that removes multiple properties.
+		boost::optional<GpmlFeatureReaderImpl::non_null_ptr_type>
+		create_property_remove_feature_reader_impl(
+				const GPlatesModel::FeatureType &feature_type,
+				const std::vector<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &properties) const;
 	};
 }
 

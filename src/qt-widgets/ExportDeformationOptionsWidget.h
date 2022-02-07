@@ -26,7 +26,7 @@
 #ifndef GPLATES_QT_WIDGETS_EXPORTDEFORMATIONOPTIONSWIDGET_H
 #define GPLATES_QT_WIDGETS_EXPORTDEFORMATIONOPTIONSWIDGET_H
 
-#include "ExportDeformationOptionsWidgetUi.h"
+#include "ui_ExportDeformationOptionsWidgetUi.h"
 
 #include "ExportOptionsWidget.h"
 
@@ -95,6 +95,9 @@ namespace GPlatesQtWidgets
 
 		void
 		react_include_second_invariant_strain_rate_check_box_clicked();
+
+		void
+		react_include_strain_rate_style_check_box_clicked();
 
 	private:
 

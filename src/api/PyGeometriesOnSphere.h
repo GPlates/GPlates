@@ -40,8 +40,6 @@
 #include "maths/PolylineOnSphere.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	/**
@@ -180,7 +178,5 @@ namespace GPlatesApi
 		};
 	};
 }
-
-#endif   // GPLATES_NO_PYTHON
 
 #endif // GPLATES_API_PYGEOMETRIESONSPHERE_H

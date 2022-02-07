@@ -51,7 +51,6 @@ GPlatesGui::Map::Map(
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		const GPlatesPresentation::VisualLayers &visual_layers,
-		const RenderSettings &render_settings,
 		ViewportZoom &viewport_zoom,
 		const ColourScheme::non_null_ptr_type &colour_scheme) :
 	d_map_projection(MapProjection::create()),
@@ -59,7 +58,6 @@ GPlatesGui::Map::Map(
 	d_gl_visual_layers(gl_visual_layers),
 	d_rendered_geometry_collection(&rendered_geometry_collection),
 	d_visual_layers(visual_layers),
-	d_render_settings(render_settings),
 	d_viewport_zoom(viewport_zoom),
 	d_colour_scheme(colour_scheme),
 	d_rendered_geom_collection_painter(
@@ -67,7 +65,6 @@ GPlatesGui::Map::Map(
 			rendered_geometry_collection,
 			gl_visual_layers,
 			visual_layers,
-			d_render_settings,
 			colour_scheme)
 {  }
 
@@ -166,7 +163,15 @@ GPlatesGui::Map::paint(
 		// in modern graphics hardware so we don't need to optimise it away.
 		// We also clear the stencil buffer in case it is used - also it's usually interleaved
 		// with depth so it's more efficient to clear both depth and stencil.
-		renderer.gl_clear_color(); // Clear colour to transparent black
+		//
+		// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
+		// the scene, that are not rendered, to have *opaque* alpha (=1). This appears to be needed on
+		// Mac with Qt5 (alpha=0 is fine on Qt5 Windows/Ubuntu, and on Qt4 for all platforms). Perhaps because
+		// QGLWidget rendering (on Qt5 Mac) is first done to a framebuffer object which is then blended into the
+		// window framebuffer (where having a source alpha of zero would result in the black background not showing).
+		// Or, more likely, maybe a framebuffer object is used on all platforms but the window framebuffer is
+		// white on Mac but already black on Windows/Ubuntu.
+		renderer.gl_clear_color(0, 0, 0, 1); // Clear colour to opaque black
 		renderer.gl_clear_depth(); // Clear depth to 1.0
 		renderer.gl_clear_stencil();
 		renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);

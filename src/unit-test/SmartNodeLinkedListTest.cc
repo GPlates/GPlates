@@ -55,7 +55,7 @@ namespace{
 		int j;
 	};
 	
-	std::auto_ptr<GPlatesUtils::SmartNodeLinkedList<int>::Node>
+	std::unique_ptr<GPlatesUtils::SmartNodeLinkedList<int>::Node>
 	add_node_3(
 			GPlatesUtils::SmartNodeLinkedList<int> &list)
 	{
@@ -69,7 +69,7 @@ namespace{
 		begin++;
 		BOOST_CHECK(begin == end);;
 
-		std::auto_ptr<Node> node_3_ptr(new Node(3));
+		std::unique_ptr<Node> node_3_ptr(new Node(3));
 		list.append(*node_3_ptr);
 
 		begin = list.begin();
@@ -86,7 +86,7 @@ namespace{
 	}
 
 
-	std::auto_ptr<GPlatesUtils::SmartNodeLinkedList<int>::Node>
+	std::unique_ptr<GPlatesUtils::SmartNodeLinkedList<int>::Node>
 	add_node_2(
 			GPlatesUtils::SmartNodeLinkedList<int> &list)
 	{
@@ -108,7 +108,7 @@ namespace{
 		begin++;
 		BOOST_CHECK(begin == end);
 
-		std::auto_ptr<GPlatesUtils::SmartNodeLinkedList<int>::Node> node_3_ptr = add_node_3(list);
+		std::unique_ptr<GPlatesUtils::SmartNodeLinkedList<int>::Node> node_3_ptr = add_node_3(list);
 		
 		begin = list.begin();
 		end = list.end();
@@ -134,7 +134,7 @@ namespace{
 		begin++;
 		BOOST_CHECK(begin == end);
 
-		std::auto_ptr<GPlatesUtils::SmartNodeLinkedList<int>::Node> node_3_ptr = add_node_2(list);
+		std::unique_ptr<GPlatesUtils::SmartNodeLinkedList<int>::Node> node_3_ptr = add_node_2(list);
 		
 		begin = list.begin();
 		end = list.end();

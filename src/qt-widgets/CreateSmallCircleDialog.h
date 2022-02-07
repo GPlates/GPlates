@@ -29,7 +29,7 @@
 #include <QDialog>
 
 #include "maths/SmallCircle.h"
-#include "CreateSmallCircleDialogUi.h"
+#include "ui_CreateSmallCircleDialogUi.h"
 #include "SmallCircleWidget.h"
 
 namespace GPlatesAppLogic

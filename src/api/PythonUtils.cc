@@ -30,11 +30,12 @@
 #include "global/python.h"
 
 #include <boost/foreach.hpp>
+#include <QDebug>
 #include <QDir>
 #include <QCoreApplication>
 #include <QFileInfo>
+#include <QMetaType>
 #include <QStringList>
-#include <QDebug>
 
 #include "PythonUtils.h"
 
@@ -46,10 +47,11 @@
 #include "app-logic/UserPreferences.h"
 
 #include "global/CompilerWarnings.h"
+#include "global/python.h"  // PY_MAJOR_VERSION
 
 #include "utils/StringUtils.h"
 
-#if !defined(GPLATES_NO_PYTHON)
+
 using namespace boost::python;
 
 // For PyUnicode_Check and PyString_Check below.
@@ -194,11 +196,33 @@ GPlatesApi::PythonUtils::get_error_message()
 	Py_XDECREF(bt);
 	return msg;
 }
+		
 
-#else
+//
+// We're compiling qRegisterMetaType<type>() (ie, without a string argument) below in CC file.
+// And qRegisterMetaType<type>() expects Q_DECLARE_METATYPE(typename), so we declare that here.
+//
+// We avoid compiling qRegisterMetaType<type>(typename) (ie, *with* a string argument) in the header file
+// since qRegisterMetaType<type>(typename) declares QMetaTypeId<type> (in Qt5). And there might be a
+// CC file that includes the header but also declares Q_DECLARE_METATYPE(typename)
+// (presumably because it uses  'type' in a QVariant) which in turn declares QMetaTypeId<type>.
+// This duplicate declaration of QMetaTypeId<type> would result in a compile error.
+//
+// We could compile qRegisterMetaType(typename) below in CC file and not declare Q_DECLARE_METATYPE(typename).
+// That should achieve the same result.
+//
+Q_DECLARE_METATYPE(boost::function< void() >)
 
-// Just so that this isn't an empty compilation unit.
-void *gplates_python_utils_disabled = 0;
-
-#endif
-
+template<>
+void
+GPlatesApi::PythonUtils::run_in_main_thread<>(
+		const boost::function< void () > &f)
+{
+	qRegisterMetaType< boost::function< void () > >();
+	ThreadSwitchGuard g;
+	QMetaObject::invokeMethod(
+			&python_manager(), 
+			"exec_function_slot", 
+			Qt::BlockingQueuedConnection,
+			Q_ARG(boost::function< void () > , f));
+}

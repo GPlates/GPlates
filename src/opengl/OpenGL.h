@@ -28,6 +28,8 @@
 #ifndef GPLATES_OPENGL_OPENGL_H
 #define GPLATES_OPENGL_OPENGL_H
 
+#include <QtGlobal>
+
 // The OpenGL Extension Wrangler Library (GLEW).
 // Must be included before the OpenGL headers (which also means before Qt headers).
 // But, as noted below, it's best to try and include it in ".cc" files only (rather than here).
@@ -44,12 +46,12 @@
 //#include <GL/glew.h>
 
 extern "C" {
-#if defined(__APPLE__)
+#if defined(Q_OS_MAC)
 /* Assume compilation on Mac OS X. */
 #define __CONVENTION__
 #include <OpenGL/gl.h>
 #include <OpenGL/glu.h>
-#elif defined(__WINDOWS__)
+#elif defined(Q_OS_WIN)
 /* Necessary to include windows.h before including gl.h */
 #include <windows.h>
 #define __CONVENTION__ WINAPI

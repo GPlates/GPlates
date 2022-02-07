@@ -26,8 +26,6 @@
 #include "PythonConverterUtils.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -55,5 +53,3 @@ export_integer()
 
 	// TODO: Perhaps might also need 64-bit integers (when supported) such as boost::uint64_t.
 }
-
-#endif // GPLATES_NO_PYTHON

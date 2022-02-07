@@ -1766,7 +1766,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::rigid_reconstruct(
 	GPlatesMaths::FiniteRotation rotation =
 			d_topology_reconstruct->get_reconstruction_tree_creator()
 					.get_reconstruction_tree(reconstruction_time)
-							->get_composed_absolute_rotation(d_reconstruction_plate_id).first;
+							->get_composed_absolute_rotation(d_reconstruction_plate_id);
 
 	if (reverse_reconstruct)
 	{
@@ -1890,7 +1890,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::initialise_deformation_t
 
 		if (!current_geometry_sample)
 		{
-			most_recent_geometry_sample = current_geometry_sample.get();
+			most_recent_geometry_sample = boost::none;
 			// Skip the current geometry sample - all its points are inactive.
 			continue;
 		}

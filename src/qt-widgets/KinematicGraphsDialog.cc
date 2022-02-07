@@ -201,7 +201,7 @@ namespace
 			return result.d_velocity_lon;
 			break;
 		case GPlatesQtWidgets::KinematicGraphsDialog::ANGULAR_VELOCITY_GRAPH_TYPE:
-			return std::abs(result.d_angular_velocity);
+			return result.d_angular_velocity;
 			break;
 #if 0
 		case GPlatesQtWidgets::KinematicGraphsDialog::ROTATION_RATE_GRAPH_TYPE:
@@ -657,17 +657,10 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 		return;
 	}
 
-	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type default_reconstruction_tree =
-			d_application_state.get_current_reconstruction()
-			.get_default_reconstruction_layer_output()->get_reconstruction_tree();
-
+	// The default reconstruction tree creator.
 	GPlatesAppLogic::ReconstructionTreeCreator tree_creator =
-			GPlatesAppLogic::create_cached_reconstruction_tree_creator(
-				default_reconstruction_tree->get_reconstruction_features(),
-				d_anchor_id,
-				100, /* try this cache size for starters */
-				// We're not going to modify the reconstruction features so no need to clone...
-				false/*clone_reconstruction_features*/);
+			d_application_state.get_current_reconstruction()
+			.get_default_reconstruction_layer_output()->get_reconstruction_tree_creator();
 
 	LatLonPoint llp(d_lat,d_lon);
 	PointOnSphere pos_ = make_point_on_sphere(llp);
@@ -683,8 +676,8 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 		get_older_and_younger_times(d_configuration,time,time_older,time_younger);
 
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree =
-				tree_creator.get_reconstruction_tree(time);
-		FiniteRotation rot = tree->get_composed_absolute_rotation(d_moving_id).first;
+				tree_creator.get_reconstruction_tree(time, d_anchor_id);
+		FiniteRotation rot = tree->get_composed_absolute_rotation(d_moving_id);
 
 		PointOnSphere p = rot*pos_;
 
@@ -692,13 +685,13 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 
 		// t1 is younger than t2, as required by the calculate_velocity_vector_and_omaga function used below.
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_t1 =
-				tree_creator.get_reconstruction_tree(time_younger);
+				tree_creator.get_reconstruction_tree(time_younger, d_anchor_id);
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type tree_t2 =
-				tree_creator.get_reconstruction_tree(time_older);
+				tree_creator.get_reconstruction_tree(time_older, d_anchor_id);
 
 
-		FiniteRotation rot_1 = tree_t1->get_composed_absolute_rotation(d_moving_id).first;
-		FiniteRotation rot_2 = tree_t2->get_composed_absolute_rotation(d_moving_id).first;
+		FiniteRotation rot_1 = tree_t1->get_composed_absolute_rotation(d_moving_id);
+		FiniteRotation rot_2 = tree_t2->get_composed_absolute_rotation(d_moving_id);
 
 		PointOnSphere p_1 = rot_1*pos_;
 		PointOnSphere p_2 = rot_2*pos_;
@@ -706,11 +699,9 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 		// The velocity calculation assumes a time step of 1Ma. As we have used dtime here to generate the finite rotations, we need to correct for this.
 		// The position here should represent the position of the point *at the desired time instant*, not the present day point.
 
-		// I've added an axis hint to the velocity routine in order to get the sign of the rotation angle, but in order to get the axis hint
-		// I have to generate the stage pole, so I'm probably duplicating work here. There may be a neater way of getting this.
-		FiniteRotation stage_pole_rotation = GPlatesAppLogic::RotationUtils::get_stage_pole(*tree_t1,*tree_t2,d_moving_id,d_anchor_id);
-		boost::optional<UnitVector3D> stage_pole_axis = stage_pole_rotation.axis_hint();
-		std::pair<Vector3D,real_t> velocity_and_omega_pair = calculate_velocity_vector_and_omega(p,rot_1,rot_2,dtime,stage_pole_axis);
+		// Calculate velocity 'vector' and positive angular velocity (rads/Myr).
+		// Note that 'omega' is always positive since the stage rotation 'pole' is arbitrary (can negate pole/angle pair and get same rotation).
+		std::pair<Vector3D,real_t> velocity_and_omega_pair = calculate_velocity_vector_and_omega(p,rot_1,rot_2,dtime);
 		Vector3D v = velocity_and_omega_pair.first;
 
 		VectorColatitudeLongitude vcl = convert_vector_from_xyz_to_colat_lon(p,v);

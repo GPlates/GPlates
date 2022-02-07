@@ -49,8 +49,6 @@
 #include "utils/ReferenceCount.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -1580,5 +1578,3 @@ export_feature_collection()
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
 }
-
-#endif // GPLATES_NO_PYTHON

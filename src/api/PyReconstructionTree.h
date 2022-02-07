@@ -37,8 +37,6 @@
 #include "global/PreconditionViolationError.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	/**
@@ -133,7 +131,5 @@ namespace GPlatesApi
 			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			bool use_identity_for_missing_plate_ids);
 }
-
-#endif   // GPLATES_NO_PYTHON
 
 #endif // GPLATES_API_PYRECONSTRUCTIONTREE_H

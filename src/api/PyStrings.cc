@@ -40,8 +40,6 @@
 #include "utils/UnicodeString.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -435,5 +433,3 @@ export_strings()
 	export_enumeration_content();
 	export_text_content();
 }
-
-#endif // GPLATES_NO_PYTHON

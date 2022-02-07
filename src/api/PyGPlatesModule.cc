@@ -29,8 +29,6 @@
 
 #include "PyGPlatesModule.h"
 
-#if !defined(GPLATES_NO_PYTHON)
-
 // Exceptions
 void export_exceptions();
 
@@ -64,7 +62,6 @@ void export_old_feature_collection();
 void export_property_values();
 void export_property_value_visitor();
 void export_qualified_xml_names();
-void export_revisioned_vector();
 void export_top_level_property();
 
 // app-logic namespace
@@ -172,7 +169,6 @@ export_cpp_python_api()
 	export_old_feature_collection();
 	export_property_values();
 	export_property_value_visitor();
-	export_revisioned_vector();
 	export_top_level_property();
 
 	// app-logic namespace
@@ -308,13 +304,5 @@ BOOST_PYTHON_MODULE(pygplates)
 	//
 	// We've already exported all the C++ python bindings - this is important because the pure python
 	// code injects methods into the python classes already defined by the C++ python bindings.
-    export_pure_python_api(); //cause exception in python 3
+    export_pure_python_api();
 }
-
-#else
-
-// Dummy variable so that this compilation unit isn't empty.
-void *dummy_gplates_can_haz_python = 0;
-
-#endif
-

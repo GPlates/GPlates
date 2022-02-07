@@ -45,8 +45,6 @@
 #include "maths/Vector3D.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -1091,5 +1089,3 @@ export_local_cartesian()
 	// Enable boost::optional<CartesianConvMatrix3D> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::CartesianConvMatrix3D>();
 }
-
-#endif // GPLATES_NO_PYTHON

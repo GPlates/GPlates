@@ -29,7 +29,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <QWidget>
 
-#include "VisualLayersWidgetUi.h"
+#include "ui_VisualLayersWidgetUi.h"
 
 #include "gui/VisualLayersProxy.h"
 

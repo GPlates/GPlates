@@ -32,7 +32,6 @@
 #include "api/PythonUtils.h"
 #include "utils/StringUtils.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 GPlatesApi::ConsoleReader::ConsoleReader(
 		AbstractConsole *console) :
 	d_console(console)
@@ -114,5 +113,3 @@ export_console_reader()
 	class_<GPlatesApi::ConsoleReader, boost::noncopyable>("GPlatesConsoleReader")
 		.def("readline", &GPlatesApi::ConsoleReader::readline);
 }
-#endif //GPLATES_NO_PYTHON
-

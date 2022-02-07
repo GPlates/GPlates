@@ -31,6 +31,8 @@
 #include "app-logic/ReconstructionGeometry.h"
 #include "app-logic/ResolvedTopologicalGeometrySubSegment.h"
 
+#include "model/FeatureHandle.h"
+
 
 namespace GPlatesFileIO
 {
@@ -84,6 +86,7 @@ namespace GPlatesFileIO
 		 */
 		enum ResolvedTopologicalBoundaryExportType
 		{
+			ALL_POLYGON_EXPORT_TYPE,
 			PLATE_POLYGON_EXPORT_TYPE,
 			SLAB_POLYGON_EXPORT_TYPE,
 			NETWORK_POLYGON_EXPORT_TYPE
@@ -112,7 +115,7 @@ namespace GPlatesFileIO
 		 */
 		SubSegmentType
 		get_sub_segment_type(
-				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment,
+				const GPlatesModel::FeatureHandle::const_weak_ref &sub_segment_feature_ref,
 				const double &recon_time);
 
 
@@ -121,7 +124,7 @@ namespace GPlatesFileIO
 		*/
 		SubSegmentType
 		get_slab_sub_segment_type(
-				const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment &sub_segment,
+				const GPlatesModel::FeatureHandle::const_weak_ref &sub_segment_feature_ref,
 				const double &recon_time);
 	}
 }

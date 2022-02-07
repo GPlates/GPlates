@@ -59,12 +59,10 @@ GPlatesGui::Globe::Globe(
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geom_collection,
 		const GPlatesPresentation::VisualLayers &visual_layers,
-		const RenderSettings &render_settings,
 		const GlobeVisibilityTester &visibility_tester,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_view_state(view_state),
 	d_gl_visual_layers(gl_visual_layers),
-	d_render_settings(render_settings),
 	d_rendered_geom_collection(rendered_geom_collection),
 	d_visual_layers(visual_layers),
 	d_globe_orientation_ptr(new SimpleGlobeOrientation()),
@@ -73,7 +71,6 @@ GPlatesGui::Globe::Globe(
 			rendered_geom_collection,
 			gl_visual_layers,
 			visual_layers,
-			d_render_settings,
 			visibility_tester,
 			colour_scheme)
 {  }
@@ -86,7 +83,6 @@ GPlatesGui::Globe::Globe(
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_view_state(existing_globe.d_view_state),
 	d_gl_visual_layers(gl_visual_layers),
-	d_render_settings(existing_globe.d_render_settings),
 	d_rendered_geom_collection(existing_globe.d_rendered_geom_collection),
 	d_visual_layers(existing_globe.d_visual_layers),
 	d_globe_orientation_ptr(existing_globe.d_globe_orientation_ptr),
@@ -95,7 +91,6 @@ GPlatesGui::Globe::Globe(
 			d_rendered_geom_collection,
 			gl_visual_layers,
 			d_visual_layers,
-			d_render_settings,
 			visibility_tester,
 			colour_scheme)
 {  }

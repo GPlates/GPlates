@@ -75,7 +75,7 @@ namespace
 			os << "999 0.0 0.0 0.0 0.0 999 !";
 		}
 
-		os << line.toUtf8().data() << endl;
+		os << line << endl;
 	}
 
 
@@ -168,6 +168,11 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatWriter(
 	}
 
 	d_output_stream.reset( new QTextStream(d_output_file.get()) );
+
+	// Write output to text file as UTF8 encoded (which includes the ASCII character set).
+	// If we don't specify this then (in Qt4) QTextCodec::codecForLocale() will get used
+	// during encoding, which is likely to not be UTF8.
+	d_output_stream->setCodec("UTF-8");
 }
 
 
@@ -296,15 +301,15 @@ GPlatesFileIO::PlatesRotationFormatWriter::PlatesRotationFormatAccumulator::prin
 		BOOST_FOREACH(const GPlatesModel::Metadata::shared_ptr_to_const_type& data, single_line_attributes)
 		{
 			os << " @"
-				<< data->get_name().toUtf8().data()
+				<< data->get_name()
 				<< "\""
-				<< data->get_content().toUtf8().data()
+				<< data->get_content()
 				<< "\"";
 		}
 	}
 	else if (reconstruction_pole_data.comment)
 	{
-		os << reconstruction_pole_data.comment.get();
+		os << reconstruction_pole_data.comment->qstring();
 	}
 
 
@@ -425,6 +430,8 @@ GPlatesFileIO::PlatesRotationFormatWriter::write_gpml_time_sample(
 	d_accum.current_pole().time = gpml_time_sample->valid_time()->get_time_position().value();
 	d_accum.current_pole().is_disabled = gpml_time_sample->is_disabled();
 	
+	d_accum.d_is_expecting_a_time_sample = true;
+
 	// Visit the finite rotation inside this time sample.
 	gpml_time_sample->value()->accept_visitor(*this);
 
@@ -433,6 +440,8 @@ GPlatesFileIO::PlatesRotationFormatWriter::write_gpml_time_sample(
 	{
 		gpml_time_sample->description().get()->accept_visitor(*this);
 	}
+	
+	d_accum.d_is_expecting_a_time_sample = false;
 }
 
 
@@ -440,5 +449,11 @@ void
 GPlatesFileIO::PlatesRotationFormatWriter::visit_xs_string(
 		const GPlatesPropertyValues::XsString &xs_string)
 {
-	d_accum.current_pole().comment = xs_string.get_value().get();
+	// We could get here either by visiting the 'gml:name' or 'gml:description' property, or
+	// the description field of a time sample. We actually want the latter, so avoid crashing
+	// if we encounter the former (and 'd_accum.reconstruction_poles' is empty).
+	if (d_accum.d_is_expecting_a_time_sample)
+	{
+		d_accum.current_pole().comment = xs_string.get_value().get();
+	}
 }

@@ -44,6 +44,7 @@ namespace GPlatesFileIO
 			SHAPEFILE,         //!< '.shp' extension.
 			OGRGMT,			   //!< '.gmt' extension.
 			GEOJSON,           //!< '.geojson' or '.json' extension.
+			GEOPACKAGE,        //!< '.gpkg' extension.
 			KML,               //!< '.kml' extension.
 			WRITE_ONLY_XY_GMT, //!< '.xy' extension.
 			GMAP,              //!< '.vgp' extension.

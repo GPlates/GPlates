@@ -35,6 +35,8 @@
 
 #include "PlatesRotationFileProxy.h"
 
+#include "FeatureCollectionFileFormatConfigurations.h"
+
 #include "global/LogException.h"
 #include "model/ModelUtils.h"
 
@@ -283,31 +285,33 @@ GPlatesFileIO::RotationFileReaderV2::RotationFileReaderV2() :
 
 void
 GPlatesFileIO::RotationFileReader::read_file(
-		File::Reference &file,
+		File::Reference &file_ref,
 		ReadErrorAccumulation &read_errors,
 		bool &contains_unsaved_changes)
 {
 	contains_unsaved_changes = false;
 
-	const boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> & cfg = 
-		file.get_file_configuration();
+	// Create a new rotation configuration.
+	//
+	// NOTE: We don't currently use a default configuration because each configuration is specific to a
+	//       particular rotation file and so we don't want to overwrite the default configuration with
+	//       the configuration specific to the current rotation file (which would interfere with the
+	//       configuration of previously loaded rotation file).
+	FeatureCollectionFileFormat::RotationFileConfiguration::shared_ptr_type rotation_file_configuration(
+			new FeatureCollectionFileFormat::RotationFileConfiguration());
 
-	if(!cfg)
-	{
-		return;
-	}
+	// Store the rotation file configuration in the file reference.
+	// It'll get used when/if writing the rotation file.
+	file_ref.set_file_info(
+			file_ref.get_file_info(),
+			FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type(rotation_file_configuration));
 
-	const FeatureCollectionFileFormat::RotationFileConfiguration* rot_file_cfg_const = 
-		dynamic_cast<const FeatureCollectionFileFormat::RotationFileConfiguration*>((*cfg).get());
-	FeatureCollectionFileFormat::RotationFileConfiguration* rot_file_cfg = 
-		const_cast<FeatureCollectionFileFormat::RotationFileConfiguration*>(rot_file_cfg_const);
+	PlatesRotationFileProxy& file_proxy = rotation_file_configuration->get_rotation_file_proxy();
 
-	PlatesRotationFileProxy& file_proxy = rot_file_cfg->get_rotation_file_proxy();
-
-	file_proxy.init(file);
+	file_proxy.init(file_ref);
 		
 	RotationFileSegmentContainer file_segments = file_proxy.get_segments();
-	PopulateReconstructionFeatureCollection visitor(file.get_feature_collection());
+	PopulateReconstructionFeatureCollection visitor(file_ref.get_feature_collection());
 	BOOST_FOREACH(boost::shared_ptr<RotationFileSegment> seg, file_segments)
 	{
 		seg->accept_visitor(visitor);
@@ -983,7 +987,7 @@ void
 GPlatesFileIO::GrotWriterWithCfg::finalise_post_feature_properties(
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
-	qDebug() << "finalise_post_feature_properties in RotationFileWriter";
+	//qDebug() << "finalise_post_feature_properties in RotationFileWriter";
 	const boost::optional<FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type> cfg = 
 		d_file_ref.get_file_configuration();
 	if(cfg)

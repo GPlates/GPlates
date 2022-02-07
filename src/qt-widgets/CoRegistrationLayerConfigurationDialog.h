@@ -34,7 +34,7 @@
 #include <QCheckBox>
 #include <QComboBox>
 
-#include "CoRegistrationLayerConfigurationDialogUi.h"
+#include "ui_CoRegistrationLayerConfigurationDialogUi.h"
 
 #include "OpenDirectoryDialog.h"
 

@@ -113,15 +113,13 @@ Rotation
    pygplates.RotationModel
    pygplates.FiniteRotation
 
-.. note:: ``ReconstructionTreeBuilder`` and ``ReconstructionTreeEdge``
-   are only needed for very advanced scenarios.
+.. note:: ``ReconstructionTreeEdge`` is only needed for very advanced scenarios.
 
 .. autosummary::
    :nosignatures:
    :toctree: generated
 
    pygplates.ReconstructionTree
-   pygplates.ReconstructionTreeBuilder
    pygplates.ReconstructionTreeEdge
 
 Functions to find and fix finite rotation crossovers (transitions of fixed plate):
@@ -233,6 +231,28 @@ Feature property value
    pygplates.XsInteger
    pygplates.XsString
 
+The following subset of property value classes represent *topological* lines, polygons and networks.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.GpmlTopologicalLine
+   pygplates.GpmlTopologicalPolygon
+   pygplates.GpmlTopologicalNetwork
+
+The following subset of property value classes represent the *topological* sections that topologies are created from.
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.GpmlTopologicalSection
+   pygplates.GpmlTopologicalPoint
+   pygplates.GpmlTopologicalLineSection
+   pygplates.GpmlPropertyDelegate
+
+
 The following subset of property value classes are time-dependent wrappers.
 These are what enable the above :class:`property values<pygplates.PropertyValue>` to vary over geological time.
 
@@ -246,15 +266,19 @@ These are what enable the above :class:`property values<pygplates.PropertyValue>
    pygplates.GpmlIrregularSampling
    pygplates.GpmlPiecewiseAggregation
 
-The following classes support *time-dependent* properties.
-Strictly speaking they are not actually :class:`property values<pygplates.PropertyValue>`.
+The following support classes are closed related to property values
+(but are not actual :class:`property values<pygplates.PropertyValue>`).
 
 .. autosummary::
    :nosignatures:
    :toctree: generated
 
+   pygplates.GpmlPropertyDelegateList
    pygplates.GpmlTimeSample
+   pygplates.GpmlTimeSampleList
    pygplates.GpmlTimeWindow
+   pygplates.GpmlTimeWindowList
+   pygplates.GpmlTopologicalSectionList
 
 Geometry
 --------

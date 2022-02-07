@@ -295,13 +295,18 @@ namespace GPlatesAppLogic
 		 * @a reconstruction_geom_ptr can be a @a ResolvedTopologicalLine,
 		 * @a ResolvedTopologicalBoundary or @a ResolvedTopologicalNetwork.
 		 *
+		 * If @a include_network_rigid_block_holes is true then the outlines of interior
+		 * rigid block holes (if any) in networks form interiors of network boundary polygons.
+		 * By default they do not.
+		 *
 		 * Returns boost::none if the specified reconstruction geometry is not one of the above
 		 * resolved topology types.
 		 */
 		template <typename ReconstructionGeometryPointer>
 		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 		get_resolved_topological_boundary_or_line_geometry(
-				ReconstructionGeometryPointer reconstruction_geom_ptr);
+				ReconstructionGeometryPointer reconstruction_geom_ptr,
+				bool include_network_rigid_block_holes = false);
 
 		/**
 		 * Returns the boundary polygon of the specified resolved topology.
@@ -309,13 +314,18 @@ namespace GPlatesAppLogic
 		 * @a reconstruction_geom_ptr can be either a @a ResolvedTopologicalBoundary or @a ResolvedTopologicalNetwork.
 		 * However @a ResolvedTopologicalLine objects are ignored.
 		 *
+		 * If @a include_network_rigid_block_holes is true then the outlines of interior
+		 * rigid block holes (if any) in networks form interiors of network boundary polygons.
+		 * By default they do not.
+		 *
 		 * Returns boost::none if the specified reconstruction geometry is not one of the above
 		 * resolved topology types.
 		 */
 		template <typename ReconstructionGeometryPointer>
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
 		get_resolved_topological_boundary_polygon(
-				ReconstructionGeometryPointer reconstruction_geom_ptr);
+				ReconstructionGeometryPointer reconstruction_geom_ptr,
+				bool include_network_rigid_block_holes = false);
 
 		/**
 		 * Returns the boundary polygon of the specified reconstruction geometry.
@@ -324,12 +334,17 @@ namespace GPlatesAppLogic
 		 * a @a ResolvedTopologicalBoundary or a @a ResolvedTopologicalNetwork.
 		 * However @a ResolvedTopologicalLine objects are ignored.
 		 *
+		 * If @a include_network_rigid_block_holes is true then the outlines of interior
+		 * rigid block holes (if any) in networks form interiors of network boundary polygons.
+		 * By default they do not.
+		 *
 		 * Returns boost::none if the specified reconstruction geometry does not contain a *polygon* geometry.
 		 */
 		template <typename ReconstructionGeometryPointer>
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
 		get_boundary_polygon(
-				ReconstructionGeometryPointer reconstruction_geom_ptr);
+				ReconstructionGeometryPointer reconstruction_geom_ptr,
+				bool include_network_rigid_block_holes = false);
 
 		/**
 		 * Returns the geometry of a topological section (used by a topological boundary/network).
@@ -998,6 +1013,12 @@ namespace GPlatesAppLogic
 			// Bring base class visit methods into scope of current class.
 			using ConstReconstructionGeometryVisitor::visit;
 
+			explicit
+			GetResolvedTopologicalBoundaryOrLineGeometry(
+					bool include_network_rigid_block_holes) :
+				d_include_network_rigid_block_holes(include_network_rigid_block_holes)
+			{  }
+
 			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 			get_geometry() const
 			{
@@ -1016,15 +1037,17 @@ namespace GPlatesAppLogic
 
 		private:
 			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> d_geometry;
+			bool d_include_network_rigid_block_holes;
 		};
 
 
 		template <typename ReconstructionGeometryPointer>
 		boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
 		get_resolved_topological_boundary_or_line_geometry(
-				ReconstructionGeometryPointer reconstruction_geom_ptr)
+				ReconstructionGeometryPointer reconstruction_geom_ptr,
+				bool include_network_rigid_block_holes)
 		{
-			GetResolvedTopologicalBoundaryOrLineGeometry visitor;
+			GetResolvedTopologicalBoundaryOrLineGeometry visitor(include_network_rigid_block_holes);
 			reconstruction_geom_ptr->accept_visitor(visitor);
 
 			return visitor.get_geometry();
@@ -1037,6 +1060,12 @@ namespace GPlatesAppLogic
 		public:
 			// Bring base class visit methods into scope of current class.
 			using ConstReconstructionGeometryVisitor::visit;
+
+			explicit
+			GetResolvedTopologicalBoundaryPolygon(
+					bool include_network_rigid_block_holes) :
+				d_include_network_rigid_block_holes(include_network_rigid_block_holes)
+			{  }
 
 			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
 			get_boundary_polygon() const
@@ -1056,15 +1085,17 @@ namespace GPlatesAppLogic
 
 		private:
 			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> d_boundary_polygon;
+			bool d_include_network_rigid_block_holes;
 		};
 
 
 		template <typename ReconstructionGeometryPointer>
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
 		get_resolved_topological_boundary_polygon(
-				ReconstructionGeometryPointer reconstruction_geom_ptr)
+				ReconstructionGeometryPointer reconstruction_geom_ptr,
+				bool include_network_rigid_block_holes)
 		{
-			GetResolvedTopologicalBoundaryPolygon visitor;
+			GetResolvedTopologicalBoundaryPolygon visitor(include_network_rigid_block_holes);
 			reconstruction_geom_ptr->accept_visitor(visitor);
 
 			return visitor.get_boundary_polygon();
@@ -1077,6 +1108,13 @@ namespace GPlatesAppLogic
 		public:
 			// Bring base class visit methods into scope of current class.
 			using ConstReconstructionGeometryVisitor::visit;
+
+			explicit
+			GetBoundaryPolygon(
+					bool include_network_rigid_block_holes) :
+				d_include_network_rigid_block_holes(include_network_rigid_block_holes)
+			{
+			}
 
 			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
 			get_boundary_polygon() const
@@ -1106,15 +1144,17 @@ namespace GPlatesAppLogic
 
 		private:
 			boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> d_boundary_polygon;
+			bool d_include_network_rigid_block_holes;
 		};
 
 
 		template <typename ReconstructionGeometryPointer>
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type>
 		get_boundary_polygon(
-				ReconstructionGeometryPointer reconstruction_geom_ptr)
+				ReconstructionGeometryPointer reconstruction_geom_ptr,
+				bool include_network_rigid_block_holes)
 		{
-			GetBoundaryPolygon visitor;
+			GetBoundaryPolygon visitor(include_network_rigid_block_holes);
 			reconstruction_geom_ptr->accept_visitor(visitor);
 
 			return visitor.get_boundary_polygon();

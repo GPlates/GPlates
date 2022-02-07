@@ -112,15 +112,15 @@ namespace GPlatesOpenGL
 				GLRenderer &renderer,
 				const GLBuffer::shared_ptr_type &buffer)
 		{
-			return shared_ptr_type(create_as_auto_ptr(renderer, buffer).release());
+			return shared_ptr_type(create_as_unique_ptr(renderer, buffer).release());
 		}
 
 		/**
-		 * Same as @a create but returns a std::auto_ptr - to guarantee only one owner.
+		 * Same as @a create but returns a std::unique_ptr - to guarantee only one owner.
 		 */
 		static
-		std::auto_ptr<GLVertexElementBuffer>
-		create_as_auto_ptr(
+		std::unique_ptr<GLVertexElementBuffer>
+		create_as_unique_ptr(
 				GLRenderer &renderer,
 				const GLBuffer::shared_ptr_type &buffer);
 

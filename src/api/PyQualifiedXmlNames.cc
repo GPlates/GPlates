@@ -23,8 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <map>
 #include <sstream>
 #include <boost/noncopyable.hpp>
+#include <boost/optional.hpp>
+
+#include "PyQualifiedXmlNames.h"
 
 #include "PyGPlatesModule.h"
 #include "PythonConverterUtils.h"
@@ -38,8 +42,6 @@
 #include "property-values/StructuralType.h"
 #include "property-values/ValueObjectType.h"
 
-
-#if !defined(GPLATES_NO_PYTHON)
 
 namespace bp = boost::python;
 
@@ -527,6 +529,7 @@ namespace GPlatesApi
 	const GPlatesModel::PropertyName gpml_center_line_of = GPlatesModel::PropertyName::create_gpml("centerLineOf");
 	const GPlatesModel::PropertyName gpml_error_bounds = GPlatesModel::PropertyName::create_gpml("errorBounds");
 	const GPlatesModel::PropertyName gpml_multi_position = GPlatesModel::PropertyName::create_gpml("multiPosition");
+	const GPlatesModel::PropertyName gpml_network = GPlatesModel::PropertyName::create_gpml("network");
 	const GPlatesModel::PropertyName gpml_outline_of = GPlatesModel::PropertyName::create_gpml("outlineOf");
 	const GPlatesModel::PropertyName gpml_pole_position = GPlatesModel::PropertyName::create_gpml("polePosition");
 	const GPlatesModel::PropertyName gpml_position = GPlatesModel::PropertyName::create_gpml("position");
@@ -596,6 +599,7 @@ export_property_name()
 			"* `pygplates.PropertyName.gpml_center_line_of <http://www.gplates.org/docs/gpgim/#gpml:centerLineOf>`_\n"
 			"* `pygplates.PropertyName.gpml_error_bounds <http://www.gplates.org/docs/gpgim/#gpml:errorBounds>`_\n"
 			"* `pygplates.PropertyName.gpml_multi_position <http://www.gplates.org/docs/gpgim/#gpml:multiPosition>`_\n"
+			"* `pygplates.PropertyName.gpml_network <http://www.gplates.org/docs/gpgim/#gpml:network>`_\n"
 			"* `pygplates.PropertyName.gpml_outline_of <http://www.gplates.org/docs/gpgim/#gpml:outlineOf>`_\n"
 			"* `pygplates.PropertyName.gpml_pole_position <http://www.gplates.org/docs/gpgim/#gpml:polePosition>`_\n"
 			"* `pygplates.PropertyName.gpml_position <http://www.gplates.org/docs/gpgim/#gpml:position>`_\n"
@@ -649,6 +653,7 @@ export_property_name()
 	property_name_class.def_readonly("gpml_center_line_of", GPlatesApi::gpml_center_line_of);
 	property_name_class.def_readonly("gpml_error_bounds", GPlatesApi::gpml_error_bounds);
 	property_name_class.def_readonly("gpml_multi_position", GPlatesApi::gpml_multi_position);
+	property_name_class.def_readonly("gpml_network", GPlatesApi::gpml_network);
 	property_name_class.def_readonly("gpml_outline_of", GPlatesApi::gpml_outline_of);
 	property_name_class.def_readonly("gpml_pole_position", GPlatesApi::gpml_pole_position);
 	property_name_class.def_readonly("gpml_position", GPlatesApi::gpml_position);
@@ -785,9 +790,183 @@ export_scalar_type()
 }
 
 
+namespace GPlatesApi
+{
+	/**
+	 * A mapping of Python property value class objects to GPlatesPropertyValues::StructuralType.
+	 *
+	 * For example, for Python <-> C++ we can have pygplates.GmlLineString <-> "gml:LineString".
+	 */
+	class StructuralTypeMap
+	{
+	public:
+
+		/**
+		 * Look up the Python class object using the C++ structural type.
+		 */
+		boost::optional<PyObject *>
+		get_structural_type(
+			const GPlatesPropertyValues::StructuralType &structural_type) const
+		{
+			python_map_type::const_iterator python_iter = s_python_map.find(structural_type);
+			if (python_iter == s_python_map.end())
+			{
+				return boost::none;
+			}
+
+			return python_iter->second;
+		}
+
+		/**
+		 * Look up the C++ structural type using the Python class object.
+		 */
+		boost::optional<GPlatesPropertyValues::StructuralType>
+		get_structural_type(
+			PyObject *class_object) const
+		{
+			cpp_map_type::const_iterator cpp_iter = s_cpp_map.find(class_object);
+			if (cpp_iter == s_cpp_map.end())
+			{
+				return boost::none;
+			}
+
+			return cpp_iter->second;
+		}
+
+		void
+		add_structural_type(
+			const boost::python::type_info &type,
+			const GPlatesPropertyValues::StructuralType &structural_type)
+		{
+			// Locate registration based on the C++ type.
+			const bp::converter::registration* registration =
+				bp::converter::registry::query(type);
+
+			if (registration)
+			{
+				PyObject *class_object = reinterpret_cast<PyObject *>(registration->get_class_object());
+
+				s_cpp_map.insert(cpp_map_type::value_type(class_object, structural_type));
+				s_python_map.insert(python_map_type::value_type(structural_type, class_object));
+			}
+		}
+
+	private:
+		// Map Python class object to C++ GPlatesPropertyValues::StructuralType.
+		typedef std::map<PyObject *, GPlatesPropertyValues::StructuralType> cpp_map_type;
+		cpp_map_type s_cpp_map;
+
+		// Map C++ GPlatesPropertyValues::StructuralType to Python class object.
+		typedef std::map<GPlatesPropertyValues::StructuralType, PyObject *> python_map_type;
+		python_map_type s_python_map;
+	};
+
+	StructuralTypeMap structural_type_map;
+
+
+	namespace Implementation
+	{
+		void
+		register_structural_type(
+			const boost::python::type_info &type,
+			const GPlatesPropertyValues::StructuralType &structural_type)
+		{
+			structural_type_map.add_structural_type(type, structural_type);
+		}
+	}
+
+
+	/**
+	 * Enables GPlatesPropertyValues::StructuralType to be passed to and from python.
+	 *
+	 * For more information on boost python to/from conversions, see:
+	 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
+	 */
+	struct ConversionStructuralType
+	{
+		ConversionStructuralType()
+		{
+			namespace bp = boost::python;
+
+			// To python conversion.
+			bp::to_python_converter<GPlatesPropertyValues::StructuralType, Conversion>();
+
+			// From python conversion.
+			bp::converter::registry::push_back(
+				&convertible,
+				&construct,
+				bp::type_id<GPlatesPropertyValues::StructuralType>());
+		}
+
+		struct Conversion
+		{
+			static
+			PyObject *
+			convert(
+					const GPlatesPropertyValues::StructuralType &structural_type)
+			{
+				namespace bp = boost::python;
+
+				// Return the property type class object (if found), otherwise None.
+				boost::optional<PyObject *> py_object = structural_type_map.get_structural_type(structural_type);
+				return bp::incref(py_object ? py_object.get() : Py_None);
+			};
+		};
+
+		static
+		void *
+		convertible(
+			PyObject *object)
+		{
+			if (!PyType_Check(object) &&
+				!Py_TYPE(object))
+			{
+				return NULL;
+			}
+
+			// Check that it's a registered structural type.
+			if (!structural_type_map.get_structural_type(object))
+			{
+				return NULL;
+			}
+
+			return object;
+		}
+
+		static
+		void
+		construct(
+			PyObject *object,
+			boost::python::converter::rvalue_from_python_stage1_data *data)
+		{
+			namespace bp = boost::python;
+
+			void *const storage = reinterpret_cast<
+				bp::converter::rvalue_from_python_storage<GPlatesPropertyValues::StructuralType> *>(
+					data)->storage.bytes;
+
+			new (storage) GPlatesPropertyValues::StructuralType(
+				structural_type_map.get_structural_type(object).get());
+
+			data->convertible = storage;
+		}
+	};
+}
+
 void
 export_structural_type()
 {
+#if 1
+	// Enables GPlatesPropertyValues::StructuralType to be passed to and from python.
+	//
+	// Unlike other converters, this one converts to/from a Python class (not an instance).
+	// For example, it converts to/from 'pygplates.GpmlPlateId'
+	// (rather than something like 'pygplates.GpmlPlateId(plate_id)').
+	GPlatesApi::ConversionStructuralType();
+
+	// Enable boost::optional<GPlatesPropertyValues::StructuralType> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesPropertyValues::StructuralType>();
+#else
 	//
 	// StructuralType - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
@@ -855,6 +1034,7 @@ export_structural_type()
 			"structural_type",
 			"gml:TimePeriod",
 			"TimePeriod");
+#endif
 }
 
 
@@ -865,9 +1045,5 @@ export_qualified_xml_names()
 	export_feature_type();
 	export_property_name();
 	export_scalar_type();
-#if 0 // There's no need to expose 'StructuralType' (yet)...
 	export_structural_type();
-#endif
 }
-
-#endif // GPLATES_NO_PYTHON

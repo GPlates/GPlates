@@ -46,6 +46,9 @@
 
 #include "file-io/ErrorOpeningFileForReadingException.h"
 
+#include "global/config.h"  // GPLATES_IGNORE_PYTHON_ENVIRONMENT
+#include "global/python.h"  // PY_MAJOR_VERSION
+
 #include "presentation/Application.h"
 
 #include "qt-widgets/QtWidgetUtils.h"
@@ -53,10 +56,9 @@
 
 #include "utils/StringUtils.h"
 
-#if !defined(GPLATES_NO_PYTHON)
 
 #if PY_MAJOR_VERSION >= 3
-extern "C" PyMODINIT_FUNC PyInit_pygplates(void);
+PyMODINIT_FUNC PyInit_pygplates(void);
 #else
 extern "C" void initpygplates();
 #endif 
@@ -123,23 +125,33 @@ GPlatesGui::PythonManager::initialize(
 void
 GPlatesGui::PythonManager::check_python_capability()
 {
+	// FIXME: For some reason importing 'sys' is required for Python 3.
+	//
+	// This was discovered because 'register_utils_scripts()' seemed to work,
+	// but the code below did not. And the only difference is 'set_python_prefix()'
+	// is called between them and that calls 'bp::import("sys")'.
+#if PY_MAJOR_VERSION >= 3
+	bp::import("sys");
+#endif
+
 	QString test_code = QString() +
-			"print \'******Start testing python capability******\';" +
+			"from __future__ import print_function;" +
+			"print(\'******Start testing python capability******\');" +
 			"import sys;" +
 			"import code;"  +
 			"import math;"  +
 			"import platform;" +
 			"import pygplates;" +
-			"print \'python import test passed.\';" +
+			"print(\'python import test passed.\');" +
 			"math.log(12);" +
-			"print \'python math test passed.\';" +
-			"print \'Version: \'; print sys.version_info;" +
+			"print(\'python math test passed.\');" +
+			"print(\'Version: \'); print(sys.version_info);" +
 			"sys.platform;" +
 			"platform.uname();" +
-			"print \'Prefix: \' +sys.prefix;" +
-			"print \'Exec Prefix: \'+sys.exec_prefix;" +
-			"print \'python system test passed.\';" +
-			"print \'******End of testing python capability******\';";
+			"print(\'Prefix: \' +sys.prefix);" +
+			"print(\'Exec Prefix: \'+sys.exec_prefix);" +
+			"print(\'python system test passed.\');" +
+			"print(\'******End of testing python capability******\');";
 
 	bool result = true;
 	GPlatesApi::PythonInterpreterLocker l;
@@ -281,7 +293,7 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	using any other Python/C API functions; with the exception of Py_SetProgramName(), 
 	Py_SetPythonHome(), PyEval_InitThreads(), PyEval_ReleaseLock(), and PyEval_AcquireLock(). 
 	This initializes the table of loaded modules (sys.modules), and creates the fundamental 
-	modules __builtin__, __main__ and sys. It also initializes the module search path (sys.path). 
+	modules __builtin__ ('builtins' for Python 3), __main__ and sys. It also initializes the module search path (sys.path). 
 	It does not set sys.argv; use PySys_SetArgvEx() for that. This is a no-op when called for a 
 	second time (without calling Py_Finalize() first). There is no return value; it is a fatal error 
 	if the initialization fails.
@@ -315,6 +327,9 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	//The objective of the following code is mysterious to me. 
 	//Comment out them until I figure out the purpose of these code.
 	//At least one crash is caused by deleting python built-in functions.
+	//
+	// NOTE: Python 3 names the "__builtin__" module "builtins"
+	// (in case this code is later uncommented).
 #if 0
 	// Importing "sys" enables the printing of the value of expressions in
 	// the interactive Python console window, and importing "builtin" enables
@@ -642,18 +657,3 @@ GPlatesGui::PythonManager::print_py_msg(const QString& msg)
 {
 	d_python_console_dialog_ptr->append_text(msg);
 }
-
-#endif //GPLATES_NO_PYTHON
-
-
-
-
-
-
-
-
-
-
-
-
-

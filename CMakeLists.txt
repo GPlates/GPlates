@@ -1,20 +1,35 @@
-project(GPlates)
+# Modern CMake requires version 3.
+#
+# Ubuntu Xenial (16.04 LTS) provides CMake 3.5.1, so we'll make this the minimum requirement.
+# Also CMake 3.5 introduced imported targets for the Boost library.
+#
+# Note: There's a "..." between min and max versions which means we need to use the minimum version
+#       but are safe to use with policies (see 'cmake_policy' command) up to the maximum version.
+#       Specifying a maximum version means we don't need 'cmake_policy' calls for running CMake versions
+#       in that [min, max] range. Note that CMake version prior to 3.12 apparently ignore the "...<max>" part.
+cmake_minimum_required(VERSION 3.5...3.15 FATAL_ERROR)
 
-# CMake 2.8.8 introduced CMAKE_CXX_COMPILER_VERSION.
-cmake_minimum_required(VERSION 2.8.8 FATAL_ERROR)
+# Set the minimum macOS version we support.
+# We select 10.9 because Apple is removing support for libstdc++ (the default prior to 10.9) in favour of libc++ (C++11).
+# Note that this needs to be set before project() and must be a cache variable (avoids project() overwriting it).
+set(CMAKE_OSX_DEPLOYMENT_TARGET 10.9 CACHE STRING "Minimum macOS deployment version")
 
-# Where to find our CMake modules (this variable is visible in subdirectories).
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")
+# The GPlates version goes here.
+project(GPlates VERSION 2.2.0 LANGUAGES C CXX)
 
+# Where to find our CMake modules.
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
+
+#
 # Include configuration options (default options and options overridden by user).
-include (ConfigCMake)
+#
+include (ConfigDefault)
 
 #
-# CMake policies give the choice of OLD (backwards compatible) or NEW (non-backwards compatible) behaviour
-# when a version of CMake newer than specified in 'cmake_minimum_required()' above is used.
-# CMake states that ultimately all policies should specify NEW with OLD being a temporary solution.
+# Add new custom build configurations (ProfileGprof and ProfileGplates) to
+# existing Debug/Release/RelWithDebInfo/MinSizeRel configurations.
 #
-include (Policies)
+include (CustomBuildConfigs)
 
 #
 # Recurse into source code directory.

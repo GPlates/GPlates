@@ -189,7 +189,7 @@ GPlatesOpenGL::GLVisualRasterSource::load_tile(
 		if (!raster_texture)
 		{
 			raster_texture = raster_volatile_texture->set_cached_object(
-					GLTexture::create_as_auto_ptr(renderer));
+					GLTexture::create_as_unique_ptr(renderer));
 
 			// The texture was just allocated so we need to create it in OpenGL.
 			create_tile_texture(renderer, raster_texture);

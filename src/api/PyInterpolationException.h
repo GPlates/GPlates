@@ -31,8 +31,6 @@
 #include "global/PreconditionViolationError.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	/**
@@ -77,7 +75,5 @@ namespace GPlatesApi
 		QString d_message;
 	};
 }
-
-#endif   // GPLATES_NO_PYTHON
 
 #endif // GPLATES_API_PYINTERPOLATIONEXCEPTION_H

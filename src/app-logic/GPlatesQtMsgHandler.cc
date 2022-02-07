@@ -38,7 +38,7 @@
 
 #include "utils/Environment.h"
 
-QtMsgHandler GPlatesAppLogic::GPlatesQtMsgHandler::s_prev_msg_handler = NULL;
+QtMessageHandler GPlatesAppLogic::GPlatesQtMsgHandler::s_prev_msg_handler = NULL;
 
 
 GPlatesAppLogic::GPlatesQtMsgHandler::GPlatesQtMsgHandler()
@@ -48,7 +48,7 @@ GPlatesAppLogic::GPlatesQtMsgHandler::GPlatesQtMsgHandler()
 GPlatesAppLogic::GPlatesQtMsgHandler::~GPlatesQtMsgHandler()
 {
 	// Reinstall the previous message handler.
-	qInstallMsgHandler(s_prev_msg_handler);
+	qInstallMessageHandler(s_prev_msg_handler);
 }
 
 
@@ -79,12 +79,8 @@ GPlatesAppLogic::GPlatesQtMsgHandler::install_qt_message_handler(
 		qWarning() << "Failed to install message handler because" << e.filename() << "cannot be opened for writing.";
 	}
 
-	// Set up a LogToFile handler for STDERR to compensate for the default output handler being removed.
-	instance().add_handler(boost::shared_ptr<MessageHandler>(
-			new GPlatesFileIO::LogToFileHandler(stderr)));
-
 	// Install our message handler and keep track of the previous message handler.
-	s_prev_msg_handler = qInstallMsgHandler(qt_message_handler);
+	s_prev_msg_handler = qInstallMessageHandler(qt_message_handler);
 }
 
 
@@ -109,15 +105,16 @@ GPlatesAppLogic::GPlatesQtMsgHandler::should_install_message_handler()
 void
 GPlatesAppLogic::GPlatesQtMsgHandler::qt_message_handler(
 		QtMsgType msg_type,
-		const char * msg)
+		const QMessageLogContext &context,
+		const QString &msg)
 {
 	// Delegate message handling to our MessageHandlers.
-	instance().handle_qt_message(msg_type, msg);
+	instance().handle_qt_message(msg_type, context, msg);
 
 	// Call the original Qt message handler if there is one.
 	if (s_prev_msg_handler)
 	{
-		s_prev_msg_handler(msg_type, msg);
+		s_prev_msg_handler(msg_type, context, msg);
 	}
 }
 
@@ -157,13 +154,14 @@ GPlatesAppLogic::GPlatesQtMsgHandler::remove_handler(
 void
 GPlatesAppLogic::GPlatesQtMsgHandler::handle_qt_message(
 		QtMsgType msg_type,
-		const char *msg)
+		const QMessageLogContext &context,
+		const QString &msg)
 {
 	BOOST_FOREACH(boost::shared_ptr<MessageHandler> handler, d_message_handler_list)
 	{
 		if (handler)
 		{
-			handler->handle_qt_message(msg_type, msg);
+			handler->handle_qt_message(msg_type, context, msg);
 		}
 	}
 }

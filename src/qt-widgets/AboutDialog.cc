@@ -26,8 +26,8 @@
 #include "AboutDialog.h"
 #include "LicenseDialog.h"
 
-#include "global/Constants.h"  // the copyright string macro
-#include "global/SubversionInfo.h"
+#include "global/License.h"  // the copyright string macro
+#include "global/Version.h"
 
 #include "gui/Dialogs.h"
 
@@ -49,12 +49,12 @@ GPlatesQtWidgets::AboutDialog::AboutDialog(
 			&dialogs, SLOT(pop_up_license_dialog()));
 
 	// Set GPlates version label text.
-	QString version(QObject::tr(GPlatesGlobal::VersionString));
+	QString version(QObject::tr(GPlatesGlobal::Version::get_GPlates_version().toLatin1().constData()));
 	label_GPlates->setText(version);
 
 	// Set Subversion info label text.
-	QString subversion_version_number = GPlatesGlobal::SubversionInfo::get_working_copy_version_number();
-	QString subversion_branch_name = GPlatesGlobal::SubversionInfo::get_working_copy_branch_name();
+	QString subversion_version_number = GPlatesGlobal::Version::get_working_copy_version_number();
+	QString subversion_branch_name = GPlatesGlobal::Version::get_working_copy_branch_name();
 	if (subversion_version_number.isEmpty())
 	{
 		if (subversion_branch_name.isEmpty())
@@ -88,6 +88,6 @@ GPlatesQtWidgets::AboutDialog::AboutDialog(
 	label_GPGIM_version->setText(QString("GPlates Geological Information Model: %1").arg(gpgim_version_string));
 
 	// Set contents of copyright box.
-	QString copyright(QObject::tr(GPlatesGlobal::HtmlCopyrightString));
+	QString copyright(QObject::tr(GPlatesGlobal::License::get_html_copyright_string().toLatin1().constData()));
 	text_Copyright->setHtml(copyright);
 }

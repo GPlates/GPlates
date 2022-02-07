@@ -265,15 +265,17 @@ namespace
 					points_pair_2.push_back(d_points_on_edge_2_3[j]);
 					points_pair_2.push_back(d_points_on_edge_4_1[d_points_on_edge_2_3.size()-j-1]);
 
-					boost::shared_ptr<const GPlatesMaths::PolylineIntersections::Graph> intersection=
-							GPlatesMaths::PolylineIntersections::partition_intersecting_geometries(
-									*GPlatesMaths::PolylineOnSphere::create_on_heap(points_pair_1),
-									*GPlatesMaths::PolylineOnSphere::create_on_heap(points_pair_2));
-				
-					if(intersection)
+					GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type line_1 =
+							GPlatesMaths::PolylineOnSphere::create_on_heap(points_pair_1);
+					GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type line_2 =
+							GPlatesMaths::PolylineOnSphere::create_on_heap(points_pair_2);
+
+					GPlatesMaths::PolylineIntersections::Graph intersection_graph;
+					if (GPlatesMaths::PolylineIntersections::partition(intersection_graph, *line_1, *line_2))
 					{
 						d_intersections.push_back(
-								intersection->intersections[0]->intersection_point);
+								// There should only be one intersection...
+								intersection_graph.unordered_intersections[0]->intersection_point);
 					}
 			}
 		}

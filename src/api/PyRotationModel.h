@@ -48,8 +48,6 @@
 #include "utils/ReferenceCount.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	/**
@@ -78,61 +76,92 @@ namespace GPlatesApi
 		 * Alternatively you can just use boost::python::extract<RotationModel::non_null_ptr_type>()
 		 * on any python object satisfying FeatureCollectionSequenceFunctionArgument::is_convertible().
 		 *
-		 * If @a clone_rotation_features is true then the rotation features are first cloned
-		 * internally. This ensures any subsequent modifications to the original features will not affect
-		 * any subsequently generated reconstruction trees. This is not necessary if you know the original
-		 * feature collections will not be modified during the scope of the returned RotationModel.
+		 * If @a extend_total_reconstruction_poles_to_distant_past is true then each moving plate
+		 * sequence is extended back to the distant past such that any @a ReconstructionTree objects
+		 * created from the @a ReconstructionGraph will not cause reconstructed geometries to snap
+		 * back to their present day positions. See @a GPlatesAppLogic::create_reconstruction_graph for more details.
+		 *
+		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and
+		 * @a get_rotation do not specify their 'anchor_plate_id' parameter.
 		 */
 		static
 		non_null_ptr_type
 		create(
 				const FeatureCollectionSequenceFunctionArgument &rotation_features,
 				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
-				bool clone_rotation_features = true);
+				bool extend_total_reconstruction_poles_to_distant_past = false,
+				GPlatesModel::integer_plate_id_type default_anchor_plate_id = 0);
 
 
 		/**
 		 * Create a rotation model (from a sequence of rotation feature collection files) that will cache
 		 * reconstruction trees up to a cache size of @a reconstruction_tree_cache_size.
+		 *
+		 * If @a extend_total_reconstruction_poles_to_distant_past is true then each moving plate
+		 * sequence is extended back to the distant past such that any @a ReconstructionTree objects
+		 * created from the @a ReconstructionGraph will not cause reconstructed geometries to snap
+		 * back to their present day positions. See @a GPlatesAppLogic::create_reconstruction_graph for more details.
+		 *
+		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and
+		 * @a get_rotation do not specify their 'anchor_plate_id' parameter.
 		 */
 		static
 		non_null_ptr_type
 		create(
 				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &rotation_features,
 				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
-				bool clone_rotation_features = true);
+				bool extend_total_reconstruction_poles_to_distant_past = false,
+				GPlatesModel::integer_plate_id_type default_anchor_plate_id = 0);
 
 
 		/**
 		 * Create a rotation model (from a sequence of rotation feature collections) that will cache
 		 * reconstruction trees up to a cache size of @a reconstruction_tree_cache_size.
+		 *
+		 * If @a extend_total_reconstruction_poles_to_distant_past is true then each moving plate
+		 * sequence is extended back to the distant past such that any @a ReconstructionTree objects
+		 * created from the @a ReconstructionGraph will not cause reconstructed geometries to snap
+		 * back to their present day positions. See @a GPlatesAppLogic::create_reconstruction_graph for more details.
+		 *
+		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and
+		 * @a get_rotation do not specify their 'anchor_plate_id' parameter.
 		 */
 		static
 		non_null_ptr_type
 		create(
 				const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &rotation_features,
 				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
-				bool clone_rotation_features = true);
+				bool extend_total_reconstruction_poles_to_distant_past = false,
+				GPlatesModel::integer_plate_id_type default_anchor_plate_id = 0);
 	
 
+		/**
+		 * Create a reconstruction tree at the specified time.
+		 *
+		 * If @a anchor_plate_id is not specified then the anchor plate used is the 'default_anchor_plate_id'
+		 * specified in @a create.
+		 */
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type
 		get_reconstruction_tree(
 				const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
-				GPlatesModel::integer_plate_id_type anchor_plate_id);
+				boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id);
 
 
 		/**
 		 * Handle the four combinations of total/stage and equivalent/relative rotations in one place.
 		 *
 		 * If @a fixed_plate_id is none then it is set to @a anchor_plate_id.
+		 *
+		 * If @a anchor_plate_id is none then the anchor plate used is the 'default_anchor_plate_id'
+		 * specified in @a create (and also used for @a fixed_plate_id if it's none).
 		 */
 		boost::optional<GPlatesMaths::FiniteRotation>
 		get_rotation(
 				const GPlatesPropertyValues::GeoTimeInstant &to_time,
 				GPlatesModel::integer_plate_id_type moving_plate_id,
-				const GPlatesPropertyValues::GeoTimeInstant &from_time,
+				boost::optional<GPlatesPropertyValues::GeoTimeInstant> from_time,
 				boost::optional<GPlatesModel::integer_plate_id_type> fixed_plate_id,
-				GPlatesModel::integer_plate_id_type anchor_plate_id,
+				boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
 				bool use_identity_for_missing_plate_ids);
 
 
@@ -249,7 +278,5 @@ namespace GPlatesApi
 		RotationModel::non_null_ptr_type d_rotation_model;
 	};
 }
-
-#endif   // GPLATES_NO_PYTHON
 
 #endif // GPLATES_API_PYROTATIONMODEL_H

@@ -328,7 +328,7 @@ GPlatesQtWidgets::RemappedColourPaletteWidget::handle_min_line_editing_finished(
 	double value = min_line_edit->validator()->locale().toDouble(text, &ok);
 	if (!ok)
 	{
-		// It appears QString::toDouble() only uses C locale despite its documentation.
+		// QString::toDouble() only uses C locale.
 		value = text.toDouble(&ok);
 	}
 
@@ -349,7 +349,7 @@ GPlatesQtWidgets::RemappedColourPaletteWidget::handle_max_line_editing_finished(
 	double value = max_line_edit->validator()->locale().toDouble(text, &ok);
 	if (!ok)
 	{
-		// It appears QString::toDouble() only uses C locale despite its documentation.
+		// QString::toDouble() only uses C locale.
 		value = text.toDouble(&ok);
 	}
 

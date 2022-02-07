@@ -23,35 +23,41 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+
 #include <QDebug>
-#include <QtAlgorithms>
 #include <QCoreApplication>
 #include <QSet>
 #include <QList>
 #include <QSettings>
+#include <QtGlobal>
 
 // For magic defaults:-
 #include <QDir>
-#include <QDesktopServices>
+#include <QNetworkProxyQuery>
+#include <QNetworkProxyFactory>
+#include <QNetworkProxy>
+#include <QStandardPaths>
+#include <QtNetwork>
 #include <QUrl>
-// Automatic proxy detection needs Qt 4.5, so using a conditional compile (see set_magic_defaults for more info)
-#if QT_VERSION >= 0x040500
-	#include <QNetworkProxyQuery>
-	#include <QNetworkProxyFactory>
-	#include <QNetworkProxy>
-#endif
+
 
 #include "UserPreferences.h"
 
-#include "global/Constants.h"
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+#include "global/Version.h"
 
 #include "utils/ConfigBundle.h"
 #include "utils/ConfigBundleUtils.h"
 #include "utils/NetworkUtils.h"
 #include "utils/Environment.h"
 
+//initialise static class memebers
+bool GPlatesAppLogic::UserPreferences::s_is_defaults_initialised = false;
+QSettings GPlatesAppLogic::UserPreferences::s_defaults(
+		":/DefaultPreferences.conf", 
+		QSettings::IniFormat);
 
 namespace
 {
@@ -69,9 +75,12 @@ namespace
 		// paths/python_user_script_dir :-
 		//
 		// Get the platform-specific "application user data" dir. Add "scripts/" to that.
-		//   Linux: ~/.local/share/data/GPlates/GPlates/
+		//   Linux: ~/.local/share/GPlates/GPlates/
 		//   Windows 7: C:/Users/*/AppData/Local/GPlates/GPlates/
-		QDir local_scripts_dir(QDesktopServices::storageLocation(QDesktopServices::DataLocation) + "/scripts/");
+		//
+		// NOTE: In Qt5, QStandardPaths::DataLocation (called QDesktopServices::DataLocation in Qt4)
+		// no longer has 'data/' in the path, so this may prevent user scripts from being found.
+		QDir local_scripts_dir(QStandardPaths::writableLocation(QStandardPaths::DataLocation) + "/scripts/");
 		defaults.setValue("paths/python_user_script_dir", QVariant(local_scripts_dir.absolutePath()));
 
 		// paths/python_system_script_dir :-
@@ -87,7 +96,7 @@ namespace
 		QDir app_scripts_dir(QCoreApplication::applicationDirPath() + "/../Resources/scripts/");
 		defaults.setValue("paths/python_system_script_dir", QVariant(app_scripts_dir.absolutePath()));
 
-#elif defined(Q_OS_WIN32)
+#elif defined(Q_OS_WIN)
 		// The Windows Installer should drop a scripts/ directory in whatever Program Files area the gplates.exe
 		// file lands in.
 		QDir progfile_scripts_dir(QCoreApplication::applicationDirPath() + "/scripts/");
@@ -103,13 +112,13 @@ namespace
 		//   Linux and OSX: ~/Documents/
 		defaults.setValue(
 				"paths/default_export_dir", 
-				QDir(QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation)).absolutePath());
+				QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)).absolutePath());
 		defaults.setValue(
-					"paths/default_feature_collection_dir",
-					QDir::currentPath());
+				"paths/default_feature_collection_dir",
+				QDir::currentPath());
 		defaults.setValue(
-					"paths/default_project_dir",
-					QDir(QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation)).absolutePath());
+				"paths/default_project_dir",
+				QDir(QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation)).absolutePath());
 
 
 		////////////////////////////////
@@ -133,16 +142,57 @@ namespace
 		defaults.setValue("net/proxy/url", "");
 		
 		// GPlates will use information from Qt where it can (OSX Frameworks and Win32 DLLs)
-#if QT_VERSION >= 0x040500
-		QNetworkProxyQuery network_proxy_query(QUrl("http://www.gplates.org"));
-		QList<QNetworkProxy> network_proxy_list = QNetworkProxyFactory::systemProxyForQuery(network_proxy_query);
+		QUrl gplates_url("http://www.gplates.org");
+
+		// The following code enclosed in the "#if defined(Q_OS_MAC)" preprocessor directive provides 
+		// a workaround for a bug on MacOS. The bug causes GPlates fails to launch under certain circumstance. 
+		// On MacOS, when the network interface appears active but in fact
+		// the computer does not have a valid network connection, the QNetworkProxyFactory::systemProxyForQuery() 
+		// function refuses to return and waits for a working network connection indefinitely. 
+		// In order to workaround the bug, we need to check the network availability
+		// on MacOS before calling QNetworkProxyFactory::systemProxyForQuery().
+		// The bug was reported by sabin.zahirovic@sydney.edu.au and verified independently by 
+		// michael.chin@sydney.edu.au.
+		// To reproduce the bug on MacOS:
+		// Step 1: make sure the network interface is active
+		// Step 2: enable "Auto Proxy Discovery"
+		// Step 3: make the network unavailable. There are several ways to complete this step. 
+		// 	 	   One simple way is to mess up your DNS setting. Or when practical, unplug the network cable 
+		// 		   on your Wi-Fi router.
+		// Without this workaround, GPlates will fail to launch and hang indefinitely during startup.
+		// With this workaround, GPlates will wait the "network timeout" and decide there is really
+		// no valid network connection, skip "proxy querying" and launch normally. 
+		// Although the startup will be slower than normal, GPlates will launch successfully eventually.
+		// Note: The finished() signal will be emitted immediately if the network interface is not active.
+		// GPlates will wait the "network timeout" only when the network seems active but in fact not really working.  
+#if defined(Q_OS_MAC)
+		QNetworkAccessManager nam;
+		QNetworkRequest req(gplates_url);
+		QNetworkReply* reply = nam.get(req);
+		QEventLoop loop;
+		QObject::connect(reply, SIGNAL(finished()), &loop, SLOT(quit()));
+		loop.exec();	
+		if (reply->error() == QNetworkReply::NoError){//network is good, go ahead
+#endif		
+			QNetworkProxyQuery network_proxy_query(gplates_url);
+			QList<QNetworkProxy> network_proxy_list = QNetworkProxyFactory::systemProxyForQuery(network_proxy_query);
 		
-		if (network_proxy_list.size() > 0) {
-			QUrl system_proxy_url = GPlatesUtils::NetworkUtils::get_url_for_proxy(network_proxy_list.first());
-			if (system_proxy_url.isValid() && ! system_proxy_url.host().isEmpty() && system_proxy_url.port() > 0) {
-				defaults.setValue("net/proxy/url", system_proxy_url);
+			if (network_proxy_list.size() > 0) {
+				QUrl system_proxy_url = GPlatesUtils::NetworkUtils::get_url_for_proxy(network_proxy_list.first());
+				if (system_proxy_url.isValid() && ! system_proxy_url.host().isEmpty() && system_proxy_url.port() > 0) {
+					defaults.setValue("net/proxy/url", system_proxy_url);
+				}
 			}
+#if defined(Q_OS_MAC)
+		}else{//network no good, skip network proxy query and print a warning message.
+			qWarning() << "No available network has been detected! Will not query network proxy.";
 		}
+		// Note: After the request has finished, it is the responsibility of the user to delete 
+		// the QNetworkReply object at an appropriate time. 
+		// Do not directly delete it inside the slot connected to finished(). 
+		// You can use the deleteLater() function.
+		// https://doc.qt.io/archives/qt-4.8/qnetworkaccessmanager.html#get
+		reply->deleteLater();
 #endif
 		
 		// GPlates will override that default with the "http_proxy" environment variable if it is set.
@@ -165,12 +215,11 @@ namespace
 
 GPlatesAppLogic::UserPreferences::UserPreferences(
 		QObject *_parent):
-	GPlatesUtils::ConfigInterface(_parent),
-	d_defaults(":/DefaultPreferences.conf", QSettings::IniFormat)
+	GPlatesUtils::ConfigInterface(_parent)
 {
 	// Initialise names used to identify our settings and paths in the OS.
 	// DO NOT CHANGE THESE VALUES without due consideration to the breaking of previously used
-	// QDesktopServices paths and preference settings.
+	// QStandardPaths paths and preference settings.
 	QCoreApplication::setOrganizationName("GPlates");
 	QCoreApplication::setOrganizationDomain("gplates.org");
 	QCoreApplication::setApplicationName("GPlates");
@@ -178,9 +227,13 @@ GPlatesAppLogic::UserPreferences::UserPreferences(
 	initialise_versioning();
 	store_executable_path();
 	
-	// Set some default values that cannot be hardcoded, but are instead generated
+	// Set some default values that cannot be hard-coded, but are instead generated
 	// at runtime.
-	set_magic_defaults(d_defaults);
+	if( !s_is_defaults_initialised )//ensure the "s_defaults" will not be initialised more than once
+	{
+		set_magic_defaults(s_defaults);
+		s_is_defaults_initialised = true;
+	}
 }
 
 
@@ -231,7 +284,7 @@ GPlatesAppLogic::UserPreferences::get_default_value(
 		const QString &key) const
 {
 	if (default_exists(key)) {
-		return d_defaults.value(key);
+		return s_defaults.value(key);
 	} else {
 		return QVariant();
 	}
@@ -258,7 +311,7 @@ bool
 GPlatesAppLogic::UserPreferences::default_exists(
 		const QString &key) const
 {
-	return d_defaults.contains(key);
+	return s_defaults.contains(key);
 }
 
 
@@ -351,16 +404,16 @@ GPlatesAppLogic::UserPreferences::subkeys(
 	settings.endGroup();
 	
 	// and the compiled-in default keys,
-	d_defaults.beginGroup(prefix);
-	QSet<QString> keys_default = d_defaults.allKeys().toSet();
-	d_defaults.endGroup();
+	s_defaults.beginGroup(prefix);
+	QSet<QString> keys_default = s_defaults.allKeys().toSet();
+	s_defaults.endGroup();
 
 	// and merge them together to get the full list of possible keys.
 	keys.unite(keys_default);
 
 	// And for presentation purposes it would be nice to get that sorted.
 	QStringList list = keys.toList();
-	qSort(list);
+	std::sort(list.begin(), list.end());
 	return list;
 }
 
@@ -459,7 +512,7 @@ GPlatesAppLogic::UserPreferences::debug_file_locations()
 	qDebug() << "User/Org:" << settings_user_org.fileName();
 	qDebug() << "System/App:" << settings_system_app.fileName();
 	qDebug() << "System/Org:" << settings_system_org.fileName();
-	qDebug() << "GPlates Defaults:" << d_defaults.fileName();
+	qDebug() << "GPlates Defaults:" << s_defaults.fileName();
 }
 
 void
@@ -489,7 +542,7 @@ GPlatesAppLogic::UserPreferences::initialise_versioning()
 	// FIXME: Ideally this should not overwrite if existing version >= current version,
 	// and also trigger version upgrade or version sandbox as appropriate...
 	// ... which we may not get around to implementing.
-	raw_settings.setValue("version/current", GPlatesGlobal::VersionString);
+	raw_settings.setValue("version/current", GPlatesGlobal::Version::get_GPlates_version());
 }
 
 void

@@ -145,6 +145,14 @@ GPlatesGui::ExportCitcomsResolvedTopologyAnimationStrategy::do_export_iteration(
 	// Assemble parts of this iteration's filename from the template filename sequence.
 	QString output_filebasename = *filename_it++;
 
+	// All that's really expected of us at this point is maybe updating
+	// the dialog status message, then calculating what we want to calculate,
+	// and writing whatever file we feel like writing.
+	d_export_animation_context_ptr->update_status_message(
+			QObject::tr("Writing resolved topologies at frame %2 to \"%1\"...")
+			.arg(output_filebasename)
+			.arg(frame_index) );
+
 	//
 	// Here's where we would do the actual exporting of the resolved topologies.
 	// The View is already set to the appropriate reconstruction time for
@@ -191,8 +199,30 @@ GPlatesGui::ExportCitcomsResolvedTopologyAnimationStrategy::do_export_iteration(
 			resolved_topological_networks.end(),
 			std::back_inserter(resolved_topological_geometries));
 
-	// Export the various files.
-	export_files(resolved_topological_geometries, reconstruction_time, output_filebasename);
+
+	// Here's where we do the actual work of exporting of the resolved topologies,
+	// given frame_index, filename, reconstructable files and geoms, and target_dir. Etc.
+	try
+	{
+		// Export the various files.
+		export_files(resolved_topological_geometries, reconstruction_time, output_filebasename);
+	}
+	catch (std::exception &exc)
+	{
+		d_export_animation_context_ptr->update_status_message(
+			QObject::tr("Error writing resolved topological geometries\"%1\": %2")
+					.arg(output_filebasename)
+					.arg(exc.what()));
+		return false;
+	}
+	catch (...)
+	{
+		// FIXME: Catch all proper exceptions we might get here.
+		d_export_animation_context_ptr->update_status_message(
+			QObject::tr("Error writing resolved topological geometries \"%1\": unknown error!")
+					.arg(output_filebasename));
+		return false;
+	}
 	
 	// Normal exit, all good, ask the Context to process the next iteration please.
 	return true;

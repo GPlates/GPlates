@@ -26,7 +26,6 @@
 #ifndef GPLATES_OPENGL_GLMULTIRESOLUTIONCUBERASTERINTERFACE_H
 #define GPLATES_OPENGL_GLMULTIRESOLUTIONCUBERASTERINTERFACE_H
 
-#include <cstddef> // For std::size_t
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -185,6 +184,12 @@ namespace GPlatesOpenGL
 		 * central meridian used in the map-projections (for the 2D map view as opposed to 3D globe view).
 		 *
 		 * The initial (default) transform is the identity transform.
+		 *
+		 * NOTE: This can invalidate the quad tree nodes (@a quad_tree_node_type) if the transform is different.
+		 *       Currently this is the case for derived class @a GLMultiResolutionCubeRaster.
+		 *       This shouldn't matter as long as you don't call @a set_world_transform in the middle of a cube quad tree traversal.
+		 *       Typically you'd start a fresh traversal at the top by calling @a get_quad_tree_root_node for each cube face
+		 *       after calling @a set_world_transform.
 		 */
 		virtual
 		void
@@ -229,7 +234,7 @@ namespace GPlatesOpenGL
 		 * Returns the tile texel dimension passed into constructor.
 		 */
 		virtual
-		std::size_t
+		unsigned int
 		get_tile_texel_dimension() const = 0;
 
 

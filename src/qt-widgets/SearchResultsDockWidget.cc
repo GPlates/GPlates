@@ -70,7 +70,7 @@ GPlatesQtWidgets::SearchResultsDockWidget::set_up_clicked_geometries_table()
 	tree_view_clicked_geometries->setModel(&d_clicked_feature_table_model);
 	GPlatesGui::FeatureTableModel::set_default_resize_modes(*tree_view_clicked_geometries->header());
 	tree_view_clicked_geometries->header()->setMinimumSectionSize(60);
-	tree_view_clicked_geometries->header()->setMovable(true);
+	tree_view_clicked_geometries->header()->setSectionsMovable(true);
 }
 
 

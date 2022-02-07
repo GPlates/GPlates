@@ -114,8 +114,8 @@ GPlatesQtWidgets::ExportAnimationDialog::ExportAnimationDialog(
 
 	for (int i = 0; i != 2; ++i)
 	{
-		tableWidget_range->horizontalHeader()->setResizeMode(i, QHeaderView::ResizeToContents);
-		tableWidget_single->horizontalHeader()->setResizeMode(i, QHeaderView::ResizeToContents);
+		tableWidget_range->horizontalHeader()->setSectionResizeMode(i, QHeaderView::ResizeToContents);
+		tableWidget_single->horizontalHeader()->setSectionResizeMode(i, QHeaderView::ResizeToContents);
 	}
 	tableWidget_range->horizontalHeader()->setStretchLastSection(true);
 	tableWidget_single->horizontalHeader()->setStretchLastSection(true);

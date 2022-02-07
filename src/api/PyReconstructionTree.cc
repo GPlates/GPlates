@@ -43,9 +43,9 @@
 #include "global/python.h"
 
 #include "app-logic/ReconstructionGraph.h"
+#include "app-logic/ReconstructionGraphBuilder.h"
 #include "app-logic/ReconstructionTree.h"
 #include "app-logic/ReconstructionTreeCreator.h"
-#include "app-logic/ReconstructionTreeEdge.h"
 
 #include "maths/MathsUtils.h"
 
@@ -54,8 +54,6 @@
 
 #include "property-values/GeoTimeInstant.h"
 
-
-#if !defined(GPLATES_NO_PYTHON)
 
 namespace bp = boost::python;
 
@@ -75,7 +73,7 @@ namespace GPlatesApi
 
 		ReconstructionTreeEdge(
 				GPlatesAppLogic::ReconstructionTree::non_null_ptr_type reconstruction_tree,
-				GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge) :
+				const GPlatesAppLogic::ReconstructionTree::Edge &edge) :
 			d_reconstruction_tree(reconstruction_tree),
 			d_edge(edge)
 		{  }
@@ -83,25 +81,25 @@ namespace GPlatesApi
 		GPlatesModel::integer_plate_id_type
 		get_fixed_plate_id() const
 		{
-			return d_edge->fixed_plate();
+			return d_edge.get_fixed_plate();
 		}
 
 		GPlatesModel::integer_plate_id_type
 		get_moving_plate_id() const
 		{
-			return d_edge->moving_plate();
+			return d_edge.get_moving_plate();
 		}
 
 		const GPlatesMaths::FiniteRotation &
 		get_relative_total_rotation() const
 		{
-			return d_edge->relative_rotation();
+			return d_edge.get_relative_rotation();
 		}
 
 		const GPlatesMaths::FiniteRotation &
 		get_equivalent_total_rotation() const
 		{
-			return d_edge->composed_absolute_rotation();
+			return d_edge.get_composed_absolute_rotation();
 		}
 
 		// Helper methods...
@@ -112,7 +110,7 @@ namespace GPlatesApi
 			return d_reconstruction_tree;
 		}
 
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type
+		const GPlatesAppLogic::ReconstructionTree::Edge &
 		get_edge() const
 		{
 			return d_edge;
@@ -122,8 +120,8 @@ namespace GPlatesApi
 		// Keep the reconstruction tree alive while we're referencing it so not left with dangling pointer.
 		GPlatesAppLogic::ReconstructionTree::non_null_ptr_type d_reconstruction_tree;
 
-		// The edge (also owned by the reconstruction tree).
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type d_edge;
+		// The edge (owned by the reconstruction tree).
+		const GPlatesAppLogic::ReconstructionTree::Edge &d_edge;
 	};
 
 
@@ -139,7 +137,7 @@ namespace GPlatesApi
 	template <
 			class EdgeIteratorType,
 			// Nontype template parameter is a function pointer that takes an iterator and returns an edge...
-			GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type
+			const GPlatesAppLogic::ReconstructionTree::Edge &
 					(*edge_from_iterator_unary_func)(EdgeIteratorType)>
 	class ReconstructionTreeEdgeSequenceView
 	{
@@ -158,7 +156,7 @@ namespace GPlatesApi
 
 		/**
 		 * We don't use bp::iterator because we need to convert
-		 * 'GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type' to its equivalent wrapper
+		 * 'const GPlatesAppLogic::ReconstructionTree::Edge &' to its equivalent wrapper
 		 * 'GPlatesApi::ReconstructionTreeEdge'.
 		 */
 		class Iterator
@@ -189,7 +187,7 @@ namespace GPlatesApi
 					boost::python::throw_error_already_set();
 				}
 
-				GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge =
+				const GPlatesAppLogic::ReconstructionTree::Edge &edge =
 						edge_from_iterator_unary_func(d_edges_iter);
 				++d_edges_iter;
 				return ReconstructionTreeEdge(d_reconstruction_tree, edge);
@@ -245,7 +243,7 @@ namespace GPlatesApi
 
 				EdgeIteratorType iter = d_edges_begin;
 				std::advance(iter, index);
-				GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge =
+				const GPlatesAppLogic::ReconstructionTree::Edge &edge =
 						edge_from_iterator_unary_func(iter);
 
 				return bp::object(ReconstructionTreeEdge(d_reconstruction_tree, edge));
@@ -270,7 +268,7 @@ namespace GPlatesApi
 
 
 	template <typename IteratorType>
-	GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type
+	const GPlatesAppLogic::ReconstructionTree::Edge &
 	edge_from_vector_iterator(
 			IteratorType iter)
 	{
@@ -279,23 +277,23 @@ namespace GPlatesApi
 
 	//! Typedef for reconstruction tree edge *vector* sequence view.
 	typedef ReconstructionTreeEdgeSequenceView<
-			GPlatesAppLogic::ReconstructionTreeEdge::edge_collection_type::const_iterator,
-			&edge_from_vector_iterator<GPlatesAppLogic::ReconstructionTreeEdge::edge_collection_type::const_iterator> >
+			GPlatesAppLogic::ReconstructionTree::edge_list_type::const_iterator,
+			&edge_from_vector_iterator<GPlatesAppLogic::ReconstructionTree::edge_list_type::const_iterator> >
 					reconstruction_tree_edge_vector_view_type;
 
 
 	template <typename IteratorType>
-	GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type
+	const GPlatesAppLogic::ReconstructionTree::Edge &
 	edge_from_map_iterator(
 			IteratorType iter)
 	{
-		return iter->second;
+		return *iter->second;
 	}
 
 	//! Typedef for reconstruction tree edge *map* sequence view.
 	typedef ReconstructionTreeEdgeSequenceView<
-			GPlatesAppLogic::ReconstructionTree::edge_refs_by_plate_id_map_const_iterator,
-			&edge_from_map_iterator<GPlatesAppLogic::ReconstructionTree::edge_refs_by_plate_id_map_const_iterator> >
+			GPlatesAppLogic::ReconstructionTree::edge_map_type::const_iterator,
+			&edge_from_map_iterator<GPlatesAppLogic::ReconstructionTree::edge_map_type::const_iterator> >
 					reconstruction_tree_edge_map_view_type;
 
 
@@ -304,14 +302,14 @@ namespace GPlatesApi
 	reconstruction_tree_edge_get_parent_edge(
 			const ReconstructionTreeEdge &reconstruction_tree_edge)
 	{
-		GPlatesAppLogic::ReconstructionTreeEdge *parent_edge =
-				reconstruction_tree_edge.get_edge()->parent_edge();
+		const GPlatesAppLogic::ReconstructionTree::Edge *parent_edge =
+				reconstruction_tree_edge.get_edge().get_parent_edge();
 		if (parent_edge == NULL)
 		{
 			return boost::none;
 		}
 
-		return ReconstructionTreeEdge(reconstruction_tree_edge.get_reconstruction_tree(), parent_edge);
+		return ReconstructionTreeEdge(reconstruction_tree_edge.get_reconstruction_tree(), *parent_edge);
 	}
 
 	// This function moved out of class ReconstructionTreeEdge due to cyclic dependency.
@@ -321,13 +319,18 @@ namespace GPlatesApi
 	{
 		return reconstruction_tree_edge_vector_view_type(
 				reconstruction_tree_edge.get_reconstruction_tree(),
-				reconstruction_tree_edge.get_edge()->children_in_built_tree().begin(),
-				reconstruction_tree_edge.get_edge()->children_in_built_tree().end());
+				reconstruction_tree_edge.get_edge().get_child_edges().begin(),
+				reconstruction_tree_edge.get_edge().get_child_edges().end());
 	}
 
 
+	/**
+	 * DEPRECATED - Creating a ReconstructionTree directly from rotation features is now deprecated.
+	 *              We'll still allow it but it is no longer documented.
+	 *              It is recommended users create ReconstructionTree's using a RotationModel.
+	 */
 	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_type
-	reconstruction_tree_create(
+	deprecated_reconstruction_tree_create(
 			const FeatureCollectionSequenceFunctionArgument &rotation_features,
 			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 			GPlatesModel::integer_plate_id_type anchor_plate_id = 0)
@@ -351,18 +354,19 @@ namespace GPlatesApi
 			feature_collection_refs.push_back(feature_collection->reference());
 		}
 
-		// NOTE: Since the feature collections are stored in the reconstruction tree as weak refs
-		// it's possible that the caller will not keep the feature collections alive (eg, they get
-		// garbage collected if caller no longer has references to them) in which case the weak
-		// references stored in the reconstruction tree will become invalid. However currently this
-		// is not a problem because we don't use them or expose them to the python user in any way.
-		//
-		// In fact the whole idea of storing weak refs in the reconstruction tree is debatable.
+		// Normally we wouldn't create a ReconstructionGraph each time a ReconstructionTree is created
+		// (because a single ReconstructionGraph can create many ReconstructionTree's at different times).
+		// However this is a deprecated function, so users should plan to stop using it
+		// (in favour of RotationModel.get_reconstruction_tree()).
+		const GPlatesAppLogic::ReconstructionGraph::non_null_ptr_to_const_type reconstruction_graph =
+				GPlatesAppLogic::create_reconstruction_graph(
+						feature_collection_refs,
+						false/*extend_total_reconstruction_poles_to_distant_past*/);
 
-		return GPlatesAppLogic::create_reconstruction_tree(
+		return GPlatesAppLogic::ReconstructionTree::create(
+				reconstruction_graph,
 				reconstruction_time.value(),
-				anchor_plate_id,
-				feature_collection_refs);
+				anchor_plate_id);
 	}
 
 	boost::optional<ReconstructionTreeEdge>
@@ -370,16 +374,15 @@ namespace GPlatesApi
 			GPlatesAppLogic::ReconstructionTree::non_null_ptr_type reconstruction_tree,
 			GPlatesModel::integer_plate_id_type moving_plate_id)
 	{
-		GPlatesAppLogic::ReconstructionTree::edge_refs_by_plate_id_map_range_type range =
-				reconstruction_tree->find_edges_whose_moving_plate_id_match(moving_plate_id);
-		if (range.first == range.second)
+		const GPlatesAppLogic::ReconstructionTree::edge_map_type &all_edges = reconstruction_tree->get_all_edges();
+		GPlatesAppLogic::ReconstructionTree::edge_map_type::const_iterator edge_iter = all_edges.find(moving_plate_id);
+		if (edge_iter == all_edges.end())
 		{
-			// No matches.
+			// No match.
 			return boost::none;
 		}
 
-		// Return first match if more than one match.
-		GPlatesAppLogic::ReconstructionTreeEdge::non_null_ptr_type edge = range.first->second;
+		const GPlatesAppLogic::ReconstructionTree::Edge &edge = *edge_iter->second;
 		return ReconstructionTreeEdge(reconstruction_tree, edge);
 	}
 
@@ -389,8 +392,8 @@ namespace GPlatesApi
 	{
 		return reconstruction_tree_edge_map_view_type(
 				reconstruction_tree,
-				reconstruction_tree->edge_map_begin(),
-				reconstruction_tree->edge_map_end());
+				reconstruction_tree->get_all_edges().begin(),
+				reconstruction_tree->get_all_edges().end());
 	}
 
 	reconstruction_tree_edge_vector_view_type
@@ -399,8 +402,8 @@ namespace GPlatesApi
 	{
 		return reconstruction_tree_edge_vector_view_type(
 				reconstruction_tree,
-				reconstruction_tree->rootmost_edges_begin(),
-				reconstruction_tree->rootmost_edges_end());
+				reconstruction_tree->get_anchor_plate_edges().begin(),
+				reconstruction_tree->get_anchor_plate_edges().end());
 	}
 
 	boost::optional<GPlatesMaths::FiniteRotation>
@@ -409,23 +412,19 @@ namespace GPlatesApi
 			GPlatesModel::integer_plate_id_type moving_plate_id,
 			bool use_identity_for_missing_plate_ids)
 	{
-		const std::pair<
-				GPlatesMaths::FiniteRotation,
-				GPlatesAppLogic::ReconstructionTree::ReconstructionCircumstance> result =
-						reconstruction_tree.get_composed_absolute_rotation(moving_plate_id);
-		if (result.second == GPlatesAppLogic::ReconstructionTree::NoPlateIdMatchesFound)
+		const boost::optional<GPlatesMaths::FiniteRotation> finite_rotation =
+				reconstruction_tree.get_composed_absolute_rotation_or_none(moving_plate_id);
+		if (!finite_rotation)
 		{
 			if (use_identity_for_missing_plate_ids)
 			{
-				// It's already an identity rotation.
-				return result.first;
+				return GPlatesMaths::FiniteRotation::create_identity_rotation();
 			}
 
 			return boost::none;
 		}
 
-		// Currently ignoring difference between 'one' and 'one or more' moving plate id matches.
-		return result.first;
+		return finite_rotation.get();
 	}
 
 	boost::optional<GPlatesMaths::FiniteRotation>
@@ -603,25 +602,41 @@ namespace GPlatesApi
 						moving_plate_from_rotation.get())));
 	}
 
+
+	//
+	// Class ReconstructionTreeBuilder is now DEPRECATED - see comment at bp::class_ below (for reasons why).
+	//
+
 	void
-	reconstruction_tree_builder_insert_total_reconstruction_pole(
-			GPlatesAppLogic::ReconstructionGraph &reconstruction_graph,
+	deprecated_reconstruction_tree_builder_insert_total_reconstruction_pole(
+			GPlatesAppLogic::ReconstructionGraphBuilder &reconstruction_graph_builder,
 			GPlatesModel::integer_plate_id_type fixed_plate_id,
 			GPlatesModel::integer_plate_id_type moving_plate_id,
 			const GPlatesMaths::FiniteRotation &total_reconstruction_pole)
 	{
-		// We'll just say the finite rotation was always interpolated - currently this is only used
-		// for display in dialogs.
-		reconstruction_graph.insert_total_reconstruction_pole(
+		// We only have a total reconstruction pole at a particular reconstruction time
+		// (and we don't know that time), so create a sequence containing the same pole both
+		// infinitely far into the future and infinitely far in the distant past (this is now supported)
+		// such that any reconstruction time will return that pole (total rotation).
+		GPlatesAppLogic::ReconstructionGraphBuilder::total_reconstruction_pole_type total_reconstruction_sequence;
+		total_reconstruction_sequence.push_back(
+				GPlatesAppLogic::ReconstructionGraphBuilder::total_reconstruction_pole_time_sample_type(
+						GPlatesPropertyValues::GeoTimeInstant::create_distant_future(),
+						total_reconstruction_pole));
+		total_reconstruction_sequence.push_back(
+				GPlatesAppLogic::ReconstructionGraphBuilder::total_reconstruction_pole_time_sample_type(
+						GPlatesPropertyValues::GeoTimeInstant::create_distant_past(),
+						total_reconstruction_pole));
+
+		reconstruction_graph_builder.insert_total_reconstruction_sequence(
 				fixed_plate_id,
 				moving_plate_id,
-				total_reconstruction_pole,
-				true/*finite_rotation_was_interpolated*/);
+				total_reconstruction_sequence);
 	}
 
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_type
-	reconstruction_tree_builder_build_reconstruction_tree(
-			GPlatesAppLogic::ReconstructionGraph &reconstruction_graph,
+	deprecated_reconstruction_tree_builder_build_reconstruction_tree(
+			GPlatesAppLogic::ReconstructionGraphBuilder &reconstruction_graph_builder,
 			GPlatesModel::integer_plate_id_type anchor_plate_id,
 			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
 	{
@@ -631,19 +646,17 @@ namespace GPlatesApi
 				GPLATES_ASSERTION_SOURCE,
 				"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
 
-		// We don't specify any rotation feature collections because we don't want to require
-		// the user to have to specify where their total reconstruction poles came from.
-		// It could be that they didn't even come from features.
-		// We also don't have a method to retrieve those features from the reconstruction tree.
-		//
 		// FIXME: It's useful to specify the features used to build a tree (since can then
 		// build trees for different reconstruction times (as done by the ReconstructionTreeCreator)
 		// but it needs to be handled in a different way to account for the fact that poles can
 		// come from different sources (not just rotation features).
-		return reconstruction_graph.build_tree(
-				anchor_plate_id,
+		const GPlatesAppLogic::ReconstructionGraph::non_null_ptr_to_const_type reconstruction_graph =
+				reconstruction_graph_builder.build_graph();
+
+		return GPlatesAppLogic::ReconstructionTree::create(
+				reconstruction_graph,
 				reconstruction_time.value(),
-				std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref>()/*empty*/);
+				anchor_plate_id);
 	}
 }
 
@@ -740,58 +753,20 @@ export_reconstruction_tree()
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
+		// DEPRECATED - Creating a ReconstructionTree directly from rotation features is now deprecated.
+		//              We'll still allow it but it is no longer documented.
+		//              It is recommended users create ReconstructionTree's using a RotationModel...
 		.def("__init__",
 				bp::make_constructor(
-						&GPlatesApi::reconstruction_tree_create,
+						&GPlatesApi::deprecated_reconstruction_tree_create,
 						bp::default_call_policies(),
 						(bp::arg("rotation_features"),
 							bp::arg("reconstruction_time"),
 							bp::arg("anchor_plate_id") = 0)),
-				"__init__(rotation_features, reconstruction_time, [anchor_plate_id=0])\n"
-				"  Create a plate-reconstruction hierarchy at the specified reconstruction time "
-				"with *equivalent* rotations relative to the specified anchored plate.\n"
+				"__init__()\n"
 				"\n"
-				"  :param rotation_features: A rotation feature collection, or rotation filename, or "
-				"rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) "
-				"of any combination of those four types\n"
-				"  :type rotation_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
-				"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
-				"  :param reconstruction_time: the time at which to generate the reconstruction tree\n"
-				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
-				"  :param anchor_plate_id: the id of the anchored plate that *equivalent* rotations "
-				"are calculated with respect to\n"
-				"  :type anchor_plate_id: int\n"
-				"  :raises: InterpolationError if *reconstruction_time* is "
-				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
-				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
-				"\n"
-				"  Note that *rotation_features* can be a rotation :class:`FeatureCollection` or a "
-				"rotation filename or a rotation :class:`Feature` or a sequence of rotation :class:`features<Feature>`, "
-				"or a sequence (eg, ``list`` or ``tuple``) of any combination of those four types.\n"
-				"\n"
-				"  If any rotation filenames are specified then this method uses "
-				":class:`FeatureCollectionFileFormatRegistry` internally to read the rotation files.\n"
-				"\n"
-				"  .. note:: The anchored plate id can be any plate id (does not have to be zero). "
-				"All *equivalent* rotations are calculated relative to the *anchored* plate id.\n"
-				"\n"
-				"  This method essentially does the following:\n"
-				"  ::\n"
-				"\n"
-				"    def create_reconstruction_tree(rotation_features, reconstruction_time, anchor_plate_id):\n"
-				"        builder = pygplates.ReconstructionTreeBuilder()\n"
-				"        for rotation_feature in rotation_features:\n"
-				"            trp = rotation_feature.get_total_reconstruction_pole()\n"
-				"            if trp:\n"
-				"                fixed_plate_id, moving_plate_id, total_reconstruction_pole = trp\n"
-				"                interpolated_rotation = total_reconstruction_pole.get_value(reconstruction_time)\n"
-				"                if interpolated_rotation:\n"
-				"                    builder.insert_total_reconstruction_pole("
-				"fixed_plate_id, moving_plate_id, interpolated_rotation)\n"
-				"        return builder.build_reconstruction_tree(anchor_plate_id, reconstruction_time)\n"
-				"\n"
-				"  Note that the above example uses :class:`ReconstructionTreeBuilder` and "
-				":meth:`Feature.get_total_reconstruction_pole`\n")
+				"  .. deprecated:: 25\n"
+				"     Use :meth:`RotationModel.get_reconstruction_tree` instead.\n")
 		.def("get_equivalent_stage_rotation",
 				&GPlatesApi::get_equivalent_stage_rotation,
 				(bp::arg("from_reconstruction_tree"),
@@ -935,7 +910,6 @@ export_reconstruction_tree()
 		.staticmethod("get_relative_stage_rotation")
 		.def("get_reconstruction_time",
 				&GPlatesAppLogic::ReconstructionTree::get_reconstruction_time,
-				bp::return_value_policy<bp::copy_const_reference>(),
 				"get_reconstruction_time()\n"
 				"  Return the reconstruction time for which this *ReconstructionTree* was generated.\n"
 				"\n"
@@ -979,8 +953,7 @@ export_reconstruction_tree()
 				":meth:`identity rotation<FiniteRotation.create_identity_rotation>` is returned "
 				"if *use_identity_for_missing_plate_ids* is ``True``, otherwise ``None`` is returned. "
 				"See :ref:`pygplates_foundations_plate_reconstruction_hierarchy` for details on how a plate id can "
-				"go missing and how to work around it. If *plate_id* matches more than one plate id in this "
-				"*ReconstructionTree* then the first match is returned.\n"
+				"go missing and how to work around it.\n"
 				"\n"
 				"  This method essentially does the following:\n"
 				"  ::\n"
@@ -1029,8 +1002,7 @@ export_reconstruction_tree()
 				"\n"
 				"  The *total* in the method name indicates that the rotation is also relative to *present day*.\n"
 				"\n"
-				"  This method is useful if *fixed_plate_id* and *moving_plate_id* have more than one "
-				"edge between them. If *fixed_plate_id* is the *anchored* plate then this method gives the same "
+				"  If *fixed_plate_id* is the *anchored* plate then this method gives the same "
 				"result as :meth:`get_equivalent_total_rotation`. Another way to calculate this result "
 				"is to create a new *ReconstructionTree* using *fixed_plate_id* as the *anchored* plate. "
 				"See :ref:`pygplates_foundations_plate_reconstruction_hierarchy` for a description of some "
@@ -1063,10 +1035,8 @@ export_reconstruction_tree()
 				"  :type moving_plate_id: int\n"
 				"  :rtype: :class:`ReconstructionTreeEdge` or None\n"
 				"\n"
-				"  Returns ``None`` if *moving_plate_id* is the *anchored* plate, or is not found (because a "
-				"total reconstruction pole with that moving plate id was not inserted into the "
-				":class:`ReconstructionTreeBuilder` used to build this reconstruction tree). "
-				"If *moving_plate_id* matches more than one edge then the first match is returned.\n")
+				"  Returns ``None`` if *moving_plate_id* is the *anchored* plate, or is not found "
+				"(not in this reconstruction tree).\n")
 		.def("get_edges",
 				&GPlatesApi::reconstruction_tree_get_edges,
 				"get_edges()\n"
@@ -1268,88 +1238,35 @@ export_reconstruction_tree()
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::ReconstructionTreeEdge>();
 
 	//
-	// ReconstructionTreeBuilder - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	// ReconstructionTreeBuilder - DEPRECATED.
+	//
+	// NOTE: This class is deprecated now ReconstructionTree is no longer created by visiting
+	//       rotation features - instead a ReconstructionGraph is created by visiting rotation features
+	//       on a ReconstructionGraphBuilder, and then any number of ReconstructionTree's are created
+	//       from the one ReconstructionGraph.
+	//       We could create a Python class for ReconstructionGraph (but this is essentially what
+	//       RotationModel already is) and a Python class for ReconstructionGraphBuilder.
+	//       But for now we'll just stick to RotationModel (which accepts rotation features).
+	//       
+	//       So while we still support this class (for those users still using it) we do not document it.
 	//
 	bp::class_<
-			GPlatesAppLogic::ReconstructionGraph,
+			GPlatesAppLogic::ReconstructionGraphBuilder,
 			boost::noncopyable>(
 					"ReconstructionTreeBuilder",
-					"Enable incremental building of a reconstruction tree by inserting *total reconstruction poles*.\n"
-					"\n"
-					"The following example demonstrates the general procedure for incrementally building "
-					"a :class:`ReconstructionTree`:\n"
-					"::\n"
-					"\n"
-					"  builder = pygplates.ReconstructionTreeBuilder()\n"
-					"  ...\n"
-					"  builder.insert_total_reconstruction_pole(fixed_plate_id1, moving_plate_id1, "
-					"total_rotation_moving_plate_id1_relative_fixed_plate_id1)\n"
-					"  builder.insert_total_reconstruction_pole(fixed_plate_id2, moving_plate_id2, "
-					"total_rotation_moving_plate_id2_relative_fixed_plate_id2)\n"
-					"  ...\n"
-					"  reconstruction_tree = builder.build_reconstruction_tree(anchor_plate_id, reconstruction_time)\n"
-					"\n"
-					"The :meth:`ReconstructionTree.__init__` method of class :class:`ReconstructionTree` "
-					"uses *ReconstructionTreeBuilder* to create itself from rotation :class:`features<Feature>`.\n",
-			bp::init<>(
-					"__init__()\n"))
+					bp::init<>())
 		.def("insert_total_reconstruction_pole",
-				&GPlatesApi::reconstruction_tree_builder_insert_total_reconstruction_pole,
-				(bp::arg("fixed_plate_id"), bp::arg("moving_plate_id"), bp::arg("total_reconstruction_pole")),
-				"insert_total_reconstruction_pole(fixed_plate_id, moving_plate_id, total_reconstruction_pole)\n"
-				"  Insert the *total reconstruction pole* associated with the plate pair *moving_plate_id* "
-				"and *fixed_plate_id* plate.\n"
-				"\n"
-				"  :param fixed_plate_id: the fixed plate id of the *total reconstruction pole*\n"
-				"  :type fixed_plate_id: int\n"
-				"  :param moving_plate_id: the moving plate id of the *total reconstruction pole*\n"
-				"  :type moving_plate_id: int\n"
-				"  :param total_reconstruction_pole: the *total reconstruction pole*\n"
-				"  :type total_reconstruction_pole: :class:`FiniteRotation`\n"
-				"\n"
-				"  The *total reconstruction pole* is associated with the reconstruction time of "
-				"the :class:`ReconstructionTree` that will be built by :meth:`build_reconstruction_tree`.\n"
-				"\n"
-				"  A *total reconstruction pole* can be obtained from a (rotation) feature of :class:`type<FeatureType>` "
-				"'gpml:TotalReconstructionSequence' and inserted into a reconstruction tree builder:\n"
-				"  ::\n"
-				"\n"
-				"    fixed_plate_id, moving_plate_id, total_reconstruction_pole = "
-				"rotation_feature.get_total_reconstruction_pole()\n"
-				"    interpolated_rotation = total_reconstruction_pole.get_value(reconstruction_time)\n"
-				"    if interpolated_rotation:\n"
-				"        builder.insert_total_reconstruction_pole(\n"
-				"            fixed_plate_id,\n"
-				"            moving_plate_id,\n"
-				"            interpolated_rotation.get_finite_rotation())\n")
+				&GPlatesApi::deprecated_reconstruction_tree_builder_insert_total_reconstruction_pole,
+				(bp::arg("fixed_plate_id"), bp::arg("moving_plate_id"), bp::arg("total_reconstruction_pole")))
 		.def("build_reconstruction_tree",
-				&GPlatesApi::reconstruction_tree_builder_build_reconstruction_tree,
-				(bp::arg("anchor_plate_id"), bp::arg("reconstruction_time")),
-				"build_reconstruction_tree(anchor_plate_id, reconstruction_time)\n"
-				"  Builds a :class:`ReconstructionTree` from the *total reconstruction poles* inserted "
-				"via :meth:`insert_total_reconstruction_pole`.\n"
-				"\n"
-				"  :param anchor_plate_id: the anchored plate id of the reconstruction tree\n"
-				"  :type anchor_plate_id: int\n"
-				"  :param reconstruction_time: the reconstruction time of *all* the total reconstruction "
-				"poles inserted\n"
-				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
-				"  :raises: InterpolationError if *reconstruction_time* is "
-				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
-				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
-				"\n"
-				"  The top (root) of the tree is the plate *anchor_plate_id*. "
-				"The *total reconstruction poles* inserted via :meth:`insert_total_reconstruction_pole` "
-				"are all assumed to be for the time *reconstruction_time* - although this is not checked.\n"
-				"\n"
-				"  **NOTE:** This method resets the state of this :class:`ReconstructionTreeBuilder` "
-				"to where it was before any calls to :meth:`insert_total_reconstruction_pole`. So a "
-				"second call to this method (without any intervening calls to "
-				":meth:`insert_total_reconstruction_pole`) will result in an empty reconstruction tree.\n")
+				&GPlatesApi::deprecated_reconstruction_tree_builder_build_reconstruction_tree,
+				(bp::arg("anchor_plate_id"), bp::arg("reconstruction_time")))
 	;
 
-	// Enable boost::optional<ReconstructionGraph> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesAppLogic::ReconstructionGraph>();
+	// NOTE: We currently do not enable boost::optional<ReconstructionGraphBuilder> to be passed to and from python.
+	//       This is because ReconstructionGraphBuilder would need to be copy-constructable (which it's not).
+	//       But "boost::optional<ReconstructionGraphBuilder>" is not used anywhere.
+	//       And besides, this class is now deprecated.
+	//
+	//GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesAppLogic::ReconstructionGraphBuilder>();
 }
-
-#endif // GPLATES_NO_PYTHON

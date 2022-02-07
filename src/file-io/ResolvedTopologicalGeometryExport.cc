@@ -96,7 +96,8 @@ namespace GPlatesFileIO
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
-						force_polygon_orientation);		
+						force_polygon_orientation,
+						wrap_to_dateline);
 					break;
 
 				case GMT:
@@ -151,7 +152,8 @@ namespace GPlatesFileIO
 						referenced_files,
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
-						reconstruction_time);		
+						reconstruction_time,
+						wrap_to_dateline);
 					break;
 
 				case GMT:

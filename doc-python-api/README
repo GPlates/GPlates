@@ -199,9 +199,9 @@ Provide docstrings (with function signature( for all regular methods and "__init
 
 Now that we're using autosummary (instead of automodule) we will get warnings such as the following...
 
-  WARNING: error while formatting arguments for pygplates.ReconstructionTreeBuilder.__init__: <Boost.Python.function object at 0x04E7AA28> is not a Python function
+  WARNING: error while formatting arguments for pygplates.Earth.__init__: <Boost.Python.function object at 0x04E7AA28> is not a Python function
 
-...if we don't provide a docstring (in the above example for "pygplates.ReconstructionTreeBuilder.__init__()")
+...if we don't provide a docstring (in the above example for "pygplates.Earth.__init__()")
 containing a function signature. In the above example this can be fixed by specifying the first line of the docstring as:
 
 __init__()

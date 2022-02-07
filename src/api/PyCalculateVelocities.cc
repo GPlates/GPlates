@@ -41,8 +41,6 @@
 #include "utils/Earth.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -175,5 +173,3 @@ export_calculate_velocities()
 			":meth:`pygplates.LocalCartesian.convert_from_geocentric_to_magnitude_azimuth_inclination`.\n"
 			"            | See the :ref:`pygplates_calculate_velocities_by_plate_id` sample code.\n");
 }
-
-#endif // GPLATES_NO_PYTHON

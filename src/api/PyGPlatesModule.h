@@ -29,8 +29,6 @@
 #include "global/python.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	//
@@ -61,7 +59,5 @@ namespace GPlatesApi
 	boost::python::object
 	get_builtin_next();
 }
-
-#endif   // GPLATES_NO_PYTHON
 
 #endif // GPLATES_API_PYGPLATESMODULE_H

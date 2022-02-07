@@ -53,8 +53,6 @@
 #include "property-values/GeoTimeInstant.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -133,12 +131,47 @@ namespace GPlatesApi
 		rotation_model_create_from_features(
 				const FeatureCollectionSequenceFunctionArgument &rotation_features,
 				unsigned int reconstruction_tree_cache_size,
-				bool clone_rotation_features)
+				bool extend_total_reconstruction_poles_to_distant_past,
+				GPlatesModel::integer_plate_id_type default_anchor_plate_id)
 		{
 			return RotationModel::create(
 					rotation_features,
 					reconstruction_tree_cache_size,
-					clone_rotation_features);
+					extend_total_reconstruction_poles_to_distant_past,
+					default_anchor_plate_id);
+		}
+
+		/**
+		 * This is called directly from Python via 'RotationModel.__init__()'.
+		 *
+		 * This is a deprecated overload of 'RotationModel.__init__()' that accepts the
+		 * deprecated argument 'clone_rotation_features' (which is no longer needed, but we
+		 * still accept for any clients still using it, and then just ignore it).
+		 *
+		 * Note that this overload has the same type and order of function arguments as
+		 * @a rotation_model_create_from_features, and so it is only distinguishable if the
+		 * caller explicitly specified the 'clone_rotation_features' argument name, as in:
+		 *
+		 *   rotation_model = RotationModel(rotation_features, clone_rotation_features=False)
+		 *
+		 * ...however, if they specified:
+		 *
+		 *   rotation_model = RotationModel(rotation_features, False)
+		 *
+		 * ...then we incorrectly accept the @a rotation_model_create_from_features overload, and
+		 * the 'clone_rotation_features' argument will be interpreted as a
+		 * 'extend_total_reconstruction_poles_to_distant_past' argument.
+		 */
+		RotationModel::non_null_ptr_type
+		rotation_model_create_from_features_deprecated(
+				const FeatureCollectionSequenceFunctionArgument &rotation_features,
+				unsigned int reconstruction_tree_cache_size,
+				bool clone_rotation_features)
+		{
+			// Ignore deprecated 'clone_rotation_features' argument.
+			return RotationModel::create(
+					rotation_features,
+					reconstruction_tree_cache_size);
 		}
 
 		/**
@@ -175,47 +208,25 @@ namespace GPlatesApi
 // So version 2 is less restrictive in its ability to share cache entries.
 //
 // Each cache entry (reconstruction tree) consumes ~0.5Mb.
-const unsigned int GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE = 100;
+const unsigned int GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE = 150;
 
 
 GPlatesApi::RotationModel::non_null_ptr_type
 GPlatesApi::RotationModel::create(
 		const FeatureCollectionSequenceFunctionArgument &rotation_features,
 		unsigned int reconstruction_tree_cache_size,
-		bool clone_rotation_features)
+		bool extend_total_reconstruction_poles_to_distant_past,
+		GPlatesModel::integer_plate_id_type default_anchor_plate_id)
 {
 	// Copy feature collection files into a vector.
 	std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
 	rotation_features.get_files(feature_collection_files);
 
-	// If the caller requested to clone reconstruction features then we don't actually need
-	// to do this if all feature collections were loaded from files. This is because feature
-	// collections loaded from files are not exposed to the Python user and therefore cannot be
-	// modified and so we don't need to clone them to ensure this.
-	if (clone_rotation_features)
-	{
-		// See if all feature collections were loaded from files.
-		bool all_loaded_from_files = true;
-
-		BOOST_FOREACH(
-				GPlatesFileIO::File::non_null_ptr_type feature_collection_file,
-				feature_collection_files)
-		{
-			// If filename is empty then feature collection was *not* loaded from a file.
-			if (feature_collection_file->get_reference().get_file_info().get_qfileinfo().fileName().isEmpty())
-			{
-				all_loaded_from_files = false;
-				break;
-			}
-		}
-
-		if (all_loaded_from_files)
-		{
-			clone_rotation_features = false;
-		}
-	}
-
-	return create(feature_collection_files, reconstruction_tree_cache_size, clone_rotation_features);
+	return create(
+			feature_collection_files,
+			reconstruction_tree_cache_size,
+			extend_total_reconstruction_poles_to_distant_past,
+			default_anchor_plate_id);
 }
 
 
@@ -223,7 +234,8 @@ GPlatesApi::RotationModel::non_null_ptr_type
 GPlatesApi::RotationModel::create(
 		const std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files,
 		unsigned int reconstruction_tree_cache_size,
-		bool clone_rotation_features)
+		bool extend_total_reconstruction_poles_to_distant_past,
+		GPlatesModel::integer_plate_id_type default_anchor_plate_id)
 {
 	// Convert the feature collections (in the files) to weak refs (for ReconstructionTreeCreator).
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> feature_collection_refs;
@@ -242,9 +254,9 @@ GPlatesApi::RotationModel::create(
 	const GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
 			GPlatesAppLogic::create_cached_reconstruction_tree_creator(
 					feature_collection_refs,
-					0/*default_anchor_plate_id*/,
-					reconstruction_tree_cache_size,
-					clone_rotation_features);
+					extend_total_reconstruction_poles_to_distant_past,
+					default_anchor_plate_id,
+					reconstruction_tree_cache_size);
 
 	return non_null_ptr_type(new RotationModel(feature_collection_files, reconstruction_tree_creator));
 }
@@ -254,7 +266,8 @@ GPlatesApi::RotationModel::non_null_ptr_type
 GPlatesApi::RotationModel::create(
 		const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
 		unsigned int reconstruction_tree_cache_size,
-		bool clone_rotation_features)
+		bool extend_total_reconstruction_poles_to_distant_past,
+		GPlatesModel::integer_plate_id_type default_anchor_plate_id)
 {
 	// Create feature collection files with empty filenames.
 	std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
@@ -270,14 +283,18 @@ GPlatesApi::RotationModel::create(
 		feature_collection_files.push_back(feature_collection_file);
 	}
 
-	return create(feature_collection_files, reconstruction_tree_cache_size, clone_rotation_features);
+	return create(
+			feature_collection_files,
+			reconstruction_tree_cache_size,
+			extend_total_reconstruction_poles_to_distant_past,
+			default_anchor_plate_id);
 }
 
 
 GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type
 GPlatesApi::RotationModel::get_reconstruction_tree(
 		const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
-		GPlatesModel::integer_plate_id_type anchor_plate_id)
+		boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
 {
 	// Time must not be distant past/future.
 	GPlatesGlobal::Assert<InterpolationException>(
@@ -285,7 +302,10 @@ GPlatesApi::RotationModel::get_reconstruction_tree(
 			GPLATES_ASSERTION_SOURCE,
 			"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
 
-	return d_reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time.value(), anchor_plate_id);
+	return anchor_plate_id
+			? d_reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time.value(), anchor_plate_id.get())
+			// If anchor_plate_id not specified then use default anchor plate ID (that RotationModel was created with)...
+			: d_reconstruction_tree_creator.get_reconstruction_tree(reconstruction_time.value());
 }
 
 
@@ -293,21 +313,21 @@ boost::optional<GPlatesMaths::FiniteRotation>
 GPlatesApi::RotationModel::get_rotation(
 		const GPlatesPropertyValues::GeoTimeInstant &to_time,
 		GPlatesModel::integer_plate_id_type moving_plate_id,
-		const GPlatesPropertyValues::GeoTimeInstant &from_time,
+		boost::optional<GPlatesPropertyValues::GeoTimeInstant> from_time,
 		boost::optional<GPlatesModel::integer_plate_id_type> fixed_plate_id,
-		GPlatesModel::integer_plate_id_type anchor_plate_id,
+		boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
 		bool use_identity_for_missing_plate_ids)
 {
 	// Times must not be distant past/future.
 	GPlatesGlobal::Assert<InterpolationException>(
-			to_time.is_real() && from_time.is_real(),
+			to_time.is_real() && (!from_time || from_time->is_real()),
 			GPLATES_ASSERTION_SOURCE,
 			"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
 
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type to_reconstruction_tree =
 			get_reconstruction_tree(to_time, anchor_plate_id);
 
-	if (from_time == GPlatesPropertyValues::GeoTimeInstant(0))
+	if (!from_time)
 	{
 		if (!fixed_plate_id)
 		{
@@ -327,7 +347,7 @@ GPlatesApi::RotationModel::get_rotation(
 	}
 
 	const GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type from_reconstruction_tree =
-			get_reconstruction_tree(from_time, anchor_plate_id);
+			get_reconstruction_tree(from_time.get(), anchor_plate_id);
 
 	if (!fixed_plate_id)
 	{
@@ -439,9 +459,8 @@ export_rotation_model()
 			// Specific overload signature...
 			"__init__(rotation_features, [reconstruction_tree_cache_size="
 			<< GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE
-			<< "], [clone_rotation_features=True])\n"
-			"  Create from rotation feature collection(s) and/or rotation filename(s), and "
-			"an optional reconstruction tree cache size.\n"
+			<< "], [extend_total_reconstruction_poles_to_distant_past=False],[default_anchor_plate_id=0])\n"
+			"  Create from rotation feature collection(s) and/or rotation filename(s).\n"
 			"\n"
 			"  :param rotation_features: A rotation feature collection, or rotation filename, or "
 			"rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) "
@@ -450,10 +469,15 @@ export_rotation_model()
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param reconstruction_tree_cache_size: number of reconstruction trees to cache internally\n"
 			"  :type reconstruction_tree_cache_size: int\n"
-			"  :param clone_rotation_features: cloning rotation features prevents subsequent rotation feature "
-			"modifications adversely affecting cached rotations (defaults to ``True``) - "
-			"see *ADVANCED* note below for more details, otherwise just use default\n"
-			"  :type clone_rotation_features: bool\n"
+			"  :param extend_total_reconstruction_poles_to_distant_past: extend each moving plate "
+			"sequence back infinitely far into the distant past such that reconstructed geometries will "
+			"not snap back to their present day positions when the reconstruction time is older than "
+			"the oldest times specified in the rotation features (defaults to ``False``)\n"
+			"  :type extend_total_reconstruction_poles_to_distant_past: bool\n"
+			"  :param default_anchor_plate_id: The default anchored plate id to use when :meth:`get_rotation` "
+			"and :meth:`get_reconstruction_tree` are called without specifying their *anchor_plate_id* parameter. "
+			"Defaults to 0. \n"
+			"  :type default_anchor_plate_id: int\n"
 			"  :raises: OpenFileForReadingError if any file is not readable (when filenames specified)\n"
 			"  :raises: FileFormatNotSupportedError if any file format (identified by the filename "
 			"extensions) does not support reading (when filenames specified)\n"
@@ -473,40 +497,12 @@ export_rotation_model()
 			"    ...\n"
 			"    rotation_model = pygplates.RotationModel(['rotations.rot', rotation_adjustments])\n"
 			"\n"
-			"  .. note:: *ADVANCED*\n"
+			"  .. versionchanged:: 25\n"
+			"     Added *extend_total_reconstruction_poles_to_distant_past* argument and "
+			"removed *clone_rotation_features* argument.\n"
 			"\n"
-			"     | *clone_rotation_features* should be left to its default of ``True`` unless "
-			"you know the rotation features will never be modified while the ``RotationModel`` is being used.\n"
-			"     | This is purely an **optimisation** opportunity since cloning feature collections in "
-			"high repetition inner loops can potentially slow things down noticeably.\n"
-			"     | For example if you create a ``RotationModel`` inside a loop:\n"
-			"\n"
-			"     ::\n"
-			"\n"
-			"       rotation_features = pygplates.FeatureCollection('rotations.rot')\n"
-			"\n"
-			"       while iteration < MAX_ITERATIONS:\n"
-			"           # We won't be modifying 'rotation_features' until finished using 'rotation_model'.\n"
-			"           # So we can turn off 'clone_rotation_features'.\n"
-			"           rotation_model = RotationModel(rotation_features, clone_rotation_features=False)\n"
-			"\n"
-			"           # The last time we use 'rotation_model' in this loop.\n"
-			"           rotation = rotation_model.get_rotation(...)\n"
-			"\n"
-			"           # Modify 'rotation_features' (eg, adjust rotations stored in features)\n"
-			"           # in preparation for the next iteration.\n"
-			"           # But we're not going to use 'rotation_model' again until the next iteration where\n"
-			"           # we'll create a new RotationModel instance with the updated rotation features.\n"
-			"           ...\n"
-			"\n"
-			"     Using this approach (avoiding cloning rotation features) in the implementation of "
-			":func:`synchronise_crossovers` *dramatically* improves its performance.\n"
-			"\n"
-			"  .. note:: *clone_rotation_features* is ignored if all rotation features specified in the "
-			"*rotation_features* argument are loaded from files (ie, if only filenames are specified).\n"
-			"\n"
-			"  .. note:: *clone_rotation_features* will be deprecated in future when this optimisation  is "
-			"taken care of internally (by cloning only if a modification to its features is detected internally).\n"
+			"  .. versionchanged:: 26\n"
+			"     Added *default_anchor_plate_id* argument.\n"
 			;
 
 	//
@@ -538,6 +534,19 @@ export_rotation_model()
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
+		// Define deprecated '__init__' first since we want it to have lowest priority
+		// (later definitions get higher priority). This is important because the overload accepting
+		// 'extend_total_reconstruction_poles_to_distant_past' argument has the exact same argument types
+		// (only the argument names differ).
+		// Also exclude a docstring for it, since we don't want it documented anymore...
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::rotation_model_create_from_features_deprecated,
+						bp::default_call_policies(),
+						(bp::arg("rotation_features"),
+							bp::arg("reconstruction_tree_cache_size") =
+								GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
+							bp::arg("clone_rotation_features") = true)))
 		.def("__init__",
 				bp::make_constructor(
 						&GPlatesApi::rotation_model_create_from_features,
@@ -545,7 +554,8 @@ export_rotation_model()
 						(bp::arg("rotation_features"),
 							bp::arg("reconstruction_tree_cache_size") =
 								GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
-							bp::arg("clone_rotation_features") = true)),
+							bp::arg("extend_total_reconstruction_poles_to_distant_past") = false,
+							bp::arg("default_anchor_plate_id") = 0)),
 				rotation_model_from_features_constructor_docstring_stream.str().c_str())
 		.def("__init__",
 				bp::make_constructor(
@@ -575,11 +585,11 @@ export_rotation_model()
 				&GPlatesApi::RotationModel::get_rotation,
 				(bp::arg("to_time"),
 					bp::arg("moving_plate_id"),
-					bp::arg("from_time") = 0,
+					bp::arg("from_time") = boost::optional<GPlatesPropertyValues::GeoTimeInstant>(),
 					bp::arg("fixed_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
-					bp::arg("anchor_plate_id") = 0,
+					bp::arg("anchor_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
 					bp::arg("use_identity_for_missing_plate_ids") = true),
-				"get_rotation(to_time, moving_plate_id, [from_time=0], [fixed_plate_id], [anchor_plate_id=0]"
+				"get_rotation(to_time, moving_plate_id, [from_time], [fixed_plate_id], [anchor_plate_id]"
 				", [use_identity_for_missing_plate_ids=True])\n"
 				"  Return the finite rotation that rotates from the *fixed_plate_id* plate to the *moving_plate_id* "
 				"plate and from the time *from_time* to the time *to_time*.\n"
@@ -593,7 +603,8 @@ export_rotation_model()
 				"  :param fixed_plate_id: the plate id of the fixed plate (defaults to *anchor_plate_id* "
 				"if not specified)\n"
 				"  :type fixed_plate_id: int\n"
-				"  :param anchor_plate_id: the id of the anchored plate\n"
+				"  :param anchor_plate_id: The id of the anchored plate. If not specified then the *default* "
+				"anchor plate id (specified in :meth:`constructor<__init__>`) is used.\n"
 				"  :type anchor_plate_id: int\n"
 				"  :param use_identity_for_missing_plate_ids: whether to return an "
 				":meth:`identity rotation<FiniteRotation.create_identity_rotation>` or return ``None`` "
@@ -617,11 +628,11 @@ export_rotation_model()
 				"see :ref:`pygplates_foundations_relative_stage_rotation` for rotation math derivation\n"
 				"\n"
 				"  If *fixed_plate_id* is not specified then it defaults to *anchor_plate_id* (which "
-				"itself defaults to zero). Normally it is sufficient to specify *fixed_plate_id* "
-				"(for a relative rotation) and leave *anchor_plate_id* as its default (zero). "
-				"However if there is no plate circuit path from the default anchor plate (zero) to either "
-				"*moving_plate_id* or *fixed_plate_id*, but there is a path from *fixed_plate_id* to "
-				"*moving_plate_id*, then the correct result will require setting *anchor_plate_id* to "
+				"itself defaults to the *default* anchor plate id specified in :meth:`constructor<__init__>`). "
+				"Normally it is sufficient to specify *fixed_plate_id* (for a relative rotation) and leave "
+				"*anchor_plate_id* as its default. However if there is no plate circuit path from the default "
+				"anchor plate to either *moving_plate_id* or *fixed_plate_id*, but there is a path from *fixed_plate_id* "
+				"to *moving_plate_id*, then the correct result will require setting *anchor_plate_id* to "
 				"*fixed_plate_id*. See :ref:`pygplates_foundations_plate_reconstruction_hierarchy` for "
 				"an overview of plate circuit paths.\n"
 				"\n"
@@ -635,10 +646,10 @@ export_rotation_model()
 				"  This method essentially does the following:\n"
 				"  ::\n"
 				"\n"
-				"    def get_rotation(rotation_model, to_time, moving_plate_id, from_time=0, "
-				"fixed_plate_id=None, anchor_plate_id=0):\n"
+				"    def get_rotation(rotation_model, to_time, moving_plate_id, from_time=None, "
+				"fixed_plate_id=None, anchor_plate_id=None):\n"
 				"        \n"
-				"        if from_time == 0:\n"
+				"        if from_time is None:\n"
 				"            if fixed_plate_id is None:\n"
 				"                return rotation_model.get_reconstruction_tree(to_time, anchor_plate_id)"
 				".get_equivalent_total_rotation(moving_plate_id)\n"
@@ -656,19 +667,32 @@ export_rotation_model()
 				"            rotation_model.get_reconstruction_tree(from_time, anchor_plate_id),\n"
 				"            rotation_model.get_reconstruction_tree(to_time, anchor_plate_id),\n"
 				"            moving_plate_id,\n"
-				"            fixed_plate_id)\n")
+				"            fixed_plate_id)\n"
+				"\n"
+				"  .. note:: Explicitly setting *from_time* to zero can give a different result than not "
+				"specifying *from_time* at all if the moving plate (or fixed plate) has a non-zero finite rotation "
+				"at present day (relative to the anchor plate). However all present-day finite rotations should "
+				"ideally be zero (identity), so typically there should not be a difference.\n"
+				"\n"
+				"  .. versionchanged:: 26\n"
+				"     *anchor_plate_id* no longer defaults to zero (see *default_anchor_plate_id* "
+				"\n"
+				"  .. versionchanged:: 27\n"
+				"     *from_time* no longer defaults to zero, and no longer assumes present day "
+				"rotations are identity (zero) rotations\n")
 		.def("get_reconstruction_tree",
 				&GPlatesApi::RotationModel::get_reconstruction_tree,
 				(bp::arg("reconstruction_time"),
-					bp::arg("anchor_plate_id")=0),
-				"get_reconstruction_tree(reconstruction_time, [anchor_plate_id=0])\n"
+					bp::arg("anchor_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>()),
+				"get_reconstruction_tree(reconstruction_time, [anchor_plate_id])\n"
 				"  Return the reconstruction tree associated with the specified instant of "
 				"geological time and anchored plate id.\n"
 				"\n"
 				"  :param reconstruction_time: time at which to create a reconstruction tree (in Ma)\n"
 				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
-				"  :param anchor_plate_id: the id of the anchored plate that *equivalent* rotations "
-				"are calculated with respect to\n"
+				"  :param anchor_plate_id: The id of the anchored plate that *equivalent* rotations "
+				"are calculated with respect to. If not specified then the *default* anchor plate id "
+				"(specified in :meth:`constructor<__init__>`) is used.\n"
 				"  :type anchor_plate_id: int\n"
 				"  :rtype: :class:`ReconstructionTree`\n"
 				"  :raises: InterpolationError if *reconstruction_time* is "
@@ -678,7 +702,11 @@ export_rotation_model()
 				"  If the reconstruction tree for the specified reconstruction time and anchored plate id "
 				"is currently in the internal cache then it is returned, otherwise a new reconstruction "
 				"tree is created and stored in the cache (after evicting the reconstruction tree associated "
-				"with the least recently requested reconstruction time and anchored plate id if necessary).\n")
+				"with the least recently requested reconstruction time and anchored plate id if necessary).\n"
+				"\n"
+				"  .. versionchanged:: 26\n"
+				"     *anchor_plate_id* no longer defaults to zero (see *default_anchor_plate_id* "
+				"in :meth:`constructor<__init__>`).\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
@@ -689,5 +717,3 @@ export_rotation_model()
 	// Register converter from a rotation model or a sequence of feature collections to a @a RotationModelFunctionArgument.
 	GPlatesApi::register_rotation_model_function_argument_conversion();
 }
-
-#endif // GPLATES_NO_PYTHON

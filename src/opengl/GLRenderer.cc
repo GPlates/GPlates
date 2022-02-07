@@ -1996,22 +1996,18 @@ GPlatesOpenGL::GLRenderer::suspend_qpainter()
 			d_qpainter_info,
 			GPLATES_ASSERTION_SOURCE);
 
-#if QT_VERSION >= 0x040600
 	// From Qt 4.6, the default OpenGL paint engine is QPaintEngine::OpenGL2.
 	// And it needs protection if we're mixing painter calls with our own native OpenGL calls.
 	//
 	// NOTE: This is a no-operation if the paint engine does not use OpenGL.
 	d_qpainter_info->qpainter.beginNativePainting();
-#endif
 
 	const QPaintEngine::Type paint_engine_type = d_qpainter_info->qpainter.paintEngine()->type();
 	if (paint_engine_type == QPaintEngine::OpenGL
-#if QT_VERSION >= 0x040600
 		// Actually the OpenGL2 engine still sets the modelview and projection matrices as if you
 		// were using the 1.x paint engine (so it's not exactly the default OpenGL state).
 		// So we make it the default by pushing identity matrices...
 		|| paint_engine_type == QPaintEngine::OpenGL2
-#endif
 		)
 	{
 		// Our GLRenderer assumes it's entered in the default OpenGL state and when it exits it leaves
@@ -2042,12 +2038,10 @@ GPlatesOpenGL::GLRenderer::resume_qpainter()
 
 	const QPaintEngine::Type paint_engine_type = d_qpainter_info->qpainter.paintEngine()->type();
 	if (paint_engine_type == QPaintEngine::OpenGL
-#if QT_VERSION >= 0x040600
 		// Actually the OpenGL2 engine still sets the modelview and projection matrices as if you
 		// were using the 1.x paint engine (so it's not exactly the default OpenGL state).
 		// So we make it the default by pushing identity matrices...
 		|| paint_engine_type == QPaintEngine::OpenGL2
-#endif
 		)
 	{
 		// We are now in the default OpenGL state but we need to return the QPainter to the state it was in.
@@ -2060,7 +2054,6 @@ GPlatesOpenGL::GLRenderer::resume_qpainter()
 		glMatrixMode(GL_MODELVIEW); // The default matrix mode.
 	}
 
-#if QT_VERSION >= 0x040600
 	// From Qt 4.6, the default OpenGL paint engine is QPaintEngine::OpenGL2.
 	// And it needs protection if we're mixing painter calls with our own native OpenGL calls.
 	//
@@ -2068,7 +2061,6 @@ GPlatesOpenGL::GLRenderer::resume_qpainter()
 	//
 	// NOTE: This is a no-operation if the paint engine does not use OpenGL.
 	d_qpainter_info->qpainter.endNativePainting();
-#endif
 
 	//
 	// NOTE: At this point we must have restored the OpenGL state to the default state !

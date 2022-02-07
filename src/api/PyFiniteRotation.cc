@@ -48,8 +48,6 @@
 #include "property-values/GeoTimeInstant.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -806,5 +804,3 @@ export_finite_rotation()
 	// Enable boost::optional<FiniteRotation> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::FiniteRotation>();
 }
-
-#endif // GPLATES_NO_PYTHON

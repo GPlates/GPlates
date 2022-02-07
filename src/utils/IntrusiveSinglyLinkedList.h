@@ -68,6 +68,9 @@ namespace GPlatesUtils
 	 *
 	 * An example where a list node element is added to two different lists:
 	 *
+	 *   struct FirstListTag;
+	 *   struct SecondListTag;
+	 *
 	 *   struct ElementNode :
 	 *      public IntrusiveSinglyLinkedList<ElementNode, FirstListTag>::Node,
 	 *      public IntrusiveSinglyLinkedList<ElementNode, SecondListTag>::Node
@@ -81,8 +84,8 @@ namespace GPlatesUtils
 	 *   first_list.push_front(element_node);
 	 *   second_list.push_front(element_node);
 	 *
-	 * Once the minimum version requirement of the boost library is raised to 1.35
-	 * we could instead use the boost version of an intrusive singly linked list 'boost::slist'.
+	 * NOTE: Now that the minimum version requirement of the boost library has been raised to 1.35
+	 * we should instead use the boost version of an intrusive singly linked list 'boost::intrusive::slist'.
 	 */
 	template <class ElementNodeType, class NodeTag = void>
 	class IntrusiveSinglyLinkedList
@@ -157,8 +160,8 @@ namespace GPlatesUtils
 				// Use "IntrusiveSinglyLinkedList<ElementNodeQualifiedType,NodeTag>::Node::" to pick the correct
 				// base class in case ElementNodeType inherits from more than once
 				// Node bass class (ie, is in more than one list).
-				d_node = d_node->IntrusiveSinglyLinkedList<ElementNodeType, NodeTag>
-						::Node::get_next_node();
+				typedef typename IntrusiveSinglyLinkedList<ElementNodeType, NodeTag>::Node tagged_base_node_type;
+				d_node = d_node->tagged_base_node_type::get_next_node();
 				return *this;
 			}
 
@@ -280,7 +283,8 @@ namespace GPlatesUtils
 			// Use "IntrusiveSinglyLinkedList<ElementNodeType,NodeTag>::Node::" to pick the correct
 			// base class in case ElementNodeType inherits from more than once
 			// Node bass class (ie, is in more than one list).
-			node->IntrusiveSinglyLinkedList<ElementNodeType,NodeTag>::Node::d_next_node = d_list;
+			typedef typename IntrusiveSinglyLinkedList<ElementNodeType, NodeTag>::Node tagged_base_node_type;
+			node->tagged_base_node_type::d_next_node = d_list;
 			d_list = node;
 		}
 
@@ -298,7 +302,8 @@ namespace GPlatesUtils
 			// Use "IntrusiveSinglyLinkedList<ElementNodeType,NodeTag>::Node::" to pick the correct
 			// base class in case ElementNodeType inherits from more than one
 			// Node bass class (ie, is in more than one list).
-			d_list = d_list->IntrusiveSinglyLinkedList<ElementNodeType,NodeTag>::Node::d_next_node;
+			typedef typename IntrusiveSinglyLinkedList<ElementNodeType, NodeTag>::Node tagged_base_node_type;
+			d_list = d_list->tagged_base_node_type::d_next_node;
 		}
 
 

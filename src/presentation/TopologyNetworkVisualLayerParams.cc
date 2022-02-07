@@ -55,6 +55,9 @@ GPlatesPresentation::TopologyNetworkVisualLayerParams::TopologyNetworkVisualLaye
 	d_min_abs_second_invariant(1e-17),
 	d_max_abs_second_invariant(3e-14),
 	d_second_invariant_colour_palette_filename(QString()),
+	d_min_strain_rate_style(-1.0),
+	d_max_strain_rate_style(1.0),
+	d_strain_rate_style_colour_palette_filename(QString()),
 	d_show_segment_velocity(false),
 	d_fill_rigid_blocks(false),
 	d_fill_opacity(1.0),
@@ -186,6 +189,58 @@ GPlatesPresentation::TopologyNetworkVisualLayerParams::use_default_second_invari
 
 
 void
+GPlatesPresentation::TopologyNetworkVisualLayerParams::set_min_strain_rate_style(
+		const double &min_strain_rate_style)
+{
+	d_min_strain_rate_style = min_strain_rate_style;
+
+	if (d_strain_rate_style_colour_palette_filename.isEmpty()) // i.e. colour palette auto-generated
+	{
+		create_default_strain_rate_style_colour_palette();
+	}
+
+	emit_modified();
+}
+
+
+void
+GPlatesPresentation::TopologyNetworkVisualLayerParams::set_max_strain_rate_style(
+		const double &max_strain_rate_style)
+{
+	d_max_strain_rate_style = max_strain_rate_style;
+
+	if (d_strain_rate_style_colour_palette_filename.isEmpty()) // i.e. colour palette auto-generated
+	{
+		create_default_strain_rate_style_colour_palette();
+	}
+
+	emit_modified();
+}
+
+
+void
+GPlatesPresentation::TopologyNetworkVisualLayerParams::set_strain_rate_style_colour_palette(
+		const QString &filename,
+		const GPlatesGui::ColourPalette<double>::non_null_ptr_type &colour_palette)
+{
+	d_strain_rate_style_colour_palette_filename = filename;
+	d_strain_rate_style_colour_palette = colour_palette;
+
+	emit_modified();
+}
+
+
+void
+GPlatesPresentation::TopologyNetworkVisualLayerParams::use_default_strain_rate_style_colour_palette()
+{
+	d_strain_rate_style_colour_palette_filename = QString();
+	create_default_strain_rate_style_colour_palette();
+
+	emit_modified();
+}
+
+
+void
 GPlatesPresentation::TopologyNetworkVisualLayerParams::create_default_dilatation_colour_palette()
 {
 	d_dilatation_colour_palette = GPlatesGui::ColourPalette<double>::non_null_ptr_type(
@@ -205,6 +260,16 @@ GPlatesPresentation::TopologyNetworkVisualLayerParams::create_default_second_inv
 }
 
 
+void
+GPlatesPresentation::TopologyNetworkVisualLayerParams::create_default_strain_rate_style_colour_palette()
+{
+	d_strain_rate_style_colour_palette = GPlatesGui::ColourPalette<double>::non_null_ptr_type(
+			GPlatesGui::BuiltinColourPalettes::create_strain_rate_strain_rate_style_colour_palette(
+					d_min_strain_rate_style,
+					d_max_strain_rate_style));
+}
+
+
 GPlatesScribe::TranscribeResult
 GPlatesPresentation::transcribe(
 		GPlatesScribe::Scribe &scribe,
@@ -217,7 +282,8 @@ GPlatesPresentation::transcribe(
 	{
 		GPlatesScribe::EnumValue("COLOUR_DRAW_STYLE", TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE),
 		GPlatesScribe::EnumValue("COLOUR_DILATATION_STRAIN_RATE", TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DILATATION_STRAIN_RATE),
-		GPlatesScribe::EnumValue("COLOUR_SECOND_INVARIANT_STRAIN_RATE", TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE)
+		GPlatesScribe::EnumValue("COLOUR_SECOND_INVARIANT_STRAIN_RATE", TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_SECOND_INVARIANT_STRAIN_RATE),
+		GPlatesScribe::EnumValue("COLOUR_COLOUR_STRAIN_RATE_STYLE", TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_STRAIN_RATE_STYLE)
 	};
 
 	return GPlatesScribe::transcribe_enum_protocol(

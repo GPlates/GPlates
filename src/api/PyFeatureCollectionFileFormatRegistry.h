@@ -36,8 +36,6 @@
 #include "model/FeatureCollectionHandle.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace GPlatesApi
 {
 	/**
@@ -81,7 +79,5 @@ namespace GPlatesApi
 			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
 			const QString &filename);
 }
-
-#endif   // GPLATES_NO_PYTHON
 
 #endif // GPLATES_API_PYFEATURECOLLECTIONFILEFORMATREGISTRY_H

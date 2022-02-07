@@ -60,9 +60,6 @@ namespace
 	//! Convenience typedef for a sequence of resolved topologies.
 	typedef std::vector<const GPlatesAppLogic::ReconstructionGeometry *> resolved_topologies_seq_type;
 
-	//! Convenience typedef for a sequence of shared sub-segments.
-	typedef std::vector<GPlatesAppLogic::ResolvedTopologicalSharedSubSegment> shared_sub_segment_seq_type;
-
 
 	void
 	add_feature_fields_to_kvd(
@@ -290,13 +287,45 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_resolved_topol
 		}
 
 		// Iterate through the sub-segments of the current section.
-		const shared_sub_segment_seq_type &shared_sub_segments = section->get_shared_sub_segments();
-		shared_sub_segment_seq_type::const_iterator shared_sub_segments_iter = shared_sub_segments.begin();
-		shared_sub_segment_seq_type::const_iterator shared_sub_segments_end = shared_sub_segments.end();
+		const GPlatesAppLogic::shared_sub_segment_seq_type &shared_sub_segments = section->get_shared_sub_segments();
+		GPlatesAppLogic::shared_sub_segment_seq_type::const_iterator shared_sub_segments_iter = shared_sub_segments.begin();
+		GPlatesAppLogic::shared_sub_segment_seq_type::const_iterator shared_sub_segments_end = shared_sub_segments.end();
 		for ( ; shared_sub_segments_iter != shared_sub_segments_end; ++shared_sub_segments_iter)
 		{
-			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &shared_sub_segment = *shared_sub_segments_iter;
-			shared_sub_segment.get_geometry()->accept_visitor(finder);
+			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type &
+					shared_sub_segment = *shared_sub_segments_iter;
+
+			// If the shared sub-segment has any of its own child sub-segments in turn
+			// (because it's from a resolved topological line) then process those instead.
+			// This essentially is the same as simply using the parent sub-segment except that the plate IDs will
+			// come from the child sub-segment features (which is more representative of the reconstructed geometry.
+			const boost::optional<GPlatesAppLogic::sub_segment_seq_type> &sub_sub_segments =
+					shared_sub_segment->get_sub_sub_segments();
+			if (sub_sub_segments)
+			{
+				// Visit each sub-sub-segment geometry.
+				GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_sub_segments_iter = sub_sub_segments->begin();
+				GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_sub_segments_end = sub_sub_segments->end();
+				for (; sub_sub_segments_iter != sub_sub_segments_end; ++sub_sub_segments_iter)
+				{
+					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &
+							sub_sub_segment = *sub_sub_segments_iter;
+
+					const GPlatesModel::FeatureHandle::const_weak_ref &sub_sub_segment_feature_ref =
+							sub_sub_segment->get_feature_ref();
+					if (!sub_sub_segment_feature_ref.is_valid())
+					{
+						continue;
+					}
+
+					sub_sub_segment->get_sub_segment_geometry()->accept_visitor(finder);
+				}
+			}
+			else
+			{
+				// Visit shared sub-segment geometry.
+				shared_sub_segment->get_shared_sub_segment_geometry()->accept_visitor(finder);
+			}
 		}
 	}
 
@@ -321,33 +350,85 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_resolved_topol
 			continue;
 		}
 
-		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd_for_export =
-				get_kvd_for_export(
-						feature_ref,
-						referenced_files,
-						active_reconstruction_files,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						export_per_collection);
-
 		std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> shared_sub_segment_geometries;
 
 		// Iterate through the shared sub-segments of the current section feature and collect their geometries.
-		const shared_sub_segment_seq_type &shared_sub_segments = section->get_shared_sub_segments();
-		shared_sub_segment_seq_type::const_iterator shared_sub_segments_iter = shared_sub_segments.begin();
-		shared_sub_segment_seq_type::const_iterator shared_sub_segments_end = shared_sub_segments.end();
+		const GPlatesAppLogic::shared_sub_segment_seq_type &shared_sub_segments = section->get_shared_sub_segments();
+		GPlatesAppLogic::shared_sub_segment_seq_type::const_iterator shared_sub_segments_iter = shared_sub_segments.begin();
+		GPlatesAppLogic::shared_sub_segment_seq_type::const_iterator shared_sub_segments_end = shared_sub_segments.end();
 		for ( ; shared_sub_segments_iter != shared_sub_segments_end; ++shared_sub_segments_iter)
 		{
-			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment &shared_sub_segment = *shared_sub_segments_iter;
+			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type &
+					shared_sub_segment = *shared_sub_segments_iter;
 
-			shared_sub_segment_geometries.push_back(shared_sub_segment.get_geometry());
+			// If the shared sub-segment has any of its own child sub-segments in turn
+			// (because it's from a resolved topological line) then process those instead.
+			// This essentially is the same as simply using the parent sub-segment except that the plate IDs will
+			// come from the child sub-segment features (which is more representative of the reconstructed geometry.
+			const boost::optional<GPlatesAppLogic::sub_segment_seq_type> &sub_sub_segments =
+					shared_sub_segment->get_sub_sub_segments();
+			if (sub_sub_segments)
+			{
+				// Visit each sub-sub-segment geometry.
+				GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_sub_segments_iter = sub_sub_segments->begin();
+				GPlatesAppLogic::sub_segment_seq_type::const_iterator sub_sub_segments_end = sub_sub_segments->end();
+				for (; sub_sub_segments_iter != sub_sub_segments_end; ++sub_sub_segments_iter)
+				{
+					const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &
+							sub_sub_segment = *sub_sub_segments_iter;
+
+					const GPlatesModel::FeatureHandle::const_weak_ref &sub_sub_segment_feature_ref =
+							sub_sub_segment->get_feature_ref();
+					if (!sub_sub_segment_feature_ref.is_valid())
+					{
+						continue;
+					}
+
+					//
+					// Each (child) sub-sub-segment potentially belongs to a different feature
+					// (unlike the parent sub-segments) and hence needs its own KVD.
+					//
+
+					GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type sub_sub_segment_kvd_for_export =
+							get_kvd_for_export(
+									sub_sub_segment_feature_ref,
+									referenced_files,
+									active_reconstruction_files,
+									reconstruction_anchor_plate_id,
+									reconstruction_time,
+									export_per_collection);
+
+					// Write (child) sub-sub-segment geometries out immediately (since each has its own KVD).
+					geom_exporter.export_geometry(
+							sub_sub_segment->get_sub_segment_geometry(),
+							GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type(sub_sub_segment_kvd_for_export));
+				}
+			}
+			else
+			{
+				// Wait and write all shared (parent) sub-segment geometries together as a single feature (with same KVD).
+				shared_sub_segment_geometries.push_back(shared_sub_segment->get_shared_sub_segment_geometry());
+			}
 		}
 
-		// Write the shared sub-segment geometries as a single feature.
-		geom_exporter.export_geometries(
-				shared_sub_segment_geometries.begin(),
-				shared_sub_segment_geometries.end(),
-				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type(kvd_for_export)); 
+		// Write the shared sub-segment geometries as a single feature since these shared (parent) sub-segments
+		// all come from the same topological section feature (and hence have same KVD).
+		if (!shared_sub_segment_geometries.empty())
+		{
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type shared_sub_segment_kvd_for_export =
+					get_kvd_for_export(
+							feature_ref,
+							referenced_files,
+							active_reconstruction_files,
+							reconstruction_anchor_plate_id,
+							reconstruction_time,
+							export_per_collection);
+
+			geom_exporter.export_geometries(
+					shared_sub_segment_geometries.begin(),
+					shared_sub_segment_geometries.end(),
+					GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type(shared_sub_segment_kvd_for_export)); 
+		}
 	}
 }
 
@@ -374,15 +455,6 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_citcoms_resolv
 		++resolved_geom_iter)
 	{
 		const GPlatesAppLogic::ReconstructionGeometry *resolved_geom = *resolved_geom_iter;
-
-		// Get the resolved boundary subsegments.
-		boost::optional<const std::vector<GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment> &> boundary_sub_segments =
-				GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_sub_segment_sequence(resolved_geom);
-		// If not a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork then skip.
-		if (!boundary_sub_segments)
-		{
-			continue;
-		}
 
 		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> boundary_polygon =
 				GPlatesAppLogic::ReconstructionGeometryUtils::get_resolved_topological_boundary_polygon(resolved_geom);
@@ -454,7 +526,7 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_citcoms_sub_se
 			++sub_segment_iter)
 		{
 			const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment *sub_segment = *sub_segment_iter;
-			sub_segment->get_geometry()->accept_visitor(finder);
+			sub_segment->get_sub_segment_geometry()->accept_visitor(finder);
 		}
 	}
 
@@ -522,7 +594,7 @@ GPlatesFileIO::OgrFormatResolvedTopologicalGeometryExport::export_citcoms_sub_se
 
 
 			// Write the subsegment.
-			geom_exporter.export_geometry(sub_segment->get_geometry(), kvd_for_export); 
+			geom_exporter.export_geometry(sub_segment->get_sub_segment_geometry(), kvd_for_export); 
 		}
 	}
 }

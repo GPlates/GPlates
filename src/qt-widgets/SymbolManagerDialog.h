@@ -26,7 +26,7 @@
 
 #include <QDialog>
 
-#include "SymbolManagerDialogUi.h"
+#include "ui_SymbolManagerDialogUi.h"
 
 #include "GPlatesDialog.h"
 

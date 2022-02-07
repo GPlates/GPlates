@@ -211,16 +211,6 @@ namespace GPlatesPropertyValues
 			return non_null_ptr_type(new GmlDataBlock(*this, context));
 		}
 
-		virtual
-		bool
-		equality(
-				const Revisionable &other) const
-		{
-			//const GmlDataBlock &other_pv = dynamic_cast<const GmlDataBlock &>(other);
-
-			return Revisionable::equality(other);
-		}
-
 	private:
 
 		/**

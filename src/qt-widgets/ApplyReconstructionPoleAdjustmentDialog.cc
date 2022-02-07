@@ -76,13 +76,13 @@ GPlatesQtWidgets::ApplyReconstructionPoleAdjustmentDialog::ApplyReconstructionPo
 	QObject::connect(spinbox_pole_time, SIGNAL(valueChanged(double)),
 			this, SLOT(handle_pole_time_changed(double)));
 
-	table_pole_sequences->horizontalHeader()->setResizeMode(ColumnNames::FIXED_PLATE,
+	table_pole_sequences->horizontalHeader()->setSectionResizeMode(ColumnNames::FIXED_PLATE,
 			QHeaderView::Stretch);
-	table_pole_sequences->horizontalHeader()->setResizeMode(ColumnNames::MOVING_PLATE,
+	table_pole_sequences->horizontalHeader()->setSectionResizeMode(ColumnNames::MOVING_PLATE,
 			QHeaderView::Stretch);
-	table_pole_sequences->horizontalHeader()->setResizeMode(ColumnNames::BEGIN_TIME,
+	table_pole_sequences->horizontalHeader()->setSectionResizeMode(ColumnNames::BEGIN_TIME,
 			QHeaderView::Stretch);
-	table_pole_sequences->horizontalHeader()->setResizeMode(ColumnNames::END_TIME,
+	table_pole_sequences->horizontalHeader()->setSectionResizeMode(ColumnNames::END_TIME,
 			QHeaderView::Stretch);
 }
 
@@ -342,7 +342,7 @@ GPlatesQtWidgets::AdjustmentApplicator::handle_pole_sequence_choice_changed(
 	unsigned long fixed_plate = d_sequence_choices.at(index).d_fixed_plate;
 	// Of course, the "fixed" plate might be moving relative to some other plate...
 	FiniteRotation motion_of_fixed_plate =
-			d_reconstruction_tree.get()->get_composed_absolute_rotation(fixed_plate).first;
+			d_reconstruction_tree.get()->get_composed_absolute_rotation(fixed_plate);
 	const UnitQuaternion3D &uq = motion_of_fixed_plate.unit_quat();
 	if ( ! represents_identity_rotation(uq)) {
 		// Let's compensate for the motion of the "fixed" ref frame.
@@ -401,7 +401,8 @@ GPlatesQtWidgets::AdjustmentApplicator::apply_adjustment()
 
 	GPlatesFeatureVisitors::TotalReconstructionSequenceRotationInserter inserter(
 			d_pole_time,
-			*d_adjustment_rel_fixed);
+			*d_adjustment_rel_fixed,
+			d_application_state_ptr->get_feature_collection_file_state());
 	inserter.visit_feature(chosen_pole_seq);
 
 	// We release the model notification guard which will cause a reconstruction to occur

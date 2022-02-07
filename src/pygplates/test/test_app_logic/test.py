@@ -925,25 +925,41 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
                 (rt for rt in resolved_topologies)))
         for bss in resolved_topologies_dict['topology1'].get_boundary_sub_segments():
             self.assertTrue(bss.get_topological_section_feature().get_name() in ('section2', 'section3', 'section4', 'section7', 'section8'))
-        # Sections 9 and 10 are points that have been joined into a single sub-segment (a hack) but either could get selected as the representative section.
+            self.assertFalse(bss.get_sub_segments()) # No topological lines in 'topology1'.
         for bss in resolved_topologies_dict['topology2'].get_boundary_sub_segments():
             self.assertTrue(bss.get_topological_section_feature().get_name() in ('section4', 'section5', 'section7', 'section14', 'section9', 'section10'))
+            if bss.get_topological_section_feature().get_name() == 'section14':
+                self.assertTrue(set(sub_sub_segment.get_feature().get_name() for sub_sub_segment in bss.get_sub_segments()) == set(['section11', 'section12']))
+                # All sub-sub-segments in this shared sub-segment happen to have 3 vertices.
+                for sub_sub_segment in bss.get_sub_segments():
+                    self.assertTrue(len(sub_sub_segment.get_resolved_geometry()) == 3)
+            else:
+                self.assertFalse(bss.get_sub_segments()) # Not from a topological line.
         for bss in resolved_topologies_dict['topology3'].get_boundary_sub_segments():
             self.assertTrue(bss.get_topological_section_feature().get_name() in ('section1', 'section2', 'section6', 'section7', 'section8', 'section14', 'section9', 'section10'))
             self.assertTrue(bss.get_resolved_feature().get_geometry() == bss.get_resolved_geometry())
             if bss.get_topological_section_feature().get_name() == 'section14':
                 # We know 'section14' is a ResolvedTopologicalLine...
                 self.assertTrue(bss.get_topological_section().get_resolved_line() == bss.get_topological_section_geometry())
+                self.assertTrue(set(sub_sub_segment.get_feature().get_name() for sub_sub_segment in bss.get_sub_segments()) == set(['section11', 'section12', 'section13']))
+                for sub_sub_segment in bss.get_sub_segments():
+                    if sub_sub_segment.get_feature().get_name() == 'section13':
+                        self.assertTrue(len(sub_sub_segment.get_resolved_geometry()) == 2)
+                    else:
+                        self.assertTrue(len(sub_sub_segment.get_resolved_geometry()) == 3)
             else:
                 # We know all sections except 'section14' are ReconstructedFeatureGeometry's (not ResolvedTopologicalLine's)...
                 self.assertTrue(pygplates.PolylineOnSphere(bss.get_topological_section().get_reconstructed_geometry()) == bss.get_topological_section_geometry())
+                self.assertFalse(bss.get_sub_segments()) # Not from a topological line.
         
-        self.assertTrue(len(resolved_topological_sections) == 9)
+        # Sections 9 and 10 are points that now are separate sub-segments (each point is a rubber-banded line).
+        # Previously they were joined into a single sub-segment (a hack).
+        self.assertTrue(len(resolved_topological_sections) == 11)
         resolved_topological_sections_dict = dict(zip(
                 (rts.get_topological_section_feature().get_name() for rts in resolved_topological_sections),
                 (rts for rts in resolved_topological_sections)))
         for rts in resolved_topological_sections:
-            self.assertTrue(rts.get_topological_section_feature().get_name() in ('section1', 'section2', 'section3', 'section4', 'section5', 'section6', 'section7', 'section8', 'section14'))
+            self.assertTrue(rts.get_topological_section_feature().get_name() in ('section1', 'section2', 'section3', 'section4', 'section5', 'section6', 'section7', 'section8', 'section9', 'section10', 'section14'))
         
         section1_shared_sub_segments = resolved_topological_sections_dict['section1'].get_shared_sub_segments()
         self.assertTrue(len(section1_shared_sub_segments) == 1)
@@ -951,54 +967,106 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology3']))
             self.assertTrue(sss.get_resolved_feature().get_geometry() == sss.get_resolved_geometry())
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
         
         section2_shared_sub_segments = resolved_topological_sections_dict['section2'].get_shared_sub_segments()
         self.assertTrue(len(section2_shared_sub_segments) == 2)
         for sss in section2_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology1']) or sharing_topologies == set(['topology3']))
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
         
         section3_shared_sub_segments = resolved_topological_sections_dict['section3'].get_shared_sub_segments()
         self.assertTrue(len(section3_shared_sub_segments) == 1)
         for sss in section3_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology1']))
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
         
         section4_shared_sub_segments = resolved_topological_sections_dict['section4'].get_shared_sub_segments()
         self.assertTrue(len(section4_shared_sub_segments) == 2)
         for sss in section4_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology1']) or sharing_topologies == set(['topology2']))
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
         
         section5_shared_sub_segments = resolved_topological_sections_dict['section5'].get_shared_sub_segments()
         self.assertTrue(len(section5_shared_sub_segments) == 1)
         for sss in section5_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology2']))
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
         
         section6_shared_sub_segments = resolved_topological_sections_dict['section6'].get_shared_sub_segments()
         self.assertTrue(len(section6_shared_sub_segments) == 1)
         for sss in section6_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology3']))
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
         
         section7_shared_sub_segments = resolved_topological_sections_dict['section7'].get_shared_sub_segments()
         self.assertTrue(len(section7_shared_sub_segments) == 2)
         for sss in section7_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology1', 'topology2']) or sharing_topologies == set(['topology2', 'topology3']))
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
         
         section8_shared_sub_segments = resolved_topological_sections_dict['section8'].get_shared_sub_segments()
         self.assertTrue(len(section8_shared_sub_segments) == 1)
         for sss in section8_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology1', 'topology3']))
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            overriding_plate, subducting_plate = sss.get_overriding_and_subducting_plates()
+            overriding_plate, subducting_plate, subduction_polarity = sss.get_overriding_and_subducting_plates(True)
+            self.assertTrue(overriding_plate.get_feature().get_reconstruction_plate_id() == 2)
+            self.assertTrue(subducting_plate.get_feature().get_reconstruction_plate_id() == 0)
+            self.assertTrue(subduction_polarity == 'Left')
+        
+        section9_shared_sub_segments = resolved_topological_sections_dict['section9'].get_shared_sub_segments()
+        self.assertTrue(len(section9_shared_sub_segments) == 1)
+        for sss in section9_shared_sub_segments:
+            sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
+            self.assertTrue(sharing_topologies == set(['topology2', 'topology3']))
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
+        
+        section10_shared_sub_segments = resolved_topological_sections_dict['section10'].get_shared_sub_segments()
+        self.assertTrue(len(section10_shared_sub_segments) == 1)
+        for sss in section10_shared_sub_segments:
+            sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
+            self.assertTrue(sharing_topologies == set(['topology2', 'topology3']))
+            self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
+            self.assertFalse(sss.get_overriding_and_subducting_plates()) # Not a subduction zone.
         
         section14_shared_sub_segments = resolved_topological_sections_dict['section14'].get_shared_sub_segments()
         self.assertTrue(len(section14_shared_sub_segments) == 2)
         for sss in section14_shared_sub_segments:
             sharing_topologies = set(srt.get_feature().get_name() for srt in sss.get_sharing_resolved_topologies())
             self.assertTrue(sharing_topologies == set(['topology3']) or sharing_topologies == set(['topology2', 'topology3']))
+            sub_sub_segments = set(sub_sub_segment.get_feature().get_name() for sub_sub_segment in sss.get_sub_segments())
+            if sharing_topologies == set(['topology3']):
+                self.assertTrue(sub_sub_segments == set(['section12', 'section13']))
+                # All sub-sub-segments in this shared sub-segment happen to have 2 vertices.
+                for sub_sub_segment in sss.get_sub_segments():
+                    self.assertTrue(len(sub_sub_segment.get_resolved_geometry()) == 2)
+                self.assertFalse(sss.get_overriding_and_subducting_plates()) # Don't have two sharing plates (only one).
+            else:
+                self.assertTrue(sub_sub_segments == set(['section11', 'section12']))
+                # All sub-sub-segments in this shared sub-segment happen to have 3 vertices.
+                for sub_sub_segment in sss.get_sub_segments():
+                    self.assertTrue(len(sub_sub_segment.get_resolved_geometry()) == 3)
+                overriding_plate, subducting_plate, subduction_polarity = sss.get_overriding_and_subducting_plates(True)
+                self.assertTrue(overriding_plate.get_feature().get_reconstruction_plate_id() == 0)
+                self.assertTrue(subducting_plate.get_feature().get_reconstruction_plate_id() == 1)
+                self.assertTrue(subduction_polarity == 'Right')
 
         # This time exclude networks from the topological sections (but not the topologies).
         resolved_topologies = []
@@ -1011,7 +1079,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             resolved_topological_sections,
             resolve_topological_section_types = pygplates.ResolveTopologyType.boundary)
         self.assertTrue(len(resolved_topologies) == 3)
-        self.assertTrue(len(resolved_topological_sections) == 7)
+        self.assertTrue(len(resolved_topological_sections) == 9)
 
         # This time exclude networks from the topologies (but not the topological sections).
         resolved_topologies = []
@@ -1025,7 +1093,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             resolve_topology_types = pygplates.ResolveTopologyType.boundary,
             resolve_topological_section_types = pygplates.ResolveTopologyType.boundary | pygplates.ResolveTopologyType.network)
         self.assertTrue(len(resolved_topologies) == 2)
-        self.assertTrue(len(resolved_topological_sections) == 9)
+        self.assertTrue(len(resolved_topological_sections) == 11)
 
         # This time exclude networks from both the topologies and the topological sections.
         resolved_topologies = []
@@ -1038,7 +1106,7 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             resolved_topological_sections,
             resolve_topology_types = pygplates.ResolveTopologyType.boundary)
         self.assertTrue(len(resolved_topologies) == 2)
-        self.assertTrue(len(resolved_topological_sections) == 7)
+        self.assertTrue(len(resolved_topological_sections) == 9)
 
 
 class ReconstructionTreeCase(unittest.TestCase):
@@ -1262,6 +1330,10 @@ class RotationModelCase(unittest.TestCase):
                 pygplates.OpenFileForReadingError,
                 pygplates.RotationModel,
                 [ 'non_existent_file.rot' ])
+        #
+        # UPDATE: Argument 'clone_rotation_features' is deprecated in revision 25.
+        #         And argument 'extend_total_reconstruction_poles_to_distant_past' was added in revision 25.
+        #
         # Create using feature collections instead of filenames.
         rotation_model = pygplates.RotationModel([self.rotations], clone_rotation_features=False)
         # Create using a single feature collection.
@@ -1277,6 +1349,46 @@ class RotationModelCase(unittest.TestCase):
                     [rotation for rotation in self.rotations],
                     next(iter(self.rotations))],
                 clone_rotation_features=False)
+        # Create a reference to the same (C++) rotation model.
+        rotation_model_reference = pygplates.RotationModel(rotation_model)
+        
+        # Test using a non-zero default anchor plate ID.
+        rotation_model_non_zero_default_anchor = pygplates.RotationModel(self.rotations, default_anchor_plate_id=802)
+        self.assertTrue(rotation_model_non_zero_default_anchor.get_rotation(self.to_time, 802).represents_identity_rotation())
+        self.assertFalse(rotation_model_non_zero_default_anchor.get_rotation(self.to_time, 802, anchor_plate_id=0).represents_identity_rotation())
+        self.assertTrue(pygplates.FiniteRotation.are_equivalent(
+                rotation_model_non_zero_default_anchor.get_rotation(self.to_time, 802),
+                self.rotation_model.get_rotation(self.to_time, 802, anchor_plate_id=802)))
+        self.assertTrue(pygplates.FiniteRotation.are_equivalent(
+                rotation_model_non_zero_default_anchor.get_rotation(self.to_time, 802, anchor_plate_id=0),
+                self.rotation_model.get_rotation(self.to_time, 802)))
+        
+        # Test extending total reconstruction poles to distant past.
+        rotation_model_not_extended = pygplates.RotationModel(self.rotations)
+        # At 1000Ma there are no rotations (for un-extended model).
+        self.assertFalse(rotation_model_not_extended.get_rotation(1000.0, 801, anchor_plate_id=802, use_identity_for_missing_plate_ids=False))
+        # Deprecated version (triggered by explicitly specifying 'clone_rotation_features' argument) is also an un-extended model.
+        rotation_model_not_extended = pygplates.RotationModel(self.rotations, clone_rotation_features=False)
+        # At 1000Ma there are no rotations (for un-extended model).
+        self.assertFalse(rotation_model_not_extended.get_rotation(1000.0, 801, anchor_plate_id=802, use_identity_for_missing_plate_ids=False))
+        rotation_model_not_extended = pygplates.RotationModel(self.rotations, clone_rotation_features=True)
+        # At 1000Ma there are no rotations (for un-extended model).
+        self.assertFalse(rotation_model_not_extended.get_rotation(1000.0, 801, anchor_plate_id=802, use_identity_for_missing_plate_ids=False))
+        
+        rotation_model_not_extended = pygplates.RotationModel(self.rotations, extend_total_reconstruction_poles_to_distant_past=False)
+        self.assertFalse(rotation_model_not_extended.get_rotation(1000.0, 801, anchor_plate_id=802, use_identity_for_missing_plate_ids=False))
+        # This should choose the 'extend_total_reconstruction_poles_to_distant_past' __init__ overload instead of the
+        # deprecated (not documented) overload accepting 'clone_rotation_features'.
+        rotation_model_not_extended = pygplates.RotationModel(self.rotations, 100, False)
+        self.assertFalse(rotation_model_not_extended.get_rotation(1000.0, 801, anchor_plate_id=802, use_identity_for_missing_plate_ids=False))
+        
+        rotation_model_extended = pygplates.RotationModel(self.rotations, extend_total_reconstruction_poles_to_distant_past=True)
+        # But at 1000Ma there are rotations (for extended model).
+        self.assertTrue(rotation_model_extended.get_rotation(1000.0, 801, anchor_plate_id=802, use_identity_for_missing_plate_ids=False))
+        # This should still choose the 'extend_total_reconstruction_poles_to_distant_past' __init__ overload instead of the
+        # deprecated (not documented) overload accepting 'clone_rotation_features'.
+        rotation_model_extended = pygplates.RotationModel(self.rotations, 100, True)
+        self.assertTrue(rotation_model_extended.get_rotation(1000.0, 801, anchor_plate_id=802, use_identity_for_missing_plate_ids=False))
     
     def test_get_reconstruction_tree(self):
         to_reconstruction_tree = self.rotation_model.get_reconstruction_tree(self.to_time)
@@ -1336,6 +1448,32 @@ class RotationModelCase(unittest.TestCase):
                         self.to_reconstruction_tree,
                         802,
                         291)))
+        
+        # Ensure that specifying 'from_time' at present day (ie, 0Ma) does not assume zero finite rotation (at present day).
+        non_zero_present_day_rotation_model = pygplates.RotationModel(
+            pygplates.Feature.create_total_reconstruction_sequence(
+                0,
+                801,
+                pygplates.GpmlIrregularSampling([
+                    pygplates.GpmlTimeSample(
+                        pygplates.GpmlFiniteRotation(
+                            pygplates.FiniteRotation((0, 0), 1.57)),
+                        0.0), # non-zero finite rotation at present day
+                    pygplates.GpmlTimeSample(
+                        pygplates.GpmlFiniteRotation(
+                            pygplates.FiniteRotation.create_identity_rotation()),
+                        10.0)
+                    ])))
+        # Non-zero finite rotation.
+        self.assertFalse(non_zero_present_day_rotation_model.get_rotation(0.0, 801).represents_identity_rotation())
+        # Just looks at 10Ma.
+        self.assertTrue(non_zero_present_day_rotation_model.get_rotation(10.0, 801).represents_identity_rotation())
+        # 10Ma relative to non-zero finite rotation at present day.
+        #
+        #   R(0->time, A->Plate) = R(time, A->Plate) * inverse[R(0, A->Plate)]
+        self.assertTrue(
+            non_zero_present_day_rotation_model.get_rotation(10.0, 801, 0.0) ==
+            non_zero_present_day_rotation_model.get_rotation(10.0, 801) * non_zero_present_day_rotation_model.get_rotation(0.0, 801).get_inverse())
 
 
 def suite():

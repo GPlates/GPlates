@@ -32,7 +32,6 @@
 
 #include "ColourScheme.h"
 #include "LayerPainter.h"
-#include "RenderSettings.h"
 
 #include "opengl/GLContext.h"
 #include "opengl/GLVisualLayers.h"
@@ -78,7 +77,6 @@ namespace GPlatesGui
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const GPlatesPresentation::VisualLayers &visual_layers,
-				const RenderSettings &render_settings,
 				ColourScheme::non_null_ptr_type colour_scheme);
 
 		/**
@@ -166,9 +164,6 @@ namespace GPlatesGui
 		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
 
 		const GPlatesPresentation::VisualLayers &d_visual_layers;
-
-		//! Rendering flags to determine what gets shown
-		const RenderSettings &d_render_settings;
 
 		//! Used to paint the layers.
 		LayerPainter d_layer_painter;

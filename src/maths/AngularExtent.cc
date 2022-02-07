@@ -54,12 +54,14 @@ GPlatesMaths::AngularExtent::operator+=(
 			// Clamp to PI.
 			d_cosine = AngularExtent::PI.get_cosine();
 			d_sine = AngularExtent::PI.get_sine();
+			d_angle = AngularExtent::PI.get_angle();
 
 			return *this;
 		}
 
 		d_cosine = cos(angular_extent);
 		d_sine = boost::none; // Will get calculated if/when needed.
+		d_angle = boost::none; // Will get calculated if/when needed.
 
 		return *this;
 	}
@@ -71,6 +73,7 @@ GPlatesMaths::AngularExtent::operator+=(
 
 	d_cosine = cosine;
 	d_sine = sine;
+	d_angle = boost::none; // Will get calculated if/when needed.
 
 	return *this;
 }
@@ -87,6 +90,7 @@ GPlatesMaths::AngularExtent::operator-=(
 		// Clamp to zero.
 		d_cosine = AngularExtent::ZERO.get_cosine();
 		d_sine = AngularExtent::ZERO.get_sine();
+		d_angle = AngularExtent::ZERO.get_angle();
 
 		return *this;
 	}
@@ -98,6 +102,7 @@ GPlatesMaths::AngularExtent::operator-=(
 
 	d_cosine = cosine;
 	d_sine = sine;
+	d_angle = boost::none; // Will get calculated if/when needed.
 
 	return *this;
 }

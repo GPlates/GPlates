@@ -45,8 +45,6 @@
 #include "maths/Vector3D.h"
 
 
-#if !defined(GPLATES_NO_PYTHON)
-
 namespace bp = boost::python;
 
 
@@ -478,6 +476,7 @@ export_vector_3d()
 				"  :type y: float\n"
 				"  :param z: the *z* component of the 3D vector\n"
 				"  :type z: float\n"
+				"  :rtype: :class:`Vector3D`\n"
 				"  :raises: UnableToNormaliseZeroVectorError if (x,y,z) is (0,0,0) "
 				"(ie, :meth:`has zero magnitude<is_zero_magnitude>`)\n"
 				"\n"
@@ -508,6 +507,7 @@ export_vector_3d()
 				"to_normalised()\n"
 				"  Returns a new vector that is a normalised (unit length) version of this vector.\n"
 				"\n"
+				"  :rtype: :class:`Vector3D`\n"
 				"  :raises: UnableToNormaliseZeroVectorError if this vector is (0,0,0) "
 				"(ie, :meth:`has zero magnitude<is_zero_magnitude>`)\n"
 				"\n"
@@ -618,5 +618,3 @@ export_vector_3d()
 	// Registers the from-python converter from an (x,y,z) sequence.
 	GPlatesApi::ConversionVector3DFromXYZSequence();
 }
-
-#endif // GPLATES_NO_PYTHON

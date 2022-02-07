@@ -30,7 +30,6 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
-#include "global/NotYetImplementedException.h"
 
 #include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
@@ -40,52 +39,34 @@ const GPlatesPropertyValues::StructuralType
 GPlatesPropertyValues::GpmlTopologicalNetwork::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("TopologicalNetwork");
 
 
-void
-GPlatesPropertyValues::GpmlTopologicalNetwork::set_boundary_sections(
-		const boundary_sections_seq_type &boundary_sections)
-{
-	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
-	revision_handler.get_revision<Revision>().boundary_sections = boundary_sections;
-	revision_handler.commit();
-}
-
-
-void
-GPlatesPropertyValues::GpmlTopologicalNetwork::set_interior_geometries(
-		const interior_geometry_seq_type &interior_geometries)
-{
-	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
-	revision_handler.get_revision<Revision>().interior_geometries = interior_geometries;
-	revision_handler.commit();
-}
-
-
 std::ostream &
 GPlatesPropertyValues::GpmlTopologicalNetwork::print_to(
 		std::ostream &os) const
 {
 	os << "[ ";
 
+		const GPlatesModel::RevisionedVector<GpmlTopologicalSection> &boundary_sections_ = boundary_sections();
+
 		os << "{ ";
 
-			const boundary_sections_seq_type &boundary_sections = get_boundary_sections();
-			boundary_sections_seq_type::const_iterator boundary_sections_iter = boundary_sections.begin();
-			boundary_sections_seq_type::const_iterator boundary_sections_end = boundary_sections.end();
+			GPlatesModel::RevisionedVector<GpmlTopologicalSection>::const_iterator boundary_sections_iter = boundary_sections_.begin();
+			GPlatesModel::RevisionedVector<GpmlTopologicalSection>::const_iterator boundary_sections_end = boundary_sections_.end();
 			for ( ; boundary_sections_iter != boundary_sections_end; ++boundary_sections_iter)
 			{
-				os << *boundary_sections_iter;
+				os << *boundary_sections_iter->get();
 			}
 
 		os << " }, ";
 
+		const GPlatesModel::RevisionedVector<GpmlPropertyDelegate> &interior_geometries_ = interior_geometries();
+
 		os << "{ ";
 
-			const interior_geometry_seq_type &interior_geometries = get_interior_geometries();
-			interior_geometry_seq_type::const_iterator interior_geometries_iter = interior_geometries.begin();
-			interior_geometry_seq_type::const_iterator interior_geometries_end = interior_geometries.end();
+			GPlatesModel::RevisionedVector<GpmlPropertyDelegate>::const_iterator interior_geometries_iter = interior_geometries_.begin();
+			GPlatesModel::RevisionedVector<GpmlPropertyDelegate>::const_iterator interior_geometries_end = interior_geometries_.end();
 			for ( ; interior_geometries_iter != interior_geometries_end; ++interior_geometries_iter)
 			{
-				os << *interior_geometries_iter;
+				os << *interior_geometries_iter->get();
 			}
 
 		os << " }";
@@ -99,56 +80,22 @@ GPlatesPropertyValues::GpmlTopologicalNetwork::bubble_up(
 		GPlatesModel::ModelTransaction &transaction,
 		const Revisionable::non_null_ptr_to_const_type &child_revisionable)
 {
-	// Currently this can't be reached because we don't attach to our children yet.
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
-}
+	// Bubble up to our (parent) context (if any) which creates a new revision for us.
+	Revision &revision = create_bubble_up_revision<Revision>(transaction);
 
-
-bool
-GPlatesPropertyValues::GpmlTopologicalNetwork::Revision::equality(
-		const GPlatesModel::Revision &other) const
-{
-	const Revision &other_revision = dynamic_cast<const Revision &>(other);
-
-	if (boundary_sections.size() != other_revision.boundary_sections.size() ||
-		interior_geometries.size() != other_revision.interior_geometries.size())
+	// In this method we are operating on a (bubble up) cloned version of the current revision.
+	if (child_revisionable == revision.boundary_sections.get_revisionable())
 	{
-		return false;
+		return revision.boundary_sections.clone_revision(transaction);
+	}
+	if (child_revisionable == revision.interior_geometries.get_revisionable())
+	{
+		return revision.interior_geometries.clone_revision(transaction);
 	}
 
-	for (unsigned int n = 0; n < boundary_sections.size(); ++n)
-	{
-		if (boundary_sections[n] != other_revision.boundary_sections[n])
-		{
-			return false;
-		}
-	}
+	// The child property value that bubbled up the modification should be one of our children.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 
-	for (unsigned int m = 0; m < interior_geometries.size(); ++m)
-	{
-		if (interior_geometries[m] != other_revision.interior_geometries[m])
-		{
-			return false;
-		}
-	}
-
-	return PropertyValue::Revision::equality(other);
-}
-
-
-std::ostream &
-GPlatesPropertyValues::operator<<(
-		std::ostream &os,
-		const GpmlTopologicalNetwork::BoundarySection &topological_network_boundary_section)
-{
-	return os << *topological_network_boundary_section.get_source_section();
-}
-
-
-std::ostream &
-GPlatesPropertyValues::operator<<(
-		std::ostream &os,
-		const GpmlTopologicalNetwork::Interior &topological_network_interior)
-{
-	return os << *topological_network_interior.get_source_geometry();
+	// To keep compiler happy - won't be able to get past 'Abort()'.
+	return GPlatesModel::Revision::non_null_ptr_type(NULL);
 }
