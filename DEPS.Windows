@@ -1,0 +1,286 @@
+Dependencies for Windows
+
+Table of Contents
+
+ 1. Introduction
+ 2. Environment variables
+ 3. Program and library dependencies
+
+Introduction
+
+This page lists the program and library dependencies which need to be satisfied
+to be able to build GPlates from source on Windows.
+
+Environment variables
+
+Instructions below may direct you to modify the PATH variable, to add
+directories to the search path for executable files. (Note that the name of the
+variable is not case sensitive, so it could be called Path instead.)
+
+ * Windows XP:
+     1. Click on the Start button.
+     2. Right-click on My Computer and select Properties.
+     3. On the Advanced tab, click on the Environment Variables button.
+     4. If you edit the PATH variable in the User variables section, the change
+        only affects your account. If you edit the PATH variable in the System
+        variables section (assuming you have sufficient privileges to do so),
+        the change will affect all users on the computer. Edit the variable in
+        whichever section is most suitable. If the PATH variable does not exist,
+        click the New button to add it. Separate paths with semicolons.
+ * Windows Vista and Windows 7 (if you have administrator access and you wish
+   to change the PATH variable for all users):
+     1. Click on the Start button.
+     2. Right-click on Computer and select Properties.
+     3. Click on the Advanced system settings link in the left-hand Tasks panel.
+     4. If prompted, enter an administrator password for UAC.
+     5. On the Advanced tab, click on the Environment Variables button.
+     6. Edit the PATH variable in the System variables section. If the PATH
+        variable does not exist, click the New button to add it. Separate paths
+        with semicolons.
+ * Windows Vista and Windows 7 (if you do not have administrator access or you
+   wish to change the PATH variable only for your account):
+     1. Click on the Start button.
+     2. Click your account's picture at the very top of the second column.
+     3. Click on the Change my environment variables link in the left-hand Tasks
+        panel.
+     4. Edit the PATH variable in the User variables section. If the PATH
+        variable does not exist, click the New button to add it. Separate paths
+        with semicolons.
+
+Program and library dependencies
+
+The following libraries and binaries are required to build GPlates. If you
+cannot use, or you cannot obtain, the exact same version as listed, you should
+try to use a version with the same major and minor build numbers (i.e. for a
+version number of x.y.z, you should aim to keep x and y the same). However,
+GPlates should compile and function correctly with newer versions of these
+dependencies.
+
+Microsoft Visual Studio
+
+  1. Install Visual Studio 8 (2005) or newer.
+
+CMake
+
+  1. Get and install cmake-2.6.2-win32-x86.exe from: http://www.cmake.org/
+
+Qt
+
+  1. Download qt-win-opensource-src-4.4.3.zip from: http://get.qt.nokia.com/qt/source/
+  2. Extract it to a path containing no spaces 
+  3. Run: configure
+      * If there are errors, open the "Visual Studio 200x Command Prompt" from
+        the Start menu, and run configure from there.
+  4. Run: nmake 
+  5. In VC access Tools, Options, Projects, Directories and add the following Qt 
+    directories: 
+      * Executable files: \bin
+  6. Add the Qt \bin and \qmake directories to the PATH environment variable
+     (see above).
+     
+GLEW
+  1. Download and extract glew-1.5.4-win32.zip from: http://glew.sourceforge.net/
+  2. Add the \include directory to the CMAKE_INCLUDE_PATH environment variable.
+  3. Add the GLEW \Bin directory to the PATH environment variable (see above).
+  4. For the latest releases (eg, version 1.10.0) you will need to copy the 'bin/Release/Win32/' files to 'bin/'
+     and the 'lib/Release/Win32/' files to 'lib/'.
+
+Python
+  1. Download, and install, the latest 2.7 Windows MSI installer (eg, 'http://www.python.org/downloads/').
+     * Note that GPlates (and pygplates) currently only support the Python 2 series (not Python 3).
+     * Ideally you should install 2.7.9 (or later in the Python 2 series) since it includes 'pip' by default
+       which is in turn useful for the pygplates documentation (see 'doc-python-api/README' in the GPlates source code).
+  2. Add the base Python directory and 'libs/' and 'Scripts/' sub-directories to the PATH environment variable.
+  3. Add the base Python directory to the PYTHONHOME environment variable.
+  4. Add the 'libs/' sub-directory to the PYTHONPATH environment variable.
+  5. Add the 'include/' sub-directory to the CMAKE_INCLUDE_PATH environment variable.
+  6. Add the 'libs/' sub-directory to the CMAKE_LIBRARY_PATH environment variable.
+     * CMAKE_INCLUDE_PATH and CMAKE_LIBRARY_PATH prevent GPlates finding a different Python installation such as inside ArcGIS.
+
+Boost
+
+  1. Download and extract the source code for boost 1.39 or higher from http://www.boost.org/users/download/
+     NOTE: You can no longer get pre-compiled binaries from http://www.boostpro.com/download
+     * Under 'Select Default Variants' select your compiler (eg, 'Visual C++ 8.0'),
+       and select all 'Variants'.
+     * In addition to the default packages, also install "Program Options",
+        "Test (unit test framework)" and "Thread".
+  2. Follow the instructions in the Getting Started guide at http://www.boost.org/doc/libs/1_53_0/more/getting_started/windows.html
+     Essentially (for Visual Studio 2005) this involves:
+     * Starting a dos command-line window (preferably Visual Studio Command Prompt).
+     * Running '.\bootstrap vc8' (where vc8 is for Visual Studio 8.0 or 2005).
+     * Running '.\bjam install --prefix=C:\SDK\boost\boost_1_39' or whichever path you choose to install.
+       Installs the static library versions (library files with the 'lib' prefix).
+       These static libraries are used by CGAL.
+     * Running '.\bjam link=shared threading=multi install --prefix=C:\SDK\boost\boost_1_39'.
+       These shared libraries are used by GPlates.
+  2. Add the C:\SDK\boost\boost_1_xx\include\boost_1_xx directory to the CMAKE_INCLUDE_PATH environment
+     variable.
+  3. Add the C:\SDK\boost\boost_1_xx\lib directory to the CMAKE_LIBRARY_PATH
+     environment variable.
+  4. Add C:\SDK\boost\boost_1_xx\lib directory to the PATH environment variable.
+  Note that the boost-python (sub)library will link against your python installation
+  and, at runtime, will expect a DLL of that python version. For example, if you build boost with python version 2.7
+  then, at runtime, the python DLL (version 2.7) should exist in the PATH.
+  To get boost to find python at compile time you might also need to add something like...
+     using python : 2.7 : C:\\SDK\\python\\Python-2.7.6 : C:\\SDK\\python\\Python-2.7.6\\Include : C:\\SDK\\python\\Python-2.7.6\\libs ;
+  ...to "C:\SDK\boost\boost_1_39\tools\build\v2\user-config.jam" for example.
+  Note if you are using python 2.6.3 or above then you need a boost version greater than 1.40 otherwise you'll get the following
+  exception during GPlates startup 'AttributeError: 'Boost.Python.StaticProperty' object attribute '__doc__' is read-only'
+  - see https://bugs.launchpad.net/ubuntu/+source/boost1.38/+bug/457688
+  Also you'll need to avoid boost 1.48 and above since they don't work well with Qt.
+  If you compile boost 1.47 with Visual Studio 2005 and get a compile warning/error in 'large_arithmetic.hpp' then
+  you can apply this small patch directly to that header file - https://svn.boost.org/trac/boost/changeset/82940
+  Also if you upgrade your boost version you'll need to re-compile the CGAL library (since it uses boost thread).
+
+Proj4
+
+  1. Get Proj4 source code from http://trac.osgeo.org/proj/.
+  2. Read the README file and build Proj4.
+     o This typically includes editing the INSTDIR variable in the "nmake.opt" file in Proj4 source code
+       to point to the install location,
+     o You can install it to the same location where you extracted the source code (eg, "INSTDIR=C:\SDK\proj\proj-4.7.0").
+  3. Add the 'include' directory to CMAKE_INCLUDE_PATH environment variable (eg, "C:\SDK\proj\proj-4.7.0\include").
+  4. Add the 'lib' directory to the CMAKE_LIBRARY_PATH environment variable (eg, "C:\SDK\proj\proj-4.7.0\lib").
+  5. Add the 'bin' directory to the PATH environment variable so the PROJ DLL can be found at run-time (eg, "C:\SDK\proj\proj-4.7.0\bin").
+
+NetCDF
+
+    1. Download the windows pre-compiled library/DLL from "ftp://ftp.unidata.ucar.edu/pub/netcdf/contrib/win32/".
+       o For example, "ftp://ftp.unidata.ucar.edu/pub/netcdf/contrib/win32/netcdf-4.1.1-win32-bin.zip".
+       o Extract it to a location on your hard drive (eg, "C:\SDK\netcdf\netcdf-4.1.1").
+    2. We also need the associated "netcdf.h" header file which, unfortunately is not in the above pre-compiled collection.
+       o So download the associated source code from "ftp://ftp.unidata.ucar.edu/pub/netcdf/contrib/win32/".
+       o For example, "ftp://ftp.unidata.ucar.edu/pub/netcdf/contrib/win32/netcdf-4.1.1-win32-src.zip".
+    3. Copy the "netcdf.h" from step 2 into the extracted location from step 1 (eg, "C:\SDK\netcdf\netcdf-4.1.1").
+       o There appears to be two different "netcdf.h" files (in the 'libsrc/' and 'libsrc4/' subdirectories).
+       o If this is the case then copy the "netcdf.h" from the 'libsrc4' subdirectory.
+    4. Also add this location to the PATH environment variable (so the NetCDF DLL can be found at run-time).
+       o Eg, Add "C:\SDK\netcdf\netcdf-4.1.1" to the PATH environment variable.
+    5. This library will get compiled into GDAL (see GDAL below).
+
+GDAL
+
+    1. Get GDAL source code from http://trac.osgeo.org/gdal/wiki/DownloadSource.
+    2. Extract to a location on your hard drive (eg, "").
+    3. Edit the "nmake.opt" file under the section labelled "# Uncomment the following to enable NetCDF format.",
+       o Uncomment the following four lines and specify the location of the NetCDF library (see NetCDF above).
+       o For example, after editing, you might have something like:
+         NETCDF_PLUGIN = NO
+         NETCDF_SETTING=yes
+         NETCDF_LIB=C:\SDK\netcdf\netcdf-4.1.1\netcdf.lib
+         NETCDF_INC_DIR=C:\SDK\netcdf\netcdf-4.1.1
+    4. Edit the "nmake.opt" file under the section labelled "# Uncomment the following lines to link PROJ.4 library statically.",
+       o Uncomment the following three lines and specify the location of the PROJ4 library (see PROJ4 above).
+       o For example, after editing, you might have something like:
+         PROJ_FLAGS = -DPROJ_STATIC
+         PROJ_INCLUDE = -Ic:\SDK\proj\proj-4.7.0\include
+         PROJ_LIBRARY = c:\SDK\proj\proj-4.7.0\lib\proj.lib
+       o This helps to avoid a dynamic library loading error (for PROJ4) if the PROJ4 DLL is not in the PATH when
+         a raster with an inbuilt spatial reference system (eg, a projection) is loaded into GPlates.
+       o Also note that 'proj.lib' (static lib) should be specified and not 'proj_i.lib' (DLL interface lib).
+    5. Uncomment "#WIN64=YES" in "nmake.opt" for 64-bit build.
+    6. Generate a new Visual Studio solution file,
+       o Run "makegdal_gen.bat 8.00 > makegdal80.vcproj" if you are using Visual Studio 2005.
+       o Run "makegdal_gen.bat 9.00 > makegdal90.vcproj" if you are using Visual Studio 2008.
+    7. Use Visual Studio to build GDAL.
+       o For example, by opening the 'makegdal80.vcproj' project file with Visual Studio 2005.
+       o Selecting 'Release' as the build type.
+	   o NOTE: It seems that selecting 'Debug' as the build type does not generate a debug build.
+	     Instead you'll need to build via the command-line (see below) using the 'DEBUG=1' option.
+	8. Alternatively, instead of building with a solution file, you can bring up a Visual Studio command prompt and type:
+	     nmake /f makefile.vc MSVC_VER=1500
+	   o If 'MSVC_VER' is not specified it appears (in "nmake.opt") to default to 1500 (Visual Studio 2008).
+	   o If you want a debug build then add 'DEBUG=1'.
+    9. Set the 'GDAL_DIR' environment variable to the root path of GDAL (eg, "C:\SDK\gdal\gdal-1.9.0").
+    10. Also add the root path of GDAL to the PATH environment variable (so the GDAL DLL can be found at run-time).
+  
+CGAL
+
+  1. Get and install the CGAL 3.8 source code from http://www.cgal.org/:
+     * Download and run 'CGAL-3.8-Setup.exe'.
+     * Under 'Choose Components' untick everything except:
+	     * 'GMP and MPFR precompiled libs' (note that 'Main CGAL' cannot be unticked).
+     * Select the install location (don't use spaces in the path) - for example, 'C:/SDK/cgal/CGAL-3.8'.
+         * In particular, do not install under Program Files on Windows Vista and
+           above because you will likely run into permissions issues later.
+     * Tick 'CGAL_DIR' environment variable - note: this is necessary for GPlates to be able to find CGAL.
+	 * Tick 'Add CGAL/auxiliary/gmp/lib to PATH'.
+  2. Prepare CGAL for building by running 'cmake-gui.exe' (this requires CMAKE to have already been installed):
+     * NOTE: Make sure you run 'cmake-gui.exe' as administrator (right-click and select 'Run as administrator').
+     * Specify the CGAL installation location as the source and build directories.
+     * Click the 'Configure' button.
+         * If an error dialog pops up and there's red text that complains it cannot find the boost library
+           boost_thread then (if it's not a path issue) it could be that you don't have the 'static' library
+           versions of the boost libraries (the ones with the 'lib' prefix in the library filenames).
+     * Untick all 'WITH_*' options except:
+	     * WITH_CGAL_Core and
+		 * WITH_GMP.
+     * Change 'CMAKE_INSTALL_PREFIX' to the installation location (eg, 'C:/SDK/cgal/CGAL-3.8').
+     * Click the 'Configure' button again.
+     * Click the 'Generate' button.
+     * If this is successful then a Visual Studio solution file 'CGAL.sln'.
+  3. Build CGAL:
+     * Open the generated Visual Studio solution file 'CGAL.sln'.
+     * Select the 'Release' build type.
+     * (GPlates developers will also want to build 'Debug', etc so that similar builds in
+       GPlates can find the CGAL library of the correct build type).
+     * Build the 'INSTALL' project.
+  When GPlates is built it should find CGAL via the "CGAL_DIR" environment variable.
+  Note: If you are compiling CGAL 3.7 or above using Visual Studio 2005 then you'll need to modify
+  a few CGAL headers to get it to compile (because VS2005 no longer supported) - see the last post at
+    http://cgal-discuss.949826.n4.nabble.com/Error-in-Delaunay-traingulation-2-h-td3063834.html
+
+qwt
+
+  1. Get the qwt source code zip package from http://sourceforge.net/projects/qwt/files/qwt/6.0.1/
+  2. Extract the files in the package to your preferred location (e.g. C:\SDK\qwt)
+  3. Open a Visual Studio command prompt and navigate to your qwt location
+	(e.g. C:\SDK\qwt\qwt-6.0.1 )
+  4. At the command prompt, do 
+	qmake
+	nmake
+     You should now have a "lib" folder containing .dll and .lib files.
+  5. (If you have a preferred installation location which is different from your build location, you can edit qwtconfig.pri to use your installation location, and then do "nmake install")
+  6. Define two new enviroment variables, QWT_INCLUDE_DIR and QWT_LIBRARY, with the paths of the qwt header files and the qwt library respectively - for example: 
+	QWT_INCLUDE_DIR could be  "C:\SDK\qwt\qwt-6.0.1\src" 
+	and 
+	QWT_LIBRARY could be "C:\SDK\qwt\qwt-6.0.1\lib\qwt.lib"
+  7. Add the QWT_LIBRARY location to your PATH environment variable.
+ 
+
+gzip
+
+  1. Get and install gzip from http://gnuwin32.sourceforge.net/packages/gzip.htm 
+     . Select the 'complete package, except sources' link.
+       * Alternatively, Cygwin (http://www.cygwin.com/), a complete POSIX
+         environment for Windows, contains gzip.
+  2. Add the location of the gzip executable to the PATH environment variable
+     (see above).
+
+Subversion (optional, but recommended for developers)
+
+  1. Get the command-line client from http://www.collab.net/downloads/subversion/
+     Either the server and client bundle or the client-only bundle will suffice.
+     Even if you have installed TortoiseSVN, this needs to be installed separately
+     to provide the `svn` and `svnversion` command line tools.
+      * Alternatively, Cygwin (http://www.cygwin.com/) contains Subversion.
+  2. Add the location of the `svn` executable to the PATH environment variable
+     (see above).
+  If Subversion is not installed, the build number and branch name will not be
+  automatically inserted into the About dialog box by the build process.
+
+Graphviz (required for documentation, but not required to build GPlates)
+
+  1. Get and install the latest version of Graphviz from http://www.graphviz.org/
+  2. Add the location of the Graphviz main executable to the PATH environment
+     variable (see above). This must be added *after* the FWTools \bin folder
+     (which was added in a previous step).
+
+Doxygen (required for documentation, but not required to build GPlates)
+
+  1. Get and install the latest version of Doxygen from
+     http://www.stack.nl/~dimitri/doxygen/download.html#latestsrc
+      * Alternatively, Cygwin (http://www.cygwin.com/) contains Doxygen.
+  2. Add the location of the Doxygen main executable to the PATH environment
+     variable (see above).

@@ -1,0 +1,169 @@
+Dependencies For Mac OS X
+
+Table of Contents
+
+ 1. Introduction
+ 2. Program and library dependencies
+ 3. Corresponding package dependencies
+ 4. Installing OpenGL
+ 5. Overview of different ways to install non-system dependencies
+ 6. Installing non-system dependencies using Macports
+ 7. Troubleshooting  
+
+Introduction
+
+This page lists the package dependencies which need to be satisfied to be able
+to build GPlates from source on Mac OS X.
+
+Program and library dependencies
+
+To compile GPlates, you will need the following programs and libraries
+installed:
+
+  • cmake (2.6.2 or newer)
+  • g++ 4.2 or above (see "BUILD.OSX" for instructions on how to install g++)
+  • make
+  • GL library (the OpenGL shared library)
+  • GLU library (the OpenGL Utility shared library)
+  • GLEW library (the OpenGL Extension Wrangler Library)
+  * Python (version 2.x but not version 3.x)
+  • Boost library headers (version 1.34 or newer)
+  • Qt library (version 4.4 or newer)
+  • Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer)
+  • Computational Geometry Algorithms Library (CGAL) (3.3.1 or newer)
+  • PROJ.4 (4.6.0 or newer)
+  • Qwt 6.0.1
+
+Corresponding package dependencies
+
+This subsection provides more specific information on resolving the program and
+library dependencies on Mac OS X 10.4 and 10.5 systems.
+
+Program/library Corresponding Macports packages
+cmake           cmake
+Python          python
+Boost           boost
+Qt              qt4-mac
+GDAL            gdal
+CGAL            cgal
+PROJ.4          proj
+
+Installing OpenGL
+
+The OpenGL libraries (GL and GLU) should already exist on your machine.
+However in some cases this is not so. If they don't exist you'll get error messages
+about missing "gl.h" or "glu.h" header files when compiling GPlates.
+To ensure that they do exist you'll need to obtain a copy of the install disc used to
+install Mac OS X on your computer. If you don't have this then you can download the
+XCode development tools free of charge from http://developer.apple.com/technology/tools.html
+(a login is required). Once you have the XCode disc image locate the OpenGLDSK.pkg (it should
+be located in the "Packages" directory) and install it.
+Note that a Mac OS X 10.5 install disc will not work on a computer with a 10.4 version of Mac OS X.
+You should only need to install "OpenGLSDK.pkg" if you get compile errors abouting missing
+"gl.h" or "glu.h" headers when compiling GPlates.
+
+Overview of different ways to install non-system dependencies
+
+There are multiple ways to install the remaining dependencies.
+You can use Fink (http://www.finkproject.org/) or Macports (http://www.macports.org).
+Or you can compile the dependent packages directly from source code.
+Or you can install the dependent packages using precompiled installer packages where available.
+
+In fact Christian Heine has written a great document titled
+"Building GPlates from source on Mac OS X without package managers" dated 26th February 2009.
+A link to that document is available at http://www.gplates.org/docs.html. In that document he
+lists several websites where you can download GPlates dependencies as precompiled binaries in
+the form of installer packages. These are certainly a better alternative to Macports or Fink
+because the installation requires no compilation of source code and hence is much quicker to install.
+Some of the slower Mac laptops can take hours to build GPlates and all its dependencies.
+I'll list the install package locations mentioned in that document here also:
+  • GDAL (and its dependencies): "http://www.kyngchaos.com/software:frameworks".
+  • Qt: "http://www.qtsoftware.com/downloads/opensource/appdev/mac-os-cpp".
+    Look for "qt-mac-opensource-4.4.3.dmg".
+  • CMake: "http://www.cmake.org/cmake/resources/software.html".
+    Look for "cmake-2.6.3-Darwin-universal.dmg".
+	It is only for Tiger (10.4) but apparently also works on Leopard (10.5).
+It is recommended that you use the installer packages over Macports or Fink where possible.
+
+Installing non-system dependencies using Macports
+
+Here we briefly describe how to install dependencies using Macports (http://www.macports.org).
+For each dependency mentioned below it is recommended to use an installer package listed above
+instead if one exists (ie, for GDAL, Qt and CMake).
+  • Install Macports (http://www.macports.org) if it's not already installed.
+  • Start a new terminal window (by running Applications->Utilities->Terminal in Finder).
+  • You may need to set the path to Macports with "export PATH=/opt/local/bin:/opt/local/sbin:$PATH".
+  • If you are behind a proxy server you may need to set the "http_proxy" and "FTP_PROXY" shell variables.
+    For example, "export http_proxy=http://www-cache.usyd.edu.au:8080".
+  • Update Macports with 'sudo port -d selfupdate'.
+    It is important to do this every time you build a new version of GPlates (eg, GPlates 0.9.8
+	introduced a new dependency CGAL which was only recently added to Macports).
+    If this doesn't work then you'll need to download the 'ports.tar.gz' tarball by following the
+    instructions in http://trac.macports.org/wiki/howto/PortTreeTarball.
+    Thanks to Jo Whittaker for pointing this out.
+  • In the following steps, if 'sudo port install ...' appears to hang then try one of the following:
+    • Use 'sudo env http_proxy="$http_proxy" port install ...' instead of 'sudo port install' ...,
+    • Or try manually downloading the port tarball from http://distfiles.macports.org/<portname>/ and copy it to
+      ${prefix}/var/macports/distfiles/<portname>/ where 'prefix' is most likely '/opt/local'.
+      More details can be found in the "Fetch failures" section at http://trac.macports.org/wiki/ProblemHotlist.
+      You may have to do the same for any dependencies that failed to fetch.  Oh the joy !
+  • Install CMake with 'sudo port install cmake' if you don't have CMake. Note that the installer
+    at "http://www.cmake.org/files/v2.6/cmake-2.6.3-Darwin-universal.dmg" is easier than using Macports.
+  • Install Qt4 with 'sudo port install qt4-mac' +framework' if you don't have Qt4. You need to install qt as framework in order to 
+    make package successfully. Otherwise you might get a missing-'.nib'-file error while making package.
+    Note that the installer at "ftp://ftp.trolltech.com/qt/source/qt-mac-opensource-4.4.3.dmg" is easier than using
+    Macports due to the large number of software dependencies required by Qt4.
+  • Install GLEW with 'sudo port install glew' if you don't have GLEW.
+  • Install Python with 'sudo port install python2[x]' where 'x' is the minor version (eg, 'sudo port install python27).
+    You may have to set the CMAKE_FRAMEWORK_PATH to '/opt/local/Library/Frameworks' (either in an
+	environment variable or via the cmake command-line using the '-D' option.
+  • Install Boost with 'sudo port install boost+python2[x]' if you don't have Boost - note the additional "+python2[x]".
+    Where 'x' is the python minor version number - for example 'sudo port install boost+python27'.
+    You may have to use 'sudo port upgrade --enforce-variants boost +python27', for example, if your Boost is already up to date.
+	NOTE: The following link http://lenni.info/blog/2009/01/how-to-deactivate-one-macport-variant-and-switch-to-another-one/
+	provides useful information on activating/deactivating existing ports if you have several variants.
+        Avoid boost 1.48 and above. They don't work well with qt.
+  • Install CGAL with 'sudo port install cgal' if you don't  have CGAL. Avoid cgal 4.0.1. A bug of it crashes GPlates.
+  • Install GDAL with 'sudo port install gdal +netcdf' if you don't have GDAL - note the additional "+netcdf".
+    You may have to use 'sudo port upgrade --enforce-variants gdal +netcdf' if your GDAL is already up to date. 
+  • Make sure you don't have multiple installations of the same library.
+    For example, /opt/local/include/gdal* and /Library/Frameworks/GDAL.framework.
+
+A note about GDAL
+
+If you decide to compile GDAL from source (instead of using Macports) then ensure that GDAL links *statically*
+to PROJ4 if the PROJ4 library is in a non-standard location. This ensures GPlates does not generate a dynamic
+library loading error (for PROJ4) when a raster with an inbuilt spatial reference system (eg, a projection) is loaded.
+This does not appear to be necessary when using GDAL installed via Macports (since it statically links PROJ4 to GDAL).
+You'll also need to ensure that the NetCDF library is installed and that GDAL is configured to use it - this is
+necessary for GPlates to be able to load gridded rasters.
+Here are the relevant options for the GDAL 'configure' script:
+   configure --with-netcdf=/path/to/netcdf --with-static-proj4=/path/to/proj4
+
+Installing qwt
+  • Download the qwt source package from http://sourceforge.net/projects/qwt/files/qwt/6.0.1/
+  • Extract the files to your preferred location
+  • Open a terminal and navigate to the qwt source location
+  • Run the following commands at the terminal:
+	qmake -spec macx-g++
+	make
+	make install
+  • create a soft link from the install location to /usr/local/lib by running
+	sudo ln -s /usr/local/qwt-6.0.1/lib/qwt.framework/qwt 
+  • Define variables QWT_INCLUDE_DIR and QWT_LIBRARY with the locations of the qwt header files and library respectively. For example
+	export QWT_INCLUDE_DIR=/usr/local/qwt-6.0.1/lib/qwt.framework/Headers
+	export QWT_LIBRARY=/usr/local/qwt-6.0.1/lib/qwt.framework
+  • When building GPlates (see BUILD.OSX) it may be necessary to provide the QWT_LIBRARY at the cmake command-line, i.e.
+	cmake -DQWT_LIBRARY=/usr/local/qwt-6.0.1/lib/qwt.framework
+
+
+Troubleshooting
+
+   • If you are using Mac OS X 10.5, the latest precompiled Qt binary on Qt offcial website probably doesn't work well for you. 
+     You might experience crash during installing Qt or bad library files during compiling gplates.
+     Sometimes, the Qt installed from Macport also doesn't work. The package you created might not be able to 
+	 install gplates sucessfully on other machines. The symptom could be that gplates complains missing menu_nib files during startup. 
+     The solution is to download Qt source code and compile it. You need to set QTDIR env variable to tell cmake where to find Qt.
+   • It seems the OpenCL frameworks on Mac OS X 10.6 and 10.7 are incompatible. So, if gplates complains OpenCL, 
+     you need to make sure you are using the installation package created on the same version Mac OS X.
+	

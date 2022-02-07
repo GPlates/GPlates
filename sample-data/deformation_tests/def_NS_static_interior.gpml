@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpml:FeatureCollection xmlns:gpml="http://www.gplates.org/gplates" xmlns:gml="http://www.opengis.net/gml" xmlns:xsi="http://www.w3.org/XMLSchema-instance" gpml:version="1.6.0327" xsi:schemaLocation="http://www.gplates.org/gplates ../xsd/gpml.xsd http://www.opengis.net/gml ../../../gml/current/base">
+    <gml:featureMember>
+        <gpml:UnclassifiedFeature>
+            <gpml:identity>GPlates-4ab78792-dfb8-4d66-ad50-9d6905e5fb1c</gpml:identity>
+            <gpml:revision>GPlates-2b9c4917-fcba-4a10-a9df-a05f3edf7940</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>102</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:unclassifiedGeometry>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">14 -4.0000000000000009 14 -7.9999999999999973 14 -12.000000000000002 14 -15.999999999999995 14 -19.999999999999996 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:unclassifiedGeometry>
+            <gml:name>North Line</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+        </gpml:UnclassifiedFeature>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:UnclassifiedFeature>
+            <gpml:identity>GPlates-36c7e1b5-3cc3-448e-bd35-2304a92d7403</gpml:identity>
+            <gpml:revision>GPlates-83847747-7ec5-495d-a9dd-e7f1b6d78235</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>0</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:unclassifiedGeometry>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">-1 -18 -1 -14 -1 -10 -1 -6 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:unclassifiedGeometry>
+            <gml:name>middle Line</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+        </gpml:UnclassifiedFeature>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:UnclassifiedFeature>
+            <gpml:identity>GPlates-f852ff89-bdc9-4ba0-a5da-073032c157dd</gpml:identity>
+            <gpml:revision>GPlates-a77e3342-ed4e-4b2d-9398-aca2539a5991</gpml:revision>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>102</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:unclassifiedGeometry>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gml:OrientableCurve gml:orientation="+">
+                            <gml:baseCurve>
+                                <gml:LineString>
+                                    <gml:posList gml:dimension="2">-8 -4 -8 -6.0000000000000009 -8 -7.9999999999999973 -8 -10 -8 -16 -8.1105117375843996 -18.724242432815036 </gml:posList>
+                                </gml:LineString>
+                            </gml:baseCurve>
+                        </gml:OrientableCurve>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:OrientableCurve</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:unclassifiedGeometry>
+            <gml:name>South Line</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+        </gpml:UnclassifiedFeature>
+    </gml:featureMember>
+    <gml:featureMember>
+        <gpml:TopologicalNetwork>
+            <gpml:identity>GPlates-1726a81b-349d-47e0-b26c-079c1b3bf847</gpml:identity>
+            <gpml:revision>GPlates-bef44fa6-28bd-489e-a21f-aa6dec1e5fd1</gpml:revision>
+            <gml:name>total NS network</gml:name>
+            <gml:validTime>
+                <gml:TimePeriod>
+                    <gml:begin>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantPast</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:begin>
+                    <gml:end>
+                        <gml:TimeInstant>
+                            <gml:timePosition gml:frame="http://gplates.org/TRS/flat">http://gplates.org/times/distantFuture</gml:timePosition>
+                        </gml:TimeInstant>
+                    </gml:end>
+                </gml:TimePeriod>
+            </gml:validTime>
+            <gpml:reconstructionPlateId>
+                <gpml:ConstantValue>
+                    <gpml:value>0</gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:plateId</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:reconstructionPlateId>
+            <gpml:network>
+                <gpml:ConstantValue>
+                    <gpml:value>
+                        <gpml:TopologicalNetwork>
+                            <gpml:boundary>
+                                <gpml:TopologicalSections>
+                                    <gpml:section>
+                                        <gpml:TopologicalLineSection>
+                                            <gpml:sourceGeometry>
+                                                <gpml:PropertyDelegate>
+                                                    <gpml:targetFeature>GPlates-4ab78792-dfb8-4d66-ad50-9d6905e5fb1c</gpml:targetFeature>
+                                                    <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:unclassifiedGeometry</gpml:targetProperty>
+                                                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
+                                                </gpml:PropertyDelegate>
+                                            </gpml:sourceGeometry>
+                                            <gpml:reverseOrder>true</gpml:reverseOrder>
+                                        </gpml:TopologicalLineSection>
+                                    </gpml:section>
+                                    <gpml:section>
+                                        <gpml:TopologicalLineSection>
+                                            <gpml:sourceGeometry>
+                                                <gpml:PropertyDelegate>
+                                                    <gpml:targetFeature>GPlates-f852ff89-bdc9-4ba0-a5da-073032c157dd</gpml:targetFeature>
+                                                    <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:unclassifiedGeometry</gpml:targetProperty>
+                                                    <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
+                                                </gpml:PropertyDelegate>
+                                            </gpml:sourceGeometry>
+                                            <gpml:reverseOrder>false</gpml:reverseOrder>
+                                        </gpml:TopologicalLineSection>
+                                    </gpml:section>
+                                </gpml:TopologicalSections>
+                            </gpml:boundary>
+                            <gpml:interior>
+                                <gpml:TopologicalNetworkInterior>
+                                    <gpml:sourceGeometry>
+                                        <gpml:PropertyDelegate>
+                                            <gpml:targetFeature>GPlates-36c7e1b5-3cc3-448e-bd35-2304a92d7403</gpml:targetFeature>
+                                            <gpml:targetProperty xmlns:gpml="http://www.gplates.org/gplates">gpml:unclassifiedGeometry</gpml:targetProperty>
+                                            <gpml:valueType xmlns:gml="http://www.opengis.net/gml">gml:LineString</gpml:valueType>
+                                        </gpml:PropertyDelegate>
+                                    </gpml:sourceGeometry>
+                                </gpml:TopologicalNetworkInterior>
+                            </gpml:interior>
+                        </gpml:TopologicalNetwork>
+                    </gpml:value>
+                    <gpml:valueType xmlns:gpml="http://www.gplates.org/gplates">gpml:TopologicalNetwork</gpml:valueType>
+                </gpml:ConstantValue>
+            </gpml:network>
+        </gpml:TopologicalNetwork>
+    </gml:featureMember>
+</gpml:FeatureCollection>

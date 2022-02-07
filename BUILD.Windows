@@ -1,0 +1,107 @@
+Build On Windows
+
+Table of Contents
+
+ 1. Introduction
+ 2. Using Microsoft Visual C++
+     1. Version requirements
+     2. Visual C++ Express Edition
+     3. Note before starting
+     4. Program and library dependencies
+ 3. Creating Visual Studio solution and project files with CMake
+     1. Building pygplates via the IDE	
+     2. Building pygplates via the Command Line (MSVC2005+ only)
+
+Introduction
+
+This will be a guide to building pygplates with various Windows development
+environments. 
+
+Using Microsoft Visual C++
+
+The Visual C++ set of development tools is part of the Microsoft Visual Studio
+suite. More information can be found at http://msdn.microsoft.com/visualc - the 
+MSDN product page for Visual C++. 
+
+Version requirements
+
+pygplates can be built with version 8.0 (2005) of Microsoft Visual C++ (MSVC8).
+pygplates also builds under MSVC9 (2008). Older versions of the environment
+are tied to older versions of the Microsoft C/C++ compiler (CL.EXE) 
+which are not standard-conforming enough, and do not properly support many of the 
+C++ features that pygplates and its dependencies (especially Boost) use. 
+pygplates is also known to build under MSVC10 (2010), although newer versions of
+the dependencies will be required; if in doubt, for each dependency, download
+the latest version instead of the version stated in DEPS.Windows.
+
+Visual C++ Express Edition
+
+The Express edition of Visual C++ is freely available (although Microsoft's support
+for the 2005 edition is coming to an end and the 2008 edition may have issues
+with the boost library). The steps for building pygplates with the Express edition
+are the same as those for the Standard or Professional editions, with one
+additional requirement. The Platform SDK must be downloaded and installed,
+and integrated with the version of Visual C++ Express installed. 
+
+Note before starting
+
+For any activities requiring the command line, remember to use the "Visual 
+Studio 200X Command Prompt" shortcut available in the "Start > Programs > 
+Microsoft Visual Studio 200X > Visual Studio Tools" menu. This starts a command 
+prompt and sets up environment variables, allowing use of VC command line 
+applications (such as the compiler, linker, and make tool).
+
+Program and library dependencies
+
+Firstly, you should ensure that you have installed the dependencies as described
+in "DEPS.Windows".
+
+Creating Visual Studio solution and project files with CMake
+
+  1.  Edit the 'CMAKE_INCLUDE_PATH' environment variable to refer to the include paths for
+      Boost, GDAL, and GLEW packages you've installed.
+      For example add the following to 'CMAKE_INCLUDE_PATH':
+         "C:/Libraries/Boost"
+         "C:/Libraries/FWTools/include"
+		 "C:/Libraries/glew-1.5.4/include"
+      The corresponding library directories will be found relative to these include directories.
+      If, for some reason, the include directories are found but not the libraries then you can
+      edit 'CMAKE_LIBRARY_PATH' in a similar manner to 'CMAKE_INCLUDE_PATH'.
+  2.  The Gzip package should be found automatically if it's installed in
+      'C:/Program Files/GnuWin32/' otherwise you'll need to tell CMake where it is by editing
+      either the 'CMAKE_PROGRAM_PATH' variable or 'PATH' environment variable.
+  3.  Run the CMake program ('CMakeSetup.exe'). CMake 2.4.8 and above is fine.
+          Vista NOTE: You need to elevate permissions on 'CMakeSetup.exe' by
+          right-click->properties->compatibility(tab)->check "run this program as an administrator".
+  4.  Set the 'source' directory to the root GPlates source directory (the one that has
+      'src' as a sub-directory).
+  5.  Set the 'build' directory to be the same as the 'source' directory for in-place builds or
+      to a different directory for out-of-place builds (recommended for developers).
+  6.  Click 'configure'.
+  6.  Specify 'Visual Studio 2005'.
+  7.  Once configuration finished you should get no popup messages.
+      If you do then most likely the 'CMAKE_INCLUDE_PATH' environment variable is not referring
+      to the correct locations.
+  8.  Even if no popup messages occurred the 'OK' will still be greyed out so you'll need
+      to click 'configure' once more.
+  9.  Click 'OK' or 'Generate' - NOTE: you might get multiple warning messages that look like..
+      "WARNING: Target "gplates" requests linking to directory..." referring to the CGAL library location.
+	  This is ok and can be ignored.
+  10. The CMake GUI closes or stays open and says 'Generating done'.
+  11. You should now have a 'gplates.sln' file in your root GPlates directory.
+
+Building pygplates via the IDE
+
+  1. Open GPlates.sln with the VS IDE.
+  2. Select 'release' build from the "Build->Configuration Manager..." menu.
+  3. Rebuild All from the Build menu.
+
+Building pygplates via the Command Line (MSVC2005+ only)
+
+  1. Add paths configured in Tools, Options, Projects, Directories in the IDE to the
+     appropriate environment variables:
+       * PATH: for Executable file paths 
+  2. Run the Visual Studio 2005 Command Prompt. 
+  3. Go to the root GPlates build directory. 
+  4. Type the following on the command-line to build a release version of pygplates:
+       vcbuild gplates.sln "Release|Win32"

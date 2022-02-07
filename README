@@ -1,0 +1,78 @@
+GPlates README
+==============
+
+This is the source code for the GPlates software.
+
+GPlates is open-source software, distributed under the terms of the GNU General
+Public License (version 2, dated June 1991) unless otherwise explicitly stated.
+A copy of the license can be found in the file "COPYING" in this directory.
+
+
+Compiling GPlates on Linux
+--------------------------
+
+To compile GPlates on Linux, you will need the programs and libraries as
+documented in the "Program and library dependencies" section in the "DEPS.Linux"
+file in this directory.
+
+After installing those dependencies, to compile on Linux, execute:
+	cmake .
+	make
+and then optionally:
+	make install
+
+More information can be found in the files "DEPS.Linux" and "BUILD.Linux" in
+this directory.
+
+
+Compiling GPlates on Mac OS X
+-----------------------------
+
+To compile GPlates on Mac OS X, you will need the programs and libraries as
+documented in the "Program and library dependencies" section in the "DEPS.OSX"
+file in this directory.
+
+After installing those dependencies, to compile on Mac OS X, execute:
+	cmake .
+	make
+and then optionally:
+	make install
+
+More information can be found in the files "DEPS.OSX" and "BUILD.OSX" in
+this directory.
+
+
+Compiling GPlates on Windows
+----------------------------
+
+To compile GPlates on Microsoft Windows, you will need the programs and libraries
+as documented in the "Program and library dependencies" section in the "DEPS.Windows"
+file in this directory.
+ * GLEW library (the OpenGL Extension Wrangler Library)
+
+To compile on Windows:
+ * Edit the 'CMAKE_INCLUDE_PATH' environment variable to refer to the include paths for
+   Boost and GDAL packages you've installed.
+ * The Gzip package should be found automatically if it's installed in 'C:/Program Files/GnuWin32/'.
+ * Run the CMake program ('CMakeSetup.exe'). CMake 2.6.2 and above is fine.
+      Vista NOTE: You need to elevate permissions on 'CMakeSetup.exe' by
+      right-click->properties->compatibility(tab)->check "run this program as an administrator".
+ * Set both the 'source' and 'build' directories to the root GPlates source directory
+   (the one that has 'src' as a sub-directory).
+ * Click 'configure'.
+ * Specify 'Visual Studio 2005'.
+ * Click 'configure' once more.
+ * Click 'OK'.
+ * Open newly created 'GPlates.sln' with the Visual Studio IDE.
+ * Select 'Release' build from the "Build->Configuration Manager..." menu.
+ * Rebuild All from the Build menu.
+
+More information can be found in the files "DEPS.Windows" and "BUILD.Windows" in this directory.
+
+
+GPlates on the Web
+------------------
+
+For up-to-date information about GPlates, you can go to the GPlates website:
+ http://www.gplates.org/
+

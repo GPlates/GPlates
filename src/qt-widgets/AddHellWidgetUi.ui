@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>Form</class>
+ <widget class="QWidget" name="Form">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>456</width>
+    <height>232</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QHBoxLayout" name="horizontalLayout_5">
+   <item>
+    <widget class="QGroupBox" name="groupBox">
+     <property name="toolTip">
+      <string/>
+     </property>
+     <property name="title">
+      <string>Add HELL</string>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QLabel" name="label">
+          <property name="toolTip">
+           <string>total misﬁt</string>
+          </property>
+          <property name="text">
+           <string>r:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDoubleSpinBox" name="r"/>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_2">
+        <item>
+         <widget class="QLabel" name="label_2">
+          <property name="toolTip">
+           <string>number of data points and segment length</string>
+          </property>
+          <property name="text">
+           <string>Ns:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="ns_n"/>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="ns_s"/>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <item>
+         <widget class="QLabel" name="label_3">
+          <property name="toolTip">
+           <string>number of data points and segment length</string>
+          </property>
+          <property name="text">
+           <string>dF:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QSpinBox" name="df"/>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <item>
+         <widget class="QLabel" name="label_4">
+          <property name="toolTip">
+           <string>Quality factor</string>
+          </property>
+          <property name="text">
+           <string>kappahat:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QDoubleSpinBox" name="kappa"/>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QLabel" name="label_5">
+        <property name="toolTip">
+         <string>Covariance matrix</string>
+        </property>
+        <property name="text">
+         <string>cov:</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <layout class="QGridLayout" name="gridLayout">
+        <item row="0" column="0">
+         <widget class="QDoubleSpinBox" name="cov_1"/>
+        </item>
+        <item row="0" column="1">
+         <widget class="QDoubleSpinBox" name="cov_2"/>
+        </item>
+        <item row="0" column="2">
+         <widget class="QDoubleSpinBox" name="cov_3"/>
+        </item>
+        <item row="1" column="0">
+         <widget class="QDoubleSpinBox" name="cov_4"/>
+        </item>
+        <item row="1" column="1">
+         <widget class="QDoubleSpinBox" name="cov_5"/>
+        </item>
+        <item row="1" column="2">
+         <widget class="QDoubleSpinBox" name="cov_6"/>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

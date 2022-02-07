@@ -1,0 +1,128 @@
+<ui version="4.0" >
+ <class>SearchResultsDockWidget</class>
+ <widget class="QDockWidget" name="SearchResultsDockWidget" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>702</width>
+    <height>131</height>
+   </rect>
+  </property>
+  <property name="minimumSize" >
+   <size>
+    <width>149</width>
+    <height>131</height>
+   </size>
+  </property>
+  <property name="contextMenuPolicy" >
+   <enum>Qt::ActionsContextMenu</enum>
+  </property>
+  <property name="features" >
+   <set>QDockWidget::DockWidgetFeatureMask</set>
+  </property>
+  <property name="allowedAreas" >
+   <set>Qt::AllDockWidgetAreas</set>
+  </property>
+  <widget class="QWidget" name="dockWidgetContents" >
+   <property name="contextMenuPolicy" >
+    <enum>Qt::PreventContextMenu</enum>
+   </property>
+   <layout class="QVBoxLayout" >
+    <property name="spacing" >
+     <number>0</number>
+    </property>
+    <property name="margin" >
+     <number>0</number>
+    </property>
+    <item>
+     <widget class="QTabWidget" name="tab_widget_search_results" >
+      <property name="sizePolicy" >
+       <sizepolicy vsizetype="MinimumExpanding" hsizetype="Expanding" >
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="minimumSize" >
+       <size>
+        <width>0</width>
+        <height>130</height>
+       </size>
+      </property>
+      <property name="contextMenuPolicy" >
+       <enum>Qt::PreventContextMenu</enum>
+      </property>
+      <property name="tabPosition" >
+       <enum>QTabWidget::North</enum>
+      </property>
+      <property name="currentIndex" >
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="tab_clicked" >
+       <attribute name="title" >
+        <string>Clicked</string>
+       </attribute>
+       <layout class="QHBoxLayout" >
+        <property name="spacing" >
+         <number>2</number>
+        </property>
+        <property name="margin" >
+         <number>2</number>
+        </property>
+        <item>
+         <widget class="QTreeView" name="tree_view_clicked_geometries" >
+          <property name="sizePolicy" >
+           <sizepolicy vsizetype="Ignored" hsizetype="Expanding" >
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_topology" >
+       <attribute name="title" >
+        <string>Topology Sections</string>
+       </attribute>
+       <layout class="QHBoxLayout" >
+        <property name="spacing" >
+         <number>2</number>
+        </property>
+        <property name="margin" >
+         <number>2</number>
+        </property>
+        <item>
+         <widget class="QTableWidget" name="table_widget_topology_sections" >
+          <property name="sizePolicy" >
+           <sizepolicy vsizetype="Ignored" hsizetype="Expanding" >
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="selectionMode" >
+           <enum>QAbstractItemView::SingleSelection</enum>
+          </property>
+          <property name="selectionBehavior" >
+           <enum>QAbstractItemView::SelectRows</enum>
+          </property>
+          <property name="verticalScrollMode" >
+           <enum>QAbstractItemView::ScrollPerItem</enum>
+          </property>
+          <property name="horizontalScrollMode" >
+           <enum>QAbstractItemView::ScrollPerPixel</enum>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
+ <connections/>
+</ui>

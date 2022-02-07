@@ -1,0 +1,190 @@
+<ui version="4.0" >
+ <class>EditShapefileAttributesWidget</class>
+ <widget class="QWidget" name="EditShapefileAttributesWidget" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>446</width>
+    <height>333</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" >
+   <property name="leftMargin" >
+    <number>2</number>
+   </property>
+   <property name="topMargin" >
+    <number>2</number>
+   </property>
+   <property name="rightMargin" >
+    <number>2</number>
+   </property>
+   <property name="bottomMargin" >
+    <number>2</number>
+   </property>
+   <item>
+    <widget class="QTableWidget" name="table_elements" >
+     <property name="sizePolicy" >
+      <sizepolicy vsizetype="Expanding" hsizetype="Expanding" >
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="styleSheet" >
+      <string/>
+     </property>
+     <property name="verticalScrollBarPolicy" >
+      <enum>Qt::ScrollBarAlwaysOn</enum>
+     </property>
+     <property name="horizontalScrollBarPolicy" >
+      <enum>Qt::ScrollBarAlwaysOff</enum>
+     </property>
+     <property name="alternatingRowColors" >
+      <bool>true</bool>
+     </property>
+     <property name="selectionBehavior" >
+      <enum>QAbstractItemView::SelectItems</enum>
+     </property>
+     <property name="verticalScrollMode" >
+      <enum>QAbstractItemView::ScrollPerItem</enum>
+     </property>
+     <property name="gridStyle" >
+      <enum>Qt::DashLine</enum>
+     </property>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <column>
+      <property name="text" >
+       <string>Name</string>
+      </property>
+     </column>
+     <column>
+      <property name="text" >
+       <string>Type</string>
+      </property>
+     </column>
+     <column>
+      <property name="text" >
+       <string>Value</string>
+      </property>
+     </column>
+     <item row="0" column="0" >
+      <property name="text" >
+       <string>50</string>
+      </property>
+     </item>
+     <item row="0" column="2" >
+      <property name="text" >
+       <string>100</string>
+      </property>
+     </item>
+     <item row="1" column="0" >
+      <property name="text" >
+       <string>51</string>
+      </property>
+     </item>
+     <item row="1" column="2" >
+      <property name="text" >
+       <string>101</string>
+      </property>
+     </item>
+     <item row="2" column="0" >
+      <property name="text" >
+       <string>52</string>
+      </property>
+     </item>
+     <item row="2" column="2" >
+      <property name="text" >
+       <string>102</string>
+      </property>
+     </item>
+     <item row="3" column="0" >
+      <property name="text" >
+       <string>53</string>
+      </property>
+     </item>
+     <item row="3" column="2" >
+      <property name="text" >
+       <string>103</string>
+      </property>
+     </item>
+     <item row="4" column="0" >
+      <property name="text" >
+       <string>54</string>
+      </property>
+     </item>
+     <item row="4" column="2" >
+      <property name="text" >
+       <string>104</string>
+      </property>
+     </item>
+     <item row="5" column="0" >
+      <property name="text" >
+       <string>55</string>
+      </property>
+     </item>
+     <item row="5" column="2" >
+      <property name="text" >
+       <string>105</string>
+      </property>
+     </item>
+     <item row="6" column="0" >
+      <property name="text" >
+       <string>56</string>
+      </property>
+     </item>
+     <item row="6" column="2" >
+      <property name="text" >
+       <string>106</string>
+      </property>
+     </item>
+     <item row="7" column="0" >
+      <property name="text" >
+       <string>57</string>
+      </property>
+     </item>
+     <item row="7" column="2" >
+      <property name="text" >
+       <string>107</string>
+      </property>
+     </item>
+     <item row="8" column="0" >
+      <property name="text" >
+       <string>58</string>
+      </property>
+     </item>
+     <item row="8" column="2" >
+      <property name="text" >
+       <string>108</string>
+      </property>
+     </item>
+     <item row="9" column="0" >
+      <property name="text" >
+       <string>59</string>
+      </property>
+     </item>
+     <item row="9" column="2" >
+      <property name="text" >
+       <string>109</string>
+      </property>
+     </item>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources>
+  <include location="../qt-resources/qt_widgets.qrc" />
+ </resources>
+ <connections/>
+</ui>

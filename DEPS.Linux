@@ -1,0 +1,198 @@
+Dependencies For Linux
+
+Table of Contents
+
+ 1. Introduction
+ 2. Program and library dependencies
+ 3. Corresponding package dependencies
+     1. For Ubuntu 8.04
+         1. Ubuntu 8.04 packages
+         3. How to install via a GUI (recommended)
+         4. How to install using the command-line (advanced)
+         5. A note about the packages for GL and GLU
+         6. A note about Qt
+     2. For Fedora 13
+
+Introduction
+
+This page lists the package dependencies which need to be satisfied to be able
+to build GPlates from source on Linux.
+
+Below, we list the corresponding Ubuntu 8.04 packages. Similar packages should
+be available on other Linux distributions. Although we only list packages for
+Ubuntu 8.04, GPlates will work with newer Ubuntu distributions; the names of the
+packages vary slightly. However, Ubuntu 8.04 is the oldest Ubuntu release that
+we support; users of older Ubuntu releases may, for some packages, be required
+to install and/or compile the dependencies manually.
+
+Program and library dependencies
+
+To compile GPlates, you will need the following programs and libraries
+installed:
+
+  • cmake (2.6.2 or newer)
+  • g++ 4.x
+  • GL library (the OpenGL shared library)
+  • GLU library (the OpenGL Utility shared library)
+  • GLEW library (the OpenGL Extension Wrangler Library)
+  • Python library (version 2.x but not version 3.x)
+  • Boost library headers (version 1.34 or newer)
+  • Qt library (version 4.4 or newer)
+  • Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer)
+  • Computational Geometry Algorithms Library (CGAL) (3.3.1 or newer)
+  • PROJ.4 (4.6.0 or newer)
+  • Qwt 6.0.1
+
+Corresponding package dependencies
+
+For Ubuntu
+
+This subsection provides more specific information on resolving the program and
+library dependencies on an Ubuntu system.
+
+(Note that GPlates development at the USyd node occurs on Ubuntu systems, so
+the Ubuntu package dependencies will always be the most tested and up-to-date.)
+
+Note that Ubuntu is based upon Debian, so (subject to the availability of the
+appropriate versions of packages) these instructions should also work on a
+Debian system.
+
+Ubuntu packages
+
+The following packages are not installed by default and may need to be
+installed manually:
+
+Program/library Corresponding Ubuntu packages
+cmake           cmake
+g++             g++-4.2
+GL              See note below.
+GLU             See note below.
+GLEW            libglew-dev 
+Python          python-dev
+Boost           libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev
+Qt              libqt4-gui libqt4-dev (See note below.)
+GDAL            libgdal1-dev
+CGAL            libcgal-dev
+PROJ.4          libproj-dev
+Qwt		libqwt-dev
+
+Started from Ubuntu 14.04 Trusty Tahr, the following additional libraries are required libxrender-dev, libice-dev, libsm-dev, libfreetype6-dev and libfontconfig1-dev.
+
+The command to install the dependencies on Ubuntu is:
+
+sudo apt-get update; sudo apt-get install libglew-dev python-dev libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev libqt4-gui libqt4-dev libgdal1-dev libcgal-dev libproj-dev libqwt-dev libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev
+(For Ubuntu releases before 14.04 Trusty Tahr, the libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev are not required.)
+
+How to install via a GUI (recommended)
+
+It is recommended that you start the Synaptic Package Manager graphical
+application, and resolve the dependencies by simply searching for the required
+packages and then selecting them for installation.
+
+How to install using the command-line (advanced)
+
+You can determine whether you have a particular package installed on your
+system using the "dpkg-query -l" command, followed by the package name.
+
+For example, to find out whether you have the package "libboost-dev" installed,
+you would run the command:
+
+	dpkg-query -l libboost-dev
+
+You would then look for a line which looks like:
+
+ii  libboost-dev         1.33.1-9ubuntu3      Boost C++ Libraries development files
+
+or:
+
+un  libboost-dev         1.33.1-9ubuntu3      Boost C++ Libraries development files
+
+or:
+
+pn  libboost-dev         1.33.1-9ubuntu3      Boost C++ Libraries development files
+
+Look at the first two letters in the line: "ii" tells you that libboost-dev is
+currently installed on your system, while "un" or "pn" tell you that
+libboost-dev is not currently installed on your system.
+
+If you have determined that libboost-dev is not installed on your system, you
+can install it by running the command:
+
+	sudo aptitude install libboost-dev
+		(assuming you have permission to run "sudo aptitude" on your
+		system).
+
+A note about the packages for GL and GLU
+
+There appear to be multiple Debian/Ubuntu packages which fulfil the GL and GLU
+library dependencies.
+
+The GL library dependency is fulfilled by:
+
+  • xlibmesa-gl + xlibmesa-gl-dev; or
+  • libgl1-mesa-dri + libgl1-mesa-glx + libgl1-mesa-dev
+
+The GLU library dependency is fulfilled by:
+
+  • xlibmesa-glu + xlibmesa-glu-dev; or
+  • libglu1-mesa + libglu1-mesa-dev
+
+The mixture of packages seems to vary from system to system.
+
+Firstly, whatever the mixture of packages on your system, if it fulfils the
+library dependencies, don't change it. ("If it ain't broke, don't fix it.")
+
+If you do need to install an extra package or two to fulfil dependencies, it is
+most likely that you are missing a "-dev" package (since the non-dev packages
+are used by many other packages, and are probably already on your system). In
+that case, you should install the "-dev" package which corresponds to the
+non-dev package already on your system. For example, if you already have
+"libglu1-mesa" installed, you should install "libglu1-mesa-dev".
+
+If you are also missing a non-dev package, well… time to call the sysadmin.
+
+Note for nvidia card owners: You may find you need to install the
+"nvidia-glx-dev" package to fufil the libGL dependency - but installing this
+package may remove some mesa related packages. Only attempt this if configure
+complains about a missing GL dependency and you are certain you are using the
+nvidia binary driver.  (If you don't know what this means, don't install
+nvidia-glx-dev!)
+
+A note about Qt
+
+To obtain Qt 4.4 on Ubuntu 8.04, you will need to enable the 'backports'
+repository. (By default, Ubuntu 8.04 is shipped with Qt 4.3.) To enable the
+'backports' repository, edit /etc/apt/sources.list and uncomment the two lines
+in that file that refer to that repository. If you have already installed Qt,
+you will then need to go to the Synaptic Package Manager and upgrade Qt. Note,
+however, that the 'backports' repository only provides Qt 4.4.0, which is not
+the latest bugfix release of Qt 4.4.
+
+Qt 4.4 or newer is provided out of the box on Ubuntu 8.10 and newer, and it is
+not necessary to enable the 'backports' repository on those systems.
+
+A note about GDAL
+
+If you decide to compile GDAL from source then ensure that GDAL links *statically*
+to PROJ4 if the PROJ4 library is in a non-standard location. This ensures GPlates
+does not generate a dynamic library loading error (for PROJ4) when a raster with an
+inbuilt spatial reference system (eg, a projection) is loaded.
+You'll also need to ensure that the NetCDF library is installed and that GDAL is
+configured to use it - this is necessary for GPlates to be able to load gridded rasters.
+Here are the relevant options for the GDAL 'configure' script:
+   configure --with-netcdf=/path/to/netcdf --with-static-proj4=/path/to/proj4
+
+Fedora 13 packages
+
+The following packages are not installed by default and may need to be
+installed manually:
+
+Program/library Corresponding Fedora packages
+cmake           cmake
+g++             gcc-c++
+GLEW            glew-devel
+Boost           boost-devel
+Qt              qt-devel
+GDAL            gdal-devel
+CGAL            CGAL-devel
+PROJ.4          proj-devel

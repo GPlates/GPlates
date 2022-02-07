@@ -1,0 +1,64 @@
+Build On Linux
+
+Table of Contents
+
+ 1. Introduction
+ 2. Build process
+     1. Package dependencies
+     2. Commands to execute
+     3. The pygplates library
+     4. Installing pygplates
+
+Introduction
+
+This page details how to build pygplates from a source release.
+
+Build process
+
+Package dependencies
+
+Firstly, you should ensure that you have installed all the packages which are
+dependencies for compilation.
+
+See "DEPS.Linux" for more information on installing dependencies.
+
+Commands to execute
+
+ 1. Change your working directory (if not already) into the base directory of
+    the pygplates source code.
+ 2. Configure and compile the program:
+
+	cmake .
+    make
+
+    * If you wish to install pygplates to a location other than the default
+      ("/usr/local"), specify the "-DCMAKE_INSTALL_PREFIX:STRING" argument to "cmake".
+      For more information, see the Installing GPlates step below.
+
+The pygplates library
+
+The pygplates library will be called "pygplates.so", located in the "bin"
+directory. If you want to do more than test pygplates from this local directory,
+you will need to install it on your system.
+
+Installing pygplates
+
+The command
+
+	make install
+
+Will copy the "pygplates.so" library to the default location, "/usr/local".
+The pygplates library will be installed as "/usr/local/lib/pygplates/revision12/pygplates.so".
+Note that you will need to be root to install software to "/usr/local".
+On Ubuntu systems, this is accomplished by prefixing the command with
+"sudo", i.e. "sudo make install".
+
+If you wish to install to a different location, use the "-DCMAKE_INSTALL_PREFIX:STRING" argument to
+"cmake". For example:
+
+	cmake -DCMAKE_INSTALL_PREFIX:STRING=$HOME/usr .
+    make
+	make install
+
+This will install pygplates in your home directory as "~/usr/lib/pygplates/revision12/pygplates.so".
+

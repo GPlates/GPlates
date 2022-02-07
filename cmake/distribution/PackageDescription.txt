@@ -1,0 +1,6 @@
+GPlates is desktop software for the interactive visualisation of plate-tectonics.
+
+GPlates offers a novel combination of interactive plate-tectonic reconstructions, geographic information system (GIS) functionality and raster data visualisation. GPlates enables both the visualisation and the manipulation of plate-tectonic reconstructions and associated data through geological time. GPlates runs on Windows, Linux and MacOS X.
+
+GPlates is developed at the University of Sydney, the California Institute
+of Technology and the Norwegian Geological Survey.

@@ -1,0 +1,21 @@
+#
+# This is an example categorical CPT file that can be used with GPlates.
+#
+# It assigns colours to mid ocean ridges and isochrons, and all other feature
+# types are coloured grey.
+#
+# The format for categorical CPT files is described here:
+# http://gmt.soest.hawaii.edu/doc/latest/GMT_Docs.html#categorical-cpt-files
+#
+# In GPlates, categorical CPT files that assign colours to non-numerical values
+# are interpreted as follows:
+#  - First column (key): not significant; description of this cpt entry;
+#  - Second column (fill): the colour to be assigned.
+#  - Third column (label): the value to be assigned that colour.
+#
+# Final line gives default colour
+#
+MidOceanRidge 255/10/10 gpml:MidOceanRidge
+Isochron 200/150/150    gpml:Isochron
+N       128     128     128
+#
