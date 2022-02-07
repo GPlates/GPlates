@@ -36,7 +36,8 @@ GPlatesQtWidgets::ViewFeatureGeometriesWidget::ViewFeatureGeometriesWidget(
 		QWidget *parent_):
 	QWidget(parent_),
 	d_application_state_ptr(&view_state_.get_application_state()),
-	d_feature_focus_ptr(&view_state_.get_feature_focus())
+	d_feature_focus_ptr(&view_state_.get_feature_focus()),
+	d_populate_geometry_tree_when_visible(false)
 {
 	setupUi(this);
 	reset();
@@ -67,24 +68,29 @@ GPlatesQtWidgets::ViewFeatureGeometriesWidget::refresh_display()
 		return;
 	}
 
-	//PROFILE_BEGIN(populate, "ViewFeatureGeometriesWidgetPopulator");
-
-	GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator populator(
-			d_application_state_ptr->get_current_reconstruction(), *tree_geometry);
-	populator.populate(d_feature_ref, d_focused_rg);
-	
 	double time = d_application_state_ptr->get_current_reconstruction_time();
 	unsigned long root = d_application_state_ptr->get_current_anchored_plate_id();
-
-	//PROFILE_END(populate);
 	
-	//PROFILE_BLOCK("resize columns for ViewFeatureGeometriesWidget");
-
 	lineedit_root_plateid->setText(tr("%1").arg(root));
 	lineedit_reconstruction_time->setText(tr("%L1").arg(time));
 	tree_geometry->resizeColumnToContents(0);
 	tree_geometry->resizeColumnToContents(1);
 	tree_geometry->resizeColumnToContents(2);
+
+	if (isVisible())
+	{
+		GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator populator(
+				d_application_state_ptr->get_current_reconstruction(),
+				*tree_geometry);
+		populator.populate(d_feature_ref, d_focused_rg);
+
+		d_populate_geometry_tree_when_visible = false;
+	}
+	else
+	{
+		// Delay populating the geometry tree widget until it is actually visible.
+		d_populate_geometry_tree_when_visible = true;
+	}
 }
 
 
@@ -100,4 +106,17 @@ GPlatesQtWidgets::ViewFeatureGeometriesWidget::edit_feature(
 }
 
 
+void
+GPlatesQtWidgets::ViewFeatureGeometriesWidget::showEvent(
+		QShowEvent *event_)
+{
+	if (d_populate_geometry_tree_when_visible)
+	{
+		GPlatesFeatureVisitors::ViewFeatureGeometriesWidgetPopulator populator(
+				d_application_state_ptr->get_current_reconstruction(),
+				*tree_geometry);
+		populator.populate(d_feature_ref, d_focused_rg);
 
+		d_populate_geometry_tree_when_visible = false;
+	}
+}	

@@ -32,6 +32,7 @@
 
 #include "ResolvedTopologicalLine.h"
 #include "ResolvedTopologicalNetwork.h"
+#include "TopologyInternalUtils.h"
 #include "TopologyUtils.h"
 
 #include "global/AssertionFailureException.h"
@@ -40,8 +41,10 @@
 #include "maths/MathsUtils.h"
 
 
-GPlatesAppLogic::TopologyNetworkResolverLayerProxy::TopologyNetworkResolverLayerProxy() :
-	d_current_reconstruction_time(0)
+GPlatesAppLogic::TopologyNetworkResolverLayerProxy::TopologyNetworkResolverLayerProxy(
+		const TopologyNetworkParams &topology_network_params) :
+	d_current_reconstruction_time(0),
+	d_current_topology_network_params(topology_network_params)
 {
 	// Defined in ".cc" file because...
 	// non_null_ptr destructors require complete type of class they're referring to.
@@ -58,19 +61,20 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::~TopologyNetworkResolverLaye
 
 GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_topological_networks(
-		std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
+		std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
+		const TopologyNetworkParams &topology_network_params,
 		const double &reconstruction_time)
 {
 	// See if the reconstruction time has changed.
-	if (d_cached_resolved_networks.cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time))
+	if (d_cached_resolved_networks.cached_reconstruction_time != GPlatesMaths::real_t(reconstruction_time) ||
+		d_cached_resolved_networks.cached_topology_network_params != topology_network_params)
 	{
 		// The resolved networks are now invalid.
 		d_cached_resolved_networks.invalidate();
 
-		// Note that observers don't need to be updated when the time changes - if they
-		// have resolved networks for a different time they don't need
-		// to be updated just because some other client requested a different time.
+		// The new time and params that our cache will correspond to.
 		d_cached_resolved_networks.cached_reconstruction_time = GPlatesMaths::real_t(reconstruction_time);
+		d_cached_resolved_networks.cached_topology_network_params = topology_network_params;
 	}
 
 	// See if any input layer proxies have changed.
@@ -78,7 +82,7 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_topological_net
 
 	if (!d_cached_resolved_networks.cached_resolved_topological_networks)
 	{
-		cache_resolved_topological_networks(reconstruction_time);
+		cache_resolved_topological_networks(topology_network_params, reconstruction_time);
 	}
 
 	// Append our cached resolved topological networks to the caller's sequence.
@@ -91,19 +95,30 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_topological_net
 }
 
 
-GPlatesAppLogic::GeometryDeformation::resolved_network_time_span_type::non_null_ptr_to_const_type
+GPlatesAppLogic::TopologyReconstruct::resolved_network_time_span_type::non_null_ptr_to_const_type
 GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_network_time_span(
-		const TimeSpanUtils::TimeRange &time_range)
+		const TimeSpanUtils::TimeRange &time_range,
+		const TopologyNetworkParams &topology_network_params)
 {
 	// See if any input layer proxies have changed.
 	check_input_layer_proxies();
 
-	// If the resolved network time span did not get invalidated (due to updated inputs)
-	// then see if the time range has changed.
-	if (d_cached_resolved_network_time_span)
+	// See if the topology network params have changed.
+	if (d_cached_time_span.cached_topology_network_params != topology_network_params)
+	{
+		// The time span is now invalid.
+		d_cached_time_span.invalidate();
+
+		// The new params that our cache will correspond to.
+		d_cached_time_span.cached_topology_network_params = topology_network_params;
+	}
+
+	// If the resolved network time span did not get invalidated (due to updated inputs or changed params)
+	// then see if the time range has changed (or the topology network params have changed).
+	if (d_cached_time_span.cached_resolved_network_time_span)
 	{
 		const TimeSpanUtils::TimeRange &cached_time_range =
-				d_cached_resolved_network_time_span.get()->get_time_range();
+				d_cached_time_span.cached_resolved_network_time_span.get()->get_time_range();
 
 		if (!GPlatesMaths::are_geo_times_approximately_equal(
 				time_range.get_begin_time(),
@@ -120,18 +135,18 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::get_resolved_network_time_sp
 			// to build a new one from the existing one since they may have time slots in common.
 			// Note that we've already checked our input proxies so we know that the current
 			// resolved network time span still contains valid resolved networks.
-			cache_resolved_network_time_span(time_range);
+			cache_resolved_network_time_span(time_range, topology_network_params);
 
-			return d_cached_resolved_network_time_span.get();
+			return d_cached_time_span.cached_resolved_network_time_span.get();
 		}
 	}
 
-	if (!d_cached_resolved_network_time_span)
+	if (!d_cached_time_span.cached_resolved_network_time_span)
 	{
-		cache_resolved_network_time_span(time_range);
+		cache_resolved_network_time_span(time_range, topology_network_params);
 	}
 
-	return d_cached_resolved_network_time_span.get();
+	return d_cached_time_span.cached_resolved_network_time_span.get();
 }
 
 
@@ -160,40 +175,78 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::set_current_reconstruction_t
 
 
 void
-GPlatesAppLogic::TopologyNetworkResolverLayerProxy::set_current_reconstructed_geometry_topological_sections_layer_proxies(
-		const std::vector<ReconstructLayerProxy::non_null_ptr_type> &reconstructed_geometry_topological_sections_layer_proxies)
+GPlatesAppLogic::TopologyNetworkResolverLayerProxy::set_current_topology_network_params(
+		const TopologyNetworkParams &topology_network_params)
 {
-	// If the topological sections layer proxies are the same ones as last time then no invalidation necessary.
-	if (!d_current_reconstructed_geometry_topological_sections_layer_proxies.set_input_layer_proxies(
-		reconstructed_geometry_topological_sections_layer_proxies))
+	if (d_current_topology_network_params == topology_network_params)
 	{
+		// The current params haven't changed so avoid updating any observers unnecessarily.
 		return;
 	}
+	d_current_topology_network_params = topology_network_params;
 
-	// All resolved topological networks are now invalid.
-	reset_cache();
-
-	// Polling observers need to update themselves with respect to us.
+	// Note that we don't invalidate our resolved topological networks cache because they aren't
+	// cached for a requested params then a new set is created.
+	// Observers need to be aware that the default params have changed.
 	d_subject_token.invalidate();
 }
 
 
 void
-GPlatesAppLogic::TopologyNetworkResolverLayerProxy::set_current_resolved_line_topological_sections_layer_proxies(
+GPlatesAppLogic::TopologyNetworkResolverLayerProxy::set_current_topological_sections_layer_proxies(
+		const std::vector<ReconstructLayerProxy::non_null_ptr_type> &reconstructed_geometry_topological_sections_layer_proxies,
 		const std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type> &resolved_line_topological_sections_layer_proxies)
 {
-	// If the topological sections layer proxies are the same ones as last time then no invalidation necessary.
-	if (!d_current_resolved_line_topological_sections_layer_proxies.set_input_layer_proxies(
-		resolved_line_topological_sections_layer_proxies))
+	bool invalidate_cache = false;
+
+	// Filter out layers that use topologies to reconstruct. These layers cannot supply
+	// topological sections because they use topology layers thus creating a cyclic dependency.
+	std::vector<ReconstructLayerProxy::non_null_ptr_type> valid_reconstructed_geometry_topological_sections_layer_proxies;
+	BOOST_FOREACH(
+			const ReconstructLayerProxy::non_null_ptr_type &reconstructed_geometry_topological_sections_layer_proxy,
+			reconstructed_geometry_topological_sections_layer_proxies)
 	{
-		return;
+		if (!reconstructed_geometry_topological_sections_layer_proxy->using_topologies_to_reconstruct())
+		{
+			valid_reconstructed_geometry_topological_sections_layer_proxies.push_back(
+					reconstructed_geometry_topological_sections_layer_proxy);
+		}
 	}
 
-	// All resolved topological networks are now invalid.
-	reset_cache();
+	if (d_current_reconstructed_geometry_topological_sections_layer_proxies.set_input_layer_proxies(
+			valid_reconstructed_geometry_topological_sections_layer_proxies))
+	{
+		// The topological section layers are different than last time.
+		// If the *dependent* layers are different then cache invalidation is necessary.
+		// Dependent means the currently cached resolved networks (and time spans) use topological sections from the specified layers.
+		if (d_dependent_topological_sections.set_topological_section_layers(
+				valid_reconstructed_geometry_topological_sections_layer_proxies))
+		{
+			invalidate_cache = true;
+		}
+	}
 
-	// Polling observers need to update themselves with respect to us.
-	d_subject_token.invalidate();
+	if (d_current_resolved_line_topological_sections_layer_proxies.set_input_layer_proxies(
+			resolved_line_topological_sections_layer_proxies))
+	{
+		// The topological section layers are different than last time.
+		// If the *dependent* layers are different then cache invalidation is necessary.
+		// Dependent means the currently cached resolved networks (and time spans) use topological sections from the specified layers.
+		if (d_dependent_topological_sections.set_topological_section_layers(
+				resolved_line_topological_sections_layer_proxies))
+		{
+			invalidate_cache = true;
+		}
+	}
+
+	if (invalidate_cache)
+	{
+		// All resolved topological networks are now invalid.
+		reset_cache();
+
+		// Polling observers need to update themselves with respect to us.
+		d_subject_token.invalidate();
+	}
 }
 
 
@@ -202,6 +255,13 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::add_topological_network_feat
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
 	d_current_topological_network_feature_collections.push_back(feature_collection);
+
+	// Set the feature IDs of topological sections referenced by our resolved networks for *all* times.
+	d_dependent_topological_sections.set_topological_section_feature_ids(
+			d_current_topological_network_feature_collections,
+			// Only look at network features (in case file has a mixture of topology types and hence
+			// spawns more than one layer type)...
+			TopologyGeometry::NETWORK);
 
 	// The resolved topological networks are now invalid.
 	reset_cache();
@@ -222,6 +282,13 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::remove_topological_network_f
 					d_current_topological_network_feature_collections.end(),
 					feature_collection));
 
+	// Set the feature IDs of topological sections referenced by our resolved networks for *all* times.
+	d_dependent_topological_sections.set_topological_section_feature_ids(
+			d_current_topological_network_feature_collections,
+			// Only look at network features (in case file has a mixture of topology types and hence
+			// spawns more than one layer type)...
+			TopologyGeometry::NETWORK);
+
 	// The resolved topological networks are now invalid.
 	reset_cache();
 
@@ -234,6 +301,13 @@ void
 GPlatesAppLogic::TopologyNetworkResolverLayerProxy::modified_topological_network_feature_collection(
 		const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection)
 {
+	// Set the feature IDs of topological sections referenced by our resolved networks for *all* times.
+	d_dependent_topological_sections.set_topological_section_feature_ids(
+			d_current_topological_network_feature_collections,
+			// Only look at network features (in case file has a mixture of topology types and hence
+			// spawns more than one layer type)...
+			TopologyGeometry::NETWORK);
+
 	// The resolved topological networks are now invalid.
 	reset_cache();
 
@@ -247,27 +321,7 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::reset_cache()
 {
 	// Clear any cached resolved topological networks.
 	d_cached_resolved_networks.invalidate();
-	d_cached_resolved_network_time_span = boost::none;
-}
-
-
-template <class InputLayerProxyWrapperType>
-void
-GPlatesAppLogic::TopologyNetworkResolverLayerProxy::check_input_layer_proxy(
-		InputLayerProxyWrapperType &input_layer_proxy_wrapper)
-{
-	// See if the input layer proxy has changed.
-	if (!input_layer_proxy_wrapper.is_up_to_date())
-	{
-		// The velocities are now invalid.
-		reset_cache();
-
-		// We're now up-to-date with respect to the input layer proxy.
-		input_layer_proxy_wrapper.set_up_to_date();
-
-		// Polling observers need to update themselves with respect to us.
-		d_subject_token.invalidate();
-	}
+	d_cached_time_span.invalidate();
 }
 
 
@@ -277,23 +331,84 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::check_input_layer_proxies()
 	// See if any reconstructed geometry topological section layer proxies have changed.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &rfg_topological_sections_layer_proxy,
-			d_current_reconstructed_geometry_topological_sections_layer_proxies.get_input_layer_proxies())
+			d_current_reconstructed_geometry_topological_sections_layer_proxies)
 	{
-		check_input_layer_proxy(rfg_topological_sections_layer_proxy);
+		// Filter out layers that use topologies to reconstruct. These layers cannot supply
+		// topological sections because they use topology layers thus creating a cyclic dependency.
+		//
+		// This also avoids infinite recursion by not checking if the layer is up-to-date (which might then check us, etc).
+		//
+		// Normally this layer would get excluded when the topological section layers are set, but that only happens when
+		// a new reconstruction is performed and we might get called just before that happens, so we need to exclude here also.
+		if (rfg_topological_sections_layer_proxy.get_input_layer_proxy()->using_topologies_to_reconstruct())
+		{
+			continue;
+		}
+
+		if (rfg_topological_sections_layer_proxy.is_up_to_date())
+		{
+			continue;
+		}
+
+		// If any cached resolved networks (including time spans) depend on these topological sections
+		// then we need to invalidate our cache.
+		//
+		// Typically our dependency layers include all reconstruct/resolved-geometry layers
+		// due to the usual global search for topological section features. However this means
+		// layers that don't contribute topological sections will trigger unnecessary cache flushes
+		// which is especially noticeable in the case of rebuilding network time spans.
+		// To avoid this we check if any topological sections from a layer can actually contribute.
+		if (d_dependent_topological_sections.update_topological_section_layer(
+				rfg_topological_sections_layer_proxy.get_input_layer_proxy()))
+		{
+			// The networks are now invalid.
+			reset_cache();
+
+			// Polling observers need to update themselves with respect to us.
+			d_subject_token.invalidate();
+		}
+
+		// We're now up-to-date with respect to the input layer proxy.
+		rfg_topological_sections_layer_proxy.set_up_to_date();
 	}
 
 	// See if any resolved geometry topological section layer proxies have changed.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &rtl_topological_sections_layer_proxy,
-			d_current_resolved_line_topological_sections_layer_proxies.get_input_layer_proxies())
+			d_current_resolved_line_topological_sections_layer_proxies)
 	{
-		check_input_layer_proxy(rtl_topological_sections_layer_proxy);
+		if (rtl_topological_sections_layer_proxy.is_up_to_date())
+		{
+			continue;
+		}
+
+		// If any cached resolved networks (including time spans) depend on these topological sections
+		// then we need to invalidate our cache.
+		//
+		// Typically our dependency layers include all reconstruct/resolved-geometry layers
+		// due to the usual global search for topological section features. However this means
+		// layers that don't contribute topological sections will trigger unnecessary cache flushes
+		// which is especially noticeable in the case of rebuilding network time spans.
+		// To avoid this we check if any topological sections from a layer can actually contribute.
+		if (d_dependent_topological_sections.update_topological_section_layer(
+				rtl_topological_sections_layer_proxy.get_input_layer_proxy()))
+		{
+			// The networks are now invalid.
+			reset_cache();
+
+			// Polling observers need to update themselves with respect to us.
+			d_subject_token.invalidate();
+		}
+
+		// We're now up-to-date with respect to the input layer proxy.
+		rtl_topological_sections_layer_proxy.set_up_to_date();
 	}
 }
 
 
 std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &
 GPlatesAppLogic::TopologyNetworkResolverLayerProxy::cache_resolved_topological_networks(
+		const TopologyNetworkParams &topology_network_params,
 		const double &reconstruction_time)
 {
 	// If they're already cached then nothing to do.
@@ -306,18 +421,20 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::cache_resolved_topological_n
 	d_cached_resolved_networks.cached_resolved_topological_networks =
 			std::vector<ResolvedTopologicalNetwork::non_null_ptr_type>();
 
-	// First see if we've already cached the current reconstruction time in the resolved network time span.
-	if (d_cached_resolved_network_time_span)
+	// First see if we've already cached the current reconstruction time (and topology network params)
+	// in the resolved network time span.
+	if (d_cached_time_span.cached_resolved_network_time_span &&
+		d_cached_time_span.cached_topology_network_params == topology_network_params)
 	{
 		// If there's a time slot in the time span that matches the reconstruction time
 		// then we can re-use the resolved networks in that time slot.
 		const boost::optional<unsigned int> time_slot =
-				d_cached_resolved_network_time_span.get()->get_time_range().get_time_slot(reconstruction_time);
+				d_cached_time_span.cached_resolved_network_time_span.get()->get_time_range().get_time_slot(reconstruction_time);
 		if (time_slot)
 		{
 			// Extract the resolved topological networks for the reconstruction time.
-			boost::optional<GeometryDeformation::rtn_seq_type &> resolved_topological_networks =
-					d_cached_resolved_network_time_span.get()->get_sample_in_time_slot(time_slot.get());
+			boost::optional<TopologyReconstruct::rtn_seq_type &> resolved_topological_networks =
+					d_cached_time_span.cached_resolved_network_time_span.get()->get_sample_in_time_slot(time_slot.get());
 			if (resolved_topological_networks)
 			{
 				d_cached_resolved_networks.cached_resolved_topological_networks = resolved_topological_networks.get();
@@ -355,27 +472,29 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::cache_resolved_topological_n
 	d_cached_resolved_networks.cached_reconstruct_handle =
 			create_resolved_topological_networks(
 					d_cached_resolved_networks.cached_resolved_topological_networks.get(),
+					topology_network_params,
 					reconstruction_time);
 
 	return d_cached_resolved_networks.cached_resolved_topological_networks.get();
 }
 
 
-GPlatesAppLogic::GeometryDeformation::resolved_network_time_span_type::non_null_ptr_to_const_type
+GPlatesAppLogic::TopologyReconstruct::resolved_network_time_span_type::non_null_ptr_to_const_type
 GPlatesAppLogic::TopologyNetworkResolverLayerProxy::cache_resolved_network_time_span(
-		const TimeSpanUtils::TimeRange &time_range)
+		const TimeSpanUtils::TimeRange &time_range,
+		const TopologyNetworkParams &topology_network_params)
 {
 	//PROFILE_FUNC();
 
 	// If one is already cached then attempt to re-use any time slots in common with the
 	// new time range. If one is already cached then it contains valid resolved networks
 	// - it's just that the time range has changed.
-	boost::optional<GeometryDeformation::resolved_network_time_span_type::non_null_ptr_type>
-			prev_resolved_network_time_span = d_cached_resolved_network_time_span;
+	boost::optional<TopologyReconstruct::resolved_network_time_span_type::non_null_ptr_type>
+			prev_resolved_network_time_span = d_cached_time_span.cached_resolved_network_time_span;
 
 	// Create an empty resolved network time span.
-	d_cached_resolved_network_time_span =
-			GeometryDeformation::resolved_network_time_span_type::create(time_range);
+	d_cached_time_span.cached_resolved_network_time_span =
+			TopologyReconstruct::resolved_network_time_span_type::create(time_range);
 
 	const unsigned int num_time_slots = time_range.get_num_time_slots();
 
@@ -386,19 +505,25 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::cache_resolved_network_time_
 	// size of the cache in the reconstruction layer proxy.
 	// We don't actually use the returned ReconstructionTreeCreator here but by specifying a
 	// cache size hint we set the size of its internal reconstruction tree cache.
+
+	std::vector<ReconstructLayerProxy::non_null_ptr_type> dependent_reconstructed_geometry_topological_sections_layers;
+	d_dependent_topological_sections.get_dependent_topological_section_layers(dependent_reconstructed_geometry_topological_sections_layers);
 	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_geometry_topological_sections_layer_proxy,
-			d_current_reconstructed_geometry_topological_sections_layer_proxies.get_input_layer_proxies())
+			const ReconstructLayerProxy::non_null_ptr_type &reconstructed_geometry_topological_sections_layer_proxy,
+			dependent_reconstructed_geometry_topological_sections_layers)
 	{
-		reconstructed_geometry_topological_sections_layer_proxy.get_input_layer_proxy()
+		reconstructed_geometry_topological_sections_layer_proxy
 				->get_current_reconstruction_layer_proxy()->get_reconstruction_tree_creator(num_time_slots + 1);
 	}
+
+	std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type> dependent_resolved_line_topological_sections_layers;
+	d_dependent_topological_sections.get_dependent_topological_section_layers(dependent_resolved_line_topological_sections_layers);
 	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &resolved_line_topological_sections_layer_proxy,
-			d_current_resolved_line_topological_sections_layer_proxies.get_input_layer_proxies())
+			const TopologyGeometryResolverLayerProxy::non_null_ptr_type &resolved_line_topological_sections_layer_proxy,
+			dependent_resolved_line_topological_sections_layers)
 	{
-		resolved_line_topological_sections_layer_proxy.get_input_layer_proxy()
-				->get_reconstruction_layer_proxy()->get_reconstruction_tree_creator(num_time_slots + 1);
+		resolved_line_topological_sections_layer_proxy
+				->get_current_reconstruction_layer_proxy()->get_reconstruction_tree_creator(num_time_slots + 1);
 	}
 
 	// Iterate over the time slots of the time span and fill in the resolved topological networks.
@@ -415,11 +540,11 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::cache_resolved_network_time_
 			if (prev_time_slot)
 			{
 				// Get the resolved topological networks from the previous resolved network time span.
-				boost::optional<GeometryDeformation::rtn_seq_type &> prev_resolved_topological_networks =
+				boost::optional<TopologyReconstruct::rtn_seq_type &> prev_resolved_topological_networks =
 						prev_resolved_network_time_span.get()->get_sample_in_time_slot(prev_time_slot.get());
 				if (prev_resolved_topological_networks)
 				{
-					d_cached_resolved_network_time_span.get()->set_sample_in_time_slot(
+					d_cached_time_span.cached_resolved_network_time_span.get()->set_sample_in_time_slot(
 							prev_resolved_topological_networks.get(),
 							time_slot);
 
@@ -431,29 +556,36 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::cache_resolved_network_time_
 
 		// Create the resolved topological networks for the current time slot.
 		std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> resolved_topological_networks;
-		create_resolved_topological_networks(resolved_topological_networks, time);
+		create_resolved_topological_networks(resolved_topological_networks, topology_network_params, time);
 
-		d_cached_resolved_network_time_span.get()->set_sample_in_time_slot(
+		d_cached_time_span.cached_resolved_network_time_span.get()->set_sample_in_time_slot(
 				resolved_topological_networks,
 				time_slot);
 	}
 
-	return d_cached_resolved_network_time_span.get();
+	return d_cached_time_span.cached_resolved_network_time_span.get();
 }
 
 
 GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::TopologyNetworkResolverLayerProxy::create_resolved_topological_networks(
 		std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
+		const TopologyNetworkParams &topology_network_params,
 		const double &reconstruction_time)
 {
+	// Get the *dependent* topological section layers.
+	std::vector<ReconstructLayerProxy::non_null_ptr_type> dependent_reconstructed_geometry_topological_sections_layers;
+	std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type> dependent_resolved_line_topological_sections_layers;
+	d_dependent_topological_sections.get_dependent_topological_section_layers(dependent_reconstructed_geometry_topological_sections_layers);
+	d_dependent_topological_sections.get_dependent_topological_section_layers(dependent_resolved_line_topological_sections_layers);
+
 	// If we have no topological features or there are no topological section layers then we
 	// can't get any topological sections and we can't resolve any topological networks.
 	if (d_current_topological_network_feature_collections.empty() ||
-		(d_current_reconstructed_geometry_topological_sections_layer_proxies.get_input_layer_proxies().empty() &&
-			d_current_resolved_line_topological_sections_layer_proxies.get_input_layer_proxies().empty()))
+		(dependent_reconstructed_geometry_topological_sections_layers.empty() &&
+			dependent_resolved_line_topological_sections_layers.empty()))
 	{
-		// There will be no reconstructed/resolved networks for this handle.
+		// There will be no resolved networks for this handle.
 		return ReconstructHandle::get_next_reconstruct_handle();
 	}
 
@@ -463,19 +595,39 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::create_resolved_topological_
 
 	std::vector<ReconstructHandle::type> topological_geometry_reconstruct_handles;
 
+	// Find the topological section feature IDs referenced by topological networks for the *current* reconstruction time.
+	//
+	// This is an optimisation that avoids unnecessary reconstructions. Only those topological sections referenced
+	// by networks that exist at the current reconstruction time are reconstructed (this saves quite a bit of time).
+	std::set<GPlatesModel::FeatureId> topological_sections_referenced;
+	BOOST_FOREACH(
+			const GPlatesModel::FeatureCollectionHandle::weak_ref &topological_network_feature_collection,
+			d_current_topological_network_feature_collections)
+	{
+		TopologyInternalUtils::find_topological_sections_referenced(
+				topological_sections_referenced,
+				topological_network_feature_collection,
+				TopologyGeometry::NETWORK,
+				reconstruction_time);
+	}
+
 	// Topological boundary sections and/or interior geometries that are reconstructed static features...
 	// We're ensuring that all potential (reconstructed geometry) topological-referenced geometries are
 	// reconstructed before we resolve topological networks (which reference them indirectly via feature-id).
-	std::vector<reconstructed_feature_geometry_non_null_ptr_type> topologically_referenced_reconstructed_geometries;
+	std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> topologically_referenced_reconstructed_geometries;
 	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &reconstructed_geometry_topological_sections_layer_proxy,
-			d_current_reconstructed_geometry_topological_sections_layer_proxies.get_input_layer_proxies())
+			const ReconstructLayerProxy::non_null_ptr_type &reconstructed_geometry_topological_sections_layer_proxy,
+			dependent_reconstructed_geometry_topological_sections_layers)
 	{
-		// Get the potential topological section RFGs.
+		// Reconstruct only the referenced topological section RFGs.
+		//
+		// This is an optimisation that avoids unnecessary reconstructions. Only those topological sections referenced
+		// by networks that exist at the current reconstruction time are reconstructed (this saves quite a bit of time).
 		const ReconstructHandle::type reconstruct_handle =
-				reconstructed_geometry_topological_sections_layer_proxy.get_input_layer_proxy()
-						->get_reconstructed_feature_geometries(
+				reconstructed_geometry_topological_sections_layer_proxy
+						->get_reconstructed_topological_sections(
 								topologically_referenced_reconstructed_geometries,
+								topological_sections_referenced,
 								reconstruction_time);
 
 		// Add the reconstruct handle to our list.
@@ -485,16 +637,20 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::create_resolved_topological_
 	// Topological boundary sections and/or interior geometries that are resolved topological lines...
 	// We're ensuring that all potential (resolved line) topologically-referenced geometries are
 	// resolved before we resolve topological networks (which reference them indirectly via feature-id).
-	std::vector<resolved_topological_line_non_null_ptr_type> topologically_referenced_resolved_lines;
+	std::vector<ResolvedTopologicalLine::non_null_ptr_type> topologically_referenced_resolved_lines;
 	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<TopologyGeometryResolverLayerProxy> &resolved_line_topological_sections_layer_proxy,
-			d_current_resolved_line_topological_sections_layer_proxies.get_input_layer_proxies())
+			const TopologyGeometryResolverLayerProxy::non_null_ptr_type &resolved_line_topological_sections_layer_proxy,
+			dependent_resolved_line_topological_sections_layers)
 	{
-		// Get the potential topological section RTGs.
+		// Reconstruct only the referenced topological section resolved lines.
+		//
+		// This is an optimisation that avoids unnecessary reconstructions. Only those topological sections
+		// referenced by boundaries that exist at the current reconstruction time are reconstructed.
 		const ReconstructHandle::type reconstruct_handle =
-				resolved_line_topological_sections_layer_proxy.get_input_layer_proxy()
-						->get_resolved_topological_lines(
+				resolved_line_topological_sections_layer_proxy
+						->get_resolved_topological_sections(
 								topologically_referenced_resolved_lines,
+								topological_sections_referenced,
 								reconstruction_time);
 
 		// Add the reconstruct handle to our list.
@@ -506,5 +662,6 @@ GPlatesAppLogic::TopologyNetworkResolverLayerProxy::create_resolved_topological_
 			resolved_topological_networks,
 			reconstruction_time,
 			d_current_topological_network_feature_collections,
-			topological_geometry_reconstruct_handles);
+			topological_geometry_reconstruct_handles,
+			topology_network_params);
 }

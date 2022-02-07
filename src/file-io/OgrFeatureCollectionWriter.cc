@@ -393,6 +393,20 @@ namespace
 	}
 
 	void
+	add_geometry_import_time_key_to_kvd_if_missing(
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
+			const QMap< QString, QString > &model_to_shapefile_map)
+	{
+		GPlatesPropertyValues::XsDouble::non_null_ptr_type value =
+				GPlatesPropertyValues::XsDouble::create(0.);
+
+		add_field_to_kvd(get_key_string(model_to_shapefile_map, ShapefileAttributes::GEOMETRY_IMPORT_TIME),
+						 value,
+						 GPlatesPropertyValues::StructuralType::create_xsi("double"),
+						 dictionary);
+	}
+
+	void
 	add_region_to_kvd(
 			const GPlatesPropertyValues::GpmlOldPlatesHeader *old_plates_header,
 			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary)
@@ -584,27 +598,9 @@ namespace
 		add_left_plate_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
 		add_right_plate_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
 		add_spreading_asymmetry_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
+		add_geometry_import_time_key_to_kvd_if_missing(kvd,model_to_shapefile_map);
 	}
 
-
-	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
-	create_multi_point_from_points(
-			const std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> &points)
-	{
-		std::vector<GPlatesMaths::PointOnSphere> vector_of_points;
-		
-		std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>::const_iterator
-				it = points.begin(),
-				end = points.end();
-
-		for (; it != end ; ++it)
-		{
-			vector_of_points.push_back(**it);
-		}
-		
-		return GPlatesMaths::MultiPointOnSphere::create_on_heap(vector_of_points);
-
-	}
 	
 	/*!
 	 * \brief add_or_replace_model_kvd - Add @a kvd to the feature given by @a feature_handle.
@@ -647,7 +643,7 @@ namespace
 
 
 	double
-	get_time_from_time_period(
+	get_time_from_time_instant(
 			const GPlatesPropertyValues::GmlTimeInstant &time_instant)
 	{
 
@@ -910,6 +906,48 @@ namespace
 	}
 
 	void
+	fill_kvd_with_geometry_import_time(
+			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
+			const QMap< QString,QString > &model_to_shapefile_map,
+			const GPlatesModel::FeatureHandle::const_weak_ref &feature)
+	{
+		static const GPlatesModel::PropertyName geometry_import_time_property_name =
+				GPlatesModel::PropertyName::create_gpml("geometryImportTime");
+
+		boost::optional<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_to_const_type> time_instant =
+				GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimeInstant>(
+						feature, geometry_import_time_property_name);
+		if (time_instant)
+		{
+
+			const double geometry_import_time = get_time_from_time_instant(*time_instant.get());
+
+			GPlatesPropertyValues::XsDouble::non_null_ptr_type value =
+					GPlatesPropertyValues::XsDouble::create(geometry_import_time);
+
+			QMap <QString,QString>::const_iterator it = model_to_shapefile_map.find(
+						ShapefileAttributes::model_properties[ShapefileAttributes::GEOMETRY_IMPORT_TIME]);
+
+			if (it != model_to_shapefile_map.end())
+			{
+
+				QString key_string = it.value();
+
+				GPlatesPropertyValues::XsString::non_null_ptr_type key =
+						GPlatesPropertyValues::XsString::create(GPlatesUtils::make_icu_string_from_qstring(key_string));
+
+				GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type new_element =
+						GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+							key,
+							value,
+							GPlatesPropertyValues::StructuralType::create_xsi("double"));
+
+				add_or_replace_kvd_element(new_element,key_string,dictionary);
+			}
+		}
+	}
+
+	void
 	fill_kvd_with_feature_type(
 			GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type dictionary,
 			const QMap< QString,QString > &model_to_shapefile_map,
@@ -1003,8 +1041,8 @@ namespace
 		if (time_period)
 		{
 
-			double begin_time = get_time_from_time_period(*(time_period.get()->begin()));
-			double end_time = get_time_from_time_period(*(time_period.get()->end()));
+			double begin_time = get_time_from_time_instant(*(time_period.get()->begin()));
+			double end_time = get_time_from_time_instant(*(time_period.get()->end()));
 
 			GPlatesPropertyValues::XsDouble::non_null_ptr_type begin_value =
 					GPlatesPropertyValues::XsDouble::create(begin_time);
@@ -1371,7 +1409,7 @@ namespace
 						GPlatesPropertyValues::StructuralType::create_xsi("string"));
 		elements.push_back(recon_method_element);
 
-		// Add a spreading asymmetry method entry
+		// Add a spreading asymmetry entry
 		it = model_to_shapefile_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::SPREADING_ASYMMETRY]);
 		key = GPlatesPropertyValues::XsString::create(
 					GPlatesUtils::make_icu_string_from_qstring(*it));
@@ -1385,6 +1423,21 @@ namespace
 						spreading_asymmetry_value,
 						GPlatesPropertyValues::StructuralType::create_xsi("double"));
 		elements.push_back(spreading_asymmetry_element);
+
+		// Add a geometry import time entry
+		it = model_to_shapefile_map.find(ShapefileAttributes::model_properties[ShapefileAttributes::GEOMETRY_IMPORT_TIME]);
+		key = GPlatesPropertyValues::XsString::create(
+					GPlatesUtils::make_icu_string_from_qstring(*it));
+
+		GPlatesPropertyValues::XsDouble::non_null_ptr_type geometry_import_time_value =
+				GPlatesPropertyValues::XsDouble::create(0.);
+
+		GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type geometry_import_time_element =
+				GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+						key,
+						geometry_import_time_value,
+						GPlatesPropertyValues::StructuralType::create_xsi("double"));
+		elements.push_back(geometry_import_time_element);
 
 		// Add them all to the default kvd.
 		default_key_value_dictionary.reset(GPlatesPropertyValues::GpmlKeyValueDictionary::create(elements));
@@ -1409,6 +1462,7 @@ namespace
 		fill_kvd_with_left_plate_id(dictionary,model_to_shapefile_map,feature);
 		fill_kvd_with_right_plate_id(dictionary,model_to_shapefile_map,feature);
 		fill_kvd_with_spreading_asymmetry(dictionary,model_to_shapefile_map,feature);
+		fill_kvd_with_geometry_import_time(dictionary,model_to_shapefile_map,feature);
 	}
 	
 	void
@@ -1426,28 +1480,26 @@ namespace
 	void
 	write_point_geometries(
 			GPlatesFileIO::OgrWriter *ogr_writer,
-			const std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> &point_geometries,
+			const std::vector<GPlatesMaths::PointOnSphere> &point_geometries,
 			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary)
 	{
+		if (point_geometries.empty())
+		{
+			return;
+		}
+
 		if (point_geometries.size() > 1)
 		{
 			// We have more than one point in the feature, so we should handle this as a multi-point.
-			GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point =
-					create_multi_point_from_points(point_geometries);
-
-			ogr_writer->write_multi_point_feature(multi_point,key_value_dictionary);
+			ogr_writer->write_multi_point_feature(
+					GPlatesMaths::MultiPointOnSphere::create_on_heap(
+							point_geometries.begin(),
+							point_geometries.end()),
+					key_value_dictionary);
 		}
 		else
 		{
-			std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>::const_iterator
-					iter = point_geometries.begin(),
-					end = point_geometries.end();
-
-			for ( ; iter != end ; ++iter)
-			{
-				ogr_writer->write_point_feature(*iter,key_value_dictionary);
-			}
-
+			ogr_writer->write_point_feature(point_geometries.front(), key_value_dictionary);
 		}
 	}
 
@@ -1570,7 +1622,10 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 					file_info.get_qfileinfo().filePath(),
 					finder.has_found_multiple_geometry_types(),
 					// Should polyline/polygon geometries be wrapped/clipped to the dateline...
-					ogr_file_configuration.get()->get_wrap_to_dateline()));
+					ogr_file_configuration.get()->get_wrap_to_dateline(),
+					// The original SRS, if one was provided.
+					ogr_file_configuration.get()->get_original_file_srs(),
+					ogr_file_configuration.get()->get_ogr_srs_write_behaviour()));
 
 	// The file_info might not have a model_to_shapefile_map - the feature collection
 	// might have originated from a plates file, for example. If we don't have one,
@@ -1651,10 +1706,24 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 			*file_ref.get_feature_collection()) =
 					d_model_to_shapefile_map;
 
+	// If we have instructed the OgrWriter to overwrite in WGS84, then update the OgrConfiguration too.
+	boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> original_srs =
+		ogr_file_configuration.get()->get_original_file_srs();
+	if (original_srs)
+	{
+		if (!original_srs.get()->is_wgs84() &&
+			(ogr_file_configuration.get()->get_ogr_srs_write_behaviour() == FeatureCollectionFileFormat::OGRConfiguration::WRITE_AS_WGS84_BEHAVIOUR))
+		{
+			ogr_file_configuration.get()->set_original_file_srs(
+						GPlatesPropertyValues::SpatialReferenceSystem::get_WGS84());
+		}
+
+	}
 	// Store the file configuration in the file reference.
 	FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type
 			file_configuration = ogr_file_configuration.get();
 	file_ref.set_file_info(file_info, file_configuration);
+
 }
 
 
@@ -1748,7 +1817,7 @@ void
 GPlatesFileIO::OgrFeatureCollectionWriter::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point)
 {
-	d_point_geometries.push_back(gml_point.get_point());
+	d_point_geometries.push_back(*gml_point.get_point());
 }
 
 void
@@ -1776,8 +1845,7 @@ void
 GPlatesFileIO::OgrFeatureCollectionWriter::visit_gml_polygon(
 		const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
-	// FIXME: Do something about interior rings....
-	d_polygon_geometries.push_back(gml_polygon.get_exterior());
+	d_polygon_geometries.push_back(gml_polygon.get_polygon());
 }
 
 void

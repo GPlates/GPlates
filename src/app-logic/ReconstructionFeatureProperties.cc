@@ -29,26 +29,10 @@
 
 #include "property-values/GpmlConstantValue.h"
 #include "property-values/GpmlPlateId.h"
+#include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/Enumeration.h"
 #include "property-values/XsDouble.h"
-
-
-bool
-GPlatesAppLogic::ReconstructionFeatureProperties::is_feature_defined_at_recon_time(
-		const double &reconstruction_time) const
-{
-	if (d_time_of_appearance &&
-		d_time_of_dissappearance)
-	{
-		const GPlatesPropertyValues::GeoTimeInstant reconstruction_geo_time(reconstruction_time);
-
-		return d_time_of_appearance->is_earlier_than_or_coincident_with(reconstruction_geo_time) &&
-				reconstruction_geo_time.is_earlier_than_or_coincident_with(d_time_of_dissappearance.get());
-	}
-
-	return true;
-}
 
 
 bool
@@ -56,15 +40,32 @@ GPlatesAppLogic::ReconstructionFeatureProperties::initialise_pre_feature_propert
 		const GPlatesModel::FeatureHandle &feature_handle)
 {
 	d_recon_plate_id = boost::none;
-	d_time_of_appearance = boost::none;
-	d_time_of_dissappearance = boost::none;
+	d_valid_time.time_of_appearance = boost::none;
+	d_valid_time.time_of_disappearance = boost::none;
 
 	d_recon_method = boost::none;
 	d_right_plate_id = boost::none;
 	d_left_plate_id = boost::none;
 	d_spreading_asymmetry = boost::none;
+	d_geometry_import_time = boost::none;
 
 	return true;
+}
+
+
+void
+GPlatesAppLogic::ReconstructionFeatureProperties::visit_gml_time_instant(
+		const GPlatesPropertyValues::GmlTimeInstant &gml_time_instant)
+{
+	static const GPlatesModel::PropertyName geometry_import_time_property_name =
+			GPlatesModel::PropertyName::create_gpml("geometryImportTime");
+
+	// Note that we're going to assume that we're in a property...
+	if (current_top_level_propname() == geometry_import_time_property_name)
+	{
+		// Cache the geometry import time.
+		d_geometry_import_time = gml_time_instant.get_time_position();
+	}
 }
 
 
@@ -78,9 +79,9 @@ GPlatesAppLogic::ReconstructionFeatureProperties::visit_gml_time_period(
 	// Note that we're going to assume that we're in a property...
 	if (current_top_level_propname() == valid_time_property_name)
 	{
-		// Cache the time of appearance/dissappearance.
-		d_time_of_appearance = gml_time_period.begin()->get_time_position();
-		d_time_of_dissappearance = gml_time_period.end()->get_time_position();
+		// Cache the time of appearance/disappearance.
+		d_valid_time.time_of_appearance = gml_time_period.begin()->get_time_position();
+		d_valid_time.time_of_disappearance = gml_time_period.end()->get_time_position();
 	}
 }
 
@@ -150,4 +151,21 @@ GPlatesAppLogic::ReconstructionFeatureProperties::visit_enumeration(
 	{
 		d_recon_method = enumeration.get_value();
 	}
+}
+
+
+bool
+GPlatesAppLogic::ReconstructionFeatureProperties::TimePeriod::is_valid_at_recon_time(
+		const double &reconstruction_time) const
+{
+	if (time_of_appearance &&
+		time_of_disappearance)
+	{
+		const GPlatesPropertyValues::GeoTimeInstant reconstruction_geo_time(reconstruction_time);
+
+		return time_of_appearance->is_earlier_than_or_coincident_with(reconstruction_geo_time) &&
+				reconstruction_geo_time.is_earlier_than_or_coincident_with(time_of_disappearance.get());
+	}
+
+	return true;
 }

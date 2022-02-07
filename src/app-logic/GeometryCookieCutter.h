@@ -31,9 +31,11 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
-#include "AppLogicFwd.h"
+#include "ReconstructedFeatureGeometry.h"
 #include "ReconstructionGeometry.h"
 #include "ReconstructionGeometryVisitor.h"
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalNetwork.h"
 
 #include "maths/PolygonIntersections.h"
 #include "maths/PolygonOnSphere.h"
@@ -69,11 +71,11 @@ namespace GPlatesAppLogic
 		{
 		public:
 			Partition(
-					const reconstruction_geometry_non_null_ptr_to_const_type &reconstruction_geometry_) :
+					const ReconstructionGeometry::non_null_ptr_to_const_type &reconstruction_geometry_) :
 				reconstruction_geometry(reconstruction_geometry_)
 			{ }
 
-			reconstruction_geometry_non_null_ptr_to_const_type reconstruction_geometry;
+			ReconstructionGeometry::non_null_ptr_to_const_type reconstruction_geometry;
 			partitioned_geometry_seq_type partitioned_geometries;
 		};
 
@@ -136,9 +138,9 @@ namespace GPlatesAppLogic
 		 */
 		GeometryCookieCutter(
 				const double &reconstruction_time,
-				boost::optional<const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &> reconstructed_static_polygons,
-				boost::optional<const std::vector<resolved_topological_boundary_non_null_ptr_type> &> resolved_topological_boundaries,
-				boost::optional<const std::vector<resolved_topological_network_non_null_ptr_type> &> resolved_topological_networks,
+				boost::optional<const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &> reconstructed_static_polygons,
+				boost::optional<const std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &> resolved_topological_boundaries,
+				boost::optional<const std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &> resolved_topological_networks,
 				boost::optional<SortPlates> sort_plates = SORT_BY_PLATE_ID,
 				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory = GPlatesMaths::PolygonOnSphere::ADAPTIVE);
 
@@ -154,7 +156,7 @@ namespace GPlatesAppLogic
 		 */
 		GeometryCookieCutter(
 				const double &reconstruction_time,
-				const std::vector<reconstruction_geometry_non_null_ptr_type> &reconstruction_geometries,
+				const std::vector<ReconstructionGeometry::non_null_ptr_type> &reconstruction_geometries,
 				bool group_networks_then_boundaries_then_static_polygons = true,
 				boost::optional<SortPlates> sort_plates = SORT_BY_PLATE_ID,
 				GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory = GPlatesMaths::PolygonOnSphere::ADAPTIVE);
@@ -253,12 +255,12 @@ namespace GPlatesAppLogic
 		{
 		public:
 			PartitioningGeometry(
-					const reconstruction_geometry_non_null_ptr_type &reconstruction_geometry,
+					const ReconstructionGeometry::non_null_ptr_type &reconstruction_geometry,
 					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
 					GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory);
 
 
-			reconstruction_geometry_non_null_ptr_to_const_type d_reconstruction_geometry;
+			ReconstructionGeometry::non_null_ptr_to_const_type d_reconstruction_geometry;
 			GPlatesMaths::PolygonIntersections::non_null_ptr_type d_polygon_intersections;
 
 			//! Used to sort by plate id.
@@ -335,7 +337,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_partitioning_reconstruction_geometries(
-				const std::vector<reconstruction_geometry_non_null_ptr_type> &reconstruction_geometries,
+				const std::vector<ReconstructionGeometry::non_null_ptr_type> &reconstruction_geometries,
 				boost::optional<SortPlates> sort_plates);
 
 
@@ -344,7 +346,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_partitioning_resolved_topological_networks(
-				const std::vector<resolved_topological_network_non_null_ptr_type> &resolved_topological_networks,
+				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
 				boost::optional<SortPlates> sort_plates);
 
 		/**
@@ -352,7 +354,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_partitioning_resolved_topological_network(
-				const resolved_topological_network_non_null_ptr_type &resolved_topological_network);
+				const ResolvedTopologicalNetwork::non_null_ptr_type &resolved_topological_network);
 
 
 		/**
@@ -360,7 +362,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_partitioning_resolved_topological_boundaries(
-				const std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
+				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
 				boost::optional<SortPlates> sort_plates);
 
 		/**
@@ -368,7 +370,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_partitioning_resolved_topological_boundary(
-				const resolved_topological_boundary_non_null_ptr_type &resolved_topological_boundary);
+				const ResolvedTopologicalBoundary::non_null_ptr_type &resolved_topological_boundary);
 
 
 		/**
@@ -376,7 +378,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_partitioning_reconstructed_feature_polygons(
-				const std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+				const std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 				boost::optional<SortPlates> sort_plates);
 
 		/**
@@ -384,7 +386,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		add_partitioning_reconstructed_feature_polygon(
-				const reconstructed_feature_geometry_non_null_ptr_type &reconstructed_feature_geometry);
+				const ReconstructedFeatureGeometry::non_null_ptr_type &reconstructed_feature_geometry);
 
 
 		/**

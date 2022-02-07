@@ -56,6 +56,10 @@ namespace GPlatesAppLogic
 		clone_feature_collection(
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref)
 		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					feature_collection_ref.is_valid(),
+					GPLATES_ASSERTION_SOURCE);
+
 			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type cloned_feature_collection =
 					GPlatesModel::FeatureCollectionHandle::create();
 
@@ -64,6 +68,11 @@ namespace GPlatesAppLogic
 			GPlatesModel::FeatureCollectionHandle::iterator features_end = feature_collection_ref->end();
 			for ( ; features_iter != features_end; ++features_iter)
 			{
+				if (!features_iter.is_still_valid())
+				{
+					continue;
+				}
+
 				GPlatesModel::FeatureHandle::non_null_ptr_type feature = *features_iter;
 
 				GPlatesModel::FeatureHandle::non_null_ptr_type cloned_feature =
@@ -111,13 +120,16 @@ namespace GPlatesAppLogic
 					// If requested then clone the feature collections to ensure that we will always create
 					// a reconstruction tree using the state of the feature collections right now
 					// (because they could subsequently get modified by some other client).
-					const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
-							clone_reconstruction_features
-							? clone_feature_collection(feature_collection_ref)
-							: GPlatesModel::FeatureCollectionHandle::non_null_ptr_type(feature_collection_ref.handle_ptr());
+					if (feature_collection_ref.is_valid())
+					{
+						const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
+								clone_reconstruction_features
+								? clone_feature_collection(feature_collection_ref)
+								: GPlatesModel::FeatureCollectionHandle::non_null_ptr_type(feature_collection_ref.handle_ptr());
 
-					d_cloned_reconstruction_features_collection.push_back(feature_collection);
-					d_cloned_reconstruction_features_collection_refs.push_back(feature_collection->reference());
+						d_cloned_reconstruction_features_collection.push_back(feature_collection);
+						d_cloned_reconstruction_features_collection_refs.push_back(feature_collection->reference());
+					}
 				}
 			}
 
@@ -315,13 +327,16 @@ GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::CachedReconstructionTreeCr
 		// If requested then clone the feature collections to ensure that we will always create
 		// a reconstruction tree using the state of the feature collections right now
 		// (because they could subsequently get modified by some other client).
-		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
-				clone_reconstruction_features
-				? clone_feature_collection(feature_collection_ref)
-				: GPlatesModel::FeatureCollectionHandle::non_null_ptr_type(feature_collection_ref.handle_ptr());
+		if (feature_collection_ref.is_valid())
+		{
+			const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
+					clone_reconstruction_features
+					? clone_feature_collection(feature_collection_ref)
+					: GPlatesModel::FeatureCollectionHandle::non_null_ptr_type(feature_collection_ref.handle_ptr());
 
-		d_cloned_reconstruction_features_collection.push_back(feature_collection);
-		d_cloned_reconstruction_features_collection_refs.push_back(feature_collection->reference());
+			d_cloned_reconstruction_features_collection.push_back(feature_collection);
+			d_cloned_reconstruction_features_collection_refs.push_back(feature_collection->reference());
+		}
 	}
 }
 

@@ -23,9 +23,12 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
 #include <cmath>
+#include <cstddef> // For std::size_t
 #include <boost/foreach.hpp>
 #include <boost/bind.hpp>
+#include <boost/cast.hpp>
 #include <boost/weak_ptr.hpp>
 #include <QTableWidgetItem>
 #include <QItemDelegate>
@@ -45,8 +48,13 @@
 
 #include "FriendlyLineEdit.h"
 #include "ImportScalarField3DDialog.h"
+#include "ProgressDialog.h"
 
+#include "file-io/RasterFileCacheFormat.h"
 #include "file-io/RasterReader.h"
+
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
 
 #include "maths/MathsUtils.h"
 #include "maths/Real.h"
@@ -483,6 +491,15 @@ GPlatesQtWidgets::ScalarField3DDepthLayersPage::remove_selected_from_table()
 	if (ranges.count() == 1)
 	{
 		const QTableWidgetSelectionRange &range = ranges.at(0);
+
+		// First clear any cache files generated for the depth layers we're about to remove.
+		ScalarField3DDepthLayersSequence::sequence_type &sequence = d_depth_layers_sequence.get_sequence();
+		for (int i = range.topRow(); i != range.bottomRow() + 1; ++i)
+		{
+			sequence[i].clear_cache_files();
+		}
+
+		// Remove the depth layers.
 		d_depth_layers_sequence.erase(
 				range.topRow(),
 				range.bottomRow() + 1);
@@ -754,44 +771,111 @@ GPlatesQtWidgets::ScalarField3DDepthLayersPage::populate_table()
 
 void
 GPlatesQtWidgets::ScalarField3DDepthLayersPage::add_files_to_sequence(
-		const QFileInfoList &file_infos)
+		QFileInfoList file_infos)
 {
-	if (!file_infos.count())
+	//
+	// Not all files will necessarily be raster files (especially when an entire directory was added).
+	// So we reduce the list to supported rasters - also makes the progress dialog more accurate.
+	//
+	const std::map<QString, GPlatesFileIO::RasterReader::FormatInfo> &raster_formats =
+			GPlatesFileIO::RasterReader::get_supported_formats();
+	for (int n = 0; n < file_infos.size(); )
+	{
+		// If filename extension not supported then remove file from list.
+		if (raster_formats.find(file_infos[n].suffix()) == raster_formats.end())
+		{
+			file_infos.erase(file_infos.begin() + n);
+		}
+		else
+		{
+			++n;
+		}
+	}
+
+	const int num_files = file_infos.size();
+
+	if (num_files == 0)
 	{
 		return;
 	}
 
+	// Deduce the depth for each file in sequence.
+	std::vector< boost::optional<double> > depths;
+	deduce_depths(depths, file_infos);
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			depths.size() == boost::numeric_cast<std::size_t>(file_infos.size()),
+			GPLATES_ASSERTION_SOURCE);
+
 	ScalarField3DDepthLayersSequence new_sequence;
 
-	BOOST_FOREACH(const QFileInfo &file_info, file_infos)
+	// Setup a progress dialog.
+	ProgressDialog *progress_dialog = new ProgressDialog(this);
+	const QString progress_dialog_text = tr("Caching depth layer sequence...");
+	// Make progress dialog modal so cannot interact with import dialog
+	// until processing finished or cancel button pressed.
+	progress_dialog->setWindowModality(Qt::WindowModal);
+	progress_dialog->setRange(0, num_files);
+	progress_dialog->setValue(0);
+	progress_dialog->show();
+
+	for (int file_index = 0; file_index < num_files; ++file_index)
 	{
-		// Attempt to read the raster file.
-		QString absolute_file_path = file_info.absoluteFilePath();
-		GPlatesFileIO::RasterReader::non_null_ptr_type reader =
-			GPlatesFileIO::RasterReader::create(absolute_file_path);
-		if (!reader->can_read())
+		progress_dialog->update_progress(file_index, progress_dialog_text);
+
+		const QFileInfo &file_info = file_infos[file_index];
+		const QString absolute_file_path = file_info.absoluteFilePath();
+
+		// Before we create a depth layer raster (which creates cache files) we'll see if
+		// any of its cache files already exist. If they do then we won't remove them when
+		// the import process finishes.
+		//
+		// We only test the first band (currently the import only considers the first band anyway)
+		// because to determine the number of bands we have to create the raster which creates the cache files.
+		const bool remove_cache_files =
+				!GPlatesFileIO::RasterFileCacheFormat::get_existing_source_cache_filename(absolute_file_path, 1/*band_number*/) &&
+				!GPlatesFileIO::RasterFileCacheFormat::get_existing_mipmap_cache_filename(absolute_file_path, 1/*band_number*/);
+
+		// Put raster reader in a block scope so it gets destroyed before we attempt to clear the cache file
+		// (if user cancels progress dialog) since otherwise the reader will still have the cache file open
+		// (preventing its removal).
 		{
-			continue;
+			// Attempt to read the raster file.
+			GPlatesFileIO::RasterReader::non_null_ptr_type reader =
+				GPlatesFileIO::RasterReader::create(absolute_file_path);
+			if (!reader->can_read())
+			{
+				continue;
+			}
+
+			// Check that there's at least one band.
+			unsigned int number_of_bands = reader->get_number_of_bands();
+			if (number_of_bands == 0)
+			{
+				continue;
+			}
+
+			std::pair<unsigned int, unsigned int> raster_size = reader->get_size();
+			if (raster_size.first != 0 && raster_size.second != 0)
+			{
+				new_sequence.push_back(
+						depths[file_index],
+						absolute_file_path,
+						file_info.fileName(),
+						raster_size.first,
+						raster_size.second,
+						remove_cache_files);
+			}
 		}
 
-		// Check that there's at least one band.
-		unsigned int number_of_bands = reader->get_number_of_bands();
-		if (number_of_bands == 0)
+		if (progress_dialog->canceled())
 		{
-			continue;
-		}
-
-		std::pair<unsigned int, unsigned int> raster_size = reader->get_size();
-		if (raster_size.first != 0 && raster_size.second != 0)
-		{
-			new_sequence.push_back(
-					deduce_depth(file_info),
-					absolute_file_path,
-					file_info.fileName(),
-					raster_size.first,
-					raster_size.second);
+			progress_dialog->close();
+			new_sequence.clear_cache_files();
+			return;
 		}
 	}
+
+	progress_dialog->close();
 
 	new_sequence.sort_by_depth();
 	d_depth_layers_sequence.add_all(new_sequence);
@@ -803,39 +887,264 @@ GPlatesQtWidgets::ScalarField3DDepthLayersPage::add_files_to_sequence(
 }
 
 
-boost::optional<double>
-GPlatesQtWidgets::ScalarField3DDepthLayersPage::deduce_depth(
-		const QFileInfo &file_info)
+void
+GPlatesQtWidgets::ScalarField3DDepthLayersPage::deduce_depths(
+		std::vector< boost::optional<double> > &depths,
+		const QFileInfoList &file_infos)
 {
-	QString base_name = file_info.completeBaseName();
-	QStringList tokens = base_name.split(QRegExp("[_-]"), QString::SkipEmptyParts);
+	const int num_files = file_infos.size();
 
-	if (tokens.count() < 2)
+	// Start off with all depths set to boost::none.
+	depths.resize(num_files);
+
+	if (num_files == 0)
 	{
-		return boost::none;
+		return;
 	}
 
-	try
+	int num_depths_deduced = 0;
+
+	// First attempt to parse file base names ending with a '_' or '-' followed by the depth.
+	// The user can guarantee no ambiguity in parsing of depths by formating their filenames this way.
+	int file_index;
+	for (file_index = 0; file_index < num_files; ++file_index)
 	{
-		GPlatesUtils::Parse<double> parse;
-		double value = parse(tokens.last());
+		const QString base_name = file_infos[file_index].completeBaseName();
+		QStringList tokens = base_name.split(QRegExp("[_-]"), QString::SkipEmptyParts);
+
+		if (tokens.count() < 2)
+		{
+			continue;
+		}
+
+		QString last_token = tokens.last();
+
+		double depth;
+		try
+		{
+			GPlatesUtils::Parse<double> parse;
+			depth = parse(last_token);
+		}
+		catch (const GPlatesUtils::ParseError &)
+		{
+			continue;
+		}
 
 		// Round to DECIMAL_PLACES.
-		value = round_to_dp(value);
+		depth = round_to_dp(depth);
 		
 		// Is value in an acceptable range?
-		if (MINIMUM_DEPTH <= value && value <= MAXIMUM_DEPTH)
+		if (depth < MINIMUM_DEPTH ||
+			depth > MAXIMUM_DEPTH)
 		{
-			return value;
+			continue;
 		}
-		else
-		{
-			return boost::none;
-		}
+
+		depths[file_index] = depth;
+		++num_depths_deduced;
 	}
-	catch (const GPlatesUtils::ParseError &)
+
+	// Return if we've successfully parsed any depth using the above approach.
+	// Unless they were *all* parsed successfully but *all* have the same depth
+	// (in which case it could just be that, for example, '_10' happens to be at the end
+	// of every file base name but is not meant to be the depth).
+	if (num_depths_deduced > 0)
 	{
-		return boost::none;
+		if (num_depths_deduced < num_files)
+		{
+			// Not all depths deduced.
+			return;
+		}
+
+		if (num_files == 1)
+		{
+			// Only one file and its depth has been deduced.
+			return;
+		}
+
+		// All depths have been deduced, so compare to see if all are the same.
+		const GPlatesMaths::Real first_time = depths[0].get();
+		for (file_index = 1; file_index < num_files; ++file_index)
+		{
+			if (first_time != depths[file_index].get())
+			{
+				// All depths are not the same.
+				return;
+			}
+		}
+
+		// ...all depths have been deduced and they are all the same.
+		// So fall through and try the second approach to filename formating...
+	}
+
+	//
+	// Use a different approach to parsing depths for any filenames not parsed using approach above.
+	// This approach tries to remove the common beginning and ending parts from all filenames,
+	// hopefully leaving only the depth (which varies across the filenames).
+	//
+	// This approach can be a little loose/ambiguous with the parsing but conversely supports any
+	// format where only the depth is different in each filename (regardless of where the depth
+	// is located in the filenames).
+	//
+	// It can be ambiguous because we could, for example, have filenames...
+	// 
+	//   prefix_10.5.1_suffix.nc
+	//   prefix_10.6.1_suffix.nc
+	//   prefix_10.7.1_suffix.nc
+	// 
+	// ...where the depths could be...
+	// 
+	//   10.5
+	//   10.6
+	//   10.7
+	// 
+	// ...or...
+	// 
+	//   5.1
+	//   6.1
+	//   7.1
+	// 
+	// ...or...
+	// 
+	//   5
+	//   6
+	//   7
+	//
+	// When the user does not get the result they want then they'll need to put the depths at the
+	// end of the filenames (after the '_' or '-') to avoid ambiguity.
+
+	// Reset all depths to boost::none.
+	num_depths_deduced = 0;
+	for (file_index = 0; file_index < num_files; ++file_index)
+	{
+		depths[file_index] = boost::none;
+	}
+
+	// Attempt to find the common prefix and suffix parts of all file base names.
+	// We're hoping the remaining middle (uncommon) parts will be the depths.
+	QString common_base_name_prefix = file_infos[0].completeBaseName();
+	QString common_base_name_suffix = file_infos[0].completeBaseName();
+	for (file_index = 1; file_index < num_files; ++file_index)
+	{
+		const QString base_name = file_infos[file_index].completeBaseName();
+		const int base_name_size = base_name.size();
+
+		// Find the common prefix part of current base name and previous prefix.
+		int common_base_name_prefix_size = common_base_name_prefix.size();
+		const int max_prefix_size = (std::min)(base_name_size, common_base_name_prefix_size);
+		int p;
+		for (p = 0; p < max_prefix_size; ++p)
+		{
+			if (base_name[p] != common_base_name_prefix[p])
+			{
+				break;
+			}
+		}
+		common_base_name_prefix = common_base_name_prefix.left(p);
+		common_base_name_prefix_size = common_base_name_prefix.size();
+
+		// Find the common suffix part of current base name and previous suffix.
+		int common_base_name_suffix_size = common_base_name_suffix.size();
+		const int max_suffix_size = (std::min)(base_name_size, common_base_name_suffix_size);
+		int s;
+		for (s = 0; s < max_suffix_size; ++s)
+		{
+			if (base_name[base_name_size - s - 1] != common_base_name_suffix[common_base_name_suffix_size - s - 1])
+			{
+				break;
+			}
+		}
+		common_base_name_suffix = common_base_name_suffix.right(s);
+		common_base_name_suffix_size = common_base_name_suffix.size();
+	}
+
+	//qDebug() << "common_base_name_prefix: " << common_base_name_prefix;
+	//qDebug() << "common_base_name_suffix: " << common_base_name_suffix;
+
+	// Remove any digits at the end of the common prefix.
+	// These are part of the depths (eg, depths might be '100', '110', '120' where the '1' is common).
+	//
+	// Note that we could have also removed a decimal point but that could cause the depths to be unparseable.
+	// For example:
+	//
+	//   prefix_10.25.1_suffix.nc
+	//   prefix_10.26.2_suffix.nc
+	//   prefix_10.27.3_suffix.nc
+	//
+	// ...currently gives us 25.1, 26.2 and 27.3 but if we removed the first decimal point then
+	// we'd get 10.25.1, 10.26.2 and 10.27.3 which is unparseable.
+	// When the user does not get the result they want then they'll need to put the depths at the
+	// end of the filenames (after the '_' or '-') to avoid ambiguity.
+	while (!common_base_name_prefix.isEmpty() &&
+			common_base_name_prefix[common_base_name_prefix.size() - 1].isDigit())
+	{
+		common_base_name_prefix.chop(1);
+	}
+
+	// Remove any digits at the start of the common suffix.
+	// These are part of the depths (eg, depths might be '100', '110', '120' where the '0' is common).
+	//
+	// Note that we could have also removed a decimal point but that could cause the depths to be unparseable.
+	// For example:
+	//
+	//   prefix_1.55.0_suffix.nc
+	//   prefix_2.65.0_suffix.nc
+	//   prefix_3.75.0_suffix.nc
+	//
+	// ...currently gives us 1.55, 2.65 and 3.75 but if we removed the first decimal point then
+	// we'd get 1.55.0, 2.65.0 and 3.75.0 which is unparseable.
+	// When the user does not get the result they want then they'll need to put the depths at the
+	// end of the filenames (after the '_' or '-') to avoid ambiguity.
+	while (!common_base_name_suffix.isEmpty() &&
+			common_base_name_suffix[0].isDigit())
+	{
+		common_base_name_suffix.remove(0, 1);
+	}
+
+	//qDebug() << "common_base_name_prefix: " << common_base_name_prefix;
+	//qDebug() << "common_base_name_suffix: " << common_base_name_suffix;
+
+	// See if the remaining middle (uncommon) parts can be parsed as floats.
+	const int num_common_prefix_chars = common_base_name_prefix.size();
+	const int num_common_suffix_chars = common_base_name_suffix.size();
+	for (file_index = 0; file_index < num_files; ++file_index)
+	{
+		const QString base_name = file_infos[file_index].completeBaseName();
+		const int base_name_size = base_name.size();
+
+		const int num_depth_chars = base_name_size - num_common_prefix_chars - num_common_suffix_chars;
+		if (num_depth_chars <= 0)
+		{
+			// It's possible that there's only one file in which case we cannot find the common parts
+			// (since need at least two filenames for that).
+			continue;
+		}
+
+		const QString depth_string = base_name.mid(num_common_prefix_chars, num_depth_chars);
+		//qDebug() << "depth_string: " << depth_string;
+
+		double depth;
+		try
+		{
+			GPlatesUtils::Parse<double> parse;
+			depth = parse(depth_string);
+		}
+		catch (const GPlatesUtils::ParseError &)
+		{
+			continue;
+		}
+
+		// Round to DECIMAL_PLACES.
+		depth = round_to_dp(depth);
+		
+		// Is value in an acceptable range?
+		if (depth < MINIMUM_DEPTH ||
+			depth > MAXIMUM_DEPTH)
+		{
+			continue;
+		}
+
+		depths[file_index] = depth;
+		++num_depths_deduced;
 	}
 }
-

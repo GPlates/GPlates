@@ -155,7 +155,7 @@ namespace GPlatesApi
 
 		// Get unit-magnitude direction at the arc point towards the end point (from start point).
 		return GPlatesMaths::Vector3D(
-				cross(arc_point.position_vector(), great_circle_arc.rotation_axis())
+				cross(great_circle_arc.rotation_axis(), arc_point.position_vector())
 						.get_normalisation());
 	}
 

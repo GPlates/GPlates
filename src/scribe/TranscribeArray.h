@@ -74,6 +74,10 @@ namespace GPlatesScribe
 	 *    transcribe(Scribe, T (&)[N], bool)
 	 * 
 	 * ...where T is 'int' and N is '3'.
+	 *
+	 *
+	 * Note: Native arrays use the sequence protocol so they are transcription compatible with
+	 * sequence containers such as std::vector.
 	 */
 	template <typename T, int N>
 	TranscribeResult
@@ -84,11 +88,12 @@ namespace GPlatesScribe
 
 
 	//
-	// We don't support using ConstructObject on (multidimensional) arrays (containing types that
-	// have no default constructor) because arrays do not support (non-default) constructors
+	// We don't support using Scribe::load() and Scribe::save() (ie, ConstructObject) on
+	// *multidimensional* arrays because they do not support (non-default) constructors
 	// (can only be initialised explicitly using braces).
 	//
-	// However arrays containing non-default constructable items are supported:
+	// However arrays containing non-default constructable items are supported (ie, the element type
+	// in the multidimensional array can have non-default constructors):
 	//
 	//    NonDefaultConstructableType array[1][2] = { ... };
 	//    ...
@@ -139,7 +144,7 @@ namespace GPlatesScribe
 				transcribed_array_size = N;
 			}
 
-			if (!scribe.transcribe(TRANSCRIBE_SOURCE, transcribed_array_size, "array_size", DONT_TRACK))
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, transcribed_array_size, ObjectTag().sequence_size()))
 			{
 				return scribe.get_transcribe_result();
 			}
@@ -183,7 +188,7 @@ namespace GPlatesScribe
 			// Transcribe each object in the array which is, in turn, another array.
 			for (unsigned int n = 0; n < N; ++n)
 			{
-				if (!scribe.transcribe(TRANSCRIBE_SOURCE, array[n], "array"))
+				if (!scribe.transcribe(TRANSCRIBE_SOURCE, array[n], ObjectTag()[n], TRACK))
 				{
 					return scribe.get_transcribe_result();
 				}
@@ -218,14 +223,14 @@ namespace GPlatesScribe
 				for (unsigned int n = 0; n < N; ++n)
 				{
 					// Mirror the load path.
-					scribe.save(TRANSCRIBE_SOURCE, array[n], "item");
+					scribe.save(TRANSCRIBE_SOURCE, array[n], ObjectTag()[n], TRACK);
 				}
 			}
 			else // loading...
 			{
 				for (unsigned int n = 0; n < N; ++n)
 				{
-					LoadRef<T> array_item = scribe.load<T>(TRANSCRIBE_SOURCE, "item");
+					LoadRef<T> array_item = scribe.load<T>(TRANSCRIBE_SOURCE, ObjectTag()[n], TRACK);
 					if (!array_item.is_valid())
 					{
 						return scribe.get_transcribe_result();

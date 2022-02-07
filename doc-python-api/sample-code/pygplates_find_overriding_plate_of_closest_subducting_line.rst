@@ -102,10 +102,10 @@ Sample code
             #
             
             # Get the subduction polarity of the nearest subducting line.
-            subduction_polarity = shared_sub_segment.get_feature().get_enumeration(pygplates.PropertyName.gpml_subduction_polarity)
+            subduction_polarity = nearest_shared_sub_segment.get_feature().get_enumeration(pygplates.PropertyName.gpml_subduction_polarity)
             if (not subduction_polarity or
                 subduction_polarity == 'Unknown'):
-                print '    Unable to find the overriding plate of the nearest subducting line "%s"' % shared_sub_segment.get_feature().get_name()
+                print '    Unable to find the overriding plate of the nearest subducting line "%s"' % nearest_shared_sub_segment.get_feature().get_name()
                 print '      subduction zone feature is missing subduction polarity property or it is set to "Unknown".'
                 continue
             
@@ -139,7 +139,7 @@ Sample code
                         break
             
             if not overriding_plate:
-                print '    Unable to find the overriding plate of the nearest subducting line "%s"' % shared_sub_segment.get_feature().get_name()
+                print '    Unable to find the overriding plate of the nearest subducting line "%s"' % nearest_shared_sub_segment.get_feature().get_name()
                 print '      topology on overriding side of subducting line is missing.'
                 continue
             
@@ -255,7 +255,7 @@ nearest subducting lines.
 
 ::
 
-    subduction_polarity = shared_sub_segment.get_feature().get_enumeration(pygplates.PropertyName.gpml_subduction_polarity)
+    subduction_polarity = nearest_shared_sub_segment.get_feature().get_enumeration(pygplates.PropertyName.gpml_subduction_polarity)
 
 | The nearest subducting line is a :class:`pygplates.ResolvedTopologicalSharedSubSegment`.
 | It is uniquely shared by topological boundaries. And it is the part of the subducting line that is closest to the feature.

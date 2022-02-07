@@ -41,211 +41,6 @@
 
 #include "model/types.h"
 
-namespace
-{
-	/**
-	 * Can either rotate a present day @a GeometryOnSphere into the past or
-	 * rotate a @a GeometryOnSphere from the past back to present day.
-	 */
-	class ReconstructGeometryOnSphereByPlateId :
-		private GPlatesMaths::ConstGeometryOnSphereVisitor
-	{
-	public:
-		ReconstructGeometryOnSphereByPlateId(
-				const GPlatesModel::integer_plate_id_type plate_id,
-				const GPlatesAppLogic::ReconstructionTree &recon_tree,
-				bool reverse_reconstruct) :
-		d_plate_id(plate_id),
-		d_recon_tree(recon_tree),
-		d_reverse_reconstruct(reverse_reconstruct)
-		{
-		}
-
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-		reconstruct(
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry)
-		{
-			geometry->accept_visitor(*this);
-
-			return GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(d_reconstructed_geom.get());
-		}
-
-	private:
-		virtual
-		void
-		visit_multi_point_on_sphere(
-				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
-		{
-			d_reconstructed_geom =
-					GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
-							multi_point_on_sphere,
-							d_plate_id,
-							d_recon_tree,
-							d_reverse_reconstruct).get();
-		}
-
-		virtual
-		void
-		visit_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
-		{
-			d_reconstructed_geom =
-					GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
-							point_on_sphere,
-							d_plate_id,
-							d_recon_tree,
-							d_reverse_reconstruct).get();
-		}
-
-		virtual
-		void
-		visit_polygon_on_sphere(
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
-		{
-			d_reconstructed_geom =
-					GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
-							polygon_on_sphere,
-							d_plate_id,
-							d_recon_tree,
-							d_reverse_reconstruct).get();
-		}
-
-		virtual
-		void
-		visit_polyline_on_sphere(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
-		{
-			d_reconstructed_geom =
-					GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
-							polyline_on_sphere,
-							d_plate_id,
-							d_recon_tree,
-							d_reverse_reconstruct).get();
-		}
-
-	private:
-		const GPlatesModel::integer_plate_id_type d_plate_id;
-		const GPlatesAppLogic::ReconstructionTree &d_recon_tree;
-		bool d_reverse_reconstruct;
-		GPlatesMaths::GeometryOnSphere::maybe_null_ptr_to_const_type d_reconstructed_geom;
-	};
-
-	/**
-	 * Can either rotate a present day @a GeometryOnSphere into the past or
-	 * rotate a @a GeometryOnSphere from the past back to present day.
-	 */
-	class ReconstructGeometryOnSphereWithHalfStage :
-		private GPlatesMaths::ConstGeometryOnSphereVisitor
-	{
-	public:
-		ReconstructGeometryOnSphereWithHalfStage(
-				const GPlatesModel::integer_plate_id_type left_plate_id,
-				const GPlatesModel::integer_plate_id_type right_plate_id,
-				const double &reconstruction_time,
-				const GPlatesAppLogic::ReconstructionTreeCreator &reconstruction_tree_creator,
-				const double &spreading_asymmetry,
-				const double &half_stage_rotation_interval,
-				bool reverse_reconstruct) :
-			d_left_plate_id(left_plate_id),
-			d_right_plate_id(right_plate_id),
-			d_reconstruction_time(reconstruction_time),
-			d_recon_tree_creator(reconstruction_tree_creator),
-			d_spreading_asymmetry(spreading_asymmetry),
-			d_half_stage_rotation_interval(half_stage_rotation_interval),
-			d_reverse_reconstruct(reverse_reconstruct)
-		{
-		}
-
-		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-		reconstruct(
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry)
-		{
-			geometry->accept_visitor(*this);
-
-			return GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type(d_reconstructed_geom.get());
-		}
-
-	private:
-		virtual
-		void
-		visit_multi_point_on_sphere(
-				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type multi_point_on_sphere)
-		{
-			d_reconstructed_geom =
-					GPlatesAppLogic::ReconstructUtils::reconstruct_as_half_stage(
-							multi_point_on_sphere,
-							d_left_plate_id,
-							d_right_plate_id,
-							d_reconstruction_time,
-							d_recon_tree_creator,
-							d_spreading_asymmetry,
-							d_half_stage_rotation_interval,
-							d_reverse_reconstruct).get();
-		}
-
-		virtual
-		void
-		visit_point_on_sphere(
-				GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
-		{
-			d_reconstructed_geom =
-					GPlatesAppLogic::ReconstructUtils::reconstruct_as_half_stage(
-							point_on_sphere,
-							d_left_plate_id,
-							d_right_plate_id,
-							d_reconstruction_time,
-							d_recon_tree_creator,
-							d_spreading_asymmetry,
-							d_half_stage_rotation_interval,
-							d_reverse_reconstruct).get();
-		}
-
-		virtual
-		void
-		visit_polygon_on_sphere(
-				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
-		{
-			d_reconstructed_geom =
-					GPlatesAppLogic::ReconstructUtils::reconstruct_as_half_stage(
-							polygon_on_sphere,
-							d_left_plate_id,
-							d_right_plate_id,
-							d_reconstruction_time,
-							d_recon_tree_creator,
-							d_spreading_asymmetry,
-							d_half_stage_rotation_interval,
-							d_reverse_reconstruct).get();
-		}
-
-		virtual
-		void
-		visit_polyline_on_sphere(
-				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
-		{
-			d_reconstructed_geom =
-					GPlatesAppLogic::ReconstructUtils::reconstruct_as_half_stage(
-							polyline_on_sphere,
-							d_left_plate_id,
-							d_right_plate_id,
-							d_reconstruction_time,
-							d_recon_tree_creator,
-							d_spreading_asymmetry,
-							d_half_stage_rotation_interval,
-							d_reverse_reconstruct).get();
-		}
-
-	private:
-		const GPlatesModel::integer_plate_id_type d_left_plate_id;
-		const GPlatesModel::integer_plate_id_type d_right_plate_id;
-		double d_reconstruction_time;
-		const GPlatesAppLogic::ReconstructionTreeCreator &d_recon_tree_creator;
-		double d_spreading_asymmetry;
-		double d_half_stage_rotation_interval;
-		bool d_reverse_reconstruct;
-
-		GPlatesMaths::GeometryOnSphere::maybe_null_ptr_to_const_type d_reconstructed_geom;
-	};
-}
 
 bool
 GPlatesAppLogic::ReconstructUtils::is_reconstruction_feature(
@@ -312,7 +107,7 @@ GPlatesAppLogic::ReconstructUtils::has_reconstructable_features(
 
 GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructUtils::reconstruct(
-		std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 		const double &reconstruction_time,
 		const ReconstructMethodRegistry &reconstruct_method_registry,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
@@ -410,7 +205,7 @@ GPlatesAppLogic::ReconstructUtils::reconstruct(
 
 GPlatesAppLogic::ReconstructHandle::type
 GPlatesAppLogic::ReconstructUtils::reconstruct(
-		std::vector<reconstructed_feature_geometry_non_null_ptr_type> &reconstructed_feature_geometries,
+		std::vector<ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_feature_geometries,
 		const double &reconstruction_time,
 		GPlatesModel::integer_plate_id_type anchor_plate_id,
 		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstructable_features_collection,
@@ -516,9 +311,40 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
 		const ReconstructMethodRegistry &reconstruct_method_registry,
 		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
+		const double &reconstruction_time,
+		const ReconstructMethodInterface::Context &reconstruct_method_context,
+		bool reverse_reconstruct)
+{
+	// Create a context without topology reconstruction for creating a reconstruct method.
+	//
+	// TODO: A bit hacky - there's probably a better way to do this.
+	// Problem is a reconstruct method instance might topology-reconstruct its feature's geometry
+	// whereas we only want to reconstruct based on the feature's properties (eg, plate ID).
+	ReconstructMethodInterface::Context reconstruct_method_context_without_topology_reconstruction(reconstruct_method_context);
+	reconstruct_method_context_without_topology_reconstruction.topology_reconstruct = boost::none;
+
+	// Find out how to reconstruct the geometry based on the feature containing the reconstruction properties.
+	ReconstructMethodInterface::non_null_ptr_type reconstruct_method =
+			reconstruct_method_registry.create_reconstruct_method_or_default(
+					reconstruction_properties,
+					reconstruct_method_context_without_topology_reconstruction);
+
+	return reconstruct_method->reconstruct_geometry(
+			geometry,
+			reconstruct_method_context_without_topology_reconstruction,
+			reconstruction_time,
+			reverse_reconstruct);
+}
+
+
+GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
+		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
+		const ReconstructMethodRegistry &reconstruct_method_registry,
+		const GPlatesModel::FeatureHandle::weak_ref &reconstruction_properties,
+		const double &reconstruction_time,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
 		const ReconstructParams &reconstruct_params,
-		const double &reconstruction_time,
 		bool reverse_reconstruct)
 {
 	// Create the context in which to reconstruct.
@@ -526,16 +352,12 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 			reconstruct_params,
 			reconstruction_tree_creator);
 
-	// Find out how to reconstruct the geometry based on the feature containing the reconstruction properties.
-	ReconstructMethodInterface::non_null_ptr_type reconstruct_method =
-			reconstruct_method_registry.create_reconstruct_method_or_default(
-					reconstruction_properties,
-					reconstruct_method_context);
-
-	return reconstruct_method->reconstruct_geometry(
+	return reconstruct_geometry(
 			geometry,
-			reconstruct_method_context,
+			reconstruct_method_registry,
+			reconstruction_properties,
 			reconstruction_time,
+			reconstruct_method_context,
 			reverse_reconstruct);
 }
 
@@ -565,9 +387,9 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 			geometry,
 			reconstruct_method_registry,
 			reconstruction_properties,
+			reconstruction_time,
 			reconstruction_tree_creator,
 			reconstruct_params,
-			reconstruction_time,
 			reverse_reconstruct);
 }
 
@@ -588,41 +410,4 @@ GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 			reconstruction_tree.get_reconstruction_features(),
 			reconstruct_params,
 			reverse_reconstruct);
-}
-
-
-GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-GPlatesAppLogic::ReconstructUtils::reconstruct_by_plate_id(
-		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-		const GPlatesModel::integer_plate_id_type reconstruction_plate_id,
-		const ReconstructionTree &reconstruction_tree,
-		bool reverse_reconstruct)
-{
-	ReconstructGeometryOnSphereByPlateId reconstruct_geom_on_sphere_by_plate_id(
-			reconstruction_plate_id, reconstruction_tree, reverse_reconstruct);
-
-	return reconstruct_geom_on_sphere_by_plate_id.reconstruct(geometry);
-}
-
-GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-GPlatesAppLogic::ReconstructUtils::reconstruct_as_half_stage(
-		const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-		const GPlatesModel::integer_plate_id_type left_plate_id,
-		const GPlatesModel::integer_plate_id_type right_plate_id,
-		const double &reconstruction_time,
-		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		const double &spreading_asymmetry,
-		const double &half_stage_rotation_interval,
-		bool reverse_reconstruct)
-{
-	ReconstructGeometryOnSphereWithHalfStage reconstruct_geom_on_sphere(
-		left_plate_id,
-		right_plate_id,
-		reconstruction_time,
-		reconstruction_tree_creator,
-		spreading_asymmetry,
-		half_stage_rotation_interval,
-		reverse_reconstruct);
-
-	return reconstruct_geom_on_sphere.reconstruct(geometry);
 }

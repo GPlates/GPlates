@@ -31,7 +31,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "AssignPlateIds.h"
-#include "ReconstructionTree.h"
+#include "ReconstructMethodInterface.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/FeatureHandle.h"
@@ -58,7 +58,6 @@ namespace GPlatesAppLogic
 	 */
 	partition_feature_task_ptr_seq_type
 	get_partition_feature_tasks(
-			const ReconstructionTree &reconstruction_tree,
 			GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType assign_plate_id_method,
 			const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign,
 			bool verify_information_model);
@@ -104,6 +103,8 @@ namespace GPlatesAppLogic
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
 				const GeometryCookieCutter &geometry_cookie_cutter,
+				const ReconstructMethodInterface::Context &reconstruct_method_context,
+				const double &reconstruction_time,
 				bool respect_feature_time_period = true) = 0;
 	};
 }

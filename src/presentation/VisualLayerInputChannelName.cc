@@ -44,8 +44,8 @@ GPlatesPresentation::VisualLayerInputChannelName::get_input_channel_name(
 	case GPlatesAppLogic::LayerInputChannelName::RECONSTRUCTABLE_FEATURES:
 		return "Reconstructable features";
 
-	case GPlatesAppLogic::LayerInputChannelName::DEFORMATION_SURFACES:
-		return "Deformation surfaces (topological networks)";
+	case GPlatesAppLogic::LayerInputChannelName::TOPOLOGY_SURFACES:
+		return "Topology surfaces";
 
 	case GPlatesAppLogic::LayerInputChannelName::TOPOLOGICAL_GEOMETRY_FEATURES:
 		return "Topological geometry features";

@@ -58,7 +58,7 @@ GPlatesAppLogic::CoRegistrationLayerProxy::~CoRegistrationLayerProxy()
 }
 
 
-boost::optional<GPlatesAppLogic::coregistration_data_non_null_ptr_type>
+boost::optional<GPlatesAppLogic::CoRegistrationData::non_null_ptr_type>
 GPlatesAppLogic::CoRegistrationLayerProxy::get_coregistration_data(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const double &reconstruction_time)
@@ -86,7 +86,7 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_coregistration_data(
 		std::vector<ReconstructContext::ReconstructedFeature> reconstructed_seed_features;
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &seed_layer_proxy,
-				d_current_seed_layer_proxies.get_input_layer_proxies())
+				d_current_seed_layer_proxies)
 		{
 			seed_layer_proxy.get_input_layer_proxy()->get_reconstructed_features(
 					reconstructed_seed_features,
@@ -99,7 +99,7 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_coregistration_data(
 		// Get the co-registration target (reconstructed geometries) layer proxies.
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &target_layer_proxy,
-				d_current_target_reconstruct_layer_proxies.get_input_layer_proxies())
+				d_current_target_reconstruct_layer_proxies)
 		{
 			target_layer_proxies.push_back(target_layer_proxy.get_input_layer_proxy());
 		}
@@ -107,7 +107,7 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_coregistration_data(
 		// Get the co-registration target (raster) layer proxies.
 		BOOST_FOREACH(
 				LayerProxyUtils::InputLayerProxy<RasterLayerProxy> &target_layer_proxy,
-				d_current_target_raster_layer_proxies.get_input_layer_proxies())
+				d_current_target_raster_layer_proxies)
 		{
 			target_layer_proxies.push_back(target_layer_proxy.get_input_layer_proxy());
 		}
@@ -143,7 +143,7 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_coregistration_data(
 }
 
 
-boost::optional<GPlatesAppLogic::coregistration_data_non_null_ptr_type>
+boost::optional<GPlatesAppLogic::CoRegistrationData::non_null_ptr_type>
 GPlatesAppLogic::CoRegistrationLayerProxy::get_birth_attribute_data(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const GPlatesModel::FeatureId &feature_id)
@@ -173,13 +173,13 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_birth_attribute_data(
 	//a bit to support co-registration better.
 	//That's going to require some thinking though so we'll have to delay that for a later re-factor/re-design.
 	ReconstructMethodRegistry reconstruct_method_registry;
-	if (d_current_seed_layer_proxies.get_input_layer_proxies().empty())
+	if (d_current_seed_layer_proxies.empty())
 	{
 		qWarning() << "No input seed layer found.";
 		return boost::none;
 	}
 	ReconstructionTreeCreator reconstruction_tree_creator = 
-		d_current_seed_layer_proxies.get_input_layer_proxies().front().get_input_layer_proxy()->
+		d_current_seed_layer_proxies.begin()->get_input_layer_proxy()->
 		get_current_reconstruction_layer_proxy()->get_reconstruction_tree_creator();
 	std::vector<FeatureCollectionHandle::weak_ref> reconstructable_features_collections;
 	FeatureCollectionHandle::non_null_ptr_type fc = FeatureCollectionHandle::create();
@@ -215,7 +215,7 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_birth_attribute_data(
 	// Get the co-registration target (reconstructed geometries) layer proxies.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &target_layer_proxy,
-			d_current_target_reconstruct_layer_proxies.get_input_layer_proxies())
+			d_current_target_reconstruct_layer_proxies)
 	{
 		target_layer_proxies.push_back(target_layer_proxy.get_input_layer_proxy());
 	}
@@ -223,7 +223,7 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_birth_attribute_data(
 	// Get the co-registration target (raster) layer proxies.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<RasterLayerProxy> &target_layer_proxy,
-			d_current_target_raster_layer_proxies.get_input_layer_proxies())
+			d_current_target_raster_layer_proxies)
 	{
 		target_layer_proxies.push_back(target_layer_proxy.get_input_layer_proxy());
 	}
@@ -239,7 +239,7 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_birth_attribute_data(
 				boost::ref(get_raster_co_registration(renderer).get()));
 	}
 		
-	boost::optional<coregistration_data_non_null_ptr_type> coreg_data = 
+	boost::optional<CoRegistrationData::non_null_ptr_type> coreg_data = 
 		CoRegistrationData::create(reconstruction_time);
 
 	// Does the actual co-registration work.
@@ -419,7 +419,7 @@ GPlatesAppLogic::CoRegistrationLayerProxy::check_input_layer_proxies()
 	// See if any reconstructed seed layer proxies have changed.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &seed_layer_proxy,
-			d_current_seed_layer_proxies.get_input_layer_proxies())
+			d_current_seed_layer_proxies)
 	{
 		check_input_layer_proxy(seed_layer_proxy);
 	}
@@ -427,7 +427,7 @@ GPlatesAppLogic::CoRegistrationLayerProxy::check_input_layer_proxies()
 	// See if any target (reconstructed geometries) layer proxies have changed.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &target_layer_proxy,
-			d_current_target_reconstruct_layer_proxies.get_input_layer_proxies())
+			d_current_target_reconstruct_layer_proxies)
 	{
 		check_input_layer_proxy(target_layer_proxy);
 	}
@@ -435,7 +435,7 @@ GPlatesAppLogic::CoRegistrationLayerProxy::check_input_layer_proxies()
 	// See if any target (raster) layer proxies have changed.
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<RasterLayerProxy> &target_layer_proxy,
-			d_current_target_raster_layer_proxies.get_input_layer_proxies())
+			d_current_target_raster_layer_proxies)
 	{
 		check_input_layer_proxy(target_layer_proxy);
 	}
@@ -475,7 +475,7 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_seed_features()
 	std::vector<ReconstructContext::ReconstructedFeature> reconstructed_seed_features;
 	BOOST_FOREACH(
 			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &seed_layer_proxy,
-			d_current_seed_layer_proxies.get_input_layer_proxies())
+			d_current_seed_layer_proxies)
 	{
 		//We have used set_reconstruct_by_plate_id_outside_active_time_period(true). 
 		//So we do not really care about the reconstruction time used here.

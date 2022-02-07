@@ -28,7 +28,7 @@
 #include "ExportVelocityOptionsWidget.h"
 
 #include "ExportFileOptionsWidget.h"
-#include "ExportVelocitySmoothingOptionsWidget.h"
+#include "ExportVelocityCalculationOptionsWidget.h"
 #include "QtWidgetUtils.h"
 
 #include "file-io/ExportTemplateFilenameSequence.h"
@@ -46,7 +46,7 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 			boost::dynamic_pointer_cast<
 					GPlatesGui::ExportVelocityAnimationStrategy::Configuration>(
 							export_configuration->clone())),
-	d_export_velocity_smoothing_options_widget(NULL),
+	d_export_velocity_calculation_options_widget(NULL),
 	d_export_file_options_widget(NULL)
 {
 	setupUi(this);
@@ -54,14 +54,14 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 	// Delegate to the export file options widget to collect the file options.
 	// Note that not all formats support this.
 
-	// All velocity layers have velocity smoothing options.
-	d_export_velocity_smoothing_options_widget =
-			ExportVelocitySmoothingOptionsWidget::create(
+	// All velocity layers have velocity calculation options.
+	d_export_velocity_calculation_options_widget =
+			ExportVelocityCalculationOptionsWidget::create(
 					parent_,
-					d_export_configuration->velocity_smoothing_options);
+					d_export_configuration->velocity_calculation_options);
 	QtWidgetUtils::add_widget_to_placeholder(
-			d_export_velocity_smoothing_options_widget,
-			widget_velocity_smoothing_options);
+			d_export_velocity_calculation_options_widget,
+			widget_velocity_calculation_options);
 
 	if (d_export_configuration->file_format == GPlatesGui::ExportVelocityAnimationStrategy::Configuration::GPML)
 	{
@@ -110,21 +110,21 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::ExportVelocityOptionsWidget(
 				dynamic_cast<const GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(
 						*d_export_configuration);
 
-		if (configuration.velocity_vector_format == GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D)
+		if (configuration.velocity_vector_format == GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_3D)
 		{
 			velocity_vector_3D_radio_button->setChecked(true);
 		}
-		else if (configuration.velocity_vector_format == GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON)
+		else if (configuration.velocity_vector_format == GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_COLAT_LON)
 		{
 			velocity_vector_colat_lon_radio_button->setChecked(true);
 		}
-		else if (configuration.velocity_vector_format == GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE)
+		else if (configuration.velocity_vector_format == GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_ANGLE_MAGNITUDE)
 		{
-			velocity_vector_magnitude_angle_radio_button->setChecked(true);
+			velocity_vector_angle_magnitude_radio_button->setChecked(true);
 		}
 		else
 		{
-			velocity_vector_magnitude_azimuth_radio_button->setChecked(true);
+			velocity_vector_azimuth_magnitude_radio_button->setChecked(true);
 		}
 
 		velocity_scale_spin_box->setValue(configuration.velocity_scale);
@@ -219,11 +219,11 @@ GPlatesGui::ExportAnimationStrategy::const_configuration_base_ptr
 GPlatesQtWidgets::ExportVelocityOptionsWidget::create_export_animation_strategy_configuration(
 		const QString &filename_template)
 {
-	// Get the export velocity smoothing options from the export velocity smoothing options widget.
-	if (d_export_velocity_smoothing_options_widget)
+	// Get the export velocity calculation options from the export velocity calculation options widget.
+	if (d_export_velocity_calculation_options_widget)
 	{
-		d_export_configuration->velocity_smoothing_options =
-				d_export_velocity_smoothing_options_widget->get_export_velocity_smoothing_options();
+		d_export_configuration->velocity_calculation_options =
+				d_export_velocity_calculation_options_widget->get_export_velocity_calculation_options();
 	}
 
 	// Get the export file options from the export file options widget, if any.
@@ -276,12 +276,12 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::make_signal_slot_connections()
 			this,
 			SLOT(react_gmt_velocity_vector_format_radio_button_toggled(bool)));
 	QObject::connect(
-			velocity_vector_magnitude_angle_radio_button,
+			velocity_vector_angle_magnitude_radio_button,
 			SIGNAL(toggled(bool)),
 			this,
 			SLOT(react_gmt_velocity_vector_format_radio_button_toggled(bool)));
 	QObject::connect(
-			velocity_vector_magnitude_azimuth_radio_button,
+			velocity_vector_azimuth_magnitude_radio_button,
 			SIGNAL(toggled(bool)),
 			this,
 			SLOT(react_gmt_velocity_vector_format_radio_button_toggled(bool)));
@@ -362,6 +362,17 @@ void
 GPlatesQtWidgets::ExportVelocityOptionsWidget::react_gmt_velocity_vector_format_radio_button_toggled(
 		bool checked)
 {
+	// All radio buttons in the group are connected to the same slot (this method).
+	// Hence there will be *two* calls to this slot even though there's only *one* user action (clicking a button).
+	// One slot call is for the button that is toggled off and the other slot call for the button toggled on.
+	// However we handle all buttons in one call to this slot so it should only be called once.
+	// So we only look at one signal.
+	// We arbitrarily choose the signal from the button toggled *on* (*off* would have worked fine too).
+	if (!checked)
+	{
+		return;
+	}
+
 	// Throws bad_cast if fails.
 	GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
 			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(
@@ -370,19 +381,19 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::react_gmt_velocity_vector_format_
 	// Determine the file format.
 	if (velocity_vector_3D_radio_button->isChecked())
 	{
-		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D;
+		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_3D;
 	}
 	else if (velocity_vector_colat_lon_radio_button->isChecked())
 	{
-		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON;
+		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_COLAT_LON;
 	}
-	else if (velocity_vector_magnitude_angle_radio_button->isChecked())
+	else if (velocity_vector_angle_magnitude_radio_button->isChecked())
 	{
-		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE;
+		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_ANGLE_MAGNITUDE;
 	}
 	else
 	{
-		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_AZIMUTH;
+		configuration.velocity_vector_format = GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_AZIMUTH_MAGNITUDE;
 	}
 
 	update_output_description_label();
@@ -419,6 +430,17 @@ void
 GPlatesQtWidgets::ExportVelocityOptionsWidget::react_gmt_domain_point_format_radio_button_toggled(
 		bool checked)
 {
+	// All radio buttons in the group are connected to the same slot (this method).
+	// Hence there will be *two* calls to this slot even though there's only *one* user action (clicking a button).
+	// One slot call is for the button that is toggled off and the other slot call for the button toggled on.
+	// However we handle all buttons in one call to this slot so it should only be called once.
+	// So we only look at one signal.
+	// We arbitrarily choose the signal from the button toggled *on* (*off* would have worked fine too).
+	if (!checked)
+	{
+		return;
+	}
+
 	// Throws bad_cast if fails.
 	GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &configuration =
 			dynamic_cast<GPlatesGui::ExportVelocityAnimationStrategy::GMTConfiguration &>(
@@ -649,33 +671,39 @@ GPlatesQtWidgets::ExportVelocityOptionsWidget::update_output_description_label()
 				}
 			}
 
-			if (configuration.include_plate_id)
-			{
-				output_description += tr("  plate_id");
-			}
-
+			//
+			// NOTE: The velocity vector should be immediately after the domain point (columns 1 and 2) since
+			// the GMT psxy '-Sv'/'-SV' options require vector angle/azimuth in column 3 and magnitude in column 4.
+			// 
 			switch (configuration.velocity_vector_format)
 			{
-			case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D:
+			case GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_3D:
 				output_description += tr("  velocity_x  velocity_y  velocity_z");
 				break;
 
-			case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON:
+			case GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_COLAT_LON:
 				output_description += tr("  velocity_colat  velocity_lon");
 				break;
 
-			case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE:
-				output_description += tr("  velocity_magnitude  velocity_angle");
+			case GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_ANGLE_MAGNITUDE:
+				// The GMT psxy '-Sv' option requires angle in column 3 and magnitude in column 4.
+				output_description += tr("  velocity_angle  velocity_magnitude");
 				break;
 
-			case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_AZIMUTH:
-				output_description += tr("  velocity_magnitude  velocity_azimuth");
+			case GPlatesFileIO::MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_AZIMUTH_MAGNITUDE:
+				// The GMT psxy '-SV' option requires azimuth in column 3 and magnitude in column 4.
+				output_description += tr("  velocity_azimuth  velocity_magnitude");
 				break;
 
 			default:
 				// Shouldn't get here.
 				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 				break;
+			}
+
+			if (configuration.include_plate_id)
+			{
+				output_description += tr("  plate_id");
 			}
 
 			output_description += "\n";

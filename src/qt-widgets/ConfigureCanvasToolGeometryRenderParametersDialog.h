@@ -98,6 +98,9 @@ namespace GPlatesQtWidgets
 		react_reconstruction_layer_line_width_hint_spinbox_value_changed(
 				double value);
 
+		void
+		handle_rendered_geometry_parameters_changed();
+
 	private:
 
 		GPlatesViewOperations::RenderedGeometryParameters &d_rendered_geometry_parameters;

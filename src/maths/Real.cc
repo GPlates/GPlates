@@ -36,6 +36,9 @@
 
 #include "global/GPlatesAssert.h"
 
+#include "scribe/Scribe.h"
+#include "scribe/TranscribeDelegateProtocol.h"
+
 
 // uncomment to turn on warnings
 #if 0
@@ -269,6 +272,22 @@ GPlatesMaths::Real
 GPlatesMaths::Real::negative_infinity()
 {
 	return -std::numeric_limits<double>::infinity();
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::Real::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	//
+	// Using transcribe delegate protocol so that Real and double/float
+	// can be used interchangeably (ie, are transcription compatible).
+	//
+	// Note that +/- Infinity and NaN (float and double) are handled properly by the
+	// scribe archive writers/readers.
+	//
+	return transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, _dval);
 }
 
 

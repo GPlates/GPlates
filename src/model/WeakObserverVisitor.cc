@@ -25,22 +25,13 @@
 
 #include "WeakObserverVisitor.h"
 
-#include "app-logic/DeformedFeatureGeometry.h"
 #include "app-logic/ReconstructedFlowline.h"
 #include "app-logic/ReconstructedMotionPath.h"
 #include "app-logic/ReconstructedSmallCircle.h"
 #include "app-logic/ReconstructedVirtualGeomagneticPole.h"
 #include "app-logic/ResolvedTopologicalBoundary.h"
 #include "app-logic/ResolvedTopologicalLine.h"
-
-
-void
-GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle>::visit_deformed_feature_geometry(
-		GPlatesAppLogic::DeformedFeatureGeometry &dfg)
-{
-	// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
-	visit_reconstructed_feature_geometry(dfg);
-}
+#include "app-logic/TopologyReconstructedFeatureGeometry.h"
 
 
 void
@@ -94,4 +85,13 @@ GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle>::visit_resolved_t
 {
 	// Default implementation delegates to base class 'ResolvedTopologicalGeometry'.
 	visit_resolved_topological_geometry(rtl);
+}
+
+
+void
+GPlatesModel::WeakObserverVisitor<GPlatesModel::FeatureHandle>::visit_topology_reconstructed_feature_geometry(
+		GPlatesAppLogic::TopologyReconstructedFeatureGeometry &trfg)
+{
+	// Default implementation delegates to base class 'ReconstructedFeatureGeometry'.
+	visit_reconstructed_feature_geometry(trfg);
 }

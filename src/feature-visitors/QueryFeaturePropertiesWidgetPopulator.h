@@ -205,7 +205,8 @@ namespace GPlatesFeatureVisitors
 
 		void
 		write_polygon_ring(
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_ptr);
+				const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_begin,
+				const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_end);
 
 		void
 		write_multipoint_member(

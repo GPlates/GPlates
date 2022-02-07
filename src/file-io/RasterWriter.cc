@@ -55,11 +55,22 @@ namespace
 			RasterWriter::supported_formats_type &supported_formats,
 			RasterWriter::FormatHandler format_handler)
 	{
-		// Add formats that we support via the RGBA writer.
-		RgbaRasterWriter::get_supported_formats(supported_formats);
+		switch (format_handler)
+		{
+		case RasterWriter::RGBA:
+			// Add formats that we support via the RGBA writer.
+			RgbaRasterWriter::get_supported_formats(supported_formats);
+			break;
 
-		// Add formats that we support via the GDAL writer.
-		GDALRasterWriter::get_supported_formats(supported_formats);
+		case RasterWriter::GDAL:
+			// Add formats that we support via the GDAL writer.
+			GDALRasterWriter::get_supported_formats(supported_formats);
+			break;
+
+		default:
+			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+			break;
+		}
 	}
 
 
@@ -139,10 +150,11 @@ GPlatesFileIO::RasterWriter::create(
 		unsigned int raster_width,
 		unsigned int raster_height,
 		unsigned int num_raster_bands,
-		GPlatesPropertyValues::RasterType::Type raster_band_type)
+		GPlatesPropertyValues::RasterType::Type raster_band_type,
+		bool compress)
 {
 	return RasterWriter::non_null_ptr_type(
-			new RasterWriter(filename, raster_width, raster_height, num_raster_bands, raster_band_type));
+			new RasterWriter(filename, raster_width, raster_height, num_raster_bands, raster_band_type, compress));
 }
 
 
@@ -151,7 +163,8 @@ GPlatesFileIO::RasterWriter::RasterWriter(
 		unsigned int raster_width,
 		unsigned int raster_height,
 		unsigned int num_raster_bands,
-		GPlatesPropertyValues::RasterType::Type raster_band_type) :
+		GPlatesPropertyValues::RasterType::Type raster_band_type,
+		bool compress) :
 	d_impl(NULL),
 	d_filename(filename),
 	d_width(raster_width),
@@ -191,7 +204,8 @@ GPlatesFileIO::RasterWriter::RasterWriter(
 							d_width,
 							d_height,
 							d_num_bands,
-							d_band_type));
+							d_band_type,
+							compress));
 			break;
 		
 		case GDAL:
@@ -202,7 +216,8 @@ GPlatesFileIO::RasterWriter::RasterWriter(
 							d_width,
 							d_height,
 							d_num_bands,
-							d_band_type));
+							d_band_type,
+							compress));
 			break;
 
 		default:

@@ -94,7 +94,14 @@ GPlatesModel::Model::decrement_notification_guard_count()
 
 	if (d_notification_guard_count == 0)
 	{
+		// Increment/decrement count around the flushed notifications so that other notification guards
+		// inside the called notification observers will not also try to flush pending notifications
+		// resulting in infinite recursion.
+		++d_notification_guard_count;
+
 		d_root->flush_pending_notifications();
+
+		--d_notification_guard_count;
 	}
 }
 

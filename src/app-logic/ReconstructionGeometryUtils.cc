@@ -256,6 +256,16 @@ GPlatesAppLogic::ReconstructionGeometryUtils::GetGeometryProperty::visit(
 
 
 void
+GPlatesAppLogic::ReconstructionGeometryUtils::GetGeometryProperty::visit(
+		const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc)
+{
+	visit(
+			GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(
+					rsc->get_reconstructed_feature_geometry()));
+}
+
+
+void
 GPlatesAppLogic::ReconstructionGeometryUtils::GetPlateId::visit(
 		const GPlatesUtils::non_null_intrusive_ptr<multi_point_vector_field_type> &mpvf)
 {
@@ -295,7 +305,7 @@ GPlatesAppLogic::ReconstructionGeometryUtils::GetPlateId::visit(
 {
 	visit(
 			GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(
-					rsc->get_reconstructed_domain_geometry()));
+					rsc->get_reconstructed_feature_geometry()));
 }
 
 
@@ -338,7 +348,7 @@ GPlatesAppLogic::ReconstructionGeometryUtils::GetTimeOfFormation::visit(
 {
 	visit(
 			GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(
-					rsc->get_reconstructed_domain_geometry()));
+					rsc->get_reconstructed_feature_geometry()));
 }
 
 
@@ -384,7 +394,7 @@ GPlatesAppLogic::ReconstructionGeometryUtils::GetReconstructionTree::visit(
 {
 	visit(
 			GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(
-					rsc->get_reconstructed_domain_geometry()));
+					rsc->get_reconstructed_feature_geometry()));
 }
 
 
@@ -426,7 +436,7 @@ GPlatesAppLogic::ReconstructionGeometryUtils::GetReconstructionTreeCreator::visi
 {
 	visit(
 			GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(
-					rsc->get_reconstructed_domain_geometry()));
+					rsc->get_reconstructed_feature_geometry()));
 }
 
 
@@ -510,7 +520,7 @@ GPlatesAppLogic::ReconstructionGeometryUtils::GetBoundaryPolygon::visit(
 {
 	visit(
 			GPlatesUtils::static_pointer_cast<reconstructed_feature_geometry_type>(
-					rsc->get_reconstructed_domain_geometry()));
+					rsc->get_reconstructed_feature_geometry()));
 }
 
 

@@ -506,7 +506,7 @@ GPlatesGui::FeedbackOpenGLToQPainter::begin_render_vector_geometry(
 	// "For this step, you can ignore the value returned by glRenderMode()."
 	glRenderMode(GL_FEEDBACK);
 
-	GPlatesOpenGL::GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GPlatesOpenGL::GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -527,7 +527,7 @@ GPlatesGui::FeedbackOpenGLToQPainter::end_render_vector_geometry(
 	// TODO: Move this function to 'GLRenderer'.
 	const GLint num_feedback_items = glRenderMode(GL_RENDER);
 
-	GPlatesOpenGL::GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GPlatesOpenGL::GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 
 	// According to http://www.glprogramming.com/red/chapter13.html#name1 , section
 	// "Selection", sub-section "The Basic Steps", a negative value means that the

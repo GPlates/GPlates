@@ -492,7 +492,7 @@ GPlatesOpenGL::GLTextureUtils::create_xy_clip_texture_2D(
 	xy_clip_texture->gl_tex_image_2D(renderer, GL_TEXTURE_2D, 0, GL_RGBA8, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
 
 	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 
 	return xy_clip_texture;
 }
@@ -539,7 +539,7 @@ GPlatesOpenGL::GLTextureUtils::create_z_clip_texture_2D(
 	z_clip_texture->gl_tex_image_2D(renderer, GL_TEXTURE_2D, 0, GL_RGBA8, 2, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
 
 	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 
 	return z_clip_texture;
 }

@@ -59,7 +59,7 @@
 
 #include "maths/ConstGeometryOnSphereVisitor.h"
 #include "maths/GeometryOnSphere.h"
-#include "maths/HierarchicalTriangularMesh.h"
+#include "maths/SphericalSubdivision.h"
 
 #include "utils/ReferenceCount.h"
 #include "utils/SubjectObserverToken.h"
@@ -598,20 +598,42 @@ namespace GPlatesOpenGL
 
 		private:
 
-			template <typename PointOnSphereForwardIter>
+			template <typename LineGeometryType>
 			void
 			render_surface_fill_mask(
+					const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry);
+
+			template <typename LineGeometryType>
+			void
+			render_surface_fill_mask_geometry(
+					const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry,
+					bool &entire_geometry_is_in_stream_target);
+
+			void
+			stream_surface_fill_mask_geometry(
+					const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
+					bool &entire_geometry_is_in_stream_target);
+
+			void
+			stream_surface_fill_mask_geometry(
+					const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon,
+					bool &entire_geometry_is_in_stream_target);
+
+			template <typename PointOnSphereForwardIter>
+			void
+			stream_surface_fill_mask_ring_as_primitive(
+					const PointOnSphereForwardIter begin_points,
+					const unsigned int num_points,
+					const GPlatesMaths::UnitVector3D &centroid,
+					streaming_vertex_element_type &vertex_index);
+
+			template <typename PointOnSphereForwardIter>
+			void
+			stream_surface_fill_mask_ring_as_triangle_fan(
 					const PointOnSphereForwardIter begin_points,
 					const unsigned int num_points,
 					const GPlatesMaths::UnitVector3D &centroid);
 
-			template <typename PointOnSphereForwardIter>
-			void
-			render_surface_fill_mask_geometry(
-					const PointOnSphereForwardIter begin_points,
-					const unsigned int num_points,
-					const GPlatesMaths::UnitVector3D &centroid,
-					bool &entire_geometry_is_in_stream_target);
 
 			GLRenderer &d_renderer;
 			GLVertexArray::shared_ptr_type d_vertex_array;
@@ -711,7 +733,7 @@ namespace GPlatesOpenGL
 
 			void
 			visit(
-					const GPlatesMaths::HierarchicalTriangularMeshTraversal::Triangle &triangle,
+					const GPlatesMaths::SphericalSubdivision::HierarchicalTriangularMeshTraversal::Triangle &triangle,
 					const unsigned int &recursion_depth);
 
 		private:

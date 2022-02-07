@@ -13,7 +13,7 @@ try:
 except ImportError:
     imported_numpy = False
 
-import test_geometries_on_sphere
+import test_maths.test_geometries_on_sphere
 
 # Fixture path
 FIXTURES = os.path.join(os.path.dirname(__file__), '..', 'fixtures')
@@ -333,16 +333,14 @@ class GreatCircleArcCase(unittest.TestCase):
         
         self.assertTrue(self.gca.get_arc_point(0) == self.gca.get_start_point())
         self.assertTrue(self.gca.get_arc_point(1) == self.gca.get_end_point())
-        self.assertTrue(self.gca.get_arc_direction(0) ==
-                pygplates.Vector3D.cross(self.gca.get_start_point().to_xyz(), self.gca.get_great_circle_normal()))
-        self.assertTrue(self.gca.get_arc_direction(1) ==
-                pygplates.Vector3D.cross(self.gca.get_end_point().to_xyz(), self.gca.get_great_circle_normal()))
+        self.assertTrue(self.gca.get_arc_direction(0) == pygplates.Vector3D(0, 0, 1))
+        self.assertTrue(self.gca.get_arc_direction(1) == pygplates.Vector3D(0, -1, 0))
         arc_midpoint = (pygplates.Vector3D(self.start_point.to_xyz()) + pygplates.Vector3D(self.end_point.to_xyz())).to_normalised()
         self.assertTrue(self.gca.get_arc_point(0.5) == pygplates.PointOnSphere(arc_midpoint.to_xyz()))
-        self.assertTrue(self.gca.get_arc_direction(0.5) == pygplates.Vector3D.cross(arc_midpoint, self.gca.get_great_circle_normal()))
+        self.assertTrue(self.gca.get_arc_direction(0.5) == pygplates.Vector3D.cross(self.gca.get_great_circle_normal(), arc_midpoint))
         arc_quarter_point = (pygplates.Vector3D(self.start_point.to_xyz()) + arc_midpoint).to_normalised()
         self.assertTrue(self.gca.get_arc_point(0.25) == pygplates.PointOnSphere(arc_quarter_point.to_xyz()))
-        self.assertTrue(self.gca.get_arc_direction(0.25) == pygplates.Vector3D.cross(arc_quarter_point, self.gca.get_great_circle_normal()))
+        self.assertTrue(self.gca.get_arc_direction(0.25) == pygplates.Vector3D.cross(self.gca.get_great_circle_normal(), arc_quarter_point))
         self.assertRaises(ValueError, self.gca.get_arc_point, -0.01)
         self.assertRaises(ValueError, self.gca.get_arc_point, 1.01)
         self.assertRaises(ValueError, self.gca.get_arc_direction, -0.01)
@@ -620,7 +618,7 @@ def suite():
     
     # Add test suites from sibling modules.
     test_modules = [
-            test_geometries_on_sphere
+            test_maths.test_geometries_on_sphere
             ]
 
     for test_module in test_modules:

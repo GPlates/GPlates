@@ -43,17 +43,17 @@ namespace GPlatesApi
 	// The names of the associated C++ exceptions match the python exception name.
 	// For example, in python "AssertionFailureError" and in C++ "AssertionFailureException".
 	//
-	// These exceptions are not normally needed for pygplates API functions (C++) because the
+	// These exceptions are not normally needed for pyGPlates API functions (C++) because the
 	// associated C++ exceptions are automatically converted to these python exceptions (below)
 	// by registering exception handlers with boost-python - see "export_exceptions()" - and these
 	// are handled for us by boost-python (in 'def' binding statements, etc). In other words the
-	// C++ exception gets converted to its python equivalent before the pygplates API function returns
+	// C++ exception gets converted to its python equivalent before the pyGPlates API function returns
 	// back to its python calling function. The python calling function is then responsible for
 	// dealing with the exception (or ignoring it as mentioned in the example below).
 	// However these python exceptions can be needed by C++ code that is not called by python.
 	// For example, in the GPlates desktop (which has an embedded python interpreter) there could be
 	// some C++ code that delegates to a python function. That python function could then, in turn,
-	// call the pygplates API (C++) which could throw a C++ exception. That C++ exception gets
+	// call the pyGPlates API (C++) which could throw a C++ exception. That C++ exception gets
 	// converted to a python exception (by our boost-python registered exception handlers) and,
 	// let's say, the python code does not catch it. So it propagates back to the original C++ code
 	// (that has no python caller). If this C++ code does not catch it then GPlates will catch the
@@ -100,8 +100,8 @@ namespace GPlatesApi
 	 *   {
 	 *      // Call python functions that might raise an error because either:
 	 *      //  (1) the called pure python code raises an exception, or
-	 *      //  (2) the called pure python code calls pygplates C++ code that throws a C++ exception, or
-	 *      //  (3) the python function is actually pygplates C++ code, that throws a C++ exception.
+	 *      //  (2) the called pure python code calls pyGPlates C++ code that throws a C++ exception, or
+	 *      //  (3) the python function is actually pyGPlates C++ code, that throws a C++ exception.
 	 *      ...
 	 *   }
 	 *   catch (const boost::python::error_already_set &)

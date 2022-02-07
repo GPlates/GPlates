@@ -49,14 +49,43 @@ namespace GPlatesQtWidgets
 		{
 			setupUi(this);
 			
-			QObject::connect(cancel_button, SIGNAL(clicked()),
-				this, SLOT(handle_cancel()));
+			QObject::connect(
+					cancel_button, SIGNAL(clicked()),
+					this, SLOT(handle_cancel()));
+			// Handle user cancelling by pressing ESC key.
+			QObject::connect(
+					this, SIGNAL(rejected()),
+					this, SLOT(handle_cancel()));
 		}
 		
 		virtual
-			~ProgressDialog()
+		~ProgressDialog()
 		{	}
-		
+
+
+		bool
+		canceled()
+		{
+			return cancel_flag;
+		}
+
+		void
+		disable_cancel_button(
+				bool flag)
+		{
+			cancel_button->setDisabled(flag);
+		}
+
+
+	public Q_SLOTS:
+
+		void
+		set_text(	
+				const QString message)
+		{
+			info_label->setText(message);
+		}
+
 		void
 		setRange(
 				int min, 
@@ -71,6 +100,15 @@ namespace GPlatesQtWidgets
 		{
 			progress_bar->setValue(val);
 		}
+		
+		void
+		update_value(
+				int val)
+		{
+			progress_bar->setValue(val);
+			progress_bar->repaint();
+			QCoreApplication::processEvents();
+		}
 
 		void
 		update_progress(	
@@ -81,18 +119,6 @@ namespace GPlatesQtWidgets
 				info_label->setText(message);
 				progress_bar->repaint();
 				QCoreApplication::processEvents();
-		}
-
-		bool
-		canceled()
-		{
-			return cancel_flag;
-		}
-
-		void
-		disable_cancel_button(bool flag)
-		{
-			cancel_button->setDisabled(flag);
 		}
 
 	private Q_SLOTS:

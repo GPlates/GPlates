@@ -322,12 +322,10 @@ GPlatesMaths::PolylineOnSphere::get_bounding_tree() const
 	{
 		// Pass the PolyGreatCircleArcBoundingTree constructor parameters to construct a new object
 		// directly in-place inside the boost::optional since PolyGreatCircleArcBoundingTree is non-copyable.
-		d_cached_calculations->polyline_bounding_tree =
-				boost::in_place(
-						GPlatesUtils::get_non_null_pointer(this),
-						// Note that we ask the bounding tree *not* to keep a shared reference to us
-						// otherwise we get circular shared pointer references and a memory leak...
-						false/*keep_shared_reference_to_polyline*/);
+		//
+		// Note that we *don't* ask the bounding tree to keep a shared reference to us
+		// otherwise we get circular shared pointer references and a memory leak.
+		d_cached_calculations->polyline_bounding_tree = boost::in_place(begin(), end());
 	}
 
 	return d_cached_calculations->polyline_bounding_tree.get();

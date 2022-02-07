@@ -29,6 +29,9 @@ set(srcs
     AddPropertyDialog.cc
     AddPropertyDialog.h
     AddPropertyDialogUi.ui
+    AgeModelManagerDialog.cc
+    AgeModelManagerDialog.h
+    AgeModelManagerDialogUi.ui
     AnimateControlWidget.cc
     AnimateControlWidget.h
     AnimateControlWidgetUi.ui
@@ -53,6 +56,9 @@ set(srcs
     ChangePropertyWidget.cc
     ChangePropertyWidget.h
     ChangePropertyWidgetUi.ui
+    ChooseBuiltinPaletteDialog.cc
+    ChooseBuiltinPaletteDialog.h
+    ChooseBuiltinPaletteDialogUi.ui
     ChooseColourButton.cc
     ChooseColourButton.h
     ChooseFeatureCollectionDialog.cc
@@ -70,6 +76,8 @@ set(srcs
     ColouringDialog.cc
     ColouringDialog.h
     ColouringDialogUi.ui
+    ColourScaleButton.cc
+    ColourScaleButton.h
     ColourScaleWidget.cc
     ColourScaleWidget.h
     ConfigureCanvasToolGeometryRenderParametersDialog.cc
@@ -84,6 +92,9 @@ set(srcs
     ConfigureTextOverlayDialog.cc
     ConfigureTextOverlayDialog.h
     ConfigureTextOverlayDialogUi.ui
+    ConfigureVelocityLegendOverlayDialog.cc
+    ConfigureVelocityLegendOverlayDialog.h
+    ConfigureVelocityLegendOverlayDialogUi.ui
     ConfigValueEditorWidget.cc
     ConfigValueEditorWidget.h
     ConnectWFSDialog.cc
@@ -211,6 +222,9 @@ set(srcs
     ExportCoordinatesDialog.cc
     ExportCoordinatesDialog.h
     ExportCoordinatesDialogUi.ui
+    ExportDeformationOptionsWidget.cc
+    ExportDeformationOptionsWidget.h
+    ExportDeformationOptionsWidgetUi.ui
     ExportFileNameTemplateWidget.cc
     ExportFileNameTemplateWidget.h
     ExportFileNameTemplateWidgetUi.ui
@@ -223,6 +237,7 @@ set(srcs
     ExportImageResolutionOptionsWidget.h
     ExportImageResolutionOptionsWidgetUi.ui
     ExportMotionPathOptionsWidget.h
+    ExportNetRotationOptionsWidget.h
     ExportOptionsWidget.h
     ExportRasterOptionsWidget.cc
     ExportRasterOptionsWidget.h
@@ -233,17 +248,20 @@ set(srcs
     ExportResolvedTopologyOptionsWidgetUi.ui
     ExportRotationOptionsWidget.h
     ExportRotationOptionsWidgetUi.ui
+    ExportScalarCoverageOptionsWidget.cc
+    ExportScalarCoverageOptionsWidget.h
+    ExportScalarCoverageOptionsWidgetUi.ui
     ExportStageRotationOnlyOptionsWidget.h
     ExportStageRotationOnlyOptionsWidgetUi.ui
     ExportStageRotationOptionsWidget.h
     ExportSvgOptionsWidget.cc
     ExportSvgOptionsWidget.h
     ExportTotalRotationOptionsWidget.h
+    ExportVelocityCalculationOptionsWidget.h
+    ExportVelocityCalculationOptionsWidgetUi.ui
     ExportVelocityOptionsWidget.cc
     ExportVelocityOptionsWidget.h
     ExportVelocityOptionsWidgetUi.ui
-    ExportVelocitySmoothingOptionsWidget.h
-    ExportVelocitySmoothingOptionsWidgetUi.ui
     FeaturePropertiesDialog.cc
     FeaturePropertiesDialog.h
     FeaturePropertiesDialogUi.ui
@@ -251,8 +269,6 @@ set(srcs
     FeatureSummaryWidget.h
     FeatureSummaryWidgetUi.ui
     FileDialogFilter.h
-    FilesNotLoadedWarningDialog.h
-    FilesNotLoadedWarningDialogUi.ui
     FiniteRotationCalculatorDialog.cc
     FiniteRotationCalculatorDialog.h
     FiniteRotationCalculatorDialogUi.ui
@@ -261,6 +277,9 @@ set(srcs
     FlowlinePropertiesWidgetUi.ui
     FriendlyLineEdit.cc
     FriendlyLineEdit.h
+    GenerateCrustalThicknessPointsDialog.cc
+    GenerateCrustalThicknessPointsDialog.h
+    GenerateCrustalThicknessPointsDialogUi.ui
     GenerateVelocityDomainCitcomsDialog.cc
     GenerateVelocityDomainCitcomsDialog.h
     GenerateVelocityDomainCitcomsDialogUi.ui
@@ -285,6 +304,37 @@ set(srcs
     GpgimVersionWarningDialogUi.ui
     GPlatesDialog.cc
     GPlatesDialog.h
+    HellingerConfigurationDialog.cc
+    HellingerConfigurationDialog.h
+    HellingerConfigurationDialogUi.ui
+    HellingerConfigurationWidget.cc
+    HellingerConfigurationWidget.h
+    HellingerConfigurationWidgetUi.ui
+    HellingerDialog.cc
+    HellingerDialog.h
+    HellingerDialogUi.ui
+    HellingerFitWidget.cc
+    HellingerFitWidget.h
+    HellingerFitWidgetUi.ui
+    HellingerModel.cc
+    HellingerModel.h
+    HellingerNewSegmentWarning.cc
+    HellingerNewSegmentWarning.h
+    HellingerNewSegmentWarningUi.ui
+    HellingerPickWidget.cc
+    HellingerPickWidget.h
+    HellingerPickWidgetUi.ui
+    HellingerPointDialog.cc
+    HellingerPointDialog.h
+    HellingerPointDialogUi.ui
+    HellingerSegmentDialog.cc
+    HellingerSegmentDialog.h
+    HellingerSegmentDialogUi.ui
+    HellingerStatsDialog.cc
+    HellingerStatsDialog.h
+    HellingerStatsDialogUi.ui
+    HellingerThread.cc
+    HellingerThread.h
     ImportRasterDialog.cc
     ImportRasterDialog.h
     ImportScalarField3DDialog.cc
@@ -339,9 +389,15 @@ set(srcs
     MeasureDistanceWidget.cc
     MeasureDistanceWidget.h
     MeasureDistanceWidgetUi.ui
+    MergeReconstructionLayersDialog.cc
+    MergeReconstructionLayersDialog.h
+    MergeReconstructionLayersDialogUi.ui
     MetadataDialog.cc
     MetadataDialog.h
     MetadataDialogUi.ui
+    MissingSessionFilesDialog.cc
+    MissingSessionFilesDialog.h
+    MissingSessionFilesDialogUi.ui
     ModifyGeometryWidget.cc
     ModifyGeometryWidget.h
     ModifyGeometryWidgetUi.ui
@@ -352,10 +408,16 @@ set(srcs
     MovePoleWidget.h
     MovePoleWidgetUi.ui
     NoActiveEditWidgetException.h
+    OgrSrsWriteOptionDialog.cc
+    OgrSrsWriteOptionDialog.h
+    OgrSrsWriteOptionDialogUi.ui
     OpenDirectoryDialog.cc
     OpenDirectoryDialog.h
     OpenFileDialog.cc
     OpenFileDialog.h
+    OpenProjectRelativeOrAbsoluteDialog.cc
+    OpenProjectRelativeOrAbsoluteDialog.h
+    OpenProjectRelativeOrAbsoluteDialogUi.ui
     PoleSequenceTableWidget.cc
     PoleSequenceTableWidget.h
     PoleSequenceTableWidgetUi.ui
@@ -434,6 +496,9 @@ set(srcs
     ReconstructScalarCoverageLayerOptionsWidget.cc
     ReconstructScalarCoverageLayerOptionsWidget.h
     ReconstructScalarCoverageLayerOptionsWidgetUi.ui
+    RemappedColourPaletteWidget.cc
+    RemappedColourPaletteWidget.h
+    RemappedColourPaletteWidgetUi.ui
     ResizeToContentsTextEdit.cc
     ResizeToContentsTextEdit.h
     SaveFileDialog.cc
@@ -461,12 +526,12 @@ set(srcs
     SetCameraViewpointDialog.cc
     SetCameraViewpointDialog.h
     SetCameraViewpointDialogUi.ui
-    SetDeformationParametersDialog.cc
-    SetDeformationParametersDialog.h
-    SetDeformationParametersDialogUi.ui
     SetProjectionDialog.cc
     SetProjectionDialog.h
     SetProjectionDialogUi.ui
+    SetTopologyReconstructionParametersDialog.cc
+    SetTopologyReconstructionParametersDialog.h
+    SetTopologyReconstructionParametersDialogUi.ui
     SetVGPVisibilityDialog.cc
     SetVGPVisibilityDialog.h
     SetVGPVisibilityDialogUi.ui
@@ -508,9 +573,9 @@ set(srcs
     TimeDependentRasterPage.cc
     TimeDependentRasterPage.h
     TimeDependentRasterPageUi.ui
-    TopologyBoundaryResolverLayerOptionsWidget.cc
-    TopologyBoundaryResolverLayerOptionsWidget.h
-    TopologyBoundaryResolverLayerOptionsWidgetUi.ui
+    TopologyGeometryResolverLayerOptionsWidget.cc
+    TopologyGeometryResolverLayerOptionsWidget.h
+    TopologyGeometryResolverLayerOptionsWidgetUi.ui
     TopologyNetworkResolverLayerOptionsWidget.cc
     TopologyNetworkResolverLayerOptionsWidget.h
     TopologyNetworkResolverLayerOptionsWidgetUi.ui
@@ -531,6 +596,9 @@ set(srcs
     VelocityFieldCalculatorLayerOptionsWidget.cc
     VelocityFieldCalculatorLayerOptionsWidget.h
     VelocityFieldCalculatorLayerOptionsWidgetUi.ui
+    VelocityMethodWidget.cc
+    VelocityMethodWidget.h
+    VelocityMethodWidgetUi.ui
     ViewFeatureGeometriesWidget.cc
     ViewFeatureGeometriesWidget.h
     ViewFeatureGeometriesWidgetUi.ui

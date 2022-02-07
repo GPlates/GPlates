@@ -329,7 +329,7 @@ namespace GPlatesScribe
 					Scribe &scribe,
 					void *object_ptr,
 					object_id_type object_id,
-					Options options) const = 0;
+					unsigned int options) const = 0;
 
 
 			/**
@@ -347,7 +347,7 @@ namespace GPlatesScribe
 			load_object(
 					Scribe &scribe,
 					object_id_type object_id,
-					Options options) const = 0;
+					unsigned int options) const = 0;
 
 		};
 
@@ -390,7 +390,7 @@ namespace GPlatesScribe
 					Scribe &scribe,
 					void *object_ptr,
 					object_id_type object_id,
-					Options options) const;
+					unsigned int options) const;
 
 
 			/**
@@ -403,7 +403,7 @@ namespace GPlatesScribe
 			load_object(
 					Scribe &scribe,
 					object_id_type object_id,
-					Options options) const;
+					unsigned int options) const;
 
 		private:
 

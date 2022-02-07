@@ -28,27 +28,14 @@
 #ifndef GPLATES_FILEIO_OGRWRITER_H
 #define GPLATES_FILEIO_OGRWRITER_H
 
-
-#ifdef HAVE_CONFIG_H
-// We're building on a UNIX-y system, and can thus expect "global/config.h".
-
-// On some systems, it's <ogrsf_frmts.h>, on others, <gdal/ogrsf_frmts.h>.
-// The "CMake" script should have determined which one to use.
-#include "global/config.h"
-#ifdef HAVE_GDAL_OGRSF_FRMTS_H
-#include <gdal/ogrsf_frmts.h>
-#else
-#include <ogrsf_frmts.h>
-#endif
-
-#else  // We're not building on a UNIX-y system.  We'll have to assume it's <ogrsf_frmts.h>.
-#include <ogrsf_frmts.h>
-#endif  // HAVE_CONFIG_H
-
 #include <vector>
 #include <QDebug>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
+
+#include "GdalUtils.h"
+#include "FeatureCollectionFileFormatConfigurations.h"
+#include "Ogr.h"
 
 #include "maths/DateLineWrapper.h"
 #include "maths/LatLonPoint.h"
@@ -57,6 +44,8 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/MultiPointOnSphere.h"
 #include "property-values/GpmlKeyValueDictionary.h"
+#include "property-values/CoordinateTransformation.h"
+#include "property-values/SpatialReferenceSystem.h"
 
 
 namespace GPlatesFileIO
@@ -80,7 +69,10 @@ namespace GPlatesFileIO
 		OgrWriter(
 			QString filename,
 			bool multiple_layers,
-			bool wrap_to_dateline = true);
+			bool wrap_to_dateline = true,
+			boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> original_srs = boost::none,
+			const GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::OgrSrsWriteBehaviour &behaviour =
+				GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::WRITE_AS_WGS84_BEHAVIOUR);
 
 		~OgrWriter();
 
@@ -90,7 +82,7 @@ namespace GPlatesFileIO
 		 */
 		void
 		write_point_feature(
-			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere,
+			const GPlatesMaths::PointOnSphere &point_on_sphere,
 			const boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type> &key_value_dictionary);
 
 		void
@@ -125,7 +117,7 @@ namespace GPlatesFileIO
 		 * We have to instantiate a driver of the appropriate type (ESRI shapefile, OGR-GMT etc) before
 		 * we can create output files. 
 		 */
-		OGRSFDriver *d_ogr_driver_ptr;
+		GdalUtils::vector_data_driver_type *d_ogr_driver_ptr;
 
 
 		/**
@@ -153,12 +145,12 @@ namespace GPlatesFileIO
 		 */
 		bool d_wrap_to_dateline;
 
-		OGRDataSource *d_ogr_data_source_ptr;
+		GdalUtils::vector_data_source_type *d_ogr_data_source_ptr;
 
 		// Data source for each of the geometry types. 
-		OGRDataSource *d_ogr_point_data_source_ptr;
-		OGRDataSource *d_ogr_line_data_source_ptr;
-		OGRDataSource *d_ogr_polygon_data_source_ptr;
+		GdalUtils::vector_data_source_type *d_ogr_point_data_source_ptr;
+		GdalUtils::vector_data_source_type *d_ogr_line_data_source_ptr;
+		GdalUtils::vector_data_source_type *d_ogr_polygon_data_source_ptr;
 
 		/**
 		 * Pointers to the geometry layers. Not all geometry layers will be required, hence they're
@@ -174,6 +166,18 @@ namespace GPlatesFileIO
 		 */
 		GPlatesMaths::DateLineWrapper::non_null_ptr_type d_dateline_wrapper;
 
+		/**
+		 * SRS of the original feature collection (if appropriate, i.e. if the collection we are writing was derived
+		 * from an OGR-compatible source which provided an SRS).
+		 */
+		boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type> d_original_srs;
+
+		FeatureCollectionFileFormat::OGRConfiguration::OgrSrsWriteBehaviour d_ogr_srs_write_behaviour;
+
+		/**
+		 * @brief d_current_coordinate_transformation - The coordinate transformation from WGS84 to the original SRS.
+		 */
+		GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type d_coordinate_transformation;
 
 		/**
 		 * Common method to write a single polyline or multiple polylines.

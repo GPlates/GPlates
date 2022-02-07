@@ -34,7 +34,6 @@
 #include <boost/type_traits/is_pointer.hpp>
 #include <boost/type_traits/remove_pointer.hpp>
 
-#include "AppLogicFwd.h"
 #include "GeometryUtils.h"
 #include "ReconstructHandle.h"
 #include "ReconstructionGeometry.h"
@@ -684,6 +683,11 @@ namespace GPlatesAppLogic
 			void
 			visit(
 					const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn);
+
+			virtual
+			void
+			visit(
+					const GPlatesUtils::non_null_intrusive_ptr<reconstructed_scalar_coverage_type> &rsc);
 
 		private:
 			boost::optional<GPlatesModel::FeatureHandle::iterator> d_property;

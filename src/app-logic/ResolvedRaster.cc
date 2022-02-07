@@ -35,14 +35,14 @@
 GPlatesAppLogic::ResolvedRaster::ResolvedRaster(
 		GPlatesModel::FeatureHandle &feature_handle,
 		const double &reconstruction_time,
-		const raster_layer_proxy_non_null_ptr_type &raster_layer_proxy,
-		const boost::optional<reconstruct_layer_proxy_non_null_ptr_type> &reconstructed_polygons_layer_proxy,
-		const boost::optional<raster_layer_proxy_non_null_ptr_type> &age_grid_raster_layer_proxy,
-		const boost::optional<raster_layer_proxy_non_null_ptr_type> &normal_map_raster_layer_proxy) :
+		const RasterLayerProxy::non_null_ptr_type &raster_layer_proxy,
+		const std::vector<ReconstructLayerProxy::non_null_ptr_type> &reconstructed_polygons_layer_proxies,
+		const boost::optional<RasterLayerProxy::non_null_ptr_type> &age_grid_raster_layer_proxy,
+		const boost::optional<RasterLayerProxy::non_null_ptr_type> &normal_map_raster_layer_proxy) :
 	ReconstructionGeometry(reconstruction_time),
 	WeakObserverType(feature_handle),
 	d_raster_layer_proxy(raster_layer_proxy),
-	d_reconstructed_polygons_layer_proxy(reconstructed_polygons_layer_proxy),
+	d_reconstructed_polygons_layer_proxies(reconstructed_polygons_layer_proxies),
 	d_age_grid_raster_layer_proxy(age_grid_raster_layer_proxy),
 	d_normal_map_raster_layer_proxy(normal_map_raster_layer_proxy)
 {

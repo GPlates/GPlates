@@ -38,21 +38,11 @@ GPlatesPropertyValues::GmlPolygon::STRUCTURAL_TYPE = GPlatesPropertyValues::Stru
 
 
 void
-GPlatesPropertyValues::GmlPolygon::set_exterior(
-		const ring_type &exterior)
+GPlatesPropertyValues::GmlPolygon::set_polygon(
+		const internal_polygon_type &polygon)
 {
 	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
-	revision_handler.get_revision<Revision>().exterior = exterior;
-	revision_handler.commit();
-}
-
-
-void
-GPlatesPropertyValues::GmlPolygon::set_interiors(
-		const ring_sequence_type &interiors)
-{
-	GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
-	revision_handler.get_revision<Revision>().interiors = interiors;
+	revision_handler.get_revision<Revision>().polygon = polygon;
 	revision_handler.commit();
 }
 
@@ -72,23 +62,9 @@ GPlatesPropertyValues::GmlPolygon::Revision::equality(
 {
 	const Revision &other_revision = dynamic_cast<const Revision &>(other);
 
-	if (*exterior != *other_revision.exterior)
+	if (*polygon != *other_revision.polygon)
 	{
 		return false;
-	}
-
-	if (interiors.size() != other_revision.interiors.size())
-	{
-		return false;
-	}
-
-	for (unsigned int n = 0; n < interiors.size(); ++n)
-	{
-		// Compare geometries not pointers.
-		if (*interiors[n] != *other_revision.interiors[n])
-		{
-			return false;
-		}
 	}
 
 	return PropertyValue::Revision::equality(other);

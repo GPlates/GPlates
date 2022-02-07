@@ -59,6 +59,8 @@ namespace GPlatesAppLogic
 				const GPlatesModel::FeatureHandle::weak_ref &feature_ref,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &feature_collection_ref,
 				const GeometryCookieCutter &geometry_cookie_cutter,
+				const ReconstructMethodInterface::Context &reconstruct_method_context,
+				const double &reconstruction_time,
 				bool respect_feature_time_period);
 
 	private:

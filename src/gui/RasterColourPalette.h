@@ -37,7 +37,6 @@
 #include "Colour.h"
 #include "ColourPalette.h"
 #include "ColourPaletteVisitor.h"
-#include "CptColourPalette.h"
 
 #include "utils/ReferenceCount.h"
 #include "utils/non_null_intrusive_ptr.h"
@@ -62,15 +61,10 @@ namespace GPlatesGui
 		typedef GPlatesUtils::non_null_intrusive_ptr<RasterColourPalette> non_null_ptr_type;
 		typedef GPlatesUtils::non_null_intrusive_ptr<const RasterColourPalette> non_null_ptr_to_const_type;
 
-		struct empty {  };
 
-		typedef boost::variant<
-			empty, // boost::variant requires the first type be default-constructible; signifies no colour palette.
-			ColourPalette<boost::int32_t>::non_null_ptr_type,
-			ColourPalette<boost::uint32_t>::non_null_ptr_type,
-			ColourPalette<double>::non_null_ptr_type
-		> variant_type;
-
+		/**
+		 * Wrap a ColourPalette<> in a RasterColourPalette.
+		 */
 		template<typename PaletteKeyType>
 		static
 		non_null_ptr_type
@@ -80,6 +74,9 @@ namespace GPlatesGui
 			return new RasterColourPalette(colour_palette);
 		}
 
+		/**
+		 * Create an empty RasterColourPalette.
+		 */
 		static
 		non_null_ptr_type
 		create()
@@ -87,27 +84,31 @@ namespace GPlatesGui
 			return new RasterColourPalette();
 		}
 
-		/**
-		 * Apply a static visitor to the boost::variant wrapped in this instance.
-		 */
-		template<class StaticVisitorType>
-		typename StaticVisitorType::result_type
-		apply_visitor(
-				const StaticVisitorType &visitor)
-		{
-			return boost::apply_visitor(visitor, d_colour_palette);
-		}
 
 		/**
-		 * Apply a static visitor to the boost::variant wrapped in this instance.
+		 * Accept a standard 'ConstColourPaletteVisitor' (as opposed to a boost variant visitor.
 		 */
-		template<class StaticVisitorType>
-		typename StaticVisitorType::result_type
-		apply_visitor(
-				StaticVisitorType &visitor)
-		{
-			return boost::apply_visitor(visitor, d_colour_palette);
-		}
+		void
+		accept_visitor(
+				ConstColourPaletteVisitor &colour_palette_visitor) const;
+
+		/**
+		 * Accept a standard 'ColourPaletteVisitor' (as opposed to a boost variant visitor.
+		 */
+		void
+		accept_visitor(
+				ColourPaletteVisitor &colour_palette_visitor) const;
+
+
+		struct empty {  };
+
+		typedef boost::variant<
+			empty, // boost::variant requires the first type be default-constructible; signifies no colour palette.
+			ColourPalette<boost::int32_t>::non_null_ptr_type,
+			ColourPalette<boost::uint32_t>::non_null_ptr_type,
+			ColourPalette<double>::non_null_ptr_type
+		> variant_type;
+
 
 		/**
 		 * Apply a static visitor to the boost::variant wrapped in this instance.
@@ -136,16 +137,14 @@ namespace GPlatesGui
 		explicit
 		RasterColourPalette() :
 			d_colour_palette(empty())
-		{  
-		}
+		{  }
 
 		template<class ColourPalettePointerType>
 		explicit
 		RasterColourPalette(
 				const ColourPalettePointerType &colour_palette) :
 			d_colour_palette(colour_palette)
-		{ 
-		}
+		{  }
 
 		variant_type d_colour_palette;
 	};
@@ -172,567 +171,75 @@ namespace GPlatesGui
 		 */
 		RasterColourPaletteType::Type
 		get_type(
-				const RasterColourPalette &colour_palette);
+				const RasterColourPalette &raster_colour_palette);
 	}
 
-	/** 
-	 * A function to get a colour out of the palette 
-	 */
-	namespace RasterColourPaletteColour
+
+	namespace RasterColourPaletteExtract
 	{
-		boost::optional<GPlatesGui::Colour>
-		get_colour(
-				const RasterColourPalette &colour_palette,
-				const double &value);
+		/**
+		 * Returns the @a ColourPalette, of the specified type, encapsulated inside a @a RasterColourPalette.
+		 *
+		 * Returns none if the contained palette type is not 'ColourPalette<PaletteKeyType>'.
+		 *
+		 * The preferred way of switching on the type of a @a RasterColourPalette is
+		 * through the use of static visitors applied using @a apply_visitor, but this
+		 * exists as an alternative.
+		 */
+		template <typename PaletteKeyType>
+		boost::optional<typename ColourPalette<PaletteKeyType>::non_null_ptr_type>
+		get_colour_palette(
+				const RasterColourPalette &raster_colour_palette);
 	}
-
-	/**
-	 * The default colour palette used to colour non-RGBA rasters upon file loading.
-	 * The colour palette covers a range of values up to two standard deviations
-	 * away from the mean.
-	 */
-	class DefaultRasterColourPalette :
-			public ColourPalette<double>
-	{
-	public:
-
-		/**
-		 * Constructs a DefaultRasterColourPalette, given the mean and the
-		 * standard deviation of the values in the raster.
-		 */
-		static
-		non_null_ptr_type
-		create(
-				double mean,
-				double std_dev);
-
-		virtual
-		boost::optional<Colour>
-		get_colour(
-				double value) const;
-
-		virtual
-		void
-		accept_visitor(
-				ConstColourPaletteVisitor &visitor) const
-		{
-			visitor.visit_default_raster_colour_palette(*this);
-		}
-
-		virtual
-		void
-		accept_visitor(
-				ColourPaletteVisitor &visitor)
-		{
-			visitor.visit_default_raster_colour_palette(*this);
-		}
-
-		double
-		get_mean() const
-		{
-			return d_mean;
-		}
-
-		double
-		get_std_dev() const
-		{
-			return d_std_dev;
-		}
-
-		double
-		get_lower_bound() const;
-
-		double
-		get_upper_bound() const;
-
-		boost::optional< std::pair<double, double> >
-		get_range() const
-		{
-			return std::make_pair(get_lower_bound(), get_upper_bound());
-		}
-
-		const std::vector<ColourSlice> &
-		get_colour_slices() const
-		{
-			return d_inner_palette->get_entries();
-		}
-
-		boost::optional<Colour>
-		get_background_colour() const
-		{
-			return d_inner_palette->get_background_colour();
-		}
-
-		boost::optional<Colour>
-		get_foreground_colour() const
-		{
-			return d_inner_palette->get_foreground_colour();
-		}
-
-		boost::optional<Colour>
-		get_nan_colour() const
-		{
-			return d_inner_palette->get_nan_colour();
-		}
-
-	private:
-
-		DefaultRasterColourPalette(
-				double mean,
-				double std_dev);
-
-
-		RegularCptColourPalette::non_null_ptr_type d_inner_palette;
-		double d_mean;
-		double d_std_dev;
-
-		static const int NUM_STD_DEV_AWAY_FROM_MEAN = 2;
-	};
-
-
-	/**
-	 * A colour palette for use with deformation networks 
-	 */
-	class DeformationColourPalette :
-			public ColourPalette<double>
-	{
-	public:
-
-		typedef GPlatesUtils::non_null_intrusive_ptr<DeformationColourPalette> non_null_ptr_type;
-		typedef GPlatesUtils::non_null_intrusive_ptr<const DeformationColourPalette> non_null_ptr_to_const_type;
-
-		/**
-		 * Constructs a DeformationColourPalette, given the max and the
-		 * standard deviation of the values in the raster.
-		 */
-		static
-		non_null_ptr_type
-		create();
-
-		static
-		non_null_ptr_type
-		create(
-				double range1_max,
-				double range1_min,
-				double range2_max,
-				double range2_min,
-				GPlatesGui::Colour fg_colour,
-				GPlatesGui::Colour max_colour,
-				GPlatesGui::Colour mid_colour,
-				GPlatesGui::Colour min_colour,
-				GPlatesGui::Colour bg_colour);
-
-		virtual
-		boost::optional<Colour>
-		get_colour(
-				double value) const;
-
-		virtual
-		void
-		accept_visitor(
-				ConstColourPaletteVisitor &visitor) const
-		{
-			visitor.visit_deformation_colour_palette(*this);
-		}
-
-		virtual
-		void
-		accept_visitor(
-				ColourPaletteVisitor &visitor)
-		{
-			visitor.visit_deformation_colour_palette(*this);
-		}
-
-		double
-		get_max() const
-		{
-			return d_range1_max;
-		}
-
-		double
-		get_min() const
-		{
-			return d_range2_min;
-		}
-
-		double
-		get_lower_bound() const;
-
-		double
-		get_upper_bound() const;
-
-		boost::optional< std::pair<double, double> >
-		get_range() const
-		{
-			return std::make_pair(get_lower_bound(), get_upper_bound());
-		}
-
-		const std::vector<ColourSlice> &
-		get_colour_slices() const
-		{
-			return d_inner_palette->get_entries();
-		}
-
-		boost::optional<Colour>
-		get_background_colour() const
-		{
-			return d_inner_palette->get_background_colour();
-		}
-
-		boost::optional<Colour>
-		get_foreground_colour() const
-		{
-			return d_inner_palette->get_foreground_colour();
-		}
-
-		boost::optional<Colour>
-		get_nan_colour() const
-		{
-			return d_inner_palette->get_nan_colour();
-		}
-
-	private:
-
-		DeformationColourPalette(
-				double range1_max,
-				double range1_min,
-				double range2_max,
-				double range2_min,
-				GPlatesGui::Colour fg_colour,
-				GPlatesGui::Colour max_colour,
-				GPlatesGui::Colour mid_colour,
-				GPlatesGui::Colour min_colour,
-				GPlatesGui::Colour bg_colour);
-
-
-		RegularCptColourPalette::non_null_ptr_type d_inner_palette;
-
-		double d_range1_max;
-		double d_range1_min;
-		double d_range2_max;
-		double d_range2_min;
-		GPlatesGui::Colour d_fg_colour;
-		GPlatesGui::Colour d_max_colour;
-		GPlatesGui::Colour d_mid_colour;
-		GPlatesGui::Colour d_min_colour;
-		GPlatesGui::Colour d_bg_colour;
-	};
-
-
-	/**
-	 * The default colour palette used to colour non-RGBA rasters upon file loading.
-	 * The colour palette covers a range of values up to two standard deviations
-	 * away from the mean.
-	 */
-	class UserColourPalette :
-			public ColourPalette<double>
-	{
-	public:
-
-		typedef GPlatesUtils::non_null_intrusive_ptr<UserColourPalette> non_null_ptr_type;
-		typedef GPlatesUtils::non_null_intrusive_ptr<const UserColourPalette> non_null_ptr_to_const_type;
-
-		/**
-		 * Constructs a UserColourPalette, given the max and the
-		 * standard deviation of the values in the raster.
-		 */
-		static
-		non_null_ptr_type
-		create();
-
-		static
-		non_null_ptr_type
-		create(
-				double range1_max,
-				double range1_min,
-				double range2_max,
-				double range2_min,
-				GPlatesGui::Colour max_colour,
-				GPlatesGui::Colour mid_colour,
-				GPlatesGui::Colour min_colour);
-
-		virtual
-		boost::optional<Colour>
-		get_colour(
-				double value) const;
-
-		virtual
-		void
-		accept_visitor(
-				ConstColourPaletteVisitor &visitor) const
-		{
-			visitor.visit_user_colour_palette(*this);
-		}
-
-		virtual
-		void
-		accept_visitor(
-				ColourPaletteVisitor &visitor)
-		{
-			visitor.visit_user_colour_palette(*this);
-		}
-
-		double
-		get_max() const
-		{
-			return d_range1_max;
-		}
-
-		double
-		get_min() const
-		{
-			return d_range2_min;
-		}
-
-		double
-		get_lower_bound() const;
-
-		double
-		get_upper_bound() const;
-
-		boost::optional< std::pair<double, double> >
-		get_range() const
-		{
-			return std::make_pair(get_lower_bound(), get_upper_bound());
-		}
-
-		const std::vector<ColourSlice> &
-		get_colour_slices() const
-		{
-			return d_inner_palette->get_entries();
-		}
-
-		boost::optional<Colour>
-		get_background_colour() const
-		{
-			return d_inner_palette->get_background_colour();
-		}
-
-		boost::optional<Colour>
-		get_foreground_colour() const
-		{
-			return d_inner_palette->get_foreground_colour();
-		}
-
-		boost::optional<Colour>
-		get_nan_colour() const
-		{
-			return d_inner_palette->get_nan_colour();
-		}
-
-	private:
-
-		UserColourPalette(
-				double range1_max,
-				double range1_min,
-				double range2_max,
-				double range2_min,
-				GPlatesGui::Colour max_colour,
-				GPlatesGui::Colour mid_colour,
-				GPlatesGui::Colour min_colour);
-
-		RegularCptColourPalette::non_null_ptr_type d_inner_palette;
-
-		double d_range1_max;
-		double d_range1_min;
-		double d_range2_max;
-		double d_range2_min;
-		GPlatesGui::Colour d_max_colour;
-		GPlatesGui::Colour d_mid_colour;
-		GPlatesGui::Colour d_min_colour;
-	};
-
-
-	/**
-	 * The default 3D scalar field colour palette used when colouring by scalar value.
-	 *
-	 * The colour palette covers the range of values [0, 1].
-	 * This palette is useful when the mapping to a specific scalar field scalar range is done
-	 * elsewhere (such as via the GPU hardware) - then the range of scalar values (such as
-	 * mean +/- std_deviation) that map to [0,1] can be handled by the GPU hardware (requires more
-	 * advanced hardware though - but 3D scalar fields rely on that anyway).
-	 */
-	class DefaultScalarFieldScalarColourPalette :
-			public ColourPalette<double>
-	{
-	public:
-
-		/**
-		 * Constructs a DefaultScalarFieldScalarColourPalette.
-		 */
-		static
-		non_null_ptr_type
-		create();
-
-		virtual
-		boost::optional<Colour>
-		get_colour(
-				double value) const;
-
-		virtual
-		void
-		accept_visitor(
-				ConstColourPaletteVisitor &visitor) const
-		{
-			visitor.visit_default_scalar_field_scalar_colour_palette(*this);
-		}
-
-		virtual
-		void
-		accept_visitor(
-				ColourPaletteVisitor &visitor)
-		{
-			visitor.visit_default_scalar_field_scalar_colour_palette(*this);
-		}
-
-		static
-		double
-		get_lower_bound()
-		{
-			return 0;
-		}
-
-		static
-		double
-		get_upper_bound()
-		{
-			return 1;
-		}
-
-		boost::optional< std::pair<double, double> >
-		get_range() const
-		{
-			return std::make_pair(get_lower_bound(), get_upper_bound());
-		}
-
-		const std::vector<ColourSlice> &
-		get_colour_slices() const
-		{
-			return d_inner_palette->get_entries();
-		}
-
-		boost::optional<Colour>
-		get_background_colour() const
-		{
-			return d_inner_palette->get_background_colour();
-		}
-
-		boost::optional<Colour>
-		get_foreground_colour() const
-		{
-			return d_inner_palette->get_foreground_colour();
-		}
-
-		boost::optional<Colour>
-		get_nan_colour() const
-		{
-			return d_inner_palette->get_nan_colour();
-		}
-
-	private:
-
-		DefaultScalarFieldScalarColourPalette();
-
-		RegularCptColourPalette::non_null_ptr_type d_inner_palette;
-	};
-
-
-	/**
-	 * The default 3D scalar field colour palette used when colouring by gradient magnitude.
-	 *
-	 * The colour palette covers the range of values [-1, 1].
-	 * When the back side of an isosurface (towards the half-space with lower scalar values)
-	 * is visible then the gradient magnitude is mapped to the range [0,1] and the front side
-	 * is mapped to the range [-1,0].
-	 *
-	 * Like @a DefaultScalarFieldScalarColourPalette this palette is useful for more advanced GPU
-	 * hardware that can explicitly handle the re-mapping of gradient magnitude ranges to [-1,1].
-	 */
-	class DefaultScalarFieldGradientColourPalette :
-			public ColourPalette<double>
-	{
-	public:
-
-		/**
-		 * Constructs a DefaultScalarFieldGradientColourPalette.
-		 */
-		static
-		non_null_ptr_type
-		create();
-
-		virtual
-		boost::optional<Colour>
-		get_colour(
-				double value) const;
-
-		virtual
-		void
-		accept_visitor(
-				ConstColourPaletteVisitor &visitor) const
-		{
-			visitor.visit_default_scalar_field_gradient_colour_palette(*this);
-		}
-
-		virtual
-		void
-		accept_visitor(
-				ColourPaletteVisitor &visitor)
-		{
-			visitor.visit_default_scalar_field_gradient_colour_palette(*this);
-		}
-
-		static
-		double
-		get_lower_bound()
-		{
-			return -1;
-		}
-
-		static
-		double
-		get_upper_bound()
-		{
-			return 1;
-		}
-
-		boost::optional< std::pair<double, double> >
-		get_range() const
-		{
-			return std::make_pair(get_lower_bound(), get_upper_bound());
-		}
-
-		const std::vector<ColourSlice> &
-		get_colour_slices() const
-		{
-			return d_inner_palette->get_entries();
-		}
-
-		boost::optional<Colour>
-		get_background_colour() const
-		{
-			return d_inner_palette->get_background_colour();
-		}
-
-		boost::optional<Colour>
-		get_foreground_colour() const
-		{
-			return d_inner_palette->get_foreground_colour();
-		}
-
-		boost::optional<Colour>
-		get_nan_colour() const
-		{
-			return d_inner_palette->get_nan_colour();
-		}
-
-	private:
-
-		DefaultScalarFieldGradientColourPalette();
-
-
-		RegularCptColourPalette::non_null_ptr_type d_inner_palette;
-	};
 }
 
+
+//
+// Implementation
+//
+
+namespace GPlatesGui
+{
+	namespace RasterColourPaletteExtract
+	{
+		namespace Implementation
+		{
+			template <typename PaletteKeyType>
+			class ExtractVisitor :
+					public boost::static_visitor<
+								boost::optional<typename ColourPalette<PaletteKeyType>::non_null_ptr_type> >
+			{
+			public:
+
+				// Look for a specific ColourPalette type (specifically with key 'PaletteKeyType')...
+				boost::optional<typename ColourPalette<PaletteKeyType>::non_null_ptr_type>
+				operator()(
+						const typename ColourPalette<PaletteKeyType>::non_null_ptr_type &colour_palette) const
+				{
+					return colour_palette;
+				}
+
+				// General operator catches everything else...
+				template <typename VariantBoundedType>
+				boost::optional<typename ColourPalette<PaletteKeyType>::non_null_ptr_type>
+				operator()(
+						const VariantBoundedType &) const
+				{
+					return boost::none;
+				}
+			};
+		}
+
+		template <typename PaletteKeyType>
+		boost::optional<typename ColourPalette<PaletteKeyType>::non_null_ptr_type>
+		get_colour_palette(
+				const RasterColourPalette &raster_colour_palette)
+		{
+			return boost::apply_visitor(
+					Implementation::ExtractVisitor<PaletteKeyType>(),
+					raster_colour_palette);
+		}
+	}
+}
 
 #endif  /* GPLATES_GUI_RASTERCOLOURPALETTE_H */

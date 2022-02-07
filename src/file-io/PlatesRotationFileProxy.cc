@@ -27,6 +27,7 @@
 #include <limits>
 #include <boost/foreach.hpp>
 
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <QBuffer>
@@ -1018,14 +1019,15 @@ GPlatesFileIO::GrotWriterWithoutCfg::visit_gpml_metadata(
 {
 	QString buf;
 	gpml_metadata.get_data().serialize(buf);
-	d_output->seekp(0);
+	d_output_stream->seek(0);
 	
+	// FIXME: We should replace usage of std::ifstream with the appropriate Qt class.
 	std::ifstream ifs(d_file_ref.get_file_info().get_qfileinfo().filePath().toStdString().c_str());
 	std::string str(
 			(std::istreambuf_iterator<char>(ifs)),
 			std::istreambuf_iterator<char>());
-	(*d_output) << buf.toUtf8().data();
-	(*d_output) << str;
+	(*d_output_stream) << buf;
+	(*d_output_stream) << str.c_str();
 }
 
 
@@ -1090,7 +1092,7 @@ GPlatesFileIO::GrotWriterWithoutCfg::initialise_pre_feature_properties(
 					arg(key_val->get_value().get().qstring()).
 					arg(val->get_value().get().qstring());
 			
-			(*d_output) << output_str.toUtf8().data();
+			(*d_output_stream) << output_str;
 		}
 	}
 	catch(GPlatesGlobal::LogException& e)

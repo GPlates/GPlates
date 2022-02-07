@@ -26,8 +26,9 @@
 
 #include "RenderedGeometryImpl.h"
 #include "RenderedGeometryVisitor.h"
-#include "gui/ColourProxy.h"
+
 #include "maths/PointOnSphere.h"
+
 
 namespace GPlatesViewOperations
 {
@@ -41,16 +42,12 @@ namespace GPlatesViewOperations
 
 		RenderedStrainMarkerSymbol(
 				const GPlatesMaths::PointOnSphere &centre,
-				const GPlatesGui::ColourProxy &colour,
 				unsigned int size,
-				float line_width_hint,
 				double scale_x,
 				double scale_y,
 				double angle) :
 			d_centre(centre),
-			d_colour(colour),
 			d_size(size),
-			d_line_width_hint(line_width_hint),
 			d_scale_x(scale_x),
 			d_scale_y(scale_y),
 			d_angle(angle)
@@ -78,19 +75,6 @@ namespace GPlatesViewOperations
 		get_centre() const
 		{
 			return d_centre;
-		}
-
-
-		const GPlatesGui::ColourProxy &
-		get_colour() const
-		{
-			return d_colour;
-		}
-
-		float
-		get_line_width_hint() const
-		{
-			return d_line_width_hint;
 		}
 
 		unsigned int
@@ -121,9 +105,7 @@ namespace GPlatesViewOperations
 
 		GPlatesMaths::PointOnSphere d_centre;
 
-		GPlatesGui::ColourProxy d_colour;
 		unsigned int d_size;
-		float d_line_width_hint;
 		double d_scale_x;
 		double d_scale_y;
 		double d_angle;

@@ -50,6 +50,7 @@ namespace GPlatesFileIO
 			RasterImage,
 			ScalarField3D,
 			Cpt,
+			HellingerPick,
 			Unspecified
 		};
 

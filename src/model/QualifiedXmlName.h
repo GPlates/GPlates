@@ -35,6 +35,9 @@
 
 #include "StringSetSingletons.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/Parse.h"
 #include "utils/UnicodeStringUtils.h" // For GPLATES_ICU_BOOL
 #include "utils/XmlNamespaces.h"
@@ -356,6 +359,23 @@ namespace GPlatesModel
 			d_namespace_alias = 
 				GPlatesUtils::XmlNamespaces::get_standard_alias_for_namespace(*d_namespace);
 		}
+
+	private: // Transcribe for sessions/projects...
+
+		friend class GPlatesScribe::Access;
+
+		// NOTE: Implementation is in "TranscribeQualifiedXmlName.h" to avoid including "Scribe.h" here.
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject< QualifiedXmlName<SingletonType> > &qualified_xml_name);
+
+		// NOTE: Implementation is in "TranscribeQualifiedXmlName.h" to avoid including "Scribe.h" here.
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 

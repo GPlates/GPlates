@@ -87,7 +87,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 		GPlatesFeatureVisitors::find_first_geometry(property_iter);
 
 	std::vector<GPlatesMaths::PointOnSphere> points;
-	GPlatesAppLogic::GeometryUtils::get_geometry_points(
+	GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(
 			*geometry_on_sphere,
 			points);
 

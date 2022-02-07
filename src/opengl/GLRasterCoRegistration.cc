@@ -2839,12 +2839,12 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 		PointRegionOfInterestVertex vertex;
 		vertex.initialise_seed_geometry_constants(seed_co_registration);
 
-		// Iterate over the points of the current polygon.
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator polygon_points_iter = polygon_on_sphere.vertex_begin();
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator polygon_points_end = polygon_on_sphere.vertex_end();
-		for ( ; polygon_points_iter != polygon_points_end; ++polygon_points_iter)
+		// Iterate over the points of the exterior ring of the current polygon.
+		GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator exterior_points_iter = polygon_on_sphere.exterior_ring_vertex_begin();
+		GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator exterior_points_end = polygon_on_sphere.exterior_ring_vertex_end();
+		for ( ; exterior_points_iter != exterior_points_end; ++exterior_points_iter)
 		{
-			const GPlatesMaths::PointOnSphere &point = *polygon_points_iter;
+			const GPlatesMaths::PointOnSphere &point = *exterior_points_iter;
 
 			// Render the point region-of-interest geometry filling in the vertex data attributes
 			// that are *not* constant across the seed geometry.
@@ -2857,6 +2857,32 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 					point.position_vector(),
 					vertex,
 					tan_region_of_interest_angle);
+		}
+
+		// Iterate over the points of the interior rings of the current polygon (if any).
+		const unsigned int num_interior_rings = polygon_on_sphere.number_of_interior_rings();
+		for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+		{
+			GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator interior_points_iter =
+					polygon_on_sphere.interior_ring_vertex_begin(interior_ring_index);
+			GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator interior_points_end =
+					polygon_on_sphere.interior_ring_vertex_end(interior_ring_index);
+			for ( ; interior_points_iter != interior_points_end; ++interior_points_iter)
+			{
+				const GPlatesMaths::PointOnSphere &point = *interior_points_iter;
+
+				// Render the point region-of-interest geometry filling in the vertex data attributes
+				// that are *not* constant across the seed geometry.
+				render_bounded_point_region_of_interest_geometry(
+						renderer,
+						map_vertex_element_buffer_scope,
+						map_vertex_buffer_scope,
+						point_stream_target,
+						point_stream_quads,
+						point.position_vector(),
+						vertex,
+						tan_region_of_interest_angle);
+			}
 		}
 	}
 
@@ -3139,12 +3165,12 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 		PointRegionOfInterestVertex vertex;
 		vertex.initialise_seed_geometry_constants(seed_co_registration);
 
-		// Iterate over the points of the current polygon.
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator polygon_points_iter = polygon_on_sphere.vertex_begin();
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator polygon_points_end = polygon_on_sphere.vertex_end();
-		for ( ; polygon_points_iter != polygon_points_end; ++polygon_points_iter)
+		// Iterate over the points of the exterior ring of the current polygon.
+		GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator exterior_points_iter = polygon_on_sphere.exterior_ring_vertex_begin();
+		GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator exterior_points_end = polygon_on_sphere.exterior_ring_vertex_end();
+		for ( ; exterior_points_iter != exterior_points_end; ++exterior_points_iter)
 		{
-			const GPlatesMaths::PointOnSphere &point = *polygon_points_iter;
+			const GPlatesMaths::PointOnSphere &point = *exterior_points_iter;
 
 			// Render the point region-of-interest geometry filling in the vertex data attributes
 			// that are *not* constant across the seed geometry.
@@ -3158,6 +3184,33 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 					vertex,
 					centre_point_weight,
 					tangent_weight);
+		}
+
+		// Iterate over the points of the interior rings of the current polygon (if any).
+		const unsigned int num_interior_rings = polygon_on_sphere.number_of_interior_rings();
+		for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+		{
+			GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator interior_points_iter =
+					polygon_on_sphere.interior_ring_vertex_begin(interior_ring_index);
+			GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator interior_points_end =
+					polygon_on_sphere.interior_ring_vertex_end(interior_ring_index);
+			for ( ; interior_points_iter != interior_points_end; ++interior_points_iter)
+			{
+				const GPlatesMaths::PointOnSphere &point = *interior_points_iter;
+
+				// Render the point region-of-interest geometry filling in the vertex data attributes
+				// that are *not* constant across the seed geometry.
+				render_unbounded_point_region_of_interest_geometry(
+						renderer,
+						map_vertex_element_buffer_scope,
+						map_vertex_buffer_scope,
+						point_stream_target,
+						point_stream_meshes,
+						point.position_vector(),
+						vertex,
+						centre_point_weight,
+						tangent_weight);
+			}
 		}
 	}
 
@@ -3394,12 +3447,12 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 		LineRegionOfInterestVertex vertex;
 		vertex.initialise_seed_geometry_constants(seed_co_registration);
 
-		// Iterate over the lines (great circle arcs) of the current polygon.
-		GPlatesMaths::PolygonOnSphere::const_iterator polygon_arcs_iter = polygon_on_sphere.begin();
-		GPlatesMaths::PolygonOnSphere::const_iterator polygon_arcs_end = polygon_on_sphere.end();
-		for ( ; polygon_arcs_iter != polygon_arcs_end; ++polygon_arcs_iter)
+		// Iterate over the lines (great circle arcs) of the exterior ring of the current polygon.
+		GPlatesMaths::PolygonOnSphere::ring_const_iterator exterior_arcs_iter = polygon_on_sphere.exterior_ring_begin();
+		GPlatesMaths::PolygonOnSphere::ring_const_iterator exterior_arcs_end = polygon_on_sphere.exterior_ring_end();
+		for ( ; exterior_arcs_iter != exterior_arcs_end; ++exterior_arcs_iter)
 		{
-			const GPlatesMaths::GreatCircleArc &line = *polygon_arcs_iter;
+			const GPlatesMaths::GreatCircleArc &line = *exterior_arcs_iter;
 
 			// If the line is degenerate (within numerical precision) then it's endpoints are
 			// too close together to get a rotation axis. We can ignore these lines since the
@@ -3419,6 +3472,39 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 					line,
 					vertex,
 					tan_region_of_interest_angle);
+		}
+
+		// Iterate over the lines (great circle arcs) of the interior rings of the current polygon (if any).
+		const unsigned int num_interior_rings = polygon_on_sphere.number_of_interior_rings();
+		for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+		{
+			GPlatesMaths::PolygonOnSphere::ring_const_iterator interior_arcs_iter =
+					polygon_on_sphere.interior_ring_begin(interior_ring_index);
+			GPlatesMaths::PolygonOnSphere::ring_const_iterator interior_arcs_end =
+					polygon_on_sphere.interior_ring_end(interior_ring_index);
+			for ( ; interior_arcs_iter != interior_arcs_end; ++interior_arcs_iter)
+			{
+				const GPlatesMaths::GreatCircleArc &line = *interior_arcs_iter;
+
+				// If the line is degenerate (within numerical precision) then it's endpoints are
+				// too close together to get a rotation axis. We can ignore these lines since the
+				// region-of-interest quad that would've been generated would also be degenerate (zero-area).
+				// And the two end-point *point* region-of-interest geometries cover the region-of-interest nicely.
+				if (line.is_zero_length())
+				{
+					continue;
+				}
+
+				render_bounded_line_region_of_interest_geometry(
+						renderer,
+						map_vertex_element_buffer_scope,
+						map_vertex_buffer_scope,
+						line_stream_target,
+						line_stream_quads,
+						line,
+						vertex,
+						tan_region_of_interest_angle);
+			}
 		}
 	}
 
@@ -3669,9 +3755,9 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 		LineRegionOfInterestVertex vertex;
 		vertex.initialise_seed_geometry_constants(seed_co_registration);
 
-		// Iterate over the lines (great circle arcs) of the current polygon.
-		GPlatesMaths::PolygonOnSphere::const_iterator polygon_arcs_iter = polygon_on_sphere.begin();
-		GPlatesMaths::PolygonOnSphere::const_iterator polygon_arcs_end = polygon_on_sphere.end();
+		// Iterate over the lines (great circle arcs) of the exterior ring of the current polygon.
+		GPlatesMaths::PolygonOnSphere::ring_const_iterator polygon_arcs_iter = polygon_on_sphere.exterior_ring_begin();
+		GPlatesMaths::PolygonOnSphere::ring_const_iterator polygon_arcs_end = polygon_on_sphere.exterior_ring_end();
 		for ( ; polygon_arcs_iter != polygon_arcs_end; ++polygon_arcs_iter)
 		{
 			const GPlatesMaths::GreatCircleArc &line = *polygon_arcs_iter;
@@ -3695,6 +3781,40 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 					vertex,
 					arc_point_weight,
 					tangent_weight);
+		}
+
+		// Iterate over the lines (great circle arcs) of the interior rings of the current polygon (if any).
+		const unsigned int num_interior_rings = polygon_on_sphere.number_of_interior_rings();
+		for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+		{
+			GPlatesMaths::PolygonOnSphere::ring_const_iterator interior_arcs_iter =
+					polygon_on_sphere.interior_ring_begin(interior_ring_index);
+			GPlatesMaths::PolygonOnSphere::ring_const_iterator interior_arcs_end =
+					polygon_on_sphere.interior_ring_end(interior_ring_index);
+			for ( ; interior_arcs_iter != interior_arcs_end; ++interior_arcs_iter)
+			{
+				const GPlatesMaths::GreatCircleArc &line = *interior_arcs_iter;
+
+				// If the line is degenerate (within numerical precision) then it's endpoints are
+				// too close together to get a rotation axis. We can ignore these lines since the
+				// region-of-interest mesh that would've been generated would also be degenerate (zero-area).
+				// And the two end-point *point* region-of-interest geometries cover the region-of-interest nicely.
+				if (line.is_zero_length())
+				{
+					continue;
+				}
+
+				render_unbounded_line_region_of_interest_geometry(
+						renderer,
+						map_vertex_element_buffer_scope,
+						map_vertex_buffer_scope,
+						line_stream_target,
+						line_stream_meshes,
+						line,
+						vertex,
+						arc_point_weight,
+						tangent_weight);
+			}
 		}
 	}
 
@@ -4034,12 +4154,12 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 		FillRegionOfInterestVertex vertex;
 		vertex.initialise_seed_geometry_constants(seed_co_registration);
 
-		// Iterate over the points of the current polygon.
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator polygon_points_iter = polygon_on_sphere.vertex_begin();
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator polygon_points_end = polygon_on_sphere.vertex_end();
-		for ( ; polygon_points_iter != polygon_points_end; ++polygon_points_iter)
+		// Iterate over the points of the exterior ring of the current polygon.
+		GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator exterior_points_iter = polygon_on_sphere.exterior_ring_vertex_begin();
+		GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator exterior_points_end = polygon_on_sphere.exterior_ring_vertex_end();
+		for ( ; exterior_points_iter != exterior_points_end; ++exterior_points_iter)
 		{
-			const GPlatesMaths::UnitVector3D &point_position = polygon_points_iter->position_vector();
+			const GPlatesMaths::UnitVector3D &point_position = exterior_points_iter->position_vector();
 
 			vertex.fill_position[0] = point_position.x().dval();
 			vertex.fill_position[1] = point_position.y().dval();
@@ -4058,6 +4178,39 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 						// These are actually rasterised points not quads (triangles)...
 						GL_POINTS);
 				fill_stream_points.add_vertex(vertex);
+			}
+		}
+
+		// Iterate over the points of the interior rings of the current polygon (if any).
+		const unsigned int num_interior_rings = polygon_on_sphere.number_of_interior_rings();
+		for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+		{
+			GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator interior_points_iter =
+					polygon_on_sphere.interior_ring_vertex_begin(interior_ring_index);
+			GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator interior_points_end =
+					polygon_on_sphere.interior_ring_vertex_end(interior_ring_index);
+			for ( ; interior_points_iter != interior_points_end; ++interior_points_iter)
+			{
+				const GPlatesMaths::UnitVector3D &point_position = interior_points_iter->position_vector();
+
+				vertex.fill_position[0] = point_position.x().dval();
+				vertex.fill_position[1] = point_position.y().dval();
+				vertex.fill_position[2] = point_position.z().dval();
+
+				if (!fill_stream_points.add_vertex(vertex))
+				{
+					suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
+							renderer,
+							fill_stream_target,
+							map_vertex_element_buffer_scope,
+							MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+							map_vertex_buffer_scope,
+							MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
+							d_fill_region_of_interest_vertex_array,
+							// These are actually rasterised points not quads (triangles)...
+							GL_POINTS);
+					fill_stream_points.add_vertex(vertex);
+				}
 			}
 		}
 	}
@@ -4186,18 +4339,18 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 		const GPlatesMaths::PolygonOnSphere &polygon_on_sphere =
 				dynamic_cast<const GPlatesMaths::PolygonOnSphere &>(seed_co_registration.geometry);
 
-		fill_stream_line_loops.begin_line_loop();
-
 		// Most of the vertex data is the same for all vertices in the seed geometry.
 		FillRegionOfInterestVertex vertex;
 		vertex.initialise_seed_geometry_constants(seed_co_registration);
 
-		// Iterate over the points of the current polygon.
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator polygon_points_iter = polygon_on_sphere.vertex_begin();
-		GPlatesMaths::PolygonOnSphere::vertex_const_iterator polygon_points_end = polygon_on_sphere.vertex_end();
-		for ( ; polygon_points_iter != polygon_points_end; ++polygon_points_iter)
+		fill_stream_line_loops.begin_line_loop();
+
+		// Iterate over the points of the exterior ring of the current polygon.
+		GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator exterior_points_iter = polygon_on_sphere.exterior_ring_vertex_begin();
+		GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator exterior_points_end = polygon_on_sphere.exterior_ring_vertex_end();
+		for ( ; exterior_points_iter != exterior_points_end; ++exterior_points_iter)
 		{
-			const GPlatesMaths::UnitVector3D &point_position = polygon_points_iter->position_vector();
+			const GPlatesMaths::UnitVector3D &point_position = exterior_points_iter->position_vector();
 
 			vertex.fill_position[0] = point_position.x().dval();
 			vertex.fill_position[1] = point_position.y().dval();
@@ -4214,11 +4367,47 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 						d_fill_region_of_interest_vertex_array,
 						// These are actually rasterised lines not quads (triangles)...
 						GL_LINES);
-				fill_stream_line_strips.add_vertex(vertex);
+				fill_stream_line_loops.add_vertex(vertex);
 			}
 		}
 
 		fill_stream_line_loops.end_line_loop();
+
+		// Iterate over the points of the interior rings of the current polygon (if any).
+		const unsigned int num_interior_rings = polygon_on_sphere.number_of_interior_rings();
+		for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+		{
+			fill_stream_line_loops.begin_line_loop();
+
+			GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator interior_points_iter =
+					polygon_on_sphere.interior_ring_vertex_begin(interior_ring_index);
+			GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator interior_points_end =
+					polygon_on_sphere.interior_ring_vertex_end(interior_ring_index);
+			for ( ; interior_points_iter != interior_points_end; ++interior_points_iter)
+			{
+				const GPlatesMaths::UnitVector3D &point_position = interior_points_iter->position_vector();
+
+				vertex.fill_position[0] = point_position.x().dval();
+				vertex.fill_position[1] = point_position.y().dval();
+				vertex.fill_position[2] = point_position.z().dval();
+				if (!fill_stream_line_loops.add_vertex(vertex))
+				{
+					suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
+							renderer,
+							fill_stream_target,
+							map_vertex_element_buffer_scope,
+							MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+							map_vertex_buffer_scope,
+							MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
+							d_fill_region_of_interest_vertex_array,
+							// These are actually rasterised lines not quads (triangles)...
+							GL_LINES);
+					fill_stream_line_loops.add_vertex(vertex);
+				}
+			}
+
+			fill_stream_line_loops.end_line_loop();
+		}
 	}
 
 	// Stop streaming so we can render the last batch.
@@ -4293,14 +4482,15 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 		const GPlatesMaths::PolygonOnSphere &polygon_on_sphere =
 				dynamic_cast<const GPlatesMaths::PolygonOnSphere &>(seed_co_registration.geometry);
 
-		fill_stream_triangle_fans.begin_triangle_fan();
+		const GPlatesMaths::UnitVector3D &centroid = polygon_on_sphere.get_boundary_centroid();
 
 		// Most of the vertex data is the same for all vertices for polygon triangle fan.
 		FillRegionOfInterestVertex vertex;
 		vertex.initialise_seed_geometry_constants(seed_co_registration);
 
+		fill_stream_triangle_fans.begin_triangle_fan();
+
 		// The first vertex is the polygon centroid.
-		const GPlatesMaths::UnitVector3D &centroid = polygon_on_sphere.get_boundary_centroid();
 		vertex.fill_position[0] = centroid.x().dval();
 		vertex.fill_position[1] = centroid.y().dval();
 		vertex.fill_position[2] = centroid.z().dval();
@@ -4318,14 +4508,16 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 			fill_stream_triangle_fans.add_vertex(vertex);
 		}
 
-		// Iterate over the points of the current polygon.
-		const GPlatesMaths::PolygonOnSphere::vertex_const_iterator points_begin = polygon_on_sphere.vertex_begin();
-		const GPlatesMaths::PolygonOnSphere::vertex_const_iterator points_end = polygon_on_sphere.vertex_end();
-		for (GPlatesMaths::PolygonOnSphere::vertex_const_iterator points_iter = points_begin;
-			points_iter != points_end;
-			++points_iter)
+		// Iterate over the points of the exterior ring of the current polygon.
+		const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator exterior_points_begin =
+				polygon_on_sphere.exterior_ring_vertex_begin();
+		const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator exterior_points_end =
+				polygon_on_sphere.exterior_ring_vertex_end();
+		for (GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator exterior_points_iter = exterior_points_begin;
+			exterior_points_iter != exterior_points_end;
+			++exterior_points_iter)
 		{
-			const GPlatesMaths::UnitVector3D &point_position = points_iter->position_vector();
+			const GPlatesMaths::UnitVector3D &point_position = exterior_points_iter->position_vector();
 
 			vertex.fill_position[0] = point_position.x().dval();
 			vertex.fill_position[1] = point_position.y().dval();
@@ -4345,11 +4537,11 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 			}
 		}
 
-		// Wraparound back to the first polygon vertex to close off the polygon.
-		const GPlatesMaths::UnitVector3D &first_point_position = points_begin->position_vector();
-		vertex.fill_position[0] = first_point_position.x().dval();
-		vertex.fill_position[1] = first_point_position.y().dval();
-		vertex.fill_position[2] = first_point_position.z().dval();
+		// Wraparound back to the first polygon vertex in the exterior ring to close off the ring.
+		const GPlatesMaths::UnitVector3D &first_exterior_point_position = exterior_points_begin->position_vector();
+		vertex.fill_position[0] = first_exterior_point_position.x().dval();
+		vertex.fill_position[1] = first_exterior_point_position.y().dval();
+		vertex.fill_position[2] = first_exterior_point_position.z().dval();
 		if (!fill_stream_triangle_fans.add_vertex(vertex))
 		{
 			suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
@@ -4365,6 +4557,81 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 		}
 
 		fill_stream_triangle_fans.end_triangle_fan();
+
+		// The interior rings of the current polygon (if any).
+		const unsigned int num_interior_rings = polygon_on_sphere.number_of_interior_rings();
+		for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+		{
+			fill_stream_triangle_fans.begin_triangle_fan();
+
+			// The first vertex is the polygon centroid.
+			vertex.fill_position[0] = centroid.x().dval();
+			vertex.fill_position[1] = centroid.y().dval();
+			vertex.fill_position[2] = centroid.z().dval();
+			if (!fill_stream_triangle_fans.add_vertex(vertex))
+			{
+				suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
+						renderer,
+						fill_stream_target,
+						map_vertex_element_buffer_scope,
+						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+						map_vertex_buffer_scope,
+						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
+						d_fill_region_of_interest_vertex_array,
+						GL_TRIANGLES);
+				fill_stream_triangle_fans.add_vertex(vertex);
+			}
+
+			// Iterate over the points of the current interior ring of the current polygon.
+			const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator interior_points_begin =
+					polygon_on_sphere.interior_ring_vertex_begin(interior_ring_index);
+			const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator interior_points_end =
+					polygon_on_sphere.interior_ring_vertex_end(interior_ring_index);
+			for (GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator interior_points_iter = interior_points_begin;
+				interior_points_iter != interior_points_end;
+				++interior_points_iter)
+			{
+				const GPlatesMaths::UnitVector3D &point_position = interior_points_iter->position_vector();
+
+				vertex.fill_position[0] = point_position.x().dval();
+				vertex.fill_position[1] = point_position.y().dval();
+				vertex.fill_position[2] = point_position.z().dval();
+				if (!fill_stream_triangle_fans.add_vertex(vertex))
+				{
+					suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
+							renderer,
+							fill_stream_target,
+							map_vertex_element_buffer_scope,
+							MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+							map_vertex_buffer_scope,
+							MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
+							d_fill_region_of_interest_vertex_array,
+							GL_TRIANGLES);
+					fill_stream_triangle_fans.add_vertex(vertex);
+				}
+			}
+
+			// Wraparound back to the first polygon vertex in the interior ring to close off the ring.
+			const GPlatesMaths::UnitVector3D &first_interior_point_position = interior_points_begin->position_vector();
+			vertex.fill_position[0] = first_interior_point_position.x().dval();
+			vertex.fill_position[1] = first_interior_point_position.y().dval();
+			vertex.fill_position[2] = first_interior_point_position.z().dval();
+			if (!fill_stream_triangle_fans.add_vertex(vertex))
+			{
+				suspend_render_resume_vertex_array_streaming<FillRegionOfInterestVertex, streaming_vertex_element_type>(
+						renderer,
+						fill_stream_target,
+						map_vertex_element_buffer_scope,
+						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+						map_vertex_buffer_scope,
+						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
+						d_fill_region_of_interest_vertex_array,
+						GL_TRIANGLES);
+				fill_stream_triangle_fans.add_vertex(vertex);
+			}
+
+			fill_stream_triangle_fans.end_triangle_fan();
+		}
 	}
 
 	// Stop streaming so we can render the last batch.

@@ -58,6 +58,9 @@ GPlatesFileIO::DataFormats::data_format_to_str(
 	case Cpt:
 		str = "GMT CPT";
 		break;
+	case HellingerPick:
+		str = "Hellinger Pick";
+		break;
 	case Unspecified:
 		str = "Unspecified";
 		break;

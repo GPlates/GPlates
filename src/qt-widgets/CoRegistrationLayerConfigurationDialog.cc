@@ -39,7 +39,7 @@
 #include "QtWidgetUtils.h"
 #include "ViewportWindow.h"
 
-#include "app-logic/CoRegistrationLayerTask.h"
+#include "app-logic/CoRegistrationLayerParams.h"
 #include "app-logic/RasterLayerProxy.h"
 #include "app-logic/ReconstructLayerProxy.h"
 
@@ -111,6 +111,24 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::CoRegistrationLayerCon
 
 	QObject::connect(co_reg_cfg_table_widget, SIGNAL(cellChanged(int, int)), 
 		this, SLOT(cfg_table_cell_changed(int,int)));
+
+	boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer = d_visual_layer.lock();
+	if (locked_visual_layer)
+	{
+		GPlatesAppLogic::CoRegistrationLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::CoRegistrationLayerParams *>(
+					locked_visual_layer->get_reconstruct_graph_layer().get_layer_params().get());
+		if (layer_params)
+		{
+			// Populate the configuration table from the layer params in case it's not empty.
+			get_configuration_table_from_layer(*layer_params);
+
+			// Handle config table modified via the layer params (instead of via this dialog).
+			QObject::connect(
+					layer_params, SIGNAL(modified_cfg_table(GPlatesAppLogic::CoRegistrationLayerParams &)),
+					this, SLOT(get_configuration_table_from_layer(GPlatesAppLogic::CoRegistrationLayerParams &)));
+		}
+	}
 
 	QObject::connect(
 		&d_application_state.get_reconstruct_graph(),
@@ -368,7 +386,8 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::react_target_layer_sel
 {
 	// Get the currently selected target layer.
 	LayerItem* current_target_layer_item = dynamic_cast< LayerItem* > (target_layers_list_widget->currentItem());
-	if (!current_target_layer_item)
+	if (!current_target_layer_item ||
+		!current_target_layer_item->layer.is_valid() /*target layer might be in process of being removed*/)
 	{
 		//qDebug() << "The current target layer item is null.";
 		return;
@@ -802,40 +821,60 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::setup_reducer_combobox
 {
 	if (relational_radio_button->isChecked()) 
 	{
-		// There are no relational attributes for rasters.
-		if (target_layer_type != GPlatesAppLogic::LayerTaskType::RECONSTRUCT)
-		{
-			return;
-		}
+		setup_reducer_relational_combobox(attribute_name, combo, target_layer_type);
+	}
+	else
+	{
+		setup_reducer_non_relational_combobox(attribute_name, combo, target_layer_type);
+	}
+}
 
-		if(attribute_name == DISTANCE)
-		{
-			combo->addItem(
-					QApplication::tr("Min"),
-					GPlatesDataMining::REDUCER_MIN);
-			combo->addItem(
-					QApplication::tr("Max"),
-					GPlatesDataMining::REDUCER_MAX);
-			combo->addItem(
-					QApplication::tr("Mean"),
-					GPlatesDataMining::REDUCER_MEAN);
-			combo->addItem(
-					QApplication::tr("Median"),
-					GPlatesDataMining::REDUCER_MEDIAN);
-			return;
-		}
 
-		if(attribute_name == PRESENCE || attribute_name == NUM_ROI)
-		{
-			combo->addItem(
-					QApplication::tr("Lookup"), 
-					GPlatesDataMining::REDUCER_LOOKUP);
-			return;
-		}
-
+void
+GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::setup_reducer_relational_combobox(
+		const QString& attribute_name,	
+		QComboBox* combo,
+		const GPlatesAppLogic::LayerTaskType::Type target_layer_type)
+{
+	// There are no relational attributes for rasters.
+	if (target_layer_type != GPlatesAppLogic::LayerTaskType::RECONSTRUCT)
+	{
 		return;
 	}
 
+	if(attribute_name == DISTANCE)
+	{
+		combo->addItem(
+				QApplication::tr("Min"),
+				GPlatesDataMining::REDUCER_MIN);
+		combo->addItem(
+				QApplication::tr("Max"),
+				GPlatesDataMining::REDUCER_MAX);
+		combo->addItem(
+				QApplication::tr("Mean"),
+				GPlatesDataMining::REDUCER_MEAN);
+		combo->addItem(
+				QApplication::tr("Median"),
+				GPlatesDataMining::REDUCER_MEDIAN);
+		return;
+	}
+
+	if(attribute_name == PRESENCE || attribute_name == NUM_ROI)
+	{
+		combo->addItem(
+				QApplication::tr("Lookup"), 
+				GPlatesDataMining::REDUCER_LOOKUP);
+		return;
+	}
+}
+
+
+void
+GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::setup_reducer_non_relational_combobox(
+		const QString& attribute_name,	
+		QComboBox* combo,
+		const GPlatesAppLogic::LayerTaskType::Type target_layer_type)
+{
 	// Rasters have a fixed set of reducer options that is independent of the attribute type.
 	// Mainly because rasters only contain numerical data and hence the attribute type is
 	// effectively always a number type (ie, not a string type).
@@ -982,20 +1021,8 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::update(
 	// Remove any configuration rows that reference target layers not existing anymore.
 	remove_config_rows_referencing_nonexistent_target_layer();
 
-	// Generate a new co-registration configuration table.
-	GPlatesDataMining::CoRegConfigurationTable cfg_table;
-	create_configuration_table(cfg_table);
-
-	// If the configuration has changed then let the co-registration layer know.
-	if (d_cfg_table != cfg_table)
-	{
-		d_cfg_table = cfg_table;
-
-		set_configuration_table_on_layer(cfg_table);
-
-		// Force a reconstruction so that the co-registration layer uses the updated configuration.
-		d_application_state.reconstruct();
-	}
+	// Update the co-registration configuration table (if table changed).
+	update_cfg_table();
 }
 
 
@@ -1031,7 +1058,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::create_configuration_t
 				reducer_box				&&
 				spinbox_ROI_range) )
 		{
-			qDebug() << "CoRegistrationLayerConfigurationDialog: Invalid input table item found! Skip this iteration";
+			//qDebug() << "CoRegistrationLayerConfigurationDialog: Invalid input table item found! Skip this iteration";
 			continue;
 		}
 
@@ -1125,13 +1152,26 @@ void
 GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::set_configuration_table_on_layer(
 		const GPlatesDataMining::CoRegConfigurationTable &cfg_table)
 {
-	boost::shared_ptr<GPlatesPresentation::VisualLayer> layer = d_visual_layer.lock();
-	GPlatesAppLogic::CoRegistrationLayerTask::Params* params =
-		dynamic_cast<GPlatesAppLogic::CoRegistrationLayerTask::Params*>(
-				&layer->get_reconstruct_graph_layer().get_layer_task_params());
-	if(params)
+	boost::shared_ptr<GPlatesPresentation::VisualLayer> visual_layer = d_visual_layer.lock();
+	if (visual_layer)
 	{
-		params->set_cfg_table(cfg_table);
+		GPlatesAppLogic::CoRegistrationLayerParams *layer_params =
+			dynamic_cast<GPlatesAppLogic::CoRegistrationLayerParams *>(
+					visual_layer->get_reconstruct_graph_layer().get_layer_params().get());
+		if (layer_params)
+		{
+			// Temporarily disconnect from layer params signal so it doesn't cause us to update our
+			// GUI (since it has just been updated).
+			QObject::disconnect(
+					layer_params, SIGNAL(modified_cfg_table(GPlatesAppLogic::CoRegistrationLayerParams &)),
+					this, SLOT(get_configuration_table_from_layer(GPlatesAppLogic::CoRegistrationLayerParams &)));
+
+			layer_params->set_cfg_table(cfg_table);
+
+			QObject::connect(
+					layer_params, SIGNAL(modified_cfg_table(GPlatesAppLogic::CoRegistrationLayerParams &)),
+					this, SLOT(get_configuration_table_from_layer(GPlatesAppLogic::CoRegistrationLayerParams &)));
+		}
 	}
 }
 
@@ -1154,7 +1194,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::apply(
 bool
 GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::remove_config_rows_referencing_nonexistent_target_layer()
 {
-	bool removed = true;
+	bool removed = false;
 
 	for (int i = 0; i < co_reg_cfg_table_widget->rowCount(); )
 	{
@@ -1179,9 +1219,9 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::remove_config_rows_ref
 
 		if (!is_cfg_row_valid)
 		{
-			qDebug() << "Removing co-registration configuration row - no longer referencing a valid target layer.";
+			//qDebug() << "Removing co-registration configuration row - no longer referencing a valid target layer.";
 			co_reg_cfg_table_widget->removeRow(i);
-			removed = false;
+			removed = true;
 		}
 		else
 		{
@@ -1201,7 +1241,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::handle_co_registration
 	// See if the layer (whose input layer list changed) is our co-registration layer.
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> co_reg_layer_ptr = d_visual_layer.lock())
 	{
-		if (co_reg_layer_ptr->get_reconstruct_graph_layer() != layer)
+		if (co_reg_layer_ptr->get_reconstruct_graph_layer() == layer)
 		{
 			return;
 		}
@@ -1251,6 +1291,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::cfg_table_cell_changed
 void
 GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::update_cfg_table()
 {
+	// Generate a new co-registration configuration table.
 	GPlatesDataMining::CoRegConfigurationTable cfg_table;
 	create_configuration_table(cfg_table);
 
@@ -1259,11 +1300,184 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::update_cfg_table()
 	{
 		d_cfg_table = cfg_table;
 
+		// The co-registration layer will update itself and this will result in a new reconstruction.
 		set_configuration_table_on_layer(cfg_table);
 	}
+}
 
-	// Force a reconstruction so that the co-registration layer uses the updated configuration.
-	d_application_state.reconstruct();
+
+void
+GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::get_configuration_table_from_layer(
+		GPlatesAppLogic::CoRegistrationLayerParams &layer_params)
+{
+	const GPlatesDataMining::CoRegConfigurationTable &cfg_table = layer_params.get_cfg_table();
+
+	// If the config table hasn't changed then return early.
+	if (d_cfg_table == cfg_table)
+	{
+		return;
+	}
+
+	d_cfg_table = cfg_table;
+
+	// Disconnect signals while we're modifying the config table widget (via the layer params),
+	// otherwise the config table widget will get updated from the existing GUI (which is not yet
+	// updated from the layer params config table) as soon as we modify the config table widget.
+	QObject::disconnect(
+			co_reg_cfg_table_widget, SIGNAL(cellChanged(int, int)),
+			this, SLOT(cfg_table_cell_changed(int,int)));
+
+	co_reg_cfg_table_widget->clearContents(); // Do not clear the header items as well.
+	co_reg_cfg_table_widget->setRowCount(0);
+
+	for (std::size_t row = 0; row < cfg_table.size(); ++row)
+	{
+		const GPlatesDataMining::ConfigurationTableRow &config_row = cfg_table[row];
+
+		const int row_num = co_reg_cfg_table_widget->rowCount();
+		co_reg_cfg_table_widget->insertRow(row_num);
+
+		// The target layer and type.
+		const GPlatesAppLogic::Layer target_layer = config_row.target_layer;
+		const GPlatesAppLogic::LayerTaskType::Type target_layer_type = target_layer.get_type();
+
+		// Association name column
+		co_reg_cfg_table_widget->setItem(
+				row_num,
+				ASSOCIATION_NAME,
+				new QTableWidgetItem(config_row.assoc_name));
+		
+		// Layer Name column
+		LayerTableItem* layer_name_item = 
+			new LayerTableItem(
+					target_layer,
+					config_row.layer_name);
+		layer_name_item->setFlags(layer_name_item->flags() & ~Qt::ItemIsEditable);
+		co_reg_cfg_table_widget->setItem(
+				row_num,
+				LAYER_NAME,
+				layer_name_item);
+
+		// Association Type column
+		QComboBox* association_combo = new QComboBox();       
+		// Currently this is always "Region of Interest" even when the optimised version of it
+		// (the seed self filter) is used.
+		setup_association_type_combobox(association_combo);
+		co_reg_cfg_table_widget->setCellWidget(
+				row_num, 
+				FILTER_TYPE, 
+				association_combo);
+		QObject::connect(
+				association_combo, SIGNAL(currentIndexChanged(int)),
+				this, SLOT(update_cfg_table()));
+
+		// Attribute Name column 
+		AttributeTableItem * attr_name_item =
+			new AttributeTableItem(
+					config_row.attr_name,
+					config_row.attr_type);
+		attr_name_item->setFlags(attr_name_item->flags() & ~Qt::ItemIsEditable);
+		co_reg_cfg_table_widget->setItem(
+				row_num,
+				ATTRIBUTE_NAME,
+				attr_name_item);
+
+		// Range column
+		QDoubleSpinBox* ROI_range_spinbox = new QDoubleSpinBox();
+		ROI_range_spinbox->setRange(0,25000);
+		if (const GPlatesDataMining::RegionOfInterestFilter::Config *range_config =
+			dynamic_cast<const GPlatesDataMining::RegionOfInterestFilter::Config *>(config_row.filter_cfg.get()))
+		{
+			ROI_range_spinbox->setValue(range_config->range());
+		}
+		else
+		{
+			ROI_range_spinbox->setValue(0);
+		}
+		co_reg_cfg_table_widget->setCellWidget(
+				row_num,
+				RANGE,
+				ROI_range_spinbox);
+		QObject::connect(
+				ROI_range_spinbox, SIGNAL(valueChanged(double)),
+				this, SLOT(update_cfg_table()));
+
+		// Reducer operation column
+		QComboBox* reducer_combo = new QComboBox();
+		// Set up the reducer combo box items.
+		if (config_row.attr_name == DISTANCE ||
+			config_row.attr_name == PRESENCE ||
+			config_row.attr_name == NUM_ROI)
+		{
+			setup_reducer_relational_combobox(
+					config_row.attr_name,
+					reducer_combo,
+					target_layer_type);
+		}
+		else
+		{
+			setup_reducer_non_relational_combobox(
+					config_row.attr_name,
+					reducer_combo,
+					target_layer_type);
+		}
+		// Select the combo box item associated with the current config row.
+		for (int r = 0; r < reducer_combo->count(); ++r)
+		{
+			const GPlatesDataMining::ReducerType reducer_operation = 
+				static_cast<GPlatesDataMining::ReducerType>(
+						reducer_combo->itemData(r).toUInt());
+			if (reducer_operation == config_row.reducer_type)
+			{
+				reducer_combo->setCurrentIndex(r);
+				break;
+			}
+		}
+		co_reg_cfg_table_widget->setCellWidget(
+				row_num,
+				REDUCER,
+				reducer_combo);
+		QObject::connect(
+				reducer_combo, SIGNAL(currentIndexChanged(int)),
+				this, SLOT(update_cfg_table()));
+
+		// If it's a raster target layer then it uses extra raster-only columns.
+		if (target_layer_type == GPlatesAppLogic::LayerTaskType::RASTER)
+		{
+			// Raster level-of-detail column.
+			std::auto_ptr<QComboBox> raster_level_of_detail_combo_box(new QComboBox());
+
+			// Only add the combo box if we were able to determine the number of raster levels of detail.
+			if (setup_raster_level_of_detail_combo_box(
+					raster_level_of_detail_combo_box.get(),
+					target_layer,
+					config_row.attr_name))
+			{
+				const int raster_level_of_detail = config_row.raster_level_of_detail;
+				if (raster_level_of_detail < raster_level_of_detail_combo_box->count())
+				{
+					raster_level_of_detail_combo_box->setCurrentIndex(raster_level_of_detail);
+				}
+				co_reg_cfg_table_widget->setCellWidget(
+						row_num,
+						RASTER_LEVEL_OF_DETAIL,
+						raster_level_of_detail_combo_box.release());
+			}
+
+			// Raster fill polygons column.
+			QCheckBox *raster_fill_polygons_check_box = new QCheckBox();
+			co_reg_cfg_table_widget->setCellWidget(
+					row_num,
+					RASTER_FILL_POLYGONS,
+					raster_fill_polygons_check_box);
+			raster_fill_polygons_check_box->setChecked(config_row.raster_fill_polygons);
+		}
+	}
+
+	// Re-connect signals after modifying config table widget.
+	QObject::connect(
+			co_reg_cfg_table_widget, SIGNAL(cellChanged(int, int)),
+			this, SLOT(cfg_table_cell_changed(int,int)));
 }
 
 

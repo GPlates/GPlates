@@ -453,7 +453,7 @@ export_local_cartesian()
 					"A local cartesian coordinate system located at a point on the sphere.\n"
 					"\n"
 					"Conversions between global *geocentric* cartesian and local cartesian "
-					"*North/East/Down* coordinates is supported.\n"
+					"*North/East/Down* coordinates are supported.\n"
 					"\n"
 					"| Also the *spherical* coordinates equivalent of local cartesian coordinates is "
 					"  supported as the triplet *(magnitude, azimuth, inclination)* that is related "
@@ -772,7 +772,7 @@ export_local_cartesian()
 				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
 				// (like it can a pure python function) and we cannot document it in first (signature) line
 				// because it messes up Sphinx's signature recognition...
-				"[*staticmethod*] Converts a geocentric vectors (or vectors) to spherical coordinates in a "
+				"[*staticmethod*] Converts a geocentric vector (or vectors) to spherical coordinates in a "
 				"local North/East/Down coordinate system (or systems).\n"
 				"\n"
 				"This function can be called in more than one way...\n"

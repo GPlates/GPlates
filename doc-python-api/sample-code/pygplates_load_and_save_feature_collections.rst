@@ -3,7 +3,7 @@
 Load and save feature collections
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example shows how to load feature data that is already in a file format that *pygplates*
+This example shows how to load feature data that is already in a file format that pyGPlates
 can load. If this is not the case then the feature data first needs to be
 :ref:`imported<pygplates_import_geometries_and_assign_plate_ids>`.
 

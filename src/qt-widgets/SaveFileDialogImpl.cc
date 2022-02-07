@@ -79,10 +79,10 @@ GPlatesQtWidgets::SaveFileDialogInternals::NativeSaveFileDialog::NativeSaveFileD
 		QWidget *parent_,
 		const QString &caption,
 		const filter_list_type &filters,
-		GPlatesPresentation::ViewState &view_state) :
+		GPlatesGui::DirectoryConfiguration &directory_configuration) :
 	d_parent_ptr(parent_),
 	d_caption(caption),
-	d_view_state(view_state)
+	d_directory_configuration(directory_configuration)
 {
 	set_filters(filters);
 }
@@ -104,7 +104,7 @@ GPlatesQtWidgets::SaveFileDialogInternals::NativeSaveFileDialog::get_file_name(
 			d_parent_ptr,
 			d_caption,
 			d_last_file_name.isEmpty()
-				? d_view_state.get_last_open_directory()
+				? d_directory_configuration.last_used_directory()
 				: d_last_file_name,
 			d_filters,
 			&temp_selected_filter);
@@ -115,7 +115,7 @@ GPlatesQtWidgets::SaveFileDialogInternals::NativeSaveFileDialog::get_file_name(
 	}
 
 	d_last_file_name = filename;
-	d_view_state.get_last_open_directory() = QFileInfo(filename).path();
+	d_directory_configuration.update_last_used_directory(QFileInfo(filename).path());
 	if (selected_filter)
 	{
 		*selected_filter = temp_selected_filter;
@@ -152,12 +152,12 @@ GPlatesQtWidgets::SaveFileDialogInternals::QtSaveFileDialog::QtSaveFileDialog(
 		QWidget *parent_,
 		const QString &caption,
 		const filter_list_type &filters,
-		GPlatesPresentation::ViewState &view_state) :
-	d_view_state(view_state),
+		GPlatesGui::DirectoryConfiguration &directory_configuration) :
 	d_file_dialog_ptr(
 			new QFileDialog(
 				parent_,
-				caption))
+				caption)),
+	d_directory_configuration(directory_configuration)
 {
 	d_file_dialog_ptr->setFileMode(QFileDialog::AnyFile);
 	d_file_dialog_ptr->setAcceptMode(QFileDialog::AcceptSave);
@@ -184,7 +184,7 @@ GPlatesQtWidgets::SaveFileDialogInternals::QtSaveFileDialog::get_file_name(
 	// If no file currently selected, use the last open directory.
 	if (!QFileInfo(d_file_dialog_ptr->selectedFiles().front()).isFile())
 	{
-		d_file_dialog_ptr->setDirectory(d_view_state.get_last_open_directory());
+		d_file_dialog_ptr->setDirectory(d_directory_configuration.last_used_directory());
 	}
 
 	if (!d_file_dialog_ptr->exec())
@@ -199,7 +199,7 @@ GPlatesQtWidgets::SaveFileDialogInternals::QtSaveFileDialog::get_file_name(
 		return boost::none;
 	}
 
-	d_view_state.get_last_open_directory() = QFileInfo(filename).path();
+	d_directory_configuration.update_last_used_directory(QFileInfo(filename).path());
 	if (selected_filter)
 	{
 		*selected_filter = d_file_dialog_ptr->selectedNameFilter();

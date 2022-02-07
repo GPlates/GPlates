@@ -108,8 +108,6 @@ set(srcs
     GpmlTopologicalSection.h
     OldVersionPropertyValue.cc
     OldVersionPropertyValue.h
-    PropertyValues.cc
-    PropertyValues.h
     ProxiedRasterCache.cc
     ProxiedRasterCache.h
     ProxiedRasterResolver.cc
@@ -121,6 +119,7 @@ set(srcs
     RawRaster.h
     RawRasterUtils.cc
     RawRasterUtils.h
+    ScalarCoverageStatistics.h
     SpatialReferenceSystem.cc
     SpatialReferenceSystem.h
     StructuralType.h

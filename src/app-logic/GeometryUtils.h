@@ -86,17 +86,31 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Returns the number of points in the specified geometry.
+		 *
+		 * If @a geometry_on_sphere is a polygon then both its *exterior* ring and *interior* ring
+		 * points are counted.
 		 */
 		unsigned int
 		get_num_geometry_points(
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
+
+		/**
+		 * Returns the number of points in the specified geometry.
+		 *
+		 * If @a geometry_on_sphere is a polygon then only its *exterior* ring points are counted.
+		 */
+		unsigned int
+		get_num_geometry_exterior_points(
 				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
 
 
 		/**
 		 * Copies the @a PointOnSphere points from @a geometry_on_sphere to the @a points array.
 		 *
-		 * Does not clear @a points - just appends whatever points it
-		 * finds in @a geometry_on_sphere.
+		 * If @a geometry_on_sphere is a polygon then both its *exterior* ring and *interior* ring
+		 * points are copied.
+		 *
+		 * Does not clear @a points - just appends whatever points it finds in @a geometry_on_sphere.
 		 *
 		 * If @a reverse_points is true then the order of the points in @a geometry_on_sphere
 		 * are reversed before appending to @a points.
@@ -109,20 +123,30 @@ namespace GPlatesAppLogic
 				std::vector<GPlatesMaths::PointOnSphere> &points,
 				bool reverse_points = false);
 
+		/**
+		 * Same as @a get_geometry_points except, if @a geometry_on_sphere is a polygon then only
+		 * its *exterior* ring points are copied.
+		 */
+		GPlatesMaths::GeometryType::Value
+		get_geometry_exterior_points(
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
+				std::vector<GPlatesMaths::PointOnSphere> &points,
+				bool reverse_points = false);
 
 		/**
 		 * Returns the end points of @a geometry_on_sphere.
 		 *
-		 * If @a reverse_points is true then the order of the returned end points
-		 * is reversed.
+		 * If @a geometry_on_sphere is a polygon then only the *exterior* ring is considered.
 		 *
-		 * This is faster than calling @a get_geometry_points and then picking out the
+		 * If @a reverse_points is true then the order of the returned end points is reversed.
+		 *
+		 * This is faster than calling @a get_geometry_exterior_points and then picking out the
 		 * first and last points as it doesn't retrieve all the points.
 		 */
 		std::pair<
 				GPlatesMaths::PointOnSphere/*start point*/,
 				GPlatesMaths::PointOnSphere/*end point*/>
-		get_geometry_end_points(
+		get_geometry_exterior_end_points(
 				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
 				bool reverse_points = false);
 
@@ -141,10 +165,14 @@ namespace GPlatesAppLogic
 		/**
 		 * Converts the specified geometry to a @a MultiPointOnSphere by treating storing the
 		 * geometry points as a multi-point.
+		 *
+		 * If @a include_polygon_interior_ring_points is true (default) and the geometry is a
+		 * polygon then the points in its interior rings (if any) are added to the multi-point.
 		 */
 		GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type
 		convert_geometry_to_multi_point(
-				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
+				bool include_polygon_interior_ring_points = true);
 
 
 		/**
@@ -153,15 +181,21 @@ namespace GPlatesAppLogic
 		 *
 		 * Returns boost::none if the specified geometry has less than two points
 		 * (ie, not enough to form a polyline) or the specified geometry is a point geometry.
+		 * If @a exclude_polygons_with_interior_rings is true (default) and the geometry is a
+		 * polygon with interior rings then returns boost::none (since it is not obvious how to
+		 * create a polyline from multiple rings). If it is false then only the exterior ring
+		 * is converted to a polyline (the interior rings are ignored).
 		 */
 		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type>
 		convert_geometry_to_polyline(
-				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere);
+				const GPlatesMaths::GeometryOnSphere &geometry_on_sphere,
+				bool exclude_polygons_with_interior_rings = true);
 
 
 		/**
-		 * Same as @a convert_geometry_to_polyline except, if geometry has less than two points then,
-		 * duplicates last point.
+		 * Same as @a convert_geometry_to_polyline except, if geometry has less than two points then
+		 * duplicates last point, or if geometry is a polygon then only the exterior ring is
+		 * converted to a polyline (the interior rings are ignored).
 		 *
 		 * This turns a point (or multi-point containing a single point) into a polyline with
 		 * two identical vertices.
@@ -204,7 +238,8 @@ namespace GPlatesAppLogic
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type
 		convert_polygon_to_oriented_polygon(
 				const GPlatesMaths::PolygonOnSphere &polygon_on_sphere,
-				GPlatesMaths::PolygonOrientation::Orientation polygon_orientation);
+				GPlatesMaths::PolygonOrientation::Orientation polygon_orientation,
+				bool ensure_interior_ring_orientation_opposite_to_exterior_ring = true);
 
 
 		/**
@@ -216,7 +251,8 @@ namespace GPlatesAppLogic
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
 		convert_geometry_to_oriented_geometry(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &geometry,
-				GPlatesMaths::PolygonOrientation::Orientation polygon_orientation);
+				GPlatesMaths::PolygonOrientation::Orientation polygon_orientation,
+				bool ensure_interior_ring_orientation_opposite_to_exterior_ring = true);
 
 
 		/**

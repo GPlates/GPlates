@@ -232,12 +232,9 @@ namespace
 		{ GPlatesFileIO::ReadErrors::InvalidPointsInPolygon,
 				QT_TR_NOOP("Invalid points in polygon"),
 				QT_TR_NOOP("The points of the polygon are invalid (No specific error message is available).") },
-		{ GPlatesFileIO::ReadErrors::InvalidPolygonEndPoint,
-				QT_TR_NOOP("Invalid polygon end point"),
-				QT_TR_NOOP("GML Polygons' terminating point must be identical to their starting point.") },
 		{ GPlatesFileIO::ReadErrors::InsufficientPointsInPolygon,
 				QT_TR_NOOP("Insufficient points in polygon"),
-				QT_TR_NOOP("GML Polygons must be defined with at least four points (which includes the identical start and end point).") },
+				QT_TR_NOOP("Polygons must be defined with at least three points.") },
 		{ GPlatesFileIO::ReadErrors::InsufficientDistinctPointsInPolygon,
 				QT_TR_NOOP("Insufficient distinct points in polygon"),
 				QT_TR_NOOP("Polygons must be defined with at least three distinct points.") },
@@ -274,9 +271,6 @@ namespace
 		{ GPlatesFileIO::ReadErrors::UnexpectedPropertyStructuralElement,
 				QT_TR_NOOP("Expected property structural element not found"),
 				QT_TR_NOOP("A property's structural element was found, but was not one of its expected structural types.") },
-		{ GPlatesFileIO::ReadErrors::PropertyNameNotRecognisedInFeatureType,
-				QT_TR_NOOP("Property name does not belong to the feature type"),
-				QT_TR_NOOP("A property name was found, but was not in the list of names associated with the feature's type.") },
 		{ GPlatesFileIO::ReadErrors::PropertyNameNotRecognisedInFeatureType,
 				QT_TR_NOOP("Property name does not belong to the feature type"),
 				QT_TR_NOOP("A property name was found, but was not in the list of names associated with the feature's type.") },
@@ -332,6 +326,9 @@ namespace
 				QT_TR_NOOP("The number of value components in range parameters does not match the number of lists in tuple.") },
 
 		// The following descriptions are related to ESRI shapefiles and other OGR-supported vector formats:
+		{ GPlatesFileIO::ReadErrors::ErrorReadingVectorFile,
+				QT_TR_NOOP("Error reading vector file."),
+				QT_TR_NOOP("An error was encountered while opening a vector file for reading.") },
 		{ GPlatesFileIO::ReadErrors::NoLayersFoundInFile,
 				QT_TR_NOOP("No layers found."),
 				QT_TR_NOOP("No layers were found in the shapefile.") },
@@ -404,6 +401,12 @@ namespace
 		{ GPlatesFileIO::ReadErrors::InvalidShapefileReconstructionMethod,
 				QT_TR_NOOP("Invalid reconstruction method."),
 				QT_TR_NOOP("An invalid reconstruction method was found.") },
+		{ GPlatesFileIO::ReadErrors::InvalidShapefileSpreadingAsymmetry,
+				QT_TR_NOOP("Invalid spreading asymmetry."),
+				QT_TR_NOOP("An invalid spreading asymmetry was found.") },
+		{ GPlatesFileIO::ReadErrors::InvalidShapefileGeometryImportTime,
+				QT_TR_NOOP("Invalid geometry import time."),
+				QT_TR_NOOP("An invalid geometry import time was found.") },
 		{ GPlatesFileIO::ReadErrors::UnableToMatchOgrGeometryWithFeature,
 				QT_TR_NOOP("Unable to match OGR geometry with feature."),
 				QT_TR_NOOP("The OGR geometry type is not compatible with the feature type.") },
@@ -485,20 +488,31 @@ namespace
 		{ GPlatesFileIO::ReadErrors::PatternFillInLine,
 				QT_TR_NOOP("Pattern fill in line."),
 				QT_TR_NOOP("Pattern fills are not supported.") },
-		{ GPlatesFileIO::ReadErrors::MissingLabelSemiColon,
-				QT_TR_NOOP("No semi-colon before label."),
-				QT_TR_NOOP("A label in a CPT file must start with a semi-colon.") },
+
+		//Errors relating to Hellinger-fit files.
+		{ GPlatesFileIO::ReadErrors::InvalidHellingerComFileFormat,
+				QT_TR_NOOP("Invalid Hellinger .com file format."),
+				QT_TR_NOOP("The format of the Hellinger .com was not as expected.")	},
+		{ GPlatesFileIO::ReadErrors::HellingerPickFormatError,
+				QT_TR_NOOP("Hellinger pick format error."),
+				QT_TR_NOOP("The format of a Hellinger pick was not as expected.") },
 
 		// Generic file-related error descriptions:
 		{ GPlatesFileIO::ReadErrors::ErrorOpeningFileForReading,
 				QT_TR_NOOP("Error opening file."),
 				QT_TR_NOOP("Error opening the file for reading.") },
+		{ GPlatesFileIO::ReadErrors::FileFormatNotSupported,
+				QT_TR_NOOP("File format not supported."),
+				QT_TR_NOOP("Loading files in this format is currently not supported.") },
 		{ GPlatesFileIO::ReadErrors::FileIsEmpty,
 				QT_TR_NOOP("File is empty."),
 				QT_TR_NOOP("The file contains no data.") },
 		{ GPlatesFileIO::ReadErrors::NoFeaturesFoundInFile,
 				QT_TR_NOOP("No features in file."),
-				QT_TR_NOOP("The file contains no features.") }
+				QT_TR_NOOP("The file contains no features.") },
+		{ GPlatesFileIO::ReadErrors::ErrorReadingFile,
+				QT_TR_NOOP("Error reading file."),
+				QT_TR_NOOP("The was an error reading the file.") }
 	};
 	
 	/**
@@ -545,8 +559,6 @@ namespace
 				QT_TR_NOOP("The type of time-dependent property wrapper was changed.") },
 		{ GPlatesFileIO::ReadErrors::PropertyNotInterpreted,
 				QT_TR_NOOP("The property was not interpreted.") },
-		{ GPlatesFileIO::ReadErrors::FeatureNotInterpreted,
-				QT_TR_NOOP("The feature was not interpreted.") },
 		{ GPlatesFileIO::ReadErrors::AttributesIgnored,
 				QT_TR_NOOP("The attributes were ignored.") },
 
@@ -589,6 +601,12 @@ namespace
 		// The following apply to GMT CPT files
 		{ GPlatesFileIO::ReadErrors::CptLineIgnored,
 				QT_TR_NOOP("CPT line was ignored.") },
+
+		//Errors relating to Hellinger-fit files.
+		{ GPlatesFileIO::ReadErrors::HellingerComFileNotImported,
+				QT_TR_NOOP("The .com file was not imported.") },
+		{ GPlatesFileIO::ReadErrors::HellingerPickIgnored,
+				QT_TR_NOOP("The pick was ignored.") },
 
 		// Generic file-related errors:
 		{ GPlatesFileIO::ReadErrors::FileNotLoaded,

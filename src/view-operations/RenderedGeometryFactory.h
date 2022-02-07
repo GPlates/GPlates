@@ -38,8 +38,9 @@
 #include "RenderedColouredTriangleSurfaceMesh.h"
 #include "RenderedRadialArrow.h"
 
-#include "app-logic/AppLogicFwd.h"
 #include "app-logic/ReconstructionGeometry.h"
+#include "app-logic/ResolvedScalarField3D.h"
+#include "app-logic/ResolvedRaster.h"
 
 #include "gui/Colour.h"
 #include "gui/ColourPalette.h"
@@ -132,7 +133,9 @@ namespace GPlatesViewOperations
 		 * Creates a @a RenderedGeometry for a @a GeometryOnSphere.
 		 *
 		 * Both @a point_size_hint and @a line_width_hint are needed since
-		 * the caller may not know what type of geometry it passed us. 
+		 * the caller may not know what type of geometry it passed us.
+		 *
+		 * Note that @a symbol only applies to @a PointOnSphere geometries.
 		 */
 		RenderedGeometry
 		create_rendered_geometry_on_sphere(
@@ -201,6 +204,57 @@ namespace GPlatesViewOperations
 				bool filled = false,
 				const GPlatesGui::Colour &fill_modulate_colour = DEFAULT_COLOUR);
 
+
+		/**
+		 * Creates a @a RenderedGeometry for a @a GeometryOnSphere with per-point colouring.
+		 *
+		 * Both @a point_size_hint and @a line_width_hint are needed since
+		 * the caller may not know what type of geometry it passed us.
+		 *
+		 * Note that @a symbol only applies to @a PointOnSphere geometries.
+		 */
+		RenderedGeometry
+		create_rendered_coloured_geometry_on_sphere(
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type,
+				const std::vector<GPlatesGui::ColourProxy> &point_colours,
+				float point_size_hint = DEFAULT_POINT_SIZE_HINT,
+				float line_width_hint = DEFAULT_LINE_WIDTH_HINT,
+				const boost::optional<GPlatesGui::Symbol> &symbol = boost::none);
+
+		/**
+		 * Creates a @a RenderedGeometry for a @a MultiPointOnSphere with per-point colouring.
+		 *
+		 * NOTE: The number of multipoint points must match the number of colours.
+		 */
+		RenderedGeometry
+		create_rendered_coloured_multi_point_on_sphere(
+				GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type,
+				const std::vector<GPlatesGui::ColourProxy> &point_colours,
+				float point_size_hint = DEFAULT_POINT_SIZE_HINT);
+
+		/**
+		 * Creates a @a RenderedGeometry for a @a PolylineOnSphere with per-point colouring.
+		 *
+		 * NOTE: The number of polyline points must match the number of colours.
+		 */
+		RenderedGeometry
+		create_rendered_coloured_polyline_on_sphere(
+				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
+				const std::vector<GPlatesGui::ColourProxy> &point_colours,
+				float line_width_hint = DEFAULT_LINE_WIDTH_HINT);
+
+		/**
+		 * Creates a @a RenderedGeometry for a @a PolygonOnSphere with per-point colouring.
+		 *
+		 * NOTE: The number of points in the *exterior* ring of polygon must match the number of colours.
+		 */
+		RenderedGeometry
+		create_rendered_coloured_polygon_on_sphere(
+				GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type,
+				const std::vector<GPlatesGui::ColourProxy> &point_colours,
+				float line_width_hint = DEFAULT_LINE_WIDTH_HINT);
+
+
 		/**
 		 * Creates a @a RenderedGeometry for a coloured edge surface mesh.
 		 */
@@ -208,6 +262,8 @@ namespace GPlatesViewOperations
 		create_rendered_coloured_edge_surface_mesh(
 				const RenderedColouredEdgeSurfaceMesh::edge_seq_type &mesh_edges,
 				const RenderedColouredEdgeSurfaceMesh::vertex_seq_type &mesh_vertices,
+				const RenderedColouredEdgeSurfaceMesh::colour_seq_type &mesh_colours,
+				bool use_vertex_colours,
 				float line_width_hint = DEFAULT_LINE_WIDTH_HINT);
 
 		/**
@@ -216,14 +272,17 @@ namespace GPlatesViewOperations
 		RenderedGeometry
 		create_rendered_coloured_triangle_surface_mesh(
 				const RenderedColouredTriangleSurfaceMesh::triangle_seq_type &mesh_triangles,
-				const RenderedColouredTriangleSurfaceMesh::vertex_seq_type &mesh_vertices);
+				const RenderedColouredTriangleSurfaceMesh::vertex_seq_type &mesh_vertices,
+				const RenderedColouredTriangleSurfaceMesh::colour_seq_type &mesh_colours,
+				bool use_vertex_colours,
+				const GPlatesGui::Colour &fill_modulate_colour = DEFAULT_COLOUR);
 
 		/**
 		 * Creates a @a RenderedGeometry for a resolved raster.
 		 */
 		RenderedGeometry
 		create_rendered_resolved_raster(
-				const GPlatesAppLogic::resolved_raster_non_null_ptr_to_const_type &resolved_raster,
+				const GPlatesAppLogic::ResolvedRaster::non_null_ptr_to_const_type &resolved_raster,
 				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &raster_colour_palette,
 				const GPlatesGui::Colour &raster_modulate_colour = GPlatesGui::Colour::get_white(),
 				float normal_map_height_field_scale_factor = 1);
@@ -233,7 +292,7 @@ namespace GPlatesViewOperations
 		 */
 		RenderedGeometry
 		create_rendered_resolved_scalar_field_3d(
-				const GPlatesAppLogic::resolved_scalar_field_3d_non_null_ptr_to_const_type &resolved_scalar_field,
+				const GPlatesAppLogic::ResolvedScalarField3D::non_null_ptr_to_const_type &resolved_scalar_field,
 				const ScalarField3DRenderParameters &scalar_field_render_parameters);
 
 		/**
@@ -412,6 +471,20 @@ namespace GPlatesViewOperations
 
 
 		/**
+		* Creates a symbol defined by @a symbol that is centred at @a centre.
+		*
+		* Symbol will be rendered on a tangent plane at the centre.
+		*
+		* @a line_width_hint is used if symbol contains any lines (eg, cross symbol).
+		*/
+		RenderedGeometry
+		create_rendered_symbol(
+				const GPlatesMaths::PointOnSphere &centre,
+				const GPlatesGui::Symbol &symbol,
+				const GPlatesGui::ColourProxy &colour = DEFAULT_COLOUR,
+				float line_width_hint = DEFAULT_LINE_WIDTH_HINT);
+
+		/**
 		* Creates a triangle centred at @a centre. Triangle will
 		* be rendered on a tangent plane at the centre.
 		*/
@@ -464,9 +537,7 @@ namespace GPlatesViewOperations
 		RenderedGeometry
 		create_rendered_strain_marker_symbol(
 				const GPlatesMaths::PointOnSphere &centre,
-				const GPlatesGui::ColourProxy &colour = DEFAULT_COLOUR,
 				const unsigned int size = DEFAULT_SYMBOL_SIZE,
-				const float line_width_hint = DEFAULT_LINE_WIDTH_HINT,
 				const double scale_x = 0,
 				const double scale_y = 0,
 				const double angle = 0);

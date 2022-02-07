@@ -33,8 +33,15 @@
 #include <boost/scoped_ptr.hpp>
 #include <QWidget>
 
+#include "gui/FileIODirectoryConfigurations.h"
+#include "presentation/ViewState.h"
 #include "FileDialogFilter.h"
+#include "PreferencesPaneFiles.h"
 
+namespace GPlatesGui
+{
+	class DirectoryConfiguration;
+}
 
 namespace GPlatesPresentation
 {
@@ -87,6 +94,23 @@ namespace GPlatesQtWidgets
 				GPlatesPresentation::ViewState &view_state);
 
 		/**
+		 * Constructs a SaveFileDialog.
+		 *
+		 * NOTE: This class is not derived from QObject. You will need to manage this
+		 * object's lifetime yourself; it is not automatically destroyed by @a parent.
+		 *
+		 * @param parent The parent window for the dialog box.
+		 * @param caption The dialog box's caption.
+		 * @param filters A vector of filter descriptions
+		 */
+		explicit
+		SaveFileDialog(
+				QWidget *parent,
+				const QString &caption,
+				const filter_list_type &filters,
+				GPlatesGui::DirectoryConfiguration &configuration);
+
+		/**
 		 * Gets a file name from the user.
 		 * @param selected_filter If not NULL, the full text of the selected filter is
 		 * returned in this variable. This is useful if there are multiple filters
@@ -116,6 +140,7 @@ namespace GPlatesQtWidgets
 	private:
 
 		boost::scoped_ptr<SaveFileDialogInternals::SaveFileDialogImpl> d_impl;
+
 	};
 }
 

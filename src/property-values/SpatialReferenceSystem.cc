@@ -78,6 +78,12 @@ GPlatesPropertyValues::SpatialReferenceSystem::is_projected() const
 	return d_ogr_srs->IsProjected();
 }
 
+bool
+GPlatesPropertyValues::SpatialReferenceSystem::is_wgs84() const
+{
+	return d_ogr_srs->IsSame(&(get_WGS84()->get_ogr_srs()));
+}
+
 
 void
 GPlatesPropertyValues::SpatialReferenceSystem::OGRSpatialReferenceDeleter::operator()(

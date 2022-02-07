@@ -607,5 +607,5 @@ GPlatesQtWidgets::GenerateVelocityDomainLatLonDialog::save_velocity_domain_file(
 	// Save the feature collection to a file that is registered with
 	// FeatureCollectionFileState (maintains list of all loaded files).
 	// This will pop up an error dialog if there's an error.
-	return d_main_window.file_io_feedback().create_file(new_file);
+	return static_cast<bool>(d_main_window.file_io_feedback().create_file(new_file));
 }

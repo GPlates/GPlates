@@ -609,7 +609,7 @@ GPlatesGui::ExternalSyncController::connect_message_signals()
 
     QObject::connect(
 	    d_animation_controller_ptr,
-	    SIGNAL(send_time_to_stdout(double)),
+	    SIGNAL(view_time_changed(double)),
 	    this,
 	    SLOT(send_external_time_command(double)));
 

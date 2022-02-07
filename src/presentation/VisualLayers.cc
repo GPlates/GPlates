@@ -182,6 +182,34 @@ GPlatesPresentation::VisualLayers::order_end() const
 	return d_layer_order.end();
 }
 
+void
+GPlatesPresentation::VisualLayers::show_all()
+{
+	for (unsigned int n = 0; n < size() ; ++n)
+	{
+		boost::shared_ptr<GPlatesPresentation::VisualLayer> visual_layer =
+				visual_layer_at(n).lock();
+		if (visual_layer)
+		{
+			visual_layer->set_visible(true);
+		}
+	}
+}
+
+void
+GPlatesPresentation::VisualLayers::hide_all()
+{
+	for (unsigned int n = 0; n < size() ; ++n)
+	{
+		boost::shared_ptr<GPlatesPresentation::VisualLayer> visual_layer =
+				visual_layer_at(n).lock();
+		if (visual_layer)
+		{
+			visual_layer->set_visible(false);
+		}
+	}
+}
+
 
 const GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type &
 GPlatesPresentation::VisualLayers::get_layer_order() const
@@ -249,6 +277,17 @@ GPlatesPresentation::VisualLayers::make_signal_slot_connections()
 					GPlatesAppLogic::ReconstructGraph &,
 					GPlatesAppLogic::Layer,
 					bool)));
+	QObject::connect(
+			reconstruct_graph,
+			SIGNAL(layer_params_changed(
+					GPlatesAppLogic::ReconstructGraph &,
+					GPlatesAppLogic::Layer,
+					GPlatesAppLogic::LayerParams &)),
+			this,
+			SLOT(handle_layer_params_changed(
+					GPlatesAppLogic::ReconstructGraph &,
+					GPlatesAppLogic::Layer,
+					GPlatesAppLogic::LayerParams &)));
 	QObject::connect(
 			reconstruct_graph,
 			SIGNAL(layer_added_input_connection(
@@ -509,8 +548,7 @@ GPlatesPresentation::VisualLayers::create_rendered_geometries()
 	{
 		const visual_layer_ptr_type &visual_layer = visual_layer_map_entry.second;
 
-		visual_layer->create_rendered_geometries(
-			    d_view_state.get_feature_type_symbol_map());
+		visual_layer->create_rendered_geometries();
 	}
 }
 
@@ -527,6 +565,7 @@ GPlatesPresentation::VisualLayers::create_visual_layer(
 				layer,
 				d_rendered_geometry_collection,
 				d_view_state.get_rendered_geometry_parameters(),
+				d_view_state.get_feature_type_symbol_map(),
 				d_next_visual_layer_number));
 
 	++d_next_visual_layer_number;
@@ -624,6 +663,19 @@ GPlatesPresentation::VisualLayers::handle_layer_activation_changed(
 		GPlatesAppLogic::Layer layer,
 		bool activation)
 {
+	handle_layer_modified(layer);
+}
+
+
+void
+GPlatesPresentation::VisualLayers::handle_layer_params_changed(
+		GPlatesAppLogic::ReconstructGraph &reconstruct_graph,
+		GPlatesAppLogic::Layer layer,
+		GPlatesAppLogic::LayerParams &layer_params)
+{
+	// First notify the visual layer parameters (in case they depend on the app-logic layer params).
+	// Then refresh the layer (in case layer options widget needs changing).
+	notify_visual_layer_params(layer);
 	handle_layer_modified(layer);
 }
 

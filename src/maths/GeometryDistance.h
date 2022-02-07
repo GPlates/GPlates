@@ -87,7 +87,7 @@ namespace GPlatesMaths
 	 * references (unless the threshold is exceeded, if specified).
 	 * Note that for PointOnSphere geometries the index will always be zero.
 	 * The point indices can be used with MultiPointOnSphere::get_point().
-	 * The segment indices can be used with PolylineOnSphere::get_segment() or PolygonOnSphere::get_segment().
+	 * The segment indices can be used with PolylineOnSphere::get_segment() or PolygonOnSphere::get_exterior_ring_segment().
 	 * Note that if @a geometry1_interior_is_solid is true and @a geometry1 is a polygon and @a geometry2
 	 * is entirely inside the polygon (without intersecting its outline) then the threshold is not exceeded
 	 * and hence @a closest_indices (if specified) will always store indices.
@@ -199,7 +199,7 @@ namespace GPlatesMaths
 	 * If @a closest_segment_index_in_polygon is specified then the index of the closest segment
 	 * (great circle arc on which the closest point on polygon *outline* lies) in the polygon is
 	 * stored in the integer it references (unless the threshold is exceeded, if specified).
-	 * The index can be used with PolygonOnSphere::get_segment().
+	 * The index can be used with PolygonOnSphere::get_exterior_ring_segment().
 	 * Note that if @a polygon_interior_is_solid is true and the point is inside the polygon then
 	 * the threshold is not exceeded and hence @a closest_segment_index_in_polygon (if specified)
 	 * will always store the index of the closest segment in the polygon.
@@ -330,7 +330,7 @@ namespace GPlatesMaths
 	 * closest point on polygon *outline* lies) is stored in the integers it references (unless the
 	 * threshold is exceeded, if specified).
 	 * The multi-point index can be used with MultiPointOnSphere::get_point().
-	 * The polygon index can be used with PolygonOnSphere::get_segment().
+	 * The polygon index can be used with PolygonOnSphere::get_exterior_ring_segment().
 	 * Note that if @a polygon_interior_is_solid is true and any point is inside the polygon then
 	 * the threshold is not exceeded and hence @a closest_indices (if specified) will always store
 	 * the index of the closest point in the multi-point and the index of the closest segment on
@@ -462,7 +462,7 @@ namespace GPlatesMaths
 	 * The closest point on the polyline lies on the closest segment on the polyline.
 	 * The closest point on the polygon outline lies on the closest segment on the polygon outline.
 	 * The polyline segment index can be used with PolylineOnSphere::get_segment().
-	 * The polygon segment index can be used with PolygonOnSphere::get_segment().
+	 * The polygon segment index can be used with PolygonOnSphere::get_exterior_ring_segment().
 	 * Note that if @a polygon_interior_is_solid is true and the polyline is entirely inside the
 	 * polygon interior (without intersecting its outline) then the threshold is not exceeded and
 	 * hence @a closest_segment_indices (if specified) will always store the closest segment on the
@@ -576,7 +576,7 @@ namespace GPlatesMaths
 	 * If @a closest_segment_indices is specified then the index of the closest *segment* on each polygon
 	 * is stored in the integers it references (unless the threshold is exceeded, if specified).
 	 * The closest point on each polygon outline lies on the closest segment of each polygon.
-	 * The segment indices can be used with PolygonOnSphere::get_segment().
+	 * The segment indices can be used with PolygonOnSphere::get_exterior_ring_segment().
 	 * Note that if @a polygon1_interior_is_solid is true and @a polyline2 is entirely inside @a polygon1
 	 * (without intersecting its outline) then the threshold is not exceeded and hence @a closest_segment_indices
 	 * (if specified) will always store the closest segment on each polygon.

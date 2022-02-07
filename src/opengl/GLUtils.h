@@ -48,13 +48,16 @@ namespace GPlatesOpenGL
 	namespace GLUtils
 	{
 		/**
-		 * Asserts that no OpenGL errors (see glGetError) have been recorded.
+		 * Checks if any OpenGL errors (see glGetError) have been recorded (by OpenGL) since
+		 * the last call to this function.
 		 *
-		 * If an error is detected then this function aborts for debug builds and
-		 * throws @a OpenGLException (with the specific OpenGL error message) for release builds.
+		 * To avoid excessive calls to 'glGetError()', which may be slow on some systems,
+		 * this is currently only called when resources are created (eg, textures, etc).
+		 *
+		 * If an error is detected a warning is logged and, for debug builds only, the function aborts.
 		 */
 		void
-		assert_no_gl_errors(
+		check_gl_errors(
 				const GPlatesUtils::CallStack::Trace &assert_location);
 
 

@@ -57,16 +57,14 @@ namespace GPlatesFileIO
 
 
 		/**
-		 * How to write out each velocity vector.
-		 *
-		 * Note that this is not used by all velocity formats.
+		 * How to write out each velocity vector to GMT format.
 		 */
-		enum VelocityVectorFormatType
+		enum GMTVelocityVectorFormatType
 		{
-			VELOCITY_VECTOR_3D,
-			VELOCITY_VECTOR_COLAT_LON,
-			VELOCITY_VECTOR_MAGNITUDE_ANGLE,
-			VELOCITY_VECTOR_MAGNITUDE_AZIMUTH
+			GMT_VELOCITY_VECTOR_3D,
+			GMT_VELOCITY_VECTOR_COLAT_LON,
+			GMT_VELOCITY_VECTOR_ANGLE_MAGNITUDE,
+			GMT_VELOCITY_VECTOR_AZIMUTH_MAGNITUDE
 		};
 
 
@@ -106,7 +104,7 @@ namespace GPlatesFileIO
 		 * Note that GMT format provides a choice of how to output each velocity vector.
 		 *
 		 * Each line in the GMT file contains:
-		 *    [domain_point] [plate_id] velocity
+		 *    [domain_point] velocity [plate_id]
 		 * ...where 'domain_point' is position at which the velocity was calculated and 'plate_id'
 		 * is the plate id used to calculate the velocity (for topological networks the plate id
 		 * only identifies the network used to calculate the velocity).
@@ -138,7 +136,7 @@ namespace GPlatesFileIO
 				const std::vector<const File::Reference *> &active_files,
 				const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 				const double &reconstruction_time,
-				VelocityVectorFormatType velocity_vector_format,
+				GMTVelocityVectorFormatType velocity_vector_format,
 				double velocity_scale,
 				unsigned int velocity_stride,
 				bool domain_point_lon_lat_format,

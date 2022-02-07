@@ -29,6 +29,7 @@
 #include <list>
 #include <map>
 #include <boost/function.hpp>
+#include <boost/optional.hpp>
 #include <loki/ScopeGuard.h>
 
 #include "global/AssertionFailureException.h"
@@ -88,6 +89,16 @@ namespace GPlatesUtils
 
 
 		/**
+		 * Constructor that creates new value objects using the default constructor of ValueType.
+		 *
+		 * @throws @a PreconditionViolationError if @a maximum_num_values_in_cache is zero.
+		 */
+		explicit
+		KeyValueCache(
+				unsigned int maximum_num_values_in_cache);
+
+
+		/**
 		 * Sets the maximum number of values in the cache.
 		 *
 		 * If the current number of values exceeds the maximum then the least-recently used
@@ -121,6 +132,9 @@ namespace GPlatesUtils
 		 * Creates a new value object from the specified key if the object is not cached
 		 * (either because never previously requested from cache or because it was evicted).
 		 *
+		 * If @a new_value_created is specified then it signals whether a new value was returned or
+		 * an existing value.
+		 *
 		 * NOTE: If the least-recently used value is evicted (due to exceeding maximum number of
 		 * cached value objects) then it will be evicted *after* the new value is created.
 		 * This is beneficial for a few use cases where the new value depends (indirectly)
@@ -135,7 +149,8 @@ namespace GPlatesUtils
 		 */
 		value_type &
 		get_value(
-				const key_type &key);
+				const key_type &key,
+				boost::optional<bool &> new_value_created = boost::none);
 
 	private:
 		//! Typedef for this class.
@@ -179,6 +194,17 @@ namespace GPlatesUtils
 		unsigned int d_num_value_objects_in_cache;
 
 
+		/**
+		 * The @a create_value_object_function_type used when value objects are default constructed.
+		 */
+		static
+		value_type
+		default_create_value_object_function(
+				const key_type &)
+		{
+			return value_type();
+		}
+
 		void
 		remove_least_recently_used_value();
 	};
@@ -194,6 +220,19 @@ namespace GPlatesUtils
 			const create_value_object_function_type &create_value_object_function,
 			unsigned int maximum_num_values_in_cache) :
 		d_create_value_object_function(create_value_object_function),
+		d_maximum_num_value_objects_in_cache(maximum_num_values_in_cache),
+		d_num_value_objects_in_cache(0)
+	{
+		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+				maximum_num_values_in_cache > 0,
+				GPLATES_ASSERTION_SOURCE);
+	}
+
+	
+	template <typename KeyType, typename ValueType>
+	KeyValueCache<KeyType,ValueType>::KeyValueCache(
+			unsigned int maximum_num_values_in_cache) :
+		d_create_value_object_function(&default_create_value_object_function),
 		d_maximum_num_value_objects_in_cache(maximum_num_values_in_cache),
 		d_num_value_objects_in_cache(0)
 	{
@@ -246,7 +285,8 @@ namespace GPlatesUtils
 	template <typename KeyType, typename ValueType>
 	typename KeyValueCache<KeyType,ValueType>::value_type &
 	KeyValueCache<KeyType,ValueType>::get_value(
-			const key_type &key)
+			const key_type &key,
+			boost::optional<bool &> new_value_created)
 	{
 		// See if 'key' is in the cache.
 		std::pair<typename key_value_map_type::iterator, bool> key_value_insert_result =
@@ -254,6 +294,12 @@ namespace GPlatesUtils
 						typename key_value_map_type::value_type(
 								key,
 								d_value_objects.end()/*dummy iterator*/));
+
+		// Let caller know if a new value was created (if requested).
+		if (new_value_created)
+		{
+			new_value_created.get() = key_value_insert_result.second;
+		}
 
 		// If the key exists in the map (ie, was *not* inserted) then return the associated value object.
 		if (!key_value_insert_result.second)

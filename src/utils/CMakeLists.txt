@@ -41,6 +41,7 @@ set(srcs
     GeometryCreationUtils.h
     GetPropertyAsPythonObjVisitor.cc
     GetPropertyAsPythonObjVisitor.h
+    HasFunction.h
     IdStringSet.cc
     IdStringSet.h
     IntrusiveSinglyLinkedList.h

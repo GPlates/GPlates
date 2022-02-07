@@ -23,11 +23,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#if defined(__APPLE__)
-//On mac, this header file must be included here to workaround a boost python bug.
-//If you don't do this, you will get strange error messages when compiling on mac.
-#include <Python.h> 
-#endif
+// Workaround for compile error in <pyport.h> for Python versions less than 2.7.13 and 3.5.3.
+// See https://bugs.python.org/issue10910
+// Workaround involves including "global/python.h" at the top of some source files
+// to ensure <Python.h> is included before <ctype.h>.
+#include "global/python.h"
 
 #include <utility>
 #include <vector>
@@ -60,7 +60,6 @@
 #include "file-io/ReconstructedMotionPathExport.h"
 #include "file-io/ReconstructionGeometryExportImpl.h"
 
-#include "global/python.h"
 // This is not included by <boost/python.hpp>.
 // Also we must include this after <boost/python.hpp> which means after "global/python.h".
 #include <boost/python/raw_function.hpp>
@@ -725,6 +724,9 @@ namespace GPlatesApi
 		//
 		// Either export the reconstructed geometries to a file or append them to a python list.
 		//
+		// NOTE: In both cases the reconstructed geometries are output in the same order as that of their
+		// respective features with each feature collection (and the order across feature collections).
+		//
 
 		if (const QString *export_file_name = boost::get<QString>(&reconstructed_feature_geometries_argument))
 		{
@@ -954,7 +956,7 @@ namespace GPlatesApi
 void
 export_reconstruct()
 {
-	// An enumeration nested within 'pygplates (ie, current) module.
+	// An enumeration nested within 'pygplates' (ie, current) module.
 	bp::enum_<GPlatesApi::ReconstructType::Value>("ReconstructType")
 			.value("feature_geometry", GPlatesApi::ReconstructType::FEATURE_GEOMETRY)
 			.value("motion_path", GPlatesApi::ReconstructType::MOTION_PATH)

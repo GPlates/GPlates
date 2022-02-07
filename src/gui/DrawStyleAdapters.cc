@@ -82,8 +82,12 @@ GPlatesGui::PythonStyleAdapter::PythonStyleAdapter(
 
 GPlatesGui::PythonStyleAdapter::~PythonStyleAdapter()
 {
-	GPlatesApi::PythonUtils::python_manager().recycle_python_object(d_py_obj);
-	//qDebug() << "Destructing PythonStyleAdapter....";
+	// If our Python object is going to be destroyed then do it while holding the Python GIL.
+	GPlatesApi::PythonInterpreterLocker interpreter_locker;
+
+	// If holding only reference to Python object then force its destruction at end of scope.
+	boost::python::object py_obj = d_py_obj;
+	d_py_obj = boost::python::object();
 }
 
 
@@ -159,12 +163,23 @@ GPlatesGui::PythonStyleAdapter::register_alternative_draw_styles(
 		GPlatesApi::PythonInterpreterLocker l;
 		// Test to see if we have declared the get_config_variants() function.
 		// Not having it declared is not an error.
-		// boost::python documentation really sucks and I can't seem to determine the presence
-		// of an attribute without straight up trying to get it and possibly getting an exception.
+		//
+		// Use the Python C API to determine if attribute string is present.
+		// We could just get the attribute and catch the Python error, but then we'd need to
+		// call 'PyErr_Fetch()' to clear the error indicator (otherwise it'll just get raised again).
+		// Note that 'PythonUtils::get_error_message()' calls 'PyErr_Fetch()' internally which is
+		// why it works in other areas of the code (but we don't want to print an error message).
+		if (!PyObject_HasAttrString(d_py_obj.ptr(), "get_config_variants"))
+		{
+			return;
+		}
+
 		bp::object fun;
 		try {
 			fun = d_py_obj.attr("get_config_variants");
 		} catch (const  boost::python::error_already_set &) {
+			// Shouldn't get here - we already checked presence of attribute above.
+			qWarning() << GPlatesApi::PythonUtils::get_error_message();
 			return;
 		}
 

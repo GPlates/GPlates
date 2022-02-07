@@ -429,7 +429,7 @@ namespace GPlatesApi
 	 * An iterator that checks the index is dereferenceable - we don't use bp::iterator in order
 	 * to avoid issues with C++ iterators being invalidated from the C++ side and causing issues
 	 * on the python side (eg, removing container elements on the C++ side while iterating over
-	 * the container on the python side, for example, via a pygplates call back into the C++ code).
+	 * the container on the python side, for example, via a pyGPlates call back into the C++ code).
 	 */
 	class GmlDataBlockCoordinateListIterator
 	{
@@ -748,7 +748,14 @@ export_gml_data_block()
 	// Note: We don't docstring this - it's not an interface the python user needs to know about.
 	bp::class_<GPlatesApi::GmlDataBlockCoordinateListIterator>("GmlDataBlockCoordinateListIterator", bp::no_init)
 		.def("__iter__", &GPlatesApi::GmlDataBlockCoordinateListIterator::self, bp::return_value_policy<bp::copy_non_const_reference>())
-		.def("next", &GPlatesApi::GmlDataBlockCoordinateListIterator::next, bp::return_value_policy<bp::copy_const_reference>())
+		.def(
+#if PY_MAJOR_VERSION < 3
+				"next",
+#else
+				"__next__",
+#endif
+				&GPlatesApi::GmlDataBlockCoordinateListIterator::next,
+				bp::return_value_policy<bp::copy_const_reference>())
 	;
 
 
@@ -1187,14 +1194,14 @@ export_gml_polygon()
 				"   polygon_property = pygplates.GmlPolygon(polygon)\n")
 		.def("get_polygon",
 				// We ignore interior polygons for now - later they will get stored in a single PolygonOnSphere...
-				&GPlatesPropertyValues::GmlPolygon::get_exterior,
+				&GPlatesPropertyValues::GmlPolygon::get_polygon,
 				"get_polygon()\n"
 				"  Returns the polygon geometry of this property value.\n"
 				"\n"
 				"  :rtype: :class:`PolygonOnSphere`\n")
 		.def("set_polygon",
 				// We ignore interior polygons for now - later they will get stored in a single PolygonOnSphere...
-				&GPlatesPropertyValues::GmlPolygon::set_exterior,
+				&GPlatesPropertyValues::GmlPolygon::set_polygon,
 				(bp::arg("polygon")),
 				"set_polygon(polygon)\n"
 				"  Sets the polygon geometry of this property value.\n"
@@ -2325,7 +2332,7 @@ namespace GPlatesApi
 	 * An iterator that checks the index is dereferenceable - we don't use bp::iterator in order
 	 * to avoid issues with C++ iterators being invalidated from the C++ side and causing issues
 	 * on the python side (eg, removing container elements on the C++ side while iterating over
-	 * the container on the python side, for example, via a pygplates call back into the C++ code).
+	 * the container on the python side, for example, via a pyGPlates call back into the C++ code).
 	 */
 	class GpmlKeyValueDictionaryIterator
 	{
@@ -2610,7 +2617,14 @@ export_gpml_key_value_dictionary()
 	// Note: We don't docstring this - it's not an interface the python user needs to know about.
 	bp::class_<GPlatesApi::GpmlKeyValueDictionaryIterator>("GpmlKeyValueDictionaryIterator", bp::no_init)
 		.def("__iter__", &GPlatesApi::GpmlKeyValueDictionaryIterator::self, bp::return_value_policy<bp::copy_non_const_reference>())
-		.def("next", &GPlatesApi::GpmlKeyValueDictionaryIterator::next, bp::return_value_policy<bp::copy_const_reference>())
+		.def(
+#if PY_MAJOR_VERSION < 3
+				"next",
+#else
+				"__next__",
+#endif
+				&GPlatesApi::GpmlKeyValueDictionaryIterator::next,
+				bp::return_value_policy<bp::copy_const_reference>())
 	;
 
 

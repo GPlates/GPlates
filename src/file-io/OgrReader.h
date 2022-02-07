@@ -30,25 +30,16 @@
 #ifndef GPLATES_FILEIO_OGRREADER_H
 #define GPLATES_FILEIO_OGRREADER_H
 
+#include <list>
+#include <vector>
+#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
-#ifdef HAVE_CONFIG_H
-// We're building on a UNIX-y system, and can thus expect "global/config.h".
 
-// On some systems, it's <ogrsf_frmts.h>, on others, <gdal/ogrsf_frmts.h>.
-// The "CMake" script should have determined which one to use.
-#include "global/config.h"
-#ifdef HAVE_GDAL_OGRSF_FRMTS_H
-#include <gdal/ogrsf_frmts.h>
-#else
-#include <ogrsf_frmts.h>
-#endif
-
-#else  // We're not building on a UNIX-y system.  We'll have to assume it's <ogrsf_frmts.h>.
-#include <ogrsf_frmts.h>
-#endif  // HAVE_CONFIG_H
-
+#include "GdalUtils.h"
+#include "FeatureCollectionFileFormatConfigurations.h"
 #include "File.h"
 #include "FileInfo.h"
+#include "Ogr.h"
 #include "PropertyMapper.h"
 #include "ReadErrorAccumulation.h"
 
@@ -56,6 +47,8 @@
 #include "model/GpgimProperty.h"
 #include "model/ModelInterface.h"
 #include "model/ModelUtils.h"
+#include "property-values/CoordinateTransformation.h"
+#include "property-values/SpatialReferenceSystem.h"
 
 
 namespace GPlatesFileIO
@@ -149,7 +142,8 @@ namespace GPlatesFileIO
 
 		bool
 		open_file(
-				const QString &filename);
+				const QString &filename,
+				ReadErrorAccumulation &read_errors);
 
 		void
 		get_field_names(
@@ -233,14 +227,15 @@ namespace GPlatesFileIO
 		create_polygon_feature_from_list(
 				const GPlatesModel::FeatureType &feature_type,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-				const std::list<GPlatesMaths::PointOnSphere> &list,
+				const std::vector<GPlatesMaths::PointOnSphere> &exterior_ring,
+				const std::list< std::vector<GPlatesMaths::PointOnSphere> > &interior_rings,
 				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property);
 
 		const GPlatesModel::FeatureHandle::weak_ref
 		create_line_feature_from_list(
 				const GPlatesModel::FeatureType &feature_type,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-				const std::list<GPlatesMaths::PointOnSphere> &list,
+				const std::vector<GPlatesMaths::PointOnSphere> &list_of_points,
 				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property);
 
 		const GPlatesModel::FeatureHandle::weak_ref
@@ -254,7 +249,7 @@ namespace GPlatesFileIO
 		create_multi_point_feature_from_list(
 				const GPlatesModel::FeatureType &feature_type,
 				const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-				const std::list<GPlatesMaths::PointOnSphere> &list,
+				const std::vector<GPlatesMaths::PointOnSphere> &list_of_points,
 				const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property);
 
 		void
@@ -265,13 +260,12 @@ namespace GPlatesFileIO
 				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location);
 
 		bool
-		is_valid_shape_data(
-				double lat,
-				double lon,
+		transform_and_check_coords(
+				double &x,
+				double &y,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
-				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location
-				);
+				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location);
 
 		void
 		display_feature_counts();
@@ -279,10 +273,19 @@ namespace GPlatesFileIO
 		OGRwkbGeometryType
 		get_OGR_type();
 
+		/**
+		 * @brief read_srs_and_set_transformation - set the Configuration's SRS, if one
+		 * was provided by the OGR source.
+		 */
+		void
+		read_srs_and_set_transformation(
+				File::Reference &file_ref,
+				const GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type &default_ogr_file_configuration);
+
 		void
 		add_ring_to_points_list(
 				OGRLinearRing *ring,
-				std::list<GPlatesMaths::PointOnSphere> &list,
+				std::vector<GPlatesMaths::PointOnSphere> &ring_points,
 				ReadErrorAccumulation &read_errors,
 				const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
 				const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location);
@@ -292,7 +295,7 @@ namespace GPlatesFileIO
 
 		int d_num_layers;
 
-		OGRDataSource *d_data_source_ptr;
+		GdalUtils::vector_data_source_type *d_data_source_ptr;
 
 		OGRGeometry *d_geometry_ptr;
 
@@ -323,9 +326,20 @@ namespace GPlatesFileIO
 		unsigned d_loaded_geometries;
 
 		/// The total number of features in the file.
-		unsigned d_total_features;
+		GdalUtils::big_int_type d_total_features;
 
 		static boost::shared_ptr< PropertyMapper > s_property_mapper;
+
+		/**
+		 * @brief d_source_srs - the original SRS of the OGR source, if one was provided.
+		 */
+		boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type>
+			d_source_srs;
+
+		/**
+		 * @brief d_current_coordinate_transformation - The coordinate transformation from the provided SRS to WGS84.
+		 */
+		GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_to_const_type d_current_coordinate_transformation;
 	};
 
 

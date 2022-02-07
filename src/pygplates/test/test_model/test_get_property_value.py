@@ -64,6 +64,9 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.feature.add(
                 pygplates.PropertyName.gml_valid_time,
                 pygplates.GmlTimePeriod(50, 0))
+        self.feature.add(
+                pygplates.PropertyName.gpml_geometry_import_time,
+                pygplates.GmlTimeInstant(100))
         # A time-dependent property excluding time 0Ma.
         self.feature.add(
                 pygplates.PropertyName.create_gpml('plateId'),
@@ -579,6 +582,27 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(self.feature.is_valid_at_time(pygplates.GeoTimeInstant.create_distant_future()))
         self.assertTrue(self.feature.is_valid_at_time(float('inf')))
         self.assertTrue(self.feature.is_valid_at_time(float('-inf')))
+    
+    def test_get_and_set_geometry_import_time(self):
+        geometry_import_time = self.feature.get_geometry_import_time()
+        self.assertTrue(pygplates.GeoTimeInstant(geometry_import_time) == 100)
+        self.feature.remove(pygplates.PropertyName.gpml_geometry_import_time)
+        # With property removed it should return default of zero.
+        geometry_import_time = self.feature.get_geometry_import_time()
+        self.assertTrue(pygplates.GeoTimeInstant(geometry_import_time) == 0)
+        self.feature.set_geometry_import_time(geometry_import_time)
+        self.assertTrue(self.feature.get_geometry_import_time(None) is not None)
+        geometry_import_time = self.feature.get_geometry_import_time()
+        self.assertTrue(pygplates.GeoTimeInstant(geometry_import_time) == 0)
+        self.feature.remove(pygplates.PropertyName.gpml_geometry_import_time)
+        # With property removed it should return our default (None).
+        self.assertTrue(self.feature.get_geometry_import_time(None) is None)
+        
+        self.feature.set_geometry_import_time(pygplates.GeoTimeInstant(200))
+        self.assertTrue(self.feature.get_geometry_import_time() == pygplates.GeoTimeInstant(200))
+        gpml_geometry_import_time = self.feature.set_geometry_import_time(300)
+        self.assertTrue(gpml_geometry_import_time.get_value().get_time() == 300)
+        self.assertTrue(self.feature.get_geometry_import_time() == 300)
     
     def test_get_and_set_left_plate(self):
         self.assertTrue(self.feature.get_left_plate() == 11)

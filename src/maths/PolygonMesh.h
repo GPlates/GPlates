@@ -83,11 +83,16 @@ namespace GPlatesMaths
 		private:
 			unsigned int d_vertex_indices[3];
 
-			// NOTE: Constructor does not initialise.
-			Triangle()
-			{  }
-
-			friend class PolygonMesh;
+		public:
+			Triangle(
+					unsigned int vertex_index_0,
+					unsigned int vertex_index_1,
+					unsigned int vertex_index_2)
+			{
+				d_vertex_indices[0] = vertex_index_0;
+				d_vertex_indices[1] = vertex_index_1;
+				d_vertex_indices[2] = vertex_index_2;
+			}
 		};
 
 
@@ -105,18 +110,20 @@ namespace GPlatesMaths
 		private:
 			UnitVector3D d_vertex;
 
+		public:
 			explicit
 			Vertex(
 					const UnitVector3D &vertex) :
 				d_vertex(vertex)
 			{  }
-
-			friend class PolygonMesh;
 		};
 
 
 		/**
 		 * Creates a @a PolygonMesh object from a @a PolygonOnSphere.
+		 *
+		 * The returned mesh is refined by splitting mesh edges until all edge lengths are below
+		 * @a mesh_refinement_threshold_radians	radians.
 		 *
 		 * Returns boost::none if failed to generate the mesh.
 		 * Such sa error meshing polygon.
@@ -124,7 +131,8 @@ namespace GPlatesMaths
 		static
 		boost::optional<non_null_ptr_to_const_type>
 		create(
-				const PolygonOnSphere::non_null_ptr_to_const_type &polygon);
+				const PolygonOnSphere::non_null_ptr_to_const_type &polygon,
+				const double &mesh_refinement_threshold_radians);
 
 
 		/**
@@ -132,13 +140,17 @@ namespace GPlatesMaths
 		 *
 		 * A polygon is formed from the polyline by joining the first and last vertices.
 		 *
+		 * The returned mesh is refined by splitting mesh edges until all edge lengths are below
+		 * @a mesh_refinement_threshold_radians	radians.
+		 *
 		 * Returns boost::none if failed to generate the mesh.
 		 * Such as less than three vertices (needed for a polygon) or error meshing polygon.
 		 */
 		static
 		boost::optional<non_null_ptr_to_const_type>
 		create(
-				const PolylineOnSphere::non_null_ptr_to_const_type &polyline);
+				const PolylineOnSphere::non_null_ptr_to_const_type &polyline,
+				const double &mesh_refinement_threshold_radians);
 
 
 		/**
@@ -147,17 +159,24 @@ namespace GPlatesMaths
 		 * A polygon is formed from the multipoint by treating the order of points in the multipoint
 		 * as the vertices of a polygon.
 		 *
+		 * The returned mesh is refined by splitting mesh edges until all edge lengths are below
+		 * @a mesh_refinement_threshold_radians	radians.
+		 *
 		 * Returns boost::none if failed to generate the mesh.
 		 * Such as less than three vertices (needed for a polygon) or error meshing polygon.
 		 */
 		static
 		boost::optional<non_null_ptr_to_const_type>
 		create(
-				const MultiPointOnSphere::non_null_ptr_to_const_type &multi_point);
+				const MultiPointOnSphere::non_null_ptr_to_const_type &multi_point,
+				const double &mesh_refinement_threshold_radians);
 
 
 		/**
 		 * Creates a @a PolygonMesh object from a @a GeometryOnSphere.
+		 *
+		 * The returned mesh is refined by splitting mesh edges until all edge lengths are below
+		 * @a mesh_refinement_threshold_radians	radians.
 		 *
 		 * Returns boost::none if failed to generate the mesh.
 		 * Such as less than three vertices (needed for a polygon) or error meshing polygon.
@@ -168,7 +187,8 @@ namespace GPlatesMaths
 		static
 		boost::optional<non_null_ptr_to_const_type>
 		create(
-				const GeometryOnSphere::non_null_ptr_to_const_type &geometry_on_sphere);
+				const GeometryOnSphere::non_null_ptr_to_const_type &geometry_on_sphere,
+				const double &mesh_refinement_threshold_radians);
 
 
 		/**
@@ -193,6 +213,7 @@ namespace GPlatesMaths
 		}
 		
 	private:
+
 		/**
 		 * The mesh triangles.
 		 */
@@ -210,20 +231,12 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Creates, and initialises, this polygon mesh using the specified range
-		 * of points as the polygon boundary.
-		 *
-		 * NOTE: We use a 2D planar projection to ensure that great circle arcs (the polygon edges)
-		 * project onto straight lines in the 2D projection - this ensures that the re-projection
-		 * of the resulting triangulation (with tessellated 2D lines) will have the extra triangulation
-		 * vertices lie on the great circle arcs. With a non-planar projection such as azimuthal
-		 * equal area projection this is not the case.
+		 * Creates, and initialises, this polygon mesh using the specified polygon.
 		 */
-		template <typename PointOnSphereForwardIter>
 		bool
 		initialise(
-				PointOnSphereForwardIter polygon_points_begin,
-				PointOnSphereForwardIter polygon_points_end);
+				const PolygonOnSphere::non_null_ptr_to_const_type &polygon,
+				const double &mesh_refinement_threshold_radians);
 	};
 }
 

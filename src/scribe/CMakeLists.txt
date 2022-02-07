@@ -35,7 +35,8 @@ set(srcs
     ScribeInternalUtilsImpl.h
     ScribeLoadRef.h
     ScribeLoadRefImpl.h
-    ScribeOptions.cc
+    ScribeObjectTag.cc
+    ScribeObjectTag.h
     ScribeOptions.h
     ScribeSaveLoadConstructObject.h
     ScribeTextArchiveReader.cc
@@ -52,6 +53,7 @@ set(srcs
     TranscribeArray.h
     TranscribeBoost.h
     TranscribeContext.h
+    TranscribeDelegateProtocol.h
     TranscribeEnumProtocol.cc
     TranscribeEnumProtocol.h
     TranscribeExternal.h

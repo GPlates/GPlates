@@ -98,7 +98,11 @@ namespace GPlatesAppLogic
 				const motion_path_geom_ptr_type &motion_path_points,
 				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
 				GPlatesModel::FeatureHandle &feature_handle,
-				GPlatesModel::FeatureHandle::iterator property_iterator)
+				GPlatesModel::FeatureHandle::iterator property_iterator,
+				// All reconstructed seed points (not just the one referenced by this ReconstructedMotionPath).
+				// This is the reconstructed geometry in the base RFG class.
+				// It needs to be *all* seed points otherwise the geometry modification tools (eg, MoveVertex) won't work...
+				const feature_geom_ptr_type &reconstructed_geometry_)
 		{
 			return non_null_ptr_type(
 					new ReconstructedMotionPath(
@@ -109,7 +113,8 @@ namespace GPlatesAppLogic
 							motion_path_points,
 							reconstruction_plate_id,
 							feature_handle,
-							property_iterator));
+							property_iterator,
+							reconstructed_geometry_));
 		}
 
 		/**
@@ -173,13 +178,14 @@ namespace GPlatesAppLogic
 				const motion_path_geom_ptr_type &motion_path_points_,
 				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id_,
 				GPlatesModel::FeatureHandle &feature_handle,
-				GPlatesModel::FeatureHandle::iterator property_iterator):
+				GPlatesModel::FeatureHandle::iterator property_iterator,
+				const feature_geom_ptr_type &reconstructed_geometry_):
 			ReconstructedFeatureGeometry(
 				reconstruction_tree_,
 				reconstruction_tree_creator,
 				feature_handle,
 				property_iterator,
-				reconstructed_seed_point_geometry_ptr,
+				reconstructed_geometry_,
 				ReconstructMethod::MOTION_PATH,
 				reconstruction_plate_id_,
 				boost::none),

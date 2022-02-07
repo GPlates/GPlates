@@ -88,17 +88,6 @@ GPlatesMaths::MultiPointOnSphere::MultiPointOnSphere(
 }
 
 
-GPlatesMaths::MultiPointOnSphere &
-GPlatesMaths::MultiPointOnSphere::operator=(
-		const MultiPointOnSphere &other)
-{
-	// Use the copy+swap idiom to enable strong exception safety.
-	MultiPointOnSphere dup(other);
-	this->swap(dup);
-	return *this;
-}
-
-
 GPlatesMaths::ProximityHitDetail::maybe_null_ptr_type
 GPlatesMaths::MultiPointOnSphere::test_proximity(
 		const ProximityCriteria &criteria) const

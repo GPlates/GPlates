@@ -51,7 +51,7 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::QueryFeaturePropertiesWidget(
 		QWidget *parent_):
 	QWidget(parent_),
 	d_application_state_ptr(&view_state_.get_application_state()),
-	d_need_load_data(false)
+	d_populate_property_tree_when_visible(false)
 {
 	setupUi(this);
 
@@ -226,35 +226,32 @@ GPlatesQtWidgets::QueryFeaturePropertiesWidget::refresh_display()
 	set_euler_pole(euler_pole_as_string);
 	set_angle(angle);
 
-	//PROFILE_BLOCK("QueryFeaturePropertiesWidgetPopulator");
-
-	GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator populator(
-			property_tree());
-
-	if(this->isVisible())
+	if (isVisible())
 	{
+		GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator populator(property_tree());
 		GPlatesModel::FeatureHandle::const_weak_ref const_feature = d_feature_ref;
 		populator.populate(const_feature, d_focused_rg);
-		d_need_load_data = false;
+
+		d_populate_property_tree_when_visible = false;
 	}
 	else
 	{
-		d_need_load_data = true;
+		// Delay populating the property tree widget until it is actually visible.
+		d_populate_property_tree_when_visible = true;
 	}
-
 }
+
+
 void
-GPlatesQtWidgets::QueryFeaturePropertiesWidget::load_data_if_necessary()
+GPlatesQtWidgets::QueryFeaturePropertiesWidget::showEvent(
+		QShowEvent *event_)
 {
-	if(d_need_load_data)
+	if (d_populate_property_tree_when_visible)
 	{
-		GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator 
-			populator(property_tree());
+		GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator populator(property_tree());
 		GPlatesModel::FeatureHandle::const_weak_ref const_feature = d_feature_ref;
 		populator.populate(const_feature, d_focused_rg);
-		d_need_load_data = false;
+
+		d_populate_property_tree_when_visible = false;
 	}
-	return;
-}
-
-
+}	

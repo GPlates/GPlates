@@ -23,8 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <algorithm>
-
 #include "ReconstructScalarCoverageLayerTask.h"
 
 #include "AppLogicUtils.h"
@@ -34,9 +32,13 @@
 
 
 GPlatesAppLogic::ReconstructScalarCoverageLayerTask::ReconstructScalarCoverageLayerTask() :
-	d_reconstruct_scalar_coverage_layer_proxy(
-			ReconstructScalarCoverageLayerProxy::create())
+	d_reconstruct_scalar_coverage_layer_proxy(ReconstructScalarCoverageLayerProxy::create()),
+	d_layer_params(ReconstructScalarCoverageLayerParams::create(d_reconstruct_scalar_coverage_layer_proxy))
 {
+	// Notify our layer output whenever the layer params are modified.
+	QObject::connect(
+			d_layer_params.get(), SIGNAL(modified_reconstruct_scalar_coverage_params(GPlatesAppLogic::ReconstructScalarCoverageLayerParams &)),
+			this, SLOT(handle_reconstruct_scalar_coverage_params_modified(GPlatesAppLogic::ReconstructScalarCoverageLayerParams &)));
 }
 
 
@@ -162,85 +164,18 @@ GPlatesAppLogic::ReconstructScalarCoverageLayerTask::update(
 	d_reconstruct_scalar_coverage_layer_proxy->set_current_reconstruction_time(
 			reconstruction->get_reconstruction_time());
 
-	// If the layer task params have been modified then update our layer proxy.
-	if (d_layer_task_params.d_set_scalar_type_called)
-	{
-		d_reconstruct_scalar_coverage_layer_proxy->set_current_scalar_type(
-				d_layer_task_params.d_scalar_type);
-
-		d_layer_task_params.d_set_scalar_type_called = false;
-	}
-
-	// If the layer task params have been modified then update our layer proxy.
-	if (d_layer_task_params.d_set_reconstruct_scalar_coverage_params_called)
-	{
-		d_reconstruct_scalar_coverage_layer_proxy->set_current_reconstruct_scalar_coverage_params(
-				d_layer_task_params.d_reconstruct_scalar_coverage_params);
-
-		d_layer_task_params.d_set_reconstruct_scalar_coverage_params_called = false;
-	}
-
-	// Update the layer task params in case the layer proxy changed (due to its dependency layers changing).
-	d_layer_task_params.update(
-			d_reconstruct_scalar_coverage_layer_proxy->get_current_scalar_type(),
-			d_reconstruct_scalar_coverage_layer_proxy->get_scalar_types());
-}
-
-
-GPlatesAppLogic::LayerProxy::non_null_ptr_type
-GPlatesAppLogic::ReconstructScalarCoverageLayerTask::get_layer_proxy()
-{
-	return d_reconstruct_scalar_coverage_layer_proxy;
-}
-
-
-GPlatesAppLogic::ReconstructScalarCoverageLayerTask::Params::Params() :
-	d_scalar_type(GPlatesPropertyValues::ValueObjectType::create_gpml("")),
-	d_set_scalar_type_called(false),
-	d_set_reconstruct_scalar_coverage_params_called(false)
-{
+	// Update the layer params in case the layer proxy changed (due to its dependency layers changing).
+	// Note that this layer does not connect to any files and so we don't get directly notified of
+	// changes to the features in the connected files - so we rely on our dependency layers instead.
+	d_layer_params->update();
 }
 
 
 void
-GPlatesAppLogic::ReconstructScalarCoverageLayerTask::Params::update(
-		const GPlatesPropertyValues::ValueObjectType &scalar_type,
-		const std::vector<GPlatesPropertyValues::ValueObjectType> &scalar_types)
+GPlatesAppLogic::ReconstructScalarCoverageLayerTask::handle_reconstruct_scalar_coverage_params_modified(
+		ReconstructScalarCoverageLayerParams &layer_params)
 {
-	d_scalar_type = scalar_type;
-	d_scalar_types = scalar_types;
-
-	// Is the selected scalar type is one of the available scalar types in the scalar coverage features?
-	// If not, then change the scalar type to be the first of the available scalar types.
-	if (!scalar_types.empty() &&
-		std::find(scalar_types.begin(), scalar_types.end(), scalar_type) == scalar_types.end())
-	{
-		// Set the scalar type using the default scalar type index of zero.
-		d_scalar_type = d_scalar_types.front();
-	}
-
-	// TODO: Notify observers (such as ReconstructScalarCoverageVisualLayerParams) that the scalar type(s)
-	// have changed - since it might need to update itself.
-}
-
-
-void
-GPlatesAppLogic::ReconstructScalarCoverageLayerTask::Params::set_scalar_type(
-		const GPlatesPropertyValues::ValueObjectType &scalar_type)
-{
-	d_scalar_type = scalar_type;
-
-	d_set_scalar_type_called = true;
-	emit_modified();
-}
-
-
-void
-GPlatesAppLogic::ReconstructScalarCoverageLayerTask::Params::set_reconstruct_scalar_coverage_params(
-		const ReconstructScalarCoverageParams &reconstruct_scalar_coverage_params)
-{
-	d_reconstruct_scalar_coverage_params = reconstruct_scalar_coverage_params;
-
-	d_set_reconstruct_scalar_coverage_params_called = true;
-	emit_modified();
+	// Update our reconstruct scalar coverage layer proxy.
+	d_reconstruct_scalar_coverage_layer_proxy->set_current_reconstruct_scalar_coverage_params(
+			layer_params.get_reconstruct_scalar_coverage_params());
 }

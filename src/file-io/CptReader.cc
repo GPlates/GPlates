@@ -63,13 +63,20 @@ namespace GPlatesFileIO
 				ParserState<RegularCptFileFormat> &parser_state)
 		{
 			// Note the use of the short-circuiting mechanism.
-			return try_process_regular_cpt_rgb_or_hsv_colour_slice(tokens, parser_state) ||
-					try_process_regular_cpt_colour_slice<GMTNameColourSpecification>(tokens, parser_state) ||
-					try_process_rgb_or_hsv_bfn<RegularCptFileFormat>(tokens, parser_state) ||
-					try_process_regular_cpt_colour_slice<CMYKColourSpecification>(tokens, parser_state) ||
-					try_process_regular_cpt_colour_slice<GreyColourSpecification>(tokens, parser_state) ||
-					try_process_regular_cpt_colour_slice<InvisibleColourSpecification>(tokens, parser_state) ||
-					try_process_regular_cpt_colour_slice<PatternFillColourSpecification>(tokens, parser_state);
+			return try_process_regular_cpt_rgb_or_hsv_or_cmyk_colour_slice(tokens, parser_state) ||
+					try_process_regular_cpt_colour_slice<RegularCptSliceColourSpecification>(tokens, parser_state) ||
+					try_process_rgb_or_hsv_or_cmyk_bfn<RegularCptFileFormat>(tokens, parser_state) ||
+
+					// R/G/B and H-S-V and C/M/Y/K don't depend on COLOR_MODEL (like "R G B" and "H S V" and "C M Y K" do)...
+					try_process_bfn<RegularCptFileFormat, RGBTripletColourSpecification>(tokens, parser_state) ||
+					try_process_bfn<RegularCptFileFormat, HSVTripletColourSpecification>(tokens, parser_state) ||
+					try_process_bfn<RegularCptFileFormat, CMYKTripletColourSpecification>(tokens, parser_state) ||
+
+					try_process_bfn<RegularCptFileFormat, GMTNameColourSpecification>(tokens, parser_state) ||
+					try_process_bfn<RegularCptFileFormat, CMYKColourSpecification>(tokens, parser_state) ||
+					try_process_bfn<RegularCptFileFormat, GreyColourSpecification>(tokens, parser_state) ||
+					try_process_bfn<RegularCptFileFormat, InvisibleColourSpecification>(tokens, parser_state) ||
+					try_process_bfn<RegularCptFileFormat, PatternFillColourSpecification>(tokens, parser_state);
 		}
 	}
 }
@@ -77,24 +84,24 @@ namespace GPlatesFileIO
 
 bool
 GPlatesFileIO::CptReaderInternals::in_rgb_range(
-		int value)
+		double value)
 {
-	return 0 <= value && value <= 255;
+	return 0.0 <= value && value <= 255.0;
 }
 
 
 GPlatesGui::Colour
 GPlatesFileIO::CptReaderInternals::make_rgb_colour(
-		int r, 
-		int g, 
-		int b)
+		double r, 
+		double g, 
+		double b)
 {
 	if (in_rgb_range(r) && in_rgb_range(g) && in_rgb_range(b))
 	{
 		return GPlatesGui::Colour(
-				static_cast<GLfloat>(r / 255.0f),
-				static_cast<GLfloat>(g / 255.0f),
-				static_cast<GLfloat>(b / 255.0f));
+				static_cast<GLfloat>(r / 255.0),
+				static_cast<GLfloat>(g / 255.0),
+				static_cast<GLfloat>(b / 255.0));
 	}
 	else
 	{
@@ -139,18 +146,18 @@ GPlatesFileIO::CptReaderInternals::make_hsv_colour(
 
 bool
 GPlatesFileIO::CptReaderInternals::in_cmyk_range(
-		int value)
+		double value)
 {
-	return 0 <= value && value <= 100;
+	return 0.0 <= value && value <= 100.0;
 }
 
 
 GPlatesGui::Colour
 GPlatesFileIO::CptReaderInternals::make_cmyk_colour(
-		int c, 
-		int m, 
-		int y, 
-		int k)
+		double c, 
+		double m, 
+		double y, 
+		double k)
 {
 	if (in_cmyk_range(c) && in_cmyk_range(m) && in_cmyk_range(y) && in_cmyk_range(k))
 	{
@@ -170,19 +177,19 @@ GPlatesFileIO::CptReaderInternals::make_cmyk_colour(
 
 bool
 GPlatesFileIO::CptReaderInternals::in_grey_range(
-		int value)
+		double value)
 {
-	return 0 <= value && value <= 255;
+	return 0.0 <= value && value <= 255.0;
 }
 
 
 GPlatesGui::Colour
 GPlatesFileIO::CptReaderInternals::make_grey_colour(
-		int value)
+		double value)
 {
 	if (in_grey_range(value))
 	{
-		GLfloat f = static_cast<GLfloat>(value / 255.0f);
+		GLfloat f = static_cast<GLfloat>(value / 255.0);
 		return GPlatesGui::Colour(f, f, f);
 	}
 	else
@@ -210,17 +217,24 @@ GPlatesFileIO::CptReaderInternals::make_gmt_colour(
 
 
 bool
-GPlatesFileIO::CptReaderInternals::try_process_regular_cpt_rgb_or_hsv_colour_slice(
+GPlatesFileIO::CptReaderInternals::try_process_regular_cpt_rgb_or_hsv_or_cmyk_colour_slice(
 		const QStringList &tokens,
 		ParserState<RegularCptFileFormat> &parser_state)
 {
-	if (parser_state.rgb)
+	// Use COLOR_MODEL to determine whether to read as "R G B", "H S V" or "C M Y K".
+	// In each case the lower *and* upper colours are read using the same colour specification
+	// (eg, RGB reads lower and upper colours as "R G B").
+	switch (parser_state.colour_model)
 	{
+	case GPlatesGui::ColourModel::RGB:
 		return try_process_regular_cpt_colour_slice<RGBColourSpecification>(tokens, parser_state);
-	}
-	else
-	{
+
+	case GPlatesGui::ColourModel::HSV:
 		return try_process_regular_cpt_colour_slice<HSVColourSpecification>(tokens, parser_state);
+
+	case GPlatesGui::ColourModel::CMYK:
+	default:
+		return try_process_regular_cpt_colour_slice<CMYKColourSpecification>(tokens, parser_state);
 	}
 }
 
@@ -231,15 +245,22 @@ GPlatesFileIO::CptReaderInternals::parse_categorical_fill(
 {
 	if (token.contains('/'))
 	{
-		// R/G/B triplet.
+		// R/G/B or C/M/Y/K triplet.
 		QStringList subtokens = token.split('/');
-		if (subtokens.size() != 3)
+		if (subtokens.size() == 3)
+		{
+			// Convert the R/G/B colour.
+			return convert_tokens<RGBColourSpecification>(subtokens);
+		}
+		else if (subtokens.size() == 4)
+		{
+			// Convert the C/M/Y/K colour.
+			return convert_tokens<CMYKColourSpecification>(subtokens);
+		}
+		else
 		{
 			throw BadTokenException();
 		}
-
-		// Convert the colour.
-		return convert_tokens<RGBColourSpecification>(subtokens);
 	}
 	else if (token.startsWith('#'))
 	{
@@ -272,10 +293,10 @@ GPlatesFileIO::CptReaderInternals::parse_categorical_fill(
 	}
 	else
 	{
-		// Try parsing it as a single integer.
+		// Try parsing it as a single number.
 		try
 		{
-			int grey = parse_token<int>(token);
+			double grey = parse_token<double>(token);
 			return make_grey_colour(grey);
 		}
 		catch (...)
@@ -376,7 +397,7 @@ GPlatesFileIO::CptParser::split_into_tokens(
 			}
 			else
 			{
-				qDebug() << "token: " << token;
+				//qDebug() << "token: " << token;
 				tokens.append(token);//the current token ends.
 				token = "";
 				inside_token = false;
@@ -397,7 +418,7 @@ GPlatesFileIO::CptParser::split_into_tokens(
 			}else
 			{
 				//the end of quotation marks
-				qDebug() << "token: " << token;
+				//qDebug() << "token: " << token;
 				tokens.append(token);
 				token = "";
 				inside_quotes = false;
@@ -415,7 +436,7 @@ GPlatesFileIO::CptParser::split_into_tokens(
 				{
 					token.append(*it);
 				}
-				qDebug() << "token: " << token;
+				//qDebug() << "token: " << token;
 				tokens.append(token);
 				token = "";
 				break;
@@ -431,7 +452,7 @@ GPlatesFileIO::CptParser::split_into_tokens(
 				//start a new token
 				if(!token.isEmpty())
 				{
-					qDebug() << "token: " << token;
+					//qDebug() << "token: " << token;
 					tokens.append(token);
 					token = "";
 				}
@@ -442,7 +463,7 @@ GPlatesFileIO::CptParser::split_into_tokens(
 	}
 	if(!token.isEmpty())
 	{
-		qDebug() << "token: " << token;
+		//qDebug() << "token: " << token;
 		tokens.append(token);
 	}
 	return tokens;

@@ -151,7 +151,7 @@ namespace GPlatesFileIO
 		boost::scoped_ptr<OgrWriter> d_ogr_writer;
 
 		// Store various geometries encountered in each feature. 
-		std::vector<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> d_point_geometries;
+		std::vector<GPlatesMaths::PointOnSphere> d_point_geometries;
 		std::vector<GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type> d_multi_point_geometries;
 		std::vector<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> d_polyline_geometries;
 		std::vector<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> d_polygon_geometries;

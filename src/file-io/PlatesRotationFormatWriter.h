@@ -27,11 +27,11 @@
 #ifndef GPLATES_FILEIO_PLATESROTATIONFORMATWRITER_H
 #define GPLATES_FILEIO_PLATESROTATIONFORMATWRITER_H
 
-#include <fstream>
-#include <iosfwd>
 #include <list>
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <QFile>
+#include <QTextStream>
 
 #include "ErrorOpeningFileForWritingException.h"
 #include "FileInfo.h"
@@ -164,7 +164,7 @@ namespace GPlatesFileIO
 			 */
 			void
 			print_rotations(
-					std::ostream &os,
+					QTextStream &os,
 					bool grot_format);
 
 
@@ -177,7 +177,7 @@ namespace GPlatesFileIO
 			 */
 			void
 			print_rotation(
-					std::ostream &os,
+					QTextStream &os,
 					const ReconstructionPoleData &reconstruction_pole_data,
 					bool grot_format);
 		};
@@ -188,7 +188,8 @@ namespace GPlatesFileIO
 		bool d_grot_format;
 
 		PlatesRotationFormatAccumulator d_accum;
-		boost::scoped_ptr<std::ostream> d_output;
+		boost::scoped_ptr<QFile> d_output_file;
+		boost::scoped_ptr<QTextStream> d_output_stream;
 	};
 }
 

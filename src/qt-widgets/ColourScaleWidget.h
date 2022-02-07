@@ -30,6 +30,7 @@
 
 #include <vector>
 #include <utility>
+#include <boost/optional.hpp>
 #include <QWidget>
 #include <QPixmap>
 #include <QString>
@@ -38,6 +39,7 @@
 
 #include "SaveFileDialog.h"
 
+#include "gui/ColourScaleGenerator.h"
 #include "gui/RasterColourPalette.h"
 
 
@@ -59,9 +61,6 @@ namespace GPlatesQtWidgets
 	{
 	public:
 
-		typedef std::pair<int, QString> annotation_type;
-		typedef std::vector<annotation_type> annotations_seq_type;
-
 		/**
 		 * Distance from left border of widget to the colour scale.
 		 */
@@ -78,11 +77,6 @@ namespace GPlatesQtWidgets
 		static const int INTERNAL_SPACING = 5;
 
 		/**
-		 * Grid size of transparent checkerboard pattern.
-		 */
-		static const int CHECKERBOARD_GRID_SIZE = 8;
-
-		/**
 		 * Minimum spacing in pixels between each line of annotation.
 		 */
 		static const int ANNOTATION_LINE_SPACING = 5;
@@ -91,6 +85,7 @@ namespace GPlatesQtWidgets
 		 * Length of tick marks that accompany annotations.
 		 */
 		static const int TICK_LENGTH = 2;
+
 
 		explicit
 		ColourScaleWidget(
@@ -101,10 +96,21 @@ namespace GPlatesQtWidgets
 		/**
 		 * Causes this widget to render scales for the given @a colour_palette.
 		 * Returns whether this widget is able to render scales for the given @a colour_palette.
+		 *
+		 * Specify @a use_log_scale to distribute the display of the colour scale uniformly in log space.
+		 * The 'double' value is only used if the min/max range of colour scale includes zero
+		 * (ie 'max_value >= 0' and 'min_value <= 0') in which case the value should be positive and
+		 * non-zero (ie, '> 0.0'), otherwise it can be set to any dummy value (like 0.0).
+		 * This is because, in log space, zero cannot be reached but we can get near to zero.
+		 * The positive range is at least from 'log(max_value)' to 'log(max_value) - use_log_scale_value'.
+		 * The negative range is at least from 'log(-min_value)' to 'log(-min_value) - use_log_scale_value'.
+		 * If 'abs(max_value)' is larger than 'abs(min_value)' then the positive range will be larger
+		 * to compensate (and vice versa for negative range).
 		 */
 		bool
 		populate(
-				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette);
+				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &colour_palette,
+				boost::optional<double> use_log_scale = boost::none);
 
 	protected:
 
@@ -139,7 +145,8 @@ namespace GPlatesQtWidgets
 
 		QPixmap d_colour_scale_pixmap;
 		QPixmap d_disabled_colour_scale_pixmap;
-		annotations_seq_type d_annotations;
+		GPlatesGui::ColourScale::annotations_seq_type d_annotations;
+		boost::optional<double> d_use_log_scale;
 		QList<QAction *> d_right_click_actions;
 		SaveFileDialog d_save_file_dialog;
 	};

@@ -27,6 +27,8 @@
 #define GPLATES_PRESENTATION_INTERNALSESSION_H
 
 #include <boost/optional.hpp>
+#include <QString>
+#include <QStringList>
 
 #include "Session.h"
 
@@ -36,7 +38,7 @@
 namespace GPlatesPresentation
 {
 	/**
-	 * An internal session of GPlates (saved to a text archive string in the user preferences store).
+	 * An internal session of GPlates (saved to the user preferences store).
 	 */
 	class InternalSession :
 			public Session
@@ -49,19 +51,29 @@ namespace GPlatesPresentation
 
 
 		/**
+		 * Returns true if there are keys in @a session_state that are recognised as session keys.
+		 *
+		 * This should return true before @a create_restore_session is called.
+		 */
+		static
+		bool
+		has_valid_session_keys(
+				const GPlatesAppLogic::UserPreferences::KeyValueMap &session_state);
+
+
+		/**
 		 * Create a @a InternalSession object, from the specified session state, that can be used to restore a session.
 		 *
-		 * NOTE: This doesn't actually restore the session. For that you need to call @a restore_session.
+		 * Note this doesn't actually restore the session. For that you need to call @a restore_session.
 		 *
 		 * The session state is stored in a sub-section of the user preferences (key-value map).
 		 *
-		 * @a is_deprecated_session is for deprecated sessions before the Scribe system was implemented.
+		 * NOTE: A call to @a has_valid_session_keys should have returned true before calling this method.
 		 */
 		static
-		non_null_ptr_to_const_type
+		non_null_ptr_type
 		create_restore_session(
-				const GPlatesAppLogic::UserPreferences::KeyValueMap &session_state,
-				bool is_deprecated_session);
+				const GPlatesAppLogic::UserPreferences::KeyValueMap &session_state);
 
 
 		/**
@@ -74,7 +86,7 @@ namespace GPlatesPresentation
 		 * if there was an error during serialization of the session state.
 		 */
 		static
-		non_null_ptr_to_const_type
+		non_null_ptr_type
 		save_session();
 
 
@@ -87,11 +99,11 @@ namespace GPlatesPresentation
 		 * NOTE: Throws an exception derived from GPlatesScribe::Exceptions::ExceptionBase
 		 * if there was an error during serialization of the session state.
 		 *
-		 * Returns a list of feature collection files that were not loaded
-		 * (either they don't exist or the load failed).
+		 * Any files that were not loaded (either they don't exist or the load failed) get reported
+		 * in the read errors dialog.
 		 */
 		virtual
-		QStringList
+		void
 		restore_session() const;
 
 
@@ -104,7 +116,74 @@ namespace GPlatesPresentation
 			return d_session_key_value_map;
 		}
 
+
+		/**
+		 * Returns unique sorted lists of all (absolute) file paths of transcribed files that
+		 * currently exist and are currently missing.
+		 *
+		 * These are file paths transcribed via the TranscribeUtils::FilePath API when the session was saved.
+		 *
+		 * Note: These are the file paths transcribed into the session when it was saved, and the
+		 * files might no longer exist.
+		 */
+		void
+		get_file_paths(
+				QStringList &existing_file_paths,
+				QStringList &missing_file_paths) const;
+
+
+		/**
+		 * Specify whether to remap missing file paths to existing file paths.
+		 *
+		 * This is used to rename missing files to existing files when a loaded session references
+		 * files that no longer exist (see @a get_file_paths).
+		 */
+		void
+		set_remapped_file_paths(
+				boost::optional< QMap<QString/*missing*/, QString/*existing*/> > file_path_remapping);
+
+
 	private:
+
+		/**
+		 * An enumeration that determines what format a session was saved in.
+		 */
+		enum SessionFormat
+		{
+			// GPlates 1.4 and prior versions did not use the Scribe system.
+			//
+			// This format can be loaded by GPlates version 1.5 and above, but GPlates 1.4 cannot
+			// load sessions saved by GPlates 1.5 and above.
+			GPLATES_1_4_OR_BEFORE_FORMAT,
+
+			// First use of the Scribe system was in GPlates 1.5.
+			//
+			// But it was not transcribed in such a way that GPlates 1.5 could load sessions saved
+			// by future GPlates versions, hence the need for the 'CURRENT_FORMAT' format which
+			// enables GPlates 1.5 to load sessions saved by versions above GPlates 1.5.
+			GPLATES_1_5_FORMAT,
+
+			// The current format also uses the Scribe system.
+			//
+			// This format should be able to load sessions saved by future GPlates versions - it won't
+			// be able to load all future state of course but should be able to load what it knows.
+			// If all goes well we shouldn't need a new format in the future (a single transcription
+			// should be backwards compatible, and forwards compatible to an extent).
+			CURRENT_FORMAT,
+
+			// An unknown or invalid format.
+			UNKNOWN_FORMAT
+		};
+
+		//! Session state key for session 'metadata'.
+		static const QString CURRENT_FORMAT_SESSION_METADATA_KEY;
+
+		//! Session state key for session 'data'.
+		static const QString CURRENT_FORMAT_SESSION_DATA_KEY;
+
+		//! Session state key for GPlates 1.5 session state.
+		static const QString GPLATES_1_5_FORMAT_SESSION_STATE_KEY;
+
 
 		/*
 		 * The entire session state including all key/value pairs stored in the session state map.
@@ -118,13 +197,23 @@ namespace GPlatesPresentation
 		GPlatesAppLogic::UserPreferences::KeyValueMap d_session_key_value_map;
 
 		/**
-		 * Deprecated sessions are those before the Scribe system was implemented.
-		 *
-		 * Deprecated sessions have a version number (from 0 to 3 inclusive).
-		 * Non-deprecated sessions do not need a version number (versioning is handled implicitly
-		 * by the Scribe system).
+		 * A unique sorted list of all transcribed filenames (transcribed via the TranscribeUtils::FilePath API).
 		 */
-		boost::optional<int> d_deprecated_version;
+		QStringList d_all_file_paths;
+
+		/**
+		 * Whether to remap missing file paths to existing file paths.
+		 */
+		boost::optional< QMap<QString/*missing*/, QString/*existing*/> > d_file_path_remapping;
+
+
+		/**
+		 * Determines the session format from the session state (key/value map).
+		 */
+		static
+		SessionFormat
+		get_session_format(
+				const GPlatesAppLogic::UserPreferences::KeyValueMap &session_state);
 
 
 		/**
@@ -133,9 +222,8 @@ namespace GPlatesPresentation
 		InternalSession(
 				const GPlatesAppLogic::UserPreferences::KeyValueMap &session_key_value_map_,
 				const QDateTime &time_,
-				const QStringList &files_,
-				boost::optional<int> deprecated_version = boost::none);
-
+				const QStringList &filenames_,
+				const QStringList &all_file_paths_);
 	};
 }
 

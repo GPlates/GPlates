@@ -58,10 +58,9 @@ namespace GPlatesAppLogic
 		{
 			coverage_domain_to_range_name_map_type coverage_domain_to_range_name_map;
 
+			// Insert default domain/range names ('gpml:domainSet' and 'gpml:rangeSet').
 			coverage_domain_to_range_name_map.insert(
-					std::make_pair(
-							GPlatesModel::PropertyName::create_gpml("domainSet"),
-							GPlatesModel::PropertyName::create_gpml("rangeSet")));
+					ScalarCoverageFeatureProperties::get_default_domain_range_property_names());
 
 			coverage_domain_to_range_name_map.insert(
 					std::make_pair(
@@ -71,6 +70,10 @@ namespace GPlatesAppLogic
 					std::make_pair(
 							GPlatesModel::PropertyName::create_gpml("centerLineOf"),
 							GPlatesModel::PropertyName::create_gpml("centerLineOfCoverage")));
+			coverage_domain_to_range_name_map.insert(
+					std::make_pair(
+							GPlatesModel::PropertyName::create_gpml("meshPoints"),
+							GPlatesModel::PropertyName::create_gpml("meshPointsCoverage")));
 			coverage_domain_to_range_name_map.insert(
 					std::make_pair(
 							GPlatesModel::PropertyName::create_gpml("multiPosition"),
@@ -186,6 +189,12 @@ namespace GPlatesAppLogic
 			finalise_post_feature_properties(
 					typename feature_visitor_type::feature_handle_type &feature_handle)
 			{
+				if (d_domains.empty() ||
+					d_ranges.empty())
+				{
+					return;
+				}
+
 				// Copy the ranges so we can erase from them as we find coverages.
 				std::vector<Range> ranges(d_ranges);
 
@@ -211,7 +220,7 @@ namespace GPlatesAppLogic
 					const GPlatesModel::PropertyName &range_property_name = range_property_name_opt.get();
 
 					const unsigned int num_domain_geometry_points =
-							GeometryUtils::get_num_geometry_points(*domain.geometry);
+							GeometryUtils::get_num_geometry_exterior_points(*domain.geometry);
 
 					// Search the ranges found for the matching range property name.
 					boost::optional<Range> matching_range;
@@ -262,7 +271,7 @@ namespace GPlatesAppLogic
 								if ((*remaining_domain.property)->get_property_name() == domain_property_name)
 								{
 									// See if the number of geometry points matches.
-									if (num_domain_geometry_points == GeometryUtils::get_num_geometry_points(*remaining_domain.geometry))
+									if (num_domain_geometry_points == GeometryUtils::get_num_geometry_exterior_points(*remaining_domain.geometry))
 									{
 										break;
 									}
@@ -321,7 +330,7 @@ namespace GPlatesAppLogic
 							gpml_piecewise_aggregation.time_windows()[time_window_index].get()->valid_time();
 
 					// If the time window period contains the current reconstruction time then visit.
-					// The time periods should be mutually exclusive - if we happen to be it
+					// The time periods should be mutually exclusive - if we happen to be in
 					// two time periods then we're probably right on the boundary between the two
 					// and then it doesn't really matter which one we choose.
 					if (time_period->contains(d_reconstruction_time))
@@ -394,7 +403,7 @@ namespace GPlatesAppLogic
 					typename feature_visitor_type::gml_polygon_type &gml_polygon)
 			{
 				d_domains.push_back(
-						Domain(this->current_top_level_propiter().get(), gml_polygon.get_exterior()));
+						Domain(this->current_top_level_propiter().get(), gml_polygon.get_polygon()));
 			}
 
 		private:
@@ -462,6 +471,15 @@ GPlatesAppLogic::ScalarCoverageFeatureProperties::get_range_property_name_from_d
 }
 
 
+std::pair<GPlatesModel::PropertyName/*domain*/, GPlatesModel::PropertyName/*range*/>
+GPlatesAppLogic::ScalarCoverageFeatureProperties::get_default_domain_range_property_names()
+{
+	return std::make_pair(
+			GPlatesModel::PropertyName::create_gpml("domainSet"),
+			GPlatesModel::PropertyName::create_gpml("rangeSet"));
+}
+
+
 bool
 GPlatesAppLogic::ScalarCoverageFeatureProperties::get_coverages(
 		std::vector<Coverage> &coverages,
@@ -471,7 +489,7 @@ GPlatesAppLogic::ScalarCoverageFeatureProperties::get_coverages(
 	typedef ExtractScalarCoverageFeatureProperties<GPlatesModel::FeatureHandle>
 			extract_scalar_coverage_feature_properties_type;
 
-	extract_scalar_coverage_feature_properties_type visitor;
+	extract_scalar_coverage_feature_properties_type visitor(reconstruction_time);
 	visitor.visit_feature(feature);
 
 	const std::vector<extract_scalar_coverage_feature_properties_type::Coverage> &

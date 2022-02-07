@@ -23,29 +23,32 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <sstream>
 #include <boost/cast.hpp>
 
 #include "TranscriptionScribeContext.h"
 
 #include "ScribeExceptions.h"
+#include "TranscribeSequenceProtocol.h"
 
 #include "global/GPlatesAssert.h"
 
 #include "maths/MathsUtils.h"
+#include "maths/Real.h"
 
 
 GPlatesScribe::TranscriptionScribeContext::TranscriptionScribeContext(
 		const Transcription::non_null_ptr_type &transcription,
-		object_id_type root_object_id,
 		bool is_saving_) :
 	d_is_saving(is_saving_),
+	d_next_save_object_id(ROOT_OBJECT_ID + 1),
 	d_transcription(transcription)
 {
 	// Transcribing at the root scope will require an emulated root composite object.
 	//
 	// This is so calls such as 'Scribe::transcribe("my_first_object", my_first_object)'
 	// will have a place to store the "my_first_object" object tag/key.
-	push_transcribed_object(root_object_id);
+	push_transcribed_object(ROOT_OBJECT_ID);
 }
 
 
@@ -70,7 +73,9 @@ GPlatesScribe::TranscriptionScribeContext::pop_transcribed_object()
 	if (is_saving())
 	{
 		// If nothing was transcribed for the current object id then create an empty composite object.
-		// This is just so the parent object that references the current object will be able to find something.
+		// This is just so the parent object that references the current object will be able to find
+		// something (eg, this is needed by Transcription::is_complete()).
+		//
 		// This usually happens when nothing is transcribed for an object (eg, an empty base class).
 		TranscribedObject &transcribed_object = d_transcribed_object_stack.top();
 		if (!transcribed_object.object_category)
@@ -83,16 +88,134 @@ GPlatesScribe::TranscriptionScribeContext::pop_transcribed_object()
 }
 
 
+GPlatesScribe::TranscriptionScribeContext::object_id_type
+GPlatesScribe::TranscriptionScribeContext::allocate_save_object_id()
+{
+	const object_id_type save_object_id = d_next_save_object_id;
+
+	// Increment the save object id for next time.
+	++d_next_save_object_id;
+
+	return save_object_id;
+}
+
+
+boost::optional<GPlatesScribe::TranscriptionScribeContext::object_id_type>
+GPlatesScribe::TranscriptionScribeContext::is_in_transcription(
+		const ObjectTag &object_tag) const
+{
+	const TranscribedObject &transcribed_object = d_transcribed_object_stack.top();
+
+	// Check if the object category (if determined yet) is a composite.
+	if (transcribed_object.object_category &&
+		transcribed_object.object_category.get() != TranscribedObject::COMPOSITE)
+	{
+		return boost::none;
+	}
+
+	// Check the object type is a composite.
+	// The object type retrieval itself shouldn't throw because the transcription
+	// should be complete (when it was written in the save path it was tested for
+	// completeness which ensures no composites reference dangling child object IDs).
+	if (d_transcription->get_object_type(transcribed_object.object_id) != Transcription::COMPOSITE)
+	{
+		return boost::none;
+	}
+
+	object_id_type object_id;
+
+	// Using a pointer so we can change it as we iterate through the sections of the object tag.
+	Transcription::CompositeObject *section_composite_object =
+			&d_transcription->get_composite_object(transcribed_object.object_id);
+
+	// Iterate over all sections of the object tag.
+	// Note that there is guaranteed to be at least one section.
+	const std::vector<ObjectTag::Section> &object_tag_sections = object_tag.get_sections();
+	const unsigned int num_object_tag_sections = object_tag_sections.size();
+	GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+			num_object_tag_sections > 0,
+			GPLATES_ASSERTION_SOURCE,
+			"Expected at least one section in object tag.");
+
+	for (unsigned int object_tag_section_index = 0;
+		object_tag_section_index < num_object_tag_sections;
+		++object_tag_section_index)
+	{
+		const ObjectTag::Section &object_tag_section = object_tag_sections[object_tag_section_index];
+
+		// The last section of the object tag (or the only section if object tag has one section)
+		// is treated differently because we don't know if the object it refers to is going to be a
+		// composite object or a primitive object. Whereas prior sections (to the last section) have a
+		// subsequent section and hence we know they will be composites.
+		boost::optional<object_id_type &> object_id_ref;
+		if (object_tag_section_index == num_object_tag_sections - 1) // is last section ?
+		{
+			// Only the last section will transcribe the actual object ID.
+			object_id_ref = object_id;
+		}
+
+		switch (object_tag_section.get_type())
+		{
+		case ObjectTag::TAG_SECTION:
+			if (!load_tag_section(
+					object_tag_section.get_tag_name(),
+					object_tag_section.get_tag_version(),
+					section_composite_object,
+					object_id_ref))
+			{
+				return boost::none;
+			}
+			break;
+
+		case ObjectTag::ARRAY_INDEX_SECTION:
+			if (!load_array_index_section(
+					object_tag_section.get_tag_name(),
+					object_tag_section.get_tag_version(),
+					object_tag_section.get_array_index(),
+					section_composite_object,
+					object_id_ref))
+			{
+				return boost::none;
+			}
+			break;
+
+		case ObjectTag::ARRAY_SIZE_SECTION:
+			if (!load_array_size_section(
+					object_tag_section.get_tag_name(),
+					object_tag_section.get_tag_version(),
+					section_composite_object,
+					object_id_ref))
+			{
+				return boost::none;
+			}
+			break;
+
+		default:
+			GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+					false,
+					GPLATES_ASSERTION_SOURCE,
+					"Expecting object tag to contain only tags and arrays (indices/sizes).");
+			break;
+		}
+	}
+
+	return object_id;
+}
+
+
 bool
 GPlatesScribe::TranscriptionScribeContext::transcribe_object_id(
 		object_id_type &object_id,
-		const char *object_tag,
-		object_tag_version_type object_tag_version)
+		const ObjectTag &object_tag)
 {
 	TranscribedObject &transcribed_object = d_transcribed_object_stack.top();
 
 	if (transcribed_object.object_category)
 	{
+		// Note that we throw exception on load path (as well as save path) instead of returning
+		// false because it indicates a programming error - it shouldn't actually be possible to
+		// get here if we're transcribing a primitive object (ie, if 'object_category' is PRIMITIVE)
+		// because class Scribe will never call 'transcribe_object_id()' in that case.
 		GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
 				transcribed_object.object_category.get() == TranscribedObject::COMPOSITE,
 				GPLATES_ASSERTION_SOURCE,
@@ -103,48 +226,137 @@ GPlatesScribe::TranscriptionScribeContext::transcribe_object_id(
 		// This is the first time a child object id is being transcribed into the current object.
 		// So that makes the current object a composite object.
 
-		transcribed_object.object_category = TranscribedObject::COMPOSITE;
-
 		if (is_saving())
 		{
 			d_transcription->add_composite_object(transcribed_object.object_id);
 		}
-	}
-
-	Transcription::CompositeObject &composite_object =
-			d_transcription->get_composite_object(transcribed_object.object_id);
-
-	if (is_saving())
-	{
-		// Convert the object tag/version into an object key.
-		const Transcription::object_key_type object_key =
-				d_transcription->get_or_create_object_key(object_tag, object_tag_version);
-
-		// Save the object id associated with the object key.
-		// Note that each key can contain multiple object ids.
-		// For example, when arrays are transcribed each array element has the same key.
-		transcribed_object.save_child_object_id(object_id, object_key, composite_object);
-	}
-	else // loading...
-	{
-		// Convert the object tag/version into an object key.
-		boost::optional<Transcription::object_key_type> object_key =
-				d_transcription->get_object_key(object_tag, object_tag_version);
-
-		// If the object key doesn't even exist across all transcribed objects then
-		// it won't exist as an object key of the current composite object.
-		if (!object_key)
+		else // loading...
 		{
-			return false;
+			// Check the object type is a composite.
+			// The object type retrieval itself shouldn't throw because the transcription
+			// should be complete (when it was written in the save path it was tested for
+			// completeness which ensures no composites reference dangling child object IDs).
+			if (d_transcription->get_object_type(transcribed_object.object_id) != Transcription::COMPOSITE)
+			{
+				return false;
+			}
 		}
 
-		// Load the next object id associated with the object key.
-		// Note that each key can contain multiple object ids.
-		// For example, when arrays are transcribed each array element has the same key.
-		if (!transcribed_object.load_child_object_id(object_id, object_key.get(), composite_object))
+		transcribed_object.object_category = TranscribedObject::COMPOSITE;
+	}
+
+	// Using a pointer so we can change it as we iterate through the sections of the object tag.
+	Transcription::CompositeObject *section_composite_object =
+			&d_transcription->get_composite_object(transcribed_object.object_id);
+
+	// Iterate over all sections of the object tag.
+	// Note that there is guaranteed to be at least one section.
+	const std::vector<ObjectTag::Section> &object_tag_sections = object_tag.get_sections();
+	const unsigned int num_object_tag_sections = object_tag_sections.size();
+	GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+			num_object_tag_sections > 0,
+			GPLATES_ASSERTION_SOURCE,
+			"Expected at least one section in object tag.");
+
+	for (unsigned int object_tag_section_index = 0;
+		object_tag_section_index < num_object_tag_sections;
+		++object_tag_section_index)
+	{
+		const ObjectTag::Section &object_tag_section = object_tag_sections[object_tag_section_index];
+
+		// The last section of the object tag (or the only section if object tag has one section)
+		// is treated differently because we don't know if the object it refers to is going to be a
+		// composite object or a primitive object. Whereas prior sections (to the last section) have a
+		// subsequent section and hence we know they will be composites.
+		boost::optional<object_id_type &> object_id_ref;
+		if (object_tag_section_index == num_object_tag_sections - 1) // is last section ?
 		{
-			// Couldn't find object key, or ran out of object ids associated with object key.
-			return false;
+			// Only the last section will transcribe the actual object ID.
+			object_id_ref = object_id;
+		}
+
+		if (is_saving())
+		{
+			switch (object_tag_section.get_type())
+			{
+			case ObjectTag::TAG_SECTION:
+				save_tag_section(
+						object_tag_section.get_tag_name(),
+						object_tag_section.get_tag_version(),
+						section_composite_object,
+						object_id_ref);
+				break;
+
+			case ObjectTag::ARRAY_INDEX_SECTION:
+				save_array_index_section(
+						object_tag_section.get_tag_name(),
+						object_tag_section.get_tag_version(),
+						object_tag_section.get_array_index(),
+						section_composite_object,
+						object_id_ref);
+				break;
+
+			case ObjectTag::ARRAY_SIZE_SECTION:
+				save_array_size_section(
+						object_tag_section.get_tag_name(),
+						object_tag_section.get_tag_version(),
+						section_composite_object,
+						object_id_ref);
+				break;
+
+			default:
+				GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+						false,
+						GPLATES_ASSERTION_SOURCE,
+						"Expecting object tag to contain only tags and arrays (indices/sizes).");
+				break;
+			}
+		}
+		else // loading...
+		{
+			switch (object_tag_section.get_type())
+			{
+			case ObjectTag::TAG_SECTION:
+				if (!load_tag_section(
+						object_tag_section.get_tag_name(),
+						object_tag_section.get_tag_version(),
+						section_composite_object,
+						object_id_ref))
+				{
+					return false;
+				}
+				break;
+
+			case ObjectTag::ARRAY_INDEX_SECTION:
+				if (!load_array_index_section(
+						object_tag_section.get_tag_name(),
+						object_tag_section.get_tag_version(),
+						object_tag_section.get_array_index(),
+						section_composite_object,
+						object_id_ref))
+				{
+					return false;
+				}
+				break;
+
+			case ObjectTag::ARRAY_SIZE_SECTION:
+				if (!load_array_size_section(
+						object_tag_section.get_tag_name(),
+						object_tag_section.get_tag_version(),
+						section_composite_object,
+						object_id_ref))
+				{
+					return false;
+				}
+				break;
+
+			default:
+				GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+						false,
+						GPLATES_ASSERTION_SOURCE,
+						"Expecting object tag to contain only tags and arrays (indices/sizes).");
+				break;
+			}
 		}
 	}
 
@@ -678,7 +890,7 @@ GPlatesScribe::TranscriptionScribeContext::transcribe(
 		catch (boost::numeric::bad_numeric_cast &)
 		{
 			// Throw as one of our exceptions instead.
-			GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+			GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
 					false,
 					GPLATES_ASSERTION_SOURCE,
 					"'long' value is out of range of 32-bit signed integer.");
@@ -746,7 +958,7 @@ GPlatesScribe::TranscriptionScribeContext::transcribe(
 		catch (boost::numeric::bad_numeric_cast &)
 		{
 			// Throw as one of our exceptions instead.
-			GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+			GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
 					false,
 					GPLATES_ASSERTION_SOURCE,
 					"'unsigned long' value is out of range of 32-bit unsigned integer.");
@@ -846,8 +1058,18 @@ GPlatesScribe::TranscriptionScribeContext::transcribe(
 		case Transcription::DOUBLE:
 			try
 			{
-				object = boost::numeric_cast<float>(
-						d_transcription->get_double(transcribed_object.object_id));
+				const double double_object = d_transcription->get_double(transcribed_object.object_id);
+
+				// 'boost::numeric_cast' from double to float will not cast Infinity and NaN
+				// from double to float so we use a regular cast for that.
+				if (GPlatesMaths::is_finite(double_object))
+				{
+					object = boost::numeric_cast<float>(double_object);
+				}
+				else
+				{
+					object = static_cast<float>(double_object);
+				}
 			}
 			catch (boost::numeric::bad_numeric_cast &)
 			{
@@ -934,7 +1156,7 @@ GPlatesScribe::TranscriptionScribeContext::transcribe(
 		catch (boost::numeric::bad_numeric_cast &)
 		{
 			// Throw as one of our exceptions instead.
-			GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+			GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
 					false,
 					GPLATES_ASSERTION_SOURCE,
 					"'long double' value is out of range of 'double'.");
@@ -957,53 +1179,322 @@ GPlatesScribe::TranscriptionScribeContext::transcribe(
 }
 
 
-bool
-GPlatesScribe::TranscriptionScribeContext::TranscribedObject::load_child_object_id(
-		object_id_type &child_object_id,
-		const Transcription::object_key_type &object_key,
-		const Transcription::CompositeObject &composite_object)
+void
+GPlatesScribe::TranscriptionScribeContext::save_tag_section(
+		const std::string &tag_name,
+		unsigned int tag_version,
+		Transcription::CompositeObject *&section_composite_object,
+		boost::optional<object_id_type &> object_id)
 {
-	// See if we've already encountered the child object key.
-	const std::pair<child_object_id_map_type::iterator, bool> object_key_inserted =
-			d_child_object_id_map.insert(
-					child_object_id_map_type::value_type(
-							object_key,
-							range_type(0,0)/*dummy*/));
+	// Convert the section tag name/version into an object key.
+	const Transcription::object_key_type section_key =
+			d_transcription->get_or_create_object_key(tag_name, tag_version);
 
-	if (object_key_inserted.second)
+	const unsigned int num_children_with_key =
+			section_composite_object->get_num_children_with_key(section_key);
+
+	if (object_id)
 	{
-		// Insertion was successful so create a new child object key entry.
+		// Should not have any children yet.
+		GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
+				num_children_with_key == 0,
+				GPLATES_ASSERTION_SOURCE,
+				std::string("An object has already been saved using the same object tag '") + tag_name + "'");
 
-		// See if the composite object even has the child object key.
-		const unsigned int num_children_with_key =
-				composite_object.get_num_children_with_key(object_key);
-		if (num_children_with_key == 0)
-		{
-			// Erase the entry we just inserted since no longer using it.
-			d_child_object_id_map.erase(object_key_inserted.first);
+		// Save the object id associated with the object key.
+		section_composite_object->set_child(section_key, object_id.get());
 
-			// Composite object has no child with that key.
-			return false;
-		}
+		return;
+	}
+	// else not the last section ...
 
-		// Assign new child index range to the inserted map entry.
-		object_key_inserted.first->second = range_type(0, num_children_with_key);
+	if (num_children_with_key == 0)
+	{
+		// There are no children for the current section tag which means this is the
+		// first time we've visited this section, so create a new composite object
+		// for the next section.
+		const object_id_type next_section_object_id = allocate_save_object_id();
+		Transcription::CompositeObject &next_section_composite_object =
+				d_transcription->add_composite_object(next_section_object_id);
+		section_composite_object->set_child(section_key, next_section_object_id);
+
+		// Move onto the next section.
+		section_composite_object = &next_section_composite_object;
+
+		return;
 	}
 
-	// The range of child object id indices associated with 'object_key'.
-	range_type &range = object_key_inserted.first->second;
+	// Should only have one child. If there are more then the tag is being
+	// used to store an array, but this is very unlikely to happen.
+	GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
+			num_children_with_key == 1,
+			GPLATES_ASSERTION_SOURCE,
+			std::string("Object tag '") + tag_name + "' already used for an array - so cannot use for non-array.");
 
-	// If there are no more child object ids associated with 'object_key' then fail.
-	if (range.first == range.second)
+	// We've visited the next section before so we just re-use it because we're just trying to
+	// traverse through the object tag until we get to the end of it and can transcribe the object ID.
+	const object_id_type next_section_object_id =
+			section_composite_object->get_child(section_key);
+
+	// We've visited the next section before so we don't need to create a
+	// composite object for it - just retrieve the previously created one.
+	//
+	// It's possible a composite object has not yet been created (even though
+	// its object ID has been transcribed). If that's the case then it's an
+	// error in using the scribe system (and an exception will be thrown).
+	// It shouldn't happen if the scribe system is used correctly.
+	Transcription::CompositeObject &next_section_composite_object =
+			d_transcription->get_composite_object(next_section_object_id);
+
+	// Move onto the next section.
+	section_composite_object = &next_section_composite_object;
+}
+
+
+bool
+GPlatesScribe::TranscriptionScribeContext::load_tag_section(
+		const std::string &tag_name,
+		unsigned int tag_version,
+		Transcription::CompositeObject *&section_composite_object,
+		boost::optional<object_id_type &> object_id) const
+{
+	// Convert the section tag name/version into an object key.
+	boost::optional<Transcription::object_key_type> section_key =
+			d_transcription->get_object_key(tag_name, tag_version);
+
+	// If the object key doesn't even exist across all transcribed objects then
+	// it won't exist as an object key of the current composite object.
+	if (!section_key)
 	{
 		return false;
 	}
 
-	// Read the next child object id.
-	child_object_id = composite_object.get_child(object_key, range.first/*index*/);
+	const unsigned int num_children_with_key =
+			section_composite_object->get_num_children_with_key(section_key.get());
 
-	// Move to the next child object id (associated with 'object_key') for next time.
-	++range.first;
+	if (num_children_with_key != 1)
+	{
+		// Either couldn't find section key or there were multiple children.
+		// The latter should have been caught when the transcription was written.
+		return false;
+	}
+	// else there was exactly one child object corresponding to the next section ...
+
+	if (object_id)
+	{
+		// Load the object id associated with the object key.
+		object_id.get() = section_composite_object->get_child(section_key.get());
+
+		return true;
+	}
+	// else not the last section ...
+
+	const object_id_type next_section_object_id = section_composite_object->get_child(section_key.get());
+
+	// Check the object type is a composite.
+	// The object type retrieval itself shouldn't throw because the transcription
+	// should be complete (when it was written in the save path it was tested for
+	// completeness which ensures no composites reference dangling child object IDs).
+	if (d_transcription->get_object_type(next_section_object_id) != Transcription::COMPOSITE)
+	{
+		// We're expecting a composite object.
+		return false;
+	}
+
+	Transcription::CompositeObject &next_section_composite_object =
+			d_transcription->get_composite_object(next_section_object_id);
+
+	// Move onto the next section.
+	section_composite_object = &next_section_composite_object;
+
+	return true;
+}
+
+
+void
+GPlatesScribe::TranscriptionScribeContext::save_array_index_section(
+		const std::string &array_item_tag_name,
+		unsigned int array_item_tag_version,
+		unsigned int array_index,
+		Transcription::CompositeObject *&section_composite_object,
+		boost::optional<object_id_type &> object_id)
+{
+	// Convert the array item name/version into an object key.
+	const Transcription::object_key_type array_item_key =
+			d_transcription->get_or_create_object_key(array_item_tag_name, array_item_tag_version);
+
+	// Set the array item (either the next section or the actual object being transcribed if last section).
+	if (object_id)
+	{
+		// Should not already have a child at the requested array index.
+		if (section_composite_object->has_valid_child(array_item_key, array_index))
+		{
+			std::stringstream string_stream;
+			string_stream << "An object has already been saved using the same object tag '"
+					<< array_item_tag_name << "' and array index '" << array_index << "'.";
+
+			GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
+					false,
+					GPLATES_ASSERTION_SOURCE,
+					string_stream.str());
+		}
+
+		// Save the object id at the requested array index (the index of child associated
+		// with the array item key).
+		section_composite_object->set_child(array_item_key, object_id.get(), array_index);
+
+		return;
+	}
+	// else not the last section ...
+
+	boost::optional<object_id_type> next_section_object_id =
+			section_composite_object->has_valid_child(array_item_key, array_index);
+	if (!next_section_object_id)
+	{
+		next_section_object_id = allocate_save_object_id();
+		Transcription::CompositeObject &next_section_composite_object =
+				d_transcription->add_composite_object(next_section_object_id.get());
+		section_composite_object->set_child(array_item_key, next_section_object_id.get(), array_index);
+
+		// Move onto the next section.
+		section_composite_object = &next_section_composite_object;
+
+		return;
+	}
+
+	// Move onto the next section.
+	section_composite_object = &d_transcription->get_composite_object(next_section_object_id.get());
+}
+
+
+bool
+GPlatesScribe::TranscriptionScribeContext::load_array_index_section(
+		const std::string &array_item_tag_name,
+		unsigned int array_item_tag_version,
+		unsigned int array_index,
+		Transcription::CompositeObject *&section_composite_object,
+		boost::optional<object_id_type &> object_id) const
+{
+	// Convert the array item name/version into an object key.
+	boost::optional<Transcription::object_key_type> array_item_key =
+			d_transcription->get_object_key(array_item_tag_name, array_item_tag_version);
+
+	// If the object key doesn't even exist across all transcribed objects then
+	// it won't exist as an object key of the current composite object.
+	if (!array_item_key)
+	{
+		return false;
+	}
+
+	// Get the array item (either the next section or the actual object being transcribed if last section).
+	if (object_id)
+	{
+		boost::optional<object_id_type> object_id_opt =
+				section_composite_object->has_valid_child(array_item_key.get(), array_index);
+		if (!object_id_opt)
+		{
+			return false;
+		}
+
+		object_id.get() = object_id_opt.get();
+
+		return true;
+	}
+	// else not the last section ...
+
+	boost::optional<object_id_type> next_section_object_id =
+			section_composite_object->has_valid_child(array_item_key.get(), array_index);
+	if (!next_section_object_id)
+	{
+		return false;
+	}
+
+	// Check the object type is a composite.
+	// The object type retrieval itself shouldn't throw because the transcription
+	// should be complete (when it was written in the save path it was tested for
+	// completeness which ensures no composites reference dangling child object IDs).
+	if (d_transcription->get_object_type(next_section_object_id.get()) != Transcription::COMPOSITE)
+	{
+		// We're expecting a composite object.
+		return false;
+	}
+
+	Transcription::CompositeObject &next_section_composite_object =
+			d_transcription->get_composite_object(next_section_object_id.get());
+
+	// Move onto the next section.
+	section_composite_object = &next_section_composite_object;
+
+	return true;
+}
+
+
+void
+GPlatesScribe::TranscriptionScribeContext::save_array_size_section(
+		const std::string &array_size_tag_name,
+		unsigned int array_size_tag_version,
+		Transcription::CompositeObject *&section_composite_object,
+		boost::optional<object_id_type &> object_id)
+{
+	// Convert the array size name/version into an object key.
+	const Transcription::object_key_type array_size_key =
+			d_transcription->get_or_create_object_key(array_size_tag_name, array_size_tag_version);
+
+	const unsigned int num_children_with_array_size_key =
+			section_composite_object->get_num_children_with_key(array_size_key);
+
+	// Should not have any children yet.
+	GPlatesGlobal::Assert<Exceptions::ScribeUserError>(
+			num_children_with_array_size_key == 0,
+			GPLATES_ASSERTION_SOURCE,
+			std::string("An object has already been saved using the same object tag '") + array_size_tag_name + "'");
+
+	// The array size section should be the last section in the object tag.
+	// Class ObjectTag should ensure that.
+	GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+			object_id,
+			GPLATES_ASSERTION_SOURCE,
+			"Expecting object tag array length to be the last section.");
+
+	section_composite_object->set_child(array_size_key, object_id.get());
+}
+
+
+bool
+GPlatesScribe::TranscriptionScribeContext::load_array_size_section(
+		const std::string &array_size_tag_name,
+		unsigned int array_size_tag_version,
+		Transcription::CompositeObject *&section_composite_object,
+		boost::optional<object_id_type &> object_id) const
+{
+	// Convert the array size name/version into an object key.
+	boost::optional<Transcription::object_key_type> array_size_key =
+			d_transcription->get_object_key(array_size_tag_name, array_size_tag_version);
+
+	// If the object key doesn't even exist across all transcribed objects then
+	// it won't exist as an object key of the current composite object.
+	if (!array_size_key)
+	{
+		return false;
+	}
+
+	const unsigned int num_children_with_array_size_key =
+			section_composite_object->get_num_children_with_key(array_size_key.get());
+
+	// Should only have one child associated with array size tag.
+	if (num_children_with_array_size_key != 1)
+	{
+		return false;
+	}
+
+	// The array size section should be the last section in the object tag.
+	// Class ObjectTag should ensure that.
+	GPlatesGlobal::Assert<Exceptions::ScribeLibraryError>(
+			object_id,
+			GPLATES_ASSERTION_SOURCE,
+			"Expecting object tag array length to be the last section.");
+
+	object_id.get() = section_composite_object->get_child(array_size_key.get());
 
 	return true;
 }

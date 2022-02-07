@@ -27,7 +27,9 @@
 #ifndef GPLATES_GLOBAL_PYTHON_H
 #define GPLATES_GLOBAL_PYTHON_H
 
-#ifndef Q_MOC_RUN //workaround. Qt moc doesn't like BOOST_JOIN. Make them not seeing each other.
+// Workaround for Qt moc failing to parse BOOST_JOIN macro in Boost library.
+// Workaround mentioned at https://bugreports.qt.io/browse/QTBUG-22829
+#ifndef Q_MOC_RUN
 
 #include "global/config.h" // GPLATES_NO_PYTHON
 
@@ -43,6 +45,15 @@
 #	if defined(ssize_t)
 #		undef ssize_t
 #	endif
+
+// Partial workaround for compile error in <pyport.h> for Python versions less than 2.7.13 and 3.5.3.
+// See https://bugs.python.org/issue10910
+// The rest of the workaround involves including "global/python.h" at the top of some source files
+// to ensure <Python.h> is included before <ctype.h>.
+//
+// Note: This should be included after the above HAVE_DIRECT_H definition to avoid compile error on Windows.
+#	include <Python.h>
+
 #	include <boost/python.hpp>
 #endif //GPLATES_NO_PYTHON
 

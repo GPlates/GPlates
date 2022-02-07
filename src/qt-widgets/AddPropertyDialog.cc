@@ -24,6 +24,7 @@
  */
 
 #include <algorithm>
+#include <functional>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QDebug>
@@ -79,6 +80,26 @@ namespace
 
 		return false;
 	}
+
+
+	/**
+	 * Used to sort GPGIM properties by the unqualified part of their property names.
+	 */
+	class SortByUnqualifiedPropertyName :
+			public std::binary_function<
+					GPlatesModel::GpgimProperty::non_null_ptr_to_const_type,
+					GPlatesModel::GpgimProperty::non_null_ptr_to_const_type,
+					bool>
+	{
+	public:
+		bool
+		operator()(
+				const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &lhs,
+				const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &rhs) const
+		{
+			return lhs->get_property_name().get_name() < rhs->get_property_name().get_name();
+		}
+	};
 }
 
 
@@ -140,7 +161,7 @@ GPlatesQtWidgets::AddPropertyDialog::reset()
 {
 	// Choose a property name that all feature types have.
 	// "gml:name" is a property of "gml:AbstractFeature" which all feature types inherit from.
-	static const int default_property_name_index = combobox_add_property_name->findText("gml:name");
+	const int default_property_name_index = combobox_add_property_name->findText("gml:name");
 
 	combobox_add_property_name->setCurrentIndex(default_property_name_index);
 }
@@ -403,6 +424,9 @@ GPlatesQtWidgets::AddPropertyDialog::populate_property_name_combobox()
 		GPlatesModel::GpgimFeatureClass::gpgim_property_seq_type gpgim_feature_properties;
 		gpgim_feature_class.get()->get_feature_properties(gpgim_feature_properties);
 
+		// Sort GPGIM properties by the unqualified part of their property names.
+		std::sort(gpgim_feature_properties.begin(), gpgim_feature_properties.end(), SortByUnqualifiedPropertyName());
+
 		// Iterate over the allowed properties for the feature type and add each property name
 		// and associated default structural type.
 		BOOST_FOREACH(
@@ -444,8 +468,10 @@ GPlatesQtWidgets::AddPropertyDialog::populate_property_name_combobox()
 	// Then add all property names present in the GPGIM.
 	// This will also duplicate the feature properties added above (but this time they'll only have
 	// a blank icon to indicate they are not allowed by the GPGIM for the current feature type).
-	const GPlatesModel::Gpgim::property_seq_type &gpgim_properties =
-			GPlatesModel::Gpgim::instance().get_properties();
+	GPlatesModel::Gpgim::property_seq_type gpgim_properties = GPlatesModel::Gpgim::instance().get_properties();
+	// Sort GPGIM properties by the unqualified part of their property names.
+	std::sort(gpgim_properties.begin(), gpgim_properties.end(), SortByUnqualifiedPropertyName());
+
 	BOOST_FOREACH(
 			const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &gpgim_property,
 			gpgim_properties)

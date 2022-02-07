@@ -24,6 +24,9 @@
     <widget class="QWidget" name="view_total_reconstruction_poles_placeholder_widget" native="true"/>
    </item>
    <item>
+    <widget class="QWidget" name="merge_reconstruction_tree_layers_placeholder_widget" native="true"/>
+   </item>
+   <item>
     <widget class="QCheckBox" name="keep_as_default_checkbox">
      <property name="text">
       <string>Keep as default tree upon file open</string>

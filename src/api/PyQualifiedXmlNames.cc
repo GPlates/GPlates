@@ -486,6 +486,7 @@ namespace GPlatesApi
 	const GPlatesModel::PropertyName gpml_average_inclination = GPlatesModel::PropertyName::create_gpml("averageInclination");
 	const GPlatesModel::PropertyName gpml_conjugate_plate_id = GPlatesModel::PropertyName::create_gpml("conjugatePlateId");
 	const GPlatesModel::PropertyName gpml_fixed_reference_frame = GPlatesModel::PropertyName::create_gpml("fixedReferenceFrame");
+	const GPlatesModel::PropertyName gpml_geometry_import_time = GPlatesModel::PropertyName::create_gpml("geometryImportTime");
 	const GPlatesModel::PropertyName gpml_left_plate = GPlatesModel::PropertyName::create_gpml("leftPlate");
 	const GPlatesModel::PropertyName gpml_moving_reference_frame = GPlatesModel::PropertyName::create_gpml("movingReferenceFrame");
 	const GPlatesModel::PropertyName gpml_polarity_chron_id = GPlatesModel::PropertyName::create_gpml("polarityChronId");
@@ -556,6 +557,7 @@ export_property_name()
 			"* `pygplates.PropertyName.gpml_average_inclination <http://www.gplates.org/docs/gpgim/#gpml:averageInclination>`_\n"
 			"* `pygplates.PropertyName.gpml_conjugate_plate_id <http://www.gplates.org/docs/gpgim/#gpml:conjugatePlateId>`_\n"
 			"* `pygplates.PropertyName.gpml_fixed_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:fixedReferenceFrame>`_\n"
+			"* `pygplates.PropertyName.gpml_geometry_import_time <http://www.gplates.org/docs/gpgim/#gpml:geometryImportTime>`_\n"
 			"* `pygplates.PropertyName.gpml_left_plate <http://www.gplates.org/docs/gpgim/#gpml:leftPlate>`_\n"
 			"* `pygplates.PropertyName.gpml_moving_reference_frame <http://www.gplates.org/docs/gpgim/#gpml:movingReferenceFrame>`_\n"
 			"* `pygplates.PropertyName.gpml_polarity_chron_id <http://www.gplates.org/docs/gpgim/#gpml:polarityChronId>`_\n"
@@ -610,6 +612,7 @@ export_property_name()
 	property_name_class.def_readonly("gpml_average_inclination", GPlatesApi::gpml_average_inclination);
 	property_name_class.def_readonly("gpml_conjugate_plate_id", GPlatesApi::gpml_conjugate_plate_id);
 	property_name_class.def_readonly("gpml_fixed_reference_frame", GPlatesApi::gpml_fixed_reference_frame);
+	property_name_class.def_readonly("gpml_geometry_import_time", GPlatesApi::gpml_geometry_import_time);
 	property_name_class.def_readonly("gpml_left_plate", GPlatesApi::gpml_left_plate);
 	property_name_class.def_readonly("gpml_moving_reference_frame", GPlatesApi::gpml_moving_reference_frame);
 	property_name_class.def_readonly("gpml_polarity_chron_id", GPlatesApi::gpml_polarity_chron_id);

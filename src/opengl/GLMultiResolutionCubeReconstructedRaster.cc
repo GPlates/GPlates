@@ -52,12 +52,19 @@
 #include "utils/Profile.h"
 
 
+const unsigned int GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::MIN_TILE_TEXEL_DIMENSION = 256;
+
+
 GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::GLMultiResolutionCubeReconstructedRaster(
 		GLRenderer &renderer,
 		const GLMultiResolutionStaticPolygonReconstructedRaster::non_null_ptr_type &source_reconstructed_raster,
 		bool cache_tile_textures) :
 	d_reconstructed_raster(source_reconstructed_raster),
-	d_tile_texel_dimension(source_reconstructed_raster->get_tile_texel_dimension()),
+	d_level_of_detail_offset_for_scaled_tile_dimension(0),
+	d_tile_texel_dimension(
+			update_tile_texel_dimension(
+					renderer,
+					source_reconstructed_raster->get_tile_texel_dimension())),
 	// Start with small size cache and just let the cache grow in size as needed (if caching enabled)...
 	d_texture_cache(tile_texture_cache_type::create(2/* GPU pipeline breathing room in case caching disabled*/)),
 	d_cache_tile_textures(cache_tile_textures),
@@ -75,6 +82,37 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::GLMultiResolutionCubeRe
 							0.5/* half a texel */))),
 	d_cube_quad_tree(cube_quad_tree_type::create())
 {
+}
+
+
+unsigned int
+GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::update_tile_texel_dimension(
+		GLRenderer &renderer,
+		unsigned int tile_texel_dimension)
+{
+	const GLCapabilities &capabilities = renderer.get_capabilities();
+
+	// If tile dimensions are too small then we end up requiring a lot more tiles to render since
+	// there's no limit on how deep we can render (see 'QuadTreeNodeImp::is_leaf_node()' for more details).
+	//
+	// To fix this we keep doubling the tile dimensions until they exceed a minimum (and without
+	// exceeding the maximum texture size).
+	d_level_of_detail_offset_for_scaled_tile_dimension = 0;
+	while (tile_texel_dimension < MIN_TILE_TEXEL_DIMENSION)
+	{
+		// Make sure the doubled tile dimension does not exceed the maximum texture size.
+		// We're requiring the final multiplier to be a power-of-two so that the level-of-detail
+		// adjustment is an integer (so we can render at an exact LOD level).
+		if (2 * tile_texel_dimension > capabilities.texture.gl_max_texture_size)
+		{
+			break;
+		}
+
+		tile_texel_dimension = 2 * tile_texel_dimension;
+		--d_level_of_detail_offset_for_scaled_tile_dimension;
+	}
+
+	return tile_texel_dimension;
 }
 
 
@@ -177,11 +215,6 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::render_raster_data_into
 {
 	PROFILE_FUNC();
 
-	// We calculate the level-of-detail ourselves.
-	// We do this instead of deferring to the reconstructed raster (which would have meant giving
-	// it our modelview/projection matrices and viewport).
-	const float level_of_detail = get_level_of_detail(tile);
-
 	// Determine if anything was rendered.
 	bool rendered = false;
 
@@ -238,7 +271,7 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::render_raster_data_into
 		// Reconstruct source raster by rendering into the render target using the view frustum
 		// we have provided and the level-of-detail we have calculated.
 		GLMultiResolutionStaticPolygonReconstructedRaster::cache_handle_type source_cache_handle;
-		if (d_reconstructed_raster->render(renderer, level_of_detail, source_cache_handle))
+		if (d_reconstructed_raster->render(renderer, tile.d_level_of_detail, source_cache_handle))
 		{
 			rendered = true;
 		}
@@ -259,11 +292,15 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::render_raster_data_into
 
 float
 GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_level_of_detail(
-		const CubeQuadTreeNode &tile) const
+		unsigned int quad_tree_depth) const
 {
 	// Since our (cube map) tile dimension is the same as the reconstructed raster's input
 	// source (cube map) tile dimension we will just render the (input) source (cube map) raster
 	// as the same level-of-detail (which means the same quad tree depth).
+	//
+	// UPDATE: Our (cube map) tile dimension can now be a power-of-two multiple of the reconstructed
+	// raster's input source (cube map) tile dimension if the latter is found to be too small.
+	// We account for this by adding a LOD offset to the final level-of-detail.
 	//
 	// NOTE: Previously we did the usual thing of passing our tile's modelview/projection matrices
 	// and viewport to the reconstructed raster which, in turn, determined the level-of-detail
@@ -272,12 +309,14 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_level_of_detail(
 	// an extra two levels too deep) which just slowed things down significantly (mostly due to the
 	// extra input raster data that needed to be converted to colours by palette lookup).
 	// Now the size of source tiles is roughly the same in the globe and map views.
-	const float cube_quad_tree_depth = tile.d_quad_tree_depth;
+	const float cube_quad_tree_depth = quad_tree_depth;
 
 	// Need to convert cube quad tree depth to the level-of-detail recognised by the source raster.
-	// See 'GLMultiResolutionStaticPolygonReconstructedRaster::get_level_of_detail()'
-	// for more details.
-	const float level_of_detail = (d_reconstructed_raster->get_num_levels_of_detail() - 1) - cube_quad_tree_depth;
+	// See 'GLMultiResolutionStaticPolygonReconstructedRaster::get_level_of_detail()' for more details.
+	//
+	// We add a LOD offset to account for possible power-of-two scaling of input source tile dimension.
+	const float level_of_detail = d_level_of_detail_offset_for_scaled_tile_dimension +
+			(d_reconstructed_raster->get_num_levels_of_detail() - 1) - cube_quad_tree_depth;
 
 	// Return the clamped level-of-detail to ensure it is within a valid range.
 	return d_reconstructed_raster->clamp_level_of_detail(level_of_detail);
@@ -315,7 +354,8 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_quad_tree_root_node
 						CubeQuadTreeNode(
 								view_transform,
 								projection_transform,
-								cube_quad_tree_location.get_node_location()->quad_tree_depth,
+								get_level_of_detail(
+										cube_quad_tree_location.get_node_location()->quad_tree_depth),
 								d_texture_cache->allocate_volatile_object())));
 
 		cube_root_node = d_cube_quad_tree->get_quad_tree_root_node(cube_face);
@@ -381,7 +421,8 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::get_child_node(
 						CubeQuadTreeNode(
 								view_transform,
 								projection_transform,
-								child_cube_quad_tree_location.get_node_location()->quad_tree_depth,
+								get_level_of_detail(
+										child_cube_quad_tree_location.get_node_location()->quad_tree_depth),
 								d_texture_cache->allocate_volatile_object())));
 
 		cube_child_node = parent_node_impl.cube_quad_tree_node.get_child_node(child_x_offset, child_y_offset);
@@ -457,5 +498,5 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::create_tile_texture(
 			0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 
 	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 }

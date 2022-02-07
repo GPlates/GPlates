@@ -53,7 +53,12 @@ GPlatesApi::PythonExtractUtils::extract_key_value_map(
 	{
 		// Get the iterator over the list of items in the dictionary.
 		// This is an iterator over (key,value) tuples.
-		key_value_mapping_object = extract_key_value_dict().iteritems();
+		key_value_mapping_object = extract_key_value_dict().
+#if PY_MAJOR_VERSION >= 3
+				items();
+#else
+				iteritems();
+#endif 
 	}
 
 	// Attempt to extract the python key/value sequence.

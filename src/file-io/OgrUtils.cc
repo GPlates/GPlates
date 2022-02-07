@@ -35,6 +35,7 @@
 #include "model/GpgimProperty.h"
 #include "model/GpgimStructuralType.h"
 #include "property-values/Enumeration.h"
+#include "property-values/GeoTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlPlateId.h"
 #include "property-values/StructuralType.h"
@@ -46,7 +47,7 @@
 namespace
 {
     double
-    get_time_from_time_period(
+    get_time_from_time_instant(
         const GPlatesPropertyValues::GmlTimeInstant &time_instant)
     {
 
@@ -406,6 +407,7 @@ GPlatesFileIO::OgrUtils::add_standard_properties_to_kvd(
 	add_left_plate_to_kvd(feature,kvd);
 	add_right_plate_to_kvd(feature,kvd);
 	add_spreading_asymmetry_to_kvd(feature,kvd);
+	add_geometry_import_time_to_kvd(feature,kvd);
 }
 
 void
@@ -497,8 +499,8 @@ GPlatesFileIO::OgrUtils::add_begin_and_end_time_to_kvd(
 					feature, valid_time_property_name);
     if (time_period)
     {
-		begin_time = get_time_from_time_period(*(time_period.get()->begin()));
-		end_time = get_time_from_time_period(*(time_period.get()->end()));
+		begin_time = get_time_from_time_instant(*(time_period.get()->begin()));
+		end_time = get_time_from_time_instant(*(time_period.get()->end()));
     }
 
 	GPlatesPropertyValues::XsDouble::non_null_ptr_type begin_value =
@@ -803,6 +805,43 @@ GPlatesFileIO::OgrUtils::add_spreading_asymmetry_to_kvd(
 					key,
 					value,
 					GPlatesPropertyValues::StructuralType::create_xsi("double"));
+	elements.push_back(element);
+}
+
+void
+GPlatesFileIO::OgrUtils::add_geometry_import_time_to_kvd(
+		const GPlatesModel::FeatureHandle::const_weak_ref &feature,
+		GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type kvd)
+{
+	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &
+			elements = kvd->elements();
+
+	static const GPlatesModel::PropertyName geometry_import_time_property_name =
+			GPlatesModel::PropertyName::create_gpml("geometryImportTime");
+
+	// Default value.
+	double geometry_import_time = 0.0;
+
+	boost::optional<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_to_const_type> time_instant =
+			GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::GmlTimeInstant>(
+					feature, geometry_import_time_property_name);
+    if (time_instant)
+    {
+		geometry_import_time = get_time_from_time_instant(*time_instant.get());
+    }
+
+	GPlatesPropertyValues::XsDouble::non_null_ptr_type value =
+			GPlatesPropertyValues::XsDouble::create(geometry_import_time);
+
+	GPlatesPropertyValues::XsString::non_null_ptr_type key =
+			GPlatesPropertyValues::XsString::create("IMPORT_AGE");
+
+	GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type element =
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement::create(
+					key,
+					value,
+					GPlatesPropertyValues::StructuralType::create_xsi("double"));
+
 	elements.push_back(element);
 }
 

@@ -26,6 +26,7 @@
 #ifndef GPLATES_APP_LOGIC_SCALARCOVERAGEFEATUREPROPERTIES_H
 #define GPLATES_APP_LOGIC_SCALARCOVERAGEFEATUREPROPERTIES_H
 
+#include <utility>
 #include <vector>
 #include <boost/optional.hpp>
 
@@ -65,6 +66,13 @@ namespace GPlatesAppLogic
 		boost::optional<GPlatesModel::PropertyName>
 		get_range_property_name_from_domain(
 				const GPlatesModel::PropertyName &domain_property_name);
+
+
+		/**
+		 * Returns the default domain/range property names ('gpml:domainSet' and 'gpml:rangeSet').
+		 */
+		std::pair<GPlatesModel::PropertyName/*domain*/, GPlatesModel::PropertyName/*range*/>
+		get_default_domain_range_property_names();
 
 
 		/**

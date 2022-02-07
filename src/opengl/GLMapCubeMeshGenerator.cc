@@ -134,6 +134,14 @@ GPlatesOpenGL::GLMapCubeMeshGenerator::create_cube_face_quadrant_mesh_vertices(
 						{
 							// Change the point's longitude depending on which longitude range
 							// the quadrant is in.
+							//
+							// Note: Also exporting of global grid-line-registered rasters depends
+							// on latitude and longitude extents being exactly [-90, 90] and [-180, 180]
+							// after subtracting central longitude in map forward projection since the
+							// export expands the map projection very slightly (using OpenGL model-view
+							// transform) to ensure border pixels get rendered.
+							// So if this code path changes then should check that those rasters are
+							// exported correctly.
 							map_point.x = quadrant_is_in_upper_longitude_range
 									? 180 + central_meridian_longitude
 									: -180 + central_meridian_longitude;

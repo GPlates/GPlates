@@ -969,7 +969,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::find_present_day_polygon_mesh
 		// case it's actually intersecting the test polygon's interior region.
 		// We test this by seeing if a vertex on the test polygon is inside the node's bounding polygon.
 		if (!quad_tree_node_bounding_polygon->is_point_in_polygon(
-			polygon_intersections.get_partitioning_polygon()->first_vertex()))
+			polygon_intersections.get_partitioning_polygon()->first_exterior_ring_vertex()))
 		{
 			// The current cube quad tree node does *not* surround the test polygon (and is also outside
 			// the test polygon) therefore the test polygon interior region does not intersect

@@ -36,7 +36,7 @@ namespace GPlatesPresentation
 	class ReconstructScalarCoverageVisualLayerParams;
 	class ReconstructVisualLayerParams;
 	class ScalarField3DVisualLayerParams;
-	class TopologyBoundaryVisualLayerParams;
+	class TopologyGeometryVisualLayerParams;
 	class TopologyNetworkVisualLayerParams;
 	class VelocityFieldCalculatorVisualLayerParams;
 
@@ -50,17 +50,13 @@ namespace GPlatesPresentation
 	public:
 
 		// Typedefs to give the supported derivations the appropriate const-ness.
-		typedef typename GPlatesUtils::SetConst<TopologyNetworkVisualLayerParams, Const>::type 
-			topology_network_visual_layer_params_type;
 		typedef typename GPlatesUtils::SetConst<RasterVisualLayerParams, Const>::type raster_visual_layer_params_type;
 		typedef typename GPlatesUtils::SetConst<ReconstructScalarCoverageVisualLayerParams, Const>::type reconstruct_scalar_coverage_visual_layer_params_type;
 		typedef typename GPlatesUtils::SetConst<ReconstructVisualLayerParams, Const>::type reconstruct_visual_layer_params_type;
 		typedef typename GPlatesUtils::SetConst<ScalarField3DVisualLayerParams, Const>::type scalar_field_3d_visual_layer_params_type;
-		typedef typename GPlatesUtils::SetConst<TopologyBoundaryVisualLayerParams, Const>::type topology_boundary_visual_layer_params_type;
-
-
-		typedef typename GPlatesUtils::SetConst<VelocityFieldCalculatorVisualLayerParams, Const>::type 
-			velocity_field_calculator_visual_layer_params_type;
+		typedef typename GPlatesUtils::SetConst<TopologyGeometryVisualLayerParams, Const>::type topology_geometry_visual_layer_params_type;
+		typedef typename GPlatesUtils::SetConst<TopologyNetworkVisualLayerParams, Const>::type topology_network_visual_layer_params_type;
+		typedef typename GPlatesUtils::SetConst<VelocityFieldCalculatorVisualLayerParams, Const>::type velocity_field_calculator_visual_layer_params_type;
 
 		virtual
 		~VisualLayerParamsVisitorBase()
@@ -92,8 +88,8 @@ namespace GPlatesPresentation
 
 		virtual
 		void
-		visit_topology_boundary_visual_layer_params(
-				topology_boundary_visual_layer_params_type &params)
+		visit_topology_geometry_visual_layer_params(
+				topology_geometry_visual_layer_params_type &params)
 		{  }
 
 		virtual

@@ -113,19 +113,8 @@ void
 GPlatesFeatureVisitors::GeometryFinder::visit_gml_polygon(
 		const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
-	// First, the exterior ring.
-	d_found_geometries.push_back(gml_polygon.get_exterior());
-	d_found_polygon_geometries.push_back(gml_polygon.get_exterior());
-
-	// Next, the interior rings (if there are any).
-	const GPlatesPropertyValues::GmlPolygon::ring_sequence_type &interiors = gml_polygon.get_interiors();
-	GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator iter = interiors.begin();
-	GPlatesPropertyValues::GmlPolygon::ring_sequence_type::const_iterator end = interiors.end();
-	for ( ; iter != end; ++iter) 
-	{
-		d_found_geometries.push_back(*iter);
-		d_found_polygon_geometries.push_back(*iter);
-	}
+	d_found_geometries.push_back(gml_polygon.get_polygon());
+	d_found_polygon_geometries.push_back(gml_polygon.get_polygon());
 }
 
 

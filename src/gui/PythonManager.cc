@@ -22,9 +22,16 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+
+#include <QByteArray>
 #include <QDir>
+#include <QDirIterator>
+#include <QFile>
+#include <QFileInfo>
 #include <QProcess>
+#include <QMap>
 #include <iostream>
+#include <string>
 
 #include "PythonManager.h"
 
@@ -37,6 +44,8 @@
 #include "app-logic/ApplicationState.h"
 #include "app-logic/UserPreferences.h"
 
+#include "file-io/ErrorOpeningFileForReadingException.h"
+
 #include "presentation/Application.h"
 
 #include "qt-widgets/QtWidgetUtils.h"
@@ -45,8 +54,12 @@
 #include "utils/StringUtils.h"
 
 #if !defined(GPLATES_NO_PYTHON)
-extern "C" void initpygplates();
 
+#if PY_MAJOR_VERSION >= 3
+extern "C" PyMODINIT_FUNC PyInit_pygplates(void);
+#else
+extern "C" void initpygplates();
+#endif 
 
 GPlatesGui::PythonManager::PythonManager() : 
 	d_python_main_thread_runner(NULL),
@@ -211,7 +224,11 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	using namespace GPlatesApi;
 	// Initialize the embedded Python interpreter.
 	char GPLATES_MODULE_NAME[] = "pygplates";
-	if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &initpygplates))
+#if PY_MAJOR_VERSION >= 3
+	if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &PyInit_pygplates))
+#else
+    if (PyImport_AppendInittab(GPLATES_MODULE_NAME, &initpygplates))
+#endif
 	{
 		qWarning() << PythonUtils::get_error_message();
 		throw PythonInitFailed(GPLATES_EXCEPTION_SOURCE);
@@ -228,7 +245,17 @@ GPlatesGui::PythonManager::init_python_interpreter(
 	string in static storage whose contents will not change for the duration of the program’s 
 	execution. No code in the Python interpreter will change the contents of this storage.
 	*/
+#if PY_MAJOR_VERSION >= 3
+	// Convert char* to wchar_t*
+	const std::wstring program_name = GPlatesUtils::make_wstring_from_qstring(QString(argv[0]));
+	// Seems Py_SetProgramName accepts a wchar_t* pointer to 'non-const', so make a copy.
+	std::vector<wchar_t> program_name_non_const(program_name.begin(), program_name.end());
+	program_name_non_const.push_back('\0'); // Null terminate the string.
+
+	Py_SetProgramName(&program_name_non_const[0]);
+#else
 	Py_SetProgramName(argv[0]);
+#endif
 	/*
 	Ignore the environment variables. This is necessary because GPlates only works with the *correct* python version, 
 	which is the version that boost python uses. So, the python version has been determined when compiling 
@@ -270,7 +297,7 @@ GPlatesGui::PythonManager::init_python_interpreter(
 
 	PythonInterpreterLocker interpreter_locker;
 
-	// Load the pygplates module.
+	// Load the 'pygplates' module.
 	try
 	{
 		d_python_main_module = import("__main__");
@@ -311,35 +338,47 @@ GPlatesGui::PythonManager::init_python_interpreter(
 }
 
 
-void
-GPlatesGui::PythonManager::recycle_python_object(
-		const boost::python::object& obj)
+QMap<QString/*module name*/, QString/*module filename*/>
+GPlatesGui::PythonManager::get_internal_scripts()
 {
-	//The static vector pointer is initialized only once.
-	//The memory allocated here does not have to be freed. 
-	static std::vector<boost::python::object>* python_object_bin = 
-		new std::vector<boost::python::object>;
-	GPlatesApi::PythonInterpreterLocker lock;
-	//Free the previous python objects in the bin and
-	//put the new object into it.
-	python_object_bin->clear();
-	python_object_bin->push_back(obj);
+	QMap<QString/*module name*/, QString> modules;
+
+	// Iterate recursively over all files/directories in the ":/python/scripts/" resources directory.
+	QDirIterator module_dir_iterator(
+			":/python/scripts",
+			QStringList("*.py"),
+			QDir::Files,
+			QDirIterator::Subdirectories);
+	while (module_dir_iterator.hasNext())
+	{
+		const QString module_file_path = module_dir_iterator.next();
+		const QString module_name = QFileInfo(module_file_path).baseName();
+
+		modules.insert(module_name, module_file_path);
+	}
+
+	return modules;
 }
 
 
-QFileInfoList
-GPlatesGui::PythonManager::get_scripts()
+QMap<QString/*module name*/, QFileInfo/*module filename*/>
+GPlatesGui::PythonManager::get_external_scripts()
 {
 	GPlatesAppLogic::UserPreferences& user_prefs = 
 		d_application->get_application_state().get_user_preferences();
-	QFileInfoList file_list;
+	QFileInfoList module_file_list;
 	QStringList filters = (QStringList() << "*.py" << "*.pyc");
 
+	// We might not need this (current working directory) now that internal scripts are supported,
+	// because development builds no longer need to access the 'scripts/' subdirectory of GPlates source code.
+	// But keep anyway, might be useful during development because can try out new scripts
+	// simply by placing them in the 'scripts/' subdirectory of the GPlates source code
+	// (provided the root of the source directory is the current working directory).
 	QDir cwd;
 	cwd.setNameFilters(filters);
 	if (cwd.cd("scripts")) {
-		file_list << cwd.entryInfoList(QDir::Files, QDir::Name);
-		d_scripts_paths.push_back(cwd);
+		module_file_list << cwd.entryInfoList(QDir::Files, QDir::Name);
+		d_external_scripts_paths.push_back(cwd);
 	}
 
 	// Look in system-specific locations for supplied sample scripts, site-specific scripts, etc.
@@ -347,8 +386,8 @@ GPlatesGui::PythonManager::get_scripts()
 	QDir system_scripts_dir(user_prefs.get_value("paths/python_system_script_dir").toString());
 	system_scripts_dir.setNameFilters(filters);
 	if (system_scripts_dir.exists() && system_scripts_dir.isReadable()) {
-		file_list << system_scripts_dir.entryInfoList(QDir::Files, QDir::Name);
-		d_scripts_paths.push_back(system_scripts_dir);
+		module_file_list << system_scripts_dir.entryInfoList(QDir::Files, QDir::Name);
+		d_external_scripts_paths.push_back(system_scripts_dir);
 	}
 
 	// Also look in user-specific application data locations for scripts the user may have made.
@@ -357,8 +396,8 @@ GPlatesGui::PythonManager::get_scripts()
 	QDir user_scripts_dir(user_prefs.get_value("paths/python_user_script_dir").toString());
 	user_scripts_dir.setNameFilters(filters);
 	if (user_scripts_dir.exists() && user_scripts_dir.isReadable()) {
-		file_list << user_scripts_dir.entryInfoList(QDir::Files, QDir::Name);
-		d_scripts_paths.push_back(user_scripts_dir);
+		module_file_list << user_scripts_dir.entryInfoList(QDir::Files, QDir::Name);
+		d_external_scripts_paths.push_back(user_scripts_dir);
 	}
 
 	//Try the best to find python script files at all possible locations.
@@ -370,19 +409,36 @@ GPlatesGui::PythonManager::get_scripts()
 	QDir default_system_scripts_dir(user_prefs.get_default_value("paths/python_system_script_dir").toString());
 	default_system_scripts_dir.setNameFilters(filters);
 	if (default_system_scripts_dir.exists() && default_system_scripts_dir.isReadable()) {
-		file_list << default_system_scripts_dir.entryInfoList(QDir::Files, QDir::Name);
-		d_scripts_paths.push_back(default_system_scripts_dir);
+		module_file_list << default_system_scripts_dir.entryInfoList(QDir::Files, QDir::Name);
+		d_external_scripts_paths.push_back(default_system_scripts_dir);
 	}
 
-	return file_list;
+	// Get a unique list of scripts based on their module names.
+	// Modules (with the same name) added first take priority.
+	// Which means the above search path order is in order of priority (ie, higher priority searched first).
+	// Also note that the internal modules (in Qt resource files), not handled here, have even higher priority.
+	QMap<QString/*module name*/, QFileInfo> modules;
+	for (int n = 0; n < module_file_list.size(); ++n)
+	{
+		const QFileInfo &module_file = module_file_list[n];
+		const QString module_name = module_file.baseName();
+
+		if (!modules.contains(module_name))
+		{
+			modules.insert(module_name, module_file);
+		}
+	}
+
+	return modules;
 }
+
 
 void
 GPlatesGui::PythonManager::add_sys_path()
 {
 	GPlatesApi::PythonInterpreterLocker interpreter_locker;
 	PyRun_SimpleString("import sys");
-	BOOST_FOREACH(const QDir& dir, d_scripts_paths)
+	BOOST_FOREACH(const QDir& dir, d_external_scripts_paths)
 	{
 		QString p_code = QString() + 
 			"sys.path.append(\"" + dir.absolutePath().replace("\\","/") +"\")\n";
@@ -396,32 +452,97 @@ GPlatesGui::PythonManager::register_utils_scripts()
 {
 	// We need to wait for the user interface is ready
 	// before we start running Python scripts.
-	QFileInfoList file_list = get_scripts();
-	add_sys_path();
-	std::set<QString> modules;
-	BOOST_FOREACH(const QFileInfo& file, file_list)
+
+	const QMap<QString/*module name*/, QString/*module filename*/>
+			internal_scripts = get_internal_scripts();
+
+	// Register internal scripts.
+	BOOST_FOREACH(const QString internal_module_name, internal_scripts.keys())
 	{
-		modules.insert(file.baseName());
+		register_internal_script(internal_module_name, internal_scripts[internal_module_name]);
 	}
-	BOOST_FOREACH(const QString& module, modules)
+
+	// Get a unique list of scripts based on their module names.
+	const QMap<QString/*module name*/, QFileInfo/*module filename*/>
+			external_scripts = get_external_scripts();
+
+	// External script paths need to be added to 'sys.path'.
+	add_sys_path();
+
+	// Register external scripts that haven't already been registered internally.
+	BOOST_FOREACH(const QString external_module_name, external_scripts.keys())
 	{
-		register_script(module); 
+		if (!internal_scripts.contains(external_module_name))
+		{
+			register_external_script(external_module_name);
+		}
 	}
 }
 
 
 void
-GPlatesGui::PythonManager::register_script(
-		const QString& name)
+GPlatesGui::PythonManager::register_internal_script(
+		const QString &internal_module_name,
+		const QString &internal_module_filename)
+{
+	namespace bp = boost::python;
+
+	try
+	{
+		GPlatesApi::PythonInterpreterLocker interpreter_locker;
+
+		QFile internal_module_file(internal_module_filename);
+		// This should never fail since we are reading from files that are embedded Qt resources.
+		if (!internal_module_file.open(QIODevice::ReadOnly | QIODevice::Text))
+		{
+			throw GPlatesFileIO::ErrorOpeningFileForReadingException(
+					GPLATES_EXCEPTION_SOURCE,
+					internal_module_filename);
+		}
+
+		// Read the entire file.
+		const QByteArray internal_module_code = internal_module_file.readAll();
+
+		// Compile the internal module code and import it.
+		bp::object compiled_object = bp::object(bp::handle<>(
+				// Returns a new reference so no need for 'bp::borrowed'...
+				Py_CompileString(
+						internal_module_code.constData(),
+						internal_module_filename.toLatin1().constData(),
+						Py_file_input)));
+
+		// Import the compiled internal module code.
+		std::string internal_module_name_string = internal_module_name.toStdString();
+		bp::object internal_module = bp::object(bp::handle<>(
+				// Returns a new reference so no need for 'bp::borrowed'...
+				PyImport_ExecCodeModule(
+						const_cast<char*>(internal_module_name_string.c_str()),
+						compiled_object.ptr())));
+
+		// Register the internal script.
+		internal_module.attr("register")();
+	}
+	catch (const bp::error_already_set &)
+	{
+		// The "get_error_message()" function call is essential here - clears Python error indicator.
+		GPlatesApi::PythonUtils::get_error_message();
+	}
+}
+
+
+void
+GPlatesGui::PythonManager::register_external_script(
+		const QString &external_module_name)
 {
 	namespace bp = boost::python ;;
 	try
 	{
 		GPlatesApi::PythonInterpreterLocker interpreter_locker;
 
-		bp::object module = bp::import(name.toStdString().c_str());
-		module.attr("register")(); //TODO: define static const for this. 
-		qDebug() << "The script " << name << " has been registered.";
+		bp::object external_module = bp::import(external_module_name.toStdString().c_str());
+		external_module.attr("register")();
+
+		qDebug() << "The script" << external_module_name << "has been registered.";
 	}
 	catch (const bp::error_already_set &)
 	{
@@ -435,6 +556,7 @@ GPlatesGui::PythonManager::register_script(
 		//qDebug() << "Failed to register  " << name;
 	}
 }
+
 
 void
 GPlatesGui::PythonManager::init_python_console()

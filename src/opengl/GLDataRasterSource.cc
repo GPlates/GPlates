@@ -343,12 +343,16 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 	// filter will ensure the texture border colour is not used - however for partially filled
 	// textures we need to duplicate the edge to achieve the same effect otherwise numerical precision
 	// in the graphics hardware and nearest neighbour filtering could sample a garbage texel.
+	//
+	// Note: We don't use anisotropic filtering for floating-point textures (like we do for fixed-point)
+	// and so we don't have to worry about a anisotropic filter width sampling texels beyond our
+	// duplicated single row/column of border texels.
 	if (texel_width < d_tile_texel_dimension)
 	{
 		const unsigned int texel_size_in_floats = capabilities.texture.gl_ARB_texture_rg ? 2 : 4;
 		// Copy the right edge of the region into the working space.
 		float *working_space = d_tile_edge_working_space.get();
-		// The last pixel in the first row of the region.
+		// The last texel in the first row of the region.
 		const float *region_last_column = d_tile_pack_working_space.get() + texel_size_in_floats * (texel_width - 1);
 		for (unsigned int y = 0; y < texel_height; ++y)
 		{
@@ -360,7 +364,7 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 			region_last_column += texel_size_in_floats * texel_width;
 		}
 
-		// Load the one-pixel wide column of data from column 'texel_width-1' into column 'texel_width'.
+		// Load the one-texel wide column of data from column 'texel_width-1' into column 'texel_width'.
 		GLTextureUtils::load_image_into_texture_2D(
 				renderer,
 				target_texture,
@@ -379,7 +383,7 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 		const unsigned int texel_size_in_floats = capabilities.texture.gl_ARB_texture_rg ? 2 : 4;
 		// Copy the bottom edge of the region into the working space.
 		float *working_space = d_tile_edge_working_space.get();
-		// The first pixel in the last row of the region.
+		// The first texel in the last row of the region.
 		const float *region_last_row =
 				d_tile_pack_working_space.get() + texel_size_in_floats * (texel_height - 1) * texel_width;
 		for (unsigned int x = 0; x < texel_width; ++x)
@@ -391,15 +395,26 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 			working_space += texel_size_in_floats;
 			region_last_row += texel_size_in_floats;
 		}
+		// Copy the corner texel, we want it to get copied to the texel at column 'texel_width' and row 'texel_height'.
+		unsigned int texels_in_last_row = texel_width;
+		if (texel_width < d_tile_texel_dimension)
+		{
+			const float *corner_texel = region_last_row - texel_size_in_floats;
+			for (unsigned int component = 0; component < texel_size_in_floats; ++component)
+			{
+				working_space[component] = corner_texel[component];
+			}
+			++texels_in_last_row;
+		}
 
-		// Load the one-pixel wide row of data from row 'texel_height-1' into row 'texel_height'.
+		// Load the one-texel wide row of data from row 'texel_height-1' into row 'texel_height'.
 		GLTextureUtils::load_image_into_texture_2D(
 				renderer,
 				target_texture,
 				d_tile_edge_working_space.get(),
 				capabilities.texture.gl_ARB_texture_rg ? GL_RG : GL_RGBA,
 				GL_FLOAT,
-				texel_width,
+				texels_in_last_row/*image_width*/,
 				1/*image_height*/,
 				0/*texel_u_offset*/,
 				texel_height/*texel_v_offset*/);

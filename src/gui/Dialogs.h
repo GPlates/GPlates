@@ -53,6 +53,7 @@ namespace GPlatesQtWidgets
 	// Forward declarations for our dialogs.
 	////////////////////////////////////////////////
 	class AboutDialog;
+	class AgeModelManagerDialog;
 	class AnimateDialog;
 	class AssignReconstructionPlateIdsDialog;
 	class CalculateReconstructionPoleDialog;
@@ -61,15 +62,18 @@ namespace GPlatesQtWidgets
 	class ConfigureCanvasToolGeometryRenderParametersDialog;
 	class ConfigureGraticulesDialog;
 	class ConfigureTextOverlayDialog;
+	class ConfigureVelocityLegendOverlayDialog;
 	class ConnectWFSDialog;
 	class CreateVGPDialog;
 	class DrawStyleDialog;
 	class ExportAnimationDialog;
 	class FeaturePropertiesDialog;
 	class FiniteRotationCalculatorDialog;
+	class GenerateCrustalThicknessPointsDialog;
 	class GenerateVelocityDomainCitcomsDialog;
 	class GenerateVelocityDomainLatLonDialog;
 	class GenerateVelocityDomainTerraDialog;
+	class HellingerDialog;
 	class KinematicGraphsDialog;
 	class LicenseDialog;
 	class LogDialog;
@@ -134,6 +138,9 @@ namespace GPlatesGui
 		GPlatesQtWidgets::AboutDialog &
 		about_dialog();
 
+		GPlatesQtWidgets::AgeModelManagerDialog &
+		age_model_manager_dialog();
+
 		GPlatesQtWidgets::AnimateDialog &
 		animate_dialog();
 
@@ -158,6 +165,9 @@ namespace GPlatesGui
 		GPlatesQtWidgets::ConfigureTextOverlayDialog &
 		configure_text_overlay_dialog();
 
+		GPlatesQtWidgets::ConfigureVelocityLegendOverlayDialog &
+		configure_velocity_legend_overlay_dialog();
+
 		GPlatesQtWidgets::ConnectWFSDialog &
 		connect_wfs_dialog();
 
@@ -175,6 +185,12 @@ namespace GPlatesGui
 
 		GPlatesQtWidgets::FiniteRotationCalculatorDialog &
 		finite_rotation_calculator_dialog();
+
+		GPlatesQtWidgets::GenerateCrustalThicknessPointsDialog &
+		generate_crustal_thickness_points_dialog();
+
+		GPlatesQtWidgets::HellingerDialog &
+		hellinger_dialog();
 
 		GPlatesQtWidgets::KinematicGraphsDialog &
 		kinematics_tool_dialog();
@@ -254,6 +270,9 @@ namespace GPlatesGui
 		pop_up_about_dialog();
 
 		void
+		pop_up_age_model_manager_dialog();
+
+		void
 		pop_up_animate_dialog();
 
 		void
@@ -275,6 +294,9 @@ namespace GPlatesGui
 		pop_up_configure_text_overlay_dialog();
 
 		void
+		pop_up_configure_velocity_legend_overlay_dialog();
+
+		void
 		pop_up_connect_wfs_dialog();
 
 		void
@@ -291,6 +313,15 @@ namespace GPlatesGui
 
 		void
 		pop_up_finite_rotation_calculator_dialog();
+
+		void
+		pop_up_generate_crustal_thickness_points_dialog();
+
+		void
+		pop_up_hellinger_dialog();
+
+		void
+		pop_up_and_reposition_hellinger_dialog();
 
 		void
 		pop_up_kinematics_tool_dialog();
@@ -364,6 +395,7 @@ namespace GPlatesGui
 		enum DialogType
 		{
 			DIALOG_ABOUT,
+			DIALOG_AGE_MODEL_MANAGER,
 			DIALOG_ANIMATE,
 			DIALOG_ASSIGN_RECONSTRUCTION_PLATE_IDS,
 			DIALOG_CALCULATE_RECONSTRUCTION_POLE,
@@ -372,12 +404,15 @@ namespace GPlatesGui
 			DIALOG_CONFIGURE_CANVAS_TOOL_GEOMETRY_RENDER_PARAMETERS,
 			DIALOG_CONFIGURE_GRATICULES,
 			DIALOG_CONFIGURE_TEXT_OVERLAY,
+			DIALOG_CONFIGURE_VELOCITY_LEGEND_OVERLAY,
 			DIALOG_CONNECT_WFS,
 			DIALOG_CREATE_VGP,
 			DIALOG_DRAW_STYLE,
 			DIALOG_EXPORT_ANIMATION,
 			DIALOG_FEATURE_PROPERTIES,
-			DIALOG_FINITE_ROTATION_CALCULATOR_DIALOG,
+			DIALOG_FINITE_ROTATION_CALCULATOR,
+			DIALOG_GENERATE_CRUSTAL_THICKNESS_POINTS,
+			DIALOG_HELLINGER,
 			DIALOG_KINEMATICS_TOOL,
 			DIALOG_LICENSE,
 			DIALOG_LOG,

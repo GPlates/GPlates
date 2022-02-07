@@ -78,7 +78,7 @@ GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::ExportResolvedTopologyOpt
 			: Qt::Unchecked);
 
 	// Topological networks.
-	export_resolved_polygons_checkbox->setCheckState(
+	export_resolved_networks_checkbox->setCheckState(
 			d_export_configuration.export_topological_networks
 			? Qt::Checked
 			: Qt::Unchecked);
@@ -99,7 +99,8 @@ GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::ExportResolvedTopologyOpt
 			d_export_configuration.file_format ==
 				GPlatesGui::ExportResolvedTopologyAnimationStrategy::Configuration::SHAPEFILE);
 	// Enable polygon orientation combobox only if forcing polygon orientation.
-	polygon_orientation_combobox->setEnabled(d_export_configuration.force_polygon_orientation);
+	polygon_orientation_combobox->setEnabled(
+			static_cast<bool>(d_export_configuration.force_polygon_orientation));
 	// Add polygon orientation combobox values.
 	polygon_orientation_combobox->insertItem(
 			GPlatesMaths::PolygonOrientation::CLOCKWISE,

@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <algorithm>
+#include <functional>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QMetaType>
@@ -92,6 +94,26 @@ namespace
 	private:
 
 		boost::optional<GPlatesModel::PropertyName> d_property_name;
+	};
+
+
+	/**
+	 * Used to sort GPGIM properties by the unqualified part of their property names.
+	 */
+	class SortByUnqualifiedPropertyName :
+			public std::binary_function<
+					GPlatesModel::GpgimProperty::non_null_ptr_to_const_type,
+					GPlatesModel::GpgimProperty::non_null_ptr_to_const_type,
+					bool>
+	{
+	public:
+		bool
+		operator()(
+				const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &lhs,
+				const GPlatesModel::GpgimProperty::non_null_ptr_to_const_type &rhs) const
+		{
+			return lhs->get_property_name().get_name() < rhs->get_property_name().get_name();
+		}
 	};
 }
 
@@ -180,6 +202,9 @@ GPlatesQtWidgets::ChoosePropertyWidget::populate(
 			target_feature_type,
 			target_property_type,
 			source_feature_ref);
+
+	// Sort GPGIM properties by the unqualified part of their property names.
+	std::sort(gpgim_feature_properties.begin(), gpgim_feature_properties.end(), SortByUnqualifiedPropertyName());
 
 	// Iterate over the matching feature properties and add them to the selection.
 	BOOST_FOREACH(

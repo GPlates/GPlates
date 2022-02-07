@@ -189,8 +189,7 @@ void
 GPlatesFileIO::GMTFormatWriter::visit_gml_polygon(
 	const GPlatesPropertyValues::GmlPolygon &gml_polygon)
 {
-	// FIXME: Handle interior rings. Requires a bit of restructuring.
-	d_feature_accumulator.add_geometry(gml_polygon.get_exterior());
+	d_feature_accumulator.add_geometry(gml_polygon.get_polygon());
 }
 
 

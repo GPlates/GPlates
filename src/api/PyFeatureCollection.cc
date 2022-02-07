@@ -800,7 +800,8 @@ GPlatesApi::FeatureCollectionFunctionArgument::is_convertible(
 
 	// Else it's a boost::python::object so we're expecting it to be a sequence of
 	// GPlatesModel::FeatureHandle::non_null_ptr_type's which requires further checking.
-	return PythonExtractUtils::check_sequence<GPlatesModel::FeatureHandle::non_null_ptr_type>(python_function_argument);
+	return static_cast<bool>(
+			PythonExtractUtils::check_sequence<GPlatesModel::FeatureHandle::non_null_ptr_type>(python_function_argument));
 }
 
 
@@ -909,7 +910,8 @@ GPlatesApi::FeatureCollectionSequenceFunctionArgument::is_convertible(
 
 	// Else it's a boost::python::object so we're expecting it to be a sequence of
 	// FeatureCollectionFunctionArgument's which requires further checking.
-	return PythonExtractUtils::check_sequence<FeatureCollectionFunctionArgument>(python_function_argument);
+	return static_cast<bool>(
+			PythonExtractUtils::check_sequence<FeatureCollectionFunctionArgument>(python_function_argument));
 }
 
 
@@ -1106,7 +1108,7 @@ namespace GPlatesApi
 void
 export_feature_collection()
 {
-	// An enumeration nested within 'pygplates (ie, current) module.
+	// An enumeration nested within 'pygplates' (ie, current) module.
 	bp::enum_<GPlatesApi::FeatureReturn::Value>("FeatureReturn")
 			.value("exactly_one", GPlatesApi::FeatureReturn::EXACTLY_ONE)
 			.value("first", GPlatesApi::FeatureReturn::FIRST)

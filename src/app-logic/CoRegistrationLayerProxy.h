@@ -29,7 +29,6 @@
 #include <vector>
 #include <boost/optional.hpp>
 
-#include "AppLogicFwd.h"
 #include "CoRegistrationData.h"
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
@@ -99,7 +98,7 @@ namespace GPlatesAppLogic
 		 * @a set_current_coregistration_configuration_table has not yet been called (ie, the
 		 * co-registration has not yet been configured by the user for this layer).
 		 */
-		boost::optional<coregistration_data_non_null_ptr_type>
+		boost::optional<CoRegistrationData::non_null_ptr_type>
 		get_coregistration_data(
 				GPlatesOpenGL::GLRenderer &renderer)
 		{
@@ -110,7 +109,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns the co-registration data for the specified reconstruction time.
 		 */
-		boost::optional<coregistration_data_non_null_ptr_type>
+		boost::optional<CoRegistrationData::non_null_ptr_type>
 		get_coregistration_data(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const double &reconstruction_time);
@@ -125,7 +124,7 @@ namespace GPlatesAppLogic
 		 * If the seed feature does not exist or has no valid birth time, 
 		 * the function returns boost::none.
 		 */
-		boost::optional<coregistration_data_non_null_ptr_type>
+		boost::optional<CoRegistrationData::non_null_ptr_type>
 		get_birth_attribute_data(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const GPlatesModel::FeatureId &feature_id);
@@ -281,7 +280,7 @@ namespace GPlatesAppLogic
 		/**
 		 * The cached co-registration data - the output of co-registration.
 		 */
-		boost::optional<coregistration_data_non_null_ptr_type> d_cached_coregistration_data;
+		boost::optional<CoRegistrationData::non_null_ptr_type> d_cached_coregistration_data;
 
 		/**
 		 * Cached reconstruction time.

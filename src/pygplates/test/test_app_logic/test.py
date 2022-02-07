@@ -75,9 +75,9 @@ class InterpolateTotalReconstructionSequenceTestCase(unittest.TestCase):
     def test_get(self):
         # Get the third rotation feature (contains more interesting poles).
         feature_iter = iter(self.rotations)
-        feature_iter.next();
-        feature_iter.next();
-        feature = feature_iter.next()
+        next(feature_iter);
+        next(feature_iter);
+        feature = next(feature_iter)
         
         total_reconstruction_pole = feature.get_total_reconstruction_pole()
         self.assertTrue(total_reconstruction_pole)
@@ -113,9 +113,9 @@ class InterpolateTotalReconstructionSequenceTestCase(unittest.TestCase):
     def test_interpolate(self):
         # Get the third rotation feature (contains more interesting poles).
         feature_iter = iter(self.rotations)
-        feature_iter.next();
-        feature_iter.next();
-        feature = feature_iter.next()
+        next(feature_iter);
+        next(feature_iter);
+        feature = next(feature_iter)
         
         total_reconstruction_pole = feature.get_total_reconstruction_pole()
         self.assertTrue(total_reconstruction_pole)

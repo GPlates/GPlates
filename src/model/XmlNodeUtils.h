@@ -259,8 +259,8 @@ namespace GPlatesModel
 					name_xml_element_iterator.node_iter != d_xml_nodes_end;
 					name_xml_element_iterator.next_xml_node())
 				{
-					if (name_xml_element_iterator.element_node =
-							d_xml_element_node_visitor.get_xml_element_node(*name_xml_element_iterator.node_iter))
+					if ((name_xml_element_iterator.element_node =
+							d_xml_element_node_visitor.get_xml_element_node(*name_xml_element_iterator.node_iter)))
 					{
 						break;
 					}

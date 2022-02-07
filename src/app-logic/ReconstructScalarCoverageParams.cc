@@ -25,6 +25,8 @@
 
 #include "ReconstructScalarCoverageParams.h"
 
+#include "scribe/Scribe.h"
+
 
 bool
 GPlatesAppLogic::ReconstructScalarCoverageParams::operator==(
@@ -39,4 +41,17 @@ GPlatesAppLogic::ReconstructScalarCoverageParams::operator<(
 		const ReconstructScalarCoverageParams &rhs) const
 {
 	return false;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::ReconstructScalarCoverageParams::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// Provide default values for failed parameters instead of returning failure.
+	// This way a future version of GPlates can add or remove parameters and still be backward/forward compatible.
+	//static const ReconstructScalarCoverageParams DEFAULT_PARAMS;
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

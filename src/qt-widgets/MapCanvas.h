@@ -41,7 +41,6 @@
 
 #include "gui/ColourScheme.h"
 #include "gui/Map.h"
-#include "gui/TextOverlay.h"
 
 #include "opengl/GLContext.h"
 #include "opengl/GLMatrix.h"
@@ -52,6 +51,8 @@
 namespace GPlatesGui
 {
 	class RenderSettings;
+	class TextOverlay;
+	class VelocityLegendOverlay;
 	class ViewportZoom;
 }
 
@@ -202,6 +203,9 @@ namespace GPlatesQtWidgets
 		//! Paints an optional text overlay onto the map.
 		boost::scoped_ptr<GPlatesGui::TextOverlay> d_text_overlay;
 
+		//! Paints an optional velocity legend overlay onto the map.
+		boost::scoped_ptr<GPlatesGui::VelocityLegendOverlay> d_velocity_legend_overlay;
+
 		//! Holds the state
 		GPlatesGui::Map d_map;
 
@@ -238,7 +242,9 @@ namespace GPlatesQtWidgets
 
 		//! Calculate scaling for lines, points and text based on size of view
 		float
-		calculate_scale();
+		calculate_scale(
+				int paint_device_width,
+				int paint_device_height);
 
 	};
 }

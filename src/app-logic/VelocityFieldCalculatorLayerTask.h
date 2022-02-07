@@ -29,12 +29,12 @@
 
 #include <utility>
 #include <boost/shared_ptr.hpp>
+#include <QObject>
 #include <QString>
 
-#include "AppLogicFwd.h"
 #include "LayerTask.h"
-#include "LayerTaskParams.h"
-#include "VelocityParams.h"
+#include "VelocityFieldCalculatorLayerParams.h"
+#include "VelocityFieldCalculatorLayerProxy.h"
 
 #include "model/FeatureCollectionHandle.h"
 
@@ -47,51 +47,12 @@ namespace GPlatesAppLogic
 	 * topological networks.
 	 */
 	class VelocityFieldCalculatorLayerTask :
+			public QObject,
 			public LayerTask
 	{
+		Q_OBJECT
+
 	public:
-		/**
-		 * App-logic parameters for a velocity layer.
-		 */
-		class Params :
-				public LayerTaskParams
-		{
-		public:
-
-			/**
-			 * Returns the 'const' velocity parameters.
-			 */
-			const VelocityParams &
-			get_velocity_params() const;
-
-			/**
-			 * Sets the velocity parameters.
-			 *
-			 * NOTE: This will flush any cached velocity multi-point vector fields in this layer.
-			 */
-			void
-			set_velocity_params(
-					const VelocityParams &velocity_params);
-
-		private:
-
-			VelocityParams d_velocity_params;
-
-			/**
-			 * Is true if @a set_velocity_params has been called.
-			 *
-			 * Used to let VelocityFieldCalculatorLayerTask know that an external client has modified this state.
-			 *
-			 * VelocityFieldCalculatorLayerTask will reset this explicitly.
-			 */
-			bool d_set_velocity_params_called;
-
-			Params();
-
-			// Make friend so can access constructor and @a d_set_velocity_params_called.
-			friend class VelocityFieldCalculatorLayerTask;
-		};
-
 
 		static
 		bool
@@ -173,23 +134,29 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		LayerTaskParams &
-		get_layer_task_params()
+		LayerParams::non_null_ptr_type
+		get_layer_params()
 		{
-			return d_layer_task_params;
+			return d_layer_params;
 		}
+
+	private Q_SLOTS:
+
+		void
+		handle_velocity_params_modified(
+				GPlatesAppLogic::VelocityFieldCalculatorLayerParams &layer_params);
 
 	private:
 
 		/**
 		 * Parameters used when calculating velocities.
 		 */
-		Params d_layer_task_params;
+		VelocityFieldCalculatorLayerParams::non_null_ptr_type d_layer_params;
 
 		/**
 		 * Does all the velocity calculations.
 		 */
-		velocity_field_calculator_layer_proxy_non_null_ptr_type d_velocity_field_calculator_layer_proxy;
+		VelocityFieldCalculatorLayerProxy::non_null_ptr_type d_velocity_field_calculator_layer_proxy;
 
 
 		//! Constructor.

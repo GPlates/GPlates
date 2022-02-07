@@ -523,9 +523,9 @@ namespace GPlatesApi
 					geometry,
 					reconstruction_method_registry,
 					feature_handle.reference(),
+					reconstruction_time,
 					reconstruction_tree_creator,
 					GPlatesAppLogic::ReconstructParams(),
-					reconstruction_time,
 					true/*reverse_reconstruct*/);
 		}
 
@@ -2923,13 +2923,13 @@ GPlatesApi::AmbiguousGeometryCoverageException::write_message(
 void
 export_feature()
 {
-	// An enumeration nested within 'pygplates (ie, current) module.
+	// An enumeration nested within 'pygplates' (ie, current) module.
 	bp::enum_<GPlatesApi::PropertyReturn::Value>("PropertyReturn")
 			.value("exactly_one", GPlatesApi::PropertyReturn::EXACTLY_ONE)
 			.value("first", GPlatesApi::PropertyReturn::FIRST)
 			.value("all", GPlatesApi::PropertyReturn::ALL);
 
-	// An enumeration nested within 'pygplates (ie, current) module.
+	// An enumeration nested within 'pygplates' (ie, current) module.
 	bp::enum_<GPlatesApi::CoverageReturn::Value>("CoverageReturn")
 			.value("geometry_only", GPlatesApi::CoverageReturn::GEOMETRY_ONLY)
 			.value("geometry_and_scalars", GPlatesApi::CoverageReturn::GEOMETRY_AND_SCALARS);
@@ -3040,6 +3040,8 @@ export_feature()
 					"* :meth:`get_times`\n"
 					"* :meth:`set_reconstruction_method`\n"
 					"* :meth:`get_reconstruction_method`\n"
+					"* :meth:`set_geometry_import_time`\n"
+					"* :meth:`get_geometry_import_time`\n"
 					"* :meth:`set_total_reconstruction_pole`\n"
 					"* :meth:`get_total_reconstruction_pole`\n"
 					"\n"

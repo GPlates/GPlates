@@ -49,6 +49,7 @@
 #include "gui/ExportAnimationRegistry.h"
 #include "gui/FeatureFocus.h"
 #include "gui/FeatureTableModel.h"
+#include "gui/FileIODirectoryConfigurations.h"
 #include "gui/GraticuleSettings.h"
 #include "gui/MapTransform.h"
 #include "gui/PythonManager.h"
@@ -58,11 +59,14 @@
 #include "gui/Symbol.h"
 #include "gui/TextOverlaySettings.h"
 #include "gui/TopologySectionsContainer.h"
+#include "gui/VelocityLegendOverlaySettings.h"
 #include "gui/ViewportProjection.h"
 #include "gui/ViewportZoom.h"
 
 #include "maths/MathsUtils.h"
 #include "maths/Real.h"
+
+#include "qt-widgets/PreferencesPaneFiles.h"
 
 #include "view-operations/FocusedFeatureGeometryManipulator.h"
 #include "view-operations/GeometryBuilder.h"
@@ -72,21 +76,10 @@
 
 namespace
 {
-	const double DEFAULT_GRATICULES_DELTA_LAT = GPlatesMaths::PI / 6.0; // 30 degrees
-	const double DEFAULT_GRATICULES_DELTA_LON = GPlatesMaths::PI / 6.0; // 30 degrees
-
 	GPlatesGui::Colour
 	get_default_background_colour()
 	{
 		return GPlatesGui::Colour(0.35f, 0.35f, 0.35f);
-	}
-
-	GPlatesGui::Colour
-	get_default_graticules_colour()
-	{
-		GPlatesGui::Colour result = GPlatesGui::Colour::get_silver();
-		result.alpha() = 0.5f;
-		return result;
 	}
 }
 
@@ -140,17 +133,18 @@ GPlatesPresentation::ViewState::ViewState(
 			new GPlatesGui::MapTransform(
 				*d_viewport_zoom)),
 	d_main_viewport_dimensions(0, 0),
-	d_last_open_directory(QDir::currentPath()),
+	d_file_io_directory_configurations(
+			new GPlatesGui::FileIODirectoryConfigurations(
+				*this)),
 	d_show_stars(false),	// Overriden by UserPreferences: view/show_stars
 	d_background_colour(
 			new GPlatesGui::Colour(get_default_background_colour())),
 	d_graticule_settings(
-			new GPlatesGui::GraticuleSettings(
-				DEFAULT_GRATICULES_DELTA_LAT,
-				DEFAULT_GRATICULES_DELTA_LON,
-				get_default_graticules_colour())),
+			new GPlatesGui::GraticuleSettings()),
 	d_text_overlay_settings(
 			new GPlatesGui::TextOverlaySettings()),
+	d_velocity_legend_overlay_settings(
+			new GPlatesGui::VelocityLegendOverlaySettings()),
 	d_export_animation_registry(
 			new GPlatesGui::ExportAnimationRegistry()),
 	d_topology_boundary_sections_container_ptr(
@@ -175,38 +169,6 @@ GPlatesPresentation::ViewState::ViewState(
 			*d_visual_layer_registry,
 			d_application_state,
 			*this);
-
-#if 0
-	// Set up a symbol map for testing
-	GPlatesModel::FeatureType gpml_volcano_type =
-		GPlatesModel::FeatureType::create_gpml("Volcano");
-	GPlatesModel::FeatureType gpml_hot_spot_type =
-		GPlatesModel::FeatureType::create_gpml("HotSpot");
-	GPlatesModel::FeatureType gpml_magnetic_pick_type =
-		GPlatesModel::FeatureType::create_gpml("MagneticAnomalyIdentification");
-
-
-	GPlatesGui::Symbol volcano_symbol(
-		    GPlatesGui::Symbol::TRIANGLE,
-		    1,
-		    true);
-	GPlatesGui::Symbol hotspot_symbol(
-		    GPlatesGui::Symbol::SQUARE,
-		    1,
-		    true);
-	GPlatesGui::Symbol magnetic_pick_symbol(
-		    GPlatesGui::Symbol::SQUARE,
-		    1,
-		    false);
-
-
-	d_feature_type_symbol_map.insert(
-		    std::make_pair(gpml_volcano_type,volcano_symbol));
-	d_feature_type_symbol_map.insert(
-		    std::make_pair(gpml_hot_spot_type,hotspot_symbol));
-	d_feature_type_symbol_map.insert(
-		    std::make_pair(gpml_magnetic_pick_type,magnetic_pick_symbol));
-#endif
 
 	// Set up the ExportAnimationRegistry.
 	register_default_export_animation_types(
@@ -236,9 +198,21 @@ GPlatesPresentation::ViewState::get_application_state()
 	return d_application_state;
 }
 
+const GPlatesAppLogic::ApplicationState &
+GPlatesPresentation::ViewState::get_application_state() const
+{
+	return d_application_state;
+}
+
 
 GPlatesGui::AnimationController&
 GPlatesPresentation::ViewState::get_animation_controller()
+{
+	return *d_animation_controller;
+}
+
+const GPlatesGui::AnimationController&
+GPlatesPresentation::ViewState::get_animation_controller() const
 {
 	return *d_animation_controller;
 }
@@ -250,9 +224,21 @@ GPlatesPresentation::ViewState::get_session_management()
 	return *d_session_management_ptr;
 }
 
+const GPlatesPresentation::SessionManagement &
+GPlatesPresentation::ViewState::get_session_management() const
+{
+	return *d_session_management_ptr;
+}
+
 
 GPlatesViewOperations::RenderedGeometryCollection &
 GPlatesPresentation::ViewState::get_rendered_geometry_collection()
+{
+	return *d_rendered_geometry_collection;
+}
+
+const GPlatesViewOperations::RenderedGeometryCollection &
+GPlatesPresentation::ViewState::get_rendered_geometry_collection() const
 {
 	return *d_rendered_geometry_collection;
 }
@@ -264,9 +250,21 @@ GPlatesPresentation::ViewState::get_feature_focus()
 	return *d_feature_focus;
 }
 
+const GPlatesGui::FeatureFocus &
+GPlatesPresentation::ViewState::get_feature_focus() const
+{
+	return *d_feature_focus;
+}
+
 
 GPlatesGui::FeatureTableModel &
 GPlatesPresentation::ViewState::get_feature_table_model()
+{
+	return *d_feature_table_model_ptr;
+}
+
+const GPlatesGui::FeatureTableModel &
+GPlatesPresentation::ViewState::get_feature_table_model() const
 {
 	return *d_feature_table_model_ptr;
 }
@@ -278,9 +276,21 @@ GPlatesPresentation::ViewState::get_viewport_zoom()
 	return *d_viewport_zoom;
 }
 
+const GPlatesGui::ViewportZoom &
+GPlatesPresentation::ViewState::get_viewport_zoom() const
+{
+	return *d_viewport_zoom;
+}
+
 
 GPlatesGui::ViewportProjection &
 GPlatesPresentation::ViewState::get_viewport_projection()
+{
+	return *d_viewport_projection;
+}
+
+const GPlatesGui::ViewportProjection &
+GPlatesPresentation::ViewState::get_viewport_projection() const
 {
 	return *d_viewport_projection;
 }
@@ -292,9 +302,21 @@ GPlatesPresentation::ViewState::get_digitise_geometry_builder()
 	return *d_digitise_geometry_builder;
 }
 
+const GPlatesViewOperations::GeometryBuilder &
+GPlatesPresentation::ViewState::get_digitise_geometry_builder() const
+{
+	return *d_digitise_geometry_builder;
+}
+
 
 GPlatesViewOperations::GeometryBuilder &
 GPlatesPresentation::ViewState::get_focused_feature_geometry_builder()
+{
+	return *d_focused_feature_geometry_builder;
+}
+
+const GPlatesViewOperations::GeometryBuilder &
+GPlatesPresentation::ViewState::get_focused_feature_geometry_builder() const
 {
 	return *d_focused_feature_geometry_builder;
 }
@@ -306,9 +328,21 @@ GPlatesPresentation::ViewState::get_colour_scheme_container()
 	return *d_colour_scheme_container;
 }
 
+const GPlatesGui::ColourSchemeContainer &
+GPlatesPresentation::ViewState::get_colour_scheme_container() const
+{
+	return *d_colour_scheme_container;
+}
+
 
 GPlatesGlobal::PointerTraits<GPlatesGui::ColourScheme>::non_null_ptr_type
 GPlatesPresentation::ViewState::get_colour_scheme()
+{
+	return d_colour_scheme;
+}
+
+GPlatesGlobal::PointerTraits<const GPlatesGui::ColourScheme>::non_null_ptr_type
+GPlatesPresentation::ViewState::get_colour_scheme() const
 {
 	return d_colour_scheme;
 }
@@ -320,9 +354,21 @@ GPlatesPresentation::ViewState::get_colour_scheme_delegator()
 	return d_colour_scheme;
 }
 
+GPlatesGlobal::PointerTraits<const GPlatesGui::ColourSchemeDelegator>::non_null_ptr_type
+GPlatesPresentation::ViewState::get_colour_scheme_delegator() const
+{
+	return d_colour_scheme;
+}
+
 
 GPlatesGui::RenderSettings &
 GPlatesPresentation::ViewState::get_render_settings()
+{
+	return *d_render_settings;
+}
+
+const GPlatesGui::RenderSettings &
+GPlatesPresentation::ViewState::get_render_settings() const
 {
 	return *d_render_settings;
 }
@@ -334,9 +380,21 @@ GPlatesPresentation::ViewState::get_rendered_geometry_parameters()
 	return *d_rendered_geometry_parameters;
 }
 
+const GPlatesViewOperations::RenderedGeometryParameters &
+GPlatesPresentation::ViewState::get_rendered_geometry_parameters() const
+{
+	return *d_rendered_geometry_parameters;
+}
+
 
 GPlatesGui::SceneLightingParameters &
 GPlatesPresentation::ViewState::get_scene_lighting_parameters()
+{
+	return *d_scene_lighting_parameters;
+}
+
+const GPlatesGui::SceneLightingParameters &
+GPlatesPresentation::ViewState::get_scene_lighting_parameters() const
 {
 	return *d_scene_lighting_parameters;
 }
@@ -348,6 +406,12 @@ GPlatesPresentation::ViewState::get_visual_layers()
 	return *d_visual_layers;
 }
 
+const GPlatesPresentation::VisualLayers &
+GPlatesPresentation::ViewState::get_visual_layers() const
+{
+	return *d_visual_layers;
+}
+
 
 GPlatesPresentation::VisualLayerRegistry &
 GPlatesPresentation::ViewState::get_visual_layer_registry()
@@ -355,9 +419,21 @@ GPlatesPresentation::ViewState::get_visual_layer_registry()
 	return *d_visual_layer_registry;
 }
 
+const GPlatesPresentation::VisualLayerRegistry &
+GPlatesPresentation::ViewState::get_visual_layer_registry() const
+{
+	return *d_visual_layer_registry;
+}
+
 
 GPlatesGui::MapTransform &
 GPlatesPresentation::ViewState::get_map_transform()
+{
+	return *d_map_transform;
+}
+
+const GPlatesGui::MapTransform &
+GPlatesPresentation::ViewState::get_map_transform() const
 {
 	return *d_map_transform;
 }
@@ -460,7 +536,6 @@ GPlatesPresentation::ViewState::get_last_open_directory() const
 	return d_last_open_directory;
 }
 
-
 bool
 GPlatesPresentation::ViewState::get_show_stars() const
 {
@@ -527,14 +602,32 @@ GPlatesPresentation::ViewState::get_text_overlay_settings()
 	return *d_text_overlay_settings;
 }
 
-
 const GPlatesGui::TextOverlaySettings &
 GPlatesPresentation::ViewState::get_text_overlay_settings() const
 {
 	return *d_text_overlay_settings;
 }
 
+GPlatesGui::VelocityLegendOverlaySettings &
+GPlatesPresentation::ViewState::get_velocity_legend_overlay_settings()
+{
+	return *d_velocity_legend_overlay_settings;
+}
+
+const GPlatesGui::VelocityLegendOverlaySettings &
+GPlatesPresentation::ViewState::get_velocity_legend_overlay_settings() const
+{
+	return *d_velocity_legend_overlay_settings;
+}
+
+
 GPlatesGui::ExportAnimationRegistry &
+GPlatesPresentation::ViewState::get_export_animation_registry()
+{
+	return *d_export_animation_registry;
+}
+
+const GPlatesGui::ExportAnimationRegistry &
 GPlatesPresentation::ViewState::get_export_animation_registry() const
 {
 	return *d_export_animation_registry;
@@ -547,9 +640,34 @@ GPlatesPresentation::ViewState::get_topology_boundary_sections_container()
 	return *d_topology_boundary_sections_container_ptr;	
 }
 
+const GPlatesGui::TopologySectionsContainer &
+GPlatesPresentation::ViewState::get_topology_boundary_sections_container() const
+{
+	return *d_topology_boundary_sections_container_ptr;	
+}
+
 
 GPlatesGui::TopologySectionsContainer &
 GPlatesPresentation::ViewState::get_topology_interior_sections_container()
 {
-	return *d_topology_interior_sections_container_ptr;	
+	return *d_topology_interior_sections_container_ptr;
+}
+
+const GPlatesGui::TopologySectionsContainer &
+GPlatesPresentation::ViewState::get_topology_interior_sections_container() const
+{
+	return *d_topology_interior_sections_container_ptr;
+}
+
+
+GPlatesGui::FileIODirectoryConfigurations &
+GPlatesPresentation::ViewState::get_file_io_directory_configurations()
+{
+	return *d_file_io_directory_configurations;
+}
+
+const GPlatesGui::FileIODirectoryConfigurations &
+GPlatesPresentation::ViewState::get_file_io_directory_configurations() const
+{
+	return *d_file_io_directory_configurations;
 }

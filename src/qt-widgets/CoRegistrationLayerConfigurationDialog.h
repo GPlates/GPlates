@@ -242,6 +242,13 @@ namespace GPlatesQtWidgets
 		void
 		update_cfg_table();
 
+		/**
+		 * Handle config table modified via the layer params (instead of via this dialog).
+		 */
+		void
+		get_configuration_table_from_layer(
+				GPlatesAppLogic::CoRegistrationLayerParams &);
+
 	private:
 	
 		/**
@@ -302,6 +309,18 @@ namespace GPlatesQtWidgets
 			
 		void
 		setup_reducer_combobox(
+				const QString& attribute_name,	
+				QComboBox* combo,
+				const GPlatesAppLogic::LayerTaskType::Type target_layer_type);
+
+		void
+		setup_reducer_relational_combobox(
+				const QString& attribute_name,	
+				QComboBox* combo,
+				const GPlatesAppLogic::LayerTaskType::Type target_layer_type);
+
+		void
+		setup_reducer_non_relational_combobox(
 				const QString& attribute_name,	
 				QComboBox* combo,
 				const GPlatesAppLogic::LayerTaskType::Type target_layer_type);

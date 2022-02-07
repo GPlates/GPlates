@@ -44,7 +44,7 @@ namespace GPlatesScribe
 				Scribe &scribe,
 				void *object_memory,
 				object_id_type object_id,
-				Options options) const
+				unsigned int options) const
 		{
 			// The 'void *' passed in is expected to point to an object of type 'ObjectType'.
 			// In other words it points to the entire object (and doesn't need any multiple
@@ -64,7 +64,7 @@ namespace GPlatesScribe
 		TranscribeOwningPointerTemplate<ObjectType>::load_object(
 				Scribe &scribe,
 				object_id_type object_id,
-				Options options) const
+				unsigned int options) const
 		{
 			// Construct the object on the heap.
 			LoadConstructObjectOnHeap<ObjectType> construct_object;

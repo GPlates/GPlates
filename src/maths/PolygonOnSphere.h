@@ -30,7 +30,7 @@
 
 #include <cstddef>  // For std::size_t
 #include <vector>
-#include <algorithm>  // std::swap
+#include <algorithm> 
 #include <utility>  // std::pair
 #include <boost/function.hpp>
 #include <boost/bind.hpp>
@@ -61,18 +61,18 @@ namespace GPlatesMaths
 	/** 
 	 * Represents a polygon on the surface of a sphere. 
 	 *
-	 * Internally, this is stored as a sequence of GreatCircleArc.  You
-	 * can iterate over this sequence of GreatCircleArc in the usual manner
+	 * Internally, this is stored as a sequence of GreatCircleArc for the polygon exterior and optional
+	 * sequences for interior rings (holes). You can iterate over this sequence of GreatCircleArc in the usual manner
 	 * using the const_iterators returned by the functions @a begin and
 	 * @a end.
 	 *
 	 * You can also iterate over the @em vertices of the polygon using the
-	 * vertex_const_iterators returned by the functions @a vertex_begin and
-	 * @a vertex_end.  For instance, to copy all the vertices of a polygon
+	 * vertex_const_iterators returned by the functions @a exterior_ring_vertex_begin and
+	 * @a exterior_ring_vertex_end.  For instance, to copy all the vertices of a polygon
 	 * into a list of PointOnSphere, you would use the code snippet:
 	 * @code
-	 * std::list< PointOnSphere > the_list(polygon.vertex_begin(),
-	 *                                     polygon.vertex_end());
+	 * std::list< PointOnSphere > the_list(polygon.exterior_ring_vertex_begin(),
+	 *                                     polygon.exterior_ring_vertex_end());
 	 * @endcode
 	 *
 	 * You can create a polygon by invoking the static member function
@@ -89,41 +89,33 @@ namespace GPlatesMaths
 	 * this sequence to the @a PolygonOnSphere::create_on_heap function, it
 	 * will create a polygon composed of 4 segments: A->B, B->C, C->D and D->A. 
 	 * (Iterating through the arcs of the polygon using the member functions
-	 * @a begin and @a end will return these 4 segments.)
-	 * If you subsequently iterate through the vertices of this polygon,
+	 * @a exterior_begin and @a exterior_end will return these 4 segments.)
+	 * If you subsequently iterate through the exterior vertices of this polygon,
 	 * you will get the same sequence of points back again: A, B, C, D.
 	 *
-	 * Note that PolygonOnSphere does have mutators (non-const member functions
-	 * which enable the modification of the class internals), in particular
-	 * the copy-assignment operator.
+	 * Note that PolygonOnSphere does *not* have mutators (non-const member functions
+	 * which enable the modification of the class internals).
 	 */
 	class PolygonOnSphere:
 			public GeometryOnSphere
 	{
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<PolygonOnSphere,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<PolygonOnSphere>.
 		 *
 		 * Note that this typedef is indeed meant to be private.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<PolygonOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<PolygonOnSphere> non_null_ptr_type;
 
 	public:
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const PolygonOnSphere> non_null_ptr_to_const_type;
 
 
 		/**
-		 * The type of the sequence of great circle arcs.
+		 * The type of the sequence of great circle arcs that form a closed ring.
 		 *
 		 * Implementation detail:  We are using 'std::vector' as the sequence type (rather
 		 * than, say, 'std::list') to provide a speed-up in memory-allocation (we use
@@ -137,25 +129,35 @@ namespace GPlatesMaths
 		 * (We should, however, be able to get away without relying upon the
 		 * "random-access"ness of vector iterators; forward iterators should be enough.)
 		 */
-		typedef std::vector<GreatCircleArc> seq_type;
+		typedef std::vector<GreatCircleArc> ring_type;
+
+		/**
+		 * The type used to const-iterate over the sequence of arcs in a closed ring.
+		 */
+		typedef ring_type::const_iterator ring_const_iterator;
 
 
 		/**
-		 * The type used to const_iterate over the sequence of arcs.
+		 * Typedef for a sequence of rings.
 		 */
-		typedef seq_type::const_iterator const_iterator;
+		typedef std::vector<ring_type> ring_sequence_type;
+
+		/**
+		 * Typedef for a const iterator over @a ring_sequence_type.
+		 */
+		typedef ring_sequence_type::const_iterator ring_sequence_const_iterator;
 
 
 		/**
 		 * The type used to describe collection sizes.
 		 */
-		typedef seq_type::size_type size_type;
+		typedef std::size_t size_type;
 
 
 		/**
-		 * Typedef for the bounding tree of great circle arcs in a polyline.
+		 * Typedef for the bounding tree of great circle arcs.
 		 */
-		typedef PolyGreatCircleArcBoundingTree<const_iterator, true/*RequireRandomAccessIterator*/>
+		typedef PolyGreatCircleArcBoundingTree<ring_const_iterator, true/*RequireRandomAccessIterator*/>
 				bounding_tree_type;
 
 	private:
@@ -163,22 +165,21 @@ namespace GPlatesMaths
 		/**
 		 * The type of a function that returns the start point of a GCA.
 		 */
-		typedef boost::function< const GPlatesMaths::PointOnSphere & (
-				const GreatCircleArc &) > gca_start_point_fn_type;
+		typedef boost::function<
+				const GPlatesMaths::PointOnSphere & (const GreatCircleArc &)>
+						gca_start_point_fn_type;
 
 	public:
 
 		/**
-		 * The type used to const_iterate over the vertices.
+		 * The type used to const-iterate over the vertices in a ring.
 		 */
-		typedef boost::transform_iterator<gca_start_point_fn_type, const_iterator> vertex_const_iterator;
-		typedef vertex_const_iterator VertexConstIterator;
+		typedef boost::transform_iterator<gca_start_point_fn_type, ring_const_iterator> ring_vertex_const_iterator;
+		typedef ring_vertex_const_iterator VertexConstIterator;
 
 		/**
-		 * The possible return values from the construction-parameter
-		 * validation functions
-		 * @a evaluate_construction_parameter_validity and
-		 * @a evaluate_segment_endpoint_validity.
+		 * The possible return values from the construction-parameter validation function
+		 * @a evaluate_construction_parameter_validity.
 		 */
 		enum ConstructionParameterValidity
 		{
@@ -194,7 +195,8 @@ namespace GPlatesMaths
 		 * What this actually means in plain(er) English is that you
 		 * can use this function to check whether you would be able to
 		 * construct a polygon instance from a given set of parameters
-		 * (ie, your collection of points in the range [@a begin, @a end) ).
+		 * (eg, your collection of exterior points in the range
+		 * [@a exterior_begin, @a exterior_end) ).
 		 *
 		 * If you pass this function what turns out to be invalid
 		 * construction-parameters, it will politely return an error
@@ -209,15 +211,7 @@ namespace GPlatesMaths
 		 * fairly unsympathetic if your parameters @em do turn out to
 		 * be invalid.
 		 *
-		 * The half-open range [@a begin, @a end) should contain
-		 * PointOnSphere objects.
-		 *
-		 * @a invalid_points is a return-parameter; if the
-		 * construction-parameters are found to be invalid due to
-		 * antipodal adjacent points, the value of this return-parameter
-		 * will be set to the pair of iterators of type ForwardIter which
-		 * point to the guilty points.  If no adjacent points are found
-		 * to be antipodal, this parameter will not be modified.
+		 * The half-open range [@a exterior_begin, @a exterior_end) should contain PointOnSphere objects.
 		 *
 		 * If @a check_distinct_points is 'true' then the sequence of points
 		 * is validated for insufficient *distinct* points, otherwise it is validated
@@ -226,86 +220,74 @@ namespace GPlatesMaths
 		 * points within epsilon distance from each other are counted as one point).
 		 * The default is to validate for insufficient *indistinct* points.
 		 */
-		template<typename ForwardIter>
+		template <typename PointForwardIter>
 		static
 		ConstructionParameterValidity
 		evaluate_construction_parameter_validity(
-				ForwardIter begin,
-				ForwardIter end,
-				std::pair<ForwardIter, ForwardIter> &invalid_points,
+				PointForwardIter exterior_begin,
+				PointForwardIter exterior_end,
 				bool check_distinct_points = false);
 
 		/**
 		 * Evaluate the validity of the construction-parameters.
 		 *
-		 * What this actually means in plain(er) English is that you
-		 * can use this function to check whether you would be able to
-		 * construct a polygon instance from a given set of parameters
-		 * (ie, your collection of points in @a coll).
-		 *
-		 * If you pass this function what turns out to be invalid
-		 * construction-parameters, it will politely return an error
-		 * diagnostic.  If you were to pass these same invalid
-		 * parameters to the creation functions down below, you would
-		 * get an exception thrown back at you.
-		 *
-		 * It's not terribly difficult to obtain a collection which
-		 * qualifies as as valid parameters (no antipodal adjacent points;
-		 * at least three distinct points in the collection -- nothing
-		 * particularly unreasonable) but the creation functions are
-		 * fairly unsympathetic if your parameters @em do turn out to
-		 * be invalid.
-		 *
-		 * @a coll should be a sequential STL container (list, vector,
-		 * ...) of PointOnSphere.
-		 *
-		 * @a invalid_points is a return-parameter; if the
-		 * construction-parameters are found to be invalid due to
-		 * antipodal adjacent points, the value of this return-parameter
-		 * will be set to the pair of const_iterators of @a coll which
-		 * point to the guilty points.  If no adjacent points are found
-		 * to be antipodal, this parameter will not be modified.
-		 *
-		 * If @a check_distinct_points is 'true' then the sequence of points
-		 * is validated for insufficient *distinct* points, otherwise it is validated
-		 * for insufficient points (regardless of whether they are distinct or not).
-		 * Distinct points are points that are separated by an epsilon distance (any
-		 * points within epsilon distance from each other are counted as one point).
-		 * The default is to validate for insufficient *indistinct* points.
+		 * @a exterior_points should be a sequential STL container (list, vector, ...) of PointOnSphere.
 		 */
-		template<typename C>
+		template <typename PointCollectionType>
 		static
 		ConstructionParameterValidity
 		evaluate_construction_parameter_validity(
-				const C &coll,
-				std::pair<typename C::const_iterator, typename C::const_iterator> &invalid_points,
+				const PointCollectionType &exterior_points,
 				bool check_distinct_points = false)
 		{
 			return evaluate_construction_parameter_validity(
-					coll.begin(), coll.end(), invalid_points, check_distinct_points);
+					exterior_points.begin(), exterior_points.end(), check_distinct_points);
 		}
 
 
 		/**
-		 * Evaluate the validity of the points @a p1 and @a p2 for use
-		 * in the creation of a polygon line-segment.
+		 * Evaluate the validity of the construction-parameters.
 		 *
-		 * You won't ever @em need to call this function
-		 * (@a evaluate_construction_parameter_validity will do all the
-		 * calling for you), but it's here in case you ever, you know,
-		 * @em want to...
+		 * Each interior ring in the range @a interior_rings_begin / @a interior_rings_end should be
+		 * a sequential STL container (list, vector, ...) of PointOnSphere.
 		 */
+		template <typename PointForwardIter, typename PointCollectionForwardIter>
 		static
 		ConstructionParameterValidity
-		evaluate_segment_endpoint_validity(
-				const PointOnSphere &p1,
-				const PointOnSphere &p2);
+		evaluate_construction_parameter_validity(
+				PointForwardIter exterior_begin,
+				PointForwardIter exterior_end,
+				PointCollectionForwardIter interior_rings_begin,
+				PointCollectionForwardIter interior_rings_end,
+				bool check_distinct_points = false);
+
+		/**
+		 * Evaluate the validity of the construction-parameters.
+		 *
+		 * @a exterior_points should be a sequential STL container (list, vector, ...) of PointOnSphere.
+		 *
+		 * Each interior ring in the range @a interior_rings_begin / @a interior_rings_end should be
+		 * a sequential STL container (list, vector, ...) of PointOnSphere.
+		 */
+		template <typename PointCollectionType, typename PointCollectionForwardIter>
+		static
+		ConstructionParameterValidity
+		evaluate_construction_parameter_validity(
+				const PointCollectionType &exterior_points,
+				PointCollectionForwardIter interior_rings_begin,
+				PointCollectionForwardIter interior_rings_end,
+				bool check_distinct_points = false)
+		{
+			return evaluate_construction_parameter_validity(
+					exterior_points.begin(), exterior_points.end(),
+					interior_rings_begin, interior_rings_end,
+					check_distinct_points);
+		}
 
 
 		/**
-		 * Create a new PolygonOnSphere instance on the heap from the sequence of points
-		 * in the range @a begin / @a end, and return an intrusive_ptr which points to
-		 * the newly-created instance.
+		 * Create a new PolygonOnSphere instance on the heap from the sequence of exterior points
+		 * in the range @a exterior_begin / @a exterior_end.
 		 *
 		 * If @a check_distinct_points is 'true' then the sequence of points
 		 * is validated for insufficient *distinct* points, otherwise it is validated
@@ -313,47 +295,132 @@ namespace GPlatesMaths
 		 * Distinct points are points that are separated by an epsilon distance (ie, any
 		 * points within epsilon distance from each other are counted as one point).
 		 * The default is to validate for insufficient *indistinct* points.
-		 *
-		 * This flag is 'false' by default but should be set to 'true' whenever data is loaded
-		 * into GPlates (ie, at any input to GPlates such as file IO). This flag was added to
-		 * prevent exceptions being thrown when reconstructing very small polygons containing only
-		 * a few points (eg, a polygon with 4 points might contain 3 distinct points when it's
-		 * loaded from a file but, due to numerical precision, contain only 2 distinct points after
+		 * This flag was added to prevent exceptions being thrown when reconstructing very small polygons
+		 * containing only a few points (eg, a polygon with 4 points might contain 3 distinct points when
+		 * it's loaded from a file but, due to numerical precision, contain only 2 distinct points after
 		 * it is rotated to a new polygon thus raising an exception when one it not really needed
 		 * or desired - because the polygon was good enough to load into GPlates therefore any
 		 * rotation of it should also be successful).
 		 *
-		 * @throws InvalidPointsForPolygonConstructionError if there are insufficient points for the polygon.
+		 * @throws InvalidPointsForPolygonConstructionError if there are insufficient points in the polygon exterior.
 		 * If @a check_distinct_points is true then the number of *distinct* points is counted,
 		 * otherwise the number of *indistinct* points (ie, the total number of points) is counted.
 		 *
 		 * This function is strongly exception-safe and exception-neutral.
 		 */
-		template<typename ForwardIter>
+		template <typename PointForwardIter>
 		static
 		const non_null_ptr_to_const_type
 		create_on_heap(
-				ForwardIter begin,
-				ForwardIter end,
+				PointForwardIter exterior_begin,
+				PointForwardIter exterior_end,
 				bool check_distinct_points = false);
 
 		/**
-		 * Create a new PolygonOnSphere instance on the heap from the sequence of points
-		 * @a coll, and return an intrusive_ptr which points to the newly-created instance.
+		 * Create a new PolygonOnSphere instance on the heap from a sequence of exterior points in @a exterior_points.
 		 *
-		 * @a coll should be a sequential STL container (list, vector, ...) of
-		 * PointOnSphere.
+		 * @a exterior_points should be a sequential STL container (list, vector, ...) of PointOnSphere.
 		 *
 		 * This function is strongly exception-safe and exception-neutral.
 		 */
-		template<typename C>
+		template <typename PointCollectionType>
 		static
 		const non_null_ptr_to_const_type
 		create_on_heap(
-				const C &coll,
+				const PointCollectionType &exterior_points,
 				bool check_distinct_points = false)
 		{
-			return create_on_heap(coll.begin(), coll.end(), check_distinct_points);
+			return create_on_heap(exterior_points.begin(), exterior_points.end(), check_distinct_points);
+		}
+
+
+		/**
+		 * Create a new PolygonOnSphere instance on the heap from the sequence of exterior points
+		 * in the range @a exterior_begin / @a exterior_end and a sequence of interior rings
+		 * (where each ring is a sequence of points).
+		 *
+		 * Each interior ring in the range @a interior_rings_begin / @a interior_rings_end should be
+		 * a sequential STL container (list, vector, ...) of PointOnSphere.
+		 *
+		 * If @a check_distinct_points is 'true' then the exterior ring and interior rings are each
+		 * validated for insufficient *distinct* points, otherwise they are validated for insufficient
+		 * points (regardless of whether they are distinct or not).
+		 * Distinct points are points that are separated by an epsilon distance (ie, any
+		 * points within epsilon distance from each other are counted as one point).
+		 * The default is to validate for insufficient *indistinct* points.
+		 * This flag was added to prevent exceptions being thrown when reconstructing very small polygons
+		 * containing only a few points (eg, a polygon with 4 points might contain 3 distinct points when
+		 * it's loaded from a file but, due to numerical precision, contain only 2 distinct points after
+		 * it is rotated to a new polygon thus raising an exception when one it not really needed
+		 * or desired - because the polygon was good enough to load into GPlates therefore any
+		 * rotation of it should also be successful).
+		 *
+		 * @throws InvalidPointsForPolygonConstructionError if there are insufficient points in the
+		 * exterior ring or any interior rings.
+		 * If @a check_distinct_points is true then the number of *distinct* points is counted,
+		 * otherwise the number of *indistinct* points (ie, the total number of points) is counted.
+		 *
+		 * This function is strongly exception-safe and exception-neutral.
+		 */
+		template <typename PointForwardIter, typename PointCollectionForwardIter>
+		static
+		const non_null_ptr_to_const_type
+		create_on_heap(
+				PointForwardIter exterior_begin,
+				PointForwardIter exterior_end,
+				PointCollectionForwardIter interior_rings_begin,
+				PointCollectionForwardIter interior_rings_end,
+				bool check_distinct_points = false);
+
+		/**
+		 * Create a new PolygonOnSphere instance on the heap from a sequence of exterior points in
+		 * @a exterior_points and a sequence of interior rings (where each ring is a sequence of points).
+		 *
+		 * @a exterior_points should be a sequential STL container (list, vector, ...) of PointOnSphere.
+		 *
+		 * Each interior ring in the range @a interior_rings_begin / @a interior_rings_end should be
+		 * a sequential STL container (list, vector, ...) of PointOnSphere.
+		 *
+		 * This function is strongly exception-safe and exception-neutral.
+		 */
+		template <typename PointCollectionType, typename PointCollectionForwardIter>
+		static
+		const non_null_ptr_to_const_type
+		create_on_heap(
+				const PointCollectionType &exterior_points,
+				PointCollectionForwardIter interior_rings_begin,
+				PointCollectionForwardIter interior_rings_end,
+				bool check_distinct_points = false)
+		{
+			return create_on_heap(
+					exterior_points.begin(), exterior_points.end(),
+					interior_rings_begin, interior_rings_end,
+					check_distinct_points);
+		}
+
+		/**
+		 * Create a new PolygonOnSphere instance on the heap from a sequence of exterior points in
+		 * @a exterior_points and a sequence of interior rings in @a interior_rings.
+		 *
+		 * @a exterior_points should be a sequential STL container (list, vector, ...) of PointOnSphere.
+		 *
+		 * @a interior_rings should be a sequential STL container (list, vector, ...) of
+		 * sequential STL containers (list, vector, ...) of PointOnSphere.
+		 *
+		 * This function is strongly exception-safe and exception-neutral.
+		 */
+		template <typename PointCollectionType, typename RingCollectionType>
+		static
+		const non_null_ptr_to_const_type
+		create_on_heap(
+				const PointCollectionType &exterior_points,
+				const RingCollectionType &interior_rings,
+				bool check_distinct_points = false)
+		{
+			return create_on_heap(
+					exterior_points.begin(), exterior_points.end(),
+					interior_rings.begin(), interior_rings.end(),
+					check_distinct_points);
 		}
 
 
@@ -369,10 +436,7 @@ namespace GPlatesMaths
 		const GeometryOnSphere::non_null_ptr_to_const_type
 		clone_as_geometry() const
 		{
-			GeometryOnSphere::non_null_ptr_to_const_type dup(
-					new PolygonOnSphere(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return dup;
+			return GeometryOnSphere::non_null_ptr_to_const_type(new PolygonOnSphere(*this));
 		}
 
 
@@ -384,10 +448,7 @@ namespace GPlatesMaths
 		const non_null_ptr_to_const_type
 		clone_as_polygon() const
 		{
-			non_null_ptr_to_const_type dup(
-					new PolygonOnSphere(*this),
-					GPlatesUtils::NullIntrusivePointerHandler());
-			return dup;
+			return non_null_ptr_to_const_type(new PolygonOnSphere(*this));
 		}
 
 
@@ -435,176 +496,395 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Copy-assign the value of @a other to this.
-		 *
-		 * This function is strongly exception-safe and exception-neutral.
-		 *
-		 * This copy-assignment operator should act exactly the same as the default
-		 * (auto-generated) copy-assignment operator would, except that it should not
-		 * assign the ref-count of @a other to this.
+		 * Return the 'begin' ring_const_iterator over the sequence of GreatCircleArc
+		 * which defines the exterior of this polygon.
 		 */
-		PolygonOnSphere &
-		operator=(
-				const PolygonOnSphere &other)
+		ring_const_iterator
+		exterior_ring_begin() const
 		{
-			// Use the copy+swap idiom to enable strong exception safety.
-			PolygonOnSphere dup(other);
-			this->swap(dup);
-			return *this;
+			return d_exterior_ring.begin();
+		}
+
+		/**
+		 * Return the 'end' ring_const_iterator over the sequence of GreatCircleArc
+		 * which defines the exterior of this polygon.
+		 */
+		ring_const_iterator
+		exterior_ring_end() const
+		{
+			return d_exterior_ring.end();
+		}
+		
+
+		/**
+		 * Return the exterior ring of this polygon.
+		 */
+		const ring_type &
+		exterior_ring() const
+		{
+			return d_exterior_ring;
 		}
 
 
 		/**
-		 * Return the "begin" const_iterator to iterate over the
-		 * sequence of GreatCircleArc which defines this polygon.
-		 */
-		const_iterator
-		begin() const
-		{
-			return d_seq.begin();
-		}
-
-
-		/**
-		 * Return the "end" const_iterator to iterate over the
-		 * sequence of GreatCircleArc which defines this polygon.
-		 */
-		const_iterator
-		end() const
-		{
-			return d_seq.end();
-		}
-
-
-		/**
-		 * Return the number of segments in this polygon.
+		 * Return the number of segments in the exterior ring in this polygon.
 		 */
 		size_type
-		number_of_segments() const
+		number_of_segments_in_exterior_ring() const
 		{
-			return d_seq.size();
+			return d_exterior_ring.size();
 		}
 
 
 		/**
-		 * Return the segment in this polygon at the specified index.
+		 * Return the exterior segment in this polygon at the specified index.
 		 */
 		const GreatCircleArc &
-		get_segment(
-				size_type segment_index) const
+		get_exterior_ring_segment(
+				size_type exterior_segment_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-					segment_index < number_of_segments(),
+					exterior_segment_index < number_of_segments_in_exterior_ring(),
 					GPLATES_ASSERTION_SOURCE);
 
-			return d_seq[segment_index];
+			return d_exterior_ring[exterior_segment_index];
 		}
 
 
 		/**
-		 * Return the "begin" const_iterator to iterate over the
-		 * vertices of this polygon.
+		 * Return the 'begin' ring_vertex_const_iterator over the exterior vertices of this polygon.
 		 */
-		vertex_const_iterator
-		vertex_begin() const
+		ring_vertex_const_iterator
+		exterior_ring_vertex_begin() const
 		{
 			return boost::make_transform_iterator(
-					d_seq.begin(),
+					d_exterior_ring.begin(),
 					gca_start_point_fn_type(
 						boost::bind(&GreatCircleArc::start_point, _1)));
 		}
 
 
 		/**
-		 * Return the "end" const_iterator to iterate over the
-		 * vertices of this polygon.
+		 * Return the 'end' ring_vertex_const_iterator over the exterior vertices of this polygon.
 		 */
-		vertex_const_iterator
-		vertex_end() const
+		ring_vertex_const_iterator
+		exterior_ring_vertex_end() const
 		{
 			return boost::make_transform_iterator(
-					d_seq.end(),
+					d_exterior_ring.end(),
 					gca_start_point_fn_type(
 						boost::bind(&GreatCircleArc::start_point, _1)));
 		}
 
 
 		/**
-		 * Return the number of vertices in this polygon.
+		 * Return the number of vertices in the exterior ring in this polygon.
 		 */
 		size_type
-		number_of_vertices() const
+		number_of_vertices_in_exterior_ring() const
 		{
-			return d_seq.size();
+			return number_of_segments_in_exterior_ring();
 		}
 
 
 		/**
-		 * Return the vertex in this polygon at the specified index.
+		 * Return the exterior vertex in this polygon at the specified index.
 		 */
 		const PointOnSphere &
-		get_vertex(
-				size_type vertex_index) const
+		get_exterior_ring_vertex(
+				size_type exterior_vertex_index) const
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-					vertex_index < number_of_vertices(),
+					exterior_vertex_index < number_of_vertices_in_exterior_ring(),
 					GPLATES_ASSERTION_SOURCE);
 
-			vertex_const_iterator vertex_iter = vertex_begin();
+			ring_vertex_const_iterator exterior_vertex_iter = exterior_ring_vertex_begin();
 			// This should be fast since iterator type is random access...
-			std::advance(vertex_iter, vertex_index);
+			std::advance(exterior_vertex_iter, exterior_vertex_index);
 
-			return *vertex_iter;
+			return *exterior_vertex_iter;
 		}
 
 
 		/**
-		 * Return the first vertex in this polygon.
+		 * Return the first exterior vertex in this polygon.
 		 *
-		 * This is the first point specified as a point in the polygon.
+		 * This is the first point specified as an exterior point in the polygon.
 		 */
 		const PointOnSphere &
-		first_vertex() const
+		first_exterior_ring_vertex() const
 		{
-			const GreatCircleArc &first_gca = *(begin());
-			return first_gca.start_point();
+			const GreatCircleArc &first_exterior_gca = *(exterior_ring_begin());
+			return first_exterior_gca.start_point();
 		}
 
 
 		/**
-		 * Return the last vertex in this polygon.
+		 * Return the last exterior vertex in this polygon.
 		 *
-		 * This is the last point specified as a point in the polygon.  It is presumably
+		 * This is the last point specified as an exterior point in the polygon.  It is presumably
 		 * different to the start-point.  (FIXME: We should ensure this at creation time.)
 		 */
 		const PointOnSphere &
-		last_vertex() const
+		last_exterior_ring_vertex() const
 		{
-			const GreatCircleArc &last_gca = *(--(end()));
-			return last_gca.end_point();
+			const GreatCircleArc &last_exterior_gca = *(--(exterior_ring_end()));
+			return last_exterior_gca.end_point();
+		}
+		
+
+		/**
+		 * Return the "begin" const iterator over the interior rings of this polygon.
+		 *
+		 * Each interior ring has type @a ring_type.
+		 */
+		ring_sequence_const_iterator
+		interior_rings_begin() const
+		{
+			return d_interior_rings.begin();
+		}
+
+		/**
+		 * Return the "end" const iterator over the interior rings of this polygon.
+		 *
+		 * Each interior ring has type @a ring_type.
+		 */
+		ring_sequence_const_iterator
+		interior_rings_end() const
+		{
+			return d_interior_rings.end();
+		}
+		
+
+		/**
+		 * Return the sequence of interior rings of this polygon.
+		 *
+		 * Each interior ring has type @a ring_type.
+		 */
+		const ring_sequence_type &
+		interior_rings() const
+		{
+			return d_interior_rings;
 		}
 
 
 		/**
-		 * Swap the contents of this polygon with @a other.
-		 *
-		 * This function does not throw.
+		 * Return the number of interior rings in this polygon.
 		 */
-		void
-		swap(
-				PolygonOnSphere &other)
+		size_type
+		number_of_interior_rings() const
 		{
-			// Obviously, we should not swap the ref-counts of the instances.
-			d_seq.swap(other.d_seq);
-			d_cached_calculations.swap(other.d_cached_calculations);
+			return d_interior_rings.size();
+		}
+
+
+		/**
+		 * Return the 'begin' ring_const_iterator over the sequence of GreatCircleArc
+		 * which defines the interior ring of this polygon at the specified interior ring index.
+		 */
+		ring_const_iterator
+		interior_ring_begin(
+				size_type interior_ring_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					interior_ring_index < number_of_interior_rings(),
+					GPLATES_ASSERTION_SOURCE);
+
+			return d_interior_rings[interior_ring_index].begin();
+		}
+
+		/**
+		 * Return the 'end' ring_const_iterator over the sequence of GreatCircleArc
+		 * which defines the interior ring of this polygon at the specified interior ring index.
+		 */
+		ring_const_iterator
+		interior_ring_end(
+				size_type interior_ring_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					interior_ring_index < number_of_interior_rings(),
+					GPLATES_ASSERTION_SOURCE);
+
+			return d_interior_rings[interior_ring_index].end();
+		}
+
+
+		/**
+		 * Return the number of segments in the interior ring in this polygon at the specified interior ring index.
+		 */
+		size_type
+		number_of_segments_in_interior_ring(
+				size_type interior_ring_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					interior_ring_index < number_of_interior_rings(),
+					GPLATES_ASSERTION_SOURCE);
+
+			return d_interior_rings[interior_ring_index].size();
+		}
+
+
+		/**
+		 * Return the segment of the interior ring in this polygon at the specified segment index
+		 * in the specified interior ring index.
+		 */
+		const GreatCircleArc &
+		get_interior_ring_segment(
+				size_type interior_ring_index,
+				size_type segment_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					interior_ring_index < number_of_interior_rings(),
+					GPLATES_ASSERTION_SOURCE);
+
+			const ring_type &interior_ring = d_interior_rings[interior_ring_index];
+
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					segment_index < interior_ring.size(),
+					GPLATES_ASSERTION_SOURCE);
+
+			return interior_ring[segment_index];
+		}
+
+
+		/**
+		 * Return the 'begin' ring_vertex_const_iterator over the vertices of the interior ring
+		 * of this polygon at the specified interior ring index.
+		 */
+		ring_vertex_const_iterator
+		interior_ring_vertex_begin(
+				size_type interior_ring_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					interior_ring_index < number_of_interior_rings(),
+					GPLATES_ASSERTION_SOURCE);
+
+			const ring_type &interior_ring = d_interior_rings[interior_ring_index];
+
+			return boost::make_transform_iterator(
+					interior_ring.begin(),
+					gca_start_point_fn_type(
+						boost::bind(&GreatCircleArc::start_point, _1)));
+		}
+
+
+		/**
+		 * Return the 'end' ring_vertex_const_iterator over the vertices of the interior ring
+		 * of this polygon at the specified interior ring index.
+		 */
+		ring_vertex_const_iterator
+		interior_ring_vertex_end(
+				size_type interior_ring_index) const
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+					interior_ring_index < number_of_interior_rings(),
+					GPLATES_ASSERTION_SOURCE);
+
+			const ring_type &interior_ring = d_interior_rings[interior_ring_index];
+
+			return boost::make_transform_iterator(
+					interior_ring.end(),
+					gca_start_point_fn_type(
+						boost::bind(&GreatCircleArc::start_point, _1)));
+		}
+
+
+		/**
+		 * Return the number of vertices in the interior ring in this polygon
+		 * at the specified interior ring index.
+		 */
+		size_type
+		number_of_vertices_in_interior_ring(
+				size_type interior_ring_index) const
+		{
+			return number_of_segments_in_interior_ring(interior_ring_index);
+		}
+
+
+		/**
+		 * Return the vertex of the interior ring in this polygon at the specified vertex index
+		 * in the specified interior ring index.
+		 */
+		const PointOnSphere &
+		get_interior_ring_vertex(
+				size_type interior_ring_index,
+				size_type vertex_index) const
+		{
+			ring_vertex_const_iterator interior_vertex_iter = interior_ring_vertex_begin(interior_ring_index);
+			// This should be fast since iterator type is random access...
+			std::advance(interior_vertex_iter, vertex_index);
+
+			return *interior_vertex_iter;
+		}
+
+
+		/**
+		 * Return the first vertex in the interior ring in this polygon at the specified interior ring index.
+		 */
+		const PointOnSphere &
+		first_interior_ring_vertex(
+				size_type interior_ring_index) const
+		{
+			const GreatCircleArc &first_interior_gca = *(interior_ring_begin(interior_ring_index));
+			return first_interior_gca.start_point();
+		}
+
+
+		/**
+		 * Return the last vertex in the interior ring in this polygon at the specified interior ring index.
+		 *
+		 * This is the last point specified as an interior point in the polygon at the specified interior ring index.
+		 * It is presumably different to the start-point.  (FIXME: We should ensure this at creation time.)
+		 */
+		const PointOnSphere &
+		last_interior_ring_vertex(
+				size_type interior_ring_index) const
+		{
+			const GreatCircleArc &last_interior_gca = *(--(interior_ring_end(interior_ring_index)));
+			return last_interior_gca.end_point();
+		}
+
+
+		/**
+		 * Return the total number of segments in the exterior ring and interiors rings in this polygon.
+		 */
+		size_type
+		number_of_segments_in_all_rings() const
+		{
+			size_type num_segments = number_of_segments_in_exterior_ring();
+
+			for (unsigned int i = 0; i < number_of_interior_rings(); ++i)
+			{
+				num_segments += number_of_segments_in_interior_ring(i);
+			}
+
+			return num_segments;
+		}
+
+
+		/**
+		 * Return the total number of vertices in the exterior ring and interiors rings in this polygon.
+		 */
+		size_type
+		number_of_vertices_in_all_rings() const
+		{
+			size_type num_vertices = number_of_vertices_in_exterior_ring();
+
+			for (unsigned int i = 0; i < number_of_interior_rings(); ++i)
+			{
+				num_vertices += number_of_vertices_in_interior_ring(i);
+			}
+
+			return num_vertices;
 		}
 
 
 		/**
 		 * Evaluate whether @a test_point is "close" to this polygon.
 		 *
-		 * Note: This function currently only tests whether
-		 * @a test_point is "close" to the polygon @em boundary.
+		 * Note: This function tests whether @a test_point is "close" to the polygon @em outline
+		 * (where the outline includes the exterior ring and any interior rings). To test if a point
+		 * is inside this polygon use @a is_point_in_polygon instead.
 		 *
 		 * The measure of what is "close" is provided by @a closeness_angular_extent_threshold.
 		 *
@@ -626,7 +906,8 @@ namespace GPlatesMaths
 		operator==(
 				const PolygonOnSphere &other) const
 		{
-			return d_seq == other.d_seq;
+			return d_exterior_ring == other.d_exterior_ring &&
+					d_interior_rings == other.d_interior_rings;
 		}
 
 		/**
@@ -646,14 +927,38 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Returns the total arc-length of the sequence of @a GreatCirclArc which defines this polygon.
+		 * Returns the total arc-length of the exterior ring and interior rings (each ring is a
+		 * sequences of @a GreatCirclArc.
+		 *
+		 * The result is in radians and represents the distance on the unit radius sphere.
+		 *
+		 * The result is cached on first call.
+		 */
+		real_t
+		get_arc_length() const;
+
+		/**
+		 * Returns the arc-length of the exterior ring sequence of @a GreatCirclArc which
+		 * defines the exterior of this polygon.
 		 *
 		 * The result is in radians and represents the distance on the unit radius sphere.
 		 *
 		 * The result is cached on first call.
 		 */
 		const real_t &
-		get_arc_length() const;
+		get_exterior_ring_arc_length() const;
+
+		/**
+		 * Returns the arc-length of an interior ring sequence of @a GreatCirclArc for the
+		 * specified interior ring index.
+		 *
+		 * The result is in radians and represents the distance on the unit radius sphere.
+		 *
+		 * The result is cached on first call.
+		 */
+		const real_t &
+		get_interior_ring_arc_length(
+				size_type interior_ring_index) const;
 
 
 		/**
@@ -727,6 +1032,15 @@ namespace GPlatesMaths
 		 * You can increase the speed but you cannot reduce it - this is because it takes
 		 * longer to set up for the higher speed tests and reducing back to lower speeds
 		 * would effectively remove any advantages gained.
+		 *
+		 * The point-in-polygon test is done by counting the number of polygon edges crossed
+		 * (in the exterior ring and any interior rings) from the polygon's antipodal centroid to
+		 * the point being tested. This means that if an interior ring intersects the exterior ring
+		 * then it is possible for a test point, that is outside the exterior ring but inside the
+		 * interior ring, to pass the point-in-polygon test. This might not be desirable but it is
+		 * similar to how filled polygons are currently rendered and so at least there is some
+		 * consistency there (and reconstructed rasters use the point-in-polygon test when generating
+		 * a polygon mesh so it's consistent too).
 		 */
 		bool
 		is_point_in_polygon(
@@ -735,9 +1049,16 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Returns the centroid of the *edges* of this polygon (see @a Centroid::calculate_outline_centroid).
+		 * Returns the centroid of the *edges* of the exterior ring of this polygon
+		 * (see @a Centroid::calculate_outline_centroid).
+		 *
+		 * This does not include the edges of the interior rings and hence is the same as
+		 * calling @a get_outline_centroid with 'use_interior_rings' set to false.
 		 *
 		 * This centroid is useful for the centre of a small circle that bounds this polygon.
+		 * Since the interior rings are (usually) inside the exterior ring they're not really needed
+		 * for this sort of thing (hence @a get_outline_centroid is not really needed). The interior
+		 * rings are more important @a get_interior_centroid which looks at the interior fill region.
 		 *
 		 * The result is cached on first call.
 		 */
@@ -746,10 +1067,30 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Returns the centroid of the *interior* of this polygon (see @a Centroid::calculate_outline_centroid).
+		 * Returns the centroid of the *edges* of this polygon
+		 * (see @a Centroid::calculate_outline_centroid).
+		 *
+		 * If @a use_interior_rings is true (the default) then the edges of the interior rings are
+		 * included. If it is false then this is the same as calling @a get_boundary_centroid.
+		 *
+		 * The result is cached on first call.
+		 */
+		const UnitVector3D &
+		get_outline_centroid(
+				bool use_interior_rings = true) const;
+
+
+		/**
+		 * Returns the centroid of the *interior* of this polygon (see @a Centroid::calculate_interior_centroid).
 		 *
 		 * This centroid is useful when the centroid should be closer to the centre-of-mass of
 		 * the polygon interior.
+		 *
+		 * This centroid can be considered a centre-of-mass type of centroid since the calculated
+		 * centroid is weighted according to the area coverage of the interior region.
+		 * For example a bottom-heavy pear-shaped polygon will have an interior centroid closer
+		 * to the bottom whereas the @a get_boundary_centroid or @a get_outline_centroid will
+		 * be closer to the middle of the pear.
 		 *
 		 * The result is cached on first call.
 		 */
@@ -771,6 +1112,13 @@ namespace GPlatesMaths
 		 * Returns the inner and outer small circle bounds of this polygon - the small circle centre
 		 * is the same as calculated by @a get_boundary_centroid.
 		 *
+		 * The inner bounding small circle contains no exterior ring or interior ring arc segments.
+		 *
+		 * Note that since the centre of the small circle is @a get_boundary_centroid it could lie
+		 * inside or outside the exterior ring or inside/outside any interior rings depending on the
+		 * shape of the rings and the location of the centroid. In other words the inner bounding
+		 * small circle has nothing to do with being inside the polygon exterior or interior rings.
+		 *
 		 * The result is cached on first call.
 		 */
 		const InnerOuterBoundingSmallCircle &
@@ -778,12 +1126,24 @@ namespace GPlatesMaths
 
 
 		/**
-		 * Returns the small circle bounding tree over of great circle arc segments of this polygon.
+		 * Returns the exterior ring small circle bounding tree over the great circle arc segments
+		 * of the exterior ring of this polygon.
 		 *
 		 * The result is cached on first call.
 		 */
 		const bounding_tree_type &
-		get_bounding_tree() const;
+		get_exterior_ring_bounding_tree() const;
+
+		/**
+		 * Returns the interior ring small circle bounding tree at the specified interior ring index.
+		 *
+		 * This is the bounding tree over the great circle arc segments of the specified interior ring.
+		 *
+		 * The result is cached on first call.
+		 */
+		const bounding_tree_type &
+		get_interior_ring_bounding_tree(
+				size_type interior_ring_index) const;
 
 	private:
 
@@ -819,24 +1179,87 @@ namespace GPlatesMaths
 				const PolygonOnSphere &other);
 
 
+		// This operator should never be defined, because we don't want/need to allow
+		// copy-assignment.
+		PolygonOnSphere &
+		operator=(
+				const PolygonOnSphere &other);
+
+
 		/**
-		 * Generate a sequence of polygon segments from the collection
-		 * of points in the range @a begin / @a end, using the points to
-		 * define the vertices of the segments, then swap this new sequence
-		 * of segments into the polygon @a poly, discarding any sequence of
-		 * segments which may have been there before.
-		 *
-		 * This function is strongly exception-safe and
-		 * exception-neutral.
+		 * Evaluate the validity of the points for use in the creation of a ring.
 		 */
-		template<typename ForwardIter>
+		template <typename PointForwardIter>
+		static
+		ConstructionParameterValidity
+		evaluate_ring_validity(
+				PointForwardIter begin,
+				PointForwardIter end,
+				bool check_distinct_points);
+
+
+		/**
+		 * Evaluate the validity of the points @a p1 and @a p2 for use
+		 * in the creation of a polygon line-segment.
+		 */
+		static
+		ConstructionParameterValidity
+		evaluate_segment_endpoint_validity(
+				const PointOnSphere &p1,
+				const PointOnSphere &p2);
+
+
+		/**
+		 * Generate a sequence of polygon segments from the exterior points in the range
+		 * @a exterior_begin / @a exterior_end.
+		 *
+		 * These are used to define the vertices of an exterior ring which is then swapped with the exterior
+		 * ring in the polygon @a polygon, discarding any exterior ring which may have been there before.
+		 *
+		 * This function is strongly exception-safe and exception-neutral.
+		 */
+		template <typename PointForwardIter>
 		static
 		void
-		generate_segments_and_swap(
-				PolygonOnSphere &poly,
-				ForwardIter begin,
-				ForwardIter end,
+		generate_rings_and_swap(
+				PolygonOnSphere &polygon,
+				PointForwardIter exterior_begin,
+				PointForwardIter exterior_end,
 				bool check_distinct_points);
+
+
+		/**
+		 * Generate a sequence of polygon segments from the exterior points in the range
+		 * @a exterior_begin / @a exterior_end and a sequence of interior rings in the range
+		 * @a interior_rings_begin / @a interior_rings_end (where each ring is a sequence of points).
+		 *
+		 * These are used to define the vertices of an exterior ring and interior rings which are then swapped
+		 * with the rings in the polygon @a polygon, discarding any rings which may have been there before.
+		 *
+		 * This function is strongly exception-safe and exception-neutral.
+		 */
+		template <typename PointForwardIter, typename PointCollectionForwardIter>
+		static
+		void
+		generate_rings_and_swap(
+				PolygonOnSphere &polygon,
+				PointForwardIter exterior_begin,
+				PointForwardIter exterior_end,
+				PointCollectionForwardIter interior_rings_begin,
+				PointCollectionForwardIter interior_rings_end,
+				bool check_distinct_points);
+
+
+		/**
+		 * Generate a ring from a sequence of points.
+		 */
+		template <typename PointForwardIter>
+		static
+		void
+		generate_ring(
+				ring_type &ring,
+	 			PointForwardIter begin,
+				PointForwardIter end);
 
 
 		/**
@@ -847,9 +1270,17 @@ namespace GPlatesMaths
 
 
 		/**
-		 * This is the sequence of polygon segments.
+		 * The exterior ring of this polygon.
 		 */
-		seq_type d_seq;
+		ring_type d_exterior_ring;
+
+
+		/**
+		 * The interior rings of this polygon (if any).
+		 *
+		 * If any interior rings are present then the polygon is a donut polygon (a polygon with holes).
+		 */
+		ring_sequence_type d_interior_rings;
 
 		/**
 		 * Useful calculations on the polygon data.
@@ -890,12 +1321,57 @@ namespace GPlatesMaths
 
 namespace GPlatesMaths
 {
-	template<typename ForwardIter>
+	template <typename PointForwardIter>
 	PolygonOnSphere::ConstructionParameterValidity
 	PolygonOnSphere::evaluate_construction_parameter_validity(
-			ForwardIter begin,
-			ForwardIter end,
-			std::pair<ForwardIter, ForwardIter> &invalid_points,
+			PointForwardIter exterior_begin,
+			PointForwardIter exterior_end,
+			bool check_distinct_points)
+	{
+		return evaluate_ring_validity(exterior_begin, exterior_end, check_distinct_points);
+	}
+
+
+	template <typename PointForwardIter, typename PointCollectionForwardIter>
+	PolygonOnSphere::ConstructionParameterValidity
+	PolygonOnSphere::evaluate_construction_parameter_validity(
+			PointForwardIter exterior_begin,
+			PointForwardIter exterior_end,
+			PointCollectionForwardIter interior_rings_begin,
+			PointCollectionForwardIter interior_rings_end,
+			bool check_distinct_points)
+	{
+		const ConstructionParameterValidity exterior_validity =
+				evaluate_ring_validity(exterior_begin, exterior_end, check_distinct_points);
+		if (exterior_validity != VALID)
+		{
+			return exterior_validity;
+		}
+
+		for (PointCollectionForwardIter interior_rings_iter = interior_rings_begin;
+			interior_rings_iter != interior_rings_end;
+			++interior_rings_iter)
+		{
+			const ConstructionParameterValidity interior_validity =
+					evaluate_ring_validity(
+							interior_rings_iter->begin(),
+							interior_rings_iter->end(),
+							check_distinct_points);
+			if (interior_validity != VALID)
+			{
+				return interior_validity;
+			}
+		}
+
+		return VALID;
+	}
+
+
+	template <typename PointForwardIter>
+	PolygonOnSphere::ConstructionParameterValidity
+	PolygonOnSphere::evaluate_ring_validity(
+			PointForwardIter begin,
+			PointForwardIter end,
 			bool check_distinct_points)
 	{
 		unsigned int num_points = 0;
@@ -906,14 +1382,16 @@ namespace GPlatesMaths
 			// This 'count_distinct_adjacent_points' doesn't consider the first and last points
 			// of the sequence to be adjacent, but we do.  Hence, if the first and last points
 			// aren't distinct, that means there's one less "distinct adjacent point".
-			if (std::distance(begin, end) >= 2) {
+			if (std::distance(begin, end) >= 2)
+			{
 				// It's valid (and worth-while) to invoke the 'front' and 'back' accessors
 				// of the container.
 				const PointOnSphere &first = *begin;
-				ForwardIter last_iter = end;
+				PointForwardIter last_iter = end;
 				--last_iter;
 				const PointOnSphere &last = *last_iter;
-				if (first == last) {
+				if (first == last)
+				{
 					// A-HA!
 					--num_points;
 				}
@@ -932,9 +1410,10 @@ namespace GPlatesMaths
 		}
 
 		// This for-loop is identical to the corresponding code in PolylineOnSphere.
-		ForwardIter prev;
-		ForwardIter iter = begin;
-		for (prev = iter++ ; iter != end; prev = iter++) {
+		PointForwardIter prev;
+		PointForwardIter iter = begin;
+		for (prev = iter++ ; iter != end; prev = iter++)
+		{
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
 
@@ -942,15 +1421,13 @@ namespace GPlatesMaths
 
 			// Using a switch-statement, along with GCC's "-Wswitch" option (implicitly
 			// enabled by "-Wall"), will help to ensure that no cases are missed.
-			switch (v) {
-
+			switch (v)
+			{
 			case VALID:
-
 				// Keep looping.
 				break;
 
 			case INVALID_INSUFFICIENT_DISTINCT_POINTS:
-
 				// This value should never be returned, since it's not related to
 				// segments.
 				//
@@ -960,9 +1437,6 @@ namespace GPlatesMaths
 				break;
 
 			case INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
-
-				invalid_points.first = prev;
-				invalid_points.second = iter;
 				return v;
 			}
 		}
@@ -977,15 +1451,13 @@ namespace GPlatesMaths
 
 			// Using a switch-statement, along with GCC's "-Wswitch" option (implicitly
 			// enabled by "-Wall"), will help to ensure that no cases are missed.
-			switch (v) {
-
+			switch (v)
+			{
 			case VALID:
-
 				// Exit the switch-statement.
 				break;
 
 			case INVALID_INSUFFICIENT_DISTINCT_POINTS:
-
 				// This value shouldn't be returned.
 				// FIXME:  Can this be checked at compile-time?
 				// (Perhaps with use of template magic, to
@@ -994,9 +1466,6 @@ namespace GPlatesMaths
 				break;
 
 			case INVALID_ANTIPODAL_SEGMENT_ENDPOINTS:
-
-				invalid_points.first = prev;
-				invalid_points.second = iter;
 				return v;
 			}
 		}
@@ -1007,17 +1476,34 @@ namespace GPlatesMaths
 	}
 
 
-	template<typename ForwardIter>
+	template <typename PointForwardIter>
 	const PolygonOnSphere::non_null_ptr_to_const_type
 	PolygonOnSphere::create_on_heap(
-			ForwardIter begin,
-			ForwardIter end,
+			PointForwardIter exterior_begin,
+			PointForwardIter exterior_end,
 			bool check_distinct_points)
 	{
-		PolygonOnSphere::non_null_ptr_type ptr(
-				new PolygonOnSphere(),
-				GPlatesUtils::NullIntrusivePointerHandler());
-		generate_segments_and_swap(*ptr, begin, end, check_distinct_points);
+		non_null_ptr_type ptr(new PolygonOnSphere());
+		generate_rings_and_swap(*ptr, exterior_begin, exterior_end, check_distinct_points);
+		return ptr;
+	}
+
+
+	template <typename PointForwardIter, typename PointCollectionForwardIter>
+	const PolygonOnSphere::non_null_ptr_to_const_type
+	PolygonOnSphere::create_on_heap(
+			PointForwardIter exterior_begin,
+			PointForwardIter exterior_end,
+			PointCollectionForwardIter interior_rings_begin,
+			PointCollectionForwardIter interior_rings_end,
+			bool check_distinct_points)
+	{
+		non_null_ptr_type ptr(new PolygonOnSphere());
+		generate_rings_and_swap(
+				*ptr,
+				exterior_begin, exterior_end,
+				interior_rings_begin, interior_rings_end,
+				check_distinct_points);
 		return ptr;
 	}
 
@@ -1068,19 +1554,18 @@ namespace GPlatesMaths
 	};
 
 
-	template<typename ForwardIter>
+	template <typename PointForwardIter>
 	void
-	PolygonOnSphere::generate_segments_and_swap(
-			PolygonOnSphere &poly,
-	 		ForwardIter begin,
-			ForwardIter end,
+	PolygonOnSphere::generate_rings_and_swap(
+			PolygonOnSphere &polygon,
+	 		PointForwardIter exterior_begin,
+			PointForwardIter exterior_end,
 			bool check_distinct_points)
 	{
-		std::pair<ForwardIter, ForwardIter> invalid_points;
-		ConstructionParameterValidity v =
+		const ConstructionParameterValidity v =
 				evaluate_construction_parameter_validity(
-						begin, end,
-						invalid_points,
+						exterior_begin,
+						exterior_end,
 						check_distinct_points);
 		if (v != VALID)
 		{
@@ -1088,48 +1573,95 @@ namespace GPlatesMaths
 		}
 
 		// Make it easier to provide strong exception safety by appending the new segments
-		// to a temporary sequence (rather than putting them directly into 'd_seq').
-		seq_type tmp_seq;
-		// Observe that the number of points used to define a polygon (which will become
-		// the number of vertices in the polygon) is also the number of segments in the
-		// polygon.
-		tmp_seq.reserve(std::distance(begin, end));
+		// to a temporary sequence (rather than putting them directly into 'd_exterior_ring').
+		ring_type exterior;
+		generate_ring(exterior, exterior_begin, exterior_end);
+		polygon.d_exterior_ring.swap(exterior);
+	}
+
+
+	template <typename PointForwardIter, typename PointCollectionForwardIter>
+	void
+	PolygonOnSphere::generate_rings_and_swap(
+			PolygonOnSphere &polygon,
+	 		PointForwardIter exterior_begin,
+			PointForwardIter exterior_end,
+			PointCollectionForwardIter interior_rings_begin,
+			PointCollectionForwardIter interior_rings_end,
+			bool check_distinct_points)
+	{
+		const ConstructionParameterValidity exterior_validity =
+				evaluate_construction_parameter_validity(
+						exterior_begin,
+						exterior_end,
+						check_distinct_points);
+		if (exterior_validity != VALID)
+		{
+			throw InvalidPointsForPolygonConstructionError(GPLATES_EXCEPTION_SOURCE, exterior_validity);
+		}
+
+		// Make it easier to provide strong exception safety by appending to temporary rings
+		// and then swapping them into 'polygon'.
+
+		ring_type exterior;
+		generate_ring(exterior, exterior_begin, exterior_end);
+
+		ring_sequence_type interiors;
+		interiors.resize(std::distance(interior_rings_begin, interior_rings_end));
+
+		unsigned int interior_index = 0;
+		for (PointCollectionForwardIter interior_rings_iter = interior_rings_begin;
+			interior_rings_iter != interior_rings_end;
+			++interior_rings_iter, ++interior_index)
+		{
+			const ConstructionParameterValidity interior_validity =
+					evaluate_construction_parameter_validity(
+							interior_rings_iter->begin(),
+							interior_rings_iter->end(),
+							check_distinct_points);
+			if (interior_validity != VALID)
+			{
+				throw InvalidPointsForPolygonConstructionError(GPLATES_EXCEPTION_SOURCE, interior_validity);
+			}
+
+			generate_ring(
+					interiors[interior_index],
+					interior_rings_iter->begin(),
+					interior_rings_iter->end());
+		}
+
+		polygon.d_exterior_ring.swap(exterior);
+		polygon.d_interior_rings.swap(interiors);
+	}
+
+
+	template <typename PointForwardIter>
+	void
+	PolygonOnSphere::generate_ring(
+			ring_type &ring,
+	 		PointForwardIter begin,
+			PointForwardIter end)
+	{
+		// Observe that the number of points used to define a ring (which will become
+		// the number of vertices in the ring) is also the number of segments in the ring.
+		ring.reserve(std::distance(begin, end));
 
 		// This for-loop is identical to the corresponding code in PolylineOnSphere.
-		ForwardIter prev;
-		ForwardIter iter = begin;
+		PointForwardIter prev;
+		PointForwardIter iter = begin;
 		for (prev = iter++ ; iter != end; prev = iter++)
 		{
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
-			tmp_seq.push_back(GreatCircleArc::create(p1, p2));
+			ring.push_back(GreatCircleArc::create(p1, p2));
 		}
 		// Now, an additional step, for the last->first point wrap-around.
 		iter = begin;
 		{
 			const PointOnSphere &p1 = *prev;
 			const PointOnSphere &p2 = *iter;
-			tmp_seq.push_back(GreatCircleArc::create(p1, p2));
+			ring.push_back(GreatCircleArc::create(p1, p2));
 		}
-		poly.d_seq.swap(tmp_seq);
-	}
-}
-
-namespace std
-{
-	/**
-	 * This is a template specialisation of the standard function @swap.
-	 *
-	 * See Josuttis, section 4.4.2, "Swapping Two Values", for more information.
-	 */
-	template<>
-	inline
-	void
-	swap<GPlatesMaths::PolygonOnSphere>(
-			GPlatesMaths::PolygonOnSphere &p1,
-			GPlatesMaths::PolygonOnSphere &p2)
-	{
-		p1.swap(p2);
 	}
 }
 

@@ -139,7 +139,7 @@ GPlatesOpenGL::GLShaderObject::gl_shader_source(
 		GLRenderer &renderer,
 		const GLShaderSource &shader_source)
 {
-	const std::vector<GLShaderSource::CodeSegment> &source_code_segments =
+	const std::vector<GLShaderSource::CodeSegment> source_code_segments =
 			shader_source.get_code_segments();
 
 	const GLsizei count = source_code_segments.size();

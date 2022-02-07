@@ -116,7 +116,7 @@ namespace
 				const GPlatesUtils::non_null_intrusive_ptr<reconstructed_feature_geometry_type> &rfg)
 		{
 			std::vector<GPlatesMaths::PointOnSphere> points;
-			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rfg->reconstructed_geometry(), points);
+			GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(*rfg->reconstructed_geometry(), points);
 			if (!points.empty())
 			{
 				d_location = GPlatesMaths::make_lat_lon_point(points.front());
@@ -131,7 +131,7 @@ namespace
 		{
 			// We want the first vertex.
 			std::vector<GPlatesMaths::PointOnSphere> points;
-			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rtg->resolved_topology_geometry(), points);
+			GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(*rtg->resolved_topology_geometry(), points);
 
 			if (!points.empty())
 			{
@@ -145,7 +145,7 @@ namespace
 				const GPlatesUtils::non_null_intrusive_ptr<resolved_topological_network_type> &rtn)
 		{
 			std::vector<GPlatesMaths::PointOnSphere> points;
-			GPlatesAppLogic::GeometryUtils::get_geometry_points(*rtn->boundary_polygon(), points);
+			GPlatesAppLogic::GeometryUtils::get_geometry_exterior_points(*rtn->boundary_polygon(), points);
 
 			if (!points.empty())
 			{

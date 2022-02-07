@@ -70,31 +70,29 @@ namespace GPlatesGui
 
 namespace GPlatesUtils
 {
-	using namespace GPlatesGui;
-
 	// Specialisation of Parse for ColourScaleAnnotation::Type.
 	template<>
-	struct Parse<ColourScaleAnnotation::Type>
+	struct Parse<GPlatesGui::ColourScaleAnnotation::Type>
 	{
-		ColourScaleAnnotation::Type
+		GPlatesGui::ColourScaleAnnotation::Type
 		operator()(
 				const QString &s)
 		{
 			if (s.isEmpty())
 			{
-				return ColourScaleAnnotation::NONE;
+				return GPlatesGui::ColourScaleAnnotation::NONE;
 			}
 			else if (s == "L")
 			{
-				return ColourScaleAnnotation::LOWER;
+				return GPlatesGui::ColourScaleAnnotation::LOWER;
 			}
 			else if (s == "U")
 			{
-				return ColourScaleAnnotation::UPPER;
+				return GPlatesGui::ColourScaleAnnotation::UPPER;
 			}
 			else if (s == "B")
 			{
-				return ColourScaleAnnotation::BOTH;
+				return GPlatesGui::ColourScaleAnnotation::BOTH;
 			}
 			else
 			{
@@ -107,6 +105,15 @@ namespace GPlatesUtils
 
 namespace GPlatesGui
 {
+	/**
+	 * Colour model as specified in CPT file.
+	 */
+	namespace ColourModel
+	{
+		enum Type { RGB, HSV, CMYK };
+	};
+
+
 	/**
 	 * A colour slice specifies a gradient of colour between two real values.
 	 *
@@ -131,6 +138,9 @@ namespace GPlatesGui
 		can_handle(
 				value_type value) const
 		{
+			// Note: We're *not* using epsilon comparisons here - this should still create airtight
+			// lookups where values don't slip through the cracks (but is more efficient than epsilon
+			// comparison - particularly when looking up millions of raster pixels)...
 			return d_lower_value.dval() <= value.dval() && value.dval() <= d_upper_value.dval();
 		}
 
@@ -632,25 +642,25 @@ namespace GPlatesGui
 		}
 
 		/**
-		 * For regular CPT files, this sets whether colours with three components are
-		 * interpreted as RGB or HSV, for both colour slices and FBN lines.
+		 * For regular CPT files, this sets whether space-separated colour components are
+		 * interpreted as RGB, HSV or CMTK (for both colour slices and FBN lines).
 		 *
 		 * For categorical CPT files, this setting is only used for FBN lines.
 		 */
 		void
-		set_rgb_colour_model(
-				bool rgb_colour_model)
+		set_colour_model(
+				ColourModel::Type colour_model)
 		{
-			d_rgb_colour_model = rgb_colour_model;
+			d_colour_model = colour_model;
 		}
 
 		/**
-		 * @see set_rgb_colour_model().
+		 * @see set_colour_model().
 		 */
-		bool
-		is_rgb_colour_model() const
+		ColourModel::Type
+		get_colour_model() const
 		{
-			return d_rgb_colour_model;
+			return d_colour_model;
 		}
 
 		/**
@@ -719,7 +729,7 @@ namespace GPlatesGui
 	protected:
 
 		CptColourPalette() :
-			d_rgb_colour_model(true)
+			 d_colour_model(ColourModel::RGB)
 		{  }
 
 		virtual
@@ -741,10 +751,10 @@ namespace GPlatesGui
 		boost::optional<Colour> d_nan_colour;
 
 		/**
-		 * True if the colour model in this CPT file is RGB.
-		 * If false, the colour model is HSV.
+		 * Colour model as specified in CPT file.
+		 * The default is ColourModel::RGB.
 		 */
-		bool d_rgb_colour_model;
+		ColourModel::Type d_colour_model;
 	};
 
 
@@ -808,7 +818,11 @@ namespace GPlatesGui
 		{
 			// Background colour is used if value comes before first slice.
 			return d_entries.empty() ||
-				value < d_entries.front();
+					// Note: We're *not* using epsilon comparisons here since not using them in
+					// ColourSlice::can_handle() either - this should still create airtight lookups
+					// where values don't slip through the cracks (but is more efficient than epsilon
+					// comparison - particularly when looking up millions of raster pixels)...
+					value.dval() <= d_entries.front().lower_value().dval();
 		}
 
 		virtual
@@ -818,7 +832,11 @@ namespace GPlatesGui
 		{
 			// Foreground colour is used if value comes after last slice.
 			return !d_entries.empty() &&
-				value > d_entries.back();
+					// Note: We're *not* using epsilon comparisons here since not using them in
+					// ColourSlice::can_handle() either - this should still create airtight lookups
+					// where values don't slip through the cracks (but is more efficient than epsilon
+					// comparison - particularly when looking up millions of raster pixels)...
+					value.dval() >= d_entries.back().upper_value().dval();
 		}
 
 	private:
@@ -888,6 +906,46 @@ namespace GPlatesGui
 				// not integral, we use the label as the value type, and there is no requirement
 				// that the labels are presented in sorted order (in fact, there may be no order).
 				return false;
+			}
+		};
+
+		template<typename T, class Enable = void>
+		struct GetRange;
+
+		template<typename T>
+		struct GetRange<T, typename boost::enable_if<boost::is_integral<T> >::type>
+		{
+			template<typename EntryType>
+			static
+			boost::optional< std::pair<T, T> >
+			get_range(
+					const std::vector<EntryType> &entries)
+			{
+				if (entries.empty())
+				{
+					return boost::none;
+				}
+
+				// The CPT entries should have monotonically increasing (integer) keys.
+				// Foreground colour is used if value comes after last slice.
+				return std::make_pair(
+						entries.front().key(),
+						entries.back().key());
+			}
+		};
+
+		template<typename T>
+		struct GetRange<T, typename boost::disable_if<boost::is_integral<T> >::type>
+		{
+			template<typename EntryType>
+			static
+			boost::optional< std::pair<T, T> >
+			get_range(
+					const std::vector<EntryType> &entries)
+			{
+				// For categorical CPT files whose value type is not integral it does not
+				// make sense to have a range of value (lower/upper bound).
+				return boost::none;
 			}
 		};
 
@@ -1013,14 +1071,7 @@ namespace GPlatesGui
 		boost::optional< std::pair<T, T> >
 		get_range() const
 		{
-			if (d_entries.empty())
-			{
-				return boost::none;
-			}
-
-			return std::make_pair(
-					d_entries.front().key(),
-					d_entries.back().key());
+			return CategoricalCptColourPaletteInternals::GetRange<T>::get_range(d_entries);
 		}
 
 	protected:

@@ -895,7 +895,17 @@ namespace
 		// more accurate than this.
 		// Also the linux timers are at best 1usec accurate so this figure seems
 		// a reasonable one.
-		const double accuracy = 1e-7/* 0.1 microseconds */;
+		//
+		// Update: For Windows 7 the documentation says...
+		//
+		//   TSCs are high-resolution per-processor hardware counters that can be accessed with very low latency and
+		//   overhead (in the order of 10s or 100s of machine cycles, depending on the processor type).
+		//
+		// ...where 10 to 100 cycles on a 3GHz machine is about 0.003 to 0.03 microseconds.
+		// Since Windows 7 and above uses TSCs as the basis for QPC we'll increase our accuracy to
+		// 0.01 microseconds (from 0.1 microseconds).
+		//
+		const double accuracy = 1e-8/* 0.01 microseconds */;
 		seconds = accuracy * static_cast<boost::uint64_t>(seconds / accuracy  + 0.5);
 
 		const char *time_suffix;

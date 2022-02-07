@@ -36,6 +36,7 @@
 #include "GMTFormatWriter.h"
 
 #include "model/FeatureCollectionHandle.h"
+#include "property-values/SpatialReferenceSystem.h"
 
 
 namespace GPlatesFileIO
@@ -90,6 +91,12 @@ namespace GPlatesFileIO
 			typedef boost::shared_ptr<const OGRConfiguration> shared_ptr_to_const_type;
 			typedef boost::shared_ptr<OGRConfiguration> shared_ptr_type;
 
+			enum OgrSrsWriteBehaviour
+			{
+				WRITE_AS_WGS84_BEHAVIOUR,
+				WRITE_AS_ORIGINAL_SRS_BEHAVIOUR
+			};
+
 			//! Typedef for a model-to-attribute mapping.
 			typedef QMap<QString, QString> model_to_attribute_map_type;
 
@@ -108,7 +115,8 @@ namespace GPlatesFileIO
 			OGRConfiguration(
 					Format file_format,
 					bool wrap_to_dateline = true) :
-				d_wrap_to_dateline(wrap_to_dateline)
+				d_wrap_to_dateline(wrap_to_dateline),
+				d_ogr_srs_write_behaviour(WRITE_AS_WGS84_BEHAVIOUR)
 			{  }
 
 
@@ -125,6 +133,19 @@ namespace GPlatesFileIO
 					bool wrap_to_dateline)
 			{
 				d_wrap_to_dateline = wrap_to_dateline;
+			}
+
+			OgrSrsWriteBehaviour
+			get_ogr_srs_write_behaviour() const
+			{
+				return d_ogr_srs_write_behaviour;
+			}
+
+			void
+			set_ogr_srs_write_behaviour(
+					const OgrSrsWriteBehaviour &behaviour)
+			{
+				d_ogr_srs_write_behaviour = behaviour;
 			}
 
 
@@ -144,6 +165,21 @@ namespace GPlatesFileIO
 			get_model_to_attribute_map(
 					GPlatesModel::FeatureCollectionHandle &feature_collection);
 
+			/**
+			 * @brief get_original_file_srs
+			 * @return the original SRS of the OGR data source, if one was provided.
+			 */
+			boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type>
+			get_original_file_srs() const;
+
+			/**
+			 * @brief set_original_file_srs
+			 * Sets the original SRS of the OGR data source.
+			 */
+			void
+			set_original_file_srs(
+					const GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type &srs);
+
 		private:
 
 			/**
@@ -153,6 +189,19 @@ namespace GPlatesFileIO
 
 
 			bool d_wrap_to_dateline;
+
+			/**
+			 * @brief d_original_file_srs - The original SRS of the OGR data source, if one was provided.
+			 */
+			boost::optional<GPlatesPropertyValues::SpatialReferenceSystem::non_null_ptr_to_const_type>
+				d_original_file_srs;
+
+			/**
+			 * @brief d_ogr_srs_write_behaviour - enum for controlling how the SRS is handled on output.
+			 */
+			OgrSrsWriteBehaviour d_ogr_srs_write_behaviour;
+
+
 		};
 	}
 }

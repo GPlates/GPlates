@@ -27,6 +27,7 @@
 #define GPLATES_QTWIDGETS_SCALARFIELD3DDEPTHLAYERSPAGE_H
 
 #include <map>
+#include <vector>
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -132,12 +133,13 @@ namespace GPlatesQtWidgets
 
 		void
 		add_files_to_sequence(
-				const QFileInfoList &file_infos);
+				QFileInfoList file_infos);
 
 		static
-		boost::optional<double>
-		deduce_depth(
-				const QFileInfo &file_info);
+		void
+		deduce_depths(
+				std::vector< boost::optional<double> > &depths,
+				const QFileInfoList &file_infos);
 
 		unsigned int &d_raster_width;
 		unsigned int &d_raster_height;

@@ -26,10 +26,11 @@
 #ifndef GPLATES_APP_LOGIC_TOPOLOGYGEOMETRYRESOLVERLAYERPROXY_H
 #define GPLATES_APP_LOGIC_TOPOLOGYGEOMETRYRESOLVERLAYERPROXY_H
 
+#include <set>
 #include <vector>
 #include <boost/optional.hpp>
 
-#include "AppLogicFwd.h"
+#include "DependentTopologicalSectionLayers.h"
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
 #include "ReconstructHandle.h"
@@ -37,8 +38,9 @@
 #include "ReconstructLayerProxy.h"
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalLine.h"
+#include "TopologyReconstruct.h"
 
-#include "global/PointerTraits.h"
+#include "model/FeatureId.h"
 
 #include "utils/SubjectObserverToken.h"
 
@@ -83,7 +85,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_resolved_topological_geometries(
-				std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_geometries,
+				std::vector<ResolvedTopologicalGeometry::non_null_ptr_type> &resolved_topological_geometries,
 				boost::optional<std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none)
 		{
 			get_resolved_topological_geometries(
@@ -98,7 +100,7 @@ namespace GPlatesAppLogic
 		 */
 		void
 		get_resolved_topological_geometries(
-				std::vector<resolved_topological_geometry_non_null_ptr_type> &resolved_topological_geometries,
+				std::vector<ResolvedTopologicalGeometry::non_null_ptr_type> &resolved_topological_geometries,
 				const double &reconstruction_time,
 				boost::optional<std::vector<ReconstructHandle::type> &> reconstruct_handles = boost::none);
 
@@ -121,7 +123,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_resolved_topological_boundaries(
-				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries)
+				std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries)
 		{
 			return get_resolved_topological_boundaries(
 					resolved_topological_boundaries, 
@@ -134,7 +136,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_resolved_topological_boundaries(
-				std::vector<resolved_topological_boundary_non_null_ptr_type> &resolved_topological_boundaries,
+				std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
 				const double &reconstruction_time);
 
 
@@ -150,7 +152,7 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_resolved_topological_lines(
-				std::vector<resolved_topological_line_non_null_ptr_type> &resolved_topological_lines)
+				std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines)
 		{
 			return get_resolved_topological_lines(
 					resolved_topological_lines, 
@@ -163,15 +165,74 @@ namespace GPlatesAppLogic
 		 */
 		ReconstructHandle::type
 		get_resolved_topological_lines(
-				std::vector<resolved_topological_line_non_null_ptr_type> &resolved_topological_lines,
+				std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
 				const double &reconstruction_time);
+
+
+		/**
+		 * Same as @a get_resolved_topological_lines except limits the resolved topological lines
+		 * to those matching the specified feature IDs.
+		 *
+		 * This is a useful optimisation when only a subset of all resolved lines are referenced as
+		 * topological sections by a topological plate boundary or deforming network.
+		 * Note that topological *boundaries* cannot be used as topological sections (only *lines* can).
+		 */
+		ReconstructHandle::type
+		get_resolved_topological_sections(
+				std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_sections,
+				const std::set<GPlatesModel::FeatureId> &topological_sections_referenced)
+		{
+			return get_resolved_topological_sections(
+					resolved_topological_sections, 
+					topological_sections_referenced,
+					d_current_reconstruction_time);
+		}
+
+		ReconstructHandle::type
+		get_resolved_topological_sections(
+				std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_sections,
+				const std::set<GPlatesModel::FeatureId> &topological_sections_referenced,
+				const double &reconstruction_time);
+
+
+		/**
+		 * Returns a time span of resolved topological boundaries.
+		 *
+		 * The main purpose of this method, over calling @a get_resolved_topological_boundaries for
+		 * a sequence of times (which essentially does the same thing), is to cache a time range
+		 * of resolved topological boundaries rather than just caching for a single reconstruction time.
+		 * This helps to avoid the expensive process of repeating the generation of a time span of
+		 * resolved boundaries which would happen if multiple clients each called
+		 * @a get_resolved_topological_boundaries over a sequence of reconstruction times because
+		 * a separate resolved boundary would unnecessarily be created for each client - whereas,
+		 * with this method, a single time range of resolved boundaries would be shared by all clients.
+		 */
+		TopologyReconstruct::resolved_boundary_time_span_type::non_null_ptr_to_const_type
+		get_resolved_boundary_time_span(
+				const TimeSpanUtils::TimeRange &time_range);
+
+
+		/**
+		 * Returns all features set by @a add_topological_geometry_feature_collection, etc.
+		 *
+		 * Note that the features might be a mixture of topological and non-topological.
+		 *
+		 * If @a only_topological_features is true then only the sub-set of features
+		 * (set by @a add_topological_geometry_feature_collection, etc)
+		 * that are actually topological features are returned.
+		 * By default all features are returned.
+		 */
+		void
+		get_current_features(
+				std::vector<GPlatesModel::FeatureHandle::weak_ref> &features,
+				bool only_topological_features = false) const;
 
 
 		/**
 		 * Returns the current reconstruction layer proxy used for reconstructions.
 		 */
 		ReconstructionLayerProxy::non_null_ptr_type
-		get_reconstruction_layer_proxy();
+		get_current_reconstruction_layer_proxy();
 
 
 		/**
@@ -236,18 +297,12 @@ namespace GPlatesAppLogic
 				const ReconstructionLayerProxy::non_null_ptr_type &reconstruction_layer_proxy);
 
 		/**
-		 * Sets the current reconstruct layer proxies used to reconstruct the topological boundary sections.
+		 * Sets the current layer proxies used to reconstruct/resolve the topological geometry sections.
 		 */
 		void
-		set_current_reconstructed_geometry_topological_sections_layer_proxies(
-				const std::vector<GPlatesGlobal::PointerTraits<ReconstructLayerProxy>::non_null_ptr_type> &
-						reconstructed_geometry_topological_sections_layer_proxies);
-
-		/**
-		 * Sets the current resolved topological line layer proxies used to resolve the topological boundary line sections.
-		 */
-		void
-		set_current_resolved_line_topological_sections_layer_proxies(
+		set_current_topological_sections_layer_proxies(
+				const std::vector<ReconstructLayerProxy::non_null_ptr_type> &
+						reconstructed_geometry_topological_sections_layer_proxies,
 				const std::vector<TopologyGeometryResolverLayerProxy::non_null_ptr_type> &
 						resolved_line_topological_sections_layer_proxies);
 
@@ -296,7 +351,7 @@ namespace GPlatesAppLogic
 			/**
 			 * The cached resolved topological boundaries.
 			 */
-			boost::optional< std::vector<resolved_topological_boundary_non_null_ptr_type> >
+			boost::optional< std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> >
 					cached_resolved_topological_boundaries;
 
 			/**
@@ -327,13 +382,31 @@ namespace GPlatesAppLogic
 			/**
 			 * The cached resolved topological lines.
 			 */
-			boost::optional< std::vector<resolved_topological_line_non_null_ptr_type> >
+			boost::optional< std::vector<ResolvedTopologicalLine::non_null_ptr_type> >
 					cached_resolved_topological_lines;
 
 			/**
 			 * Cached reconstruction time.
 			 */
 			boost::optional<GPlatesMaths::real_t> cached_reconstruction_time;
+		};
+
+		/**
+		 * Contains resolved topological boundaries time span.
+		 */
+		struct ResolvedBoundaryTimeSpan
+		{
+			void
+			invalidate()
+			{
+				cached_resolved_boundary_time_span = boost::none;
+			}
+
+			/**
+			 * The cached resolved topologies over a range of reconstruction times.
+			 */
+			boost::optional<TopologyReconstruct::resolved_boundary_time_span_type::non_null_ptr_type>
+					cached_resolved_boundary_time_span;
 		};
 
 
@@ -362,6 +435,13 @@ namespace GPlatesAppLogic
 				d_current_resolved_line_topological_sections_layer_proxies;
 
 		/**
+		 * The cached resolved boundary topologies over a range of reconstruction times.
+		 *
+		 * This is cached as a performance optimisation for clients that reconstruct geometries using topologies.
+		 */
+		ResolvedBoundaryTimeSpan d_cached_resolved_boundary_time_span;
+
+		/**
 		 * The cached resolved topological boundaries (polygons).
 		 */
 		ResolvedBoundaries d_cached_resolved_boundaries;
@@ -370,6 +450,16 @@ namespace GPlatesAppLogic
 		 * The cached resolved topological lines (polylines).
 		 */
 		ResolvedLines d_cached_resolved_lines;
+
+		/**
+		 * The cached resolved *boundaries* depend on these topological sections.
+		 */
+		DependentTopologicalSectionLayers d_resolved_boundary_dependent_topological_sections;
+
+		/**
+		 * The cached resolved *lines* depend on these topological sections.
+		 */
+		DependentTopologicalSectionLayers d_resolved_line_dependent_topological_sections;
 
 		/**
 		 * The current reconstruction time as set by the layer system.
@@ -401,18 +491,8 @@ namespace GPlatesAppLogic
 		 */
 		void
 		reset_cache(
+				bool invalidate_resolved_boundaries = true,
 				bool invalidate_resolved_lines = true);
-
-
-		/**
-		 * Checks if the specified input layer proxy has changed.
-		 *
-		 * If so then reset caches and invalidates subject token.
-		 */
-		template <class InputLayerProxyWrapperType>
-		void
-		check_input_layer_proxy(
-				InputLayerProxyWrapperType &input_layer_proxy_wrapper);
 
 
 		/**
@@ -423,6 +503,42 @@ namespace GPlatesAppLogic
 		void
 		check_input_layer_proxies(
 				bool check_resolved_line_topological_sections = true);
+
+
+		/**
+		 * Generates resolved topological boundaries for the specified reconstruction time
+		 * if they're not already cached.
+		 */
+		std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &
+		cache_resolved_topological_boundaries(
+				const double &reconstruction_time);
+
+
+		/**
+		 * Generates a resolved boundary time span for the specified time range if one is not already cached.
+		 */
+		TopologyReconstruct::resolved_boundary_time_span_type::non_null_ptr_to_const_type
+		cache_resolved_boundary_time_span(
+				const TimeSpanUtils::TimeRange &time_range);
+
+
+		/**
+		 * Creates resolved topological boundaries for the specified reconstruction time.
+		 */
+		ReconstructHandle::type
+		create_resolved_topological_boundaries(
+				std::vector<ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
+				const double &reconstruction_time);
+
+
+		/**
+		 * Creates resolved topological lines for the specified reconstruction time.
+		 */
+		ReconstructHandle::type
+		create_resolved_topological_lines(
+				std::vector<ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
+				const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &topological_geometry_feature_collections,
+				const double &reconstruction_time);
 	};
 }
 

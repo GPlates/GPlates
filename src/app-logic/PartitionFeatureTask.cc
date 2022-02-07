@@ -31,7 +31,6 @@
 
 GPlatesAppLogic::partition_feature_task_ptr_seq_type
 GPlatesAppLogic::get_partition_feature_tasks(
-		const ReconstructionTree &reconstruction_tree,
 		GPlatesAppLogic::AssignPlateIds::AssignPlateIdMethodType assign_plate_id_method,
 		const GPlatesAppLogic::AssignPlateIds::feature_property_flags_type &feature_property_types_to_assign,
 		bool verify_information_model)
@@ -51,7 +50,6 @@ GPlatesAppLogic::get_partition_feature_tasks(
 	tasks.push_back(
 			partition_feature_task_ptr_type(
 					new GenericPartitionFeatureTask(
-							reconstruction_tree,
 							assign_plate_id_method,
 							feature_property_types_to_assign,
 							verify_information_model)));

@@ -31,10 +31,12 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/FlowlineUtils.h"
+#include "app-logic/LayerProxyUtils.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructionFeatureProperties.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionTree.h"
+#include "app-logic/ReconstructLayerProxy.h"
 #include "app-logic/ReconstructUtils.h"
 #include "app-logic/ResolvedTopologicalGeometry.h"
 #include "app-logic/ResolvedTopologicalNetwork.h"
@@ -109,8 +111,8 @@ namespace GPlatesViewOperations
 			{
 				d_undo_operation = d_geom_builder->set_geometry(
 						GPlatesMaths::GeometryType::POLYGON,
-						polygon_on_sphere->vertex_begin(),
-						polygon_on_sphere->vertex_end());
+						polygon_on_sphere->exterior_ring_vertex_begin(),
+						polygon_on_sphere->exterior_ring_vertex_end());
 			}
 
 			virtual
@@ -370,13 +372,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_geom_from_buil
 				*opt_geometry_on_sphere;
 
 		// Reconstruct back to present day.
-		geometry_on_sphere = reconstruct(
-				geometry_on_sphere,
-				*focused_rfg.get()->get_reconstruction_tree(),
-				// FIXME: Using default reconstruct parameters, but will probably need to
-				// get this from the layer that created the focused feature...
-				GPlatesAppLogic::ReconstructParams(),
-				true/*reverse_reconstruct*/);
+		geometry_on_sphere = reverse_reconstruct(geometry_on_sphere, focused_rfg.get()->get_feature_ref());
 
 		// Set the actual geometry in the geometry property of the focused geometry.
 		GPlatesFeatureVisitors::GeometrySetter geometry_setter(geometry_on_sphere);
@@ -413,13 +409,7 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_secondary_geom
 		*geom;
 
 	// Reconstruct back to present day.
-	geometry_on_sphere = reconstruct(
-			geometry_on_sphere,
-			*rfg.get()->get_reconstruction_tree(),
-			// FIXME: Using default reconstruct parameters, but will probably need to
-			// get this from the layer that created the focused feature...
-			GPlatesAppLogic::ReconstructParams(),
-			true/*reverse_reconstruct*/);
+	geometry_on_sphere = reverse_reconstruct(geometry_on_sphere, rfg.get()->get_feature_ref());
 
 	// Set the actual geometry in the geometry property of the focused geometry.
 	GPlatesFeatureVisitors::GeometrySetter geometry_setter(geometry_on_sphere);
@@ -433,18 +423,49 @@ GPlatesViewOperations::FocusedFeatureGeometryManipulator::convert_secondary_geom
 }
 
 GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
-GPlatesViewOperations::FocusedFeatureGeometryManipulator::reconstruct(
+GPlatesViewOperations::FocusedFeatureGeometryManipulator::reverse_reconstruct(
 		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_on_sphere,
-		const GPlatesAppLogic::ReconstructionTree &reconstruction_tree,
-		const GPlatesAppLogic::ReconstructParams &reconstruct_params,
-		bool reverse_reconstruct)
+		const GPlatesModel::FeatureHandle::weak_ref &feature_ref)
 {
 	// We need to convert geometry to present day coordinates. This is because the geometry is
 	// currently reconstructed geometry at the current reconstruction time.
+
+	const GPlatesAppLogic::Reconstruction &reconstruction = d_application_state->get_current_reconstruction();
+
+	// Get the reconstruct layers (if any) that reconstruct the focused feature.
+	std::vector<GPlatesAppLogic::ReconstructLayerProxy::non_null_ptr_type> reconstruct_layer_outputs;
+	GPlatesAppLogic::LayerProxyUtils::find_reconstruct_layer_outputs_of_feature(
+			reconstruct_layer_outputs,
+			feature_ref,
+			reconstruction);
+
+	const GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
+
+	// If there's no reconstruct layers then use the default reconstruction tree creator and
+	// default reconstruct parameters. This probably shouldn't happen though.
+	// Currently we just use the default reconstruction tree layer.
+	if (reconstruct_layer_outputs.empty())
+	{
+		return GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
+				geometry_on_sphere,
+				reconstruct_method_registry,
+				feature_ref,
+				reconstruction.get_reconstruction_time(),
+				reconstruction.get_default_reconstruction_layer_output()->get_reconstruction_tree_creator(),
+				GPlatesAppLogic::ReconstructParams(),
+				true/*reverse_reconstruct*/);
+	}
+
+	// We found a reconstruct layer so use its reconstruct method context (contains the
+	// reconstruct parameters, reconstruction tree creator and optional deformation).
+	//
+    // FIXME: We arbitrarily choose first layer if feature is reconstructed by multiple layers
+    // (for example if the user is reconstructing the same feature using two different reconstruction trees).
 	return GPlatesAppLogic::ReconstructUtils::reconstruct_geometry(
 			geometry_on_sphere,
-			d_feature,
-			reconstruction_tree,
-			reconstruct_params,
-			reverse_reconstruct);
+			reconstruct_method_registry,
+			feature_ref,
+			reconstruction.get_reconstruction_time(),
+			reconstruct_layer_outputs.front()->get_reconstruct_method_context(),
+			true/*reverse_reconstruct*/);
 }

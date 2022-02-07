@@ -67,7 +67,7 @@ namespace GPlatesGlobal
 	extern const char GPlatesVersionPatch[];
 
 	/**
-	 * A single revision number for the pygplates API.
+	 * A single revision number for the pyGPlates API.
 	 *
 	 * For example "207".
 	 *

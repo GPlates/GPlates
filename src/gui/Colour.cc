@@ -34,6 +34,9 @@
 
 #include "Colour.h"
 
+#include "scribe/Scribe.h"
+
+
 // Undefine the min and max macros as they can interfere with the min and
 // max functions in std::numeric_limits<T>, on Visual Studio.
 #if defined(_MSC_VER)
@@ -96,6 +99,61 @@ namespace
 			return value;
 		}
 	}
+}
+
+
+GPlatesGui::HSVColour
+GPlatesGui::HSVColour::linearly_interpolate(
+		const GPlatesGui::HSVColour &first,
+		const GPlatesGui::HSVColour &second,
+		const double &position)
+{
+	const double one_minus_position = (1.0 - position);
+
+	// If either colour has a saturation of zero then it is achromatic (ie, gray or white) and hence
+	// the hue value is meaningless. In this case we want both colours to have the same hue so that
+	// we don't unnecessarily interpolate through a range of hues.
+	double first_h = first.h;
+	double second_h = second.h;
+	if (first.s < 1e-12)
+	{
+		first_h = second_h;
+	}
+	else if (second.s < 1e-12)
+	{
+		second_h = first_h;
+	}
+
+	// Hue is cyclic (wraps from 1.0 back to 0.0).
+	// So we need to take the shortest path between two colours.
+	const double h_delta = second_h - first_h;
+	double h_interp;
+	if (h_delta < -0.5)
+	{
+		h_interp = first_h * one_minus_position + (1.0 + second_h) * position;
+		if (h_interp > 1.0)
+		{
+			h_interp -= 1.0;
+		}
+	}
+	else if (h_delta > 0.5)
+	{
+		h_interp = (1.0 + first_h) * one_minus_position + second_h * position;
+		if (h_interp > 1.0)
+		{
+			h_interp -= 1.0;
+		}
+	}
+	else // Shortest path is directly between the two colours (no wrapping needed)...
+	{
+		h_interp = first_h * one_minus_position + second_h * position;
+	}
+
+	return HSVColour(
+			h_interp,
+			first.s * one_minus_position + second.s * position,
+			first.v * one_minus_position + second.v * position,
+			first.a * one_minus_position + second.a * position);
 }
 
 
@@ -173,6 +231,32 @@ GPlatesGui::convert_rgba8_to_argb32(
 						(rgba8_pixels[i].uint32_value & 0xff00ff00));
 		}
 	}
+}
+
+
+GPlatesGui::rgba8_t
+GPlatesGui::pre_multiply_alpha(
+		rgba8_t rgba8_color)
+{
+	const unsigned int alpha = rgba8_color.alpha;
+
+	unsigned int red = rgba8_color.red;
+	unsigned int green = rgba8_color.green;
+	unsigned int blue = rgba8_color.blue;
+
+	// Avoid using floating-point arithmetic, and especially float-to-integer conversion - it's much faster.
+	// Also avoid integer division by 255 (division is also slow) by using ((x+1)*257)>>16
+	// (see http://research.swtch.com/divmult).
+	// So instead of '(rgb * alpha) / 255' we have '(((rgb * alpha) + 1) * 257) >> 16'
+	red = (((red * alpha) + 1) * 257) >> 16;
+	green = (((green * alpha) + 1) * 257) >> 16;
+	blue = (((blue * alpha) + 1) * 257) >> 16;
+
+	return rgba8_t(
+			static_cast<boost::uint8_t>(red),
+			static_cast<boost::uint8_t>(green),
+			static_cast<boost::uint8_t>(blue),
+			rgba8_color.alpha);
 }
 
 
@@ -268,7 +352,31 @@ GPlatesGui::Colour::linearly_interpolate(
 			static_cast<GLfloat>(first.green() * one_minus_position +
 				second.green() * position),
 			static_cast<GLfloat>(first.blue() * one_minus_position +
-				second.blue() * position));
+				second.blue() * position),
+			static_cast<GLfloat>(first.alpha() * one_minus_position +
+				second.alpha() * position));
+}
+
+
+GPlatesGui::Colour
+GPlatesGui::Colour::linearly_interpolate(
+		const Colour &first,
+		const Colour &second,
+		const Colour &third,
+		const double &interp_first,
+		const double &interp_second)
+{
+	const double interp_third = 1.0 - interp_first - interp_second;
+
+	return Colour(
+			static_cast<GLfloat>(
+				first.red() * interp_first + second.red() * interp_second + third.red() * interp_third),
+			static_cast<GLfloat>(
+				first.green() * interp_first + second.green() * interp_second + third.green() * interp_third),
+			static_cast<GLfloat>(
+				first.blue() * interp_first + second.blue() * interp_second + third.blue() * interp_third),
+			static_cast<GLfloat>(
+				first.alpha() * interp_first + second.alpha() * interp_second + third.alpha() * interp_third));
 }
 
 
@@ -282,6 +390,18 @@ GPlatesGui::Colour::modulate(
 			static_cast<GLfloat>(first.green() * second.green()),
 			static_cast<GLfloat>(first.blue()  * second.blue()),
 			static_cast<GLfloat>(first.alpha() * second.alpha()));
+}
+
+
+GPlatesGui::Colour
+GPlatesGui::Colour::pre_multiply_alpha(
+		const Colour &colour)
+{
+	return GPlatesGui::Colour(
+			colour.red() * colour.alpha(),
+			colour.green() * colour.alpha(),
+			colour.blue() * colour.alpha(),
+			colour.alpha());
 }
 
 
@@ -353,14 +473,23 @@ GPlatesGui::Colour::to_hsv(
 	QColor qcolor = static_cast<QColor>(colour);
 	qreal h, s, v, a;
 	qcolor.getHsvF(&h, &s, &v, &a);
+	// Qt returns -1 for achromatic colours (ie, grays, where saturation is zero).
+	// Set to a value in the range [0,1] since that's the expected range.
+	if (h < 0)
+	{
+		h = 0;
+	}
+
 	return HSVColour(h, s, v, a);
 }
 
 
 namespace
 {
-	static const GLfloat FLOAT_TO_UINT8 = static_cast<GLfloat>(std::numeric_limits<boost::uint8_t>::max());
-	static const boost::uint8_t UINT8_MAX_VALUE = std::numeric_limits<boost::uint8_t>::max();
+	// The parentheses around min/max are to prevent the windows min/max macros
+	// from stuffing numeric_limits' min/max.
+	static const GLfloat FLOAT_TO_UINT8 = static_cast<GLfloat>((std::numeric_limits<boost::uint8_t>::max)());
+	static const boost::uint8_t UINT8_MAX_VALUE = (std::numeric_limits<boost::uint8_t>::max)();
 
 	inline
 	boost::uint8_t
@@ -426,3 +555,17 @@ GPlatesGui::Colour::to_qrgb(
 	return qcolor.rgba();
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesGui::Colour::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// Transcribe native array (of floats).
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_rgba, "rgba"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

@@ -213,24 +213,12 @@ namespace
 		const Model::FeatureType feature_type(feature_xml_element->get_name());
 
 		// Get the feature reader associated with the feature type.
-		boost::optional<IO::GpmlFeatureReaderInterface> feature_reader =
+		IO::GpmlFeatureReaderInterface feature_reader =
 				feature_reader_factory.get_feature_reader(feature_type);
-		if (!feature_reader)
-		{
-			append_recoverable_error_if(true,
-					feature_xml_element,
-					params,
-					IO::ReadErrors::UnrecognisedFeatureType,
-					IO::ReadErrors::FeatureNotInterpreted);
-
-			// Read in the feature properties as 'UninterpretedPropertyValue' property values.
-			// This ensures they get stored in the GPML file when it gets written back out to disk.
-			feature_reader = feature_reader_factory.get_uninterpreted_feature_reader();
-		}
 
 		// Create and read a new feature from the GPML file (from the already-read-in XML feature node).
 		GPlatesModel::FeatureHandle::non_null_ptr_type feature =
-				feature_reader.get().read_feature(feature_xml_element, params);
+				feature_reader.read_feature(feature_xml_element, params);
 
 		// Add the new feature to the feature collection.
 		feature_collection->add(feature);
@@ -397,10 +385,16 @@ GPlatesFileIO::GpmlReader::read_file(
 		// gzipped, assuming gzipped GPML.
 		// Set up the gzip process.
 		input_process.setStandardInputFile(filename);
+
 		// FIXME: Assuming gzip is in a standard place on the path. Not true on MS/Win32. Not true at all.
 		// In fact, it may need to be a user preference.
 		input_process.start(gunzip_program().command(), QIODevice::ReadWrite | QIODevice::Unbuffered);
-		if ( ! input_process.waitForStarted())
+
+		// Checking the error code is a workaround for a Qt bug that causes a crash on Mac/Unix
+		// when the input file does not exist - see https://bugreports.qt.io/browse/QTBUG-33021.
+		// Without the bug only QProcess::waitForStarted() needs to be called.
+		if (input_process.error() != QProcess::UnknownError ||
+			!input_process.waitForStarted())
 		{
 			throw ErrorOpeningPipeFromGzipException(GPLATES_EXCEPTION_SOURCE,
 					gunzip_program().command(), filename);

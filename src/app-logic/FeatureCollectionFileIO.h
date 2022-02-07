@@ -191,7 +191,6 @@ namespace GPlatesAppLogic
 
 		void
 		handle_read_errors(
-				GPlatesAppLogic::FeatureCollectionFileIO &,
 				const GPlatesFileIO::ReadErrorAccumulation &read_errors);
 
 	private:

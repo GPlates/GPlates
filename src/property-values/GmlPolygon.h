@@ -45,7 +45,7 @@ namespace GPlatesPropertyValues
 	/**
 	 * This class implements the PropertyValue which corresponds to "gml:Polygon".
 	 */
-	class GmlPolygon:
+	class GmlPolygon :
 			public GPlatesModel::PropertyValue
 	{
 	public:
@@ -61,14 +61,9 @@ namespace GPlatesPropertyValues
 
 
 		/**
-		 * A convenience typedef for the ring representation used internally.
+		 * A convenience typedef for the internal polygon representation.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolygonOnSphere> ring_type;
-		
-		/**
-		 * Typedef for a sequence of rings -- used to hold the interior ring definition.
-		 */
-		typedef std::vector<ring_type> ring_sequence_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PolygonOnSphere> internal_polygon_type;
 
 
 		virtual
@@ -76,37 +71,17 @@ namespace GPlatesPropertyValues
 		{  }
 
 		/**
-		 * Create a GmlPolygon instance which contains an exterior ring only (no interior
-		 * rings).
-		 *
-		 * This function will store a copy of @a exterior_ring (which is a pointer).
+		 * Create a GmlPolygon instance which contains a copy of @a polygon_.
 		 */
 		static
 		const non_null_ptr_type
 		create(
-				const ring_type &exterior_ring)
+				const internal_polygon_type &polygon_)
 		{
-			return create(exterior_ring, ring_sequence_type());
-		}
-
-		/**
-		 * Create a GmlPolygon instance which contains an exterior ring and some number of
-		 * interior rings.
-		 *
-		 * This function will store a copy of @a exterior_ring (which is a pointer) and
-		 * each ring in @a interior_ring_collection (which are pointers).
-		 */
-		static
-		const non_null_ptr_type
-		create(
-				const ring_type &exterior_ring,
-				const ring_sequence_type &interior_rings)
-		{
-			// Because PolygonOnSphere can only ever be handled via a
-			// non_null_ptr_to_const_type, there is no way a PolylineOnSphere instance
-			// can be changed.  Hence, it is safe to store a pointer to the instance
-			// which was passed into this 'create' function.
-			return non_null_ptr_type(new GmlPolygon(exterior_ring, interior_rings));
+			// Because PolygonOnSphere can only ever be handled via a non_null_ptr_to_const_type,
+			// there is no way a PolygonOnSphere instance can be changed.  Hence, it is safe to store
+			// a pointer to the instance which was passed into this 'create' function.
+			return non_null_ptr_type(new GmlPolygon(polygon_));
 		}
 
 		const non_null_ptr_type
@@ -115,41 +90,23 @@ namespace GPlatesPropertyValues
 			return GPlatesUtils::dynamic_pointer_cast<GmlPolygon>(clone_impl());
 		}
 
+
 		/**
-		 * Access the GPlatesMaths::PolygonOnSphere which encodes the exterior geometry of this instance.
+		 * Access the GPlatesMaths::PolygonOnSphere which encodes the geometry of this instance.
 		 */
-		const ring_type
-		get_exterior() const
+		const internal_polygon_type
+		get_polygon() const
 		{
-			return get_current_revision<Revision>().exterior;
+			return get_current_revision<Revision>().polygon;
 		}
 
 		/**
-		 * Set the exterior polygon within this instance to @a exterior.
+		 * Set the polygon within this instance to @a p.
 		 */
 		void
-		set_exterior(
-				const ring_type &exterior);
-
-		/**
-		 * Return the sequence of interior rings of this GmlPolygon.
-		 *
-		 * To modify any interior rings:
-		 * (1) make additions/removals/modifications to a copy of the returned vector, and
-		 * (2) use @a set_interiors to set them.
-		 */
-		const ring_sequence_type &
-		get_interiors() const
-		{
-			return get_current_revision<Revision>().interiors;
-		}
-
-		/**
-		 * Set the sequence of interior rings within this instance to @a r.
-		 */
-		void
-		set_interiors(
-				const ring_sequence_type &interiors);
+		set_polygon(
+				const internal_polygon_type &p);
+		
 
 
 		/**
@@ -208,9 +165,8 @@ namespace GPlatesPropertyValues
 		 * instantiation of this type on the stack.
 		 */
 		GmlPolygon(
-				const ring_type &exterior_ring,
-				const ring_sequence_type &interior_rings) :
-			PropertyValue(Revision::non_null_ptr_type(new Revision(exterior_ring, interior_rings)))
+				const internal_polygon_type &polygon_):
+			PropertyValue(Revision::non_null_ptr_type(new Revision(polygon_)))
 		{  }
 
 		//! Constructor used when cloning.
@@ -239,10 +195,8 @@ namespace GPlatesPropertyValues
 				public PropertyValue::Revision
 		{
 			Revision(
-					const ring_type &exterior_ring_,
-					const ring_sequence_type &interior_rings_) :
-				exterior(exterior_ring_),
-				interiors(interior_rings_)
+					const internal_polygon_type &polygon_) :
+				polygon(polygon_)
 			{  }
 
 			//! Clone constructor.
@@ -252,8 +206,7 @@ namespace GPlatesPropertyValues
 				PropertyValue::Revision(context_),
 				// Note there is no need to distinguish between shallow and deep copying because
 				// PolygonOnSphere is immutable and hence there is never a need to deep copy it...
-				exterior(other_.exterior),
-				interiors(other_.interiors)
+				polygon(other_.polygon)
 			{  }
 
 			virtual
@@ -270,9 +223,8 @@ namespace GPlatesPropertyValues
 					const GPlatesModel::Revision &other) const;
 
 			/**
-			 * This is the GPlatesMaths::PolygonOnSphere which defines the exterior ring of this
-			 * GmlPolygon. A GmlPolygon contains exactly one exterior ring, and zero or more interior
-			 * rings.
+			 * This is the GPlatesMaths::PolygonOnSphere which contains exactly one exterior ring, and
+			 * zero or more interior rings.
 			 *
 			 * Note that this conflicts with the ESRI Shapefile definition which allows for multiple
 			 * exterior rings.
@@ -284,14 +236,7 @@ namespace GPlatesPropertyValues
 			 * points creates a triangle, and three points are invalid. This is especially important
 			 * to keep in mind as GPlates cannot create a GreatCircleArc between coincident points.
 			 */
-			ring_type exterior;
-			
-			/**
-			 * This is the sequence of GPlatesMaths::PolygonOnSphere which defines the interior ring(s)
-			 * of this GmlPolygon.  A GmlPolygon contains exactly one exterior ring, and zero or more
-			 * interior rings.
-			 */
-			ring_sequence_type interiors;
+			internal_polygon_type polygon;
 		};
 
 	};

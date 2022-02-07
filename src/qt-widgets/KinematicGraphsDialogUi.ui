@@ -29,7 +29,7 @@
         <string> Ma</string>
        </property>
        <property name="maximum">
-        <double>1000.000000000000000</double>
+        <double>9999.000000000000000</double>
        </property>
       </widget>
      </item>
@@ -46,7 +46,7 @@
         <string> Ma</string>
        </property>
        <property name="maximum">
-        <double>1000.000000000000000</double>
+        <double>9999.000000000000000</double>
        </property>
       </widget>
      </item>
@@ -66,7 +66,7 @@
         <number>2</number>
        </property>
        <property name="maximum">
-        <double>1000.000000000000000</double>
+        <double>9999.000000000000000</double>
        </property>
       </widget>
      </item>
@@ -426,6 +426,26 @@
           </property>
           <property name="checkable">
            <bool>false</bool>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QToolButton" name="button_flip_x">
+          <property name="maximumSize">
+           <size>
+            <width>23</width>
+            <height>23</height>
+           </size>
+          </property>
+          <property name="toolTip">
+           <string>Flip horizontal axis</string>
+          </property>
+          <property name="text">
+           <string>...</string>
+          </property>
+          <property name="icon">
+           <iconset resource="../qt-resources/qt_widgets.qrc">
+            <normaloff>:/gnome_object_flip_horizontal_purple_16.png</normaloff>:/gnome_object_flip_horizontal_purple_16.png</iconset>
           </property>
          </widget>
         </item>

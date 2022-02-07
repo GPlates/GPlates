@@ -26,7 +26,8 @@
 
 #include <QWidget>
 
-#include "KinematicGraphsDialog.h"
+#include "gui/ConfigGuiUtils.h"
+
 #include "KinematicGraphsConfigurationWidgetUi.h"
 
 namespace GPlatesQtWidgets
@@ -39,6 +40,24 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 
 	public:
+
+		enum VelocityMethod{
+			T_TO_T_MINUS_DT = 0,
+			T_PLUS_DT_TO_T,
+			T_PLUS_MINUS_HALF_DT
+		};
+
+		static const GPlatesGui::ConfigGuiUtils::ConfigButtonGroupAdapter::button_enum_to_description_map_type &
+		build_velocity_method_description_map()
+		{
+			static GPlatesGui::ConfigGuiUtils::ConfigButtonGroupAdapter::button_enum_to_description_map_type map;
+			map[T_PLUS_DT_TO_T] = "(T+dt)_to_T";
+			map[T_TO_T_MINUS_DT] = "T_to_(T-dt)";
+			map[T_PLUS_MINUS_HALF_DT] = "(T+dt/2)_to_(T-dt/2)";
+			return map;
+		}
+
+
 		explicit
 		KinematicGraphsConfigurationWidget(QWidget *parent = 0);
 
@@ -105,12 +124,12 @@ namespace GPlatesQtWidgets
 			spinbox_red->setValue(red);
 		}
 
-		KinematicGraphsDialog::VelocityMethod
+		VelocityMethod
 		velocity_method();
 
 		void
 		set_velocity_method(
-				const KinematicGraphsDialog::VelocityMethod &method)
+				const VelocityMethod &method)
 		{
 			d_velocity_method = method;
 			QAbstractButton *button = button_group_velocity_method->button(method);
@@ -150,7 +169,7 @@ namespace GPlatesQtWidgets
 
 	private:
 
-		KinematicGraphsDialog::VelocityMethod d_velocity_method;
+		VelocityMethod d_velocity_method;
 
 		/**
 		 * @brief d_spin_box_palette - the palette used in the delta_time spinboxe. Stored so that we can

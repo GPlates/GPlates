@@ -3,11 +3,11 @@
 Reference
 =========
 
-This document lists the Python functions and classes that make up the GPlates Python *Application Programming Interface* (*API*) known as *pygplates*.
+This document lists the Python functions and classes that make up the GPlates Python *Application Programming Interface* (*API*) known as pyGPlates.
 
-.. note:: Please see the :ref:`installation<pygplates_getting_started_installation>` section for information on how to install *pygplates*.
+.. note:: Please see the :ref:`installation<pygplates_getting_started_installation>` section for information on how to install pyGPlates.
 
-.. note:: Please see the :ref:`tutorial<pygplates_getting_started_tutorial>` section to help get you started using *pygplates*.
+.. note:: Please see the :ref:`tutorial<pygplates_getting_started_tutorial>` section to help get you started using pyGPlates.
 
 
 .. contents::
@@ -312,7 +312,7 @@ A vector class, and conversions between global cartesian and local magnitude/azi
 String
 ------
 
-String-type classes used in various areas of *pygplates*:
+String-type classes used in various areas of pyGPlates:
 
 .. autosummary::
    :nosignatures:

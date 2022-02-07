@@ -33,10 +33,11 @@
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
 #include "ReconstructLayerProxy.h"
-#include "ResolvedScalarField3D.h"
-#include "ScalarField3DLayerTask.h"
+#include "ScalarField3DLayerParams.h"
 #include "TopologyGeometryResolverLayerProxy.h"
 #include "TopologyNetworkResolverLayerProxy.h"
+
+#include "global/PointerTraits.h"
 
 #include "maths/GeometryOnSphere.h"
 #include "maths/types.h"
@@ -55,6 +56,8 @@ namespace GPlatesOpenGL
 
 namespace GPlatesAppLogic
 {
+	class ResolvedScalarField3D;
+
 	/**
 	 * A layer proxy for a 3D scalar field to be visualised using volume rendering.
 	 */
@@ -112,18 +115,15 @@ namespace GPlatesAppLogic
 		 *
 		 * Returns boost::none if there is no input scalar field feature connected or it cannot be resolved.
 		 */
-		boost::optional<ResolvedScalarField3D::non_null_ptr_type>
-		get_resolved_scalar_field_3d()
-		{
-			return get_resolved_scalar_field_3d(d_current_reconstruction_time);
-		}
+		boost::optional<GPlatesGlobal::PointerTraits<ResolvedScalarField3D>::non_null_ptr_type>
+		get_resolved_scalar_field_3d();
 
 		/**
 		 * Returns the resolved scalar field for the specified time.
 		 *
 		 * Returns boost::none if there is no input scalar field feature connected or it cannot be resolved.
 		 */
-		boost::optional<ResolvedScalarField3D::non_null_ptr_type>
+		boost::optional<GPlatesGlobal::PointerTraits<ResolvedScalarField3D>::non_null_ptr_type>
 		get_resolved_scalar_field_3d(
 				const double &reconstruction_time);
 
@@ -268,14 +268,14 @@ namespace GPlatesAppLogic
 		void
 		set_current_scalar_field_feature(
 				boost::optional<GPlatesModel::FeatureHandle::weak_ref> scalar_field_feature,
-				const ScalarField3DLayerTask::Params &scalar_field_params);
+				const ScalarField3DLayerParams &scalar_field_params);
 
 		/**
 		 * The scalar field feature has been modified.
 		 */
 		void
 		modified_scalar_field_feature(
-				const ScalarField3DLayerTask::Params &scalar_field_params);
+				const ScalarField3DLayerParams &scalar_field_params);
 
 
 		//! Add a 'cross section' reconstructed static geometries layer proxy.
@@ -513,7 +513,7 @@ namespace GPlatesAppLogic
 		//! Sets some scalar field parameters.
 		void
 		set_scalar_field_params(
-				const ScalarField3DLayerTask::Params &raster_params);
+				const ScalarField3DLayerParams &raster_params);
 
 
 		/**

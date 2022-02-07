@@ -151,14 +151,23 @@ namespace GPlatesOpenGL
 			/**
 			 * Create a filled drawable from a 2D polyline or polygon @a line_geometry.
 			 *
-			 * A polygon is formed by closing the first and last points if the geometry is a polyline.
-			 * If the geometry is already a polygon then this extra point doesn't affect the filled result.
+			 * Note that the last point does not have to equal the first point (for polyline or polygon)
+			 * since internally the first point is used to close off the ring.
 			 * Note that if the geometry has too few points then it simply won't be used to render the filled drawable.
 			 */
 			void
 			add_filled_polygon(
 					const std::vector<QPointF> &line_geometry,
-					const GPlatesGui::Colour &colour);
+					GPlatesGui::rgba8_t rgba8_color);
+
+			/**
+			 * Same as the other overload of @a add_filled_polygon but accepts multiple line geometries
+			 * that need to be rendered in one drawable (such as exterior/interior rings of a polygon).
+			 */
+			void
+			add_filled_polygon(
+					const std::vector< std::vector<QPointF> > &line_geometries,
+					GPlatesGui::rgba8_t rgba8_color);
 
 			/**
 			 * Begins a single drawable for a filled mesh composed of individually added triangles.
@@ -188,7 +197,21 @@ namespace GPlatesOpenGL
 					const QPointF &vertex1,
 					const QPointF &vertex2,
 					const QPointF &vertex3,
-					const GPlatesGui::Colour &colour);
+					GPlatesGui::rgba8_t rgba8_color);
+
+			/**
+			 * Adds a triangle with per-vertex colouring to the current filled triangle mesh drawable.
+			 *
+			 * This must be called between @a begin_filled_triangle_mesh and @a end_filled_triangle_mesh.
+			 */
+			void
+			add_filled_triangle_to_mesh(
+					const QPointF &vertex1,
+					const QPointF &vertex2,
+					const QPointF &vertex3,
+					GPlatesGui::rgba8_t rgba8_vertex_color1,
+					GPlatesGui::rgba8_t rgba8_vertex_color2,
+					GPlatesGui::rgba8_t rgba8_vertex_color3);
 
 		private:
 
@@ -224,6 +247,14 @@ namespace GPlatesOpenGL
 			// So can access accumulated vertices/indices/drawables of filled drawables.
 			friend class GLFilledPolygonsMapView;
 
+
+			/**
+			 * Adds a line geometry (ring) as a fan mesh (with centroid calculated from ring vertices).
+			 */
+			void
+			add_line_geometry_to_current_filled_drawable(
+					const std::vector<QPointF> &line_geometry,
+					GPlatesGui::rgba8_t rgba8_color);
 
 			/**
 			 * Begin a new drawable.

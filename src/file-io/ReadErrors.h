@@ -95,6 +95,7 @@ namespace GPlatesFileIO
 			InvalidPlatepolygonBoundaryFeature,
 
 			// The following apply to OGR-supported file format import.
+			ErrorReadingVectorFile,
 			NoLayersFoundInFile,
 			MultipleLayersInFile,
 			ErrorReadingOgrLayer,
@@ -120,8 +121,9 @@ namespace GPlatesFileIO
 			InvalidOgrPolygon,
 			InvalidShapefileReconstructionMethod,
 			InvalidShapefileSpreadingAsymmetry,
+			InvalidShapefileGeometryImportTime,
 			UnableToMatchOgrGeometryWithFeature,
-                        NoGeometriesFoundInMultiGeometry,
+			NoGeometriesFoundInMultiGeometry,
 			
 			// The following relate to raster files in general.
 			InsufficientMemoryToLoadRaster,
@@ -156,7 +158,6 @@ namespace GPlatesFileIO
 			InsufficientDistinctPointsInPolyline,
 			AntipodalAdjacentPointsInPolyline,
 			InvalidPointsInPolygon,
-			InvalidPolygonEndPoint,
 			InsufficientPointsInPolygon,
 			InsufficientDistinctPointsInPolygon,
 			AntipodalAdjacentPointsInPolygon,
@@ -204,12 +205,18 @@ namespace GPlatesFileIO
 			CptFileTypeNotDeduced,
 			UnrecognisedLabel,
 			PatternFillInLine,
-			MissingLabelSemiColon,
+
+			// The following are specific to Hellinger-fit-related file formats.
+			HellingerPickFormatError,
+			InvalidHellingerComFileFormat,
+			HellingerFileError,
 
 			// The following are generic to all local files
 			ErrorOpeningFileForReading,
+			FileFormatNotSupported,
 			FileIsEmpty,
-			NoFeaturesFoundInFile
+			NoFeaturesFoundInFile,
+			ErrorReadingFile // Arbitrary error reading file (usually results in 'FileNotLoaded').
 		}; // enum Description
 
 		enum Result
@@ -263,7 +270,6 @@ namespace GPlatesFileIO
 			PropertyConvertedFromTimeDependent,
 			PropertyConvertedBetweenTimeDependentTypes,
 			PropertyNotInterpreted,
-			FeatureNotInterpreted,
 			AttributesIgnored,
 			
 			// The following are specific to GMAP vgp files
@@ -271,6 +277,11 @@ namespace GPlatesFileIO
 
 			// The following are specific to regular and categorical GMT CPT files.
 			CptLineIgnored,
+
+			// The following are specific to hellinger-fit-related files.
+			HellingerComFileNotImported,
+			HellingerPickIgnored,
+			HellingerFileNotOpened,
 
 			// The following are generic to all local files
 			FileNotLoaded,

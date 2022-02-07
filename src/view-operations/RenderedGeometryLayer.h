@@ -38,8 +38,13 @@
 #include "RenderedGeometry.h"
 
 #include "maths/CubeQuadTreeLocation.h"
-#include "maths/MathsFwd.h"
 
+
+namespace GPlatesMaths
+{
+	template <typename ElementType>
+	class CubeQuadTreePartition;
+}
 
 namespace GPlatesViewOperations
 {

@@ -79,7 +79,7 @@ namespace GPlatesFileIO
 			const GPlatesMaths::UnitQuaternion3D &quat =fr.unit_quat();
 			if (GPlatesMaths::represents_identity_rotation(quat)) 
 			{
-				lat = 0;
+				lat = 90;
 				lon = 0;
 				angle = 0;
 			} 

@@ -30,6 +30,10 @@
 
 #include <map>
 #include <QString>
+#include <boost/mpl/if.hpp>
+
+#include "HasFunction.h"
+
 
 namespace GPlatesUtils
 {
@@ -290,6 +294,8 @@ namespace GPlatesUtils
 		{
 		};
 
+		HAS_MEMBER_FUNCTION(erase, HasEraseMember)
+
 		template<class MapType>
 		struct mem_fn_types_for_maps
 		{
@@ -298,24 +304,44 @@ namespace GPlatesUtils
 			typedef typename map_type::const_iterator const_iterator_type;
 			typedef typename map_type::key_type key_type;
 
-			// erase() that takes iterator as argument.
+			// erase() - use 'erase1' (eg, mem_fn_types<...>::erase1).
+			//
+			// We use function/method signature detection code to determine signature of 'map_type::erase'
+			// because it varies quite a bit across different compilers (and versions) between:
+			//  - iterator_type (map_type::*)(iterator_type)
+			//  - iterator_type (map_type::*)(const_iterator_type)
+			//  - void (map_type::*)(iterator_type)
+			//
+			// Previously we had preprocessor ifdef's based on different compilers but it got too fiddly
+			// between MSVC, G++ and CLANG and different versions within each having different signatures.
+			//
+			// Update: Looks like we need at least one ifdef though :-)
+			// At least don't have to worry about compiler versions - not yet anyway :-)
 #ifdef _MSC_VER
-	#if _MSC_VER <= 1400
-			// VS2005
-			typedef iterator_type (map_type::*erase1)(iterator_type);
-	#else
-			// VS2008
-			typedef iterator_type (map_type::*erase1)(const_iterator_type);
-	#endif
+			// For MSVC we need to inherit 'map_type' and bring its 'erase()' method into scope of derived class
+			// so that, when we check the method type, it doesn't find 'erase' in the base class of 'map_type'
+			// and hence have a different method signature (eg, 'map_base_type::erase') and hence bypass
+			// our method detection code.
+			struct CheckMapEraseType : public map_type { using map_type::erase; };
 #else
-	#ifdef __clang__
-			// clang
-			typedef iterator_type (map_type::*erase1)(const_iterator_type);
-	#else
-			// G++
-			typedef void (map_type::*erase1)(iterator_type);
-	#endif
+			// The above inherit 'map_type' trick doesn't work for G++ and CLANG.
+			// Instead just use the map type itself as the check type.
+			// This may only work is 'map_type' itself doesn't inherit from a base class (containing 'erase()').
+			// So far it seems this is the case.
+			typedef map_type CheckMapEraseType;
 #endif
+			typedef typename boost::mpl::if_<
+					// See if erase method has signature 'iterator_type (map_type::*)(iterator_type)'...
+					HasEraseMember<CheckMapEraseType, iterator_type (CheckMapEraseType::*)(iterator_type)>,
+							iterator_type (map_type::*)(iterator_type),
+							// See if erase method has signature 'iterator_type (map_type::*)(const_iterator_type)'...
+							typename boost::mpl::if_<
+									HasEraseMember<CheckMapEraseType, iterator_type (CheckMapEraseType::*)(const_iterator_type)>,
+											iterator_type (map_type::*)(const_iterator_type),
+											// Default to signature 'void (map_type::*)(iterator_type)'...
+											void (map_type::*)(iterator_type)
+							>::type
+					>::type erase1;
 			
 			// non-const find().
 			typedef iterator_type (map_type::*find)(const key_type &);

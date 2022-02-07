@@ -27,8 +27,10 @@
 // Fragment shader for rendering a single iso-surface.
 //
 
-// "#extension" needs to be specified in the shader source *string* where it is used (this is not
-// documented in the GLSL spec but is mentioned at http://www.opengl.org/wiki/GLSL_Core_Language).
+// GPlates currently moves this to start of *first* source code string passed into glShaderSource.
+// This is because extension lines must not occur *after* any non-preprocessor source code.
+//
+// NOTE: Do not comment this out with a /**/ comment spanning multiple lines since GPlates does not detect that.
 #extension GL_EXT_texture_array : enable
 // Shouldn't need this since '#version 120' (in separate source string) supports 'gl_FragData', but just in case...
 #extension GL_ARB_draw_buffers : enable
@@ -458,10 +460,8 @@ get_blended_crossing_colour(
 	// Gradient strength to isosurface colour-mapping
 	if (colour_mode_gradient)
 	{
-		// If positive crossing then ray crosses surfaces in gradient direction: dot(ray.direction,gradient) > 0.
-		// If positive crossing then the first window surface (crossed by ray)
-		// is the one with a gradient pointing "to" the isosurface - and the second window
-		// has a gradient pointing "away" from the isosurface.
+		// The first window surface (lowest isovalue) is the one with a gradient pointing "to" the isosurface.
+		// The second window has a gradient pointing "away" from the isosurface.
 		// The first window maps ||gradient|| to colour.
 		// The second window maps -||gradient|| to colour.
 		float field_gradient_magnitude = length(field_gradient);
@@ -895,8 +895,9 @@ render_volume_fill_walls(
 	}
 	
 	vec4 colour_wall = vec4(1,1,1,1);
+	// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 	float lambda_wall = convert_screen_space_depth_to_ray_lambda(
-			screen_space_wall_depth, screen_coord, gl_ModelViewProjectionMatrixInverse, eye_position);
+			screen_space_wall_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, eye_position);
 	vec3 ray_sample_position_wall = at(ray, lambda_wall);
 
 	int cube_face_index_wall;
@@ -1085,16 +1086,18 @@ reduce_depth_range_to_volume_fill_walls(
 		// If ray does not enter an active zone then we can skip the first part of the ray.
 		if (!active_surface_fill_mask_at_ray_entry_point)
 		{
+			// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 			float lambda_min_depth = convert_screen_space_depth_to_ray_lambda(
-					min_depth, screen_coord, gl_ModelViewProjectionMatrixInverse, eye_position);
+					min_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, eye_position);
 			lambda_min_max.x = max(lambda_min_max.x, lambda_min_depth);
 		}
 		
 		// If ray does not exit an active zone then we can skip the last part of the ray.
 		if (!active_surface_fill_mask_at_ray_exit_point)
 		{
+			// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 			float lambda_max_depth = convert_screen_space_depth_to_ray_lambda(
-					max_depth, screen_coord, gl_ModelViewProjectionMatrixInverse, eye_position);
+					max_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, eye_position);
 			lambda_min_max.y = min(lambda_min_max.y, lambda_max_depth);
 		}
 	}
@@ -1466,15 +1469,19 @@ raycasting(
 		// This is such that the ray will always be parallel to the view direction.
 		// Use an arbitrary post-projection screen-space depth of -2.
 		// Any value will do as long as it's outside the view frustum [-1,1] and not *on* the near plane (z = -1).
-		eye_position = screen_to_world(vec3(screen_coord, -2.0), gl_ModelViewProjectionMatrixInverse);
+		//
+		// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
+		eye_position = screen_to_world(vec3(screen_coord, -2.0), gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse);
 	}
 	else
 	{
 		eye_position = perspective_projection_eye_position;
 	}
 
-	// create the ray starting at eye position and moving into direction through near plane
-	Ray ray = get_ray(screen_coord, gl_ModelViewProjectionMatrixInverse, eye_position);
+	// Create the ray starting at eye position and moving into direction through near plane
+	//
+	// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
+	Ray ray = get_ray(screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, eye_position);
 	
 	
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1560,8 +1567,9 @@ raycasting(
 		// Convert [-1,1] range to [0,1] for texture coordinates.
 		// Depth texture is a single-channel floating-point texture (GL_R32F).
 		float depth_texture_screen_space_depth = texture2D(depth_texture_sampler, 0.5 * screen_coord + 0.5).r;
+		// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
 		float depth_texture_lambda = convert_screen_space_depth_to_ray_lambda(
-				depth_texture_screen_space_depth, screen_coord, gl_ModelViewProjectionMatrixInverse, eye_position);
+				depth_texture_screen_space_depth, screen_coord, gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse, eye_position);
 		lambda_min_max.y = min(lambda_min_max.y, depth_texture_lambda);
 	}
 
@@ -1949,8 +1957,6 @@ main()
 	// Note that we need to write to 'gl_FragDepth' because if we don't then the fixed-function
 	// depth will get written (if depth writes enabled) using the fixed-function depth which is that
 	// of our full-screen quad (not the actual ray-traced depth).
-	//
-	// NOTE: Currently depth writes are turned off for scalar fields but will be turned on soon.
 	vec4 screen_space_iso_surface_position = gl_ModelViewProjectionMatrix * vec4(iso_surface_position, 1.0);
 	float screen_space_iso_surface_depth = screen_space_iso_surface_position.z / screen_space_iso_surface_position.w;
 
@@ -1961,11 +1967,14 @@ main()
 	//
 	// Using multiple render targets here.
 	//
-	// This is in case another scalar field is rendered as an iso-surface (or cross-section) in which case
-	// it cannot use the hardware depth buffer because we're not rendering traditional geometry
-	// (and so instead it must query a depth texture).
-	// This enables correct depth sorting of the cross-sections and iso-surfaces (although it doesn't
-	// work with semi-transparency but that's a much harder problem to solve - depth peeling).
+	// This is in case another scalar field is rendered as an iso-surface in which case
+	// it cannot use the hardware depth buffer because it's not rendering traditional geometry.
+	// Well it can, but it's not efficient because it cannot early cull rays (it needs to do the full
+	// ray trace before it can output fragment depth to make use of the depth buffer).
+	// So instead it must query a depth texture in order to early-cull rays.
+	// The hardware depth buffer is still used for correct depth sorting of the cross-sections and iso-surfaces.
+	// Note that this doesn't work with semi-transparency (non-zero deviation windows) but that's a much harder
+	// problem to solve - depth peeling.
 	//
 
 	// According to the GLSL spec...

@@ -77,27 +77,7 @@ namespace GPlatesFileIO
 				header_lines.push_back(
 						QString("reconstructionTime ") + QString::number(reconstruction_time));
 
-				// Print the list of feature collection filenames that the exported
-				// vector fields came from.
-				QStringList filenames;
-				referenced_files_collection_type::const_iterator file_iter;
-				for (file_iter = referenced_files.begin();
-					file_iter != referenced_files.end();
-					++file_iter)
-				{
-					const File::Reference *file = *file_iter;
-
-					// Some files might not actually exist yet if the user created a new
-					// feature collection internally and hasn't saved it to file yet.
-					if (!GPlatesFileIO::file_exists(file->get_file_info()))
-					{
-						continue;
-					}
-
-					filenames << file->get_file_info().get_display_name(false/*use_absolute_path_name*/);
-				}
-
-				header_lines.push_back(filenames.join(" "));
+				GMTFormatHeader::add_filenames_to_header(header_lines, referenced_files);
 			}
 
 
@@ -110,7 +90,7 @@ namespace GPlatesFileIO
 					const GPlatesMaths::PointOnSphere &domain_point,
 					const GPlatesMaths::Vector3D &velocity_vector,
 					GPlatesModel::integer_plate_id_type plate_id,
-					MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format,
+					MultiPointVectorFieldExport::GMTVelocityVectorFormatType velocity_vector_format,
 					bool domain_point_lon_lat_format,
 					bool include_plate_id,
 					bool include_domain_point)
@@ -155,24 +135,11 @@ namespace GPlatesFileIO
 				}
 
 				//
-				// Output plate id.
-				//
-
-				if (include_plate_id)
-				{
-					// Use a minimum width of 5 since 5-digit plate ids are currently in use.
-					static const unsigned PLATE_ID_FIELDWIDTH = 5;
-
-					const std::string plate_id_str = GPlatesUtils::formatted_int_to_string(
-							plate_id,
-							PLATE_ID_FIELDWIDTH);
-
-					gmt_line << "      " << plate_id_str;
-				}
-
-				//
 				// Output velocity.
 				//
+				// NOTE: The velocity vector should be immediately after the domain point (columns 1 and 2) since
+				// the GMT psxy '-Sv'/'-SV' options require vector angle/azimuth in column 3 and magnitude in column 4.
+				// 
 
 				// Output velocities as double precision.
 				static const unsigned VELOCITY_PRECISION = 16;
@@ -180,7 +147,7 @@ namespace GPlatesFileIO
 
 				switch (velocity_vector_format)
 				{
-				case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_3D:
+				case MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_3D:
 					{
 						const std::string velocity_x_str = GPlatesUtils::formatted_double_to_string(
 								velocity_vector.x().dval(),
@@ -199,7 +166,7 @@ namespace GPlatesFileIO
 					}
 					break;
 
-				case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_COLAT_LON:
+				case MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_COLAT_LON:
 					{
 						GPlatesMaths::VectorColatitudeLongitude velocity_colat_lon =
 								GPlatesMaths::convert_vector_from_xyz_to_colat_lon(domain_point, velocity_vector);
@@ -217,7 +184,7 @@ namespace GPlatesFileIO
 					}
 					break;
 
-				case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_ANGLE:
+				case MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_ANGLE_MAGNITUDE:
 					{
 						std::pair<GPlatesMaths::real_t, GPlatesMaths::real_t> velocity_magnitude_angle =
 								GPlatesMaths::calculate_vector_components_magnitude_angle(domain_point, velocity_vector);
@@ -231,11 +198,12 @@ namespace GPlatesFileIO
 								VELOCITY_FIELDWIDTH,
 								VELOCITY_PRECISION);
 
-						gmt_line << "      " << velocity_magnitude_str << "      " << velocity_angle_degrees_str;
+						// The GMT psxy '-Sv' option requires angle in column 3 and magnitude in column 4.
+						gmt_line << "      " << velocity_angle_degrees_str << "      " << velocity_magnitude_str;
 					}
 					break;
 
-				case GPlatesFileIO::MultiPointVectorFieldExport::VELOCITY_VECTOR_MAGNITUDE_AZIMUTH:
+				case MultiPointVectorFieldExport::GMT_VELOCITY_VECTOR_AZIMUTH_MAGNITUDE:
 					{
 						std::pair<GPlatesMaths::real_t, GPlatesMaths::real_t> velocity_magnitude_azimuth =
 								GPlatesMaths::calculate_vector_components_magnitude_and_azimuth(domain_point, velocity_vector);
@@ -249,7 +217,8 @@ namespace GPlatesFileIO
 								VELOCITY_FIELDWIDTH,
 								VELOCITY_PRECISION);
 
-						gmt_line << "      " << velocity_magnitude_str << "      " << velocity_azimuth_degrees_str;
+						// The GMT psxy '-SV' option requires azimuth in column 3 and magnitude in column 4.
+						gmt_line << "      " << velocity_azimuth_degrees_str << "      " << velocity_magnitude_str;
 					}
 					break;
 
@@ -259,7 +228,26 @@ namespace GPlatesFileIO
 					break;
 				}
 
+				//
+				// Output plate id.
+				//
+
+				if (include_plate_id)
+				{
+					// Use a minimum width of 5 since 5-digit plate ids are currently in use.
+					static const unsigned PLATE_ID_FIELDWIDTH = 5;
+
+					const std::string plate_id_str = GPlatesUtils::formatted_int_to_string(
+							plate_id,
+							PLATE_ID_FIELDWIDTH);
+
+					gmt_line << "      " << plate_id_str;
+				}
+
+				//
 				// Output the final line.
+				//
+
 				const std::string gmt_line_string = gmt_line.str();
 				output_stream << gmt_line_string.c_str() << endl;
 			}
@@ -272,7 +260,7 @@ namespace GPlatesFileIO
 			print_gmt_velocity_vector_field(
 					QTextStream &output_stream,
 					const GPlatesAppLogic::MultiPointVectorField &velocity_vector_field,
-					MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format,
+					MultiPointVectorFieldExport::GMTVelocityVectorFormatType velocity_vector_format,
 					double velocity_scale,
 					unsigned int &velocity_vector_index,
 					unsigned int velocity_stride,
@@ -335,7 +323,7 @@ GPlatesFileIO::GMTFormatMultiPointVectorFieldExport::export_velocity_vector_fiel
 		const referenced_files_collection_type &referenced_files,
 		const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 		const double &reconstruction_time,
-		MultiPointVectorFieldExport::VelocityVectorFormatType velocity_vector_format,
+		MultiPointVectorFieldExport::GMTVelocityVectorFormatType velocity_vector_format,
 		double velocity_scale,
 		unsigned int velocity_stride,
 		bool domain_point_lon_lat_format,

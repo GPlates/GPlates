@@ -80,7 +80,7 @@ namespace GPlatesPropertyValues
 		 * Returns the 'const' property delegate.
 		 */
 		GpmlPropertyDelegate::non_null_ptr_to_const_type
-		source_geometry() const
+		get_source_geometry() const
 		{
 			return get_current_revision<Revision>().source_geometry.get_revisionable();
 		}
@@ -89,7 +89,7 @@ namespace GPlatesPropertyValues
 		 * Returns the 'non-const' property delegate.
 		 */
 		GpmlPropertyDelegate::non_null_ptr_type
-		source_geometry()
+		get_source_geometry()
 		{
 			return get_current_revision<Revision>().source_geometry.get_revisionable();
 		}

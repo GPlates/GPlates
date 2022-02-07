@@ -36,7 +36,7 @@ namespace bp = boost::python;
 void
 export_information_model()
 {
-	// An enumeration nested within 'pygplates (ie, current) module.
+	// An enumeration nested within 'pygplates' (ie, current) module.
 	bp::enum_<GPlatesApi::VerifyInformationModel::Value>("VerifyInformationModel")
 			.value("yes", GPlatesApi::VerifyInformationModel::YES)
 			.value("no", GPlatesApi::VerifyInformationModel::NO);

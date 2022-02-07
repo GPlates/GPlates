@@ -55,6 +55,7 @@
 #include "gui/GlobeVisibilityTester.h"
 #include "gui/SimpleGlobeOrientation.h"
 #include "gui/TextOverlay.h"
+#include "gui/VelocityLegendOverlay.h"
 
 #include "maths/types.h"
 #include "maths/UnitVector3D.h"
@@ -75,18 +76,17 @@
 
 #include "view-operations/RenderedGeometryCollection.h"
 
+/**
+ * At the initial zoom, the smaller dimension of the GlobeCanvas will be @a FRAMING_RATIO times the
+ * diameter of the Globe.  Obviously, when the GlobeCanvas is resized, the Globe will be scaled
+ * accordingly.
+ *
+ * The value of this constant is purely cosmetic.
+ */
+const GLfloat GPlatesQtWidgets::GlobeCanvas::FRAMING_RATIO = static_cast<GLfloat>(1.07);
 
 namespace 
 {
-	/**
-	 * At the initial zoom, the smaller dimension of the GlobeCanvas will be @a FRAMING_RATIO times the
-	 * diameter of the Globe.  Obviously, when the GlobeCanvas is resized, the Globe will be scaled
-	 * accordingly.
-	 *
-	 * The value of this constant is purely cosmetic.
-	 */
-	static const GLfloat FRAMING_RATIO = static_cast<GLfloat>(1.07);
-
 	/**
 	 * The view is initially oriented such that the global x-axis points out of the screen.
 	 * So set our viewpoint to be along the positive x-axis (looking at the origin).
@@ -251,7 +251,7 @@ namespace
 		
 		// This is used for the coordinates of the symmetrical clipping planes which bound the
 		// smaller dimension.
-		GLdouble smaller_dim_clipping = FRAMING_RATIO / zoom_factor;
+		GLdouble smaller_dim_clipping = GPlatesQtWidgets::GlobeCanvas::FRAMING_RATIO / zoom_factor;
 
 		// This is used for the coordinates of the symmetrical clipping planes which bound the
 		// larger dimension.
@@ -348,7 +348,9 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			colour_scheme),
 	d_text_overlay(
 			new GPlatesGui::TextOverlay(
-				view_state.get_application_state()))
+				view_state.get_application_state())),
+	d_velocity_legend_overlay(
+			new GPlatesGui::VelocityLegendOverlay())
 {
 	init();
 }
@@ -395,7 +397,9 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			colour_scheme_),
 	d_text_overlay(
 			new GPlatesGui::TextOverlay(
-				d_view_state.get_application_state()))
+				d_view_state.get_application_state())),
+	d_velocity_legend_overlay(
+			new GPlatesGui::VelocityLegendOverlay())
 {
 	if (!isSharing())
 	{
@@ -1031,7 +1035,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 	renderer.gl_load_matrix(GL_MODELVIEW, d_gl_model_view_transform);
 
 	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
-	const float scale = calculate_scale();
+	const float scale = calculate_scale(paint_device_width, paint_device_height);
 	//
 	// Paint the globe and its contents.
 	//
@@ -1065,6 +1069,14 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 			paint_device_height,
 			scale);
 
+	// Paint the velocity legend overlay
+	d_velocity_legend_overlay->paint(
+			renderer,
+			d_view_state.get_velocity_legend_overlay_settings(),
+			paint_device_width,
+			paint_device_height,
+			scale);
+
 	return frame_cache_handle;
 }
 
@@ -1088,7 +1100,7 @@ GPlatesQtWidgets::GlobeCanvas::paintEvent(
 	}
 
 	// If d_mouse_press_info is not boost::none, then mouse is down.
-	Q_EMIT repainted(d_mouse_press_info);
+	Q_EMIT repainted(static_cast<bool>(d_mouse_press_info));
 }
 
 
@@ -1498,11 +1510,22 @@ GPlatesQtWidgets::GlobeCanvas::reset_camera_orientation()
 }
 
 float
-GPlatesQtWidgets::GlobeCanvas::calculate_scale()
+GPlatesQtWidgets::GlobeCanvas::calculate_scale(
+		int paint_device_width,
+		int paint_device_height)
 {
-	int min_dimension = (std::min)(size().width(), size().height());
-	return static_cast<float>(min_dimension) /
-		static_cast<float>(d_view_state.get_main_viewport_min_dimension());
+	const int paint_device_dimension = (std::min)(paint_device_width, paint_device_height);
+	const int min_viewport_dimension = d_view_state.get_main_viewport_min_dimension();
+
+	// If paint device is larger than the viewport then don't scale - this avoids having
+	// too large point/line sizes when exporting large screenshots.
+	if (paint_device_dimension >= min_viewport_dimension)
+	{
+		return 1.0f;
+	}
+
+	// This is useful when rendering the small colouring previews - avoids too large point/line sizes.
+	return static_cast<float>(paint_device_dimension) / static_cast<float>(min_viewport_dimension);
 }
 
 void

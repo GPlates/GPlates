@@ -1,8 +1,8 @@
 /**
- * \file 
+ * \file
  * $Revision: 8651 $
- * $Date: 2010-06-06 20:15:55 +0200 (Sun, 06 Jun 2010) $ 
- * 
+ * $Date: 2010-06-06 20:15:55 +0200 (Sun, 06 Jun 2010) $
+ *
  * Copyright (C) 2014, 2015 Geological Survey of Norway
  *
  * This file is part of GPlates.
@@ -65,8 +65,12 @@ const unsigned int MAX_VERTICAL_SCALE_POWER = 5;
 const unsigned int MIN_VERTICAL_SCALE_POWER = 0;
 const double INITIAL_BEGIN_TIME = 200.;
 const double INITIAL_END_TIME = 0.;
-const double INITIAL_TIME_STEP = 10.;
+//const double INITIAL_TIME_STEP = 10.;
 
+// Set start-up time step to 5 Ma for 2.0
+const double INITIAL_TIME_STEP = 5.;
+
+typedef GPlatesGui::ConfigGuiUtils::ConfigButtonGroupAdapter::button_enum_to_description_map_type velocity_method_map_type;
 
 // TODO: Implement the "create-motion-path-feature" option.
 
@@ -90,14 +94,14 @@ namespace
 	 */
 	static const FileDialogFilterOption file_dialog_filter_table[] = {
 		{ QT_TRANSLATE_NOOP("KinematicGraphsDialog",
-				"CSV file, comma-delimited"),
-			{ ',' } },
+		  "CSV file, comma-delimited"),
+		  { ',' } },
 		{ QT_TRANSLATE_NOOP("KinematicGraphsDialog",
-				"CSV file, semicolon-delimited"),
-			{ ';' } },
+		  "CSV file, semicolon-delimited"),
+		  { ';' } },
 		{ QT_TRANSLATE_NOOP("KinematicGraphsDialog",
-				"CSV file, tab-delimited"),
-			{ '\t' } },
+		  "CSV file, tab-delimited"),
+		  { '\t' } },
 	};
 
 	/**
@@ -113,8 +117,8 @@ namespace
 		for (; begin != end; ++begin)
 		{
 			map.insert(
-					QObject::tr(begin->text) + " (*.csv)",
-					begin->options);
+						QObject::tr(begin->text) + " (*.csv)",
+						begin->options);
 		}
 		return map;
 	}
@@ -143,26 +147,26 @@ namespace
 			QStandardItemModel *model,
 			const GPlatesQtWidgets::KinematicGraphsDialog::table_entries &values)
 	{
-        static const QLocale locale;
+		static const QLocale locale;
 		unsigned int row = model->rowCount();
 		model->insertRow(row);
 		model->setData(model->index(row,GPlatesQtWidgets::KinematicGraphsDialog::TIME_COLUMN),
-						 values.d_time);
+					   values.d_time);
 
 		model->setData(model->index(row,GPlatesQtWidgets::KinematicGraphsDialog::LAT_COLUMN),
-                       locale.toString(values.d_lat,'f',4));
+					   locale.toString(values.d_lat,'f',4));
 		model->setData(model->index(row,GPlatesQtWidgets::KinematicGraphsDialog::LON_COLUMN),
-                       locale.toString(values.d_lon,'f',4));
+					   locale.toString(values.d_lon,'f',4));
 		model->setData(model->index(row,GPlatesQtWidgets::KinematicGraphsDialog::VELOCITY_MAG_COLUMN),
-                       locale.toString(values.d_velocity_mag,'f',4));
+					   locale.toString(values.d_velocity_mag,'f',4));
 		model->setData(model->index(row,GPlatesQtWidgets::KinematicGraphsDialog::VELOCITY_AZIMUTH_COLUMN),
-                       locale.toString(values.d_velocity_azimuth,'f',4));
+					   locale.toString(values.d_velocity_azimuth,'f',4));
 		model->setData(model->index(row,GPlatesQtWidgets::KinematicGraphsDialog::VELOCITY_COLAT_COLUMN),
-                       locale.toString(values.d_velocity_colat,'f',4));
+					   locale.toString(values.d_velocity_colat,'f',4));
 		model->setData(model->index(row,GPlatesQtWidgets::KinematicGraphsDialog::VELOCITY_LON_COLUMN),
-                       locale.toString(values.d_velocity_lon,'f',4));
+					   locale.toString(values.d_velocity_lon,'f',4));
 		model->setData(model->index(row,GPlatesQtWidgets::KinematicGraphsDialog::ANGULAR_VELOCITY_COLUMN),
-                       locale.toString(values.d_angular_velocity,'f',4));
+					   locale.toString(values.d_angular_velocity,'f',4));
 #if 0
 		model->setData(model->index(row,GPlatesQtWidgets::KinematicGraphsDialog::ROTATION_RATE_COLUMN),
 					   values.d_rotation_rate);
@@ -179,17 +183,17 @@ namespace
 		switch(graph_type)
 		{
 		case GPlatesQtWidgets::KinematicGraphsDialog::LATITUDE_GRAPH_TYPE:
-			 return result.d_lat;
-		break;
+			return result.d_lat;
+			break;
 		case GPlatesQtWidgets::KinematicGraphsDialog::LONGITUDE_GRAPH_TYPE:
 			return result.d_lon;
-		break;
+			break;
 		case GPlatesQtWidgets::KinematicGraphsDialog::VELOCITY_MAG_GRAPH_TYPE:
 			return result.d_velocity_mag;
-		break;
+			break;
 		case GPlatesQtWidgets::KinematicGraphsDialog::VELOCITY_AZIMUTH_GRAPH_TYPE:
 			return result.d_velocity_azimuth;
-		break;
+			break;
 		case GPlatesQtWidgets::KinematicGraphsDialog::VELOCITY_COLAT_GRAPH_TYPE:
 			return result.d_velocity_colat;
 			break;
@@ -204,9 +208,9 @@ namespace
 			return std::abs(result.d_rotation_rate);
 			break;
 #endif
-	default:
+		default:
 			return 0.;
-		break;
+			break;
 		}
 	}
 
@@ -220,15 +224,15 @@ namespace
 		for (int row = 0; row < rows; ++row)
 		{
 			QStandardItem *item = model->item(row,GPlatesQtWidgets::KinematicGraphsDialog::VELOCITY_MAG_COLUMN);
-            if (item)
-            {
-                double velocity = item->data(Qt::EditRole).toDouble();
-                if (velocity > velocity_threshold)
-                {
-                    bad_indices.push_back(item->index());
-                }
-            }
-        }
+			if (item)
+			{
+				double velocity = item->data(Qt::EditRole).toDouble();
+				if (velocity > velocity_threshold)
+				{
+					bad_indices.push_back(item->index());
+				}
+			}
+		}
 	}
 
 	void
@@ -277,21 +281,21 @@ namespace
 	{
 		switch(configuration.d_velocity_method)
 		{
-			case GPlatesQtWidgets::KinematicGraphsDialog::T_TO_T_MINUS_DT:
-				time_older = current_time;
-				time_younger = current_time - configuration.d_delta_t;
-				break;
-			case GPlatesQtWidgets::KinematicGraphsDialog::T_PLUS_DT_TO_T:
-				time_older = current_time + configuration.d_delta_t;
-				time_younger = current_time;
-				break;
-			case GPlatesQtWidgets::KinematicGraphsDialog::T_PLUS_MINUS_HALF_DT:
-				time_older = current_time + configuration.d_delta_t/2.;
-				time_younger = current_time - configuration.d_delta_t/2.;
-				break;
-			default:
-				time_older = current_time;
-				time_younger = current_time - configuration.d_delta_t;
+		case GPlatesQtWidgets::KinematicGraphsConfigurationWidget::T_TO_T_MINUS_DT:
+			time_older = current_time;
+			time_younger = current_time - configuration.d_delta_t;
+			break;
+		case GPlatesQtWidgets::KinematicGraphsConfigurationWidget::T_PLUS_DT_TO_T:
+			time_older = current_time + configuration.d_delta_t;
+			time_younger = current_time;
+			break;
+		case GPlatesQtWidgets::KinematicGraphsConfigurationWidget::T_PLUS_MINUS_HALF_DT:
+			time_older = current_time + configuration.d_delta_t/2.;
+			time_younger = current_time - configuration.d_delta_t/2.;
+			break;
+		default:
+			time_older = current_time;
+			time_younger = current_time - configuration.d_delta_t;
 		}
 	}
 
@@ -318,12 +322,12 @@ GPlatesQtWidgets::KinematicGraphsDialog::KinematicGraphsDialog(
 	d_application_state(view_state.get_application_state()),
 	d_view_state(view_state),
 	d_feature_focus(view_state.get_feature_focus()),
-    d_model(new QStandardItemModel(0,NUM_COLUMNS,this)),
+	d_model(new QStandardItemModel(0,NUM_COLUMNS,this)),
 	d_save_file_dialog(
-			this,
-			tr("Export Tabular Data"),
-			build_save_file_dialog_filters(),
-			view_state),
+		this,
+		tr("Export Tabular Data"),
+		build_save_file_dialog_filters(),
+		view_state),
 	d_settings_dialog(0)
 {
 	setupUi(this);
@@ -335,6 +339,12 @@ GPlatesQtWidgets::KinematicGraphsDialog::KinematicGraphsDialog(
 	set_up_plot();
 	set_up_axes_ranges();
 	set_graph_axes_and_titles();
+#if 0
+	qDebug() << "Using Qwt version " << QWT_VERSION_STR;
+	qDebug() << QWT_MAJOR_VERSION;
+	qDebug() << QWT_MINOR_VERSION;
+	qDebug() << QWT_PATCH_VERSION;
+#endif
 }
 
 void
@@ -493,7 +503,7 @@ GPlatesQtWidgets::KinematicGraphsDialog::handle_use_feature()
 
 	// TODO: check if we need to extract the relative plate-id and use this as the anchor.
 	static const GPlatesModel::FeatureType motion_path_feature_type =
-						GPlatesModel::FeatureType::create_gpml("MotionPath");
+			GPlatesModel::FeatureType::create_gpml("MotionPath");
 	if (d_feature_focus.focused_feature().handle_ptr()->feature_type() == motion_path_feature_type)
 	{
 		qDebug() << "We have a motion path";
@@ -539,13 +549,17 @@ GPlatesQtWidgets::KinematicGraphsDialog::handle_use_animation()
 void
 GPlatesQtWidgets::KinematicGraphsDialog::handle_auto_y_clicked()
 {
-#if 0
+
 	d_plot->setAxisAutoScale(QwtPlot::yLeft, button_auto_y->isChecked());
 	button_compress_y->setEnabled(!button_auto_y->isChecked());
 	button_stretch_y->setEnabled(!button_auto_y->isChecked());
+#if ((QWT_MAJOR_VERSION >= 6) && (QWT_MINOR_VERSION >= 1))
+	double upper_ = d_plot->axisScaleDiv(QwtPlot::yLeft).upperBound();
+	double lower_ = d_plot->axisScaleDiv(QwtPlot::yLeft).lowerBound();
+#else
 	double upper_ = d_plot->axisScaleDiv(QwtPlot::yLeft)->upperBound();
 	double lower_ = d_plot->axisScaleDiv(QwtPlot::yLeft)->lowerBound();
-
+#endif
 	double bigger_of_upper_lower = (std::max)(std::abs(upper_),std::abs(lower_));
 
 	double scale_factor = (2*bigger_of_upper_lower)/(d_vertical_scale_maxes[d_graph_type]-d_vertical_scale_mins[d_graph_type]);
@@ -553,7 +567,6 @@ GPlatesQtWidgets::KinematicGraphsDialog::handle_auto_y_clicked()
 	unsigned int power = static_cast<unsigned int>(std::log(scale_factor)/std::log(VERTICAL_SCALE_MULTIPLIER));
 	d_vertical_scale_powers[d_graph_type] = power;
 	d_plot->replot();
-#endif
 }
 
 void
@@ -578,6 +591,17 @@ GPlatesQtWidgets::KinematicGraphsDialog::handle_stretch_y_clicked()
 
 	d_vertical_scale_powers[d_graph_type] = scale;
 	set_graph_axes_and_titles();
+}
+
+void
+GPlatesQtWidgets::KinematicGraphsDialog::handle_flip_horizontal_axis()
+{
+	bool current_axis_state =
+			d_plot->axisScaleEngine(QwtPlot::xBottom)->testAttribute(QwtScaleEngine::Inverted);
+
+	d_plot->axisScaleEngine(QwtPlot::xBottom)->setAttribute(QwtScaleEngine::Inverted,!current_axis_state);
+
+	update_graph();
 }
 
 void
@@ -615,8 +639,8 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 
 	using namespace GPlatesMaths;
 
-    d_results.clear();
-    d_model->setRowCount(0);
+	d_results.clear();
+	d_model->setRowCount(0);
 
 	if (d_end_time >= d_begin_time)
 	{
@@ -633,11 +657,9 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 		return;
 	}
 
-	double one_over_dtime = 1./(dtime);
-
 	GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type default_reconstruction_tree =
 			d_application_state.get_current_reconstruction()
-					.get_default_reconstruction_layer_output()->get_reconstruction_tree();
+			.get_default_reconstruction_layer_output()->get_reconstruction_tree();
 
 	GPlatesAppLogic::ReconstructionTreeCreator tree_creator =
 			GPlatesAppLogic::create_cached_reconstruction_tree_creator(
@@ -688,12 +710,12 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 		// I have to generate the stage pole, so I'm probably duplicating work here. There may be a neater way of getting this.
 		FiniteRotation stage_pole_rotation = GPlatesAppLogic::RotationUtils::get_stage_pole(*tree_t1,*tree_t2,d_moving_id,d_anchor_id);
 		boost::optional<UnitVector3D> stage_pole_axis = stage_pole_rotation.axis_hint();
-		std::pair<Vector3D,real_t> velocity_and_omega_pair = calculate_velocity_vector_and_omega(p,rot_1,rot_2,stage_pole_axis);
-		Vector3D v = velocity_and_omega_pair.first*one_over_dtime;
+		std::pair<Vector3D,real_t> velocity_and_omega_pair = calculate_velocity_vector_and_omega(p,rot_1,rot_2,dtime,stage_pole_axis);
+		Vector3D v = velocity_and_omega_pair.first;
 
 		VectorColatitudeLongitude vcl = convert_vector_from_xyz_to_colat_lon(p,v);
 		std::pair<real_t,real_t> mag_azimuth =
-			calculate_vector_components_magnitude_and_azimuth(p,v);
+				calculate_vector_components_magnitude_and_azimuth(p,v);
 
 		table_entries results;
 
@@ -710,9 +732,9 @@ GPlatesQtWidgets::KinematicGraphsDialog::update_table()
 		results.d_lon = l.longitude();
 		results.d_velocity_mag = mag_azimuth.first.dval();
 		results.d_velocity_azimuth = convert_rad_to_deg(mag_azimuth.second.dval());
-        results.d_velocity_colat = vcl.get_vector_colatitude().dval(); // south component
-        results.d_velocity_lon = vcl.get_vector_longitude().dval(); // east component
-		results.d_angular_velocity = convert_rad_to_deg(velocity_and_omega_pair.second.dval())*one_over_dtime;
+		results.d_velocity_colat = vcl.get_vector_colatitude().dval(); // south component
+		results.d_velocity_lon = vcl.get_vector_longitude().dval(); // east component
+		results.d_angular_velocity = convert_rad_to_deg(velocity_and_omega_pair.second.dval());
 #if 0
 		qDebug() << "rot: " << results.d_angular_velocity;
 		double delta_azimuth = previous_azimuth - results.d_velocity_azimuth;
@@ -772,8 +794,8 @@ GPlatesQtWidgets::KinematicGraphsDialog::set_up_plot()
 	layout_->addWidget(d_plot);
 
 	d_plot->setTitle("Test qwt");
-    d_plot->setAxisScale(QwtPlot::xBottom,INITIAL_BEGIN_TIME,0);
-    d_plot->setAxisScale(QwtPlot::yLeft,-90,90);
+	d_plot->setAxisScale(QwtPlot::xBottom,INITIAL_BEGIN_TIME,0);
+	d_plot->setAxisScale(QwtPlot::yLeft,-90,90);
 
 	// Reverse x axis so we go from oldest (left) to youngest (right).
 	d_plot->axisScaleEngine(QwtPlot::xBottom)->setAttribute(QwtScaleEngine::Inverted);
@@ -811,17 +833,17 @@ GPlatesQtWidgets::KinematicGraphsDialog::read_values_from_preferences()
 
 	QVariant velocity_method_variant = prefs.get_value("tools/kinematics/velocity_method");
 
-	static const velocity_method_description_map_type
-			map = build_velocity_method_description_map();
+	static const velocity_method_map_type
+			map = KinematicGraphsConfigurationWidget::build_velocity_method_description_map();
 
-	MapValueEquals map_value_equals(velocity_method_variant.toString());
+	GPlatesGui::ConfigGuiUtils::MapValueEquals map_value_equals(velocity_method_variant.toString());
 
-	const velocity_method_description_map_type::const_iterator
+	const velocity_method_map_type::const_iterator
 			it = std::find_if(map.begin(),map.end(),map_value_equals);
 
 	if (it != map.end())
 	{
-		d_configuration.d_velocity_method = static_cast<VelocityMethod>(it.key());
+		d_configuration.d_velocity_method = static_cast<KinematicGraphsConfigurationWidget::VelocityMethod>(it.key());
 	}
 }
 
@@ -829,12 +851,12 @@ void
 GPlatesQtWidgets::KinematicGraphsDialog::initialise_widgets()
 {
 
-//	  Qt documentation says (http://qt-project.org/doc/qt-4.8/qobject.html):
-//		"For portability reasons, we recommend that you use escape sequences for
-//		specifying non-ASCII characters in string literals to trUtf8(). For example:
-//			label->setText(tr("F\374r \310lise"));  "
-//
-//		So we use \260 for the degree symbol.
+	//	  Qt documentation says (http://qt-project.org/doc/qt-4.8/qobject.html):
+	//		"For portability reasons, we recommend that you use escape sequences for
+	//		specifying non-ASCII characters in string literals to trUtf8(). For example:
+	//			label->setText(tr("F\374r \310lise"));  "
+	//
+	//		So we use \260 for the degree symbol.
 
 
 
@@ -872,13 +894,13 @@ GPlatesQtWidgets::KinematicGraphsDialog::initialise_widgets()
 	table_results->setModel(d_model);
 
 	table_results->horizontalHeader()->resizeSection(TIME_COLUMN,100);
-    table_results->horizontalHeader()->resizeSection(LAT_COLUMN,90);
-    table_results->horizontalHeader()->resizeSection(LON_COLUMN,90);
-    table_results->horizontalHeader()->resizeSection(VELOCITY_MAG_COLUMN,130);
-    table_results->horizontalHeader()->resizeSection(VELOCITY_AZIMUTH_COLUMN,130);
-    table_results->horizontalHeader()->resizeSection(VELOCITY_COLAT_COLUMN,130);
-    table_results->horizontalHeader()->resizeSection(VELOCITY_LON_COLUMN,130);
-    table_results->horizontalHeader()->resizeSection(ANGULAR_VELOCITY_COLUMN,130);
+	table_results->horizontalHeader()->resizeSection(LAT_COLUMN,90);
+	table_results->horizontalHeader()->resizeSection(LON_COLUMN,90);
+	table_results->horizontalHeader()->resizeSection(VELOCITY_MAG_COLUMN,130);
+	table_results->horizontalHeader()->resizeSection(VELOCITY_AZIMUTH_COLUMN,130);
+	table_results->horizontalHeader()->resizeSection(VELOCITY_COLAT_COLUMN,130);
+	table_results->horizontalHeader()->resizeSection(VELOCITY_LON_COLUMN,130);
+	table_results->horizontalHeader()->resizeSection(ANGULAR_VELOCITY_COLUMN,130);
 	table_results->horizontalHeader()->setStretchLastSection(true);
 
 	table_results->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -923,6 +945,7 @@ GPlatesQtWidgets::KinematicGraphsDialog::set_up_connections()
 	QObject::connect(button_auto_y,SIGNAL(clicked()),this,SLOT(handle_auto_y_clicked()));
 	QObject::connect(button_compress_y,SIGNAL(clicked()),this,SLOT(handle_compress_y_clicked()));
 	QObject::connect(button_stretch_y,SIGNAL(clicked()),this,SLOT(handle_stretch_y_clicked()));
+	QObject::connect(button_flip_x,SIGNAL(clicked()),this,SLOT(handle_flip_horizontal_axis()));
 	QObject::connect(button_export_table,SIGNAL(clicked()),this,SLOT(handle_export_table()));
 	QObject::connect(button_settings,SIGNAL(clicked()),this,SLOT(handle_settings_clicked()));
 
@@ -972,8 +995,8 @@ GPlatesQtWidgets::KinematicGraphsDialog::set_graph_axes_and_titles()
 
 	}
 
-    double y_min = d_vertical_scale_mins[d_graph_type];
-    double y_max = d_vertical_scale_maxes[d_graph_type];
+	double y_min = d_vertical_scale_mins[d_graph_type];
+	double y_max = d_vertical_scale_maxes[d_graph_type];
 
 	d_plot->setTitle(graph_title);
 

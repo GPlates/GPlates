@@ -291,10 +291,28 @@ GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::add(
 
 
 void
+GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::add(
+		const GPlatesMaths::PolygonOnSphere &polygon)
+{
+	// Exterior ring.
+	add(polygon.exterior_ring_begin(), polygon.exterior_ring_end());
+
+	// Interior rings.
+	const unsigned int num_interior_rings = polygon.number_of_interior_rings();
+	for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+	{
+		add(
+				polygon.interior_ring_begin(interior_ring_index),
+				polygon.interior_ring_end(interior_ring_index));
+	}
+}
+
+
+void
 GPlatesOpenGL::GLIntersect::OrientedBoundingBoxBuilder::add_filled_polygon(
 	const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon)
 {
-	// Add the boundary of the polygon.
+	// Add the boundary of the polygon (this includes the exterior ring and any interior rings).
 	add(*polygon);
 
 	// Test each positive and negative OBB axis point for inclusion in the polygon.

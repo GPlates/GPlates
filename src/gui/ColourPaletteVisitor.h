@@ -37,14 +37,8 @@ namespace GPlatesGui
 	// Forward declarations of supported ColourPalette derivations.
 	class AgeColourPalette;
 	template <typename> class CategoricalCptColourPalette;
-	class DefaultPlateIdColourPalette;
-	class DefaultRasterColourPalette;
-	class UserColourPalette;
-	class DeformationColourPalette;
-	class DefaultScalarFieldGradientColourPalette;
-	class DefaultScalarFieldScalarColourPalette;
 	class FeatureTypeColourPalette;
-	class RegionalPlateIdColourPalette;
+	class PlateIdColourPalette;
 	class RegularCptColourPalette;
 
 	/**
@@ -58,17 +52,11 @@ namespace GPlatesGui
 
 		// Typedefs to give the supported derivations the appropriate const-ness.
 		typedef typename GPlatesUtils::SetConst<AgeColourPalette, Const>::type age_colour_palette_type;
-		typedef typename GPlatesUtils::SetConst<DefaultPlateIdColourPalette, Const>::type default_plate_id_colour_palette_type;
-		typedef typename GPlatesUtils::SetConst<DefaultRasterColourPalette, Const>::type default_raster_colour_palette_type;
-		typedef typename GPlatesUtils::SetConst<UserColourPalette, Const>::type user_colour_palette_type;
-		typedef typename GPlatesUtils::SetConst<DeformationColourPalette, Const>::type deformation_colour_palette_type;
-		typedef typename GPlatesUtils::SetConst<DefaultScalarFieldGradientColourPalette, Const>::type default_scalar_field_gradient_colour_palette_type;
-		typedef typename GPlatesUtils::SetConst<DefaultScalarFieldScalarColourPalette, Const>::type default_scalar_field_scalar_colour_palette_type;
-		typedef typename GPlatesUtils::SetConst<FeatureTypeColourPalette, Const>::type feature_type_colour_palette_type;
-		typedef typename GPlatesUtils::SetConst<RegionalPlateIdColourPalette, Const>::type regional_plate_id_colour_palette_type;
-		typedef typename GPlatesUtils::SetConst<RegularCptColourPalette, Const>::type regular_cpt_colour_palette_type;
 		typedef typename GPlatesUtils::SetConst<CategoricalCptColourPalette<boost::int32_t>, Const>::type int32_categorical_cpt_colour_palette_type;
 		typedef typename GPlatesUtils::SetConst<CategoricalCptColourPalette<boost::uint32_t>, Const>::type uint32_categorical_cpt_colour_palette_type;
+		typedef typename GPlatesUtils::SetConst<FeatureTypeColourPalette, Const>::type feature_type_colour_palette_type;
+		typedef typename GPlatesUtils::SetConst<PlateIdColourPalette, Const>::type plate_id_colour_palette_type;
+		typedef typename GPlatesUtils::SetConst<RegularCptColourPalette, Const>::type regular_cpt_colour_palette_type;
 
 		virtual
 		~ColourPaletteVisitorBase()
@@ -82,38 +70,14 @@ namespace GPlatesGui
 
 		virtual
 		void
-		visit_default_plate_id_colour_palette(
-				default_plate_id_colour_palette_type &)
+		visit_int32_categorical_cpt_colour_palette(
+				int32_categorical_cpt_colour_palette_type &)
 		{  }
 
 		virtual
 		void
-		visit_default_raster_colour_palette(
-				default_raster_colour_palette_type &)
-		{  }
-
-		virtual
-		void
-		visit_user_colour_palette(
-				user_colour_palette_type &)
-		{  }
-
-		virtual
-		void
-		visit_deformation_colour_palette(
-				deformation_colour_palette_type &)
-		{  }
-
-		virtual
-		void
-		visit_default_scalar_field_scalar_colour_palette(
-				default_scalar_field_scalar_colour_palette_type &)
-		{  }
-
-		virtual
-		void
-		visit_default_scalar_field_gradient_colour_palette(
-				default_scalar_field_gradient_colour_palette_type &)
+		visit_uint32_categorical_cpt_colour_palette(
+				uint32_categorical_cpt_colour_palette_type &)
 		{  }
 
 		virtual
@@ -124,26 +88,14 @@ namespace GPlatesGui
 
 		virtual
 		void
-		visit_regional_plate_id_colour_palette(
-				regional_plate_id_colour_palette_type &)
+		visit_plate_id_colour_palette(
+				plate_id_colour_palette_type &)
 		{  }
 
 		virtual
 		void
 		visit_regular_cpt_colour_palette(
 				regular_cpt_colour_palette_type &)
-		{  }
-
-		virtual
-		void
-		visit_int32_categorical_cpt_colour_palette(
-				int32_categorical_cpt_colour_palette_type &)
-		{  }
-
-		virtual
-		void
-		visit_uint32_categorical_cpt_colour_palette(
-				uint32_categorical_cpt_colour_palette_type &)
 		{  }
 
 	protected:

@@ -32,11 +32,10 @@
 #include <boost/shared_ptr.hpp>
 #include <QString>
 
-#include "AppLogicFwd.h"
 #include "LayerTask.h"
-#include "LayerTaskParams.h"
+#include "ScalarField3DLayerParams.h"
+#include "ScalarField3DLayerProxy.h"
 
-#include "model/FeatureHandle.h"
 #include "model/FeatureCollectionHandle.h"
 
 
@@ -50,121 +49,6 @@ namespace GPlatesAppLogic
 	{
 	public:
 
-		/**
-		 * App-logic parameters for a scalar field layer.
-		 */
-		class Params :
-				public LayerTaskParams
-		{
-		public:
-
-			//! Returns the raster feature or boost::none if one is currently not set on the layer.
-			const boost::optional<GPlatesModel::FeatureHandle::weak_ref> &
-			get_scalar_field_feature() const;
-
-			//! Returns the minimum depth layer radius of scalar field or none if no field.
-			boost::optional<double>
-			get_minimum_depth_layer_radius() const
-			{
-				return d_minimum_depth_layer_radius;
-			}
-
-			//! Returns the maximum depth layer radius of scalar field or none if no field.
-			boost::optional<double>
-			get_maximum_depth_layer_radius() const
-			{
-				return d_maximum_depth_layer_radius;
-			}
-
-			//! Returns the minimum scalar value across the entire scalar field or none if no field.
-			boost::optional<double>
-			get_scalar_min() const
-			{
-				return d_scalar_min;
-			}
-
-			//! Returns the maximum scalar value across the entire scalar field or none if no field.
-			boost::optional<double>
-			get_scalar_max() const
-			{
-				return d_scalar_max;
-			}
-
-			//! Returns the mean scalar value across the entire scalar field or none if no field.
-			boost::optional<double>
-			get_scalar_mean() const
-			{
-				return d_scalar_mean;
-			}
-
-			//! Returns the standard deviation of scalar values across the entire scalar field or none if no field.
-			boost::optional<double>
-			get_scalar_standard_deviation() const
-			{
-				return d_scalar_standard_deviation;
-			}
-
-			//! Returns the minimum gradient magnitude across the entire scalar field or none if no field.
-			boost::optional<double>
-			get_gradient_magnitude_min() const
-			{
-				return d_gradient_magnitude_min;
-			}
-
-			//! Returns the maximum gradient magnitude across the entire scalar field or none if no field.
-			boost::optional<double>
-			get_gradient_magnitude_max() const
-			{
-				return d_gradient_magnitude_max;
-			}
-
-			//! Returns the mean gradient magnitude across the entire scalar field or none if no field.
-			boost::optional<double>
-			get_gradient_magnitude_mean() const
-			{
-				return d_gradient_magnitude_mean;
-			}
-
-			//! Returns the standard deviation of gradient magnitudes across the entire scalar field or none if no field.
-			boost::optional<double>
-			get_gradient_magnitude_standard_deviation() const
-			{
-				return d_gradient_magnitude_standard_deviation;
-			}
-
-		private:
-
-			//! The scalar field feature.
-			boost::optional<GPlatesModel::FeatureHandle::weak_ref> d_scalar_field_feature;
-
-			boost::optional<double> d_minimum_depth_layer_radius;
-			boost::optional<double> d_maximum_depth_layer_radius;
-
-			boost::optional<double> d_scalar_min;
-			boost::optional<double> d_scalar_max;
-			boost::optional<double> d_scalar_mean;
-			boost::optional<double> d_scalar_standard_deviation;
-
-			boost::optional<double> d_gradient_magnitude_min;
-			boost::optional<double> d_gradient_magnitude_max;
-			boost::optional<double> d_gradient_magnitude_mean;
-			boost::optional<double> d_gradient_magnitude_standard_deviation;
-
-			Params();
-
-			void
-			set_scalar_field_feature(
-					boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref);
-
-			//! Update state to reflect a new, or modified, raster feature.
-			void
-			updated_scalar_field_feature();
-
-			// Make friend so can access constructor.
-			friend class ScalarField3DLayerTask;
-		};
-
-
 		static
 		bool
 		can_process_feature_collection(
@@ -177,9 +61,6 @@ namespace GPlatesAppLogic
 		{
 			return boost::shared_ptr<ScalarField3DLayerTask>(new ScalarField3DLayerTask());
 		}
-
-
-		~ScalarField3DLayerTask();
 
 
 		virtual
@@ -251,10 +132,10 @@ namespace GPlatesAppLogic
 
 
 		virtual
-		LayerTaskParams &
-		get_layer_task_params()
+		LayerParams::non_null_ptr_type
+		get_layer_params()
 		{
-			return d_layer_task_params;
+			return d_layer_params;
 		}
 
 	private:
@@ -262,9 +143,9 @@ namespace GPlatesAppLogic
 		/**
 		 * Extra parameters for this layer.
 		 */
-		Params d_layer_task_params;
+		ScalarField3DLayerParams::non_null_ptr_type d_layer_params;
 
-		scalar_field_3d_layer_proxy_non_null_ptr_type d_scalar_field_layer_proxy;
+		ScalarField3DLayerProxy::non_null_ptr_type d_scalar_field_layer_proxy;
 
 
 		//! Constructor.

@@ -360,13 +360,10 @@ namespace GPlatesUtils
 			ForwardIterPointOnSphere end_points_on_sphere,
 			GeometryConstruction::GeometryConstructionValidity &validity)
 	{
-		// Set up the return-parameter for the evaluate_construction_parameter_validity() function.
-		std::pair<ForwardIterPointOnSphere, ForwardIterPointOnSphere> invalid_points;
-		
 		// Evaluate construction parameter validity, and create.
 		GPlatesMaths::PolylineOnSphere::ConstructionParameterValidity polyline_validity = 
 				GPlatesMaths::PolylineOnSphere::evaluate_construction_parameter_validity(
-						begin_points_on_sphere, end_points_on_sphere, invalid_points);
+						begin_points_on_sphere, end_points_on_sphere);
 
 		// Create the polyline and return it - if we can.
 		switch (polyline_validity)
@@ -405,13 +402,10 @@ namespace GPlatesUtils
 			ForwardIterPointOnSphere end_points_on_sphere,
 			GeometryConstruction::GeometryConstructionValidity &validity)
 	{
-		// Set up the return-parameter for the evaluate_construction_parameter_validity() function.
-		std::pair<ForwardIterPointOnSphere, ForwardIterPointOnSphere> invalid_points;
-
 		// Evaluate construction parameter validity, and create.
 		GPlatesMaths::PolygonOnSphere::ConstructionParameterValidity polygon_validity = 
 				GPlatesMaths::PolygonOnSphere::evaluate_construction_parameter_validity(
-						begin_points_on_sphere, end_points_on_sphere, invalid_points);
+						begin_points_on_sphere, end_points_on_sphere);
 
 		// Create the polygon and return it - if we can.
 		switch (polygon_validity)

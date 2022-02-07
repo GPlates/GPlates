@@ -35,6 +35,8 @@
 #include <QStringList>
 #include <QVariant>
 
+#include "Gdal.h"
+#include "GdalUtils.h"
 #include "ErrorOpeningFileForReadingException.h"
 #include "FeatureCollectionFileFormat.h"
 #include "FeatureCollectionFileFormatConfigurations.h"
@@ -61,6 +63,7 @@
 #include "property-values/GmlMultiPoint.h"
 #include "property-values/GmlPoint.h"
 #include "property-values/GmlPolygon.h"
+#include "property-values/GmlTimeInstant.h"
 #include "property-values/GmlTimePeriod.h"
 #include "property-values/GpmlKeyValueDictionary.h"
 #include "property-values/GpmlKeyValueDictionaryElement.h"
@@ -77,6 +80,7 @@
 #include "utils/Profile.h"
 #include "utils/UnicodeStringUtils.h"
 
+
 boost::shared_ptr< GPlatesFileIO::PropertyMapper> GPlatesFileIO::OgrReader::s_property_mapper;
 
 namespace
@@ -84,7 +88,7 @@ namespace
 
 	/**
 	 * @brief recon_method_is_valid returns true if @a recon_method is "ByPlateID",
-	 * "HalfStageRotation" or "HalfStageRotationVersion2".
+	 * "HalfStageRotation", "HalfStageRotationVersion2" or "HalfStageRotationVersion3".
 	 *
 	 * Note that currently (Feb 2014) only HalfStageRotationVersion2 gets exported by any part of GPlates. ByPlateID
 	 * is considered as the default and is not explicitly exported in any of GPlates' export functionality, and
@@ -99,7 +103,8 @@ namespace
 	{
 		if (recon_method == "ByPlateID" ||
 			recon_method == "HalfStageRotation" ||
-			recon_method == "HalfStageRotationVersion2")
+			recon_method == "HalfStageRotationVersion2" ||
+			recon_method == "HalfStageRotationVersion3")
 		{
 			return true;
 		}
@@ -108,23 +113,34 @@ namespace
 
 
 	const GPlatesPropertyValues::GeoTimeInstant
+	create_geo_time_instant(
+			const double &time)
+	{
+		if (time < -998.9 && time > -1000.0)
+		{
+			// It's in the distant future, which is denoted in PLATES4 line-format
+			// files using times like -999.0 or -999.9.
+			return GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
+		}
+		if (time > 998.9 && time < 1000.0)
+		{
+			// It's in the distant past, which is denoted in PLATES4 line-format files
+			// using times like 999.0 or 999.9.
+			return GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
+		}
+
+		return GPlatesPropertyValues::GeoTimeInstant(time);
+	}
+
+	const GPlatesPropertyValues::GeoTimeInstant
 	create_begin_geo_time_instant(
 			const boost::optional<double> &time)
 	{
 		if (time)
 		{
-			if (*time < -998.9 && *time > -1000.0) {
-				// It's in the distant future, which is denoted in PLATES4 line-format
-				// files using times like -999.0 or -999.9.
-				return GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
-			}
-			if (*time > 998.9 && *time < 1000.0) {
-				// It's in the distant past, which is denoted in PLATES4 line-format files
-				// using times like 999.0 or 999.9.
-				return GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
-			}
-			return GPlatesPropertyValues::GeoTimeInstant(*time);
+			return create_geo_time_instant(time.get());
 		}
+
 		return GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
 	}
 
@@ -134,18 +150,9 @@ namespace
 	{
 		if (time)
 		{
-			if (*time < -998.9 && *time > -1000.0) {
-				// It's in the distant future, which is denoted in PLATES4 line-format
-				// files using times like -999.0 or -999.9.
-				return GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
-			}
-			if (*time > 998.9 && *time < 1000.0) {
-				// It's in the distant past, which is denoted in PLATES4 line-format files
-				// using times like 999.0 or 999.9.
-				return GPlatesPropertyValues::GeoTimeInstant::create_distant_past();
-			}
-			return GPlatesPropertyValues::GeoTimeInstant(*time);
+			return create_geo_time_instant(time.get());
 		}
+
 		return GPlatesPropertyValues::GeoTimeInstant::create_distant_future();
 	}
 
@@ -157,7 +164,7 @@ namespace
 	void
 	add_polyline_geometry_to_feature(
 		const GPlatesModel::FeatureHandle::weak_ref &feature,
-		const std::list<GPlatesMaths::PointOnSphere> &list_of_points,
+		const std::vector<GPlatesMaths::PointOnSphere> &list_of_points,
 		const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property)
 	{
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
@@ -194,11 +201,12 @@ namespace
 	void
 	add_polygon_geometry_to_feature(		
 		const GPlatesModel::FeatureHandle::weak_ref &feature,
-		const std::list<GPlatesMaths::PointOnSphere> &list_of_points,
+		const std::vector<GPlatesMaths::PointOnSphere> &exterior_ring,
+		const std::list< std::vector<GPlatesMaths::PointOnSphere> > &interior_rings,
 		const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property)
 	{
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon =
-			GPlatesMaths::PolygonOnSphere::create_on_heap(list_of_points);
+			GPlatesMaths::PolygonOnSphere::create_on_heap(exterior_ring, interior_rings);
 
 		GPlatesPropertyValues::GmlPolygon::non_null_ptr_type gml_polygon =
 			GPlatesPropertyValues::GmlPolygon::create(polygon);
@@ -382,6 +390,20 @@ namespace
 	}
 
 	void
+	append_geometry_import_time_to_feature(
+		const GPlatesModel::FeatureHandle::weak_ref &feature,
+		double geometry_import_time)
+	{
+		const GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type geometry_import_time_property_value =
+				GPlatesModel::ModelUtils::create_gml_time_instant(
+						create_geo_time_instant(geometry_import_time));
+		feature->add(
+				GPlatesModel::TopLevelPropertyInline::create(
+					GPlatesModel::PropertyName::create_gpml("geometryImportTime"),
+					geometry_import_time_property_value));
+	}
+
+	void
 	append_name_to_feature(
 		const GPlatesModel::FeatureHandle::weak_ref &feature,
 		QString name)
@@ -419,6 +441,7 @@ namespace
 	 *		leftPlate
 	 *		rightPlate
 	 *		spreadingAsymmetry
+	 *		geometryImportTime
 	 *	from the feature given by @a feature_handle.
 	 *
 	 * This is used when re-mapping model properties from shapefile attributes.
@@ -438,6 +461,7 @@ namespace
 		property_name_list << QString("leftPlate");
 		property_name_list << QString("rightPlate");
 		property_name_list << QString("spreadingAsymmetry");
+		property_name_list << QString("geometryImportTime");
 
 		GPlatesModel::FeatureHandle::iterator p_iter = feature->begin();
 		GPlatesModel::FeatureHandle::iterator p_iter_end = feature->end();
@@ -676,8 +700,26 @@ namespace
 
 		}
 
+		it = model_to_attribute_map.find(
+					ShapefileAttributes::model_properties[ShapefileAttributes::GEOMETRY_IMPORT_TIME]);
 
-		
+		if (it != model_to_attribute_map.constEnd())
+		{
+			attribute = get_qvariant_from_finder(it.value(),feature);
+			bool ok;
+			double geometry_import_time = attribute.toDouble(&ok);
+			if (ok){
+				append_geometry_import_time_to_feature(feature,geometry_import_time);
+			}
+			else{
+				read_errors.d_warnings.push_back(
+					GPlatesFileIO::ReadErrorOccurrence(
+					source,
+					location,
+					GPlatesFileIO::ReadErrors::InvalidShapefileGeometryImportTime,
+					GPlatesFileIO::ReadErrors::AttributeIgnored));
+			}
+		}
 	}
 
 	/**
@@ -770,7 +812,7 @@ namespace
 	{
 		// If there's no property mapper then fill the mapping with default values.
 		// If there's no property mapper then 'set_property_mapper()' was never called which
-		// can happen when we not using GPlates as a GUI (eg, importing pygplates into a python
+		// can happen when we not using GPlates as a GUI (eg, importing 'pygplates' into a python
 		// interpreter) - in this case we don't want to abort due to lack of a shapefile mapping.
 		if (mapper == NULL)
 		{
@@ -857,20 +899,23 @@ GPlatesFileIO::OgrReader::OgrReader():
 	d_feature_type_string("UnclassifiedFeature"),
 	d_total_geometries(0),
 	d_loaded_geometries(0),
-	d_total_features(0)
+	d_total_features(0),
+	d_current_coordinate_transformation(GPlatesPropertyValues::CoordinateTransformation::create())
 {
-	OGRRegisterAll();
+	GdalUtils::register_all_drivers();
 }
 
 GPlatesFileIO::OgrReader::~OgrReader()
 {
-	try{
-		if(d_data_source_ptr)
+	try
+	{
+		if (d_data_source_ptr)
 		{
-			OGRDataSource::DestroyDataSource(d_data_source_ptr);
+			GdalUtils::close_vector(d_data_source_ptr);
 		}
 	}
-	catch (...) {
+	catch (...)
+	{
 	}
 }
 
@@ -939,16 +984,15 @@ GPlatesFileIO::OgrReader::check_file_format(
 
 bool
 GPlatesFileIO::OgrReader::open_file(
-		const QString &filename)
+		const QString &filename,
+		ReadErrorAccumulation &read_errors)
 {
-
-	std::string fname = filename.toStdString();
-	
-	d_data_source_ptr = OGRSFDriverRegistrar::Open(fname.c_str());
+	d_data_source_ptr = GdalUtils::open_vector(filename, false/*update*/, &read_errors);
 	if	(d_data_source_ptr == NULL)
 	{
 		return false;
 	}
+
 	d_filename = filename;
 	return true;
 }
@@ -1014,7 +1058,9 @@ GPlatesFileIO::OgrReader::read_features(
 				QString feature_string = d_attributes[index].toString();
 				if (GPlatesFileIO::OgrUtils::feature_type_field_is_gpgim_type(d_model_to_attribute_map))
 				{
-					// FIXME: We should check for a valid feature type here.
+					// We've loosened the GPGIM loading constraints to allow any feature type
+					// (even if it's not defined in the GPGIM). So there's no need to check it's in the GPGIM.
+					// It still has to be in "<namespace_alias>:<name>" format though (but that's checked below).
 					d_feature_type_string = feature_string;
 				}
 				else
@@ -1178,15 +1224,14 @@ const GPlatesModel::FeatureHandle::weak_ref
 GPlatesFileIO::OgrReader::create_polygon_feature_from_list(
 	const GPlatesModel::FeatureType &feature_type,
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-	const std::list<GPlatesMaths::PointOnSphere> &list_of_points,
+	const std::vector<GPlatesMaths::PointOnSphere> &exterior_ring,
+	const std::list< std::vector<GPlatesMaths::PointOnSphere> > &interior_rings,
 	const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property)
 {
-
-			
 	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,collection,d_feature_type_string,d_feature_id);
 
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere =
-		GPlatesMaths::PolygonOnSphere::create_on_heap(list_of_points);
+		GPlatesMaths::PolygonOnSphere::create_on_heap(exterior_ring, interior_rings);
 
 	GPlatesPropertyValues::GmlPolygon::non_null_ptr_type gml_polygon =
 		GPlatesPropertyValues::GmlPolygon::create(polygon_on_sphere);
@@ -1217,7 +1262,7 @@ const GPlatesModel::FeatureHandle::weak_ref
 GPlatesFileIO::OgrReader::create_line_feature_from_list(
 	const GPlatesModel::FeatureType &feature_type,
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-	const std::list<GPlatesMaths::PointOnSphere> &list_of_points,
+	const std::vector<GPlatesMaths::PointOnSphere> &list_of_points,
 	const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property)
 {
 	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,collection,d_feature_type_string,d_feature_id);
@@ -1291,7 +1336,7 @@ const GPlatesModel::FeatureHandle::weak_ref
 GPlatesFileIO::OgrReader::create_multi_point_feature_from_list(
 	const GPlatesModel::FeatureType &feature_type,
 	const GPlatesModel::FeatureCollectionHandle::weak_ref &collection,
-	const std::list<GPlatesMaths::PointOnSphere> &list_of_points,
+	const std::vector<GPlatesMaths::PointOnSphere> &list_of_points,
 	const boost::optional<GPlatesModel::GpgimProperty::non_null_ptr_to_const_type> &property)
 {
 
@@ -1510,55 +1555,68 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 
 
 bool
-GPlatesFileIO::OgrReader::is_valid_shape_data(
-		double lat,
-		double lon,
+GPlatesFileIO::OgrReader::transform_and_check_coords(
+		double &x,
+		double &y,
 		ReadErrorAccumulation &read_errors,
 		const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
 		const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location)
 {
 
-	if (lat < SHAPE_NO_DATA){
-		read_errors.d_recoverable_errors.push_back(
-			GPlatesFileIO::ReadErrorOccurrence(
-			source,
-			location,
-			GPlatesFileIO::ReadErrors::NoLatitudeShapeData,
-			GPlatesFileIO::ReadErrors::GeometryIgnored));
-		return false;
-	}			
-	if (lon < SHAPE_NO_DATA){
-		read_errors.d_recoverable_errors.push_back(
-			GPlatesFileIO::ReadErrorOccurrence(
-			source,
-			location,
-			GPlatesFileIO::ReadErrors::NoLongitudeShapeData,
-			GPlatesFileIO::ReadErrors::GeometryIgnored));
+	if (!d_current_coordinate_transformation->transform_in_place(&x,&y))
+	{
+		qWarning() << "Failed to transform coordinates";
 		return false;
 	}
 
-	if (!GPlatesMaths::LatLonPoint::is_valid_latitude(lat)){
+	if (x < SHAPE_NO_DATA){
 		read_errors.d_recoverable_errors.push_back(
-			GPlatesFileIO::ReadErrorOccurrence(
-			source,
-			location,
-			GPlatesFileIO::ReadErrors::InvalidOgrLatitude,
-			GPlatesFileIO::ReadErrors::GeometryIgnored));
+					GPlatesFileIO::ReadErrorOccurrence(
+						source,
+						location,
+						GPlatesFileIO::ReadErrors::NoLongitudeShapeData,
+						GPlatesFileIO::ReadErrors::GeometryIgnored));
+		return false;
+	}
+	if (y < SHAPE_NO_DATA){
+		read_errors.d_recoverable_errors.push_back(
+					GPlatesFileIO::ReadErrorOccurrence(
+						source,
+						location,
+						GPlatesFileIO::ReadErrors::NoLatitudeShapeData,
+						GPlatesFileIO::ReadErrors::GeometryIgnored));
 		return false;
 	}
 
-	if (!GPlatesMaths::LatLonPoint::is_valid_longitude(lon)){
+	if (!GPlatesMaths::LatLonPoint::is_valid_latitude(y)){
 		read_errors.d_recoverable_errors.push_back(
-			GPlatesFileIO::ReadErrorOccurrence(
-			source,
-			location,
-			GPlatesFileIO::ReadErrors::InvalidOgrLongitude,
-			GPlatesFileIO::ReadErrors::GeometryIgnored));
+					GPlatesFileIO::ReadErrorOccurrence(
+						source,
+						location,
+						GPlatesFileIO::ReadErrors::InvalidOgrLatitude,
+						GPlatesFileIO::ReadErrors::GeometryIgnored));
+		// Increase precision to make sure numbers like 90.00000190700007 (an actual value in a Shapefile)
+		// don't get printed as 90.0.
+		qDebug() << "Invalid latitude: " << qSetRealNumberPrecision(16) << y;
+		return false;
+	}
+
+	if (!GPlatesMaths::LatLonPoint::is_valid_longitude(x)){
+		read_errors.d_recoverable_errors.push_back(
+					GPlatesFileIO::ReadErrorOccurrence(
+						source,
+						location,
+						GPlatesFileIO::ReadErrors::InvalidOgrLongitude,
+						GPlatesFileIO::ReadErrors::GeometryIgnored));
+		// Increase precision to make sure numbers very slightly less/greater than -360.0/360.0
+		// don't get printed -360.0/360.0.
+		qDebug() << "Invalid longitude: " << qSetRealNumberPrecision(16) << x;
 		return false;
 	}
 
 	return true;
 }
+
 
 void
 GPlatesFileIO::OgrReader::read_file(
@@ -1577,13 +1635,17 @@ GPlatesFileIO::OgrReader::read_file(
 	QString filename = fileinfo.get_qfileinfo().fileName();
 
 	OgrReader reader;
-	if (!reader.open_file(absolute_path_filename)){
+	if (!reader.open_file(absolute_path_filename, read_errors))
+	{
 		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
 
 	if (!reader.check_file_format(read_errors)){
 		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}
+
+	reader.read_srs_and_set_transformation(file_ref,default_file_configuration);
+
 	reader.get_field_names(read_errors);
 
 	QString shapefile_xml_filename = OgrUtils::make_ogr_xml_filename(fileinfo.get_qfileinfo());
@@ -1673,14 +1735,11 @@ GPlatesFileIO::OgrReader::handle_point(
 		const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
 		const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location)
 {
-			OGRPoint *ogr_point = static_cast<OGRPoint*>(d_geometry_ptr);
-			double lat,lon;
-			lat = ogr_point->getY();
-			lon = ogr_point->getX();
-
-			
-			if (is_valid_shape_data(lat,lon,read_errors,source,location)){
-				GPlatesMaths::LatLonPoint llp(lat,lon);
+	OGRPoint *ogr_point = static_cast<OGRPoint*>(d_geometry_ptr);
+	double x = ogr_point->getX();
+	double y = ogr_point->getY();
+	if (transform_and_check_coords(x,y,read_errors,source,location)){
+		GPlatesMaths::LatLonPoint llp(y,x);
 				GPlatesMaths::PointOnSphere point = GPlatesMaths::make_point_on_sphere(llp);
 				try {
 					GPlatesModel::FeatureHandle::weak_ref feature =
@@ -1739,17 +1798,17 @@ GPlatesFileIO::OgrReader::handle_multi_point(
 
 		d_total_geometries += num_geometries;
 
-		std::list<GPlatesMaths::PointOnSphere> list_of_points;
+		std::vector<GPlatesMaths::PointOnSphere> list_of_points;
+		list_of_points.reserve(num_geometries);
 
 		for(int count = 0; count < num_geometries; count++)
 		{
-			OGRPoint* point = static_cast<OGRPoint*>(multi->getGeometryRef(count));
-			double lat,lon;
-			lat = point->getY();
-			lon = point->getX();
+			OGRPoint* ogr_point = static_cast<OGRPoint*>(multi->getGeometryRef(count));
+			double x = ogr_point->getX();
+			double y = ogr_point->getY();
 
-			if (is_valid_shape_data(lat,lon,read_errors,source,location)){
-				GPlatesMaths::LatLonPoint llp(lat,lon);
+			if (transform_and_check_coords(x,y,read_errors,source,location)){
+				GPlatesMaths::LatLonPoint llp(y,x);
 				GPlatesMaths::PointOnSphere p = GPlatesMaths::make_point_on_sphere(llp);
 				list_of_points.push_back(p);
 
@@ -1796,9 +1855,10 @@ GPlatesFileIO::OgrReader::handle_linestring(
 			const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location
 			)
 {
-	std::list<GPlatesMaths::PointOnSphere> feature_points;			
+	std::vector<GPlatesMaths::PointOnSphere> feature_points;
 	OGRLineString *linestring = static_cast<OGRLineString*>(d_geometry_ptr);
 	int num_points = linestring->getNumPoints();
+	feature_points.reserve(num_points);
 	d_total_geometries++;
 	if (num_points < 2){	
 		read_errors.d_recoverable_errors.push_back(
@@ -1810,12 +1870,12 @@ GPlatesFileIO::OgrReader::handle_linestring(
 			return;
 	}
 	int count;
-	double lon,lat;
+	double x,y;
 	for (count = 0; count < num_points; count ++){
-		lon = linestring->getX(count);
-		lat = linestring->getY(count);
-		if (is_valid_shape_data(lat,lon,read_errors,source,location)){
-			GPlatesMaths::LatLonPoint llp(lat,lon);
+		x = linestring->getX(count);
+		y = linestring->getY(count);
+		if (transform_and_check_coords(x,y,read_errors,source,location)){
+			GPlatesMaths::LatLonPoint llp(y,x);
 			feature_points.push_back(GPlatesMaths::make_point_on_sphere(llp));
 		}
 		else{
@@ -1888,10 +1948,11 @@ GPlatesFileIO::OgrReader::handle_multi_linestring(
 
 	for (int multiCount = 0; multiCount < num_geometries ; multiCount++){
 
-		std::list<GPlatesMaths::PointOnSphere> feature_points;
+		std::vector<GPlatesMaths::PointOnSphere> feature_points;
 		OGRLineString *linestring = static_cast<OGRLineString*>(multi->getGeometryRef(multiCount));
 
 		int num_points = linestring->getNumPoints();
+		feature_points.reserve(num_points);
 		if (num_points < 2){	
 			// FIXME: May want to treat this as a warning, and accept the single-point line. 
 			read_errors.d_recoverable_errors.push_back(
@@ -1903,13 +1964,13 @@ GPlatesFileIO::OgrReader::handle_multi_linestring(
 			continue;
 		}
 		int count;
-		double lon,lat;
+		double x,y;
 
 		for (count = 0; count < num_points; count++){
-			lon = linestring->getX(count);
-			lat = linestring->getY(count);
-			if (is_valid_shape_data(lat,lon,read_errors,source,location)){
-				GPlatesMaths::LatLonPoint llp(lat,lon);
+			x = linestring->getX(count);
+			y = linestring->getY(count);
+			if (transform_and_check_coords(x,y,read_errors,source,location)){
+				GPlatesMaths::LatLonPoint llp(y,x);
 				feature_points.push_back(GPlatesMaths::make_point_on_sphere(llp));
 			}
 			else{
@@ -1960,93 +2021,70 @@ GPlatesFileIO::OgrReader::handle_polygon(
 			const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
 			const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location)
 {
-	std::list<GPlatesMaths::PointOnSphere> feature_points;
 	OGRPolygon *polygon = static_cast<OGRPolygon*>(d_geometry_ptr);
 	d_total_geometries++;
 
-	OGRLinearRing *ring = polygon->getExteriorRing();
-	add_ring_to_points_list(ring,feature_points,read_errors,source,location);
+	// Read the exterior ring points.
+	std::vector<GPlatesMaths::PointOnSphere> exterior_ring_points;
+	OGRLinearRing *exterior_ring = polygon->getExteriorRing();
+	add_ring_to_points_list(exterior_ring, exterior_ring_points, read_errors, source, location);
 
-	GPlatesModel::FeatureHandle::weak_ref feature = create_feature(feature_type,collection,d_feature_type_string,d_feature_id);
-	add_attributes_to_feature(feature,read_errors,source,location);	
-
-	if (!feature_points.empty()){
-		try {
-			add_polygon_geometry_to_feature(feature,feature_points,property);
-			d_loaded_geometries++;
-			d_loaded_geometries++;
-		}
-		catch (std::exception &exc)
-		{
-			qWarning() << "GPlatesFileIO::OgrReader::handle_polygon: " << exc.what();
-
-			read_errors.d_recoverable_errors.push_back(
-				GPlatesFileIO::ReadErrorOccurrence(
-				source,
-				location,
-				GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
-				GPlatesFileIO::ReadErrors::GeometryIgnored));
-		}
-		catch (...)
-		{
-			qWarning() << "GPlatesFileIO::OgrReader::handle_polygon: Unknown error";
-
-			read_errors.d_recoverable_errors.push_back(
-				GPlatesFileIO::ReadErrorOccurrence(
-				source,
-				location,
-				GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
-				GPlatesFileIO::ReadErrors::GeometryIgnored));
-		}
-
-		d_loaded_geometries++;
-	}
-
-	int num_interior_rings = polygon->getNumInteriorRings();
-	if (num_interior_rings == 0){
+	// If there are no points in the exterior ring then we don't create a polygon feature.
+	if (exterior_ring_points.empty())
+	{
 		return;
 	}
 
+	std::list< std::vector<GPlatesMaths::PointOnSphere> > interior_rings;
+
+	// Read the points in the interior rings.
+	int num_interior_rings = polygon->getNumInteriorRings();
 	for (int ring_count = 0; ring_count < num_interior_rings; ring_count++)
 	{
 		//std::cerr << "Interior ring: " << ring_count << std::endl;
-		feature_points.clear();
 
-		ring = polygon->getInteriorRing(ring_count);
-		add_ring_to_points_list(ring,feature_points,read_errors,source,location);
+		std::vector<GPlatesMaths::PointOnSphere> interior_ring_points;
+		OGRLinearRing *interior_ring = polygon->getInteriorRing(ring_count);
+		add_ring_to_points_list(interior_ring, interior_ring_points, read_errors, source, location);
 
-		if (!feature_points.empty()){
-			try
-			{
-				add_polygon_geometry_to_feature(feature,feature_points,property);
-				d_loaded_geometries++;
-			}
-			catch (std::exception &exc)
-			{
-				qWarning() << "GPlatesFileIO::OgrReader::handle_polygon: " << exc.what();
-
-				read_errors.d_recoverable_errors.push_back(
-					GPlatesFileIO::ReadErrorOccurrence(
-					source,
-					location,
-					GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
-					GPlatesFileIO::ReadErrors::GeometryIgnored));
-			}
-			catch (...)
-			{
-				qWarning() << "GPlatesFileIO::OgrReader::handle_polygon: Unknown error";
-
-				read_errors.d_recoverable_errors.push_back(
-					GPlatesFileIO::ReadErrorOccurrence(
-					source,
-					location,
-					GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
-					GPlatesFileIO::ReadErrors::GeometryIgnored));
-			}
+		// Only add interior ring if it contains points.
+		if (!interior_ring_points.empty())
+		{
+			interior_rings.push_back(interior_ring_points);
 		}
 
 	} // loop over interior rings
 
+
+	try
+	{
+		GPlatesModel::FeatureHandle::weak_ref feature = create_polygon_feature_from_list(
+				feature_type, collection, exterior_ring_points, interior_rings, property);
+		add_attributes_to_feature(feature, read_errors, source, location);
+		d_loaded_geometries++;
+	}
+	catch (std::exception &exc)
+	{
+		qWarning() << "GPlatesFileIO::OgrReader::handle_polygon: " << exc.what();
+
+		read_errors.d_recoverable_errors.push_back(
+			GPlatesFileIO::ReadErrorOccurrence(
+			source,
+			location,
+			GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
+			GPlatesFileIO::ReadErrors::GeometryIgnored));
+	}
+	catch (...)
+	{
+		qWarning() << "GPlatesFileIO::OgrReader::handle_polygon: Unknown error";
+
+		read_errors.d_recoverable_errors.push_back(
+			GPlatesFileIO::ReadErrorOccurrence(
+			source,
+			location,
+			GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
+			GPlatesFileIO::ReadErrors::GeometryIgnored));
+	}
 }
 
 void
@@ -2077,87 +2115,69 @@ GPlatesFileIO::OgrReader::handle_multi_polygon(
 
 	d_total_geometries += num_geometries;
 
-	for (int multiCount = 0; multiCount < num_geometries ; multiCount++){
+	for (int multiCount = 0; multiCount < num_geometries ; multiCount++)
+	{
 		//std::cerr << "Polygon number: " << multiCount << std::endl;
-		std::list<GPlatesMaths::PointOnSphere> feature_points;
 		OGRPolygon *polygon = static_cast<OGRPolygon*>(multi->getGeometryRef(multiCount));
 
-		OGRLinearRing *ring = polygon->getExteriorRing();
+		// Read the exterior ring points.
+		std::vector<GPlatesMaths::PointOnSphere> exterior_ring_points;
+		OGRLinearRing *exterior_ring = polygon->getExteriorRing();
+		add_ring_to_points_list(exterior_ring, exterior_ring_points, read_errors, source, location);
 
-		add_ring_to_points_list(ring,feature_points,read_errors,source,location);
-
-		if (!feature_points.empty()){
-			try
-			{	
-				add_polygon_geometry_to_feature(feature,feature_points,property);
-				d_loaded_geometries++;
-			}
-			catch (std::exception &exc)
-			{
-				qWarning() << "GPlatesFileIO::OgrReader::handle_multi_polygon: " << exc.what();
-
-				read_errors.d_recoverable_errors.push_back(
-					GPlatesFileIO::ReadErrorOccurrence(
-					source,
-					location,
-					GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
-					GPlatesFileIO::ReadErrors::GeometryIgnored));
-			}
-			catch (...)
-			{
-				qWarning() << "GPlatesFileIO::OgrReader::handle_multi_polygon: Unknown error";
-
-				read_errors.d_recoverable_errors.push_back(
-					GPlatesFileIO::ReadErrorOccurrence(
-					source,
-					location,
-					GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
-					GPlatesFileIO::ReadErrors::GeometryIgnored));
-			}
+		// If there are no points in the exterior ring then we don't add a polygon geometry.
+		if (exterior_ring_points.empty())
+		{
+			continue;
 		}
 
-		int num_interior_rings = polygon->getNumInteriorRings();
+		std::list< std::vector<GPlatesMaths::PointOnSphere> > interior_rings;
 
+		// Read the points in the interior rings.
+		int num_interior_rings = polygon->getNumInteriorRings();
 		for (int ring_count = 0; ring_count < num_interior_rings; ring_count++)
 		{
-			//std::cerr << "Multi-polygon Interior ring: " << ring_count << std::endl;
-			feature_points.clear();
+			//std::cerr << "Interior ring: " << ring_count << std::endl;
 
-			ring = polygon->getInteriorRing(ring_count);
+			std::vector<GPlatesMaths::PointOnSphere> interior_ring_points;
+			OGRLinearRing *interior_ring = polygon->getInteriorRing(ring_count);
+			add_ring_to_points_list(interior_ring, interior_ring_points, read_errors, source, location);
 
-			add_ring_to_points_list(ring,feature_points,read_errors,source,location);
-
-			if (!feature_points.empty()){
-				try
-				{
-					add_polygon_geometry_to_feature(feature,feature_points,property);
-					d_loaded_geometries++;
-				}
-				catch (std::exception &exc)
-				{
-					qWarning() << "GPlatesFileIO::OgrReader::handle_multi_polygon: " << exc.what();
-
-					read_errors.d_recoverable_errors.push_back(
-						GPlatesFileIO::ReadErrorOccurrence(
-						source,
-						location,
-						GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
-						GPlatesFileIO::ReadErrors::GeometryIgnored));
-				}
-				catch (...)
-				{
-					qWarning() << "GPlatesFileIO::OgrReader::handle_multi_polygon: Unknown error";
-
-					read_errors.d_recoverable_errors.push_back(
-						GPlatesFileIO::ReadErrorOccurrence(
-						source,
-						location,
-						GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
-						GPlatesFileIO::ReadErrors::GeometryIgnored));
-				}
+			// Only add interior ring if it contains points.
+			if (!interior_ring_points.empty())
+			{
+				interior_rings.push_back(interior_ring_points);
 			}
 
 		} // loop over interior rings
+
+		try
+		{	
+			add_polygon_geometry_to_feature(feature, exterior_ring_points, interior_rings, property);
+			d_loaded_geometries++;
+		}
+		catch (std::exception &exc)
+		{
+			qWarning() << "GPlatesFileIO::OgrReader::handle_multi_polygon: " << exc.what();
+
+			read_errors.d_recoverable_errors.push_back(
+				GPlatesFileIO::ReadErrorOccurrence(
+				source,
+				location,
+				GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
+				GPlatesFileIO::ReadErrors::GeometryIgnored));
+		}
+		catch (...)
+		{
+			qWarning() << "GPlatesFileIO::OgrReader::handle_multi_polygon: Unknown error";
+
+			read_errors.d_recoverable_errors.push_back(
+				GPlatesFileIO::ReadErrorOccurrence(
+				source,
+				location,
+				GPlatesFileIO::ReadErrors::InvalidOgrPolygon,
+				GPlatesFileIO::ReadErrors::GeometryIgnored));
+		}
 
 	} // loop over multipolygons
 }
@@ -2173,11 +2193,57 @@ GPlatesFileIO::OgrReader::display_feature_counts()
 
 }
 
+void
+GPlatesFileIO::OgrReader::read_srs_and_set_transformation(
+		GPlatesFileIO::File::Reference &file_ref,
+		const GPlatesFileIO::FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_to_const_type
+		&default_ogr_file_configuration)
+{
+	// d_current_coordinate_transform is initialised to an identity transformation in the initialiser list, and
+	// is only overwritten here if we find an SRS which can be transformed to WGS84.
+
+	if (!d_layer_ptr)
+	{
+		return;
+	}
+
+	const OGRSpatialReference *ogr_srs = d_layer_ptr->GetSpatialRef();
+	if (ogr_srs)
+	{
+		d_source_srs = GPlatesPropertyValues::SpatialReferenceSystem::create(*ogr_srs);
+
+		// Transformation from provided srs (source) to WGS84 (target, default)
+		boost::optional<GPlatesPropertyValues::CoordinateTransformation::non_null_ptr_type> transform =
+				GPlatesPropertyValues::CoordinateTransformation::create(*d_source_srs);
+
+		if (transform)
+		{
+			d_current_coordinate_transformation = transform.get();
+		}
+
+		boost::optional<FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type> ogr_file_configuration =
+				FeatureCollectionFileFormat::OGRConfiguration::shared_ptr_type(
+					new FeatureCollectionFileFormat::OGRConfiguration(
+						*default_ogr_file_configuration));
+
+		if (ogr_file_configuration)
+		{
+			ogr_file_configuration.get()->set_original_file_srs(*d_source_srs);
+		}
+
+		FeatureCollectionFileFormat::Configuration::shared_ptr_to_const_type
+				file_configuration = ogr_file_configuration.get();
+
+		file_ref.set_file_info(file_ref.get_file_info(), file_configuration);
+
+	}
+}
+
 
 void
 GPlatesFileIO::OgrReader::add_ring_to_points_list(
 	OGRLinearRing *ring, 
-	std::list<GPlatesMaths::PointOnSphere> &feature_points,
+	std::vector<GPlatesMaths::PointOnSphere> &ring_points,
 	ReadErrorAccumulation &read_errors,
 	const boost::shared_ptr<GPlatesFileIO::DataSource> &source,
 	const boost::shared_ptr<GPlatesFileIO::LocationInDataSource> &location)
@@ -2190,9 +2256,9 @@ GPlatesFileIO::OgrReader::add_ring_to_points_list(
 
 	int num_points;
 	int count;
-	double lat,lon; 
+	double x,y;
 
-	feature_points.clear();
+	ring_points.clear();
 
 	num_points = ring->getNumPoints();
  
@@ -2211,16 +2277,18 @@ GPlatesFileIO::OgrReader::add_ring_to_points_list(
 			return;
 	}
 
+	ring_points.reserve(num_points);
+
 	for (count = 0; count < num_points; count++){
-		lon = ring->getX(count);
-		lat = ring->getY(count);
-		if (is_valid_shape_data(lat,lon,read_errors,source,location)){
-			GPlatesMaths::LatLonPoint llp(lat,lon);
-			feature_points.push_back(GPlatesMaths::make_point_on_sphere(llp));
+		x = ring->getX(count);
+		y = ring->getY(count);
+		if (transform_and_check_coords(x,y,read_errors,source,location)){
+			GPlatesMaths::LatLonPoint llp(y,x);
+			ring_points.push_back(GPlatesMaths::make_point_on_sphere(llp));
 		}
 		else{
-			// One of our points is invalid. We can't create a feature, so clear the std::list.
-			feature_points.clear();
+			// One of our points is invalid. We can't create a feature, so clear the std::vector.
+			ring_points.clear();
 			return;
 		}
 	}
@@ -2247,7 +2315,7 @@ GPlatesFileIO::OgrReader::read_field_names(
 	QString filename = fileinfo.get_qfileinfo().fileName();
 
 	OgrReader reader;
-	if (!reader.open_file(absolute_path_filename))
+	if (!reader.open_file(absolute_path_filename, read_errors))
 	{
 		throw ErrorOpeningFileForReadingException(GPLATES_EXCEPTION_SOURCE, filename);
 	}

@@ -33,6 +33,10 @@ DISABLE_MSVC_WARNING(4181)
 #include <boost/lambda/lambda.hpp>
 POP_MSVC_WARNINGS
 
+// Suppress compiler warning 4503 'decorated name length exceeded' in Visual Studio 2008.
+// It's too hard to avoid using the 'convert typedef to struct' trick.
+DISABLE_MSVC_WARNING(4503)
+
 #include "CitcomsResolvedTopologicalBoundaryExport.h"
 
 #include "CitcomsGMTFormatResolvedTopologicalBoundaryExport.h"
@@ -954,10 +958,12 @@ namespace GPlatesFileIO
 						// We're expecting a plate id as that will form part of the filename.
 						boost::optional<GPlatesModel::integer_plate_id_type> resolved_geom_plate_id =
 								GPlatesAppLogic::ReconstructionGeometryUtils::get_plate_id( resolved_geom);
-						if (resolved_geom_plate_id)
+						if (!resolved_geom_plate_id)
 						{
-							plate_id_resolved_geoms[resolved_geom_plate_id.get()].push_back(resolved_geom);
+							resolved_geom_plate_id = 0;
 						}
+
+						plate_id_resolved_geoms[resolved_geom_plate_id.get()].push_back(resolved_geom);
 					}
 
 					// Export each plate id file.
@@ -1108,10 +1114,12 @@ namespace GPlatesFileIO
 						// We're expecting a plate id as that will form part of the filename.
 						boost::optional<GPlatesModel::integer_plate_id_type> resolved_geom_plate_id =
 								GPlatesAppLogic::ReconstructionGeometryUtils::get_plate_id( resolved_geom);
-						if (resolved_geom_plate_id)
+						if (!resolved_geom_plate_id)
 						{
-							plate_id_resolved_geoms[resolved_geom_plate_id.get()].push_back(resolved_geom);
+							resolved_geom_plate_id = 0;
 						}
+
+						plate_id_resolved_geoms[resolved_geom_plate_id.get()].push_back(resolved_geom);
 					}
 
 					// Export each plate id file.
@@ -1281,10 +1289,12 @@ namespace GPlatesFileIO
 						// We're expecting a plate id as that will form part of the filename.
 						boost::optional<GPlatesModel::integer_plate_id_type> resolved_geom_plate_id =
 								GPlatesAppLogic::ReconstructionGeometryUtils::get_plate_id( resolved_geom);
-						if (resolved_geom_plate_id)
+						if (!resolved_geom_plate_id)
 						{
-							plate_id_resolved_geoms[resolved_geom_plate_id.get()].push_back(resolved_geom);
+							resolved_geom_plate_id = 0;
 						}
+
+						plate_id_resolved_geoms[resolved_geom_plate_id.get()].push_back(resolved_geom);
 					}
 
 					// Export each plate id file.

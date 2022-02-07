@@ -85,7 +85,7 @@ namespace GPlatesScribe
 		/**
 		 * Registers a class type.
 		 *
-		 * To register a class add an entry in 'ScribeExportRegistration.h' instead of calling this directly.
+		 * To register a class add an entry (see 'ScribeExportRegistration.h') instead of calling this directly.
 		 */
 		template <class Type>
 		const ExportClassType &
@@ -181,7 +181,7 @@ namespace GPlatesScribe
 								static_cast<const ExportClassType *>(NULL)/*dummy*/));
 
 		// If the class id name has already been inserted then this is OK since it probably
-		// means the client put two identical entries in 'ScribeExportRegistration.h'.
+		// means the client put two identical entries (see 'ScribeExportRegistration.h').
 		// However, throw an exception if the previously registered class id name has a different class type.
 		// This can occur if two different classes have been given the same class id name identifier string.
 		if (!class_id_name_inserted.second)

@@ -31,7 +31,6 @@
 
 namespace GPlatesAppLogic
 {
-	class DeformedFeatureGeometry;
 	class MultiPointVectorField;
 	class ReconstructedFeatureGeometry;
 	class ReconstructedFlowline;
@@ -45,6 +44,7 @@ namespace GPlatesAppLogic
 	class ResolvedTopologicalGeometry;
 	class ResolvedTopologicalLine;
 	class ResolvedTopologicalNetwork;
+	class TopologyReconstructedFeatureGeometry;
 }
 
 namespace GPlatesModel
@@ -128,14 +128,6 @@ namespace GPlatesModel
 		}
 
 		// Please keep these reconstruction geometry derivations ordered alphabetically.
-
-		/**
-		 * Override this function in your own derived class.
-		 */
-		virtual
-		void
-		visit_deformed_feature_geometry(
-				GPlatesAppLogic::DeformedFeatureGeometry &dfg);
 
 		/**
 		 * Override this function in your own derived class.
@@ -247,6 +239,14 @@ namespace GPlatesModel
 		visit_resolved_topological_network(
 				GPlatesAppLogic::ResolvedTopologicalNetwork &rtn)
 		{  }
+
+		/**
+		 * Override this function in your own derived class.
+		 */
+		virtual
+		void
+		visit_topology_reconstructed_feature_geometry(
+				GPlatesAppLogic::TopologyReconstructedFeatureGeometry &rtfg);
 
 #if 0
 		/**

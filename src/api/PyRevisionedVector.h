@@ -271,7 +271,7 @@ namespace GPlatesApi
 			 * An iterator that checks the index is dereferenceable - we don't use bp::iterator in order
 			 * to avoid issues with C++ iterators being invalidated from the C++ side and causing issues
 			 * on the python side (eg, removing container elements on the C++ side while iterating over
-			 * the container on the python side, for example, via a pygplates call back into the C++ code).
+			 * the container on the python side, for example, via a pyGPlates call back into the C++ code).
 			 */
 			class Iterator
 			{
@@ -509,7 +509,13 @@ namespace GPlatesApi
 			// Note: We don't docstring this - it's not an interface the python user needs to know about.
 			bp::class_<Iterator>(iterator_class_name.c_str(), bp::no_init)
 				.def("__iter__", &Iterator::self, bp::return_value_policy<bp::copy_non_const_reference>())
-				.def("next", &Iterator::next)
+				.def(
+#if PY_MAJOR_VERSION < 3
+						"next",
+#else
+						"__next__",
+#endif
+						&Iterator::next)
 			;
 
 			std::stringstream class_docstring_stream;
@@ -1259,7 +1265,13 @@ namespace GPlatesApi
 				// Note: We don't docstring this - it's not an interface the python user needs to know about.
 				bp::class_<iterator_type>(iterator_class_name.c_str(), bp::no_init)
 					.def("__iter__", &iterator_type::self, bp::return_value_policy<bp::copy_non_const_reference>())
-					.def("next", &iterator_type::next)
+					.def(
+#if PY_MAJOR_VERSION < 3
+							"next",
+#else
+							"__next__",
+#endif
+							&iterator_type::next)
 				;
 
 				// Add the 'def' methods to 'python_class'.

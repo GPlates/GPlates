@@ -386,34 +386,6 @@ GPlatesOpenGL::GLScalarField3D::is_supported(
 			return false;
 		}
 
-		GLShaderSource surface_fill_mask_vertex_shader_source(SHADER_VERSION);
-		surface_fill_mask_vertex_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
-		surface_fill_mask_vertex_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
-		surface_fill_mask_vertex_shader_source.add_code_segment_from_file(SURFACE_FILL_MASK_VERTEX_SHADER_SOURCE_FILE_NAME);
-
-		GLShaderSource surface_fill_mask_geometry_shader_source(SHADER_VERSION);
-		surface_fill_mask_geometry_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
-		surface_fill_mask_geometry_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
-		surface_fill_mask_geometry_shader_source.add_code_segment_from_file(SURFACE_FILL_MASK_GEOMETRY_SHADER_SOURCE_FILE_NAME);
-
-		GLShaderSource surface_fill_mask_fragment_shader_source(SHADER_VERSION);
-		surface_fill_mask_fragment_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
-		surface_fill_mask_fragment_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
-		surface_fill_mask_fragment_shader_source.add_code_segment_from_file(SURFACE_FILL_MASK_FRAGMENT_SHADER_SOURCE_FILE_NAME);
-
-		// Attempt to create the test shader program.
-		if (!GLShaderProgramUtils::compile_and_link_vertex_geometry_fragment_program(
-				renderer,
-				surface_fill_mask_vertex_shader_source,
-				surface_fill_mask_geometry_shader_source,
-				surface_fill_mask_fragment_shader_source,
-				GLShaderProgramUtils::GeometryShaderProgramParameters(
-						SURFACE_FILL_MASK_GEOMETRY_SHADER_MAX_OUTPUT_VERTICES)))
-		{
-			qWarning() << "3D scalar fields NOT supported by this graphics hardware - failed to compile surface fill mask shader program.";
-			return false;
-		}
-
 		// If we get this far then we have support.
 		supported = true;
 	}
@@ -498,6 +470,47 @@ GPlatesOpenGL::GLScalarField3D::supports_surface_fill_mask(
 			// Detach from the framebuffer object before it gets returned to the framebuffer object cache.
 			framebuffer_object->gl_detach_all(renderer);
 
+			return false;
+		}
+
+		//
+		// Try to compile our surface fill mask shader program.
+		//
+		// NOTE: Some Intel GPU systems are not respecting our "#version 120" GLSL shader declarations and
+		// hence preventing us from using deprecated functions like 'texture2D()' (which changed to 'texture()').
+		// In this case we'll turn off support for surface fill masks.
+		//
+		// TODO: May need to update OpenGL to use later GLSL versions, but this needs some care to
+		// make sure works on all hardware/platforms. May need this for MacOS X anyway which may lack support
+		// for compatibility profiles prior to "#version 150" (ie, OpenGL 3.2) in later MacOS versions -
+		// needs looking into.
+		//
+
+		GLShaderSource surface_fill_mask_vertex_shader_source(SHADER_VERSION);
+		surface_fill_mask_vertex_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		surface_fill_mask_vertex_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
+		surface_fill_mask_vertex_shader_source.add_code_segment_from_file(SURFACE_FILL_MASK_VERTEX_SHADER_SOURCE_FILE_NAME);
+
+		GLShaderSource surface_fill_mask_geometry_shader_source(SHADER_VERSION);
+		surface_fill_mask_geometry_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		surface_fill_mask_geometry_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
+		surface_fill_mask_geometry_shader_source.add_code_segment_from_file(SURFACE_FILL_MASK_GEOMETRY_SHADER_SOURCE_FILE_NAME);
+
+		GLShaderSource surface_fill_mask_fragment_shader_source(SHADER_VERSION);
+		surface_fill_mask_fragment_shader_source.add_code_segment_from_file(GLShaderProgramUtils::UTILS_SHADER_SOURCE_FILE_NAME);
+		surface_fill_mask_fragment_shader_source.add_code_segment_from_file(SCALAR_FIELD_UTILS_SOURCE_FILE_NAME);
+		surface_fill_mask_fragment_shader_source.add_code_segment_from_file(SURFACE_FILL_MASK_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+
+		// Attempt to create the test shader program.
+		if (!GLShaderProgramUtils::compile_and_link_vertex_geometry_fragment_program(
+				renderer,
+				surface_fill_mask_vertex_shader_source,
+				surface_fill_mask_geometry_shader_source,
+				surface_fill_mask_fragment_shader_source,
+				GLShaderProgramUtils::GeometryShaderProgramParameters(
+						SURFACE_FILL_MASK_GEOMETRY_SHADER_MAX_OUTPUT_VERTICES)))
+		{
+			qWarning() << "Scalar field surface polygon masking not supported: failed to compile surface fill mask shader program.";
 			return false;
 		}
 
@@ -1266,7 +1279,11 @@ GPlatesOpenGL::GLScalarField3D::render_surface_fill_mask(
 			// We're rendering to a render target so reset to the default OpenGL state...
 			true/*reset_to_default_state*/);
 
-	// We should always have a valid shader program but test just in case.
+	// We may not have a valid shader program if the geometry shader failed to compile for example.
+	//
+	// This seems to happen on some Intel GPU systems that are not respecting our "#version 120"
+	// GLSL shader declarations and hence preventing us from using deprecated functions like 'texture2D()'
+	// (which changed to 'texture()').
 	if (!d_render_surface_fill_mask_program_object)
 	{
 		return false;
@@ -1433,7 +1450,11 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_wall_depth_range(
 			surface_fill_mask_texture->get_width().get());
 #endif
 
-	// We should always have valid shader programs but test just in case.
+	// We may not have a valid shader program if the geometry shader failed to compile for example.
+	//
+	// This seems to happen on some Intel GPU systems that are not respecting our "#version 120"
+	// GLSL shader declarations and hence preventing us from using deprecated functions like 'texture2D()'
+	// (which changed to 'texture()').
 	if (!d_render_volume_fill_wall_depth_range_program_object)
 	{
 		return false;
@@ -1597,7 +1618,11 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_wall_surface_normal_and_depth
 	// GL_MODELVIEW and GL_PROJECTION matrices as well as the current viewport.
 	GLRenderer::StateBlockScope save_restore_state(renderer);
 
-	// We should always have valid shader programs but test just in case.
+	// We may not have a valid shader program if the geometry shader failed to compile for example.
+	//
+	// This seems to happen on some Intel GPU systems that are not respecting our "#version 120"
+	// GLSL shader declarations and hence preventing us from using deprecated functions like 'texture2D()'
+	// (which changed to 'texture()').
 	if (!d_render_volume_fill_wall_surface_normals_program_object)
 	{
 		return false;
@@ -1985,7 +2010,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_inner_sphere(
 			vertex_elements,
 			GPlatesGui::Colour::to_rgba8(GPlatesGui::Colour::get_white()),
 			recursion_depth_to_generate_mesh);
-	GPlatesMaths::HierarchicalTriangularMeshTraversal htm;
+	GPlatesMaths::SphericalSubdivision::HierarchicalTriangularMeshTraversal htm;
 	const unsigned int current_recursion_depth = 0;
 	htm.visit(sphere_mesh_builder, current_recursion_depth);
 
@@ -2177,7 +2202,7 @@ GPlatesOpenGL::GLScalarField3D::set_iso_surface_and_cross_sections_shader_common
 		// like unit 0. This avoids shader program validation failure when active shader samplers of
 		// different types reference the same texture unit. Currently happens on MacOS - probably
 		// because shader compiler does not detect that the sampler is not used and keeps it active.
-		d_render_iso_surface_program_object.get()->gl_uniform1i(
+		program_object->gl_uniform1i(
 				renderer,
 				"surface_occlusion_texture_sampler",
 				current_texture_unit);
@@ -2316,7 +2341,7 @@ GPlatesOpenGL::GLScalarField3D::allocate_streaming_vertex_buffers(
 	// Allocate memory for the streaming vertex buffer.
 	//
 
-	// Allocate the buffer data in the seed geometries vertex element buffer.
+	// Allocate the buffer data in the vertex element buffer.
 	d_streaming_vertex_element_buffer->get_buffer()->gl_buffer_data(
 			renderer,
 			GLBuffer::TARGET_ELEMENT_ARRAY_BUFFER,
@@ -2324,7 +2349,7 @@ GPlatesOpenGL::GLScalarField3D::allocate_streaming_vertex_buffers(
 			NULL,
 			GLBuffer::USAGE_STREAM_DRAW);
 
-	// Allocate the buffer data in the seed geometries vertex buffer.
+	// Allocate the buffer data in the vertex buffer.
 	d_streaming_vertex_buffer->get_buffer()->gl_buffer_data(
 			renderer,
 			GLBuffer::TARGET_ARRAY_BUFFER,
@@ -2915,7 +2940,7 @@ GPlatesOpenGL::GLScalarField3D::create_tile_meta_data_texture_array(
 			0, GL_RGB, GL_FLOAT, NULL);
 
 	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -2962,7 +2987,7 @@ GPlatesOpenGL::GLScalarField3D::create_field_data_texture_array(
 			0, GL_RGBA, GL_FLOAT, NULL);
 
 	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -3009,7 +3034,7 @@ GPlatesOpenGL::GLScalarField3D::create_mask_data_texture_array(
 			0, GL_RED, GL_FLOAT, NULL);
 
 	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -3057,7 +3082,7 @@ GPlatesOpenGL::GLScalarField3D::create_depth_radius_to_layer_texture(
 			0, GL_RED, GL_FLOAT, NULL);
 
 	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -3105,7 +3130,7 @@ GPlatesOpenGL::GLScalarField3D::create_colour_palette_texture(
 			0, GL_RGBA, GL_FLOAT, NULL);
 
 	// Check there are no OpenGL errors.
-	GLUtils::assert_no_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -3610,7 +3635,19 @@ void
 GPlatesOpenGL::GLScalarField3D::CrossSection2DGeometryOnSphereVisitor::visit_polygon_on_sphere(
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 {
-	render_cross_sections_2d(polygon_on_sphere->begin(), polygon_on_sphere->end());
+	// Exterior ring.
+	render_cross_sections_2d(
+			polygon_on_sphere->exterior_ring_begin(),
+			polygon_on_sphere->exterior_ring_end());
+
+	// Interior rings.
+ 	const unsigned int num_interior_rings = polygon_on_sphere->number_of_interior_rings();
+ 	for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+ 	{
+ 		render_cross_sections_2d(
+ 				polygon_on_sphere->interior_ring_begin(interior_ring_index),
+ 				polygon_on_sphere->interior_ring_end(interior_ring_index));
+ 	}
 }
 
 
@@ -3776,10 +3813,7 @@ void
 GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::visit_polygon_on_sphere(
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 {
-	render_surface_fill_mask(
-			polygon_on_sphere->vertex_begin(),
-			polygon_on_sphere->number_of_vertices(),
-			polygon_on_sphere->get_boundary_centroid());
+	render_surface_fill_mask<GPlatesMaths::PolygonOnSphere>(polygon_on_sphere);
 }
 
 
@@ -3789,20 +3823,15 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::visit_po
 {
 	if (d_include_polylines)
 	{
-		render_surface_fill_mask(
-				polyline_on_sphere->vertex_begin(),
-				polyline_on_sphere->number_of_vertices(),
-				polyline_on_sphere->get_centroid());
+		render_surface_fill_mask<GPlatesMaths::PolylineOnSphere>(polyline_on_sphere);
 	}
 }
 
 
-template <typename PointOnSphereForwardIter>
+template <typename LineGeometryType>
 void
 GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::render_surface_fill_mask(
-		const PointOnSphereForwardIter begin_points,
-		const unsigned int num_points,
-		const GPlatesMaths::UnitVector3D &centroid)
+		const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry)
 {
 	// This is an optimisation whereby if the entire geometry fits within the stream buffer
 	// (which is usually the case) then the geometry does not need to be re-streamed for each
@@ -3814,22 +3843,14 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::render_s
 	// polygon fill mask in the alpha channel.
 	d_renderer.gl_color_mask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
 
-	render_surface_fill_mask_geometry(
-			begin_points,
-			num_points,
-			centroid,
-			entire_geometry_is_in_stream_target);
+	render_surface_fill_mask_geometry<LineGeometryType>(line_geometry, entire_geometry_is_in_stream_target);
 
 	// Second render the fill geometry with disabled color writes to the Alpha channel.
 	// This leaves the alpha-blending factors for the RGB channels to accumulate the
 	// polygon fill mask (just rendered) from the alpha channel into the RGB channels.
 	d_renderer.gl_color_mask(GL_TRUE, GL_TRUE, GL_TRUE, GL_FALSE);
 
-	render_surface_fill_mask_geometry(
-			begin_points,
-			num_points,
-			centroid,
-			entire_geometry_is_in_stream_target);
+	render_surface_fill_mask_geometry<LineGeometryType>(line_geometry, entire_geometry_is_in_stream_target);
 
 	// Third render the fill geometry with disabled color writes to the RGB channels again.
 	// This effectively clears the alpha channel of the current polygon fill mask in preparation
@@ -3840,20 +3861,14 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::render_s
 	// (two times an odd or even number is an even number) resulting in 0 for all pixels (in alpha channel).
 	d_renderer.gl_color_mask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
 
-	render_surface_fill_mask_geometry(
-			begin_points,
-			num_points,
-			centroid,
-			entire_geometry_is_in_stream_target);
+	render_surface_fill_mask_geometry<LineGeometryType>(line_geometry, entire_geometry_is_in_stream_target);
 }
 
 
-template <typename PointOnSphereForwardIter>
+template <typename LineGeometryType>
 void
 GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::render_surface_fill_mask_geometry(
-		const PointOnSphereForwardIter begin_points,
-		const unsigned int num_points,
-		const GPlatesMaths::UnitVector3D &centroid,
+		const typename LineGeometryType::non_null_ptr_to_const_type &line_geometry,
 		bool &entire_geometry_is_in_stream_target)
 {
 	// If the entire geometry is already in the stream then we only need to issue a draw call.
@@ -3878,134 +3893,7 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::render_s
 			d_map_vertex_buffer_scope,
 			MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER);
 
-	// See if there's enough space remaining in the streaming buffers to stream the entire geometry.
-	if (d_stream_primitives.begin_primitive(
-			num_points + 2/*max_num_vertices*/,
-			3 * num_points/*max_num_vertex_elements*/))
-	{
-		//
-		// Here we use the more efficient path of generating the triangle fan mesh ourselves.
-		// The price we pay is having to be more explicit in how we submit the triangle fan.
-		//
-
-		// Vertex element relative to the beginning of the primitive (not beginning of buffer).
-		streaming_vertex_element_type vertex_index = 0;
-
-		SurfaceFillMaskVertex vertex;
-
-		// The first vertex is the polygon centroid.
-		vertex.surface_point[0] = centroid.x().dval();
-		vertex.surface_point[1] = centroid.y().dval();
-		vertex.surface_point[2] = centroid.z().dval();
-		d_stream_primitives.add_vertex(vertex);
-		++vertex_index;
-
-		// The remaining vertices form the boundary.
-		PointOnSphereForwardIter points_iter = begin_points;
-		for (unsigned int n = 0; n < num_points; ++n, ++vertex_index, ++points_iter)
-		{
-			const GPlatesMaths::UnitVector3D &point_position = points_iter->position_vector();
-
-			vertex.surface_point[0] = point_position.x().dval();
-			vertex.surface_point[1] = point_position.y().dval();
-			vertex.surface_point[2] = point_position.z().dval();
-			d_stream_primitives.add_vertex(vertex);
-
-			d_stream_primitives.add_vertex_element(0); // Centroid.
-			d_stream_primitives.add_vertex_element(vertex_index); // Current boundary point.
-			d_stream_primitives.add_vertex_element(vertex_index + 1); // Next boundary point.
-		}
-
-		// Wraparound back to the first boundary vertex to close off the polygon.
-		const GPlatesMaths::UnitVector3D &first_point_position = begin_points->position_vector();
-		vertex.surface_point[0] = first_point_position.x().dval();
-		vertex.surface_point[1] = first_point_position.y().dval();
-		vertex.surface_point[2] = first_point_position.z().dval();
-		d_stream_primitives.add_vertex(vertex);
-
-		d_stream_primitives.end_primitive();
-
-		// The entire geometry is now in the stream buffer.
-		entire_geometry_is_in_stream_target = true;
-	}
-	else // Not enough space remaining in streaming buffer for the entire geometry...
-	{
-		//
-		// Here we use the less efficient path of rendering a triangle fan in order to have the
-		// stream take of copying the fan apex vertex whenever the stream fills up mid-triangle-fan.
-		// It also makes things easier by allowing us to simply add vertices.
-		//
-
-		// Render each polygon as a triangle fan with the fan apex being the polygon centroid.
-		surface_fill_mask_stream_primitives_type::TriangleFans fill_stream_triangle_fans(d_stream);
-
-		fill_stream_triangle_fans.begin_triangle_fan();
-
-		SurfaceFillMaskVertex vertex;
-
-		// The first vertex is the polygon centroid.
-		vertex.surface_point[0] = centroid.x().dval();
-		vertex.surface_point[1] = centroid.y().dval();
-		vertex.surface_point[2] = centroid.z().dval();
-		if (!fill_stream_triangle_fans.add_vertex(vertex))
-		{
-			suspend_render_resume_vertex_array_streaming<SurfaceFillMaskVertex, streaming_vertex_element_type>(
-					d_renderer,
-					d_stream_target,
-					d_map_vertex_element_buffer_scope,
-					MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-					d_map_vertex_buffer_scope,
-					MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-					d_vertex_array,
-					GL_TRIANGLES);
-			fill_stream_triangle_fans.add_vertex(vertex);
-		}
-
-		// The remaining vertices form the boundary.
-		PointOnSphereForwardIter points_iter = begin_points;
-		for (unsigned int n = 0; n < num_points; ++n, ++points_iter)
-		{
-			const GPlatesMaths::UnitVector3D &point_position = points_iter->position_vector();
-
-			vertex.surface_point[0] = point_position.x().dval();
-			vertex.surface_point[1] = point_position.y().dval();
-			vertex.surface_point[2] = point_position.z().dval();
-			if (!fill_stream_triangle_fans.add_vertex(vertex))
-			{
-				suspend_render_resume_vertex_array_streaming<SurfaceFillMaskVertex, streaming_vertex_element_type>(
-						d_renderer,
-						d_stream_target,
-						d_map_vertex_element_buffer_scope,
-						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-						d_map_vertex_buffer_scope,
-						MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-						d_vertex_array,
-						GL_TRIANGLES);
-				fill_stream_triangle_fans.add_vertex(vertex);
-			}
-		}
-
-		// Wraparound back to the first polygon vertex to close off the polygon.
-		const GPlatesMaths::UnitVector3D &first_point_position = begin_points->position_vector();
-		vertex.surface_point[0] = first_point_position.x().dval();
-		vertex.surface_point[1] = first_point_position.y().dval();
-		vertex.surface_point[2] = first_point_position.z().dval();
-		if (!fill_stream_triangle_fans.add_vertex(vertex))
-		{
-			suspend_render_resume_vertex_array_streaming<SurfaceFillMaskVertex, streaming_vertex_element_type>(
-					d_renderer,
-					d_stream_target,
-					d_map_vertex_element_buffer_scope,
-					MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
-					d_map_vertex_buffer_scope,
-					MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
-					d_vertex_array,
-					GL_TRIANGLES);
-			fill_stream_triangle_fans.add_vertex(vertex);
-		}
-
-		fill_stream_triangle_fans.end_triangle_fan();
-	}
+	stream_surface_fill_mask_geometry(line_geometry, entire_geometry_is_in_stream_target);
 
 	// Stop streaming the current surface fill mask geometry.
 	end_vertex_array_streaming<SurfaceFillMaskVertex, streaming_vertex_element_type>(
@@ -4020,6 +3908,247 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::render_s
 			d_stream_target,
 			d_vertex_array,
 			GL_TRIANGLES);
+}
+
+
+void
+GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::stream_surface_fill_mask_geometry(
+		const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type &polyline,
+		bool &entire_geometry_is_in_stream_target)
+{
+	// Polyline is rendered as a triangle fan which has an extra vertex at centroid and to close off ring.
+	const unsigned int num_vertices = polyline->number_of_vertices() + 2;
+	const unsigned int num_vertex_elements = 3 * polyline->number_of_vertices();
+
+	// See if there's enough space remaining in the streaming buffers to stream the entire polyline.
+	if (d_stream_primitives.begin_primitive(
+			num_vertices/*max_num_vertices*/,
+			num_vertex_elements/*max_num_vertex_elements*/))
+	{
+		// Vertex element relative to the beginning of the primitive (not beginning of buffer).
+		streaming_vertex_element_type vertex_index = 0;
+
+		stream_surface_fill_mask_ring_as_primitive(
+				polyline->vertex_begin(),
+				polyline->number_of_vertices(),
+				polyline->get_centroid(),
+				vertex_index);
+
+		d_stream_primitives.end_primitive();
+
+		// The entire polyline is now in the stream buffer.
+		entire_geometry_is_in_stream_target = true;
+	}
+	else // Not enough space remaining in streaming buffer for the entire polyline...
+	{
+		stream_surface_fill_mask_ring_as_triangle_fan(
+				polyline->vertex_begin(),
+				polyline->number_of_vertices(),
+				polyline->get_centroid());
+	}
+}
+
+
+void
+GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::stream_surface_fill_mask_geometry(
+		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &polygon,
+		bool &entire_geometry_is_in_stream_target)
+{
+	const unsigned int num_vertices_in_all_rings = polygon->number_of_vertices_in_all_rings();
+	const unsigned int num_interior_rings = polygon->number_of_interior_rings();
+
+	// Each ring in the polygon is rendered as a triangle fan which has an extra vertex at centroid
+	// and to close off ring (although the ring is already closed, but we are using the same code
+	// used for a polyline which does require an extra vertex to close the ring).
+	const unsigned int num_rings = 1 + num_interior_rings;
+	const unsigned int num_vertices = num_vertices_in_all_rings + 2 * num_rings;
+	const unsigned int num_vertex_elements = 3 * num_vertices_in_all_rings;
+
+	// See if there's enough space remaining in the streaming buffers to stream the entire polygon.
+	if (d_stream_primitives.begin_primitive(
+			num_vertices/*max_num_vertices*/,
+			num_vertex_elements/*max_num_vertex_elements*/))
+	{
+		// Vertex element relative to the beginning of the primitive (not beginning of buffer).
+		streaming_vertex_element_type vertex_index = 0;
+
+		// Exterior ring.
+		stream_surface_fill_mask_ring_as_primitive(
+				polygon->exterior_ring_vertex_begin(),
+				polygon->number_of_vertices_in_exterior_ring(),
+				polygon->get_boundary_centroid(),
+				vertex_index);
+
+		// Interior rings.
+		//
+		// Note that the interior rings make holes in the exterior ring's surface mask.
+		for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+		{
+			stream_surface_fill_mask_ring_as_primitive(
+					polygon->interior_ring_vertex_begin(interior_ring_index),
+					polygon->number_of_vertices_in_interior_ring(interior_ring_index),
+					polygon->get_boundary_centroid(),
+					vertex_index);
+		}
+
+		d_stream_primitives.end_primitive();
+
+		// The entire polygon is now in the stream buffer.
+		entire_geometry_is_in_stream_target = true;
+	}
+	else // Not enough space remaining in streaming buffer for the entire polygon...
+	{
+		// Exterior ring.
+		stream_surface_fill_mask_ring_as_triangle_fan(
+				polygon->exterior_ring_vertex_begin(),
+				polygon->number_of_vertices_in_exterior_ring(),
+				polygon->get_boundary_centroid());
+
+		// Interior rings.
+		//
+		// Note that the interior rings make holes in the exterior ring's surface mask.
+		for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+		{
+			stream_surface_fill_mask_ring_as_triangle_fan(
+					polygon->interior_ring_vertex_begin(interior_ring_index),
+					polygon->number_of_vertices_in_interior_ring(interior_ring_index),
+					polygon->get_boundary_centroid());
+		}
+	}
+}
+
+
+template <typename PointOnSphereForwardIter>
+void
+GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::stream_surface_fill_mask_ring_as_primitive(
+		const PointOnSphereForwardIter begin_points,
+		const unsigned int num_points,
+		const GPlatesMaths::UnitVector3D &centroid,
+		streaming_vertex_element_type &vertex_index)
+{
+	//
+	// Here we use the more efficient path of generating the triangle fan mesh ourselves.
+	// The price we pay is having to be more explicit in how we submit the triangle fan.
+	//
+
+	SurfaceFillMaskVertex vertex;
+
+	// The first vertex is the polygon centroid.
+	const streaming_vertex_element_type centroid_vertex_index = vertex_index;
+	vertex.surface_point[0] = centroid.x().dval();
+	vertex.surface_point[1] = centroid.y().dval();
+	vertex.surface_point[2] = centroid.z().dval();
+	d_stream_primitives.add_vertex(vertex);
+	++vertex_index;
+
+	// The remaining vertices form the boundary.
+	PointOnSphereForwardIter points_iter = begin_points;
+	for (unsigned int n = 0; n < num_points; ++n, ++vertex_index, ++points_iter)
+	{
+		const GPlatesMaths::UnitVector3D &point_position = points_iter->position_vector();
+
+		vertex.surface_point[0] = point_position.x().dval();
+		vertex.surface_point[1] = point_position.y().dval();
+		vertex.surface_point[2] = point_position.z().dval();
+		d_stream_primitives.add_vertex(vertex);
+
+		d_stream_primitives.add_vertex_element(centroid_vertex_index); // Centroid.
+		d_stream_primitives.add_vertex_element(vertex_index); // Current boundary point.
+		d_stream_primitives.add_vertex_element(vertex_index + 1); // Next boundary point.
+	}
+
+	// Wraparound back to the first boundary vertex to close off the ring.
+	const GPlatesMaths::UnitVector3D &first_point_position = begin_points->position_vector();
+	vertex.surface_point[0] = first_point_position.x().dval();
+	vertex.surface_point[1] = first_point_position.y().dval();
+	vertex.surface_point[2] = first_point_position.z().dval();
+	d_stream_primitives.add_vertex(vertex);
+	++vertex_index;
+}
+
+
+template <typename PointOnSphereForwardIter>
+void
+GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::stream_surface_fill_mask_ring_as_triangle_fan(
+		const PointOnSphereForwardIter begin_points,
+		const unsigned int num_points,
+		const GPlatesMaths::UnitVector3D &centroid)
+{
+	//
+	// Here we use the less efficient path of rendering a triangle fan in order to have the
+	// stream take of copying the fan apex vertex whenever the stream fills up mid-triangle-fan.
+	// It also makes things easier by allowing us to simply add vertices.
+	//
+
+	// Render each polygon as a triangle fan with the fan apex being the polygon centroid.
+	surface_fill_mask_stream_primitives_type::TriangleFans fill_stream_triangle_fans(d_stream);
+
+	fill_stream_triangle_fans.begin_triangle_fan();
+
+	SurfaceFillMaskVertex vertex;
+
+	// The first vertex is the polygon centroid.
+	vertex.surface_point[0] = centroid.x().dval();
+	vertex.surface_point[1] = centroid.y().dval();
+	vertex.surface_point[2] = centroid.z().dval();
+	if (!fill_stream_triangle_fans.add_vertex(vertex))
+	{
+		suspend_render_resume_vertex_array_streaming<SurfaceFillMaskVertex, streaming_vertex_element_type>(
+				d_renderer,
+				d_stream_target,
+				d_map_vertex_element_buffer_scope,
+				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+				d_map_vertex_buffer_scope,
+				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
+				d_vertex_array,
+				GL_TRIANGLES);
+		fill_stream_triangle_fans.add_vertex(vertex);
+	}
+
+	// The remaining vertices form the boundary.
+	PointOnSphereForwardIter points_iter = begin_points;
+	for (unsigned int n = 0; n < num_points; ++n, ++points_iter)
+	{
+		const GPlatesMaths::UnitVector3D &point_position = points_iter->position_vector();
+
+		vertex.surface_point[0] = point_position.x().dval();
+		vertex.surface_point[1] = point_position.y().dval();
+		vertex.surface_point[2] = point_position.z().dval();
+		if (!fill_stream_triangle_fans.add_vertex(vertex))
+		{
+			suspend_render_resume_vertex_array_streaming<SurfaceFillMaskVertex, streaming_vertex_element_type>(
+					d_renderer,
+					d_stream_target,
+					d_map_vertex_element_buffer_scope,
+					MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+					d_map_vertex_buffer_scope,
+					MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
+					d_vertex_array,
+					GL_TRIANGLES);
+			fill_stream_triangle_fans.add_vertex(vertex);
+		}
+	}
+
+	// Wraparound back to the first polygon vertex to close off the polygon.
+	const GPlatesMaths::UnitVector3D &first_point_position = begin_points->position_vector();
+	vertex.surface_point[0] = first_point_position.x().dval();
+	vertex.surface_point[1] = first_point_position.y().dval();
+	vertex.surface_point[2] = first_point_position.z().dval();
+	if (!fill_stream_triangle_fans.add_vertex(vertex))
+	{
+		suspend_render_resume_vertex_array_streaming<SurfaceFillMaskVertex, streaming_vertex_element_type>(
+				d_renderer,
+				d_stream_target,
+				d_map_vertex_element_buffer_scope,
+				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_ELEMENT_BUFFER,
+				d_map_vertex_buffer_scope,
+				MINIMUM_BYTES_TO_STREAM_IN_VERTEX_BUFFER,
+				d_vertex_array,
+				GL_TRIANGLES);
+		fill_stream_triangle_fans.add_vertex(vertex);
+	}
+
+	fill_stream_triangle_fans.end_triangle_fan();
 }
 
 
@@ -4091,10 +4220,21 @@ void
 GPlatesOpenGL::GLScalarField3D::VolumeFillBoundaryGeometryOnSphereVisitor::visit_polygon_on_sphere(
 		GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
 {
+	// Exterior ring.
 	render_volume_fill_boundary(
-			polygon_on_sphere->begin(),
-			polygon_on_sphere->end(),
+			polygon_on_sphere->exterior_ring_begin(),
+			polygon_on_sphere->exterior_ring_end(),
 			polygon_on_sphere->get_boundary_centroid());
+
+	// Interior rings.
+ 	const unsigned int num_interior_rings = polygon_on_sphere->number_of_interior_rings();
+ 	for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+ 	{
+		render_volume_fill_boundary(
+				polygon_on_sphere->interior_ring_begin(interior_ring_index),
+				polygon_on_sphere->interior_ring_end(interior_ring_index),
+				polygon_on_sphere->get_boundary_centroid());
+ 	}
 }
 
 
@@ -4245,7 +4385,7 @@ GPlatesOpenGL::GLScalarField3D::SphereMeshBuilder::SphereMeshBuilder(
 
 void
 GPlatesOpenGL::GLScalarField3D::SphereMeshBuilder::visit(
-		const GPlatesMaths::HierarchicalTriangularMeshTraversal::Triangle &triangle,
+		const GPlatesMaths::SphericalSubdivision::HierarchicalTriangularMeshTraversal::Triangle &triangle,
 		const unsigned int &recursion_depth)
 {
 	// If we're at the correct depth then add the triangle to our mesh.

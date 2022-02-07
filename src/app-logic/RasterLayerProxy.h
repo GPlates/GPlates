@@ -27,13 +27,15 @@
 #define GPLATES_APP_LOGIC_RASTERLAYERPROXY_H
 
 #include <utility>
+#include <vector>
 #include <boost/optional.hpp>
 
 #include "LayerProxy.h"
 #include "LayerProxyUtils.h"
-#include "RasterLayerTask.h"
+#include "RasterLayerParams.h"
 #include "ReconstructLayerProxy.h"
-#include "ResolvedRaster.h"
+
+#include "global/PointerTraits.h"
 
 #include "maths/types.h"
 
@@ -67,6 +69,8 @@ namespace GPlatesOpenGL
 
 namespace GPlatesAppLogic
 {
+	class ResolvedRaster;
+
 	/**
 	 * A layer proxy for resolving, and optionally reconstructing, a raster.
 	 */
@@ -212,18 +216,15 @@ namespace GPlatesAppLogic
 		 *
 		 * Returns boost::none if there is no input raster feature connected or it cannot be resolved.
 		 */
-		boost::optional<ResolvedRaster::non_null_ptr_type>
-		get_resolved_raster()
-		{
-			return get_resolved_raster(d_current_reconstruction_time);
-		}
+		boost::optional<GPlatesGlobal::PointerTraits<ResolvedRaster>::non_null_ptr_type>
+		get_resolved_raster();
 
 		/**
 		 * Returns the resolved raster for the specified time.
 		 *
 		 * Returns boost::none if there is no input raster feature connected or it cannot be resolved.
 		 */
-		boost::optional<ResolvedRaster::non_null_ptr_type>
+		boost::optional<GPlatesGlobal::PointerTraits<ResolvedRaster>::non_null_ptr_type>
 		get_resolved_raster(
 				const double &reconstruction_time);
 
@@ -509,8 +510,15 @@ namespace GPlatesAppLogic
 		 * Adds the specified reconstructed polygons layer proxy.
 		 */
 		void
-		set_current_reconstructed_polygons_layer_proxy(
-				boost::optional<ReconstructLayerProxy::non_null_ptr_type> reconstructed_polygons_layer_proxy);
+		add_current_reconstructed_polygons_layer_proxy(
+				const ReconstructLayerProxy::non_null_ptr_type &reconstructed_polygons_layer_proxy);
+
+		/**
+		 * Removes the specified reconstructed polygons layer proxy.
+		 */
+		void
+		remove_current_reconstructed_polygons_layer_proxy(
+				const ReconstructLayerProxy::non_null_ptr_type &reconstructed_polygons_layer_proxy);
 
 		/**
 		 * Set the age grid raster layer proxy.
@@ -532,7 +540,7 @@ namespace GPlatesAppLogic
 		void
 		set_current_raster_feature(
 				boost::optional<GPlatesModel::FeatureHandle::weak_ref> raster_feature,
-				const RasterLayerTask::Params &raster_params);
+				const RasterLayerParams &raster_params);
 
 
 		/**
@@ -540,14 +548,14 @@ namespace GPlatesAppLogic
 		 */
 		void
 		set_current_raster_band_name(
-				const RasterLayerTask::Params &raster_params);
+				const RasterLayerParams &raster_params);
 
 		/**
 		 * The raster feature has been modified.
 		 */
 		void
 		modified_raster_feature(
-				const RasterLayerTask::Params &raster_params);
+				const RasterLayerParams &raster_params);
 
 	private:
 		/**
@@ -595,7 +603,7 @@ namespace GPlatesAppLogic
 				cached_data_reconstructed_raster = boost::none;
 
 				// Invalidate structures from other layers used to reconstruct the raster.
-				cached_reconstructed_polygon_meshes = boost::none;
+				cached_reconstructed_polygon_meshes.clear();
 				cached_age_grid_mask_cube_raster = boost::none;
 			}
 
@@ -625,9 +633,9 @@ namespace GPlatesAppLogic
 			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRaster::non_null_ptr_type> cached_data_cube_raster;
 
 			/**
-			 * Cached OpenGL reconstructed polygon meshes (from another layer) for reconstructing the raster.
+			 * Cached OpenGL reconstructed polygon meshes (from other layers) for reconstructing the raster.
 			 */
-			boost::optional<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type>
+			std::vector<GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::non_null_ptr_type>
 					cached_reconstructed_polygon_meshes;
 
 			/**
@@ -724,7 +732,7 @@ namespace GPlatesAppLogic
 		/**
 		 * The input reconstructed polygons, if any connected to our input.
 		 */
-		LayerProxyUtils::OptionalInputLayerProxy<ReconstructLayerProxy> d_current_reconstructed_polygons_layer_proxy;
+		LayerProxyUtils::InputLayerProxySequence<ReconstructLayerProxy> d_current_reconstructed_polygons_layer_proxies;
 
 		/**
 		 * Optional age grid raster input.
@@ -823,7 +831,7 @@ namespace GPlatesAppLogic
 		//! Sets some raster parameters.
 		void
 		set_raster_params(
-				const RasterLayerTask::Params &raster_params);
+				const RasterLayerParams &raster_params);
 	};
 }
 

@@ -35,14 +35,6 @@
 #include "global/GPlatesAssert.h"
 
 
-GPlatesMaths::Vector3D::Vector3D(
-		const UnitVector3D &u) :
-	d_x(u.x()),
-	d_y(u.y()),
-	d_z(u.z())
-{  }
-
-
 bool
 GPlatesMaths::Vector3D::is_zero_magnitude() const
 {

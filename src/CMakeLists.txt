@@ -7,9 +7,17 @@ endforeach(lib)
 # The following Boost libraries are both required and dynamically linked.
 set(Boost_USE_STATIC_LIBS FALSE)
 set(boost_components program_options thread system)
+
 if(NOT GPLATES_NO_PYTHON)
-	set(boost_components ${boost_components} python)
+
+	if(NOT GPLATES_PYTHON_3)
+        set(boost_components ${boost_components} python)
+    else(NOT GPLATES_PYTHON_3)
+        set(boost_components ${boost_components} python3)
+    endif(NOT GPLATES_PYTHON_3)
+
 endif(NOT GPLATES_NO_PYTHON)
+
 find_package("Boost" 1.34.1 REQUIRED ${boost_components})
 
 if(NOT GPLATES_NO_PYTHON)
@@ -92,8 +100,10 @@ if ( NOT WIN32 )
 	# type of build (Release/Debug).
 	# The two following lines scrub out the -g and -O<something> from
 	# CMAKE_CXX_FLAGS but leave the good stuff (e.g. -frounding-math).
-	string(REGEX REPLACE "-g" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-	string(REGEX REPLACE "-O." "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+	if (CMAKE_CXX_FLAGS)
+		string(REGEX REPLACE "-g" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+		string(REGEX REPLACE "-O." "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+	endif (CMAKE_CXX_FLAGS)
 
 	# Valgrind doesn't emulate the FPU properly, so CGAL will complain about
 	# incorrect rounding when run under Valgrind (this is even if we compile
@@ -290,21 +300,17 @@ file(WRITE ${GPlates_EXTRACT_SVN_INFO_OUTPUT_PATH} "")
 #
 # The 'qt-widgets' target generates header files so it should get built before anything that depends on it.
 #
-# NOTE: there's a bug in CMake 2.4.6 in 'add_dependencies'. 
-#   It seems that subdirs are built in the order they are listed provided you don't run a parallel build (eg, 'make -j').
-if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.4.6")
-    add_dependencies(canvas-tools qt-widgets)
-    add_dependencies(view-operations qt-widgets)
-    add_dependencies(presentation qt-widgets)
-    add_dependencies(gui qt-widgets)
-	add_dependencies(utils qt-widgets) #Need more investigation
+add_dependencies(canvas-tools qt-widgets)
+add_dependencies(view-operations qt-widgets)
+add_dependencies(presentation qt-widgets)
+add_dependencies(gui qt-widgets)
+add_dependencies(utils qt-widgets) #Need more investigation
 if(NOT GPLATES_NO_PYTHON)
-	add_dependencies(api gui)
+add_dependencies(api gui)
 endif(NOT GPLATES_NO_PYTHON)
-    add_dependencies(global run-gplates-extract-svn-info)
-	# because gplates-extract-svn-info executable generates global/SubversionInfo.cc
-    #add_dependencies(qt-widgets qt-resources)
-endif ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}.${CMAKE_PATCH_VERSION}" STRGREATER "2.4.6")
+add_dependencies(global run-gplates-extract-svn-info)
+# because gplates-extract-svn-info executable generates global/SubversionInfo.cc
+#add_dependencies(qt-widgets qt-resources)
 
 
 #

@@ -99,42 +99,45 @@ namespace GPlatesMaths
 
 template <typename PointOnSphereForwardIter>
 void
-GPlatesMaths::PolygonFan::initialise(
-		const PointOnSphereForwardIter polygon_points_begin,
-		const unsigned int num_points,
+GPlatesMaths::PolygonFan::add_fan_ring(
+		const PointOnSphereForwardIter ring_points_begin,
+		const unsigned int num_ring_points,
 		const GPlatesMaths::UnitVector3D &centroid)
 {
-	// Need at least three points for a polygon.
+	// Need at least three points for a polygon ring.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			num_points >= 3,
+			num_ring_points >= 3,
 			GPLATES_ASSERTION_SOURCE);
 
-	d_triangles.reserve(num_points);
-	d_vertices.reserve(num_points + 2); // Includes the fan apex vertex and polygon-closing vertex.
+	d_triangles.reserve(d_triangles.size() + num_ring_points);
+	// Includes the fan apex vertex and ring-closing vertex...
+	d_vertices.reserve(d_vertices.size() + num_ring_points + 2);
 
-	unsigned int vertex_index = 0;
+	const unsigned int centroid_vertex_index = d_vertices.size();
+
+	unsigned int vertex_index = centroid_vertex_index;
 
 	// First (apex) vertex is the centroid.
 	d_vertices.push_back(Vertex(centroid));
 	++vertex_index;
 
-	// The remaining vertices form the boundary.
-	PointOnSphereForwardIter polygon_points_iter = polygon_points_begin;
-	for (unsigned int n = 0; n < num_points; ++n, ++vertex_index, ++polygon_points_iter)
+	// The remaining vertices form the ring boundary.
+	PointOnSphereForwardIter ring_points_iter = ring_points_begin;
+	for (unsigned int n = 0; n < num_ring_points; ++n, ++vertex_index, ++ring_points_iter)
 	{
-		d_vertices.push_back(Vertex(polygon_points_iter->position_vector()));
+		d_vertices.push_back(Vertex(ring_points_iter->position_vector()));
 
 		Triangle triangle;
 
-		triangle.d_vertex_indices[0] = 0; // Centroid.
-		triangle.d_vertex_indices[1] = vertex_index; // Current boundary point.
-		triangle.d_vertex_indices[2] = vertex_index + 1; // Next boundary point.
+		triangle.d_vertex_indices[0] = centroid_vertex_index; // Centroid.
+		triangle.d_vertex_indices[1] = vertex_index; // Current ring boundary point.
+		triangle.d_vertex_indices[2] = vertex_index + 1; // Next ring boundary point.
 
 		d_triangles.push_back(triangle);
 	}
 
-	// Wraparound back to the first boundary vertex to close off the polygon.
-	d_vertices.push_back(Vertex(polygon_points_begin->position_vector()));
+	// Wraparound back to the first ring boundary vertex to close off the ring.
+	d_vertices.push_back(Vertex(ring_points_begin->position_vector()));
 }
 
 
@@ -144,11 +147,22 @@ GPlatesMaths::PolygonFan::create(
 {
 	non_null_ptr_type polygon_fan(new PolygonFan());
 
-	// Create the polygon fan mesh from the polygon vertices.
-	polygon_fan->initialise(
-			polygon->vertex_begin(),
-			polygon->number_of_vertices(),
+	// Add the polygon's exterior ring.
+	polygon_fan->add_fan_ring(
+			polygon->exterior_ring_vertex_begin(),
+			polygon->number_of_vertices_in_exterior_ring(),
 			polygon->get_boundary_centroid());
+
+
+	// Add the polygon's interior rings.
+	const unsigned int num_interior_rings = polygon->number_of_interior_rings();
+	for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+	{
+		polygon_fan->add_fan_ring(
+				polygon->interior_ring_vertex_begin(interior_ring_index),
+				polygon->number_of_vertices_in_interior_ring(interior_ring_index),
+				polygon->get_boundary_centroid());
+	}
 
 	return non_null_ptr_to_const_type(polygon_fan);
 }
@@ -168,7 +182,7 @@ GPlatesMaths::PolygonFan::create(
 
 	// Create the polygon fan mesh from the polyline vertices.
 	// The first and last vertices will close off to form a polygon.
-	polygon_fan->initialise(
+	polygon_fan->add_fan_ring(
 			polyline->vertex_begin(),
 			polyline->number_of_vertices(),
 			polyline->get_centroid());
@@ -192,7 +206,7 @@ GPlatesMaths::PolygonFan::create(
 	// Create the polygon fan mesh from the multi-point vertices.
 	// A polygon is formed from the multipoint by treating the order of points in the multipoint
 	// as the vertices of a polygon.
-	polygon_fan->initialise(
+	polygon_fan->add_fan_ring(
 			multi_point->begin(),
 			multi_point->number_of_points(),
 			multi_point->get_centroid());

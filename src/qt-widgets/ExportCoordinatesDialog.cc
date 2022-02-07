@@ -41,8 +41,9 @@
 
 #include "InformationDialog.h"
 
-#include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+#include "global/GPlatesException.h"
 
 #include "file-io/GMTFormatGeometryExporter.h"
 #include "file-io/OgrException.h"
@@ -330,60 +331,57 @@ GPlatesQtWidgets::ExportCoordinatesDialog::export_geometry_to_file(
 
 	QTextStream text_stream(&file);
 
-	switch (format)
-	{
-	case PLATES4:
-		geometry_exporter.reset(
-			new GPlatesFileIO::PlatesLineFormatGeometryExporter(
-			text_stream,
-			(combobox_coordinate_order->currentIndex() != LAT_LON),
-			checkbox_polygon_terminating_point->isChecked()));
-		break;
-
-	case GMT:
-		geometry_exporter.reset(
-			new GPlatesFileIO::GMTFormatGeometryExporter(
-			text_stream,
-			// Default coordinate order for GMT is (lon, lat).
-			(combobox_coordinate_order->currentIndex() != LON_LAT),
-			checkbox_polygon_terminating_point->isChecked()));
-		break;
-
-	case SHAPEFILE:
-		file.remove();
-		geometry_exporter.reset(
-			new GPlatesFileIO::OgrGeometryExporter(
-			filename, false /* multiple_geometries = false */));
-		break;
-
-	case OGRGMT:
-		file.remove();
-		geometry_exporter.reset(
-			new GPlatesFileIO::OgrGeometryExporter(
-			filename, false /* multiple_geometries = false */));
-		break;
-
-	default:
-		QMessageBox::critical(this, tr("Unsupported output format"),
-			tr("Sorry, writing in the selected format is currently not supported."));
-		return;
-	}
-
-	// Make sure we created a geometry exporter.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			geometry_exporter.get() != NULL,
-			GPLATES_EXCEPTION_SOURCE);
-
-	// Export the geometry.
 	try
 	{
+		switch (format)
+		{
+		case PLATES4:
+			geometry_exporter.reset(
+				new GPlatesFileIO::PlatesLineFormatGeometryExporter(
+						text_stream,
+						(combobox_coordinate_order->currentIndex() != LAT_LON),
+						checkbox_polygon_terminating_point->isChecked()));
+			break;
+
+		case GMT:
+			geometry_exporter.reset(
+				new GPlatesFileIO::GMTFormatGeometryExporter(
+						text_stream,
+						// Default coordinate order for GMT is (lon, lat).
+						(combobox_coordinate_order->currentIndex() != LON_LAT),
+						checkbox_polygon_terminating_point->isChecked()));
+			break;
+
+		case SHAPEFILE:
+			file.remove();
+			geometry_exporter.reset(
+				new GPlatesFileIO::OgrGeometryExporter(
+						filename, false /* multiple_geometries = false */));
+			break;
+
+		case OGRGMT:
+			file.remove();
+			geometry_exporter.reset(
+				new GPlatesFileIO::OgrGeometryExporter(
+						filename, false /* multiple_geometries = false */));
+			break;
+
+		default:
+			QMessageBox::critical(
+					this,
+					tr("Unsupported output format"),
+					tr("Sorry, writing in the selected format is currently not supported."));
+			return;
+		}
+
+		// Export the geometry.
 		geometry_exporter->export_geometry(*d_geometry_opt_ptr);
 	}
-	catch (GPlatesFileIO::OgrException &exc)
+	catch (GPlatesGlobal::Exception &exc)
 	{
 		qWarning() << exc; // Also log the detailed error message.
 		
-		QString message = tr("An OGR error occurred.");
+		QString message = tr("An error occurred.");
 		QMessageBox::critical(this, tr("Error Saving File"), message,
 			QMessageBox::Ok, QMessageBox::Ok);
 	}

@@ -154,10 +154,13 @@ namespace GPlatesApi
 	{
 		bp::list exterior_point_list;
 
+		const GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type &exterior_ring_points =
+				lat_lon_polygon.get_exterior_ring_points();
+
 		GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type::const_iterator exterior_points_iter =
-				lat_lon_polygon.get_exterior_points().begin();
+				exterior_ring_points.begin();
 		GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type::const_iterator exterior_points_end =
-				lat_lon_polygon.get_exterior_points().end();
+				exterior_ring_points.end();
 		for ( ; exterior_points_iter != exterior_points_end; ++exterior_points_iter)
 		{
 			exterior_point_list.append(*exterior_points_iter);
@@ -172,15 +175,19 @@ namespace GPlatesApi
 	{
 		bp::list is_original_exterior_point_flags_list;
 
-		std::vector<bool>::const_iterator is_original_exterior_point_flags_iter =
-				lat_lon_polygon.get_is_original_exterior_point_flags().begin();
-		std::vector<bool>::const_iterator is_original_exterior_point_flags_end =
-				lat_lon_polygon.get_is_original_exterior_point_flags().end();
+		std::vector<GPlatesMaths::DateLineWrapper::LatLonPolygon::point_flags_type> exterior_ring_point_flags;
+		lat_lon_polygon.get_exterior_ring_point_flags(exterior_ring_point_flags);
+
+		std::vector<GPlatesMaths::DateLineWrapper::LatLonPolygon::point_flags_type>::const_iterator
+				exterior_ring_point_flags_iter = exterior_ring_point_flags.begin();
+		std::vector<GPlatesMaths::DateLineWrapper::LatLonPolygon::point_flags_type>::const_iterator
+				exterior_ring_point_flags_end = exterior_ring_point_flags.end();
 		for ( ;
-			is_original_exterior_point_flags_iter != is_original_exterior_point_flags_end;
-			++is_original_exterior_point_flags_iter)
+			exterior_ring_point_flags_iter != exterior_ring_point_flags_end;
+			++exterior_ring_point_flags_iter)
 		{
-			is_original_exterior_point_flags_list.append(*is_original_exterior_point_flags_iter);
+			is_original_exterior_point_flags_list.append(
+					exterior_ring_point_flags_iter->test(GPlatesMaths::DateLineWrapper::LatLonPolygon::ORIGINAL_POINT));
 		}
 
 		return is_original_exterior_point_flags_list;
@@ -210,13 +217,17 @@ namespace GPlatesApi
 	{
 		bp::list is_original_point_flags_list;
 
-		std::vector<bool>::const_iterator is_original_point_flags_iter =
-				lat_lon_polyline.get_is_original_point_flags().begin();
-		std::vector<bool>::const_iterator is_original_point_flags_end =
-				lat_lon_polyline.get_is_original_point_flags().end();
-		for ( ; is_original_point_flags_iter != is_original_point_flags_end; ++is_original_point_flags_iter)
+		std::vector<GPlatesMaths::DateLineWrapper::LatLonPolyline::point_flags_type> point_flags;
+		lat_lon_polyline.get_point_flags(point_flags);
+
+		std::vector<GPlatesMaths::DateLineWrapper::LatLonPolyline::point_flags_type>::const_iterator
+				point_flags_iter = point_flags.begin();
+		std::vector<GPlatesMaths::DateLineWrapper::LatLonPolyline::point_flags_type>::const_iterator
+				point_flags_end = point_flags.end();
+		for ( ; point_flags_iter != point_flags_end; ++point_flags_iter)
 		{
-			is_original_point_flags_list.append(*is_original_point_flags_iter);
+			is_original_point_flags_list.append(
+					point_flags_iter->test(GPlatesMaths::DateLineWrapper::LatLonPolyline::ORIGINAL_POINT));
 		}
 
 		return is_original_point_flags_list;

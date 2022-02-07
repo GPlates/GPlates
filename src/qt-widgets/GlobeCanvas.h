@@ -63,6 +63,7 @@
 namespace GPlatesGui
 {
 	class TextOverlay;
+	class VelocityLegendOverlay;
 }
 
 namespace GPlatesOpenGL
@@ -90,6 +91,10 @@ namespace GPlatesQtWidgets
 		Q_OBJECT
 
 	public:
+
+		static const GLfloat FRAMING_RATIO;
+
+
 		struct MousePressInfo
 		{
 			MousePressInfo(
@@ -641,7 +646,11 @@ namespace GPlatesQtWidgets
 
 		GPlatesGui::Globe d_globe;
 
+		//! Paints an optional text overlay onto the globe.
 		boost::scoped_ptr<GPlatesGui::TextOverlay> d_text_overlay;
+
+		//! Paints an optional velocity legend overlay onto the globe.
+		boost::scoped_ptr<GPlatesGui::VelocityLegendOverlay> d_velocity_legend_overlay;
 
 
 		//! Calls 'initializeGL()' if it hasn't already been called.
@@ -731,9 +740,11 @@ namespace GPlatesQtWidgets
 		get_universe_coord_z(
 				int screen_y) const;
 
-		//! Calculates scaling for lines, points and text based on size of canvas
+		//! Calculates scaling for lines, points and text based on size of the paint device.
 		float
-		calculate_scale();
+		calculate_scale(
+				int paint_device_width,
+				int paint_device_height);
 
 	};
 

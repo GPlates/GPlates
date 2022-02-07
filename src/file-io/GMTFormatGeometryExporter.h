@@ -114,6 +114,11 @@ namespace GPlatesFileIO
 		*/
 		bool d_polygon_terminating_point;
 
+
+		void
+		write_polygon_ring(
+				const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_vertex_begin,
+				const GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator &ring_vertex_end);
 	};
 
 }

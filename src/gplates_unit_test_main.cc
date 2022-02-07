@@ -29,12 +29,18 @@
 #include <QDebug>
 #include <QDir>
 
+#include "app-logic/GPlatesQtMsgHandler.h"
+
+#include "global/Constants.h"
+
+#include "maths/MathsUtils.h"
+
 #include "unit-test/GPlatesGlobalFixture.h"
 #include "unit-test/MainTestSuite.h"
 #include "unit-test/TestSuiteFilter.h"
+
 #include "utils/CommandLineParser.h"
-#include "app-logic/GPlatesQtMsgHandler.h"
-#include "global/Constants.h"
+
 
 namespace
 {
@@ -120,6 +126,11 @@ init_unit_test_suite(
 	Q_INIT_RESOURCE(python);
 	Q_INIT_RESOURCE(gpgim);
 	Q_INIT_RESOURCE(qt_widgets);
+	Q_INIT_RESOURCE(python);
+
+	// Sanity check: Proceed only if we have access to infinity and NaN.
+	// This should pass on all systems that we support.
+	GPlatesMaths::assert_has_infinity_and_nan();
 
 	GPlatesAppLogic::GPlatesQtMsgHandler::install_qt_message_handler("GPlates_unit_test_QT.log");
 

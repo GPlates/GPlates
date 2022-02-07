@@ -36,42 +36,53 @@
 
 #include "global/GPlatesAssert.h"
 
+#include "utils/CallStackTracker.h"
 
-GPlatesMaths::UnitVector3D::UnitVector3D(
-		const real_t &x_comp,
-		const real_t &y_comp,
-		const real_t &z_comp,
-		bool check_validity) :
-	d_x(x_comp),
-	d_y(y_comp),
-	d_z(z_comp)
+
+void
+GPlatesMaths::UnitVector3D::check_validity()
 {
-	if (!check_validity)
+	/*
+	 * Calculate magnitude of vector to ensure that it actually _is_ 1.
+	 * For efficiency, don't bother sqrting yet.
+	 */
+	real_t mag_sqrd = (d_x * d_x) + (d_y * d_y) + (d_z * d_z);
+	if (mag_sqrd != 1.0)
 	{
-		return;
+		// invariant has been violated
+		std::ostringstream oss;
+		oss << "UnitVector3D has magnitude-squared of " << HighPrecision<real_t>(mag_sqrd);
+		throw ViolatedUnitVectorInvariantException(
+				GPLATES_ASSERTION_SOURCE,
+				oss.str().c_str());
 	}
 
-	AssertInvariant(GPLATES_ASSERTION_SOURCE);
-
-	if (d_x.dval() > 1.0) {
+	if (d_x.dval() > 1.0)
+	{
 		d_x = 1.0;
 	}
-	if (d_x.dval() < -1.0) {
+	if (d_x.dval() < -1.0)
+	{
 		d_x = -1.0;
 	}
-	if (d_y.dval() > 1.0) {
+	if (d_y.dval() > 1.0)
+	{
 		d_y = 1.0;
 	}
-	if (d_y.dval() < -1.0) {
+	if (d_y.dval() < -1.0)
+	{
 		d_y = -1.0;
 	}
-	if (d_z.dval() > 1.0) {
+	if (d_z.dval() > 1.0)
+	{
 		d_z = 1.0;
 	}
-	if (d_z.dval() < -1.0) {
+	if (d_z.dval() < -1.0)
+	{
 		d_z = -1.0;
 	}
-	real_t mag_sqrd = (d_x * d_x) + (d_y * d_y) + (d_z * d_z);
+
+	mag_sqrd = (d_x * d_x) + (d_y * d_y) + (d_z * d_z);
 	if (std::fabs(mag_sqrd.dval() - 1.0) > 1.0e-13) {
 		double mag = std::sqrt(mag_sqrd.dval());
 #if 0
@@ -89,36 +100,6 @@ GPlatesMaths::UnitVector3D::UnitVector3D(
 		qWarning() << "After renormalisation, deviation from 1.0 = "
 				<< HighPrecision<double>(mag - 1.0);
 #endif
-	}
-}
-
-
-GPlatesMaths::UnitVector3D::UnitVector3D(
-		const Vector3D &v) :
-	d_x(v.x()),
-	d_y(v.y()),
-	d_z(v.z())
-{
-	AssertInvariant(GPLATES_ASSERTION_SOURCE);
-}
-
-
-void
-GPlatesMaths::UnitVector3D::AssertInvariant(
-		const GPlatesUtils::CallStack::Trace &exception_source) const
-{
-	/*
-	 * Calculate magnitude of vector to ensure that it actually _is_ 1.
-	 * For efficiency, don't bother sqrting yet.
-	 */
-	real_t mag_sqrd = (d_x * d_x) + (d_y * d_y) + (d_z * d_z);
-	if (mag_sqrd != 1.0) {
-		// invariant has been violated
-		std::ostringstream oss;
-		oss << "UnitVector3D has magnitude-squared of " << HighPrecision<real_t>(mag_sqrd);
-		throw ViolatedUnitVectorInvariantException(
-				exception_source,
-				oss.str().c_str());
 	}
 }
 

@@ -116,6 +116,16 @@ namespace GPlatesScribe
 
 	// Specialisation of protected member template function.
 	template <>
+	float
+	TextArchiveReader::read<float>();
+
+	// Specialisation of protected member template function.
+	template <>
+	double
+	TextArchiveReader::read<double>();
+
+	// Specialisation of protected member template function.
+	template <>
 	std::string
 	TextArchiveReader::read<std::string>();
 }

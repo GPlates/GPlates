@@ -44,6 +44,8 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/WeakReferenceCallback.h"
 
+#include "presentation/SessionManagement.h"
+
 #include "qt-widgets/ViewportWindow.h"
 #include "qt-widgets/UnsavedChangesWarningDialog.h"
 #include "qt-widgets/ManageFeatureCollectionsDialog.h"
@@ -101,6 +103,44 @@ namespace
 	};
 
 
+	/**
+	 * Returns true if user decides it's OK to discard the unsaved changes.
+	 */
+	GPlatesGui::UnsavedChangesTracker::UnsavedChangesResult
+	get_unsaved_changes_result(
+			GPlatesQtWidgets::UnsavedChangesWarningDialog *warning_dialog_ptr,
+			GPlatesQtWidgets::UnsavedChangesWarningDialog::ActionRequested action_requested,
+			QStringList unsaved_feature_collection_filenames,
+			bool has_unsaved_project_changes)
+	{
+		// See if have no unsaved changes.
+		if (unsaved_feature_collection_filenames.isEmpty() &&
+			!has_unsaved_project_changes)
+		{
+			// All saved, all good.
+			return GPlatesGui::UnsavedChangesTracker::NO_UNSAVED_CHANGES;
+		}
+
+		// We have unsaved changes, ask user whether to discard them or not.
+		//
+		// Exec the dialog and find which QDialogButtonBox::StandardButton was clicked.
+		warning_dialog_ptr->set_action_requested(
+				action_requested,
+				unsaved_feature_collection_filenames,
+				has_unsaved_project_changes);
+
+		switch (warning_dialog_ptr->exec())
+		{
+		case QDialogButtonBox::Discard:
+			// The unsaved changes will be discarded.
+			return GPlatesGui::UnsavedChangesTracker::DISCARD_UNSAVED_CHANGES;
+
+		default:
+		case QDialogButtonBox::Abort:
+			// Do not discard the unsaved changes.
+			return GPlatesGui::UnsavedChangesTracker::DONT_DISCARD_UNSAVED_CHANGES;
+		}
+	}
 }
 
 
@@ -110,12 +150,14 @@ GPlatesGui::UnsavedChangesTracker::UnsavedChangesTracker(
 		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		GPlatesAppLogic::FeatureCollectionFileState &file_state_,
 		GPlatesAppLogic::FeatureCollectionFileIO &feature_collection_file_io_,
+		GPlatesPresentation::SessionManagement &session_management_,
 		QObject *parent_):
 	QObject(parent_),
 	d_viewport_window_ptr(&viewport_window_),
 	d_warning_dialog_ptr(new GPlatesQtWidgets::UnsavedChangesWarningDialog(d_viewport_window_ptr)),
 	d_file_state_ptr(&file_state_),
-	d_feature_collection_file_io_ptr(&feature_collection_file_io_)
+	d_feature_collection_file_io_ptr(&feature_collection_file_io_),
+	d_session_management_ptr(&session_management_)
 {
 	setObjectName("UnsavedChangesTracker");
 	connect_to_file_state_signals();
@@ -131,7 +173,7 @@ GPlatesGui::UnsavedChangesTracker::init()
 
 
 bool
-GPlatesGui::UnsavedChangesTracker::has_unsaved_changes()
+GPlatesGui::UnsavedChangesTracker::has_unsaved_feature_collections()
 {
 	// Taking the brute force approach for now, later should delegate to an applogic class which
 	// could be smarter about the whole deal.
@@ -152,7 +194,7 @@ GPlatesGui::UnsavedChangesTracker::has_unsaved_changes()
 
 
 QStringList
-GPlatesGui::UnsavedChangesTracker::list_unsaved_filenames()
+GPlatesGui::UnsavedChangesTracker::list_unsaved_feature_collection_filenames()
 {
 	QStringList filenames;
 
@@ -178,68 +220,63 @@ GPlatesGui::UnsavedChangesTracker::list_unsaved_filenames()
 }
 
 
-bool
+GPlatesGui::UnsavedChangesTracker::UnsavedChangesResult
 GPlatesGui::UnsavedChangesTracker::close_event_hook()
 {
-	if (has_unsaved_changes()) {
-		// Exec the dialog and find which QDialogButtonBox::StandardButton was clicked.
-		d_warning_dialog_ptr->set_filename_list(list_unsaved_filenames());
-		d_warning_dialog_ptr->set_action_requested(
-				GPlatesQtWidgets::UnsavedChangesWarningDialog::CLOSE_GPLATES);
-
-		switch (d_warning_dialog_ptr->exec()) {
-
-		case QDialogButtonBox::Discard:
-			return true;
-
-		default:
-		case QDialogButtonBox::Abort:
-			return false;
-
-		}
-	} else {
-		// All saved, all good. Quit already.
-		return true;
-	}
+	// If any unsaved changes then they will either be discarded when GPlates quits, or we won't quit GPlates.
+	return get_unsaved_changes_result(
+			d_warning_dialog_ptr,
+			GPlatesQtWidgets::UnsavedChangesWarningDialog::CLOSE_GPLATES,
+			list_unsaved_feature_collection_filenames(),
+			d_session_management_ptr->is_current_session_a_project_with_unsaved_changes()/*has_unsaved_project_changes*/);
 }
 
 
-bool
+GPlatesGui::UnsavedChangesTracker::UnsavedChangesResult
 GPlatesGui::UnsavedChangesTracker::clear_session_event_hook()
 {
-	if (has_unsaved_changes())
-	{
-		// Exec the dialog and find which QDialogButtonBox::StandardButton was clicked.
-		d_warning_dialog_ptr->set_filename_list(list_unsaved_filenames());
-		d_warning_dialog_ptr->set_action_requested(
-				GPlatesQtWidgets::UnsavedChangesWarningDialog::CLEAR_SESSION);
+	// If any unsaved changes then they will either be discarded when the session is cleared, or
+	// we won't clear the session.
+	return get_unsaved_changes_result(
+			d_warning_dialog_ptr,
+			GPlatesQtWidgets::UnsavedChangesWarningDialog::CLEAR_SESSION,
+			list_unsaved_feature_collection_filenames(),
+			d_session_management_ptr->is_current_session_a_project_with_unsaved_changes()/*has_unsaved_project_changes*/);
+}
 
-		switch (d_warning_dialog_ptr->exec())
-		{
-		case QDialogButtonBox::Discard:
-			// The unsaved changes will be discarded when the session is cleared.
-			return true;
 
-		default:
-		case QDialogButtonBox::Abort:
-			// Do not discard the unsaved changes and do not clear the session.
-			return false;
-		}
-	}
-	else
-	{
-		// There are no unsaved changes so the session can be cleared.
-		return true;
-	}
+GPlatesGui::UnsavedChangesTracker::UnsavedChangesResult
+GPlatesGui::UnsavedChangesTracker::load_previous_session_event_hook()
+{
+	// If any unsaved changes then they will either be discarded (and then a previous session loaded), or
+	// we won't load a previous session.
+	return get_unsaved_changes_result(
+			d_warning_dialog_ptr,
+			GPlatesQtWidgets::UnsavedChangesWarningDialog::LOAD_PREVIOUS_SESSION,
+			list_unsaved_feature_collection_filenames(),
+			d_session_management_ptr->is_current_session_a_project_with_unsaved_changes()/*has_unsaved_project_changes*/);
+}
+
+
+GPlatesGui::UnsavedChangesTracker::UnsavedChangesResult
+GPlatesGui::UnsavedChangesTracker::load_project_event_hook()
+{
+	// If any unsaved changes then they will either be discarded (and then a project loaded), or
+	// we won't load a project.
+	return get_unsaved_changes_result(
+			d_warning_dialog_ptr,
+			GPlatesQtWidgets::UnsavedChangesWarningDialog::LOAD_PROJECT,
+			list_unsaved_feature_collection_filenames(),
+			d_session_management_ptr->is_current_session_a_project_with_unsaved_changes()/*has_unsaved_project_changes*/);
 }
 
 
 void
 GPlatesGui::UnsavedChangesTracker::handle_model_has_changed()
 {
-	if (has_unsaved_changes()) {
+	if (has_unsaved_feature_collections()) {
 		// Build a tooltip to list the files which need saving.
-		QStringList files = list_unsaved_filenames();
+		QStringList files = list_unsaved_feature_collection_filenames();
 		QString tip;
 		if (files.size() < 10) {
 			tip = tr("The following files have unsaved changes:-\n");

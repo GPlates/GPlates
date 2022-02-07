@@ -28,6 +28,7 @@
 #ifndef GPLATES_MATHS_POINTONSPHERE_H
 #define GPLATES_MATHS_POINTONSPHERE_H
 
+#include <functional>
 #include <iosfwd>
 #include <iterator>  // std::distance
 #include <QDebug>
@@ -79,13 +80,9 @@ namespace GPlatesMaths
 		static const PointOnSphere south_pole;
 
 		/**
-		 * A convenience typedef for
-		 * GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere,
-		 * GPlatesUtils::NullIntrusivePointerHandler>.
+		 * A convenience typedef for GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere>.
 		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere,
-				GPlatesUtils::NullIntrusivePointerHandler>
-				non_null_ptr_to_const_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const PointOnSphere> non_null_ptr_to_const_type;
 
 
 		/**
@@ -97,7 +94,10 @@ namespace GPlatesMaths
 		static
 		const non_null_ptr_to_const_type
 		create_on_heap(
-				const UnitVector3D &position_vector_);
+				const UnitVector3D &position_vector_)
+		{
+			return non_null_ptr_to_const_type(new PointOnSphere(position_vector_));
+		}
 
 
 		/**
@@ -221,15 +221,6 @@ namespace GPlatesMaths
 		}
 
 
-		PointOnSphere &
-		operator=(
-				const UnitVector3D &position_vec)
-		{
-			d_position_vector = position_vec;
-			return *this;
-		}
-
-
 		const UnitVector3D &
 		position_vector() const
 		{
@@ -273,18 +264,6 @@ namespace GPlatesMaths
 		UnitVector3D d_position_vector;
 
 	};
-
-
-	inline
-	const PointOnSphere::non_null_ptr_to_const_type
-	PointOnSphere::create_on_heap(
-			const UnitVector3D &position_vector_)
-	{
-		non_null_ptr_to_const_type ptr(
-				new PointOnSphere(position_vector_),
-				GPlatesUtils::NullIntrusivePointerHandler());
-		return ptr;
-	}
 
 
 	/**
@@ -340,16 +319,6 @@ namespace GPlatesMaths
 	{
 		return dot(p1.position_vector(), p2.position_vector());
 	}
-
-
-	inline
-	bool
-	operator==(
-			const PointOnSphere &p1,
-			const PointOnSphere &p2)
-	{
-		return p1.position_vector() == p2.position_vector();
-	}
 	
 
 	/**
@@ -361,32 +330,11 @@ namespace GPlatesMaths
 	 * of the shortest arc between the two points on the circumference of that
 	 * disc.
 	 */
-	inline
 	const real_t
 	calculate_distance_on_surface_of_sphere(
 			const PointOnSphere &p1,
 			const PointOnSphere &p2,
-			real_t radius_of_sphere)
-	{
-		if (p1 == p2)
-		{
-			return 0.0;
-		}
-		else
-		{
-			return acos(calculate_closeness(p1, p2)) * radius_of_sphere;
-		}
-	}
-
-
-	inline
-	bool
-	operator!=(
-			const PointOnSphere &p1,
-			const PointOnSphere &p2)
-	{
-		return p1.position_vector() != p2.position_vector();
-	}
+			real_t radius_of_sphere);
 
 
 	/**
@@ -508,6 +456,66 @@ namespace GPlatesMaths
 	operator <<(
 			QTextStream &stream,
 			const PointOnSphere &p);
+
+
+	inline
+	bool
+	operator==(
+			const PointOnSphere &p1,
+			const PointOnSphere &p2)
+	{
+		return p1.position_vector() == p2.position_vector();
+	}
+
+
+	inline
+	bool
+	operator!=(
+			const PointOnSphere &p1,
+			const PointOnSphere &p2)
+	{
+		return p1.position_vector() != p2.position_vector();
+	}
+
+
+	/**
+	 * Enables PointOnSphere to be used as a key in a 'std::map'.
+	 *
+	 * For example, std::map<PointOnSphere, mapped_type, PointOnSphereMapPredicate>.
+	 *
+	 *
+	 * NOTE: If two points are close enough together then they will correspond to the same map entry
+	 * since the map's equivalence relation...
+	 *
+	 *   !compare(point1, point2) && !compare(point2, point1)
+	 *
+	 * ...will be true (due to the use of an epsilon in the comparison).
+	 *
+	 * This may not be desirable if you want 'point1' and 'point2' to have separate map entries.
+	 *
+	 *
+	 * You might then be tempted to write a slightly different map predicate that does exact comparisons
+	 * of the floating-point x/y/z coordinates using ('<' and '>' operators in the predicate) instead
+	 * of using an epsilon. And this will probably work fine when the points used to look up the map
+	 * are the exact same points added to the map as keys. However note that the compiler can do
+	 * things like comparing one 80-bit double (in a floating-point register) with a 64-bit double (in memory)
+	 * that was truncated from a 80-bit register when written to memory. Google
+	 * "[29.18] Why is cos(x) != cos(y) even though x == y? (Or sine or tangent or log or just about any other floating point computation)"
+	 * for more details on this. However this is extremely unlikely in our example above (using the same
+	 * points to look up the map as used to create the map) because when a point is first created it is
+	 * unlikely that an untruncated version of that point (eg, x/y/z cached in 80-bit registers) will get
+	 * compiled in during the map creation but a truncated version of that point compiled in during the
+	 * map look up (or vice versa). Still it's probably not in the realm of impossibility.
+	 */
+	class PointOnSphereMapPredicate :
+			public std::binary_function<PointOnSphere, PointOnSphere, bool>
+	{
+	public:
+		bool
+		operator()(
+				const PointOnSphere &lhs,
+				const PointOnSphere &rhs) const;
+	};
 }
 
 

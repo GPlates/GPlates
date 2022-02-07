@@ -34,7 +34,6 @@
 
 #include "GLMatrix.h"
 #include "GLTexture.h"
-#include "OpenGLFwd.h"
 
 #include "maths/CubeCoordinateFrame.h"
 

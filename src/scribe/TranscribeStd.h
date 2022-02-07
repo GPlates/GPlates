@@ -65,19 +65,19 @@ namespace GPlatesScribe
 	 * without save/load construction. An example without save/load construct is:
 	 * 
 	 *     std::pair<...> x;
-	 *     scribe.transcribe(TRANSCRIBE_SOURCE, x, "x");
+	 *     scribe.transcribe(TRANSCRIBE_SOURCE, x, "x", GPlatesScribe::TRACK);
 	 * 
 	 * ...but if it is not default constructable then it must be transcribed using save/load construction
-	 * or initialised with a dummy value (and then transcribing).
+	 * or initialised with a dummy value (and then transcribed).
 	 * For example:
 	 * 
 	 *     GPlatesScribe::LoadRef< std::pair<...> > x =
-	 *         scribe.load< std::pair<...> >(TRANSCRIBE_SOURCE, "x");
+	 *         scribe.load< std::pair<...> >(TRANSCRIBE_SOURCE, "x", GPlatesScribe::TRACK);
 	 * 
 	 * ...or...
 	 * 
 	 *     std::pair<...> x(dummy_first, dummy_second);
-	 *     scribe.transcribe(TRANSCRIBE_SOURCE, x, "x");
+	 *     scribe.transcribe(TRANSCRIBE_SOURCE, x, "x", GPlatesScribe::TRACK);
 	 */
 	template <typename T1, typename T2>
 	TranscribeResult
@@ -288,18 +288,14 @@ namespace GPlatesScribe
 			bool transcribed_construct_data)
 	{
 		// If already transcribed using (non-default) constructor then nothing left to do.
-
-		if (!scribe.has_been_transcribed(pair_object.first))
+		if (!transcribed_construct_data)
 		{
-			if (!scribe.transcribe(TRANSCRIBE_SOURCE, pair_object.first, "first"))
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, pair_object.first, "first", TRACK))
 			{
 				return scribe.get_transcribe_result();
 			}
-		}
 
-		if (!scribe.has_been_transcribed(pair_object.second))
-		{
-			if (!scribe.transcribe(TRANSCRIBE_SOURCE, pair_object.second, "second"))
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, pair_object.second, "second", TRACK))
 			{
 				return scribe.get_transcribe_result();
 			}
@@ -316,18 +312,18 @@ namespace GPlatesScribe
 	{
 		if (scribe.is_saving())
 		{
-			scribe.save(TRANSCRIBE_SOURCE, pair_object->first, "first");
-			scribe.save(TRANSCRIBE_SOURCE, pair_object->second, "second");
+			scribe.save(TRANSCRIBE_SOURCE, pair_object->first, "first", TRACK);
+			scribe.save(TRANSCRIBE_SOURCE, pair_object->second, "second", TRACK);
 		}
 		else // loading...
 		{
-			LoadRef<T1> first = scribe.load<T1>(TRANSCRIBE_SOURCE, "first");
+			LoadRef<T1> first = scribe.load<T1>(TRANSCRIBE_SOURCE, "first", TRACK);
 			if (!first.is_valid())
 			{
 				return scribe.get_transcribe_result();
 			}
 
-			LoadRef<T2> second = scribe.load<T2>(TRANSCRIBE_SOURCE, "second");
+			LoadRef<T2> second = scribe.load<T2>(TRANSCRIBE_SOURCE, "second", TRACK);
 			if (!second.is_valid())
 			{
 				return scribe.get_transcribe_result();

@@ -78,7 +78,7 @@ GPlatesUnitTest::CoregTest::load_test_data()
 	// TODO: Re-implement this test when the lower-level python API is implemented.
 	// This will use the same functionality to access co-registration without reference to layers.
 	qWarning() << "GPlatesUnitTest::CoregTest::test: not implemented.";
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+	//throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 
 #else
 	d_rotation_fc = 
@@ -127,7 +127,7 @@ GPlatesUnitTest::CoregTest::test(double time)
 	// TODO: Re-implement this test when the lower-level python API is implemented.
 	// This will use the same functionality to access co-registration without reference to layers.
 	qWarning() << "GPlatesUnitTest::CoregTest::test: not implemented.";
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+	//throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 
 #else
 	ReconstructMethodRegistry reconstruct_method_registry;
@@ -142,7 +142,6 @@ GPlatesUnitTest::CoregTest::test(double time)
 	ReconstructUtils::reconstruct(
 			reconstructed_seeds,
 			time,
-			0, //anchor plate
 			reconstruct_method_registry,
 			d_seed_fc,
 			reconstruction_tree_creator);
@@ -152,14 +151,11 @@ GPlatesUnitTest::CoregTest::test(double time)
 	ReconstructUtils::reconstruct(
 			reconstructed_coreg,
 			time,
-			0, //anchor plate
 			reconstruct_method_registry,
 			d_coreg_fc,
 			reconstruction_tree_creator);
 
-	CoRegistrationData::non_null_ptr_type data_ptr =
-			CoRegistrationData::create(
-					reconstruction_tree_creator.get_reconstruction_tree(time, 0/*anchor_plate_id*/));
+	CoRegistrationData::non_null_ptr_type data_ptr = CoRegistrationData::create(time);
 
 	CoRegConfigurationTable input_table;
 	populate_cfg_table(input_table,cfg_file);
@@ -255,7 +251,7 @@ GPlatesUnitTest::CoregTest::populate_cfg_table(
 	// TODO: Re-implement this test when the lower-level python API is implemented.
 	// This will use the same functionality to access co-registration without reference to layers.
 	qWarning() << "GPlatesUnitTest::CoregTest::populate_cfg_table: not implemented.";
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+	//throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 
 #else
 	enum ColName

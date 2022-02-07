@@ -27,6 +27,13 @@
  
 #ifndef GPLATES_QTWIDGETS_PYTHONARGUMENTWIDGET_H
 #define GPLATES_QTWIDGETS_PYTHONARGUMENTWIDGET_H
+
+// Workaround for compile error in <pyport.h> for Python versions less than 2.7.13 and 3.5.3.
+// See https://bugs.python.org/issue10910
+// Workaround involves including "global/python.h" at the top of some source files
+// to ensure <Python.h> is included before <ctype.h>.
+#include "global/python.h"
+
 #include <QtCore/QVariant>
 #include <QtGui/QAction>
 #include <QtGui/QApplication>
@@ -41,9 +48,9 @@
 #include <QtGui/QFileDialog>
 #include <QtGui/QLineEdit>
 #include <QPalette>
+
 #include "gui/PythonConfiguration.h"
 
-#include "global/python.h"
 #if !defined(GPLATES_NO_PYTHON)
 
 namespace GPlatesQtWidgets
@@ -208,8 +215,9 @@ namespace GPlatesQtWidgets
 			hboxLayout->setObjectName(QString::fromUtf8("hboxLayout"));
 			
 			line_edit = new QLineEdit(this);
-			choose_button = new QPushButton("open...",this);
-			
+			choose_button = new QPushButton("Open...",this);
+			reload_button = new QPushButton("Reload",this);
+
 			line_edit->setText(d_cfg_item->get_value());
 			line_edit->setEnabled(false);
 			
@@ -217,7 +225,7 @@ namespace GPlatesQtWidgets
 			//hboxLayout->addItem(spacer);
 			hboxLayout->addWidget(line_edit);
 			hboxLayout->addWidget(choose_button);
-			
+			hboxLayout->addWidget(reload_button);
 
 			QObject::connect(
 					choose_button,
@@ -226,11 +234,12 @@ namespace GPlatesQtWidgets
 					SLOT(handle_choose_button_clicked(bool)));
 
 			QObject::connect(
-					line_edit,
-					SIGNAL(textChanged(const QString&)),
+					reload_button,
+					SIGNAL(clicked(bool)),
 					this,
-					SLOT(handle_cpt_file_changed(const QString&)));
+					SLOT(handle_reload_button_clicked(bool)));
 		}
+
 		private Q_SLOTS:
 			void
 			handle_choose_button_clicked(bool b)
@@ -243,21 +252,30 @@ namespace GPlatesQtWidgets
 
 				if (!file_names.isEmpty())
 				{
-					d_last_open_directory = QFileInfo(file_names.first()).path();
-					line_edit->setText(file_names.first());
+					const QString file_name = file_names.first();
+
+					d_last_open_directory = QFileInfo(file_name).path();
+					line_edit->setText(file_name);
+
+					// Set the filename even if it's the same because the user might
+					// be reloading a CPT file that's changed since it was last loaded.
+					d_cfg_item->set_value(file_name);
+					Q_EMIT configuration_changed();
 				}
 			}
 
 			void
-			handle_cpt_file_changed(const QString& cpt_file)
+			handle_reload_button_clicked(bool b)
 			{
-				d_cfg_item->set_value(cpt_file);
+				d_cfg_item->set_value(line_edit->text());
 				Q_EMIT configuration_changed();
 			}
+
 	private:
 		QHBoxLayout* hboxLayout;
 		QLineEdit* line_edit;
 		QPushButton* choose_button;
+		QPushButton* reload_button;
 		QSpacerItem* spacer;
 		QString d_last_open_directory;
 		GPlatesGui::PythonCfgItem*  d_cfg_item;
