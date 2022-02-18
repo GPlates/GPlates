@@ -227,9 +227,9 @@ set(GPLATES_DOXYGEN_INPUT
 # the suffix path of where the installed executable goes (versus the built executable).
 #
 # Set default location of built (not installed) executables on all platforms and DLLs on Windows.
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${GPlates_BINARY_DIR}/bin")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
 # Set default location for built (not installed) shared libraries on non-Windows platforms.
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${GPlates_BINARY_DIR}/bin")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
 
 # Order the include directories so that directories which are in the source or build tree always
 # come before directories outside the project.
