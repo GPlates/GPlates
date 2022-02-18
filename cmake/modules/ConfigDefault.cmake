@@ -23,31 +23,11 @@ set(GPLATES_PACKAGE_VENDOR "Earthbyte project")
 set(GPLATES_PACKAGE_CONTACT "" CACHE STRING "Package contact/maintainer. Use format 'FirstName LastName <EmailAddress>'.")
 
 
-# The pygplates (GPlates Python API) revision.
-#
-# This revision number should ideally be incremented whenever a change is made to the pygplates API.
-# For example a new function or class - so users can then test whether a pygplates build has
-# this function or not - this is also useful for internal (non-public) releases.
-# However typically the revision number is only incremented for internal releases since currently
-# the (internal release) users (eg, various python scripts) are the only ones that query the version.
-# We don't use the SVN revision (commit) number because an API change might occur on a branch
-# and a subsequent non-API change on trunk would cause trunk to have a higher pygplates version.
-# Also the SVN revision number (and hence pygplates version) would increase for each non-API commit.
-# So unfortunately this must be incremented manually for each API change.
-# At a minimum this should be done for each internal release (if API has changed).
-#
-# NOTE: This revision number should *never* be reset to zero (eg, when the GPlates major, minor or
-# patch version is incremented at public releases) - it should just continually increment.
-# Also it does not need to be incremented at each public release - for example the revision number
-# just prior to the GPlates 1.5.0 release and just after might be the same (if API did not change
-# during that time).
-set(PYGPLATES_REVISION 33)
-
 # The GPlates copyright - string version to be used in a source file.
 set(GPLATES_COPYRIGHT_STRING "")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2003-2021 The University of Sydney, Australia\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2004-2021 California Institute of Technology\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2007-2021 The Geological Survey of Norway\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2003-2022 The University of Sydney, Australia\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2004-2022 California Institute of Technology\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2007-2022 The Geological Survey of Norway\\n")
 set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}\\n")
 set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}The GPlates source code also contains code derived from:\\n")
 set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING} * ReconTreeViewer (James Boyden)\\n")
@@ -61,9 +41,9 @@ set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}environment, the Inksca
 # The GPlates copyright for html.
 set(GPLATES_HTML_COPYRIGHT_STRING "")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}<html><body>\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2003-2021 The University of Sydney, Australia<br />\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2004-2021 California Institute of Technology<br />\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2007-2021 The Geological Survey of Norway<br />\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2003-2022 The University of Sydney, Australia<br />\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2004-2022 California Institute of Technology<br />\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2007-2022 The Geological Survey of Norway<br />\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}<br />\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}The GPlates source code also contains code derived from: <ul>\\n")
@@ -80,84 +60,32 @@ set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html
 # The pyGPlates copyright - string version to be used in Python API documentation.
 # We don't include 'Copyright' since we're using Sphinx for documentation and it prepends it to our copyright string.
 set(PYGPLATES_DOCS_COPYRIGHT_STRING "")
-set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2003-2020 The University of Sydney, Australia\\n")
-set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2004-2020 California Institute of Technology\\n")
-set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2007-2020 The Geological Survey of Norway\\n")
+set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2003-2022 The University of Sydney, Australia\\n")
+set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2004-2022 California Institute of Technology\\n")
+set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2007-2022 The Geological Survey of Norway\\n")
 
-# GPLATES_VERSION_PRERELEASE - Pre-release version (empty for official public release).
-#
-# This should be:
-# - empty for official public releases,
-# - a number for development releases (eg, 1, 2, etc),
-# - 'alpha' followed by '.' followed by a number for alpha releases (eg, alpha.1, alpha.2, etc),
-# - 'beta' followed by '.' followed by a number for beta releases (eg, beta.1, beta.2, etc),
-# - 'rc' followed by '.' followed by a number for release candidates (eg, rc.1, rc.2, etc).
-#
-# The reason for the above rules is they support the correct version ordering precedence for both Semantic Versioning and Debian versioning
-# (even though Semantic and Debian versioning have slightly different precedence rules).
-#
-# Semantic version precedence separates identifiers between dots and compares each identifier.
-# According to https://semver.org/spec/v2.0.0.html ...
-# - digit-only identifiers are compared numerically,
-# - identifiers with letters are compared lexically in ASCII order,
-# - numeric identifiers have lower precedence than non-numeric identifiers.
-# ...and so '1' < 'beta.1' because '1' < 'beta', and 'beta.1' < 'beta.2' because 'beta' == 'beta' but '1' < '2'.
-#
-# Debian version precedence separates identifiers into alternating non-digit and digit identifiers.
-# According to https://www.debian.org/doc/debian-policy/ch-controlfields.html#version ...
-# - find initial part consisting only of non-digits and compare lexically in ASCII order (modified so letters sort earlier than non-letters, and '~' earliest of all),
-# - find next part consisting only of digits and compare numerically,
-# - repeat the above two steps until a difference is found.
-# ...and so '1' < 'beta.1' because '' < 'beta.', and 'beta.1' < 'beta.2' because 'beta.' == 'beta.' but '1' < '2'.
-#
-# For example:
-# For Semantic Versioning: 2.3.0-1 < 2.3.0-alpha.1 < 2.3.0-beta.1 < 2.3.0-rc.1 < 2.3.0.
-# For Debian versioning:   2.3.0~1 < 2.3.0~alpha.1 < 2.3.0~beta.1 < 2.3.0~rc.1 < 2.3.0.
-set(GPLATES_VERSION_PRERELEASE "1" CACHE STRING "Pre-release version suffix (eg, '1', 'alpha.1', 'beta.1', 'rc.1'). Empty means official public release.")
-#
-# Make sure pre-release contains only dot-separated alphanumeric identifiers.
-if (GPLATES_VERSION_PRERELEASE)
-	if (NOT GPLATES_VERSION_PRERELEASE MATCHES [[^[a-zA-Z0-9\.]+$]])
-		message(FATAL_ERROR "GPLATES_VERSION_PRERELEASE should only contain dot-separated alphanumeric identifiers")
-	endif()
-endif()
 
-# GPLATES_PACKAGE_VERSION      - Full package version (the actual version as dictated by Semantic Versioning).
-# GPLATES_PACKAGE_VERSION_NAME - Full package version name for use in package filenames (or any string the user might see).
-#
-# Currently the only difference is GPLATES_PACKAGE_VERSION_NAME inserts 'dev' for development releases
-# (but GPLATES_PACKAGE_VERSION does not, in order to maintain the correct version precendence, eg, '1' < 'alpha.1' as desired but 'dev.1' > 'alpha.1').
-#
-# For a public release both variables are equivalent to PROJECT_VERSION (as set by project() command in top-level CMakeLists.txt).
-set(GPLATES_PACKAGE_VERSION ${PROJECT_VERSION})
-set(GPLATES_PACKAGE_VERSION_NAME ${PROJECT_VERSION})
-#
-# For a pre-release append the pre-release version (using a hyphen for pre-releases as dictated by Semantic Versioning).
-if (GPLATES_VERSION_PRERELEASE)
-	set(GPLATES_PACKAGE_VERSION "${GPLATES_PACKAGE_VERSION}-${GPLATES_VERSION_PRERELEASE}")
-	# A human-readable pre-release version name (unset/empty for official public releases).
-	#
-	# If a development release (ie, if pre-release version is just a number) then insert 'dev' into the version *name* to make it more obvious to users.
-	# Note: We don't insert 'dev' into the version itself because that would give it a higher version ordering precedence than 'alpha' and 'beta' (since a < b < d).
-	#       Keeping only the development number in the actual version works because digits have lower precedence than non-digits (according to Semantic and Debian versioning).
-	if (GPLATES_VERSION_PRERELEASE MATCHES "^[0-9]+$")
-		set(GPLATES_VERSION_PRERELEASE_NAME "dev${GPLATES_VERSION_PRERELEASE}")
-	else()
-		set(GPLATES_VERSION_PRERELEASE_NAME "${GPLATES_VERSION_PRERELEASE}")
-	endif()
-	set(GPLATES_PACKAGE_VERSION_NAME "${GPLATES_PACKAGE_VERSION_NAME}-${GPLATES_VERSION_PRERELEASE_NAME}")
-endif()
-
-# GPLATES_PUBLIC_RELEASE - Official public release.
-#
-# If GPLATES_VERSION_PRERELEASE is empty then GPLATES_PUBLIC_RELEASE is set to true to mark this as an official public release.
+# GPLATES_PUBLIC_RELEASE - Official public release (GPlates or pyGPlates depending on GPLATES_BUILD_GPLATES).
 #
 # Official public releases disable all warnings.
 # Also defines a compiler flag GPLATES_PUBLIC_RELEASE (see 'src/global/config.h.in').
-if (GPLATES_VERSION_PRERELEASE)
-	set(GPLATES_PUBLIC_RELEASE false)
-else()
-	set(GPLATES_PUBLIC_RELEASE true)
+#
+if (GPLATES_BUILD_GPLATES) # GPlates ...
+	# First remove cache variable (eg, leftover if switching from a pyGPlates build to GPlates by enabling GPLATES_BUILD_GPLATES).
+	unset(GPLATES_PUBLIC_RELEASE CACHE)
+	# If GPLATES_VERSION_PRERELEASE_SUFFIX is empty then it's an offical public GPlates release (eg, 2.3.0).
+	if (GPLATES_VERSION_PRERELEASE_SUFFIX)
+		set(GPLATES_PUBLIC_RELEASE false)
+	else()
+		set(GPLATES_PUBLIC_RELEASE true)
+	endif()
+else() # pyGPlates ...
+	# Currently the pyGPlates major version is zero and the minor version increments each time the API is changed
+	# (including internal releases) and so the pre-release suffix is typically left empty, so we can't really use
+	# the presence of the pre-release suffix to distinguish public releases (like we do with GPlates).
+	# So we just default to false and rely on the developer setting it to true for official releases
+	# (eg, using 'cmake -D GPLATES_PUBLIC_RELEASE:BOOL=TRUE ...', or via ccmake or cmake-gui).
+	option(GPLATES_PUBLIC_RELEASE "PyGPlates official public release." false)
 endif()
 
 
@@ -180,29 +108,37 @@ option(GPLATES_INSTALL_STANDALONE "Install GPlates (or pyGPlates) as a standalon
 unset(_INSTALL_STANDALONE)
 
 
-# Whether to install geodata (eg, in the binary installer) or not.
-# By default this is false but should be enabled when packaging a public release.
+# Only GPlates has option to install geodata (we don't distribute it with pyGPlates).
 #
-# Developers may want to turn this on, using the cmake command-line or cmake GUI, even when not releasing a public build.
-option(GPLATES_INSTALL_GEO_DATA "Install geodata (eg, in the binary installer)." false)
+if (GPLATES_BUILD_GPLATES) # GPlates ...
+	# Whether to install geodata (eg, in the binary installer) or not.
+	# By default this is false but should be enabled when packaging a public release.
+	#
+	# Developers may want to turn this on, using the cmake command-line or cmake GUI, even when not releasing a public build.
+	option(GPLATES_INSTALL_GEO_DATA "Install geodata (eg, in the binary installer)." false)
 
-# The directory location of the geodata.
-# The geodata is only included in the binary installer if 'GPLATES_INSTALL_GEO_DATA' is true.
-# Paths must be full paths (eg, '~/geodata' is ok but '../geodata' is not).
-set(GPLATES_INSTALL_GEO_DATA_DIR "" CACHE PATH "Location of geodata (use absolute path).")
-#
-# If we're installing geodata then make sure the source geodata directory has been specified, is an absolute path and exists.
-if (GPLATES_INSTALL_GEO_DATA)
-	if (NOT GPLATES_INSTALL_GEO_DATA_DIR)
-		message(FATAL_ERROR "Please specify GPLATES_INSTALL_GEO_DATA_DIR when you enable GPLATES_INSTALL_GEO_DATA")
+	# The directory location of the geodata.
+	# The geodata is only included in the binary installer if 'GPLATES_INSTALL_GEO_DATA' is true.
+	# Paths must be full paths (eg, '~/geodata' is ok but '../geodata' is not).
+	set(GPLATES_INSTALL_GEO_DATA_DIR "" CACHE PATH "Location of geodata (use absolute path).")
+	#
+	# If we're installing geodata then make sure the source geodata directory has been specified, is an absolute path and exists.
+	if (GPLATES_INSTALL_GEO_DATA)
+		if (NOT GPLATES_INSTALL_GEO_DATA_DIR)
+			message(FATAL_ERROR "Please specify GPLATES_INSTALL_GEO_DATA_DIR when you enable GPLATES_INSTALL_GEO_DATA")
+		endif()
+		if (NOT IS_ABSOLUTE "${GPLATES_INSTALL_GEO_DATA_DIR}")
+			message(FATAL_ERROR "GPLATES_INSTALL_GEO_DATA_DIR should be an absolute path (not a relative path)")
+		endif()
+		if (NOT EXISTS "${GPLATES_INSTALL_GEO_DATA_DIR}")
+			message(FATAL_ERROR "GPLATES_INSTALL_GEO_DATA_DIR does not exist: ${GPLATES_INSTALL_GEO_DATA_DIR}")
+		endif()
+		file(TO_CMAKE_PATH ${GPLATES_INSTALL_GEO_DATA_DIR} GPLATES_INSTALL_GEO_DATA_DIR) # Convert '\' to '/' in paths.
 	endif()
-	if (NOT IS_ABSOLUTE "${GPLATES_INSTALL_GEO_DATA_DIR}")
-		message(FATAL_ERROR "GPLATES_INSTALL_GEO_DATA_DIR should be an absolute path (not a relative path)")
-	endif()
-	if (NOT EXISTS "${GPLATES_INSTALL_GEO_DATA_DIR}")
-		message(FATAL_ERROR "GPLATES_INSTALL_GEO_DATA_DIR does not exist: ${GPLATES_INSTALL_GEO_DATA_DIR}")
-	endif()
-	file(TO_CMAKE_PATH ${GPLATES_INSTALL_GEO_DATA_DIR} GPLATES_INSTALL_GEO_DATA_DIR) # Convert '\' to '/' in paths.
+else() # pyGPlates ...
+	# Remove cache variables (eg, leftover if switching from a GPlates build to pyGPlates by disabling GPLATES_BUILD_GPLATES).
+	unset(GPLATES_INSTALL_GEO_DATA CACHE)
+	unset(GPLATES_INSTALL_GEO_DATA_DIR CACHE)
 endif()
 
 
@@ -257,10 +193,7 @@ endif()
 if (MSVC)
 	# When using Visual Studio this shows included headers (used by 'list_external_includes.py').
 	# This disables pre-compiled headers (regardless of value of 'GPLATES_USE_PRECOMPILED_HEADERS').
-	#
-	# Developers may want to turn this on using the cmake command-line or cmake GUI.
-	option(GPLATES_MSVC_SHOW_INCLUDES "Show included headers. Used when configuring pre-compiled headers." false)
-	mark_as_advanced(GPLATES_MSVC_SHOW_INCLUDES)
+	set(GPLATES_MSVC_SHOW_INCLUDES false)
 	# Disable pre-compiled headers if showing include headers.
 	# The only reason to show include headers is to use 'list_external_includes.py' script to generates pch header.
 	if (GPLATES_MSVC_SHOW_INCLUDES)
