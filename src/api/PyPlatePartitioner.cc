@@ -459,7 +459,6 @@ export_plate_partitioner()
 								bp::arg("sort_partitioning_plates") =
 										GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID)),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
-				// Specific overload signature...
 				"__init__(...)\n"
 				"A *PlatePartitioner* object can be constructed in more than one way. The following applies to both ways...\n"
 				"\n"

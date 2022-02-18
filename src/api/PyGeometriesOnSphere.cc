@@ -946,7 +946,6 @@ export_point_on_sphere()
 						bp::default_call_policies(),
 						(bp::arg("point"))),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
-				// Specific overload signature...
 				"__init__(...)\n"
 				"A *PointOnSphere* object can be constructed in more than one way...\n"
 				"\n"
@@ -1311,7 +1310,6 @@ export_multi_point_on_sphere()
 						bp::default_call_policies(),
 						(bp::arg("points"))),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
-				// Specific overload signature...
 				"__init__(...)\n"
 				"A *MultiPointOnSphere* object can be constructed in more than one way...\n"
 				"\n"
@@ -2117,7 +2115,6 @@ export_polyline_on_sphere()
 						bp::default_call_policies(),
 						(bp::arg("points"))),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
-				// Specific overload signature...
 				"__init__(...)\n"
 				"A *PolylineOnSphere* object can be constructed in more than one way...\n"
 				"\n"
@@ -2890,7 +2887,6 @@ export_polygon_on_sphere()
 						bp::default_call_policies(),
 						(bp::arg("points"))),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
-				// Specific overload signature...
 				"__init__(...)\n"
 				"A *PolygonOnSphere* object can be constructed in more than one way...\n"
 				"\n"

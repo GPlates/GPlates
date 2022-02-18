@@ -515,7 +515,6 @@ export_rotation_model()
 	std::stringstream rotation_model_from_features_constructor_docstring_stream;
 	rotation_model_from_features_constructor_docstring_stream <<
 			// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
-			// Specific overload signature...
 			"__init__(...)\n"
 			"A *RotationModel* object can be constructed in more than one way...\n"
 			"\n"

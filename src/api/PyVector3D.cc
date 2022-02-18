@@ -266,7 +266,6 @@ export_vector_3d()
 					bp::init<GPlatesMaths::Real, GPlatesMaths::Real, GPlatesMaths::Real>(
 							(bp::arg("x"), bp::arg("y"), bp::arg("z")),
 							// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
-							// Specific overload signature...
 							"__init__(...)\n"
 							"A *Vector3D* object can be constructed in more than one way...\n"
 							"\n"

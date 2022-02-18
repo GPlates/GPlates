@@ -33,12 +33,21 @@ namespace GPlatesGlobal
 {
 	namespace Version
 	{
+		/////////////
+		// GPlates //
+		/////////////
+
 		/**
-		 * The MAJOR.MINOR.PATCH[-PRERELEASE] human-readable version of GPlates.
+		 * The MAJOR.MINOR.PATCH[-PRERELEASE] "human-readable" version of GPlates
+		 * (very similar to Semantic Versioning https://semver.org/spec/v2.0.0.html).
 		 *
-		 * Where '-PRERELEASE' is optional and not used for official public releases (GPLATES_PUBLIC_RELEASE is true).
+		 * Where '-PRERELEASE' is optional and only used for pre-releases.
 		 *
-		 * For example "2.3.0-dev1" for first development pre-release leading up to official "2.3.0".
+		 * For example "2.3.0-dev1" for first development pre-release leading up to official "2.3.0", or
+		 * "2.3.0-rc.1" for first release candidate.
+		 *
+		 * Note: Currently the only difference compared to Semantic Versioning is the "dev" in development releases
+		 *       (which is not part of Semantic Versioning).
 		 */
 		QString
 		get_GPlates_version();
@@ -62,19 +71,64 @@ namespace GPlatesGlobal
 		get_GPlates_version_patch();
 
 		/**
-		 * The optional PRERELEASE human-readable version suffix of GPlates.
+		 * The optional PRERELEASE "human-readable" version suffix of GPlates
+		 * (very similar to Semantic Versioning https://semver.org/spec/v2.0.0.html).
 		 *
-		 * Returns none if GPLATES_PUBLIC_RELEASE is true (official public release).
+		 * For example "dev1" for first development pre-release, or "rc.1" for first release candidate.
+		 *
+		 * Returns none if GPlates is not a pre-release.
+		 *
+		 * Note: Currently the only difference compared to Semantic Versioning is the "dev" in development releases
+		 *       (which is not part of Semantic Versioning).
 		 */
 		boost::optional<QString>
-		get_GPlates_version_prerelease();
+		get_GPlates_version_prerelease_suffix();
 
+
+		///////////////
+		// PyGPlates //
+		///////////////
 
 		/**
-		 * The revision number of pyGPlates.
+		 * The MAJOR.MINOR.PATCH[PRERELEASE] version of pyGPlates formatted in the PEP440 versioning scheme
+		 * (https://www.python.org/dev/peps/pep-0440/).
+		 *
+		 * Where 'PRERELEASE' is optional and only used for pre-releases.
+		 *
+		 * For example "1.0.0.dev1" for first development pre-release leading up to official "1.0.0", or
+		 * "1.0.0rc1" for first release candidate.
+		 */
+		QString
+		get_pyGPlates_version();
+
+		/**
+		 * The MAJOR version number of pyGPlates.
 		 */
 		unsigned int
-		get_pyGPlates_revision();
+		get_pyGPlates_version_major();
+
+		/**
+		 * The MINOR version number of pyGPlates.
+		 */
+		unsigned int
+		get_pyGPlates_version_minor();
+
+		/**
+		 * The PATCH version number of pyGPlates.
+		 */
+		unsigned int
+		get_pyGPlates_version_patch();
+
+		/**
+		 * The optional PRERELEASE version suffix of pyGPlates formatted in the PEP440 versioning scheme
+		 * (https://www.python.org/dev/peps/pep-0440/).
+		 *
+		 * For example ".dev1" for first development pre-release, or "rc1" for first release candidate.
+		 *
+		 * Returns none if pyGPlates is not a pre-release.
+		 */
+		boost::optional<QString>
+		get_pyGPlates_version_prerelease_suffix();
 	}
 }
 

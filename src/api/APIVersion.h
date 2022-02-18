@@ -42,16 +42,10 @@ namespace GPlatesApi
 	/**
 	 * The GPlates Python API (pyGPlates) version number.
 	 *
-	 * In string format the version number looks like "<MAJOR>.<MINOR>.<PATCH>.<REVISION>" where
-	 * <MAJOR>, <MINOR> and <PATCH> are the GPlates version and <REVISION> is the pyGPlates
-	 * revision number that is incremented for each pyGPlates API change (and never reset to zero).
+	 * This is formatted in the PEP440 versioning scheme (https://www.python.org/dev/peps/pep-0440/).
 	 *
-	 * However, comparison of Version objects only uses the <REVISION> number since this alone
-	 * identifies API changes.
-	 *
-	 * NOTE: To increment the revision number (when an API change is made) you will need to
-	 * increment the 'PYGPLATES_REVISION' variable in 'cmake/ConfigDefault.cmake' (which will
-	 * then require running cmake again).
+	 * NOTE: To update the version you'll need to edit 'cmake/modules/Version.cmake'
+	 *       (which will then require running cmake again).
 	 */
 	class Version :
 			public boost::less_than_comparable<Version>,
@@ -61,109 +55,123 @@ namespace GPlatesApi
 	{
 	public:
 
-		static
-		unsigned int
-		get_imported_major();
-
-		static
-		unsigned int
-		get_imported_minor();
-
-		static
-		unsigned int
-		get_imported_patch();
-
-		static
-		unsigned int
-		get_imported_revision();
-
-
 		/**
 		 * Gets the current version (of this imported pyGPlates build).
-		 *
-		 * Using 'operator <<' on the returned instance will print "<REVISION> (GPlates <MAJOR>.<MINOR>.<PATCH>)".
 		 */
 		static
 		Version
-		get_imported_version()
-		{
-			return Version();
-		}
+		get_imported_version();
 
 
 		/**
-		 * Creates a Version using the specified <REVISION> number.
+		 * Creates a Version using the specified major, minor, patch numbers and
+		 * optional pre-release PEP440 suffix "(.dev|a|b|rc)N".
 		 *
-		 * Using 'operator <<' on the returned instance will print "<REVISION>".
-		 * Note that this doesn't print the GPlates version like @a get_imported_version does
-		 * because we don't know which GPlates version is associated with @a revision.
+		 * Note: The pre-release suffix (if specified) should use the PEP440 format restricted to just
+		 *       ".devN", "aN", "bN" and "rcN" (where N is a non-negative integer).
+		 */
+		Version(
+				unsigned int major,
+				unsigned int minor,
+				unsigned int patch = 0,
+				boost::optional<QString> prerelease_suffix_string = boost::none);
+
+
+		/**
+		 * Create using the specified PEP440 version string "N.N[.N][(.dev|a|b|rc)N]".
+		 *
+		 * Note: The pre-release suffix (if included) should use the PEP440 format restricted to just
+		 *       ".devN", "aN", "bN" and "rcN" (where N is a non-negative integer).
 		 */
 		explicit
 		Version(
-				unsigned int revision) :
-			d_revision(revision)
-		{  }
+				QString version_string);
+
+
+		unsigned int
+		get_major() const
+		{
+			return d_major;
+		}
+
+		unsigned int
+		get_minor() const
+		{
+			return d_minor;
+		}
+
+		unsigned int
+		get_patch() const
+		{
+			return d_patch;
+		}
+
+		/**
+		 * Return the optional pre-release PEP440 suffix "(.dev|a|b|rc)N".
+		 */
+		boost::optional<QString>
+		get_prerelease_suffix_string() const;
 
 
 		/**
-		 * Returns the revision number.
+		 * Return the PEP440 version string "N.N.N[(.dev|a|b|rc)N]".
 		 */
-		unsigned int
-		get_revision() const
-		{
-			return d_revision ? d_revision.get() : get_imported_revision();
-		}
+		QString
+		get_version_string() const;
 
 
 		/**
 		 * Equality comparison operator.
 		 *
-		 * NOTE: This only compares using the <REVISION> number.
-		 *
 		 * The inequality comparison operator is provided by boost::equality_comparable.
 		 */
 		bool
 		operator==(
-				const Version &rhs) const
-		{
-			return get_revision() == rhs.get_revision();
-		}
+				const Version &rhs) const;
 
 
 		/**
 		 * Less than comparison operator.
 		 *
-		 * NOTE: This only compares using the <REVISION> number.
-		 *
 		 * The other comparison operators are provided by boost::less_than_comparable.
 		 */
 		bool
 		operator<(
-				const Version &rhs) const
-		{
-			return get_revision() < rhs.get_revision();
-		}
+				const Version &rhs) const;
 
 	private:
 
+		struct PrereleaseSuffix
+		{
+			// NOTE: These enum values are ordered by version precedence.
+			enum Type
+			{
+				DEVELOPMENT,
+				ALPHA,
+				BETA,
+				RELEASE_CANDIDATE
+			};
 
-		//! Constructor used by @a get_imported_revision.
-		Version()
-		{  }
+			Type type;
+			unsigned int number;
+		};
+
+		unsigned int d_major;
+		unsigned int d_minor;
+		unsigned int d_patch;
+		// Optional pre-release suffix...
+		boost::optional<PrereleaseSuffix> d_prerelease_suffix;
 
 
-		//! Revision number - if none then use @a get_imported_revision.
-		boost::optional<unsigned int> d_revision;
-
-
-		// Give access to 'd_revision'.
-		friend std::ostream & operator<<(std::ostream &, const Version &);
+		static
+		boost::optional<PrereleaseSuffix>
+		extract_prerelease_suffix(
+				QString prerelease_suffix_string);
 	};
 
 
 	/**
-	 * Prints "<REVISION> (GPlates <MAJOR>.<MINOR>.<PATCH>)" if @a version was created with
-	 * @a get_imported_version, otherwise just prints "<REVISION>".
+	 * Prints @a version in PEP440 format.
 	 */
 	std::ostream &
 	operator<<(

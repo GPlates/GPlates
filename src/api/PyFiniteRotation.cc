@@ -465,7 +465,6 @@ export_finite_rotation()
 						bp::default_call_policies(),
 						(bp::arg("pole"), bp::arg("angle_radians"))),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
-				// Specific overload signature...
 				"__init__(...)\n"
 				"A *FiniteRotation* object can be constructed in more than one way...\n"
 				"\n"

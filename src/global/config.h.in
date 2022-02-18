@@ -6,7 +6,7 @@
 //
 
 
-// Define if this is a public release.
+// Define if this is a public release (GPlates or pyGPlates).
 #cmakedefine GPLATES_PUBLIC_RELEASE
 
 // Define if installing GPlates (or pyGPlates) as a standalone bundle (by copying dependency libraries during installation).
