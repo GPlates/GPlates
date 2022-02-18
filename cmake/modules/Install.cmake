@@ -1148,6 +1148,8 @@ del pygplates
                 #       ${CMAKE_INSTALL_PREFIX} (inside QT_PLUGINS_INSTALLED). And a side note, it does this at install time...
                 CODE "set(QT_PLUGINS_INSTALLED \"${QT_PLUGINS_INSTALLED}\")"
                 CODE "set(GPLATES_BUILD_GPLATES [[${GPLATES_BUILD_GPLATES}]])"
+                # The *build* target filename: executable (for gplates) or module library (for pygplates).
+                CODE "set(_target_file_name \"$<TARGET_FILE_NAME:${BUILD_TARGET}>\")"
                 #
                 # Fix up the path to each *direct* dependency of GPlates (or pyGPlates), its Qt plugins and their installed dependencies.
                 #
@@ -1180,9 +1182,9 @@ del pygplates
                         codesign(${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/gplates.app)
                     else()  # pyGPlates ...
                         # Fix the dependency install names in the installed pygplates library.
-                        fix_dependency_install_names(${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/$<TARGET_FILE_NAME:pygplates>)
+                        fix_dependency_install_names(${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${_target_file_name})
                         # Sign *after* fixing dependencies (since we cannot modify after signing).
-                        codesign(${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/$<TARGET_FILE_NAME:pygplates>)
+                        codesign(${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${_target_file_name})
                     endif()
                 ]]
         )
