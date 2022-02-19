@@ -10,11 +10,11 @@
 # Now we build *either* GPlates or pyGPlates. If you need to build both then create two separate out-of-place CMake builds
 # (out-of-place means the binary artifacts are created in a directory separate from the source code).
 #
-# NOTE: THIS IS CURRENTLY THE PYGPLATES BRANCH (SO 'GPLATES_BUILD_GPLATES' DEFAULTS TO 'FALSE').
-#       YOU SHOULD ONLY BUILD 'pygplates'. YOU SHOULDN'T BUILD 'gplates' UNTIL THIS BRANCH IS FULLY MERGED TO TRUNK
-#       (WHICH CAN ONLY HAPPEN ONCE WE'VE COMPLETELY UPDATED THE INTERNAL MODEL).
+# NOTE: THIS IS CURRENTLY THE MAIN BRANCH (SO 'GPLATES_BUILD_GPLATES' DEFAULTS TO 'TRUE').
+#       YOU SHOULD ONLY BUILD 'gplates'. YOU SHOULDN'T BUILD 'pygplates' UNTIL THE PYGPLATES BRANCH HAS BEEN FULLY MERGED TO MAIN
+#       (WHICH CAN ONLY HAPPEN ONCE WE'VE COMPLETELY UPDATED THE INTERNAL MODEL IN THE PYGPLATES BRANCH).
 #
-option(GPLATES_BUILD_GPLATES "True to build GPlates (false to build pyGPlates)." false)
+option(GPLATES_BUILD_GPLATES "True to build GPlates (false to build pyGPlates)." true)
 
 
 #
