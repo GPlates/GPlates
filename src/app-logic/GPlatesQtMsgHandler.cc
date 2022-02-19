@@ -53,7 +53,6 @@
 #include "file-io/ErrorOpeningFileForWritingException.h"
 
 #include "global/AssertionFailureException.h"
-#include "global/config.h"  // GPLATES_PUBLIC_RELEASE
 #include "global/GPlatesAssert.h"
 #include "global/Version.h"
 
@@ -262,17 +261,9 @@ GPlatesAppLogic::GPlatesQtMsgHandler::GPlatesQtMsgHandler()
 	}
 	
 	// Print the last message to the console before it gets redirected to log window and log file.
-#if defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
 	const QString console_message = QObject::tr("GPlates %1 started at %2")
 			.arg(GPlatesGlobal::Version::get_GPlates_version())
 			.arg(QDateTime::currentDateTime().toString());
-#else
-	const QString console_message = QObject::tr("GPlates %1 (build:%3 %4) started at %2")
-			.arg(GPlatesGlobal::Version::get_GPlates_version())
-			.arg(QDateTime::currentDateTime().toString())
-			.arg(GPlatesGlobal::Version::get_working_copy_version_number())
-			.arg(GPlatesGlobal::Version::get_working_copy_branch_name());
-#endif
 	std::cout << console_message.toStdString() << std::endl;
 
 	// Install our message handler and keep track of the previous message handler.

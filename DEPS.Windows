@@ -160,7 +160,7 @@ Python
      * Download the 32-bit installer for a 32-bit build (eg, 'python-3.7.9.exe'), or
        download the 64-bit installer for a 64-bit build (eg, 'python-3.7.9.amd64.exe).
      * Note that GPlates (and pygplates) also support Python 2 (but it has reached end of life, so Python 3 is recommended).
-  2. Add the root Python directory, and 'DLLs/' and 'Scripts/' sub-directories, to the PATH environment variable.
+  2. Add the root Python directory, and 'Scripts/' sub-directories, to the PATH environment variable.
      * Note: Make sure you add these higher in the PATH than "%USERPROFILE%\AppData\Local\Microsoft\WindowsApps" because
              Windows 10 May 2019 update now places a redirect python.exe in there that takes you straight to the Microsoft Store.
   3. Add the root Python directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\python\Python-3.7.9 )
@@ -353,18 +353,6 @@ zlib
      * zlibwapi.pdb
   5. Add the zlib root directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\zlib\zlib-1.2.11 ).
   6. Add the zlib root directory to the PATH environment variable (eg, "C:\SDK\zlib\zlib-1.2.11") so the DLL can be found.
-
-Subversion (optional, but recommended for developers)
-
-  1. Get the command-line client from http://www.collab.net/downloads/subversion/
-     Either the server and client bundle or the client-only bundle will suffice.
-     Even if you have installed TortoiseSVN, this needs to be installed separately
-     to provide the `svn` and `svnversion` command line tools.
-      * Alternatively, Cygwin (http://www.cygwin.com/) contains Subversion.
-  2. Add the location of the `svn` executable to the PATH environment variable
-     (see above).
-  If Subversion is not installed, the build number and branch name will not be
-  automatically inserted into the About dialog box by the build process.
 
 Graphviz (required for documentation, but not required to build GPlates)
 

@@ -31,7 +31,6 @@
 
 #include "LogToModelHandler.h"
 
-#include "global/config.h"  // GPLATES_PUBLIC_RELEASE
 #include "global/Version.h"
 
 
@@ -131,17 +130,9 @@ GPlatesAppLogic::LogModel::LogModel(
 	d_buffer_timeout->setSingleShot(true);
 	
 	// Start the log with the date and our version.
-#if defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
 	QString logmsg = QObject::tr("Log started at %1 by GPlates %2")
 			.arg(QDateTime::currentDateTime().toString())
 			.arg(GPlatesGlobal::Version::get_GPlates_version());
-#else
-	QString logmsg = QObject::tr("Log started at %1 by GPlates %2 (build:%3 %4)")
-			.arg(QDateTime::currentDateTime().toString())
-			.arg(GPlatesGlobal::Version::get_GPlates_version())
-			.arg(GPlatesGlobal::Version::get_working_copy_version_number())
-			.arg(GPlatesGlobal::Version::get_working_copy_branch_name());
-#endif
 	append(LogEntry(logmsg, LogEntry::OTHER, LogEntry::META));
 			
 	// As we get created by ApplicationState, we should now be ready to install
