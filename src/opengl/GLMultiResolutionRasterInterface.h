@@ -182,8 +182,8 @@ namespace GPlatesOpenGL
 		 * The framebuffer colour buffer format should typically match the texture format of this
 		 * raster. The two main examples are:
 		 *   1) visual display of raster: an RGBA fixed-point raster rendered to the main framebuffer,
-		 *   2) data analysis: a data-value/data-coverage floating-point raster rendered to
-		 *      a floating-point texture attached to a framebuffer object.
+		 *   2) data analysis: a data-value(R)/data-coverage(G) floating-point RG raster rendered to a
+		 *                     floating-point RG texture attached to a framebuffer object.
 		 * NOTE: It is possible to render a fixed-point raster to a floating-point colour buffer
 		 * or vice versa but there's no real need or use for that.
 		 */

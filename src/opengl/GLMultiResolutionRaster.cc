@@ -491,7 +491,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_visible_tiles(
 	const LevelOfDetail &lod = *d_level_of_detail_pyramid[pyramid_level];
 
 	//
-	// Traverse the OBB tree of the level-of-detail and gather of list of tiles that
+	// Traverse the OBB tree of the level-of-detail and gather a list of tiles that
 	// are visible in the view frustum.
 	//
 
@@ -568,27 +568,27 @@ GPlatesOpenGL::GLMultiResolutionRaster::clear_framebuffer(
 		GL &gl,
 		const GLMatrix &view_projection_transform)
 {
-	// If not a normal map then just clear the colour buffer.
-	if (dynamic_cast<GLNormalMapSource *>(d_raster_source.get()) == nullptr)
+	if (dynamic_cast<GLNormalMapSource *>(d_raster_source.get()) != nullptr)
 	{
+		//
+		// We have a normal map raster source.
+		//
+
+		// If we've not yet created the ability to render sphere normals then do so now.
+		if (!d_render_sphere_normals)
+		{
+			d_render_sphere_normals = boost::in_place(boost::ref(gl));
+		}
+
+		// Render the sphere normals.
+		d_render_sphere_normals->render(gl, view_projection_transform);
+	}
+	else // *not* a normal map...
+	{
+		// Clear the colour buffer.
 		gl.ClearColor(); // Clear colour to all zeros.
 		glClear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
-
-		return;
 	}
-
-	//
-	// We have a normal map raster source.
-	//
-
-	// If we've not yet created the ability to render sphere normals then do so now.
-	if (!d_render_sphere_normals)
-	{
-		d_render_sphere_normals = boost::in_place(boost::ref(gl));
-	}
-
-	// Render the sphere normals.
-	d_render_sphere_normals->render(gl, view_projection_transform);
 }
 
 

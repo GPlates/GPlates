@@ -412,7 +412,7 @@ GPlatesQtWidgets::MapView::mouse_pointer_llp()
 	boost::optional<GPlatesMaths::LatLonPoint> llp;
 
 
-	llp = d_map_canvas_ptr->map().projection().inverse_transform(x_mouse_pos,y_mouse_pos);
+	llp = map_canvas().map().projection().inverse_transform(x_mouse_pos,y_mouse_pos);
 
 	if (!llp)
 	{
@@ -422,7 +422,7 @@ GPlatesQtWidgets::MapView::mouse_pointer_llp()
 	// Forward transform the lat-lon point and see where it would end up. 
 	double x_scene_pos = llp->longitude();
 	double y_scene_pos = llp->latitude();
-	d_map_canvas_ptr->map().projection().forward_transform(x_scene_pos,y_scene_pos);
+	map_canvas().map().projection().forward_transform(x_scene_pos,y_scene_pos);
 
 	// If we don't end up at the same point, we're off the map. 
 
@@ -525,20 +525,6 @@ GPlatesQtWidgets::MapView::render_opengl_feedback_to_paint_device(
 }
 
 
-const GPlatesQtWidgets::MapCanvas &
-GPlatesQtWidgets::MapView::map_canvas() const
-{
-	return *d_map_canvas_ptr;
-}
-
-
-GPlatesQtWidgets::MapCanvas &
-GPlatesQtWidgets::MapView::map_canvas()
-{
-	return *d_map_canvas_ptr;
-}
-
-
 void
 GPlatesQtWidgets::MapView::set_camera_viewpoint(
 	const GPlatesMaths::LatLonPoint &desired_centre)
@@ -547,8 +533,9 @@ GPlatesQtWidgets::MapView::set_camera_viewpoint(
 	double x_pos = desired_centre.longitude();
 	double y_pos = desired_centre.latitude();
 
-	try{
-		d_map_canvas_ptr->map().projection().forward_transform(x_pos,y_pos);
+	try
+	{
+		map_canvas().map().projection().forward_transform(x_pos,y_pos);
 	}
 	catch(GPlatesGui::ProjectionException &e)
 	{
@@ -576,7 +563,7 @@ GPlatesQtWidgets::MapView::camera_llp() const
 	double tolerance = 1.;
 
 	boost::optional<GPlatesMaths::LatLonPoint> llp =
-		d_map_canvas_ptr->map().projection().inverse_transform(x_pos,y_pos);
+		map_canvas().map().projection().inverse_transform(x_pos,y_pos);
 		
 	if (!llp)
 	{
@@ -586,7 +573,7 @@ GPlatesQtWidgets::MapView::camera_llp() const
 	// Forward transform the lat-lon point and see where it would end up. 
 	double x_scene_pos = llp->longitude();
 	double y_scene_pos = llp->latitude();
-	d_map_canvas_ptr->map().projection().forward_transform(x_scene_pos,y_scene_pos);
+	map_canvas().map().projection().forward_transform(x_scene_pos,y_scene_pos);
 
 	// If we don't end up at the same point, we're off the map. 
 	if (std::fabs(x_scene_pos - screen_x) > tolerance)
@@ -824,8 +811,9 @@ GPlatesQtWidgets::MapView::set_orientation(
 	double x_pos = desired_llp.longitude();
 	double y_pos = desired_llp.latitude();
 
-	try{
-		d_map_canvas_ptr->map().projection().forward_transform(x_pos,y_pos);
+	try
+	{
+		map_canvas().map().projection().forward_transform(x_pos,y_pos);
 	}
 	catch(GPlatesGui::ProjectionException &e)
 	{

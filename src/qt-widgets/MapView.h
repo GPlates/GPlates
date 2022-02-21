@@ -216,10 +216,16 @@ namespace GPlatesQtWidgets
 				QPaintDevice &feedback_paint_device);
 
 		const MapCanvas &
-		map_canvas() const;
+		map_canvas() const
+		{
+			return *d_map_canvas_ptr;
+		}
 
 		MapCanvas &
-		map_canvas();
+		map_canvas()
+		{
+			return *d_map_canvas_ptr;
+		}
 
 
 		/**

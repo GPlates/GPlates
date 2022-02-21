@@ -39,13 +39,13 @@ uniform sampler2D region_of_interest_mask_texture_sampler;
 void main (void)
 {
 	float region_of_interest_mask =
-			texture2D(region_of_interest_mask_texture_sampler, gl_TexCoord[1].st).a;
+			texture(region_of_interest_mask_texture_sampler, gl_TexCoord[1].st).a;
 	if (region_of_interest_mask == 0)
 		discard;
 
 	// NOTE: There's no need to bilinear filter since the projection frustums should be
 	// such that we're sampling at texel centres.
-	vec4 target_raster = texture2D(target_raster_texture_sampler, gl_TexCoord[0].st);
+	vec4 target_raster = texture(target_raster_texture_sampler, gl_TexCoord[0].st);
 	// The red channel contains the raster data value and the green channel contains the coverage.
 	float data = target_raster.r;
 	float coverage = target_raster.g;

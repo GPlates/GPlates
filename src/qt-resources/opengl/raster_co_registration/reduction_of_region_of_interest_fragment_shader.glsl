@@ -44,10 +44,10 @@ void main (void)
 
 	vec4 src[4];
 	// Sample the four source texels.
-	src[0] = texture2D(reduce_source_texture_sampler, st00);
-	src[1] = texture2D(reduce_source_texture_sampler, st01);
-	src[2] = texture2D(reduce_source_texture_sampler, st10);
-	src[3] = texture2D(reduce_source_texture_sampler, st11);
+	src[0] = texture(reduce_source_texture_sampler, st00);
+	src[1] = texture(reduce_source_texture_sampler, st01);
+	src[2] = texture(reduce_source_texture_sampler, st10);
+	src[3] = texture(reduce_source_texture_sampler, st11);
 
 #ifdef REDUCTION_SUM
 	vec4 sum = vec4(0);
