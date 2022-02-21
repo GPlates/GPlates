@@ -24,25 +24,8 @@
 #
 
 # Determine if the current generator is multi-configuration (Visual Studio and XCode), or not (Makefile).
-if (CMAKE_VERSION VERSION_LESS 3.9)
-	# The pre-CMake 3.9 way of detecting a multi-config generator:
-	#
-	# The following is from http://mail.kde.org/pipermail/kde-buildsystem/2008-November/005112.html...
-	#
-	# "The way to identify whether a generator is multi-configuration is to
-	# check whether CMAKE_CONFIGURATION_TYPES is set.  The VS/XCode generators
-	# set it (and ignore CMAKE_BUILD_TYPE).  The Makefile generators do not
-	# set it (and use CMAKE_BUILD_TYPE).  If CMAKE_CONFIGURATION_TYPES is not
-	# already set, don't set it."
-	if (CMAKE_CONFIGURATION_TYPES)
-		set(_GENERATOR_IS_MULTI_CONFIG TRUE)
-	else()
-		set(_GENERATOR_IS_MULTI_CONFIG FALSE)
-	endif()
-else()
-	# The robust way to detect a multi-config generator (requires CMake 3.9).
-	get_property(_GENERATOR_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
-endif()
+# CMake 3.9 introduced a robust way to detect a multi-config generator (and our min. CMake requirement exceeds 3.9).
+get_property(_GENERATOR_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
 #
 # Multi-configuration generators list the build types in CMAKE_CONFIGURATION_TYPES.

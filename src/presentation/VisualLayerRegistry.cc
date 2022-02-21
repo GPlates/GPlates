@@ -405,6 +405,7 @@ GPlatesPresentation::register_default_visual_layers(
 		GPlatesPresentation::ViewState &view_state)
 {
 	using namespace GPlatesAppLogic::LayerTaskType;
+	using namespace boost::placeholders;  // For _1, _2, etc
 
 	GPlatesGui::HTMLColourNames &html_colours = GPlatesGui::HTMLColourNames::instance();
 	GPlatesAppLogic::ReconstructGraph &reconstruct_graph = application_state.get_reconstruct_graph();

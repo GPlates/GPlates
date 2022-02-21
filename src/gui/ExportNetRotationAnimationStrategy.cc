@@ -637,7 +637,9 @@ GPlatesGui::ExportNetRotationAnimationStrategy::export_iteration(
 						geom_ptr->get_reconstruction_tree_creator().get_reconstruction_tree(
 							t_younger);
 
-				const GPlatesMaths::FiniteRotation stage_pole = GPlatesAppLogic::RotationUtils::get_stage_pole(*tree1,*tree2,*plate_id_opt,0);
+				const GPlatesMaths::FiniteRotation stage_pole = GPlatesAppLogic::RotationUtils::get_stage_pole(
+						*tree1, *tree2,
+						*plate_id_opt, d_anchor_plate_id);
 #else // Doesn't appear to affect the results...
 				const GPlatesMaths::FiniteRotation stage_pole = GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
 						*plate_id_opt,

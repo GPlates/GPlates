@@ -51,7 +51,6 @@
 
 #include "file-io/StandaloneBundle.h"
 
-#include "global/config.h"  // GPLATES_PUBLIC_RELEASE
 #include "global/NotYetImplementedException.h"
 #include "global/python.h"
 #include "global/Version.h"
@@ -337,33 +336,7 @@ namespace
 		if (GPlatesUtils::CommandLineParser::is_version_requested(vm))
 		{
 			// Specify the major.minor.patch[-prerelease] version.
-			std::cout << GPlatesGlobal::Version::get_GPlates_version().toLatin1().constData();
-
-#if !defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
-			// Specify the build revision (using the subversion info).
-			QString subversion_version_number = GPlatesGlobal::Version::get_working_copy_version_number();
-			if (!subversion_version_number.isEmpty())
-			{
-				QString subversion_info = " (build:" + subversion_version_number;
-				QString subversion_branch_name = GPlatesGlobal::Version::get_working_copy_branch_name();
-				if (!subversion_branch_name.isEmpty())
-				{
-					if (subversion_branch_name == "trunk")
-					{
-						subversion_info.append(" trunk");
-					}
-					else
-					{
-						subversion_info.append(" ").append(subversion_branch_name).append(" branch");
-					}
-				}
-				subversion_info.append(")");
-				std::cout << subversion_info.toLatin1().constData();
-			}
-#endif
-
-			std::cout << std::endl;
-
+			std::cout << GPlatesGlobal::Version::get_GPlates_version().toLatin1().constData() << std::endl;
 			exit(0);
 		}
 

@@ -1,0 +1,6 @@
+# Auto detect text files and store as LF in repository.
+* text=auto
+
+# Isolate binary files in case auto-detection algorithm fails.
+# These are extensions of binary files that exist in repository.
+*.{icns,ico,gz,dbf,shp,shx,png} binary

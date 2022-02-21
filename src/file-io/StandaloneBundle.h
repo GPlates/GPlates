@@ -69,8 +69,7 @@ namespace GPlatesFileIO
 		// The following data directory queries return none if GPlates (or pyGPlates) was not compiled
 		// as standalone (ie, GPLATES_INSTALL_STANDALONE is not defined) or the standalone bundle has
 		// not yet been created (ie, if we've built GPlates with GPLATES_INSTALL_STANDALONE but not yet
-		// installed it, eg, with "cmake --install . --component gplates --prefix ~/gplates/", or not yet
-		// packaged it, eg, with "cpack -D CPACK_COMPONENTS_ALL=gplates").
+		// installed it, eg, with "cmake --install . --prefix ~/gplates/", or not yet packaged it, eg, with "cpack").
 		//
 
 		/**

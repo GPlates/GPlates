@@ -486,7 +486,16 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::split_feature(
 	// Push command onto undo list.
 	// Note: the command's redo() gets executed inside the push() call and this is where
 	// the vertex is initially inserted.
+#if 1
+	// We're currently preventing undo of splitting a feature.
+	// It still crashes, and I can see there's been a fair bit of hacking in it, best to disable it for now.
+	//
+	// TODO: Fix SplitFeatureUndoCommand once model undo-redo is properly implemented in the model
+	//       (when the internal model of pyGPlates is integrated back into GPlates).
+	undo_command->redo();
+#else
 	UndoRedo::instance().get_active_undo_stack().push(undo_command.release());
+#endif
 }
 
 void

@@ -1,8 +1,8 @@
 ################################################################################################
 #                                                                                              #
-# Package targets.                                                                             #
+# Package the ${BUILD_TARGET} target (either 'gplates' or 'pygplates').                        #
 #                                                                                              #
-# Package targets to run on *other* machines (rather than just the *build* machine).           #
+# This enable the target to run on *other* machines (rather than just the *build* machine).    #
 #                                                                                              #
 ################################################################################################
 
@@ -22,18 +22,68 @@
 #   (e.g., CPACK_SOURCE_ZIP) allowing users to select which packages will be generated.
 #
 if (WIN32)
-    # For binary packages default to a NSIS installer (need to install version 3 prior to creating NSIS package).
-    # Also create a ZIP (binary) archive by default so that users can install without admin privileges.
-    SET(CPACK_GENERATOR NSIS ZIP)
+
+    if (GPLATES_BUILD_GPLATES)  # GPlates ...
+        # For binary packages default to a NSIS installer (need to install version 3 prior to creating NSIS package).
+        # Also create a ZIP (binary) archive by default so that users can install without admin privileges.
+        SET(CPACK_GENERATOR NSIS ZIP)
+    else()  # pyGPlates ...
+        # Just create a ZIP (binary) archive by default.
+        SET(CPACK_GENERATOR ZIP)
+    endif()
     # For source packages default to a ZIP archive.
     SET(CPACK_SOURCE_GENERATOR ZIP)
+
 elseif (APPLE)
-    # For binary packages default to a drag'n'drop disk image
-    # (which is a ".dmg" with the GPlates app bundle and a sym link to /Applications in it).
-    SET(CPACK_GENERATOR DragNDrop)
+
+    if (GPLATES_BUILD_GPLATES)  # GPlates ...
+        # For binary packages default to a drag'n'drop disk image
+        # (which is a ".dmg" with the GPlates app bundle and a sym link to /Applications in it).
+        SET(CPACK_GENERATOR DragNDrop)
+    else()  # pyGPlates ...
+        # Just create a ZIP (binary) archive by default.
+        SET(CPACK_GENERATOR ZIP)
+    endif()
     # For source packages default to a bzipped tarball (.tar.bz2).
     SET(CPACK_SOURCE_GENERATOR TBZ2)
+    #
+    # Note that Apple also requires notarization.
+    #
+    # The entire notarization process is currently done outside of CMake/CPack and should follow the procedure outlined here:
+    #     https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/customizing_the_notarization_workflow
+    # ...for XCode 13 (and above) which I've not yet tried. The notarization process for XCode 12 and earlier is here (the examples below follow this):
+    #     https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/customizing_the_notarization_workflow/notarizing_apps_when_developing_with_xcode_12_and_earlier
+    #
+    # For GPlates this amounts to uploading the '.dmg' file to Apple for notarization, checking for successful notarization and then stapling the
+    # notarization ticket to the '.dmg' file. Once that is all done the '.dmg' file can be distributed to users.
+    # For example:
+    #   xcrun altool --notarize-app --primary-bundle-id org.gplates.gplates-2.3.0-dev1 --username <email-address> --password @keychain:ALTOOL_PASSWORD --file gplates_2.3.0-dev1_Darwin-x86_64.dmg
+    #   xcrun altool --notarization-info <request-identifier> -u <email-address> --password @keychain:ALTOOL_PASSWORD
+    #   xcrun stapler staple gplates_2.3.0-dev1_Darwin-x86_64.dmg
+    # Note however that, if you're only using CMake < 3.19, then you also need to manually code sign the '.dmg' file prior to notarization upload
+    # (for CMake >= 3.19 we handle it during the packaging phase using CPACK_POST_BUILD_SCRIPTS). See the "DragNDrop" section below.
+    #
+    # For pyGPlates this amounts to uploading the zip archive to Apple for notarization and checking for successful notarization
+    # (note that Apple's notarization process does not accept the TBZ2 format, which is why we default to ZIP for binary archives).
+    # For example:
+    #   xcrun altool --notarize-app --primary-bundle-id org.gplates.pygplates-0.34.0-py38 --username <email-address> --password @keychain:ALTOOL_PASSWORD --file pygplates_0.34.0_py38_Darwin-x86_64.zip
+    #   xcrun altool --notarization-info <request-identifier> -u <email-address> --password @keychain:ALTOOL_PASSWORD
+    # However you cannot staple a notarization ticket to a ZIP archive (you must instead staple each item in the archive and then create a new archive).
+    # If an item is not stapled then Gatekeeper finds the ticket online (stapling is so the ticket can be found when the network is offline).
+    # So currently we don't staple the items.
+    #
+    # Note that soon we will also use Conda to build pyGPlates packages (and we won't need Apple notarization for conda because the Conda package manager
+    # will be responsible for installing pygplates on the user's computer, and so conda will then be responsible for quarantine).
+    # Also the conda build script will likely use only the 'install' phase (ie, not use CPack) with something like:
+    #   cmake --install . --prefix pygplates_installation
+    # It is interesting to note that, as an alternative to using CPack, these staged install files could be manually archived into a zip file using 'ditto'
+    # (which can store extended attributes; and actually appears to be used by CPack):
+    #   ditto -c -k --keepParent pygplates_installation pygplates_installation.zip
+    # ...but it's easier just to use CPack.
+    #
+
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+
     if (GPLATES_INSTALL_STANDALONE)
         # For standalone binary packages default to a bzipped tarball.
         # With standalone Linux, like Windows and macOS, the 'install' stage has copied the dependencies
@@ -41,45 +91,14 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
         # The user will be able to extract the archive on target system without having to install anything.
         SET(CPACK_GENERATOR TBZ2)
     else()
-        # For non-standalone binary packages, default to a Debian package.
+        # For non-standalone binary packages, default to a Debian package (can be used for GPlates or pyGPlates).
         # Dependencies will then be installed on the target system by the system binary package manager.
         SET(CPACK_GENERATOR DEB)
     endif()
     # For source packages default to a bzipped tarball (.tar.bz2).
     SET(CPACK_SOURCE_GENERATOR TBZ2)
-endif()
 
-# Specify which components to package by default.
-#
-# There are two components available for packaging:
-# - gplates
-# - pygplates
-#
-# By default, we only package 'gplates'.
-#
-# This is because 'pygplates' will soon be installable via 'conda' (and maybe ultimately via 'pip', although pygplates
-# has many shared library dependencies and 'pip' is not really designed to handle that).
-# So typically only the 'install' process would be used for 'pygplates' (eg, 'cmake --install . --component pygplates --prefix staging),
-# but not the 'packaging' process (ie, turning a staged installation into a package). Instead the staged installation
-# (without subsequent packaging with cpack) could be used as part of the conda build process (currently investigating this).
-#
-# However, if you want to package both 'gplates' and 'pygplates' then run 'cpack -G ZIP -D CPACK_COMPONENTS_ALL=gplates;pygplates'.
-# Note the use of '-G ZIP', for example on Windows, to override the CPACK_GENERATOR default above (NSIS;ZIP) since you would not
-# want to create an NSIS package for pygplates. In fact it's currently not possible to create an NSIS package for pygplates anyway because
-# we have CPACK_MONOLITHIC_INSTALL turned ON (for all generators, except archive generators like ZIP) and we use EXCLUDE_FROM_ALL in the
-# 'install()' commands for the 'pygplates' component, and together these two settings appear to result in NSIS packaging up all components
-# from a *default* installation (which includes only component 'gplates').
-# In any case, typically you would package 'gplates' and 'pygplates' in *separate* 'cpack' runs.
-# In this case you'd want to package 'gplates' with just 'cpack' (to create both an NSIS installer and a ZIP archive by default) and
-# package 'pygplates' with 'cpack -G ZIP -D CPACK_COMPONENTS_ALL=pygplates' (but note that when extracting the resultant archive you
-# would have a top-level directory that looked something like 'gplates_2.3.0_win64/', so you'd probably want to manually rename that).
-# Note the space in '-D CPACK_COMPONENTS_ALL' (without the space it won't override the default).
-#
-# NOTE: We only specify CPACK_COMPONENTS_ALL when CPACK_MONOLITHIC_INSTALL is disabled because they are conflicting
-#       (CPack will issue a warning and default to monolithic). We have CPACK_MONOLITHIC_INSTALL enabled by default and
-#       only disable it for the archive generators. As a result we don't set CPACK_COMPONENTS_ALL here, instead overriding it
-#       in PackageGeneratorOverrides.cmake for archive generators only.
-#set(CPACK_COMPONENTS_ALL gplates)
+endif()
 
 #   CPACK_MONOLITHIC_INSTALL - Disables the component-based installation mechanism.
 #
@@ -87,9 +106,7 @@ endif()
 #   Some CPack generators do monolithic packaging by default and may be asked to do component packaging by setting
 #   CPACK_<GENNAME>_COMPONENT_INSTALL to TRUE.
 #
-# We only want component-based installs (for components gplates and pygplates) for archive generators.
-# NSIS, DragNDrop and Debian should be monolithic which, as mentioned near the top of this file, will only package the 'gplates' component
-# (since we used EXCLUDE_FROM_ALL in the 'install()' commands for the 'pygplates' component).
+# We can only package either GPlates or pyGPlates (depending on GPLATES_BUILD_GPLATES), so we don't use component-based packaging.
 SET(CPACK_MONOLITHIC_INSTALL ON)
 
 
@@ -98,7 +115,7 @@ SET(CPACK_MONOLITHIC_INSTALL ON)
 ############################
 
 # Where all the distribution files are located.
-SET(GPLATES_SOURCE_DISTRIBUTION_DIR "${GPlates_SOURCE_DIR}/cmake/distribution")
+SET(GPLATES_SOURCE_DISTRIBUTION_DIR "${PROJECT_SOURCE_DIR}/cmake/distribution")
 
 # Lower case PROJECT_NAME.
 STRING(TOLOWER "${PROJECT_NAME}" _PROJECT_NAME_LOWER)
@@ -126,7 +143,8 @@ SET(CPACK_PACKAGE_CONTACT "${GPLATES_PACKAGE_CONTACT}")
 #
 #   By default, this is built from CPACK_PACKAGE_VERSION_MAJOR, CPACK_PACKAGE_VERSION_MINOR, and CPACK_PACKAGE_VERSION_PATCH.
 #
-SET(CPACK_PACKAGE_VERSION ${GPLATES_PACKAGE_VERSION})
+# Note: We're using PROJECT_VERSION_PRERELEASE which represents GPlates (or pyGPlates) if GPLATES_BUILD_GPLATES is true (or false).
+SET(CPACK_PACKAGE_VERSION "${PROJECT_VERSION_PRERELEASE}")
 
 #   CPACK_PACKAGE_FILE_NAME - The name of the package file to generate, not including the extension.
 #
@@ -142,9 +160,9 @@ if (WIN32)
     else()
         SET(_CPACK_SYSTEM_NAME_WIN win32)
     endif()
-    SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${GPLATES_PACKAGE_VERSION_NAME}_${_CPACK_SYSTEM_NAME_WIN}")
+    SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_CPACK_SYSTEM_NAME_WIN}")
 else()
-    SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${GPLATES_PACKAGE_VERSION_NAME}_${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+    SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
 #   CPACK_PACKAGE_DESCRIPTION_FILE - A text file used to describe the project.
@@ -184,7 +202,7 @@ SET(CPACK_RESOURCE_FILE_WELCOME "${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageWelco
 #   For example, setting this to the list ccmake;CMake will create a shortcut named "CMake" that will execute the installed executable ccmake.
 #   Not all CPack generators use it (at least NSIS, WIX and OSXX11 do).
 #
-SET(CPACK_PACKAGE_EXECUTABLES "gplates;${PROJECT_NAME}")
+SET(CPACK_PACKAGE_EXECUTABLES "${_PROJECT_NAME_LOWER};${PROJECT_NAME}")
 
 #   CPACK_STRIP_FILES - List of files to be stripped.
 #
@@ -195,7 +213,7 @@ SET(CPACK_STRIP_FILES TRUE)
 
 #   CPACK_SOURCE_PACKAGE_FILE_NAME - The name of the source package, e.g., cmake-2.6.1
 #
-SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${GPLATES_PACKAGE_VERSION_NAME}_src")
+SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_src")
 
 #   CPACK_SOURCE_STRIP_FILES - List of files in the source tree that will be stripped.
 #
@@ -209,9 +227,9 @@ SET(CPACK_SOURCE_STRIP_FILES FALSE)
 #   This is a list of patterns, e.g., /CVS/;/\\.svn/;\\.swp$;\\.#;/#;.*~;cscope.*
 #
 # Skip:
-# - directories starting with '.', and
+# - directories and files starting with '.' (eg, '.git/' directory or '.git' file, and '.gitattributes' and '.gitignore'), and
 # - directories named '__pycache__'.
-SET(CPACK_SOURCE_IGNORE_FILES "/\\.[^/]+/" "/__pycache__/")
+SET(CPACK_SOURCE_IGNORE_FILES "/\\.[^/]+" "/__pycache__/")
 
 #   CPACK_VERBATIM_VARIABLES - If set to TRUE, values of variables prefixed with CPACK_ will be escaped before being written
 #                              to the configuration files, so that the cpack program receives them exactly as they were specified.
@@ -226,50 +244,23 @@ set(CPACK_VERBATIM_VARIABLES TRUE)
 # Archive #
 ###########
 #
-# The only generator used to package both our 'gplates' and 'pygplates' components (as separate archives).
-
-
-#   CPACK_<GENNAME>_COMPONENT_INSTALL - Enable/Disable component install for CPack generator <GENNAME>.
-#   
-#   Each CPack Generator (RPM, DEB, ARCHIVE, NSIS, DMG, etc...) has a legacy default behavior. e.g. RPM builds monolithic whereas NSIS builds component.
-#   One can change the default behavior by setting this variable to 0/1 or OFF/ON.
-#   
-# We want to create separate archives for our two components (gplates and pygplates).
-# We also override CPACK_MONOLITHIC_INSTALL (turn it off) in PackageGeneratorOverrides.cmake.
-set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
-
-
-#   CPACK_ARCHIVE_<component>_FILE_NAME - Package file name without extension.
-#
-#   The extension is determined from the archive format and automatically appended to the file name.
-#   The default is <CPACK_PACKAGE_FILE_NAME>[-<component>], with spaces replaced by '-'.
-#
-#   New in version 3.9: Per-component CPACK_ARCHIVE_<component>_FILE_NAME variables.
-#
-# Each of our two components (gplates and pygplates) goes into a separate archive file.
-if (WIN32)
-    SET(CPACK_ARCHIVE_GPLATES_FILE_NAME "gplates_${GPLATES_PACKAGE_VERSION_NAME}_${_CPACK_SYSTEM_NAME_WIN}")
-    SET(CPACK_ARCHIVE_PYGPLATES_FILE_NAME "pygplates_${GPLATES_PACKAGE_VERSION_NAME}_${_CPACK_SYSTEM_NAME_WIN}")
-else()
-    SET(CPACK_ARCHIVE_GPLATES_FILE_NAME "gplates_${GPLATES_PACKAGE_VERSION_NAME}_${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
-    SET(CPACK_ARCHIVE_PYGPLATES_FILE_NAME "pygplates_${GPLATES_PACKAGE_VERSION_NAME}_${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
-endif()
+# Nothing needed for this generator.
 
 
 ########
 # NSIS #
 ########
 #
-# Only used to package our 'gplates' component (not 'pygplates').
+# Only used to package GPlates (not pyGPlates).
 
 
 #   CPACK_NSIS_PACKAGE_NAME - The title displayed at the top of the installer.
 #
-SET(CPACK_NSIS_PACKAGE_NAME "${PROJECT_NAME} ${GPLATES_PACKAGE_VERSION_NAME}")
+SET(CPACK_NSIS_PACKAGE_NAME "${PROJECT_NAME} ${PROJECT_VERSION_PRERELEASE_USER}")
 
 #   CPACK_NSIS_DISPLAY_NAME - The display name string that appears in the Windows Apps & features in Control Panel.
 #
-SET(CPACK_NSIS_DISPLAY_NAME "${PROJECT_NAME} ${GPLATES_PACKAGE_VERSION_NAME}")
+SET(CPACK_NSIS_DISPLAY_NAME "${PROJECT_NAME} ${PROJECT_VERSION_PRERELEASE_USER}")
 
 #   CPACK_NSIS_MUI_ICON - An icon filename.
 #
@@ -322,7 +313,7 @@ set(CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
 # DragNDrop #
 #############
 #
-# Only used to package our 'gplates' component (not 'pygplates').
+# Only used to package GPlates (not pyGPlates).
 #
 # Currently no DragNDrop-specific variables need setting.
 # See "PackageGeneratorOverrides.cmake" for overrides of the general variables (non-generator specific).
@@ -364,20 +355,22 @@ if (APPLE)
             #
             file(WRITE "${post_build_script}" "
                 foreach(_package_file \${CPACK_PACKAGE_FILES})
-                    # Run 'codesign' to sign with a Developer ID certificate.
-                    execute_process(
-                        COMMAND ${CODESIGN} --timestamp --sign \"${GPLATES_APPLE_CODE_SIGN_IDENTITY}\" \${_package_file}
-                        RESULT_VARIABLE _codesign_result
-                        OUTPUT_VARIABLE _codesign_output
-                        ERROR_VARIABLE _codesign_error)
-                    if (_codesign_result)
-                        message(FATAL_ERROR \"${CODESIGN} failed: \${_codesign_error}\")
+                    if (_package_file MATCHES [[.*\.dmg]])
+                        # Run 'codesign' to sign with a Developer ID certificate.
+                        execute_process(
+                            COMMAND ${CODESIGN} --timestamp --sign \"${GPLATES_APPLE_CODE_SIGN_IDENTITY}\" \${_package_file}
+                            RESULT_VARIABLE _codesign_result
+                            OUTPUT_VARIABLE _codesign_output
+                            ERROR_VARIABLE _codesign_error)
+                        if (_codesign_result)
+                            message(FATAL_ERROR \"${CODESIGN} failed: \${_codesign_error}\")
+                        endif()
                     endif()
                 endforeach()
             ")
         endfunction()
 
-        set(_post_build_script "${CMAKE_CURRENT_BINARY_DIR}/codesign_dragndrop_package.cmake")
+        set(_post_build_script "${CMAKE_CURRENT_BINARY_DIR}/codesign_package.cmake")
 
         create_post_build_script(${_post_build_script})
 
@@ -390,7 +383,7 @@ endif()
 # DEB #
 #######
 #
-# Only used to package our 'gplates' component (not 'pygplates').
+# Packages GPlates (or pyGPlates) if GPLATES_BUILD_GPLATES is true (or false).
 
 #   CPACK_DEBIAN_PACKAGE_VERSION - The Debian package version.
 #
@@ -398,9 +391,10 @@ endif()
 #
 # For a pre-release append the pre-release version, using a '~' character which is the common Debian method
 # of handling pre-releases (see https://www.debian.org/doc/debian-policy/ch-controlfields.html#version).
-if (GPLATES_VERSION_PRERELEASE)
-    # For example, the first development release before 2.3.0 would be 2.3.0~1, and the first release candidate would be 2.3.0~rc.1.
-    SET(CPACK_DEBIAN_PACKAGE_VERSION "${PROJECT_VERSION}~${GPLATES_VERSION_PRERELEASE}")
+# Note: We're using PROJECT_VERSION_PRERELEASE which represents GPlates (or pyGPlates) if GPLATES_BUILD_GPLATES is true (or false).
+if (PROJECT_VERSION_PRERELEASE_SUFFIX)
+    # For example, for GPlates, the first development release before 2.3.0 would be 2.3.0~1, and the first release candidate would be 2.3.0~rc.1.
+    SET(CPACK_DEBIAN_PACKAGE_VERSION "${PROJECT_VERSION}~${PROJECT_VERSION_PRERELEASE_SUFFIX}")
 else()
     SET(CPACK_DEBIAN_PACKAGE_VERSION "${PROJECT_VERSION}")
 endif()
@@ -422,10 +416,10 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 8)
 else()
     SET(_DEBIAN_ARCH i386)
 endif()
-# Note: GPLATES_PACKAGE_VERSION_NAME is the version that includes the pre-release version suffix in a form that is suitable
-#       for use in package filenames (unlike GPLATES_PACKAGE_VERSION). For example, for development 2.3 pre-releases this looks like
+# Note: PROJECT_VERSION_PRERELEASE_USER is the version that includes the pre-release version suffix in a form that is suitable
+#       for use in package filenames (unlike PROJECT_VERSION_PRERELEASE). For example, for development 2.3 pre-releases this looks like
 #       gplates_2.3.0-dev1_amd64.deb (when the actual version is 2.3.0~1 - see CPACK_DEBIAN_PACKAGE_VERSION).
-SET(CPACK_DEBIAN_FILE_NAME "${_PROJECT_NAME_LOWER}_${GPLATES_PACKAGE_VERSION_NAME}_${_DEBIAN_ARCH}.deb")
+SET(CPACK_DEBIAN_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_DEBIAN_ARCH}.deb")
 
 #   CPACK_DEBIAN_PACKAGE_HOMEPAGE - The URL of the web site for this package, preferably (when applicable) the site
 #                                   from which the original source can be obtained and any additional upstream documentation
@@ -473,11 +467,11 @@ SET(CPACK_DEB_COMPONENT_INSTALL OFF)
 # Specify our own configuration file to handle generator-specific settings for CPACK variables that are used by multiple generators
 # (eg, NSIS, DragNDrop). For example, CPACK_PACKAGE_ICON uses different icon formats for different generators.
 # This is not needed for CPACK_<GENERATOR>_ variables (since they only apply to a specific generator).
-set(CPACK_PROJECT_CONFIG_FILE "${GPlates_BINARY_DIR}/cmake/modules/PackageGeneratorOverrides.cmake")
+set(CPACK_PROJECT_CONFIG_FILE "${PROJECT_BINARY_DIR}/cmake/modules/PackageGeneratorOverrides.cmake")
 #
 # The configuration file only has access to CPACK_ variables (since it's only loaded when cpack runs).
 # So we need to transfer any other variables across now (during CMake configuration).
-configure_file(${GPlates_SOURCE_DIR}/cmake/modules/PackageGeneratorOverrides.cmake.in ${CPACK_PROJECT_CONFIG_FILE} @ONLY)
+configure_file(${PROJECT_SOURCE_DIR}/cmake/modules/PackageGeneratorOverrides.cmake.in ${CPACK_PROJECT_CONFIG_FILE} @ONLY)
 
 # CPack will generate a target 'package' that, when built, will install the targets specified
 # by any 'install' commands into a staging area and package them.

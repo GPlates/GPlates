@@ -35,7 +35,6 @@
 
 #include "GPlatesQApplication.h"
 
-#include "global/config.h"  // GPLATES_PUBLIC_RELEASE
 #include "global/GPlatesException.h"
 #include "global/Version.h"
 
@@ -150,8 +149,6 @@ namespace
 		if (!call_stack_trace_std.empty())
 		{
 			// If we have an installed message handler then this will output to a log file.
-			// Also write out the SVN revision number so we know which source code to look
-			// at when users send us back a log file.
 			qWarning()
 					<< QString::fromStdString(call_stack_trace_std)
 #if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
@@ -159,12 +156,7 @@ namespace
 #else
 					<< endl
 #endif
-					<< GPlatesGlobal::Version::get_GPlates_version()
-#if !defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
-					<< "( build:" << GPlatesGlobal::Version::get_working_copy_version_number()
-					<< GPlatesGlobal::Version::get_working_copy_branch_name() << ")"
-#endif
-				;
+					<< GPlatesGlobal::Version::get_GPlates_version();
 		}
 
 		// If we have an installed message handler then this will output to a log file.
