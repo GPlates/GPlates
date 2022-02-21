@@ -58,7 +58,8 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
+	class GLViewProjection;
 }
 
 namespace GPlatesViewOperations
@@ -113,7 +114,8 @@ namespace GPlatesGui
 		 */
 		cache_handle_type
 		paint(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection,
 				LayerPainter &layer_painter);
 
 		void
@@ -381,11 +383,11 @@ namespace GPlatesGui
 		 */
 		void
 		visit_rendered_geometries(
-				GPlatesOpenGL::GLRenderer &renderer);
+				GPlatesOpenGL::GL &gl);
 
 		void
 		get_visible_rendered_geometries(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				std::vector<RenderedGeometryInfo> &rendered_geometry_infos,
 				std::vector<RenderedGeometryOrder> &rendered_geometry_orders,
 				const rendered_geometries_spatial_partition_type &rendered_geometries_spatial_partition);

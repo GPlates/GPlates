@@ -196,6 +196,7 @@ GPlatesGui::Globe::paint(
 	{
 		render_globe_sub_surface(
 				gl,
+				view_projection,
 				*cache_handle,
 				viewport_zoom_factor);
 	}
@@ -334,6 +335,7 @@ GPlatesGui::Globe::render_globe_hemisphere_surface(
 	const cache_handle_type rendered_geoms_cache_half_globe =
 			d_rendered_geom_collection_painter.paint_surface(
 					gl,
+					view_projection,
 					viewport_zoom_factor,
 					vector_geometries_override_colour);
 	cache_handle.push_back(rendered_geoms_cache_half_globe);
@@ -349,6 +351,7 @@ GPlatesGui::Globe::render_globe_hemisphere_surface(
 void
 GPlatesGui::Globe::render_globe_sub_surface(
 		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLViewProjection &view_projection,
 		std::vector<cache_handle_type> &cache_handle,
 		const double &viewport_zoom_factor)
 {
@@ -361,6 +364,7 @@ GPlatesGui::Globe::render_globe_sub_surface(
 	const cache_handle_type rendered_geoms_cache_sub_surface_globe =
 			d_rendered_geom_collection_painter.paint_sub_surface(
 					gl,
+					view_projection,
 					viewport_zoom_factor,
 					// Set to true when active globe canvas tool is currently in a
 					// mouse drag operation that changes the view.

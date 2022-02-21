@@ -46,9 +46,9 @@
 #include "maths/Rotation.h"
 #include "maths/UnitVector3D.h"
 
+#include "opengl/GL.h"
 #include "opengl/GLIntersect.h"
 #include "opengl/GLIntersectPrimitives.h"
-#include "opengl/GLRenderer.h"
 
 #include "property-values/RawRaster.h"
 #include "property-values/RawRasterUtils.h"
@@ -144,35 +144,33 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter
 
 GPlatesGui::GlobeRenderedGeometryLayerPainter::cache_handle_type
 GPlatesGui::GlobeRenderedGeometryLayerPainter::paint(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLViewProjection &view_projection,
 		LayerPainter &layer_painter)
 {
 	//PROFILE_FUNC();
 
-	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
+	// Make sure we leave the OpenGL global state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
 
 	// We have a layer painter for the duration of this method.
 	d_layer_painter = layer_painter;
 
 	// Get the view frustum planes.
 	d_frustum_planes = boost::in_place(
-			renderer.gl_get_matrix(GL_MODELVIEW),
-			renderer.gl_get_matrix(GL_PROJECTION));
+			view_projection.get_view_transform(),
+			view_projection.get_projection_transform());
 
 	// Begin painting so our visit methods can start painting.
-	layer_painter.begin_painting(renderer);
+	layer_painter.begin_painting(gl);
 
 	// Visit the rendered geometries in the rendered layer.
 	//
 	// The point/line/polygon primitives get batched up into vertex streams for efficient rendering.
-	visit_rendered_geometries(renderer);
+	visit_rendered_geometries(gl);
 
 	// Do the actual painting.
-	const cache_handle_type layer_cache =
-			layer_painter.end_painting(
-					renderer,
-					d_scale);
+	const cache_handle_type layer_cache = layer_painter.end_painting(gl, view_projection, d_scale);
 
 	// We no longer have a layer painter.
 	d_layer_painter = boost::none;
@@ -1914,7 +1912,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_strain_marker_symb
 
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_geometries(
-		GPlatesOpenGL::GLRenderer &renderer)
+		GPlatesOpenGL::GL &gl)
 {
 	// Get the spatial partition of rendered geometries.
 	rendered_geometries_spatial_partition_type::non_null_ptr_to_const_type
@@ -1930,7 +1928,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_geometries(
 	// Visit the spatial partition to do view-frustum culling and collect the visible rendered geometries
 	// (the geometries completely outside the view frustum are not rendered).
 	get_visible_rendered_geometries(
-			renderer,
+			gl,
 			rendered_geometry_infos,
 			rendered_geometry_orders,
 			*rendered_geometries_spatial_partition);
@@ -1966,7 +1964,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_geometries(
 
 void
 GPlatesGui::GlobeRenderedGeometryLayerPainter::get_visible_rendered_geometries(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		std::vector<RenderedGeometryInfo> &rendered_geometry_infos,
 		std::vector<RenderedGeometryOrder> &rendered_geometry_orders,
 		const rendered_geometries_spatial_partition_type &rendered_geometries_spatial_partition)

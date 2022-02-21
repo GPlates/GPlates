@@ -47,6 +47,7 @@
 namespace GPlatesOpenGL
 {
 	class GL;
+	class GLViewProjection;
 }
 
 namespace GPlatesViewOperations
@@ -108,6 +109,7 @@ namespace GPlatesGui
 		cache_handle_type
 		paint_surface(
 				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection,
 				const double &viewport_zoom_factor,
 				boost::optional<Colour> vector_geometries_override_colour = boost::none);
 
@@ -123,6 +125,7 @@ namespace GPlatesGui
 		cache_handle_type
 		paint_sub_surface(
 				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection,
 				const double &viewport_zoom_factor,
 				bool improve_performance_reduce_quality_hint = false);
 
@@ -165,6 +168,7 @@ namespace GPlatesGui
 		{
 			PaintParams(
 					GPlatesOpenGL::GL &gl,
+					const GPlatesOpenGL::GLViewProjection &view_projection,
 					const double &viewport_zoom_factor,
 					GlobeRenderedGeometryLayerPainter::PaintRegionType paint_region,
 					// Used for PAINT_SURFACE...
@@ -173,6 +177,7 @@ namespace GPlatesGui
 					bool improve_performance_reduce_quality_hint = false);
 
 			GPlatesOpenGL::GL *d_gl;
+			GPlatesOpenGL::GLViewProjection d_view_projection;
 			double d_inverse_viewport_zoom_factor;
 			GlobeRenderedGeometryLayerPainter::PaintRegionType d_paint_region;
 

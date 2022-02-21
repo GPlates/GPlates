@@ -72,6 +72,7 @@
 #include "opengl/GLIntersect.h"
 #include "opengl/GLIntersectPrimitives.h"
 #include "opengl/GLTileRender.h"
+#include "opengl/OpenGLException.h"
 
 #include "presentation/ViewState.h"
 
@@ -289,6 +290,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 							new GPlatesOpenGL::GLContextImpl::QGLWidgetImpl(*this)))),
 	d_make_context_current(*d_gl_context),
 	d_initialisedGL(false),
+	d_off_screen_render_target_dimension(OFF_SCREEN_RENDER_TARGET_DIMENSION),
 	d_view_projection(
 			GPlatesOpenGL::GLViewport(0, 0, d_gl_context->get_width(), d_gl_context->get_height()),
 			// Use identity transforms for now, these will get updated when the camera changes...
@@ -412,11 +414,11 @@ GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 			// in device *independent* coordinates. This way if a user has a high DPI display (like Apple Retina)
 			// the higher pixel resolution does not force them to have more accurate mouse clicks...
 			GPlatesOpenGL::GLViewport(0, 0, width(), height()),
-			d_gl_view_transform,
+			d_view_projection.get_view_transform(),
 			// Also note that this projection transform is 'orthographic' or 'perspective', and hence is
 			// only affected by viewport *aspect ratio*, so it is independent of whether we're using
 			// device pixels or device *independent* pixels...
-			d_gl_projection_transform);
+			d_view_projection.get_projection_transform());
 	boost::optional< std::pair<double/*min*/, double/*max*/> > min_max_pixel_size =
 			gl_view_projection.get_min_max_pixel_size_on_unit_sphere(click_point.position_vector());
 	// If unable to determine maximum pixel size then just return the maximum allowed proximity threshold.
@@ -538,6 +540,9 @@ GPlatesQtWidgets::GlobeCanvas::initializeGL()
 	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
 	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
+	// Create and initialise the offscreen render target.
+	initialize_off_screen_render_target(*gl);
+
 	// NOTE: We should not perform any operation that affects the default framebuffer (such as 'glClear()')
 	//       because it's possible the default framebuffer (associated with this GLWidget) is not yet
 	//       set up correctly despite its OpenGL context being the current rendering context.
@@ -547,6 +552,47 @@ GPlatesQtWidgets::GlobeCanvas::initializeGL()
 
 	// 'initializeGL()' should only be called once.
 	d_initialisedGL = true;
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::initialize_off_screen_render_target(
+		GPlatesOpenGL::GL &gl)
+{
+	if (d_off_screen_render_target_dimension > gl.get_capabilities().gl_max_texture_size)
+	{
+		d_off_screen_render_target_dimension = gl.get_capabilities().gl_max_texture_size;
+	}
+
+	// Create the framebuffer and its renderbuffers.
+	d_off_screen_colour_renderbuffer = GPlatesOpenGL::GLRenderbuffer::create(gl);
+	d_off_screen_depth_stencil_renderbuffer = GPlatesOpenGL::GLRenderbuffer::create(gl);
+	d_off_screen_framebuffer = GPlatesOpenGL::GLFramebuffer::create(gl);
+
+	// Initialise offscreen colour renderbuffer.
+	gl.BindRenderbuffer(GL_RENDERBUFFER, d_off_screen_colour_renderbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, d_off_screen_render_target_dimension, d_off_screen_render_target_dimension);
+
+	// Initialise offscreen depth/stencil renderbuffer.
+	// Note that (in OpenGL 3.3 core) an OpenGL implementation is only *required* to provide stencil if a
+	// depth/stencil format is requested, and furthermore GL_DEPTH24_STENCIL8 is a specified required format.
+	gl.BindRenderbuffer(GL_RENDERBUFFER, d_off_screen_depth_stencil_renderbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, d_off_screen_render_target_dimension, d_off_screen_render_target_dimension);
+
+	// Bind the framebuffer that'll we subsequently attach the renderbuffers to.
+	gl.BindFramebuffer(GL_FRAMEBUFFER, d_off_screen_framebuffer);
+
+	// Bind the colour renderbuffer to framebuffer's first colour attachment.
+	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, d_off_screen_colour_renderbuffer);
+
+	// Bind the depth/stencil renderbuffer to framebuffer's depth/stencil attachment.
+	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, d_off_screen_depth_stencil_renderbuffer);
+
+	const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	GPlatesGlobal::Assert<GPlatesOpenGL::OpenGLException>(
+			completeness == GL_FRAMEBUFFER_COMPLETE,
+			GPLATES_ASSERTION_SOURCE,
+			"Framebuffer not complete for rendering tiles in globe filled polygons.");
 }
 
 
@@ -604,7 +650,6 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
 	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
-
 	// The image to render/copy the scene into.
 	//
 	// Handle high DPI displays (eg, Apple Retina) by rendering image in high-res device pixels.
@@ -633,7 +678,7 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 			0, 0,
 			// Use image size in device pixels (used by OpenGL)...
 			image_size_in_device_pixels.width(),
-			image_size_in_device_pixels.height())/*destination_viewport*/);
+			image_size_in_device_pixels.height()/*destination_viewport*/);
 	const double image_aspect_ratio = double(image_size_in_device_independent_pixels.width()) /
 			image_size_in_device_independent_pixels.height();
 
@@ -645,11 +690,10 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 	// The border is half the point size or line width, rounded up to nearest pixel.
 	// TODO: Use the actual maximum point size or line width to calculate this.
 	const unsigned int image_tile_border = 10;
-	// Set up for rendering the scene into tiles.
-	// The tile render target dimensions match the framebuffer dimensions.
+	// Set up for rendering the scene into tiles using the offscreen render target.
 	GPlatesOpenGL::GLTileRender image_tile_render(
-			framebuffer_dimensions.first/*tile_render_target_width*/,
-			framebuffer_dimensions.second/*tile_render_target_height*/,
+			d_off_screen_render_target_dimension/*tile_render_target_width*/,
+			d_off_screen_render_target_dimension/*tile_render_target_height*/,
 			image_viewport/*destination_viewport*/,
 			image_tile_border);
 
@@ -687,7 +731,15 @@ GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 		QImage &image)
 {
 	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+	GPlatesOpenGL::GL::StateScope save_restore_state(
+			gl,
+			// We're rendering to a render target so reset to the default OpenGL state...
+			true/*reset_to_default_state*/);
+
+	// Bind our offscreen framebuffer object for drawing and reading.
+	// This directs drawing to and reading from the offscreen colour renderbuffer at the first colour attachment, and
+	// its associated depth/stencil renderbuffer at the depth/stencil attachment.
+	gl.BindFramebuffer(GL_FRAMEBUFFER, d_off_screen_framebuffer);
 
 	GPlatesOpenGL::GLViewport image_tile_render_target_viewport;
 	image_tile_render.get_tile_render_target_viewport(image_tile_render_target_viewport);
@@ -829,7 +881,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 {
 	PROFILE_FUNC();
 
-	// Clear the colour and depth buffers of the main framebuffer.
+	// Clear the colour and depth buffers of the framebuffer currently bound to GL_DRAW_FRAMEBUFFER target.
 	// We also clear the stencil buffer in case it is used - also it's usually
 	// interleaved with depth so it's more efficient to clear both depth and stencil.
 	//

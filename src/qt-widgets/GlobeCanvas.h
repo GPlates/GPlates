@@ -52,7 +52,9 @@
 #include "maths/PolylineOnSphere.h"
 
 #include "opengl/GLContext.h"
+#include "opengl/GLFramebuffer.h"
 #include "opengl/GLMatrix.h"
+#include "opengl/GLRenderbuffer.h"
 #include "opengl/GLViewport.h"
 #include "opengl/GLViewProjection.h"
 #include "opengl/GLVisualLayers.h"
@@ -575,6 +577,18 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesOpenGL::GLViewProjection d_view_projection;
 
+		//! Colour renderbuffer object used for offscreen rendering.
+		GPlatesOpenGL::GLRenderbuffer::shared_ptr_type d_off_screen_colour_renderbuffer;
+
+		//! Depth/stencil renderbuffer object used for offscreen rendering.
+		GPlatesOpenGL::GLRenderbuffer::shared_ptr_type d_off_screen_depth_stencil_renderbuffer;
+
+		//! Framebuffer object used for offscreen rendering.
+		GPlatesOpenGL::GLFramebuffer::shared_ptr_type d_off_screen_framebuffer;
+
+		//! Dimensions of square render target used for offscreen rendering.
+		unsigned int d_off_screen_render_target_dimension;
+
 		//! Keeps track of OpenGL objects that persist from one render to another.
 		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
 
@@ -626,10 +640,18 @@ namespace GPlatesQtWidgets
 		 */
 		static const double NUDGE_CAMERA_DEGREES;
 
+		//! Dimensions of square render target used for offscreen rendering.
+		static const unsigned int OFF_SCREEN_RENDER_TARGET_DIMENSION = 1024;
+
 
 		//! Calls 'initializeGL()' if it hasn't already been called.
 		void
 		initializeGL_if_necessary();
+
+		//! Create and initialise the framebuffer and its renderbuffers used for offscreen rendering.
+		void
+		initialize_off_screen_render_target(
+				GPlatesOpenGL::GL &gl);
 
 		void
 		set_view();

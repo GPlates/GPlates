@@ -130,6 +130,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::has_sub_surface_geometries(
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::cache_handle_type
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint_surface(
 		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLViewProjection &view_projection,
 		const double &viewport_zoom_factor,
 		boost::optional<Colour> vector_geometries_override_colour)
 {
@@ -139,6 +140,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint_surface(
 	// Initialise our paint parameters so our visit methods can access them.
 	d_paint_params = PaintParams(
 			gl,
+			view_projection,
 			viewport_zoom_factor,
 			GlobeRenderedGeometryLayerPainter::PAINT_SURFACE,
 			vector_geometries_override_colour);
@@ -159,6 +161,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint_surface(
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::cache_handle_type
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint_sub_surface(
 		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLViewProjection &view_projection,
 		const double &viewport_zoom_factor,
 		bool improve_performance_reduce_quality_hint)
 {
@@ -168,6 +171,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint_sub_surface(
 	// Initialise our paint parameters so our visit methods can access them.
 	d_paint_params = PaintParams(
 			gl,
+			view_projection,
 			viewport_zoom_factor,
 			GlobeRenderedGeometryLayerPainter::PAINT_SUB_SURFACE,
 			boost::none/*vector_geometries_override_colour*/,
@@ -212,8 +216,10 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 	rendered_geom_layer_painter.set_scale(d_scale);
 
 	// Paint the layer.
-	const cache_handle_type layer_cache =
-			rendered_geom_layer_painter.paint(*d_paint_params->d_gl, d_layer_painter);
+	const cache_handle_type layer_cache = rendered_geom_layer_painter.paint(
+			*d_paint_params->d_gl,
+			d_paint_params->d_view_projection,
+			d_layer_painter);
 
 	// Cache the layer's painting.
 	d_paint_params->d_cache_handle->push_back(layer_cache);
@@ -278,11 +284,13 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::set_visual_layers_reversed(
 
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::PaintParams::PaintParams(
 		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLViewProjection &view_projection,
 		const double &viewport_zoom_factor,
 		GlobeRenderedGeometryLayerPainter::PaintRegionType paint_region,
 		boost::optional<Colour> vector_geometries_override_colour,
 		bool improve_performance_reduce_quality_hint) :
 	d_gl(&gl),
+	d_view_projection(view_projection),
 	d_inverse_viewport_zoom_factor(1.0 / viewport_zoom_factor),
 	d_paint_region(paint_region),
 	d_vector_geometries_override_colour(vector_geometries_override_colour),

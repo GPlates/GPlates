@@ -53,7 +53,7 @@ namespace GPlatesOpenGL
 	class GL;
 	class GLViewProjection;
 
-	class GLIntersect
+	namespace GLIntersect
 	{
 		class Plane;
 	};
@@ -200,6 +200,7 @@ namespace GPlatesGui
 		void
 		render_globe_sub_surface(
 				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection,
 				std::vector<cache_handle_type> &cache_handle,
 				const double &viewport_zoom_factor);
 	};
