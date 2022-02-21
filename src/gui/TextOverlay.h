@@ -35,7 +35,7 @@ namespace GPlatesAppLogic
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 }
 
 namespace GPlatesGui
@@ -56,7 +56,7 @@ namespace GPlatesGui
 
 		void
 		paint(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const TextOverlaySettings &settings,
 				int paint_device_width,
 				int paint_device_height,

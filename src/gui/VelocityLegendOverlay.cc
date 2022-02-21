@@ -36,9 +36,10 @@
 #include "VelocityLegendOverlaySettings.h"
 
 #include "global/GPlatesAssert.h"
+#include "global/NotYetImplementedException.h"
 
+#include "opengl/GL.h"
 #include "opengl/GLMatrix.h"
-#include "opengl/GLRenderer.h"
 #include "opengl/GLViewport.h"
 #include "opengl/GLViewProjection.h"
 #include "opengl/OpenGLException.h"
@@ -222,7 +223,7 @@ namespace
 
 	void
 	render(
-			GPlatesOpenGL::GLRenderer &renderer,
+			GPlatesOpenGL::GL &gl,
 			const GPlatesGui::VelocityLegendOverlaySettings &settings,
 			float x,
 			float y,
@@ -236,21 +237,26 @@ namespace
 			double arrow_angle,
 			float scale)
 	{
+#if 1
+		// Rendering of text should now be done using QPainter software renderer (into OpenGL textures
+		// that we render ourselves) instead of relying on QPainter to render directly to OpenGL.
+		throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+#else
 		using namespace GPlatesOpenGL;
 
 		// Before we suspend GLRenderer (and resume QPainter) we'll get the scissor rectangle
 		// if scissoring is enabled and use that as a clip rectangle.
 		boost::optional<GLViewport> scissor_rect;
-		if (renderer.gl_get_enable(GL_SCISSOR_TEST))
+		if (gl.gl_get_enable(GL_SCISSOR_TEST))
 		{
-			scissor_rect = renderer.gl_get_scissor();
+			scissor_rect = gl.gl_get_scissor();
 		}
 
 		// And before we suspend GLRenderer (and resume QPainter) we'll get the viewport,
 		// model-view transform and projection transform.
-		const GLViewport viewport = renderer.gl_get_viewport();
-		const GLMatrix model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
-		const GLMatrix projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
+		const GLViewport viewport = gl.gl_get_viewport();
+		const GLMatrix model_view_transform = gl.gl_get_matrix(GL_MODELVIEW);
+		const GLMatrix projection_transform = gl.gl_get_matrix(GL_PROJECTION);
 
 		// Suspend rendering with 'GLRenderer' so we can resume painting with 'QPainter'.
 		// At scope exit we can resume rendering with 'GLRenderer'.
@@ -258,7 +264,7 @@ namespace
 		// We do this because the QPainter's paint engine might be OpenGL and we need to make sure
 		// it's OpenGL state does not interfere with the OpenGL state of 'GLRenderer' and vice versa.
 		// This also provides a means to retrieve the QPainter for rendering text.
-		GLRenderer::QPainterBlockScope qpainter_block_scope(renderer);
+		GLRenderer::QPainterBlockScope qpainter_block_scope(gl);
 
 		boost::optional<QPainter &> qpainter = qpainter_block_scope.get_qpainter();
 
@@ -362,6 +368,7 @@ namespace
 		{
 			qpainter->setClipRect(QRect(), Qt::NoClip);
 		}
+#endif
 	}
 }
 
@@ -372,7 +379,7 @@ GPlatesGui::VelocityLegendOverlay::VelocityLegendOverlay()
 
 void
 GPlatesGui::VelocityLegendOverlay::paint(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		const VelocityLegendOverlaySettings &settings,
 		int paint_device_width,
 		int paint_device_height,
@@ -491,7 +498,7 @@ GPlatesGui::VelocityLegendOverlay::paint(
 
 	// Render the velocity legend.
 	render(
-			renderer,
+			gl,
 			settings,
 			x, y,
 			legend_width, legend_height, legend_margin,

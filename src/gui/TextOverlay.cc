@@ -45,7 +45,7 @@ GPlatesGui::TextOverlay::TextOverlay(
 
 void
 GPlatesGui::TextOverlay::paint(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		const TextOverlaySettings &settings,
 		int paint_device_width,
 		int paint_device_height,
@@ -107,7 +107,7 @@ GPlatesGui::TextOverlay::paint(
 		shadow_colour.alpha() = settings.get_colour().alpha();
 
 		GPlatesOpenGL::GLText::render_text_2D(
-				renderer,
+				gl,
 				x,
 				y,
 				substituted,
@@ -120,7 +120,7 @@ GPlatesGui::TextOverlay::paint(
 	}
 
 	GPlatesOpenGL::GLText::render_text_2D(
-			renderer,
+			gl,
 			x,
 			y,
 			substituted,

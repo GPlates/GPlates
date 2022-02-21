@@ -31,12 +31,13 @@
 
 #include "GLText.h"
 
-#include "GLRenderer.h"
+#include "GL.h"
 #include "GLViewport.h"
 #include "GLViewProjection.h"
 #include "OpenGLException.h"
 
 #include "global/GPlatesAssert.h"
+#include "global/NotYetImplementedException.h"
 #include "global/PreconditionViolationError.h"
 
 
@@ -60,29 +61,13 @@ namespace GPlatesOpenGL
 
 			return ret;
 		}
-
-
-		/**
-		 * Renders text by delegating to the QPainter passed into GLRenderer.
-		 */
-		void
-		render_text(
-				GLRenderer &renderer,
-				float x,
-				float y,
-				const QString &string,
-				const GPlatesGui::Colour &colour,
-				const QFont &font,
-				float scale)
-		{
-		}
 	}
 }
 
 
 void
 GPlatesOpenGL::GLText::render_text_3D(
-		GLRenderer &renderer,
+		GL &gl,
 		double world_x,
 		double world_y,
 		double world_z,
@@ -93,19 +78,24 @@ GPlatesOpenGL::GLText::render_text_3D(
 		const QFont &font,
 		float scale)
 {
+#if 1
+	// Rendering of text should now be done using QPainter software renderer (into OpenGL textures
+	// that we render ourselves) instead of relying on QPainter to render directly to OpenGL.
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+#else
 	// Before we suspend GLRenderer (and resume QPainter) we'll get the scissor rectangle
 	// if scissoring is enabled and use that as a clip rectangle.
 	boost::optional<GLViewport> scissor_rect;
-	if (renderer.gl_get_enable(GL_SCISSOR_TEST))
+	if (gl.gl_get_enable(GL_SCISSOR_TEST))
 	{
-		scissor_rect = renderer.gl_get_scissor();
+		scissor_rect = gl.gl_get_scissor();
 	}
 
 	// And before we suspend GLRenderer (and resume QPainter) we'll get the viewport,
 	// model-view transform and projection transform.
-	const GLViewport viewport = renderer.gl_get_viewport();
-	const GLMatrix model_view_transform = renderer.gl_get_matrix(GL_MODELVIEW);
-	const GLMatrix projection_transform = renderer.gl_get_matrix(GL_PROJECTION);
+	const GLViewport viewport = gl.gl_get_viewport();
+	const GLMatrix model_view_transform = gl.gl_get_matrix(GL_MODELVIEW);
+	const GLMatrix projection_transform = gl.gl_get_matrix(GL_PROJECTION);
 
 	// Suspend rendering with 'GLRenderer' so we can resume painting with 'QPainter'.
 	// At scope exit we can resume rendering with 'GLRenderer'.
@@ -113,7 +103,7 @@ GPlatesOpenGL::GLText::render_text_3D(
 	// We do this because the QPainter's paint engine might be OpenGL and we need to make sure
 	// it's OpenGL state does not interfere with the OpenGL state of 'GLRenderer' and vice versa.
 	// This also provides a means to retrieve the QPainter for rendering text.
-	GPlatesOpenGL::GLRenderer::QPainterBlockScope qpainter_block_scope(renderer);
+	GPlatesOpenGL::GLRenderer::QPainterBlockScope qpainter_block_scope(gl);
 
 	boost::optional<QPainter &> qpainter = qpainter_block_scope.get_qpainter();
 
@@ -197,4 +187,5 @@ GPlatesOpenGL::GLText::render_text_3D(
 	}
 
 	// At scope exit we can resume rendering with 'GLRenderer'...
+#endif
 }

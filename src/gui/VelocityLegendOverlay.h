@@ -29,7 +29,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 }
 
 namespace GPlatesPresentation
@@ -54,7 +54,7 @@ namespace GPlatesGui
 
 		void
 		paint(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const VelocityLegendOverlaySettings &settings,
 				int paint_device_width,
 				int paint_device_height,

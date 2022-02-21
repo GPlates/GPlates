@@ -36,7 +36,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 
 	namespace GLText
 	{
@@ -67,7 +67,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		render_text_3D(
-				GLRenderer &renderer,
+				GL &gl,
 				double world_x,
 				double world_y,
 				double world_z,
@@ -92,7 +92,7 @@ namespace GPlatesOpenGL
 		inline
 		void
 		render_text_2D(
-				GLRenderer &renderer,
+				GL &gl,
 				const double &world_x,
 				const double &world_y,
 				const QString &string,
@@ -102,7 +102,7 @@ namespace GPlatesOpenGL
 				const QFont &font,
 				float scale = 1.0f)
 		{
-			render_text_3D(renderer, world_x, world_y, 0.0, string, colour, x_offset, y_offset, font, scale);
+			render_text_3D(gl, world_x, world_y, 0.0, string, colour, x_offset, y_offset, font, scale);
 		}
 	};
 }
