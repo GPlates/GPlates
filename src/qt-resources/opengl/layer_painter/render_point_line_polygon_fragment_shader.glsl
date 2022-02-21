@@ -28,7 +28,6 @@
 //
 
 uniform bool map_view_enabled;
-
 uniform bool lighting_enabled;
 
 // In the map view the lighting is constant across the map because
@@ -38,13 +37,19 @@ uniform float map_view_ambient_and_diffuse_lighting;
 uniform float globe_view_light_ambient_contribution;
 uniform vec3 globe_view_world_space_light_direction;
 
-// The world-space coordinates are interpolated across the geometry.
-varying vec3 globe_view_world_space_position;
+in VertexData
+{
+	// The world-space coordinates are interpolated across the geometry.
+	vec3 globe_view_world_space_position;
+	vec4 colour;
+} fs_in;
+
+layout(location = 0) out vec4 colour;
 
 void main (void)
 {
 	// The interpolated fragment colour.
-	vec4 colour = gl_Color;
+	colour = fs_in.colour;
 
 	if (lighting_enabled)
 	{
@@ -56,7 +61,7 @@ void main (void)
 		{
 			// Apply the Lambert diffuse lighting using the world-space position as the globe surface normal.
 			// Note that neither the light direction nor the surface normal need be normalised.
-			float lambert = lambert_diffuse_lighting(globe_view_world_space_light_direction, globe_view_world_space_position);
+			float lambert = lambert_diffuse_lighting(globe_view_world_space_light_direction, fs_in.globe_view_world_space_position);
 
 			// Blend between ambient and diffuse lighting.
 			float ambient_and_diffuse_lighting = mix_ambient_with_diffuse_lighting(lambert, globe_view_light_ambient_contribution);
@@ -64,7 +69,4 @@ void main (void)
 			colour.rgb *= ambient_and_diffuse_lighting;
 		}
 	}
-
-	// The final fragment colour.
-	gl_FragColor = colour;
 }

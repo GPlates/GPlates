@@ -56,7 +56,8 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
+	class GLViewProjection;
 }
 
 namespace GPlatesGui
@@ -168,15 +169,16 @@ namespace GPlatesGui
 			 */
 			void
 			end_painting(
-					GPlatesOpenGL::GLRenderer &renderer,
-					GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
-					GPlatesOpenGL::GLBuffer &vertex_buffer_data,
-					GPlatesOpenGL::GLVertexArray &vertex_array,
-					GPlatesOpenGL::GLVertexArray &axially_symmetric_mesh_vertex_array,
+					GPlatesOpenGL::GL &gl,
+					GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_element_buffer_data,
+					GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_buffer_data,
+					GPlatesOpenGL::GLVertexArray::shared_ptr_type vertex_array,
+					GPlatesOpenGL::GLVertexArray::shared_ptr_type axially_symmetric_mesh_vertex_array,
+					GPlatesOpenGL::GLProgram::shared_ptr_type render_point_line_polygon_program,
+					GPlatesOpenGL::GLProgram::shared_ptr_type render_axially_symmetric_mesh_program,
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
-					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection,
-					boost::optional<GPlatesOpenGL::GLProgram::shared_ptr_type> render_point_line_polygon_program,
-					boost::optional<GPlatesOpenGL::GLProgram::shared_ptr_type> render_axially_symmetric_mesh_program);
+					const GPlatesOpenGL::GLViewProjection &view_projection,
+					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection);
 
 			/**
 			 * Returns the stream for points of size @a point_size.
@@ -260,10 +262,7 @@ namespace GPlatesGui
 
 				void
 				end_painting(
-						GPlatesOpenGL::GLRenderer &renderer,
-						GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
-						GPlatesOpenGL::GLBuffer &vertex_buffer_data,
-						GPlatesOpenGL::GLVertexArray &vertex_array,
+						GPlatesOpenGL::GL &gl,
 						GLenum mode);
 
 				// Can only be called between @a begin_painting and @a end_painting.
@@ -294,18 +293,12 @@ namespace GPlatesGui
 
 				void
 				draw_primitives(
-						GPlatesOpenGL::GLRenderer &renderer,
-						GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
-						GPlatesOpenGL::GLBuffer &vertex_buffer_data,
-						GPlatesOpenGL::GLVertexArray &vertex_array,
+						GPlatesOpenGL::GL &gl,
 						GLenum mode);
 
 				void
 				draw_feedback_primitives_to_qpainter(
-						GPlatesOpenGL::GLRenderer &renderer,
-						GPlatesOpenGL::GLBuffer &vertex_element_buffer_data,
-						GPlatesOpenGL::GLBuffer &vertex_buffer_data,
-						GPlatesOpenGL::GLVertexArray &vertex_array,
+						GPlatesOpenGL::GL &gl,
 						GLenum mode);
 			};
 
@@ -351,32 +344,31 @@ namespace GPlatesGui
 
 			void
 			paint_filled_polygons(
-					GPlatesOpenGL::GLRenderer &renderer,
+					GPlatesOpenGL::GL &gl,
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
+					const GPlatesOpenGL::GLViewProjection &view_projection,
 					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection);
 
 			/**
 			 * Sets state in shader program for point/line/polygon primitives.
-			 *
-			 * Returns false if shader program not supported by runtime system.
 			 */
-			bool
+			void
 			set_point_line_polygon_program_state(
-					GPlatesOpenGL::GLRenderer &renderer,
+					GPlatesOpenGL::GL &gl,
+					GPlatesOpenGL::GLProgram::shared_ptr_type render_point_line_polygon_program,
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
-					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection,
-					boost::optional<GPlatesOpenGL::GLProgram::shared_ptr_type> render_point_line_polygon_program);
+					const GPlatesOpenGL::GLViewProjection &view_projection,
+					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection);
 
 			/**
 			 * Sets state in shader program for axially symmetric meshes.
-			 *
-			 * Returns false if shader program not supported by runtime system.
 			 */
-			bool
+			void
 			set_axially_symmetric_mesh_program_state(
-					GPlatesOpenGL::GLRenderer &renderer,
+					GPlatesOpenGL::GL &gl,
+					GPlatesOpenGL::GLProgram::shared_ptr_type render_axially_symmetric_mesh_program,
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
-					boost::optional<GPlatesOpenGL::GLProgram::shared_ptr_type> render_axially_symmetric_mesh_program);
+					const GPlatesOpenGL::GLViewProjection &view_projection);
 		};
 
 
@@ -512,37 +504,27 @@ namespace GPlatesGui
 				boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection = boost::none);
 
 		/**
-		 * Initialise objects requiring @a GLRenderer.
+		 * Initialise objects requiring @a GL.
 		 */
 		void
 		initialise(
-				GPlatesOpenGL::GLRenderer &renderer);
+				GPlatesOpenGL::GL &gl);
 
 		/**
 		 * Must be called before streaming or queuing any primitives.
 		 */
 		void
 		begin_painting(
-				GPlatesOpenGL::GLRenderer &renderer);
+				GPlatesOpenGL::GL &gl);
 
 		/**
 		 * Renders any streamed or queued primitives.
 		 */
 		cache_handle_type
 		end_painting(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection,
 				float scale);
-
-		/**
-		 * Returns the render.
-		 *
-		 * NOTE: Can *only* be called between @a begin_painting and @a end_painting.
-		 */
-		GPlatesOpenGL::GLRenderer &
-		get_renderer()
-		{
-			return d_renderer.get();
-		}
 
 
 		PointLinePolygonDrawables drawables_off_the_sphere;
@@ -557,34 +539,33 @@ namespace GPlatesGui
 
 		cache_handle_type
 		paint_scalar_fields(
-				GPlatesOpenGL::GLRenderer &renderer);
+				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection);
 
 		cache_handle_type
 		paint_rasters(
-				GPlatesOpenGL::GLRenderer &renderer);
+				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection);
 
 		void
 		paint_text_drawables_2D(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				float scale);
 
 		void
 		paint_text_drawables_3D(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				float scale);
 
-
-		//! References the renderer (is only valid between @a begin_painting and @a end_painting).
-		boost::optional<GPlatesOpenGL::GLRenderer &> d_renderer;
 
 		//! For obtaining the OpenGL light and rendering rasters and scalar fields.
 		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
 
 		//! Used to stream vertex elements (indices) to.
-		GPlatesOpenGL::GLVertexElementBuffer::shared_ptr_type d_vertex_element_buffer;
+		GPlatesOpenGL::GLBuffer::shared_ptr_type d_vertex_element_buffer;
 
 		//! Used to stream vertices to.
-		GPlatesOpenGL::GLVertexBuffer::shared_ptr_type d_vertex_buffer;
+		GPlatesOpenGL::GLBuffer::shared_ptr_type d_vertex_buffer;
 
 		/**
 		 * Used for vertices of type @a coloured_vertex_type (streamed to @a d_vertex_buffer).
@@ -599,23 +580,19 @@ namespace GPlatesGui
 		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_axially_symmetric_mesh_vertex_array;
 
 		/**
-		 * Used for rendering to a 2D map view (is none for 3D globe view).
-		 */
-		boost::optional<MapProjection::non_null_ptr_to_const_type> d_map_projection;
-
-		/**
 		 * Shader program to render points/lines/polygons.
-		 *
-		 * Is boost::none if not supported by the runtime system.
 		 */
-		boost::optional<GPlatesOpenGL::GLProgram::shared_ptr_type> d_render_point_line_polygon_program;
+		GPlatesOpenGL::GLProgram::shared_ptr_type d_render_point_line_polygon_program;
 
 		/**
 		 * Shader program for rendering axially symmetric meshes.
-		 *
-		 * Is boost::none if not supported by the runtime system.
 		 */
-		boost::optional<GPlatesOpenGL::GLProgram::shared_ptr_type> d_render_axially_symmetric_mesh_program;
+		GPlatesOpenGL::GLProgram::shared_ptr_type d_render_axially_symmetric_mesh_program;
+
+		/**
+		 * Used for rendering to a 2D map view (is none for 3D globe view).
+		 */
+		boost::optional<MapProjection::non_null_ptr_to_const_type> d_map_projection;
 	};
 }
 

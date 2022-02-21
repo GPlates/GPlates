@@ -27,30 +27,37 @@
 // Vertex shader source code to render points, lines and polygons with lighting.
 //
 
+uniform mat4 view_projection;
+			
 // The 3D globe view needs to calculate lighting across the geometry but the map view does not
 // because the surface normal is constant across the map (ie, it's flat unlike the 3D globe).
 uniform bool map_view_enabled;
-
 uniform bool lighting_enabled;
 
-// The world-space coordinates are interpolated across the geometry.
-varying vec3 globe_view_world_space_position;
+layout(location = 0) in vec4 position;
+layout(location = 1) in vec4 colour;
+
+out VertexData
+{
+	// The world-space coordinates are interpolated across the geometry.
+	vec3 globe_view_world_space_position;
+	vec4 colour;
+} vs_out;
 
 void main (void)
 {
-	gl_Position = gl_ModelViewProjectionMatrix * gl_Vertex;
+	gl_Position = view_projection * position;
 
 	// Output the vertex colour.
 	// We render both sides (front and back) of triangles (ie, there's no back-face culling).
-	gl_FrontColor = gl_Color;
-	gl_BackColor = gl_Color;
+    vs_out.colour = colour;
 
     if (lighting_enabled)
     {
         if (!map_view_enabled)
         {
             // This assumes the geometry does not need a model transform (eg, reconstruction rotation).
-            globe_view_world_space_position = gl_Vertex.xyz / gl_Vertex.w;
+            vs_out.globe_view_world_space_position = position.xyz / position.w;
         }
     }
 }

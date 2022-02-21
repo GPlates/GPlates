@@ -27,41 +27,46 @@
 // Vertex shader source code for rendering axially symmetric meshes.
 //
 
+uniform mat4 view_projection;
+
 uniform bool lighting_enabled;
 
-attribute vec3 world_space_position_attribute;
-attribute vec4 colour_attribute;
-attribute vec3 world_space_x_axis_attribute;
-attribute vec3 world_space_y_axis_attribute;
-attribute vec3 world_space_z_axis_attribute;
-attribute vec2 model_space_radial_position_attribute;
-attribute vec2 radial_and_axial_normal_weights_attribute;
+layout(location = 0) in vec3 world_space_position;
+layout(location = 1) in vec4 colour;
+layout(location = 2) in vec3 world_space_x_axis;
+layout(location = 3) in vec3 world_space_y_axis;
+layout(location = 4) in vec3 world_space_z_axis;
+layout(location = 5) in vec2 model_space_radial_position;
+layout(location = 6) in vec2 radial_and_axial_normal_weights;
 
-varying vec3 world_space_sphere_normal;
-varying vec3 world_space_x_axis;
-varying vec3 world_space_y_axis;
-varying vec3 world_space_z_axis;
-// The model-space coordinates are interpolated across the geometry.
-varying vec2 model_space_radial_position;
-varying vec2 radial_and_axial_normal_weights;
+out VertexData
+{
+	vec3 world_space_sphere_normal;
+	vec4 colour;
+	vec3 world_space_x_axis;
+	vec3 world_space_y_axis;
+	vec3 world_space_z_axis;
+	// The model-space coordinates are interpolated across the geometry.
+	vec2 model_space_radial_position;
+	vec2 radial_and_axial_normal_weights;
+} vs_out;
 
 void main (void)
 {
-	gl_Position = gl_ModelViewProjectionMatrix * vec4(world_space_position_attribute, 1);
+	gl_Position = view_projection * vec4(world_space_position, 1);
 
 	// Output the vertex colour.
 	// We render both sides (front and back) of triangles (ie, there's no back-face culling).
-	gl_FrontColor = colour_attribute;
-	gl_BackColor = colour_attribute;
+    vs_out.colour = colour;
 
 	if (lighting_enabled)
 	{
 		// Pass to fragment shader.
-		world_space_sphere_normal = normalize(world_space_position_attribute);
-		world_space_x_axis = world_space_x_axis_attribute;
-		world_space_y_axis = world_space_y_axis_attribute;
-		world_space_z_axis = world_space_z_axis_attribute;
-		model_space_radial_position = model_space_radial_position_attribute;
-		radial_and_axial_normal_weights = radial_and_axial_normal_weights_attribute;
+		vs_out.world_space_sphere_normal = normalize(world_space_position);
+		vs_out.world_space_x_axis = world_space_x_axis;
+		vs_out.world_space_y_axis = world_space_y_axis;
+		vs_out.world_space_z_axis = world_space_z_axis;
+		vs_out.model_space_radial_position = model_space_radial_position;
+		vs_out.radial_and_axial_normal_weights = radial_and_axial_normal_weights;
 	}
 }
