@@ -30,7 +30,6 @@
 #include <QComboBox>
 #include <QDoubleSpinBox>
 #include <QFileDialog>
-#include <QMessageBox>
 
 #include "CoRegistrationLayerConfigurationDialog.h"
 
@@ -52,9 +51,8 @@
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
 
+#include "opengl/GL.h"
 #include "opengl/GLContext.h"
-#include "opengl/GLRasterCoRegistration.h"
-#include "opengl/GLRenderer.h"
 
 #include "presentation/VisualLayer.h"
 #include "presentation/VisualLayers.h"
@@ -80,8 +78,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::CoRegistrationLayerCon
 	d_view_state(view_state),
 	d_viewport_window(viewport_window),
 	d_visual_layers(view_state.get_visual_layers()),
-	d_visual_layer(layer),
-	d_raster_co_registration_supported(false)
+	d_visual_layer(layer)
 {
 	setupUi(this);
 
@@ -185,28 +182,10 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::pop_up()
 	// attributes so this makes it easier for the user).
 	co_reg_radio_buttton->setChecked(true);
 
-	// Note: We don't test for raster co-registration in constructor since we want the GUI system
-	// to be stabile/initialised first since we use the active OpenGL context which is associated
-	// with the globe/map window.
-	d_raster_co_registration_supported = is_raster_co_registration_supported();
-
 	QtWidgetUtils::pop_up_dialog(this);
 
 	// Note: We update *after* popping up the dialog because it only updates when dialog is *visible*.
 	update();
-}
-
-
-bool
-GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::is_raster_co_registration_supported() const
-{
-	// We need an OpenGL renderer before we can query support.
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = create_gl_renderer();
-
-	// Start a begin_render/end_render scope.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
-
-	return GPlatesOpenGL::GLRasterCoRegistration::is_supported(*renderer);
 }
 
 
@@ -341,8 +320,8 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::does_raster_layer_cont
 }
 
 
-GPlatesOpenGL::GLRenderer::non_null_ptr_type
-GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::create_gl_renderer() const
+GPlatesOpenGL::GL::non_null_ptr_type
+GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::create_gl() const
 {
 	// Get an OpenGL context since the (raster) co-registration is accelerated with OpenGL.
 	GPlatesOpenGL::GLContext::non_null_ptr_type gl_context =
@@ -351,9 +330,9 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::create_gl_renderer() c
 	// Make sure the context is currently active.
 	gl_context->make_current();
 
-	// Start a begin_render/end_render scope.
+	// Start a render scope.
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-	return gl_context->create_renderer();
+	return gl_context->create_gl();
 }
 
 
@@ -390,28 +369,6 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::react_target_layer_sel
 		!current_target_layer_item->layer.is_valid() /*target layer might be in process of being removed*/)
 	{
 		//qDebug() << "The current target layer item is null.";
-		return;
-	}
-
-	// If the layer is a raster layer and raster co-registration is not supported on the run-time
-	// system then pop-up a message box to the user.
-	if (current_target_layer_item->layer.get_type() == GPlatesAppLogic::LayerTaskType::RASTER &&
-		!d_raster_co_registration_supported)
-	{
-		// Clear the list of attributes (from the previous layer selection) before popping up the message.
-		attributes_list_widget->clear();
-
-		const QString message = tr(
-				"Raster co-registration requires roughly OpenGL 2.0/3.0 compliant graphics hardware "
-				"(specifically floating-point textures and framebuffer objects).\n\n"
-				"Please select a non-raster layer instead.");
-		QMessageBox::warning(
-				this,
-				tr("Raster co-registration not supported on this graphics hardware"),
-				message,
-				QMessageBox::Ok,
-				QMessageBox::Ok);
-
 		return;
 	}
 
@@ -950,11 +907,11 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::setup_raster_level_of_
 		return false;
 	}
 
-	// We need an OpenGL renderer before we can query multi-resolution rasters.
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = create_gl_renderer();
-
-	// Start a begin_render/end_render scope.
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
+	// Start a render scope (all GL calls should be done inside this scope).
+	//
+	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
+	GPlatesOpenGL::GL::non_null_ptr_type gl = create_gl();
+	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
 	// Get the multi-resolution raster from the layer proxy.
 	// The number of levels of detail should be independent of time since a time-dependent raster
@@ -962,7 +919,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::setup_raster_level_of_
 	// get the multi-resolution raster for the current reconstruction time.
 	boost::optional<GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type> multi_resolution_raster =
 			raster_layer_proxy.get()->get_multi_resolution_data_raster(
-			*renderer,
+			*gl,
 			GPlatesUtils::make_icu_string_from_qstring(raster_band_name));
 	if (!multi_resolution_raster)
 	{

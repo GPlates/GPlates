@@ -55,7 +55,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 	class GLViewport;
 }
 
@@ -277,9 +277,6 @@ namespace GPlatesQtWidgets
 			CoRegistrationLayerConfigurationDialog *d_co_reg_layer_cfg_dialog;
 		};
 
-		bool
-		is_raster_co_registration_supported() const;
-
 		void
 		populate_target_layers_list() const;
 
@@ -296,10 +293,10 @@ namespace GPlatesQtWidgets
 				const GPlatesAppLogic::Layer &raster_layer) const;
 
 		/**
-		 * Creates an OpenGL renderer so we can query raster-related information.
+		 * Makes the OpenGL context current so we can query raster-related information.
 		 */
-		GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLRenderer>::non_null_ptr_type
-		create_gl_renderer() const;
+		GPlatesGlobal::PointerTraits<GPlatesOpenGL::GL>::non_null_ptr_type
+		create_gl() const;
 
 		void
 		get_unique_attribute_names(
@@ -384,11 +381,6 @@ namespace GPlatesQtWidgets
 		 * copies of the callback thus allowing it to get called more than once per modification.
 		 */
 		GPlatesModel::FeatureStoreRootHandle::const_weak_ref d_callback_feature_store;
-
-		/**
-		  * Is raster co-registration supported (are the necessary OpenGL extensions available).
-		 */
-		bool d_raster_co_registration_supported;
 	};
 }
 

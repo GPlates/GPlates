@@ -51,8 +51,8 @@
 
 namespace GPlatesOpenGL
 {
+	class GL;
 	class GLRasterCoRegistration;
-	class GLRenderer;
 }
 
 namespace GPlatesDataMining
@@ -65,13 +65,13 @@ namespace GPlatesDataMining
 		struct RasterCoRegistration
 		{
 			RasterCoRegistration(
-					GPlatesOpenGL::GLRenderer &renderer_,
+					GPlatesOpenGL::GL &gl_,
 					GPlatesOpenGL::GLRasterCoRegistration &co_registration_) :
-				renderer(renderer_),
+				gl(gl_),
 				co_registration(co_registration_)
 			{  }
 
-			GPlatesOpenGL::GLRenderer &renderer;
+			GPlatesOpenGL::GL &gl;
 			GPlatesOpenGL::GLRasterCoRegistration &co_registration;
 		};
 
@@ -143,7 +143,7 @@ namespace GPlatesDataMining
 
 		void
 		co_register_target_reconstructed_rasters(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				GPlatesOpenGL::GLRasterCoRegistration &raster_co_registration,
 				const std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature> &reconstructed_seed_features,	
 				const double &reconstruction_time,

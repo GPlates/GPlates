@@ -23,18 +23,21 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include <vector>
-#include <boost/foreach.hpp>
 
 #include "PyFeature.h"
 #include "PyCoregistrationLayerProxy.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
+
 #include "data-mining/DataMiningUtils.h"
+
+#include "opengl/GL.h"
 #include "opengl/GLContext.h"
-#include "opengl/GLRenderer.h"
+
 #include "presentation/Application.h"
-#include "qt-widgets/ReconstructionViewWidget.h"
+
 #include "qt-widgets/GlobeAndMapWidget.h"
+#include "qt-widgets/ReconstructionViewWidget.h"
 
 
 bp::list
@@ -44,14 +47,12 @@ GPlatesApi::PyCoregistrationLayerProxy::get_all_seed_features()
 	std::set<GPlatesModel::FeatureHandle*> feature_set;
 	using namespace GPlatesDataMining;
 	
-	BOOST_FOREACH(
-			const GPlatesModel::FeatureHandle::weak_ref f, 
-			d_proxy->get_seed_features())
+	for(const GPlatesModel::FeatureHandle::weak_ref feature_ref : d_proxy->get_seed_features())
 	{
-		if(f.is_valid() && feature_set.find(f.handle_ptr()) == feature_set.end())
+		if(feature_ref.is_valid() && feature_set.find(feature_ref.handle_ptr()) == feature_set.end())
 		{
-			feature_set.insert(f.handle_ptr());
-			result.append(GPlatesApi::Feature(f));
+			feature_set.insert(feature_ref.handle_ptr());
+			result.append(GPlatesApi::Feature(feature_ref));
 		}
 	}
 	return result;
@@ -87,7 +88,6 @@ bp::list
 GPlatesApi::PyCoregistrationLayerProxy::get_coregistration_data(
 		float time)
 {
-	bp::list ret;
 	GPlatesOpenGL::GLContext::non_null_ptr_type gl_context =
 		GPlatesPresentation::Application::instance().get_main_window().
 		reconstruction_view_widget().globe_and_map_widget().get_active_gl_context();
@@ -95,28 +95,31 @@ GPlatesApi::PyCoregistrationLayerProxy::get_coregistration_data(
 	// Make sure the context is currently active.
 	gl_context->make_current();
 
-	// Start a begin_render/end_render scope.
+	// Start a render scope (all GL calls should be done inside this scope).
+	//
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = gl_context->create_renderer();
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
-	boost::optional<GPlatesAppLogic::CoRegistrationData::non_null_ptr_type> coregistration_data = 
-		d_proxy->get_coregistration_data(*renderer, time);
-	if(coregistration_data)
+	GPlatesOpenGL::GL::non_null_ptr_type gl = gl_context->create_gl();
+	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
+
+	GPlatesAppLogic::CoRegistrationData::non_null_ptr_type coregistration_data = 
+			d_proxy->get_coregistration_data(*gl, time);
+
+	bp::list ret_list;
+
+	std::vector<std::vector<QString> > table;
+	coregistration_data->data_table().to_qstring_table(table);
+	for (const std::vector<QString> &row : table)
 	{
-		std::vector<std::vector<QString> > table;
-		(*coregistration_data)->data_table().to_qstring_table(table);
-		BOOST_FOREACH(const std::vector<QString>& row, table)
+		bp::list data_row;
+		for(const QString &cell : row)
 		{
-			bp::list data_row;
-			BOOST_FOREACH(const QString& cell, row)
-			{
-				const QByteArray data_array = cell.toUtf8();
-				data_row.append(bp::str(data_array.data()));
-			}
-			ret.append(data_row);
+			const QByteArray data_array = cell.toUtf8();
+			data_row.append(bp::str(data_array.data()));
 		}
+		ret_list.append(data_row);
 	}
-	return ret;
+
+	return ret_list;
 }
 
 

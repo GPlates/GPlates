@@ -43,8 +43,8 @@
 #include "model/ModelUtils.h"
 #include "model/PropertyName.h"
 
+#include "opengl/GL.h"
 #include "opengl/GLContext.h"
-#include "opengl/GLRenderer.h"
 
 #include "presentation/Application.h"
 #include "presentation/ViewState.h"
@@ -444,39 +444,43 @@ GPlatesGui::GetAssociationDataCommand::execute(
 	// Make sure the context is currently active.
 	gl_context->make_current();
 
-	// Start a begin_render/end_render scope.
+	// Start a render scope (all GL calls should be done inside this scope).
+	//
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = gl_context->create_renderer();
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
+	GPlatesOpenGL::GL::non_null_ptr_type gl = gl_context->create_gl();
+	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
+
 	boost::optional<GPlatesAppLogic::CoRegistrationLayerProxy::non_null_ptr_type> proxy =
 		get_coregistration_layer_proxy(d_view_state, d_layer_name);
-	if(!proxy)
+	if (!proxy)
 	{
 		qWarning() << "Not be able to get co-registration layer.";
 		return false;
 	}
-	try{
-		boost::optional<GPlatesAppLogic::CoRegistrationData::non_null_ptr_type> coregistration_data = 
-			(*proxy)->get_coregistration_data(*renderer, d_time);
-		if(coregistration_data)
+
+	try
+	{
+		GPlatesAppLogic::CoRegistrationData::non_null_ptr_type coregistration_data = 
+			(*proxy)->get_coregistration_data(*gl, d_time);
+
+		std::vector<std::vector<QString> > table;
+		coregistration_data->data_table().to_qstring_table(table);
+		if(!table.empty())
 		{
-			std::vector<std::vector<QString> > table;
-			(*coregistration_data)->data_table().to_qstring_table(table);
-			if(!table.empty())
+			os << "<DataTable row=\"" << table.size() <<  "\" column=\"" << table[0].size() << "\" >";
+			BOOST_FOREACH(const std::vector<QString>& row, table)
 			{
-				os << "<DataTable row=\"" << table.size() <<  "\" column=\"" << table[0].size() << "\" >";
-				BOOST_FOREACH(const std::vector<QString>& row, table)
+				BOOST_FOREACH(const QString& cell, row)
 				{
-					BOOST_FOREACH(const QString& cell, row)
-					{
-						os << "<c>" << escape_reserved_xml_characters(cell) << "</c>";
-					}
+					os << "<c>" << escape_reserved_xml_characters(cell) << "</c>";
 				}
-				os << "</DataTable>";
 			}
+			os << "</DataTable>";
 		}
+
 		os << "</Response>";
-	}catch(GPlatesGlobal::Exception& ex)
+	}
+	catch (GPlatesGlobal::Exception &ex)
 	{
 		ex.write(std::cerr);
 		std::stringstream ss;
@@ -505,11 +509,14 @@ GPlatesGui::GetBirthAttributeCommand::execute(
 	// Make sure the context is currently active.
 	gl_context->make_current();
 
-	// Start a begin_render/end_render scope.
+	// Start a render scope (all GL calls should be done inside this scope).
+	//
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = gl_context->create_renderer();
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
-	try{
+	GPlatesOpenGL::GL::non_null_ptr_type gl = gl_context->create_gl();
+	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
+
+	try
+	{
 		//TODO: The following code should be re-factored 2013/09/23.
 		//1. Catch the paticular exception, not GPlatesGlobal::Exception.h
 		//2. Create a new function for converting CoRegistrationData into xml DataTable.
@@ -522,7 +529,7 @@ GPlatesGui::GetBirthAttributeCommand::execute(
 		}
 		boost::optional<GPlatesAppLogic::CoRegistrationData::non_null_ptr_type> coregistration_data = 
 			(*proxy)->get_birth_attribute_data(
-					*renderer, 
+					*gl, 
 					GPlatesModel::FeatureId(GPlatesUtils::UnicodeString(d_feature_id)));
 		if(coregistration_data)
 		{
@@ -542,7 +549,8 @@ GPlatesGui::GetBirthAttributeCommand::execute(
 			}
 		}
 		os << "</Response>";
-	}catch(GPlatesGlobal::Exception& ex)
+	}
+	catch (GPlatesGlobal::Exception &ex)
 	{
 		ex.write(std::cerr);
 		std::stringstream ss;

@@ -376,9 +376,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Creates a @a GL.
-		 *
-		 * This is the interface through which OpenGL is used to draw.
+		 * Creates a global context state to track common OpenGL state.
 		 *
 		 * Typically a @a GL is created each time a frame needs drawing.
 		 */

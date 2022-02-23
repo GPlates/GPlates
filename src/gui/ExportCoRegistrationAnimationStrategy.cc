@@ -38,8 +38,8 @@
 #include "gui/AnimationController.h"
 #include "gui/CsvExport.h"
 
+#include "opengl/GL.h"
 #include "opengl/GLContext.h"
-#include "opengl/GLRenderer.h"
 
 #include "presentation/ViewState.h"
 
@@ -126,24 +126,19 @@ GPlatesGui::ExportCoRegistrationAnimationStrategy::do_export_iteration(
 			// Make sure the context is currently active.
 			gl_context->make_current();
 
-			// Start a begin_render/end_render scope.
+			// Start a render scope (all GL calls should be done inside this scope).
+			//
 			// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-			GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = gl_context->create_renderer();
-			GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
+			GPlatesOpenGL::GL::non_null_ptr_type gl = gl_context->create_gl();
+			GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
 			//
 			// Get the co-registration results (perform the co-registration).
 			//
 
 			// Get the co-registration result data for the current reconstruction time.
-			boost::optional<GPlatesAppLogic::CoRegistrationData::non_null_ptr_type> coregistration_data =
-					co_registration_layer_output->get_coregistration_data(*renderer);
-
-			// If there's no co-registration data then it means the user has not yet configured co-registration.
-			if (!coregistration_data)
-			{
-				continue;
-			}
+			GPlatesAppLogic::CoRegistrationData::non_null_ptr_type coregistration_data =
+					co_registration_layer_output->get_coregistration_data(*gl);
 
 			// If there's more then one co-registration layer in total then we'll need to have different
 			// export filenames - so just substitute "_layer1", etc (incrementing the number)
@@ -160,7 +155,7 @@ GPlatesGui::ExportCoRegistrationAnimationStrategy::do_export_iteration(
 			QString full_filename = d_export_animation_context_ptr->target_dir().absoluteFilePath(output_basename);
 
 			// Export the co-registration data.
-			coregistration_data.get()->data_table().export_as_CSV(full_filename);
+			coregistration_data->data_table().export_as_CSV(full_filename);
 		}
 	}
 

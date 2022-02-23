@@ -34,6 +34,7 @@
 #include <boost/shared_ptr.hpp>
 #include <QString>
 
+#include "GLBuffer.h"
 #include "GLCubeSubdivisionCache.h"
 #include "GLFramebuffer.h"
 #include "GLMultiResolutionRasterInterface.h"
@@ -71,7 +72,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 
 	/**
 	 * Co-registers the seed (geometry) features with a (possibly reconstructed) floating-point raster.
@@ -94,10 +95,9 @@ namespace GPlatesOpenGL
 		 *
 		 * This should not be too large since each floating-point texel consumes 16 bytes (4 floats - RGBA).
 		 *
-		 * Also graphics cards supporting floating-point textures typically support at least 2048
-		 * dimension textures so probably shouldn't go above that - wouldn't want to anyway because
-		 * the texture memory usage for the reduce stages would become larger than the video memory
-		 * available for most of those cards.
+		 * OpenGL 3 requires texture dimension be at least 2048 so probably shouldn't go above that.
+		 * Probably wouldn't want to anyway because the texture memory usage for the reduce stages
+		 * would become quite large.
 		 */
 		static const unsigned int TEXTURE_DIMENSION = 1024;
 
@@ -324,39 +324,14 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns true if raster co-registration is supported on the runtime system.
-		 *
-		 * The most stringent requirement is OpenGL support for floating-point textures.
-		 * If the runtime system supports 'GL_ARB_texture_float' then it will very likely
-		 * support the other requirements such as shader programs and framebuffer objects.
+		 * Creates a @a GLRasterCoRegistration.
 		 */
 		static
-		bool
-		is_supported(
-				GLRenderer &renderer);
-
-
-		/**
-		 * Creates a @a GLRasterCoRegistration that co-registers the specified seed (geometry) features
-		 * with the specified (possibly reconstructed) floating-point raster.
-		 *
-		 * @a raster_level_of_detail is the level-of-detail at which to process the target raster.
-		 * For the highest resolution this is zero.
-		 * This is used to increase performance and reduce memory usage on systems that need it.
-		 *
-		 * Returns boost::none if @a is_supported returns false.
-		 */
-		static
-		boost::optional<non_null_ptr_type>
+		non_null_ptr_type
 		create(
-				GLRenderer &renderer)
+				GL &gl)
 		{
-			if (!is_supported(renderer))
-			{
-				return boost::none;
-			}
-
-			return non_null_ptr_type(new GLRasterCoRegistration(renderer));
+			return non_null_ptr_type(new GLRasterCoRegistration(gl));
 		}
 
 
@@ -372,12 +347,10 @@ namespace GPlatesOpenGL
 		 *
 		 * NOTE: It is *much* more efficient to process any, and all, operations in one pass than to
 		 * separate them in individual passes (per operation/region-of-interest).
-		 *
-		 * Returns boost::none if @a is_supported returns false.
 		 */
 		void
 		co_register(
-				GLRenderer &renderer,
+				GL &gl,
 				std::vector<Operation> &operations,
 				const std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature> &reconstructed_seed_features,
 				const GLMultiResolutionRasterInterface::non_null_ptr_type &reconstructed_target_raster,
@@ -955,7 +928,7 @@ namespace GPlatesOpenGL
 		public:
 			explicit
 			ResultsQueue(
-					GLRenderer &renderer);
+					GL &gl);
 
 			/**
 			 * Queue the results stored in @a results_texture for read back from GPU to CPU memory.
@@ -967,7 +940,7 @@ namespace GPlatesOpenGL
 			 */
 			void
 			queue_reduce_pyramid_output(
-					GLRenderer &renderer,
+					GL &gl,
 					const GLFramebuffer::shared_ptr_type &framebuffer,
 					const GLTexture::shared_ptr_to_const_type &results_texture,
 					const ReduceQuadTree::non_null_ptr_to_const_type &reduce_quad_tree,
@@ -983,7 +956,7 @@ namespace GPlatesOpenGL
 			 */
 			void
 			flush_results(
-					GLRenderer &renderer,
+					GL &gl,
 					std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results);
 
 		private:
@@ -1023,7 +996,7 @@ namespace GPlatesOpenGL
 			{
 				ReducePyramidOutput(
 						const ReduceQuadTree::non_null_ptr_to_const_type &reduce_quad_tree_,
-						const GLPixelBuffer::shared_ptr_type &pixel_buffer_) :
+						const GLBuffer::shared_ptr_type &pixel_buffer_) :
 					reduce_quad_tree(reduce_quad_tree_),
 					pixel_buffer(pixel_buffer_)
 				{  }
@@ -1037,14 +1010,14 @@ namespace GPlatesOpenGL
 				/**
 				 * The reduce texture read back asynchronously from the GPU to CPU memory.
 				 */
-				GLPixelBuffer::shared_ptr_type pixel_buffer;
+				GLBuffer::shared_ptr_type pixel_buffer;
 			};
 
 			//! Typedef for a sequence of @a ReducePyramidOutput objects.
 			typedef std::deque<ReducePyramidOutput> reduce_pyramid_output_queue_type;
 
 			//! Typedef for a list of available pixel buffer objects.
-			typedef std::vector<GLPixelBuffer::shared_ptr_type> pixel_buffer_seq_type;
+			typedef std::vector<GLBuffer::shared_ptr_type> pixel_buffer_seq_type;
 
 			pixel_buffer_seq_type d_free_pixel_buffers;
 
@@ -1053,20 +1026,20 @@ namespace GPlatesOpenGL
 
 			void
 			flush_least_recently_queued_result(
-					GLRenderer &renderer,
+					GL &gl,
 					std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results);
 
 			void
 			distribute_async_read_back(
-					GLRenderer &renderer,
+					GL &gl,
 					const ReduceQuadTree &reduce_quad_tree,
-					GLPixelBuffer &pixel_buffer);
+					GLBuffer &pixel_buffer);
 
 			void
 			distribute_async_read_back(
-					GLRenderer &renderer,
+					GL &gl,
 					const ReduceQuadTreeInternalNode &reduce_quad_tree_internal_node,
-					GLPixelBuffer &pixel_buffer,
+					GLBuffer &pixel_buffer,
 					GLint &pixel_buffer_offset,
 					GLint pixel_rect_offset_x,
 					GLint pixel_rect_offset_y,
@@ -1074,14 +1047,14 @@ namespace GPlatesOpenGL
 
 			void
 			distribute_result_data(
-					GLRenderer &renderer,
+					GL &gl,
 					const void *result_data,
 					const ReduceQuadTree &reduce_quad_tree,
 					std::vector<OperationSeedFeaturePartialResults> &seed_feature_partial_results);
 
 			void
 			distribute_result_data(
-					GLRenderer &renderer,
+					GL &gl,
 					const ReduceQuadTreeInternalNode &reduce_quad_tree_internal_node,
 					const ResultPixel *const result_pixel_data,
 					unsigned int &result_data_pixel_offset,
@@ -1090,7 +1063,7 @@ namespace GPlatesOpenGL
 
 			void
 			distribute_result_data_from_gl_read_pixels_rect(
-					GLRenderer &renderer,
+					GL &gl,
 					const ReduceQuadTreeInternalNode &reduce_quad_tree_internal_node,
 					const ResultPixel *const gl_read_pixels_result_data,
 					const GLsizei gl_read_pixels_rect_dimension,
@@ -1361,47 +1334,47 @@ namespace GPlatesOpenGL
 		 * Used to retrieve render target data and save to an image file for debugging purposes.
 		 */
 #if defined(DEBUG_RASTER_COREGISTRATION_RENDER_TARGET)
-		GLPixelBuffer::shared_ptr_type d_debug_pixel_buffer;
+		GLBuffer::shared_ptr_type d_debug_pixel_buffer;
 #endif
 
 
 		explicit
 		GLRasterCoRegistration(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		initialise_vertex_arrays_and_shader_programs(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		initialise_point_region_of_interest_shader_programs(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		initialise_line_region_of_interest_shader_program(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		initialise_fill_region_of_interest_shader_program(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		initialise_mask_region_of_interest_shader_program(
-				GLRenderer &renderer);
+				GL &gl);
 
 		GLProgram::shared_ptr_type
 		create_region_of_interest_shader_program(
-				GLRenderer &renderer,
+				GL &gl,
 				const char *vertex_shader_defines,
 				const char *fragment_shader_defines);
 
 		void
 		initialise_reduction_of_region_of_interest_shader_programs(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		initialise_reduction_of_region_of_interest_vertex_array(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		initialise_reduction_vertex_array_in_quad_tree_traversal_order(
@@ -1413,7 +1386,7 @@ namespace GPlatesOpenGL
 
 		void
 		initialise_texture_level_of_detail_parameters(
-				GLRenderer &renderer,
+				GL &gl,
 				const GLMultiResolutionRasterInterface::non_null_ptr_type &target_raster,
 				const unsigned int raster_level_of_detail,
 				unsigned int &raster_texture_cube_quad_tree_depth,
@@ -1427,12 +1400,12 @@ namespace GPlatesOpenGL
 
 		void
 		filter_reduce_seed_geometries_spatial_partition(
-				GLRenderer &renderer,
+				GL &gl,
 				const CoRegistrationParameters &co_registration_parameters);
 
 		void
 		filter_reduce_seed_geometries(
-				GLRenderer &renderer,
+				GL &gl,
 				const CoRegistrationParameters &co_registration_parameters,
 				seed_geometries_spatial_partition_type::node_reference_type seed_geometries_spatial_partition_node,
 				const seed_geometries_spatial_partition_node_list_type &parent_seed_geometries_intersecting_node_list,
@@ -1443,7 +1416,7 @@ namespace GPlatesOpenGL
 
 		void
 		co_register_seed_geometries(
-				GLRenderer &renderer,
+				GL &gl,
 				const CoRegistrationParameters &co_registration_parameters,
 				seed_geometries_spatial_partition_type::node_reference_type seed_geometries_spatial_partition_node,
 				const seed_geometries_spatial_partition_node_list_type &parent_seed_geometries_intersecting_node_list,
@@ -1453,7 +1426,7 @@ namespace GPlatesOpenGL
 
 		void
 		co_register_seed_geometries_with_target_raster(
-				GLRenderer &renderer,
+				GL &gl,
 				const CoRegistrationParameters &co_registration_parameters,
 				const seed_geometries_spatial_partition_node_list_type &parent_seed_geometries_intersecting_node_list,
 				const seed_geometries_intersecting_nodes_type &seed_geometries_intersecting_nodes,
@@ -1462,7 +1435,7 @@ namespace GPlatesOpenGL
 
 		void
 		co_register_seed_geometries_with_target_raster(
-				GLRenderer &renderer,
+				GL &gl,
 				const CoRegistrationParameters &co_registration_parameters,
 				const seed_geometries_spatial_partition_node_list_type &seed_geometries_intersecting_node_list,
 				const GPlatesMaths::UnitVector3D &cube_face_centre,
@@ -1477,7 +1450,7 @@ namespace GPlatesOpenGL
 
 		void
 		co_register_seed_geometries_with_loose_target_raster(
-				GLRenderer &renderer,
+				GL &gl,
 				const CoRegistrationParameters &co_registration_parameters,
 				seed_geometries_spatial_partition_type::node_reference_type seed_geometries_spatial_partition_node,
 				cube_subdivision_cache_type &cube_subdivision_cache,
@@ -1493,7 +1466,7 @@ namespace GPlatesOpenGL
 
 		void
 		render_seed_geometries_to_reduce_pyramids(
-				GLRenderer &renderer,
+				GL &gl,
 				const CoRegistrationParameters &co_registration_parameters,
 				unsigned int operation_index,
 				const GPlatesMaths::UnitVector3D &cube_face_centre,
@@ -1505,13 +1478,13 @@ namespace GPlatesOpenGL
 
 		unsigned int
 		render_seed_geometries_to_reduce_quad_tree_internal_node(
-				GLRenderer &renderer,
+				GL &gl,
 				RenderSeedCoRegistrationParameters &render_params,
 				ReduceQuadTreeInternalNode &reduce_quad_tree_internal_node);
 
 		void
 		render_seed_geometries_in_reduce_stage_render_list(
-				GLRenderer &renderer,
+				GL &gl,
 				const GLTexture::shared_ptr_type &reduce_stage_texture,
 				bool clear_reduce_stage_texture,
 				const Operation &operation,
@@ -1524,13 +1497,13 @@ namespace GPlatesOpenGL
 
 		void
 		render_bounded_point_region_of_interest_geometries(
-				GLRenderer &renderer,
+				GL &gl,
 				const SeedCoRegistrationGeometryLists &geometry_lists,
 				const double &region_of_interest_radius);
 
 		void
 		render_bounded_point_region_of_interest_geometry(
-				GLRenderer &renderer,
+				GL &gl,
 				point_region_of_interest_stream_primitives_type::MapStreamBufferScope &point_stream_target,
 				point_region_of_interest_stream_primitives_type::Primitives &point_stream_quads,
 				const GPlatesMaths::UnitVector3D &point,
@@ -1539,13 +1512,13 @@ namespace GPlatesOpenGL
 
 		void
 		render_unbounded_point_region_of_interest_geometries(
-				GLRenderer &renderer,
+				GL &gl,
 				const SeedCoRegistrationGeometryLists &geometry_lists,
 				const double &region_of_interest_radius);
 
 		void
 		render_unbounded_point_region_of_interest_geometry(
-				GLRenderer &renderer,
+				GL &gl,
 				point_region_of_interest_stream_primitives_type::MapStreamBufferScope &point_stream_target,
 				point_region_of_interest_stream_primitives_type::Primitives &point_stream_meshes,
 				const GPlatesMaths::UnitVector3D &point,
@@ -1555,13 +1528,13 @@ namespace GPlatesOpenGL
 
 		void
 		render_bounded_line_region_of_interest_geometries(
-				GLRenderer &renderer,
+				GL &gl,
 				const SeedCoRegistrationGeometryLists &geometry_lists,
 				const double &region_of_interest_radius);
 
 		void
 		render_bounded_line_region_of_interest_geometry(
-				GLRenderer &renderer,
+				GL &gl,
 				line_region_of_interest_stream_primitives_type::MapStreamBufferScope &line_stream_target,
 				line_region_of_interest_stream_primitives_type::Primitives &line_stream_quads,
 				const GPlatesMaths::GreatCircleArc &line,
@@ -1570,13 +1543,13 @@ namespace GPlatesOpenGL
 
 		void
 		render_unbounded_line_region_of_interest_geometries(
-				GLRenderer &renderer,
+				GL &gl,
 				const SeedCoRegistrationGeometryLists &geometry_lists,
 				const double &region_of_interest_radius);
 
 		void
 		render_unbounded_line_region_of_interest_geometry(
-				GLRenderer &renderer,
+				GL &gl,
 				line_region_of_interest_stream_primitives_type::MapStreamBufferScope &line_stream_target,
 				line_region_of_interest_stream_primitives_type::Primitives &line_stream_meshes,
 				const GPlatesMaths::GreatCircleArc &line,
@@ -1586,22 +1559,22 @@ namespace GPlatesOpenGL
 
 		void
 		render_single_pixel_size_point_region_of_interest_geometries(
-				GLRenderer &renderer,
+				GL &gl,
 				const SeedCoRegistrationGeometryLists &geometry_lists);
 
 		void
 		render_single_pixel_wide_line_region_of_interest_geometries(
-				GLRenderer &renderer,
+				GL &gl,
 				const SeedCoRegistrationGeometryLists &geometry_lists);
 
 		void
 		render_fill_region_of_interest_geometries(
-				GLRenderer &renderer,
+				GL &gl,
 				const SeedCoRegistrationGeometryLists &geometry_lists);
 
 		void
 		mask_target_raster_with_regions_of_interest(
-				GLRenderer &renderer,
+				GL &gl,
 				const Operation &operation,
 				const GPlatesMaths::UnitVector3D &cube_face_centre,
 				const GLTexture::shared_ptr_type &target_raster_texture,
@@ -1610,14 +1583,14 @@ namespace GPlatesOpenGL
 
 		void
 		mask_target_raster_with_region_of_interest(
-				GLRenderer &renderer,
+				GL &gl,
 				mask_region_of_interest_stream_primitives_type::MapStreamBufferScope &mask_stream_target,
 				mask_region_of_interest_stream_primitives_type::Primitives &mask_stream_quads,
 				const SeedCoRegistration &seed_co_registration);
 
 		void
 		render_reduction_of_reduce_stage(
-				GLRenderer &renderer,
+				GL &gl,
 				const Operation &operation,
 				const ReduceQuadTreeInternalNode &dst_reduce_quad_tree_node,
 				unsigned int src_child_x_offset,
@@ -1639,7 +1612,7 @@ namespace GPlatesOpenGL
 		 */
 		bool
 		render_target_raster(
-				GLRenderer &renderer,
+				GL &gl,
 				const CoRegistrationParameters &co_registration_parameters,
 				const GLTexture::shared_ptr_type &target_raster_texture,
 				const GLTransform &view_transform,
@@ -1648,12 +1621,12 @@ namespace GPlatesOpenGL
 		static
 		GLTexture::shared_ptr_type
 		acquire_rgba_float_texture(
-				GLRenderer &renderer);
+				GL &gl);
 
 		static
 		GLTexture::shared_ptr_type
 		acquire_rgba_fixed_texture(
-				GLRenderer &renderer);
+				GL &gl);
 
 		void
 		return_co_registration_results_to_caller(
@@ -1662,12 +1635,12 @@ namespace GPlatesOpenGL
 #if defined(DEBUG_RASTER_COREGISTRATION_RENDER_TARGET)
 		void
 		debug_fixed_point_render_target(
-				GLRenderer &renderer,
+				GL &gl,
 				const QString &image_file_basename);
 
 		void
 		debug_floating_point_render_target(
-				GLRenderer &renderer,
+				GL &gl,
 				const QString &image_file_basename,
 				bool coverage_is_in_green_channel);
 #endif

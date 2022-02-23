@@ -47,8 +47,8 @@
 
 namespace GPlatesOpenGL
 {
+	class GL;
 	class GLRasterCoRegistration;
-	class GLRenderer;
 }
 
 namespace GPlatesAppLogic
@@ -84,34 +84,30 @@ namespace GPlatesAppLogic
 		/**
 		 * Returns the co-registration data for the current reconstruction time.
 		 *
-		 * @a renderer is required since *raster* co-registration is accelerated using OpenGL.
-		 * If you do not already have a @a GLRenderer available then you'll need to retrieve a
-		 * @a GLContext object and use that to create a @a GLRenderer. An OpenGL context usually
+		 * @a gl is required since *raster* co-registration is accelerated using OpenGL.
+		 * If you do not already have a @a GL available then you'll need to retrieve a
+		 * @a GLContext object and use that to create a @a GL. An OpenGL context usually
 		 * requires some kind of operating system window (in Qt this can be a QGLWidget) which is
-		 * what the globe and map views use - see "GlobeAndMapWidget::get_gl_context()".
+		 * what the globe and map views use - see "GlobeAndMapWidget::get_active_gl_context()".
 		 * For situations where there's not typically a window handy (eg, using the GPlates
 		 * python API without using the GPlates application) you'll probably need to create a
 		 * window of some sort and associate an OpenGL context with it
 		 * (perhaps the GPlates python API can provide something like this).
-		 *
-		 * Returns boost::none if the input layers are not connected or if
-		 * @a set_current_coregistration_configuration_table has not yet been called (ie, the
-		 * co-registration has not yet been configured by the user for this layer).
 		 */
-		boost::optional<CoRegistrationData::non_null_ptr_type>
+		CoRegistrationData::non_null_ptr_type
 		get_coregistration_data(
-				GPlatesOpenGL::GLRenderer &renderer)
+				GPlatesOpenGL::GL &gl)
 		{
-			return get_coregistration_data(renderer, d_current_reconstruction_time);
+			return get_coregistration_data(gl, d_current_reconstruction_time);
 		}
 
 
 		/**
 		 * Returns the co-registration data for the specified reconstruction time.
 		 */
-		boost::optional<CoRegistrationData::non_null_ptr_type>
+		CoRegistrationData::non_null_ptr_type
 		get_coregistration_data(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const double &reconstruction_time);
 
 
@@ -126,7 +122,7 @@ namespace GPlatesAppLogic
 		 */
 		boost::optional<CoRegistrationData::non_null_ptr_type>
 		get_birth_attribute_data(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const GPlatesModel::FeatureId &feature_id);
 
 
@@ -272,10 +268,9 @@ namespace GPlatesAppLogic
 		 *
 		 * The one instance is used to co-register all/any rasters and is only created when first used.
 		 *
-		 * NOTE: Used the method @a get_raster_co_registration to retrieve this.
+		 * NOTE: Use the method @a get_raster_co_registration to retrieve this.
 		 */
-		boost::optional<GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLRasterCoRegistration>::non_null_ptr_type>
-				d_raster_co_registration;
+		boost::optional<GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLRasterCoRegistration>::non_null_ptr_type> d_raster_co_registration;
 
 		/**
 		 * The cached co-registration data - the output of co-registration.
@@ -325,12 +320,10 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Returns the raster co-registration and creates one the first time this method is called.
-		 *
-		 * Returns boost::none if the OpenGL extensions required for raster co-registration are not available.
 		 */
-		boost::optional<GPlatesOpenGL::GLRasterCoRegistration &>
+		GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLRasterCoRegistration>::non_null_ptr_type
 		get_raster_co_registration(
-				GPlatesOpenGL::GLRenderer &renderer);
+				GPlatesOpenGL::GL &gl);
 	};
 }
 

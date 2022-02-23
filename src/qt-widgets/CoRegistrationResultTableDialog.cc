@@ -48,8 +48,8 @@
 
 #include "model/ModelUtils.h"
 
+#include "opengl/GL.h"
 #include "opengl/GLContext.h"
-#include "opengl/GLRenderer.h"
 
 #include "presentation/ViewState.h"
 
@@ -163,24 +163,19 @@ GPlatesQtWidgets::CoRegistrationResultTableDialog::update()
 	// Make sure the context is currently active.
 	gl_context->make_current();
 
-	// Start a begin_render/end_render scope.
+	// Start a render scope (all GL calls should be done inside this scope).
+	//
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = gl_context->create_renderer();
-	GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
+	GPlatesOpenGL::GL::non_null_ptr_type gl = gl_context->create_gl();
+	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
 	//
 	// Get the co-registration results (perform the co-registration).
 	//
 
 	// Get the co-registration result data for the current reconstruction time.
-	boost::optional<GPlatesAppLogic::CoRegistrationData::non_null_ptr_type> coregistration_data =
-			layer_proxy.get()->get_coregistration_data(*renderer);
-
-	// If there's no co-registration data then it means the user has not yet configured co-registration.
-	if (!coregistration_data)
-	{
-		return;
-	}
+	GPlatesAppLogic::CoRegistrationData::non_null_ptr_type coregistration_data =
+			layer_proxy.get()->get_coregistration_data(*gl);
 
 	// Update the co-registration data in the GUI.
 	update_co_registration_data(coregistration_data.get()->data_table());

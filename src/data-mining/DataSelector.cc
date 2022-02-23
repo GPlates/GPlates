@@ -103,7 +103,7 @@ GPlatesDataMining::DataSelector::select(
 	if (co_register_rasters)
 	{
 		co_register_target_reconstructed_rasters(
-				co_register_rasters->renderer,
+				co_register_rasters->gl,
 				co_register_rasters->co_registration,
 				reconstructed_seed_features,	
 				reconstruction_time,
@@ -126,7 +126,7 @@ ENABLE_GCC_WARNING("-Wshadow")
 
 void
 GPlatesDataMining::DataSelector::co_register_target_reconstructed_rasters(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		GPlatesOpenGL::GLRasterCoRegistration &raster_co_registration,
 		const std::vector<GPlatesAppLogic::ReconstructContext::ReconstructedFeature> &reconstructed_seed_features,	
 		const double &reconstruction_time,
@@ -195,7 +195,7 @@ GPlatesDataMining::DataSelector::co_register_target_reconstructed_rasters(
 		// Get the (possibly) reconstructed raster.
 		boost::optional<GPlatesOpenGL::GLMultiResolutionRasterInterface::non_null_ptr_type> reconstructed_raster =
 				target_layer_proxy.get()->get_multi_resolution_data_raster(
-						renderer,
+						gl,
 						reconstruction_time,
 						raster_band_name);
 		if (!reconstructed_raster)
@@ -275,7 +275,7 @@ GPlatesDataMining::DataSelector::co_register_target_reconstructed_rasters(
 		// Co-register the reconstructed seed features with the reconstructed raster for all the
 		// operations associated with the current raster.
 		raster_co_registration.co_register(
-				renderer,
+				gl,
 				raster_operations,
 				reconstructed_seed_features,
 				reconstructed_raster.get(),

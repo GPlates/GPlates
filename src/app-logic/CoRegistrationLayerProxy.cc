@@ -23,7 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 #include <boost/bind/bind.hpp>
-#include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
 #include "CoRegistrationLayerProxy.h"
@@ -39,6 +38,7 @@
 
 #include "model/ModelUtils.h"
 
+#include "opengl/GL.h"
 #include "opengl/GLRasterCoRegistration.h"
 
 #include "property-values/GmlTimePeriod.h"
@@ -60,9 +60,9 @@ GPlatesAppLogic::CoRegistrationLayerProxy::~CoRegistrationLayerProxy()
 }
 
 
-boost::optional<GPlatesAppLogic::CoRegistrationData::non_null_ptr_type>
+GPlatesAppLogic::CoRegistrationData::non_null_ptr_type
 GPlatesAppLogic::CoRegistrationLayerProxy::get_coregistration_data(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		const double &reconstruction_time)
 {
 	// We have at least an empty co-registration configuration table we can always proceed past that.
@@ -121,16 +121,9 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_coregistration_data(
 				GPlatesDataMining::DataSelector::create(
 						d_current_coregistration_configuration_table);
 
-		// Co-register rasters if we can (if the run-time system supports it).
-		boost::optional<GPlatesDataMining::DataSelector::RasterCoRegistration> co_register_rasters;
-		if (get_raster_co_registration(renderer))
-		{
-			// Pass GPlatesDataMining::DataSelector::RasterCoRegistration constructor parameters to
-			// construct a new object directly in-place.
-			co_register_rasters = boost::in_place(
-					boost::ref(renderer),
-					boost::ref(get_raster_co_registration(renderer).get()));
-		}
+		// Co-register rasters.
+		GPlatesOpenGL::GLRasterCoRegistration::non_null_ptr_type raster_co_registration = get_raster_co_registration(gl);
+		GPlatesDataMining::DataSelector::RasterCoRegistration co_register_rasters(gl, *raster_co_registration);
 		
 		// Fill the co-registration data table with results.
 		selector->select(
@@ -147,7 +140,7 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_coregistration_data(
 
 boost::optional<GPlatesAppLogic::CoRegistrationData::non_null_ptr_type>
 GPlatesAppLogic::CoRegistrationLayerProxy::get_birth_attribute_data(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		const GPlatesModel::FeatureId &feature_id)
 {
 	using namespace GPlatesModel;
@@ -221,34 +214,26 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_birth_attribute_data(
 	std::vector<LayerProxy::non_null_ptr_type> target_layer_proxies;
 
 	// Get the co-registration target (reconstructed geometries) layer proxies.
-	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &target_layer_proxy,
+	for (
+			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &target_layer_proxy :
 			d_current_target_reconstruct_layer_proxies)
 	{
 		target_layer_proxies.push_back(target_layer_proxy.get_input_layer_proxy());
 	}
 
 	// Get the co-registration target (raster) layer proxies.
-	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<RasterLayerProxy> &target_layer_proxy,
+	for (
+			LayerProxyUtils::InputLayerProxy<RasterLayerProxy> &target_layer_proxy :
 			d_current_target_raster_layer_proxies)
 	{
 		target_layer_proxies.push_back(target_layer_proxy.get_input_layer_proxy());
 	}
 
-	// Co-register rasters if we can (if the run-time system supports it).
-	boost::optional<GPlatesDataMining::DataSelector::RasterCoRegistration> co_register_rasters;
-	if (get_raster_co_registration(renderer))
-	{
-		// Pass GPlatesDataMining::DataSelector::RasterCoRegistration constructor parameters to
-		// construct a new object directly in-place.
-		co_register_rasters = boost::in_place(
-				boost::ref(renderer),
-				boost::ref(get_raster_co_registration(renderer).get()));
-	}
+	// Co-register rasters.
+	GPlatesOpenGL::GLRasterCoRegistration::non_null_ptr_type raster_co_registration = get_raster_co_registration(gl);
+	GPlatesDataMining::DataSelector::RasterCoRegistration co_register_rasters(gl, *raster_co_registration);
 		
-	boost::optional<CoRegistrationData::non_null_ptr_type> coreg_data = 
-		CoRegistrationData::create(reconstruction_time);
+	CoRegistrationData::non_null_ptr_type coreg_data = CoRegistrationData::create(reconstruction_time);
 
 	// Does the actual co-registration work.
 	boost::shared_ptr<GPlatesDataMining::DataSelector> selector =
@@ -260,9 +245,10 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_birth_attribute_data(
 			reconstructed_seed_features,
 			target_layer_proxies,
 			reconstruction_time,
-			coreg_data.get()->data_table(),
+			coreg_data->data_table(),
 			co_register_rasters);
-	return coreg_data.get();
+
+	return coreg_data;
 }
 
 
@@ -425,24 +411,24 @@ void
 GPlatesAppLogic::CoRegistrationLayerProxy::check_input_layer_proxies()
 {
 	// See if any reconstructed seed layer proxies have changed.
-	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &seed_layer_proxy,
+	for (
+			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &seed_layer_proxy :
 			d_current_seed_layer_proxies)
 	{
 		check_input_layer_proxy(seed_layer_proxy);
 	}
 
 	// See if any target (reconstructed geometries) layer proxies have changed.
-	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &target_layer_proxy,
+	for (
+			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &target_layer_proxy :
 			d_current_target_reconstruct_layer_proxies)
 	{
 		check_input_layer_proxy(target_layer_proxy);
 	}
 
 	// See if any target (raster) layer proxies have changed.
-	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<RasterLayerProxy> &target_layer_proxy,
+	for (
+			LayerProxyUtils::InputLayerProxy<RasterLayerProxy> &target_layer_proxy :
 			d_current_target_raster_layer_proxies)
 	{
 		check_input_layer_proxy(target_layer_proxy);
@@ -450,26 +436,17 @@ GPlatesAppLogic::CoRegistrationLayerProxy::check_input_layer_proxies()
 }
 
 
-boost::optional<GPlatesOpenGL::GLRasterCoRegistration &>
+GPlatesOpenGL::GLRasterCoRegistration::non_null_ptr_type
 GPlatesAppLogic::CoRegistrationLayerProxy::get_raster_co_registration(
-		GPlatesOpenGL::GLRenderer &renderer)
+		GPlatesOpenGL::GL &gl)
 {
-	// Attempt to create raster co-registration if not already created.
+	// Create raster co-registration if not already created.
 	if (!d_raster_co_registration)
 	{
-		// Returns boost::none if the required OpenGL extensions are not available.
-		d_raster_co_registration = GPlatesOpenGL::GLRasterCoRegistration::create(renderer);
+		d_raster_co_registration = GPlatesOpenGL::GLRasterCoRegistration::create(gl);
 	}
 
-	// Convert from a non_null_ptr to a reference (if raster co-registration supported).
-	if (d_raster_co_registration)
-	{
-		GPlatesOpenGL::GLRasterCoRegistration &raster_co_registration = *d_raster_co_registration.get();
-
-		return raster_co_registration;
-	}
-
-	return boost::none;
+	return d_raster_co_registration.get();
 }
 
 
@@ -481,8 +458,8 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_seed_features()
 
 	// Get the co-registration reconstructed seed features from the input seed layer proxies.
 	std::vector<ReconstructContext::ReconstructedFeature> reconstructed_seed_features;
-	BOOST_FOREACH(
-			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &seed_layer_proxy,
+	for (
+			LayerProxyUtils::InputLayerProxy<ReconstructLayerProxy> &seed_layer_proxy :
 			d_current_seed_layer_proxies)
 	{
 		//We have used set_reconstruct_by_plate_id_outside_active_time_period(true). 
@@ -494,13 +471,11 @@ GPlatesAppLogic::CoRegistrationLayerProxy::get_seed_features()
 	}
 	//Get all seed features from reconstructed seed features.
 	std::vector<GPlatesModel::FeatureHandle::weak_ref> features;
-	BOOST_FOREACH(
-			ReconstructContext::ReconstructedFeature &f,
-			reconstructed_seed_features)
+	for (ReconstructContext::ReconstructedFeature &feature_ref : reconstructed_seed_features)
 	{
-		if(f.get_feature().is_valid())
+		if (feature_ref.get_feature().is_valid())
 		{
-			features.push_back(f.get_feature());
+			features.push_back(feature_ref.get_feature());
 		}
 	}
 	return features;
