@@ -112,9 +112,6 @@ namespace GPlatesPresentation
 
 			d_scalar_field_3d_render_parameters = scalar_field_3d_render_parameters;
 
-			// If surface polygons mask not supported then disable it.
-			disable_surface_polygons_mask_if_not_supported();
-
 			emit_modified();
 		}
 
@@ -322,15 +319,6 @@ namespace GPlatesPresentation
 			emit_modified();
 		}
 
-		/**
-		 * Returns whether the runtime graphics hardware can support surface polygons mask.
-		 */
-		bool
-		is_surface_polygons_mask_supported() const
-		{
-			return d_is_surface_polygons_mask_supported;
-		}
-
 		const GPlatesViewOperations::ScalarField3DRenderParameters::SurfacePolygonsMask &
 		get_surface_polygons_mask() const
 		{
@@ -342,9 +330,6 @@ namespace GPlatesPresentation
 				GPlatesViewOperations::ScalarField3DRenderParameters::SurfacePolygonsMask surface_polygons_mask)
 		{
 			d_scalar_field_3d_render_parameters.set_surface_polygons_mask(surface_polygons_mask);
-
-			// If surface polygons mask not supported then disable it.
-			disable_surface_polygons_mask_if_not_supported();
 
 			emit_modified();
 		}
@@ -410,16 +395,10 @@ namespace GPlatesPresentation
 
 		GPlatesViewOperations::ScalarField3DRenderParameters d_scalar_field_3d_render_parameters;
 
-		bool d_is_surface_polygons_mask_supported;
-
 		bool d_scalar_colour_palette_parameters_initialised_from_scalar_field;
 		bool d_gradient_colour_palette_parameters_initialised_from_scalar_field;
 		bool d_isovalue_parameters_initialised_from_scalar_field;
 		bool d_depth_restriction_initialised_from_scalar_field;
-
-
-		void
-		disable_surface_polygons_mask_if_not_supported();
 	};
 }
 

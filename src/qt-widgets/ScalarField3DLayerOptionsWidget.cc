@@ -27,7 +27,6 @@
 #include <QDebug>
 #include <QDir>
 #include <QFileInfo>
-#include <QMessageBox>
 #include <QtGlobal>
 
 #include "ScalarField3DLayerOptionsWidget.h"
@@ -2938,26 +2937,6 @@ GPlatesQtWidgets::ScalarField3DLayerOptionsWidget::handle_surface_polygons_mask_
 		{
 			GPlatesViewOperations::ScalarField3DRenderParameters::SurfacePolygonsMask surface_polygons_mask =
 					visual_layer_params->get_surface_polygons_mask();
-
-			// If surface polygons masking is not supported (by runtime graphics hardware), and the
-			// checkbox was checked, then popup a warning message and then disable the checkbox.
-			if (!visual_layer_params->is_surface_polygons_mask_supported() &&
-				!surface_polygons_mask.enable_surface_polygons_mask &&
-				enable_surface_polygons_mask_button->isChecked())
-			{
-				// Uncheck the checkbox and disable it so it cannot be checked again.
-				enable_surface_polygons_mask_button->setChecked(false);
-				enable_surface_polygons_mask_button->setDisabled(true);
-
-				QMessageBox::warning(this, tr("Cannot enable surface polygons mask"),
-						tr("Graphics hardware lacks support, or a problem was encountered."
-#ifndef Q_OS_MACOS // Cannot actually update graphics driver explicitly on Mac OS X systems...
-							"\nMake sure you have the latest graphics hardware driver installed."
-#endif
-							"\nAlso try switching to the dedicated GPU if using a dual-GPU system."
-						),
-						QMessageBox::Ok);
-			}
 
 			surface_polygons_mask.enable_surface_polygons_mask = enable_surface_polygons_mask_button->isChecked();
 			surface_polygons_mask.show_polygon_walls = show_polygon_walls_button->isChecked();

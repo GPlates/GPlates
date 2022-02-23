@@ -33,58 +33,20 @@
 
 #include "gui/RasterColourPalette.h"
 
-#include "opengl/GLContext.h"
-#include "opengl/GLRenderer.h"
-#include "opengl/GLScalarField3D.h"
-
 #include "qt-widgets/GlobeAndMapWidget.h"
 #include "qt-widgets/ReconstructionViewWidget.h"
 #include "qt-widgets/ViewportWindow.h"
-
-
-namespace GPlatesPresentation
-{
-	namespace
-	{
-		/**
-		 * Returns true if 3D scalar fields support 'surface polygons mask'.
-		 */
-		bool
-		determine_if_surface_polygons_mask_supported(
-				ViewState &view_state)
-		{
-			// Get an OpenGL context.
-			GPlatesOpenGL::GLContext::non_null_ptr_type gl_context =
-					view_state.get_other_view_state().reconstruction_view_widget().globe_and_map_widget()
-							.get_active_gl_context();
-
-			// Make sure the context is currently active.
-			gl_context->make_current();
-
-			// We need an OpenGL renderer before we can query support.
-			GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer = gl_context->create_renderer();
-
-			// Start a begin_render/end_render scope.
-			GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
-
-			return GPlatesOpenGL::GLScalarField3D::supports_surface_fill_mask(*renderer);
-		}
-	}
-}
 
 
 GPlatesPresentation::ScalarField3DVisualLayerParams::ScalarField3DVisualLayerParams(
 		GPlatesAppLogic::LayerParams::non_null_ptr_type layer_params,
 		GPlatesPresentation::ViewState &view_state) :
 	VisualLayerParams(layer_params, view_state),
-	d_is_surface_polygons_mask_supported(determine_if_surface_polygons_mask_supported(view_state)),
 	d_scalar_colour_palette_parameters_initialised_from_scalar_field(false),
 	d_gradient_colour_palette_parameters_initialised_from_scalar_field(false),
 	d_isovalue_parameters_initialised_from_scalar_field(false),
 	d_depth_restriction_initialised_from_scalar_field(false)
 {
-	// If surface polygons mask not supported then disable it.
-	disable_surface_polygons_mask_if_not_supported();
 }
 
 
@@ -182,20 +144,4 @@ GPlatesPresentation::ScalarField3DVisualLayerParams::handle_layer_modified(
 	// ...else there's no scalar field feature...
 
 	emit_modified();
-}
-
-
-void
-GPlatesPresentation::ScalarField3DVisualLayerParams::disable_surface_polygons_mask_if_not_supported()
-{
-	// If surface polygons mask not supported then disable it.
-	if (!d_is_surface_polygons_mask_supported)
-	{
-		GPlatesViewOperations::ScalarField3DRenderParameters::SurfacePolygonsMask surface_polygons_mask =
-				d_scalar_field_3d_render_parameters.get_surface_polygons_mask();
-
-		surface_polygons_mask.enable_surface_polygons_mask = false;
-
-		d_scalar_field_3d_render_parameters.set_surface_polygons_mask(surface_polygons_mask);
-	}
 }
