@@ -29,7 +29,6 @@
 
 #include <cmath>
 #include <algorithm>
-#include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
 #include "SphericalGrid.h"
@@ -171,7 +170,7 @@ namespace
 			GPlatesMaths::GreatCircleArc::create(equatorial_point, GPlatesMaths::PointOnSphere::south_pole)
 		};
 
-		BOOST_FOREACH(const GPlatesMaths::GreatCircleArc &great_circle_arc, great_circle_arcs)
+		for (const GPlatesMaths::GreatCircleArc &great_circle_arc : great_circle_arcs)
 		{
 			// Tessellate the great circle arc.
 			std::vector<GPlatesMaths::PointOnSphere> points;

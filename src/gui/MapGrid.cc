@@ -29,7 +29,6 @@
 #include <cmath>
 #include <utility>
 #include <vector>
-#include <boost/foreach.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <QDebug>
 
@@ -42,14 +41,47 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "maths/MathsUtils.h"
+
+#include "opengl/GL.h"
 #include "opengl/GLMatrix.h"
 #include "opengl/GLStreamPrimitives.h"
-#include "opengl/GLRenderer.h"
 #include "opengl/GLVertexArray.h"
 #include "opengl/GLVertexUtils.h"
+#include "opengl/GLViewProjection.h"
+
 
 namespace
 {
+	// Vertex and fragment shader source code to render grid lines in the 2D map views.
+	const char *VERTEX_SHADER_SOURCE =
+		R"(
+			uniform mat4 view_projection;
+			
+			layout(location = 0) in vec4 position;
+			layout(location = 1) in vec4 colour;
+
+			out vec4 line_colour;
+			
+			void main (void)
+			{
+				gl_Position = view_projection * position;
+				
+				line_colour = colour;
+			}
+		)";
+	const char *FRAGMENT_SHADER_SOURCE =
+		R"(
+			in vec4 line_colour;
+			
+			layout(location = 0) out vec4 colour;
+
+			void main (void)
+			{
+				colour = line_colour;
+			}
+		)";
+
 	// Vertex stream.
 	typedef GPlatesOpenGL::GLVertexUtils::ColourVertex vertex_type;
 	typedef GLuint vertex_element_type;
@@ -99,44 +131,6 @@ namespace
 	{
 		projection.forward_transform(lon, lat);
 		return projection_coord_type(lon, lat);
-	}
-
-
-	/**
-	 * Sets the OpenGL state set that defines the appearance of the grid lines.
-	 */
-	void
-	set_line_draw_state(
-			GPlatesOpenGL::GLRenderer &renderer,
-			float line_width_hint)
-	{
-		// Set the alpha-blend state.
-		// Set up alpha blending for pre-multiplied alpha.
-		// This has (src,dst) blend factors of (1, 1-src_alpha) instead of (src_alpha, 1-src_alpha).
-		// This is where the RGB channels have already been multiplied by the alpha channel.
-		// See class GLVisualRasterSource for why this is done.
-		//
-		// To generate pre-multiplied alpha we'll use separate alpha-blend (src,dst) factors for the alpha channel...
-		//
-		//   RGB uses (src_alpha, 1 - src_alpha)  ->  (R,G,B) = (Rs*As,Gs*As,Bs*As) + (1-As) * (Rd,Gd,Bd)
-		//     A uses (1, 1 - src_alpha)          ->        A = As + (1-As) * Ad
-		if (renderer.get_capabilities().framebuffer.gl_EXT_blend_func_separate)
-		{
-			renderer.gl_enable(GL_BLEND);
-			renderer.gl_blend_func_separate(
-					GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
-					GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-		}
-		else // otherwise resort to normal blending...
-		{
-			renderer.gl_enable(GL_BLEND);
-			renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-		}
-
-		// Set the anti-aliased line state.
-		renderer.gl_enable(GL_LINE_SMOOTH);
-		renderer.gl_hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-		renderer.gl_line_width(line_width_hint);
 	}
 
 
@@ -290,27 +284,25 @@ namespace
 	}
 
 
-	GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type
-	compile_grid_draw_state(
-			GPlatesOpenGL::GLRenderer &renderer,
-			GPlatesOpenGL::GLVertexArray &vertex_array,
+	void
+	create_grid_lines(
+			std::vector<vertex_type> &vertices,
+			std::vector<vertex_element_type> &vertex_elements,
 			const GPlatesGui::MapProjection &map_projection,
 			const GPlatesMaths::Real &delta_lat,
 			const GPlatesMaths::Real &delta_lon,
-			const GPlatesGui::rgba8_t &colour,
-			float line_width_hint)
+			const GPlatesGui::rgba8_t &colour)
 	{
-		const double lat_0 = 90;
-		const double lon_0 = map_projection.central_llp().longitude() - 180;
-
 		stream_primitives_type stream;
 
-		std::vector<vertex_type> vertices;
-		std::vector<vertex_element_type> vertex_elements;
 		stream_primitives_type::StreamTarget stream_target(stream);
+
 		stream_target.start_streaming(
 				boost::in_place(boost::ref(vertices)),
 				boost::in_place(boost::ref(vertex_elements)));
+
+		const double lat_0 = 90;
+		const double lon_0 = map_projection.central_llp().longitude() - 180;
 
 		if (delta_lat != 0.0)
 		{
@@ -323,70 +315,182 @@ namespace
 		}
 
 		stream_target.stop_streaming();
+	}
 
-#if 0 // Update: using 32-bit indices now...
-		// We're using 16-bit indices (ie, 65536 vertices) so make sure we've not exceeded that many vertices.
-		// Shouldn't get close really but check to be sure.
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				vertices.size() - 1 <= GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::MAX_INDEXABLE_VERTEX,
-				GPLATES_ASSERTION_SOURCE);
-#endif
 
-		// Streamed line strips end up as indexed lines.
-		const GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type draw_vertex_array =
-				compile_vertex_array_draw_state(
-						renderer, vertex_array, vertices, vertex_elements, GL_LINES);
+	void
+	load_grid_lines(
+			GPlatesOpenGL::GL &gl,
+			GPlatesOpenGL::GLVertexArray::shared_ptr_type vertex_array,
+			GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_buffer,
+			GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_element_buffer,
+			const std::vector<vertex_type> &vertices,
+			const std::vector<vertex_element_type> &vertex_elements)
+	{
+		// Bind vertex array object.
+		gl.BindVertexArray(vertex_array);
 
-		// Start compiling draw state that includes line drawing state and the vertex array draw command.
-		GPlatesOpenGL::GLRenderer::CompileDrawStateScope compile_draw_state_scope(renderer);
+		// Bind vertex element buffer object to currently bound vertex array object.
+		gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_element_buffer);
 
-		set_line_draw_state(renderer, line_width_hint);
-		renderer.apply_compiled_draw_state(*draw_vertex_array);
+		// Transfer vertex element data to currently bound vertex element buffer object.
+		glBufferData(
+				GL_ELEMENT_ARRAY_BUFFER,
+				vertex_elements.size() * sizeof(vertex_elements[0]),
+				vertex_elements.data(),
+				GL_STATIC_DRAW);
 
-		return compile_draw_state_scope.get_compiled_draw_state();
+		// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
+		gl.BindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+
+		// Transfer vertex data to currently bound vertex buffer object.
+		glBufferData(
+				GL_ARRAY_BUFFER,
+				vertices.size() * sizeof(vertices[0]),
+				vertices.data(),
+				GL_STATIC_DRAW);
+
+		// Specify vertex attributes (position and colour) in currently bound vertex buffer object.
+		// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
+		// to currently bound vertex array object.
+		gl.EnableVertexAttribArray(0);
+		gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_type), BUFFER_OFFSET(vertex_type, x));
+		gl.EnableVertexAttribArray(1);
+		gl.VertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(vertex_type), BUFFER_OFFSET(vertex_type, colour));
+	}
+
+
+	void
+	compile_link_program(
+			GPlatesOpenGL::GL &gl,
+			GPlatesOpenGL::GLProgram::shared_ptr_type program)
+	{
+		// Vertex shader source.
+		GPlatesOpenGL::GLShaderSource vertex_shader_source;
+		vertex_shader_source.add_code_segment(VERTEX_SHADER_SOURCE);
+
+		// Vertex shader.
+		GPlatesOpenGL::GLShader::shared_ptr_type vertex_shader = GPlatesOpenGL::GLShader::create(gl, GL_VERTEX_SHADER);
+		vertex_shader->shader_source(vertex_shader_source);
+		vertex_shader->compile_shader();
+
+		// Fragment shader source.
+		GPlatesOpenGL::GLShaderSource fragment_shader_source;
+		fragment_shader_source.add_code_segment(FRAGMENT_SHADER_SOURCE);
+
+		// Fragment shader.
+		GPlatesOpenGL::GLShader::shared_ptr_type fragment_shader = GPlatesOpenGL::GLShader::create(gl, GL_FRAGMENT_SHADER);
+		fragment_shader->shader_source(fragment_shader_source);
+		fragment_shader->compile_shader();
+
+		// Vertex-fragment program.
+		program->attach_shader(vertex_shader);
+		program->attach_shader(fragment_shader);
+		program->link_program();
 	}
 }
 
 
 GPlatesGui::MapGrid::MapGrid(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
 		const MapProjection &map_projection,
 		const GraticuleSettings &graticule_settings) :
 	d_map_projection(map_projection),
 	d_graticule_settings(graticule_settings),
-	d_grid_vertex_array(GPlatesOpenGL::GLVertexArray::create(renderer))
-{  }
+	d_program(GPlatesOpenGL::GLProgram::create(gl)),
+	d_vertex_array(GPlatesOpenGL::GLVertexArray::create(gl)),
+	d_vertex_buffer(GPlatesOpenGL::GLBuffer::create(gl)),
+	d_vertex_element_buffer(GPlatesOpenGL::GLBuffer::create(gl)),
+	d_num_vertex_indices(0)
+{
+	// Make sure we leave the OpenGL global state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+
+	compile_link_program(gl, d_program);
+}
 
 
 void
 GPlatesGui::MapGrid::paint(
-		GPlatesOpenGL::GLRenderer &renderer)
+		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLViewProjection &view_projection)
 {
-	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
+	// Make sure we leave the OpenGL global state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
 
 	const MapProjectionSettings map_projection_settings = d_map_projection.get_projection_settings();
 
-	// Check whether we need to compile a new draw state.
-	if (!d_grid_compiled_draw_state ||
-		!d_last_seen_graticule_settings ||
-		*d_last_seen_graticule_settings != d_graticule_settings ||
-		!d_last_seen_map_projection_settings ||
-		*d_last_seen_map_projection_settings != map_projection_settings)
+	// Check whether we need to (re)generate the grid lines.
+	//
+	// Note: This will always happen on the first paint.
+	if (d_last_seen_graticule_settings != d_graticule_settings ||
+		d_last_seen_map_projection_settings != map_projection_settings)
 	{
-		d_grid_compiled_draw_state = compile_grid_draw_state(
-				renderer,
-				*d_grid_vertex_array,
+		std::vector<vertex_type> vertices;
+		std::vector<vertex_element_type> vertex_elements;
+		create_grid_lines(
+				vertices,
+				vertex_elements,
 				d_map_projection,
 				GPlatesMaths::convert_rad_to_deg(d_graticule_settings.get_delta_lat()),
 				GPlatesMaths::convert_rad_to_deg(d_graticule_settings.get_delta_lon()),
-				Colour::to_rgba8(d_graticule_settings.get_colour()),
-				d_graticule_settings.get_line_width_hint());
+				Colour::to_rgba8(d_graticule_settings.get_colour()));
+		d_num_vertex_indices = vertex_elements.size();
+
+		load_grid_lines(gl, d_vertex_array, d_vertex_buffer, d_vertex_element_buffer, vertices, vertex_elements);
 
 		d_last_seen_graticule_settings = d_graticule_settings;
 		d_last_seen_map_projection_settings = map_projection_settings;
 	}
 
+	// Set the anti-aliased line state.
+	gl.Enable(GL_LINE_SMOOTH);
+	gl.Hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+	gl.LineWidth(d_graticule_settings.get_line_width_hint());
+
+	//
+	// For alpha-blending we want:
+	//
+	//   RGB = A_src * RGB_src + (1-A_src) * RGB_dst
+	//     A =     1 *   A_src + (1-A_src) *   A_dst
+	//
+	// ...so we need to use separate (src,dst) blend factors for the RGB and alpha channels...
+	//
+	//   RGB uses (A_src, 1 - A_src)
+	//     A uses (    1, 1 - A_src)
+	//
+	// ...this enables the destination to be a texture that is subsequently blended into the final scene.
+	// In this case the destination alpha must be correct in order to properly blend the texture into the final scene.
+	// However if we're rendering directly into the scene (ie, no render-to-texture) then destination alpha is not
+	// actually used (since only RGB in the final scene is visible) and therefore could use same blend factors as RGB.
+	//
+	gl.Enable(GL_BLEND);
+	gl.BlendFuncSeparate(
+		GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,  // RGB
+		GL_ONE, GL_ONE_MINUS_SRC_ALPHA);       // Alpha
+
+	// Use the shader program.
+	gl.UseProgram(d_program);
+
+	// Set view projection matrix in the currently bound program.
+	GLfloat view_projection_float_matrix[16];
+	view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
+	glUniformMatrix4fv(
+			d_program->get_uniform_location("view_projection"),
+			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
+
+	// Bind the vertex array.
+	gl.BindVertexArray(d_vertex_array);
+
+	// Temporarily disable OpenGL feedback (eg, to SVG) until it's re-implemented using OpenGL 3...
+#if 1
+	// Draw the grid lines.
+	glDrawElements(
+			GL_LINES,
+			d_num_vertex_indices/*count*/,
+			GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::type,
+			nullptr/*indices_offset*/);
+#else
 	// Either render directly to the framebuffer, or use OpenGL feedback to render to the
 	// QPainter's paint device.
 	if (renderer.rendering_to_context_framebuffer())
@@ -399,8 +503,9 @@ GPlatesGui::MapGrid::paint(
 		// We are rendering to the QPainter attached to GLRenderer.
 		FeedbackOpenGLToQPainter feedback_opengl;
 		FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(
-				feedback_opengl, renderer, 0, LINE_OF_LATITUDE_NUM_SEGMENTS * LINE_OF_LONGITUDE_NUM_SEGMENTS, 0);
+				feedback_opengl, renderer, 0, d_num_vertex_indices, 0);
 
 		renderer.apply_compiled_draw_state(*d_grid_compiled_draw_state.get());
 	}
+#endif
 }

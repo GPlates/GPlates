@@ -32,13 +32,15 @@
 #include "GraticuleSettings.h"
 #include "MapProjection.h"
 
-#include "opengl/GLCompiledDrawState.h"
+#include "opengl/GLBuffer.h"
+#include "opengl/GLProgram.h"
 #include "opengl/GLVertexArray.h"
 
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
+	class GLViewProjection;
 }
 
 namespace GPlatesGui
@@ -52,7 +54,7 @@ namespace GPlatesGui
 	public:
 
 		MapGrid(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
 				const MapProjection &map_projection,
 				const GraticuleSettings &graticule_settings);
 
@@ -61,7 +63,8 @@ namespace GPlatesGui
 		 */
 		void
 		paint(
-				GPlatesOpenGL::GLRenderer &renderer);
+				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection);
 
 	private:
 		const MapProjection &d_map_projection;
@@ -70,8 +73,14 @@ namespace GPlatesGui
 		boost::optional<MapProjectionSettings> d_last_seen_map_projection_settings;
 		boost::optional<GraticuleSettings> d_last_seen_graticule_settings;
 
-		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_grid_vertex_array;
-		boost::optional<GPlatesOpenGL::GLCompiledDrawState::non_null_ptr_to_const_type> d_grid_compiled_draw_state;
+		//! Shader program to render grid lines.
+		GPlatesOpenGL::GLProgram::shared_ptr_type d_program;
+
+		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_vertex_array;
+		GPlatesOpenGL::GLBuffer::shared_ptr_type d_vertex_buffer;
+		GPlatesOpenGL::GLBuffer::shared_ptr_type d_vertex_element_buffer;
+
+		unsigned int d_num_vertex_indices;
 	};
 }
 
