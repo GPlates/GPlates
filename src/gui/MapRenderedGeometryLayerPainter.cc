@@ -55,7 +55,7 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/SphericalArea.h"
 
-#include "opengl/GLRenderer.h"
+#include "opengl/GL.h"
 
 #include "view-operations/RenderedArrowedPolyline.h"
 #include "view-operations/RenderedCircleSymbol.h"
@@ -290,28 +290,29 @@ GPlatesGui::MapRenderedGeometryLayerPainter::MapRenderedGeometryLayerPainter(
 
 GPlatesGui::MapRenderedGeometryLayerPainter::cache_handle_type
 GPlatesGui::MapRenderedGeometryLayerPainter::paint(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLViewProjection &view_projection,
 		LayerPainter &layer_painter)
 {
 	//PROFILE_FUNC();
 
-	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_state(renderer);
+	// Make sure we leave the OpenGL global state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
 
 	// We have a layer painter for the duration of this method.
 	d_layer_painter = layer_painter;
 
 	// Begin painting so our visit methods can start painting.
-	layer_painter.begin_painting(renderer);
+	layer_painter.begin_painting(gl);
 
 	// Visit the rendered geometries in the rendered layer.
 	//
 	// NOTE: Rasters get painted as they are visited - it's really mainly the point/line/polygon
 	// primitives that get batched up into vertex streams for efficient rendering.
-	visit_rendered_geometries(renderer);
+	visit_rendered_geometries(gl);
 
 	// Do the actual painting.
-	const cache_handle_type layer_cache = layer_painter.end_painting(renderer, d_scale);
+	const cache_handle_type layer_cache = layer_painter.end_painting(gl, view_projection, d_scale);
 
 	// We no longer have a layer painter.
 	d_layer_painter = boost::none;
@@ -1930,7 +1931,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_cross_symbol(
 
 void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_geometries(
-		GPlatesOpenGL::GLRenderer &renderer)
+		GPlatesOpenGL::GL &gl)
 {
 	// TODO: If there's a spatial partition of rendered geometries then do view frustum
 	// culling depending on what parts of the map are visible in the viewport - this will require

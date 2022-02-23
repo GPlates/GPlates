@@ -657,9 +657,9 @@ namespace GPlatesQtWidgets
 		set_view();
 
 		/**
-		 * Render one tile of the scene (as specified by @a tile_render).
+		 * Render one tile of the scene (as specified by @a image_tile_render).
 		 *
-		 * The sub-rect of @a image to render into is determined by @a tile_renderer.
+		 * The sub-rect of @a image to render into is determined by @a image_tile_render.
 		 */
 		cache_handle_type
 		render_scene_tile_into_image(

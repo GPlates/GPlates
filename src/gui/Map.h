@@ -48,7 +48,8 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
+	class GLViewProjection;
 }
 
 namespace GPlatesGui
@@ -80,7 +81,7 @@ namespace GPlatesGui
 		 */
 		void
 		initialiseGL(
-				GPlatesOpenGL::GLRenderer &renderer);
+				GPlatesOpenGL::GL &gl);
 
 		MapProjection &
 		projection();
@@ -109,7 +110,8 @@ namespace GPlatesGui
 		 */
 		cache_handle_type
 		paint(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection,
 				const double &viewport_zoom_factor,
 				float scale);
 

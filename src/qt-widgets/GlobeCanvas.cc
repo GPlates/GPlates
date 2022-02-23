@@ -924,7 +924,7 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 			viewport_zoom_factor,
 			scale);
 
-	// Noet that The overlays are rendered in screen window coordinates, so no view transform is needed.
+	// Note that the overlays are rendered in screen window coordinates, so no view transform is needed.
 
 	// Paint the text overlay.
 	// We use the paint device dimensions (and not the canvas dimensions) in case the paint device

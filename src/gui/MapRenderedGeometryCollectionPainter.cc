@@ -34,7 +34,7 @@
 
 #include "MapRenderedGeometryLayerPainter.h"
 
-#include "opengl/GLRenderer.h"
+#include "opengl/GL.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryLayer.h"
@@ -58,22 +58,23 @@ GPlatesGui::MapRenderedGeometryCollectionPainter::MapRenderedGeometryCollectionP
 
 void
 GPlatesGui::MapRenderedGeometryCollectionPainter::initialise(
-		GPlatesOpenGL::GLRenderer &renderer)
+		GPlatesOpenGL::GL &gl)
 {
-	d_layer_painter.initialise(renderer);
+	d_layer_painter.initialise(gl);
 }
 
 
 GPlatesGui::MapRenderedGeometryCollectionPainter::cache_handle_type
 GPlatesGui::MapRenderedGeometryCollectionPainter::paint(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLViewProjection &view_projection,
 		const double &viewport_zoom_factor)
 {
-	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GLRenderer::StateBlockScope save_restore_globe_state_scope(renderer);
+	// Make sure we leave the OpenGL global state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_scope(gl);
 
 	// Initialise our paint parameters so our visit methods can access them.
-	d_paint_params = PaintParams(renderer, viewport_zoom_factor);
+	d_paint_params = PaintParams(gl, view_projection, viewport_zoom_factor);
 
 	// Draw the layers.
 	d_rendered_geometry_collection.accept_visitor(*this);
@@ -112,8 +113,10 @@ GPlatesGui::MapRenderedGeometryCollectionPainter::visit_rendered_geometry_layer(
 	rendered_geom_layer_painter.set_scale(d_scale);
 
 	// Paint the layer.
-	const cache_handle_type layer_cache =
-			rendered_geom_layer_painter.paint(*d_paint_params->d_renderer, d_layer_painter);
+	const cache_handle_type layer_cache = rendered_geom_layer_painter.paint(
+			*d_paint_params->d_gl,
+			d_paint_params->d_view_projection,
+			d_layer_painter);
 
 	// Cache the layer's painting.
 	d_paint_params->d_cache_handle->push_back(layer_cache);

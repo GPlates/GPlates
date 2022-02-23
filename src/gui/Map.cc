@@ -42,7 +42,8 @@
 #include "maths/LatLonPoint.h"
 #include "maths/Real.h"
 
-#include "opengl/GLRenderer.h"
+#include "opengl/GL.h"
+#include "opengl/GLViewProjection.h"
 
 #include "utils/Profile.h"
 
@@ -72,18 +73,18 @@ GPlatesGui::Map::Map(
 
 void
 GPlatesGui::Map::initialiseGL(
-		GPlatesOpenGL::GLRenderer &renderer)
+		GPlatesOpenGL::GL &gl)
 {
 	//
 	// We now have a valid OpenGL context bound so we can initialise members that have OpenGL objects.
 	//
 
 	// Create these objects in place (some as non-copy-constructable).
-	d_grid = boost::in_place(boost::ref(renderer), *d_map_projection, d_view_state.get_graticule_settings());
-	d_background = boost::in_place(boost::ref(renderer), *d_map_projection, boost::ref(d_view_state));
+	d_grid = boost::in_place(boost::ref(gl), *d_map_projection, d_view_state.get_graticule_settings());
+	d_background = boost::in_place(boost::ref(gl), *d_map_projection, boost::ref(d_view_state));
 
 	// Initialise the rendered geometry collection painter.
-	d_rendered_geom_collection_painter.initialise(renderer);
+	d_rendered_geom_collection_painter.initialise(gl);
 }
 
 
@@ -134,7 +135,8 @@ GPlatesGui::Map::set_central_meridian(
 
 GPlatesGui::Map::cache_handle_type
 GPlatesGui::Map::paint(
-		GPlatesOpenGL::GLRenderer &renderer,
+		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLViewProjection &view_projection,
 		const double &viewport_zoom_factor,
 		float scale)
 {
@@ -144,54 +146,28 @@ GPlatesGui::Map::paint(
 	{
 		// Get the OpenGL light if the runtime system supports it.
 		boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type> gl_light =
-				d_gl_visual_layers->get_light(renderer);
+				d_gl_visual_layers->get_light(gl);
 		// Set the scene lighting parameters on the light.
 		if (gl_light)
 		{
 			gl_light.get()->set_scene_lighting(
-					renderer,
+					gl,
 					d_view_state.get_scene_lighting_parameters(),
-					renderer.gl_get_matrix(GL_MODELVIEW)/*view_orientation*/,
+					view_projection.get_view_transform()/*view_orientation*/,
 					MapProjection::non_null_ptr_to_const_type(d_map_projection));
 		}
-
-		// Clear the colour and depth buffers of the main framebuffer.
-		//
-		// NOTE: We don't use the depth buffer in the map view but clear it anyway so that we can
-		// use common layer painting code with the 3D globe rendering that enables depth testing.
-		// In our case the depth testing will always return true - depth testing is very fast
-		// in modern graphics hardware so we don't need to optimise it away.
-		// We also clear the stencil buffer in case it is used - also it's usually interleaved
-		// with depth so it's more efficient to clear both depth and stencil.
-		//
-		// NOTE: Depth/stencil writes must be enabled for depth/stencil clears to work.
-		//       But these should be enabled by default anyway.
-		renderer.gl_depth_mask(GL_TRUE);
-		renderer.gl_stencil_mask(~0/*all ones*/);
-		//
-		// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
-		// the scene, that are not rendered, to have *opaque* alpha (=1). This appears to be needed on
-		// Mac with Qt5 (alpha=0 is fine on Qt5 Windows/Ubuntu, and on Qt4 for all platforms). Perhaps because
-		// QGLWidget rendering (on Qt5 Mac) is first done to a framebuffer object which is then blended into the
-		// window framebuffer (where having a source alpha of zero would result in the black background not showing).
-		// Or, more likely, maybe a framebuffer object is used on all platforms but the window framebuffer is
-		// white on Mac but already black on Windows/Ubuntu.
-		renderer.gl_clear_color(0, 0, 0, 1); // Clear colour to opaque black
-		renderer.gl_clear_depth(); // Clear depth to 1.0
-		renderer.gl_clear_stencil();
-		renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 		// Set the scale factor.
 		d_rendered_geom_collection_painter.set_scale(scale);
 
 		// Render the background of the map.
-		d_background->paint(renderer);
+		d_background->paint(gl, view_projection);
 
 		// Render the rendered geometry layers onto the map.
-		cache_handle = d_rendered_geom_collection_painter.paint(renderer, viewport_zoom_factor);
+		cache_handle = d_rendered_geom_collection_painter.paint(gl, view_projection, viewport_zoom_factor);
 
 		// Render the grid lines on the map.
-		d_grid->paint(renderer);
+		d_grid->paint(gl, view_projection);
 	}
 	catch (const GPlatesGui::ProjectionException &exc)
 	{

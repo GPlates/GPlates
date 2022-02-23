@@ -43,6 +43,8 @@
 
 #include "opengl/GLContext.h"
 #include "opengl/GLMatrix.h"
+#include "opengl/GLFramebuffer.h"
+#include "opengl/GLRenderbuffer.h"
 #include "opengl/GLVisualLayers.h"
 
 
@@ -57,6 +59,7 @@ namespace GPlatesOpenGL
 {
 	class GL;
 	class GLTileRender;
+	class GLViewProjection;
 }
 
 namespace GPlatesPresentation
@@ -193,6 +196,18 @@ namespace GPlatesQtWidgets
 		//! Makes the OpenGL context current in @a GlobeCanvas constructor so it can call OpenGL.
 		MakeGLContextCurrent d_make_context_current;
 
+		//! Colour renderbuffer object used for offscreen rendering.
+		GPlatesOpenGL::GLRenderbuffer::shared_ptr_type d_off_screen_colour_renderbuffer;
+
+		//! Depth/stencil renderbuffer object used for offscreen rendering.
+		GPlatesOpenGL::GLRenderbuffer::shared_ptr_type d_off_screen_depth_stencil_renderbuffer;
+
+		//! Framebuffer object used for offscreen rendering.
+		GPlatesOpenGL::GLFramebuffer::shared_ptr_type d_off_screen_framebuffer;
+
+		//! Dimensions of square render target used for offscreen rendering.
+		unsigned int d_off_screen_render_target_dimension;
+
 		/**
 		 * Enables frame-to-frame caching of persistent OpenGL resources.
 		 *
@@ -217,31 +232,39 @@ namespace GPlatesQtWidgets
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
 
 
+		//! Dimensions of square render target used for offscreen rendering.
+		static const unsigned int OFF_SCREEN_RENDER_TARGET_DIMENSION = 1024;
+
+
 		//! Do some OpenGL initialisation.
 		void 
 		initializeGL(
 				QGLWidget *gl_widget);
 
+		//! Create and initialise the framebuffer and its renderbuffers used for offscreen rendering.
+		void
+		initialize_off_screen_render_target(
+				GPlatesOpenGL::GL &gl);
+
 		/**
-		 * Render one tile of the scene (as specified by @a tile_render).
+		 * Render one tile of the scene (as specified by @a image_tile_render).
 		 *
-		 * The sub-rect of @a image to render into is determined by @a tile_renderer.
+		 * The sub-rect of @a image to render into is determined by @a image_tile_render.
 		 */
 		cache_handle_type
 		render_scene_tile_into_image(
 				GPlatesOpenGL::GL &gl,
-				const GPlatesOpenGL::GLTileRender &tile_render,
+				const GPlatesOpenGL::GLMatrix &image_view_transform,
+				const GPlatesOpenGL::GLMatrix &image_projection_transform,
+				const GPlatesOpenGL::GLTileRender &image_tile_render,
 				QImage &image,
-				const GPlatesOpenGL::GLMatrix &projection_matrix_scene,
-				const GPlatesOpenGL::GLMatrix &projection_matrix_text_overlay,
 				const QPaintDevice &map_canvas_paint_device);
 
 		//! Render onto the canvas.
 		cache_handle_type
 		render_scene(
 				GPlatesOpenGL::GL &gl,
-				const GPlatesOpenGL::GLMatrix &projection_matrix_scene,
-				const GPlatesOpenGL::GLMatrix &projection_matrix_text_overlay,
+				const GPlatesOpenGL::GLViewProjection &view_projection,
 				int paint_device_width_in_device_independent_pixels,
 				int paint_device_height_in_device_independent_pixels,
 				int map_canvas_paint_device_width_in_device_independent_pixels,

@@ -42,7 +42,7 @@
 
 namespace GPlatesOpenGL
 {
-	class GLRenderer;
+	class GL;
 }
 
 namespace GPlatesViewOperations
@@ -79,11 +79,11 @@ namespace GPlatesGui
 				int device_pixel_ratio);
 
 		/**
-		 * Initialise objects requiring @a GLRenderer.
+		 * Initialise objects requiring @a GL.
 		 */
 		void
 		initialise(
-				GPlatesOpenGL::GLRenderer &renderer);
+				GPlatesOpenGL::GL &gl);
 
 		/**
 		 * Draw the rendered geometries.
@@ -92,7 +92,8 @@ namespace GPlatesGui
 		 */
 		cache_handle_type
 		paint(
-				GPlatesOpenGL::GLRenderer &renderer,
+				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection,
 				const double &viewport_zoom_factor);
 
 		void
@@ -129,16 +130,19 @@ namespace GPlatesGui
 		struct PaintParams
 		{
 			PaintParams(
-					GPlatesOpenGL::GLRenderer &renderer,
+					GPlatesOpenGL::GL &gl,
+					const GPlatesOpenGL::GLViewProjection &view_projection,
 					const double &viewport_zoom_factor) :
-				d_renderer(&renderer),
+				d_gl(&gl),
+				d_view_projection(view_projection),
 				d_inverse_viewport_zoom_factor(1.0 / viewport_zoom_factor),
 				d_cache_handle(new std::vector<cache_handle_type>()),
 				// Default to RECONSTRUCTION_LAYER (we set it before visiting each layer anyway) ...
 				d_main_rendered_layer_type(GPlatesViewOperations::RenderedGeometryCollection::RECONSTRUCTION_LAYER)
 			{  }
 
-			GPlatesOpenGL::GLRenderer *d_renderer;
+			GPlatesOpenGL::GL *d_gl;
+			GPlatesOpenGL::GLViewProjection d_view_projection;
 			double d_inverse_viewport_zoom_factor;
 
 			// Cache of rendered geometry layers.
