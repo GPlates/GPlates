@@ -34,7 +34,6 @@
 #include "SphericalGrid.h"
 
 #include "Colour.h"
-#include "FeedbackOpenGLToQPainter.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -420,30 +419,10 @@ GPlatesGui::SphericalGrid::paint(
 	// Bind the vertex array.
 	gl.BindVertexArray(d_vertex_array);
 
-	// Temporarily disable OpenGL feedback (eg, to SVG) until it's re-implemented using OpenGL 3...
-#if 1
 	// Draw the grid lines.
 	glDrawElements(
 			GL_LINES,
 			d_num_vertex_indices/*count*/,
 			GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::type,
 			nullptr/*indices_offset*/);
-#else
-	// Either render directly to the framebuffer, or use OpenGL feedback to render to the
-	// QPainter's paint device.
-	if (renderer.rendering_to_context_framebuffer())
-	{
-		renderer.apply_compiled_draw_state(*d_grid_compiled_draw_state.get());
-	}
-	else
-	{
-		// Create an OpenGL feedback buffer large enough to capture the primitives we're about to render.
-		// We are rendering to the QPainter attached to GLRenderer.
-		FeedbackOpenGLToQPainter feedback_opengl;
-		FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(
-				feedback_opengl, renderer, 0, d_num_vertex_indices, 0);
-
-		renderer.apply_compiled_draw_state(*d_grid_compiled_draw_state.get());
-	}
-#endif
 }

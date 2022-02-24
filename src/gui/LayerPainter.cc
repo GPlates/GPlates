@@ -29,8 +29,6 @@
 
 #include "LayerPainter.h"
 
-#include "FeedbackOpenGLToQPainter.h"
-
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
@@ -457,61 +455,12 @@ GPlatesGui::LayerPainter::paint_scalar_fields(
 		// so those structures need to persist from one render to the next.
 		cache_handle_type scalar_field_cache_handle;
 
-		// Temporarily disable OpenGL feedback (eg, to SVG) until it's re-implemented using OpenGL 3...
-#if 1
 		scalar_field_cache_handle = d_gl_visual_layers->render_scalar_field_3d(
 				gl,
 				view_projection,
 				scalar_field_drawable.source_resolved_scalar_field,
 				scalar_field_drawable.render_parameters);
 		cache_handle->push_back(scalar_field_cache_handle);
-#else
-		// Either render directly to the framebuffer, or render to a QImage and draw that to the
-		// feedback paint device using a QPainter.
-		if (gl.rendering_to_context_framebuffer())
-		{
-			scalar_field_cache_handle = d_gl_visual_layers->render_scalar_field_3d(
-					gl,
-					scalar_field_drawable.source_resolved_scalar_field,
-					scalar_field_drawable.render_parameters);
-			cache_handle->push_back(scalar_field_cache_handle);
-		}
-		else
-		{
-			FeedbackOpenGLToQPainter feedback_opengl;
-			FeedbackOpenGLToQPainter::ImageScope image_scope(feedback_opengl, gl);
-
-			// The feedback image tiling loop...
-			do
-			{
-				GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type tile_projection =
-						image_scope.begin_render_tile();
-
-				// Adjust the current projection transform - it'll get restored before the next tile though.
-				GPlatesOpenGL::GLMatrix projection_matrix(tile_projection->get_matrix());
-				projection_matrix.gl_mult_matrix(gl.gl_get_matrix(GL_PROJECTION));
-				gl.gl_load_matrix(GL_PROJECTION, projection_matrix);
-
-				// Clear the framebuffer (colour and depth) before rendering each scalar field.
-				// We also clear the stencil buffer in case it is used - also it's usually
-				// interleaved with depth so it's more efficient to clear both depth and stencil.
-				gl.gl_clear_color();  // Clear to transparent (alpha=0) so regions with no scalar field are transparent.
-				gl.gl_clear_depth();
-				gl.gl_clear_stencil();
-				gl.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-				scalar_field_cache_handle = d_gl_visual_layers->render_scalar_field_3d(
-						gl,
-						scalar_field_drawable.source_resolved_scalar_field,
-						scalar_field_drawable.render_parameters);
-				cache_handle->push_back(scalar_field_cache_handle);
-			}
-			while (image_scope.end_render_tile());
-
-			// Draw final scalar field QImage to feedback QPainter.
-			image_scope.end_render();
-		}
-#endif
 	}
 
 	// Now that the scalar fields have been rendered we should clear the drawables list for the next render call.
@@ -540,8 +489,6 @@ GPlatesGui::LayerPainter::paint_rasters(
 		// so those structures need to persist from one render to the next.
 		cache_handle_type raster_cache_handle;
 
-		// Temporarily disable OpenGL feedback (eg, to SVG) until it's re-implemented using OpenGL 3...
-#if 1
 		raster_cache_handle = d_gl_visual_layers->render_raster(
 				gl,
 				view_projection,
@@ -551,59 +498,6 @@ GPlatesGui::LayerPainter::paint_rasters(
 				raster_drawable.normal_map_height_field_scale_factor,
 				d_map_projection);
 		cache_handle->push_back(raster_cache_handle);
-#else
-		// Either render directly to the framebuffer, or render to a QImage and draw that to the
-		// feedback paint device using a QPainter.
-		if (gl.rendering_to_context_framebuffer())
-		{
-			raster_cache_handle = d_gl_visual_layers->render_raster(
-					gl,
-					raster_drawable.source_resolved_raster,
-					raster_drawable.source_raster_colour_palette,
-					raster_drawable.source_raster_modulate_colour,
-					raster_drawable.normal_map_height_field_scale_factor,
-					d_map_projection);
-			cache_handle->push_back(raster_cache_handle);
-		}
-		else
-		{
-			FeedbackOpenGLToQPainter feedback_opengl;
-			FeedbackOpenGLToQPainter::ImageScope image_scope(feedback_opengl, gl);
-
-			// The feedback image tiling loop...
-			do
-			{
-				GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type tile_projection =
-						image_scope.begin_render_tile();
-
-				// Adjust the current projection transform - it'll get restored before the next tile though.
-				GPlatesOpenGL::GLMatrix projection_matrix(tile_projection->get_matrix());
-				projection_matrix.gl_mult_matrix(gl.gl_get_matrix(GL_PROJECTION));
-				gl.gl_load_matrix(GL_PROJECTION, projection_matrix);
-
-				// Clear the framebuffer (colour and depth) before rendering each raster.
-				// We also clear the stencil buffer in case it is used - also it's usually
-				// interleaved with depth so it's more efficient to clear both depth and stencil.
-				gl.gl_clear_color();  // Clear to transparent (alpha=0) so regions with no raster are transparent.
-				gl.gl_clear_depth();
-				gl.gl_clear_stencil();
-				gl.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-				raster_cache_handle = d_gl_visual_layers->render_raster(
-						gl,
-						raster_drawable.source_resolved_raster,
-						raster_drawable.source_raster_colour_palette,
-						raster_drawable.source_raster_modulate_colour,
-						raster_drawable.normal_map_height_field_scale_factor,
-						d_map_projection);
-				cache_handle->push_back(raster_cache_handle);
-			}
-			while (image_scope.end_render_tile());
-
-			// Draw final raster QImage to feedback QPainter.
-			image_scope.end_render();
-		}
-#endif
 	}
 
 	// Now that the rasters have been rendered we should clear the drawables list for the next render call.
@@ -937,8 +831,6 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::paint_filled_polygons(
 	// Filled polygons are rendered as rasters (textures) and hence the state set here
 	// is similar (in fact identical) to the state set for rasters.
 	//
-	// Temporarily disable OpenGL feedback (eg, to SVG) until it's re-implemented using OpenGL 3...
-#if 1
 	if (map_projection) // Rendering to a 2D map view...
 	{
 		gl_visual_layers.render_filled_polygons(gl, view_projection, d_filled_polygons_map_view);
@@ -947,60 +839,6 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::paint_filled_polygons(
 	{
 		gl_visual_layers.render_filled_polygons(gl, view_projection, d_filled_polygons_globe_view);
 	}
-#else
-	// Either render directly to the framebuffer, or render to a QImage and draw that to the
-	// feedback paint device using a QPainter. We render filled polygons to an image instead of
-	// as vector geometries because filled polygons are actually rendered as a raster.
-	if (gl.rendering_to_context_framebuffer())
-	{
-		if (map_projection) // Rendering to a 2D map view...
-		{
-			gl_visual_layers.render_filled_polygons(gl, d_filled_polygons_map_view);
-		}
-		else // Rendering to the 3D globe view...
-		{
-			gl_visual_layers.render_filled_polygons(gl, d_filled_polygons_globe_view);
-		}
-	}
-	else
-	{
-		FeedbackOpenGLToQPainter feedback_opengl;
-		FeedbackOpenGLToQPainter::ImageScope image_scope(feedback_opengl, gl);
-
-		// The feedback image tiling loop...
-		do
-		{
-			GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type tile_projection =
-					image_scope.begin_render_tile();
-
-			// Adjust the current projection transform - it'll get restored before the next tile though.
-			GPlatesOpenGL::GLMatrix projection_matrix(tile_projection->get_matrix());
-			projection_matrix.gl_mult_matrix(gl.gl_get_matrix(GL_PROJECTION));
-			gl.gl_load_matrix(GL_PROJECTION, projection_matrix);
-
-			// Clear the framebuffer (colour and depth) before rendering the filled polygons.
-			// We also clear the stencil buffer since it is used when filling polygons - also it's
-			// usually interleaved with depth so it's more efficient to clear both depth and stencil.
-			gl.gl_clear_color();  // Clear to transparent (alpha=0) so regions with no filled polygon are transparent.
-			gl.gl_clear_depth();
-			gl.gl_clear_stencil();
-			gl.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-			if (map_projection) // Rendering to a 2D map view...
-			{
-				gl_visual_layers.render_filled_polygons(gl, d_filled_polygons_map_view);
-			}
-			else // Rendering to the 3D globe view...
-			{
-				gl_visual_layers.render_filled_polygons(gl, d_filled_polygons_globe_view);
-			}
-		}
-		while (image_scope.end_render_tile());
-
-		// Draw final raster QImage to feedback QPainter.
-		image_scope.end_render();
-	}
-#endif
 
 	// Now that the filled polygons have been rendered we should clear them for the next render call.
 	if (map_projection) // Rendering to a 2D map view...
@@ -1167,21 +1005,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables<VertexType>::end_
 	// If there are primitives to draw...
 	if (has_primitives())
 	{
-		// Temporarily disable OpenGL feedback (eg, to SVG) until it's re-implemented using OpenGL 3...
-#if 1
 		draw_primitives(gl, mode);
-#else
-		// Either render directly to the framebuffer, or use OpenGL feedback to render to the
-		// QPainter's paint device.
-		if (gl.rendering_to_context_framebuffer())
-		{
-			draw_primitives(gl, mode);
-		}
-		else
-		{
-			draw_feedback_primitives_to_qpainter(gl, mode);
-		}
-#endif
 	}
 
 	// Destroy the stream.
@@ -1245,48 +1069,6 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables<VertexType>::draw
 			d_vertex_elements.size()/*count*/,
 			GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::type,
 			0/*indices_offset*/);
-}
-
-
-template <class VertexType>
-void
-GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables<VertexType>::draw_feedback_primitives_to_qpainter(
-		GPlatesOpenGL::GL &gl,
-		GLenum mode)
-{
-	// Determine the number of points/lines/triangles we're about to render.
-	unsigned int max_num_points = 0;
-	unsigned int max_num_lines = 0;
-	unsigned int max_num_triangles = 0;
-
-	if (mode == GL_POINTS)
-	{
-		max_num_points += d_vertex_elements.size();
-	}
-	else if (mode == GL_LINES)
-	{
-		max_num_lines += d_vertex_elements.size() / 2;
-	}
-	else
-	{
-		GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-				mode == GL_TRIANGLES,
-				GPLATES_ASSERTION_SOURCE);
-
-		max_num_triangles += d_vertex_elements.size() / 3;
-	}
-
-	// Create an OpenGL feedback buffer large enough to capture the primitives we're about to render.
-	// We are rendering to the QPainter attached to GLRenderer.
-	FeedbackOpenGLToQPainter feedback_opengl;
-	FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(
-			feedback_opengl,
-			gl,
-			max_num_points,
-			max_num_lines,
-			max_num_triangles);
-
-	draw_primitives(gl, mode);
 }
 
 

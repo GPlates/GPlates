@@ -36,7 +36,6 @@
 #include "MapBackground.h"
 
 #include "Colour.h"
-#include "FeedbackOpenGLToQPainter.h"
 #include "ProjectionException.h"
 
 #include "global/AssertionFailureException.h"
@@ -396,55 +395,9 @@ GPlatesGui::MapBackground::paint(
 	// Bind the vertex array.
 	gl.BindVertexArray(d_vertex_array);
 
-	// Temporarily disable OpenGL feedback (eg, to SVG) until it's re-implemented using OpenGL 3...
-#if 1
 	glDrawElements(
 			GL_TRIANGLES,
 			d_num_vertex_indices/*count*/,
 			GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::type,
 			nullptr/*indices_offset*/);
-#else
-	// Either render directly to the framebuffer, or render to a QImage and draw that to the
-	// feedback paint device using a QPainter.
-	//
-	// NOTE: For feedback to a QPainter we render to an image instead of rendering vector geometries.
-	// This is because, for SVG output, we don't want a large number of vector geometries due to this
-	// map background - we really only want actual geological data and grid lines as SVG vector data.
-	if (gl.rendering_to_context_framebuffer())
-	{
-		gl.apply_compiled_draw_state(*d_compiled_draw_state.get());
-	}
-	else
-	{
-		FeedbackOpenGLToQPainter feedback_opengl;
-		FeedbackOpenGLToQPainter::ImageScope image_scope(feedback_opengl, gl);
-
-		// The feedback image tiling loop...
-		do
-		{
-			GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type tile_projection =
-					image_scope.begin_render_tile();
-
-			// Adjust the current projection transform - it'll get restored before the next tile though.
-			GPlatesOpenGL::GLMatrix projection_matrix(tile_projection->get_matrix());
-			projection_matrix.gl_mult_matrix(gl.gl_get_matrix(GL_PROJECTION));
-			gl.gl_load_matrix(GL_PROJECTION, projection_matrix);
-
-			// Clear the main framebuffer (colour and depth) before rendering the image.
-			// We also clear the stencil buffer in case it is used - also it's usually interleaved
-			// with depth so it's more efficient to clear both depth and stencil.
-			gl.gl_clear_color();  // Clear to transparent (alpha=0) so regions outside map background are transparent.
-			gl.gl_clear_depth();
-			gl.gl_clear_stencil();
-			gl.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-			// Render the actual map background.
-			gl.apply_compiled_draw_state(*d_compiled_draw_state.get());
-		}
-		while (image_scope.end_render_tile());
-
-		// Draw final raster QImage to feedback QPainter.
-		image_scope.end_render();
-	}
-#endif
 }

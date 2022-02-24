@@ -129,8 +129,6 @@ set(srcs
     FeatureTableModel.h
     FeatureTypeColourPalette.cc
     FeatureTypeColourPalette.h
-    FeedbackOpenGLToQPainter.cc
-    FeedbackOpenGLToQPainter.h
     FileIODirectoryConfigurations.cc
     FileIODirectoryConfigurations.h
     FileIOFeedback.cc

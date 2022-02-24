@@ -295,11 +295,6 @@ namespace GPlatesGui
 				draw_primitives(
 						GPlatesOpenGL::GL &gl,
 						GLenum mode);
-
-				void
-				draw_feedback_primitives_to_qpainter(
-						GPlatesOpenGL::GL &gl,
-						GLenum mode);
 			};
 
 

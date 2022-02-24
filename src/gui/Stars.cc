@@ -38,7 +38,6 @@
 #include "Stars.h"
 
 #include "Colour.h"
-#include "FeedbackOpenGLToQPainter.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -431,8 +430,6 @@ GPlatesGui::Stars::paint(
 	// Bind the vertex array.
 	gl.BindVertexArray(d_vertex_array);
 
-	// Temporarily disable OpenGL feedback (eg, to SVG) until it's re-implemented using OpenGL 3...
-#if 1
 	draw_stars(
 			gl,
 			d_num_small_star_vertices,
@@ -440,36 +437,4 @@ GPlatesGui::Stars::paint(
 			d_num_large_star_vertices,
 			d_num_large_star_vertex_indices,
 			device_pixel_ratio);
-#else
-	// Either render directly to the framebuffer, or use OpenGL feedback to render to the
-	// QPainter's paint device.
-	if (gl.rendering_to_context_framebuffer())
-	{
-		draw_stars(
-				gl,
-				d_program,
-				d_vertex_array,
-				d_num_small_star_vertices,
-				d_num_small_star_vertex_indices,
-				d_num_large_star_vertices,
-				d_num_large_star_vertex_indices);
-	}
-	else
-	{
-		// Create an OpenGL feedback buffer large enough to capture the primitives we're about to render.
-		// We are rendering to the QPainter attached to GLRenderer.
-		FeedbackOpenGLToQPainter feedback_opengl;
-		FeedbackOpenGLToQPainter::VectorGeometryScope vector_geometry_scope(
-				feedback_opengl, gl, d_num_small_star_vertices + d_num_large_star_vertices, 0, 0);
-
-		draw_stars(
-				gl,
-				d_program,
-				d_vertex_array,
-				d_num_small_star_vertices,
-				d_num_small_star_vertex_indices,
-				d_num_large_star_vertices,
-				d_num_large_star_vertex_indices);
-	}
-#endif
 }
