@@ -56,6 +56,7 @@
 
 #include "maths/MathsUtils.h"
 
+#include "opengl/GL.h"
 #include "opengl/GLBuffer.h"
 #include "opengl/GLCapabilities.h"
 #include "opengl/GLContext.h"
@@ -64,11 +65,12 @@
 #include "opengl/GLMultiResolutionCubeRaster.h"
 #include "opengl/GLMultiResolutionMapCubeMesh.h"
 #include "opengl/GLMultiResolutionRasterMapView.h"
-#include "opengl/GLRenderer.h"
-#include "opengl/GLRenderTarget.h"
 #include "opengl/GLTexture.h"
 #include "opengl/GLTileRender.h"
+#include "opengl/GLUtils.h"
+#include "opengl/GLViewProjection.h"
 #include "opengl/GLVisualLayers.h"
+#include "opengl/OpenGLException.h"
 
 #include "presentation/RasterVisualLayerParams.h"
 #include "presentation/ViewState.h"
@@ -232,7 +234,7 @@ namespace
 	 */
 	void
 	get_visible_colour_rasters(
-			GPlatesOpenGL::GLRenderer &renderer,
+			GPlatesOpenGL::GL &gl,
 			GPlatesPresentation::ViewState &view_state,
 			colour_raster_seq_type &colour_rasters)
 	{
@@ -287,7 +289,7 @@ namespace
 	 */
 	void
 	get_visible_numerical_rasters(
-			GPlatesOpenGL::GLRenderer &renderer,
+			GPlatesOpenGL::GL &gl,
 			GPlatesPresentation::ViewState &view_state,
 			numerical_raster_seq_type &numerical_rasters)
 	{
@@ -485,8 +487,8 @@ namespace
 	}
 
 
-	GPlatesOpenGL::GLRenderer::non_null_ptr_type
-	create_gl_renderer(
+	GPlatesOpenGL::GL::non_null_ptr_type
+	create_gl(
 			GPlatesGui::ExportAnimationContext &export_animation_context)
 	{
 		// Get an OpenGL context.
@@ -498,20 +500,20 @@ namespace
 		gl_context->make_current();
 
 		// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-		return gl_context->create_renderer();
+		return gl_context->create_gl();
 	}
 
 
 	/**
 	 * Setup a tile for rendering.
 	 */
-	void
+	GPlatesOpenGL::GLViewProjection
 	setup_tile_for_rendering(
 			const unsigned int export_raster_width,
 			const unsigned int export_raster_height,
 			const bool export_raster_grid_line_registration,
 			const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &pixel_rendering_lat_lon_extents,
-			GPlatesOpenGL::GLRenderer &renderer,
+			GPlatesOpenGL::GL &gl,
 			GPlatesOpenGL::GLTileRender &tile_render)
 	{
 		GPlatesOpenGL::GLViewport current_tile_render_target_viewport;
@@ -525,13 +527,13 @@ namespace
 		//
 		// This is not really necessary since there is no border region around the tiles
 		// because we are not rendering any fat point or wide line primitives.
-		renderer.gl_enable(GL_SCISSOR_TEST);
-		renderer.gl_scissor(
+		gl.Enable(GL_SCISSOR_TEST);
+		gl.Scissor(
 				current_tile_render_target_scissor_rect.x(),
 				current_tile_render_target_scissor_rect.y(),
 				current_tile_render_target_scissor_rect.width(),
 				current_tile_render_target_scissor_rect.height());
-		renderer.gl_viewport(
+		gl.Viewport(
 				current_tile_render_target_viewport.x(),
 				current_tile_render_target_viewport.y(),
 				current_tile_render_target_viewport.width(),
@@ -541,8 +543,8 @@ namespace
 		//
 		// Note that we clear the colour to (0,0,0,0) and not (0,0,0,1) because we want any transparent
 		// parts of the raster (parts that we don't render) to have an alpha of zero.
-		renderer.gl_clear_color();
-		renderer.gl_clear(GL_COLOR_BUFFER_BIT);
+		gl.ClearColor();
+		glClear(GL_COLOR_BUFFER_BIT);
 
 		// Adjust the projection transform for the current tile.
 		const GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type projection_transform_tile =
@@ -586,7 +588,7 @@ namespace
 			// can get snapped (quantized) to.
 			//
 			// Note: The '1.01' is to give a little extra headroom (eg, for finite precision of floating-point).
-			const double sub_pixel_precision = 1.01 / (1 << renderer.get_capabilities().framebuffer.gl_sub_pixel_bits);
+			const double sub_pixel_precision = 1.01 / (1 << gl.get_capabilities().gl_sub_pixel_bits);
 
 			// The increment in vertex coordinates between two adjacent pixels in the x and y directions
 			// (from left to right, and from bottom to top respectively).
@@ -699,8 +701,10 @@ namespace
 			model_view_matrix_tile.gl_translate(-translate_x, -translate_y, 0.0);
 		}
 
-		renderer.gl_load_matrix(GL_MODELVIEW, model_view_matrix_tile);
-		renderer.gl_load_matrix(GL_PROJECTION, projection_matrix_tile);
+		return GPlatesOpenGL::GLViewProjection(
+				current_tile_render_target_viewport,
+				model_view_matrix_tile,
+				projection_matrix_tile);
 	}
 
 
@@ -709,26 +713,53 @@ namespace
 	 */
 	GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type
 	read_colour_tile_data(
-			GPlatesOpenGL::GLRenderer &renderer,
-			const GPlatesOpenGL::GLPixelBuffer::shared_ptr_type &tile_pixel_buffer,
-			const unsigned int tile_width,
-			const unsigned int tile_height)
+			GPlatesOpenGL::GL &gl,
+			const GPlatesOpenGL::GLBuffer::shared_ptr_type &tile_pixel_buffer,
+			const GPlatesOpenGL::GLViewport &current_tile_source_viewport)
 	{
+		const unsigned int tile_width = current_tile_source_viewport.width();
+		const unsigned int tile_height = current_tile_source_viewport.height();
+
 		// Floating-point raw raster to contain data in the tile region.
 		GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type tile_data_raster =
 				GPlatesPropertyValues::Rgba8RawRaster::create(
 						tile_width,
 						tile_height);
 
-		// Map the pixel buffer to access its data.
-		GPlatesOpenGL::GLBuffer::MapBufferScope map_tile_pixel_buffer_scope(
-				renderer,
-				*tile_pixel_buffer->get_buffer(),
-				GPlatesOpenGL::GLBuffer::TARGET_PIXEL_PACK_BUFFER);
+		// Bind the pixel buffer as destination for subsequent 'glReadPixels()'.
+		gl.BindBuffer(GL_PIXEL_PACK_BUFFER, tile_pixel_buffer);
 
-		// Map the pixel buffer data.
-		const void *tile_data =
-				map_tile_pixel_buffer_scope.gl_map_buffer_static(GPlatesOpenGL::GLBuffer::ACCESS_READ_ONLY);
+		// Request asynchronous transfer of render target data into pixel buffer.
+		// We (CPU) won't block until we actually map the pixel buffer (although that's immediately
+		// after this call, so we don't gain any benefit over client memory).
+		//
+		// Note that the tile render target must currently be active since it's the source of our read.
+		//
+		// NOTE: We don't need to worry about changing the default GL_PACK_ALIGNMENT (rows aligned to 4 bytes)
+		// since our data is RGBA (already 4-byte aligned).
+		glReadPixels(
+				current_tile_source_viewport.x(),
+				current_tile_source_viewport.y(),
+				current_tile_source_viewport.width(),
+				current_tile_source_viewport.height(),
+				GL_RGBA,
+				GL_UNSIGNED_BYTE,
+				nullptr);
+
+		// Get read access to the pixel buffer.
+		const GLvoid *tile_data = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+
+		// If there was an error during mapping then report it and throw exception.
+		if (tile_data == NULL)
+		{
+			// Log OpenGL error - a mapped data pointer of NULL should generate an OpenGL error.
+			GPlatesOpenGL::GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+
+			throw GPlatesOpenGL::OpenGLException(
+					GPLATES_ASSERTION_SOURCE,
+					"ExportRasterAnimationStrategy: Failed to map OpenGL buffer object.");
+		}
+
 		const GPlatesGui::rgba8_t *tile_pixel_data = static_cast<const GPlatesGui::rgba8_t *>(tile_data);
 
 		// Read data from the pixel buffer into the raw raster.
@@ -742,6 +773,16 @@ namespace
 			}
 		}
 
+		if (!glUnmapBuffer(GL_PIXEL_PACK_BUFFER))
+		{
+			// Check OpenGL errors in case glUnmapBuffer used incorrectly.
+			GPlatesOpenGL::GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+
+			// Otherwise the buffer contents have been corrupted, so just emit a warning.
+			qWarning() << "ExportRasterAnimationStrategy: Failed to unmap OpenGL buffer object. "
+					"Buffer object contents have been corrupted (such as an ALT+TAB switch between applications).";
+		}
+
 		return tile_data_raster;
 	}
 
@@ -751,11 +792,13 @@ namespace
 	 */
 	GPlatesPropertyValues::FloatRawRaster::non_null_ptr_type
 	read_numerical_band_tile_data(
-			GPlatesOpenGL::GLRenderer &renderer,
-			const GPlatesOpenGL::GLPixelBuffer::shared_ptr_type &tile_pixel_buffer,
-			const unsigned int tile_width,
-			const unsigned int tile_height)
+			GPlatesOpenGL::GL &gl,
+			const GPlatesOpenGL::GLBuffer::shared_ptr_type &tile_pixel_buffer,
+			const GPlatesOpenGL::GLViewport &current_tile_source_viewport)
 	{
+		const unsigned int tile_width = current_tile_source_viewport.width();
+		const unsigned int tile_height = current_tile_source_viewport.height();
+
 		// Floating-point raw raster to contain data in the tile region.
 		GPlatesPropertyValues::FloatRawRaster::non_null_ptr_type band_tile_data_raster =
 				GPlatesPropertyValues::FloatRawRaster::create(
@@ -764,15 +807,40 @@ namespace
 		// The no-data value for a floating-point raw raster.
 		const float no_data_value = GPlatesMaths::quiet_nan<float>();
 
-		// Map the pixel buffer to access its data.
-		GPlatesOpenGL::GLBuffer::MapBufferScope map_tile_pixel_buffer_scope(
-				renderer,
-				*tile_pixel_buffer->get_buffer(),
-				GPlatesOpenGL::GLBuffer::TARGET_PIXEL_PACK_BUFFER);
+		// Bind the pixel buffer as destination for subsequent 'glReadPixels()'.
+		gl.BindBuffer(GL_PIXEL_PACK_BUFFER, tile_pixel_buffer);
 
-		// Map the pixel buffer data.
-		const void *band_tile_data =
-				map_tile_pixel_buffer_scope.gl_map_buffer_static(GPlatesOpenGL::GLBuffer::ACCESS_READ_ONLY);
+		// Request asynchronous transfer of render target data into pixel buffer.
+		// We (CPU) won't block until we actually map the pixel buffer (although that's immediately
+		// after this call, so we don't gain any benefit over client memory).
+		//
+		// Note that the tile render target must currently be active since it's the source of our read.
+		//
+		// NOTE: We don't need to worry about changing the default GL_PACK_ALIGNMENT (rows aligned to 4 bytes)
+		// since our data is RGBA (already 4-byte aligned).
+		glReadPixels(
+				current_tile_source_viewport.x(),
+				current_tile_source_viewport.y(),
+				current_tile_source_viewport.width(),
+				current_tile_source_viewport.height(),
+				GL_RG,
+				GL_FLOAT,
+				nullptr);
+
+		// Get read access to the pixel buffer.
+		const GLvoid *band_tile_data = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+
+		// If there was an error during mapping then report it and throw exception.
+		if (band_tile_data == NULL)
+		{
+			// Log OpenGL error - a mapped data pointer of NULL should generate an OpenGL error.
+			GPlatesOpenGL::GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+
+			throw GPlatesOpenGL::OpenGLException(
+					GPLATES_ASSERTION_SOURCE,
+					"ExportRasterAnimationStrategy: Failed to map OpenGL buffer object.");
+		}
+
 		const GLfloat *band_tile_pixel_data = static_cast<const GLfloat *>(band_tile_data);
 
 		// Read data from the pixel buffer into the raw raster.
@@ -815,6 +883,16 @@ namespace
 
 		GPlatesPropertyValues::RawRasterUtils::add_no_data_value(*band_tile_data_raster, no_data_value);
 
+		if (!glUnmapBuffer(GL_PIXEL_PACK_BUFFER))
+		{
+			// Check OpenGL errors in case glUnmapBuffer used incorrectly.
+			GPlatesOpenGL::GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+
+			// Otherwise the buffer contents have been corrupted, so just emit a warning.
+			qWarning() << "ExportRasterAnimationStrategy: Failed to unmap OpenGL buffer object. "
+					"Buffer object contents have been corrupted (such as an ALT+TAB switch between applications).";
+		}
+
 		return band_tile_data_raster;
 	}
 
@@ -830,7 +908,10 @@ namespace
 			const GPlatesPropertyValues::Georeferencing::non_null_ptr_type &georeferencing,
 			const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &pixel_registration_lat_lon_extents,
 			const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
-			GPlatesOpenGL::GLRenderer &renderer,
+			GPlatesOpenGL::GL &gl,
+			const GPlatesOpenGL::GLFramebuffer::shared_ptr_type &tile_framebuffer,
+			const GPlatesOpenGL::GLBuffer::shared_ptr_type &tile_pixel_buffer,
+			const unsigned int tile_framebuffer_dimension,
 			const GPlatesGui::MapProjection::non_null_ptr_to_const_type &map_projection)
 	{
 		// The raster writer will be used to write each tile of exported raster.
@@ -851,42 +932,10 @@ namespace
 					QObject::tr("unable to write to raster internal buffer"));
 		}
 
-		// We will render the exported raster in tiles if it's larger than our tile render target size.
-		//
-		// If hardware does not support 2048x2048 textures then we'll lower it.
-		// With RGBA 8-bit-per-channel texture this will be 16Mb.
-		unsigned int tile_render_target_dimension = 2048;
-		if (tile_render_target_dimension > renderer.get_capabilities().texture.gl_max_texture_size)
-		{
-			tile_render_target_dimension = renderer.get_capabilities().texture.gl_max_texture_size;
-		}
-
-		// Get a render target for rendering our tiles to.
-		boost::optional<GPlatesOpenGL::GLRenderTarget::shared_ptr_type> tile_render_target =
-				renderer.get_context().get_shared_state()->acquire_render_target(
-						renderer,
-						GL_RGBA8,
-						false/*include_depth_buffer*/,
-						false/*include_stencil_buffer*/,
-						tile_render_target_dimension,
-						tile_render_target_dimension);
-		// Thrown exception will get caught and report error (and update status message).
-		GPlatesGlobal::Assert<GPlatesGlobal::LogException>(
-				tile_render_target,
-				GPLATES_ASSERTION_SOURCE,
-				QObject::tr("graphics hardware does not support render targets"));
-
-		// Get a pixel buffer so we can read the render target data from GPU to CPU.
-		GPlatesOpenGL::GLPixelBuffer::shared_ptr_type tile_pixel_buffer =
-				renderer.get_context().get_shared_state()->acquire_pixel_buffer(
-						renderer,
-						4/*RGBA*/ * sizeof(GLubyte) * tile_render_target_dimension * tile_render_target_dimension,
-						GPlatesOpenGL::GLBuffer::USAGE_STREAM_READ);
-
 		// Set up for rendering the exported raster into tiles.
 		GPlatesOpenGL::GLTileRender tile_render(
-				tile_render_target_dimension,
-				tile_render_target_dimension,
+				tile_framebuffer_dimension,
+				tile_framebuffer_dimension,
 				GPlatesOpenGL::GLViewport(
 						0,
 						0,
@@ -909,24 +958,33 @@ namespace
 #endif
 		for (tile_render.first_tile(); !tile_render.finished(); tile_render.next_tile())
 		{
+			// Make sure we leave the OpenGL state the way it was.
+			//
 			// Within this scope we will render to the tile render target.
-			GPlatesOpenGL::GLRenderTarget::RenderScope tile_render_target_scope(
-					*tile_render_target.get(),
-					renderer);
+			GPlatesOpenGL::GL::StateScope save_restore_state(
+					gl,
+					// We're rendering to a render target so reset to the default OpenGL state...
+					true/*reset_to_default_state*/);
+
+			// Bind our tile framebuffer object for drawing and reading.
+			// This directs drawing to and reading from the tile colour renderbuffer at the first colour attachment.
+			gl.BindFramebuffer(GL_FRAMEBUFFER, tile_framebuffer);
 
 			// Setup for rendering to the current tile.
-			setup_tile_for_rendering(
-					export_raster_width,
-					export_raster_height,
-					export_raster_grid_line_registration,
-					pixel_rendering_lat_lon_extents,
-					renderer,
-					tile_render);
+			const GPlatesOpenGL::GLViewProjection view_projection =
+					setup_tile_for_rendering(
+							export_raster_width,
+							export_raster_height,
+							export_raster_grid_line_registration,
+							pixel_rendering_lat_lon_extents,
+							gl,
+							tile_render);
 
 			// Render the (possibly reconstructed) raster to the current tile.
 			const GPlatesOpenGL::GLVisualLayers::cache_handle_type tile_cache_handle =
 					gl_visual_layers->render_raster(
-							renderer,
+							gl,
+							view_projection,
 							raster.resolved_raster,
 							raster.raster_colour_palette,
 							raster.raster_modulate_colour,
@@ -948,32 +1006,8 @@ namespace
 			GPlatesOpenGL::GLViewport current_tile_source_viewport;
 			tile_render.get_tile_source_viewport(current_tile_source_viewport);
 
-			// Bind the pixel buffer so that all subsequent 'gl_read_pixels()' calls go into that buffer.
-			tile_pixel_buffer->gl_bind_pack(renderer);
-
-			// Request asynchronous transfer of render target data into pixel buffer.
-			// We (CPU) won't block until we actually map the pixel buffer.
-			//
-			// Note that the tile render target must currently be active since it's the source of our read.
-			//
-			// NOTE: We don't need to worry about changing the default GL_PACK_ALIGNMENT (rows aligned to 4 bytes)
-			// since our data is RGBA (already 4-byte aligned).
-			tile_pixel_buffer->gl_read_pixels(
-					renderer,
-					current_tile_source_viewport.x(),
-					current_tile_source_viewport.y(),
-					current_tile_source_viewport.width(),
-					current_tile_source_viewport.height(),
-					GL_RGBA,
-					GL_UNSIGNED_BYTE,
-					0);
-
 			GPlatesPropertyValues::Rgba8RawRaster::non_null_ptr_type tile_data =
-					read_colour_tile_data(
-							renderer,
-							tile_pixel_buffer,
-							current_tile_source_viewport.width()/*tile_width*/,
-							current_tile_source_viewport.height()/*tile_height*/);
+					read_colour_tile_data(gl, tile_pixel_buffer, current_tile_source_viewport);
 
 			GPlatesOpenGL::GLViewport current_tile_destination_viewport;
 			tile_render.get_tile_destination_viewport(current_tile_destination_viewport);
@@ -1023,52 +1057,16 @@ namespace
 			const bool export_raster_grid_line_registration,
 			const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &pixel_registration_lat_lon_extents,
 			GPlatesFileIO::RasterWriter &raster_writer,
-			GPlatesOpenGL::GLRenderer &renderer,
+			GPlatesOpenGL::GL &gl,
+			const GPlatesOpenGL::GLFramebuffer::shared_ptr_type &tile_framebuffer,
+			const GPlatesOpenGL::GLBuffer::shared_ptr_type &tile_pixel_buffer,
+			const unsigned int tile_framebuffer_dimension,
 			const GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_type &map_cube_mesh)
 	{
-		// We need support for floating-point textures (for *numerical* raster data).
-		// Thrown exception will get caught and report error (and update status message).
-		GPlatesGlobal::Assert<GPlatesGlobal::LogException>(
-				renderer.get_capabilities().texture.gl_ARB_texture_float,
-				GPLATES_ASSERTION_SOURCE,
-				QObject::tr("graphics hardware does not support floating-point textures"));
-
-		// We will render the exported raster in tiles if it's larger than our tile render target size.
-		//
-		// If hardware does not support 1024x1024 textures then we'll lower it.
-		// With RGBA floating-point texture this will be 16Mb.
-		unsigned int tile_render_target_dimension = 1024;
-		if (tile_render_target_dimension > renderer.get_capabilities().texture.gl_max_texture_size)
-		{
-			tile_render_target_dimension = renderer.get_capabilities().texture.gl_max_texture_size;
-		}
-
-		// Get a render target for rendering our tiles to.
-		boost::optional<GPlatesOpenGL::GLRenderTarget::shared_ptr_type> tile_render_target =
-				renderer.get_context().get_shared_state()->acquire_render_target(
-						renderer,
-						GL_RG32F,
-						false/*include_depth_buffer*/,
-						false/*include_stencil_buffer*/,
-						tile_render_target_dimension,
-						tile_render_target_dimension);
-		// Thrown exception will get caught and report error (and update status message).
-		GPlatesGlobal::Assert<GPlatesGlobal::LogException>(
-				tile_render_target,
-				GPLATES_ASSERTION_SOURCE,
-				QObject::tr("graphics hardware does not support render targets"));
-
-		// Get a pixel buffer so we can read the render target data from GPU to CPU.
-		GPlatesOpenGL::GLPixelBuffer::shared_ptr_type tile_pixel_buffer =
-				renderer.get_context().get_shared_state()->acquire_pixel_buffer(
-						renderer,
-						4/*RGBA*/ * sizeof(GLfloat) * tile_render_target_dimension * tile_render_target_dimension,
-						GPlatesOpenGL::GLBuffer::USAGE_STREAM_READ);
-
 		// Set up for rendering the exported raster into tiles.
 		GPlatesOpenGL::GLTileRender tile_render(
-				tile_render_target_dimension,
-				tile_render_target_dimension,
+				tile_framebuffer_dimension,
+				tile_framebuffer_dimension,
 				GPlatesOpenGL::GLViewport(
 						0,
 						0,
@@ -1079,7 +1077,7 @@ namespace
 		// to the equirectangular map projection.
 		GPlatesOpenGL::GLMultiResolutionRasterMapView::non_null_ptr_type raster_band_map_view =
 				GPlatesOpenGL::GLMultiResolutionRasterMapView::create(
-						renderer,
+						gl,
 						band_data,
 						map_cube_mesh);
 
@@ -1096,19 +1094,27 @@ namespace
 		// Render the current raster band tile-by-tile.
 		for (tile_render.first_tile(); !tile_render.finished(); tile_render.next_tile())
 		{
+			// Make sure we leave the OpenGL state the way it was.
+			//
 			// Within this scope we will render to the tile render target.
-			GPlatesOpenGL::GLRenderTarget::RenderScope tile_render_target_scope(
-					*tile_render_target.get(),
-					renderer);
+			GPlatesOpenGL::GL::StateScope save_restore_state(
+					gl,
+					// We're rendering to a render target so reset to the default OpenGL state...
+					true/*reset_to_default_state*/);
+
+			// Bind our tile framebuffer object for drawing and reading.
+			// This directs drawing to and reading from the tile colour renderbuffer at the first colour attachment.
+			gl.BindFramebuffer(GL_FRAMEBUFFER, tile_framebuffer);
 
 			// Setup for rendering to the current tile.
-			setup_tile_for_rendering(
-					export_raster_width,
-					export_raster_height,
-					export_raster_grid_line_registration,
-					pixel_rendering_lat_lon_extents,
-					renderer,
-					tile_render);
+			const GPlatesOpenGL::GLViewProjection view_projection =
+					setup_tile_for_rendering(
+							export_raster_width,
+							export_raster_height,
+							export_raster_grid_line_registration,
+							pixel_rendering_lat_lon_extents,
+							gl,
+							tile_render);
 
 			// Render the (possibly reconstructed) raster to the current tile.
 			//
@@ -1117,37 +1123,13 @@ namespace
 			// the *cube* data raster wrapping the regular data raster will not also cache the
 			// entire raster (at the level-of-detail we are exporting at anyway).
 			GPlatesOpenGL::GLMultiResolutionRasterMapView::cache_handle_type tile_cache_handle;
-			raster_band_map_view->render(renderer, tile_cache_handle);
+			raster_band_map_view->render(gl, view_projection, tile_cache_handle);
 
 			GPlatesOpenGL::GLViewport current_tile_source_viewport;
 			tile_render.get_tile_source_viewport(current_tile_source_viewport);
 
-			// Bind the pixel buffer so that all subsequent 'gl_read_pixels()' calls go into that buffer.
-			tile_pixel_buffer->gl_bind_pack(renderer);
-
-			// Request asynchronous transfer of render target data into pixel buffer.
-			// We (CPU) won't block until we actually map the pixel buffer.
-			//
-			// Note that the tile render target must currently be active since it's the source of our read.
-			//
-			// NOTE: We don't need to worry about changing the default GL_PACK_ALIGNMENT (rows aligned to 4 bytes)
-			// since our data is floats (each float is already 4-byte aligned).
-			tile_pixel_buffer->gl_read_pixels(
-					renderer,
-					current_tile_source_viewport.x(),
-					current_tile_source_viewport.y(),
-					current_tile_source_viewport.width(),
-					current_tile_source_viewport.height(),
-					GL_RG,
-					GL_FLOAT,
-					0);
-
 			GPlatesPropertyValues::FloatRawRaster::non_null_ptr_type band_tile_data =
-					read_numerical_band_tile_data(
-							renderer,
-							tile_pixel_buffer,
-							current_tile_source_viewport.width()/*tile_width*/,
-							current_tile_source_viewport.height()/*tile_height*/);
+					read_numerical_band_tile_data(gl, tile_pixel_buffer, current_tile_source_viewport);
 
 			GPlatesOpenGL::GLViewport current_tile_destination_viewport;
 			tile_render.get_tile_destination_viewport(current_tile_destination_viewport);
@@ -1178,7 +1160,10 @@ namespace
 			const bool export_raster_compress,
 			const GPlatesPropertyValues::Georeferencing::non_null_ptr_type &georeferencing,
 			const GPlatesPropertyValues::Georeferencing::lat_lon_extents_type &pixel_registration_lat_lon_extents,
-			GPlatesOpenGL::GLRenderer &renderer,
+			GPlatesOpenGL::GL &gl,
+			const GPlatesOpenGL::GLFramebuffer::shared_ptr_type &tile_framebuffer,
+			const GPlatesOpenGL::GLBuffer::shared_ptr_type &tile_pixel_buffer,
+			const unsigned int tile_framebuffer_dimension,
 			const GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_type &map_cube_mesh)
 	{
 		// The raster writer will be used to write each tile of exported raster to
@@ -1213,16 +1198,18 @@ namespace
 			// each other - by requesting just before rendering it will update for us if needed.
 			boost::optional<GPlatesOpenGL::GLMultiResolutionCubeRasterInterface::non_null_ptr_type>
 					band_data = raster.layer_proxy->get_multi_resolution_data_cube_raster(
-							renderer,
+							gl,
 							band.name);
-			// If this fails it most likely means OpenGL support was insufficient.
+			// If this fails it most likely means the raster was not a numerical raster (although we
+			// shouldn't get here if it's not) or raster had no georeferencing for some reason.
+			//
 			// Thrown exception will get caught and report error (and update status message).
 			// Note that we've already checked that the raster contains numerical data so this
 			// should have already caught most of these types of errors.
 			GPlatesGlobal::Assert<GPlatesGlobal::LogException>(
 					band_data,
 					GPLATES_EXCEPTION_SOURCE,
-					QObject::tr("graphics hardware must support floating-point textures and shader programs"));
+					QObject::tr("error accessing multi-resolution numerical raster"));
 
 			export_numerical_raster_band(
 					band_data.get(),
@@ -1232,7 +1219,10 @@ namespace
 					export_raster_grid_line_registration,
 					pixel_registration_lat_lon_extents,
 					*raster_writer,
-					renderer,
+					gl,
+					tile_framebuffer,
+					tile_pixel_buffer,
+					tile_framebuffer_dimension,
 					map_cube_mesh);
 		}
 
@@ -1267,6 +1257,7 @@ GPlatesGui::ExportRasterAnimationStrategy::ExportRasterAnimationStrategy(
 	set_template_filename(d_configuration->get_filename_template());
 }
 
+
 bool
 GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 		std::size_t frame_index)
@@ -1281,10 +1272,6 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 
 	try
 	{
-		// Reconstructed raster export requires an OpenGL renderer (to reconstruct floating-point raster data).
-		GPlatesOpenGL::GLRenderer::non_null_ptr_type renderer =
-				create_gl_renderer(*d_export_animation_context_ptr);
-
 		// Calculate the exported raster dimensions.
 		unsigned int export_raster_width;
 		unsigned int export_raster_height;
@@ -1328,22 +1315,31 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 		// Compress raster if it is supported and has been turned on.
 		const bool export_raster_compress = d_configuration->compress && d_configuration->compress.get();
 
+		// Need an active OpenGL context before any OpenGL rendering.
+		GPlatesOpenGL::GL::non_null_ptr_type gl = create_gl(*d_export_animation_context_ptr);
+
+		// Start an explicit render scope (all GL calls should be done inside this scope).
+		GPlatesOpenGL::GL::RenderScope render_scope(*gl);
+
+		// Initialise the tile framebuffer (and pixel buffer) if first time called for the current export sequence.
+		if (!d_gl_resources)
+		{
+			d_gl_resources = GLResources(*gl, d_configuration->raster_type);
+		}
+
 		if (d_configuration->raster_type == Configuration::COLOUR)
 		{
-			// Start an explicit render scope.
-			renderer->begin_render();
-
 			// Get all rasters from the set of visible layers.
 			// We include numerical rasters because they can be converted to colour using their layer's palette.
 			colour_raster_seq_type colour_rasters;
 			get_visible_colour_rasters(
-					*renderer,
+					*gl,
 					d_export_animation_context_ptr->view_state(),
 					colour_rasters);
 
 			// End an explicit render scope to exclude any direct modifications of OpenGL via Qt
 			// such as 'update_status_message()' below.
-			renderer->end_render();
+			render_scope.end();
 
 			// This will be used to render rasters as colour.
 			const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type gl_visual_layers =
@@ -1370,14 +1366,14 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 				// Start a begin_render/end_render scope.
 				//
 				// NOTE: We *don't* include the above 'update_status_message()' inside this render scope
-				// because it gets Qt to paint which modifies the OpenGL state which confuses GLRenderer.
+				// because it gets Qt to paint which modifies the OpenGL state which confuses GL.
 				// Previously this caused a bug that was *very* difficult to track down - the bug
 				// showed up as missing cube map tiles in the (reconstructed) raster image and,
 				// strangely enough, even some rendering of parts of the actual map canvas.
-				// The client's contract to GLRenderer (within a render scope) is to never modify
-				// the OpenGL state directly (to only make changes via GLRenderer) because GLRenderer
-				// shadows the OpenGL state.
-				GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
+				// The client's contract to GL (within a render scope) is to never modify
+				// the OpenGL global state directly (to only make changes via GL) because GL
+				// shadows the OpenGL global state.
+				GPlatesOpenGL::GL::RenderScope render_scope_inner(*gl);
 
 				export_colour_raster(
 						raster,
@@ -1389,32 +1385,32 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 						georeferencing,
 						pixel_registration_lat_lon_extents,
 						gl_visual_layers,
-						*renderer,
+						*gl,
+						d_gl_resources->tile_framebuffer,
+						d_gl_resources->tile_pixel_buffer,
+						d_gl_resources->tile_framebuffer_dimension,
 						map_projection);
 
 			}
 		}
 		else if (d_configuration->raster_type == Configuration::NUMERICAL)
 		{
-			// Start an explicit render scope.
-			renderer->begin_render();
-
 			// Get the rasters containing numerical bands from the set of visible layers.
 			numerical_raster_seq_type numerical_rasters;
 			get_visible_numerical_rasters(
-					*renderer,
+					*gl,
 					d_export_animation_context_ptr->view_state(),
 					numerical_rasters);
 
 			GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_type map_cube_mesh =
 					GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_type(
 							GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create(
-									*renderer,
+									*gl,
 									*map_projection));
 
 			// End an explicit render scope to exclude any direct modifications of OpenGL via Qt
 			// such as 'update_status_message()' below.
-			renderer->end_render();
+			render_scope.end();
 
 			// Iterate over the numerical rasters and export them.
 			for (unsigned int raster_index = 0; raster_index < numerical_rasters.size(); ++raster_index)
@@ -1436,12 +1432,12 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 				// Start a begin_render/end_render scope.
 				//
 				// NOTE: We *don't* include the above 'update_status_message()' inside this render scope
-				// because it gets Qt to paint which modifies the OpenGL state which confuses GLRenderer.
+				// because it gets Qt to paint which modifies the OpenGL state which confuses GL.
 				// Previously this caused a bug that was *very* difficult to track down.
-				// The client's contract to GLRenderer (within a render scope) is to never modify
-				// the OpenGL state directly (to only make changes via GLRenderer) because GLRenderer
-				// shadows the OpenGL state.
-				GPlatesOpenGL::GLRenderer::RenderScope render_scope(*renderer);
+				// The client's contract to GL (within a render scope) is to never modify
+				// the OpenGL global state directly (to only make changes via GL) because GL
+				// shadows the OpenGL global state.
+				GPlatesOpenGL::GL::RenderScope render_scope_inner(*gl);
 
 				export_numerical_raster(
 						raster,
@@ -1452,7 +1448,10 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 						export_raster_compress,
 						georeferencing,
 						pixel_registration_lat_lon_extents,
-						*renderer,
+						*gl,
+						d_gl_resources->tile_framebuffer,
+						d_gl_resources->tile_pixel_buffer,
+						d_gl_resources->tile_framebuffer_dimension,
 						map_cube_mesh);
 			}
 		}
@@ -1503,4 +1502,79 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 	
 	// Normal exit, all good, ask the Context process the next iteration please.
 	return true;
+}
+
+
+void
+GPlatesGui::ExportRasterAnimationStrategy::wrap_up(
+		bool export_successful)
+{
+	// Destroy the tile framebuffer (and pixel buffer) if allocated.
+	if (d_gl_resources)
+	{
+		// Need an active OpenGL context.
+		GPlatesOpenGL::GL::non_null_ptr_type gl = create_gl(*d_export_animation_context_ptr);
+
+		// Start an explicit render scope (all GL calls, including queueing for deallocation,
+		// should be done inside this scope).
+		GPlatesOpenGL::GL::RenderScope render_scope(*gl);
+
+		// Queue framebuffer (and pixel buffer) for deallocation (actually deallocates at end of render scope).
+		d_gl_resources = boost::none;
+	}
+}
+
+
+GPlatesGui::ExportRasterAnimationStrategy::GLResources::GLResources(
+		GPlatesOpenGL::GL &gl,
+		Configuration::RasterType raster_type) :
+	tile_framebuffer_dimension(TILE_FRAMEBUFFER_DIMENSION)
+{
+	// Make sure we leave the OpenGL global state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+
+	if (tile_framebuffer_dimension > gl.get_capabilities().gl_max_texture_size)
+	{
+		tile_framebuffer_dimension = gl.get_capabilities().gl_max_texture_size;
+	}
+
+	// Create the framebuffer and its renderbuffer.
+	tile_colour_renderbuffer = GPlatesOpenGL::GLRenderbuffer::create(gl);
+	tile_framebuffer = GPlatesOpenGL::GLFramebuffer::create(gl);
+
+	// Initialise colour renderbuffer.
+	gl.BindRenderbuffer(GL_RENDERBUFFER, tile_colour_renderbuffer);
+	const GLenum colour_renderbuffer_format = (raster_type == Configuration::COLOUR)
+			? GL_RGBA8
+			: GL_RG32F;
+	glRenderbufferStorage(GL_RENDERBUFFER, colour_renderbuffer_format, tile_framebuffer_dimension, tile_framebuffer_dimension);
+
+	// Bind the framebuffer that'll we subsequently attach the renderbuffer to.
+	gl.BindFramebuffer(GL_FRAMEBUFFER, tile_framebuffer);
+
+	// Bind the colour renderbuffer to framebuffer's first colour attachment.
+	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, tile_colour_renderbuffer);
+
+	const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	GPlatesGlobal::Assert<GPlatesOpenGL::OpenGLException>(
+			completeness == GL_FRAMEBUFFER_COMPLETE,
+			GPLATES_ASSERTION_SOURCE,
+			"Framebuffer not complete for rendering tiles when exporting rasters.");
+
+	// Create the pixel buffer to read back framebuffer data.
+	tile_pixel_buffer = GPlatesOpenGL::GLBuffer::create(gl);
+
+	// Bind pixel buffer object.
+	gl.BindBuffer(GL_PIXEL_PACK_BUFFER, tile_pixel_buffer);
+
+	// Allocate the pixel buffer data store.
+	const unsigned int pixel_size = (raster_type == Configuration::COLOUR)
+			? 4/*RGBA*/ * sizeof(GLubyte)
+			: 2/*RG*/ * sizeof(GLfloat);
+	glBufferData(
+			GL_PIXEL_PACK_BUFFER,
+			tile_framebuffer_dimension * tile_framebuffer_dimension * pixel_size,
+			nullptr,
+			// Data will be modified repeatedly by the GL and read by the application...
+			GL_DYNAMIC_READ);
 }

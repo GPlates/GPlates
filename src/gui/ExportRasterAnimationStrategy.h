@@ -31,6 +31,10 @@
 
 #include "ExportAnimationStrategy.h"
 
+#include "opengl/GLBuffer.h"
+#include "opengl/GLFramebuffer.h"
+#include "opengl/GLRenderbuffer.h"
+
 #include "property-values/Georeferencing.h"
 
 #include "qt-widgets/GlobeAndMapWidget.h"
@@ -143,6 +147,15 @@ namespace GPlatesGui
 		do_export_iteration(
 				std::size_t frame_index);
 
+
+		/**
+		 * Release tile OpenGL framebuffer and pixel buffer.
+		 */
+		virtual
+		void
+		wrap_up(
+				bool export_successful);
+
 	protected:
 		/**
 		 * Protected constructor to prevent instantiation on the stack.
@@ -153,9 +166,41 @@ namespace GPlatesGui
 				const const_configuration_ptr &export_configuration);
 
 	private:
+
+		/**
+		 * OpenGL resources that we re-use from one export iteration frame to the next (and release when finished).
+		 *
+		 * Currently this is a framebuffer object and pixel buffer used to render rasters to a tile and
+		 * read it back to the CPU.
+		 */
+		struct GLResources
+		{
+			GLResources(
+					GPlatesOpenGL::GL &gl,
+					Configuration::RasterType raster_type);
+
+			//! Colour renderbuffer object used in framebuffer.
+			GPlatesOpenGL::GLRenderbuffer::shared_ptr_type tile_colour_renderbuffer;
+
+			//! Framebuffer object used to render raster tiles to.
+			GPlatesOpenGL::GLFramebuffer::shared_ptr_type tile_framebuffer;
+
+			//! Pixel buffer object used to read back from framebuffer.
+			GPlatesOpenGL::GLBuffer::shared_ptr_type tile_pixel_buffer;
+
+			//! Dimensions of square framebuffer used to render raster tiles to.
+			unsigned int tile_framebuffer_dimension;
+
+
+			//! Dimensions of square framebuffer used to render raster tiles to.
+			static const unsigned int TILE_FRAMEBUFFER_DIMENSION = 1024;
+		};
+
+
 		//! Export configuration parameters.
 		const_configuration_ptr d_configuration;
 
+		boost::optional<GLResources> d_gl_resources;
 	};
 }
 
