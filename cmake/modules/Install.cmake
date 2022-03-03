@@ -640,8 +640,8 @@ del pygplates
     # List of directories when searching.
     if (WIN32)
         # On Windows exclude 'api-ms-', 'System32' and 'SysWOW64'.
-        # The necessary 'api-ms-*' get installed when installing the Windows Universal CRT libraries (using InstallRequiredSystemLibraries).
-        list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[.*[/\\]api-ms-.*]])
+        # The necessary 'api-ms-win-*' get installed when installing the Windows Universal CRT libraries (using InstallRequiredSystemLibraries).
+        list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[.*api-ms-win-.*]])
         list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[.*[/\\][Ss]ystem32[/\\].*]])
         list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[.*[/\\][Ss]ys[Ww][Oo][Ww]64[/\\].*]])
         # On Windows search for DLLs using the PATH environment variable.
