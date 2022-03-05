@@ -43,10 +43,10 @@ GLEW            glew
 Python          python
 Boost           boost
 Qt              qt5
-Qwt             qwt61
+Qwt             qwt-qt5
 GDAL            gdal
 PROJ            proj
-CGAL            cgal
+CGAL            cgal5
 zlib            zlib
 
 Overview of different ways to install non-system dependencies
@@ -65,17 +65,17 @@ Here we briefly describe how to install dependencies using Macports (http://www.
   • Update Macports with 'sudo port -d selfupdate'.
   • Install CMake with 'sudo port install cmake' (or download an installer from http://www.cmake.org ).
   • Install GLEW with 'sudo port install glew'.
-  • Install Python with 'sudo port install python3[x]' where 'x' is the minor version (eg, 'sudo port install python38).
+  • Install Python with 'sudo port install python3[x]' where 'x' is the minor version (eg, 'sudo port install python39).
   • Install Boost with 'sudo port install boost +python3[x]'.
-    Note the additional '+python3[x]' where 'x' is the python minor version number (eg, 'sudo port install boost +python38').
+    Note the additional '+python3[x]' where 'x' is the python minor version number (eg, 'sudo port install boost +python39').
   • Install Qt with 'sudo port install qt5'.
-  • Instal Qwt with 'sudo port install qwt61 +qt5'.
+  • Instal Qwt with 'sudo port install qwt-qt5'.
     This appears to install qwt inside qt5, and so it should get found once qt5 is found.
   • Install GDAL with 'sudo port install gdal +netcdf'.
     Note the additional "+netcdf" is required to enable GPlates to import/export NetCDF rasters.
   • Install PROJ with 'sudo port install proj'.
     Note that this will likely already be installed since it's a dependency of gdal (installed above).
-  • Install CGAL with 'sudo port install cgal'.
+  • Install CGAL with 'sudo port install cgal5'.
   • Install zlib with 'sudo port install zlib'.
 
 A note about Python
@@ -83,14 +83,14 @@ A note about Python
 You may need to explicitly specify the Macports Python location. Otherwise the Python framework bundled inside
 the XCode app will instead be found by CMake, which likely has a different Python minor version than the Macports Python
 you've compiled/activated Macports Boost for, causing CMake to be unable to find boost_python3[x].
-For example, if you installed Python 3.8 via Macports (and are running CMake 3.12 or greater) then build GPlates by typing (see BUILD.OSX):
+For example, if you installed Python 3.9 via Macports (and are running CMake 3.12 or greater) then build GPlates by typing (see BUILD.OSX):
 
-    cmake -D Python3_ROOT=/opt/local/Library/Frameworks/Python.framework/Versions/3.8 .
+    cmake -D Python3_ROOT=/opt/local/Library/Frameworks/Python.framework/Versions/3.9 .
     make
 
 ...or, equivalently, set the environment variable Python3_ROOT and then build GPlates:
 
-    export Python3_ROOT_DIR=/opt/local/Library/Frameworks/Python.framework/Versions/3.8
+    export Python3_ROOT_DIR=/opt/local/Library/Frameworks/Python.framework/Versions/3.9
     cmake .
     make
 
