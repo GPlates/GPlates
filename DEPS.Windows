@@ -99,7 +99,7 @@ Microsoft Visual Studio
 
 CMake
 
-  1. Get and install the latest CMake (at least 3.5) from: http://www.cmake.org/
+  1. Get and install the latest CMake (at least 3.10) from: http://www.cmake.org/
 
 Qt
 

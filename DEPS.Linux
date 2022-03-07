@@ -27,7 +27,7 @@ Program and library dependencies
 To compile GPlates, you will need the following programs and libraries
 installed:
 
-  • cmake (3.5 or newer)
+  • cmake (3.10 or newer)
   • g++ (4.8.1 or newer, required to support C++11) 
   • GL library (the OpenGL shared library)
   • GLU library (the OpenGL Utility shared library)

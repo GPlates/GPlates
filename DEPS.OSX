@@ -1,5 +1,6 @@
 Dependencies For macOS
 
+
 Table of Contents
 
  1. Introduction
@@ -10,10 +11,12 @@ Table of Contents
  6. Installing non-system dependencies using Macports
  7. Troubleshooting  
 
+
 Introduction
 
 This page lists the package dependencies which need to be satisfied to be able
 to build GPlates from source on macOS.
+
 
 Program and library dependencies
 
@@ -21,12 +24,12 @@ To compile GPlates, you will need the following programs and libraries
 installed:
 
   • XCode (see "BUILD.OSX" for instructions on how to install)
-  • cmake (3.5 or newer)
+  • cmake (3.10 or newer)
   • make
   • GL library (the OpenGL shared library)
   • GLU library (the OpenGL Utility shared library)
   • GLEW library (the OpenGL Extension Wrangler Library)
-  * Python (version 2.7 or 3; preferably 3.5 or newer)
+  * Python (version 2.7 or 3; preferably 3.10 or newer)
   • Boost library headers (version 1.35 or newer)
   • Qt library (version 5.6 or newer)
   • GDAL (Geospatial Data Abstraction Library) (1.3.2 or newer; preferably 2 or newer)
@@ -34,6 +37,7 @@ installed:
   • PROJ (4.6.0 or newer; preferably 6 or newer)
   • Qwt (6.0.1 or newer; preferably 6.1 or newer)
   • zlib
+
 
 Corresponding package dependencies
 
@@ -49,6 +53,7 @@ PROJ            proj
 CGAL            cgal5
 zlib            zlib
 
+
 Overview of different ways to install non-system dependencies
 
 There are multiple ways to install the remaining dependencies.
@@ -56,16 +61,17 @@ You can use Macports (http://www.macports.org) or Homebrew (https://brew.sh/) or
 Or you can compile the dependent packages directly from source code.
 Or you can install the dependent packages using precompiled installer packages where available.
 
+
 Installing non-system dependencies using Macports
 
-Here we briefly describe how to install dependencies using Macports (http://www.macports.org).
-  • Install Macports (http://www.macports.org) if it's not already installed.
+Here we briefly describe how to install dependencies using Macports (http://www.macports.org):
+  • Install Macports (http://www.macports.org) if it's not already installed (it will ask you to first install XCode).
   • Start a new terminal window (by running Applications->Utilities->Terminal in Finder).
   • You may need to set the path to Macports with "export PATH=/opt/local/bin:/opt/local/sbin:$PATH".
   • Update Macports with 'sudo port -d selfupdate'.
   • Install CMake with 'sudo port install cmake' (or download an installer from http://www.cmake.org ).
   • Install GLEW with 'sudo port install glew'.
-  • Install Python with 'sudo port install python3[x]' where 'x' is the minor version (eg, 'sudo port install python39).
+  • Install Python with 'sudo port install python3[x]' where 'x' is the minor version (eg, 'sudo port install python39').
   • Install Boost with 'sudo port install boost +python3[x]'.
     Note the additional '+python3[x]' where 'x' is the python minor version number (eg, 'sudo port install boost +python39').
   • Install Qt with 'sudo port install qt5'.
@@ -78,6 +84,7 @@ Here we briefly describe how to install dependencies using Macports (http://www.
   • Install CGAL with 'sudo port install cgal5'.
   • Install zlib with 'sudo port install zlib'.
 
+
 A note about Python
 
 You may need to explicitly specify the Macports Python location. Otherwise the Python framework bundled inside
@@ -85,14 +92,24 @@ the XCode app will instead be found by CMake, which likely has a different Pytho
 you've compiled/activated Macports Boost for, causing CMake to be unable to find boost_python3[x].
 For example, if you installed Python 3.9 via Macports (and are running CMake 3.12 or greater) then build GPlates by typing (see BUILD.OSX):
 
-    cmake -D Python3_ROOT=/opt/local/Library/Frameworks/Python.framework/Versions/3.9 .
+    cmake -D Python3_ROOT:PATH=/opt/local/Library/Frameworks/Python.framework/Versions/3.9 .
     make
 
 ...or, equivalently, set the environment variable Python3_ROOT and then build GPlates:
 
-    export Python3_ROOT_DIR=/opt/local/Library/Frameworks/Python.framework/Versions/3.9
+    export Python3_ROOT_DIR:PATH=/opt/local/Library/Frameworks/Python.framework/Versions/3.9
     cmake .
     make
+
+
+A note about Qwt
+
+If Qwt is not found (with a regular 'cmake .') then you can explicitly specify the Qwt include and library locations using QWT_INCLUDE_DIR and QWT_LIBRARY.
+For example, the 'qwt-qt5' Macports package should get installed inside 'qt5', so something like the following might be required:
+
+    cmake -D QWT_INCLUDE_DIR:PATH=/opt/local/libexec/qt5/lib/qwt.framework/Headers -D QWT_LIBRARY:FILEPATH=/opt/local/libexec/qt5/lib/qwt.framework .
+    make
+
 
 A note about GDAL
 
