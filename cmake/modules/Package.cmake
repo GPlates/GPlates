@@ -49,25 +49,35 @@ elseif (APPLE)
     #
     # Note that Apple also requires notarization.
     #
-    # The entire notarization process is currently done outside of CMake/CPack and should follow the procedure outlined here:
+    # The entire notarization process is currently done outside of CMake/CPack and should follow the procedure outlined here...
+    #   XCode >= 13:
     #     https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/customizing_the_notarization_workflow
-    # ...for XCode 13 (and above) which I've not yet tried. The notarization process for XCode 12 and earlier is here (the examples below follow this):
+    #   XCode < 13:
     #     https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/customizing_the_notarization_workflow/notarizing_apps_when_developing_with_xcode_12_and_earlier
     #
     # For GPlates this amounts to uploading the '.dmg' file to Apple for notarization, checking for successful notarization and then stapling the
     # notarization ticket to the '.dmg' file. Once that is all done the '.dmg' file can be distributed to users.
-    # For example:
-    #   xcrun altool --notarize-app --primary-bundle-id org.gplates.gplates-2.3.0-dev1 --username <email-address> --password @keychain:ALTOOL_PASSWORD --file gplates_2.3.0-dev1_Darwin-x86_64.dmg
-    #   xcrun altool --notarization-info <request-identifier> -u <email-address> --password @keychain:ALTOOL_PASSWORD
-    #   xcrun stapler staple gplates_2.3.0-dev1_Darwin-x86_64.dmg
+    # For example...
+    #   XCode >= 13:
+    #     xcrun notarytool submit gplates_2.3.0-dev1_Darwin-arm64.dmg --keychain-profile "AC_PASSWORD"
+    #     xcrun notarytool info <request-identifier> --keychain-profile "AC_PASSWORD"
+    #     xcrun stapler staple gplates_2.3.0-dev1_Darwin-arm64.dmg
+    #   XCode < 13:
+    #     xcrun altool --notarize-app --primary-bundle-id org.gplates.gplates-2.3.0-dev1 --username <email-address> --password @keychain:AC_PASSWORD --file gplates_2.3.0-dev1_Darwin-x86_64.dmg
+    #     xcrun altool --notarization-info <request-identifier> -u <email-address> --password @keychain:AC_PASSWORD
+    #     xcrun stapler staple gplates_2.3.0-dev1_Darwin-x86_64.dmg
     # Note however that, if you're only using CMake < 3.19, then you also need to manually code sign the '.dmg' file prior to notarization upload
     # (for CMake >= 3.19 we handle it during the packaging phase using CPACK_POST_BUILD_SCRIPTS). See the "DragNDrop" section below.
     #
     # For pyGPlates this amounts to uploading the zip archive to Apple for notarization and checking for successful notarization
     # (note that Apple's notarization process does not accept the TBZ2 format, which is why we default to ZIP for binary archives).
     # For example:
-    #   xcrun altool --notarize-app --primary-bundle-id org.gplates.pygplates-0.34.0-py38 --username <email-address> --password @keychain:ALTOOL_PASSWORD --file pygplates_0.34.0_py38_Darwin-x86_64.zip
-    #   xcrun altool --notarization-info <request-identifier> -u <email-address> --password @keychain:ALTOOL_PASSWORD
+    #   XCode >= 13:
+    #     xcrun notarytool submit pygplates_0.34.0_Darwin-arm64.zip pygplates_0.34.0_Darwin-arm64.zip --keychain-profile "AC_PASSWORD"
+    #     xcrun notarytool info <request-identifier> --keychain-profile "AC_PASSWORD"
+    #   XCode < 13:
+    #     xcrun altool --notarize-app --primary-bundle-id org.gplates.pygplates-0.34.0 --username <email-address> --password @keychain:AC_PASSWORD --file pygplates_0.34.0_Darwin-x86_64.zip
+    #     xcrun altool --notarization-info <request-identifier> -u <email-address> --password @keychain:AC_PASSWORD
     # However you cannot staple a notarization ticket to a ZIP archive (you must instead staple each item in the archive and then create a new archive).
     # If an item is not stapled then Gatekeeper finds the ticket online (stapling is so the ticket can be found when the network is offline).
     # So currently we don't staple the items.
