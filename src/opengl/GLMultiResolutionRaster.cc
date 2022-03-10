@@ -58,6 +58,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "utils/CallStackTracker.h"
 #include "utils/Profile.h"
 
 namespace GPlatesOpenGL
@@ -1604,6 +1605,9 @@ void
 GPlatesOpenGL::GLMultiResolutionRaster::compile_link_shader_program(
 		GL &gl)
 {
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
 	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 
@@ -2701,6 +2705,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::RenderSphereNormals
 	d_num_vertex_elements(0),
 	d_program(GLProgram::create(gl))
 {
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
 	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 

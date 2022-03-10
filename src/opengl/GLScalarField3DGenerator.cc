@@ -60,6 +60,7 @@
 
 #include "property-values/RawRaster.h"
 
+#include "utils/CallStackTracker.h"
 #include "utils/Endian.h"
 #include "utils/Profile.h"
 
@@ -1029,6 +1030,9 @@ void
 GPlatesOpenGL::GLScalarField3DGenerator::compile_link_shader_program(
 		GL &gl)
 {
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
 	//
 	// Shader program to render the tile mask.
 	//

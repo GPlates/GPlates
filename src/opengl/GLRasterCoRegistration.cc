@@ -58,7 +58,9 @@
 #include "maths/types.h"
 
 #include "utils/Base2Utils.h"
+#include "utils/CallStackTracker.h"
 #include "utils/Profile.h"
+
 
 namespace GPlatesOpenGL
 {
@@ -170,6 +172,9 @@ void
 GPlatesOpenGL::GLRasterCoRegistration::initialise_point_region_of_interest_shader_programs(
 		GL &gl)
 {
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
 	//
 	// Shader program to render points of seed geometries bounded by a loose target raster tile.
 	//
@@ -336,6 +341,9 @@ void
 GPlatesOpenGL::GLRasterCoRegistration::initialise_line_region_of_interest_shader_program(
 		GL &gl)
 {
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
 	//
 	// Shader program to render lines (GCAs) of seed geometries bounded by a loose target raster tile.
 	// This version clips to the loose frustum (shouldn't be rendering pixels outside the loose frustum
@@ -512,6 +520,9 @@ void
 GPlatesOpenGL::GLRasterCoRegistration::initialise_fill_region_of_interest_shader_program(
 		GL &gl)
 {
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
 	//
 	// Shader program to render interior of seed polygons bounded by a loose target raster tile.
 	//
@@ -613,6 +624,9 @@ void
 GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader_program(
 		GL &gl)
 {
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
 	// Vertex shader source to copy target raster moments into seed sub-viewport with region-of-interest masking.
 	GLShaderSource mask_region_of_interest_moments_vertex_shader_source;
 	mask_region_of_interest_moments_vertex_shader_source.add_code_segment("#define FILTER_MOMENTS\n");
@@ -711,6 +725,9 @@ void
 GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interest_shader_programs(
 		GL &gl)
 {
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
 	//
 	// Compile the common vertex shader used by all reduction operation shader programs.
 	//

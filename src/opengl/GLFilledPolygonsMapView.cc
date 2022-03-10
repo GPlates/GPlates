@@ -38,6 +38,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "utils/CallStackTracker.h"
 #include "utils/Profile.h"
 
 
@@ -272,6 +273,9 @@ void
 GPlatesOpenGL::GLFilledPolygonsMapView::compile_link_shader_program(
 		GL &gl)
 {
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
 	//
 	// Shader program to render filled drawables to the scene.
 	//

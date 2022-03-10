@@ -53,6 +53,8 @@
 
 #include "presentation/ViewState.h"
 
+#include "utils/CallStackTracker.h"
+
 
 namespace
 {
@@ -254,6 +256,9 @@ namespace
 			GPlatesOpenGL::GLProgram::shared_ptr_type program,
 			const GPlatesGui::Colour &colour)
 	{
+		// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+		TRACK_CALL_STACK();
+
 		// Vertex shader source.
 		GPlatesOpenGL::GLShaderSource vertex_shader_source;
 		vertex_shader_source.add_code_segment(VERTEX_SHADER_SOURCE);

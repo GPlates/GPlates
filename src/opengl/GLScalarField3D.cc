@@ -2643,6 +2643,9 @@ GPlatesOpenGL::GLScalarField3D::create_shader_program(
 		boost::optional<QString> geometry_shader_source_string_or_file_name,
 		boost::optional<const char *> shader_defines)
 {
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
 	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 

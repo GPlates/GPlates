@@ -51,6 +51,7 @@
 #include "property-values/ProxiedRasterResolver.h"
 
 #include "utils/Base2Utils.h"
+#include "utils/CallStackTracker.h"
 #include "utils/Profile.h"
 
 
@@ -909,6 +910,9 @@ void
 GPlatesOpenGL::GLNormalMapSource::compile_link_normal_map_generation_shader_program(
 		GL &gl)
 {
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
 	// Vertex shader source.
 	GLShaderSource vertex_shader_source;
 	vertex_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);

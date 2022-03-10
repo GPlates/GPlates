@@ -59,6 +59,7 @@
 #include "maths/MathsUtils.h"
 #include "maths/UnitQuaternion3D.h"
 
+#include "utils/CallStackTracker.h"
 #include "utils/Profile.h"
 
 
@@ -1801,6 +1802,9 @@ void
 GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::compile_link_shader_program(
 		GL &gl)
 {
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
 	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 
