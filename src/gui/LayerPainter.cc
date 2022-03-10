@@ -350,10 +350,6 @@ GPlatesGui::LayerPainter::end_painting(
 	}
 #endif
 
-	// Set the anti-aliased point state.
-	gl.Enable(GL_POINT_SMOOTH);
-	gl.Hint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-
 	// Set the anti-aliased line state.
 	gl.Enable(GL_LINE_SMOOTH);
 	gl.Hint(GL_LINE_SMOOTH_HINT, GL_NICEST);
@@ -402,7 +398,6 @@ GPlatesGui::LayerPainter::end_painting(
 		// As mentioned above these off-sphere primitives should not be rendered with any anti-aliasing
 		// (including polygon anti-aliasing - which we no longer use because it generates transparent
 		// edges between adjacent triangles in a mesh).
-		gl.Disable(GL_POINT_SMOOTH);
 		gl.Disable(GL_LINE_SMOOTH);
 
 		drawables_off_the_sphere.end_painting(
