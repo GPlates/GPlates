@@ -78,7 +78,7 @@ void main (void)
 		vec4 age_data = textureProj(age_grid_texture_sampler, age_grid_texture_coordinate);
 
 		// Age grid coverage in alpha channel is 1 inside age grid (oceanic) and 0 outside (continental).
-		float age_coverage = age_data.a
+		float age_coverage = age_data.a;
 
 		// If the current fragment is covered by the age grid then we're on oceanic crust, so do the age comparison test.
 		// Otherwise we're on continental crust, and the age test result effectively gets ignored (since age coverage is zero).

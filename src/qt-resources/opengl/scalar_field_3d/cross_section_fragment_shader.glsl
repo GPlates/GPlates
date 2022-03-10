@@ -226,7 +226,7 @@ void main()
 	//
 	// ...where 'weight(i)' are the linear filtering weights.
 	//
-	colour.rgb /= colour.a
+	colour.rgb /= colour.a;
 	colour.a = 1;
 
 	// This branches on a uniform variable and hence is efficient since all pixels follow same path.

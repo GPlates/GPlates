@@ -104,7 +104,7 @@ namespace GPlatesOpenGL
 					// Note: Source texture has premultiplied alpha, so multiply by
 					//       a premultiplied-alpha version of the modulate colour.
 					colour = texture(source_texture_sampler, tex_coord);
-					colour *= vec4(modulate_color.rgb * modulate_color.a, modulate_color.a)
+					colour *= vec4(modulate_color.rgb * modulate_color.a, modulate_color.a);
 				}
 			)";
 

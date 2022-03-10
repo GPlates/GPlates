@@ -139,9 +139,6 @@ GPlatesGui::LayerPainter::initialise(
 	vertex_shader->shader_source(vertex_shader_source);
 	vertex_shader->compile_shader();
 
-	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
-	TRACK_CALL_STACK();
-
 	// Fragment shader source.
 	GPlatesOpenGL::GLShaderSource fragment_shader_source;
 	fragment_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
@@ -199,9 +196,6 @@ GPlatesGui::LayerPainter::initialise(
 	// Create shader program to render axially symmetric meshes.
 	//
 
-	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
-	TRACK_CALL_STACK();
-
 	// Vertex shader source.
 	GPlatesOpenGL::GLShaderSource axially_symmetric_mesh_vertex_shader_source;
 	axially_symmetric_mesh_vertex_shader_source.add_code_segment_from_file(GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME);
@@ -210,9 +204,6 @@ GPlatesGui::LayerPainter::initialise(
 	GPlatesOpenGL::GLShader::shared_ptr_type axially_symmetric_mesh_vertex_shader = GPlatesOpenGL::GLShader::create(gl, GL_VERTEX_SHADER);
 	axially_symmetric_mesh_vertex_shader->shader_source(axially_symmetric_mesh_vertex_shader_source);
 	axially_symmetric_mesh_vertex_shader->compile_shader();
-
-	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
-	TRACK_CALL_STACK();
 
 	// Fragment shader source.
 	GPlatesOpenGL::GLShaderSource axially_symmetric_mesh_fragment_shader_source;

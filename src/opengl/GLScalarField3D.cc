@@ -2335,6 +2335,9 @@ void
 GPlatesOpenGL::GLScalarField3D::initialise_inner_sphere(
 		GL &gl)
 {
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
 	//
 	// Compile/link shader programs to render inner sphere as white and as screen-space depth.
 	//
@@ -2425,6 +2428,9 @@ void
 GPlatesOpenGL::GLScalarField3D::initialise_cross_section_rendering(
 		GL &gl)
 {
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
 	//
 	// Create the shader programs.
 	//
@@ -2476,6 +2482,9 @@ void
 GPlatesOpenGL::GLScalarField3D::initialise_iso_surface_rendering(
 		GL &gl)
 {
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
 	//
 	// Create the shader program.
 	//
@@ -2492,6 +2501,9 @@ void
 GPlatesOpenGL::GLScalarField3D::initialise_surface_fill_mask_rendering(
 		GL &gl)
 {
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
 	//
 	// Create the shader program.
 	//
@@ -2588,6 +2600,9 @@ void
 GPlatesOpenGL::GLScalarField3D::initialise_volume_fill_boundary_rendering(
 		GL &gl)
 {
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
 	//
 	// Create the shader programs.
 	//

@@ -56,7 +56,7 @@ look_up_table_1D(
 		float input_upper_bound,
 		float input_value)
 {
-	int table_resolution = textureSize(table_sampler, 0).x/*square texture*/;
+	int table_resolution = textureSize(table_sampler, 0)/*square texture*/;
 	
 	// Map the range [input_lower_bound, input_upper_bound] to [0,1].
 	float table_coordinate_u = (input_value - input_lower_bound) / (input_upper_bound - input_lower_bound);
@@ -445,6 +445,8 @@ get_scalar_field_data_from_position(
 		inout float field_scalar,
 		inout vec3 field_gradient)
 {
+	int tile_resolution = textureSize(field_data_sampler, 0).x/*square texture*/;
+
 	calculate_cube_face_coordinates(position, cube_face_index, cube_face_coordinate_uv);
 	
 	// tile offset indices

@@ -1721,7 +1721,7 @@ raycasting(
 		{
 			get_tile_meta_data_from_cube_face_coordinates(
 					cube_face_index, cube_face_coordinate_uv,
-					textureSize(tile_meta_data_sampler, 0).x/*square texture*/,
+					tile_meta_data_sampler,
 					textureSize(field_data_sampler, 0).x/*square texture*/,
 					tile_offset_uv, tile_coordinate_uv, tile_ID, tile_meta_data_min_max_scalar);
 		}
