@@ -27,7 +27,6 @@
 
 #include <cmath>
 #include <boost/cast.hpp>
-#include <boost/foreach.hpp>
 
 #include "GLMultiResolutionCubeRaster.h"
 

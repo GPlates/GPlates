@@ -29,7 +29,6 @@
 #include <cmath>
 #include <limits>
 #include <boost/cast.hpp>
-#include <boost/foreach.hpp>
 #include <QDebug>
 
 #include "GLFilledPolygonsGlobeView.h"

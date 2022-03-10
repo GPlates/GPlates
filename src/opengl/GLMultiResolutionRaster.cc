@@ -1104,7 +1104,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
 
 	// Get access to the allocated buffer.
 	// NOTE: This is a write-only pointer - it might reference video memory - and cannot be read from.
-	GLvoid *vertex_data_write_ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_MAP_WRITE_BIT);
+	GLvoid *vertex_data_write_ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
 
 	// If there was an error during mapping then report it and throw exception.
 	if (vertex_data_write_ptr == NULL)

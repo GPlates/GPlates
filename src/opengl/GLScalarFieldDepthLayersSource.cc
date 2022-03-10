@@ -30,7 +30,6 @@
 #include <utility>
 #include <boost/bind/bind.hpp>
 #include <boost/cast.hpp>
-#include <boost/foreach.hpp>
 #include <QDebug>
 
 #include "GLScalarFieldDepthLayersSource.h"
@@ -68,7 +67,7 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::create(
 	proxied_depth_layer_seq_type proxied_depth_layers;
 
 	// Create a resolver for each proxied raster depth layer.
-	BOOST_FOREACH(const DepthLayer &depth_layer, depth_layers)
+	for (const DepthLayer &depth_layer : depth_layers)
 	{
 		// The raster type is expected to contain numerical (height) data, not colour RGBA data.
 		if (!GPlatesPropertyValues::RawRasterUtils::does_raster_contain_numerical_data(*depth_layer.depth_layer_raster))

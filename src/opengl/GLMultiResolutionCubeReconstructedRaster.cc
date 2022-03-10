@@ -26,7 +26,6 @@
 #include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
 
 #include <cmath>
-#include <boost/foreach.hpp>
 #include <QDebug>
 
 #include "GLMultiResolutionCubeReconstructedRaster.h"
@@ -474,7 +473,7 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::create_tile_texture(
 	// unlike global rectangular lat/lon rasters that squash near the poles.
 	//
 
-	// Binlinear filtering for GL_TEXTURE_MIN_FILTER and GL_TEXTURE_MAG_FILTER.
+	// Bilinear filtering for GL_TEXTURE_MIN_FILTER and GL_TEXTURE_MAG_FILTER.
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 

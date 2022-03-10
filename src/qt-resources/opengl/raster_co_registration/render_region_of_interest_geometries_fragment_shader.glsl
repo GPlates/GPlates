@@ -49,21 +49,26 @@
 #endif
 #endif
 
-#if defined(POINT_REGION_OF_INTEREST) || defined(LINE_REGION_OF_INTEREST)
-varying vec3 present_day_position;
-#endif
+in VertexData
+{
+	#if defined(POINT_REGION_OF_INTEREST) || defined(LINE_REGION_OF_INTEREST)
+		vec3 present_day_position;
+	#endif
 
-#ifdef POINT_REGION_OF_INTEREST
-	varying vec3 present_day_point_centre;
-#endif
+	#ifdef POINT_REGION_OF_INTEREST
+		vec3 present_day_point_centre;
+	#endif
 
-#ifdef LINE_REGION_OF_INTEREST
-	varying vec3 present_day_line_arc_normal;
-#endif
+	#ifdef LINE_REGION_OF_INTEREST
+		vec3 present_day_line_arc_normal;
+	#endif
 
-#ifdef ENABLE_SEED_FRUSTUM_CLIPPING
-	varying vec4 clip_position_params;
-#endif
+	#ifdef ENABLE_SEED_FRUSTUM_CLIPPING
+		vec4 clip_position_params;
+	#endif
+} fs_in;
+
+layout(location = 0) out vec4 region_of_interest;
 
 void main (void)
 {
@@ -74,10 +79,10 @@ void main (void)
 	//   tan(angle) = sin(angle) / cos(angle) = |cross(x1,x2)| / dot(x1,x2)
 	// 'present_day_point_centre' is constant (and unit length) across the primitive but
 	// 'present_day_position' varies and is not unit length (so must be normalised).
-	vec3 present_day_position_normalised = normalize(present_day_position);
-	vec3 cross_position_and_point_centre = cross(present_day_position_normalised, present_day_point_centre);
+	vec3 present_day_position_normalised = normalize(fs_in.present_day_position);
+	vec3 cross_position_and_point_centre = cross(present_day_position_normalised, fs_in.present_day_point_centre);
 	float sin_squared_angle = dot(cross_position_and_point_centre, cross_position_and_point_centre);
-	float cos_angle = dot(present_day_position_normalised, present_day_point_centre);
+	float cos_angle = dot(present_day_position_normalised, fs_in.present_day_point_centre);
 	float cos_squared_angle = cos_angle * cos_angle;
 	if (sin_squared_angle > cos_squared_angle * tan_squared_region_of_interest_angle)
 		discard;
@@ -87,7 +92,7 @@ void main (void)
 	// Also the 'tan' (used for small angles) is not valid at 90 degrees.
 	// 'present_day_point_centre' is constant (and unit length) across the primitive but
 	// 'present_day_position' varies and is not unit length (so must be normalised).
-	if (dot(normalize(present_day_position), present_day_point_centre) < cos_region_of_interest_angle)
+	if (dot(normalize(fs_in.present_day_position), fs_in.present_day_point_centre) < cos_region_of_interest_angle)
 		discard;
 #endif
 #endif
@@ -98,7 +103,7 @@ void main (void)
 	// For very small region-of-interest angles sin(angle) is fine.
 	// 'present_day_line_arc_normal' is constant (and unit length) across the primitive but
 	// 'present_day_position' varies and is not unit length (so must be normalised).
-	if (abs(dot(normalize(present_day_position), present_day_line_arc_normal)) > sin_region_of_interest_angle)
+	if (abs(dot(normalize(fs_in.present_day_position), fs_in.present_day_line_arc_normal)) > sin_region_of_interest_angle)
 		discard;
 #endif
 #ifdef LARGE_ROI_ANGLE
@@ -107,10 +112,10 @@ void main (void)
 	// where 'N' is the arc normal and 'x' is the position vector.
 	// 'present_day_point_centre' is constant (and unit length) across the primitive but
 	// 'present_day_position' varies and is not unit length (so must be normalised).
-	vec3 present_day_position_normalised = normalize(present_day_position);
-	vec3 cross_position_and_arc_normal = cross(present_day_position_normalised, present_day_line_arc_normal);
+	vec3 present_day_position_normalised = normalize(fs_in.present_day_position);
+	vec3 cross_position_and_arc_normal = cross(present_day_position_normalised, fs_in.present_day_line_arc_normal);
 	float sin_squared_complementary_angle = dot(cross_position_and_arc_normal, cross_position_and_arc_normal);
-	float cos_complementary_angle = dot(present_day_position_normalised, present_day_line_arc_normal);
+	float cos_complementary_angle = dot(present_day_position_normalised, fs_in.present_day_line_arc_normal);
 	float cos_squared_complementary_angle = cos_complementary_angle * cos_complementary_angle;
 	if (sin_squared_complementary_angle < 
 			cos_squared_complementary_angle * tan_squared_region_of_interest_complementary_angle)
@@ -127,12 +132,12 @@ void main (void)
 	// Inside clip frustum means -1 < x/w < 1 and -1 < y/w < 1 which is same as
 	// -w < x < w and -w < y < w.
 	// 'clip_position_params' is (x, y, w, -w).
-	if (!all(lessThan(clip_position_params.wxwy, clip_position_params.xzyz)))
+	if (!all(lessThan(fs_in.clip_position_params.wxwy, fs_in.clip_position_params.xzyz)))
 		discard;
 #endif
 
 	// Output all channels as 1.0 to indicate inside region-of-interest.
 	// TODO: Output grayscale to account for partial pixel coverage or
 	// smoothing near boundary of region-of-interest (will require max blending).
-	gl_FragColor = vec4(1.0);
+	region_of_interest = vec4(1.0);
 }

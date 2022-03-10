@@ -28,7 +28,6 @@
 #define GPLATES_OPENGL_GLOBJECTRESOURCEMANAGER_H
 
 #include <vector>
-#include <boost/foreach.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 #include <opengl/OpenGL1.h>
@@ -109,7 +108,7 @@ namespace GPlatesOpenGL
 		void
 		deallocate_queued_resources()
 		{
-			BOOST_FOREACH(ResourceHandleType resource, d_resource_deallocation_queue)
+			for (ResourceHandleType resource : d_resource_deallocation_queue)
 			{
 				d_resource_allocator.deallocate(resource);
 			}

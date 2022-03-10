@@ -135,7 +135,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The viewport that should be specified to 'GLRenderer::gl_viewport()' before rendering
+		 * The viewport that should be specified to 'GL::Viewport()' before rendering
 		 * to the current tile (this viewport includes the tile's border pixels).
 		 *
 		 * Note that if there are border pixels then the viewport is larger than the source tile.
@@ -154,10 +154,10 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The scissor rectangle that should be specified to 'GLRenderer::gl_scissor()' before rendering
+		 * The scissor rectangle that should be specified to 'GL::Scissor()' before rendering
 		 * to the current tile (this rectangle excludes the tile's border pixels).
 		 *
-		 * NOTE: You *must* specify a scissor rectangle (see 'GLRenderer::gl_scissor()') otherwise
+		 * NOTE: You *must* specify a scissor rectangle (see 'GL::Scissor()') otherwise
 		 * fat points and wide lines can render to pixels outside the tile (scissor) region.
 		 * This only really matters if the tile region is smaller than the render target.
 		 */

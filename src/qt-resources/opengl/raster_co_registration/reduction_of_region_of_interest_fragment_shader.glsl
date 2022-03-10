@@ -31,12 +31,19 @@ uniform sampler2D reduce_source_texture_sampler;
 // 'x' component is half texel offset and 'y' component is negative of that.
 uniform vec2 reduce_source_texture_half_texel_offset;
 
+in VertexData
+{
+	vec4 texture_coordinate;
+} fs_in;
+
+layout(location = 0) out vec4 reduce_data;
+
 void main (void)
 {
 	// Get the texture coordinates of the four source texels.
 	// Since it's a 2x2 -> 1x1 reduction the texture coordinate of the current pixel
 	// will be equidistant from four source texels (in each texel's corner).
-	vec2 st = gl_TexCoord[0].st;
+	vec2 st = fs_in.texture_coordinate.st;
 	vec2 st00 = st + reduce_source_texture_half_texel_offset.yy;
 	vec2 st01 = st + reduce_source_texture_half_texel_offset.yx;
 	vec2 st10 = st + reduce_source_texture_half_texel_offset.xy;
@@ -58,7 +65,7 @@ void main (void)
 		sum += src[n];
 	}
 
-	gl_FragColor = sum;
+	reduce_data = sum;
 #endif
 
 #ifdef REDUCTION_MIN
@@ -80,7 +87,7 @@ void main (void)
 			min_covered_value = min(min_covered_value, src[n].rgb);
 	}
 
-	gl_FragColor = vec4(min_covered_value, max_coverage);
+	reduce_data = vec4(min_covered_value, max_coverage);
 #endif
 
 #ifdef REDUCTION_MAX
@@ -104,6 +111,6 @@ void main (void)
 			max_covered_value = max(max_covered_value, src[n].rgb);
 	}
 
-	gl_FragColor = vec4(max_covered_value, max_coverage);
+	reduce_data = vec4(max_covered_value, max_coverage);
 #endif
 }

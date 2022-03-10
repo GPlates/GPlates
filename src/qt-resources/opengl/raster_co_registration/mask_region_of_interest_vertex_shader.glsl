@@ -31,15 +31,24 @@
 // The 'xy' values are (translate, scale)
 const vec2 clip_space_to_texture_space_transform = vec2(0.5, 0.5);
 
-attribute vec4 screen_space_position;
-// The 'xyz' values are (translate_x, translate_y, scale)
-attribute vec3 raster_frustum_to_seed_frustum_clip_space_transform;
-// The 'xyz' values are (translate_x, translate_y, scale)
-attribute vec3 seed_frustum_to_render_target_clip_space_transform;
-
 #ifdef FILTER_MOMENTS
-	varying vec4 view_position;
+	uniform mat4 view_projection_inverse;
 #endif
+
+layout(location = 0) in vec4 screen_space_position;
+// The 'xyz' values are (translate_x, translate_y, scale)...
+layout(location = 1) in vec4 raster_frustum_to_seed_frustum_clip_space_transform;
+// The 'xyz' values are (translate_x, translate_y, scale)...
+layout(location = 2) in vec3 seed_frustum_to_render_target_clip_space_transform;
+
+out VertexData
+{
+	vec4 target_raster_texture_coordinate;
+	vec4 region_of_interest_mask_texture_coordinate;
+	#ifdef FILTER_MOMENTS
+		vec4 view_position;
+	#endif
+} vs_out;
 
 void main (void)
 {
@@ -68,11 +77,9 @@ void main (void)
 
 #ifdef FILTER_MOMENTS
 	// Convert from the screen-space of the raster frustum to view-space using
-	// the inverse view-projection *inverse* matrix.
+	// the view-projection *inverse* matrix.
 	// The view position is used in the fragment shader to adjust for cube map distortion.
-	//
-	// Note: Seems gl_ModelViewProjectionMatrixInverse does not always work on Mac OS X.
-	view_position = gl_ModelViewMatrixInverse * gl_ProjectionMatrixInverse * raster_frustum_position;
+	vs_out.view_position = view_projection_inverse * raster_frustum_position;
 #endif
 
 	// Post-projection translate/scale to position NDC space around render target frustum.
@@ -90,7 +97,7 @@ void main (void)
 
 	// The target raster texture coordinates.
 	// Convert clip-space range [-1,1] to texture coordinate range [0,1].
-	gl_TexCoord[0] = vec4(
+	target_raster_texture_coordinate = vec4(
 		// Scale and translate s component...
 		dot(clip_space_to_texture_space_transform.yx,
 				raster_frustum_position.xw),
@@ -102,7 +109,7 @@ void main (void)
 
 	// The region-of-interest mask texture coordinates.
 	// Convert clip-space range [-1,1] to texture coordinate range [0,1].
-	gl_TexCoord[1] = vec4(
+	region_of_interest_mask_texture_coordinate = vec4(
 		// Scale and translate s component...
 		dot(clip_space_to_texture_space_transform.yx,
 				render_target_frustum_position.xw),
