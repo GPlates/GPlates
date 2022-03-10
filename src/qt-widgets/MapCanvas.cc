@@ -587,8 +587,6 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 			feedback_paint_device.width() * feedback_paint_device.devicePixelRatio();
 	const unsigned int feedback_paint_device_pixel_height =
 			feedback_paint_device.height() * feedback_paint_device.devicePixelRatio();
-	const double feedback_paint_device_aspect_ratio =
-			double(feedback_paint_device_pixel_width) / feedback_paint_device_pixel_height;
 
 	const GPlatesOpenGL::GLViewport feedback_paint_device_viewport(
 			0, 0,

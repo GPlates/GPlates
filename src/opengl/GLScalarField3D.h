@@ -862,8 +862,8 @@ namespace GPlatesOpenGL
 		 * These are initially none and set to the screen viewport dimensions on first render, but
 		 * can change if the screen viewport dimensions change (eg, user resizes main viewport).
 		 */
-		unsigned int d_volume_fill_screen_width;
-		unsigned int d_volume_fill_screen_height;
+		GLsizei d_volume_fill_screen_width;
+		GLsizei d_volume_fill_screen_height;
 
 		//
 		// Vertex array for white inner sphere.

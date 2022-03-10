@@ -5109,8 +5109,6 @@ GPlatesOpenGL::GLRasterCoRegistration::acquire_rgba_float_texture(
 	const GLTexture::shared_ptr_type texture = d_rgba_float_texture_cache->allocate_object(
 			GLTexture::create_unique(gl));
 
-	const GLCapabilities &capabilities = gl.get_capabilities();
-
 	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 

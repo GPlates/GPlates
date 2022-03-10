@@ -36,6 +36,8 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "maths/Real.h"
+
 
 GPlatesOpenGL::GLActiveTextureStateSet::GLActiveTextureStateSet(
 		const GLCapabilities &capabilities,
@@ -2011,7 +2013,7 @@ GPlatesOpenGL::GLPixelStoreStateSet::GLPixelStoreStateSet(
 		// OpenGL 3.3 spec says zero maps to false and non-zero to true, which if specified
 		// using an integer (ie, glPixelStorei instead of glPixelStoref) then false is 0 and true
 		// can be any non-zero integer (we choose 1).
-		d_param = (param != 0) ? 1 : 0;
+		d_param = (GPlatesMaths::Real(param) != 0) ? 1 : 0;
 	}
 	else // all remaining pnames have type integer (in OpenGL 3.3)...
 	{

@@ -290,12 +290,12 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 							new GPlatesOpenGL::GLContextImpl::QGLWidgetImpl(*this)))),
 	d_make_context_current(*d_gl_context),
 	d_initialisedGL(false),
-	d_off_screen_render_target_dimension(OFF_SCREEN_RENDER_TARGET_DIMENSION),
 	d_view_projection(
 			GPlatesOpenGL::GLViewport(0, 0, d_gl_context->get_width(), d_gl_context->get_height()),
 			// Use identity transforms for now, these will get updated when the camera changes...
 			GPlatesOpenGL::GLMatrix::IDENTITY,
 			GPlatesOpenGL::GLMatrix::IDENTITY),
+	d_off_screen_render_target_dimension(OFF_SCREEN_RENDER_TARGET_DIMENSION),
 	d_gl_visual_layers(
 			GPlatesOpenGL::GLVisualLayers::create(
 					d_gl_context, view_state.get_application_state())),
@@ -381,6 +381,10 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 
 	setAttribute(Qt::WA_NoSystemBackground);
 }
+
+
+GPlatesQtWidgets::GlobeCanvas::~GlobeCanvas()
+{  }
 
 
 double

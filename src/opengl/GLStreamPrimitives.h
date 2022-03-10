@@ -1125,7 +1125,7 @@ namespace GPlatesOpenGL
 			GLStreamBuffer::MapScope d_map_vertex_element_buffer_scope;
 			GLStreamBuffer::MapScope d_map_vertex_buffer_scope;
 
-			StreamTarget d_stream_target;
+			typename GLStreamPrimitives<VertexType, VertexElementType, GLStaticBufferStreamWriter>::StreamTarget d_stream_target;
 			bool d_is_streaming;
 		};
 	};

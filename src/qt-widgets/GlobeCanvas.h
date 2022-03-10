@@ -131,6 +131,8 @@ namespace GPlatesQtWidgets
 				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent_ = 0);
 
+		~GlobeCanvas();
+
 
 		/**
 		 * The proximity inclusion threshold is a measure of how close a geometry must be

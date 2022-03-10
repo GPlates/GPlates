@@ -50,11 +50,11 @@ GPlatesOpenGL::GLStreamBuffer::GLStreamBuffer(
 GPlatesOpenGL::GLStreamBuffer::MapScope::MapScope(
 		GLenum target,
 		GLStreamBuffer &stream_buffer,
-		unsigned int d_minimum_bytes_to_stream,
+		unsigned int minimum_bytes_to_stream,
 		unsigned int stream_alignment) :
 	d_target(target),
 	d_stream_buffer(stream_buffer),
-	d_minimum_bytes_to_stream(d_minimum_bytes_to_stream),
+	d_minimum_bytes_to_stream(minimum_bytes_to_stream),
 	d_stream_alignment(stream_alignment),
 	d_is_mapped(false)
 {

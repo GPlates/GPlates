@@ -166,8 +166,6 @@ GPlatesOpenGL::GLNormalMapSource::GLNormalMapSource(
 	d_have_checked_framebuffer_completeness_normal_map_generation(false),
 	d_logged_tile_load_failure_warning(false)
 {
-	const GLCapabilities &capabilities = gl.get_capabilities();
-
 	initialise_level_of_detail_dimensions();
 
 	// Adjust the height field scale factor that's based on the raster statistics.

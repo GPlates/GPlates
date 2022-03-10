@@ -2492,8 +2492,6 @@ void
 GPlatesOpenGL::GLScalarField3D::initialise_surface_fill_mask_rendering(
 		GL &gl)
 {
-	const GLCapabilities &capabilities = gl.get_capabilities();
-
 	//
 	// Create the shader program.
 	//
@@ -2771,8 +2769,6 @@ void
 GPlatesOpenGL::GLScalarField3D::create_tile_meta_data_texture_array(
 		GL &gl)
 {
-	const GLCapabilities &capabilities = gl.get_capabilities();
-
 	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 
@@ -2808,8 +2804,6 @@ void
 GPlatesOpenGL::GLScalarField3D::create_field_data_texture_array(
 		GL &gl)
 {
-	const GLCapabilities &capabilities = gl.get_capabilities();
-
 	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 
@@ -2844,8 +2838,6 @@ void
 GPlatesOpenGL::GLScalarField3D::create_mask_data_texture_array(
 		GL &gl)
 {
-	const GLCapabilities &capabilities = gl.get_capabilities();
-
 	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 
@@ -2880,8 +2872,6 @@ void
 GPlatesOpenGL::GLScalarField3D::create_depth_radius_to_layer_texture(
 		GL &gl)
 {
-	const GLCapabilities &capabilities = gl.get_capabilities();
-
 	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 
@@ -2913,8 +2903,6 @@ void
 GPlatesOpenGL::GLScalarField3D::create_colour_palette_texture(
 		GL &gl)
 {
-	const GLCapabilities &capabilities = gl.get_capabilities();
-
 	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 
@@ -2946,10 +2934,6 @@ void
 GPlatesOpenGL::GLScalarField3D::create_surface_fill_mask_texture(
 		GL &gl)
 {
-	const GLCapabilities &capabilities = gl.get_capabilities();
-
-	const unsigned int texture_depth = 6;
-
 	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 
