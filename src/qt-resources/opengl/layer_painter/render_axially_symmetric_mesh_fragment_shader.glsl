@@ -52,11 +52,11 @@ void main (void)
 		// Calculate the model-space normal of the axially symmetric mesh at the current fragment location.
 		// The mesh, in model-space, is axially symmetric about its z-axis so we blend the radial (x,y) normal with the z-axis.
 		vec3 model_space_mesh_normal = vec3(
-				radial_and_axial_normal_weights.x * normalize(model_space_radial_position),
-				radial_and_axial_normal_weights.y);
+				fs_in.radial_and_axial_normal_weights.x * normalize(fs_in.model_space_radial_position),
+				fs_in.radial_and_axial_normal_weights.y);
 		
 		// Convert the model-space normal to world-space (the same space the light direction is in).
-		vec3 world_space_mesh_normal = mat3(world_space_x_axis, world_space_y_axis, world_space_z_axis) * model_space_mesh_normal;
+		vec3 world_space_mesh_normal = mat3(fs_in.world_space_x_axis, fs_in.world_space_y_axis, fs_in.world_space_z_axis) * model_space_mesh_normal;
 		
 		// Apply the Lambert diffuse lighting using the world-space normal.
 		// Note that neither the light direction nor the surface normal need be normalised.
@@ -70,7 +70,7 @@ void main (void)
 		// We use a non-zero lower bound so that the mesh retains some diffuse lighting in shadow to help visualise its shape better.
 		// NOTE: Using float instead of integer parameters to 'clamp' otherwise driver compiler
 		// crashes on some systems complaining cannot find (integer overload of) function in 'stdlib'.
-		lambert *= clamp(8 * dot(world_space_light_direction, world_space_sphere_normal), 0.3, 1.0);
+		lambert *= clamp(8 * dot(world_space_light_direction, fs_in.world_space_sphere_normal), 0.3, 1.0);
 
 		// Blend between ambient and diffuse lighting.
 		float ambient_and_diffuse_lighting = mix_ambient_with_diffuse_lighting(lambert, light_ambient_contribution);
