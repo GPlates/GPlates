@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/shared_ptr.hpp>
 #include <QString>
 
 #include "global/config.h"  // For GPLATES_INSTALL_STANDALONE
@@ -218,12 +219,54 @@ namespace
 	boost::python::object builtin_iter;
 	boost::python::object builtin_next;
 
+	/**
+	 * Class to ensure cached objects get released when pyGPlates module is released.
+	 *
+	 * This avoids a crash (initially started happening with Python 3.9) where the cached
+	 * objects were presumably being released after their actual Python objects were destroyed.
+	 */
+	class CachedBuiltinAttributes
+	{
+	public:
+		CachedBuiltinAttributes()
+		{
+			cache();
+		}
+
+		~CachedBuiltinAttributes()
+		{
+			uncache();
+		}
+
+	private:
+		void
+		cache()
+		{
+			// Cache the following builtin attributes.
+			builtin_hash = boost::python::scope().attr("__builtins__").attr("hash");
+			builtin_iter = boost::python::scope().attr("__builtins__").attr("iter");
+			builtin_next = boost::python::scope().attr("__builtins__").attr("next");
+		}
+
+		void
+		uncache()
+		{
+			// Release the cached objects.
+			builtin_hash = boost::python::object();
+			builtin_iter = boost::python::object();
+			builtin_next = boost::python::object();
+		}
+	};
+
 	void
 	cache_builtin_attributes()
 	{
-		builtin_hash = boost::python::scope().attr("__builtins__").attr("hash");
-		builtin_iter = boost::python::scope().attr("__builtins__").attr("iter");
-		builtin_next = boost::python::scope().attr("__builtins__").attr("next");
+		// Cache the objects using a C++ class and register/store that as a Python object attached to the pygplates module
+		// to ensure that they get uncached (by C++ class destructor) when pygplates module is destroyed (and not after that).
+		boost::python::class_<CachedBuiltinAttributes, boost::shared_ptr<CachedBuiltinAttributes>, boost::noncopyable>(
+				"CachedBuiltinAttributes", boost::python::no_init);
+		boost::python::scope().attr("_cleanup_cached_builtin_attributes") =
+				boost::shared_ptr<CachedBuiltinAttributes>(new CachedBuiltinAttributes());
 	}
 }
 
