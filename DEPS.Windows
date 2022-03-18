@@ -243,7 +243,7 @@ Proj
      o Install Proj (into the CMAKE_INSTALL_PREFIX location specified above):
          cmake --build . --config Release --target install
   3. Add the *install* 'bin' directory to the PATH environment variable (eg, "C:\SDK\proj\proj-8.0.1\msvc2015_64\bin").
-     This is so the 'projinfo' executable can be found (currenlty only used when GPlates/pyGPlates installed/packaged as a standalone bundle).
+     This is so the 'projinfo' executable can be found (currently only used when GPlates/pyGPlates installed/packaged as a standalone bundle).
      Note that by default a static (instead of shared DLL) Proj library is built, so PATH is not actually needed to find a Proj DLL.
   4. Add the Proj *install* directory (see CMAKE_INSTALL_PREFIX above) to the CMAKE_PREFIX_PATH environment variable (eg, "C:\SDK\proj\proj-8.0.1\msvc2015_64").
      This enables CMake to find Proj when configuring GPlates (see BUILD.Windows).
