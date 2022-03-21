@@ -9,8 +9,23 @@
 cmake_minimum_required(VERSION 3.10...3.22 FATAL_ERROR)
 
 # Set the minimum macOS version we support.
+#
 # We select 10.13 because Qt5 currently supports 10.13+.
 # Also, as of 10.9, Apple has removed support for libstdc++ (the default prior to 10.9) in favour of libc++ (C++11).
+#
+# Note that you'll also need the deployment target set in your dependency libraries.
+# For example, with Macports you can specify the following in your "/opt/local/etc/macports/macports.conf" file:
+#   buildfromsource            always
+#   macosx_deployment_target   10.13
+# ...prior to installing the ports.
+# This will also force all ports to have their source code compiled (not downloaded as binaries) which can be quite slow.
+# For Apple M1 you can instead target 11.0 (since M1/arm64 wasn't introduced until macOS 11.0).
+#
+# However sometimes Macports has issues with deployment targets (eg, Qt sometimes fails to find the default SDK).
+# In this case you may decide to only deploy to the macOS version of your build system (and above) and not build libraries with a lower
+# deployment target (as covered above). Then also set CMAKE_OSX_DEPLOYMENT_TARGET cache variable to empty (using CMake GUI or ccmake)
+# so that GPlates/pyGPlates doesn't also build with a lower deployment target (resulting in some warnings when linking to its dependencies).
+#
 # Note that this needs to be set before project() and must be a cache variable (avoids project() overwriting it).
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.13 CACHE STRING "Minimum macOS deployment version")
 
