@@ -130,6 +130,10 @@ SET(GPLATES_SOURCE_DISTRIBUTION_DIR "${PROJECT_SOURCE_DIR}/cmake/distribution")
 # Lower case PROJECT_NAME.
 STRING(TOLOWER "${PROJECT_NAME}" _PROJECT_NAME_LOWER)
 
+# Python version suffix for pyGPlates builds.
+if (NOT GPLATES_BUILD_GPLATES)  # pyGPlates ...
+    SET(_PYGPLATES_PYTHON_VERSION_SUFFIX py${GPLATES_PYTHON_VERSION_MAJOR}${GPLATES_PYTHON_VERSION_MINOR})
+endif()
 
 #########################################################
 # CPack configuration variables common to all platforms #
@@ -170,9 +174,17 @@ if (WIN32)
     else()
         SET(_CPACK_SYSTEM_NAME_WIN win32)
     endif()
-    SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_CPACK_SYSTEM_NAME_WIN}")
+    if (GPLATES_BUILD_GPLATES)  # GPlates ...
+        SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_CPACK_SYSTEM_NAME_WIN}")
+    else()  # pyGPlates ...
+        SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_PYGPLATES_PYTHON_VERSION_SUFFIX}_${_CPACK_SYSTEM_NAME_WIN}")
+    endif()
 else()
-    SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+    if (GPLATES_BUILD_GPLATES)  # GPlates ...
+        SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+    else()  # pyGPlates ...
+        SET(CPACK_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_PYGPLATES_PYTHON_VERSION_SUFFIX}_${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+    endif()
 endif()
 
 #   CPACK_PACKAGE_DESCRIPTION_FILE - A text file used to describe the project.
@@ -223,6 +235,7 @@ SET(CPACK_STRIP_FILES TRUE)
 
 #   CPACK_SOURCE_PACKAGE_FILE_NAME - The name of the source package, e.g., cmake-2.6.1
 #
+# Note: We do not insert the python version suffix for pyGPlates source builds (like we do for pyGPlates binary builds).
 SET(CPACK_SOURCE_PACKAGE_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_src")
 
 #   CPACK_SOURCE_STRIP_FILES - List of files in the source tree that will be stripped.
@@ -427,7 +440,11 @@ endif()
 # Note: PROJECT_VERSION_PRERELEASE_USER is the version that includes the pre-release version suffix in a form that is suitable
 #       for use in package filenames (unlike PROJECT_VERSION_PRERELEASE). For example, for development 2.3 pre-releases this looks like
 #       gplates_2.3.0-dev1_amd64.deb (when the actual version is 2.3.0~1 - see CPACK_DEBIAN_PACKAGE_VERSION).
-SET(CPACK_DEBIAN_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_DEBIAN_ARCH}.deb")
+if (GPLATES_BUILD_GPLATES)  # GPlates ...
+    SET(CPACK_DEBIAN_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_DEBIAN_ARCH}.deb")
+else()  # pyGPlates ...
+    SET(CPACK_DEBIAN_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_PYGPLATES_PYTHON_VERSION_SUFFIX}_${_DEBIAN_ARCH}.deb")
+endif()
 
 #   CPACK_DEBIAN_PACKAGE_HOMEPAGE - The URL of the web site for this package, preferably (when applicable) the site
 #                                   from which the original source can be obtained and any additional upstream documentation
