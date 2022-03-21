@@ -84,6 +84,12 @@ Here we briefly describe how to install dependencies using Macports (http://www.
   • Install CGAL with 'sudo port install cgal5'.
   • Install zlib with 'sudo port install zlib'.
 
+For example, to install using Python 3.9:
+
+    sudo port -N install cmake glew python39 boost +python39 qt5 qwt-qt5 gdal +netcdf proj cgal5 zlib
+
+...note the '-N' *prevents* Macports asking you to confirm dependencies for each port.
+
 
 A note about Python
 
