@@ -331,6 +331,7 @@ if (GPLATES_BUILD_GPLATES)
     set(CPACK_NSIS_EXECUTABLES_DIRECTORY ".")
 endif()
 
+
 #############
 # DragNDrop #
 #############
@@ -400,6 +401,7 @@ if (GPLATES_BUILD_GPLATES)
         endif()
     endif()
 endif()
+
 
 #######
 # DEB #
@@ -479,6 +481,46 @@ SET(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 #   If enabled (ON) multiple packages are generated. By default a single package containing files of all components is generated.
 #
 SET(CPACK_DEB_COMPONENT_INSTALL OFF)
+
+# Check the GPLATES_PACKAGE_CONTACT variable has been set.
+#
+# GPLATES_PACKAGE_CONTACT initialises CPACK_PACKAGE_CONTACT which initialises CPACK_DEBIAN_PACKAGE_MAINTAINER which is mandatory for the DEB generator.
+#
+# TODO: Find a way to apply this to DEB generator *only*.
+#       Could use CPACK_PRE_BUILD_SCRIPTS and access package filename using CPACK_PACKAGE_FILES (but that requires CMake 3.19 - a bit too high).
+#       Could use CPACK_INSTALL_SCRIPTS (requires 3.16) but then don't have access to CPACK_PACKAGE_FILES.
+#       For now we just assume a Linux build that's not standalone will be packaged as Debian (which is the default we set for CPACK_GENERATOR).
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    if (NOT GPLATES_INSTALL_STANDALONE)
+        function(check_package_contact_script install_script)
+            # Check the GPLATES_PACKAGE_CONTACT variable has been set.
+            #
+            # Careful use of the escape charactor '\' allows us to prevent expansion of some variables until the script is executed.
+            # The only variable we want to expand when writing the script is GPLATES_PACKAGE_CONTACT.
+            #
+            file(WRITE "${install_script}" "
+                # Error if no package contact.
+                set(_PACKAGE_CONTACT \"${GPLATES_PACKAGE_CONTACT}\")
+                if (NOT _PACKAGE_CONTACT)
+                    message(FATAL_ERROR \"Package contact not specified - please set GPLATES_PACKAGE_CONTACT before creating a package\")
+                endif()
+            ")
+        endfunction()
+
+        set(_install_script "${CMAKE_CURRENT_BINARY_DIR}/check_package_contact.cmake")
+
+        check_package_contact_script(${_install_script})
+
+        # List of CMake script(s) to execute before installing the files to be packaged.
+        if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)
+            set(CPACK_INSTALL_SCRIPTS "${_install_script}")
+        else()
+            # Only a single install script supported prior to CMake 3.16.
+            set(CPACK_INSTALL_SCRIPT "${_install_script}")
+        endif()
+    endif()
+endif()
+
 
 
 #########
