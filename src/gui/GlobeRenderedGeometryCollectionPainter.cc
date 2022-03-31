@@ -131,6 +131,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::cache_handle_type
 GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint_surface(
 		GPlatesOpenGL::GL &gl,
 		const GPlatesOpenGL::GLViewProjection &view_projection,
+		const GPlatesOpenGL::GLIntersect::Plane &globe_horizon_plane,
 		const double &viewport_zoom_factor,
 		boost::optional<Colour> vector_geometries_override_colour)
 {
@@ -143,6 +144,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint_surface(
 			view_projection,
 			viewport_zoom_factor,
 			GlobeRenderedGeometryLayerPainter::PAINT_SURFACE,
+			globe_horizon_plane,
 			vector_geometries_override_colour);
 
 	// Draw the layers.
@@ -174,6 +176,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::paint_sub_surface(
 			view_projection,
 			viewport_zoom_factor,
 			GlobeRenderedGeometryLayerPainter::PAINT_SUB_SURFACE,
+			boost::none/*globe_horizon_plane*/,
 			boost::none/*vector_geometries_override_colour*/,
 			improve_performance_reduce_quality_hint);
 
@@ -211,6 +214,7 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 			d_paint_params->d_inverse_viewport_zoom_factor,
 			d_visibility_tester,
 			d_paint_params->d_paint_region,
+			d_paint_params->d_globe_horizon_plane,
 			d_paint_params->d_vector_geometries_override_colour,
 			d_paint_params->d_improve_performance_reduce_quality_hint);
 	rendered_geom_layer_painter.set_scale(d_scale);
@@ -287,12 +291,14 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::PaintParams::PaintParams(
 		const GPlatesOpenGL::GLViewProjection &view_projection,
 		const double &viewport_zoom_factor,
 		GlobeRenderedGeometryLayerPainter::PaintRegionType paint_region,
+		boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_horizon_plane,
 		boost::optional<Colour> vector_geometries_override_colour,
 		bool improve_performance_reduce_quality_hint) :
 	d_gl(&gl),
 	d_view_projection(view_projection),
 	d_inverse_viewport_zoom_factor(1.0 / viewport_zoom_factor),
 	d_paint_region(paint_region),
+	d_globe_horizon_plane(globe_horizon_plane),
 	d_vector_geometries_override_colour(vector_geometries_override_colour),
 	d_improve_performance_reduce_quality_hint(improve_performance_reduce_quality_hint),
 	d_cache_handle(new std::vector<cache_handle_type>()),

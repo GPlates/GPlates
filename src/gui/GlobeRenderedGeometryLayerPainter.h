@@ -47,6 +47,7 @@
 
 #include "opengl/GLCubeSubdivisionCache.h"
 #include "opengl/GLFrustum.h"
+#include "opengl/GLIntersectPrimitives.h"
 #include "opengl/GLTexture.h"
 
 #include "presentation/VisualLayers.h"
@@ -104,6 +105,7 @@ namespace GPlatesGui
 				const double &inverse_viewport_zoom_factor,
 				const GlobeVisibilityTester &visibility_tester,
 				PaintRegionType paint_region,
+				boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_horizon_plane = boost::none,
 				boost::optional<Colour> vector_geometries_override_colour = boost::none,
 				bool improve_performance_reduce_quality_hint = false);
 
@@ -348,6 +350,14 @@ namespace GPlatesGui
 		 * Is only valid during @a paint.
 		 */
 		boost::optional<GPlatesOpenGL::GLFrustum> d_frustum_planes;
+
+		/**
+		 * Plane that separates visible front half of globe from rear (from the camera's point of view).
+		 *
+		 * This plane determines whether front or rear of globe is rendered.
+		 * Only the part of globe in positive half space is rendered.
+		 */
+		boost::optional<GPlatesOpenGL::GLIntersect::Plane> d_globe_horizon_plane;
 
 		/**
 		 * Optional override colour of vector geometries (useful when rendering geometries gray on rear of globe).

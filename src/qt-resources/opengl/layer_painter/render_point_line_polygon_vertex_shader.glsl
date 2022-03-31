@@ -28,7 +28,10 @@
 //
 
 uniform mat4 view_projection;
-			
+
+// In the globe view only draw front or rear of visible globe using a clip plane (in world space).
+uniform vec4 globe_view_horizon_plane;
+
 // The 3D globe view needs to calculate lighting across the geometry but the map view does not
 // because the surface normal is constant across the map (ie, it's flat unlike the 3D globe).
 uniform bool map_view_enabled;
@@ -47,6 +50,9 @@ out VertexData
 void main (void)
 {
 	gl_Position = view_projection * position;
+
+    // Only draw front or rear of visible globe using a clip plane (in world space).
+    gl_ClipDistance[0] = dot(position, globe_view_horizon_plane);
 
 	// Output the vertex colour.
 	// We render both sides (front and back) of triangles (ie, there's no back-face culling).

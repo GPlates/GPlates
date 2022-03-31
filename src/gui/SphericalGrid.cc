@@ -44,6 +44,7 @@
 
 #include "opengl/GL.h"
 #include "opengl/GLContext.h"
+#include "opengl/GLIntersectPrimitives.h"
 #include "opengl/GLMatrix.h"
 #include "opengl/GLStreamPrimitives.h"
 #include "opengl/GLVertexArray.h"

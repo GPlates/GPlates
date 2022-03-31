@@ -336,6 +336,7 @@ GPlatesGui::Globe::render_globe_hemisphere_surface(
 			d_rendered_geom_collection_painter.paint_surface(
 					gl,
 					view_projection,
+					globe_horizon_plane,
 					viewport_zoom_factor,
 					vector_geometries_override_colour);
 	cache_handle.push_back(rendered_geoms_cache_half_globe);

@@ -36,6 +36,7 @@
 #include "LayerPainter.h"
 
 #include "opengl/GLContext.h"
+#include "opengl/GLIntersectPrimitives.h"
 #include "opengl/GLTexture.h"
 #include "opengl/GLVisualLayers.h"
 
@@ -102,6 +103,9 @@ namespace GPlatesGui
 		 *
 		 * This includes rendered direction arrows.
 		 *
+		 * @param globe_horizon_plane Plane that separates visible front half of globe from rear
+		 *        (from the camera's point of view). This plane determines whether front or rear
+		 *        of globe is rendered. Only the part of globe in positive half space is rendered.
 		 * @param viewport_zoom_factor is used for rendering view-dependent geometries.
 		 * @param vector_geometries_override_colour is used to optionally override the colour of
 		 *        vector geometries (this is useful when rendering geometries gray on rear of globe).
@@ -110,6 +114,7 @@ namespace GPlatesGui
 		paint_surface(
 				GPlatesOpenGL::GL &gl,
 				const GPlatesOpenGL::GLViewProjection &view_projection,
+				const GPlatesOpenGL::GLIntersect::Plane &globe_horizon_plane,
 				const double &viewport_zoom_factor,
 				boost::optional<Colour> vector_geometries_override_colour = boost::none);
 
@@ -172,6 +177,7 @@ namespace GPlatesGui
 					const double &viewport_zoom_factor,
 					GlobeRenderedGeometryLayerPainter::PaintRegionType paint_region,
 					// Used for PAINT_SURFACE...
+					boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_horizon_plane = boost::none,
 					boost::optional<Colour> vector_geometries_override_colour = boost::none,
 					// Used for PAINT_SUB_SURFACE...
 					bool improve_performance_reduce_quality_hint = false);
@@ -182,6 +188,7 @@ namespace GPlatesGui
 			GlobeRenderedGeometryLayerPainter::PaintRegionType d_paint_region;
 
 			// Used for PAINT_SURFACE...
+			boost::optional<GPlatesOpenGL::GLIntersect::Plane> d_globe_horizon_plane;
 			boost::optional<Colour> d_vector_geometries_override_colour;
 
 			// Used for PAINT_SUB_SURFACE...

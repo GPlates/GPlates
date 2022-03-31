@@ -29,6 +29,9 @@
 
 uniform mat4 view_projection;
 
+// In the globe view only draw front or rear of visible globe using a clip plane (in world space).
+uniform vec4 globe_view_horizon_plane;
+
 uniform bool lighting_enabled;
 
 layout(location = 0) in vec3 world_space_position;
@@ -54,6 +57,9 @@ out VertexData
 void main (void)
 {
 	gl_Position = view_projection * vec4(world_space_position, 1);
+
+    // Only draw front or rear of visible globe using a clip plane (in world space).
+    gl_ClipDistance[0] = dot(vec4(world_space_position, 1), globe_view_horizon_plane);
 
 	// Output the vertex colour.
 	// We render both sides (front and back) of triangles (ie, there's no back-face culling).

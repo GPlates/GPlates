@@ -45,6 +45,7 @@
 #include "opengl/GLLight.h"
 #include "opengl/GLFilledPolygonsGlobeView.h"
 #include "opengl/GLFilledPolygonsMapView.h"
+#include "opengl/GLIntersectPrimitives.h"
 #include "opengl/GLProgram.h"
 #include "opengl/GLStreamPrimitives.h"
 #include "opengl/GLTexture.h"
@@ -178,6 +179,7 @@ namespace GPlatesGui
 					GPlatesOpenGL::GLProgram::shared_ptr_type render_axially_symmetric_mesh_program,
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 					const GPlatesOpenGL::GLViewProjection &view_projection,
+					boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_view_horizon_plane,
 					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection);
 
 			/**
@@ -342,27 +344,30 @@ namespace GPlatesGui
 					GPlatesOpenGL::GL &gl,
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 					const GPlatesOpenGL::GLViewProjection &view_projection,
+					boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_view_horizon_plane,
 					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection);
 
 			/**
-			 * Sets state in shader program for point/line/polygon primitives.
+			 * Sets state for point/line/polygon primitives.
 			 */
 			void
-			set_point_line_polygon_program_state(
+			set_point_line_polygon_state(
 					GPlatesOpenGL::GL &gl,
 					GPlatesOpenGL::GLProgram::shared_ptr_type render_point_line_polygon_program,
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 					const GPlatesOpenGL::GLViewProjection &view_projection,
+					boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_view_horizon_plane,
 					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection);
 
 			/**
-			 * Sets state in shader program for axially symmetric meshes.
+			 * Sets state for axially symmetric meshes.
 			 */
 			void
-			set_axially_symmetric_mesh_program_state(
+			set_axially_symmetric_mesh_state(
 					GPlatesOpenGL::GL &gl,
 					GPlatesOpenGL::GLProgram::shared_ptr_type render_axially_symmetric_mesh_program,
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
+					boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_view_horizon_plane,
 					const GPlatesOpenGL::GLViewProjection &view_projection);
 		};
 
@@ -514,13 +519,15 @@ namespace GPlatesGui
 
 		/**
 		 * Renders any streamed or queued primitives.
+		 *
+		 * Note that @a globe_view_horizon_plane is only used for the globe view.
 		 */
 		cache_handle_type
 		end_painting(
 				GPlatesOpenGL::GL &gl,
 				const GPlatesOpenGL::GLViewProjection &view_projection,
-				float scale);
-
+				float scale,
+				boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_view_horizon_plane = boost::none);
 
 		PointLinePolygonDrawables drawables_off_the_sphere;
 		PointLinePolygonDrawables drawables_on_the_sphere;
@@ -540,7 +547,8 @@ namespace GPlatesGui
 		cache_handle_type
 		paint_rasters(
 				GPlatesOpenGL::GL &gl,
-				const GPlatesOpenGL::GLViewProjection &view_projection);
+				const GPlatesOpenGL::GLViewProjection &view_projection,
+				boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_view_horizon_plane);
 
 		void
 		paint_text_drawables_2D(

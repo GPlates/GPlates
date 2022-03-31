@@ -241,7 +241,8 @@ GPlatesGui::LayerPainter::cache_handle_type
 GPlatesGui::LayerPainter::end_painting(
 		GPlatesOpenGL::GL &gl,
 		const GPlatesOpenGL::GLViewProjection &view_projection,
-		float scale)
+		float scale,
+		boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_view_horizon_plane)
 {
 	PROFILE_FUNC();
 
@@ -305,11 +306,11 @@ GPlatesGui::LayerPainter::end_painting(
 
 	// Paint rasters if there are any (note there should only be one raster per visual layer).
 	// In particular pre-multiplied alpha-blending is used for reasons explained in the raster rendering code.
-	const cache_handle_type rasters_cache_handle = paint_rasters(gl, view_projection);
+	const cache_handle_type rasters_cache_handle = paint_rasters(gl, view_projection, globe_view_horizon_plane);
 	cache_handle->push_back(rasters_cache_handle);
 
 
-#if 0 // TODO: Remove this commented-out code once we're sure that each type of primitive being rendered
+#if 1 // TODO: Remove this commented-out code once we're sure that each type of primitive being rendered
 	  //       should decide itself whether to pre-multiply alpha in shader program or using alpha blending.
 	  //       This means all rendering can assume the default state of no alpha blending.
 	// Set up alpha blending for pre-multiplied alpha.
@@ -327,18 +328,10 @@ GPlatesGui::LayerPainter::end_painting(
 	//
 	// ...this then enables us to later use (1, 1 - src_alpha) for all RGBA channels when blending
 	// the render texture into the main framebuffer (if that's how we get rendered by clients).
-	if (renderer.get_capabilities().framebuffer.gl_EXT_blend_func_separate)
-	{
-		renderer.gl_enable(GL_BLEND);
-		renderer.gl_blend_func_separate(
-				GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
-				GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-	}
-	else // otherwise resort to normal blending...
-	{
-		renderer.gl_enable(GL_BLEND);
-		renderer.gl_blend_func(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	}
+	gl.Enable(GL_BLEND);
+	gl.BlendFuncSeparate(
+			GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
+			GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 #endif
 
 	// Set the anti-aliased line state.
@@ -365,6 +358,7 @@ GPlatesGui::LayerPainter::end_painting(
 			d_render_axially_symmetric_mesh_program,
 			*d_gl_visual_layers,
 			view_projection,
+			globe_view_horizon_plane,
 			d_map_projection);
 
 
@@ -401,6 +395,7 @@ GPlatesGui::LayerPainter::end_painting(
 				d_render_axially_symmetric_mesh_program,
 				*d_gl_visual_layers,
 				view_projection,
+				globe_view_horizon_plane,
 				d_map_projection);
 	}
 
@@ -472,7 +467,8 @@ GPlatesGui::LayerPainter::paint_scalar_fields(
 GPlatesGui::LayerPainter::cache_handle_type
 GPlatesGui::LayerPainter::paint_rasters(
 		GPlatesOpenGL::GL &gl,
-		const GPlatesOpenGL::GLViewProjection &view_projection)
+		const GPlatesOpenGL::GLViewProjection &view_projection,
+		boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_view_horizon_plane)
 {
 	// Make sure we leave the OpenGL global state the way it was.
 	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
@@ -612,6 +608,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 		GPlatesOpenGL::GLProgram::shared_ptr_type render_axially_symmetric_mesh_program,
 		GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 		const GPlatesOpenGL::GLViewProjection &view_projection,
+		boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_view_horizon_plane,
 		boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection)
 {
 	// Make sure we leave the OpenGL global state the way it was.
@@ -619,7 +616,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 
 	// If any rendered polygons (or polylines) are 'filled' then render them first.
 	// This way any vector geometry in this layer gets rendered on top and hence is visible.
-	paint_filled_polygons(gl, gl_visual_layers, view_projection, map_projection);
+	paint_filled_polygons(gl, gl_visual_layers, view_projection, globe_view_horizon_plane, map_projection);
 
 	//
 	// Set up for regular rendering of points, lines and polygons.
@@ -642,11 +639,12 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 	// In other words it doesn't consider any surface variations that are present in arbitrary
 	// triangular meshes for instance.
 	//
-	set_point_line_polygon_program_state(
+	set_point_line_polygon_state(
 			gl,
 			render_point_line_polygon_program,
 			gl_visual_layers,
 			view_projection,
+			globe_view_horizon_plane,
 			map_projection);
 
 	//
@@ -724,10 +722,11 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 	if (d_axially_symmetric_mesh_triangle_drawables.has_primitives())
 	{
 		// Set the state of the program object used to render axially symmetric primitives.
-		set_axially_symmetric_mesh_program_state(
+		set_axially_symmetric_mesh_state(
 				gl,
 				render_axially_symmetric_mesh_program,
 				gl_visual_layers,
+				globe_view_horizon_plane,
 				view_projection);
 
 		gl.BindVertexArray(axially_symmetric_mesh_vertex_array);
@@ -809,6 +808,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::paint_filled_polygons(
 		GPlatesOpenGL::GL &gl,
 		GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 		const GPlatesOpenGL::GLViewProjection &view_projection,
+		boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_view_horizon_plane,
 		boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection)
 {
 	// Return early if nothing to render.
@@ -852,11 +852,12 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::paint_filled_polygons(
 
 
 void
-GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_point_line_polygon_program_state(
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_point_line_polygon_state(
 		GPlatesOpenGL::GL &gl,
 		GPlatesOpenGL::GLProgram::shared_ptr_type render_point_line_polygon_program,
 		GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 		const GPlatesOpenGL::GLViewProjection &view_projection,
+		boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_view_horizon_plane,
 		boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection)
 {
 	// Bind the shader program.
@@ -868,6 +869,22 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_point_line_polygon_prog
 	glUniformMatrix4fv(
 			render_point_line_polygon_program->get_uniform_location("view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
+
+	if (globe_view_horizon_plane)
+	{
+		// Only draw front or rear of visible globe using a clip plane (in world space).
+		//
+		// This ensures the correct draw order of geometries on the surface of the globe since depth writes
+		// are turned off. For example, if the globe is semi-transparent (due to a visible 3D scalar field)
+		// then the rear of globe is rendered in a first pass, followed by the scalar field inside the globe
+		// in a second pass and finally the front of the globe in a third pass.
+		gl.Enable(GL_CLIP_DISTANCE0);
+		GLfloat globe_horizon_float_plane[4];
+		globe_view_horizon_plane->get_float_plane(globe_horizon_float_plane);
+		glUniform4fv(
+				render_point_line_polygon_program->get_uniform_location("globe_view_horizon_plane"),
+				1, globe_horizon_float_plane);
+	}
 
 	// Set the star colour (it never changes).
 	glUniform1i(
@@ -922,10 +939,11 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_point_line_polygon_prog
 
 
 void
-GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_axially_symmetric_mesh_program_state(
+GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_axially_symmetric_mesh_state(
 		GPlatesOpenGL::GL &gl,
 		GPlatesOpenGL::GLProgram::shared_ptr_type render_axially_symmetric_mesh_program,
 		GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
+		boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_view_horizon_plane,
 		const GPlatesOpenGL::GLViewProjection &view_projection)
 {
 	// Bind the shader program.
@@ -937,6 +955,22 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_axially_symmetric_mesh_
 	glUniformMatrix4fv(
 			render_axially_symmetric_mesh_program->get_uniform_location("view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
+
+	if (globe_view_horizon_plane)
+	{
+		// Only draw front or rear of visible globe using a clip plane (in world space).
+		//
+		// This ensures the correct draw order of geometries on the surface of the globe since depth writes
+		// are turned off. For example, if the globe is semi-transparent (due to a visible 3D scalar field)
+		// then the rear of globe is rendered in a first pass, followed by the scalar field inside the globe
+		// in a second pass and finally the front of the globe in a third pass.
+		gl.Enable(GL_CLIP_DISTANCE0);
+		GLfloat globe_horizon_float_plane[4];
+		globe_view_horizon_plane->get_float_plane(globe_horizon_float_plane);
+		glUniform4fv(
+				render_axially_symmetric_mesh_program->get_uniform_location("globe_view_horizon_plane"),
+				1, globe_horizon_float_plane);
+	}
 
 	// Get the OpenGL light if the runtime system supports it.
 	boost::optional<GPlatesOpenGL::GLLight::non_null_ptr_type> gl_light = gl_visual_layers.get_light(gl);

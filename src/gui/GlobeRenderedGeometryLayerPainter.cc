@@ -129,6 +129,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter
 		const double &inverse_viewport_zoom_factor,
 		const GlobeVisibilityTester &visibility_tester,
 		PaintRegionType paint_region,
+		boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_horizon_plane,
 		boost::optional<Colour> vector_geometries_override_colour,
 		bool improve_performance_reduce_quality_hint) :
 	d_rendered_geometry_layer(rendered_geometry_layer),
@@ -136,6 +137,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter
 	d_visibility_tester(visibility_tester),
 	d_scale(1.0f),
 	d_paint_region(paint_region),
+	d_globe_horizon_plane(globe_horizon_plane),
 	d_vector_geometries_override_colour(vector_geometries_override_colour),
 	d_improve_performance_reduce_quality_hint(improve_performance_reduce_quality_hint)
 {
@@ -170,7 +172,8 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint(
 	visit_rendered_geometries(gl);
 
 	// Do the actual painting.
-	const cache_handle_type layer_cache = layer_painter.end_painting(gl, view_projection, d_scale);
+	const cache_handle_type layer_cache =
+			layer_painter.end_painting(gl, view_projection, d_scale, d_globe_horizon_plane);
 
 	// We no longer have a layer painter.
 	d_layer_painter = boost::none;
