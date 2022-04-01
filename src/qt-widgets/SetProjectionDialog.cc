@@ -27,7 +27,6 @@
 #include "SetProjectionDialog.h"
 
 #include "MapCanvas.h"
-#include "MapView.h"
 #include "ReconstructionViewWidget.h"
 #include "QtWidgetUtils.h"
 

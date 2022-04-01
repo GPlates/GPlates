@@ -28,7 +28,8 @@
 #ifndef GPLATES_QTWIDGETS_SCENEVIEW_H
 #define GPLATES_QTWIDGETS_SCENEVIEW_H
 
-#include "boost/optional.hpp"
+#include <boost/optional.hpp>
+#include <boost/noncopyable.hpp>
 #include <QImage>
 #include <QSize>
 
@@ -46,10 +47,11 @@ namespace GPlatesQtWidgets
 {
 
 	/**
-	 * Base class of GlobeCanvas and MapView.
+	 * Base class of GlobeCanvas and MapCanvas.
 	 */
 	class SceneView :
-			public GPlatesViewOperations::QueryProximityThreshold
+			public GPlatesViewOperations::QueryProximityThreshold,
+			private boost::noncopyable
 	{
 
 	public:
@@ -61,10 +63,16 @@ namespace GPlatesQtWidgets
 		~SceneView()
 			{};
 
+
 		virtual
 		void
 		set_camera_viewpoint(
-			const GPlatesMaths::LatLonPoint &llp) = 0;
+			const GPlatesMaths::LatLonPoint &camera_viewpoint) = 0;
+
+		virtual
+		boost::optional<GPlatesMaths::LatLonPoint>
+		get_camera_viewpoint() const = 0;
+
 
 		// FIXME should this be pure virtual? 
 		virtual
@@ -72,15 +80,12 @@ namespace GPlatesQtWidgets
 		set_orientation(
 			const GPlatesMaths::Rotation &rotation
 			/*bool should_emit_external_signal = true */)
-		{ };
+		{ }
 
 		virtual
 		boost::optional<GPlatesMaths::Rotation>
-		orientation() const = 0;
+		get_orientation() const = 0;
 
-		virtual
-		boost::optional<GPlatesMaths::LatLonPoint>
-		camera_llp() const = 0;
 
 		/**
 		 * Returns the dimensions of the viewport in device *independent* pixels (ie, widget size).
@@ -130,9 +135,11 @@ namespace GPlatesQtWidgets
 		render_opengl_feedback_to_paint_device(
 				QPaintDevice &feedback_paint_device) = 0;
 
+
 		virtual
 		void
 		update_canvas() = 0;
+
 
 		virtual
 		void
@@ -161,16 +168,6 @@ namespace GPlatesQtWidgets
 		virtual
 		void
 		reset_camera_orientation() = 0;
-
-	private:
-		// Make copy and assignment private to prevent copying/assignment
-		SceneView(
-			const SceneView &other);
-
-		SceneView &
-		operator=(
-			const SceneView &other);
-
 	};
 
 }

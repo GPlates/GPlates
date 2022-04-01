@@ -27,7 +27,7 @@
 #include "canvas-tools/SelectHellingerGeometries.h"
 #include "presentation/ViewState.h"
 #include "qt-widgets/GlobeCanvas.h"
-#include "qt-widgets/MapView.h"
+#include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 #include "view-operations/RenderedGeometryCollection.h"
 
@@ -53,7 +53,7 @@ GPlatesGui::HellingerCanvasToolWorkflow::HellingerCanvasToolWorkflow(
 		GPlatesQtWidgets::ViewportWindow &viewport_window) :
 	CanvasToolWorkflow(
 			viewport_window.globe_canvas(),
-			viewport_window.map_view(),
+			viewport_window.map_canvas(),
 			CanvasToolWorkflows::WORKFLOW_HELLINGER,
 			// The tool to start off with...
 			CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES),
@@ -91,15 +91,13 @@ GPlatesGui::HellingerCanvasToolWorkflow::create_canvas_tools(
 	d_globe_select_hellinger_geometries_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					select_hellinger_geometries_tool,
-					viewport_window.globe_canvas().globe(),
 					viewport_window.globe_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_select_hellinger_geometries_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					select_hellinger_geometries_tool,
-					viewport_window.map_view().map_canvas(),
-					viewport_window.map_view(),
+					viewport_window.map_canvas(),
 					view_state.get_map_transform()));
 
 
@@ -118,15 +116,13 @@ GPlatesGui::HellingerCanvasToolWorkflow::create_canvas_tools(
 	d_globe_adjust_pole_estimate_tool.reset(
 				new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					adjust_pole_estimate_tool,
-					viewport_window.globe_canvas().globe(),
 					viewport_window.globe_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_adjust_pole_estimate_tool.reset(
 				new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					adjust_pole_estimate_tool,
-					viewport_window.map_view().map_canvas(),
-					viewport_window.map_view(),
+					viewport_window.map_canvas(),
 					view_state.get_map_transform()));
 
 }

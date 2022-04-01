@@ -542,7 +542,7 @@ GPlatesGui::ExternalSyncController::get_time()
 boost::optional<GPlatesMaths::LatLonPoint>
 GPlatesGui::ExternalSyncController::get_projection_centre()
 {
-    return d_reconstruction_view_widget_ptr->active_view().camera_llp();
+    return d_reconstruction_view_widget_ptr->active_view().get_camera_viewpoint();
 }
 
 double
@@ -554,7 +554,7 @@ GPlatesGui::ExternalSyncController::get_zoom()
 boost::optional<GPlatesMaths::Rotation>
 GPlatesGui::ExternalSyncController::get_orientation()
 {
-	return d_reconstruction_view_widget_ptr->active_view().orientation();
+	return d_reconstruction_view_widget_ptr->active_view().get_orientation();
 }
 
 void

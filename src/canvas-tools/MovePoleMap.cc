@@ -28,17 +28,15 @@
 #include "presentation/ViewState.h"
 
 #include "qt-widgets/MapCanvas.h"
-#include "qt-widgets/MapView.h"
 #include "qt-widgets/ViewportWindow.h"
 
 
 GPlatesCanvasTools::MovePoleMap::MovePoleMap(
 		const GPlatesViewOperations::MovePoleOperation::non_null_ptr_type &move_pole_operation,
 		GPlatesQtWidgets::MapCanvas &map_canvas_,
-		GPlatesQtWidgets::MapView &map_view_,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		GPlatesPresentation::ViewState &view_state_) :
-	MapCanvasTool(map_canvas_, map_view_, view_state_.get_map_transform()),
+	MapCanvasTool(map_canvas_, view_state_.get_map_transform()),
 	d_viewport_window_ptr(&viewport_window_),
 	d_move_pole_operation(move_pole_operation),
 	d_is_in_drag(false)
@@ -49,7 +47,7 @@ GPlatesCanvasTools::MovePoleMap::MovePoleMap(
 void
 GPlatesCanvasTools::MovePoleMap::handle_activation()
 {
-	if (map_view().isVisible())
+	if (map_canvas().isVisible())
 	{
 		// Activate our MovePoleOperation.
 		d_move_pole_operation->activate();
@@ -63,7 +61,7 @@ GPlatesCanvasTools::MovePoleMap::handle_activation()
 void
 GPlatesCanvasTools::MovePoleMap::handle_deactivation()
 {
-	if (map_view().isVisible())
+	if (map_canvas().isVisible())
 	{
 		// Deactivate our MovePoleOperation.
 		d_move_pole_operation->deactivate();
@@ -79,7 +77,7 @@ GPlatesCanvasTools::MovePoleMap::handle_left_drag(
 		bool is_on_surface,
 		const QPointF &translation)
 {
-	if (!map_view().isVisible())
+	if (!map_canvas().isVisible())
 	{
 		return;
 	}
@@ -128,7 +126,7 @@ GPlatesCanvasTools::MovePoleMap::handle_left_release_after_drag(
 		bool is_on_surface,
 		const QPointF &translation)
 {
-	if (!map_view().isVisible())
+	if (!map_canvas().isVisible())
 	{
 		return;
 	}
@@ -179,7 +177,7 @@ GPlatesCanvasTools::MovePoleMap::handle_move_without_drag(
 		bool is_on_surface,
 		const QPointF &translation)
 {
-	if (!map_view().isVisible())
+	if (!map_canvas().isVisible())
 	{
 		return;
 	}

@@ -53,7 +53,6 @@ namespace GPlatesCanvasTools
 		explicit
 		MovePoleGlobe(
 				const GPlatesViewOperations::MovePoleOperation::non_null_ptr_type &move_pole_operation,
-				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_);
 

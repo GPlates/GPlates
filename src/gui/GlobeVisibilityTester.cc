@@ -34,7 +34,7 @@ GPlatesGui::GlobeVisibilityTester::is_point_visible(
 		const GPlatesMaths::PointOnSphere &point_on_sphere)
 {
 	GPlatesMaths::PointOnSphere camera_pos = GPlatesMaths::make_point_on_sphere(
-			*(d_globe_canvas_ptr->camera_llp()));
+			*d_globe_canvas_ptr->get_camera_viewpoint());
 	return calculate_closeness(point_on_sphere, camera_pos) >= 0.0;
 }
 

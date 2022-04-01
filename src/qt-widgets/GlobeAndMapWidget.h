@@ -66,7 +66,6 @@ namespace GPlatesQtWidgets
 {
 	class GlobeCanvas;
 	class MapCanvas;
-	class MapView;
 	class SceneView;
 
 	/**
@@ -94,11 +93,11 @@ namespace GPlatesQtWidgets
 		const GlobeCanvas &
 		get_globe_canvas() const;
 		
-		MapView &
-		get_map_view();
+		MapCanvas &
+		get_map_canvas();
 
-		const MapView &
-		get_map_view() const;
+		const MapCanvas &
+		get_map_canvas() const;
 
 		SceneView &
 		get_active_view();
@@ -113,7 +112,7 @@ namespace GPlatesQtWidgets
 		is_map_active() const;
 
 		boost::optional<GPlatesMaths::LatLonPoint>
-		get_camera_llp() const;
+		get_camera_viewpoint() const;
 
 		virtual
 		QSize
@@ -145,7 +144,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * Returns the OpenGL context for the active view.
 		 *
-		 * Since both the globe and map views use OpenGL this returns whichever is currently active.
+		 * Since both the globe and map canvases use OpenGL this returns whichever is currently active.
 		 * Note that you should still call "GLContext::make_current()" before using the context
 		 * to ensure it is the currently active OpenGL context.
 		 */
@@ -241,7 +240,7 @@ namespace GPlatesQtWidgets
 		GPlatesPresentation::ViewState &d_view_state;
 
 		boost::scoped_ptr<GlobeCanvas> d_globe_canvas_ptr;
-		boost::scoped_ptr<MapView> d_map_view_ptr; // NOTE: Must be declared *after* d_globe_canvas_ptr.
+		boost::scoped_ptr<MapCanvas> d_map_canvas_ptr; // NOTE: Must be declared *after* d_globe_canvas_ptr.
 		QStackedLayout *d_layout;
 
 		/**
@@ -254,7 +253,7 @@ namespace GPlatesQtWidgets
 		 *
 		 * Is boost::none if unable to retrieve the camera position from the currently active view.
 		 */
-		boost::optional<GPlatesMaths::LatLonPoint> d_active_camera_llp;
+		boost::optional<GPlatesMaths::LatLonPoint> d_active_camera_viewpoint;
 
 		/**
 		 * Whether zooming (via mouse wheel or pinch gesture) is enabled.

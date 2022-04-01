@@ -36,7 +36,6 @@
 #include "MapGrid.h"
 #include "MapProjection.h"
 #include "MapRenderedGeometryCollectionPainter.h"
-#include "ViewportZoom.h"
 
 #include "opengl/GLVisualLayers.h"
 
@@ -55,7 +54,7 @@ namespace GPlatesOpenGL
 namespace GPlatesGui
 {
 	/**
-	 * Holds the state for MapCanvas/MapView (analogous to the Globe class).
+	 * Holds the state for MapCanvas (analogous to the Globe class for GlobeCanvas).
 	 */
 	class Map
 	{
@@ -71,7 +70,6 @@ namespace GPlatesGui
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesPresentation::VisualLayers &visual_layers,
-				ViewportZoom &viewport_zoom,
 				int device_pixel_ratio);
 
 		/**
@@ -131,9 +129,6 @@ namespace GPlatesGui
 		GPlatesViewOperations::RenderedGeometryCollection *d_rendered_geometry_collection;
 
 		const GPlatesPresentation::VisualLayers &d_visual_layers;
-
-		//! For zoom-dependent rendered objects.                                                                     
-		GPlatesGui::ViewportZoom &d_viewport_zoom;		
 
 		/**
 		 * The coloured map background (behind the grid and rendered geometry data).

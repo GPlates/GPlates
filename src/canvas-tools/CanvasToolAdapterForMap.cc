@@ -31,17 +31,14 @@
 #include "gui/MapTransform.h"
 
 #include "qt-widgets/MapCanvas.h"
-#include "qt-widgets/MapView.h"
 
 
 GPlatesCanvasTools::CanvasToolAdapterForMap::CanvasToolAdapterForMap(
 		const CanvasTool::non_null_ptr_type &canvas_tool_ptr,
 		GPlatesQtWidgets::MapCanvas &map_canvas_,
-		GPlatesQtWidgets::MapView &map_view_,
 		GPlatesGui::MapTransform &map_transform_) :
 	MapCanvasTool(
 			map_canvas_,
-			map_view_,
 			map_transform_),
 	d_canvas_tool_ptr(canvas_tool_ptr)
 {  }
@@ -50,7 +47,7 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::CanvasToolAdapterForMap(
 void
 GPlatesCanvasTools::CanvasToolAdapterForMap::handle_activation()
 {
-	if (map_view().isVisible())
+	if (map_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_activation();
 	}
@@ -60,7 +57,7 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_activation()
 void
 GPlatesCanvasTools::CanvasToolAdapterForMap::handle_deactivation()
 {
-	if (map_view().isVisible()) // Avoid deactivating twice (in globe and map adaptor)
+	if (map_canvas().isVisible()) // Avoid deactivating twice (in globe and map adaptor)
 	{
 		d_canvas_tool_ptr->handle_deactivation();
 	}
@@ -73,7 +70,7 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::invoke_canvas_tool_func(
 		bool is_on_surface,
 		const canvas_tool_click_func &func)
 {
-	if (!map_view().isVisible())
+	if (!map_canvas().isVisible())
 	{
 		return;
 	}
@@ -97,7 +94,7 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::invoke_canvas_tool_func(
 	((d_canvas_tool_ptr.get())->*func)(
 			*point_on_sphere,
 			is_on_surface,
-			map_view().current_proximity_inclusion_threshold(
+			map_canvas().current_proximity_inclusion_threshold(
 				*point_on_sphere));
 }
 
@@ -109,7 +106,7 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::invoke_canvas_tool_func(
 		bool is_on_surface,
 		const canvas_tool_drag_func_without_default &func)
 {
-	if ( ! map_view().isVisible())
+	if ( ! map_canvas().isVisible())
 	{
 		return;
 	}
@@ -139,11 +136,11 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::invoke_canvas_tool_func(
 	((d_canvas_tool_ptr.get())->*func)(
 			*initial_point_on_sphere,
 			was_on_surface,
-			map_view().current_proximity_inclusion_threshold(
+			map_canvas().current_proximity_inclusion_threshold(
 				*initial_point_on_sphere),
 			*current_point_on_sphere,
 			is_on_surface,
-			map_view().current_proximity_inclusion_threshold(
+			map_canvas().current_proximity_inclusion_threshold(
 				*current_point_on_sphere),
 			qpointf_to_point_on_sphere(map_transform().get_centre_of_viewport(), projection));
 }
@@ -157,7 +154,7 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::invoke_canvas_tool_func(
 		bool is_on_surface,
 		const canvas_tool_drag_func_with_default &func)
 {
-	if ( ! map_view().isVisible())
+	if ( ! map_canvas().isVisible())
 	{
 		return false;
 	}
@@ -187,11 +184,11 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::invoke_canvas_tool_func(
 	return ((d_canvas_tool_ptr.get())->*func)(
 			*initial_point_on_sphere,
 			was_on_surface,
-			map_view().current_proximity_inclusion_threshold(
+			map_canvas().current_proximity_inclusion_threshold(
 				*initial_point_on_sphere),
 			*current_point_on_sphere,
 			is_on_surface,
-			map_view().current_proximity_inclusion_threshold(
+			map_canvas().current_proximity_inclusion_threshold(
 				*current_point_on_sphere),
 			qpointf_to_point_on_sphere(map_transform().get_centre_of_viewport(), projection));
 }

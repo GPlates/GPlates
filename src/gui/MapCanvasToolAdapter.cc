@@ -34,12 +34,12 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-#include "qt-widgets/MapView.h"
+#include "qt-widgets/MapCanvas.h"
 
 
 GPlatesGui::MapCanvasToolAdapter::MapCanvasToolAdapter(
-		GPlatesQtWidgets::MapView &map_view) :
-	d_map_view(map_view)
+		GPlatesQtWidgets::MapCanvas &map_canvas) :
+	d_map_canvas(map_canvas)
 {
 }
 
@@ -51,7 +51,7 @@ GPlatesGui::MapCanvasToolAdapter::activate_canvas_tool(
 	// Make sure we don't have multiple connections if we already have an active canvas tool (and hence connection).
 	if (!d_active_map_canvas_tool)
 	{
-		connect_to_map_view();
+		connect_to_map_canvas();
 	}
 
 	d_active_map_canvas_tool = map_canvas_tool;
@@ -62,7 +62,7 @@ void
 GPlatesGui::MapCanvasToolAdapter::deactivate_canvas_tool()
 {
 	d_active_map_canvas_tool = boost::none;
-	disconnect_from_map_view();
+	disconnect_from_map_canvas();
 }
 
 
@@ -272,10 +272,10 @@ GPlatesGui::MapCanvasToolAdapter::handle_move_without_drag(
 
 
 void
-GPlatesGui::MapCanvasToolAdapter::connect_to_map_view()
+GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 {
 	QObject::connect(
-			&d_map_view,
+			&d_map_canvas,
 			SIGNAL(mouse_pressed(
 					const QPointF &,
 					bool,
@@ -289,7 +289,7 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_view()
 					Qt::KeyboardModifiers)));
 
 	QObject::connect(
-			&d_map_view,
+			&d_map_canvas,
 			SIGNAL(mouse_clicked(
 					const QPointF &,
 					bool,
@@ -303,7 +303,7 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_view()
 					Qt::KeyboardModifiers)));
 
 	QObject::connect(
-			&d_map_view,
+			&d_map_canvas,
 			SIGNAL(mouse_dragged(
 					const QPointF &,
 					bool,
@@ -323,7 +323,7 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_view()
 					const QPointF &)));
 
 	QObject::connect(
-			&d_map_view,
+			&d_map_canvas,
 			SIGNAL(mouse_released_after_drag(
 					const QPointF &,
 					bool,
@@ -344,7 +344,7 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_view()
 
 
 	QObject::connect(
-			&d_map_view,
+			&d_map_canvas,
 			SIGNAL(mouse_moved_without_drag(
 					const QPointF &,
 					bool,
@@ -358,10 +358,10 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_view()
 
 
 void
-GPlatesGui::MapCanvasToolAdapter::disconnect_from_map_view()
+GPlatesGui::MapCanvasToolAdapter::disconnect_from_map_canvas()
 {
 	// Disconnect all signals connected to us.
-	QObject::disconnect(&d_map_view, 0, this, 0);
+	QObject::disconnect(&d_map_canvas, 0, this, 0);
 }
 
 

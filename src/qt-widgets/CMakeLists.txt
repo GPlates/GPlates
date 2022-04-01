@@ -379,8 +379,6 @@ set(srcs
     ManageFeatureCollectionsEditConfigurations.h
     MapCanvas.cc
     MapCanvas.h
-    MapView.cc
-    MapView.h
     MeasureDistanceWidget.cc
     MeasureDistanceWidget.h
     MeasureDistanceWidgetUi.ui

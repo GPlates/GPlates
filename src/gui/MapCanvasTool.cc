@@ -33,7 +33,7 @@
 #include "maths/MathsUtils.h"
 #include "maths/types.h"
 
-#include "qt-widgets/MapView.h"
+#include "qt-widgets/MapCanvas.h"
 
 
 namespace
@@ -112,7 +112,7 @@ GPlatesGui::MapCanvasTool::rotate_map_by_drag(
 		bool is_on_surface,
 		const QPointF &translation)
 {
-	QPointF centre = map_view().mapToScene(map_view().viewport()->rect().center());
+	QPointF centre = map_canvas().mapToScene(map_canvas().viewport()->rect().center());
 
 	QPointF current_vector = current_point_on_scene - centre;
 	QPointF previous_vector = current_vector - translation;

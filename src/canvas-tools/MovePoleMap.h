@@ -59,7 +59,6 @@ namespace GPlatesCanvasTools
 		MovePoleMap(
 				const GPlatesViewOperations::MovePoleOperation::non_null_ptr_type &move_pole_operation,
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
-				GPlatesQtWidgets::MapView &map_view_,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_,
 				GPlatesPresentation::ViewState &view_state_);
 

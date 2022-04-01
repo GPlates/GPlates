@@ -56,6 +56,7 @@
 #include "gui/GlobeVisibilityTester.h"
 #include "gui/TextOverlay.h"
 #include "gui/VelocityLegendOverlay.h"
+#include "gui/ViewportZoom.h"
 
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
@@ -73,6 +74,7 @@
 #include "opengl/GLIntersectPrimitives.h"
 #include "opengl/GLTileRender.h"
 #include "opengl/OpenGLException.h"
+#include "opengl/GLViewport.h"
 
 #include "presentation/ViewState.h"
 
@@ -334,7 +336,7 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	// NOTE: Also there's a problem where QPainter (used in 'paintGL()') uses the background role
 	// of the canvas widget to fill the background using glClearColor/glClear - but the clear colour
 	// does not get reset to black (default OpenGL state) in 'QPainter::beginNativePainting()' which
-	// GLRenderer requires (the default OpenGL state) and hence it assumes the clear colour is black
+	// GL requires (the default OpenGL state) and hence it assumes the clear colour is black
 	// when it is not - and hence the background (behind the globe) is *not* black.
 	setAutoFillBackground(false);
 
@@ -612,10 +614,6 @@ GPlatesQtWidgets::GlobeCanvas::resizeGL(
 void 
 GPlatesQtWidgets::GlobeCanvas::paintGL() 
 {
-// This paintGL method should be enabled, and the paintEvent() method disabled, when we wish to draw *without* overpainting
-//	(  http://doc.trolltech.com/4.3/opengl-overpainting.html )
-//
-
 	// Start a render scope (all GL calls should be done inside this scope).
 	//
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
@@ -628,7 +626,8 @@ GPlatesQtWidgets::GlobeCanvas::paintGL()
 			d_view_projection,
 			// Using device-independent pixels (eg, widget dimensions)...
 			width(),
-			height());}
+			height());
+}
 
 
 QSize
@@ -958,9 +957,6 @@ void
 GPlatesQtWidgets::GlobeCanvas::paintEvent(
 		QPaintEvent *paint_event)
 {
-// This paintEvent() method should be enabled, and the paintGL method disabled, when we wish to use Qt overpainting
-//  ( http://doc.trolltech.com/4.3/opengl-overpainting.html )
-
 	QGLWidget::paintEvent(paint_event);
 
 	// Explicitly swap the OpenGL front and back buffers.
@@ -1219,93 +1215,16 @@ GPlatesQtWidgets::GlobeCanvas::update_mouse_pointer_pos(
 	handle_mouse_pointer_pos_change();
 }
 
-
-#if 0
-void
-GPlatesQtWidgets::GlobeCanvas::draw_colour_legend(
-	QPainter *painter,
-	GPlatesGui::Texture &texture)
-{
-	if (!(texture.is_enabled() && texture.corresponds_to_data())){
-		return;
-	}
-
-	// The position of the bottom-right of the colour legend w.r.t the bottom right of the window.  
-	QPoint margin(30,30);
-
-	// The size of the colour legend background box.
-	QSize box(80,220);
-
-	// The size of the colour bar. 
-	QSize bar(20,200);
-
-	// The offset of the colour bar w.r.t. the colour legend background box. 
-	QPoint bar_margin(5,
-			static_cast<int>((box.height()-bar.height())/2.0));
-
-
-	// The background box.
-	QRect box_rect(width()- margin.x() - box.width(),
-					height() - margin.y() - box.height(),
-					box.width(),
-					box.height());
-			
-	// The colour bar box.
-	QRect bar_rect(box_rect.topLeft()+bar_margin,
-					bar);
-
-
-	// Draw the gray background box. 
-	painter->setBrush(Qt::gray);
-	painter->drawRect(box_rect);
-
-	QLinearGradient gradient(
-					bar_rect.left() + bar_rect.width()/2,
-					bar_rect.top(),
-					bar_rect.left() + bar_rect.width()/2,
-					bar_rect.bottom());
-
-	gradient.setColorAt(0,Qt::blue);
-	gradient.setColorAt(0.25,Qt::cyan);
-	gradient.setColorAt(0.5,Qt::green);
-	gradient.setColorAt(0.75,Qt::yellow);
-	gradient.setColorAt(1.0,Qt::red);
-
-	// Draw the colour bar. 
-	painter->setBrush(gradient);
-	painter->drawRect(bar_rect);
-
-	// Add text at the bottom, middle, and top of the colour bar. 
-	QString min_string,max_string,med_string;
-	float min = texture.get_min();
-	float max = texture.get_max();
-	float med = (max + min)/2.;
-
-	QLocale locale_;
-	min_string = locale_.toString(min,'g',4);
-	med_string = locale_.toString(med,'g',4);
-	max_string = locale_.toString(max,'g',4);
-
-	painter->setPen(Qt::black);
-	painter->drawText(bar_rect.right()+5, bar_rect.bottom()+2, min_string);
-	painter->drawText(bar_rect.right()+5,
-			static_cast<int>((bar_rect.bottom()+bar_rect.top())/2.0+2),
-			med_string);
-	painter->drawText(bar_rect.right()+5, bar_rect.top()+2, max_string);
-
-}
-#endif
-
 void
 GPlatesQtWidgets::GlobeCanvas::set_camera_viewpoint(
-		const GPlatesMaths::LatLonPoint &desired_centre)
+		const GPlatesMaths::LatLonPoint &camera_viewpoint)
 {
 	d_globe_camera.move_look_at_position(
-			GPlatesMaths::make_point_on_sphere(desired_centre));
+			GPlatesMaths::make_point_on_sphere(camera_viewpoint));
 }
 
 boost::optional<GPlatesMaths::LatLonPoint>
-GPlatesQtWidgets::GlobeCanvas::camera_llp() const
+GPlatesQtWidgets::GlobeCanvas::get_camera_viewpoint() const
 {
 	// This function returns a boost::optional for consistency with the base class virtual function.
 	// The globe always returns a valid camera llp though.
@@ -1438,7 +1357,7 @@ GPlatesQtWidgets::GlobeCanvas::set_orientation(
 }
 
 boost::optional<GPlatesMaths::Rotation>
-GPlatesQtWidgets::GlobeCanvas::orientation() const
+GPlatesQtWidgets::GlobeCanvas::get_orientation() const
 {
 	return d_globe_camera.get_globe_orientation_relative_to_view();
 }

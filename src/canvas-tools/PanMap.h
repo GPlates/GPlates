@@ -38,7 +38,6 @@ namespace GPlatesGui
 namespace GPlatesQtWidgets
 {
 	class MapCanvas;
-	class MapView;
 	class ViewportWindow;
 }
 
@@ -63,11 +62,10 @@ namespace GPlatesCanvasTools
 		explicit
 		PanMap(
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
-				GPlatesQtWidgets::MapView &map_view_,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesQtWidgets::ViewportWindow &view_state_,
 				GPlatesGui::MapTransform &map_transform_):
-			MapCanvasTool(map_canvas_, map_view_, map_transform_),
+			MapCanvasTool(map_canvas_, map_transform_),
 			d_rendered_geometry_collection(rendered_geometry_collection),
 			d_view_state_ptr(&view_state_)
 		{  }

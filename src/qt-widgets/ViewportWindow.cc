@@ -71,7 +71,7 @@
 #include "GlobeAndMapWidget.h"
 #include "ImportRasterDialog.h"
 #include "ImportScalarField3DDialog.h"
-#include "MapView.h"
+#include "MapCanvas.h"
 #include "PythonConsoleDialog.h"
 #include "QtWidgetUtils.h"
 #include "ReadErrorAccumulationDialog.h"
@@ -951,17 +951,17 @@ GPlatesQtWidgets::ViewportWindow::globe_canvas() const
 }
 
 
-GPlatesQtWidgets::MapView &
-GPlatesQtWidgets::ViewportWindow::map_view()
+GPlatesQtWidgets::MapCanvas &
+GPlatesQtWidgets::ViewportWindow::map_canvas()
 {
-	return d_reconstruction_view_widget_ptr->map_view();
+	return d_reconstruction_view_widget_ptr->map_canvas();
 }
 
 
-const GPlatesQtWidgets::MapView &
-GPlatesQtWidgets::ViewportWindow::map_view() const
+const GPlatesQtWidgets::MapCanvas &
+GPlatesQtWidgets::ViewportWindow::map_canvas() const
 {
-	return d_reconstruction_view_widget_ptr->map_view();
+	return d_reconstruction_view_widget_ptr->map_canvas();
 }
 
 

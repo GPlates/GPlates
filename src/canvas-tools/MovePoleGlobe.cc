@@ -35,10 +35,9 @@
 
 GPlatesCanvasTools::MovePoleGlobe::MovePoleGlobe(
 		const GPlatesViewOperations::MovePoleOperation::non_null_ptr_type &move_pole_operation,
-		GPlatesGui::Globe &globe_,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_) :
-	GlobeCanvasTool(globe_, globe_canvas_, viewport_window_.get_view_state().get_globe_view_operation()),
+	GlobeCanvasTool(globe_canvas_, viewport_window_.get_view_state().get_globe_view_operation()),
 	d_viewport_window(&viewport_window_),
 	d_move_pole_operation(move_pole_operation),
 	d_is_in_drag(false)

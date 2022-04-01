@@ -27,6 +27,8 @@
 
 #include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
 
+#include <cmath>
+#include <iostream>
 #include <QApplication>
 #include <QDebug>
 #include <QGLWidget>
@@ -35,19 +37,20 @@
 #include <QPaintEngine>
 #include <QPainter>
 
+#include "GlobeCanvas.h"
 #include "MapCanvas.h"
-#include "MapView.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/GPlatesException.h"
-#include "global/PreconditionViolationError.h"
 
 #include "gui/Map.h"
 #include "gui/MapProjection.h"
 #include "gui/MapTransform.h"
+#include "gui/ProjectionException.h"
 #include "gui/TextOverlay.h"
 #include "gui/VelocityLegendOverlay.h"
+#include "gui/ViewportZoom.h"
 
 #include "opengl/GL.h"
 #include "opengl/GLContext.h"
@@ -67,103 +70,240 @@ namespace GPlatesQtWidgets
 {
 	namespace
 	{
-		/**
-		 * Gets the equivalent OpenGL model-view matrix from the 2D world transform.
-		 */
-		void
-		get_model_view_matrix_from_2D_world_transform(
-				GPlatesOpenGL::GLMatrix &model_view_matrix,
-				const QTransform &world_transform)
+		double
+		distance_between_qpointfs(
+				const QPointF& p1,
+				const QPointF& p2)
 		{
-			const GLdouble model_view_matrix_array[16] =
-			{
-				world_transform.m11(), world_transform.m12(),        0, world_transform.m13(),
-				world_transform.m21(), world_transform.m22(),        0, world_transform.m23(),
-				                    0,                     0,        1,                     0,
-				 world_transform.dx(),  world_transform.dy(),        0, world_transform.m33()
-			};
-			model_view_matrix.gl_load_matrix(model_view_matrix_array);
-		}
+			QPointF difference = p1 - p2;
 
-
-		/**
-		 * Gets the orthographic OpenGL projection matrix from the specified dimensions.
-		 */
-		GPlatesOpenGL::GLMatrix
-		get_ortho_projection_matrix_from_dimensions(
-				int scene_width,
-				int scene_height)
-		{
-			GPlatesOpenGL::GLMatrix projection_matrix_scene;
-
-			// NOTE: Use bottom=height instead of top=height inverts the y-axis which
-			// converts from Qt coordinate system to OpenGL coordinate system.
-			projection_matrix_scene.gl_ortho(0, scene_width, scene_height, 0, -999999, 999999);
-
-			return projection_matrix_scene;
+			return sqrt(difference.x()*difference.x() + difference.y()*difference.y());
 		}
 	}
 }
 
 
+// Public constructor
 GPlatesQtWidgets::MapCanvas::MapCanvas(
 		GPlatesPresentation::ViewState &view_state,
-		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-		MapView *map_view_ptr,
-		QGLWidget *gl_widget,
-		const GPlatesOpenGL::GLContext::non_null_ptr_type &gl_context,
-		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
-		GPlatesGui::ViewportZoom &viewport_zoom,
-		QWidget *parent_) :
-	QGraphicsScene(parent_),
+		GlobeCanvas &globe_canvas,
+		QWidget *parent_):
+	QGLWidget(
+			GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with(),
+			parent_,
+			// Share texture objects, vertex buffer objects, etc...
+			&globe_canvas),
 	d_view_state(view_state),
-	d_map_view_ptr(map_view_ptr),
-	d_gl_context(gl_context),
+	d_gl_context(
+			// Mirror the sharing of OpenGL context state (if sharing).
+			// Both GLWidgets should be sharing since they were created with the same QGLFormat...
+			globe_canvas.isSharing()
+			? GPlatesOpenGL::GLContext::create(
+					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
+							new GPlatesOpenGL::GLContextImpl::QGLWidgetImpl(*this)),
+					*globe_canvas.get_gl_context())
+			: GPlatesOpenGL::GLContext::create(
+					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
+							new GPlatesOpenGL::GLContextImpl::QGLWidgetImpl(*this)))),
 	d_make_context_current(*d_gl_context),
+	d_initialisedGL(false),
+	d_view_projection(
+			GPlatesOpenGL::GLViewport(0, 0, d_gl_context->get_width(), d_gl_context->get_height()),
+			// Use identity transforms for now, these will get updated when the camera changes...
+			GPlatesOpenGL::GLMatrix::IDENTITY,
+			GPlatesOpenGL::GLMatrix::IDENTITY),
 	d_off_screen_render_target_dimension(OFF_SCREEN_RENDER_TARGET_DIMENSION),
-	d_text_overlay(new GPlatesGui::TextOverlay(view_state.get_application_state())),
-	d_velocity_legend_overlay(new GPlatesGui::VelocityLegendOverlay()),
+	d_gl_visual_layers(
+			// Attempt to share OpenGL resources across contexts.
+			// This will depend on whether the two 'GLContext's share any state.
+			GPlatesOpenGL::GLVisualLayers::create(
+					d_gl_context,
+					globe_canvas.get_gl_visual_layers(),
+					view_state.get_application_state())),
 	d_map(
 			view_state,
-			gl_visual_layers,
-			rendered_geometry_collection,
+			d_gl_visual_layers,
+			view_state.get_rendered_geometry_collection(),
 			view_state.get_visual_layers(),
-			viewport_zoom,
-			gl_widget->devicePixelRatio()),
-	d_rendered_geometry_collection(&rendered_geometry_collection)
+			devicePixelRatio()),
+	d_map_camera(view_state.get_map_camera()),
+	d_text_overlay(new GPlatesGui::TextOverlay(view_state.get_application_state())),
+	d_velocity_legend_overlay(new GPlatesGui::VelocityLegendOverlay())
 {
-	// Do some OpenGL initialisation.
-	// Because of 'd_make_context_current' we know the OpenGL context is currently active.
-	initializeGL(gl_widget);
+	// Since we're using a QPainter inside 'paintEvent()' or more specifically 'paintGL()'
+	// (which is called from 'paintEvent()') then we turn off automatic swapping of the OpenGL
+	// front and back buffers after each 'paintGL()' call. This is because QPainter::end(),
+	// or QPainter's destructor, automatically calls QGLWidget::swapBuffers() if auto buffer swap
+	// is enabled - and this results in two calls to QGLWidget::swapBuffers() - one from QPainter
+	// and one from 'paintEvent()'. So we disable auto buffer swapping and explicitly call it ourself.
+	//
+	// Also we don't want to swap buffers when we're just rendering to a QImage (using OpenGL)
+	// and not rendering to the QGLWidget itself, otherwise the widget will have the wrong content.
+	setAutoBufferSwap(false);
 
-	// Give the scene a rectangle that's big enough to guarantee that the map view,
-	// even after rotations and translations, won't go outside these boundaries.
-	// (Note that the centre of the map, in scene coordinates, is constrained by
-	// the MapTransform class.)
-	static const int FACTOR = 3;
-	setSceneRect(QRect(
-				GPlatesGui::MapTransform::MIN_CENTRE_OF_VIEWPORT_X * FACTOR,
-				GPlatesGui::MapTransform::MIN_CENTRE_OF_VIEWPORT_Y * FACTOR,
-				(GPlatesGui::MapTransform::MAX_CENTRE_OF_VIEWPORT_X -
-				 GPlatesGui::MapTransform::MIN_CENTRE_OF_VIEWPORT_X) * FACTOR,
-				(GPlatesGui::MapTransform::MAX_CENTRE_OF_VIEWPORT_Y -
-				 GPlatesGui::MapTransform::MIN_CENTRE_OF_VIEWPORT_Y) * FACTOR));
+	// Don't fill the background - we already clear the background using OpenGL in 'render_scene()' anyway.
+	//
+	// NOTE: Also there's a problem where QPainter (used in 'paintGL()') uses the background role
+	// of the canvas widget to fill the background using glClearColor/glClear - but the clear colour
+	// does not get reset to black (default OpenGL state) in 'QPainter::beginNativePainting()' which
+	// GL requires (the default OpenGL state) and hence it assumes the clear colour is black
+	// when it is not - and hence the background (behind the globe) is *not* black.
+	setAutoFillBackground(false);
 
-	QObject::connect(d_rendered_geometry_collection,
-		SIGNAL(collection_was_updated(
-			GPlatesViewOperations::RenderedGeometryCollection &,
-			GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
-		this,
-		SLOT(update_canvas()));
+	// QWidget::setMouseTracking:
+	//   If mouse tracking is disabled (the default), the widget only receives mouse move
+	//   events when at least one mouse button is pressed while the mouse is being moved.
+	//
+	//   If mouse tracking is enabled, the widget receives mouse move events even if no buttons
+	//   are pressed.
+	//    -- http://doc.trolltech.com/4.3/qwidget.html#mouseTracking-prop
+	setMouseTracking(true);
+	
+	// Ensure the map will always expand to fill available space.
+	// A minumum size and non-collapsibility is set on the map basically so users
+	// can't obliterate it and then wonder (read:complain) where their map went.
+	QSizePolicy map_size_policy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	map_size_policy.setHorizontalStretch(255);
+	setSizePolicy(map_size_policy);
+	setFocusPolicy(Qt::StrongFocus);
+	setMinimumSize(100, 100);
+
+	// Update our canvas whenever the RenderedGeometryCollection gets updated.
+	// This will cause 'paintGL()' to be called which will visit the rendered
+	// geometry collection and redraw it.
+	QObject::connect(
+			&(d_view_state.get_rendered_geometry_collection()),
+			SIGNAL(collection_was_updated(
+					GPlatesViewOperations::RenderedGeometryCollection &,
+					GPlatesViewOperations::RenderedGeometryCollection::main_layers_update_type)),
+			this,
+			SLOT(update_canvas()));
+
+	// Update our view whenever the camera changes.
+	//
+	// Note that the camera is updated when the zoom changes.
+	QObject::connect(
+			&d_map_camera, SIGNAL(camera_changed()),
+			this, SLOT(handle_camera_change()));
+	QObject::connect(
+			&d_map_camera, SIGNAL(camera_changed()),
+			this, SLOT(force_mouse_pointer_pos_change()));
+
+	handle_camera_change();
+
+	setAttribute(Qt::WA_NoSystemBackground);
 }
+
 
 GPlatesQtWidgets::MapCanvas::~MapCanvas()
 {  }
 
 
+double
+GPlatesQtWidgets::MapCanvas::current_proximity_inclusion_threshold(
+		const GPlatesMaths::PointOnSphere &click_point) const
+{
+	// See the corresponding GlobeCanvas::current_proximity_inclusion_threshold function for a 
+	// justification, and explanation of calculation, of the proximity inclusion threshold. 
+	//
+	// On the map, the calculation is slightly different to that on the globe. 
+	//
+	// The ClickGeometry code, which will use the output of this function, requires a 
+	// "dot-product-related closeness inclusion threshold".
+	// 
+	// To evaluate this on the map:
+	// 1. Convert the click-point to llp, and to point-on-sphere.
+	// 2. Move 3 screen pixels towards the centre of the canvas. 
+	// 3. Convert this location to llp and point-on-sphere.
+	// 4. Calculate the cosine of the angle between the 2 point-on-spheres.
+
+	QPoint temp_screen_mouse_position = d_mouse_pointer_screen_pos + QPoint(3,0);
+	QPointF temp_scene_mouse_position = mapToScene(temp_screen_mouse_position);
+
+	QPointF scene_mouse_position = mapToScene(d_mouse_pointer_screen_pos);
+
+	double scene_proximity_distance = distance_between_qpointfs(scene_mouse_position,temp_scene_mouse_position);
+
+	double angle = atan2(scene_mouse_position.y(),scene_mouse_position.x());
+	double x_proximity = scene_proximity_distance * cos(angle);
+	double y_proximity = scene_proximity_distance * sin(angle);
+
+	QPointF threshold_point;
+	if (scene_mouse_position.x() > 0)
+	{
+		threshold_point.setX(scene_mouse_position.x() - x_proximity);
+	}
+	else
+	{	
+		threshold_point.setX(scene_mouse_position.x() + x_proximity);
+	}
+#if 1
+	if (scene_mouse_position.y() > 0)
+	{
+		threshold_point.setY(scene_mouse_position.y() - y_proximity);
+	}
+	else
+	{	
+		threshold_point.setY(scene_mouse_position.y() + y_proximity);
+	}
+#else
+	threshold_point.setY(scene_mouse_position.y());
+#endif
+	double x_ = threshold_point.x();
+	double y_ = threshold_point.y();
+
+	boost::optional<GPlatesMaths::LatLonPoint> llp =  map().projection().inverse_transform(x_, y_);
+
+	if (!llp)
+	{
+		return 0.;
+	}
+	
+	GPlatesMaths::PointOnSphere proximity_pos = GPlatesMaths::make_point_on_sphere(*llp);
+
+	double proximity_inclusion_threshold = GPlatesMaths::dot(
+			click_point.position_vector(),
+			proximity_pos.position_vector()).dval();
+
+#if 0
+	double origin_to_scene_distance = distance_between_qpointfs(scene_mouse_position,QPointF());
+	qDebug();
+	qDebug() << "temp screen: " << temp_screen_mouse_position;
+	qDebug() << "temp scene: " << temp_scene_mouse_position;
+	qDebug() << "scene: " << scene_mouse_position;
+	qDebug() << "scene prox distance: " << scene_proximity_distance;
+	qDebug() << "origin to scene: " << origin_to_scene_distance;
+	qDebug() << "Threshold point: " << threshold_point;
+	qDebug() << "result: " << proximity_inclusion_threshold;
+	qDebug(); 
+#endif
+
+	return proximity_inclusion_threshold;
+}
+
+
 void 
-GPlatesQtWidgets::MapCanvas::initializeGL(
-		QGLWidget *gl_widget) 
+GPlatesQtWidgets::MapCanvas::initializeGL_if_necessary()
+{
+	// Return early if we've already initialised OpenGL.
+	// This is now necessary because it's not only 'paintEvent()' and other QGLWidget methods
+	// that call our 'initializeGL()' method - it's now also when a client wants to render the
+	// scene to an image (instead of render/update the QGLWidget itself).
+	if (d_initialisedGL)
+	{
+		return;
+	}
+
+	// Make sure the OpenGL context is current.
+	// We can't use 'd_gl_context' yet because it hasn't been initialised.
+	makeCurrent();
+
+	initializeGL();
+}
+
+
+void 
+GPlatesQtWidgets::MapCanvas::initializeGL() 
 {
 	// Initialise our context-like object first.
 	d_gl_context->initialise();
@@ -183,6 +323,9 @@ GPlatesQtWidgets::MapCanvas::initializeGL(
 
 	// Initialise those parts of map that require a valid OpenGL context to be bound.
 	d_map.initialiseGL(*gl);
+
+	// 'initializeGL()' should only be called once.
+	d_initialisedGL = true;
 }
 
 
@@ -309,10 +452,39 @@ GPlatesQtWidgets::MapCanvas::render_scene(
 
 
 void
-GPlatesQtWidgets::MapCanvas::drawBackground(
-		QPainter *painter,
-		const QRectF &/*exposed_rect*/)
+GPlatesQtWidgets::MapCanvas::update_canvas()
 {
+	update();
+}
+
+
+void 
+GPlatesQtWidgets::MapCanvas::resizeGL(
+		int new_width,
+		int new_height) 
+{
+	set_view();
+}
+
+
+void 
+GPlatesQtWidgets::MapCanvas::paintGL()
+{
+#if 1
+	// Start a render scope (all GL calls should be done inside this scope).
+	//
+	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
+	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
+	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
+
+	// Hold onto the previous frame's cached resources *while* generating the current frame.
+	d_gl_frame_cache_handle = render_scene(
+			*gl,
+			d_view_projection,
+			// Using device-independent pixels (eg, widget dimensions)...
+			width(),
+			height());
+#else
 	// Restore the QPainter's transform after our rendering because we overwrite it during our
 	// text rendering (where we set it to the identity transform).
 	const QTransform qpainter_world_transform = painter->worldTransform();
@@ -364,25 +536,222 @@ GPlatesQtWidgets::MapCanvas::drawBackground(
 
 	// Restore the QPainter's original world transform in case we modified it during rendering.
 	painter->setWorldTransform(qpainter_world_transform);
+#endif
 }
 
-void
-GPlatesQtWidgets::MapCanvas::update_canvas()
-{
-	update();
-}
 
 void
-GPlatesQtWidgets::MapCanvas::set_viewport_transform(
-		const QTransform &viewport_transform)
+GPlatesQtWidgets::MapCanvas::paintEvent(
+		QPaintEvent *paint_event)
 {
-	d_viewport_transform = viewport_transform;
+	QGLWidget::paintEvent(paint_event);
+
+	// Explicitly swap the OpenGL front and back buffers.
+	// Note that we have already disabled auto buffer swapping because otherwise both the QPainter
+	// in 'paintGL()' and 'QGLWidget::paintEvent()' will call 'QGLWidget::swapBuffers()'
+	// essentially canceling each other out (or causing flickering).
+	if (doubleBuffer() && !autoBufferSwap())
+	{
+		swapBuffers();
+	}
+
+	// If d_mouse_press_info is not boost::none, then mouse is down.
+	Q_EMIT repainted(static_cast<bool>(d_mouse_press_info));
 }
+
+
+void
+GPlatesQtWidgets::MapCanvas::mousePressEvent(
+		QMouseEvent *press_event) 
+{
+
+	update_mouse_pointer_pos(press_event);
+
+	// Let's ignore all mouse buttons except the left mouse button.
+	if (press_event->button() != Qt::LeftButton) {
+		return;
+	}
+
+	d_last_mouse_view_coords = press_event->pos();
+
+	d_mouse_press_info =
+			MousePressInfo(
+					press_event->x(),
+					press_event->y(),
+					mouse_pointer_scene_coords(),
+					mouse_pointer_llp(),
+					mouse_pointer_is_on_surface(),
+					press_event->button(),
+					press_event->modifiers());
+					
+	Q_EMIT mouse_pressed(
+			d_mouse_press_info->d_mouse_pointer_scene_coords,
+			d_mouse_press_info->d_is_on_surface,
+			d_mouse_press_info->d_button,
+			d_mouse_press_info->d_modifiers);
+}
+
+
+void 
+GPlatesQtWidgets::MapCanvas::mouseReleaseEvent(
+		QMouseEvent *release_event)
+{
+	// Let's ignore all mouse buttons except the left mouse button.
+	if (release_event->button() != Qt::LeftButton) 
+	{
+		return;
+	}
+
+	// Let's do our best to avoid crash-inducing Boost assertions.
+	if ( ! d_mouse_press_info)
+	{
+		// OK, something strange happened:  Our boost::optional MousePressInfo is not
+		// initialised.  Rather than spontaneously crashing with a Boost assertion error,
+		// let's log a warning on the console and NOT crash.
+		
+		// A reasonably fast double left mouse click on the map is resulting (for some 
+		// reason) in an uninitialised mouse_press_info structure, so the following message 
+		// gets output quite easily. So I'll silence it for now. 
+#if 0	
+		std::cerr << "Warning (MapCanvas::mouseReleaseEvent, "
+				<< __FILE__
+				<< " line "
+				<< __LINE__
+				<< "):\nUninitialised mouse press info!"
+				<< std::endl;
+#endif				
+		return;
+	}
+
+	if (abs(release_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x) > 3 &&
+			abs(release_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y) > 3) {
+		d_mouse_press_info->d_is_mouse_drag = true;
+	}
+	if ((d_mouse_press_info->d_is_mouse_drag))
+	{
+
+		Q_EMIT mouse_released_after_drag(
+				d_mouse_press_info->d_mouse_pointer_scene_coords,
+				d_mouse_press_info->d_is_on_surface,
+				mouse_pointer_scene_coords(),
+				mouse_pointer_is_on_surface(),
+				QPointF(),
+				d_mouse_press_info->d_button,
+				d_mouse_press_info->d_modifiers);
+
+	} else {
+		Q_EMIT mouse_clicked(
+				d_mouse_press_info->d_mouse_pointer_scene_coords,
+				d_mouse_press_info->d_is_on_surface,
+				d_mouse_press_info->d_button,
+				d_mouse_press_info->d_modifiers);
+	}
+	d_mouse_press_info = boost::none;
+
+	// Emit repainted signal with mouse_down = false so that those listeners who
+	// didn't care about intermediate repaints can now deal with the repaint.
+	Q_EMIT repainted(false);
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::mouseDoubleClickEvent(
+		QMouseEvent *mouse_event)
+{
+	mousePressEvent(mouse_event);
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::mouseMoveEvent(
+	QMouseEvent *move_event)
+{
+	QPointF translation = mapToScene(move_event->pos()) - 
+		mapToScene(d_last_mouse_view_coords);
+
+	d_last_mouse_view_coords = move_event->pos();
+
+	update_mouse_pointer_pos(move_event);
+
+	if (d_mouse_press_info)
+	{
+		int x_dist = move_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x;
+		int y_dist = move_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y;
+		if (x_dist*x_dist + y_dist*y_dist > 4)
+		{
+			d_mouse_press_info->d_is_mouse_drag = true;
+		}
+
+		if (d_mouse_press_info->d_is_mouse_drag)
+		{
+			Q_EMIT mouse_dragged(
+					d_mouse_press_info->d_mouse_pointer_scene_coords,
+					d_mouse_press_info->d_is_on_surface,
+					mouse_pointer_scene_coords(),
+					mouse_pointer_is_on_surface(),
+					d_mouse_press_info->d_button,
+					d_mouse_press_info->d_modifiers,
+					translation);
+		}
+
+	}
+	else
+	{
+		//
+		// The mouse has moved but the left mouse button is not currently pressed.
+		// This could mean no mouse buttons are currently pressed or it could mean a
+		// button other than the left mouse button is currently pressed.
+		// Either way it is an mouse movement that is not currently invoking a
+		// canvas tool operation.
+		//
+		Q_EMIT mouse_moved_without_drag(
+				mouse_pointer_scene_coords(),
+				mouse_pointer_is_on_surface(),
+				translation);
+	}
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::keyPressEvent(
+		QKeyEvent *key_event)
+{
+	// Note that the arrow keys are handled here instead of being set as shortcuts
+	// to the corresponding actions in ViewportWindow because when they were set as
+	// shortcuts, they were interfering with the arrow keys on other widgets.
+	switch (key_event->key())
+	{
+		case Qt::Key_Up:
+			move_camera_up();
+			break;
+
+		case Qt::Key_Down:
+			move_camera_down();
+			break;
+
+		case Qt::Key_Left:
+			move_camera_left();
+			break;
+
+		case Qt::Key_Right:
+			move_camera_right();
+			break;
+
+		default:
+			QGraphicsView::keyPressEvent(key_event);
+	}
+}
+
+
+QSize
+GPlatesQtWidgets::MapCanvas::get_viewport_size() const
+{
+	return QSize(width(), height());
+}
+
 
 QImage
 GPlatesQtWidgets::MapCanvas::render_to_qimage(
-		QPaintDevice &map_canvas_paint_device,
-		const QTransform &viewport_transform,
 		const QSize &image_size_in_device_independent_pixels)
 {
 	// Set up a QPainter to help us with OpenGL text rendering.
@@ -569,8 +938,6 @@ GPlatesQtWidgets::MapCanvas::render_scene_tile_into_image(
 
 void
 GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
-		QPaintDevice &map_canvas_paint_device,
-		const QTransform &viewport_transform,
 		QPaintDevice &feedback_paint_device)
 {
 	// Make sure the OpenGL context is currently active.
@@ -630,6 +997,265 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 			map_canvas_paint_device.width(),
 			map_canvas_paint_device.height());
 }
+
+
+boost::optional<GPlatesMaths::LatLonPoint>
+GPlatesQtWidgets::MapCanvas::get_camera_viewpoint() const
+{
+#if 1
+	return GPlatesMaths::make_lat_lon_point(d_map_camera.get_look_at_position());
+#else
+	const GPlatesGui::MapTransform::point_type &centre_of_viewport = d_map_transform.get_centre_of_viewport();
+	double x_pos = centre_of_viewport.x();
+	double y_pos = centre_of_viewport.y();
+
+	// This stores the x screen coordinate, for comparison with the forward-transformed longitude.  
+	double screen_x = x_pos;
+
+	// Tolerance for comparing forward transformed longitude with screen longitude. 
+	double tolerance = 1.;
+
+	boost::optional<GPlatesMaths::LatLonPoint> llp = map().projection().inverse_transform(x_pos,y_pos);
+		
+	if (!llp)
+	{
+		return boost::none;
+	}
+
+	// Forward transform the lat-lon point and see where it would end up. 
+	double x_scene_pos = llp->longitude();
+	double y_scene_pos = llp->latitude();
+	map().projection().forward_transform(x_scene_pos,y_scene_pos);
+
+	// If we don't end up at the same point, we're off the map. 
+	if (std::fabs(x_scene_pos - screen_x) > tolerance)
+	{
+		return boost::none;
+	}
+		
+	return llp;
+#endif
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::set_camera_viewpoint(
+		const GPlatesMaths::LatLonPoint &camera_viewpoint)
+{
+#if 1
+	d_map_camera.move_look_at_position(
+			GPlatesMaths::make_point_on_sphere(camera_viewpoint));
+#else
+	// Convert the llp to canvas coordinates.
+	double x_pos = camera_viewpoint.longitude();
+	double y_pos = camera_viewpoint.latitude();
+
+	try
+	{
+		map().projection().forward_transform(x_pos,y_pos);
+	}
+	catch(GPlatesGui::ProjectionException &e)
+	{
+		qWarning() << "Caught exception converting lat-long to scene coordinates.";
+		qWarning() << e;
+	}
+
+	// Centre the view on this point.
+	d_map_transform.set_centre_of_viewport(
+			GPlatesGui::MapTransform::point_type(x_pos, y_pos));
+#endif
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::set_orientation(
+		const GPlatesMaths::Rotation &rotation
+		/*bool should_emit_external_signal */)
+{
+	GPlatesMaths::LatLonPoint llp(0,0);
+	GPlatesMaths::PointOnSphere centre = GPlatesMaths::make_point_on_sphere(llp);
+
+	GPlatesMaths::Rotation rev = rotation.get_reverse();
+
+	GPlatesMaths::PointOnSphere desired_centre = rev * centre;
+	GPlatesMaths::LatLonPoint desired_llp = GPlatesMaths::make_lat_lon_point(desired_centre);
+
+
+	// Convert the llp to canvas coordinates.
+	double x_pos = desired_llp.longitude();
+	double y_pos = desired_llp.latitude();
+
+	try
+	{
+		map().projection().forward_transform(x_pos, y_pos);
+	}
+	catch (GPlatesGui::ProjectionException &e)
+	{
+		qWarning() << "Caught exception converting lat-long to scene coordinates.";
+		qWarning() << e;
+	}
+
+	// Centre the view on this point.
+	d_map_transform.set_centre_of_viewport(
+		GPlatesGui::MapTransform::point_type(x_pos, y_pos)
+		/*should_emit_external_signal */);
+
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::update_mouse_pointer_pos(
+		QMouseEvent *mouse_event)
+{
+	d_mouse_pointer_screen_pos = mouse_event->pos();
+
+	handle_mouse_pointer_pos_change();
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::handle_mouse_pointer_pos_change()
+{
+	boost::optional<GPlatesMaths::LatLonPoint> llp = mouse_pointer_llp();
+
+	const bool is_on_surface = static_cast<bool>(llp);
+
+	Q_EMIT mouse_pointer_position_changed(llp, is_on_surface);
+}
+
+
+boost::optional<GPlatesMaths::LatLonPoint>
+GPlatesQtWidgets::MapCanvas::mouse_pointer_llp()
+{
+
+	QPointF canvas_pos = mapToScene(d_mouse_pointer_screen_pos);
+
+	double x_mouse_pos = canvas_pos.x();
+	double y_mouse_pos = canvas_pos.y();
+
+	// The proj library returns valid longitudes even when the screen coordinates are 
+	// far to the right, or left, of the map itself. To determine if the mouse position is off
+	// the map, I'm transforming the returned lat-lon back into screen coordinates. 
+	// If this doesn't match our original screen coordinates, then we can assume that we're off the map.
+	// I'm going to use the longitude value for comparison. 
+
+	// This stores the x screen coordinate, for comparison with the forward-transformed longitude.  
+	double screen_x = x_mouse_pos;
+
+	// I haven't put any great deal of thought into a suitable tolerance here. 
+	double tolerance = 1.;
+
+	boost::optional<GPlatesMaths::LatLonPoint> llp;
+
+
+	llp = map().projection().inverse_transform(x_mouse_pos,y_mouse_pos);
+
+	if (!llp)
+	{
+		return boost::none;
+	}
+		
+	// Forward transform the lat-lon point and see where it would end up. 
+	double x_scene_pos = llp->longitude();
+	double y_scene_pos = llp->latitude();
+	map().projection().forward_transform(x_scene_pos,y_scene_pos);
+
+	// If we don't end up at the same point, we're off the map. 
+
+	if (std::fabs(x_scene_pos - screen_x) > tolerance)
+	{
+		return boost::none;
+	}
+
+	// If we reach here, we should be on the map, with valid lat,lon.
+	return llp;
+	
+}
+
+
+QPointF
+GPlatesQtWidgets::MapCanvas::mouse_pointer_scene_coords()
+{
+	return mapToScene(d_mouse_pointer_screen_pos);
+}
+
+
+bool
+GPlatesQtWidgets::MapCanvas::mouse_pointer_is_on_surface()
+{
+	return static_cast<bool>(mouse_pointer_llp());
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::move_camera(
+		double dx,
+		double dy)
+{
+	// Position of new centre in window coordinates.
+	double win_x = static_cast<double>(width()) / 2.0 + dx;
+	double win_y = static_cast<double>(height()) / 2.0 + dy;
+
+	// Turn that into scene coordinates.
+	double scene_x, scene_y;
+	transform().inverted().map(win_x, win_y, &scene_x, &scene_y);
+	d_map_transform.set_centre_of_viewport(
+			GPlatesGui::MapTransform::point_type(scene_x, scene_y));
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::move_camera_up()
+{
+	// This translation will be zoom-dependent, as it's based on view coordinates. 
+	move_camera(0, -5);
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::move_camera_down()
+{
+	// See comments under "move_camera_up" above. 
+	move_camera(0, 5);
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::move_camera_left()
+{
+	// See comments under "move_camera_up" above. 
+	move_camera(-5, 0);
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::move_camera_right()
+{
+	// See comments under "move_camera_up" above.
+	move_camera(5, 0);
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::rotate_camera_clockwise()
+{
+	d_map_transform.rotate(-5.0);
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::rotate_camera_anticlockwise()
+{
+	d_map_transform.rotate(5.0);
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::reset_camera_orientation()
+{
+	d_map_transform.set_rotation(0);
+}
+
 
 float
 GPlatesQtWidgets::MapCanvas::calculate_scale(

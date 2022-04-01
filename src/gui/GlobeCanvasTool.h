@@ -43,8 +43,6 @@ namespace GPlatesQtWidgets
 
 namespace GPlatesGui
 {
-	class Globe;
-
 	/**
 	 * This class is the abstract base of all canvas tools.
 	 *
@@ -67,7 +65,6 @@ namespace GPlatesGui
 		 */
 		explicit
 		GlobeCanvasTool(
-				Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				GPlatesViewOperations::GlobeViewOperation &globe_view_operation_);
 
@@ -672,12 +669,6 @@ namespace GPlatesGui
 
 	protected:
 
-		Globe &
-		globe() const
-		{
-			return *d_globe_ptr;
-		}
-
 		GPlatesQtWidgets::GlobeCanvas &
 		globe_canvas() const
 		{
@@ -809,11 +800,6 @@ namespace GPlatesGui
 				const GPlatesMaths::PointOnSphere &centre_of_viewport);
 
 	private:
-
-		/**
-		 * The globe which will be re-oriented by globe re-orientation operations.
-		 */
-		Globe *d_globe_ptr;
 
 		/**
 		 * The globe canvas which will need to be updated after globe re-orientation.

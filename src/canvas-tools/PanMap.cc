@@ -29,7 +29,6 @@
 #include "gui/MapTransform.h"
 
 #include "qt-widgets/MapCanvas.h"
-#include "qt-widgets/MapView.h"
 #include "qt-widgets/ViewportWindow.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
@@ -38,7 +37,7 @@
 void
 GPlatesCanvasTools::PanMap::handle_activation()
 {
-	if (map_view().isVisible())
+	if (map_canvas().isVisible())
 	{
 		d_view_state_ptr->status_message(QObject::tr(
 					"Drag to pan the map."

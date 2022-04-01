@@ -521,7 +521,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::update_drag_position(
 		//
 		// Note: This used to be an assertion but it would trip up occasionally for unknown reasons.
 		//       Maybe user was using shortcut key *during* drag (but that is very unlikely).
-		//       More likely some issue with mouse events in GlobeCanvas or MapView.
+		//       More likely some issue with mouse events in GlobeCanvas or MapCanvas.
 		return;
 	}
 

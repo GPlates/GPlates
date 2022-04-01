@@ -36,13 +36,12 @@
 
 
 GPlatesCanvasTools::ChangeLightDirectionGlobe::ChangeLightDirectionGlobe(
-		GPlatesGui::Globe &globe_,
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_,
 		GPlatesPresentation::ViewState &view_state_) :
-	GlobeCanvasTool(globe_, globe_canvas_, view_state_.get_globe_view_operation()),
+	GlobeCanvasTool(globe_canvas_, view_state_.get_globe_view_operation()),
 	d_viewport_window(&viewport_window_),
 	d_change_light_direction_operation(
 			view_state_.get_scene_lighting_parameters(),

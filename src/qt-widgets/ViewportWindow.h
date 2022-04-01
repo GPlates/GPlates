@@ -99,7 +99,7 @@ namespace GPlatesQtWidgets
 	class CanvasToolBarDockWidget;
 	class DockWidget;
 	class GlobeCanvas;
-	class MapView;
+	class MapCanvas;
 	class PythonConsoleDialog;
 	class ReconstructionViewWidget;
 	class SearchResultsDockWidget;
@@ -178,11 +178,11 @@ namespace GPlatesQtWidgets
 		const GlobeCanvas &
 		globe_canvas() const;
 
-		MapView &
-		map_view();
+		MapCanvas &
+		map_canvas();
 
-		const MapView &
-		map_view() const;
+		const MapCanvas &
+		map_canvas() const;
 		
 		
 		/**

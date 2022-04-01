@@ -37,7 +37,6 @@
 namespace GPlatesQtWidgets
 {
 	class MapCanvas;
-	class MapView;
 }
 
 namespace GPlatesGui
@@ -68,9 +67,7 @@ namespace GPlatesGui
 		explicit
 		MapCanvasTool(
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
-				GPlatesQtWidgets::MapView &map_view_,
 				MapTransform &map_transform_):
-			d_map_view_ptr(&map_view_),
 			d_map_canvas_ptr(&map_canvas_),
 			d_map_transform_ptr(&map_transform_)
 		{  }
@@ -355,12 +352,6 @@ namespace GPlatesGui
 
 	protected:
 
-		GPlatesQtWidgets::MapView &
-		map_view() const
-		{
-			return *d_map_view_ptr;
-		}
-
 		GPlatesQtWidgets::MapCanvas &
 		map_canvas() const
 		{
@@ -398,9 +389,6 @@ namespace GPlatesGui
 				const QPointF &translation);
 
 	private:
-
-		//! The map view.
-		GPlatesQtWidgets::MapView *d_map_view_ptr;
 
 		//! The map canvas.
 		GPlatesQtWidgets::MapCanvas *d_map_canvas_ptr;

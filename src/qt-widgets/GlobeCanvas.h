@@ -37,14 +37,16 @@
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+#include <QGLWidget>
 #include <QImage>
 #include <QPaintDevice>
 #include <QPainter>
 #include <QtGlobal>
 #include <QtOpenGL/qgl.h>
 
+#include "SceneView.h"
+
 #include "gui/Globe.h"
-#include "gui/ViewportZoom.h"
 
 #include "maths/PointOnSphere.h"
 #include "maths/MultiPointOnSphere.h"
@@ -55,11 +57,8 @@
 #include "opengl/GLFramebuffer.h"
 #include "opengl/GLMatrix.h"
 #include "opengl/GLRenderbuffer.h"
-#include "opengl/GLViewport.h"
 #include "opengl/GLViewProjection.h"
 #include "opengl/GLVisualLayers.h"
-
-#include "qt-widgets/SceneView.h"
 
 #include "view-operations/RenderedGeometryFactory.h"
 
@@ -80,11 +79,6 @@ namespace GPlatesOpenGL
 namespace GPlatesPresentation
 {
 	class ViewState;
-}
-
-namespace GPlatesViewOperations
-{
-	class RenderedGeometryCollection;
 }
 
 namespace GPlatesQtWidgets 
@@ -167,8 +161,6 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * The point which corresponds to the centre of the viewport.
-		 *
-		 * This corresponds to the camera's look-at position-on-sphere (which never actually changes).
 		 */
 		GPlatesMaths::PointOnSphere
 		centre_of_viewport() const;
@@ -226,9 +218,8 @@ namespace GPlatesQtWidgets
 		 * Widget dimensions are device independent whereas OpenGL uses device pixels
 		 * (differing by the device pixel ratio).
 		 */
-		virtual
 		QSize
-		get_viewport_size() const;
+		get_viewport_size() const override;
 
 		/**
 		 * Renders the scene to a QImage of the dimensions specified by @a image_size.
@@ -239,37 +230,31 @@ namespace GPlatesQtWidgets
 		 *
 		 * Returns a null QImage if unable to allocate enough memory for the image data.
 		 */
-		virtual
 		QImage
 		render_to_qimage(
-				const QSize &image_size_in_device_independent_pixels);
+				const QSize &image_size_in_device_independent_pixels) override;
 
 		/**
 		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
 		 */
-		virtual
 		void
 		render_opengl_feedback_to_paint_device(
-				QPaintDevice &feedback_paint_device);
+				QPaintDevice &feedback_paint_device) override;
 
-		virtual
-		boost::optional<GPlatesMaths::LatLonPoint>
-		camera_llp() const;
-
-		virtual
 		void
 		set_camera_viewpoint(
-			const GPlatesMaths::LatLonPoint &llp);
+				const GPlatesMaths::LatLonPoint &camera_viewpoint) override;
 
-		virtual
+		boost::optional<GPlatesMaths::LatLonPoint>
+		get_camera_viewpoint() const override;
+
 		boost::optional<GPlatesMaths::Rotation>
-		orientation() const;
+		get_orientation() const override;
 
-		virtual
 		void
 		set_orientation(
-			const GPlatesMaths::Rotation &rotation
-			/*bool should_emit_external_signal = true */);
+				const GPlatesMaths::Rotation &rotation
+				/*bool should_emit_external_signal = true */) override;
 
 		/**
 		 * Returns the OpenGL context associated with this QGLWidget.
@@ -294,9 +279,8 @@ namespace GPlatesQtWidgets
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
 
-		virtual
 		void
-		update_canvas();
+		update_canvas() override;
 
 		void
 		handle_mouse_pointer_pos_change();
@@ -320,9 +304,8 @@ namespace GPlatesQtWidgets
 		 * There is no need to call makeCurrent() because this has already been done when
 		 * this function is called.
 		 */
-		virtual 
 		void 
-		initializeGL();
+		initializeGL() override;
 
 		/**
 		 * This is a virtual override of the function in QGLWidget.
@@ -335,11 +318,10 @@ namespace GPlatesQtWidgets
 		 * There is no need to call makeCurrent() because this has already been done when
 		 * this function is called.
 		 */
-		virtual
 		void 
 		resizeGL(
 				int width, 
-				int height);
+				int height) override;
 
 		/**
 		 * This is a virtual override of the function in QGLWidget.
@@ -352,14 +334,12 @@ namespace GPlatesQtWidgets
 		 * There is no need to call makeCurrent() because this has already been done when
 		 * this function is called.
 		 */
-		virtual
 		void
-		paintGL();
+		paintGL() override;
 
-		virtual
 		void
 		paintEvent(
-				QPaintEvent *paint_event);
+				QPaintEvent *paint_event) override;
 
 		/**
 		 * This is a virtual override of the function in QWidget.
@@ -376,10 +356,9 @@ namespace GPlatesQtWidgets
 		 * The default implementation implements the closing of popup widgets when you
 		 * click outside the window.  For other widget types it does nothing.
 		 */
-		virtual
 		void
 		mousePressEvent(
-				QMouseEvent *event);
+				QMouseEvent *event) override;
 
 		/**
 		 * This is a virtual override of the function in QWidget.
@@ -398,10 +377,9 @@ namespace GPlatesQtWidgets
 		 * position of the last mouse move event, but it might be different if the user's
 		 * hand shakes.  This is a feature of the underlying window system, not Qt.
 		 */
-		virtual 
-		void 
+		void
 		mouseMoveEvent(
-				QMouseEvent *event);
+				QMouseEvent *event) override;
 
 		/**
 		 * This is a virtual override of the function in QWidget.
@@ -411,43 +389,34 @@ namespace GPlatesQtWidgets
 		 * This event handler, for event event, can be reimplemented in a subclass to
 		 * receive mouse release events for the widget.
 		 */
-		virtual 
 		void 
 		mouseReleaseEvent(
-				QMouseEvent *event);
+				QMouseEvent *event) override;
 
-		virtual
 		void
 		keyPressEvent(
-				QKeyEvent *key_event);
+				QKeyEvent *key_event) override;
 
-		virtual
 		void
-		move_camera_up();
+		move_camera_up() override;
 
-		virtual
 		void
-		move_camera_down();
+		move_camera_down() override;
 
-		virtual
 		void
-		move_camera_left();
+		move_camera_left() override;
 
-		virtual
 		void
-		move_camera_right();
+		move_camera_right() override;
 
-		virtual
 		void
-		rotate_camera_clockwise();
+		rotate_camera_clockwise() override;
 
-		virtual
 		void
-		rotate_camera_anticlockwise();
+		rotate_camera_anticlockwise() override;
 
-		virtual
 		void
-		reset_camera_orientation();
+		reset_camera_orientation() override;
 
 	Q_SIGNALS:
 

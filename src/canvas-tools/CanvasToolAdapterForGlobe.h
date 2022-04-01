@@ -40,11 +40,6 @@ namespace GPlatesQtWidgets
 	class GlobeCanvas;
 }
 
-namespace GPlatesGui
-{
-	class Globe;
-}
-
 namespace GPlatesMaths
 {
 	class PointOnSphere;
@@ -67,7 +62,6 @@ namespace GPlatesCanvasTools
 		 */
 		CanvasToolAdapterForGlobe(
 				const CanvasTool::non_null_ptr_type &canvas_tool_ptr,
-				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				GPlatesViewOperations::GlobeViewOperation &globe_view_operation_);
 		

@@ -60,7 +60,6 @@ namespace GPlatesCanvasTools
 		 */
 		explicit
 		ZoomGlobe(
-				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_,

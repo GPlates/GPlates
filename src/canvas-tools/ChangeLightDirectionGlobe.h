@@ -62,7 +62,6 @@ namespace GPlatesCanvasTools
 		 */
 		explicit
 		ChangeLightDirectionGlobe(
-				GPlatesGui::Globe &globe_,
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type,

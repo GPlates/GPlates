@@ -41,7 +41,7 @@
 
 #include "qt-widgets/GlobeAndMapWidget.h"
 #include "qt-widgets/GlobeCanvas.h"
-#include "qt-widgets/MapView.h"
+#include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/ReconstructionViewWidget.h"
 #include "qt-widgets/TaskPanel.h"
 #include "qt-widgets/ViewportWindow.h"
@@ -70,7 +70,7 @@ GPlatesGui::SmallCircleCanvasToolWorkflow::SmallCircleCanvasToolWorkflow(
 		GPlatesQtWidgets::ViewportWindow &viewport_window) :
 	CanvasToolWorkflow(
 			viewport_window.globe_canvas(),
-			viewport_window.map_view(),
+			viewport_window.map_canvas(),
 			CanvasToolWorkflows::WORKFLOW_SMALL_CIRCLE,
 			// The tool to start off with...
 			CanvasToolWorkflows::TOOL_CREATE_SMALL_CIRCLE),
@@ -109,15 +109,13 @@ GPlatesGui::SmallCircleCanvasToolWorkflow::create_canvas_tools(
 	d_globe_create_small_circle_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					create_small_circle_tool,
-					viewport_window.globe_canvas().globe(),
 					viewport_window.globe_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_create_small_circle_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					create_small_circle_tool,
-					viewport_window.map_view().map_canvas(),
-					viewport_window.map_view(),
+					viewport_window.map_canvas(),
 					view_state.get_map_transform()));
 }
 

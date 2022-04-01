@@ -34,7 +34,7 @@ class QPointF;
 
 namespace GPlatesQtWidgets
 {
-	class MapView;
+	class MapCanvas;
 }
 
 namespace GPlatesGui
@@ -43,7 +43,7 @@ namespace GPlatesGui
 
 	/**
 	 * This class adapts the interface of MapCanvasTool to the interface expected by the mouse-click
-	 * and mouse-drag signals of MapView and directs them to the activate canvas tool.
+	 * and mouse-drag signals of MapCanvas and directs them to the activate canvas tool.
 	 */
 	class MapCanvasToolAdapter:
 			public QObject
@@ -56,20 +56,20 @@ namespace GPlatesGui
 		 */
 		explicit
 		MapCanvasToolAdapter(
-				GPlatesQtWidgets::MapView &map_view);
+				GPlatesQtWidgets::MapCanvas &map_canvas);
 
 		~MapCanvasToolAdapter()
 		{  }
 
 		/**
-		 * Connects mouse signals from @a MapView to the specified canvas tool.
+		 * Connects mouse signals from @a MapCanvas to the specified canvas tool.
 		 */
 		void
 		activate_canvas_tool(
 				MapCanvasTool &map_canvas_tool);
 
 		/**
-		 * Disconnects mouse signals from @a MapView to the currently active canvas tool.
+		 * Disconnects mouse signals from @a MapCanvas to the currently active canvas tool.
 		 */
 		void
 		deactivate_canvas_tool();
@@ -122,18 +122,18 @@ namespace GPlatesGui
 
 	private:
 
-		GPlatesQtWidgets::MapView &d_map_view;
+		GPlatesQtWidgets::MapCanvas &d_map_canvas;
 
 		boost::optional<MapCanvasTool &> d_active_map_canvas_tool;
 
 
-		//! Connects to mouse signals from the map view.
+		//! Connects to mouse signals from the map canvas.
 		void
-		connect_to_map_view();
+		connect_to_map_canvas();
 
-		//! Disconnects from mouse signals from the map view.
+		//! Disconnects from mouse signals from the map canvas.
 		void
-		disconnect_from_map_view();
+		disconnect_from_map_canvas();
 
 		MapCanvasTool &
 		get_active_map_canvas_tool();

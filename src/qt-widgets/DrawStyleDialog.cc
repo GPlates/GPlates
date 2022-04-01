@@ -58,7 +58,6 @@
 #include "GlobeAndMapWidget.h"
 #include "GlobeCanvas.h"
 #include "MapCanvas.h"
-#include "MapView.h"
 
 
 GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(

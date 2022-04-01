@@ -46,7 +46,7 @@
 
 #include "qt-widgets/GlobeAndMapWidget.h"
 #include "qt-widgets/GlobeCanvas.h"
-#include "qt-widgets/MapView.h"
+#include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/ReconstructionViewWidget.h"
 #include "qt-widgets/TaskPanel.h"
 #include "qt-widgets/ViewportWindow.h"
@@ -74,7 +74,7 @@ GPlatesGui::ViewCanvasToolWorkflow::ViewCanvasToolWorkflow(
 		GPlatesQtWidgets::ViewportWindow &viewport_window) :
 	CanvasToolWorkflow(
 			viewport_window.globe_canvas(),
-			viewport_window.map_view(),
+			viewport_window.map_canvas(),
 			CanvasToolWorkflows::WORKFLOW_VIEW,
 			// The tool to start off with...
 			CanvasToolWorkflows::TOOL_DRAG_GLOBE),
@@ -101,14 +101,12 @@ GPlatesGui::ViewCanvasToolWorkflow::create_canvas_tools(
 
 	d_globe_drag_globe_tool.reset(
 			new GPlatesCanvasTools::ReorientGlobe(
-					viewport_window.globe_canvas().globe(),
 					viewport_window.globe_canvas(),
 					view_state.get_rendered_geometry_collection(),
 					viewport_window));
 	d_map_drag_globe_tool.reset(
 			new GPlatesCanvasTools::PanMap(
-					viewport_window.map_view().map_canvas(),
-					viewport_window.map_view(),
+					viewport_window.map_canvas(),
 					view_state.get_rendered_geometry_collection(),
 					viewport_window,
 					view_state.get_map_transform()));
@@ -119,15 +117,13 @@ GPlatesGui::ViewCanvasToolWorkflow::create_canvas_tools(
 
 	d_globe_zoom_globe_tool.reset(
 			new GPlatesCanvasTools::ZoomGlobe(
-					viewport_window.globe_canvas().globe(),
 					viewport_window.globe_canvas(),
 					view_state.get_rendered_geometry_collection(),
 					viewport_window,
 					view_state));
 	d_map_zoom_globe_tool.reset(
 			new GPlatesCanvasTools::ZoomMap(
-					viewport_window.map_view().map_canvas(),
-					viewport_window.map_view(),
+					viewport_window.map_canvas(),
 					view_state.get_rendered_geometry_collection(),
 					viewport_window,
 					view_state.get_map_transform(),
@@ -139,7 +135,6 @@ GPlatesGui::ViewCanvasToolWorkflow::create_canvas_tools(
 
 	d_globe_change_lighting_tool.reset(
 			new GPlatesCanvasTools::ChangeLightDirectionGlobe(
-					viewport_window.globe_canvas().globe(),
 					viewport_window.globe_canvas(),
 					view_state.get_rendered_geometry_collection(),
 					WORKFLOW_RENDER_LAYER,
@@ -147,8 +142,7 @@ GPlatesGui::ViewCanvasToolWorkflow::create_canvas_tools(
 					view_state));
 	d_map_change_lighting_tool.reset(
 			new GPlatesCanvasTools::ChangeLightDirectionMap(
-					viewport_window.map_view().map_canvas(),
-					viewport_window.map_view(),
+					viewport_window.map_canvas(),
 					view_state.get_rendered_geometry_collection(),
 					viewport_window,
 					view_state.get_map_transform()));

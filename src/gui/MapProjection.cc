@@ -454,9 +454,9 @@ GPlatesGui::MapProjection::inverse_transform(
 		// On Fedora the following message is output when you switch from the map to the globe. This 
 		// doesn't happen on XP. The reason this is being called is that if you click on the part of
 		// the projection combobox that is on top of the viewport (e.g. on the word "Globe"), a
-		// mouse down event is issued for the MapView (even though it's covered up by the list),
+		// mouse down event is issued for the MapCanvas (even though it's covered up by the list),
 		// which in turn calls inverse_projection. There does not seem to be an easy way to stop the
-		// MapView from getting the mouse down event unfortunately, so let's suppress the error.
+		// MapCanvas from getting the mouse down event unfortunately, so let's suppress the error.
 		// qWarning("No inverse is defined for this projection in the proj library.");
 		return boost::none;
 	}

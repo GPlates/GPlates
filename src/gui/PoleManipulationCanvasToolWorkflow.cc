@@ -47,7 +47,7 @@
 
 #include "qt-widgets/GlobeAndMapWidget.h"
 #include "qt-widgets/GlobeCanvas.h"
-#include "qt-widgets/MapView.h"
+#include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/ReconstructionViewWidget.h"
 #include "qt-widgets/TaskPanel.h"
 #include "qt-widgets/ViewportWindow.h"
@@ -76,7 +76,7 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::PoleManipulationCanvasToolWorkfl
 		GPlatesQtWidgets::ViewportWindow &viewport_window) :
 	CanvasToolWorkflow(
 			viewport_window.globe_canvas(),
-			viewport_window.map_view(),
+			viewport_window.map_canvas(),
 			CanvasToolWorkflows::WORKFLOW_POLE_MANIPULATION,
 			// The tool to start off with...
 			CanvasToolWorkflows::TOOL_MANIPULATE_POLE),
@@ -130,15 +130,13 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::create_canvas_tools(
 	d_globe_click_geometry_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					click_geometry_tool,
-					viewport_window.globe_canvas().globe(),
 					viewport_window.globe_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_click_geometry_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					click_geometry_tool,
-					viewport_window.map_view().map_canvas(),
-					viewport_window.map_view(),
+					viewport_window.map_canvas(),
 					view_state.get_map_transform()));
 
 	//
@@ -154,15 +152,13 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::create_canvas_tools(
 	d_globe_manipulate_pole_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					manipulate_pole_tool,
-					viewport_window.globe_canvas().globe(),
 					viewport_window.globe_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_manipulate_pole_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					manipulate_pole_tool,
-					viewport_window.map_view().map_canvas(),
-					viewport_window.map_view(),
+					viewport_window.map_canvas(),
 					view_state.get_map_transform()));
 
 	//
@@ -180,15 +176,13 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::create_canvas_tools(
 	d_globe_move_pole_tool.reset(
 			new GPlatesCanvasTools::MovePoleGlobe(
 					move_pole_operation,
-					viewport_window.globe_canvas().globe(),
 					viewport_window.globe_canvas(),
 					viewport_window));
 	// For the map view.
 	d_map_move_pole_tool.reset(
 			new GPlatesCanvasTools::MovePoleMap(
 					move_pole_operation,
-					viewport_window.map_view().map_canvas(),
-					viewport_window.map_view(),
+					viewport_window.map_canvas(),
 					viewport_window,
 					view_state));
 }

@@ -48,7 +48,6 @@ namespace GPlatesGui
 namespace GPlatesQtWidgets
 {
 	class MapCanvas;
-	class MapView;
 }
 
 namespace GPlatesCanvasTools
@@ -69,7 +68,6 @@ namespace GPlatesCanvasTools
 		CanvasToolAdapterForMap(
 				const CanvasTool::non_null_ptr_type &canvas_tool_ptr,
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
-				GPlatesQtWidgets::MapView &map_view_,
 				GPlatesGui::MapTransform &map_transform_);
 		
 		virtual

@@ -39,7 +39,6 @@
 #include "GlobeCanvas.h"
 #include "LeaveFullScreenButton.h"
 #include "MapCanvas.h"
-#include "MapView.h"
 #include "ProjectionControlWidget.h"
 #include "TimeControlWidget.h"
 #include "ViewportWindow.h"
@@ -226,7 +225,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	canvas_widget_layout->setSpacing(2);
 	canvas_widget_layout->setContentsMargins(0, 0, 0, 0);
 
-	// Add GlobeCanvas, MapView to this hand-made widget.
+	// Add GlobeCanvas, MapCanvas to this hand-made widget.
 	d_globe_and_map_widget_ptr->setParent(canvas_widget);
 	canvas_widget_layout->addWidget(d_globe_and_map_widget_ptr);
 
@@ -275,7 +274,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 			this,
 			SLOT(update_mouse_pointer_position(int, int, double, double, const GPlatesMaths::PointOnSphere &, bool)));
 	QObject::connect(
-			&(d_globe_and_map_widget_ptr->get_map_view()),
+			&(d_globe_and_map_widget_ptr->get_map_canvas()),
 			SIGNAL(mouse_pointer_position_changed(const boost::optional<GPlatesMaths::LatLonPoint> &, bool)),
 			this,
 			SLOT(update_mouse_pointer_position(const boost::optional<GPlatesMaths::LatLonPoint> &, bool)));
@@ -333,17 +332,17 @@ GPlatesQtWidgets::ReconstructionViewWidget::globe_canvas() const
 }
 
 
-GPlatesQtWidgets::MapView &
-GPlatesQtWidgets::ReconstructionViewWidget::map_view()
+GPlatesQtWidgets::MapCanvas &
+GPlatesQtWidgets::ReconstructionViewWidget::map_canvas()
 {
-	return d_globe_and_map_widget_ptr->get_map_view();
+	return d_globe_and_map_widget_ptr->get_map_canvas();
 }
 
 
-const GPlatesQtWidgets::MapView &
-GPlatesQtWidgets::ReconstructionViewWidget::map_view() const
+const GPlatesQtWidgets::MapCanvas &
+GPlatesQtWidgets::ReconstructionViewWidget::map_canvas() const
 {
-	return d_globe_and_map_widget_ptr->get_map_view();
+	return d_globe_and_map_widget_ptr->get_map_canvas();
 }
 
 
@@ -589,7 +588,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::activate_time_spinbox()
 boost::optional<GPlatesMaths::LatLonPoint>
 GPlatesQtWidgets::ReconstructionViewWidget::camera_llp()
 {
-	return d_globe_and_map_widget_ptr->get_camera_llp();
+	return d_globe_and_map_widget_ptr->get_camera_viewpoint();
 }
 
 
@@ -597,7 +596,7 @@ void
 GPlatesQtWidgets::ReconstructionViewWidget::recalc_camera_position()
 {
 	// FIXME: This is a bit convoluted.
-	boost::optional<GPlatesMaths::LatLonPoint> llp = d_globe_and_map_widget_ptr->get_camera_llp();
+	boost::optional<GPlatesMaths::LatLonPoint> llp = d_globe_and_map_widget_ptr->get_camera_viewpoint();
 
 	QString lat_label(QObject::tr("(lat: "));
 	QString lon_label(QObject::tr(" ; lon: "));
@@ -633,7 +632,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::recalc_camera_position()
 	}
 	else if (globe_is_active())
 	{
-		boost::optional<GPlatesMaths::Rotation> rotation = active_view().orientation();
+		boost::optional<GPlatesMaths::Rotation> rotation = active_view().get_orientation();
 		if (rotation)
 		{
 			Q_EMIT send_orientation_to_stdout(*rotation);
@@ -724,6 +723,6 @@ GPlatesQtWidgets::ReconstructionViewWidget::globe_is_active()
 bool
 GPlatesQtWidgets::ReconstructionViewWidget::map_is_active()
 {
-	return d_globe_and_map_widget_ptr->get_map_view().isVisible();
+	return d_globe_and_map_widget_ptr->get_map_canvas().isVisible();
 }
 
