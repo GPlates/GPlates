@@ -35,7 +35,6 @@
 
 #include "APIVersion.h"
 
-#include "PyGPlatesModule.h"
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
 
@@ -352,8 +351,8 @@ namespace GPlatesApi
 	version_hash(
 			const Version &version)
 	{
-		// Use python builtin hash() function to hash the version string.
-		return get_builtin_hash()(version.get_version_string());
+		// Use the Python built-in 'hash()' function on the version string.
+		return bp::object(PyObject_Hash(bp::object(version.get_version_string()).ptr()));
 	}
 
 	/**

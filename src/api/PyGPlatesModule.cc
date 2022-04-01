@@ -33,8 +33,6 @@
 #define PYGPLATES_IMPORT_NUMPY_ARRAY_API
 #include "global/python.h"
 
-#include "PyGPlatesModule.h"
-
 #include "file-io/StandaloneBundle.h"
 
 #include "maths/MathsUtils.h"
@@ -212,84 +210,6 @@ export_cpp_python_api()
 // Export the part of the python API that is *pure* python code (ie, not C++ python bindings).
 void export_pure_python_api();
 
-
-namespace
-{
-	boost::python::object builtin_hash;
-	boost::python::object builtin_iter;
-	boost::python::object builtin_next;
-
-	/**
-	 * Class to ensure cached objects get released when pyGPlates module is released.
-	 *
-	 * This avoids a crash (initially started happening with Python 3.9) where the cached
-	 * objects were presumably being released after their actual Python objects were destroyed.
-	 */
-	class CachedBuiltinAttributes
-	{
-	public:
-		CachedBuiltinAttributes()
-		{
-			cache();
-		}
-
-		~CachedBuiltinAttributes()
-		{
-			uncache();
-		}
-
-	private:
-		void
-		cache()
-		{
-			// Cache the following builtin attributes.
-			builtin_hash = boost::python::scope().attr("__builtins__").attr("hash");
-			builtin_iter = boost::python::scope().attr("__builtins__").attr("iter");
-			builtin_next = boost::python::scope().attr("__builtins__").attr("next");
-		}
-
-		void
-		uncache()
-		{
-			// Release the cached objects.
-			builtin_hash = boost::python::object();
-			builtin_iter = boost::python::object();
-			builtin_next = boost::python::object();
-		}
-	};
-
-	void
-	cache_builtin_attributes()
-	{
-		// Cache the objects using a C++ class and register/store that as a Python object attached to the pygplates module
-		// to ensure that they get uncached (by C++ class destructor) when pygplates module is destroyed (and not after that).
-		boost::python::class_<CachedBuiltinAttributes, boost::shared_ptr<CachedBuiltinAttributes>, boost::noncopyable>(
-				"CachedBuiltinAttributes", boost::python::no_init);
-		boost::python::scope().attr("_cleanup_cached_builtin_attributes") =
-				boost::shared_ptr<CachedBuiltinAttributes>(new CachedBuiltinAttributes());
-	}
-}
-
-
-boost::python::object
-GPlatesApi::get_builtin_hash()
-{
-	return builtin_hash;
-}
-
-
-boost::python::object
-GPlatesApi::get_builtin_iter()
-{
-	return builtin_iter;
-}
-
-
-boost::python::object
-GPlatesApi::get_builtin_next()
-{
-	return builtin_next;
-}
 
 //
 // Wrap the numpy C-API 'import_array()' macro.
@@ -469,9 +389,6 @@ BOOST_PYTHON_MODULE(pygplates)
 #else
 			bp::import("builtins");
 #endif
-    // Cache some commonly used built-in attributes.
-	// Note: This must be done *after* injecting the __builtins__ module.
-	cache_builtin_attributes();
 
 	// Export the part of the python API that consists of C++ python bindings (ie, not pure python).
 	export_cpp_python_api();
@@ -480,7 +397,7 @@ BOOST_PYTHON_MODULE(pygplates)
 	//
 	// We've already exported all the C++ python bindings - this is important because the pure python
 	// code injects methods into the python classes already defined by the C++ python bindings.
-    export_pure_python_api();
+	export_pure_python_api();
 
 	// If pygplates is being built as a profile build (see "Profile.h") then register a function to
 	// report profiled information to a file when Python exits normally.

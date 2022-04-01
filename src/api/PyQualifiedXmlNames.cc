@@ -30,7 +30,6 @@
 
 #include "PyQualifiedXmlNames.h"
 
-#include "PyGPlatesModule.h"
 #include "PythonConverterUtils.h"
 
 #include "global/python.h"
@@ -97,10 +96,10 @@ namespace GPlatesApi
 	qualified_xml_name_hash(
 			const QualifiedXmlNameType &qualified_xml_name)
 	{
-		// Use python builtin hash() function to hash the fully-qualified string.
-		return get_builtin_hash()(
-				GPlatesModel::convert_qualified_xml_name_to_qstring<QualifiedXmlNameType>(
-						qualified_xml_name));
+		// Use the Python built-in 'hash()' function on the fully-qualified string.
+		return bp::object(PyObject_Hash(bp::object(
+				GPlatesModel::convert_qualified_xml_name_to_qstring<QualifiedXmlNameType>(qualified_xml_name)
+				).ptr()));
 	}
 }
 

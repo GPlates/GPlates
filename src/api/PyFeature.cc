@@ -36,7 +36,6 @@
 
 #include "PyFeature.h"
 
-#include "PyGPlatesModule.h"
 #include "PyInformationModel.h"
 #include "PyPropertyValues.h"
 #include "PyRotationModel.h"

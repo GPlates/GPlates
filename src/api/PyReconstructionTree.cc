@@ -34,7 +34,6 @@
 #include "PyReconstructionTree.h"
 
 #include "PyFeatureCollectionFunctionArgument.h"
-#include "PyGPlatesModule.h"
 #include "PyInterpolationException.h"
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
