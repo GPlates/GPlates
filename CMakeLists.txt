@@ -21,9 +21,8 @@ cmake_minimum_required(VERSION 3.10...3.22 FATAL_ERROR)
 # This will also force all ports to have their source code compiled (not downloaded as binaries) which can be quite slow.
 # For Apple M1 you can instead target 11.0 (since M1/arm64 wasn't introduced until macOS 11.0).
 #
-# However sometimes Macports has issues with deployment targets (eg, Qt sometimes fails to find the default SDK).
-# In this case you may decide to only deploy to the macOS version of your build system (and above) and not build libraries with a lower
-# deployment target (as covered above). Then also set CMAKE_OSX_DEPLOYMENT_TARGET cache variable to empty (using CMake GUI or ccmake)
+# However you may decide to only deploy to the macOS version of your build system (and above) and not build libraries with a lower deployment target
+# (as covered above). If so, then set this CMAKE_OSX_DEPLOYMENT_TARGET cache variable to empty (but using the CMake GUI or ccmake, not editing it here)
 # so that GPlates/pyGPlates doesn't also build with a lower deployment target (resulting in some warnings when linking to its dependencies).
 #
 # Note that this needs to be set before project() and must be a cache variable (avoids project() overwriting it).
