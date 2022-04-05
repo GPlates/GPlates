@@ -139,7 +139,7 @@ namespace
 				GPLATES_ASSERTION_SOURCE);
 
 		const double lat_0 = -90;
-		const double lon_0 = projection.central_llp().longitude() - 180;
+		const double lon_0 = projection.central_meridian() - 180;
 
 		// Project the vertices using the map projection.
 		try

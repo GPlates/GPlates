@@ -560,7 +560,7 @@ namespace GPlatesGui
 		static const double PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
 
 		//! Tangent of half of field-of-view angle.
-		static const double TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
+		static const double TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW;
 
 		/**
 		 * The initial position on the sphere that the camera looks at.

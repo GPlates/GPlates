@@ -90,7 +90,7 @@ GPlatesGui::MapProjection::MapProjection():
 #endif
 	d_scale(1.),
 	d_projection_type(RECTANGULAR),
-	d_central_llp(0,0),
+	d_central_meridian(0),
 	d_boundary_great_circle(INITIAL_BOUNDARY_AXIS)
 {
 	set_projection_type(d_projection_type);
@@ -107,7 +107,7 @@ GPlatesGui::MapProjection::MapProjection(
 #endif
 	d_scale(1.),
 	d_projection_type(RECTANGULAR),
-	d_central_llp(0,0),
+	d_central_meridian(0),
 	d_boundary_great_circle(INITIAL_BOUNDARY_AXIS)
 {
 	set_projection_type(projection_type_);
@@ -124,7 +124,7 @@ GPlatesGui::MapProjection::MapProjection(
 #endif
 	d_scale(1.),
 	d_projection_type(RECTANGULAR),
-	d_central_llp(projection_settings.get_central_llp()),
+	d_central_meridian(projection_settings.get_central_meridian()),
 	d_boundary_great_circle(INITIAL_BOUNDARY_AXIS)
 {
 	set_projection_type(projection_settings.get_projection_type());
@@ -156,7 +156,7 @@ GPlatesGui::MapProjection::~MapProjection()
 GPlatesGui::MapProjectionSettings
 GPlatesGui::MapProjection::get_projection_settings() const
 {
-	return MapProjectionSettings(d_projection_type, d_central_llp);
+	return MapProjectionSettings(d_projection_type, d_central_meridian);
 }
 
 void
@@ -165,7 +165,7 @@ GPlatesGui::MapProjection::set_projection_type(
 {
 	// Set up the central longitude string.
 	QString lon_string("lon_0=");
-	double lon = d_central_llp.longitude();
+	double lon = d_central_meridian;
 	lon_string += QString("%1").arg(lon);
 
 	const int num_projection_args = 3;
@@ -330,7 +330,7 @@ GPlatesGui::MapProjection::forward_transform(
 		// export expands the map projection very slightly (using OpenGL model-view transform) to ensure
 		// border pixels get rendered.
 		// So if this code path changes then should check that those rasters are exported correctly.
-		longitude -= d_central_llp.longitude();
+		longitude -= d_central_meridian;
 
 		if (longitude > 180.)
 		{
@@ -424,7 +424,7 @@ GPlatesGui::MapProjection::inverse_transform(
 		// The inverse transform rectangular->rectangular 
 		// is playing silly buggers under non-zero central meridians, so
 		// I'm handling this projection explicitly.
-		longitude += d_central_llp.longitude();
+		longitude += d_central_meridian;
 
 		if (longitude > 180.)
 		{
@@ -523,10 +523,10 @@ GPlatesGui::MapProjection::inverse_transform(
 
 
 void
-GPlatesGui::MapProjection::set_central_llp(
-		const GPlatesMaths::LatLonPoint &llp)
+GPlatesGui::MapProjection::set_central_meridian(
+		const double &central_meridian_)
 {
-	d_central_llp = llp;
+	d_central_meridian = central_meridian_;
 
 	// We've changed some projection parameters, so reset the projection. 
 	set_projection_type(d_projection_type);
@@ -544,30 +544,18 @@ GPlatesGui::MapProjection::update_boundary_great_circle()
 	//	  We're not handling oblique projections here, i.e. we're only handling lat-lon offsets to the 
 	//	  centre of the map, so anywhere on the central meridian will give us a suitable point. 
 	//
-	double central_lat = d_central_llp.latitude();
-	double central_lon = d_central_llp.longitude();
-
-	GPlatesMaths::PointOnSphere central_pos = GPlatesMaths::make_point_on_sphere(d_central_llp);
-	double lat_of_second_llp = 0.;
-	if (central_lat <= 0.)
-	{
-		lat_of_second_llp = central_lat + 90.;
-	}
-	else
-	{
-		lat_of_second_llp = central_lat - 90.;
-	}
-
-	GPlatesMaths::LatLonPoint second_llp(lat_of_second_llp,central_lon);
-	GPlatesMaths::PointOnSphere second_pos = GPlatesMaths::make_point_on_sphere(second_llp);
-	d_boundary_great_circle = GPlatesMaths::GreatCircle(central_pos,second_pos);
+	GPlatesMaths::PointOnSphere central_pos = GPlatesMaths::make_point_on_sphere(
+			GPlatesMaths::LatLonPoint(0.0, d_central_meridian));
+	GPlatesMaths::PointOnSphere second_pos = GPlatesMaths::make_point_on_sphere(
+			GPlatesMaths::LatLonPoint(90.0, d_central_meridian));
+	d_boundary_great_circle = GPlatesMaths::GreatCircle(central_pos, second_pos);
 }
 
 
 GPlatesGui::MapProjectionSettings::MapProjectionSettings(
 		MapProjection::Type projection_type_,
-		const GPlatesMaths::LatLonPoint &central_llp_) :
+		const double &central_meridian_) :
 	d_projection_type(projection_type_),
-	d_central_llp(central_llp_)
+	d_central_meridian(central_meridian_)
 {
 }

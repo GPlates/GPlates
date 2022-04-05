@@ -270,14 +270,14 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	// Handle signals to update mouse pointer position
 	QObject::connect(
 			&(d_globe_and_map_widget_ptr->get_globe_canvas()),
-		SIGNAL(mouse_pointer_position_changed(int, int, double, double, const GPlatesMaths::PointOnSphere &, bool)),
+		SIGNAL(mouse_position_on_globe_changed(const GPlatesMaths::PointOnSphere &, bool)),
 			this,
-			SLOT(update_mouse_pointer_position(int, int, double, double, const GPlatesMaths::PointOnSphere &, bool)));
+			SLOT(update_mouse_position_on_globe(const GPlatesMaths::PointOnSphere &, bool)));
 	QObject::connect(
 			&(d_globe_and_map_widget_ptr->get_map_canvas()),
-			SIGNAL(mouse_pointer_position_changed(const boost::optional<GPlatesMaths::LatLonPoint> &, bool)),
+			SIGNAL(mouse_position_on_map_changed(const boost::optional<GPlatesMaths::LatLonPoint> &)),
 			this,
-			SLOT(update_mouse_pointer_position(const boost::optional<GPlatesMaths::LatLonPoint> &, bool)));
+			SLOT(update_mouse_position_on_map(const boost::optional<GPlatesMaths::LatLonPoint> &)));
 	QObject::connect(
 			&(view_state.get_viewport_projection()),
 			SIGNAL(projection_type_changed(const GPlatesGui::ViewportProjection &)),
@@ -647,16 +647,12 @@ GPlatesQtWidgets::ReconstructionViewWidget::recalc_camera_position()
 
 
 void
-GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_pointer_position(
-		int screen_width,
-		int screen_height,
-		double screen_x,
-		double screen_y,
-		const GPlatesMaths::PointOnSphere &new_pos,
+GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_position_on_globe(
+		const GPlatesMaths::PointOnSphere &position_on_globe,
 		bool is_on_globe)
 {
 	//std::cerr << "Updating pos pointer" << std::endl;
-	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(new_pos);
+	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(position_on_globe);
 
 	QLocale locale_;
 	QString lat = locale_.toString(llp.latitude(), 'f', 2);
@@ -675,19 +671,18 @@ GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_pointer_position(
 
 
 void
-GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_pointer_position(
-		const boost::optional<GPlatesMaths::LatLonPoint> &llp,
-		bool is_on_map)
+GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_position_on_map(
+		const boost::optional<GPlatesMaths::LatLonPoint> &position_on_globe)
 {
 	//std::cerr << "Updating llp pointer" << std::endl;
 	QString lat_label(QObject::tr("(lat: "));
 	QString lon_label(QObject::tr(" ; lon: "));
 	QString position_as_string;
-	if (llp)
+	if (position_on_globe)
 	{
 		QLocale locale_;
-		QString lat = locale_.toString((*llp).latitude(), 'f', 2);
-		QString lon = locale_.toString((*llp).longitude(), 'f', 2);
+		QString lat = locale_.toString(position_on_globe->latitude(), 'f', 2);
+		QString lon = locale_.toString(position_on_globe->longitude(), 'f', 2);
 		position_as_string.append(lat_label);
 		position_as_string.append(lat);
 		position_as_string.append(lon_label);

@@ -48,8 +48,6 @@ namespace GPlatesGui
 	 * This class is the abstract base of all map canvas tools.
 	 *
 	 * This serves the role of the abstract State class in the State Pattern in Gamma et al.
-	 *
-	 * The currently-activated MapCanvasTool is referenced by an instance of MapCanvasToolChoice.
 	 */
 	class MapCanvasTool :
 			public boost::noncopyable
@@ -58,11 +56,6 @@ namespace GPlatesGui
 
 		/**
 		 * Construct a MapCanvasTool instance.
-		 *
-		 * Since this class is an abstract class, this constructor can never be invoked
-		 * other than explicitly in the initialiser lists of derived classes.
-		 * Nevertheless, the initialiser lists of derived classes @em do need to invoke it
-		 * explicitly, since this class contains members which need to be initialised.
 		 */
 		explicit
 		MapCanvasTool(

@@ -37,6 +37,7 @@
 
 #include "maths/GreatCircle.h"
 #include "maths/LatLonPoint.h"
+#include "maths/MathsUtils.h"
 
 #include "utils/ReferenceCount.h"
 
@@ -168,19 +169,19 @@ namespace GPlatesGui
 			double &y) const;
 
 		/**
-		 * Set the central llp
+		 * Set the central meridian.
 		 */ 
 		void
-		set_central_llp(
-				const GPlatesMaths::LatLonPoint &llp);
+		set_central_meridian(
+				const double &central_meridian_);
 
 		/**
-		 * Get the central llp
+		 * Get the central meridian.
 		 */
-		const GPlatesMaths::LatLonPoint &
-		central_llp() const
+		double
+		central_meridian() const
 		{
-			return d_central_llp;
+			return d_central_meridian;
 		}
 
 		/**
@@ -235,9 +236,9 @@ namespace GPlatesGui
 
 
 		/**
-		 * The central lat-lon point for the projection.
+		 * The central meridian for the projection.
 		 */
-		GPlatesMaths::LatLonPoint d_central_llp;
+		double d_central_meridian;
 
 
 		/**
@@ -276,7 +277,7 @@ namespace GPlatesGui
 	public:
 		MapProjectionSettings(
 				MapProjection::Type projection_type_,
-				const GPlatesMaths::LatLonPoint &central_llp_);
+				const double &central_meridian_);
 
 		MapProjection::Type
 		get_projection_type() const
@@ -291,25 +292,25 @@ namespace GPlatesGui
 			d_projection_type = projection_type_;
 		}
 
-		const GPlatesMaths::LatLonPoint &
-		get_central_llp() const
+		double
+		get_central_meridian() const
 		{
-			return d_central_llp;
+			return d_central_meridian;
 		}
 
 		void
-		set_central_llp(
-				const GPlatesMaths::LatLonPoint &central_llp_)
+		set_central_meridian(
+				const double &central_meridian_)
 		{
-			d_central_llp = central_llp_;
+			d_central_meridian = central_meridian_;
 		}
 
 	private:
 		//! The projection type.
 		MapProjection::Type d_projection_type;
 
-		//! The central lat-lon point for the projection.
-		GPlatesMaths::LatLonPoint d_central_llp;
+		//! The central meridian for the projection.
+		double d_central_meridian;
 
 		friend
 		bool
@@ -318,7 +319,7 @@ namespace GPlatesGui
 				const MapProjectionSettings &rhs)
 		{
 			return lhs.d_projection_type == rhs.d_projection_type &&
-				make_point_on_sphere(lhs.d_central_llp) == make_point_on_sphere(rhs.d_central_llp);
+				GPlatesMaths::are_almost_exactly_equal(lhs.d_central_meridian, rhs.d_central_meridian);
 		}
 	};
 }

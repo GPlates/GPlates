@@ -28,7 +28,6 @@
 
 #include <memory>
 #include <QByteArray>
-#include <QGraphicsScene>
 #include <QLabel>
 #include <QMainWindow>
 #include <QSplitter>
@@ -147,18 +146,13 @@ namespace GPlatesQtWidgets
 		recalc_camera_position();
 
 		void
-		update_mouse_pointer_position(
-				int screen_width,
-				int screen_height,
-				double screen_x,
-				double screen_y,
-				const GPlatesMaths::PointOnSphere &new_pos,
+		update_mouse_position_on_globe(
+				const GPlatesMaths::PointOnSphere &position_on_globe,
 				bool is_on_globe);
 
 		void
-		update_mouse_pointer_position(
-				const boost::optional<GPlatesMaths::LatLonPoint> &new_lat_lon_pos,
-				bool is_on_map);
+		update_mouse_position_on_map(
+				const boost::optional<GPlatesMaths::LatLonPoint> &position_on_globe);
 		
 		void
 		activate_zoom_spinbox();

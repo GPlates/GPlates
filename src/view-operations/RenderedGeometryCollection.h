@@ -69,9 +69,7 @@ namespace GPlatesViewOperations
 	 *   its scope does the update signal get emitted.
      * * Currently GlobeCanvas listens to signals from RenderedGeomeryCollection and redraws when
 	 *   a change is made.
-     * * Globe in GlobeCanvas draws the RenderedGeometryCollection by visiting it with a single visitor.
-     * * The map canvas or view could listen to RenderedGeometryCollection and clear all the
-	 *   objects added to QGraphicsScene and re-add them by traversing the collection with a visitor.
+     * * Globe in GlobeCanvas (and Map in MapCanvas) draws the RenderedGeometryCollection by visiting.
      * * RenderedGeometryFactory is used to create RenderedGeometry objects which are added to
 	 *   RenderedGeometryCollection.
      * * RenderedGeometryFactory contains global functions for creating different types of

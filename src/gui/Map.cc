@@ -118,7 +118,7 @@ GPlatesGui::Map::set_projection_type(
 double
 GPlatesGui::Map::central_meridian()
 {
-	return d_map_projection->central_llp().longitude();
+	return d_map_projection->central_meridian();
 }
 
 
@@ -126,8 +126,7 @@ void
 GPlatesGui::Map::set_central_meridian(
 		double central_meridian_)
 {
-	GPlatesMaths::LatLonPoint llp(0.0, central_meridian_);
-	d_map_projection->set_central_llp(llp);
+	d_map_projection->set_central_meridian(central_meridian_);
 }
 
 

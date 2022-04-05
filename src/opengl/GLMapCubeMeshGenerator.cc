@@ -90,7 +90,7 @@ GPlatesOpenGL::GLMapCubeMeshGenerator::create_cube_face_quadrant_mesh_vertices(
 	const double dateline_test_espsilon =
 			std::sin(std::atan(0.5 / (std::sqrt(2.0) * cube_face_quadrant_dimension_in_vertex_spacing)));
 
-	const double &central_meridian_longitude = d_map_projection.central_llp().longitude();
+	const double central_meridian = d_map_projection.central_meridian();
 
 	// Iterate over the vertices of the quadrant of the cube face.
 	for (unsigned int y = 0; y < cube_face_quadrant_dimension_in_vertex_samples; ++y)
@@ -108,7 +108,7 @@ GPlatesOpenGL::GLMapCubeMeshGenerator::create_cube_face_quadrant_mesh_vertices(
 			// The map-projected point - it's not yet projected though.
 			Point2D map_point =
 			{
-				lat_lon_point.longitude() + central_meridian_longitude,
+				lat_lon_point.longitude() + central_meridian,
 				lat_lon_point.latitude()
 			};
 
@@ -155,8 +155,8 @@ GPlatesOpenGL::GLMapCubeMeshGenerator::create_cube_face_quadrant_mesh_vertices(
 							// So if this code path changes then should check that those rasters are
 							// exported correctly.
 							map_point.x = quadrant_is_in_upper_longitude_range
-									? 180 - 1e-6 + central_meridian_longitude
-									: -180 + 1e-6 + central_meridian_longitude;
+									? 180 - 1e-6 + central_meridian
+									: -180 + 1e-6 + central_meridian;
 						}
 					}
 				}
@@ -179,12 +179,12 @@ GPlatesOpenGL::GLMapCubeMeshGenerator::create_pole_mesh_vertex(
 		const double &pole_longitude,
 		bool north_pole) const
 {
-	const double &central_meridian_longitude = d_map_projection.central_llp().longitude();
+	const double central_meridian = d_map_projection.central_meridian();
 
 	// The map-projected point - it's not yet projected though.
 	Point2D map_point =
 	{
-		pole_longitude + central_meridian_longitude,
+		pole_longitude + central_meridian,
 		double(north_pole ? 90 : -90)
 	};
 

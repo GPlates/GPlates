@@ -481,7 +481,7 @@ namespace
 		// Anything outside that range does not get rendered.
 		// So we need to make sure the full [left,right] range gets rendered.
 		const double central_lon = 0.5 * (lat_lon_extents.left + lat_lon_extents.right);
-		map_projection->set_central_llp(GPlatesMaths::LatLonPoint(0, central_lon));
+		map_projection->set_central_meridian(central_lon);
 
 		return map_projection;
 	}
@@ -946,7 +946,7 @@ namespace
 		// stored as georeferencing in the exported file) since the map view adjusts longitude
 		// according to the map projection's central meridian.
 		const double map_view_central_meridian =
-				map_projection->get_projection_settings().get_central_llp().longitude();
+				map_projection->get_projection_settings().get_central_meridian();
 		GPlatesPropertyValues::Georeferencing::lat_lon_extents_type pixel_rendering_lat_lon_extents =
 				pixel_registration_lat_lon_extents;
 		pixel_rendering_lat_lon_extents.left -= map_view_central_meridian;
@@ -1085,7 +1085,7 @@ namespace
 		// stored as georeferencing in the exported file) since the map view adjusts longitude
 		// according to the map projection's central meridian.
 		const double map_view_central_meridian =
-				map_cube_mesh->get_current_map_projection_settings().get_central_llp().longitude();
+				map_cube_mesh->get_current_map_projection_settings().get_central_meridian();
 		GPlatesPropertyValues::Georeferencing::lat_lon_extents_type pixel_rendering_lat_lon_extents =
 				pixel_registration_lat_lon_extents;
 		pixel_rendering_lat_lon_extents.left -= map_view_central_meridian;

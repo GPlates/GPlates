@@ -303,7 +303,7 @@ namespace
 				boost::in_place(boost::ref(vertex_elements)));
 
 		const double lat_0 = 90;
-		const double lon_0 = map_projection.central_llp().longitude() - 180;
+		const double lon_0 = map_projection.central_meridian() - 180;
 
 		if (delta_lat != 0.0)
 		{

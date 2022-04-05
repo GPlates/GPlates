@@ -42,7 +42,7 @@ const double GPlatesGui::GlobeCamera::FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIE
 
 // Use a standard field-of-view of 90 degrees for the smaller viewport dimension.
 const double GPlatesGui::GlobeCamera::PERSPECTIVE_FIELD_OF_VIEW_DEGREES = 90.0;
-const double GPlatesGui::GlobeCamera::TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW_DEGREES =
+const double GPlatesGui::GlobeCamera::TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW =
 		std::tan(GPlatesMaths::convert_deg_to_rad(GPlatesGui::GlobeCamera::PERSPECTIVE_FIELD_OF_VIEW_DEGREES) / 2.0);
 
 // Our universe coordinate system is:
@@ -104,7 +104,7 @@ GPlatesGui::GlobeCamera::calc_distance_eye_to_look_at_for_perspective_viewing_at
 	//
 	// This means 'tan(FOV/2) = FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT / distance', which means
 	// distance = FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT / tan(FOV/2).
-	return FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT / TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
+	return FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT / TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW;
 #else
 	// Field-of-view for the smaller viewport dimension.
 	const double perspective_field_of_view_smaller_dim_radians =
@@ -452,7 +452,7 @@ GPlatesGui::GlobeCamera::get_perspective_fovy(
 	{
 		// Convert field-of-view in x-axis to field-of-view in y-axis by adjusting for the aspect ratio.
 		fovy_degrees = GPlatesMaths::convert_rad_to_deg(
-				2.0 * std::atan(TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW_DEGREES / aspect_ratio));
+				2.0 * std::atan(TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW / aspect_ratio));
 	}
 }
 
@@ -518,13 +518,13 @@ GPlatesGui::GlobeCamera::get_camera_ray_at_window_coord(
 		if (aspect_ratio < 1.0)
 		{
 			// Width is smaller dimension.
-			tan_fovx = TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
+			tan_fovx = TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW;
 			tan_fovy = tan_fovx / aspect_ratio;
 		}
 		else
 		{
 			// Height is smaller dimension.
-			tan_fovy = TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
+			tan_fovy = TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW;
 			tan_fovx = tan_fovy * aspect_ratio;
 		}
 
@@ -637,13 +637,13 @@ GPlatesGui::GlobeCamera::get_window_coord_at_position(
 		if (aspect_ratio < 1.0)
 		{
 			// Width is smaller dimension.
-			tan_fovx = TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
+			tan_fovx = TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW;
 			tan_fovy = tan_fovx / aspect_ratio;
 		}
 		else
 		{
 			// Height is smaller dimension.
-			tan_fovy = TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
+			tan_fovy = TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW;
 			tan_fovx = tan_fovy * aspect_ratio;
 		}
 

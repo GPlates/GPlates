@@ -328,12 +328,12 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render(
 	// First see if the map projection central meridian has changed.
 	//
 	// NOTE: If the projection *type* changes then we don't need to change our world transform.
-	const double updated_map_projection_central_meridian_longitude =
-			d_multi_resolution_map_cube_mesh->get_current_map_projection_settings().get_central_llp().longitude();
+	const double updated_map_projection_central_meridian =
+			d_multi_resolution_map_cube_mesh->get_current_map_projection_settings().get_central_meridian();
 	if (!GPlatesMaths::are_almost_exactly_equal(
-			d_map_projection_central_meridian_longitude, updated_map_projection_central_meridian_longitude))
+			d_map_projection_central_meridian_longitude, updated_map_projection_central_meridian))
 	{
-		d_map_projection_central_meridian_longitude = updated_map_projection_central_meridian_longitude;
+		d_map_projection_central_meridian_longitude = updated_map_projection_central_meridian;
 
 		// Specify a transform that makes the (non-zero longitude) central meridian (at equator)
 		// become the global x-axis. This means an object on the central meridian
