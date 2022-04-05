@@ -278,7 +278,6 @@ namespace
 const double GPlatesQtWidgets::GlobeCanvas::NUDGE_CAMERA_DEGREES = 5.0;
 
 
-// Public constructor
 GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
@@ -302,10 +301,10 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			GPlatesOpenGL::GLVisualLayers::create(
 					d_gl_context, view_state.get_application_state())),
 	// The following unit-vector initialisation value is arbitrary.
-	d_mouse_pointer_pos_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
-	d_mouse_pointer_is_on_globe(false),
-	d_mouse_pointer_screen_pos_x(0),
-	d_mouse_pointer_screen_pos_y(0),
+	d_mouse_position_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
+	d_mouse_is_on_globe(false),
+	d_mouse_screen_position_x(0),
+	d_mouse_screen_position_y(0),
 	d_globe(
 			view_state,
 			d_gl_visual_layers,
@@ -375,9 +374,6 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	QObject::connect(
 			&d_globe_camera, SIGNAL(camera_changed()),
 			this, SLOT(handle_camera_change()));
-	QObject::connect(
-			&d_globe_camera, SIGNAL(camera_changed()),
-			this, SLOT(force_mouse_pointer_pos_change()));
 
 	handle_camera_change();
 
@@ -445,188 +441,6 @@ GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 
 	// Proximity threshold is expected to be a cosine.
 	return std::cos(distance_inclusion_threshold);
-}
-
-
-GPlatesMaths::PointOnSphere
-GPlatesQtWidgets::GlobeCanvas::centre_of_viewport() const
-{
-	return d_globe_camera.get_look_at_position();
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::update_canvas()
-{
-	update();
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::handle_mouse_pointer_pos_change()
-{
-	std::pair<bool, GPlatesMaths::PointOnSphere> new_pos_result =
-			calc_globe_position(
-					d_mouse_pointer_screen_pos_x,
-					d_mouse_pointer_screen_pos_y);
-
-	bool is_now_on_globe = new_pos_result.first;
-	const GPlatesMaths::PointOnSphere &new_pos = new_pos_result.second;
-
-	if (new_pos != d_mouse_pointer_pos_on_globe ||
-		is_now_on_globe != d_mouse_pointer_is_on_globe)
-	{
-		d_mouse_pointer_pos_on_globe = new_pos;
-		d_mouse_pointer_is_on_globe = is_now_on_globe;
-
-		Q_EMIT mouse_pointer_position_changed(
-				width(),
-				height(),
-				d_mouse_pointer_screen_pos_x,
-				d_mouse_pointer_screen_pos_y,
-				new_pos,
-				is_now_on_globe);
-	}
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::force_mouse_pointer_pos_change()
-{
-	std::pair<bool, GPlatesMaths::PointOnSphere> new_pos_result =
-			calc_globe_position(
-					d_mouse_pointer_screen_pos_x,
-					d_mouse_pointer_screen_pos_y);
-
-	bool is_now_on_globe = new_pos_result.first;
-	const GPlatesMaths::PointOnSphere &new_pos = new_pos_result.second;
-
-	d_mouse_pointer_pos_on_globe = new_pos;
-	d_mouse_pointer_is_on_globe = is_now_on_globe;
-
-	Q_EMIT mouse_pointer_position_changed(
-			width(),
-			height(),
-			d_mouse_pointer_screen_pos_x,
-			d_mouse_pointer_screen_pos_y,
-			new_pos,
-			is_now_on_globe);
-}
-
-
-void 
-GPlatesQtWidgets::GlobeCanvas::initializeGL_if_necessary() 
-{
-	// Return early if we've already initialised OpenGL.
-	// This is now necessary because it's not only 'paintEvent()' and other QGLWidget methods
-	// that call our 'initializeGL()' method - it's now also when a client wants to render the
-	// scene to an image (instead of render/update the QGLWidget itself).
-	if (d_initialisedGL)
-	{
-		return;
-	}
-
-	// Make sure the OpenGL context is current.
-	// We can't use 'd_gl_context' yet because it hasn't been initialised.
-	makeCurrent();
-
-	initializeGL();
-}
-
-
-void 
-GPlatesQtWidgets::GlobeCanvas::initializeGL() 
-{
-	// Initialise our context-like object first.
-	d_gl_context->initialise();
-
-	// Start a render scope (all GL calls should be done inside this scope).
-	//
-	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
-	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
-
-	// Create and initialise the offscreen render target.
-	initialize_off_screen_render_target(*gl);
-
-	// NOTE: We should not perform any operation that affects the default framebuffer (such as 'glClear()')
-	//       because it's possible the default framebuffer (associated with this GLWidget) is not yet
-	//       set up correctly despite its OpenGL context being the current rendering context.
-
-	// Initialise those parts of globe that require a valid OpenGL context to be bound.
-	d_globe.initialiseGL(*gl);
-
-	// 'initializeGL()' should only be called once.
-	d_initialisedGL = true;
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::initialize_off_screen_render_target(
-		GPlatesOpenGL::GL &gl)
-{
-	if (d_off_screen_render_target_dimension > gl.get_capabilities().gl_max_texture_size)
-	{
-		d_off_screen_render_target_dimension = gl.get_capabilities().gl_max_texture_size;
-	}
-
-	// Create the framebuffer and its renderbuffers.
-	d_off_screen_colour_renderbuffer = GPlatesOpenGL::GLRenderbuffer::create(gl);
-	d_off_screen_depth_stencil_renderbuffer = GPlatesOpenGL::GLRenderbuffer::create(gl);
-	d_off_screen_framebuffer = GPlatesOpenGL::GLFramebuffer::create(gl);
-
-	// Initialise offscreen colour renderbuffer.
-	gl.BindRenderbuffer(GL_RENDERBUFFER, d_off_screen_colour_renderbuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, d_off_screen_render_target_dimension, d_off_screen_render_target_dimension);
-
-	// Initialise offscreen depth/stencil renderbuffer.
-	// Note that (in OpenGL 3.3 core) an OpenGL implementation is only *required* to provide stencil if a
-	// depth/stencil format is requested, and furthermore GL_DEPTH24_STENCIL8 is a specified required format.
-	gl.BindRenderbuffer(GL_RENDERBUFFER, d_off_screen_depth_stencil_renderbuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, d_off_screen_render_target_dimension, d_off_screen_render_target_dimension);
-
-	// Bind the framebuffer that'll we subsequently attach the renderbuffers to.
-	gl.BindFramebuffer(GL_FRAMEBUFFER, d_off_screen_framebuffer);
-
-	// Bind the colour renderbuffer to framebuffer's first colour attachment.
-	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, d_off_screen_colour_renderbuffer);
-
-	// Bind the depth/stencil renderbuffer to framebuffer's depth/stencil attachment.
-	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, d_off_screen_depth_stencil_renderbuffer);
-
-	const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	GPlatesGlobal::Assert<GPlatesOpenGL::OpenGLException>(
-			completeness == GL_FRAMEBUFFER_COMPLETE,
-			GPLATES_ASSERTION_SOURCE,
-			"Framebuffer not complete for rendering tiles in globe filled polygons.");
-}
-
-
-void 
-GPlatesQtWidgets::GlobeCanvas::resizeGL(
-		int new_width,
-		int new_height) 
-{
-	set_view();
-}
-
-
-void 
-GPlatesQtWidgets::GlobeCanvas::paintGL() 
-{
-	// Start a render scope (all GL calls should be done inside this scope).
-	//
-	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
-	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
-
-	// Hold onto the previous frame's cached resources *while* generating the current frame.
-	d_gl_frame_cache_handle = render_scene(
-			*gl,
-			d_view_projection,
-			// Using device-independent pixels (eg, widget dimensions)...
-			width(),
-			height());
 }
 
 
@@ -725,6 +539,628 @@ GPlatesQtWidgets::GlobeCanvas::render_to_qimage(
 }
 
 
+void
+GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
+		QPaintDevice &feedback_paint_device)
+{
+	// Initialise OpenGL if we haven't already.
+	initializeGL_if_necessary();
+
+	// Make sure the OpenGL context is currently active.
+	d_gl_context->make_current();
+
+	// Start a render scope (all GL calls should be done inside this scope).
+	//
+	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
+	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
+	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
+
+	// Convert from paint device size to device pixels (used by OpenGL)...
+	const unsigned int feedback_paint_device_pixel_width =
+			feedback_paint_device.width() * feedback_paint_device.devicePixelRatio();
+	const unsigned int feedback_paint_device_pixel_height =
+			feedback_paint_device.height() * feedback_paint_device.devicePixelRatio();
+	const double feedback_paint_device_aspect_ratio =
+			double(feedback_paint_device_pixel_width) / feedback_paint_device_pixel_height;
+
+	const GPlatesOpenGL::GLViewport feedback_paint_device_viewport(
+			0, 0,
+			feedback_paint_device_pixel_width,
+			feedback_paint_device_pixel_height);
+
+	// Get the view-projection transform.
+	const std::pair<GPlatesOpenGL::GLMatrix/*view*/, GPlatesOpenGL::GLMatrix/*projection*/>
+			feedback_paint_device_view_projection_transform =
+					calc_scene_view_projection_transform(
+							d_globe_camera,
+							feedback_paint_device_aspect_ratio);
+
+	const GPlatesOpenGL::GLViewProjection feedback_paint_device_view_projection(
+			feedback_paint_device_viewport,
+			feedback_paint_device_view_projection_transform.first/*view*/,
+			feedback_paint_device_view_projection_transform.second/*projection*/);
+
+	// Set the viewport (and scissor rectangle) to the size of the feedback paint device
+	// (instead of the globe canvas) since we're rendering to it (via transform feedback).
+	gl->Viewport(
+			feedback_paint_device_viewport.x(), feedback_paint_device_viewport.y(),
+			feedback_paint_device_viewport.width(), feedback_paint_device_viewport.height());
+	gl->Scissor(
+			feedback_paint_device_viewport.x(), feedback_paint_device_viewport.y(),
+			feedback_paint_device_viewport.width(), feedback_paint_device_viewport.height());
+
+	// Render the scene to the feedback paint device.
+	// Hold onto the previous frame's cached resources *while* generating the current frame.
+	d_gl_frame_cache_handle = render_scene(
+			*gl,
+			feedback_paint_device_view_projection,
+			// Using device-independent pixels (eg, widget dimensions)...
+			feedback_paint_device.width(),
+			feedback_paint_device.height());
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::set_camera_viewpoint(
+		const GPlatesMaths::LatLonPoint &camera_viewpoint)
+{
+	d_globe_camera.move_look_at_position(
+			GPlatesMaths::make_point_on_sphere(camera_viewpoint));
+}
+
+boost::optional<GPlatesMaths::LatLonPoint>
+GPlatesQtWidgets::GlobeCanvas::get_camera_viewpoint() const
+{
+	// This function returns a boost::optional for consistency with the base class virtual function.
+	// The globe always returns a valid camera llp though.
+	return GPlatesMaths::make_lat_lon_point(d_globe_camera.get_look_at_position());
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::set_orientation(
+	const GPlatesMaths::Rotation &rotation
+	/*bool should_emit_external_signal */)
+{
+	d_globe_camera.set_globe_orientation_relative_to_view(rotation);
+
+	update_canvas();
+}
+
+boost::optional<GPlatesMaths::Rotation>
+GPlatesQtWidgets::GlobeCanvas::get_orientation() const
+{
+	return d_globe_camera.get_globe_orientation_relative_to_view();
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::update_canvas()
+{
+	update();
+}
+
+
+void 
+GPlatesQtWidgets::GlobeCanvas::initializeGL() 
+{
+	// Initialise our context-like object first.
+	d_gl_context->initialise();
+
+	// Start a render scope (all GL calls should be done inside this scope).
+	//
+	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
+	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
+	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
+
+	// Create and initialise the offscreen render target.
+	initialize_off_screen_render_target(*gl);
+
+	// NOTE: We should not perform any operation that affects the default framebuffer (such as 'glClear()')
+	//       because it's possible the default framebuffer (associated with this GLWidget) is not yet
+	//       set up correctly despite its OpenGL context being the current rendering context.
+
+	// Initialise those parts of globe that require a valid OpenGL context to be bound.
+	d_globe.initialiseGL(*gl);
+
+	// 'initializeGL()' should only be called once.
+	d_initialisedGL = true;
+}
+
+
+void 
+GPlatesQtWidgets::GlobeCanvas::resizeGL(
+		int new_width,
+		int new_height) 
+{
+	set_view();
+}
+
+
+void 
+GPlatesQtWidgets::GlobeCanvas::paintGL() 
+{
+	// Start a render scope (all GL calls should be done inside this scope).
+	//
+	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
+	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
+	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
+
+	// Hold onto the previous frame's cached resources *while* generating the current frame.
+	d_gl_frame_cache_handle = render_scene(
+			*gl,
+			d_view_projection,
+			// Using device-independent pixels (eg, widget dimensions)...
+			width(),
+			height());
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::paintEvent(
+		QPaintEvent *paint_event)
+{
+	QGLWidget::paintEvent(paint_event);
+
+	// Explicitly swap the OpenGL front and back buffers.
+	// Note that we have already disabled auto buffer swapping because otherwise both the QPainter
+	// in 'paintGL()' and 'QGLWidget::paintEvent()' will call 'QGLWidget::swapBuffers()'
+	// essentially canceling each other out (or causing flickering).
+	if (doubleBuffer() && !autoBufferSwap())
+	{
+		swapBuffers();
+	}
+
+	// If d_mouse_press_info is not boost::none, then mouse is down.
+	Q_EMIT repainted(static_cast<bool>(d_mouse_press_info));
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::mousePressEvent(
+		QMouseEvent *press_event) 
+{
+	// Let's ignore all mouse buttons except the left mouse button.
+	if (press_event->button() != Qt::LeftButton)
+	{
+		return;
+	}
+
+	update_mouse_screen_position(press_event);
+
+	d_mouse_press_info =
+			MousePressInfo(
+					d_mouse_screen_position_x,
+					d_mouse_screen_position_y,
+					d_mouse_position_on_globe,
+					d_mouse_is_on_globe,
+					press_event->button(),
+					press_event->modifiers());
+
+	Q_EMIT mouse_pressed(
+			width(),
+			height(),
+			d_mouse_press_info->d_mouse_screen_position_x,
+			d_mouse_press_info->d_mouse_screen_position_y,
+			d_mouse_press_info->d_mouse_position_on_globe,
+			d_mouse_press_info->d_mouse_is_on_globe,
+			d_mouse_press_info->d_button,
+			d_mouse_press_info->d_modifiers);
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
+		QMouseEvent *move_event) 
+{
+	update_mouse_screen_position(move_event);
+	
+	if (d_mouse_press_info)
+	{
+		// Call it a drag if EITHER:
+		//  * the mouse moved at least 2 pixels in one direction and 1 pixel in the other;
+		// OR:
+		//  * the mouse moved at least 3 pixels in one direction.
+		//
+		// Otherwise, the user just has shaky hands or a very high-res screen.
+		int mouse_delta_x = d_mouse_screen_position_x - d_mouse_press_info->d_mouse_screen_position_x;
+		int mouse_delta_y = d_mouse_screen_position_y - d_mouse_press_info->d_mouse_screen_position_y;
+		if (mouse_delta_x * mouse_delta_x + mouse_delta_y * mouse_delta_y > 4)
+		{
+			d_mouse_press_info->d_is_mouse_drag = true;
+		}
+
+		if (d_mouse_press_info->d_is_mouse_drag)
+		{
+			Q_EMIT mouse_dragged(
+					width(),
+					height(),
+					d_mouse_press_info->d_mouse_screen_position_x,
+					d_mouse_press_info->d_mouse_screen_position_y,
+					d_mouse_press_info->d_mouse_position_on_globe,
+					d_mouse_press_info->d_mouse_is_on_globe,
+					d_mouse_screen_position_x,
+					d_mouse_screen_position_y,
+					d_mouse_position_on_globe,
+					d_mouse_is_on_globe,
+					centre_of_viewport(),
+					d_mouse_press_info->d_button,
+					d_mouse_press_info->d_modifiers);
+		}
+	}
+	else
+	{
+		//
+		// The mouse has moved but the left mouse button is not currently pressed.
+		// This could mean no mouse buttons are currently pressed or it could mean a
+		// button other than the left mouse button is currently pressed.
+		// Either way it is an mouse movement that is not currently invoking a
+		// canvas tool operation.
+		//
+		Q_EMIT mouse_moved_without_drag(
+				width(),
+				height(),
+				d_mouse_screen_position_x,
+				d_mouse_screen_position_y,
+				d_mouse_position_on_globe,
+				d_mouse_is_on_globe,
+				centre_of_viewport());
+	}
+}
+
+
+void 
+GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
+		QMouseEvent *release_event)
+{
+	// Let's ignore all mouse buttons except the left mouse button.
+	if (release_event->button() != Qt::LeftButton)
+	{
+		return;
+	}
+
+	// Let's do our best to avoid crash-inducing Boost assertions.
+	if ( ! d_mouse_press_info)
+	{
+		// OK, something strange happened:  Our boost::optional MousePressInfo is not
+		// initialised.  Rather than spontaneously crashing with a Boost assertion error,
+		// let's log a warning on the console and NOT crash.
+		qWarning() << "Warning (GlobeCanvas::mouseReleaseEvent, "
+				<< __FILE__
+				<< " line "
+				<< __LINE__
+				<< "):\nUninitialised mouse press info!";
+		return;
+	}
+
+	update_mouse_screen_position(release_event);
+
+	if (abs(d_mouse_screen_position_x - d_mouse_press_info->d_mouse_screen_position_x) > 3 &&
+		abs(d_mouse_screen_position_y - d_mouse_press_info->d_mouse_screen_position_y) > 3)
+	{
+		d_mouse_press_info->d_is_mouse_drag = true;
+	}
+	if (d_mouse_press_info->d_is_mouse_drag)
+	{
+		Q_EMIT mouse_released_after_drag(
+				width(),
+				height(),
+				d_mouse_press_info->d_mouse_screen_position_x,
+				d_mouse_press_info->d_mouse_screen_position_y,
+				d_mouse_press_info->d_mouse_position_on_globe,
+				d_mouse_press_info->d_mouse_is_on_globe,
+				d_mouse_screen_position_x,
+				d_mouse_screen_position_y,
+				d_mouse_position_on_globe,
+				d_mouse_is_on_globe,
+				centre_of_viewport(),
+				d_mouse_press_info->d_button,
+				d_mouse_press_info->d_modifiers);
+	}
+	else
+	{
+		Q_EMIT mouse_clicked(
+				width(),
+				height(),
+				d_mouse_press_info->d_mouse_screen_position_x,
+				d_mouse_press_info->d_mouse_screen_position_y,
+				d_mouse_press_info->d_mouse_position_on_globe,
+				d_mouse_press_info->d_mouse_is_on_globe,
+				d_mouse_press_info->d_button,
+				d_mouse_press_info->d_modifiers);
+	}
+	d_mouse_press_info = boost::none;
+
+	// Emit repainted signal with mouse_down = false so that those listeners who
+	// didn't care about intermediate repaints can now deal with the repaint.
+	Q_EMIT repainted(false);
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::mouseDoubleClickEvent(
+		QMouseEvent *mouse_event)
+{
+	mousePressEvent(mouse_event);
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::keyPressEvent(
+		QKeyEvent *key_event)
+{
+	// Note that the arrow keys are handled here instead of being set as shortcuts
+	// to the corresponding actions in ViewportWindow because when they were set as
+	// shortcuts, they were interfering with the arrow keys on other widgets.
+	switch (key_event->key())
+	{
+		case Qt::Key_Up:
+			move_camera_up();
+			break;
+
+		case Qt::Key_Down:
+			move_camera_down();
+			break;
+
+		case Qt::Key_Left:
+			move_camera_left();
+			break;
+
+		case Qt::Key_Right:
+			move_camera_right();
+			break;
+
+		default:
+			QGLWidget::keyPressEvent(key_event);
+	}
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::move_camera_up()
+{
+	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
+			d_view_state.get_viewport_zoom().zoom_factor();
+
+	d_globe_camera.rotate_up(nudge_angle);
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::move_camera_down()
+{
+	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
+			d_view_state.get_viewport_zoom().zoom_factor();
+
+	d_globe_camera.rotate_down(nudge_angle);
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::move_camera_left()
+{
+	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
+			d_view_state.get_viewport_zoom().zoom_factor();
+
+	d_globe_camera.rotate_left(nudge_angle);
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::move_camera_right()
+{
+	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
+			d_view_state.get_viewport_zoom().zoom_factor();
+
+	d_globe_camera.rotate_right(nudge_angle);
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::rotate_camera_clockwise()
+{
+	// Note that we actually want to rotate the globe clockwise (not the camera).
+	// We achieve this by rotating the camera anti-clockwise...
+	d_globe_camera.rotate_anticlockwise(
+			GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES));
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::rotate_camera_anticlockwise()
+{
+	// Note that we actually want to rotate the globe anti-clockwise (not the camera).
+	// We achieve this by rotating the camera clockwise...
+	d_globe_camera.rotate_clockwise(
+			GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES));
+}
+
+void
+GPlatesQtWidgets::GlobeCanvas::reset_camera_orientation()
+{
+	d_globe_camera.reorient_up_direction();
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::handle_camera_change() 
+{
+	// switch context before we do any GL stuff
+	makeCurrent();
+
+	set_view();
+
+	// QWidget::update:
+	//   Updates the widget unless updates are disabled or the widget is hidden.
+	//
+	//   This function does not cause an immediate repaint; instead it schedules a paint event
+	//   for processing when Qt returns to the main event loop.
+	//    -- http://doc.trolltech.com/4.3/qwidget.html#update
+	update_canvas();
+
+	// The camera change will alter the position on the globe under the current mouse pointer.
+	update_mouse_position_on_globe();
+}
+
+
+void 
+GPlatesQtWidgets::GlobeCanvas::initializeGL_if_necessary() 
+{
+	// Return early if we've already initialised OpenGL.
+	// This is now necessary because it's not only 'paintEvent()' and other QGLWidget methods
+	// that call our 'initializeGL()' method - it's now also when a client wants to render the
+	// scene to an image (instead of render/update the QGLWidget itself).
+	if (d_initialisedGL)
+	{
+		return;
+	}
+
+	// Make sure the OpenGL context is current.
+	// We can't use 'd_gl_context' yet because it hasn't been initialised.
+	makeCurrent();
+
+	initializeGL();
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::initialize_off_screen_render_target(
+		GPlatesOpenGL::GL &gl)
+{
+	if (d_off_screen_render_target_dimension > gl.get_capabilities().gl_max_texture_size)
+	{
+		d_off_screen_render_target_dimension = gl.get_capabilities().gl_max_texture_size;
+	}
+
+	// Create the framebuffer and its renderbuffers.
+	d_off_screen_colour_renderbuffer = GPlatesOpenGL::GLRenderbuffer::create(gl);
+	d_off_screen_depth_stencil_renderbuffer = GPlatesOpenGL::GLRenderbuffer::create(gl);
+	d_off_screen_framebuffer = GPlatesOpenGL::GLFramebuffer::create(gl);
+
+	// Initialise offscreen colour renderbuffer.
+	gl.BindRenderbuffer(GL_RENDERBUFFER, d_off_screen_colour_renderbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, d_off_screen_render_target_dimension, d_off_screen_render_target_dimension);
+
+	// Initialise offscreen depth/stencil renderbuffer.
+	// Note that (in OpenGL 3.3 core) an OpenGL implementation is only *required* to provide stencil if a
+	// depth/stencil format is requested, and furthermore GL_DEPTH24_STENCIL8 is a specified required format.
+	gl.BindRenderbuffer(GL_RENDERBUFFER, d_off_screen_depth_stencil_renderbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, d_off_screen_render_target_dimension, d_off_screen_render_target_dimension);
+
+	// Bind the framebuffer that'll we subsequently attach the renderbuffers to.
+	gl.BindFramebuffer(GL_FRAMEBUFFER, d_off_screen_framebuffer);
+
+	// Bind the colour renderbuffer to framebuffer's first colour attachment.
+	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, d_off_screen_colour_renderbuffer);
+
+	// Bind the depth/stencil renderbuffer to framebuffer's depth/stencil attachment.
+	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, d_off_screen_depth_stencil_renderbuffer);
+
+	const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	GPlatesGlobal::Assert<GPlatesOpenGL::OpenGLException>(
+			completeness == GL_FRAMEBUFFER_COMPLETE,
+			GPLATES_ASSERTION_SOURCE,
+			"Framebuffer not complete for rendering tiles in globe filled polygons.");
+}
+
+
+void
+GPlatesQtWidgets::GlobeCanvas::set_view() 
+{
+	// GLContext returns the current width and height of this GLWidget canvas.
+	//
+	// Note: This includes the device-pixel ratio since dimensions, in OpenGL, are in device pixels
+	//       (not the device independent pixels used for widget sizes).
+	const unsigned int canvas_width = d_gl_context->get_width();
+	const unsigned int canvas_height = d_gl_context->get_height();
+
+	// Get the view-projection transform.
+	const std::pair<GPlatesOpenGL::GLMatrix/*view*/, GPlatesOpenGL::GLMatrix/*projection*/>
+			view_projection_transform =
+					calc_scene_view_projection_transform(
+							d_globe_camera,
+							double(canvas_width) / canvas_height /*aspect ratio*/);
+
+	d_view_projection = GPlatesOpenGL::GLViewProjection(
+			GPlatesOpenGL::GLViewport(0, 0, canvas_width, canvas_height),
+			view_projection_transform.first/*view*/,
+			view_projection_transform.second/*projection*/);
+}
+
+
+GPlatesQtWidgets::GlobeCanvas::cache_handle_type
+GPlatesQtWidgets::GlobeCanvas::render_scene(
+		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLViewProjection &view_projection,
+		int paint_device_width_in_device_independent_pixels,
+		int paint_device_height_in_device_independent_pixels)
+{
+	PROFILE_FUNC();
+
+	// Clear the colour and depth buffers of the framebuffer currently bound to GL_DRAW_FRAMEBUFFER target.
+	// We also clear the stencil buffer in case it is used - also it's usually
+	// interleaved with depth so it's more efficient to clear both depth and stencil.
+	//
+	// NOTE: Depth/stencil writes must be enabled for depth/stencil clears to work.
+	//       But these should be enabled by default anyway.
+	gl.DepthMask(GL_TRUE);
+	gl.StencilMask(~0/*all ones*/);
+	//
+	// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
+	// the scene, that are not rendered, to have *opaque* alpha (=1). This appears to be needed on
+	// Mac with Qt5 (alpha=0 is fine on Qt5 Windows/Ubuntu, and on Qt4 for all platforms). Perhaps because
+	// QGLWidget rendering (on Qt5 Mac) is first done to a framebuffer object which is then blended into the
+	// window framebuffer (where having a source alpha of zero would result in the black background not showing).
+	// Or, more likely, maybe a framebuffer object is used on all platforms but the window framebuffer is
+	// white on Mac but already black on Windows/Ubuntu.
+	gl.ClearColor(0, 0, 0, 1); // Clear colour to opaque black
+	gl.ClearDepth(); // Clear depth to 1.0
+	gl.ClearStencil(); // Clear stencil to 0
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
+	const float scale = calculate_scale(
+			paint_device_width_in_device_independent_pixels,
+			paint_device_height_in_device_independent_pixels);
+
+	//
+	// Paint the globe and its contents.
+	//
+	// NOTE: We hold onto the previous frame's cached resources *while* generating the current frame
+	// and then release our hold on the previous frame (by assigning the current frame's cache).
+	// This just prevents a render frame from invalidating cached resources of the previous frame
+	// in order to avoid regenerating the same cached resources unnecessarily each frame.
+	// Since the view direction usually differs little from one frame to the next there is a lot
+	// of overlap that we want to reuse (and not recalculate).
+	//
+	const cache_handle_type frame_cache_handle = d_globe.paint(
+			gl,
+			view_projection,
+			d_globe_camera.get_front_globe_horizon_plane(),
+			viewport_zoom_factor,
+			scale);
+
+	// Note that the overlays are rendered in screen window coordinates, so no view transform is needed.
+
+	// Paint the text overlay.
+	// We use the paint device dimensions (and not the canvas dimensions) in case the paint device
+	// is not the canvas (eg, when rendering to a larger dimension SVG paint device).
+	d_text_overlay->paint(
+			gl,
+			d_view_state.get_text_overlay_settings(),
+			// These are widget dimensions (not device pixels)...
+			paint_device_width_in_device_independent_pixels,
+			paint_device_height_in_device_independent_pixels,
+			scale);
+
+	// Paint the velocity legend overlay
+	d_velocity_legend_overlay->paint(
+			gl,
+			d_view_state.get_velocity_legend_overlay_settings(),
+			// These are widget dimensions (not device pixels)...
+			paint_device_width_in_device_independent_pixels,
+			paint_device_height_in_device_independent_pixels,
+			scale);
+
+	return frame_cache_handle;
+}
+
+
 GPlatesQtWidgets::GlobeCanvas::cache_handle_type
 GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 		GPlatesOpenGL::GL &gl,
@@ -814,485 +1250,48 @@ GPlatesQtWidgets::GlobeCanvas::render_scene_tile_into_image(
 }
 
 
-void
-GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
-		QPaintDevice &feedback_paint_device)
+GPlatesMaths::PointOnSphere
+GPlatesQtWidgets::GlobeCanvas::centre_of_viewport() const
 {
-	// Initialise OpenGL if we haven't already.
-	initializeGL_if_necessary();
-
-	// Make sure the OpenGL context is currently active.
-	d_gl_context->make_current();
-
-	// Start a render scope (all GL calls should be done inside this scope).
-	//
-	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
-	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
-
-	// Convert from paint device size to device pixels (used by OpenGL)...
-	const unsigned int feedback_paint_device_pixel_width =
-			feedback_paint_device.width() * feedback_paint_device.devicePixelRatio();
-	const unsigned int feedback_paint_device_pixel_height =
-			feedback_paint_device.height() * feedback_paint_device.devicePixelRatio();
-	const double feedback_paint_device_aspect_ratio =
-			double(feedback_paint_device_pixel_width) / feedback_paint_device_pixel_height;
-
-	const GPlatesOpenGL::GLViewport feedback_paint_device_viewport(
-			0, 0,
-			feedback_paint_device_pixel_width,
-			feedback_paint_device_pixel_height);
-
-	// Get the view-projection transform.
-	const std::pair<GPlatesOpenGL::GLMatrix/*view*/, GPlatesOpenGL::GLMatrix/*projection*/>
-			feedback_paint_device_view_projection_transform =
-					calc_scene_view_projection_transform(
-							d_globe_camera,
-							feedback_paint_device_aspect_ratio);
-
-	const GPlatesOpenGL::GLViewProjection feedback_paint_device_view_projection(
-			feedback_paint_device_viewport,
-			feedback_paint_device_view_projection_transform.first/*view*/,
-			feedback_paint_device_view_projection_transform.second/*projection*/);
-
-	// Set the viewport (and scissor rectangle) to the size of the feedback paint device
-	// (instead of the globe canvas) since we're rendering to it (via transform feedback).
-	gl->Viewport(
-			feedback_paint_device_viewport.x(), feedback_paint_device_viewport.y(),
-			feedback_paint_device_viewport.width(), feedback_paint_device_viewport.height());
-	gl->Scissor(
-			feedback_paint_device_viewport.x(), feedback_paint_device_viewport.y(),
-			feedback_paint_device_viewport.width(), feedback_paint_device_viewport.height());
-
-	// Render the scene to the feedback paint device.
-	// Hold onto the previous frame's cached resources *while* generating the current frame.
-	d_gl_frame_cache_handle = render_scene(
-			*gl,
-			feedback_paint_device_view_projection,
-			// Using device-independent pixels (eg, widget dimensions)...
-			feedback_paint_device.width(),
-			feedback_paint_device.height());
-}
-
-
-GPlatesQtWidgets::GlobeCanvas::cache_handle_type
-GPlatesQtWidgets::GlobeCanvas::render_scene(
-		GPlatesOpenGL::GL &gl,
-		const GPlatesOpenGL::GLViewProjection &view_projection,
-		int paint_device_width_in_device_independent_pixels,
-		int paint_device_height_in_device_independent_pixels)
-{
-	PROFILE_FUNC();
-
-	// Clear the colour and depth buffers of the framebuffer currently bound to GL_DRAW_FRAMEBUFFER target.
-	// We also clear the stencil buffer in case it is used - also it's usually
-	// interleaved with depth so it's more efficient to clear both depth and stencil.
-	//
-	// NOTE: Depth/stencil writes must be enabled for depth/stencil clears to work.
-	//       But these should be enabled by default anyway.
-	gl.DepthMask(GL_TRUE);
-	gl.StencilMask(~0/*all ones*/);
-	//
-	// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
-	// the scene, that are not rendered, to have *opaque* alpha (=1). This appears to be needed on
-	// Mac with Qt5 (alpha=0 is fine on Qt5 Windows/Ubuntu, and on Qt4 for all platforms). Perhaps because
-	// QGLWidget rendering (on Qt5 Mac) is first done to a framebuffer object which is then blended into the
-	// window framebuffer (where having a source alpha of zero would result in the black background not showing).
-	// Or, more likely, maybe a framebuffer object is used on all platforms but the window framebuffer is
-	// white on Mac but already black on Windows/Ubuntu.
-	gl.ClearColor(0, 0, 0, 1); // Clear colour to opaque black
-	gl.ClearDepth(); // Clear depth to 1.0
-	gl.ClearStencil(); // Clear stencil to 0
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
-	const float scale = calculate_scale(
-			paint_device_width_in_device_independent_pixels,
-			paint_device_height_in_device_independent_pixels);
-
-	//
-	// Paint the globe and its contents.
-	//
-	// NOTE: We hold onto the previous frame's cached resources *while* generating the current frame
-	// and then release our hold on the previous frame (by assigning the current frame's cache).
-	// This just prevents a render frame from invalidating cached resources of the previous frame
-	// in order to avoid regenerating the same cached resources unnecessarily each frame.
-	// Since the view direction usually differs little from one frame to the next there is a lot
-	// of overlap that we want to reuse (and not recalculate).
-	//
-	const cache_handle_type frame_cache_handle = d_globe.paint(
-			gl,
-			view_projection,
-			d_globe_camera.get_front_globe_horizon_plane(),
-			viewport_zoom_factor,
-			scale);
-
-	// Note that the overlays are rendered in screen window coordinates, so no view transform is needed.
-
-	// Paint the text overlay.
-	// We use the paint device dimensions (and not the canvas dimensions) in case the paint device
-	// is not the canvas (eg, when rendering to a larger dimension SVG paint device).
-	d_text_overlay->paint(
-			gl,
-			d_view_state.get_text_overlay_settings(),
-			// These are widget dimensions (not device pixels)...
-			paint_device_width_in_device_independent_pixels,
-			paint_device_height_in_device_independent_pixels,
-			scale);
-
-	// Paint the velocity legend overlay
-	d_velocity_legend_overlay->paint(
-			gl,
-			d_view_state.get_velocity_legend_overlay_settings(),
-			// These are widget dimensions (not device pixels)...
-			paint_device_width_in_device_independent_pixels,
-			paint_device_height_in_device_independent_pixels,
-			scale);
-
-	return frame_cache_handle;
+	return d_globe_camera.get_look_at_position();
 }
 
 
 void
-GPlatesQtWidgets::GlobeCanvas::paintEvent(
-		QPaintEvent *paint_event)
-{
-	QGLWidget::paintEvent(paint_event);
-
-	// Explicitly swap the OpenGL front and back buffers.
-	// Note that we have already disabled auto buffer swapping because otherwise both the QPainter
-	// in 'paintGL()' and 'QGLWidget::paintEvent()' will call 'QGLWidget::swapBuffers()'
-	// essentially canceling each other out (or causing flickering).
-	if (doubleBuffer() && !autoBufferSwap())
-	{
-		swapBuffers();
-	}
-
-	// If d_mouse_press_info is not boost::none, then mouse is down.
-	Q_EMIT repainted(static_cast<bool>(d_mouse_press_info));
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::mousePressEvent(
-		QMouseEvent *press_event) 
-{
-	update_mouse_pointer_pos(press_event);
-
-	// Let's ignore all mouse buttons except the left mouse button.
-	if (press_event->button() != Qt::LeftButton)
-	{
-		return;
-	}
-	d_mouse_press_info =
-			MousePressInfo(
-					press_event->localPos().x(),
-					press_event->localPos().y(),
-					mouse_pointer_pos_on_globe(),
-					mouse_pointer_is_on_globe(),
-					press_event->button(),
-					press_event->modifiers());
-
-	Q_EMIT mouse_pressed(
-			width(),
-			height(),
-			d_mouse_press_info->d_mouse_pointer_screen_pos_x,
-			d_mouse_press_info->d_mouse_pointer_screen_pos_y,
-			d_mouse_press_info->d_mouse_pointer_pos,
-			d_mouse_press_info->d_is_on_globe,
-			d_mouse_press_info->d_button,
-			d_mouse_press_info->d_modifiers);
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
-		QMouseEvent *move_event) 
-{
-	update_mouse_pointer_pos(move_event);
-	
-	if (d_mouse_press_info)
-	{
-		// Call it a drag if EITHER:
-		//  * the mouse moved at least 2 pixels in one direction and 1 pixel in the other;
-		// OR:
-		//  * the mouse moved at least 3 pixels in one direction.
-		//
-		// Otherwise, the user just has shaky hands or a very high-res screen.
-		int mouse_delta_x = move_event->localPos().x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x;
-		int mouse_delta_y = move_event->localPos().y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y;
-		if (mouse_delta_x*mouse_delta_x + mouse_delta_y*mouse_delta_y > 4)
-		{
-			d_mouse_press_info->d_is_mouse_drag = true;
-		}
-
-		if (d_mouse_press_info->d_is_mouse_drag)
-		{
-			Q_EMIT mouse_dragged(
-					width(),
-					height(),
-					d_mouse_press_info->d_mouse_pointer_screen_pos_x,
-					d_mouse_press_info->d_mouse_pointer_screen_pos_y,
-					d_mouse_press_info->d_mouse_pointer_pos,
-					d_mouse_press_info->d_is_on_globe,
-					mouse_pointer_screen_pos_x(),
-					mouse_pointer_screen_pos_y(),
-					mouse_pointer_pos_on_globe(),
-					mouse_pointer_is_on_globe(),
-					centre_of_viewport(),
-					d_mouse_press_info->d_button,
-					d_mouse_press_info->d_modifiers);
-		}
-	}
-	else
-	{
-		//
-		// The mouse has moved but the left mouse button is not currently pressed.
-		// This could mean no mouse buttons are currently pressed or it could mean a
-		// button other than the left mouse button is currently pressed.
-		// Either way it is an mouse movement that is not currently invoking a
-		// canvas tool operation.
-		//
-		Q_EMIT mouse_moved_without_drag(
-				width(),
-				height(),
-				mouse_pointer_screen_pos_x(),
-				mouse_pointer_screen_pos_y(),
-				mouse_pointer_pos_on_globe(),
-				mouse_pointer_is_on_globe(),
-				centre_of_viewport());
-	}
-}
-
-
-void 
-GPlatesQtWidgets::GlobeCanvas::mouseReleaseEvent(
-		QMouseEvent *release_event)
-{
-	// Let's ignore all mouse buttons except the left mouse button.
-	if (release_event->button() != Qt::LeftButton)
-	{
-		return;
-	}
-
-	// Let's do our best to avoid crash-inducing Boost assertions.
-	if ( ! d_mouse_press_info)
-	{
-		// OK, something strange happened:  Our boost::optional MousePressInfo is not
-		// initialised.  Rather than spontaneously crashing with a Boost assertion error,
-		// let's log a warning on the console and NOT crash.
-		qWarning() << "Warning (GlobeCanvas::mouseReleaseEvent, "
-				<< __FILE__
-				<< " line "
-				<< __LINE__
-				<< "):\nUninitialised mouse press info!";
-		return;
-	}
-
-	if (abs(release_event->localPos().x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x) > 3 &&
-			abs(release_event->localPos().y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y) > 3)
-	{
-		d_mouse_press_info->d_is_mouse_drag = true;
-	}
-	if (d_mouse_press_info->d_is_mouse_drag)
-	{
-		Q_EMIT mouse_released_after_drag(
-				width(),
-				height(),
-				d_mouse_press_info->d_mouse_pointer_screen_pos_x,
-				d_mouse_press_info->d_mouse_pointer_screen_pos_y,
-				d_mouse_press_info->d_mouse_pointer_pos,
-				d_mouse_press_info->d_is_on_globe,
-				mouse_pointer_screen_pos_x(),
-				mouse_pointer_screen_pos_y(),
-				mouse_pointer_pos_on_globe(),
-				mouse_pointer_is_on_globe(),
-				centre_of_viewport(),
-				d_mouse_press_info->d_button,
-				d_mouse_press_info->d_modifiers);
-	}
-	else
-	{
-		Q_EMIT mouse_clicked(
-				width(),
-				height(),
-				d_mouse_press_info->d_mouse_pointer_screen_pos_x,
-				d_mouse_press_info->d_mouse_pointer_screen_pos_y,
-				d_mouse_press_info->d_mouse_pointer_pos,
-				d_mouse_press_info->d_is_on_globe,
-				d_mouse_press_info->d_button,
-				d_mouse_press_info->d_modifiers);
-	}
-	d_mouse_press_info = boost::none;
-
-	// Emit repainted signal with mouse_down = false so that those listeners who
-	// didn't care about intermediate repaints can now deal with the repaint.
-	Q_EMIT repainted(false);
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::keyPressEvent(
-		QKeyEvent *key_event)
-{
-	// Note that the arrow keys are handled here instead of being set as shortcuts
-	// to the corresponding actions in ViewportWindow because when they were set as
-	// shortcuts, they were interfering with the arrow keys on other widgets.
-	switch (key_event->key())
-	{
-		case Qt::Key_Up:
-			move_camera_up();
-			break;
-
-		case Qt::Key_Down:
-			move_camera_down();
-			break;
-
-		case Qt::Key_Left:
-			move_camera_left();
-			break;
-
-		case Qt::Key_Right:
-			move_camera_right();
-			break;
-
-		default:
-			QGLWidget::keyPressEvent(key_event);
-	}
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::handle_camera_change() 
-{
-	// switch context before we do any GL stuff
-	makeCurrent();
-
-	set_view();
-
-	// QWidget::update:
-	//   Updates the widget unless updates are disabled or the widget is hidden.
-	//
-	//   This function does not cause an immediate repaint; instead it schedules a paint event
-	//   for processing when Qt returns to the main event loop.
-	//    -- http://doc.trolltech.com/4.3/qwidget.html#update
-	update_canvas();
-
-	handle_mouse_pointer_pos_change();
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::set_view() 
-{
-	// GLContext returns the current width and height of this GLWidget canvas.
-	//
-	// Note: This includes the device-pixel ratio since dimensions, in OpenGL, are in device pixels
-	//       (not the device independent pixels used for widget sizes).
-	const unsigned int canvas_width = d_gl_context->get_width();
-	const unsigned int canvas_height = d_gl_context->get_height();
-
-	// Get the view-projection transform.
-	const std::pair<GPlatesOpenGL::GLMatrix/*view*/, GPlatesOpenGL::GLMatrix/*projection*/>
-			view_projection_transform =
-					calc_scene_view_projection_transform(
-							d_globe_camera,
-							double(canvas_width) / canvas_height /*aspect ratio*/);
-
-	d_view_projection = GPlatesOpenGL::GLViewProjection(
-			GPlatesOpenGL::GLViewport(0, 0, canvas_width, canvas_height),
-			view_projection_transform.first/*view*/,
-			view_projection_transform.second/*projection*/);
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::update_mouse_pointer_pos(
+GPlatesQtWidgets::GlobeCanvas::update_mouse_screen_position(
 		QMouseEvent *mouse_event) 
 {
-	d_mouse_pointer_screen_pos_x = mouse_event->localPos().x();
-	d_mouse_pointer_screen_pos_y = mouse_event->localPos().y();
+	d_mouse_screen_position_x = mouse_event->localPos().x();
+	d_mouse_screen_position_y = mouse_event->localPos().y();
 
-	handle_mouse_pointer_pos_change();
+	update_mouse_position_on_globe();
 }
+
 
 void
-GPlatesQtWidgets::GlobeCanvas::set_camera_viewpoint(
-		const GPlatesMaths::LatLonPoint &camera_viewpoint)
+GPlatesQtWidgets::GlobeCanvas::update_mouse_position_on_globe()
 {
-	d_globe_camera.move_look_at_position(
-			GPlatesMaths::make_point_on_sphere(camera_viewpoint));
+	std::pair<bool, GPlatesMaths::PointOnSphere> new_position_on_globe_result =
+			calculate_position_on_globe(
+					d_mouse_screen_position_x,
+					d_mouse_screen_position_y);
+
+	bool is_now_on_globe = new_position_on_globe_result.first;
+	const GPlatesMaths::PointOnSphere &new_position_on_globe = new_position_on_globe_result.second;
+
+	if (new_position_on_globe != d_mouse_position_on_globe ||
+		is_now_on_globe != d_mouse_is_on_globe)
+	{
+		d_mouse_position_on_globe = new_position_on_globe;
+		d_mouse_is_on_globe = is_now_on_globe;
+
+		Q_EMIT mouse_position_on_globe_changed(d_mouse_position_on_globe, d_mouse_is_on_globe);
+	}
 }
 
-boost::optional<GPlatesMaths::LatLonPoint>
-GPlatesQtWidgets::GlobeCanvas::get_camera_viewpoint() const
-{
-	// This function returns a boost::optional for consistency with the base class virtual function.
-	// The globe always returns a valid camera llp though.
-	return GPlatesMaths::make_lat_lon_point(d_globe_camera.get_look_at_position());
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::move_camera_up()
-{
-	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
-			d_view_state.get_viewport_zoom().zoom_factor();
-
-	d_globe_camera.rotate_up(nudge_angle);
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::move_camera_down()
-{
-	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
-			d_view_state.get_viewport_zoom().zoom_factor();
-
-	d_globe_camera.rotate_down(nudge_angle);
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::move_camera_left()
-{
-	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
-			d_view_state.get_viewport_zoom().zoom_factor();
-
-	d_globe_camera.rotate_left(nudge_angle);
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::move_camera_right()
-{
-	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
-			d_view_state.get_viewport_zoom().zoom_factor();
-
-	d_globe_camera.rotate_right(nudge_angle);
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::rotate_camera_clockwise()
-{
-	// Note that we actually want to rotate the globe clockwise (not the camera).
-	// We achieve this by rotating the camera anti-clockwise...
-	d_globe_camera.rotate_anticlockwise(
-			GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES));
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::rotate_camera_anticlockwise()
-{
-	// Note that we actually want to rotate the globe anti-clockwise (not the camera).
-	// We achieve this by rotating the camera clockwise...
-	d_globe_camera.rotate_clockwise(
-			GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES));
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::reset_camera_orientation()
-{
-	d_globe_camera.reorient_up_direction();
-}
 
 std::pair<bool, GPlatesMaths::PointOnSphere>
-GPlatesQtWidgets::GlobeCanvas::calc_globe_position(
+GPlatesQtWidgets::GlobeCanvas::calculate_position_on_globe(
 		qreal screen_x,
 		qreal screen_y) const
 {
@@ -1322,6 +1321,7 @@ GPlatesQtWidgets::GlobeCanvas::calc_globe_position(
 	return std::make_pair(false, nearest_globe_horizon_position);
 }
 
+
 float
 GPlatesQtWidgets::GlobeCanvas::calculate_scale(
 		int paint_device_width_in_device_independent_pixels,
@@ -1344,20 +1344,4 @@ GPlatesQtWidgets::GlobeCanvas::calculate_scale(
 
 	// This is useful when rendering the small colouring previews - avoids too large point/line sizes.
 	return static_cast<float>(paint_device_dimension) / static_cast<float>(min_viewport_dimension);
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::set_orientation(
-	const GPlatesMaths::Rotation &rotation
-	/*bool should_emit_external_signal */)
-{
-	d_globe_camera.set_globe_orientation_relative_to_view(rotation);
-
-	update_canvas();
-}
-
-boost::optional<GPlatesMaths::Rotation>
-GPlatesQtWidgets::GlobeCanvas::get_orientation() const
-{
-	return d_globe_camera.get_globe_orientation_relative_to_view();
 }

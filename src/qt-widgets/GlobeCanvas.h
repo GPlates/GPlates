@@ -95,25 +95,25 @@ namespace GPlatesQtWidgets
 		struct MousePressInfo
 		{
 			MousePressInfo(
-					qreal mouse_pointer_screen_pos_x,
-					qreal mouse_pointer_screen_pos_y,
-					const GPlatesMaths::PointOnSphere &mouse_pointer_pos,
-					bool is_on_globe,
+					qreal mouse_screen_position_x,
+					qreal mouse_screen_position_y,
+					const GPlatesMaths::PointOnSphere &mouse_position_on_globe,
+					bool mouse_is_on_globe,
 					Qt::MouseButton button,
 					Qt::KeyboardModifiers modifiers):
-				d_mouse_pointer_screen_pos_x(mouse_pointer_screen_pos_x),
-				d_mouse_pointer_screen_pos_y(mouse_pointer_screen_pos_y),
-				d_mouse_pointer_pos(mouse_pointer_pos),
-				d_is_on_globe(is_on_globe),
+				d_mouse_screen_position_x(mouse_screen_position_x),
+				d_mouse_screen_position_y(mouse_screen_position_y),
+				d_mouse_position_on_globe(mouse_position_on_globe),
+				d_mouse_is_on_globe(mouse_is_on_globe),
 				d_button(button),
 				d_modifiers(modifiers),
 				d_is_mouse_drag(false)
 			{  }
 
-			qreal d_mouse_pointer_screen_pos_x;
-			qreal d_mouse_pointer_screen_pos_y;
-			GPlatesMaths::PointOnSphere d_mouse_pointer_pos;
-			bool d_is_on_globe;
+			qreal d_mouse_screen_position_x;
+			qreal d_mouse_screen_position_y;
+			GPlatesMaths::PointOnSphere d_mouse_position_on_globe;
+			bool d_mouse_is_on_globe;
 			Qt::MouseButton d_button;
 			Qt::KeyboardModifiers d_modifiers;
 			bool d_is_mouse_drag;
@@ -123,10 +123,22 @@ namespace GPlatesQtWidgets
 		explicit
 		GlobeCanvas(
 				GPlatesPresentation::ViewState &view_state,
-				QWidget *parent_ = 0);
+				QWidget *parent_ = nullptr);
 
 		~GlobeCanvas();
 
+
+		GPlatesGui::Globe &
+		globe()
+		{
+			return d_globe;
+		}
+
+		const GPlatesGui::Globe &
+		globe() const
+		{
+			return d_globe;
+		}
 
 		/**
 		 * The proximity inclusion threshold is a measure of how close a geometry must be
@@ -157,59 +169,7 @@ namespace GPlatesQtWidgets
 		 */
 		double
 		current_proximity_inclusion_threshold(
-				const GPlatesMaths::PointOnSphere &click_point) const;
-
-		/**
-		 * The point which corresponds to the centre of the viewport.
-		 */
-		GPlatesMaths::PointOnSphere
-		centre_of_viewport() const;
-
-		GPlatesGui::Globe &
-		globe()
-		{
-			return d_globe;
-		}
-
-		const GPlatesGui::Globe &
-		globe() const
-		{
-			return d_globe;
-		}
-
-		double
-		mouse_pointer_screen_pos_x() const
-		{
-			return d_mouse_pointer_screen_pos_x;
-		}
-
-		double
-		mouse_pointer_screen_pos_y() const
-		{
-			return d_mouse_pointer_screen_pos_y;
-		}
-
-		/**
-		 * If the mouse pointer is on the globe, return the position of the mouse pointer
-		 * on the globe.
-		 *
-		 * Otherwise, return the closest position on the globe to the position of the
-		 * mouse pointer in the 3-D "universe".
-		 */
-		const GPlatesMaths::PointOnSphere &
-		mouse_pointer_pos_on_globe() const
-		{
-			return d_mouse_pointer_pos_on_globe;
-		}
-
-		/**
-		 * Return whether the mouse pointer is on the globe.
-		 */
-		bool
-		mouse_pointer_is_on_globe() const
-		{
-			return d_mouse_pointer_is_on_globe;
-		}
+				const GPlatesMaths::PointOnSphere &click_point) const override;
 
 		/**
 		 * Returns the dimensions of the viewport in device *independent* pixels (ie, widget size).
@@ -241,6 +201,7 @@ namespace GPlatesQtWidgets
 		render_opengl_feedback_to_paint_device(
 				QPaintDevice &feedback_paint_device) override;
 
+
 		void
 		set_camera_viewpoint(
 				const GPlatesMaths::LatLonPoint &camera_viewpoint) override;
@@ -248,13 +209,15 @@ namespace GPlatesQtWidgets
 		boost::optional<GPlatesMaths::LatLonPoint>
 		get_camera_viewpoint() const override;
 
-		boost::optional<GPlatesMaths::Rotation>
-		get_orientation() const override;
 
 		void
 		set_orientation(
 				const GPlatesMaths::Rotation &rotation
 				/*bool should_emit_external_signal = true */) override;
+
+		boost::optional<GPlatesMaths::Rotation>
+		get_orientation() const override;
+
 
 		/**
 		 * Returns the OpenGL context associated with this QGLWidget.
@@ -282,12 +245,83 @@ namespace GPlatesQtWidgets
 		void
 		update_canvas() override;
 
-		void
-		handle_mouse_pointer_pos_change();
+	Q_SIGNALS:
 
 		void
-		force_mouse_pointer_pos_change();
+		mouse_position_on_globe_changed(
+				const GPlatesMaths::PointOnSphere &position_on_globe,
+				bool is_on_globe);
+				
+		void
+		mouse_pressed(
+				int screen_width,
+				int screen_height,
+				double press_screen_x,
+				double press_screen_y,
+				const GPlatesMaths::PointOnSphere &press_pos_on_globe,
+				bool is_on_globe,
+				Qt::MouseButton button,
+				Qt::KeyboardModifiers modifiers);
 
+		void
+		mouse_clicked(
+				int screen_width,
+				int screen_height,
+				double click_screen_x,
+				double click_screen_y,
+				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+				bool is_on_globe,
+				Qt::MouseButton button,
+				Qt::KeyboardModifiers modifiers);
+
+		void
+		mouse_dragged(
+				int screen_width,
+				int screen_height,
+				double initial_screen_x,
+				double initial_screen_y,
+				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				bool was_on_globe,
+				double current_screen_x,
+				double current_screen_y,
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &centre_of_viewport,
+				Qt::MouseButton button,
+				Qt::KeyboardModifiers modifiers);
+
+		void
+		mouse_released_after_drag(
+				int screen_width,
+				int screen_height,
+				double initial_screen_x,
+				double initial_screen_y,
+				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				bool was_on_globe,
+				double current_screen_x,
+				double current_screen_y,
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &centre_of_viewport,
+				Qt::MouseButton button,
+				Qt::KeyboardModifiers modifiers);
+
+		/**
+		 * The mouse position moved but the left mouse button is NOT down.
+		 */
+		void
+		mouse_moved_without_drag(
+				int screen_width,
+				int screen_height,
+				double current_screen_x,
+				double current_screen_y,
+				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				bool is_on_globe,
+				const GPlatesMaths::PointOnSphere &centre_of_viewport);
+
+		void
+		repainted(
+				bool mouse_down);
 
 	protected:
 		/**
@@ -394,6 +428,10 @@ namespace GPlatesQtWidgets
 				QMouseEvent *event) override;
 
 		void
+		mouseDoubleClickEvent(
+				QMouseEvent *mouse_event) override;
+
+		void
 		keyPressEvent(
 				QKeyEvent *key_event) override;
 
@@ -418,91 +456,7 @@ namespace GPlatesQtWidgets
 		void
 		reset_camera_orientation() override;
 
-	Q_SIGNALS:
-
-		void
-		mouse_pointer_position_changed(
-				int screen_width,
-				int screen_height,
-				double screen_x,
-				double screen_y,
-				const GPlatesMaths::PointOnSphere &new_pos,
-				bool is_on_globe);
-				
-				
-		void
-		mouse_pressed(
-				int screen_width,
-				int screen_height,
-				double press_screen_x,
-				double press_screen_y,
-				const GPlatesMaths::PointOnSphere &press_pos_on_globe,
-				bool is_on_globe,
-				Qt::MouseButton button,
-				Qt::KeyboardModifiers modifiers);
-
-		void
-		mouse_clicked(
-				int screen_width,
-				int screen_height,
-				double click_screen_x,
-				double click_screen_y,
-				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-				bool is_on_globe,
-				Qt::MouseButton button,
-				Qt::KeyboardModifiers modifiers);
-
-		void
-		mouse_dragged(
-				int screen_width,
-				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport,
-				Qt::MouseButton button,
-				Qt::KeyboardModifiers modifiers);
-
-		void
-		mouse_released_after_drag(
-				int screen_width,
-				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport,
-				Qt::MouseButton button,
-				Qt::KeyboardModifiers modifiers);
-
-		/**
-		 * The mouse position moved but the left mouse button is NOT down.
-		 */
-		void
-		mouse_moved_without_drag(
-				int screen_width,
-				int screen_height,
-				double current_screen_x,
-				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport);
-
-		void
-		repainted(
-				bool mouse_down);
-
-	public Q_SLOTS:
-
+	private Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
@@ -575,22 +529,21 @@ namespace GPlatesQtWidgets
 		cache_handle_type d_gl_frame_cache_handle;
 
 		/**
-		 * If the mouse pointer is on the globe, this is the position of the mouse pointer
-		 * on the globe.
+		 * If the mouse pointer is on the globe, this is the position of the mouse pointer on the globe.
 		 *
 		 * Otherwise, this is the closest position on the globe to the position of the
 		 * mouse pointer in the 3-D "universe".
 		 */
-		GPlatesMaths::PointOnSphere d_mouse_pointer_pos_on_globe;
+		GPlatesMaths::PointOnSphere d_mouse_position_on_globe;
 
 		//! Whether the mouse pointer is on the globe.
-		bool d_mouse_pointer_is_on_globe;
+		bool d_mouse_is_on_globe;
 
 		//! The x-coord of the mouse pointer position on the screen.
-		qreal d_mouse_pointer_screen_pos_x;
+		qreal d_mouse_screen_position_x;
 
 		//! The y-coord of the mouse pointer position on the screen.
-		qreal d_mouse_pointer_screen_pos_y;
+		qreal d_mouse_screen_position_y;
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
 
@@ -628,6 +581,16 @@ namespace GPlatesQtWidgets
 		set_view();
 
 		/**
+		 * Render the scene.
+		 */
+		cache_handle_type
+		render_scene(
+				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection,
+				int paint_device_width_in_device_independent_pixels,
+				int paint_device_height_in_device_independent_pixels);
+
+		/**
 		 * Render one tile of the scene (as specified by @a image_tile_render).
 		 *
 		 * The sub-rect of @a image to render into is determined by @a image_tile_render.
@@ -641,28 +604,26 @@ namespace GPlatesQtWidgets
 				QImage &image);
 
 		/**
-		 * Render the scene.
+		 * The point which corresponds to the centre of the viewport.
 		 */
-		cache_handle_type
-		render_scene(
-				GPlatesOpenGL::GL &gl,
-				const GPlatesOpenGL::GLViewProjection &view_projection,
-				int paint_device_width_in_device_independent_pixels,
-				int paint_device_height_in_device_independent_pixels);
+		GPlatesMaths::PointOnSphere
+		centre_of_viewport() const;
 
 		void
-		update_mouse_pointer_pos(
+		update_mouse_screen_position(
 				QMouseEvent *mouse_event);
 
+		void
+		update_mouse_position_on_globe();
+
 		/**
-		 * Given the screen coordinates, calculate and return a position which is on
-		 * the globe (a unit sphere).
+		 * Given the screen coordinates, calculate and return a position which is on the globe (a unit sphere).
 		 *
-		 * This position might be the position determined by @a y and @a z, or the closest position
-		 * on the globe to the position determined by @a y and @a z.
+		 * This position might be the position determined by @a screen_x and @a screen_y, or
+		 * the closest position on the globe to the position determined by @a screen_x and @a screen_y.
 		 */
 		std::pair<bool, GPlatesMaths::PointOnSphere>
-		calc_globe_position(
+		calculate_position_on_globe(
 				qreal screen_x,
 				qreal screen_y) const;
 
