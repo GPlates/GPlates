@@ -32,7 +32,7 @@
 #include <QApplication>
 #include <QDebug>
 #include <QGLWidget>
-#include <QGraphicsView>
+#include <QLineF>
 #include <QPaintDevice>
 #include <QPaintEngine>
 #include <QPainter>
@@ -52,6 +52,8 @@
 #include "gui/VelocityLegendOverlay.h"
 #include "gui/ViewportZoom.h"
 
+#include "maths/MathsUtils.h"
+
 #include "opengl/GL.h"
 #include "opengl/GLContext.h"
 #include "opengl/GLContextImpl.h"
@@ -66,24 +68,187 @@
 #include "utils/Profile.h"
 
 
-namespace GPlatesQtWidgets
+namespace 
 {
-	namespace
-	{
-		double
-		distance_between_qpointfs(
-				const QPointF& p1,
-				const QPointF& p2)
-		{
-			QPointF difference = p1 - p2;
+	/**
+	 * The radius from the map origin (at central meridian) of a sphere that not only bounds the map
+	 * but adds padding to bound objects *off* the map (such as rendered velocity arrows) so they don't
+	 * get clipped by the near and far planes of the view frustum.
+	 *
+	 * The value of 180.0 represents the distance from central meridian (at origin) to edge of map (in longitude direction).
+	 * The latitude direction is shorter, so this should bound all map projections (except for maybe the Mercator projection?).
+	 *
+	 * The value of 90.0 represents the extra padding (for objects *off* the map).
+	 */
+	const double EXTENDED_BOUNDING_MAP_RADIUS = 180.0 + 90.0;
 
-			return sqrt(difference.x()*difference.x() + difference.y()*difference.y());
+	/**
+	 * From the camera (and viewport aspect ratio) calculate the view and projection transforms.
+	 *
+	 * Note: The projection transform is 'orthographic' or 'perspective', and hence is only affected
+	 *       by viewport *aspect ratio*, so it's independent of whether we're using device pixels or
+	 *       device *independent* pixels.
+	 */
+	std::pair<GPlatesOpenGL::GLMatrix/*view_transform*/, GPlatesOpenGL::GLMatrix/*projection_transform*/>
+	calc_scene_view_projection_transform(
+			const GPlatesGui::MapCamera &camera,
+			const double &aspect_ratio)
+	{
+		const GPlatesMaths::UnitVector3D &camera_view_direction = camera.get_view_direction();
+		const GPlatesMaths::UnitVector3D &camera_up = camera.get_up_direction();
+		// Camera look at position is 2D in map projection space, so convert to 3D assuming map plane is z=0 plane.
+		const QPointF &camera_look_at_2D = camera.get_look_at_position();
+		const GPlatesMaths::Vector3D camera_look_at(camera_look_at_2D.x(), camera_look_at_2D.y(), 0);
+
+		GPlatesOpenGL::GLMatrix view_transform;
+		GPlatesOpenGL::GLMatrix projection_transform;
+
+		if (camera.get_projection_type() == GPlatesGui::GlobeProjection::ORTHOGRAPHIC)
+		{
+			//
+			// View transform.
+			//
+			// Note that, for 'orthographic' viewing (as opposed to 'perspective'), the 'eye' can be anywhere
+			// along the view direction. This is because the view rays are parallel and hence only the direction
+			// matters (not the position). The position does affect the near/far clip plane distances, but
+			// they're all adjusted based on the eye position anyway, so the near/far clip planes always end up
+			// in the correct position regardless of the eye position.
+			// The end result is moving the eye position along the view direction does not affect the rendered scene
+			// for 'orthographic' viewing (whereas it does affect the scene for 'perspective' viewing).
+			//
+			// We'll just (arbitrarily) choose the eye position to be the look-at position moved back one unit along the view direction.
+			const GPlatesMaths::Vector3D camera_eye = camera_look_at - GPlatesMaths::Vector3D(camera_view_direction);
+			view_transform.glu_look_at(
+					camera_eye.x().dval(), camera_eye.y().dval(), camera_eye.z().dval(), // eye
+					camera_look_at.x().dval(), camera_look_at.y().dval(), camera_look_at.z().dval(), // centre
+					camera_up.x().dval(), camera_up.y().dval(), camera_up.z().dval()); // up
+
+			// Distance from eye to map centre projected along the view direction.
+			//
+			// Note that the central meridian is now always mapped to the origin so that the map
+			// does not shift (by central meridian degrees) like previously.
+			const GPlatesMaths::Vector3D map_centre(0, 0, 0);
+			const GLdouble eye_to_map_centre_distance_along_view_direction = dot(map_centre - camera_eye, camera_view_direction).dval();
+
+			// The near and far depths surround a sphere that bounds the map (noting that map central meridian is at origin).
+			// The bounding sphere is larger than the actual bounding sphere around the map to account for objects extending
+			// off the map (such as rendered arrows).
+			const GLdouble depth_in_front_of_globe = eye_to_map_centre_distance_along_view_direction - EXTENDED_BOUNDING_MAP_RADIUS;
+			const GLdouble depth_behind_globe = eye_to_map_centre_distance_along_view_direction + EXTENDED_BOUNDING_MAP_RADIUS;
+
+			//
+			// Projection transform.
+			//
+			// Note that, counter-intuitively, zooming into an orthographic view is not accomplished by moving
+			// the eye closer to the globe. Instead it's accomplished by reducing the width and height of
+			// the orthographic viewing frustum (rectangular prism).
+			//
+
+			double ortho_left;
+			double ortho_right;
+			double ortho_bottom;
+			double ortho_top;
+			camera.get_orthographic_left_right_bottom_top(
+					aspect_ratio,
+					ortho_left, ortho_right, ortho_bottom, ortho_top);
+
+			projection_transform.gl_ortho(
+					ortho_left, ortho_right,
+					ortho_bottom, ortho_top,
+					depth_in_front_of_globe,
+					depth_behind_globe);
 		}
+		else // perspective...
+		{
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					camera.get_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
+					GPLATES_ASSERTION_SOURCE);
+
+			//
+			// View transform.
+			//
+			// In contrast to orthographic viewing, zooming in 'perspective' viewing is accomplished by moving the eye position.
+			// Alternatively zooming could also be accomplished by narrowing the field-of-view, but it's better
+			// to keep the field-of-view constant since that is how we view the real world with the naked eye
+			// (as opposed to a telephoto lens where the viewing rays become more parallel with greater zoom).
+			//
+			const GPlatesMaths::Vector3D camera_eye = camera.get_perspective_eye_position();
+			view_transform.glu_look_at(
+					camera_eye.x().dval(), camera_eye.y().dval(), camera_eye.z().dval(), // eye
+					camera_look_at.x().dval(), camera_look_at.y().dval(), camera_look_at.z().dval(), // centre
+					camera_up.x().dval(), camera_up.y().dval(), camera_up.z().dval()); // up
+
+			// Distance from eye to map centre projected along the view direction.
+			//
+			// Note that the central meridian is now always mapped to the origin so that the map
+			// does not shift (by central meridian degrees) like previously.
+			const GPlatesMaths::Vector3D map_centre(0, 0, 0);
+			const GLdouble eye_to_map_centre_distance_along_view_direction =
+					dot(map_centre - camera_eye, camera_view_direction).dval();
+
+			//
+			// For perspective viewing it's generally advised to keep the near plane as far away as
+			// possible in order to get better precision from the depth buffer (ie, quantised 32-bit
+			// depths in hardware depth buffer, or 24 bits if using 8 bits for stencil, spread over a
+			// shorter near-to-far distance).
+			// Actually most of the loss of precision occurs in the far distance (since it's essentially
+			// the post-projection '1/z' that's quantised into the 32-bit depth buffer), so depths
+			// close to the near clip plane get mapped to more quantised values than further away.
+			// So if there's any z-fighting (different objects mapped to same depth buffer value)
+			// it'll happen more at distances further from the eye where it's not as noticeable
+			// (since projected to a smaller area in viewport).
+			// According to https://www.khronos.org/opengl/wiki/Depth_Buffer_Precision the z value
+			// in eye coordinates (ie, eye at z=0) is related to the near 'n' and far 'f' distances
+			// and the integer z-buffer value 'z_w' and the number of integer depth buffer values 's':
+			//
+			//   z_eye =         f * n
+			//           -----------------------
+			//           (z_w / s) * (f - n) - f
+			//
+			// ...for z_w equal to 0 and s this gives a z_eye of -n and -f.
+			//
+			// Since the eye position moves quite close to the map in perspective view
+			// (to accomplish viewport zooming) we also don't want to clip away the closest part of the map,
+			// and we don't want to clip away any objects sticking outside the map as much as we
+			// can avoid it (such as rendered arrows). So we can't keep the near plane too far away.
+			// We set it to the same near plane distance used for the globe perspective view
+			// (0.001 * Earth radius = 6km = 0.057 in degrees) and set the max far plane distance to 360+270=630 degrees.
+			// With s=2^24 for a 24-bit depth buffer, we plug in the z_w values of 0, 1 and s, s-1
+			// (which are the two closest and two furthest integer z-buffer values respectively)
+			// then we get z_eye(0)-z_eye(1) = 3.4e-9 and z_eye(s)-z_eye(s-1) = 4.1e-1.
+			// This corresponds to ~0.38mm and 45.6km respectively.
+			// This also shows we get about 1.2e+8 times more z-buffer precision at the near plane compared to the far plane.
+			//
+
+			// The default distance from camera eye to near plane (along view direction).
+			const GLdouble depth_in_front_of_map = 0.001 * (180.0 / GPlatesMaths::PI);  // ~6km (z-buffer resolution: ~0.37mm near and ~45.6km far)
+
+			// The EXTENDED_BOUNDING_MAP_RADIUS is because we don't want to put the far clipping plane too close
+			// to the map because some objects are outside the map such as rendered arrows.
+			const GLdouble depth_behind_map = eye_to_map_centre_distance_along_view_direction + EXTENDED_BOUNDING_MAP_RADIUS;
+
+			double fovy_degrees;
+			camera.get_perspective_fovy(aspect_ratio, fovy_degrees);
+
+			//
+			// Projection transform.
+			//
+
+			projection_transform.glu_perspective(
+					fovy_degrees,
+					aspect_ratio,
+					depth_in_front_of_map,
+					depth_behind_map);
+		}
+
+		return std::make_pair(view_transform, projection_transform);
 	}
 }
 
 
-// Public constructor
+const double GPlatesQtWidgets::MapCanvas::NUDGE_CAMERA_DEGREES = 5.0;
+
+
 GPlatesQtWidgets::MapCanvas::MapCanvas(
 		GPlatesPresentation::ViewState &view_state,
 		GlobeCanvas &globe_canvas,
@@ -120,6 +285,10 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 					d_gl_context,
 					globe_canvas.get_gl_visual_layers(),
 					view_state.get_application_state())),
+	d_mouse_screen_position_x(0),
+	d_mouse_screen_position_y(0),
+	d_mouse_map_position_x(0),
+	d_mouse_map_position_y(0),
 	d_map(
 			view_state,
 			d_gl_visual_layers,
@@ -185,9 +354,6 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 	QObject::connect(
 			&d_map_camera, SIGNAL(camera_changed()),
 			this, SLOT(handle_camera_change()));
-	QObject::connect(
-			&d_map_camera, SIGNAL(camera_changed()),
-			this, SLOT(force_mouse_pointer_pos_change()));
 
 	handle_camera_change();
 
@@ -217,38 +383,34 @@ GPlatesQtWidgets::MapCanvas::current_proximity_inclusion_threshold(
 	// 3. Convert this location to llp and point-on-sphere.
 	// 4. Calculate the cosine of the angle between the 2 point-on-spheres.
 
-	QPoint temp_screen_mouse_position = d_mouse_pointer_screen_pos + QPoint(3,0);
-	QPointF temp_scene_mouse_position = mapToScene(temp_screen_mouse_position);
+	const QPointF temp_mouse_map_position =
+			calculate_position_on_map(d_mouse_screen_position_x + 3, d_mouse_screen_position_y);
 
-	QPointF scene_mouse_position = mapToScene(d_mouse_pointer_screen_pos);
+	const qreal map_proximity_distance = QLineF(
+			d_mouse_map_position_x, d_mouse_map_position_y,
+			temp_mouse_map_position.x(), temp_mouse_map_position.y()).length();
 
-	double scene_proximity_distance = distance_between_qpointfs(scene_mouse_position,temp_scene_mouse_position);
-
-	double angle = atan2(scene_mouse_position.y(),scene_mouse_position.x());
-	double x_proximity = scene_proximity_distance * cos(angle);
-	double y_proximity = scene_proximity_distance * sin(angle);
+	double angle = atan2(d_mouse_map_position_y, d_mouse_map_position_x);
+	double x_proximity = map_proximity_distance * cos(angle);
+	double y_proximity = map_proximity_distance * sin(angle);
 
 	QPointF threshold_point;
-	if (scene_mouse_position.x() > 0)
+	if (d_mouse_map_position_x > 0)
 	{
-		threshold_point.setX(scene_mouse_position.x() - x_proximity);
+		threshold_point.setX(d_mouse_map_position_x - x_proximity);
 	}
 	else
 	{	
-		threshold_point.setX(scene_mouse_position.x() + x_proximity);
+		threshold_point.setX(d_mouse_map_position_x + x_proximity);
 	}
-#if 1
-	if (scene_mouse_position.y() > 0)
+	if (d_mouse_map_position_y > 0)
 	{
-		threshold_point.setY(scene_mouse_position.y() - y_proximity);
+		threshold_point.setY(d_mouse_map_position_y - y_proximity);
 	}
 	else
 	{	
-		threshold_point.setY(scene_mouse_position.y() + y_proximity);
+		threshold_point.setY(d_mouse_map_position_y + y_proximity);
 	}
-#else
-	threshold_point.setY(scene_mouse_position.y());
-#endif
 	double x_ = threshold_point.x();
 	double y_ = threshold_point.y();
 
@@ -265,40 +427,266 @@ GPlatesQtWidgets::MapCanvas::current_proximity_inclusion_threshold(
 			click_point.position_vector(),
 			proximity_pos.position_vector()).dval();
 
-#if 0
-	double origin_to_scene_distance = distance_between_qpointfs(scene_mouse_position,QPointF());
-	qDebug();
-	qDebug() << "temp screen: " << temp_screen_mouse_position;
-	qDebug() << "temp scene: " << temp_scene_mouse_position;
-	qDebug() << "scene: " << scene_mouse_position;
-	qDebug() << "scene prox distance: " << scene_proximity_distance;
-	qDebug() << "origin to scene: " << origin_to_scene_distance;
-	qDebug() << "Threshold point: " << threshold_point;
-	qDebug() << "result: " << proximity_inclusion_threshold;
-	qDebug(); 
-#endif
-
 	return proximity_inclusion_threshold;
 }
 
 
-void 
-GPlatesQtWidgets::MapCanvas::initializeGL_if_necessary()
+QSize
+GPlatesQtWidgets::MapCanvas::get_viewport_size() const
 {
-	// Return early if we've already initialised OpenGL.
-	// This is now necessary because it's not only 'paintEvent()' and other QGLWidget methods
-	// that call our 'initializeGL()' method - it's now also when a client wants to render the
-	// scene to an image (instead of render/update the QGLWidget itself).
-	if (d_initialisedGL)
+	return QSize(width(), height());
+}
+
+
+QImage
+GPlatesQtWidgets::MapCanvas::render_to_qimage(
+		const QSize &image_size_in_device_independent_pixels)
+{
+	// Initialise OpenGL if we haven't already.
+	initializeGL_if_necessary();
+
+	// Make sure the OpenGL context is currently active.
+	d_gl_context->make_current();
+
+	// Start a render scope (all GL calls should be done inside this scope).
+	//
+	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
+	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
+	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
+
+
+	// The image to render/copy the scene into.
+	//
+	// Handle high DPI displays (eg, Apple Retina) by rendering image in high-res device pixels.
+	// The image will still be it's original size in device *independent* pixels.
+	//
+	// TODO: We're using the device pixel ratio of current canvas since we're rendering into that and
+	// then copying into image. This might not be ideal if this canvas is displayed on one monitor and
+	// the QImage (eg, Colouring previews) will be displayed on another with a different device pixel ratio.
+	const QSize image_size_in_device_pixels(
+			image_size_in_device_independent_pixels.width() * devicePixelRatio(),
+			image_size_in_device_independent_pixels.height() * devicePixelRatio());
+	QImage image(image_size_in_device_pixels, QImage::Format_ARGB32);
+	image.setDevicePixelRatio(devicePixelRatio());
+
+	if (image.isNull())
 	{
-		return;
+		// Most likely a memory allocation failure - return the null image.
+		return QImage();
 	}
 
-	// Make sure the OpenGL context is current.
-	// We can't use 'd_gl_context' yet because it hasn't been initialised.
-	makeCurrent();
+	// Fill the image with transparent black in case there's an exception during rendering
+	// of one of the tiles and the image is incomplete.
+	image.fill(QColor(0,0,0,0).rgba());
 
-	initializeGL();
+	const GPlatesOpenGL::GLViewport image_viewport(
+			0, 0,
+			// Use image size in device pixels (used by OpenGL)...
+			image_size_in_device_pixels.width(),
+			image_size_in_device_pixels.height()/*destination_viewport*/);
+	const double image_aspect_ratio = double(image_size_in_device_independent_pixels.width()) /
+			image_size_in_device_independent_pixels.height();
+
+	// Get the view-projection transform for the image.
+	const std::pair<GPlatesOpenGL::GLMatrix/*view*/, GPlatesOpenGL::GLMatrix/*projection*/>
+			image_view_projection_transform =
+					calc_scene_view_projection_transform(
+							d_map_camera,
+							image_aspect_ratio);
+
+	// The border is half the point size or line width, rounded up to nearest pixel.
+	// TODO: Use the actual maximum point size or line width to calculate this.
+	const unsigned int image_tile_border = 10;
+	// Set up for rendering the scene into tiles using the offscreen render target.
+	GPlatesOpenGL::GLTileRender image_tile_render(
+			d_off_screen_render_target_dimension/*tile_render_target_width*/,
+			d_off_screen_render_target_dimension/*tile_render_target_height*/,
+			image_viewport/*destination_viewport*/,
+			image_tile_border);
+
+	// Keep track of the cache handles of all rendered tiles.
+	boost::shared_ptr< std::vector<cache_handle_type> > frame_cache_handle(
+			new std::vector<cache_handle_type>());
+
+	// Render the scene tile-by-tile.
+	for (image_tile_render.first_tile(); !image_tile_render.finished(); image_tile_render.next_tile())
+	{
+		// Render the scene to current image tile.
+		// Hold onto the previous frame's cached resources *while* generating the current frame.
+		const cache_handle_type image_tile_cache_handle = render_scene_tile_into_image(
+				*gl,
+				image_view_projection_transform.first/*view*/,
+				image_view_projection_transform.second/*projection*/,
+				image_tile_render,
+				image);
+		frame_cache_handle->push_back(image_tile_cache_handle);
+	}
+
+	// The previous cached resources were kept alive *while* in the rendering loop above.
+	d_gl_frame_cache_handle = frame_cache_handle;
+
+	return image;
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
+		QPaintDevice &feedback_paint_device)
+{
+	// Initialise OpenGL if we haven't already.
+	initializeGL_if_necessary();
+
+	// Make sure the OpenGL context is currently active.
+	d_gl_context->make_current();
+
+	// Start a render scope (all GL calls should be done inside this scope).
+	//
+	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
+	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
+	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
+
+	// Convert from paint device size to device pixels (used by OpenGL)...
+	const unsigned int feedback_paint_device_pixel_width =
+			feedback_paint_device.width() * feedback_paint_device.devicePixelRatio();
+	const unsigned int feedback_paint_device_pixel_height =
+			feedback_paint_device.height() * feedback_paint_device.devicePixelRatio();
+	const double feedback_paint_device_aspect_ratio =
+			double(feedback_paint_device_pixel_width) / feedback_paint_device_pixel_height;
+
+	const GPlatesOpenGL::GLViewport feedback_paint_device_viewport(
+			0, 0,
+			feedback_paint_device_pixel_width,
+			feedback_paint_device_pixel_height);
+
+	// Get the view-projection transform.
+	const std::pair<GPlatesOpenGL::GLMatrix/*view*/, GPlatesOpenGL::GLMatrix/*projection*/>
+			feedback_paint_device_view_projection_transform =
+					calc_scene_view_projection_transform(
+							d_map_camera,
+							feedback_paint_device_aspect_ratio);
+
+	const GPlatesOpenGL::GLViewProjection feedback_paint_device_view_projection(
+			feedback_paint_device_viewport,
+			feedback_paint_device_view_projection_transform.first/*view*/,
+			feedback_paint_device_view_projection_transform.second/*projection*/);
+
+	// Set the viewport (and scissor rectangle) to the size of the feedback paint device
+	// (instead of the map canvas) since we're rendering to it (via transform feedback).
+	gl->Viewport(
+			feedback_paint_device_viewport.x(), feedback_paint_device_viewport.y(),
+			feedback_paint_device_viewport.width(), feedback_paint_device_viewport.height());
+	gl->Scissor(
+			feedback_paint_device_viewport.x(), feedback_paint_device_viewport.y(),
+			feedback_paint_device_viewport.width(), feedback_paint_device_viewport.height());
+
+	// Render the scene to the feedback paint device.
+	// Hold onto the previous frame's cached resources *while* generating the current frame.
+	d_gl_frame_cache_handle = render_scene(
+			*gl,
+			feedback_paint_device_view_projection,
+			// Using device-independent pixels (eg, widget dimensions)...
+			feedback_paint_device.width(),
+			feedback_paint_device.height());
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::set_camera_viewpoint(
+		const GPlatesMaths::LatLonPoint &camera_viewpoint)
+{
+	// Convert the llp to map coordinates.
+	double x_map = camera_viewpoint.longitude();
+	double y_map = camera_viewpoint.latitude();
+
+	try
+	{
+		map().projection().forward_transform(x_map, y_map);
+	}
+	catch(GPlatesGui::ProjectionException &e)
+	{
+		qWarning() << "Caught exception converting lat-long to scene coordinates.";
+		qWarning() << e;
+	}
+
+	// Centre the view on this point.
+	d_map_camera.move_look_at_position(QPointF(x_map, y_map));
+}
+
+
+boost::optional<GPlatesMaths::LatLonPoint>
+GPlatesQtWidgets::MapCanvas::get_camera_viewpoint() const
+{
+	// Camera look at position is in map projection space.
+	const QPointF &camera_look_at = d_map_camera.get_look_at_position();
+
+	double x_pos = camera_look_at.x();
+	double y_pos = camera_look_at.y();
+
+	// This stores the x screen coordinate, for comparison with the forward-transformed longitude.  
+	double screen_x = x_pos;
+
+	// Tolerance for comparing forward transformed longitude with screen longitude. 
+	double tolerance = 1.;
+
+	boost::optional<GPlatesMaths::LatLonPoint> llp = map().projection().inverse_transform(x_pos,y_pos);
+		
+	if (!llp)
+	{
+		return boost::none;
+	}
+
+	// Forward transform the lat-lon point and see where it would end up. 
+	double x_scene_pos = llp->longitude();
+	double y_scene_pos = llp->latitude();
+	map().projection().forward_transform(x_scene_pos,y_scene_pos);
+
+	// If we don't end up at the same point, we're off the map. 
+	if (std::fabs(x_scene_pos - screen_x) > tolerance)
+	{
+		return boost::none;
+	}
+		
+	return llp;
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::set_orientation(
+		const GPlatesMaths::Rotation &rotation
+		/*bool should_emit_external_signal */)
+{
+	GPlatesMaths::LatLonPoint llp(0,0);
+	GPlatesMaths::PointOnSphere centre = GPlatesMaths::make_point_on_sphere(llp);
+
+	GPlatesMaths::Rotation rev = rotation.get_reverse();
+
+	GPlatesMaths::PointOnSphere desired_centre = rev * centre;
+	GPlatesMaths::LatLonPoint desired_llp = GPlatesMaths::make_lat_lon_point(desired_centre);
+
+
+	// Convert the llp to map coordinates.
+	double x_map = desired_llp.longitude();
+	double y_map = desired_llp.latitude();
+
+	try
+	{
+		map().projection().forward_transform(x_map, y_map);
+	}
+	catch (GPlatesGui::ProjectionException &e)
+	{
+		qWarning() << "Caught exception converting lat-long to scene coordinates.";
+		qWarning() << e;
+	}
+
+	// Centre the view on this point.
+	d_map_camera.move_look_at_position(QPointF(x_map, y_map));
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::update_canvas()
+{
+	update();
 }
 
 
@@ -329,135 +717,6 @@ GPlatesQtWidgets::MapCanvas::initializeGL()
 }
 
 
-void
-GPlatesQtWidgets::MapCanvas::initialize_off_screen_render_target(
-		GPlatesOpenGL::GL &gl)
-{
-	if (d_off_screen_render_target_dimension > gl.get_capabilities().gl_max_texture_size)
-	{
-		d_off_screen_render_target_dimension = gl.get_capabilities().gl_max_texture_size;
-	}
-
-	// Create the framebuffer and its renderbuffers.
-	d_off_screen_colour_renderbuffer = GPlatesOpenGL::GLRenderbuffer::create(gl);
-	d_off_screen_depth_stencil_renderbuffer = GPlatesOpenGL::GLRenderbuffer::create(gl);
-	d_off_screen_framebuffer = GPlatesOpenGL::GLFramebuffer::create(gl);
-
-	// Initialise offscreen colour renderbuffer.
-	gl.BindRenderbuffer(GL_RENDERBUFFER, d_off_screen_colour_renderbuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, d_off_screen_render_target_dimension, d_off_screen_render_target_dimension);
-
-	// Initialise offscreen depth/stencil renderbuffer.
-	// Note that (in OpenGL 3.3 core) an OpenGL implementation is only *required* to provide stencil if a
-	// depth/stencil format is requested, and furthermore GL_DEPTH24_STENCIL8 is a specified required format.
-	gl.BindRenderbuffer(GL_RENDERBUFFER, d_off_screen_depth_stencil_renderbuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, d_off_screen_render_target_dimension, d_off_screen_render_target_dimension);
-
-	// Bind the framebuffer that'll we subsequently attach the renderbuffers to.
-	gl.BindFramebuffer(GL_FRAMEBUFFER, d_off_screen_framebuffer);
-
-	// Bind the colour renderbuffer to framebuffer's first colour attachment.
-	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, d_off_screen_colour_renderbuffer);
-
-	// Bind the depth/stencil renderbuffer to framebuffer's depth/stencil attachment.
-	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, d_off_screen_depth_stencil_renderbuffer);
-
-	const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-	GPlatesGlobal::Assert<GPlatesOpenGL::OpenGLException>(
-			completeness == GL_FRAMEBUFFER_COMPLETE,
-			GPLATES_ASSERTION_SOURCE,
-			"Framebuffer not complete for rendering tiles in globe filled polygons.");
-}
-
-
-GPlatesQtWidgets::MapCanvas::cache_handle_type
-GPlatesQtWidgets::MapCanvas::render_scene(
-		GPlatesOpenGL::GL &gl,
-		const GPlatesOpenGL::GLViewProjection &view_projection,
-		int paint_device_width_in_device_independent_pixels,
-		int paint_device_height_in_device_independent_pixels,
-		int map_canvas_paint_device_width_in_device_independent_pixels,
-		int map_canvas_paint_device_height_in_device_independent_pixels)
-{
-	PROFILE_FUNC();
-
-	// Clear the colour and depth buffers of the main framebuffer.
-	//
-	// NOTE: We don't use the depth buffer in the map view but clear it anyway so that we can
-	// use common layer painting code with the 3D globe rendering that enables depth testing.
-	// In our case the depth testing will always return true - depth testing is very fast
-	// in modern graphics hardware so we don't need to optimise it away.
-	// We also clear the stencil buffer in case it is used - also it's usually interleaved
-	// with depth so it's more efficient to clear both depth and stencil.
-	//
-	// NOTE: Depth/stencil writes must be enabled for depth/stencil clears to work.
-	//       But these should be enabled by default anyway.
-	gl.DepthMask(GL_TRUE);
-	gl.StencilMask(~0/*all ones*/);
-	//
-	// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
-	// the scene, that are not rendered, to have *opaque* alpha (=1). This appears to be needed on
-	// Mac with Qt5 (alpha=0 is fine on Qt5 Windows/Ubuntu, and on Qt4 for all platforms). Perhaps because
-	// QGLWidget rendering (on Qt5 Mac) is first done to a framebuffer object which is then blended into the
-	// window framebuffer (where having a source alpha of zero would result in the black background not showing).
-	// Or, more likely, maybe a framebuffer object is used on all platforms but the window framebuffer is
-	// white on Mac but already black on Windows/Ubuntu.
-	gl.ClearColor(0, 0, 0, 1); // Clear colour to opaque black
-	gl.ClearDepth(); // Clear depth to 1.0
-	gl.ClearStencil();
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
-	const float scale = calculate_scale(
-			paint_device_width_in_device_independent_pixels,
-			paint_device_height_in_device_independent_pixels,
-			map_canvas_paint_device_width_in_device_independent_pixels,
-			map_canvas_paint_device_height_in_device_independent_pixels);
-
-	//
-	// Paint the map and its contents.
-	//
-	// NOTE: We hold onto the previous frame's cached resources *while* generating the current frame
-	// and then release our hold on the previous frame (by assigning the current frame's cache).
-	// This just prevents a render frame from invalidating cached resources of the previous frame
-	// in order to avoid regenerating the same cached resources unnecessarily each frame.
-	// Since the view direction usually differs little from one frame to the next there is a lot
-	// of overlap that we want to reuse (and not recalculate).
-	//
-	const cache_handle_type frame_cache_handle = d_map.paint(gl, view_projection, viewport_zoom_factor, scale);
-
-	// Note that the overlays are rendered in screen window coordinates, so no view transform is needed.
-
-	// Draw the optional text overlay.
-	// We use the paint device dimensions (and not the canvas dimensions) in case the paint device
-	// is not the canvas (eg, when rendering to a larger dimension SVG paint device).
-	d_text_overlay->paint(
-			gl,
-			d_view_state.get_text_overlay_settings(),
-			// These are widget dimensions (not device pixels)...
-			paint_device_width_in_device_independent_pixels,
-			paint_device_height_in_device_independent_pixels,
-			scale);
-
-	d_velocity_legend_overlay->paint(
-			gl,
-			d_view_state.get_velocity_legend_overlay_settings(),
-			// These are widget dimensions (not device pixels)...
-			paint_device_width_in_device_independent_pixels,
-			paint_device_height_in_device_independent_pixels,
-			scale);
-
-	return frame_cache_handle;
-}
-
-
-void
-GPlatesQtWidgets::MapCanvas::update_canvas()
-{
-	update();
-}
-
-
 void 
 GPlatesQtWidgets::MapCanvas::resizeGL(
 		int new_width,
@@ -470,7 +729,6 @@ GPlatesQtWidgets::MapCanvas::resizeGL(
 void 
 GPlatesQtWidgets::MapCanvas::paintGL()
 {
-#if 1
 	// Start a render scope (all GL calls should be done inside this scope).
 	//
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
@@ -484,59 +742,6 @@ GPlatesQtWidgets::MapCanvas::paintGL()
 			// Using device-independent pixels (eg, widget dimensions)...
 			width(),
 			height());
-#else
-	// Restore the QPainter's transform after our rendering because we overwrite it during our
-	// text rendering (where we set it to the identity transform).
-	const QTransform qpainter_world_transform = painter->worldTransform();
-
-	// Start a render scope (all GL calls should be done inside this scope).
-	//
-	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
-	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
-
-	// Get the model-view matrix.
-	GPlatesOpenGL::GLMatrix model_view_matrix;
-	get_model_view_matrix_from_2D_world_transform(model_view_matrix, d_viewport_transform);
-
-	// The QPainter's paint device.
-	const QPaintDevice *qpaint_device = painter->device();
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			qpaint_device,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Get the projection matrix for the QPainter's paint device.
-	const GPlatesOpenGL::GLMatrix projection_matrix_scene = 
-			get_ortho_projection_matrix_from_dimensions(
-					// Using device-independent pixels (eg, widget dimensions)...
-					qpaint_device->width(),
-					qpaint_device->height());
-
-	// GLContext returns the current width and height of this GLWidget canvas.
-	//
-	// Note: This includes the device-pixel ratio since dimensions, in OpenGL, are in device pixels
-	//       (not the device independent pixels used for widget sizes).
-	const unsigned int canvas_width = d_gl_context->get_width();
-	const unsigned int canvas_height = d_gl_context->get_height();
-
-	const GPlatesOpenGL::GLViewProjection view_projection(
-			GPlatesOpenGL::GLViewport(0, 0, canvas_width, canvas_height),
-			model_view_matrix/*view*/,
-			projection_matrix_scene/*projection*/);
-
-	// Hold onto the previous frame's cached resources *while* generating the current frame.
-	d_gl_frame_cache_handle = render_scene(
-			*gl,
-			view_projection,
-			// Using device-independent pixels (eg, widget dimensions)...
-			qpaint_device->width(),
-			qpaint_device->height(),
-			qpaint_device->width(),
-			qpaint_device->height());
-
-	// Restore the QPainter's original world transform in case we modified it during rendering.
-	painter->setWorldTransform(qpainter_world_transform);
-#endif
 }
 
 
@@ -564,15 +769,13 @@ void
 GPlatesQtWidgets::MapCanvas::mousePressEvent(
 		QMouseEvent *press_event) 
 {
-
-	update_mouse_pointer_pos(press_event);
-
 	// Let's ignore all mouse buttons except the left mouse button.
-	if (press_event->button() != Qt::LeftButton) {
+	if (press_event->button() != Qt::LeftButton)
+	{
 		return;
 	}
 
-	d_last_mouse_view_coords = press_event->pos();
+	update_mouse_screen_position(press_event);
 
 	d_mouse_press_info =
 			MousePressInfo(
@@ -589,6 +792,56 @@ GPlatesQtWidgets::MapCanvas::mousePressEvent(
 			d_mouse_press_info->d_is_on_surface,
 			d_mouse_press_info->d_button,
 			d_mouse_press_info->d_modifiers);
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::mouseMoveEvent(
+	QMouseEvent *move_event)
+{
+	QPointF translation = mapToScene(move_event->pos()) - 
+		mapToScene(d_last_mouse_view_coords);
+
+	d_last_mouse_view_coords = move_event->pos();
+
+	update_mouse_pointer_pos(move_event);
+
+	if (d_mouse_press_info)
+	{
+		int x_dist = move_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x;
+		int y_dist = move_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y;
+		if (x_dist*x_dist + y_dist*y_dist > 4)
+		{
+			d_mouse_press_info->d_is_mouse_drag = true;
+		}
+
+		if (d_mouse_press_info->d_is_mouse_drag)
+		{
+			Q_EMIT mouse_dragged(
+					d_mouse_press_info->d_mouse_pointer_scene_coords,
+					d_mouse_press_info->d_is_on_surface,
+					mouse_pointer_scene_coords(),
+					mouse_pointer_is_on_surface(),
+					d_mouse_press_info->d_button,
+					d_mouse_press_info->d_modifiers,
+					translation);
+		}
+
+	}
+	else
+	{
+		//
+		// The mouse has moved but the left mouse button is not currently pressed.
+		// This could mean no mouse buttons are currently pressed or it could mean a
+		// button other than the left mouse button is currently pressed.
+		// Either way it is an mouse movement that is not currently invoking a
+		// canvas tool operation.
+		//
+		Q_EMIT mouse_moved_without_drag(
+				mouse_pointer_scene_coords(),
+				mouse_pointer_is_on_surface(),
+				translation);
+	}
 }
 
 
@@ -663,56 +916,6 @@ GPlatesQtWidgets::MapCanvas::mouseDoubleClickEvent(
 
 
 void
-GPlatesQtWidgets::MapCanvas::mouseMoveEvent(
-	QMouseEvent *move_event)
-{
-	QPointF translation = mapToScene(move_event->pos()) - 
-		mapToScene(d_last_mouse_view_coords);
-
-	d_last_mouse_view_coords = move_event->pos();
-
-	update_mouse_pointer_pos(move_event);
-
-	if (d_mouse_press_info)
-	{
-		int x_dist = move_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x;
-		int y_dist = move_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y;
-		if (x_dist*x_dist + y_dist*y_dist > 4)
-		{
-			d_mouse_press_info->d_is_mouse_drag = true;
-		}
-
-		if (d_mouse_press_info->d_is_mouse_drag)
-		{
-			Q_EMIT mouse_dragged(
-					d_mouse_press_info->d_mouse_pointer_scene_coords,
-					d_mouse_press_info->d_is_on_surface,
-					mouse_pointer_scene_coords(),
-					mouse_pointer_is_on_surface(),
-					d_mouse_press_info->d_button,
-					d_mouse_press_info->d_modifiers,
-					translation);
-		}
-
-	}
-	else
-	{
-		//
-		// The mouse has moved but the left mouse button is not currently pressed.
-		// This could mean no mouse buttons are currently pressed or it could mean a
-		// button other than the left mouse button is currently pressed.
-		// Either way it is an mouse movement that is not currently invoking a
-		// canvas tool operation.
-		//
-		Q_EMIT mouse_moved_without_drag(
-				mouse_pointer_scene_coords(),
-				mouse_pointer_is_on_surface(),
-				translation);
-	}
-}
-
-
-void
 GPlatesQtWidgets::MapCanvas::keyPressEvent(
 		QKeyEvent *key_event)
 {
@@ -738,452 +941,8 @@ GPlatesQtWidgets::MapCanvas::keyPressEvent(
 			break;
 
 		default:
-			QGraphicsView::keyPressEvent(key_event);
+			QGLWidget::keyPressEvent(key_event);
 	}
-}
-
-
-QSize
-GPlatesQtWidgets::MapCanvas::get_viewport_size() const
-{
-	return QSize(width(), height());
-}
-
-
-QImage
-GPlatesQtWidgets::MapCanvas::render_to_qimage(
-		const QSize &image_size_in_device_independent_pixels)
-{
-	// Set up a QPainter to help us with OpenGL text rendering.
-	QPainter painter(&map_canvas_paint_device);
-
-	// Make sure the OpenGL context is currently active.
-	d_gl_context->make_current();
-
-	// Start a render scope (all GL calls should be done inside this scope).
-	//
-	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
-	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
-
-
-	// The image to render/copy the scene into.
-	//
-	// Handle high DPI displays (eg, Apple Retina) by rendering image in high-res device pixels.
-	// The image will still be it's original size in device *independent* pixels.
-	//
-	// TODO: We're using the device pixel ratio of current canvas since we're rendering into that and
-	// then copying into image. This might not be ideal if this canvas is displayed on one monitor and
-	// the QImage (eg, Colouring previews) will be displayed on another with a different device pixel ratio.
-	const QSize image_size_in_device_pixels(
-			image_size_in_device_independent_pixels.width() * map_canvas_paint_device.devicePixelRatio(),
-			image_size_in_device_independent_pixels.height() * map_canvas_paint_device.devicePixelRatio());
-	QImage image(image_size_in_device_pixels, QImage::Format_ARGB32);
-	image.setDevicePixelRatio(map_canvas_paint_device.devicePixelRatio());
-
-	if (image.isNull())
-	{
-		// Most likely a memory allocation failure - return the null image.
-		return QImage();
-	}
-
-	// Fill the image with transparent black in case there's an exception during rendering
-	// of one of the tiles and the image is incomplete.
-	image.fill(QColor(0,0,0,0).rgba());
-
-	const GPlatesOpenGL::GLViewport image_viewport(
-			0, 0,
-			// Use image size in device pixels (used by OpenGL)...
-			image_size_in_device_pixels.width(),
-			image_size_in_device_pixels.height()/*destination_viewport*/);
-
-	// Get the model-view matrix from the 2D world transform.
-	GPlatesOpenGL::GLMatrix image_view_transform;
-	get_model_view_matrix_from_2D_world_transform(image_view_transform, viewport_transform);
-
-	// Get the projection matrix for the image dimensions.
-	// It'll get adjusted per tile (that the scene is rendered to).
-	const GPlatesOpenGL::GLMatrix image_projection_transform =
-			get_ortho_projection_matrix_from_dimensions(
-					// Using device-independent pixels (eg, widget dimensions)...
-					image_size_in_device_independent_pixels.width(),
-					image_size_in_device_independent_pixels.height());
-
-	// The border is half the point size or line width, rounded up to nearest pixel.
-	// TODO: Use the actual maximum point size or line width to calculate this.
-	const unsigned int tile_border = 10;
-	// Set up for rendering the scene into tiles.
-	// The tile render target dimensions match the framebuffer dimensions.
-	GPlatesOpenGL::GLTileRender image_tile_render(
-			d_off_screen_render_target_dimension/*tile_render_target_width*/,
-			d_off_screen_render_target_dimension/*tile_render_target_height*/,
-			image_viewport/*destination_viewport*/,
-			tile_border);
-
-	// Keep track of the cache handles of all rendered tiles.
-	boost::shared_ptr< std::vector<cache_handle_type> > frame_cache_handle(
-			new std::vector<cache_handle_type>());
-
-	// Render the scene tile-by-tile.
-	for (image_tile_render.first_tile(); !image_tile_render.finished(); image_tile_render.next_tile())
-	{
-		// Render the scene to the current tile.
-		// Hold onto the previous frame's cached resources *while* generating the current frame.
-		const cache_handle_type tile_cache_handle = render_scene_tile_into_image(
-				*gl,
-				image_view_transform,
-				image_projection_transform,
-				image_tile_render,
-				image,
-				map_canvas_paint_device);
-		frame_cache_handle->push_back(tile_cache_handle);
-	}
-
-	// Hold onto the previous frame's cached resources *while* generating the current frame.
-	d_gl_frame_cache_handle = frame_cache_handle;
-
-	return image;
-}
-
-GPlatesQtWidgets::MapCanvas::cache_handle_type
-GPlatesQtWidgets::MapCanvas::render_scene_tile_into_image(
-		GPlatesOpenGL::GL &gl,
-		const GPlatesOpenGL::GLMatrix &image_view_transform,
-		const GPlatesOpenGL::GLMatrix &image_projection_transform,
-		const GPlatesOpenGL::GLTileRender &image_tile_render,
-		QImage &image,
-		const QPaintDevice &map_canvas_paint_device)
-{
-	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GL::StateScope save_restore_state(
-			gl,
-			// We're rendering to a render target so reset to the default OpenGL state...
-			true/*reset_to_default_state*/);
-
-	// Bind our offscreen framebuffer object for drawing and reading.
-	// This directs drawing to and reading from the offscreen colour renderbuffer at the first colour attachment, and
-	// its associated depth/stencil renderbuffer at the depth/stencil attachment.
-	gl.BindFramebuffer(GL_FRAMEBUFFER, d_off_screen_framebuffer);
-
-	GPlatesOpenGL::GLViewport image_tile_render_target_viewport;
-	image_tile_render.get_tile_render_target_viewport(image_tile_render_target_viewport);
-
-	GPlatesOpenGL::GLViewport image_tile_render_target_scissor_rect;
-	image_tile_render.get_tile_render_target_scissor_rectangle(image_tile_render_target_scissor_rect);
-
-	// Mask off rendering outside the current tile region in case the tile is smaller than the
-	// render target. Note that the tile's viewport is slightly larger than the tile itself
-	// (the scissor rectangle) in order that fat points and wide lines just outside the tile
-	// have pixels rasterised inside the tile (the projection transform has also been expanded slightly).
-	//
-	// This includes 'gl_clear()' calls which clear the entire framebuffer.
-	gl.Enable(GL_SCISSOR_TEST);
-	gl.Scissor(
-			image_tile_render_target_scissor_rect.x(),
-			image_tile_render_target_scissor_rect.y(),
-			image_tile_render_target_scissor_rect.width(),
-			image_tile_render_target_scissor_rect.height());
-	gl.Viewport(
-			image_tile_render_target_viewport.x(),
-			image_tile_render_target_viewport.y(),
-			image_tile_render_target_viewport.width(),
-			image_tile_render_target_viewport.height());
-
-	// View transform associated with current image tile is same as for whole image.
-	const GPlatesOpenGL::GLMatrix &image_tile_view_transform = image_view_transform;
-
-	// Projection transform associated with current image tile is post-multiplied with the
-	// projection transform for the whole image.
-	GPlatesOpenGL::GLMatrix image_tile_projection_transform =
-			image_tile_render.get_tile_projection_transform()->get_matrix();
-	image_tile_projection_transform.gl_mult_matrix(image_projection_transform);
-
-	// The view/projection/viewport for the current image tile.
-	const GPlatesOpenGL::GLViewProjection image_tile_view_projection(
-			image_tile_render_target_viewport,  // The viewport that is used for rendering tile.
-			image_tile_view_transform,
-			image_tile_projection_transform);
-
-	//
-	// Render the scene.
-	//
-	const cache_handle_type tile_cache_handle = render_scene(
-			gl,
-			image_tile_view_projection,
-			// Since QImage is just raw pixels its dimensions are in device pixels, but
-			// we need device-independent pixels here (eg, widget dimensions)...
-			image.width() / image.devicePixelRatio(),
-			image.height() / image.devicePixelRatio(),
-			map_canvas_paint_device.width(),
-			map_canvas_paint_device.height());
-
-	//
-	// Copy the rendered tile into the appropriate sub-rect of the image.
-	//
-
-	GPlatesOpenGL::GLViewport current_tile_source_viewport;
-	image_tile_render.get_tile_source_viewport(current_tile_source_viewport);
-
-	GPlatesOpenGL::GLViewport current_tile_destination_viewport;
-	image_tile_render.get_tile_destination_viewport(current_tile_destination_viewport);
-
-	GPlatesOpenGL::GLImageUtils::copy_rgba8_framebuffer_into_argb32_qimage(
-			gl,
-			image,
-			current_tile_source_viewport,
-			current_tile_destination_viewport);
-
-	return tile_cache_handle;
-}
-
-void
-GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
-		QPaintDevice &feedback_paint_device)
-{
-	// Make sure the OpenGL context is currently active.
-	d_gl_context->make_current();
-
-	// Start a render scope (all GL calls should be done inside this scope).
-	//
-	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
-	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
-
-	// Convert from paint device size to device pixels (used by OpenGL)...
-	const unsigned int feedback_paint_device_pixel_width =
-			feedback_paint_device.width() * feedback_paint_device.devicePixelRatio();
-	const unsigned int feedback_paint_device_pixel_height =
-			feedback_paint_device.height() * feedback_paint_device.devicePixelRatio();
-
-	const GPlatesOpenGL::GLViewport feedback_paint_device_viewport(
-			0, 0,
-			feedback_paint_device_pixel_width,
-			feedback_paint_device_pixel_height);
-
-	// Set the viewport (and scissor rectangle) to the size of the feedback paint device
-	// (instead of the map canvas) since we're rendering to it (via transform feedback).
-	gl->Viewport(
-			feedback_paint_device_viewport.x(), feedback_paint_device_viewport.y(),
-			feedback_paint_device_viewport.width(), feedback_paint_device_viewport.height());
-	gl->Scissor(
-			feedback_paint_device_viewport.x(), feedback_paint_device_viewport.y(),
-			feedback_paint_device_viewport.width(), feedback_paint_device_viewport.height());
-
-	// Get the model-view matrix from the 2D world transform.
-	GPlatesOpenGL::GLMatrix model_view_matrix;
-	get_model_view_matrix_from_2D_world_transform(model_view_matrix, viewport_transform);
-
-	// Get the projection matrix for the feedback paint device.
-	const GPlatesOpenGL::GLMatrix projection_matrix_scene =
-			get_ortho_projection_matrix_from_dimensions(
-					// Using device-independent pixels (eg, widget dimensions)...
-					feedback_paint_device.width(),
-					feedback_paint_device.height());
-
-	const GPlatesOpenGL::GLViewProjection feedback_paint_device_view_projection(
-			feedback_paint_device_viewport,
-			model_view_matrix/*view*/,
-			projection_matrix_scene/*projection*/);
-
-	// Render the scene to the feedback paint device.
-	// This will use the main framebuffer for intermediate rendering in some cases.
-	// Hold onto the previous frame's cached resources *while* generating the current frame.
-	d_gl_frame_cache_handle = render_scene(
-			*gl,
-			feedback_paint_device_view_projection,
-			// Using device-independent pixels (eg, widget dimensions)...
-			feedback_paint_device.width(),
-			feedback_paint_device.height(),
-			map_canvas_paint_device.width(),
-			map_canvas_paint_device.height());
-}
-
-
-boost::optional<GPlatesMaths::LatLonPoint>
-GPlatesQtWidgets::MapCanvas::get_camera_viewpoint() const
-{
-#if 1
-	return GPlatesMaths::make_lat_lon_point(d_map_camera.get_look_at_position());
-#else
-	const GPlatesGui::MapTransform::point_type &centre_of_viewport = d_map_transform.get_centre_of_viewport();
-	double x_pos = centre_of_viewport.x();
-	double y_pos = centre_of_viewport.y();
-
-	// This stores the x screen coordinate, for comparison with the forward-transformed longitude.  
-	double screen_x = x_pos;
-
-	// Tolerance for comparing forward transformed longitude with screen longitude. 
-	double tolerance = 1.;
-
-	boost::optional<GPlatesMaths::LatLonPoint> llp = map().projection().inverse_transform(x_pos,y_pos);
-		
-	if (!llp)
-	{
-		return boost::none;
-	}
-
-	// Forward transform the lat-lon point and see where it would end up. 
-	double x_scene_pos = llp->longitude();
-	double y_scene_pos = llp->latitude();
-	map().projection().forward_transform(x_scene_pos,y_scene_pos);
-
-	// If we don't end up at the same point, we're off the map. 
-	if (std::fabs(x_scene_pos - screen_x) > tolerance)
-	{
-		return boost::none;
-	}
-		
-	return llp;
-#endif
-}
-
-
-void
-GPlatesQtWidgets::MapCanvas::set_camera_viewpoint(
-		const GPlatesMaths::LatLonPoint &camera_viewpoint)
-{
-#if 1
-	d_map_camera.move_look_at_position(
-			GPlatesMaths::make_point_on_sphere(camera_viewpoint));
-#else
-	// Convert the llp to canvas coordinates.
-	double x_pos = camera_viewpoint.longitude();
-	double y_pos = camera_viewpoint.latitude();
-
-	try
-	{
-		map().projection().forward_transform(x_pos,y_pos);
-	}
-	catch(GPlatesGui::ProjectionException &e)
-	{
-		qWarning() << "Caught exception converting lat-long to scene coordinates.";
-		qWarning() << e;
-	}
-
-	// Centre the view on this point.
-	d_map_transform.set_centre_of_viewport(
-			GPlatesGui::MapTransform::point_type(x_pos, y_pos));
-#endif
-}
-
-
-void
-GPlatesQtWidgets::MapCanvas::set_orientation(
-		const GPlatesMaths::Rotation &rotation
-		/*bool should_emit_external_signal */)
-{
-	GPlatesMaths::LatLonPoint llp(0,0);
-	GPlatesMaths::PointOnSphere centre = GPlatesMaths::make_point_on_sphere(llp);
-
-	GPlatesMaths::Rotation rev = rotation.get_reverse();
-
-	GPlatesMaths::PointOnSphere desired_centre = rev * centre;
-	GPlatesMaths::LatLonPoint desired_llp = GPlatesMaths::make_lat_lon_point(desired_centre);
-
-
-	// Convert the llp to canvas coordinates.
-	double x_pos = desired_llp.longitude();
-	double y_pos = desired_llp.latitude();
-
-	try
-	{
-		map().projection().forward_transform(x_pos, y_pos);
-	}
-	catch (GPlatesGui::ProjectionException &e)
-	{
-		qWarning() << "Caught exception converting lat-long to scene coordinates.";
-		qWarning() << e;
-	}
-
-	// Centre the view on this point.
-	d_map_transform.set_centre_of_viewport(
-		GPlatesGui::MapTransform::point_type(x_pos, y_pos)
-		/*should_emit_external_signal */);
-
-}
-
-
-void
-GPlatesQtWidgets::MapCanvas::update_mouse_pointer_pos(
-		QMouseEvent *mouse_event)
-{
-	d_mouse_pointer_screen_pos = mouse_event->pos();
-
-	handle_mouse_pointer_pos_change();
-}
-
-
-void
-GPlatesQtWidgets::MapCanvas::handle_mouse_pointer_pos_change()
-{
-	boost::optional<GPlatesMaths::LatLonPoint> llp = mouse_pointer_llp();
-
-	const bool is_on_surface = static_cast<bool>(llp);
-
-	Q_EMIT mouse_pointer_position_changed(llp, is_on_surface);
-}
-
-
-boost::optional<GPlatesMaths::LatLonPoint>
-GPlatesQtWidgets::MapCanvas::mouse_pointer_llp()
-{
-
-	QPointF canvas_pos = mapToScene(d_mouse_pointer_screen_pos);
-
-	double x_mouse_pos = canvas_pos.x();
-	double y_mouse_pos = canvas_pos.y();
-
-	// The proj library returns valid longitudes even when the screen coordinates are 
-	// far to the right, or left, of the map itself. To determine if the mouse position is off
-	// the map, I'm transforming the returned lat-lon back into screen coordinates. 
-	// If this doesn't match our original screen coordinates, then we can assume that we're off the map.
-	// I'm going to use the longitude value for comparison. 
-
-	// This stores the x screen coordinate, for comparison with the forward-transformed longitude.  
-	double screen_x = x_mouse_pos;
-
-	// I haven't put any great deal of thought into a suitable tolerance here. 
-	double tolerance = 1.;
-
-	boost::optional<GPlatesMaths::LatLonPoint> llp;
-
-
-	llp = map().projection().inverse_transform(x_mouse_pos,y_mouse_pos);
-
-	if (!llp)
-	{
-		return boost::none;
-	}
-		
-	// Forward transform the lat-lon point and see where it would end up. 
-	double x_scene_pos = llp->longitude();
-	double y_scene_pos = llp->latitude();
-	map().projection().forward_transform(x_scene_pos,y_scene_pos);
-
-	// If we don't end up at the same point, we're off the map. 
-
-	if (std::fabs(x_scene_pos - screen_x) > tolerance)
-	{
-		return boost::none;
-	}
-
-	// If we reach here, we should be on the map, with valid lat,lon.
-	return llp;
-	
-}
-
-
-QPointF
-GPlatesQtWidgets::MapCanvas::mouse_pointer_scene_coords()
-{
-	return mapToScene(d_mouse_pointer_screen_pos);
-}
-
-
-bool
-GPlatesQtWidgets::MapCanvas::mouse_pointer_is_on_surface()
-{
-	return static_cast<bool>(mouse_pointer_llp());
 }
 
 
@@ -1257,12 +1016,363 @@ GPlatesQtWidgets::MapCanvas::reset_camera_orientation()
 }
 
 
+void
+GPlatesQtWidgets::MapCanvas::handle_camera_change()
+{
+	// switch context before we do any GL stuff
+	makeCurrent();
+
+	set_view();
+
+	// QWidget::update:
+	//   Updates the widget unless updates are disabled or the widget is hidden.
+	//
+	//   This function does not cause an immediate repaint; instead it schedules a paint event
+	//   for processing when Qt returns to the main event loop.
+	//    -- http://doc.trolltech.com/4.3/qwidget.html#update
+	update_canvas();
+
+	update_mouse_position_on_map();
+}
+
+
+void 
+GPlatesQtWidgets::MapCanvas::initializeGL_if_necessary()
+{
+	// Return early if we've already initialised OpenGL.
+	// This is now necessary because it's not only 'paintEvent()' and other QGLWidget methods
+	// that call our 'initializeGL()' method - it's now also when a client wants to render the
+	// scene to an image (instead of render/update the QGLWidget itself).
+	if (d_initialisedGL)
+	{
+		return;
+	}
+
+	// Make sure the OpenGL context is current.
+	// We can't use 'd_gl_context' yet because it hasn't been initialised.
+	makeCurrent();
+
+	initializeGL();
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::initialize_off_screen_render_target(
+		GPlatesOpenGL::GL &gl)
+{
+	if (d_off_screen_render_target_dimension > gl.get_capabilities().gl_max_texture_size)
+	{
+		d_off_screen_render_target_dimension = gl.get_capabilities().gl_max_texture_size;
+	}
+
+	// Create the framebuffer and its renderbuffers.
+	d_off_screen_colour_renderbuffer = GPlatesOpenGL::GLRenderbuffer::create(gl);
+	d_off_screen_depth_stencil_renderbuffer = GPlatesOpenGL::GLRenderbuffer::create(gl);
+	d_off_screen_framebuffer = GPlatesOpenGL::GLFramebuffer::create(gl);
+
+	// Initialise offscreen colour renderbuffer.
+	gl.BindRenderbuffer(GL_RENDERBUFFER, d_off_screen_colour_renderbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, d_off_screen_render_target_dimension, d_off_screen_render_target_dimension);
+
+	// Initialise offscreen depth/stencil renderbuffer.
+	// Note that (in OpenGL 3.3 core) an OpenGL implementation is only *required* to provide stencil if a
+	// depth/stencil format is requested, and furthermore GL_DEPTH24_STENCIL8 is a specified required format.
+	gl.BindRenderbuffer(GL_RENDERBUFFER, d_off_screen_depth_stencil_renderbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, d_off_screen_render_target_dimension, d_off_screen_render_target_dimension);
+
+	// Bind the framebuffer that'll we subsequently attach the renderbuffers to.
+	gl.BindFramebuffer(GL_FRAMEBUFFER, d_off_screen_framebuffer);
+
+	// Bind the colour renderbuffer to framebuffer's first colour attachment.
+	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, d_off_screen_colour_renderbuffer);
+
+	// Bind the depth/stencil renderbuffer to framebuffer's depth/stencil attachment.
+	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, d_off_screen_depth_stencil_renderbuffer);
+
+	const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	GPlatesGlobal::Assert<GPlatesOpenGL::OpenGLException>(
+			completeness == GL_FRAMEBUFFER_COMPLETE,
+			GPLATES_ASSERTION_SOURCE,
+			"Framebuffer not complete for rendering tiles in globe filled polygons.");
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::set_view()
+{
+	// GLContext returns the current width and height of this GLWidget canvas.
+	//
+	// Note: This includes the device-pixel ratio since dimensions, in OpenGL, are in device pixels
+	//       (not the device independent pixels used for widget sizes).
+	const unsigned int canvas_width = d_gl_context->get_width();
+	const unsigned int canvas_height = d_gl_context->get_height();
+
+	// Get the view-projection transform.
+	const std::pair<GPlatesOpenGL::GLMatrix/*view*/, GPlatesOpenGL::GLMatrix/*projection*/>
+			view_projection_transform =
+					calc_scene_view_projection_transform(
+							d_map_camera,
+							double(canvas_width) / canvas_height /*aspect ratio*/);
+
+	d_view_projection = GPlatesOpenGL::GLViewProjection(
+			GPlatesOpenGL::GLViewport(0, 0, canvas_width, canvas_height),
+			view_projection_transform.first/*view*/,
+			view_projection_transform.second/*projection*/);
+}
+
+
+GPlatesQtWidgets::MapCanvas::cache_handle_type
+GPlatesQtWidgets::MapCanvas::render_scene(
+		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLViewProjection &view_projection,
+		int paint_device_width_in_device_independent_pixels,
+		int paint_device_height_in_device_independent_pixels)
+{
+	PROFILE_FUNC();
+
+	// Clear the colour and depth buffers of the framebuffer currently bound to GL_DRAW_FRAMEBUFFER target.
+	// We also clear the stencil buffer in case it is used - also it's usually
+	// interleaved with depth so it's more efficient to clear both depth and stencil.
+	//
+	// NOTE: Depth/stencil writes must be enabled for depth/stencil clears to work.
+	//       But these should be enabled by default anyway.
+	gl.DepthMask(GL_TRUE);
+	gl.StencilMask(~0/*all ones*/);
+	//
+	// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
+	// the scene, that are not rendered, to have *opaque* alpha (=1). This appears to be needed on
+	// Mac with Qt5 (alpha=0 is fine on Qt5 Windows/Ubuntu, and on Qt4 for all platforms). Perhaps because
+	// QGLWidget rendering (on Qt5 Mac) is first done to a framebuffer object which is then blended into the
+	// window framebuffer (where having a source alpha of zero would result in the black background not showing).
+	// Or, more likely, maybe a framebuffer object is used on all platforms but the window framebuffer is
+	// white on Mac but already black on Windows/Ubuntu.
+	gl.ClearColor(0, 0, 0, 1); // Clear colour to opaque black
+	gl.ClearDepth(); // Clear depth to 1.0
+	gl.ClearStencil(); // Clear stencil to 0
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
+	const float scale = calculate_scale(
+			paint_device_width_in_device_independent_pixels,
+			paint_device_height_in_device_independent_pixels);
+
+	//
+	// Paint the map and its contents.
+	//
+	// NOTE: We hold onto the previous frame's cached resources *while* generating the current frame
+	// and then release our hold on the previous frame (by assigning the current frame's cache).
+	// This just prevents a render frame from invalidating cached resources of the previous frame
+	// in order to avoid regenerating the same cached resources unnecessarily each frame.
+	// Since the view direction usually differs little from one frame to the next there is a lot
+	// of overlap that we want to reuse (and not recalculate).
+	//
+	const cache_handle_type frame_cache_handle = d_map.paint(gl, view_projection, viewport_zoom_factor, scale);
+
+	// Note that the overlays are rendered in screen window coordinates, so no view transform is needed.
+
+	// Paint the text overlay.
+	// We use the paint device dimensions (and not the canvas dimensions) in case the paint device
+	// is not the canvas (eg, when rendering to a larger dimension SVG paint device).
+	d_text_overlay->paint(
+			gl,
+			d_view_state.get_text_overlay_settings(),
+			// These are widget dimensions (not device pixels)...
+			paint_device_width_in_device_independent_pixels,
+			paint_device_height_in_device_independent_pixels,
+			scale);
+
+	d_velocity_legend_overlay->paint(
+			gl,
+			d_view_state.get_velocity_legend_overlay_settings(),
+			// These are widget dimensions (not device pixels)...
+			paint_device_width_in_device_independent_pixels,
+			paint_device_height_in_device_independent_pixels,
+			scale);
+
+	return frame_cache_handle;
+}
+
+
+GPlatesQtWidgets::MapCanvas::cache_handle_type
+GPlatesQtWidgets::MapCanvas::render_scene_tile_into_image(
+		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLMatrix &image_view_transform,
+		const GPlatesOpenGL::GLMatrix &image_projection_transform,
+		const GPlatesOpenGL::GLTileRender &image_tile_render,
+		QImage &image,
+		const QPaintDevice &map_canvas_paint_device)
+{
+	// Make sure we leave the OpenGL state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(
+			gl,
+			// We're rendering to a render target so reset to the default OpenGL state...
+			true/*reset_to_default_state*/);
+
+	// Bind our offscreen framebuffer object for drawing and reading.
+	// This directs drawing to and reading from the offscreen colour renderbuffer at the first colour attachment, and
+	// its associated depth/stencil renderbuffer at the depth/stencil attachment.
+	gl.BindFramebuffer(GL_FRAMEBUFFER, d_off_screen_framebuffer);
+
+	GPlatesOpenGL::GLViewport image_tile_render_target_viewport;
+	image_tile_render.get_tile_render_target_viewport(image_tile_render_target_viewport);
+
+	GPlatesOpenGL::GLViewport image_tile_render_target_scissor_rect;
+	image_tile_render.get_tile_render_target_scissor_rectangle(image_tile_render_target_scissor_rect);
+
+	// Mask off rendering outside the current tile region in case the tile is smaller than the
+	// render target. Note that the tile's viewport is slightly larger than the tile itself
+	// (the scissor rectangle) in order that fat points and wide lines just outside the tile
+	// have pixels rasterised inside the tile (the projection transform has also been expanded slightly).
+	//
+	// This includes 'gl_clear()' calls which clear the entire framebuffer.
+	gl.Enable(GL_SCISSOR_TEST);
+	gl.Scissor(
+			image_tile_render_target_scissor_rect.x(),
+			image_tile_render_target_scissor_rect.y(),
+			image_tile_render_target_scissor_rect.width(),
+			image_tile_render_target_scissor_rect.height());
+	gl.Viewport(
+			image_tile_render_target_viewport.x(),
+			image_tile_render_target_viewport.y(),
+			image_tile_render_target_viewport.width(),
+			image_tile_render_target_viewport.height());
+
+	// View transform associated with current image tile is same as for whole image.
+	const GPlatesOpenGL::GLMatrix &image_tile_view_transform = image_view_transform;
+
+	// Projection transform associated with current image tile is post-multiplied with the
+	// projection transform for the whole image.
+	GPlatesOpenGL::GLMatrix image_tile_projection_transform =
+			image_tile_render.get_tile_projection_transform()->get_matrix();
+	image_tile_projection_transform.gl_mult_matrix(image_projection_transform);
+
+	// The view/projection/viewport for the current image tile.
+	const GPlatesOpenGL::GLViewProjection image_tile_view_projection(
+			image_tile_render_target_viewport,  // The viewport that is used for rendering tile.
+			image_tile_view_transform,
+			image_tile_projection_transform);
+
+	//
+	// Render the scene.
+	//
+	const cache_handle_type tile_cache_handle = render_scene(
+			gl,
+			image_tile_view_projection,
+			// Since QImage is just raw pixels its dimensions are in device pixels, but
+			// we need device-independent pixels here (eg, widget dimensions)...
+			image.width() / image.devicePixelRatio(),
+			image.height() / image.devicePixelRatio());
+
+	//
+	// Copy the rendered tile into the appropriate sub-rect of the image.
+	//
+
+	GPlatesOpenGL::GLViewport current_tile_source_viewport;
+	image_tile_render.get_tile_source_viewport(current_tile_source_viewport);
+
+	GPlatesOpenGL::GLViewport current_tile_destination_viewport;
+	image_tile_render.get_tile_destination_viewport(current_tile_destination_viewport);
+
+	GPlatesOpenGL::GLImageUtils::copy_rgba8_framebuffer_into_argb32_qimage(
+			gl,
+			image,
+			current_tile_source_viewport,
+			current_tile_destination_viewport);
+
+	return tile_cache_handle;
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::update_mouse_screen_position(
+		QMouseEvent *mouse_event)
+{
+	d_mouse_screen_position_x = mouse_event->localPos().x();
+	d_mouse_screen_position_y = mouse_event->localPos().y();
+
+	update_mouse_position_on_map();
+}
+
+
+void
+GPlatesQtWidgets::MapCanvas::update_mouse_position_on_map()
+{
+	const QPointF new_position_on_map =
+			calculate_position_on_map(
+					d_mouse_screen_position_x,
+					d_mouse_screen_position_y);
+	d_mouse_map_position_x = new_position_on_map.x();
+	d_mouse_map_position_y = new_position_on_map.y();
+
+	boost::optional<GPlatesMaths::LatLonPoint> new_position_on_globe =
+			calculate_position_on_globe(
+					d_mouse_map_position_x,
+					d_mouse_map_position_y);
+
+	if (new_position_on_globe != d_mouse_position_on_globe)
+	{
+		d_mouse_position_on_globe = new_position_on_globe;
+
+		Q_EMIT mouse_position_on_map_changed(d_mouse_position_on_globe);
+	}
+}
+
+
+QPointF
+GPlatesQtWidgets::MapCanvas::calculate_position_on_map(
+		qreal screen_x,
+		qreal screen_y) const
+{
+}
+
+
+boost::optional<GPlatesMaths::LatLonPoint>
+GPlatesQtWidgets::MapCanvas::calculate_position_on_globe(
+		qreal map_x,
+		qreal map_y) const
+{
+	double x_map = map_x;
+	double y_map = map_y;
+
+	// The proj library returns valid longitudes even when the screen coordinates are 
+	// far to the right, or left, of the map itself. To determine if the mouse position is off
+	// the map, I'm transforming the returned lat-lon back into screen coordinates. 
+	// If this doesn't match our original screen coordinates, then we can assume that we're off the map.
+	// I'm going to use the longitude value for comparison. 
+
+	// This stores the x screen coordinate, for comparison with the forward-transformed longitude.  
+	const double initial_x_map = x_map;
+
+	// I haven't put any great deal of thought into a suitable tolerance here. 
+	const double tolerance = 1.0;
+
+	boost::optional<GPlatesMaths::LatLonPoint> position_on_globe =
+			map().projection().inverse_transform(x_map, y_map);
+	if (!position_on_globe)
+	{
+		return boost::none;
+	}
+		
+	// Forward transform the lat-lon point and see where it would end up. 
+	double x_pos = position_on_globe->longitude();
+	double y_pos = position_on_globe->latitude();
+	map().projection().forward_transform(x_pos, y_pos);
+
+	// If we don't end up at the same point, we're off the map. 
+	if (std::fabs(x_pos - initial_x_map) > tolerance)
+	{
+		return boost::none;
+	}
+
+	// If we reach here, we should be on the globe, with valid lat,lon.
+	return position_on_globe;
+}
+
+
 float
 GPlatesQtWidgets::MapCanvas::calculate_scale(
 		int paint_device_width_in_device_independent_pixels,
-		int paint_device_height_in_device_independent_pixels,
-		int map_canvas_paint_device_width_in_device_independent_pixels,
-		int map_canvas_paint_device_height_in_device_independent_pixels)
+		int paint_device_height_in_device_independent_pixels) const
 {
 	// Note that we use regular device *independent* sizes not high-DPI device pixels
 	// (ie, not using device pixel ratio) to calculate scale because font sizes, etc, are
@@ -1270,9 +1380,7 @@ GPlatesQtWidgets::MapCanvas::calculate_scale(
 	const int paint_device_dimension = (std::min)(
 			paint_device_width_in_device_independent_pixels,
 			paint_device_height_in_device_independent_pixels);
-	const int min_viewport_dimension = (std::min)(
-			map_canvas_paint_device_width_in_device_independent_pixels,
-			map_canvas_paint_device_height_in_device_independent_pixels);
+	const int min_viewport_dimension = (std::min)(width(), height());
 
 	// If paint device is larger than the viewport then don't scale - this avoids having
 	// too large point/line sizes when exporting large screenshots.

@@ -38,6 +38,7 @@
 #include <QPaintDevice>
 #include <QPoint>
 #include <QSize>
+#include <QtGlobal>
 
 #include "SceneView.h"
 
@@ -128,7 +129,7 @@ namespace GPlatesQtWidgets
 		MapCanvas(
 				GPlatesPresentation::ViewState &view_state,
 				GlobeCanvas &globe_canvas,
-				QWidget *parent_ = NULL);
+				QWidget *parent_ = nullptr);
 
 		~MapCanvas();
 
@@ -146,7 +147,7 @@ namespace GPlatesQtWidgets
 
 		double
 		current_proximity_inclusion_threshold(
-				const GPlatesMaths::PointOnSphere &click_point) const;
+				const GPlatesMaths::PointOnSphere &click_point) const override;
 
 		/**
 		 * Returns the dimensions of the viewport in device *independent* pixels (ie, widget size).
@@ -169,20 +170,15 @@ namespace GPlatesQtWidgets
 		 */
 		QImage
 		render_to_qimage(
-				const QSize &image_size_in_device_independent_pixels);
+				const QSize &image_size_in_device_independent_pixels) override;
 
 		/**
 		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
 		 */
 		void
 		render_opengl_feedback_to_paint_device(
-				QPaintDevice &feedback_paint_device);
+				QPaintDevice &feedback_paint_device) override;
 
-		/**
-		 * Returns the LatLonPoint at the centre of the active view, if the central point is on the surface of the earth. 
-		 */
-		boost::optional<GPlatesMaths::LatLonPoint>
-		get_camera_viewpoint() const override;
 
 		/** 
 		 * Translates the view so that the LatLonPoint llp is centred on the viewport. 
@@ -190,6 +186,13 @@ namespace GPlatesQtWidgets
 		void
 		set_camera_viewpoint(
 				const GPlatesMaths::LatLonPoint &camera_viewpoint) override;
+
+		/**
+		 * Returns the LatLonPoint at the centre of the active view, if the central point is on the surface of the earth. 
+		 */
+		boost::optional<GPlatesMaths::LatLonPoint>
+		get_camera_viewpoint() const override;
+
 
 		void
 		set_orientation(
@@ -201,6 +204,7 @@ namespace GPlatesQtWidgets
 		{
 			return boost::none;
 		}
+
 
 		/**
 		 * Returns the OpenGL context associated with our QGLWidget viewport.
@@ -221,16 +225,18 @@ namespace GPlatesQtWidgets
 		}
 
 	public Q_SLOTS:
-		
+		// NOTE: all signals/slots should use namespace scope for all arguments
+		//       otherwise differences between signals and slots will cause Qt
+		//       to not be able to connect them at runtime.
+
 		void
 		update_canvas();
 
 	Q_SIGNALS:
 
 		void
-		mouse_pointer_position_changed(
-				const boost::optional<GPlatesMaths::LatLonPoint> &,
-				bool is_on_surface);
+		mouse_position_on_map_changed(
+				const boost::optional<GPlatesMaths::LatLonPoint> &position_on_globe);
 				
 		void
 		mouse_pressed(
@@ -331,20 +337,20 @@ namespace GPlatesQtWidgets
 		paintEvent(
 				QPaintEvent *paint_event) override;
 
-		void 
-		mouseMoveEvent(
-				QMouseEvent *mouse_event) override;
-
 		void
 		mousePressEvent(
 				QMouseEvent *mouse_event) override;
 
-		void
-		mouseDoubleClickEvent(
+		void 
+		mouseMoveEvent(
 				QMouseEvent *mouse_event) override;
 
 		void 
 		mouseReleaseEvent(
+				QMouseEvent *mouse_event) override;
+
+		void
+		mouseDoubleClickEvent(
 				QMouseEvent *mouse_event) override;
 
 		void
@@ -372,6 +378,14 @@ namespace GPlatesQtWidgets
 
 		void
 		reset_camera_orientation() override;
+
+	private Q_SLOTS:
+		// NOTE: all signals/slots should use namespace scope for all arguments
+		//       otherwise differences between signals and slots will cause Qt
+		//       to not be able to connect them at runtime.
+
+		void
+		handle_camera_change();
 
 	private:
 
@@ -438,27 +452,39 @@ namespace GPlatesQtWidgets
 		 */
 		cache_handle_type d_gl_frame_cache_handle;
 
+		//! The x-coord of the mouse pointer position on the screen.
+		qreal d_mouse_screen_position_x;
+		//! The y-coord of the mouse pointer position on the screen.
+		qreal d_mouse_screen_position_y;
+
+		//! The x-coord of the mouse pointer position on the map (in 2D map projection space).
+		qreal d_mouse_map_position_x;
+		//! The y-coord of the mouse pointer position on the map (in 2D map projection space).
+		qreal d_mouse_map_position_y;
+
+		/**
+		 * If the mouse pointer is on the globe, this is the position of the mouse pointer on the globe.
+		 */
+		boost::optional<GPlatesMaths::LatLonPoint> d_mouse_position_on_globe;
+
+		boost::optional<MousePressInfo> d_mouse_press_info;
+
+		//! Holds the state
+		GPlatesGui::Map d_map;
+		
+		GPlatesGui::MapCamera &d_map_camera;
+
 		//! Paints an optional text overlay onto the map.
 		boost::scoped_ptr<GPlatesGui::TextOverlay> d_text_overlay;
 
 		//! Paints an optional velocity legend overlay onto the map.
 		boost::scoped_ptr<GPlatesGui::VelocityLegendOverlay> d_velocity_legend_overlay;
 
-		//! Holds the state
-		GPlatesGui::Map d_map;
 
 		/**
-		 * The position of the mouse pointer in view coordinates.
+		 * How far to nudge or rotate the camera when incrementally moving the camera, in degrees.
 		 */
-		QPoint d_mouse_pointer_screen_pos;
-
-		/**
-		 * The last position of the mouse in view (screen) coordinates.
-		 */
-		QPoint d_last_mouse_view_coords;
-
-		boost::optional<MousePressInfo> d_mouse_press_info;
-
+		static const double NUDGE_CAMERA_DEGREES;
 
 		//! Dimensions of square render target used for offscreen rendering.
 		static const unsigned int OFF_SCREEN_RENDER_TARGET_DIMENSION = 1024;
@@ -472,6 +498,17 @@ namespace GPlatesQtWidgets
 		void
 		initialize_off_screen_render_target(
 				GPlatesOpenGL::GL &gl);
+
+		void
+		set_view();
+
+		//! Render onto the canvas.
+		cache_handle_type
+		render_scene(
+				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewProjection &view_projection,
+				int paint_device_width_in_device_independent_pixels,
+				int paint_device_height_in_device_independent_pixels);
 
 		/**
 		 * Render one tile of the scene (as specified by @a image_tile_render).
@@ -487,40 +524,29 @@ namespace GPlatesQtWidgets
 				QImage &image,
 				const QPaintDevice &map_canvas_paint_device);
 
-		//! Render onto the canvas.
-		cache_handle_type
-		render_scene(
-				GPlatesOpenGL::GL &gl,
-				const GPlatesOpenGL::GLViewProjection &view_projection,
-				int paint_device_width_in_device_independent_pixels,
-				int paint_device_height_in_device_independent_pixels,
-				int map_canvas_paint_device_width_in_device_independent_pixels,
-				int map_canvas_paint_device_height_in_device_independent_pixels);
-
 		void
-		update_mouse_pointer_pos(
+		update_mouse_screen_position(
 				QMouseEvent *mouse_event);
 
 		void
-		handle_mouse_pointer_pos_change();
+		update_mouse_position_on_map();
 
 		/**
-		 * Returns the llp of the mouse position, if the mouse is on the surface. 
-		 */ 
-		boost::optional<GPlatesMaths::LatLonPoint>
-		mouse_pointer_llp();
-
-		/**
-		 * Returns the scene coords of the mouse position. 
-		 */ 
+		 * Given the screen coordinates, calculate and return a position on the map (in 2D map projection space).
+		 */
 		QPointF
-		mouse_pointer_scene_coords();
+		calculate_position_on_map(
+				qreal screen_x,
+				qreal screen_y) const;
 
 		/**
-		 * Returns true if the mouse is over the surface of the earth. 
-		 */ 
-		bool
-		mouse_pointer_is_on_surface();
+		 * Given the map coordinates, calculate and return a position which is on the globe (a unit sphere),
+		 * or none if map coordinates are not on the map surface (representing globe).
+		 */
+		boost::optional<GPlatesMaths::LatLonPoint>
+		calculate_position_on_globe(
+				qreal map_x,
+				qreal map_y) const;
 
 		/**
 		 * Move camera by @a dx and @a dy, both expressed in window coordinates.
@@ -534,9 +560,7 @@ namespace GPlatesQtWidgets
 		float
 		calculate_scale(
 				int paint_device_width_in_device_independent_pixels,
-				int paint_device_height_in_device_independent_pixels,
-				int map_canvas_paint_device_width_in_device_independent_pixels,
-				int map_canvas_paint_device_height_in_device_independent_pixels);
+				int paint_device_height_in_device_independent_pixels) const;
 
 	};
 }
