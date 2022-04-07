@@ -30,26 +30,16 @@
 #include "gui/MapCanvasTool.h"
 
 
-namespace GPlatesGui
-{
-	class MapTransform;
-}
-
 namespace GPlatesQtWidgets
 {
 	class MapCanvas;
 	class ViewportWindow;
 }
 
-namespace GPlatesViewOperations
-{
-	class RenderedGeometryCollection;
-}
-
 namespace GPlatesCanvasTools
 {
 	/**
-	 * This is the canvas tool used to re-orient the globe by dragging.
+	 * This is the canvas tool used to re-orient the map by dragging.
 	 */
 	class PanMap:
 			public GPlatesGui::MapCanvasTool
@@ -62,54 +52,96 @@ namespace GPlatesCanvasTools
 		explicit
 		PanMap(
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesQtWidgets::ViewportWindow &view_state_,
-				GPlatesGui::MapTransform &map_transform_):
-			MapCanvasTool(map_canvas_, map_transform_),
-			d_rendered_geometry_collection(rendered_geometry_collection),
-			d_view_state_ptr(&view_state_)
-		{  }
+				GPlatesQtWidgets::ViewportWindow &viewport_window_);
 
-		virtual
+
 		void
-		handle_activation();
+		handle_activation() override;
 
-		virtual
 		void
-		handle_deactivation();
+		handle_deactivation() override;
 
 
-		virtual
 		void
 		handle_left_drag(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation
-		);
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
+
+		void
+		handle_left_release_after_drag(
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 
 
-		virtual
 		void
 		handle_shift_left_drag(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation);
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
+
+		void
+		handle_shift_left_release_after_drag(
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
+
+
+		void
+		handle_alt_left_drag(
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
+
+		void
+		handle_alt_left_release_after_drag(
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 
 	private:
 
 		/**
-		 * Used to activate/deactivate focused geometry highlight rendered layer.
-		 */
-		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
-
-		/**
 		 * This is the View State used to pass messages to the status bar.
 		 */
-		GPlatesQtWidgets::ViewportWindow *d_view_state_ptr;
+		GPlatesQtWidgets::ViewportWindow *d_viewport_window_ptr;
 	};
 }
 

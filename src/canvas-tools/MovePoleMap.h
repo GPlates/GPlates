@@ -38,7 +38,6 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
-	class MovePoleWidget;
 	class ViewportWindow;
 }
 
@@ -59,41 +58,47 @@ namespace GPlatesCanvasTools
 		MovePoleMap(
 				const GPlatesViewOperations::MovePoleOperation::non_null_ptr_type &move_pole_operation,
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
-				GPlatesQtWidgets::ViewportWindow &viewport_window_,
-				GPlatesPresentation::ViewState &view_state_);
+				GPlatesQtWidgets::ViewportWindow &viewport_window_);
 
-		virtual
+
 		void
-		handle_activation();
+		handle_activation() override;
 
-		virtual
 		void
-		handle_deactivation();
+		handle_deactivation() override;
 
-		virtual
 		void
 		handle_left_drag(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation);
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 
-		virtual
 		void
 		handle_left_release_after_drag(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation);
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 
-		virtual
 		void
 		handle_move_without_drag(
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation);
+				int screen_width,
+				int screen_height,
+				const QPointF &screen_position,
+				const QPointF &map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 
 	private:
 

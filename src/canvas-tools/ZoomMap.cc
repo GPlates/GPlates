@@ -26,26 +26,21 @@
 
 #include "ZoomMap.h"
 
-#include "gui/MapTransform.h"
+#include "gui/MapCamera.h"
 #include "gui/ViewportZoom.h"
+
+#include "presentation/ViewState.h"
 
 #include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 
-#include "view-operations/RenderedGeometryCollection.h"
-
 
 GPlatesCanvasTools::ZoomMap::ZoomMap(
 		GPlatesQtWidgets::MapCanvas &map_canvas_,
-		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-		GPlatesQtWidgets::ViewportWindow &viewport_window_,
-		GPlatesGui::MapTransform &map_transform_,
-		GPlatesGui::ViewportZoom &viewport_zoom_) :
-	MapCanvasTool(map_canvas_, map_transform_),
-	d_rendered_geometry_collection(rendered_geometry_collection),
+		GPlatesQtWidgets::ViewportWindow &viewport_window_) :
+	MapCanvasTool(map_canvas_, viewport_window_.get_view_state().get_map_view_operation()),
 	d_viewport_window_ptr(&viewport_window_),
-	d_map_transform_ptr(&map_transform_),
-	d_viewport_zoom_ptr(&viewport_zoom_)
+	d_view_state(viewport_window_.get_view_state())
 {  }
 
 
@@ -70,35 +65,39 @@ GPlatesCanvasTools::ZoomMap::handle_deactivation()
 
 void
 GPlatesCanvasTools::ZoomMap::recentre_map(
-		const QPointF &point_on_scene)
+		const QPointF &map_position)
 {
-	d_map_transform_ptr->set_centre_of_viewport(point_on_scene);
+	d_view_state.get_map_camera().move_look_at_position(map_position);
 }
 
 
 void
 GPlatesCanvasTools::ZoomMap::handle_left_click(
-		const QPointF &point_on_scene, 
-		bool is_on_surface)
+		int screen_width,
+		int screen_height,
+		const QPointF &click_screen_position,
+		const QPointF &click_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
 {
-	if (is_on_surface)
+	if (click_position_on_globe)
 	{
-		recentre_map(point_on_scene);
-		d_viewport_zoom_ptr->zoom_in();
+		recentre_map(click_map_position);
+		d_view_state.get_viewport_zoom().zoom_in();
 	}
 }
-
 
 
 void
 GPlatesCanvasTools::ZoomMap::handle_shift_left_click(
-		const QPointF &point_on_scene, 
-		bool is_on_surface)
+		int screen_width,
+		int screen_height,
+		const QPointF &click_screen_position,
+		const QPointF &click_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
 {
-	if (is_on_surface)
+	if (click_position_on_globe)
 	{
-		recentre_map(point_on_scene);
-		d_viewport_zoom_ptr->zoom_out();
+		recentre_map(click_map_position);
+		d_view_state.get_viewport_zoom().zoom_out();
 	}
 }
-

@@ -139,7 +139,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					measure_distance_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 
 	//
 	// Digitise multipoint canvas tool.
@@ -166,7 +166,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					digitise_multipoint_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 
 	//
 	// Digitise polyline canvas tool.
@@ -193,7 +193,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					digitise_polyline_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 
 	//
 	// Digitise polygon canvas tool.
@@ -220,7 +220,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					digitise_polygon_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 
 	//
 	// Move vertex canvas tool.
@@ -248,7 +248,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					move_vertex_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 
 	//
 	// Delete vertex canvas tool.
@@ -274,7 +274,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					delete_vertex_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 
 	//
 	// Insert vertex canvas tool.
@@ -300,7 +300,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					insert_vertex_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 }
 
 

@@ -29,20 +29,10 @@
 #include "gui/MapCanvasTool.h"
 
 
-namespace GPlatesGui
-{
-	class MapTransform;
-}
-
 namespace GPlatesQtWidgets
 {
 	class MapCanvas;
 	class ViewportWindow;
-}
-
-namespace GPlatesViewOperations
-{
-	class RenderedGeometryCollection;
 }
 
 namespace GPlatesCanvasTools
@@ -63,23 +53,14 @@ namespace GPlatesCanvasTools
 		 */
 		ChangeLightDirectionMap(
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesQtWidgets::ViewportWindow &viewport_window_,
-				GPlatesGui::MapTransform &map_transform_);
+				GPlatesQtWidgets::ViewportWindow &viewport_window_);
 
 	private:
-
-		/**
-		 * Used to activate/deactivate focused geometry highlight rendered layer.
-		 */
-		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
 
 		/**
 		 * This is the window that has the status bar.
 		 */
 		GPlatesQtWidgets::ViewportWindow *d_viewport_window_ptr;
-
-		GPlatesGui::MapTransform *d_map_transform_ptr;
 	};
 }
 

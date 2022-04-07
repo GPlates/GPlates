@@ -27,17 +27,13 @@
 
 #include "GlobeCanvasTool.h"
 
-#include "Globe.h"
-
-#include "maths/PointOnSphere.h"
-
-#include "qt-widgets/GlobeCanvas.h"
+#include "view-operations/GlobeViewOperation.h"
 
 
 GPlatesGui::GlobeCanvasTool::GlobeCanvasTool(
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 		GPlatesViewOperations::GlobeViewOperation &globe_view_operation_) :
-	d_globe_canvas_ptr(&globe_canvas_),
+	d_globe_canvas(globe_canvas_),
 	d_globe_view_operation(globe_view_operation_)
 {  }
 

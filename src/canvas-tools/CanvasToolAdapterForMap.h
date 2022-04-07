@@ -28,31 +28,23 @@
 #ifndef GPLATES_CANVASTOOLS_CANVASTOOLADAPTERFORMAP_H
 #define GPLATES_CANVASTOOLS_CANVASTOOLADAPTERFORMAP_H
 
-#include <boost/optional.hpp>
-#include <QPointF>
-#include <QString>
-
 #include "CanvasTool.h"
 
 #include "gui/MapCanvasTool.h"
 
-#include "maths/PointOnSphere.h"
-
-
-namespace GPlatesGui
-{
-	class MapProjection;
-	class MapTransform;
-}
 
 namespace GPlatesQtWidgets
 {
 	class MapCanvas;
 }
 
+namespace  GPlatesViewOperations
+{
+	class MapViewOperation;
+}
+
 namespace GPlatesCanvasTools
 {
-
 	/**
 	 * Adapter class for CanvasTool -> MapCanvasTool
 	 */
@@ -68,177 +60,226 @@ namespace GPlatesCanvasTools
 		CanvasToolAdapterForMap(
 				const CanvasTool::non_null_ptr_type &canvas_tool_ptr,
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
-				GPlatesGui::MapTransform &map_transform_);
+				GPlatesViewOperations::MapViewOperation &map_view_operation_);
+
+
+		void
+		handle_activation() override;
+
+		void
+		handle_deactivation() override;
 		
-		virtual
-		void
-		handle_activation();
-
-		virtual
-		void
-		handle_deactivation();
-
-		virtual
 		void
 		handle_left_press(
-				const QPointF &click_point_on_scene,
-				bool is_on_surface);
+				int screen_width,
+				int screen_height,
+				const QPointF &press_screen_position,
+				const QPointF &press_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &press_position_on_globe) override;
 
-
-		virtual
 		void
 		handle_left_click(
-				const QPointF &click_point_on_scene,
-				bool is_on_surface);
+				int screen_width,
+				int screen_height,
+				const QPointF &click_screen_position,
+				const QPointF &click_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe) override;
 
-		virtual
 		void
 		handle_left_drag(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation);
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 
-		virtual
 		void
 		handle_left_release_after_drag(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation);
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 
-		virtual
 		void
 		handle_shift_left_click(
-				const QPointF &click_point_on_scene,
-				bool is_on_surface);
+				int screen_width,
+				int screen_height,
+				const QPointF &click_screen_position,
+				const QPointF &click_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe) override;
 
-		virtual
 		void
 		handle_shift_left_drag(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation);
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 
-		virtual
 		void
 		handle_shift_left_release_after_drag(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface);
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 
-		virtual
+		void
+		handle_alt_left_click(
+				int screen_width,
+				int screen_height,
+				const QPointF &click_screen_position,
+				const QPointF &click_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe) override;
+
+		void
+		handle_alt_left_drag(
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
+
+		void
+		handle_alt_left_release_after_drag(
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
+
 		void
 		handle_ctrl_left_click(
-				const QPointF &click_point_on_scene,
-				bool is_on_surface);
+				int screen_width,
+				int screen_height,
+				const QPointF &click_screen_position,
+				const QPointF &click_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe) override;
 
-		virtual
 		void
 		handle_ctrl_left_drag(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation);
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 
-		virtual
 		void
 		handle_ctrl_left_release_after_drag(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface);
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 
-		virtual
 		void
 		handle_shift_ctrl_left_click(
-				const QPointF &click_point_on_scene,
-				bool is_on_surface);
+				int screen_width,
+				int screen_height,
+				const QPointF &click_screen_position,
+				const QPointF &click_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe) override;
 
-		virtual
 		void
 		handle_shift_ctrl_left_drag(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation);
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 
-/* FIXME: commented out because it is commented out in MapCanvasTool.h
-		virtual
 		void
 		handle_shift_ctrl_left_release_after_drag(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation);
-*/
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 
-		virtual
+		void
+		handle_alt_ctrl_left_click(
+				int screen_width,
+				int screen_height,
+				const QPointF &click_screen_position,
+				const QPointF &click_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe) override;
+
+		void
+		handle_alt_ctrl_left_drag(
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
+
+		void
+		handle_alt_ctrl_left_release_after_drag(
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
+
 		void
 		handle_move_without_drag(
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation);
+				int screen_width,
+				int screen_height,
+				const QPointF &screen_position,
+				const QPointF &map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 	
 	private:
-
-		/**
-		 * Typedef for a pointer to a member function of CanvasTool used for clicks
-		 * and moves without drag.
-		 */
-		typedef void (CanvasTool::*canvas_tool_click_func)
-			(const GPlatesMaths::PointOnSphere &, bool, double);
-
-		/**
-		 * Typedef for a pointer to a member function of CanvasTool used for drag
-		 * operations that do not have a default action.
-		 */
-		typedef void (CanvasTool::*canvas_tool_drag_func_without_default)
-			(const GPlatesMaths::PointOnSphere &, bool, double,
-			 const GPlatesMaths::PointOnSphere &, bool, double,
-			 const boost::optional<GPlatesMaths::PointOnSphere> &);
-
-		/**
-		 * Typedef for a pointer to a member function of CanvasTool used for drag
-		 * operations that have a default action.
-		 */
-		typedef bool (CanvasTool::*canvas_tool_drag_func_with_default)
-			(const GPlatesMaths::PointOnSphere &, bool, double,
-			 const GPlatesMaths::PointOnSphere &, bool, double,
-			 const boost::optional<GPlatesMaths::PointOnSphere> &);
-
-		void
-		invoke_canvas_tool_func(
-				const QPointF &click_point_on_scene,
-				bool is_on_surface,
-				const canvas_tool_click_func &func);
-
-		void
-		invoke_canvas_tool_func(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const canvas_tool_drag_func_without_default &func);
-
-		bool
-		invoke_canvas_tool_func(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const canvas_tool_drag_func_with_default &func);
-				
-
-		//! A pointer to the CanvasTool instance that we wrap around
+		//! A pointer to the CanvasTool instance that we wrap.
 		CanvasTool::non_null_ptr_type d_canvas_tool_ptr;
 	};
 }

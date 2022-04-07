@@ -26,47 +26,15 @@
 
 #include "MapCanvasTool.h"
 
-#include "MapProjection.h"
-#include "MapTransform.h"
-
-#include "maths/Real.h"
-#include "maths/MathsUtils.h"
-#include "maths/types.h"
-
-#include "qt-widgets/MapCanvas.h"
+#include "view-operations/MapViewOperation.h"
 
 
-namespace
-{
-	double
-	angle_between_vectors(
-			const QPointF &v1,
-			const QPointF &v2)
-	{
-		GPlatesMaths::real_t len1 = sqrt(v1.x()*v1.x() + v1.y()*v1.y());
-		GPlatesMaths::real_t len2 = sqrt(v2.x()*v2.x() + v2.y()*v2.y());
-
-		if ((len1 == 0) || (len2 == 0)) {
-			return 0.0;
-		}
-
-		GPlatesMaths::real_t cosangle = (v1.x()*v2.x() + v1.y()*v2.y())/(len1*len2);
-		GPlatesMaths::real_t cross = v1.x()*v2.y() - v2.x()*v1.y();
-
-		if (!is_strictly_negative(cross))
-		{
-			//qDebug() << "Cross greater-than or equal to 0";
-			return GPlatesMaths::convert_rad_to_deg(acos(cosangle.dval()));
-		}
-		else
-		{
-			//qDebug() << "Cross less than 0";
-			return (-1.0 * GPlatesMaths::convert_rad_to_deg(acos(cosangle.dval())));
-		}
-
-	}
-
-}
+GPlatesGui::MapCanvasTool::MapCanvasTool(
+		GPlatesQtWidgets::MapCanvas &map_canvas_,
+		GPlatesViewOperations::MapViewOperation &map_view_operation_) :
+	d_map_canvas(map_canvas_),
+	d_map_view_operation(map_view_operation_)
+{  }
 
 
 GPlatesGui::MapCanvasTool::~MapCanvasTool()
@@ -74,78 +42,174 @@ GPlatesGui::MapCanvasTool::~MapCanvasTool()
 
 
 void
-GPlatesGui::MapCanvasTool::handle_ctrl_left_drag(
-		const QPointF &initial_point_on_scene,
-		bool was_on_surface,
-		const QPointF &current_point_on_scene,
-		bool is_on_surface,
-		const QPointF &translation)
+GPlatesGui::MapCanvasTool::pan_map_by_drag_update(
+		int screen_width,
+		int screen_height,
+		const QPointF &initial_screen_position,
+		const QPointF &initial_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const QPointF &current_screen_position,
+		const QPointF &current_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
-	map_transform().translate(-translation.x(), -translation.y());
-}
-
-
-boost::optional<GPlatesMaths::PointOnSphere>
-GPlatesGui::MapCanvasTool::qpointf_to_point_on_sphere(
-		const QPointF &point,
-		const GPlatesGui::MapProjection &projection)
-{
-	double x = point.x();
-	double y = point.y();
-
-	boost::optional<GPlatesMaths::LatLonPoint> llp =
-			projection.inverse_transform(x, y);
-	if (!llp)
+	if (!d_map_view_operation.in_drag())
 	{
-		return boost::none;
+		d_map_view_operation.start_drag(
+				GPlatesViewOperations::MapViewOperation::DRAG_NORMAL,
+				initial_map_position,
+				initial_screen_position,
+				screen_width, screen_height);
 	}
 
-	return GPlatesMaths::make_point_on_sphere(llp.get());
+	d_map_view_operation.update_drag(
+			current_map_position,
+			current_screen_position,
+			screen_width, screen_height,
+			false/*end_of_drag*/);
 }
 
 
 void
-GPlatesGui::MapCanvasTool::rotate_map_by_drag(
-		const QPointF &initial_point_on_scene,
-		bool was_on_surface,
-		const QPointF &current_point_on_scene,
-		bool is_on_surface,
-		const QPointF &translation)
+GPlatesGui::MapCanvasTool::pan_map_by_drag_release(
+		int screen_width,
+		int screen_height,
+		const QPointF &initial_screen_position,
+		const QPointF &initial_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const QPointF &current_screen_position,
+		const QPointF &current_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
-	QPointF centre = map_canvas().mapToScene(map_canvas().viewport()->rect().center());
-
-	QPointF current_vector = current_point_on_scene - centre;
-	QPointF previous_vector = current_vector - translation;
-
-	double angle = angle_between_vectors(previous_vector,current_vector);
-
-	if (GPlatesMaths::is_nan(angle)) {
-#if 0
-		qDebug() << "isnan";
-		qDebug() << "previous: " << previous_vector;
-		qDebug() << "current: " << current_vector;
-#endif
-		return;
+	if (!d_map_view_operation.in_drag())
+	{
+		d_map_view_operation.start_drag(
+				GPlatesViewOperations::MapViewOperation::DRAG_NORMAL,
+				initial_map_position,
+				initial_screen_position,
+				screen_width, screen_height);
 	}
-	
-	// FIXME: Setting setTransformationAnchor(QGraphicsView::AnchorViewCentre) here
-	// rotates the map about the centre of the view, but also re-centres the whole 
-	// map each time you rotate. 
-	// Without setting the transformation anchor here, the map is not re-centred
-	// each time, but the rotation is about the centre of the map rather than
-	// the centre of the view. 
-	// Ideally I want this to rotate about the centre of the view, but without 
-	// re-centring the map each time. 
-	map_transform().rotate(angle);
 
-#if 0
-	qDebug();
-	qDebug() << "Centre: " << centre;
-	qDebug() << "Translation: " << translation;
-	qDebug() << "Current point: " << current_point_on_scene;
-	qDebug() << "Current vector: " << current_vector;
-	qDebug() << "Previous vector: " << previous_vector;
-	qDebug() << "Angle: " << angle;
-#endif
+	d_map_view_operation.update_drag(
+			current_map_position,
+			current_screen_position,
+			screen_width, screen_height,
+			true/*end_of_drag*/);
 }
 
+
+void
+GPlatesGui::MapCanvasTool::rotate_map_by_drag_update(
+		int screen_width,
+		int screen_height,
+		const QPointF &initial_screen_position,
+		const QPointF &initial_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const QPointF &current_screen_position,
+		const QPointF &current_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+{
+	if (!d_map_view_operation.in_drag())
+	{
+		d_map_view_operation.start_drag(
+				GPlatesViewOperations::MapViewOperation::DRAG_ROTATE,
+				initial_map_position,
+				initial_screen_position,
+				screen_width, screen_height);
+	}
+
+	d_map_view_operation.update_drag(
+			current_map_position,
+			current_screen_position,
+			screen_width, screen_height,
+			false/*end_of_drag*/);
+}
+
+
+void
+GPlatesGui::MapCanvasTool::rotate_map_by_drag_release(
+		int screen_width,
+		int screen_height,
+		const QPointF &initial_screen_position,
+		const QPointF &initial_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const QPointF &current_screen_position,
+		const QPointF &current_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+{
+	if (!d_map_view_operation.in_drag())
+	{
+		d_map_view_operation.start_drag(
+				GPlatesViewOperations::MapViewOperation::DRAG_ROTATE,
+				initial_map_position,
+				initial_screen_position,
+				screen_width, screen_height);
+	}
+
+	d_map_view_operation.update_drag(
+			current_map_position,
+			current_screen_position,
+			screen_width, screen_height,
+			true/*end_of_drag*/);
+}
+
+
+void
+GPlatesGui::MapCanvasTool::tilt_map_by_drag_update(
+		int screen_width,
+		int screen_height,
+		const QPointF &initial_screen_position,
+		const QPointF &initial_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const QPointF &current_screen_position,
+		const QPointF &current_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+{
+	if (!d_map_view_operation.in_drag())
+	{
+		d_map_view_operation.start_drag(
+				GPlatesViewOperations::MapViewOperation::DRAG_TILT,
+				initial_map_position,
+				initial_screen_position,
+				screen_width, screen_height);
+	}
+
+	d_map_view_operation.update_drag(
+			current_map_position,
+			current_screen_position,
+			screen_width, screen_height,
+			false/*end_of_drag*/);
+}
+
+
+void
+GPlatesGui::MapCanvasTool::tilt_map_by_drag_release(
+		int screen_width,
+		int screen_height,
+		const QPointF &initial_screen_position,
+		const QPointF &initial_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const QPointF &current_screen_position,
+		const QPointF &current_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+{
+	if (!d_map_view_operation.in_drag())
+	{
+		d_map_view_operation.start_drag(
+				GPlatesViewOperations::MapViewOperation::DRAG_TILT,
+				initial_map_position,
+				initial_screen_position,
+				screen_width, screen_height);
+	}
+
+	d_map_view_operation.update_drag(
+			current_map_position,
+			current_screen_position,
+			screen_width, screen_height,
+			true/*end_of_drag*/);
+}

@@ -46,8 +46,8 @@
 
 #include "gui/Globe.h"
 #include "gui/GlobeCamera.h"
+#include "gui/MapCamera.h"
 #include "gui/MapProjection.h"
-#include "gui/MapTransform.h"
 #include "gui/ViewportProjection.h"
 
 #include "maths/LatLonPoint.h"
@@ -262,8 +262,8 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 			this,
 			SLOT(recalc_camera_position()));
 	QObject::connect(
-			&(view_state.get_map_transform()),
-			SIGNAL(transform_changed(const GPlatesGui::MapTransform &)),
+			&(view_state.get_map_camera()),
+			SIGNAL(camera_changed()),
 			this,
 			SLOT(recalc_camera_position()));
 
@@ -275,9 +275,9 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 			SLOT(update_mouse_position_on_globe(const GPlatesMaths::PointOnSphere &, bool)));
 	QObject::connect(
 			&(d_globe_and_map_widget_ptr->get_map_canvas()),
-			SIGNAL(mouse_position_on_map_changed(const boost::optional<GPlatesMaths::LatLonPoint> &)),
+			SIGNAL(mouse_position_on_map_changed(const boost::optional<GPlatesMaths::PointOnSphere> &)),
 			this,
-			SLOT(update_mouse_position_on_map(const boost::optional<GPlatesMaths::LatLonPoint> &)));
+			SLOT(update_mouse_position_on_map(const boost::optional<GPlatesMaths::PointOnSphere> &)));
 	QObject::connect(
 			&(view_state.get_viewport_projection()),
 			SIGNAL(projection_type_changed(const GPlatesGui::ViewportProjection &)),
@@ -672,7 +672,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_position_on_globe(
 
 void
 GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_position_on_map(
-		const boost::optional<GPlatesMaths::LatLonPoint> &position_on_globe)
+		const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe)
 {
 	//std::cerr << "Updating llp pointer" << std::endl;
 	QString lat_label(QObject::tr("(lat: "));
@@ -680,9 +680,11 @@ GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_position_on_map(
 	QString position_as_string;
 	if (position_on_globe)
 	{
+		const GPlatesMaths::LatLonPoint lat_lon_position_on_globe = make_lat_lon_point(position_on_globe.get());
+
 		QLocale locale_;
-		QString lat = locale_.toString(position_on_globe->latitude(), 'f', 2);
-		QString lon = locale_.toString(position_on_globe->longitude(), 'f', 2);
+		QString lat = locale_.toString(lat_lon_position_on_globe.latitude(), 'f', 2);
+		QString lon = locale_.toString(lat_lon_position_on_globe.longitude(), 'f', 2);
 		position_as_string.append(lat_label);
 		position_as_string.append(lat);
 		position_as_string.append(lon_label);

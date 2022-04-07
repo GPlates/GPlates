@@ -34,15 +34,19 @@
 #include <QWidget>
 #include <boost/optional.hpp>
 
-#include "GMenuButton.h"
 #include "ui_ReconstructionViewWidgetUi.h"
+
+#include "GMenuButton.h"
 #include "ZoomSliderWidget.h"
+
 #include "gui/ViewportZoom.h"
+
 #include "maths/LatLonPoint.h"
+#include "maths/PointOnSphere.h"
+
 
 namespace GPlatesMaths
 {
-	class PointOnSphere;
 	class Rotation;
 }
 
@@ -152,7 +156,7 @@ namespace GPlatesQtWidgets
 
 		void
 		update_mouse_position_on_map(
-				const boost::optional<GPlatesMaths::LatLonPoint> &position_on_globe);
+				const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe);
 		
 		void
 		activate_zoom_spinbox();

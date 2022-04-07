@@ -35,11 +35,6 @@ namespace GPlatesQtWidgets
 	class ViewportWindow;
 }
 
-namespace GPlatesViewOperations
-{
-	class RenderedGeometryCollection;
-}
-
 namespace GPlatesCanvasTools
 {
 	/**
@@ -56,18 +51,14 @@ namespace GPlatesCanvasTools
 		explicit
 		ReorientGlobe(
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_);
 
-		virtual
 		void
-		handle_activation();
+		handle_activation() override;
 
-		virtual
 		void
-		handle_deactivation();
+		handle_deactivation() override;
 
-		virtual
 		void
 		handle_left_drag(
 				int screen_width,
@@ -80,9 +71,8 @@ namespace GPlatesCanvasTools
 				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
 
-		virtual
 		void
 		handle_left_release_after_drag(
 				int screen_width,
@@ -95,9 +85,8 @@ namespace GPlatesCanvasTools
 				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
 
-		virtual
 		void
 		handle_shift_left_drag(
 				int screen_width,
@@ -110,9 +99,8 @@ namespace GPlatesCanvasTools
 				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
 
-		virtual
 		void
 		handle_shift_left_release_after_drag(
 				int screen_width,
@@ -125,9 +113,8 @@ namespace GPlatesCanvasTools
 				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
 
-		virtual
 		void
 		handle_alt_left_drag(
 				int screen_width,
@@ -140,9 +127,8 @@ namespace GPlatesCanvasTools
 				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
 
-		virtual
 		void
 		handle_alt_left_release_after_drag(
 				int screen_width,
@@ -155,14 +141,9 @@ namespace GPlatesCanvasTools
 				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
 
 	private:
-
-		/**
-		 * Used to activate/deactivate focused geometry highlight rendered layer.
-		 */
-		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
 
 		/**
 		 * This is the View State used to pass messages to the status bar.

@@ -31,15 +31,11 @@
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 
-#include "view-operations/RenderedGeometryCollection.h"
-
 
 GPlatesCanvasTools::ReorientGlobe::ReorientGlobe(
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_) :
 	GlobeCanvasTool(globe_canvas_, viewport_window_.get_view_state().get_globe_view_operation()),
-	d_rendered_geometry_collection(rendered_geometry_collection),
 	d_viewport_window_ptr(&viewport_window_)
 {
 }

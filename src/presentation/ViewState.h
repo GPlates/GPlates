@@ -64,7 +64,7 @@ namespace GPlatesGui
 	class FileIODirectoryConfigurations;
 	class GlobeCamera;
 	class GraticuleSettings;
-	class MapTransform;
+	class MapCamera;
 	class PythonManager;
 	class RenderSettings;
 	class SceneLightingParameters;
@@ -86,6 +86,7 @@ namespace GPlatesViewOperations
 	class FocusedFeatureGeometryManipulator;
 	class GeometryBuilder;
 	class GlobeViewOperation;
+	class MapViewOperation;
 	class RenderedGeometryCollection;
 	class RenderedGeometryParameters;
 }
@@ -245,18 +246,17 @@ namespace GPlatesPresentation
 		get_visual_layer_registry() const;
 
 
-		GPlatesGui::MapTransform &
-		get_map_transform();
-
-		const GPlatesGui::MapTransform &
-		get_map_transform() const;
-
-
 		GPlatesGui::GlobeCamera &
 		get_globe_camera();
 
 		const GPlatesGui::GlobeCamera &
 		get_globe_camera() const;
+
+		GPlatesGui::MapCamera &
+		get_map_camera();
+
+		const GPlatesGui::MapCamera &
+		get_map_camera() const;
 
 
 		//! The sole GlobeViewOperation shared by all globe canvas tools for manipulating view with mouse drags.
@@ -265,6 +265,14 @@ namespace GPlatesPresentation
 
 		const GPlatesViewOperations::GlobeViewOperation &
 		get_globe_view_operation() const;
+
+		//! The sole MapViewOperation shared by all map canvas tools for manipulating view with mouse drags.
+		GPlatesViewOperations::MapViewOperation &
+		get_map_view_operation();
+
+		const GPlatesViewOperations::MapViewOperation &
+		get_map_view_operation() const;
+
 
 		// TODO: the get_last_open_directory methods should be obsolete now, but retain
 		// until the FileIODirectoryConfiguration stuff has been tested further.
@@ -452,14 +460,17 @@ namespace GPlatesPresentation
 		 */
 		boost::scoped_ptr<VisualLayerRegistry> d_visual_layer_registry;
 
-		//! Sends signals to transform maps
-		boost::scoped_ptr<GPlatesGui::MapTransform> d_map_transform;
-
-		//! Camera controls for the 3D globe view (3D orthographic and 3D perspective settings).
+		//! Camera controls for the 3D globe view.
 		boost::scoped_ptr<GPlatesGui::GlobeCamera> d_globe_camera;
+
+		//! Camera controls for the 2D map view.
+		boost::scoped_ptr<GPlatesGui::MapCamera> d_map_camera;
 
 		//! Converts mouse drags to globe camera view changes.
 		boost::scoped_ptr<GPlatesViewOperations::GlobeViewOperation> d_globe_view_operation;
+
+		//! Converts mouse drags to map camera view changes.
+		boost::scoped_ptr<GPlatesViewOperations::MapViewOperation> d_map_view_operation;
 
 		/**
 		 * Stores the directory containing the files last opened, or the last opened

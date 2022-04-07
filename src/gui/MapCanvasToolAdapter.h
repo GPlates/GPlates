@@ -28,9 +28,10 @@
 
 #include <boost/optional.hpp>
 #include <QObject>
+#include <QPointF>
 
+#include "maths/PointOnSphere.h"
 
-class QPointF;
 
 namespace GPlatesQtWidgets
 {
@@ -78,36 +79,50 @@ namespace GPlatesGui
 	
 		void
 		handle_press(
-				const QPointF &clicked_point_on_scene,
-				bool is_on_surface,
+				int screen_width,
+				int screen_height,
+				const QPointF &press_screen_position,
+				const QPointF &press_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &press_position_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 	
 	
 		void
 		handle_click(
-				const QPointF &clicked_point_on_scene,
-				bool is_on_surface,
+				int screen_width,
+				int screen_height,
+				const QPointF &click_screen_position,
+				const QPointF &click_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
 		void
 		handle_drag(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe,
 				Qt::MouseButton button,
-				Qt::KeyboardModifiers modifiers,
-				const QPointF &translation);
+				Qt::KeyboardModifiers modifiers);
 
 		void
 		handle_release_after_drag(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation,
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -116,9 +131,12 @@ namespace GPlatesGui
 		*/
 		void
 		handle_move_without_drag(
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation);
+				int screen_width,
+				int screen_height,
+				const QPointF &screen_position,
+				const QPointF &map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
 
 	private:
 

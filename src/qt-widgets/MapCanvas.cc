@@ -45,8 +45,8 @@
 #include "global/GPlatesException.h"
 
 #include "gui/Map.h"
+#include "gui/MapCamera.h"
 #include "gui/MapProjection.h"
-#include "gui/MapTransform.h"
 #include "gui/ProjectionException.h"
 #include "gui/TextOverlay.h"
 #include "gui/VelocityLegendOverlay.h"
@@ -96,7 +96,7 @@ namespace
 	{
 		const GPlatesMaths::UnitVector3D &camera_view_direction = camera.get_view_direction();
 		const GPlatesMaths::UnitVector3D &camera_up = camera.get_up_direction();
-		// Camera look at position is 2D in map projection space, so convert to 3D assuming map plane is z=0 plane.
+		// Camera look-at position is 2D in map projection space, so convert to 3D assuming map plane is z=0 plane.
 		const QPointF &camera_look_at_2D = camera.get_look_at_position();
 		const GPlatesMaths::Vector3D camera_look_at(camera_look_at_2D.x(), camera_look_at_2D.y(), 0);
 
@@ -285,10 +285,6 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 					d_gl_context,
 					globe_canvas.get_gl_visual_layers(),
 					view_state.get_application_state())),
-	d_mouse_screen_position_x(0),
-	d_mouse_screen_position_y(0),
-	d_mouse_map_position_x(0),
-	d_mouse_map_position_y(0),
 	d_map(
 			view_state,
 			d_gl_visual_layers,
@@ -384,32 +380,30 @@ GPlatesQtWidgets::MapCanvas::current_proximity_inclusion_threshold(
 	// 4. Calculate the cosine of the angle between the 2 point-on-spheres.
 
 	const QPointF temp_mouse_map_position =
-			calculate_position_on_map(d_mouse_screen_position_x + 3, d_mouse_screen_position_y);
+			calculate_position_on_map(d_mouse_screen_position + QPointF(3, 0));
 
-	const qreal map_proximity_distance = QLineF(
-			d_mouse_map_position_x, d_mouse_map_position_y,
-			temp_mouse_map_position.x(), temp_mouse_map_position.y()).length();
+	const qreal map_proximity_distance = QLineF(d_mouse_map_position, temp_mouse_map_position).length();
 
-	double angle = atan2(d_mouse_map_position_y, d_mouse_map_position_x);
+	double angle = atan2(d_mouse_map_position.y(), d_mouse_map_position.x());
 	double x_proximity = map_proximity_distance * cos(angle);
 	double y_proximity = map_proximity_distance * sin(angle);
 
 	QPointF threshold_point;
-	if (d_mouse_map_position_x > 0)
+	if (d_mouse_map_position.x() > 0)
 	{
-		threshold_point.setX(d_mouse_map_position_x - x_proximity);
+		threshold_point.setX(d_mouse_map_position.x() - x_proximity);
 	}
 	else
 	{	
-		threshold_point.setX(d_mouse_map_position_x + x_proximity);
+		threshold_point.setX(d_mouse_map_position.x() + x_proximity);
 	}
-	if (d_mouse_map_position_y > 0)
+	if (d_mouse_map_position.y() > 0)
 	{
-		threshold_point.setY(d_mouse_map_position_y - y_proximity);
+		threshold_point.setY(d_mouse_map_position.y() - y_proximity);
 	}
 	else
 	{	
-		threshold_point.setY(d_mouse_map_position_y + y_proximity);
+		threshold_point.setY(d_mouse_map_position.y() + y_proximity);
 	}
 	double x_ = threshold_point.x();
 	double y_ = threshold_point.y();
@@ -616,7 +610,7 @@ GPlatesQtWidgets::MapCanvas::set_camera_viewpoint(
 boost::optional<GPlatesMaths::LatLonPoint>
 GPlatesQtWidgets::MapCanvas::get_camera_viewpoint() const
 {
-	// Camera look at position is in map projection space.
+	// Camera look-at position is in map projection space.
 	const QPointF &camera_look_at = d_map_camera.get_look_at_position();
 
 	double x_pos = camera_look_at.x();
@@ -779,17 +773,18 @@ GPlatesQtWidgets::MapCanvas::mousePressEvent(
 
 	d_mouse_press_info =
 			MousePressInfo(
-					press_event->x(),
-					press_event->y(),
-					mouse_pointer_scene_coords(),
-					mouse_pointer_llp(),
-					mouse_pointer_is_on_surface(),
+					d_mouse_screen_position,
+					d_mouse_map_position,
+					d_mouse_position_on_globe,
 					press_event->button(),
 					press_event->modifiers());
 					
 	Q_EMIT mouse_pressed(
-			d_mouse_press_info->d_mouse_pointer_scene_coords,
-			d_mouse_press_info->d_is_on_surface,
+			width(),
+			height(),
+			d_mouse_press_info->d_mouse_screen_position,
+			d_mouse_press_info->d_mouse_map_position,
+			d_mouse_press_info->d_mouse_position_on_globe,
 			d_mouse_press_info->d_button,
 			d_mouse_press_info->d_modifiers);
 }
@@ -799,18 +794,13 @@ void
 GPlatesQtWidgets::MapCanvas::mouseMoveEvent(
 	QMouseEvent *move_event)
 {
-	QPointF translation = mapToScene(move_event->pos()) - 
-		mapToScene(d_last_mouse_view_coords);
-
-	d_last_mouse_view_coords = move_event->pos();
-
-	update_mouse_pointer_pos(move_event);
+	update_mouse_screen_position(move_event);
 
 	if (d_mouse_press_info)
 	{
-		int x_dist = move_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x;
-		int y_dist = move_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y;
-		if (x_dist*x_dist + y_dist*y_dist > 4)
+		int x_dist = d_mouse_screen_position.x() - d_mouse_press_info->d_mouse_screen_position.x();
+		int y_dist = d_mouse_screen_position.y() - d_mouse_press_info->d_mouse_screen_position.y();
+		if (x_dist * x_dist + y_dist * y_dist > 4)
 		{
 			d_mouse_press_info->d_is_mouse_drag = true;
 		}
@@ -818,13 +808,17 @@ GPlatesQtWidgets::MapCanvas::mouseMoveEvent(
 		if (d_mouse_press_info->d_is_mouse_drag)
 		{
 			Q_EMIT mouse_dragged(
-					d_mouse_press_info->d_mouse_pointer_scene_coords,
-					d_mouse_press_info->d_is_on_surface,
-					mouse_pointer_scene_coords(),
-					mouse_pointer_is_on_surface(),
+					width(),
+					height(),
+					d_mouse_press_info->d_mouse_screen_position,
+					d_mouse_press_info->d_mouse_map_position,
+					d_mouse_press_info->d_mouse_position_on_globe,
+					d_mouse_screen_position,
+					d_mouse_map_position,
+					d_mouse_position_on_globe,
+					calculate_position_on_globe(centre_of_viewport()),
 					d_mouse_press_info->d_button,
-					d_mouse_press_info->d_modifiers,
-					translation);
+					d_mouse_press_info->d_modifiers);
 		}
 
 	}
@@ -838,9 +832,12 @@ GPlatesQtWidgets::MapCanvas::mouseMoveEvent(
 		// canvas tool operation.
 		//
 		Q_EMIT mouse_moved_without_drag(
-				mouse_pointer_scene_coords(),
-				mouse_pointer_is_on_surface(),
-				translation);
+				width(),
+				height(),
+				d_mouse_screen_position,
+				d_mouse_map_position,
+				d_mouse_position_on_globe,
+				calculate_position_on_globe(centre_of_viewport()));
 	}
 }
 
@@ -876,26 +873,38 @@ GPlatesQtWidgets::MapCanvas::mouseReleaseEvent(
 		return;
 	}
 
-	if (abs(release_event->x() - d_mouse_press_info->d_mouse_pointer_screen_pos_x) > 3 &&
-			abs(release_event->y() - d_mouse_press_info->d_mouse_pointer_screen_pos_y) > 3) {
+	update_mouse_screen_position(release_event);
+
+	if (abs(d_mouse_screen_position.x() - d_mouse_press_info->d_mouse_screen_position.x()) > 3 &&
+		abs(d_mouse_screen_position.y() - d_mouse_press_info->d_mouse_screen_position.y()) > 3)
+	{
 		d_mouse_press_info->d_is_mouse_drag = true;
 	}
-	if ((d_mouse_press_info->d_is_mouse_drag))
+	if (d_mouse_press_info->d_is_mouse_drag)
 	{
 
 		Q_EMIT mouse_released_after_drag(
-				d_mouse_press_info->d_mouse_pointer_scene_coords,
-				d_mouse_press_info->d_is_on_surface,
-				mouse_pointer_scene_coords(),
-				mouse_pointer_is_on_surface(),
-				QPointF(),
+				width(),
+				height(),
+				d_mouse_press_info->d_mouse_screen_position,
+				d_mouse_press_info->d_mouse_map_position,
+				d_mouse_press_info->d_mouse_position_on_globe,
+				d_mouse_screen_position,
+				d_mouse_map_position,
+				d_mouse_position_on_globe,
+				calculate_position_on_globe(centre_of_viewport()),
 				d_mouse_press_info->d_button,
 				d_mouse_press_info->d_modifiers);
 
-	} else {
+	}
+	else
+	{
 		Q_EMIT mouse_clicked(
-				d_mouse_press_info->d_mouse_pointer_scene_coords,
-				d_mouse_press_info->d_is_on_surface,
+				width(),
+				height(),
+				d_mouse_press_info->d_mouse_screen_position,
+				d_mouse_press_info->d_mouse_map_position,
+				d_mouse_press_info->d_mouse_position_on_globe,
 				d_mouse_press_info->d_button,
 				d_mouse_press_info->d_modifiers);
 	}
@@ -947,72 +956,63 @@ GPlatesQtWidgets::MapCanvas::keyPressEvent(
 
 
 void
-GPlatesQtWidgets::MapCanvas::move_camera(
-		double dx,
-		double dy)
-{
-	// Position of new centre in window coordinates.
-	double win_x = static_cast<double>(width()) / 2.0 + dx;
-	double win_y = static_cast<double>(height()) / 2.0 + dy;
-
-	// Turn that into scene coordinates.
-	double scene_x, scene_y;
-	transform().inverted().map(win_x, win_y, &scene_x, &scene_y);
-	d_map_transform.set_centre_of_viewport(
-			GPlatesGui::MapTransform::point_type(scene_x, scene_y));
-}
-
-
-void
 GPlatesQtWidgets::MapCanvas::move_camera_up()
 {
-	// This translation will be zoom-dependent, as it's based on view coordinates. 
-	move_camera(0, -5);
-}
+	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
+			d_view_state.get_viewport_zoom().zoom_factor();
 
+	d_map_camera.rotate_up(nudge_angle);
+}
 
 void
 GPlatesQtWidgets::MapCanvas::move_camera_down()
 {
-	// See comments under "move_camera_up" above. 
-	move_camera(0, 5);
-}
+	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
+			d_view_state.get_viewport_zoom().zoom_factor();
 
+	d_map_camera.rotate_down(nudge_angle);
+}
 
 void
 GPlatesQtWidgets::MapCanvas::move_camera_left()
 {
-	// See comments under "move_camera_up" above. 
-	move_camera(-5, 0);
-}
+	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
+			d_view_state.get_viewport_zoom().zoom_factor();
 
+	d_map_camera.rotate_left(nudge_angle);
+}
 
 void
 GPlatesQtWidgets::MapCanvas::move_camera_right()
 {
-	// See comments under "move_camera_up" above.
-	move_camera(5, 0);
-}
+	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
+			d_view_state.get_viewport_zoom().zoom_factor();
 
+	d_map_camera.rotate_right(nudge_angle);
+}
 
 void
 GPlatesQtWidgets::MapCanvas::rotate_camera_clockwise()
 {
-	d_map_transform.rotate(-5.0);
+	// Note that we actually want to rotate the map clockwise (not the camera).
+	// We achieve this by rotating the camera anti-clockwise...
+	d_map_camera.rotate_anticlockwise(
+			GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES));
 }
-
 
 void
 GPlatesQtWidgets::MapCanvas::rotate_camera_anticlockwise()
 {
-	d_map_transform.rotate(5.0);
+	// Note that we actually want to rotate the map anti-clockwise (not the camera).
+	// We achieve this by rotating the camera clockwise...
+	d_map_camera.rotate_clockwise(
+			GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES));
 }
-
 
 void
 GPlatesQtWidgets::MapCanvas::reset_camera_orientation()
 {
-	d_map_transform.set_rotation(0);
+	d_map_camera.reorient_up_direction();
 }
 
 
@@ -1199,8 +1199,7 @@ GPlatesQtWidgets::MapCanvas::render_scene_tile_into_image(
 		const GPlatesOpenGL::GLMatrix &image_view_transform,
 		const GPlatesOpenGL::GLMatrix &image_projection_transform,
 		const GPlatesOpenGL::GLTileRender &image_tile_render,
-		QImage &image,
-		const QPaintDevice &map_canvas_paint_device)
+		QImage &image)
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GL::StateScope save_restore_state(
@@ -1283,12 +1282,19 @@ GPlatesQtWidgets::MapCanvas::render_scene_tile_into_image(
 }
 
 
+QPointF
+GPlatesQtWidgets::MapCanvas::centre_of_viewport() const
+{
+	// Camera look-at position is in map projection space.
+	return d_map_camera.get_look_at_position();
+}
+
+
 void
 GPlatesQtWidgets::MapCanvas::update_mouse_screen_position(
 		QMouseEvent *mouse_event)
 {
-	d_mouse_screen_position_x = mouse_event->localPos().x();
-	d_mouse_screen_position_y = mouse_event->localPos().y();
+	d_mouse_screen_position = mouse_event->localPos();
 
 	update_mouse_position_on_map();
 }
@@ -1297,17 +1303,10 @@ GPlatesQtWidgets::MapCanvas::update_mouse_screen_position(
 void
 GPlatesQtWidgets::MapCanvas::update_mouse_position_on_map()
 {
-	const QPointF new_position_on_map =
-			calculate_position_on_map(
-					d_mouse_screen_position_x,
-					d_mouse_screen_position_y);
-	d_mouse_map_position_x = new_position_on_map.x();
-	d_mouse_map_position_y = new_position_on_map.y();
+	d_mouse_map_position = calculate_position_on_map(d_mouse_screen_position);
 
-	boost::optional<GPlatesMaths::LatLonPoint> new_position_on_globe =
-			calculate_position_on_globe(
-					d_mouse_map_position_x,
-					d_mouse_map_position_y);
+	boost::optional<GPlatesMaths::PointOnSphere> new_position_on_globe =
+			calculate_position_on_globe(d_mouse_map_position);
 
 	if (new_position_on_globe != d_mouse_position_on_globe)
 	{
@@ -1320,19 +1319,17 @@ GPlatesQtWidgets::MapCanvas::update_mouse_position_on_map()
 
 QPointF
 GPlatesQtWidgets::MapCanvas::calculate_position_on_map(
-		qreal screen_x,
-		qreal screen_y) const
+		const QPointF &screen_position) const
 {
 }
 
 
-boost::optional<GPlatesMaths::LatLonPoint>
+boost::optional<GPlatesMaths::PointOnSphere>
 GPlatesQtWidgets::MapCanvas::calculate_position_on_globe(
-		qreal map_x,
-		qreal map_y) const
+		const QPointF &map_position) const
 {
-	double x_map = map_x;
-	double y_map = map_y;
+	double x_map = map_position.x();
+	double y_map = map_position.y();
 
 	// The proj library returns valid longitudes even when the screen coordinates are 
 	// far to the right, or left, of the map itself. To determine if the mouse position is off
@@ -1346,16 +1343,16 @@ GPlatesQtWidgets::MapCanvas::calculate_position_on_globe(
 	// I haven't put any great deal of thought into a suitable tolerance here. 
 	const double tolerance = 1.0;
 
-	boost::optional<GPlatesMaths::LatLonPoint> position_on_globe =
+	boost::optional<GPlatesMaths::LatLonPoint> lat_lon_position_on_globe =
 			map().projection().inverse_transform(x_map, y_map);
-	if (!position_on_globe)
+	if (!lat_lon_position_on_globe)
 	{
 		return boost::none;
 	}
 		
 	// Forward transform the lat-lon point and see where it would end up. 
-	double x_pos = position_on_globe->longitude();
-	double y_pos = position_on_globe->latitude();
+	double x_pos = lat_lon_position_on_globe->longitude();
+	double y_pos = lat_lon_position_on_globe->latitude();
 	map().projection().forward_transform(x_pos, y_pos);
 
 	// If we don't end up at the same point, we're off the map. 
@@ -1365,7 +1362,7 @@ GPlatesQtWidgets::MapCanvas::calculate_position_on_globe(
 	}
 
 	// If we reach here, we should be on the globe, with valid lat,lon.
-	return position_on_globe;
+	return make_point_on_sphere(lat_lon_position_on_globe.get());
 }
 
 

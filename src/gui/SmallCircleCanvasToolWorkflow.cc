@@ -116,7 +116,7 @@ GPlatesGui::SmallCircleCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					create_small_circle_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 }
 
 

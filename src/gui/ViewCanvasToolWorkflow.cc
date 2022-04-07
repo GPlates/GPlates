@@ -102,14 +102,11 @@ GPlatesGui::ViewCanvasToolWorkflow::create_canvas_tools(
 	d_globe_drag_globe_tool.reset(
 			new GPlatesCanvasTools::ReorientGlobe(
 					viewport_window.globe_canvas(),
-					view_state.get_rendered_geometry_collection(),
 					viewport_window));
 	d_map_drag_globe_tool.reset(
 			new GPlatesCanvasTools::PanMap(
 					viewport_window.map_canvas(),
-					view_state.get_rendered_geometry_collection(),
-					viewport_window,
-					view_state.get_map_transform()));
+					viewport_window));
 
 	//
 	// Zoom canvas tool.
@@ -118,16 +115,11 @@ GPlatesGui::ViewCanvasToolWorkflow::create_canvas_tools(
 	d_globe_zoom_globe_tool.reset(
 			new GPlatesCanvasTools::ZoomGlobe(
 					viewport_window.globe_canvas(),
-					view_state.get_rendered_geometry_collection(),
-					viewport_window,
-					view_state));
+					viewport_window));
 	d_map_zoom_globe_tool.reset(
 			new GPlatesCanvasTools::ZoomMap(
 					viewport_window.map_canvas(),
-					view_state.get_rendered_geometry_collection(),
-					viewport_window,
-					view_state.get_map_transform(),
-					view_state.get_viewport_zoom()));
+					viewport_window));
 
 	//
 	// Change lighting canvas tool.
@@ -136,16 +128,14 @@ GPlatesGui::ViewCanvasToolWorkflow::create_canvas_tools(
 	d_globe_change_lighting_tool.reset(
 			new GPlatesCanvasTools::ChangeLightDirectionGlobe(
 					viewport_window.globe_canvas(),
-					view_state.get_rendered_geometry_collection(),
+				view_state.get_rendered_geometry_collection(),
 					WORKFLOW_RENDER_LAYER,
 					viewport_window,
 					view_state));
 	d_map_change_lighting_tool.reset(
 			new GPlatesCanvasTools::ChangeLightDirectionMap(
 					viewport_window.map_canvas(),
-					view_state.get_rendered_geometry_collection(),
-					viewport_window,
-					view_state.get_map_transform()));
+					viewport_window));
 }
 
 

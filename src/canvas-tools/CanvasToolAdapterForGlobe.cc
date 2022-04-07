@@ -38,7 +38,9 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::CanvasToolAdapterForGlobe (
 		GPlatesViewOperations::GlobeViewOperation &globe_view_operation_) :
 	GlobeCanvasTool(globe_canvas_, globe_view_operation_),
 	d_canvas_tool_ptr(canvas_tool_ptr)
-{  }
+{
+}
+
 
 void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_activation()
@@ -49,6 +51,7 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_activation()
 	}
 }
 
+
 void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_deactivation()
 {
@@ -57,6 +60,7 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_deactivation()
 		d_canvas_tool_ptr->handle_deactivation();
 	}
 }
+
 
 void
 GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_left_press(

@@ -28,8 +28,6 @@
 
 #include <boost/noncopyable.hpp>
 
-#include "view-operations/GlobeViewOperation.h"
-
 
 namespace GPlatesMaths
 {
@@ -41,14 +39,17 @@ namespace GPlatesQtWidgets
 	class GlobeCanvas;
 }
 
+namespace GPlatesViewOperations
+{
+	class GlobeViewOperation;
+}
+
 namespace GPlatesGui
 {
 	/**
 	 * This class is the abstract base of all canvas tools.
 	 *
 	 * This serves the role of the abstract State class in the State Pattern in Gamma et al.
-	 *
-	 * The currently-activated GlobeCanvasTool is referenced by an instance of GlobeCanvasToolChoice.
 	 */
 	class GlobeCanvasTool :
 			public boost::noncopyable
@@ -57,11 +58,6 @@ namespace GPlatesGui
 
 		/**
 		 * Construct a GlobeCanvasTool instance.
-		 *
-		 * Since this class is an abstract class, this constructor can never be invoked
-		 * other than explicitly in the initialiser lists of derived classes.
-		 * Nevertheless, the initialiser lists of derived classes @em do need to invoke it
-		 * explicitly, since this class contains members which need to be initialised.
 		 */
 		explicit
 		GlobeCanvasTool(
@@ -73,9 +69,6 @@ namespace GPlatesGui
 
 		/**
 		 * Handle the activation (selection) of this tool.
-		 *
-		 * This function is a no-op implementation which may be overridden in a derived
-		 * class.
 		 */
 		virtual
 		void
@@ -84,14 +77,12 @@ namespace GPlatesGui
 
 		/**
 		 * Handle the deactivation of this tool (a different tool has been selected).
-		 *
-		 * This function is a no-op implementation which may be overridden in a derived
-		 * class.
 		 */
 		virtual
 		void
 		handle_deactivation()
 		{  }
+
 
 		/**
 		 * Handle a left mouse-button press.
@@ -102,9 +93,6 @@ namespace GPlatesGui
 		 * pointer is not actually on the globe, @a is_on_globe will be false, and the
 		 * position reported will be the closest position on the globe to the actual
 		 * mouse pointer position on-screen.
-		 *
-		 * This function is a no-op implementation which may be overridden in a derived
-		 * class.
 		 */
 		virtual
 		void
@@ -126,9 +114,6 @@ namespace GPlatesGui
 		 * pointer is not actually on the globe, @a is_on_globe will be false, and the
 		 * position reported will be the closest position on the globe to the actual
 		 * mouse pointer position on-screen.
-		 *
-		 * This function is a no-op implementation which may be overridden in a derived
-		 * class.
 		 */
 		virtual
 		void
@@ -164,9 +149,6 @@ namespace GPlatesGui
 		 * mouse-pointer position (as the mouse-pointer is moved about with the
 		 * mouse-button pressed).  In response to the final update (when the mouse-button
 		 * has just been released), invoke the function @a left_release_after_drag instead.
-		 *
-		 * This function is a no-op implementation which may be overridden in a derived
-		 * class.
 		 */
 		virtual
 		void
@@ -206,11 +188,7 @@ namespace GPlatesGui
 		 * This function should be invoked in response to the final mouse-pointer position
 		 * update (when the mouse-button has just been released).  In response to
 		 * intermediate updates of the mouse-pointer position (as the mouse-pointer is
-		 * moved about with the mouse-button pressed), invoke the function @a
-		 * handle_left_drag instead.
-		 *
-		 * This function is a no-op implementation which may be overridden in a derived
-		 * class.
+		 * moved about with the mouse-button pressed), invoke the function @a handle_left_drag instead.
 		 */
 		virtual
 		void
@@ -228,11 +206,9 @@ namespace GPlatesGui
 				const GPlatesMaths::PointOnSphere &centre_of_viewport)
 		{  }
 
+
 		/**
 		 * Handle a left mouse-button click while a Shift key is held.
-		 *
-		 * This function is a no-op implementation which may be overridden in a derived
-		 * class.
 		 */
 		virtual
 		void
@@ -253,9 +229,6 @@ namespace GPlatesGui
 		 * mouse-pointer position (as the mouse-pointer is moved about with the
 		 * mouse-button pressed).  In response to the final update (when the mouse-button
 		 * has just been released), invoke the function @a handle_shift_left_release_after_drag instead.
-		 *
-		 * This function is a no-op implementation which may be overridden in a derived
-		 * class.
 		 */
 		virtual
 		void
@@ -280,11 +253,7 @@ namespace GPlatesGui
 		 * This function should be invoked in response to the final mouse-pointer position
 		 * update (when the mouse-button has just been released).  In response to
 		 * intermediate updates of the mouse-pointer position (as the mouse-pointer is
-		 * moved about with the mouse-button pressed), invoke the function @a
-		 * handle_shift_left_drag instead.
-		 *
-		 * This function is a no-op implementation which may be overridden in a derived
-		 * class.
+		 * moved about with the mouse-button pressed), invoke the function @a handle_shift_left_drag instead.
 		 */
 		virtual
 		void
@@ -302,11 +271,9 @@ namespace GPlatesGui
 				const GPlatesMaths::PointOnSphere &centre_of_viewport)
 		{  }
 
+
 		/**
 		 * Handle a left mouse-button click while a Alt key is held.
-		 *
-		 * This function is a no-op implementation which may be overridden in a derived
-		 * class.
 		 */
 		virtual
 		void
@@ -327,9 +294,6 @@ namespace GPlatesGui
 		 * mouse-pointer position (as the mouse-pointer is moved about with the
 		 * mouse-button pressed).  In response to the final update (when the mouse-button
 		 * has just been released), invoke the function @a handle_alt_left_release_after_drag instead.
-		 *
-		 * This function is a no-op implementation which may be overridden in a derived
-		 * class.
 		 */
 		virtual
 		void
@@ -354,11 +318,7 @@ namespace GPlatesGui
 		 * This function should be invoked in response to the final mouse-pointer position
 		 * update (when the mouse-button has just been released).  In response to
 		 * intermediate updates of the mouse-pointer position (as the mouse-pointer is
-		 * moved about with the mouse-button pressed), invoke the function @a
-		 * handle_alt_left_drag instead.
-		 *
-		 * This function is a no-op implementation which may be overridden in a derived
-		 * class.
+		 * moved about with the mouse-button pressed), invoke the function @a handle_alt_left_drag instead.
 		 */
 		virtual
 		void
@@ -376,11 +336,9 @@ namespace GPlatesGui
 				const GPlatesMaths::PointOnSphere &centre_of_viewport)
 		{  }
 
+
 		/**
 		 * Handle a left mouse-button click while a Control key is held.
-		 *
-		 * This function is a no-op implementation which may be overridden in a derived
-		 * class.
 		 */
 		virtual
 		void
@@ -402,8 +360,7 @@ namespace GPlatesGui
 		 * mouse-button pressed).  In response to the final update (when the mouse-button
 		 * has just been released), invoke the function @a handle_ctrl_left_release_after_drag instead.
 		 *
-		 * The default implementation of this function re-orients the globe.  This
-		 * implementation may be overridden in a derived class.
+		 * The default implementation of this function re-orients the globe.
 		 */
 		virtual
 		void
@@ -436,11 +393,9 @@ namespace GPlatesGui
 		 * This function should be invoked in response to the final mouse-pointer position
 		 * update (when the mouse-button has just been released).  In response to
 		 * intermediate updates of the mouse-pointer position (as the mouse-pointer is
-		 * moved about with the mouse-button pressed), invoke the function @a
-		 * handle_ctrl_left_drag instead.
+		 * moved about with the mouse-button pressed), invoke the function @a handle_ctrl_left_drag instead.
 		 *
-		 * The default implementation of this function re-orients the globe.  This
-		 * implementation may be overridden in a derived class.
+		 * The default implementation of this function re-orients the globe.
 		 */
 		virtual
 		void
@@ -466,11 +421,9 @@ namespace GPlatesGui
 					centre_of_viewport);
 		}
 
+
 		/**
 		 * Handle a left mouse-button click while a Shift key and a Control key are held.
-		 *
-		 * This function is a no-op implementation which may be overridden in a derived
-		 * class.
 		 */
 		virtual
 		void
@@ -492,8 +445,7 @@ namespace GPlatesGui
 		 * mouse-button pressed).  In response to the final update (when the mouse-button
 		 * has just been released), invoke the function @a handle_shift_ctrl_left_release_after_drag instead.
 		 *
-		 * The default implementation of this function rotates the globe.  This
-		 * implementation may be overridden in a derived class.
+		 * The default implementation of this function rotates the globe.
 		 */
 		virtual
 		void
@@ -526,11 +478,9 @@ namespace GPlatesGui
 		 * This function should be invoked in response to the final mouse-pointer position
 		 * update (when the mouse-button has just been released).  In response to
 		 * intermediate updates of the mouse-pointer position (as the mouse-pointer is
-		 * moved about with the mouse-button pressed), invoke the function @a
-		 * handle_shift_ctrl_left_drag instead.
+		 * moved about with the mouse-button pressed), invoke the function @a handle_shift_ctrl_left_drag instead.
 		 *
-		 * The default implementation of this function rotates the globe.  This
-		 * implementation may be overridden in a derived class.
+		 * The default implementation of this function rotates the globe.
 		 */
 		virtual
 		void
@@ -556,11 +506,9 @@ namespace GPlatesGui
 					centre_of_viewport);
 		}
 
+
 		/**
 		 * Handle a left mouse-button click while a Alt key and a Control key are held.
-		 *
-		 * This function is a no-op implementation which may be overridden in a derived
-		 * class.
 		 */
 		virtual
 		void
@@ -582,8 +530,7 @@ namespace GPlatesGui
 		 * mouse-button pressed).  In response to the final update (when the mouse-button
 		 * has just been released), invoke the function @a handle_alt_ctrl_left_release_after_drag instead.
 		 *
-		 * The default implementation of this function tilts the globe.  This
-		 * implementation may be overridden in a derived class.
+		 * The default implementation of this function tilts the globe.
 		 */
 		virtual
 		void
@@ -616,11 +563,9 @@ namespace GPlatesGui
 		 * This function should be invoked in response to the final mouse-pointer position
 		 * update (when the mouse-button has just been released).  In response to
 		 * intermediate updates of the mouse-pointer position (as the mouse-pointer is
-		 * moved about with the mouse-button pressed), invoke the function @a
-		 * handle_alt_ctrl_left_drag instead.
+		 * moved about with the mouse-button pressed), invoke the function @a handle_alt_ctrl_left_drag instead.
 		 *
-		 * The default implementation of this function tilts the globe.  This
-		 * implementation may be overridden in a derived class.
+		 * The default implementation of this function tilts the globe.
 		 */
 		virtual
 		void
@@ -646,14 +591,12 @@ namespace GPlatesGui
 					centre_of_viewport);
 		}
 
+
 		/**
 		 * Handle a mouse movement when left mouse-button is NOT down.
 		 *
 		 * This function should be invoked in response to intermediate updates of the
 		 * mouse-pointer position (as the mouse-pointer is moved about).
-		 *
-		 * This function is a no-op implementation which may be overridden in a derived
-		 * class.
 		 */
 		virtual
 		void
@@ -672,7 +615,7 @@ namespace GPlatesGui
 		GPlatesQtWidgets::GlobeCanvas &
 		globe_canvas() const
 		{
-			return *d_globe_canvas_ptr;
+			return d_globe_canvas;
 		}
 
 		/**
@@ -801,10 +744,8 @@ namespace GPlatesGui
 
 	private:
 
-		/**
-		 * The globe canvas which will need to be updated after globe re-orientation.
-		 */
-		GPlatesQtWidgets::GlobeCanvas *d_globe_canvas_ptr;
+		//! The globe canvas.
+		GPlatesQtWidgets::GlobeCanvas &d_globe_canvas;
 
 		/**
 		 * Used to orient/tilt the globe view (converts mouse drags to globe camera view changes).

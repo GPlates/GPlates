@@ -25,6 +25,8 @@
 
 #include "MovePoleMap.h"
 
+#include "gui/Map.h"
+
 #include "presentation/ViewState.h"
 
 #include "qt-widgets/MapCanvas.h"
@@ -34,9 +36,8 @@
 GPlatesCanvasTools::MovePoleMap::MovePoleMap(
 		const GPlatesViewOperations::MovePoleOperation::non_null_ptr_type &move_pole_operation,
 		GPlatesQtWidgets::MapCanvas &map_canvas_,
-		GPlatesQtWidgets::ViewportWindow &viewport_window_,
-		GPlatesPresentation::ViewState &view_state_) :
-	MapCanvasTool(map_canvas_, view_state_.get_map_transform()),
+		GPlatesQtWidgets::ViewportWindow &viewport_window_) :
+	MapCanvasTool(map_canvas_, viewport_window_.get_view_state().get_map_view_operation()),
 	d_viewport_window_ptr(&viewport_window_),
 	d_move_pole_operation(move_pole_operation),
 	d_is_in_drag(false)
@@ -71,134 +72,92 @@ GPlatesCanvasTools::MovePoleMap::handle_deactivation()
 
 void
 GPlatesCanvasTools::MovePoleMap::handle_left_drag(
-		const QPointF &initial_point_on_scene,
-		bool was_on_surface,
-		const QPointF &current_point_on_scene,
-		bool is_on_surface,
-		const QPointF &translation)
+		int screen_width,
+		int screen_height,
+		const QPointF &initial_screen_position,
+		const QPointF &initial_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const QPointF &current_screen_position,
+		const QPointF &current_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
-	if (!map_canvas().isVisible())
-	{
-		return;
-	}
-
-	if (!is_on_surface)
-	{
+	if (map_canvas().isVisible() &&
 		// We currently can't do anything sensible with map view when off map.
-		return;
-	}
-
-	const GPlatesGui::MapProjection &projection = map_canvas().map().projection();
-
-	boost::optional<GPlatesMaths::PointOnSphere> initial_point_on_sphere =
-			qpointf_to_point_on_sphere(initial_point_on_scene, projection);
-	if (!initial_point_on_sphere)
+		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
+		// much like how it snaps to the horizon of the globe if you click outside of the globe...
+		initial_position_on_globe && current_position_on_globe)
 	{
-		return;
+		if (!d_is_in_drag)
+		{
+			d_move_pole_operation->start_drag_on_map(
+					initial_map_position,
+					initial_position_on_globe.get(),
+					map_canvas().map().projection());
+
+			d_is_in_drag = true;
+		}
+
+		d_move_pole_operation->update_drag(current_position_on_globe.get());
 	}
-
-	boost::optional<GPlatesMaths::PointOnSphere> current_point_on_sphere =
-			qpointf_to_point_on_sphere(current_point_on_scene, projection);
-	if (!current_point_on_sphere)
-	{
-		return;
-	}
-
-	if (!d_is_in_drag)
-	{
-		d_move_pole_operation->start_drag_on_map(
-				initial_point_on_scene,
-				initial_point_on_sphere.get(),
-				projection);
-
-		d_is_in_drag = true;
-	}
-
-	d_move_pole_operation->update_drag(current_point_on_sphere.get());
 }
 
 
 void
 GPlatesCanvasTools::MovePoleMap::handle_left_release_after_drag(
-		const QPointF &initial_point_on_scene,
-		bool was_on_surface,
-		const QPointF &current_point_on_scene,
-		bool is_on_surface,
-		const QPointF &translation)
+		int screen_width,
+		int screen_height,
+		const QPointF &initial_screen_position,
+		const QPointF &initial_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const QPointF &current_screen_position,
+		const QPointF &current_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
-	if (!map_canvas().isVisible())
-	{
-		return;
-	}
-
-	if (!is_on_surface)
-	{
+	if (map_canvas().isVisible() &&
 		// We currently can't do anything sensible with map view when off map.
-		return;
-	}
-
-	const GPlatesGui::MapProjection &projection = map_canvas().map().projection();
-
-	boost::optional<GPlatesMaths::PointOnSphere> initial_point_on_sphere =
-			qpointf_to_point_on_sphere(initial_point_on_scene, projection);
-	if (!initial_point_on_sphere)
+		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
+		// much like how it snaps to the horizon of the globe if you click outside of the globe...
+		initial_position_on_globe && current_position_on_globe)
 	{
-		return;
+		// In case clicked and released at same time.
+		if (!d_is_in_drag)
+		{
+			d_move_pole_operation->start_drag_on_map(
+					initial_map_position,
+					initial_position_on_globe.get(),
+					map_canvas().map().projection());
+
+			d_is_in_drag = true;
+		}
+
+		d_move_pole_operation->update_drag(current_position_on_globe.get());
+
+		d_move_pole_operation->end_drag(current_position_on_globe.get());
+		d_is_in_drag = false;
 	}
-
-	boost::optional<GPlatesMaths::PointOnSphere> current_point_on_sphere =
-			qpointf_to_point_on_sphere(current_point_on_scene, projection);
-	if (!current_point_on_sphere)
-	{
-		return;
-	}
-
-	// In case clicked and released at same time.
-	if (!d_is_in_drag)
-	{
-		d_move_pole_operation->start_drag_on_map(
-				initial_point_on_scene,
-				initial_point_on_sphere.get(),
-				projection);
-
-		d_is_in_drag = true;
-	}
-
-	d_move_pole_operation->update_drag(current_point_on_sphere.get());
-
-	d_move_pole_operation->end_drag(current_point_on_sphere.get());
-	d_is_in_drag = false;
 }
 
 
 void
 GPlatesCanvasTools::MovePoleMap::handle_move_without_drag(
-		const QPointF &current_point_on_scene,
-		bool is_on_surface,
-		const QPointF &translation)
+		int screen_width,
+		int screen_height,
+		const QPointF &screen_position,
+		const QPointF &map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
-	if (!map_canvas().isVisible())
-	{
-		return;
-	}
-
-	if (!is_on_surface)
-	{
+	if (map_canvas().isVisible() &&
 		// We currently can't do anything sensible with map view when off map.
-		return;
-	}
-
-	const GPlatesGui::MapProjection &projection = map_canvas().map().projection();
-
-	boost::optional<GPlatesMaths::PointOnSphere> current_point_on_sphere =
-			qpointf_to_point_on_sphere(current_point_on_scene, projection);
-	if (!current_point_on_sphere)
+		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
+		// much like how it snaps to the horizon of the globe if you click outside of the globe...
+		position_on_globe)
 	{
-		return;
+		d_move_pole_operation->mouse_move_on_map(
+				map_position,
+				position_on_globe.get(),
+				map_canvas().map().projection());
 	}
-
-	d_move_pole_operation->mouse_move_on_map(
-			current_point_on_scene,
-			current_point_on_sphere.get(),
-			projection);
 }

@@ -166,7 +166,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					measure_distance_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 
 	//
 	// Click geometry canvas tool.
@@ -194,7 +194,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					click_geometry_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 
 	//
 	// Move vertex canvas tool.
@@ -222,7 +222,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					move_vertex_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 
 	//
 	// Delete vertex canvas tool.
@@ -248,7 +248,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					delete_vertex_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 
 	//
 	// Insert vertex canvas tool.
@@ -274,7 +274,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					insert_vertex_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 
 	//
 	// Split feature canvas tool.
@@ -302,7 +302,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					split_feature_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 }
 
 

@@ -29,20 +29,15 @@
 #include "gui/GlobeCanvasTool.h"
 
 
-namespace GPlatesQtWidgets
-{
-	class GlobeCanvas;
-	class ViewportWindow;
-}
-
 namespace GPlatesPresentation
 {
 	class ViewState;
 }
 
-namespace GPlatesViewOperations
+namespace GPlatesQtWidgets
 {
-	class RenderedGeometryCollection;
+	class GlobeCanvas;
+	class ViewportWindow;
 }
 
 namespace GPlatesCanvasTools
@@ -61,9 +56,7 @@ namespace GPlatesCanvasTools
 		explicit
 		ZoomGlobe(
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesQtWidgets::ViewportWindow &viewport_window_,
-				GPlatesPresentation::ViewState &view_state_);
+				GPlatesQtWidgets::ViewportWindow &viewport_window_);
 
 		virtual
 		void
@@ -98,11 +91,6 @@ namespace GPlatesCanvasTools
 		void
 		recentre_globe(
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe);
-
-		/**
-		 * Used to activate/deactivate focused geometry highlight rendered layer.
-		 */
-		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
 
 		/**
 		 * This is the View State used to pass messages to the status bar.

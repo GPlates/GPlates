@@ -51,7 +51,7 @@
 #include "gui/GlobeCamera.h"
 #include "gui/GlobeProjectionType.h"
 #include "gui/GraticuleSettings.h"
-#include "gui/MapTransform.h"
+#include "gui/MapCamera.h"
 #include "gui/PythonManager.h"
 #include "gui/RasterColourPalette.h"
 #include "gui/RenderSettings.h"
@@ -71,6 +71,7 @@
 #include "view-operations/FocusedFeatureGeometryManipulator.h"
 #include "view-operations/GeometryBuilder.h"
 #include "view-operations/GlobeViewOperation.h"
+#include "view-operations/MapViewOperation.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryParameters.h"
 
@@ -123,15 +124,18 @@ GPlatesPresentation::ViewState::ViewState(
 			new VisualLayers(d_application_state, *this)),
 	d_visual_layer_registry(
 			new VisualLayerRegistry()),
-	d_map_transform(
-			new GPlatesGui::MapTransform(
-				*d_viewport_zoom)),
 	d_globe_camera(
 			new GPlatesGui::GlobeCamera(
+				*d_viewport_zoom)),
+	d_map_camera(
+			new GPlatesGui::MapCamera(
 				*d_viewport_zoom)),
 	d_globe_view_operation(
 			new GPlatesViewOperations::GlobeViewOperation(
 				*d_globe_camera)),
+	d_map_view_operation(
+			new GPlatesViewOperations::MapViewOperation(
+				*d_map_camera)),
 	d_file_io_directory_configurations(
 			new GPlatesGui::FileIODirectoryConfigurations(
 				*this)),
@@ -397,19 +401,6 @@ GPlatesPresentation::ViewState::get_visual_layer_registry() const
 }
 
 
-GPlatesGui::MapTransform &
-GPlatesPresentation::ViewState::get_map_transform()
-{
-	return *d_map_transform;
-}
-
-const GPlatesGui::MapTransform &
-GPlatesPresentation::ViewState::get_map_transform() const
-{
-	return *d_map_transform;
-}
-
-
 GPlatesGui::GlobeCamera &
 GPlatesPresentation::ViewState::get_globe_camera()
 {
@@ -420,6 +411,19 @@ const GPlatesGui::GlobeCamera &
 GPlatesPresentation::ViewState::get_globe_camera() const
 {
 	return *d_globe_camera;
+}
+
+
+GPlatesGui::MapCamera &
+GPlatesPresentation::ViewState::get_map_camera()
+{
+	return *d_map_camera;
+}
+
+const GPlatesGui::MapCamera &
+GPlatesPresentation::ViewState::get_map_camera() const
+{
+	return *d_map_camera;
 }
 
 
@@ -435,6 +439,18 @@ GPlatesPresentation::ViewState::get_globe_view_operation() const
 	return *d_globe_view_operation;
 }
 
+
+GPlatesViewOperations::MapViewOperation &
+GPlatesPresentation::ViewState::get_map_view_operation()
+{
+	return *d_map_view_operation;
+}
+
+const GPlatesViewOperations::MapViewOperation &
+GPlatesPresentation::ViewState::get_map_view_operation() const
+{
+	return *d_map_view_operation;
+}
 
 
 void

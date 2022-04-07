@@ -37,7 +37,7 @@
 
 #include "gui/Globe.h"
 #include "gui/GlobeCamera.h"
-#include "gui/MapTransform.h"
+#include "gui/MapCamera.h"
 #include "gui/ViewportProjection.h"
 #include "gui/ViewportZoom.h"
 
@@ -408,7 +408,9 @@ GPlatesQtWidgets::GlobeAndMapWidget::event(
 				}
 				else
 				{
-					d_view_state.get_map_transform().rotate(-angle);
+					GPlatesGui::MapCamera &map_camera = d_view_state.get_map_camera();
+					// We want to rotate the map clockwise which means rotating the camera anticlockwise.
+					map_camera.rotate_anticlockwise(angle);
 				}
 			}
 		}

@@ -27,7 +27,6 @@
 
 #include "ZoomGlobe.h"
 
-#include "gui/Globe.h"
 #include "gui/GlobeCamera.h"
 #include "gui/ViewportZoom.h"
 
@@ -38,19 +37,16 @@
 #include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 
-#include "view-operations/RenderedGeometryCollection.h"
-
 
 GPlatesCanvasTools::ZoomGlobe::ZoomGlobe(
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
-		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-		GPlatesQtWidgets::ViewportWindow &viewport_window_,
-		GPlatesPresentation::ViewState &view_state_) :
-	GlobeCanvasTool(globe_canvas_, view_state_.get_globe_view_operation()),
-	d_rendered_geometry_collection(rendered_geometry_collection),
+		GPlatesQtWidgets::ViewportWindow &viewport_window_) :
+	GlobeCanvasTool(globe_canvas_, viewport_window_.get_view_state().get_globe_view_operation()),
 	d_viewport_window(&viewport_window_),
-	d_view_state(view_state_)
-{  }
+	d_view_state(viewport_window_.get_view_state())
+{
+}
+
 
 void
 GPlatesCanvasTools::ZoomGlobe::handle_activation()

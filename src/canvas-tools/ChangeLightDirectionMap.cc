@@ -25,18 +25,14 @@
 
 #include "ChangeLightDirectionMap.h"
 
-#include "qt-widgets/ViewportWindow.h"
+#include "presentation/ViewState.h"
 
-#include "view-operations/RenderedGeometryCollection.h"
+#include "qt-widgets/ViewportWindow.h"
 
 
 GPlatesCanvasTools::ChangeLightDirectionMap::ChangeLightDirectionMap(
 		GPlatesQtWidgets::MapCanvas &map_canvas_,
-		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-		GPlatesQtWidgets::ViewportWindow &viewport_window_,
-		GPlatesGui::MapTransform &map_transform_) :
-	MapCanvasTool(map_canvas_, map_transform_),
-	d_rendered_geometry_collection(rendered_geometry_collection),
-	d_viewport_window_ptr(&viewport_window_),
-	d_map_transform_ptr(&map_transform_)
+		GPlatesQtWidgets::ViewportWindow &viewport_window_) :
+	MapCanvasTool(map_canvas_, viewport_window_.get_view_state().get_map_view_operation()),
+	d_viewport_window_ptr(&viewport_window_)
 {  }

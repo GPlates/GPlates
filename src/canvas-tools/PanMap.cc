@@ -26,12 +26,19 @@
 
 #include "PanMap.h"
 
-#include "gui/MapTransform.h"
+#include "presentation/ViewState.h"
 
 #include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 
-#include "view-operations/RenderedGeometryCollection.h"
+
+GPlatesCanvasTools::PanMap::PanMap(
+		GPlatesQtWidgets::MapCanvas &map_canvas_,
+		GPlatesQtWidgets::ViewportWindow &viewport_window_):
+	MapCanvasTool(map_canvas_, viewport_window_.get_view_state().get_map_view_operation()),
+	d_viewport_window_ptr(&viewport_window_)
+{
+}
 
 
 void
@@ -39,7 +46,7 @@ GPlatesCanvasTools::PanMap::handle_activation()
 {
 	if (map_canvas().isVisible())
 	{
-		d_view_state_ptr->status_message(QObject::tr(
+		d_viewport_window_ptr->status_message(QObject::tr(
 					"Drag to pan the map."
 					" Shift+drag to rotate the map."));
 	}
@@ -54,29 +61,119 @@ GPlatesCanvasTools::PanMap::handle_deactivation()
 
 void
 GPlatesCanvasTools::PanMap::handle_left_drag(
-		const QPointF &initial_point_on_scene,
-		bool was_on_surface,
-		const QPointF &current_point_on_scene,
-		bool is_on_surface,
-		const QPointF &translation)
+		int screen_width,
+		int screen_height,
+		const QPointF &initial_screen_position,
+		const QPointF &initial_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const QPointF &current_screen_position,
+		const QPointF &current_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
-	map_transform().translate(-translation.x(), -translation.y());
+	pan_map_by_drag_update(
+			screen_width, screen_height,
+			initial_screen_position, initial_map_position, initial_position_on_globe,
+			current_screen_position, current_map_position, current_position_on_globe,
+			centre_of_viewport_on_globe);
+}
+
+
+void
+GPlatesCanvasTools::PanMap::handle_left_release_after_drag(
+		int screen_width,
+		int screen_height,
+		const QPointF &initial_screen_position,
+		const QPointF &initial_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const QPointF &current_screen_position,
+		const QPointF &current_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+{
+	pan_map_by_drag_release(
+			screen_width, screen_height,
+			initial_screen_position, initial_map_position, initial_position_on_globe,
+			current_screen_position, current_map_position, current_position_on_globe,
+			centre_of_viewport_on_globe);
 }
 
 
 void
 GPlatesCanvasTools::PanMap::handle_shift_left_drag(
-		const QPointF &initial_point_on_scene,
-		bool was_on_surface,
-		const QPointF &current_point_on_scene,
-		bool is_on_surface,
-		const QPointF &translation)
+		int screen_width,
+		int screen_height,
+		const QPointF &initial_screen_position,
+		const QPointF &initial_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const QPointF &current_screen_position,
+		const QPointF &current_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
-	rotate_map_by_drag(
-			initial_point_on_scene,
-			was_on_surface,
-			current_point_on_scene,
-			is_on_surface,
-			translation);	
+	rotate_map_by_drag_update(
+			screen_width, screen_height,
+			initial_screen_position, initial_map_position, initial_position_on_globe,
+			current_screen_position, current_map_position, current_position_on_globe,
+			centre_of_viewport_on_globe);
 }
 
+
+void
+GPlatesCanvasTools::PanMap::handle_shift_left_release_after_drag(
+		int screen_width,
+		int screen_height,
+		const QPointF &initial_screen_position,
+		const QPointF &initial_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const QPointF &current_screen_position,
+		const QPointF &current_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+{
+	rotate_map_by_drag_release(
+			screen_width, screen_height,
+			initial_screen_position, initial_map_position, initial_position_on_globe,
+			current_screen_position, current_map_position, current_position_on_globe,
+			centre_of_viewport_on_globe);
+}
+
+
+void
+GPlatesCanvasTools::PanMap::handle_alt_left_drag(
+		int screen_width,
+		int screen_height,
+		const QPointF &initial_screen_position,
+		const QPointF &initial_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const QPointF &current_screen_position,
+		const QPointF &current_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+{
+	tilt_map_by_drag_update(
+			screen_width, screen_height,
+			initial_screen_position, initial_map_position, initial_position_on_globe,
+			current_screen_position, current_map_position, current_position_on_globe,
+			centre_of_viewport_on_globe);
+}
+
+
+void
+GPlatesCanvasTools::PanMap::handle_alt_left_release_after_drag(
+		int screen_width,
+		int screen_height,
+		const QPointF &initial_screen_position,
+		const QPointF &initial_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const QPointF &current_screen_position,
+		const QPointF &current_map_position,
+		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+{
+	tilt_map_by_drag_release(
+			screen_width, screen_height,
+			initial_screen_position, initial_map_position, initial_position_on_globe,
+			current_screen_position, current_map_position, current_position_on_globe,
+			centre_of_viewport_on_globe);
+}

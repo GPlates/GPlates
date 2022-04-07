@@ -83,12 +83,9 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_press(
 		{
 		case Qt::NoModifier:
 			get_active_globe_canvas_tool().handle_left_press(
-					screen_width,
-					screen_height,
-					press_screen_x,
-					press_screen_y,
-					press_pos_on_globe,
-					is_on_globe);
+					screen_width, screen_height,
+					press_screen_x, press_screen_y,
+					press_pos_on_globe, is_on_globe);
 			break;
 
 		case Qt::ShiftModifier:
@@ -152,6 +149,25 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_click(
 			break;
 
 		default:
+			// This is an ugly way of getting around the fact that
+			// (Qt::ShiftModifier | Qt::ControlModifier) is not a constant-expression,
+			// and so cannot be used as a case label.
+			if (modifiers == (Qt::ShiftModifier | Qt::ControlModifier))
+			{
+				// The user was indeed holding the Shift and Control keys.
+				get_active_globe_canvas_tool().handle_shift_ctrl_left_click(
+						screen_width, screen_height,
+						click_screen_x, click_screen_y,
+						click_pos_on_globe, is_on_globe);
+			}
+			else if (modifiers == (Qt::AltModifier | Qt::ControlModifier))
+			{
+				// The user was indeed holding the Alt and Control keys.
+				get_active_globe_canvas_tool().handle_alt_ctrl_left_click(
+						screen_width, screen_height,
+						click_screen_x, click_screen_y,
+						click_pos_on_globe, is_on_globe);
+			}
 			break;
 		}
 		break;

@@ -137,7 +137,7 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					click_geometry_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 
 	//
 	// Manipulate pole canvas tool.
@@ -159,7 +159,7 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					manipulate_pole_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 
 	//
 	// Move pole canvas tool.
@@ -183,8 +183,7 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::MovePoleMap(
 					move_pole_operation,
 					viewport_window.map_canvas(),
-					viewport_window,
-					view_state));
+					viewport_window));
 }
 
 

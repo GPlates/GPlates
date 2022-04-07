@@ -36,13 +36,16 @@
 #include <QImage>
 #include <QMouseEvent>
 #include <QPaintDevice>
-#include <QPoint>
+#include <QPointF>
 #include <QSize>
 #include <QtGlobal>
 
 #include "SceneView.h"
 
 #include "gui/Map.h"
+
+#include "maths/LatLonPoint.h"
+#include "maths/PointOnSphere.h"
 
 #include "opengl/GLContext.h"
 #include "opengl/GLMatrix.h"
@@ -90,28 +93,22 @@ namespace GPlatesQtWidgets
 		struct MousePressInfo
 		{
 			MousePressInfo(
-					int mouse_pointer_screen_pos_x,
-					int mouse_pointer_screen_pos_y,
-					const QPointF &mouse_pointer_scene_coords,
-					const boost::optional<GPlatesMaths::LatLonPoint> &mouse_pointer_llp,
-					bool is_on_surface,
+					const QPointF &mouse_screen_position,
+					const QPointF &mouse_map_position,
+					const boost::optional<GPlatesMaths::PointOnSphere> &mouse_position_on_globe,
 					Qt::MouseButton button,
 					Qt::KeyboardModifiers modifiers):
-				d_mouse_pointer_screen_pos_x(mouse_pointer_screen_pos_x),
-				d_mouse_pointer_screen_pos_y(mouse_pointer_screen_pos_y),
-				d_mouse_pointer_scene_coords(mouse_pointer_scene_coords),
-				d_mouse_pointer_llp(mouse_pointer_llp),
-				d_is_on_surface(is_on_surface),
+				d_mouse_screen_position(mouse_screen_position),
+				d_mouse_map_position(mouse_map_position),
+				d_mouse_position_on_globe(mouse_position_on_globe),
 				d_button(button),
 				d_modifiers(modifiers),
 				d_is_mouse_drag(false)
 			{  }
 
-			int d_mouse_pointer_screen_pos_x;
-			int d_mouse_pointer_screen_pos_y;
-			QPointF d_mouse_pointer_scene_coords;
-			boost::optional<GPlatesMaths::LatLonPoint> d_mouse_pointer_llp;
-			bool d_is_on_surface;
+			QPointF d_mouse_screen_position;
+			QPointF d_mouse_map_position;
+			boost::optional<GPlatesMaths::PointOnSphere> d_mouse_position_on_globe;
 			Qt::MouseButton d_button;
 			Qt::KeyboardModifiers d_modifiers;
 			bool d_is_mouse_drag;
@@ -236,48 +233,65 @@ namespace GPlatesQtWidgets
 
 		void
 		mouse_position_on_map_changed(
-				const boost::optional<GPlatesMaths::LatLonPoint> &position_on_globe);
+				const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe);
 				
 		void
 		mouse_pressed(
-				const QPointF &point_on_scene,
-				bool is_on_surface,
+				int screen_width,
+				int screen_height,
+				const QPointF &press_screen_position,
+				const QPointF &press_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &press_position_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 				
 
 		void
 		mouse_clicked(
-				const QPointF &point_on_scene,
-				bool is_on_surface,
+				int screen_width,
+				int screen_height,
+				const QPointF &click_screen_position,
+				const QPointF &click_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
 		void
 		mouse_dragged(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe,
 				Qt::MouseButton button,
-				Qt::KeyboardModifiers modifiers,
-				const QPointF &translation);
+				Qt::KeyboardModifiers modifiers);
 
 		void
 		mouse_released_after_drag(
-				const QPointF &initial_point_on_scene,
-				bool was_on_surface,
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation,
+				int screen_width,
+				int screen_height,
+				const QPointF &initial_screen_position,
+				const QPointF &initial_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const QPointF &current_screen_position,
+				const QPointF &current_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
 		void
 		mouse_moved_without_drag(
-				const QPointF &current_point_on_scene,
-				bool is_on_surface,
-				const QPointF &translation);
+				int screen_width,
+				int screen_height,
+				const QPointF &screen_position,
+				const QPointF &map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe,
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
 
 		void
 		repainted(
@@ -452,20 +466,16 @@ namespace GPlatesQtWidgets
 		 */
 		cache_handle_type d_gl_frame_cache_handle;
 
-		//! The x-coord of the mouse pointer position on the screen.
-		qreal d_mouse_screen_position_x;
-		//! The y-coord of the mouse pointer position on the screen.
-		qreal d_mouse_screen_position_y;
+		//! The mouse pointer position on the *screen*.
+		QPointF d_mouse_screen_position;
 
-		//! The x-coord of the mouse pointer position on the map (in 2D map projection space).
-		qreal d_mouse_map_position_x;
-		//! The y-coord of the mouse pointer position on the map (in 2D map projection space).
-		qreal d_mouse_map_position_y;
+		//! The mouse pointer position on the *map* (in 2D map projection space).
+		QPointF d_mouse_map_position;
 
 		/**
 		 * If the mouse pointer is on the globe, this is the position of the mouse pointer on the globe.
 		 */
-		boost::optional<GPlatesMaths::LatLonPoint> d_mouse_position_on_globe;
+		boost::optional<GPlatesMaths::PointOnSphere> d_mouse_position_on_globe;
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
 
@@ -521,8 +531,13 @@ namespace GPlatesQtWidgets
 				const GPlatesOpenGL::GLMatrix &image_view_transform,
 				const GPlatesOpenGL::GLMatrix &image_projection_transform,
 				const GPlatesOpenGL::GLTileRender &image_tile_render,
-				QImage &image,
-				const QPaintDevice &map_canvas_paint_device);
+				QImage &image);
+
+		/**
+		 * The point (in map projection coordinates) which corresponds to the centre of the viewport.
+		 */
+		QPointF
+		centre_of_viewport() const;
 
 		void
 		update_mouse_screen_position(
@@ -536,25 +551,15 @@ namespace GPlatesQtWidgets
 		 */
 		QPointF
 		calculate_position_on_map(
-				qreal screen_x,
-				qreal screen_y) const;
+				const QPointF &screen_position) const;
 
 		/**
 		 * Given the map coordinates, calculate and return a position which is on the globe (a unit sphere),
 		 * or none if map coordinates are not on the map surface (representing globe).
 		 */
-		boost::optional<GPlatesMaths::LatLonPoint>
+		boost::optional<GPlatesMaths::PointOnSphere>
 		calculate_position_on_globe(
-				qreal map_x,
-				qreal map_y) const;
-
-		/**
-		 * Move camera by @a dx and @a dy, both expressed in window coordinates.
-		 */
-		void
-		move_camera(
-				double dx,
-				double dy);
+				const QPointF &map_position) const;
 
 		//! Calculate scaling for lines, points and text based on size of view
 		float

@@ -163,7 +163,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					click_geometry_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 
 	//
 	// Build line topology canvas tool.
@@ -189,7 +189,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					build_line_topology_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 
 	//
 	// Build boundary topology canvas tool.
@@ -215,7 +215,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					build_boundary_topology_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 
 	//
 	// Build network topology canvas tool.
@@ -241,7 +241,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					build_network_topology_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 
 	//
 	// Edit topology canvas tool.
@@ -266,7 +266,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					edit_topology_tool,
 					viewport_window.map_canvas(),
-					view_state.get_map_transform()));
+					view_state.get_map_view_operation()));
 }
 
 

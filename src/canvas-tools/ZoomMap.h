@@ -30,21 +30,15 @@
 #include "gui/MapCanvasTool.h"
 
 
-namespace GPlatesGui
+namespace GPlatesPresentation
 {
-	class MapTransform;
-	class ViewportZoom;
+	class ViewState;
 }
 
 namespace GPlatesQtWidgets
 {
 	class MapCanvas;
 	class ViewportWindow;
-}
-
-namespace GPlatesViewOperations
-{
-	class RenderedGeometryCollection;
 }
 
 namespace GPlatesCanvasTools
@@ -63,50 +57,47 @@ namespace GPlatesCanvasTools
 		explicit
 		ZoomMap(
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
-				GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesQtWidgets::ViewportWindow &viewport_window_,
-				GPlatesGui::MapTransform &map_transform_,
-				GPlatesGui::ViewportZoom &viewport_zoom_);
+				GPlatesQtWidgets::ViewportWindow &viewport_window_);
 
-		virtual
-		void
-		handle_activation();
 
-		virtual
 		void
-		handle_deactivation();
+		handle_activation() override;
+
+		void
+		handle_deactivation() override;
 
 		
-		virtual
 		void
 		handle_left_click(
-				const QPointF &point_on_scene,
-				bool is_on_surface);
+				int screen_width,
+				int screen_height,
+				const QPointF &click_screen_position,
+				const QPointF &click_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe) override;
 
-		virtual
 		void
 		handle_shift_left_click(
-				const QPointF &point_on_scene,
-				bool is_on_surface);
+				int screen_width,
+				int screen_height,
+				const QPointF &click_screen_position,
+				const QPointF &click_map_position,
+				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe) override;
 
 	private:
 
 		void
 		recentre_map(
-				const QPointF &point_on_scene);
-
-		/**
-		 * Used to activate/deactivate focused geometry highlight rendered layer.
-		 */
-		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
+				const QPointF &map_position);
 
 		/**
 		 * This is the window that has the status bar.
 		 */
 		GPlatesQtWidgets::ViewportWindow *d_viewport_window_ptr;
 
-		GPlatesGui::MapTransform *d_map_transform_ptr;
-		GPlatesGui::ViewportZoom *d_viewport_zoom_ptr;
+		/**
+		 * This is the view state (in the presentation tier).
+		 */
+		GPlatesPresentation::ViewState &d_view_state;
 	};
 }
 
