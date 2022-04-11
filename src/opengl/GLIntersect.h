@@ -54,7 +54,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Intersects a ray with a sphere and returns the closest distance from
+		 * Intersects a ray with a sphere and returns the closest distance along ray from
 		 * the ray's origin to the sphere's surface or false it doesn't intersect.
 		 */
 		boost::optional<GPlatesMaths::real_t>
@@ -79,7 +79,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Intersects a ray with an infinite cylinder and returns the closest distance from
+		 * Intersects a ray with an infinite cylinder and returns the closest distance along ray from
 		 * the ray's origin to the cylinder's surface or false it doesn't intersect.
 		 */
 		boost::optional<GPlatesMaths::real_t>
@@ -101,6 +101,16 @@ namespace GPlatesOpenGL
 		intersect_line_cylinder(
 				const Ray &ray,
 				const Cylinder &cylinder);
+
+
+		/**
+		 * Intersects a ray with a plane and returns the distance along ray from
+		 * the ray's origin to the plane or false it doesn't intersect.
+		 */
+		boost::optional<GPlatesMaths::real_t>
+		intersect_ray_plane(
+				const Ray &ray,
+				const Plane &plane);
 
 
 		/**

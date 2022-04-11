@@ -163,6 +163,48 @@ GPlatesOpenGL::GLIntersect::intersect_line_cylinder(
 }
 
 
+boost::optional<GPlatesMaths::real_t>
+GPlatesOpenGL::GLIntersect::intersect_ray_plane(
+		const Ray &ray,
+		const Plane &plane)
+{
+	//
+	// Points on the plane satisfy:
+	// 
+	//   N.R + d = 0
+	//   N.(R0 + t*Rd) + d = 0
+	//
+	// ...where "R = R0 + t*Rd" is the ray (with origin R0 and direction Rd) and N is plane normal
+	// (could be unnormalized) and d is signed unnormalized distance of plane to origin.
+	//
+	// Rearranging gives:
+	//
+	//   t = -d - N.R0
+	//       ---------
+	//         N.Rd
+	//
+
+	const GPlatesMaths::real_t denom = dot(plane.get_normal_unnormalised(), ray.get_direction());
+	if (denom == 0)  // Note: this is an epsilon test.
+	{
+		// The ray line is perpendicular to the plane and hence they either they never intersect
+		// or the ray lies on the plane and there's an infinity of intersections.
+		// For both cases we just return no intersection.
+		return boost::none;
+	}
+
+	const GPlatesMaths::real_t t =
+			(-plane.get_signed_distance_to_origin_unnormalised() - dot(plane.get_normal_unnormalised(), ray.get_origin())) / denom;
+	if (t.dval() < 0)
+	{
+		// The ray's line intersects the plane, but it intersects behind the ray.
+		return boost::none;
+	}
+
+	return t;
+}
+
+
 boost::optional<boost::uint32_t>
 GPlatesOpenGL::GLIntersect::intersect_sphere_frustum(
 		const Sphere &sphere,
