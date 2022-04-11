@@ -427,9 +427,10 @@ namespace GPlatesGui
 		 *
 		 * The @a camera_ray can be obtained from mouse coordinates using @a get_camera_ray_at_window_coord.
 		 */
+		static
 		boost::optional<GPlatesMaths::PointOnSphere>
 		get_position_on_globe_at_camera_ray(
-				const GPlatesOpenGL::GLIntersect::Ray &camera_ray) const;
+				const GPlatesOpenGL::GLIntersect::Ray &camera_ray);
 
 
 		/**

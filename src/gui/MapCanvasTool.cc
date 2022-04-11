@@ -46,10 +46,10 @@ GPlatesGui::MapCanvasTool::pan_map_by_drag_update(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
-		const QPointF &initial_map_position,
+		const boost::optional<QPointF> &initial_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 		const QPointF &current_screen_position,
-		const QPointF &current_map_position,
+		const boost::optional<QPointF> &current_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
@@ -57,14 +57,14 @@ GPlatesGui::MapCanvasTool::pan_map_by_drag_update(
 	{
 		d_map_view_operation.start_drag(
 				GPlatesViewOperations::MapViewOperation::DRAG_NORMAL,
-				initial_map_position,
 				initial_screen_position,
+				initial_map_position,
 				screen_width, screen_height);
 	}
 
 	d_map_view_operation.update_drag(
-			current_map_position,
 			current_screen_position,
+			current_map_position,
 			screen_width, screen_height,
 			false/*end_of_drag*/);
 }
@@ -75,10 +75,10 @@ GPlatesGui::MapCanvasTool::pan_map_by_drag_release(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
-		const QPointF &initial_map_position,
+		const boost::optional<QPointF> &initial_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 		const QPointF &current_screen_position,
-		const QPointF &current_map_position,
+		const boost::optional<QPointF> &current_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
@@ -86,14 +86,14 @@ GPlatesGui::MapCanvasTool::pan_map_by_drag_release(
 	{
 		d_map_view_operation.start_drag(
 				GPlatesViewOperations::MapViewOperation::DRAG_NORMAL,
-				initial_map_position,
 				initial_screen_position,
+				initial_map_position,
 				screen_width, screen_height);
 	}
 
 	d_map_view_operation.update_drag(
-			current_map_position,
 			current_screen_position,
+			current_map_position,
 			screen_width, screen_height,
 			true/*end_of_drag*/);
 }
@@ -104,10 +104,10 @@ GPlatesGui::MapCanvasTool::rotate_map_by_drag_update(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
-		const QPointF &initial_map_position,
+		const boost::optional<QPointF> &initial_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 		const QPointF &current_screen_position,
-		const QPointF &current_map_position,
+		const boost::optional<QPointF> &current_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
@@ -115,14 +115,14 @@ GPlatesGui::MapCanvasTool::rotate_map_by_drag_update(
 	{
 		d_map_view_operation.start_drag(
 				GPlatesViewOperations::MapViewOperation::DRAG_ROTATE,
-				initial_map_position,
 				initial_screen_position,
+				initial_map_position,
 				screen_width, screen_height);
 	}
 
 	d_map_view_operation.update_drag(
-			current_map_position,
 			current_screen_position,
+			current_map_position,
 			screen_width, screen_height,
 			false/*end_of_drag*/);
 }
@@ -133,10 +133,10 @@ GPlatesGui::MapCanvasTool::rotate_map_by_drag_release(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
-		const QPointF &initial_map_position,
+		const boost::optional<QPointF> &initial_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 		const QPointF &current_screen_position,
-		const QPointF &current_map_position,
+		const boost::optional<QPointF> &current_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
@@ -144,14 +144,14 @@ GPlatesGui::MapCanvasTool::rotate_map_by_drag_release(
 	{
 		d_map_view_operation.start_drag(
 				GPlatesViewOperations::MapViewOperation::DRAG_ROTATE,
-				initial_map_position,
 				initial_screen_position,
+				initial_map_position,
 				screen_width, screen_height);
 	}
 
 	d_map_view_operation.update_drag(
-			current_map_position,
 			current_screen_position,
+			current_map_position,
 			screen_width, screen_height,
 			true/*end_of_drag*/);
 }
@@ -162,10 +162,10 @@ GPlatesGui::MapCanvasTool::tilt_map_by_drag_update(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
-		const QPointF &initial_map_position,
+		const boost::optional<QPointF> &initial_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 		const QPointF &current_screen_position,
-		const QPointF &current_map_position,
+		const boost::optional<QPointF> &current_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
@@ -173,14 +173,14 @@ GPlatesGui::MapCanvasTool::tilt_map_by_drag_update(
 	{
 		d_map_view_operation.start_drag(
 				GPlatesViewOperations::MapViewOperation::DRAG_TILT,
-				initial_map_position,
 				initial_screen_position,
+				initial_map_position,
 				screen_width, screen_height);
 	}
 
 	d_map_view_operation.update_drag(
-			current_map_position,
 			current_screen_position,
+			current_map_position,
 			screen_width, screen_height,
 			false/*end_of_drag*/);
 }
@@ -191,10 +191,10 @@ GPlatesGui::MapCanvasTool::tilt_map_by_drag_release(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
-		const QPointF &initial_map_position,
+		const boost::optional<QPointF> &initial_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 		const QPointF &current_screen_position,
-		const QPointF &current_map_position,
+		const boost::optional<QPointF> &current_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
@@ -202,14 +202,14 @@ GPlatesGui::MapCanvasTool::tilt_map_by_drag_release(
 	{
 		d_map_view_operation.start_drag(
 				GPlatesViewOperations::MapViewOperation::DRAG_TILT,
-				initial_map_position,
 				initial_screen_position,
+				initial_map_position,
 				screen_width, screen_height);
 	}
 
 	d_map_view_operation.update_drag(
-			current_map_position,
 			current_screen_position,
+			current_map_position,
 			screen_width, screen_height,
 			true/*end_of_drag*/);
 }

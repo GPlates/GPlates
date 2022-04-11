@@ -395,7 +395,11 @@ GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 	// FIXME:  Do we want this constant to instead be a variable set by a per-user preference,
 	// to enable users to specify their own epsilon radius?  (For example, users with shaky
 	// hands or very high-resolution displays might prefer a larger epsilon radius.)
-	const double pixel_inclusion_threshold = 3.0;
+	//
+	// Note: We're specifying device *independent* pixels here.
+	//       On high-DPI displays there are more device pixels in the same physical area on screen but we're
+	//       more interested in physical area (which is better represented by device *independent* pixels).
+	const double device_independent_pixel_inclusion_threshold = 3.0;
 	// Limit the maximum angular distance on unit sphere. When the click point is at the circumference
 	// of the visible globe, a one viewport pixel variation can result in a large traversal on the
 	// globe since the globe surface is tangential to the view there.
@@ -421,17 +425,18 @@ GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 			// only affected by viewport *aspect ratio*, so it is independent of whether we're using
 			// device pixels or device *independent* pixels...
 			d_view_projection.get_projection_transform());
-	boost::optional< std::pair<double/*min*/, double/*max*/> > min_max_pixel_size =
+	boost::optional< std::pair<double/*min*/, double/*max*/> > min_max_device_independent_pixel_size =
 			gl_view_projection.get_min_max_pixel_size_on_unit_sphere(click_point.position_vector());
 	// If unable to determine maximum pixel size then just return the maximum allowed proximity threshold.
-	if (!min_max_pixel_size)
+	if (!min_max_device_independent_pixel_size)
 	{
 		return std::cos(max_distance_inclusion_threshold);  // Proximity threshold is expected to be a cosine.
 	}
 
 	// Multiply the inclusive distance on unit-sphere (associated with one viewport pixel) by the
 	// number of inclusive viewport pixels.
-	double distance_inclusion_threshold = pixel_inclusion_threshold * min_max_pixel_size->second/*max*/;
+	double distance_inclusion_threshold = device_independent_pixel_inclusion_threshold *
+			min_max_device_independent_pixel_size->second/*max*/;
 
 	// Clamp to range to the maximum distance inclusion threshold (if necessary).
 	if (distance_inclusion_threshold > max_distance_inclusion_threshold)
@@ -763,8 +768,8 @@ GPlatesQtWidgets::GlobeCanvas::mouseMoveEvent(
 		//  * the mouse moved at least 3 pixels in one direction.
 		//
 		// Otherwise, the user just has shaky hands or a very high-res screen.
-		int mouse_delta_x = d_mouse_screen_position_x - d_mouse_press_info->d_mouse_screen_position_x;
-		int mouse_delta_y = d_mouse_screen_position_y - d_mouse_press_info->d_mouse_screen_position_y;
+		const qreal mouse_delta_x = d_mouse_screen_position_x - d_mouse_press_info->d_mouse_screen_position_x;
+		const qreal mouse_delta_y = d_mouse_screen_position_y - d_mouse_press_info->d_mouse_screen_position_y;
 		if (mouse_delta_x * mouse_delta_x + mouse_delta_y * mouse_delta_y > 4)
 		{
 			d_mouse_press_info->d_is_mouse_drag = true;

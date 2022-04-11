@@ -677,7 +677,7 @@ GPlatesGui::GlobeCamera::get_window_coord_at_position(
 
 boost::optional<GPlatesMaths::PointOnSphere>
 GPlatesGui::GlobeCamera::get_position_on_globe_at_camera_ray(
-		const GPlatesOpenGL::GLIntersect::Ray &camera_ray) const
+		const GPlatesOpenGL::GLIntersect::Ray &camera_ray)
 {
 	// Create a unit sphere representing the globe.
 	const GPlatesOpenGL::GLIntersect::Sphere globe(GPlatesMaths::Vector3D()/*origin*/, 1.0);

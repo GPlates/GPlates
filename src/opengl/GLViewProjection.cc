@@ -141,7 +141,7 @@ GPlatesOpenGL::GLViewProjection::get_inverse_view_projection_transform() const
 }
 
 
-int
+bool
 GPlatesOpenGL::GLViewProjection::glu_project(
 		double objx,
 		double objy,
@@ -158,7 +158,7 @@ GPlatesOpenGL::GLViewProjection::glu_project(
 
 	if (GPlatesMaths::are_almost_exactly_equal(out_vec[3], 0.0))
 	{
-		return GL_FALSE;
+		return false;
 	}
 
 	// Divide xyz by w.
@@ -182,11 +182,11 @@ GPlatesOpenGL::GLViewProjection::glu_project(
 	*winy = out_vec[1];
 	*winz = out_vec[2];
 
-	return GL_TRUE;
+	return true;
 }
 
 
-int
+bool
 GPlatesOpenGL::GLViewProjection::glu_un_project(
 		double winx,
 		double winy,
@@ -199,7 +199,7 @@ GPlatesOpenGL::GLViewProjection::glu_un_project(
 	const boost::optional<GLMatrix> &inverse_view_projection = get_inverse_view_projection_transform();
 	if (!inverse_view_projection)
 	{
-		return GL_FALSE;
+		return false;
 	}
 
 	double in_vec[4] = { winx, winy, winz, 1.0 };
@@ -220,7 +220,7 @@ GPlatesOpenGL::GLViewProjection::glu_un_project(
 
 	if (GPlatesMaths::are_almost_exactly_equal(out_vec[3], 0.0))
 	{
-		return GL_FALSE;
+		return false;
 	}
 
 	// Divide xyz by w.
@@ -234,7 +234,7 @@ GPlatesOpenGL::GLViewProjection::glu_un_project(
 	*objy = out_vec[1];
 	*objz = out_vec[2];
 
-	return GL_TRUE;
+	return true;
 }
 
 
@@ -245,18 +245,14 @@ GPlatesOpenGL::GLViewProjection::project_window_coords_into_ray(
 {
 	// Get point on near clipping plane.
 	double near_objx, near_objy, near_objz;
-	if (glu_un_project(
-		window_x, window_y, 0,
-		&near_objx, &near_objy, &near_objz) == GL_FALSE)
+	if (!glu_un_project(window_x, window_y, 0, &near_objx, &near_objy, &near_objz))
 	{
 		return boost::none;
 	}
 
 	// Get point on far clipping plane.
 	double far_objx, far_objy, far_objz;
-	if (glu_un_project(
-		window_x, window_y, 1,
-		&far_objx, &far_objy, &far_objz) == GL_FALSE)
+	if (!glu_un_project(window_x, window_y, 1, &far_objx, &far_objy, &far_objz))
 	{
 		return boost::none;
 	}
@@ -317,13 +313,13 @@ GPlatesOpenGL::GLViewProjection::get_min_max_pixel_size_on_unit_sphere(
 {
 	// Find the window coordinates of the position on the unit sphere.
 	GLdouble window_x, window_y, window_z;
-	if (glu_project(
+	if (!glu_project(
 			projected_pixel.x().dval(),
 			projected_pixel.y().dval(),
 			projected_pixel.z().dval(),
 			&window_x,
 			&window_y,
-			&window_z) == GL_FALSE)
+			&window_z))
 	{
 		return boost::none;
 	}

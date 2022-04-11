@@ -94,7 +94,7 @@ namespace GPlatesQtWidgets
 		{
 			MousePressInfo(
 					const QPointF &mouse_screen_position,
-					const QPointF &mouse_map_position,
+					const boost::optional<QPointF> &mouse_map_position,
 					const boost::optional<GPlatesMaths::PointOnSphere> &mouse_position_on_globe,
 					Qt::MouseButton button,
 					Qt::KeyboardModifiers modifiers):
@@ -107,7 +107,7 @@ namespace GPlatesQtWidgets
 			{  }
 
 			QPointF d_mouse_screen_position;
-			QPointF d_mouse_map_position;
+			boost::optional<QPointF> d_mouse_map_position;
 			boost::optional<GPlatesMaths::PointOnSphere> d_mouse_position_on_globe;
 			Qt::MouseButton d_button;
 			Qt::KeyboardModifiers d_modifiers;
@@ -240,7 +240,7 @@ namespace GPlatesQtWidgets
 				int screen_width,
 				int screen_height,
 				const QPointF &press_screen_position,
-				const QPointF &press_map_position,
+				const boost::optional<QPointF> &press_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &press_position_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
@@ -251,7 +251,7 @@ namespace GPlatesQtWidgets
 				int screen_width,
 				int screen_height,
 				const QPointF &click_screen_position,
-				const QPointF &click_map_position,
+				const boost::optional<QPointF> &click_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
@@ -261,10 +261,10 @@ namespace GPlatesQtWidgets
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe,
 				Qt::MouseButton button,
@@ -275,10 +275,10 @@ namespace GPlatesQtWidgets
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe,
 				Qt::MouseButton button,
@@ -289,7 +289,7 @@ namespace GPlatesQtWidgets
 				int screen_width,
 				int screen_height,
 				const QPointF &screen_position,
-				const QPointF &map_position,
+				const boost::optional<QPointF> &map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
 
@@ -469,8 +469,11 @@ namespace GPlatesQtWidgets
 		//! The mouse pointer position on the *screen*.
 		QPointF d_mouse_screen_position;
 
-		//! The mouse pointer position on the *map* (in 2D map projection space).
-		QPointF d_mouse_map_position;
+		/**
+		 * The mouse pointer position on the* map* (in 2D map projection space), or none if screen view ray
+		 * at the mouse pointer *screen* position does not intersect the map plane (z=0).
+		 */
+		boost::optional<QPointF> d_mouse_map_position;
 
 		/**
 		 * If the mouse pointer is on the globe, this is the position of the mouse pointer on the globe.
@@ -547,9 +550,10 @@ namespace GPlatesQtWidgets
 		update_mouse_position_on_map();
 
 		/**
-		 * Given the screen coordinates, calculate and return a position on the map (in 2D map projection space).
+		 * Given the screen coordinates, calculate and return a position on the map (in 2D map projection space),
+		 * or none if screen view ray (as screen position) does not intersect the map plane (z=0).
 		 */
-		QPointF
+		boost::optional<QPointF>
 		calculate_position_on_map(
 				const QPointF &screen_position) const;
 

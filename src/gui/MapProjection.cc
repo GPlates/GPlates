@@ -438,7 +438,7 @@ GPlatesGui::MapProjection::inverse_transform(
 		if (GPlatesMaths::LatLonPoint::is_valid_latitude(latitude) && 
 			(GPlatesMaths::LatLonPoint::is_valid_longitude(longitude)))
 		{
-			return boost::optional<GPlatesMaths::LatLonPoint>(GPlatesMaths::LatLonPoint(latitude,longitude));		
+			return GPlatesMaths::LatLonPoint(latitude,longitude);
 		}
 		else
 		{
@@ -513,7 +513,7 @@ GPlatesGui::MapProjection::inverse_transform(
 	if (GPlatesMaths::LatLonPoint::is_valid_latitude(latitude) && 
 		(GPlatesMaths::LatLonPoint::is_valid_longitude(longitude)))
 	{
-		return boost::optional<GPlatesMaths::LatLonPoint>(GPlatesMaths::LatLonPoint(latitude,longitude));		
+		return GPlatesMaths::LatLonPoint(latitude,longitude);
 	}
 	else
 	{

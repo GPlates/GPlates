@@ -67,10 +67,10 @@ namespace GPlatesCanvasTools
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 
@@ -79,10 +79,10 @@ namespace GPlatesCanvasTools
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 
@@ -92,10 +92,10 @@ namespace GPlatesCanvasTools
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 
@@ -104,10 +104,10 @@ namespace GPlatesCanvasTools
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 
@@ -117,10 +117,10 @@ namespace GPlatesCanvasTools
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 
@@ -129,10 +129,10 @@ namespace GPlatesCanvasTools
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe) override;
 

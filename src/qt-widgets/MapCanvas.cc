@@ -379,8 +379,13 @@ GPlatesQtWidgets::MapCanvas::current_proximity_inclusion_threshold(
 	// 3. Convert this location to llp and point-on-sphere.
 	// 4. Calculate the cosine of the angle between the 2 point-on-spheres.
 
-	const QPointF temp_mouse_map_position =
-			calculate_position_on_map(d_mouse_screen_position + QPointF(3, 0));
+	// Note: We're specifying device *independent* pixels here.
+	//       On high-DPI displays there are more device pixels in the same physical area on screen but we're
+	//       more interested in physical area (which is better represented by device *independent* pixels).
+	const double device_independent_pixel_inclusion_threshold = 3.0;
+
+	const QPointF temp_mouse_map_position = calculate_position_on_map(
+			d_mouse_screen_position + QPointF(device_independent_pixel_inclusion_threshold, 0));
 
 	const qreal map_proximity_distance = QLineF(d_mouse_map_position, temp_mouse_map_position).length();
 
@@ -798,8 +803,8 @@ GPlatesQtWidgets::MapCanvas::mouseMoveEvent(
 
 	if (d_mouse_press_info)
 	{
-		int x_dist = d_mouse_screen_position.x() - d_mouse_press_info->d_mouse_screen_position.x();
-		int y_dist = d_mouse_screen_position.y() - d_mouse_press_info->d_mouse_screen_position.y();
+		const qreal x_dist = d_mouse_screen_position.x() - d_mouse_press_info->d_mouse_screen_position.x();
+		const qreal y_dist = d_mouse_screen_position.y() - d_mouse_press_info->d_mouse_screen_position.y();
 		if (x_dist * x_dist + y_dist * y_dist > 4)
 		{
 			d_mouse_press_info->d_is_mouse_drag = true;
@@ -1305,8 +1310,12 @@ GPlatesQtWidgets::MapCanvas::update_mouse_position_on_map()
 {
 	d_mouse_map_position = calculate_position_on_map(d_mouse_screen_position);
 
-	boost::optional<GPlatesMaths::PointOnSphere> new_position_on_globe =
-			calculate_position_on_globe(d_mouse_map_position);
+	// Calculate position on globe from position on map plane (if mouse currently on map plane).
+	boost::optional<GPlatesMaths::PointOnSphere> new_position_on_globe;
+	if (d_mouse_map_position)
+	{
+		new_position_on_globe = calculate_position_on_globe(d_mouse_map_position.get());
+	}
 
 	if (new_position_on_globe != d_mouse_position_on_globe)
 	{
@@ -1317,10 +1326,28 @@ GPlatesQtWidgets::MapCanvas::update_mouse_position_on_map()
 }
 
 
-QPointF
+boost::optional<QPointF>
 GPlatesQtWidgets::MapCanvas::calculate_position_on_map(
 		const QPointF &screen_position) const
 {
+	// Note that OpenGL and Qt y-axes are the reverse of each other.
+	const double screen_y = height() - screen_position.y();
+	const double screen_x = screen_position.x();
+
+	// Project screen coordinates into a ray into 3D scene (containing 2D map plane).
+	const GPlatesOpenGL::GLIntersect::Ray camera_ray =
+			d_map_camera.get_camera_ray_at_window_coord(screen_x, screen_y, width(), height());
+
+	// See if camera ray intersects the map plane (passing through z=0).
+	boost::optional<QPointF> camera_ray_map_plane_intersection =
+			d_map_camera.get_position_on_map_at_camera_ray(camera_ray);
+	if (camera_ray_map_plane_intersection)
+	{
+		// Camera ray at screen pixel does not intersect the map plane (z=0).
+		return boost::none;
+	}
+
+	return camera_ray_map_plane_intersection.get();
 }
 
 

@@ -739,12 +739,12 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::get_viewport_pixel_size_in_map_pr
 	// Get map-projection coordinates of bottom-left viewport pixel.
 	// The depth doesn't actually matter since it's a 2D orthographic projection
 	// (for 'projection_transform' as opposed to the map projection which is handled elsewhere).
-	if (view_projection.glu_un_project(
+	if (!view_projection.glu_un_project(
 		// Bottom-left viewport pixel...
 		// The 'z' value does matter in 2D orthographic projection
 		// (for 'projection_transform' as opposed to the map projection).
 		0, 0, 0,
-		&objx[0], &objy[0], &objz[0]) == GL_FALSE)
+		&objx[0], &objy[0], &objz[0]))
 	{
 		qWarning() << "GLMultiResolutionRasterMapView::get_viewport_pixel_size_in_map_projection: "
 			<< "glu_un_project() failed: using lowest resolution view.";
@@ -755,12 +755,12 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::get_viewport_pixel_size_in_map_pr
 	// Get map-projection coordinates of bottom-left viewport pixel.
 	// The depth doesn't actually matter since it's a 2D orthographic projection
 	// (for 'projection_transform' as opposed to the map projection which is handled elsewhere).
-	if (view_projection.glu_un_project(
+	if (!view_projection.glu_un_project(
 		// Bottom-left viewport pixel plus one in x-direction...
 		// The 'z' value does matter in 2D orthographic projection
 		// (for 'projection_transform' as opposed to the map projection).
 		1, 0, 0,
-		&objx[1], &objy[1], &objz[1]) == GL_FALSE)
+		&objx[1], &objy[1], &objz[1]))
 	{
 		qWarning() << "GLMultiResolutionRasterMapView::get_viewport_pixel_size_in_map_projection: "
 			<< "glu_un_project() failed: using lowest resolution view.";

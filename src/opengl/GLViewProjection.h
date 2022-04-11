@@ -147,9 +147,9 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Convenience function performs same as similarly named OpenGL function.
+		 * Convenience function performs same as similarly named OpenGL function (gluProject).
 		 */
-		int
+		bool
 		glu_project(
 				double objx,
 				double objy,
@@ -160,9 +160,9 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Convenience function performs same as similarly named OpenGL function.
+		 * Convenience function performs same as similarly named OpenGL function (gluUnProject).
 		 */
-		int
+		bool
 		glu_un_project(
 				double winx,
 				double winy,

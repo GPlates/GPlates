@@ -75,10 +75,10 @@ GPlatesCanvasTools::MovePoleMap::handle_left_drag(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
-		const QPointF &initial_map_position,
+		const boost::optional<QPointF> &initial_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 		const QPointF &current_screen_position,
-		const QPointF &current_map_position,
+		const boost::optional<QPointF> &current_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
@@ -91,7 +91,7 @@ GPlatesCanvasTools::MovePoleMap::handle_left_drag(
 		if (!d_is_in_drag)
 		{
 			d_move_pole_operation->start_drag_on_map(
-					initial_map_position,
+					initial_map_position.get(),  // If initial_position_on_globe is valid then initial_map_position is too.
 					initial_position_on_globe.get(),
 					map_canvas().map().projection());
 
@@ -108,10 +108,10 @@ GPlatesCanvasTools::MovePoleMap::handle_left_release_after_drag(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
-		const QPointF &initial_map_position,
+		const boost::optional<QPointF> &initial_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 		const QPointF &current_screen_position,
-		const QPointF &current_map_position,
+		const boost::optional<QPointF> &current_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
@@ -125,7 +125,7 @@ GPlatesCanvasTools::MovePoleMap::handle_left_release_after_drag(
 		if (!d_is_in_drag)
 		{
 			d_move_pole_operation->start_drag_on_map(
-					initial_map_position,
+					initial_map_position.get(),  // If initial_position_on_globe is valid then initial_map_position is too.
 					initial_position_on_globe.get(),
 					map_canvas().map().projection());
 
@@ -145,7 +145,7 @@ GPlatesCanvasTools::MovePoleMap::handle_move_without_drag(
 		int screen_width,
 		int screen_height,
 		const QPointF &screen_position,
-		const QPointF &map_position,
+		const boost::optional<QPointF> &map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
@@ -156,7 +156,7 @@ GPlatesCanvasTools::MovePoleMap::handle_move_without_drag(
 		position_on_globe)
 	{
 		d_move_pole_operation->mouse_move_on_map(
-				map_position,
+				map_position.get(),  // If position_on_globe is valid then map_position is too.
 				position_on_globe.get(),
 				map_canvas().map().projection());
 	}

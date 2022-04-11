@@ -76,12 +76,12 @@ GPlatesCanvasTools::ZoomMap::handle_left_click(
 		int screen_width,
 		int screen_height,
 		const QPointF &click_screen_position,
-		const QPointF &click_map_position,
+		const boost::optional<QPointF> &click_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
 {
 	if (click_position_on_globe)
 	{
-		recentre_map(click_map_position);
+		recentre_map(click_map_position.get());  // If click_position_on_globe is valid then click_map_position is too.
 		d_view_state.get_viewport_zoom().zoom_in();
 	}
 }
@@ -92,12 +92,12 @@ GPlatesCanvasTools::ZoomMap::handle_shift_left_click(
 		int screen_width,
 		int screen_height,
 		const QPointF &click_screen_position,
-		const QPointF &click_map_position,
+		const boost::optional<QPointF> &click_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
 {
 	if (click_position_on_globe)
 	{
-		recentre_map(click_map_position);
+		recentre_map(click_map_position.get());  // If click_position_on_globe is valid then click_map_position is too.
 		d_view_state.get_viewport_zoom().zoom_out();
 	}
 }

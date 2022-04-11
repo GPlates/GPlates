@@ -64,10 +64,10 @@ GPlatesCanvasTools::PanMap::handle_left_drag(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
-		const QPointF &initial_map_position,
+		const boost::optional<QPointF> &initial_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 		const QPointF &current_screen_position,
-		const QPointF &current_map_position,
+		const boost::optional<QPointF> &current_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
@@ -84,10 +84,10 @@ GPlatesCanvasTools::PanMap::handle_left_release_after_drag(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
-		const QPointF &initial_map_position,
+		const boost::optional<QPointF> &initial_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 		const QPointF &current_screen_position,
-		const QPointF &current_map_position,
+		const boost::optional<QPointF> &current_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
@@ -104,10 +104,10 @@ GPlatesCanvasTools::PanMap::handle_shift_left_drag(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
-		const QPointF &initial_map_position,
+		const boost::optional<QPointF> &initial_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 		const QPointF &current_screen_position,
-		const QPointF &current_map_position,
+		const boost::optional<QPointF> &current_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
@@ -124,10 +124,10 @@ GPlatesCanvasTools::PanMap::handle_shift_left_release_after_drag(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
-		const QPointF &initial_map_position,
+		const boost::optional<QPointF> &initial_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 		const QPointF &current_screen_position,
-		const QPointF &current_map_position,
+		const boost::optional<QPointF> &current_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
@@ -144,10 +144,10 @@ GPlatesCanvasTools::PanMap::handle_alt_left_drag(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
-		const QPointF &initial_map_position,
+		const boost::optional<QPointF> &initial_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 		const QPointF &current_screen_position,
-		const QPointF &current_map_position,
+		const boost::optional<QPointF> &current_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
@@ -164,10 +164,10 @@ GPlatesCanvasTools::PanMap::handle_alt_left_release_after_drag(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
-		const QPointF &initial_map_position,
+		const boost::optional<QPointF> &initial_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 		const QPointF &current_screen_position,
-		const QPointF &current_map_position,
+		const boost::optional<QPointF> &current_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {

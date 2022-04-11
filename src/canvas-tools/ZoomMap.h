@@ -72,7 +72,7 @@ namespace GPlatesCanvasTools
 				int screen_width,
 				int screen_height,
 				const QPointF &click_screen_position,
-				const QPointF &click_map_position,
+				const boost::optional<QPointF> &click_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe) override;
 
 		void
@@ -80,7 +80,7 @@ namespace GPlatesCanvasTools
 				int screen_width,
 				int screen_height,
 				const QPointF &click_screen_position,
-				const QPointF &click_map_position,
+				const boost::optional<QPointF> &click_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe) override;
 
 	private:

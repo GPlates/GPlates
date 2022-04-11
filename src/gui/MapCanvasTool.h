@@ -86,24 +86,30 @@ namespace GPlatesGui
 		
 
 		/**
-		* Handle a left mouse-button press.
-		*
-		* @a press_position_on_globe is the position of the press on the globe, or none if not on globe/map. 
-		*/
+		 * Handle a left mouse-button press.
+		 *
+		 * @a press_screen_position is the position of the press on the screen (viewport window).
+		 * @a press_map_position is position of the press on the map plane (z=0), or none if not on plane.
+		 * @a press_position_on_globe is the position of the press on the globe, or none if not on globe.
+		 * Note: If @a press_position_on_globe is valid then @a press_map_position is also valid.
+		 */
 		virtual
 		void
 		handle_left_press(
 				int screen_width,
 				int screen_height,
 				const QPointF &press_screen_position,
-				const QPointF &press_map_position,
+				const boost::optional<QPointF> &press_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &press_position_on_globe)
 		{  }
 
 		/**
 		 * Handle a left mouse-button click.
 		 *
-		 * @a click_screen_position is the position of the click on the globe, or none if not on globe/map. 
+		 * @a click_screen_position is the position of the click on the screen (viewport window).
+		 * @a click_map_position is position of the click on the map plane (z=0), or none if not on plane.
+		 * @a click_position_on_globe is the position of the click on the globe, or none if not on globe.
+		 * Note: If @a click_position_on_globe is valid then @a click_map_position is also valid.
 		 */
 		virtual
 		void
@@ -111,12 +117,17 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &click_screen_position,
-				const QPointF &click_map_position,
+				const boost::optional<QPointF> &click_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
 		{  }
 
 		/**
 		 * Handle a mouse drag with the left mouse-button pressed.
+		 *
+		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
+		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
+		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
 		 */
 		virtual
 		void
@@ -124,10 +135,10 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 		{  }
@@ -139,6 +150,11 @@ namespace GPlatesGui
 		 * update (when the mouse-button has just been released).  In response to
 		 * intermediate updates of the mouse-pointer position (as the mouse-pointer is
 		 * moved about with the mouse-button pressed), invoke the function @a handle_left_drag instead.
+		 *
+		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
+		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
+		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
 		 */
 		virtual
 		void
@@ -146,10 +162,10 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 		{  }
@@ -157,6 +173,11 @@ namespace GPlatesGui
 
 		/**
 		 * Handle a left mouse-button click while a Shift key is held.
+		 *
+		 * @a click_screen_position is the position of the click on the screen (viewport window).
+		 * @a click_map_position is position of the click on the map plane (z=0), or none if not on plane.
+		 * @a click_position_on_globe is the position of the click on the globe, or none if not on globe.
+		 * Note: If @a click_position_on_globe is valid then @a click_map_position is also valid.
 		 */
 		virtual
 		void
@@ -164,12 +185,17 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &click_screen_position,
-				const QPointF &click_map_position,
+				const boost::optional<QPointF> &click_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
 		{  }
 
 		/**
 		 * Handle a mouse drag with the left mouse-button pressed while a Shift key is held.
+		 *
+		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
+		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
+		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
 		 */
 		virtual
 		void
@@ -177,10 +203,10 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 		{  }
@@ -192,6 +218,11 @@ namespace GPlatesGui
 		 * update (when the mouse-button has just been released).  In response to
 		 * intermediate updates of the mouse-pointer position (as the mouse-pointer is
 		 * moved about with the mouse-button pressed), invoke the function @a handle_shift_left_drag instead.
+		 *
+		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
+		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
+		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
 		 */
 		virtual
 		void
@@ -199,10 +230,10 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 		{  }
@@ -210,6 +241,11 @@ namespace GPlatesGui
 
 		/**
 		 * Handle a left mouse-button click while a Alt key is held.
+		 *
+		 * @a click_screen_position is the position of the click on the screen (viewport window).
+		 * @a click_map_position is position of the click on the map plane (z=0), or none if not on plane.
+		 * @a click_position_on_globe is the position of the click on the globe, or none if not on globe.
+		 * Note: If @a click_position_on_globe is valid then @a click_map_position is also valid.
 		 */
 		virtual
 		void
@@ -217,12 +253,17 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &click_screen_position,
-				const QPointF &click_map_position,
+				const boost::optional<QPointF> &click_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
 		{  }
 
 		/**
 		 * Handle a mouse drag with the left mouse-button pressed while a Alt key is held.
+		 *
+		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
+		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
+		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
 		 */
 		virtual
 		void
@@ -230,10 +271,10 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 		{  }
@@ -245,6 +286,11 @@ namespace GPlatesGui
 		 * update (when the mouse-button has just been released).  In response to
 		 * intermediate updates of the mouse-pointer position (as the mouse-pointer is
 		 * moved about with the mouse-button pressed), invoke the function @a handle_alt_left_drag instead.
+		 *
+		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
+		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
+		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
 		 */
 		virtual
 		void
@@ -252,10 +298,10 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 		{  }
@@ -263,6 +309,11 @@ namespace GPlatesGui
 
 		/**
 		 * Handle a left mouse-button click while a Control key is held.
+		 *
+		 * @a click_screen_position is the position of the click on the screen (viewport window).
+		 * @a click_map_position is position of the click on the map plane (z=0), or none if not on plane.
+		 * @a click_position_on_globe is the position of the click on the globe, or none if not on globe.
+		 * Note: If @a click_position_on_globe is valid then @a click_map_position is also valid.
 		 */
 		virtual
 		void
@@ -270,12 +321,17 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &click_screen_position,
-				const QPointF &click_map_position,
+				const boost::optional<QPointF> &click_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
 		{  }
 
 		/**
 		 * Handle a mouse drag with the left mouse-button pressed while a Control key is held.
+		 *
+		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
+		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
+		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
 		 *
 		 * The default implementation of this function pans the map.
 		 */
@@ -285,10 +341,10 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 		{
@@ -307,6 +363,11 @@ namespace GPlatesGui
 		 * intermediate updates of the mouse-pointer position (as the mouse-pointer is
 		 * moved about with the mouse-button pressed), invoke the function @a handle_ctrl_left_drag instead.
 		 *
+		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
+		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
+		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
+		 *
 		 * The default implementation of this function pans the map.
 		 */
 		virtual
@@ -315,10 +376,10 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 		{
@@ -332,6 +393,11 @@ namespace GPlatesGui
 
 		/**
 		 * Handle a left mouse-button click while a Shift key and a Control key are held.
+		 *
+		 * @a click_screen_position is the position of the click on the screen (viewport window).
+		 * @a click_map_position is position of the click on the map plane (z=0), or none if not on plane.
+		 * @a click_position_on_globe is the position of the click on the globe, or none if not on globe.
+		 * Note: If @a click_position_on_globe is valid then @a click_map_position is also valid.
 		 */
 		virtual
 		void
@@ -339,12 +405,17 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &click_screen_position,
-				const QPointF &click_map_position,
+				const boost::optional<QPointF> &click_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
 		{  }
 
 		/**
 		 * Handle a mouse drag with the left mouse-button pressed while a Shift key and a Control key are held.
+		 *
+		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
+		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
+		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
 		 *
 		 * The default implementation of this function rotates the map.
 		 */
@@ -354,10 +425,10 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 		{
@@ -376,6 +447,11 @@ namespace GPlatesGui
 		 * intermediate updates of the mouse-pointer position (as the mouse-pointer is
 		 * moved about with the mouse-button pressed), invoke the function @a handle_shift_ctrl_left_drag instead.
 		 *
+		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
+		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
+		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
+		 *
 		 * The default implementation of this function rotates the map.
 		 */
 		virtual
@@ -384,10 +460,10 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 		{
@@ -401,6 +477,11 @@ namespace GPlatesGui
 
 		/**
 		 * Handle a left mouse-button click while a Alt key and a Control key are held.
+		 *
+		 * @a click_screen_position is the position of the click on the screen (viewport window).
+		 * @a click_map_position is position of the click on the map plane (z=0), or none if not on plane.
+		 * @a click_position_on_globe is the position of the click on the globe, or none if not on globe.
+		 * Note: If @a click_position_on_globe is valid then @a click_map_position is also valid.
 		 */
 		virtual
 		void
@@ -408,12 +489,17 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &click_screen_position,
-				const QPointF &click_map_position,
+				const boost::optional<QPointF> &click_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
 		{  }
 
 		/**
 		 * Handle a mouse drag with the left mouse-button pressed while a Alt key and a Control key are held.
+		 *
+		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
+		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
+		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
 		 *
 		 * The default implementation of this function rotates the map.
 		 */
@@ -423,10 +509,10 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 		{
@@ -445,6 +531,11 @@ namespace GPlatesGui
 		 * intermediate updates of the mouse-pointer position (as the mouse-pointer is
 		 * moved about with the mouse-button pressed), invoke the function @a handle_alt_ctrl_left_drag instead.
 		 *
+		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
+		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
+		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
+		 *
 		 * The default implementation of this function rotates the map.
 		 */
 		virtual
@@ -453,10 +544,10 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 		{
@@ -473,6 +564,11 @@ namespace GPlatesGui
 		*
 		* This function should be invoked in response to intermediate updates of the
 		* mouse-pointer position (as the mouse-pointer is moved about).
+		 *
+		 * @a screen_position is the position on the screen (viewport window).
+		 * @a position_on_globe is the position on the globe, or none if not on globe.
+		 * @a map_position is position on the map plane (z=0), or none if not on plane.
+		 * Note: If @a position_on_globe is valid then @a map_position is also valid.
 		*/
 		virtual
 		void
@@ -480,7 +576,7 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &screen_position,
-				const QPointF &map_position,
+				const boost::optional<QPointF>&map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 		{  }
@@ -503,10 +599,10 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
 
@@ -520,10 +616,10 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
 
@@ -537,10 +633,10 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
 
@@ -554,10 +650,10 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
 
@@ -571,10 +667,10 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
 
@@ -588,10 +684,10 @@ namespace GPlatesGui
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
-				const QPointF &initial_map_position,
+				const boost::optional<QPointF> &initial_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
 				const QPointF &current_screen_position,
-				const QPointF &current_map_position,
+				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
 
