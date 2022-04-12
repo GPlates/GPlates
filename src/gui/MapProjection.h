@@ -30,6 +30,7 @@
 
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
+#include <QPointF>
 
 #include "ProjectionException.h"
 
@@ -137,24 +138,35 @@ namespace GPlatesGui
 			return d_projection_type;
 		}
 
-		/**
-		 * Transforms the point on sphere to cartesian coodinates according to the 
-		 * current state of the projection.
-		 */
-		void
-		forward_transform(
-			const GPlatesMaths::PointOnSphere &point_on_sphere,
-			double &x_coordinate, 
-			double &y_coordinate) const;
 
 		/**
-		 * Transform the latitude and longitude to cartesian coordinates according to the 
+		 * Transforms the point on sphere to cartesian coordinates (x,y) according to the 
+		 * current state of the projection.
+		 */
+		QPointF
+		forward_transform(
+				const GPlatesMaths::PointOnSphere &point_on_sphere) const
+		{
+			return forward_transform(make_lat_lon_point(point_on_sphere));
+		}
+
+		/**
+		 * Transforms the lat-lon point to cartesian coordinates (x,y) according to the 
+		 * current state of the projection.
+		 */
+		QPointF
+		forward_transform(
+				const GPlatesMaths::LatLonPoint &lat_lon_point) const;
+
+		/**
+		 * Transform the longitude and latitude to cartesian coordinates according to the 
 		 * current state of the projection. 
 		 */ 
 		void
 		forward_transform(
-			double &longitude,
-			double &latitude) const;
+				double &longitude,
+				double &latitude) const;
+
 
 		/**
 		* Transform cartesian (x,y) coordinates to a LatLonPoint according to the current
@@ -165,8 +177,19 @@ namespace GPlatesGui
 		*/ 
 		boost::optional<GPlatesMaths::LatLonPoint>
 		inverse_transform(
-			double &x,
-			double &y) const;
+				const QPointF &map_point) const;
+
+		/**
+		* Transform cartesian (x,y) coordinates to longitude and latitude according to the current
+		* state of the projection. 
+		* 
+		* Returns false if there is not a valid inverse transform for the provided (x,y) values. 
+		*/ 
+		bool
+		inverse_transform(
+				double &x,
+				double &y) const;
+
 
 		/**
 		 * Set the central meridian.

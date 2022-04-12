@@ -410,17 +410,14 @@ GPlatesQtWidgets::MapCanvas::current_proximity_inclusion_threshold(
 	{	
 		threshold_point.setY(d_mouse_map_position.y() + y_proximity);
 	}
-	double x_ = threshold_point.x();
-	double y_ = threshold_point.y();
 
-	boost::optional<GPlatesMaths::LatLonPoint> llp =  map().projection().inverse_transform(x_, y_);
-
+	boost::optional<GPlatesMaths::LatLonPoint> llp =  map().projection().inverse_transform(threshold_point);
 	if (!llp)
 	{
 		return 0.;
 	}
 	
-	GPlatesMaths::PointOnSphere proximity_pos = GPlatesMaths::make_point_on_sphere(*llp);
+	GPlatesMaths::PointOnSphere proximity_pos = GPlatesMaths::make_point_on_sphere(llp.get());
 
 	double proximity_inclusion_threshold = GPlatesMaths::dot(
 			click_point.position_vector(),
@@ -593,22 +590,20 @@ void
 GPlatesQtWidgets::MapCanvas::set_camera_viewpoint(
 		const GPlatesMaths::LatLonPoint &camera_viewpoint)
 {
-	// Convert the llp to map coordinates.
-	double x_map = camera_viewpoint.longitude();
-	double y_map = camera_viewpoint.latitude();
-
+	QPointF map_position;
 	try
 	{
-		map().projection().forward_transform(x_map, y_map);
+		// Convert the llp to map coordinates.
+		map_position = map().projection().forward_transform(camera_viewpoint);
 	}
 	catch(GPlatesGui::ProjectionException &e)
 	{
-		qWarning() << "Caught exception converting lat-long to scene coordinates.";
+		qWarning() << "Caught exception converting lat-long to map coordinates.";
 		qWarning() << e;
 	}
 
 	// Centre the view on this point.
-	d_map_camera.move_look_at_position(QPointF(x_map, y_map));
+	d_map_camera.move_look_at_position(map_position);
 }
 
 
@@ -618,34 +613,24 @@ GPlatesQtWidgets::MapCanvas::get_camera_viewpoint() const
 	// Camera look-at position is in map projection space.
 	const QPointF &camera_look_at = d_map_camera.get_look_at_position();
 
-	double x_pos = camera_look_at.x();
-	double y_pos = camera_look_at.y();
-
-	// This stores the x screen coordinate, for comparison with the forward-transformed longitude.  
-	double screen_x = x_pos;
-
-	// Tolerance for comparing forward transformed longitude with screen longitude. 
-	double tolerance = 1.;
-
-	boost::optional<GPlatesMaths::LatLonPoint> llp = map().projection().inverse_transform(x_pos,y_pos);
-		
+	boost::optional<GPlatesMaths::LatLonPoint> llp = map().projection().inverse_transform(camera_look_at);
 	if (!llp)
 	{
 		return boost::none;
 	}
 
 	// Forward transform the lat-lon point and see where it would end up. 
-	double x_scene_pos = llp->longitude();
-	double y_scene_pos = llp->latitude();
-	map().projection().forward_transform(x_scene_pos,y_scene_pos);
+	const QPointF scene_pos = map().projection().forward_transform(llp.get());
 
+	// Tolerance for comparing forward transformed longitude with screen longitude. 
+	const double tolerance = 1.0;
 	// If we don't end up at the same point, we're off the map. 
-	if (std::fabs(x_scene_pos - screen_x) > tolerance)
+	if (std::fabs(scene_pos.x() - camera_look_at.x()) > tolerance)
 	{
 		return boost::none;
 	}
 		
-	return llp;
+	return llp.get();
 }
 
 
@@ -662,23 +647,20 @@ GPlatesQtWidgets::MapCanvas::set_orientation(
 	GPlatesMaths::PointOnSphere desired_centre = rev * centre;
 	GPlatesMaths::LatLonPoint desired_llp = GPlatesMaths::make_lat_lon_point(desired_centre);
 
-
-	// Convert the llp to map coordinates.
-	double x_map = desired_llp.longitude();
-	double y_map = desired_llp.latitude();
-
+	QPointF map_position;
 	try
 	{
-		map().projection().forward_transform(x_map, y_map);
+		// Convert the llp to map coordinates.
+		map_position = map().projection().forward_transform(desired_llp);
 	}
 	catch (GPlatesGui::ProjectionException &e)
 	{
-		qWarning() << "Caught exception converting lat-long to scene coordinates.";
+		qWarning() << "Caught exception converting lat-long to map coordinates.";
 		qWarning() << e;
 	}
 
 	// Centre the view on this point.
-	d_map_camera.move_look_at_position(QPointF(x_map, y_map));
+	d_map_camera.move_look_at_position(map_position);
 }
 
 
@@ -1355,35 +1337,26 @@ boost::optional<GPlatesMaths::PointOnSphere>
 GPlatesQtWidgets::MapCanvas::calculate_position_on_globe(
 		const QPointF &map_position) const
 {
-	double x_map = map_position.x();
-	double y_map = map_position.y();
-
 	// The proj library returns valid longitudes even when the screen coordinates are 
 	// far to the right, or left, of the map itself. To determine if the mouse position is off
 	// the map, I'm transforming the returned lat-lon back into screen coordinates. 
 	// If this doesn't match our original screen coordinates, then we can assume that we're off the map.
 	// I'm going to use the longitude value for comparison. 
 
-	// This stores the x screen coordinate, for comparison with the forward-transformed longitude.  
-	const double initial_x_map = x_map;
-
-	// I haven't put any great deal of thought into a suitable tolerance here. 
-	const double tolerance = 1.0;
-
 	boost::optional<GPlatesMaths::LatLonPoint> lat_lon_position_on_globe =
-			map().projection().inverse_transform(x_map, y_map);
+			map().projection().inverse_transform(map_position);
 	if (!lat_lon_position_on_globe)
 	{
 		return boost::none;
 	}
 		
 	// Forward transform the lat-lon point and see where it would end up. 
-	double x_pos = lat_lon_position_on_globe->longitude();
-	double y_pos = lat_lon_position_on_globe->latitude();
-	map().projection().forward_transform(x_pos, y_pos);
+	const QPointF transformed_map_position = map().projection().forward_transform(lat_lon_position_on_globe.get());
 
+	// I haven't put any great deal of thought into a suitable tolerance here. 
+	const double tolerance = 1.0;
 	// If we don't end up at the same point, we're off the map. 
-	if (std::fabs(x_pos - initial_x_map) > tolerance)
+	if (std::fabs(transformed_map_position.x() - map_position.x()) > tolerance)
 	{
 		return boost::none;
 	}

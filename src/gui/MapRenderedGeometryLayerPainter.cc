@@ -150,12 +150,10 @@ namespace
 		const GPlatesMaths::PointOnSphere &point,
 		const GPlatesGui::MapProjection &projection)
 	{
-		double lat;
-		double lon;
-		projection.forward_transform(point, lon, lat);
+		const QPointF map_point = projection.forward_transform(point);
 
 		qDebug() << "Vertex: " << point.position_vector();
-		qDebug() << QPointF(lon, lat);
+		qDebug() << map_point;
 		qDebug();
 	}
 

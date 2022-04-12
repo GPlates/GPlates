@@ -56,17 +56,18 @@ namespace
 		const char* proj_name;
 		const char* proj_ellipse;
 		double scaling_factor;
-		bool inverse_defined;
 	};
 
 	static ProjectionParameters projection_table[] =
 	{
-		{GPlatesGui::MapProjection::RECTANGULAR, "Rectangular", "proj=latlong", "ellps=WGS84", (180.0 / GPlatesMaths::PI)/*RAD_TO_DEG*/, true},
-		{GPlatesGui::MapProjection::MERCATOR, "Mercator", "proj=merc", "ellps=WGS84", 0.0000070, true},
-		{GPlatesGui::MapProjection::MOLLWEIDE, "Mollweide", "proj=moll", "ellps=WGS84", 0.0000095, true},
-		{GPlatesGui::MapProjection::ROBINSON, "Robinson", "proj=robin", "ellps=WGS84", 0.0000095, true}
+		// Don't really need a scale for "Rectangular" since handling ourselves (directly in degrees) and not using proj library...
+		{GPlatesGui::MapProjection::RECTANGULAR, "Rectangular", "proj=latlong", "ellps=WGS84", 1.0},
+		// The remaining projections are handled by the proj library and the scale converts metres to degrees (purely to match "Rectangular")...
+		{GPlatesGui::MapProjection::MERCATOR, "Mercator", "proj=merc", "ellps=WGS84", 0.0000070},
+		{GPlatesGui::MapProjection::MOLLWEIDE, "Mollweide", "proj=moll", "ellps=WGS84", 0.0000095},
+		{GPlatesGui::MapProjection::ROBINSON, "Robinson", "proj=robin", "ellps=WGS84", 0.0000095}
 		// This was never used as a map projection, probably because it's not a standard projection, so we'll remove it as a choice...
-		//{GPlatesGui::MapProjection::LAMBERT_CONIC, "LambertConic", "proj=lcc", "ellps=WGS84", 0.000003, true}
+		//{GPlatesGui::MapProjection::LAMBERT_CONIC, "LambertConic", "proj=lcc", "ellps=WGS84", 0.000003}
 	};
 
 }
@@ -288,24 +289,22 @@ GPlatesGui::MapProjection::set_projection_type(
 }
 
 
-void
+QPointF
 GPlatesGui::MapProjection::forward_transform(
-	const GPlatesMaths::PointOnSphere &point_on_sphere, 
-	double &x_coordinate, 
-	double &y_coordinate) const
+		const GPlatesMaths::LatLonPoint &lat_lon_point) const
 {
-	const GPlatesMaths::LatLonPoint lat_lon_point = make_lat_lon_point(point_on_sphere);
-
-	x_coordinate = lat_lon_point.longitude();
-	y_coordinate = lat_lon_point.latitude();
+	double x_coordinate = lat_lon_point.longitude();
+	double y_coordinate = lat_lon_point.latitude();
 	forward_transform(x_coordinate, y_coordinate);
+
+	return QPointF(x_coordinate, y_coordinate);
 }
 
 
 void
 GPlatesGui::MapProjection::forward_transform(
-	 double &longitude,
-	 double &latitude) const
+		double &input_longitude_output_x,
+		double &input_latitude_output_y) const
 {
 
 #if defined(GPLATES_USING_PROJ4)
@@ -320,26 +319,47 @@ GPlatesGui::MapProjection::forward_transform(
 	}
 #endif
 
+	// Input (longitude, latitude).
+	double longitude = input_longitude_output_x;
+	double latitude = input_latitude_output_y;
+
+	//
+	// Handle rectangular projection ourselves (instead of using the proj library).
+	//
+	// There were a few issues with non-zero central meridians using earlier proj library versions.
+	// Also the 'latlong' projection is treated as a special case by proj (having units of degrees instead of metres)
+	// and this varies across the proj versions.
+	//
 	if (d_projection_type == RECTANGULAR)
 	{
-		// The rectangular projection is playing silly buggers under non-zero central meridians,
-		// so I'm going to handle this case explicitly.
+		// Output (x, y).
+		double x = longitude;
+		double y = latitude;
+
+		// Handle non-zero central meridians.
 		//
 		// Note: Also exporting of global grid-line-registered rasters depends on latitude and longitude
 		// extents being exactly [-90, 90] and [-180, 180] after subtracting central longitude since the
 		// export expands the map projection very slightly (using OpenGL model-view transform) to ensure
 		// border pixels get rendered.
 		// So if this code path changes then should check that those rasters are exported correctly.
-		longitude -= d_central_meridian;
+		x -= d_central_meridian;
 
-		if (longitude > 180.)
+		if (x > 180.)
 		{
-			longitude -= 360.;
+			x -= 360.;
 		}
-		if (longitude < -180.)
+		if (x < -180.)
 		{
-			longitude += 360.;
+			x += 360.;
 		}
+		// Output x should now be in the range [-180, 180].
+		// And output x corresponding to central meridian input should be zero (to match what proj library does).
+
+		// Return forward transformed (x,y) to the caller.
+		input_longitude_output_x = x;
+		input_latitude_output_y = y;
+
 		return;
 	}
 
@@ -355,8 +375,12 @@ GPlatesGui::MapProjection::forward_transform(
 	longitude *= DEG_TO_RAD;
 	latitude *= DEG_TO_RAD;
 
+	// Output (x, y).
+	double x = longitude;
+	double y = latitude;
+
 	// Projection transformation.
-	if (0 != pj_transform(d_latlon_projection, d_projection, 1, 0, &longitude, &latitude, NULL))
+	if (0 != pj_transform(d_latlon_projection, d_projection, 1, 0, &x, &y, NULL))
 	{
 		throw ProjectionException(GPLATES_EXCEPTION_SOURCE, "Error in pj_transform.");
 	}
@@ -379,8 +403,10 @@ GPlatesGui::MapProjection::forward_transform(
 	c.lp.lam = longitude;
 	c.lp.phi = latitude;
 	c = proj_trans(d_transformation, PJ_FWD, c);
-	longitude = c.lp.lam;
-	latitude = c.lp.phi;
+
+	// Output (x, y).
+	double x = c.lp.lam;
+	double y = c.lp.phi;
 
 	// Debugging...
 	//
@@ -392,40 +418,73 @@ GPlatesGui::MapProjection::forward_transform(
 
 #endif
 
-	if (GPlatesMaths::is_infinity(longitude) || GPlatesMaths::is_infinity(latitude))
+	if (GPlatesMaths::is_infinity(x) || GPlatesMaths::is_infinity(y))
 	{
 		throw ProjectionException(GPLATES_EXCEPTION_SOURCE, "HUGE_VAL returned from proj transform.");
 	}
 
-	longitude *= d_scale;
-	latitude *= d_scale;
+	x *= d_scale;
+	y *= d_scale;
+
+	// Return forward transformed (x,y) to the caller.
+	input_longitude_output_x = x;
+	input_latitude_output_y = y;
 }
 
 
 boost::optional<GPlatesMaths::LatLonPoint>
 GPlatesGui::MapProjection::inverse_transform(
-	double &longitude,
-	double &latitude) const
+		const QPointF &map_point) const
+{
+	double longitude = map_point.x();
+	double latitude = map_point.y();
+	if (!inverse_transform(longitude, latitude))
+	{
+		return boost::none;
+	}
+
+	return GPlatesMaths::LatLonPoint(latitude, longitude);
+}
+
+
+bool
+GPlatesGui::MapProjection::inverse_transform(
+		double &input_x_output_longitude,
+		double &input_y_output_latitude) const
 {
 #if defined(GPLATES_USING_PROJ4)
 	if (!d_projection)
 	{
-		return boost::none;
+		return false;
 	}
 #else // using proj5+...
 	if (!d_transformation)
 	{
-		return boost::none;
+		return false;
 	}
 #endif
 
+	// Input (x, y).
+	double x = input_x_output_longitude;
+	double y = input_y_output_latitude;
+
+	//
+	// Handle rectangular projection ourselves (instead of using the proj library).
+	//
+	// There were a few issues with non-zero central meridians using earlier proj library versions.
+	// Also the 'latlong' projection is treated as a special case by proj (having units of degrees instead of metres)
+	// and this varies across the proj versions.
+	//
 	if (d_projection_type == RECTANGULAR)
 	{
-		// The inverse transform rectangular->rectangular 
-		// is playing silly buggers under non-zero central meridians, so
-		// I'm handling this projection explicitly.
+		// Output (longitude, latitude).
+		double longitude = x;
+		double latitude = y;
+
+		// Handle non-zero central meridians (x=0 in map projection space should map to longitude=central_meridian).
 		longitude += d_central_meridian;
 
+		// This shouldn't really be necessary but we'll keep longitude within a reasonable range just in case.
 		if (longitude > 180.)
 		{
 			longitude -= 360.;
@@ -434,39 +493,32 @@ GPlatesGui::MapProjection::inverse_transform(
 		{
 			longitude += 360.;
 		}
+		if (!GPlatesMaths::LatLonPoint::is_valid_latitude(latitude) ||
+			!GPlatesMaths::LatLonPoint::is_valid_longitude(longitude))
+		{
+			return false;
+		}
 
-		if (GPlatesMaths::LatLonPoint::is_valid_latitude(latitude) && 
-			(GPlatesMaths::LatLonPoint::is_valid_longitude(longitude)))
-		{
-			return GPlatesMaths::LatLonPoint(latitude,longitude);
-		}
-		else
-		{
-			return boost::none;
-		}
+		// Return inverse transformed (longitude,latitude) to the caller.
+		input_x_output_longitude = longitude;
+		input_y_output_latitude = latitude;
+
+		return true;
 	}
 
-	longitude /= d_scale;
-	latitude /= d_scale;
-
-	if  (!projection_table[d_projection_type].inverse_defined)
-	{	
-		// On Fedora the following message is output when you switch from the map to the globe. This 
-		// doesn't happen on XP. The reason this is being called is that if you click on the part of
-		// the projection combobox that is on top of the viewport (e.g. on the word "Globe"), a
-		// mouse down event is issued for the MapCanvas (even though it's covered up by the list),
-		// which in turn calls inverse_projection. There does not seem to be an easy way to stop the
-		// MapCanvas from getting the mouse down event unfortunately, so let's suppress the error.
-		// qWarning("No inverse is defined for this projection in the proj library.");
-		return boost::none;
-	}
+	x /= d_scale;
+	y /= d_scale;
 
 #if defined(GPLATES_USING_PROJ4)
+
+	// Output (longitude, latitude).
+	double longitude = x;
+	double latitude = y;
 
 	// Projection inverse transformation.
 	if (0 != pj_transform(d_projection,d_latlon_projection,1,0,&longitude,&latitude,NULL))
 	{
-		return boost::none;
+		return false;
 	}
 
 	// Convert radians to degrees.
@@ -478,11 +530,13 @@ GPlatesGui::MapProjection::inverse_transform(
 
 	// Projection inverse transformation.
 	PJ_COORD c;
-	c.lp.lam = longitude;
-	c.lp.phi = latitude;
+	c.lp.lam = x;
+	c.lp.phi = y;
 	c = proj_trans(d_transformation, PJ_INV, c);
-	longitude = c.lp.lam;
-	latitude = c.lp.phi;
+
+	// Output (longitude, latitude).
+	double longitude = c.lp.lam;
+	double latitude = c.lp.phi;
 
 	if (d_proj_info.major == 5)
 	{
@@ -507,18 +561,20 @@ GPlatesGui::MapProjection::inverse_transform(
 
 	if (GPlatesMaths::is_infinity(longitude) || GPlatesMaths::is_infinity(latitude))
 	{
-		return boost::none;
+		return false;
 	}
 	
-	if (GPlatesMaths::LatLonPoint::is_valid_latitude(latitude) && 
-		(GPlatesMaths::LatLonPoint::is_valid_longitude(longitude)))
+	if (!GPlatesMaths::LatLonPoint::is_valid_latitude(latitude) ||
+		!GPlatesMaths::LatLonPoint::is_valid_longitude(longitude))
 	{
-		return GPlatesMaths::LatLonPoint(latitude,longitude);
+		return false;
 	}
-	else
-	{
-		return boost::none;
-	}
+
+	// Return inverse transformed (longitude,latitude) to the caller.
+	input_x_output_longitude = longitude;
+	input_y_output_latitude = latitude;
+
+	return true;
 }
 
 
