@@ -618,17 +618,6 @@ GPlatesQtWidgets::MapCanvas::get_camera_viewpoint() const
 	{
 		return boost::none;
 	}
-
-	// Forward transform the lat-lon point and see where it would end up. 
-	const QPointF scene_pos = map().projection().forward_transform(llp.get());
-
-	// Tolerance for comparing forward transformed longitude with screen longitude. 
-	const double tolerance = 1.0;
-	// If we don't end up at the same point, we're off the map. 
-	if (std::fabs(scene_pos.x() - camera_look_at.x()) > tolerance)
-	{
-		return boost::none;
-	}
 		
 	return llp.get();
 }
@@ -1337,26 +1326,9 @@ boost::optional<GPlatesMaths::PointOnSphere>
 GPlatesQtWidgets::MapCanvas::calculate_position_on_globe(
 		const QPointF &map_position) const
 {
-	// The proj library returns valid longitudes even when the screen coordinates are 
-	// far to the right, or left, of the map itself. To determine if the mouse position is off
-	// the map, I'm transforming the returned lat-lon back into screen coordinates. 
-	// If this doesn't match our original screen coordinates, then we can assume that we're off the map.
-	// I'm going to use the longitude value for comparison. 
-
 	boost::optional<GPlatesMaths::LatLonPoint> lat_lon_position_on_globe =
 			map().projection().inverse_transform(map_position);
 	if (!lat_lon_position_on_globe)
-	{
-		return boost::none;
-	}
-		
-	// Forward transform the lat-lon point and see where it would end up. 
-	const QPointF transformed_map_position = map().projection().forward_transform(lat_lon_position_on_globe.get());
-
-	// I haven't put any great deal of thought into a suitable tolerance here. 
-	const double tolerance = 1.0;
-	// If we don't end up at the same point, we're off the map. 
-	if (std::fabs(transformed_map_position.x() - map_position.x()) > tolerance)
 	{
 		return boost::none;
 	}
