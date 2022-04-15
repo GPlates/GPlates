@@ -31,13 +31,18 @@
 #include <boost/optional.hpp>
 #include <opengl/OpenGL1.h>
 
-#include "maths/UnitVector3D.h"
+#include "maths/PointOnSphere.h"
 #include "maths/Vector3D.h"
 
 #include "GLIntersectPrimitives.h"
 #include "GLMatrix.h"
 #include "GLViewport.h"
 
+
+namespace GPlatesGui
+{
+	class MapProjection;
+}
 
 namespace GPlatesOpenGL
 {
@@ -186,45 +191,54 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Projects a window coordinate onto the unit sphere in world space using the specified
-		 * view and projection transforms and the specified viewport.
+		 * Projects a window coordinate onto the globe (unit sphere), or map plane (z=0) if @a map_projection
+		 * specified, using the specified view and projection transforms and the specified viewport.
 		 *
-		 * The returned vector is the intersection of the window coordinate (screen pixel)
-		 * projected onto the unit sphere.
+		 * The returned position is the intersection of the window coordinate screen pixel
+		 * (projected from the view into world space) and the globe (unit sphere) or map plane (z=0).
 		 *
-		 * Returns false if misses the globe (or if unable to invert view-projection transform).
+		 * Returns false if misses the globe or map (or if unable to invert view-projection transform).
+		 * When @a map_projection is specified the intersection must not just be with the map plane (z=0)
+		 * but also that part of the map plane corresponding to the Earth (otherwise false is returned).
 		 *
-		 * The screen pixel ray is intersected with the unit sphere (centered on global origin).
-		 * The first intersection with sphere is the returned position on sphere.
+		 * When intersecting the globe (when @a map_projection is not specified) the first intersection
+		 * with the globe (unit sphere) is returned.
 		 */
-		boost::optional<GPlatesMaths::UnitVector3D>
-		project_window_coords_onto_unit_sphere(
+		boost::optional<GPlatesMaths::PointOnSphere>
+		project_window_coords_onto_globe(
 				const double &window_x,
-				const double &window_y) const;
+				const double &window_y,
+				boost::optional<const GPlatesGui::MapProjection &> map_projection = boost::none) const;
 
 
 		/**
-		 * Returns an estimate of the minimum and maximum sizes of one viewport pixel,
-		 * at the specified position on the unit sphere.
+		 * Returns an estimate of the minimum and maximum sizes of one viewport pixel at the specified
+		 * position on the globe (unit sphere) in units of radians (arc distance on unit sphere).
 		 *
 		 * Currently this is done by sampling 8 screen points in a circle (of radius one pixel) around the window
-		 * coordinate (that @a position_on_sphere projects onto) and projecting them onto the unit sphere.
-		 * Then minimum and maximum distances of these unit-sphere samples to @a position_on_sphere are returned.
+		 * coordinate (that @a position_on_globe projects onto). If @a map_projection is specified then these 8 screen rays
+		 * are intersected with the map (part of map plane, z=0, associated with the Earth; the map projection) and
+		 * inverse transformed (using map projection) onto the globe. If @a map_projection is *not* specified then
+		 * these 8 screen rays are directly intersected with the globe (unit sphere).
 		 *
-		 * Since these sampled points are projected onto the visible front side of the unit sphere, it is
-		 * assumed that @a position_on_sphere is also on the visible front side of the unit sphere.
+		 * Then minimum and maximum distances, on the unit sphere, of these globe samples to @a position_on_globe are returned.
+		 *
+		 * When intersecting the globe (when @a map_projection is not specified) then these sampled points are
+		 * projected onto the visible front side of the globe, and it is assumed that @a position_on_globe is
+		 * also on the visible front side of the globe.
 		 *
 		 * Returned results are in the range (0, Pi] where Pi is the distance between North and South poles.
 		 *
-		 * Returns none if none of the offset pixels intersect the unit sphere.
+		 * Returns none if none of the offset pixels intersect the globe/map.
 		 */
 		boost::optional< std::pair<double/*min*/, double/*max*/> >
-		get_min_max_pixel_size_on_unit_sphere(
-				const GPlatesMaths::UnitVector3D &position_on_sphere) const;
+		get_min_max_pixel_size_on_globe(
+				const GPlatesMaths::PointOnSphere &position_on_globe,
+				boost::optional<const GPlatesGui::MapProjection &> map_projection = boost::none) const;
 
 
 		/**
-		 * Returns an estimate of the minimum and maximum sizes of viewport pixels projected onto the unit sphere.
+		 * Returns an estimate of the minimum and maximum sizes of viewport pixels projected onto the globe (unit sphere).
 		 *
 		 * This assumes the globe is a sphere of radius one centred at the origin in world space.
 		 *
@@ -236,35 +250,12 @@ namespace GPlatesOpenGL
 		 *
 		 * Returned result is in the range (0, Pi] where Pi is the distance between north and
 		 * south poles on the unit sphere.
+		 *
+		 * TODO: Remove this once we test each raster/filled-polygon tile separately rather than determining
+		 *       one LOD level for the entire raster/filled-polygon (now that have variable LOD due to view tilt).
 		 */
 		std::pair<double/*min*/, double/*max*/>
-		get_min_max_pixel_size_on_unit_sphere() const;
-
-
-		/**
-		 * Returns the minimum value of @a get_min_max_pixel_size_on_unit_sphere.
-		 *
-		 * See @a get_min_max_pixel_size_on_unit_sphere for more details.
-		 */
-		inline
-		double
-		get_min_pixel_size_on_unit_sphere() const
-		{
-			return get_min_max_pixel_size_on_unit_sphere().first/*min*/;
-		}
-
-
-		/**
-		 * Returns the maximum value of @a get_min_max_pixel_size_on_unit_sphere.
-		 *
-		 * See @a get_min_max_pixel_size_on_unit_sphere for more details.
-		 */
-		inline
-		double
-		get_max_pixel_size_on_unit_sphere() const
-		{
-			return get_min_max_pixel_size_on_unit_sphere().second/*max*/;
-		}
+		get_min_max_pixel_size_on_globe() const;
 
 	private:
 		GLViewport d_viewport;
@@ -276,6 +267,16 @@ namespace GPlatesOpenGL
 		mutable boost::optional<GLMatrix> d_inverse_view_transform;
 		mutable boost::optional<GLMatrix> d_inverse_projection_transform;
 		mutable boost::optional<GLMatrix> d_inverse_view_projection_transform;
+
+
+		boost::optional<GPlatesMaths::PointOnSphere>
+		project_ray_onto_globe(
+				const GLIntersect::Ray &ray) const;
+
+		boost::optional<GPlatesMaths::PointOnSphere>
+		project_ray_onto_map(
+				const GLIntersect::Ray &ray,
+				const GPlatesGui::MapProjection &map_projection) const;
 	};
 }
 

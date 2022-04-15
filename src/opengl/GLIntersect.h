@@ -56,6 +56,9 @@ namespace GPlatesOpenGL
 		/**
 		 * Intersects a ray with a sphere and returns the closest distance along ray from
 		 * the ray's origin to the sphere's surface or false it doesn't intersect.
+		 *
+		 * If ray origin is *outside* the sphere (and intersects sphere) then first intersection along ray is returned.
+		 * If ray origin is *inside* the sphere then it must intersect sphere (and there's only one intersection).
 		 */
 		boost::optional<GPlatesMaths::real_t>
 		intersect_ray_sphere(

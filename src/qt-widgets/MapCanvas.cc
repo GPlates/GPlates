@@ -365,65 +365,68 @@ double
 GPlatesQtWidgets::MapCanvas::current_proximity_inclusion_threshold(
 		const GPlatesMaths::PointOnSphere &click_point) const
 {
-	// See the corresponding GlobeCanvas::current_proximity_inclusion_threshold function for a 
-	// justification, and explanation of calculation, of the proximity inclusion threshold. 
+	// Say we pick an epsilon radius of 3 pixels around the click position.
+	// The larger this radius, the more relaxed the proximity inclusion threshold.
 	//
-	// On the map, the calculation is slightly different to that on the globe. 
+	// FIXME:  Do we want this constant to instead be a variable set by a per-user preference,
+	// to enable users to specify their own epsilon radius?  (For example, users with shaky
+	// hands or very high-resolution displays might prefer a larger epsilon radius.)
 	//
-	// The ClickGeometry code, which will use the output of this function, requires a 
-	// "dot-product-related closeness inclusion threshold".
-	// 
-	// To evaluate this on the map:
-	// 1. Convert the click-point to llp, and to point-on-sphere.
-	// 2. Move 3 screen pixels towards the centre of the canvas. 
-	// 3. Convert this location to llp and point-on-sphere.
-	// 4. Calculate the cosine of the angle between the 2 point-on-spheres.
-
 	// Note: We're specifying device *independent* pixels here.
 	//       On high-DPI displays there are more device pixels in the same physical area on screen but we're
 	//       more interested in physical area (which is better represented by device *independent* pixels).
 	const double device_independent_pixel_inclusion_threshold = 3.0;
+	// Limit the maximum angular distance on unit sphere. When the map view is tilted the click point
+	// can intersect it at an acute angle such that one viewport pixel can cover a large area on the map.
+	// Additionally the map projection itself (eg, Rectangular, Mollweide, etc) can further stretch the
+	// viewport pixel (already projected onto map plane z=0) when it's inverse transformed back onto the globe.
+	const double max_distance_inclusion_threshold = GPlatesMaths::convert_deg_to_rad(5.0);
 
-	const QPointF temp_mouse_map_position = calculate_position_on_map(
-			d_mouse_screen_position + QPointF(device_independent_pixel_inclusion_threshold, 0));
-
-	const qreal map_proximity_distance = QLineF(d_mouse_map_position, temp_mouse_map_position).length();
-
-	double angle = atan2(d_mouse_map_position.y(), d_mouse_map_position.x());
-	double x_proximity = map_proximity_distance * cos(angle);
-	double y_proximity = map_proximity_distance * sin(angle);
-
-	QPointF threshold_point;
-	if (d_mouse_map_position.x() > 0)
+	// The map view can be tilted such that the click point can intersect the map plane (z=0) at varying angles.
+	// This means one viewport pixel can cover varying areas on the map plane (z=0).
+	// Additionally the map projection itself (eg, Rectangular, Mollweide, etc) can further stretch or compress
+	// the viewport pixel (already projected onto map plane z=0) when it's inverse transformed back onto the globe.
+	//
+	// As such, a small mouse-pointer displacement on-screen can result in significantly different mouse-pointer
+	// displacements on the surface of the globe depending on the location of the click point.
+	//
+	// To take this into account we use the current view and projection transforms (and viewport) to project one
+	// screen pixel area onto the map plane (z=0) and then inverse transform from the map plane onto the globe
+	// (using the map projection, eg, Rectangular, Mollweide, etc).
+	// This finds the maximum deviation of this area projected onto the globe (in terms of angular distance on the globe).
+	//
+	// Calculate the maximum distance on the unit-sphere subtended by one viewport pixel projected onto it.
+	GPlatesOpenGL::GLViewProjection gl_view_projection(
+			// Note: We don't multiply dimensions by device-pixel-ratio since we want our max pixel size to be
+			// in device *independent* coordinates. This way if a user has a high DPI display (like Apple Retina)
+			// the higher pixel resolution does not force them to have more accurate mouse clicks...
+			GPlatesOpenGL::GLViewport(0, 0, width(), height()),
+			d_view_projection.get_view_transform(),
+			// Also note that this projection transform is 'orthographic' or 'perspective', and hence is
+			// only affected by viewport *aspect ratio*, so it is independent of whether we're using
+			// device pixels or device *independent* pixels...
+			d_view_projection.get_projection_transform());
+	boost::optional< std::pair<double/*min*/, double/*max*/> > min_max_device_independent_pixel_size =
+			gl_view_projection.get_min_max_pixel_size_on_globe(click_point, map().projection());
+	// If unable to determine maximum pixel size then just return the maximum allowed proximity threshold.
+	if (!min_max_device_independent_pixel_size)
 	{
-		threshold_point.setX(d_mouse_map_position.x() - x_proximity);
+		return std::cos(max_distance_inclusion_threshold);  // Proximity threshold is expected to be a cosine.
 	}
-	else
-	{	
-		threshold_point.setX(d_mouse_map_position.x() + x_proximity);
-	}
-	if (d_mouse_map_position.y() > 0)
+
+	// Multiply the inclusive distance on unit-sphere (associated with one viewport pixel) by the
+	// number of inclusive viewport pixels.
+	double distance_inclusion_threshold = device_independent_pixel_inclusion_threshold *
+			min_max_device_independent_pixel_size->second/*max*/;
+
+	// Clamp to range to the maximum distance inclusion threshold (if necessary).
+	if (distance_inclusion_threshold > max_distance_inclusion_threshold)
 	{
-		threshold_point.setY(d_mouse_map_position.y() - y_proximity);
-	}
-	else
-	{	
-		threshold_point.setY(d_mouse_map_position.y() + y_proximity);
+		distance_inclusion_threshold = max_distance_inclusion_threshold;
 	}
 
-	boost::optional<GPlatesMaths::LatLonPoint> llp =  map().projection().inverse_transform(threshold_point);
-	if (!llp)
-	{
-		return 0.;
-	}
-	
-	GPlatesMaths::PointOnSphere proximity_pos = GPlatesMaths::make_point_on_sphere(llp.get());
-
-	double proximity_inclusion_threshold = GPlatesMaths::dot(
-			click_point.position_vector(),
-			proximity_pos.position_vector()).dval();
-
-	return proximity_inclusion_threshold;
+	// Proximity threshold is expected to be a cosine.
+	return std::cos(distance_inclusion_threshold);
 }
 
 

@@ -426,7 +426,7 @@ GPlatesQtWidgets::GlobeCanvas::current_proximity_inclusion_threshold(
 			// device pixels or device *independent* pixels...
 			d_view_projection.get_projection_transform());
 	boost::optional< std::pair<double/*min*/, double/*max*/> > min_max_device_independent_pixel_size =
-			gl_view_projection.get_min_max_pixel_size_on_unit_sphere(click_point.position_vector());
+			gl_view_projection.get_min_max_pixel_size_on_globe(click_point);
 	// If unable to determine maximum pixel size then just return the maximum allowed proximity threshold.
 	if (!min_max_device_independent_pixel_size)
 	{

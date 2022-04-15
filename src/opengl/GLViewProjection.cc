@@ -27,6 +27,7 @@
 
 #include <cmath>
 #include <boost/optional.hpp>
+#include <QPointF>
 
 #include "GLViewProjection.h"
 
@@ -34,6 +35,8 @@
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
+
+#include "gui/MapProjection.h"
 
 #include "maths/MathsUtils.h"
 #include "maths/Vector3D.h"
@@ -275,10 +278,11 @@ GPlatesOpenGL::GLViewProjection::project_window_coords_into_ray(
 }
 
 
-boost::optional<GPlatesMaths::UnitVector3D>
-GPlatesOpenGL::GLViewProjection::project_window_coords_onto_unit_sphere(
+boost::optional<GPlatesMaths::PointOnSphere>
+GPlatesOpenGL::GLViewProjection::project_window_coords_onto_globe(
 		const double &window_x,
-		const double &window_y) const
+		const double &window_y,
+		boost::optional<const GPlatesGui::MapProjection &> map_projection) const
 {
 	boost::optional<GLIntersect::Ray> ray = project_window_coords_into_ray(window_x, window_y);
 	if (!ray)
@@ -286,12 +290,26 @@ GPlatesOpenGL::GLViewProjection::project_window_coords_onto_unit_sphere(
 		return boost::none;
 	}
 
+	if (map_projection)
+	{
+		return project_ray_onto_map(ray.get(), map_projection.get());
+	}
+	else
+	{
+		return project_ray_onto_globe(ray.get());
+	}
+}
+
+
+boost::optional<GPlatesMaths::PointOnSphere>
+GPlatesOpenGL::GLViewProjection::project_ray_onto_globe(
+		const GLIntersect::Ray &ray) const
+{
 	// Create a unit sphere in world space representing the globe.
 	const GLIntersect::Sphere sphere(GPlatesMaths::Vector3D(0,0,0), 1);
 
 	// Intersect the ray with the globe.
-	const boost::optional<GPlatesMaths::real_t> ray_distance =
-			intersect_ray_sphere(ray.get(), sphere);
+	const boost::optional<GPlatesMaths::real_t> ray_distance = intersect_ray_sphere(ray, sphere);
 
 	// Did the ray intersect the globe ?
 	if (!ray_distance)
@@ -303,25 +321,96 @@ GPlatesOpenGL::GLViewProjection::project_window_coords_onto_unit_sphere(
 	// Due to numerical precision the ray may be slightly off the sphere so we'll
 	// normalise it (otherwise can provide out-of-range for 'acos' later on).
 	// Also note the normalisation shouldn't fail since ray-globe intersection cannot be at the origin.
-	return ray->get_point_on_ray(ray_distance.get()).get_normalisation();
+	return GPlatesMaths::PointOnSphere(ray.get_point_on_ray(ray_distance.get()).get_normalisation());
+}
+
+
+boost::optional<GPlatesMaths::PointOnSphere>
+GPlatesOpenGL::GLViewProjection::project_ray_onto_map(
+		const GLIntersect::Ray &ray,
+		const GPlatesGui::MapProjection &map_projection) const
+{
+	// Create a plane representing the map plane (z=0).
+	//
+	// For the z=0 plane (passing through origin) this is:
+	//
+	//   a*x + b*y + c*z + d = 0
+	//   z = 0
+	//
+	// ...which is...
+	//
+	//   a = b = d = 0.0
+	//   c = 1.0
+	//
+	const GPlatesOpenGL::GLIntersect::Plane map_plane(0, 0, 1, 0);
+
+	// Intersect the ray with the map plane.
+	const boost::optional<GPlatesMaths::real_t> ray_distance_to_map_plane = intersect_ray_plane(ray, map_plane);
+
+	// Did the ray intersect the map plane ?
+	if (!ray_distance_to_map_plane)
+	{
+		return boost::none;
+	}
+
+	// Point on the map plane where the ray intersects.
+	const GPlatesMaths::Vector3D ray_intersection_on_map_plane =
+			ray.get_point_on_ray(ray_distance_to_map_plane.get());
+
+	// We know that the intersection point must have z=0 so we can just return its x and y.
+	const QPointF ray_intersection_map_point(
+			ray_intersection_on_map_plane.x().dval(),
+			ray_intersection_on_map_plane.y().dval());
+
+	// Inverse transform point on map plane onto the globe/map.
+	boost::optional<GPlatesMaths::LatLonPoint> ray_intersection_on_map =
+			map_projection.inverse_transform(ray_intersection_map_point);
+	if (!ray_intersection_on_map)
+	{
+		return boost::none;
+	}
+
+	return make_point_on_sphere(ray_intersection_on_map.get());
 }
 
 
 boost::optional< std::pair<double/*min*/, double/*max*/> >
-GPlatesOpenGL::GLViewProjection::get_min_max_pixel_size_on_unit_sphere(
-		const GPlatesMaths::UnitVector3D &projected_pixel) const
+GPlatesOpenGL::GLViewProjection::get_min_max_pixel_size_on_globe(
+		const GPlatesMaths::PointOnSphere &position_on_globe,
+		boost::optional<const GPlatesGui::MapProjection &> map_projection) const
 {
-	// Find the window coordinates of the position on the unit sphere.
 	GLdouble window_x, window_y, window_z;
-	if (!glu_project(
-			projected_pixel.x().dval(),
-			projected_pixel.y().dval(),
-			projected_pixel.z().dval(),
-			&window_x,
-			&window_y,
-			&window_z))
+	if (map_projection)
 	{
-		return boost::none;
+		// Project the position on globe onto the map plane (z=0).
+		const GPlatesMaths::LatLonPoint lat_lon_position_on_globe = make_lat_lon_point(position_on_globe);
+		const QPointF position_on_map = map_projection->forward_transform(lat_lon_position_on_globe);
+
+		// Find the window coordinates of the position on the map plane (z=0).
+		if (!glu_project(
+				position_on_map.x(),
+				position_on_map.y(),
+				0.0/*z*/,
+				&window_x,
+				&window_y,
+				&window_z))
+		{
+			return boost::none;
+		}
+	}
+	else
+	{
+		// Find the window coordinates of the position on the unit sphere.
+		if (!glu_project(
+				position_on_globe.position_vector().x().dval(),
+				position_on_globe.position_vector().y().dval(),
+				position_on_globe.position_vector().z().dval(),
+				&window_x,
+				&window_y,
+				&window_z))
+		{
+			return boost::none;
+		}
 	}
 
 	// Calculate 8 sample points in a circle (of radius one pixel) around the window coordinate.
@@ -350,19 +439,21 @@ GPlatesOpenGL::GLViewProjection::get_min_max_pixel_size_on_unit_sphere(
 	for (int n = 0; n < 8; ++n)
 	{
 		// Project the offset pixel onto the unit sphere.
-		const boost::optional<GPlatesMaths::UnitVector3D> projected_offset_pixel =
-				project_window_coords_onto_unit_sphere(
+		const boost::optional<GPlatesMaths::PointOnSphere> offset_position_on_globe =
+				project_window_coords_onto_globe(
 						window_xy_offset_coords[n][0],
-						window_xy_offset_coords[n][1]);
-		if (!projected_offset_pixel)
+						window_xy_offset_coords[n][1],
+						map_projection);
+		if (!offset_position_on_globe)
 		{
 			continue;
 		}
 
 		// The dot product can be converted to arc distance but we can delay that
 		// expensive operation until we've compared all samples.
-		const GPlatesMaths::real_t dot_product =
-				dot(projected_offset_pixel.get(), projected_pixel);
+		const GPlatesMaths::real_t dot_product = dot(
+				offset_position_on_globe->position_vector(),
+				position_on_globe.position_vector());
 		// Here we want the maximum projected pixel size which means minimum dot product.
 		if (dot_product < min_dot_product)
 		{
@@ -392,7 +483,7 @@ GPlatesOpenGL::GLViewProjection::get_min_max_pixel_size_on_unit_sphere(
 
 
 std::pair<double/*min*/, double/*max*/>
-GPlatesOpenGL::GLViewProjection::get_min_max_pixel_size_on_unit_sphere() const
+GPlatesOpenGL::GLViewProjection::get_min_max_pixel_size_on_globe() const
 {
 	//
 	// Divide the near face of the normalised device coordinates (NDC) box into 9 points and
@@ -434,8 +525,8 @@ GPlatesOpenGL::GLViewProjection::get_min_max_pixel_size_on_unit_sphere() const
 	for (int n = 0; n < 9; ++n)
 	{
 		// Project the same point on the unit sphere.
-		const boost::optional<GPlatesMaths::UnitVector3D> projected_pixel =
-				project_window_coords_onto_unit_sphere(
+		const boost::optional<GPlatesMaths::PointOnSphere> projected_pixel =
+				project_window_coords_onto_globe(
 						window_xy_coords[n][0],
 						window_xy_coords[n][1]);
 		if (!projected_pixel)
@@ -446,8 +537,8 @@ GPlatesOpenGL::GLViewProjection::get_min_max_pixel_size_on_unit_sphere() const
 		// Project the sample point plus one pixel (in the x direction) onto the unit sphere.
 		// It doesn't matter that the window coordinate might go outside the viewport
 		// because there's no clipping happening here.
-		const boost::optional<GPlatesMaths::UnitVector3D> projected_pixel_plus_one_x =
-				project_window_coords_onto_unit_sphere(
+		const boost::optional<GPlatesMaths::PointOnSphere> projected_pixel_plus_one_x =
+				project_window_coords_onto_globe(
 						window_xy_coords[n][0] + 1,
 						window_xy_coords[n][1]);
 		if (!projected_pixel_plus_one_x)
@@ -457,8 +548,9 @@ GPlatesOpenGL::GLViewProjection::get_min_max_pixel_size_on_unit_sphere() const
 
 		// The dot product can be converted to arc distance but we can delay that
 		// expensive operation until we've compared all samples.
-		const GPlatesMaths::real_t dot_product_pixel_size_x =
-				dot(projected_pixel_plus_one_x.get(), projected_pixel.get());
+		const GPlatesMaths::real_t dot_product_pixel_size_x = dot(
+				projected_pixel_plus_one_x->position_vector(),
+				projected_pixel->position_vector());
 		// Here we want the maximum projected pixel size which means minimum dot product.
 		if (dot_product_pixel_size_x < min_dot_product_pixel_size)
 		{
@@ -473,8 +565,8 @@ GPlatesOpenGL::GLViewProjection::get_min_max_pixel_size_on_unit_sphere() const
 		// Project the sample point plus one pixel (in the y direction) onto the unit sphere.
 		// It doesn't matter that the window coordinate might go outside the viewport
 		// because there's no clipping happening here.
-		const boost::optional<GPlatesMaths::UnitVector3D> projected_pixel_plus_one_y =
-				project_window_coords_onto_unit_sphere(
+		const boost::optional<GPlatesMaths::PointOnSphere> projected_pixel_plus_one_y =
+				project_window_coords_onto_globe(
 						window_xy_coords[n][0],
 						window_xy_coords[n][1] + 1);
 		if (!projected_pixel_plus_one_y)
@@ -484,8 +576,9 @@ GPlatesOpenGL::GLViewProjection::get_min_max_pixel_size_on_unit_sphere() const
 
 		// The dot product can be converted to arc distance but we can delay that
 		// expensive operation until we've compared all samples.
-		const GPlatesMaths::real_t dot_product_pixel_size_y =
-				dot(projected_pixel_plus_one_y.get(), projected_pixel.get());
+		const GPlatesMaths::real_t dot_product_pixel_size_y = dot(
+				projected_pixel_plus_one_y->position_vector(),
+				projected_pixel->position_vector());
 		// Here we want the maximum projected pixel size which means minimum dot product.
 		if (dot_product_pixel_size_y < min_dot_product_pixel_size)
 		{
