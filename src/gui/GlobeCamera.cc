@@ -168,7 +168,7 @@ GPlatesGui::GlobeCamera::calc_distance_eye_to_look_at_for_perspective_viewing_at
 GPlatesGui::GlobeCamera::GlobeCamera(
 	ViewportZoom &viewport_zoom) :
 	d_viewport_zoom(viewport_zoom),
-	d_projection_type(GlobeProjection::ORTHOGRAPHIC),
+	d_view_projection_type(GlobeProjection::ORTHOGRAPHIC),
 	d_view_orientation(GPlatesMaths::Rotation::create_identity_rotation()),
 	d_tilt_angle(0)
 {
@@ -180,15 +180,15 @@ GPlatesGui::GlobeCamera::GlobeCamera(
 
 
 void
-GPlatesGui::GlobeCamera::set_projection_type(
-		GlobeProjection::Type projection_type)
+GPlatesGui::GlobeCamera::set_view_projection_type(
+		GlobeProjection::Type view_projection_type)
 {
-	if (d_projection_type == projection_type)
+	if (d_view_projection_type == view_projection_type)
 	{
 		return;
 	}
 
-	d_projection_type = projection_type;
+	d_view_projection_type = view_projection_type;
 
 	Q_EMIT camera_changed();
 }
@@ -472,7 +472,7 @@ GPlatesGui::GlobeCamera::get_camera_ray_at_window_coord(
 	const GPlatesMaths::Vector3D view_y_axis(get_up_direction());
 	const GPlatesMaths::Vector3D view_x_axis = cross(view_z_axis, view_y_axis);
 
-	if (get_projection_type() == GlobeProjection::ORTHOGRAPHIC)
+	if (get_view_projection_type() == GlobeProjection::ORTHOGRAPHIC)
 	{
 		double ortho_left;
 		double ortho_right;
@@ -509,7 +509,7 @@ GPlatesGui::GlobeCamera::get_camera_ray_at_window_coord(
 	else  // perspective...
 	{
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				get_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
+				get_view_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
 				GPLATES_ASSERTION_SOURCE);
 
 		double tan_fovx;
@@ -549,7 +549,7 @@ GPlatesOpenGL::GLIntersect::Ray
 GPlatesGui::GlobeCamera::get_camera_ray_at_position(
 		const GPlatesMaths::Vector3D &position) const
 {
-	if (get_projection_type() == GlobeProjection::ORTHOGRAPHIC)
+	if (get_view_projection_type() == GlobeProjection::ORTHOGRAPHIC)
 	{
 		// In orthographic projection all view rays are parallel and so there's no real eye position.
 		// Instead place the ray origin an arbitrary distance (currently 1.0) back along the view direction.
@@ -563,7 +563,7 @@ GPlatesGui::GlobeCamera::get_camera_ray_at_position(
 	else  // perspective...
 	{
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				get_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
+				get_view_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
 				GPLATES_ASSERTION_SOURCE);
 
 		const GPlatesMaths::Vector3D camera_eye = get_perspective_eye_position();
@@ -596,7 +596,7 @@ GPlatesGui::GlobeCamera::get_window_coord_at_position(
 	const GPlatesMaths::Vector3D view_y_axis(get_up_direction());
 	const GPlatesMaths::Vector3D view_x_axis = cross(view_z_axis, view_y_axis);
 
-	if (get_projection_type() == GlobeProjection::ORTHOGRAPHIC)
+	if (get_view_projection_type() == GlobeProjection::ORTHOGRAPHIC)
 	{
 		double ortho_left;
 		double ortho_right;
@@ -627,7 +627,7 @@ GPlatesGui::GlobeCamera::get_window_coord_at_position(
 	else  // perspective...
 	{
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				get_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
+				get_view_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
 				GPLATES_ASSERTION_SOURCE);
 
 		// Get the projection field-of-view tans.
@@ -735,7 +735,7 @@ GPlatesGui::GlobeCamera::get_nearest_sphere_horizon_position_at_camera_ray(
 			ray_origin_to_sphere_centre.magnitude() > sphere.get_radius(),
 			GPLATES_ASSERTION_SOURCE);
 
-	if (get_projection_type() == GPlatesGui::GlobeProjection::ORTHOGRAPHIC)
+	if (get_view_projection_type() == GPlatesGui::GlobeProjection::ORTHOGRAPHIC)
 	{
 		// Find the position, along camera ray, closest to the sphere.
 		// We'll project this towards the origin onto the sphere, and consider that the horizon of the sphere.
@@ -767,7 +767,7 @@ GPlatesGui::GlobeCamera::get_nearest_sphere_horizon_position_at_camera_ray(
 	else // perspective...
 	{
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				get_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
+				get_view_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
 				GPLATES_ASSERTION_SOURCE);
 
 		// For perspective viewing we want the equivalent of a ray, emanating from the eye location,
@@ -817,7 +817,7 @@ GPlatesGui::GlobeCamera::get_nearest_sphere_horizon_position_at_camera_ray(
 GPlatesOpenGL::GLIntersect::Plane
 GPlatesGui::GlobeCamera::get_front_globe_horizon_plane() const
 {
-	if (get_projection_type() == GPlatesGui::GlobeProjection::ORTHOGRAPHIC)
+	if (get_view_projection_type() == GPlatesGui::GlobeProjection::ORTHOGRAPHIC)
 	{
 		// For orthographic viewing all camera rays are parallel and hence all are perpendicular
 		// to the horizon (visible circumference around sphere). This means the visible circumference
@@ -831,7 +831,7 @@ GPlatesGui::GlobeCamera::get_front_globe_horizon_plane() const
 	else // perspective...
 	{
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				get_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
+				get_view_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
 				GPLATES_ASSERTION_SOURCE);
 
 		const GPlatesMaths::Vector3D camera_eye = get_perspective_eye_position();

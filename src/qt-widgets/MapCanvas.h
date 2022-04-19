@@ -496,6 +496,10 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * How far to nudge or rotate the camera when incrementally moving the camera, in degrees.
+		 *
+		 * Note: This is in the map projection space (ie, after map projection). We still use degrees
+		 *       though, so you can think of the map extents (that bound the map projection) as being
+		 *       a rectangle of roughly 360 degrees horizontally and 180 degrees vertically.
 		 */
 		static const double NUDGE_CAMERA_DEGREES;
 

@@ -177,6 +177,8 @@ set(srcs
     Map.h
     MapBackground.cc
     MapBackground.h
+    MapCamera.cc
+    MapCamera.h
     MapCanvasTool.cc
     MapCanvasTool.h
     MapCanvasToolAdapter.cc
@@ -189,8 +191,6 @@ set(srcs
     MapRenderedGeometryCollectionPainter.h
     MapRenderedGeometryLayerPainter.cc
     MapRenderedGeometryLayerPainter.h
-    MapTransform.cc
-    MapTransform.h
     Mipmapper.cc
     Mipmapper.h
     Palette.cc

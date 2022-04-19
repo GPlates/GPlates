@@ -103,7 +103,7 @@ namespace
 		GPlatesOpenGL::GLMatrix view_transform;
 		GPlatesOpenGL::GLMatrix projection_transform;
 
-		if (camera.get_projection_type() == GPlatesGui::GlobeProjection::ORTHOGRAPHIC)
+		if (camera.get_view_projection_type() == GPlatesGui::GlobeProjection::ORTHOGRAPHIC)
 		{
 			//
 			// View transform.
@@ -161,7 +161,7 @@ namespace
 		else // perspective...
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					camera.get_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
+					camera.get_view_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
 					GPLATES_ASSERTION_SOURCE);
 
 			//
@@ -940,7 +940,7 @@ GPlatesQtWidgets::MapCanvas::move_camera_up()
 	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
 			d_view_state.get_viewport_zoom().zoom_factor();
 
-	d_map_camera.rotate_up(nudge_angle);
+	d_map_camera.pan_up(nudge_angle);
 }
 
 void
@@ -949,7 +949,7 @@ GPlatesQtWidgets::MapCanvas::move_camera_down()
 	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
 			d_view_state.get_viewport_zoom().zoom_factor();
 
-	d_map_camera.rotate_down(nudge_angle);
+	d_map_camera.pan_down(nudge_angle);
 }
 
 void
@@ -958,7 +958,7 @@ GPlatesQtWidgets::MapCanvas::move_camera_left()
 	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
 			d_view_state.get_viewport_zoom().zoom_factor();
 
-	d_map_camera.rotate_left(nudge_angle);
+	d_map_camera.pan_left(nudge_angle);
 }
 
 void
@@ -967,7 +967,7 @@ GPlatesQtWidgets::MapCanvas::move_camera_right()
 	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
 			d_view_state.get_viewport_zoom().zoom_factor();
 
-	d_map_camera.rotate_right(nudge_angle);
+	d_map_camera.pan_right(nudge_angle);
 }
 
 void

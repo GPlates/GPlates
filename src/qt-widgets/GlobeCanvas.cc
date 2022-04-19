@@ -116,7 +116,7 @@ namespace
 		GPlatesOpenGL::GLMatrix view_transform;
 		GPlatesOpenGL::GLMatrix projection_transform;
 
-		if (camera.get_projection_type() == GPlatesGui::GlobeProjection::ORTHOGRAPHIC)
+		if (camera.get_view_projection_type() == GPlatesGui::GlobeProjection::ORTHOGRAPHIC)
 		{
 			//
 			// View transform.
@@ -172,7 +172,7 @@ namespace
 		else // perspective...
 		{
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					camera.get_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
+					camera.get_view_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
 					GPLATES_ASSERTION_SOURCE);
 
 			//

@@ -54,9 +54,10 @@ namespace GPlatesGui
 
 	public:
 		/**
-		 * At the initial zoom, the smaller dimension of the viewport will be @a FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT
-		 * times the diameter of the globe (in the orthographic projection). This creates a little space between
-		 * the globe circumference and the viewport. When the viewport is resized, the globe will be scaled accordingly.
+		 * At the initial zoom, and untilted view, the smaller dimension of the viewport will be
+		 * @a FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT times the diameter of the globe
+		 * (in the orthographic projection). This creates a little space between the globe circumference
+		 * and the viewport. When the viewport is resized, the globe will be scaled accordingly.
 		 *
 		 * The value of this constant is purely cosmetic.
 		 */
@@ -68,16 +69,19 @@ namespace GPlatesGui
 				ViewportZoom &viewport_zoom);
 
 		/**
-		 * Switch between orthographic and perspective projections.
+		 * Switch between orthographic and perspective view projections.
 		 */
 		void
-		set_projection_type(
-				GlobeProjection::Type projection_type);
+		set_view_projection_type(
+				GlobeProjection::Type view_projection_type);
 
+		/**
+		 * Return the view projection (orthographic or perspective).
+		 */
 		GlobeProjection::Type
-		get_projection_type() const
+		get_view_projection_type() const
 		{
-			return d_projection_type;
+			return d_view_projection_type;
 		}
 
 		/**
@@ -512,7 +516,10 @@ namespace GPlatesGui
 
 		ViewportZoom &d_viewport_zoom;
 
-		GlobeProjection::Type d_projection_type;
+		/**
+		 * The view projection (orthographic or perspective).
+		 */
+		GlobeProjection::Type d_view_projection_type;
 
 		/**
 		 * The view-space orientation.

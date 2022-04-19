@@ -171,7 +171,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 		view_projection.get_globe_projection_type())
 	{
 		// Update the globe canvas's projection.
-		d_view_state.get_globe_camera().set_projection_type(globe_projection_type.get());
+		d_view_state.get_globe_camera().set_view_projection_type(globe_projection_type.get());
 
 		// Switch to globe.
 		d_active_view_ptr = d_globe_canvas_ptr.get();
