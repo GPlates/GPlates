@@ -56,16 +56,6 @@ namespace GPlatesGui
 
 	public:
 
-		/**
-		 * At the initial zoom, and untilted view, the smaller dimension of the viewport will be
-		 * @a FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT times the diameter of the circle that bounds the map.
-		 * This creates a little space between the map boundary and the viewport.
-		 * When the viewport is resized, the map will be scaled accordingly.
-		 *
-		 * The value of this constant is purely cosmetic.
-		 */
-		static const double FRAMING_RATIO_OF_MAP_IN_VIEWPORT;
-
 
 		explicit
 		MapCamera(
@@ -332,6 +322,26 @@ namespace GPlatesGui
 
 
 		/**
+		 * Ratio of the map extent in the longitude direction divided by the latitude direction.
+		 *
+		 * This varies depending on the map projection so we'll just use the Rectangular projection as a basis.
+		 */
+		static constexpr double MAP_LONGITUDE_TO_LATITUDE_EXTENT_RATIO_IN_MAP_SPACE = 2.0;
+		//! Extent of map projection in longitude direction (just using the Rectangular projection as a basis).
+		static constexpr double MAP_LONGITUDE_EXTENT_IN_MAP_SPACE = 360.0;
+		//! Extent of map projection in latitude direction (just using the Rectangular projection as a basis).
+		static constexpr double MAP_LATITUDE_EXTENT_IN_MAP_SPACE =
+				MAP_LONGITUDE_EXTENT_IN_MAP_SPACE / MAP_LONGITUDE_TO_LATITUDE_EXTENT_RATIO_IN_MAP_SPACE;
+
+		/**
+		 * At the initial zoom, and untilted view, this creates a little space between the map boundary and the viewport.
+		 *
+		 * When the viewport is resized, the map will be scaled accordingly.
+		 * The value of this constant is purely cosmetic.
+		 */
+		static const double FRAMING_RATIO_OF_MAP_IN_VIEWPORT;
+
+		/**
 		 * Angle of field-of-view for perspective projection.
 		 */
 		static const double PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
@@ -344,7 +354,7 @@ namespace GPlatesGui
 		 *
 		 * This is in map units (in the map plane).
 		 */
-		static const double NUDGE_CAMERA;
+		static const double NUDGE_CAMERA_IN_MAP_SPACE;
 
 		/**
 		 * The initial position on the map that the camera looks at.
@@ -378,6 +388,10 @@ namespace GPlatesGui
 		pan(
 				const QPointF &delta,
 				bool only_emit_if_changed);
+
+		double
+		get_perspective_tan_half_fovy(
+				const double &aspect_ratio) const;
 	};
 }
 

@@ -39,16 +39,18 @@
 #include "opengl/GLIntersect.h"
 
 
-const double GPlatesGui::MapCamera::FRAMING_RATIO_OF_MAP_IN_VIEWPORT = 1.07;
+constexpr double GPlatesGui::MapCamera::MAP_LONGITUDE_TO_LATITUDE_EXTENT_RATIO_IN_MAP_SPACE;
+constexpr double GPlatesGui::MapCamera::MAP_LONGITUDE_EXTENT_IN_MAP_SPACE;
+constexpr double GPlatesGui::MapCamera::MAP_LATITUDE_EXTENT_IN_MAP_SPACE;
 
+const double GPlatesGui::MapCamera::FRAMING_RATIO_OF_MAP_IN_VIEWPORT = 1.07;
 // Use a standard field-of-view of 90 degrees for the smaller viewport dimension.
 const double GPlatesGui::MapCamera::PERSPECTIVE_FIELD_OF_VIEW_DEGREES = 90.0;
 const double GPlatesGui::MapCamera::TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW =
 		std::tan(GPlatesMaths::convert_deg_to_rad(GPlatesGui::MapCamera::PERSPECTIVE_FIELD_OF_VIEW_DEGREES) / 2.0);
-
 // How far to nudge or pan the camera when incrementally moving the camera.
 // Note that the extent of our map is roughly 360 degrees in longitude direction, and that's in map (post-projection) units.
-const double GPlatesGui::MapCamera::NUDGE_CAMERA = 5.0;
+const double GPlatesGui::MapCamera::NUDGE_CAMERA_IN_MAP_SPACE = 5.0;
 
 // Our universe coordinate system is:
 //
@@ -87,10 +89,10 @@ GPlatesGui::MapCamera::calc_distance_eye_to_look_at_for_perspective_viewing_at_d
 	//       in both the orthographic and perspective view projections (because it is flat and perpendicular
 	//       to the view direction) *and* objects on the map will also appear the same size in both view projections.
 	//
-	// This means 'tan(FOV/2) = FRAMING_RATIO_OF_MAP_IN_VIEWPORT * 180 / distance', where 180 is approximately
-	// the vertical distance spanned by the map projection (at least in Rectangular projection), which means
-	// 'distance = FRAMING_RATIO_OF_MAP_IN_VIEWPORT * 180 / tan(FOV/2)'.
-	return FRAMING_RATIO_OF_MAP_IN_VIEWPORT * 180.0 / TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW;
+	// This means 'tan(FOVY/2) = FRAMING_RATIO_OF_MAP_IN_VIEWPORT * 90 / distance', where 90 is approximately
+	// half the latitude distance spanned by the map projection (at least in Rectangular projection), which means
+	// 'distance = FRAMING_RATIO_OF_MAP_IN_VIEWPORT * 90 / tan(FOVX/2)'.
+	return FRAMING_RATIO_OF_MAP_IN_VIEWPORT * (MAP_LATITUDE_EXTENT_IN_MAP_SPACE / 2.0) / TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW;
 }
 
 
@@ -172,7 +174,7 @@ GPlatesGui::MapCamera::pan_up(
 		const GPlatesMaths::real_t &angle,
 		bool only_emit_if_changed)
 {
-	const double nudge_y = NUDGE_CAMERA / d_viewport_zoom.zoom_factor();
+	const double nudge_y = NUDGE_CAMERA_IN_MAP_SPACE / d_viewport_zoom.zoom_factor();
 	pan(QPointF(0, nudge_y), only_emit_if_changed);
 }
 
@@ -182,7 +184,7 @@ GPlatesGui::MapCamera::pan_down(
 		const GPlatesMaths::real_t &angle,
 		bool only_emit_if_changed)
 {
-	const double nudge_y = -NUDGE_CAMERA / d_viewport_zoom.zoom_factor();
+	const double nudge_y = -NUDGE_CAMERA_IN_MAP_SPACE / d_viewport_zoom.zoom_factor();
 	pan(QPointF(0, nudge_y), only_emit_if_changed);
 }
 
@@ -192,7 +194,7 @@ GPlatesGui::MapCamera::pan_left(
 		const GPlatesMaths::real_t &angle,
 		bool only_emit_if_changed)
 {
-	const double nudge_x = -NUDGE_CAMERA / d_viewport_zoom.zoom_factor();
+	const double nudge_x = -NUDGE_CAMERA_IN_MAP_SPACE / d_viewport_zoom.zoom_factor();
 	pan(QPointF(nudge_x, 0), only_emit_if_changed);
 }
 
@@ -202,7 +204,7 @@ GPlatesGui::MapCamera::pan_right(
 		const GPlatesMaths::real_t &angle,
 		bool only_emit_if_changed)
 {
-	const double nudge_x = NUDGE_CAMERA / d_viewport_zoom.zoom_factor();
+	const double nudge_x = NUDGE_CAMERA_IN_MAP_SPACE / d_viewport_zoom.zoom_factor();
 	pan(QPointF(nudge_x, 0), only_emit_if_changed);
 }
 
@@ -231,24 +233,34 @@ GPlatesGui::MapCamera::get_orthographic_left_right_bottom_top(
 		double &ortho_bottom,
 		double &ortho_top) const
 {
-	// This is used for the coordinates of the symmetrical clipping planes which bound the smaller dimension.
-	const double smaller_dim_clipping = 180.0 * FRAMING_RATIO_OF_MAP_IN_VIEWPORT / d_viewport_zoom.zoom_factor();
-
-	if (aspect_ratio > 1.0)
+	// If the aspect ratio (viewport width/height) exceeds the ratio of the map rectangle aspect ratio then set the
+	// top/bottom frustum to bound the latitude extent, otherwise set left/right frustum to bound longitude extent.
+	//
+	// Note: This makes the map view look well contained in the viewport regardless of aspect ratio, but
+	//       only when it's not rotated. However that's the most common orientation in most cases.
+	if (aspect_ratio > MAP_LONGITUDE_TO_LATITUDE_EXTENT_RATIO_IN_MAP_SPACE)
 	{
+		// This is used for the coordinates of the symmetrical clipping planes which bound the latitude direction.
+		const double latitude_clipping = FRAMING_RATIO_OF_MAP_IN_VIEWPORT *
+				(MAP_LATITUDE_EXTENT_IN_MAP_SPACE / 2.0) / d_viewport_zoom.zoom_factor();
+
 		// right - left > top - bottom
-		ortho_left = -smaller_dim_clipping * aspect_ratio;
-		ortho_right = smaller_dim_clipping * aspect_ratio;
-		ortho_bottom = -smaller_dim_clipping;
-		ortho_top = smaller_dim_clipping;
+		ortho_left = -latitude_clipping * aspect_ratio;
+		ortho_right = latitude_clipping * aspect_ratio;
+		ortho_bottom = -latitude_clipping;
+		ortho_top = latitude_clipping;
 	}
 	else
 	{
+		// This is used for the coordinates of the symmetrical clipping planes which bound the longitude direction.
+		const double longitude_clipping = FRAMING_RATIO_OF_MAP_IN_VIEWPORT *
+				(MAP_LONGITUDE_EXTENT_IN_MAP_SPACE / 2.0) / d_viewport_zoom.zoom_factor();
+
 		// right - left <= top - bottom
-		ortho_left = -smaller_dim_clipping;
-		ortho_right = smaller_dim_clipping;
-		ortho_bottom = -smaller_dim_clipping / aspect_ratio;
-		ortho_top = smaller_dim_clipping / aspect_ratio;
+		ortho_left = -longitude_clipping;
+		ortho_right = longitude_clipping;
+		ortho_bottom = -longitude_clipping / aspect_ratio;
+		ortho_top = longitude_clipping / aspect_ratio;
 	}
 }
 
@@ -272,17 +284,36 @@ GPlatesGui::MapCamera::get_perspective_fovy(
 		const double &aspect_ratio,
 		double &fovy_degrees) const
 {
-	// Since 'glu_perspective()' accepts a 'y' field-of-view (along height dimension),
-	// if the height is the smaller dimension we don't need to do anything.
-	fovy_degrees = PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
+	const double tan_half_fovy = get_perspective_tan_half_fovy(aspect_ratio);
+	fovy_degrees = GPlatesMaths::convert_rad_to_deg(2.0 * std::atan(tan_half_fovy));
+}
 
-	// If the width is the smaller dimension then our field-of-view applies to the width,
-	// so we need to calculate the field-of-view that applies to the height.
-	if (aspect_ratio < 1.0)
+
+double
+GPlatesGui::MapCamera::get_perspective_tan_half_fovy(
+		const double &aspect_ratio) const
+{
+	// If the aspect ratio (viewport width/height) exceeds the ratio of the map rectangle aspect ratio then set the
+	// frustum to bound the latitude extent, otherwise set frustum to bound longitude extent.
+	//
+	// Note: This makes the map view look well contained in the viewport regardless of aspect ratio, but
+	//       only when it's not rotated. However that's the most common orientation in most cases.
+	if (aspect_ratio > MAP_LONGITUDE_TO_LATITUDE_EXTENT_RATIO_IN_MAP_SPACE)
 	{
-		// Convert field-of-view in x-axis to field-of-view in y-axis by adjusting for the aspect ratio.
-		fovy_degrees = GPlatesMaths::convert_rad_to_deg(
-				2.0 * std::atan(TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW / aspect_ratio));
+		// Set frustum to bound *latitude* extent...
+		//
+		//   tan(fovy/2) = TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW
+		//
+		return TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW;
+	}
+	else
+	{
+		// Set frustum to bound *longitude* extent.
+		//
+		// Easiest is to increase the fovy from what it is when 'aspect_ratio == MAP_LONGITUDE_TO_LATITUDE_EXTENT_RATIO_IN_MAP_SPACE'.
+		// Noting that this factor is 1.0 when 'aspect_ratio == MAP_LONGITUDE_TO_LATITUDE_EXTENT_RATIO_IN_MAP_SPACE'.
+		const double fovy_increase_factor = MAP_LONGITUDE_TO_LATITUDE_EXTENT_RATIO_IN_MAP_SPACE / aspect_ratio;
+		return TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW * fovy_increase_factor;
 	}
 }
 
@@ -343,24 +374,12 @@ GPlatesGui::MapCamera::get_camera_ray_at_window_coord(
 				get_view_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
 				GPLATES_ASSERTION_SOURCE);
 
-		double tan_fovx;
-		double tan_fovy;
-		// Field-of-view applies to smaller dimension.
-		if (aspect_ratio < 1.0)
-		{
-			// Width is smaller dimension.
-			tan_fovx = TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW;
-			tan_fovy = tan_fovx / aspect_ratio;
-		}
-		else
-		{
-			// Height is smaller dimension.
-			tan_fovy = TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW;
-			tan_fovx = tan_fovy * aspect_ratio;
-		}
+		// Get the field-of-view.
+		const double tan_half_fovy = get_perspective_tan_half_fovy(aspect_ratio);
+		const double tan_half_fovx = aspect_ratio * tan_half_fovy;
 
-		const GPlatesMaths::real_t view_x_component = (2 * (window_x / window_width) - 1) * tan_fovx;
-		const GPlatesMaths::real_t view_y_component = (2 * (window_y / window_height) - 1) * tan_fovy;
+		const GPlatesMaths::real_t view_x_component = (2 * (window_x / window_width) - 1) * tan_half_fovx;
+		const GPlatesMaths::real_t view_y_component = (2 * (window_y / window_height) - 1) * tan_half_fovy;
 
 		// Ray direction.
 		const GPlatesMaths::UnitVector3D ray_direction = (
