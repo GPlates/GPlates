@@ -2013,7 +2013,7 @@ export_resolved_topological_sub_segment()
 				"For example, if the child sub-segment was reversed in this sub-segment, and this sub-segment was reversed in the final "
 				"boundary, then the child sub-segment was not reversed in the final boundary.\n"
 				"\n"
-				"  .. versionadded:: 22\n")
+				"  .. versionadded:: 0.22\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
@@ -2410,7 +2410,7 @@ export_resolved_topological_shared_sub_segment()
 				"(of the child sub-segment and this shared sub-segment). For example, if the child sub-segment was reversed in this shared sub-segment, "
 				"and this shared sub-segment was reversed in a final boundary, then the child sub-segment was not reversed in that final boundary.\n"
 				"\n"
-				"  .. versionadded:: 22\n")
+				"  .. versionadded:: 0.22\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

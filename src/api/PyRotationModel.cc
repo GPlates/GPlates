@@ -560,11 +560,11 @@ export_rotation_model()
 			"    ...\n"
 			"    rotation_model = pygplates.RotationModel(['rotations.rot', rotation_adjustments])\n"
 			"\n"
-			"  .. versionchanged:: 25\n"
+			"  .. versionchanged:: 0.25\n"
 			"     Added *extend_total_reconstruction_poles_to_distant_past* argument and "
 			"removed *clone_rotation_features* argument.\n"
 			"\n"
-			"  .. versionchanged:: 26\n"
+			"  .. versionchanged:: 0.26\n"
 			"     Added *default_anchor_plate_id* argument.\n"
 			;
 
@@ -659,7 +659,7 @@ export_rotation_model()
 			"              rotation_model.get_rotation(100.0, 802, anchor_plate_id=1)\n"
 			"              rotation_model_anchor_1.get_rotation(100.0, 802)\n"
 			"\n"
-			"  .. versionadded:: 29\n")
+			"  .. versionadded:: 0.29\n")
 		// Define this '__init__' after the one just above since we want it to have a higher priority
 		// (later definitions get higher priority). This is because both this '__init__' and the one above both
 		// accept a single RotationModel argument (since all other parameters in the one above has default values)
@@ -783,10 +783,10 @@ export_rotation_model()
 				"at present day (relative to the anchor plate). However all present-day finite rotations should "
 				"ideally be zero (identity), so typically there should not be a difference.\n"
 				"\n"
-				"  .. versionchanged:: 26\n"
+				"  .. versionchanged:: 0.26\n"
 				"     *anchor_plate_id* no longer defaults to zero (see *default_anchor_plate_id*)\n"
 				"\n"
-				"  .. versionchanged:: 27\n"
+				"  .. versionchanged:: 0.27\n"
 				"     *from_time* no longer defaults to zero, and no longer assumes present day "
 				"rotations are identity (zero) rotations\n")
 		.def("get_reconstruction_tree",
@@ -813,7 +813,7 @@ export_rotation_model()
 				"tree is created and stored in the cache (after evicting the reconstruction tree associated "
 				"with the least recently requested reconstruction time and anchored plate id if necessary).\n"
 				"\n"
-				"  .. versionchanged:: 26\n"
+				"  .. versionchanged:: 0.26\n"
 				"     *anchor_plate_id* no longer defaults to zero (see *default_anchor_plate_id* "
 				"in :meth:`constructor<__init__>`).\n")
 		.def("get_default_anchor_plate_id",
@@ -823,7 +823,7 @@ export_rotation_model()
 				"\n"
 				"  :rtype: int\n"
 				"\n"
-				"  .. versionadded:: 29\n")
+				"  .. versionadded:: 0.29\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

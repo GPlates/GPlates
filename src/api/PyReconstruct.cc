@@ -1213,6 +1213,6 @@ export_reconstruct()
 			"\n"
             "    pygplates.reconstruct(feature, rotation_model, 10)\n"
 			"\n"
-			"  .. versionchanged:: 29\n"
+			"  .. versionchanged:: 0.29\n"
 			"     The :meth:`geometry import time<Feature.set_geometry_import_time>` is set to *reconstruction_time*.\n");
 }

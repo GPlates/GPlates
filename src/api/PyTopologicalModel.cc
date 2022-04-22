@@ -940,7 +940,7 @@ export_topological_model()
 					"TopologyPointLocation",
 					"Locates a point in a specific resolved topological boundary or network (deforming region or interior rigid block).\n"
 					"\n"
-					"  .. versionadded:: 29\n",
+					"  .. versionadded:: 0.29\n",
 					// Don't allow creation from python side...
 					bp::no_init)
 		.def("not_located_in_resolved_topology",
@@ -1005,7 +1005,7 @@ export_topological_model()
 						"ReconstructedGeometryTimeSpan",
 						"A history of geometries reconstructed using topologies over geological time.\n"
 						"\n"
-						"  .. versionadded:: 29\n",
+						"  .. versionadded:: 0.29\n",
 						// Don't allow creation from python side...
 						// (Also there is no publicly-accessible default constructor).
 						bp::no_init)
@@ -1117,7 +1117,7 @@ export_topological_model()
 						"in your derived class then Python will call the base class *__init__* (so you don't have to do anything). "
 						"However if you do define *__init__* in your derived class then it must explicitly call the base class *__init__*.\n"
 						"\n"
-						".. versionadded:: 31\n"
+						".. versionadded:: 0.31\n"
 						"\n"
 						"__init__()\n"
 						"  Default constructor - must be explicitly called by derived class.\n"
@@ -1193,7 +1193,7 @@ export_topological_model()
 		default_deactivate_points_class_docstring_stream <<
 				"The default algorithm for deactivating geometry points as they are reconstructed forward and/or backward in time.\n"
 				"\n"
-				".. versionadded:: 31\n"
+				".. versionadded:: 0.31\n"
 				"\n"
 				"__init__([threshold_velocity_delta="
 				<< GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_THRESHOLD_VELOCITY_DELTA
@@ -1286,7 +1286,7 @@ export_topological_model()
 					"TopologicalModel",
 					"A history of topologies over geological time.\n"
 					"\n"
-					"  .. versionadded:: 30\n",
+					"  .. versionadded:: 0.30\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1339,7 +1339,7 @@ export_topological_model()
 			"only be done if necessary since each :class:`TopologicalModel` created can consume a reasonable amount of "
 			"CPU and memory (since it caches resolved topologies and reconstructed geometries over geological time).\n"
 			"\n"
-			"  .. versionchanged:: 31\n"
+			"  .. versionchanged:: 0.31\n"
 			"     Added *default_resolve_topology_parameters* argument.\n")
 		.def("topological_snapshot",
 				&GPlatesApi::topological_model_get_topological_snapshot,
@@ -1429,7 +1429,7 @@ export_topological_model()
 				"\n"
 				"    topological_model.reconstruct_geometry(geometry, 100, deactivate_points=None)\n"
 				"\n"
-				"  .. versionchanged:: 31\n"
+				"  .. versionchanged:: 0.31\n"
 				"     Added *deactivate_points* argument.\n")
 		.def("get_rotation_model",
 				&GPlatesApi::TopologicalModel::get_rotation_model,

@@ -2199,7 +2199,7 @@ export_gpml_irregular_sampling()
 				"\n"
 				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
 				"\n"
-				"  .. versionadded:: 21\n")
+				"  .. versionadded:: 0.21\n")
 		// Not including interpolation function since it is not really used (yet) in GPlates and hence
 		// is just extra baggage for the python API user (we can add it later though)...
 #if 0
@@ -3285,7 +3285,7 @@ export_gpml_piecewise_aggregation()
 				"\n"
 				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
 				"\n"
-				"  .. versionadded:: 21\n")
+				"  .. versionadded:: 0.21\n")
 	;
 
 	// Make 'GpmlPiecewiseAggregation' look like a python list (RevisionedVector<GpmlTimeWindow>).
@@ -3541,7 +3541,7 @@ export_gpml_property_delegate()
 					"GpmlPropertyDelegate",
 					"A property value that represents a reference, or delegation, to a property in another feature.\n"
 					"\n"
-					"  .. versionadded:: 21\n",
+					"  .. versionadded:: 0.21\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -3762,7 +3762,7 @@ export_gpml_time_sample()
 				"\n"
 				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
 				"\n"
-				"  .. versionadded:: 21\n")
+				"  .. versionadded:: 0.21\n")
 		.def("set_value",
 				&GPlatesPropertyValues::GpmlTimeSample::set_value,
 				(bp::arg("property_value")),
@@ -3980,7 +3980,7 @@ export_gpml_time_window()
 				"\n"
 				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
 				"\n"
-				"  .. versionadded:: 21\n")
+				"  .. versionadded:: 0.21\n")
 		.def("set_value",
 				&GPlatesPropertyValues::GpmlTimeWindow::set_time_dependent_value,
 				(bp::arg("property_value")),
@@ -4335,7 +4335,7 @@ export_gpml_topological_section()
 					"* :class:`GpmlTopologicalPoint`\n"
 					"* :class:`GpmlTopologicalLineSection`\n"
 					"\n"
-					"  .. versionadded:: 21\n",
+					"  .. versionadded:: 0.21\n",
 					bp::no_init)
 		.def("create",
 			&GPlatesApi::gpml_topological_section_create,
@@ -4406,7 +4406,7 @@ export_gpml_topological_section()
 			"  .. seealso:: :meth:`GpmlTopologicalLine.get_sections`, :meth:`GpmlTopologicalPolygon.get_boundary_sections` and "
 			":meth:`GpmlTopologicalNetwork.get_boundary_sections`\n"
 			"\n"
-			"  .. versionadded:: 24\n")
+			"  .. versionadded:: 0.24\n")
 		.staticmethod("create")
 		.def("create_network_interior",
 			&GPlatesApi::gpml_topological_section_create_network_interior,
@@ -4466,7 +4466,7 @@ export_gpml_topological_section()
 			"\n"
 			"  .. seealso:: :meth:`GpmlTopologicalNetwork.get_interiors`\n"
 			"\n"
-			"  .. versionadded:: 24\n")
+			"  .. versionadded:: 0.24\n")
 		.staticmethod("create_network_interior")
 		.def("get_property_delegate",
 			get_property_delegate,
@@ -4535,7 +4535,7 @@ export_gpml_topological_line()
 			"GpmlTopologicalLine",
 			"A topological line geometry that is resolved from topological sections.\n"
 			"\n"
-			"  .. versionadded:: 21\n",
+			"  .. versionadded:: 0.21\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)
@@ -4595,7 +4595,7 @@ export_gpml_topological_line_section()
 			"GpmlTopologicalLineSection",
 			"A topological section referencing a line geometry.\n"
 			"\n"
-			"  .. versionadded:: 21\n",
+			"  .. versionadded:: 0.21\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)
@@ -4713,7 +4713,7 @@ export_gpml_topological_network()
 			"\n"
 			".. note:: If an interior geometry is a polygon then it becomes an interior rigid block.\n"
 			"\n"
-			"  .. versionadded:: 21\n",
+			"  .. versionadded:: 0.21\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)
@@ -4790,7 +4790,7 @@ export_gpml_topological_point()
 			"GpmlTopologicalPoint",
 			"A topological section referencing a point geometry.\n"
 			"\n"
-			"  .. versionadded:: 21\n",
+			"  .. versionadded:: 0.21\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)
@@ -4870,7 +4870,7 @@ export_gpml_topological_polygon()
 			"GpmlTopologicalPolygon",
 			"A topological polygon geometry that is resolved from topological sections.\n"
 			"\n"
-			"  .. versionadded:: 21\n",
+			"  .. versionadded:: 0.21\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)
@@ -4907,7 +4907,7 @@ export_gpml_topological_polygon()
 			"    # Append a section\n"
 			"    boundary_sections.append(pygplates.GpmlTopologicalLineSection(...))\n"
 			"\n"
-			"  .. versionadded:: 24\n")
+			"  .. versionadded:: 0.24\n")
 		;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).

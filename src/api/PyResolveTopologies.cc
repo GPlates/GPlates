@@ -589,15 +589,15 @@ export_resolve_topologies()
 			"        'plate_polygons_and_networks.gpml', 'rotations.rot', resolved_topologies, 10,\n"
 			"         resolved_topological_sections)\n"
 			"\n"
-			"  .. versionchanged:: 29\n"
+			"  .. versionchanged:: 0.29\n"
 			"     The output order of *resolved_topological_sections* is now same as that of their "
 			"respective features in *topological_features* (the order across feature collections is also retained). "
 			"Previously the order was only retained for *resolved_topologies*.\n"
 			"\n"
-			"  .. versionchanged:: 31\n"
+			"  .. versionchanged:: 0.31\n"
 			"     Added *default_resolve_topology_parameters* argument.\n"
 			"\n"
-			"  .. versionchanged:: 33\n"
+			"  .. versionchanged:: 0.33\n"
 			"     Added *export_topological_line_sub_segments* argument.\n";
 
 	// Register 'resolved topologies' variant.

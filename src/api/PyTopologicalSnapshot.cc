@@ -846,7 +846,7 @@ export_topological_snapshot()
 					"TopologicalSnapshot",
 					"A snapshot of topologies at a specific geological time.\n"
 					"\n"
-					"  .. versionadded:: 30\n",
+					"  .. versionadded:: 0.30\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -893,7 +893,7 @@ export_topological_snapshot()
 			"    rotation_model = pygplates.RotationModel('rotations.rot')\n"
 			"    topological_snapshot = pygplates.TopologicalSnapshot(topology_features, rotation_model, reconstruction_time)\n"
 			"\n"
-			"  .. versionchanged:: 31\n"
+			"  .. versionchanged:: 0.31\n"
 			"     Added *default_resolve_topology_parameters* argument.\n")
 		.def("get_resolved_topologies",
 				&GPlatesApi::topological_snapshot_get_resolved_topologies,
@@ -1035,7 +1035,7 @@ export_topological_snapshot()
 				"respective topological features (see :meth:`constructor<__init__>`) and the order across "
 				"topological feature collections (if any) is also retained.\n"
 				"\n"
-				"  .. versionchanged:: 33\n"
+				"  .. versionchanged:: 0.33\n"
 				"     Added *export_topological_line_sub_segments* argument.\n")
 		.def("get_rotation_model",
 				&GPlatesApi::TopologicalSnapshot::get_rotation_model,

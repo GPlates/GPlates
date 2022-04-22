@@ -583,7 +583,7 @@ export_finite_rotation()
 				"    finite_rotation = pygplates.FiniteRotation.create_great_circle_point_rotation(from_point, to_point)\n"
 				"    # assert(to_point == finite_rotation * from_point)\n"
 				"\n"
-				"  .. versionadded:: 29\n")
+				"  .. versionadded:: 0.29\n")
 		.staticmethod("create_great_circle_point_rotation")
 		.def("create_small_circle_point_rotation",
 				&GPlatesApi::finite_rotation_create_small_circle_point_rotation,
@@ -616,7 +616,7 @@ export_finite_rotation()
 				"\n"
 				"    finite_rotation = pygplates.FiniteRotation.create_small_circle_point_rotation(rotation_pole, from_point, to_point)\n"
 				"\n"
-				"  .. versionadded:: 29\n")
+				"  .. versionadded:: 0.29\n")
 		.staticmethod("create_small_circle_point_rotation")
 		.def("create_segment_rotation",
 				&GPlatesApi::finite_rotation_create_segment_rotation,
@@ -668,7 +668,7 @@ export_finite_rotation()
 				"  .. note:: It's fine for the start points of both *from* and *to* segments to coincide "
 				"(and it's also fine for the end points of both segments to coincide for that matter).\n"
 				"\n"
-				"  .. versionadded:: 29\n")
+				"  .. versionadded:: 0.29\n")
 		.staticmethod("create_segment_rotation")
 		.def("are_equivalent",
 				&GPlatesApi::finite_rotation_represent_equivalent_rotations,

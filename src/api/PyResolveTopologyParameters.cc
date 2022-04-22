@@ -117,7 +117,7 @@ export_resolve_topology_parameters()
 					"ResolveTopologyParameters",
 					"Specify parameters used to resolve topologies.\n"
 					"\n"
-					"  .. versionadded:: 31\n",
+					"  .. versionadded:: 0.31\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)

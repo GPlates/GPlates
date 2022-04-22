@@ -3923,7 +3923,7 @@ export_feature()
 				"        geometry_at_time_of_appearance,\n"
 				"        reverse_reconstruct=(rotation_model, time_of_appearance))\n"
 				"\n"
-				"  .. versionchanged:: 29\n"
+				"  .. versionchanged:: 0.29\n"
 				"     The :meth:`geometry import time<set_geometry_import_time>` is set to the geometry "
 				"reconstruction time when reverse reconstructing.\n")
 		.staticmethod("create_reconstructable_feature")
@@ -4008,7 +4008,7 @@ export_feature()
 				"\n"
 				"  .. seealso:: :meth:`create_reconstructable_feature`\n"
 				"\n"
-				"  .. versionadded:: 24\n")
+				"  .. versionadded:: 0.24\n")
 		.staticmethod("create_topological_feature")
 		.def("create_tectonic_section",
 				&GPlatesApi::feature_handle_create_tectonic_section,
@@ -4161,7 +4161,7 @@ export_feature()
 				"correctly reverse-reconstructed (which is especially important for mid-ocean ridges with version 3 "
 				"half-stage rotations where the spreading start time is the geometry import time).\n"
 				"\n"
-				"  .. versionchanged:: 29\n"
+				"  .. versionchanged:: 0.29\n"
 				"     The :meth:`geometry import time<set_geometry_import_time>` is set to the geometry "
 				"reconstruction time when reverse reconstructing.\n")
 		.staticmethod("create_tectonic_section")
@@ -4862,7 +4862,7 @@ export_feature()
 				"\n"
 				"  .. seealso:: :meth:`get_geometry`, :meth:`get_geometries` and :meth:`get_all_geometries`\n"
 				"\n"
-				"  .. versionchanged:: 29\n"
+				"  .. versionchanged:: 0.29\n"
 				"     The :meth:`geometry import time<set_geometry_import_time>` is set to the geometry "
 				"reconstruction time when reverse reconstructing.\n")
 		.def("get_geometry",
@@ -5118,7 +5118,7 @@ export_feature()
 				"  .. seealso:: :meth:`get_topological_geometry`, :meth:`get_topological_geometries` and :meth:`get_all_topological_geometries`\n"
 				"  .. seealso:: :meth:`set_geometry`\n"
 				"\n"
-				"  .. versionadded:: 24\n")
+				"  .. versionadded:: 0.24\n")
 		.def("get_topological_geometry",
 				&GPlatesApi::feature_handle_get_topological_geometry,
 				(bp::arg("property_query") = bp::object()/*Py_None*/,
@@ -5179,7 +5179,7 @@ export_feature()
 				"\n"
 				"  .. seealso:: :meth:`set_topological_geometry`\n"
 				"\n"
-				"  .. versionadded:: 24\n")
+				"  .. versionadded:: 0.24\n")
 		.def("get_topological_geometries",
 				&GPlatesApi::feature_handle_get_topological_geometries,
 				(bp::arg("property_query") = bp::object()/*Py_None*/),
@@ -5207,7 +5207,7 @@ export_feature()
 				"\n"
 				"  .. seealso:: :meth:`set_topological_geometry`\n"
 				"\n"
-				"  .. versionadded:: 24\n")
+				"  .. versionadded:: 0.24\n")
 		.def("get_all_topological_geometries",
 				&GPlatesApi::feature_handle_get_all_topological_geometries,
 				"get_all_topological_geometries()\n"
@@ -5228,7 +5228,7 @@ export_feature()
 				"\n"
 				"  .. seealso:: :meth:`set_topological_geometry`\n"
 				"\n"
-				"  .. versionadded:: 24\n")
+				"  .. versionadded:: 0.24\n")
 		.def("set_enumeration",
 				&GPlatesApi::feature_handle_set_enumeration,
 				(bp::arg("property_name"),

@@ -811,7 +811,7 @@ export_feature_collection()
 					"\n"
 					".. note:: A feature collection can be deep copied using :meth:`clone`.\n"
 					"\n"
-					".. versionchanged:: 31\n"
+					".. versionchanged:: 0.31\n"
 					"   Can index a feature in feature collection *fc* with ``fc[i]``.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...

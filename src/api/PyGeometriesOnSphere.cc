@@ -379,7 +379,7 @@ export_geometry_on_sphere()
 				"\n"
 				"  :rtype: :class:`GeometryOnSphere`\n"
 				"\n"
-				"  .. deprecated:: 30\n"
+				"  .. deprecated:: 0.30\n"
 				"     Geometry is immutable so there's no need to clone (instead you can just share the geometry).\n")
 		.def("distance",
 				&GPlatesApi::geometry_on_sphere_distance,
