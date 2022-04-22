@@ -46,75 +46,90 @@ The following sections cover the installation of pyGPlates in the *external* cas
 Installing pyGPlates
 ^^^^^^^^^^^^^^^^^^^^
 
-Each release includes files similar to:
+This release includes files:
 ::
 
-  pygplates_rev@PYGPLATES_REVISION@_docs.zip
-  pygplates_rev@PYGPLATES_REVISION@_python38_MacOS64.zip
-  pygplates_rev@PYGPLATES_REVISION@_python38_win64.zip
-  pygplates_rev@PYGPLATES_REVISION@_src.zip
+  pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_docs.zip
+  pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src.zip
+  pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src.tar.bz2
+  pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_Darwin-x86_64.zip
+  ...
+  pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_Darwin-arm64.zip
+  ...
+  pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_win64.zip
+  ...
+  pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_ubuntu-22.04-amd64.deb
+  ...
 
-.. note:: If this is an internal (non-public) release then the above files come in a single zip file
-  (``pygplates_rev@PYGPLATES_REVISION@.zip``).
+The pyGPlates documentation is in ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_docs.zip``.
+If you extract this zip file to your hard drive and then open ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_docs/index.html``
+in a web browser you will see the :ref:`front page <pygplates_index>` of this documentation.
 
-.. note:: For public releases there are also Ubuntu packages (``.deb`` files).
-
-| The pyGPlates documentation is in ``pygplates_rev@PYGPLATES_REVISION@_docs.zip``.
-| If you extract this zip file to your hard drive and then open ``pygplates_rev@PYGPLATES_REVISION@_docs/index.html``
-  in a web browser you will see the :ref:`front page <pygplates_index>` of this documentation.
-
-The remaining zip files contain a pre-built pyGPlates library for macOS and Windows, and source
-code for Linux (and Ubuntu packages for public pyGPlates releases):
+The remaining zip files contain source code and pre-built pyGPlates libraries for macOS, Windows and Ubuntu:
   
-* ``pygplates_rev@PYGPLATES_REVISION@_python38_MacOS64.zip`` - pyGPlates for macOS (compiled for 64-bit Python 3.8).
+* ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src.zip`` and ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src.tar.bz2`` -
+  pyGPlates source code (typically used to compile pyGPlates on Linux).
 
-  Extracting this zip file creates a directory ``pygplates_rev@PYGPLATES_REVISION@_python38_MacOS64`` containing the
-  ``pygplates.so`` pyGPlates library and its dependency libraries.
-  
-  .. note:: This pre-built pyGPlates library will only work with a Python interpreter that is
-     version 3.8.x and is 64-bit. The operating system can be High Sierra (10.13) or above.
-  
-* ``pygplates_rev@PYGPLATES_REVISION@_python38_win64.zip`` - pyGPlates for Windows (compiled for 64-bit Python 3.8).
-
-  Extracting this zip file creates a directory ``pygplates_rev@PYGPLATES_REVISION@_python38_win64`` containing the
-  ``pygplates.pyd`` pyGPlates library and its dependency libraries.
-  
-  .. note:: This pre-built pyGPlates library will only work with a Python interpreter that is
-     version 3.8.x and is 64-bit. So it will only work if you are using a 64-bit operating system (Windows 7 or above)
-     **and** the installed Python is **64-bit** (a 32-bit Python installation will not work).
-  
-* ``pygplates_rev@PYGPLATES_REVISION@_src.zip`` - pyGPlates source code (typically used to compile pyGPlates on Linux).
-
-  Extracting this zip file creates a directory ``pygplates_rev@PYGPLATES_REVISION@_src``
+  Extracting either of these archive files creates a directory ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src``
   containing the pyGPlates source code.
   
-  Unlike the pre-built pyGPlates libraries for macOS and Windows, here we have source code that
-  needs to be compiled into a pyGPlates library. This is typically used to compile pyGPlates on
-  Linux systems because they have binary package managers that make installing dependency
-  libraries (of pyGPlates and GPlates) a lot easier than with macOS and Windows.
+  Unlike the pre-built pyGPlates libraries for macOS, Windows and Ubuntu, here we have source code that
+  needs to be compiled into a pyGPlates library. This is typically used on Linux systems because they
+  have binary package managers that make installing dependency libraries (of pyGPlates and GPlates)
+  a lot easier than with macOS and Windows.
   
-  To compile pyGPlates follow the instructions for building GPlates in the files ``BUILD.Linux`` and
-  ``DEPS.Linux`` in the root directory ``pygplates_rev@PYGPLATES_REVISION@_src`` of the source code.
+  To compile pyGPlates follow the instructions for building in the files ``BUILD.Linux`` and
+  ``DEPS.Linux`` in the root directory ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src`` of the source code.
   Once the dependency libraries have been installed this process essentially boils down to executing
   the following commands in a *Terminal* in the root source code directory:
   ::
   
     cmake .
-    make pygplates
+    make
 
   ...which, on successful completion, should result in a ``pygplates.so`` library in the ``bin``
-  sub-directory of the root source code directory ``pygplates_rev@PYGPLATES_REVISION@_src``.
+  sub-directory of the root source code directory ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src``.
   
-  Also if you have a dual-core or quad-core system then you can speed up compilation
-  using ``make -j 2 pygplates`` or ``make -j 4 pygplates``.
+  .. note:: On a quad-core system you can speed up compilation using ``make -j 4``.
   
-  .. note:: The pyGPlates source code is actually the same as the GPlates source code except we build
-     pyGPlates with ``make pygplates`` (whereas GPlates is built with just ``make``). However the
-     pyGPlates source code is currently a separate development branch (of the GPlates source code repository)
-     that has not yet made its way into the development mainline (hence you won't find it in regular
-     GPlates source code releases yet).
+* ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_Darwin-x86_64.zip`` - pyGPlates for macOS on **Intel** (x86 architecture).
+
+  This file is compiled for Python 3.10 (64-bit) as noted by ``py310`` in the filename.
+  There are also similar files for Python versions 3.7, 3.8 and 3.9.
+
+  Extracting this zip file creates a directory ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_Darwin-x86_64`` containing the
+  ``pygplates.so`` pyGPlates library and its dependency libraries.
   
-* ``ubuntu/pygplates-...`` - pyGPlates Ubuntu ``.deb`` packages.
+  .. note:: This pre-built pyGPlates library will only work with a Python interpreter that is
+     version 3.10.x and is 64-bit. The operating system can be High Sierra (10.13) or above.
+  
+* ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_Darwin-arm64.zip`` - pyGPlates for macOS on **M1** (arm64 architecture).
+
+  This file is compiled for Python 3.10 (64-bit) as noted by ``py310`` in the filename.
+  There are also similar files for Python versions 3.7, 3.8 and 3.9.
+
+  Extracting this zip file creates a directory ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_Darwin-arm64`` containing the
+  ``pygplates.so`` pyGPlates library and its dependency libraries.
+  
+  .. note:: This pre-built pyGPlates library will only work with a Python interpreter that is
+     version 3.10.x and is 64-bit. The operating system can be Big Sur (11.0) or above.
+  
+* ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_win64.zip`` - pyGPlates for Windows.
+
+  This file is compiled for Python 3.10 (64-bit) as noted by ``py310`` in the filename.
+  There are also similar files for Python versions 3.7, 3.8 and 3.9.
+
+  Extracting this zip file creates a directory ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_win64`` containing the
+  ``pygplates.pyd`` pyGPlates library and its dependency libraries.
+  
+  .. note:: This pre-built pyGPlates library will only work with a Python interpreter that is
+     version 3.10.x and is 64-bit. So it will only work if you are using a 64-bit operating system
+     **and** the installed Python is **64-bit** (a 32-bit Python installation will not work).
+  
+* ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_ubuntu-22.04-amd64.deb`` - pyGPlates Debian package for Ubuntu Jammy (22.04).
+
+  This file is compiled for Ubuntu Jammy (22.04 LTS) (which comes with Python 3.10 64-bit as noted by ``py310`` in the filename).
+  There are also similar files for Ubuntu Bionic (18.04 LTS), Focal (20.04 LTS) and Impish (21.10).
 
   To install pyGPlates on Ubuntu, double-click on the ``.deb`` file appropriate for your system.
   
@@ -125,9 +140,7 @@ code for Linux (and Ubuntu packages for public pyGPlates releases):
   
   ...and note the codename displayed.
   
-  PyGPlates will then be installed to ``/usr/lib/pygplates/revision@PYGPLATES_REVISION@/``.
-  
-  .. note:: Ubuntu ``.deb`` packages are not available for internal (non-public) releases.
+  PyGPlates will then be installed to ``/usr/lib/pygplates/@PYGPLATES_VERSION_PRERELEASE_USER@/``.
   
 In the next section we will tell Python how to find our pre-built (or compiled) pyGPlates installation.
 
@@ -160,8 +173,17 @@ Setting the *PYTHONPATH* environment variable:
   
     export PYTHONPATH=$PYTHONPATH:/path/to/pygplates
 
-  ...replacing ``/path/to/pygplates`` with the actual path to your extracted
-  ``pygplates_rev@PYGPLATES_REVISION@_python38_MacOS64`` directory, for example.
+  ...replacing ``/path/to/pygplates`` with the actual path to your extracted directory. For example:
+  ::
+
+    export PYTHONPATH=$PYTHONPATH:~/pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_Darwin-arm64
+  
+  ...if you extracted pyGPlates in your home directory (and are using Python 3.10 on an M1 computer).
+  
+  .. note:: Do not point to the ``pygplates/`` sub-directory within
+     ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_Darwin-arm64/`` (even though that's where
+     ``pygplates.so`` lives). This is because pyGPlates on macOS (and Windows) is now a Python *package*
+     (due to the presence of a ``pygplates/__init__.py`` file).
 
 * *Linux*:
 
@@ -170,20 +192,23 @@ Setting the *PYTHONPATH* environment variable:
   
     export PYTHONPATH=$PYTHONPATH:/path/to/pygplates/bin
 
-  ...replacing ``/path/to/pygplates`` with the actual path to your extracted
-  ``pygplates_rev@PYGPLATES_REVISION@_src`` source code directory, for example.
+  ...replacing ``/path/to/pygplates`` with the actual path to your extracted source code directory. For example:
+  ::
+  
+    export PYTHONPATH=$PYTHONPATH:~/pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src/bin
+  
+  ...if you extracted (and compiled) pyGPlates in your home directory.
   
   .. note:: The extra ``/bin`` suffix is because ``pygplates.so`` is in the local ``bin`` directory
-     (once it has been compiled from source code).
+     once it has been compiled from source code. And compiling from source does not produce a Python *package*
+     (ie, there's no ``pygplates/__init__.py`` file).
 
 * *Ubuntu* ``.deb`` package:
 
   Type the following in a *Terminal* window (or you can add it to your shell startup file):
   ::
   
-    export PYTHONPATH=$PYTHONPATH:/usr/lib/pygplates/revision@PYGPLATES_REVISION@
-  
-  .. note:: Ubuntu ``.deb`` packages are not available for internal (non-public) releases.
+    export PYTHONPATH=$PYTHONPATH:/usr/lib/pygplates/@PYGPLATES_VERSION_PRERELEASE_USER@
 
 * *Windows*:
 
@@ -192,10 +217,18 @@ Setting the *PYTHONPATH* environment variable:
   ::
   
     set pythonpath=%pythonpath%;"c:\path\to\pygplates"
-    set path=%path%;"c:\path\to\pygplates"
 
-  ...replacing ``c:\path\to\pygplates`` with the actual path to your extracted
-  ``pygplates_rev@PYGPLATES_REVISION@_python38_win64`` directory, for example.
+  ...replacing ``c:\path\to\pygplates`` with the actual path to your extracted directory. For example:
+  ::
+  
+    set pythonpath=%pythonpath%;"C:\pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_win64"
+  
+  ...if you extracted pyGPlates in the root of your ``C:`` drive (and are using Python 3.10).
+  
+  .. note:: Do not point to the ``pygplates/`` sub-directory within
+     ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_win64/`` (even though that's where
+     ``pygplates.pyd`` lives). This is because pyGPlates on Windows (and macOS) is now a Python *package*
+     (due to the presence of a ``pygplates/__init__.py`` file).
 
   Or you can change *PYTHONPATH* and *PATH* in the system environment variables:
   
