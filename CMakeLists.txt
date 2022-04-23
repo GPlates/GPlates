@@ -6,7 +6,7 @@
 #       but are safe to use with policies (see 'cmake_policy' command) up to the maximum version.
 #       Specifying a maximum version means we don't need 'cmake_policy' calls for running CMake versions
 #       in that [min, max] range. Note that CMake version prior to 3.12 apparently ignore the "...<max>" part.
-cmake_minimum_required(VERSION 3.10...3.22 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.10...3.23 FATAL_ERROR)
 
 # Set the minimum macOS version we support.
 #
