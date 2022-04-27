@@ -24,6 +24,7 @@ RelWithDebInfo
 *.bz2
 *.cmake
 GPlates_log.txt
+__pycache__/
 
 #
 # /
@@ -55,8 +56,6 @@ GPlates_log.txt
 #
 # /src/
 #
-/src/gplates*/
-/src/pygplates*/
 # CMake generated...
 /src/__init__.py
 /src/gplates.entitlements
@@ -64,3 +63,4 @@ GPlates_log.txt
 /src/global/License.cc
 /src/global/Version.cc
 /src/global/config.h
+/src/pygplates/test/test_*.py
