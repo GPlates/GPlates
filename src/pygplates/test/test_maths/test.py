@@ -59,6 +59,27 @@ class DateLineWrapperCase(unittest.TestCase):
         self.assertEquals(len(wrapped_polygons), 1)
         self.assertTrue(isinstance(wrapped_polygons[0], pygplates.DateLineWrapper.LatLonPolygon))
 
+        # Polygon with holes should get split into two across dateline (but not when central meridian is 90).
+        polygon = pygplates.PolygonOnSphere(
+                [(40, 100), (-40, 100), (-40, -100), (40, -100)],  # exterior ring
+                [[(30, 120), (30, 150), (-30, 150), (-30, 120)], [(30, 165), (-30, 165), (-30, -165), (30, -165)]])  # 2 interior rings
+        wrapped_polygons = date_line_wrapper.wrap(polygon)
+        self.assertEquals(len(wrapped_polygons), 2)
+        # Total wrapped interior rings is 1 because one interior ring is clipped to dateline (so no longer interior) and the other is not.
+        self.assertTrue(wrapped_polygons[0].get_number_of_interior_rings() + wrapped_polygons[1].get_number_of_interior_rings() == 1)
+        # Get the sole wrapped interior ring.
+        if wrapped_polygons[0].get_number_of_interior_rings() > 0:
+            wrapped_interior_ring = wrapped_polygons[0].get_interior_points(0)
+        else:
+            wrapped_interior_ring = wrapped_polygons[1].get_interior_points(0)
+        self.assertEquals(len(wrapped_interior_ring), 4)
+        # Each point in wrapped interior ring should match the first interior ring we created the original polygon with.
+        for llp in wrapped_interior_ring:
+            self.assertTrue(llp.to_point_on_sphere() in polygon.get_interior_ring_points(0))
+        wrapped_polygons = date_line_wrapper_90.wrap(polygon)
+        self.assertEquals(len(wrapped_polygons), 1)
+        self.assertTrue(wrapped_polygons[0].get_number_of_interior_rings() == 2)
+
         # Polyline should get split into three across dateline (but not when central meridian is 90).
         polyline = pygplates.PolylineOnSphere([(10, 170), (0, -170), (-10, 170)])
         wrapped_polylines = date_line_wrapper.wrap(polyline)
