@@ -96,13 +96,8 @@ namespace GPlatesApi
 
 				bp::list lat_lon_polyline_list;
 
-				std::vector<GPlatesMaths::DateLineWrapper::LatLonPolyline>::const_iterator lat_lon_polylines_iter =
-						lat_lon_polylines.begin();
-				std::vector<GPlatesMaths::DateLineWrapper::LatLonPolyline>::const_iterator lat_lon_polylines_end =
-						lat_lon_polylines.end();
-				for ( ; lat_lon_polylines_iter != lat_lon_polylines_end; ++lat_lon_polylines_iter)
+				for (const GPlatesMaths::DateLineWrapper::LatLonPolyline &lat_lon_polyline : lat_lon_polylines)
 				{
-					const GPlatesMaths::DateLineWrapper::LatLonPolyline &lat_lon_polyline = *lat_lon_polylines_iter;
 					lat_lon_polyline_list.append(lat_lon_polyline);
 				}
 
@@ -116,17 +111,12 @@ namespace GPlatesApi
 						GPlatesUtils::dynamic_pointer_cast<const GPlatesMaths::PolygonOnSphere>(geometry);
 
 				std::vector<GPlatesMaths::DateLineWrapper::LatLonPolygon> lat_lon_polygons;
-				date_line_wrapper.wrap_polygon(polygon, lat_lon_polygons, tessellate);
+				date_line_wrapper.wrap_polygon(polygon, lat_lon_polygons, tessellate, true/*group_interior_with_exterior_rings*/);
 
 				bp::list lat_lon_polygon_list;
 
-				std::vector<GPlatesMaths::DateLineWrapper::LatLonPolygon>::const_iterator lat_lon_polygons_iter =
-						lat_lon_polygons.begin();
-				std::vector<GPlatesMaths::DateLineWrapper::LatLonPolygon>::const_iterator lat_lon_polygons_end =
-						lat_lon_polygons.end();
-				for ( ; lat_lon_polygons_iter != lat_lon_polygons_end; ++lat_lon_polygons_iter)
+				for (const GPlatesMaths::DateLineWrapper::LatLonPolygon &lat_lon_polygon : lat_lon_polygons)
 				{
-					const GPlatesMaths::DateLineWrapper::LatLonPolygon &lat_lon_polygon = *lat_lon_polygons_iter;
 					lat_lon_polygon_list.append(lat_lon_polygon);
 				}
 
@@ -152,16 +142,9 @@ namespace GPlatesApi
 	{
 		bp::list exterior_point_list;
 
-		const GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type &exterior_ring_points =
-				lat_lon_polygon.get_exterior_ring_points();
-
-		GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type::const_iterator exterior_points_iter =
-				exterior_ring_points.begin();
-		GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type::const_iterator exterior_points_end =
-				exterior_ring_points.end();
-		for ( ; exterior_points_iter != exterior_points_end; ++exterior_points_iter)
+		for (const GPlatesMaths::LatLonPoint &exterior_point : lat_lon_polygon.get_exterior_ring_points())
 		{
-			exterior_point_list.append(*exterior_points_iter);
+			exterior_point_list.append(exterior_point);
 		}
 
 		return exterior_point_list;
@@ -176,19 +159,118 @@ namespace GPlatesApi
 		std::vector<GPlatesMaths::DateLineWrapper::LatLonPolygon::point_flags_type> exterior_ring_point_flags;
 		lat_lon_polygon.get_exterior_ring_point_flags(exterior_ring_point_flags);
 
-		std::vector<GPlatesMaths::DateLineWrapper::LatLonPolygon::point_flags_type>::const_iterator
-				exterior_ring_point_flags_iter = exterior_ring_point_flags.begin();
-		std::vector<GPlatesMaths::DateLineWrapper::LatLonPolygon::point_flags_type>::const_iterator
-				exterior_ring_point_flags_end = exterior_ring_point_flags.end();
-		for ( ;
-			exterior_ring_point_flags_iter != exterior_ring_point_flags_end;
-			++exterior_ring_point_flags_iter)
+		for (const auto &exterior_ring_point_flag : exterior_ring_point_flags)
 		{
 			is_original_exterior_point_flags_list.append(
-					exterior_ring_point_flags_iter->test(GPlatesMaths::DateLineWrapper::LatLonPolygon::ORIGINAL_POINT));
+					exterior_ring_point_flag.test(GPlatesMaths::DateLineWrapper::LatLonPolygon::ORIGINAL_POINT));
 		}
 
 		return is_original_exterior_point_flags_list;
+	}
+
+	bp::list
+	date_line_wrapper_polygon_get_interior_points(
+			const GPlatesMaths::DateLineWrapper::LatLonPolygon &lat_lon_polygon,
+			unsigned int interior_ring_index)
+	{
+		if (interior_ring_index >= lat_lon_polygon.get_num_interior_rings())
+		{
+			PyErr_SetString(PyExc_IndexError, "Interior ring index out of range");
+			bp::throw_error_already_set();
+		}
+
+		bp::list interior_point_list;
+
+		for (const GPlatesMaths::LatLonPoint &interior_point : lat_lon_polygon.get_interior_ring_points(interior_ring_index))
+		{
+			interior_point_list.append(interior_point);
+		}
+
+		return interior_point_list;
+	}
+
+	bp::list
+	date_line_wrapper_polygon_get_is_original_interior_point_flags(
+			const GPlatesMaths::DateLineWrapper::LatLonPolygon &lat_lon_polygon,
+			unsigned int interior_ring_index)
+	{
+		if (interior_ring_index >= lat_lon_polygon.get_num_interior_rings())
+		{
+			PyErr_SetString(PyExc_IndexError, "Interior ring index out of range");
+			bp::throw_error_already_set();
+		}
+
+		bp::list is_original_interior_point_flags_list;
+
+		std::vector<GPlatesMaths::DateLineWrapper::LatLonPolygon::point_flags_type> interior_ring_point_flags;
+		lat_lon_polygon.get_interior_ring_point_flags(interior_ring_point_flags, interior_ring_index);
+
+		for (const auto &interior_ring_point_flag : interior_ring_point_flags)
+		{
+			is_original_interior_point_flags_list.append(
+					interior_ring_point_flag.test(GPlatesMaths::DateLineWrapper::LatLonPolygon::ORIGINAL_POINT));
+		}
+
+		return is_original_interior_point_flags_list;
+	}
+
+	bp::list
+	date_line_wrapper_polygon_get_points(
+			const GPlatesMaths::DateLineWrapper::LatLonPolygon &lat_lon_polygon)
+	{
+		bp::list point_list;
+
+		// Exterior ring.
+		for (const GPlatesMaths::LatLonPoint &exterior_point : lat_lon_polygon.get_exterior_ring_points())
+		{
+			point_list.append(exterior_point);
+		}
+
+		// Interior rings.
+		for (unsigned int interior_ring_index = 0;
+			interior_ring_index < lat_lon_polygon.get_num_interior_rings();
+			++interior_ring_index)
+		{
+			for (const GPlatesMaths::LatLonPoint &interior_point : lat_lon_polygon.get_interior_ring_points(interior_ring_index))
+			{
+				point_list.append(interior_point);
+			}
+		}
+
+		return point_list;
+	}
+
+	bp::list
+	date_line_wrapper_polygon_get_is_original_point_flags(
+			const GPlatesMaths::DateLineWrapper::LatLonPolygon &lat_lon_polygon)
+	{
+		bp::list is_original_point_flags_list;
+
+		// Exterior ring.
+		std::vector<GPlatesMaths::DateLineWrapper::LatLonPolygon::point_flags_type> exterior_ring_point_flags;
+		lat_lon_polygon.get_exterior_ring_point_flags(exterior_ring_point_flags);
+		for (const auto &exterior_ring_point_flag : exterior_ring_point_flags)
+		{
+			is_original_point_flags_list.append(
+					exterior_ring_point_flag.test(GPlatesMaths::DateLineWrapper::LatLonPolygon::ORIGINAL_POINT));
+		}
+
+		// Interior rings.
+		for (unsigned int interior_ring_index = 0;
+			interior_ring_index < lat_lon_polygon.get_num_interior_rings();
+			++interior_ring_index)
+		{
+			std::vector<GPlatesMaths::DateLineWrapper::LatLonPolygon::point_flags_type> interior_ring_point_flags;
+			lat_lon_polygon.get_interior_ring_point_flags(interior_ring_point_flags, interior_ring_index);
+
+			for (const auto &interior_ring_point_flag : interior_ring_point_flags)
+			{
+				is_original_point_flags_list.append(
+						interior_ring_point_flag.test(GPlatesMaths::DateLineWrapper::LatLonPolygon::ORIGINAL_POINT));
+			}
+		}
+
+		return is_original_point_flags_list;
 	}
 
 	bp::list
@@ -197,13 +279,9 @@ namespace GPlatesApi
 	{
 		bp::list point_list;
 
-		GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type::const_iterator points_iter =
-				lat_lon_polyline.get_points().begin();
-		GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type::const_iterator points_end =
-				lat_lon_polyline.get_points().end();
-		for ( ; points_iter != points_end; ++points_iter)
+		for (const GPlatesMaths::LatLonPoint &point : lat_lon_polyline.get_points())
 		{
-			point_list.append(*points_iter);
+			point_list.append(point);
 		}
 
 		return point_list;
@@ -218,14 +296,10 @@ namespace GPlatesApi
 		std::vector<GPlatesMaths::DateLineWrapper::LatLonPolyline::point_flags_type> point_flags;
 		lat_lon_polyline.get_point_flags(point_flags);
 
-		std::vector<GPlatesMaths::DateLineWrapper::LatLonPolyline::point_flags_type>::const_iterator
-				point_flags_iter = point_flags.begin();
-		std::vector<GPlatesMaths::DateLineWrapper::LatLonPolyline::point_flags_type>::const_iterator
-				point_flags_end = point_flags.end();
-		for ( ; point_flags_iter != point_flags_end; ++point_flags_iter)
+		for (const auto &point_flag : point_flags)
 		{
 			is_original_point_flags_list.append(
-					point_flags_iter->test(GPlatesMaths::DateLineWrapper::LatLonPolyline::ORIGINAL_POINT));
+					point_flag.test(GPlatesMaths::DateLineWrapper::LatLonPolyline::ORIGINAL_POINT));
 		}
 
 		return is_original_point_flags_list;
@@ -237,13 +311,9 @@ namespace GPlatesApi
 	{
 		bp::list point_list;
 
-		GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type::const_iterator points_iter =
-				lat_lon_multi_point.get_points().begin();
-		GPlatesMaths::DateLineWrapper::lat_lon_points_seq_type::const_iterator points_end =
-				lat_lon_multi_point.get_points().end();
-		for ( ; points_iter != points_end; ++points_iter)
+		for (const GPlatesMaths::LatLonPoint &point : lat_lon_multi_point.get_points())
 		{
-			point_list.append(*points_iter);
+			point_list.append(point);
 		}
 
 		return point_list;
@@ -321,33 +391,50 @@ export_date_line_wrapper()
 				"  +-----------------------------+-------------------------------------------------+----------------------------------------------------------------------------+\n"
 				"  | :class:`MultiPointOnSphere` | ``DateLineWrapper.LatLonMultiPoint``            | A single ``LatLonMultiPoint`` with the following methods:                  |\n"
 				"  |                             |                                                 |                                                                            |\n"
-				"  |                             |                                                 | - ``get_points``: returns a ``list`` of :class:`LatLonPoint`               |\n"
+				"  |                             |                                                 | - ``get_points()``: returns a ``list`` of :class:`LatLonPoint`             |\n"
 				"  |                             |                                                 |   representing the wrapped points.                                         |\n"
 				"  +-----------------------------+-------------------------------------------------+----------------------------------------------------------------------------+\n"
 				"  | :class:`PolylineOnSphere`   | ``list`` of ``DateLineWrapper.LatLonPolyline``  | | A list of wrapped polylines.                                             |\n"
 				"  |                             |                                                 | | Each ``LatLonPolyline`` has the following methods:                       |\n"
 				"  |                             |                                                 |                                                                            |\n"
-				"  |                             |                                                 | - ``get_points``: returns a ``list`` of :class:`LatLonPoint`               |\n"
-				"  |                             |                                                 |   representing the wrapped points (of one wrapped polyline).               |\n"
-				"  |                             |                                                 | - ``get_is_original_point_flags``: returns a ``list`` of ``bool``          |\n"
-				"  |                             |                                                 |   indicating whether each point in ``get_points`` is an original point in  |\n"
-				"  |                             |                                                 |   the polyline. Newly added points due to dateline wrapping and            |\n"
+				"  |                             |                                                 | - ``get_points()``: returns a ``list`` of :class:`LatLonPoint`             |\n"
+				"  |                             |                                                 |   representing the wrapped points of the ``LatLonPolyline``.               |\n"
+				"  |                             |                                                 | - ``get_is_original_point_flags()``: returns a ``list`` of ``bool``        |\n"
+				"  |                             |                                                 |   indicating whether each point in ``get_points()`` is an original point   |\n"
+				"  |                             |                                                 |   from the input polyline. Newly added points due to dateline wrapping and |\n"
 				"  |                             |                                                 |   tessellation will be ``False``. Note that both lists are the same length.|\n"
 				"  +-----------------------------+-------------------------------------------------+----------------------------------------------------------------------------+\n"
 				"  | :class:`PolygonOnSphere`    | ``list`` of ``DateLineWrapper.LatLonPolygon``   | | A list of wrapped polygons.                                              |\n"
 				"  |                             |                                                 | | Each ``LatLonPolygon`` has the following methods:                        |\n"
 				"  |                             |                                                 |                                                                            |\n"
-				"  |                             |                                                 | - ``get_exterior_points``: returns a ``list`` of :class:`LatLonPoint`      |\n"
-				"  |                             |                                                 |   representing the wrapped exterior points (of one wrapped polygon).       |\n"
-				"  |                             |                                                 |   In future, interior points (holes) will also be supported.               |\n"
-				"  |                             |                                                 | - ``get_is_original_exterior_point_flags``: returns a ``list`` of ``bool`` |\n"
-				"  |                             |                                                 |   indicating whether each point in ``get_exterior_points`` is an original  |\n"
-				"  |                             |                                                 |   exterior point in the polygon. Newly added points due to dateline        |\n"
-				"  |                             |                                                 |   wrapping and tessellation will be ``False``. Note that both lists are    |\n"
-				"  |                             |                                                 |   the same length.                                                         |\n"
+				"  |                             |                                                 | - ``get_points()``: returns a ``list`` of :class:`LatLonPoint` representing|\n"
+				"  |                             |                                                 |   all wrapped points of the ``LatLonPolygon`` starting with its exterior   |\n"
+				"  |                             |                                                 |   ring and followed by all its interior rings if any (ordered by interior  |\n"
+				"  |                             |                                                 |   ring indices).                                                           |\n"
+				"  |                             |                                                 | - ``get_is_original_point_flags()``: returns a ``list`` of ``bool``        |\n"
+				"  |                             |                                                 |   indicating whether each point in ``get_points()`` is an original point   |\n"
+				"  |                             |                                                 |   from the input polygon. Newly added points due to dateline wrapping and  |\n"
+				"  |                             |                                                 |   tessellation will be ``False``. Note that both lists are the same length.|\n"
+				"  |                             |                                                 | - ``get_exterior_points``: similar to ``get_points()`` but only returns    |\n"
+				"  |                             |                                                 |   points in the *exterior* ring.                                           |\n"
+				"  |                             |                                                 | - ``get_is_original_exterior_point_flags()``: similar to                   |\n"
+				"  |                             |                                                 |   ``get_is_original_point_flags()`` but only for the *exterior* ring.      |\n"
+				"  |                             |                                                 |   Note that both ``get_exterior_points`` and                               |\n"
+				"  |                             |                                                 |   ``get_is_original_exterior_point_flags()`` are the same length.          |\n"
+				"  |                             |                                                 | - ``get_number_of_interior_rings()``: returns the number of interior rings.|\n"
+				"  |                             |                                                 | - ``get_interior_points(interior_ring_index)``: similar to ``get_points()``|\n"
+				"  |                             |                                                 |   but only returns points in the *interior* ring at the specified interior |\n"
+				"  |                             |                                                 |   ring index (which must be less than ``get_number_of_interior_rings()``). |\n"
+				"  |                             |                                                 | - ``get_is_original_interior_point_flags(interior_ring_index)``: similar to|\n"
+				"  |                             |                                                 |   ``get_is_original_point_flags()`` but only for the *interior* ring at the|\n"
+				"  |                             |                                                 |   specified interior ring index. Note that both                            |\n"
+				"  |                             |                                                 |   ``get_interior_points(interior_ring_index)`` and                         |\n"
+				"  |                             |                                                 |   ``get_is_original_interior_point_flags(interior_ring_index)`` are the    |\n"
+				"  |                             |                                                 |   same length.                                                             |\n"
 				"  |                             |                                                 |                                                                            |\n"
-				"  |                             |                                                 | .. note:: The start and end points are generally *not* the same.           |\n"
-				"  |                             |                                                 |    This is similar to :class:`pygplates.PolygonOnSphere`.                  |\n"
+				"  |                             |                                                 | .. note:: The start and end points in a particular ring (exterior or       |\n"
+				"  |                             |                                                 |    interior) are generally *not* the same. This is similar to              |\n"
+				"  |                             |                                                 |    :class:`pygplates.PolygonOnSphere`.                                     |\n"
 				"  +-----------------------------+-------------------------------------------------+----------------------------------------------------------------------------+\n"
 				"\n"
 				"  Note that, unlike points and multi-points, when wrapping an input polyline (or polygon) "
@@ -378,8 +465,22 @@ export_date_line_wrapper()
 				"    polygon = pygplates.PolygonOnSphere(...)\n"
 				"    wrapped_polygons = date_line_wrapper.wrap(polygon)\n"
 				"    for wrapped_polygon in wrapped_polygons:\n"
+				"      for wrapped_point in wrapped_polygon.get_points():\n"
+				"        wrapped_point_lat_lon = wrapped_point.get_latitude(), wrapped_point.get_longitude()\n"
+				"\n"
+				"  And for polygons an equivalent alternative (to the above example) extracts each wrapped polygon's "
+				"exterior and interior rings separately (rather than together):\n"
+				"  ::\n"
+				"\n"
+				"    # Wrap a polygon to the range [-90, 270].\n"
+				"    polygon = pygplates.PolygonOnSphere(...)\n"
+				"    wrapped_polygons = date_line_wrapper.wrap(polygon)\n"
+				"    for wrapped_polygon in wrapped_polygons:\n"
 				"      for wrapped_point in wrapped_polygon.get_exterior_points():\n"
 				"        wrapped_point_lat_lon = wrapped_point.get_latitude(), wrapped_point.get_longitude()\n"
+				"      for interior_ring_index in range(wrapped_polygon.get_number_of_interior_rings()):\n"
+				"        for wrapped_point in wrapped_polygon.get_interior_points(interior_ring_index):\n"
+				"          wrapped_point_lat_lon = wrapped_point.get_latitude(), wrapped_point.get_longitude()\n"
 				"\n"
 				"  | If *tessellate_degrees* is specified then tessellation (of polylines and polygons) is also performed.\n"
 				"  | Each :class:`segment<GreatCircleArc>` is then tessellated such that adjacent points are separated by "
@@ -434,8 +535,13 @@ export_date_line_wrapper()
 
 	// A nested class within python class DateLineWrapper (due to above 'bp::scope').
 	bp::class_<GPlatesMaths::DateLineWrapper::LatLonPolygon>("LatLonPolygon", bp::no_init)
+		.def("get_points", &GPlatesApi::date_line_wrapper_polygon_get_points)
+		.def("get_is_original_point_flags", &GPlatesApi::date_line_wrapper_polygon_get_is_original_point_flags)
 		.def("get_exterior_points", &GPlatesApi::date_line_wrapper_polygon_get_exterior_points)
 		.def("get_is_original_exterior_point_flags", &GPlatesApi::date_line_wrapper_polygon_get_is_original_exterior_point_flags)
+		.def("get_number_of_interior_rings", &GPlatesMaths::DateLineWrapper::LatLonPolygon::get_num_interior_rings)
+		.def("get_interior_points", &GPlatesApi::date_line_wrapper_polygon_get_interior_points)
+		.def("get_is_original_interior_point_flags", &GPlatesApi::date_line_wrapper_polygon_get_is_original_interior_point_flags)
 	;
 
 	// A nested class within python class DateLineWrapper (due to above 'bp::scope').
