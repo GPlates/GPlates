@@ -156,8 +156,7 @@ else() # not standalone
     else()  # pyGPlates ...
         install(TARGETS pygplates
             LIBRARY
-                # Eg, 'lib/pygplates/0.35.0/'...
-                DESTINATION ${CMAKE_INSTALL_LIBDIR}/pygplates/${PYGPLATES_VERSION_PRERELEASE_USER}/)
+                DESTINATION ${CMAKE_INSTALL_LIBDIR})
     endif()
 endif()
 
