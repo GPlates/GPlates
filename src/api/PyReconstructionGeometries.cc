@@ -71,7 +71,11 @@ namespace GPlatesApi
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &sub_segment_geometry)
 		{
 			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> sub_segment_polyline =
-					GPlatesAppLogic::GeometryUtils::convert_geometry_to_polyline(*sub_segment_geometry);
+					GPlatesAppLogic::GeometryUtils::convert_geometry_to_polyline(
+							*sub_segment_geometry,
+							// When false then only polygon exterior ring is converted to a polyline (interior rings are ignored).
+							// We don't set to true since none is returned and the next step would assume geometry has less than two points...
+							false/*exclude_polygons_with_interior_rings*/);
 			if (!sub_segment_polyline)
 			{
 				// There were less than two points.
