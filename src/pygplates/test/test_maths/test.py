@@ -55,6 +55,7 @@ class DateLineWrapperCase(unittest.TestCase):
         wrapped_polygons = date_line_wrapper.wrap(polygon)
         self.assertEquals(len(wrapped_polygons), 2)
         self.assertTrue(isinstance(wrapped_polygons[0].get_exterior_points()[0], pygplates.LatLonPoint))
+        self.assertTrue(isinstance(wrapped_polygons[0].get_points()[0], pygplates.LatLonPoint))
         wrapped_polygons = date_line_wrapper_90.wrap(polygon)
         self.assertEquals(len(wrapped_polygons), 1)
         self.assertTrue(isinstance(wrapped_polygons[0], pygplates.DateLineWrapper.LatLonPolygon))
@@ -69,10 +70,14 @@ class DateLineWrapperCase(unittest.TestCase):
         self.assertTrue(wrapped_polygons[0].get_number_of_interior_rings() + wrapped_polygons[1].get_number_of_interior_rings() == 1)
         # Get the sole wrapped interior ring.
         if wrapped_polygons[0].get_number_of_interior_rings() > 0:
-            wrapped_interior_ring = wrapped_polygons[0].get_interior_points(0)
+            wrapped_polygon_with_interior_index = 0
         else:
-            wrapped_interior_ring = wrapped_polygons[1].get_interior_points(0)
+            wrapped_polygon_with_interior_index = 1
+        wrapped_interior_ring = wrapped_polygons[wrapped_polygon_with_interior_index].get_interior_points(0)
+        wrapped_interior_ring_flags = wrapped_polygons[wrapped_polygon_with_interior_index].get_is_original_interior_point_flags(0)
         self.assertEquals(len(wrapped_interior_ring), 4)
+        self.assertEquals(len(wrapped_interior_ring_flags), 4)
+        self.assertTrue(all(wrapped_interior_ring_flags))  # all points are original points
         # Each point in wrapped interior ring should match the first interior ring we created the original polygon with.
         for llp in wrapped_interior_ring:
             self.assertTrue(llp.to_point_on_sphere() in polygon.get_interior_ring_points(0))
@@ -120,6 +125,10 @@ class DateLineWrapperCase(unittest.TestCase):
         self.assertEquals(len(wrapped_polygons[1].get_exterior_points()), 4)
         self.assertEquals(len(wrapped_polygons[0].get_is_original_exterior_point_flags()), 4)
         self.assertEquals(len(wrapped_polygons[1].get_is_original_exterior_point_flags()), 4)
+        self.assertEquals(len(wrapped_polygons[0].get_points()), 4)
+        self.assertEquals(len(wrapped_polygons[1].get_points()), 4)
+        self.assertEquals(len(wrapped_polygons[0].get_is_original_point_flags()), 4)
+        self.assertEquals(len(wrapped_polygons[1].get_is_original_point_flags()), 4)
         wrapped_polygons = date_line_wrapper.wrap(polygon, 4)
         self.assertEquals(len(wrapped_polygons), 2)
         self.assertEquals(len(wrapped_polygons[0].get_exterior_points()), 8)

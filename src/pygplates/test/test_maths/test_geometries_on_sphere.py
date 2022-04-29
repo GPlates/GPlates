@@ -348,6 +348,13 @@ class PolylineOnSphereCase(unittest.TestCase):
                         [pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(1, 0, 0)])
                 == pygplates.PolylineOnSphere(
                     pygplates.PolygonOnSphere(pygplates.PointOnSphere(1, 0, 0))))
+        # Interior rings of polygon are ignored when converting to polyline.
+        self.assertTrue(
+                pygplates.PolylineOnSphere([(40, 100), (-40, 100), (-40, -100), (40, -100), (40, 100)]) # First and last vertex the same
+                == pygplates.PolylineOnSphere(
+                    pygplates.PolygonOnSphere(
+                            [(40, 100), (-40, 100), (-40, -100), (40, -100)],  # exterior ring
+                            [[(30, 120), (30, 150), (-30, 150), (-30, 120)], [(30, 165), (-30, 165), (-30, -165), (30, -165)]])))  # 2 interior rings get ignored
     
     def test_get_points(self):
         point_sequence = self.polyline.get_points()
@@ -697,6 +704,9 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.points.append(pygplates.PointOnSphere(0, 0, 1))
         self.points.append(pygplates.PointOnSphere(0, -1, 0))
         self.polygon = pygplates.PolygonOnSphere(self.points)
+        self.polygon_with_interior = pygplates.PolygonOnSphere(
+                [(40, 100), (-40, 100), (-40, -100), (40, -100)],  # exterior ring
+                [[(30, 120), (30, 150), (-30, 150), (-30, 120)], [(30, 165), (-30, 165), (-30, -165), (30, -165)]])  # 2 interior rings
 
     def test_construct(self):
         # Need at least three points.
@@ -758,6 +768,34 @@ class PolygonOnSphereCase(unittest.TestCase):
     def test_get_points(self):
         point_sequence = self.polygon.get_points()
         self.assertEquals(self.polygon, pygplates.PolygonOnSphere(point_sequence))
+        exterior_ring_point_sequence = self.polygon.get_exterior_ring_points()
+        self.assertEquals(self.polygon, pygplates.PolygonOnSphere(exterior_ring_point_sequence))
+
+        exterior_ring = self.polygon_with_interior.get_exterior_ring_points()
+        interior_rings = [list(self.polygon_with_interior.get_interior_ring_points(interior_ring_index))
+                for interior_ring_index in range(self.polygon_with_interior.get_number_of_interior_rings())]
+        self.assertEquals(self.polygon_with_interior, pygplates.PolygonOnSphere(exterior_ring, interior_rings))
+    
+    def test_get_segments(self):
+        point_sequence = self.polygon.get_points()
+        segment_sequence = self.polygon.get_segments()
+        self.assertEquals(len(point_sequence), len(segment_sequence))
+        for index in range(len(point_sequence)):
+            self.assertEquals(point_sequence[index], segment_sequence[index].get_start_point())
+        
+        exterior_ring_point_sequence = self.polygon_with_interior.get_exterior_ring_points()
+        exterior_ring_segment_sequence = self.polygon_with_interior.get_exterior_ring_segments()
+        self.assertEquals(len(exterior_ring_point_sequence), len(exterior_ring_segment_sequence))
+        for index in range(len(exterior_ring_point_sequence)):
+            self.assertEquals(exterior_ring_point_sequence[index], exterior_ring_segment_sequence[index].get_start_point())
+        
+        self.assertTrue(self.polygon_with_interior.get_number_of_interior_rings() == 2)
+        for interior_ring_index in range(self.polygon_with_interior.get_number_of_interior_rings()):
+            interior_ring_point_sequence = self.polygon_with_interior.get_interior_ring_points(interior_ring_index)
+            interior_ring_segment_sequence = self.polygon_with_interior.get_interior_ring_segments(interior_ring_index)
+            self.assertEquals(len(interior_ring_point_sequence), len(interior_ring_segment_sequence))
+            for index in range(len(interior_ring_point_sequence)):
+                self.assertEquals(interior_ring_point_sequence[index], interior_ring_segment_sequence[index].get_start_point())
 
     def test_compare(self):
         self.assertEquals(self.polygon, pygplates.PolygonOnSphere(self.points))
@@ -816,18 +854,27 @@ class PolygonOnSphereCase(unittest.TestCase):
         iter(self.polygon.get_segments())
         arcs = [arc for arc in self.polygon.get_segments()]
         self.assertEquals(len(self.polygon.get_segments()), len(self.polygon.get_points()))
+
+        iter(self.polygon.get_exterior_ring_segments())
+        arcs = [arc for arc in self.polygon.get_exterior_ring_segments()]
+        self.assertEquals(len(self.polygon.get_exterior_ring_segments()), len(self.polygon.get_exterior_ring_points()))
+
+        self.assertTrue(self.polygon.get_number_of_interior_rings() == 0)
    
     def test_contains_point(self):
         self.assertTrue(self.points[0] in self.polygon.get_points())
+        self.assertTrue(self.points[0] in self.polygon.get_exterior_ring_points())
         self.assertTrue(pygplates.PointOnSphere(1, 0, 0) in self.polygon.get_points())
         self.assertTrue(pygplates.PointOnSphere(0, 0, -1) not in self.polygon.get_points())
     
     def test_contains_arc(self):
         first_arc = pygplates.GreatCircleArc(self.points[0], self.points[1])
         self.assertTrue(first_arc in self.polygon.get_segments())
+        self.assertTrue(first_arc in self.polygon.get_exterior_ring_segments())
         # Last arc wraps around for a polygon.
         last_arc = pygplates.GreatCircleArc(self.points[-1], self.points[0])
         self.assertTrue(last_arc in self.polygon.get_segments())
+        self.assertTrue(last_arc in self.polygon.get_exterior_ring_segments())
 
     def test_get_item_point(self):
         for i in range(0, len(self.points)):
