@@ -46,23 +46,18 @@ def geometry_on_sphere_get_points(geometry):
     
     .. note:: The returned sequence is *read-only* and cannot be modified.
     
-    .. note:: If you want a modifiable sequence consider wrapping the returned sequence in a ``list``
-       using something like ``points = list(geometry.get_points())`` **but** note that modifying
-       the ``list`` (eg, inserting a new point) will **not** modify the original geometry.
-    
     If this geometry is a :class:`PointOnSphere` then the returned sequence has length one.
     For other geometry types (:class:`MultiPointOnSphere`, :class:`PolylineOnSphere` and
     :class:`PolygonOnSphere`) the length will equal the number of :class:`points<PointOnSphere>`
-    contained within.
+    contained within. For a :class:`PolygonOnSphere` the points include its exterior ring followed
+    by its interior rings (if any).
     
     The following example demonstrates some uses of the above operations:
     ::
     
       points = geometry.get_points()
       for point in points:
-          print point
-      first_point = points[0]
-      last_point = points[-1]
+          print(point)
     
     | However if you know you have a :class:`MultiPointOnSphere`, :class:`PolylineOnSphere` or :class:`PolygonOnSphere`
       (ie, not a :class:`PointOnSphere`) it's actually easier to iterate directly over the geometry itself.
@@ -71,9 +66,9 @@ def geometry_on_sphere_get_points(geometry):
     ::
     
       for point in polyline:
-          print point
-      first_point = polyline[0]
-      last_point = polyline[-1]
+          print(point)
+      first_polyline_point = polyline[0]
+      last_polyline_point = polyline[-1]
     
     .. note:: There are also methods that return the sequence of points as (latitude,longitude)
        values and (x,y,z) values contained in lists and numpy arrays
@@ -99,7 +94,8 @@ def geometry_on_sphere_to_lat_lon_list(geometry):
     If this geometry is a :class:`PointOnSphere` then the returned sequence has length one.
     For other geometry types (:class:`MultiPointOnSphere`, :class:`PolylineOnSphere` and
     :class:`PolygonOnSphere`) the length will equal the number of :class:`points<PointOnSphere>`
-    contained within.
+    contained within. For a :class:`PolygonOnSphere` the points include its exterior ring followed
+    by its interior rings (if any).
     
     If you want the latitude/longitude order swapped in the returned tuples then the following is one way to achieve this:
     ::
@@ -128,7 +124,8 @@ def geometry_on_sphere_to_lat_lon_array(geometry):
     If this geometry is a :class:`PointOnSphere` then the returned sequence has length one.
     For other geometry types (:class:`MultiPointOnSphere`, :class:`PolylineOnSphere` and
     :class:`PolygonOnSphere`) the length will equal the number of :class:`points<PointOnSphere>`
-    contained within.
+    contained within. For a :class:`PolygonOnSphere` the points include its exterior ring followed
+    by its interior rings (if any).
     
     If you want the latitude/longitude order swapped in the returned tuples then the following is one way to achieve this:
     ::
@@ -159,7 +156,8 @@ def geometry_on_sphere_to_lat_lon_point_list(geometry):
     If this geometry is a :class:`PointOnSphere` then the returned sequence has length one.
     For other geometry types (:class:`MultiPointOnSphere`, :class:`PolylineOnSphere` and
     :class:`PolygonOnSphere`) the length will equal the number of :class:`points<PointOnSphere>`
-    contained within.
+    contained within. For a :class:`PolygonOnSphere` the points include its exterior ring followed
+    by its interior rings (if any).
     """
     
     return [point.to_lat_lon_point() for point in geometry.get_points()]
@@ -180,7 +178,8 @@ def geometry_on_sphere_to_xyz_list(geometry):
     If this geometry is a :class:`PointOnSphere` then the returned sequence has length one.
     For other geometry types (:class:`MultiPointOnSphere`, :class:`PolylineOnSphere` and
     :class:`PolygonOnSphere`) the length will equal the number of :class:`points<PointOnSphere>`
-    contained within.
+    contained within. For a :class:`PolygonOnSphere` the points include its exterior ring followed
+    by its interior rings (if any).
     """
     
     return [point.to_xyz() for point in geometry.get_points()]
@@ -208,7 +207,8 @@ def geometry_on_sphere_to_xyz_array(geometry):
     If this geometry is a :class:`PointOnSphere` then the returned sequence has length one.
     For other geometry types (:class:`MultiPointOnSphere`, :class:`PolylineOnSphere` and
     :class:`PolygonOnSphere`) the length will equal the number of :class:`points<PointOnSphere>`
-    contained within.
+    contained within. For a :class:`PolygonOnSphere` the points include its exterior ring followed
+    by its interior rings (if any).
     """
     
     return numpy.array(geometry.to_xyz_list())
