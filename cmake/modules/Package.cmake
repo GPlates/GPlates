@@ -92,6 +92,27 @@ elseif (APPLE)
     # ...but it's easier just to use CPack.
     #
 
+    #
+    # NOTE: You can set the macOS deployment target to a macOS version earlier than your build machine (so users on older systems can still use the package).
+    #
+    # This is done by setting the CMAKE_OSX_DEPLOYMENT_TARGET cache variable
+    # (eg, using 'cmake -D CMAKE_OSX_DEPLOYMENT_TARGET:STRING="10.13", or setting manually inside 'ccmake' or 'cmake-gui').
+    #
+    # Currently the minimum macOS version we support is macOS 10.13 because Qt5 currently supports 10.13+.
+    # Also, as of 10.9, Apple has removed support for libstdc++ (the default prior to 10.9) in favour of libc++ (C++11).
+    #
+    # Note that if you do this then you'll also need the same deployment target set in your dependency libraries.
+    # For example, with Macports you can specify the following in your "/opt/local/etc/macports/macports.conf" file:
+    #   buildfromsource            always
+    #   macosx_deployment_target   10.13
+    # ...prior to installing the ports.
+    # This will also force all ports to have their source code compiled (not downloaded as binaries) which can be quite slow.
+    # For Apple M1 you can instead target 11.0 (since M1/arm64 wasn't introduced until macOS 11.0).
+    #
+    # By default (when CMAKE_OSX_DEPLOYMENT_TARGET is not explicitly set) you are deploying to the macOS version of your build system (and above).
+    # In this case you don't need to build your dependency libraries with a lower deployment target.
+    #
+
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
     if (GPLATES_INSTALL_STANDALONE)
