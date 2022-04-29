@@ -897,6 +897,13 @@ namespace GPlatesApi
 
 		return bp::make_tuple(lat_lon_point.latitude(), lat_lon_point.longitude());
 	}
+
+	GPlatesMaths::PointOnSphere
+	point_on_sphere_get_centroid(
+			const GPlatesMaths::PointGeometryOnSphere &point_on_sphere)
+	{
+		return point_on_sphere.position();
+	}
 }
 
 void
@@ -1083,6 +1090,15 @@ export_point_on_sphere()
 				"    latitude, longitude = point.to_lat_lon()\n"
 				"\n"
 				"  This is similar to :meth:`LatLonPoint.to_lat_lon`.\n")
+		.def("get_centroid",
+				&GPlatesApi::point_on_sphere_get_centroid,
+				"get_centroid()\n"
+				"  Simply returns this point.\n"
+				"\n"
+				"  :rtype: :class:`PointOnSphere`\n"
+				"\n"
+				"  .. note:: This method is only here so that ``get_centroid()`` can be called for all "
+				":class:`geometry types<GeometryOnSphere>` (points, multi-points, polylines and polygons).\n")
 		// Due to the numerical tolerance in comparisons we cannot make hashable.
 		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
@@ -3631,6 +3647,14 @@ export_polygon_on_sphere()
 				"For example, the *interior* centroid of a bottom-heavy, pear-shaped polygon will be "
 				"closer to the bottom of the polygon. This centroid is not exactly at the centre-of-mass, "
 				"but it will be a lot closer to the real centre-of-mass than :meth:`get_boundary_centroid`.\n")
+		.def("get_centroid",
+				&GPlatesApi::polygon_on_sphere_get_interior_centroid,
+				"get_centroid()\n"
+				"  Returns the centroid of this polygon (equivalent to calling :meth:`get_interior_centroid`).\n"
+				"\n"
+				"  :rtype: :class:`PointOnSphere`\n"
+				"\n"
+				"  .. seealso:: :meth:`get_interior_centroid`\n")
 		.def("to_tessellated",
 				&GPlatesApi::polygon_on_sphere_to_tessellated,
 				(bp::arg("tessellate_radians")),

@@ -78,6 +78,13 @@ class GeometryOnSphereCase(unittest.TestCase):
         # The polyline intersects the polygon.
         self.assertAlmostEqual(distance, 0)
         self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(closest_point1, closest_point2), 0)
+    
+    def test_get_centroid(self):
+        # Test all geometry types have a 'get_controid()' method.
+        self.assertTrue(isinstance(pygplates.PointOnSphere(0, 1, 0).get_centroid(), pygplates.PointOnSphere))
+        self.assertTrue(isinstance(pygplates.MultiPointOnSphere([(0, 0), (10, 10)]).get_centroid(), pygplates.PointOnSphere))
+        self.assertTrue(isinstance(pygplates.PolylineOnSphere([(0, 0), (10, 10)]).get_centroid(), pygplates.PointOnSphere))
+        self.assertTrue(isinstance(pygplates.PolygonOnSphere([(0, 0), (10, 10), (20, 20)]).get_centroid(), pygplates.PointOnSphere))
 
 
 class PointOnSphereCase(unittest.TestCase):
@@ -159,6 +166,10 @@ class PointOnSphereCase(unittest.TestCase):
         self.assertAlmostEqual(x, 0)
         self.assertAlmostEqual(y, 1)
         self.assertAlmostEqual(z, 0)
+    
+    def test_get_centroid(self):
+        point = pygplates.PointOnSphere(0, 1, 0)
+        self.assertEqual(point.get_centroid(), point)
 
 
 class MultiPointOnSphereCase(unittest.TestCase):
@@ -1064,6 +1075,7 @@ class PolygonOnSphereCase(unittest.TestCase):
     def test_centroid(self):
         self.assertTrue(isinstance(self.polygon.get_boundary_centroid(), pygplates.PointOnSphere))
         self.assertTrue(isinstance(self.polygon.get_interior_centroid(), pygplates.PointOnSphere))
+        self.assertEquals(self.polygon.get_centroid(), self.polygon.get_interior_centroid())
     
     def test_tessellate(self):
         tessellated = self.polygon.to_tessellated(math.radians(91))
