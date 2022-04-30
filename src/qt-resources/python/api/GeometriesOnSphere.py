@@ -73,6 +73,9 @@ def geometry_on_sphere_get_points(geometry):
     .. note:: There are also methods that return the sequence of points as (latitude,longitude)
        values and (x,y,z) values contained in lists and numpy arrays
        (:meth:`to_lat_lon_list`, :meth:`to_lat_lon_array`, :meth:`to_xyz_list` and :meth:`to_xyz_array`).
+
+    .. versionchanged:: 0.36
+       For :class:`PolygonOnSphere` the returned points now include interior rings (if any).
     """
 
     # Use private method in derived classes.

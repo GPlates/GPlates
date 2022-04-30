@@ -528,7 +528,16 @@ export_date_line_wrapper()
 				"      is_original_point_flags = wrapped_polyline.get_is_original_point_flags()\n"
 				"      for wrapped_point_index in range(len(wrapped_points)):\n"
 				"        if is_original_point_flags[wrapped_point_index]:\n"
-				"          wrapped_point_lat, wrapped_point_lon = wrapped_points[wrapped_point_index].to_lat_lon()\n")
+				"          wrapped_point_lat, wrapped_point_lon = wrapped_points[wrapped_point_index].to_lat_lon()\n"
+				"\n"
+				"  .. versionchanged:: 0.36\n"
+				"     Added the following to *DateLineWrapper.LatLonPolygon*:\n"
+				"\n"
+				"     - get_points()\n"
+				"     - get_is_original_point_flags()\n"
+				"     - get_number_of_interior_rings()\n"
+				"     - get_interior_points(interior_ring_index)\n"
+				"     - get_is_original_interior_point_flags(interior_ring_index)\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

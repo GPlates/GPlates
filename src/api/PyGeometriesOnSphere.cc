@@ -1098,7 +1098,9 @@ export_point_on_sphere()
 				"  :rtype: :class:`PointOnSphere`\n"
 				"\n"
 				"  .. note:: This method is only here so that ``get_centroid()`` can be called for all "
-				":class:`geometry types<GeometryOnSphere>` (points, multi-points, polylines and polygons).\n")
+				":class:`geometry types<GeometryOnSphere>` (points, multi-points, polylines and polygons).\n"
+				"\n"
+				"  .. versionadded:: 0.36\n")
 		// Due to the numerical tolerance in comparisons we cannot make hashable.
 		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
@@ -3090,7 +3092,11 @@ export_polygon_on_sphere()
 					"  polygon = pygplates.PolygonOnSphere(polyline)\n"
 					"\n"
 					".. note:: A polygon closes the loop between the last and first points in its exterior ring "
-					"(created from the polyline) so there's no need to make the first and last points equal.\n",
+					"(created from the polyline) so there's no need to make the first and last points equal.\n"
+					"\n"
+					".. versionchanged:: 0.36\n"
+					"   :meth:`get_points<GeometryOnSphere.get_points>` and :meth:`get_segments` now include "
+					"points and segments from interior rings (as do the operations listed in the table above).\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -3205,7 +3211,10 @@ export_polygon_on_sphere()
 				"    \n"
 				"    # Lon/lat list of tuples (ie, different latitude/longitude order).\n"
 				"    points = [(lon1, lat1), (lon2, lat2), (lon3, lat3)]\n"
-				"    polygon = pygplates.PolygonOnSphere([(lat,lon) for lon, lat in points])\n")
+				"    polygon = pygplates.PolygonOnSphere([(lat,lon) for lon, lat in points])\n"
+				"\n"
+				"  .. versionchanged:: 0.36\n"
+				"     Can now optionally specify interior rings (in addition to the exterior ring).\n")
 		.def("__init__",
 				bp::make_constructor(
 						&GPlatesApi::polygon_on_sphere_create_from_geometry,
@@ -3298,7 +3307,10 @@ export_polygon_on_sphere()
 				"  .. note:: The :meth:`end point<GreatCircleArc.get_end_point>` of the last segment in a ring is "
 				"equal to the :meth:`start point<GreatCircleArc.get_start_point>` of the first segment in that ring.\n"
 				"\n"
-				"  .. note:: The returned sequence is *read-only* and cannot be modified.\n")
+				"  .. note:: The returned sequence is *read-only* and cannot be modified.\n"
+				"\n"
+				"  .. versionchanged:: 0.36\n"
+				"     The returned segments now include interior rings (if any).\n")
 		.def("get_exterior_ring_segments",
 				&GPlatesApi::polygon_on_sphere_get_exterior_ring_arcs_view,
 				"get_exterior_ring_segments()\n"
@@ -3337,7 +3349,9 @@ export_polygon_on_sphere()
 				"  .. note:: The :meth:`end point<GreatCircleArc.get_end_point>` of the last segment in the exterior ring is "
 				"equal to the :meth:`start point<GreatCircleArc.get_start_point>` of the first segment in the exterior ring.\n"
 				"\n"
-				"  .. note:: The returned sequence is *read-only* and cannot be modified.\n")
+				"  .. note:: The returned sequence is *read-only* and cannot be modified.\n"
+				"\n"
+				"  .. versionadded:: 0.36\n")
 		.def("get_exterior_ring_points",
 				&GPlatesApi::polygon_on_sphere_get_exterior_ring_points_view,
 				"get_exterior_ring_points()\n"
@@ -3368,7 +3382,9 @@ export_polygon_on_sphere()
 				"    for point in exterior_ring_points:\n"
 				"        print(point)\n"
 				"\n"
-				"  .. note:: The returned sequence is *read-only* and cannot be modified.\n")
+				"  .. note:: The returned sequence is *read-only* and cannot be modified.\n"
+				"\n"
+				"  .. versionadded:: 0.36\n")
 		.def("get_number_of_interior_rings",
 				&GPlatesMaths::PolygonOnSphere::number_of_interior_rings,
 				"get_number_of_interior_rings()\n"
@@ -3376,7 +3392,9 @@ export_polygon_on_sphere()
 				"\n"
 				"  :rtype: int\n"
 				"\n"
-				"  If there are no interior rings then ``0`` is returned.\n")
+				"  If there are no interior rings then ``0`` is returned.\n"
+				"\n"
+				"  .. versionadded:: 0.36\n")
 		.def("get_interior_ring_segments",
 				&GPlatesApi::polygon_on_sphere_get_interior_ring_arcs_view,
 				(bp::arg("interior_ring_index")),
@@ -3420,7 +3438,9 @@ export_polygon_on_sphere()
 				"  .. note:: The :meth:`end point<GreatCircleArc.get_end_point>` of the last segment in an interior ring is "
 				"equal to the :meth:`start point<GreatCircleArc.get_start_point>` of the first segment in that interior ring.\n"
 				"\n"
-				"  .. note:: The returned sequence is *read-only* and cannot be modified.\n")
+				"  .. note:: The returned sequence is *read-only* and cannot be modified.\n"
+				"\n"
+				"  .. versionadded:: 0.36\n")
 		.def("get_interior_ring_points",
 				&GPlatesApi::polygon_on_sphere_get_interior_ring_points_view,
 				(bp::arg("interior_ring_index")),
@@ -3456,7 +3476,9 @@ export_polygon_on_sphere()
 				"        for point in interior_ring_points:\n"
 				"            print(point)\n"
 				"\n"
-				"  .. note:: The returned sequence is *read-only* and cannot be modified.\n")
+				"  .. note:: The returned sequence is *read-only* and cannot be modified.\n"
+				"\n"
+				"  .. versionadded:: 0.36\n")
 		.def("get_arc_length",
 				&GPlatesMaths::PolygonOnSphere::get_arc_length,
 				"get_arc_length()\n"
@@ -3654,7 +3676,9 @@ export_polygon_on_sphere()
 				"\n"
 				"  :rtype: :class:`PointOnSphere`\n"
 				"\n"
-				"  .. seealso:: :meth:`get_interior_centroid`\n")
+				"  .. seealso:: :meth:`get_interior_centroid`\n"
+				"\n"
+				"  .. versionadded:: 0.36\n")
 		.def("to_tessellated",
 				&GPlatesApi::polygon_on_sphere_to_tessellated,
 				(bp::arg("tessellate_radians")),
