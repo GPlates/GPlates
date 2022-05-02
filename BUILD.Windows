@@ -9,13 +9,18 @@ Table of Contents
      3. Note before starting
      4. Program and library dependencies
  3. Creating Visual Studio solution and project files with CMake
-     1. Building GPlates via the IDE
-     2. Building GPlates via the Command Line
+ 4. Building and installing GPlates/pyGPlates via the IDE
+     1. Building
+     2. Installing
+ 5. Building and installing GPlates/pyGPlates via the Command Line
+     1. Building
+     2. Installing
 
 Introduction
 
-This will be a guide to building GPlates with various Windows development
-environments. 
+This is a guide to building GPlates or pyGPlates in a Windows development environment.
+The source code will compile either GPlates or pyGPlates depending on where
+you obtained the source code (eg, from a GPlates release or a pyGPlates release).
 
 Using Microsoft Visual C++
 
@@ -25,7 +30,7 @@ product page for Visual Studio.
 
 Version requirements
 
-GPlates can be built with version 14.0 (2015) of Microsoft Visual C++ (Visual Studio 2015),
+GPlates/pyGPlates can be built with version 14.0 (2015) of Microsoft Visual C++ (Visual Studio 2015),
 although Visual Studio 2017 (or above) is preferred.
 As newer versions of Visual Studio are released, newer versions of the
 dependencies will likely be required; if in doubt, for each dependency, download
@@ -34,19 +39,18 @@ the latest version instead of the version stated in DEPS.Windows.
 Visual Studio Community
 
 The Community edition of Visual Studio is freely available.
-The steps for building GPlates with the Community edition are the
+The steps for building GPlates/pyGPlates with the Community edition are the
 same as those for the other editions (such as Professional edition).
 
 Note before starting
 
-For any activities requiring the command line, remember to use the
-"Developer Command Prompt for VS201X" shortcut available in the Windows "Start" menu.
+For any activities requiring the command line, remember to use the developer command prompt shortcut
+for your Visual Studio 64-bit compiler.
+These are available in the Windows "Start" menu in the folder of your version of Visual Studio.
+For example, for Visual Studio 2017 you should see "x64 Native Tools Command Prompt for VS 2017"
+under the "Visual Studio 2017" folder.
 This starts a command prompt and sets up environment variables, allowing use of VC command line 
 applications (such as the compiler, linker, make and build tools).
-Note that this is 32-bit. For a 64-bit version of GPlates you'll need a command prompt with a
-64-bit Visual Studio toolset enabled. To do this:
-* Start a standard command prompt, and run the following in it (keeping the double quotes intact):
-  "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
 
 Program and library dependencies
 
@@ -57,41 +61,74 @@ Creating Visual Studio solution and project files with CMake
   1.  Install the library dependencies by following the instructions in "DEPS.Windows".
       Note that the 'CMAKE_PREFIX_PATH' and 'PATH' environment variables are used
       to help find some of these libraries (see "DEPS.Windows").
-  2.  Run the CMake GUI program ('cmake-gui.exe').
-  3.  Set the 'source' directory to the root GPlates source directory
-      (the one that has 'src' as a sub-directory).
+  2.  Run the CMake GUI program ("cmake-gui.exe").
+  3.  Set the 'source' directory to the root source directory (the one that has 'src' as a sub-directory).
   4.  Set the 'build' directory to be the same as the 'source' directory for in-place builds or
       to a different directory for out-of-place builds (recommended for developers).
   5.  Click 'Configure'.
-  6.  Specify 'Visual Studio 14 2015' for 32-bit or 'Visual Studio 14 2015 Win64' for 64-bit.
-      Note that the library dependencies should be compiled as 32-bit or 64-bit respectively.
+  6.  Specify your version of "Visual Studio" (such as "Visual Studio 15 2017") and specify "x64" as the
+      platform for the generator. Note that the library dependencies should also be compiled as 64-bit.
   7.  Once configuration finished you should get no popup messages saying a dependency could not be found.
       If you do then you might need to edit 'CMAKE_PREFIX_PATH' environment variable if it is not referring
       to the correct dependency locations.
   8.  Even if no popup messages occurred, the 'Generate' will still be greyed out so you'll need
       to click 'Configure' once more.
   9.  Click 'Generate'.
-      Note that, in CMake 3.21, the 'generate' phase can take a long time.
+      Note that starting with CMake 3.21 the 'generate' phase can take a long time.
   10. The CMake GUI should then say 'Generating done' (or it might just close when finished).
-  11. You should now have a 'GPlates.sln' file in your root GPlates directory.
+  11. You should now have a "GPlates.sln" (or "PyGPlates.sln") file in your root 'build' directory.
 
-Building GPlates via the IDE
+Building and installing GPlates/pyGPlates via the IDE
 
-  1. Open GPlates.sln with the Visual Studio IDE.
-  2. Select 'Release' build from the "Build->Configuration Manager..." menu.
-  3. Rebuild All from the Build menu.
-     Or right-click on the 'gplates' project and select 'Rebuild' to only build the GPlates executable.
+Building
 
-Building GPlates via the Command Line
+  1. Open "GPlates.sln" (or "PyGPlates.sln") with the Visual Studio IDE.
+  2. Select the 'Release' build from the "Build->Configuration Manager..." menu.
+  3. Right-click on 'gplates' (or 'pygplates') in the "Solution Explorer" window and select 'Build'.
+  4. There should now be "gplates.exe" (or "pygplates.pyd") in the "bin/Release" directory.
 
-  1. Run the Visual Studio 2015 Command Prompt.
-     * This is "Developer Command Prompt for VS2015" for Visual Studio 2015.
-       Note that this is 32-bit. To build a 64-bit version of GPlates you'll need a
-       command prompt with a 64-bit Visual Studio toolset enabled. To do this:
-       * Start a standard command prompt, and run the following in it (keeping the double quotes intact):
-         "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" amd64
-  2. Go to the root GPlates build directory. 
+Installing
+
+  1. Run the CMake GUI program ("cmake-gui.exe").
+  2. Change the 'CMAKE_INSTALL_PREFIX' variable to the location you want to install to.
+     Note that it defaults to "C:/Program Files/GPlates" (or "C:/Program Files/PyGPlates") which requires admin privileges.
+  3. Click 'Configure' and 'Generate' (as covered in the 'Building' section).
+  4. Open "GPlates.sln" (or "PyGPlates.sln") with the Visual Studio IDE.
+  5. Select the 'Release' build from the "Build->Configuration Manager..." menu.
+  6. Right-click on 'INSTALL' (under 'CMakePredefinedTargets') in the "Solution Explorer" window and select 'Build'.
+  7. There should now be a "gplates.exe" (or a "pygplates/" sub-directory) in the directory specified by 'CMAKE_INSTALL_PREFIX'.
+     Note that, unlike Linux, on Windows GPlates (or pyGPlates) is installed as a standalone application (or standalone Python package).
+     This means the dependency libraries are included along with "gplates.exe" (or "pygplates/").
+     Also note that with pyGPlates you would then add the directory specified by 'CMAKE_INSTALL_PREFIX' to PYTHONPATH (not its "pygplates/" sub-directory).
+
+Building GPlates/pyGPlates via the Command Line
+
+Building
+
+  1. Run the Visual Studio Command Prompt.
+     * Click the Windows "Start" menu, open the folder containing your version of Visual Studio and
+       run the 64-bit developer command prompt. For example, for Visual Studio 2017 you should see
+       "x64 Native Tools Command Prompt for VS 2017" under the "Visual Studio 2017" folder.
+  2. Go to the root 'build' directory (using "cd /d <build_dir>"). 
   3. Type the following on the command-line to build a release version of GPlates:
-       msbuild gplates.sln /m /t:gplates /p:Configuration=Release /v:quiet
-     ...where '/m' uses all CPUs, and '/t:gplates' just builds the GPlates executable
-     (you can exclude it to build all targets).
+       msbuild gplates.sln /m /t:gplates /p:Configuration=Release /v:minimal
+     ...or to build pyGPlates:
+       msbuild pygplates.sln /m /t:pygplates /p:Configuration=Release /v:minimal
+     ...where '/m' uses all CPUs, and '/t' specifies the target to build.
+  4. There should now be "gplates.exe" (or "pygplates.pyd") in the "bin/Release" directory.
+
+Installing
+
+  1. Run the Visual Studio Command Prompt.
+     * Click the Windows "Start" menu, open the folder containing your version of Visual Studio and
+       run the 64-bit developer command prompt. For example, for Visual Studio 2017 you should see
+       "x64 Native Tools Command Prompt for VS 2017" under the "Visual Studio 2017" folder.
+  2. Go to the root 'build' directory (using "cd /d <build_dir>").
+  3. Type the following on the command-line to install a standalone version of GPlates (or pyGPlates):
+       cmake --install . --prefix <install_dir>
+     ...where '<install_dir>' is your installation directory.
+     Note: this assumes you've already built GPlates (or pyGPlates).
+  4. There should now be a "gplates.exe" (or a "pygplates/" sub-directory) in the directory '<install_dir>'.
+     Note that, unlike Linux, on Windows GPlates (or pyGPlates) is installed as a standalone application (or standalone Python package).
+     This means the dependency libraries are included along with "gplates.exe" (or "pygplates/").
+     Also note that with pyGPlates you would then add the directory specified by '<install_dir>' to PYTHONPATH (not its "pygplates/" sub-directory).
