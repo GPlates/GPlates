@@ -73,7 +73,7 @@ elseif (APPLE)
     # (note that Apple's notarization process does not accept the TBZ2 format, which is why we default to ZIP for binary archives).
     # For example:
     #   XCode >= 13:
-    #     xcrun notarytool submit pygplates_0.34.0_Darwin-arm64.zip pygplates_0.34.0_Darwin-arm64.zip --keychain-profile "AC_PASSWORD"
+    #     xcrun notarytool submit pygplates_0.34.0_Darwin-arm64.zip --keychain-profile "AC_PASSWORD"
     #     xcrun notarytool info <request-identifier> --keychain-profile "AC_PASSWORD"
     #   XCode < 13:
     #     xcrun altool --notarize-app --primary-bundle-id org.gplates.pygplates-0.34.0 --username <email-address> --password @keychain:AC_PASSWORD --file pygplates_0.34.0_Darwin-x86_64.zip

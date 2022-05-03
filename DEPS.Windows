@@ -24,7 +24,7 @@ To edit the environment variables:
      As you are typing you should see that entry appear (with sub-heading 'Control panel').
      Click on that entry.
   3. Click "Environment variables..." at the bottom of the dialog that pops up.
-  6. Edit an environment variable in the 'User variables for ...' or 'System variables' section.
+  4. Edit an environment variable in the 'User variables for ...' or 'System variables' section.
      If the environment variable does not exist, click the New button to add it.
 
 Program and library dependencies

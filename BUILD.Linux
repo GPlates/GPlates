@@ -33,6 +33,8 @@ Commands to build GPlates/pyGPlates
     cmake .
     make
 
+Note that you can ignore the CMake warning "CGAL_DATA_DIR cannot be deduced".
+
 The GPlates executable (or pyGPlates library)
 
 The GPlates executable (or pyGPlates library) will be called "gplates" (or "pygplates.so") and

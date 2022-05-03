@@ -474,7 +474,7 @@ export_resolve_topologies()
 			"*topological* features.\n"
 			"  | They can all be mixed in a single :class:`feature collection<FeatureCollection>` or file, "
 			"or they can be distributed across multiple :class:`feature collections<FeatureCollection>` or files.\n"
-			"  | For example the dynamic polygons in the `GPlates sample data <http://www.gplates.org/download.html#download_data>`_ "
+			"  | For example the dynamic polygons in the `GPlates geodata <http://www.gplates.org/download.html#download-gplates-compatible-data>`_ "
 			"have everything in a single file.\n"
 			"\n"
 			"  .. note:: Topological *sections* can be regular features or topological *line* features. "
