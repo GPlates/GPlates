@@ -792,21 +792,7 @@ endif()
 #
 # OpenGL (and GLEW) dependency.
 #
-target_link_libraries(${SOURCE_TARGET} PUBLIC OpenGL::GL OpenGL::GLU GLEW::GLEW)
-# Define GL_SILENCE_DEPRECATION to avoid a bunch of OpenGL deprecation warnings.
-# Currently happens when compiling on macOS mojave (10.14).
-# We will eventually replace OpenGL with Vulkan, but not for a while since
-# Apple are unlikely to 'remove' OpenGL in their drivers anytime soon.
-#
-# Set as usage requirements (INTERFACE) on the OpenGL imported library target.
-#
-# Note: Prior to CMake 3.11 none of the 'target_*()' commands could set INTERFACE_ properties on imported targets.
-if (CMAKE_VERSION VERSION_LESS 3.11)
-	# Using 'set_property' since 'set_target_property' cannot append.
-	set_property(TARGET OpenGL::GL APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS GL_SILENCE_DEPRECATION)
-else()
-	target_compile_definitions(OpenGL::GL INTERFACE GL_SILENCE_DEPRECATION)
-endif()
+target_link_libraries(${SOURCE_TARGET} PUBLIC OpenGL::GL GLEW::GLEW)
 
 #
 # ZLIB dependency.
