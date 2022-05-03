@@ -53,18 +53,6 @@ class ParserMSVC(IncludeParser):
                 '#endif',
                 '}'
                 ]),
-            ('gl/glu.h', [
-                'extern "C" {',
-                '#if defined(__APPLE__)',
-                '#include <OpenGL/glu.h>',
-                '#elif defined(__WINDOWS__)',
-                '#include <windows.h>',
-                '#include <GL/glu.h>',
-                '#else',
-                '#include <GL/glu.h>',
-                '#endif',
-                '}'
-            	]),
         ]
         # Convert search part of list to lower case.
         for i in range(len(self.include_varies_with_platform)):

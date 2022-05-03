@@ -45,11 +45,10 @@ same as those for the other editions (such as Professional edition).
 Note before starting
 
 For any activities requiring the command line, remember to use the developer command prompt shortcut
-for your Visual Studio 64-bit compiler.
-These are available in the Windows "Start" menu in the folder of your version of Visual Studio.
-For example, for Visual Studio 2017 you should see "x64 Native Tools Command Prompt for VS 2017"
-under the "Visual Studio 2017" folder.
-This starts a command prompt and sets up environment variables, allowing use of VC command line 
+for your Visual Studio 64-bit compiler. These are available in the Windows "Start" menu in the folder
+of your version of Visual Studio. For example, for Visual Studio 2017 you should see
+"x64 Native Tools Command Prompt for VS 2017" under the "Visual Studio 2017" folder.
+This starts a command prompt and sets up environment variables, allowing use of VC command line
 applications (such as the compiler, linker, make and build tools).
 
 Program and library dependencies
