@@ -58,7 +58,7 @@ def get_overriding_and_subducting_plates(shared_sub_segment, return_subduction_p
                     overriding_plate_id = overriding_plate.get_feature().get_reconstruction_plate_id()
                     subducting_plate_id = subducting_plate.get_feature().get_reconstruction_plate_id()
     
-    .. versionadded:: 23
+    .. versionadded:: 0.23
     """
     
     # Get the subduction polarity of the subduction zone line.
@@ -159,7 +159,7 @@ def get_subducting_plate(shared_sub_segment, return_subduction_polarity=False):
                     subducting_plate, subduction_polarity = subducting_plate_and_polarity
                     subducting_plate_id = subducting_plate.get_feature().get_reconstruction_plate_id()
     
-    .. versionadded:: 30
+    .. versionadded:: 0.30
     """
     
     # Get the subduction polarity of the subducting line.
