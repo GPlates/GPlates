@@ -22,11 +22,9 @@ Sample code
     import pygplates
 
 
-    # Load one or more rotation files into a rotation model.
-    rotation_model = pygplates.RotationModel('rotations.rot')
-
-    # Load the topological plate polygon features (can also include deforming networks).
-    topology_features = pygplates.FeatureCollection('topologies.gpml')
+    # Create a topological model from the topological plate polygon features (can also include deforming networks)
+    # and rotation file(s).
+    topological_model = pygplates.TopologicalModel('topologies.gpml', 'rotations.rot')
 
     # Our geological times will be from 0Ma to 'num_time_steps' Ma (inclusive) in 1 My intervals.
     num_time_steps = 140
@@ -34,11 +32,11 @@ Sample code
     # 'time' = 0, 1, 2, ... , 140
     for time in range(num_time_steps + 1):
         
-        # Resolve our topological plate polygons (and deforming networks) to the current 'time'.
-        # We generate both the resolved topology boundaries and the boundary sections between them.
-        resolved_topologies = []
-        shared_boundary_sections = []
-        pygplates.resolve_topologies(topology_features, rotation_model, resolved_topologies, time, shared_boundary_sections)
+        # Get a snapshot of our resolved topologies at the current 'time'.
+        topological_snapshot = topological_model.topological_snapshot(time)
+
+        # Extract the boundary sections between our resolved topological plate polygons (and deforming networks) from the current snapshot.
+        shared_boundary_sections = topological_snapshot.get_resolved_topological_sections()
         
         # We will accumulate the total ridge and subduction zone lengths for the current 'time'.
         total_ridge_length = 0
@@ -76,30 +74,35 @@ Sample code
 Details
 """""""
 
-The rotations are loaded from a rotation file into a :class:`pygplates.RotationModel`.
+| First create a :class:`topological model<pygplates.TopologicalModel>` from topological features and rotation files.
+| The topological features can be plate polygons and/or deforming networks.
+| More than one file containing topological features can be specified here, however we're only specifying one file.
+| Also note that more than one rotation file (or even a single :class:`pygplates.RotationModel`) can be specified here,
+  however we're only specifying a single rotation file.
+
 ::
 
-    rotation_model = pygplates.RotationModel('rotations.rot')
+    topological_model = pygplates.TopologicalModel('topologies.gpml', 'rotations.rot')
 
-The topological features are loaded into a :class:`pygplates.FeatureCollection`.
+.. note:: We create our :class:`pygplates.TopologicalModel` **outside** the time loop since that does not require ``time``.
+
+| Get a snapshot of our resolved topologies.
+| Here the topological features are resolved to the current ``time``
+  using :func:`pygplates.TopologicalModel.topological_snapshot`.
+
 ::
 
-    topology_features = pygplates.FeatureCollection('topologies.gpml')
+    topological_snapshot = topological_model.topological_snapshot(time)
 
-| The topological features are resolved to the current ``time`` using :func:`pygplates.resolve_topologies`.
+| Extract the boundary sections between our resolved topological plate polygons (and deforming networks) from the current snapshot.
 | By default both :class:`pygplates.ResolvedTopologicalBoundary` (used for dynamic plate polygons) and
-  :class:`pygplates.ResolvedTopologicalNetwork` (used for deforming regions) are appended to the
-  list ``resolved_topologies``.
-| Additionally the :class:`resolved topological sections<pygplates.ResolvedTopologicalSection>` are
-  appended to the list ``shared_boundary_sections``.
+  :class:`pygplates.ResolvedTopologicalNetwork` (used for deforming regions) are listed in the boundary sections.
 
 ::
 
-    resolved_topologies = []
-    shared_boundary_sections = []
-    pygplates.resolve_topologies(topology_features, rotation_model, resolved_topologies, time, shared_boundary_sections)
+    shared_boundary_sections = topological_snapshot.get_resolved_topological_sections()
 
-| The :class:`resolved topological sections<pygplates.ResolvedTopologicalSection>` are actually what
+| These :class:`boundary sections<pygplates.ResolvedTopologicalSection>` are actually what
   we're interested in because they contain no duplicate sub-segments.
 | If we were to iterate over the resolved topologies and *their* sub-segments, as we do in the
   :ref:`pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies` sample code,

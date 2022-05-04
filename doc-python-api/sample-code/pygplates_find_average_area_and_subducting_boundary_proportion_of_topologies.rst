@@ -22,11 +22,9 @@ Sample code
     import pygplates
 
 
-    # Load one or more rotation files into a rotation model.
-    rotation_model = pygplates.RotationModel('rotations.rot')
-
-    # Load the topological features (can be plate polygons and/or deforming networks).
-    topology_features = pygplates.FeatureCollection('topologies.gpml')
+    # Create a topological model from our topological features (can be plate polygons and/or deforming networks)
+    # and rotation file(s).
+    topological_model = pygplates.TopologicalModel('topologies.gpml', 'rotations.rot')
 
     # Our geological times will be from 0Ma to 'num_time_steps' Ma (inclusive) in 1 My intervals.
     num_time_steps = 140
@@ -34,9 +32,11 @@ Sample code
     # 'time' = 0, 1, 2, ... , 140
     for time in range(num_time_steps + 1):
         
-        # Resolve our topological plate polygons (and deforming networks) to the current 'time'.
-        resolved_topologies = []
-        pygplates.resolve_topologies(topology_features, rotation_model, resolved_topologies, time)
+        # Get a snapshot of our resolved topologies at the current 'time'.
+        topological_snapshot = topological_model.topological_snapshot(time)
+
+        # Extract the resolved topological plate polygons (and deforming networks) from the current snapshot.
+        resolved_topologies = topological_snapshot.get_resolved_topologies()
         
         # We will accumulate the total area and subduction length proportion for the current 'time'.
         total_area = 0
@@ -80,25 +80,33 @@ Sample code
 Details
 """""""
 
-The rotations are loaded from a rotation file into a :class:`pygplates.RotationModel`.
+| First create a :class:`topological model<pygplates.TopologicalModel>` from topological features and rotation files.
+| The topological features can be plate polygons and/or deforming networks.
+| More than one file containing topological features can be specified here, however we're only specifying one file.
+| Also note that more than one rotation file (or even a single :class:`pygplates.RotationModel`) can be specified here,
+  however we're only specifying a single rotation file.
+
 ::
 
-    rotation_model = pygplates.RotationModel('rotations.rot')
+    topological_model = pygplates.TopologicalModel('topologies.gpml', 'rotations.rot')
 
-The topological features are loaded into a :class:`pygplates.FeatureCollection`.
+.. note:: We create our :class:`pygplates.TopologicalModel` **outside** the time loop since that does not require ``time``.
+
+| Get a snapshot of our resolved topologies.
+| Here the topological features are resolved to the current ``time``
+  using :func:`pygplates.TopologicalModel.topological_snapshot`.
+
 ::
 
-    topology_features = pygplates.FeatureCollection('topologies.gpml')
+    topological_snapshot = topological_model.topological_snapshot(time)
 
-| The topological features are resolved to the current ``time`` using :func:`pygplates.resolve_topologies`.
+| Extract the resolved topological plate polygons (and deforming networks) from the current snapshot.
 | By default both :class:`pygplates.ResolvedTopologicalBoundary` (used for dynamic plate polygons) and
-  :class:`pygplates.ResolvedTopologicalNetwork` (used for deforming regions) and are appended to the
-  list ``resolved_topologies``.
+  :class:`pygplates.ResolvedTopologicalNetwork` (used for deforming regions) are returned.
 
 ::
 
-    resolved_topologies = []
-    pygplates.resolve_topologies(topology_features, rotation_model, resolved_topologies, time)
+    resolved_topologies = topological_snapshot.get_resolved_topologies()
 
 | The boundary polygon of a resolved topology is found by calling
   ``resolved_topology.get_resolved_boundary()`` which is available for both

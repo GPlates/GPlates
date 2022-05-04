@@ -127,10 +127,10 @@ you could type the following in a *command* window (click the *Start* icon in lo
 
   set pythonpath=%pythonpath%;"C:\pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_win64"
   
-.. note:: We are **not** pointing to ``C:/pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_win64/pygplates/``
-   (ie, the ``pygplates/`` sub-directory within ``C:/pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_win64/``)
+.. note:: We are **not** pointing to ``C:\pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_win64\pygplates\``
+   (ie, the ``pygplates\`` sub-directory within ``C:\pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_win64\``)
    even though that's where ``pygplates.pyd`` lives. This is because pyGPlates on Windows (and macOS) is now a Python *package*
-   (due to the presence of a ``pygplates/__init__.py`` file).
+   (due to the presence of a ``pygplates\__init__.py`` file).
 
 Or you can change ``PYTHONPATH`` in the system environment variables:
   
