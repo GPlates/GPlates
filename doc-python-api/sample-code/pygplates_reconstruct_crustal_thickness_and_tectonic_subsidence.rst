@@ -26,7 +26,7 @@ Sample code
     # and rotation file(s).
     topological_model = pygplates.TopologicalModel('topologies.gpml', 'rotations.rot')
 
-    # Our reconstruction will span from 140Ma to present day in 1 Myr intervals.
+    # Our reconstruction will span from 250Ma to present day in 1 Myr intervals.
     initial_time = 250
     time_increment = 1
 

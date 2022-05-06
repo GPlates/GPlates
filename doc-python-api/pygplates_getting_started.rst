@@ -57,6 +57,10 @@ This release includes the following download files:
 
 The following sections cover these files and their installation.
 
+.. contents::
+   :local:
+   :depth: 2
+
 Documentation
 """""""""""""
 
