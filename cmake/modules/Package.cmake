@@ -400,20 +400,22 @@ if (GPLATES_BUILD_GPLATES)
                 #
                 file(WRITE "${post_build_script}" "
                     foreach(_package_file \${CPACK_PACKAGE_FILES})
-                        # Run 'codesign' to sign with a Developer ID certificate.
-                        execute_process(
-                            COMMAND ${CODESIGN} --timestamp --sign \"${GPLATES_APPLE_CODE_SIGN_IDENTITY}\" \${_package_file}
-                            RESULT_VARIABLE _codesign_result
-                            OUTPUT_VARIABLE _codesign_output
-                            ERROR_VARIABLE _codesign_error)
-                        if (_codesign_result)
-                            message(FATAL_ERROR \"${CODESIGN} failed: \${_codesign_error}\")
+                        if (_package_file MATCHES [[.*\.dmg]])
+                            # Run 'codesign' to sign with a Developer ID certificate.
+                            execute_process(
+                                COMMAND ${CODESIGN} --timestamp --sign \"${GPLATES_APPLE_CODE_SIGN_IDENTITY}\" \${_package_file}
+                                RESULT_VARIABLE _codesign_result
+                                OUTPUT_VARIABLE _codesign_output
+                                ERROR_VARIABLE _codesign_error)
+                            if (_codesign_result)
+                                message(FATAL_ERROR \"${CODESIGN} failed: \${_codesign_error}\")
+                            endif()
                         endif()
                     endforeach()
                 ")
             endfunction()
 
-            set(_post_build_script "${CMAKE_CURRENT_BINARY_DIR}/codesign_dragndrop_package.cmake")
+            set(_post_build_script "${CMAKE_CURRENT_BINARY_DIR}/codesign_package.cmake.cmake")
 
             create_post_build_script(${_post_build_script})
 
