@@ -9,36 +9,32 @@ Table of Contents
          1. Ubuntu packages
          3. How to install via a GUI (recommended)
          4. How to install using the command-line (advanced)
-         5. A note about the packages for GL and GLU
+         5. A note about the packages for GL
      2. For other Linux variants
 
 Introduction
 
 This page lists the package dependencies which need to be satisfied to be able
-to build GPlates from source on Linux.
+to build GPlates/pyGPlates from source on Linux.
 
-Below, we list the corresponding Ubuntu packages. Similar packages should
-be available on other Linux distributions. Ubuntu 8.04 is the oldest Ubuntu release that
-we support; users of older Ubuntu releases may, for some packages, be required
-to install and/or compile the dependencies manually.
+Below, we list the corresponding Ubuntu packages.
+Similar packages should be available on other Linux distributions.
 
 Program and library dependencies
 
-To compile GPlates, you will need the following programs and libraries
-installed:
+To compile GPlates/pyGPlates, you will need the following programs and libraries installed:
 
-  • cmake (3.5 or newer)
+  • cmake (3.10 or newer)
   • g++ (4.8.1 or newer, required to support C++11) 
   • GL library (the OpenGL shared library)
-  • GLU library (the OpenGL Utility shared library)
   • GLEW library (the OpenGL Extension Wrangler Library)
-  • Python library (version 2 or 3, preferably 3)
-  • Boost library headers (version 1.35 or newer; the highest version number which has been tested so far is 1.65.)
+  • Python library (version 2.7 or 3, preferably 3)
+  • Boost library headers (version 1.35 or newer)
   • Qt library (version 5.6 or newer)
   • Geospatial Data Abstraction Library (GDAL) (1.3.2 or newer; GDAL 2 is highly recommended.)
   • Computational Geometry Algorithms Library (CGAL) (4.7 or newer; preferably 4.12 or newer for improved CMake support)
-  • PROJ.4 (4.6.0 or newer)
-  • Qwt 6.0.1 (6.1.x is recommended)
+  • PROJ (4.6.0 or newer; preferably 6 or newer)
+  • Qwt (6.0.1 or newer; preferably 6.1 or newer)
   • zlib
 
 Corresponding package dependencies
@@ -48,7 +44,7 @@ For Ubuntu
 This subsection provides more specific information on resolving the program and
 library dependencies on an Ubuntu system.
 
-(Note that GPlates development at the USyd node occurs on Ubuntu systems, so
+(Note that GPlates/pyGPlates development at the USyd node occurs on Ubuntu systems, so
 the Ubuntu package dependencies will always be the most tested and up-to-date.)
 
 Note that Ubuntu is based upon Debian, so (subject to the availability of the
@@ -64,25 +60,23 @@ Program/library Corresponding Ubuntu packages
 cmake           cmake
 g++             g++
 GL              See note below.
-GLU             See note below.
 GLEW            libglew-dev 
 Python          python3-dev python3-numpy
 Boost           libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev 
                 libboost-test-dev libboost-system-dev (See note below regarding Xenial 16.04 and libboost-python-dev)
-Qt              qt5-default libqt5opengl5-dev libqt5svg5-dev libqt5xmlpatterns5-dev (starting with Hirsute 21.04 you should exclude qt5-default).
+Qt              libqt5opengl5-dev libqt5svg5-dev libqt5xmlpatterns5-dev (prior to Hirsute 21.04 you also need qt5-default).
 GDAL            libgdal-dev (or libgdal1-dev for GDAL1 on older systems)
 CGAL            libcgal-dev (may also need libcgal-qt5-dev on Xenial 16.04 due to bug in CGAL cmake)
-PROJ.4          libproj-dev
+PROJ            libproj-dev
 Qwt             libqwt-qt5-dev
 zlib            zlib1g-dev
 
 Extras          libxrender-dev libice-dev libsm-dev libfreetype6-dev libfontconfig1-dev  (Ubuntu 14.04 Trusty Tahr and above)
 
 
-The command to install the dependencies on Ubuntu is (NOTE: starting with Hirsute 21.04 you should exclude qt5-default from the list below):
+The command to install the dependencies on Ubuntu is (NOTE: prior to Hirsute 21.04 you should also include qt5-default in the list below):
 
-sudo apt-get update; sudo apt-get install cmake libglew-dev python3-dev python3-numpy libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev qt5-default libqt5opengl5-dev libqt5svg5-dev libqt5xmlpatterns5-dev libgdal-dev libcgal-dev libproj-dev libqwt-qt5-dev zlib1g-dev libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev
-(For Ubuntu releases before 14.04 Trusty Tahr, the libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev are not required.)
+sudo apt-get update; sudo apt-get install cmake libglew-dev python3-dev python3-numpy libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev libqt5opengl5-dev libqt5svg5-dev libqt5xmlpatterns5-dev libgdal-dev libcgal-dev libproj-dev libqwt-qt5-dev zlib1g-dev libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev
 
 How to install via a GUI (recommended)
 
@@ -102,7 +96,7 @@ you would run the command:
 
 You would then look for a line which looks like:
 
-ii  libboost-dev:amd64 1.71.0.0ubuntu2 amd64        Boost C++ Libraries development files (default version)
+ii  libboost-dev:amd64 1.74.0.3ubuntu7 amd64        Boost C++ Libraries development files (default version)
 
 Look at the first two letters in the line: "ii" tells you that libboost-dev is
 currently installed on your system, while "un" or "pn" tell you that
@@ -111,23 +105,15 @@ libboost-dev is not currently installed on your system.
 If you have determined that libboost-dev is not installed on your system, you
 can install it by running the command:
 
-	sudo aptitude install libboost-dev
-		(assuming you have permission to run "sudo aptitude" on your system).
+	sudo apt install libboost-dev
+		(assuming you have permission to run "sudo apt" on your system).
 
-A note about the packages for GL and GLU
+A note about the packages for GL
 
-There appear to be multiple Debian/Ubuntu packages which fulfil the GL and GLU
-library dependencies.
-
-The GL library dependency is fulfilled by:
+There appear to be multiple Debian/Ubuntu packages which fulfil the GL library dependency:
 
   • xlibmesa-gl + xlibmesa-gl-dev; or
   • libgl1-mesa-dri + libgl1-mesa-glx + libgl1-mesa-dev
-
-The GLU library dependency is fulfilled by:
-
-  • xlibmesa-glu + xlibmesa-glu-dev; or
-  • libglu1-mesa + libglu1-mesa-dev
 
 The mixture of packages seems to vary from system to system.
 
@@ -138,8 +124,7 @@ If you do need to install an extra package or two to fulfil dependencies, it is
 most likely that you are missing a "-dev" package (since the non-dev packages
 are used by many other packages, and are probably already on your system). In
 that case, you should install the "-dev" package which corresponds to the
-non-dev package already on your system. For example, if you already have
-"libglu1-mesa" installed, you should install "libglu1-mesa-dev".
+non-dev package already on your system.
 
 If you are also missing a non-dev package, well… time to call the sysadmin.
 
@@ -149,19 +134,6 @@ package may remove some mesa related packages. Only attempt this if configure
 complains about a missing GL dependency and you are certain you are using the
 nvidia binary driver.  (If you don't know what this means, don't install
 nvidia-glx-dev!)
-
-
-A note about Boost
-
-When running cmake (see BUILD.Linux) on Xenial 16.04, if you get the error...
-
-  Could not find the following Boost libraries:
-          boost_python3
-
-...then you may need to create the following symbolic link...
-
-  sudo ln -s /usr/lib/x86_64-linux-gnu/libboost_python-py35.so /usr/lib/x86_64-linux-gnu/libboost_python3.so
-
 
 A note about GDAL
 
@@ -181,5 +153,4 @@ And if using a version of GDAL older than 3.0 then replace '--with-proj=/path/to
 
 For other Linux variants
 
-There are some sucessful stories about compiling GPlates on other Linux variants, including Fedora, Debian, Redhat
-and CentOS.
+There are some sucessful stories about compiling GPlates/pyGPlates on other Linux variants, including Fedora, Debian, Redhat and CentOS.

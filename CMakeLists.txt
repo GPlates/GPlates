@@ -6,13 +6,7 @@
 #       but are safe to use with policies (see 'cmake_policy' command) up to the maximum version.
 #       Specifying a maximum version means we don't need 'cmake_policy' calls for running CMake versions
 #       in that [min, max] range. Note that CMake version prior to 3.12 apparently ignore the "...<max>" part.
-cmake_minimum_required(VERSION 3.10...3.22 FATAL_ERROR)
-
-# Set the minimum macOS version we support.
-# We select 10.13 because Qt5 currently supports 10.13+.
-# Also, as of 10.9, Apple has removed support for libstdc++ (the default prior to 10.9) in favour of libc++ (C++11).
-# Note that this needs to be set before project() and must be a cache variable (avoids project() overwriting it).
-set(CMAKE_OSX_DEPLOYMENT_TARGET 10.13 CACHE STRING "Minimum macOS deployment version")
+cmake_minimum_required(VERSION 3.10...3.23 FATAL_ERROR)
 
 # Where to find our CMake modules.
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
