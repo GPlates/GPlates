@@ -1285,6 +1285,40 @@ class GetTimeWindowsCase(unittest.TestCase):
                 [pygplates.XsInteger(i) for i in (100,)])
 
 
+class PropertyValueVisitorCase(unittest.TestCase):
+    def test_visit(self):
+        class GetPlateIdVisitor(pygplates.PropertyValueVisitor):
+            def __init__(self):
+                # NOTE: You must call base class '__init__' otherwise you will
+                # get a 'Boost.Python.ArgumentError' exception.
+                super(GetPlateIdVisitor, self).__init__()
+                self.plate_id = None
+            
+            # Returns the plate id from the visited GpmlPlateId property value,
+            # or None if property value was a different type.
+            def get_plate_id(self):
+                return self.plate_id
+            
+            def visit_gpml_constant_value(self, gpml_constant_value):
+                # Visit the GpmlConstantValue's nested property value.
+                gpml_constant_value.get_value().accept_visitor(self)
+            
+            def visit_gpml_plate_id(self, gpml_plate_id):
+                self.plate_id = gpml_plate_id.get_plate_id()
+        
+        # Visitor can extract plate id from this...
+        property_value1 = pygplates.GpmlPlateId(701)
+        plate_id_visitor = GetPlateIdVisitor()
+        property_value1.accept_visitor(plate_id_visitor)
+        self.assertTrue(plate_id_visitor.get_plate_id() == 701)
+
+        # Visitor cannot extract plate id from this...
+        property_value2 = pygplates.XsInteger(701)
+        plate_id_visitor = GetPlateIdVisitor()
+        property_value2.accept_visitor(plate_id_visitor)
+        self.assertTrue(plate_id_visitor.get_plate_id() is None)
+
+
 def suite():
     suite = unittest.TestSuite()
     
@@ -1294,7 +1328,8 @@ def suite():
             GetGeometryFromPropertyValueCase,
             GetPropertyValueCase,
             GetTimeSamplesCase,
-            GetTimeWindowsCase
+            GetTimeWindowsCase,
+            PropertyValueVisitorCase
         ]
 
     for test_case in test_cases:

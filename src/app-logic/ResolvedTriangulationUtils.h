@@ -32,6 +32,8 @@
 #include <utility>
 #include <vector>
 
+#include <boost/numeric/conversion/cast.hpp>
+
 #include <CGAL/Origin.h> // Must come before <CGAL/barycenter.h> since it uses it but doesn't define it.
 #include <CGAL/barycenter.h>
 #include <CGAL/centroid.h>
@@ -82,7 +84,9 @@ namespace GPlatesAppLogic
 				// Attempt to insert the vertex into the map.
 				std::pair<typename vertex_index_map_type::iterator, bool> vertex_insert_result =
 						d_vertex_index_map.insert(
-								typename vertex_index_map_type::value_type(vertex, d_vertices.size()/*index*/));
+								typename vertex_index_map_type::value_type(
+										vertex,
+										boost::numeric_cast<unsigned int>(d_vertices.size()/*index*/)));
 				if (vertex_insert_result.second)
 				{
 					// Insertion successful - first time seen vertex - add vertex to the sequence.

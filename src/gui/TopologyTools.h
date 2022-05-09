@@ -30,7 +30,6 @@
 #include <vector>
 
 #include <boost/optional.hpp>
-#include <boost/none.hpp>
 
 #include <QDebug>
 #include <QObject>
@@ -471,7 +470,7 @@ namespace GPlatesGui
 		/**
 		 * The topology geometry type for the topology feature we are building or editing.
 		 */
-		GPlatesAppLogic::TopologyGeometry::Type d_topology_geometry_type;
+		boost::optional<GPlatesAppLogic::TopologyGeometry::Type> d_topology_geometry_type;
 
 		/**
 		 * Optional time period of topology feature.

@@ -22,8 +22,15 @@ find_path(QWT_INCLUDE_DIR
   /usr/include
   /usr/local/include
   /opt/local/include
-  # On Macports Qwt is installed into Qt5 (using "sudo port install qwt61 +qt5")...
-  /opt/local/libexec/qt5/include
+  /usr/local/opt/qwt/include
+  /usr/local/opt/qwt/lib  # CMake can find 'A/b.h' as 'A.framework/Headers/b.h'
+  # With Macports, Qwt is typically installed into Qt5 (using "sudo port install qwt-qt5"):
+  # If there's a 'qwt' sym-link in this 'include' directory
+  /opt/local/libexec/qt5/include  # Macports (if 'qwt' sym-links to '/opt/local/libexec/qt5/lib/qwt.framework/Headers')
+  /usr/local/opt/qt5/include  # Do same for Homebrew although unlikely (if 'qwt' sym-links to '/usr/local/opt/qt5/lib/qwt.framework/Headers')
+  # ...else explicitly specify directory containing framework (noting that CMake can find 'A/b.h' as 'A.framework/Headers/b.h')...
+  /opt/local/libexec/qt5/lib  # Macports ('/opt/local/libexec/qt5/lib/qwt.framework')
+  /usr/local/opt/qt5/lib  # Do same for Homebrew although unlikely ('/usr/local/opt/qt5/lib/qwt.framework')
   "$ENV{QWT_INCLUDE_DIR}"
   "$ENV{INCLUDE}" 
   # The '-qt5' versions searched first (in case 'qwt' is a qt4 version)...
@@ -35,12 +42,15 @@ set (QWT_INCLUDE_DIRS ${QWT_INCLUDE_DIR})
 find_library(QWT_LIBRARY
   # The '-qt5' versions searched first (in case 'qwt' is a qt4 version)...
   NAMES qwt-qt5 qwt6-qt5 qwt qwt6
+  NAMES_PER_DIR
   PATHS
     /usr/lib
     /usr/local/lib
     /opt/local/lib
-    # On Macports Qwt is installed into Qt5 (using "sudo port install qwt61 +qt5")...
+    /usr/local/opt/qwt/lib
+    # On Macports Qwt is installed into Qt5 (using "sudo port install qwt-qt5")...
     /opt/local/libexec/qt5/lib
+    /usr/local/opt/qt5/lib  # Do same for Homebrew although unlikely ('/usr/local/opt/qt5/lib/qwt.framework')
     "$ENV{QWT_LIB_DIR}"
 )
 

@@ -26,7 +26,7 @@
 #ifndef GPLATES_QTWIDGETS_CONFIGUREEXPORTPARAMETERSDIALOG_H
 #define GPLATES_QTWIDGETS_CONFIGUREEXPORTPARAMETERSDIALOG_H
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/optional.hpp>
 #include <QDebug>

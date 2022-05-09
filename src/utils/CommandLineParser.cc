@@ -25,7 +25,7 @@
 
 #include <iostream>
 #include <fstream>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/token_functions.hpp>
 #include <QtGlobal>
@@ -125,7 +125,7 @@ namespace
 		//
 		// Note that we end up ignoring the '-psn...' option.
 		// Also note that it doesn't actually appear in 'argv[]' for some reason.
-#if defined(Q_OS_MAC)
+#if defined(Q_OS_MACOS)
 		command_line_parser.allow_unregistered();
 
 		// Parse options.
@@ -211,7 +211,7 @@ namespace
 				config_filenames.begin(),
 				config_filenames.end(),
 				boost::bind(&parse_config_file,
-						_1/*config filename*/,
+						boost::placeholders::_1/*config filename*/,
 						boost::cref(config_file_options),
 						boost::ref(vm)));
 		}

@@ -72,7 +72,7 @@ GPlatesPropertyValues::GpmlFiniteRotation::create(
 {
 	GPlatesMaths::FiniteRotation fr =
 			GPlatesMaths::FiniteRotation::create(
-					*gpml_euler_pole->get_point(),
+					gpml_euler_pole->get_point(),
 					GPlatesMaths::convert_deg_to_rad(gml_angle_in_degrees->get_quantity()));
 
 	return create(fr, metadata_);

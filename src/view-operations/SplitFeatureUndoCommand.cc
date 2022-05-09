@@ -162,7 +162,7 @@ GPlatesModel::FeatureHandle::iterator property_iter = *property_iter_opt;
 	point_index_to_split = d_point_index_to_insert_at + 1;
 	
 	GPlatesFeatureVisitors::GeometrySetter geometry_setter(
-			GPlatesMaths::PolylineOnSphere::create_on_heap(
+			GPlatesMaths::PolylineOnSphere::create(
 					points.begin(), 
 					points.begin() + point_index_to_split));
 #if 0

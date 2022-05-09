@@ -153,9 +153,9 @@ GPlatesQtWidgets::SmallCircleWidget::update_current_centre(
 	const GPlatesMaths::PointOnSphere &current_centre)
 {
 	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(current_centre);
-	// \260 is for a degree symbol.
-	QString centre_string = QString("(%1\260,%2\260)").arg(llp.latitude(),0,'f',2).arg(llp.longitude(),0,'f',2);
-        lineedit_centre->setText(centre_string);
+	// \302\260 is UTF8 for degree sign.
+	QString centre_string = QString("(%1\302\260,%2\302\260)").arg(llp.latitude(),0,'f',2).arg(llp.longitude(),0,'f',2);
+	lineedit_centre->setText(centre_string);
 	lineedit_centre->setText(centre_string);
 }
 
@@ -208,7 +208,8 @@ GPlatesQtWidgets::SmallCircleWidget::update_radii(
 		{
 			textedit_radii->setTextBackgroundColor(Qt::white);
 		}
-		textedit_radii->append(QString("%1\260").arg(GPlatesMaths::convert_rad_to_deg(*r_it)));
+		// \302\260 is UTF8 for degree sign.
+		textedit_radii->append(QString("%1\302\260").arg(GPlatesMaths::convert_rad_to_deg(*r_it)));
 	}
 }
 

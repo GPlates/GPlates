@@ -30,7 +30,7 @@
 #include <set>
 #include <vector>
 #include <boost/foreach.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 
 #include <QDebug>
 

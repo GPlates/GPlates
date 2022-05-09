@@ -86,8 +86,7 @@ namespace GPlatesCanvasTools
 			visit_rendered_point_on_sphere(
 				const GPlatesViewOperations::RenderedPointOnSphere &rendered_point_on_sphere)
 			{
-				d_geometry.reset(
-					rendered_point_on_sphere.get_point_on_sphere().get_non_null_pointer());
+				d_geometry.reset(rendered_point_on_sphere.get_point_on_sphere());
 			}
 
 
@@ -108,7 +107,7 @@ namespace GPlatesCanvasTools
 						it = rendered_multi_point_on_sphere.get_multi_point_on_sphere()->begin();
 					std::advance(it,*d_vertex_index);
 
-					d_geometry.reset(it->get_non_null_pointer());
+					d_geometry.reset(*it);
 				}
 			}
 
@@ -116,8 +115,7 @@ namespace GPlatesCanvasTools
 			void
 			visit_rendered_circle_symbol(const GPlatesViewOperations::RenderedCircleSymbol &rendered_circle_symbol)
 			{
-				d_geometry.reset(
-							rendered_circle_symbol.get_centre().get_non_null_pointer());
+				d_geometry.reset(rendered_circle_symbol.get_centre());
 			}
 
 			virtual
@@ -125,8 +123,7 @@ namespace GPlatesCanvasTools
 			visit_rendered_cross_symbol(
 					const GPlatesViewOperations::RenderedCrossSymbol &rendered_cross_symbol)
 			{
-				d_geometry.reset(
-							rendered_cross_symbol.get_centre().get_non_null_pointer());
+				d_geometry.reset(rendered_cross_symbol.get_centre());
 			}
 
 			virtual
@@ -134,8 +131,7 @@ namespace GPlatesCanvasTools
 			visit_rendered_square_symbol(
 					const GPlatesViewOperations::RenderedSquareSymbol &rendered_square_symbol)
 			{
-				d_geometry.reset(
-							rendered_square_symbol.get_centre().get_non_null_pointer());
+				d_geometry.reset(rendered_square_symbol.get_centre());
 			}
 
 			virtual
@@ -143,11 +139,10 @@ namespace GPlatesCanvasTools
 			visit_rendered_triangle_symbol(
 					const GPlatesViewOperations::RenderedTriangleSymbol &rendered_triangle_symbol)
 			{
-				d_geometry.reset(
-							rendered_triangle_symbol.get_centre().get_non_null_pointer());
+				d_geometry.reset(rendered_triangle_symbol.get_centre());
 			}
 
-			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>
+			const boost::optional<GPlatesMaths::PointOnSphere> &
 			get_geometry()
 			{
 				return d_geometry;
@@ -155,8 +150,7 @@ namespace GPlatesCanvasTools
 
 		private:
 
-			boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type>
-				d_geometry;
+			boost::optional<GPlatesMaths::PointOnSphere> d_geometry;
 
 			boost::optional<unsigned int> d_vertex_index;
 

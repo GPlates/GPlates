@@ -23,7 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 
 #include "LayerTaskRegistry.h"
@@ -164,6 +164,8 @@ GPlatesAppLogic::register_default_layer_task_types(
 		LayerTaskRegistry &layer_task_registry,
 		ApplicationState &application_state)
 {
+	using namespace boost::placeholders;  // For _1, _2, etc
+
 	//
 	// NOTE: The order in which layer tasks are registered does *not* matter.
 	//

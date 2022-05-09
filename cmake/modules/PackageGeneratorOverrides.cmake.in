@@ -1,0 +1,69 @@
+#####################################################################################################################################
+#   CPACK_PROJECT_CONFIG_FILE - CPack-time project CPack configuration file.                                                        #
+#   This file is included at cpack time, once per generator after CPack has set CPACK_GENERATOR                                     #
+#   to the actual generator being used. It allows per-generator setting of CPACK_* variables at cpack time.                         #
+#                                                                                                                                   #
+# This is our own configuration file to handle generator-specific settings for CPACK variables that are used by multiple generators #
+# (eg, NSIS, DragNDrop). For example, CPACK_PACKAGE_ICON uses different icon formats for different generators.                      #
+# This is not needed for CPACK_<GENERATOR>_ variables (since they only apply to a specific generator).                              #
+#####################################################################################################################################
+
+
+###########
+# Archive #
+###########
+
+if (CPACK_GENERATOR MATCHES "^(7Z|TBZ2|TGZ|TXZ|TZ|TZST|ZIP)$")
+endif()
+
+
+########
+# NSIS #
+########
+
+if (CPACK_GENERATOR MATCHES "^NSIS$")
+    #   CPACK_PACKAGE_INSTALL_DIRECTORY - Installation directory on the target system.
+    #
+    #   This may be used by some CPack generators like NSIS to create an installation directory e.g.,
+    #   "CMake 2.5" below the installation prefix. All installed elements will be put inside this directory..
+    #
+    # We want, for example, "GPlates\GPlates 2.3.0\" (which ends up as "C:\Program Files\GPlates\GPlates 2.3.0\").
+    # This way multiple versions can be installed at the same time (in different sub-directories of "C:\Program Files\GPlates\").
+    SET(CPACK_PACKAGE_INSTALL_DIRECTORY "@PROJECT_NAME@\\@PROJECT_NAME@ @PROJECT_VERSION_PRERELEASE_USER@")
+
+    #   CPACK_PACKAGE_INSTALL_REGISTRY_KEY - Registry key used when installing this project.
+    #
+    #   This is only used by installers for Windows. The default value is based on the installation directory.
+    #
+    # We want, for example, "GPlates 2.3.0-dev1" for a development release so that multiple installations
+    # with different version numbers don't conflict with each other.
+    SET(CPACK_PACKAGE_INSTALL_REGISTRY_KEY "@PROJECT_NAME@ @PROJECT_VERSION_PRERELEASE_USER@")
+
+    # Note that CPACK_PACKAGE_ICON can be used by NSIS, but we don't set this for now since apparently NSIS needs this to be 150x57 pixels.
+endif()
+
+
+#############
+# DragNDrop #
+#############
+
+if (CPACK_GENERATOR MATCHES "^DragNDrop$")
+    #   CPACK_PACKAGE_ICON - A branding image that will be displayed inside the installer (used by GUI installers).
+    #
+    # Apparently this icon is only used to represent the .dmg file when mounted, not for the .dmg file itself.
+    SET(CPACK_PACKAGE_ICON "@GPLATES_SOURCE_DISTRIBUTION_DIR@/gplates_desktop_icon.icns")
+
+    #    CPACK_PACKAGING_INSTALL_PREFIX - The prefix used in the built package.
+    #
+    #    Each CPack generator has a default value (like /usr). This default value may be overwritten from the CMakeLists.txt or
+    #    the cpack(1) command line by setting an alternative value. Example:
+    #
+    #       set(CPACK_PACKAGING_INSTALL_PREFIX "/opt")
+    #
+    #    This is not the same purpose as CMAKE_INSTALL_PREFIX which is used when installing from the build tree without building a package.
+    #
+    # Make sure everything ends up in the specified directory (which the user can then drag'n'drop into "/Applications/").
+    # This way the GPlates app bundle and geodata stay together in the one directory.
+    # And using the version in the directory name enables multiple versions to be installed (in different sub-directories of, eg, "/Applications").
+    SET(CPACK_PACKAGING_INSTALL_PREFIX "/@PROJECT_NAME@_@PROJECT_VERSION_PRERELEASE_USER@")
+endif()

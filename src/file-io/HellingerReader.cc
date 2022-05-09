@@ -28,6 +28,8 @@
 
 #include <QDir>
 #include <QStringList>
+#include <Qt>
+#include <QtGlobal>
 
 #include "qt-widgets/HellingerModel.h"
 #include "utils/ComponentManager.h"
@@ -93,7 +95,13 @@ namespace
 	bool
 	initial_guess_ok(const QString &line,double &lat, double &lon, double &rho)
 	{
-		QStringList fields = line.split(' ',QString::SkipEmptyParts);
+		QStringList fields = line.split(' ',
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			Qt::SkipEmptyParts
+#else
+			QString::SkipEmptyParts
+#endif
+		);
 		if (fields.length() != 3){
 			return false;
 		}
@@ -241,7 +249,13 @@ namespace
 	try_to_extract_nsegments_from_first_line(
 			const QString &line)
 	{
-		if (line.split(" ", QString::SkipEmptyParts).size() == 1)
+		if (line.split(" ",
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			Qt::SkipEmptyParts
+#else
+			QString::SkipEmptyParts
+#endif
+		).size() == 1)
 		{
 			bool ok = false;
 			int nlines = line.toInt(&ok);
@@ -257,7 +271,13 @@ namespace
 			const QString &line,
 			GPlatesQtWidgets::hellinger_model_type &pick_data)
 	{
-		QStringList fields = line.split(" ",QString::SkipEmptyParts);
+		QStringList fields = line.split(" ",
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			Qt::SkipEmptyParts
+#else
+			QString::SkipEmptyParts
+#endif
+		);
 
 		GPlatesQtWidgets::HellingerPick pick;
 		int segment;
@@ -686,7 +706,13 @@ namespace
 	determine_com_file_type_from_third_line(
 			const QString &line)
 	{
-		QStringList list = line.split(" ",QString::SkipEmptyParts);
+		QStringList list = line.split(" ",
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			Qt::SkipEmptyParts
+#else
+			QString::SkipEmptyParts
+#endif
+		);
 		if (list.size() == 1)
 		{
 			return GPlatesQtWidgets::TWO_PLATE_FIT_TYPE;
@@ -910,7 +936,13 @@ GPlatesFileIO::HellingerReader::read_error_ellipse(
 		while (!in.atEnd())
 		{
 			QString line = in.readLine();
-			QStringList fields = line.split(" ",QString::SkipEmptyParts);
+			QStringList fields = line.split(" ",
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+				Qt::SkipEmptyParts
+#else
+				QString::SkipEmptyParts
+#endif
+			);
 			GPlatesMaths::LatLonPoint llp(fields.at(1).toDouble(),fields.at(0).toDouble());
 			hellinger_model.error_ellipse_points(type).push_back(llp);
 		}
@@ -936,7 +968,13 @@ GPlatesFileIO::HellingerReader::read_fit_results_from_temporary_fit_file(
 	{
 		bool ok;
 		QString line = stream.readLine();
-		QStringList fields = line.split(" ",QString::SkipEmptyParts);
+		QStringList fields = line.split(" ",
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			Qt::SkipEmptyParts
+#else
+			QString::SkipEmptyParts
+#endif
+		);
 
 		if (fields.size() != 3)
 		{

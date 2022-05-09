@@ -41,6 +41,10 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::ChooseBuiltinPaletteDialog(
 		QWidget *parent_):
 	GPlatesDialog(parent_, Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
 	d_builtin_parameters(builtin_parameters),
+	// Age palettes...
+	d_age_legacy_button(new ColourScaleButton(this)),
+	d_age_traditional_button(new ColourScaleButton(this)),
+	d_age_modern_button(new ColourScaleButton(this)),
 	// ColorBrewer sequential multi-hue palettes...
 	d_BuGn_button(new ColourScaleButton(this)),
 	d_BuPu_button(new ColourScaleButton(this)),
@@ -73,6 +77,11 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::ChooseBuiltinPaletteDialog(
 	d_Spectral_button(new ColourScaleButton(this))
 {
 	setupUi(this);
+
+	// Age palettes.
+	add_colour_scale_button(d_age_legacy_button, age_legacy_placeholder);
+	add_colour_scale_button(d_age_traditional_button, age_traditional_placeholder);
+	add_colour_scale_button(d_age_modern_button, age_modern_placeholder);
 
 	// ColorBrewer sequential multi-hue palettes.
 	add_colour_scale_button(d_BuGn_button, BuGn_placeholder);
@@ -108,8 +117,8 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::ChooseBuiltinPaletteDialog(
 	add_colour_scale_button(d_Spectral_button, Spectral_placeholder);
 
 	colorbrewer_sequential_classes_spinbox->setRange(
-			GPlatesGui::BuiltinColourPalettes::ThreeSequentialClasses,
-			GPlatesGui::BuiltinColourPalettes::NineSequentialClasses);
+			GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::Three,
+			GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::Nine);
 	colorbrewer_sequential_classes_spinbox->setSingleStep(1);
 	colorbrewer_sequential_classes_spinbox->setValue(d_builtin_parameters.colorbrewer_sequential_classes);
 	QObject::connect(
@@ -117,8 +126,8 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::ChooseBuiltinPaletteDialog(
 			this, SLOT(handle_colorbrewer_sequential_classes_changed(int)));
 
 	colorbrewer_diverging_classes_spinbox->setRange(
-			GPlatesGui::BuiltinColourPalettes::ThreeDivergingClasses,
-			GPlatesGui::BuiltinColourPalettes::ElevenDivergingClasses);
+			GPlatesGui::BuiltinColourPalettes::ColorBrewer::Diverging::Three,
+			GPlatesGui::BuiltinColourPalettes::ColorBrewer::Diverging::Eleven);
 	colorbrewer_diverging_classes_spinbox->setSingleStep(1);
 	colorbrewer_diverging_classes_spinbox->setValue(d_builtin_parameters.colorbrewer_diverging_classes);
 	QObject::connect(
@@ -166,139 +175,158 @@ GPlatesGui::BuiltinColourPaletteType
 GPlatesQtWidgets::ChooseBuiltinPaletteDialog::get_builtin_colour_palette_type(
 		ColourScaleButton *colour_scale_button)
 {
+	// Age palettes.
+	if (colour_scale_button == d_age_legacy_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::Age::Legacy);
+	}
+	if (colour_scale_button == d_age_traditional_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::Age::Traditional);
+	}
+	if (colour_scale_button == d_age_modern_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::Age::Modern);
+	}
+
 	// ColorBrewer sequential multi-hue palettes.
 	if (colour_scale_button == d_BuGn_button)
 	{
-		return create_colorbrewer_sequential_palette_type(GPlatesGui::BuiltinColourPalettes::BuGn);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::BuGn);
 	}
 	if (colour_scale_button == d_BuPu_button)
 	{
-		return create_colorbrewer_sequential_palette_type(GPlatesGui::BuiltinColourPalettes::BuPu);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::BuPu);
 	}
 	if (colour_scale_button == d_GnBu_button)
 	{
-		return create_colorbrewer_sequential_palette_type(GPlatesGui::BuiltinColourPalettes::GnBu);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::GnBu);
 	}
 	if (colour_scale_button == d_OrRd_button)
 	{
-		return create_colorbrewer_sequential_palette_type(GPlatesGui::BuiltinColourPalettes::OrRd);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::OrRd);
 	}
 	if (colour_scale_button == d_PuBu_button)
 	{
-		return create_colorbrewer_sequential_palette_type(GPlatesGui::BuiltinColourPalettes::PuBu);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::PuBu);
 	}
 	if (colour_scale_button == d_PuBuGn_button)
 	{
-		return create_colorbrewer_sequential_palette_type(GPlatesGui::BuiltinColourPalettes::PuBuGn);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::PuBuGn);
 	}
 	if (colour_scale_button == d_PuRd_button)
 	{
-		return create_colorbrewer_sequential_palette_type(GPlatesGui::BuiltinColourPalettes::PuRd);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::PuRd);
 	}
 	if (colour_scale_button == d_RdPu_button)
 	{
-		return create_colorbrewer_sequential_palette_type(GPlatesGui::BuiltinColourPalettes::RdPu);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::RdPu);
 	}
 	if (colour_scale_button == d_YlGn_button)
 	{
-		return create_colorbrewer_sequential_palette_type(GPlatesGui::BuiltinColourPalettes::YlGn);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::YlGn);
 	}
 	if (colour_scale_button == d_YlGnBu_button)
 	{
-		return create_colorbrewer_sequential_palette_type(GPlatesGui::BuiltinColourPalettes::YlGnBu);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::YlGnBu);
 	}
 	if (colour_scale_button == d_YlOrBr_button)
 	{
-		return create_colorbrewer_sequential_palette_type(GPlatesGui::BuiltinColourPalettes::YlOrBr);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::YlOrBr);
 	}
 	if (colour_scale_button == d_YlOrRd_button)
 	{
-		return create_colorbrewer_sequential_palette_type(GPlatesGui::BuiltinColourPalettes::YlOrRd);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::YlOrRd);
 	}
 
 	// ColorBrewer sequential single hue palettes.
 	if (colour_scale_button == d_Blues_button)
 	{
-		return create_colorbrewer_sequential_palette_type(GPlatesGui::BuiltinColourPalettes::Blues);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::Blues);
 	}
 	if (colour_scale_button == d_Greens_button)
 	{
-		return create_colorbrewer_sequential_palette_type(GPlatesGui::BuiltinColourPalettes::Greens);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::Greens);
 	}
 	if (colour_scale_button == d_Greys_button)
 	{
-		return create_colorbrewer_sequential_palette_type(GPlatesGui::BuiltinColourPalettes::Greys);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::Greys);
 	}
 	if (colour_scale_button == d_Oranges_button)
 	{
-		return create_colorbrewer_sequential_palette_type(GPlatesGui::BuiltinColourPalettes::Oranges);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::Oranges);
 	}
 	if (colour_scale_button == d_Purples_button)
 	{
-		return create_colorbrewer_sequential_palette_type(GPlatesGui::BuiltinColourPalettes::Purples);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::Purples);
 	}
 	if (colour_scale_button == d_Reds_button)
 	{
-		return create_colorbrewer_sequential_palette_type(GPlatesGui::BuiltinColourPalettes::Reds);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::Reds);
 	}
 
 	// ColorBrewer diverging palettes.
 	if (colour_scale_button == d_BrBG_button)
 	{
-		return create_colorbrewer_diverging_palette_type(GPlatesGui::BuiltinColourPalettes::BrBG);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Diverging::BrBG);
 	}
 	if (colour_scale_button == d_PiYG_button)
 	{
-		return create_colorbrewer_diverging_palette_type(GPlatesGui::BuiltinColourPalettes::PiYG);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Diverging::PiYG);
 	}
 	if (colour_scale_button == d_PRGn_button)
 	{
-		return create_colorbrewer_diverging_palette_type(GPlatesGui::BuiltinColourPalettes::PRGn);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Diverging::PRGn);
 	}
 	if (colour_scale_button == d_PuOr_button)
 	{
-		return create_colorbrewer_diverging_palette_type(GPlatesGui::BuiltinColourPalettes::PuOr);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Diverging::PuOr);
 	}
 	if (colour_scale_button == d_RdBu_button)
 	{
-		return create_colorbrewer_diverging_palette_type(GPlatesGui::BuiltinColourPalettes::RdBu);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Diverging::RdBu);
 	}
 	if (colour_scale_button == d_RdGy_button)
 	{
-		return create_colorbrewer_diverging_palette_type(GPlatesGui::BuiltinColourPalettes::RdGy);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Diverging::RdGy);
 	}
 	if (colour_scale_button == d_RdYlBu_button)
 	{
-		return create_colorbrewer_diverging_palette_type(GPlatesGui::BuiltinColourPalettes::RdYlBu);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Diverging::RdYlBu);
 	}
 	if (colour_scale_button == d_RdYlGn_button)
 	{
-		return create_colorbrewer_diverging_palette_type(GPlatesGui::BuiltinColourPalettes::RdYlGn);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Diverging::RdYlGn);
 	}
 	if (colour_scale_button == d_Spectral_button)
 	{
-		return create_colorbrewer_diverging_palette_type(GPlatesGui::BuiltinColourPalettes::Spectral);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::ColorBrewer::Diverging::Spectral);
 	}
 
 	// Shouldn't be able to get here.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			colour_scale_button,
-			GPLATES_ASSERTION_SOURCE);
-	return GPlatesGui::BuiltinColourPaletteType(GPlatesGui::BuiltinColourPaletteType::AGE_PALETTE/*arbitrary*/);
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 }
 
 
 GPlatesGui::BuiltinColourPaletteType
-GPlatesQtWidgets::ChooseBuiltinPaletteDialog::create_colorbrewer_sequential_palette_type(
-		GPlatesGui::BuiltinColourPalettes::ColorBrewerSequentialType sequential_type)
+GPlatesQtWidgets::ChooseBuiltinPaletteDialog::create_palette_type(
+		GPlatesGui::BuiltinColourPalettes::Age::Type age_type)
+{
+	return GPlatesGui::BuiltinColourPaletteType(age_type);
+}
+
+
+GPlatesGui::BuiltinColourPaletteType
+GPlatesQtWidgets::ChooseBuiltinPaletteDialog::create_palette_type(
+		GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::Type sequential_type)
 {
 	return GPlatesGui::BuiltinColourPaletteType(sequential_type, d_builtin_parameters);
 }
 
 
 GPlatesGui::BuiltinColourPaletteType
-GPlatesQtWidgets::ChooseBuiltinPaletteDialog::create_colorbrewer_diverging_palette_type(
-		GPlatesGui::BuiltinColourPalettes::ColorBrewerDivergingType diverging_type)
+GPlatesQtWidgets::ChooseBuiltinPaletteDialog::create_palette_type(
+		GPlatesGui::BuiltinColourPalettes::ColorBrewer::Diverging::Type diverging_type)
 {
 	return GPlatesGui::BuiltinColourPaletteType(diverging_type, d_builtin_parameters);
 }
@@ -307,6 +335,7 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::create_colorbrewer_diverging_palet
 void
 GPlatesQtWidgets::ChooseBuiltinPaletteDialog::re_populate_colorbrewer_buttons()
 {
+	// ColorBrewer sequential multi-hue palettes.
 	d_BuGn_button->populate(get_builtin_colour_palette_type(d_BuGn_button).create_palette());
 	d_BuPu_button->populate(get_builtin_colour_palette_type(d_BuPu_button).create_palette());
 	d_GnBu_button->populate(get_builtin_colour_palette_type(d_GnBu_button).create_palette());
@@ -346,7 +375,7 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::handle_colorbrewer_sequential_clas
 		int value)
 {
 	d_builtin_parameters.colorbrewer_sequential_classes =
-			static_cast<GPlatesGui::BuiltinColourPalettes::ColorBrewerSequentialClasses>(value);
+			static_cast<GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::Classes>(value);
 
 	// Redraw the ColorBrewer buttons since number of classes changed.
 	re_populate_colorbrewer_buttons();
@@ -360,7 +389,7 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::handle_colorbrewer_diverging_class
 		int value)
 {
 	d_builtin_parameters.colorbrewer_diverging_classes =
-			static_cast<GPlatesGui::BuiltinColourPalettes::ColorBrewerDivergingClasses>(value);
+			static_cast<GPlatesGui::BuiltinColourPalettes::ColorBrewer::Diverging::Classes>(value);
 
 	// Redraw the ColorBrewer buttons since number of classes changed.
 	re_populate_colorbrewer_buttons();

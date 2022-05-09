@@ -50,7 +50,6 @@
 #include "file-io/ErrorOpeningFileForWritingException.h"
 #include "file-io/ErrorOpeningPipeFromGzipException.h"
 #include "file-io/ErrorOpeningPipeToGzipException.h"
-#include "file-io/ExternalProgram.h"
 #include "file-io/FeatureCollectionFileFormat.h"
 #include "file-io/FeatureCollectionFileFormatConfiguration.h"
 #include "file-io/FeatureCollectionFileFormatRegistry.h"

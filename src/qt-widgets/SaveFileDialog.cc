@@ -34,7 +34,7 @@
 
 
 // We use the native dialog, instead of the Qt dialog, on Windows and Mac OS X.
-#if defined(Q_OS_WIN) || defined(Q_OS_MAC)
+#if defined(Q_OS_WIN) || defined(Q_OS_MACOS)
 #	define GPLATES_USE_NATIVE_FILE_DIALOG
 #endif
 

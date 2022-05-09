@@ -30,7 +30,7 @@
 #include "global/AssertionFailureException.h"
 #include "utils/Singleton.h"
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/noncopyable.hpp>
 #include <list>
 #include <QDebug>
@@ -479,7 +479,7 @@ GPlatesViewOperations::RenderedGeometryCollection::begin_update_all_registered_c
 	std::for_each(
 			collections.begin(),
 			collections.end(),
-			boost::bind(&RenderedGeometryCollection::begin_update_collection, _1));
+			boost::bind(&RenderedGeometryCollection::begin_update_collection, boost::placeholders::_1));
 }
 
 
@@ -494,7 +494,7 @@ GPlatesViewOperations::RenderedGeometryCollection::end_update_all_registered_col
 	std::for_each(
 			collections.begin(),
 			collections.end(),
-			boost::bind(&RenderedGeometryCollection::end_update_collection, _1));
+			boost::bind(&RenderedGeometryCollection::end_update_collection, boost::placeholders::_1));
 }
 
 

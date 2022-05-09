@@ -42,8 +42,6 @@ set(srcs
     ExportTemplateFilenameSequenceFormats.h
     ExportTemplateFilenameSequenceImpl.cc
     ExportTemplateFilenameSequenceImpl.h
-    ExternalProgram.cc
-    ExternalProgram.h
     FeatureCollectionFileFormat.h
     FeatureCollectionFileFormatClassify.cc
     FeatureCollectionFileFormatClassify.h
@@ -230,6 +228,8 @@ set(srcs
     ShapefileXmlWriter.cc
     ShapefileXmlWriter.h
     SourceRasterFileCacheFormatReader.h
+    StandaloneBundle.cc
+    StandaloneBundle.h
     SymbolFileReader.cc
     SymbolFileReader.h
     TemporaryFileRegistry.cc
@@ -242,13 +242,5 @@ set(srcs
     XmlWriter.h
 )
 
-# Add the source files to the gplates static library.
-target_sources_util(gplates-lib PRIVATE ${srcs})
-
-# Add the source files to the pygplates extension module.
-#
-# Note this is the external Python library that is not embedded inside GPlates.
-# All sources files compiled in pygplates need to be position independent and hence
-# compiled differently (POSITION_INDEPENDENT_CODE target property is set on pygplates).
-set(pygplates_srcs ${srcs})
-target_sources_util(pygplates PRIVATE ${pygplates_srcs})
+# Add the source files to the gplates static library (or pygplates extension module).
+target_sources_util(${SOURCE_TARGET} PRIVATE ${srcs})

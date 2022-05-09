@@ -36,7 +36,6 @@
 
 #include "PyFeature.h"
 
-#include "PyGPlatesModule.h"
 #include "PyInformationModel.h"
 #include "PyPropertyValues.h"
 #include "PyRotationModel.h"
@@ -141,6 +140,237 @@ namespace GPlatesApi
 		}
 
 		return default_geometry_feature_property.get()->get_property_name();
+	}
+
+
+	/**
+	 * Extract one geometry or coverage (geometry + scalars).
+	 */
+	std::tuple<
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type,
+			boost::optional<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>>
+	extract_geometry_or_coverage(
+			boost::python::object geometry_or_coverage_object,
+			const char *type_error_string)
+	{
+		//
+		// 'geometry_or_coverage_object' is either:
+		//   1) a GeometryOnSphere, or
+		//   2) a coverage.
+		//
+		// ...where a 'coverage' is a (geometry-domain, geometry-range) sequence (eg, 2-tuple)
+		// and 'geometry-domain' is GeometryOnSphere and 'geometry-range' is a 'dict', or a sequence,
+		// of (scalar type, sequence of scalar values) 2-tuples.
+		//
+
+		if (!type_error_string)
+		{
+			type_error_string = "Expected a GeometryOnSphere, or a coverage - where a coverage is a "
+					"(GeometryOnSphere, scalar-values-dictionary) tuple and a scalar-values-dictionary is "
+					"a 'dict' or a sequence of (scalar type, sequence of scalar values) tuples";
+		}
+
+		bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> extract_geometry(geometry_or_coverage_object);
+		if (extract_geometry.check())
+		{
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = extract_geometry();
+
+			return std::make_tuple(geometry, boost::none);
+		}
+
+		// Attempt to extract a 2-tuple (GeometryOnSphere, coverage-range) which is a sequence of two objects.
+		std::vector<bp::object> sequence_of_objects;
+		PythonExtractUtils::extract_iterable(sequence_of_objects, geometry_or_coverage_object, type_error_string);
+
+		if (sequence_of_objects.size() != 2)
+		{
+			PyErr_SetString(PyExc_TypeError, type_error_string);
+			bp::throw_error_already_set();
+		}
+
+		// Extract geometry from 2-tuple.
+		bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> extract_coverage_domain(sequence_of_objects[0]);
+		if (!extract_coverage_domain.check())
+		{
+			PyErr_SetString(PyExc_TypeError, type_error_string);
+			bp::throw_error_already_set();
+		}
+		GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type coverage_domain = extract_coverage_domain();
+
+		// Extract coverage range from 2-tuple.
+		GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type coverage_range =
+				create_gml_data_block(sequence_of_objects[1], type_error_string);
+
+		return std::make_tuple(coverage_domain, coverage_range);
+	}
+
+
+	/**
+	 * Extract zero, one or more geometries or coverages (geometry + scalars).
+	 */
+	std::tuple<
+			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
+			boost::optional<std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>>>
+	extract_geometries_or_coverages(
+			boost::python::object geometries_or_coverages_object,
+			const char *type_error_string)
+	{
+		//
+		// 'geometries_or_coverages_object' is either:
+		//   1) a GeometryOnSphere, or
+		//   2) a sequence of GeometryOnSphere's, or
+		//   3) a coverage, or
+		//   4) a sequence of coverages.
+		//
+		// ...where a 'coverage' is a (geometry-domain, geometry-range) sequence (eg, 2-tuple)
+		// and 'geometry-domain' is GeometryOnSphere and 'geometry-range' is a 'dict', or a sequence,
+		// of (scalar type, sequence of scalar values) 2-tuples.
+		//
+
+		if (!type_error_string)
+		{
+			type_error_string = "Expected a GeometryOnSphere, or a sequence of GeometryOnSphere, "
+					"or a coverage, or a sequence of coverages - where a coverage is a "
+					"(GeometryOnSphere, scalar-values-dictionary) tuple and a scalar-values-dictionary is "
+					"a 'dict' or a sequence of (scalar type, sequence of scalar values) tuples";
+		}
+
+		bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> extract_geometry(geometries_or_coverages_object);
+		if (extract_geometry.check())
+		{
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = extract_geometry();
+
+			return std::make_tuple(
+					std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>{geometry},
+					boost::none);
+		}
+
+		// Attempt to extract a sequence of objects.
+		// All the following are sequences - including the tuple in (3)...
+		//
+		//   2) a sequence of GeometryOnSphere's, or
+		//   3) a (GeometryOnSphere, coverage-range) tuple, or
+		//   4) a sequence of (GeometryOnSphere, coverage-range) tuples.
+		//
+		std::vector<bp::object> sequence_of_objects;
+		PythonExtractUtils::extract_iterable(sequence_of_objects, geometries_or_coverages_object, type_error_string);
+
+		// It's possible we were given an empty sequence
+		if (sequence_of_objects.empty())
+		{
+			// Return an empty vector.
+			return std::make_tuple(
+					std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>{},
+					boost::none);
+		}
+
+		// If the first object in the sequence is a geometry then we've narrowed things down to:
+		//   2) a sequence of GeometryOnSphere's, or
+		//   3) a (GeometryOnSphere, coverage-range) tuple.
+		//
+		// Ie, we've ruled out:
+		//   4) a sequence of (GeometryOnSphere, coverage-range) tuples.
+		//
+		// ...because its first object is a tuple (not a geometry).
+		bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> extract_first_geometry(sequence_of_objects[0]);
+		if (extract_first_geometry.check())
+		{
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type first_geometry = extract_first_geometry();
+
+			// If there's exactly two objects then we *could* be looking at a (GeometryOnSphere, coverage-range) tuple.
+			// Otherwise it has to be a sequence of GeometryOnSphere's.
+			if (sequence_of_objects.size() == 2)
+			{
+				// See if the second object is also a geometry.
+				bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> extract_second_geometry(sequence_of_objects[1]);
+				if (!extract_second_geometry.check())
+				{
+					// If we get here then we've narrowed things down to:
+					//   3) a (GeometryOnSphere, coverage-range) tuple.
+					//
+
+					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type coverage_domain_geometry = first_geometry;
+
+					// Extract the coverage range.
+					GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type gml_data_block =
+							create_gml_data_block(sequence_of_objects[1], type_error_string);
+
+					return std::make_tuple(
+							std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>{coverage_domain_geometry},
+							std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>{gml_data_block});
+				}
+				// else second object is a geometry so we must have a sequence of geometries.
+			}
+
+			// If we get here then we've narrowed things down to:
+			//   2) a sequence of GeometryOnSphere's.
+			//
+
+			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometries;
+
+			// We've already extracted the first geometry.
+			geometries.push_back(first_geometry);
+
+			// Extract the remaining geometries.
+			for (unsigned int n = 1; n < sequence_of_objects.size(); ++n)
+			{
+				bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+						extract_geometry_n(sequence_of_objects[n]);
+				if (!extract_geometry_n.check())
+				{
+					PyErr_SetString(PyExc_TypeError, type_error_string);
+					bp::throw_error_already_set();
+				}
+				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_n = extract_geometry_n();
+
+				geometries.push_back(geometry_n);
+			}
+
+			return std::make_tuple(geometries, boost::none);
+		}
+
+		// If we get here then we've narrowed things down to:
+		//   4) a sequence of (GeometryOnSphere, coverage-range) tuples.
+		//
+
+		std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> coverage_domains;
+		std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type> coverage_ranges;
+
+		// Extract the sequence of coverages (domains/ranges).
+		std::vector<bp::object>::const_iterator sequence_of_objects_iter = sequence_of_objects.begin();
+		std::vector<bp::object>::const_iterator sequence_of_objects_end = sequence_of_objects.end();
+		for ( ; sequence_of_objects_iter != sequence_of_objects_end; ++sequence_of_objects_iter)
+		{
+			const bp::object &coverage_object = *sequence_of_objects_iter;
+
+			// Extract the domain/range tuple.
+			std::vector<bp::object> coverage_domain_range;
+			PythonExtractUtils::extract_iterable(coverage_domain_range, coverage_object, type_error_string);
+
+			if (coverage_domain_range.size() != 2)
+			{
+				PyErr_SetString(PyExc_TypeError, type_error_string);
+				bp::throw_error_already_set();
+			}
+
+			// Extract the coverage domain.
+			bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
+					extract_coverage_domain(coverage_domain_range[0]);
+			if (!extract_coverage_domain.check())
+			{
+				PyErr_SetString(PyExc_TypeError, type_error_string);
+				bp::throw_error_already_set();
+			}
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type coverage_domain = extract_coverage_domain();
+			coverage_domains.push_back(coverage_domain);
+
+			// Extract the coverage range.
+			GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type coverage_range =
+					create_gml_data_block(coverage_domain_range[1], type_error_string);
+			coverage_ranges.push_back(coverage_range);
+		}
+
+		return std::make_tuple(coverage_domains, coverage_ranges);
 	}
 
 
@@ -544,7 +774,7 @@ namespace GPlatesApi
 			}
 			const double reconstruction_time = reconstruction_geo_time_instant.value();
 
-			GPlatesModel::integer_plate_id_type anchor_plate_id = 0;
+			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id;
 			if (tuple_len == 3)
 			{
 				bp::extract<GPlatesModel::integer_plate_id_type> extract_anchor_plate_id(reverse_reconstruct_tuple[2]);
@@ -557,7 +787,8 @@ namespace GPlatesApi
 				anchor_plate_id = extract_anchor_plate_id();
 			}
 
-			// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default.
+			// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default
+			// (which if none, then uses default anchor plate of 'rotation_model' instead).
 			// This ensures we will reverse reconstruct using the correct anchor plate.
 			GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
 					GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
@@ -625,6 +856,23 @@ namespace GPlatesApi
 						reverse_reconstruct_parameters = extract_reverse_reconstruct_parameters(
 								reverse_reconstruct_object);
 
+				// Set the geometry import time to the reconstruction time so that the geometry is correctly
+				// reverse-reconstructed below (this is especially important for mid-ocean ridges with
+				// version 3 half-stage rotations where spreading start time is the geometry import time).
+				static const GPlatesModel::PropertyName GEOMETRY_IMPORT_TIME_PROPERTY_NAME =
+						GPlatesModel::PropertyName::create_gpml("geometryImportTime");
+				// Note: Property will only get added if property name is valid for the feature's type,
+				//       which it should since the GPGIM says it's valid for all reconstructable features.
+				//       But it won't get added for flowlines for example (according to the current GPGIM).
+				GPlatesModel::ModelUtils::set_property(
+						feature_handle.reference(),
+						GEOMETRY_IMPORT_TIME_PROPERTY_NAME,
+						GPlatesModel::ModelUtils::create_gml_time_instant(
+								GPlatesPropertyValues::GeoTimeInstant(
+										reverse_reconstruct_parameters.second/*reconstruction_time*/)),
+						true/*check_property_name_allowed_for_feature_type*/,
+						true/*check_property_value_type*/);
+
 				// Before we can reverse reconstruct the geometry, the feature we use for this
 				// must have a geometry otherwise the reconstruct method will default to by-plate-id.
 				// It may already have a geometry but it doesn't matter if we overwrite it now
@@ -641,8 +889,8 @@ namespace GPlatesApi
 						geometry,
 						feature_handle,
 						reconstruct_method_registry,
-						reverse_reconstruct_parameters.first,
-						reverse_reconstruct_parameters.second);
+						reverse_reconstruct_parameters.first/*reconstruction_tree_creator*/,
+						reverse_reconstruct_parameters.second/*reconstruction_time*/);
 			}
 
 			// Wrap the geometry in a property value.
@@ -700,7 +948,7 @@ namespace GPlatesApi
 					!coverage_range_property_value.get()->tuple_list().empty(),
 					GPLATES_ASSERTION_SOURCE);
 			// Just test the scalar values length for the first scalar type (all types should already have the same length).
-			if (num_domain_geometry_points != coverage_range_property_value.get()->tuple_list().front().get()->get_coordinates().size())
+			if (num_domain_geometry_points != coverage_range_property_value.get()->tuple_list().front()->get_coordinates().size())
 			{
 				PyErr_SetString(PyExc_ValueError, "Number of scalar values in coverage must match number of points in geometry");
 				bp::throw_error_already_set();
@@ -734,7 +982,7 @@ namespace GPlatesApi
 				const GPlatesModel::PropertyName &geometry_property_name,
 				bp::object reverse_reconstruct_object,
 				VerifyInformationModel::Value verify_information_model,
-				boost::optional<const std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type> &>
+				boost::optional<std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>>
 						coverage_range_property_values = boost::none)
 		{
 			//
@@ -748,6 +996,23 @@ namespace GPlatesApi
 			if (reverse_reconstruct_object != bp::object()/*Py_None*/)
 			{
 				reverse_reconstruct_parameters = extract_reverse_reconstruct_parameters(reverse_reconstruct_object);
+
+				// Set the geometry import time to the reconstruction time so that the geometries are correctly
+				// reverse-reconstructed below (this is especially important for mid-ocean ridges with
+				// version 3 half-stage rotations where spreading start time is the geometry import time).
+				static const GPlatesModel::PropertyName GEOMETRY_IMPORT_TIME_PROPERTY_NAME =
+						GPlatesModel::PropertyName::create_gpml("geometryImportTime");
+				// Note: Property will only get added if property name is valid for the feature's type,
+				//       which it should since the GPGIM says it's valid for all reconstructable features.
+				//       But it won't get added for flowlines for example (according to the current GPGIM).
+				GPlatesModel::ModelUtils::set_property(
+						feature_handle.reference(),
+						GEOMETRY_IMPORT_TIME_PROPERTY_NAME,
+						GPlatesModel::ModelUtils::create_gml_time_instant(
+								GPlatesPropertyValues::GeoTimeInstant(
+										reverse_reconstruct_parameters->second/*reconstruction_time*/)),
+						true/*check_property_name_allowed_for_feature_type*/,
+						true/*check_property_value_type*/);
 			}
 
 			// Wrap the geometries in property values.
@@ -782,8 +1047,8 @@ namespace GPlatesApi
 							geometry,
 							feature_handle,
 							reconstruction_method_registry,
-							reverse_reconstruct_parameters->first,
-							reverse_reconstruct_parameters->second);
+							reverse_reconstruct_parameters->first/*reconstruction_tree_creator*/,
+							reverse_reconstruct_parameters->second/*reconstruction_time*/);
 				}
 
 				// Wrap the current geometry in a property value.
@@ -858,7 +1123,7 @@ namespace GPlatesApi
 						!coverage_range_property_values.get()[c]->tuple_list().empty(),
 						GPLATES_ASSERTION_SOURCE);
 				// Just test the scalar values length for the first scalar type (all types should already have the same length).
-				if (num_domain_geometry_points != coverage_range_property_values.get()[c]->tuple_list().front().get()->get_coordinates().size())
+				if (num_domain_geometry_points != coverage_range_property_values.get()[c]->tuple_list().front()->get_coordinates().size())
 				{
 					PyErr_SetString(PyExc_ValueError, "Number of scalar values in coverage must match number of points in geometry");
 					bp::throw_error_already_set();
@@ -1843,49 +2108,14 @@ namespace GPlatesApi
 		}
 		const GPlatesModel::PropertyName &geometry_property_name = property_name.get();
 
-		//
-		// 'geometry_object' is either:
-		//   1) a GeometryOnSphere, or
-		//   2) a sequence of GeometryOnSphere's, or
-		//   3) a coverage, or
-		//   4) a sequence of coverages.
-		//
-		// ...where a 'coverage' is a (geometry-domain, geometry-range) sequence (eg, 2-tuple)
-		// and 'geometry-domain' is GeometryOnSphere and 'geometry-range' is a 'dict', or a sequence,
-		// of (scalar type, sequence of scalar values) 2-tuples.
-		//
-
-		const char *type_error_string = "Expected a GeometryOnSphere, or a sequence of GeometryOnSphere, "
-				"or a coverage, or a sequence of coverages - where a coverage is a "
-				"(GeometryOnSphere, scalar-values-dictionary) tuple and a scalar-values-dictionary is "
-				"a 'dict' or a sequence of (scalar type, sequence of scalar values) tuples";
-
-		bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> extract_geometry(geometry_object);
-		if (extract_geometry.check())
-		{
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = extract_geometry();
-
-			return set_geometry(
-					feature_handle,
-					geometry,
-					geometry_property_name,
-					reverse_reconstruct_object,
-					verify_information_model);
-		}
-
-		// Attempt to extract a sequence of objects.
-		// All the following are sequences - including the tuple in (3)...
-		//
-		//   2) a sequence of GeometryOnSphere's, or
-		//   3) a (GeometryOnSphere, coverage-range) tuple, or
-		//   4) a sequence of (GeometryOnSphere, coverage-range) tuples.
-		//
-		std::vector<bp::object> sequence_of_objects;
-		PythonExtractUtils::extract_iterable(sequence_of_objects, geometry_object, type_error_string);
+		// Extract the geometries, or coverages (geometries + scalars).
+		std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometries;
+		boost::optional<std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>> coverage_ranges;
+		std::tie(geometries, coverage_ranges) = extract_geometries_or_coverages(geometry_object);
 
 		// It's possible we were given an empty sequence - which means we should remove all
 		// matching geometries (domains) and coverage ranges.
-		if (sequence_of_objects.empty())
+		if (geometries.empty())
 		{
 			// Remove any geometry properties with the geometry property name.
 			feature_handle.remove_properties_by_name(geometry_property_name);
@@ -1903,125 +2133,28 @@ namespace GPlatesApi
 			return bp::list();
 		}
 
-		// If the first object in the sequence is a geometry then we've narrowed things down to:
-		//   2) a sequence of GeometryOnSphere's, or
-		//   3) a (GeometryOnSphere, coverage-range) tuple.
-		//
-		// Ie, we've ruled out:
-		//   4) a sequence of (GeometryOnSphere, coverage-range) tuples.
-		//
-		// ...because it's first object is a tuple (not a geometry).
-		bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-				extract_first_geometry(sequence_of_objects[0]);
-		if (extract_first_geometry.check())
+		if (geometries.size() == 1)
 		{
-			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type first_geometry = extract_first_geometry();
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry = geometries[0];
 
-			// If there's exactly two objects then we *could* be looking at a (GeometryOnSphere, coverage-range) tuple.
-			// Otherwise it has to be a sequence of GeometryOnSphere's.
-			if (sequence_of_objects.size() == 2)
+			boost::optional<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type> coverage_range;
+			if (coverage_ranges)
 			{
-				// See if the second object is also a geometry.
-				bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-						extract_second_geometry(sequence_of_objects[1]);
-				if (!extract_second_geometry.check())
-				{
-					// If we get here then we've narrowed things down to:
-					//   3) a (GeometryOnSphere, coverage-range) tuple.
-					//
-
-					GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type coverage_domain_geometry = first_geometry;
-
-					// Extract the coverage range.
-					GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type gml_data_block =
-							create_gml_data_block(sequence_of_objects[1], type_error_string);
-
-					return set_geometry(
-							feature_handle,
-							coverage_domain_geometry,
-							geometry_property_name,
-							reverse_reconstruct_object,
-							verify_information_model,
-							gml_data_block);
-				}
-				// else second object is a geometry so we must have a sequence of geometries.
+				coverage_range = coverage_ranges.get()[0];
 			}
 
-			// If we get here then we've narrowed things down to:
-			//   2) a sequence of GeometryOnSphere's.
-			//
-
-			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> geometries;
-
-			// We've already extracted the first geometry.
-			geometries.push_back(first_geometry);
-
-			// Extract the remaining geometries.
-			for (unsigned int n = 1; n < sequence_of_objects.size(); ++n)
-			{
-				bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-						extract_geometry_n(sequence_of_objects[n]);
-				if (!extract_geometry_n.check())
-				{
-					PyErr_SetString(PyExc_TypeError, type_error_string);
-					bp::throw_error_already_set();
-				}
-				GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry_n = extract_geometry_n();
-
-				geometries.push_back(geometry_n);
-			}
-
-			return set_geometries(
+			return set_geometry(
 					feature_handle,
-					geometries,
+					geometry,
 					geometry_property_name,
 					reverse_reconstruct_object,
-					verify_information_model);
-		}
-
-		// If we get here then we've narrowed things down to:
-		//   4) a sequence of (GeometryOnSphere, coverage-range) tuples.
-		//
-
-		std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type> coverage_domains;
-		std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type> coverage_ranges;
-
-		// Extract the sequence of coverages (domains/ranges).
-		std::vector<bp::object>::const_iterator sequence_of_objects_iter = sequence_of_objects.begin();
-		std::vector<bp::object>::const_iterator sequence_of_objects_end = sequence_of_objects.end();
-		for ( ; sequence_of_objects_iter != sequence_of_objects_end; ++sequence_of_objects_iter)
-		{
-			const bp::object &coverage_object = *sequence_of_objects_iter;
-
-			// Extract the domain/range tuple.
-			std::vector<bp::object> coverage_domain_range;
-			PythonExtractUtils::extract_iterable(coverage_domain_range, coverage_object, type_error_string);
-
-			if (coverage_domain_range.size() != 2)
-			{
-				PyErr_SetString(PyExc_TypeError, type_error_string);
-				bp::throw_error_already_set();
-			}
-
-			// Extract the coverage domain.
-			bp::extract<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>
-					extract_coverage_domain(coverage_domain_range[0]);
-			if (!extract_coverage_domain.check())
-			{
-				PyErr_SetString(PyExc_TypeError, type_error_string);
-				bp::throw_error_already_set();
-			}
-			coverage_domains.push_back(extract_coverage_domain());
-
-			// Extract the coverage range.
-			GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type coverage_range =
-					create_gml_data_block(coverage_domain_range[1], type_error_string);
-			coverage_ranges.push_back(coverage_range);
+					verify_information_model,
+					coverage_range);
 		}
 
 		return set_geometries(
 				feature_handle,
-				coverage_domains,
+				geometries,
 				geometry_property_name,
 				reverse_reconstruct_object,
 				verify_information_model,
@@ -3668,9 +3801,10 @@ export_feature()
 				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
 				"  :type feature_id: :class:`FeatureId`\n"
 				"  :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) "
-				"where the anchor plate is optional - if this tuple of reverse reconstruct parameters is specified "
-				"then *geometry* is reverse reconstructed using those parameters and any specified feature properties "
-				"(eg, *reconstruction_plate_id*) - this is only required if *geometry* is not present day - "
+				"where the anchor plate is optional (defaults to default anchor plate of rotation model) - "
+				"if this tuple of reverse reconstruct parameters is specified then *geometry* is reverse reconstructed "
+				"using those parameters and any specified feature properties (eg, *reconstruction_plate_id*) - "
+				"this is only required if *geometry* is not present day - "
 				"alternatively you can subsequently call :func:`reverse_reconstruct`\n"
 				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
@@ -3787,7 +3921,11 @@ export_feature()
 				"    # Set geometry and reverse reconstruct *after* other feature properties have been set.\n"
 				"    isochron_feature.set_geometry(\n"
 				"        geometry_at_time_of_appearance,\n"
-				"        reverse_reconstruct=(rotation_model, time_of_appearance))\n")
+				"        reverse_reconstruct=(rotation_model, time_of_appearance))\n"
+				"\n"
+				"  .. versionchanged:: 0.29\n"
+				"     The :meth:`geometry import time<set_geometry_import_time>` is set to the geometry "
+				"reconstruction time when reverse reconstructing.\n")
 		.staticmethod("create_reconstructable_feature")
 		.def("create_topological_feature",
 				&GPlatesApi::feature_handle_create_topological_feature,
@@ -3870,7 +4008,7 @@ export_feature()
 				"\n"
 				"  .. seealso:: :meth:`create_reconstructable_feature`\n"
 				"\n"
-				"  .. versionadded:: 24\n")
+				"  .. versionadded:: 0.24\n")
 		.staticmethod("create_topological_feature")
 		.def("create_tectonic_section",
 				&GPlatesApi::feature_handle_create_tectonic_section,
@@ -3941,10 +4079,10 @@ export_feature()
 				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
 				"  :type feature_id: :class:`FeatureId`\n"
 				"  :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) "
-				"where the anchor plate is optional - if this tuple of reverse reconstruct parameters is specified "
-				"then *geometry* is reverse reconstructed using those parameters and any specified feature properties "
-				"(eg, *reconstruction_plate_id*) - this is only required if *geometry* is not present day - "
-				"alternatively you can subsequently call :func:`reverse_reconstruct`\n"
+				"where the anchor plate is optional (defaults to default anchor plate of rotation model) - "
+				"if this tuple of reverse reconstruct parameters is specified then *geometry* is reverse reconstructed using "
+				"those parameters and any specified feature properties (eg, *reconstruction_plate_id*) - this is only required "
+				"if *geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`\n"
 				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
@@ -4015,7 +4153,17 @@ export_feature()
 				"    # Set geometry and reverse reconstruct *after* other feature properties have been set.\n"
 				"    mid_ocean_ridge_feature.set_geometry(\n"
 				"        geometry_at_time_of_appearance,\n"
-				"        reverse_reconstruct=(rotation_model, time_of_appearance))\n")
+				"        reverse_reconstruct=(rotation_model, time_of_appearance))\n"
+				"\n"
+				"  In the examples above the :meth:`geometry import time<set_geometry_import_time>` is internally "
+				"set to `time_of_appearance` (either due to the `reverse_reconstruct` arguments or the "
+				":meth:`reverse_reconstruct` function). This is so the ridge geometry at the time of appearance is "
+				"correctly reverse-reconstructed (which is especially important for mid-ocean ridges with version 3 "
+				"half-stage rotations where the spreading start time is the geometry import time).\n"
+				"\n"
+				"  .. versionchanged:: 0.29\n"
+				"     The :meth:`geometry import time<set_geometry_import_time>` is set to the geometry "
+				"reconstruction time when reverse reconstructing.\n")
 		.staticmethod("create_tectonic_section")
 		.def("create_flowline",
 				&GPlatesApi::feature_handle_create_flowline,
@@ -4068,10 +4216,10 @@ export_feature()
 				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
 				"  :type feature_id: :class:`FeatureId`\n"
 				"  :param reverse_reconstruct: the tuple (rotation model, seed geometry reconstruction time [, anchor plate id]) "
-				"where the anchor plate is optional - if this tuple of reverse reconstruct parameters is specified "
-				"then *seed_geometry* is reverse reconstructed using those parameters and any specified feature properties "
-				"(eg, *left_plate*) - this is only required if *seed_geometry* is not present day - "
-				"alternatively you can subsequently call :func:`reverse_reconstruct`\n"
+				"where the anchor plate is optional (defaults to default anchor plate of rotation model) - "
+				"if this tuple of reverse reconstruct parameters is specified then *seed_geometry* is reverse reconstructed using "
+				"those parameters and any specified feature properties (eg, *left_plate*) - this is only required if *seed_geometry* "
+				"is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`\n"
 				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
@@ -4198,10 +4346,10 @@ export_feature()
 				"  :param feature_id: the feature identifier, if not specified then a unique feature identifier is created\n"
 				"  :type feature_id: :class:`FeatureId`\n"
 				"  :param reverse_reconstruct: the tuple (rotation model, seed geometry reconstruction time [, anchor plate id]) "
-				"where the anchor plate is optional - if this tuple of reverse reconstruct parameters is specified "
-				"then *seed_geometry* is reverse reconstructed using those parameters and any specified feature properties "
-				"(eg, *reconstruction_plate_id*) - this is only required if *seed_geometry* is not present day - "
-				"alternatively you can subsequently call :func:`reverse_reconstruct`\n"
+				"where the anchor plate is optional (defaults to default anchor plate of rotation model) - "
+				"if this tuple of reverse reconstruct parameters is specified then *seed_geometry* is reverse reconstructed using "
+				"those parameters and any specified feature properties (eg, *reconstruction_plate_id*) - this is only required if "
+				"*seed_geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`\n"
 				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
 				"  :param verify_information_model: whether to check the information model (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
@@ -4572,16 +4720,18 @@ export_feature()
 				":class:`type<FeatureType>` is used instead\n"
 				"  :type property_name: :class:`PropertyName`\n"
 				"  :param reverse_reconstruct: the tuple (rotation model, geometry reconstruction time [, anchor plate id]) "
-				"where the anchor plate is optional - if this tuple of reverse reconstruct parameters is specified "
-				"then *geometry* is reverse reconstructed using those parameters and this feature's existing properties "
-				"(eg, reconstruction plate id) - this is only required if *geometry* is not present day - "
-				"alternatively you can subsequently call :func:`reverse_reconstruct`\n"
+				"where the anchor plate is optional (defaults to default anchor plate of rotation model) - "
+				"if this tuple of reverse reconstruct parameters is specified then *geometry* is reverse reconstructed using "
+				"those parameters and this feature's existing properties (eg, reconstruction plate id) - this is only required if "
+				"*geometry* is not present day - alternatively you can subsequently call :func:`reverse_reconstruct`\n"
 				"  :type reverse_reconstruct: tuple (:class:`RotationModel`, float or :class:`GeoTimeInstant` [, int])\n"
 				"  :param verify_information_model: whether to check the information model before setting (default) or not\n"
 				"  :type verify_information_model: *VerifyInformationModel.yes* or *VerifyInformationModel.no*\n"
-				"  :returns: the geometry property (or properties) set in the feature\n"
-				"  :rtype: :class:`Property`, or list of :class:`Property` depending on whether *geometry* "
-				"is a :class:`GeometryOnSphere` or sequence of :class:`GeometryOnSphere`\n"
+				"  :returns: the geometry property or properties set in the feature (or 2-tuple of geometry property and "
+				"scalars property, or list of those, if a coverage or coverages was specified for *geometry*)\n"
+				"  :rtype: :class:`Property` or list of :class:`Property` depending on whether *geometry* "
+				"is a :class:`GeometryOnSphere` or sequence of :class:`GeometryOnSphere` (or 2-tuple of :class:`Property` "
+				"or list of 2-tuple of :class:`Property` if *geometry* is a coverage or list of coverage - see below)\n"
 				"  :raises: InformationModelError if *verify_information_model* is *VerifyInformationModel.yes* "
 				"and *property_name* is specified but is not a recognised property name or is not supported by "
 				"this feature's :class:`type<FeatureType>`\n"
@@ -4681,6 +4831,12 @@ export_feature()
 				"    mid_ocean_ridge_feature.set_geometry(ridge_geometry_at_digitisation_time)\n"
 				"    pygplates.reverse_reconstruct(mid_ocean_ridge_feature, rotation_model, time_of_digitisation)\n"
 				"\n"
+				"  In the examples above the :meth:`geometry import time<set_geometry_import_time>` is internally "
+				"set to `time_of_digitisation` (either due to the `reverse_reconstruct` argument or the "
+				":meth:`reverse_reconstruct` function). This is so the ridge geometry at digitisation time is "
+				"correctly reverse-reconstructed (which is especially important for mid-ocean ridges with version 3 "
+				"half-stage rotations where the spreading start time is the geometry import time).\n"
+				"\n"
 				"  .. note:: *geometry* can also be a coverage or sequence of coverages - where a coverage essentially "
 				"maps each point in a geometry to one or more scalar values. A coverage is specified in *geometry* "
 				"as a (:class:`GeometryOnSphere`, *scalar-values-dictionary*) tuple (or a sequence of tuples) "
@@ -4704,7 +4860,11 @@ export_feature()
 				"to set only a single coverage (per geometry property name) - but that single coverage "
 				"can still have more than one list of scalars.\n"
 				"\n"
-				"  .. seealso:: :meth:`get_geometry`, :meth:`get_geometries` and :meth:`get_all_geometries`\n")
+				"  .. seealso:: :meth:`get_geometry`, :meth:`get_geometries` and :meth:`get_all_geometries`\n"
+				"\n"
+				"  .. versionchanged:: 0.29\n"
+				"     The :meth:`geometry import time<set_geometry_import_time>` is set to the geometry "
+				"reconstruction time when reverse reconstructing.\n")
 		.def("get_geometry",
 				&GPlatesApi::feature_handle_get_geometry,
 				(bp::arg("property_query") = bp::object()/*Py_None*/,
@@ -4723,7 +4883,9 @@ export_feature()
 				"  :param coverage_return: whether to return geometry(s) only (the default), or coverage(s) "
 				"(where a coverage is a geometry and associated per-point scalar values)\n"
 				"  :type coverage_return: *CoverageReturn.geometry_only* or *CoverageReturn.geometry_and_scalars*\n"
-				"  :rtype: :class:`GeometryOnSphere`, or list of :class:`GeometryOnSphere`, or None\n"
+				"  :rtype: :class:`GeometryOnSphere` or list of :class:`GeometryOnSphere` (or 2-tuple of "
+				":class:`GeometryOnSphere` and `dict` of scalar values, or list of those, if "
+				"*CoverageReturn.geometry_and_scalars* specified) or None\n"
 				"\n"
 				"  This is a convenience method to make geometry retrieval easier.\n"
 				"\n"
@@ -4845,7 +5007,8 @@ export_feature()
 				"  :param coverage_return: whether to return geometries only (the default), or coverages "
 				"(where a coverage is a geometry and associated per-point scalar values)\n"
 				"  :type coverage_return: *CoverageReturn.geometry_only* or *CoverageReturn.geometry_and_scalars*\n"
-				"  :rtype: list of :class:`GeometryOnSphere`\n"
+				"  :rtype: list of :class:`GeometryOnSphere` (or list of 2-tuple of :class:`GeometryOnSphere` and "
+				"`dict` of scalar values if *CoverageReturn.geometry_and_scalars* specified)\n"
 				"\n"
 				"  | This is a convenient alternative to :meth:`get_geometry` that returns a ``list`` "
 				"of matching geometries without having to specify ``pygplates.PropertyReturn.all``.\n"
@@ -4870,7 +5033,8 @@ export_feature()
 				"  :param coverage_return: whether to return geometries only (the default), or coverages "
 				"(where a coverage is a geometry and associated per-point scalar values)\n"
 				"  :type coverage_return: *CoverageReturn.geometry_only* or *CoverageReturn.geometry_and_scalars*\n"
-				"  :rtype: list of :class:`GeometryOnSphere`\n"
+				"  :rtype: list of :class:`GeometryOnSphere` (or list of 2-tuple of :class:`GeometryOnSphere` and "
+				"`dict` of scalar values if *CoverageReturn.geometry_and_scalars* specified)\n"
 				"\n"
 				"  | This is a convenient alternative to :meth:`get_geometries` that returns a ``list`` "
 				"of *all* geometries regardless of their :class:`property names<PropertyName>`.\n"
@@ -4954,7 +5118,7 @@ export_feature()
 				"  .. seealso:: :meth:`get_topological_geometry`, :meth:`get_topological_geometries` and :meth:`get_all_topological_geometries`\n"
 				"  .. seealso:: :meth:`set_geometry`\n"
 				"\n"
-				"  .. versionadded:: 24\n")
+				"  .. versionadded:: 0.24\n")
 		.def("get_topological_geometry",
 				&GPlatesApi::feature_handle_get_topological_geometry,
 				(bp::arg("property_query") = bp::object()/*Py_None*/,
@@ -5015,7 +5179,7 @@ export_feature()
 				"\n"
 				"  .. seealso:: :meth:`set_topological_geometry`\n"
 				"\n"
-				"  .. versionadded:: 24\n")
+				"  .. versionadded:: 0.24\n")
 		.def("get_topological_geometries",
 				&GPlatesApi::feature_handle_get_topological_geometries,
 				(bp::arg("property_query") = bp::object()/*Py_None*/),
@@ -5043,7 +5207,7 @@ export_feature()
 				"\n"
 				"  .. seealso:: :meth:`set_topological_geometry`\n"
 				"\n"
-				"  .. versionadded:: 24\n")
+				"  .. versionadded:: 0.24\n")
 		.def("get_all_topological_geometries",
 				&GPlatesApi::feature_handle_get_all_topological_geometries,
 				"get_all_topological_geometries()\n"
@@ -5064,7 +5228,7 @@ export_feature()
 				"\n"
 				"  .. seealso:: :meth:`set_topological_geometry`\n"
 				"\n"
-				"  .. versionadded:: 24\n")
+				"  .. versionadded:: 0.24\n")
 		.def("set_enumeration",
 				&GPlatesApi::feature_handle_set_enumeration,
 				(bp::arg("property_name"),

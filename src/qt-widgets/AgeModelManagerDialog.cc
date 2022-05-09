@@ -89,7 +89,7 @@ namespace
 #if 0
 			GPlatesAppLogic::age_model_map_type::const_iterator it =
 					std::find_if(age_model.d_model.begin(),age_model.d_model.end(),
-								boost::bind(&GPlatesAppLogic::age_model_pair_type::first, _1) == chron);
+								boost::bind(&GPlatesAppLogic::age_model_pair_type::first, boost::placeholders::_1) == chron);
 #endif
 			if (it != age_model.d_model.end())
 			{
@@ -163,7 +163,7 @@ namespace
 			int column,
 			QStandardItemModel *standard_model)
 	{
-			standard_model->setData(standard_model->index(row,column), QColor(Qt::yellow), Qt::BackgroundColorRole);
+			standard_model->setData(standard_model->index(row,column), QColor(Qt::yellow), Qt::BackgroundRole);
 	}
 
 	void

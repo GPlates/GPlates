@@ -459,7 +459,6 @@ export_plate_partitioner()
 								bp::arg("sort_partitioning_plates") =
 										GPlatesApi::SortPartitioningPlates::BY_PARTITION_TYPE_THEN_PLATE_ID)),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
-				// Specific overload signature...
 				"__init__(...)\n"
 				"A *PlatePartitioner* object can be constructed in more than one way. The following applies to both ways...\n"
 				"\n"
@@ -581,6 +580,9 @@ export_plate_partitioner()
 				"  :param sort_partitioning_plates: optional sort order of partitioning plates "
 				"(defaults to *SortPartitioningPlates.by_partition_type_then_plate_id*)\n"
 				"  :type sort_partitioning_plates: One of the values in the *SortPartitioningPlates* table above, or None\n"
+				"  :raises: ValueError if *reconstruction_time* is "
+				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
 				"\n"
 				"  The partitioning plates are generated internally by :func:`reconstructing the regular geological features<reconstruct>` "
 				"and :func:`resolving the topological features<resolve_topologies>` in *partitioning_features* using the rotation model and "

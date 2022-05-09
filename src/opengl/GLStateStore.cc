@@ -23,7 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 
 #include "GLStateStore.h"
 
@@ -65,7 +65,7 @@ GPlatesOpenGL::GLStateStore::allocate_state()
 						// This is so 'GLState' objects can allocate through us when cloning themselves...
 						shared_from_this()),
 				// Calls 'GLState::clear()' every time a GLState object is returned to the cache...
-				boost::bind(&GLState::clear, _1));
+				boost::bind(&GLState::clear, boost::placeholders::_1));
 	}
 
 	return state.get();

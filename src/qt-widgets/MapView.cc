@@ -68,7 +68,7 @@ namespace
 	 * Given the scene view's dimensions (eg, canvas dimensions) generate a world transform
 	 * needed to display the scene.
 	 */
-	QMatrix
+	QTransform
 	calc_world_transform(
 			const GPlatesGui::MapTransform &map_transform,
 			unsigned int scene_view_width,
@@ -79,7 +79,8 @@ namespace
 			(GPlatesGui::MapTransform::MAX_CENTRE_OF_VIEWPORT_X -
 			 GPlatesGui::MapTransform::MIN_CENTRE_OF_VIEWPORT_X) / FRAMING_RATIO;
 
-		QMatrix m;
+		QTransform m;
+		// Invert 'y' coordinate to transform from OpenGL frame to Qt frame.
 		m.scale(scale_factor, -scale_factor);
 		m.rotate(map_transform.get_rotation());
 
@@ -87,7 +88,7 @@ namespace
 		// coordinates) would have ended up (in window coordinates) if we hadn't done
 		// any translation. Then we apply a translation such that the centre of
 		// viewport will end up in the middle of the screen (in window coordinates).
-		// Note that QMatrix::translate() translates along the (already rotated) axes,
+		// Note that QTransform::translate() translates along the (already rotated) axes,
 		// so we do it manually, by modifying the dx and dy parameters of the matrix.
 		const GPlatesGui::MapTransform::point_type &centre = map_transform.get_centre_of_viewport();
 		double transformed_centre_x, transformed_centre_y;
@@ -95,7 +96,7 @@ namespace
 		double offset_x = static_cast<double>(scene_view_width) / 2.0 - transformed_centre_x;
 		double offset_y = static_cast<double>(scene_view_height) / 2.0 - transformed_centre_y;
 
-		return QMatrix(
+		return QTransform(
 				m.m11(), m.m12(), m.m21(), m.m22(),
 				m.dx() + offset_x,
 				m.dy() + offset_y);
@@ -191,21 +192,20 @@ GPlatesQtWidgets::MapView::handle_transform_changed(
 {
 	setTransformationAnchor(QGraphicsView::NoAnchor);
 
-	// Calculate world transforms.
+	// Calculate world transform.
 	//
-	// Note that Qt uses device *independent* coordinates (eg, in the QGraphicsView/QGraphicsScene/QPainter).
-	// Whereas OpenGL uses device pixels (affected by device pixel ratio on high DPI displays like Apple Retina).
-	const QMatrix qpainter_world_transform = calc_world_transform(
+	// Note that even though Qt uses device *independent* coordinates (eg, in the QGraphicsView/QGraphicsScene/QPainter)
+	// and OpenGL uses device pixels (affected by device pixel ratio on high DPI displays like Apple Retina)
+	// we use device *independent* coordinates for our transforms (including orthographic projections).
+	// It's really only the OpenGL viewport that needs to know about device pixels.
+	const QTransform world_transform = calc_world_transform(
 			map_transform,
+			// Using device-independent pixels (eg, widget dimensions)...
 			width(),
 			height());
-	const QMatrix opengl_world_transform = calc_world_transform(
-			map_transform,
-			devicePixelRatio() * width(),
-			devicePixelRatio() * height());
 
-	setMatrix(qpainter_world_transform);
-	map_canvas().set_viewport_transform_for_device_pixels(QTransform(opengl_world_transform));
+	setTransform(world_transform);
+	map_canvas().set_viewport_transform(world_transform);
 
 	// Even though the scroll bars are hidden, the QGraphicsView is still
 	// scrollable, and it has a habit of scrolling around if you have panned to the
@@ -492,23 +492,20 @@ GPlatesQtWidgets::MapView::get_viewport_size() const
 }
 
 
-QSize
-GPlatesQtWidgets::MapView::get_viewport_size_in_device_pixels() const
-{
-	// QWidget::width() and QWidget::height() are in device independent pixels.
-	// Convert from widget size to device pixels (OpenGL).
-	return devicePixelRatio() * get_viewport_size();
-}
-
-
 QImage
 GPlatesQtWidgets::MapView::render_to_qimage(
-		const QSize &image_size)
+		const QSize &image_size_in_device_independent_pixels)
 {
 	// Calculate the world matrix to position the scene appropriately according to the image dimensions.
-	const QMatrix world_matrix = calc_world_transform(d_map_transform, image_size.width(), image_size.height());
+	//
+	// Note that the image dimensions are in device *independent* pixels (eg, widget dimensions).
+	const QTransform world_matrix = calc_world_transform(
+			d_map_transform,
+			// Using device-independent pixels (eg, widget dimensions)...
+			image_size_in_device_independent_pixels.width(),
+			image_size_in_device_independent_pixels.height());
 
-	return map_canvas().render_to_qimage(*d_gl_widget_ptr, QTransform(world_matrix), image_size);
+	return map_canvas().render_to_qimage(*d_gl_widget_ptr, world_matrix, image_size_in_device_independent_pixels);
 }
 
 
@@ -518,18 +515,15 @@ GPlatesQtWidgets::MapView::render_opengl_feedback_to_paint_device(
 {
 	// Calculate the world matrix to position the scene appropriately according to the dimensions
 	// of the feedback paint device.
-	const QMatrix world_matrix = calc_world_transform(
+	const QTransform world_matrix = calc_world_transform(
 			d_map_transform,
-			// Use device pixels (instead of device *independent* pixels) since this transform is used for OpenGL rendering.
-			//
-			// Note that Qt uses device *independent* coordinates (eg, in the QGraphicsView/QGraphicsScene/QPainter).
-			// Whereas OpenGL uses device pixels (affected by device pixel ratio on high DPI displays like Apple Retina).
-			feedback_paint_device.width() * feedback_paint_device.devicePixelRatio(),
-			feedback_paint_device.height() * feedback_paint_device.devicePixelRatio());
+			// Using device-independent pixels (eg, widget dimensions)...
+			feedback_paint_device.width(),
+			feedback_paint_device.height());
 
 	map_canvas().render_opengl_feedback_to_paint_device(
 			*d_gl_widget_ptr,
-			QTransform(world_matrix),
+			world_matrix,
 			feedback_paint_device);
 }
 
@@ -659,7 +653,7 @@ GPlatesQtWidgets::MapView::move_camera(
 
 	// Turn that into scene coordinates.
 	double scene_x, scene_y;
-	matrix().inverted().map(win_x, win_y, &scene_x, &scene_y);
+	transform().inverted().map(win_x, win_y, &scene_x, &scene_y);
 	d_map_transform.set_centre_of_viewport(
 			GPlatesGui::MapTransform::point_type(scene_x, scene_y));
 }

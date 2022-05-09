@@ -35,6 +35,10 @@ if (SPHINX_FOUND)
 	# Sphinx cache with pickled ReST documents
 	set(SPHINX_CACHE_DIR "${CMAKE_CURRENT_BINARY_DIR}/_doctrees")
 
+	# Sphinx directory containing custom static files (such as style sheets).
+	# This gets used in 'conf.py.in'.
+	set(SPHINX_STATIC_DIR "${CMAKE_CURRENT_BINARY_DIR}/_static")
+
 	# HTML output directory
 	set(SPHINX_HTML_DIR "${CMAKE_CURRENT_BINARY_DIR}/html")
 	
@@ -45,7 +49,7 @@ if (SPHINX_FOUND)
 	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/sample-code") # Ensure 'sample-code' sub-directory exists in binary build directory.
 	FOREACH(RST_FILE ${RST_FILES})
 		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${RST_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${RST_FILE} @ONLY)
-	ENDFOREACH(RST_FILE ${RST_FILES})
+	ENDFOREACH()
 	
 	# Copy the image (".png") files from our source directory to our binary/output directory.
 	# This is because we're making that the Sphinx source directory (since ".rst" files are also copied there as mentioned above).
@@ -53,11 +57,15 @@ if (SPHINX_FOUND)
 	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/images") # Ensure 'images' sub-directory exists in binary build directory.
 	FOREACH(IMAGE_FILE ${IMAGE_FILES})
 		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${IMAGE_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${IMAGE_FILE} COPYONLY)
-	ENDFOREACH(IMAGE_FILE ${IMAGE_FILES})
+	ENDFOREACH()
 	
-	# It seems that 'sphinx-build' generates the following warning unless we create the specific directory in question...
-	# "WARNING: html_static_path entry '...doc-python-api/_build/_static' does not exist".
-	file(MAKE_DIRECTORY "${BINARY_BUILD_DIR}/_static")
+	# Copy the '_static' directory containing custom static files (such as style sheets) to our binary/output directory.
+	# This is because we're making that the Sphinx source directory (since ".rst" files are also copied there as mentioned above).
+	FILE(GLOB STATIC_FILES RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${CMAKE_CURRENT_SOURCE_DIR}/_static/*")
+	file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/_static") # Ensure '_static' sub-directory exists in binary build directory.
+	FOREACH(STATIC_FILE ${STATIC_FILES})
+		configure_file(${CMAKE_CURRENT_SOURCE_DIR}/${STATIC_FILE} ${CMAKE_CURRENT_BINARY_DIR}/${STATIC_FILE} COPYONLY)
+	ENDFOREACH()
 
 	# Configure the Sphinx configuration file using @VAR@ CMake variable substitutions.
 	configure_file(conf.py.in "${CMAKE_CURRENT_BINARY_DIR}/conf.py.intermediate" @ONLY)
@@ -67,7 +75,7 @@ if (SPHINX_FOUND)
 	# creates a separate file for each build configuration (eg, Debug/Release/etc), since the above generator expression is
 	# build-specific, and so we place each generated file in a build-specific directory (using $<CONFIG>) - which we specify
 	# to sphinx-build with the '-c "${BINARY_BUILD_DIR}/$<CONFIG>"' option.
-	# Note that this is all done at 'generate' time (not during 'configure).
+	# Note that this is all done at 'generate' time (not during 'configure').
 	file(GENERATE
 		OUTPUT "${BINARY_BUILD_DIR}/$<CONFIG>/conf.py"
 		INPUT "${CMAKE_CURRENT_BINARY_DIR}/conf.py.intermediate")

@@ -1,44 +1,33 @@
 #
 # Useful CMAKE variables.
 #
+# Many of these variables are cache variables that can be configured using 'cmake -D <name>=<value> ...', or via ccmake or cmake-gui.
+# This file doesn't need to be edited in those cases.
+#
 
-# The GPlates package name.
-set(GPLATES_PACKAGE_NAME "GPlates")
+
+# A short description of the GPlates project (only a few words).
+#
+# CMake (>= 3.16) uses this as the first line of Debian package description and Debian doesn't want first word to be same name as package name (eg, 'gplates').
+set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "Desktop software for the interactive visualisation of plate tectonics.")
+
 
 # The GPlates package vendor.
 set(GPLATES_PACKAGE_VENDOR "Earthbyte project")
 
-# A short description of the GPlates project (only a few words).
-set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "GPlates is desktop software for the interactive visualisation of plate-tectonics.")
 
-# The current GPlates version.
-set(GPLATES_VERSION_STRING "${GPLATES_PACKAGE_NAME} ${GPlates_VERSION}")
+# The GPlates package contact (Debian requires a name and email address - so use format 'FirstName LastName <EmailAddress>').
+#
+# NOTE: Leave it as the *empty* string here (so it doesn't get committed to source code control).
+#       It is currently only needed when creating Debian packages (using cpack) where the developer should set it using 'cmake -D', or CMake GUI, or 'ccmake'.
+set(GPLATES_PACKAGE_CONTACT "" CACHE STRING "Package contact/maintainer. Use format 'FirstName LastName <EmailAddress>'.")
 
-# The pygplates (GPlates Python API) revision.
-#
-# This revision number should ideally be incremented whenever a change is made to the pygplates API.
-# For example a new function or class - so users can then test whether a pygplates build has
-# this function or not - this is also useful for internal (non-public) releases.
-# However typically the revision number is only incremented for internal releases since currently
-# the (internal release) users (eg, various python scripts) are the only ones that query the version.
-# We don't use the SVN revision (commit) number because an API change might occur on a branch
-# and a subsequent non-API change on trunk would cause trunk to have a higher pygplates version.
-# Also the SVN revision number (and hence pygplates version) would increase for each non-API commit.
-# So unfortunately this must be incremented manually for each API change.
-# At a minimum this should be done for each internal release (if API has changed).
-#
-# NOTE: This revision number should *never* be reset to zero (eg, when the GPlates major, minor or
-# patch version is incremented at public releases) - it should just continually increment.
-# Also it does not need to be incremented at each public release - for example the revision number
-# just prior to the GPlates 1.5.0 release and just after might be the same (if API did not change
-# during that time).
-set(PYGPLATES_REVISION 28)
 
 # The GPlates copyright - string version to be used in a source file.
 set(GPLATES_COPYRIGHT_STRING "")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2003-2020 The University of Sydney, Australia\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2004-2020 California Institute of Technology\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2007-2020 The Geological Survey of Norway\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2003-2022 The University of Sydney, Australia\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2004-2022 California Institute of Technology\\n")
+set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2007-2022 The Geological Survey of Norway\\n")
 set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}\\n")
 set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}The GPlates source code also contains code derived from:\\n")
 set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING} * ReconTreeViewer (James Boyden)\\n")
@@ -52,9 +41,9 @@ set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}environment, the Inksca
 # The GPlates copyright for html.
 set(GPLATES_HTML_COPYRIGHT_STRING "")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}<html><body>\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2003-2020 The University of Sydney, Australia<br />\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2004-2020 California Institute of Technology<br />\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2007-2020 The Geological Survey of Norway<br />\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2003-2022 The University of Sydney, Australia<br />\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2004-2022 California Institute of Technology<br />\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2007-2022 The Geological Survey of Norway<br />\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}<br />\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}\\n")
 set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}The GPlates source code also contains code derived from: <ul>\\n")
@@ -71,38 +60,126 @@ set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html
 # The pyGPlates copyright - string version to be used in Python API documentation.
 # We don't include 'Copyright' since we're using Sphinx for documentation and it prepends it to our copyright string.
 set(PYGPLATES_DOCS_COPYRIGHT_STRING "")
-set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2003-2020 The University of Sydney, Australia\\n")
-set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2004-2020 California Institute of Technology\\n")
-set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2007-2020 The Geological Survey of Norway\\n")
+set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2003-2022 The University of Sydney, Australia\\n")
+set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2004-2022 California Institute of Technology\\n")
+set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2007-2022 The Geological Survey of Norway\\n")
 
-# Set to 'true' if this is a public code release (to non-developers).
-# Currently disables all warnings.
-# And also defines a compiler flag GPLATES_PUBLIC_RELEASE.
-option(GPLATES_PUBLIC_RELEASE "Public release (to non-developers)." false)
 
-# Whether to include sample data in the binary installer or not.
-# By default this is false and only enabled when packaging a public release.
+# GPLATES_PUBLIC_RELEASE - Official public release (GPlates or pyGPlates depending on GPLATES_BUILD_GPLATES).
 #
-# Developers may want to turn this on, using the cmake command-line or cmake GUI, even when not releasing a public build.
-option(GPLATES_INCLUDE_SAMPLE_DATA "Include sample data in the binary installer." false)
-
-# The directory location of the sample data.
-# The sample data is only included in the binary installer if 'GPLATES_INCLUDE_SAMPLE_DATA' is true.
-# Paths must be full paths (eg, '~/sample-data' is ok but '../sample-data' is not).
-set(GPLATES_SAMPLE_DATA_DIR "" CACHE PATH "Location of sample data.")
-
-# Set to 'true' to tell GPlates ignore environment variables, such as PYTHONHOME, PYTHONPATH, etc, 
-# when initializing embeded Python interpreter.
-# Put this close to GPLATES_PUBLIC_RELEASE because we usually want to set this to "true" when compiling public release.
+# Official public releases disable all warnings.
+# Also defines a compiler flag GPLATES_PUBLIC_RELEASE (see 'src/global/config.h.in').
 #
-# TODO: Consider adding a "python37._pth", for example, alongside the GPlates installed executable to ignore paths listed
-# in the registry and environment variables (according to https://docs.python.org/3/using/windows.html#finding-modules).
-set(GPLATES_IGNORE_PYTHON_ENVIRONMENT false)
+if (GPLATES_BUILD_GPLATES) # GPlates ...
+	# First remove cache variable (eg, leftover if switching from a pyGPlates build to GPlates by enabling GPLATES_BUILD_GPLATES).
+	unset(GPLATES_PUBLIC_RELEASE CACHE)
+	# If GPLATES_VERSION_PRERELEASE_SUFFIX is empty then it's an offical public GPlates release (eg, 2.3.0).
+	if (GPLATES_VERSION_PRERELEASE_SUFFIX)
+		set(GPLATES_PUBLIC_RELEASE false)
+	else()
+		set(GPLATES_PUBLIC_RELEASE true)
+	endif()
+else() # pyGPlates ...
+	# Currently the pyGPlates major version is zero and the minor version increments each time the API is changed
+	# (including internal releases) and so the pre-release suffix is typically left empty, so we can't really use
+	# the presence of the pre-release suffix to distinguish public releases (like we do with GPlates).
+	# So we just default to false and rely on the developer setting it to true for official releases
+	# (eg, using 'cmake -D GPLATES_PUBLIC_RELEASE:BOOL=TRUE ...', or via ccmake or cmake-gui).
+	option(GPLATES_PUBLIC_RELEASE "PyGPlates official public release." false)
+endif()
+
+
+# Whether to install GPlates (or pyGPlates) as a standalone bundle (by copying dependency libraries during installation).
+#
+# When this is true then we install code to fix up GPlates (or pyGPlates) for deployment to another machine
+# (which mainly involves copying dependency libraries into the install location, which subsequently gets packaged).
+# When this is false then we don't install dependencies, instead only installing the GPlates executable (or pyGPlates library) and a few non-dependency items.
+if (WIN32 OR APPLE)
+	# On Windows and Apple this is *enabled* by default since we typically distribute a self-contained package to users on those systems.
+	# However this can be *disabled* for use cases such as creating a conda package (since conda manages dependency installation itself).
+	set(_INSTALL_STANDALONE true)
+else() # Linux
+	# On Linux this is *disabled* by default since we rely on the Linux binary package manager to install dependencies on the user's system
+	# (for example, we create a '.deb' package that only *lists* the dependencies, which are then installed on the target system if not already there).
+	# However this can be *enabled* for use cases such as creating a standalone bundle for upload to a cloud service (where it is simply extracted).
+	set(_INSTALL_STANDALONE false)
+endif()
+option(GPLATES_INSTALL_STANDALONE "Install GPlates (or pyGPlates) as a standalone bundle (copy dependency libraries into the installation)." ${_INSTALL_STANDALONE})
+unset(_INSTALL_STANDALONE)
+
+
+# Only GPlates has option to install geodata (we don't distribute it with pyGPlates).
+#
+if (GPLATES_BUILD_GPLATES) # GPlates ...
+	# Whether to install geodata (eg, in the binary installer) or not.
+	# By default this is false but should be enabled when packaging a public release.
+	#
+	# Developers may want to turn this on, using the cmake command-line or cmake GUI, even when not releasing a public build.
+	option(GPLATES_INSTALL_GEO_DATA "Install geodata (eg, in the binary installer)." false)
+
+	# The directory location of the geodata.
+	# The geodata is only included in the binary installer if 'GPLATES_INSTALL_GEO_DATA' is true.
+	# Paths must be full paths (eg, '~/geodata' is ok but '../geodata' is not).
+	set(GPLATES_INSTALL_GEO_DATA_DIR "" CACHE PATH "Location of geodata (use absolute path).")
+	#
+	# If we're installing geodata then make sure the source geodata directory has been specified, is an absolute path and exists.
+	if (GPLATES_INSTALL_GEO_DATA)
+		if (NOT GPLATES_INSTALL_GEO_DATA_DIR)
+			message(FATAL_ERROR "Please specify GPLATES_INSTALL_GEO_DATA_DIR when you enable GPLATES_INSTALL_GEO_DATA")
+		endif()
+		if (NOT IS_ABSOLUTE "${GPLATES_INSTALL_GEO_DATA_DIR}")
+			message(FATAL_ERROR "GPLATES_INSTALL_GEO_DATA_DIR should be an absolute path (not a relative path)")
+		endif()
+		if (NOT EXISTS "${GPLATES_INSTALL_GEO_DATA_DIR}")
+			message(FATAL_ERROR "GPLATES_INSTALL_GEO_DATA_DIR does not exist: ${GPLATES_INSTALL_GEO_DATA_DIR}")
+		endif()
+		file(TO_CMAKE_PATH ${GPLATES_INSTALL_GEO_DATA_DIR} GPLATES_INSTALL_GEO_DATA_DIR) # Convert '\' to '/' in paths.
+	endif()
+else() # pyGPlates ...
+	# Remove cache variables (eg, leftover if switching from a GPlates build to pyGPlates by disabling GPLATES_BUILD_GPLATES).
+	unset(GPLATES_INSTALL_GEO_DATA CACHE)
+	unset(GPLATES_INSTALL_GEO_DATA_DIR CACHE)
+endif()
+
+
+# The macOS code signing identity used to sign installed/packaged GPlates application bundle with a Developer ID certificate.
+#
+# NOTE: Leave it as the *empty* string here (so it doesn't get committed to source code control).
+#       Also it is not needed for local builds (ie, when running GPlates/pyGPlates on build machine), it's only needed when deploying to other machines.
+#       When deploying, the developer is responsible for setting it to their Developer ID (eg, using 'cmake -D', or CMake GUI, or 'ccmake').
+#       To create a Developer ID certificate the developer first needs to create an Apple developer account and pay a yearly fee.
+#       This can be done as an individual or as a company (the latter requiring a company ID such as a company number).
+#       After that's all done and a Developer ID certificate has been created, it should typically be installed into the Keychain.
+#       It should have a name like "Developer ID Application: <ID>" thus allowing GPlates/pyGPlates to be configured with (for example):
+#
+#           cmake -D GPLATES_APPLE_CODE_SIGN_IDENTITY:STRING="Developer ID Application: <ID>" -S <source-dir> -B <build-dir>
+#
+#       Once a GPlates/pyGPlates package has been created for deployment (using 'cpack') the final step is to get Apple to notarize it (see 'Install.cmake' for details).
+#       Only then will Apple's security checks pass when users run/install the package on their machines.
+if (APPLE)
+	set(GPLATES_APPLE_CODE_SIGN_IDENTITY "" CACHE STRING "Apple code signing identity.")
+endif()
+
 
 # We compile with Python 3 (by default).
 #
 # However developers can choose to compile with Python 2 instead.
 option(GPLATES_PYTHON_3 "Compile with Python 3 (not Python 2)." true)
+
+
+# Whether to enable GPlates custom CPU profiling functionality.
+#
+# Is false by default. However note that the custom build type 'ProfileGplates' effectively
+# overrides by adding 'GPLATES_PROFILE_CODE' directly as a compiler flag. Other build types
+# set it indirectly via '#cmakedefine GPLATES_PROFILE_CODE' in 'config.h.in' using the
+# same-named CMake variable (ie, the option below).
+#
+# Usually it's easiest to just select the 'ProfileGplates' build type (note that enabling/disabling
+# the option below then has no effect). However, being a custom build type, that sometimes creates problems
+# (eg, the CGAL dependency does not always play nicely with custom build types). In this case you can choose
+# the builtin 'Release' build type (for example) and enable this option to achieve the same affect.
+option(GPLATES_PROFILE_CODE "Enable GPlates custom CPU profiling functionality." false)
+
 
 # Pre-compiled headers are turned off by default.
 #
@@ -116,16 +193,13 @@ endif()
 if (MSVC)
 	# When using Visual Studio this shows included headers (used by 'list_external_includes.py').
 	# This disables pre-compiled headers (regardless of value of 'GPLATES_USE_PRECOMPILED_HEADERS').
-	#
-	# Developers may want to turn this on using the cmake command-line or cmake GUI.
-	option(GPLATES_MSVC_SHOW_INCLUDES "Show included headers. Used when configuring pre-compiled headers." false)
-	mark_as_advanced(GPLATES_MSVC_SHOW_INCLUDES)
+	set(GPLATES_MSVC_SHOW_INCLUDES false)
 	# Disable pre-compiled headers if showing include headers.
 	# The only reason to show include headers is to use 'list_external_includes.py' script to generates pch header.
 	if (GPLATES_MSVC_SHOW_INCLUDES)
 		# Note: This sets the non-cache variable ('option' above sets the cache variable of same name).
 		#       The non-cache variable will get precedence when subsequently accessed.
-		#       It's also important to set this *after* 'option' since whenever a cache variable is added
+		#       It's also important to set this *after* 'option' since, prior to CMake 3.21, whenever a cache variable is added
 		#       (eg, on the first run if not yet present in "CMakeCache.txt") the normal variable is removed.
 		if (DEFINED GPLATES_USE_PRECOMPILED_HEADERS)
 			set(GPLATES_USE_PRECOMPILED_HEADERS false)
@@ -142,6 +216,7 @@ if (MSVC)
 	option(GPLATES_MSVC_PARALLEL_BUILD "Enable parallel builds within each Visual Studio project." true)
 endif()
 
+
 # Specify which source directories (relative to the 'doc/' directory) should be scanned by doxygen.
 set(GPLATES_DOXYGEN_INPUT
     "../src/feature-visitors ../src/file-io ../src/model ../src/property-values ../src/utils")
@@ -152,57 +227,10 @@ set(GPLATES_DOXYGEN_INPUT
 # the suffix path of where the installed executable goes (versus the built executable).
 #
 # Set default location of built (not installed) executables on all platforms and DLLs on Windows.
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${GPlates_BINARY_DIR}/bin")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
 # Set default location for built (not installed) shared libraries on non-Windows platforms.
-SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${GPlates_BINARY_DIR}/bin")
-
-# Set the minimum C++ language standard to C++11.
-#
-# std::auto_ptr was deprecated in C++11 (and removed in C++17), so we now use std::unique_ptr introduced in C++11.
-# Also GDAL 2.3 and above require C++11.
-# And CGAL 5.x requires C++14, and this requirement is transitively passed to us via the CGAL::CGAL target
-# where CMake chooses the stricter requirement between our C++11 and CGAL's C++14 (which is C++14).
-#
-# Also note that this avoids the problem of compile errors, when C++14 features are used (eg, by CGAL 5),
-# due to forcing C++11 by specifying '-std=c++11' directly on the compiler command-line.
-#
-# Note: This is also set using 'target_compile_features()' in src/CMakeLists.txt (for CMake >= 3.8).
-#       So this can be removed once our minimum CMake requirement is 3.8.
-if (CMAKE_VERSION VERSION_LESS 3.8)
-	set(CMAKE_CXX_STANDARD 11)
-	set(CMAKE_CXX_STANDARD_REQUIRED ON)
-endif()
-
-# Disable compiler-specific extensions.
-# Eg, for C++11 on GNU compilers we want '-std=c++11' instead of '-std=g++11'.
-set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
 
 # Order the include directories so that directories which are in the source or build tree always
 # come before directories outside the project.
 set(CMAKE_INCLUDE_DIRECTORIES_PROJECT_BEFORE true)
-
-# List the Qt plugins used by GPlates.
-# This is needed for packaging standalone versions of GPlates for a binary installer.
-# NOTE: each plugin listed should have its own double quotes as these are list variables.
-# The paths listed should be relative to the Qt 'plugins' directory which can be found
-# by typing 'qmake -query QT_INSTALL_PLUGINS' at the command/shell prompt.
-# Each platform has a different name for the library(s).
-# The binary packagers for Mac OS X and Windows will copy these plugins
-# into a standalone location to be included in the installer and, in the case of Mac OS X,
-# will fixup the references to point to libraries inside the app bundle.
-# Note: not really required for Linux since the binary installer will use the
-# Debian/RPM package manager to install Qt (and its plugins) on the target machine.
-set(GPLATES_QT_PLUGINS_MACOSX 
-	"imageformats/libqjpeg.dylib"
-	"imageformats/libqgif.dylib"
-	"imageformats/libqico.dylib"
-	"imageformats/libqmng.dylib"
-	"imageformats/libqsvg.dylib"
-	"imageformats/libqtiff.dylib"
-	)
-set(GPLATES_QT_PLUGINS_WIN32 
-	"imageformats/qjpeg4.dll"
-	)
-set(GPLATES_QT_PLUGINS_LINUX 
-	"imageformats/libqjpeg.so"
-	)

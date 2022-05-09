@@ -765,18 +765,18 @@ namespace
                     UserItemTypes::POLE_ITEM_TYPE);
             QVariant qv;
 			// FIXME: This const cast bypasses the model revisioning system.
-            qv.setValue(const_cast<GpmlTimeSample *>(iter->get().get()));
+            qv.setValue(const_cast<GpmlTimeSample *>((*iter).get_element().get()));
             item_for_pole->setData(0,Qt::UserRole,qv);
 
 #if 0
             // Display an icon if the pole is disabled.
             static const QIcon icon_pole_disabled(":/gnome_dialog_error_16.png");
-            if (iter->get()->is_disabled()) {
+            if (iter->is_disabled()) {
                 item_for_pole->setIcon(ColumnNames::ICON, icon_pole_disabled);
             }
 #endif
             // Colour the background if the pole is disabled.
-            if (iter->get()->is_disabled() || irreg_sampling.get()->is_disabled()) {
+            if (iter->is_disabled() || irreg_sampling.get()->is_disabled()) {
                 set_row_background_to_show_disabled_pole(item_for_pole);
             } else {
                 // OK, we've found at least one non-disabled pole.
@@ -785,18 +785,18 @@ namespace
 
             // Now display the geo-time instant of the TimeSample.
             fill_tree_widget_pole_time_instant(item_for_pole,
-                    iter->get()->valid_time()->get_time_position(),
+                    iter->valid_time()->get_time_position(),
                     locale_);
             
             // Display the pole's FiniteRotation (the expected value of the TimeSample).
             fill_tree_widget_pole_sample_value(item_for_pole,
-                    iter->get()->value(),
+                    iter->value(),
                     locale_);
 
             // Display the pole comment (the TimeSample description), if present.
-            if (iter->get()->description()) {
+            if (iter->description()) {
                 QString comment = GPlatesUtils::make_qstring_from_icu_string(
-                        iter->get()->description().get()->get_value().get());
+                        iter->description().get()->get_value().get());
                 item_for_pole->setText(ColumnNames::COMMENT, comment);
                 sequence->append_new_pole(comment, item_for_pole);
             } else {
@@ -1808,15 +1808,15 @@ GPlatesQtWidgets::TotalReconstructionSequencesDialog::get_pole_data_from_feature
         for ( ; iter != end; ++iter) 
         {
             const GpmlFiniteRotation *time_sample_value =
-                dynamic_cast<const GpmlFiniteRotation*>(iter->get()->value().get());
+                dynamic_cast<const GpmlFiniteRotation*>(iter->value().get());
             if(time_sample_value)
             {
                 RotationPoleData pole(
                         time_sample_value->get_finite_rotation(),
                         moving_plate_id,
                         fixed_plate_id,
-                        iter->get()->valid_time()->get_time_position().value(),
-						iter->get()->is_disabled());
+                        iter->valid_time()->get_time_position().value(),
+						iter->is_disabled());
                 ret.push_back(pole);
             }
         }

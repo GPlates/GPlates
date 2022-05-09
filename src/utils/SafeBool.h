@@ -73,12 +73,15 @@ namespace GPlatesUtils
 		SafeBool()
 		{  }
 
-		SafeBool(const SafeBool &)
+		template<class U>
+		SafeBool(
+				const SafeBool<U> &)
 		{  }
 
+		template<class U>
 		SafeBool&
 		operator=(
-				const SafeBool &)
+				const SafeBool<U> &)
 		{
 			return *this;
 		}

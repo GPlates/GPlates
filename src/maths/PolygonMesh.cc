@@ -30,8 +30,9 @@
 #include <queue>
 #include <vector>
 #include <boost/cast.hpp>
-#include <boost/pool/object_pool.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 #include <boost/optional.hpp>
+#include <boost/pool/object_pool.hpp>
 #include <CGAL/Cartesian.h>
 #include <CGAL/Constrained_Delaunay_triangulation_2.h>
 #include <CGAL/Constrained_triangulation_face_base_2.h>
@@ -297,7 +298,7 @@ namespace GPlatesMaths
 			virtual
 			void
 			visit_point_on_sphere(
-					PointOnSphere::non_null_ptr_to_const_type /*point_on_sphere*/)
+					PointGeometryOnSphere::non_null_ptr_to_const_type /*point_on_sphere*/)
 			{
 				// Do nothing - can't create a polygon mesh from a single point.
 			}
@@ -398,7 +399,7 @@ namespace GPlatesMaths
 								ring_vert_2_iter->y()));
 				if (cdt_unique_vertex_handles_map.insert(
 						std::map<polygon_mesh_constrained_triangulation_type::Vertex_handle, unsigned int>::value_type(
-								vertex_handle, cdt_unique_vertex_handles.size())).second)
+							vertex_handle, boost::numeric_cast<unsigned int>(cdt_unique_vertex_handles.size()))).second)
 				{
 					cdt_unique_vertex_handles.push_back(vertex_handle);
 
@@ -1248,7 +1249,7 @@ GPlatesMaths::PolygonMesh::create(
 	}
 
 	PolygonOnSphere::non_null_ptr_to_const_type polygon =
-			PolygonOnSphere::create_on_heap(
+			PolygonOnSphere::create(
 					polyline->vertex_begin(),
 					polyline->vertex_end());
 
@@ -1276,7 +1277,7 @@ GPlatesMaths::PolygonMesh::create(
 	}
 
 	PolygonOnSphere::non_null_ptr_to_const_type polygon =
-			PolygonOnSphere::create_on_heap(
+			PolygonOnSphere::create(
 					multi_point->begin(),
 					multi_point->end());
 

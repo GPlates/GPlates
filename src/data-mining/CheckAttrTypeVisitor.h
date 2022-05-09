@@ -168,8 +168,8 @@ namespace GPlatesDataMining
 				 ele_it_end = elements.end();
 			for(; ele_it != ele_it_end; ++ele_it)
 			{
-				ele_it->get()->value()->accept_visitor(*this);
-				QString ele_name = GPlatesUtils::make_qstring_from_icu_string(ele_it->get()->key()->get_value().get());
+				ele_it->value()->accept_visitor(*this);
+				QString ele_name = GPlatesUtils::make_qstring_from_icu_string(ele_it->key()->get_value().get());
 				d_map.insert(
 						std::pair< QString, AttributeTypeEnum >(
 								ele_name, this->type() ) );

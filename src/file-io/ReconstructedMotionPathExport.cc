@@ -77,18 +77,8 @@ namespace GPlatesFileIO
 					break;
 
 				case SHAPEFILE:
-					OgrFormatMotionPathExport::export_motion_paths(
-						grouped_recon_geoms_seq,
-						filename,
-						referenced_files,
-						active_reconstruction_files,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						true/*should_export_referenced_files*/,
-						wrap_to_dateline);		
-					break;
-
 				case OGRGMT:
+				case GEOJSON:
 					OgrFormatMotionPathExport::export_motion_paths(
 						grouped_recon_geoms_seq,
 						filename,
@@ -121,17 +111,8 @@ namespace GPlatesFileIO
 				switch(export_format)
 				{
 				case SHAPEFILE:
-					OgrFormatMotionPathExport::export_motion_paths(
-						grouped_recon_geoms_seq,
-						filename,
-						referenced_files,
-						active_reconstruction_files,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						true/*should_export_referenced_files*/,
-						wrap_to_dateline);
-					break;
 				case OGRGMT:
+				case GEOJSON:
 					OgrFormatMotionPathExport::export_motion_paths(
 						grouped_recon_geoms_seq,
 						filename,
@@ -188,6 +169,8 @@ GPlatesFileIO::ReconstructedMotionPathExport::get_export_file_format(
 		return SHAPEFILE;
 	case FeatureCollectionFileFormat::OGRGMT:
 		return OGRGMT;
+	case FeatureCollectionFileFormat::GEOJSON:
+		return GEOJSON;
 	default:
 		break;
 	}

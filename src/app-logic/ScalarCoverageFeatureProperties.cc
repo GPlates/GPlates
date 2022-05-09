@@ -327,7 +327,7 @@ namespace GPlatesAppLogic
 				for (std::size_t time_window_index = 0; time_window_index < num_time_windows; ++time_window_index)
 				{
 					const GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_to_const_type time_period =
-							gpml_piecewise_aggregation.time_windows()[time_window_index].get()->valid_time();
+							gpml_piecewise_aggregation.time_windows()[time_window_index]->valid_time();
 
 					// If the time window period contains the current reconstruction time then visit.
 					// The time periods should be mutually exclusive - if we happen to be in
@@ -335,7 +335,7 @@ namespace GPlatesAppLogic
 					// and then it doesn't really matter which one we choose.
 					if (time_period->contains(d_reconstruction_time))
 					{
-						gpml_piecewise_aggregation.time_windows()[time_window_index].get()->time_dependent_value()
+						gpml_piecewise_aggregation.time_windows()[time_window_index]->time_dependent_value()
 								->accept_visitor(*this);
 					}
 				}
@@ -393,7 +393,7 @@ namespace GPlatesAppLogic
 					typename feature_visitor_type::gml_point_type &gml_point)
 			{
 				d_domains.push_back(
-						Domain(this->current_top_level_propiter().get(), gml_point.get_point()));
+						Domain(this->current_top_level_propiter().get(), gml_point.get_point().get_geometry_on_sphere()));
 			}
 
 

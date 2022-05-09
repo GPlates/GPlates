@@ -27,7 +27,43 @@
 
 #include "DatelineWrapOptionsWidget.h"
 #include "ExportFileOptionsWidget.h"
+#include "InformationDialog.h"
 #include "QtWidgetUtils.h"
+
+
+namespace GPlatesQtWidgets
+{
+	namespace
+	{
+		const QString HELP_EXPORT_TOPOLOGICAL_LINE_SUB_SEGMENTS_DIALOG_TITLE = QObject::tr(
+				"Topological line sub-segments");
+		const QString HELP_EXPORT_TOPOLOGICAL_LINE_SUB_SEGMENTS_DIALOG_TEXT = QObject::tr(
+				"<html><body>\n"
+				"<h3>Export topological line sub-segments</h3>"
+
+				"<p>The boundary of a single topological polygon or network consists of multiple "
+				"boundary segments. And a single boundary segment can be from a regular geometry or a "
+				"topological line. In the latter case the boundary segment in turn consists of "
+				"multiple sub-segments (because a topological line itself consists of segments).</p>"
+
+				"<p>If this option is enabled then the individual sub-segment geometries of a "
+				"boundary segment are exported. This also means the feature properties of each individual "
+				"sub-segment are exported (such as plate ID and feature type), not the properties of the "
+				"topological line. For topological lines this option results in more accurate plate IDs but "
+				"the individual sub-segment feature types may not match the feature type of the topological line "
+				"(depending on how they were built). Note that this only applies to boundary segments associated "
+				"with topological lines. A boundary segment associated with a regular (non-topological) line "
+				"is always exported as a single geometry/feature.</p>"
+
+				"<p>Conversely if this option is <em>not</em> enabled then a single geometry is exported for each "
+				"boundary segment geometry (as if its individual sub-segment geometries were joined together). "
+				"This also means the feature properties of the topological line itself are exported (such as plate ID "
+				"and feature type), not the properties of the individual sub-segment features. For topological lines "
+				"this option has the advantage of a single geometry per boundary segment, but the plate ID is probably "
+				"not meaningful (since the individual sub-segments likely have varying plate IDs).</p>"
+				"</body></html>\n");
+	}
+}
 
 
 GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::ExportResolvedTopologyOptionsWidget(
@@ -38,7 +74,12 @@ GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::ExportResolvedTopologyOpt
 	ExportOptionsWidget(parent_),
 	d_export_configuration(*export_configuration),
 	d_dateline_wrap_options_widget(NULL),
-	d_export_file_options_widget(NULL)
+	d_export_file_options_widget(NULL),
+	d_help_export_topological_line_sub_segments_dialog(
+			new InformationDialog(
+					HELP_EXPORT_TOPOLOGICAL_LINE_SUB_SEGMENTS_DIALOG_TEXT,
+					HELP_EXPORT_TOPOLOGICAL_LINE_SUB_SEGMENTS_DIALOG_TITLE,
+					this))
 {
 	setupUi(this);
 
@@ -85,9 +126,15 @@ GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::ExportResolvedTopologyOpt
 
 	// Topological sections.
 	export_resolved_boundary_segments_checkbox->setCheckState(
-		d_export_configuration.export_topological_sections
-		? Qt::Checked
-		: Qt::Unchecked);
+			d_export_configuration.export_topological_sections
+			? Qt::Checked
+			: Qt::Unchecked);
+
+	// Topological line sub-segments.
+	export_topological_line_sub_segments_checkbox->setCheckState(
+			d_export_configuration.export_topological_line_sub_segments
+			? Qt::Checked
+			: Qt::Unchecked);
 
 	// Enable polygons options only if exporting resolved polygons or networks.
 	polygon_options->setEnabled(
@@ -165,10 +212,15 @@ GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::make_signal_slot_connecti
 			this,
 			SLOT(react_export_resolved_geometry_check_box_state_changed(int)));
 	QObject::connect(
-		export_resolved_boundary_segments_checkbox,
-		SIGNAL(stateChanged(int)),
-		this,
-		SLOT(react_export_resolved_geometry_check_box_state_changed(int)));
+			export_resolved_boundary_segments_checkbox,
+			SIGNAL(stateChanged(int)),
+			this,
+			SLOT(react_export_resolved_geometry_check_box_state_changed(int)));
+	QObject::connect(
+			export_topological_line_sub_segments_checkbox,
+			SIGNAL(stateChanged(int)),
+			this,
+			SLOT(react_export_resolved_geometry_check_box_state_changed(int)));
 	QObject::connect(
 			force_polygon_orientation_checkbox,
 			SIGNAL(stateChanged(int)),
@@ -179,6 +231,11 @@ GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::make_signal_slot_connecti
 			SIGNAL(currentIndexChanged(int)),
 			this,
 			SLOT(react_polygon_orientation_combobox_state_changed(int)));
+
+	// Connect the help dialog.
+	QObject::connect(
+			push_button_help_export_topological_line_sub_segments, SIGNAL(clicked()),
+			d_help_export_topological_line_sub_segments_dialog, SLOT(show()));
 }
 
 
@@ -190,6 +247,7 @@ GPlatesQtWidgets::ExportResolvedTopologyOptionsWidget::react_export_resolved_geo
 	d_export_configuration.export_topological_polygons = export_resolved_polygons_checkbox->isChecked();
 	d_export_configuration.export_topological_networks = export_resolved_networks_checkbox->isChecked();
 	d_export_configuration.export_topological_sections = export_resolved_boundary_segments_checkbox->isChecked();
+	d_export_configuration.export_topological_line_sub_segments = export_topological_line_sub_segments_checkbox->isChecked();
 
 	// Enable polygons options only if exporting resolved polygons or networks.
 	polygon_options->setEnabled(

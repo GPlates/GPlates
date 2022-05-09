@@ -30,6 +30,8 @@
 #include <iosfwd>
 #include <string>
 
+#include "global/config.h"  // To see if GPLATES_PROFILE_CODE is defined.
+
 
 /**
     This file contains interface macros for profiling
@@ -138,7 +140,7 @@
  * to avoid linker errors due to multiple operator new and delete symbols.
  */
 
-#if defined(PROFILE_GPLATES)
+#if defined(GPLATES_PROFILE_CODE)
 
 /**
  * Starts profiling until the matching PROFILE_END is reached or
@@ -255,7 +257,7 @@
 #define PROFILE_REPORT_TO_FILE(filename) \
 	GPlatesUtils::profile_report_to_file(filename);
 
-#else // if defined(PROFILE_GPLATES) ...
+#else // if defined(GPLATES_PROFILE_CODE) ...
 
 #define PROFILE_BEGIN(profile_tag, name)
 #define PROFILE_END(profile_tag)
@@ -265,7 +267,7 @@
 #define PROFILE_REPORT_TO_OSTREAM(output_stream)
 #define PROFILE_REPORT_TO_FILE(filename)
 
-#endif // if defined(PROFILE_GPLATES) ... else ...
+#endif // if defined(GPLATES_PROFILE_CODE) ... else ...
 
 
 #define PROFILE_CONCATENATE_DIRECT(s1, s2)   s1##s2

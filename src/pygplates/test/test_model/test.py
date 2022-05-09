@@ -545,15 +545,40 @@ class FeatureCollectionCase(unittest.TestCase):
         feature_collection = pygplates.FeatureCollection(self.volcanoes_filename) 
         self.assertTrue(len(feature_collection) == 4)
         
-        tmp_filename = os.path.join(FIXTURES, 'tmp.gpml')
-        feature_collection.write(tmp_filename)
-        self.assertTrue(os.path.isfile(tmp_filename))
-        feature_collection = pygplates.FeatureCollection.read(tmp_filename) 
-        self.assertTrue(len(feature_collection) == 4)
-        feature_collections = pygplates.FeatureCollection.read([tmp_filename, tmp_filename])
-        self.assertTrue(len(feature_collections) == 2)
-        self.assertTrue(len(feature_collections[0]) == 4 and len(feature_collections[1]) == 4)
-        os.remove(tmp_filename)
+        def _internal_test_read_write(test_case, feature_collection, tmp_filename):
+            tmp_filename = os.path.join(FIXTURES, tmp_filename)
+            feature_collection.write(tmp_filename)
+            self.assertTrue(os.path.isfile(tmp_filename))
+            feature_collection = pygplates.FeatureCollection(tmp_filename) 
+            self.assertTrue(len(feature_collection) == 4)
+            feature_collections = pygplates.FeatureCollection.read([tmp_filename, tmp_filename])
+            self.assertTrue(len(feature_collections) == 2)
+            self.assertTrue(len(feature_collections[0]) == 4 and len(feature_collections[1]) == 4)
+            os.remove(tmp_filename)
+
+            # In case an OGR format file (which also has shapefile mapping XML file).
+            if os.path.isfile(tmp_filename + '.gplates.xml'):
+                os.remove(tmp_filename + '.gplates.xml')
+            
+            # For Shapefile.
+            if tmp_filename.endswith('.shp'):
+                tmp_base_filename = tmp_filename[:-len('.shp')]
+                if os.path.isfile(tmp_base_filename + '.dbf'):
+                    os.remove(tmp_base_filename + '.dbf')
+                if os.path.isfile(tmp_base_filename + '.prj'):
+                    os.remove(tmp_base_filename + '.prj')
+                if os.path.isfile(tmp_base_filename + '.shx'):
+                    os.remove(tmp_base_filename + '.shx')
+        
+        # Test read/write to different format (eg, GPML, Shapefile, GeoJSON, etc).
+        _internal_test_read_write(self, feature_collection, 'tmp.gpml')  # GPML
+        _internal_test_read_write(self, feature_collection, 'tmp.gpmlz')  # GPMLZ
+        _internal_test_read_write(self, feature_collection, 'tmp.dat')  # PLATES4
+        _internal_test_read_write(self, feature_collection, 'tmp.shp')  # Shapefile
+        _internal_test_read_write(self, feature_collection, 'tmp.gmt')  # OGRGMT
+        _internal_test_read_write(self, feature_collection, 'tmp.geojson')  # GeoJSON
+        _internal_test_read_write(self, feature_collection, 'tmp.json')  # GeoJSON
+        _internal_test_read_write(self, feature_collection, 'tmp.gpkg')  # GeoPackage
 
     def test_construct(self):
         # Create new empty feature collection.
@@ -582,6 +607,32 @@ class FeatureCollectionCase(unittest.TestCase):
 
     def test_len(self):
         self.assertEquals(len(self.feature_collection), self.feature_count)
+
+    def test_get_item(self):
+        for feature_index, feature in enumerate(self.feature_collection):
+            self.assertTrue(feature == self.feature_collection[feature_index])
+
+	# Temporarily comment out until we merge the python-model-revisions branch into this (python-api) branch because
+	# currently '*feature_iter = feature' does not do anything (since '*feature_iter' just returns a non-null pointer).
+    if (False):
+        def test_set_item(self):
+            shallow_copy_feature_collection = pygplates.FeatureCollection(self.feature_collection)
+
+            self.assertTrue(len(shallow_copy_feature_collection) == len(self.feature_collection))
+            for feature_index in range(len(shallow_copy_feature_collection)):
+                shallow_copy_feature_collection[feature_index] = self.feature_collection[feature_index]
+            self.assertTrue(len(shallow_copy_feature_collection) == len(self.feature_collection))
+            for feature_index in range(len(shallow_copy_feature_collection)):
+                self.assertTrue(shallow_copy_feature_collection[feature_index] == self.feature_collection[feature_index])
+                self.assertTrue(shallow_copy_feature_collection[feature_index].get_feature_id() == self.feature_collection[feature_index].get_feature_id())
+
+            self.assertTrue(len(shallow_copy_feature_collection) == len(self.feature_collection))
+            for feature_index in range(len(shallow_copy_feature_collection)):
+                shallow_copy_feature_collection[feature_index] = self.feature_collection[feature_index].clone()  # Cloned feature
+            self.assertTrue(len(shallow_copy_feature_collection) == len(self.feature_collection))
+            for feature_index in range(len(shallow_copy_feature_collection)):
+                self.assertTrue(shallow_copy_feature_collection[feature_index] != self.feature_collection[feature_index])
+                self.assertTrue(shallow_copy_feature_collection[feature_index].get_feature_id() != self.feature_collection[feature_index].get_feature_id())
 
     def test_is_iterable(self):
         """

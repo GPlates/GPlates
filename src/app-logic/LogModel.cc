@@ -130,10 +130,9 @@ GPlatesAppLogic::LogModel::LogModel(
 	d_buffer_timeout->setSingleShot(true);
 	
 	// Start the log with the date and our version.
-	QString logmsg = QObject::tr("Log started at %1 by GPlates %2 %3")
+	QString logmsg = QObject::tr("Log started at %1 by GPlates %2")
 			.arg(QDateTime::currentDateTime().toString())
-			.arg(GPlatesGlobal::Version::get_working_copy_branch_name())
-			.arg(GPlatesGlobal::Version::get_working_copy_version_number());
+			.arg(GPlatesGlobal::Version::get_GPlates_version());
 	append(LogEntry(logmsg, LogEntry::OTHER, LogEntry::META));
 			
 	// As we get created by ApplicationState, we should now be ready to install

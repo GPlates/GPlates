@@ -876,7 +876,7 @@ GPlatesQtWidgets::MetadataDialog::set_data(
 	if(p_inline && p_inline->size() >= 1)
 	{
 		const GpmlKeyValueDictionary* const_dictionary = 
-			dynamic_cast<const GpmlKeyValueDictionary*>((*p_inline->begin()).get());
+			dynamic_cast<const GpmlKeyValueDictionary*>((*p_inline->begin()).get_element().get());
 		if(const_dictionary)
 		{
 			std::vector<boost::shared_ptr<Metadata> > data_ =
@@ -915,7 +915,7 @@ GPlatesQtWidgets::MetadataDialog::set_data(
 			if(p_inline && p_inline->size() >= 1)
 			{
 				const GpmlKeyValueDictionary* const_dictionary = 
-					dynamic_cast<const GpmlKeyValueDictionary*>((*p_inline->begin()).get());
+					dynamic_cast<const GpmlKeyValueDictionary*>((*p_inline->begin()).get_element().get());
 				if(const_dictionary)
 				{
 					d_mprs_data = convert_mprs_metadata_to_vector(const_dictionary);
@@ -1124,9 +1124,9 @@ GPlatesQtWidgets::MetadataDialog::get_gpml_total_reconstruction_pole(
 	GpmlFiniteRotation *trs = NULL;
 	for ( ; iter != end; ++iter) 
 	{
-		if(std::fabs(iter->get()->valid_time()->get_time_position().value() - time.toDouble()) < EPSILON)
+		if(std::fabs(iter->valid_time()->get_time_position().value() - time.toDouble()) < EPSILON)
 		{
-			trs = dynamic_cast<GpmlFiniteRotation *>(iter->get()->value().get());
+			trs = dynamic_cast<GpmlFiniteRotation *>(iter->value().get());
 			if(!trs)
 			{
 				qWarning() << "The time sample is not GpmlFiniteRotation type.";

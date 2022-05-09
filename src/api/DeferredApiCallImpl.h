@@ -26,7 +26,7 @@
 #ifndef GPLATES_API_DEFERREDAPICALLIMPL_H
 #define GPLATES_API_DEFERREDAPICALLIMPL_H
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/type_traits.hpp>
 #include <boost/utility/enable_if.hpp>
 

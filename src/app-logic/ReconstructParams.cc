@@ -32,9 +32,6 @@
 #include "scribe/TranscribeEnumProtocol.h"
 
 
-const double
-GPlatesAppLogic::ReconstructParams::INITIAL_VGP_DELTA_T = 5.;
-
 // Topology reconstruction parameters.
 const double GPlatesAppLogic::ReconstructParams::INITIAL_TIME_RANGE_END = 0.0;
 const double GPlatesAppLogic::ReconstructParams::INITIAL_TIME_RANGE_BEGIN = 20.0; 
@@ -43,10 +40,6 @@ const double GPlatesAppLogic::ReconstructParams::INITIAL_LINE_TESSELLATION_DEGRE
 
 GPlatesAppLogic::ReconstructParams::ReconstructParams() :
 	d_reconstruct_by_plate_id_outside_active_time_period(false),
-	d_vgp_visibility_setting(DELTA_T_AROUND_AGE),
-	d_vgp_earliest_time(GPlatesPropertyValues::GeoTimeInstant::create_distant_past()),
-	d_vgp_latest_time(GPlatesPropertyValues::GeoTimeInstant::create_distant_future()),
-	d_vgp_delta_t(INITIAL_VGP_DELTA_T),
 	d_reconstruct_using_topologies(false),
 	d_topology_reconstruction_end_time(INITIAL_TIME_RANGE_END),
 	d_topology_reconstruction_begin_time(INITIAL_TIME_RANGE_BEGIN),
@@ -57,54 +50,12 @@ GPlatesAppLogic::ReconstructParams::ReconstructParams() :
 	d_topology_reconstruction_line_tessellation_degrees(INITIAL_LINE_TESSELLATION_DEGREES),
 	d_topology_reconstruction_enable_lifetime_detection(true),
 	d_topology_reconstruction_lifetime_detection_threshold_velocity_delta(
-			TopologyReconstruct::DEFAULT_ACTIVE_POINT_PARAMETERS.threshold_velocity_delta),
+			TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_THRESHOLD_VELOCITY_DELTA),
 	d_topology_reconstruction_lifetime_detection_threshold_distance_to_boundary(
-			TopologyReconstruct::DEFAULT_ACTIVE_POINT_PARAMETERS.threshold_distance_to_boundary_in_kms_per_my),
+			TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_THRESHOLD_DISTANCE_TO_BOUNDARY_IN_KMS_PER_MY),
 	d_topology_reconstruction_deactivate_points_that_fall_outside_a_network(
-			TopologyReconstruct::DEFAULT_ACTIVE_POINT_PARAMETERS.deactivate_points_that_fall_outside_a_network)
+			TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_DEACTIVATE_POINTS_THAT_FALL_OUTSIDE_A_NETWORK)
 {
-}
-
-
-bool
-GPlatesAppLogic::ReconstructParams::should_draw_vgp(
-		double current_time,
-		const boost::optional<double> &age) const
-{
-	// Check the render settings and use them to decide if the vgp should be drawn for 
-	// the current time.
-	
-	GPlatesPropertyValues::GeoTimeInstant geo_time = 
-							GPlatesPropertyValues::GeoTimeInstant(current_time);
-
-	switch(d_vgp_visibility_setting)
-	{
-		case ALWAYS_VISIBLE:
-			return true;
-		case TIME_WINDOW:
-			if ( geo_time.is_later_than_or_coincident_with(d_vgp_earliest_time) && 
-				 geo_time.is_earlier_than_or_coincident_with(d_vgp_latest_time) )
-			{
-				return true;
-			}
-			break;
-		case DELTA_T_AROUND_AGE:
-			if (age)
-			{
-				GPlatesPropertyValues::GeoTimeInstant earliest_time =
-					GPlatesPropertyValues::GeoTimeInstant(*age + d_vgp_delta_t.dval());
-				GPlatesPropertyValues::GeoTimeInstant latest_time =
-					GPlatesPropertyValues::GeoTimeInstant(*age - d_vgp_delta_t.dval());
-				
-				if ((geo_time.is_later_than_or_coincident_with(earliest_time)) &&
-					(geo_time.is_earlier_than_or_coincident_with(latest_time)))
-				{
-					return true;
-				}
-			}
-			break;			
-	}
-	return false;
 }
 
 
@@ -114,10 +65,6 @@ GPlatesAppLogic::ReconstructParams::operator==(
 {
 	return
 		d_reconstruct_by_plate_id_outside_active_time_period == rhs.d_reconstruct_by_plate_id_outside_active_time_period &&
-		d_vgp_visibility_setting == rhs.d_vgp_visibility_setting &&
-		d_vgp_earliest_time == rhs.d_vgp_earliest_time &&
-		d_vgp_latest_time == rhs.d_vgp_latest_time &&
-		d_vgp_delta_t == rhs.d_vgp_delta_t &&
 		d_reconstruct_using_topologies == rhs.d_reconstruct_using_topologies &&
 		d_topology_reconstruction_end_time == rhs.d_topology_reconstruction_end_time &&
 		d_topology_reconstruction_begin_time == rhs.d_topology_reconstruction_begin_time &&
@@ -142,42 +89,6 @@ GPlatesAppLogic::ReconstructParams::operator<(
 		return true;
 	}
 	if (d_reconstruct_by_plate_id_outside_active_time_period > rhs.d_reconstruct_by_plate_id_outside_active_time_period)
-	{
-		return false;
-	}
-
-	if (d_vgp_visibility_setting < rhs.d_vgp_visibility_setting)
-	{
-		return true;
-	}
-	if (d_vgp_visibility_setting > rhs.d_vgp_visibility_setting)
-	{
-		return false;
-	}
-
-	if (d_vgp_earliest_time < rhs.d_vgp_earliest_time)
-	{
-		return true;
-	}
-	if (d_vgp_earliest_time > rhs.d_vgp_earliest_time)
-	{
-		return false;
-	}
-
-	if (d_vgp_latest_time < rhs.d_vgp_latest_time)
-	{
-		return true;
-	}
-	if (d_vgp_latest_time > rhs.d_vgp_latest_time)
-	{
-		return false;
-	}
-
-	if (d_vgp_delta_t < rhs.d_vgp_delta_t)
-	{
-		return true;
-	}
-	if (d_vgp_delta_t > rhs.d_vgp_delta_t)
 	{
 		return false;
 	}
@@ -309,21 +220,6 @@ GPlatesAppLogic::ReconstructParams::transcribe(
 		d_reconstruct_by_plate_id_outside_active_time_period = DEFAULT_PARAMS.d_reconstruct_by_plate_id_outside_active_time_period;
 	}
 
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_vgp_earliest_time, "vgp_earliest_time"))
-	{
-		d_vgp_earliest_time = DEFAULT_PARAMS.d_vgp_earliest_time;
-	}
-
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_vgp_latest_time, "vgp_latest_time"))
-	{
-		d_vgp_latest_time = DEFAULT_PARAMS.d_vgp_latest_time;
-	}
-
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_vgp_delta_t, "vgp_delta_t"))
-	{
-		d_vgp_delta_t = DEFAULT_PARAMS.d_vgp_delta_t;
-	}
-
 	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_reconstruct_using_topologies, "reconstruct_using_topologies"))
 	{
 		d_reconstruct_using_topologies = DEFAULT_PARAMS.d_reconstruct_using_topologies;
@@ -410,34 +306,5 @@ GPlatesAppLogic::ReconstructParams::transcribe(
 				DEFAULT_PARAMS.d_topology_reconstruction_deactivate_points_that_fall_outside_a_network;
 	}
 
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_vgp_visibility_setting, "vgp_visibility_setting"))
-	{
-		d_vgp_visibility_setting = DEFAULT_PARAMS.d_vgp_visibility_setting;
-	}
-
 	return GPlatesScribe::TRANSCRIBE_SUCCESS;
-}
-
-
-GPlatesScribe::TranscribeResult
-GPlatesAppLogic::transcribe(
-		GPlatesScribe::Scribe &scribe,
-		ReconstructParams::VGPVisibilitySetting &vgp_visibility_setting,
-		bool transcribed_construct_data)
-{
-	// WARNING: Changing the string ids will break backward/forward compatibility.
-	//          So don't change the string ids even if the enum name changes.
-	static const GPlatesScribe::EnumValue enum_values[] =
-	{
-		GPlatesScribe::EnumValue("ALWAYS_VISIBLE", ReconstructParams::ALWAYS_VISIBLE),
-		GPlatesScribe::EnumValue("TIME_WINDOW", ReconstructParams::TIME_WINDOW),
-		GPlatesScribe::EnumValue("DELTA_T_AROUND_AGE", ReconstructParams::DELTA_T_AROUND_AGE)
-	};
-
-	return GPlatesScribe::transcribe_enum_protocol(
-			TRANSCRIBE_SOURCE,
-			scribe,
-			vgp_visibility_setting,
-			enum_values,
-			enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
 }

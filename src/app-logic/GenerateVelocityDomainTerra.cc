@@ -240,5 +240,5 @@ GPlatesAppLogic::GenerateVelocityDomainTerra::Grid::get_processor_sub_domain(
 		}
 	}
 
-	return GPlatesMaths::MultiPointOnSphere::create_on_heap(sub_domain);
+	return GPlatesMaths::MultiPointOnSphere::create(sub_domain);
 }

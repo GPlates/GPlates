@@ -60,7 +60,8 @@ namespace GPlatesGui
 		Stars(
 				GPlatesOpenGL::GLRenderer &renderer,
 				GPlatesPresentation::ViewState &view_state,
-				const GPlatesGui::Colour &colour);
+				const GPlatesGui::Colour &colour,
+				int device_pixel_ratio);
 
 		void
 		paint(

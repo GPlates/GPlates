@@ -167,10 +167,10 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::split_feature(
 		const GeometryBuilder::PointIndex index_of_point_to_insert_before =
 			index_of_start_point + 1;
 		
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_to_insert =
+		const GPlatesMaths::PointOnSphere point_to_insert =
 				project_point_onto_line_segment(index_of_start_point, oriented_pos_on_sphere);
 
-		split_feature(index_of_point_to_insert_before, *point_to_insert);
+		split_feature(index_of_point_to_insert_before, point_to_insert);
 	}
 	else
 	{
@@ -180,7 +180,7 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::split_feature(
 	}
 }
 
-GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+GPlatesMaths::PointOnSphere
 GPlatesViewOperations::SplitFeatureGeometryOperation::project_point_onto_line_segment(
 		const GeometryBuilder::PointIndex start_point_index,
 		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)
@@ -384,7 +384,6 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::get_closest_geometry_point
 	GPlatesMaths::real_t max_closeness(-1);
 	GeometryBuilder::PointIndex closest_pos_on_sphere_index = 0;
 
-	GeometryBuilder::point_const_iterator_type builder_geom_iter;
 	GeometryBuilder::PointIndex point_on_sphere_index;
 	for (point_on_sphere_index = 0;
 		point_on_sphere_index < num_points_in_geom;
@@ -486,7 +485,16 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::split_feature(
 	// Push command onto undo list.
 	// Note: the command's redo() gets executed inside the push() call and this is where
 	// the vertex is initially inserted.
+#if 1
+	// We're currently preventing undo of splitting a feature.
+	// It still crashes, and I can see there's been a fair bit of hacking in it, best to disable it for now.
+	//
+	// TODO: Fix SplitFeatureUndoCommand once model undo-redo is properly implemented in the model
+	//       (when the internal model of pyGPlates is integrated back into GPlates).
+	undo_command->redo();
+#else
 	UndoRedo::instance().get_active_undo_stack().push(undo_command.release());
+#endif
 }
 
 void

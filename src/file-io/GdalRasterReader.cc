@@ -33,7 +33,7 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/cast.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/numeric/conversion/cast.hpp>

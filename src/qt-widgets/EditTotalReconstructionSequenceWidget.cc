@@ -606,7 +606,7 @@ GPlatesQtWidgets::EditTotalReconstructionSequenceWidget::update_table_widget_fro
 			irreg_sampling->time_samples().end();
 	for ( ; iter != end; ++iter, ++row_count) 
 	{
-		insert_table_row(table_sequences,row_count,iter->get(),locale_);
+		insert_table_row(table_sequences, row_count, *iter, locale_);
 	}
 	table_sequences->setRowCount(row_count);
 

@@ -27,7 +27,7 @@
 #include <boost/cstdint.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/operators.hpp>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 
 #include <stack>
 #include <vector>
@@ -958,8 +958,8 @@ namespace
 		std::sort(
 				sorted_profile_node_seq.begin(),
 				sorted_profile_node_seq.end(),
-				boost::bind(&ProfileNode::get_self_ticks, _1)
-						> boost::bind(&ProfileNode::get_self_ticks, _2));
+				boost::bind(&ProfileNode::get_self_ticks, boost::placeholders::_1)
+						> boost::bind(&ProfileNode::get_self_ticks, boost::placeholders::_2));
 	
 		output_stream << "Flat Profile" << std::endl;
 		output_stream << "------------" << std::endl;
@@ -1037,8 +1037,8 @@ namespace
 		std::sort(
 				sorted_profile_node_seq.begin(),
 				sorted_profile_node_seq.end(),
-				boost::bind(&calc_ticks_in_profile_node_and_all_its_children, _1)
-					> boost::bind(&calc_ticks_in_profile_node_and_all_its_children, _2));
+				boost::bind(&calc_ticks_in_profile_node_and_all_its_children, boost::placeholders::_1)
+					> boost::bind(&calc_ticks_in_profile_node_and_all_its_children, boost::placeholders::_2));
 
 		output_stream << "Call Graph Profile" << std::endl;
 		output_stream << "------------------" << std::endl;
@@ -1086,8 +1086,8 @@ namespace
 			std::sort(
 					sorted_parent_links.begin(),
 					sorted_parent_links.end(),
-					boost::bind(&get_ticks, _1)
-						< boost::bind(&get_ticks, _2));
+					boost::bind(&get_ticks, boost::placeholders::_1)
+						< boost::bind(&get_ticks, boost::placeholders::_2));
 
 			// Iterate through the sorted sequence of parent links and print them out.
 			parent_profile_link_seq_type::const_iterator sorted_parent_iter;
@@ -1186,8 +1186,8 @@ namespace
 			std::sort(
 					sorted_child_links.begin(),
 					sorted_child_links.end(),
-					boost::bind(&get_ticks, _1)
-						> boost::bind(&get_ticks, _2));
+					boost::bind(&get_ticks, boost::placeholders::_1)
+						> boost::bind(&get_ticks, boost::placeholders::_2));
 
 			// Iterate through the sorted sequence of child links and print them out.
 			child_profile_link_seq_type::const_iterator sorted_child_iter;
@@ -1253,8 +1253,8 @@ namespace
 				profile_nodes.end(),
 				ticks_t(0),
 				boost::bind(std::plus<ticks_t>(),
-						_1,
-						boost::bind(&ProfileNode::get_self_ticks, _2)));
+						boost::placeholders::_1,
+						boost::bind(&ProfileNode::get_self_ticks, boost::placeholders::_2)));
 		
 		const double total_seconds = convert_ticks_to_seconds(total_ticks);
 		

@@ -85,16 +85,16 @@ namespace
 	normalize_geometry_coord(
 			QByteArray& buf)
 	{
-		static const QString posList_begin = "<gml:posList";
-		static const QString posList_end = "</gml:posList>";
+		static const QByteArray posList_begin("<gml:posList");
+		static const QByteArray posList_end("</gml:posList>");
 		
 		int idx = 0, idx_begin = 0, idx_end = 0;
 
-		idx = buf.indexOf(posList_begin.toUtf8());
+		idx = buf.indexOf(posList_begin);
 		while(idx != -1)
 		{
 			idx_begin = buf.indexOf(">", idx)+1;
-			idx_end = buf.indexOf(posList_end.toUtf8(), idx_begin);
+			idx_end = buf.indexOf(posList_end, idx_begin);
 
 			if(idx_end == -1 || idx_begin == -1)
 			{
@@ -119,8 +119,8 @@ namespace
 			buf.append(tail);
 			
 			//move to next "<gml:posList>  </gml:posList>" block.
-			idx_end = buf.indexOf(posList_end,idx_end) + posList_end.length();
-			idx = buf.indexOf(posList_begin.toUtf8(),idx_end);
+			idx_end = buf.indexOf(posList_end, idx_end) + posList_end.length();
+			idx = buf.indexOf(posList_begin, idx_end);
 		}
 	}
 
@@ -210,18 +210,18 @@ namespace
 			return;
 		}
 
-		static const QString posList_begin = "<gml:posList";
-		static const QString posList_end = "</gml:posList>";
+		static const QByteArray posList_begin("<gml:posList");
+		static const QByteArray posList_end("</gml:posList>");
 		
 		int idx = 0, idx_begin = 0, idx_end = 0;
 		unsigned int srs_dimension = 2; //by default, 2D
 
-		idx = buf.indexOf(posList_begin.toUtf8());
+		idx = buf.indexOf(posList_begin);
 		while(idx != -1)
 		{
 			idx_begin = buf.indexOf(">", idx) + 1;
 			srs_dimension = find_srs_dimension(buf.mid(idx, idx_begin-idx));
-			idx_end = buf.indexOf(posList_end.toUtf8(), idx_begin);
+			idx_end = buf.indexOf(posList_end, idx_begin);
 
 			if(idx_end == -1)
 			{
@@ -299,8 +299,8 @@ namespace
 			idx_end = buf.length();
 			buf.append(tail);
 		
-			idx_end = buf.indexOf(posList_end,idx_end) + posList_end.length();
-			idx = buf.indexOf(posList_begin.toUtf8(),idx_end);
+			idx_end = buf.indexOf(posList_end, idx_end) + posList_end.length();
+			idx = buf.indexOf(posList_begin, idx_end);
 		}
 	}
 
@@ -538,7 +538,7 @@ GPlatesFileIO::GsmlPropertyHandlers::handle_occurrence_property(
 		XQuery::evaluate(
 				xml_data,
 				"/gsml:occurrence/gsml:MappedFeature/gsml:shape",
-				boost::bind(&XQuery::is_empty,_1));
+				boost::bind(&XQuery::is_empty, boost::placeholders::_1));
 #endif
 
 	std::vector<QByteArray> results = 

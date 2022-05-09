@@ -198,7 +198,7 @@ GPlatesFileIO::OgrUtils::create_default_kvd_from_collection(
 			iter = feature_collection->begin(), 
 			end = feature_collection->end();
 
-		while ((iter != end) && !default_key_value_dictionary)
+		for ( ; iter != end; ++iter)
 		{
 			// FIXME: Replace this kvd-finder with the new PropertyValueFinder.
 			GPlatesFeatureVisitors::KeyValueDictionaryFinder finder;
@@ -207,10 +207,61 @@ GPlatesFileIO::OgrUtils::create_default_kvd_from_collection(
 			{
 				GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_to_const_type found_kvd =
 					*(finder.found_key_value_dictionaries_begin());
-				default_key_value_dictionary = found_kvd->clone();
-			}
 
-			++iter;
+				// We've found a KVD so create an empty default kvd if we haven't created one yet.
+				if (!default_key_value_dictionary)
+				{
+					default_key_value_dictionary = GPlatesPropertyValues::GpmlKeyValueDictionary::create();
+				}
+
+				//
+				// Add or replace each element in the default kvd with the current found element.
+				//
+				// This has the effect of creating a default kvd that has all keys of all found kvds
+				// (and, as a side effect, has the last found value of each key).
+				//
+
+				const GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &found_elements =
+						found_kvd->elements();
+				GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::const_iterator 
+						found_iter = found_elements.begin(),
+						found_end = found_elements.end();
+				for ( ; found_iter != found_end; ++found_iter)
+				{
+					GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_to_const_type found_element = *found_iter;
+
+					const QString found_attribute_name =
+							GPlatesUtils::make_qstring_from_icu_string(found_element->key()->get_value().get());
+
+					GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement> &default_elements =
+							default_key_value_dictionary.get()->elements();
+					GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>::iterator 
+							default_iter = default_elements.begin(),
+							default_end = default_elements.end();
+					for ( ; default_iter != default_end; ++default_iter)
+					{
+						const QString default_attribute_name =
+								GPlatesUtils::make_qstring_from_icu_string(default_iter->key()->get_value().get());
+
+						if (QString::compare(found_attribute_name, default_attribute_name) == 0)
+						{
+							// Default kvd already has the current key (of current found element).
+							break;
+						}
+					}
+
+					if (default_iter != default_end)
+					{
+						// Key already exists in default kvd, so replace element (key/value) with a clone of found element.
+						*default_iter = found_element->clone();
+					}
+					else
+					{
+						// Key does not exist in default kvd, so add element (key/value) with a clone of found element.
+						default_key_value_dictionary.get()->elements().push_back(found_element->clone());
+					}
+				}
+			}
 		}
 
 	}		
@@ -903,9 +954,9 @@ GPlatesFileIO::OgrUtils::write_kvd(
 	for (; iter != end; ++iter)
 	{
 		qDebug() << "Key: " <<
-					GPlatesUtils::make_qstring_from_icu_string(iter->get()->key()->get_value().get()) <<
+					GPlatesUtils::make_qstring_from_icu_string(iter->key()->get_value().get()) <<
 					", Value: " <<
-					get_qvariant_from_kvd_element(*iter->get());
+					get_qvariant_from_kvd_element(**iter);
 	}
 }
 
@@ -925,9 +976,9 @@ GPlatesFileIO::OgrUtils::write_kvd(
 	for (; iter != end; ++iter)
 	{
 		qDebug() << "Key: " <<
-					GPlatesUtils::make_qstring_from_icu_string(iter->get()->key()->get_value().get()) <<
+					GPlatesUtils::make_qstring_from_icu_string(iter->key()->get_value().get()) <<
 					", Value: " <<
-					get_qvariant_from_kvd_element(*iter->get());
+					get_qvariant_from_kvd_element(**iter);
 	}
 }
 

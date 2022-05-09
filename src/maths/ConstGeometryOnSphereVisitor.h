@@ -83,7 +83,7 @@ namespace GPlatesMaths
 		virtual
 		void
 		visit_point_on_sphere(
-				PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+				PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 		{  }
 
 		/**

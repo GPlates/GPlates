@@ -917,6 +917,8 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Returns true if we are reconstructing geometries using topologies.
+		 *
+		 * That is, as determined by the @a ReconstructParams returned by @a get_current_reconstruct_params.
 		 */
 		bool
 		using_topologies_to_reconstruct() const;

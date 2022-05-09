@@ -55,7 +55,7 @@ namespace
 		"<p><a href=\"http://www.python.org/download/releases/2.7.2/\">Click here to download Python installer for Windows</a></p>" \
 		;
 #endif
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 	const char* python26_install_instructions_mac =
 		"<h4>Type in \"sudo port install python26\" in terminal to install python.</h4>" \
 		;
@@ -94,7 +94,7 @@ GPlatesQtWidgets::PythonInitFailedDialog::assemble_message()
 	d_html_page = QString(python_failed_msg);
 	QString python_version = GPlatesGui::PythonManager::instance()->python_version();
 	d_html_page.replace("$PYTHON_NAME", QString("Python") + python_version);
-#ifdef Q_OS_MAC   
+#ifdef Q_OS_MACOS   
 	if("2.7" == python_version)
 		d_html_page.replace("$INSTALL_INSTRUCTION", python27_install_instructions_mac);
 	else if("2.6" == python_version)

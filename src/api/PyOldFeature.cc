@@ -197,7 +197,7 @@ GPlatesApi::OldFeature::get_all_property_names()
 				for (; iter != end; ++iter)
 				{
 					const QByteArray buf = (shape_file_attr_name.build_aliased_name().qstring() + ":" + 
-						GPlatesUtils::make_qstring_from_icu_string(iter->get()->key()->get_value().get())).toUtf8();
+						GPlatesUtils::make_qstring_from_icu_string(iter->key()->get_value().get())).toUtf8();
 					//qDebug() << "name: " << QString(buf);
 					ret.append(bp::str(buf.data()));
 				}

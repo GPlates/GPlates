@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_API_PYFEATURECOLLECTION_H
-#define GPLATES_API_PYFEATURECOLLECTION_H
+#ifndef GPLATES_API_PYFEATURECOLLECTIONFUNCTIONARGUMENT_H
+#define GPLATES_API_PYFEATURECOLLECTIONFUNCTIONARGUMENT_H
 
 #include <vector>
 #include <boost/optional.hpp>
@@ -155,10 +155,6 @@ namespace GPlatesApi
 		FeatureCollectionSequenceFunctionArgument(
 				const function_argument_type &function_argument);
 
-		explicit
-		FeatureCollectionSequenceFunctionArgument(
-				const std::vector<FeatureCollectionFunctionArgument> &feature_collections);
-
 		/**
 		 * Return the individual feature collection function arguments.
 		 */
@@ -197,4 +193,4 @@ namespace GPlatesApi
 	};
 }
 
-#endif // GPLATES_API_PYFEATURECOLLECTION_H
+#endif // GPLATES_API_PYFEATURECOLLECTIONFUNCTIONARGUMENT_H

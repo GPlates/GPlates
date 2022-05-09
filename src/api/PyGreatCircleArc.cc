@@ -60,13 +60,6 @@ namespace GPlatesApi
 						GPlatesMaths::GreatCircleArc::create(start_point, end_point)));
 	}
 
-	GPlatesMaths::real_t
-	great_circle_arc_get_arc_length(
-			const GPlatesMaths::GreatCircleArc &great_circle_arc)
-	{
-		return acos(great_circle_arc.dot_of_endpoints());
-	}
-
 	GPlatesMaths::Vector3D
 	great_circle_arc_get_great_circle_normal(
 			const GPlatesMaths::GreatCircleArc &great_circle_arc)
@@ -104,13 +97,6 @@ namespace GPlatesApi
 			const GPlatesMaths::GreatCircleArc &great_circle_arc,
 			const GPlatesMaths::Real &normalised_distance_from_start_point)
 	{
-		// If arc is zero length then all arc points are the same.
-		if (great_circle_arc.is_zero_length())
-		{
-			// Start and end points are the same.
-			return great_circle_arc.start_point();
-		}
-
 		if (normalised_distance_from_start_point < 0 ||
 			normalised_distance_from_start_point > 1)
 		{
@@ -119,24 +105,7 @@ namespace GPlatesApi
 			bp::throw_error_already_set();
 		}
 
-		// Return exactly the start or end point if requested.
-		// This avoids numerical precision differences due to rotating at 0 or 1.
-		if (normalised_distance_from_start_point == 0)
-		{
-			return great_circle_arc.start_point();
-		}
-		if (normalised_distance_from_start_point == 1)
-		{
-			return great_circle_arc.end_point();
-		}
-
-		// Rotation from start point to requested arc point.
-		const GPlatesMaths::Real angle_from_start_to_end = acos(great_circle_arc.dot_of_endpoints());
-		const GPlatesMaths::Rotation rotation = GPlatesMaths::Rotation::create(
-				great_circle_arc.rotation_axis(),
-				normalised_distance_from_start_point * angle_from_start_to_end);
-
-		return rotation * great_circle_arc.start_point();
+		return great_circle_arc.point_on_arc(normalised_distance_from_start_point);
 	}
 
 	GPlatesMaths::Vector3D
@@ -144,17 +113,19 @@ namespace GPlatesApi
 			const GPlatesMaths::GreatCircleArc &great_circle_arc,
 			const GPlatesMaths::Real &normalised_distance_from_start_point)
 	{
+		if (normalised_distance_from_start_point < 0 ||
+			normalised_distance_from_start_point > 1)
+		{
+			// Raise the 'ValueError' python exception if outside range.
+			PyErr_SetString(PyExc_ValueError, "Normalised distance should be in the range [0,1]");
+			bp::throw_error_already_set();
+		}
+
 		GPlatesGlobal::Assert<IndeterminateGreatCircleArcDirectionException>(
 				!great_circle_arc.is_zero_length(),
 				GPLATES_ASSERTION_SOURCE);
 
-		const GPlatesMaths::PointOnSphere arc_point =
-				great_circle_arc_get_arc_point(great_circle_arc, normalised_distance_from_start_point);
-
-		// Get unit-magnitude direction at the arc point towards the end point (from start point).
-		return GPlatesMaths::Vector3D(
-				cross(great_circle_arc.rotation_axis(), arc_point.position_vector())
-						.get_normalisation());
+		return great_circle_arc.direction_on_arc(normalised_distance_from_start_point);
 	}
 
 	bp::list
@@ -224,7 +195,7 @@ export_great_circle_arc()
 				"  | An arc is specified by a start-point and an end-point:\n"
 				"  | If these two points are not antipodal, a unique great-circle arc (with angle-span "
 				"less than PI radians) will be determined between them. If they are antipodal then "
-				"*IndeterminateResultException* will be raised. Note that an error is *not* raised if "
+				"*IndeterminateResultError* will be raised. Note that an error is *not* raised if "
 				"the two points are coincident.\n"
 				"\n"
 				"  ::\n"
@@ -254,7 +225,8 @@ export_great_circle_arc()
 				"  If this arc is of zero length, it will not have a determinate rotation axis "
 				"and a call to :meth:`get_rotation_axis` will raise an error.\n")
 		.def("get_arc_length",
-				&GPlatesApi::great_circle_arc_get_arc_length,
+				&GPlatesMaths::GreatCircleArc::arc_length,
+				bp::return_value_policy<bp::copy_const_reference>(),
 				"get_arc_length()\n"
 				"  Returns the arc length of this great circle arc (in radians).\n"
 				"\n"

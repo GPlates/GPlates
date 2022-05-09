@@ -29,7 +29,7 @@
 
 #include <memory> // For std::unique_ptr
 #include <vector>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
@@ -814,7 +814,7 @@ namespace GPlatesOpenGL
 					get_state_set_query<const GLViewport &, GLScissorStateSet>(
 							GLStateSetKeys::KEY_SCISSOR,
 							boost::bind(&GLScissorStateSet::get_scissor,
-									_1, boost::cref(capabilities), viewport_index));
+									boost::placeholders::_1, boost::cref(capabilities), viewport_index));
 			return scissor;
 		}
 
@@ -862,7 +862,7 @@ namespace GPlatesOpenGL
 					get_state_set_query<const GLViewport &, GLViewportStateSet>(
 							GLStateSetKeys::KEY_VIEWPORT,
 							boost::bind(&GLViewportStateSet::get_viewport,
-									_1, boost::cref(capabilities), viewport_index));
+									boost::placeholders::_1, boost::cref(capabilities), viewport_index));
 			return viewport;
 		}
 

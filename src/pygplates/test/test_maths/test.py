@@ -55,9 +55,35 @@ class DateLineWrapperCase(unittest.TestCase):
         wrapped_polygons = date_line_wrapper.wrap(polygon)
         self.assertEquals(len(wrapped_polygons), 2)
         self.assertTrue(isinstance(wrapped_polygons[0].get_exterior_points()[0], pygplates.LatLonPoint))
+        self.assertTrue(isinstance(wrapped_polygons[0].get_points()[0], pygplates.LatLonPoint))
         wrapped_polygons = date_line_wrapper_90.wrap(polygon)
         self.assertEquals(len(wrapped_polygons), 1)
         self.assertTrue(isinstance(wrapped_polygons[0], pygplates.DateLineWrapper.LatLonPolygon))
+
+        # Polygon with holes should get split into two across dateline (but not when central meridian is 90).
+        polygon = pygplates.PolygonOnSphere(
+                [(40, 100), (-40, 100), (-40, -100), (40, -100)],  # exterior ring
+                [[(30, 120), (30, 150), (-30, 150), (-30, 120)], [(30, 165), (-30, 165), (-30, -165), (30, -165)]])  # 2 interior rings
+        wrapped_polygons = date_line_wrapper.wrap(polygon)
+        self.assertEquals(len(wrapped_polygons), 2)
+        # Total wrapped interior rings is 1 because one interior ring is clipped to dateline (so no longer interior) and the other is not.
+        self.assertTrue(wrapped_polygons[0].get_number_of_interior_rings() + wrapped_polygons[1].get_number_of_interior_rings() == 1)
+        # Get the sole wrapped interior ring.
+        if wrapped_polygons[0].get_number_of_interior_rings() > 0:
+            wrapped_polygon_with_interior_index = 0
+        else:
+            wrapped_polygon_with_interior_index = 1
+        wrapped_interior_ring = wrapped_polygons[wrapped_polygon_with_interior_index].get_interior_points(0)
+        wrapped_interior_ring_flags = wrapped_polygons[wrapped_polygon_with_interior_index].get_is_original_interior_point_flags(0)
+        self.assertEquals(len(wrapped_interior_ring), 4)
+        self.assertEquals(len(wrapped_interior_ring_flags), 4)
+        self.assertTrue(all(wrapped_interior_ring_flags))  # all points are original points
+        # Each point in wrapped interior ring should match the first interior ring we created the original polygon with.
+        for llp in wrapped_interior_ring:
+            self.assertTrue(llp.to_point_on_sphere() in polygon.get_interior_ring_points(0))
+        wrapped_polygons = date_line_wrapper_90.wrap(polygon)
+        self.assertEquals(len(wrapped_polygons), 1)
+        self.assertTrue(wrapped_polygons[0].get_number_of_interior_rings() == 2)
 
         # Polyline should get split into three across dateline (but not when central meridian is 90).
         polyline = pygplates.PolylineOnSphere([(10, 170), (0, -170), (-10, 170)])
@@ -99,6 +125,10 @@ class DateLineWrapperCase(unittest.TestCase):
         self.assertEquals(len(wrapped_polygons[1].get_exterior_points()), 4)
         self.assertEquals(len(wrapped_polygons[0].get_is_original_exterior_point_flags()), 4)
         self.assertEquals(len(wrapped_polygons[1].get_is_original_exterior_point_flags()), 4)
+        self.assertEquals(len(wrapped_polygons[0].get_points()), 4)
+        self.assertEquals(len(wrapped_polygons[1].get_points()), 4)
+        self.assertEquals(len(wrapped_polygons[0].get_is_original_point_flags()), 4)
+        self.assertEquals(len(wrapped_polygons[1].get_is_original_point_flags()), 4)
         wrapped_polygons = date_line_wrapper.wrap(polygon, 4)
         self.assertEquals(len(wrapped_polygons), 2)
         self.assertEquals(len(wrapped_polygons[0].get_exterior_points()), 8)
@@ -150,17 +180,59 @@ class FiniteRotationCase(unittest.TestCase):
             finite_rotation = pygplates.FiniteRotation(numpy.array(lat_lon_tuple), self.angle)
             self.assertTrue(isinstance(finite_rotation, pygplates.FiniteRotation))
     
-    def test_construct_rotation_between_two_points(self):
+    def test_create_great_circle_point_rotation(self):
+        self.assertTrue(pygplates.FiniteRotation.create_great_circle_point_rotation((10,10), (55,132)) * pygplates.PointOnSphere(10,10)
+                == pygplates.PointOnSphere(55,132))
         self.assertTrue(pygplates.FiniteRotation((10,10), (55,132)) * pygplates.PointOnSphere(10,10)
                 == pygplates.PointOnSphere(55,132))
+
+        self.assertTrue(pygplates.FiniteRotation.represents_identity_rotation(
+                pygplates.FiniteRotation.create_great_circle_point_rotation((10,10), (10,10))))
         self.assertTrue(pygplates.FiniteRotation.represents_identity_rotation(
                 pygplates.FiniteRotation((10,10), (10,10))))
+        
         self.assertAlmostEqual(pygplates.FiniteRotation((10,10), (-10,-170))
                 .get_lat_lon_euler_pole_and_angle_degrees()[2], 180, 4)
         lat, lon, angle = pygplates.FiniteRotation((10,10), (-30,10)).get_lat_lon_euler_pole_and_angle_degrees()
         self.assertAlmostEqual(lat, 0)
         self.assertAlmostEqual(lon, 100)
         self.assertAlmostEqual(angle, 40)
+    
+    def test_create_small_circle_point_rotation(self):
+        # When pole is North Pole the rotated longitudes much match (but not necessarily latitudes).
+        self.assertTrue(pygplates.FiniteRotation.create_small_circle_point_rotation((90,0), (10,10), (20,20)) * pygplates.PointOnSphere(10,10)
+                == pygplates.PointOnSphere(10,20))
+        self.assertTrue(pygplates.FiniteRotation.create_small_circle_point_rotation((90,0), (20,20), (10,10)) * pygplates.PointOnSphere(20,20)
+                == pygplates.PointOnSphere(20,10))
+        self.assertTrue(pygplates.FiniteRotation.create_small_circle_point_rotation((0,90), (0,100), (10,90)) * pygplates.PointOnSphere(0,100)
+                == pygplates.PointOnSphere(10,90))
+        self.assertTrue(pygplates.FiniteRotation.create_small_circle_point_rotation((0,90), (10,90), (0,100)) * pygplates.PointOnSphere(10,90)
+                == pygplates.PointOnSphere(0,100))
+        # When 'from' or 'to' point coincides with rotation pole then we get identity rotation.
+        self.assertTrue(pygplates.FiniteRotation.represents_identity_rotation(
+                pygplates.FiniteRotation.create_small_circle_point_rotation((10,10), (10,10), (20,20))))
+        self.assertTrue(pygplates.FiniteRotation.represents_identity_rotation(
+                pygplates.FiniteRotation.create_small_circle_point_rotation((10,10), (20, 20), (10,10))))
+    
+    def test_create_segment_rotation(self):
+        # We know 'from' and 'to' arcs are same length because each is a 90 degree longitude rotation at a 10 degree latitude around their respective poles.
+        # So the start point of 'from' arc rotates onto 'to', and similarly for their end points.
+        segment_rotation = pygplates.FiniteRotation.create_segment_rotation((80,30), (80,120), (0,100), (10,90))
+        self.assertTrue(segment_rotation * pygplates.PointOnSphere(80,30) == pygplates.PointOnSphere(0,100))
+        self.assertTrue(segment_rotation * pygplates.PointOnSphere(80,120) == pygplates.PointOnSphere(10,90))
+        # The 'from' and 'to' arcs don't have to be the same length, in which case the 'from' start point rotates onto the 'to' start point but
+        # the 'from' end point doesn't necessarily rotate onto the 'to' end point, instead the rotated 'from' orientation matches 'to' orientation.
+        segment_rotation = pygplates.FiniteRotation.create_segment_rotation((0,0), (10,0), (0,90), (0,110)) # 'from' points North, 'to' points East
+        self.assertTrue(segment_rotation * pygplates.PointOnSphere(0,0) == pygplates.PointOnSphere(0,90))  # Rotated start point matches
+        self.assertTrue(segment_rotation * pygplates.PointOnSphere(10,0) == pygplates.PointOnSphere(0,100)) # Rotated 'from' end point doesn't match but still East like 'to'
+        # When start point of 'from' or 'to' arcs coincide and either arc is zero length then we get identity rotation.
+        self.assertTrue(pygplates.FiniteRotation.represents_identity_rotation(
+                pygplates.FiniteRotation.create_segment_rotation((10,10), (10,10), (10,10), (20,20))))
+        self.assertTrue(pygplates.FiniteRotation.represents_identity_rotation(
+                pygplates.FiniteRotation.create_segment_rotation((10,10), (20,20), (10,10), (10,10))))
+        # When start point of 'from' or 'to' arcs coincide and orientation of both arcs coincide then we get identity rotation.
+        self.assertTrue(pygplates.FiniteRotation.represents_identity_rotation(
+                pygplates.FiniteRotation.create_segment_rotation((10,0), (20,0), (10,0), (30,0))))
     
     # Attempt to rotate each supported geometry type - an error will be raised if not supported...
     
@@ -600,6 +672,56 @@ class Vector3DCase(unittest.TestCase):
         self.assertRaises(pygplates.UnableToNormaliseZeroVectorError, pygplates.Vector3D(0,0,0).to_normalised)
         self.assertRaises(pygplates.UnableToNormaliseZeroVectorError, pygplates.Vector3D.create_normalised, 0, 0, 0)
 
+
+class IntegerFloatCase(unittest.TestCase):
+    
+    def test_numpy_scalar_to_integer_float(self):
+        try:
+            import numpy as np;
+        except ImportError:
+            print('NumPy not installed: skipping NumPy scalar conversion test')
+            return
+        
+        #
+        # Just using XsInteger and XsDouble as a way of accepting integer and floating-point numbers.
+        #
+        # These should all not raise an exception (Boost.Python.ArgumentError).
+        #
+
+        pygplates.XsInteger(np.longlong(1000))
+        pygplates.XsInteger(np.int64(1000))
+        pygplates.XsInteger(np.int32(-1000))
+        pygplates.XsInteger(np.int16(-1000))
+        pygplates.XsInteger(np.uint8(100))
+        pygplates.XsInteger(np.int(-1000))
+        pygplates.XsInteger(np.uint(1000))
+        self.assertTrue(pygplates.XsInteger(np.uint(1000)).get_integer() == 1000)
+        
+        f = pygplates.Feature()
+        f.set_reconstruction_plate_id(np.uint32(801))
+        self.assertTrue(f.get_reconstruction_plate_id() == 801)
+
+        pygplates.XsDouble(np.longlong(-1000))
+        pygplates.XsDouble(np.int64(1000))
+        pygplates.XsDouble(np.int32(-1000))
+        pygplates.XsDouble(np.int(-1000))
+        pygplates.XsDouble(np.uint(1000))
+        pygplates.XsDouble(np.float64(1000))
+        pygplates.XsDouble(np.float32(-1000))
+        pygplates.XsDouble(np.float_(1000))
+        pygplates.XsDouble(np.double(1000))
+        pygplates.XsDouble(np.longdouble(-1000))
+        self.assertAlmostEqual(pygplates.XsDouble(np.float64(105.67)).get_double(), 105.67)
+
+        pygplates.GeoTimeInstant(np.float64(140.6))
+        self.assertTrue(pygplates.GeoTimeInstant(np.float64(140.6)) == pygplates.GeoTimeInstant(140.6))
+
+        f.set_valid_time(np.longdouble(140.23), np.single(10.54))
+        begin, end = f.get_valid_time()
+        self.assertAlmostEqual(begin, 140.23)
+        self.assertAlmostEqual(end, 10.54)
+
+
 def suite():
     suite = unittest.TestSuite()
     
@@ -610,7 +732,8 @@ def suite():
             GreatCircleArcCase,
             LatLonPointCase,
             LocalCartesianCase,
-            Vector3DCase
+            Vector3DCase,
+            IntegerFloatCase
         ]
 
     for test_case in test_cases:

@@ -273,7 +273,7 @@ namespace GPlatesAppLogic
 
 		void
 		calculate_flowline(
-			const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &seed_point,
+			const GPlatesMaths::PointOnSphere &seed_point,
 			const FlowlinePropertyFinder &flowline_parameters,
 			std::vector<GPlatesMaths::PointOnSphere> &flowline,
 			const ReconstructionTreeCreator &reconstruction_tree_creator,
@@ -297,9 +297,9 @@ namespace GPlatesAppLogic
 			std::vector<double> &times,
 			const GPlatesPropertyValues::GpmlArray &array);
 
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+		GPlatesMaths::PointOnSphere
 		reconstruct_seed_point(
-			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type seed_point,
+			const GPlatesMaths::PointOnSphere &seed_point,
 			const std::vector<GPlatesMaths::FiniteRotation> &rotations,
 			bool reverse = false);
 

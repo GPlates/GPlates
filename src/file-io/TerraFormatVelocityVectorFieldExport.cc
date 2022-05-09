@@ -29,6 +29,7 @@
 #include <QStringList>
 #include <QString>
 #include <QTextStream>
+#include <QtGlobal>
 
 #include "TerraFormatVelocityVectorFieldExport.h"
 
@@ -90,7 +91,11 @@ namespace GPlatesFileIO
 						<< "  " << velocity_x_str.c_str()
 						<< "      " << velocity_y_str.c_str()
 						<< "      " << velocity_z_str.c_str()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+						<< Qt::endl;
+#else
 						<< endl;
+#endif
 			}
 
 
@@ -151,12 +156,47 @@ GPlatesFileIO::TerraFormatVelocityVectorFieldExport::export_velocity_vector_fiel
 	QTextStream output_stream(&output_file);
 
 	// Write out the header (at the top of the exported file).
-	output_stream << "> GPlates Velocities Terra Text Format v1.0" << endl;
-	output_stream << "> mt = " << terra_mt << endl;
-	output_stream << "> nt = " << terra_nt << endl;
-	output_stream << "> nd = " << terra_nd << endl;
-	output_stream << "> proc = " << local_processor_number << endl;
-	output_stream << "> age = " << age << endl;
+	output_stream << "> GPlates Velocities Terra Text Format v1.0"
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		<< Qt::endl;
+#else
+		<< endl;
+#endif
+
+	output_stream << "> mt = " << terra_mt
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		<< Qt::endl;
+#else
+		<< endl;
+#endif
+
+	output_stream << "> nt = " << terra_nt
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		<< Qt::endl;
+#else
+		<< endl;
+#endif
+
+	output_stream << "> nd = " << terra_nd
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		<< Qt::endl;
+#else
+		<< endl;
+#endif
+
+	output_stream << "> proc = " << local_processor_number
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		<< Qt::endl;
+#else
+		<< endl;
+#endif
+
+	output_stream << "> age = " << age
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+		<< Qt::endl;
+#else
+		<< endl;
+#endif
 
 	// Iterate through the vector fields and write to output.
 	std::list<velocity_vector_field_group_type>::const_iterator feature_iter;

@@ -25,9 +25,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <QtGlobal>
-#include <QTextStream>
 #include <string>
+#include <QTextStream>
+#include <QtGlobal>
+
 #include "PlatesLineFormatGeometryExporter.h"
 
 #include "maths/PointOnSphere.h"
@@ -95,10 +96,20 @@ namespace
 
 		if (reverse_coordinate_order) {
 			// For whatever perverse reason, the user wants to write in (lon,lat) order.
-			stream << lon_str.c_str() << " " << lat_str.c_str() << " " << pen_str.c_str() << endl;
+			stream << lon_str.c_str() << " " << lat_str.c_str() << " " << pen_str.c_str()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+				<< Qt::endl;
+#else
+				<< endl;
+#endif
 		} else {
 			// Normal PLATES4 (lat,lon) order should be used.
-			stream << lat_str.c_str() << " " << lon_str.c_str() << " " << pen_str.c_str() << endl;
+			stream << lat_str.c_str() << " " << lon_str.c_str() << " " << pen_str.c_str()
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+				<< Qt::endl;
+#else
+				<< endl;
+#endif
 		}
 	}
 
@@ -173,13 +184,13 @@ GPlatesFileIO::PlatesLineFormatGeometryExporter::visit_multi_point_on_sphere(
 
 void
 GPlatesFileIO::PlatesLineFormatGeometryExporter::visit_point_on_sphere(
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+		GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 {
 #if 0
 	qDebug(Q_FUNC_INFO);
 #endif
 	// Skip-to then draw-to the same location, producing a point.
-	print_plates_coordinate_line(*d_stream_ptr, *point_on_sphere, PenPositions::PEN_SKIP_TO_POINT,
+	print_plates_coordinate_line(*d_stream_ptr, point_on_sphere->position(), PenPositions::PEN_SKIP_TO_POINT,
 			d_reverse_coordinate_order);
 }
 

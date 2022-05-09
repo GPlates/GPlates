@@ -385,31 +385,30 @@ GPlatesMaths::GreatCircleArc::create(
 
 const GPlatesMaths::GreatCircleArc
 GPlatesMaths::GreatCircleArc::create_rotated_arc(
-		const FiniteRotation &rot,
+		const FiniteRotation &rotation,
 		const GreatCircleArc &arc)
 {
-	const PointOnSphere rot_start = rot * arc.start_point();
-	const PointOnSphere rot_end   = rot * arc.end_point();
+	// Copy the arc (and any cached-on-demand quantities).
+	GreatCircleArc rotated_arc(arc);
 
-	// Create the GCA without a cached rotation axis.
-	GreatCircleArc gca(rot_start, rot_end, arc.dot_of_endpoints());
+	// Rotate the start/end points.
+	rotated_arc.d_start_point = rotation * rotated_arc.d_start_point;
+	rotated_arc.d_end_point = rotation * rotated_arc.d_end_point;
 
-	if (arc.is_zero_length())
+	// Note: The dot product of the start/end points remains unchanged by rotation.
+	//       As does the arc length (if it was calculated/cached).
+
+	// If the rotation axis has been cached (ie, rotation info calculated and not zero length)
+	// then rotate the cached rotation axis.
+	if (rotated_arc.d_cached_on_demand.d_have_calculated_rotation_info)
 	{
-		// The arc is pointlike, so there is no determinate rotation axis.
-
-		gca.d_rotation_info = boost::in_place();
-	}
-	else
-	{
-		// There is a determinate rotation axis.
-		const UnitVector3D rot_axis = rot * arc.rotation_axis();
-
-		// Set the cached rotation axis.
-		gca.d_rotation_info = boost::in_place(boost::cref(rot_axis));
+		if (!rotated_arc.d_cached_on_demand.d_is_zero_length)
+		{
+			rotated_arc.d_cached_on_demand.d_rotation_axis = rotation * rotated_arc.d_cached_on_demand.d_rotation_axis;
+		}
 	}
 
-	return gca;
+	return rotated_arc;
 }
 
 
@@ -417,45 +416,103 @@ const GPlatesMaths::GreatCircleArc
 GPlatesMaths::GreatCircleArc::create_antipodal_arc(
 		const GreatCircleArc &arc)
 {
-	GreatCircleArc antipodal_arc(
-			PointOnSphere(-arc.d_start_point.position_vector()),
-			PointOnSphere(-arc.d_end_point.position_vector()),
-			arc.d_dot_of_endpoints);
+	// Copy the arc (and any cached-on-demand quantities).
+	GreatCircleArc antipodal_arc(arc);
 
-	// Copy the rotation information (if it exists) because it's the same so there's
-	// no point having to re-calculate it later (if/when needed).
-	antipodal_arc.d_rotation_info = arc.d_rotation_info;
+	// Make the start/end points antipodal.
+	antipodal_arc.d_start_point = PointOnSphere(-antipodal_arc.d_start_point.position_vector());
+	antipodal_arc.d_end_point = PointOnSphere(-antipodal_arc.d_end_point.position_vector());
+
+	// Note: The dot product of the start/end points remains unchanged.
+	//       As does the arc length and rotation axis (if they were calculated/cached).
 
 	return antipodal_arc;
+}
+
+
+const GPlatesMaths::real_t &
+GPlatesMaths::GreatCircleArc::arc_length() const
+{
+	if (!d_cached_on_demand.d_have_calculated_arc_length)
+	{
+		d_cached_on_demand.calculate_arc_length(dot_of_endpoints());
+	}
+
+	return d_cached_on_demand.d_arc_length;
 }
 
 
 bool
 GPlatesMaths::GreatCircleArc::is_zero_length() const
 {
-	if (!d_rotation_info)
+	if (!d_cached_on_demand.d_have_calculated_rotation_info)
 	{
-		calculate_rotation_info();
+		d_cached_on_demand.calculate_rotation_info(d_start_point, d_end_point);
 	}
 
-	return d_rotation_info->d_is_zero_length;
+	return d_cached_on_demand.d_is_zero_length;
 }
 
 
 const GPlatesMaths::UnitVector3D &
 GPlatesMaths::GreatCircleArc::rotation_axis() const
 {
-	if (is_zero_length())
+	if (!d_cached_on_demand.d_have_calculated_rotation_info)
+	{
+		d_cached_on_demand.calculate_rotation_info(d_start_point, d_end_point);
+	}
+
+	if (d_cached_on_demand.d_is_zero_length)
 	{
 		throw IndeterminateArcRotationAxisException(GPLATES_EXCEPTION_SOURCE, *this);
 	}
 
-	if (!d_rotation_info)
+	return d_cached_on_demand.d_rotation_axis;
+}
+
+
+GPlatesMaths::PointOnSphere
+GPlatesMaths::GreatCircleArc::point_on_arc(
+		const real_t &normalised_distance_from_start_point) const
+{
+	// If arc is zero length then all arc points are the same.
+	if (is_zero_length())
 	{
-		calculate_rotation_info();
+		// Start and end points are the same.
+		return start_point();
 	}
 
-	return d_rotation_info->d_rot_axis;
+	// Return exactly the start or end point if requested.
+	// This avoids numerical precision differences due to rotating at 0 or 1.
+	if (normalised_distance_from_start_point == 0)
+	{
+		return start_point();
+	}
+	if (normalised_distance_from_start_point == 1)
+	{
+		return end_point();
+	}
+
+	// Rotation from start point to requested arc point.
+	const Real angle_from_start_to_end = arc_length();
+	const Rotation rotation = Rotation::create(
+			rotation_axis(),
+			normalised_distance_from_start_point * angle_from_start_to_end);
+
+	return rotation * start_point();
+}
+
+
+GPlatesMaths::Vector3D
+GPlatesMaths::GreatCircleArc::direction_on_arc(
+		const real_t &normalised_distance_from_start_point) const
+{
+	const PointOnSphere arc_point = point_on_arc(normalised_distance_from_start_point);
+
+	// Get unit-magnitude direction at the arc point towards the end point (from start point).
+	//
+	// NOTE: 'rotation_axis()' will throw 'IndeterminateArcRotationAxisException' if arc is zero length.
+	return Vector3D(cross(rotation_axis(), arc_point.position_vector()).get_normalisation());
 }
 
 
@@ -525,7 +582,7 @@ GPlatesMaths::GreatCircleArc::is_close_to(
 	return start_point();
 }
 
-GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+GPlatesMaths::PointOnSphere
 GPlatesMaths::GreatCircleArc::get_closest_point(
 		const PointOnSphere &test_point) const
 {
@@ -534,7 +591,7 @@ GPlatesMaths::GreatCircleArc::get_closest_point(
 	boost::optional<PointOnSphere> closest_point_on_great_circle_arc;
 	calculate_closest_feature(*this, test_point, closest_point_on_great_circle_arc, closeness);
 
-	return closest_point_on_great_circle_arc->get_non_null_pointer();
+	return closest_point_on_great_circle_arc.get();
 }
 
 GPlatesMaths::GreatCircleArc::ConstructionParameterValidity
@@ -564,7 +621,9 @@ GPlatesMaths::GreatCircleArc::evaluate_construction_parameter_validity(
 
 
 void
-GPlatesMaths::GreatCircleArc::calculate_rotation_info() const
+GPlatesMaths::GreatCircleArc::CachedOnDemand::calculate_rotation_info(
+		const PointOnSphere &start_point,
+		const PointOnSphere &end_point)
 {
 	/*
 	 * Now we want to calculate the unit vector normal to the plane
@@ -572,7 +631,7 @@ GPlatesMaths::GreatCircleArc::calculate_rotation_info() const
 	 *
 	 * To do this, we calculate the cross product.
 	 */
-	const Vector3D v = cross(d_start_point.position_vector(), d_end_point.position_vector());
+	const Vector3D v = cross(start_point.position_vector(), end_point.position_vector());
 
 	/*
 	 * Since start/end points are unit vectors which might be parallel (but won't be antiparallel),
@@ -582,14 +641,16 @@ GPlatesMaths::GreatCircleArc::calculate_rotation_info() const
 	if (v.magSqrd() <= 0.0)
 	{
 		// The points are coincident, which means there is no determinate rotation axis.
-		d_rotation_info = boost::in_place();
+		d_is_zero_length = true;
 	}
 	else
 	{
 		// The points are non-coincident, which means there is a determinate rotation axis.
-		const UnitVector3D rot_axis = v.get_normalisation();
-		d_rotation_info = boost::in_place(boost::cref(rot_axis));
+		d_rotation_axis = v.get_normalisation();
+		d_is_zero_length = false;
 	}
+
+	d_have_calculated_rotation_info = true;
 }
 
 
@@ -611,7 +672,7 @@ GPlatesMaths::tessellate(
 	}
 
 	// The angular extent of the great circle arc being subdivided.
-	const double gca_angular_extent = acos(great_circle_arc.dot_of_endpoints()).dval();
+	const double gca_angular_extent = great_circle_arc.arc_length().dval();
 
 	//
 	// Note: Using static_cast<int> instead of static_cast<unsigned int> since

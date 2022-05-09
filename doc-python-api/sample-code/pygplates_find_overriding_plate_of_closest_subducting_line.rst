@@ -27,9 +27,10 @@ Sample code
     
     # Load some features to test for closeness to subducting lines.
     features = pygplates.FeatureCollection('features.gpml')
-    
-    # Load the topological plate polygon features (can also include deforming networks).
-    topology_features = pygplates.FeatureCollection('topologies.gpml')
+
+    # Create a topological model from the topological plate polygon features (can also include deforming networks)
+    # and the rotation model.
+    topological_model = pygplates.TopologicalModel('topologies.gpml', rotation_model)
 
     # Our geological times will be from 0Ma to 'num_time_steps' Ma (inclusive) in 1 My intervals.
     num_time_steps = 140
@@ -43,11 +44,10 @@ Sample code
         reconstructed_features = []
         pygplates.reconstruct(features, rotation_model, reconstructed_features, time, group_with_feature=True)
         
-        # Resolve our topological plate polygons (and deforming networks) to the current 'time'.
-        # We generate both the resolved topology boundaries and the boundary sections between them.
-        resolved_topologies = []
-        shared_boundary_sections = []
-        pygplates.resolve_topologies(topology_features, rotation_model, resolved_topologies, time, shared_boundary_sections)
+        # Get a snapshot of our resolved topologies at the current 'time'.
+        topological_snapshot = topological_model.topological_snapshot(time)
+        # Extract the boundary sections between our resolved topological plate polygons (and deforming networks) from the current snapshot.
+        shared_boundary_sections = topological_snapshot.get_resolved_topological_sections()
         
         # Iterate over all reconstructed features.
         for feature, feature_reconstructed_geometries in reconstructed_features:
@@ -161,10 +161,10 @@ Load the regular features that we want to see which subducting lines (in the top
 
     features = pygplates.FeatureCollection('features.gpml')
 
-The topological features are loaded into a :class:`pygplates.FeatureCollection`.
+Create a :class:`topological model<pygplates.TopologicalModel>` from topological features and the rotation model.
 ::
 
-    topology_features = pygplates.FeatureCollection('topologies.gpml')
+    topological_model = pygplates.TopologicalModel('topologies.gpml', rotation_model)
 
 | All regular features are reconstructed to the current ``time`` using :func:`pygplates.reconstruct`.
 | We specify a ``list`` for *reconstructed_features* instead of a filename.
@@ -187,20 +187,17 @@ The topological features are loaded into a :class:`pygplates.FeatureCollection`.
         ...
         for feature_reconstructed_geometry in feature_reconstructed_geometries:
 
-| The topological features are resolved to the current ``time`` using :func:`pygplates.resolve_topologies`.
-| By default both :class:`pygplates.ResolvedTopologicalBoundary` (used for dynamic plate polygons) and
-  :class:`pygplates.ResolvedTopologicalNetwork` (used for deforming regions) are appended to the
-  list ``resolved_topologies``.
-| Additionally the :class:`resolved topological sections<pygplates.ResolvedTopologicalSection>` are
-  appended to the list ``shared_boundary_sections``.
+| Get a snapshot of our resolved topologies at the current ``time`` using :func:`pygplates.TopologicalModel.topological_snapshot`.
+| And from the snapshot extract the boundary sections between our resolved topological plate polygons (and deforming networks).
+  By default both :class:`pygplates.ResolvedTopologicalBoundary` (used for dynamic plate polygons) and
+  :class:`pygplates.ResolvedTopologicalNetwork` (used for deforming regions) are listed in the boundary sections.
 
 ::
 
-    resolved_topologies = []
-    shared_boundary_sections = []
-    pygplates.resolve_topologies(topology_features, rotation_model, resolved_topologies, time, shared_boundary_sections)
+    topological_snapshot = topological_model.topological_snapshot(time)
+    shared_boundary_sections = topological_snapshot.get_resolved_topological_sections()
 
-| The :class:`resolved topological sections<pygplates.ResolvedTopologicalSection>` are actually what
+| These :class:`boundary sections<pygplates.ResolvedTopologicalSection>` are actually what
   we're interested in because their sub-segments have a list of topologies on them.
 | And it's that list of topologies that we'll be searching to find the overriding plate of a subducting line.
 

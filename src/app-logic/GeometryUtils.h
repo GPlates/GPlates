@@ -412,15 +412,15 @@ namespace GPlatesAppLogic
 			{
 			case GPlatesMaths::GeometryType::POLYLINE:
 				return create_polyline_geometry_property_value(
-						GPlatesMaths::PolylineOnSphere::create_on_heap(begin, end));
+						GPlatesMaths::PolylineOnSphere::create(begin, end));
 
 			case GPlatesMaths::GeometryType::MULTIPOINT:
 				return create_multipoint_geometry_property_value(
-						GPlatesMaths::MultiPointOnSphere::create_on_heap(begin, end));
+						GPlatesMaths::MultiPointOnSphere::create(begin, end));
 
 			case GPlatesMaths::GeometryType::POLYGON:
 				return create_polygon_geometry_property_value(
-						GPlatesMaths::PolygonOnSphere::create_on_heap(begin, end));
+						GPlatesMaths::PolygonOnSphere::create(begin, end));
 
 			case GPlatesMaths::GeometryType::POINT:
 				return create_point_geometry_property_value(*begin);

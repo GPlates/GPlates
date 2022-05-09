@@ -233,7 +233,7 @@ qDebug() << "GPlatesUtils::XQuery::evaluate_query(): query_str=" << query_str;
 		// extract the tag_name string from query_str like 
 		// "//gpml:RockUnit_siliciclastic" or "/gsml:shape/gml:Point" 
 
-		QString tag_name = query_str.mid( query_str.lastIndexOf("/") );
+		QByteArray tag_name = query_str.mid( query_str.lastIndexOf("/") ).toUtf8();
 
 		QByteArray tag_i; tag_i.append("</" + tag_name + "><" + tag_name);
 		QByteArray tag_o; tag_o.append("</" + tag_name + ">^<" + tag_name);

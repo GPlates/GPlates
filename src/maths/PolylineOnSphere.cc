@@ -85,19 +85,6 @@ GPlatesMaths::PolylineOnSphere::PolylineOnSphere() :
 }
 
 
-GPlatesMaths::PolylineOnSphere::PolylineOnSphere(
-		const PolylineOnSphere &other) :
-	GeometryOnSphere(),
-	d_seq(other.d_seq),
-	// Since PolylineOnSphere is immutable we can just share the cached calculations.
-	d_cached_calculations(other.d_cached_calculations)
-{
-	// Constructor defined in '.cc' so ~boost::intrusive_ptr<> has access to
-	// PolylineOnSphereImpl::CachedCalculations - because compiler must
-	// generate code that destroys already constructed members if constructor throws.
-}
-
-
 GPlatesMaths::PolylineOnSphere::ConstructionParameterValidity
 GPlatesMaths::PolylineOnSphere::evaluate_segment_endpoint_validity(
 		const PointOnSphere &p1,
@@ -255,7 +242,7 @@ GPlatesMaths::PolylineOnSphere::get_arc_length() const
 		{
 			const GreatCircleArc &gca = *gca_iter;
 
-			arc_length += acos(gca.dot_of_endpoints());
+			arc_length += gca.arc_length();
 		}
 
 		d_cached_calculations->arc_length = arc_length;
@@ -361,7 +348,7 @@ GPlatesMaths::tessellate(
 		tessellated_points.pop_back();
 	}
 
-	return PolylineOnSphere::create_on_heap(tessellated_points);
+	return PolylineOnSphere::create(tessellated_points);
 }
 
 

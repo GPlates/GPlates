@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QtGlobal>
+
 #include "GMTFormatHeader.h"
 
 #include "global/GPlatesAssert.h"
@@ -406,7 +408,7 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_key_value_dictionary(
 			end = elements.end();
 	for ( ; iter != end; ++iter)
 	{
-		write_gpml_key_value_dictionary_element(*iter->get());
+		write_gpml_key_value_dictionary_element(**iter);
 	}
 
 	end_header_line();
@@ -433,7 +435,7 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_piecewise_aggregation(
 	for ( ; iter != end; ++iter) 
 	{
 		d_line_stream << " <timeWindow>";
-		write_gpml_time_window(*iter->get());
+		write_gpml_time_window(**iter);
 		d_line_stream << "</timeWindow>";
 	}
 
@@ -555,7 +557,7 @@ GPlatesFileIO::GMTFormatVerboseHeader::visit_gpml_irregular_sampling(
 	for ( ; iter != end; ++iter) 
 	{
 		d_line_stream << " <timeSample>";
-		write_gpml_time_sample(*iter->get());
+		write_gpml_time_sample(**iter);
 		d_line_stream << "</timeSample>";
 	}
 
@@ -779,7 +781,12 @@ GPlatesFileIO::GMTHeaderPrinter::print_global_header_lines(
 		++header_line_iter)
 	{
 		const QString &line = *header_line_iter;
-		output_stream << '>' << line << endl;
+		output_stream << '>' << line
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
+			<< endl;
+#endif
 	}
 }
 
@@ -804,7 +811,12 @@ GPlatesFileIO::GMTHeaderPrinter::print_feature_header_lines(
 	if (header_lines.empty())
 	{
 		// There are no header lines to output so just output a newline and return.
-		output_stream << endl;
+		output_stream
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			<< Qt::endl;
+#else
+			<< endl;
+#endif
 		return;
 	}
 
@@ -821,13 +833,23 @@ GPlatesFileIO::GMTHeaderPrinter::print_feature_header_lines(
 		if (first_line_in_header)
 		{
 			// First line in header uses '>' marker written by previous geometry.
-			output_stream << line << endl;
+			output_stream << line
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+				<< Qt::endl;
+#else
+				<< endl;
+#endif
 			first_line_in_header = false;
 		}
 		else
 		{
 			// 2nd, 3rd, etc lines in header write their own '>' marker.
-			output_stream << '>' << line << endl;
+			output_stream << '>' << line
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+				<< Qt::endl;
+#else
+				<< endl;
+#endif
 		}
 	}
 }

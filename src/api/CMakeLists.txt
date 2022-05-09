@@ -32,15 +32,15 @@ set(srcs
     PyFeature.cc
     PyFeature.h
     PyFeatureCollection.cc
-    PyFeatureCollection.h
     PyFeatureCollectionFileFormatRegistry.cc
     PyFeatureCollectionFileFormatRegistry.h
+    PyFeatureCollectionFunctionArgument.cc
+    PyFeatureCollectionFunctionArgument.h
     PyFiniteRotation.cc
     PyGeometriesOnSphere.cc
     PyGeometriesOnSphere.h
     PyGeoTimeInstant.cc
     PyGPlatesModule.cc
-    PyGPlatesModule.h
     PyGreatCircleArc.cc
     PyGreatCircleArc.h
     PyIds.cc
@@ -70,6 +70,8 @@ set(srcs
     PyReconstructionTree.cc
     PyReconstructionTree.h
     PyResolveTopologies.cc
+    PyResolveTopologyParameters.h
+    PyResolveTopologyParameters.cc
     PyRevisionedVector.cc
     PyRevisionedVector.h
     PyRotationModel.cc
@@ -93,6 +95,12 @@ set(srcs
     PythonUtils.h
     PythonVariableFunctionArguments.cc
     PythonVariableFunctionArguments.h
+    PyTopologicalFeatureCollectionFunctionArgument.cc
+    PyTopologicalFeatureCollectionFunctionArgument.h
+    PyTopologicalModel.cc
+    PyTopologicalModel.h
+    PyTopologicalSnapshot.cc
+    PyTopologicalSnapshot.h
     PyTopologyTools.cc
     PyVector3D.cc
     PyViewportWindow.cc
@@ -100,13 +108,5 @@ set(srcs
     Sleeper.h
 )
 
-# Add the source files to the gplates static library.
-target_sources_util(gplates-lib PRIVATE ${srcs})
-
-# Add the source files to the pygplates extension module.
-#
-# Note this is the external Python library that is not embedded inside GPlates.
-# All sources files compiled in pygplates need to be position independent and hence
-# compiled differently (POSITION_INDEPENDENT_CODE target property is set on pygplates).
-set(pygplates_srcs ${srcs})
-target_sources_util(pygplates PRIVATE ${pygplates_srcs})
+# Add the source files to the gplates static library (or pygplates extension module).
+target_sources_util(${SOURCE_TARGET} PRIVATE ${srcs})

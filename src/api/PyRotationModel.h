@@ -30,7 +30,7 @@
 #include <boost/optional.hpp>
 #include <boost/variant.hpp>
 
-#include "PyFeatureCollection.h"
+#include "PyFeatureCollectionFunctionArgument.h"
 
 #include "app-logic/ReconstructionTreeCreator.h"
 
@@ -81,8 +81,8 @@ namespace GPlatesApi
 		 * created from the @a ReconstructionGraph will not cause reconstructed geometries to snap
 		 * back to their present day positions. See @a GPlatesAppLogic::create_reconstruction_graph for more details.
 		 *
-		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and
-		 * @a get_rotation do not specify their 'anchor_plate_id' parameter.
+		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and @a get_rotation
+		 * do not specify their 'anchor_plate_id' parameter.
 		 */
 		static
 		non_null_ptr_type
@@ -102,8 +102,8 @@ namespace GPlatesApi
 		 * created from the @a ReconstructionGraph will not cause reconstructed geometries to snap
 		 * back to their present day positions. See @a GPlatesAppLogic::create_reconstruction_graph for more details.
 		 *
-		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and
-		 * @a get_rotation do not specify their 'anchor_plate_id' parameter.
+		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and @a get_rotation
+		 * do not specify their 'anchor_plate_id' parameter.
 		 */
 		static
 		non_null_ptr_type
@@ -123,8 +123,8 @@ namespace GPlatesApi
 		 * created from the @a ReconstructionGraph will not cause reconstructed geometries to snap
 		 * back to their present day positions. See @a GPlatesAppLogic::create_reconstruction_graph for more details.
 		 *
-		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and
-		 * @a get_rotation do not specify their 'anchor_plate_id' parameter.
+		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and @a get_rotation
+		 * do not specify their 'anchor_plate_id' parameter.
 		 */
 		static
 		non_null_ptr_type
@@ -133,6 +133,25 @@ namespace GPlatesApi
 				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
 				bool extend_total_reconstruction_poles_to_distant_past = false,
 				GPlatesModel::integer_plate_id_type default_anchor_plate_id = 0);
+
+
+		/**
+		 * Instead of directly creating reconstruction trees the returned rotation model will get them
+		 * from the existing @a rotation_model.
+		 *
+		 * This is useful for re-using an existing @a RotationModel but extending the cache size and/or
+		 * changing the default anchor plate ID.
+		 *
+		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and @a get_rotation
+		 * do not specify their 'anchor_plate_id' parameter (which if none, then uses default anchor plate
+		 * of @a rotation_model instead).
+		 */
+		static
+		non_null_ptr_type
+		create(
+				RotationModel::non_null_ptr_type rotation_model,
+				unsigned int reconstruction_tree_cache_size,
+				boost::optional<GPlatesModel::integer_plate_id_type> default_anchor_plate_id = boost::none);
 	
 
 		/**
@@ -170,10 +189,25 @@ namespace GPlatesApi
 		 *
 		 * NOTE: Not accessible from python - only used in C++ when RotationModel passed from python.
 		 */
-		GPlatesAppLogic::ReconstructionTreeCreator
+		const GPlatesAppLogic::ReconstructionTreeCreator &
 		get_reconstruction_tree_creator() const
 		{
 			return d_reconstruction_tree_creator;
+		}
+
+
+		/**
+		 * Returns the internal cached reconstruction tree creator implementation.
+		 *
+		 * Only needed when desire to change the internal cache size of reconstruction trees.
+		 * Otherwise @a get_reconstruction_tree_creator should generally be used.
+		 *
+		 * NOTE: Not accessible from python - only used in C++ when RotationModel passed from python.
+		 */
+		const GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::non_null_ptr_type &
+		get_cached_reconstruction_tree_creator_impl() const
+		{
+			return d_cached_reconstruction_tree_creator_impl;
 		}
 
 
@@ -198,9 +232,10 @@ namespace GPlatesApi
 
 		RotationModel(
 				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files,
-				const GPlatesAppLogic::ReconstructionTreeCreator &reconstruction_tree_creator) :
+				GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::non_null_ptr_type cached_reconstruction_tree_creator_impl) :
 			d_feature_collection_files(feature_collection_files),
-			d_reconstruction_tree_creator(reconstruction_tree_creator)
+			d_cached_reconstruction_tree_creator_impl(cached_reconstruction_tree_creator_impl),
+			d_reconstruction_tree_creator(cached_reconstruction_tree_creator_impl)
 		{  }
 
 
@@ -214,7 +249,12 @@ namespace GPlatesApi
 		std::vector<GPlatesFileIO::File::non_null_ptr_type> d_feature_collection_files;
 
 		/**
-		 * Cached reconstruction tree creator.
+		 * Cached reconstruction tree creator implementation.
+		 */
+		GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::non_null_ptr_type d_cached_reconstruction_tree_creator_impl;
+
+		/**
+		 * Reconstruction tree creator (wrapper around cached reconstruction tree creator implementation).
 		 */
 		GPlatesAppLogic::ReconstructionTreeCreator d_reconstruction_tree_creator;
 
@@ -229,7 +269,10 @@ namespace GPlatesApi
 	 * To get an instance of @a RotationModelFunctionArgument you can either:
 	 *  (1) specify RotationModelFunctionArgument directly as a function argument type
 	 *      (in the C++ function being wrapped), or
-	 *  (2) use boost::python::extract<RotationModelFunctionArgument>().
+	 *  (2) use boost::python::extract<RotationModelFunctionArgument>(), or even
+	 *  (3) specify RotationModelFunctionArgument::function_argument_type as a function argument type or
+	 *      use boost::python::extract<RotationModelFunctionArgument::function_argument_type>()
+	 *      if you want to know whether argument was sourced from an existing RotationModel or rotation features.
 	 */
 	class RotationModelFunctionArgument
 	{

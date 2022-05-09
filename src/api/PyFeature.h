@@ -26,14 +26,21 @@
 #ifndef GPLATES_API_PYFEATURE_H
 #define GPLATES_API_PYFEATURE_H
 
+#include <tuple>
+#include <vector>
 #include <boost/optional.hpp>
-
-#include "global/PreconditionViolationError.h"
 
 #include "app-logic/TopologyInternalUtils.h"
 
+#include "global/PreconditionViolationError.h"
+#include "global/python.h"
+
+#include "maths/GeometryOnSphere.h"
+
 #include "model/FeatureType.h"
 #include "model/PropertyName.h"
+
+#include "property-values/GmlDataBlock.h"
 
 
 namespace GPlatesApi
@@ -108,6 +115,59 @@ namespace GPlatesApi
 	boost::optional<GPlatesModel::PropertyName>
 	get_default_geometry_property_name(
 			const GPlatesModel::FeatureType &feature_type);
+
+
+	/**
+	 * Extract one geometry or coverage (geometry + scalars).
+	 *
+	 * 'geometry_or_coverage_object' can be:
+	 *   1) a GeometryOnSphere, or
+	 *   2) a coverage.
+	 *
+	 * ...where a 'coverage' is a (geometry-domain, geometry-range) sequence (eg, 2-tuple)
+	 * and 'geometry-domain' is GeometryOnSphere and 'geometry-range' is a 'dict', or a sequence,
+	 * of (scalar type, sequence of scalar values) 2-tuples.
+	 *
+	 * If @a type_error_string is not specified then it will default to:
+	 *
+	 *   Expected a GeometryOnSphere, or a coverage - where a coverage is a
+	 *   (GeometryOnSphere, scalar-values-dictionary) tuple and a scalar-values-dictionary is
+	 *   a 'dict' or a sequence of (scalar type, sequence of scalar values) tuples
+	 */
+	std::tuple<
+			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type,
+			boost::optional<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>>
+	extract_geometry_or_coverage(
+			boost::python::object geometry_or_coverage_object,
+			const char *type_error_string = nullptr);
+
+
+	/**
+	 * Extract zero, one or more geometries or coverages (geometry + scalars).
+	 *
+	 * 'geometries_or_coverages_object' can be:
+	 *   1) a GeometryOnSphere, or
+	 *   2) a sequence of GeometryOnSphere's, or
+	 *   3) a coverage, or
+	 *   4) a sequence of coverages.
+	 *
+	 * ...where a 'coverage' is a (geometry-domain, geometry-range) sequence (eg, 2-tuple)
+	 * and 'geometry-domain' is GeometryOnSphere and 'geometry-range' is a 'dict', or a sequence,
+	 * of (scalar type, sequence of scalar values) 2-tuples.
+	 *
+	 * If @a type_error_string is not specified then it will default to:
+	 *
+	 *   Expected a GeometryOnSphere, or a sequence of GeometryOnSphere,
+	 *   or a coverage, or a sequence of coverages - where a coverage is a
+	 *   (GeometryOnSphere, scalar-values-dictionary) tuple and a scalar-values-dictionary is
+	 *   a 'dict' or a sequence of (scalar type, sequence of scalar values) tuples
+	 */
+	std::tuple<
+			std::vector<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>,
+			boost::optional<std::vector<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>>>
+	extract_geometries_or_coverages(
+			boost::python::object geometries_or_coverages_object,
+			const char *type_error_string = nullptr);
 }
 
 #endif // GPLATES_API_PYFEATURE_H

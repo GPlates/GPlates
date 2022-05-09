@@ -31,7 +31,6 @@
 #include "PythonExtractUtils.h"
 
 #include "PyExceptions.h"
-#include "PyGPlatesModule.h"
 
 #include "global/python.h"
 
@@ -90,35 +89,13 @@ void
 GPlatesApi::PythonExtractUtils::Implementation::raise_type_error_if_iterator(
 		bp::object iterable_object)
 {
-	// Calling builtin function 'next()' will work on an iterator, but not on a sequence.
-	try
+	// See if iterable is an iterator.
+	if (PyIter_Check(iterable_object.ptr()))
 	{
-		// Use python builtin next() function to see if iterable is an iterator.
-		get_builtin_next()(iterable_object);
-	}
-	catch (const bp::error_already_set &)
-	{
-		PythonExceptionHandler handler;
-		if (handler.exception_matches(PyExc_TypeError))
-		{
-			// It's not an iterator.
-			return;
-		}
-		else if (handler.exception_matches(PyExc_StopIteration))
-		{
-			// It's an iterator that has stopped iteration (ie, there were no items to iterate over).
-			// Let's fall through to our error message.
-		}
-		else
-		{
-			// It's some other error so let's restore it (this also throws boost::python::error_already_set).
-			handler.restore_exception();
-		}
-	}
+		PyErr_SetString(
+				PyExc_TypeError,
+				"Iterable must be a sequence (eg, list or tuple), not an iterator, since need more than one iteration pass");
 
-	PyErr_SetString(
-			PyExc_TypeError,
-			"Iterable must be a sequence (eg, list or tuple), not an iterator, since need more than one iteration pass");
-
-	boost::python::throw_error_already_set();
+		boost::python::throw_error_already_set();
+	}
 }

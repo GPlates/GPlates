@@ -167,14 +167,14 @@ GPlatesViewOperations::InsertVertexGeometryOperation::insert_vertex_on_line_segm
 		// position onto the line segment and insert there.
 		// This is useful if the user wants to insert directly on the line segment even
 		// though the mouse position might be off the line segment by a pixel or two.
-		GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_to_insert =
+		const GPlatesMaths::PointOnSphere point_to_insert =
 				project_point_onto_line_segment(index_of_start_point, oriented_pos_on_sphere);
 
-		insert_vertex(index_of_point_to_insert_before, *point_to_insert);
+		insert_vertex(index_of_point_to_insert_before, point_to_insert);
 	}
 }
 
-GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+GPlatesMaths::PointOnSphere
 GPlatesViewOperations::InsertVertexGeometryOperation::project_point_onto_line_segment(
 		const GeometryBuilder::PointIndex start_point_index,
 		const GPlatesMaths::PointOnSphere &oriented_pos_on_sphere)

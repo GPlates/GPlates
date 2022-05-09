@@ -167,6 +167,9 @@ namespace GPlatesViewOperations
 		 * @param export_topological_polygons export resolved topological polygons.
 		 * @param export_topological_networks export resolved topological networks.
 		 * @param export_topological_sections export resolved topological sections (*shared* sub-segments).
+		 * @param export_topological_line_sub_segments Export the individual sub-segments of each boundary segment
+		 *                                             that came from a resolved topological line.
+		 *                                             If false then a single geometry per boundary segment is exported.
 		 * @param force_polygon_orientation optionally force polygon orientation (clockwise or counter-clockwise).
 		 * @param wrap_to_dateline if true then exported geometries are wrapped/clipped to the dateline.
 		 *
@@ -197,6 +200,7 @@ namespace GPlatesViewOperations
 				bool export_topological_polygons,
 				bool export_topological_networks,
 				bool export_topological_sections,
+				bool export_topological_line_sub_segments,
 				boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation,
 				bool wrap_to_dateline);
 	}

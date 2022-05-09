@@ -73,26 +73,6 @@
 
 namespace
 {
-
-
-	bool
-	is_shapefile_format(
-			const QFileInfo &qfileinfo)
-	{
-		QString suffix = qfileinfo.suffix();
-		suffix = suffix.toLower();
-		return (suffix == "shp");
-	}
-
-	bool
-	is_ogrgmt_format(
-			const QFileInfo &qfileinfo)
-	{
-		QString suffix = qfileinfo.suffix();
-		suffix = suffix.toLower();
-		return (suffix == "gmt");
-	}
-
 	/*!
 	 * \brief get_key_string - if a key for the model property given by @param property_enum exists
 	 * in @param model_to_shapefile_map, return the value for that key; otherwise return the default
@@ -132,7 +112,7 @@ namespace
 
 		for (; it != end ; ++it)
 		{
-			QString key_string = GPlatesUtils::make_qstring_from_icu_string(it->get()->key()->get_value().get());
+			QString key_string = GPlatesUtils::make_qstring_from_icu_string(it->key()->get_value().get());
 			if (key == key_string)
 			{
 				break;
@@ -1478,7 +1458,7 @@ namespace
 		{
 			// We have more than one point in the feature, so we should handle this as a multi-point.
 			ogr_writer->write_multi_point_feature(
-					GPlatesMaths::MultiPointOnSphere::create_on_heap(
+					GPlatesMaths::MultiPointOnSphere::create(
 							point_geometries.begin(),
 							point_geometries.end()),
 					field_names_key_value_dictionary,
@@ -1655,7 +1635,7 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 	// Look for a key value dictionary, and store it as the default.
 	//
 	// FIXME: It might be nicer to store a single kvd definition at the collection level - such
-	// as in the OgrConfiguration.  Here we are getting the kvd by grabbing the first one we come across
+	// as in the OgrConfiguration.  Here we are getting the kvd by merging the KVDs of each feature
 	// in the collection, and typically every feature in a collection would have the same kvd. (This is
 	// not necessarily the case - a user can delete the kvd property from a feature. A user cannot however
 	// add or remove fields from the kvd, so the form of the kvd - if it hasn't been deleted - should remain
@@ -1663,7 +1643,7 @@ GPlatesFileIO::OgrFeatureCollectionWriter::OgrFeatureCollectionWriter(
 	//
 	// The only other place in GPlates where a kvd could be modified is here in the ogr export workflow.
 	//
-	// So grabbing the first (existing) kvd from a collection should give us an appropriate kvd in any case.
+	// So grabbing a merged kvd from a collection should give us an appropriate kvd in any case.
 	boost::optional<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type> non_const_default_key_value_dictionary;
 	OgrUtils::create_default_kvd_from_collection(feature_collection_ref, non_const_default_key_value_dictionary);
 	if (non_const_default_key_value_dictionary)
@@ -1808,7 +1788,7 @@ void
 GPlatesFileIO::OgrFeatureCollectionWriter::visit_gml_point(
 		const GPlatesPropertyValues::GmlPoint &gml_point)
 {
-	d_point_geometries.push_back(*gml_point.get_point());
+	d_point_geometries.push_back(gml_point.get_point());
 }
 
 void

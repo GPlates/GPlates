@@ -71,7 +71,7 @@ namespace GPlatesApi
 		 */
 		typedef boost::variant<
 				// These are the types stored inside the associated Python-wrapped objects (in bp::class_)...
-				GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>,
+				GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>,
 				GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere>,
 				GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere>,
 				GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>,

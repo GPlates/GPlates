@@ -6,12 +6,27 @@ Unit tests for the pygplates native library.
 
 import os
 import sys
+import platform
 import types
 import unittest
 
 # Import the built pygplates library (not any other one installed on the system).
 PYGPLATES_PATH = "$<TARGET_FILE_DIR:pygplates>"  # CMake changes this to the actual path to the built version of pygplates.
 sys.path.insert(1, PYGPLATES_PATH)
+
+# If on Windows and Python >= 3.8 then we need to specify the paths to all dependency DLLs of the
+# pygplates '.pyd' since Python 3.8 no longer searches for these using the PATH environment variable.
+if platform.system() == 'Windows':
+    if sys.version_info[0] > 3 or (sys.version_info[0] == 3 and sys.version_info[1] >= 8):
+        # If we're in a conda environment then don't add the paths (conda already ensures dependencies are loaded correctly).
+        if not os.environ.get('CONDA_PREFIX'):
+            # Just add all the paths in the PATH environment variable.
+            env_path = os.environ.get('PATH')
+            if env_path:
+                for dll_path in env_path.split(os.pathsep):
+                    if dll_path and os.path.exists(dll_path):
+                        os.add_dll_directory(dll_path)
+
 import pygplates
 
 import test_app_logic.test
@@ -84,12 +99,71 @@ class HashableCase(unittest.TestCase):
         self.assertRaises(TypeError, d.get, pygplates.LatLonPoint(0, 0))
 
 
+class VersionCase(unittest.TestCase):
+    def test_version(self):
+        self.assertTrue(pygplates.Version(0, 1) < pygplates.Version.get_imported_version())
+        self.assertTrue(pygplates.Version(0, 21) > pygplates.Version(0, 20))
+        self.assertTrue(pygplates.Version(0, 34, prerelease_suffix='.dev1') < pygplates.Version(0, 34))
+        self.assertTrue(pygplates.Version(0, 34, prerelease_suffix='.dev1') > pygplates.Version(0, 33))
+        self.assertTrue(pygplates.Version('0.34.dev1') == pygplates.Version(0, 34, 0, '.dev1'))
+        self.assertTrue(pygplates.Version('0.34.dev1') < pygplates.Version(0, 34))
+        self.assertTrue(pygplates.Version('0.34.1.dev1') > pygplates.Version(0, 34))
+        self.assertTrue(pygplates.Version('0.34.1.dev1') < pygplates.Version(0, 34, 1))
+        self.assertTrue(pygplates.Version('0.34.dev1') < pygplates.Version('0.34a1'))
+        self.assertTrue(pygplates.Version('0.34a1') < pygplates.Version('0.34a2'))
+        self.assertTrue(pygplates.Version('0.34a2') < pygplates.Version('0.34b1'))
+        self.assertTrue(pygplates.Version('0.34b1') < pygplates.Version('0.34rc1'))
+        self.assertTrue(pygplates.Version('0.34rc1') < pygplates.Version('0.34'))
+        
+        self.assertTrue(pygplates.Version('0.33').get_major() == 0)
+        self.assertTrue(pygplates.Version('0.33').get_minor() == 33)
+        self.assertTrue(pygplates.Version('1.33').get_major() == 1)
+        self.assertTrue(pygplates.Version('0.33.1').get_patch() == 1)
+        self.assertTrue(pygplates.Version('0.33.1').get_prerelease_suffix() is None)
+        self.assertTrue(pygplates.Version('1.33.2.dev1').get_patch() == 2)
+        self.assertTrue(pygplates.Version('1.33.2.dev1').get_prerelease_suffix() == ".dev1")
+        self.assertTrue(pygplates.Version('1.33.dev1').get_patch() == 0)
+        self.assertTrue(pygplates.Version('1.33.dev1').get_prerelease_suffix() == ".dev1")
+        with self.assertRaises(ValueError):
+            pygplates.Version('1.33.2dev1')  # Should be "1.33.2.dev1"
+        self.assertTrue(pygplates.Version('1.33.2a1').get_patch() == 2)
+        self.assertTrue(pygplates.Version('1.33.2a1').get_prerelease_suffix() == "a1")
+        self.assertTrue(pygplates.Version('1.33a1').get_patch() == 0)
+        self.assertTrue(pygplates.Version('1.33a1').get_prerelease_suffix() == "a1")
+        with self.assertRaises(ValueError):
+            pygplates.Version('1.33.2.a1')  # Should be "1.33.2a1"
+        self.assertTrue(pygplates.Version('1.33.2b2').get_patch() == 2)
+        self.assertTrue(pygplates.Version('1.33.2b2').get_prerelease_suffix() == "b2")
+        self.assertTrue(pygplates.Version('1.33b2').get_patch() == 0)
+        self.assertTrue(pygplates.Version('1.33b2').get_prerelease_suffix() == "b2")
+        with self.assertRaises(ValueError):
+            pygplates.Version('1.33.2.b2')  # Should be "1.33.2b2"
+        self.assertTrue(pygplates.Version('1.33.2rc3').get_patch() == 2)
+        self.assertTrue(pygplates.Version('1.33.2rc3').get_prerelease_suffix() == "rc3")
+        self.assertTrue(pygplates.Version('1.33rc3').get_patch() == 0)
+        self.assertTrue(pygplates.Version('1.33rc3').get_prerelease_suffix() == "rc3")
+        with self.assertRaises(ValueError):
+            pygplates.Version('1.33.2.rc3')  # Should be "1.33.2rc3"
+        with self.assertRaises(ValueError):
+            pygplates.Version('1.33.rc3')  # Should be "1.33rc3"
+        
+        # Test deprecated functions
+        self.assertTrue(pygplates.Version(20).get_revision() == 20)  # 'get_revision()' is deprecated
+        self.assertTrue(pygplates.Version(20).get_major() == 0)  # 'Version(revision)' is deprecated
+        self.assertTrue(pygplates.Version(20).get_minor() == 20)  # 'Version(revision)' is deprecated
+        self.assertTrue(pygplates.Version(20).get_patch() == 0)  # 'Version(revision)' is deprecated
+        self.assertTrue(pygplates.Version(20).get_prerelease_suffix() is None)  # 'Version(revision)' is deprecated
+        self.assertTrue(pygplates.Version(20) < pygplates.Version(21))  # 'Version(revision)' is deprecated
+        self.assertTrue(pygplates.Version(20) < pygplates.Version(0, 21))  # 'Version(revision)' is deprecated
+
+
 def suite():
     suite = unittest.TestSuite()
     
     # Add test cases from this module.
     test_cases = [
-            HashableCase
+            HashableCase,
+            VersionCase
         ]
 
     for test_case in test_cases:

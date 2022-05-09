@@ -54,7 +54,7 @@ GPlatesPropertyValues::GpmlTopologicalPolygon::print_to(
 	GPlatesModel::RevisionedVector<GpmlTopologicalSection>::const_iterator exterior_sections_end = exterior_sections_.end();
 	for ( ; exterior_sections_iter != exterior_sections_end; ++exterior_sections_iter)
 	{
-		os << *exterior_sections_iter->get();
+		os << **exterior_sections_iter;
 	}
 
 	return os << " ]";

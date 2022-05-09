@@ -23,7 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <QObject>
 #include <QPalette>
 #include <QFont>
@@ -45,11 +45,11 @@ GPlatesQtWidgets::FriendlyLineEdit::FriendlyLineEdit(
 				boost::bind(
 					&FriendlyLineEdit::focusInEvent,
 					boost::ref(*this),
-					_1),
+					boost::placeholders::_1),
 				boost::bind(
 					&FriendlyLineEdit::focusOutEvent,
 					boost::ref(*this),
-					_1),
+					boost::placeholders::_1),
 				this))
 {
 	QtWidgetUtils::add_widget_to_placeholder(d_line_edit, this);

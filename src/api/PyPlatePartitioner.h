@@ -29,7 +29,7 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "PyFeatureCollection.h"
+#include "PyFeatureCollectionFunctionArgument.h"
 #include "PyRotationModel.h"
 
 #include "app-logic/GeometryCookieCutter.h"

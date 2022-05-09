@@ -1,3 +1,148 @@
+GPlates 2.3
+===========
+
+Changes since 2.2:
+
+ * Deformation:
+   * Tectonic subsidence:
+     * Calculate tectonic subsidence due to crustal stretching (with thermal cooling).
+     * Calculate lithosphere temperature-depth profile at each surface point.
+     * Numerically solve temperature advection-diffusion equation:
+       * Using the Crank-Nicolson method followed by,
+       * solving that tridiagonal system of equations using the Thomas algorithm.
+       * Choose depth resolution and clamp absolute strain rate to ensure numerical stability.
+     * Changes in integrated temperature over depth contribute to thermal subsidence.
+     * This now gives us tectonic subsidence including the effects of thermal cooling of the lithosphere.
+   * Improve stability of crustal thinning calculations by clamping strain rate dilatation:
+     * Avoids extremely large spurious strain rates generating implausible negative crustal thicknesses.
+ * Rendering:
+   * Added two new age palettes ('traditional' and 'modern') to built-in palette dialog (along with existing 'legacy').
+     * Can now also be used in non-raster layers (3D scalar field layers and reconstructed scalar coverage layers).
+   * Improve look of tool palette on macOS (using stylesheet):
+     * Native look is worse on Qt5 than Qt4 (which itself wasn't that good).
+     * Now looks much more similar to Windows and Linux (which still use the native look).
+   * Support high-DPI displays (eg, Apple Retina):
+     * In globe/map views, colouring previews and canvas tool icons.
+     * Scale point sizes and line widths by the device pixel ratio.
+       * High-DPI displays have more pixels in same physical screen area, so without increasing sizes they would look too small/thin.
+     * Currently only integer factors are supported.
+       * On Windows, a system DPI scale factor of 175% will round up to 200% (150% round downs to 100%, otherwise GPlates is bigger than 1920x1080 display).
+     * Image export dimensions now specified using device-independent pixel coordinates (but exported image can be high-DPI, ie, device pixels).
+       * This also means exported image has some number of raw pixels as displayed in viewport.
+   * Velocity legend:
+     * Fix scaling (eg, for rendering to images smaller than the viewport).
+     * And now displays in (smaller) Manage Colouring previews.
+   * VGP:
+     * Create a single reconstructed feature geometry for each VGP (instead of an extra one for site point).
+     * And move visibility decisions from application logic to visual logic.
+ * Export:
+   * In 'general' resolved topology export, provide option to export each boundary segment as:
+     * sub-segments (of a resolved topological line) or as a single segment geometry.
+   * Support export of GeoJSON files.
+   * OGRGMT exports now have dateline wrapping disabled by default (previously enabled by default).
+     * Also exposing option to user to enable it. Note that "native" GMT does not respect dateline wrapping parameter (never does any dateline wrapping).
+     * Only Shapefile format for feature collections (as opposed to exporting) wraps to the dateline when saving.
+       * However this can be changed in the file configuration in ManageFeatureCollections dialog.
+     * Fixed OGR format feature collections (eg, OGRGMT, GEOPACKAGE, etc) incorrectly having the default configuration (eg, dateline wrapping) of Shapefile.
+     * Export resolved topological sections to a single file in same order as features in the files (also maintaining order across files).
+ * Rotations:
+   * Much faster creation of reconstruction trees.
+     * No longer repeat creation of reconstruction graph for each reconstruction tree (at each reconstruction time).
+     * Instead create more general graph once (suitable for all reconstruction times) and create trees from that (at specific reconstruction times).
+   * No longer need to clone reconstruction feature collections:
+     * Since reconstruction graph is a snapshot of rotation features (replaces clone).
+     * Means subsequently updated rotation features no longer inadvertently affect reconstruction trees of snapshot.
+   * New option to extend moving plate rotation sequences back to the distant past:
+     * Such that reconstructed geometries are not snapped back to their present day positions
+     * when the reconstruction time gets too old for the rotation file.
+     * Option saved in projects/sessions.
+   * Avoid modifying PLATES rotation file to no effect when adjusting stage pole to take short instead long path.
+     * This was marking the file as needing to be saved every time it's loaded.
+     * Happened when modified finite pole is identity rotation.
+ * Memory usage:
+   * Reduced memory usage of geometries:
+     * Multipoints reduced 40%.
+     * Polylines and polygons reduced 33%.
+   * Reduced reconstruction tree memory usage by 25%.
+ * Build:
+   * Overhauled CMake build system:
+     * Using modern CMake (version 3) API.
+       * Targets are created (add_executable/add_library), and
+       * their properties are defined using 'target_' commands (eg, target_compile_definitions, target_include_directories), and
+       * properties are passed transitively to other targets via 'target_link_libraries' command.
+     * Only using our own 'find package' modules to find dependency library when:
+       * library does not support CMake and CMake itself does not provide a find module for it.
+   * Can now create standalone binary packages on macOS, Windows and Linux.
+     * Windows supports NSIS and ZIP (both standalone).
+     * macOS supports DragNDrop package (standalone).
+       * Signs GPlates bundle, its internal contents and final DMG package with a Developer ID certificate.
+       * Notarization by Apple still manually done outside CMake/CPack (requires uploading and periodically checking notarization status).
+     * Linux supports:
+       * Standalone: tarball (pre-packaged dependencies).
+       * Non-standalone: Debian package (system package manager installs dependencies).
+     * For standalone installation, dependency libraries are recursively found and copied to install location, including:
+       * Python standard library (for embedded Python interpreter),
+       * Qt plugins,
+       * Windows Universal CRT libraries and Visual Studio runtime libraries,
+       * Python Hellinger scripts,
+       * GDAL/PROJ library data (eg, 'proj.db').
+   * Use CMake 'components' to handle separate installation of GPlates and pyGPlates:
+     * Will be used later to install/build pygplates into Anaconda.
+   * Updated GPlates icon (to new blue icon) used in file system (eg, associated with gplates.exe or gplates.app).
+   * Replaced old-style (pre-CMake3) pre-compiled headers with native support starting in CMake 3.16.
+   * Changed version numbering to support pre-releases for packaging including regular development releases and alpha, beta, release candidate releases.
+     * Works with Semantic and Debian versioning.
+   * Can enable CPU profiling without using 'ProfileGplates' custom build type:
+     * Avoids issues with CGAL not working well with custom build types.
+ * Library dependencies:
+   * C++11 is now a minimum requirement.
+     * GDAL 2.3 and above require it.
+     * CGAL 5 and above require C++14 (requirement transitively passed to GPlates via CGAL::CGAL CMake target).
+   * Significant upgrade to Qt version 5 (from version 4).
+   * GPlates and pyGPlates now link to zlib (and no longer require the gzip program).
+     * This also means pyGPlates no longer needs to include the gzip executable in the PATH on Windows.
+   * Enable compilation of Boost and CGAL with a different version of Visual Studio than GPlates (eg, VS2015 and VS2019):
+     * Disable boost auto-linking.
+     * Use header-less CGAL (CGAL >= 4.12).
+   * Ported Hellinger Python code to Python 3, and NumPy >= 1.12.
+ * Bug fixes:
+   * Fixed macOS scrollbar in layers window obscuring underlying layer controls:
+     * For example, inability to click '-' icon to remove a layer connection.
+   * Save GPlates log to writable location when current working directory does not have write permission:
+     * For example save to "C:/Users/<USER>/AppData/Local/GPlates/" when GPlates is installed to "C:\Program Files".
+   * Enable writing of '.json' files (not just '.geojson).
+   * Kinematics tool:
+     * Angular velocity (rads/Myr) is now always positive since stage rotation 'pole' is arbitrary (can negate pole/angle pair and get same rotation),
+     * and so we just take the absolute value.
+   * Raster fixes:
+     * Fixed bug where part of a raster touching dateline is stretched right across map (in 2D map views).
+     * Fixed incorrect clipping of high resolution floating-point rasters in map view.
+       * First noticed when exporting a 0.0005 degree numerical raster in export region: lat [-49.417, -28.917], lon [140.629, 150.23].
+     * Fixed bug in (non-reconstructed) raster when using non-zero central meridians in map view.
+       * This showed up as missing square sections in the displayed raster.
+       * This also affected raster export (which uses rectangular map projection) where square sections would be missing from exported raster.
+     * Fixed regional raster not getting exported with same extents as imported raster.
+       * No longer change left and right longitude extents of imported raster when they are already in range [-360, 360].
+   * Fixed exporting CitcomS topological segments using a header format that CitcomS is unable to pre-process:
+     * This resulted in missing subduction polarities, for example.
+   * Fixed dateline wrapping parameter not getting used for export to OGRGMT format.
+   * Fixed one GROT file getting saved with the contents of another GROT file.
+     * And also crashing when trying to save the first GROT file after unloading the second one.
+   * Fixed crash on Linux when opening a save file dialog to get project or feature collection file name.
+   * Fixed default settings not getting initialised from ":/DefaultPreferences.conf" (on some systems):
+     * Such as "view/animation/default_time_increment" being 0 instead of 1.
+   * Fixed point not detected as inside a network's rigid block, and crashing under assumption it must be in a delaunay face.
+   * Fixed exception/crash in the following topological scenario:
+     * a topological polygon sub-segment is a rubber-banded resolved topological line, and
+     * shared by two topological polygons, and
+     * we're retrieving its sub-sub-segments (eg, in 'general' resolved topology export).
+   * Fixed more complex topology rubber banding scenario involving:
+     * point (not line) sections where there's more than two adjacent sections,
+     * such as a triple junction (3 or more rubber bands converging on a single point).
+   * Fixed polyline around the equator not getting intersected with small polygon crossing it.
+   * Fixed some zero area dateline sliver polygons giving incorrect areas (multiples of PI instead of zero).
+     * And fixed polygon around the equator ending up with zero area instead of 2*PI (ie, half the globe).
+
 GPlates 2.2
 ===========
 

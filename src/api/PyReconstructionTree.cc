@@ -33,8 +33,7 @@
 
 #include "PyReconstructionTree.h"
 
-#include "PyFeatureCollection.h"
-#include "PyGPlatesModule.h"
+#include "PyFeatureCollectionFunctionArgument.h"
 #include "PyInterpolationException.h"
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
@@ -670,7 +669,8 @@ export_reconstruction_tree()
 	// We don't document this wrapper (using docstrings) since it's documented in "ReconstructionTree".
 	bp::class_<
 			GPlatesApi::reconstruction_tree_edge_vector_view_type>(
-					"ReconstructionTreeEdgesView",
+					// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+					"_ReconstructionTreeEdgesView",
 					bp::no_init)
 		.def("__iter__",
 				&GPlatesApi::reconstruction_tree_edge_vector_view_type::get_iter)
@@ -702,7 +702,8 @@ export_reconstruction_tree()
 	// We don't document this wrapper (using docstrings) since it's documented in "ReconstructionTree".
 	bp::class_<
 			GPlatesApi::reconstruction_tree_edge_map_view_type>(
-					"AllReconstructionTreeEdgesView",
+					// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+					"_AllReconstructionTreeEdgesView",
 					bp::no_init)
 		.def("__iter__",
 				&GPlatesApi::reconstruction_tree_edge_map_view_type::get_iter)
@@ -765,7 +766,7 @@ export_reconstruction_tree()
 							bp::arg("anchor_plate_id") = 0)),
 				"__init__()\n"
 				"\n"
-				"  .. deprecated:: 25\n"
+				"  .. deprecated:: 0.25\n"
 				"     Use :meth:`RotationModel.get_reconstruction_tree` instead.\n")
 		.def("get_equivalent_stage_rotation",
 				&GPlatesApi::get_equivalent_stage_rotation,

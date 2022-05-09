@@ -110,13 +110,9 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * Sets the viewport transform used for rendering this canvas using OpenGL.
-		 *
-		 * It is based on the viewport dimensions in device pixels (not device *independent* pixels).
-		 * Note that Qt uses device *independent* coordinates (eg, in the QGraphicsView/QGraphicsScene/QPainter).
-		 * Whereas OpenGL uses device pixels (affected by device pixel ratio on high DPI displays like Apple Retina).
 		 */
 		void
-		set_viewport_transform_for_device_pixels(
+		set_viewport_transform(
 				const QTransform &viewport_transform);
 
 		/**
@@ -124,9 +120,9 @@ namespace GPlatesQtWidgets
 		 *
 		 * The paint device is the QGLWidget set as the viewport on MapView (on QGraphicsView).
 		 *
-		 * @a image_size is in pixels (not widget size). If the caller is rendering a high-DPI image
-		 * they should multiply their widget size by the appropriate device pixel ratio and then call
-		 * QImage::setDevicePixelRatio on the returned image.
+		 * The specified image size should be in device *independent* pixels (eg, widget dimensions).
+		 * The returned image will be a high-DPI image if this canvas has a device pixel ratio greater than 1.0
+		 * (in which case the returned QImage will have the same device pixel ratio).
 		 *
 		 * Returns a null QImage if unable to allocate enough memory for the image data.
 		 */
@@ -134,7 +130,7 @@ namespace GPlatesQtWidgets
 		render_to_qimage(
 				QPaintDevice &map_canvas_paint_device,
 				const QTransform &viewport_transform,
-				const QSize &image_size);
+				const QSize &image_size_in_device_independent_pixels);
 
 		/**
 		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the
@@ -192,8 +188,8 @@ namespace GPlatesQtWidgets
 		GPlatesPresentation::ViewState &d_view_state;
 		MapView *d_map_view_ptr;
 
-		//! Viewport transform used for rendering this canvas using OpenGL (in device pixels).
-		QTransform d_viewport_transform_for_device_pixels;
+		//! Viewport transform used for rendering this canvas.
+		QTransform d_viewport_transform;
 
 		//! Mirrors an OpenGL context and provides a central place to manage low-level OpenGL objects.
 		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
@@ -256,14 +252,18 @@ namespace GPlatesQtWidgets
 				GPlatesOpenGL::GLRenderer &renderer,
 				const GPlatesOpenGL::GLMatrix &projection_matrix_scene,
 				const GPlatesOpenGL::GLMatrix &projection_matrix_text_overlay,
-				const QPaintDevice &paint_device,
-				const QPaintDevice &map_canvas_paint_device);
+				int paint_device_width_in_device_independent_pixels,
+				int paint_device_height_in_device_independent_pixels,
+				int map_canvas_paint_device_width_in_device_independent_pixels,
+				int map_canvas_paint_device_height_in_device_independent_pixels);
 
 		//! Calculate scaling for lines, points and text based on size of view
 		float
 		calculate_scale(
-				const QPaintDevice &paint_device,
-				const QPaintDevice &map_canvas_paint_device);
+				int paint_device_width_in_device_independent_pixels,
+				int paint_device_height_in_device_independent_pixels,
+				int map_canvas_paint_device_width_in_device_independent_pixels,
+				int map_canvas_paint_device_height_in_device_independent_pixels);
 
 	};
 }

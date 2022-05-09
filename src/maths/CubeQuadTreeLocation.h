@@ -204,8 +204,9 @@ namespace GPlatesMaths
 	 *
 	 * The nodes can also be on different cube faces and still intersect.
 	 *
-	 * @throws PreconditionViolationError if the specified locations are not quad tree nodes
-	 * and are not at the same depth.
+	 * @throws PreconditionViolationError if the specified locations are not quad tree nodes,
+	 * or if @a regular_quad_tree_location_at_child_depth does not have a depth of one larger than
+	 * @a loose_quad_tree_location_at_parent_depth.
 	 */
 	bool
 	intersect_loose_quad_tree_node_with_regular_quad_tree_node_at_parent_child_depths(

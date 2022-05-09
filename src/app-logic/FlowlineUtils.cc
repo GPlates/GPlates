@@ -72,7 +72,7 @@ GPlatesAppLogic::FlowlineUtils::get_times_from_time_period_array(
 		for (; iter != end ; ++iter)
 		{
 			gml_time_period_ptr =
-				dynamic_cast<const GPlatesPropertyValues::GmlTimePeriod*>(iter->get().get());
+				dynamic_cast<const GPlatesPropertyValues::GmlTimePeriod*>((*iter).get_element().get());
 
 			GPlatesPropertyValues::GeoTimeInstant geo_time_instant = 
 				gml_time_period_ptr->end()->get_time_position();
@@ -307,7 +307,7 @@ GPlatesAppLogic::FlowlineUtils::FlowlinePropertyFinder::initialise_pre_feature_p
 
 void
 GPlatesAppLogic::FlowlineUtils::calculate_flowline(
-        const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &reconstructed_seed_point,
+        const GPlatesMaths::PointOnSphere &reconstructed_seed_point,
 		const FlowlinePropertyFinder &flowline_parameters,
 		std::vector<GPlatesMaths::PointOnSphere> &flowline,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
@@ -315,31 +315,30 @@ GPlatesAppLogic::FlowlineUtils::calculate_flowline(
 {
 	using namespace GPlatesMaths;
 
-	flowline.push_back(*reconstructed_seed_point);
+	flowline.push_back(reconstructed_seed_point);
 
 	std::vector<FiniteRotation>::const_iterator		iter = rotations.begin(),
 		end = rotations.end();
 
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type current_point = reconstructed_seed_point;
+	GPlatesMaths::PointOnSphere current_point = reconstructed_seed_point;
 
 	for (; iter != end ; ++iter)
 	{
-		PointOnSphere::non_null_ptr_to_const_type new_point =
-			*iter * current_point;
-		flowline.push_back(*new_point);
+		const PointOnSphere new_point = *iter * current_point;
+		flowline.push_back(new_point);
 		current_point = new_point;
 	}
 
 }
 
 
-GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+GPlatesMaths::PointOnSphere
 GPlatesAppLogic::FlowlineUtils::reconstruct_seed_point(
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type seed_point,
+	const GPlatesMaths::PointOnSphere &seed_point,
 	const std::vector<GPlatesMaths::FiniteRotation> &rotations,
 	bool reverse)
 {
-    GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type current_point = seed_point;
+    GPlatesMaths::PointOnSphere current_point = seed_point;
 
     if (reverse)
     {

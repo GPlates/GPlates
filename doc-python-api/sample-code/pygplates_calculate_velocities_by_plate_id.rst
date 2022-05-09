@@ -90,7 +90,8 @@ They can be any :class:`type<pygplates.FeatureType>` of feature as long as they 
     delta_time = 1
 
 :class:`pygplates.RotationModel` enables to calculate both the rotation from present day to 10Ma
-of a particular tectonic plate relative to the anchor plate (defaults to zero):
+of a particular tectonic plate relative to the anchor plate (which is zero because *rotation_model*
+was created without specifying a default anchor plate):
 ::
 
     equivalent_total_rotation = rotation_model.get_rotation(reconstruction_time, domain_plate_id)

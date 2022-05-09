@@ -5,13 +5,15 @@ Table of Contents
  1. Introduction
  2. Build process
      1. Package dependencies
-     2. Commands to execute
-     3. The pygplates library
-     4. Installing pygplates
+     2. Commands to build GPlates/pyGPlates
+     3. The GPlates executable (or pyGPlates library)
+     4. Installing GPlates/pyGPlates
 
 Introduction
 
-This page details how to build pygplates from a source release.
+This page details how to build GPlates or pyGPlates from a source release.
+The source code will compile either GPlates or pyGPlates depending on where
+you obtained the source code (eg, from a GPlates release or a pyGPlates release).
 
 Build process
 
@@ -22,36 +24,35 @@ dependencies for compilation.
 
 See "DEPS.Linux" for more information on installing dependencies.
 
-Commands to execute
+Commands to build GPlates/pyGPlates
 
  1. Change your working directory (if not already) into the base directory of
-    the pygplates source code.
- 2. Configure and compile the program:
+    the GPlates/pyGPlates source code.
+ 2. Build GPlates (or pyGPlates) by typing:
 
     cmake .
     make
 
-    * If you wish to install pygplates to a location other than the default
-      ("/usr/local"), specify the "-DCMAKE_INSTALL_PREFIX:STRING" argument to "cmake".
-      For more information, see the Installing GPlates step below.
+Note that you can ignore the CMake warning "CGAL_DATA_DIR cannot be deduced".
 
-The pygplates library
+The GPlates executable (or pyGPlates library)
 
-The pygplates library will be called "pygplates.so", located in the "bin"
-directory. If you want to do more than test pygplates from this local directory,
+The GPlates executable (or pyGPlates library) will be called "gplates" (or "pygplates.so") and
+located in the "bin" directory.
+If you want to do more than test GPlates (or pyGPlates) from this local directory,
 you will need to install it on your system.
 
-Installing pygplates
+Installing GPlates/pyGPlates
 
 The command
 
     sudo make install
 
-Will copy the "pygplates.so" library to the default location, "/usr/local".
-The pygplates library will be installed as "/usr/local/lib/pygplates/revision28/pygplates.so".
-Note that you will need to be root to install software to "/usr/local".
-On Ubuntu systems, this is accomplished by prefixing the command with
-"sudo", i.e. "sudo make install".
+Will copy the "gplates" executable (or "pygplates.so" library) into a sub-directory of the default location,
+"/usr/local". The GPlates executable will be installed as "/usr/local/bin/gplates" (or the pyGPlates library
+installed as "/usr/local/lib/pygplates.so"). For pyGPlates you would then add "/usr/local/lib" to PYTHONPATH.
+Note that you will need to be root to install software to "/usr/local". On Ubuntu systems, this is accomplished
+by prefixing the command with "sudo", i.e. "sudo make install".
 
 If you wish to install to a different location, use the "-DCMAKE_INSTALL_PREFIX:STRING" argument to
 "cmake". For example:
@@ -60,5 +61,5 @@ If you wish to install to a different location, use the "-DCMAKE_INSTALL_PREFIX:
     make
     make install
 
-This will install pygplates in your home directory as "~/usr/lib/pygplates/revision28/pygplates.so".
-
+This will install GPlates (or pyGPlates) into your home directory as "~/usr/bin/gplates"
+(or "~/usr/lib/pygplates.so"). Note that for pyGPlates you would then add "~/usr/lib" to PYTHONPATH.

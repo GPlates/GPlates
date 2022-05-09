@@ -410,7 +410,7 @@ GPlatesAppLogic::GeometryCookieCutter::partition_geometries(
 			// Partition the current outside geometry against the partitioning polygon.
 			// Geometry partitioned outside the current partitioning polygon get stored
 			// in the sequence of outside geometries used for the next partitioning polygon.
-			partitioning_geometry.d_polygon_intersections->partition_geometry(
+			partitioning_geometry.d_polygon_partitioner->partition_geometry(
 					outside_geometry,
 					current_partitioned_inside_geometries.partitioned_geometries/*inside*/,
 					*next_partitioned_outside_geometries/*outside*/);
@@ -474,8 +474,8 @@ GPlatesAppLogic::GeometryCookieCutter::partition_point(
 	{
 		const PartitioningGeometry &partitioning_geometry = *partition_iter;
 
-		if (partitioning_geometry.d_polygon_intersections->partition_point(point) !=
-			GPlatesMaths::PolygonIntersections::GEOMETRY_OUTSIDE)
+		if (partitioning_geometry.d_polygon_partitioner->partition_point(point) !=
+			GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE)
 		{
 			return partitioning_geometry.d_reconstruction_geometry.get();
 		}
@@ -682,8 +682,8 @@ GPlatesAppLogic::GeometryCookieCutter::PartitioningGeometry::PartitioningGeometr
 		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type &partitioning_polygon,
 		GPlatesMaths::PolygonOnSphere::PointInPolygonSpeedAndMemory partition_point_speed_and_memory) :
 	d_reconstruction_geometry(reconstruction_geometry),
-	d_polygon_intersections(
-			GPlatesMaths::PolygonIntersections::create(partitioning_polygon, partition_point_speed_and_memory))
+	d_polygon_partitioner(
+			GPlatesMaths::PolygonPartitioner::create(partitioning_polygon, partition_point_speed_and_memory))
 {
 }
 

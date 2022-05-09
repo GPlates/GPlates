@@ -23,11 +23,22 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <boost/shared_ptr.hpp>
+#include <QString>
+
+#include "global/config.h"  // For GPLATES_INSTALL_STANDALONE
+
+// We are going to import the numpy C-API in this file.
+// This tells 'global/python.h' not to define NO_IMPORT_ARRAY.
+#define PYGPLATES_IMPORT_NUMPY_ARRAY_API
 #include "global/python.h"
+
+#include "file-io/StandaloneBundle.h"
 
 #include "maths/MathsUtils.h"
 
-#include "PyGPlatesModule.h"
+#include "utils/Profile.h"
+
 
 // Exceptions
 void export_exceptions();
@@ -54,6 +65,8 @@ void export_feature_collection_file_format_registry();
 // model namespace
 void export_feature();
 void export_feature_collection();
+void export_feature_collection_function_argument();
+void export_topological_feature_collection_function_argument();
 void export_geo_time_instant();
 void export_ids();
 void export_information_model();
@@ -71,7 +84,10 @@ void export_reconstruct();
 void export_reconstruction_geometries();
 void export_reconstruction_tree();
 void export_resolve_topologies();
+void export_resolve_topology_parameters();
 void export_rotation_model();
+void export_topological_model();
+void export_topological_snapshot();
 
 // api directory.
 void export_version();
@@ -165,6 +181,8 @@ export_cpp_python_api()
 	export_qualified_xml_names(); // Must be called before 'export_feature()'.
 	export_feature();
 	export_feature_collection();
+	export_feature_collection_function_argument();
+	export_topological_feature_collection_function_argument();
 	export_old_feature(); // TODO: Remove this once transitioned to 'export_feature()'.
 	export_old_feature_collection();
 	export_property_values();
@@ -178,7 +196,10 @@ export_cpp_python_api()
 	export_reconstruction_geometries();
 	export_reconstruction_tree();
 	export_resolve_topologies();
+	export_resolve_topology_parameters();
 	export_rotation_model();
+	export_topological_model();
+	export_topological_snapshot();
 
 	//export_co_registration();
 	export_colour();
@@ -190,46 +211,121 @@ export_cpp_python_api()
 void export_pure_python_api();
 
 
+//
+// Wrap the numpy C-API 'import_array()' macro.
+//
+// We only need to call 'import_array()' once and it should be done during our module initialisation.
+//
+#ifdef GPLATES_HAVE_NUMPY_C_API
+#	if PY_MAJOR_VERSION < 3
+	static
+	void
+	pygplates_numpy_c_api_import_array()
+	{
+		// For Python 2 the 'import_array()' macro is defined as:
+		//
+		//   if (_import_array() < 0) { ...; return; }
+		//
+		// ...so our function signature should not have a return type and therefore we don't need to
+		// return anything (even if macro condition fails).
+		import_array();
+	}
+#	else
+	static
+	void *
+	pygplates_numpy_c_api_import_array()
+	{
+		import_array();
+		// For Python 3 the 'import_array()' macro is defined as:
+		//
+		//   if (_import_array() < 0) { ...; return NULL; }
+		//
+		// ...so our function signature must have a *pointer* return type and therefore we need to return
+		// something (in case macro condition fails).
+		return nullptr;
+	}
+#	endif
+#endif
+
 namespace
 {
-	boost::python::object builtin_hash;
-	boost::python::object builtin_iter;
-	boost::python::object builtin_next;
-
+	/**
+	 * Report profiling information to a file when Python exits normally.
+	 *
+	 * This is a no-op if a profile build has not been selected (see "Profile.h").
+	 */
 	void
-	cache_builtin_attributes()
+	pygplates_profile_report_to_file()
 	{
-		builtin_hash = boost::python::scope().attr("__builtins__").attr("hash");
-		builtin_iter = boost::python::scope().attr("__builtins__").attr("iter");
-		builtin_next = boost::python::scope().attr("__builtins__").attr("next");
+		PROFILE_REPORT_TO_FILE("profile.txt");
 	}
 }
 
-
-boost::python::object
-GPlatesApi::get_builtin_hash()
-{
-	return builtin_hash;
-}
-
-
-boost::python::object
-GPlatesApi::get_builtin_iter()
-{
-	return builtin_iter;
-}
-
-
-boost::python::object
-GPlatesApi::get_builtin_next()
-{
-	return builtin_next;
-}
-
+#if defined (GPLATES_INSTALL_STANDALONE) && !defined(GPLATES_PYTHON_EMBEDDING)
+	namespace
+	{
+		/**
+		 * When pygplates is imported into an *external* Python interpreter (ie, not the interpreter
+		 * *embedded* in GPlates) the '__init__.py' of the pygplates package will call us to let us
+		 * know the directory we're being imported from.
+		 *
+		 * In fact that was the whole reason for creating a "Python package" (with '__init__.py')
+		 * because we cannot easily find the runtime import directory from a C++ extension module.
+		 * In the package '__init__.py' file we have access to the '__file__' attribute which serves
+		 * this purpose. Note that PEP 489 ("Multi-phase extension module initialization":
+		 * https://www.python.org/dev/peps/pep-0489/) addresses this difference between pure Python
+		 * and C extensions, but it is not clear how to achieve this with boost-python.
+		 */
+		void
+		pygplates_post_import(
+				QString pygplates_import_directory)
+		{
+			// Initialise standalone bundle information (and let it know where the bundle location is).
+			GPlatesFileIO::StandaloneBundle::initialise(pygplates_import_directory);
+		}
+	}
+#endif
 
 BOOST_PYTHON_MODULE(pygplates)
 {
 	namespace bp = boost::python;
+
+	//
+	// Apparently Py_Initialize should be called before initialising numpy.
+	//
+	// According to the docs for Py_Initialize:
+	// 
+	//   "This is a no-op when called for a second time (without calling Py_FinalizeEx() first)."
+	//   
+	//...so it should be OK to call twice.
+	//
+	// Calling twice happens when embedding pyGPlates into GPlates (as opposed to loading pyGPlates
+	// into an external Python interpreter) because PyImport_AppendInittab("pygplates", &PyInit_pygplates)
+	// is called (which calls us) and then Py_Initialize() is called (after calling us). However I don't
+	// know if it's a problem to call Py_Initialize() here before PyImport_AppendInittab() has returned.
+	//
+	// Also this seems to upset the order of things because the docs state that other functions,
+	// like Py_SetProgramName(), should be called before Py_Initialize(). But that won't happen if
+	// Py_Initialize() is called here (because Py_SetProgramName() is called after
+	// PyImport_AppendInittab() has returned and hence Py_Initialize() has already been called).
+	//
+	Py_Initialize();
+	//
+	// We're importing the numpy C-API directly because we use it to register converters from
+	// numpy integers/floats to C++ integers/floats.
+	//
+#ifdef GPLATES_HAVE_NUMPY_C_API
+	pygplates_numpy_c_api_import_array();
+#endif
+	//
+	// In future we will also use boost::python::numpy to return numpy arrays (from C++ to Python).
+	// Note that boost::python::numpy also needs initialisation (and it also internally imports the numpy C-API).
+	//
+	// Only available for Boost >= 1.63, and if boost.python.numpy installed since it's currently optional
+	// (because we don't actually use it yet).
+#ifdef GPLATES_HAVE_BOOST_PYTHON_NUMPY
+	bp::numpy::initialize();
+#endif
 
 	// Sanity check: Proceed only if we have access to infinity and NaN.
 	// This should pass on all systems that we support.
@@ -242,7 +338,7 @@ BOOST_PYTHON_MODULE(pygplates)
 	}
 
 	//
-	// Specify the 'pygplate' module's docstring options.
+	// Specify the 'pygplates' module's docstring options.
 	//
 	// Note that we *disable* python and C++ signatures since we explicitly specify the
 	// signatures in the first line of each function's (or class method's) docstring.
@@ -293,9 +389,6 @@ BOOST_PYTHON_MODULE(pygplates)
 #else
 			bp::import("builtins");
 #endif
-    // Cache some commonly used built-in attributes.
-	// Note: This must be done *after* injecting the __builtins__ module.
-	cache_builtin_attributes();
 
 	// Export the part of the python API that consists of C++ python bindings (ie, not pure python).
 	export_cpp_python_api();
@@ -304,5 +397,25 @@ BOOST_PYTHON_MODULE(pygplates)
 	//
 	// We've already exported all the C++ python bindings - this is important because the pure python
 	// code injects methods into the python classes already defined by the C++ python bindings.
-    export_pure_python_api();
+	export_pure_python_api();
+
+	// If pygplates is being built as a profile build (see "Profile.h") then register a function to
+	// report profiled information to a file when Python exits normally.
+	//
+	// Note that it's possible some boost python objects are still alive when atexit calls this function,
+	// but we're assuming that any profiled code has already run (and hence been profiled) before this happens.
+#if defined(PROFILE_GPLATES)
+	bp::import("atexit").attr("register")(bp::make_function(&pygplates_profile_report_to_file));
+#endif
+
+#if defined (GPLATES_INSTALL_STANDALONE) && !defined(GPLATES_PYTHON_EMBEDDING)
+	// Wrap the 'pygplates_post_import()' function so it can be called by the pygplates "Python package" '__init__.py'
+	// just after it imports this pygplates shared library to let us know our runtime import location.
+	//
+	// Note that this only happens when pygplates is imported into an *external* Python interpreter
+	// (ie, not the interpreter *embedded* in GPlates).
+	bp::def("_post_import",
+			&pygplates_post_import,
+			(bp::arg("pygplates_import_directory")));
+#endif
 }

@@ -36,7 +36,7 @@
 #include <boost/variant.hpp>
 #include <QString>
 
-#include "PyFeatureCollection.h"
+#include "PyFeatureCollectionFunctionArgument.h"
 #include "PyRotationModel.h"
 #include "PythonConverterUtils.h"
 #include "PythonUtils.h"
@@ -65,6 +65,7 @@
 #include <boost/python/raw_function.hpp>
 
 #include "model/FeatureCollectionHandle.h"
+#include "model/ModelUtils.h"
 #include "model/types.h"
 
 #include "property-values/GeoTimeInstant.h"
@@ -118,7 +119,7 @@ namespace GPlatesApi
 				boost::optional<RotationModel::non_null_ptr_type> &rotation_model,
 				reconstructed_feature_geometries_argument_type &reconstructed_feature_geometries,
 				GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
-				GPlatesModel::integer_plate_id_type &anchor_plate_id)
+				boost::optional<GPlatesModel::integer_plate_id_type> &anchor_plate_id)
 		{
 			// Define the explicit function argument types...
 			//
@@ -128,7 +129,7 @@ namespace GPlatesApi
 					FeatureCollectionSequenceFunctionArgument,
 					RotationModelFunctionArgument,
 					double, // Note: This is not GPlatesPropertyValues::GeoTimeInstant.
-					GPlatesModel::integer_plate_id_type,
+					boost::optional<GPlatesModel::integer_plate_id_type>,
 					QString> // Only export filename supported (not a python list of RFG's).
 							reconstruct_args_type;
 
@@ -188,7 +189,7 @@ namespace GPlatesApi
 				boost::optional<RotationModel::non_null_ptr_type> &rotation_model,
 				reconstructed_feature_geometries_argument_type &reconstructed_feature_geometries,
 				GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
-				GPlatesModel::integer_plate_id_type &anchor_plate_id,
+				boost::optional<GPlatesModel::integer_plate_id_type> &anchor_plate_id,
 				ReconstructType::Value &reconstruct_type,
 				bool &export_wrap_to_dateline,
 				bool &group_with_feature)
@@ -228,7 +229,7 @@ namespace GPlatesApi
 					RotationModelFunctionArgument,
 					reconstructed_feature_geometries_argument_type,
 					GPlatesPropertyValues::GeoTimeInstant,
-					GPlatesModel::integer_plate_id_type>
+					boost::optional<GPlatesModel::integer_plate_id_type>>
 							reconstruct_args_type;
 
 			// Define the explicit function argument names...
@@ -241,8 +242,8 @@ namespace GPlatesApi
 							"anchor_plate_id");
 
 			// Define the default function arguments...
-			typedef boost::tuple<GPlatesModel::integer_plate_id_type> default_args_type;
-			default_args_type defaults_args(0/*anchor_plate_id*/);
+			typedef boost::tuple<boost::optional<GPlatesModel::integer_plate_id_type>> default_args_type;
+			default_args_type defaults_args(boost::none/*anchor_plate_id*/);
 
 			const reconstruct_args_type reconstruct_args =
 					VariableArguments::get_explicit_args<reconstruct_args_type>(
@@ -287,76 +288,6 @@ namespace GPlatesApi
 		}
 
 
-		// Traits class to allow one 'get_format()' function to handle all three export namespaces
-		// 'ReconstructedFeatureGeometryExport', 'ReconstructedFlowlineExport' and 'ReconstructedMotionPathExport'.
-		template <class ReconstructionGeometryType>
-		struct FormatTraits
-		{  };
-
-		template <>
-		struct FormatTraits<GPlatesAppLogic::ReconstructedFeatureGeometry>
-		{
-			typedef GPlatesFileIO::ReconstructedFeatureGeometryExport::Format format_type;
-
-			static const format_type UNKNOWN = GPlatesFileIO::ReconstructedFeatureGeometryExport::UNKNOWN;
-			static const format_type GMT = GPlatesFileIO::ReconstructedFeatureGeometryExport::GMT;
-			static const format_type SHAPEFILE = GPlatesFileIO::ReconstructedFeatureGeometryExport::SHAPEFILE;
-			static const format_type OGRGMT = GPlatesFileIO::ReconstructedFeatureGeometryExport::OGRGMT;
-		};
-
-		template <>
-		struct FormatTraits<GPlatesAppLogic::ReconstructedMotionPath>
-		{
-			typedef GPlatesFileIO::ReconstructedMotionPathExport::Format format_type;
-
-			static const format_type UNKNOWN = GPlatesFileIO::ReconstructedMotionPathExport::UNKNOWN;
-			static const format_type GMT = GPlatesFileIO::ReconstructedMotionPathExport::GMT;
-			static const format_type SHAPEFILE = GPlatesFileIO::ReconstructedMotionPathExport::SHAPEFILE;
-			static const format_type OGRGMT = GPlatesFileIO::ReconstructedMotionPathExport::OGRGMT;
-		};
-
-		template <>
-		struct FormatTraits<GPlatesAppLogic::ReconstructedFlowline>
-		{
-			typedef GPlatesFileIO::ReconstructedFlowlineExport::Format format_type;
-
-			static const format_type UNKNOWN = GPlatesFileIO::ReconstructedFlowlineExport::UNKNOWN;
-			static const format_type GMT = GPlatesFileIO::ReconstructedFlowlineExport::GMT;
-			static const format_type SHAPEFILE = GPlatesFileIO::ReconstructedFlowlineExport::SHAPEFILE;
-			static const format_type OGRGMT = GPlatesFileIO::ReconstructedFlowlineExport::OGRGMT;
-		};
-
-
-		/**
-		 * Template function to handles format retrieval for all three export namespaces
-		 * 'ReconstructedFeatureGeometryExport', 'ReconstructedFlowlineExport' and 'ReconstructedMotionPathExport'.
-		 */
-		template <class ReconstructionGeometryType>
-		typename FormatTraits<ReconstructionGeometryType>::format_type
-		get_format(
-				QString file_name)
-		{
-			static const QString GMT_EXT = ".xy";
-			static const QString SHP_EXT = ".shp";
-			static const QString OGRGMT_EXT = ".gmt";
-
-			if (file_name.endsWith(GMT_EXT))
-			{
-				return FormatTraits<ReconstructionGeometryType>::GMT;
-			}
-			if (file_name.endsWith(SHP_EXT))
-			{
-				return FormatTraits<ReconstructionGeometryType>::SHAPEFILE;
-			}
-			if (file_name.endsWith(OGRGMT_EXT))
-			{
-				return FormatTraits<ReconstructionGeometryType>::OGRGMT;
-			}
-
-			return FormatTraits<ReconstructionGeometryType>::UNKNOWN;
-		}
-
-
 		void
 		export_reconstructed_feature_geometries(
 				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &rfgs,
@@ -377,8 +308,20 @@ namespace GPlatesApi
 				reconstructed_feature_geometries.push_back(rfg.get());
 			}
 
+			GPlatesFileIO::FeatureCollectionFileFormat::Registry file_format_registry;
 			const GPlatesFileIO::ReconstructedFeatureGeometryExport::Format format =
-					get_format<GPlatesAppLogic::ReconstructedFeatureGeometry>(export_file_name);
+					GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(
+							export_file_name,
+							file_format_registry);
+
+			// The API docs state that dateline wrapping should be ignored except for Shapefile.
+			//
+			// For example, we don't want to pollute real-world data with dateline vertices when
+			// using GMT software (since it can handle 3D globe data, whereas ESRI handles only 2D).
+			if (format != GPlatesFileIO::ReconstructedFeatureGeometryExport::SHAPEFILE)
+			{
+				export_wrap_to_dateline = false;
+			}
 
 			// Export the reconstructed feature geometries.
 			GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_geometries(
@@ -419,8 +362,20 @@ namespace GPlatesApi
 					rfgs.end(),
 					reconstructed_motion_paths);
 
+			GPlatesFileIO::FeatureCollectionFileFormat::Registry file_format_registry;
 			const GPlatesFileIO::ReconstructedMotionPathExport::Format format =
-					get_format<GPlatesAppLogic::ReconstructedMotionPath>(export_file_name);
+					GPlatesFileIO::ReconstructedMotionPathExport::get_export_file_format(
+							export_file_name,
+							file_format_registry);
+
+			// The API docs state that dateline wrapping should be ignored except for Shapefile.
+			//
+			// For example, we don't want to pollute real-world data with dateline vertices when
+			// using GMT software (since it can handle 3D globe data, whereas ESRI handles only 2D).
+			if (format != GPlatesFileIO::ReconstructedMotionPathExport::SHAPEFILE)
+			{
+				export_wrap_to_dateline = false;
+			}
 
 			// Export the reconstructed motion paths.
 			GPlatesFileIO::ReconstructedMotionPathExport::export_reconstructed_motion_paths(
@@ -456,8 +411,20 @@ namespace GPlatesApi
 					rfgs.end(),
 					reconstructed_flowlines);
 
+			GPlatesFileIO::FeatureCollectionFileFormat::Registry file_format_registry;
 			const GPlatesFileIO::ReconstructedFlowlineExport::Format format =
-					get_format<GPlatesAppLogic::ReconstructedFlowline>(export_file_name);
+					GPlatesFileIO::ReconstructedFlowlineExport::get_export_file_format(
+							export_file_name,
+							file_format_registry);
+
+			// The API docs state that dateline wrapping should be ignored except for Shapefile.
+			//
+			// For example, we don't want to pollute real-world data with dateline vertices when
+			// using GMT software (since it can handle 3D globe data, whereas ESRI handles only 2D).
+			if (format != GPlatesFileIO::ReconstructedFlowlineExport::SHAPEFILE)
+			{
+				export_wrap_to_dateline = false;
+			}
 
 			// Export the reconstructed flowlines.
 			GPlatesFileIO::ReconstructedFlowlineExport::export_reconstructed_flowlines(
@@ -485,7 +452,7 @@ namespace GPlatesApi
 		template <class ReconstructionGeometryType>
 		void
 		output_reconstruction_geometries(
-				bp::list output_reconstruction_geometries_list,
+				bp::list &output_reconstruction_geometries_list,
 				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &rfgs,
 				const std::vector<const GPlatesFileIO::File::Reference *> &reconstructable_file_ptrs,
 				bool group_with_feature)
@@ -601,7 +568,7 @@ namespace GPlatesApi
 		boost::optional<RotationModel::non_null_ptr_type> rotation_model;
 		reconstructed_feature_geometries_argument_type reconstructed_feature_geometries_argument;
 		GPlatesPropertyValues::GeoTimeInstant reconstruction_time(0);
-		GPlatesModel::integer_plate_id_type anchor_plate_id;
+		boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id;
 		ReconstructType::Value reconstruct_type;
 		bool export_wrap_to_dateline;
 		bool group_with_feature;
@@ -630,7 +597,8 @@ namespace GPlatesApi
 		// Reconstruct the features in the feature collection files.
 		//
 
-		// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default.
+		// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default
+		// (which if none, then uses default anchor plate of 'rotation_model' instead).
 		// This ensures 'ReconstructMethodInterface' will reconstruct using the correct anchor plate.
 		GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
 				GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
@@ -753,7 +721,7 @@ namespace GPlatesApi
 						*export_file_name,
 						reconstructable_file_ptrs,
 						reconstruction_file_ptrs,
-						anchor_plate_id,
+						reconstruction_tree_creator.get_default_anchor_plate_id(),
 						reconstruction_time.value(),
 						export_wrap_to_dateline);
 				break;
@@ -764,7 +732,7 @@ namespace GPlatesApi
 						*export_file_name,
 						reconstructable_file_ptrs,
 						reconstruction_file_ptrs,
-						anchor_plate_id,
+						reconstruction_tree_creator.get_default_anchor_plate_id(),
 						reconstruction_time.value(),
 						export_wrap_to_dateline);
 				break;
@@ -775,7 +743,7 @@ namespace GPlatesApi
 						*export_file_name,
 						reconstructable_file_ptrs,
 						reconstruction_file_ptrs,
-						anchor_plate_id,
+						reconstruction_tree_creator.get_default_anchor_plate_id(),
 						reconstruction_time.value(),
 						export_wrap_to_dateline);
 				break;
@@ -853,7 +821,7 @@ namespace GPlatesApi
 			FeatureCollectionSequenceFunctionArgument reconstructable_features,
 			RotationModelFunctionArgument rotation_model,
 			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
-			GPlatesModel::integer_plate_id_type anchor_plate_id)
+			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id)
 	{
 		// Time must not be distant past/future.
 		if (!reconstruction_time.is_real())
@@ -863,7 +831,8 @@ namespace GPlatesApi
 			bp::throw_error_already_set();
 		}
 
-		// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default.
+		// Adapt the reconstruction tree creator to a new one that has 'anchor_plate_id' as its default
+		// (which if none, then uses default anchor plate of 'rotation_model' instead).
 		// This ensures we will reverse reconstruct using the correct anchor plate.
 		GPlatesAppLogic::ReconstructionTreeCreator reconstruction_tree_creator =
 				GPlatesAppLogic::create_cached_reconstruction_tree_adaptor(
@@ -878,6 +847,8 @@ namespace GPlatesApi
 		std::vector<GPlatesFileIO::File::non_null_ptr_type> reconstructable_files;
 		reconstructable_features.get_files(reconstructable_files);
 
+		GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
+
 		// Iterate over the files.
 		std::vector<GPlatesFileIO::File::non_null_ptr_type>::const_iterator reconstructable_files_iter =
 				reconstructable_files.begin();
@@ -890,8 +861,6 @@ namespace GPlatesApi
 			const GPlatesModel::FeatureCollectionHandle::weak_ref &reconstructable_feature_collection =
 					reconstructable_file->get_reference().get_feature_collection();
 
-			GPlatesAppLogic::ReconstructMethodRegistry reconstruct_method_registry;
-
 			// Iterate over the features in the reconstructable feature collection.
 			GPlatesModel::FeatureCollectionHandle::iterator reconstructable_features_iter =
 					reconstructable_feature_collection->begin();
@@ -901,6 +870,22 @@ namespace GPlatesApi
 			{
 				const GPlatesModel::FeatureHandle::weak_ref reconstructable_feature =
 						(*reconstructable_features_iter)->reference();
+
+				// Set the geometry import time to the reconstruction time so that the geometries are correctly
+				// reverse-reconstructed below (this is especially important for mid-ocean ridges with version 3
+				// half-stage rotations where spreading start time is the geometry import time).
+				static const GPlatesModel::PropertyName GEOMETRY_IMPORT_TIME_PROPERTY_NAME =
+						GPlatesModel::PropertyName::create_gpml("geometryImportTime");
+				// Note: Property will only get added if property name is valid for the feature's type,
+				//       which it should since the GPGIM says it's valid for all reconstructable features.
+				//       But it won't get added for flowlines for example (according to the current GPGIM).
+				GPlatesModel::ModelUtils::set_property(
+						reconstructable_feature,
+						GEOMETRY_IMPORT_TIME_PROPERTY_NAME,
+						GPlatesModel::ModelUtils::create_gml_time_instant(
+								GPlatesPropertyValues::GeoTimeInstant(reconstruction_time)),
+						true/*check_property_name_allowed_for_feature_type*/,
+						true/*check_property_value_type*/);
 
 				// Find out how to reconstruct each geometry in a feature based on the feature's other properties.
 				// Get the reconstruct method so we can reverse reconstruct the geometry.
@@ -968,7 +953,7 @@ export_reconstruct()
 	// so we set the docstring the old-fashioned way.
 	bp::scope().attr(reconstruct_function_name).attr("__doc__") =
 			"reconstruct(reconstructable_features, rotation_model, reconstructed_geometries, "
-			"reconstruction_time, [anchor_plate_id=0], [\\*\\*output_parameters])\n"
+			"reconstruction_time, [anchor_plate_id], [**output_parameters])\n"
 			"  Reconstruct regular geological features, motion paths or flowlines to a specific geological time.\n"
 			"\n"
 			"  :param reconstructable_features: the features to reconstruct as a feature collection, or filename, or "
@@ -991,15 +976,16 @@ export_reconstruct()
 			"  :type reconstructed_geometries: string or ``list``\n"
 			"  :param reconstruction_time: the specific geological time to reconstruct to\n"
 			"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
-			"  :param anchor_plate_id: the anchored plate id used during reconstruction\n"
+			"  :param anchor_plate_id: The anchored plate id used during reconstruction. "
+			"Defaults to the default anchor plate of *rotation_model*.\n"
 			"  :type anchor_plate_id: int\n"
 			"  :param output_parameters: variable number of keyword arguments specifying output "
 			"parameters (see table below)\n"
 			"  :raises: OpenFileForReadingError if any input file is not readable (when filenames specified)\n"
 			"  :raises: OpenFileForWritingError if *reconstructed_geometries* is a filename and it is not writeable\n"
 			"  :raises: FileFormatNotSupportedError if any input file format (identified by any "
-			"reconstructable and rotation filename extensions) does not support reading "
-			"(when filenames specified)\n"
+			"reconstructable and rotation filename extensions) does not support reading (when filenames specified), "
+			"or if *reconstructed_geometries* is a filename and it is not supported for writing\n"
 			"  :raises: ValueError if *reconstruction_time* is "
 			":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
 			":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
@@ -1055,12 +1041,13 @@ export_reconstruct()
 			"is also retained). This happens regardless of whether *reconstructable_features* "
 			"and *reconstructed_geometries* include files or not.\n"
 			"\n"
-			"  The following *export* file formats are currently supported by GPlates:\n"
+			"  The following *export* file formats are currently supported:\n"
 			"\n"
 			"  =============================== =======================\n"
 			"  Export File Format              Filename Extension     \n"
 			"  =============================== =======================\n"
 			"  ESRI Shapefile                  '.shp'                 \n"
+			"  GeoJSON                         '.geojson' or '.json'  \n"
 			"  OGR GMT                         '.gmt'                 \n"
 			"  GMT xy                          '.xy'                  \n"
 			"  =============================== =======================\n"
@@ -1085,7 +1072,7 @@ export_reconstruct()
 			"then a temporary one is created internally (and hence is less efficient if this "
 			"function is called multiple times with the same rotation data).\n"
 			"\n"
-			"  If any filenames are specified then :class:`FeatureCollectionFileFormatRegistry` is "
+			"  If any filenames are specified then :class:`FeatureCollection` is "
 			"used internally to read feature collections from those files.\n"
 			"\n"
 			"  Reconstructing a file containing regular reconstructable features to a shapefile at 10Ma:\n"
@@ -1154,8 +1141,8 @@ export_reconstruct()
 			(bp::arg("reconstructable_features"),
 				bp::arg("rotation_model"),
 				bp::arg("reconstruction_time"),
-				bp::arg("anchor_plate_id")=0),
-			"reverse_reconstruct(reconstructable_features, rotation_model, reconstruction_time, [anchor_plate_id=0])\n"
+				bp::arg("anchor_plate_id")=boost::optional<GPlatesModel::integer_plate_id_type>()),
+			"reverse_reconstruct(reconstructable_features, rotation_model, reconstruction_time, [anchor_plate_id])\n"
 			"  Reverse reconstruct geological features from a specific geological time.\n"
 			"\n"
 			"  :param reconstructable_features: A reconstructable feature collection, or filename, or "
@@ -1167,9 +1154,11 @@ export_reconstruct()
 			"filename or a sequence of rotation feature collections and/or rotation filenames\n"
 			"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string "
 			"or sequence of :class:`FeatureCollection` instances and/or strings\n"
-			"  :param reconstruction_time: the specific geological time to reverse reconstruct from\n"
+			"  :param reconstruction_time: the specific geological time to reverse reconstruct from "
+			"(note that this also :meth:`sets the geometry import time<Feature.set_geometry_import_time>`).\n"
 			"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
-			"  :param anchor_plate_id: the anchored plate id used during reverse reconstruction\n"
+			"  :param anchor_plate_id: The anchored plate id used during reverse reconstruction. "
+			"Defaults to the default anchor plate of *rotation_model*.\n"
 			"  :type anchor_plate_id: int\n"
 			"  :raises: OpenFileForReadingError if any input file is not readable (when filenames specified)\n"
 			"  :raises: OpenFileForWritingError if *reconstructable_features* specifies any filename that "
@@ -1195,8 +1184,7 @@ export_reconstruct()
 			"\n"
 			"  If any filenames are specified in *reconstructable_features* then the modified feature "
 			"collection(s) (containing reverse reconstructed geometries) that are associated with those "
-			"files are written back out to those same files. :class:`FeatureCollectionFileFormatRegistry` "
-			"is used internally to read/write feature collections from/to those files.\n"
+			"files are written back out to those same files.\n"
 			"\n"
 			"  Note that *rotation_model* can be either a :class:`RotationModel` or a "
 			"rotation :class:`FeatureCollection` or a rotation filename or a sequence "
@@ -1223,5 +1211,8 @@ export_reconstruct()
 			"  Reconstructing a single feature from 10Ma:\n"
 			"  ::\n"
 			"\n"
-            "    pygplates.reconstruct(feature, rotation_model, 10)\n");
+            "    pygplates.reconstruct(feature, rotation_model, 10)\n"
+			"\n"
+			"  .. versionchanged:: 0.29\n"
+			"     The :meth:`geometry import time<Feature.set_geometry_import_time>` is set to *reconstruction_time*.\n");
 }

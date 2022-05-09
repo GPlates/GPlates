@@ -75,19 +75,8 @@ namespace GPlatesFileIO
 				switch (export_format)
 				{
 				case SHAPEFILE:
-					OgrFormatResolvedTopologicalGeometryExport::export_resolved_topological_geometries(
-						export_per_collection,
-						grouped_recon_geoms_seq,
-						filename,
-						referenced_files,
-						active_reconstruction_files,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						force_polygon_orientation,
-						wrap_to_dateline);
-					break;
-
 				case OGRGMT:
+				case GEOJSON:
 					OgrFormatResolvedTopologicalGeometryExport::export_resolved_topological_geometries(
 						export_per_collection,
 						grouped_recon_geoms_seq,
@@ -128,23 +117,14 @@ namespace GPlatesFileIO
 					const std::vector<const File::Reference *> &active_reconstruction_files,
 					const GPlatesModel::integer_plate_id_type &reconstruction_anchor_plate_id,
 					const double &reconstruction_time,
+					bool export_topological_line_sub_segments,
 					bool wrap_to_dateline)
 			{
 				switch (export_format)
 				{
 				case SHAPEFILE:
-					OgrFormatResolvedTopologicalGeometryExport::export_resolved_topological_sections(
-						export_per_collection,
-						resolved_topological_sections,
-						filename,
-						referenced_files,
-						active_reconstruction_files,
-						reconstruction_anchor_plate_id,
-						reconstruction_time,
-						wrap_to_dateline);
-					break;
-
 				case OGRGMT:
+				case GEOJSON:
 					OgrFormatResolvedTopologicalGeometryExport::export_resolved_topological_sections(
 						export_per_collection,
 						resolved_topological_sections,
@@ -153,6 +133,7 @@ namespace GPlatesFileIO
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
 						reconstruction_time,
+						export_topological_line_sub_segments,
 						wrap_to_dateline);
 					break;
 
@@ -163,7 +144,8 @@ namespace GPlatesFileIO
 						referenced_files,
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
-						reconstruction_time);
+						reconstruction_time,
+						export_topological_line_sub_segments);
 					break;
 
 				default:
@@ -200,6 +182,8 @@ GPlatesFileIO::ResolvedTopologicalGeometryExport::get_export_file_format(
 		return SHAPEFILE;
 	case FeatureCollectionFileFormat::OGRGMT:
 		return OGRGMT;
+	case FeatureCollectionFileFormat::GEOJSON:
+		return GEOJSON;
 	default:
 		break;
 	}
@@ -311,17 +295,33 @@ GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_se
 		bool export_single_output_file,
 		bool export_per_input_file,
 		bool export_separate_output_directory_per_input_file,
+		bool export_topological_line_sub_segments,
 		bool wrap_to_dateline)
 {
-	// Get a list of the resolved topological section ReconstructionGeometry's.
+	// We need to determine which resolved topological sections belong to which feature group
+	// so we know which sections to write out which output file.
+	typedef std::map<
+			const GPlatesAppLogic::ReconstructionGeometry *,
+			const GPlatesAppLogic::ResolvedTopologicalSection *>
+					recon_geom_to_resolved_section_map_type;
+	recon_geom_to_resolved_section_map_type recon_geom_to_resolved_section_map;
+
+	// List of the resolved topological section ReconstructionGeometry's.
 	// We'll use these to determine which features/collections each section came from.
 	std::vector<const GPlatesAppLogic::ReconstructionGeometry *> resolved_topological_section_recon_geoms;
-	BOOST_FOREACH(
-			const GPlatesAppLogic::ResolvedTopologicalSection *resolved_topological_section,
-			resolved_topological_sections)
+
+	for (const GPlatesAppLogic::ResolvedTopologicalSection *resolved_topological_section :  resolved_topological_sections)
 	{
+		const GPlatesAppLogic::ReconstructionGeometry *resolved_topological_section_recon_geom_ptr =
+				resolved_topological_section->get_reconstruction_geometry().get();
+
+		recon_geom_to_resolved_section_map.insert(
+				recon_geom_to_resolved_section_map_type::value_type(
+						resolved_topological_section_recon_geom_ptr,
+						resolved_topological_section));
+
 		resolved_topological_section_recon_geoms.push_back(
-				resolved_topological_section->get_reconstruction_geometry().get());
+				resolved_topological_section_recon_geom_ptr);
 	}
 
 	// Get the list of active reconstructable feature collection files that contain
@@ -354,17 +354,43 @@ GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_se
 
 	if (export_single_output_file)
 	{
+		// The group of resolved topological sections to write to the single output file.
+		//
+		// We want the resolved topological sections to be written out in the order of the features in the files.
+		std::vector<const GPlatesAppLogic::ResolvedTopologicalSection *> resolved_topological_section_group;
+
+		// Iterate over the files to export.
+		for (const FeatureCollectionFeatureGroup<GPlatesAppLogic::ReconstructionGeometry> &grouped_features : grouped_features_seq)
+		{
+			// Find the resolved topological sections associated with the features associated with the current file.
+			for (const FeatureGeometryGroup<GPlatesAppLogic::ReconstructionGeometry> &feature_geometry_group :
+					grouped_features.feature_geometry_groups)
+			{
+				for (const GPlatesAppLogic::ReconstructionGeometry *recon_geom : feature_geometry_group.recon_geoms)
+				{
+					auto resolved_section_iter = recon_geom_to_resolved_section_map.find(recon_geom);
+					if (resolved_section_iter != recon_geom_to_resolved_section_map.end())
+					{
+						const GPlatesAppLogic::ResolvedTopologicalSection *resolved_section = resolved_section_iter->second;
+
+						resolved_topological_section_group.push_back(resolved_section);
+					}
+				}
+			}
+		}
+
 		// If all features came from a single file then export per collection...
 		const bool export_per_collection = (grouped_features_seq.size() == 1);
 		export_resolved_topological_sections_impl(
 				export_per_collection,
 				filename,
 				export_format,
-				resolved_topological_sections,
+				resolved_topological_section_group,
 				referenced_files,
 				active_reconstruction_files,
 				reconstruction_anchor_plate_id,
 				reconstruction_time,
+				export_topological_line_sub_segments,
 				wrap_to_dateline);
 	}
 
@@ -377,25 +403,6 @@ GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_se
 				grouped_features_seq,
 				export_separate_output_directory_per_input_file);
 
-		// We need to determine which resolved topological sections belong to which feature group
-		// so we know which sections to write out which output file.
-		typedef std::map<
-				const GPlatesAppLogic::ReconstructionGeometry *,
-				const GPlatesAppLogic::ResolvedTopologicalSection *>
-						recon_geom_to_resolved_section_map_type;
-		recon_geom_to_resolved_section_map_type recon_geom_to_resolved_section_map;
-
-		// Initialise the mapping of reconstruction geometries to resolved topological sections.
-		BOOST_FOREACH(
-				const GPlatesAppLogic::ResolvedTopologicalSection *resolved_topological_section,
-				resolved_topological_sections)
-		{
-			recon_geom_to_resolved_section_map.insert(
-					recon_geom_to_resolved_section_map_type::value_type(
-							resolved_topological_section->get_reconstruction_geometry().get(),
-							resolved_topological_section));
-		}
-
 		// Iterate over the files to export.
 		grouped_features_seq_type::const_iterator grouped_features_iter = grouped_features_seq.begin();
 		grouped_features_seq_type::const_iterator grouped_features_end = grouped_features_seq.end();
@@ -407,25 +414,17 @@ GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_se
 			std::vector<const GPlatesAppLogic::ResolvedTopologicalSection *> resolved_topological_section_group;
 
 			// Find the resolved topological sections associated with the features associated with the current file.
-			BOOST_FOREACH(
-					const FeatureGeometryGroup<GPlatesAppLogic::ReconstructionGeometry> &feature_geometry_group,
+			for (const FeatureGeometryGroup<GPlatesAppLogic::ReconstructionGeometry> &feature_geometry_group :
 					grouped_features_iter->feature_geometry_groups)
 			{
-				std::vector<const GPlatesAppLogic::ReconstructionGeometry *>::const_iterator recon_geoms_iter =
-						feature_geometry_group.recon_geoms.begin();
-				std::vector<const GPlatesAppLogic::ReconstructionGeometry *>::const_iterator recon_geoms_end =
-						feature_geometry_group.recon_geoms.end();
-				for ( ; recon_geoms_iter != recon_geoms_end; ++recon_geoms_iter)
+				for (const GPlatesAppLogic::ReconstructionGeometry *recon_geom : feature_geometry_group.recon_geoms)
 				{
-					const GPlatesAppLogic::ReconstructionGeometry *recon_geom = *recon_geoms_iter;
-
-					recon_geom_to_resolved_section_map_type::const_iterator section_iter =
-							recon_geom_to_resolved_section_map.find(recon_geom);
-					if (section_iter != recon_geom_to_resolved_section_map.end())
+					auto resolved_section_iter = recon_geom_to_resolved_section_map.find(recon_geom);
+					if (resolved_section_iter != recon_geom_to_resolved_section_map.end())
 					{
-						const GPlatesAppLogic::ResolvedTopologicalSection *section = section_iter->second;
+						const GPlatesAppLogic::ResolvedTopologicalSection *resolved_section = resolved_section_iter->second;
 
-						resolved_topological_section_group.push_back(section);
+						resolved_topological_section_group.push_back(resolved_section);
 					}
 				}
 			}
@@ -439,6 +438,7 @@ GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_se
 					active_reconstruction_files,
 					reconstruction_anchor_plate_id,
 					reconstruction_time,
+					export_topological_line_sub_segments,
 					wrap_to_dateline);
 		}
 	}

@@ -32,7 +32,7 @@
 #include <vector>
 #include <list>
 #include <stack>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/integer_traits.hpp>
 #include <boost/noncopyable.hpp>
@@ -538,7 +538,7 @@ namespace GPlatesGui
 	{
 		std::for_each(begin_child_item_handles, end_child_item_handles,
 				boost::bind(&TreeWidgetBuilder::add_child,
-						boost::ref(tree_widget_builder), parent_item_handle, _1));
+						boost::ref(tree_widget_builder), parent_item_handle, boost::placeholders::_1));
 	}
 
 	/**

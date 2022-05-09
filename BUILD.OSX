@@ -1,4 +1,4 @@
-Build On MacOS X
+Build On macOS
 
 Table of Contents
 
@@ -6,21 +6,25 @@ Table of Contents
  2. Build process
      1. Development environment
      2. Package dependencies
-     3. Commands to build pygplates
-     4. The pygplates library
-     5. Installing pygplates
+     3. Commands to build GPlates/pyGPlates
+     4. The GPlates application
+     5. The pyGPlates library
+     6. Installing GPlates/pyGPlates
 
 Introduction
 
-This page details how to build pygplates from a source release.
+This page details how to build GPlates or pyGPlates from a source release.
+The source code will compile either GPlates or pyGPlates depending on where
+you obtained the source code (eg, from a GPlates release or a pyGPlates release).
 
 Build process
 
 Development environment
 
-Although it appears to be installed by default we recommend installing the XCode development tools
-if you haven't already done so. You can download them free of charge from http://developer.apple.com
-(a login is required). Also install the XCode command-line tools if they don't get installed.
+You'll need the command-line tools for XCode installed. If you have not already installed XCode then this can be
+accomplished by running the following in a terminal window (open Applications->Utilities->Terminal in Finder):
+
+    xcode-select --install
 
 Package dependencies
 
@@ -28,41 +32,57 @@ Firstly, you should ensure that you have installed all the packages which are de
 
 See "DEPS.OSX" for more information on installing dependencies.
 
-Commands to build pygplates
+Commands to build GPlates/pyGPlates
 
- 1. Open a terminal window by running Applications->Utilities->Terminal in Finder.
- 2. Change your working directory (if not already) into the base directory of the pygplates source code.
- 3. Build GPlates by typing:
+ 1. Open a terminal window (Applications->Utilities->Terminal in Finder).
+ 2. Change your working directory (if not already) into the base directory of the source code.
+ 3. Build GPlates (or pyGPlates) by typing:
 
     cmake .
     make
 
-    * If you wish to install pygplates to a location other than the default
-      ("/usr/local"), specify the "-DCMAKE_INSTALL_PREFIX:STRING" argument to "cmake".
-      For more information, see the Installing pygplates step below.
+The GPlates application
 
-The pygplates library
+If you are compiling pyGPlates source code then please skip this section.
 
-The pygplates library will be called "pygplates.so", located in the "bin"
-directory. If you want to do more than test pygplates from this local directory,
+The GPlates application bundle will be called "gplates.app", located in the "bin" directory.
+However this will appear simply as 'gplates' in the file explorer (Finder),
+and you can run GPlates by double-clicking on it.
+
+Alternatively, to run gplates from the command-line (Terminal window) you can type:
+
+    bin/gplates.app/Contents/MacOS/gplates
+
+...this is because the actual gplates executable is installed inside the GPlates application bundle.
+
+If you want to do more than test GPlates from this local build directory,
 you will need to install it on your system.
 
-Installing pygplates
+The pyGPlates library
+
+If you are compiling GPlates source code then please skip this section.
+
+The pyGPlates library will be called "pygplates.so" and located in the "bin" directory.
+You would then add the "bin" directory to PYTHONPATH (as an absolute path).
+
+If you want to do more than test pyGPlates from this local build directory,
+you will need to install it on your system.
+
+Installing GPlates/pyGPlates
+
+Unlike Linux, on macOS GPlates (or pyGPlates) is installed as a standalone bundle (or standalone Python package).
+This means the dependency libraries are included inside the GPlates application bundle (or packaged along with the pyGPlates library).
 
 The command
 
-    sudo make install
+    cmake --install . --prefix <install_dir>
 
-Will copy the "pygplates.so" library to the default location, "/usr/local".
-The pygplates library will be installed as "/usr/local/lib/pygplates/revision28/pygplates.so".
-Note that 'sudo' is needed since root permissions are required to install software to "/usr/local".
+will install a GPlates standalone application bundle (or a pyGPlates standalone Python package) to the directory specified by '--prefix'.
+For example:
 
-If you wish to install to a different location, use the "-DCMAKE_INSTALL_PREFIX:STRING" argument to
-"cmake". For example:
-
-    cmake -DCMAKE_INSTALL_PREFIX:STRING=$HOME/usr .
+    cmake .
     make
-    make install
+    cmake --install . --prefix $HOME
 
-This will install pygplates in your home directory as "~/usr/lib/pygplates/revision28/pygplates.so".
-
+will install a standalone GPlates (or pyGPlates) into your home directory.
+Note that for pyGPlates you would then add "~/" to PYTHONPATH (not "~/pygplates/").

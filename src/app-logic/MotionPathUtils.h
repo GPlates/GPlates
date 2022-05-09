@@ -250,7 +250,7 @@ namespace GPlatesAppLogic
 
 		void
 		calculate_motion_track(
-			const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &present_day_seed_point,
+			const GPlatesMaths::PointOnSphere &present_day_seed_point,
 			const MotionPathPropertyFinder	 &motion_track_parameters,
 			std::vector<GPlatesMaths::PointOnSphere> &motion_track,
 			const std::vector<GPlatesMaths::FiniteRotation> &rotations);

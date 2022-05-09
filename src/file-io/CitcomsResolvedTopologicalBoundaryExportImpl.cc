@@ -157,9 +157,9 @@ namespace GPlatesFileIO
 				for ( ; iter != end; ++iter)
 				{
 					// If time of time sample matches our reconstruction time then visit.
-					if (d_recon_time.is_coincident_with(iter->get()->valid_time()->get_time_position()))
+					if (d_recon_time.is_coincident_with(iter->valid_time()->get_time_position()))
 					{
-						iter->get()->value()->accept_visitor(*this);
+						iter->value()->accept_visitor(*this);
 					}
 				}
 			}
@@ -178,9 +178,9 @@ namespace GPlatesFileIO
 				for ( ; iter != end; ++iter)
 				{
 					// If the time window covers our reconstruction time then visit.
-					if (iter->get()->valid_time()->contains(d_recon_time))
+					if (iter->valid_time()->contains(d_recon_time))
 					{
-						iter->get()->time_dependent_value()->accept_visitor(*this);
+						iter->time_dependent_value()->accept_visitor(*this);
 					}
 				}
 			}
@@ -267,6 +267,7 @@ namespace GPlatesFileIO
 				private GPlatesModel::ConstFeatureVisitor
 		{
 		public:
+			explicit
 			DetermineSlabSubSegmentFeatureType(
 					const double &recon_time) :
 				d_recon_time(GPlatesPropertyValues::GeoTimeInstant(recon_time))
@@ -284,9 +285,6 @@ namespace GPlatesFileIO
 				// - a property named "subductionPolarity",
 				// - a property type of "gpml:SubductionPolarityEnumeration".
 				// - an enumeration value other than "Unknown".
-				//
-				// If we didn't find this information then look for the "sL" and "sR"
-				// data type codes in an old plates header if we can find one.
 				//
 				return d_sub_segment_type;
 			}
@@ -357,9 +355,9 @@ namespace GPlatesFileIO
 				for ( ; iter != end; ++iter)
 				{
 					// If time of time sample matches our reconstruction time then visit.
-					if (d_recon_time.is_coincident_with(iter->get()->valid_time()->get_time_position()))
+					if (d_recon_time.is_coincident_with(iter->valid_time()->get_time_position()))
 					{
-						iter->get()->value()->accept_visitor(*this);
+						iter->value()->accept_visitor(*this);
 					}
 				}
 			}
@@ -378,9 +376,9 @@ namespace GPlatesFileIO
 				for ( ; iter != end; ++iter)
 				{
 					// If the time window covers our reconstruction time then visit.
-					if (iter->get()->valid_time()->contains(d_recon_time))
+					if (iter->valid_time()->contains(d_recon_time))
 					{
-						iter->get()->time_dependent_value()->accept_visitor(*this);
+						iter->time_dependent_value()->accept_visitor(*this);
 					}
 				}
 			}
@@ -432,7 +430,6 @@ GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl::get_slab_sub_segmen
 {
 	SubSegmentType d_sub_segment_type = SUB_SEGMENT_TYPE_OTHER;
 
-	QString slabEdgeType;
 	static const GPlatesModel::PropertyName property_name =
 			GPlatesModel::PropertyName::create_gpml("slabEdgeType");
 
@@ -441,7 +438,7 @@ GPlatesFileIO::CitcomsResolvedTopologicalBoundaryExportImpl::get_slab_sub_segmen
 					sub_segment_feature_ref, property_name);
 	if (property_value)
 	{
-		slabEdgeType = GPlatesUtils::make_qstring_from_icu_string( property_value.get()->get_value().get() );
+		const QString slabEdgeType = GPlatesUtils::make_qstring_from_icu_string( property_value.get()->get_value().get() );
 
 		if (slabEdgeType == QString("Leading") ) 
 		{

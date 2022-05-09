@@ -79,14 +79,12 @@ GPlatesAppLogic::TopologyNetworkResolver::TopologyNetworkResolver(
 		const double &reconstruction_time,
 		ReconstructHandle::type reconstruct_handle,
 		boost::optional<const std::vector<ReconstructHandle::type> &> topological_geometry_reconstruct_handles,
-		const TopologyNetworkParams &topology_network_params,
-		boost::optional<std::set<GPlatesModel::FeatureId> &> topological_sections_referenced) :
+		const TopologyNetworkParams &topology_network_params) :
 	d_resolved_topological_networks(resolved_topological_networks),
 	d_reconstruction_time(reconstruction_time),
 	d_reconstruct_handle(reconstruct_handle),
 	d_topological_geometry_reconstruct_handles(topological_geometry_reconstruct_handles),
-	d_topology_network_params(topology_network_params),
-	d_topological_sections_referenced(topological_sections_referenced)
+	d_topology_network_params(topology_network_params)
 {  
 }
 
@@ -177,7 +175,7 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_piecewise_aggregation(
 	// networks from different time periods will get created instead of just one of them).
 	if (time_windows.size() == 1)
 	{
-		visit_gpml_time_window(*time_windows.front().get());
+		visit_gpml_time_window(*time_windows.front());
 		return;
 	}
 
@@ -185,7 +183,7 @@ GPlatesAppLogic::TopologyNetworkResolver::visit_gpml_piecewise_aggregation(
 	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>::iterator end = time_windows.end();
 	for ( ; iter != end; ++iter) 
 	{
-		GPlatesPropertyValues::GpmlTimeWindow &time_window = *iter->get();
+		GPlatesPropertyValues::GpmlTimeWindow &time_window = **iter;
 		// If the time window period contains the current reconstruction time then visit.
 		// The time periods should be mutually exclusive - if we happen to be in
 		// two time periods then we're probably right on the boundary between the two
@@ -241,7 +239,7 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_boundary_sections(
 	GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>::iterator boundary_sections_end = boundary_sections.end();
 	for ( ; boundary_sections_iter != boundary_sections_end; ++boundary_sections_iter)
 	{
-		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type topological_section = boundary_sections_iter->get();
+		GPlatesPropertyValues::GpmlTopologicalSection::non_null_ptr_type topological_section = *boundary_sections_iter;
 
 		topological_section->accept_visitor(*this);
 	}
@@ -410,7 +408,7 @@ GPlatesAppLogic::TopologyNetworkResolver::record_topological_interior_geometries
 	// Loop over the interior geometries.
 	for ( ; interior_geometries_iter != interior_geometries_end; ++interior_geometries_iter) 
 	{
-		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type interior_geometry = interior_geometries_iter->get();
+		GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type interior_geometry = *interior_geometries_iter;
 
 		record_topological_interior_geometry(*interior_geometry);
 	}
@@ -473,14 +471,6 @@ boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>
 GPlatesAppLogic::TopologyNetworkResolver::find_topological_reconstruction_geometry(
 		const GPlatesPropertyValues::GpmlPropertyDelegate &geometry_delegate)
 {
-	// If caller has requested the referenced topological sections.
-	// Note that we add a topological section feature ID even if we cannot find
-	// any topological section features that have that feature ID.
-	if (d_topological_sections_referenced)
-	{
-		d_topological_sections_referenced->insert(geometry_delegate.get_feature_id());
-	}
-
 	// Get the reconstructed geometry of the geometry property delegate.
 	// The referenced RGs must be in our sequence of reconstructed/resolved topological geometries.
 	// If we need to restrict the topological RGs to specific reconstruct handles...

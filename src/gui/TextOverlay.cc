@@ -26,6 +26,7 @@
 
 #include <QFontMetrics>
 #include <QLocale>
+#include <QtGlobal>
 
 #include "TextOverlay.h"
 
@@ -46,7 +47,8 @@ void
 GPlatesGui::TextOverlay::paint(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const TextOverlaySettings &settings,
-		const QPaintDevice &paint_device,
+		int paint_device_width,
+		int paint_device_height,
 		float scale)
 {
 	if (!settings.is_enabled())
@@ -60,12 +62,13 @@ GPlatesGui::TextOverlay::paint(
 	QString substituted = settings.get_text();
 	substituted.replace("%f", time);
 
+	QFontMetrics fm(settings.get_font());
+
 	// Scale the x and y offsets.
 	float x_offset = settings.get_x_offset() * scale;
 	float y_offset = settings.get_y_offset() * scale;
 
-	// Work out position of text.
-	QFontMetrics fm(settings.get_font());
+	// Find left of text.
 	float x;
 	if (settings.get_anchor() == GPlatesGui::TextOverlaySettings::TOP_LEFT ||
 		settings.get_anchor() == GPlatesGui::TextOverlaySettings::BOTTOM_LEFT)
@@ -74,23 +77,28 @@ GPlatesGui::TextOverlay::paint(
 	}
 	else // TOP_RIGHT, BOTTOM_RIGHT
 	{
+#if QT_VERSION >= QT_VERSION_CHECK(5,11,0)
+		float text_width = fm.horizontalAdvance(substituted) * scale;
+#else
 		float text_width = fm.width(substituted) * scale;
-		x = paint_device.width() - x_offset - text_width;
+#endif
+		x = paint_device_width - x_offset - text_width;
 	}
 
+	// Find bottom of text (ie, baseline of the font).
+	//
+	// Note: We're using OpenGL co-ordinates where OpenGL and Qt y-axes are the reverse of each other.
 	float y;
 	if (settings.get_anchor() == GPlatesGui::TextOverlaySettings::TOP_LEFT ||
 		settings.get_anchor() == GPlatesGui::TextOverlaySettings::TOP_RIGHT)
 	{
 		float text_height = fm.height() * scale;
-		y = paint_device.height() - y_offset - text_height;
+		y = paint_device_height - y_offset - text_height;
 	}
 	else // BOTTOM_LEFT, BOTTOM_RIGHT
 	{
 		y = y_offset;
 	}
-
-	const int paint_device_pixel_ratio = paint_device.devicePixelRatio();
 
 	if (settings.has_shadow())
 	{
@@ -100,27 +108,25 @@ GPlatesGui::TextOverlay::paint(
 
 		GPlatesOpenGL::GLText::render_text_2D(
 				renderer,
-				// Convert from device size to device pixels (used by OpenGL)...
-				x * paint_device_pixel_ratio,
-				y * paint_device_pixel_ratio,
+				x,
+				y,
 				substituted,
 				shadow_colour,
-				1 * paint_device_pixel_ratio,
+				1,
 				// OpenGL viewport 'y' coord goes from bottom to top...
-				-1 * paint_device_pixel_ratio, // down 1px
+				-1, // down 1px
 				settings.get_font(),
 				scale);
 	}
 
 	GPlatesOpenGL::GLText::render_text_2D(
 			renderer,
-			// Convert from device size to device pixels (used by OpenGL)...
-			x * paint_device_pixel_ratio,
-			y * paint_device_pixel_ratio,
+			x,
+			y,
 			substituted,
 			settings.get_colour(),
-			0 * paint_device_pixel_ratio,
-			0 * paint_device_pixel_ratio,
+			0,
+			0,
 			settings.get_font(),
 			scale);
 }

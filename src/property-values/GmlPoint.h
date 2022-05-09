@@ -144,19 +144,6 @@ namespace GPlatesPropertyValues
 				const GPlatesMaths::PointOnSphere &p,
 				GmlProperty gml_property_ = POS)
 		{
-			return create(p.clone_as_point(), gml_property_);
-		}
-
-		/**
-		 * Create a GmlPoint instance from a non-null-intrusive-pointer to a
-		 * GPlatesMaths::PointOnSphere.
-		 */
-		static
-		const non_null_ptr_type
-		create(
-				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &p,
-				GmlProperty gml_property_ = POS)
-		{
 			return non_null_ptr_type(new GmlPoint(p, gml_property_));
 		}
 
@@ -173,7 +160,7 @@ namespace GPlatesPropertyValues
 		 * This can happen if this instance was created using @a create_from_pos_2d with arguments
 		 * that are not latitude and longitude - see @a create_from_pos_2d for more details.
 		 */
-		const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+		const GPlatesMaths::PointOnSphere &
 		get_point() const
 		{
 			return get_current_revision<Revision>().get_point();
@@ -215,7 +202,7 @@ namespace GPlatesPropertyValues
 		 */
 		void
 		set_point(
-				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &p);
+				const GPlatesMaths::PointOnSphere &p);
 
 		GmlProperty
 		gml_property() const
@@ -292,7 +279,7 @@ namespace GPlatesPropertyValues
 		// instantiation of this type on the stack.
 		explicit
 		GmlPoint(
-				const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &point_on_sphere_,
+				const GPlatesMaths::PointOnSphere &point_on_sphere_,
 				GmlProperty gml_property_) :
 			PropertyValue(Revision::non_null_ptr_type(new Revision(point_on_sphere_, gml_property_)))
 		{  }
@@ -333,7 +320,7 @@ namespace GPlatesPropertyValues
 
 			explicit
 			Revision(
-					const GPlatesUtils::non_null_intrusive_ptr<const GPlatesMaths::PointOnSphere> &point_on_sphere_,
+					const GPlatesMaths::PointOnSphere &point_on_sphere_,
 					GmlProperty gml_property_):
 				point_on_sphere(point_on_sphere_),
 				gml_property(gml_property_)
@@ -364,7 +351,7 @@ namespace GPlatesPropertyValues
 			equality(
 					const GPlatesModel::Revision &other) const;
 
-			const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+			const GPlatesMaths::PointOnSphere &
 			get_point() const;
 
 			const std::pair<double, double> &
@@ -373,8 +360,7 @@ namespace GPlatesPropertyValues
 			// One of these will always exist depending on how this instance was created...
 
 			mutable boost::optional< std::pair<double, double> > point_2d;
-			// PointOnSphere is inherently immutable so we can share it across revisions.
-			mutable boost::optional<GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type> point_on_sphere;
+			mutable boost::optional<GPlatesMaths::PointOnSphere> point_on_sphere;
 
 			GmlProperty gml_property;
 

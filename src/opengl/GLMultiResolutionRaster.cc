@@ -27,7 +27,7 @@
 #include <limits>
 #include <new> // For placement new.
 #include <vector>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/cast.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/foreach.hpp>
@@ -628,7 +628,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile_texture(
 			tile_texture = lod_tile.tile_texture->set_cached_object(
 					std::unique_ptr<TileTexture>(new TileTexture(renderer)),
 					// Called whenever tile texture is returned to the cache...
-					boost::bind(&TileTexture::returned_to_cache, _1));
+					boost::bind(&TileTexture::returned_to_cache, boost::placeholders::_1));
 
 			// The texture was just allocated so we need to create it in OpenGL.
 			create_texture(renderer, tile_texture->texture);

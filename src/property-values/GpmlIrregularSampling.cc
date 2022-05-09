@@ -173,7 +173,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
 
 	//then add new DISABLED_SEQUENCE_FLAG
 	GpmlFiniteRotation *first_pole = 
-			dynamic_cast<GpmlFiniteRotation *>(samples[0].get()->value().get());
+			dynamic_cast<GpmlFiniteRotation *>(samples[0]->value().get());
 	if(flag && first_pole)
 	{
 		MetadataContainer first_pole_meta_data = first_pole->get_metadata();
@@ -233,7 +233,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::print_to(
 			samples.end();
 	for ( ; samples_iter != samples_end; ++samples_iter)
 	{
-		os << *samples_iter->get();
+		os << **samples_iter;
 	}
 
 	return os << " ]";

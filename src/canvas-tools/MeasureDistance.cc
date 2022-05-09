@@ -406,8 +406,7 @@ GPlatesCanvasTools::MeasureDistance::add_distance_label_and_highlight(
 
 	// snap the label to a point on the line (it looks neater)
 	GPlatesMaths::GreatCircleArc gca = GPlatesMaths::GreatCircleArc::create(highlight_start, highlight_end);
-	d_label_position = boost::optional<GPlatesMaths::PointOnSphere>(
-			*(gca.get_closest_point(label_position)));
+	d_label_position = gca.get_closest_point(label_position);
 
 	// redraw since we just changed the label
 	paint();

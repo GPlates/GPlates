@@ -126,6 +126,10 @@ namespace GPlatesApi
 		 * conversions are registered/handled automatically) but we need this extra registration
 		 * to properly handle GPlatesUtils::non_null_intrusive_ptr.
 		 *
+		 * Note that the conversion only happens if the pointee is actually referenced by non-null
+		 * intrusive pointers (ie, has a non-zero reference count), otherwise it is not converted
+		 * since it is not dynamically allocated (and hence should not be deallocated).
+		 *
 		 * For more information on boost python to/from conversions, see:
 		 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
 		 */
@@ -606,7 +610,22 @@ namespace GPlatesApi
 					namespace bp = boost::python;
 
 					// non_null_intrusive_ptr<T> is created from a reference/pointer to T.
-					return bp::extract<T &>(obj).check() ? obj : NULL;
+					bp::extract<T &> extract_ref(obj);
+					if (!extract_ref.check())
+					{
+						return nullptr;
+					}
+
+					// We only allow conversion if the pointee is actually referenced by non-null
+					// intrusive pointers (ie, has a non-zero reference count), otherwise it is not
+					// converted since it's not dynamically allocated (and should not be deallocated).
+					T &ref = extract_ref();
+					if (ref.get_reference_count() == 0)
+					{
+						return nullptr;
+					}
+
+					return obj;
 				}
 
 				static

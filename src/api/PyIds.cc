@@ -29,7 +29,6 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
-#include "PyGPlatesModule.h"
 #include "PythonConverterUtils.h"
 
 #include "model/FeatureId.h"
@@ -51,7 +50,8 @@ namespace GPlatesApi
 	feature_id_hash(
 			const GPlatesModel::FeatureId &feature_id)
 	{
-		return get_builtin_hash()(feature_id.get());
+		// Use the Python built-in 'hash()' function on the string form of the feature ID.
+		return bp::object(PyObject_Hash(bp::object(feature_id.get()).ptr()));
 	}
 }
 
@@ -135,7 +135,8 @@ namespace GPlatesApi
 	revision_id_hash(
 			const GPlatesModel::RevisionId &revision_id)
 	{
-		return get_builtin_hash()(revision_id.get());
+		// Use the Python built-in 'hash()' function on the string form of the revision ID.
+		return bp::object(PyObject_Hash(bp::object(revision_id.get()).ptr()));
 	}
 }
 

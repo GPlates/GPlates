@@ -41,47 +41,16 @@ GPlatesQtWidgets::AboutDialog::AboutDialog(
 	GPlatesDialog(
 			parent_,
 			Qt::CustomizeWindowHint | Qt::WindowTitleHint | Qt::WindowSystemMenuHint | Qt::MSWindowsFixedSizeDialogHint),
-	d_license_dialog_ptr(NULL)
+	d_license_dialog_ptr(new LicenseDialog(this))
 {
 	setupUi(this);
 
 	QObject::connect(button_License, SIGNAL(clicked()),
-			&dialogs, SLOT(pop_up_license_dialog()));
+			d_license_dialog_ptr, SLOT(show()));
 
 	// Set GPlates version label text.
 	QString version(QObject::tr(GPlatesGlobal::Version::get_GPlates_version().toLatin1().constData()));
 	label_GPlates->setText(version);
-
-	// Set Subversion info label text.
-	QString subversion_version_number = GPlatesGlobal::Version::get_working_copy_version_number();
-	QString subversion_branch_name = GPlatesGlobal::Version::get_working_copy_branch_name();
-	if (subversion_version_number.isEmpty())
-	{
-		if (subversion_branch_name.isEmpty())
-		{
-			label_subversion_info->hide();
-		}
-		else
-		{
-			label_subversion_info->setText("(" + subversion_branch_name + ")");
-		}
-	}
-	else
-	{
-		QString subversion_info = "Build: " + subversion_version_number;
-		if (!subversion_branch_name.isEmpty())
-		{
-			if (subversion_branch_name == "trunk")
-			{
-				subversion_info.append(" (trunk)");
-			}
-			else
-			{
-				subversion_info.append(" (").append(subversion_branch_name).append(" branch)");
-			}
-		}
-		label_subversion_info->setText(subversion_info);
-	}
 
 	// Set the GPGIM version label.
 	const QString gpgim_version_string = GPlatesModel::Gpgim::instance().get_version().get_version_string();

@@ -45,7 +45,7 @@
         <string/>
        </property>
        <property name="pixmap">
-        <pixmap resource="../qt-resources/qt_widgets.qrc">:/GPlates-logo-transparent.png</pixmap>
+        <pixmap resource="../qt-resources/qt_widgets.qrc">:/GPlates-icon-160x160-opaque.png</pixmap>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
@@ -70,16 +70,6 @@
        </property>
        <property name="text">
         <string>Edit 'GPlatesGlobal::VersionString'</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QLabel" name="label_subversion_info">
-       <property name="text">
-        <string>(Information from Subversion automatically generated)</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>

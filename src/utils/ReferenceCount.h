@@ -26,7 +26,7 @@
 #ifndef GPLATES_UTILS_REFERENCECOUNT_H
 #define GPLATES_UTILS_REFERENCECOUNT_H
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/checked_delete.hpp>
 // Using boost::detail::atomic since boost::atomic not available until boost version 1.53.
 // This is what boost::shared_ptr uses.
@@ -250,7 +250,7 @@ namespace GPlatesUtils
 
 		return boost::shared_ptr<U>(
 				reference_count_derived,
-				boost::bind(&intrusive_ptr_release<U>, _1));
+				boost::bind(&intrusive_ptr_release<U>, boost::placeholders::_1));
 	}
 
 
@@ -265,7 +265,7 @@ namespace GPlatesUtils
 
 		return boost::shared_ptr<U>(
 				reference_count_derived,
-				boost::bind(&intrusive_ptr_release<U>, _1));
+				boost::bind(&intrusive_ptr_release<U>, boost::placeholders::_1));
 	}
 }
 

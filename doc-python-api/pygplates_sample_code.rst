@@ -83,6 +83,7 @@ at past geological times, and how to query their topologies.
    sample-code/pygplates_find_average_area_and_subducting_boundary_proportion_of_topologies
    sample-code/pygplates_find_total_ridge_and_subduction_zone_lengths
    sample-code/pygplates_detect_topology_gaps_and_overlaps
+   sample-code/pygplates_reconstruct_crustal_thickness_and_tectonic_subsidence
    sample-code/pygplates_create_topological_features
 
 Velocities

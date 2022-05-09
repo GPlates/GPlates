@@ -477,7 +477,7 @@ namespace GPlatesApi
 				PyErr_SetString(PyExc_StopIteration, "No more data.");
 				bp::throw_error_already_set();
 			}
-			return d_coordinate_lists[d_index++].get()->get_value_object_type();
+			return d_coordinate_lists[d_index++]->get_value_object_type();
 		}
 
 	private:
@@ -502,7 +502,7 @@ namespace GPlatesApi
 		const unsigned int num_scalar_types = scalar_value_lists.size();
 		for (unsigned int n = 0; n < num_scalar_types; ++n)
 		{
-			gml_data_block_coordinate_lists.push_back(scalar_value_lists[n].get());
+			gml_data_block_coordinate_lists.push_back(scalar_value_lists[n]);
 		}
 
 		return create_dict_from_gml_data_block_coordinate_lists(
@@ -510,27 +510,32 @@ namespace GPlatesApi
 				gml_data_block_coordinate_lists.end());
 	}
 
-	const GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type
-	create_gml_data_block(
+	std::map<
+			GPlatesPropertyValues::ValueObjectType/*scalar type*/,
+			std::vector<double>/*scalars*/>
+	create_scalar_type_to_values_map(
 			bp::object scalar_type_to_values_mapping_object,
 			const char *type_error_string)
 	{
+		if (!type_error_string)
+		{
+			type_error_string = "Expected a 'dict' or a sequence of (scalar type, sequence of scalar values) 2-tuples";
+		}
+
 		// Extract the key/value pairs from a Python 'dict' or from a sequence of (key, value) tuples.
-		PythonExtractUtils::key_value_map_type scalar_type_to_values_map;
+		PythonExtractUtils::key_value_map_type scalar_type_object_to_values_object_map;
 		PythonExtractUtils::extract_key_value_map(
-				scalar_type_to_values_map,
+				scalar_type_object_to_values_object_map,
 				scalar_type_to_values_mapping_object,
 				type_error_string);
 
-		std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> coordinate_lists;
+		std::map<
+				GPlatesPropertyValues::ValueObjectType/*scalar type*/,
+				std::vector<double>/*scalars*/> scalar_type_to_values_map;
 
-		PythonExtractUtils::key_value_map_type::const_iterator scalar_type_to_values_map_iter = scalar_type_to_values_map.begin();
-		PythonExtractUtils::key_value_map_type::const_iterator scalar_type_to_values_map_end = scalar_type_to_values_map.end();
-		for ( ; scalar_type_to_values_map_iter != scalar_type_to_values_map_end; ++scalar_type_to_values_map_iter)
+		for (auto scalar_type_object_to_values_object : scalar_type_object_to_values_object_map)
 		{
-			const PythonExtractUtils::key_value_type &scalar_type_to_values = *scalar_type_to_values_map_iter;
-
-			bp::extract<GPlatesPropertyValues::ValueObjectType> extract_scalar_type(scalar_type_to_values.first);
+			bp::extract<GPlatesPropertyValues::ValueObjectType> extract_scalar_type(scalar_type_object_to_values_object.first);
 			if (!extract_scalar_type.check())
 			{
 				PyErr_SetString(PyExc_TypeError, type_error_string);
@@ -538,36 +543,57 @@ namespace GPlatesApi
 			}
 			const GPlatesPropertyValues::ValueObjectType scalar_type = extract_scalar_type();
 
-			// Make sure the each scalar type only occurs once - otherwise remove duplicate (similar behaviour to 'dict').
-			std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type>::iterator
-					coordinate_lists_iter = coordinate_lists.begin();
-			const std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type>::iterator
-					coordinate_lists_end = coordinate_lists.end();
-			for ( ; coordinate_lists_iter != coordinate_lists_end; ++coordinate_lists_iter)
-			{
-				const GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type &coordinate_list = *coordinate_lists_iter;
-				if (scalar_type == coordinate_list->get_value_object_type())
-				{
-					coordinate_lists.erase(coordinate_lists_iter);
-					break;
-				}
-			}
+			// Add empty sequence of scalars for current scalar type.
+			std::vector<double> &scalar_values = scalar_type_to_values_map[scalar_type];
+			// This clears previous scalars (if have duplicate scalar types - which user shouldn't).
+			scalar_values.clear();
 
-			// Attempt to extract the scalar values for the current coordinate list.
-			GPlatesPropertyValues::GmlDataBlockCoordinateList::coordinates_type scalar_values;
-			PythonExtractUtils::extract_iterable(scalar_values, scalar_type_to_values.second, type_error_string);
+			// Attempt to extract the scalar values for the current scalar type.
+			PythonExtractUtils::extract_iterable(scalar_values, scalar_type_object_to_values_object.second, type_error_string);
 
 			// Make sure the each scalar type has the same number of scalar values.
-			BOOST_FOREACH(
-					const GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type &coordinate_list,
-					coordinate_lists)
+			for (auto scalar_type_to_values : scalar_type_to_values_map)
 			{
-				if (scalar_values.size() != coordinate_list->get_coordinates().size())
+				if (scalar_values.size() != scalar_type_to_values.second.size())
 				{
 					PyErr_SetString(PyExc_ValueError, "Each scalar type must have the same number of scalar values");
 					bp::throw_error_already_set();
 				}
 			}
+		}
+
+		// Need at least one scalar type (and associated scalar values).
+		if (scalar_type_to_values_map.empty())
+		{
+			PyErr_SetString(
+					PyExc_ValueError,
+					"At least one scalar type (and associated scalar values) is required");
+			bp::throw_error_already_set();
+		}
+
+		return scalar_type_to_values_map;
+	}
+
+	const GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type
+	create_gml_data_block(
+			bp::object scalar_type_to_values_mapping_object,
+			const char *type_error_string)
+	{
+		// Extract the mapping of scalar types to scalar values.
+		const std::map<
+				GPlatesPropertyValues::ValueObjectType/*scalar type*/,
+				std::vector<double>/*scalars*/> scalar_type_to_values_map =
+						create_scalar_type_to_values_map(
+								scalar_type_to_values_mapping_object,
+								type_error_string);
+
+		std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> coordinate_lists;
+
+		// Store each map entry (scalar type and scalar values) in a GmlDataBlockCoordinateList.
+		for (auto scalar_type_to_values : scalar_type_to_values_map)
+		{
+			const GPlatesPropertyValues::ValueObjectType &scalar_type = scalar_type_to_values.first;
+			const std::vector<double> &scalar_values = scalar_type_to_values.second;
 
 			// Add a new list of scalar values (associated with scalar type) to the data block.
 			coordinate_lists.push_back(
@@ -577,15 +603,6 @@ namespace GPlatesApi
 							scalar_values));
 		}
 
-		// Need at least one scalar type (and associated scalar values).
-		if (coordinate_lists.empty())
-		{
-			PyErr_SetString(
-					PyExc_ValueError,
-					"At least one scalar type (and associated scalar values) is required");
-			bp::throw_error_already_set();
-		}
-
 		return GPlatesPropertyValues::GmlDataBlock::create(coordinate_lists);
 	}
 
@@ -593,9 +610,7 @@ namespace GPlatesApi
 	gml_data_block_create(
 			bp::object scalar_type_to_values_mapping_object)
 	{
-		return create_gml_data_block(
-				scalar_type_to_values_mapping_object,
-				"Expected a 'dict' or a sequence of (scalar type, sequence of scalar values) 2-tuples");
+		return create_gml_data_block(scalar_type_to_values_mapping_object);
 	}
 
 	GmlDataBlockCoordinateListIterator
@@ -627,7 +642,7 @@ namespace GPlatesApi
 		// Search for the coordinate list associated with 'scalar_type'.
 		for ( ; coordinate_lists_iter != coordinate_lists_end ; ++coordinate_lists_iter)
 		{
-			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = *coordinate_lists_iter->get();
+			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = **coordinate_lists_iter;
 
 			const GPlatesPropertyValues::ValueObjectType &coordinate_list_scalar_type = coordinate_list.get_value_object_type();
 			if (scalar_type == coordinate_list_scalar_type)
@@ -657,7 +672,7 @@ namespace GPlatesApi
 		// Search for the coordinate list associated with 'scalar_type'.
 		for ( ; coordinate_lists_iter != coordinate_lists_end ; ++coordinate_lists_iter)
 		{
-			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = *coordinate_lists_iter->get();
+			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = **coordinate_lists_iter;
 
 			const GPlatesPropertyValues::ValueObjectType &coordinate_list_scalar_type = coordinate_list.get_value_object_type();
 			if (scalar_type == coordinate_list_scalar_type)
@@ -697,7 +712,7 @@ namespace GPlatesApi
 		// Search for the coordinate list associated with 'scalar_type'.
 		for ( ; coordinate_lists_iter != coordinate_lists_end ; ++coordinate_lists_iter)
 		{
-			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = *coordinate_lists_iter->get();
+			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = **coordinate_lists_iter;
 
 			const GPlatesPropertyValues::ValueObjectType &coordinate_list_scalar_type = coordinate_list.get_value_object_type();
 			if (scalar_type == coordinate_list_scalar_type)
@@ -713,7 +728,7 @@ namespace GPlatesApi
 
 		// Make sure has the same number of scalar values as existing scalar values.
 		if (!coordinate_lists.empty() &&
-			scalar_values.size() != coordinate_lists.front().get()->get_coordinates().size())
+			scalar_values.size() != coordinate_lists.front()->get_coordinates().size())
 		{
 			PyErr_SetString(PyExc_ValueError, "Each scalar type must have the same number of scalar values");
 			bp::throw_error_already_set();
@@ -749,7 +764,7 @@ namespace GPlatesApi
 		// Search for the coordinate list associated with 'scalar_type'.
 		for ( ; coordinate_lists_iter != coordinate_lists_end ; ++coordinate_lists_iter)
 		{
-			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = *coordinate_lists_iter->get();
+			const GPlatesPropertyValues::GmlDataBlockCoordinateList &coordinate_list = **coordinate_lists_iter;
 
 			const GPlatesPropertyValues::ValueObjectType &coordinate_list_scalar_type = coordinate_list.get_value_object_type();
 			if (scalar_type == coordinate_list_scalar_type)
@@ -767,7 +782,10 @@ export_gml_data_block()
 {
 	// Iterator over scalar coordinate lists.
 	// Note: We don't docstring this - it's not an interface the python user needs to know about.
-	bp::class_<GPlatesApi::GmlDataBlockCoordinateListIterator>("GmlDataBlockCoordinateListIterator", bp::no_init)
+	bp::class_<GPlatesApi::GmlDataBlockCoordinateListIterator>(
+			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+			"_GmlDataBlockCoordinateListIterator",
+			bp::no_init)
 		.def("__iter__", &GPlatesApi::GmlDataBlockCoordinateListIterator::self, bp::return_value_policy<bp::copy_non_const_reference>())
 		.def(
 #if PY_MAJOR_VERSION < 3
@@ -1164,6 +1182,7 @@ export_gml_point()
 				"    point_property = pygplates.GmlPoint(point)\n")
 		.def("get_point",
 				&GPlatesPropertyValues::GmlPoint::get_point,
+				bp::return_value_policy<bp::copy_const_reference>(),
 				"get_point()\n"
 				"  Returns the point geometry of this property value.\n"
 				"\n"
@@ -2180,7 +2199,7 @@ export_gpml_irregular_sampling()
 				"\n"
 				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
 				"\n"
-				"  .. versionadded:: 21\n")
+				"  .. versionadded:: 0.21\n")
 		// Not including interpolation function since it is not really used (yet) in GPlates and hence
 		// is just extra baggage for the python API user (we can add it later though)...
 #if 0
@@ -2419,7 +2438,7 @@ namespace GPlatesApi
 				PyErr_SetString(PyExc_StopIteration, "No more data.");
 				bp::throw_error_already_set();
 			}
-			return d_elements[d_index++].get()->key()->get_value();
+			return d_elements[d_index++]->key()->get_value();
 		}
 
 	private:
@@ -2537,7 +2556,7 @@ namespace GPlatesApi
 		// Search for the element associated with 'key'.
 		for ( ; elements_iter != elements_end ; ++elements_iter)
 		{
-			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element = *elements_iter->get();
+			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element = **elements_iter;
 
 			const GPlatesPropertyValues::TextContent &element_key = element.key()->get_value();
 			if (key == element_key)
@@ -2568,7 +2587,7 @@ namespace GPlatesApi
 		// Search for the element associated with 'key'.
 		for ( ; elements_iter != elements_end ; ++elements_iter)
 		{
-			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element = *elements_iter->get();
+			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element = **elements_iter;
 
 			const GPlatesPropertyValues::TextContent &element_key = element.key()->get_value();
 			if (key == element_key)
@@ -2607,7 +2626,7 @@ namespace GPlatesApi
 		// Search for the element associated with 'key'.
 		for ( ; elements_iter != elements_end ; ++elements_iter)
 		{
-			GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element = *elements_iter->get();
+			GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element = **elements_iter;
 
 			const GPlatesPropertyValues::TextContent &element_key = element.key()->get_value();
 			if (key == element_key)
@@ -2657,7 +2676,7 @@ namespace GPlatesApi
 		// Search for the element associated with 'key'.
 		for ( ; elements_iter != elements_end ; ++elements_iter)
 		{
-			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element = *elements_iter->get();
+			const GPlatesPropertyValues::GpmlKeyValueDictionaryElement &element = **elements_iter;
 
 			const GPlatesPropertyValues::TextContent &element_key = element.key()->get_value();
 			if (key == element_key)
@@ -2675,7 +2694,10 @@ export_gpml_key_value_dictionary()
 {
 	// Iterator over key value dictionary elements.
 	// Note: We don't docstring this - it's not an interface the python user needs to know about.
-	bp::class_<GPlatesApi::GpmlKeyValueDictionaryIterator>("GpmlKeyValueDictionaryIterator", bp::no_init)
+	bp::class_<GPlatesApi::GpmlKeyValueDictionaryIterator>(
+			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+			"_GpmlKeyValueDictionaryIterator",
+			bp::no_init)
 		.def("__iter__", &GPlatesApi::GpmlKeyValueDictionaryIterator::self, bp::return_value_policy<bp::copy_non_const_reference>())
 		.def(
 #if PY_MAJOR_VERSION < 3
@@ -3263,7 +3285,7 @@ export_gpml_piecewise_aggregation()
 				"\n"
 				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
 				"\n"
-				"  .. versionadded:: 21\n")
+				"  .. versionadded:: 0.21\n")
 	;
 
 	// Make 'GpmlPiecewiseAggregation' look like a python list (RevisionedVector<GpmlTimeWindow>).
@@ -3519,7 +3541,7 @@ export_gpml_property_delegate()
 					"GpmlPropertyDelegate",
 					"A property value that represents a reference, or delegation, to a property in another feature.\n"
 					"\n"
-					"  .. versionadded:: 21\n",
+					"  .. versionadded:: 0.21\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -3740,7 +3762,7 @@ export_gpml_time_sample()
 				"\n"
 				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
 				"\n"
-				"  .. versionadded:: 21\n")
+				"  .. versionadded:: 0.21\n")
 		.def("set_value",
 				&GPlatesPropertyValues::GpmlTimeSample::set_value,
 				(bp::arg("property_value")),
@@ -3958,7 +3980,7 @@ export_gpml_time_window()
 				"\n"
 				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
 				"\n"
-				"  .. versionadded:: 21\n")
+				"  .. versionadded:: 0.21\n")
 		.def("set_value",
 				&GPlatesPropertyValues::GpmlTimeWindow::set_time_dependent_value,
 				(bp::arg("property_value")),
@@ -4313,7 +4335,7 @@ export_gpml_topological_section()
 					"* :class:`GpmlTopologicalPoint`\n"
 					"* :class:`GpmlTopologicalLineSection`\n"
 					"\n"
-					"  .. versionadded:: 21\n",
+					"  .. versionadded:: 0.21\n",
 					bp::no_init)
 		.def("create",
 			&GPlatesApi::gpml_topological_section_create,
@@ -4384,7 +4406,7 @@ export_gpml_topological_section()
 			"  .. seealso:: :meth:`GpmlTopologicalLine.get_sections`, :meth:`GpmlTopologicalPolygon.get_boundary_sections` and "
 			":meth:`GpmlTopologicalNetwork.get_boundary_sections`\n"
 			"\n"
-			"  .. versionadded:: 24\n")
+			"  .. versionadded:: 0.24\n")
 		.staticmethod("create")
 		.def("create_network_interior",
 			&GPlatesApi::gpml_topological_section_create_network_interior,
@@ -4444,7 +4466,7 @@ export_gpml_topological_section()
 			"\n"
 			"  .. seealso:: :meth:`GpmlTopologicalNetwork.get_interiors`\n"
 			"\n"
-			"  .. versionadded:: 24\n")
+			"  .. versionadded:: 0.24\n")
 		.staticmethod("create_network_interior")
 		.def("get_property_delegate",
 			get_property_delegate,
@@ -4513,7 +4535,7 @@ export_gpml_topological_line()
 			"GpmlTopologicalLine",
 			"A topological line geometry that is resolved from topological sections.\n"
 			"\n"
-			"  .. versionadded:: 21\n",
+			"  .. versionadded:: 0.21\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)
@@ -4573,7 +4595,7 @@ export_gpml_topological_line_section()
 			"GpmlTopologicalLineSection",
 			"A topological section referencing a line geometry.\n"
 			"\n"
-			"  .. versionadded:: 21\n",
+			"  .. versionadded:: 0.21\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)
@@ -4691,7 +4713,7 @@ export_gpml_topological_network()
 			"\n"
 			".. note:: If an interior geometry is a polygon then it becomes an interior rigid block.\n"
 			"\n"
-			"  .. versionadded:: 21\n",
+			"  .. versionadded:: 0.21\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)
@@ -4768,7 +4790,7 @@ export_gpml_topological_point()
 			"GpmlTopologicalPoint",
 			"A topological section referencing a point geometry.\n"
 			"\n"
-			"  .. versionadded:: 21\n",
+			"  .. versionadded:: 0.21\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)
@@ -4848,7 +4870,7 @@ export_gpml_topological_polygon()
 			"GpmlTopologicalPolygon",
 			"A topological polygon geometry that is resolved from topological sections.\n"
 			"\n"
-			"  .. versionadded:: 21\n",
+			"  .. versionadded:: 0.21\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)
@@ -4885,7 +4907,7 @@ export_gpml_topological_polygon()
 			"    # Append a section\n"
 			"    boundary_sections.append(pygplates.GpmlTopologicalLineSection(...))\n"
 			"\n"
-			"  .. versionadded:: 24\n")
+			"  .. versionadded:: 0.24\n")
 		;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).

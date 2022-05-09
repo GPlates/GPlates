@@ -37,8 +37,8 @@
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalNetwork.h"
 
-#include "maths/PolygonIntersections.h"
 #include "maths/PolygonOnSphere.h"
+#include "maths/PolygonPartitioner.h"
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
@@ -61,8 +61,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Typedef for a sequence of geometries resulting from partitioning a single geometry.
 		 */
-		typedef GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type
-				partitioned_geometry_seq_type;
+		typedef GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type partitioned_geometry_seq_type;
 
 		/**
 		 * Typedef for a partitioning polygon and the geometries partitioned inside it.
@@ -261,7 +260,7 @@ namespace GPlatesAppLogic
 
 
 			ReconstructionGeometry::non_null_ptr_to_const_type d_reconstruction_geometry;
-			GPlatesMaths::PolygonIntersections::non_null_ptr_type d_polygon_intersections;
+			GPlatesMaths::PolygonPartitioner::non_null_ptr_type d_polygon_partitioner;
 
 			//! Used to sort by plate id.
 			struct SortPlateIdHighestToLowest

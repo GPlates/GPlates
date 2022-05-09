@@ -37,9 +37,7 @@ namespace GPlatesGui
 	public:
 		GPlatesQApplication(
 				int &_argc,
-				char **_argv):
-			QApplication(_argc, _argv)
-		{  }
+				char **_argv);
 
 		/**
 		 * This Qt method is overridden in order to catch any uncaught exceptions in

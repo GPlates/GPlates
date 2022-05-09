@@ -26,7 +26,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <QLocale>
 
 #include "QueryFeaturePropertiesWidgetPopulator.h"
@@ -123,8 +123,8 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::initialise_pre_pr
 				item_handle,
 				boost::bind(
 						&QTreeWidget::scrollToItem,
-						_2, // will be the QTreeWidget that the tree widget builder uses
-						_1, // will be the QTreeWidgetItem we're attaching this function to
+						boost::placeholders::_2, // will be the QTreeWidget that the tree widget builder uses
+						boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 						QAbstractItemView::EnsureVisible));
 	}
 
@@ -170,7 +170,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_line_st
 		add_function_to_current_item(d_tree_widget_builder,
 				boost::bind(
 						&QTreeWidgetItem::setExpanded,
-						_1, // will be the QTreeWidgetItem we're attaching this function to
+						boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 						true));
 	}
 
@@ -234,7 +234,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_multi_p
 	add_function_to_current_item(d_tree_widget_builder,
 			boost::bind(
 					&QTreeWidgetItem::setExpanded,
-					_1, // will be the QTreeWidgetItem we're attaching this function to
+					boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 					true));
 
 	GPlatesMaths::MultiPointOnSphere::non_null_ptr_to_const_type 
@@ -280,7 +280,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_orienta
 		add_function_to_current_item(d_tree_widget_builder,
 				boost::bind(
 						&QTreeWidgetItem::setExpanded,
-						_1, // will be the QTreeWidgetItem we're attaching this function to
+						boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 						true));
 	}
 
@@ -298,7 +298,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_point(
 	add_function_to_current_item(d_tree_widget_builder,
 			boost::bind(
 					&QTreeWidgetItem::setExpanded,
-					_1, // will be the QTreeWidgetItem we're attaching this function to
+					boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 					true));
 
 	// First, add a branch for the "gml:posList".
@@ -308,7 +308,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_point(
 	// Now, hang the coords (in (lon, lat) format, since that is how GML does things) off the
 	// "gml:posList" branch.
 
-	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(*(gml_point.get_point()));
+	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(gml_point.get_point());
 	QLocale locale;
 
 	QString point_id(QObject::tr("#"));
@@ -350,7 +350,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_polygon
 	add_function_to_current_item(d_tree_widget_builder,
 			boost::bind(
 					&QTreeWidgetItem::setExpanded,
-					_1, // will be the QTreeWidgetItem we're attaching this function to
+					boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 					true));
 
 	// First, add a branch for the "gml:exterior".
@@ -422,7 +422,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gml_time_pe
 	add_function_to_current_item(d_tree_widget_builder,
 			boost::bind(
 					&QTreeWidgetItem::setExpanded,
-					_1, // will be the QTreeWidgetItem we're attaching this function to
+					boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 					true));
 
 	// FIXME:  Ensure that 'gml_time_period.begin()' and 'gml_time_period.end()' are not NULL.
@@ -447,7 +447,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_key_va
 	add_function_to_current_item(d_tree_widget_builder,
 			boost::bind(
 					&QTreeWidgetItem::setExpanded,
-					_1, // will be the QTreeWidgetItem we're attaching this function to
+					boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 					true));
 
 	// FIXME:  Should that be "gpml:element" rather than "gpml:elements" in the KeyValueDictionary?
@@ -461,7 +461,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_key_va
 			iter = elements.begin(),
 			end = elements.end();
 	for ( ; iter != end; ++iter) {
-		add_gpml_key_value_dictionary_element(*iter->get());
+		add_gpml_key_value_dictionary_element(**iter);
 	}
 	d_tree_widget_builder.pop_current_item();
 }
@@ -498,7 +498,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_old_pl
 	add_function_to_current_item(d_tree_widget_builder,
 			boost::bind(
 					&QTreeWidgetItem::setExpanded,
-					_1, // will be the QTreeWidgetItem we're attaching this function to
+					boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 					true));
 
 	QLocale locale;
@@ -531,7 +531,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_string
 	add_function_to_current_item(d_tree_widget_builder,
 			boost::bind(
 					&QTreeWidgetItem::setExpanded,
-					_1, // will be the QTreeWidgetItem we're attaching this function to
+					boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 					true));
 
 	// First, add a branch for the "gpml:element".
@@ -715,7 +715,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_array(
 	add_function_to_current_item(d_tree_widget_builder,
 		boost::bind(
 		&QTreeWidgetItem::setExpanded,
-		_1, // will be the QTreeWidgetItem we're attaching this function to
+		boost::placeholders::_1, // will be the QTreeWidgetItem we're attaching this function to
 		true));
 
 	const GPlatesGui::TreeWidgetBuilder::item_handle_type item_handle =
@@ -727,7 +727,7 @@ GPlatesFeatureVisitors::QueryFeaturePropertiesWidgetPopulator::visit_gpml_array(
 	GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::const_iterator end = members.end();
 	for ( ; iter != end; ++iter) 
 	{
-		iter->get()->accept_visitor(*this);
+		iter->accept_visitor(*this);
 	}
 	d_tree_widget_builder.pop_current_item();
 }

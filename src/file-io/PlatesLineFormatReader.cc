@@ -30,7 +30,7 @@
 
 #include <list>
 #include <vector>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 
 #include <QDebug>
 #include <QFile>
@@ -523,7 +523,7 @@ qDebug() << "use_tail_next = " << use_tail_next;
 			// ReadErrors.
 
 			PolylineOnSphere::non_null_ptr_to_const_type polyline =
-					PolylineOnSphere::create_on_heap(points);
+					PolylineOnSphere::create(points);
 			GPlatesPropertyValues::GmlLineString::non_null_ptr_type gml_line_string =
 					GPlatesPropertyValues::GmlLineString::create(polyline);
 
@@ -644,7 +644,7 @@ qDebug() << "use_tail_next = " << use_tail_next;
 		// to the current feature.
 		std::for_each(geometry_seq.begin(), geometry_seq.end(),
 				boost::bind(&append_appropriate_geometry,
-						_1, boost::cref(geometry_property_name), boost::ref(feature_handle)));
+						boost::placeholders::_1, boost::cref(geometry_property_name), boost::ref(feature_handle)));
 
 		GmlTimePeriod::non_null_ptr_type gml_valid_time =
 				ModelUtils::create_gml_time_period(geo_time_instant_begin, geo_time_instant_end);

@@ -198,8 +198,8 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_multi_point(
 			++seed_multipoint_iter, ++reconstructed_seed_multipoint_iter)
 		{
 			create_motion_path_geometry(
-					seed_multipoint_iter->get_non_null_pointer(),
-					reconstructed_seed_multipoint_iter->get_non_null_pointer(),
+					*seed_multipoint_iter,
+					*reconstructed_seed_multipoint_iter,
 					reconstructed_seed_multipoint_geometry);
 		}
 	}
@@ -228,11 +228,13 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_point(
 	ReconstructionTree::non_null_ptr_to_const_type reconstruction_tree =
 			d_reconstruction_tree_creator.get_reconstruction_tree(d_recon_time.value());
 
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type reconstructed_seed_point_geometry =
+	const GPlatesMaths::PointOnSphere reconstructed_seed_point =
 		reconstruction_tree->get_composed_absolute_rotation(
 			d_motion_track_property_finder->get_reconstruction_plate_id().get()) *
 			gml_point.get_point();
 
+	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+			reconstructed_seed_point_geometry = reconstructed_seed_point.get_geometry_on_sphere();
 
 	try{
 
@@ -263,7 +265,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gml_point(
 	{
 		create_motion_path_geometry(
 				gml_point.get_point(),
-				reconstructed_seed_point_geometry,
+				reconstructed_seed_point,
 				reconstructed_seed_point_geometry);
 	}
 
@@ -281,15 +283,15 @@ GPlatesAppLogic::MotionPathGeometryPopulator::visit_gpml_constant_value(
 
 void
 GPlatesAppLogic::MotionPathGeometryPopulator::create_motion_path_geometry(
-	const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &present_day_seed_point_geometry,
-	const GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type &reconstructed_seed_point_geometry,
+	const GPlatesMaths::PointOnSphere &present_day_seed_point,
+	const GPlatesMaths::PointOnSphere &reconstructed_seed_point,
 	const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &reconstructed_seed_geometry)
 {
 
 	std::vector<GPlatesMaths::PointOnSphere> motion_track;
 
 	MotionPathUtils::calculate_motion_track(
-		present_day_seed_point_geometry,
+		present_day_seed_point,
 		*d_motion_track_property_finder,
 		motion_track,
 		d_rotations);
@@ -315,7 +317,7 @@ GPlatesAppLogic::MotionPathGeometryPopulator::create_motion_path_geometry(
 	try
 	{
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type motion_track_points = 
-			GPlatesMaths::PolylineOnSphere::create_on_heap(motion_track.begin(),motion_track.end());
+			GPlatesMaths::PolylineOnSphere::create(motion_track.begin(),motion_track.end());
 
 		// Everything has been calculated in the frame of the relative_plate_id; now
 		// we just correct for that plate's motion. 
@@ -325,8 +327,8 @@ GPlatesAppLogic::MotionPathGeometryPopulator::create_motion_path_geometry(
 			ReconstructedMotionPath::create(
 			reconstruction_tree,
 			d_reconstruction_tree_creator,
-			present_day_seed_point_geometry,
-			reconstructed_seed_point_geometry,
+			present_day_seed_point,
+			reconstructed_seed_point,
 			motion_track_points,
 			*d_motion_track_property_finder->get_reconstruction_plate_id(),
 			*(current_top_level_propiter()->handle_weak_ref()),

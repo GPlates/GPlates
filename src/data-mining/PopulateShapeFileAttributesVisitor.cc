@@ -71,7 +71,7 @@ GPlatesDataMining::PopulateShapeFileAttributesVisitor::visit_gpml_key_value_dict
 			end = elements.end();
 	for ( ; iter != end; ++iter) 
 	{
-		d_names.push_back(iter->get()->key()->get_value().get().qstring() );
+		d_names.push_back(iter->key()->get_value().get().qstring() );
 	}
 }
 

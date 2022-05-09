@@ -84,7 +84,7 @@ namespace GPlatesViewOperations
 		{
 			d_rfg = other.d_rfg;
 			d_index_of_vertex = other.d_index_of_vertex;
-			d_geometry_on_sphere = other.d_geometry_on_sphere->clone_as_geometry();
+			d_geometry_on_sphere = other.d_geometry_on_sphere;  // Geometry is immutable, so can share pointer.
 			return *this;
 		}
 #endif
@@ -102,22 +102,21 @@ namespace GPlatesViewOperations
 	{
 	public:
 		GeometryUpdater(
-			const GPlatesMaths::PointOnSphere &point_on_sphere,
-			unsigned int index_of_vertex
-			):
+				const GPlatesMaths::PointOnSphere &point_on_sphere,
+				unsigned int index_of_vertex) :
 			d_point_on_sphere(point_on_sphere),
 			d_index_of_vertex(index_of_vertex),
 			d_validity(GPlatesUtils::GeometryConstruction::INVALID_INSUFFICIENT_POINTS)
-			{  }
+		{  }
 		
 		void
 		visit_point_on_sphere(
-			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+			GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 		{
 			std::vector<GPlatesMaths::PointOnSphere> points;
 			points.push_back(d_point_on_sphere);
 
-			d_geometry = GPlatesUtils::create_point_on_sphere(points,d_validity);
+			d_geometry = GPlatesUtils::create_point_geometry_on_sphere(points, d_validity);
 		}
 
 		void
@@ -223,11 +222,11 @@ namespace GPlatesViewOperations
 		
 		void
 		visit_point_on_sphere(
-			GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type point_on_sphere)
+			GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type point_on_sphere)
 		{
 			if (d_index == 0)
 			{
-				d_vertex.reset(*point_on_sphere);
+				d_vertex.reset(point_on_sphere->position());
 			}
 		}
 

@@ -24,7 +24,7 @@
  */
 
 #include <vector>
-#include <boost/bind.hpp>
+#include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <boost/optional.hpp>
 #include <QDebug>
@@ -206,7 +206,7 @@ namespace GPlatesFileIO
 				}
 
 				// Just visit the first time window - there should only be one window.
-				gpml_piecewise_aggregation.time_windows().front().get()->time_dependent_value()->accept_visitor(*this);
+				gpml_piecewise_aggregation.time_windows().front()->time_dependent_value()->accept_visitor(*this);
 			}
 
 			virtual
@@ -571,6 +571,8 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::TopologicalNetworkFeatureReaderUpgrade_1_
 		const GpmlPropertyStructuralTypeReader::non_null_ptr_to_const_type &property_structural_type_reader,
 		const GPlatesModel::GpgimVersion &gpml_version)
 {
+	using namespace boost::placeholders;  // For _1, _2, etc
+
 	//
 	// Find the 'gpml:network' property name or whatever it currently is in the GPGIM.
 	//
@@ -960,7 +962,7 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::CrustalThinningFactorUpgrade_1_6_338::con
 		static const GPlatesPropertyValues::ValueObjectType CRUSTAL_THINNING_FACTOR_PROPERTY_NAME =
 				GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThinningFactor");
 
-		GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type scalar_data = range_iter->get();
+		GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type scalar_data = *range_iter;
 		if (scalar_data->get_value_object_type() == CRUSTAL_THINNING_FACTOR_PROPERTY_NAME)
 		{
 			// Extract/copy the thinning factors.
@@ -1009,9 +1011,9 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::CrustalThinningFactorUpgrade_1_6_338::con
 			{
 				converted_range_tuple_list.push_back(
 						GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
-								original_range_iter->get()->get_value_object_type(),
-								original_range_iter->get()->get_value_object_xml_attributes(),
-								original_range_iter->get()->get_coordinates()));
+								original_range_iter->get_value_object_type(),
+								original_range_iter->get_value_object_xml_attributes(),
+								original_range_iter->get_coordinates()));
 			}
 
 			// Add converted crustal thinning factors.
@@ -1029,9 +1031,9 @@ GPlatesFileIO::GpmlUpgradeReaderUtils::CrustalThinningFactorUpgrade_1_6_338::con
 			{
 				converted_range_tuple_list.push_back(
 						GPlatesPropertyValues::GmlDataBlockCoordinateList::create(
-								original_range_iter->get()->get_value_object_type(),
-								original_range_iter->get()->get_value_object_xml_attributes(),
-								original_range_iter->get()->get_coordinates()));
+								original_range_iter->get_value_object_type(),
+								original_range_iter->get_value_object_xml_attributes(),
+								original_range_iter->get_coordinates()));
 			}
 
 			// The converted range property.

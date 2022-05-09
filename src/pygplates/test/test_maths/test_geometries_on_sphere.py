@@ -78,6 +78,13 @@ class GeometryOnSphereCase(unittest.TestCase):
         # The polyline intersects the polygon.
         self.assertAlmostEqual(distance, 0)
         self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(closest_point1, closest_point2), 0)
+    
+    def test_get_centroid(self):
+        # Test all geometry types have a 'get_controid()' method.
+        self.assertTrue(isinstance(pygplates.PointOnSphere(0, 1, 0).get_centroid(), pygplates.PointOnSphere))
+        self.assertTrue(isinstance(pygplates.MultiPointOnSphere([(0, 0), (10, 10)]).get_centroid(), pygplates.PointOnSphere))
+        self.assertTrue(isinstance(pygplates.PolylineOnSphere([(0, 0), (10, 10)]).get_centroid(), pygplates.PointOnSphere))
+        self.assertTrue(isinstance(pygplates.PolygonOnSphere([(0, 0), (10, 10), (20, 20)]).get_centroid(), pygplates.PointOnSphere))
 
 
 class PointOnSphereCase(unittest.TestCase):
@@ -159,6 +166,10 @@ class PointOnSphereCase(unittest.TestCase):
         self.assertAlmostEqual(x, 0)
         self.assertAlmostEqual(y, 1)
         self.assertAlmostEqual(z, 0)
+    
+    def test_get_centroid(self):
+        point = pygplates.PointOnSphere(0, 1, 0)
+        self.assertEqual(point.get_centroid(), point)
 
 
 class MultiPointOnSphereCase(unittest.TestCase):
@@ -348,6 +359,13 @@ class PolylineOnSphereCase(unittest.TestCase):
                         [pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(1, 0, 0), pygplates.PointOnSphere(1, 0, 0)])
                 == pygplates.PolylineOnSphere(
                     pygplates.PolygonOnSphere(pygplates.PointOnSphere(1, 0, 0))))
+        # Interior rings of polygon are ignored when converting to polyline.
+        self.assertTrue(
+                pygplates.PolylineOnSphere([(40, 100), (-40, 100), (-40, -100), (40, -100), (40, 100)]) # First and last vertex the same
+                == pygplates.PolylineOnSphere(
+                    pygplates.PolygonOnSphere(
+                            [(40, 100), (-40, 100), (-40, -100), (40, -100)],  # exterior ring
+                            [[(30, 120), (30, 150), (-30, 150), (-30, 120)], [(30, 165), (-30, 165), (-30, -165), (30, -165)]])))  # 2 interior rings get ignored
     
     def test_get_points(self):
         point_sequence = self.polyline.get_points()
@@ -697,6 +715,9 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.points.append(pygplates.PointOnSphere(0, 0, 1))
         self.points.append(pygplates.PointOnSphere(0, -1, 0))
         self.polygon = pygplates.PolygonOnSphere(self.points)
+        self.polygon_with_interior = pygplates.PolygonOnSphere(
+                [(40, 100), (-40, 100), (-40, -100), (40, -100)],  # exterior ring
+                [[(30, 120), (30, 150), (-30, 150), (-30, 120)], [(30, 165), (-30, 165), (-30, -165), (30, -165)]])  # 2 interior rings
 
     def test_construct(self):
         # Need at least three points.
@@ -758,6 +779,34 @@ class PolygonOnSphereCase(unittest.TestCase):
     def test_get_points(self):
         point_sequence = self.polygon.get_points()
         self.assertEquals(self.polygon, pygplates.PolygonOnSphere(point_sequence))
+        exterior_ring_point_sequence = self.polygon.get_exterior_ring_points()
+        self.assertEquals(self.polygon, pygplates.PolygonOnSphere(exterior_ring_point_sequence))
+
+        exterior_ring = self.polygon_with_interior.get_exterior_ring_points()
+        interior_rings = [list(self.polygon_with_interior.get_interior_ring_points(interior_ring_index))
+                for interior_ring_index in range(self.polygon_with_interior.get_number_of_interior_rings())]
+        self.assertEquals(self.polygon_with_interior, pygplates.PolygonOnSphere(exterior_ring, interior_rings))
+    
+    def test_get_segments(self):
+        point_sequence = self.polygon.get_points()
+        segment_sequence = self.polygon.get_segments()
+        self.assertEquals(len(point_sequence), len(segment_sequence))
+        for index in range(len(point_sequence)):
+            self.assertEquals(point_sequence[index], segment_sequence[index].get_start_point())
+        
+        exterior_ring_point_sequence = self.polygon_with_interior.get_exterior_ring_points()
+        exterior_ring_segment_sequence = self.polygon_with_interior.get_exterior_ring_segments()
+        self.assertEquals(len(exterior_ring_point_sequence), len(exterior_ring_segment_sequence))
+        for index in range(len(exterior_ring_point_sequence)):
+            self.assertEquals(exterior_ring_point_sequence[index], exterior_ring_segment_sequence[index].get_start_point())
+        
+        self.assertTrue(self.polygon_with_interior.get_number_of_interior_rings() == 2)
+        for interior_ring_index in range(self.polygon_with_interior.get_number_of_interior_rings()):
+            interior_ring_point_sequence = self.polygon_with_interior.get_interior_ring_points(interior_ring_index)
+            interior_ring_segment_sequence = self.polygon_with_interior.get_interior_ring_segments(interior_ring_index)
+            self.assertEquals(len(interior_ring_point_sequence), len(interior_ring_segment_sequence))
+            for index in range(len(interior_ring_point_sequence)):
+                self.assertEquals(interior_ring_point_sequence[index], interior_ring_segment_sequence[index].get_start_point())
 
     def test_compare(self):
         self.assertEquals(self.polygon, pygplates.PolygonOnSphere(self.points))
@@ -816,18 +865,27 @@ class PolygonOnSphereCase(unittest.TestCase):
         iter(self.polygon.get_segments())
         arcs = [arc for arc in self.polygon.get_segments()]
         self.assertEquals(len(self.polygon.get_segments()), len(self.polygon.get_points()))
+
+        iter(self.polygon.get_exterior_ring_segments())
+        arcs = [arc for arc in self.polygon.get_exterior_ring_segments()]
+        self.assertEquals(len(self.polygon.get_exterior_ring_segments()), len(self.polygon.get_exterior_ring_points()))
+
+        self.assertTrue(self.polygon.get_number_of_interior_rings() == 0)
    
     def test_contains_point(self):
         self.assertTrue(self.points[0] in self.polygon.get_points())
+        self.assertTrue(self.points[0] in self.polygon.get_exterior_ring_points())
         self.assertTrue(pygplates.PointOnSphere(1, 0, 0) in self.polygon.get_points())
         self.assertTrue(pygplates.PointOnSphere(0, 0, -1) not in self.polygon.get_points())
     
     def test_contains_arc(self):
         first_arc = pygplates.GreatCircleArc(self.points[0], self.points[1])
         self.assertTrue(first_arc in self.polygon.get_segments())
+        self.assertTrue(first_arc in self.polygon.get_exterior_ring_segments())
         # Last arc wraps around for a polygon.
         last_arc = pygplates.GreatCircleArc(self.points[-1], self.points[0])
         self.assertTrue(last_arc in self.polygon.get_segments())
+        self.assertTrue(last_arc in self.polygon.get_exterior_ring_segments())
 
     def test_get_item_point(self):
         for i in range(0, len(self.points)):
@@ -884,13 +942,33 @@ class PolygonOnSphereCase(unittest.TestCase):
         area = self.polygon.get_area()
         signed_area = self.polygon.get_signed_area()
         # Polygon covers exactly a quarter of the unit sphere.
-        self.assertTrue(area > math.pi - 1e-6 and area < math.pi + 1e-6)
-        # Counter-clockwise polygon.
-        ccw_polygon = pygplates.PolygonOnSphere(reversed(self.polygon.get_points()))
-        ccw_area = ccw_polygon.get_area()
-        ccw_signed_area = ccw_polygon.get_signed_area()
-        self.assertTrue(area > ccw_area - 1e-6 and area < ccw_area + 1e-6)
-        self.assertTrue(signed_area > ccw_signed_area - 1e-6 and signed_area < -ccw_signed_area + 1e-6)
+        self.assertAlmostEqual(area, math.pi)
+        # Clockwise polygon.
+        cw_polygon = pygplates.PolygonOnSphere(reversed(self.polygon.get_points()))
+        cw_area = cw_polygon.get_area()
+        cw_signed_area = cw_polygon.get_signed_area()
+        self.assertAlmostEqual(area, cw_area)
+        self.assertAlmostEqual(signed_area, -cw_signed_area)
+
+        # Test some zero area dateline sliver polygons that previously gave incorrect areas (as multiples of PI).
+        self.assertAlmostEqual(0.0, pygplates.PolygonOnSphere([(0, 180), (-1, 180), (-3, 180)]).get_area())  # previously was 2*PI
+        self.assertAlmostEqual(0.0, pygplates.PolygonOnSphere([(0, 180), (-1, 180), (-3, 180), (-5, 180)]).get_area())  # previously was 4*PI
+        self.assertAlmostEqual(0.0, pygplates.PolygonOnSphere([(0, 180), (-1, 180), (-3, 180), (-5, 180), (-6, 180)]).get_area())  # previously was 2*PI
+        self.assertAlmostEqual(0.0, pygplates.PolygonOnSphere([(0, 180), (-1, 180), (-3, 180), (-5, 180), (-6, 180), (-5, 180)]).get_area())  # previously was 8*PI
+        self.assertAlmostEqual(0.0, pygplates.PolygonOnSphere([(0, 180), (-1, 180), (-3, 180), (-5, 180), (-6, 180), (-5, 180), (-3, 180)]).get_area())  # previously was 4*PI
+        self.assertAlmostEqual(0.0, pygplates.PolygonOnSphere([(0, 180), (-1, 180), (-3, 180), (-5, 180), (-6, 180), (-5, 180), (-3, 180), (-1, 180)]).get_area())  # previously was 2*PI
+
+        # Test the sign of the area of some almost zero area sliver polygons.
+        self.assertTrue(pygplates.PolygonOnSphere([(0, 180), (-1, 180), (-3, -179.99)]).get_signed_area() > 0)  # Counter-clockwise
+        self.assertTrue(pygplates.PolygonOnSphere([(0, 180), (-1, 180), (-3, 179.99)]).get_signed_area() < 0)  # Clockwise
+
+        # Test some polygons that cover half the globe (largest polygon possible).
+        #
+        # Note: We use 'places=4' because even though polygon is exactly along the equator pygplates doesn't calculate exactly 2*PI.
+        #       This is because internally it encounters an arc with antipodal end points and has to adjust slightly to avoid this (thus introducing a small error).
+        self.assertAlmostEqual(2 * math.pi, pygplates.PolygonOnSphere([(0, 0), (0, 90), (0, 180), (0, -90)]).get_area(), places=4)  # Neither clockwise nor counter-clockwise (right on equator)
+        self.assertAlmostEqual(2 * math.pi, pygplates.PolygonOnSphere([(0, 0), (0, 90), (0, 180), (0.001, -90)]).get_signed_area(), places=3)  # Counter-clockwise (slightly above equator)
+        self.assertAlmostEqual(-2 * math.pi, pygplates.PolygonOnSphere([(0, 0), (0, 90), (0, 180), (-0.001, -90)]).get_signed_area(), places=3)  # Clockwise (slightly below equator)
     
     def test_orientation(self):
         self.assertTrue(self.polygon.get_orientation() == pygplates.PolygonOnSphere.Orientation.counter_clockwise)
@@ -997,6 +1075,7 @@ class PolygonOnSphereCase(unittest.TestCase):
     def test_centroid(self):
         self.assertTrue(isinstance(self.polygon.get_boundary_centroid(), pygplates.PointOnSphere))
         self.assertTrue(isinstance(self.polygon.get_interior_centroid(), pygplates.PointOnSphere))
+        self.assertEquals(self.polygon.get_centroid(), self.polygon.get_interior_centroid())
     
     def test_tessellate(self):
         tessellated = self.polygon.to_tessellated(math.radians(91))

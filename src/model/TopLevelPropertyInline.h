@@ -38,6 +38,8 @@
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
 #include <boost/type_traits/is_const.hpp>
+#include <boost/type_traits/is_convertible.hpp>
+#include <boost/utility/enable_if.hpp>
 
 #include "ModelTransaction.h"
 #include "PropertyValue.h"
@@ -72,6 +74,117 @@ namespace GPlatesModel
 
 
 		/**
+		 * Reference (proxied) implementation for a reference to a property value.
+		 *
+		 * PropertyValueQualifiedType can be 'PropertyValue' or 'const PropertyValue'.
+		 *
+		 * Note that this class has no *element* (property value pointer) assignment operator,
+		 * such as for non-const 'PropertyValue':
+		 *
+		 *   Reference<PropertyValue> &
+		 *   operator=(
+		 *           const PropertyValue::non_null_ptr_type &element);
+		 *
+		 * ...and hence clients cannot use '*iter = new_ptr' to swap one property value pointer for another.
+		 * This is intentional since this ability is not allowed.
+		 */
+		template <class PropertyValueQualifiedType>
+		class Reference
+		{
+		public:
+
+			//! Typedef for the top level property pointer.
+			typedef typename boost::mpl::if_<
+					boost::is_const<PropertyValueQualifiedType>,
+								const TopLevelPropertyInline *,
+								TopLevelPropertyInline *>::type
+										top_level_property_ptr_type;
+
+			Reference(
+					top_level_property_ptr_type top_level_property_inline,
+					std::size_t index) :
+				d_top_level_property_inline(top_level_property_inline),
+				d_index(index)
+			{  }
+
+			/**
+			 * No *copy* assignment operator, since we're not allowing assignment (through references).
+			 *
+			 * This prevents something like "*iter1 = *iter2".
+			 *
+			 * This is in addition to not defining an *element* assignment operator, which prevents
+			 * something like "*iter = property_value_ptr".
+			 */
+			template <class OtherPropertyValueQualifiedType>
+			Reference &
+			operator=(
+					const Reference<OtherPropertyValueQualifiedType> &other) = delete;
+
+			/**
+			 * Access property value pointer (element).
+			 *
+			 * Note that a 'const non_null_intrusive_ptr' is returned to ensure the returned temporary
+			 * (non_null_intrusive_ptr) is not modified since this is probably not the intention of the
+			 * client. Additionally if this is a non-const 'reference' then it's possible to modify the
+			 * pointed-to property value, otherwise if this is a 'const_reference' then cannot modify.
+			 */
+			const typename GPlatesGlobal::PointerTraits<PropertyValueQualifiedType>::non_null_ptr_type
+			get_element() const
+			{
+				return d_top_level_property_inline->template get_current_revision<Revision>()
+						.values[d_index].get_revisionable();
+			}
+
+			/**
+			 * Conversion to element, which is 'non_null_intrusive_ptr<PropertyValue>' for 'reference'
+			 * and 'non_null_intrusive_ptr<const PropertyValue>' for 'const_reference'.
+			 */
+			operator typename GPlatesGlobal::PointerTraits<PropertyValueQualifiedType>::non_null_ptr_type() const
+			{
+				return get_element();
+			}
+
+			/**
+			 * Dereference operator, returns 'PropertyValue *' for 'reference' and
+			 * 'const PropertyValue *' for 'const_reference'.
+			 */
+			PropertyValueQualifiedType *
+			operator->() const
+			{
+				return get_element().get();
+			}
+
+			/**
+			 * Dereference operator, returns 'PropertyValue &' for 'reference' and
+			 * 'const PropertyValue &' for 'const_reference'
+			 */
+			PropertyValueQualifiedType &
+			operator*() const
+			{
+				return *get_element();
+			}
+
+		private:
+			top_level_property_ptr_type d_top_level_property_inline;
+			std::size_t d_index;
+		};
+
+		/**
+		 * Non-const iterator type.
+		 *
+		 * Dereferencing will return a PropertyValue::non_null_ptr_type.
+		 */
+		typedef Reference<PropertyValue> reference;
+
+		/**
+		 * Const iterator type.
+		 *
+		 * Dereferencing will return a PropertyValue::non_null_ptr_to_const_type.
+		 */
+		typedef Reference<const PropertyValue> const_reference;
+
+
+		/**
 		 * Iterator implementation.
 		 *
 		 * PropertyValueQualifiedType can be 'PropertyValue' or 'const PropertyValue'.
@@ -89,9 +202,8 @@ namespace GPlatesModel
 						// The 'pointer' inner type is set to void, because the dereference operator
 						// returns a temporary, and it is not desirable to take a pointer to a temporary...
 						void,
-						// The 'reference' inner type is not a reference, because the dereference operator
-						// returns a temporary, and it is not desirable to take a reference to a temporary...
-						typename GPlatesGlobal::PointerTraits<PropertyValueQualifiedType>::non_null_ptr_type>,
+						// Reference type...
+						Reference<PropertyValueQualifiedType>>,
 				public boost::incrementable<
 						Iterator<PropertyValueQualifiedType>,
 						boost::decrementable<
@@ -115,19 +227,36 @@ namespace GPlatesModel
 				d_index(index)
 			{  }
 
+			// Template copy constructor conversion from 'iterator' to 'const_iterator'.
+			template <class OtherPropertyValueQualifiedType>
+			Iterator(
+					const Iterator<OtherPropertyValueQualifiedType> &other,
+					// Only allow conversion from 'iterator' to 'const_iterator', not vice versa...
+					typename boost::enable_if<
+							boost::is_convertible<OtherPropertyValueQualifiedType, PropertyValueQualifiedType>
+									>::type *dummy = 0) :
+				d_top_level_property_inline(other.d_top_level_property_inline),
+				d_index(other.d_index)
+			{  }
+
 			/**
-			 * Dereference operator.
-			 *
-			 * Note that this does not return a *reference* to a property value non_null_ptr_type and
-			 * hence clients cannot use '*iter = new_ptr' to swap one property value pointer for another.
-			 *
-			 * 'operator->()' is not provided since address of a temporary object is not desirable.
+			 * Dereference operator, returns 'PropertyValue *' for 'iterator' and
+			 * 'const PropertyValue *' for 'const_iterator'.
 			 */
-			typename GPlatesGlobal::PointerTraits<PropertyValueQualifiedType>::non_null_ptr_type
+			PropertyValueQualifiedType *
+			operator->() const
+			{
+				return Reference<PropertyValueQualifiedType>(d_top_level_property_inline, d_index).get_element().get();
+			}
+
+			/**
+			 * Dereference operator, returns 'reference' for 'iterator' and
+			 * 'const_reference' for 'const_iterator'.
+			 */
+			Reference<PropertyValueQualifiedType>
 			operator*() const
 			{
-				return d_top_level_property_inline->template get_current_revision<Revision>()
-						.values[d_index].get_revisionable();
+				return Reference<PropertyValueQualifiedType>(d_top_level_property_inline, d_index);
 			}
 
 			//! Post-increment operator provided by base class boost::incrementable.
@@ -161,7 +290,6 @@ namespace GPlatesModel
 			top_level_property_ptr_type d_top_level_property_inline;
 			std::size_t d_index;
 		};
-
 
 		/**
 		 * Non-const iterator type.

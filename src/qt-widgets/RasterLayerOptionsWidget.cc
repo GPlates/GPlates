@@ -61,9 +61,8 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::RasterLayerOptionsWidget(
 			tr("Open CPT File"),
 			tr("Regular CPT file (*.cpt);;All files (*)"),
 			view_state),
-	d_use_age_palette_button(new QToolButton(this)),
 	d_colour_palette_widget(
-			new RemappedColourPaletteWidget(view_state, viewport_window, this, d_use_age_palette_button))
+			new RemappedColourPaletteWidget(view_state, viewport_window, this))
 {
 	setupUi(this);
 
@@ -72,12 +71,6 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::RasterLayerOptionsWidget(
 	QObject::connect(
 			band_combobox, SIGNAL(activated(const QString &)),
 			this, SLOT(handle_band_combobox_activated(const QString &)));
-
-	d_use_age_palette_button->setCursor(QCursor(Qt::ArrowCursor));
-	d_use_age_palette_button->setText(QObject::tr("Age"));
-	QObject::connect(
-			d_use_age_palette_button, SIGNAL(clicked()),
-			this, SLOT(handle_use_age_palette_button_clicked()));
 
 	opacity_spinbox->setCursor(QCursor(Qt::ArrowCursor));
 	QObject::connect(
@@ -335,32 +328,6 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_use_default_palette_button_cl
 
 
 void
-GPlatesQtWidgets::RasterLayerOptionsWidget::handle_use_age_palette_button_clicked()
-{
-	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
-			d_current_visual_layer.lock())
-	{
-		GPlatesPresentation::RasterVisualLayerParams *params =
-			dynamic_cast<GPlatesPresentation::RasterVisualLayerParams *>(
-					locked_visual_layer->get_visual_layer_params().get());
-		if (!params)
-		{
-			return;
-		}
-
-		// Update the colour palette in the layer params.
-		GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
-				params->get_colour_palette_parameters();
-		// Unmap the age grid colour palette otherwise the colours will be incorrect.
-		colour_palette_parameters.unmap_palette_range();
-		colour_palette_parameters.load_builtin_colour_palette(
-				GPlatesGui::BuiltinColourPaletteType(GPlatesGui::BuiltinColourPaletteType::AGE_PALETTE));
-		params->set_colour_palette_parameters(colour_palette_parameters);
-	}
-}
-
-
-void
 GPlatesQtWidgets::RasterLayerOptionsWidget::handle_builtin_colour_palette_selected(
 		const GPlatesGui::BuiltinColourPaletteType &builtin_colour_palette_type)
 {
@@ -379,6 +346,11 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_builtin_colour_palette_select
 		GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
 				params->get_colour_palette_parameters();
 		colour_palette_parameters.load_builtin_colour_palette(builtin_colour_palette_type);
+		// If an age palette then don't map the range - the age palettes don't need remapping.
+		if (builtin_colour_palette_type.get_palette_type() == GPlatesGui::BuiltinColourPaletteType::AGE_PALETTE)
+		{
+			colour_palette_parameters.unmap_palette_range();
+		}
 		params->set_colour_palette_parameters(colour_palette_parameters);
 	}
 }

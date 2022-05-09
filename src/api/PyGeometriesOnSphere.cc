@@ -58,7 +58,7 @@
 #include "maths/MathsUtils.h"
 #include "maths/MultiPointOnSphere.h"
 #include "maths/PointOnSphere.h"
-#include "maths/PolygonIntersections.h"
+#include "maths/PolygonPartitioner.h"
 #include "maths/PolygonOnSphere.h"
 #include "maths/PolylineOnSphere.h"
 #include "maths/UnitVector3D.h"
@@ -142,7 +142,7 @@ GPlatesApi::PointSequenceFunctionArgument::is_convertible(
 		bp::object python_function_argument)
 {
 	// Test all supported types (in function_argument_type) except the bp::object (since that's a sequence).
-	if (bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> >(python_function_argument).check() ||
+	if (bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere> >(python_function_argument).check() ||
 		bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere> >(python_function_argument).check() ||
 		bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere> >(python_function_argument).check() ||
 		bp::extract< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere> >(python_function_argument).check())
@@ -177,10 +177,10 @@ boost::shared_ptr<GPlatesApi::PointSequenceFunctionArgument::point_seq_type>
 GPlatesApi::PointSequenceFunctionArgument::initialise_points(
 		const function_argument_type &function_argument)
 {
-	if (const GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> *point_function_argument =
-		boost::get< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere> >(&function_argument))
+	if (const GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere> *point_function_argument =
+		boost::get< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere> >(&function_argument))
 	{
-		return boost::shared_ptr<point_seq_type>(new point_seq_type(1, **point_function_argument));
+		return boost::shared_ptr<point_seq_type>(new point_seq_type(1, (*point_function_argument)->position()));
 	}
 	else if (const GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere> *multi_point_function_argument =
 		boost::get< GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere> >(&function_argument))
@@ -217,6 +217,20 @@ GPlatesApi::PointSequenceFunctionArgument::initialise_points(
 
 namespace GPlatesApi
 {
+	/**
+	 * Clone a geometry.
+	 * 
+	 * NOTE: This function is deprecated because a geometry is immutable and hence the Python user
+	 *       can just share the same geometry object. In fact this function now just returns the
+	 *       geometry object passed in without cloning it.
+	 */
+	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type
+	geometry_on_sphere_clone_deprecated(
+			const GPlatesMaths::GeometryOnSphere &geometry)
+	{
+		return geometry.get_non_null_pointer();
+	}
+
 	/**
 	 * Calculate the (minimum) distance between two geometries.
 	 */
@@ -359,11 +373,14 @@ export_geometry_on_sphere()
 					"* :class:`PolygonOnSphere`\n",
 					bp::no_init)
 		.def("clone",
-				&GPlatesMaths::GeometryOnSphere::clone_as_geometry,
+				&GPlatesApi::geometry_on_sphere_clone_deprecated,
 				"clone()\n"
 				"  Create a duplicate of this geometry (derived) instance.\n"
 				"\n"
-				"  :rtype: :class:`GeometryOnSphere`\n")
+				"  :rtype: :class:`GeometryOnSphere`\n"
+				"\n"
+				"  .. deprecated:: 0.30\n"
+				"     Geometry is immutable so there's no need to clone (instead you can just share the geometry).\n")
 		.def("distance",
 				&GPlatesApi::geometry_on_sphere_distance,
 				(bp::arg("geometry1"), bp::arg("geometry2"),
@@ -531,6 +548,91 @@ export_geometry_on_sphere()
 
 namespace GPlatesApi
 {
+	//
+	// The following to/from Python conversions are handled:
+	//
+	// To Python    GPlatesMaths::PointGeometryOnSphere  GPlatesMaths::LatLonPoint  XYZOrLatLonSequence
+	//     /\                      /\                               |                      |
+	//     |                       |                                |                      |
+	//     |                       ---------------------------------+-----------------------
+	//     |      		                                            |
+	//     \/                                                       \/
+	// From Python                                     GPlatesMaths::PointOnSphere
+	//
+
+	/**
+	 * Enables GPlatesMaths::PointOnSphere to be passed to and from python
+	 * (as GPlatesMaths::PointGeometryOnSphere which is the HeldType, of bp::class_, of Python PointOnSphere).
+	 *
+	 * For more information on boost python to/from conversions, see:
+	 *   http://misspent.wordpress.com/2009/09/27/how-to-write-boost-python-converters/
+	 */
+	struct ConversionPointOnSphereToFromPointGeometryOnSphere :
+			private boost::noncopyable
+	{
+		explicit
+		ConversionPointOnSphereToFromPointGeometryOnSphere()
+		{
+			// To python conversion.
+			bp::to_python_converter<GPlatesMaths::PointOnSphere, Conversion>();
+
+			// From python conversion.
+			bp::converter::registry::push_back(
+					&convertible,
+					&construct,
+					bp::type_id<GPlatesMaths::PointOnSphere>());
+		}
+
+		struct Conversion
+		{
+			static
+			PyObject *
+			convert(
+					const GPlatesMaths::PointOnSphere &point_on_sphere)
+			{
+				// 'GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>' is the
+				// HeldType of the 'bp::class_' wrapper of GPlatesMaths::PointGeometryOnSphere, so
+				// it will be used to complete the conversion to the final 'pygplates.PointOnSphere' object.
+				// This is why the 'const' cast is used. We don't actually need it though - we could
+				// return a *const* intrusive pointer because a to-python converter from 'const' to 'non-const'
+				// intrusive pointer is also registered. But by returning 'non-const' we require one less conversion
+				// so it's a little faster.
+				GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere> point_geometry_on_sphere =
+						GPlatesUtils::const_pointer_cast<GPlatesMaths::PointGeometryOnSphere>(
+								point_on_sphere.get_point_geometry_on_sphere());
+
+				return bp::incref(bp::object(point_geometry_on_sphere).ptr());
+			};
+		};
+
+		static
+		void *
+		convertible(
+				PyObject *obj)
+		{
+			return bp::extract<const GPlatesMaths::PointGeometryOnSphere &>(obj).check() ? obj : NULL;
+		}
+
+		static
+		void
+		construct(
+				PyObject *obj,
+				boost::python::converter::rvalue_from_python_stage1_data *data)
+		{
+			void *const storage = reinterpret_cast<
+					bp::converter::rvalue_from_python_storage<GPlatesMaths::Real> *>(
+							data)->storage.bytes;
+
+			const GPlatesMaths::PointGeometryOnSphere &point_geometry_on_sphere =
+					bp::extract<const GPlatesMaths::PointGeometryOnSphere &>(obj);
+
+			new (storage) GPlatesMaths::PointOnSphere(point_geometry_on_sphere.position());
+
+			data->convertible = storage;
+		}
+	};
+
+
 	/**
 	 * Enables LatLonPoint to be passed from python (to a PointOnSphere).
 	 *
@@ -673,8 +775,18 @@ namespace GPlatesApi
 
 
 	// North and south poles.
-	const GPlatesMaths::PointOnSphere point_on_sphere_north_pole(GPlatesMaths::UnitVector3D::zBasis());
-	const GPlatesMaths::PointOnSphere point_on_sphere_south_pole(-GPlatesMaths::UnitVector3D::zBasis());
+	const GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere> point_on_sphere_north_pole =
+			GPlatesUtils::const_pointer_cast<GPlatesMaths::PointGeometryOnSphere>(
+					GPlatesMaths::PointGeometryOnSphere::create(
+							// Note that we can't use 'GPlatesMaths::PointOnSphere::north_pole' here because
+							// it might not yet be initialised when this static variable is initialised...
+							GPlatesMaths::PointOnSphere(GPlatesMaths::UnitVector3D::zBasis())));
+	const GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere> point_on_sphere_south_pole =
+			GPlatesUtils::const_pointer_cast<GPlatesMaths::PointGeometryOnSphere>(
+					GPlatesMaths::PointGeometryOnSphere::create(
+							// Note that we can't use 'GPlatesMaths::PointOnSphere::south_pole' here because
+							// it might not yet be initialised when this static variable is initialised...
+							GPlatesMaths::PointOnSphere(-GPlatesMaths::UnitVector3D::zBasis())));
 
 
 	// Convenience constructor to create from (x,y,z).
@@ -684,39 +796,41 @@ namespace GPlatesApi
 	//
 	// With boost 1.42 we get the following compile error...
 	//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
-	// ...if we return 'GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type' and rely on
+	// ...if we return 'GPlatesMaths::PointGeometryOnSphere::non_null_ptr_to_const_type' and rely on
 	// 'PythonConverterUtils::register_conversion_const_non_null_intrusive_ptr'
 	// to convert for us - despite the fact that this conversion works successfully for python bindings
 	// in other source files. It's possibly due to 'bp::make_constructor' which isn't used for
 	// MultiPointOnSphere which has no problem with 'const'.
 	//
 	// So we avoid it by using returning a pointer to 'non-const' PointOnSphere.
-	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>
 	point_on_sphere_create_xyz(
 			const GPlatesMaths::real_t &x,
 			const GPlatesMaths::real_t &y,
 			const GPlatesMaths::real_t &z,
 			bool normalise)
 	{
-		return GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>(
-				new GPlatesMaths::PointOnSphere(
-						normalise
-						? GPlatesMaths::Vector3D(x, y, z).get_normalisation()
-						: GPlatesMaths::UnitVector3D(x, y, z)));
+		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PointGeometryOnSphere>(
+				GPlatesMaths::PointGeometryOnSphere::create(
+						GPlatesMaths::PointOnSphere(
+								normalise
+								? GPlatesMaths::Vector3D(x, y, z).get_normalisation()
+								: GPlatesMaths::UnitVector3D(x, y, z))));
 	}
 
-	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>
 	point_on_sphere_create_lat_lon(
 			const GPlatesMaths::real_t &latitude,
 			const GPlatesMaths::real_t &longitude)
 	{
-		return GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>(
-				new GPlatesMaths::PointOnSphere(
-						make_point_on_sphere(
-								GPlatesMaths::LatLonPoint(latitude.dval(), longitude.dval()))));
+		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PointGeometryOnSphere>(
+				GPlatesMaths::PointGeometryOnSphere::create(
+						GPlatesMaths::PointOnSphere(
+								make_point_on_sphere(
+										GPlatesMaths::LatLonPoint(latitude.dval(), longitude.dval())))));
 	}
 
-	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>
 	point_on_sphere_create(
 			bp::object point_object)
 	{
@@ -725,8 +839,9 @@ namespace GPlatesApi
 		bp::extract<GPlatesMaths::PointOnSphere> extract_point_on_sphere(point_object);
 		if (extract_point_on_sphere.check())
 		{
-			return GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>(
-					new GPlatesMaths::PointOnSphere(extract_point_on_sphere()));
+			return GPlatesUtils::const_pointer_cast<GPlatesMaths::PointGeometryOnSphere>(
+					GPlatesMaths::PointGeometryOnSphere::create(
+								extract_point_on_sphere()));
 		}
 
 		PyErr_SetString(PyExc_TypeError, "Expected PointOnSphere or LatLonPoint or "
@@ -734,46 +849,60 @@ namespace GPlatesApi
 		bp::throw_error_already_set();
 
 		// Shouldn't be able to get here.
-		return GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>(NULL);
+		return GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>(NULL);
 	}
 
 	GPlatesMaths::Real
 	point_on_sphere_get_x(
-			const GPlatesMaths::PointOnSphere &point_on_sphere)
+			const GPlatesMaths::PointGeometryOnSphere &point_on_sphere)
 	{
-		return point_on_sphere.position_vector().x();
+		return point_on_sphere.position().position_vector().x();
 	}
 
 	GPlatesMaths::Real
 	point_on_sphere_get_y(
-			const GPlatesMaths::PointOnSphere &point_on_sphere)
+			const GPlatesMaths::PointGeometryOnSphere &point_on_sphere)
 	{
-		return point_on_sphere.position_vector().y();
+		return point_on_sphere.position().position_vector().y();
 	}
 
 	GPlatesMaths::Real
 	point_on_sphere_get_z(
-			const GPlatesMaths::PointOnSphere &point_on_sphere)
+			const GPlatesMaths::PointGeometryOnSphere &point_on_sphere)
 	{
-		return point_on_sphere.position_vector().z();
+		return point_on_sphere.position().position_vector().z();
 	}
 
 	bp::tuple
 	point_on_sphere_to_xyz(
-			const GPlatesMaths::PointOnSphere &point_on_sphere)
+			const GPlatesMaths::PointGeometryOnSphere &point_on_sphere)
 	{
-		const GPlatesMaths::UnitVector3D &position_vector = point_on_sphere.position_vector();
+		const GPlatesMaths::UnitVector3D &position_vector = point_on_sphere.position().position_vector();
 
 		return bp::make_tuple(position_vector.x(), position_vector.y(), position_vector.z());
 	}
 
+	GPlatesMaths::LatLonPoint
+	point_on_sphere_to_lat_lon_point(
+			const GPlatesMaths::PointGeometryOnSphere &point_on_sphere)
+	{
+		return GPlatesMaths::make_lat_lon_point(point_on_sphere.position());
+	}
+
 	bp::tuple
 	point_on_sphere_to_lat_lon(
-			const GPlatesMaths::PointOnSphere &point_on_sphere)
+			const GPlatesMaths::PointGeometryOnSphere &point_on_sphere)
 	{
-		const GPlatesMaths::LatLonPoint lat_lon_point = make_lat_lon_point(point_on_sphere);
+		const GPlatesMaths::LatLonPoint lat_lon_point = make_lat_lon_point(point_on_sphere.position());
 
 		return bp::make_tuple(lat_lon_point.latitude(), lat_lon_point.longitude());
+	}
+
+	GPlatesMaths::PointOnSphere
+	point_on_sphere_get_centroid(
+			const GPlatesMaths::PointGeometryOnSphere &point_on_sphere)
+	{
+		return point_on_sphere.position();
 	}
 }
 
@@ -784,7 +913,7 @@ export_point_on_sphere()
 	// PointOnSphere - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
-			GPlatesMaths::PointOnSphere,
+			GPlatesMaths::PointGeometryOnSphere,
 			// This wrapped type is immutable so it's desireable to wrap it as a *const* object.
 			// However boost-python currently does not compile when wrapping *const* objects
 			// (eg, 'GeometryOnSphere::non_null_ptr_to_const_type') - see:
@@ -793,22 +922,9 @@ export_point_on_sphere()
 			//
 			// ...so the current solution for that is to wrap *non-const* objects (to keep boost-python happy)
 			// and register python to/from converter that convert const to non-const and back again.
-			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>,
-			bp::bases<GPlatesMaths::GeometryOnSphere>
-			// NOTE: PointOnSphere is the only GeometryOnSphere type that is copyable.
-			// And it needs to be copyable (in our wrapper) so that, eg, MultiPointOnSphere's iterator
-			// can copy raw PointOnSphere elements (in its vector) into 'non_null_intrusive_ptr' versions
-			// of PointOnSphere as it iterates over its collection (this conversion is one of those
-			// cool things that boost-python takes care of automatically).
-			//
-			// Also note that PointOnSphere (like all GeometryOnSphere types) is immutable so the fact
-			// that it can be copied into a python object (unlike the other GeometryOnSphere types) does
-			// not mean we have to worry about a PointOnSphere modification from the C++ side not being
-			// visible on the python side, or vice versa (because cannot modify since immutable - or at least
-			// the python interface is immutable - the C++ has an assignment operator we should be careful of).
-#if 0
+			GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>,
+			bp::bases<GPlatesMaths::GeometryOnSphere>,
 			boost::noncopyable
-#endif
 			>(
 					"PointOnSphere",
 					"Represents a point on the surface of the unit length sphere in 3D cartesian coordinates.\n"
@@ -837,7 +953,6 @@ export_point_on_sphere()
 						bp::default_call_policies(),
 						(bp::arg("point"))),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
-				// Specific overload signature...
 				"__init__(...)\n"
 				"A *PointOnSphere* object can be constructed in more than one way...\n"
 				"\n"
@@ -920,9 +1035,9 @@ export_point_on_sphere()
 				"    # If (x,y,z) might not be on the unit globe.\n"
 				"    point = pygplates.PointOnSphere(x, y, z, normalise=True)\n")
 		// Static property 'pygplates.PointOnSphere.north_pole'...
-		.def_readonly("north_pole", GPlatesApi::point_on_sphere_north_pole)
+		.def_readonly("north_pole", GPlatesApi::point_on_sphere_north_pole.get())
 		// Static property 'pygplates.PointOnSphere.south_pole'...
-		.def_readonly("south_pole", GPlatesApi::point_on_sphere_south_pole)
+		.def_readonly("south_pole", GPlatesApi::point_on_sphere_south_pole.get())
 		.def("get_x",
 				&GPlatesApi::point_on_sphere_get_x,
 				"get_x()\n"
@@ -958,7 +1073,7 @@ export_point_on_sphere()
 				"    dot_product = pygplates.Vector3D.dot(point1.to_xyz(), point2.to_xyz())\n"
 				"    cross_product = pygplates.Vector3D.cross(point1.to_xyz(), point2.to_xyz())\n")
 		.def("to_lat_lon_point",
-				&GPlatesMaths::make_lat_lon_point,
+				&GPlatesApi::point_on_sphere_to_lat_lon_point,
 				"to_lat_lon_point()\n"
 				"  Returns the (latitude,longitude) equivalent of this :class:`PointOnSphere`.\n"
 				"\n"
@@ -975,6 +1090,17 @@ export_point_on_sphere()
 				"    latitude, longitude = point.to_lat_lon()\n"
 				"\n"
 				"  This is similar to :meth:`LatLonPoint.to_lat_lon`.\n")
+		.def("get_centroid",
+				&GPlatesApi::point_on_sphere_get_centroid,
+				"get_centroid()\n"
+				"  Simply returns this point.\n"
+				"\n"
+				"  :rtype: :class:`PointOnSphere`\n"
+				"\n"
+				"  .. note:: This method is only here so that ``get_centroid()`` can be called for all "
+				":class:`geometry types<GeometryOnSphere>` (points, multi-points, polylines and polygons).\n"
+				"\n"
+				"  .. versionadded:: 0.36\n")
 		// Due to the numerical tolerance in comparisons we cannot make hashable.
 		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
@@ -986,16 +1112,19 @@ export_point_on_sphere()
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
-	//
-	// PointOnSphere is a bit of an exception to the immutable rule since it can be allocated on
-	// the stack or heap (unlike the other geometry types) and it has an assignment operator.
-	// However we treat it the same as the other geometry types.
-	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesMaths::PointOnSphere>();
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>();
 
-	// Registers the from-python converter from GPlatesMaths::LatLonPoint.
+	// Registers a from-python converter from GPlatesMaths::PointGeometryOnSphere to GPlatesMaths::PointOnSphere and
+	// a to-python converter from GPlatesMaths::PointOnSphere to GPlatesMaths::PointGeometryOnSphere.
+	GPlatesApi::ConversionPointOnSphereToFromPointGeometryOnSphere();
+
+	// Enable boost::optional<GPlatesMaths::PointOnSphere> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::PointOnSphere>();
+
+	// Registers the from-python converter from GPlatesMaths::LatLonPoint to GPlatesMaths::PointOnSphere.
 	GPlatesApi::ConversionPointOnSphereFromLatLonPoint();
 
-	// Registers the from-python converter from a (x,y,z) or (lat,lon) sequence.
+	// Registers the from-python converter from a (x,y,z) or (lat,lon) sequence to GPlatesMaths::PointOnSphere.
 	GPlatesApi::ConversionPointOnSphereFromXYZOrLatLonSequence();
 }
 
@@ -1008,7 +1137,7 @@ namespace GPlatesApi
 			bp::object points) // Any python sequence (eg, list, tuple).
 	{
 		// Copy into a vector.
-		// Note: We can't pass the iterators directly to 'MultiPointOnSphere::create_on_heap'
+		// Note: We can't pass the iterators directly to 'MultiPointOnSphere::create'
 		// because they are *input* iterators (ie, one pass only) and 'MultiPointOnSphere' expects
 		// forward iterators (it actually makes two passes over the points).
  		std::vector<GPlatesMaths::PointOnSphere> points_vector;
@@ -1023,7 +1152,7 @@ namespace GPlatesApi
 		//
 		// So we avoid it by using returning a pointer to 'non-const' MultiPointOnSphere.
 		return GPlatesUtils::const_pointer_cast<GPlatesMaths::MultiPointOnSphere>(
-				GPlatesMaths::MultiPointOnSphere::create_on_heap(
+				GPlatesMaths::MultiPointOnSphere::create(
 						points_vector.begin(),
 						points_vector.end()));
 	}
@@ -1042,7 +1171,9 @@ namespace GPlatesApi
 		//
 		// So we avoid it by returning a pointer to 'non-const' MultiPointOnSphere.
 		return GPlatesUtils::const_pointer_cast<GPlatesMaths::MultiPointOnSphere>(
-				GPlatesAppLogic::GeometryUtils::convert_geometry_to_multi_point(geometry));
+				GPlatesAppLogic::GeometryUtils::convert_geometry_to_multi_point(
+						geometry,
+						true/*include_polygon_interior_ring_points*/));
 	}
 
 	bool
@@ -1199,7 +1330,6 @@ export_multi_point_on_sphere()
 						bp::default_call_policies(),
 						(bp::arg("points"))),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
-				// Specific overload signature...
 				"__init__(...)\n"
 				"A *MultiPointOnSphere* object can be constructed in more than one way...\n"
 				"\n"
@@ -1274,7 +1404,10 @@ export_multi_point_on_sphere()
 				"  To create a MultiPointOnSphere from any geometry type:\n"
 				"  ::\n"
 				"\n"
-				"    multipoint = pygplates.MultiPointOnSphere(geometry)\n")
+				"    multipoint = pygplates.MultiPointOnSphere(geometry)\n"
+				"\n"
+				"  .. note:: If *geometry* is a polygon then points from both its exterior and "
+				"interior rings are added to the multipoint.\n")
 		.def("get_centroid",
 				&GPlatesApi::multi_point_on_sphere_get_centroid,
 				"get_centroid()\n"
@@ -1302,80 +1435,8 @@ export_multi_point_on_sphere()
 
 namespace GPlatesApi
 {
-	// Create a polyline/polygon from a sequence of points.
-	template <class PolyGeometryOnSphereType>
-	GPlatesUtils::non_null_intrusive_ptr<PolyGeometryOnSphereType>
-	poly_geometry_on_sphere_create_from_points(
-			bp::object points) // Any python sequence (eg, list, tuple).
-	{
-		// Copy into a vector.
-		// Note: We can't pass the iterators directly to 'PolylineOnSphere::create_on_heap' or
-		// 'PolygonOnSphere::create_on_heap' because they are *input* iterators (ie, one pass only)
-		// and 'PolylineOnSphere/PolygonOnSphere' expects forward iterators (they actually makes
-		// two passes over the points).
- 		std::vector<GPlatesMaths::PointOnSphere> points_vector;
-		PythonExtractUtils::extract_iterable(points_vector, points, "Expected a sequence of points");
-
-		// With boost 1.42 we get the following compile error...
-		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
-		// ...if we return 'PolyGeometryOnSphereType::non_null_ptr_to_const_type' and rely on
-		// 'PythonConverterUtils::register_conversion_const_non_null_intrusive_ptr'
-		// to convert for us - despite the fact that this conversion works successfully for python bindings
-		// in other source files. It's likely due to 'bp::make_constructor'.
-		//
-		// So we avoid it by using returning a pointer to 'non-const' PolyGeometryOnSphereType.
-		return GPlatesUtils::const_pointer_cast<PolyGeometryOnSphereType>(
-				PolyGeometryOnSphereType::create_on_heap(
-						points_vector.begin(),
-						points_vector.end()));
-	}
-
-	// Create a PolylineOnSphere from a GeometryOnSphere.
-	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere>
-	polyline_on_sphere_create_from_geometry(
-			const GPlatesMaths::GeometryOnSphere &geometry,
-			bool allow_one_point)
-	{
-		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> polyline =
-				GPlatesAppLogic::GeometryUtils::convert_geometry_to_polyline(geometry);
-		if (!polyline)
-		{
-			// There were less than two points.
-			// 
-			// Retrieve the point.
-			std::vector<GPlatesMaths::PointOnSphere> geometry_points;
-			GPlatesAppLogic::GeometryUtils::get_geometry_points(geometry, geometry_points);
-
-			// There should be a single point.
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					!geometry_points.empty(),
-					GPLATES_ASSERTION_SOURCE);
-
-			// Duplicate the point if caller allows one point, otherwise let
-			// 'PolylineOnSphere::create_on_heap()' throw InvalidPointsForPolylineConstructionError.
-			if (allow_one_point)
-			{
-				geometry_points.push_back(geometry_points.back());
-			}
-
-			// Note that this raises an exception (converted to Python) if 'allow_one_point'
-			// is false - because there is only one point.
-			polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(geometry_points);
-		}
-
-		// With boost 1.42 we get the following compile error...
-		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
-		// ...if we return 'GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type' and rely on
-		// 'PythonConverterUtils::register_conversion_const_non_null_intrusive_ptr'
-		// to convert for us - despite the fact that this conversion works successfully for python bindings
-		// in other source files. It's likely due to 'bp::make_constructor'.
-		//
-		// So we avoid it by returning a pointer to 'non-const' PolylineOnSphere.
-		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolylineOnSphere>(polyline.get());
-	}
-
 	/**
-	 * Wrapper class for functions accessing the *points* of a PolylineOnSphere or exterior/interior ring of a PolygonOnSphere.
+	 * Wrapper class for functions accessing the *points* of a PolylineOnSphere or PolygonOnSphere.
 	 *
 	 * This is a view into the internal points in a PolylineOnSphere/PolygonOnSphere in that an
 	 * iterator can be obtained from the view and the view supports indexing.
@@ -1502,83 +1563,9 @@ namespace GPlatesApi
 		unsigned int d_number_of_vertices;
 	};
 
-	//! Typedef for PolylineOnSphere points view.
-	typedef PolyGeometryOnSpherePointsView<
-					GPlatesMaths::PolylineOnSphere,
-					GPlatesMaths::PolylineOnSphere::vertex_const_iterator>
-							polyline_on_sphere_points_view_type;
-
-	polyline_on_sphere_points_view_type
-	polyline_on_sphere_get_points_view(
-			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
-	{
-		return polyline_on_sphere_points_view_type(
-				polyline_on_sphere,
-				polyline_on_sphere->vertex_begin(),
-				polyline_on_sphere->vertex_end(),
-				polyline_on_sphere->number_of_vertices());
-	}
-
-	//! Typedef for PolygonOnSphere ring points view.
-	typedef PolyGeometryOnSpherePointsView<
-					GPlatesMaths::PolygonOnSphere,
-					GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator>
-							polygon_on_sphere_ring_points_view_type;
-
-	polygon_on_sphere_ring_points_view_type
-	polygon_on_sphere_get_exterior_ring_points_view(
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
-	{
-		return polygon_on_sphere_ring_points_view_type(
-				polygon_on_sphere,
-				polygon_on_sphere->exterior_ring_vertex_begin(),
-				polygon_on_sphere->exterior_ring_vertex_end(),
-				polygon_on_sphere->number_of_vertices_in_exterior_ring());
-	}
-
-	bool
-	polyline_on_sphere_contains_point(
-			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere,
-			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
-			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
-			const GPlatesMaths::PointOnSphere &point_on_sphere)
-	{
-		return polyline_on_sphere_get_points_view(polyline_on_sphere).contains_point(point_on_sphere);
-	}
-
-	bool
-	polygon_on_sphere_exterior_ring_contains_point(
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
-			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
-			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
-			const GPlatesMaths::PointOnSphere &point_on_sphere)
-	{
-		return polygon_on_sphere_get_exterior_ring_points_view(polygon_on_sphere).contains_point(point_on_sphere);
-	}
-
-	//
-	// Support for "__getitem__".
-	//
-
-	boost::python::object
-	polyline_on_sphere_get_item(
-			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere,
-			boost::python::object i)
-	{
-		return polyline_on_sphere_get_points_view(polyline_on_sphere).get_item(i);
-	}
-
-	boost::python::object
-	polygon_on_sphere_exterior_ring_get_item(
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
-			boost::python::object i)
-	{
-		return polygon_on_sphere_get_exterior_ring_points_view(polygon_on_sphere).get_item(i);
-	}
-
 
 	/**
-	 * Wrapper class for functions accessing the *great circle arcs* of a PolylineOnSphere or exterior/interior ring of a PolygonOnSphere.
+	 * Wrapper class for functions accessing the *great circle arcs* of a PolylineOnSphere or PolygonOnSphere.
 	 *
 	 * This is a view into the internal arcs in a PolylineOnSphere/PolygonOnSphere in that an
 	 * iterator can be obtained from the view and the view supports indexing.
@@ -1704,6 +1691,118 @@ namespace GPlatesApi
 
 		unsigned int d_number_of_segments;
 	};
+}
+
+
+namespace GPlatesApi
+{
+	// Create a PolylineOnSphere from a sequence of points.
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere>
+	polyline_on_sphere_create_from_points(
+			bp::object points) // Any python sequence (eg, list, tuple).
+	{
+		// Copy into a vector.
+		// Note: We can't pass the iterators directly to 'PolylineOnSphere::create' because they
+		// are *input* iterators (ie, one pass only) and 'PolylineOnSphere' expects forward iterators
+		// (they actually make two passes over the points).
+ 		std::vector<GPlatesMaths::PointOnSphere> points_vector;
+		PythonExtractUtils::extract_iterable(points_vector, points, "Expected a sequence of points");
+
+		// With boost 1.42 we get the following compile error...
+		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
+		// ...if we return 'PolylineOnSphere::non_null_ptr_to_const_type' and rely on
+		// 'PythonConverterUtils::register_conversion_const_non_null_intrusive_ptr'
+		// to convert for us - despite the fact that this conversion works successfully for python bindings
+		// in other source files. It's likely due to 'bp::make_constructor'.
+		//
+		// So we avoid it by using returning a pointer to 'non-const' PolylineOnSphere.
+		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolylineOnSphere>(
+				GPlatesMaths::PolylineOnSphere::create(points_vector.begin(), points_vector.end()));
+	}
+
+	// Create a PolylineOnSphere from a GeometryOnSphere.
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere>
+	polyline_on_sphere_create_from_geometry(
+			const GPlatesMaths::GeometryOnSphere &geometry,
+			bool allow_one_point)
+	{
+		boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> polyline =
+				GPlatesAppLogic::GeometryUtils::convert_geometry_to_polyline(
+						geometry,
+						// When false then only polygon exterior ring is converted to a polyline (interior rings are ignored).
+						// We don't set to true since none is returned and the next step would assume geometry has less than two points...
+						false/*exclude_polygons_with_interior_rings*/);
+		if (!polyline)
+		{
+			// There were less than two points.
+			// 
+			// Retrieve the point.
+			std::vector<GPlatesMaths::PointOnSphere> geometry_points;
+			GPlatesAppLogic::GeometryUtils::get_geometry_points(geometry, geometry_points);
+
+			// There should be a single point.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					!geometry_points.empty(),
+					GPLATES_ASSERTION_SOURCE);
+
+			// Duplicate the point if caller allows one point, otherwise let
+			// 'PolylineOnSphere::create()' throw InvalidPointsForPolylineConstructionError.
+			if (allow_one_point)
+			{
+				geometry_points.push_back(geometry_points.back());
+			}
+
+			// Note that this raises an exception (converted to Python) if 'allow_one_point'
+			// is false - because there is only one point.
+			polyline = GPlatesMaths::PolylineOnSphere::create(geometry_points);
+		}
+
+		// With boost 1.42 we get the following compile error...
+		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
+		// ...if we return 'GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type' and rely on
+		// 'PythonConverterUtils::register_conversion_const_non_null_intrusive_ptr'
+		// to convert for us - despite the fact that this conversion works successfully for python bindings
+		// in other source files. It's likely due to 'bp::make_constructor'.
+		//
+		// So we avoid it by returning a pointer to 'non-const' PolylineOnSphere.
+		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolylineOnSphere>(polyline.get());
+	}
+
+	//! Typedef for PolylineOnSphere points view.
+	typedef PolyGeometryOnSpherePointsView<
+					GPlatesMaths::PolylineOnSphere,
+					GPlatesMaths::PolylineOnSphere::vertex_const_iterator>
+							polyline_on_sphere_points_view_type;
+
+	polyline_on_sphere_points_view_type
+	polyline_on_sphere_get_points_view(
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere)
+	{
+		return polyline_on_sphere_points_view_type(
+				polyline_on_sphere,
+				polyline_on_sphere->vertex_begin(),
+				polyline_on_sphere->vertex_end(),
+				polyline_on_sphere->number_of_vertices());
+	}
+
+	bool
+	polyline_on_sphere_contains_point(
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere,
+			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
+			const GPlatesMaths::PointOnSphere &point_on_sphere)
+	{
+		return polyline_on_sphere_get_points_view(polyline_on_sphere).contains_point(point_on_sphere);
+	}
+
+	boost::python::object
+	polyline_on_sphere_get_item(
+			GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere,
+			boost::python::object i)
+	{
+		return polyline_on_sphere_get_points_view(polyline_on_sphere).get_item(i);
+	}
+
 
 	//! Typedef for PolylineOnSphere arcs view.
 	typedef PolyGeometryOnSphereArcsView<
@@ -1720,23 +1819,6 @@ namespace GPlatesApi
 				polyline_on_sphere->begin(),
 				polyline_on_sphere->end(),
 				polyline_on_sphere->number_of_segments());
-	}
-
-	//! Typedef for PolygonOnSphere ring arcs view.
-	typedef PolyGeometryOnSphereArcsView<
-					GPlatesMaths::PolygonOnSphere,
-					GPlatesMaths::PolygonOnSphere::ring_const_iterator>
-							polygon_on_sphere_ring_arcs_view_type;
-
-	polygon_on_sphere_ring_arcs_view_type
-	polygon_on_sphere_get_exterior_ring_arcs_view(
-			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
-	{
-		return polygon_on_sphere_ring_arcs_view_type(
-				polygon_on_sphere,
-				polygon_on_sphere->exterior_ring_begin(),
-				polygon_on_sphere->exterior_ring_end(),
-				polygon_on_sphere->number_of_segments_in_exterior_ring());
 	}
 
 
@@ -1898,7 +1980,8 @@ export_polyline_on_sphere()
 	//
 	// We don't document this wrapper (using docstrings) since it's documented in "PolylineOnSphere".
 	bp::class_<GPlatesApi::polyline_on_sphere_points_view_type>(
-			"PolylineOnSpherePointsView",
+			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+			"_PolylineOnSpherePointsView",
 			bp::no_init)
 		.def("__iter__",
 				bp::iterator< const GPlatesApi::polyline_on_sphere_points_view_type >())
@@ -1915,7 +1998,8 @@ export_polyline_on_sphere()
 	//
 	// We don't document this wrapper (using docstrings) since it's documented in "PolylineOnSphere".
 	bp::class_< GPlatesApi::polyline_on_sphere_arcs_view_type >(
-			"PolylineOnSphereArcsView",
+			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+			"_PolylineOnSphereArcsView",
 			bp::no_init)
 		.def("__iter__",
 				bp::iterator< const GPlatesApi::polyline_on_sphere_arcs_view_type >())
@@ -1951,12 +2035,12 @@ export_polyline_on_sphere()
 					"\n"
 					"A polyline instance is both:\n"
 					"\n"
-					"* a sequence of :class:`points<PointOnSphere>` - see :meth:`get_points`, and\n"
+					"* a sequence of :class:`points<PointOnSphere>` - see :meth:`get_points<GeometryOnSphere.get_points>`, and\n"
 					"* a sequence of :class:`segments<GreatCircleArc>` (between adjacent points) "
 					"- see :meth:`get_segments`.\n"
 					"\n"
 					"In addition a polyline instance is *directly* iterable over its points (without "
-					"having to use :meth:`get_points`):\n"
+					"having to use :meth:`get_points<GeometryOnSphere.get_points>`):\n"
 					"::\n"
 					"\n"
 					"  polyline = pygplates.PolylineOnSphere(points)\n"
@@ -1999,11 +2083,10 @@ export_polyline_on_sphere()
 					bp::no_init)
 		.def("__init__",
 				bp::make_constructor(
-						&GPlatesApi::poly_geometry_on_sphere_create_from_points<GPlatesMaths::PolylineOnSphere>,
+						&GPlatesApi::polyline_on_sphere_create_from_points,
 						bp::default_call_policies(),
 						(bp::arg("points"))),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
-				// Specific overload signature...
 				"__init__(...)\n"
 				"A *PolylineOnSphere* object can be constructed in more than one way...\n"
 				"\n"
@@ -2125,7 +2208,10 @@ export_polyline_on_sphere()
 				"    try:\n"
 				"        polyline = pygplates.PolylineOnSphere(geometry, allow_one_point=False)\n"
 				"    except pygplates.InvalidPointsForPolylineConstructionError:\n"
-				"        ... # Handle failure to convert 'geometry' to a PolylineOnSphere.\n")
+				"        ... # Handle failure to convert 'geometry' to a PolylineOnSphere.\n"
+				"\n"
+				"  .. note:: If *geometry* is a polygon then only its exterior ring is converted "
+				"(interior rings are ignored).\n")
 		.def("rotation_interpolate",
 				&GPlatesApi::polyline_on_sphere_rotation_interpolate,
 				(bp::arg("from_polyline"), bp::arg("to_polyline"),
@@ -2479,6 +2565,80 @@ export_polyline_on_sphere()
 
 namespace GPlatesApi
 {
+	// Create a PolygonOnSphere from a sequence of points.
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>
+	polygon_on_sphere_create_from_points(
+			bp::object exterior_ring,  // Any python sequence (eg, list, tuple).
+			bp::object interior_rings) // Any python sequence (eg, list, tuple) or Py_None.
+	{
+		// The polygon to return.
+		boost::optional<GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type> polygon;
+
+		// Copy exterior ring points into a vector.
+		// Note: We can't pass the iterators directly to 'PolygonOnSphere::create'  because they
+		// are *input* iterators (ie, one pass only) and 'PolygonOnSphere' expects forward iterators
+		// (they actually make two passes over the points).
+ 		std::vector<GPlatesMaths::PointOnSphere> exterior_ring_points;
+		PythonExtractUtils::extract_iterable(
+				exterior_ring_points, exterior_ring, "Expected a sequence of exterior ring points");
+
+		// Read the interior rings (if any).
+		if (interior_rings != bp::object()/*Py_None*/)
+		{
+			// Extract the interior rings.
+			std::vector<bp::object/*ring*/> interior_rings_seq;
+			PythonExtractUtils::extract_iterable(
+					interior_rings_seq, interior_rings, "Expected a sequence of interior rings");
+			const unsigned int num_interior_rings = interior_rings_seq.size();
+
+			// A vector of interior rings (each ring being a vector of points).
+			std::vector<std::vector<GPlatesMaths::PointOnSphere>> interior_rings_points;
+			interior_rings_points.resize(num_interior_rings);
+
+			// Extract points from each interior ring.
+			for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+			{
+				bp::object interior_ring = interior_rings_seq[interior_ring_index];
+
+				// Copy interior ring points into a vector.
+				// Note: We can't pass the iterators directly to 'PolygonOnSphere::create'  because they
+				// are *input* iterators (ie, one pass only) and 'PolygonOnSphere' expects forward iterators
+				// (they actually make two passes over the points).
+ 				std::vector<GPlatesMaths::PointOnSphere> &interior_ring_points = interior_rings_points[interior_ring_index];
+				PythonExtractUtils::extract_iterable(
+						interior_ring_points, interior_ring, "Expected a sequence of interior ring points");
+			}
+
+			polygon = GPlatesMaths::PolygonOnSphere::create(exterior_ring_points, interior_rings_points);
+		}
+		else // just create with an exterior ring (no interior rings)...
+		{
+			polygon = GPlatesMaths::PolygonOnSphere::create(exterior_ring_points);
+		}
+
+		// With boost 1.42 we get the following compile error...
+		//   pointer_holder.hpp:145:66: error: invalid conversion from 'const void*' to 'void*'
+		// ...if we return 'PolygonOnSphere::non_null_ptr_to_const_type' and rely on
+		// 'PythonConverterUtils::register_conversion_const_non_null_intrusive_ptr'
+		// to convert for us - despite the fact that this conversion works successfully for python bindings
+		// in other source files. It's likely due to 'bp::make_constructor'.
+		//
+		// So we avoid it by using returning a pointer to 'non-const' PolygonOnSphere.
+		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolygonOnSphere>(polygon.get());
+	}
+
+	// Create a PolygonOnSphere from a sequence of points.
+	//
+	// This is a deprecated overload of 'PolygonOnSphere.__init__()' that accepts only
+	// exterior ring points (new version accepts both an exterior ring and zero or more interior rings).
+	// Also it uses the deprecated argument 'points' (which is renamed to 'exterior_ring' in new version).
+	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>
+	polygon_on_sphere_create_from_points_deprecated(
+			bp::object points) // Any python sequence (eg, list, tuple).
+	{
+		return polygon_on_sphere_create_from_points(points, bp::object()/*Py_None*/);
+	}
+
 	// Create a PolygonOnSphere from a GeometryOnSphere.
 	GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>
 	polygon_on_sphere_create_from_geometry(
@@ -2501,7 +2661,7 @@ namespace GPlatesApi
 					GPLATES_ASSERTION_SOURCE);
 
 			// Duplicate the last point until we have three points if caller allows one or two points,
-			// otherwise let 'PolygonOnSphere::create_on_heap()' throw InvalidPointsForPolygonConstructionError.
+			// otherwise let 'PolygonOnSphere::create()' throw InvalidPointsForPolygonConstructionError.
 			if (allow_one_or_two_points)
 			{
 				while (geometry_points.size() < 3)
@@ -2512,7 +2672,7 @@ namespace GPlatesApi
 
 			// Note that this raises an exception (converted to Python) if 'allow_one_or_two_points'
 			// is false - because there is only one or two points.
-			polygon = GPlatesMaths::PolygonOnSphere::create_on_heap(geometry_points);
+			polygon = GPlatesMaths::PolygonOnSphere::create(geometry_points);
 		}
 
 		// With boost 1.42 we get the following compile error...
@@ -2524,6 +2684,129 @@ namespace GPlatesApi
 		//
 		// So we avoid it by returning a pointer to 'non-const' PolygonOnSphere.
 		return GPlatesUtils::const_pointer_cast<GPlatesMaths::PolygonOnSphere>(polygon.get());
+	}
+
+	//! Typedef for PolygonOnSphere (all) points view.
+	typedef PolyGeometryOnSpherePointsView<
+					GPlatesMaths::PolygonOnSphere,
+					GPlatesMaths::PolygonOnSphere::vertex_const_iterator>
+							polygon_on_sphere_points_view_type;
+
+	polygon_on_sphere_points_view_type
+	polygon_on_sphere_get_points_view(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+	{
+		return polygon_on_sphere_points_view_type(
+				polygon_on_sphere,
+				polygon_on_sphere->vertex_begin(),
+				polygon_on_sphere->vertex_end(),
+				polygon_on_sphere->number_of_vertices());
+	}
+
+	//! Typedef for PolygonOnSphere ring points view.
+	typedef PolyGeometryOnSpherePointsView<
+					GPlatesMaths::PolygonOnSphere,
+					GPlatesMaths::PolygonOnSphere::ring_vertex_const_iterator>
+							polygon_on_sphere_ring_points_view_type;
+
+	polygon_on_sphere_ring_points_view_type
+	polygon_on_sphere_get_exterior_ring_points_view(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+	{
+		return polygon_on_sphere_ring_points_view_type(
+				polygon_on_sphere,
+				polygon_on_sphere->exterior_ring_vertex_begin(),
+				polygon_on_sphere->exterior_ring_vertex_end(),
+				polygon_on_sphere->number_of_vertices_in_exterior_ring());
+	}
+
+	polygon_on_sphere_ring_points_view_type
+	polygon_on_sphere_get_interior_ring_points_view(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
+			unsigned int interior_ring_index)
+	{
+		if (interior_ring_index >= polygon_on_sphere->number_of_interior_rings())
+		{
+			PyErr_SetString(PyExc_IndexError, "Interior ring index out of range");
+			bp::throw_error_already_set();
+		}
+
+		return polygon_on_sphere_ring_points_view_type(
+				polygon_on_sphere,
+				polygon_on_sphere->interior_ring_vertex_begin(interior_ring_index),
+				polygon_on_sphere->interior_ring_vertex_end(interior_ring_index),
+				polygon_on_sphere->number_of_vertices_in_interior_ring(interior_ring_index));
+	}
+
+	//! Typedef for PolygonOnSphere (all) arcs view.
+	typedef PolyGeometryOnSphereArcsView<
+					GPlatesMaths::PolygonOnSphere,
+					GPlatesMaths::PolygonOnSphere::const_iterator>
+							polygon_on_sphere_arcs_view_type;
+
+	polygon_on_sphere_arcs_view_type
+	polygon_on_sphere_get_arcs_view(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+	{
+		return polygon_on_sphere_arcs_view_type(
+				polygon_on_sphere,
+				polygon_on_sphere->begin(),
+				polygon_on_sphere->end(),
+				polygon_on_sphere->number_of_segments());
+	}
+
+	//! Typedef for PolygonOnSphere ring arcs view.
+	typedef PolyGeometryOnSphereArcsView<
+					GPlatesMaths::PolygonOnSphere,
+					GPlatesMaths::PolygonOnSphere::ring_const_iterator>
+							polygon_on_sphere_ring_arcs_view_type;
+
+	polygon_on_sphere_ring_arcs_view_type
+	polygon_on_sphere_get_exterior_ring_arcs_view(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere)
+	{
+		return polygon_on_sphere_ring_arcs_view_type(
+				polygon_on_sphere,
+				polygon_on_sphere->exterior_ring_begin(),
+				polygon_on_sphere->exterior_ring_end(),
+				polygon_on_sphere->number_of_segments_in_exterior_ring());
+	}
+
+	polygon_on_sphere_ring_arcs_view_type
+	polygon_on_sphere_get_interior_ring_arcs_view(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
+			unsigned int interior_ring_index)
+	{
+		if (interior_ring_index >= polygon_on_sphere->number_of_interior_rings())
+		{
+			PyErr_SetString(PyExc_IndexError, "Interior ring index out of range");
+			bp::throw_error_already_set();
+		}
+
+		return polygon_on_sphere_ring_arcs_view_type(
+				polygon_on_sphere,
+				polygon_on_sphere->interior_ring_begin(interior_ring_index),
+				polygon_on_sphere->interior_ring_end(interior_ring_index),
+				polygon_on_sphere->number_of_segments_in_interior_ring(interior_ring_index));
+	}
+
+
+	bool
+	polygon_on_sphere_contains_point(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
+			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
+			const GPlatesMaths::PointOnSphere &point_on_sphere)
+	{
+		return polygon_on_sphere_get_points_view(polygon_on_sphere).contains_point(point_on_sphere);
+	}
+
+	boost::python::object
+	polygon_on_sphere_get_item(
+			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
+			boost::python::object i)
+	{
+		return polygon_on_sphere_get_points_view(polygon_on_sphere).get_item(i);
 	}
 
 	bool
@@ -2567,7 +2850,7 @@ namespace GPlatesApi
 				tessellate(polygon_on_sphere, tessellate_radians));
 	}
 
-	GPlatesMaths::PolygonIntersections::Result
+	GPlatesMaths::PolygonPartitioner::Result
 	polygon_on_sphere_partition(
 			GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type polygon_on_sphere,
 			GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type geometry,
@@ -2575,10 +2858,10 @@ namespace GPlatesApi
 			bp::object partitioned_geometries_outside_object)
 	{
 		// Partitioned inside/outside lists may or may not get used.
-		boost::optional<GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type> partitioned_geometries_inside_storage;
-		boost::optional<GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type> partitioned_geometries_outside_storage;
-		boost::optional<GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type &> partitioned_geometries_inside;
-		boost::optional<GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type &> partitioned_geometries_outside;
+		boost::optional<GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type> partitioned_geometries_inside_storage;
+		boost::optional<GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type> partitioned_geometries_outside_storage;
+		boost::optional<GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type &> partitioned_geometries_inside;
+		boost::optional<GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type &> partitioned_geometries_outside;
 		boost::optional<bp::list> partitioned_geometries_inside_list;
 		boost::optional<bp::list> partitioned_geometries_outside_list;
 
@@ -2590,7 +2873,7 @@ namespace GPlatesApi
 				PyErr_SetString(PyExc_TypeError, "Expecting a list or None for 'partitioned_geometries_inside'");
 				bp::throw_error_already_set();
 			}
-			partitioned_geometries_inside_storage = GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type();
+			partitioned_geometries_inside_storage = GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type();
 			partitioned_geometries_inside = partitioned_geometries_inside_storage.get();
 			partitioned_geometries_inside_list = extract_partitioned_geometries_inside_list();
 		}
@@ -2603,7 +2886,7 @@ namespace GPlatesApi
 				PyErr_SetString(PyExc_TypeError, "Expecting a list or None for 'partitioned_geometries_outside'");
 				bp::throw_error_already_set();
 			}
-			partitioned_geometries_outside_storage = GPlatesMaths::PolygonIntersections::partitioned_geometry_seq_type();
+			partitioned_geometries_outside_storage = GPlatesMaths::PolygonPartitioner::partitioned_geometry_seq_type();
 			partitioned_geometries_outside = partitioned_geometries_outside_storage.get();
 			partitioned_geometries_outside_list = extract_partitioned_geometries_outside_list();
 		}
@@ -2612,10 +2895,10 @@ namespace GPlatesApi
 		// Partition the geometry.
 		//
 
-		GPlatesMaths::PolygonIntersections::non_null_ptr_type polygon_intersections =
-				GPlatesMaths::PolygonIntersections::create(polygon_on_sphere);
-		const GPlatesMaths::PolygonIntersections::Result partition_result =
-				polygon_intersections->partition_geometry(
+		GPlatesMaths::PolygonPartitioner::non_null_ptr_type polygon_partitioner =
+				GPlatesMaths::PolygonPartitioner::create(polygon_on_sphere);
+		const GPlatesMaths::PolygonPartitioner::Result partition_result =
+				polygon_partitioner->partition_geometry(
 						geometry,
 						partitioned_geometries_inside,
 						partitioned_geometries_outside);
@@ -2653,11 +2936,30 @@ void
 export_polygon_on_sphere()
 {
 	//
+	// A wrapper around view access to all *points* (exterior and interior rings combined) of a PolygonOnSphere.
+	//
+	// We don't document this wrapper (using docstrings) since it's documented in "PolygonOnSphere".
+	bp::class_< GPlatesApi::polygon_on_sphere_points_view_type >(
+			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+			"_PolygonOnSpherePointsView",
+			bp::no_init)
+		.def("__iter__",
+				bp::iterator< const GPlatesApi::polygon_on_sphere_points_view_type >())
+		.def("__len__",
+				&GPlatesApi::polygon_on_sphere_points_view_type::get_number_of_points)
+		.def("__contains__",
+				&GPlatesApi::polygon_on_sphere_points_view_type::contains_point)
+		.def("__getitem__",
+				&GPlatesApi::polygon_on_sphere_points_view_type::get_item)
+	;
+
+	//
 	// A wrapper around view access to the *points* of an exterior/interior ring of a PolygonOnSphere.
 	//
 	// We don't document this wrapper (using docstrings) since it's documented in "PolygonOnSphere".
 	bp::class_< GPlatesApi::polygon_on_sphere_ring_points_view_type >(
-			"PolygonOnSphereRingPointsView",
+			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+			"_PolygonOnSphereRingPointsView",
 			bp::no_init)
 		.def("__iter__",
 				bp::iterator< const GPlatesApi::polygon_on_sphere_ring_points_view_type >())
@@ -2670,11 +2972,30 @@ export_polygon_on_sphere()
 	;
 
 	//
+	// A wrapper around view access to all *great circle arcs* (exterior and interior rings combined) of a PolygonOnSphere.
+	//
+	// We don't document this wrapper (using docstrings) since it's documented in "PolygonOnSphere".
+	bp::class_< GPlatesApi::polygon_on_sphere_arcs_view_type >(
+			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+			"_PolygonOnSphereArcsView",
+			bp::no_init)
+		.def("__iter__",
+				bp::iterator< const GPlatesApi::polygon_on_sphere_arcs_view_type >())
+		.def("__len__",
+				&GPlatesApi::polygon_on_sphere_arcs_view_type::get_number_of_arcs)
+		.def("__contains__",
+				&GPlatesApi::polygon_on_sphere_arcs_view_type::contains_arc)
+		.def("__getitem__",
+				&GPlatesApi::polygon_on_sphere_arcs_view_type::get_item)
+	;
+
+	//
 	// A wrapper around view access to the *great circle arcs* of an exterior/interior ring of a PolygonOnSphere.
 	//
 	// We don't document this wrapper (using docstrings) since it's documented in "PolygonOnSphere".
 	bp::class_< GPlatesApi::polygon_on_sphere_ring_arcs_view_type >(
-			"PolygonOnSphereRingArcsView",
+			// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+			"_PolygonOnSphereRingArcsView",
 			bp::no_init)
 		.def("__iter__",
 				bp::iterator< const GPlatesApi::polygon_on_sphere_ring_arcs_view_type >())
@@ -2710,12 +3031,14 @@ export_polygon_on_sphere()
 					"\n"
 					"A polygon instance is both:\n"
 					"\n"
-					"* a sequence of :class:`points<PointOnSphere>` - see :meth:`get_points`, and\n"
+					"* a sequence of :class:`points<PointOnSphere>` - see :meth:`get_points<GeometryOnSphere.get_points>`, and\n"
 					"* a sequence of :class:`segments<GreatCircleArc>` (between adjacent points) "
 					"- see :meth:`get_segments`.\n"
 					"\n"
+					".. note:: This includes points and segments from the exterior ring followed by all interior rings (if any).\n"
+					"\n"
 					"In addition a polygon instance is *directly* iterable over its points (without "
-					"having to use :meth:`get_points`):\n"
+					"having to use :meth:`get_points<GeometryOnSphere.get_points>`):\n"
 					"::\n"
 					"\n"
 					"  polygon = pygplates.PolygonOnSphere(points)\n"
@@ -2724,38 +3047,43 @@ export_polygon_on_sphere()
 					"\n"
 					"...and so the following operations for accessing the points are supported:\n"
 					"\n"
-					"=========================== ==========================================================\n"
+					"=========================== =====================================================================\n"
 					"Operation                   Result\n"
-					"=========================== ==========================================================\n"
-					"``len(polygon)``            number of vertices in *polygon*\n"
+					"=========================== =====================================================================\n"
+					"``len(polygon)``            number of vertices in *polygon* (in exterior ring and interior rings)\n"
 					"``for p in polygon``        iterates over the vertices *p* of *polygon*\n"
 					"``p in polygon``            ``True`` if *p* is equal to a **vertex** of *polygon*\n"
 					"``p not in polygon``        ``False`` if *p* is equal to a **vertex** of *polygon*\n"
 					"``polygon[i]``              the vertex of *polygon* at index *i*\n"
 					"``polygon[i:j]``            slice of *polygon* from *i* to *j*\n"
 					"``polygon[i:j:k]``          slice of *polygon* from *i* to *j* with step *k*\n"
-					"=========================== ==========================================================\n"
+					"=========================== =====================================================================\n"
 					"\n"
 					".. note:: ``if p in polygon`` does **not** test whether a point ``p`` is *inside* the "
-					"the *interior* of a polygon - use :meth:`is_point_in_polygon` for that instead.\n"
+					"the *interior area* of a polygon - use :meth:`is_point_in_polygon` for that instead.\n"
 					"\n"
 					"| Since a *PolygonOnSphere* is **immutable** it contains no operations or "
 					"methods that modify its state (such as adding or removing points). "
 					"This is similar to other immutable types in python such as ``str``.\n"
 					"| So instead of modifying an existing polygon you will need to create a new "
-					":class:`PolygonOnSphere` instance as the following example demonstrates:\n"
+					":class:`PolygonOnSphere` instance. The following example demonstrates modifying "
+					"points in the exterior ring:\n"
 					"\n"
 					"::\n"
 					"\n"
-					"  # Get a list of points from an existing 'polygon'.\n"
-					"  points = list(polygon)\n"
+					"  # Get a list of exterior ring points from an existing 'polygon'.\n"
+					"  exterior_ring = list(polygon.get_exterior_ring_points())\n"
 					"\n"
-					"  # Modify the points list somehow.\n"
-					"  points[0] = pygplates.PointOnSphere(...)\n"
-					"  points.append(pygplates.PointOnSphere(...))\n"
+					"  # Modify the exterior ring points list somehow.\n"
+					"  exterior_ring[0] = pygplates.PointOnSphere(...)\n"
+					"  exterior_ring.append(pygplates.PointOnSphere(...))\n"
 					"\n"
-					"  # 'polygon' now references a new PolygonOnSphere instance.\n"
-					"  polygon = pygplates.PolygonOnSphere(points)\n"
+					"  # Extract the interior rings (we'll just pass these through unmodified).\n"
+					"  interior_rings = [list(polygon.get_interior_ring_points(interior_ring_index))\n"
+					"      for interior_ring_index in range(polygon.get_number_of_interior_rings())]\n"
+					"\n"
+					"  # 'polygon' now references a new PolygonOnSphere instance with a modified exterior ring.\n"
+					"  polygon = pygplates.PolygonOnSphere(exterior_ring, interior_rings)\n"
 					"\n"
 					"The following example demonstrates creating a :class:`PolygonOnSphere` from a "
 					":class:`PolylineOnSphere`:\n"
@@ -2763,45 +3091,63 @@ export_polygon_on_sphere()
 					"\n"
 					"  polygon = pygplates.PolygonOnSphere(polyline)\n"
 					"\n"
-					".. note:: A polygon closes the loop between its last and first points "
-					"so there's no need to make the first and last points equal.\n",
+					".. note:: A polygon closes the loop between the last and first points in its exterior ring "
+					"(created from the polyline) so there's no need to make the first and last points equal.\n"
+					"\n"
+					".. versionchanged:: 0.36\n"
+					"   :meth:`get_points<GeometryOnSphere.get_points>` and :meth:`get_segments` now include "
+					"points and segments from interior rings (as do the operations listed in the table above).\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
+		// Define deprecated '__init__' first since we want it to have lowest priority
+		// (later definitions get higher priority). This is important because the overload accepting
+		// 'extend_total_reconstruction_poles_to_distant_past' argument has the exact same argument types
+		// (only the argument names differ).
+		// Also exclude a docstring for it, since we don't want it documented anymore...
 		.def("__init__",
 				bp::make_constructor(
-						&GPlatesApi::poly_geometry_on_sphere_create_from_points<GPlatesMaths::PolygonOnSphere>,
+						&GPlatesApi::polygon_on_sphere_create_from_points_deprecated,
 						bp::default_call_policies(),
-						(bp::arg("points"))),
+						(bp::arg("points"))))
+		.def("__init__",
+				bp::make_constructor(
+						&GPlatesApi::polygon_on_sphere_create_from_points,
+						bp::default_call_policies(),
+						(bp::arg("exterior_ring"),
+								bp::arg("interior_rings") = bp::object()/*Py_None*/)),
 				// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
-				// Specific overload signature...
 				"__init__(...)\n"
 				"A *PolygonOnSphere* object can be constructed in more than one way...\n"
 				"\n"
 				// Specific overload signature...
-				"__init__(points)\n"
-				"  Create a polygon from a sequence of (x,y,z) or (latitude,longitude) points.\n"
+				"__init__(exterior_ring, [interior_rings])\n"
+				"  Create a polygon from an exterior ring and optional interior rings, where each ring "
+				"is a sequence of (x,y,z) or (latitude,longitude) points.\n"
 				"\n"
-				"  :param points: A sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).\n"
-				"  :type points: Any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or "
-				"tuple (float,float,float) or tuple (float,float)\n"
+				"  :param exterior_ring: Exterior ring sequence of (x,y,z) points, or (latitude,longitude) points (in degrees).\n"
+				"  :type exterior_ring: Any sequence of :class:`PointOnSphere` or :class:`LatLonPoint` or "
+				"tuple (float,float,float) or tuple (float,float).\n"
+				"  :param interior_rings: Optional sequence of interior rings where each ring is a sequence of "
+				"(x,y,z) points, or (latitude,longitude) points (in degrees).\n"
+				"  :type interior_rings: Any sequence of rings (where ring is any sequence of :class:`PointOnSphere` "
+				"or :class:`LatLonPoint` or tuple (float,float,float) or tuple (float,float)), or None.\n"
 				"  :raises: InvalidLatLonError if any *latitude* or *longitude* is invalid\n"
 				"  :raises: ViolatedUnitVectorInvariantError if any (x,y,z) is not unit magnitude\n"
-				"  :raises: InvalidPointsForPolygonConstructionError if sequence has less than three points "
-				"or if any two points (adjacent in the *points* sequence) are antipodal to each other "
-				"(on opposite sides of the globe)\n"
+				"  :raises: InvalidPointsForPolygonConstructionError if any ring has less than three points "
+				"or if any two points (adjacent in a ring) are antipodal to each other (on opposite sides of the globe)\n"
 				"\n"
-				"  .. note:: The sequence must contain at least three points in order to be a valid "
-				"polygon, otherwise *InvalidPointsForPolygonConstructionError* will be raised.\n"
+				"  .. note:: Each ring must contain at least three points in order for the polygon to be valid, "
+				"otherwise *InvalidPointsForPolygonConstructionError* will be raised.\n"
 				"\n"
 				"  During creation, a :class:`GreatCircleArc` is created between each adjacent pair of "
-				"of points in *points* - see :meth:`get_segments`. The last arc is "
-				"created between the last and first points to close the loop of the polygon. "
-				"For this reason you do *not* need to ensure that the first and last points have the "
-				"same position (although it's not an error if this is the case because the final arc "
+				"of points in a ring - see :meth:`get_segments`. The last arc in each ring is "
+				"created between the last and first points in that ring to close the loop of the ring. "
+				"For this reason you do *not* need to ensure that the first and last points in a ring have the "
+				"same position (although it's not an error if this is the case because the final arc in the ring "
 				"will then just have a zero length).\n"
 				"\n"
-				"  It is *not* an error for adjacent points in the sequence to be coincident. In this "
+				"  It is *not* an error for adjacent points in a ring to be coincident. In this "
 				"case each :class:`GreatCircleArc` between two such adjacent points will have zero length "
 				"(:meth:`GreatCircleArc.is_zero_length` will return ``True``) and will have no "
 				"rotation axis (:meth:`GreatCircleArc.get_rotation_axis` will raise an error).\n"
@@ -2809,23 +3155,41 @@ export_polygon_on_sphere()
 				"  The following example shows a few different ways to create a :class:`polygon<PolygonOnSphere>`:\n"
 				"  ::\n"
 				"\n"
+				"    # Polygon with only an exterior ring.\n"
 				"    points = []\n"
 				"    points.append(pygplates.PointOnSphere(...))\n"
 				"    points.append(pygplates.PointOnSphere(...))\n"
 				"    points.append(pygplates.PointOnSphere(...))\n"
 				"    polygon = pygplates.PolygonOnSphere(points)\n"
 				"    \n"
+				"    # Polygon with only an exterior ring.\n"
 				"    points = []\n"
 				"    points.append((lat1,lon1))\n"
 				"    points.append((lat2,lon2))\n"
 				"    points.append((lat3,lon3))\n"
 				"    polygon = pygplates.PolygonOnSphere(points)\n"
 				"    \n"
+				"    # Polygon with only an exterior ring.\n"
 				"    points = []\n"
 				"    points.append([x1,y1,z1])\n"
 				"    points.append([x2,y2,z2])\n"
 				"    points.append([x3,y3,z3])\n"
 				"    polygon = pygplates.PolygonOnSphere(points)\n"
+				"    \n"
+				"    # Polygon with an exterior ring and interior rings.\n"
+				"    exterior_ring = []\n"
+				"    exterior_ring.append(pygplates.PointOnSphere(...))\n"
+				"    ...\n"
+				"    interior_rings = []\n"
+				"    first_interior_ring = []\n"
+				"    first_interior_ring.append(pygplates.PointOnSphere(...))\n"
+				"    ...\n"
+				"    interior_rings.append(first_interior_ring)\n"
+				"    second_interior_ring = []\n"
+				"    second_interior_ring.append(pygplates.PointOnSphere(...))\n"
+				"    ...\n"
+				"    interior_rings.append(second_interior_ring)\n"
+				"    polygon = pygplates.PolygonOnSphere(exterior_ring, interior_rings)\n"
 				"\n"
 				"  If you have latitude/longitude values but they are not a sequence of tuples or "
 				"if the latitude/longitude order is swapped then the following examples demonstrate "
@@ -2847,7 +3211,10 @@ export_polygon_on_sphere()
 				"    \n"
 				"    # Lon/lat list of tuples (ie, different latitude/longitude order).\n"
 				"    points = [(lon1, lat1), (lon2, lat2), (lon3, lat3)]\n"
-				"    polygon = pygplates.PolygonOnSphere([(lat,lon) for lon, lat in points])\n")
+				"    polygon = pygplates.PolygonOnSphere([(lat,lon) for lon, lat in points])\n"
+				"\n"
+				"  .. versionchanged:: 0.36\n"
+				"     Can now optionally specify interior rings (in addition to the exterior ring).\n")
 		.def("__init__",
 				bp::make_constructor(
 						&GPlatesApi::polygon_on_sphere_create_from_geometry,
@@ -2897,60 +3264,230 @@ export_polygon_on_sphere()
 				"    try:\n"
 				"        polygon = pygplates.PolygonOnSphere(geometry, allow_one_or_two_points=False)\n"
 				"    except pygplates.InvalidPointsForPolygonConstructionError:\n"
-				"        ... # Handle failure to convert 'geometry' to a PolygonOnSphere.\n")
+				"        ... # Handle failure to convert 'geometry' to a PolygonOnSphere.\n"
+				"\n"
+				"  .. note:: The created polygon will have no interior rings unless *geometry* is also a "
+				":class:`PolygonOnSphere` and has interior rings.\n")
 		.def("get_segments",
-				&GPlatesApi::polygon_on_sphere_get_exterior_ring_arcs_view,
+				&GPlatesApi::polygon_on_sphere_get_arcs_view,
 				"get_segments()\n"
-				"  Returns a *read-only* sequence of :class:`segments<GreatCircleArc>` in this polygon.\n"
+				"  Returns a *read-only* sequence of **all** :class:`segments<GreatCircleArc>` in this polygon "
+				"(exterior ring followed by interior rings if any).\n"
 				"\n"
 				"  :rtype: a read-only sequence of :class:`GreatCircleArc`\n"
 				"\n"
 				"  The following operations for accessing the great circle arcs in the returned "
 				"read-only sequence are supported:\n"
 				"\n"
-				"  =========================== ==========================================================\n"
+				"  =========================== =======================================================================\n"
 				"  Operation                   Result\n"
-				"  =========================== ==========================================================\n"
-				"  ``len(seq)``                number of segments of the polygon\n"
+				"  =========================== =======================================================================\n"
+				"  ``len(seq)``                number of segments of the polygon (in exterior ring and interior rings)\n"
 				"  ``for s in seq``            iterates over the segments *s* of the polygon\n"
 				"  ``s in seq``                ``True`` if *s* is an segment of the polygon\n"
 				"  ``s not in seq``            ``False`` if *s* is an segment of the polygon\n"
 				"  ``seq[i]``                  the segment of the polygon at index *i*\n"
 				"  ``seq[i:j]``                slice of segments of the polygon from *i* to *j*\n"
 				"  ``seq[i:j:k]``              slice of segments of the polygon from *i* to *j* with step *k*\n"
-				"  =========================== ==========================================================\n"
+				"  =========================== =======================================================================\n"
 				"\n"
-				"  .. note:: Between each adjacent pair of :class:`points<PointOnSphere>` there "
-				"is an :class:`segment<GreatCircleArc>` such that the number of points equals the number of segments.\n"
+				"  .. note:: Between each adjacent pair of :class:`points<PointOnSphere>` in each ring there is a "
+				":class:`segment<GreatCircleArc>` such that the total number of points equals the total number of segments.\n"
 				"\n"
 				"  The following example demonstrates some uses of the above operations:\n"
 				"  ::\n"
 				"\n"
-				"    polygon = pygplates.PolygonOnSphere(points)\n"
+				"    polygon = pygplates.PolygonOnSphere(exterior_ring, interior_rings)\n"
 				"    ...\n"
 				"    segments = polygon.get_segments()\n"
 				"    for segment in segments:\n"
 				"        if not segment.is_zero_length():\n"
 				"            segment_midpoint_direction = segment.get_arc_direction(0.5)\n"
-				"    first_segment = segments[0]\n"
-				"    last_segment = segments[-1]\n"
 				"\n"
-				"  .. note:: The :meth:`end point<GreatCircleArc.get_end_point>` of the last segment is "
-				"equal to the :meth:`start point<GreatCircleArc.get_start_point>` of the first segment.\n"
+				"  .. note:: The :meth:`end point<GreatCircleArc.get_end_point>` of the last segment in a ring is "
+				"equal to the :meth:`start point<GreatCircleArc.get_start_point>` of the first segment in that ring.\n"
 				"\n"
 				"  .. note:: The returned sequence is *read-only* and cannot be modified.\n"
 				"\n"
-				"  .. note:: If you want a modifiable sequence consider wrapping the returned sequence in a ``list`` "
-				"using something like ``segments = list(polygon.get_segments())`` **but** note that modifying "
-				"the ``list`` (eg, appending a new segment) will **not** modify the original polygon.\n")
+				"  .. versionchanged:: 0.36\n"
+				"     The returned segments now include interior rings (if any).\n")
+		.def("get_exterior_ring_segments",
+				&GPlatesApi::polygon_on_sphere_get_exterior_ring_arcs_view,
+				"get_exterior_ring_segments()\n"
+				"  Returns a *read-only* sequence of :class:`segments<GreatCircleArc>` in the *exterior* ring.\n"
+				"\n"
+				"  :rtype: a read-only sequence of :class:`GreatCircleArc`\n"
+				"\n"
+				"  The following operations for accessing the great circle arcs in the returned "
+				"read-only sequence are supported:\n"
+				"\n"
+				"  =========================== ============================================================================\n"
+				"  Operation                   Result\n"
+				"  =========================== ============================================================================\n"
+				"  ``len(seq)``                number of segments in the exterior ring\n"
+				"  ``for s in seq``            iterates over the segments *s* in the exterior ring\n"
+				"  ``s in seq``                ``True`` if *s* is an exterior ring segment\n"
+				"  ``s not in seq``            ``False`` if *s* is an exterior ring segment\n"
+				"  ``seq[i]``                  the exterior ring segment at index *i*\n"
+				"  ``seq[i:j]``                slice of exterior ring segments from *i* to *j*\n"
+				"  ``seq[i:j:k]``              slice of exterior ring segments from *i* to *j* with step *k*\n"
+				"  =========================== ============================================================================\n"
+				"\n"
+				"  .. note:: Between each adjacent pair of :class:`points<PointOnSphere>` in the exterior ring there is a "
+				":class:`segment<GreatCircleArc>` such that the number of exterior ring points equals the number of exterior ring segments.\n"
+				"\n"
+				"  The following example demonstrates some uses of the above operations:\n"
+				"  ::\n"
+				"\n"
+				"    polygon = pygplates.PolygonOnSphere(exterior_ring)\n"
+				"    ...\n"
+				"    exterior_ring_segments = polygon.get_exterior_ring_segments()\n"
+				"    for segment in exterior_ring_segments:\n"
+				"        if not segment.is_zero_length():\n"
+				"            segment_midpoint_direction = segment.get_arc_direction(0.5)\n"
+				"\n"
+				"  .. note:: The :meth:`end point<GreatCircleArc.get_end_point>` of the last segment in the exterior ring is "
+				"equal to the :meth:`start point<GreatCircleArc.get_start_point>` of the first segment in the exterior ring.\n"
+				"\n"
+				"  .. note:: The returned sequence is *read-only* and cannot be modified.\n"
+				"\n"
+				"  .. versionadded:: 0.36\n")
+		.def("get_exterior_ring_points",
+				&GPlatesApi::polygon_on_sphere_get_exterior_ring_points_view,
+				"get_exterior_ring_points()\n"
+				"  Returns a *read-only* sequence of :class:`points<PointOnSphere>` in the *exterior* ring.\n"
+				"\n"
+				"  :rtype: a read-only sequence of :class:`PointOnSphere`\n"
+				"\n"
+				"  The following operations for accessing the points in the returned read-only sequence are supported:\n"
+				"\n"
+				"  ============================ ===========================================================\n"
+				"  Operation                    Result\n"
+				"  ============================ ===========================================================\n"
+				"  ``len(seq)``                 number of points in the exterior ring\n"
+				"  ``for p in seq``             iterates over the points *p* in the exterior ring\n"
+				"  ``p in seq``                 ``True`` if *p* is an exterior ring point\n"
+				"  ``p not in seq``             ``False`` if *p* is an exterior ring point\n"
+				"  ``seq[i]``                   the exterior ring point at index *i*\n"
+				"  ``seq[i:j]``                 slice of exterior ring points from *i* to *j*\n"
+				"  ``seq[i:j:k]``               slice of exterior ring points from *i* to *j* with step *k*\n"
+				"  ============================ ===========================================================\n"
+				"\n"
+				"  The following example demonstrates some uses of the above operations:\n"
+				"  ::\n"
+				"\n"
+				"    polygon = pygplates.PolygonOnSphere(exterior_ring)\n"
+				"    ...\n"
+				"    exterior_ring_points = polygon.get_exterior_ring_points()\n"
+				"    for point in exterior_ring_points:\n"
+				"        print(point)\n"
+				"\n"
+				"  .. note:: The returned sequence is *read-only* and cannot be modified.\n"
+				"\n"
+				"  .. versionadded:: 0.36\n")
+		.def("get_number_of_interior_rings",
+				&GPlatesMaths::PolygonOnSphere::number_of_interior_rings,
+				"get_number_of_interior_rings()\n"
+				"  Returns the number of interior rings.\n"
+				"\n"
+				"  :rtype: int\n"
+				"\n"
+				"  If there are no interior rings then ``0`` is returned.\n"
+				"\n"
+				"  .. versionadded:: 0.36\n")
+		.def("get_interior_ring_segments",
+				&GPlatesApi::polygon_on_sphere_get_interior_ring_arcs_view,
+				(bp::arg("interior_ring_index")),
+				"get_interior_ring_segments(interior_ring_index)\n"
+				"  Returns a *read-only* sequence of :class:`segments<GreatCircleArc>` in the *interior* ring "
+				"at the specified interior ring index.\n"
+				"\n"
+				"  :param interior_ring_index: Index of interior ring (must be less than :meth:`get_number_of_interior_rings`).\n"
+				"  :type interior_ring_index: int\n"
+				"  :rtype: a read-only sequence of :class:`GreatCircleArc`\n"
+				"\n"
+				"  The following operations for accessing the great circle arcs in the returned "
+				"read-only sequence are supported:\n"
+				"\n"
+				"  =========================== ============================================================================\n"
+				"  Operation                   Result\n"
+				"  =========================== ============================================================================\n"
+				"  ``len(seq)``                number of segments in the interior ring\n"
+				"  ``for s in seq``            iterates over the segments *s* in the interior ring\n"
+				"  ``s in seq``                ``True`` if *s* is a segment in the interior ring\n"
+				"  ``s not in seq``            ``False`` if *s* is a segment in the interior ring\n"
+				"  ``seq[i]``                  the interior ring's segment at index *i*\n"
+				"  ``seq[i:j]``                slice of the interior ring's segments from *i* to *j*\n"
+				"  ``seq[i:j:k]``              slice of the interior ring's segments from *i* to *j* with step *k*\n"
+				"  =========================== ============================================================================\n"
+				"\n"
+				"  .. note:: Between each adjacent pair of :class:`points<PointOnSphere>` in the interior ring there is a "
+				":class:`segment<GreatCircleArc>` such that the number of points in the interior ring equals its number of segments.\n"
+				"\n"
+				"  The following example demonstrates some uses of the above operations:\n"
+				"  ::\n"
+				"\n"
+				"    polygon = pygplates.PolygonOnSphere(exterior_ring, [interior_ring_0, interior_ring_1])\n"
+				"    ...\n"
+				"    for interior_ring_index in range(polygon.get_number_of_interior_rings()):\n"
+				"        interior_ring_segments = polygon.get_interior_ring_segments(interior_ring_index)\n"
+				"        for segment in interior_ring_segments:\n"
+				"            if not segment.is_zero_length():\n"
+				"                segment_midpoint_direction = segment.get_arc_direction(0.5)\n"
+				"\n"
+				"  .. note:: The :meth:`end point<GreatCircleArc.get_end_point>` of the last segment in an interior ring is "
+				"equal to the :meth:`start point<GreatCircleArc.get_start_point>` of the first segment in that interior ring.\n"
+				"\n"
+				"  .. note:: The returned sequence is *read-only* and cannot be modified.\n"
+				"\n"
+				"  .. versionadded:: 0.36\n")
+		.def("get_interior_ring_points",
+				&GPlatesApi::polygon_on_sphere_get_interior_ring_points_view,
+				(bp::arg("interior_ring_index")),
+				"get_interior_ring_points(interior_ring_index)\n"
+				"  Returns a *read-only* sequence of :class:`points<PointOnSphere>` in the *interior* ring "
+				"at the specified interior ring index.\n"
+				"\n"
+				"  :param interior_ring_index: Index of interior ring (must be less than :meth:`get_number_of_interior_rings`).\n"
+				"  :type interior_ring_index: int\n"
+				"  :rtype: a read-only sequence of :class:`PointOnSphere`\n"
+				"\n"
+				"  The following operations for accessing the points in the returned read-only sequence are supported:\n"
+				"\n"
+				"  ============================ =============================================================\n"
+				"  Operation                    Result\n"
+				"  ============================ =============================================================\n"
+				"  ``len(seq)``                 number of points in the interior ring\n"
+				"  ``for p in seq``             iterates over the points *p* in the interior ring\n"
+				"  ``p in seq``                 ``True`` if *p* is a point in the interior ring\n"
+				"  ``p not in seq``             ``False`` if *p* is a point in the interior ring\n"
+				"  ``seq[i]``                   the interior ring's point at index *i*\n"
+				"  ``seq[i:j]``                 slice of interior ring's points from *i* to *j*\n"
+				"  ``seq[i:j:k]``               slice of interior ring's points from *i* to *j* with step *k*\n"
+				"  ============================ =============================================================\n"
+				"\n"
+				"  The following example demonstrates some uses of the above operations:\n"
+				"  ::\n"
+				"\n"
+				"    polygon = pygplates.PolygonOnSphere(exterior_ring, [interior_ring_0, interior_ring_1])\n"
+				"    ...\n"
+				"    for interior_ring_index in range(polygon.get_number_of_interior_rings()):\n"
+				"        interior_ring_points = polygon.get_interior_ring_points(interior_ring_index)\n"
+				"        for point in interior_ring_points:\n"
+				"            print(point)\n"
+				"\n"
+				"  .. note:: The returned sequence is *read-only* and cannot be modified.\n"
+				"\n"
+				"  .. versionadded:: 0.36\n")
 		.def("get_arc_length",
 				&GPlatesMaths::PolygonOnSphere::get_arc_length,
 				"get_arc_length()\n"
-				"  Returns the total arc length of this polygon (in radians).\n"
+				"  Returns the total arc length of this polygon (in radians) including the exterior ring "
+				"and all interiors rings (if any).\n"
 				"\n"
 				"  :rtype: float\n"
 				"\n"
-				"  | This is the sum of the arc lengths of the :meth:`segments<get_segments>` of this polygon.\n"
+				"  | This is the sum of the arc lengths of the exterior ring and all interior rings (if any).\n"
 				"  | To convert to distance, multiply the result by the Earth radius (see :class:`Earth`).\n")
 		.def("get_area",
 				&GPlatesMaths::PolygonOnSphere::get_area,
@@ -2962,7 +3499,10 @@ export_polygon_on_sphere()
 				"  The area is essentially the absolute value of the :meth:`signed area<get_signed_area>`.\n"
 				"\n"
 				"  To convert to area on the Earth's surface, multiply the result by the Earth radius squared "
-				"(see :class:`Earth`).\n")
+				"(see :class:`Earth`).\n"
+				"\n"
+				"  .. note:: The interior rings reduce the absolute area of the exterior ring "
+				"(regardless of their orientation) because they are holes in the polygon.\n")
 		.def("get_signed_area",
 				&GPlatesMaths::PolygonOnSphere::get_signed_area,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -2978,6 +3518,11 @@ export_polygon_on_sphere()
 				"\n"
 				"  To convert to *signed* area on the Earth's surface, multiply the result by the "
 				"Earth radius squared (see :class:`Earth`).\n"
+				"\n"
+				"  .. note:: The interior rings reduce the absolute area of the exterior ring "
+				"(regardless of their orientation) because they are holes in the polygon. "
+				"So if the signed area of exterior ring is positive then any interior rings will reduce that, "
+				"and if it's negative then any interior rings will make it less negative.\n"
 				"\n"
 				"  .. seealso:: :meth:`get_area`\n")
 		.def("get_orientation",
@@ -2996,7 +3541,10 @@ export_polygon_on_sphere()
 				"    if polygon.get_orientation() == pygplates.PolygonOnSphere.Orientation.clockwise:\n"
 				"      print 'Orientation is clockwise'\n"
 				"    else:\n"
-				"      print 'Orientation is counter-clockwise'\n")
+				"      print 'Orientation is counter-clockwise'\n"
+				"\n"
+				"  .. note:: The orientation is determined by the sign of the :meth:`signed area<get_signed_area>` "
+				"(with an optimization to make it more efficient in most cases).\n")
 		.def("is_point_in_polygon",
 				&GPlatesApi::polygon_on_sphere_is_point_in_polygon,
 				(bp::arg("point")),
@@ -3013,7 +3561,11 @@ export_polygon_on_sphere()
 				"  ::\n"
 				"\n"
 				"    if polygon.is_point_in_polygon((latitude, longitude)):\n"
-				"      ...\n")
+				"      ...\n"
+				"\n"
+				"  .. note:: If a polygon has one or more non-intersecting interior rings contained fully within its "
+				"exterior ring and the test point is inside any interior ring then the test point is considered to be "
+				"*outside* the polygon. This is because the interior rings subtract area from the exterior ring.\n")
 		.def("partition",
 				&GPlatesApi::polygon_on_sphere_partition,
 				(bp::arg("geometry"),
@@ -3095,8 +3647,8 @@ export_polygon_on_sphere()
 				"  :rtype: :class:`PointOnSphere`\n"
 				"\n"
 				"  The *boundary* centroid is calculated as a weighted average of the mid-points of the "
-				":class:`great circle arcs<GreatCircleArc>` of this polygon with weighting "
-				"proportional to the individual arc lengths.\n"
+				":class:`great circle arcs<GreatCircleArc>` of the *exterior* ring of this polygon with "
+				"weighting proportional to the individual arc lengths. The *interior* rings are ignored.\n"
 				"\n"
 				"  Note that if you want a centroid closer to the centre-of-mass of the polygon interior "
 				"then use :meth:`get_interior_centroid` instead.\n")
@@ -3108,15 +3660,25 @@ export_polygon_on_sphere()
 				"  :rtype: :class:`PointOnSphere`\n"
 				"\n"
 				"  The *interior* centroid is calculated as a weighted average of the centroids of "
-				"spherical triangles formed by the :class:`great circle arcs<GreatCircleArc>` of this polygon "
-				"and its (boundary) centroid with weighting proportional to the signed area of each individual "
-				"spherical triangle. The three vertices of each spherical triangle consist of the "
-				"polygon (boundary) centroid and the two end points of a great circle arc.\n"
+				"spherical triangles formed by all :class:`great circle arcs<GreatCircleArc>` of this polygon "
+				"with weighting proportional to the signed area of each individual spherical triangle. "
+				"The interior rings change the spherical area weighting because they are holes in the polygon "
+				"and essentially cut out the internal area of the exterior ring.\n"
 				"\n"
 				"  This centroid is useful when the centre-of-mass of the polygon interior is desired. "
 				"For example, the *interior* centroid of a bottom-heavy, pear-shaped polygon will be "
 				"closer to the bottom of the polygon. This centroid is not exactly at the centre-of-mass, "
 				"but it will be a lot closer to the real centre-of-mass than :meth:`get_boundary_centroid`.\n")
+		.def("get_centroid",
+				&GPlatesApi::polygon_on_sphere_get_interior_centroid,
+				"get_centroid()\n"
+				"  Returns the centroid of this polygon (equivalent to calling :meth:`get_interior_centroid`).\n"
+				"\n"
+				"  :rtype: :class:`PointOnSphere`\n"
+				"\n"
+				"  .. seealso:: :meth:`get_interior_centroid`\n"
+				"\n"
+				"  .. versionadded:: 0.36\n")
 		.def("to_tessellated",
 				&GPlatesApi::polygon_on_sphere_to_tessellated,
 				(bp::arg("tessellate_radians")),
@@ -3138,7 +3700,7 @@ export_polygon_on_sphere()
 				"  .. note:: Since a *PolygonOnSphere* is immutable it cannot be modified. Which is why a "
 				"new (tessellated) *PolygonOnSphere* is returned.\n"
 				"\n"
-				"  .. note:: The distance between adjacent points (in the tessellated polygon) will not be exactly "
+				"  .. note:: The distance between adjacent points (in each tessellated ring) will not be exactly "
 				"*uniform*. This is because each :class:`segment<GreatCircleArc>` in the original polygon is "
 				"tessellated to the nearest integer number of points (that keeps that segment under the threshold) "
 				"and hence each original *segment* will have a slightly different tessellation angle.\n"
@@ -3146,11 +3708,11 @@ export_polygon_on_sphere()
 				"  .. seealso:: :meth:`GreatCircleArc.to_tessellated`\n")
 		.def("__iter__",
 				bp::range(
-						&GPlatesMaths::PolygonOnSphere::exterior_ring_vertex_begin,
-						&GPlatesMaths::PolygonOnSphere::exterior_ring_vertex_end))
-		.def("__len__", &GPlatesMaths::PolygonOnSphere::number_of_vertices_in_exterior_ring)
-		.def("__contains__", &GPlatesApi::polygon_on_sphere_exterior_ring_contains_point)
-		.def("__getitem__", &GPlatesApi::polygon_on_sphere_exterior_ring_get_item)
+						&GPlatesMaths::PolygonOnSphere::vertex_begin,
+						&GPlatesMaths::PolygonOnSphere::vertex_end))
+		.def("__len__", &GPlatesMaths::PolygonOnSphere::number_of_vertices)
+		.def("__contains__", &GPlatesApi::polygon_on_sphere_contains_point)
+		.def("__getitem__", &GPlatesApi::polygon_on_sphere_get_item)
 		// Due to the numerical tolerance in comparisons we cannot make hashable.
 		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
@@ -3167,13 +3729,13 @@ export_polygon_on_sphere()
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::PolygonOrientation::Orientation>();
 
 	// An enumeration nested within python class PolygonOnSphere (due to above 'bp::scope').
-	bp::enum_<GPlatesMaths::PolygonIntersections::Result>("PartitionResult")
-			.value("inside", GPlatesMaths::PolygonIntersections::GEOMETRY_INSIDE)
-			.value("outside", GPlatesMaths::PolygonIntersections::GEOMETRY_OUTSIDE)
-			.value("intersecting", GPlatesMaths::PolygonIntersections::GEOMETRY_INTERSECTING);
+	bp::enum_<GPlatesMaths::PolygonPartitioner::Result>("PartitionResult")
+			.value("inside", GPlatesMaths::PolygonPartitioner::GEOMETRY_INSIDE)
+			.value("outside", GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE)
+			.value("intersecting", GPlatesMaths::PolygonPartitioner::GEOMETRY_INTERSECTING);
 
-	// Enable boost::optional<GPlatesMaths::PolygonOrientation::PolygonIntersections::Result> to be passed to and from python.
-	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::PolygonIntersections::Result>();
+	// Enable boost::optional<GPlatesMaths::PolygonPartitioner::Result> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::PolygonPartitioner::Result>();
 
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.

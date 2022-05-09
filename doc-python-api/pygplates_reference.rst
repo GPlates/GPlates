@@ -17,7 +17,7 @@ This document lists the Python functions and classes that make up the GPlates Py
 Reconstruction
 --------------
 
-Functions to reconstruct backward and forward in time:
+Function to reconstruct backward and forward in time:
 
 .. autosummary::
    :toctree: generated
@@ -47,7 +47,26 @@ All three above reconstructed feature types inherit from:
 Topology
 --------
 
-Functions to resolve topologies:
+Classes to query the history of a topological model, and reconstruct regular features using it:
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.TopologicalModel
+   pygplates.TopologicalSnapshot
+   pygplates.ReconstructedGeometryTimeSpan
+   pygplates.TopologyPointLocation
+
+Parameters to control how topologies are resolved:
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.ResolveTopologyParameters
+
+Function to resolve topologies:
 
 .. autosummary::
    :toctree: generated
@@ -158,10 +177,6 @@ Classes that read/write data from/to files:
    :toctree: generated
 
    pygplates.FeatureCollection
-   pygplates.FeatureCollectionFileFormatRegistry
-
-.. note:: ``FeatureCollection`` is easier to use for
-   :meth:`reading<pygplates.FeatureCollection.read>` and :meth:`writing<pygplates.FeatureCollection.write>`.
 
 Feature
 -------

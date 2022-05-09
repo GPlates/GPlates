@@ -2737,7 +2737,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 
 		// We're currently traversing the 'GPlatesMaths::PointOnSphere' list so the dynamic_cast should not fail.
 		const GPlatesMaths::PointOnSphere &point_on_sphere =
-				dynamic_cast<const GPlatesMaths::PointOnSphere &>(seed_co_registration.geometry);
+				dynamic_cast<const GPlatesMaths::PointGeometryOnSphere &>(seed_co_registration.geometry).position();
 
 		// Most of the vertex data is the same for all vertices in the seed geometry.
 		PointRegionOfInterestVertex vertex;
@@ -3060,7 +3060,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 
 		// We're currently traversing the 'GPlatesMaths::PointOnSphere' list so the dynamic_cast should not fail.
 		const GPlatesMaths::PointOnSphere &point_on_sphere =
-				dynamic_cast<const GPlatesMaths::PointOnSphere &>(seed_co_registration.geometry);
+				dynamic_cast<const GPlatesMaths::PointGeometryOnSphere &>(seed_co_registration.geometry).position();
 
 		// Most of the vertex data is the same for all vertices in the seed geometry.
 		PointRegionOfInterestVertex vertex;
@@ -4027,7 +4027,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 
 		// We're currently traversing the 'GPlatesMaths::PointOnSphere' list so the dynamic_cast should not fail.
 		const GPlatesMaths::PointOnSphere &point_on_sphere =
-				dynamic_cast<const GPlatesMaths::PointOnSphere &>(seed_co_registration.geometry);
+				dynamic_cast<const GPlatesMaths::PointGeometryOnSphere &>(seed_co_registration.geometry).position();
 
 		const GPlatesMaths::UnitVector3D &point_position = point_on_sphere.position_vector();
 

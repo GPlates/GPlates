@@ -105,8 +105,8 @@ namespace
 						// Iterate over the scalar types until we find a matching one.
 						for ( ; ranges_iter != ranges_end ; ++ranges_iter)
 						{
-							const GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type &
-									range = ranges_iter->get();
+							GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_to_const_type
+									range = *ranges_iter;
 							if (range->get_value_object_type() == reconstructed_scalar_coverage->get_scalar_type())
 							{
 								return range;
@@ -181,6 +181,7 @@ namespace
 				// Get the current (per-point) geometry data.
 				dfg.get()->get_geometry_data(
 						boost::none/*points*/,
+						boost::none/*point_locations*/,
 						deformation_strain_rates,
 						deformation_strains);
 			}

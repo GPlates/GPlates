@@ -64,15 +64,18 @@ namespace GPlatesApi
 		/**
 		 * Convert a GeometryOnSphere to a PolylineOnSphere (even if they are just single points - just duplicate).
 		 *
-		 * This will make it easier for the user who will expect sub-segments to be polylines, or
-		 * RFG topological sections to be polylines (instead, eg, polygons).
+		 * This will make it easier for the user who will expect RFG topological sections to be polylines (instead, eg, polygons).
 		 */
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type
 		convert_geometry_to_polyline(
 				const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type &sub_segment_geometry)
 		{
 			boost::optional<GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type> sub_segment_polyline =
-					GPlatesAppLogic::GeometryUtils::convert_geometry_to_polyline(*sub_segment_geometry);
+					GPlatesAppLogic::GeometryUtils::convert_geometry_to_polyline(
+							*sub_segment_geometry,
+							// When false then only polygon exterior ring is converted to a polyline (interior rings are ignored).
+							// We don't set to true since none is returned and the next step would assume geometry has less than two points...
+							false/*exclude_polygons_with_interior_rings*/);
 			if (!sub_segment_polyline)
 			{
 				// There were less than two points.
@@ -89,7 +92,7 @@ namespace GPlatesApi
 				// Duplicate the point.
 				geometry_points.push_back(geometry_points.back());
 
-				sub_segment_polyline = GPlatesMaths::PolylineOnSphere::create_on_heap(geometry_points);
+				sub_segment_polyline = GPlatesMaths::PolylineOnSphere::create(geometry_points);
 			}
 
 			return sub_segment_polyline.get();
@@ -672,7 +675,7 @@ namespace GPlatesApi
 	/**
 	 * Returns the reconstructed seed point.
 	 */
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+	GPlatesMaths::PointOnSphere
 	reconstructed_motion_path_get_reconstructed_seed_point(
 			const GPlatesAppLogic::ReconstructedMotionPath &reconstructed_motion_path)
 	{
@@ -682,7 +685,7 @@ namespace GPlatesApi
 	/**
 	 * Returns the present day seed point.
 	 */
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+	GPlatesMaths::PointOnSphere
 	reconstructed_motion_path_get_present_day_seed_point(
 			const GPlatesAppLogic::ReconstructedMotionPath &reconstructed_motion_path)
 	{
@@ -838,7 +841,7 @@ namespace GPlatesApi
 	/**
 	 * Returns the reconstructed seed point.
 	 */
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+	GPlatesMaths::PointOnSphere
 	reconstructed_flowline_get_reconstructed_seed_point(
 			const GPlatesAppLogic::ReconstructedFlowline &reconstructed_flowline)
 	{
@@ -848,7 +851,7 @@ namespace GPlatesApi
 	/**
 	 * Returns the present day seed point.
 	 */
-	GPlatesMaths::PointOnSphere::non_null_ptr_to_const_type
+	GPlatesMaths::PointOnSphere
 	reconstructed_flowline_get_present_day_seed_point(
 			const GPlatesAppLogic::ReconstructedFlowline &reconstructed_flowline)
 	{
@@ -1756,8 +1759,7 @@ namespace GPlatesApi
 	resolved_topological_geometry_sub_segment_get_resolved_geometry(
 			const GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::non_null_ptr_type &resolved_topological_geometry_sub_segment)
 	{
-		return convert_geometry_to_polyline(
-				resolved_topological_geometry_sub_segment->get_sub_segment_geometry());
+		return resolved_topological_geometry_sub_segment->get_sub_segment_geometry();
 	}
 
 	// The topological section might not be a reconstructed feature geometry or a resolved topological *line*.
@@ -2015,7 +2017,7 @@ export_resolved_topological_sub_segment()
 				"For example, if the child sub-segment was reversed in this sub-segment, and this sub-segment was reversed in the final "
 				"boundary, then the child sub-segment was not reversed in the final boundary.\n"
 				"\n"
-				"  .. versionadded:: 22\n")
+				"  .. versionadded:: 0.22\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
@@ -2062,8 +2064,7 @@ namespace GPlatesApi
 	resolved_topological_shared_sub_segment_get_resolved_geometry(
 			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type &resolved_topological_shared_sub_segment)
 	{
-		return convert_geometry_to_polyline(
-				resolved_topological_shared_sub_segment->get_shared_sub_segment_geometry());
+		return resolved_topological_shared_sub_segment->get_shared_sub_segment_geometry();
 	}
 
 	// The topological section might not be a reconstructed feature geometry or a resolved topological *line*.
@@ -2413,7 +2414,7 @@ export_resolved_topological_shared_sub_segment()
 				"(of the child sub-segment and this shared sub-segment). For example, if the child sub-segment was reversed in this shared sub-segment, "
 				"and this shared sub-segment was reversed in a final boundary, then the child sub-segment was not reversed in that final boundary.\n"
 				"\n"
-				"  .. versionadded:: 22\n")
+				"  .. versionadded:: 0.22\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

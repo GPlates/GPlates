@@ -2,7 +2,8 @@
 Generating GPlates Python API documentation using Sphinx
 ========================================================
 
-This documentation gives an overview of generating the GPlates Python API documentation using Sphinx to generate HTML from the Python docstrings (classes, class methods, functions, etc) in the 'pygplates' Python module.
+This documentation gives an overview of generating the GPlates Python API documentation using Sphinx to generate HTML
+from the Python docstrings (classes, class methods, functions, etc) in the 'pygplates' Python module.
 
 
 Installing Sphinx
@@ -11,97 +12,13 @@ Installing Sphinx
 Instructions for installing Sphinx can be found at:
 http://sphinx-doc.org/latest/install.html
 
-NOTE: Be sure to install version 1.2.3 of Sphinx (see the section "Use Sphinx version 1.2.3").
-      For Debian/Ubuntu this might involve 'sudo apt-get install sphinx=1.2.3'.
-      For Macports (on MacOS X systems) this might involve 'sudo port install sphinx @1.2.3'.
-      For Windows this involves 'pip install sphinx=1.2.3' (see below).
+Note: For Debian/Ubuntu you can run 'sudo apt-get install sphinx'.
+      For Macports (on macOS systems) you can run 'sudo port install sphinx'.
+      For Windows you can run 'python -m pip install sphinx'.
 
-
-Installing Sphinx on Windows
-----------------------------
-
-To install Sphinx on Windows you first need to install Python.
-And on Windows you can install Python either:
- * using a pre-build Python MSI installer, or
- * compiling Python from source code.
-
-It is recommended you install using a pre-built Python MSI installer since it is far easier to then install Sphinx.
-
-
-Installing with a pre-built Python
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-On Windows you can install a Python MSI and then install Sphinx using the 'pip' command
-(also covered in http://sphinx-doc.org/latest/install.html). Also see the 'DEPS.Windows' file in the
-GPlates source for instructions on how to install Python for GPlates using an MSI installer.
-
-
-Note that Python 2.7.9 (and later in the Python 2 series) and Python 3.4 (and later in the Python 3 series) include pip by default.
-For GPlates (and pygplates) we currently only support the Python 2 series (not Python 3).
-In which case you only need to run the following (at the command or terminal prompt) after having installed Python:
-
-  pip install sphinx==1.2.3
-
-...note that, as mentioned above, version 1.2.3 of Sphinx is being installed.
-
-
-If you are installing a version of Python earlier than 2.7.9 then the following link provides a
-useful summary of installing pip:
-  http://www.pip-installer.org/en/latest/installing.html
-
-Essentially it involves downloading the 'ez_setup.py' and 'get-pip.py' Python scripts and running them:
-  python ez_setup.py
-  python get-pip.py
-  pip install sphinx==1.2.3
-
-...note that, as mentioned above, version 1.2.3 of Sphinx is being installed.
-
-
-Installing with a version of Python built from source code
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-NOTE: It is NOT recommended to install Sphinx using Python built from source code.
-      Instead it is recommended to use Python installed from a pre-built Python MSI installer (version 2.7.9 or later) as covered above.
-
-
-On Windows, if you have built Python from source then there are issues running the 'get-pip.py' script (this was tested using Python 2.7.5).
-
-An interesting link which describes building Python for Visual Studio 2010 is https://wiki.python.org/moin/VS2010
-Some of the steps in that link are similar to those described below.
-
-The following issues were encountered running the 'get-pip.py' script (using a Python interpreter built from source):
-
- * It requires the 'bzip2' library, and unless this library is installed (next to the source code of Python itself) it will fail to compile (the 'bz2' project in the Python Visual Studio solution). Installing next to the source code of Python itself enables Python to find it automatically.
-
- * It requires the 'openssl' library (which should also be installed next to the source code of Python itself) in order to avoid the error 'ImportError: cannot import name HTTPSHandler'.
-
- * You need to install ActivePerl - http://www.activestate.com/activeperl
-
- * Install (as mentioned in openssl 'INSTALL.W32' text file) NASM (http://nasm.sourceforge.net/) and add it to the PATH environment variable.
-
- * There's a bug in the 'build_ssl.py' script in the Python source code (eg, 'PC/VS8.0/build_ssl.py' if you're using Visual Studio 2005). Unfortunately the patch at http://bugs.python.org/issue10752 does not seem to allow the build system to find the Perl executable. So I ended up just hardwiring in the path to my ActivePerl executable with something like the following code in the 'find_working_perl()' function...
-    def find_working_perl(perls):
-        for perl in perls:
-            if perl == 'C:\\programs\\Perl64\\bin\\perl.exe':
-                return perl
-        print("Can not find a suitable PERL:")
-        print(" Please install ActivePerl and ensure it appears on your path")
-        return None
-
- * Run 'python build_ssl.py Release Win32' from its directory (eg, 'PC/VS8.0/build_ssl.py').
-   If get compile errors (when it compiles C code) then remove the offending ('.obj') files from the makefile in openssl directory ('ms/nt.mak') until it compiles right through.
-
- * Edit 'pyproject.vsprops' (eg, in 'PC/VS8.0/') and change "opensslDir" value to "$(externalsDir)\openssl-1.0.1e", or whichever openssl version you have.
-
-After these steps, most of the projects in the Python source code (in Visual Studio) should compile.
-Some projects don't compile but not all projects are required to compile in order to have a working Python installation.
-In fact, although the documentation in the 2.7.5 Python source code does not mention this, it is OK that building the entire solution fails for some projects (in fact there's a patch to the docs somewhere that explicitly states this, but it's not yet mentioned in Python 2.7.5).
-
-After all that I was finally able to run...
-  python get-pip.py
-...and, after running 'pip install sphinx', ended up with 'sphinx-build.exe' in the 'python-2.7.5/Scripts/' directory (which is also where the 'easy_install.exe' was installed).
-Also make sure you run the cmd shell as administrator (right click -> "Run as administrator") before executing 'python ez_setup.py' and 'python get-pip.py'. I think I also changed current working directory to the 'Scripts/' directory before running those commands.
-Note that the 'Scripts/' sub-directory should be added to the PATH environment variable.
+Then install the Read the Doc Sphinx Theme (currently used as the HTML theme for GPlates Python API docs).
+For example:
+    python -m pip install sphinx_rtd_theme
 
 
 Building the HTML documentation
@@ -113,13 +30,6 @@ For example, on Linux:
   make doc-python-api
 
 On Windows, build the 'doc-python-api' project in Visual Studio.
-And if you are not building a 'release' build then change the following line in the file
-'doc-python-api/CMakeLists.txt' to reflect the build type (eg, 'debug', 'profilegplates', etc):
-
-  set(PYGPLATES_MSVC_BUILD_TYPE release)
-
-...and this should be done before running 'cmake' to build the Visual Studio solution.
-
 
 'doc-python-api' is a CMake-generated target that uses the installed 'sphinx-build' executable to create HTML from the built 'pygplates' module.
 
@@ -127,7 +37,8 @@ And if you are not building a 'release' build then change the following line in 
 Viewing the HTML documentation
 ==============================
 
-The built documentation should be in the following HTML file, relative to the cmake *build* directory corresponding to your GPlates source directory (if you are doing in-place cmake builds then the root GPlates source directory is the same as the build directory):
+The built documentation should be in the following HTML file, relative to the cmake *build* directory corresponding to your GPlates source directory
+(if you are doing in-place cmake builds then the root GPlates source directory is the same as the build directory):
 
   doc-python-api/html/index.html
 
@@ -137,12 +48,6 @@ Issues
 
 This section covers various issues encountered while using Sphinx to document pygplates.
 
-
-Use Sphinx version 1.2.3
-------------------------
-
-The best Sphinx version to use currently is 1.2.3 (not 1.3).
-
 First some background:
 Using the 'autosummary' directive (eg, in 'pygplates_reference.rst' file) combined with its ':toctree:' option
 will cause Sphinx to generate a stub '.rst' file for each class/function listed under an 'autosummary' directive
@@ -151,14 +56,21 @@ By default autosummary will list the methods in a class' '.rst' file but it won'
 for the methods. Previously we used 'automodule' (instead of 'autosummary' to generate the documentation)
 and it required the ':members:' option to the class members. But when 'autosummary' generates stub
 files (using the ':toctree:' option) it generates an 'autoclass' directive in each stub file but doesn't
-add the ':members:' option. So we need to set ':members:' as on by default using the 'autodoc_default_flags'
+add the ':members:' option. So we need to set ':members:' as on by default using the 'autodoc_default_options'
 flag (in 'conf.py.in'). We also need to turn ':inherited-members:' on by default since each stub class
 autosummary listing seems to include inherited members and if we don't generate documentation for them
-then those listing entries will have no hyperlinks (like the non-inherited members).
+then those listing entries will have no hyperlinks (like the non-inherited members). Update: We now turn
+off inherited members (the missing hyperlinks essentially document that the method is inherited and user
+should look up the base class documentation instead).
 
-So with Sphinx 1.3, when using 'autosummary' with its ':toctree:' option, it seems only the pure Python
-class methods are listed in the class' 'Methods' section. Our C module methods (boost-python) are not listed.
-This problem is not there for Sphinx 1.2.3.
+
+Use Sphinx >= 1.8
+-----------------
+
+As of Sphinx 1.8, the 'autodoc_default_flags' flag in 'conf.py' has been deprecated.
+The new flag is 'autodoc_default_options'. Unfortunately there is no warning using the old flag
+and it is simply ignored (leading to class members not getting documented). We now use the new flag,
+which means you should use Sphinx >= 1.8.
 
 
 Use autosummary (with :toctree:) instead of automodule
@@ -176,12 +88,11 @@ Specify default autodoc flags
 -----------------------------
 
 We're currently using autosummary with ':toctree:' to generate a stub ".rst" file for each class/function.
-But to get decent looking documentation we still need to change the 'autodoc_default_flags' flag
-to include 'members' and 'inherited-members', otherwise they will be missing from the default
-documentation generated by autosummary (and ":toctree:").
+But to get decent looking documentation we still need to change the 'autodoc_default_options' flag to include
+'members', otherwise they will be missing from the default documentation generated by autosummary (and ":toctree:").
 
-So the 'autdoc_default_flags' should look something like:
-autodoc_default_flags = ['members', 'inherited-members', 'show-inheritance']
+So the 'autodoc_default_options' should look something like:
+autodoc_default_options = { 'members' : True, 'inherited-members' : False, 'show-inheritance' : True }
 
 
 Adding, removing or renaming functions or class methods
@@ -224,7 +135,7 @@ The default value is True anyway so we don't really need to set this.
 Using templates with autosummary is problematic
 -----------------------------------------------
 
-At least it was problematic for me.
+UPDATE: This was for Sphinx version 1.x. For later versions it may no longer be an issue.
 
 'autosummary' has its own template for classes and modules when it generates stub '.rst' files
 (for each function/class). If you want to change it slightly (such as adding the :nosignatures:
@@ -251,7 +162,7 @@ But there are two problems:
    It seems the default autosummary templates are always used regardless.
 
 However it seems we can get decent looking documentation without using templates by specifying the
-'autodoc_default_flags' flag (in 'conf.py.in') include 'members' and 'inherited-members' such that
+'autodoc_default_options' flag (in 'conf.py.in') to include 'members' such that
 autosummary generates them (by effectively adding ':members:' to the 'autoclass' it places in
 each stub '.rst' file - although you won't actually see ':members:' in there - but generates
 documentation as if it was there).

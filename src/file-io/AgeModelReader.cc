@@ -22,6 +22,8 @@
  */
 #include <QFile>
 #include <QStringList>
+#include <Qt>
+#include <QtGlobal>
 
 
 #include "AgeModelReader.h"
@@ -74,7 +76,13 @@ namespace
 			comment.remove(comment.length()-1,1);
 		}
 
-		QStringList list = split_at_comment.first().split(delimiter,QString::SkipEmptyParts);
+		QStringList list = split_at_comment.first().split(delimiter,
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+			Qt::SkipEmptyParts
+#else
+			QString::SkipEmptyParts
+#endif
+		);
 
 
 		// From here we assume that the first term in "list" is the Chron string, and subsequent terms are the ages (or NULL marker)

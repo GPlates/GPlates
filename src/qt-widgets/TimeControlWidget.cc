@@ -36,7 +36,8 @@ GPlatesQtWidgets::TimeControlWidget::create_as_qdockwidget(
 		GPlatesGui::AnimationController &animation_controller)
 {
 	QDockWidget *dock = new QDockWidget(tr("Time Controls"));
-	dock->setFeatures(QDockWidget::AllDockWidgetFeatures);
+	dock->setFeatures(
+			QDockWidget::DockWidgetClosable | QDockWidget::DockWidgetMovable | QDockWidget::DockWidgetFloatable);
 	
 	TimeControlWidget *controls = new TimeControlWidget(
 			animation_controller, dock);
@@ -80,7 +81,7 @@ GPlatesQtWidgets::TimeControlWidget::TimeControlWidget(
 	// Special: on OS X, the style stubbornly refuses to scale up the font size used
 	// in the TimeControlWidget spinbox, despite it being allocated plenty of space.
 	// However, we can manually bump the point size up a bit to compensate.
-#ifdef Q_OS_MAC
+#ifdef Q_OS_MACOS
 	QFont time_font = spinbox_current_time->font();
 	time_font.setPointSize(20);
 	spinbox_current_time->setFont(time_font);
