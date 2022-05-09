@@ -31,7 +31,17 @@
 // Workaround mentioned at https://bugreports.qt.io/browse/QTBUG-22829
 #ifndef Q_MOC_RUN
 
+#   include "global/CompilerWarnings.h"
 #	include "global/config.h"
+
+	// Disable MSVC warning C4996:
+	//
+	//   "'PyEval_CallFunction': deprecated in 3.9"
+	//
+	// ...since 'PyEval_CallFunction' is used inside boost-python (tested with boost 1.69).
+	//
+	PUSH_MSVC_WARNINGS
+	DISABLE_MSVC_WARNING(4996)
 
 // The undef's are compile fixes for Windows.
 
@@ -154,6 +164,8 @@
 //      Include the numpy C-API header.
 #		include <numpy/arrayobject.h>
 #	endif // GPLATES_HAVE_NUMPY_C_API
+
+	POP_MSVC_WARNINGS
 
 #endif //Q_MOC_RUN
 

@@ -356,6 +356,16 @@ if (GPLATES_INSTALL_STANDALONE)
         # as well as an '__init__.py' to find its runtime location (needed to locate the GDAL/PROJ data bundled with pygplates).
         set(PYGPLATES_INIT_PY "${CMAKE_CURRENT_BINARY_DIR}/__init__.py")
         # Note that we allow no indentation in the file content to avoid Python 'unexpected indent' errors.
+        #
+        # Notes for the "__init__.py" source code:
+        #
+        # Once we've imported symbols from the pygplates shared library (C++) into the namespace of this package
+        # (also called pygplates) we can rename it to something more private (with a leading underscore).
+        # We can't delete it completely since the "import *" does not import private variables (with leading underscores)
+        # and we need to keep those private variables (usually implementation details) alive.
+        #
+        # This also means we don't have pygplates.<symbol> and pygplates.pygplates.<symbol>.
+        # Instead we have pygplates.<symbol> and pygplates._impl.<symbol>.
         file(WRITE "${PYGPLATES_INIT_PY}" [[
 # Import the pygplates shared library (C++).
 from .pygplates import *
@@ -367,9 +377,8 @@ from .pygplates import __doc__
 import os.path
 pygplates._post_import(os.path.dirname(__file__))
 
-# Now that we've imported symbols from the pygplates shared library (C++) into
-# the namespace of this package (also called pygplates) we can remove it.
-# This is so we don't have pygplates.<symbol> and pygplates.pygplates.<symbol>.
+# Rename '.pygplates' to '._impl' so we don't have both pygplates.<symbol> and pygplates.pygplates.<symbol>.
+_impl = pygplates
 del pygplates
 ]])
         install(FILES "${PYGPLATES_INIT_PY}" DESTINATION ${STANDALONE_BASE_INSTALL_DIR})
@@ -637,8 +646,8 @@ del pygplates
     # List of directories when searching.
     if (WIN32)
         # On Windows exclude 'api-ms-', 'System32' and 'SysWOW64'.
-        # The necessary 'api-ms-*' get installed when installing the Windows Universal CRT libraries (using InstallRequiredSystemLibraries).
-        list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[.*[/\\]api-ms-.*]])
+        # The necessary 'api-ms-win-*' get installed when installing the Windows Universal CRT libraries (using InstallRequiredSystemLibraries).
+        list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[.*api-ms-win-.*]])
         list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[.*[/\\][Ss]ystem32[/\\].*]])
         list(APPEND GET_RUNTIME_DEPENDENCIES_EXCLUDE_REGEXES [[.*[/\\][Ss]ys[Ww][Oo][Ww]64[/\\].*]])
         # On Windows search for DLLs using the PATH environment variable.

@@ -384,7 +384,6 @@ GPlatesViewOperations::SplitFeatureGeometryOperation::get_closest_geometry_point
 	GPlatesMaths::real_t max_closeness(-1);
 	GeometryBuilder::PointIndex closest_pos_on_sphere_index = 0;
 
-	GeometryBuilder::point_const_iterator_type builder_geom_iter;
 	GeometryBuilder::PointIndex point_on_sphere_index;
 	for (point_on_sphere_index = 0;
 		point_on_sphere_index < num_points_in_geom;
