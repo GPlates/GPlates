@@ -35,6 +35,8 @@ set(srcs
     InsertVertexGeometryOperation.h
     InternalGeometryBuilder.cc
     InternalGeometryBuilder.h
+    MapViewOperation.cc
+    MapViewOperation.h
     MovePoleOperation.cc
     MovePoleOperation.h
     MoveVertexGeometryOperation.cc

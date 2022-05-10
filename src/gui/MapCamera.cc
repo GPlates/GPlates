@@ -34,6 +34,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "maths/MathsUtils.h"
 #include "maths/Rotation.h"
 
 #include "opengl/GLIntersect.h"
@@ -100,6 +101,7 @@ GPlatesGui::MapCamera::MapCamera(
 	ViewportZoom &viewport_zoom) :
 	d_viewport_zoom(viewport_zoom),
 	d_view_projection_type(GlobeProjection::ORTHOGRAPHIC),
+	d_look_at_position(INITIAL_LOOK_AT_POSITION),
 	d_tilt_angle(0)
 {
 	// View zoom changes affect our camera.
@@ -127,7 +129,7 @@ GPlatesGui::MapCamera::set_view_projection_type(
 const QPointF &
 GPlatesGui::MapCamera::get_look_at_position() const
 {
-	return INITIAL_LOOK_AT_POSITION;
+	return d_look_at_position;
 }
 
 
@@ -214,6 +216,16 @@ GPlatesGui::MapCamera::pan(
 		const QPointF &delta,
 		bool only_emit_if_changed)
 {
+	if (only_emit_if_changed &&
+		GPlatesMaths::are_almost_exactly_equal(delta.x(), 0) &&
+		GPlatesMaths::are_almost_exactly_equal(delta.y(), 0))
+	{
+		return;
+	}
+
+	d_look_at_position += delta;
+
+	Q_EMIT camera_changed();
 }
 
 

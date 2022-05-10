@@ -201,7 +201,7 @@ GPlatesViewOperations::GlobeViewOperation::update_drag(
 	// If we're finishing the drag operation.
 	if (end_of_drag)
 	{
-		// Set to false so that when clients call 'in_drag()' it will return true.
+		// Set to false so that when clients call 'in_drag()' it will return false.
 		//
 		// It's important to do this at the start because this function can update
 		// the globe camera which in turn signals the globe to be rendered which in turn

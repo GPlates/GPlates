@@ -312,6 +312,8 @@ namespace GPlatesGui
 
 		GlobeProjection::Type d_view_projection_type;
 
+		QPointF d_look_at_position;
+
 		/**
 		 * The angle that the view direction tilts.
 		 *
