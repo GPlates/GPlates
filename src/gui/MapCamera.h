@@ -96,6 +96,31 @@ namespace GPlatesGui
 
 
 		/**
+		 * The angle (in radians) that the view direction rotates around the map plane normal.
+		 *
+		 * This is the rotation of the moving camera around the fixed map.
+		 *
+		 * Note that we don't actually rotate the map, instead rotating the view frame
+		 * (look-at position and view/up directions) to achieve the same effect.
+		 */
+		GPlatesMaths::real_t
+		get_rotation_angle() const
+		{
+			return d_rotation_angle;
+		}
+
+		/**
+		 * Set the camera rotation angle (in radians).
+		 *
+		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
+		 */
+		void
+		set_rotation_angle(
+				const GPlatesMaths::real_t &rotation_angle,
+				bool only_emit_if_changed = true);
+
+
+		/**
 		 * The angle (in radians) that the view direction tilts.
 		 *
 		 * Zero angle implies looking straight down on the map plane (z=0). And PI/2 (90 degrees) means the view
@@ -308,11 +333,29 @@ namespace GPlatesGui
 
 	private:
 
+		struct ViewFrame
+		{
+			ViewFrame(
+					const GPlatesMaths::UnitVector3D &view_direction_,
+					const GPlatesMaths::UnitVector3D &up_direction_) :
+				view_direction(view_direction_),
+				up_direction(up_direction_)
+			{  }
+
+			GPlatesMaths::UnitVector3D view_direction;
+			GPlatesMaths::UnitVector3D up_direction;
+		};
+
 		ViewportZoom &d_viewport_zoom;
 
 		GlobeProjection::Type d_view_projection_type;
 
 		QPointF d_look_at_position;
+
+		/**
+		 * The angle (in radians) that the view direction rotates around the map plane normal.
+		 */
+		GPlatesMaths::real_t d_rotation_angle;
 
 		/**
 		 * The angle that the view direction tilts.
@@ -321,6 +364,28 @@ namespace GPlatesGui
 		 * direction is looking tangentially at the map plane (at look-at position).
 		 */
 		GPlatesMaths::real_t d_tilt_angle;
+
+		/**
+		 * The view frame (look-at position and view/up directions) is calculated/cached from the
+		 * view orientation and view tilt.
+		 */
+		mutable boost::optional<ViewFrame> d_view_frame;
+
+
+		/**
+		 * Update @a d_view_frame using the current view orientation and view tilt.
+		 */
+		void
+		cache_view_frame() const;
+
+		/**
+		 * The view frame needs updating.
+		 */
+		void
+		invalidate_view_frame() const
+		{
+			d_view_frame = boost::none;
+		}
 
 
 		/**

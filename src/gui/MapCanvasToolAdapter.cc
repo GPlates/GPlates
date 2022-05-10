@@ -188,7 +188,6 @@ GPlatesGui::MapCanvasToolAdapter::handle_drag(
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
 {
-	//qDebug() << "Handling drag on the map...";
 	switch (button)
 	{
 	case Qt::LeftButton:

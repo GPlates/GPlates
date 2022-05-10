@@ -258,6 +258,10 @@ GPlatesViewOperations::GlobeViewOperation::start_drag_normal()
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_mouse_drag_info,
 			GPLATES_ASSERTION_SOURCE);
+
+	//
+	// Nothing to be done.
+	//
 }
 
 

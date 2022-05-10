@@ -102,6 +102,7 @@ GPlatesGui::MapCamera::MapCamera(
 	d_viewport_zoom(viewport_zoom),
 	d_view_projection_type(GlobeProjection::ORTHOGRAPHIC),
 	d_look_at_position(INITIAL_LOOK_AT_POSITION),
+	d_rotation_angle(0),
 	d_tilt_angle(0)
 {
 	// View zoom changes affect our camera.
@@ -136,14 +137,44 @@ GPlatesGui::MapCamera::get_look_at_position() const
 const GPlatesMaths::UnitVector3D &
 GPlatesGui::MapCamera::get_view_direction() const
 {
-	return INITIAL_VIEW_DIRECTION;
+	if (!d_view_frame)
+	{
+		cache_view_frame();
+	}
+
+	return d_view_frame->view_direction;
 }
 
 
 const GPlatesMaths::UnitVector3D &
 GPlatesGui::MapCamera::get_up_direction() const
 {
-	return INITIAL_UP_DIRECTION;
+	if (!d_view_frame)
+	{
+		cache_view_frame();
+	}
+
+	return d_view_frame->up_direction;
+}
+
+
+void
+GPlatesGui::MapCamera::set_rotation_angle(
+		const GPlatesMaths::real_t &rotation_angle,
+		bool only_emit_if_changed)
+{
+	if (only_emit_if_changed &&
+		rotation_angle == d_rotation_angle)
+	{
+		return;
+	}
+
+	d_rotation_angle = rotation_angle;
+
+	// Invalidate view frame - it now needs updating.
+	invalidate_view_frame();
+
+	Q_EMIT camera_changed();
 }
 
 
@@ -152,6 +183,18 @@ GPlatesGui::MapCamera::set_tilt_angle(
 		const GPlatesMaths::real_t &tilt_angle,
 		bool only_emit_if_changed)
 {
+	if (only_emit_if_changed &&
+		tilt_angle == d_tilt_angle)
+	{
+		return;
+	}
+
+	d_tilt_angle = tilt_angle;
+
+	// Invalidate view frame - it now needs updating.
+	invalidate_view_frame();
+
+	Q_EMIT camera_changed();
 }
 
 
@@ -160,6 +203,15 @@ GPlatesGui::MapCamera::move_look_at_position(
 		const QPointF &new_look_at_position,
 		bool only_emit_if_changed)
 {
+	if (only_emit_if_changed &&
+		new_look_at_position == get_look_at_position())
+	{
+		return;
+	}
+
+	// Pan from current look-at position to specified look-at position.
+
+	Q_EMIT camera_changed();
 }
 
 
@@ -234,6 +286,9 @@ GPlatesGui::MapCamera::rotate_anticlockwise(
 		const GPlatesMaths::real_t &angle,
 		bool only_emit_if_changed)
 {
+	set_rotation_angle(
+			get_rotation_angle() + angle,
+			only_emit_if_changed);
 }
 
 
@@ -485,4 +540,32 @@ GPlatesGui::MapCamera::handle_zoom_changed()
 {
 	// View zoom changes affect our camera (both orthographic and perspective modes).
 	Q_EMIT camera_changed();
+}
+
+
+void
+GPlatesGui::MapCamera::cache_view_frame() const
+{
+	const GPlatesMaths::Rotation rotation_about_map_plane_normal =
+			GPlatesMaths::Rotation::create(GPlatesMaths::UnitVector3D::zBasis(), d_rotation_angle);
+
+	// Rotate initial view frame, excluding tilt.
+	//
+	// Note that we only rotate the view and up directions to determine the tilt axis in the
+	// globe orientation (we're not actually tilting the view yet here).
+	const GPlatesMaths::UnitVector3D un_tilted_view_direction = rotation_about_map_plane_normal * INITIAL_VIEW_DIRECTION;
+	const GPlatesMaths::UnitVector3D un_tilted_up_direction = rotation_about_map_plane_normal * INITIAL_UP_DIRECTION;
+
+	// The tilt axis that the un-tilted view direction (and up direction) will tilt around.
+	// However note that the axis effectively passes through the look-at position on globe (not globe centre).
+	// The view direction always tilts away from the up direction (hence the order in the cross product).
+	const GPlatesMaths::UnitVector3D tilt_axis =
+			cross(un_tilted_view_direction, un_tilted_up_direction).get_normalisation();
+	const GPlatesMaths::Rotation tilt_rotation = GPlatesMaths::Rotation::create(tilt_axis, d_tilt_angle);
+
+	// Tilt the view and up directions using same tilt rotation.
+	const GPlatesMaths::UnitVector3D tilted_view_direction = tilt_rotation * un_tilted_view_direction;
+	const GPlatesMaths::UnitVector3D tilted_up_direction = tilt_rotation * un_tilted_up_direction;
+
+	d_view_frame = ViewFrame(tilted_view_direction, tilted_up_direction);
 }
