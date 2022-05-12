@@ -24,6 +24,7 @@
  */
 
 #include <cmath>
+#include <QTransform>
 
 #include "MapCamera.h"
 
@@ -49,9 +50,6 @@ const double GPlatesGui::MapCamera::FRAMING_RATIO_OF_MAP_IN_VIEWPORT = 1.07;
 const double GPlatesGui::MapCamera::PERSPECTIVE_FIELD_OF_VIEW_DEGREES = 90.0;
 const double GPlatesGui::MapCamera::TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW =
 		std::tan(GPlatesMaths::convert_deg_to_rad(GPlatesGui::MapCamera::PERSPECTIVE_FIELD_OF_VIEW_DEGREES) / 2.0);
-// How far to nudge or pan the camera when incrementally moving the camera.
-// Note that the extent of our map is roughly 360 degrees in longitude direction, and that's in map (post-projection) units.
-const double GPlatesGui::MapCamera::NUDGE_CAMERA_IN_MAP_SPACE = 5.0;
 
 // Our universe coordinate system is:
 //
@@ -101,7 +99,7 @@ GPlatesGui::MapCamera::MapCamera(
 	ViewportZoom &viewport_zoom) :
 	d_viewport_zoom(viewport_zoom),
 	d_view_projection_type(GlobeProjection::ORTHOGRAPHIC),
-	d_look_at_position(INITIAL_LOOK_AT_POSITION),
+	d_pan(0, 0),
 	d_rotation_angle(0),
 	d_tilt_angle(0)
 {
@@ -130,7 +128,12 @@ GPlatesGui::MapCamera::set_view_projection_type(
 const QPointF &
 GPlatesGui::MapCamera::get_look_at_position() const
 {
-	return d_look_at_position;
+	if (!d_view_frame)
+	{
+		cache_view_frame();
+	}
+
+	return d_view_frame->look_at_position;
 }
 
 
@@ -155,6 +158,26 @@ GPlatesGui::MapCamera::get_up_direction() const
 	}
 
 	return d_view_frame->up_direction;
+}
+
+
+void
+GPlatesGui::MapCamera::set_pan(
+		const QPointF &pan,
+		bool only_emit_if_changed)
+{
+	if (only_emit_if_changed &&
+		pan == d_pan)
+	{
+		return;
+	}
+
+	d_pan = pan;
+
+	// Invalidate view frame - it now needs updating.
+	invalidate_view_frame();
+
+	Q_EMIT camera_changed();
 }
 
 
@@ -203,15 +226,11 @@ GPlatesGui::MapCamera::move_look_at_position(
 		const QPointF &new_look_at_position,
 		bool only_emit_if_changed)
 {
-	if (only_emit_if_changed &&
-		new_look_at_position == get_look_at_position())
-	{
-		return;
-	}
-
 	// Pan from current look-at position to specified look-at position.
+	const QPointF delta_pan = new_look_at_position - get_look_at_position();
 
-	Q_EMIT camera_changed();
+	// Accumulate the delta pan into current pan.
+	set_pan(delta_pan + get_pan(), only_emit_if_changed);
 }
 
 
@@ -228,28 +247,12 @@ GPlatesGui::MapCamera::pan_up(
 		const GPlatesMaths::real_t &angle,
 		bool only_emit_if_changed)
 {
-	const double nudge_y = NUDGE_CAMERA_IN_MAP_SPACE / d_viewport_zoom.zoom_factor();
-	pan(QPointF(0, nudge_y), only_emit_if_changed);
-}
+	const QPointF delta_pan_in_view_frame(0, GPlatesMaths::convert_rad_to_deg(angle.dval()));
 
+	// Convert the pan in the view frame to a pan in the map frame.
+	const QPointF delta_pan_in_map_frame = convert_pan_from_view_to_map_frame(delta_pan_in_view_frame);
 
-void
-GPlatesGui::MapCamera::pan_down(
-		const GPlatesMaths::real_t &angle,
-		bool only_emit_if_changed)
-{
-	const double nudge_y = -NUDGE_CAMERA_IN_MAP_SPACE / d_viewport_zoom.zoom_factor();
-	pan(QPointF(0, nudge_y), only_emit_if_changed);
-}
-
-
-void
-GPlatesGui::MapCamera::pan_left(
-		const GPlatesMaths::real_t &angle,
-		bool only_emit_if_changed)
-{
-	const double nudge_x = -NUDGE_CAMERA_IN_MAP_SPACE / d_viewport_zoom.zoom_factor();
-	pan(QPointF(nudge_x, 0), only_emit_if_changed);
+	set_pan(delta_pan_in_map_frame + get_pan(), only_emit_if_changed);
 }
 
 
@@ -258,26 +261,12 @@ GPlatesGui::MapCamera::pan_right(
 		const GPlatesMaths::real_t &angle,
 		bool only_emit_if_changed)
 {
-	const double nudge_x = NUDGE_CAMERA_IN_MAP_SPACE / d_viewport_zoom.zoom_factor();
-	pan(QPointF(nudge_x, 0), only_emit_if_changed);
-}
+	const QPointF delta_pan_in_view_frame(GPlatesMaths::convert_rad_to_deg(angle.dval()), 0);
 
+	// Convert the pan in the view frame to a pan in the map frame.
+	const QPointF delta_pan_in_map_frame = convert_pan_from_view_to_map_frame(delta_pan_in_view_frame);
 
-void
-GPlatesGui::MapCamera::pan(
-		const QPointF &delta,
-		bool only_emit_if_changed)
-{
-	if (only_emit_if_changed &&
-		GPlatesMaths::are_almost_exactly_equal(delta.x(), 0) &&
-		GPlatesMaths::are_almost_exactly_equal(delta.y(), 0))
-	{
-		return;
-	}
-
-	d_look_at_position += delta;
-
-	Q_EMIT camera_changed();
+	set_pan(delta_pan_in_map_frame + get_pan(), only_emit_if_changed);
 }
 
 
@@ -543,9 +532,22 @@ GPlatesGui::MapCamera::handle_zoom_changed()
 }
 
 
+QPointF
+GPlatesGui::MapCamera::convert_pan_from_view_to_map_frame(
+		const QPointF &pan_in_view_frame) const
+{
+	// Convert the pan in the view frame to a pan in the map frame.
+	// Rotate the view frame pan by the view rotation (about the map plane normal).
+	// Because we want, for example, a pan in the 'up' direction to be with respect to the current view.
+	return pan_in_view_frame * QTransform().rotateRadians(d_rotation_angle.dval());
+}
+
+
 void
 GPlatesGui::MapCamera::cache_view_frame() const
 {
+	const QPointF look_at_position = d_pan + INITIAL_LOOK_AT_POSITION;
+
 	const GPlatesMaths::Rotation rotation_about_map_plane_normal =
 			GPlatesMaths::Rotation::create(GPlatesMaths::UnitVector3D::zBasis(), d_rotation_angle);
 
@@ -567,5 +569,5 @@ GPlatesGui::MapCamera::cache_view_frame() const
 	const GPlatesMaths::UnitVector3D tilted_view_direction = tilt_rotation * un_tilted_view_direction;
 	const GPlatesMaths::UnitVector3D tilted_up_direction = tilt_rotation * un_tilted_up_direction;
 
-	d_view_frame = ViewFrame(tilted_view_direction, tilted_up_direction);
+	d_view_frame = ViewFrame(look_at_position, tilted_view_direction, tilted_up_direction);
 }

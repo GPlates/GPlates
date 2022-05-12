@@ -124,14 +124,17 @@ namespace GPlatesViewOperations
 					const boost::optional<QPointF> &start_map_position_,
 					const QPointF &start_look_at_position_,
 					const GPlatesMaths::UnitVector3D &start_view_direction_,
-					const GPlatesMaths::UnitVector3D &start_up_direction_) :
+					const GPlatesMaths::UnitVector3D &start_up_direction_,
+					const QPointF &start_pan_) :
 				mode(mode_),
 				start_mouse_window_x(start_mouse_window_x_),
 				start_mouse_window_y(start_mouse_window_y_),
 				start_map_position(start_map_position_),
 				start_look_at_position(start_look_at_position_),
 				start_view_direction(start_view_direction_),
-				start_up_direction(start_up_direction_)
+				start_up_direction(start_up_direction_),
+				start_pan(start_pan_),
+				pan_relative_to_start_in_view_frame(0, 0)
 			{  }
 
 			MouseDragMode mode;
@@ -143,6 +146,10 @@ namespace GPlatesViewOperations
 			QPointF start_look_at_position;
 			GPlatesMaths::UnitVector3D start_view_direction;
 			GPlatesMaths::UnitVector3D start_up_direction;
+
+			// For DRAG_NORMAL...
+			QPointF start_pan;
+			QPointF pan_relative_to_start_in_view_frame;
 		};
 
 
@@ -163,6 +170,14 @@ namespace GPlatesViewOperations
 		 * Is true if we're currently in the last call to @a update_drag.
 		 */
 		bool d_in_last_update_drag;
+
+
+		void
+		start_drag_normal();
+
+		void
+		update_drag_normal(
+				const boost::optional<QPointF> &map_position);
 	};
 }
 

@@ -96,6 +96,24 @@ namespace GPlatesGui
 
 
 		/**
+		 * The translation (in map plane) that the view pans in the map plane.
+		 */
+		const QPointF &
+		get_pan() const
+		{
+			return d_pan;
+		}
+
+		/**
+		 * Set the camera translation that the view pans in the map plane.
+		 */
+		void
+		set_pan(
+				const QPointF &pan,
+				bool only_emit_if_changed = true);
+
+
+		/**
 		 * The angle (in radians) that the view direction rotates around the map plane normal.
 		 *
 		 * This is the rotation of the moving camera around the fixed map.
@@ -181,7 +199,10 @@ namespace GPlatesGui
 		void
 		pan_down(
 				const GPlatesMaths::real_t &angle,
-				bool only_emit_if_changed = true);
+				bool only_emit_if_changed = true)
+		{
+			pan_up(-angle, only_emit_if_changed);
+		}
 
 		/**
 		 * Pan the current look-at position "left" by the specified angle (in radians).
@@ -189,7 +210,10 @@ namespace GPlatesGui
 		void
 		pan_left(
 				const GPlatesMaths::real_t &angle,
-				bool only_emit_if_changed = true);
+				bool only_emit_if_changed = true)
+		{
+			pan_right(-angle, only_emit_if_changed);
+		}
 
 		/**
 		 * Same as @a pan_left but pans "right".
@@ -336,12 +360,15 @@ namespace GPlatesGui
 		struct ViewFrame
 		{
 			ViewFrame(
+					const QPointF &look_at_position_,
 					const GPlatesMaths::UnitVector3D &view_direction_,
 					const GPlatesMaths::UnitVector3D &up_direction_) :
+				look_at_position(look_at_position_),
 				view_direction(view_direction_),
 				up_direction(up_direction_)
 			{  }
 
+			QPointF look_at_position;
 			GPlatesMaths::UnitVector3D view_direction;
 			GPlatesMaths::UnitVector3D up_direction;
 		};
@@ -350,7 +377,7 @@ namespace GPlatesGui
 
 		GlobeProjection::Type d_view_projection_type;
 
-		QPointF d_look_at_position;
+		QPointF d_pan;
 
 		/**
 		 * The angle (in radians) that the view direction rotates around the map plane normal.
@@ -372,6 +399,10 @@ namespace GPlatesGui
 		mutable boost::optional<ViewFrame> d_view_frame;
 
 
+		QPointF
+		convert_pan_from_view_to_map_frame(
+				const QPointF &pan_in_view_frame) const;
+
 		/**
 		 * Update @a d_view_frame using the current view orientation and view tilt.
 		 */
@@ -386,6 +417,8 @@ namespace GPlatesGui
 		{
 			d_view_frame = boost::none;
 		}
+
+
 
 
 		/**
@@ -417,13 +450,6 @@ namespace GPlatesGui
 		static const double TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW;
 
 		/**
-		 * How far to nudge or pan the camera when incrementally moving the camera.
-		 *
-		 * This is in map units (in the map plane).
-		 */
-		static const double NUDGE_CAMERA_IN_MAP_SPACE;
-
-		/**
 		 * The initial position on the map that the camera looks at.
 		 */
 		static const QPointF INITIAL_LOOK_AT_POSITION;
@@ -449,12 +475,6 @@ namespace GPlatesGui
 		static
 		double
 		calc_distance_eye_to_look_at_for_perspective_viewing_at_default_zoom();
-
-
-		void
-		pan(
-				const QPointF &delta,
-				bool only_emit_if_changed);
 
 		double
 		get_perspective_tan_half_fovy(

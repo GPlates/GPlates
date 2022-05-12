@@ -64,7 +64,21 @@ GPlatesViewOperations::MapViewOperation::start_drag(
 			initial_map_position,
 			d_map_camera.get_look_at_position(),
 			d_map_camera.get_view_direction(),
-			d_map_camera.get_up_direction());
+			d_map_camera.get_up_direction(),
+			d_map_camera.get_pan());
+
+	switch (d_mouse_drag_info->mode)
+	{
+	case DRAG_NORMAL:
+		start_drag_normal();
+		break;
+	case DRAG_ROTATE:
+	case DRAG_TILT:
+	case DRAG_ROTATE_AND_TILT:
+	default:
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		break;
+	}
 }
 
 
@@ -98,6 +112,19 @@ GPlatesViewOperations::MapViewOperation::update_drag(
 	const double mouse_window_y = screen_height - screen_position.y();
 	const double mouse_window_x = screen_position.x();
 
+	switch (d_mouse_drag_info->mode)
+	{
+	case DRAG_NORMAL:
+		update_drag_normal(map_position);
+		break;
+	case DRAG_ROTATE:
+	case DRAG_TILT:
+	case DRAG_ROTATE_AND_TILT:
+	default:
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		break;
+	}
+
 	// If we've finished the drag operation.
 	if (end_of_drag)
 	{
@@ -106,4 +133,63 @@ GPlatesViewOperations::MapViewOperation::update_drag(
 
 		d_in_last_update_drag = false;
 	}
+}
+
+
+void
+GPlatesViewOperations::MapViewOperation::start_drag_normal()
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_mouse_drag_info,
+			GPLATES_ASSERTION_SOURCE);
+
+	//
+	// Nothing to be done.
+	//
+}
+
+
+void
+GPlatesViewOperations::MapViewOperation::update_drag_normal(
+		const boost::optional<QPointF> &map_position)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_mouse_drag_info,
+			GPLATES_ASSERTION_SOURCE);
+
+	// If the mouse position at start of drag, or current mouse position, is not on the map plane
+	// then we cannot pan the view.
+	if (!d_mouse_drag_info->start_map_position ||
+		!map_position)
+	{
+		return;
+	}
+
+	// The current mouse position-on-map is in global (universe) coordinates.
+	// It actually doesn't change (within numerical precision) when the view pans.
+	// However, in the frame-of-reference of the view at the start of drag, it has changed.
+	// To detect how much change we need to pan it by the reverse of the change in view frame
+	// (it's reverse because a change in view space is equivalent to the reverse change in model space
+	// and the map, and points on it, are in model space).
+	const QPointF map_position_relative_to_start_view =
+			-d_mouse_drag_info->pan_relative_to_start_in_view_frame + map_position.get();
+
+	// The pan since start of drag in the map frame of reference.
+	const QPointF pan_relative_to_start_in_map_frame =
+			map_position_relative_to_start_view - d_mouse_drag_info->start_map_position.get();
+
+	// Convert the pan to the view frame of reference.
+	// The view moves in the opposite direction.
+	const QPointF pan_relative_to_start_in_view_frame = -pan_relative_to_start_in_map_frame;
+
+	// The total pan is the pan at the start of drag plus the pan relative to that start.
+	const QPointF pan = d_mouse_drag_info->start_pan + pan_relative_to_start_in_view_frame;
+
+	// Keep track of the updated view pan relative to the start.
+	d_mouse_drag_info->pan_relative_to_start_in_view_frame = pan_relative_to_start_in_view_frame;
+
+	d_map_camera.set_pan(
+			pan,
+			// Always emit on last update so client can turn off any rendering optimisations now that drag has finished...
+			!d_in_last_update_drag/*only_emit_if_changed*/);
 }

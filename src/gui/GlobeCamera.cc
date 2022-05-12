@@ -275,24 +275,13 @@ GPlatesGui::GlobeCamera::move_look_at_position(
 		const GPlatesMaths::PointOnSphere &new_look_at_position,
 		bool only_emit_if_changed)
 {
-	if (only_emit_if_changed &&
-		new_look_at_position == get_look_at_position())
-	{
-		return;
-	}
-
 	// Rotation from current look-at position to specified look-at position.
 	const GPlatesMaths::Rotation view_rotation = GPlatesMaths::Rotation::create(
 			get_look_at_position(),
 			new_look_at_position);
 
 	// Accumulate view rotation into current view orientation.
-	d_view_orientation = view_rotation * d_view_orientation;
-
-	// Invalidate view frame - it now needs updating.
-	invalidate_view_frame();
-
-	Q_EMIT camera_changed();
+	set_view_orientation(view_rotation * get_view_orientation(), only_emit_if_changed);
 }
 
 
