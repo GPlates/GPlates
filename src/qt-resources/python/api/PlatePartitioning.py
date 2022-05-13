@@ -442,7 +442,12 @@ def plate_partitioner_partition_features(
             
             if partitioned_inside_geometries:
                 # Determine which partitioning plate (if feature is partitioned into any) overlaps the current feature the most.
-                max_geometry_size_measure = (0.0, 0)
+                #
+                # Note: It's possible for an inside polyline/polygon to have zero arc length (if all its points are coincident).
+                #       So we need to start with a 'max_geometry_size_measure' that will pass 'geometry_size_measure > max_geometry_size_measure'
+                #       when 'geometry_size_measure' is '(0.0, 0)' otherwise 'most_overlapping_partitioning_plate' will remain None.
+                #       So we use '(0.0, -1)'.
+                max_geometry_size_measure = (0.0, -1)
                 most_overlapping_partitioning_plate = None
                 for partitioning_plate, inside_geometries in partitioned_inside_geometries:
                     # Accumulate the size of the geometries inside the current partitioning plate.
