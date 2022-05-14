@@ -32,6 +32,7 @@
 
 #include "MapRenderedGeometryCollectionPainter.h"
 
+#include "MapProjection.h"
 #include "MapRenderedGeometryLayerPainter.h"
 
 #include "opengl/GL.h"
@@ -42,7 +43,7 @@
 
 
 GPlatesGui::MapRenderedGeometryCollectionPainter::MapRenderedGeometryCollectionPainter(
-		const MapProjection::non_null_ptr_to_const_type &map_projection,
+		const MapProjection &map_projection,
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		const GPlatesPresentation::VisualLayers &visual_layers,

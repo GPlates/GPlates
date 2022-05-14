@@ -989,7 +989,7 @@ namespace
 							raster.raster_colour_palette,
 							raster.raster_modulate_colour,
 							raster.surface_relief_scale,
-							map_projection);
+							*map_projection);
 #if 0 // UPDATE: No longer caching since uses up too much memory...
 			// Keep the cache handles alive over all the tiles since colour rasters do not cache
 			// the entire multi-resolution pyramid (the GLMultiResolutionRaster in RasterLayerProxy).

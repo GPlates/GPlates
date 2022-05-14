@@ -170,7 +170,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 	if (boost::optional<GPlatesGui::GlobeProjection::Type> globe_projection_type =
 		view_projection.get_globe_projection_type())
 	{
-		// Update the globe canvas's projection.
+		// Update the globe canvas's view projection (orthographic or perspective).
 		d_view_state.get_globe_camera().set_view_projection_type(globe_projection_type.get());
 
 		// Switch to globe.
@@ -184,10 +184,15 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 	}
 	else // map projection...
 	{
-		// Update the map canvas's projection.
-		d_map_canvas_ptr->map().set_projection_type(
+		// Update the map canvas's view projection (orthographic or perspective).
+		//
+		// TODO: Change this when view projection is separated from globe/map projection.
+		//d_view_state.get_map_camera().set_view_projection_type(globe_projection_type.get());
+
+		// Update the map canvas's map projection.
+		d_view_state.get_map_projection().set_projection_type(
 				view_projection.get_map_projection_type().get());
-		d_map_canvas_ptr->map().set_central_meridian(
+		d_view_state.get_map_projection().set_central_meridian(
 				view_projection.get_map_central_meridian());
 
 		// Switch to map.

@@ -92,8 +92,7 @@ GPlatesCanvasTools::MovePoleMap::handle_left_drag(
 		{
 			d_move_pole_operation->start_drag_on_map(
 					initial_map_position.get(),  // If initial_position_on_globe is valid then initial_map_position is too.
-					initial_position_on_globe.get(),
-					map_canvas().map().projection());
+					initial_position_on_globe.get());
 
 			d_is_in_drag = true;
 		}
@@ -126,8 +125,7 @@ GPlatesCanvasTools::MovePoleMap::handle_left_release_after_drag(
 		{
 			d_move_pole_operation->start_drag_on_map(
 					initial_map_position.get(),  // If initial_position_on_globe is valid then initial_map_position is too.
-					initial_position_on_globe.get(),
-					map_canvas().map().projection());
+					initial_position_on_globe.get());
 
 			d_is_in_drag = true;
 		}
@@ -157,7 +155,6 @@ GPlatesCanvasTools::MovePoleMap::handle_move_without_drag(
 	{
 		d_move_pole_operation->mouse_move_on_map(
 				map_position.get(),  // If position_on_globe is valid then map_position is too.
-				position_on_globe.get(),
-				map_canvas().map().projection());
+				position_on_globe.get());
 	}
 }

@@ -103,7 +103,7 @@ GPlatesOpenGL::GLLight::create(
 		GL &gl,
 		const GPlatesGui::SceneLightingParameters &scene_lighting_params,
 		const GLMatrix &view_orientation,
-		boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection)
+		boost::optional<const GPlatesGui::MapProjection &> map_projection)
 {
 	return non_null_ptr_type(
 			new GLLight(
@@ -118,7 +118,7 @@ GPlatesOpenGL::GLLight::GLLight(
 		GL &gl,
 		const GPlatesGui::SceneLightingParameters &scene_lighting_params,
 		const GLMatrix &view_orientation,
-		boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection) :
+		boost::optional<const GPlatesGui::MapProjection &> map_projection) :
 	d_scene_lighting_params(scene_lighting_params),
 	d_view_orientation(view_orientation),
 	d_globe_view_light_direction(scene_lighting_params.get_globe_view_light_direction()/*not necessarily in world-space yet!*/),
@@ -154,13 +154,12 @@ GPlatesOpenGL::GLLight::set_scene_lighting(
 		GL &gl,
 		const GPlatesGui::SceneLightingParameters &scene_lighting_params,
 		const GLMatrix &view_orientation,
-		boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection)
+		boost::optional<const GPlatesGui::MapProjection &> map_projection)
 {
 	bool update = false;
 
-	// If the map projection has changed in any way then we need to update.
-	// This includes switching between globe and map views.
-	if (map_projection != d_map_projection)
+	// If switching between globe and map views.
+	if (static_cast<bool>(map_projection) != static_cast<bool>(d_map_projection))
 	{
 		update = true;
 

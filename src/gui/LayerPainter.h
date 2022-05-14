@@ -32,7 +32,6 @@
 #include <boost/shared_ptr.hpp>
 
 #include "ColourPalette.h"
-#include "MapProjection.h"
 #include "RasterColourPalette.h"
 #include "SceneLightingParameters.h"
 
@@ -180,7 +179,7 @@ namespace GPlatesGui
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 					const GPlatesOpenGL::GLViewProjection &view_projection,
 					boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_view_horizon_plane,
-					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection);
+					boost::optional<const MapProjection &> map_projection);
 
 			/**
 			 * Returns the stream for points of size @a point_size.
@@ -345,7 +344,7 @@ namespace GPlatesGui
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 					const GPlatesOpenGL::GLViewProjection &view_projection,
 					boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_view_horizon_plane,
-					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection);
+					boost::optional<const MapProjection &> map_projection);
 
 			/**
 			 * Sets state for point/line/polygon primitives.
@@ -357,7 +356,7 @@ namespace GPlatesGui
 					GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 					const GPlatesOpenGL::GLViewProjection &view_projection,
 					boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_view_horizon_plane,
-					boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection);
+					boost::optional<const MapProjection &> map_projection);
 
 			/**
 			 * Sets state for axially symmetric meshes.
@@ -501,7 +500,7 @@ namespace GPlatesGui
 		LayerPainter(
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				int device_pixel_ratio,
-				boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection = boost::none);
+				boost::optional<const MapProjection &> map_projection = boost::none);
 
 		/**
 		 * Initialise objects requiring @a GL.
@@ -595,7 +594,7 @@ namespace GPlatesGui
 		/**
 		 * Used for rendering to a 2D map view (is none for 3D globe view).
 		 */
-		boost::optional<MapProjection::non_null_ptr_to_const_type> d_map_projection;
+		boost::optional<const MapProjection &> d_map_projection;
 	};
 }
 

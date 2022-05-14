@@ -65,6 +65,7 @@ namespace GPlatesGui
 	class GlobeCamera;
 	class GraticuleSettings;
 	class MapCamera;
+	class MapProjection;
 	class PythonManager;
 	class RenderSettings;
 	class SceneLightingParameters;
@@ -274,6 +275,13 @@ namespace GPlatesPresentation
 		get_map_view_operation() const;
 
 
+		GPlatesGui::MapProjection &
+		get_map_projection();
+
+		const GPlatesGui::MapProjection &
+		get_map_projection() const;
+
+
 		// TODO: the get_last_open_directory methods should be obsolete now, but retain
 		// until the FileIODirectoryConfiguration stuff has been tested further.
 		QString &
@@ -459,6 +467,9 @@ namespace GPlatesPresentation
 		 * Stores information about the available visual layer types.
 		 */
 		boost::scoped_ptr<VisualLayerRegistry> d_visual_layer_registry;
+
+		//! Map projection for the 2D map view (must be declared before 'd_map_camera').
+		GPlatesGlobal::PointerTraits<GPlatesGui::MapProjection>::non_null_ptr_type d_map_projection;
 
 		//! Camera controls for the 3D globe view.
 		boost::scoped_ptr<GPlatesGui::GlobeCamera> d_globe_camera;

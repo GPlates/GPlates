@@ -72,7 +72,7 @@ namespace GPlatesGui
 
 
 		MapRenderedGeometryCollectionPainter(
-				const MapProjection::non_null_ptr_to_const_type &map_projection,
+				const MapProjection &map_projection,
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const GPlatesPresentation::VisualLayers &visual_layers,
@@ -157,7 +157,7 @@ namespace GPlatesGui
 		boost::optional<PaintParams> d_paint_params;
 
 		//! Used to project vertices of rendered geometries to the map.
-		MapProjection::non_null_ptr_to_const_type d_map_projection;
+		const MapProjection &d_map_projection;
 
 		const GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geometry_collection;
 

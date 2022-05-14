@@ -31,11 +31,6 @@
 #include "view-operations/MovePoleOperation.h"
 
 
-namespace GPlatesPresentation
-{
-	class ViewState;
-}
-
 namespace GPlatesQtWidgets
 {
 	class ViewportWindow;

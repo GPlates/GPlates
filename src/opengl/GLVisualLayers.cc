@@ -123,7 +123,7 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 		const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &source_raster_colour_palette,
 		const GPlatesGui::Colour &source_raster_modulate_colour,
 		float normal_map_height_field_scale_factor,
-		boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection)
+		boost::optional<const GPlatesGui::MapProjection &> map_projection)
 {
 	PROFILE_FUNC();
 
@@ -221,7 +221,7 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 				map_raster_layer_usage->get_multi_resolution_raster_map_view(
 						gl,
 						// The global map cube mesh shared by all layers...
-						d_list_objects->get_multi_resolution_map_cube_mesh(gl, *map_projection.get()),
+						d_list_objects->get_multi_resolution_map_cube_mesh(gl, map_projection.get()),
 						resolved_raster->get_reconstruction_time());
 
 		cache_handle_type cache_handle;

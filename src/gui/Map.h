@@ -34,7 +34,6 @@
 
 #include "MapBackground.h"
 #include "MapGrid.h"
-#include "MapProjection.h"
 #include "MapRenderedGeometryCollectionPainter.h"
 
 #include "opengl/GLVisualLayers.h"
@@ -81,26 +80,6 @@ namespace GPlatesGui
 		initialiseGL(
 				GPlatesOpenGL::GL &gl);
 
-		MapProjection &
-		projection();
-
-		const MapProjection &
-		projection() const;
-
-		MapProjection::Type
-		projection_type() const;
-
-		void
-		set_projection_type(
-				GPlatesGui::MapProjection::Type projection_type_);
-
-		double
-		central_meridian();
-
-		void
-		set_central_meridian(
-				double central_meridian_);
-
 		/**
 		 * Paint the map and all the visible features and rasters on it.
 		 *
@@ -114,9 +93,6 @@ namespace GPlatesGui
 				float scale);
 
 	private:
-
-		//! To do map projections
-		MapProjection::non_null_ptr_type d_map_projection;
 
 		GPlatesPresentation::ViewState &d_view_state;
 

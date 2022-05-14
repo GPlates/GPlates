@@ -189,7 +189,7 @@ namespace GPlatesOpenGL
 				const GPlatesGui::RasterColourPalette::non_null_ptr_to_const_type &source_raster_colour_palette,
 				const GPlatesGui::Colour &source_raster_modulate_colour = GPlatesGui::Colour::get_white(),
 				float normal_map_height_field_scale_factor = 1,
-				boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection = boost::none);
+				boost::optional<const GPlatesGui::MapProjection &> map_projection = boost::none);
 
 
 		/**

@@ -59,6 +59,7 @@ namespace GPlatesGui
 
 		explicit
 		MapCamera(
+				MapProjection &map_projection,
 				ViewportZoom &viewport_zoom);
 
 		/**
@@ -372,6 +373,8 @@ namespace GPlatesGui
 			GPlatesMaths::UnitVector3D view_direction;
 			GPlatesMaths::UnitVector3D up_direction;
 		};
+
+		MapProjection &d_map_projection;
 
 		ViewportZoom &d_viewport_zoom;
 

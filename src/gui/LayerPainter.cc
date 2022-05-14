@@ -32,6 +32,8 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "gui/MapProjection.h"
+
 #include "opengl/GL.h"
 #include "opengl/GLContext.h"
 #include "opengl/GLLight.h"
@@ -76,7 +78,7 @@ namespace GPlatesGui
 GPlatesGui::LayerPainter::LayerPainter(
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		int device_pixel_ratio,
-		boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection) :
+		boost::optional<const MapProjection &> map_projection) :
 	drawables_off_the_sphere(device_pixel_ratio),
 	drawables_on_the_sphere(device_pixel_ratio),
 	d_gl_visual_layers(gl_visual_layers),
@@ -609,7 +611,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::end_painting(
 		GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 		const GPlatesOpenGL::GLViewProjection &view_projection,
 		boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_view_horizon_plane,
-		boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection)
+		boost::optional<const MapProjection &> map_projection)
 {
 	// Make sure we leave the OpenGL global state the way it was.
 	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
@@ -809,7 +811,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::paint_filled_polygons(
 		GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 		const GPlatesOpenGL::GLViewProjection &view_projection,
 		boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_view_horizon_plane,
-		boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection)
+		boost::optional<const MapProjection &> map_projection)
 {
 	// Return early if nothing to render.
 	if (map_projection) // Rendering to a 2D map view...
@@ -858,7 +860,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_point_line_polygon_stat
 		GPlatesOpenGL::GLVisualLayers &gl_visual_layers,
 		const GPlatesOpenGL::GLViewProjection &view_projection,
 		boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_view_horizon_plane,
-		boost::optional<MapProjection::non_null_ptr_to_const_type> map_projection)
+		boost::optional<const MapProjection &> map_projection)
 {
 	// Bind the shader program.
 	gl.UseProgram(render_point_line_polygon_program);

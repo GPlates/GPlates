@@ -167,6 +167,7 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::create_canvas_tools(
 
 	const GPlatesViewOperations::MovePoleOperation::non_null_ptr_type move_pole_operation =
 			GPlatesViewOperations::MovePoleOperation::create(
+					view_state.get_map_projection(),
 					view_state.get_viewport_zoom(),
 					view_state.get_rendered_geometry_collection(),
 					WORKFLOW_RENDER_LAYER,

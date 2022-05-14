@@ -52,6 +52,7 @@
 #include "gui/GlobeProjectionType.h"
 #include "gui/GraticuleSettings.h"
 #include "gui/MapCamera.h"
+#include "gui/MapProjection.h"
 #include "gui/PythonManager.h"
 #include "gui/RasterColourPalette.h"
 #include "gui/RenderSettings.h"
@@ -124,11 +125,14 @@ GPlatesPresentation::ViewState::ViewState(
 			new VisualLayers(d_application_state, *this)),
 	d_visual_layer_registry(
 			new VisualLayerRegistry()),
+	d_map_projection(
+			GPlatesGui::MapProjection::create()),
 	d_globe_camera(
 			new GPlatesGui::GlobeCamera(
 				*d_viewport_zoom)),
 	d_map_camera(
 			new GPlatesGui::MapCamera(
+				*d_map_projection,
 				*d_viewport_zoom)),
 	d_globe_view_operation(
 			new GPlatesViewOperations::GlobeViewOperation(
@@ -450,6 +454,19 @@ const GPlatesViewOperations::MapViewOperation &
 GPlatesPresentation::ViewState::get_map_view_operation() const
 {
 	return *d_map_view_operation;
+}
+
+
+GPlatesGui::MapProjection &
+GPlatesPresentation::ViewState::get_map_projection()
+{
+	return *d_map_projection;
+}
+
+const GPlatesGui::MapProjection &
+GPlatesPresentation::ViewState::get_map_projection() const
+{
+	return *d_map_projection;
 }
 
 

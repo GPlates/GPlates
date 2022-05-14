@@ -54,13 +54,12 @@ GPlatesGui::Map::Map(
 		GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		const GPlatesPresentation::VisualLayers &visual_layers,
 		int device_pixel_ratio) :
-	d_map_projection(MapProjection::create()),
 	d_view_state(view_state),
 	d_gl_visual_layers(gl_visual_layers),
 	d_rendered_geometry_collection(&rendered_geometry_collection),
 	d_visual_layers(visual_layers),
 	d_rendered_geom_collection_painter(
-			d_map_projection,
+			view_state.get_map_projection(),
 			rendered_geometry_collection,
 			gl_visual_layers,
 			visual_layers,
@@ -78,55 +77,11 @@ GPlatesGui::Map::initialiseGL(
 	//
 
 	// Create these objects in place (some as non-copy-constructable).
-	d_grid = boost::in_place(boost::ref(gl), *d_map_projection, d_view_state.get_graticule_settings());
-	d_background = boost::in_place(boost::ref(gl), *d_map_projection, boost::ref(d_view_state));
+	d_grid = boost::in_place(boost::ref(gl), d_view_state.get_map_projection(), d_view_state.get_graticule_settings());
+	d_background = boost::in_place(boost::ref(gl), d_view_state.get_map_projection(), boost::ref(d_view_state));
 
 	// Initialise the rendered geometry collection painter.
 	d_rendered_geom_collection_painter.initialise(gl);
-}
-
-
-GPlatesGui::MapProjection &
-GPlatesGui::Map::projection()
-{
-	return *d_map_projection;
-}
-
-
-const GPlatesGui::MapProjection &
-GPlatesGui::Map::projection() const
-{
-	return *d_map_projection;
-}
-
-
-GPlatesGui::MapProjection::Type
-GPlatesGui::Map::projection_type() const
-{
-	return d_map_projection->projection_type();
-}
-
-
-void
-GPlatesGui::Map::set_projection_type(
-		GPlatesGui::MapProjection::Type projection_type_)
-{
-	d_map_projection->set_projection_type(projection_type_);
-}
-
-
-double
-GPlatesGui::Map::central_meridian()
-{
-	return d_map_projection->central_meridian();
-}
-
-
-void
-GPlatesGui::Map::set_central_meridian(
-		double central_meridian_)
-{
-	d_map_projection->set_central_meridian(central_meridian_);
 }
 
 
@@ -151,7 +106,7 @@ GPlatesGui::Map::paint(
 					gl,
 					d_view_state.get_scene_lighting_parameters(),
 					view_projection.get_view_transform()/*view_orientation*/,
-					MapProjection::non_null_ptr_to_const_type(d_map_projection));
+					d_view_state.get_map_projection());
 		}
 
 		// Set the scale factor.

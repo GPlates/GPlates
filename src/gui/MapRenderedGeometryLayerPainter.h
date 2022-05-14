@@ -81,7 +81,7 @@ namespace GPlatesGui
 
 
 		MapRenderedGeometryLayerPainter(
-				const MapProjection::non_null_ptr_to_const_type &map_projection,
+				const MapProjection &map_projection,
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 				const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 				const double &inverse_viewport_zoom_factor);
@@ -401,7 +401,7 @@ namespace GPlatesGui
 
 
 		//! Used to project vertices of rendered geometries to the map.
-		MapProjection::non_null_ptr_to_const_type d_map_projection;
+		const MapProjection &d_map_projection;
 
 		const GPlatesViewOperations::RenderedGeometryLayer &d_rendered_geometry_layer;
 

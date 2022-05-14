@@ -62,10 +62,12 @@ const float GPlatesViewOperations::MovePoleOperation::SYMBOL_SIZE = 10.0f;
 
 
 GPlatesViewOperations::MovePoleOperation::MovePoleOperation(
+		const GPlatesGui::MapProjection &map_projection,
 		GPlatesGui::ViewportZoom &viewport_zoom,
 		RenderedGeometryCollection &rendered_geometry_collection,
 		RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
 		GPlatesQtWidgets::MovePoleWidget &move_pole_widget) :
+	d_map_projection(map_projection),
 	d_viewport_zoom(viewport_zoom),
 	d_rendered_geometry_collection(rendered_geometry_collection),
 	d_main_rendered_layer_type(main_rendered_layer_type),
@@ -137,15 +139,10 @@ GPlatesViewOperations::MovePoleOperation::mouse_move_on_globe(
 void
 GPlatesViewOperations::MovePoleOperation::mouse_move_on_map(
 		const QPointF &current_point_on_scene,
-		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
-		const GPlatesGui::MapProjection &map_projection)
+		const GPlatesMaths::PointOnSphere &current_point_on_sphere)
 {
 	// Render pole as either highlighted if mouse hovering near pole or unhighlighted.
-	const bool highlight =
-			test_proximity_to_pole_on_map(
-					current_point_on_scene,
-					current_point_on_sphere,
-					map_projection);
+	const bool highlight =test_proximity_to_pole_on_map(current_point_on_scene, current_point_on_sphere);
 
 	render_pole(highlight);
 }
@@ -180,15 +177,14 @@ GPlatesViewOperations::MovePoleOperation::start_drag_on_globe(
 bool
 GPlatesViewOperations::MovePoleOperation::start_drag_on_map(
 		const QPointF &initial_point_on_scene,
-		const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
-		const GPlatesGui::MapProjection &map_projection)
+		const GPlatesMaths::PointOnSphere &initial_point_on_sphere)
 {
 	if (!d_move_pole_widget.can_change_pole())
 	{
 		return false;
 	}
 
-	if (!test_proximity_to_pole_on_map(initial_point_on_scene, initial_point_on_sphere, map_projection))
+	if (!test_proximity_to_pole_on_map(initial_point_on_scene, initial_point_on_sphere))
 	{
 		return false;
 	}
@@ -288,8 +284,7 @@ GPlatesViewOperations::MovePoleOperation::test_proximity_to_pole_on_globe(
 bool
 GPlatesViewOperations::MovePoleOperation::test_proximity_to_pole_on_map(
 		const QPointF &point_on_scene,
-		const GPlatesMaths::PointOnSphere &point_on_sphere,
-		const GPlatesGui::MapProjection &map_projection)
+		const GPlatesMaths::PointOnSphere &point_on_sphere)
 {
 	// If pole is not enabled then we cannot be close to it.
 	if (!d_move_pole_widget.get_pole())
@@ -298,7 +293,7 @@ GPlatesViewOperations::MovePoleOperation::test_proximity_to_pole_on_map(
 	}
 
 	// Find the pole location in map *scene* coordinates.
-	const QPointF pole_on_scene = map_projection.forward_transform(d_move_pole_widget.get_pole().get());
+	const QPointF pole_on_scene = d_map_projection.forward_transform(d_move_pole_widget.get_pole().get());
 
 	// Calculate distance between pole and point in scene coordinates.
 	const QPointF difference = point_on_scene - pole_on_scene;

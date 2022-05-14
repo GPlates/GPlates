@@ -88,7 +88,7 @@ namespace GPlatesOpenGL
 				GL &gl,
 				const GPlatesGui::SceneLightingParameters &scene_lighting_params = GPlatesGui::SceneLightingParameters(),
 				const GLMatrix &view_orientation = GLMatrix::IDENTITY,
-				boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection = boost::none);
+				boost::optional<const GPlatesGui::MapProjection &> map_projection = boost::none);
 
 
 		/**
@@ -115,7 +115,7 @@ namespace GPlatesOpenGL
 				GL &gl,
 				const GPlatesGui::SceneLightingParameters &scene_lighting_params,
 				const GLMatrix &view_orientation = GLMatrix::IDENTITY,
-				boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection = boost::none);
+				boost::optional<const GPlatesGui::MapProjection &> map_projection = boost::none);
 
 
 		/**
@@ -147,7 +147,7 @@ namespace GPlatesOpenGL
 		 * of position-on-globe.
 		 * Otherwise just use the constant light direction specified by @a get_scene_lighting_parameters.
 		 */
-		boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type>
+		boost::optional<const GPlatesGui::MapProjection &>
 		get_map_projection() const
 		{
 			return d_map_projection;
@@ -237,7 +237,7 @@ namespace GPlatesOpenGL
 		/**
 		 * The map projection if the light direction is (constant) in 2D map-space.
 		 */
-		boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> d_map_projection;
+		boost::optional<const GPlatesGui::MapProjection &> d_map_projection;
 
 		/**
 		 * The dimension of the square faces of the light direction cube texture (for the 2D map views).
@@ -267,7 +267,7 @@ namespace GPlatesOpenGL
 				GL &gl,
 				const GPlatesGui::SceneLightingParameters &scene_lighting_params,
 				const GLMatrix &view_orientation,
-				boost::optional<GPlatesGui::MapProjection::non_null_ptr_to_const_type> map_projection);
+				boost::optional<const GPlatesGui::MapProjection &> map_projection);
 
 		void
 		compile_link_programs(

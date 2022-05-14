@@ -407,7 +407,7 @@ GPlatesQtWidgets::MapCanvas::current_proximity_inclusion_threshold(
 			// device pixels or device *independent* pixels...
 			d_view_projection.get_projection_transform());
 	boost::optional< std::pair<double/*min*/, double/*max*/> > min_max_device_independent_pixel_size =
-			gl_view_projection.get_min_max_pixel_size_on_globe(click_point, map().projection());
+			gl_view_projection.get_min_max_pixel_size_on_globe(click_point, d_view_state.get_map_projection());
 	// If unable to determine maximum pixel size then just return the maximum allowed proximity threshold.
 	if (!min_max_device_independent_pixel_size)
 	{
@@ -597,7 +597,7 @@ GPlatesQtWidgets::MapCanvas::set_camera_viewpoint(
 	try
 	{
 		// Convert the llp to map coordinates.
-		map_position = map().projection().forward_transform(camera_viewpoint);
+		map_position = d_view_state.get_map_projection().forward_transform(camera_viewpoint);
 	}
 	catch(GPlatesGui::ProjectionException &e)
 	{
@@ -616,7 +616,7 @@ GPlatesQtWidgets::MapCanvas::get_camera_viewpoint() const
 	// Camera look-at position is in map projection space.
 	const QPointF &camera_look_at = d_map_camera.get_look_at_position();
 
-	boost::optional<GPlatesMaths::LatLonPoint> llp = map().projection().inverse_transform(camera_look_at);
+	boost::optional<GPlatesMaths::LatLonPoint> llp = d_view_state.get_map_projection().inverse_transform(camera_look_at);
 	if (!llp)
 	{
 		return boost::none;
@@ -643,7 +643,7 @@ GPlatesQtWidgets::MapCanvas::set_orientation(
 	try
 	{
 		// Convert the llp to map coordinates.
-		map_position = map().projection().forward_transform(desired_llp);
+		map_position = d_view_state.get_map_projection().forward_transform(desired_llp);
 	}
 	catch (GPlatesGui::ProjectionException &e)
 	{
@@ -1330,7 +1330,7 @@ GPlatesQtWidgets::MapCanvas::calculate_position_on_globe(
 		const QPointF &map_position) const
 {
 	boost::optional<GPlatesMaths::LatLonPoint> lat_lon_position_on_globe =
-			map().projection().inverse_transform(map_position);
+			d_view_state.get_map_projection().inverse_transform(map_position);
 	if (!lat_lon_position_on_globe)
 	{
 		return boost::none;

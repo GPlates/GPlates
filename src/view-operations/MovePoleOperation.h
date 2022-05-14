@@ -74,6 +74,7 @@ namespace GPlatesViewOperations
 		static
 		non_null_ptr_type
 		create(
+				const GPlatesGui::MapProjection &map_projection,
 				GPlatesGui::ViewportZoom &viewport_zoom,
 				RenderedGeometryCollection &rendered_geometry_collection,
 				RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
@@ -81,6 +82,7 @@ namespace GPlatesViewOperations
 		{
 			return non_null_ptr_type(
 					new MovePoleOperation(
+							map_projection,
 							viewport_zoom,
 							rendered_geometry_collection,
 							main_rendered_layer_type,
@@ -108,8 +110,7 @@ namespace GPlatesViewOperations
 		void
 		mouse_move_on_map(
 				const QPointF &current_point_on_scene,
-				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
-				const GPlatesGui::MapProjection &map_projection);
+				const GPlatesMaths::PointOnSphere &current_point_on_sphere);
 
 		/**
 		 * User has just clicked and dragged on the globe.
@@ -131,8 +132,7 @@ namespace GPlatesViewOperations
 		bool
 		start_drag_on_map(
 				const QPointF &initial_point_on_scene,
-				const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
-				const GPlatesGui::MapProjection &map_projection);
+				const GPlatesMaths::PointOnSphere &initial_point_on_sphere);
 
 		//! User is currently in the middle of dragging the mouse.
 		void
@@ -168,6 +168,8 @@ namespace GPlatesViewOperations
 		static const float SYMBOL_SIZE;
 
 
+		const GPlatesGui::MapProjection &d_map_projection;
+
 		GPlatesGui::ViewportZoom &d_viewport_zoom;
 
 		/**
@@ -197,6 +199,7 @@ namespace GPlatesViewOperations
 
 
 		MovePoleOperation(
+				const GPlatesGui::MapProjection &map_projection,
 				GPlatesGui::ViewportZoom &viewport_zoom,
 				RenderedGeometryCollection &rendered_geometry_collection,
 				RenderedGeometryCollection::MainLayerType main_rendered_layer_type,
@@ -220,8 +223,7 @@ namespace GPlatesViewOperations
 		bool
 		test_proximity_to_pole_on_map(
 				const QPointF &point_on_scene,
-				const GPlatesMaths::PointOnSphere &point_on_sphere,
-				const GPlatesGui::MapProjection &map_projection);
+				const GPlatesMaths::PointOnSphere &point_on_sphere);
 
 		void
 		move_pole(

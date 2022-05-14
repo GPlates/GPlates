@@ -96,7 +96,9 @@ GPlatesGui::MapCamera::calc_distance_eye_to_look_at_for_perspective_viewing_at_d
 
 
 GPlatesGui::MapCamera::MapCamera(
-	ViewportZoom &viewport_zoom) :
+		MapProjection &map_projection,
+		ViewportZoom &viewport_zoom) :
+	d_map_projection(map_projection),
 	d_viewport_zoom(viewport_zoom),
 	d_view_projection_type(GlobeProjection::ORTHOGRAPHIC),
 	d_pan(0, 0),
