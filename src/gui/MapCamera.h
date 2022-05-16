@@ -28,9 +28,9 @@
 
 #include <utility>  // std::pair
 #include <boost/optional.hpp>
-#include <QObject>
 #include <QPointF>
 
+#include "Camera.h"
 #include "GlobeProjectionType.h"
 
 #include "maths/PointOnSphere.h"
@@ -50,10 +50,8 @@ namespace GPlatesGui
 	 * Handles viewing of the map (eye location, view direction, projection).
 	 */
 	class MapCamera :
-			public QObject
+			public Camera
 	{
-		Q_OBJECT
-
 	public:
 
 
@@ -62,38 +60,36 @@ namespace GPlatesGui
 				MapProjection &map_projection,
 				ViewportZoom &viewport_zoom);
 
-		/**
-		 * Switch between orthographic and perspective projections.
-		 */
-		void
-		set_view_projection_type(
-				GlobeProjection::Type view_projection_type);
-
-		GlobeProjection::Type
-		get_view_projection_type() const
-		{
-			return d_view_projection_type;
-		}
 
 		/**
-		 * The position on the map that the view is looking at.
+		 * The position on the map (z=0 plane) that the view is looking at.
 		 */
 		const QPointF &
-		get_look_at_position() const;
+		get_look_at_position_on_map() const;
+
+		/**
+		 * Same as @a get_look_at_position_on_map but returned a position in 3D space.
+		 */
+		GPlatesMaths::Vector3D
+		get_look_at_position() const override
+		{
+			const QPointF &position_on_map = get_look_at_position_on_map();
+			return GPlatesMaths::Vector3D(position_on_map.x(), position_on_map.y(), 0);
+		}
 
 		/**
 		 * The view direction.
 		 *
 		 * For perspective viewing this is from the eye position to the look-at position.
 		 */
-		const GPlatesMaths::UnitVector3D &
-		get_view_direction() const;
+		GPlatesMaths::UnitVector3D
+		get_view_direction() const override;
 
 		/**
 		 * The 'up' vector for the view orientation.
 		 */
-		const GPlatesMaths::UnitVector3D &
-		get_up_direction() const;
+		GPlatesMaths::UnitVector3D
+		get_up_direction() const override;
 
 
 		/**
@@ -249,87 +245,6 @@ namespace GPlatesGui
 
 
 		/**
-		 * Returns the left/right/bottom/top parameters of the 'glOrtho()' function, given the
-		 * specified viewport aspect ratio.
-		 *
-		 * The current viewport zoom affects these parameters.
-		 */
-		void
-		get_orthographic_left_right_bottom_top(
-				const double &aspect_ratio,
-				double &ortho_left,
-				double &ortho_right,
-				double &ortho_bottom,
-				double &ortho_top) const;
-
-		/**
-		 * The camera (eye) location for perspective viewing.
-		 *
-		 * The current viewport zoom affects this eye location.
-		 *
-		 * NOTE: For orthographic viewing there is no real eye location since the view rays
-		 *       are parallel and hence the eye location is at infinity.
-		 */
-		GPlatesMaths::Vector3D
-		get_perspective_eye_position() const;
-
-		/**
-		 * Returns the field-of-view (in y-axis) parameters of the 'gluPerspective()' function,
-		 * given the specified viewport aspect ratio.
-		 */
-		void
-		get_perspective_fovy(
-				const double &aspect_ratio,
-				double &fovy_degrees) const;
-
-
-		/**
-		 * Returns ray from camera eye into the projected scene at the specified window coordinate.
-		 *
-		 * Window coordinates are typically in the range [0, window_width] and [0, window_height]
-		 * where (0, 0) is bottom-left and (window_width, window_height) is top-right of window.
-		 * Note that we use the OpenGL convention where 'window_x = 0' is the bottom of the window.
-		 * But in Qt it means top, so a Qt mouse y coordinate (for example) needs be inverted
-		 * before passing to this method.
-		 *
-		 * Note that either/both window coordinate could be outside the range[0, window_width] and
-		 * [0, window_height], in which case the ray is not associated with a window pixel inside the
-		 * viewport (visible projected scene).
-		 *
-		 * For a perspective projection, the ray origin is at the camera eye (@a get_perspective_eye_position).
-		 *
-		 * For an orthographic projection, all view rays are parallel and so there's no real eye position.
-		 * Instead the ray origin is placed an arbitrary distance (currently 1.0) from the look-at position
-		 * (more accurately the distance from the plane, orthogonal to view direction, containing look-at position)
-		 * back along the view direction.
-		 */
-		GPlatesOpenGL::GLIntersect::Ray
-		get_camera_ray_at_window_coord(
-				double window_x,
-				double window_y,
-				int window_width,
-				int window_height) const;
-
-		/**
-		 * Returns ray from camera eye to the specified arbitrary position.
-		 *
-		 * Note that the position could be outside the view frustum, in which case the ray
-		 * is not associated with a screen pixel inside the viewport (visible projected scene).
-		 *
-		 * For a perspective projection, the ray origin is at the camera eye (@a get_perspective_eye_position).
-		 *
-		 * For an orthographic projection, all view rays are parallel and so there's no real eye position.
-		 * Instead the ray origin is placed an arbitrary distance (currently 1.0) from the specified position
-		 * back along the view direction.
-		 *
-		 * NOTE: A precondition, for perspective projection, is the camera eye must not coincide with the specified position.
-		 */
-		GPlatesOpenGL::GLIntersect::Ray
-		get_camera_ray_at_position(
-				const GPlatesMaths::Vector3D &position) const;
-
-
-		/**
 		 * Returns the position on the map plane (z=0) where the specified camera ray intersects, or
 		 * none if does not intersect.
 		 *
@@ -343,18 +258,14 @@ namespace GPlatesGui
 		get_position_on_map_at_camera_ray(
 				const GPlatesOpenGL::GLIntersect::Ray &camera_ray);
 
-	Q_SIGNALS:
-	
+	protected:
+
 		/**
-		 * This signal is emitted when the camera changes.
+		 * In perspective viewing mode, this is the distance from the eye position to the look-at
+		 * position for the default zoom (ie, a zoom factor of 1.0).
 		 */
-		void
-		camera_changed();
-
-	private Q_SLOTS:
-
-		void
-		handle_zoom_changed();
+		double
+		get_distance_from_eye_to_look_at_for_perspective_viewing_at_default_zoom() const override;
 
 	private:
 
@@ -375,10 +286,6 @@ namespace GPlatesGui
 		};
 
 		MapProjection &d_map_projection;
-
-		ViewportZoom &d_viewport_zoom;
-
-		GlobeProjection::Type d_view_projection_type;
 
 		QPointF d_pan;
 
@@ -445,14 +352,6 @@ namespace GPlatesGui
 		static const double FRAMING_RATIO_OF_MAP_IN_VIEWPORT;
 
 		/**
-		 * Angle of field-of-view for perspective projection.
-		 */
-		static const double PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
-
-		//! Tangent of half of field-of-view angle.
-		static const double TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW;
-
-		/**
 		 * The initial position on the map that the camera looks at.
 		 */
 		static const QPointF INITIAL_LOOK_AT_POSITION;
@@ -466,22 +365,6 @@ namespace GPlatesGui
 		 * Initial up direction (orthogonal to view direction).
 		 */
 		static const GPlatesMaths::UnitVector3D INITIAL_UP_DIRECTION;
-
-		/**
-		 * In perspective viewing mode, this is the distance from the eye position to the look-at
-		 * position for the default zoom (ie, a zoom factor of 1.0).
-		 */
-		static
-		double
-		get_distance_eye_to_look_at_for_perspective_viewing_at_default_zoom();
-
-		static
-		double
-		calc_distance_eye_to_look_at_for_perspective_viewing_at_default_zoom();
-
-		double
-		get_perspective_tan_half_fovy(
-				const double &aspect_ratio) const;
 	};
 }
 
