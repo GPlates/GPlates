@@ -163,7 +163,7 @@ GPlatesViewOperations::GlobeViewOperation::start_drag(
 			initial_mouse_pos_on_globe.position_vector(),
 			initial_mouse_window_x,
 			initial_mouse_window_y,
-			d_globe_camera.get_look_at_position().position_vector(),
+			d_globe_camera.get_look_at_position_on_globe().position_vector(),
 			d_globe_camera.get_view_direction(),
 			d_globe_camera.get_up_direction(),
 			d_globe_camera.get_view_orientation());

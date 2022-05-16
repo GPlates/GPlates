@@ -62,7 +62,7 @@ GPlatesViewOperations::MapViewOperation::start_drag(
 			initial_mouse_window_x,
 			initial_mouse_window_y,
 			initial_map_position,
-			d_map_camera.get_look_at_position(),
+			d_map_camera.get_look_at_position_on_map(),
 			d_map_camera.get_view_direction(),
 			d_map_camera.get_up_direction(),
 			d_map_camera.get_pan());

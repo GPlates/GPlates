@@ -68,184 +68,6 @@
 #include "utils/Profile.h"
 
 
-namespace 
-{
-	/**
-	 * The radius from the map origin (at central meridian) of a sphere that not only bounds the map
-	 * but adds padding to bound objects *off* the map (such as rendered velocity arrows) so they don't
-	 * get clipped by the near and far planes of the view frustum.
-	 *
-	 * The value of 180.0 represents the distance from central meridian (at origin) to edge of map (in longitude direction).
-	 * The latitude direction is shorter, so this should bound all map projections (except for maybe the Mercator projection?).
-	 *
-	 * The value of 90.0 represents the extra padding (for objects *off* the map).
-	 */
-	const double EXTENDED_BOUNDING_MAP_RADIUS = 180.0 + 90.0;
-
-	/**
-	 * From the camera (and viewport aspect ratio) calculate the view and projection transforms.
-	 *
-	 * Note: The projection transform is 'orthographic' or 'perspective', and hence is only affected
-	 *       by viewport *aspect ratio*, so it's independent of whether we're using device pixels or
-	 *       device *independent* pixels.
-	 */
-	std::pair<GPlatesOpenGL::GLMatrix/*view_transform*/, GPlatesOpenGL::GLMatrix/*projection_transform*/>
-	calc_scene_view_projection_transform(
-			const GPlatesGui::MapCamera &camera,
-			const double &aspect_ratio)
-	{
-		const GPlatesMaths::UnitVector3D &camera_view_direction = camera.get_view_direction();
-		const GPlatesMaths::UnitVector3D &camera_up = camera.get_up_direction();
-		// Camera look-at position is 2D in map projection space, so convert to 3D assuming map plane is z=0 plane.
-		const QPointF &camera_look_at_2D = camera.get_look_at_position();
-		const GPlatesMaths::Vector3D camera_look_at(camera_look_at_2D.x(), camera_look_at_2D.y(), 0);
-
-		GPlatesOpenGL::GLMatrix view_transform;
-		GPlatesOpenGL::GLMatrix projection_transform;
-
-		if (camera.get_view_projection_type() == GPlatesGui::GlobeProjection::ORTHOGRAPHIC)
-		{
-			//
-			// View transform.
-			//
-			// Note that, for 'orthographic' viewing (as opposed to 'perspective'), the 'eye' can be anywhere
-			// along the view direction. This is because the view rays are parallel and hence only the direction
-			// matters (not the position). The position does affect the near/far clip plane distances, but
-			// they're all adjusted based on the eye position anyway, so the near/far clip planes always end up
-			// in the correct position regardless of the eye position.
-			// The end result is moving the eye position along the view direction does not affect the rendered scene
-			// for 'orthographic' viewing (whereas it does affect the scene for 'perspective' viewing).
-			//
-			// We'll just (arbitrarily) choose the eye position to be the look-at position moved back one unit along the view direction.
-			const GPlatesMaths::Vector3D camera_eye = camera_look_at - GPlatesMaths::Vector3D(camera_view_direction);
-			view_transform.glu_look_at(
-					camera_eye.x().dval(), camera_eye.y().dval(), camera_eye.z().dval(), // eye
-					camera_look_at.x().dval(), camera_look_at.y().dval(), camera_look_at.z().dval(), // centre
-					camera_up.x().dval(), camera_up.y().dval(), camera_up.z().dval()); // up
-
-			// Distance from eye to map centre projected along the view direction.
-			//
-			// Note that the central meridian is now always mapped to the origin so that the map
-			// does not shift (by central meridian degrees) like previously.
-			const GPlatesMaths::Vector3D map_centre(0, 0, 0);
-			const GLdouble eye_to_map_centre_distance_along_view_direction = dot(map_centre - camera_eye, camera_view_direction).dval();
-
-			// The near and far depths surround a sphere that bounds the map (noting that map central meridian is at origin).
-			// The bounding sphere is larger than the actual bounding sphere around the map to account for objects extending
-			// off the map (such as rendered arrows).
-			const GLdouble depth_in_front_of_globe = eye_to_map_centre_distance_along_view_direction - EXTENDED_BOUNDING_MAP_RADIUS;
-			const GLdouble depth_behind_globe = eye_to_map_centre_distance_along_view_direction + EXTENDED_BOUNDING_MAP_RADIUS;
-
-			//
-			// Projection transform.
-			//
-			// Note that, counter-intuitively, zooming into an orthographic view is not accomplished by moving
-			// the eye closer to the globe. Instead it's accomplished by reducing the width and height of
-			// the orthographic viewing frustum (rectangular prism).
-			//
-
-			double ortho_left;
-			double ortho_right;
-			double ortho_bottom;
-			double ortho_top;
-			camera.get_orthographic_left_right_bottom_top(
-					aspect_ratio,
-					ortho_left, ortho_right, ortho_bottom, ortho_top);
-
-			projection_transform.gl_ortho(
-					ortho_left, ortho_right,
-					ortho_bottom, ortho_top,
-					depth_in_front_of_globe,
-					depth_behind_globe);
-		}
-		else // perspective...
-		{
-			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-					camera.get_view_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
-					GPLATES_ASSERTION_SOURCE);
-
-			//
-			// View transform.
-			//
-			// In contrast to orthographic viewing, zooming in 'perspective' viewing is accomplished by moving the eye position.
-			// Alternatively zooming could also be accomplished by narrowing the field-of-view, but it's better
-			// to keep the field-of-view constant since that is how we view the real world with the naked eye
-			// (as opposed to a telephoto lens where the viewing rays become more parallel with greater zoom).
-			//
-			const GPlatesMaths::Vector3D camera_eye = camera.get_perspective_eye_position();
-			view_transform.glu_look_at(
-					camera_eye.x().dval(), camera_eye.y().dval(), camera_eye.z().dval(), // eye
-					camera_look_at.x().dval(), camera_look_at.y().dval(), camera_look_at.z().dval(), // centre
-					camera_up.x().dval(), camera_up.y().dval(), camera_up.z().dval()); // up
-
-			// Distance from eye to map centre projected along the view direction.
-			//
-			// Note that the central meridian is now always mapped to the origin so that the map
-			// does not shift (by central meridian degrees) like previously.
-			const GPlatesMaths::Vector3D map_centre(0, 0, 0);
-			const GLdouble eye_to_map_centre_distance_along_view_direction =
-					dot(map_centre - camera_eye, camera_view_direction).dval();
-
-			//
-			// For perspective viewing it's generally advised to keep the near plane as far away as
-			// possible in order to get better precision from the depth buffer (ie, quantised 32-bit
-			// depths in hardware depth buffer, or 24 bits if using 8 bits for stencil, spread over a
-			// shorter near-to-far distance).
-			// Actually most of the loss of precision occurs in the far distance (since it's essentially
-			// the post-projection '1/z' that's quantised into the 32-bit depth buffer), so depths
-			// close to the near clip plane get mapped to more quantised values than further away.
-			// So if there's any z-fighting (different objects mapped to same depth buffer value)
-			// it'll happen more at distances further from the eye where it's not as noticeable
-			// (since projected to a smaller area in viewport).
-			// According to https://www.khronos.org/opengl/wiki/Depth_Buffer_Precision the z value
-			// in eye coordinates (ie, eye at z=0) is related to the near 'n' and far 'f' distances
-			// and the integer z-buffer value 'z_w' and the number of integer depth buffer values 's':
-			//
-			//   z_eye =         f * n
-			//           -----------------------
-			//           (z_w / s) * (f - n) - f
-			//
-			// ...for z_w equal to 0 and s this gives a z_eye of -n and -f.
-			//
-			// Since the eye position moves quite close to the map in perspective view
-			// (to accomplish viewport zooming) we also don't want to clip away the closest part of the map,
-			// and we don't want to clip away any objects sticking outside the map as much as we
-			// can avoid it (such as rendered arrows). So we can't keep the near plane too far away.
-			// We set it to the same near plane distance used for the globe perspective view
-			// (0.001 * Earth radius = 6km = 0.057 in degrees) and set the max far plane distance to 360+270=630 degrees.
-			// With s=2^24 for a 24-bit depth buffer, we plug in the z_w values of 0, 1 and s, s-1
-			// (which are the two closest and two furthest integer z-buffer values respectively)
-			// then we get z_eye(0)-z_eye(1) = 3.4e-9 and z_eye(s)-z_eye(s-1) = 4.1e-1.
-			// This corresponds to ~0.38mm and 45.6km respectively.
-			// This also shows we get about 1.2e+8 times more z-buffer precision at the near plane compared to the far plane.
-			//
-
-			// The default distance from camera eye to near plane (along view direction).
-			const GLdouble depth_in_front_of_map = 0.001 * (180.0 / GPlatesMaths::PI);  // ~6km (z-buffer resolution: ~0.37mm near and ~45.6km far)
-
-			// The EXTENDED_BOUNDING_MAP_RADIUS is because we don't want to put the far clipping plane too close
-			// to the map because some objects are outside the map such as rendered arrows.
-			const GLdouble depth_behind_map = eye_to_map_centre_distance_along_view_direction + EXTENDED_BOUNDING_MAP_RADIUS;
-
-			double fovy_degrees;
-			camera.get_perspective_fovy(aspect_ratio, fovy_degrees);
-
-			//
-			// Projection transform.
-			//
-
-			projection_transform.glu_perspective(
-					fovy_degrees,
-					aspect_ratio,
-					depth_in_front_of_map,
-					depth_behind_map);
-		}
-
-		return std::make_pair(view_transform, projection_transform);
-	}
-}
-
-
 const double GPlatesQtWidgets::MapCanvas::NUDGE_CAMERA_DEGREES = 5.0;
 
 
@@ -487,11 +309,9 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 			image_size_in_device_independent_pixels.height();
 
 	// Get the view-projection transform for the image.
-	const std::pair<GPlatesOpenGL::GLMatrix/*view*/, GPlatesOpenGL::GLMatrix/*projection*/>
-			image_view_projection_transform =
-					calc_scene_view_projection_transform(
-							d_map_camera,
-							image_aspect_ratio);
+	const GPlatesOpenGL::GLMatrix image_view_transform = d_map_camera.get_view_transform();
+	const GPlatesOpenGL::GLMatrix image_projection_transform =
+			d_map_camera.get_projection_transform(image_aspect_ratio);
 
 	// The border is half the point size or line width, rounded up to nearest pixel.
 	// TODO: Use the actual maximum point size or line width to calculate this.
@@ -514,8 +334,8 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 		// Hold onto the previous frame's cached resources *while* generating the current frame.
 		const cache_handle_type image_tile_cache_handle = render_scene_tile_into_image(
 				*gl,
-				image_view_projection_transform.first/*view*/,
-				image_view_projection_transform.second/*projection*/,
+				image_view_transform,
+				image_projection_transform,
 				image_tile_render,
 				image);
 		frame_cache_handle->push_back(image_tile_cache_handle);
@@ -558,16 +378,14 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 			feedback_paint_device_pixel_height);
 
 	// Get the view-projection transform.
-	const std::pair<GPlatesOpenGL::GLMatrix/*view*/, GPlatesOpenGL::GLMatrix/*projection*/>
-			feedback_paint_device_view_projection_transform =
-					calc_scene_view_projection_transform(
-							d_map_camera,
-							feedback_paint_device_aspect_ratio);
+	const GPlatesOpenGL::GLMatrix feedback_paint_device_view_transform = d_map_camera.get_view_transform();
+	const GPlatesOpenGL::GLMatrix feedback_paint_device_projection_transform =
+			d_map_camera.get_projection_transform(feedback_paint_device_aspect_ratio);
 
 	const GPlatesOpenGL::GLViewProjection feedback_paint_device_view_projection(
 			feedback_paint_device_viewport,
-			feedback_paint_device_view_projection_transform.first/*view*/,
-			feedback_paint_device_view_projection_transform.second/*projection*/);
+			feedback_paint_device_view_transform,
+			feedback_paint_device_projection_transform);
 
 	// Set the viewport (and scissor rectangle) to the size of the feedback paint device
 	// (instead of the map canvas) since we're rendering to it (via transform feedback).
@@ -614,7 +432,7 @@ boost::optional<GPlatesMaths::LatLonPoint>
 GPlatesQtWidgets::MapCanvas::get_camera_viewpoint() const
 {
 	// Camera look-at position is in map projection space.
-	const QPointF &camera_look_at = d_map_camera.get_look_at_position();
+	const QPointF &camera_look_at = d_map_camera.get_look_at_position_on_map();
 
 	boost::optional<GPlatesMaths::LatLonPoint> llp = d_view_state.get_map_projection().inverse_transform(camera_look_at);
 	if (!llp)
@@ -1085,18 +903,17 @@ GPlatesQtWidgets::MapCanvas::set_view()
 	//       (not the device independent pixels used for widget sizes).
 	const unsigned int canvas_width = d_gl_context->get_width();
 	const unsigned int canvas_height = d_gl_context->get_height();
+	const double canvas_aspect_ratio = double(canvas_width) / canvas_height;
 
 	// Get the view-projection transform.
-	const std::pair<GPlatesOpenGL::GLMatrix/*view*/, GPlatesOpenGL::GLMatrix/*projection*/>
-			view_projection_transform =
-					calc_scene_view_projection_transform(
-							d_map_camera,
-							double(canvas_width) / canvas_height /*aspect ratio*/);
+	const GPlatesOpenGL::GLMatrix view_transform = d_map_camera.get_view_transform();
+	const GPlatesOpenGL::GLMatrix projection_transform =
+			d_map_camera.get_projection_transform(canvas_aspect_ratio);
 
 	d_view_projection = GPlatesOpenGL::GLViewProjection(
 			GPlatesOpenGL::GLViewport(0, 0, canvas_width, canvas_height),
-			view_projection_transform.first/*view*/,
-			view_projection_transform.second/*projection*/);
+			view_transform,
+			projection_transform);
 }
 
 
@@ -1265,7 +1082,7 @@ QPointF
 GPlatesQtWidgets::MapCanvas::centre_of_viewport() const
 {
 	// Camera look-at position is in map projection space.
-	return d_map_camera.get_look_at_position();
+	return d_map_camera.get_look_at_position_on_map();
 }
 
 
