@@ -1,0 +1,316 @@
+/* $Id$ */
+
+/**
+ * \file 
+ * $Revision$
+ * $Date$
+ * 
+ * Copyright (C) 2021 The University of Sydney, Australia
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+#ifndef GPLATES_GUI_CAMERA_H
+#define GPLATES_GUI_CAMERA_H
+
+#include <utility>  // std::pair
+#include <boost/optional.hpp>
+#include <QObject>
+
+#include "GlobeProjectionType.h"
+
+#include "maths/UnitVector3D.h"
+#include "maths/Vector3D.h"
+
+#include "opengl/GLIntersectPrimitives.h"
+#include "opengl/GLMatrix.h"
+
+
+namespace GPlatesGui
+{
+	class ViewportZoom;
+
+	/**
+	 * Base class for globe and map cameras.
+	 */
+	class Camera :
+			public QObject
+	{
+		Q_OBJECT
+
+	public:
+
+		virtual
+		~Camera()
+		{  }
+
+
+		/**
+		 * Switch between orthographic and perspective view projections.
+		 */
+		void
+		set_view_projection_type(
+				GlobeProjection::Type view_projection_type);
+
+		/**
+		 * Return the view projection (orthographic or perspective).
+		 */
+		GlobeProjection::Type
+		get_view_projection_type() const
+		{
+			return d_view_projection_type;
+		}
+
+
+		/**
+		 * Get the view transform to pass to OpenGL.
+		 */
+		GPlatesOpenGL::GLMatrix
+		get_view_transform() const;
+
+		/**
+		 * Get the projection transform to pass to OpenGL.
+		 *
+		 * Note: The projection transform is 'orthographic' or 'perspective', and hence is only affected
+		 *       by the viewport *aspect ratio*, so it's independent of whether we're using device pixels or
+		 *       device *independent* pixels.
+		 */
+		GPlatesOpenGL::GLMatrix
+		get_projection_transform(
+				const double &viewport_aspect_ratio) const;
+
+
+		/**
+		 * The position on the globe or map that the view is looking at.
+		 *
+		 * Note: For the globe this is on the unit sphere.
+		 *       For the map this is on the z=0 plane.
+		 */
+		virtual
+		GPlatesMaths::Vector3D
+		get_look_at_position() const = 0;
+
+		/**
+		 * The view direction.
+		 *
+		 * This is from the eye position to the look-at position.
+		 */
+		virtual
+		GPlatesMaths::UnitVector3D
+		get_view_direction() const = 0;
+
+		/**
+		 * The 'up' vector for the view orientation.
+		 */
+		virtual
+		GPlatesMaths::UnitVector3D
+		get_up_direction() const = 0;
+
+		/**
+		 * The camera (eye) location.
+		 *
+		 * The eye location to the look-at position (@a get_look_at_position) is along the view direction.
+		 *
+		 * Note: For perspective viewing the current viewport zoom affects this eye location.
+		 *
+		 * Note: For orthographic viewing there is no real eye location since the view rays are
+		 *       parallel and hence the eye location can be anywhere along the view direction
+		 *       (including at infinity). This is because the view rays are parallel and hence only
+		 *       the direction matters (not the position). However since the position does affect the
+		 *       near/far clip plane distances we arbitrarily place the eye position on the near clip plane
+		 *       (so it has a view/eye space z value of zero).
+		 */
+		GPlatesMaths::Vector3D
+		get_eye_position() const;
+
+
+		/**
+		 * Returns ray from camera eye into the projected scene at the specified window coordinate.
+		 *
+		 * Window coordinates are typically in the range [0, window_width] and [0, window_height]
+		 * where (0, 0) is bottom-left and (window_width, window_height) is top-right of window.
+		 * Note that we use the OpenGL convention where 'window_x = 0' is the bottom of the window.
+		 * But in Qt it means top, so a Qt mouse y coordinate (for example) needs be inverted
+		 * before passing to this method.
+		 *
+		 * Note that either/both window coordinate could be outside the range[0, window_width] and
+		 * [0, window_height], in which case the ray is not associated with a window pixel inside the
+		 * viewport (visible projected scene).
+		 *
+		 * The ray origin is at the camera eye (@a get_eye_position).
+		 */
+		GPlatesOpenGL::GLIntersect::Ray
+		get_camera_ray_at_window_coord(
+				double window_x,
+				double window_y,
+				int window_width,
+				int window_height) const;
+
+
+		/**
+		 * Returns ray from camera eye to the specified arbitrary position.
+		 *
+		 * The eye location to the look-at position (@a get_look_at_position) is along the view direction.
+		 *
+		 * Note that the position could be outside the view frustum, in which case the ray
+		 * is not associated with a screen pixel inside the viewport (visible projected scene).
+		 *
+		 * NOTE: A precondition, for perspective projection, is the specified position must not coincide with the camera eye.
+		 */
+		GPlatesOpenGL::GLIntersect::Ray
+		get_camera_ray_at_position(
+				const GPlatesMaths::Vector3D &position) const;
+
+
+		/**
+		 * Returns the window coordinates that the specified arbitrary position projects onto.
+		 *
+		 * Window coordinates are typically in the range [0, window_width] and [0, window_height]
+		 * where (0, 0) is bottom-left and (window_width, window_height) is top-right of window.
+		 * Note that we use the OpenGL convention where 'window_x = 0' is the bottom of the window.
+		 * But in Qt it means top, so if a Qt mouse y-coordinate is desired then the returned
+		 * OpenGL y-coordinate needs be inverted.
+		 *
+		 * Note that either/both window coordinate could be outside the range[0, window_width] and
+		 * [0, window_height], in which case the specified position is not visible (does not
+		 * project inside the viewport).
+		 *
+		 * Returns none if the projection is perspective and the specified position is on the plane
+		 * containing the camera eye with plane normal equal to view direction.
+		 */
+		boost::optional<std::pair<double/*window_x*/, double/*window_y*/>>
+		get_window_coord_at_position(
+				const GPlatesMaths::Vector3D &position,
+				int window_width,
+				int window_height) const;
+
+	Q_SIGNALS:
+	
+		/**
+		 * This signal is emitted when the camera changes.
+		 */
+		void
+		camera_changed();
+
+	private Q_SLOTS:
+
+		void
+		handle_zoom_changed();
+
+	protected:
+
+		explicit
+		Camera(
+				ViewportZoom &viewport_zoom);
+
+		const ViewportZoom &
+		get_viewport_zoom() const
+		{
+			return d_viewport_zoom;
+		}
+
+
+		/**
+		 * The camera (eye) location.
+		 *
+		 * Note: For perspective viewing the current viewport zoom affects this eye location.
+		 *
+		 */
+		/**
+		 * The camera (eye) location for orthographic viewing.
+		 *
+		 * The eye location to the specified look-at position is along the view direction.
+		 *
+		 * For orthographic viewing there is no single eye location (like perspective viewing) since
+		 * the view rays are parallel and hence never converge on a single point.
+		 * This is also why the eye position depends on the look-at position.
+		 * Also since the position does affect the near/far clip plane distances we arbitrarily
+		 * place the eye position on the near clip plane (so it has a view/eye space z value of zero).
+		 * The eye location to specified look-at position is along the view direction.
+		 */
+		GPlatesMaths::Vector3D
+		get_orthographic_eye_position(
+				const GPlatesMaths::Vector3D &look_at_position) const;
+
+		/**
+		 * The camera (eye) location for perspective viewing.
+		 *
+		 * Unlike orthographic viewing, with perspective viewing the view rays all converge at a single point.
+		 *
+		 * Note: The current viewport zoom affects this eye location.
+		 */
+		GPlatesMaths::Vector3D
+		get_perspective_eye_position() const;
+
+
+		/**
+		 * Returns the left/right/bottom/top parameters of the 'glOrtho()' function, given the
+		 * specified viewport aspect ratio.
+		 *
+		 * Note: The current viewport zoom affects these parameters.
+		 */
+		void
+		get_orthographic_left_right_bottom_top(
+				const double &aspect_ratio,
+				double &ortho_left,
+				double &ortho_right,
+				double &ortho_bottom,
+				double &ortho_top) const;
+
+		/**
+		 * Returns the field-of-view (in y-axis) parameters of the 'gluPerspective()' function,
+		 * given the specified viewport aspect ratio.
+		 */
+		double
+		get_perspective_fovy(
+				const double &aspect_ratio) const;
+
+		/**
+		 * Same as @a get_perspective_fovy except returns tan(fovy/2) instead of fovy.
+		 */
+		double
+		get_perspective_tan_half_fovy(
+				const double &aspect_ratio) const;
+
+		/**
+		 * In perspective viewing mode, this is the distance from the eye position to the look-at
+		 * position for the default zoom (ie, a zoom factor of 1.0).
+		 */
+		virtual
+		double
+		get_distance_from_eye_to_look_at_for_perspective_viewing_at_default_zoom() const = 0;
+
+
+		/**
+		 * Angle of field-of-view for perspective projection.
+		 */
+		static const double PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
+
+		//! Tangent of half of field-of-view angle.
+		static const double TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW;
+
+	private:
+
+		ViewportZoom &d_viewport_zoom;
+
+		/**
+		 * The view projection (orthographic or perspective).
+		 */
+		GlobeProjection::Type d_view_projection_type;
+	};
+}
+
+#endif // GPLATES_GUI_CAMERA_H

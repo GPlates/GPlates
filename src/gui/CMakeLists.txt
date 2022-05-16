@@ -21,6 +21,8 @@ set(srcs
     BuiltinColourPalettes.h
     BuiltinColourPaletteType.cc
     BuiltinColourPaletteType.h
+    Camera.cc
+    Camera.h
     CanvasToolWorkflow.cc
     CanvasToolWorkflow.h
     CanvasToolWorkflows.cc
