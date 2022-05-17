@@ -32,6 +32,7 @@
 
 #include "GlobeProjectionType.h"
 
+#include "maths/types.h"
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
 
@@ -129,9 +130,10 @@ namespace GPlatesGui
 		 * Note: For orthographic viewing there is no real eye location since the view rays are
 		 *       parallel and hence the eye location can be anywhere along the view direction
 		 *       (including at infinity). This is because the view rays are parallel and hence only
-		 *       the direction matters (not the position). However since the position does affect the
-		 *       near/far clip plane distances we arbitrarily place the eye position on the near clip plane
-		 *       (so it has a view/eye space z value of zero).
+		 *       the direction matters (not the position). However since the eye position does affect the
+		 *       near/far clip plane distances we arbitrarily place the eye position *on* the near clip plane
+		 *       (so it has a view/eye space z value of zero). And the near/far distances are such that
+		 *       they encompass the bounds of the globe or map.
 		 */
 		GPlatesMaths::Vector3D
 		get_eye_position() const;
@@ -151,6 +153,10 @@ namespace GPlatesGui
 		 * viewport (visible projected scene).
 		 *
 		 * The ray origin is at the camera eye (@a get_eye_position).
+		 * Note that, for orthographic viewing, the ray origin isn't actually at @a get_eye_position but
+		 * it's in the same view plane as it (ie, plane passing through @a get_eye_position with plane normal
+		 * @a get_view_direction). And this means the entire scene (globe or map) will always be in *front*
+		 * of the ray (see the description of @a get_eye_position for the detailed reason).
 		 */
 		GPlatesOpenGL::GLIntersect::Ray
 		get_camera_ray_at_window_coord(
@@ -163,12 +169,17 @@ namespace GPlatesGui
 		/**
 		 * Returns ray from camera eye to the specified arbitrary position.
 		 *
-		 * The eye location to the look-at position (@a get_look_at_position) is along the view direction.
-		 *
 		 * Note that the position could be outside the view frustum, in which case the ray
 		 * is not associated with a screen pixel inside the viewport (visible projected scene).
 		 *
-		 * NOTE: A precondition, for perspective projection, is the specified position must not coincide with the camera eye.
+		 * The ray origin is at the camera eye (@a get_eye_position).
+		 * Note that, for orthographic viewing, the ray origin isn't actually at @a get_eye_position but
+		 * it's in the same view plane as it (ie, plane passing through @a get_eye_position with plane normal
+		 * @a get_view_direction). And this means the entire scene (globe or map) will always be in *front*
+		 * of the ray (see the description of @a get_eye_position for the detailed reason).
+		 *
+		 * NOTE: A precondition, for perspective projection, is the specified position must not coincide
+		 *       with the camera eye (which would prevent the ray direction from being found).
 		 */
 		GPlatesOpenGL::GLIntersect::Ray
 		get_camera_ray_at_position(
@@ -224,12 +235,6 @@ namespace GPlatesGui
 
 
 		/**
-		 * The camera (eye) location.
-		 *
-		 * Note: For perspective viewing the current viewport zoom affects this eye location.
-		 *
-		 */
-		/**
 		 * The camera (eye) location for orthographic viewing.
 		 *
 		 * The eye location to the specified look-at position is along the view direction.
@@ -237,9 +242,11 @@ namespace GPlatesGui
 		 * For orthographic viewing there is no single eye location (like perspective viewing) since
 		 * the view rays are parallel and hence never converge on a single point.
 		 * This is also why the eye position depends on the look-at position.
-		 * Also since the position does affect the near/far clip plane distances we arbitrarily
-		 * place the eye position on the near clip plane (so it has a view/eye space z value of zero).
-		 * The eye location to specified look-at position is along the view direction.
+		 * Also since the eye position does affect the near/far clip plane distances we arbitrarily
+		 * place the eye position *on* the near clip plane (so it has a view/eye space z value of zero).
+		 * And the near/far distances are such that they encompass the bounds of the globe or map.
+		 * One reason for this is the eye position can then be used as a ray origin such that the
+		 * entire scene (globe or map) will always be in *front* of that ray.
 		 */
 		GPlatesMaths::Vector3D
 		get_orthographic_eye_position(
@@ -291,7 +298,19 @@ namespace GPlatesGui
 		 */
 		virtual
 		double
-		get_distance_from_eye_to_look_at_for_perspective_viewing_at_default_zoom() const = 0;
+		get_perspective_viewing_distance_from_eye_to_look_at_for_at_default_zoom() const = 0;
+
+		/**
+		 * Return the radius of the sphere that bounds the globe or map.
+		 *
+		 * This includes a reasonable amount of extra space around the globe or map to include objects
+		 * off the globe or map such as velocity arrows.
+		 *
+		 * Note: For a map view the bounds depend on the current map projection.
+		 */
+		virtual
+		double
+		get_bounding_radius() const = 0;
 
 
 		/**

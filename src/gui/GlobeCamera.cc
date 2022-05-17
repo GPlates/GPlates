@@ -458,7 +458,7 @@ GPlatesGui::GlobeCamera::get_front_globe_horizon_plane() const
 
 
 double
-GPlatesGui::GlobeCamera::get_distance_from_eye_to_look_at_for_perspective_viewing_at_default_zoom() const
+GPlatesGui::GlobeCamera::get_perspective_viewing_distance_from_eye_to_look_at_for_at_default_zoom() const
 {
 //
 // Defining this adjusts the the initial eye distance such that objects at the look-at position project

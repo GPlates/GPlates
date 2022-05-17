@@ -118,40 +118,14 @@ GPlatesOpenGL::GLMatrix
 GPlatesGui::Camera::get_projection_transform(
 		const double &viewport_aspect_ratio) const
 {
-	const GPlatesMaths::Vector3D camera_eye = get_eye_position();
-	const GPlatesMaths::UnitVector3D camera_view_direction = get_view_direction();
-
-#if 1
-	// Distance from eye to globe centre projected along the view direction.
-	const GPlatesMaths::Vector3D globe_centre(0, 0, 0);
-	const GLdouble eye_to_globe_centre_distance_along_view_direction = dot(globe_centre - camera_eye, camera_view_direction).dval();
-#else
-	// Distance from eye to map centre projected along the view direction.
-	//
-	// Note that the central meridian is now always mapped to the origin so that the map
-	// does not shift (by central meridian degrees) like previously.
-	const GPlatesMaths::Vector3D map_centre(0, 0, 0);
-	const GLdouble eye_to_map_centre_distance_along_view_direction = dot(map_centre - camera_eye, camera_view_direction).dval();
-#endif
-
 	GPlatesOpenGL::GLMatrix projection_transform;
-
 	if (get_view_projection_type() == GlobeProjection::ORTHOGRAPHIC)
 	{
-#if 1
-		// The 1.0 is the globe radius.
-		// The VIEW_DISTANCE_EXTENDED_OFF_GLOBE is because we don't want to put the near clipping plane too close
-		// to the globe because some objects are outside the globe such as rendered arrows.
-		// Same applies to the far clipping plane.
-		const GLdouble depth_in_front_of_globe = eye_to_globe_centre_distance_along_view_direction - 1.0 - VIEW_DISTANCE_EXTENDED_OFF_GLOBE;
-		const GLdouble depth_behind_globe = eye_to_globe_centre_distance_along_view_direction + 1.0 + VIEW_DISTANCE_EXTENDED_OFF_GLOBE;
-#else
-		// The near and far depths surround a sphere that bounds the map (noting that map central meridian is at origin).
-		// The bounding sphere is larger than the actual bounding sphere around the map to account for objects extending
-		// off the map (such as rendered arrows).
-		const GLdouble depth_in_front_of_map = eye_to_map_centre_distance_along_view_direction - EXTENDED_BOUNDING_MAP_RADIUS;
-		const GLdouble depth_behind_map = eye_to_map_centre_distance_along_view_direction + EXTENDED_BOUNDING_MAP_RADIUS;
-#endif
+		// For orthographic viewing we know the eye position is such that the sphere bounding the scene (globe or map)
+		// is just in front of it (along the view direction). So we can set the near plane distance to zero.
+		const GLdouble depth_in_front_of_scene = 0.0;
+		// Then the far plane distance is the diameter of the sphere bounding the scene (globe or map).
+		const GLdouble depth_behind_scene = 2 * get_bounding_radius();
 
 		// Note that, counter-intuitively, zooming into an orthographic view is not accomplished by moving
 		// the eye closer to the globe. Instead it's accomplished by reducing the width and height of
@@ -176,7 +150,6 @@ GPlatesGui::Camera::get_projection_transform(
 				get_view_projection_type() == GlobeProjection::PERSPECTIVE,
 				GPLATES_ASSERTION_SOURCE);
 
-#if 1
 		//
 		// For perspective viewing it's generally advised to keep the near plane as far away as
 		// possible in order to get better precision from the depth buffer (ie, quantised 32-bit
@@ -186,7 +159,7 @@ GPlatesGui::Camera::get_projection_transform(
 		// the post-projection '1/z' that's quantised into the 32-bit depth buffer), so depths
 		// close to the near clip plane get mapped to more quantised values than further away.
 		// So if there's any z-fighting (different objects mapped to same depth buffer value)
-		// it'll happen more at the back of the globe where it's not as noticeable
+		// it'll happen more towards the far plane where it's not as noticeable
 		// (since projected to a smaller area in viewport).
 		// According to https://www.khronos.org/opengl/wiki/Depth_Buffer_Precision the z value
 		// in eye coordinates (ie, eye at z=0) is related to the near 'n' and far 'f' distances
@@ -198,88 +171,55 @@ GPlatesGui::Camera::get_projection_transform(
 		//
 		// ...for z_w equal to 0 and s this gives a z_eye of -n and -f.
 		//
-		// Since the eye position moves quite close to the globe in perspective view
-		// (to accomplish viewport zooming) we also don't want to clip away the closest part of the globe,
-		// and we don't want to clip away any objects sticking outside the globe as much as we
+		// Since the eye position can move quite close to the scene (globe or map) in perspective view
+		// (to accomplish viewport zooming) we also don't want to clip away the closest part of the globe or map,
+		// and we don't want to clip away any objects sticking outside the globe or map as much as we
 		// can avoid it (such as rendered arrows). So we can't keep the near plane too far away.
-		// If we set it to half the distance between the eye and the globe at maximum zoom (factor 1000)
-		// then near distance n=0.5*(1.4-1.0)/1000=0.0002. And if, for a far distance f=(1.4 + 1.0 + 0.5)=2.9
-		// and s=2^24 for a 24-bit depth buffer, we plug in the z_w values of 0, 1 and s, s-1
-		// (which are the two closest and two furthest integer z-buffer values respectively)
-		// then we get z_eye(0)-z_eye(1) = 1.2e-11 and z_eye(s)-z_eye(s-1) = 2.5e-3.
-		// This corresponds to 0.08mm and 16km respectively.
-		// This also shows we get about 2e+8 times more z-buffer precision at the near plane compared to the far plane.
+		//
+		// Set the near distance to half the distance between the eye and the globe or map at maximum zoom (factor 1000).
+		//
+		// For an idea of the effect of doing this we plug in some values corresponding to the globe view (unit radius globe):
+		//   The fully zoomed out distance to the globe is approximately 1.0. Fully zoomed in is then 1.0/1000.
+		//   The near distance is half that n=0.5*1.0/1000=0.0005. And the maximum far distance, for fully zoomed out view,
+		//   is f=(1.0 + 2.0 + 0.5)=3.5 where 2.0 is globe diameter and 0.5 is extra padding (for rendered arrows, etc).
+		//   And with s=2^24 for a 24-bit depth buffer, we plug in the z_w values of 0, 1 and s, s-1
+		//   (which are the two closest and two furthest integer z-buffer values respectively)
+		//   then we get z_eye(0)-z_eye(1) = 3.0e-11 and z_eye(s)-z_eye(s-1) = 1.46e-3.
+		//   This corresponds to ~0.19mm and 9.3km respectively.
+		//   This also shows we get about 4.9e+7 times more z-buffer precision at the near plane compared to the far plane.
 		//
 
-		// The default distance from camera eye to near plane (along view direction).
-		GLdouble depth_in_front_of_globe = 0.001;  // ~6km (z-buffer resolution: ~0.37mm near and ~3.2km far)
-
-		// If camera eye gets too close to the globe surface then reduce near plane distance even further
-		// to prevent clipping of the globe by the near plane.
-		const GLdouble eye_to_globe_distance = camera_eye.magnitude().dval() - 1.0/*globe radius*/;
-		// We're essentially making it so that any possible near plane clipping only starts to happen
-		// at a distance halfway between eye and globe surface, which means the globe itself cannot
-		// be clipped but an object sticking out of the globe (like a velocity arrow) can be clipped
-		// (well, it'll get clipped regardless of near plane distance if it passes through the eye location).
 		//
-		// The division by 2.0 is because we are choosing the maximum distance from eye to visible near plane
-		// to be half the distance from eye to globe surface.
+		// Near distance.
+		//
+
+		const double max_zoom_factor = ViewportZoom::s_max_zoom_percent / 100.0;
+		const double min_distance_from_eye_to_look_at =
+				get_perspective_viewing_distance_from_eye_to_look_at_for_at_default_zoom() / max_zoom_factor;
+
+		// The distance from camera eye to near plane (along view direction).
+		//
+		// The division by 2.0 is because we are choosing the near plane distance to be half the
+		// minimum distance from eye to globe or map.
 		// And the sqrt(2.0) is because a standard perspective field-of-view of 90 degrees results in
 		// a maximum distance from eye to visible near plane (at corners of viewport) that is sqrt(2) times
 		// the minimum distance to near plane (at the centre of the viewport).
-		const GLdouble max_depth_in_front_of_globe = eye_to_globe_distance / (2.0 * std::sqrt(2.0));
-		if (depth_in_front_of_globe > max_depth_in_front_of_globe)
-		{
-			depth_in_front_of_globe = max_depth_in_front_of_globe;
-		}
+		const GLdouble depth_in_front_of_scene = min_distance_from_eye_to_look_at / (2.0 * std::sqrt(2.0));
 
-		// The 1.0 is the globe radius.
-		// The VIEW_DISTANCE_EXTENDED_OFF_GLOBE is because we don't want to put the far clipping plane too close
-		// to the globe because some objects are outside the globe such as rendered arrows.
-		// Note that this mostly only matters if you can see them (if the globe is translucent).
-		const GLdouble depth_behind_globe = eye_to_globe_centre_distance_along_view_direction + 1.0 + VIEW_DISTANCE_EXTENDED_OFF_GLOBE;
-#else
 		//
-		// For perspective viewing it's generally advised to keep the near plane as far away as
-		// possible in order to get better precision from the depth buffer (ie, quantised 32-bit
-		// depths in hardware depth buffer, or 24 bits if using 8 bits for stencil, spread over a
-		// shorter near-to-far distance).
-		// Actually most of the loss of precision occurs in the far distance (since it's essentially
-		// the post-projection '1/z' that's quantised into the 32-bit depth buffer), so depths
-		// close to the near clip plane get mapped to more quantised values than further away.
-		// So if there's any z-fighting (different objects mapped to same depth buffer value)
-		// it'll happen more at distances further from the eye where it's not as noticeable
-		// (since projected to a smaller area in viewport).
-		// According to https://www.khronos.org/opengl/wiki/Depth_Buffer_Precision the z value
-		// in eye coordinates (ie, eye at z=0) is related to the near 'n' and far 'f' distances
-		// and the integer z-buffer value 'z_w' and the number of integer depth buffer values 's':
-		//
-		//   z_eye =         f * n
-		//           -----------------------
-		//           (z_w / s) * (f - n) - f
-		//
-		// ...for z_w equal to 0 and s this gives a z_eye of -n and -f.
-		//
-		// Since the eye position moves quite close to the map in perspective view
-		// (to accomplish viewport zooming) we also don't want to clip away the closest part of the map,
-		// and we don't want to clip away any objects sticking outside the map as much as we
-		// can avoid it (such as rendered arrows). So we can't keep the near plane too far away.
-		// We set it to the same near plane distance used for the globe perspective view
-		// (0.001 * Earth radius = 6km = 0.057 in degrees) and set the max far plane distance to 360+270=630 degrees.
-		// With s=2^24 for a 24-bit depth buffer, we plug in the z_w values of 0, 1 and s, s-1
-		// (which are the two closest and two furthest integer z-buffer values respectively)
-		// then we get z_eye(0)-z_eye(1) = 3.4e-9 and z_eye(s)-z_eye(s-1) = 4.1e-1.
-		// This corresponds to ~0.38mm and 45.6km respectively.
-		// This also shows we get about 1.2e+8 times more z-buffer precision at the near plane compared to the far plane.
+		// Far distance.
 		//
 
-		// The default distance from camera eye to near plane (along view direction).
-		const GLdouble depth_in_front_of_map = 0.001 * (180.0 / GPlatesMaths::PI);  // ~6km (z-buffer resolution: ~0.37mm near and ~45.6km far)
+		// The signed distance from eye to origin (0,0,0).
+		// This is positive/negative if the eye is in-front/behind the plane
+		// passing through origin with plane normal in view direction.
+		const double signed_distance_from_eye_to_origin_along_view_direction =
+				dot(get_eye_position(), get_view_direction()).dval();
 
-		// The EXTENDED_BOUNDING_MAP_RADIUS is because we don't want to put the far clipping plane too close
-		// to the map because some objects are outside the map such as rendered arrows.
-		const GLdouble depth_behind_map = eye_to_map_centre_distance_along_view_direction + EXTENDED_BOUNDING_MAP_RADIUS;
-#endif
+		// Distance from eye to bounding sphere surface along the view direction.
+		// This puts the far plane far enough away to include the entire scene.
+		const GLdouble depth_behind_scene = get_bounding_radius() - signed_distance_from_eye_to_origin_along_view_direction;
+
 
 		const double fovy_degrees = get_perspective_fovy(viewport_aspect_ratio);
 
@@ -507,21 +447,26 @@ GPlatesMaths::Vector3D
 GPlatesGui::Camera::get_orthographic_eye_position(
 		const GPlatesMaths::Vector3D &look_at_position) const
 {
-#if 1
 	// Note that, counter-intuitively, zooming into an orthographic view is not accomplished by moving
 	// the eye closer to the globe or map. Instead it's accomplished by reducing the width and height of
-	// the orthographic viewing frustum (rectangular prism).
-	//
-	// In orthographic projection all view rays are parallel and so there's no real eye position.
-	// Instead place the ray origin an arbitrary distance (currently 1.0) back along the view direction.
-	const GPlatesMaths::Vector3D camera_eye = look_at_position - GPlatesMaths::Vector3D(get_view_direction());
-#else
-	// In orthographic projection all view rays are parallel and so there's no real eye position.
-	// Instead place the ray origin an arbitrary distance (currently 360.0) back along the view direction.
-	const GPlatesMaths::Vector3D camera_eye = look_at_position - 360 * GPlatesMaths::Vector3D(get_view_direction());
-#endif
+	// the orthographic viewing frustum (rectangular prism). Our setting of the eye position is simply
+	// to ensure that the scene (globe or map) is in *front* of the eye (along the view direction).
 
-	return camera_eye;
+	// The signed distance from specified look-at position to origin (0,0,0).
+	// This is positive/negative if the specified look-at position is in-front/behind the plane
+	// passing through origin with plane normal in view direction.
+	const GPlatesMaths::real_t signed_distance_from_look_at_position_to_origin_along_view_direction =
+			dot(look_at_position, get_view_direction());
+
+	// The absolute distance from origin (0,0,0) to surface of sphere that bounds the scene (globe or map).
+	const GPlatesMaths::real_t distance_from_eye_to_origin_along_view_direction = get_bounding_radius();
+
+	// Signed distance from specified look-at position to eye position (along view direction).
+	const GPlatesMaths::real_t distance_from_look_at_position_to_eye_along_view_direction = 
+			distance_from_eye_to_origin_along_view_direction + signed_distance_from_look_at_position_to_origin_along_view_direction;
+
+	// Move from specified look-at position back along the negative view direction to find the eye position.
+	return look_at_position - distance_from_look_at_position_to_eye_along_view_direction * get_view_direction();
 }
 
 
@@ -535,7 +480,7 @@ GPlatesGui::Camera::get_perspective_eye_position() const
 	//
 	// Zooming brings us closer to the globe or map surface but never quite reaches it.
 	// Move 1/zoom_factor times the default zoom distance between the look-at location and the eye location.
-	const double distance_eye_to_look_at = get_distance_from_eye_to_look_at_for_perspective_viewing_at_default_zoom() /
+	const double distance_eye_to_look_at = get_perspective_viewing_distance_from_eye_to_look_at_for_at_default_zoom() /
 			get_viewport_zoom().zoom_factor();
 
 	return get_look_at_position() - distance_eye_to_look_at * GPlatesMaths::Vector3D(get_view_direction());
@@ -560,7 +505,7 @@ GPlatesGui::Camera::get_orthographic_left_right_bottom_top(
     {
             // This is used for the coordinates of the symmetrical clipping planes which bound the latitude direction.
             const double latitude_clipping = FRAMING_RATIO_OF_MAP_IN_VIEWPORT *
-                            (MAP_LATITUDE_EXTENT_IN_MAP_SPACE / 2.0) / d_viewport_zoom.zoom_factor();
+                            (MAP_LATITUDE_EXTENT_IN_MAP_SPACE / 2.0) / get_viewport_zoom().zoom_factor();
 
             // right - left > top - bottom
             ortho_left = -latitude_clipping * aspect_ratio;
@@ -572,7 +517,7 @@ GPlatesGui::Camera::get_orthographic_left_right_bottom_top(
     {
             // This is used for the coordinates of the symmetrical clipping planes which bound the longitude direction.
             const double longitude_clipping = FRAMING_RATIO_OF_MAP_IN_VIEWPORT *
-                            (MAP_LONGITUDE_EXTENT_IN_MAP_SPACE / 2.0) / d_viewport_zoom.zoom_factor();
+                            (MAP_LONGITUDE_EXTENT_IN_MAP_SPACE / 2.0) / get_viewport_zoom().zoom_factor();
 
             // right - left <= top - bottom
             ortho_left = -longitude_clipping;
