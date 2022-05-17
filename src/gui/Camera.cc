@@ -37,33 +37,6 @@
 #include "maths/Vector3D.h"
 
 
-namespace
-{
-	/**
-	 * The distance to extend the view frustum (visible 3D region of the scene) to avoid clipping objects
-	 * that extend off the globe (such as rendered velocity arrows).
-	 *
-	 * If this is zero then the orthographic view frustum is such that the near and far frustum planes
-	 * touch the surface of the globe. For perspective viewing it is the far plane that touches globe.
-	 *
-	 * A value of 1.0 represents the globe radius.
-	 */
-	const double VIEW_DISTANCE_EXTENDED_OFF_GLOBE = 0.5;
-
-	/**
-	 * The radius from the map origin (at central meridian) of a sphere that not only bounds the map
-	 * but adds padding to bound objects *off* the map (such as rendered velocity arrows) so they don't
-	 * get clipped by the near and far planes of the view frustum.
-	 *
-	 * The value of 180.0 represents the distance from central meridian (at origin) to edge of map (in longitude direction).
-	 * The latitude direction is shorter, so this should bound all map projections (except for maybe the Mercator projection?).
-	 *
-	 * The value of 90.0 represents the extra padding (for objects *off* the map).
-	 */
-	const double EXTENDED_BOUNDING_MAP_RADIUS = 180.0 + 90.0;
-}
-
-
 // Use a standard field-of-view of 90 degrees for the smaller viewport dimension.
 const double GPlatesGui::Camera::PERSPECTIVE_FIELD_OF_VIEW_DEGREES = 90.0;
 const double GPlatesGui::Camera::TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW =

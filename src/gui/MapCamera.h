@@ -32,6 +32,7 @@
 
 #include "Camera.h"
 #include "GlobeProjectionType.h"
+#include "MapProjection.h"
 
 #include "maths/PointOnSphere.h"
 #include "maths/Rotation.h"
@@ -43,7 +44,6 @@
 
 namespace GPlatesGui
 {
-	class MapProjection;
 	class ViewportZoom;
 
 	/**
@@ -93,7 +93,7 @@ namespace GPlatesGui
 
 
 		/**
-		 * The translation (in map plane) that the view pans in the map plane.
+		 * The translation (in map plane) that the view pans.
 		 */
 		const QPointF &
 		get_pan() const
@@ -267,6 +267,15 @@ namespace GPlatesGui
 		double
 		get_perspective_viewing_distance_from_eye_to_look_at_for_at_default_zoom() const override;
 
+		/**
+		 * Return the radius of the sphere that bounds the map.
+		 *
+		 * This includes a reasonable amount of extra space around the map to include objects
+		 * off the map such as velocity arrows.
+		 */
+		double
+		get_bounding_radius() const override;
+
 	private:
 
 		struct ViewFrame
@@ -287,6 +296,21 @@ namespace GPlatesGui
 
 		MapProjection &d_map_projection;
 
+		/**
+		 * To determine if the map projection has changed.
+		 */
+		mutable boost::optional<MapProjectionSettings> d_map_projection_settings;
+
+		/**
+		 * Radius of the sphere that bounds the map (including extra space for objects off the map).
+		 *
+		 * This is updated when the map projection changes.
+		 */
+		mutable boost::optional<double> d_map_bounding_radius;
+
+		/**
+		 * The translation (in map plane) that the view pans.
+		 */
 		QPointF d_pan;
 
 		/**
@@ -308,6 +332,22 @@ namespace GPlatesGui
 		 */
 		mutable boost::optional<ViewFrame> d_view_frame;
 
+
+		/**
+		 * Invalidate any cached parameters that depend on the map projection (if it changed).
+		 */
+		void
+		invalidate_if_changed_map_projection_settings() const
+		{
+			if (d_map_projection_settings != d_map_projection.get_projection_settings())
+			{
+				// Invalidate any dependent cached parameters.
+				d_map_bounding_radius = boost::none;
+
+				// Signal that we've invalidated.
+				d_map_projection_settings = d_map_projection.get_projection_settings();
+			}
+		}
 
 		QPointF
 		convert_pan_from_view_to_map_frame(

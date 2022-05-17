@@ -28,13 +28,13 @@
 
 #include "MapCamera.h"
 
-#include "MapProjection.h"
 #include "ViewportZoom.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
 #include "maths/Rotation.h"
 
@@ -282,6 +282,61 @@ GPlatesGui::MapCamera::get_perspective_viewing_distance_from_eye_to_look_at_for_
 	// half the latitude distance spanned by the map projection (at least in Rectangular projection), which means
 	// 'distance = FRAMING_RATIO_OF_MAP_IN_VIEWPORT * 90 / tan(FOVX/2)'.
 	return FRAMING_RATIO_OF_MAP_IN_VIEWPORT * (MAP_LATITUDE_EXTENT_IN_MAP_SPACE / 2.0) / TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW;
+}
+
+
+double
+GPlatesGui::MapCamera::get_bounding_radius() const
+{
+	// Invalidate the bounding radius if the map projection has changed since it was last updated.
+	invalidate_if_changed_map_projection_settings();
+
+	// Update the bounding radius if needed.
+	if (!d_map_bounding_radius)
+	{
+		// Query the left/right/top/bottom sides and corners of the map projection.
+		// These are extremal points that will produce the maximum distance to the map centre.
+		const double central_meridian = d_map_projection.central_meridian();
+		const QPointF map_projected_points[] =
+		{
+			// Left/right sides...
+			d_map_projection.forward_transform(GPlatesMaths::LatLonPoint(0, central_meridian - 180 + 1e-6)),
+			d_map_projection.forward_transform(GPlatesMaths::LatLonPoint(0, central_meridian + 180 - 1e-6)),
+			// Top/bottom sides...
+			d_map_projection.forward_transform(GPlatesMaths::LatLonPoint(90 - 1e-6, central_meridian)),
+			d_map_projection.forward_transform(GPlatesMaths::LatLonPoint(-90 + 1e-6, central_meridian)),
+			// Top left/right corners...
+			d_map_projection.forward_transform(GPlatesMaths::LatLonPoint(90 - 1e-6, central_meridian - 180 + 1e-6)),
+			d_map_projection.forward_transform(GPlatesMaths::LatLonPoint(90 - 1e-6, central_meridian + 180 - 1e-6)),
+			// Bottom left/right corners...
+			d_map_projection.forward_transform(GPlatesMaths::LatLonPoint(-90 + 1e-6, central_meridian - 180 + 1e-6)),
+			d_map_projection.forward_transform(GPlatesMaths::LatLonPoint(-90 + 1e-6, central_meridian + 180 - 1e-6))
+		};
+		const unsigned int num_map_projected_points = sizeof(map_projected_points) / sizeof(map_projected_points[0]);
+
+		// The bounding extent is the maximum distance of any extremal point to the origin.
+		// Note that the lat-lon point (0, central_meridian) maps to the origin in map projection space.
+		double map_bounding_extent = 0.0;
+		for (unsigned int point_index = 0; point_index < num_map_projected_points; ++point_index)
+		{
+			const QPointF &map_projected_point = map_projected_points[point_index];
+
+			const double distance_point_to_origin = std::sqrt(QPointF::dotProduct(map_projected_point, map_projected_point));
+			if (map_bounding_extent < distance_point_to_origin)
+			{
+				map_bounding_extent = distance_point_to_origin;
+			}
+		}
+
+		// The radius from the map origin (at central meridian) of a sphere that not only bounds the map
+		// but adds padding to bound objects *off* the map (such as rendered velocity arrows) so they don't
+		// get clipped by the near and far planes of the view frustum.
+		//
+		// For now we'll just multiple the maximum map extent by a constant factor.
+		d_map_bounding_radius = 1.5 * map_bounding_extent;
+	}
+
+	return d_map_bounding_radius.get();
 }
 
 

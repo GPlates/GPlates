@@ -348,6 +348,19 @@ namespace GPlatesGui
 		double
 		get_perspective_viewing_distance_from_eye_to_look_at_for_at_default_zoom() const override;
 
+		/**
+		 * Return the radius of the sphere that bounds the globe.
+		 *
+		 * This includes a reasonable amount of extra space around the globe to include objects
+		 * off the globe such as velocity arrows.
+		 */
+		double
+		get_bounding_radius() const override
+		{
+			// 1.0 for the globe radius and 0.5 to include objects off the sphere such as rendered arrows.
+			return 1.0 + 0.5;
+		}
+
 	private:
 
 		struct ViewFrame
