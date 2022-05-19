@@ -24,6 +24,7 @@
  */
 
 #include <QColor>
+#include <QDir>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QPushButton>
@@ -85,6 +86,7 @@ GPlatesQtWidgets::MissingSessionFilesDialog::populate(
 		file_name_item_flags &= ~Qt::ItemIsSelectable;
 		file_name_item->setFlags(file_name_item_flags);;
 		file_name_item->setData(Qt::BackgroundRole, QColor("#FF6149")); // Colour indicating file does not exist.
+		file_name_item->setToolTip(QDir::toNativeSeparators(missing_file_path));
 		missing_files_table_widget->setItem(row, ColumnNames::FILENAME, file_name_item);
 
 		// The update column.
