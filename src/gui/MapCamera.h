@@ -261,6 +261,36 @@ namespace GPlatesGui
 	protected:
 
 		/**
+		 * Returns the aspect ratio that is optimally suited to the map view.
+		 *
+		 * This is the ratio of the map extent in the longitude direction divided by the latitude direction.
+		 * This is typically 2.0 since in the default orientation in Rectangular projection the width is twice the height.
+		 *
+		 * This actually varies depending on the map projection but we'll just use the Rectangular projection as a basis.
+		 *
+		 * Note that this applies to both orthographic and perspective views.
+		 */
+		double
+		get_optimal_aspect_ratio() const override
+		{
+			return 2.0;
+		}
+
+		/**
+		 * In orthographic viewing mode, this is *half* the distance between top and bottom clip planes of
+		 * the orthographic view frustum (rectangular prism) at default zoom (ie, a zoom factor of 1.0).
+		 */
+		double
+		get_orthographic_half_height_extent_at_default_zoom() const override
+		{
+			// The map height (in the Rectangular projection at default orientation) is 180.0 and the half height is 90.
+			// So this is slightly larger than that (due to framing ratio).
+			// This means the Rectangular map projection at default orientation will fit just inside the
+			// top and bottom clip planes if the aspect ratio is greater than the optimal aspect ratio.
+			return FRAMING_RATIO_OF_MAP_IN_VIEWPORT * (MAP_LATITUDE_EXTENT_IN_MAP_SPACE / 2.0);
+		}
+
+		/**
 		 * In perspective viewing mode, this is the distance from the eye position to the look-at
 		 * position for the default zoom (ie, a zoom factor of 1.0).
 		 */
@@ -299,14 +329,14 @@ namespace GPlatesGui
 		/**
 		 * To determine if the map projection has changed.
 		 */
-		mutable boost::optional<MapProjectionSettings> d_map_projection_settings;
+		mutable boost::optional<MapProjectionSettings> d_cached_map_projection_settings;
 
 		/**
 		 * Radius of the sphere that bounds the map (including extra space for objects off the map).
 		 *
 		 * This is updated when the map projection changes.
 		 */
-		mutable boost::optional<double> d_map_bounding_radius;
+		mutable boost::optional<double> d_cached_map_bounding_radius;
 
 		/**
 		 * The translation (in map plane) that the view pans.
@@ -339,13 +369,13 @@ namespace GPlatesGui
 		void
 		invalidate_if_changed_map_projection_settings() const
 		{
-			if (d_map_projection_settings != d_map_projection.get_projection_settings())
+			if (d_cached_map_projection_settings != d_map_projection.get_projection_settings())
 			{
 				// Invalidate any dependent cached parameters.
-				d_map_bounding_radius = boost::none;
+				d_cached_map_bounding_radius = boost::none;
 
 				// Signal that we've invalidated.
-				d_map_projection_settings = d_map_projection.get_projection_settings();
+				d_cached_map_projection_settings = d_map_projection.get_projection_settings();
 			}
 		}
 
@@ -369,20 +399,6 @@ namespace GPlatesGui
 		}
 
 
-
-
-		/**
-		 * Ratio of the map extent in the longitude direction divided by the latitude direction.
-		 *
-		 * This varies depending on the map projection so we'll just use the Rectangular projection as a basis.
-		 */
-		static constexpr double MAP_LONGITUDE_TO_LATITUDE_EXTENT_RATIO_IN_MAP_SPACE = 2.0;
-		//! Extent of map projection in longitude direction (just using the Rectangular projection as a basis).
-		static constexpr double MAP_LONGITUDE_EXTENT_IN_MAP_SPACE = 360.0;
-		//! Extent of map projection in latitude direction (just using the Rectangular projection as a basis).
-		static constexpr double MAP_LATITUDE_EXTENT_IN_MAP_SPACE =
-				MAP_LONGITUDE_EXTENT_IN_MAP_SPACE / MAP_LONGITUDE_TO_LATITUDE_EXTENT_RATIO_IN_MAP_SPACE;
-
 		/**
 		 * At the initial zoom, and untilted view, this creates a little space between the map boundary and the viewport.
 		 *
@@ -390,6 +406,11 @@ namespace GPlatesGui
 		 * The value of this constant is purely cosmetic.
 		 */
 		static const double FRAMING_RATIO_OF_MAP_IN_VIEWPORT;
+
+		/**
+		 * Extent of map projection in latitude direction (just using the Rectangular projection as a basis).
+		 */
+		static constexpr double MAP_LATITUDE_EXTENT_IN_MAP_SPACE = 180.0;
 
 		/**
 		 * The initial position on the map that the camera looks at.

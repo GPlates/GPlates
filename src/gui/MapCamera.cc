@@ -41,8 +41,6 @@
 #include "opengl/GLIntersect.h"
 
 
-constexpr double GPlatesGui::MapCamera::MAP_LONGITUDE_TO_LATITUDE_EXTENT_RATIO_IN_MAP_SPACE;
-constexpr double GPlatesGui::MapCamera::MAP_LONGITUDE_EXTENT_IN_MAP_SPACE;
 constexpr double GPlatesGui::MapCamera::MAP_LATITUDE_EXTENT_IN_MAP_SPACE;
 
 const double GPlatesGui::MapCamera::FRAMING_RATIO_OF_MAP_IN_VIEWPORT = 1.07;
@@ -69,7 +67,7 @@ GPlatesGui::MapCamera::MapCamera(
 	d_map_projection(map_projection),
 	d_pan(0, 0),
 	d_rotation_angle(0),
-	d_tilt_angle(GPlatesMaths::convert_deg_to_rad(45))
+	d_tilt_angle(0)
 {
 }
 
@@ -292,7 +290,7 @@ GPlatesGui::MapCamera::get_bounding_radius() const
 	invalidate_if_changed_map_projection_settings();
 
 	// Update the bounding radius if needed.
-	if (!d_map_bounding_radius)
+	if (!d_cached_map_bounding_radius)
 	{
 		// Query the left/right/top/bottom sides and corners of the map projection.
 		// These are extremal points that will produce the maximum distance to the map centre.
@@ -333,10 +331,10 @@ GPlatesGui::MapCamera::get_bounding_radius() const
 		// get clipped by the near and far planes of the view frustum.
 		//
 		// For now we'll just multiple the maximum map extent by a constant factor.
-		d_map_bounding_radius = 1.5 * map_bounding_extent;
+		d_cached_map_bounding_radius = 1.5 * map_bounding_extent;
 	}
 
-	return d_map_bounding_radius.get();
+	return d_cached_map_bounding_radius.get();
 }
 
 

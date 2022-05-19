@@ -293,6 +293,27 @@ namespace GPlatesGui
 				const double &aspect_ratio) const;
 
 		/**
+		 * Returns the aspect ratio that is optimally suited to the globe or map view.
+		 *
+		 * For the globe this is just 1.0 since it is circular.
+		 * For the map this is typically 2.0 since in the default orientation in Rectangular projection
+		 * the width is twice the height.
+		 *
+		 * Note that this applies to both orthographic and perspective views.
+		 */
+		virtual
+		double
+		get_optimal_aspect_ratio() const = 0;
+
+		/**
+		 * In orthographic viewing mode, this is *half* the distance between top and bottom clip planes of
+		 * the orthographic view frustum (rectangular prism) at default zoom (ie, a zoom factor of 1.0).
+		 */
+		virtual
+		double
+		get_orthographic_half_height_extent_at_default_zoom() const = 0;
+
+		/**
 		 * In perspective viewing mode, this is the distance from the eye position to the look-at
 		 * position for the default zoom (ie, a zoom factor of 1.0).
 		 */

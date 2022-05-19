@@ -46,7 +46,7 @@ const double GPlatesGui::Camera::TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW =
 GPlatesGui::Camera::Camera(
 		ViewportZoom &viewport_zoom) :
 	d_viewport_zoom(viewport_zoom),
-	d_view_projection_type(GlobeProjection::PERSPECTIVE)
+	d_view_projection_type(GlobeProjection::ORTHOGRAPHIC)
 {
 	// View zoom changes affect our camera.
 	QObject::connect(
@@ -468,57 +468,41 @@ GPlatesGui::Camera::get_orthographic_left_right_bottom_top(
 		double &ortho_bottom,
 		double &ortho_top) const
 {
-#if 1
-    // If the aspect ratio (viewport width/height) exceeds the ratio of the map rectangle aspect ratio then set the
-    // top/bottom frustum to bound the latitude extent, otherwise set left/right frustum to bound longitude extent.
-    //
-    // Note: This makes the map view look well contained in the viewport regardless of aspect ratio, but
-    //       only when it's not rotated. However that's the most common orientation in most cases.
-    if (aspect_ratio > MAP_LONGITUDE_TO_LATITUDE_EXTENT_RATIO_IN_MAP_SPACE)
-    {
-            // This is used for the coordinates of the symmetrical clipping planes which bound the latitude direction.
-            const double latitude_clipping = FRAMING_RATIO_OF_MAP_IN_VIEWPORT *
-                            (MAP_LATITUDE_EXTENT_IN_MAP_SPACE / 2.0) / get_viewport_zoom().zoom_factor();
+	// Note that, counter-intuitively, zooming into an orthographic view is not accomplished by moving
+	// the eye closer to the globe or map. Instead it's accomplished by reducing the width and height of
+	// the orthographic viewing frustum (rectangular prism).
 
-            // right - left > top - bottom
-            ortho_left = -latitude_clipping * aspect_ratio;
-            ortho_right = latitude_clipping * aspect_ratio;
-            ortho_bottom = -latitude_clipping;
-            ortho_top = latitude_clipping;
+	const double optimal_aspect_ratio = get_optimal_aspect_ratio();
+
+	// If the aspect ratio (viewport width/height) exceeds the optimal aspect ratio of the globe or map view
+	// then set the frustum to bound the height extent, otherwise set frustum to the bound width extent.
+	//
+	// Note: For the map view, this makes it look well contained in the viewport regardless of aspect ratio,
+	//       but only when it's not rotated. However that's the most common orientation in most cases.
+	if (aspect_ratio > optimal_aspect_ratio)
+    {
+		// This is used for the coordinates of the symmetrical clipping planes which bound the height direction.
+		const double height_clipping =
+				get_orthographic_half_height_extent_at_default_zoom() / get_viewport_zoom().zoom_factor();
+ 
+		// right - left > top - bottom
+		ortho_left = -height_clipping * aspect_ratio;
+		ortho_right = height_clipping * aspect_ratio;
+		ortho_bottom = -height_clipping;
+		ortho_top = height_clipping;
     }
     else
     {
-            // This is used for the coordinates of the symmetrical clipping planes which bound the longitude direction.
-            const double longitude_clipping = FRAMING_RATIO_OF_MAP_IN_VIEWPORT *
-                            (MAP_LONGITUDE_EXTENT_IN_MAP_SPACE / 2.0) / get_viewport_zoom().zoom_factor();
+		// This is used for the coordinates of the symmetrical clipping planes which bound the width direction.
+		const double width_clipping = optimal_aspect_ratio *
+				get_orthographic_half_height_extent_at_default_zoom() / get_viewport_zoom().zoom_factor();
 
-            // right - left <= top - bottom
-            ortho_left = -longitude_clipping;
-            ortho_right = longitude_clipping;
-            ortho_bottom = -longitude_clipping / aspect_ratio;
-            ortho_top = longitude_clipping / aspect_ratio;
-    }
-#else
-	// This is used for the coordinates of the symmetrical clipping planes which bound the smaller dimension.
-	const double smaller_dim_clipping = FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT / get_viewport_zoom().zoom_factor();
-
-	if (aspect_ratio > 1.0)
-	{
-		// right - left > top - bottom
-		ortho_left = -smaller_dim_clipping * aspect_ratio;
-		ortho_right = smaller_dim_clipping * aspect_ratio;
-		ortho_bottom = -smaller_dim_clipping;
-		ortho_top = smaller_dim_clipping;
-	}
-	else
-	{
 		// right - left <= top - bottom
-		ortho_left = -smaller_dim_clipping;
-		ortho_right = smaller_dim_clipping;
-		ortho_bottom = -smaller_dim_clipping / aspect_ratio;
-		ortho_top = smaller_dim_clipping / aspect_ratio;
-	}
-#endif
+		ortho_left = -width_clipping;
+		ortho_right = width_clipping;
+		ortho_bottom = -width_clipping / aspect_ratio;
+		ortho_top = width_clipping / aspect_ratio;
+    }
 }
 
 
@@ -536,30 +520,16 @@ double
 GPlatesGui::Camera::get_perspective_tan_half_fovy(
 		const double &aspect_ratio) const
 {
-#if 1
-	if (aspect_ratio > 1.0)
-	{
-		// Since 'glu_perspective()' accepts a 'y' field-of-view (along height dimension),
-		// if the height is the smaller dimension we don't need to do anything.
-		return TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW;
-	}
-	else
-	{
-		// The width is the smaller dimension then our field-of-view applies to the width,
-		// so we need to calculate the field-of-view that applies to the height.
-		//
-		// Convert field-of-view in x-axis to field-of-view in y-axis by adjusting for the aspect ratio.
-		return TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW / aspect_ratio;
-	}
-#else
-	// If the aspect ratio (viewport width/height) exceeds the ratio of the map rectangle aspect ratio then set the
-	// frustum to bound the latitude extent, otherwise set frustum to bound longitude extent.
+	const double optimal_aspect_ratio = get_optimal_aspect_ratio();
+
+	// If the aspect ratio (viewport width/height) exceeds the optimal aspect ratio of the globe or map view
+	// then set the frustum to bound the height extent, otherwise set frustum to the bound width extent.
 	//
-	// Note: This makes the map view look well contained in the viewport regardless of aspect ratio, but
-	//       only when it's not rotated. However that's the most common orientation in most cases.
-	if (aspect_ratio > MAP_LONGITUDE_TO_LATITUDE_EXTENT_RATIO_IN_MAP_SPACE)
+	// Note: For the map view, this makes it look well contained in the viewport regardless of aspect ratio,
+	//       but only when it's not rotated. However that's the most common orientation in most cases.
+	if (aspect_ratio > optimal_aspect_ratio)
 	{
-		// Set frustum to bound *latitude* extent...
+		// Set frustum to bound the *height* extent...
 		//
 		//   tan(fovy/2) = TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW
 		//
@@ -567,14 +537,14 @@ GPlatesGui::Camera::get_perspective_tan_half_fovy(
 	}
 	else
 	{
-		// Set frustum to bound *longitude* extent.
+		// Set frustum to bound the *width* extent.
 		//
-		// Easiest is to increase the fovy from what it is when 'aspect_ratio == MAP_LONGITUDE_TO_LATITUDE_EXTENT_RATIO_IN_MAP_SPACE'.
-		// Noting that this factor is 1.0 when 'aspect_ratio == MAP_LONGITUDE_TO_LATITUDE_EXTENT_RATIO_IN_MAP_SPACE'.
-		const double fovy_increase_factor = MAP_LONGITUDE_TO_LATITUDE_EXTENT_RATIO_IN_MAP_SPACE / aspect_ratio;
+		// Easiest is to increase the fovy from what it is when 'aspect_ratio == optimal_aspect_ratio'.
+		// Noting that this factor is 1.0 when 'aspect_ratio == optimal_aspect_ratio'.
+		const double fovy_increase_factor = optimal_aspect_ratio / aspect_ratio;
+
 		return TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW * fovy_increase_factor;
 	}
-#endif
 }
 
 

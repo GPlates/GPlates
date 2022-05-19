@@ -342,6 +342,31 @@ namespace GPlatesGui
 	protected:
 
 		/**
+		 * Returns the aspect ratio that is optimally suited to the globe view.
+		 *
+		 * This is just 1.0 since the globe is circular.
+		 *
+		 * Note that this applies to both orthographic and perspective views.
+		 */
+		double
+		get_optimal_aspect_ratio() const override
+		{
+			return 1.0;
+		}
+
+		/**
+		 * In orthographic viewing mode, this is *half* the distance between top and bottom clip planes of
+		 * the orthographic view frustum (rectangular prism) at default zoom (ie, a zoom factor of 1.0).
+		 */
+		double
+		get_orthographic_half_height_extent_at_default_zoom() const override
+		{
+			// The globe radius is 1.0, so this is slightly larger than the globe radius (due to framing ratio).
+			// This means the globe diameter (twice radius) will fit just inside the top and bottom clip planes.
+			return FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT;
+		}
+
+		/**
 		 * In perspective viewing mode, this is the distance from the eye position to the look-at
 		 * position for the default zoom (ie, a zoom factor of 1.0).
 		 */
