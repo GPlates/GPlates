@@ -329,17 +329,20 @@ if (GPLATES_INSTALL_STANDALONE)
         endif()
 
         # On Apple there are some shared '.so' libraries in Python framework that need code signing.
+        #
+        # For example, there's a directory called, , 'Python.framework/Versions/3.8/lib/python3.8/lib-dynload/' that is in 'sys.path' and contains '.so' libraries.
+        # There's also site packages (eg, in 'Python.framework/Versions/3.8/lib/python3.8/site-packages/' like NumPy that contain '.so' libraries.
         if (APPLE)
-            # There's a directory called, for example, 'Python.framework/Versions/3.8/lib/python3.8/lib-dynload/' that is in 'sys.path' and contains '.so' libraries.
             # We need to codesign and secure timestamp these (otherwise Apple notarization fails).
             # So we use our codesign() function - it is defined later but that's fine since this code is not executed until after codesign() has been defined.
             install(
                 CODE "set(STANDALONE_BASE_INSTALL_DIR [[${STANDALONE_BASE_INSTALL_DIR_gplates}]])"
                 CODE "set(_PYTHON_STDLIB_INSTALL_DIR [[${_PYTHON_STDLIB_INSTALL_DIR}]])"
                 CODE [[
-                    file(GLOB _python_dynload_libs "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${_PYTHON_STDLIB_INSTALL_DIR}/lib-dynload/*.so")
-                    foreach(_python_dynload_lib ${_python_dynload_libs})
-                        codesign(${_python_dynload_lib})
+                    # Recursively search for '.so' files within the Python standard library.
+                    file(GLOB_RECURSE _python_shared_libs "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${_PYTHON_STDLIB_INSTALL_DIR}/*.so")
+                    foreach(_python_shared_lib ${_python_shared_libs})
+                        codesign(${_python_shared_lib})
                     endforeach()
                 ]]
 
