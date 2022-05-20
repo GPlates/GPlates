@@ -756,15 +756,7 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_tilt(
 	// Need to tilt view in opposite direction to achieve same result as tilting the globe.
 	delta_tilt_angle -= delta_cylinder_intersect_angle_relative_to_view;
 
-	GPlatesMaths::real_t tilt_angle = d_mouse_drag_info->start_tilt_angle + delta_tilt_angle;
-	if (tilt_angle.dval() > GPlatesMaths::HALF_PI)
-	{
-		tilt_angle = GPlatesMaths::HALF_PI;
-	}
-	else if (tilt_angle.dval() < 0)
-	{
-		tilt_angle = 0;
-	}
+	const GPlatesMaths::real_t tilt_angle = d_mouse_drag_info->start_tilt_angle + delta_tilt_angle;
 
 	d_globe_camera.set_tilt_angle(
 			tilt_angle,
@@ -835,15 +827,7 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_tilt_without_cylinder_int
 	}
 
 	// Increase or decrease the initial tilt angle (and clamp to [0, PI/2]).
-	GPlatesMaths::real_t tilt_angle = d_mouse_drag_info->start_tilt_angle + delta_tilt_angle;
-	if (tilt_angle.dval() > GPlatesMaths::HALF_PI)
-	{
-		tilt_angle = GPlatesMaths::HALF_PI;
-	}
-	else if (tilt_angle.dval() < 0)
-	{
-		tilt_angle = 0;
-	}
+	const GPlatesMaths::real_t tilt_angle = d_mouse_drag_info->start_tilt_angle + delta_tilt_angle;
 
 	d_globe_camera.set_tilt_angle(
 			tilt_angle,

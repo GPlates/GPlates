@@ -150,9 +150,18 @@ GPlatesGui::MapCamera::set_rotation_angle(
 
 void
 GPlatesGui::MapCamera::set_tilt_angle(
-		const GPlatesMaths::real_t &tilt_angle,
+		GPlatesMaths::real_t tilt_angle,
 		bool only_emit_if_changed)
 {
+	if (tilt_angle.dval() > GPlatesMaths::HALF_PI)
+	{
+		tilt_angle = GPlatesMaths::HALF_PI;
+	}
+	else if (tilt_angle.dval() < 0)
+	{
+		tilt_angle = 0;
+	}
+
 	if (only_emit_if_changed &&
 		tilt_angle == d_tilt_angle)
 	{

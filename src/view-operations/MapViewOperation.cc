@@ -65,16 +65,20 @@ GPlatesViewOperations::MapViewOperation::start_drag(
 			d_map_camera.get_look_at_position_on_map(),
 			d_map_camera.get_view_direction(),
 			d_map_camera.get_up_direction(),
-			d_map_camera.get_pan());
+			d_map_camera.get_pan(),
+			d_map_camera.get_rotation_angle(),
+			d_map_camera.get_tilt_angle());
 
 	switch (d_mouse_drag_info->mode)
 	{
 	case DRAG_NORMAL:
 		start_drag_normal();
 		break;
+	case DRAG_ROTATE_AND_TILT:
+		start_drag_rotate_and_tilt();
+		break;
 	case DRAG_ROTATE:
 	case DRAG_TILT:
-	case DRAG_ROTATE_AND_TILT:
 	default:
 		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 		break;
@@ -117,9 +121,11 @@ GPlatesViewOperations::MapViewOperation::update_drag(
 	case DRAG_NORMAL:
 		update_drag_normal(map_position);
 		break;
+	case DRAG_ROTATE_AND_TILT:
+		update_drag_rotate_and_tilt(mouse_window_x, mouse_window_y, screen_width, screen_height);
+		break;
 	case DRAG_ROTATE:
 	case DRAG_TILT:
-	case DRAG_ROTATE_AND_TILT:
 	default:
 		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 		break;
@@ -190,6 +196,52 @@ GPlatesViewOperations::MapViewOperation::update_drag_normal(
 
 	d_map_camera.set_pan(
 			pan,
+			// Always emit on last update so client can turn off any rendering optimisations now that drag has finished...
+			!d_in_last_update_drag/*only_emit_if_changed*/);
+}
+
+
+void
+GPlatesViewOperations::MapViewOperation::start_drag_rotate_and_tilt()
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_mouse_drag_info,
+			GPLATES_ASSERTION_SOURCE);
+
+	//
+	// Nothing to be done.
+	//
+}
+
+
+void
+GPlatesViewOperations::MapViewOperation::update_drag_rotate_and_tilt(
+		double mouse_window_x,
+		double mouse_window_y,
+		int window_width,
+		int window_height)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_mouse_drag_info,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Horizontal dragging rotates the view.
+	//
+	// Each multiple of PI means dragging the full window *width* will *rotate* by PI radians (180 degrees).
+	const double delta_rotation_angle = 3 * GPlatesMaths::PI * (d_mouse_drag_info->start_mouse_window_x - mouse_window_x) / window_width;
+	const GPlatesMaths::real_t rotation_angle = d_mouse_drag_info->start_rotation_angle + delta_rotation_angle;
+	d_map_camera.set_rotation_angle(
+			rotation_angle,
+			// Always emit on last update so client can turn off any rendering optimisations now that drag has finished...
+			!d_in_last_update_drag/*only_emit_if_changed*/);
+
+	// Vertical dragging tilts the view.
+	//
+	// Each multiple of PI means dragging the full window *height* will *tilt* by PI radians (180 degrees).
+	const double delta_tilt_angle = 1.5 * GPlatesMaths::PI * (mouse_window_y - d_mouse_drag_info->start_mouse_window_y) / window_height;
+	const GPlatesMaths::real_t tilt_angle = d_mouse_drag_info->start_tilt_angle + delta_tilt_angle;
+	d_map_camera.set_tilt_angle(
+			tilt_angle,
 			// Always emit on last update so client can turn off any rendering optimisations now that drag has finished...
 			!d_in_last_update_drag/*only_emit_if_changed*/);
 }

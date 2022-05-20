@@ -138,6 +138,8 @@ namespace GPlatesGui
 		/**
 		 * The angle (in radians) that the view direction tilts.
 		 *
+		 * The tilt angle is clamped to the range [0, PI/2].
+		 *
 		 * Zero angle implies looking straight down on the map plane (z=0). And PI/2 (90 degrees) means the view
 		 * direction is looking tangentially at the map plane (at look-at position) and the up
 		 * direction is pointing outward from the map plane (along z-axis).
@@ -155,7 +157,7 @@ namespace GPlatesGui
 		 */
 		void
 		set_tilt_angle(
-				const GPlatesMaths::real_t &tilt_angle,
+				GPlatesMaths::real_t tilt_angle,
 				bool only_emit_if_changed = true);
 
 		/**

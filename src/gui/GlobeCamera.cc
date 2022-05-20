@@ -34,6 +34,7 @@
 #include "global/PreconditionViolationError.h"
 
 #include "maths/Rotation.h"
+#include "maths/MathsUtils.h"
 
 #include "opengl/GLIntersect.h"
 
@@ -122,9 +123,18 @@ GPlatesGui::GlobeCamera::set_view_orientation(
 
 void
 GPlatesGui::GlobeCamera::set_tilt_angle(
-		const GPlatesMaths::real_t &tilt_angle,
+		GPlatesMaths::real_t tilt_angle,
 		bool only_emit_if_changed)
 {
+	if (tilt_angle.dval() > GPlatesMaths::HALF_PI)
+	{
+		tilt_angle = GPlatesMaths::HALF_PI;
+	}
+	else if (tilt_angle.dval() < 0)
+	{
+		tilt_angle = 0;
+	}
+
 	if (only_emit_if_changed &&
 		tilt_angle == d_tilt_angle)
 	{

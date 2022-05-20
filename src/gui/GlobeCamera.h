@@ -170,13 +170,15 @@ namespace GPlatesGui
 		/**
 		 * Set the angle (in radians) that the view direction tilts.
 		 *
+		 * The tilt angle is clamped to the range [0, PI/2].
+		 *
 		 * Note that this does not change the current view orientation (returned by @a get_view_orientation).
 		 *
 		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
 		 */
 		void
 		set_tilt_angle(
-				const GPlatesMaths::real_t &tilt_angle,
+				GPlatesMaths::real_t tilt_angle,
 				bool only_emit_if_changed = true);
 
 		/**

@@ -31,6 +31,7 @@
 #include <QPointF>
 
 #include "maths/PointOnSphere.h"
+#include "maths/types.h"
 
 
 namespace GPlatesGui
@@ -125,7 +126,9 @@ namespace GPlatesViewOperations
 					const QPointF &start_look_at_position_,
 					const GPlatesMaths::UnitVector3D &start_view_direction_,
 					const GPlatesMaths::UnitVector3D &start_up_direction_,
-					const QPointF &start_pan_) :
+					const QPointF &start_pan_,
+					const GPlatesMaths::real_t &start_rotation_angle_,
+					const GPlatesMaths::real_t &start_tilt_angle_) :
 				mode(mode_),
 				start_mouse_window_x(start_mouse_window_x_),
 				start_mouse_window_y(start_mouse_window_y_),
@@ -134,7 +137,9 @@ namespace GPlatesViewOperations
 				start_view_direction(start_view_direction_),
 				start_up_direction(start_up_direction_),
 				start_pan(start_pan_),
-				pan_relative_to_start_in_view_frame(0, 0)
+				pan_relative_to_start_in_view_frame(0, 0),
+				start_rotation_angle(start_rotation_angle_),
+				start_tilt_angle(start_tilt_angle_)
 			{  }
 
 			MouseDragMode mode;
@@ -150,6 +155,10 @@ namespace GPlatesViewOperations
 			// For DRAG_NORMAL...
 			QPointF start_pan;
 			QPointF pan_relative_to_start_in_view_frame;
+
+			// For DRAG_ROTATE_AND_TILT...
+			GPlatesMaths::real_t start_rotation_angle;
+			GPlatesMaths::real_t start_tilt_angle;
 		};
 
 
@@ -178,6 +187,16 @@ namespace GPlatesViewOperations
 		void
 		update_drag_normal(
 				const boost::optional<QPointF> &map_position);
+
+		void
+		start_drag_rotate_and_tilt();
+
+		void
+		update_drag_rotate_and_tilt(
+				double mouse_window_x,
+				double mouse_window_y,
+				int window_width,
+				int window_height);
 	};
 }
 
