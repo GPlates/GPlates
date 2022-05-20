@@ -411,6 +411,9 @@ namespace GPlatesGui
 
 		/**
 		 * Extent of map projection in latitude direction (just using the Rectangular projection as a basis).
+		 *
+		 * Note: This actually matches what we'd get if we used class @a MapProjection with a Rectangular projection
+		 *       and queried the difference in forward map projected 'y' coordinate from North to South pole.
 		 */
 		static constexpr double MAP_LATITUDE_EXTENT_IN_MAP_SPACE = 180.0;
 

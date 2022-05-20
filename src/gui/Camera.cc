@@ -37,8 +37,17 @@
 #include "maths/Vector3D.h"
 
 
-// Use a standard field-of-view of 90 degrees for the smaller viewport dimension.
-const double GPlatesGui::Camera::PERSPECTIVE_FIELD_OF_VIEW_DEGREES = 90.0;
+// Use a VERTICAL field-of-view of 70 degrees.
+// This results in a HORIZONTAL field-of-view of:
+//   * 70 degrees for a square viewport,
+//   * 86 degrees for a viewport with 4:3 aspect ratio,
+//   * 102 degrees for a viewport with 16:9 aspect ratio.
+// ...provided the viewport aspect ratio exceeds the optimal aspect ratio (ie, 1.0 for globe, 2.0 for map),
+// otherwise the VERTICAL field-of-view is increased (ie, no longer fixed at 70 degrees).
+// This means if the viewport aspect ratio is less than 1.0 for globe or 2.0 for map then the VERTICAL
+// tan(field-of-view/2) is increased by 1.0/aspect_ratio for globe or 2.0/aspect_ratio for map
+// (to ensure the entire globe or map is visible in the viewport, at default zoom).
+const double GPlatesGui::Camera::PERSPECTIVE_FIELD_OF_VIEW_DEGREES = 70.0;
 const double GPlatesGui::Camera::TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW =
 		std::tan(GPlatesMaths::convert_deg_to_rad(GPlatesGui::Camera::PERSPECTIVE_FIELD_OF_VIEW_DEGREES) / 2.0);
 
