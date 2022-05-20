@@ -40,20 +40,16 @@
 namespace GPlatesCanvasTools
 {
 	/**
-	 * Base class for canvas tools that do not need to be implemented differently
-	 * for globe and map views.
+	 * Base class for canvas tools that do not need to be implemented differently for globe and map views.
 	 *
 	 * Prefer using CanvasTool as the base class over GlobeCanvasTool and
 	 * MapCanvasTool if you do not need the extra parameters provided by those.
 	 *
-	 * Note: The handle_*ctrl* functions all return a boolean value. If the value returned
-	 * is true, the default action is performed by the CanvasToolAdapterFor{Globe,Map}
-	 * instance holding the instance of this class.
-	 * For example the default action when the Ctrl key is held down is for the globe to be
-	 * rotated or the map to be panned. Return false in these functions if you
-	 * wish to suppress this behaviour (rare).
-	 *
-	 * For other handle_* functions, the default behaviour is to do nothing.
+	 * NOTE: There are NO handle_*ctrl*_drag functions.
+	 *       This is because they have default handling in GlobeCanvasTool/MapCanvasTool such as
+	 *       rotating the globe (or panning the map) which is (should be) consistent across all tools.
+	 *       If you wish to override these default behaviours (probably not advisable) then use
+	 *       GlobeCanvasTool/MapCanvasTool as the base class (instead of CanvasTool).
 	 *
 	 * Clicks off the globe or map: If we are in globe view, the handle_* functions
 	 * will be called, with is_on_earth as false and the point_on_sphere as the
@@ -203,34 +199,6 @@ namespace GPlatesCanvasTools
 		{  }
 
 		virtual
-		bool
-		handle_ctrl_left_drag(
-				const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
-				bool was_on_earth,
-				double initial_proximity_inclusion_threshold,
-				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
-				bool is_on_earth,
-				double current_proximity_inclusion_threshold,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
-		{
-			return true; // perform default behaviour (rotate globe)
-		}
-
-		virtual
-		bool
-		handle_ctrl_left_release_after_drag(
-				const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
-				bool was_on_earth,
-				double initial_proximity_inclusion_threshold,
-				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
-				bool is_on_earth,
-				double current_proximity_inclusion_threshold,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
-		{
-			return true; // perform default behaviour (rotate globe)
-		}
-
-		virtual
 		void
 		handle_shift_ctrl_left_click(
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
@@ -239,68 +207,12 @@ namespace GPlatesCanvasTools
 		{  }
 
 		virtual
-		bool
-		handle_shift_ctrl_left_drag(
-				const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
-				bool was_on_earth,
-				double initial_proximity_inclusion_threshold,
-				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
-				bool is_on_earth,
-				double current_proximity_inclusion_threshold,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
-		{
-			return true; // perform default behaviour (rotate globe)
-		}
-
-		virtual
-		bool
-		handle_shift_ctrl_left_release_after_drag(
-				const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
-				bool was_on_earth,
-				double initial_proximity_inclusion_threshold,
-				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
-				bool is_on_earth,
-				double current_proximity_inclusion_threshold,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
-		{
-			return true; // perform default behaviour (rotate globe)
-		}
-
-		virtual
 		void
 		handle_alt_ctrl_left_click(
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
 				double proximity_inclusion_threshold)
 		{  }
-
-		virtual
-		bool
-		handle_alt_ctrl_left_drag(
-				const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
-				bool was_on_earth,
-				double initial_proximity_inclusion_threshold,
-				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
-				bool is_on_earth,
-				double current_proximity_inclusion_threshold,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
-		{
-			return true; // perform default behaviour (tilt globe)
-		}
-
-		virtual
-		bool
-		handle_alt_ctrl_left_release_after_drag(
-				const GPlatesMaths::PointOnSphere &initial_point_on_sphere,
-				bool was_on_earth,
-				double initial_proximity_inclusion_threshold,
-				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
-				bool is_on_earth,
-				double current_proximity_inclusion_threshold,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
-		{
-			return true; // perform default behaviour (tilt globe)
-		}
 
 		virtual
 		void

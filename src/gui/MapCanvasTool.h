@@ -346,14 +346,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
-		{
-			pan_map_by_drag_update(
-					screen_width, screen_height,
-					initial_screen_position, initial_map_position, initial_position_on_globe,
-					current_screen_position, current_map_position, current_position_on_globe,
-					centre_of_viewport_on_globe);
-		}
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
 
 		/**
 		 * Handle the release of the left-mouse button after a mouse drag while a Control key is held.
@@ -381,14 +374,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
-		{
-			pan_map_by_drag_release(
-					screen_width, screen_height,
-					initial_screen_position, initial_map_position, initial_position_on_globe,
-					current_screen_position, current_map_position, current_position_on_globe,
-					centre_of_viewport_on_globe);
-		}
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
 
 
 		/**
@@ -430,14 +416,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
-		{
-			rotate_map_by_drag_update(
-					screen_width, screen_height,
-					initial_screen_position, initial_map_position, initial_position_on_globe,
-					current_screen_position, current_map_position, current_position_on_globe,
-					centre_of_viewport_on_globe);
-		}
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
 
 		/**
 		 * Handle the release of the left-mouse button after a mouse drag while a Shift key and a Control key are held.
@@ -465,14 +444,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
-		{
-			rotate_map_by_drag_release(
-					screen_width, screen_height,
-					initial_screen_position, initial_map_position, initial_position_on_globe,
-					current_screen_position, current_map_position, current_position_on_globe,
-					centre_of_viewport_on_globe);
-		}
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
 
 
 		/**
@@ -514,14 +486,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
-		{
-			tilt_map_by_drag_update(
-					screen_width, screen_height,
-					initial_screen_position, initial_map_position, initial_position_on_globe,
-					current_screen_position, current_map_position, current_position_on_globe,
-					centre_of_viewport_on_globe);
-		}
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
 
 		/**
 		 * Handle the release of the left-mouse button after a mouse drag while a Alt key and a Control key are held.
@@ -549,14 +514,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
-		{
-			tilt_map_by_drag_release(
-					screen_width, screen_height,
-					initial_screen_position, initial_map_position, initial_position_on_globe,
-					current_screen_position, current_map_position, current_position_on_globe,
-					centre_of_viewport_on_globe);
-		}
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
 
 
 		/**

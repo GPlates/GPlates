@@ -27,6 +27,8 @@
 
 #include "GlobeCanvasTool.h"
 
+#include "qt-widgets/GlobeCanvas.h"
+
 #include "view-operations/GlobeViewOperation.h"
 
 
@@ -40,6 +42,168 @@ GPlatesGui::GlobeCanvasTool::GlobeCanvasTool(
 
 GPlatesGui::GlobeCanvasTool::~GlobeCanvasTool()
 {  }
+
+
+void
+GPlatesGui::GlobeCanvasTool::handle_ctrl_left_drag(
+		int screen_width,
+		int screen_height,
+		double initial_screen_x,
+		double initial_screen_y,
+		const GPlatesMaths::PointOnSphere& initial_pos_on_globe,
+		bool was_on_globe,
+		double current_screen_x,
+		double current_screen_y,
+		const GPlatesMaths::PointOnSphere& current_pos_on_globe,
+		bool is_on_globe,
+		const GPlatesMaths::PointOnSphere& centre_of_viewport)
+{
+	if (globe_canvas().isVisible())
+	{
+		reorient_globe_by_drag_update(
+				screen_width, screen_height,
+				initial_screen_x, initial_screen_y,
+				initial_pos_on_globe, was_on_globe,
+				current_screen_x, current_screen_y,
+				current_pos_on_globe, is_on_globe,
+				centre_of_viewport);
+	}
+}
+
+
+void
+GPlatesGui::GlobeCanvasTool::handle_ctrl_left_release_after_drag(
+		int screen_width,
+		int screen_height,
+		double initial_screen_x,
+		double initial_screen_y,
+		const GPlatesMaths::PointOnSphere& initial_pos_on_globe,
+		bool was_on_globe,
+		double current_screen_x,
+		double current_screen_y,
+		const GPlatesMaths::PointOnSphere& current_pos_on_globe,
+		bool is_on_globe,
+		const GPlatesMaths::PointOnSphere& centre_of_viewport)
+{
+	if (globe_canvas().isVisible())
+	{
+		reorient_globe_by_drag_release(
+				screen_width, screen_height,
+				initial_screen_x, initial_screen_y,
+				initial_pos_on_globe, was_on_globe,
+				current_screen_x, current_screen_y,
+				current_pos_on_globe, is_on_globe,
+				centre_of_viewport);
+	}
+}
+
+
+void
+GPlatesGui::GlobeCanvasTool::handle_shift_ctrl_left_drag(
+		int screen_width,
+		int screen_height,
+		double initial_screen_x,
+		double initial_screen_y,
+		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+		bool was_on_globe,
+		double current_screen_x,
+		double current_screen_y,
+		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		bool is_on_globe,
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
+{
+	if (globe_canvas().isVisible())
+	{
+		rotate_globe_by_drag_update(
+				screen_width, screen_height,
+				initial_screen_x, initial_screen_y,
+				initial_pos_on_globe, was_on_globe,
+				current_screen_x, current_screen_y,
+				current_pos_on_globe, is_on_globe,
+				centre_of_viewport);
+	}
+}
+
+
+void
+GPlatesGui::GlobeCanvasTool::handle_shift_ctrl_left_release_after_drag(
+		int screen_width,
+		int screen_height,
+		double initial_screen_x,
+		double initial_screen_y,
+		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+		bool was_on_globe,
+		double current_screen_x,
+		double current_screen_y,
+		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		bool is_on_globe,
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
+{
+	if (globe_canvas().isVisible())
+	{
+		rotate_globe_by_drag_release(
+				screen_width, screen_height,
+				initial_screen_x, initial_screen_y,
+				initial_pos_on_globe, was_on_globe,
+				current_screen_x, current_screen_y,
+				current_pos_on_globe, is_on_globe,
+				centre_of_viewport);
+	}
+}
+
+
+void
+GPlatesGui::GlobeCanvasTool::handle_alt_ctrl_left_drag(
+		int screen_width,
+		int screen_height,
+		double initial_screen_x,
+		double initial_screen_y,
+		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+		bool was_on_globe,
+		double current_screen_x,
+		double current_screen_y,
+		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		bool is_on_globe,
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
+{
+	if (globe_canvas().isVisible())
+	{
+		tilt_globe_by_drag_update(
+				screen_width, screen_height,
+				initial_screen_x, initial_screen_y,
+				initial_pos_on_globe, was_on_globe,
+				current_screen_x, current_screen_y,
+				current_pos_on_globe, is_on_globe,
+				centre_of_viewport);
+	}
+}
+
+
+void
+GPlatesGui::GlobeCanvasTool::handle_alt_ctrl_left_release_after_drag(
+		int screen_width,
+		int screen_height,
+		double initial_screen_x,
+		double initial_screen_y,
+		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+		bool was_on_globe,
+		double current_screen_x,
+		double current_screen_y,
+		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		bool is_on_globe,
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
+{
+	if (globe_canvas().isVisible())
+	{
+		tilt_globe_by_drag_release(
+				screen_width, screen_height,
+				initial_screen_x, initial_screen_y,
+				initial_pos_on_globe, was_on_globe,
+				current_screen_x, current_screen_y,
+				current_pos_on_globe, is_on_globe,
+				centre_of_viewport);
+	}
+}
 
 
 void

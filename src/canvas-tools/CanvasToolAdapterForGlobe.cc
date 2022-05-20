@@ -346,29 +346,14 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_ctrl_left_drag(
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	if (globe_canvas().isVisible())
-	{
-		if (d_canvas_tool_ptr->handle_ctrl_left_drag(
-				initial_pos_on_globe,
-				was_on_globe,
-				globe_canvas().current_proximity_inclusion_threshold(
-					initial_pos_on_globe),
-				current_pos_on_globe,
-				is_on_globe,
-				globe_canvas().current_proximity_inclusion_threshold(
-					current_pos_on_globe),
-				centre_of_viewport))
-		{
-			// perform default action
-			GlobeCanvasTool::handle_ctrl_left_drag(
-					screen_width, screen_height,
-					initial_screen_x, initial_screen_y,
-					initial_pos_on_globe, was_on_globe,
-					current_screen_x, current_screen_y,
-					current_pos_on_globe, is_on_globe,
-					centre_of_viewport);
-		}
-	}
+	// perform default action
+	GlobeCanvasTool::handle_ctrl_left_drag(
+			screen_width, screen_height,
+			initial_screen_x, initial_screen_y,
+			initial_pos_on_globe, was_on_globe,
+			current_screen_x, current_screen_y,
+			current_pos_on_globe, is_on_globe,
+			centre_of_viewport);
 }
 
 void
@@ -385,29 +370,14 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_ctrl_left_release_after_dr
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	if (globe_canvas().isVisible())
-	{
-		if (d_canvas_tool_ptr->handle_ctrl_left_release_after_drag(
-				initial_pos_on_globe,
-				was_on_globe,
-				globe_canvas().current_proximity_inclusion_threshold(
-					initial_pos_on_globe),
-				current_pos_on_globe,
-				is_on_globe,
-				globe_canvas().current_proximity_inclusion_threshold(
-					current_pos_on_globe),
-				centre_of_viewport))
-		{
-			// perform default action
-			GlobeCanvasTool::handle_ctrl_left_release_after_drag(
-					screen_width, screen_height,
-					initial_screen_x, initial_screen_y,
-					initial_pos_on_globe, was_on_globe,
-					current_screen_x, current_screen_y,
-					current_pos_on_globe, is_on_globe,
-					centre_of_viewport);
-		}
-	}
+	// perform default action
+	GlobeCanvasTool::handle_ctrl_left_release_after_drag(
+			screen_width, screen_height,
+			initial_screen_x, initial_screen_y,
+			initial_pos_on_globe, was_on_globe,
+			current_screen_x, current_screen_y,
+			current_pos_on_globe, is_on_globe,
+			centre_of_viewport);
 }
 
 void
@@ -443,29 +413,14 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_shift_ctrl_left_drag(
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	if (globe_canvas().isVisible())
-	{
-		if (d_canvas_tool_ptr->handle_shift_ctrl_left_drag(
-				initial_pos_on_globe,
-				was_on_globe,
-				globe_canvas().current_proximity_inclusion_threshold(
-					initial_pos_on_globe),
-				current_pos_on_globe,
-				is_on_globe,
-				globe_canvas().current_proximity_inclusion_threshold(
-					current_pos_on_globe),
-				centre_of_viewport))
-		{
-			// perform default action
-			GlobeCanvasTool::handle_shift_ctrl_left_drag(
-					screen_width, screen_height,
-					initial_screen_x, initial_screen_y,
-					initial_pos_on_globe, was_on_globe,
-					current_screen_x, current_screen_y,
-					current_pos_on_globe, is_on_globe,
-					centre_of_viewport);
-		}
-	}
+	// perform default action
+	GlobeCanvasTool::handle_shift_ctrl_left_drag(
+			screen_width, screen_height,
+			initial_screen_x, initial_screen_y,
+			initial_pos_on_globe, was_on_globe,
+			current_screen_x, current_screen_y,
+			current_pos_on_globe, is_on_globe,
+			centre_of_viewport);
 }
 
 void
@@ -482,29 +437,14 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_shift_ctrl_left_release_af
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	if (globe_canvas().isVisible())
-	{
-		if (d_canvas_tool_ptr->handle_shift_ctrl_left_release_after_drag(
-				initial_pos_on_globe,
-				was_on_globe,
-				globe_canvas().current_proximity_inclusion_threshold(
-					initial_pos_on_globe),
-				current_pos_on_globe,
-				is_on_globe,
-				globe_canvas().current_proximity_inclusion_threshold(
-					current_pos_on_globe),
-				centre_of_viewport))
-		{
-			// perform default action
-			GlobeCanvasTool::handle_shift_ctrl_left_release_after_drag(
-					screen_width, screen_height,
-					initial_screen_x, initial_screen_y,
-					initial_pos_on_globe, was_on_globe,
-					current_screen_x, current_screen_y,
-					current_pos_on_globe, is_on_globe,
-					centre_of_viewport);
-		}
-	}
+	// perform default action
+	GlobeCanvasTool::handle_shift_ctrl_left_release_after_drag(
+			screen_width, screen_height,
+			initial_screen_x, initial_screen_y,
+			initial_pos_on_globe, was_on_globe,
+			current_screen_x, current_screen_y,
+			current_pos_on_globe, is_on_globe,
+			centre_of_viewport);
 }
 
 void
@@ -540,29 +480,14 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_alt_ctrl_left_drag(
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	if (globe_canvas().isVisible())
-	{
-		if (d_canvas_tool_ptr->handle_alt_ctrl_left_drag(
-				initial_pos_on_globe,
-				was_on_globe,
-				globe_canvas().current_proximity_inclusion_threshold(
-					initial_pos_on_globe),
-				current_pos_on_globe,
-				is_on_globe,
-				globe_canvas().current_proximity_inclusion_threshold(
-					current_pos_on_globe),
-				centre_of_viewport))
-		{
-			// perform default action
-			GlobeCanvasTool::handle_alt_ctrl_left_drag(
-					screen_width, screen_height,
-					initial_screen_x, initial_screen_y,
-					initial_pos_on_globe, was_on_globe,
-					current_screen_x, current_screen_y,
-					current_pos_on_globe, is_on_globe,
-					centre_of_viewport);
-		}
-	}
+	// perform default action
+	GlobeCanvasTool::handle_alt_ctrl_left_drag(
+			screen_width, screen_height,
+			initial_screen_x, initial_screen_y,
+			initial_pos_on_globe, was_on_globe,
+			current_screen_x, current_screen_y,
+			current_pos_on_globe, is_on_globe,
+			centre_of_viewport);
 }
 
 void
@@ -579,29 +504,14 @@ GPlatesCanvasTools::CanvasToolAdapterForGlobe::handle_alt_ctrl_left_release_afte
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	if (globe_canvas().isVisible())
-	{
-		if (d_canvas_tool_ptr->handle_alt_ctrl_left_release_after_drag(
-				initial_pos_on_globe,
-				was_on_globe,
-				globe_canvas().current_proximity_inclusion_threshold(
-					initial_pos_on_globe),
-				current_pos_on_globe,
-				is_on_globe,
-				globe_canvas().current_proximity_inclusion_threshold(
-					current_pos_on_globe),
-				centre_of_viewport))
-		{
-			// perform default action
-			GlobeCanvasTool::handle_alt_ctrl_left_release_after_drag(
-					screen_width, screen_height,
-					initial_screen_x, initial_screen_y,
-					initial_pos_on_globe, was_on_globe,
-					current_screen_x, current_screen_y,
-					current_pos_on_globe, is_on_globe,
-					centre_of_viewport);
-		}
-	}
+	// perform default action
+	GlobeCanvasTool::handle_alt_ctrl_left_release_after_drag(
+			screen_width, screen_height,
+			initial_screen_x, initial_screen_y,
+			initial_pos_on_globe, was_on_globe,
+			current_screen_x, current_screen_y,
+			current_pos_on_globe, is_on_globe,
+			centre_of_viewport);
 }
 
 void
