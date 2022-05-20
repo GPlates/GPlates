@@ -56,11 +56,11 @@ namespace GPlatesViewOperations
 		{
 			// Rotate along great circle arcs (axes) as mouse is dragged across the globe...
 			DRAG_NORMAL,
-			// Rotate about the axis (from globe centre) through the look-at position on globe (centre of viewport)...
-			DRAG_ROTATE,
-			// Tilt the view around the axis (perpendicular to view and up directions) passing tangentially through the look-at position on globe...
-			DRAG_TILT,
 			// Rotate and tilt using same mouse drag motion...
+			// Using horizontal drag, rotate about the axis (from globe centre) through the
+			// look-at position on globe (centre of viewport).
+			// Using vertical drag, tilt around the axis (perpendicular to view and up directions)
+			// passing tangentially through the look-at position on globe.
 			DRAG_ROTATE_AND_TILT
 		};
 
@@ -125,16 +125,6 @@ namespace GPlatesViewOperations
 	private:
 
 		/**
-		 * The method used to tilt the view.
-		 */
-		enum class TiltMethod
-		{
-			USE_CYLINDER_FRONT_INTERSECTION,
-			USE_CYLINDER_BACK_INTERSECTION,
-			DONT_USE_CYLINDER_INTERSECTIONS
-		};
-
-		/**
 		 * Information generated in @a start_drag and used in subsequent calls to @a update_drag.
 		 */
 		struct MouseDragInfo
@@ -147,7 +137,8 @@ namespace GPlatesViewOperations
 					const GPlatesMaths::UnitVector3D &start_look_at_pos_on_globe_,
 					const GPlatesMaths::UnitVector3D &start_view_direction_,
 					const GPlatesMaths::UnitVector3D &start_up_direction_,
-					const GPlatesMaths::Rotation &start_view_orientation_) :
+					const GPlatesMaths::Rotation &start_view_orientation_,
+					const GPlatesMaths::real_t &start_tilt_angle_) :
 				mode(mode_),
 				start_mouse_pos_on_globe(start_mouse_pos_on_globe_),
 				start_mouse_window_x(start_mouse_window_x_),
@@ -157,8 +148,7 @@ namespace GPlatesViewOperations
 				start_up_direction(start_up_direction_),
 				start_view_orientation(start_view_orientation_),
 				view_rotation_relative_to_start(GPlatesMaths::Rotation::create_identity_rotation()),
-				tilt_method(TiltMethod::DONT_USE_CYLINDER_INTERSECTIONS/*arbitrary initialization value*/),
-				start_intersects_globe_cylinder(false/*arbitrary initialization value*/)
+				start_tilt_angle(start_tilt_angle_)
 			{  }
 
 			MouseDragMode mode;
@@ -174,15 +164,8 @@ namespace GPlatesViewOperations
 
 			GPlatesMaths::Rotation view_rotation_relative_to_start;
 
-			// For DRAG_ROTATE...
-			GPlatesMaths::real_t start_rotation_angle;
-
-			// For DRAG_TILT...
-			TiltMethod tilt_method;
-			bool start_intersects_globe_cylinder;
-			GPlatesMaths::real_t tilt_cylinder_radius;
+			// For DRAG_ROTATE_AND_TILT...
 			GPlatesMaths::real_t start_tilt_angle;
-			GPlatesMaths::real_t start_cylinder_intersect_angle_relative_to_view;
 		};
 
 
@@ -220,41 +203,10 @@ namespace GPlatesViewOperations
 
 
 		void
-		start_drag_rotate();
-
-		void
-		update_drag_rotate(
-				const GPlatesMaths::UnitVector3D &mouse_pos_on_globe);
-
-
-		void
-		start_drag_tilt(
-				int window_width,
-				int window_height);
-
-		void
-		update_drag_tilt(
-				double mouse_window_x,
-				double mouse_window_y,
-				int window_width,
-				int window_height);
-
-		void
-		update_drag_tilt_without_cylinder_intersections(
-				double mouse_window_x,
-				double mouse_window_y,
-				int window_width,
-				int window_height);
-
-
-		void
-		start_drag_rotate_and_tilt(
-				int window_width,
-				int window_height);
+		start_drag_rotate_and_tilt();
 
 		void
 		update_drag_rotate_and_tilt(
-				const GPlatesMaths::UnitVector3D &mouse_pos_on_globe,
 				double mouse_window_x,
 				double mouse_window_y,
 				int window_width,
