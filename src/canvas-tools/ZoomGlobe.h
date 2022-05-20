@@ -58,15 +58,12 @@ namespace GPlatesCanvasTools
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_);
 
-		virtual
 		void
-		handle_activation();
+		handle_activation() override;
 
-		virtual
 		void
-		handle_deactivation();
+		handle_deactivation() override;
 
-		virtual
 		void
 		handle_left_click(
 				int screen_width,
@@ -74,9 +71,8 @@ namespace GPlatesCanvasTools
 				double click_screen_x,
 				double click_screen_y,
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-				bool is_on_globe);
+				bool is_on_globe) override;
 
-		virtual
 		void
 		handle_shift_left_click(
 				int screen_width,
@@ -84,7 +80,7 @@ namespace GPlatesCanvasTools
 				double click_screen_x,
 				double click_screen_y,
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
-				bool is_on_globe);
+				bool is_on_globe) override;
 
 	private:
 

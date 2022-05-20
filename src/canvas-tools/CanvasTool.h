@@ -46,10 +46,10 @@ namespace GPlatesCanvasTools
 	 * Prefer using CanvasTool as the base class over GlobeCanvasTool and
 	 * MapCanvasTool if you do not need the extra parameters provided by those.
 	 *
-	 * Note: the handle_*ctrl* functions all return a boolean value. If the value
-	 * returned is true, the default action is performed by the
-	 * CanvasTooLAdapterFor{Globe,Map} instance holding the instance of this class.
-	 * The default action when the Ctrl key is held down is for the globe to be
+	 * Note: The handle_*ctrl* functions all return a boolean value. If the value returned
+	 * is true, the default action is performed by the CanvasToolAdapterFor{Globe,Map}
+	 * instance holding the instance of this class.
+	 * For example the default action when the Ctrl key is held down is for the globe to be
 	 * rotated or the map to be panned. Return false in these functions if you
 	 * wish to suppress this behaviour (rare).
 	 *

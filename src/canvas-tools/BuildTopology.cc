@@ -203,7 +203,7 @@ GPlatesCanvasTools::BuildTopology::handle_left_click(
 }
 
 void
-GPlatesCanvasTools::BuildTopology::handle_left_control_click(
+GPlatesCanvasTools::BuildTopology::handle_ctrl_left_click(
 		const GPlatesMaths::PointOnSphere &point_on_sphere,
 		bool is_on_earth,
 		double proximity_inclusion_threshold)

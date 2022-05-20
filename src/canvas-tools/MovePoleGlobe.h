@@ -56,16 +56,13 @@ namespace GPlatesCanvasTools
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_);
 
-		virtual
 		void
-		handle_activation();
+		handle_activation() override;
 
-		virtual
 		void
-		handle_deactivation();
+		handle_deactivation() override;
 
 
-		virtual
 		void
 		handle_left_drag(
 				int screen_width,
@@ -78,9 +75,8 @@ namespace GPlatesCanvasTools
 				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
 
-		virtual
 		void
 		handle_left_release_after_drag(
 				int screen_width,
@@ -93,9 +89,8 @@ namespace GPlatesCanvasTools
 				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
 
-		virtual
 		void
 		handle_move_without_drag(
 				int screen_width,
@@ -104,7 +99,7 @@ namespace GPlatesCanvasTools
 				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
 
 	private:
 

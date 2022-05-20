@@ -87,26 +87,26 @@ namespace GPlatesCanvasTools
 
 		virtual
 		void
-		handle_activation();
+		handle_activation() override;
 
 
 		virtual
 		void
-		handle_deactivation();
+		handle_deactivation() override;
 
 		virtual
 		void
 		handle_left_click(
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
-				double proximity_inclusion_threshold);
+				double proximity_inclusion_threshold) override;
 
 		virtual
 		void
 		handle_move_without_drag(	
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
-				double proximity_inclusion_threshold);
+				double proximity_inclusion_threshold) override;
 
 		/**
 		 * We'll use shift-left-click to continue drawing an additional circle after closing 
@@ -118,7 +118,7 @@ namespace GPlatesCanvasTools
 		handle_shift_left_click(
 				const GPlatesMaths::PointOnSphere &point_on_sphere, 
 				bool is_on_earth, 
-				double proximity_inclusion_threshold);
+				double proximity_inclusion_threshold) override;
 
 	private Q_SLOTS:
 

@@ -99,25 +99,25 @@ namespace GPlatesCanvasTools
 
 		virtual
 		void
-		handle_activation();
+		handle_activation() override;
 
 		virtual
 		void
-		handle_deactivation();
+		handle_deactivation() override;
 
 		virtual
 		void
 		handle_left_click(
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
-				double proximity_inclusion_threshold);
+				double proximity_inclusion_threshold) override;
 
 		virtual
 		void
 		handle_shift_left_click(
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
-				double proximity_inclusion_threshold);
+				double proximity_inclusion_threshold) override;
 
 
 		/**

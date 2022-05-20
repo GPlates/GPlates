@@ -223,19 +223,19 @@ namespace GPlatesCanvasTools
 
 		virtual
 		void
-		handle_activation();
+		handle_activation() override;
 
 
 		virtual
 		void
-		handle_deactivation();
+		handle_deactivation() override;
 
 		virtual
 		void
 		handle_move_without_drag(	
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
-				double proximity_inclusion_threshold);
+				double proximity_inclusion_threshold) override;
 
 
 		virtual
@@ -246,7 +246,7 @@ namespace GPlatesCanvasTools
 				double initial_proximity_inclusion_threshold,
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth, double current_proximity_inclusion_threshold,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport);
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport) override;
 
 		virtual
 		void
@@ -257,14 +257,14 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
 				double current_proximity_inclusion_threshold,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport);
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport) override;
 
 		virtual
 		void
 		handle_left_press(
 				const GPlatesMaths::PointOnSphere &point_on_sphere,
 				bool is_on_earth,
-				double proximity_inclusion_threshold);
+				double proximity_inclusion_threshold) override;
 
 
 
