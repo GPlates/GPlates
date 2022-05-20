@@ -403,7 +403,7 @@ namespace GPlatesGui
 		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
 		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
 		 *
-		 * The default implementation of this function rotates the map.
+		 * The default implementation of this function rotates and tilts the map.
 		 */
 		virtual
 		void
@@ -431,7 +431,7 @@ namespace GPlatesGui
 		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
 		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
 		 *
-		 * The default implementation of this function rotates the map.
+		 * The default implementation of this function rotates and tilts the map.
 		 */
 		virtual
 		void
@@ -472,8 +472,6 @@ namespace GPlatesGui
 		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
 		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
 		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
-		 *
-		 * The default implementation of this function rotates the map.
 		 */
 		virtual
 		void
@@ -486,7 +484,8 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+		{  }
 
 		/**
 		 * Handle the release of the left-mouse button after a mouse drag while a Alt key and a Control key are held.
@@ -500,8 +499,6 @@ namespace GPlatesGui
 		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
 		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
 		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
-		 *
-		 * The default implementation of this function rotates the map.
 		 */
 		virtual
 		void
@@ -514,7 +511,8 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
+				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+		{  }
 
 
 		/**
@@ -582,12 +580,12 @@ namespace GPlatesGui
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
 
 		/**
-		 * Rotate the map around the centre of the viewport (in map 2D plane) by dragging the mouse pointer.
+		 * Rotate and tilt the map around the centre of the viewport (in map 2D plane) by dragging the mouse pointer.
 		 *
 		 * This function is used by the default implementation of the Ctrl + Shift + left-mouse button drag handler.
 		 */
 		void
-		rotate_map_by_drag_update(
+		rotate_and_tilt_map_by_drag_update(
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,
@@ -599,46 +597,12 @@ namespace GPlatesGui
 				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
 
 		/**
-		 * Rotate the map around the centre of the viewport (in map 2D plane) by dragging the mouse pointer.
+		 * Rotate and tilt the map around the centre of the viewport (in map 2D plane) by dragging the mouse pointer.
 		 *
 		 * This function is used by the default implementation of the Ctrl + Shift + left-mouse button drag handler.
 		 */
 		void
-		rotate_map_by_drag_release(
-				int screen_width,
-				int screen_height,
-				const QPointF &initial_screen_position,
-				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
-				const QPointF &current_screen_position,
-				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
-
-		/**
-		 * Tilt the map around the centre of the viewport by dragging the mouse pointer.
-		 *
-		 * This function is used by the default implementation of the Ctrl + Alt + left-mouse button drag handler.
-		 */
-		void
-		tilt_map_by_drag_update(
-				int screen_width,
-				int screen_height,
-				const QPointF &initial_screen_position,
-				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
-				const QPointF &current_screen_position,
-				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
-
-		/**
-		 * Tilt the map around the centre of the viewport by dragging the mouse pointer.
-		 *
-		 * This function is used by the default implementation of the Ctrl + Alt + left-mouse button drag handler.
-		 */
-		void
-		tilt_map_by_drag_release(
+		rotate_and_tilt_map_by_drag_release(
 				int screen_width,
 				int screen_height,
 				const QPointF &initial_screen_position,

@@ -111,7 +111,7 @@ GPlatesCanvasTools::PanMap::handle_shift_left_drag(
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
-	rotate_map_by_drag_update(
+	rotate_and_tilt_map_by_drag_update(
 			screen_width, screen_height,
 			initial_screen_position, initial_map_position, initial_position_on_globe,
 			current_screen_position, current_map_position, current_position_on_globe,
@@ -131,47 +131,7 @@ GPlatesCanvasTools::PanMap::handle_shift_left_release_after_drag(
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
-	rotate_map_by_drag_release(
-			screen_width, screen_height,
-			initial_screen_position, initial_map_position, initial_position_on_globe,
-			current_screen_position, current_map_position, current_position_on_globe,
-			centre_of_viewport_on_globe);
-}
-
-
-void
-GPlatesCanvasTools::PanMap::handle_alt_left_drag(
-		int screen_width,
-		int screen_height,
-		const QPointF &initial_screen_position,
-		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
-		const QPointF &current_screen_position,
-		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
-{
-	tilt_map_by_drag_update(
-			screen_width, screen_height,
-			initial_screen_position, initial_map_position, initial_position_on_globe,
-			current_screen_position, current_map_position, current_position_on_globe,
-			centre_of_viewport_on_globe);
-}
-
-
-void
-GPlatesCanvasTools::PanMap::handle_alt_left_release_after_drag(
-		int screen_width,
-		int screen_height,
-		const QPointF &initial_screen_position,
-		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
-		const QPointF &current_screen_position,
-		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
-{
-	tilt_map_by_drag_release(
+	rotate_and_tilt_map_by_drag_release(
 			screen_width, screen_height,
 			initial_screen_position, initial_map_position, initial_position_on_globe,
 			current_screen_position, current_map_position, current_position_on_globe,

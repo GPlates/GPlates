@@ -56,11 +56,10 @@ namespace GPlatesViewOperations
 		{
 			// Pan along the 2D map plane as mouse is dragged across the map...
 			DRAG_NORMAL,
-			// Rotate about the 2D map plane normal at the look-at position (centre of viewport)...
-			DRAG_ROTATE,
-			// Tilt the view around the axis (perpendicular to view and up directions) passing tangentially through the look-at position on map...
-			DRAG_TILT,
 			// Rotate and tilt using same mouse drag motion...
+			// Using horizontal drag, rotate about the 2D map plane normal at the look-at position (centre of viewport).
+			// Using vertical drag, tilt around the axis (perpendicular to view and up directions) passing tangentially
+			// through the look-at position on map.
 			DRAG_ROTATE_AND_TILT
 		};
 

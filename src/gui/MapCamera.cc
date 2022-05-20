@@ -195,6 +195,7 @@ GPlatesGui::MapCamera::reorient_up_direction(
 		const GPlatesMaths::real_t &reorientation_angle,
 		bool only_emit_if_changed)
 {
+	set_rotation_angle(reorientation_angle, only_emit_if_changed);
 }
 
 

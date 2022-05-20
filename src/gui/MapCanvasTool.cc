@@ -103,7 +103,7 @@ GPlatesGui::MapCanvasTool::handle_shift_ctrl_left_drag(
 {
 	if (map_canvas().isVisible())
 	{
-		rotate_map_by_drag_update(
+		rotate_and_tilt_map_by_drag_update(
 				screen_width, screen_height,
 				initial_screen_position, initial_map_position, initial_position_on_globe,
 				current_screen_position, current_map_position, current_position_on_globe,
@@ -126,53 +126,7 @@ GPlatesGui::MapCanvasTool::handle_shift_ctrl_left_release_after_drag(
 {
 	if (map_canvas().isVisible())
 	{
-		rotate_map_by_drag_release(
-				screen_width, screen_height,
-				initial_screen_position, initial_map_position, initial_position_on_globe,
-				current_screen_position, current_map_position, current_position_on_globe,
-				centre_of_viewport_on_globe);
-	}
-}
-
-
-void
-GPlatesGui::MapCanvasTool::handle_alt_ctrl_left_drag(
-	int screen_width,
-	int screen_height,
-	const QPointF& initial_screen_position,
-	const boost::optional<QPointF>& initial_map_position,
-	const boost::optional<GPlatesMaths::PointOnSphere>& initial_position_on_globe,
-	const QPointF& current_screen_position,
-	const boost::optional<QPointF>& current_map_position,
-	const boost::optional<GPlatesMaths::PointOnSphere>& current_position_on_globe,
-	const boost::optional<GPlatesMaths::PointOnSphere>& centre_of_viewport_on_globe)
-{
-	if (map_canvas().isVisible())
-	{
-		tilt_map_by_drag_update(
-				screen_width, screen_height,
-				initial_screen_position, initial_map_position, initial_position_on_globe,
-				current_screen_position, current_map_position, current_position_on_globe,
-				centre_of_viewport_on_globe);
-	}
-}
-
-
-void
-GPlatesGui::MapCanvasTool::handle_alt_ctrl_left_release_after_drag(
-	int screen_width,
-	int screen_height,
-	const QPointF& initial_screen_position,
-	const boost::optional<QPointF>& initial_map_position,
-	const boost::optional<GPlatesMaths::PointOnSphere>& initial_position_on_globe,
-	const QPointF& current_screen_position,
-	const boost::optional<QPointF>& current_map_position,
-	const boost::optional<GPlatesMaths::PointOnSphere>& current_position_on_globe,
-	const boost::optional<GPlatesMaths::PointOnSphere>& centre_of_viewport_on_globe)
-{
-	if (map_canvas().isVisible())
-	{
-		tilt_map_by_drag_release(
+		rotate_and_tilt_map_by_drag_release(
 				screen_width, screen_height,
 				initial_screen_position, initial_map_position, initial_position_on_globe,
 				current_screen_position, current_map_position, current_position_on_globe,
@@ -240,7 +194,7 @@ GPlatesGui::MapCanvasTool::pan_map_by_drag_release(
 
 
 void
-GPlatesGui::MapCanvasTool::rotate_map_by_drag_update(
+GPlatesGui::MapCanvasTool::rotate_and_tilt_map_by_drag_update(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
@@ -269,7 +223,7 @@ GPlatesGui::MapCanvasTool::rotate_map_by_drag_update(
 
 
 void
-GPlatesGui::MapCanvasTool::rotate_map_by_drag_release(
+GPlatesGui::MapCanvasTool::rotate_and_tilt_map_by_drag_release(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
@@ -284,64 +238,6 @@ GPlatesGui::MapCanvasTool::rotate_map_by_drag_release(
 	{
 		d_map_view_operation.start_drag(
 				GPlatesViewOperations::MapViewOperation::DRAG_ROTATE_AND_TILT,
-				initial_screen_position,
-				initial_map_position,
-				screen_width, screen_height);
-	}
-
-	d_map_view_operation.update_drag(
-			current_screen_position,
-			current_map_position,
-			screen_width, screen_height,
-			true/*end_of_drag*/);
-}
-
-
-void
-GPlatesGui::MapCanvasTool::tilt_map_by_drag_update(
-		int screen_width,
-		int screen_height,
-		const QPointF &initial_screen_position,
-		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
-		const QPointF &current_screen_position,
-		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
-{
-	if (!d_map_view_operation.in_drag())
-	{
-		d_map_view_operation.start_drag(
-				GPlatesViewOperations::MapViewOperation::DRAG_TILT,
-				initial_screen_position,
-				initial_map_position,
-				screen_width, screen_height);
-	}
-
-	d_map_view_operation.update_drag(
-			current_screen_position,
-			current_map_position,
-			screen_width, screen_height,
-			false/*end_of_drag*/);
-}
-
-
-void
-GPlatesGui::MapCanvasTool::tilt_map_by_drag_release(
-		int screen_width,
-		int screen_height,
-		const QPointF &initial_screen_position,
-		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
-		const QPointF &current_screen_position,
-		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
-{
-	if (!d_map_view_operation.in_drag())
-	{
-		d_map_view_operation.start_drag(
-				GPlatesViewOperations::MapViewOperation::DRAG_TILT,
 				initial_screen_position,
 				initial_map_position,
 				screen_width, screen_height);

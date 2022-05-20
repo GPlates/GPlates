@@ -427,7 +427,7 @@ namespace GPlatesGui
 		 * mouse-button pressed).  In response to the final update (when the mouse-button
 		 * has just been released), invoke the function @a handle_shift_ctrl_left_release_after_drag instead.
 		 *
-		 * The default implementation of this function rotates the globe.
+		 * The default implementation of this function rotates and tilts the globe.
 		 */
 		virtual
 		void
@@ -453,7 +453,7 @@ namespace GPlatesGui
 		 * intermediate updates of the mouse-pointer position (as the mouse-pointer is
 		 * moved about with the mouse-button pressed), invoke the function @a handle_shift_ctrl_left_drag instead.
 		 *
-		 * The default implementation of this function rotates the globe.
+		 * The default implementation of this function rotates and tilts the globe.
 		 */
 		virtual
 		void
@@ -493,8 +493,6 @@ namespace GPlatesGui
 		 * mouse-pointer position (as the mouse-pointer is moved about with the
 		 * mouse-button pressed).  In response to the final update (when the mouse-button
 		 * has just been released), invoke the function @a handle_alt_ctrl_left_release_after_drag instead.
-		 *
-		 * The default implementation of this function tilts the globe.
 		 */
 		virtual
 		void
@@ -509,7 +507,8 @@ namespace GPlatesGui
 				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport)
+		{  }
 
 		/**
 		 * Handle the release of the left-mouse button after a mouse drag while a Alt key
@@ -519,8 +518,6 @@ namespace GPlatesGui
 		 * update (when the mouse-button has just been released).  In response to
 		 * intermediate updates of the mouse-pointer position (as the mouse-pointer is
 		 * moved about with the mouse-button pressed), invoke the function @a handle_alt_ctrl_left_drag instead.
-		 *
-		 * The default implementation of this function tilts the globe.
 		 */
 		virtual
 		void
@@ -535,7 +532,8 @@ namespace GPlatesGui
 				double current_screen_y,
 				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport)
+		{  }
 
 
 		/**
@@ -605,14 +603,13 @@ namespace GPlatesGui
 				const GPlatesMaths::PointOnSphere &centre_of_viewport);
 
 		/**
-		 * Rotate the globe around the centre of the viewport by dragging the mouse
-		 * pointer.
+		 * Rotate and tilt the globe around the centre of the viewport by dragging the mouse pointer.
 		 *
 		 * This function is used by the default implementation of the Ctrl + Shift +
 		 * left-mouse button drag handler.
 		 */
 		void
-		rotate_globe_by_drag_update(
+		rotate_and_tilt_globe_by_drag_update(
 				int screen_width,
 				int screen_height,
 				double initial_screen_x,
@@ -626,56 +623,13 @@ namespace GPlatesGui
 				const GPlatesMaths::PointOnSphere &centre_of_viewport);
 
 		/**
-		 * Rotate the globe around the centre of the viewport by dragging the mouse
-		 * pointer.
+		 * Rotate and tilt the globe around the centre of the viewport by dragging the mouse pointer.
 		 *
 		 * This function is used by the default implementation of the Ctrl + Shift +
 		 * left-mouse button drag handler.
 		 */
 		void
-		rotate_globe_by_drag_release(
-				int screen_width,
-				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport);
-
-		/**
-		 * Tilt the globe around the centre of the viewport by dragging the mouse
-		 * pointer.
-		 *
-		 * This function is used by the default implementation of the Ctrl + Alt +
-		 * left-mouse button drag handler.
-		 */
-		void
-		tilt_globe_by_drag_update(
-				int screen_width,
-				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
-				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
-				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport);
-
-		/**
-		 * Tilt the globe around the centre of the viewport by dragging the mouse
-		 * pointer.
-		 *
-		 * This function is used by the default implementation of the Ctrl + Alt +
-		 * left-mouse button drag handler.
-		 */
-		void
-		tilt_globe_by_drag_release(
+		rotate_and_tilt_globe_by_drag_release(
 				int screen_width,
 				int screen_height,
 				double initial_screen_x,
