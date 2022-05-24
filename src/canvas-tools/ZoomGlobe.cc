@@ -54,10 +54,10 @@ GPlatesCanvasTools::ZoomGlobe::handle_activation()
 	if (globe_canvas().isVisible())
 	{
 		d_viewport_window->status_message(QObject::tr(
-				"Click to zoom in."
-				" Shift+click to zoom out."
-				" Ctrl+drag to re-orient the globe."));
-
+				"Click to zoom in. "
+				"Shift+click to zoom out. "
+				"Ctrl+drag to pan. "
+				"Ctrl+Shift+drag to rotate/tilt."));
 	}
 }
 

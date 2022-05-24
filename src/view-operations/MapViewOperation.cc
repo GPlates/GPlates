@@ -71,8 +71,8 @@ GPlatesViewOperations::MapViewOperation::start_drag(
 
 	switch (d_mouse_drag_info->mode)
 	{
-	case DRAG_NORMAL:
-		start_drag_normal();
+	case DRAG_PAN:
+		start_drag_pan();
 		break;
 	case DRAG_ROTATE_AND_TILT:
 		start_drag_rotate_and_tilt();
@@ -116,8 +116,8 @@ GPlatesViewOperations::MapViewOperation::update_drag(
 
 	switch (d_mouse_drag_info->mode)
 	{
-	case DRAG_NORMAL:
-		update_drag_normal(map_position);
+	case DRAG_PAN:
+		update_drag_pan(map_position);
 		break;
 	case DRAG_ROTATE_AND_TILT:
 		update_drag_rotate_and_tilt(mouse_window_x, mouse_window_y, screen_width, screen_height);
@@ -139,7 +139,7 @@ GPlatesViewOperations::MapViewOperation::update_drag(
 
 
 void
-GPlatesViewOperations::MapViewOperation::start_drag_normal()
+GPlatesViewOperations::MapViewOperation::start_drag_pan()
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_mouse_drag_info,
@@ -152,7 +152,7 @@ GPlatesViewOperations::MapViewOperation::start_drag_normal()
 
 
 void
-GPlatesViewOperations::MapViewOperation::update_drag_normal(
+GPlatesViewOperations::MapViewOperation::update_drag_pan(
 		const boost::optional<QPointF> &map_position)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(

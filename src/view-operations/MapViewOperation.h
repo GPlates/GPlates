@@ -42,7 +42,7 @@ namespace GPlatesGui
 namespace GPlatesViewOperations
 {
 	/**
-	 * Enables users to drag the map view to a new pan/rotation/tilt.
+	 * Enables users to pan/rotate/tilt the map by dragging it.
 	 */
 	class MapViewOperation :
 			private boost::noncopyable
@@ -55,7 +55,7 @@ namespace GPlatesViewOperations
 		enum MouseDragMode
 		{
 			// Pan along the 2D map plane as mouse is dragged across the map...
-			DRAG_NORMAL,
+			DRAG_PAN,
 			// Rotate and tilt using same mouse drag motion...
 			// Using horizontal drag, rotate about the 2D map plane normal at the look-at position (centre of viewport).
 			// Using vertical drag, tilt around the axis (perpendicular to view and up directions) passing tangentially
@@ -151,7 +151,7 @@ namespace GPlatesViewOperations
 			GPlatesMaths::UnitVector3D start_view_direction;
 			GPlatesMaths::UnitVector3D start_up_direction;
 
-			// For DRAG_NORMAL...
+			// For DRAG_PAN...
 			QPointF start_pan;
 			QPointF pan_relative_to_start_in_view_frame;
 
@@ -181,10 +181,10 @@ namespace GPlatesViewOperations
 
 
 		void
-		start_drag_normal();
+		start_drag_pan();
 
 		void
-		update_drag_normal(
+		update_drag_pan(
 				const boost::optional<QPointF> &map_position);
 
 		void

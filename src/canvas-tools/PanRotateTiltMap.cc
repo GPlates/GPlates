@@ -24,7 +24,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "PanMap.h"
+#include "PanRotateTiltMap.h"
 
 #include "presentation/ViewState.h"
 
@@ -32,7 +32,7 @@
 #include "qt-widgets/ViewportWindow.h"
 
 
-GPlatesCanvasTools::PanMap::PanMap(
+GPlatesCanvasTools::PanRotateTiltMap::PanRotateTiltMap(
 		GPlatesQtWidgets::MapCanvas &map_canvas_,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_):
 	MapCanvasTool(map_canvas_, viewport_window_.get_view_state().get_map_view_operation()),
@@ -42,25 +42,25 @@ GPlatesCanvasTools::PanMap::PanMap(
 
 
 void
-GPlatesCanvasTools::PanMap::handle_activation()
+GPlatesCanvasTools::PanRotateTiltMap::handle_activation()
 {
 	if (map_canvas().isVisible())
 	{
 		d_viewport_window_ptr->status_message(QObject::tr(
-					"Drag to pan the map."
-					" Shift+drag to rotate the map."));
+				"Drag to pan. "
+				"Shift+drag to rotate/tilt."));
 	}
 }
 
 
 void
-GPlatesCanvasTools::PanMap::handle_deactivation()
+GPlatesCanvasTools::PanRotateTiltMap::handle_deactivation()
 {
 }
 
 
 void
-GPlatesCanvasTools::PanMap::handle_left_drag(
+GPlatesCanvasTools::PanRotateTiltMap::handle_left_drag(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
@@ -71,16 +71,19 @@ GPlatesCanvasTools::PanMap::handle_left_drag(
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
-	pan_map_by_drag_update(
-			screen_width, screen_height,
-			initial_screen_position, initial_map_position, initial_position_on_globe,
-			current_screen_position, current_map_position, current_position_on_globe,
-			centre_of_viewport_on_globe);
+	if (map_canvas().isVisible())
+	{
+		pan_map_by_drag_update(
+				screen_width, screen_height,
+				initial_screen_position, initial_map_position, initial_position_on_globe,
+				current_screen_position, current_map_position, current_position_on_globe,
+				centre_of_viewport_on_globe);
+	}
 }
 
 
 void
-GPlatesCanvasTools::PanMap::handle_left_release_after_drag(
+GPlatesCanvasTools::PanRotateTiltMap::handle_left_release_after_drag(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
@@ -91,16 +94,19 @@ GPlatesCanvasTools::PanMap::handle_left_release_after_drag(
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
-	pan_map_by_drag_release(
-			screen_width, screen_height,
-			initial_screen_position, initial_map_position, initial_position_on_globe,
-			current_screen_position, current_map_position, current_position_on_globe,
-			centre_of_viewport_on_globe);
+	if (map_canvas().isVisible())
+	{
+		pan_map_by_drag_release(
+				screen_width, screen_height,
+				initial_screen_position, initial_map_position, initial_position_on_globe,
+				current_screen_position, current_map_position, current_position_on_globe,
+				centre_of_viewport_on_globe);
+	}
 }
 
 
 void
-GPlatesCanvasTools::PanMap::handle_shift_left_drag(
+GPlatesCanvasTools::PanRotateTiltMap::handle_shift_left_drag(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
@@ -111,16 +117,19 @@ GPlatesCanvasTools::PanMap::handle_shift_left_drag(
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
-	rotate_and_tilt_map_by_drag_update(
-			screen_width, screen_height,
-			initial_screen_position, initial_map_position, initial_position_on_globe,
-			current_screen_position, current_map_position, current_position_on_globe,
-			centre_of_viewport_on_globe);
+	if (map_canvas().isVisible())
+	{
+		rotate_and_tilt_map_by_drag_update(
+				screen_width, screen_height,
+				initial_screen_position, initial_map_position, initial_position_on_globe,
+				current_screen_position, current_map_position, current_position_on_globe,
+				centre_of_viewport_on_globe);
+	}
 }
 
 
 void
-GPlatesCanvasTools::PanMap::handle_shift_left_release_after_drag(
+GPlatesCanvasTools::PanRotateTiltMap::handle_shift_left_release_after_drag(
 		int screen_width,
 		int screen_height,
 		const QPointF &initial_screen_position,
@@ -131,9 +140,12 @@ GPlatesCanvasTools::PanMap::handle_shift_left_release_after_drag(
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
 		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
 {
-	rotate_and_tilt_map_by_drag_release(
-			screen_width, screen_height,
-			initial_screen_position, initial_map_position, initial_position_on_globe,
-			current_screen_position, current_map_position, current_position_on_globe,
-			centre_of_viewport_on_globe);
+	if (map_canvas().isVisible())
+	{
+		rotate_and_tilt_map_by_drag_release(
+				screen_width, screen_height,
+				initial_screen_position, initial_map_position, initial_position_on_globe,
+				current_screen_position, current_map_position, current_position_on_globe,
+				centre_of_viewport_on_globe);
+	}
 }

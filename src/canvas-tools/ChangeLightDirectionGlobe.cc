@@ -63,7 +63,9 @@ GPlatesCanvasTools::ChangeLightDirectionGlobe::handle_activation()
 	if (globe_canvas().isVisible())
 	{
 		d_viewport_window->status_message(QObject::tr(
-				"Drag arrow to change the light direction."));
+				"Drag arrow to change the light direction. "
+				"Ctrl+drag to pan. "
+				"Ctrl+Shift+drag to rotate/tilt."));
 	}
 }
 

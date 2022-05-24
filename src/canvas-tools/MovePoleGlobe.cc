@@ -54,7 +54,9 @@ GPlatesCanvasTools::MovePoleGlobe::handle_activation()
 		d_move_pole_operation->activate();
 
 		d_viewport_window->status_message(QObject::tr(
-				"Drag arrow to move the pole location."));
+				"Drag pole to move its location. "
+				"Ctrl+drag to pan. "
+				"Ctrl+Shift+drag to rotate/tilt."));
 	}
 }
 

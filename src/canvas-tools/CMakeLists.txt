@@ -48,10 +48,10 @@ set(srcs
     MovePoleMap.h
     MoveVertex.cc
     MoveVertex.h
-    PanMap.cc
-    PanMap.h
-    ReorientGlobe.cc
-    ReorientGlobe.h
+    PanRotateTiltGlobe.cc
+    PanRotateTiltGlobe.h
+    PanRotateTiltMap.cc
+    PanRotateTiltMap.h
     SelectHellingerGeometries.cc
     SelectHellingerGeometries.h
     SplitFeature.cc

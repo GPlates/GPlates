@@ -71,8 +71,8 @@ GPlatesViewOperations::GlobeViewOperation::start_drag(
 
 	switch (d_mouse_drag_info->mode)
 	{
-	case DRAG_NORMAL:
-		start_drag_normal();
+	case DRAG_PAN:
+		start_drag_pan();
 		break;
 	case DRAG_ROTATE_AND_TILT:
 		start_drag_rotate_and_tilt();
@@ -115,8 +115,8 @@ GPlatesViewOperations::GlobeViewOperation::update_drag(
 
 		switch (d_mouse_drag_info->mode)
 		{
-		case DRAG_NORMAL:
-			update_drag_normal(mouse_pos_on_globe.position_vector());
+		case DRAG_PAN:
+			update_drag_pan(mouse_pos_on_globe.position_vector());
 			break;
 		case DRAG_ROTATE_AND_TILT:
 			update_drag_rotate_and_tilt(mouse_window_x, mouse_window_y, screen_width, screen_height);
@@ -139,7 +139,7 @@ GPlatesViewOperations::GlobeViewOperation::update_drag(
 
 
 void
-GPlatesViewOperations::GlobeViewOperation::start_drag_normal()
+GPlatesViewOperations::GlobeViewOperation::start_drag_pan()
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_mouse_drag_info,
@@ -152,7 +152,7 @@ GPlatesViewOperations::GlobeViewOperation::start_drag_normal()
 
 
 void
-GPlatesViewOperations::GlobeViewOperation::update_drag_normal(
+GPlatesViewOperations::GlobeViewOperation::update_drag_pan(
 		const GPlatesMaths::UnitVector3D &mouse_pos_on_globe)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(

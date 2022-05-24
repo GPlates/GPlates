@@ -299,12 +299,12 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_view_workflow()
 
 	add_tool_action_to_workflow(
 			view_workflow,
-			GPlatesGui::CanvasToolWorkflows::TOOL_DRAG_GLOBE,
-			action_Drag_Globe);
+			GPlatesGui::CanvasToolWorkflows::TOOL_PAN_ROTATE_TILT,
+			action_Drag);
 	add_tool_action_to_workflow(
 			view_workflow,
-			GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM_GLOBE,
-			action_Zoom_Globe);
+			GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM,
+			action_Zoom);
 #if 0 // Disable lighting tool until volume visualisation is officially released (in GPlates 1.5)...
 	add_tool_action_to_workflow(
 			view_workflow,
@@ -634,8 +634,8 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_canvas_tool_shortcuts()
 	// won't be visible - instead, when they are triggered by a keyboard shortcut, we will determine
 	// which workflow is currently active to determine which of the  multiple canvas tools
 	// (using that same shortcut) we should target.
-	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_DRAG_GLOBE, action_Drag_Globe);
-	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM_GLOBE, action_Zoom_Globe);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_PAN_ROTATE_TILT, action_Drag);
+	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM, action_Zoom);
 #if 0 // Disable lighting tool until volume visualisation is officially released (in GPlates 1.5)...
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_CHANGE_LIGHTING, action_Change_Lighting);
 #endif

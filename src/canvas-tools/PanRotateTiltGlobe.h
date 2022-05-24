@@ -23,8 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_CANVASTOOLS_REORIENTGLOBE_H
-#define GPLATES_CANVASTOOLS_REORIENTGLOBE_H
+#ifndef GPLATES_CANVASTOOLS_PANROTATETILTGLOBE_H
+#define GPLATES_CANVASTOOLS_PANROTATETILTGLOBE_H
 
 #include "gui/GlobeCanvasTool.h"
 
@@ -38,18 +38,18 @@ namespace GPlatesQtWidgets
 namespace GPlatesCanvasTools
 {
 	/**
-	 * This is the canvas tool used to re-orient the globe by dragging.
+	 * This is the canvas tool used to pan (re-orient), rotate and tilt the globe by dragging.
 	 */
-	class ReorientGlobe:
+	class PanRotateTiltGlobe:
 			public GPlatesGui::GlobeCanvasTool
 	{
 	public:
 
 		/**
-		 * Create a ReorientGlobe instance.
+		 * Create a PanRotateTiltGlobe instance.
 		 */
 		explicit
-		ReorientGlobe(
+		PanRotateTiltGlobe(
 				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_);
 
@@ -124,4 +124,4 @@ namespace GPlatesCanvasTools
 	};
 }
 
-#endif  // GPLATES_CANVASTOOLS_REORIENTGLOBE_H
+#endif  // GPLATES_CANVASTOOLS_PANROTATETILTGLOBE_H

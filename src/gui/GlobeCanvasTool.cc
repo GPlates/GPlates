@@ -60,7 +60,7 @@ GPlatesGui::GlobeCanvasTool::handle_ctrl_left_drag(
 {
 	if (globe_canvas().isVisible())
 	{
-		reorient_globe_by_drag_update(
+		pan_globe_by_drag_update(
 				screen_width, screen_height,
 				initial_screen_x, initial_screen_y,
 				initial_pos_on_globe, was_on_globe,
@@ -87,7 +87,7 @@ GPlatesGui::GlobeCanvasTool::handle_ctrl_left_release_after_drag(
 {
 	if (globe_canvas().isVisible())
 	{
-		reorient_globe_by_drag_release(
+		pan_globe_by_drag_release(
 				screen_width, screen_height,
 				initial_screen_x, initial_screen_y,
 				initial_pos_on_globe, was_on_globe,
@@ -153,7 +153,7 @@ GPlatesGui::GlobeCanvasTool::handle_shift_ctrl_left_release_after_drag(
 
 
 void
-GPlatesGui::GlobeCanvasTool::reorient_globe_by_drag_update(
+GPlatesGui::GlobeCanvasTool::pan_globe_by_drag_update(
 		int screen_width,
 		int screen_height,
 		double initial_screen_x,
@@ -169,7 +169,7 @@ GPlatesGui::GlobeCanvasTool::reorient_globe_by_drag_update(
 	if (!d_globe_view_operation.in_drag())
 	{
 		d_globe_view_operation.start_drag(
-				GPlatesViewOperations::GlobeViewOperation::DRAG_NORMAL,
+				GPlatesViewOperations::GlobeViewOperation::DRAG_PAN,
 				initial_pos_on_globe,
 				initial_screen_x, initial_screen_y,
 				screen_width, screen_height);
@@ -184,7 +184,7 @@ GPlatesGui::GlobeCanvasTool::reorient_globe_by_drag_update(
 
 
 void
-GPlatesGui::GlobeCanvasTool::reorient_globe_by_drag_release(
+GPlatesGui::GlobeCanvasTool::pan_globe_by_drag_release(
 		int screen_width,
 		int screen_height,
 		double initial_screen_x,
@@ -200,7 +200,7 @@ GPlatesGui::GlobeCanvasTool::reorient_globe_by_drag_release(
 	if (!d_globe_view_operation.in_drag())
 	{
 		d_globe_view_operation.start_drag(
-				GPlatesViewOperations::GlobeViewOperation::DRAG_NORMAL,
+				GPlatesViewOperations::GlobeViewOperation::DRAG_PAN,
 				initial_pos_on_globe,
 				initial_screen_x, initial_screen_y,
 				screen_width, screen_height);

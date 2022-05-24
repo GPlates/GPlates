@@ -150,7 +150,7 @@ GPlatesGui::MapCanvasTool::pan_map_by_drag_update(
 	if (!d_map_view_operation.in_drag())
 	{
 		d_map_view_operation.start_drag(
-				GPlatesViewOperations::MapViewOperation::DRAG_NORMAL,
+				GPlatesViewOperations::MapViewOperation::DRAG_PAN,
 				initial_screen_position,
 				initial_map_position,
 				screen_width, screen_height);
@@ -179,7 +179,7 @@ GPlatesGui::MapCanvasTool::pan_map_by_drag_release(
 	if (!d_map_view_operation.in_drag())
 	{
 		d_map_view_operation.start_drag(
-				GPlatesViewOperations::MapViewOperation::DRAG_NORMAL,
+				GPlatesViewOperations::MapViewOperation::DRAG_PAN,
 				initial_screen_position,
 				initial_map_position,
 				screen_width, screen_height);

@@ -42,7 +42,7 @@ namespace GPlatesGui
 namespace GPlatesViewOperations
 {
 	/**
-	 * Enables users to drag the globe view to a new orientation/tilt.
+	 * Enables users to pan/rotate/tilt the globe by dragging it.
 	 */
 	class GlobeViewOperation :
 			private boost::noncopyable
@@ -54,8 +54,8 @@ namespace GPlatesViewOperations
 		 */
 		enum MouseDragMode
 		{
-			// Rotate along great circle arcs (axes) as mouse is dragged across the globe...
-			DRAG_NORMAL,
+			// Pan (rotate along great circle arcs) as mouse is dragged across the globe...
+			DRAG_PAN,
 			// Rotate and tilt using same mouse drag motion...
 			// Using horizontal drag, rotate about the axis (from globe centre) through the
 			// look-at position on globe (centre of viewport).
@@ -195,10 +195,10 @@ namespace GPlatesViewOperations
 
 
 		void
-		start_drag_normal();
+		start_drag_pan();
 
 		void
-		update_drag_normal(
+		update_drag_pan(
 				const GPlatesMaths::UnitVector3D &mouse_pos_on_globe);
 
 

@@ -360,7 +360,7 @@ namespace GPlatesGui
 		 * mouse-button pressed).  In response to the final update (when the mouse-button
 		 * has just been released), invoke the function @a handle_ctrl_left_release_after_drag instead.
 		 *
-		 * The default implementation of this function re-orients the globe.
+		 * The default implementation of this function pans (re-orients) the globe.
 		 */
 		virtual
 		void
@@ -386,7 +386,7 @@ namespace GPlatesGui
 		 * intermediate updates of the mouse-pointer position (as the mouse-pointer is
 		 * moved about with the mouse-button pressed), invoke the function @a handle_ctrl_left_drag instead.
 		 *
-		 * The default implementation of this function re-orients the globe.
+		 * The default implementation of this function pans (re-orients) the globe.
 		 */
 		virtual
 		void
@@ -563,13 +563,13 @@ namespace GPlatesGui
 		}
 
 		/**
-		 * Re-orient the globe by dragging the mouse pointer.
+		 * Pan (re-orient) the globe by dragging the mouse pointer.
 		 *
 		 * This function is used by the default implementation of the Ctrl + left-mouse
 		 * button drag handler.
 		 */
 		void
-		reorient_globe_by_drag_update(
+		pan_globe_by_drag_update(
 				int screen_width,
 				int screen_height,
 				double initial_screen_x,
@@ -583,13 +583,13 @@ namespace GPlatesGui
 				const GPlatesMaths::PointOnSphere &centre_of_viewport);
 
 		/**
-		 * Re-orient the globe by dragging the mouse pointer.
+		 * Pan (re-orient) the globe by dragging the mouse pointer.
 		 *
 		 * This function is used by the default implementation of the Ctrl + left-mouse
 		 * button drag handler.
 		 */
 		void
-		reorient_globe_by_drag_release(
+		pan_globe_by_drag_release(
 				int screen_width,
 				int screen_height,
 				double initial_screen_x,
@@ -648,7 +648,7 @@ namespace GPlatesGui
 		GPlatesQtWidgets::GlobeCanvas &d_globe_canvas;
 
 		/**
-		 * Used to orient/tilt the globe view (converts mouse drags to globe camera view changes).
+		 * Used to pan/rotate/tilt the globe view (converts mouse drags to globe camera view changes).
 		 *
 		 * We reference the sole GlobeViewOperation shared by all globe canvas tools for manipulating the view.
 		 */

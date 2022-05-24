@@ -90,15 +90,15 @@ namespace GPlatesGui
 		//! For rendering purposes
 		GPlatesViewOperations::RenderedGeometryCollection &d_rendered_geom_collection;
 
-		//! For dragging the globe in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_drag_globe_tool;
-		//! For dragging the globe in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_drag_globe_tool;
+		//! For panning/rotating/tilting in the 3D globe view.
+		boost::scoped_ptr<GlobeCanvasTool> d_globe_pan_rotate_tilt_tool;
+		//! For panning/rotating/tilting in the 2D map view.
+		boost::scoped_ptr<MapCanvasTool> d_map_pan_rotate_tilt_tool;
 
-		//! For zooming the globe in the 3D globe view.
-		boost::scoped_ptr<GlobeCanvasTool> d_globe_zoom_globe_tool;
-		//! For zooming the globe in the 2D map view.
-		boost::scoped_ptr<MapCanvasTool> d_map_zoom_globe_tool;
+		//! For zooming in the 3D globe view.
+		boost::scoped_ptr<GlobeCanvasTool> d_globe_zoom_tool;
+		//! For zooming in the 2D map view.
+		boost::scoped_ptr<MapCanvasTool> d_map_zoom_tool;
 
 		//! For changing the lighting in the 3D globe view.
 		boost::scoped_ptr<GlobeCanvasTool> d_globe_change_lighting_tool;

@@ -382,7 +382,7 @@
     </item>
    </layout>
   </widget>
-  <action name="action_Drag_Globe">
+  <action name="action_Drag">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -394,10 +394,10 @@
      <normaloff>:/drag_globe_35.png</normaloff>:/drag_globe_35.png</iconset>
    </property>
    <property name="text">
-    <string>Drag Globe</string>
+    <string>Drag</string>
    </property>
    <property name="toolTip">
-    <string>Drag Globe  D</string>
+    <string>Drag  D</string>
    </property>
    <property name="shortcut">
     <string>D</string>
@@ -406,7 +406,7 @@
     <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
-  <action name="action_Zoom_Globe">
+  <action name="action_Zoom">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -415,10 +415,10 @@
      <normaloff>:/zoom_globe_35.png</normaloff>:/zoom_globe_35.png</iconset>
    </property>
    <property name="text">
-    <string>Zoom In</string>
+    <string>Zoom</string>
    </property>
    <property name="toolTip">
-    <string>Zoom In  Z</string>
+    <string>Zoom  Z</string>
    </property>
    <property name="shortcut">
     <string>Z</string>

@@ -24,7 +24,7 @@
  */
 
 
-#include "ReorientGlobe.h"
+#include "PanRotateTiltGlobe.h"
 
 #include "presentation/ViewState.h"
 
@@ -32,7 +32,7 @@
 #include "qt-widgets/ViewportWindow.h"
 
 
-GPlatesCanvasTools::ReorientGlobe::ReorientGlobe(
+GPlatesCanvasTools::PanRotateTiltGlobe::PanRotateTiltGlobe(
 		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_) :
 	GlobeCanvasTool(globe_canvas_, viewport_window_.get_view_state().get_globe_view_operation()),
@@ -41,25 +41,25 @@ GPlatesCanvasTools::ReorientGlobe::ReorientGlobe(
 }
 
 void
-GPlatesCanvasTools::ReorientGlobe::handle_activation()
+GPlatesCanvasTools::PanRotateTiltGlobe::handle_activation()
 {
 	if (globe_canvas().isVisible())
 	{
 		d_viewport_window_ptr->status_message(QObject::tr(
-			"Drag to re-orient the globe."
-			" Shift+drag to rotate the globe."));
+				"Drag to pan. "
+				"Shift+drag to rotate/tilt."));
 	}
 }
 
 
 void
-GPlatesCanvasTools::ReorientGlobe::handle_deactivation()
+GPlatesCanvasTools::PanRotateTiltGlobe::handle_deactivation()
 {
 }
 
 
 void
-GPlatesCanvasTools::ReorientGlobe::handle_left_drag(
+GPlatesCanvasTools::PanRotateTiltGlobe::handle_left_drag(
 		int screen_width,
 		int screen_height,
 		double initial_screen_x,
@@ -72,18 +72,21 @@ GPlatesCanvasTools::ReorientGlobe::handle_left_drag(
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	reorient_globe_by_drag_update(
-			screen_width, screen_height,
-			initial_screen_x, initial_screen_y,
-			initial_pos_on_globe, was_on_globe,
-			current_screen_x, current_screen_y,
-			current_pos_on_globe, is_on_globe,
-			centre_of_viewport);
+	if (globe_canvas().isVisible())
+	{
+		pan_globe_by_drag_update(
+				screen_width, screen_height,
+				initial_screen_x, initial_screen_y,
+				initial_pos_on_globe, was_on_globe,
+				current_screen_x, current_screen_y,
+				current_pos_on_globe, is_on_globe,
+				centre_of_viewport);
+	}
 }
 
 
 void
-GPlatesCanvasTools::ReorientGlobe::handle_left_release_after_drag(
+GPlatesCanvasTools::PanRotateTiltGlobe::handle_left_release_after_drag(
 		int screen_width,
 		int screen_height,
 		double initial_screen_x,
@@ -96,18 +99,21 @@ GPlatesCanvasTools::ReorientGlobe::handle_left_release_after_drag(
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	reorient_globe_by_drag_release(
-			screen_width, screen_height,
-			initial_screen_x, initial_screen_y,
-			initial_pos_on_globe, was_on_globe,
-			current_screen_x, current_screen_y,
-			current_pos_on_globe, is_on_globe,
-			centre_of_viewport);
+	if (globe_canvas().isVisible())
+	{
+		pan_globe_by_drag_release(
+				screen_width, screen_height,
+				initial_screen_x, initial_screen_y,
+				initial_pos_on_globe, was_on_globe,
+				current_screen_x, current_screen_y,
+				current_pos_on_globe, is_on_globe,
+				centre_of_viewport);
+	}
 }
 
 
 void
-GPlatesCanvasTools::ReorientGlobe::handle_shift_left_drag(
+GPlatesCanvasTools::PanRotateTiltGlobe::handle_shift_left_drag(
 		int screen_width,
 		int screen_height,
 		double initial_screen_x,
@@ -120,18 +126,21 @@ GPlatesCanvasTools::ReorientGlobe::handle_shift_left_drag(
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	rotate_and_tilt_globe_by_drag_update(
-			screen_width, screen_height,
-			initial_screen_x, initial_screen_y,
-			initial_pos_on_globe, was_on_globe,
-			current_screen_x, current_screen_y,
-			current_pos_on_globe, is_on_globe,
-			centre_of_viewport);
+	if (globe_canvas().isVisible())
+	{
+		rotate_and_tilt_globe_by_drag_update(
+				screen_width, screen_height,
+				initial_screen_x, initial_screen_y,
+				initial_pos_on_globe, was_on_globe,
+				current_screen_x, current_screen_y,
+				current_pos_on_globe, is_on_globe,
+				centre_of_viewport);
+	}
 }
 
 
 void
-GPlatesCanvasTools::ReorientGlobe::handle_shift_left_release_after_drag(
+GPlatesCanvasTools::PanRotateTiltGlobe::handle_shift_left_release_after_drag(
 		int screen_width,
 		int screen_height,
 		double initial_screen_x,
@@ -144,11 +153,14 @@ GPlatesCanvasTools::ReorientGlobe::handle_shift_left_release_after_drag(
 		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	rotate_and_tilt_globe_by_drag_release(
-			screen_width, screen_height,
-			initial_screen_x, initial_screen_y,
-			initial_pos_on_globe, was_on_globe,
-			current_screen_x, current_screen_y,
-			current_pos_on_globe, is_on_globe,
-			centre_of_viewport);
+	if (globe_canvas().isVisible())
+	{
+		rotate_and_tilt_globe_by_drag_release(
+				screen_width, screen_height,
+				initial_screen_x, initial_screen_y,
+				initial_pos_on_globe, was_on_globe,
+				current_screen_x, current_screen_y,
+				current_pos_on_globe, is_on_globe,
+				centre_of_viewport);
+	}
 }

@@ -141,8 +141,9 @@ namespace GPlatesQtWidgets
 {
 	namespace
 	{
-		const char *STATUS_MESSAGE_SUFFIX_FOR_GLOBE = QT_TR_NOOP("Ctrl+drag to re-orient the globe.");
-		const char *STATUS_MESSAGE_SUFFIX_FOR_MAP = QT_TR_NOOP("Ctrl+drag to pan the map.");
+		const char *STATUS_MESSAGE_SUFFIX = QT_TR_NOOP(
+				"Ctrl+drag to pan. "
+				"Ctrl+Shift+drag to rotate/tilt.");
 
 		void
 		canvas_tool_status_message(
@@ -151,9 +152,7 @@ namespace GPlatesQtWidgets
 		{
 			viewport_window.status_message(
 					GPlatesQtWidgets::ViewportWindow::tr(message) + " " +
-					GPlatesQtWidgets::ViewportWindow::tr(
-						viewport_window.reconstruction_view_widget().globe_is_active() ?
-							STATUS_MESSAGE_SUFFIX_FOR_GLOBE : STATUS_MESSAGE_SUFFIX_FOR_MAP));
+					GPlatesQtWidgets::ViewportWindow::tr(STATUS_MESSAGE_SUFFIX));
 		}
 
 		void
@@ -1483,8 +1482,8 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 	// Switch to the proper task panel tab depending on which canvas tool was just activated.
 	switch (tool)
 	{
-	case GPlatesGui::CanvasToolWorkflows::TOOL_DRAG_GLOBE:
-	case GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM_GLOBE:
+	case GPlatesGui::CanvasToolWorkflows::TOOL_PAN_ROTATE_TILT:
+	case GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM:
 		// We don't pick a tab - the previous tab from another canvas tool workflow will remain.
 		break;
 

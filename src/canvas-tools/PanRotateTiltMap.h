@@ -39,18 +39,18 @@ namespace GPlatesQtWidgets
 namespace GPlatesCanvasTools
 {
 	/**
-	 * This is the canvas tool used to re-orient the map by dragging.
+	 * This is the canvas tool used to pan, rotate and tilt the map by dragging.
 	 */
-	class PanMap:
+	class PanRotateTiltMap:
 			public GPlatesGui::MapCanvasTool
 	{
 	public:
 
 		/**
-		 * Create a PanMap instance.
+		 * Create a PanRotateTiltMap instance.
 		 */
 		explicit
-		PanMap(
+		PanRotateTiltMap(
 				GPlatesQtWidgets::MapCanvas &map_canvas_,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_);
 

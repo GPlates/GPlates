@@ -50,9 +50,10 @@ GPlatesCanvasTools::ZoomMap::handle_activation()
 	if (map_canvas().isVisible())
 	{
 		d_viewport_window_ptr->status_message(QObject::tr(
-					"Click to zoom in."
-					" Shift+click to zoom out."
-					" Ctrl+drag to pan the map."));
+				"Click to zoom in. "
+				"Shift+click to zoom out. "
+				"Ctrl+drag to pan. "
+				"Ctrl+Shift+drag to rotate/tilt."));
 	}
 }
 

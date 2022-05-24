@@ -97,8 +97,8 @@ namespace GPlatesGui
 		 */
 		enum ToolType
 		{
-			TOOL_DRAG_GLOBE,
-			TOOL_ZOOM_GLOBE,
+			TOOL_PAN_ROTATE_TILT,
+			TOOL_ZOOM,
 #if 0 // Disable lighting tool until volume visualisation is officially released (in GPlates 1.5)...
 			TOOL_CHANGE_LIGHTING,
 #endif

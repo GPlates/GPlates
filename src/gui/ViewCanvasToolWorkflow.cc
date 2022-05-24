@@ -35,8 +35,8 @@
 #include "canvas-tools/CanvasToolAdapterForMap.h"
 #include "canvas-tools/ChangeLightDirectionGlobe.h"
 #include "canvas-tools/ChangeLightDirectionMap.h"
-#include "canvas-tools/PanMap.h"
-#include "canvas-tools/ReorientGlobe.h"
+#include "canvas-tools/PanRotateTiltMap.h"
+#include "canvas-tools/PanRotateTiltGlobe.h"
 #include "canvas-tools/ZoomGlobe.h"
 #include "canvas-tools/ZoomMap.h"
 
@@ -77,7 +77,7 @@ GPlatesGui::ViewCanvasToolWorkflow::ViewCanvasToolWorkflow(
 			viewport_window.map_canvas(),
 			CanvasToolWorkflows::WORKFLOW_VIEW,
 			// The tool to start off with...
-			CanvasToolWorkflows::TOOL_DRAG_GLOBE),
+			CanvasToolWorkflows::TOOL_PAN_ROTATE_TILT),
 	d_rendered_geom_collection(view_state.get_rendered_geometry_collection())
 {
 	create_canvas_tools(
@@ -99,12 +99,12 @@ GPlatesGui::ViewCanvasToolWorkflow::create_canvas_tools(
 	// Drag canvas tool.
 	//
 
-	d_globe_drag_globe_tool.reset(
-			new GPlatesCanvasTools::ReorientGlobe(
+	d_globe_pan_rotate_tilt_tool.reset(
+			new GPlatesCanvasTools::PanRotateTiltGlobe(
 					viewport_window.globe_canvas(),
 					viewport_window));
-	d_map_drag_globe_tool.reset(
-			new GPlatesCanvasTools::PanMap(
+	d_map_pan_rotate_tilt_tool.reset(
+			new GPlatesCanvasTools::PanRotateTiltMap(
 					viewport_window.map_canvas(),
 					viewport_window));
 
@@ -112,11 +112,11 @@ GPlatesGui::ViewCanvasToolWorkflow::create_canvas_tools(
 	// Zoom canvas tool.
 	//
 
-	d_globe_zoom_globe_tool.reset(
+	d_globe_zoom_tool.reset(
 			new GPlatesCanvasTools::ZoomGlobe(
 					viewport_window.globe_canvas(),
 					viewport_window));
-	d_map_zoom_globe_tool.reset(
+	d_map_zoom_tool.reset(
 			new GPlatesCanvasTools::ZoomMap(
 					viewport_window.map_canvas(),
 					viewport_window));
@@ -128,7 +128,7 @@ GPlatesGui::ViewCanvasToolWorkflow::create_canvas_tools(
 	d_globe_change_lighting_tool.reset(
 			new GPlatesCanvasTools::ChangeLightDirectionGlobe(
 					viewport_window.globe_canvas(),
-				view_state.get_rendered_geometry_collection(),
+					view_state.get_rendered_geometry_collection(),
 					WORKFLOW_RENDER_LAYER,
 					viewport_window,
 					view_state));
@@ -149,8 +149,8 @@ GPlatesGui::ViewCanvasToolWorkflow::initialise()
 	// NOTE: If you are updating the tool in 'update_enable_state()' then you
 	// don't need to enable/disable it here.
 
-	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_DRAG_GLOBE, true);
-	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_ZOOM_GLOBE, true);
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_PAN_ROTATE_TILT, true);
+	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_ZOOM, true);
 #if 0 // Disable lighting tool until volume visualisation is officially released (in GPlates 1.5)...
 	emit_canvas_tool_enabled(CanvasToolWorkflows::TOOL_CHANGE_LIGHTING, true);
 #endif
@@ -187,11 +187,11 @@ GPlatesGui::ViewCanvasToolWorkflow::get_selected_globe_and_map_canvas_tools(
 {
 	switch (selected_tool)
 	{
-	case CanvasToolWorkflows::TOOL_DRAG_GLOBE:
-		return std::make_pair(d_globe_drag_globe_tool.get(), d_map_drag_globe_tool.get());
+	case CanvasToolWorkflows::TOOL_PAN_ROTATE_TILT:
+		return std::make_pair(d_globe_pan_rotate_tilt_tool.get(), d_map_pan_rotate_tilt_tool.get());
 
-	case CanvasToolWorkflows::TOOL_ZOOM_GLOBE:
-		return std::make_pair(d_globe_zoom_globe_tool.get(), d_map_zoom_globe_tool.get());
+	case CanvasToolWorkflows::TOOL_ZOOM:
+		return std::make_pair(d_globe_zoom_tool.get(), d_map_zoom_tool.get());
 
 #if 0 // Disable lighting tool until volume visualisation is officially released (in GPlates 1.5)...
 	case CanvasToolWorkflows::TOOL_CHANGE_LIGHTING:
