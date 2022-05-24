@@ -29,6 +29,8 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
+#include "RenderedGeometryCollection.h"
+
 #include "maths/PointOnSphere.h"
 #include "maths/Rotation.h"
 #include "maths/UnitVector3D.h"
@@ -65,9 +67,9 @@ namespace GPlatesViewOperations
 		};
 
 
-		explicit
 		GlobeViewOperation(
-				GPlatesGui::GlobeCamera &globe_camera);
+				GPlatesGui::GlobeCamera &globe_camera,
+				RenderedGeometryCollection &rendered_geometry_collection);
 
 		/**
 		 * Start a mouse drag, using the specified mode, at the specified position on the globe.
@@ -192,6 +194,12 @@ namespace GPlatesViewOperations
 		 * Is true if we're currently in the last call to @a update_drag.
 		 */
 		bool d_in_last_update_drag;
+
+		/**
+		 * Used to render the centre of viewport when rotating/tilting.
+		 */
+		RenderedGeometryCollection &d_rendered_geometry_collection;
+		RenderedGeometryCollection::child_layer_owner_ptr_type d_rotate_and_tilt_rendered_layer_ptr;
 
 
 		void

@@ -65,7 +65,7 @@ GPlatesGui::GlobeCamera::GlobeCamera(
 }
 
 
-const GPlatesMaths::PointOnSphere &
+GPlatesMaths::PointOnSphere
 GPlatesGui::GlobeCamera::get_look_at_position_on_globe() const
 {
 	if (!d_view_frame)

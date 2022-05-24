@@ -136,10 +136,12 @@ GPlatesPresentation::ViewState::ViewState(
 				*d_viewport_zoom)),
 	d_globe_view_operation(
 			new GPlatesViewOperations::GlobeViewOperation(
-				*d_globe_camera)),
+				*d_globe_camera,
+				*d_rendered_geometry_collection)),
 	d_map_view_operation(
 			new GPlatesViewOperations::MapViewOperation(
-				*d_map_camera)),
+				*d_map_camera,
+				*d_rendered_geometry_collection)),
 	d_file_io_directory_configurations(
 			new GPlatesGui::FileIODirectoryConfigurations(
 				*this)),

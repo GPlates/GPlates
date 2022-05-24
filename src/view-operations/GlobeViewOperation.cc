@@ -25,6 +25,8 @@
 
 #include "GlobeViewOperation.h"
 
+#include "RenderedGeometryFactory.h"
+
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
@@ -34,12 +36,15 @@
 
 
 GPlatesViewOperations::GlobeViewOperation::GlobeViewOperation(
-		GPlatesGui::GlobeCamera &globe_camera) :
+		GPlatesGui::GlobeCamera &globe_camera,
+		RenderedGeometryCollection &rendered_geometry_collection) :
 	d_globe_camera(globe_camera),
 	d_in_drag_operation(false),
-	d_in_last_update_drag(false)
+	d_in_last_update_drag(false),
+	d_rendered_geometry_collection(rendered_geometry_collection)
 {
 }
+
 
 void
 GPlatesViewOperations::GlobeViewOperation::start_drag(
@@ -195,6 +200,32 @@ GPlatesViewOperations::GlobeViewOperation::start_drag_rotate_and_tilt()
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_mouse_drag_info,
 			GPLATES_ASSERTION_SOURCE);
+
+	// Create a child rendered geometry layer to render centre of viewport (when rotating/tilting).
+	//
+	// We store the returned object as a data member and it automatically destroys the created layer
+	// for us when 'this' object is destroyed.
+	d_rotate_and_tilt_rendered_layer_ptr =
+		d_rendered_geometry_collection.create_child_rendered_layer_and_transfer_ownership(
+				RenderedGeometryCollection::PAN_ROTATE_TILT_IN_ALL_CANVAS_TOOLS_LAYER);
+
+	// Activate our render layer (and its parent/main layer) so it becomes visible.
+	//
+	// Note: The parent/main layer is not specific to a particular canvas tool workflow.
+	//       This is because rotating and tilting are available in ALL canvas tools.
+	d_rendered_geometry_collection.set_main_layer_active(RenderedGeometryCollection::PAN_ROTATE_TILT_IN_ALL_CANVAS_TOOLS_LAYER);
+	d_rotate_and_tilt_rendered_layer_ptr->set_active(true);
+
+	// Render a small circle at the viewport centre which is the camera look-at position.
+	// This is so the user can see the camera look-at position used for rotating tilting around.
+	const RenderedGeometry rotate_and_tilt_arrow_rendered_geom =
+			RenderedGeometryFactory::create_rendered_circle_symbol(
+					d_globe_camera.get_look_at_position_on_globe(),
+					GPlatesGui::Colour::get_silver(),
+					3.0f/*size*/,
+					false/*filled*/,
+					1.0f/*line_width_hint*/);
+	d_rotate_and_tilt_rendered_layer_ptr->add_rendered_geometry(rotate_and_tilt_arrow_rendered_geom);
 }
 
 
@@ -243,4 +274,14 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_rotate_and_tilt(
 			tilt_angle,
 			// Always emit on last update so client can turn off any rendering optimisations now that drag has finished...
 			!d_in_last_update_drag/*only_emit_if_changed*/);
+
+	// If at end of drag then clear/deactivate our rotate/tilt rendered geometry layer.
+	if (d_in_last_update_drag)
+	{
+		d_rendered_geometry_collection.set_main_layer_active(
+				RenderedGeometryCollection::PAN_ROTATE_TILT_IN_ALL_CANVAS_TOOLS_LAYER,
+				false);
+		d_rotate_and_tilt_rendered_layer_ptr->set_active(false);
+		d_rotate_and_tilt_rendered_layer_ptr->clear_rendered_geometries();
+	}
 }

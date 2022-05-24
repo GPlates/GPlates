@@ -69,8 +69,8 @@ namespace GPlatesGui
 		/**
 		 * The position on the globe that the view is looking at.
 		 */
-		const GPlatesMaths::PointOnSphere &
-		get_look_at_position_on_globe() const;
+		GPlatesMaths::PointOnSphere
+		get_look_at_position_on_globe() const override;
 
 		/**
 		 * Same as @a get_look_at_position_on_globe but returned as a Vector3D.

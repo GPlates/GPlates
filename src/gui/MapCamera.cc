@@ -72,6 +72,13 @@ GPlatesGui::MapCamera::MapCamera(
 }
 
 
+GPlatesMaths::PointOnSphere
+GPlatesGui::MapCamera::get_look_at_position_on_globe() const
+{
+	return make_point_on_sphere(d_map_projection.inverse_transform(get_look_at_position_on_map()).get());
+}
+
+
 const QPointF &
 GPlatesGui::MapCamera::get_look_at_position_on_map() const
 {

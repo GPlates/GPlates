@@ -62,6 +62,16 @@ namespace GPlatesGui
 
 
 		/**
+		 * The position on the globe (unit sphere) that the view is looking at.
+		 *
+		 * This is the map-projection inverse of @a get_look_at_position_on_map
+		 * (ie, the actual look-at position on the z=0 map plane inverse projected back onto the globe).
+		 */
+		GPlatesMaths::PointOnSphere
+		get_look_at_position_on_globe() const override;
+
+
+		/**
 		 * The position on the map (z=0 plane) that the view is looking at.
 		 */
 		const QPointF &

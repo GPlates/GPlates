@@ -32,6 +32,7 @@
 
 #include "GlobeProjectionType.h"
 
+#include "maths/PointOnSphere.h"
 #include "maths/types.h"
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
@@ -95,10 +96,21 @@ namespace GPlatesGui
 
 
 		/**
-		 * The position on the globe or map that the view is looking at.
+		 * The position on the globe (unit sphere) that the view is looking at.
+		 *
+		 * Note: For the globe this is the same as @a get_look_at_position.
+		 *       For the map this is the map-projection inverse of @a get_look_at_position
+		 *       (ie, the actual look-at position on the z=0 map plane inverse projected back onto the globe).
+		 */
+		virtual
+		GPlatesMaths::PointOnSphere
+		get_look_at_position_on_globe() const = 0;
+
+		/**
+		 * The position in 3D space that the view is looking at.
 		 *
 		 * Note: For the globe this is on the unit sphere.
-		 *       For the map this is on the z=0 plane.
+		 *       For the map this is on the z=0 plane (ie, returned position only has non-zero x and y).
 		 */
 		virtual
 		GPlatesMaths::Vector3D

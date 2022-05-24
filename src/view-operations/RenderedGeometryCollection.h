@@ -137,7 +137,8 @@ namespace GPlatesViewOperations
 			// All reconstructed geometries, etc get rendered into this layer...
 			RECONSTRUCTION_LAYER,
 
-			// Canvas tool workflow layers...
+			// Canvas tool workflow layers.
+			// Only one workflow layer active at a time (when associated workflow is active).
 			VIEW_CANVAS_TOOL_WORKFLOW_LAYER,
 			FEATURE_INSPECTION_CANVAS_TOOL_WORKFLOW_LAYER,
 			DIGITISATION_CANVAS_TOOL_WORKFLOW_LAYER,
@@ -145,6 +146,10 @@ namespace GPlatesViewOperations
 			POLE_MANIPULATION_CANVAS_TOOL_WORKFLOW_LAYER,
 			SMALL_CIRCLE_CANVAS_TOOL_WORKFLOW_LAYER,
 			HELLINGER_CANVAS_TOOL_WORKFLOW_LAYER,
+
+			// A layer for panning, rotating and tilting the view in ALL canvas tools.
+			// This is a separate layer because these operations are not specific to any canvas tool workflow.
+			PAN_ROTATE_TILT_IN_ALL_CANVAS_TOOLS_LAYER,
 
 			NUM_LAYERS // Must be the last enum.
 		};
