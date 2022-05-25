@@ -99,7 +99,7 @@ namespace GPlatesGui
 		 * The position on the globe (unit sphere) that the view is looking at.
 		 *
 		 * Note: For the globe this is the same as @a get_look_at_position.
-		 *       For the map this is the map-projection inverse of @a get_look_at_position
+		 *       For the map this is equivalent to the map-projection inverse of @a get_look_at_position
 		 *       (ie, the actual look-at position on the z=0 map plane inverse projected back onto the globe).
 		 */
 		virtual
@@ -249,8 +249,6 @@ namespace GPlatesGui
 		/**
 		 * The camera (eye) location for orthographic viewing.
 		 *
-		 * The eye location to the specified look-at position is along the view direction.
-		 *
 		 * For orthographic viewing there is no single eye location (like perspective viewing) since
 		 * the view rays are parallel and hence never converge on a single point.
 		 * This is also why the eye position depends on the look-at position.
@@ -259,6 +257,10 @@ namespace GPlatesGui
 		 * And the near/far distances are such that they encompass the bounds of the globe or map.
 		 * One reason for this is the eye position can then be used as a ray origin such that the
 		 * entire scene (globe or map) will always be in *front* of that ray.
+		 *
+		 * The eye location to the specified look-at position is along the positive or negative view direction.
+		 * Note that this means the specified look-at position can be behind the eye position
+		 * (but this does not change the view direction).
 		 */
 		GPlatesMaths::Vector3D
 		get_orthographic_eye_position(

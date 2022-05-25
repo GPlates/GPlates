@@ -1131,7 +1131,7 @@ GPlatesQtWidgets::MapCanvas::calculate_position_on_map(
 
 	// See if camera ray intersects the map plane (passing through z=0).
 	boost::optional<QPointF> camera_ray_map_plane_intersection =
-			d_map_camera.get_position_on_map_at_camera_ray(camera_ray);
+			GPlatesGui::MapCamera::get_position_on_map_at_camera_ray(camera_ray);
 	if (!camera_ray_map_plane_intersection)
 	{
 		// Camera ray at screen pixel does not intersect the map plane (z=0).

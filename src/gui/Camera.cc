@@ -86,11 +86,21 @@ GPlatesGui::Camera::get_view_transform() const
 	const GPlatesMaths::Vector3D camera_look_at = get_look_at_position();
 	const GPlatesMaths::UnitVector3D camera_up = get_up_direction();
 
+	// Get the view transform.
+	//
+	// Note: We don't use GLMatrix::glu_look_at() because that calculates a view direction
+	//       from the eye position to the look-at position, and for orthographic viewing the
+	//       look-at position can be behind the eye (since we're arbitrarily placing the eye at
+	//       the near z=0 plane) and this essentially reverses the view direction.
+	//       Although the look-at position is now limited to being in front of the eye
+	//       (since the look-at position is now restricted to lie on the map, or globe, which is
+	//       inside the sphere bounding the scene) - however it's possible that could change in future.
+	//       Also, since we have the view direction there is no need to calculate it.
 	GPlatesOpenGL::GLMatrix view_transform;
-	view_transform.glu_look_at(
-			camera_eye.x().dval(), camera_eye.y().dval(), camera_eye.z().dval(), // eye
-			camera_look_at.x().dval(), camera_look_at.y().dval(), camera_look_at.z().dval(), // centre
-			camera_up.x().dval(), camera_up.y().dval(), camera_up.z().dval()); // up
+	view_transform.view(
+			get_eye_position(),
+			get_view_direction(),
+			get_up_direction());
 
 	return view_transform;
 }
@@ -100,14 +110,31 @@ GPlatesOpenGL::GLMatrix
 GPlatesGui::Camera::get_projection_transform(
 		const double &viewport_aspect_ratio) const
 {
+	// The signed distance from origin (0,0,0) to eye along view direction.
+	// This is positive/negative if the eye is in-front/behind the plane
+	// passing through origin with plane normal in view direction.
+	const double signed_distance_from_origin_to_eye_along_view_direction =
+			dot(get_eye_position(), get_view_direction()).dval();
+	// Reverse to get the signed distance from eye to origin (along view direction).
+	// We want our near/far distances to be positive when near/far plane is in front of the eye.
+	const double signed_distance_from_eye_to_origin_along_view_direction =
+			-signed_distance_from_origin_to_eye_along_view_direction;
+
+	// Distance from eye to far side of bounding sphere surface along the view direction.
+	// This puts the far plane far enough away to include the entire scene.
+	//
+	// Note: This is calculated the same for both orthographic and perspective viewing.
+	const GLdouble depth_to_far_side_of_scene = signed_distance_from_eye_to_origin_along_view_direction + get_bounding_radius();
+
 	GPlatesOpenGL::GLMatrix projection_transform;
 	if (get_view_projection_type() == GlobeProjection::ORTHOGRAPHIC)
 	{
-		// For orthographic viewing we know the eye position is such that the sphere bounding the scene (globe or map)
-		// is just in front of it (along the view direction). So we can set the near plane distance to zero.
-		const GLdouble depth_in_front_of_scene = 0.0;
-		// Then the far plane distance is the diameter of the sphere bounding the scene (globe or map).
-		const GLdouble depth_behind_scene = 2 * get_bounding_radius();
+		// Distance along the view direction from eye to near side of surface of sphere that bounds the scene (globe or map).
+		// This puts the near plane close enough to include the entire scene.
+		//
+		// Note: This will be zero if we place the eye position *on* the near clip plane
+		//       (as we currently do - see 'get_orthographic_eye_position()').
+		const GLdouble depth_to_near_side_of_scene = signed_distance_from_eye_to_origin_along_view_direction - get_bounding_radius();
 
 		// Note that, counter-intuitively, zooming into an orthographic view is not accomplished by moving
 		// the eye closer to the globe. Instead it's accomplished by reducing the width and height of
@@ -123,8 +150,8 @@ GPlatesGui::Camera::get_projection_transform(
 		projection_transform.gl_ortho(
 				ortho_left, ortho_right,
 				ortho_bottom, ortho_top,
-				depth_in_front_of_scene,
-				depth_behind_scene);
+				depth_to_near_side_of_scene,
+				depth_to_far_side_of_scene);
 	}
 	else // perspective...
 	{
@@ -186,21 +213,7 @@ GPlatesGui::Camera::get_projection_transform(
 		// And the sqrt(2.0) is because a standard perspective field-of-view of 90 degrees results in
 		// a maximum distance from eye to visible near plane (at corners of viewport) that is sqrt(2) times
 		// the minimum distance to near plane (at the centre of the viewport).
-		const GLdouble depth_in_front_of_scene = min_distance_from_eye_to_look_at / (2.0 * std::sqrt(2.0));
-
-		//
-		// Far distance.
-		//
-
-		// The signed distance from eye to origin (0,0,0).
-		// This is positive/negative if the eye is in-front/behind the plane
-		// passing through origin with plane normal in view direction.
-		const double signed_distance_from_eye_to_origin_along_view_direction =
-				dot(get_eye_position(), get_view_direction()).dval();
-
-		// Distance from eye to bounding sphere surface along the view direction.
-		// This puts the far plane far enough away to include the entire scene.
-		const GLdouble depth_behind_scene = get_bounding_radius() - signed_distance_from_eye_to_origin_along_view_direction;
+		const GLdouble depth_to_near_side_of_scene = min_distance_from_eye_to_look_at / (2.0 * std::sqrt(2.0));
 
 
 		const double fovy_degrees = get_perspective_fovy(viewport_aspect_ratio);
@@ -208,13 +221,12 @@ GPlatesGui::Camera::get_projection_transform(
 		projection_transform.glu_perspective(
 				fovy_degrees,
 				viewport_aspect_ratio,
-				depth_in_front_of_scene,
-				depth_behind_scene);
+				depth_to_near_side_of_scene,
+				depth_to_far_side_of_scene);
 	}
 
 	return projection_transform;
 }
-
 
 GPlatesMaths::Vector3D
 GPlatesGui::Camera::get_eye_position() const
@@ -274,7 +286,6 @@ GPlatesGui::Camera::get_camera_ray_at_window_coord(
 				view_y_component * view_y_axis;
 
 		// Ray origin.
-		// Passing through the ray origin along the ray direction should intersect 'position_on_ray'.
 		const GPlatesMaths::Vector3D ray_origin = get_orthographic_eye_position(position_on_ray);
 
 		// Ray direction.
@@ -318,7 +329,6 @@ GPlatesGui::Camera::get_camera_ray_at_position(
 	if (get_view_projection_type() == GlobeProjection::ORTHOGRAPHIC)
 	{
 		// Ray origin.
-		// Passing through the ray origin along the ray direction should intersect 'position'.
 		const GPlatesMaths::Vector3D ray_origin = get_orthographic_eye_position(position);
 
 		// Ray direction.
@@ -434,21 +444,24 @@ GPlatesGui::Camera::get_orthographic_eye_position(
 	// the orthographic viewing frustum (rectangular prism). Our setting of the eye position is simply
 	// to ensure that the scene (globe or map) is in *front* of the eye (along the view direction).
 
-	// The signed distance from specified look-at position to origin (0,0,0).
+	// The signed distance from origin (0,0,0) to specified look-at position (along view direction).
 	// This is positive/negative if the specified look-at position is in-front/behind the plane
 	// passing through origin with plane normal in view direction.
-	const GPlatesMaths::real_t signed_distance_from_look_at_position_to_origin_along_view_direction =
+	const GPlatesMaths::real_t signed_distance_from_origin_to_look_at_position_along_view_direction =
 			dot(look_at_position, get_view_direction());
 
 	// The absolute distance from origin (0,0,0) to surface of sphere that bounds the scene (globe or map).
-	const GPlatesMaths::real_t distance_from_eye_to_origin_along_view_direction = get_bounding_radius();
+	const GPlatesMaths::real_t distance_from_eye_to_origin = get_bounding_radius();
 
-	// Signed distance from specified look-at position to eye position (along view direction).
-	const GPlatesMaths::real_t distance_from_look_at_position_to_eye_along_view_direction = 
-			distance_from_eye_to_origin_along_view_direction + signed_distance_from_look_at_position_to_origin_along_view_direction;
+	// Signed distance from eye position to specified look-at position (along view direction).
+	const GPlatesMaths::real_t signed_distance_from_eye_to_look_at_position_along_view_direction =
+			distance_from_eye_to_origin + signed_distance_from_origin_to_look_at_position_along_view_direction;
+	// Reverse to get the signed distance from specified look-at position to eye position (along view direction).
+	const GPlatesMaths::real_t signed_distance_from_look_at_position_to_eye_along_view_direction =
+			-signed_distance_from_eye_to_look_at_position_along_view_direction;
 
 	// Move from specified look-at position back along the negative view direction to find the eye position.
-	return look_at_position - distance_from_look_at_position_to_eye_along_view_direction * get_view_direction();
+	return look_at_position + signed_distance_from_look_at_position_to_eye_along_view_direction * get_view_direction();
 }
 
 

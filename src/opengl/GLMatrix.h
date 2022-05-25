@@ -36,6 +36,8 @@
 namespace GPlatesMaths
 {
 	class UnitQuaternion3D;
+	class UnitVector3D;
+	class Vector3D;
 }
 
 namespace GPlatesOpenGL
@@ -199,6 +201,20 @@ namespace GPlatesOpenGL
 				double top,
 				double zNear,
 				double zFar);
+
+		/**
+		 * Get the view transform for a camera at @a eye_position looking in the
+		 * direction @a view_direction with the up oriented to @a up_direction.
+		 *
+		 * Like @a glu_look_at, this puts the view direction along the negative z-axis.
+		 *
+		 * NOTE: @a view_direction and @a up_direction MUST be perpendicular.
+		 */
+		GLMatrix &
+		view(
+				const GPlatesMaths::Vector3D &eye_position,
+				const GPlatesMaths::UnitVector3D &view_direction,
+				const GPlatesMaths::UnitVector3D &up_direction);
 
 		//! Performs function of similarly named OpenGL function (including post-multiplication).
 		GLMatrix &

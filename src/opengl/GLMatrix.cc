@@ -408,6 +408,49 @@ GPlatesOpenGL::GLMatrix::gl_frustum(
 
 
 GPlatesOpenGL::GLMatrix &
+GPlatesOpenGL::GLMatrix::view(
+		const GPlatesMaths::Vector3D &eye_position,
+		const GPlatesMaths::UnitVector3D &view_direction,
+		const GPlatesMaths::UnitVector3D &up_direction)
+{
+	// Get the view x axis from the view direction (negative z-axis) and up direction (y-axis).
+	const GPlatesMaths::Vector3D side_direction = cross(view_direction, up_direction);
+
+	GLdouble view_matrix[16];
+
+	// Column 0
+	view_matrix[0] = side_direction.x().dval();
+	view_matrix[1] = up_direction.x().dval();
+	view_matrix[2] = -view_direction.x().dval();
+	view_matrix[3] = 0.0;
+
+	// Column 1
+	view_matrix[4] = side_direction.y().dval();
+	view_matrix[5] = up_direction.y().dval();
+	view_matrix[6] = -view_direction.y().dval();
+	view_matrix[7] = 0.0;
+
+	// Column 2
+	view_matrix[8] = side_direction.z().dval();
+	view_matrix[9] = up_direction.z().dval();
+	view_matrix[10] = -view_direction.z().dval();
+	view_matrix[11] = 0.0;
+
+	// Column 3
+	view_matrix[12] = 0.0;
+	view_matrix[13] = 0.0;
+	view_matrix[14] = 0.0;
+	view_matrix[15] = 1.0;
+
+	gl_mult_matrix(view_matrix);
+
+	gl_translate(-eye_position.x().dval(), -eye_position.y().dval(), -eye_position.z().dval());
+
+	return *this;
+}
+
+
+GPlatesOpenGL::GLMatrix &
 GPlatesOpenGL::GLMatrix::glu_look_at(
 		double eyex,
 		double eyey,

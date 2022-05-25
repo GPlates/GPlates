@@ -1115,7 +1115,7 @@ GPlatesQtWidgets::GlobeCanvas::calculate_position_on_globe(
 
 	// See if camera ray intersects the globe.
 	boost::optional<GPlatesMaths::PointOnSphere> camera_ray_globe_intersection =
-			d_globe_camera.get_position_on_globe_at_camera_ray(camera_ray);
+			GPlatesGui::GlobeCamera::get_position_on_globe_at_camera_ray(camera_ray);
 	if (camera_ray_globe_intersection)
 	{
 		// Return true to indicate camera ray intersected the globe.
