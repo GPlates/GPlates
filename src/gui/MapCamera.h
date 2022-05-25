@@ -257,6 +257,35 @@ namespace GPlatesGui
 
 
 		/**
+		 * Returns the position on the map plane (z=0) at the specified window coordinate.
+		 *
+		 * Window coordinates are typically in the range [0, window_width] and [0, window_height]
+		 * where (0, 0) is bottom-left and (window_width, window_height) is top-right of window.
+		 * Note that we use the OpenGL convention where 'window_x = 0' is the bottom of the window.
+		 * But in Qt it means top, so a Qt mouse y coordinate (for example) needs be inverted
+		 * before passing to this method.
+		 *
+		 * Note that either/both window coordinate could be outside the range[0, window_width] and
+		 * [0, window_height], in which case the position on the map plane is not visible either.
+		 *
+		 * Note: This is equivalent to calling @a get_camera_ray_at_window_coord to get a ray
+		 *       followed by calling @a get_position_on_map_at_camera_ray with that ray.
+		 */
+		boost::optional<QPointF>
+		get_position_on_map_at_window_coord(
+				double window_x,
+				double window_y,
+				int window_width,
+				int window_height) const
+		{
+			// See if camera ray intersects the map plane (passing through z=0).
+			return get_position_on_map_at_camera_ray(
+					// Project screen coordinates into a ray into 3D scene (containing 2D map plane)...
+					get_camera_ray_at_window_coord(window_x, window_y, window_width, window_height));
+		}
+
+
+		/**
 		 * Returns the position on the map plane (z=0) where the specified camera ray intersects, or
 		 * none if does not intersect.
 		 *
@@ -264,11 +293,17 @@ namespace GPlatesGui
 		 * in which case the position on the map plane is not visible either.
 		 *
 		 * The @a camera_ray can be obtained from mouse coordinates using @a get_camera_ray_at_window_coord.
+		 *
+		 * Note: For *orthographic* viewing the negative or positive side of the ray can intersect the plane
+		 *       (since the view rays are parallel and so if we ignore the near/far clip planes then
+		 *       everything in the infinitely long rectangular prism is visible).
+		 *       Whereas for *perspective* viewing only the positive side of the ray can intersect the plane
+		 *       (since the view rays emanate/diverge from a single eye location and so, ignoring the
+		 *       near/far clip planes, only the front infinitely long pyramid with apex at eye is visible).
 		 */
-		static
 		boost::optional<QPointF>
 		get_position_on_map_at_camera_ray(
-				const GPlatesOpenGL::GLIntersect::Ray &camera_ray);
+				const GPlatesOpenGL::GLIntersect::Ray &camera_ray) const;
 
 	protected:
 

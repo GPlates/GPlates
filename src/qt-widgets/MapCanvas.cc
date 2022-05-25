@@ -1125,20 +1125,8 @@ GPlatesQtWidgets::MapCanvas::calculate_position_on_map(
 	const double screen_y = height() - screen_position.y();
 	const double screen_x = screen_position.x();
 
-	// Project screen coordinates into a ray into 3D scene (containing 2D map plane).
-	const GPlatesOpenGL::GLIntersect::Ray camera_ray =
-			d_map_camera.get_camera_ray_at_window_coord(screen_x, screen_y, width(), height());
-
-	// See if camera ray intersects the map plane (passing through z=0).
-	boost::optional<QPointF> camera_ray_map_plane_intersection =
-			GPlatesGui::MapCamera::get_position_on_map_at_camera_ray(camera_ray);
-	if (!camera_ray_map_plane_intersection)
-	{
-		// Camera ray at screen pixel does not intersect the map plane (z=0).
-		return boost::none;
-	}
-
-	return camera_ray_map_plane_intersection.get();
+	// See if screen coordinates intersect the map plane.
+	return d_map_camera.get_position_on_map_at_window_coord(screen_x, screen_y, width(), height());
 }
 
 

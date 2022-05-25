@@ -247,7 +247,7 @@ GPlatesGui::MapCamera::rotate_anticlockwise(
 
 boost::optional<QPointF>
 GPlatesGui::MapCamera::get_position_on_map_at_camera_ray(
-		const GPlatesOpenGL::GLIntersect::Ray &camera_ray)
+		const GPlatesOpenGL::GLIntersect::Ray &camera_ray) const
 {
 	// Create a plane representing the map plane (z=0).
 	//
@@ -264,7 +264,16 @@ GPlatesGui::MapCamera::get_position_on_map_at_camera_ray(
 	const GPlatesOpenGL::GLIntersect::Plane map_plane(0, 0, 1, 0);
 
 	// Intersect the ray with the map plane.
-	const boost::optional<GPlatesMaths::real_t> ray_distance_to_map_plane = intersect_ray_plane(camera_ray, map_plane);
+	const boost::optional<GPlatesMaths::real_t> ray_distance_to_map_plane =
+			(get_view_projection_type() == GlobeProjection::ORTHOGRAPHIC)
+					// For *orthographic* viewing the negative or positive side of the ray can intersect the plane
+					// (since the view rays are parallel and so if we ignore the near/far clip planes then
+					// everything in the infinitely long rectangular prism is visible)...
+					? intersect_line_plane(camera_ray, map_plane)
+					// Whereas for *perspective* viewing only the positive side of the ray can intersect the plane
+					// (since the view rays emanate/diverge from a single eye location and so, ignoring the
+					// near/far clip planes, only the front infinitely long pyramid with apex at eye is visible)...
+					: intersect_ray_plane(camera_ray, map_plane);
 
 	// Did the ray intersect the map plane ?
 	if (!ray_distance_to_map_plane)

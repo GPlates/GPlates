@@ -265,13 +265,32 @@ GPlatesGui::GlobeCamera::rotate_anticlockwise(
 
 boost::optional<GPlatesMaths::PointOnSphere>
 GPlatesGui::GlobeCamera::get_position_on_globe_at_camera_ray(
-		const GPlatesOpenGL::GLIntersect::Ray &camera_ray)
+		const GPlatesOpenGL::GLIntersect::Ray &camera_ray) const
 {
 	// Create a unit sphere representing the globe.
 	const GPlatesOpenGL::GLIntersect::Sphere globe(GPlatesMaths::Vector3D()/*origin*/, 1.0);
 
 	// Intersect the ray with the globe.
-	const boost::optional<GPlatesMaths::real_t> ray_distance_to_globe = intersect_ray_sphere(camera_ray, globe);
+	boost::optional<GPlatesMaths::real_t> ray_distance_to_globe;
+	if (get_view_projection_type() == GlobeProjection::ORTHOGRAPHIC)
+	{
+		// For *orthographic* viewing the negative or positive side of the ray can intersect the globe
+		// (since the view rays are parallel and so if we ignore the near/far clip planes then
+		// everything in the infinitely long rectangular prism is visible).
+		boost::optional<std::pair<GPlatesMaths::real_t/*first*/, GPlatesMaths::real_t/*second*/>>
+				intersections = intersect_line_sphere(camera_ray, globe);
+		if (intersections)
+		{
+			ray_distance_to_globe = intersections->first;  // Closest/smallest distance.
+		}
+	}
+	else
+	{
+		// Whereas for *perspective* viewing only the positive side of the ray can intersect the globe
+		// (since the view rays emanate/diverge from a single eye location and so, ignoring the
+		// near/far clip planes, only the front infinitely long pyramid with apex at eye is visible).
+		ray_distance_to_globe = intersect_ray_sphere(camera_ray, globe);
+	}
 
 	// Did the ray intersect the globe ?
 	if (!ray_distance_to_globe)

@@ -168,6 +168,28 @@ GPlatesOpenGL::GLIntersect::intersect_ray_plane(
 		const Ray &ray,
 		const Plane &plane)
 {
+	// Find intersection of the ray's infinite line with the plane.
+	boost::optional<GPlatesMaths::real_t> t = intersect_line_plane(ray, plane);
+	if (!t)
+	{
+		return boost::none;
+	}
+
+	if (t->dval() < 0)
+	{
+		// The ray's line intersects the plane, but it intersects behind the ray.
+		return boost::none;
+	}
+
+	return t.get();
+}
+
+
+boost::optional<GPlatesMaths::real_t>
+GPlatesOpenGL::GLIntersect::intersect_line_plane(
+		const Ray &ray,
+		const Plane &plane)
+{
 	//
 	// Points on the plane satisfy:
 	// 
@@ -187,21 +209,14 @@ GPlatesOpenGL::GLIntersect::intersect_ray_plane(
 	const GPlatesMaths::real_t denom = dot(plane.get_normal_unnormalised(), ray.get_direction());
 	if (denom == 0)  // Note: this is an epsilon test.
 	{
-		// The ray line is perpendicular to the plane and hence they either they never intersect
-		// or the ray lies on the plane and there's an infinity of intersections.
+		// The line is perpendicular to the plane and hence either it never intersects the plane
+		// or the line lies on the plane and there's an infinity of intersections.
 		// For both cases we just return no intersection.
 		return boost::none;
 	}
 
-	const GPlatesMaths::real_t t =
-			(-plane.get_signed_distance_to_origin_unnormalised() - dot(plane.get_normal_unnormalised(), ray.get_origin())) / denom;
-	if (t.dval() < 0)
-	{
-		// The ray's line intersects the plane, but it intersects behind the ray.
-		return boost::none;
-	}
-
-	return t;
+	// Calculate and return 't'.
+	return (-plane.get_signed_distance_to_origin_unnormalised() - dot(plane.get_normal_unnormalised(), ray.get_origin())) / denom;
 }
 
 

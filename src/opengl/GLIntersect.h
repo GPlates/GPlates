@@ -115,6 +115,19 @@ namespace GPlatesOpenGL
 				const Ray &ray,
 				const Plane &plane);
 
+		/**
+		 * Intersects an infinite line (specified as a ray) with a plane and returns the distance
+		 * to the intersection point or false if doesn't intersect (if perpendicular).
+		 *
+		 * Note that although it's an infinite line we still need to define it using a point
+		 * (on the line) and a direction, which we specify as a ray. And distances are from
+		 * the ray's origin and can be negative when intersects behind ray origin.
+		 */
+		boost::optional<GPlatesMaths::real_t>
+		intersect_line_plane(
+				const Ray &ray,
+				const Plane &plane);
+
 
 		/**
 		 * Intersects a @a Sphere with the planes of a frustum.
