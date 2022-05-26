@@ -53,7 +53,6 @@
 
 #include "gui/Colour.h"
 #include "gui/GlobeCamera.h"
-#include "gui/GlobeVisibilityTester.h"
 #include "gui/TextOverlay.h"
 #include "gui/VelocityLegendOverlay.h"
 #include "gui/ViewportZoom.h"
@@ -119,7 +118,6 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			d_gl_visual_layers,
 			view_state.get_rendered_geometry_collection(),
 			view_state.get_visual_layers(),
-			GPlatesGui::GlobeVisibilityTester(*this),
 			devicePixelRatio()),
 	d_globe_camera(view_state.get_globe_camera()),
 	d_text_overlay(
@@ -419,6 +417,7 @@ GPlatesQtWidgets::GlobeCanvas::set_camera_viewpoint(
 	d_globe_camera.move_look_at_position(
 			GPlatesMaths::make_point_on_sphere(camera_viewpoint));
 }
+
 
 boost::optional<GPlatesMaths::LatLonPoint>
 GPlatesQtWidgets::GlobeCanvas::get_camera_viewpoint() const

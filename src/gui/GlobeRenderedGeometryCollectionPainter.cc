@@ -96,13 +96,11 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollect
 		const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		const GPlatesPresentation::VisualLayers &visual_layers,
-		const GlobeVisibilityTester &visibility_tester,
 		int device_pixel_ratio) :
 	d_rendered_geometry_collection(rendered_geometry_collection),
 	d_gl_visual_layers(gl_visual_layers),
 	d_visual_layers(visual_layers),
 	d_layer_painter(gl_visual_layers, device_pixel_ratio),
-	d_visibility_tester(visibility_tester),
 	d_scale(1.0f),
 	d_visual_layers_reversed(false)
 {  }
@@ -212,7 +210,6 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::visit_rendered_geometry_laye
 	GlobeRenderedGeometryLayerPainter rendered_geom_layer_painter(
 			rendered_geometry_layer,
 			d_paint_params->d_inverse_viewport_zoom_factor,
-			d_visibility_tester,
 			d_paint_params->d_paint_region,
 			d_paint_params->d_globe_horizon_plane,
 			d_paint_params->d_vector_geometries_override_colour,

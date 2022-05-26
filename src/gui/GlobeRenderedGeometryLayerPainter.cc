@@ -127,14 +127,12 @@ const float GPlatesGui::GlobeRenderedGeometryLayerPainter::LINE_WIDTH_ADJUSTMENT
 GPlatesGui::GlobeRenderedGeometryLayerPainter::GlobeRenderedGeometryLayerPainter(
 		const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 		const double &inverse_viewport_zoom_factor,
-		const GlobeVisibilityTester &visibility_tester,
 		PaintRegionType paint_region,
 		boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_horizon_plane,
 		boost::optional<Colour> vector_geometries_override_colour,
 		bool improve_performance_reduce_quality_hint) :
 	d_rendered_geometry_layer(rendered_geometry_layer),
 	d_inverse_zoom_factor(inverse_viewport_zoom_factor),
-	d_visibility_tester(visibility_tester),
 	d_scale(1.0f),
 	d_paint_region(paint_region),
 	d_globe_horizon_plane(globe_horizon_plane),
@@ -1173,7 +1171,10 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_string(
 		return;
 	}
 
-	if (d_visibility_tester.is_point_visible(rendered_string.get_point_on_sphere()))
+	// Only render string if it's on the visible front side of the globe.
+	if (d_globe_horizon_plane/* should be true if d_paint_region == PAINT_SURFACE */ &&
+		d_globe_horizon_plane->classify_point(rendered_string.get_point_on_sphere().position_vector()) ==
+				GPlatesOpenGL::GLIntersect::Plane::POSITIVE)
 	{
 		const Colour &colour = get_vector_geometry_colour(rendered_string.get_colour());
 

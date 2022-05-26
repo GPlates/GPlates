@@ -36,7 +36,6 @@
 #include <opengl/OpenGL1.h>
 
 #include "Colour.h"
-#include "GlobeVisibilityTester.h"
 #include "LayerPainter.h"
 
 #include "maths/CubeQuadTreeLocation.h"
@@ -103,7 +102,6 @@ namespace GPlatesGui
 		GlobeRenderedGeometryLayerPainter(
 				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 				const double &inverse_viewport_zoom_factor,
-				const GlobeVisibilityTester &visibility_tester,
 				PaintRegionType paint_region,
 				boost::optional<GPlatesOpenGL::GLIntersect::Plane> globe_horizon_plane = boost::none,
 				boost::optional<Colour> vector_geometries_override_colour = boost::none,
@@ -327,9 +325,6 @@ namespace GPlatesGui
 		const GPlatesViewOperations::RenderedGeometryLayer &d_rendered_geometry_layer;
 
 		const double d_inverse_zoom_factor;
-
-		//! For determining whether a particular point on the globe is visible or not
-		GlobeVisibilityTester d_visibility_tester;
 
 		//! When rendering scaled globes that are meant to be a scaled version of another
 		float d_scale;

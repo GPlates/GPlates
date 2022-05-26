@@ -57,15 +57,14 @@ GPlatesOpenGL::GLIntersect::Plane::HalfSpaceType
 GPlatesOpenGL::GLIntersect::Plane::classify_point(
 		const GPlatesMaths::Vector3D &point) const
 {
-	const GPlatesMaths::real_t d =
-			dot(point, d_normal) + d_signed_distance_to_origin_unnormalised;
+	const double d = signed_distance_unnormalised(point);
 
-	if (is_strictly_positive(d))
+	if (d > 0.0)
 	{
 		return POSITIVE;
 	}
 
-	if (is_strictly_negative(d))
+	if (d < 0.0)
 	{
 		return NEGATIVE;
 	}
@@ -78,15 +77,14 @@ GPlatesOpenGL::GLIntersect::Plane::HalfSpaceType
 GPlatesOpenGL::GLIntersect::Plane::classify_point(
 		const GPlatesMaths::UnitVector3D &point) const
 {
-	const GPlatesMaths::real_t d =
-			dot(point, d_normal) + d_signed_distance_to_origin_unnormalised;
+	const double d = signed_distance_unnormalised(point);
 
-	if (is_strictly_positive(d))
+	if (d > 0.0)
 	{
 		return POSITIVE;
 	}
 
-	if (is_strictly_negative(d))
+	if (d < 0.0)
 	{
 		return NEGATIVE;
 	}

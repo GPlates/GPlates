@@ -154,8 +154,6 @@ set(srcs
     GlobeRenderedGeometryCollectionPainter.h
     GlobeRenderedGeometryLayerPainter.cc
     GlobeRenderedGeometryLayerPainter.h
-    GlobeVisibilityTester.cc
-    GlobeVisibilityTester.h
     GMTColourNames.cc
     GMTColourNames.h
     GPlatesQApplication.cc
