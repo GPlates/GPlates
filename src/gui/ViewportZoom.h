@@ -105,15 +105,10 @@ namespace GPlatesGui
 	Q_SIGNALS:
 	
 		/**
-		 * This signal should only be emitted if the zoom is actually different to what it
-		 * was.
+		 * This signal should only be emitted if the zoom is actually different to what it was.
 		 */
 		void
 		zoom_changed();
-
-		void
-		send_zoom_to_stdout(
-			double zoom);
 
 	private:
 

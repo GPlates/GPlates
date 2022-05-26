@@ -212,10 +212,9 @@ namespace GPlatesQtWidgets
 
 		void
 		set_orientation(
-				const GPlatesMaths::Rotation &rotation
-				/*bool should_emit_external_signal = true */) override;
+				const GPlatesMaths::Rotation &orientation) override;
 
-		boost::optional<GPlatesMaths::Rotation>
+		GPlatesMaths::Rotation
 		get_orientation() const override;
 
 

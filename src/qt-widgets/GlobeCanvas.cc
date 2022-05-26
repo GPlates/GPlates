@@ -430,15 +430,22 @@ GPlatesQtWidgets::GlobeCanvas::get_camera_viewpoint() const
 
 void
 GPlatesQtWidgets::GlobeCanvas::set_orientation(
-	const GPlatesMaths::Rotation &rotation
-	/*bool should_emit_external_signal */)
+	const GPlatesMaths::Rotation &orientation)
 {
-	d_globe_camera.set_globe_orientation_relative_to_view(rotation);
+	// Set the orientation of the fixed globe relative to the moving camera (excluding tilt).
+	//
+	// The orientation essentially takes the globe and rotates it relative to the view (camera).
+	// However we don't actually rotate the globe (instead rotating the camera the opposite rotation)
+	// to achieve the same effect. Which means we rotate the camera by the inverse of the desired orientation.
+	//
+	// Note that this is the reverse of the camera orientation which is of the moving camera
+	// relative to the fixed globe.
+	d_globe_camera.set_globe_orientation_relative_to_view(orientation);
 
 	update_canvas();
 }
 
-boost::optional<GPlatesMaths::Rotation>
+GPlatesMaths::Rotation
 GPlatesQtWidgets::GlobeCanvas::get_orientation() const
 {
 	return d_globe_camera.get_globe_orientation_relative_to_view();

@@ -126,6 +126,9 @@ namespace GPlatesQtWidgets
 		const SceneView &
 		active_view() const;
 
+		boost::optional<GPlatesMaths::LatLonPoint>
+		get_camera_viewpoint();
+
 		GlobeAndMapWidget &
 		globe_and_map_widget();
 
@@ -137,9 +140,6 @@ namespace GPlatesQtWidgets
 
 		bool
 		map_is_active();
-
-		boost::optional<GPlatesMaths::LatLonPoint>
-		camera_llp();
 
 	public Q_SLOTS:
 
@@ -170,13 +170,7 @@ namespace GPlatesQtWidgets
 		update_tools_and_status_message();
 
 		void
-		send_camera_pos_to_stdout(
-			double,
-			double);
-
-		void
-		send_orientation_to_stdout(
-			GPlatesMaths::Rotation &);
+		camera_position_recalced();
 	
 	private Q_SLOTS:
 

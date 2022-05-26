@@ -94,44 +94,6 @@ namespace
 	}
 
 
-
-    /**
-     * Extracts llp from @a string_list when @a string_list is of the form
-     * VIEWPORTCENTRE <lat> <lon>
-     */
-	boost::optional<GPlatesMaths::LatLonPoint>
-	get_centre_from_argument_list(
-		const QStringList &string_list)
-	{
-		if (string_list.size() < 3)
-		{
-			return boost::none;
-		}
-		QString lat_as_string = string_list.at(1);
-		QString lon_as_string = string_list.at(2);
-
-		bool lat_ok, lon_ok;
-		double lat = lat_as_string.toDouble(&lat_ok);
-		double lon = lon_as_string.toDouble(&lon_ok);
-		if (lat_ok && lon_ok)
-		{
-			boost::optional<GPlatesMaths::LatLonPoint> llp;
-			try
-			{
-				llp = GPlatesMaths::LatLonPoint(lat,lon);
-				return boost::optional<GPlatesMaths::LatLonPoint>(llp);
-			}
-			catch(...)
-			{
-				return boost::none;
-			}
-		}
-
-		// To satisfy MSVC
-		return boost::none;
-
-	}
-
     /**
      * Extracts time from @a string_list when @a string_list is of the form
      * TIME <time>
@@ -254,7 +216,6 @@ GPlatesGui::ExternalSyncController::ExternalSyncController(
     d_should_sync_view(false),
     d_should_sync_time(false),
 	d_most_recent_time(0.),
-	d_most_recent_llp(GPlatesMaths::LatLonPoint(0.,0.)),
 	d_most_recent_zoom(100.),
 	d_most_recent_orientation(GPlatesMaths::Rotation::create(GPlatesMaths::UnitVector3D(0.,0.,1.),0.)),
 	d_gplates_is_master(gplates_is_master),
@@ -290,7 +251,6 @@ GPlatesGui::ExternalSyncController::process_external_command(
     d_should_send_output = false;
 
 	static const QString TIME_COMMAND_STRING = "TIME";
-	static const QString VIEW_CENTRE_COMMAND_STRING = "PROJECTIONCENTRE";
 	static const QString ZOOM_COMMAND_STRING = "DISTANCE";
 	static const QString GAIN_FOCUS_COMMAND_STRING = "GAINFOCUS";
 	static const QString ORIENTATION_COMMAND_STRING = "ORIENTATION";
@@ -315,12 +275,6 @@ GPlatesGui::ExternalSyncController::process_external_command(
 	if (command == TIME_COMMAND_STRING)
 	{
 		process_time_command(command_string_parts);
-	}
-	else if (command == VIEW_CENTRE_COMMAND_STRING)
-	{
-#if 0
-		process_viewport_centre_command(command_string_parts);
-#endif
 	}
 	else if (command == ZOOM_COMMAND_STRING)
 	{
@@ -359,22 +313,6 @@ GPlatesGui::ExternalSyncController::process_time_command(
 		d_most_recent_time = *time;
 
 	}
-}
-
-void
-GPlatesGui::ExternalSyncController::process_viewport_centre_command(
-	const QStringList &commands)
-{
-	boost::optional<GPlatesMaths::LatLonPoint> desired_centre = get_centre_from_argument_list(commands);
-	if (desired_centre)
-	{
-		if (d_should_sync_view)
-		{
-			set_projection_centre(*desired_centre);
-		}
-		d_most_recent_llp = *desired_centre;
-	}
-
 }
 
 void
@@ -423,7 +361,7 @@ GPlatesGui::ExternalSyncController::process_orientation_command(
 	{
 		if (d_should_sync_view)
 		{
-			d_reconstruction_view_widget_ptr->active_view().set_orientation(*rotation);
+			set_orientation(rotation.get());
 		}
 
 		d_most_recent_orientation = *rotation;
@@ -443,12 +381,11 @@ GPlatesGui::ExternalSyncController::send_external_time_command(
 }
 
 void
-GPlatesGui::ExternalSyncController::send_external_camera_command(
-	double lat, double lon)
+GPlatesGui::ExternalSyncController::send_external_zoom_command()
 {
     if (d_should_sync_view)
     {
-		QString message = QString("PROJECTIONCENTRE %1 %2").arg(lat).arg(lon);
+		QString message = QString("DISTANCE %1").arg(get_zoom());
 
 		send_external_command(message);
     }
@@ -456,30 +393,19 @@ GPlatesGui::ExternalSyncController::send_external_camera_command(
 }
 
 void
-GPlatesGui::ExternalSyncController::send_external_zoom_command(
-	double zoom)
-{
-    if (d_should_sync_view)
-    {
-		QString message = QString("DISTANCE %1").arg(zoom);
-
-		send_external_command(message);
-    }
-
-}
-
-void
-GPlatesGui::ExternalSyncController::send_external_orientation_command(
-	GPlatesMaths::Rotation &rotation)
+GPlatesGui::ExternalSyncController::send_external_orientation_command()
 {
 	if (d_should_sync_view)
 	{
-		GPlatesMaths::UnitVector3D uv = rotation.axis();
-		GPlatesMaths::PointOnSphere p(uv);
+		const GPlatesMaths::Rotation orientation = get_orientation();
 
-		GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(p);
+		const GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(
+				GPlatesMaths::PointOnSphere(orientation.axis()));
 
-		QString message = QString("ORIENTATION %1 %2 %3").arg(llp.latitude()).arg(llp.longitude()).arg(rotation.angle().dval());
+		QString message = QString("ORIENTATION %1 %2 %3")
+				.arg(llp.latitude())
+				.arg(llp.longitude())
+				.arg(orientation.angle().dval());
 
 		send_external_command(message);
 	}
@@ -539,19 +465,13 @@ GPlatesGui::ExternalSyncController::get_time()
     return d_view_state_ptr->get_application_state().get_current_reconstruction_time();
 }
 
-boost::optional<GPlatesMaths::LatLonPoint>
-GPlatesGui::ExternalSyncController::get_projection_centre()
-{
-    return d_reconstruction_view_widget_ptr->active_view().get_camera_viewpoint();
-}
-
 double
 GPlatesGui::ExternalSyncController::get_zoom()
 {
     return d_view_state_ptr->get_viewport_zoom().zoom_percent();
 }
 
-boost::optional<GPlatesMaths::Rotation>
+GPlatesMaths::Rotation
 GPlatesGui::ExternalSyncController::get_orientation()
 {
 	return d_reconstruction_view_widget_ptr->active_view().get_orientation();
@@ -562,13 +482,6 @@ GPlatesGui::ExternalSyncController::set_time(
 	const double &time)
 {
 	d_animation_controller_ptr->set_view_time(time);
-}
-
-void
-GPlatesGui::ExternalSyncController::set_projection_centre(
-	const GPlatesMaths::LatLonPoint &llp)
-{
-	d_reconstruction_view_widget_ptr->active_view().set_camera_viewpoint(llp);
 }
 
 void
@@ -621,26 +534,17 @@ GPlatesGui::ExternalSyncController::connect_message_signals()
 	    this,
 	    SLOT(send_external_time_command(double)));
 
-	// Camera commands now superseded by orientation commands. 
-#if 0
-    QObject::connect(
-	    d_reconstruction_view_widget_ptr,
-	    SIGNAL(send_camera_pos_to_stdout(double, double)),
-	    this,
-	    SLOT(send_external_camera_command(double,double)));
-#endif
-
 	QObject::connect(
 		d_reconstruction_view_widget_ptr,
-		SIGNAL(send_orientation_to_stdout(GPlatesMaths::Rotation &)),
+		SIGNAL(camera_position_recalced()),
 		this,
-		SLOT(send_external_orientation_command(GPlatesMaths::Rotation &)));
+		SLOT(send_external_orientation_command()));
 
     QObject::connect(
 	    &d_view_state_ptr->get_viewport_zoom(),
-	    SIGNAL(send_zoom_to_stdout(double)),
+	    SIGNAL(zoom_changed()),
 	    this,
-	    SLOT(send_external_zoom_command(double)));
+	    SLOT(send_external_zoom_command()));
 
 	QObject::connect(
 		d_process,
@@ -682,23 +586,12 @@ void
 GPlatesGui::ExternalSyncController::sync_external_view()
 {
 	d_should_sync_view = true;
-	boost::optional<GPlatesMaths::LatLonPoint> llp = get_projection_centre();
-	if (llp)
-	{
-		send_external_camera_command(llp->latitude(),llp->longitude());
-		d_most_recent_llp = *llp;
-	}
 
-	boost::optional<GPlatesMaths::Rotation> orientation = get_orientation();
-	if (orientation)
-	{
-		send_external_orientation_command(*orientation);
-		d_most_recent_orientation = *orientation;
-	}
+	send_external_orientation_command();
+	d_most_recent_orientation = get_orientation();
 
-	double zoom = get_zoom();
-	send_external_zoom_command(zoom);
-	d_most_recent_zoom = zoom;
+	send_external_zoom_command();
+	d_most_recent_zoom = get_zoom();
 
 	d_should_sync_view = false;
 }

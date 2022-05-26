@@ -695,7 +695,7 @@ GPlatesGui::Dialogs::pop_up_set_camera_viewpoint_dialog()
 	GPlatesQtWidgets::SetCameraViewpointDialog &dialog = set_camera_viewpoint_dialog();
 
 	boost::optional<GPlatesMaths::LatLonPoint> cur_llp_opt =
-			viewport_window().reconstruction_view_widget().camera_llp();
+			viewport_window().reconstruction_view_widget().get_camera_viewpoint();
 	GPlatesMaths::LatLonPoint cur_llp = cur_llp_opt ? *cur_llp_opt : GPlatesMaths::LatLonPoint(0.0, 0.0);
 
 	dialog.set_lat_lon(cur_llp.latitude(), cur_llp.longitude());

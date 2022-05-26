@@ -446,16 +446,19 @@ GPlatesQtWidgets::MapCanvas::get_camera_viewpoint() const
 
 void
 GPlatesQtWidgets::MapCanvas::set_orientation(
-		const GPlatesMaths::Rotation &rotation
-		/*bool should_emit_external_signal */)
+		const GPlatesMaths::Rotation &orientation)
 {
-	GPlatesMaths::LatLonPoint llp(0,0);
-	GPlatesMaths::PointOnSphere centre = GPlatesMaths::make_point_on_sphere(llp);
-
-	GPlatesMaths::Rotation rev = rotation.get_reverse();
-
-	GPlatesMaths::PointOnSphere desired_centre = rev * centre;
-	GPlatesMaths::LatLonPoint desired_llp = GPlatesMaths::make_lat_lon_point(desired_centre);
+	// The orientation essentially takes the globe and rotates it relative to the view (camera).
+	// However we don't actually rotate the globe (instead rotating the camera the opposite rotation)
+	// to achieve the same effect. Which means we rotate the camera by the inverse of the desired orientation.
+	//
+	// And for the map camera we don't actually set the orientation, instead panning the map and
+	// ignoring its rotation about the map plane normal (TODO: don't ignore rotation).
+	//
+	// The easiest way to do this is to take the map centre (0, 0) and rotate it by the inverse orientation.
+	const GPlatesMaths::PointOnSphere desired_centre =
+			orientation.get_reverse() * GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0,0));
+	const GPlatesMaths::LatLonPoint desired_llp = GPlatesMaths::make_lat_lon_point(desired_centre);
 
 	QPointF map_position;
 	try
@@ -471,6 +474,20 @@ GPlatesQtWidgets::MapCanvas::set_orientation(
 
 	// Centre the view on this point.
 	d_map_camera.move_look_at_position(map_position);
+}
+
+
+GPlatesMaths::Rotation
+GPlatesQtWidgets::MapCanvas::get_orientation() const
+{
+	const GPlatesMaths::PointOnSphere look_at_position_on_globe = d_map_camera.get_look_at_position_on_globe();
+
+	// Create a rotation from the camera's look-at position to the map centre (0, 0).
+	// See 'set_orientation()' for more details (in particular why we're using reverse rotation
+	// from current look-at position to map centre and not vice versa).
+	return GPlatesMaths::Rotation::create(
+			look_at_position_on_globe,
+			GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0,0)));
 }
 
 
@@ -907,8 +924,7 @@ GPlatesQtWidgets::MapCanvas::set_view()
 
 	// Get the view-projection transform.
 	const GPlatesOpenGL::GLMatrix view_transform = d_map_camera.get_view_transform();
-	const GPlatesOpenGL::GLMatrix projection_transform =
-			d_map_camera.get_projection_transform(canvas_aspect_ratio);
+	const GPlatesOpenGL::GLMatrix projection_transform = d_map_camera.get_projection_transform(canvas_aspect_ratio);
 
 	d_view_projection = GPlatesOpenGL::GLViewProjection(
 			GPlatesOpenGL::GLViewport(0, 0, canvas_width, canvas_height),

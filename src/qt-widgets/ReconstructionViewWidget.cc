@@ -586,7 +586,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::activate_time_spinbox()
 
 
 boost::optional<GPlatesMaths::LatLonPoint>
-GPlatesQtWidgets::ReconstructionViewWidget::camera_llp()
+GPlatesQtWidgets::ReconstructionViewWidget::get_camera_viewpoint()
 {
 	return d_globe_and_map_widget_ptr->get_camera_viewpoint();
 }
@@ -623,26 +623,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::recalc_camera_position()
 
 	d_label_camera_coords->setText(position_as_string);
 
-	if (map_is_active())
-	{
-		if (llp)
-		{
-			Q_EMIT send_camera_pos_to_stdout(llp->latitude(),llp->longitude());
-		}
-	}
-	else if (globe_is_active())
-	{
-		boost::optional<GPlatesMaths::Rotation> rotation = active_view().get_orientation();
-		if (rotation)
-		{
-			Q_EMIT send_orientation_to_stdout(*rotation);
-#if 0
-			// For now, continue to emit llp as well. 
-			Q_EMIT send_camera_pos_to_stdout(llp->latitude(),llp->longitude());
-#endif
-		}
-	}
-
+	Q_EMIT camera_position_recalced();
 }
 
 

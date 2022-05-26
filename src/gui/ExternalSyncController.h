@@ -135,7 +135,7 @@ namespace GPlatesGui
 	    const QString &process);
 
 	/**
-	 * Continuously send and receive/process projection-centre and zoom signals from std in/out                                                              
+	 * Continuously send and receive/process orientation and zoom signals from std in/out                                                              
 	 */
 	void
 	auto_sync_view(
@@ -203,16 +203,10 @@ namespace GPlatesGui
 		double time);
 
 	void
-	send_external_camera_command(
-		double lat, double lon);
+	send_external_orientation_command();
 
 	void
-	send_external_orientation_command(
-		GPlatesMaths::Rotation &rotation);
-
-	void
-	send_external_zoom_command(
-		double zoom);
+	send_external_zoom_command();
 
 	void
 	handle_process_finished(
@@ -245,10 +239,6 @@ namespace GPlatesGui
 		const QStringList &commands);
 
 	void
-	process_viewport_centre_command(
-		const QStringList &commands);
-
-	void
 	process_orientation_command(
 		const QStringList &commands);
 
@@ -268,22 +258,15 @@ namespace GPlatesGui
 	double
 	get_time();
 
-	boost::optional<GPlatesMaths::LatLonPoint>
-	get_projection_centre();
-
 	double
 	get_zoom();
 
-	boost::optional<GPlatesMaths::Rotation>
+	GPlatesMaths::Rotation
 	get_orientation();
 
 	void
 	set_time(
 		const double &time);
-
-	void
-	set_projection_centre(
-		const GPlatesMaths::LatLonPoint &llp);
 
 	void
 	set_zoom(
@@ -319,7 +302,6 @@ namespace GPlatesGui
 	bool d_should_sync_time;
 
 	double d_most_recent_time;
-	GPlatesMaths::LatLonPoint d_most_recent_llp;
 	double d_most_recent_zoom;
 	GPlatesMaths::Rotation d_most_recent_orientation;
 
