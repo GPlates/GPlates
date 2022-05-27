@@ -191,13 +191,31 @@ GPlatesViewOperations::MapViewOperation::update_drag_pan(
 	// The new look-at position is the look-at position at the start of drag plus the pan relative to that start.
 	const QPointF look_at_position = d_mouse_drag_info->start_look_at_position + pan_relative_to_start_in_view_frame;
 
-	// Keep track of the updated view pan relative to the start.
-	d_mouse_drag_info->pan_relative_to_start_in_view_frame = pan_relative_to_start_in_view_frame;
-
-	d_map_camera.move_look_at_position_on_map(
+	// Attempt to move the camera's look-at position on map.
+	if (d_map_camera.move_look_at_position_on_map(
 			look_at_position,
 			// Always emit on last update so client can turn off any rendering optimisations now that drag has finished...
-			!d_in_last_update_drag/*only_emit_if_changed*/);
+			!d_in_last_update_drag/*only_emit_if_changed*/))
+	{
+		// The look-at position was successfully moved (because new look-at position is inside map projection boundary).
+		// So keep track of the updated view pan relative to the start.
+		d_mouse_drag_info->pan_relative_to_start_in_view_frame = pan_relative_to_start_in_view_frame;
+	}
+	else // failed to move camera's look-at position on map...
+	{
+		// Reset the start of the drag to the current mouse position.
+		//
+		// This prevents the mouse appearing to no longer be responsive in panning the map until
+		// the user moves the mouse position back to where it was when the map stopped panning.
+		// By continually reseting to the start of the drag when the proposed look-at position is
+		// outside the map projection boundary the user can just reverse the mouse movement direction
+		// and panning will immediately continue again.
+		//
+		// Note: We're only resetting the variables we actually use for panning.
+		d_mouse_drag_info->start_map_position = map_position;
+		d_mouse_drag_info->pan_relative_to_start_in_view_frame = QPointF(0, 0);
+		d_mouse_drag_info->start_look_at_position = d_map_camera.get_look_at_position_on_map();
+	}
 }
 
 

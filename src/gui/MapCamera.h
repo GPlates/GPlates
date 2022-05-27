@@ -73,10 +73,12 @@ namespace GPlatesGui
 		 * Note that this does not change the current tilt angle.
 		 *
 		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
+		 *
+		 * Returns false (and does not move) if specified position is outside map projection (of the globe).
 		 */
-		void
+		bool
 		move_look_at_position_on_map(
-				const QPointF &look_at_position_on_globe,
+				const QPointF &look_at_position_on_map,
 				bool only_emit_if_changed = true);
 
 
@@ -190,8 +192,10 @@ namespace GPlatesGui
 
 		/**
 		 * Pan the current look-at position "up" by the specified angle (in radians).
+		 *
+		 * Returns false (and does not move) if specified position is outside map projection (of the globe).
 		 */
-		void
+		bool
 		pan_up(
 				const GPlatesMaths::real_t &angle,
 				bool only_emit_if_changed = true);
@@ -199,29 +203,31 @@ namespace GPlatesGui
 		/**
 		 * Same as @a pan_up but pans "down".
 		 */
-		void
+		bool
 		pan_down(
 				const GPlatesMaths::real_t &angle,
 				bool only_emit_if_changed = true)
 		{
-			pan_up(-angle, only_emit_if_changed);
+			return pan_up(-angle, only_emit_if_changed);
 		}
 
 		/**
 		 * Pan the current look-at position "left" by the specified angle (in radians).
+		 *
+		 * Returns false (and does not move) if specified position is outside map projection (of the globe).
 		 */
-		void
+		bool
 		pan_left(
 				const GPlatesMaths::real_t &angle,
 				bool only_emit_if_changed = true)
 		{
-			pan_right(-angle, only_emit_if_changed);
+			return pan_right(-angle, only_emit_if_changed);
 		}
 
 		/**
 		 * Same as @a pan_left but pans "right".
 		 */
-		void
+		bool
 		pan_right(
 				const GPlatesMaths::real_t &angle,
 				bool only_emit_if_changed = true);
@@ -377,9 +383,16 @@ namespace GPlatesGui
 		mutable boost::optional<double> d_cached_map_bounding_radius;
 
 		/**
-		 * The look-at position on the map plane.
+		 * The look-at position on the map plane (contained inside map projection of the globe).
+		 *
+		 * This is updated when the map projection changes.
 		 */
-		QPointF d_look_at_position_on_map;
+		mutable boost::optional<QPointF> d_cached_look_at_position_on_map;
+
+		/**
+		 * The look-at position on the globe.
+		 */
+		GPlatesMaths::PointOnSphere d_look_at_position_on_globe;
 
 		/**
 		 * The angle (in radians) that the view direction rotates around the map plane normal.
@@ -398,24 +411,14 @@ namespace GPlatesGui
 		 * The view frame (look-at position and view/up directions) is calculated/cached from the
 		 * view orientation and view tilt.
 		 */
-		mutable boost::optional<ViewFrame> d_view_frame;
+		mutable boost::optional<ViewFrame> d_cached_view_frame;
 
 
 		/**
 		 * Invalidate any cached parameters that depend on the map projection (if it changed).
 		 */
 		void
-		invalidate_if_changed_map_projection_settings() const
-		{
-			if (d_cached_map_projection_settings != d_map_projection.get_projection_settings())
-			{
-				// Invalidate any dependent cached parameters.
-				d_cached_map_bounding_radius = boost::none;
-
-				// Signal that we've invalidated.
-				d_cached_map_projection_settings = d_map_projection.get_projection_settings();
-			}
-		}
+		invalidate_if_changed_map_projection_settings() const;
 
 		QPointF
 		convert_pan_from_view_to_map_frame(
@@ -433,7 +436,7 @@ namespace GPlatesGui
 		void
 		invalidate_view_frame() const
 		{
-			d_view_frame = boost::none;
+			d_cached_view_frame = boost::none;
 		}
 
 
@@ -454,9 +457,9 @@ namespace GPlatesGui
 		static constexpr double MAP_LATITUDE_EXTENT_IN_MAP_SPACE = 180.0;
 
 		/**
-		 * The initial position on the map that the camera looks at.
+		 * The initial position on the globe that the camera looks at.
 		 */
-		static const QPointF INITIAL_LOOK_AT_POSITION;
+		static const GPlatesMaths::PointOnSphere INITIAL_LOOK_AT_POSITION_ON_GLOBE;
 
 		/**
 		 * Initial view direction.

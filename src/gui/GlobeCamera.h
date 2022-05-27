@@ -464,7 +464,7 @@ namespace GPlatesGui
 		 * The view frame (look-at position and view/up directions) is calculated/cached from the
 		 * view orientation and view tilt.
 		 */
-		mutable boost::optional<ViewFrame> d_view_frame;
+		mutable boost::optional<ViewFrame> d_cached_view_frame;
 
 
 		/**
@@ -479,7 +479,7 @@ namespace GPlatesGui
 		void
 		invalidate_view_frame() const
 		{
-			d_view_frame = boost::none;
+			d_cached_view_frame = boost::none;
 		}
 
 

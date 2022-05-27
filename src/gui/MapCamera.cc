@@ -51,11 +51,12 @@ const double GPlatesGui::MapCamera::FRAMING_RATIO_OF_MAP_IN_VIEWPORT = 1.07;
 //   Y increases from South to North
 //   X increases from West to East
 //
-// We set up our initial camera look-at position to the origin.
+// We set up our initial camera look-at position to latitude and longitude (0,0).
 // We set up our initial camera view direction to look down the negative z-axis.
 // We set up our initial camera 'up' direction along the y-axis.
 //
-const QPointF GPlatesGui::MapCamera::INITIAL_LOOK_AT_POSITION(0, 0);
+const GPlatesMaths::PointOnSphere GPlatesGui::MapCamera::INITIAL_LOOK_AT_POSITION_ON_GLOBE =
+		make_point_on_sphere(GPlatesMaths::LatLonPoint(0, 0));
 const GPlatesMaths::UnitVector3D GPlatesGui::MapCamera::INITIAL_VIEW_DIRECTION(0, 0, -1);
 const GPlatesMaths::UnitVector3D GPlatesGui::MapCamera::INITIAL_UP_DIRECTION(0, 1, 0);
 
@@ -65,7 +66,7 @@ GPlatesGui::MapCamera::MapCamera(
 		ViewportZoom &viewport_zoom) :
 	Camera(viewport_zoom),
 	d_map_projection(map_projection),
-	d_look_at_position_on_map(INITIAL_LOOK_AT_POSITION),
+	d_look_at_position_on_globe(INITIAL_LOOK_AT_POSITION_ON_GLOBE),
 	d_rotation_angle(0),
 	d_tilt_angle(0)
 {
@@ -75,31 +76,58 @@ GPlatesGui::MapCamera::MapCamera(
 const QPointF &
 GPlatesGui::MapCamera::get_look_at_position_on_map() const
 {
-	return d_look_at_position_on_map;
+	// Invalidate the look-at position on map if the map projection has changed since it was last updated.
+	invalidate_if_changed_map_projection_settings();
+
+	// If needed, update the look-at position on *map* (from the look-at position on *globe*).
+	if (!d_cached_look_at_position_on_map)
+	{
+		d_cached_look_at_position_on_map = d_map_projection.forward_transform(
+				make_lat_lon_point(get_look_at_position_on_globe()));
+	}
+
+	return d_cached_look_at_position_on_map.get();
 }
 
 
-void
+bool
 GPlatesGui::MapCamera::move_look_at_position_on_map(
 		const QPointF &look_at_position_on_map,
 		bool only_emit_if_changed)
 {
 	if (only_emit_if_changed &&
-		look_at_position_on_map == d_look_at_position_on_map)
+		look_at_position_on_map == get_look_at_position_on_map())
 	{
-		return;
+		// Although position on map didn't change it is still within the map projection (of the globe).
+		return true;
 	}
 
-	d_look_at_position_on_map = look_at_position_on_map;
+	// See if look-at position on map is actually inside the map projection (of the globe)
+	// by attempting to inverse map project from map back onto globe.
+	boost::optional<GPlatesMaths::LatLonPoint> lat_lon_look_at_position_on_globe =
+			d_map_projection.inverse_transform(look_at_position_on_map);
+	if (!lat_lon_look_at_position_on_globe)
+	{
+		// Look-at position is outside the map projection (of the globe), so reject the move.
+		return false;
+	}
+
+	// Update the position on globe (with inverse map projected position).
+	d_look_at_position_on_globe = make_point_on_sphere(lat_lon_look_at_position_on_globe.get());
+
+	// Update the position on map.
+	d_cached_look_at_position_on_map = look_at_position_on_map;
 
 	Q_EMIT camera_changed();
+
+	return true;
 }
 
 
 GPlatesMaths::PointOnSphere
 GPlatesGui::MapCamera::get_look_at_position_on_globe() const
 {
-	return make_point_on_sphere(d_map_projection.inverse_transform(get_look_at_position_on_map()).get());
+	return d_look_at_position_on_globe;
 }
 
 
@@ -108,10 +136,19 @@ GPlatesGui::MapCamera::move_look_at_position_on_globe(
 		const GPlatesMaths::PointOnSphere &look_at_position_on_globe,
 		bool only_emit_if_changed)
 {
-	const QPointF look_at_position_on_map = d_map_projection.forward_transform(
-			make_lat_lon_point(look_at_position_on_globe));
+	if (only_emit_if_changed &&
+		look_at_position_on_globe == get_look_at_position_on_globe())
+	{
+		return;
+	}
 
-	move_look_at_position_on_map(look_at_position_on_map, only_emit_if_changed);
+	// Invalidate the look-at position on *map*.
+	// The next time it's queried it will be calculated from the look-at position on *globe*.
+	d_cached_look_at_position_on_map = boost::none;
+
+	d_look_at_position_on_globe = look_at_position_on_globe;
+
+	Q_EMIT camera_changed();
 }
 
 
@@ -126,24 +163,24 @@ GPlatesGui::MapCamera::get_look_at_position() const
 GPlatesMaths::UnitVector3D
 GPlatesGui::MapCamera::get_view_direction() const
 {
-	if (!d_view_frame)
+	if (!d_cached_view_frame)
 	{
 		cache_view_frame();
 	}
 
-	return d_view_frame->view_direction;
+	return d_cached_view_frame->view_direction;
 }
 
 
 GPlatesMaths::UnitVector3D
 GPlatesGui::MapCamera::get_up_direction() const
 {
-	if (!d_view_frame)
+	if (!d_cached_view_frame)
 	{
 		cache_view_frame();
 	}
 
-	return d_view_frame->up_direction;
+	return d_cached_view_frame->up_direction;
 }
 
 
@@ -205,7 +242,7 @@ GPlatesGui::MapCamera::reorient_up_direction(
 }
 
 
-void
+bool
 GPlatesGui::MapCamera::pan_up(
 		const GPlatesMaths::real_t &angle,
 		bool only_emit_if_changed)
@@ -217,13 +254,13 @@ GPlatesGui::MapCamera::pan_up(
 	// Convert the pan in the view frame to a pan in the map frame.
 	const QPointF delta_pan_in_map_frame = convert_pan_from_view_to_map_frame(delta_pan_in_view_frame);
 
-	move_look_at_position_on_map(
-			d_look_at_position_on_map + delta_pan_in_map_frame,
+	return move_look_at_position_on_map(
+			get_look_at_position_on_map() + delta_pan_in_map_frame,
 			only_emit_if_changed);
 }
 
 
-void
+bool
 GPlatesGui::MapCamera::pan_right(
 		const GPlatesMaths::real_t &angle,
 		bool only_emit_if_changed)
@@ -235,8 +272,8 @@ GPlatesGui::MapCamera::pan_right(
 	// Convert the pan in the view frame to a pan in the map frame.
 	const QPointF delta_pan_in_map_frame = convert_pan_from_view_to_map_frame(delta_pan_in_view_frame);
 
-	move_look_at_position_on_map(
-			d_look_at_position_on_map + delta_pan_in_map_frame,
+	return move_look_at_position_on_map(
+			get_look_at_position_on_map() + delta_pan_in_map_frame,
 			only_emit_if_changed);
 }
 
@@ -371,6 +408,21 @@ GPlatesGui::MapCamera::get_bounding_radius() const
 }
 
 
+void
+GPlatesGui::MapCamera::invalidate_if_changed_map_projection_settings() const
+{
+	if (d_cached_map_projection_settings != d_map_projection.get_projection_settings())
+	{
+		// Invalidate any dependent cached parameters.
+		d_cached_map_bounding_radius = boost::none;
+		d_cached_look_at_position_on_map = boost::none;
+
+		// Signal that we've invalidated.
+		d_cached_map_projection_settings = d_map_projection.get_projection_settings();
+	}
+}
+
+
 QPointF
 GPlatesGui::MapCamera::convert_pan_from_view_to_map_frame(
 		const QPointF &pan_in_view_frame) const
@@ -406,5 +458,5 @@ GPlatesGui::MapCamera::cache_view_frame() const
 	const GPlatesMaths::UnitVector3D tilted_view_direction = tilt_rotation * un_tilted_view_direction;
 	const GPlatesMaths::UnitVector3D tilted_up_direction = tilt_rotation * un_tilted_up_direction;
 
-	d_view_frame = ViewFrame(tilted_view_direction, tilted_up_direction);
+	d_cached_view_frame = ViewFrame(tilted_view_direction, tilted_up_direction);
 }

@@ -68,12 +68,12 @@ GPlatesGui::GlobeCamera::GlobeCamera(
 GPlatesMaths::PointOnSphere
 GPlatesGui::GlobeCamera::get_look_at_position_on_globe() const
 {
-	if (!d_view_frame)
+	if (!d_cached_view_frame)
 	{
 		cache_view_frame();
 	}
 
-	return d_view_frame->look_at_position;
+	return d_cached_view_frame->look_at_position;
 }
 
 
@@ -102,24 +102,24 @@ GPlatesGui::GlobeCamera::get_look_at_position() const
 GPlatesMaths::UnitVector3D
 GPlatesGui::GlobeCamera::get_view_direction() const
 {
-	if (!d_view_frame)
+	if (!d_cached_view_frame)
 	{
 		cache_view_frame();
 	}
 
-	return d_view_frame->view_direction;
+	return d_cached_view_frame->view_direction;
 }
 
 
 GPlatesMaths::UnitVector3D
 GPlatesGui::GlobeCamera::get_up_direction() const
 {
-	if (!d_view_frame)
+	if (!d_cached_view_frame)
 	{
 		cache_view_frame();
 	}
 
-	return d_view_frame->up_direction;
+	return d_cached_view_frame->up_direction;
 }
 
 
@@ -610,5 +610,5 @@ GPlatesGui::GlobeCamera::cache_view_frame() const
 	const GPlatesMaths::UnitVector3D tilted_view_direction = tilt_rotation * un_tilted_view_direction;
 	const GPlatesMaths::UnitVector3D tilted_up_direction = tilt_rotation * un_tilted_up_direction;
 
-	d_view_frame = ViewFrame(look_at_position, tilted_view_direction, tilted_up_direction);
+	d_cached_view_frame = ViewFrame(look_at_position, tilted_view_direction, tilted_up_direction);
 }

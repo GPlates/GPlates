@@ -166,9 +166,10 @@ void
 GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 		const GPlatesGui::ViewportProjection &view_projection)
 {
-	// If a globe projection.
-	if (boost::optional<GPlatesGui::GlobeProjection::Type> globe_projection_type =
-		view_projection.get_globe_projection_type())
+	const boost::optional<GPlatesGui::GlobeProjection::Type> globe_projection_type =
+			view_projection.get_globe_projection_type();
+
+	if (globe_projection_type)  // globe projection...
 	{
 		// Switch to globe.
 		d_layout->setCurrentWidget(d_globe_canvas_ptr.get());
@@ -199,11 +200,12 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 				view_projection.get_map_central_meridian());
 	}
 
-	d_active_view_ptr->update_canvas();
 	if (d_active_camera_viewpoint)
 	{
 		d_active_view_ptr->get_camera().move_look_at_position_on_globe(d_active_camera_viewpoint.get());
 	}
+
+	d_active_view_ptr->update_canvas();
 
 	Q_EMIT update_tools_and_status_message();
 }
