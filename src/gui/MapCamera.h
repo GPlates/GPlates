@@ -62,6 +62,25 @@ namespace GPlatesGui
 
 
 		/**
+		 * The position on the map (z=0 plane) that the view is looking at.
+		 */
+		const QPointF &
+		get_look_at_position_on_map() const;
+
+		/**
+		 * Move the current look-at position to the specified look-at position along the line segment between them.
+		 *
+		 * Note that this does not change the current tilt angle.
+		 *
+		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
+		 */
+		void
+		move_look_at_position_on_map(
+				const QPointF &look_at_position_on_globe,
+				bool only_emit_if_changed = true);
+
+
+		/**
 		 * The position on the globe (unit sphere) that the view is looking at.
 		 *
 		 * This is the equivalent to the map-projection inverse of @a get_look_at_position_on_map
@@ -70,22 +89,27 @@ namespace GPlatesGui
 		GPlatesMaths::PointOnSphere
 		get_look_at_position_on_globe() const override;
 
-
 		/**
-		 * The position on the map (z=0 plane) that the view is looking at.
+		 * Move the current look-at position to the specified look-at position on the globe.
+		 *
+		 * This pans the view along the line segment (on the map plane) between the
+		 * current and new look-at positions. The view and up directions are not changed.
+		 *
+		 * Note that this does not change the current tilt angle.
+		 *
+		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
 		 */
-		const QPointF &
-		get_look_at_position_on_map() const;
+		void
+		move_look_at_position_on_globe(
+				const GPlatesMaths::PointOnSphere &look_at_position_on_globe,
+				bool only_emit_if_changed = true) override;
+
 
 		/**
-		 * Same as @a get_look_at_position_on_map but returned a position in 3D space.
+		 * Same as @a get_look_at_position_on_map but returned as a position in 3D space.
 		 */
 		GPlatesMaths::Vector3D
-		get_look_at_position() const override
-		{
-			const QPointF &position_on_map = get_look_at_position_on_map();
-			return GPlatesMaths::Vector3D(position_on_map.x(), position_on_map.y(), 0);
-		}
+		get_look_at_position() const override;
 
 		/**
 		 * The view direction.
@@ -100,24 +124,6 @@ namespace GPlatesGui
 		 */
 		GPlatesMaths::UnitVector3D
 		get_up_direction() const override;
-
-
-		/**
-		 * The translation (in map plane) that the view pans.
-		 */
-		const QPointF &
-		get_pan() const
-		{
-			return d_pan;
-		}
-
-		/**
-		 * Set the camera translation that the view pans in the map plane.
-		 */
-		void
-		set_pan(
-				const QPointF &pan,
-				bool only_emit_if_changed = true);
 
 
 		/**
@@ -169,33 +175,6 @@ namespace GPlatesGui
 		set_tilt_angle(
 				GPlatesMaths::real_t tilt_angle,
 				bool only_emit_if_changed = true);
-
-		/**
-		 * Move the current look-at position to the specified look-at position along the line segment between them.
-		 *
-		 * Note that this does not change the current tilt angle.
-		 *
-		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
-		 */
-		void
-		move_look_at_position(
-				const QPointF &new_look_at_position,
-				bool only_emit_if_changed = true);
-
-		/**
-		 * Move the current look-at position to the specified look-at position on the globe.
-		 *
-		 * This pans the view along the line segment (on the map plane) between the
-		 * current and new look-at positions. The view and up directions are not changed.
-		 *
-		 * Note that this does not change the current tilt angle.
-		 *
-		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
-		 */
-		void
-		move_look_at_position(
-				const GPlatesMaths::PointOnSphere &look_at_position_on_globe,
-				bool only_emit_if_changed = true) override;
 
 		/**
 		 * Rotate the view so that the "up" direction points towards the North pole when @a reorientation_angle is zero.
@@ -373,15 +352,12 @@ namespace GPlatesGui
 		struct ViewFrame
 		{
 			ViewFrame(
-					const QPointF &look_at_position_,
 					const GPlatesMaths::UnitVector3D &view_direction_,
 					const GPlatesMaths::UnitVector3D &up_direction_) :
-				look_at_position(look_at_position_),
 				view_direction(view_direction_),
 				up_direction(up_direction_)
 			{  }
 
-			QPointF look_at_position;
 			GPlatesMaths::UnitVector3D view_direction;
 			GPlatesMaths::UnitVector3D up_direction;
 		};
@@ -401,9 +377,9 @@ namespace GPlatesGui
 		mutable boost::optional<double> d_cached_map_bounding_radius;
 
 		/**
-		 * The translation (in map plane) that the view pans.
+		 * The look-at position on the map plane.
 		 */
-		QPointF d_pan;
+		QPointF d_look_at_position_on_map;
 
 		/**
 		 * The angle (in radians) that the view direction rotates around the map plane normal.

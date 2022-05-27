@@ -70,7 +70,6 @@ GPlatesViewOperations::MapViewOperation::start_drag(
 			d_map_camera.get_look_at_position_on_map(),
 			d_map_camera.get_view_direction(),
 			d_map_camera.get_up_direction(),
-			d_map_camera.get_pan(),
 			d_map_camera.get_rotation_angle(),
 			d_map_camera.get_tilt_angle());
 
@@ -164,8 +163,8 @@ GPlatesViewOperations::MapViewOperation::update_drag_pan(
 			d_mouse_drag_info,
 			GPLATES_ASSERTION_SOURCE);
 
-	// If the mouse position at start of drag, or current mouse position, is not on the map plane
-	// then we cannot pan the view.
+	// If the mouse position at start of drag, or current mouse position, is not anywhere on the
+	// map *plane* then we cannot pan the view.
 	if (!d_mouse_drag_info->start_map_position ||
 		!map_position)
 	{
@@ -189,14 +188,14 @@ GPlatesViewOperations::MapViewOperation::update_drag_pan(
 	// The view moves in the opposite direction.
 	const QPointF pan_relative_to_start_in_view_frame = -pan_relative_to_start_in_map_frame;
 
-	// The total pan is the pan at the start of drag plus the pan relative to that start.
-	const QPointF pan = d_mouse_drag_info->start_pan + pan_relative_to_start_in_view_frame;
+	// The new look-at position is the look-at position at the start of drag plus the pan relative to that start.
+	const QPointF look_at_position = d_mouse_drag_info->start_look_at_position + pan_relative_to_start_in_view_frame;
 
 	// Keep track of the updated view pan relative to the start.
 	d_mouse_drag_info->pan_relative_to_start_in_view_frame = pan_relative_to_start_in_view_frame;
 
-	d_map_camera.set_pan(
-			pan,
+	d_map_camera.move_look_at_position_on_map(
+			look_at_position,
 			// Always emit on last update so client can turn off any rendering optimisations now that drag has finished...
 			!d_in_last_update_drag/*only_emit_if_changed*/);
 }

@@ -127,7 +127,6 @@ namespace GPlatesViewOperations
 					const QPointF &start_look_at_position_,
 					const GPlatesMaths::UnitVector3D &start_view_direction_,
 					const GPlatesMaths::UnitVector3D &start_up_direction_,
-					const QPointF &start_pan_,
 					const GPlatesMaths::real_t &start_rotation_angle_,
 					const GPlatesMaths::real_t &start_tilt_angle_) :
 				mode(mode_),
@@ -137,7 +136,6 @@ namespace GPlatesViewOperations
 				start_look_at_position(start_look_at_position_),
 				start_view_direction(start_view_direction_),
 				start_up_direction(start_up_direction_),
-				start_pan(start_pan_),
 				pan_relative_to_start_in_view_frame(0, 0),
 				start_rotation_angle(start_rotation_angle_),
 				start_tilt_angle(start_tilt_angle_)
@@ -154,7 +152,6 @@ namespace GPlatesViewOperations
 			GPlatesMaths::UnitVector3D start_up_direction;
 
 			// For DRAG_PAN...
-			QPointF start_pan;
 			QPointF pan_relative_to_start_in_view_frame;
 
 			// For DRAG_ROTATE_AND_TILT...
