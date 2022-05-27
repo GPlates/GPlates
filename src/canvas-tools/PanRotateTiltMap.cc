@@ -69,7 +69,7 @@ GPlatesCanvasTools::PanRotateTiltMap::handle_left_drag(
 		const QPointF &current_screen_position,
 		const boost::optional<QPointF> &current_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	if (map_canvas().isVisible())
 	{
@@ -92,7 +92,7 @@ GPlatesCanvasTools::PanRotateTiltMap::handle_left_release_after_drag(
 		const QPointF &current_screen_position,
 		const boost::optional<QPointF> &current_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	if (map_canvas().isVisible())
 	{
@@ -115,7 +115,7 @@ GPlatesCanvasTools::PanRotateTiltMap::handle_shift_left_drag(
 		const QPointF &current_screen_position,
 		const boost::optional<QPointF> &current_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	if (map_canvas().isVisible())
 	{
@@ -138,7 +138,7 @@ GPlatesCanvasTools::PanRotateTiltMap::handle_shift_left_release_after_drag(
 		const QPointF &current_screen_position,
 		const boost::optional<QPointF> &current_map_position,
 		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	if (map_canvas().isVisible())
 	{

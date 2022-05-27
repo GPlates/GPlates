@@ -70,7 +70,7 @@ GPlatesCanvasTools::ManipulatePole::handle_left_drag(
 		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 		bool is_on_earth,
 		double current_proximity_inclussion_threshold,
-		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if ( ! d_is_in_drag)
 	{
@@ -89,7 +89,7 @@ GPlatesCanvasTools::ManipulatePole::handle_left_release_after_drag(
 		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 		bool is_on_earth,
 		double current_proximity_inclussion_threshold,
-		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if ( ! d_is_in_drag)
 	{
@@ -110,23 +110,18 @@ GPlatesCanvasTools::ManipulatePole::handle_shift_left_drag(
 		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 		bool is_on_earth,
 		double current_proximity_inclussion_threshold,
-		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	if ( ! centre_of_viewport)
-	{
-		return;
-	}
-
 	if ( ! d_is_in_drag)
 	{
 		d_pole_widget_ptr->start_new_rotation_drag(
 				initial_point_on_sphere,
-				*centre_of_viewport);
+				centre_of_viewport);
 		d_is_in_drag = true;
 	}
 	d_pole_widget_ptr->update_rotation_drag_position(
 			current_point_on_sphere,
-			*centre_of_viewport);
+			centre_of_viewport);
 }
 
 
@@ -138,23 +133,18 @@ GPlatesCanvasTools::ManipulatePole::handle_shift_left_release_after_drag(
 		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 		bool is_on_earth,
 		double current_proximity_inclussion_threshold,
-		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
-	if ( ! centre_of_viewport)
-	{
-		return;
-	}
-
 	if ( ! d_is_in_drag)
 	{
 		d_pole_widget_ptr->start_new_rotation_drag(
 				initial_point_on_sphere,
-				*centre_of_viewport);
+				centre_of_viewport);
 		d_is_in_drag = true;
 	}
 	d_pole_widget_ptr->update_rotation_drag_position(
 			current_point_on_sphere,
-			*centre_of_viewport);
+			centre_of_viewport);
 	d_pole_widget_ptr->end_drag();
 	d_is_in_drag = false;
 }

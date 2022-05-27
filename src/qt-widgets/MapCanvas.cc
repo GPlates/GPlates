@@ -594,7 +594,7 @@ GPlatesQtWidgets::MapCanvas::mouseMoveEvent(
 					d_mouse_screen_position,
 					d_mouse_map_position,
 					d_mouse_position_on_globe,
-					calculate_position_on_globe(centre_of_viewport()),
+					centre_of_viewport(),
 					d_mouse_press_info->d_button,
 					d_mouse_press_info->d_modifiers);
 		}
@@ -615,7 +615,7 @@ GPlatesQtWidgets::MapCanvas::mouseMoveEvent(
 				d_mouse_screen_position,
 				d_mouse_map_position,
 				d_mouse_position_on_globe,
-				calculate_position_on_globe(centre_of_viewport()));
+				centre_of_viewport());
 	}
 }
 
@@ -670,7 +670,7 @@ GPlatesQtWidgets::MapCanvas::mouseReleaseEvent(
 				d_mouse_screen_position,
 				d_mouse_map_position,
 				d_mouse_position_on_globe,
-				calculate_position_on_globe(centre_of_viewport()),
+				centre_of_viewport(),
 				d_mouse_press_info->d_button,
 				d_mouse_press_info->d_modifiers);
 
@@ -1058,11 +1058,14 @@ GPlatesQtWidgets::MapCanvas::render_scene_tile_into_image(
 }
 
 
-QPointF
+GPlatesMaths::PointOnSphere
 GPlatesQtWidgets::MapCanvas::centre_of_viewport() const
 {
-	// Camera look-at position is in map projection space.
-	return d_map_camera.get_look_at_position_on_map();
+	// The point on the globe which corresponds to the centre of the viewport.
+	//
+	// Note that the map camera look-at position (on map plane) is restricted to be inside
+	// the map projection boundary, so this always returned a valid position on the globe.
+	return d_map_camera.get_look_at_position_on_globe();
 }
 
 
@@ -1106,6 +1109,9 @@ GPlatesQtWidgets::MapCanvas::calculate_position_on_map(
 	const double screen_x = screen_position.x();
 
 	// See if screen coordinates intersect the map plane.
+	//
+	// In perspective view it's possible for a screen pixel ray emanating from the camera eye to
+	// miss the map plane entirely (even though the map plane is infinite).
 	return d_map_camera.get_position_on_map_at_window_coord(screen_x, screen_y, width(), height());
 }
 
@@ -1118,6 +1124,7 @@ GPlatesQtWidgets::MapCanvas::calculate_position_on_globe(
 			d_view_state.get_map_projection().inverse_transform(map_position);
 	if (!lat_lon_position_on_globe)
 	{
+		// The map position in on the map plane (z=0) but outside the map projection of the globe.
 		return boost::none;
 	}
 

@@ -117,7 +117,7 @@ GPlatesCanvasTools::MoveVertex::handle_left_drag(
 		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 		bool is_on_earth,
 		double current_proximity_inclusion_threshold,
-		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	handle_left_drag(
 			d_is_in_drag,
@@ -156,7 +156,7 @@ GPlatesCanvasTools::MoveVertex::handle_left_release_after_drag(
 		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 		bool is_on_earth,
 		double current_proximity_inclusion_threshold,
-		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	// In case clicked and released at same time.
 	handle_left_drag(

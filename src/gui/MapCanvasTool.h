@@ -140,7 +140,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 		{  }
 
 		/**
@@ -167,7 +167,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 		{  }
 
 
@@ -208,7 +208,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 		{  }
 
 		/**
@@ -235,7 +235,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 		{  }
 
 
@@ -276,7 +276,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 		{  }
 
 		/**
@@ -303,7 +303,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 		{  }
 
 
@@ -346,7 +346,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe);
 
 		/**
 		 * Handle the release of the left-mouse button after a mouse drag while a Control key is held.
@@ -374,7 +374,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe);
 
 
 		/**
@@ -416,7 +416,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe);
 
 		/**
 		 * Handle the release of the left-mouse button after a mouse drag while a Shift key and a Control key are held.
@@ -444,7 +444,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe);
 
 
 		/**
@@ -484,7 +484,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 		{  }
 
 		/**
@@ -511,7 +511,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 		{  }
 
 
@@ -534,7 +534,7 @@ namespace GPlatesGui
 				const QPointF &screen_position,
 				const boost::optional<QPointF>&map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe)
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 		{  }
 
 	protected:
@@ -560,7 +560,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe);
 
 		/**
 		 * Pan the map by dragging the mouse pointer.
@@ -577,7 +577,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe);
 
 		/**
 		 * Rotate and tilt the map around the centre of the viewport (in map 2D plane) by dragging the mouse pointer.
@@ -594,7 +594,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe);
 
 		/**
 		 * Rotate and tilt the map around the centre of the viewport (in map 2D plane) by dragging the mouse pointer.
@@ -611,7 +611,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe);
 
 	private:
 

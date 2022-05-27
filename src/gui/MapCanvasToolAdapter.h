@@ -108,7 +108,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe,
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -122,7 +122,7 @@ namespace GPlatesGui
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe,
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -136,7 +136,7 @@ namespace GPlatesGui
 				const QPointF &screen_position,
 				const boost::optional<QPointF> &map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe);
 
 	private:
 

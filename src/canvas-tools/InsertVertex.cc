@@ -91,7 +91,7 @@ GPlatesCanvasTools::InsertVertex::handle_left_drag(
 		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 		bool is_on_earth,
 		double current_proximity_inclusion_threshold,
-		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	d_insert_vertex_geometry_operation->mouse_move(
 			current_point_on_sphere,

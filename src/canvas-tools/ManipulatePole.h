@@ -83,7 +83,7 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
 				double current_proximity_inclussion_threshold,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport) override;
+				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
 
 		virtual
 		void
@@ -94,7 +94,7 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
 				double current_proximity_inclussion_threshold,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport) override;
+				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
 
 		virtual
 		void
@@ -105,7 +105,7 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
 				double current_proximity_inclussion_threshold,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport) override;
+				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
 
 		virtual
 		void
@@ -116,7 +116,7 @@ namespace GPlatesCanvasTools
 				const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 				bool is_on_earth,
 				double current_proximity_inclussion_threshold,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport) override;
+				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
 
 	private:
 

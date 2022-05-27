@@ -261,7 +261,7 @@ namespace GPlatesQtWidgets
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe,
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -275,7 +275,7 @@ namespace GPlatesQtWidgets
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe,
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -286,7 +286,7 @@ namespace GPlatesQtWidgets
 				const QPointF &screen_position,
 				const boost::optional<QPointF> &map_position,
 				const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe,
-				const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport_on_globe);
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe);
 
 		void
 		repainted(
@@ -536,9 +536,12 @@ namespace GPlatesQtWidgets
 				QImage &image);
 
 		/**
-		 * The point (in map projection coordinates) which corresponds to the centre of the viewport.
+		 * The point on the globe which corresponds to the centre of the viewport.
+		 *
+		 * Note that the map camera look-at position (on map plane) is restricted to be inside
+		 * the map projection boundary, so this always returned a valid position on the globe.
 		 */
-		QPointF
+		GPlatesMaths::PointOnSphere
 		centre_of_viewport() const;
 
 		void

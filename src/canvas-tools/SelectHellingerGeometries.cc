@@ -311,7 +311,7 @@ GPlatesCanvasTools::SelectHellingerGeometries::handle_shift_left_drag(
 		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 		bool is_on_earth,
 		double current_proximity_inclusion_threshold,
-		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 
 }
@@ -324,7 +324,7 @@ GPlatesCanvasTools::SelectHellingerGeometries::handle_left_release_after_drag(
 		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 		bool is_on_earth,
 		double current_proximity_inclusion_threshold,
-		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	d_pick_is_being_dragged = false;
 	d_hellinger_dialog_ptr->set_enlarged_edit_geometry(false);
@@ -340,7 +340,7 @@ GPlatesCanvasTools::SelectHellingerGeometries::handle_left_drag(
 		const GPlatesMaths::PointOnSphere &current_point_on_sphere,
 		bool is_on_earth,
 		double current_proximity_inclusion_threshold,
-		const boost::optional<GPlatesMaths::PointOnSphere> &centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport)
 {
 	if (d_pick_is_being_dragged)
 	{
