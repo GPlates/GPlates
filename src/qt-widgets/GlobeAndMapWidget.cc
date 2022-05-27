@@ -158,7 +158,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::about_to_change_projection(
 {
 	// Save the camera position of the currently active view before we potentially change
 	// to a different view (eg, globe to map view or vice versa).
-	d_active_camera_viewpoint = get_camera_viewpoint();
+	d_active_camera_viewpoint = get_active_camera().get_look_at_position_on_globe();
 }
 
 
@@ -170,39 +170,39 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 	if (boost::optional<GPlatesGui::GlobeProjection::Type> globe_projection_type =
 		view_projection.get_globe_projection_type())
 	{
-		// Update the globe canvas's view projection (orthographic or perspective).
-		d_view_state.get_globe_camera().set_view_projection_type(globe_projection_type.get());
-
 		// Switch to globe.
-		d_active_view_ptr = d_globe_canvas_ptr.get();
-		d_globe_canvas_ptr->update_canvas();
-		if (d_active_camera_viewpoint)
-		{
-			d_globe_canvas_ptr->set_camera_viewpoint(d_active_camera_viewpoint.get());
-		}
 		d_layout->setCurrentWidget(d_globe_canvas_ptr.get());
+		d_active_view_ptr = d_globe_canvas_ptr.get();
+
+		// Update the globe canvas's view projection (orthographic or perspective).
+		//
+		// TODO: Move outside globe/map if/else.
+		d_active_view_ptr->get_camera().set_view_projection_type(globe_projection_type.get());
 	}
 	else // map projection...
 	{
+		// Switch to map.
+		d_layout->setCurrentWidget(d_map_canvas_ptr.get());
+		d_active_view_ptr = d_map_canvas_ptr.get();
+
 		// Update the map canvas's view projection (orthographic or perspective).
 		//
 		// TODO: Change this when view projection is separated from globe/map projection.
-		//d_view_state.get_map_camera().set_view_projection_type(globe_projection_type.get());
+#if 0
+		d_active_view_ptr->get_camera().set_view_projection_type(globe_projection_type.get());
+#endif
 
 		// Update the map canvas's map projection.
 		d_view_state.get_map_projection().set_projection_type(
 				view_projection.get_map_projection_type().get());
 		d_view_state.get_map_projection().set_central_meridian(
 				view_projection.get_map_central_meridian());
+	}
 
-		// Switch to map.
-		d_active_view_ptr = d_map_canvas_ptr.get();
-		d_map_canvas_ptr->update_canvas();
-		if (d_active_camera_viewpoint)
-		{
-			d_map_canvas_ptr->set_camera_viewpoint(d_active_camera_viewpoint.get());	
-		}
-		d_layout->setCurrentWidget(d_map_canvas_ptr.get());
+	d_active_view_ptr->update_canvas();
+	if (d_active_camera_viewpoint)
+	{
+		d_active_view_ptr->get_camera().move_look_at_position(d_active_camera_viewpoint.get());
 	}
 
 	Q_EMIT update_tools_and_status_message();
@@ -251,10 +251,17 @@ GPlatesQtWidgets::GlobeAndMapWidget::get_active_view() const
 }
 
 
-boost::optional<GPlatesMaths::LatLonPoint>
-GPlatesQtWidgets::GlobeAndMapWidget::get_camera_viewpoint() const
+GPlatesGui::Camera &
+GPlatesQtWidgets::GlobeAndMapWidget::get_active_camera()
 {
-	return d_active_view_ptr->get_camera_viewpoint();
+	return d_active_view_ptr->get_camera();
+}
+
+
+const GPlatesGui::Camera &
+GPlatesQtWidgets::GlobeAndMapWidget::get_active_camera() const
+{
+	return d_active_view_ptr->get_camera();
 }
 
 

@@ -152,13 +152,13 @@ GPlatesGui::GlobeCamera::set_tilt_angle(
 
 void
 GPlatesGui::GlobeCamera::move_look_at_position(
-		const GPlatesMaths::PointOnSphere &new_look_at_position,
+		const GPlatesMaths::PointOnSphere &look_at_position_on_globe,
 		bool only_emit_if_changed)
 {
 	// Rotation from current look-at position to specified look-at position.
 	const GPlatesMaths::Rotation view_rotation = GPlatesMaths::Rotation::create(
 			get_look_at_position_on_globe(),
-			new_look_at_position);
+			look_at_position_on_globe);
 
 	// Accumulate view rotation into current view orientation.
 	set_view_orientation(view_rotation * get_view_orientation(), only_emit_if_changed);

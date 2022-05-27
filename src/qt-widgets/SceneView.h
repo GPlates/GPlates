@@ -43,6 +43,11 @@ namespace GPlatesMaths
 	class LatLonPoint;
 }
 
+namespace  GPlatesGui
+{
+	class Camera;
+}
+
 namespace GPlatesQtWidgets
 {
 
@@ -65,16 +70,18 @@ namespace GPlatesQtWidgets
 
 
 		/**
-		 * Set the position that the camera looks at (at the centre of the viewport).
+		 * Return the camera controlling the view.
 		 */
 		virtual
-		void
-		set_camera_viewpoint(
-				const GPlatesMaths::LatLonPoint &camera_viewpoint) = 0;
+		const GPlatesGui::Camera &
+		get_camera() const = 0;
 
+		/**
+		 * Return the camera controlling the view.
+		 */
 		virtual
-		boost::optional<GPlatesMaths::LatLonPoint>
-		get_camera_viewpoint() const = 0;
+		GPlatesGui::Camera &
+		get_camera() = 0;
 
 
 		/**
@@ -146,6 +153,9 @@ namespace GPlatesQtWidgets
 				QPaintDevice &feedback_paint_device) = 0;
 
 
+		/**
+		 * Update/redraw the canvas.
+		 */
 		virtual
 		void
 		update_canvas() = 0;

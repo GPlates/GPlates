@@ -32,6 +32,7 @@
 #include "global/python.h"
 
 #include "gui/AnimationController.h"
+#include "gui/Camera.h"
 #include "gui/FeatureFocus.h"
 
 #include "maths/InvalidLatLonException.h"
@@ -72,7 +73,9 @@ namespace GPlatesApi
 			try
 			{
 				GPlatesMaths::LatLonPoint center(lat,lon);
-				d_scene_view.set_camera_viewpoint(center);
+
+				d_scene_view.get_camera().move_look_at_position(
+						make_point_on_sphere(center));
 			}
 			catch(GPlatesMaths::InvalidLatLonException& ex)
 			{
@@ -188,7 +191,10 @@ namespace GPlatesApi
 
 			boost::optional<GPlatesMaths::LatLonPoint> point = GPlatesGui::locate_focus();
 			if(point)
-				d_scene_view.set_camera_viewpoint(*point);
+			{
+				d_scene_view.get_camera().move_look_at_position(
+						make_point_on_sphere(point.get()));
+			}
 		}
 
 		void

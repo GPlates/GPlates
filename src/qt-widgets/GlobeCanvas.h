@@ -202,12 +202,17 @@ namespace GPlatesQtWidgets
 				QPaintDevice &feedback_paint_device) override;
 
 
-		void
-		set_camera_viewpoint(
-				const GPlatesMaths::LatLonPoint &camera_viewpoint) override;
+		/**
+		 * Return the camera controlling the view.
+		 */
+		const GPlatesGui::Camera &
+		get_camera() const override;
 
-		boost::optional<GPlatesMaths::LatLonPoint>
-		get_camera_viewpoint() const override;
+		/**
+		 * Return the camera controlling the view.
+		 */
+		GPlatesGui::Camera &
+		get_camera() override;
 
 
 		void

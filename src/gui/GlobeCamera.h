@@ -193,8 +193,8 @@ namespace GPlatesGui
 		 */
 		void
 		move_look_at_position(
-				const GPlatesMaths::PointOnSphere &new_look_at_position,
-				bool only_emit_if_changed = true);
+				const GPlatesMaths::PointOnSphere &look_at_position_on_globe,
+				bool only_emit_if_changed = true) override;
 
 		/**
 		 * Rotate the view around the view direction so that the "up" direction points

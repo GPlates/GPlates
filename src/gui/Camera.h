@@ -117,6 +117,26 @@ namespace GPlatesGui
 		get_look_at_position() const = 0;
 
 		/**
+		 * Move the current look-at position to the specified look-at position on the globe.
+		 *
+		 * For the globe this rotates the view along the great circle arc (on the globe) between the current and
+		 * new look-at positions. The view and up directions are rotated by same rotation as look-at position.
+		 *
+		 * For the map this pans the view along the line segment (on the map plane) between the
+		 * current and new look-at positions. The view and up directions are not changed.
+		 *
+		 * Note that this does not change the current tilt angle (in globe or map view).
+		 *
+		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
+		 */
+		virtual
+		void
+		move_look_at_position(
+				const GPlatesMaths::PointOnSphere &look_at_position_on_globe,
+				bool only_emit_if_changed = true) = 0;
+
+
+		/**
 		 * The view direction.
 		 *
 		 * This is from the eye position to the look-at position.

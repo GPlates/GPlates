@@ -35,8 +35,9 @@
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
 
-#include "gui/ViewportProjection.h"
+#include "gui/Camera.h"
 #include "gui/TrinketArea.h"
+#include "gui/ViewportProjection.h"
 
 #include "maths/InvalidLatLonException.h"
 
@@ -694,9 +695,9 @@ GPlatesGui::Dialogs::pop_up_set_camera_viewpoint_dialog()
 {
 	GPlatesQtWidgets::SetCameraViewpointDialog &dialog = set_camera_viewpoint_dialog();
 
-	boost::optional<GPlatesMaths::LatLonPoint> cur_llp_opt =
-			viewport_window().reconstruction_view_widget().get_camera_viewpoint();
-	GPlatesMaths::LatLonPoint cur_llp = cur_llp_opt ? *cur_llp_opt : GPlatesMaths::LatLonPoint(0.0, 0.0);
+	Camera &active_camera = viewport_window().reconstruction_view_widget().get_active_camera();
+	const GPlatesMaths::LatLonPoint cur_llp = make_lat_lon_point(
+			active_camera.get_look_at_position_on_globe());
 
 	dialog.set_lat_lon(cur_llp.latitude(), cur_llp.longitude());
 
@@ -704,9 +705,10 @@ GPlatesGui::Dialogs::pop_up_set_camera_viewpoint_dialog()
 	{
 		try
 		{
-			GPlatesMaths::LatLonPoint desired_centre(dialog.latitude(), dialog.longitude());
+			const GPlatesMaths::LatLonPoint desired_centre(dialog.latitude(), dialog.longitude());
 
-			viewport_window().reconstruction_view_widget().active_view().set_camera_viewpoint(desired_centre);
+			active_camera.move_look_at_position(
+					make_point_on_sphere(desired_centre));
 		}
 		catch (GPlatesMaths::InvalidLatLonException &)
 		{

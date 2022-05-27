@@ -36,7 +36,7 @@
 
 #include "global/PointerTraits.h"
 
-#include "maths/LatLonPoint.h"
+#include "maths/PointOnSphere.h"
 
 #include "view-operations/QueryProximityThreshold.h"
 
@@ -48,6 +48,7 @@
 
 namespace GPlatesGui
 {
+	class Camera;
 	class ViewportProjection;
 }
 
@@ -105,14 +106,17 @@ namespace GPlatesQtWidgets
 		const SceneView &
 		get_active_view() const;
 
+		GPlatesGui::Camera &
+		get_active_camera();
+
+		const GPlatesGui::Camera &
+		get_active_camera() const;
+
 		bool
 		is_globe_active() const;
 
 		bool
 		is_map_active() const;
-
-		boost::optional<GPlatesMaths::LatLonPoint>
-		get_camera_viewpoint() const;
 
 		virtual
 		QSize
@@ -253,7 +257,7 @@ namespace GPlatesQtWidgets
 		 *
 		 * Is boost::none if unable to retrieve the camera position from the currently active view.
 		 */
-		boost::optional<GPlatesMaths::LatLonPoint> d_active_camera_viewpoint;
+		boost::optional<GPlatesMaths::PointOnSphere> d_active_camera_viewpoint;
 
 		/**
 		 * Whether zooming (via mouse wheel or pinch gesture) is enabled.

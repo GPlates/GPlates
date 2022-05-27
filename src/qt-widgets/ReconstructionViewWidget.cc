@@ -44,6 +44,7 @@
 #include "ViewportWindow.h"
 #include "ZoomControlWidget.h"
 
+#include "gui/Camera.h"
 #include "gui/Globe.h"
 #include "gui/GlobeCamera.h"
 #include "gui/MapCamera.h"
@@ -360,6 +361,20 @@ GPlatesQtWidgets::ReconstructionViewWidget::active_view() const
 }
 
 
+GPlatesGui::Camera &
+GPlatesQtWidgets::ReconstructionViewWidget::get_active_camera()
+{
+	return d_globe_and_map_widget_ptr->get_active_camera();
+}
+
+
+const GPlatesGui::Camera &
+GPlatesQtWidgets::ReconstructionViewWidget::get_active_camera() const
+{
+	return d_globe_and_map_widget_ptr->get_active_camera();
+}
+
+
 GPlatesQtWidgets::GlobeAndMapWidget &
 GPlatesQtWidgets::ReconstructionViewWidget::globe_and_map_widget()
 {
@@ -585,41 +600,22 @@ GPlatesQtWidgets::ReconstructionViewWidget::activate_time_spinbox()
 }
 
 
-boost::optional<GPlatesMaths::LatLonPoint>
-GPlatesQtWidgets::ReconstructionViewWidget::get_camera_viewpoint()
-{
-	return d_globe_and_map_widget_ptr->get_camera_viewpoint();
-}
-
-
 void
 GPlatesQtWidgets::ReconstructionViewWidget::recalc_camera_position()
 {
-	// FIXME: This is a bit convoluted.
-	boost::optional<GPlatesMaths::LatLonPoint> llp = d_globe_and_map_widget_ptr->get_camera_viewpoint();
+	const GPlatesMaths::LatLonPoint llp = make_lat_lon_point(
+			d_globe_and_map_widget_ptr->get_active_camera().get_look_at_position_on_globe());
 
-	QString lat_label(QObject::tr("(lat: "));
-	QString lon_label(QObject::tr(" ; lon: "));
+	QLocale locale_;
+	QString lat = locale_.toString(llp.latitude(), 'f', 2);
+	QString lon = locale_.toString(llp.longitude(), 'f', 2);
+
 	QString position_as_string;
-
-	if (llp)
-	{
-		QLocale locale_;
-		QString lat = locale_.toString((*llp).latitude(), 'f', 2);
-		QString lon = locale_.toString((*llp).longitude(), 'f', 2);
-		position_as_string.append(lat_label);
-		position_as_string.append(lat);
-		position_as_string.append(lon_label);
-		position_as_string.append(lon);
-		position_as_string.append(QObject::tr(")"));
-	}
-	else
-	{
-		position_as_string.append(lat_label);
-		position_as_string.append(lon_label);
-		position_as_string.append(QObject::tr(")"));
-		position_as_string.append(QObject::tr(" (off map)"));
-	}
+	position_as_string.append(QObject::tr("(lat: "));
+	position_as_string.append(lat);
+	position_as_string.append(QObject::tr(" ; lon: "));
+	position_as_string.append(lon);
+	position_as_string.append(QObject::tr(")"));
 
 	d_label_camera_coords->setText(position_as_string);
 

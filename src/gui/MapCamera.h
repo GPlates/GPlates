@@ -183,6 +183,21 @@ namespace GPlatesGui
 				bool only_emit_if_changed = true);
 
 		/**
+		 * Move the current look-at position to the specified look-at position on the globe.
+		 *
+		 * This pans the view along the line segment (on the map plane) between the
+		 * current and new look-at positions. The view and up directions are not changed.
+		 *
+		 * Note that this does not change the current tilt angle.
+		 *
+		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
+		 */
+		void
+		move_look_at_position(
+				const GPlatesMaths::PointOnSphere &look_at_position_on_globe,
+				bool only_emit_if_changed = true) override;
+
+		/**
 		 * Rotate the view so that the "up" direction points towards the North pole when @a reorientation_angle is zero.
 		 *
 		 * @a reorientation_angle, in radians, is [0, PI] for anti-clockwise view orientation with respect

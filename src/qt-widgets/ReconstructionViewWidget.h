@@ -63,6 +63,7 @@ namespace GPlatesPresentation
 namespace GPlatesGui
 {
 	class AnimationController;
+	class Camera;
 	class ViewportProjection;
 }
 
@@ -126,8 +127,11 @@ namespace GPlatesQtWidgets
 		const SceneView &
 		active_view() const;
 
-		boost::optional<GPlatesMaths::LatLonPoint>
-		get_camera_viewpoint();
+		GPlatesGui::Camera &
+		get_active_camera();
+
+		const GPlatesGui::Camera &
+		get_active_camera() const;
 
 		GlobeAndMapWidget &
 		globe_and_map_widget();

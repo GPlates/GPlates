@@ -177,18 +177,17 @@ namespace GPlatesQtWidgets
 				QPaintDevice &feedback_paint_device) override;
 
 
-		/** 
-		 * Translates the view so that the LatLonPoint llp is centred on the viewport. 
+		/**
+		 * Return the camera controlling the view.
 		 */
-		void
-		set_camera_viewpoint(
-				const GPlatesMaths::LatLonPoint &camera_viewpoint) override;
+		const GPlatesGui::Camera &
+		get_camera() const override;
 
 		/**
-		 * Returns the LatLonPoint at the centre of the active view, if the central point is on the surface of the earth. 
+		 * Return the camera controlling the view.
 		 */
-		boost::optional<GPlatesMaths::LatLonPoint>
-		get_camera_viewpoint() const override;
+		GPlatesGui::Camera &
+		get_camera() override;
 
 
 		void

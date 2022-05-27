@@ -407,40 +407,17 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 }
 
 
-void
-GPlatesQtWidgets::MapCanvas::set_camera_viewpoint(
-		const GPlatesMaths::LatLonPoint &camera_viewpoint)
+const GPlatesGui::Camera &
+GPlatesQtWidgets::MapCanvas::get_camera() const
 {
-	QPointF map_position;
-	try
-	{
-		// Convert the llp to map coordinates.
-		map_position = d_view_state.get_map_projection().forward_transform(camera_viewpoint);
-	}
-	catch(GPlatesGui::ProjectionException &e)
-	{
-		qWarning() << "Caught exception converting lat-long to map coordinates.";
-		qWarning() << e;
-	}
-
-	// Centre the view on this point.
-	d_map_camera.move_look_at_position(map_position);
+	return d_map_camera;
 }
 
 
-boost::optional<GPlatesMaths::LatLonPoint>
-GPlatesQtWidgets::MapCanvas::get_camera_viewpoint() const
+GPlatesGui::Camera &
+GPlatesQtWidgets::MapCanvas::get_camera()
 {
-	// Camera look-at position is in map projection space.
-	const QPointF &camera_look_at = d_map_camera.get_look_at_position_on_map();
-
-	boost::optional<GPlatesMaths::LatLonPoint> llp = d_view_state.get_map_projection().inverse_transform(camera_look_at);
-	if (!llp)
-	{
-		return boost::none;
-	}
-		
-	return llp.get();
+	return d_map_camera;
 }
 
 
@@ -458,22 +435,9 @@ GPlatesQtWidgets::MapCanvas::set_orientation(
 	// The easiest way to do this is to take the map centre (0, 0) and rotate it by the inverse orientation.
 	const GPlatesMaths::PointOnSphere desired_centre =
 			orientation.get_reverse() * GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0,0));
-	const GPlatesMaths::LatLonPoint desired_llp = GPlatesMaths::make_lat_lon_point(desired_centre);
-
-	QPointF map_position;
-	try
-	{
-		// Convert the llp to map coordinates.
-		map_position = d_view_state.get_map_projection().forward_transform(desired_llp);
-	}
-	catch (GPlatesGui::ProjectionException &e)
-	{
-		qWarning() << "Caught exception converting lat-long to map coordinates.";
-		qWarning() << e;
-	}
 
 	// Centre the view on this point.
-	d_map_camera.move_look_at_position(map_position);
+	d_map_camera.move_look_at_position(desired_centre);
 }
 
 

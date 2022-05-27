@@ -198,6 +198,18 @@ GPlatesGui::MapCamera::move_look_at_position(
 
 
 void
+GPlatesGui::MapCamera::move_look_at_position(
+		const GPlatesMaths::PointOnSphere &look_at_position_on_globe,
+		bool only_emit_if_changed)
+{
+	const QPointF look_at_position_on_map = d_map_projection.forward_transform(
+			make_lat_lon_point(look_at_position_on_globe));
+
+	move_look_at_position(look_at_position_on_map);
+}
+
+
+void
 GPlatesGui::MapCamera::reorient_up_direction(
 		const GPlatesMaths::real_t &reorientation_angle,
 		bool only_emit_if_changed)

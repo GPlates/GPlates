@@ -410,21 +410,17 @@ GPlatesQtWidgets::GlobeCanvas::render_opengl_feedback_to_paint_device(
 }
 
 
-void
-GPlatesQtWidgets::GlobeCanvas::set_camera_viewpoint(
-		const GPlatesMaths::LatLonPoint &camera_viewpoint)
+const GPlatesGui::Camera &
+GPlatesQtWidgets::GlobeCanvas::get_camera() const
 {
-	d_globe_camera.move_look_at_position(
-			GPlatesMaths::make_point_on_sphere(camera_viewpoint));
+	return d_globe_camera;
 }
 
 
-boost::optional<GPlatesMaths::LatLonPoint>
-GPlatesQtWidgets::GlobeCanvas::get_camera_viewpoint() const
+GPlatesGui::Camera &
+GPlatesQtWidgets::GlobeCanvas::get_camera()
 {
-	// This function returns a boost::optional for consistency with the base class virtual function.
-	// The globe always returns a valid camera llp though.
-	return GPlatesMaths::make_lat_lon_point(d_globe_camera.get_look_at_position_on_globe());
+	return d_globe_camera;
 }
 
 
@@ -441,8 +437,6 @@ GPlatesQtWidgets::GlobeCanvas::set_orientation(
 	// Note that this is the reverse of the camera orientation which is of the moving camera
 	// relative to the fixed globe.
 	d_globe_camera.set_globe_orientation_relative_to_view(orientation);
-
-	update_canvas();
 }
 
 GPlatesMaths::Rotation
