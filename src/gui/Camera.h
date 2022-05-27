@@ -107,16 +107,6 @@ namespace GPlatesGui
 		get_look_at_position_on_globe() const = 0;
 
 		/**
-		 * The position in 3D space that the view is looking at.
-		 *
-		 * Note: For the globe this is on the unit sphere.
-		 *       For the map this is on the z=0 plane (ie, returned position only has non-zero x and y).
-		 */
-		virtual
-		GPlatesMaths::Vector3D
-		get_look_at_position() const = 0;
-
-		/**
 		 * Move the current look-at position to the specified look-at position on the globe.
 		 *
 		 * For the globe this rotates the view along the great circle arc (on the globe) between the current and
@@ -131,10 +121,21 @@ namespace GPlatesGui
 		 */
 		virtual
 		void
-		move_look_at_position(
+		move_look_at_position_on_globe(
 				const GPlatesMaths::PointOnSphere &look_at_position_on_globe,
 				bool only_emit_if_changed = true) = 0;
 
+
+		/**
+		 * The position in 3D space that the view is looking at.
+		 *
+		 * Note: For the globe this is on the unit sphere.
+		 *       For the map this is the map-projected position on the z=0 plane
+		 *       (ie, returned position only has non-zero x and y).
+		 */
+		virtual
+		GPlatesMaths::Vector3D
+		get_look_at_position() const = 0;
 
 		/**
 		 * The view direction.

@@ -202,7 +202,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 	d_active_view_ptr->update_canvas();
 	if (d_active_camera_viewpoint)
 	{
-		d_active_view_ptr->get_camera().move_look_at_position(d_active_camera_viewpoint.get());
+		d_active_view_ptr->get_camera().move_look_at_position_on_globe(d_active_camera_viewpoint.get());
 	}
 
 	Q_EMIT update_tools_and_status_message();

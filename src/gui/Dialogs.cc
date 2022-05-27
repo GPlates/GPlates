@@ -707,7 +707,7 @@ GPlatesGui::Dialogs::pop_up_set_camera_viewpoint_dialog()
 		{
 			const GPlatesMaths::LatLonPoint desired_centre(dialog.latitude(), dialog.longitude());
 
-			active_camera.move_look_at_position(
+			active_camera.move_look_at_position_on_globe(
 					make_point_on_sphere(desired_centre));
 		}
 		catch (GPlatesMaths::InvalidLatLonException &)

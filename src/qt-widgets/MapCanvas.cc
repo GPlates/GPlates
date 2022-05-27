@@ -437,7 +437,7 @@ GPlatesQtWidgets::MapCanvas::set_orientation(
 			orientation.get_reverse() * GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(0,0));
 
 	// Centre the view on this point.
-	d_map_camera.move_look_at_position(desired_centre);
+	d_map_camera.move_look_at_position_on_globe(desired_centre);
 }
 
 

@@ -74,7 +74,7 @@ namespace GPlatesApi
 			{
 				GPlatesMaths::LatLonPoint center(lat,lon);
 
-				d_scene_view.get_camera().move_look_at_position(
+				d_scene_view.get_camera().move_look_at_position_on_globe(
 						make_point_on_sphere(center));
 			}
 			catch(GPlatesMaths::InvalidLatLonException& ex)
@@ -192,7 +192,7 @@ namespace GPlatesApi
 			boost::optional<GPlatesMaths::LatLonPoint> point = GPlatesGui::locate_focus();
 			if(point)
 			{
-				d_scene_view.get_camera().move_look_at_position(
+				d_scene_view.get_camera().move_look_at_position_on_globe(
 						make_point_on_sphere(point.get()));
 			}
 		}

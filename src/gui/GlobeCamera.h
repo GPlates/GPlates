@@ -73,13 +73,26 @@ namespace GPlatesGui
 		get_look_at_position_on_globe() const override;
 
 		/**
+		 * Rotate the current look-at position to the specified look-at position along the
+		 * great circle arc between them.
+		 *
+		 * The view and up directions are rotated by same rotation as look-at position.
+		 *
+		 * Note that this does not change the current tilt angle.
+		 *
+		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
+		 */
+		void
+		move_look_at_position_on_globe(
+				const GPlatesMaths::PointOnSphere &look_at_position_on_globe,
+				bool only_emit_if_changed = true) override;
+
+
+		/**
 		 * Same as @a get_look_at_position_on_globe but returned as a Vector3D.
 		 */
 		GPlatesMaths::Vector3D
-		get_look_at_position() const override
-		{
-			return GPlatesMaths::Vector3D(get_look_at_position_on_globe().position_vector());
-		}
+		get_look_at_position() const override;
 
 		/**
 		 * The view direction.
@@ -154,6 +167,7 @@ namespace GPlatesGui
 			set_view_orientation(globe_orientation_relative_to_view.get_reverse());
 		}
 
+
 		/**
 		 * The angle (in radians) that the view direction tilts.
 		 *
@@ -181,20 +195,6 @@ namespace GPlatesGui
 				GPlatesMaths::real_t tilt_angle,
 				bool only_emit_if_changed = true);
 
-		/**
-		 * Rotate the current look-at position to the specified look-at position along the
-		 * great circle arc between them.
-		 *
-		 * The view and up directions are rotated by same rotation as look-at position.
-		 *
-		 * Note that this does not change the current tilt angle.
-		 *
-		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
-		 */
-		void
-		move_look_at_position(
-				const GPlatesMaths::PointOnSphere &look_at_position_on_globe,
-				bool only_emit_if_changed = true) override;
 
 		/**
 		 * Rotate the view around the view direction so that the "up" direction points

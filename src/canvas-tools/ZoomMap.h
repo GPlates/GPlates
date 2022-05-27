@@ -87,7 +87,7 @@ namespace GPlatesCanvasTools
 
 		void
 		recentre_map(
-				const QPointF &map_position);
+				const GPlatesMaths::PointOnSphere &position_on_globe);
 
 		/**
 		 * This is the window that has the status bar.
