@@ -368,26 +368,77 @@ namespace GPlatesGui
 			GPlatesMaths::UnitVector3D up_direction;
 		};
 
-		MapProjection &d_map_projection;
-
 		/**
-		 * To determine if the map projection has changed.
+		 * Helper class for a value type that depends on the map projection (detects changed projection settings).
 		 */
-		mutable boost::optional<MapProjectionSettings> d_cached_map_projection_settings;
+		template <typename ValueType>
+		class MapProjectionCache
+		{
+		public:
+
+			MapProjectionCache()
+			{  }
+
+			explicit
+			MapProjectionCache(
+					const ValueType &value) :
+				d_value(value)
+			{  }
+
+			/**
+			 * Returns true if map projection settings match internally stored settings.
+			 *
+			 * Will return false until @a set is first called.
+			 */
+			bool
+			is_valid(
+					const MapProjectionSettings &map_projection_settings) const
+			{
+				return d_map_projection_settings == map_projection_settings;
+			}
+
+			void
+			set(
+					const ValueType &value,
+					const MapProjectionSettings &map_projection_settings)
+			{
+				d_value = value;
+				d_map_projection_settings = map_projection_settings;
+			}
+
+			const ValueType &
+			get() const
+			{
+				return d_value;
+			}
+
+			ValueType &
+			get()
+			{
+				return d_value;
+			}
+
+		private:
+			ValueType d_value;
+			boost::optional<MapProjectionSettings> d_map_projection_settings;
+		};
+
+
+		MapProjection &d_map_projection;
 
 		/**
 		 * Radius of the sphere that bounds the map (including extra space for objects off the map).
 		 *
 		 * This is updated when the map projection changes.
 		 */
-		mutable boost::optional<double> d_cached_map_bounding_radius;
+		mutable MapProjectionCache<double> d_map_bounding_radius;
 
 		/**
 		 * The look-at position on the map plane (contained inside map projection of the globe).
 		 *
 		 * This is updated when the map projection changes.
 		 */
-		mutable boost::optional<QPointF> d_cached_look_at_position_on_map;
+		mutable MapProjectionCache<QPointF> d_look_at_position_on_map;
 
 		/**
 		 * The look-at position on the globe.
@@ -414,11 +465,13 @@ namespace GPlatesGui
 		mutable boost::optional<ViewFrame> d_cached_view_frame;
 
 
-		/**
-		 * Invalidate any cached parameters that depend on the map projection (if it changed).
-		 */
-		void
-		invalidate_if_changed_map_projection_settings() const;
+		QPointF
+		convert_position_on_globe_to_map(
+				const GPlatesMaths::PointOnSphere &position_on_globe) const;
+
+		boost::optional<GPlatesMaths::PointOnSphere>
+		convert_position_on_map_to_globe(
+				const QPointF &position_on_map) const;
 
 		QPointF
 		convert_pan_from_view_to_map_frame(

@@ -76,17 +76,16 @@ GPlatesGui::MapCamera::MapCamera(
 const QPointF &
 GPlatesGui::MapCamera::get_look_at_position_on_map() const
 {
-	// Invalidate the look-at position on map if the map projection has changed since it was last updated.
-	invalidate_if_changed_map_projection_settings();
-
-	// If needed, update the look-at position on *map* (from the look-at position on *globe*).
-	if (!d_cached_look_at_position_on_map)
+	// If needed, update the look-at position on *map* (eg, if map projection changed).
+	if (!d_look_at_position_on_map.is_valid(d_map_projection.get_projection_settings()))
 	{
-		d_cached_look_at_position_on_map = d_map_projection.forward_transform(
-				make_lat_lon_point(get_look_at_position_on_globe()));
+		// Update using the look-at position on *globe* (which is independent of map projection).
+		d_look_at_position_on_map.set(
+				convert_position_on_globe_to_map(d_look_at_position_on_globe),
+				d_map_projection.get_projection_settings());
 	}
 
-	return d_cached_look_at_position_on_map.get();
+	return d_look_at_position_on_map.get();
 }
 
 
@@ -95,28 +94,31 @@ GPlatesGui::MapCamera::move_look_at_position_on_map(
 		const QPointF &look_at_position_on_map,
 		bool only_emit_if_changed)
 {
-	if (only_emit_if_changed &&
-		look_at_position_on_map == get_look_at_position_on_map())
-	{
-		// Although position on map didn't change it is still within the map projection (of the globe).
-		return true;
-	}
-
-	// See if look-at position on map is actually inside the map projection (of the globe)
-	// by attempting to inverse map project from map back onto globe.
-	boost::optional<GPlatesMaths::LatLonPoint> lat_lon_look_at_position_on_globe =
-			d_map_projection.inverse_transform(look_at_position_on_map);
-	if (!lat_lon_look_at_position_on_globe)
+	// The look-at position on *globe* corresponding to specified look-at position on *map*.
+	// This will use the current map projection.
+	const boost::optional<GPlatesMaths::PointOnSphere> look_at_position_on_globe =
+			convert_position_on_map_to_globe(look_at_position_on_map);
+	if (!look_at_position_on_globe)
 	{
 		// Look-at position is outside the map projection (of the globe), so reject the move.
 		return false;
 	}
 
-	// Update the position on globe (with inverse map projected position).
-	d_look_at_position_on_globe = make_point_on_sphere(lat_lon_look_at_position_on_globe.get());
+	if (only_emit_if_changed &&
+		look_at_position_on_globe.get() == d_look_at_position_on_globe &&
+		look_at_position_on_map == d_look_at_position_on_map.get()/*is old value if map projection changed*/)
+	{
+		// Although position on map didn't change it is still within the map projection (of the globe).
+		return true;
+	}
+
+	// Update the position on globe.
+	d_look_at_position_on_globe = look_at_position_on_globe.get();
 
 	// Update the position on map.
-	d_cached_look_at_position_on_map = look_at_position_on_map;
+	d_look_at_position_on_map.set(
+			look_at_position_on_map,
+			d_map_projection.get_projection_settings());
 
 	Q_EMIT camera_changed();
 
@@ -136,17 +138,26 @@ GPlatesGui::MapCamera::move_look_at_position_on_globe(
 		const GPlatesMaths::PointOnSphere &look_at_position_on_globe,
 		bool only_emit_if_changed)
 {
+	// The look-at position on *map* corresponding to specified look-at position on *globe*.
+	// This will use the current map projection.
+	const QPointF look_at_position_on_map = convert_position_on_globe_to_map(look_at_position_on_globe);
+
 	if (only_emit_if_changed &&
-		look_at_position_on_globe == get_look_at_position_on_globe())
+		look_at_position_on_globe == d_look_at_position_on_globe &&
+		// It's possible the look-at position on *globe* has not changed but the map projection has.
+		// In which case the look-at position on *map* will have changed...
+		look_at_position_on_map == d_look_at_position_on_map.get()/*is old value if map projection changed*/)
 	{
 		return;
 	}
 
-	// Invalidate the look-at position on *map*.
-	// The next time it's queried it will be calculated from the look-at position on *globe*.
-	d_cached_look_at_position_on_map = boost::none;
-
+	// Update the position on globe.
 	d_look_at_position_on_globe = look_at_position_on_globe;
+
+	// Update the position on map.
+	d_look_at_position_on_map.set(
+			look_at_position_on_map,
+			d_map_projection.get_projection_settings());
 
 	Q_EMIT camera_changed();
 }
@@ -356,11 +367,8 @@ GPlatesGui::MapCamera::get_perspective_viewing_distance_from_eye_to_look_at_for_
 double
 GPlatesGui::MapCamera::get_bounding_radius() const
 {
-	// Invalidate the bounding radius if the map projection has changed since it was last updated.
-	invalidate_if_changed_map_projection_settings();
-
-	// Update the bounding radius if needed.
-	if (!d_cached_map_bounding_radius)
+	// Update the bounding radius if needed (eg, if map projection changed).
+	if (!d_map_bounding_radius.is_valid(d_map_projection.get_projection_settings()))
 	{
 		// Query the left/right/top/bottom sides and corners of the map projection.
 		// These are extremal points that will produce the maximum distance to the map centre.
@@ -401,25 +409,38 @@ GPlatesGui::MapCamera::get_bounding_radius() const
 		// get clipped by the near and far planes of the view frustum.
 		//
 		// For now we'll just multiple the maximum map extent by a constant factor.
-		d_cached_map_bounding_radius = 1.5 * map_bounding_extent;
+		d_map_bounding_radius.set(
+				1.5 * map_bounding_extent,
+				d_map_projection.get_projection_settings());
 	}
 
-	return d_cached_map_bounding_radius.get();
+	return d_map_bounding_radius.get();
 }
 
 
-void
-GPlatesGui::MapCamera::invalidate_if_changed_map_projection_settings() const
+QPointF
+GPlatesGui::MapCamera::convert_position_on_globe_to_map(
+		const GPlatesMaths::PointOnSphere &position_on_globe) const
 {
-	if (d_cached_map_projection_settings != d_map_projection.get_projection_settings())
-	{
-		// Invalidate any dependent cached parameters.
-		d_cached_map_bounding_radius = boost::none;
-		d_cached_look_at_position_on_map = boost::none;
+	return d_map_projection.forward_transform(make_lat_lon_point(position_on_globe));
+}
 
-		// Signal that we've invalidated.
-		d_cached_map_projection_settings = d_map_projection.get_projection_settings();
+
+boost::optional<GPlatesMaths::PointOnSphere>
+GPlatesGui::MapCamera::convert_position_on_map_to_globe(
+		const QPointF &position_on_map) const
+{
+	// See if position on map is actually inside the map projection (of the globe)
+	// by attempting to inverse map project from map back onto globe.
+	boost::optional<GPlatesMaths::LatLonPoint> lat_lon_position_on_globe =
+			d_map_projection.inverse_transform(position_on_map);
+	if (!lat_lon_position_on_globe)
+	{
+		// Position is outside the map projection (of the globe).
+		return boost::none;
 	}
+
+	return make_point_on_sphere(lat_lon_position_on_globe.get());
 }
 
 
