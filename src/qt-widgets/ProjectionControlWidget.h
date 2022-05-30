@@ -35,13 +35,14 @@
 
 namespace GPlatesGui
 {
-	class ViewportProjection;
+	class Projection;
 }
 
 namespace GPlatesQtWidgets
 {
 	/**
-	 * Small widget with combobox, to let the user switch projections.
+	 * Small widget with combobox, to let the user switch projections
+	 * (globe/map projection and viewport projection).
 	 */
 	class ProjectionControlWidget:
 			public QWidget,
@@ -52,30 +53,26 @@ namespace GPlatesQtWidgets
 	public:
 		explicit
 		ProjectionControlWidget(
-				GPlatesGui::ViewportProjection &viewport_projection,
+				GPlatesGui::Projection &projection,
 				QWidget *parent_);
 
 	private Q_SLOTS:
 		
 		void
-		handle_combobox_changed(
+		handle_globe_map_projection_combo_changed(
 				int idx);
 
 		void
-		handle_shortcut_triggered();
+		handle_globe_map_projection_shortcut_triggered();
 
 	public Q_SLOTS:
 		void
-		handle_projection_type_changed(
-				const GPlatesGui::ViewportProjection &);
-				
-		void
-		show_label(
-			bool show_);				
+		handle_globe_map_projection_changed(
+				const GPlatesGui::Projection &);
 
 	private:
 
-		GPlatesGui::ViewportProjection &d_viewport_projection;
+		GPlatesGui::Projection &d_projection;
 
 
 		void

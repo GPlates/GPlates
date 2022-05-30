@@ -64,7 +64,7 @@ namespace GPlatesGui
 {
 	class AnimationController;
 	class Camera;
-	class ViewportProjection;
+	class Projection;
 }
 
 namespace GPlatesQtWidgets
@@ -179,8 +179,8 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
-		handle_projection_type_changed(
-				const GPlatesGui::ViewportProjection &viewport_projection);
+		handle_globe_map_projection_changed(
+				const GPlatesGui::Projection &projection);
 
 	private:
 		
@@ -192,7 +192,7 @@ namespace GPlatesQtWidgets
 		std::unique_ptr<QWidget>
 		construct_awesomebar_two(
 				GPlatesGui::ViewportZoom &vzoom,
-				GPlatesGui::ViewportProjection &vprojection);
+				GPlatesGui::Projection &vprojection);
 
 		std::unique_ptr<QWidget>
 		construct_viewbar(
@@ -202,7 +202,7 @@ namespace GPlatesQtWidgets
 		std::unique_ptr<QWidget>
 		construct_viewbar_with_projections(
 				GPlatesGui::ViewportZoom &vzoom,
-				GPlatesGui::ViewportProjection &vprojection);
+				GPlatesGui::Projection &vprojection);
 		
 		GPlatesPresentation::ViewState &d_view_state;
 

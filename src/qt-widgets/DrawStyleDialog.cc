@@ -44,8 +44,8 @@
 #include "gui/DrawStyleManager.h"
 #include "gui/HTMLColourNames.h"
 #include "gui/PlateIdColourPalettes.h"
+#include "gui/Projection.h"
 #include "gui/PythonConfiguration.h"
-#include "gui/ViewportProjection.h"
 
 #include "presentation/Application.h"
 #include "presentation/ReconstructVisualLayerParams.h"

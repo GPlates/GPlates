@@ -66,13 +66,13 @@ namespace GPlatesGui
 	class GraticuleSettings;
 	class MapCamera;
 	class MapProjection;
+	class Projection;
 	class PythonManager;
 	class RenderSettings;
 	class SceneLightingParameters;
 	class TextOverlaySettings;
 	class TopologySectionsContainer;
 	class VelocityLegendOverlaySettings;
-	class ViewportProjection;
 	class ViewportZoom;
 
 }
@@ -191,13 +191,6 @@ namespace GPlatesPresentation
 		get_viewport_zoom() const;
 
 
-		GPlatesGui::ViewportProjection &
-		get_viewport_projection();
-
-		const GPlatesGui::ViewportProjection &
-		get_viewport_projection() const;
-
-
 		GPlatesViewOperations::GeometryBuilder &
 		get_digitise_geometry_builder();
 
@@ -280,6 +273,16 @@ namespace GPlatesPresentation
 
 		const GPlatesGui::MapProjection &
 		get_map_projection() const;
+
+
+		/**
+		 * Get the globe/map projection and the viewport projection.
+		 */
+		GPlatesGui::Projection &
+		get_projection();
+
+		const GPlatesGui::Projection &
+		get_projection() const;
 
 
 		// TODO: the get_last_open_directory methods should be obsolete now, but retain
@@ -426,9 +429,6 @@ namespace GPlatesPresentation
 		//! The viewport zoom state.
 		boost::scoped_ptr<GPlatesGui::ViewportZoom> d_viewport_zoom;
 
-		//! The viewport projection state.
-		boost::scoped_ptr<GPlatesGui::ViewportProjection> d_viewport_projection;
-
 		//! Builds geometry for digitised geometry.
 		boost::scoped_ptr<GPlatesViewOperations::GeometryBuilder> d_digitise_geometry_builder;
 
@@ -470,6 +470,9 @@ namespace GPlatesPresentation
 
 		//! Map projection for the 2D map view (must be declared before 'd_map_camera').
 		GPlatesGlobal::PointerTraits<GPlatesGui::MapProjection>::non_null_ptr_type d_map_projection;
+
+		//! The globe/map projection and the viewport projection.
+		boost::scoped_ptr<GPlatesGui::Projection> d_projection;
 
 		//! Camera controls for the 3D globe view.
 		boost::scoped_ptr<GPlatesGui::GlobeCamera> d_globe_camera;

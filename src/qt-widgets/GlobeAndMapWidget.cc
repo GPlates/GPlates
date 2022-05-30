@@ -38,7 +38,7 @@
 #include "gui/Globe.h"
 #include "gui/GlobeCamera.h"
 #include "gui/MapCamera.h"
-#include "gui/ViewportProjection.h"
+#include "gui/Projection.h"
 #include "gui/ViewportZoom.h"
 
 #include "opengl/GLContext.h"
@@ -113,22 +113,17 @@ void
 GPlatesQtWidgets::GlobeAndMapWidget::make_signal_slot_connections()
 {
 	// Handle changes in the projection.
-	GPlatesGui::ViewportProjection &view_projection = d_view_state.get_viewport_projection();
+	GPlatesGui::Projection &projection = d_view_state.get_projection();
 	QObject::connect(
-			&view_projection,
-			SIGNAL(projection_type_about_to_change(const GPlatesGui::ViewportProjection &)),
+			&projection,
+			SIGNAL(globe_map_projection_about_to_change(const GPlatesGui::Projection &)),
 			this,
-			SLOT(about_to_change_projection(const GPlatesGui::ViewportProjection &)));
+			SLOT(about_to_change_globe_map_projection(const GPlatesGui::Projection &)));
 	QObject::connect(
-			&view_projection,
-			SIGNAL(projection_type_changed(const GPlatesGui::ViewportProjection &)),
+			&projection,
+			SIGNAL(projection_changed(const GPlatesGui::Projection &)),
 			this,
-			SLOT(change_projection(const GPlatesGui::ViewportProjection &)));
-	QObject::connect(
-			&view_projection,
-			SIGNAL(central_meridian_changed(const GPlatesGui::ViewportProjection &)),
-			this,
-			SLOT(change_projection(const GPlatesGui::ViewportProjection &)));
+			SLOT(change_projection(const GPlatesGui::Projection &)));
 
 	// Get notified when globe and map get repainted.
 	QObject::connect(
@@ -153,8 +148,8 @@ GPlatesQtWidgets::GlobeAndMapWidget::handle_globe_or_map_repainted(
 
 
 void
-GPlatesQtWidgets::GlobeAndMapWidget::about_to_change_projection(
-		const GPlatesGui::ViewportProjection &view_projection)
+GPlatesQtWidgets::GlobeAndMapWidget::about_to_change_globe_map_projection(
+		const GPlatesGui::Projection &projection)
 {
 	// Save the camera position of the currently active view before we potentially change
 	// to a different view (eg, globe to map view or vice versa).
@@ -164,42 +159,34 @@ GPlatesQtWidgets::GlobeAndMapWidget::about_to_change_projection(
 
 void
 GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
-		const GPlatesGui::ViewportProjection &view_projection)
+		const GPlatesGui::Projection &projection)
 {
-	const boost::optional<GPlatesGui::GlobeProjection::Type> globe_projection_type =
-			view_projection.get_globe_projection_type();
+	const GPlatesGui::Projection::globe_map_projection_type &globe_map_projection = projection.get_globe_map_projection();
+	const GPlatesGui::Projection::viewport_projection_type viewport_projection = projection.get_viewport_projection();
 
-	if (globe_projection_type)  // globe projection...
+	if (globe_map_projection.is_viewing_globe_projection())  // viewing globe projection...
 	{
 		// Switch to globe.
 		d_layout->setCurrentWidget(d_globe_canvas_ptr.get());
 		d_active_view_ptr = d_globe_canvas_ptr.get();
-
-		// Update the globe canvas's view projection (orthographic or perspective).
-		//
-		// TODO: Move outside globe/map if/else.
-		d_active_view_ptr->get_camera().set_view_projection_type(globe_projection_type.get());
 	}
-	else // map projection...
+	else // viewing map projection...
 	{
 		// Switch to map.
 		d_layout->setCurrentWidget(d_map_canvas_ptr.get());
 		d_active_view_ptr = d_map_canvas_ptr.get();
 
-		// Update the map canvas's view projection (orthographic or perspective).
-		//
-		// TODO: Change this when view projection is separated from globe/map projection.
-#if 0
-		d_active_view_ptr->get_camera().set_view_projection_type(globe_projection_type.get());
-#endif
-
 		// Update the map canvas's map projection.
 		d_view_state.get_map_projection().set_projection_type(
-				view_projection.get_map_projection_type().get());
+				globe_map_projection.get_map_projection_type());
 		d_view_state.get_map_projection().set_central_meridian(
-				view_projection.get_map_central_meridian());
+				globe_map_projection.get_map_central_meridian());
 	}
 
+	// Set the camera viewport projection (orthographic/perspective).
+	d_active_view_ptr->get_camera().set_viewport_projection(viewport_projection);
+
+	// Set the camera look-at position.
 	if (d_active_camera_viewpoint)
 	{
 		d_active_view_ptr->get_camera().move_look_at_position_on_globe(d_active_camera_viewpoint.get());

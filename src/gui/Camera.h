@@ -30,7 +30,7 @@
 #include <boost/optional.hpp>
 #include <QObject>
 
-#include "GlobeProjectionType.h"
+#include "ViewportProjectionType.h"
 
 #include "maths/PointOnSphere.h"
 #include "maths/types.h"
@@ -64,16 +64,16 @@ namespace GPlatesGui
 		 * Switch between orthographic and perspective view projections.
 		 */
 		void
-		set_view_projection_type(
-				GlobeProjection::Type view_projection_type);
+		set_viewport_projection(
+				ViewportProjection::Type viewport_projection);
 
 		/**
 		 * Return the view projection (orthographic or perspective).
 		 */
-		GlobeProjection::Type
-		get_view_projection_type() const
+		ViewportProjection::Type
+		get_viewport_projection() const
 		{
-			return d_view_projection_type;
+			return d_viewport_projection;
 		}
 
 
@@ -256,8 +256,8 @@ namespace GPlatesGui
 
 	protected:
 
-		explicit
 		Camera(
+				ViewportProjection::Type viewport_projection,
 				ViewportZoom &viewport_zoom);
 
 		const ViewportZoom &
@@ -379,12 +379,12 @@ namespace GPlatesGui
 
 	private:
 
-		ViewportZoom &d_viewport_zoom;
-
 		/**
-		 * The view projection (orthographic or perspective).
+		 * The viewport projection (orthographic or perspective).
 		 */
-		GlobeProjection::Type d_view_projection_type;
+		ViewportProjection::Type d_viewport_projection;
+
+		ViewportZoom &d_viewport_zoom;
 	};
 }
 

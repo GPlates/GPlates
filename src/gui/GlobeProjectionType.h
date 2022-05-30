@@ -32,11 +32,12 @@ namespace GPlatesGui
 	{
 		/**
 		 * An enumeration of globe projection types.
+		 *
+		 * NOTE: There's only one globe projection type and that's the 3D globe.
 		 */
 		enum Type
 		{
-			ORTHOGRAPHIC,  // 3D orthographic view frustum - view rays are parallel.
-			PERSPECTIVE,   // 3D perspective view frustum - view rays emanate from eye/camera position.
+			GLOBE,
 
 			NUM_PROJECTIONS
 		};

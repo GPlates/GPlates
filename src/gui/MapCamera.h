@@ -54,10 +54,9 @@ namespace GPlatesGui
 	{
 	public:
 
-
-		explicit
 		MapCamera(
 				MapProjection &map_projection,
+				ViewportProjection::Type viewport_projection,
 				ViewportZoom &viewport_zoom);
 
 

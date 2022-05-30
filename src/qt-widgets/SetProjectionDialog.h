@@ -32,7 +32,7 @@
 
 #include "GPlatesDialog.h"
 
-#include "gui/ViewportProjection.h"
+#include "gui/Projection.h"
 
 
 namespace GPlatesQtWidgets
@@ -58,35 +58,39 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		setup(
-				const GPlatesGui::ViewportProjection &viewport_projection)
+				const GPlatesGui::Projection &projection)
 		{
-			set_projection(viewport_projection);
+			set_projection(projection);
 		}
 
 		void
 		set_projection(
-				const GPlatesGui::ViewportProjection &viewport_projection);
-
-		void
-		set_map_central_meridian(
-				double map_central_meridian);
+				const GPlatesGui::Projection &projection);
 
 
-		GPlatesGui::ViewportProjection::projection_type
-		get_projection_type() const;
+		GPlatesGui::Projection::globe_map_projection_type
+		get_globe_map_projection() const;
 
-		double
-		get_map_central_meridian();
+		GPlatesGui::Projection::viewport_projection_type
+		get_viewport_projection() const;
 
 	private Q_SLOTS:
 
 		/**
-		 * Disables the central_meridian spinbox when the Orthographic projection is selected. 
+		 * Disables the central_meridian spinbox when the globe projection is selected. 
 		 */
 		void
-		update_central_meridian_status();
-	};
+		update_map_central_meridian_status();
 
+	private:
+
+		void
+		set_map_central_meridian(
+				const double &map_central_meridian);
+
+		double
+		get_map_central_meridian() const;
+	};
 }
 
 #endif  // GPLATES_QTWIDGETS_SETPROJECTIONDIALOG_H

@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2019 The University of Sydney, Australia
+ * Copyright (C) 2022 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,19 +23,21 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "GlobeProjectionType.h"
+#include "ViewportProjectionType.h"
 
 #include "global/GPlatesAssert.h"
 
 
 const char *
-GPlatesGui::GlobeProjection::get_display_name(
+GPlatesGui::ViewportProjection::get_display_name(
 		Type projection_type)
 {
 	switch (projection_type)
 	{
-	case GLOBE:
-		return "Globe";
+	case ORTHOGRAPHIC:
+		return "3D Orthographic";
+	case PERSPECTIVE:
+		return "3D Perspective";
 	default:
 		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 	}

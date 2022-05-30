@@ -5,7 +5,7 @@
  * $Revision$
  * $Date$
  * 
- * Copyright (C) 2019 The University of Sydney, Australia
+ * Copyright (C) 2022 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,20 +23,31 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "GlobeProjectionType.h"
+#ifndef GPLATES_GUI_VIEWPORTPROJECTIONTYPE_H
+#define GPLATES_GUI_VIEWPORTPROJECTIONTYPE_H
 
-#include "global/GPlatesAssert.h"
-
-
-const char *
-GPlatesGui::GlobeProjection::get_display_name(
-		Type projection_type)
+namespace GPlatesGui
 {
-	switch (projection_type)
+	namespace ViewportProjection
 	{
-	case GLOBE:
-		return "Globe";
-	default:
-		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		/**
+		 * An enumeration of viewport projection types.
+		 */
+		enum Type
+		{
+			ORTHOGRAPHIC,  // 3D orthographic view frustum - view rays are parallel.
+			PERSPECTIVE,   // 3D perspective view frustum - view rays emanate from eye/camera position.
+
+			NUM_PROJECTIONS
+		};
+
+		/**
+		 * Return a suitable label naming the specified projection type.
+		 */
+		const char *
+		get_display_name(
+				Type projection_type);
 	}
 }
+
+#endif // GPLATES_GUI_VIEWPORTPROJECTIONTYPE_H

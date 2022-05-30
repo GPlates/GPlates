@@ -50,7 +50,7 @@ namespace
 
 	const double MIN_SCALE_FACTOR = 1e-8;
 
-	struct ProjectionParameters 
+	struct MapProjectionParameters 
 	{
 		GPlatesGui::MapProjection::Type projection_name;
 		const char *label_name;
@@ -65,7 +65,7 @@ namespace
 		bool detect_inverse_longitude_wrapping;
 	};
 
-	static ProjectionParameters projection_table[] =
+	static MapProjectionParameters projection_table[] =
 	{
 		// Don't really need a scale for "Rectangular" since handling ourselves (directly in degrees) and not using proj library...
 		{GPlatesGui::MapProjection::RECTANGULAR, "Rectangular", "proj=latlong", "ellps=WGS84", 1.0, true},
@@ -489,7 +489,7 @@ GPlatesGui::MapProjection::inverse_transform(
 		//
 		// Note that input x corresponding to central meridian is zero.
 		//
-		// Note that this does the check required by 'ProjectionParameters::detect_inverse_longitude_wrapping'.
+		// Note that this does the check required by 'MapProjectionParameters::detect_inverse_longitude_wrapping'.
 		if (!GPlatesMaths::is_in_range(x, -180.0, 180.0))
 		{
 			return false;

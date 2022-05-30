@@ -62,8 +62,8 @@ namespace GPlatesGui
 		static const double FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT;
 
 
-		explicit
 		GlobeCamera(
+				ViewportProjection::Type viewport_projection,
 				ViewportZoom &viewport_zoom);
 
 		/**

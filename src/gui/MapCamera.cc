@@ -63,8 +63,9 @@ const GPlatesMaths::UnitVector3D GPlatesGui::MapCamera::INITIAL_UP_DIRECTION(0, 
 
 GPlatesGui::MapCamera::MapCamera(
 		MapProjection &map_projection,
+		ViewportProjection::Type viewport_projection,
 		ViewportZoom &viewport_zoom) :
-	Camera(viewport_zoom),
+	Camera(viewport_projection, viewport_zoom),
 	d_map_projection(map_projection),
 	d_look_at_position_on_globe(INITIAL_LOOK_AT_POSITION_ON_GLOBE),
 	d_rotation_angle(0),
@@ -320,7 +321,7 @@ GPlatesGui::MapCamera::get_position_on_map_at_camera_ray(
 
 	// Intersect the ray with the map plane.
 	const boost::optional<GPlatesMaths::real_t> ray_distance_to_map_plane =
-			(get_view_projection_type() == GlobeProjection::ORTHOGRAPHIC)
+			(get_viewport_projection() == ViewportProjection::ORTHOGRAPHIC)
 					// For *orthographic* viewing the negative or positive side of the ray can intersect the plane
 					// (since the view rays are parallel and so if we ignore the near/far clip planes then
 					// everything in the infinitely long rectangular prism is visible)...

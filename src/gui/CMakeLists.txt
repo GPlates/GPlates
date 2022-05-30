@@ -199,6 +199,7 @@ set(srcs
     PlateIdColourPalettes.h
     PoleManipulationCanvasToolWorkflow.cc
     PoleManipulationCanvasToolWorkflow.h
+    Projection.h
     ProjectionException.h
     PythonConfiguration.cc
     PythonConfiguration.h
@@ -251,7 +252,8 @@ set(srcs
     VelocityLegendOverlaySettings.h
     ViewCanvasToolWorkflow.cc
     ViewCanvasToolWorkflow.h
-    ViewportProjection.h
+    ViewportProjectionType.cc
+    ViewportProjectionType.h
     ViewportZoom.cc
     ViewportZoom.h
     VisualLayersListModel.cc

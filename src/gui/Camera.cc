@@ -53,9 +53,10 @@ const double GPlatesGui::Camera::TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW =
 
 
 GPlatesGui::Camera::Camera(
+		ViewportProjection::Type viewport_projection,
 		ViewportZoom &viewport_zoom) :
-	d_viewport_zoom(viewport_zoom),
-	d_view_projection_type(GlobeProjection::ORTHOGRAPHIC)
+	d_viewport_projection(viewport_projection),
+	d_viewport_zoom(viewport_zoom)
 {
 	// View zoom changes affect our camera.
 	QObject::connect(
@@ -65,17 +66,14 @@ GPlatesGui::Camera::Camera(
 
 
 void
-GPlatesGui::Camera::set_view_projection_type(
-		GlobeProjection::Type projection_type)
+GPlatesGui::Camera::set_viewport_projection(
+		ViewportProjection::Type viewport_projection)
 {
-	if (d_view_projection_type == projection_type)
+	if (d_viewport_projection != viewport_projection)
 	{
-		return;
+		d_viewport_projection = viewport_projection;
+		Q_EMIT camera_changed();
 	}
-
-	d_view_projection_type = projection_type;
-
-	Q_EMIT camera_changed();
 }
 
 
@@ -127,7 +125,7 @@ GPlatesGui::Camera::get_projection_transform(
 	const GLdouble depth_to_far_side_of_scene = signed_distance_from_eye_to_origin_along_view_direction + get_bounding_radius();
 
 	GPlatesOpenGL::GLMatrix projection_transform;
-	if (get_view_projection_type() == GlobeProjection::ORTHOGRAPHIC)
+	if (get_viewport_projection() == ViewportProjection::ORTHOGRAPHIC)
 	{
 		// Distance along the view direction from eye to near side of surface of sphere that bounds the scene (globe or map).
 		// This puts the near plane close enough to include the entire scene.
@@ -156,7 +154,7 @@ GPlatesGui::Camera::get_projection_transform(
 	else // perspective...
 	{
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				get_view_projection_type() == GlobeProjection::PERSPECTIVE,
+				get_viewport_projection() == ViewportProjection::PERSPECTIVE,
 				GPLATES_ASSERTION_SOURCE);
 
 		//
@@ -231,14 +229,14 @@ GPlatesGui::Camera::get_projection_transform(
 GPlatesMaths::Vector3D
 GPlatesGui::Camera::get_eye_position() const
 {
-	if (get_view_projection_type() == GlobeProjection::ORTHOGRAPHIC)
+	if (get_viewport_projection() == ViewportProjection::ORTHOGRAPHIC)
 	{
 		return get_orthographic_eye_position(get_look_at_position());
 	}
 	else // perspective...
 	{
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				get_view_projection_type() == GlobeProjection::PERSPECTIVE,
+				get_viewport_projection() == ViewportProjection::PERSPECTIVE,
 				GPLATES_ASSERTION_SOURCE);
 
 		return get_perspective_eye_position();
@@ -261,7 +259,7 @@ GPlatesGui::Camera::get_camera_ray_at_window_coord(
 	const GPlatesMaths::Vector3D view_y_axis(get_up_direction());
 	const GPlatesMaths::Vector3D view_x_axis = cross(view_z_axis, view_y_axis);
 
-	if (get_view_projection_type() == GlobeProjection::ORTHOGRAPHIC)
+	if (get_viewport_projection() == ViewportProjection::ORTHOGRAPHIC)
 	{
 		double ortho_left;
 		double ortho_right;
@@ -297,7 +295,7 @@ GPlatesGui::Camera::get_camera_ray_at_window_coord(
 	else  // perspective...
 	{
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				get_view_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
+				get_viewport_projection() == ViewportProjection::PERSPECTIVE,
 				GPLATES_ASSERTION_SOURCE);
 
 		// Get the field-of-view.
@@ -326,7 +324,7 @@ GPlatesOpenGL::GLIntersect::Ray
 GPlatesGui::Camera::get_camera_ray_at_position(
 		const GPlatesMaths::Vector3D &position) const
 {
-	if (get_view_projection_type() == GlobeProjection::ORTHOGRAPHIC)
+	if (get_viewport_projection() == ViewportProjection::ORTHOGRAPHIC)
 	{
 		// Ray origin.
 		const GPlatesMaths::Vector3D ray_origin = get_orthographic_eye_position(position);
@@ -340,7 +338,7 @@ GPlatesGui::Camera::get_camera_ray_at_position(
 	else  // perspective...
 	{
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				get_view_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
+				get_viewport_projection() == ViewportProjection::PERSPECTIVE,
 				GPLATES_ASSERTION_SOURCE);
 
 		const GPlatesMaths::Vector3D ray_origin = get_perspective_eye_position();
@@ -373,7 +371,7 @@ GPlatesGui::Camera::get_window_coord_at_position(
 	const GPlatesMaths::Vector3D view_y_axis(get_up_direction());
 	const GPlatesMaths::Vector3D view_x_axis = cross(view_z_axis, view_y_axis);
 
-	if (get_view_projection_type() == GlobeProjection::ORTHOGRAPHIC)
+	if (get_viewport_projection() == ViewportProjection::ORTHOGRAPHIC)
 	{
 		double ortho_left;
 		double ortho_right;
@@ -402,7 +400,7 @@ GPlatesGui::Camera::get_window_coord_at_position(
 	else  // perspective...
 	{
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				get_view_projection_type() == GPlatesGui::GlobeProjection::PERSPECTIVE,
+				get_viewport_projection() == ViewportProjection::PERSPECTIVE,
 				GPLATES_ASSERTION_SOURCE);
 
 		// Get the field-of-view.

@@ -49,7 +49,7 @@
 namespace GPlatesGui
 {
 	class Camera;
-	class ViewportProjection;
+	class Projection;
 }
 
 namespace GPlatesOpenGL
@@ -221,12 +221,12 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
-		about_to_change_projection(
-				const GPlatesGui::ViewportProjection &view_projection);
+		about_to_change_globe_map_projection(
+				const GPlatesGui::Projection &projection);
 
 		void
 		change_projection(
-			const GPlatesGui::ViewportProjection &view_projection);
+			const GPlatesGui::Projection &projection);
 
 		void
 		handle_globe_or_map_repainted(

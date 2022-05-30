@@ -36,8 +36,8 @@
 #include "global/AssertionFailureException.h"
 
 #include "gui/Camera.h"
+#include "gui/Projection.h"
 #include "gui/TrinketArea.h"
-#include "gui/ViewportProjection.h"
 
 #include "maths/InvalidLatLonException.h"
 
@@ -741,17 +741,17 @@ GPlatesGui::Dialogs::pop_up_set_projection_dialog()
 {
 	GPlatesQtWidgets::SetProjectionDialog &dialog = set_projection_dialog();
 
-	GPlatesGui::ViewportProjection &viewport_projection = view_state().get_viewport_projection();
-	dialog.setup(viewport_projection);
+	GPlatesGui::Projection &projection = view_state().get_projection();
+	dialog.setup(projection);
 
 	if (dialog.exec())
 	{
 		try
 		{
-			// Notify the view state of the projection change.
-			// It will handle the rest.
-			viewport_projection.set_projection_type(dialog.get_projection_type());
-			viewport_projection.set_map_central_meridian(dialog.get_map_central_meridian());
+			// Notify the view state of the projection change. It will handle the rest.
+			projection.set_projection(
+					dialog.get_globe_map_projection(),
+					dialog.get_viewport_projection());
 		}
 		catch(GPlatesGui::ProjectionException &e)
 		{

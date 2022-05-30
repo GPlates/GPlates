@@ -48,7 +48,7 @@ GPlatesQtWidgets::SetProjectionDialog::SetProjectionDialog(
 		const GPlatesGui::GlobeProjection::Type globe_projection_type =
 				static_cast<GPlatesGui::GlobeProjection::Type>(globe_projection_index);
 
-		combo_projection->addItem(
+		combo_globe_map_projection->addItem(
 				tr(GPlatesGui::GlobeProjection::get_display_name(globe_projection_type)),
 				globe_projection_index);
 	}
@@ -60,22 +60,22 @@ GPlatesQtWidgets::SetProjectionDialog::SetProjectionDialog(
 		++map_projection_index)
 	{
 		const GPlatesGui::MapProjection::Type map_projection_type =
-			static_cast<GPlatesGui::MapProjection::Type>(map_projection_index);
+				static_cast<GPlatesGui::MapProjection::Type>(map_projection_index);
 
-		combo_projection->addItem(
+		combo_globe_map_projection->addItem(
 				tr(GPlatesGui::MapProjection::get_display_name(map_projection_type)),
 				// Add map projection indices *after* the globe projection indices...
 				GPlatesGui::GlobeProjection::NUM_PROJECTIONS + map_projection_index);
 	}
 
 	// The central_meridian spinbox should be disabled if we're in a globe projection. 
-	update_central_meridian_status();
+	update_map_central_meridian_status();
 
 	QObject::connect(
-			combo_projection,
+			combo_globe_map_projection,
 			SIGNAL(currentIndexChanged(int)),
 			this,
-			SLOT(update_central_meridian_status()));
+			SLOT(update_map_central_meridian_status()));
 
 	QObject::connect(
 			main_buttonbox,
@@ -91,62 +91,49 @@ GPlatesQtWidgets::SetProjectionDialog::SetProjectionDialog(
 	QtWidgetUtils::resize_based_on_size_hint(this);
 }
 
+
 void
 GPlatesQtWidgets::SetProjectionDialog::set_projection(
-		const GPlatesGui::ViewportProjection &viewport_projection)
+		const GPlatesGui::Projection &projection)
 {
-	// Get the projection index of the viewport projection (it's either a globe or map projection).
-	unsigned int projection_index;
-	if (boost::optional<GPlatesGui::GlobeProjection::Type> globe_projection_type =
-		viewport_projection.get_globe_projection_type())
+	const GPlatesGui::Projection::globe_map_projection_type &globe_map_projection =
+			projection.get_globe_map_projection();
+	const GPlatesGui::Projection::viewport_projection_type viewport_projection =
+			projection.get_viewport_projection();
+
+	// Get the globe/map projection index (it's either a globe or map projection).
+	unsigned int globe_map_projection_index;
+	if (globe_map_projection.is_viewing_globe_projection())
 	{
-		projection_index = globe_projection_type.get();
+		globe_map_projection_index = globe_map_projection.get_globe_projection_type();
 	}
 	else // map projection...
 	{
-		boost::optional<GPlatesGui::MapProjection::Type> map_projection_type =
-				viewport_projection.get_map_projection_type();
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				map_projection_type,
-				GPLATES_ASSERTION_SOURCE);
-
 		// Map projection indices come *after* the globe projection indices.
-		projection_index = GPlatesGui::GlobeProjection::NUM_PROJECTIONS + map_projection_type.get();
+		globe_map_projection_index = GPlatesGui::GlobeProjection::NUM_PROJECTIONS + globe_map_projection.get_map_projection_type();
+
+		set_map_central_meridian(globe_map_projection.get_map_central_meridian());
 	}
 
 	// Now we can quickly select the appropriate line of the combobox
 	// by finding our projection ID (and not worrying about the text
 	// label)
-	const int idx = combo_projection->findData(projection_index);
+	const int idx = combo_globe_map_projection->findData(globe_map_projection_index);
 	if (idx != -1)
 	{
-		combo_projection->setCurrentIndex(idx);
+		combo_globe_map_projection->setCurrentIndex(idx);
 	}
 }
 
-void
-GPlatesQtWidgets::SetProjectionDialog::set_map_central_meridian(
-		double central_meridian_)
-{
-	spin_central_meridian->setValue(central_meridian_);
-}
 
-void
-GPlatesQtWidgets::SetProjectionDialog::update_central_meridian_status()
-{
-	// Disable for the globe projections (map projections added to combo box after globe projections).
-	spin_central_meridian->setDisabled(
-			combo_projection->currentIndex() < GPlatesGui::GlobeProjection::NUM_PROJECTIONS);
-}
-
-GPlatesGui::ViewportProjection::projection_type
-GPlatesQtWidgets::SetProjectionDialog::get_projection_type() const
+GPlatesGui::Projection::globe_map_projection_type
+GPlatesQtWidgets::SetProjectionDialog::get_globe_map_projection() const
 {
 	// Retrieve the embedded QVariant for the selected combobox choice.
-	QVariant projection_qv = combo_projection->itemData(combo_projection->currentIndex());
+	QVariant globe_map_projection_qv = combo_globe_map_projection->itemData(combo_globe_map_projection->currentIndex());
 
-	// Extract projection index from QVariant.
-	const unsigned int projection_index = projection_qv.toUInt();
+	// Extract globe/map projection index from QVariant.
+	const unsigned int projection_index = globe_map_projection_qv.toUInt();
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			projection_index < GPlatesGui::GlobeProjection::NUM_PROJECTIONS + GPlatesGui::MapProjection::NUM_PROJECTIONS,
 			GPLATES_ASSERTION_SOURCE);
@@ -154,17 +141,47 @@ GPlatesQtWidgets::SetProjectionDialog::get_projection_type() const
 	// If it's a globe projection.
 	if (projection_index < GPlatesGui::GlobeProjection::NUM_PROJECTIONS)
 	{
-		return GPlatesGui::ViewportProjection::projection_type(
+		return GPlatesGui::Projection::globe_map_projection_type(
 				static_cast<GPlatesGui::GlobeProjection::Type>(projection_index));
 	}
 
-	// Map projection (projection index is after all globe projections).
-	return GPlatesGui::ViewportProjection::projection_type(
-			static_cast<GPlatesGui::MapProjection::Type>(projection_index - GPlatesGui::GlobeProjection::NUM_PROJECTIONS));
+	const GPlatesGui::MapProjection::Type map_projection_type =
+			// Projection index is after all globe projections...
+			static_cast<GPlatesGui::MapProjection::Type>(projection_index - GPlatesGui::GlobeProjection::NUM_PROJECTIONS);
+	const double map_central_meridian = get_map_central_meridian();
+
+	return GPlatesGui::Projection::globe_map_projection_type(
+			map_projection_type,
+			map_central_meridian);
 }
 
+
+GPlatesGui::Projection::viewport_projection_type
+GPlatesQtWidgets::SetProjectionDialog::get_viewport_projection() const
+{
+	return  GPlatesGui::ViewportProjection::ORTHOGRAPHIC;
+}
+
+
+void
+GPlatesQtWidgets::SetProjectionDialog::update_map_central_meridian_status()
+{
+	// Disable for the globe projections (map projections added to combo box after globe projections).
+	spin_central_meridian->setDisabled(
+			combo_globe_map_projection->currentIndex() < GPlatesGui::GlobeProjection::NUM_PROJECTIONS);
+}
+
+
+void
+GPlatesQtWidgets::SetProjectionDialog::set_map_central_meridian(
+		const double &map_central_meridian)
+{
+	spin_central_meridian->setValue(map_central_meridian);
+}
+
+
 double
-GPlatesQtWidgets::SetProjectionDialog::get_map_central_meridian()
+GPlatesQtWidgets::SetProjectionDialog::get_map_central_meridian() const
 {
 	return spin_central_meridian->value();
 }

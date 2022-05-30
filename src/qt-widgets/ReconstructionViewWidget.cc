@@ -49,7 +49,7 @@
 #include "gui/GlobeCamera.h"
 #include "gui/MapCamera.h"
 #include "gui/MapProjection.h"
-#include "gui/ViewportProjection.h"
+#include "gui/Projection.h"
 
 #include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
@@ -198,7 +198,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	// Construct the "View Bar" for the bottom.
 	std::unique_ptr<QWidget> viewbar =
 		construct_viewbar_with_projections(view_state.get_viewport_zoom(),
-										   view_state.get_viewport_projection());
+										   view_state.get_projection());
 
 	// With all our widgets constructed, on to the main canvas layout:-
 
@@ -280,10 +280,10 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 			this,
 			SLOT(update_mouse_position_on_map(const boost::optional<GPlatesMaths::PointOnSphere> &)));
 	QObject::connect(
-			&(view_state.get_viewport_projection()),
-			SIGNAL(projection_type_changed(const GPlatesGui::ViewportProjection &)),
+			&(view_state.get_projection()),
+			SIGNAL(globe_map_projection_changed(const GPlatesGui::Projection &)),
 			this,
-			SLOT(handle_projection_type_changed(const GPlatesGui::ViewportProjection &)));
+			SLOT(handle_globe_map_projection_changed(const GPlatesGui::Projection &)));
 
 	// Propagate messages up to ViewportWindow
 	QObject::connect(
@@ -304,11 +304,14 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 
 
 void
-GPlatesQtWidgets::ReconstructionViewWidget::handle_projection_type_changed(
-		const GPlatesGui::ViewportProjection &viewport_projection)
+GPlatesQtWidgets::ReconstructionViewWidget::handle_globe_map_projection_changed(
+		const GPlatesGui::Projection &projection)
 {
+	const GPlatesGui::Projection::globe_map_projection_type &globe_map_projection =
+			projection.get_globe_map_projection();
+
 	// Reset the mouse coords label if projection changed.
-	if (viewport_projection.get_globe_projection_type())
+	if (globe_map_projection.is_viewing_globe_projection())
 	{
 		d_label_mouse_coords->setText(DEFAULT_MOUSE_COORDS_LABEL_TEXT_FOR_GLOBE);
 	}
@@ -445,7 +448,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_one(
 std::unique_ptr<QWidget>
 GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_two(
 		GPlatesGui::ViewportZoom &vzoom,
-		GPlatesGui::ViewportProjection &vprojection)
+		GPlatesGui::Projection &vprojection)
 {
 	// We create the bar widget in a unique_ptr, because it has no Qt parent yet.
 	// unique_ptr will keep tabs on the memory for us until we can return it
@@ -515,7 +518,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar(
 std::unique_ptr<QWidget>
 GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar_with_projections(
 	GPlatesGui::ViewportZoom &vzoom,
-	GPlatesGui::ViewportProjection &vprojection)
+	GPlatesGui::Projection &projection)
 {
 	// We create the bar widget in a unique_ptr, because it has no Qt parent yet.
 	// unique_ptr will keep tabs on the memory for us until we can return it
@@ -554,7 +557,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar_with_projections(
 			SLOT(setFocus()));
 
 	// Create the ProjectionControlWidget
-	d_projection_control_widget_ptr = new ProjectionControlWidget(vprojection,viewbar_widget.get());
+	d_projection_control_widget_ptr = new ProjectionControlWidget(projection, viewbar_widget.get());
 
 	// Create a view-controls widget to house the View label, Projection box, Zoom spinbox, and Camera. 
 	QWidget *view_controls_widget = new QWidget(viewbar_widget.get());

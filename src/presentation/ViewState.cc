@@ -53,6 +53,7 @@
 #include "gui/GraticuleSettings.h"
 #include "gui/MapCamera.h"
 #include "gui/MapProjection.h"
+#include "gui/Projection.h"
 #include "gui/PythonManager.h"
 #include "gui/RasterColourPalette.h"
 #include "gui/RenderSettings.h"
@@ -61,7 +62,6 @@
 #include "gui/TextOverlaySettings.h"
 #include "gui/TopologySectionsContainer.h"
 #include "gui/VelocityLegendOverlaySettings.h"
-#include "gui/ViewportProjection.h"
 #include "gui/ViewportZoom.h"
 
 #include "maths/MathsUtils.h"
@@ -105,8 +105,6 @@ GPlatesPresentation::ViewState::ViewState(
 				*d_rendered_geometry_collection)),
 	d_viewport_zoom(
 			new GPlatesGui::ViewportZoom()),
-	d_viewport_projection(
-			new GPlatesGui::ViewportProjection(GPlatesGui::GlobeProjection::ORTHOGRAPHIC)),
 	d_digitise_geometry_builder(
 			new GPlatesViewOperations::GeometryBuilder()),
 	d_focused_feature_geometry_builder(
@@ -127,12 +125,16 @@ GPlatesPresentation::ViewState::ViewState(
 			new VisualLayerRegistry()),
 	d_map_projection(
 			GPlatesGui::MapProjection::create()),
+	d_projection(
+			new GPlatesGui::Projection()),
 	d_globe_camera(
 			new GPlatesGui::GlobeCamera(
+				d_projection->get_viewport_projection(),
 				*d_viewport_zoom)),
 	d_map_camera(
 			new GPlatesGui::MapCamera(
 				*d_map_projection,
+				d_projection->get_viewport_projection(),
 				*d_viewport_zoom)),
 	d_globe_view_operation(
 			new GPlatesViewOperations::GlobeViewOperation(
@@ -303,16 +305,16 @@ GPlatesPresentation::ViewState::get_viewport_zoom() const
 }
 
 
-GPlatesGui::ViewportProjection &
-GPlatesPresentation::ViewState::get_viewport_projection()
+GPlatesGui::Projection &
+GPlatesPresentation::ViewState::get_projection()
 {
-	return *d_viewport_projection;
+	return *d_projection;
 }
 
-const GPlatesGui::ViewportProjection &
-GPlatesPresentation::ViewState::get_viewport_projection() const
+const GPlatesGui::Projection &
+GPlatesPresentation::ViewState::get_projection() const
 {
-	return *d_viewport_projection;
+	return *d_projection;
 }
 
 
