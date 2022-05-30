@@ -51,7 +51,7 @@ GPlatesQtWidgets::ProjectionControlWidget::ProjectionControlWidget(
 		const GPlatesGui::GlobeProjection::Type globe_projection =
 				static_cast<GPlatesGui::GlobeProjection::Type>(globe_projection_index);
 
-		add_projection(
+		add_globe_map_projection(
 				tr(GPlatesGui::GlobeProjection::get_display_name(globe_projection)),
 				globe_projection_index);
 	}
@@ -65,27 +65,47 @@ GPlatesQtWidgets::ProjectionControlWidget::ProjectionControlWidget(
 		const GPlatesGui::MapProjection::Type map_projection_type =
 				static_cast<GPlatesGui::MapProjection::Type>(map_projection_index);
 
-		add_projection(
+		add_globe_map_projection(
 				tr(GPlatesGui::MapProjection::get_display_name(map_projection_type)),
 				// Add map projection indices *after* the globe projection indices...
 				GPlatesGui::GlobeProjection::NUM_PROJECTIONS + map_projection_index);
+	}
+
+	// Now add the viewport projections.
+	for (unsigned int viewport_projection_index = 0;
+		viewport_projection_index < GPlatesGui::ViewportProjection::NUM_PROJECTIONS;
+		++viewport_projection_index)
+	{
+		const GPlatesGui::ViewportProjection::Type viewport_projection =
+				static_cast<GPlatesGui::ViewportProjection::Type>(viewport_projection_index);
+
+		// Add to the combo box.
+		combo_viewport_projection->addItem(
+				tr(GPlatesGui::ViewportProjection::get_display_name(viewport_projection)),
+				viewport_projection_index);
 	}
 	
 	// Handle events from the user changing the combobox.
 	QObject::connect(
 			combo_globe_map_projection, SIGNAL(activated(int)),
 			this, SLOT(handle_globe_map_projection_combo_changed(int)));
+	QObject::connect(
+			combo_viewport_projection, SIGNAL(activated(int)),
+			this, SLOT(handle_viewport_projection_combo_changed(int)));
 	
 	// Listen for projection changes that may occur from some
 	// other source, and update the combobox appropriately.
 	QObject::connect(
 			&d_projection, SIGNAL(globe_map_projection_changed(const GPlatesGui::Projection &)),
 			this, SLOT(handle_globe_map_projection_changed(const GPlatesGui::Projection &)));
+	QObject::connect(
+			&d_projection, SIGNAL(viewport_projection_changed(const GPlatesGui::Projection &)),
+			this, SLOT(handle_viewport_projection_changed(const GPlatesGui::Projection &)));
 }
 
 
 void
-GPlatesQtWidgets::ProjectionControlWidget::add_projection(
+GPlatesQtWidgets::ProjectionControlWidget::add_globe_map_projection(
 		const QString &projection_text,
 		unsigned int projection_index)
 {
@@ -162,6 +182,26 @@ GPlatesQtWidgets::ProjectionControlWidget::handle_globe_map_projection_combo_cha
 
 
 void
+GPlatesQtWidgets::ProjectionControlWidget::handle_viewport_projection_combo_changed(
+		int idx)
+{
+	// Retrieve the embedded QVariant for the selected combobox choice.
+	QVariant selected_projection_qv = combo_viewport_projection->itemData(idx);
+
+	// Extract projection index from QVariant.
+	const unsigned int selected_projection_index = selected_projection_qv.toUInt();
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			selected_projection_index < GPlatesGui::ViewportProjection::NUM_PROJECTIONS,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Set current viewport projection.
+	GPlatesGui::Projection::viewport_projection_type viewport_projection =
+			static_cast<GPlatesGui::ViewportProjection::Type>(selected_projection_index);
+	d_projection.set_viewport_projection(viewport_projection);
+}
+
+
+void
 GPlatesQtWidgets::ProjectionControlWidget::handle_globe_map_projection_shortcut_triggered()
 {
 	// Get the QObject that triggered this slot.
@@ -233,5 +273,25 @@ GPlatesQtWidgets::ProjectionControlWidget::handle_globe_map_projection_changed(
 		// This will not trigger activate() causing a infinite cycle
 		// because we're setting this programmatically.
 		combo_globe_map_projection->setCurrentIndex(idx);
+	}
+}
+
+
+void
+GPlatesQtWidgets::ProjectionControlWidget::handle_viewport_projection_changed(
+		const GPlatesGui::Projection &projection)
+{
+	// Get the projection index of the viewport projection.
+	const unsigned int projection_index = projection.get_viewport_projection();
+
+	// Now we can quickly select the appropriate line of the combobox
+	// by finding our projection ID (and not worrying about the text
+	// label)
+	const int idx = combo_viewport_projection->findData(projection_index);
+	if (idx != -1)
+	{
+		// This will not trigger activate() causing a infinite cycle
+		// because we're setting this programmatically.
+		combo_viewport_projection->setCurrentIndex(idx);
 	}
 }

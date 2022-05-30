@@ -32,7 +32,7 @@
    <item>
     <widget class="QComboBox" name="combo_globe_map_projection">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
        <horstretch>10</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
@@ -42,7 +42,7 @@
    <item>
     <widget class="QComboBox" name="combo_viewport_projection">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+      <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
        <horstretch>10</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>

@@ -147,12 +147,12 @@ namespace
 	{
 		QLabel *label_ptr = new QLabel(DEFAULT_CAMERA_COORDS_LABEL_TEXT);
 		
-		QSizePolicy size(QSizePolicy::Preferred, QSizePolicy::Preferred);
+		QSizePolicy size(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred);
 		size.setHorizontalStretch(0);
 		size.setVerticalStretch(0);
 		size.setHeightForWidth(label_ptr->sizePolicy().hasHeightForWidth());
 		label_ptr->setSizePolicy(size);
-		label_ptr->setMinimumSize(QSize(170, 0));
+		label_ptr->setMinimumSize(QSize(130, 0));
 		
 		return label_ptr;
 	}
@@ -170,7 +170,7 @@ namespace
 		size.setVerticalStretch(0);
 		size.setHeightForWidth(label_ptr->sizePolicy().hasHeightForWidth());
 		label_ptr->setSizePolicy(size);
-		label_ptr->setMinimumSize(QSize(231, 0));
+		label_ptr->setMinimumSize(QSize(180, 0));
 		
 		return label_ptr;
 	}

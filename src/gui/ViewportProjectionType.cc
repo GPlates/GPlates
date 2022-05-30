@@ -35,9 +35,9 @@ GPlatesGui::ViewportProjection::get_display_name(
 	switch (projection_type)
 	{
 	case ORTHOGRAPHIC:
-		return "3D Orthographic";
+		return "Orthographic";
 	case PERSPECTIVE:
-		return "3D Perspective";
+		return "Perspective";
 	default:
 		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 	}

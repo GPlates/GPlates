@@ -64,10 +64,18 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_globe_map_projection_shortcut_triggered();
+		
+		void
+		handle_viewport_projection_combo_changed(
+				int idx);
 
 	public Q_SLOTS:
 		void
 		handle_globe_map_projection_changed(
+				const GPlatesGui::Projection &);
+
+		void
+		handle_viewport_projection_changed(
 				const GPlatesGui::Projection &);
 
 	private:
@@ -76,10 +84,9 @@ namespace GPlatesQtWidgets
 
 
 		void
-		add_projection(
+		add_globe_map_projection(
 				const QString &projection_text,
 				unsigned int projection_index);
-
 	};
 }
 
