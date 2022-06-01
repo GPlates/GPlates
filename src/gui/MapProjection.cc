@@ -50,6 +50,16 @@ namespace
 
 	const double MIN_SCALE_FACTOR = 1e-8;
 
+	// The Proj library has issues with the Mercator projection at the poles (ie, latitudes -90 and 90).
+	// So we clamp latitude slightly inside the poles.
+	// And we do this for all projections for consistency.
+	//
+	// Note: The clamping epsilon also determines the height range of the Mercator map projection.
+	//       Eg, changing from 1e-3  to 1e-6 increases the range quite noticeably.
+	const double CLAMP_LATITUDE_NEAR_POLES_EPSILON = 1e-6;
+	const double MIN_LATITUDE = -90.0 + CLAMP_LATITUDE_NEAR_POLES_EPSILON;
+	const double MAX_LATITUDE = 90.0 - CLAMP_LATITUDE_NEAR_POLES_EPSILON;
+
 	struct MapProjectionParameters 
 	{
 		GPlatesGui::MapProjection::Type projection_name;
@@ -330,6 +340,12 @@ GPlatesGui::MapProjection::forward_transform(
 	double longitude = input_longitude_output_x;
 	double latitude = input_latitude_output_y;
 
+	// The Proj library has issues with the Mercator projection at the poles (ie, latitudes -90 and 90).
+	// So we clamp latitude slightly inside the poles.
+	// And we do this for all projections for consistency.
+	if (latitude <= MIN_LATITUDE) latitude = MIN_LATITUDE;
+	if (latitude >= MAX_LATITUDE) latitude = MAX_LATITUDE;
+
 	//
 	// Handle rectangular projection ourselves (instead of using the proj library).
 	//
@@ -369,11 +385,6 @@ GPlatesGui::MapProjection::forward_transform(
 
 		return;
 	}
-
-	// The mercator projection (and quite possibly some others that we don't use yet)
-	// doesn't like +/-90 latitude values. 
-	if (latitude <= -90.) latitude = -89.999;
-	if (latitude >= 90.) latitude = 89.999;
 
 #if defined(GPLATES_USING_PROJ4)
 
@@ -602,14 +613,16 @@ GPlatesGui::MapProjection::inverse_transform(
 		// with the original x-coordinate. If they don't match then we can assume we're off the map.
 
 		const double original_x = input_x_output_longitude;
-		
+		const double original_y = input_y_output_latitude;
+
 		// Forward transform the inverted longitude and latitude.
 		double inverted_and_transformed_x = longitude;
 		double inverted_and_transformed_y = latitude;
 		forward_transform(inverted_and_transformed_x, inverted_and_transformed_y);
 
 		// If we don't end up at the same transformed x-coordinate then we're off the map. 
-		if (std::fabs(inverted_and_transformed_x - original_x) > 1e-6)
+		if (std::fabs(inverted_and_transformed_x - original_x) > 1e-6 ||
+			std::fabs(inverted_and_transformed_y - original_y) > 1e-6)
 		{
 			return false;
 		}
