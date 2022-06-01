@@ -337,13 +337,15 @@ GPlatesGui::MapProjection::forward_transform(
 	double latitude = input_latitude_output_y;
 
 	// Handle non-zero central meridians (longitude=central_meridian should map to x=0 in map projection space).
+	longitude -= d_central_meridian;
+
+	// Ensure valid longitude (in range [-180, 180]).
 	//
 	// Note: Also exporting of global grid-line-registered rasters (in Rectangular projection) depends
 	//       on latitude and longitude extents being exactly [-90, 90] and [-180, 180] after subtracting
 	//       central longitude since the export expands the map projection very slightly
 	//       (using OpenGL model-view transform) to ensure border pixels get rendered.
 	//       So if this code path changes then should check that those rasters are exported correctly.
-	longitude -= d_central_meridian;
 	if (longitude > 180)
 	{
 		longitude -= 360;
@@ -354,6 +356,8 @@ GPlatesGui::MapProjection::forward_transform(
 	}
 	// ...longitude should now be in the range [-180, 180].
 
+	// Ensure valid latitude.
+	//
 	// The Proj library has issues with the Mercator projection at the poles (ie, latitudes -90 and 90).
 	// So we clamp latitude slightly inside the poles.
 	// And we do this for all projections for consistency.
@@ -509,24 +513,6 @@ GPlatesGui::MapProjection::inverse_transform(
 	double longitude, latitude;
 	if (d_projection_type == RECTANGULAR)
 	{
-		// Check the input x is within the valid range associated with longitude range [-180, 180].
-		// Anything outside that range is outside the rectangular map (left or right of it).
-		//
-		// Note that input x corresponding to central meridian is zero.
-		//
-		// Note that this does the check required by 'MapProjectionParameters::detect_inverse_longitude_wrapping'.
-		if (!GPlatesMaths::is_in_range(x, -180.0, 180.0))
-		{
-			return false;
-		}
-
-		// Check the input y is within the valid range associated with latitude range [-90, 90].
-		// Anything outside that range is outside the rectangular map (above or below it).
-		if (!GPlatesMaths::is_in_range(y, -90.0, 90.0))
-		{
-			return false;
-		}
-
 		//
 		// Handle rectangular projection ourselves (instead of using the proj library).
 		//
@@ -546,32 +532,36 @@ GPlatesGui::MapProjection::inverse_transform(
 		{
 			return false;
 		}
-
-		// See if we need to check if the inverse transform wrapped longitude to range [-180, 180].
-		if (projection_table[d_projection_type].detect_inverse_longitude_wrapping)
-		{
-			// For example, with Mercator the proj library inverse transform returns valid longitudes even
-			// when the map coordinates are far to the right, or left, of the map itself (and this doesn't happen
-			// with Mollweide and Robinson). So we need to explicitly detect and prevent this with Mercator.
-			//
-			// To check this we transform the inverted longitude back into an x-coordinate and compare
-			// with the original x-coordinate. If they don't match then we can assume we're off the map.
-
-			// Forward transform the inverted longitude and latitude.
-			double inverted_and_transformed_x, inverted_and_transformed_y;
-			forward_proj_transform(longitude, latitude, inverted_and_transformed_x, inverted_and_transformed_y);
-
-			// If we don't end up at the same transformed x-coordinate then we're off the map. 
-			if (std::fabs(inverted_and_transformed_x - x) * d_scale > 1e-6 ||
-				std::fabs(inverted_and_transformed_y - y) * d_scale > 1e-6)
-			{
-				return false;
-			}
-		}
 	}
 
 	// Handle non-zero central meridians (x=0 in map projection space should map to longitude=central_meridian).
 	longitude += d_central_meridian;
+
+	// See if we need to check if the inverse transform wrapped longitude to range [-180, 180].
+	if (projection_table[d_projection_type].detect_inverse_longitude_wrapping)
+	{
+		// For example, with Mercator the proj library inverse transform returns valid longitudes even
+		// when the map coordinates are far to the right, or left, of the map itself (and this doesn't happen
+		// with Mollweide and Robinson). So we need to explicitly detect and prevent this with Mercator.
+		//
+		// To check this we transform the inverted longitude back into an x-coordinate and compare
+		// with the original x-coordinate. If they don't match then we can assume we're off the map.
+
+		const double original_x = input_x_output_longitude;
+		const double original_y = input_y_output_latitude;
+
+		// Forward transform the inverted longitude and latitude.
+		double inverted_and_transformed_x = longitude;
+		double inverted_and_transformed_y = latitude;
+		forward_transform(inverted_and_transformed_x, inverted_and_transformed_y);
+
+		// If we don't end up at the same transformed x-coordinate then we're off the map. 
+		if (std::fabs(inverted_and_transformed_x - original_x) > 1e-6 ||
+			std::fabs(inverted_and_transformed_y - original_y) > 1e-6)
+		{
+			return false;
+		}
+	}
 
 	// Return inverse transformed (longitude, latitude) to the caller.
 	input_x_output_longitude = longitude;
