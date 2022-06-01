@@ -28,6 +28,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <string>
 #include <boost/none.hpp>
 #include <QDebug>
 #include <QString>
@@ -38,9 +39,6 @@
 #include "maths/Real.h"
 #include "maths/MathsUtils.h"
 
-#ifdef _MSC_VER
-#define strdup _strdup
-#endif
 
 namespace 
 {
@@ -64,8 +62,8 @@ namespace
 	{
 		GPlatesGui::MapProjection::Type projection_name;
 		const char *label_name;
-		const char* proj_name;
-		const char* proj_ellipse;
+		const char *proj_name;
+		const char *proj_ellipse;
 		double scaling_factor;
 		// Whether we need to check for longitude wrapping to range [-180, 180] for inverse transform.
 		//
@@ -181,28 +179,35 @@ void
 GPlatesGui::MapProjection::set_projection_type(
 		MapProjection::Type projection_type_)
 {
-	// Set up the central longitude string.
-	QString lon_string("lon_0=");
-	double lon = d_central_meridian;
-	lon_string += QString("%1").arg(lon);
-
+	// The requested projection.
 	const int num_projection_args = 3;
-	const int num_latlon_args = 3;
+	std::string projection_arg_strings[num_projection_args] =
+	{
+		std::string(projection_table[projection_type_].proj_name),
+		std::string(projection_table[projection_type_].proj_ellipse),
+		QString("lon_0=%1").arg(d_central_meridian).toStdString()
+	};
+	// Some versions of Proj library require pointers to *non-const* chars.
 	char *projection_args[num_projection_args];
+	for (unsigned int n = 0; n < num_projection_args; ++n)
+	{
+		projection_args[n] = &projection_arg_strings[n][0];
+	}
+
+	// A 'latlong' projection.
+	const int num_latlon_args = 3;
+	std::string latlon_arg_strings[num_latlon_args] =
+	{
+		std::string("proj=latlong"),
+		std::string(projection_table[projection_type_].proj_ellipse),
+		std::string("lon_0=0")
+	};
+	// Some versions of Proj library require pointers to *non-const* chars.
 	char *latlon_args[num_latlon_args];
-
-	projection_args[0] = strdup(projection_table[projection_type_].proj_name);
-	projection_args[1] = strdup(projection_table[projection_type_].proj_ellipse);
-	projection_args[2] = strdup(lon_string.toStdString().c_str());
-
-	// Set up a zero central longitude string.
-	lon_string = QString("lon_0=");
-	lon = 0.;
-	lon_string += QString("%1").arg(lon);
-
-	latlon_args[0] = strdup("proj=latlong");
-	latlon_args[1] = strdup(projection_table[projection_type_].proj_ellipse);
-	latlon_args[2] = strdup(lon_string.toStdString().c_str());
+	for (unsigned int n = 0; n < num_projection_args; ++n)
+	{
+		latlon_args[n] = &latlon_arg_strings[n][0];
+	}
 
 #if defined(GPLATES_USING_PROJ4)
 
