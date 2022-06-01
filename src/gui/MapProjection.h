@@ -159,8 +159,8 @@ namespace GPlatesGui
 				const GPlatesMaths::LatLonPoint &lat_lon_point) const;
 
 		/**
-		 * Transform the longitude and latitude to cartesian coordinates according to the 
-		 * current state of the projection. 
+		 * Transform the longitude and latitude to cartesian coordinates according to the
+		 * current state of the projection.
 		 */ 
 		void
 		forward_transform(
@@ -169,22 +169,22 @@ namespace GPlatesGui
 
 
 		/**
-		* Transform cartesian (x,y) coordinates to a LatLonPoint according to the current
-		* state of the projection. 
-		* 
-		* Return type is boost::optional as there may not be a valid inverse transform
-		* for the provided (x,y) values. 
-		*/ 
+		 * Transform cartesian (x,y) coordinates to a LatLonPoint according to the current
+		 * state of the projection.
+		 *
+		 * Return type is boost::optional as there may not be a valid inverse transform
+		 * for the provided (x,y) values.
+		 */
 		boost::optional<GPlatesMaths::LatLonPoint>
 		inverse_transform(
 				const QPointF &map_point) const;
 
 		/**
-		* Transform cartesian (x,y) coordinates to longitude and latitude according to the current
-		* state of the projection. 
-		* 
-		* Returns false if there is not a valid inverse transform for the provided (x,y) values. 
-		*/ 
+		 * Transform cartesian (x,y) coordinates to longitude and latitude according to the current
+		 * state of the projection.
+		 *
+		 * Returns false if there is not a valid inverse transform for the provided (x,y) values.
+		 */
 		bool
 		inverse_transform(
 				double &x,
@@ -277,6 +277,28 @@ namespace GPlatesGui
 
 		MapProjection(
 				const MapProjectionSettings &projection_settings);
+
+		/**
+		 * Ask the Proj library to forward transform from (longitude, latitude) in degrees to map projection space.
+		 */
+		void
+		forward_proj_transform(
+				double longitude,
+				double latitude,
+				double &x,
+				double &y) const;
+
+		/**
+		 * Ask the Proj library to inverse transform from map projection space (x, y) back to (longitude, latitude) in degrees.
+		 *
+		 * Returns false is there's not a valid inverse transform for the provided (x, y) values.
+		 */
+		bool
+		inverse_proj_transform(
+				double x,
+				double y,
+				double &longitude,
+				double &latitude) const;
 
 		/**
 		 * Updates the boundary great circle - should be called if central llp or projection type changed.
