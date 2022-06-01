@@ -53,8 +53,8 @@ namespace
 	// And we do this for all projections for consistency.
 	//
 	// Note: The clamping epsilon also determines the height range of the Mercator map projection.
-	//       Eg, changing from 1e-3  to 1e-6 increases the range quite noticeably.
-	const double CLAMP_LATITUDE_NEAR_POLES_EPSILON = 1e-6;
+	//       Eg, changing from 1e-3  to 1e-5 increases the range quite noticeably.
+	const double CLAMP_LATITUDE_NEAR_POLES_EPSILON = 1e-5;
 	const double MIN_LATITUDE = -90.0 + CLAMP_LATITUDE_NEAR_POLES_EPSILON;
 	const double MAX_LATITUDE = 90.0 - CLAMP_LATITUDE_NEAR_POLES_EPSILON;
 
