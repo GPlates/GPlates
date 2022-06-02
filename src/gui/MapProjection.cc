@@ -68,24 +68,18 @@ namespace
 		const char *proj_name;
 		const char *proj_ellipse;
 		double scaling_factor;
-		// Whether we need to check for longitude wrapping to range [-180, 180] for inverse transform.
-		//
-		// For example, with Mercator the proj library inverse transform returns valid longitudes even
-		// when the map coordinates are far to the right, or left, of the map itself (and this doesn't happen
-		// with Mollweide and Robinson). So we need to explicitly detect and prevent this with Mercator.
-		bool detect_inverse_longitude_wrapping;
 	};
 
 	static const MapProjectionParameters projection_table[] =
 	{
 		// Don't really need a scale for "Rectangular" since handling ourselves (directly in degrees) and not using proj library...
-		{GPlatesGui::MapProjection::RECTANGULAR, "Rectangular", "proj=latlong", "ellps=WGS84", 1.0, true},
+		{GPlatesGui::MapProjection::RECTANGULAR, "Rectangular", "proj=latlong", "ellps=WGS84", 1.0},
 		// The remaining projections are handled by the proj library and the scale roughly converts metres to degrees (purely to match "Rectangular")...
-		{GPlatesGui::MapProjection::MERCATOR, "Mercator", "proj=merc", "ellps=WGS84", 0.0000070, true},
-		{GPlatesGui::MapProjection::MOLLWEIDE, "Mollweide", "proj=moll", "ellps=WGS84", 0.0000095, false},
-		{GPlatesGui::MapProjection::ROBINSON, "Robinson", "proj=robin", "ellps=WGS84", 0.0000095, false}
+		{GPlatesGui::MapProjection::MERCATOR, "Mercator", "proj=merc", "ellps=WGS84", 0.0000070},
+		{GPlatesGui::MapProjection::MOLLWEIDE, "Mollweide", "proj=moll", "ellps=WGS84", 0.0000095},
+		{GPlatesGui::MapProjection::ROBINSON, "Robinson", "proj=robin", "ellps=WGS84", 0.0000095}
 		// This was never used as a map projection, probably because it's not a standard projection, so we'll remove it as a choice...
-		//{GPlatesGui::MapProjection::LAMBERT_CONIC, "LambertConic", "proj=lcc", "ellps=WGS84", 0.000003, false}
+		//{GPlatesGui::MapProjection::LAMBERT_CONIC, "LambertConic", "proj=lcc", "ellps=WGS84", 0.000003}
 	};
 
 }
@@ -537,30 +531,17 @@ GPlatesGui::MapProjection::inverse_transform(
 	// Handle non-zero central meridians (x=0 in map projection space should map to longitude=central_meridian).
 	longitude += d_central_meridian;
 
-	// See if we need to check if the inverse transform wrapped longitude to range [-180, 180].
-	if (projection_table[d_projection_type].detect_inverse_longitude_wrapping)
+	// Make sure the input (x, y) map coordinates are actually inside the map boundary.
+	//
+	// This is done by checking that the inverted input (x, y) map position - which is (longitude, latitude) -
+	// is forward transformed to the same input (x, y) map position (within a numerical tolerance).
+	//
+	// The clamping of longitude and latitude in 'forward_transform()' determines what's inside the map boundary.
+	//
+	// Note: This check even applies to the Rectangular projection (that is not passed through the Proj library).
+	if (!check_forward_transform(longitude, latitude, input_x_output_longitude, input_y_output_latitude))
 	{
-		// For example, with Mercator the proj library inverse transform returns valid longitudes even
-		// when the map coordinates are far to the right, or left, of the map itself (and this doesn't happen
-		// with Mollweide and Robinson). So we need to explicitly detect and prevent this with Mercator.
-		//
-		// To check this we transform the inverted longitude back into an x-coordinate and compare
-		// with the original x-coordinate. If they don't match then we can assume we're off the map.
-
-		const double original_x = input_x_output_longitude;
-		const double original_y = input_y_output_latitude;
-
-		// Forward transform the inverted longitude and latitude.
-		double inverted_and_transformed_x = longitude;
-		double inverted_and_transformed_y = latitude;
-		forward_transform(inverted_and_transformed_x, inverted_and_transformed_y);
-
-		// If we don't end up at the same transformed x-coordinate then we're off the map. 
-		if (std::fabs(inverted_and_transformed_x - original_x) > 1e-6 ||
-			std::fabs(inverted_and_transformed_y - original_y) > 1e-6)
-		{
-			return false;
-		}
+		return false;
 	}
 
 	// Return inverse transformed (longitude, latitude) to the caller.
@@ -644,6 +625,40 @@ GPlatesGui::MapProjection::inverse_proj_transform(
 	
 	if (!GPlatesMaths::LatLonPoint::is_valid_latitude(latitude) ||
 		!GPlatesMaths::LatLonPoint::is_valid_longitude(longitude))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+
+bool
+GPlatesGui::MapProjection::check_forward_transform(
+		const double &inverted_x,
+		const double &inverted_y,
+		const double &x,
+		const double &y) const
+{
+	// Make sure the input (x, y) map coordinates are actually inside the map boundary.
+	//
+	// This is done by checking that the inverted input (x, y) map position - which is (longitude, latitude) -
+	// is forward transformed to the same input (x, y) map position (within a numerical tolerance).
+	//
+	// For example, with the Mercator projection the Proj library inverse transform returns valid longitudes
+	// even when the map coordinates are far to the right, or left, of the map itself.
+	// So we need to explicitly detect and prevent this.
+	// This issue doesn't happen with Mollweide and Robinson. Although I did notice it with Robinson when using
+	// an earlier Proj version (6.3.1). So this is one reason why this check is now done for all map projections.
+
+	// Forward transform the inverted coordinates.
+	double inverted_and_transformed_x = inverted_x;
+	double inverted_and_transformed_y = inverted_y;
+	forward_transform(inverted_and_transformed_x, inverted_and_transformed_y);
+
+	// If we don't end up at the same coordinates then we're off the map. 
+	if (std::fabs(inverted_and_transformed_x - x) > 1e-6 ||
+		std::fabs(inverted_and_transformed_y - y) > 1e-6)
 	{
 		return false;
 	}

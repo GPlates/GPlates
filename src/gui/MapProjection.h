@@ -172,8 +172,9 @@ namespace GPlatesGui
 		 * Transform cartesian (x,y) coordinates to a LatLonPoint according to the current
 		 * state of the projection.
 		 *
-		 * Return type is boost::optional as there may not be a valid inverse transform
-		 * for the provided (x,y) values.
+		 * Return type is boost::optional as there may not be a valid inverse transform for
+		 * the provided (x,y) values - including if the specified map point is outside
+		 * the map boundary (eg, outside the map rectangle in the Rectangular projection).
 		 */
 		boost::optional<GPlatesMaths::LatLonPoint>
 		inverse_transform(
@@ -183,7 +184,9 @@ namespace GPlatesGui
 		 * Transform cartesian (x,y) coordinates to longitude and latitude according to the current
 		 * state of the projection.
 		 *
-		 * Returns false if there is not a valid inverse transform for the provided (x,y) values.
+		 * Returns false if there is not a valid inverse transform for the provided (x,y) values -
+		 * including if the specified (x, y) map position is outside the map boundary
+		 * (eg, outside the map rectangle in the Rectangular projection).
 		 */
 		bool
 		inverse_transform(
@@ -299,6 +302,17 @@ namespace GPlatesGui
 				double y,
 				double &longitude,
 				double &latitude) const;
+
+		/**
+		 * Check that the inverted (x, y), which are (longitude, latitude) coordinates, forward transform
+		 * to the specified (x, y) within a numerical tolerance.
+		 */
+		bool
+		check_forward_transform(
+				const double &inverted_x,
+				const double &inverted_y,
+				const double &x,
+				const double &y) const;
 
 		/**
 		 * Updates the boundary great circle - should be called if central llp or projection type changed.
