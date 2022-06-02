@@ -221,7 +221,7 @@ namespace GPlatesQtWidgets
 	private Q_SLOTS:
 
 		void
-		about_to_change_globe_map_projection(
+		about_to_change_projection(
 				const GPlatesGui::Projection &projection);
 
 		void

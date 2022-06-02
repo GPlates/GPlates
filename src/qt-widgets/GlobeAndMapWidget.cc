@@ -116,9 +116,9 @@ GPlatesQtWidgets::GlobeAndMapWidget::make_signal_slot_connections()
 	GPlatesGui::Projection &projection = d_view_state.get_projection();
 	QObject::connect(
 			&projection,
-			SIGNAL(globe_map_projection_about_to_change(const GPlatesGui::Projection &)),
+			SIGNAL(projection_about_to_change(const GPlatesGui::Projection &)),
 			this,
-			SLOT(about_to_change_globe_map_projection(const GPlatesGui::Projection &)));
+			SLOT(about_to_change_projection(const GPlatesGui::Projection &)));
 	QObject::connect(
 			&projection,
 			SIGNAL(projection_changed(const GPlatesGui::Projection &)),
@@ -148,7 +148,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::handle_globe_or_map_repainted(
 
 
 void
-GPlatesQtWidgets::GlobeAndMapWidget::about_to_change_globe_map_projection(
+GPlatesQtWidgets::GlobeAndMapWidget::about_to_change_projection(
 		const GPlatesGui::Projection &projection)
 {
 	// Save the camera position of the currently active view before we potentially change
