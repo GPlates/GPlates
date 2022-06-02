@@ -99,16 +99,11 @@ namespace
 
 	/**
 	 * The number of line segments along a line of longitude.
+	 *
+	 * This is more than for lines of latitude because a line of longitude can curve in the map projection
+	 * (whereas lines of latitude are straight, for all the map projections we currently support anyway).
 	 */
-	const int LINE_OF_LONGITUDE_NUM_SEGMENTS = 200;
-
-	// LATITUDE_MARGIN represents the number of degrees above -90 and below 90 between
-	// which each line of longitude will be drawn. This gives you a little space
-	// at the top and bottom, so that grid lines which converge at the poles don't
-	// look too busy. 
-
-	//const double LATITUDE_MARGIN = 1.5;
-	const double LATITUDE_MARGIN = 0.0;
+	const int LINE_OF_LONGITUDE_NUM_SEGMENTS = 400;
 
 	/**
 	 * The angular spacing a points along a line of latitude.
@@ -118,7 +113,7 @@ namespace
 	/**
 	 * The angular spacing a points along a line of longitude.
 	 */
-	const double LINE_OF_LONGITUDE_DELTA_LATITUDE = (180.0 - 2.0 * LATITUDE_MARGIN) / LINE_OF_LONGITUDE_NUM_SEGMENTS;
+	const double LINE_OF_LONGITUDE_DELTA_LATITUDE = 180.0 / LINE_OF_LONGITUDE_NUM_SEGMENTS;
 
 
 	/**
@@ -166,11 +161,24 @@ namespace
 			projection_coord_seq_type projected_coords;
 			try
 			{
-				GPlatesMaths::real_t lon = lon_0;
-				projected_coords.push_back(project_lat_lon(lat.dval(), lon.dval(), map_projection));
-				for (int n = 0; n < LINE_OF_LATITUDE_NUM_SEGMENTS; ++n)
+				for (int x = 0; x < LINE_OF_LATITUDE_NUM_SEGMENTS + 1; ++x)
 				{
-					lon += LINE_OF_LATITUDE_DELTA_LONGITUDE;
+					GPlatesMaths::real_t lon;
+					// Stay slightly inside the map boundary to avoid any potential map projection
+					// issues (eg, due to numerical precision).
+					if (x == 0)
+					{
+						lon = lon_0 + 1e-8;
+					}
+					else if (x == LINE_OF_LATITUDE_NUM_SEGMENTS)
+					{
+						lon = lon_0 + 360 - 1e-8;
+					}
+					else
+					{
+						lon = lon_0 + x * LINE_OF_LATITUDE_DELTA_LONGITUDE;
+					}
+
 					projected_coords.push_back(
 							project_lat_lon(lat.dval(), lon.dval(), map_projection));
 				}
@@ -187,11 +195,8 @@ namespace
 			// Stream the projected vertices into the line stream.
 			stream_line_strips.begin_line_strip();
 
-			for (projection_coord_seq_type::const_iterator projected_iter = projected_coords.begin();
-				projected_iter != projected_coords.end();
-				++projected_iter)
+			for (const projection_coord_type &projected_coord : projected_coords)
 			{
-				const projection_coord_type &projected_coord = *projected_iter;
 				const vertex_type vertex(
 						projected_coord.first, projected_coord.second, 0/*z*/, colour);
 
@@ -241,11 +246,24 @@ namespace
 			projection_coord_seq_type projected_coords;
 			try
 			{
-				GPlatesMaths::real_t lat = lat_0 + LATITUDE_MARGIN;
-				projected_coords.push_back(project_lat_lon(lat.dval(), lon.dval(), map_projection));
-				for (int n = 0; n < LINE_OF_LONGITUDE_NUM_SEGMENTS; ++n)
+				for (int y = 0; y < LINE_OF_LONGITUDE_NUM_SEGMENTS + 1; ++y)
 				{
-					lat -= LINE_OF_LONGITUDE_DELTA_LATITUDE;
+					GPlatesMaths::real_t lat;
+					// Stay slightly inside the map boundary to avoid any potential map projection
+					// issues (eg, due to numerical precision).
+					if (y == 0)
+					{
+						lat = lat_0 - 1e-8;
+					}
+					else if (y == LINE_OF_LONGITUDE_NUM_SEGMENTS)
+					{
+						lat = lat_0 - 180 + 1e-8;
+					}
+					else
+					{
+						lat = lat_0 - y * LINE_OF_LONGITUDE_DELTA_LATITUDE;
+					}
+
 					projected_coords.push_back(
 							project_lat_lon(lat.dval(), lon.dval(), map_projection));
 				}
@@ -262,11 +280,8 @@ namespace
 			// Stream the projected vertices into the line stream.
 			stream_line_strips.begin_line_strip();
 
-			for (projection_coord_seq_type::const_iterator projected_iter = projected_coords.begin();
-				projected_iter != projected_coords.end();
-				++projected_iter)
+			for (const projection_coord_type &projected_coord : projected_coords)
 			{
-				const projection_coord_type &projected_coord = *projected_iter;
 				const vertex_type vertex(
 						projected_coord.first, projected_coord.second, 0/*z*/, colour);
 

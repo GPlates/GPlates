@@ -94,8 +94,11 @@ namespace
 
 	/**
 	 * The number of line segments along a line of longitude.
+	 *
+	 * This is more than for lines of latitude because a line of longitude can curve in the map projection
+	 * (whereas lines of latitude are straight, for all the map projections we currently support anyway).
 	 */
-	const int LINE_OF_LONGITUDE_NUM_SEGMENTS = 200;
+	const int LINE_OF_LONGITUDE_NUM_SEGMENTS = 400;
 
 	/**
 	 * The angular spacing a points along a line of latitude.
@@ -147,19 +150,39 @@ namespace
 			// Add the mesh vertices.
 			for (int y = 0; y < LINE_OF_LONGITUDE_NUM_SEGMENTS + 1; ++y)
 			{
-				const GPlatesMaths::real_t lat = (y == LINE_OF_LONGITUDE_NUM_SEGMENTS)
-						// At last row explicitly to avoid going slightly above
-						// 'lat_0 + 180' due to numerical precision...
-						? lat_0 + 180
-						: lat_0 + y * LINE_OF_LONGITUDE_DELTA_LATITUDE;
+				GPlatesMaths::real_t lat;
+				// Stay slightly inside the map boundary to avoid any potential map projection
+				// issues (eg, due to numerical precision).
+				if (y == 0)
+				{
+					lat = lat_0 + 1e-8;
+				}
+				else if (y == LINE_OF_LONGITUDE_NUM_SEGMENTS)
+				{
+					lat = lat_0 + 180 - 1e-8;
+				}
+				else
+				{
+					lat = lat_0 + y * LINE_OF_LONGITUDE_DELTA_LATITUDE;
+				}
 
 				for (int x = 0; x < LINE_OF_LATITUDE_NUM_SEGMENTS + 1; ++x)
 				{
-					const GPlatesMaths::real_t lon = (x == LINE_OF_LATITUDE_NUM_SEGMENTS)
-							// At last column explicitly to avoid going slightly above
-							// 'lon_0 + 360' due to numerical precision...
-							? lon_0 + 360
-							: lon_0 + x * LINE_OF_LATITUDE_DELTA_LONGITUDE;
+					GPlatesMaths::real_t lon;
+					// Stay slightly inside the map boundary to avoid any potential map projection
+					// issues (eg, due to numerical precision).
+					if (x == 0)
+					{
+						lon = lon_0 + 1e-8;
+					}
+					else if (x == LINE_OF_LATITUDE_NUM_SEGMENTS)
+					{
+						lon = lon_0 + 360 - 1e-8;
+					}
+					else
+					{
+						lon = lon_0 + x * LINE_OF_LATITUDE_DELTA_LONGITUDE;
+					}
 
 					const projection_coord_type projected_coord =
 							project_lat_lon(lat.dval(), lon.dval(), projection);
