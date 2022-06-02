@@ -60,6 +60,10 @@ namespace
 	const double CLAMP_LATITUDE_NEAR_POLES_EPSILON = 1e-5;
 	const double MIN_LATITUDE = -90.0 + CLAMP_LATITUDE_NEAR_POLES_EPSILON;
 	const double MAX_LATITUDE = 90.0 - CLAMP_LATITUDE_NEAR_POLES_EPSILON;
+	
+	// The distance threshold in map projected space (after scaling) for comparing original (x, y)
+	// with inverted and forward transformed (x, y).
+	const double CHECK_FORWARD_TRANFORM_MAP_SPACE_DELTA_THRESHOLD = 1e-6;
 
 	struct MapProjectionParameters 
 	{
@@ -527,6 +531,13 @@ GPlatesGui::MapProjection::inverse_transform(
 			return false;
 		}
 	}
+	
+	// Ensure the latitude is valid (within [-90, 90]) and the longitude is valid (within [-360, 360], not [-180, 180]).
+	if (!GPlatesMaths::LatLonPoint::is_valid_latitude(latitude) ||
+		!GPlatesMaths::LatLonPoint::is_valid_longitude(longitude))
+	{
+		return false;
+	}
 
 	// Handle non-zero central meridians (x=0 in map projection space should map to longitude=central_meridian).
 	longitude += d_central_meridian;
@@ -622,12 +633,6 @@ GPlatesGui::MapProjection::inverse_proj_transform(
 	{
 		return false;
 	}
-	
-	if (!GPlatesMaths::LatLonPoint::is_valid_latitude(latitude) ||
-		!GPlatesMaths::LatLonPoint::is_valid_longitude(longitude))
-	{
-		return false;
-	}
 
 	return true;
 }
@@ -657,13 +662,11 @@ GPlatesGui::MapProjection::check_forward_transform(
 	forward_transform(inverted_and_transformed_x, inverted_and_transformed_y);
 
 	// If we don't end up at the same coordinates then we're off the map. 
-	if (std::fabs(inverted_and_transformed_x - x) > 1e-6 ||
-		std::fabs(inverted_and_transformed_y - y) > 1e-6)
-	{
-		return false;
-	}
+	const double delta_distance = std::sqrt(
+			(inverted_and_transformed_x - x) * (inverted_and_transformed_x - x) +
+			(inverted_and_transformed_y - y) * (inverted_and_transformed_y - y));
 
-	return true;
+	return delta_distance < CHECK_FORWARD_TRANFORM_MAP_SPACE_DELTA_THRESHOLD;
 }
 
 
