@@ -179,10 +179,10 @@ namespace GPlatesViewOperations
 		bool d_in_last_update_drag;
 
 		/**
-		 * Used to render the centre of viewport when rotating/tilting.
+		 * Used to render the centre of viewport when panning/rotating/tilting.
 		 */
 		RenderedGeometryCollection &d_rendered_geometry_collection;
-		RenderedGeometryCollection::child_layer_owner_ptr_type d_rotate_and_tilt_rendered_layer_ptr;
+		RenderedGeometryCollection::child_layer_owner_ptr_type d_rendered_layer_ptr;
 
 
 		void
