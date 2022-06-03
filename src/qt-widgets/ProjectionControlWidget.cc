@@ -153,7 +153,7 @@ GPlatesQtWidgets::ProjectionControlWidget::handle_globe_map_projection_combo_cha
 	// Retrieve the embedded QVariant for the selected combobox choice.
 	QVariant selected_projection_qv = combo_globe_map_projection->itemData(idx);
 
-	// Extract projection index from QVariant.
+	// Extract globe/map projection index from QVariant.
 	const unsigned int selected_projection_index = selected_projection_qv.toUInt();
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			selected_projection_index < GPlatesGui::GlobeProjection::NUM_PROJECTIONS + GPlatesGui::MapProjection::NUM_PROJECTIONS,
@@ -162,7 +162,7 @@ GPlatesQtWidgets::ProjectionControlWidget::handle_globe_map_projection_combo_cha
 	// Get current globe/map projection.
 	GPlatesGui::Projection::globe_map_projection_type globe_map_projection = d_projection.get_globe_map_projection();
 
-	// Set the projection type - it will also notify us of the change with its signal.
+	// Set the globe/map projection type - it will also notify us of the change with its signal.
 	if (selected_projection_index < GPlatesGui::GlobeProjection::NUM_PROJECTIONS)
 	{
 		// It's a globe projection.
@@ -188,7 +188,7 @@ GPlatesQtWidgets::ProjectionControlWidget::handle_viewport_projection_combo_chan
 	// Retrieve the embedded QVariant for the selected combobox choice.
 	QVariant selected_projection_qv = combo_viewport_projection->itemData(idx);
 
-	// Extract projection index from QVariant.
+	// Extract viewport projection index from QVariant.
 	const unsigned int selected_projection_index = selected_projection_qv.toUInt();
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			selected_projection_index < GPlatesGui::ViewportProjection::NUM_PROJECTIONS,
@@ -218,7 +218,7 @@ GPlatesQtWidgets::ProjectionControlWidget::handle_globe_map_projection_shortcut_
 			shortcut_action,
 			GPLATES_ASSERTION_SOURCE);
 
-	// Determine the projection to activate.
+	// Determine the globe/map projection to activate.
 	const unsigned int projection_index = shortcut_action->data().toInt();
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			projection_index < GPlatesGui::GlobeProjection::NUM_PROJECTIONS + GPlatesGui::MapProjection::NUM_PROJECTIONS,
@@ -227,7 +227,7 @@ GPlatesQtWidgets::ProjectionControlWidget::handle_globe_map_projection_shortcut_
 	// Get current globe/map projection.
 	GPlatesGui::Projection::globe_map_projection_type globe_map_projection = d_projection.get_globe_map_projection();
 
-	// Set the projection type - it will also notify us of the change with its signal.
+	// Set the globe/map projection type - it will also notify us of the change with its signal.
 	if (projection_index < GPlatesGui::GlobeProjection::NUM_PROJECTIONS)
 	{
 		// It's a globe projection.
@@ -252,7 +252,7 @@ GPlatesQtWidgets::ProjectionControlWidget::handle_globe_map_projection_changed(
 {
 	const GPlatesGui::Projection::globe_map_projection_type &globe_map_projection = projection.get_globe_map_projection();
 
-	// Get the projection index of the viewport projection (it's either a globe or map projection).
+	// Get the globe/map projection index (it's either a globe or map projection).
 	unsigned int projection_index;
 	if (globe_map_projection.is_viewing_globe_projection())
 	{
@@ -264,9 +264,8 @@ GPlatesQtWidgets::ProjectionControlWidget::handle_globe_map_projection_changed(
 		projection_index = GPlatesGui::GlobeProjection::NUM_PROJECTIONS + globe_map_projection.get_map_projection_type();
 	}
 
-	// Now we can quickly select the appropriate line of the combobox
-	// by finding our projection ID (and not worrying about the text
-	// label)
+	// Now we can quickly select the appropriate line of the combobox by finding our globe/map projection ID
+	// (and not worrying about the text label).
 	const int idx = combo_globe_map_projection->findData(projection_index);
 	if (idx != -1)
 	{
@@ -281,12 +280,11 @@ void
 GPlatesQtWidgets::ProjectionControlWidget::handle_viewport_projection_changed(
 		const GPlatesGui::Projection &projection)
 {
-	// Get the projection index of the viewport projection.
+	// Get the viewport projection index of the viewport projection.
 	const unsigned int projection_index = projection.get_viewport_projection();
 
-	// Now we can quickly select the appropriate line of the combobox
-	// by finding our projection ID (and not worrying about the text
-	// label)
+	// Now we can quickly select the appropriate line of the combobox by finding our viewport projection ID
+	// (and not worrying about the text label).
 	const int idx = combo_viewport_projection->findData(projection_index);
 	if (idx != -1)
 	{

@@ -68,6 +68,20 @@ GPlatesQtWidgets::SetProjectionDialog::SetProjectionDialog(
 				GPlatesGui::GlobeProjection::NUM_PROJECTIONS + map_projection_index);
 	}
 
+	// Now add the viewport projections.
+	for (unsigned int viewport_projection_index = 0;
+		viewport_projection_index < GPlatesGui::ViewportProjection::NUM_PROJECTIONS;
+		++viewport_projection_index)
+	{
+		const GPlatesGui::ViewportProjection::Type viewport_projection =
+				static_cast<GPlatesGui::ViewportProjection::Type>(viewport_projection_index);
+
+		// Add to the combo box.
+		combo_viewport_projection->addItem(
+				tr(GPlatesGui::ViewportProjection::get_display_name(viewport_projection)),
+				viewport_projection_index);
+	}
+
 	// The central_meridian spinbox should be disabled if we're in a globe projection. 
 	update_map_central_meridian_status();
 
@@ -96,10 +110,11 @@ void
 GPlatesQtWidgets::SetProjectionDialog::set_projection(
 		const GPlatesGui::Projection &projection)
 {
-	const GPlatesGui::Projection::globe_map_projection_type &globe_map_projection =
-			projection.get_globe_map_projection();
-	const GPlatesGui::Projection::viewport_projection_type viewport_projection =
-			projection.get_viewport_projection();
+	//
+	// Globe/map projection.
+	//
+
+	const GPlatesGui::Projection::globe_map_projection_type &globe_map_projection = projection.get_globe_map_projection();
 
 	// Get the globe/map projection index (it's either a globe or map projection).
 	unsigned int globe_map_projection_index;
@@ -115,13 +130,29 @@ GPlatesQtWidgets::SetProjectionDialog::set_projection(
 		set_map_central_meridian(globe_map_projection.get_map_central_meridian());
 	}
 
-	// Now we can quickly select the appropriate line of the combobox
-	// by finding our projection ID (and not worrying about the text
-	// label)
-	const int idx = combo_globe_map_projection->findData(globe_map_projection_index);
-	if (idx != -1)
+	// Now we can quickly select the appropriate line of the combobox by finding our globe/map projection ID
+	// (and not worrying about the text label).
+	const int globe_map_idx = combo_globe_map_projection->findData(globe_map_projection_index);
+	if (globe_map_idx != -1)
 	{
-		combo_globe_map_projection->setCurrentIndex(idx);
+		combo_globe_map_projection->setCurrentIndex(globe_map_idx);
+	}
+
+	//
+	// Viewport projection.
+	//
+
+	const GPlatesGui::Projection::viewport_projection_type viewport_projection = projection.get_viewport_projection();
+
+	// Get the viewport projection index of the viewport projection.
+	const unsigned int viewport_projection_index = viewport_projection;
+
+	// Now we can quickly select the appropriate line of the combobox by finding our viewport projection ID
+	// (and not worrying about the text label).
+	const int viewport_idx = combo_viewport_projection->findData(viewport_projection_index);
+	if (viewport_idx != -1)
+	{
+		combo_viewport_projection->setCurrentIndex(viewport_idx);
 	}
 }
 
@@ -159,7 +190,19 @@ GPlatesQtWidgets::SetProjectionDialog::get_globe_map_projection() const
 GPlatesGui::Projection::viewport_projection_type
 GPlatesQtWidgets::SetProjectionDialog::get_viewport_projection() const
 {
-	return  GPlatesGui::ViewportProjection::ORTHOGRAPHIC;
+	// Retrieve the embedded QVariant for the selected combobox choice.
+	QVariant viewport_projection_qv = combo_viewport_projection->itemData(combo_viewport_projection->currentIndex());
+
+	// Extract viewport projection index from QVariant.
+	const unsigned int projection_index = viewport_projection_qv.toUInt();
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			projection_index < GPlatesGui::ViewportProjection::NUM_PROJECTIONS,
+			GPLATES_ASSERTION_SOURCE);
+
+	const GPlatesGui::Projection::viewport_projection_type viewport_projection =
+			static_cast<GPlatesGui::ViewportProjection::Type>(projection_index);
+
+	return viewport_projection;
 }
 
 
