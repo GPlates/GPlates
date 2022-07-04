@@ -357,7 +357,7 @@ GPlatesGui::Camera::get_camera_ray_at_position(
 }
 
 
-boost::optional<std::pair<double/*window_x*/, double/*window_y*/>>
+boost::optional<QPointF>
 GPlatesGui::Camera::get_window_coord_at_position(
 		const GPlatesMaths::Vector3D &position,
 		int window_width,
@@ -395,7 +395,7 @@ GPlatesGui::Camera::get_window_coord_at_position(
 		const GPlatesMaths::real_t window_y = window_height *
 				((view_y_component - ortho_bottom) / (ortho_top - ortho_bottom));
 
-		return std::make_pair(window_x.dval(), window_y.dval());
+		return QPointF(window_x.dval(), window_y.dval());
 	}
 	else  // perspective...
 	{
@@ -428,7 +428,7 @@ GPlatesGui::Camera::get_window_coord_at_position(
 		const GPlatesMaths::real_t window_x = window_width * (((tan_view_x_component / tan_half_fovx) + 1.0) / 2.0);
 		const GPlatesMaths::real_t window_y = window_height * (((tan_view_y_component / tan_half_fovy) + 1.0) / 2.0);
 
-		return std::make_pair(window_x.dval(), window_y.dval());
+		return QPointF(window_x.dval(), window_y.dval());
 	}
 }
 

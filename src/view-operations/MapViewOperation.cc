@@ -39,7 +39,6 @@ GPlatesViewOperations::MapViewOperation::MapViewOperation(
 		GPlatesGui::MapCamera &map_camera,
 		RenderedGeometryCollection &rendered_geometry_collection) :
 	d_map_camera(map_camera),
-	d_in_drag_operation(false),
 	d_in_last_update_drag(false),
 	d_rendered_geometry_collection(rendered_geometry_collection)
 {
@@ -54,32 +53,25 @@ GPlatesViewOperations::MapViewOperation::start_drag(
 		int screen_width,
 		int screen_height)
 {
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			!d_mouse_drag_mode && !d_pan_drag_info && !d_rotate_and_tilt_drag_info,
+			GPLATES_ASSERTION_SOURCE);
+
 	// We've started a drag operation.
-	d_in_drag_operation = true;
+	d_mouse_drag_mode = mouse_drag_mode;
 	d_in_last_update_drag = false;
 
 	// Note that OpenGL (window) and Qt (screen) y-axes are the reverse of each other.
 	const double initial_mouse_window_y = screen_height - initial_screen_position.y();
 	const double initial_mouse_window_x = initial_screen_position.x();
 
-	d_mouse_drag_info = MouseDragInfo(
-			mouse_drag_mode,
-			initial_mouse_window_x,
-			initial_mouse_window_y,
-			initial_map_position,
-			d_map_camera.get_look_at_position_on_map(),
-			d_map_camera.get_view_direction(),
-			d_map_camera.get_up_direction(),
-			d_map_camera.get_rotation_angle(),
-			d_map_camera.get_tilt_angle());
-
-	switch (d_mouse_drag_info->mode)
+	switch (mouse_drag_mode)
 	{
 	case DRAG_PAN:
-		start_drag_pan();
+		start_drag_pan(initial_map_position);
 		break;
 	case DRAG_ROTATE_AND_TILT:
-		start_drag_rotate_and_tilt();
+		start_drag_rotate_and_tilt(initial_mouse_window_x, initial_mouse_window_y);
 		break;
 	default:
 		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -113,6 +105,11 @@ GPlatesViewOperations::MapViewOperation::update_drag(
 		int screen_height,
 		bool end_of_drag)
 {
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_mouse_drag_mode,
+			GPLATES_ASSERTION_SOURCE);
+	const MouseDragMode mouse_drag_mode = d_mouse_drag_mode.get();
+
 	// If we're finishing the drag operation.
 	if (end_of_drag)
 	{
@@ -122,25 +119,27 @@ GPlatesViewOperations::MapViewOperation::update_drag(
 		// the map camera which in turn signals the map to be rendered which in turn
 		// queries 'in_drag()' to see if it should optimise rendering *during* a mouse drag.
 		// And that all happens before we even leave the current function.
-		d_in_drag_operation = false;
+		d_mouse_drag_mode = boost::none;
 
 		d_in_last_update_drag = true;
 	}
-
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_mouse_drag_info,
-			GPLATES_ASSERTION_SOURCE);
 
 	// Note that OpenGL (window) and Qt (screen) y-axes are the reverse of each other.
 	const double mouse_window_y = screen_height - screen_position.y();
 	const double mouse_window_x = screen_position.x();
 
-	switch (d_mouse_drag_info->mode)
+	switch (mouse_drag_mode)
 	{
 	case DRAG_PAN:
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				d_pan_drag_info && !d_rotate_and_tilt_drag_info,
+				GPLATES_ASSERTION_SOURCE);
 		update_drag_pan(map_position);
 		break;
 	case DRAG_ROTATE_AND_TILT:
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				!d_pan_drag_info && d_rotate_and_tilt_drag_info,
+				GPLATES_ASSERTION_SOURCE);
 		update_drag_rotate_and_tilt(mouse_window_x, mouse_window_y, screen_width, screen_height);
 		break;
 	default:
@@ -180,7 +179,8 @@ GPlatesViewOperations::MapViewOperation::update_drag(
 	if (end_of_drag)
 	{
 		// Finished dragging mouse - no need for mouse drag info.
-		d_mouse_drag_info = boost::none;
+		d_pan_drag_info = boost::none;
+		d_rotate_and_tilt_drag_info = boost::none;
 
 		d_in_last_update_drag = false;
 	}
@@ -188,15 +188,12 @@ GPlatesViewOperations::MapViewOperation::update_drag(
 
 
 void
-GPlatesViewOperations::MapViewOperation::start_drag_pan()
+GPlatesViewOperations::MapViewOperation::start_drag_pan(
+		const boost::optional<QPointF> &start_map_position)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_mouse_drag_info,
-			GPLATES_ASSERTION_SOURCE);
-
-	//
-	// Nothing to be done.
-	//
+	d_pan_drag_info = PanDragInfo(
+			start_map_position,
+			d_map_camera.get_look_at_position_on_map());
 }
 
 
@@ -204,15 +201,13 @@ void
 GPlatesViewOperations::MapViewOperation::update_drag_pan(
 		const boost::optional<QPointF> &map_position)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_mouse_drag_info,
-			GPLATES_ASSERTION_SOURCE);
-
 	// If the mouse position at start of drag, or current mouse position, is not anywhere on the
 	// map *plane* then we cannot pan the view.
-	if (!d_mouse_drag_info->start_map_position ||
+	if (!d_pan_drag_info->start_map_position ||
 		!map_position)
 	{
+		// This essentially means the user will have to release the drag (release mouse button) and
+		// start a new drag (hold mouse button down again) to get past here.
 		return;
 	}
 
@@ -223,18 +218,18 @@ GPlatesViewOperations::MapViewOperation::update_drag_pan(
 	// (it's reverse because a change in view space is equivalent to the reverse change in model space
 	// and the map, and points on it, are in model space).
 	const QPointF map_position_relative_to_start_view =
-			-d_mouse_drag_info->pan_relative_to_start_in_view_frame + map_position.get();
+			-d_pan_drag_info->pan_relative_to_start_in_view_frame + map_position.get();
 
 	// The pan since start of drag in the map frame of reference.
 	const QPointF pan_relative_to_start_in_map_frame =
-			map_position_relative_to_start_view - d_mouse_drag_info->start_map_position.get();
+			map_position_relative_to_start_view - d_pan_drag_info->start_map_position.get();
 
 	// Convert the pan to the view frame of reference.
 	// The view moves in the opposite direction.
 	const QPointF pan_relative_to_start_in_view_frame = -pan_relative_to_start_in_map_frame;
 
 	// The new look-at position is the look-at position at the start of drag plus the pan relative to that start.
-	const QPointF look_at_position = d_mouse_drag_info->start_look_at_position + pan_relative_to_start_in_view_frame;
+	const QPointF look_at_position = d_pan_drag_info->start_look_at_position + pan_relative_to_start_in_view_frame;
 
 	// Attempt to move the camera's look-at position on map.
 	if (d_map_camera.move_look_at_position_on_map(
@@ -244,7 +239,7 @@ GPlatesViewOperations::MapViewOperation::update_drag_pan(
 	{
 		// The look-at position was successfully moved (because new look-at position is inside map projection boundary).
 		// So keep track of the updated view pan relative to the start.
-		d_mouse_drag_info->pan_relative_to_start_in_view_frame = pan_relative_to_start_in_view_frame;
+		d_pan_drag_info->pan_relative_to_start_in_view_frame = pan_relative_to_start_in_view_frame;
 	}
 	else // failed to move camera's look-at position on map...
 	{
@@ -257,23 +252,23 @@ GPlatesViewOperations::MapViewOperation::update_drag_pan(
 		// and panning will immediately continue again.
 		//
 		// Note: We're only resetting the variables we actually use for panning.
-		d_mouse_drag_info->start_map_position = map_position;
-		d_mouse_drag_info->pan_relative_to_start_in_view_frame = QPointF(0, 0);
-		d_mouse_drag_info->start_look_at_position = d_map_camera.get_look_at_position_on_map();
+		d_pan_drag_info->start_map_position = map_position;
+		d_pan_drag_info->pan_relative_to_start_in_view_frame = QPointF(0, 0);
+		d_pan_drag_info->start_look_at_position = d_map_camera.get_look_at_position_on_map();
 	}
 }
 
 
 void
-GPlatesViewOperations::MapViewOperation::start_drag_rotate_and_tilt()
+GPlatesViewOperations::MapViewOperation::start_drag_rotate_and_tilt(
+		const double &start_mouse_window_x,
+		const double &start_mouse_window_y)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_mouse_drag_info,
-			GPLATES_ASSERTION_SOURCE);
-
-	//
-	// Nothing to be done.
-	//
+	d_rotate_and_tilt_drag_info = RotateAndTiltDragInfo(
+			start_mouse_window_x,
+			start_mouse_window_y,
+			d_map_camera.get_rotation_angle(),
+			d_map_camera.get_tilt_angle());
 }
 
 
@@ -284,18 +279,15 @@ GPlatesViewOperations::MapViewOperation::update_drag_rotate_and_tilt(
 		int window_width,
 		int window_height)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_mouse_drag_info,
-			GPLATES_ASSERTION_SOURCE);
-
 	//
 	// Horizontal dragging rotates the view.
 	//
 
 	// Each multiple of PI means dragging the full window *width* will *rotate* by PI radians (180 degrees).
-	const double delta_rotation_angle = 3 * GPlatesMaths::PI * (d_mouse_drag_info->start_mouse_window_x - mouse_window_x) / window_width;
+	const double delta_rotation_angle = 3 * GPlatesMaths::PI *
+			(d_rotate_and_tilt_drag_info->start_mouse_window_x - mouse_window_x) / window_width;
 
-	const GPlatesMaths::real_t rotation_angle = d_mouse_drag_info->start_rotation_angle + delta_rotation_angle;
+	const GPlatesMaths::real_t rotation_angle = d_rotate_and_tilt_drag_info->start_rotation_angle + delta_rotation_angle;
 
 	d_map_camera.set_rotation_angle(
 			rotation_angle,
@@ -307,9 +299,10 @@ GPlatesViewOperations::MapViewOperation::update_drag_rotate_and_tilt(
 	//
 
 	// Each multiple of PI means dragging the full window *height* will *tilt* by PI radians (180 degrees).
-	const double delta_tilt_angle = 1.5 * GPlatesMaths::PI * (mouse_window_y - d_mouse_drag_info->start_mouse_window_y) / window_height;
+	const double delta_tilt_angle = 1.5 * GPlatesMaths::PI *
+			(mouse_window_y - d_rotate_and_tilt_drag_info->start_mouse_window_y) / window_height;
 
-	const GPlatesMaths::real_t tilt_angle = d_mouse_drag_info->start_tilt_angle + delta_tilt_angle;
+	const GPlatesMaths::real_t tilt_angle = d_rotate_and_tilt_drag_info->start_tilt_angle + delta_tilt_angle;
 
 	d_map_camera.set_tilt_angle(
 			tilt_angle,

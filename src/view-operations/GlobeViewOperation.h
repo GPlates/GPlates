@@ -112,7 +112,9 @@ namespace GPlatesViewOperations
 				bool end_of_drag);
 
 		/**
-		 * Returns true if currently in a drag, where @a start_drag has been called but the last
+		 * Returns true if currently in a drag.
+		 *
+		 * A drag is where @a start_drag has been called but the last
 		 * @a update_drag ('end_of_drag' is true) has not yet been called.
 		 *
 		 * Note that this means false is returned *during* the last update
@@ -121,7 +123,18 @@ namespace GPlatesViewOperations
 		bool
 		in_drag() const
 		{
-			return d_in_drag_operation;
+			return static_cast<bool>(d_mouse_drag_mode);
+		}
+
+		/**
+		 * Returns the drag mode if currently in a drag (otherwise returns none).
+		 *
+		 * See @a in_drag.
+		 */
+		boost::optional<MouseDragMode>
+		drag_mode() const
+		{
+			return d_mouse_drag_mode;
 		}
 
 	private:
@@ -129,44 +142,44 @@ namespace GPlatesViewOperations
 		/**
 		 * Information generated in @a start_drag and used in subsequent calls to @a update_drag.
 		 */
-		struct MouseDragInfo
+		struct PanDragInfo
 		{
-			MouseDragInfo(
-					MouseDragMode mode_,
+			PanDragInfo(
 					const GPlatesMaths::UnitVector3D &start_mouse_pos_on_globe_,
-					const double &start_mouse_window_x_,
-					const double &start_mouse_window_y_,
-					const GPlatesMaths::UnitVector3D &start_look_at_pos_on_globe_,
-					const GPlatesMaths::UnitVector3D &start_view_direction_,
-					const GPlatesMaths::UnitVector3D &start_up_direction_,
-					const GPlatesMaths::Rotation &start_view_orientation_,
-					const GPlatesMaths::real_t &start_tilt_angle_) :
-				mode(mode_),
+					const GPlatesMaths::Rotation &start_view_orientation_) :
 				start_mouse_pos_on_globe(start_mouse_pos_on_globe_),
-				start_mouse_window_x(start_mouse_window_x_),
-				start_mouse_window_y(start_mouse_window_y_),
-				start_look_at_position(start_look_at_pos_on_globe_),
-				start_view_direction(start_view_direction_),
-				start_up_direction(start_up_direction_),
 				start_view_orientation(start_view_orientation_),
-				view_rotation_relative_to_start(GPlatesMaths::Rotation::create_identity_rotation()),
-				start_tilt_angle(start_tilt_angle_)
+				view_rotation_relative_to_start(GPlatesMaths::Rotation::create_identity_rotation())
 			{  }
 
-			MouseDragMode mode;
-
 			GPlatesMaths::UnitVector3D start_mouse_pos_on_globe;
-			double start_mouse_window_x;
-			double start_mouse_window_y;
-
-			GPlatesMaths::UnitVector3D start_look_at_position;
-			GPlatesMaths::UnitVector3D start_view_direction;
-			GPlatesMaths::UnitVector3D start_up_direction;
 			GPlatesMaths::Rotation start_view_orientation;
 
 			GPlatesMaths::Rotation view_rotation_relative_to_start;
+		};
 
-			// For DRAG_ROTATE_AND_TILT...
+		/**
+		 * Information generated in @a start_drag_rotate_and_tilt and used in subsequent calls to @a update_drag_rotate_and_tilt.
+		 */
+		struct RotateAndTiltDragInfo
+		{
+			RotateAndTiltDragInfo(
+					const double &start_mouse_window_x_,
+					const double &start_mouse_window_y_,
+					const GPlatesMaths::UnitVector3D &start_look_at_position_,
+					const GPlatesMaths::Rotation &start_view_orientation_,
+					const GPlatesMaths::real_t &start_tilt_angle_) :
+				start_mouse_window_x(start_mouse_window_x_),
+				start_mouse_window_y(start_mouse_window_y_),
+				start_look_at_position(start_look_at_position_),
+				start_view_orientation(start_view_orientation_),
+				start_tilt_angle(start_tilt_angle_)
+			{  }
+
+			double start_mouse_window_x;
+			double start_mouse_window_y;
+			GPlatesMaths::UnitVector3D start_look_at_position;
+			GPlatesMaths::Rotation start_view_orientation;
 			GPlatesMaths::real_t start_tilt_angle;
 		};
 
@@ -174,21 +187,20 @@ namespace GPlatesViewOperations
 		GPlatesGui::GlobeCamera &d_globe_camera;
 
 		/**
-		 * Info generated in @a start_drag and used subsequently in @a update_drag.
-		 *
-		 * Note that it can be none *during* a drag operation if the drag operation was
-		 * disabled in 'start_drag()' for some reason.
-		 */
-		boost::optional<MouseDragInfo> d_mouse_drag_info;
-
-		/**
 		 * Is true if we're currently between the start of drag (@a start_drag) and
 		 * end of drag ('end_of_drag' is true in call to @a update_drag).
-		 *
-		 * Note that this does not always coincide with @a d_mouse_drag_info which can
-		 * be none if the drag operation was disabled in 'start_drag()' for some reason.
 		 */
-		bool d_in_drag_operation;
+		boost::optional<MouseDragMode> d_mouse_drag_mode;
+
+		/**
+		 * Info used when panning the view.
+		 */
+		boost::optional<PanDragInfo> d_pan_drag_info;
+
+		/**
+		 * Info used when rotating and tilting the view.
+		 */
+		boost::optional<RotateAndTiltDragInfo> d_rotate_and_tilt_drag_info;
 
 		/**
 		 * Is true if we're currently in the last call to @a update_drag.
@@ -203,15 +215,18 @@ namespace GPlatesViewOperations
 
 
 		void
-		start_drag_pan();
+		start_drag_pan(
+				const GPlatesMaths::PointOnSphere &start_mouse_pos_on_globe);
 
 		void
 		update_drag_pan(
-				const GPlatesMaths::UnitVector3D &mouse_pos_on_globe);
+				const GPlatesMaths::PointOnSphere &mouse_pos_on_globe);
 
 
 		void
-		start_drag_rotate_and_tilt();
+		start_drag_rotate_and_tilt(
+				const double &start_mouse_window_x,
+				const double &start_mouse_window_y);
 
 		void
 		update_drag_rotate_and_tilt(

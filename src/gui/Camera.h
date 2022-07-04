@@ -26,9 +26,9 @@
 #ifndef GPLATES_GUI_CAMERA_H
 #define GPLATES_GUI_CAMERA_H
 
-#include <utility>  // std::pair
 #include <boost/optional.hpp>
 #include <QObject>
+#include <QPointF>
 
 #include "ViewportProjectionType.h"
 
@@ -235,7 +235,7 @@ namespace GPlatesGui
 		 * Returns none if the projection is perspective and the specified position is on the plane
 		 * containing the camera eye with plane normal equal to view direction.
 		 */
-		boost::optional<std::pair<double/*window_x*/, double/*window_y*/>>
+		boost::optional<QPointF>
 		get_window_coord_at_position(
 				const GPlatesMaths::Vector3D &position,
 				int window_width,

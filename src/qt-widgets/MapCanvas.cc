@@ -552,7 +552,7 @@ GPlatesQtWidgets::MapCanvas::mousePressEvent(
 	d_mouse_press_info =
 			MousePressInfo(
 					d_mouse_screen_position,
-					d_mouse_map_position,
+					d_mouse_position_on_map_plane,
 					d_mouse_position_on_globe,
 					press_event->button(),
 					press_event->modifiers());
@@ -592,7 +592,7 @@ GPlatesQtWidgets::MapCanvas::mouseMoveEvent(
 					d_mouse_press_info->d_mouse_map_position,
 					d_mouse_press_info->d_mouse_position_on_globe,
 					d_mouse_screen_position,
-					d_mouse_map_position,
+					d_mouse_position_on_map_plane,
 					d_mouse_position_on_globe,
 					centre_of_viewport(),
 					d_mouse_press_info->d_button,
@@ -613,7 +613,7 @@ GPlatesQtWidgets::MapCanvas::mouseMoveEvent(
 				width(),
 				height(),
 				d_mouse_screen_position,
-				d_mouse_map_position,
+				d_mouse_position_on_map_plane,
 				d_mouse_position_on_globe,
 				centre_of_viewport());
 	}
@@ -668,7 +668,7 @@ GPlatesQtWidgets::MapCanvas::mouseReleaseEvent(
 				d_mouse_press_info->d_mouse_map_position,
 				d_mouse_press_info->d_mouse_position_on_globe,
 				d_mouse_screen_position,
-				d_mouse_map_position,
+				d_mouse_position_on_map_plane,
 				d_mouse_position_on_globe,
 				centre_of_viewport(),
 				d_mouse_press_info->d_button,
@@ -1082,13 +1082,13 @@ GPlatesQtWidgets::MapCanvas::update_mouse_screen_position(
 void
 GPlatesQtWidgets::MapCanvas::update_mouse_position_on_map()
 {
-	d_mouse_map_position = calculate_position_on_map(d_mouse_screen_position);
+	d_mouse_position_on_map_plane = calculate_position_on_map_plane(d_mouse_screen_position);
 
 	// Calculate position on globe from position on map plane (if mouse currently on map plane).
 	boost::optional<GPlatesMaths::PointOnSphere> new_position_on_globe;
-	if (d_mouse_map_position)
+	if (d_mouse_position_on_map_plane)
 	{
-		new_position_on_globe = calculate_position_on_globe(d_mouse_map_position.get());
+		new_position_on_globe = calculate_position_on_globe(d_mouse_position_on_map_plane.get());
 	}
 
 	if (new_position_on_globe != d_mouse_position_on_globe)
@@ -1101,7 +1101,7 @@ GPlatesQtWidgets::MapCanvas::update_mouse_position_on_map()
 
 
 boost::optional<QPointF>
-GPlatesQtWidgets::MapCanvas::calculate_position_on_map(
+GPlatesQtWidgets::MapCanvas::calculate_position_on_map_plane(
 		const QPointF &screen_position) const
 {
 	// Note that OpenGL and Qt y-axes are the reverse of each other.
@@ -1112,16 +1112,16 @@ GPlatesQtWidgets::MapCanvas::calculate_position_on_map(
 	//
 	// In perspective view it's possible for a screen pixel ray emanating from the camera eye to
 	// miss the map plane entirely (even though the map plane is infinite).
-	return d_map_camera.get_position_on_map_at_window_coord(screen_x, screen_y, width(), height());
+	return d_map_camera.get_position_on_map_plane_at_window_coord(screen_x, screen_y, width(), height());
 }
 
 
 boost::optional<GPlatesMaths::PointOnSphere>
 GPlatesQtWidgets::MapCanvas::calculate_position_on_globe(
-		const QPointF &map_position) const
+		const QPointF &position_on_map_plane) const
 {
 	boost::optional<GPlatesMaths::LatLonPoint> lat_lon_position_on_globe =
-			d_view_state.get_map_projection().inverse_transform(map_position);
+			d_view_state.get_map_projection().inverse_transform(position_on_map_plane);
 	if (!lat_lon_position_on_globe)
 	{
 		// The map position in on the map plane (z=0) but outside the map projection of the globe.

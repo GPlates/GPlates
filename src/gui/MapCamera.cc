@@ -37,8 +37,26 @@
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
 #include "maths/Rotation.h"
+#include "maths/types.h"
 
 #include "opengl/GLIntersect.h"
+
+
+namespace GPlatesGui
+{
+	namespace
+	{
+		/**
+		 * Return the distance from origin to specified QPointF.
+		 */
+		double
+		get_distance_from_origin(
+				const QPointF &point)
+		{
+			return std::sqrt(QPointF::dotProduct(point, point));
+		}
+	}
+}
 
 
 constexpr double GPlatesGui::MapCamera::MAP_LATITUDE_EXTENT_IN_MAP_SPACE;
@@ -302,7 +320,7 @@ GPlatesGui::MapCamera::rotate_anticlockwise(
 
 
 boost::optional<QPointF>
-GPlatesGui::MapCamera::get_position_on_map_at_camera_ray(
+GPlatesGui::MapCamera::get_position_on_map_plane_at_camera_ray(
 		const GPlatesOpenGL::GLIntersect::Ray &camera_ray) const
 {
 	// Create a plane representing the map plane (z=0).
@@ -398,10 +416,10 @@ GPlatesGui::MapCamera::get_bounding_radius() const
 		{
 			const QPointF &map_projected_point = map_projected_points[point_index];
 
-			const double distance_point_to_origin = std::sqrt(QPointF::dotProduct(map_projected_point, map_projected_point));
-			if (map_bounding_extent < distance_point_to_origin)
+			const double distance_from_origin = get_distance_from_origin(map_projected_point);
+			if (map_bounding_extent < distance_from_origin)
 			{
-				map_bounding_extent = distance_point_to_origin;
+				map_bounding_extent = distance_from_origin;
 			}
 		}
 

@@ -39,7 +39,6 @@ GPlatesViewOperations::GlobeViewOperation::GlobeViewOperation(
 		GPlatesGui::GlobeCamera &globe_camera,
 		RenderedGeometryCollection &rendered_geometry_collection) :
 	d_globe_camera(globe_camera),
-	d_in_drag_operation(false),
 	d_in_last_update_drag(false),
 	d_rendered_geometry_collection(rendered_geometry_collection)
 {
@@ -55,32 +54,25 @@ GPlatesViewOperations::GlobeViewOperation::start_drag(
 		int screen_width,
 		int screen_height)
 {
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			!d_mouse_drag_mode && !d_pan_drag_info && !d_rotate_and_tilt_drag_info,
+			GPLATES_ASSERTION_SOURCE);
+
 	// We've started a drag operation.
-	d_in_drag_operation = true;
+	d_mouse_drag_mode = mouse_drag_mode;
 	d_in_last_update_drag = false;
 
 	// Note that OpenGL (window) and Qt (screen) y-axes are the reverse of each other.
 	const double initial_mouse_window_y = screen_height - initial_mouse_screen_y;
 	const double initial_mouse_window_x = initial_mouse_screen_x;
 
-	d_mouse_drag_info = MouseDragInfo(
-			mouse_drag_mode,
-			initial_mouse_pos_on_globe.position_vector(),
-			initial_mouse_window_x,
-			initial_mouse_window_y,
-			d_globe_camera.get_look_at_position_on_globe().position_vector(),
-			d_globe_camera.get_view_direction(),
-			d_globe_camera.get_up_direction(),
-			d_globe_camera.get_view_orientation(),
-			d_globe_camera.get_tilt_angle());
-
-	switch (d_mouse_drag_info->mode)
+	switch (mouse_drag_mode)
 	{
 	case DRAG_PAN:
-		start_drag_pan();
+		start_drag_pan(initial_mouse_pos_on_globe);
 		break;
 	case DRAG_ROTATE_AND_TILT:
-		start_drag_rotate_and_tilt();
+		start_drag_rotate_and_tilt(initial_mouse_window_x, initial_mouse_window_y);
 		break;
 	default:
 		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
@@ -115,6 +107,11 @@ GPlatesViewOperations::GlobeViewOperation::update_drag(
 		int screen_height,
 		bool end_of_drag)
 {
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_mouse_drag_mode,
+			GPLATES_ASSERTION_SOURCE);
+	const MouseDragMode mouse_drag_mode = d_mouse_drag_mode.get();
+
 	// If we're finishing the drag operation.
 	if (end_of_drag)
 	{
@@ -124,29 +121,32 @@ GPlatesViewOperations::GlobeViewOperation::update_drag(
 		// the globe camera which in turn signals the globe to be rendered which in turn
 		// queries 'in_drag()' to see if it should optimise rendering *during* a mouse drag.
 		// And that all happens before we even leave the current function.
-		d_in_drag_operation = false;
+		d_mouse_drag_mode = boost::none;
 
 		d_in_last_update_drag = true;
 	}
 
-	if (d_mouse_drag_info)  // drag operation might have been disabled in 'start_drag()' for some reason.
-	{
-		// Note that OpenGL (window) and Qt (screen) y-axes are the reverse of each other.
-		const double mouse_window_y = screen_height - mouse_screen_y;
-		const double mouse_window_x = mouse_screen_x;
+	// Note that OpenGL (window) and Qt (screen) y-axes are the reverse of each other.
+	const double mouse_window_y = screen_height - mouse_screen_y;
+	const double mouse_window_x = mouse_screen_x;
 
-		switch (d_mouse_drag_info->mode)
-		{
-		case DRAG_PAN:
-			update_drag_pan(mouse_pos_on_globe.position_vector());
-			break;
-		case DRAG_ROTATE_AND_TILT:
-			update_drag_rotate_and_tilt(mouse_window_x, mouse_window_y, screen_width, screen_height);
-			break;
-		default:
-			GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-			break;
-		}
+	switch (mouse_drag_mode)
+	{
+	case DRAG_PAN:
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				d_pan_drag_info && !d_rotate_and_tilt_drag_info,
+				GPLATES_ASSERTION_SOURCE);
+		update_drag_pan(mouse_pos_on_globe);
+		break;
+	case DRAG_ROTATE_AND_TILT:
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				!d_pan_drag_info && d_rotate_and_tilt_drag_info,
+				GPLATES_ASSERTION_SOURCE);
+		update_drag_rotate_and_tilt(mouse_window_x, mouse_window_y, screen_width, screen_height);
+		break;
+	default:
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		break;
 	}
 
 	//
@@ -181,7 +181,8 @@ GPlatesViewOperations::GlobeViewOperation::update_drag(
 	if (end_of_drag)
 	{
 		// Finished dragging mouse - no need for mouse drag info.
-		d_mouse_drag_info = boost::none;
+		d_pan_drag_info = boost::none;
+		d_rotate_and_tilt_drag_info = boost::none;
 
 		d_in_last_update_drag = false;
 	}
@@ -189,26 +190,19 @@ GPlatesViewOperations::GlobeViewOperation::update_drag(
 
 
 void
-GPlatesViewOperations::GlobeViewOperation::start_drag_pan()
+GPlatesViewOperations::GlobeViewOperation::start_drag_pan(
+		const GPlatesMaths::PointOnSphere &start_mouse_pos_on_globe)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_mouse_drag_info,
-			GPLATES_ASSERTION_SOURCE);
-
-	//
-	// Nothing to be done.
-	//
+	d_pan_drag_info = PanDragInfo(
+			start_mouse_pos_on_globe.position_vector(),
+			d_globe_camera.get_view_orientation());
 }
 
 
 void
 GPlatesViewOperations::GlobeViewOperation::update_drag_pan(
-		const GPlatesMaths::UnitVector3D &mouse_pos_on_globe)
+		const GPlatesMaths::PointOnSphere &mouse_pos_on_globe)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_mouse_drag_info,
-			GPLATES_ASSERTION_SOURCE);
-
 	// The current mouse position-on-globe is in global (universe) coordinates.
 	// It actually doesn't change (within numerical precision) when the view rotates.
 	// However, in the frame-of-reference of the view at the start of drag, it has changed.
@@ -216,21 +210,21 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_pan(
 	// (it's reverse because a change in view space is equivalent to the reverse change in model space
 	// and the globe, and points on it, are in model space).
 	const GPlatesMaths::UnitVector3D mouse_pos_on_globe_relative_to_start_view =
-			d_mouse_drag_info->view_rotation_relative_to_start.get_reverse() * mouse_pos_on_globe;
+			d_pan_drag_info->view_rotation_relative_to_start.get_reverse() * mouse_pos_on_globe.position_vector();
 
 	// The model-space rotation from initial position at start of drag to current position.
 	const GPlatesMaths::Rotation globe_rotation_relative_to_start = GPlatesMaths::Rotation::create(
-			d_mouse_drag_info->start_mouse_pos_on_globe,
+			d_pan_drag_info->start_mouse_pos_on_globe,
 			mouse_pos_on_globe_relative_to_start_view);
 
 	// Rotation in view space is reverse of rotation in model space.
 	const GPlatesMaths::Rotation view_rotation_relative_to_start = globe_rotation_relative_to_start.get_reverse();
 
 	// Rotate the view frame.
-	const GPlatesMaths::Rotation view_orientation = view_rotation_relative_to_start * d_mouse_drag_info->start_view_orientation;
+	const GPlatesMaths::Rotation view_orientation = view_rotation_relative_to_start * d_pan_drag_info->start_view_orientation;
 
 	// Keep track of the updated view rotation relative to the start.
-	d_mouse_drag_info->view_rotation_relative_to_start = view_rotation_relative_to_start;
+	d_pan_drag_info->view_rotation_relative_to_start = view_rotation_relative_to_start;
 
 	d_globe_camera.set_view_orientation(
 			view_orientation,
@@ -240,15 +234,16 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_pan(
 
 
 void
-GPlatesViewOperations::GlobeViewOperation::start_drag_rotate_and_tilt()
+GPlatesViewOperations::GlobeViewOperation::start_drag_rotate_and_tilt(
+		const double &start_mouse_window_x,
+		const double &start_mouse_window_y)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_mouse_drag_info,
-			GPLATES_ASSERTION_SOURCE);
-
-	//
-	// Nothing to be done.
-	//
+	d_rotate_and_tilt_drag_info = RotateAndTiltDragInfo(
+			start_mouse_window_x,
+			start_mouse_window_y,
+			d_globe_camera.get_look_at_position_on_globe().position_vector(),
+			d_globe_camera.get_view_orientation(),
+			d_globe_camera.get_tilt_angle());
 }
 
 
@@ -259,25 +254,21 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_rotate_and_tilt(
 		int window_width,
 		int window_height)
 {
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_mouse_drag_info,
-			GPLATES_ASSERTION_SOURCE);
-
 	//
 	// Horizontal dragging rotates the view.
 	//
 
 	// Each multiple of PI means dragging the full window *width* will *rotate* by PI radians (180 degrees).
 	const double view_rotation_angle_relative_to_start = 3 * GPlatesMaths::PI * (
-			d_mouse_drag_info->start_mouse_window_x - mouse_window_x) / window_width;
+			d_rotate_and_tilt_drag_info->start_mouse_window_x - mouse_window_x) / window_width;
 
 	// The rotation from start of drag.
 	const GPlatesMaths::Rotation view_rotation_relative_to_start = GPlatesMaths::Rotation::create(
-			d_mouse_drag_info->start_look_at_position,
+			d_rotate_and_tilt_drag_info->start_look_at_position,
 			view_rotation_angle_relative_to_start);
 
 	// Rotate the view frame.
-	const GPlatesMaths::Rotation view_orientation = view_rotation_relative_to_start * d_mouse_drag_info->start_view_orientation;
+	const GPlatesMaths::Rotation view_orientation = view_rotation_relative_to_start * d_rotate_and_tilt_drag_info->start_view_orientation;
 
 	d_globe_camera.set_view_orientation(
 			view_orientation,
@@ -289,9 +280,9 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_rotate_and_tilt(
 	//
 
 	// Each multiple of PI means dragging the full window *height* will *tilt* by PI radians (180 degrees).
-	const double delta_tilt_angle = 1.5 * GPlatesMaths::PI * (mouse_window_y - d_mouse_drag_info->start_mouse_window_y) / window_height;
+	const double delta_tilt_angle = 1.5 * GPlatesMaths::PI * (mouse_window_y - d_rotate_and_tilt_drag_info->start_mouse_window_y) / window_height;
 
-	const GPlatesMaths::real_t tilt_angle = d_mouse_drag_info->start_tilt_angle + delta_tilt_angle;
+	const GPlatesMaths::real_t tilt_angle = d_rotate_and_tilt_drag_info->start_tilt_angle + delta_tilt_angle;
 
 	d_globe_camera.set_tilt_angle(
 			tilt_angle,

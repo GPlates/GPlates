@@ -100,7 +100,9 @@ namespace GPlatesViewOperations
 				bool end_of_drag);
 
 		/**
-		 * Returns true if currently in a drag, where @a start_drag has been called but the last
+		 * Returns true if currently in a drag.
+		 *
+		 * A drag is where @a start_drag has been called but the last
 		 * @a update_drag ('end_of_drag' is true) has not yet been called.
 		 *
 		 * Note that this means false is returned *during* the last update
@@ -109,52 +111,60 @@ namespace GPlatesViewOperations
 		bool
 		in_drag() const
 		{
-			return d_in_drag_operation;
+			return static_cast<bool>(d_mouse_drag_mode);
+		}
+
+		/**
+		 * Returns the drag mode if currently in a drag (otherwise returns none).
+		 *
+		 * See @a in_drag.
+		 */
+		boost::optional<MouseDragMode>
+		drag_mode() const
+		{
+			return d_mouse_drag_mode;
 		}
 
 	private:
 
 		/**
-		 * Information generated in @a start_drag and used in subsequent calls to @a update_drag.
+		 * Information generated in @a start_drag_pan and used in subsequent calls to @a update_drag_pan.
 		 */
-		struct MouseDragInfo
+		struct PanDragInfo
 		{
-			MouseDragInfo(
-					MouseDragMode mode_,
-					const double &start_mouse_window_x_,
-					const double &start_mouse_window_y_,
+			PanDragInfo(
 					const boost::optional<QPointF> &start_map_position_,
-					const QPointF &start_look_at_position_,
-					const GPlatesMaths::UnitVector3D &start_view_direction_,
-					const GPlatesMaths::UnitVector3D &start_up_direction_,
-					const GPlatesMaths::real_t &start_rotation_angle_,
-					const GPlatesMaths::real_t &start_tilt_angle_) :
-				mode(mode_),
-				start_mouse_window_x(start_mouse_window_x_),
-				start_mouse_window_y(start_mouse_window_y_),
+					const QPointF &start_look_at_position_) :
 				start_map_position(start_map_position_),
 				start_look_at_position(start_look_at_position_),
-				start_view_direction(start_view_direction_),
-				start_up_direction(start_up_direction_),
-				pan_relative_to_start_in_view_frame(0, 0),
+				pan_relative_to_start_in_view_frame(0, 0)
+			{  }
+
+			boost::optional<QPointF> start_map_position;
+			QPointF start_look_at_position;
+
+			QPointF pan_relative_to_start_in_view_frame;
+		};
+
+		/**
+		 * Information generated in @a start_drag_rotate_and_tilt and used in subsequent calls to @a update_drag_rotate_and_tilt.
+		 */
+		struct RotateAndTiltDragInfo
+		{
+			RotateAndTiltDragInfo(
+					const double &start_mouse_window_x_,
+					const double &start_mouse_window_y_,
+					const GPlatesMaths::real_t &start_rotation_angle_,
+					const GPlatesMaths::real_t &start_tilt_angle_) :
+				start_mouse_window_x(start_mouse_window_x_),
+				start_mouse_window_y(start_mouse_window_y_),
 				start_rotation_angle(start_rotation_angle_),
 				start_tilt_angle(start_tilt_angle_)
 			{  }
 
-			MouseDragMode mode;
-
 			double start_mouse_window_x;
 			double start_mouse_window_y;
-			boost::optional<QPointF> start_map_position;
 
-			QPointF start_look_at_position;
-			GPlatesMaths::UnitVector3D start_view_direction;
-			GPlatesMaths::UnitVector3D start_up_direction;
-
-			// For DRAG_PAN...
-			QPointF pan_relative_to_start_in_view_frame;
-
-			// For DRAG_ROTATE_AND_TILT...
 			GPlatesMaths::real_t start_rotation_angle;
 			GPlatesMaths::real_t start_tilt_angle;
 		};
@@ -163,15 +173,20 @@ namespace GPlatesViewOperations
 		GPlatesGui::MapCamera &d_map_camera;
 
 		/**
-		 * Info generated in @a start_drag and used subsequently in @a update_drag.
-		 */
-		boost::optional<MouseDragInfo> d_mouse_drag_info;
-
-		/**
 		 * Is true if we're currently between the start of drag (@a start_drag) and
 		 * end of drag ('end_of_drag' is true in call to @a update_drag).
 		 */
-		bool d_in_drag_operation;
+		boost::optional<MouseDragMode> d_mouse_drag_mode;
+
+		/**
+		 * Info used when panning the view.
+		 */
+		boost::optional<PanDragInfo> d_pan_drag_info;
+
+		/**
+		 * Info used when rotating and tilting the view.
+		 */
+		boost::optional<RotateAndTiltDragInfo> d_rotate_and_tilt_drag_info;
 
 		/**
 		 * Is true if we're currently in the last call to @a update_drag.
@@ -186,14 +201,17 @@ namespace GPlatesViewOperations
 
 
 		void
-		start_drag_pan();
+		start_drag_pan(
+				const boost::optional<QPointF> &start_map_position);
 
 		void
 		update_drag_pan(
 				const boost::optional<QPointF> &map_position);
 
 		void
-		start_drag_rotate_and_tilt();
+		start_drag_rotate_and_tilt(
+				const double &start_mouse_window_x,
+				const double &start_mouse_window_y);
 
 		void
 		update_drag_rotate_and_tilt(

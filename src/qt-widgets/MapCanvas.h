@@ -465,10 +465,10 @@ namespace GPlatesQtWidgets
 		QPointF d_mouse_screen_position;
 
 		/**
-		 * The mouse pointer position on the* map* (in 2D map projection space), or none if screen view ray
-		 * at the mouse pointer *screen* position does not intersect the map plane (z=0).
+		 * The mouse pointer position on the map *plane* (2D plane with z=0), or none if screen view ray
+		 * at the mouse pointer *screen* position does not intersect the map plane.
 		 */
-		boost::optional<QPointF> d_mouse_map_position;
+		boost::optional<QPointF> d_mouse_position_on_map_plane;
 
 		/**
 		 * If the mouse pointer is on the globe, this is the position of the mouse pointer on the globe.
@@ -552,11 +552,11 @@ namespace GPlatesQtWidgets
 		update_mouse_position_on_map();
 
 		/**
-		 * Given the screen coordinates, calculate and return a position on the map (in 2D map projection space),
-		 * or none if screen view ray (as screen position) does not intersect the map plane (z=0).
+		 * Given the screen coordinates, calculate and return a position on the map *plane* (2D plane with z=0),
+		 * or none if screen view ray (as screen position) does not intersect the map plane.
 		 */
 		boost::optional<QPointF>
-		calculate_position_on_map(
+		calculate_position_on_map_plane(
 				const QPointF &screen_position) const;
 
 		/**

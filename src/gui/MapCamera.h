@@ -268,17 +268,17 @@ namespace GPlatesGui
 		 * [0, window_height], in which case the position on the map plane is not visible either.
 		 *
 		 * Note: This is equivalent to calling @a get_camera_ray_at_window_coord to get a ray
-		 *       followed by calling @a get_position_on_map_at_camera_ray with that ray.
+		 *       followed by calling @a get_position_on_map_plane_at_camera_ray with that ray.
 		 */
 		boost::optional<QPointF>
-		get_position_on_map_at_window_coord(
+		get_position_on_map_plane_at_window_coord(
 				double window_x,
 				double window_y,
 				int window_width,
 				int window_height) const
 		{
 			// See if camera ray intersects the map plane (passing through z=0).
-			return get_position_on_map_at_camera_ray(
+			return get_position_on_map_plane_at_camera_ray(
 					// Project screen coordinates into a ray into 3D scene (containing 2D map plane)...
 					get_camera_ray_at_window_coord(window_x, window_y, window_width, window_height));
 		}
@@ -301,7 +301,7 @@ namespace GPlatesGui
 		 *       near/far clip planes, only the front infinitely long pyramid with apex at eye is visible).
 		 */
 		boost::optional<QPointF>
-		get_position_on_map_at_camera_ray(
+		get_position_on_map_plane_at_camera_ray(
 				const GPlatesOpenGL::GLIntersect::Ray &camera_ray) const;
 
 	protected:
