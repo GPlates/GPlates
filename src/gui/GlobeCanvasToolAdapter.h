@@ -89,7 +89,7 @@ namespace GPlatesGui
 				int screen_height,
 				double press_screen_x,
 				double press_screen_y,
-				const GPlatesMaths::PointOnSphere &press_pos_on_globe,
+				GPlatesMaths::PointOnSphere press_pos_on_globe,
 				bool is_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);	
@@ -100,7 +100,7 @@ namespace GPlatesGui
 				int screen_height,
 				double click_screen_x,
 				double click_screen_y,
-				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+				GPlatesMaths::PointOnSphere click_pos_on_globe,
 				bool is_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
@@ -111,13 +111,13 @@ namespace GPlatesGui
 				int screen_height,
 				double initial_screen_x,
 				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				GPlatesMaths::PointOnSphere initial_pos_on_globe,
 				bool was_on_globe,
 				double current_screen_x,
 				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				GPlatesMaths::PointOnSphere current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport,
+				GPlatesMaths::PointOnSphere centre_of_viewport,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -127,13 +127,13 @@ namespace GPlatesGui
 				int screen_height,
 				double initial_screen_x,
 				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				GPlatesMaths::PointOnSphere initial_pos_on_globe,
 				bool was_on_globe,
 				double current_screen_x,
 				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				GPlatesMaths::PointOnSphere current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport,
+				GPlatesMaths::PointOnSphere centre_of_viewport,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -146,9 +146,9 @@ namespace GPlatesGui
 				int screen_height,
 				double current_screen_x,
 				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				GPlatesMaths::PointOnSphere current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport);
+				GPlatesMaths::PointOnSphere centre_of_viewport);
 
 	private:
 

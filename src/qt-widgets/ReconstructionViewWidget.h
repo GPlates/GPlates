@@ -155,12 +155,12 @@ namespace GPlatesQtWidgets
 
 		void
 		update_mouse_position_on_globe(
-				const GPlatesMaths::PointOnSphere &position_on_globe,
+				GPlatesMaths::PointOnSphere position_on_globe,
 				bool is_on_globe);
 
 		void
 		update_mouse_position_on_map(
-				const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe);
+				boost::optional<GPlatesMaths::PointOnSphere> position_on_globe);
 		
 		void
 		activate_zoom_spinbox();

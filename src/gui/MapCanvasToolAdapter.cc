@@ -70,9 +70,9 @@ void
 GPlatesGui::MapCanvasToolAdapter::handle_press(
 		int screen_width,
 		int screen_height,
-		const QPointF &press_screen_position,
-		const boost::optional<QPointF> &press_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &press_position_on_globe,
+		QPointF press_screen_position,
+		boost::optional<QPointF> press_map_position,
+		boost::optional<GPlatesMaths::PointOnSphere> press_position_on_globe,
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
 {
@@ -108,9 +108,9 @@ void
 GPlatesGui::MapCanvasToolAdapter::handle_click(
 		int screen_width,
 		int screen_height,
-		const QPointF &click_screen_position,
-		const boost::optional<QPointF> &click_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe,
+		QPointF click_screen_position,
+		boost::optional<QPointF> click_map_position,
+		boost::optional<GPlatesMaths::PointOnSphere> click_position_on_globe,
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
 {
@@ -178,13 +178,13 @@ void
 GPlatesGui::MapCanvasToolAdapter::handle_drag(
 		int screen_width,
 		int screen_height,
-		const QPointF &initial_screen_position,
-		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
-		const QPointF &current_screen_position,
-		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe,
+		QPointF initial_screen_position,
+		boost::optional<QPointF> initial_map_position,
+		boost::optional<GPlatesMaths::PointOnSphere> initial_position_on_globe,
+		QPointF current_screen_position,
+		boost::optional<QPointF> current_map_position,
+		boost::optional<GPlatesMaths::PointOnSphere> current_position_on_globe,
+		GPlatesMaths::PointOnSphere centre_of_viewport_on_globe,
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
 {
@@ -264,13 +264,13 @@ void
 GPlatesGui::MapCanvasToolAdapter::handle_release_after_drag(
 		int screen_width,
 		int screen_height,
-		const QPointF &initial_screen_position,
-		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
-		const QPointF &current_screen_position,
-		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe,
+		QPointF initial_screen_position,
+		boost::optional<QPointF> initial_map_position,
+		boost::optional<GPlatesMaths::PointOnSphere> initial_position_on_globe,
+		QPointF current_screen_position,
+		boost::optional<QPointF> current_map_position,
+		boost::optional<GPlatesMaths::PointOnSphere> current_position_on_globe,
+		GPlatesMaths::PointOnSphere centre_of_viewport_on_globe,
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
 {
@@ -350,10 +350,10 @@ void
 GPlatesGui::MapCanvasToolAdapter::handle_move_without_drag(
 		int screen_width,
 		int screen_height,
-		const QPointF &screen_position,
-		const boost::optional<QPointF> &map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe,
-		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
+		QPointF screen_position,
+		boost::optional<QPointF> map_position,
+		boost::optional<GPlatesMaths::PointOnSphere> position_on_globe,
+		GPlatesMaths::PointOnSphere centre_of_viewport_on_globe)
 {
 	get_active_map_canvas_tool().handle_move_without_drag(
 			screen_width, screen_height,
@@ -370,18 +370,18 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 			SIGNAL(mouse_pressed(
 					int,
 					int,
-					const QPointF &,
-					const boost::optional<QPointF> &,
-					const boost::optional<GPlatesMaths::PointOnSphere> &,
+					QPointF,
+					boost::optional<QPointF>,
+					boost::optional<GPlatesMaths::PointOnSphere>,
 					Qt::MouseButton,
 					Qt::KeyboardModifiers)),
 			this,
 			SLOT(handle_press(
 					int,
 					int,
-					const QPointF &,
-					const boost::optional<QPointF> &,
-					const boost::optional<GPlatesMaths::PointOnSphere> &,
+					QPointF,
+					boost::optional<QPointF>,
+					boost::optional<GPlatesMaths::PointOnSphere>,
 					Qt::MouseButton,
 					Qt::KeyboardModifiers)));
 
@@ -390,18 +390,18 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 			SIGNAL(mouse_clicked(
 					int,
 					int,
-					const QPointF &,
-					const boost::optional<QPointF> &,
-					const boost::optional<GPlatesMaths::PointOnSphere> &,
+					QPointF,
+					boost::optional<QPointF>,
+					boost::optional<GPlatesMaths::PointOnSphere>,
 					Qt::MouseButton,
 					Qt::KeyboardModifiers)),
 			this,
 			SLOT(handle_click(
 					int,
 					int,
-					const QPointF &,
-					const boost::optional<QPointF> &,
-					const boost::optional<GPlatesMaths::PointOnSphere> &,
+					QPointF,
+					boost::optional<QPointF>,
+					boost::optional<GPlatesMaths::PointOnSphere>,
 					Qt::MouseButton,
 					Qt::KeyboardModifiers)));
 
@@ -410,26 +410,26 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 			SIGNAL(mouse_dragged(
 					int,
 					int,
-					const QPointF &,
-					const boost::optional<QPointF> &,
-					const boost::optional<GPlatesMaths::PointOnSphere> &,
-					const QPointF &,
-					const boost::optional<QPointF> &,
-					const boost::optional<GPlatesMaths::PointOnSphere> &,
-					const GPlatesMaths::PointOnSphere &,
+					QPointF,
+					boost::optional<QPointF>,
+					boost::optional<GPlatesMaths::PointOnSphere>,
+					QPointF,
+					boost::optional<QPointF>,
+					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere,
 					Qt::MouseButton,
 					Qt::KeyboardModifiers)),
 			this,
 			SLOT(handle_drag(
 					int,
 					int,
-					const QPointF &,
-					const boost::optional<QPointF> &,
-					const boost::optional<GPlatesMaths::PointOnSphere> &,
-					const QPointF &,
-					const boost::optional<QPointF> &,
-					const boost::optional<GPlatesMaths::PointOnSphere> &,
-					const GPlatesMaths::PointOnSphere &,
+					QPointF,
+					boost::optional<QPointF>,
+					boost::optional<GPlatesMaths::PointOnSphere>,
+					QPointF,
+					boost::optional<QPointF>,
+					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere,
 					Qt::MouseButton,
 					Qt::KeyboardModifiers)));
 
@@ -438,26 +438,26 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 			SIGNAL(mouse_released_after_drag(
 					int,
 					int,
-					const QPointF &,
-					const boost::optional<QPointF> &,
-					const boost::optional<GPlatesMaths::PointOnSphere> &,
-					const QPointF &,
-					const boost::optional<QPointF> &,
-					const boost::optional<GPlatesMaths::PointOnSphere> &,
-					const GPlatesMaths::PointOnSphere &,
+					QPointF,
+					boost::optional<QPointF>,
+					boost::optional<GPlatesMaths::PointOnSphere>,
+					QPointF,
+					boost::optional<QPointF>,
+					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere,
 					Qt::MouseButton,
 					Qt::KeyboardModifiers)),
 			this,
 			SLOT(handle_release_after_drag(
 					int,
 					int,
-					const QPointF &,
-					const boost::optional<QPointF> &,
-					const boost::optional<GPlatesMaths::PointOnSphere> &,
-					const QPointF &,
-					const boost::optional<QPointF> &,
-					const boost::optional<GPlatesMaths::PointOnSphere> &,
-					const GPlatesMaths::PointOnSphere &,
+					QPointF,
+					boost::optional<QPointF>,
+					boost::optional<GPlatesMaths::PointOnSphere>,
+					QPointF,
+					boost::optional<QPointF>,
+					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere,
 					Qt::MouseButton,
 					Qt::KeyboardModifiers)));
 
@@ -467,18 +467,18 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 			SIGNAL(mouse_moved_without_drag(
 					int,
 					int,
-					const QPointF &,
-					const boost::optional<QPointF> &,
-					const boost::optional<GPlatesMaths::PointOnSphere> &,
-					const GPlatesMaths::PointOnSphere &)),
+					QPointF,
+					boost::optional<QPointF>,
+					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere)),
 			this,
 			SLOT(handle_move_without_drag(
 					int,
 					int,
-					const QPointF &,
-					const boost::optional<QPointF> &,
-					const boost::optional<GPlatesMaths::PointOnSphere> &,
-					const GPlatesMaths::PointOnSphere &)));
+					QPointF,
+					boost::optional<QPointF>,
+					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere)));
 }
 
 

@@ -1124,7 +1124,7 @@ GPlatesQtWidgets::MapCanvas::calculate_position_on_globe(
 			d_view_state.get_map_projection().inverse_transform(position_on_map_plane);
 	if (!lat_lon_position_on_globe)
 	{
-		// The map position in on the map plane (z=0) but outside the map projection of the globe.
+		// The map position is on the map plane (z=0) but outside the map projection of the globe.
 		return boost::none;
 	}
 

@@ -271,14 +271,14 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	// Handle signals to update mouse pointer position
 	QObject::connect(
 			&(d_globe_and_map_widget_ptr->get_globe_canvas()),
-		SIGNAL(mouse_position_on_globe_changed(const GPlatesMaths::PointOnSphere &, bool)),
+		SIGNAL(mouse_position_on_globe_changed(GPlatesMaths::PointOnSphere, bool)),
 			this,
-			SLOT(update_mouse_position_on_globe(const GPlatesMaths::PointOnSphere &, bool)));
+			SLOT(update_mouse_position_on_globe(GPlatesMaths::PointOnSphere, bool)));
 	QObject::connect(
 			&(d_globe_and_map_widget_ptr->get_map_canvas()),
-			SIGNAL(mouse_position_on_map_changed(const boost::optional<GPlatesMaths::PointOnSphere> &)),
+			SIGNAL(mouse_position_on_map_changed(boost::optional<GPlatesMaths::PointOnSphere>)),
 			this,
-			SLOT(update_mouse_position_on_map(const boost::optional<GPlatesMaths::PointOnSphere> &)));
+			SLOT(update_mouse_position_on_map(boost::optional<GPlatesMaths::PointOnSphere>)));
 	QObject::connect(
 			&(view_state.get_projection()),
 			SIGNAL(globe_map_projection_changed(const GPlatesGui::Projection &)),
@@ -628,7 +628,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::recalc_camera_position()
 
 void
 GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_position_on_globe(
-		const GPlatesMaths::PointOnSphere &position_on_globe,
+		GPlatesMaths::PointOnSphere position_on_globe,
 		bool is_on_globe)
 {
 	//std::cerr << "Updating pos pointer" << std::endl;
@@ -652,7 +652,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_position_on_globe(
 
 void
 GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_position_on_map(
-		const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe)
+		boost::optional<GPlatesMaths::PointOnSphere> position_on_globe)
 {
 	//std::cerr << "Updating llp pointer" << std::endl;
 	QString lat_label(QObject::tr("(lat: "));

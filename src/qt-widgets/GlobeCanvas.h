@@ -251,9 +251,18 @@ namespace GPlatesQtWidgets
 
 	Q_SIGNALS:
 
+		//
+		// NOTE: These signals do NOT pass by reference (const) since a reference points to an underlying data member and
+		//       that data member can change within the duration of the slot being signaled.
+		//       For example, changing the globe camera causes it to emit a signal that we (GlobeCanvas) use to update the
+		//       current position on globe under the mouse cursor. So if a signaled slot updates the camera and then continues
+		//       to use the reference after that then it will find the referenced variable has unexpectedly been updated.
+		//
+
+
 		void
 		mouse_position_on_globe_changed(
-				const GPlatesMaths::PointOnSphere &position_on_globe,
+				GPlatesMaths::PointOnSphere position_on_globe,
 				bool is_on_globe);
 				
 		void
@@ -262,7 +271,7 @@ namespace GPlatesQtWidgets
 				int screen_height,
 				double press_screen_x,
 				double press_screen_y,
-				const GPlatesMaths::PointOnSphere &press_pos_on_globe,
+				GPlatesMaths::PointOnSphere press_pos_on_globe,
 				bool is_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
@@ -273,7 +282,7 @@ namespace GPlatesQtWidgets
 				int screen_height,
 				double click_screen_x,
 				double click_screen_y,
-				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+				GPlatesMaths::PointOnSphere click_pos_on_globe,
 				bool is_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
@@ -284,13 +293,13 @@ namespace GPlatesQtWidgets
 				int screen_height,
 				double initial_screen_x,
 				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				GPlatesMaths::PointOnSphere initial_pos_on_globe,
 				bool was_on_globe,
 				double current_screen_x,
 				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				GPlatesMaths::PointOnSphere current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport,
+				GPlatesMaths::PointOnSphere centre_of_viewport,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -300,13 +309,13 @@ namespace GPlatesQtWidgets
 				int screen_height,
 				double initial_screen_x,
 				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				GPlatesMaths::PointOnSphere initial_pos_on_globe,
 				bool was_on_globe,
 				double current_screen_x,
 				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				GPlatesMaths::PointOnSphere current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport,
+				GPlatesMaths::PointOnSphere centre_of_viewport,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -319,9 +328,9 @@ namespace GPlatesQtWidgets
 				int screen_height,
 				double current_screen_x,
 				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				GPlatesMaths::PointOnSphere current_pos_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport);
+				GPlatesMaths::PointOnSphere centre_of_viewport);
 
 		void
 		repainted(

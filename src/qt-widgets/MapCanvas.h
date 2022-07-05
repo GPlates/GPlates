@@ -226,17 +226,25 @@ namespace GPlatesQtWidgets
 
 	Q_SIGNALS:
 
+		//
+		// NOTE: These signals do NOT pass by reference (const) since a reference points to an underlying data member and
+		//       that data member can change within the duration of the slot being signaled.
+		//       For example, changing the map camera causes it to emit a signal that we (MapCanvas) use to update the
+		//       current map position under the mouse cursor. So if a signaled slot updates the camera and then continues
+		//       to use the reference after that then it will find the referenced variable has unexpectedly been updated.
+		//
+
 		void
 		mouse_position_on_map_changed(
-				const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe);
+				boost::optional<GPlatesMaths::PointOnSphere> position_on_globe);
 				
 		void
 		mouse_pressed(
 				int screen_width,
 				int screen_height,
-				const QPointF &press_screen_position,
-				const boost::optional<QPointF> &press_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &press_position_on_globe,
+				QPointF press_screen_position,
+				boost::optional<QPointF> press_map_position,
+				boost::optional<GPlatesMaths::PointOnSphere> press_position_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 				
@@ -245,9 +253,9 @@ namespace GPlatesQtWidgets
 		mouse_clicked(
 				int screen_width,
 				int screen_height,
-				const QPointF &click_screen_position,
-				const boost::optional<QPointF> &click_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe,
+				QPointF click_screen_position,
+				boost::optional<QPointF> click_map_position,
+				boost::optional<GPlatesMaths::PointOnSphere> click_position_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -255,13 +263,13 @@ namespace GPlatesQtWidgets
 		mouse_dragged(
 				int screen_width,
 				int screen_height,
-				const QPointF &initial_screen_position,
-				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
-				const QPointF &current_screen_position,
-				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe,
+				QPointF initial_screen_position,
+				boost::optional<QPointF> initial_map_position,
+				boost::optional<GPlatesMaths::PointOnSphere> initial_position_on_globe,
+				QPointF current_screen_position,
+				boost::optional<QPointF> current_map_position,
+				boost::optional<GPlatesMaths::PointOnSphere> current_position_on_globe,
+				GPlatesMaths::PointOnSphere centre_of_viewport_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -269,13 +277,13 @@ namespace GPlatesQtWidgets
 		mouse_released_after_drag(
 				int screen_width,
 				int screen_height,
-				const QPointF &initial_screen_position,
-				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
-				const QPointF &current_screen_position,
-				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe,
+				QPointF initial_screen_position,
+				boost::optional<QPointF> initial_map_position,
+				boost::optional<GPlatesMaths::PointOnSphere> initial_position_on_globe,
+				QPointF current_screen_position,
+				boost::optional<QPointF> current_map_position,
+				boost::optional<GPlatesMaths::PointOnSphere> current_position_on_globe,
+				GPlatesMaths::PointOnSphere centre_of_viewport_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -283,10 +291,10 @@ namespace GPlatesQtWidgets
 		mouse_moved_without_drag(
 				int screen_width,
 				int screen_height,
-				const QPointF &screen_position,
-				const boost::optional<QPointF> &map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe);
+				QPointF screen_position,
+				boost::optional<QPointF> map_position,
+				boost::optional<GPlatesMaths::PointOnSphere> position_on_globe,
+				GPlatesMaths::PointOnSphere centre_of_viewport_on_globe);
 
 		void
 		repainted(
