@@ -132,18 +132,22 @@ namespace GPlatesViewOperations
 		 */
 		struct PanDragInfo
 		{
+			explicit
 			PanDragInfo(
-					const boost::optional<QPointF> &start_map_position_,
-					const QPointF &start_look_at_position_) :
-				start_map_position(start_map_position_),
-				start_look_at_position(start_look_at_position_),
-				pan_relative_to_start_in_view_frame(0, 0)
+					// Start mouse window coordinates, but only if mouse is *on* the map plane...
+					const boost::optional<QPointF> &start_mouse_window_coords_) :
+				drag_from_mouse_window_coords(start_mouse_window_coords_)
 			{  }
 
-			boost::optional<QPointF> start_map_position;
-			QPointF start_look_at_position;
-
-			QPointF pan_relative_to_start_in_view_frame;
+			/**
+			 * The mouse window coordinates to drag *from* in the next drag update, but only if mouse was *on* the map plane.
+			 *
+			 * For the first drag update this will be from the start of the drag, and for subsequent drag updates
+			 * this will be the *to* (or destination) mouse coordinates of the previous drag update.
+			 *
+			 * Note: A value of none indicates that the mouse was NOT on the map plane.
+			 */
+			boost::optional<QPointF> drag_from_mouse_window_coords;
 		};
 
 		/**
@@ -202,11 +206,17 @@ namespace GPlatesViewOperations
 
 		void
 		start_drag_pan(
-				const boost::optional<QPointF> &start_map_position);
+				const boost::optional<QPointF> &start_map_position,
+				const double &start_mouse_window_x,
+				const double &start_mouse_window_y);
 
 		void
 		update_drag_pan(
-				const boost::optional<QPointF> &map_position);
+				const boost::optional<QPointF> &map_position,
+				double mouse_window_x,
+				double mouse_window_y,
+				int window_width,
+				int window_height);
 
 		void
 		start_drag_rotate_and_tilt(

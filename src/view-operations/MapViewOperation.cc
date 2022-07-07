@@ -68,7 +68,7 @@ GPlatesViewOperations::MapViewOperation::start_drag(
 	switch (mouse_drag_mode)
 	{
 	case DRAG_PAN:
-		start_drag_pan(initial_map_position);
+		start_drag_pan(initial_map_position, initial_mouse_window_x, initial_mouse_window_y);
 		break;
 	case DRAG_ROTATE_AND_TILT:
 		start_drag_rotate_and_tilt(initial_mouse_window_x, initial_mouse_window_y);
@@ -134,7 +134,7 @@ GPlatesViewOperations::MapViewOperation::update_drag(
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 				d_pan_drag_info && !d_rotate_and_tilt_drag_info,
 				GPLATES_ASSERTION_SOURCE);
-		update_drag_pan(map_position);
+		update_drag_pan(map_position, mouse_window_x, mouse_window_y, screen_width, screen_height);
 		break;
 	case DRAG_ROTATE_AND_TILT:
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -189,73 +189,106 @@ GPlatesViewOperations::MapViewOperation::update_drag(
 
 void
 GPlatesViewOperations::MapViewOperation::start_drag_pan(
-		const boost::optional<QPointF> &start_map_position)
+		const boost::optional<QPointF> &start_map_position,
+		const double &start_mouse_window_x,
+		const double &start_mouse_window_y)
 {
-	d_pan_drag_info = PanDragInfo(
-			start_map_position,
-			d_map_camera.get_look_at_position_on_map());
+	boost::optional<QPointF> start_mouse_window_coords;
+	if (start_map_position)
+	{
+		start_mouse_window_coords = QPointF(start_mouse_window_x, start_mouse_window_y);
+	}
+
+	d_pan_drag_info = PanDragInfo(start_mouse_window_coords);
 }
 
 
 void
 GPlatesViewOperations::MapViewOperation::update_drag_pan(
-		const boost::optional<QPointF> &map_position)
+		const boost::optional<QPointF> &map_position,
+		double mouse_window_x,
+		double mouse_window_y,
+		int window_width,
+		int window_height)
 {
-	// If the mouse position at start of drag, or current mouse position, is not anywhere on the
-	// map *plane* then we cannot pan the view.
-	if (!d_pan_drag_info->start_map_position ||
-		!map_position)
+	//
+	// Incrementally update the panning by calculating the pan due to dragging since the last drag update
+	// (rather than since the start of the drag).
+	//
+	// The drag-from and drag-to mouse coordinates and map positions refer to this incremental update.
+	//
+	// This prevents the mouse appearing to no longer be responsive in panning the map until
+	// the user moves the mouse position back to where it was when the map stopped panning.
+	// By limiting each update to the interval since the last update, when the proposed (updated)
+	// look-at position is outside the map projection boundary the user can just reverse the mouse
+	// movement direction and panning will immediately continue again.
+	//
+
+	// The current mouse position is the drag-to (or destination) of the current drag update.
+	const double drag_to_mouse_window_x = mouse_window_x;
+	const double drag_to_mouse_window_y = mouse_window_y;
+	const boost::optional<QPointF> &drag_to_map_position = map_position;
+
+	// If the drag-to mouse position is not anywhere on the map *plane* then we cannot pan the view.
+	if (!drag_to_map_position)
 	{
-		// This essentially means the user will have to release the drag (release mouse button) and
-		// start a new drag (hold mouse button down again) to get past here.
+		// The current drag-to mouse coordinates will be the drag-from coordinates for the next drag update.
+		// So signal that the drag-from coordinates for the next drag update are *off* the map plane.
+		// The next drag update will then know that it cannot pan the view.
+		d_pan_drag_info->drag_from_mouse_window_coords = boost::none;  // Off map plane.
+		return;
+	}
+	// If the drag-from mouse position is not anywhere on the map *plane* then we cannot pan the view.
+	if (!d_pan_drag_info->drag_from_mouse_window_coords)
+	{
+		// The current drag-to mouse coordinates will be the drag-from coordinates for the next drag update.
+		// So signal that the drag-from coordinates for the next drag update are *on* the map plane.
+		// The next drag update will then know that it can pan the view (provided its drag-to is also on the map plane).
+		d_pan_drag_info->drag_from_mouse_window_coords = QPointF(drag_to_mouse_window_x, drag_to_mouse_window_y);  // On map plane.
 		return;
 	}
 
-	// The current mouse position-on-map is in global (universe) coordinates.
-	// It actually doesn't change (within numerical precision) when the view pans.
-	// However, in the frame-of-reference of the view at the start of drag, it has changed.
-	// To detect how much change we need to pan it by the reverse of the change in view frame
-	// (it's reverse because a change in view space is equivalent to the reverse change in model space
-	// and the map, and points on it, are in model space).
-	const QPointF map_position_relative_to_start_view =
-			-d_pan_drag_info->pan_relative_to_start_in_view_frame + map_position.get();
+	// Get the drag-from position on the map plane.
+	// This uses the drag-from mouse coordinates, but calculated using the *current* map camera
+	// (not camera from previous drag update).
+	const boost::optional<QPointF> drag_from_map_position =
+			d_map_camera.get_position_on_map_plane_at_window_coord(
+					d_pan_drag_info->drag_from_mouse_window_coords->x(),
+					d_pan_drag_info->drag_from_mouse_window_coords->y(),
+					window_width,
+					window_height);
+	if (!drag_from_map_position)
+	{
+		// We shouldn't really get here because the drag-from mouse coordinates are the drag-to coordinates
+		// from the previous drag update and that update had a drag-to map position *on* the map plane.
+		// The only thing that changed was the map camera but it should only have panned (not rotated/tilted)
+		// and so the ray at those mouse coordinates should still intersect the map plane.
+		// But we'll handle this just in case.
+		//
+		// The current drag-to mouse coordinates will be the drag-from coordinates for the next drag update.
+		// So signal that the drag-from coordinates for the next drag update are *off* the map plane.
+		// And since *off* the map plane then return early (since cannot pan the view).
+		d_pan_drag_info->drag_from_mouse_window_coords = boost::none;
+		return;
+	}
 
-	// The pan since start of drag in the map frame of reference.
-	const QPointF pan_relative_to_start_in_map_frame =
-			map_position_relative_to_start_view - d_pan_drag_info->start_map_position.get();
+	// The new camera look-at position is the current look-at position plus the pan due to
+	// mouse movement during the current drag update (from drag-from to drag-to).
+	const QPointF pan_in_current_drag_update = drag_to_map_position.get() - drag_from_map_position.get();
 
-	// Convert the pan to the view frame of reference.
-	// The view moves in the opposite direction.
-	const QPointF pan_relative_to_start_in_view_frame = -pan_relative_to_start_in_map_frame;
-
-	// The new look-at position is the look-at position at the start of drag plus the pan relative to that start.
-	const QPointF look_at_position = d_pan_drag_info->start_look_at_position + pan_relative_to_start_in_view_frame;
+	// Negate the pan because a change in view space is equivalent to the reverse change in model space and the map,
+	// and points on it, are in model space. Essentially when we drag the mouse the view moves in the opposite direction.
+	const QPointF camera_look_at_position = d_map_camera.get_look_at_position_on_map() - pan_in_current_drag_update;
 
 	// Attempt to move the camera's look-at position on map.
-	if (d_map_camera.move_look_at_position_on_map(
-			look_at_position,
+	d_map_camera.move_look_at_position_on_map(
+			camera_look_at_position,
 			// Always emit on last update so client can turn off any rendering optimisations now that drag has finished...
-			!d_in_last_update_drag/*only_emit_if_changed*/))
-	{
-		// The look-at position was successfully moved (because new look-at position is inside map projection boundary).
-		// So keep track of the updated view pan relative to the start.
-		d_pan_drag_info->pan_relative_to_start_in_view_frame = pan_relative_to_start_in_view_frame;
-	}
-	else // failed to move camera's look-at position on map...
-	{
-		// Reset the start of the drag to the current mouse position.
-		//
-		// This prevents the mouse appearing to no longer be responsive in panning the map until
-		// the user moves the mouse position back to where it was when the map stopped panning.
-		// By continually reseting to the start of the drag when the proposed look-at position is
-		// outside the map projection boundary the user can just reverse the mouse movement direction
-		// and panning will immediately continue again.
-		//
-		// Note: We're only resetting the variables we actually use for panning.
-		d_pan_drag_info->start_map_position = map_position;
-		d_pan_drag_info->pan_relative_to_start_in_view_frame = QPointF(0, 0);
-		d_pan_drag_info->start_look_at_position = d_map_camera.get_look_at_position_on_map();
-	}
+			!d_in_last_update_drag/*only_emit_if_changed*/);
+
+	// The current drag-to mouse coordinates will be the drag-from coordinates for the next drag update.
+	// So signal that the drag-from coordinates for the next drag update are *on* the map plane.
+	d_pan_drag_info->drag_from_mouse_window_coords = QPointF(drag_to_mouse_window_x, drag_to_mouse_window_y);
 }
 
 
