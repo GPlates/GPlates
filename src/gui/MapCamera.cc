@@ -47,10 +47,10 @@ namespace GPlatesGui
 	namespace
 	{
 		/**
-		 * Return the distance from origin to specified QPointF.
+		 * Return the length of the specified QPointF.
 		 */
 		double
-		get_distance_from_origin(
+		get_length(
 				const QPointF &point)
 		{
 			return std::sqrt(QPointF::dotProduct(point, point));
@@ -416,7 +416,7 @@ GPlatesGui::MapCamera::get_bounding_radius() const
 		{
 			const QPointF &map_projected_point = map_projected_points[point_index];
 
-			const double distance_from_origin = get_distance_from_origin(map_projected_point);
+			const double distance_from_origin = get_length(map_projected_point);
 			if (map_bounding_extent < distance_from_origin)
 			{
 				map_bounding_extent = distance_from_origin;
@@ -434,6 +434,79 @@ GPlatesGui::MapCamera::get_bounding_radius() const
 	}
 
 	return d_map_bounding_radius.get();
+}
+
+
+QPointF
+GPlatesGui::MapCamera::get_map_boundary_position(
+		const QPointF &map_position_inside_boundary,
+		const QPointF &map_position_outside_boundary) const
+{
+	// One point should be inside and one outside the map boundary.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			is_inside_map_boundary(map_position_inside_boundary) &&
+					!is_inside_map_boundary(map_position_outside_boundary),
+			GPLATES_ASSERTION_SOURCE);
+
+	QPointF inside_point = map_position_inside_boundary;
+	QPointF outside_point = map_position_outside_boundary;
+
+	const double bounding_radius = get_bounding_radius();
+
+	// If the outside point is far away (from the inside point) then shrink it towards the inside point.
+	//
+	// This ensures the subsequent bisection iteration converges more quickly in those cases
+	// where the outside point is very far away from the map boundary.
+	//
+	// We just need to get the outside point reasonably close to the bounding circle (not right on it).
+	// So we don't need to do an exact line-circle intersection test.
+	// Instead, to keep the shrunk outside point outside the bounding radius (and hence outside the map boundary)
+	// we shrink it along the line segment towards the inside point such that its distance to the inside point
+	// is twice the bounding radius (since that ensures the shrunk outside point remains outside the bounding circle,
+	// regardless of the location of the inside point inside the map boundary and hence inside the bounding circle).
+	// This is all just to get the outside point within a reasonable distance from the inside point.
+	if (get_length(outside_point - inside_point) > 2 * bounding_radius)
+	{
+		outside_point = inside_point + (2 * bounding_radius / get_length(outside_point - inside_point)) *
+				(outside_point - inside_point);
+
+		// Ensure it's still outside the map boundary.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				!is_inside_map_boundary(outside_point),
+				GPLATES_ASSERTION_SOURCE);
+	}
+
+	// Use bisection iterations to converge on the map projection boundary.
+	//
+	// The inside and outside points get closer to each other until they are within a
+	// threshold distance that terminates bisection iteration.
+	const double bisection_threshold = 1e-6 * bounding_radius;  // Roughly 1 arc second on map.
+	while (get_length(outside_point - inside_point) > bisection_threshold)
+	{
+		const QPointF mid_point = 0.5 * (inside_point + outside_point);
+
+		// See if mid-range point is inside map projection boundary.
+		if (is_inside_map_boundary(mid_point))
+		{
+			// [mid_point, outside_point] range crosses the map boundary.
+			inside_point = mid_point;
+		}
+		else
+		{
+			// [inside_point, mid_point] range crosses the map boundary.
+			outside_point = mid_point;
+		}
+	}
+
+	return inside_point;
+}
+
+
+bool
+GPlatesGui::MapCamera::is_inside_map_boundary(
+		const QPointF &point) const
+{
+	return static_cast<bool>(d_map_projection.inverse_transform(point));
 }
 
 
