@@ -379,7 +379,8 @@ namespace GPlatesGui
 		{
 		public:
 
-			MapProjectionCache()
+			MapProjectionCache() :
+				d_value()
 			{  }
 
 			explicit

@@ -113,6 +113,11 @@ GPlatesGui::MapCamera::move_look_at_position_on_map(
 		QPointF look_at_position_on_map,
 		bool only_emit_if_changed)
 {
+	// Before we access the current look-at position on *map* check that it's valid (in case map projection changed).
+	// This is because calling "get_look_at_position_on_map()" will update it with the new map projection.
+	const bool is_look_at_position_on_map_valid =
+			d_look_at_position_on_map.is_valid(d_map_projection.get_projection_settings());
+
 	// The look-at position on *globe* corresponding to specified look-at position on *map*.
 	// This will use the current map projection.
 	boost::optional<GPlatesMaths::PointOnSphere> look_at_position_on_globe =
@@ -136,7 +141,11 @@ GPlatesGui::MapCamera::move_look_at_position_on_map(
 
 	if (only_emit_if_changed &&
 		look_at_position_on_globe.get() == d_look_at_position_on_globe &&
-		look_at_position_on_map == d_look_at_position_on_map.get()/*is old value if map projection changed*/)
+		// It's possible the look-at position on *globe* has not changed but the map projection has.
+		// In which case the look-at position on *map* will have changed.
+		//
+		// Can only compare current and new look-at positions on *map* if they're in the same map projection...
+		(is_look_at_position_on_map_valid && (look_at_position_on_map == get_look_at_position_on_map())))
 	{
 		return;
 	}
@@ -165,6 +174,11 @@ GPlatesGui::MapCamera::move_look_at_position_on_globe(
 		const GPlatesMaths::PointOnSphere &look_at_position_on_globe,
 		bool only_emit_if_changed)
 {
+	// Before we access the current look-at position on *map* check that it's valid (in case map projection changed).
+	// This is because calling "get_look_at_position_on_map()" will update it with the new map projection.
+	const bool is_look_at_position_on_map_valid =
+			d_look_at_position_on_map.is_valid(d_map_projection.get_projection_settings());
+
 	// The look-at position on *map* corresponding to specified look-at position on *globe*.
 	// This will use the current map projection.
 	const QPointF look_at_position_on_map = convert_position_on_globe_to_map(look_at_position_on_globe);
@@ -172,8 +186,10 @@ GPlatesGui::MapCamera::move_look_at_position_on_globe(
 	if (only_emit_if_changed &&
 		look_at_position_on_globe == d_look_at_position_on_globe &&
 		// It's possible the look-at position on *globe* has not changed but the map projection has.
-		// In which case the look-at position on *map* will have changed...
-		look_at_position_on_map == d_look_at_position_on_map.get()/*is old value if map projection changed*/)
+		// In which case the look-at position on *map* will have changed.
+		//
+		// Can only compare current and new look-at positions on *map* if they're in the same map projection...
+		(is_look_at_position_on_map_valid && (look_at_position_on_map == get_look_at_position_on_map())))
 	{
 		return;
 	}
