@@ -108,27 +108,37 @@ GPlatesGui::MapCamera::get_look_at_position_on_map() const
 }
 
 
-bool
+void
 GPlatesGui::MapCamera::move_look_at_position_on_map(
-		const QPointF &look_at_position_on_map,
+		QPointF look_at_position_on_map,
 		bool only_emit_if_changed)
 {
 	// The look-at position on *globe* corresponding to specified look-at position on *map*.
 	// This will use the current map projection.
-	const boost::optional<GPlatesMaths::PointOnSphere> look_at_position_on_globe =
+	boost::optional<GPlatesMaths::PointOnSphere> look_at_position_on_globe =
 			convert_position_on_map_to_globe(look_at_position_on_map);
 	if (!look_at_position_on_globe)
 	{
-		// Look-at position is outside the map projection (of the globe), so reject the move.
-		return false;
+		look_at_position_on_map = get_map_boundary_position(
+				get_look_at_position_on_map()/*map_position_inside_boundary*/,
+				look_at_position_on_map/*map_position_outside_boundary*/);
+
+		look_at_position_on_globe = convert_position_on_map_to_globe(look_at_position_on_map);
+
+		// Look-at map position should correspond to a valid position on the globe.
+		//
+		// This is guaranteed by 'get_map_boundary_position()' if 'get_look_at_position_on_map()'
+		// is always *inside* the map boundary (which it should be).
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				look_at_position_on_globe,
+				GPLATES_ASSERTION_SOURCE);
 	}
 
 	if (only_emit_if_changed &&
 		look_at_position_on_globe.get() == d_look_at_position_on_globe &&
 		look_at_position_on_map == d_look_at_position_on_map.get()/*is old value if map projection changed*/)
 	{
-		// Although position on map didn't change it is still within the map projection (of the globe).
-		return true;
+		return;
 	}
 
 	// Update the position on globe.
@@ -140,8 +150,6 @@ GPlatesGui::MapCamera::move_look_at_position_on_map(
 			d_map_projection.get_projection_settings());
 
 	Q_EMIT camera_changed();
-
-	return true;
 }
 
 
@@ -272,7 +280,7 @@ GPlatesGui::MapCamera::reorient_up_direction(
 }
 
 
-bool
+void
 GPlatesGui::MapCamera::pan_up(
 		const GPlatesMaths::real_t &angle,
 		bool only_emit_if_changed)
@@ -284,13 +292,13 @@ GPlatesGui::MapCamera::pan_up(
 	// Convert the pan in the view frame to a pan in the map frame.
 	const QPointF delta_pan_in_map_frame = convert_pan_from_view_to_map_frame(delta_pan_in_view_frame);
 
-	return move_look_at_position_on_map(
+	move_look_at_position_on_map(
 			get_look_at_position_on_map() + delta_pan_in_map_frame,
 			only_emit_if_changed);
 }
 
 
-bool
+void
 GPlatesGui::MapCamera::pan_right(
 		const GPlatesMaths::real_t &angle,
 		bool only_emit_if_changed)
@@ -302,7 +310,7 @@ GPlatesGui::MapCamera::pan_right(
 	// Convert the pan in the view frame to a pan in the map frame.
 	const QPointF delta_pan_in_map_frame = convert_pan_from_view_to_map_frame(delta_pan_in_view_frame);
 
-	return move_look_at_position_on_map(
+	move_look_at_position_on_map(
 			get_look_at_position_on_map() + delta_pan_in_map_frame,
 			only_emit_if_changed);
 }

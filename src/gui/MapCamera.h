@@ -69,15 +69,17 @@ namespace GPlatesGui
 		/**
 		 * Move the current look-at position to the specified look-at position along the line segment between them.
 		 *
-		 * Note that this does not change the current tilt angle.
+		 * If the specified look-at position is outside the map projection boundary then it is changed to be
+		 * on the boundary (just inside it actually within a tolerance) where the line segment
+		 * (between old and new look-at positions) intersects the map projection boundary.
+		 *
+		 * Note that this does not change the current rotation or tilt angle.
 		 *
 		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
-		 *
-		 * Returns false (and does not move) if specified position is outside map projection (of the globe).
 		 */
-		bool
+		void
 		move_look_at_position_on_map(
-				const QPointF &look_at_position_on_map,
+				QPointF look_at_position_on_map,
 				bool only_emit_if_changed = true);
 
 
@@ -192,9 +194,10 @@ namespace GPlatesGui
 		/**
 		 * Pan the current look-at position "up" by the specified angle (in radians).
 		 *
-		 * Returns false (and does not move) if specified position is outside map projection (of the globe).
+		 * Similar to @a move_look_at_position_on_map, if the newly panned look-at position is outside the
+		 * map projection boundary then it is only panned to the boundary.
 		 */
-		bool
+		void
 		pan_up(
 				const GPlatesMaths::real_t &angle,
 				bool only_emit_if_changed = true);
@@ -202,31 +205,32 @@ namespace GPlatesGui
 		/**
 		 * Same as @a pan_up but pans "down".
 		 */
-		bool
+		void
 		pan_down(
 				const GPlatesMaths::real_t &angle,
 				bool only_emit_if_changed = true)
 		{
-			return pan_up(-angle, only_emit_if_changed);
+			pan_up(-angle, only_emit_if_changed);
 		}
 
 		/**
 		 * Pan the current look-at position "left" by the specified angle (in radians).
 		 *
-		 * Returns false (and does not move) if specified position is outside map projection (of the globe).
+		 * Similar to @a move_look_at_position_on_map, if the newly panned look-at position is outside the
+		 * map projection boundary then it is only panned to the boundary.
 		 */
-		bool
+		void
 		pan_left(
 				const GPlatesMaths::real_t &angle,
 				bool only_emit_if_changed = true)
 		{
-			return pan_right(-angle, only_emit_if_changed);
+			pan_right(-angle, only_emit_if_changed);
 		}
 
 		/**
 		 * Same as @a pan_left but pans "right".
 		 */
-		bool
+		void
 		pan_right(
 				const GPlatesMaths::real_t &angle,
 				bool only_emit_if_changed = true);
