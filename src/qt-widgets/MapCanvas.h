@@ -239,7 +239,8 @@ namespace GPlatesQtWidgets
 
 		void
 		mouse_position_on_map_changed(
-				boost::optional<GPlatesMaths::PointOnSphere> position_on_globe);
+				GPlatesMaths::PointOnSphere position_on_globe,
+				bool is_on_globe);
 				
 		void
 		mouse_pressed(

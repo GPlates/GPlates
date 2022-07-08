@@ -271,14 +271,14 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	// Handle signals to update mouse pointer position
 	QObject::connect(
 			&(d_globe_and_map_widget_ptr->get_globe_canvas()),
-		SIGNAL(mouse_position_on_globe_changed(GPlatesMaths::PointOnSphere, bool)),
+			SIGNAL(mouse_position_on_globe_changed(GPlatesMaths::PointOnSphere, bool)),
 			this,
 			SLOT(update_mouse_position_on_globe(GPlatesMaths::PointOnSphere, bool)));
 	QObject::connect(
 			&(d_globe_and_map_widget_ptr->get_map_canvas()),
-			SIGNAL(mouse_position_on_map_changed(boost::optional<GPlatesMaths::PointOnSphere>)),
+			SIGNAL(mouse_position_on_map_changed(GPlatesMaths::PointOnSphere, bool)),
 			this,
-			SLOT(update_mouse_position_on_map(boost::optional<GPlatesMaths::PointOnSphere>)));
+			SLOT(update_mouse_position_on_map(GPlatesMaths::PointOnSphere, bool)));
 	QObject::connect(
 			&(view_state.get_projection()),
 			SIGNAL(globe_map_projection_changed(const GPlatesGui::Projection &)),
@@ -631,18 +631,18 @@ GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_position_on_globe(
 		GPlatesMaths::PointOnSphere position_on_globe,
 		bool is_on_globe)
 {
-	//std::cerr << "Updating pos pointer" << std::endl;
-	GPlatesMaths::LatLonPoint llp = GPlatesMaths::make_lat_lon_point(position_on_globe);
+	GPlatesMaths::LatLonPoint lat_lon_position_on_globe = GPlatesMaths::make_lat_lon_point(position_on_globe);
 
 	QLocale locale_;
-	QString lat = locale_.toString(llp.latitude(), 'f', 2);
-	QString lon = locale_.toString(llp.longitude(), 'f', 2);
+	QString lat = locale_.toString(lat_lon_position_on_globe.latitude(), 'f', 2);
+	QString lon = locale_.toString(lat_lon_position_on_globe.longitude(), 'f', 2);
 	QString position_as_string(QObject::tr("(lat: "));
 	position_as_string.append(lat);
 	position_as_string.append(QObject::tr(" ; lon: "));
 	position_as_string.append(lon);
 	position_as_string.append(QObject::tr(")"));
-	if ( ! is_on_globe) {
+	if (!is_on_globe)
+	{
 		position_as_string.append(QObject::tr(" (off globe)"));
 	}
 
@@ -652,32 +652,22 @@ GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_position_on_globe(
 
 void
 GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_position_on_map(
-		boost::optional<GPlatesMaths::PointOnSphere> position_on_globe)
+		GPlatesMaths::PointOnSphere position_on_globe,
+		bool is_on_globe)
 {
-	//std::cerr << "Updating llp pointer" << std::endl;
-	QString lat_label(QObject::tr("(lat: "));
-	QString lon_label(QObject::tr(" ; lon: "));
-	QString position_as_string;
-	if (position_on_globe)
-	{
-		const GPlatesMaths::LatLonPoint lat_lon_position_on_globe = make_lat_lon_point(position_on_globe.get());
+	const GPlatesMaths::LatLonPoint lat_lon_position_on_globe = make_lat_lon_point(position_on_globe);
 
-		QLocale locale_;
-		QString lat = locale_.toString(lat_lon_position_on_globe.latitude(), 'f', 2);
-		QString lon = locale_.toString(lat_lon_position_on_globe.longitude(), 'f', 2);
-		position_as_string.append(lat_label);
-		position_as_string.append(lat);
-		position_as_string.append(lon_label);
-		position_as_string.append(lon);
-		position_as_string.append(QObject::tr(")"));
-	}
-	else
+	QLocale locale_;
+	QString lat = locale_.toString(lat_lon_position_on_globe.latitude(), 'f', 2);
+	QString lon = locale_.toString(lat_lon_position_on_globe.longitude(), 'f', 2);
+	QString position_as_string(QObject::tr("(lat: "));
+	position_as_string.append(lat);
+	position_as_string.append(QObject::tr(" ; lon: "));
+	position_as_string.append(lon);
+	position_as_string.append(QObject::tr(")"));
+	if (!is_on_globe)
 	{
-		position_as_string.append(lat_label);
-		position_as_string.append(lon_label);
-		position_as_string.append(QObject::tr(")"));
 		position_as_string.append(QObject::tr(" (off map)"));
-
 	}
 
 	d_label_mouse_coords->setText(position_as_string);
