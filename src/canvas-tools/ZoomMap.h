@@ -73,7 +73,8 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &click_screen_position,
 				const boost::optional<QPointF> &click_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe) override;
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
+				bool is_on_globe) override;
 
 		void
 		handle_shift_left_click(
@@ -81,7 +82,9 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &click_screen_position,
 				const boost::optional<QPointF> &click_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe) override;
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
+				bool is_on_globe) override;
+
 
 	private:
 

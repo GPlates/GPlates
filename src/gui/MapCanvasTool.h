@@ -90,8 +90,12 @@ namespace GPlatesGui
 		 *
 		 * @a press_screen_position is the position of the press on the screen (viewport window).
 		 * @a press_map_position is position of the press on the map plane (z=0), or none if not on plane.
-		 * @a press_position_on_globe is the position of the press on the globe, or none if not on globe.
-		 * Note: If @a press_position_on_globe is valid then @a press_map_position is also valid.
+		 * @a press_position_on_globe is the position of the press on the globe.
+		 *
+		 * Note that the mouse pointer may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a is_on_globe will be false, and the
+		 * position reported will be a position on the map boundary (inverted onto the globe) that
+		 * is near the actual mouse pointer position on-screen.
 		 */
 		virtual
 		void
@@ -100,7 +104,8 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &press_screen_position,
 				const boost::optional<QPointF> &press_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &press_position_on_globe)
+				const GPlatesMaths::PointOnSphere &press_position_on_globe,
+				bool is_on_globe)
 		{  }
 
 		/**
@@ -108,8 +113,12 @@ namespace GPlatesGui
 		 *
 		 * @a click_screen_position is the position of the click on the screen (viewport window).
 		 * @a click_map_position is position of the click on the map plane (z=0), or none if not on plane.
-		 * @a click_position_on_globe is the position of the click on the globe, or none if not on globe.
-		 * Note: If @a click_position_on_globe is valid then @a click_map_position is also valid.
+		 * @a click_position_on_globe is the position of the click on the globe.
+		 *
+		 * Note that the mouse pointer may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a is_on_globe will be false, and the
+		 * position reported will be a position on the map boundary (inverted onto the globe) that
+		 * is near the actual mouse pointer position on-screen.
 		 */
 		virtual
 		void
@@ -118,7 +127,8 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &click_screen_position,
 				const boost::optional<QPointF> &click_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
+				bool is_on_globe)
 		{  }
 
 		/**
@@ -126,8 +136,12 @@ namespace GPlatesGui
 		 *
 		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
 		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
-		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
-		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe.
+		 *
+		 * Note that the mouse pointers may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a (was/is)_on_globe will be false, and the
+		 * positions reported will be positions on the map boundary (inverted onto the globe) that
+		 * are near the actual mouse pointer positions on-screen.
 		 */
 		virtual
 		void
@@ -136,10 +150,12 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 		{  }
 
@@ -153,8 +169,12 @@ namespace GPlatesGui
 		 *
 		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
 		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
-		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
-		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe.
+		 *
+		 * Note that the mouse pointers may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a (was/is)_on_globe will be false, and the
+		 * positions reported will be positions on the map boundary (inverted onto the globe) that
+		 * are near the actual mouse pointer positions on-screen.
 		 */
 		virtual
 		void
@@ -163,10 +183,12 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 		{  }
 
@@ -176,8 +198,12 @@ namespace GPlatesGui
 		 *
 		 * @a click_screen_position is the position of the click on the screen (viewport window).
 		 * @a click_map_position is position of the click on the map plane (z=0), or none if not on plane.
-		 * @a click_position_on_globe is the position of the click on the globe, or none if not on globe.
-		 * Note: If @a click_position_on_globe is valid then @a click_map_position is also valid.
+		 * @a click_position_on_globe is the position of the click on the globe.
+		 *
+		 * Note that the mouse pointer may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a is_on_globe will be false, and the
+		 * position reported will be a position on the map boundary (inverted onto the globe) that
+		 * is near the actual mouse pointer position on-screen.
 		 */
 		virtual
 		void
@@ -186,7 +212,8 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &click_screen_position,
 				const boost::optional<QPointF> &click_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
+				bool is_on_globe)
 		{  }
 
 		/**
@@ -194,8 +221,12 @@ namespace GPlatesGui
 		 *
 		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
 		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
-		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
-		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe.
+		 *
+		 * Note that the mouse pointers may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a (was/is)_on_globe will be false, and the
+		 * positions reported will be positions on the map boundary (inverted onto the globe) that
+		 * are near the actual mouse pointer positions on-screen.
 		 */
 		virtual
 		void
@@ -204,10 +235,12 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 		{  }
 
@@ -221,8 +254,12 @@ namespace GPlatesGui
 		 *
 		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
 		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
-		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
-		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe.
+		 *
+		 * Note that the mouse pointers may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a (was/is)_on_globe will be false, and the
+		 * positions reported will be positions on the map boundary (inverted onto the globe) that
+		 * are near the actual mouse pointer positions on-screen.
 		 */
 		virtual
 		void
@@ -231,10 +268,12 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 		{  }
 
@@ -244,8 +283,12 @@ namespace GPlatesGui
 		 *
 		 * @a click_screen_position is the position of the click on the screen (viewport window).
 		 * @a click_map_position is position of the click on the map plane (z=0), or none if not on plane.
-		 * @a click_position_on_globe is the position of the click on the globe, or none if not on globe.
-		 * Note: If @a click_position_on_globe is valid then @a click_map_position is also valid.
+		 * @a click_position_on_globe is the position of the click on the globe.
+		 *
+		 * Note that the mouse pointer may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a is_on_globe will be false, and the
+		 * position reported will be a position on the map boundary (inverted onto the globe) that
+		 * is near the actual mouse pointer position on-screen.
 		 */
 		virtual
 		void
@@ -254,7 +297,8 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &click_screen_position,
 				const boost::optional<QPointF> &click_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
+				bool is_on_globe)
 		{  }
 
 		/**
@@ -262,8 +306,12 @@ namespace GPlatesGui
 		 *
 		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
 		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
-		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
-		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe.
+		 *
+		 * Note that the mouse pointers may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a (was/is)_on_globe will be false, and the
+		 * positions reported will be positions on the map boundary (inverted onto the globe) that
+		 * are near the actual mouse pointer positions on-screen.
 		 */
 		virtual
 		void
@@ -272,10 +320,12 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 		{  }
 
@@ -289,8 +339,12 @@ namespace GPlatesGui
 		 *
 		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
 		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
-		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
-		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe.
+		 *
+		 * Note that the mouse pointers may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a (was/is)_on_globe will be false, and the
+		 * positions reported will be positions on the map boundary (inverted onto the globe) that
+		 * are near the actual mouse pointer positions on-screen.
 		 */
 		virtual
 		void
@@ -299,10 +353,12 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 		{  }
 
@@ -312,8 +368,12 @@ namespace GPlatesGui
 		 *
 		 * @a click_screen_position is the position of the click on the screen (viewport window).
 		 * @a click_map_position is position of the click on the map plane (z=0), or none if not on plane.
-		 * @a click_position_on_globe is the position of the click on the globe, or none if not on globe.
-		 * Note: If @a click_position_on_globe is valid then @a click_map_position is also valid.
+		 * @a click_position_on_globe is the position of the click on the globe.
+		 *
+		 * Note that the mouse pointer may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a is_on_globe will be false, and the
+		 * position reported will be a position on the map boundary (inverted onto the globe) that
+		 * is near the actual mouse pointer position on-screen.
 		 */
 		virtual
 		void
@@ -322,7 +382,8 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &click_screen_position,
 				const boost::optional<QPointF> &click_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
+				bool is_on_globe)
 		{  }
 
 		/**
@@ -330,8 +391,12 @@ namespace GPlatesGui
 		 *
 		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
 		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
-		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
-		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe.
+		 *
+		 * Note that the mouse pointers may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a (was/is)_on_globe will be false, and the
+		 * positions reported will be positions on the map boundary (inverted onto the globe) that
+		 * are near the actual mouse pointer positions on-screen.
 		 *
 		 * The default implementation of this function pans the map.
 		 */
@@ -342,10 +407,12 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe);
 
 		/**
@@ -358,8 +425,12 @@ namespace GPlatesGui
 		 *
 		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
 		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
-		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
-		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe.
+		 *
+		 * Note that the mouse pointers may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a (was/is)_on_globe will be false, and the
+		 * positions reported will be positions on the map boundary (inverted onto the globe) that
+		 * are near the actual mouse pointer positions on-screen.
 		 *
 		 * The default implementation of this function pans the map.
 		 */
@@ -370,10 +441,12 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe);
 
 
@@ -382,8 +455,12 @@ namespace GPlatesGui
 		 *
 		 * @a click_screen_position is the position of the click on the screen (viewport window).
 		 * @a click_map_position is position of the click on the map plane (z=0), or none if not on plane.
-		 * @a click_position_on_globe is the position of the click on the globe, or none if not on globe.
-		 * Note: If @a click_position_on_globe is valid then @a click_map_position is also valid.
+		 * @a click_position_on_globe is the position of the click on the globe.
+		 *
+		 * Note that the mouse pointer may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a is_on_globe will be false, and the
+		 * position reported will be a position on the map boundary (inverted onto the globe) that
+		 * is near the actual mouse pointer position on-screen.
 		 */
 		virtual
 		void
@@ -392,7 +469,8 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &click_screen_position,
 				const boost::optional<QPointF> &click_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
+				bool is_on_globe)
 		{  }
 
 		/**
@@ -400,8 +478,12 @@ namespace GPlatesGui
 		 *
 		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
 		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
-		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
-		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe.
+		 *
+		 * Note that the mouse pointers may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a (was/is)_on_globe will be false, and the
+		 * positions reported will be positions on the map boundary (inverted onto the globe) that
+		 * are near the actual mouse pointer positions on-screen.
 		 *
 		 * The default implementation of this function rotates and tilts the map.
 		 */
@@ -412,10 +494,12 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe);
 
 		/**
@@ -428,8 +512,12 @@ namespace GPlatesGui
 		 *
 		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
 		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
-		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
-		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe.
+		 *
+		 * Note that the mouse pointers may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a (was/is)_on_globe will be false, and the
+		 * positions reported will be positions on the map boundary (inverted onto the globe) that
+		 * are near the actual mouse pointer positions on-screen.
 		 *
 		 * The default implementation of this function rotates and tilts the map.
 		 */
@@ -440,10 +528,12 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe);
 
 
@@ -452,8 +542,12 @@ namespace GPlatesGui
 		 *
 		 * @a click_screen_position is the position of the click on the screen (viewport window).
 		 * @a click_map_position is position of the click on the map plane (z=0), or none if not on plane.
-		 * @a click_position_on_globe is the position of the click on the globe, or none if not on globe.
-		 * Note: If @a click_position_on_globe is valid then @a click_map_position is also valid.
+		 * @a click_position_on_globe is the position of the click on the globe.
+		 *
+		 * Note that the mouse pointer may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a is_on_globe will be false, and the
+		 * position reported will be a position on the map boundary (inverted onto the globe) that
+		 * is near the actual mouse pointer position on-screen.
 		 */
 		virtual
 		void
@@ -462,7 +556,8 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &click_screen_position,
 				const boost::optional<QPointF> &click_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
+				bool is_on_globe)
 		{  }
 
 		/**
@@ -470,8 +565,12 @@ namespace GPlatesGui
 		 *
 		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
 		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
-		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
-		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe.
+		 *
+		 * Note that the mouse pointers may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a (was/is)_on_globe will be false, and the
+		 * positions reported will be positions on the map boundary (inverted onto the globe) that
+		 * are near the actual mouse pointer positions on-screen.
 		 */
 		virtual
 		void
@@ -480,10 +579,12 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 		{  }
 
@@ -497,8 +598,12 @@ namespace GPlatesGui
 		 *
 		 * @a (initial/current)_screen_position is the initial/current position on the screen (viewport window).
 		 * @a (initial/current)_map_position is initial/current position on the map plane (z=0), or none if not on plane.
-		 * @a (initial/current)_position_on_globe is the initial/current position on the globe, or none if not on globe.
-		 * Note: If @a (initial/current)_position_on_globe is valid then @a (initial/current)_map_position is also valid.
+		 * @a (initial/current)_position_on_globe is the initial/current position on the globe.
+		 *
+		 * Note that the mouse pointers may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a (was/is)_on_globe will be false, and the
+		 * positions reported will be positions on the map boundary (inverted onto the globe) that
+		 * are near the actual mouse pointer positions on-screen.
 		 */
 		virtual
 		void
@@ -507,10 +612,12 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 		{  }
 
@@ -522,10 +629,14 @@ namespace GPlatesGui
 		* mouse-pointer position (as the mouse-pointer is moved about).
 		 *
 		 * @a screen_position is the position on the screen (viewport window).
-		 * @a position_on_globe is the position on the globe, or none if not on globe.
 		 * @a map_position is position on the map plane (z=0), or none if not on plane.
-		 * Note: If @a position_on_globe is valid then @a map_position is also valid.
-		*/
+		 * @a position_on_globe is the position on the globe.
+		 *
+		 * Note that the mouse pointer may not actually be on the globe (inside map boundary):
+		 * If the mouse pointer is not actually on the globe, @a is_on_globe will be false, and the
+		 * position reported will be a position on the map boundary (inverted onto the globe) that
+		 * is near the actual mouse pointer position on-screen.
+		 */
 		virtual
 		void
 		handle_move_without_drag(
@@ -533,7 +644,8 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &screen_position,
 				const boost::optional<QPointF>&map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe,
+				const GPlatesMaths::PointOnSphere &position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 		{  }
 
@@ -556,10 +668,12 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe);
 
 		/**
@@ -573,10 +687,12 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe);
 
 		/**
@@ -590,10 +706,12 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe);
 
 		/**
@@ -607,10 +725,12 @@ namespace GPlatesGui
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe);
 
 	private:

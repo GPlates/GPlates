@@ -83,7 +83,8 @@ namespace GPlatesGui
 				int screen_height,
 				QPointF press_screen_position,
 				boost::optional<QPointF> press_map_position,
-				boost::optional<GPlatesMaths::PointOnSphere> press_position_on_globe,
+				GPlatesMaths::PointOnSphere press_position_on_globe,
+				bool is_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 	
@@ -94,7 +95,8 @@ namespace GPlatesGui
 				int screen_height,
 				QPointF click_screen_position,
 				boost::optional<QPointF> click_map_position,
-				boost::optional<GPlatesMaths::PointOnSphere> click_position_on_globe,
+				GPlatesMaths::PointOnSphere click_position_on_globe,
+				bool is_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -104,10 +106,12 @@ namespace GPlatesGui
 				int screen_height,
 				QPointF initial_screen_position,
 				boost::optional<QPointF> initial_map_position,
-				boost::optional<GPlatesMaths::PointOnSphere> initial_position_on_globe,
+				GPlatesMaths::PointOnSphere initial_position_on_globe,
+				bool was_on_globe,
 				QPointF current_screen_position,
 				boost::optional<QPointF> current_map_position,
-				boost::optional<GPlatesMaths::PointOnSphere> current_position_on_globe,
+				GPlatesMaths::PointOnSphere current_position_on_globe,
+				bool is_on_globe,
 				GPlatesMaths::PointOnSphere centre_of_viewport_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
@@ -118,10 +122,12 @@ namespace GPlatesGui
 				int screen_height,
 				QPointF initial_screen_position,
 				boost::optional<QPointF> initial_map_position,
-				boost::optional<GPlatesMaths::PointOnSphere> initial_position_on_globe,
+				GPlatesMaths::PointOnSphere initial_position_on_globe,
+				bool was_on_globe,
 				QPointF current_screen_position,
 				boost::optional<QPointF> current_map_position,
-				boost::optional<GPlatesMaths::PointOnSphere> current_position_on_globe,
+				GPlatesMaths::PointOnSphere current_position_on_globe,
+				bool is_on_globe,
 				GPlatesMaths::PointOnSphere centre_of_viewport_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
@@ -135,7 +141,8 @@ namespace GPlatesGui
 				int screen_height,
 				QPointF screen_position,
 				boost::optional<QPointF> map_position,
-				boost::optional<GPlatesMaths::PointOnSphere> position_on_globe,
+				GPlatesMaths::PointOnSphere position_on_globe,
+				bool is_on_globe,
 				GPlatesMaths::PointOnSphere centre_of_viewport_on_globe);
 
 	private:

@@ -78,28 +78,28 @@ GPlatesCanvasTools::MovePoleMap::handle_left_drag(
 		int screen_height,
 		const QPointF &initial_screen_position,
 		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+		bool was_on_globe,
 		const QPointF &current_screen_position,
 		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
+		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	if (map_canvas().isVisible() &&
-		// We currently can't do anything sensible with map view when off map.
-		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
-		// much like how it snaps to the horizon of the globe if you click outside of the globe...
-		initial_position_on_globe && current_position_on_globe)
+		// Initial map position must be *on* the 2D map plane (z=0)...
+		initial_map_position)
 	{
 		if (!d_is_in_drag)
 		{
 			d_move_pole_operation->start_drag_on_map(
-					initial_map_position.get(),  // If initial_position_on_globe is valid then initial_map_position is too.
-					initial_position_on_globe.get());
+					initial_map_position.get(),
+					initial_position_on_globe);
 
 			d_is_in_drag = true;
 		}
 
-		d_move_pole_operation->update_drag(current_position_on_globe.get());
+		d_move_pole_operation->update_drag(current_position_on_globe);
 	}
 }
 
@@ -110,31 +110,31 @@ GPlatesCanvasTools::MovePoleMap::handle_left_release_after_drag(
 		int screen_height,
 		const QPointF &initial_screen_position,
 		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+		bool was_on_globe,
 		const QPointF &current_screen_position,
 		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
+		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	if (map_canvas().isVisible() &&
-		// We currently can't do anything sensible with map view when off map.
-		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
-		// much like how it snaps to the horizon of the globe if you click outside of the globe...
-		initial_position_on_globe && current_position_on_globe)
+		// Initial map position must be *on* the 2D map plane (z=0)...
+		initial_map_position)
 	{
 		// In case clicked and released at same time.
 		if (!d_is_in_drag)
 		{
 			d_move_pole_operation->start_drag_on_map(
-					initial_map_position.get(),  // If initial_position_on_globe is valid then initial_map_position is too.
-					initial_position_on_globe.get());
+					initial_map_position.get(),
+					initial_position_on_globe);
 
 			d_is_in_drag = true;
 		}
 
-		d_move_pole_operation->update_drag(current_position_on_globe.get());
+		d_move_pole_operation->update_drag(current_position_on_globe);
 
-		d_move_pole_operation->end_drag(current_position_on_globe.get());
+		d_move_pole_operation->end_drag(current_position_on_globe);
 		d_is_in_drag = false;
 	}
 }
@@ -146,17 +146,16 @@ GPlatesCanvasTools::MovePoleMap::handle_move_without_drag(
 		int screen_height,
 		const QPointF &screen_position,
 		const boost::optional<QPointF> &map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe,
+		const GPlatesMaths::PointOnSphere &position_on_globe,
+		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	if (map_canvas().isVisible() &&
-		// We currently can't do anything sensible with map view when off map.
-		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
-		// much like how it snaps to the horizon of the globe if you click outside of the globe...
-		position_on_globe)
+		// Map position must be *on* the 2D map plane (z=0)...
+		map_position)
 	{
 		d_move_pole_operation->mouse_move_on_map(
-				map_position.get(),  // If position_on_globe is valid then map_position is too.
-				position_on_globe.get());
+				map_position.get(),
+				position_on_globe);
 	}
 }

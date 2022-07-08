@@ -75,7 +75,8 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &press_screen_position,
 				const boost::optional<QPointF> &press_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &press_position_on_globe) override;
+				const GPlatesMaths::PointOnSphere &press_position_on_globe,
+				bool is_on_globe) override;
 
 		void
 		handle_left_click(
@@ -83,7 +84,8 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &click_screen_position,
 				const boost::optional<QPointF> &click_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe) override;
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
+				bool is_on_globe) override;
 
 		void
 		handle_left_drag(
@@ -91,10 +93,12 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
@@ -103,10 +107,12 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
@@ -115,7 +121,8 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &click_screen_position,
 				const boost::optional<QPointF> &click_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe) override;
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
+				bool is_on_globe) override;
 
 		void
 		handle_shift_left_drag(
@@ -123,10 +130,12 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
@@ -135,10 +144,12 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
@@ -147,7 +158,8 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &click_screen_position,
 				const boost::optional<QPointF> &click_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe) override;
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
+				bool is_on_globe) override;
 
 		void
 		handle_alt_left_drag(
@@ -155,10 +167,12 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
@@ -167,10 +181,12 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
@@ -179,7 +195,8 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &click_screen_position,
 				const boost::optional<QPointF> &click_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe) override;
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
+				bool is_on_globe) override;
 
 		void
 		handle_ctrl_left_drag(
@@ -187,10 +204,12 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
@@ -199,10 +218,12 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
@@ -211,7 +232,8 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &click_screen_position,
 				const boost::optional<QPointF> &click_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe) override;
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
+				bool is_on_globe) override;
 
 		void
 		handle_shift_ctrl_left_drag(
@@ -219,10 +241,12 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
@@ -231,10 +255,12 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
@@ -243,7 +269,8 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &click_screen_position,
 				const boost::optional<QPointF> &click_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe) override;
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
+				bool is_on_globe) override;
 
 		void
 		handle_alt_ctrl_left_drag(
@@ -251,10 +278,12 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
@@ -263,10 +292,12 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &initial_screen_position,
 				const boost::optional<QPointF> &initial_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+				bool was_on_globe,
 				const QPointF &current_screen_position,
 				const boost::optional<QPointF> &current_map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
@@ -275,7 +306,8 @@ namespace GPlatesCanvasTools
 				int screen_height,
 				const QPointF &screen_position,
 				const boost::optional<QPointF> &map_position,
-				const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe,
+				const GPlatesMaths::PointOnSphere &position_on_globe,
+				bool is_on_globe,
 				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 	
 	private:

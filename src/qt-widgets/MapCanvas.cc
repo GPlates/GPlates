@@ -557,6 +557,7 @@ GPlatesQtWidgets::MapCanvas::mousePressEvent(
 					d_mouse_screen_position,
 					d_mouse_position_on_map_plane,
 					d_mouse_position_on_globe,
+					d_mouse_is_on_globe,
 					press_event->button(),
 					press_event->modifiers());
 					
@@ -566,6 +567,7 @@ GPlatesQtWidgets::MapCanvas::mousePressEvent(
 			d_mouse_press_info->d_mouse_screen_position,
 			d_mouse_press_info->d_mouse_map_position,
 			d_mouse_press_info->d_mouse_position_on_globe,
+			d_mouse_press_info->d_mouse_is_on_globe,
 			d_mouse_press_info->d_button,
 			d_mouse_press_info->d_modifiers);
 }
@@ -594,9 +596,11 @@ GPlatesQtWidgets::MapCanvas::mouseMoveEvent(
 					d_mouse_press_info->d_mouse_screen_position,
 					d_mouse_press_info->d_mouse_map_position,
 					d_mouse_press_info->d_mouse_position_on_globe,
+					d_mouse_press_info->d_mouse_is_on_globe,
 					d_mouse_screen_position,
 					d_mouse_position_on_map_plane,
 					d_mouse_position_on_globe,
+					d_mouse_is_on_globe,
 					centre_of_viewport(),
 					d_mouse_press_info->d_button,
 					d_mouse_press_info->d_modifiers);
@@ -618,6 +622,7 @@ GPlatesQtWidgets::MapCanvas::mouseMoveEvent(
 				d_mouse_screen_position,
 				d_mouse_position_on_map_plane,
 				d_mouse_position_on_globe,
+				d_mouse_is_on_globe,
 				centre_of_viewport());
 	}
 }
@@ -670,9 +675,11 @@ GPlatesQtWidgets::MapCanvas::mouseReleaseEvent(
 				d_mouse_press_info->d_mouse_screen_position,
 				d_mouse_press_info->d_mouse_map_position,
 				d_mouse_press_info->d_mouse_position_on_globe,
+				d_mouse_press_info->d_mouse_is_on_globe,
 				d_mouse_screen_position,
 				d_mouse_position_on_map_plane,
 				d_mouse_position_on_globe,
+				d_mouse_is_on_globe,
 				centre_of_viewport(),
 				d_mouse_press_info->d_button,
 				d_mouse_press_info->d_modifiers);
@@ -686,6 +693,7 @@ GPlatesQtWidgets::MapCanvas::mouseReleaseEvent(
 				d_mouse_press_info->d_mouse_screen_position,
 				d_mouse_press_info->d_mouse_map_position,
 				d_mouse_press_info->d_mouse_position_on_globe,
+				d_mouse_press_info->d_mouse_is_on_globe,
 				d_mouse_press_info->d_button,
 				d_mouse_press_info->d_modifiers);
 	}

@@ -72,7 +72,8 @@ GPlatesGui::MapCanvasToolAdapter::handle_press(
 		int screen_height,
 		QPointF press_screen_position,
 		boost::optional<QPointF> press_map_position,
-		boost::optional<GPlatesMaths::PointOnSphere> press_position_on_globe,
+		GPlatesMaths::PointOnSphere press_position_on_globe,
+		bool is_on_globe,
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
 {
@@ -84,7 +85,7 @@ GPlatesGui::MapCanvasToolAdapter::handle_press(
 		case Qt::NoModifier:
 			get_active_map_canvas_tool().handle_left_press(
 					screen_width, screen_height,
-					press_screen_position, press_map_position, press_position_on_globe);
+					press_screen_position, press_map_position, press_position_on_globe, is_on_globe);
 			break;
 
 		case Qt::ShiftModifier:
@@ -110,7 +111,8 @@ GPlatesGui::MapCanvasToolAdapter::handle_click(
 		int screen_height,
 		QPointF click_screen_position,
 		boost::optional<QPointF> click_map_position,
-		boost::optional<GPlatesMaths::PointOnSphere> click_position_on_globe,
+		GPlatesMaths::PointOnSphere click_position_on_globe,
+		bool is_on_globe,
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
 {
@@ -122,25 +124,25 @@ GPlatesGui::MapCanvasToolAdapter::handle_click(
 		case Qt::NoModifier:
 			get_active_map_canvas_tool().handle_left_click(
 					screen_width, screen_height,
-					click_screen_position, click_map_position, click_position_on_globe);
+					click_screen_position, click_map_position, click_position_on_globe, is_on_globe);
 			break;
 
 		case Qt::ShiftModifier:
 			get_active_map_canvas_tool().handle_shift_left_click(
 					screen_width, screen_height,
-					click_screen_position, click_map_position, click_position_on_globe);
+					click_screen_position, click_map_position, click_position_on_globe, is_on_globe);
 			break;
 
 		case Qt::AltModifier:
 			get_active_map_canvas_tool().handle_alt_left_click(
 					screen_width, screen_height,
-					click_screen_position, click_map_position, click_position_on_globe);
+					click_screen_position, click_map_position, click_position_on_globe, is_on_globe);
 			break;
 
 		case Qt::ControlModifier:
 			get_active_map_canvas_tool().handle_ctrl_left_click(
 					screen_width, screen_height,
-					click_screen_position, click_map_position, click_position_on_globe);
+					click_screen_position, click_map_position, click_position_on_globe, is_on_globe);
 			break;
 
 		default:
@@ -152,14 +154,14 @@ GPlatesGui::MapCanvasToolAdapter::handle_click(
 				// The user was indeed holding the Shift and Control keys.
 				get_active_map_canvas_tool().handle_shift_ctrl_left_click(
 						screen_width, screen_height,
-						click_screen_position, click_map_position, click_position_on_globe);
+						click_screen_position, click_map_position, click_position_on_globe, is_on_globe);
 			}
 			else if (modifiers == (Qt::AltModifier | Qt::ControlModifier))
 			{
 				// The user was indeed holding the Alt and Control keys.
 				get_active_map_canvas_tool().handle_alt_ctrl_left_click(
 						screen_width, screen_height,
-						click_screen_position, click_map_position, click_position_on_globe);
+						click_screen_position, click_map_position, click_position_on_globe, is_on_globe);
 			}
 			break;
 		}
@@ -180,10 +182,12 @@ GPlatesGui::MapCanvasToolAdapter::handle_drag(
 		int screen_height,
 		QPointF initial_screen_position,
 		boost::optional<QPointF> initial_map_position,
-		boost::optional<GPlatesMaths::PointOnSphere> initial_position_on_globe,
+		GPlatesMaths::PointOnSphere initial_position_on_globe,
+		bool was_on_globe,
 		QPointF current_screen_position,
 		boost::optional<QPointF> current_map_position,
-		boost::optional<GPlatesMaths::PointOnSphere> current_position_on_globe,
+		GPlatesMaths::PointOnSphere current_position_on_globe,
+		bool is_on_globe,
 		GPlatesMaths::PointOnSphere centre_of_viewport_on_globe,
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
@@ -196,32 +200,32 @@ GPlatesGui::MapCanvasToolAdapter::handle_drag(
 		case Qt::NoModifier:
 			get_active_map_canvas_tool().handle_left_drag(
 					screen_width, screen_height,
-					initial_screen_position, initial_map_position, initial_position_on_globe,
-					current_screen_position, current_map_position, current_position_on_globe,
+					initial_screen_position, initial_map_position, initial_position_on_globe, was_on_globe,
+					current_screen_position, current_map_position, current_position_on_globe, is_on_globe,
 					centre_of_viewport_on_globe);
 			break;
 
 		case Qt::ShiftModifier:
 			get_active_map_canvas_tool().handle_shift_left_drag(
 					screen_width, screen_height,
-					initial_screen_position, initial_map_position, initial_position_on_globe,
-					current_screen_position, current_map_position, current_position_on_globe,
+					initial_screen_position, initial_map_position, initial_position_on_globe, was_on_globe,
+					current_screen_position, current_map_position, current_position_on_globe, is_on_globe,
 					centre_of_viewport_on_globe);
 			break;
 
 		case Qt::AltModifier:
 			get_active_map_canvas_tool().handle_alt_left_drag(
 					screen_width, screen_height,
-					initial_screen_position, initial_map_position, initial_position_on_globe,
-					current_screen_position, current_map_position, current_position_on_globe,
+					initial_screen_position, initial_map_position, initial_position_on_globe, was_on_globe,
+					current_screen_position, current_map_position, current_position_on_globe, is_on_globe,
 					centre_of_viewport_on_globe);
 			break;
 
 		case Qt::ControlModifier:
 			get_active_map_canvas_tool().handle_ctrl_left_drag(
 					screen_width, screen_height,
-					initial_screen_position, initial_map_position, initial_position_on_globe,
-					current_screen_position, current_map_position, current_position_on_globe,
+					initial_screen_position, initial_map_position, initial_position_on_globe, was_on_globe,
+					current_screen_position, current_map_position, current_position_on_globe, is_on_globe,
 					centre_of_viewport_on_globe);
 			break;
 
@@ -234,8 +238,8 @@ GPlatesGui::MapCanvasToolAdapter::handle_drag(
 				// The user was indeed holding the Shift and Control keys.
 				get_active_map_canvas_tool().handle_shift_ctrl_left_drag(
 						screen_width, screen_height,
-						initial_screen_position, initial_map_position, initial_position_on_globe,
-						current_screen_position, current_map_position, current_position_on_globe,
+						initial_screen_position, initial_map_position, initial_position_on_globe, was_on_globe,
+						current_screen_position, current_map_position, current_position_on_globe, is_on_globe,
 						centre_of_viewport_on_globe);
 			}
 			else if (modifiers == (Qt::AltModifier | Qt::ControlModifier))
@@ -243,8 +247,8 @@ GPlatesGui::MapCanvasToolAdapter::handle_drag(
 				// The user was indeed holding the Alt and Control keys.
 				get_active_map_canvas_tool().handle_alt_ctrl_left_drag(
 						screen_width, screen_height,
-						initial_screen_position, initial_map_position, initial_position_on_globe,
-						current_screen_position, current_map_position, current_position_on_globe,
+						initial_screen_position, initial_map_position, initial_position_on_globe, was_on_globe,
+						current_screen_position, current_map_position, current_position_on_globe, is_on_globe,
 						centre_of_viewport_on_globe);
 			}
 			break;
@@ -266,10 +270,12 @@ GPlatesGui::MapCanvasToolAdapter::handle_release_after_drag(
 		int screen_height,
 		QPointF initial_screen_position,
 		boost::optional<QPointF> initial_map_position,
-		boost::optional<GPlatesMaths::PointOnSphere> initial_position_on_globe,
+		GPlatesMaths::PointOnSphere initial_position_on_globe,
+		bool was_on_globe,
 		QPointF current_screen_position,
 		boost::optional<QPointF> current_map_position,
-		boost::optional<GPlatesMaths::PointOnSphere> current_position_on_globe,
+		GPlatesMaths::PointOnSphere current_position_on_globe,
+		bool is_on_globe,
 		GPlatesMaths::PointOnSphere centre_of_viewport_on_globe,
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
@@ -282,32 +288,32 @@ GPlatesGui::MapCanvasToolAdapter::handle_release_after_drag(
 		case Qt::NoModifier:
 			get_active_map_canvas_tool().handle_left_release_after_drag(
 						screen_width, screen_height,
-						initial_screen_position, initial_map_position, initial_position_on_globe,
-						current_screen_position, current_map_position, current_position_on_globe,
+						initial_screen_position, initial_map_position, initial_position_on_globe, was_on_globe,
+						current_screen_position, current_map_position, current_position_on_globe, is_on_globe,
 						centre_of_viewport_on_globe);
 			break;
 
 		case Qt::ShiftModifier:
 			get_active_map_canvas_tool().handle_shift_left_release_after_drag(
 						screen_width, screen_height,
-						initial_screen_position, initial_map_position, initial_position_on_globe,
-						current_screen_position, current_map_position, current_position_on_globe,
+						initial_screen_position, initial_map_position, initial_position_on_globe, was_on_globe,
+						current_screen_position, current_map_position, current_position_on_globe, is_on_globe,
 						centre_of_viewport_on_globe);
 			break;
 
 		case Qt::AltModifier:
 			get_active_map_canvas_tool().handle_alt_left_release_after_drag(
 						screen_width, screen_height,
-						initial_screen_position, initial_map_position, initial_position_on_globe,
-						current_screen_position, current_map_position, current_position_on_globe,
+						initial_screen_position, initial_map_position, initial_position_on_globe, was_on_globe,
+						current_screen_position, current_map_position, current_position_on_globe, is_on_globe,
 						centre_of_viewport_on_globe);
 			break;
 
 		case Qt::ControlModifier:
 			get_active_map_canvas_tool().handle_ctrl_left_release_after_drag(
 						screen_width, screen_height,
-						initial_screen_position, initial_map_position, initial_position_on_globe,
-						current_screen_position, current_map_position, current_position_on_globe,
+						initial_screen_position, initial_map_position, initial_position_on_globe, was_on_globe,
+						current_screen_position, current_map_position, current_position_on_globe, is_on_globe,
 						centre_of_viewport_on_globe);
 			break;
 
@@ -320,8 +326,8 @@ GPlatesGui::MapCanvasToolAdapter::handle_release_after_drag(
 				// The user was indeed holding the Shift and Control keys.
 				get_active_map_canvas_tool().handle_shift_ctrl_left_release_after_drag(
 						screen_width, screen_height,
-						initial_screen_position, initial_map_position, initial_position_on_globe,
-						current_screen_position, current_map_position, current_position_on_globe,
+						initial_screen_position, initial_map_position, initial_position_on_globe, was_on_globe,
+						current_screen_position, current_map_position, current_position_on_globe, is_on_globe,
 						centre_of_viewport_on_globe);
 			}
 			else if (modifiers == (Qt::AltModifier | Qt::ControlModifier))
@@ -329,8 +335,8 @@ GPlatesGui::MapCanvasToolAdapter::handle_release_after_drag(
 				// The user was indeed holding the Alt and Control keys.
 				get_active_map_canvas_tool().handle_alt_ctrl_left_release_after_drag(
 						screen_width, screen_height,
-						initial_screen_position, initial_map_position, initial_position_on_globe,
-						current_screen_position, current_map_position, current_position_on_globe,
+						initial_screen_position, initial_map_position, initial_position_on_globe, was_on_globe,
+						current_screen_position, current_map_position, current_position_on_globe, is_on_globe,
 						centre_of_viewport_on_globe);
 			}
 			break;
@@ -352,12 +358,13 @@ GPlatesGui::MapCanvasToolAdapter::handle_move_without_drag(
 		int screen_height,
 		QPointF screen_position,
 		boost::optional<QPointF> map_position,
-		boost::optional<GPlatesMaths::PointOnSphere> position_on_globe,
+		GPlatesMaths::PointOnSphere position_on_globe,
+		bool is_on_globe,
 		GPlatesMaths::PointOnSphere centre_of_viewport_on_globe)
 {
 	get_active_map_canvas_tool().handle_move_without_drag(
 			screen_width, screen_height,
-			screen_position, map_position, position_on_globe,
+			screen_position, map_position, position_on_globe, is_on_globe,
 			centre_of_viewport_on_globe);
 }
 
@@ -372,7 +379,8 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 					int,
 					QPointF,
 					boost::optional<QPointF>,
-					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere,
+					bool,
 					Qt::MouseButton,
 					Qt::KeyboardModifiers)),
 			this,
@@ -381,7 +389,8 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 					int,
 					QPointF,
 					boost::optional<QPointF>,
-					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere,
+					bool,
 					Qt::MouseButton,
 					Qt::KeyboardModifiers)));
 
@@ -392,7 +401,8 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 					int,
 					QPointF,
 					boost::optional<QPointF>,
-					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere,
+					bool,
 					Qt::MouseButton,
 					Qt::KeyboardModifiers)),
 			this,
@@ -401,7 +411,8 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 					int,
 					QPointF,
 					boost::optional<QPointF>,
-					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere,
+					bool,
 					Qt::MouseButton,
 					Qt::KeyboardModifiers)));
 
@@ -412,10 +423,12 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 					int,
 					QPointF,
 					boost::optional<QPointF>,
-					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere,
+					bool,
 					QPointF,
 					boost::optional<QPointF>,
-					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere,
+					bool,
 					GPlatesMaths::PointOnSphere,
 					Qt::MouseButton,
 					Qt::KeyboardModifiers)),
@@ -425,10 +438,12 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 					int,
 					QPointF,
 					boost::optional<QPointF>,
-					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere,
+					bool,
 					QPointF,
 					boost::optional<QPointF>,
-					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere,
+					bool,
 					GPlatesMaths::PointOnSphere,
 					Qt::MouseButton,
 					Qt::KeyboardModifiers)));
@@ -440,10 +455,12 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 					int,
 					QPointF,
 					boost::optional<QPointF>,
-					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere,
+					bool,
 					QPointF,
 					boost::optional<QPointF>,
-					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere,
+					bool,
 					GPlatesMaths::PointOnSphere,
 					Qt::MouseButton,
 					Qt::KeyboardModifiers)),
@@ -453,10 +470,12 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 					int,
 					QPointF,
 					boost::optional<QPointF>,
-					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere,
+					bool,
 					QPointF,
 					boost::optional<QPointF>,
-					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere,
+					bool,
 					GPlatesMaths::PointOnSphere,
 					Qt::MouseButton,
 					Qt::KeyboardModifiers)));
@@ -469,7 +488,8 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 					int,
 					QPointF,
 					boost::optional<QPointF>,
-					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere,
+					bool,
 					GPlatesMaths::PointOnSphere)),
 			this,
 			SLOT(handle_move_without_drag(
@@ -477,7 +497,8 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 					int,
 					QPointF,
 					boost::optional<QPointF>,
-					boost::optional<GPlatesMaths::PointOnSphere>,
+					GPlatesMaths::PointOnSphere,
+					bool,
 					GPlatesMaths::PointOnSphere)));
 }
 

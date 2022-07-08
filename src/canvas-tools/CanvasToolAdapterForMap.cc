@@ -65,18 +65,15 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_left_press(
 		int screen_height,
 		const QPointF &press_screen_position,
 		const boost::optional<QPointF> &press_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &press_position_on_globe)
+		const GPlatesMaths::PointOnSphere &press_position_on_globe,
+		bool is_on_globe)
 {
-	if (map_canvas().isVisible() &&
-		// We currently can't do anything sensible with map view when off map.
-		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
-		// much like how it snaps to the horizon of the globe if you click outside of the globe...
-		press_position_on_globe)
+	if (map_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_left_press(
-				press_position_on_globe.get(),
-				true/*is_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(press_position_on_globe.get()));
+				press_position_on_globe,
+				is_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(press_position_on_globe));
 	}
 }
 
@@ -87,18 +84,15 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_left_click(
 		int screen_height,
 		const QPointF &click_screen_position,
 		const boost::optional<QPointF> &click_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
+		const GPlatesMaths::PointOnSphere &click_position_on_globe,
+		bool is_on_globe)
 {
-	if (map_canvas().isVisible() &&
-		// We currently can't do anything sensible with map view when off map.
-		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
-		// much like how it snaps to the horizon of the globe if you click outside of the globe...
-		click_position_on_globe)
+	if (map_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_left_click(
-				click_position_on_globe.get(),
-				true/*is_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(click_position_on_globe.get()));
+				click_position_on_globe,
+				is_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(click_position_on_globe));
 	}
 }
 
@@ -109,25 +103,23 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_left_drag(
 		int screen_height,
 		const QPointF &initial_screen_position,
 		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+		bool was_on_globe,
 		const QPointF &current_screen_position,
 		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
+		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
-	if (map_canvas().isVisible() &&
-		// We currently can't do anything sensible with map view when off map.
-		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
-		// much like how it snaps to the horizon of the globe if you click outside of the globe...
-		initial_position_on_globe && current_position_on_globe)
+	if (map_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_left_drag(
-				initial_position_on_globe.get(),
-				true/*was_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(initial_position_on_globe.get()),
-				current_position_on_globe.get(),
-				true/*is_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(current_position_on_globe.get()),
+				initial_position_on_globe,
+				was_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(initial_position_on_globe),
+				current_position_on_globe,
+				is_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(current_position_on_globe),
 				centre_of_viewport_on_globe);
 	}
 }
@@ -139,25 +131,23 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_left_release_after_drag(
 		int screen_height,
 		const QPointF &initial_screen_position,
 		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+		bool was_on_globe,
 		const QPointF &current_screen_position,
 		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
+		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
-	if (map_canvas().isVisible() &&
-		// We currently can't do anything sensible with map view when off map.
-		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
-		// much like how it snaps to the horizon of the globe if you click outside of the globe...
-		initial_position_on_globe && current_position_on_globe)
+	if (map_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_left_release_after_drag(
-				initial_position_on_globe.get(),
-				true/*was_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(initial_position_on_globe.get()),
-				current_position_on_globe.get(),
-				true/*is_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(current_position_on_globe.get()),
+				initial_position_on_globe,
+				was_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(initial_position_on_globe),
+				current_position_on_globe,
+				is_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(current_position_on_globe),
 				centre_of_viewport_on_globe);
 	}
 }
@@ -169,18 +159,15 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_shift_left_click(
 		int screen_height,
 		const QPointF &click_screen_position,
 		const boost::optional<QPointF> &click_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
+		const GPlatesMaths::PointOnSphere &click_position_on_globe,
+		bool is_on_globe)
 {
-	if (map_canvas().isVisible() &&
-		// We currently can't do anything sensible with map view when off map.
-		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
-		// much like how it snaps to the horizon of the globe if you click outside of the globe...
-		click_position_on_globe)
+	if (map_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_shift_left_click(
-				click_position_on_globe.get(),
-				true/*is_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(click_position_on_globe.get()));
+				click_position_on_globe,
+				is_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(click_position_on_globe));
 	}
 }
 
@@ -191,25 +178,23 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_shift_left_drag(
 		int screen_height,
 		const QPointF &initial_screen_position,
 		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+		bool was_on_globe,
 		const QPointF &current_screen_position,
 		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
+		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
-	if (map_canvas().isVisible() &&
-		// We currently can't do anything sensible with map view when off map.
-		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
-		// much like how it snaps to the horizon of the globe if you click outside of the globe...
-		initial_position_on_globe && current_position_on_globe)
+	if (map_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_shift_left_drag(
-				initial_position_on_globe.get(),
-				true/*was_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(initial_position_on_globe.get()),
-				current_position_on_globe.get(),
-				true/*is_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(current_position_on_globe.get()),
+				initial_position_on_globe,
+				was_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(initial_position_on_globe),
+				current_position_on_globe,
+				is_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(current_position_on_globe),
 				centre_of_viewport_on_globe);
 	}
 }
@@ -221,25 +206,23 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_shift_left_release_after_dra
 		int screen_height,
 		const QPointF &initial_screen_position,
 		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+		bool was_on_globe,
 		const QPointF &current_screen_position,
 		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
+		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
-	if (map_canvas().isVisible() &&
-		// We currently can't do anything sensible with map view when off map.
-		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
-		// much like how it snaps to the horizon of the globe if you click outside of the globe...
-		initial_position_on_globe && current_position_on_globe)
+	if (map_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_shift_left_release_after_drag(
-				initial_position_on_globe.get(),
-				true/*was_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(initial_position_on_globe.get()),
-				current_position_on_globe.get(),
-				true/*is_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(current_position_on_globe.get()),
+				initial_position_on_globe,
+				was_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(initial_position_on_globe),
+				current_position_on_globe,
+				is_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(current_position_on_globe),
 				centre_of_viewport_on_globe);
 	}
 }
@@ -251,18 +234,15 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_alt_left_click(
 		int screen_height,
 		const QPointF &click_screen_position,
 		const boost::optional<QPointF> &click_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
+		const GPlatesMaths::PointOnSphere &click_position_on_globe,
+		bool is_on_globe)
 {
-	if (map_canvas().isVisible() &&
-		// We currently can't do anything sensible with map view when off map.
-		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
-		// much like how it snaps to the horizon of the globe if you click outside of the globe...
-		click_position_on_globe)
+	if (map_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_alt_left_click(
-				click_position_on_globe.get(),
-				true/*is_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(click_position_on_globe.get()));
+				click_position_on_globe,
+				is_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(click_position_on_globe));
 	}
 }
 
@@ -273,25 +253,23 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_alt_left_drag(
 		int screen_height,
 		const QPointF &initial_screen_position,
 		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+		bool was_on_globe,
 		const QPointF &current_screen_position,
 		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
+		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
-	if (map_canvas().isVisible() &&
-		// We currently can't do anything sensible with map view when off map.
-		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
-		// much like how it snaps to the horizon of the globe if you click outside of the globe...
-		initial_position_on_globe && current_position_on_globe)
+	if (map_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_alt_left_drag(
-				initial_position_on_globe.get(),
-				true/*was_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(initial_position_on_globe.get()),
-				current_position_on_globe.get(),
-				true/*is_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(current_position_on_globe.get()),
+				initial_position_on_globe,
+				was_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(initial_position_on_globe),
+				current_position_on_globe,
+				is_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(current_position_on_globe),
 				centre_of_viewport_on_globe);
 	}
 }
@@ -303,25 +281,23 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_alt_left_release_after_drag(
 		int screen_height,
 		const QPointF &initial_screen_position,
 		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+		bool was_on_globe,
 		const QPointF &current_screen_position,
 		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
+		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
-	if (map_canvas().isVisible() &&
-		// We currently can't do anything sensible with map view when off map.
-		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
-		// much like how it snaps to the horizon of the globe if you click outside of the globe...
-		initial_position_on_globe && current_position_on_globe)
+	if (map_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_alt_left_release_after_drag(
-				initial_position_on_globe.get(),
-				true/*was_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(initial_position_on_globe.get()),
-				current_position_on_globe.get(),
-				true/*is_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(current_position_on_globe.get()),
+				initial_position_on_globe,
+				was_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(initial_position_on_globe),
+				current_position_on_globe,
+				is_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(current_position_on_globe),
 				centre_of_viewport_on_globe);
 	}
 }
@@ -333,18 +309,15 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_ctrl_left_click(
 		int screen_height,
 		const QPointF &click_screen_position,
 		const boost::optional<QPointF> &click_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
+		const GPlatesMaths::PointOnSphere &click_position_on_globe,
+		bool is_on_globe)
 {
-	if (map_canvas().isVisible() &&
-		// We currently can't do anything sensible with map view when off map.
-		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
-		// much like how it snaps to the horizon of the globe if you click outside of the globe...
-		click_position_on_globe)
+	if (map_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_ctrl_left_click(
-				click_position_on_globe.get(),
-				true/*is_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(click_position_on_globe.get()));
+				click_position_on_globe,
+				is_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(click_position_on_globe));
 	}
 }
 
@@ -355,17 +328,19 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_ctrl_left_drag(
 		int screen_height,
 		const QPointF &initial_screen_position,
 		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+		bool was_on_globe,
 		const QPointF &current_screen_position,
 		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
+		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	// Perform default action.
 	MapCanvasTool::handle_ctrl_left_drag(
 			screen_width, screen_height,
-			initial_screen_position, initial_map_position, initial_position_on_globe,
-			current_screen_position, current_map_position, current_position_on_globe,
+			initial_screen_position, initial_map_position, initial_position_on_globe, was_on_globe,
+			current_screen_position, current_map_position, current_position_on_globe, is_on_globe,
 			centre_of_viewport_on_globe);
 }
 
@@ -376,17 +351,19 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_ctrl_left_release_after_drag
 		int screen_height,
 		const QPointF &initial_screen_position,
 		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+		bool was_on_globe,
 		const QPointF &current_screen_position,
 		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
+		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	// Perform default action.
 	MapCanvasTool::handle_ctrl_left_release_after_drag(
 			screen_width, screen_height,
-			initial_screen_position, initial_map_position, initial_position_on_globe,
-			current_screen_position, current_map_position, current_position_on_globe,
+			initial_screen_position, initial_map_position, initial_position_on_globe, was_on_globe,
+			current_screen_position, current_map_position, current_position_on_globe, is_on_globe,
 			centre_of_viewport_on_globe);
 }
 
@@ -397,18 +374,15 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_shift_ctrl_left_click(
 		int screen_height,
 		const QPointF &click_screen_position,
 		const boost::optional<QPointF> &click_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
+		const GPlatesMaths::PointOnSphere &click_position_on_globe,
+		bool is_on_globe)
 {
-	if (map_canvas().isVisible() &&
-		// We currently can't do anything sensible with map view when off map.
-		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
-		// much like how it snaps to the horizon of the globe if you click outside of the globe...
-		click_position_on_globe)
+	if (map_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_shift_ctrl_left_click(
-				click_position_on_globe.get(),
-				true/*is_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(click_position_on_globe.get()));
+				click_position_on_globe,
+				is_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(click_position_on_globe));
 	}
 }
 
@@ -419,17 +393,19 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_shift_ctrl_left_drag(
 		int screen_height,
 		const QPointF &initial_screen_position,
 		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+		bool was_on_globe,
 		const QPointF &current_screen_position,
 		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
+		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	// Perform default action.
 	MapCanvasTool::handle_shift_ctrl_left_drag(
 			screen_width, screen_height,
-			initial_screen_position, initial_map_position, initial_position_on_globe,
-			current_screen_position, current_map_position, current_position_on_globe,
+			initial_screen_position, initial_map_position, initial_position_on_globe, was_on_globe,
+			current_screen_position, current_map_position, current_position_on_globe, is_on_globe,
 			centre_of_viewport_on_globe);
 }
 
@@ -440,17 +416,19 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_shift_ctrl_left_release_afte
 		int screen_height,
 		const QPointF &initial_screen_position,
 		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+		bool was_on_globe,
 		const QPointF &current_screen_position,
 		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
+		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	// Perform default action.
 	MapCanvasTool::handle_shift_ctrl_left_release_after_drag(
 			screen_width, screen_height,
-			initial_screen_position, initial_map_position, initial_position_on_globe,
-			current_screen_position, current_map_position, current_position_on_globe,
+			initial_screen_position, initial_map_position, initial_position_on_globe, was_on_globe,
+			current_screen_position, current_map_position, current_position_on_globe, is_on_globe,
 			centre_of_viewport_on_globe);
 }
 
@@ -461,18 +439,15 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_alt_ctrl_left_click(
 		int screen_height,
 		const QPointF &click_screen_position,
 		const boost::optional<QPointF> &click_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &click_position_on_globe)
+		const GPlatesMaths::PointOnSphere &click_position_on_globe,
+		bool is_on_globe)
 {
-	if (map_canvas().isVisible() &&
-		// We currently can't do anything sensible with map view when off map.
-		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
-		// much like how it snaps to the horizon of the globe if you click outside of the globe...
-		click_position_on_globe)
+	if (map_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_alt_ctrl_left_click(
-				click_position_on_globe.get(),
-				true/*is_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(click_position_on_globe.get()));
+				click_position_on_globe,
+				is_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(click_position_on_globe));
 	}
 }
 
@@ -483,17 +458,19 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_alt_ctrl_left_drag(
 		int screen_height,
 		const QPointF &initial_screen_position,
 		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+		bool was_on_globe,
 		const QPointF &current_screen_position,
 		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
+		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	// Perform default action.
 	MapCanvasTool::handle_alt_ctrl_left_drag(
 			screen_width, screen_height,
-			initial_screen_position, initial_map_position, initial_position_on_globe,
-			current_screen_position, current_map_position, current_position_on_globe,
+			initial_screen_position, initial_map_position, initial_position_on_globe, was_on_globe,
+			current_screen_position, current_map_position, current_position_on_globe, is_on_globe,
 			centre_of_viewport_on_globe);
 }
 
@@ -504,17 +481,19 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_alt_ctrl_left_release_after_
 		int screen_height,
 		const QPointF &initial_screen_position,
 		const boost::optional<QPointF> &initial_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &initial_position_on_globe,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
+		bool was_on_globe,
 		const QPointF &current_screen_position,
 		const boost::optional<QPointF> &current_map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &current_position_on_globe,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
+		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	// Perform default action.
 	MapCanvasTool::handle_alt_ctrl_left_release_after_drag(
 			screen_width, screen_height,
-			initial_screen_position, initial_map_position, initial_position_on_globe,
-			current_screen_position, current_map_position, current_position_on_globe,
+			initial_screen_position, initial_map_position, initial_position_on_globe, was_on_globe,
+			current_screen_position, current_map_position, current_position_on_globe, is_on_globe,
 			centre_of_viewport_on_globe);
 }
 
@@ -525,18 +504,15 @@ GPlatesCanvasTools::CanvasToolAdapterForMap::handle_move_without_drag(
 		int screen_height,
 		const QPointF &screen_position,
 		const boost::optional<QPointF> &map_position,
-		const boost::optional<GPlatesMaths::PointOnSphere> &position_on_globe,
+		const GPlatesMaths::PointOnSphere &position_on_globe,
+		bool is_on_globe,
 		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
-	if (map_canvas().isVisible() &&
-		// We currently can't do anything sensible with map view when off map.
-		// This can be removed when we have the ability to make mouse-clicks snap to the edge of the map,
-		// much like how it snaps to the horizon of the globe if you click outside of the globe...
-		position_on_globe)
+	if (map_canvas().isVisible())
 	{
 		d_canvas_tool_ptr->handle_move_without_drag(
-				position_on_globe.get(),
-				true/*is_on_earth*/,
-				map_canvas().current_proximity_inclusion_threshold(position_on_globe.get()));
+				position_on_globe,
+				is_on_globe,
+				map_canvas().current_proximity_inclusion_threshold(position_on_globe));
 	}
 }
