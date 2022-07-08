@@ -468,26 +468,6 @@ namespace GPlatesGui
 		 */
 		mutable boost::optional<ViewFrame> d_cached_view_frame;
 
-		/**
-		 * Return the map position near (but just inside) map boundary given two map positions
-		 * (one inside and one outside map boundary).
-		 *
-		 * Note that the returned map position is guaranteed to have a valid inverse map projection (onto the globe).
-		 *
-		 * Note: The line segment (joining inside and outside points) only crosses map boundary once
-		 *       since shape of map boundary is convex.
-		 */
-		QPointF
-		get_map_boundary_position(
-				const QPointF &map_position_inside_boundary,
-				const QPointF &map_position_outside_boundary) const;
-
-		/**
-		 * Return true if specified point is inside the map projection boundary.
-		 */
-		bool
-		is_inside_map_boundary(
-				const QPointF &point) const;
 
 		QPointF
 		convert_position_on_globe_to_map(

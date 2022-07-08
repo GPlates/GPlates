@@ -36,7 +36,6 @@
 
 #include "file-io/Proj.h"
 
-#include "maths/GreatCircle.h"
 #include "maths/LatLonPoint.h"
 #include "maths/MathsUtils.h"
 
@@ -140,6 +139,23 @@ namespace GPlatesGui
 
 
 		/**
+		 * Set the central meridian.
+		 */ 
+		void
+		set_central_meridian(
+				const double &central_meridian_);
+
+		/**
+		 * Get the central meridian.
+		 */
+		double
+		central_meridian() const
+		{
+			return d_central_meridian;
+		}
+
+
+		/**
 		 * Transforms the point on sphere to cartesian coordinates (x,y) according to the 
 		 * current state of the projection.
 		 */
@@ -195,30 +211,47 @@ namespace GPlatesGui
 
 
 		/**
-		 * Set the central meridian.
-		 */ 
-		void
-		set_central_meridian(
-				const double &central_meridian_);
+		 * Returns true if specified point is inside the map projection boundary.
+		 */
+		bool
+		is_inside_map_boundary(
+				const QPointF &map_point) const
+		{
+			return static_cast<bool>(inverse_transform(map_point));
+		}
 
 		/**
-		 * Get the central meridian.
+		 * Return the map position near (but just inside to within a small tolerance) the map boundary
+		 * given two map positions (one inside and one outside map boundary).
+		 *
+		 * The returned position is essentially the intersection of the 2D line segment joining the specified
+		 * inside and outside points with the map boundary, obtained using bisection iteration that terminates
+		 * once converged to within @a bisection_iteration_threshold_ratio times the bounding radius.
+		 *
+		 * Throws @a PreconditionViolationError if the specified inside point is not inside, or
+		 * the specified outside point is not outside, the map boundary.
+		 *
+		 * Note: The returned map position is guaranteed to have a valid inverse transform.
+		 *
+		 * Note: The lat-lon point (0, central_meridian) maps to the origin in map projection space.
+		 *
+		 * Note: The line segment (joining inside and outside points) only crosses map boundary once
+		 *       since shape of map boundary is convex.
+		 */
+		QPointF
+		get_map_boundary_position(
+				const QPointF &map_point_inside_boundary,
+				const QPointF &map_point_outside_boundary,
+				double bisection_iteration_threshold_ratio = 1e-6/*equivalent to roughly 1 arc second on map*/) const;
+
+		/**
+		 * Return the radius of the circle/sphere that bounds the map (including a very small numerical tolerance).
+		 *
+		 * Note: The lat-lon point (0, central_meridian) maps to the origin in map projection space.
+		 *       So the bounding circle/sphere is centred at the origin (in map projection space).
 		 */
 		double
-		central_meridian() const
-		{
-			return d_central_meridian;
-		}
-
-		/**
-		 * Get the great circle which includes the great circle arc defining the boundary of the map. 
-		 */
-		const GPlatesMaths::GreatCircle &
-		boundary_great_circle() const
-		{
-			return d_boundary_great_circle;
-		}
-
+		get_map_bounding_radius() const;
 			
 	private:
 
@@ -266,11 +299,12 @@ namespace GPlatesGui
 		 */
 		double d_central_meridian;
 
-
 		/**
-		 * The great circle which includes the great circle arc defining the boundary of the map. 
+		 * Radius of the circle/sphere that bounds the map (including a very small numerical tolerance).
+		 *
+		 * This is calculated and cached when bounding radius is requested (and set to none when the map projection changes).
 		 */
-		GPlatesMaths::GreatCircle d_boundary_great_circle;
+		mutable boost::optional<double> d_cached_bounding_radius;
 
 
 		MapProjection();
@@ -313,12 +347,6 @@ namespace GPlatesGui
 				const double &inverted_y,
 				const double &x,
 				const double &y) const;
-
-		/**
-		 * Updates the boundary great circle - should be called if central llp or projection type changed.
-		 */
-		void
-		update_boundary_great_circle();
 	};
 
 

@@ -37,18 +37,14 @@
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+#include "global/PreconditionViolationError.h"
 
-#include "maths/GreatCircle.h"
 #include "maths/Real.h"
 #include "maths/MathsUtils.h"
 
 
 namespace 
 {
-	// This is used for initialising d_boundary_great_circle in the constructor.
-	// It should correspond to the initial central llp value. 
-	const GPlatesMaths::UnitVector3D INITIAL_BOUNDARY_AXIS(0,1,0);
-
 	const double MIN_SCALE_FACTOR = 1e-8;
 
 	// The Proj library has issues with the Mercator projection at the poles (ie, latitudes -90 and 90).
@@ -86,6 +82,15 @@ namespace
 		//{GPlatesGui::MapProjection::LAMBERT_CONIC, "LambertConic", "proj=lcc", "ellps=WGS84", 0.000003}
 	};
 
+	/**
+	 * Return the length of the specified QPointF.
+	 */
+	double
+	get_length(
+			const QPointF &point)
+	{
+		return std::sqrt(QPointF::dotProduct(point, point));
+	}
 }
 
 
@@ -107,8 +112,7 @@ GPlatesGui::MapProjection::MapProjection():
 #endif
 	d_scale(1.),
 	d_projection_type(RECTANGULAR),
-	d_central_meridian(0),
-	d_boundary_great_circle(INITIAL_BOUNDARY_AXIS)
+	d_central_meridian(0)
 {
 	set_projection_type(d_projection_type);
 }
@@ -124,8 +128,7 @@ GPlatesGui::MapProjection::MapProjection(
 #endif
 	d_scale(1.),
 	d_projection_type(RECTANGULAR),
-	d_central_meridian(0),
-	d_boundary_great_circle(INITIAL_BOUNDARY_AXIS)
+	d_central_meridian(0)
 {
 	set_projection_type(projection_type_);
 }
@@ -141,13 +144,9 @@ GPlatesGui::MapProjection::MapProjection(
 #endif
 	d_scale(1.),
 	d_projection_type(RECTANGULAR),
-	d_central_meridian(projection_settings.get_central_meridian()),
-	d_boundary_great_circle(INITIAL_BOUNDARY_AXIS)
+	d_central_meridian(projection_settings.get_central_meridian())
 {
 	set_projection_type(projection_settings.get_projection_type());
-
-	// The central llp is not the default so we need to update the boundary great circle.
-	update_boundary_great_circle();
 }
 
 GPlatesGui::MapProjection::~MapProjection()
@@ -309,7 +308,21 @@ GPlatesGui::MapProjection::set_projection_type(
 		d_scale = MIN_SCALE_FACTOR;
 	}
 
+	// The projection has changed so its bounding radius will need to be recalculated next time it is requested.
+	d_cached_bounding_radius = boost::none;
+
 	d_projection_type = projection_type_;
+}
+
+
+void
+GPlatesGui::MapProjection::set_central_meridian(
+		const double &central_meridian_)
+{
+	d_central_meridian = central_meridian_;
+
+	// We've changed some projection parameters, so reset the projection. 
+	set_projection_type(d_projection_type);
 }
 
 
@@ -670,33 +683,117 @@ GPlatesGui::MapProjection::check_forward_transform(
 }
 
 
-void
-GPlatesGui::MapProjection::set_central_meridian(
-		const double &central_meridian_)
+QPointF
+GPlatesGui::MapProjection::get_map_boundary_position(
+		const QPointF &map_point_inside_boundary,
+		const QPointF &map_point_outside_boundary,
+		double bisection_iteration_threshold_ratio) const
 {
-	d_central_meridian = central_meridian_;
+	// One point should be inside and one outside the map boundary.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			is_inside_map_boundary(map_point_inside_boundary) &&
+					!is_inside_map_boundary(map_point_outside_boundary),
+			GPLATES_ASSERTION_SOURCE);
 
-	// We've changed some projection parameters, so reset the projection. 
-	set_projection_type(d_projection_type);
+	QPointF inside_point = map_point_inside_boundary;
+	QPointF outside_point = map_point_outside_boundary;
 
-	// We need to update the boundary great circle as well.
-	update_boundary_great_circle();
+	const double bounding_radius = get_map_bounding_radius();
+
+	// If the outside point is far away (from the inside point) then shrink it towards the inside point.
+	//
+	// This ensures the subsequent bisection iteration converges more quickly in those cases
+	// where the outside point is very far away from the map boundary.
+	//
+	// We just need to get the outside point reasonably close to the bounding circle (not right on it).
+	// So we don't need to do an exact line-circle intersection test.
+	// Instead, to keep the shrunk outside point outside the bounding radius (and hence outside the map boundary)
+	// we shrink it along the line segment towards the inside point such that its distance to the inside point
+	// is twice the bounding radius (since that ensures the shrunk outside point remains outside the bounding circle,
+	// regardless of the location of the inside point inside the map boundary and hence inside the bounding circle).
+	// This is all just to get the outside point within a reasonable distance from the inside point.
+	if (get_length(outside_point - inside_point) > 2 * bounding_radius)
+	{
+		outside_point = inside_point + (2 * bounding_radius / get_length(outside_point - inside_point)) *
+				(outside_point - inside_point);
+
+		// Ensure it's still outside the map boundary.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				!is_inside_map_boundary(outside_point),
+				GPLATES_ASSERTION_SOURCE);
+	}
+
+	// Use bisection iterations to converge on the map projection boundary.
+	//
+	// The inside and outside points get closer to each other until they are within a
+	// threshold distance that terminates bisection iteration.
+	const double bisection_iteration_threshold = bisection_iteration_threshold_ratio * bounding_radius;
+	while (get_length(outside_point - inside_point) > bisection_iteration_threshold)
+	{
+		const QPointF mid_point = 0.5 * (inside_point + outside_point);
+
+		// See if mid-range point is inside map projection boundary.
+		if (is_inside_map_boundary(mid_point))
+		{
+			// [mid_point, outside_point] range crosses the map boundary.
+			inside_point = mid_point;
+		}
+		else
+		{
+			// [inside_point, mid_point] range crosses the map boundary.
+			outside_point = mid_point;
+		}
+	}
+
+	return inside_point;
 }
 
-void
-GPlatesGui::MapProjection::update_boundary_great_circle()
+
+double
+GPlatesGui::MapProjection::get_map_bounding_radius() const
 {
-	// We need 2 points to do this. We can use:
-	// 1) The central llp of the map projection, and
-	// 2) The "north pole" of the map projection (which will not necessarily coincide with the real north pole). 
-	//	  We're not handling oblique projections here, i.e. we're only handling lat-lon offsets to the 
-	//	  centre of the map, so anywhere on the central meridian will give us a suitable point. 
-	//
-	GPlatesMaths::PointOnSphere central_pos = GPlatesMaths::make_point_on_sphere(
-			GPlatesMaths::LatLonPoint(0.0, d_central_meridian));
-	GPlatesMaths::PointOnSphere second_pos = GPlatesMaths::make_point_on_sphere(
-			GPlatesMaths::LatLonPoint(90.0, d_central_meridian));
-	d_boundary_great_circle = GPlatesMaths::GreatCircle(central_pos, second_pos);
+	// Update the bounding radius if needed.
+	if (!d_cached_bounding_radius)
+	{
+		// Query the left/right/top/bottom sides and corners of the map projection.
+		// These are extremal points that will produce the maximum distance to the map centre.
+		const QPointF map_projected_points[] =
+		{
+			// Left/right sides...
+			forward_transform(GPlatesMaths::LatLonPoint(0, d_central_meridian - 180 + 1e-6)),
+			forward_transform(GPlatesMaths::LatLonPoint(0, d_central_meridian + 180 - 1e-6)),
+			// Top/bottom sides...
+			forward_transform(GPlatesMaths::LatLonPoint(90 - 1e-6, d_central_meridian)),
+			forward_transform(GPlatesMaths::LatLonPoint(-90 + 1e-6, d_central_meridian)),
+			// Top left/right corners...
+			forward_transform(GPlatesMaths::LatLonPoint(90 - 1e-6, d_central_meridian - 180 + 1e-6)),
+			forward_transform(GPlatesMaths::LatLonPoint(90 - 1e-6, d_central_meridian + 180 - 1e-6)),
+			// Bottom left/right corners...
+			forward_transform(GPlatesMaths::LatLonPoint(-90 + 1e-6, d_central_meridian - 180 + 1e-6)),
+			forward_transform(GPlatesMaths::LatLonPoint(-90 + 1e-6, d_central_meridian + 180 - 1e-6))
+		};
+		const unsigned int num_map_projected_points = sizeof(map_projected_points) / sizeof(map_projected_points[0]);
+
+		// The bounding extent is the maximum distance of any extremal point to the origin.
+		// Note that the lat-lon point (0, central_meridian) maps to the origin in map projection space.
+		double map_bounding_extent = 0.0;
+		for (unsigned int point_index = 0; point_index < num_map_projected_points; ++point_index)
+		{
+			const QPointF &map_projected_point = map_projected_points[point_index];
+
+			const double distance_from_origin = get_length(map_projected_point);
+			if (map_bounding_extent < distance_from_origin)
+			{
+				map_bounding_extent = distance_from_origin;
+			}
+		}
+
+		// The radius from the map origin (at central meridian) of a sphere that bounds the map
+		// (including a very small numerical tolerance).
+		d_cached_bounding_radius = (1 + 1e-8) * map_bounding_extent;
+	}
+
+	return d_cached_bounding_radius.get();
 }
 
 
