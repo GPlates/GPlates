@@ -25,6 +25,8 @@
 
 #include "GLMapCubeMeshGenerator.h"
 
+#include "maths/PointOnSphere.h"
+
 
 GPlatesOpenGL::GLMapCubeMeshGenerator::GLMapCubeMeshGenerator(
 		const GPlatesGui::MapProjection &map_projection,

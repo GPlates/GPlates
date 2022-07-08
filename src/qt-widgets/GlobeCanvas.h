@@ -32,7 +32,6 @@
 #ifndef GPLATES_QTWIDGETS_GLOBECANVAS_H
 #define GPLATES_QTWIDGETS_GLOBECANVAS_H
 
-#include <utility>  // std::pair
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -628,17 +627,6 @@ namespace GPlatesQtWidgets
 
 		void
 		update_mouse_position_on_globe();
-
-		/**
-		 * Given the screen coordinates, calculate and return a position which is on the globe (a unit sphere).
-		 *
-		 * This position might be the position determined by @a screen_x and @a screen_y, or
-		 * the closest position on the globe to the position determined by @a screen_x and @a screen_y.
-		 */
-		std::pair<bool, GPlatesMaths::PointOnSphere>
-		calculate_position_on_globe(
-				qreal screen_x,
-				qreal screen_y) const;
 
 		//! Calculates scaling for lines, points and text based on size of the paint device.
 		float

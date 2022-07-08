@@ -1082,54 +1082,42 @@ GPlatesQtWidgets::GlobeCanvas::update_mouse_screen_position(
 void
 GPlatesQtWidgets::GlobeCanvas::update_mouse_position_on_globe()
 {
-	std::pair<bool, GPlatesMaths::PointOnSphere> new_position_on_globe_result =
-			calculate_position_on_globe(
-					d_mouse_screen_position_x,
-					d_mouse_screen_position_y);
+	// Note that OpenGL and Qt y-axes are the reverse of each other.
+	const double mouse_window_y = height() - d_mouse_screen_position_y;
+	const double mouse_window_x = d_mouse_screen_position_x;
 
-	bool is_now_on_globe = new_position_on_globe_result.first;
-	const GPlatesMaths::PointOnSphere &new_position_on_globe = new_position_on_globe_result.second;
+	// Project screen coordinates into a ray into 3D scene.
+	const GPlatesOpenGL::GLIntersect::Ray camera_ray =
+			d_globe_camera.get_camera_ray_at_window_coord(mouse_window_x, mouse_window_y, width(), height());
 
-	if (new_position_on_globe != d_mouse_position_on_globe ||
+	// See if camera ray intersects the globe.
+	boost::optional<GPlatesMaths::PointOnSphere> new_position_on_globe =
+			d_globe_camera.get_position_on_globe_at_camera_ray(camera_ray);
+
+	bool is_now_on_globe;
+	if (new_position_on_globe)
+	{
+		// Camera ray, at screen coordinates, intersects the globe.
+		is_now_on_globe = true;
+	}
+	else
+	{
+		// Camera ray, at screen coordinates, does NOT intersect the globe.
+		is_now_on_globe = false;
+
+		// Instead get the nearest point on the globe horizon (visible circumference) to the camera ray.
+		new_position_on_globe = d_globe_camera.get_nearest_globe_horizon_position_at_camera_ray(camera_ray);
+	}
+
+	// Update if changed.
+	if (new_position_on_globe.get() != d_mouse_position_on_globe ||
 		is_now_on_globe != d_mouse_is_on_globe)
 	{
-		d_mouse_position_on_globe = new_position_on_globe;
+		d_mouse_position_on_globe = new_position_on_globe.get();
 		d_mouse_is_on_globe = is_now_on_globe;
 
 		Q_EMIT mouse_position_on_globe_changed(d_mouse_position_on_globe, d_mouse_is_on_globe);
 	}
-}
-
-
-std::pair<bool, GPlatesMaths::PointOnSphere>
-GPlatesQtWidgets::GlobeCanvas::calculate_position_on_globe(
-		qreal screen_x,
-		qreal screen_y) const
-{
-	// Note that OpenGL and Qt y-axes are the reverse of each other.
-	screen_y = height() - screen_y;
-
-	// Project screen coordinates into a ray into 3D scene.
-	const GPlatesOpenGL::GLIntersect::Ray camera_ray =
-			d_globe_camera.get_camera_ray_at_window_coord(screen_x, screen_y, width(), height());
-
-	// See if camera ray intersects the globe.
-	boost::optional<GPlatesMaths::PointOnSphere> camera_ray_globe_intersection =
-			d_globe_camera.get_position_on_globe_at_camera_ray(camera_ray);
-	if (camera_ray_globe_intersection)
-	{
-		// Return true to indicate camera ray intersected the globe.
-		return std::make_pair(true, camera_ray_globe_intersection.get());
-	}
-
-	// Camera ray at screen pixel does not intersect unit sphere.
-	//
-	// Instead return the nearest point on the horizon (visible circumference) of the globe.
-	const GPlatesMaths::PointOnSphere nearest_globe_horizon_position =
-			d_globe_camera.get_nearest_globe_horizon_position_at_camera_ray(camera_ray);
-
-	// Return false to indicate camera ray did not intersect the globe.
-	return std::make_pair(false, nearest_globe_horizon_position);
 }
 
 
