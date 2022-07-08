@@ -480,8 +480,16 @@ namespace GPlatesQtWidgets
 
 		/**
 		 * If the mouse pointer is on the globe, this is the position of the mouse pointer on the globe.
+		 *
+		 * Otherwise, this is the closest position on the globe to the position of the
+		 * mouse pointer in the 3-D "universe".
 		 */
-		boost::optional<GPlatesMaths::PointOnSphere> d_mouse_position_on_globe;
+		GPlatesMaths::PointOnSphere d_mouse_position_on_globe;
+
+		/**
+		 * Whether the mouse pointer is on the globe (on the map plane and inside the map projection boundary).
+		 */
+		bool d_mouse_is_on_globe;
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
 
@@ -558,22 +566,6 @@ namespace GPlatesQtWidgets
 
 		void
 		update_mouse_position_on_map();
-
-		/**
-		 * Given the screen coordinates, calculate and return a position on the map *plane* (2D plane with z=0),
-		 * or none if screen view ray (as screen position) does not intersect the map plane.
-		 */
-		boost::optional<QPointF>
-		calculate_position_on_map_plane(
-				const QPointF &screen_position) const;
-
-		/**
-		 * Given the map coordinates, calculate and return a position which is on the globe (a unit sphere),
-		 * or none if map coordinates are not on the map surface (representing globe).
-		 */
-		boost::optional<GPlatesMaths::PointOnSphere>
-		calculate_position_on_globe(
-				const QPointF &map_position) const;
 
 		//! Calculate scaling for lines, points and text based on size of view
 		float

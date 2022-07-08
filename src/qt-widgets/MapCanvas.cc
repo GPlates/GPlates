@@ -107,6 +107,9 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 					d_gl_context,
 					globe_canvas.get_gl_visual_layers(),
 					view_state.get_application_state())),
+	// The following unit-vector initialisation value is arbitrary.
+	d_mouse_position_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
+	d_mouse_is_on_globe(false),
 	d_map(
 			view_state,
 			d_gl_visual_layers,
@@ -1082,54 +1085,86 @@ GPlatesQtWidgets::MapCanvas::update_mouse_screen_position(
 void
 GPlatesQtWidgets::MapCanvas::update_mouse_position_on_map()
 {
-	d_mouse_position_on_map_plane = calculate_position_on_map_plane(d_mouse_screen_position);
+	const GPlatesGui::MapProjection &map_projection = d_view_state.get_map_projection();
 
-	// Calculate position on globe from position on map plane (if mouse currently on map plane).
-	boost::optional<GPlatesMaths::PointOnSphere> new_position_on_globe;
-	if (d_mouse_position_on_map_plane)
-	{
-		new_position_on_globe = calculate_position_on_globe(d_mouse_position_on_map_plane.get());
-	}
-
-	if (new_position_on_globe != d_mouse_position_on_globe)
-	{
-		d_mouse_position_on_globe = new_position_on_globe;
-
-		Q_EMIT mouse_position_on_map_changed(d_mouse_position_on_globe);
-	}
-}
-
-
-boost::optional<QPointF>
-GPlatesQtWidgets::MapCanvas::calculate_position_on_map_plane(
-		const QPointF &screen_position) const
-{
 	// Note that OpenGL and Qt y-axes are the reverse of each other.
-	const double screen_y = height() - screen_position.y();
-	const double screen_x = screen_position.x();
+	const double mouse_window_y = height() - d_mouse_screen_position.y();
+	const double mouse_window_x = d_mouse_screen_position.x();
 
-	// See if screen coordinates intersect the map plane.
+	// Project screen coordinates into a ray into 3D scene.
+	const GPlatesOpenGL::GLIntersect::Ray camera_ray =
+			d_map_camera.get_camera_ray_at_window_coord(mouse_window_x, mouse_window_y, width(), height());
+
+	// See if camera ray at screen coordinates intersects the 2D map plane (z=0).
 	//
 	// In perspective view it's possible for a screen pixel ray emanating from the camera eye to
 	// miss the map plane entirely (even though the map plane is infinite).
-	return d_map_camera.get_position_on_map_plane_at_window_coord(screen_x, screen_y, width(), height());
-}
+	//
+	// Given the camera ray, calculate a position on the map *plane* (2D plane with z=0), or
+	// none if screen view ray (at screen position) does not intersect the map plane.
+	d_mouse_position_on_map_plane = d_map_camera.get_position_on_map_plane_at_camera_ray(camera_ray);
 
-
-boost::optional<GPlatesMaths::PointOnSphere>
-GPlatesQtWidgets::MapCanvas::calculate_position_on_globe(
-		const QPointF &position_on_map_plane) const
-{
-	boost::optional<GPlatesMaths::LatLonPoint> lat_lon_position_on_globe =
-			d_view_state.get_map_projection().inverse_transform(position_on_map_plane);
-	if (!lat_lon_position_on_globe)
+	// Get the position on the globe.
+	boost::optional<GPlatesMaths::LatLonPoint> new_lat_lon_position_on_globe;
+	bool is_now_on_globe;
+	if (d_mouse_position_on_map_plane)
 	{
-		// The map position is on the map plane (z=0) but outside the map projection of the globe.
-		return boost::none;
+		// Mouse position is on map plane, so see if it's also inside the map projection boundary.
+		new_lat_lon_position_on_globe = map_projection.inverse_transform(d_mouse_position_on_map_plane.get());
+		if (new_lat_lon_position_on_globe)
+		{
+			// Mouse position is inside the map projection boundary (so it is also on the globe).
+			is_now_on_globe = true;
+		}
+		else
+		{
+			// Mouse position is NOT inside the map projection boundary (so it is not on the globe).
+			is_now_on_globe = false;
+
+			// Camera ray at screen pixel intersects the map plane but not *within* the map projection boundary.
+			//
+			// So get the intersection of line segment (from origin to intersection on map plane) with map projection boundary.
+			// We'll use that to get a new position on the globe (it can be inverse map projected onto the globe).
+			new_lat_lon_position_on_globe = map_projection.inverse_transform(
+					map_projection.get_map_boundary_position(
+								QPointF(0, 0),  // map origin
+								d_mouse_position_on_map_plane.get()));
+
+			// The map boundary position is guaranteed to be invertible (onto the globe) in the map projection.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					new_lat_lon_position_on_globe,
+					GPLATES_ASSERTION_SOURCE);
+		}
+	}
+	else
+	{
+		// Mouse position is NOT on the map plane (so it is not on the globe).
+		is_now_on_globe = false;
+
+		// Camera ray at screen pixel does not intersect the map plane.
+		//
+		// So get the intersection of 2D ray, from origin in direction of camera ray (projected onto 2D map plane), with map projection boundary.
+		new_lat_lon_position_on_globe = map_projection.inverse_transform(
+				d_map_camera.get_position_on_map_boundary_at_camera_ray(camera_ray));
+
+		// The map boundary position is guaranteed to be invertible (onto the globe) in the map projection.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				new_lat_lon_position_on_globe,
+				GPLATES_ASSERTION_SOURCE);
 	}
 
-	// If we reach here, we should be on the globe, with valid lat,lon.
-	return make_point_on_sphere(lat_lon_position_on_globe.get());
+	// Convert inverse-map-projected lat-lon position to new position on the globe.
+	const GPlatesMaths::PointOnSphere new_position_on_globe = make_point_on_sphere(new_lat_lon_position_on_globe.get());
+
+	// Update if changed.
+	if (new_position_on_globe != d_mouse_position_on_globe ||
+		is_now_on_globe != d_mouse_is_on_globe)
+	{
+		d_mouse_position_on_globe = new_position_on_globe;
+		d_mouse_is_on_globe = is_now_on_globe;
+
+		Q_EMIT mouse_position_on_map_changed(d_mouse_position_on_globe, d_mouse_is_on_globe);
+	}
 }
 
 

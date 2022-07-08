@@ -308,6 +308,24 @@ namespace GPlatesGui
 		get_position_on_map_plane_at_camera_ray(
 				const GPlatesOpenGL::GLIntersect::Ray &camera_ray) const;
 
+
+		/**
+		 * Returns position on map boundary (actually near boundary but just inside) in the direction of
+		 * the specified camera ray (projected onto 2D map plane) from the origin.
+		 *
+		 * Since the 2D ray origin is at the map origin (instead of specified camera ray origin) it means
+		 * the specified camera ray origin is ignored (and only its direction considered).
+		 *
+		 * Uses bisection iteration to get position close to the intersection of 2D ray (from origin) and map boundary.
+		 *
+		 * The @a camera_ray can be obtained from mouse coordinates using @a get_camera_ray_at_window_coord.
+		 *
+		 * NOTE: It is assumed that @a camera_ray does not intersect the 2D map plane (z=0).
+		 */
+		QPointF
+		get_position_on_map_boundary_at_camera_ray(
+				const GPlatesOpenGL::GLIntersect::Ray &camera_ray) const;
+
 	protected:
 
 		/**
