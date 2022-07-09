@@ -194,7 +194,7 @@ GPlatesViewOperations::GlobeViewOperation::start_drag_pan(
 		const GPlatesMaths::PointOnSphere &start_mouse_pos_on_globe)
 {
 	d_pan_drag_info = PanDragInfo(
-			start_mouse_pos_on_globe.position_vector(),
+			start_mouse_pos_on_globe,
 			d_globe_camera.get_view_orientation());
 }
 
@@ -239,11 +239,9 @@ GPlatesViewOperations::GlobeViewOperation::start_drag_rotate_and_tilt(
 		const double &start_mouse_window_y)
 {
 	d_rotate_and_tilt_drag_info = RotateAndTiltDragInfo(
+			d_globe_camera.get_look_at_position_on_globe(),
 			start_mouse_window_x,
-			start_mouse_window_y,
-			d_globe_camera.get_look_at_position_on_globe().position_vector(),
-			d_globe_camera.get_view_orientation(),
-			d_globe_camera.get_tilt_angle());
+			start_mouse_window_y);
 }
 
 
@@ -255,20 +253,38 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_rotate_and_tilt(
 		int window_height)
 {
 	//
+	// Incrementally update the rotating/tilting by calculating it due to dragging since the last drag update
+	// (rather than since the start of the drag).
+	//
+	// The drag-from and drag-to mouse coordinates refer to this incremental update.
+	//
+	// This prevents the mouse appearing to no longer be responsive in tilting the map until
+	// the user moves the mouse position back to where it was when the map stopped tilting.
+	// By limiting each update to the interval since the last update, when the proposed (updated)
+	// tilt is outside the [0, 90] degree range the user can just reverse the mouse 'y' movement direction
+	// and tilting will immediately continue again.
+	// This is not strictly needed for rotation in the 'x' direction but we do it anyway.
+	//
+
+	// The current mouse position is the drag-to (or destination) of the current drag update.
+	const double rotate_to_mouse_window_coord = mouse_window_x;
+	const double tilt_to_mouse_window_coord = mouse_window_y;
+
+	//
 	// Horizontal dragging rotates the view.
 	//
 
 	// Each multiple of PI means dragging the full window *width* will *rotate* by PI radians (180 degrees).
-	const double view_rotation_angle_relative_to_start = 3 * GPlatesMaths::PI * (
-			d_rotate_and_tilt_drag_info->start_mouse_window_x - mouse_window_x) / window_width;
+	const double delta_rotation_angle = 3 * GPlatesMaths::PI * (
+			d_rotate_and_tilt_drag_info->rotate_from_mouse_window_coord - rotate_to_mouse_window_coord) / window_width;
 
-	// The rotation from start of drag.
-	const GPlatesMaths::Rotation view_rotation_relative_to_start = GPlatesMaths::Rotation::create(
-			d_rotate_and_tilt_drag_info->start_look_at_position,
-			view_rotation_angle_relative_to_start);
+	// The delta rotation around the look-at position.
+	const GPlatesMaths::Rotation delta_rotation = GPlatesMaths::Rotation::create(
+			d_rotate_and_tilt_drag_info->look_at_position,
+			delta_rotation_angle);
 
-	// Rotate the view frame.
-	const GPlatesMaths::Rotation view_orientation = view_rotation_relative_to_start * d_rotate_and_tilt_drag_info->start_view_orientation;
+	// New view orientation.
+	const GPlatesMaths::Rotation view_orientation = delta_rotation * d_globe_camera.get_view_orientation();
 
 	d_globe_camera.set_view_orientation(
 			view_orientation,
@@ -280,12 +296,20 @@ GPlatesViewOperations::GlobeViewOperation::update_drag_rotate_and_tilt(
 	//
 
 	// Each multiple of PI means dragging the full window *height* will *tilt* by PI radians (180 degrees).
-	const double delta_tilt_angle = 1.5 * GPlatesMaths::PI * (mouse_window_y - d_rotate_and_tilt_drag_info->start_mouse_window_y) / window_height;
+	const double delta_tilt_angle = 1.5 * GPlatesMaths::PI *
+			(tilt_to_mouse_window_coord - d_rotate_and_tilt_drag_info->tilt_from_mouse_window_coord) / window_height;
 
-	const GPlatesMaths::real_t tilt_angle = d_rotate_and_tilt_drag_info->start_tilt_angle + delta_tilt_angle;
+	const GPlatesMaths::real_t tilt_angle = d_globe_camera.get_tilt_angle() + delta_tilt_angle;
 
 	d_globe_camera.set_tilt_angle(
 			tilt_angle,
 			// Always emit on last update so client can turn off any rendering optimisations now that drag has finished...
 			!d_in_last_update_drag/*only_emit_if_changed*/);
+
+	//
+	// The current drag-to mouse coordinates will be the drag-from coordinates for the next drag update.
+	//
+
+	d_rotate_and_tilt_drag_info->rotate_from_mouse_window_coord = rotate_to_mouse_window_coord;
+	d_rotate_and_tilt_drag_info->tilt_from_mouse_window_coord = tilt_to_mouse_window_coord;
 }

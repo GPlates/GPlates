@@ -145,9 +145,9 @@ namespace GPlatesViewOperations
 		struct PanDragInfo
 		{
 			PanDragInfo(
-					const GPlatesMaths::UnitVector3D &start_mouse_pos_on_globe_,
+					const GPlatesMaths::PointOnSphere &start_mouse_pos_on_globe_,
 					const GPlatesMaths::Rotation &start_view_orientation_) :
-				start_mouse_pos_on_globe(start_mouse_pos_on_globe_),
+				start_mouse_pos_on_globe(start_mouse_pos_on_globe_.position_vector()),
 				start_view_orientation(start_view_orientation_),
 				view_rotation_relative_to_start(GPlatesMaths::Rotation::create_identity_rotation())
 			{  }
@@ -164,23 +164,27 @@ namespace GPlatesViewOperations
 		struct RotateAndTiltDragInfo
 		{
 			RotateAndTiltDragInfo(
-					const double &start_mouse_window_x_,
-					const double &start_mouse_window_y_,
-					const GPlatesMaths::UnitVector3D &start_look_at_position_,
-					const GPlatesMaths::Rotation &start_view_orientation_,
-					const GPlatesMaths::real_t &start_tilt_angle_) :
-				start_mouse_window_x(start_mouse_window_x_),
-				start_mouse_window_y(start_mouse_window_y_),
-				start_look_at_position(start_look_at_position_),
-				start_view_orientation(start_view_orientation_),
-				start_tilt_angle(start_tilt_angle_)
+					const GPlatesMaths::PointOnSphere &start_look_at_position,
+					// Start mouse window coordinates...
+					const double &start_mouse_window_x,
+					const double &start_mouse_window_y) :
+				look_at_position(start_look_at_position.position_vector()),
+				rotate_from_mouse_window_coord(start_mouse_window_x),
+				tilt_from_mouse_window_coord(start_mouse_window_y)
 			{  }
 
-			double start_mouse_window_x;
-			double start_mouse_window_y;
-			GPlatesMaths::UnitVector3D start_look_at_position;
-			GPlatesMaths::Rotation start_view_orientation;
-			GPlatesMaths::real_t start_tilt_angle;
+			// Rotate around the look-at position.
+			GPlatesMaths::UnitVector3D look_at_position;
+
+			//
+			// The mouse window coordinates to rotate/tilt *from* in the next rotate/tilt update.
+			//
+			// For the first rotate/tilt update this will be from the start of the drag, and
+			// for subsequent rotate/tilt updates this will be the *to* (or destination) mouse coordinates
+			// of the previous rotate/tilt update.
+			//
+			double rotate_from_mouse_window_coord;
+			double tilt_from_mouse_window_coord;
 		};
 
 

@@ -135,8 +135,8 @@ namespace GPlatesViewOperations
 			explicit
 			PanDragInfo(
 					// Start mouse window coordinates, but only if mouse is *on* the map plane...
-					const boost::optional<QPointF> &start_mouse_window_coords_) :
-				drag_from_mouse_window_coords(start_mouse_window_coords_)
+					const boost::optional<QPointF> &start_mouse_window_coords) :
+				drag_from_mouse_window_coords(start_mouse_window_coords)
 			{  }
 
 			/**
@@ -156,21 +156,22 @@ namespace GPlatesViewOperations
 		struct RotateAndTiltDragInfo
 		{
 			RotateAndTiltDragInfo(
-					const double &start_mouse_window_x_,
-					const double &start_mouse_window_y_,
-					const GPlatesMaths::real_t &start_rotation_angle_,
-					const GPlatesMaths::real_t &start_tilt_angle_) :
-				start_mouse_window_x(start_mouse_window_x_),
-				start_mouse_window_y(start_mouse_window_y_),
-				start_rotation_angle(start_rotation_angle_),
-				start_tilt_angle(start_tilt_angle_)
+					// Start mouse window coordinates...
+					const double &start_mouse_window_x,
+					const double &start_mouse_window_y) :
+				rotate_from_mouse_window_coord(start_mouse_window_x),
+				tilt_from_mouse_window_coord(start_mouse_window_y)
 			{  }
 
-			double start_mouse_window_x;
-			double start_mouse_window_y;
-
-			GPlatesMaths::real_t start_rotation_angle;
-			GPlatesMaths::real_t start_tilt_angle;
+			//
+			// The mouse window coordinates to rotate/tilt *from* in the next rotate/tilt update.
+			//
+			// For the first rotate/tilt update this will be from the start of the drag, and
+			// for subsequent rotate/tilt updates this will be the *to* (or destination) mouse coordinates
+			// of the previous rotate/tilt update.
+			//
+			double rotate_from_mouse_window_coord;
+			double tilt_from_mouse_window_coord;
 		};
 
 
