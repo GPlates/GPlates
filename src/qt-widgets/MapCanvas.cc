@@ -1133,10 +1133,10 @@ GPlatesQtWidgets::MapCanvas::update_mouse_position_on_map()
 			//
 			// So get the intersection of line segment (from origin to intersection on map plane) with map projection boundary.
 			// We'll use that to get a new position on the globe (it can be inverse map projected onto the globe).
-			new_lat_lon_position_on_globe = map_projection.inverse_transform(
-					map_projection.get_map_boundary_position(
-								QPointF(0, 0),  // map origin
-								d_mouse_position_on_map_plane.get()));
+			const QPointF map_boundary_point = map_projection.get_map_boundary_position(
+					QPointF(0, 0),  // map origin
+					d_mouse_position_on_map_plane.get());
+			new_lat_lon_position_on_globe = map_projection.inverse_transform(map_boundary_point);
 
 			// The map boundary position is guaranteed to be invertible (onto the globe) in the map projection.
 			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
@@ -1151,14 +1151,39 @@ GPlatesQtWidgets::MapCanvas::update_mouse_position_on_map()
 
 		// Camera ray at screen pixel does not intersect the map plane.
 		//
-		// So get the intersection of 2D ray, from origin in direction of camera ray (projected onto 2D map plane), with map projection boundary.
-		new_lat_lon_position_on_globe = map_projection.inverse_transform(
-				d_map_camera.get_position_on_map_boundary_at_camera_ray(camera_ray));
+		// So get the intersection of 2D ray, map from origin in direction of camera ray (projected onto 2D map plane),
+		// with map projection boundary.
+		const QPointF ray_direction(
+				camera_ray.get_direction().x().dval(),
+				camera_ray.get_direction().y().dval());
+		const QPointF ray_origin(0, 0);  // map origin
 
-		// The map boundary position is guaranteed to be invertible (onto the globe) in the map projection.
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				new_lat_lon_position_on_globe,
-				GPLATES_ASSERTION_SOURCE);
+		const boost::optional<QPointF> map_boundary_point =
+				d_map_camera.get_position_on_map_boundary_intersected_by_2d_camera_ray(ray_direction, ray_origin);
+		if (map_boundary_point)
+		{
+			new_lat_lon_position_on_globe = map_projection.inverse_transform(map_boundary_point.get());
+
+			// The map boundary position is guaranteed to be invertible (onto the globe) in the map projection.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					new_lat_lon_position_on_globe,
+					GPLATES_ASSERTION_SOURCE);
+		}
+		else
+		{
+			// The 3D camera ray direction points straight down (ie, camera ray x and y are zero).
+			//
+			// We shouldn't really get here for a valid camera ray since we already know it did not intersect the
+			// 2D map plane and so if it points straight down then it would have intersected the map plane (z=0).
+			// However it's possible that at 90 degree tilt the camera eye (in perspective viewing) dips just below
+			// the map plane (z=0) due to numerical tolerance and hence just misses the map plane.
+			// But even then the camera view direction would be horizontal and with a field-of-view of 90 degrees or less
+			// there wouldn't be any screen pixel in the view frustum that could look straight down.
+			// So it really should never happen.
+			//
+			// Arbitrarily choose the North pole (again, we shouldn't get here).
+			new_lat_lon_position_on_globe = GPlatesMaths::LatLonPoint(90, 0);
+		}
 	}
 
 	// Convert inverse-map-projected lat-lon position to new position on the globe.

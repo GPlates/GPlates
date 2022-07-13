@@ -389,33 +389,29 @@ GPlatesGui::MapCamera::get_position_on_map_plane_at_camera_ray(
 }
 
 
-QPointF
-GPlatesGui::MapCamera::get_position_on_map_boundary_at_camera_ray(
-		const GPlatesOpenGL::GLIntersect::Ray &camera_ray) const
+boost::optional<QPointF>
+GPlatesGui::MapCamera::get_position_on_map_boundary_intersected_by_2d_camera_ray(
+		const QPointF &ray_direction,
+		const QPointF &ray_origin) const
 {
-	const QPointF direction_along_map_plane(
-			camera_ray.get_direction().x().dval(),
-			camera_ray.get_direction().y().dval());
-
-	const GPlatesMaths::real_t distance_from_origin = get_length(direction_along_map_plane);
+	const GPlatesMaths::real_t length_ray_direction = get_length(ray_direction);
+	if (length_ray_direction == 0) // epsilon comparison
+	{
+		// Avoid divide-by-zero.
+		return boost::none;
+	}
 
 	// Convert 2D direction to a 2D unit vector.
-	const QPointF unit_vector_direction = (distance_from_origin != 0) // epsilon comparison
-			? (1 / distance_from_origin.dval()) * direction_along_map_plane
-			// Arbitrarily use the UP direction if direction is zero length.
-			// We shouldn't really get here for a valid camera ray because a precondition is the
-			// camera ray does not intersect the 2D map plane and so if it points straight down
-			// (ie, camera ray x and y are zero) then it would intersect the map plane (z=0).
-			// However it's possible that at 90 degree tilt the camera eye (in perspective viewing) dips
-			// just below the map plane (z=0) due to numerical tolerance and hence just misses the map plane.
-			: QPointF(0, 1);
+	const QPointF unit_vector_direction = (1 / length_ray_direction.dval()) * ray_direction;
 
 	// The lower bound is inside, and upper bound outside, the map boundary.
 	//
-	// Map origin is always inside the map boundary.
-	const QPointF map_position_inside_boundary(0, 0);
-	// Anything on the bounding circle/sphere is outside the map boundary.
-	const QPointF map_position_outside_boundary = d_map_projection.get_map_bounding_radius() * unit_vector_direction;
+	// Inside point is the ray origin, which should be inside the map boundary.
+	const QPointF &map_position_inside_boundary = ray_origin;
+	// Start at the inside point and move in the unit vector direction to get the outside point.
+	// We move a distance of twice the bounding radius since that ensures the outside point is
+	// outside the bounding circle regardless of the location of the inside point.
+	const QPointF map_position_outside_boundary = map_position_inside_boundary + 2 * d_map_projection.get_map_bounding_radius() * unit_vector_direction;
 
 	return d_map_projection.get_map_boundary_position(map_position_inside_boundary, map_position_outside_boundary);
 }
