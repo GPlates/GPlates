@@ -223,24 +223,24 @@ GPlatesGui::GlobeCamera::reorient_up_direction(
 
 
 void
-GPlatesGui::GlobeCamera::rotate_down(
+GPlatesGui::GlobeCamera::pan_up(
 		const GPlatesMaths::real_t &angle,
 		bool only_emit_if_changed)
 {
 	// Rotate the view around the axis perpendicular to the view and up directions.
 	const GPlatesMaths::UnitVector3D rotation_axis =
-			cross(get_view_direction(), get_up_direction()).get_normalisation();
+			cross(get_up_direction(), get_view_direction()).get_normalisation();
 
 	// Rotate by positive angle to rotate the view "down".
 	const GPlatesMaths::Rotation rotation =
-			GPlatesMaths::Rotation::create(rotation_axis,  angle);
+			GPlatesMaths::Rotation::create(rotation_axis,  angle / get_viewport_zoom().zoom_factor());
 
 	set_view_orientation(rotation * get_view_orientation(), only_emit_if_changed);
 }
 
 
 void
-GPlatesGui::GlobeCamera::rotate_right(
+GPlatesGui::GlobeCamera::pan_right(
 		const GPlatesMaths::real_t &angle,
 		bool only_emit_if_changed)
 {
@@ -249,7 +249,7 @@ GPlatesGui::GlobeCamera::rotate_right(
 
 	// Rotate by positive angle to rotate the view "right".
 	const GPlatesMaths::Rotation rotation =
-			GPlatesMaths::Rotation::create(rotation_axis,  angle);
+			GPlatesMaths::Rotation::create(rotation_axis,  angle / get_viewport_zoom().zoom_factor());
 
 	set_view_orientation(rotation * get_view_orientation(), only_emit_if_changed);
 }

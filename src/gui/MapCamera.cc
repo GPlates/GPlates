@@ -304,7 +304,7 @@ GPlatesGui::MapCamera::pan_up(
 {
 	const QPointF delta_pan_in_view_frame(
 			0,
-			GPlatesMaths::convert_rad_to_deg(angle.dval()));
+			GPlatesMaths::convert_rad_to_deg(angle.dval() / get_viewport_zoom().zoom_factor()));
 
 	// Convert the pan in the view frame to a pan in the map frame.
 	const QPointF delta_pan_in_map_frame = convert_pan_from_view_to_map_frame(delta_pan_in_view_frame);
@@ -321,7 +321,7 @@ GPlatesGui::MapCamera::pan_right(
 		bool only_emit_if_changed)
 {
 	const QPointF delta_pan_in_view_frame(
-			GPlatesMaths::convert_rad_to_deg(angle.dval()),
+			GPlatesMaths::convert_rad_to_deg(angle.dval() / get_viewport_zoom().zoom_factor()),
 			0);
 
 	// Convert the pan in the view frame to a pan in the map frame.

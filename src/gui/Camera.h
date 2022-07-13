@@ -55,6 +55,15 @@ namespace GPlatesGui
 
 	public:
 
+		/**
+		 * Default amount to pan, rotate or tilt the camera (in radians) in 'pan_*()', 'rotate_*()' and 'tilt_*()' methods.
+		 *
+		 * Note: Both *globe* and *map* cameras use radians. For the *map* camera you can think of the map extents
+		 *       (that bound the map projection) as being a rectangle of roughly 360 degrees horizontally and 180 degrees vertically.
+		 */
+		static const double DEFAULT_PAN_ROTATE_TILT_RADIANS;
+
+
 		virtual
 		~Camera()
 		{  }
@@ -170,6 +179,119 @@ namespace GPlatesGui
 		 */
 		GPlatesMaths::Vector3D
 		get_eye_position() const;
+
+
+		/**
+		 * The angle (in radians) that the view direction tilts.
+		 *
+		 * The tilt angle is clamped to the range [0, PI/2].
+		 *
+		 * Zero angle implies looking straight down on the globe (or map plane). And PI/2 (90 degrees)
+		 * means the view direction is looking tangentially at the look-at position (on globe surface or
+		 * the map plane) and the up direction is pointing outward from the globe (or map plane along z-axis).
+		 */
+		virtual
+		GPlatesMaths::real_t
+		get_tilt_angle() const = 0;
+
+		/**
+		 * Set the angle (in radians) that the view direction tilts.
+		 *
+		 * The tilt angle is clamped to the range [0, PI/2].
+		 *
+		 * Note that this does not change the current view orientation (returned by @a get_view_orientation).
+		 *
+		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
+		 */
+		virtual
+		void
+		set_tilt_angle(
+				GPlatesMaths::real_t tilt_angle,
+				bool only_emit_if_changed = true) = 0;
+
+
+		/**
+		 * Rotate the view so that the "up" direction points towards the North pole when @a reorientation_angle is zero.
+		 *
+		 * @a reorientation_angle, in radians, is [0, PI] for anti-clockwise view orientation with respect
+		 * to North pole (note map appears to rotate clockwise relative to camera), and [0,-PI] for
+		 * clockwise view orientation (note map appears to rotate anti-clockwise relative to camera).
+		 *
+		 * Note that this does not change the current tilt angle.
+		 */
+		virtual
+		void
+		reorient_up_direction(
+				const GPlatesMaths::real_t &reorientation_angle = 0,
+				bool only_emit_if_changed = true) = 0;
+
+
+		/**
+		 * Pan the current look-at position "up" by the specified angle (in radians) divided by
+		 * the viewport zoom factor (so that there's less panning for zoomed-in views).
+		 */
+		virtual
+		void
+		pan_up(
+				const GPlatesMaths::real_t &angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				bool only_emit_if_changed = true) = 0;
+
+		/**
+		 * Same as @a pan_up but pans "down".
+		 */
+		void
+		pan_down(
+				const GPlatesMaths::real_t &angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				bool only_emit_if_changed = true)
+		{
+			pan_up(-angle, only_emit_if_changed);
+		}
+
+		/**
+		 * Pan the current look-at position "right" by the specified angle (in radians) divided by
+		 * the viewport zoom factor (so that there's less panning for zoomed-in views).
+		 */
+		virtual
+		void
+		pan_right(
+				const GPlatesMaths::real_t &angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				bool only_emit_if_changed = true) = 0;
+
+		/**
+		 * Same as @a pan_right but pans "left".
+		 */
+		void
+		pan_left(
+				const GPlatesMaths::real_t &angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				bool only_emit_if_changed = true)
+		{
+			pan_right(-angle, only_emit_if_changed);
+		}
+
+
+		/**
+		 * Rotate the view "anticlockwise", around the current look-at position, by the specified angle (in radians).
+		 *
+		 * The view and up directions are rotated.
+		 *
+		 * Note that this does not change the current tilt angle.
+		 */
+		virtual
+		void
+		rotate_anticlockwise(
+				const GPlatesMaths::real_t &angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				bool only_emit_if_changed = true) = 0;
+
+		/**
+		 * Same as @a rotate_anticlockwise but rotates "clockwise".
+		 */
+		void
+		rotate_clockwise(
+				const GPlatesMaths::real_t &angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				bool only_emit_if_changed = true)
+		{
+			rotate_anticlockwise(-angle, only_emit_if_changed);
+		}
 
 
 		/**

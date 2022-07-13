@@ -447,27 +447,6 @@ namespace GPlatesQtWidgets
 		keyPressEvent(
 				QKeyEvent *key_event) override;
 
-		void
-		move_camera_up() override;
-
-		void
-		move_camera_down() override;
-
-		void
-		move_camera_left() override;
-
-		void
-		move_camera_right() override;
-
-		void
-		rotate_camera_clockwise() override;
-
-		void
-		rotate_camera_anticlockwise() override;
-
-		void
-		reset_camera_orientation() override;
-
 	private Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
@@ -569,12 +548,6 @@ namespace GPlatesQtWidgets
 		//! Paints an optional velocity legend overlay onto the globe.
 		boost::scoped_ptr<GPlatesGui::VelocityLegendOverlay> d_velocity_legend_overlay;
 
-
-
-		/**
-		 * How far to nudge or rotate the camera when incrementally moving the camera, in degrees.
-		 */
-		static const double NUDGE_CAMERA_DEGREES;
 
 		//! Dimensions of square render target used for offscreen rendering.
 		static const unsigned int OFF_SCREEN_RENDER_TARGET_DIMENSION = 1024;

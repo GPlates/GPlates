@@ -164,7 +164,7 @@ namespace GPlatesGui
 		 * direction is pointing outward from the map plane (along z-axis).
 		 */
 		GPlatesMaths::real_t
-		get_tilt_angle() const
+		get_tilt_angle() const override
 		{
 			return d_tilt_angle;
 		}
@@ -177,7 +177,7 @@ namespace GPlatesGui
 		void
 		set_tilt_angle(
 				GPlatesMaths::real_t tilt_angle,
-				bool only_emit_if_changed = true);
+				bool only_emit_if_changed = true) override;
 
 		/**
 		 * Rotate the view so that the "up" direction points towards the North pole when @a reorientation_angle is zero.
@@ -185,78 +185,50 @@ namespace GPlatesGui
 		 * @a reorientation_angle, in radians, is [0, PI] for anti-clockwise view orientation with respect
 		 * to North pole (note map appears to rotate clockwise relative to camera), and [0,-PI] for
 		 * clockwise view orientation (note map appears to rotate anti-clockwise relative to camera).
+		 *
+		 * Note that this does not change the current tilt angle.
 		 */
 		void
 		reorient_up_direction(
 				const GPlatesMaths::real_t &reorientation_angle = 0,
-				bool only_emit_if_changed = true);
+				bool only_emit_if_changed = true) override;
 
 		/**
-		 * Pan the current look-at position "up" by the specified angle (in radians).
+		 * Pan the current look-at position "up" by the specified angle (in radians) divided by
+		 * the viewport zoom factor (so that there's less panning for zoomed-in views).
 		 *
-		 * Similar to @a move_look_at_position_on_map, if the newly panned look-at position is outside the
+		 * As with @a move_look_at_position_on_map, if the newly panned look-at position is outside the
 		 * map projection boundary then it is only panned to the boundary.
 		 */
 		void
 		pan_up(
-				const GPlatesMaths::real_t &angle,
-				bool only_emit_if_changed = true);
+				const GPlatesMaths::real_t &angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				bool only_emit_if_changed = true) override;
 
 		/**
-		 * Same as @a pan_up but pans "down".
-		 */
-		void
-		pan_down(
-				const GPlatesMaths::real_t &angle,
-				bool only_emit_if_changed = true)
-		{
-			pan_up(-angle, only_emit_if_changed);
-		}
-
-		/**
-		 * Pan the current look-at position "left" by the specified angle (in radians).
+		 * Pan the current look-at position "right" by the specified angle (in radians) divided by
+		 * the viewport zoom factor (so that there's less panning for zoomed-in views).
 		 *
-		 * Similar to @a move_look_at_position_on_map, if the newly panned look-at position is outside the
+		 * As with @a move_look_at_position_on_map, if the newly panned look-at position is outside the
 		 * map projection boundary then it is only panned to the boundary.
 		 */
 		void
-		pan_left(
-				const GPlatesMaths::real_t &angle,
-				bool only_emit_if_changed = true)
-		{
-			pan_right(-angle, only_emit_if_changed);
-		}
-
-		/**
-		 * Same as @a pan_left but pans "right".
-		 */
-		void
 		pan_right(
-				const GPlatesMaths::real_t &angle,
-				bool only_emit_if_changed = true);
+				const GPlatesMaths::real_t &angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				bool only_emit_if_changed = true) override;
+
 
 		/**
-		 * Rotate the view "clockwise", around the current look-at position, by the specified angle (in radians).
+		 * Rotate the view "anticlockwise", around the current look-at position, by the specified angle (in radians).
 		 *
 		 * The view and up directions are rotated.
 		 *
 		 * Note that this does not change the current tilt angle.
 		 */
 		void
-		rotate_clockwise(
-				const GPlatesMaths::real_t &angle,
-				bool only_emit_if_changed = true)
-		{
-			rotate_anticlockwise(-angle, only_emit_if_changed);
-		}
-
-		/**
-		 * Same as @a rotate_clockwise but rotates "anti-clockwise".
-		 */
-		void
 		rotate_anticlockwise(
-				const GPlatesMaths::real_t &angle,
-				bool only_emit_if_changed = true);
+				const GPlatesMaths::real_t &angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				bool only_emit_if_changed = true) override;
 
 
 		/**

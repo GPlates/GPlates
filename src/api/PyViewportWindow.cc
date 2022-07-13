@@ -90,7 +90,7 @@ namespace GPlatesApi
 		{
 			DISPATCH_GUI_FUN<void>(boost::bind(&ViewportWindow::move_camera_up,this));
 
-			d_scene_view.move_camera_up();
+			d_scene_view.get_camera().pan_up();
 		}
 
 		void
@@ -98,7 +98,7 @@ namespace GPlatesApi
 		{
 			DISPATCH_GUI_FUN<void>(boost::bind(&ViewportWindow::move_camera_down,this));
 
-			d_scene_view.move_camera_down();
+			d_scene_view.get_camera().pan_down();
 		}
 
 		void
@@ -106,7 +106,7 @@ namespace GPlatesApi
 		{
 			DISPATCH_GUI_FUN<void>(boost::bind(&ViewportWindow::move_camera_left,this));
 
-			d_scene_view.move_camera_left();
+			d_scene_view.get_camera().pan_left();
 		}
 
 		void
@@ -114,7 +114,7 @@ namespace GPlatesApi
 		{
 			DISPATCH_GUI_FUN<void>(boost::bind(&ViewportWindow::move_camera_right, this));
 
-			d_scene_view.move_camera_right();
+			d_scene_view.get_camera().pan_right();
 		}
 
 		void
@@ -122,7 +122,8 @@ namespace GPlatesApi
 		{
 			DISPATCH_GUI_FUN<void>(boost::bind(&ViewportWindow::rotate_camera_clockwise, this));
 
-			d_scene_view.rotate_camera_clockwise();
+			// We want to rotate the globe/map clockwise which means rotating the camera anticlockwise.
+			d_scene_view.get_camera().rotate_anticlockwise();
 		}
 
 		void
@@ -130,7 +131,8 @@ namespace GPlatesApi
 		{
 			DISPATCH_GUI_FUN<void>(boost::bind(&ViewportWindow::rotate_camera_anticlockwise, this));
 
-			d_scene_view.rotate_camera_anticlockwise();
+			// We want to rotate the globe/map anticlockwise which means rotating the camera clockwise.
+			d_scene_view.get_camera().rotate_clockwise();
 		}
 
 
@@ -139,7 +141,7 @@ namespace GPlatesApi
 		{
 			DISPATCH_GUI_FUN<void>(boost::bind(&ViewportWindow::reset_camera_orientation, this));
 
-			d_scene_view.reset_camera_orientation();
+			d_scene_view.get_camera().reorient_up_direction();
 		}
 
 		void

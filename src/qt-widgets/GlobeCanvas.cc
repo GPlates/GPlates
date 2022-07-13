@@ -83,9 +83,6 @@
 #include "view-operations/RenderedGeometryCollection.h"
 
 
-const double GPlatesQtWidgets::GlobeCanvas::NUDGE_CAMERA_DEGREES = 5.0;
-
-
 GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
@@ -707,85 +704,24 @@ GPlatesQtWidgets::GlobeCanvas::keyPressEvent(
 	switch (key_event->key())
 	{
 		case Qt::Key_Up:
-			move_camera_up();
+			d_globe_camera.pan_up();
 			break;
 
 		case Qt::Key_Down:
-			move_camera_down();
+			d_globe_camera.pan_down();
 			break;
 
 		case Qt::Key_Left:
-			move_camera_left();
+			d_globe_camera.pan_left();
 			break;
 
 		case Qt::Key_Right:
-			move_camera_right();
+			d_globe_camera.pan_right();
 			break;
 
 		default:
 			QGLWidget::keyPressEvent(key_event);
 	}
-}
-
-
-void
-GPlatesQtWidgets::GlobeCanvas::move_camera_up()
-{
-	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
-			d_view_state.get_viewport_zoom().zoom_factor();
-
-	d_globe_camera.rotate_up(nudge_angle);
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::move_camera_down()
-{
-	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
-			d_view_state.get_viewport_zoom().zoom_factor();
-
-	d_globe_camera.rotate_down(nudge_angle);
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::move_camera_left()
-{
-	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
-			d_view_state.get_viewport_zoom().zoom_factor();
-
-	d_globe_camera.rotate_left(nudge_angle);
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::move_camera_right()
-{
-	const double nudge_angle = GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES) /
-			d_view_state.get_viewport_zoom().zoom_factor();
-
-	d_globe_camera.rotate_right(nudge_angle);
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::rotate_camera_clockwise()
-{
-	// Note that we actually want to rotate the globe clockwise (not the camera).
-	// We achieve this by rotating the camera anti-clockwise...
-	d_globe_camera.rotate_anticlockwise(
-			GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES));
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::rotate_camera_anticlockwise()
-{
-	// Note that we actually want to rotate the globe anti-clockwise (not the camera).
-	// We achieve this by rotating the camera clockwise...
-	d_globe_camera.rotate_clockwise(
-			GPlatesMaths::convert_deg_to_rad(NUDGE_CAMERA_DEGREES));
-}
-
-void
-GPlatesQtWidgets::GlobeCanvas::reset_camera_orientation()
-{
-	d_globe_camera.reorient_up_direction();
 }
 
 

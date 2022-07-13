@@ -176,7 +176,7 @@ namespace GPlatesGui
 		 * direction is pointing radially outward from the globe.
 		 */
 		GPlatesMaths::real_t
-		get_tilt_angle() const
+		get_tilt_angle() const override
 		{
 			return d_tilt_angle;
 		}
@@ -193,92 +193,62 @@ namespace GPlatesGui
 		void
 		set_tilt_angle(
 				GPlatesMaths::real_t tilt_angle,
-				bool only_emit_if_changed = true);
+				bool only_emit_if_changed = true) override;
 
 
 		/**
-		 * Rotate the view around the view direction so that the "up" direction points
-		 * towards the North pole when @a reorientation_angle is zero.
+		 * Rotate the view so that the "up" direction points towards the North pole when @a reorientation_angle is zero.
 		 *
 		 * @a reorientation_angle, in radians, is [0, PI] for anti-clockwise view orientation with respect
-		 * to North pole (note globe appears to rotate clockwise relative to camera), and [0,-PI] for
-		 * clockwise view orientation (note globe appears to rotate anti-clockwise relative to camera).
+		 * to North pole (note map appears to rotate clockwise relative to camera), and [0,-PI] for
+		 * clockwise view orientation (note map appears to rotate anti-clockwise relative to camera).
 		 *
 		 * Note that this does not change the current tilt angle.
 		 */
 		void
 		reorient_up_direction(
 				const GPlatesMaths::real_t &reorientation_angle = 0,
-				bool only_emit_if_changed = true);
+				bool only_emit_if_changed = true) override;
+
 
 		/**
-		 * Rotate the current look-at position "up" by the specified angle (in radians).
+		 * Pan (rotate) the current look-at position "up" by the specified angle (in radians) divided by
+		 * the viewport zoom factor (so that there's less panning for zoomed-in views).
 		 *
 		 * The view and up directions are rotated by same rotation as look-at position.
 		 *
 		 * Note that this does not change the current tilt angle.
 		 */
 		void
-		rotate_up(
-				const GPlatesMaths::real_t &angle,
-				bool only_emit_if_changed = true)
-		{
-			rotate_down(-angle, only_emit_if_changed);
-		}
+		pan_up(
+				const GPlatesMaths::real_t &angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				bool only_emit_if_changed = true) override;
 
 		/**
-		 * Same as @a rotate_up but rotates "down".
-		 */
-		void
-		rotate_down(
-				const GPlatesMaths::real_t &angle,
-				bool only_emit_if_changed = true);
-
-		/**
-		 * Rotate the current look-at position "left" by the specified angle (in radians).
+		 * Pan (rotate) the current look-at position "right" by the specified angle (in radians) divided by
+		 * the viewport zoom factor (so that there's less panning for zoomed-in views).
 		 *
 		 * The view and up directions are rotated by same rotation as look-at position.
 		 *
 		 * Note that this does not change the current tilt angle.
 		 */
 		void
-		rotate_left(
-				const GPlatesMaths::real_t &angle,
-				bool only_emit_if_changed = true)
-		{
-			rotate_right(-angle, only_emit_if_changed);
-		}
+		pan_right(
+				const GPlatesMaths::real_t &angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				bool only_emit_if_changed = true) override;
+
 
 		/**
-		 * Same as @a rotate_left but rotates "right".
-		 */
-		void
-		rotate_right(
-				const GPlatesMaths::real_t &angle,
-				bool only_emit_if_changed = true);
-
-		/**
-		 * Rotate the view "clockwise", around the current look-at position, by the specified angle (in radians).
+		 * Rotate the view "anticlockwise", around the current look-at position, by the specified angle (in radians).
 		 *
 		 * The view and up directions are rotated.
 		 *
 		 * Note that this does not change the current tilt angle.
 		 */
 		void
-		rotate_clockwise(
-				const GPlatesMaths::real_t &angle,
-				bool only_emit_if_changed = true)
-		{
-			rotate_anticlockwise(-angle, only_emit_if_changed);
-		}
-
-		/**
-		 * Same as @a rotate_clockwise but rotates "anti-clockwise".
-		 */
-		void
 		rotate_anticlockwise(
-				const GPlatesMaths::real_t &angle,
-				bool only_emit_if_changed = true);
+				const GPlatesMaths::real_t &angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				bool only_emit_if_changed = true) override;
 
 
 		/**

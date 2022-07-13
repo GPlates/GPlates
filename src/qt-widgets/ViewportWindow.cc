@@ -106,6 +106,7 @@
 #include "global/python.h"
 
 #include "gui/AnimationController.h"
+#include "gui/Camera.h"
 #include "gui/CanvasToolWorkflows.h"
 #include "gui/DockState.h"
 #include "gui/Dialogs.h"
@@ -1435,43 +1436,45 @@ GPlatesQtWidgets::ViewportWindow::update_tools_and_status_message()
 void
 GPlatesQtWidgets::ViewportWindow::handle_move_camera_up()
 {
-	d_reconstruction_view_widget_ptr->active_view().move_camera_up();
+	d_reconstruction_view_widget_ptr->get_active_camera().pan_up();
 }
 
 void
 GPlatesQtWidgets::ViewportWindow::handle_move_camera_down()
 {
-	d_reconstruction_view_widget_ptr->active_view().move_camera_down();
+	d_reconstruction_view_widget_ptr->get_active_camera().pan_down();
 }
 
 void
 GPlatesQtWidgets::ViewportWindow::handle_move_camera_left()
 {
-	d_reconstruction_view_widget_ptr->active_view().move_camera_left();
+	d_reconstruction_view_widget_ptr->get_active_camera().pan_left();
 }
 
 void
 GPlatesQtWidgets::ViewportWindow::handle_move_camera_right()
 {
-	d_reconstruction_view_widget_ptr->active_view().move_camera_right();
+	d_reconstruction_view_widget_ptr->get_active_camera().pan_right();
 }
 
 void
 GPlatesQtWidgets::ViewportWindow::handle_rotate_camera_clockwise()
 {
-	d_reconstruction_view_widget_ptr->active_view().rotate_camera_clockwise();
+	// We want to rotate the globe/map clockwise which means rotating the camera anticlockwise.
+	d_reconstruction_view_widget_ptr->get_active_camera().rotate_anticlockwise();
 }
 
 void
 GPlatesQtWidgets::ViewportWindow::handle_rotate_camera_anticlockwise()
 {
-	d_reconstruction_view_widget_ptr->active_view().rotate_camera_anticlockwise();
+	// We want to rotate the globe/map anticlockwise which means rotating the camera clockwise.
+	d_reconstruction_view_widget_ptr->get_active_camera().rotate_clockwise();
 }
 
 void
 GPlatesQtWidgets::ViewportWindow::handle_reset_camera_orientation()
 {
-	d_reconstruction_view_widget_ptr->active_view().reset_camera_orientation();
+	d_reconstruction_view_widget_ptr->get_active_camera().reorient_up_direction();
 }
 
 void

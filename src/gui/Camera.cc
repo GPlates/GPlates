@@ -37,6 +37,8 @@
 #include "maths/Vector3D.h"
 
 
+const double GPlatesGui::Camera::DEFAULT_PAN_ROTATE_TILT_RADIANS = GPlatesMaths::convert_deg_to_rad(5.0);
+
 // Use a VERTICAL field-of-view of 70 degrees.
 // This results in a HORIZONTAL field-of-view of:
 //   * 70 degrees for a square viewport,

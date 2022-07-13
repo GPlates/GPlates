@@ -159,38 +159,7 @@ namespace GPlatesQtWidgets
 		virtual
 		void
 		update_canvas() = 0;
-
-
-		virtual
-		void
-		move_camera_up() = 0;
-
-		virtual
-		void
-		move_camera_down() = 0;
-
-		virtual
-		void
-		move_camera_left() = 0;
-
-		virtual
-		void
-		move_camera_right() = 0;
-
-		virtual
-		void
-		rotate_camera_clockwise() = 0;
-
-		virtual
-		void
-		rotate_camera_anticlockwise() = 0;
-
-		virtual
-		void
-		reset_camera_orientation() = 0;
 	};
-
 }
-
 
 #endif // GPLATES_QTWIDGETS_SCENEVIEW_H
