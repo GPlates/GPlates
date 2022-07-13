@@ -143,6 +143,7 @@ GPlatesPresentation::ViewState::ViewState(
 	d_map_view_operation(
 			new GPlatesViewOperations::MapViewOperation(
 				*d_map_camera,
+				*d_map_projection,
 				*d_rendered_geometry_collection)),
 	d_file_io_directory_configurations(
 			new GPlatesGui::FileIODirectoryConfigurations(

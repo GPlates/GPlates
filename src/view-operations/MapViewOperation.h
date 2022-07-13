@@ -39,6 +39,7 @@
 namespace GPlatesGui
 {
 	class MapCamera;
+	class MapProjection;
 }
 
 namespace GPlatesViewOperations
@@ -68,6 +69,7 @@ namespace GPlatesViewOperations
 
 		MapViewOperation(
 				GPlatesGui::MapCamera &map_camera,
+				const GPlatesGui::MapProjection &map_projection,
 				RenderedGeometryCollection &rendered_geometry_collection);
 
 		/**
@@ -79,7 +81,6 @@ namespace GPlatesViewOperations
 		start_drag(
 				MouseDragMode mouse_drag_mode,
 				const QPointF &initial_screen_position,
-				const boost::optional<QPointF> &initial_map_position,
 				int screen_width,
 				int screen_height);
 
@@ -94,7 +95,6 @@ namespace GPlatesViewOperations
 		void
 		update_drag(
 				const QPointF &screen_position,
-				const boost::optional<QPointF> &map_position,
 				int screen_width,
 				int screen_height,
 				bool end_of_drag);
@@ -134,20 +134,19 @@ namespace GPlatesViewOperations
 		{
 			explicit
 			PanDragInfo(
-					// Start mouse window coordinates, but only if mouse is *on* the map plane...
-					const boost::optional<QPointF> &start_mouse_window_coords) :
-				drag_from_mouse_window_coords(start_mouse_window_coords)
+					// Start mouse window coordinates...
+					const double &start_mouse_window_x,
+					const double &start_mouse_window_y) :
+				drag_from_mouse_window_coords(start_mouse_window_x, start_mouse_window_y)
 			{  }
 
 			/**
-			 * The mouse window coordinates to drag *from* in the next drag update, but only if mouse was *on* the map plane.
+			 * The mouse window coordinates to drag *from* in the next drag update.
 			 *
 			 * For the first drag update this will be from the start of the drag, and for subsequent drag updates
 			 * this will be the *to* (or destination) mouse coordinates of the previous drag update.
-			 *
-			 * Note: A value of none indicates that the mouse was NOT on the map plane.
 			 */
-			boost::optional<QPointF> drag_from_mouse_window_coords;
+			QPointF drag_from_mouse_window_coords;
 		};
 
 		/**
@@ -175,7 +174,8 @@ namespace GPlatesViewOperations
 		};
 
 
-		GPlatesGui::MapCamera &d_map_camera;
+		GPlatesGui::MapCamera& d_map_camera;
+		const GPlatesGui::MapProjection &d_map_projection;
 
 		/**
 		 * Is true if we're currently between the start of drag (@a start_drag) and
@@ -207,13 +207,11 @@ namespace GPlatesViewOperations
 
 		void
 		start_drag_pan(
-				const boost::optional<QPointF> &start_map_position,
 				const double &start_mouse_window_x,
 				const double &start_mouse_window_y);
 
 		void
 		update_drag_pan(
-				const boost::optional<QPointF> &map_position,
 				double mouse_window_x,
 				double mouse_window_y,
 				int window_width,

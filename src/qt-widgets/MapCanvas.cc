@@ -1151,7 +1151,7 @@ GPlatesQtWidgets::MapCanvas::update_mouse_position_on_map()
 
 		// Camera ray at screen pixel does not intersect the map plane.
 		//
-		// So get the intersection of 2D ray, map from origin in direction of camera ray (projected onto 2D map plane),
+		// So get the intersection of 2D ray, from map origin in direction of camera ray (projected onto 2D map plane),
 		// with map projection boundary.
 		const QPointF ray_direction(
 				camera_ray.get_direction().x().dval(),

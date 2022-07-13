@@ -162,13 +162,11 @@ GPlatesGui::MapCanvasTool::pan_map_by_drag_update(
 		d_map_view_operation.start_drag(
 				GPlatesViewOperations::MapViewOperation::DRAG_PAN,
 				initial_screen_position,
-				initial_map_position,
 				screen_width, screen_height);
 	}
 
 	d_map_view_operation.update_drag(
 			current_screen_position,
-			current_map_position,
 			screen_width, screen_height,
 			false/*end_of_drag*/);
 }
@@ -193,13 +191,11 @@ GPlatesGui::MapCanvasTool::pan_map_by_drag_release(
 		d_map_view_operation.start_drag(
 				GPlatesViewOperations::MapViewOperation::DRAG_PAN,
 				initial_screen_position,
-				initial_map_position,
 				screen_width, screen_height);
 	}
 
 	d_map_view_operation.update_drag(
 			current_screen_position,
-			current_map_position,
 			screen_width, screen_height,
 			true/*end_of_drag*/);
 }
@@ -224,13 +220,11 @@ GPlatesGui::MapCanvasTool::rotate_and_tilt_map_by_drag_update(
 		d_map_view_operation.start_drag(
 				GPlatesViewOperations::MapViewOperation::DRAG_ROTATE_AND_TILT,
 				initial_screen_position,
-				initial_map_position,
 				screen_width, screen_height);
 	}
 
 	d_map_view_operation.update_drag(
 			current_screen_position,
-			current_map_position,
 			screen_width, screen_height,
 			false/*end_of_drag*/);
 }
@@ -255,13 +249,11 @@ GPlatesGui::MapCanvasTool::rotate_and_tilt_map_by_drag_release(
 		d_map_view_operation.start_drag(
 				GPlatesViewOperations::MapViewOperation::DRAG_ROTATE_AND_TILT,
 				initial_screen_position,
-				initial_map_position,
 				screen_width, screen_height);
 	}
 
 	d_map_view_operation.update_drag(
 			current_screen_position,
-			current_map_position,
 			screen_width, screen_height,
 			true/*end_of_drag*/);
 }
