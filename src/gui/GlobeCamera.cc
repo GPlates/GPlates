@@ -271,6 +271,17 @@ GPlatesGui::GlobeCamera::rotate_anticlockwise(
 }
 
 
+void
+GPlatesGui::GlobeCamera::tilt_more(
+		const GPlatesMaths::real_t &angle,
+		bool only_emit_if_changed)
+{
+	set_tilt_angle(
+			get_tilt_angle() + angle,
+			only_emit_if_changed);
+}
+
+
 boost::optional<GPlatesMaths::PointOnSphere>
 GPlatesGui::GlobeCamera::get_position_on_globe_at_camera_ray(
 		const GPlatesOpenGL::GLIntersect::Ray &camera_ray) const

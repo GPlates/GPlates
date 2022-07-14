@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>780</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -164,9 +164,18 @@
      <addaction name="action_Show_3D_Scalar_Fields"/>
      <addaction name="action_Show_Scalar_Coverages"/>
     </widget>
+    <widget class="QMenu" name="menu_Camera_Tilt">
+     <property name="title">
+      <string>Camera &amp;Tilt</string>
+     </property>
+     <addaction name="action_Tilt_Camera_More"/>
+     <addaction name="action_Tilt_Camera_Less"/>
+     <addaction name="action_Reset_Camera_Tilt"/>
+    </widget>
     <addaction name="action_Set_Projection"/>
     <addaction name="menu_Move_Camera"/>
     <addaction name="menu_Rotate_Camera"/>
+    <addaction name="menu_Camera_Tilt"/>
     <addaction name="menu_Camera_Zoom"/>
     <addaction name="separator"/>
     <addaction name="action_Configure_Text_Overlay"/>
@@ -1074,7 +1083,7 @@
   </action>
   <action name="action_Configure_Text_Overlay">
    <property name="text">
-    <string>Configure &amp;Text Overlay...</string>
+    <string>Configure Te&amp;xt Overlay...</string>
    </property>
    <property name="menuRole">
     <enum>QAction::NoRole</enum>
@@ -1332,6 +1341,42 @@
    </property>
    <property name="toolTip">
     <string>A toggle operation which controls whether scalar coverages are shown.</string>
+   </property>
+  </action>
+  <action name="action_Tilt_Camera_More">
+   <property name="icon">
+    <iconset resource="../qt-resources/qt_widgets.qrc">
+     <normaloff>:/human_view_refresh_16.png</normaloff>:/human_view_refresh_16.png</iconset>
+   </property>
+   <property name="text">
+    <string>Tilt &amp;More</string>
+   </property>
+   <property name="shortcut">
+    <string>.</string>
+   </property>
+  </action>
+  <action name="action_Tilt_Camera_Less">
+   <property name="icon">
+    <iconset resource="../qt-resources/qt_widgets.qrc">
+     <normaloff>:/human_view_refresh_flipped_16.png</normaloff>:/human_view_refresh_flipped_16.png</iconset>
+   </property>
+   <property name="text">
+    <string>Tilt &amp;Less</string>
+   </property>
+   <property name="shortcut">
+    <string>,</string>
+   </property>
+  </action>
+  <action name="action_Reset_Camera_Tilt">
+   <property name="icon">
+    <iconset resource="../qt-resources/qt_widgets.qrc">
+     <normaloff>:/reorient_poles_16.png</normaloff>:/reorient_poles_16.png</iconset>
+   </property>
+   <property name="text">
+    <string>&amp;Reset Tilt</string>
+   </property>
+   <property name="shortcut">
+    <string>/</string>
    </property>
   </action>
  </widget>

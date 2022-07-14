@@ -703,6 +703,13 @@ GPlatesQtWidgets::ViewportWindow::connect_view_menu_actions()
 	QObject::connect(action_Reset_Camera_Orientation, SIGNAL(triggered()),
 			this, SLOT(handle_reset_camera_orientation()));
 	// ----
+	QObject::connect(action_Tilt_Camera_More, SIGNAL(triggered()),
+			this, SLOT(handle_tilt_camera_more()));
+	QObject::connect(action_Tilt_Camera_Less, SIGNAL(triggered()),
+			this, SLOT(handle_tilt_camera_less()));
+	QObject::connect(action_Reset_Camera_Tilt, SIGNAL(triggered()),
+			this, SLOT(handle_reset_camera_tilt()));
+	// ----
 	QObject::connect(action_Set_Zoom, SIGNAL(triggered()),
 			d_reconstruction_view_widget_ptr, SLOT(activate_zoom_spinbox()));
 	QObject::connect(action_Zoom_In, SIGNAL(triggered()),
@@ -1475,6 +1482,24 @@ void
 GPlatesQtWidgets::ViewportWindow::handle_reset_camera_orientation()
 {
 	d_reconstruction_view_widget_ptr->get_active_camera().reorient_up_direction();
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_tilt_camera_more()
+{
+	d_reconstruction_view_widget_ptr->get_active_camera().tilt_more();
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_tilt_camera_less()
+{
+	d_reconstruction_view_widget_ptr->get_active_camera().tilt_less();
+}
+
+void
+GPlatesQtWidgets::ViewportWindow::handle_reset_camera_tilt()
+{
+	d_reconstruction_view_widget_ptr->get_active_camera().set_tilt_angle(0);
 }
 
 void

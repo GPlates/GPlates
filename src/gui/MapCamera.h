@@ -232,6 +232,19 @@ namespace GPlatesGui
 
 
 		/**
+		 * Tilt the view "more" (view is more tilted) by the specified angle (in radians).
+		 *
+		 * The view and up directions are tilted.
+		 *
+		 * Note that this does not change the current rotation angle.
+		 */
+		void
+		tilt_more(
+				const GPlatesMaths::real_t &angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				bool only_emit_if_changed = true) override;
+
+
+		/**
 		 * Returns the position on the map plane (z=0) at the specified window coordinate.
 		 *
 		 * Window coordinates are typically in the range [0, window_width] and [0, window_height]

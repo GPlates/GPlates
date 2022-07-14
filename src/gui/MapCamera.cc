@@ -344,6 +344,17 @@ GPlatesGui::MapCamera::rotate_anticlockwise(
 }
 
 
+void
+GPlatesGui::MapCamera::tilt_more(
+		const GPlatesMaths::real_t &angle,
+		bool only_emit_if_changed)
+{
+	set_tilt_angle(
+			get_tilt_angle() + angle,
+			only_emit_if_changed);
+}
+
+
 boost::optional<QPointF>
 GPlatesGui::MapCamera::get_position_on_map_plane_at_camera_ray(
 		const GPlatesOpenGL::GLIntersect::Ray &camera_ray) const

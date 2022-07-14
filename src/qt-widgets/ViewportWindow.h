@@ -412,6 +412,15 @@ namespace GPlatesQtWidgets
 		handle_reset_camera_orientation();
 
 		void
+		handle_tilt_camera_more();
+
+		void
+		handle_tilt_camera_less();
+
+		void
+		handle_reset_camera_tilt();
+
+		void
 		handle_canvas_tool_activated(
 				GPlatesGui::CanvasToolWorkflows::WorkflowType workflow,
 				GPlatesGui::CanvasToolWorkflows::ToolType tool);

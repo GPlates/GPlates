@@ -295,6 +295,31 @@ namespace GPlatesGui
 
 
 		/**
+		 * Tilt the view "more" (view is more tilted) by the specified angle (in radians).
+		 *
+		 * The view and up directions are tilted.
+		 *
+		 * Note that this does not change the current rotation angle.
+		 */
+		virtual
+		void
+		tilt_more(
+				const GPlatesMaths::real_t &angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				bool only_emit_if_changed = true) = 0;
+
+		/**
+		 * Same as @a tilt_more but tilts "less" (view is less tilted).
+		 */
+		void
+		tilt_less(
+				const GPlatesMaths::real_t &angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				bool only_emit_if_changed = true)
+		{
+			tilt_more(-angle, only_emit_if_changed);
+		}
+
+
+		/**
 		 * Returns ray from camera eye into the projected scene at the specified window coordinate.
 		 *
 		 * Window coordinates are typically in the range [0, window_width] and [0, window_height]
