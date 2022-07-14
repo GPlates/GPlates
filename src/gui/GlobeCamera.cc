@@ -175,7 +175,7 @@ GPlatesGui::GlobeCamera::set_tilt_angle(
 
 void
 GPlatesGui::GlobeCamera::reorient_up_direction(
-		const GPlatesMaths::real_t &reorientation_angle,
+		GPlatesMaths::real_t reorientation_angle,
 		bool only_emit_if_changed)
 {
 	// Rotate the view around the view direction.
@@ -224,16 +224,21 @@ GPlatesGui::GlobeCamera::reorient_up_direction(
 
 void
 GPlatesGui::GlobeCamera::pan_up(
-		const GPlatesMaths::real_t &angle,
+		GPlatesMaths::real_t angle,
+		bool scale_by_viewport_zoom,
 		bool only_emit_if_changed)
 {
+	if (scale_by_viewport_zoom)
+	{
+		angle /= get_viewport_zoom().zoom_factor();
+	}
+
 	// Rotate the view around the axis perpendicular to the view and up directions.
 	const GPlatesMaths::UnitVector3D rotation_axis =
 			cross(get_up_direction(), get_view_direction()).get_normalisation();
 
 	// Rotate by positive angle to rotate the view "down".
-	const GPlatesMaths::Rotation rotation =
-			GPlatesMaths::Rotation::create(rotation_axis,  angle / get_viewport_zoom().zoom_factor());
+	const GPlatesMaths::Rotation rotation = GPlatesMaths::Rotation::create(rotation_axis,  angle);
 
 	set_view_orientation(rotation * get_view_orientation(), only_emit_if_changed);
 }
@@ -241,15 +246,20 @@ GPlatesGui::GlobeCamera::pan_up(
 
 void
 GPlatesGui::GlobeCamera::pan_right(
-		const GPlatesMaths::real_t &angle,
+		GPlatesMaths::real_t angle,
+		bool scale_by_viewport_zoom,
 		bool only_emit_if_changed)
 {
+	if (scale_by_viewport_zoom)
+	{
+		angle /= get_viewport_zoom().zoom_factor();
+	}
+
 	// Rotate the view around the "up" direction axis.
 	const GPlatesMaths::UnitVector3D &rotation_axis = get_up_direction();
 
 	// Rotate by positive angle to rotate the view "right".
-	const GPlatesMaths::Rotation rotation =
-			GPlatesMaths::Rotation::create(rotation_axis,  angle / get_viewport_zoom().zoom_factor());
+	const GPlatesMaths::Rotation rotation = GPlatesMaths::Rotation::create(rotation_axis,  angle);
 
 	set_view_orientation(rotation * get_view_orientation(), only_emit_if_changed);
 }
@@ -257,7 +267,7 @@ GPlatesGui::GlobeCamera::pan_right(
 
 void
 GPlatesGui::GlobeCamera::rotate_anticlockwise(
-		const GPlatesMaths::real_t &angle,
+		GPlatesMaths::real_t angle,
 		bool only_emit_if_changed)
 {
 	// Rotate the view around the look-at position.
@@ -273,7 +283,7 @@ GPlatesGui::GlobeCamera::rotate_anticlockwise(
 
 void
 GPlatesGui::GlobeCamera::tilt_more(
-		const GPlatesMaths::real_t &angle,
+		GPlatesMaths::real_t angle,
 		bool only_emit_if_changed)
 {
 	set_tilt_angle(

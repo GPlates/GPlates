@@ -207,13 +207,15 @@ namespace GPlatesGui
 		 */
 		void
 		reorient_up_direction(
-				const GPlatesMaths::real_t &reorientation_angle = 0,
+				GPlatesMaths::real_t reorientation_angle = 0,
 				bool only_emit_if_changed = true) override;
 
 
 		/**
-		 * Pan (rotate) the current look-at position "up" by the specified angle (in radians) divided by
-		 * the viewport zoom factor (so that there's less panning for zoomed-in views).
+		 * Pan (rotate) the current look-at position "up" by the specified angle (in radians).
+		 *
+		 * If @a scale_by_viewport_zoom is true (defaults to true) then scales the angle by the current viewport zoom
+		 * (divide angle by the viewport zoom factor so that there's less panning for zoomed-in views).
 		 *
 		 * The view and up directions are rotated by same rotation as look-at position.
 		 *
@@ -221,12 +223,15 @@ namespace GPlatesGui
 		 */
 		void
 		pan_up(
-				const GPlatesMaths::real_t &angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				GPlatesMaths::real_t angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				bool scale_by_viewport_zoom = true,
 				bool only_emit_if_changed = true) override;
 
 		/**
-		 * Pan (rotate) the current look-at position "right" by the specified angle (in radians) divided by
-		 * the viewport zoom factor (so that there's less panning for zoomed-in views).
+		 * Pan (rotate) the current look-at position "right" by the specified angle (in radians).
+		 *
+		 * If @a scale_by_viewport_zoom is true (defaults to true) then scales the angle by the current viewport zoom
+		 * (divide angle by the viewport zoom factor so that there's less panning for zoomed-in views).
 		 *
 		 * The view and up directions are rotated by same rotation as look-at position.
 		 *
@@ -234,7 +239,8 @@ namespace GPlatesGui
 		 */
 		void
 		pan_right(
-				const GPlatesMaths::real_t &angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				GPlatesMaths::real_t angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				bool scale_by_viewport_zoom = true,
 				bool only_emit_if_changed = true) override;
 
 
@@ -247,7 +253,7 @@ namespace GPlatesGui
 		 */
 		void
 		rotate_anticlockwise(
-				const GPlatesMaths::real_t &angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				GPlatesMaths::real_t angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
 				bool only_emit_if_changed = true) override;
 
 
@@ -260,7 +266,7 @@ namespace GPlatesGui
 		 */
 		void
 		tilt_more(
-				const GPlatesMaths::real_t &angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
+				GPlatesMaths::real_t angle = DEFAULT_PAN_ROTATE_TILT_RADIANS,
 				bool only_emit_if_changed = true) override;
 
 

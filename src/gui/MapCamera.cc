@@ -241,7 +241,7 @@ GPlatesGui::MapCamera::get_up_direction() const
 
 void
 GPlatesGui::MapCamera::set_rotation_angle(
-		const GPlatesMaths::real_t &rotation_angle,
+		GPlatesMaths::real_t rotation_angle,
 		bool only_emit_if_changed)
 {
 	if (only_emit_if_changed &&
@@ -290,7 +290,7 @@ GPlatesGui::MapCamera::set_tilt_angle(
 
 void
 GPlatesGui::MapCamera::reorient_up_direction(
-		const GPlatesMaths::real_t &reorientation_angle,
+		GPlatesMaths::real_t reorientation_angle,
 		bool only_emit_if_changed)
 {
 	set_rotation_angle(reorientation_angle, only_emit_if_changed);
@@ -299,12 +299,18 @@ GPlatesGui::MapCamera::reorient_up_direction(
 
 void
 GPlatesGui::MapCamera::pan_up(
-		const GPlatesMaths::real_t &angle,
+		GPlatesMaths::real_t angle,
+		bool scale_by_viewport_zoom,
 		bool only_emit_if_changed)
 {
+	if (scale_by_viewport_zoom)
+	{
+		angle /= get_viewport_zoom().zoom_factor();
+	}
+
 	const QPointF delta_pan_in_view_frame(
 			0,
-			GPlatesMaths::convert_rad_to_deg(angle.dval() / get_viewport_zoom().zoom_factor()));
+			GPlatesMaths::convert_rad_to_deg(angle.dval()));
 
 	// Convert the pan in the view frame to a pan in the map frame.
 	const QPointF delta_pan_in_map_frame = convert_pan_from_view_to_map_frame(delta_pan_in_view_frame);
@@ -317,11 +323,17 @@ GPlatesGui::MapCamera::pan_up(
 
 void
 GPlatesGui::MapCamera::pan_right(
-		const GPlatesMaths::real_t &angle,
+		GPlatesMaths::real_t angle,
+		bool scale_by_viewport_zoom,
 		bool only_emit_if_changed)
 {
+	if (scale_by_viewport_zoom)
+	{
+		angle /= get_viewport_zoom().zoom_factor();
+	}
+
 	const QPointF delta_pan_in_view_frame(
-			GPlatesMaths::convert_rad_to_deg(angle.dval() / get_viewport_zoom().zoom_factor()),
+			GPlatesMaths::convert_rad_to_deg(angle.dval()),
 			0);
 
 	// Convert the pan in the view frame to a pan in the map frame.
@@ -335,7 +347,7 @@ GPlatesGui::MapCamera::pan_right(
 
 void
 GPlatesGui::MapCamera::rotate_anticlockwise(
-		const GPlatesMaths::real_t &angle,
+		GPlatesMaths::real_t angle,
 		bool only_emit_if_changed)
 {
 	set_rotation_angle(
@@ -346,7 +358,7 @@ GPlatesGui::MapCamera::rotate_anticlockwise(
 
 void
 GPlatesGui::MapCamera::tilt_more(
-		const GPlatesMaths::real_t &angle,
+		GPlatesMaths::real_t angle,
 		bool only_emit_if_changed)
 {
 	set_tilt_angle(
