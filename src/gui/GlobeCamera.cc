@@ -47,7 +47,8 @@ const double GPlatesGui::GlobeCamera::FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIE
 //   Y points right
 //   X points out of the screen
 //
-// We set up our initial camera look-at position where the globe (unit sphere) intersects the positive x-axis.
+// We set up our initial camera look-at position where the globe (unit sphere) intersects the positive x-axis
+// (this is latitude 0 and longitude 0).
 // We set up our initial camera view direction to look down the negative x-axis.
 // We set up our initial camera 'up' direction along the z-axis.
 //
@@ -124,6 +125,18 @@ GPlatesGui::GlobeCamera::get_up_direction() const
 }
 
 
+GPlatesMaths::UnitVector3D
+GPlatesGui::GlobeCamera::get_un_tilted_up_direction() const
+{
+	if (!d_cached_view_frame)
+	{
+		cache_view_frame();
+	}
+
+	return d_cached_view_frame->un_tilted_up_direction;
+}
+
+
 void
 GPlatesGui::GlobeCamera::set_view_orientation(
 		const GPlatesMaths::Rotation &view_orientation,
@@ -178,17 +191,15 @@ GPlatesGui::GlobeCamera::reorient_up_direction(
 		GPlatesMaths::real_t reorientation_angle,
 		bool only_emit_if_changed)
 {
-	// Rotate the view around the view direction.
-	// It's negated so that it points towards the camera (from globe centre).
+	// Rotate the view around the look-at position.
 	// This works regardless of whether the view is tilted or not.
-	const GPlatesMaths::UnitVector3D &rotation_axis = -get_view_direction();
+	const GPlatesMaths::UnitVector3D rotation_axis = get_look_at_position_on_globe().position_vector();
 
 	const GPlatesMaths::Vector3D vertical_orientation_unnormalised =
 			cross(GPlatesMaths::UnitVector3D::zBasis()/*North pole*/, rotation_axis);
 	if (vertical_orientation_unnormalised.is_zero_magnitude())
 	{
-		// The position on the globe from origin to globe surface along negative view direction
-		// happens to be the North pole. So we cannot reorient, hence do nothing and return.
+		// The look-at position happens to be the North pole. So we cannot reorient, hence do nothing and return.
 		
 		if (!only_emit_if_changed)
 		{
@@ -200,8 +211,7 @@ GPlatesGui::GlobeCamera::reorient_up_direction(
 	}
 	const GPlatesMaths::UnitVector3D vertical_orientation = vertical_orientation_unnormalised.get_normalisation();
 
-	const GPlatesMaths::UnitVector3D current_orientation =
-			cross(get_view_direction(), get_up_direction()).get_normalisation();
+	const GPlatesMaths::UnitVector3D current_orientation = cross(get_un_tilted_up_direction(), rotation_axis).get_normalisation();
 
 	// Current orientation angle.
 	GPlatesMaths::real_t current_orientation_angle = acos(dot(current_orientation, vertical_orientation));
@@ -632,5 +642,5 @@ GPlatesGui::GlobeCamera::cache_view_frame() const
 	const GPlatesMaths::UnitVector3D tilted_view_direction = tilt_rotation * un_tilted_view_direction;
 	const GPlatesMaths::UnitVector3D tilted_up_direction = tilt_rotation * un_tilted_up_direction;
 
-	d_cached_view_frame = ViewFrame(look_at_position, tilted_view_direction, tilted_up_direction);
+	d_cached_view_frame = ViewFrame(look_at_position, tilted_view_direction, tilted_up_direction, un_tilted_up_direction);
 }

@@ -52,7 +52,7 @@ namespace GPlatesGui
 	{
 	public:
 		/**
-		 * At the initial zoom, and untilted view, the smaller dimension of the viewport will be
+		 * At the initial zoom, and un-tilted view, the smaller dimension of the viewport will be
 		 * @a FRAMING_RATIO_OF_GLOBE_IN_ORTHOGRAPHIC_VIEWPORT times the diameter of the globe
 		 * (in the orthographic projection). This creates a little space between the globe circumference
 		 * and the viewport. When the viewport is resized, the globe will be scaled accordingly.
@@ -419,15 +419,19 @@ namespace GPlatesGui
 			ViewFrame(
 					const GPlatesMaths::PointOnSphere &look_at_position_,
 					const GPlatesMaths::UnitVector3D &view_direction_,
-					const GPlatesMaths::UnitVector3D &up_direction_) :
+					const GPlatesMaths::UnitVector3D &up_direction_,
+					const GPlatesMaths::UnitVector3D &un_tilted_up_direction_) :
 				look_at_position(look_at_position_),
 				view_direction(view_direction_),
-				up_direction(up_direction_)
+				up_direction(up_direction_),
+				un_tilted_up_direction(un_tilted_up_direction_)
 			{  }
 
 			GPlatesMaths::PointOnSphere look_at_position;
-			GPlatesMaths::UnitVector3D view_direction;
-			GPlatesMaths::UnitVector3D up_direction;
+			GPlatesMaths::UnitVector3D view_direction;  // tilted view direction
+			GPlatesMaths::UnitVector3D up_direction;    // tilted up direction
+
+			GPlatesMaths::UnitVector3D un_tilted_up_direction;
 		};
 
 
@@ -470,6 +474,12 @@ namespace GPlatesGui
 		{
 			d_cached_view_frame = boost::none;
 		}
+
+		/**
+		 * The *un-tilted* 'up' vector for the view orientation (before it is tilted).
+		 */
+		GPlatesMaths::UnitVector3D
+		get_un_tilted_up_direction() const;
 
 
 		/**
