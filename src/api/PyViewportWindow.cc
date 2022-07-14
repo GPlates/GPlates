@@ -141,7 +141,7 @@ namespace GPlatesApi
 		{
 			DISPATCH_GUI_FUN<void>(boost::bind(&ViewportWindow::reset_camera_orientation, this));
 
-			d_scene_view.get_camera().reorient_up_direction();
+			d_scene_view.get_camera().set_rotation_angle(0);
 		}
 
 		void

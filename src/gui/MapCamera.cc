@@ -289,15 +289,6 @@ GPlatesGui::MapCamera::set_tilt_angle(
 
 
 void
-GPlatesGui::MapCamera::reorient_up_direction(
-		GPlatesMaths::real_t reorientation_angle,
-		bool only_emit_if_changed)
-{
-	set_rotation_angle(reorientation_angle, only_emit_if_changed);
-}
-
-
-void
 GPlatesGui::MapCamera::pan_up(
 		GPlatesMaths::real_t angle,
 		bool scale_by_viewport_zoom,

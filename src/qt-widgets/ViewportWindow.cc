@@ -1481,7 +1481,7 @@ GPlatesQtWidgets::ViewportWindow::handle_rotate_camera_anticlockwise()
 void
 GPlatesQtWidgets::ViewportWindow::handle_reset_camera_orientation()
 {
-	d_reconstruction_view_widget_ptr->get_active_camera().reorient_up_direction();
+	d_reconstruction_view_widget_ptr->get_active_camera().set_rotation_angle(0);
 }
 
 void

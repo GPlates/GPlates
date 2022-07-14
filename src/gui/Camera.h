@@ -182,6 +182,38 @@ namespace GPlatesGui
 
 
 		/**
+		 * The angle (in radians), around the look-at position, of the un-tilted camera "up" direction
+		 * relative to the direction of the North pole.
+		 *
+		 * A positive rotation angle indicates a rotation *anti-clockwise* relative to North.
+		 */
+		virtual
+		GPlatesMaths::real_t
+		get_rotation_angle() const = 0;
+
+		/**
+		 * Rotate the view so that the camera un-tilted "up" direction has an angle, around the look-at position,
+		 * of @a rotation_angle radians relative to the direction of the North pole.
+		 *
+		 * A positive rotation angle indicates a rotation *anti-clockwise* relative to North.
+		 *
+		 * Note: An *anti-clockwise* rotation of camera (relative to North) causes the globe/map to
+		 *       rotate *clockwise* relative to the camera (and vice versa).
+		 *
+		 * Note: This is a rotation of the moving camera around the fixed globe/map.
+		 *       We don't actually rotate the globe/map, instead rotating the view frame
+		 *       (look-at position and view/up directions) to achieve the same effect.
+		 *
+		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
+		 */
+		virtual
+		void
+		set_rotation_angle(
+				GPlatesMaths::real_t rotation_angle,
+				bool only_emit_if_changed = true) = 0;
+
+
+		/**
 		 * The angle (in radians) that the view direction tilts.
 		 *
 		 * The tilt angle is clamped to the range [0, PI/2].
@@ -207,22 +239,6 @@ namespace GPlatesGui
 		void
 		set_tilt_angle(
 				GPlatesMaths::real_t tilt_angle,
-				bool only_emit_if_changed = true) = 0;
-
-
-		/**
-		 * Rotate the view so that the "up" direction points towards the North pole when @a reorientation_angle is zero.
-		 *
-		 * @a reorientation_angle, in radians, is [0, PI] for anti-clockwise view orientation with respect
-		 * to North pole (note map appears to rotate clockwise relative to camera), and [0,-PI] for
-		 * clockwise view orientation (note map appears to rotate anti-clockwise relative to camera).
-		 *
-		 * Note that this does not change the current tilt angle.
-		 */
-		virtual
-		void
-		reorient_up_direction(
-				GPlatesMaths::real_t reorientation_angle = 0,
 				bool only_emit_if_changed = true) = 0;
 
 

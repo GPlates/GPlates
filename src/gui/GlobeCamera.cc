@@ -157,6 +157,59 @@ GPlatesGui::GlobeCamera::set_view_orientation(
 }
 
 
+GPlatesMaths::real_t
+GPlatesGui::GlobeCamera::get_rotation_angle() const
+{
+	// The rotation angle is around the look-at position.
+	// This works regardless of whether the view is tilted or not.
+	const GPlatesMaths::UnitVector3D rotation_axis = get_look_at_position_on_globe().position_vector();
+
+	const GPlatesMaths::Vector3D vertical_orientation_unnormalised =
+			cross(GPlatesMaths::UnitVector3D::zBasis()/*North pole*/, rotation_axis);
+	if (vertical_orientation_unnormalised.is_zero_magnitude())
+	{
+		// The look-at position happens to be the North pole.
+		// So arbitrarily choose zero to be the rotation angle.
+		return 0;
+	}
+	const GPlatesMaths::UnitVector3D vertical_orientation = vertical_orientation_unnormalised.get_normalisation();
+
+	const GPlatesMaths::UnitVector3D current_orientation = cross(get_un_tilted_up_direction(), rotation_axis).get_normalisation();
+
+	// Current orientation angle relative to North.
+	GPlatesMaths::real_t current_orientation_angle = acos(dot(current_orientation, vertical_orientation));
+
+	// A positive rotation angle indicates a rotation *anti-clockwise* relative to North.
+	// So negate if camera should be rotated *clockwise* relative to North.
+	if (dot(current_orientation, cross(rotation_axis, vertical_orientation)).dval() < 0)
+	{
+		current_orientation_angle = -current_orientation_angle;
+	}
+
+	return current_orientation_angle;
+}
+
+
+void
+GPlatesGui::GlobeCamera::set_rotation_angle(
+		GPlatesMaths::real_t rotation_angle,
+		bool only_emit_if_changed)
+{
+	// The rotation angle is around the look-at position.
+	// This works regardless of whether the view is tilted or not.
+	const GPlatesMaths::UnitVector3D rotation_axis = get_look_at_position_on_globe().position_vector();
+
+	// If there's a difference between the desired angle and the current angle then we'll need to rotate.
+	// For example, if current angle is -1.0 and desired angle is 0 then we rotate 1.0 radians (anti-clockwise)).
+	const GPlatesMaths::real_t reorient_rotation_angle = rotation_angle - get_rotation_angle();
+
+	const GPlatesMaths::Rotation reorient_rotation =
+			GPlatesMaths::Rotation::create(rotation_axis, reorient_rotation_angle);
+
+	set_view_orientation(reorient_rotation * get_view_orientation(), only_emit_if_changed);
+}
+
+
 void
 GPlatesGui::GlobeCamera::set_tilt_angle(
 		GPlatesMaths::real_t tilt_angle,
@@ -183,52 +236,6 @@ GPlatesGui::GlobeCamera::set_tilt_angle(
 	invalidate_view_frame();
 
 	Q_EMIT camera_changed();
-}
-
-
-void
-GPlatesGui::GlobeCamera::reorient_up_direction(
-		GPlatesMaths::real_t reorientation_angle,
-		bool only_emit_if_changed)
-{
-	// Rotate the view around the look-at position.
-	// This works regardless of whether the view is tilted or not.
-	const GPlatesMaths::UnitVector3D rotation_axis = get_look_at_position_on_globe().position_vector();
-
-	const GPlatesMaths::Vector3D vertical_orientation_unnormalised =
-			cross(GPlatesMaths::UnitVector3D::zBasis()/*North pole*/, rotation_axis);
-	if (vertical_orientation_unnormalised.is_zero_magnitude())
-	{
-		// The look-at position happens to be the North pole. So we cannot reorient, hence do nothing and return.
-		
-		if (!only_emit_if_changed)
-		{
-			// Client wants this signal emitted regardless.
-			Q_EMIT camera_changed();
-		}
-
-		return;
-	}
-	const GPlatesMaths::UnitVector3D vertical_orientation = vertical_orientation_unnormalised.get_normalisation();
-
-	const GPlatesMaths::UnitVector3D current_orientation = cross(get_un_tilted_up_direction(), rotation_axis).get_normalisation();
-
-	// Current orientation angle.
-	GPlatesMaths::real_t current_orientation_angle = acos(dot(current_orientation, vertical_orientation));
-
-	// Rotation angles go clockwise around rotation axis, so negate when going anti-clockwise.
-	if (dot(current_orientation, cross(rotation_axis, vertical_orientation)).dval() < 0)
-	{
-		current_orientation_angle = -current_orientation_angle;
-	}
-
-	// If there's a difference between the desired angle and the current angle then we'll need to rotate.
-	const GPlatesMaths::real_t reorient_rotation_angle = reorientation_angle - current_orientation_angle;
-
-	const GPlatesMaths::Rotation reorient_rotation =
-			GPlatesMaths::Rotation::create(rotation_axis, reorient_rotation_angle);
-
-	set_view_orientation(reorient_rotation * get_view_orientation(), only_emit_if_changed);
 }
 
 
