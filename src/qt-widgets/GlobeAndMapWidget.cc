@@ -45,23 +45,18 @@
 
 #include "presentation/ViewState.h"
 
-// Fresh GlobeAndMapWidget
+
 GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_) :
 	QWidget(parent_),
 	d_view_state(view_state),
-	d_globe_canvas_ptr(
-			new GlobeCanvas(
-				d_view_state,
-				this)),
-	d_map_canvas_ptr(
-			new MapCanvas(
-				d_view_state,
-				*d_globe_canvas_ptr,
-				this)),
+	d_globe_canvas_ptr(new GlobeCanvas(d_view_state, this)),
+	d_map_canvas_ptr(new MapCanvas(d_view_state, *d_globe_canvas_ptr, this)),
 	d_layout(new QStackedLayout(this)),
 	d_active_view_ptr(d_globe_canvas_ptr.get()),
+	d_active_camera_view_orientation(GPlatesMaths::Rotation::create_identity_rotation()),
+	d_active_camera_view_tilt(0),
 	d_zoom_enabled(true)
 {
 	// Add the globe and the map to this widget.
@@ -151,9 +146,10 @@ void
 GPlatesQtWidgets::GlobeAndMapWidget::about_to_change_projection(
 		const GPlatesGui::Projection &projection)
 {
-	// Save the camera position of the currently active view before we potentially change
+	// Save the camera view orientation and tilt of the currently active view before we potentially change
 	// to a different view (eg, globe to map view or vice versa).
-	d_active_camera_viewpoint = get_active_camera().get_look_at_position_on_globe();
+	d_active_camera_view_orientation = get_active_camera().get_view_orientation();
+	d_active_camera_view_tilt = get_active_camera().get_tilt_angle();
 }
 
 
@@ -186,11 +182,9 @@ GPlatesQtWidgets::GlobeAndMapWidget::change_projection(
 	// Set the camera viewport projection (orthographic/perspective).
 	d_active_view_ptr->get_camera().set_viewport_projection(viewport_projection);
 
-	// Set the camera look-at position.
-	if (d_active_camera_viewpoint)
-	{
-		d_active_view_ptr->get_camera().move_look_at_position_on_globe(d_active_camera_viewpoint.get());
-	}
+	// Set the camera view orientation (look-at position and orientation around it) and tilt.
+	d_active_view_ptr->get_camera().set_view_orientation(d_active_camera_view_orientation);
+	d_active_view_ptr->get_camera().set_tilt_angle(d_active_camera_view_tilt);
 
 	d_active_view_ptr->update_canvas();
 

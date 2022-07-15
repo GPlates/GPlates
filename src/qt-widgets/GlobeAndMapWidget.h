@@ -37,6 +37,8 @@
 #include "global/PointerTraits.h"
 
 #include "maths/PointOnSphere.h"
+#include "maths/Rotation.h"
+#include "maths/types.h"
 
 #include "view-operations/QueryProximityThreshold.h"
 
@@ -253,11 +255,16 @@ namespace GPlatesQtWidgets
 		SceneView *d_active_view_ptr;
 
 		/**
-		 * The camera position of the currently active view.
+		 * The camera view orientation of the currently active view.
 		 *
-		 * Is boost::none if unable to retrieve the camera position from the currently active view.
+		 * The view orientation is the combined camera look-at position and the orientation rotation around that look-at position.
 		 */
-		boost::optional<GPlatesMaths::PointOnSphere> d_active_camera_viewpoint;
+		GPlatesMaths::Rotation d_active_camera_view_orientation;
+
+		/**
+		 * The camera tilt of the currently active view.
+		 */
+		GPlatesMaths::real_t d_active_camera_view_tilt;
 
 		/**
 		 * Whether zooming (via mouse wheel or pinch gesture) is enabled.
