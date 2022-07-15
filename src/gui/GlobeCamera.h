@@ -66,27 +66,6 @@ namespace GPlatesGui
 				ViewportProjection::Type viewport_projection,
 				ViewportZoom &viewport_zoom);
 
-		/**
-		 * The position on the globe that the view is looking at.
-		 */
-		GPlatesMaths::PointOnSphere
-		get_look_at_position_on_globe() const override;
-
-		/**
-		 * Rotate the current look-at position to the specified look-at position along the
-		 * great circle arc between them.
-		 *
-		 * The view and up directions are rotated by same rotation as look-at position.
-		 *
-		 * Note that this does not change the current tilt angle.
-		 *
-		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
-		 */
-		void
-		move_look_at_position_on_globe(
-				const GPlatesMaths::PointOnSphere &look_at_position_on_globe,
-				bool only_emit_if_changed = true) override;
-
 
 		/**
 		 * Same as @a get_look_at_position_on_globe but returned as a Vector3D.
@@ -110,15 +89,32 @@ namespace GPlatesGui
 
 
 		/**
-		 * The camera orientation (excluding tilt).
-		 *
-		 * This is the rotation of the moving camera around the fixed globe.
-		 *
-		 * Note that we don't actually rotate the globe, instead rotating the view frame
-		 * (look-at position and view/up directions) to achieve the same effect.
+		 * The position on the globe that the view is looking at.
 		 */
-		const GPlatesMaths::Rotation &
-		get_view_orientation() const
+		GPlatesMaths::PointOnSphere
+		get_look_at_position_on_globe() const override;
+
+		/**
+		 * Rotate the current look-at position to the specified look-at position along the
+		 * great circle arc between them.
+		 *
+		 * The view and up directions are rotated by same rotation as look-at position.
+		 *
+		 * Note that this does not change the current tilt angle.
+		 *
+		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
+		 */
+		void
+		move_look_at_position_on_globe(
+				const GPlatesMaths::PointOnSphere &look_at_position_on_globe,
+				bool only_emit_if_changed = true) override;
+
+
+		/**
+		 * The camera orientation (excluding tilt).
+		 */
+		GPlatesMaths::Rotation
+		get_view_orientation() const override
 		{
 			return d_view_orientation;
 		}
@@ -133,7 +129,7 @@ namespace GPlatesGui
 		void
 		set_view_orientation(
 				const GPlatesMaths::Rotation &view_orientation,
-				bool only_emit_if_changed = true);
+				bool only_emit_if_changed = true) override;
 
 
 		/**
@@ -141,6 +137,8 @@ namespace GPlatesGui
 		 * relative to the direction of the North pole.
 		 *
 		 * A positive rotation angle indicates a rotation *anti-clockwise* relative to North.
+		 *
+		 * This is obtained indirectly from the camera by extraction from its view orientation.
 		 */
 		GPlatesMaths::real_t
 		get_rotation_angle() const override;
@@ -157,6 +155,9 @@ namespace GPlatesGui
 		 * Note: This is a rotation of the moving camera around the fixed globe.
 		 *       We don't actually rotate the globe, instead rotating the view frame
 		 *       (look-at position and view/up directions) to achieve the same effect.
+		 *
+		 * This is set indirectly in the camera first by extracting a rotation angle from its view orientation and
+		 * comparing to the specified rotation angle, and then adjusting its view orientation accordingly.
 		 *
 		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
 		 */
@@ -402,19 +403,15 @@ namespace GPlatesGui
 			ViewFrame(
 					const GPlatesMaths::PointOnSphere &look_at_position_,
 					const GPlatesMaths::UnitVector3D &view_direction_,
-					const GPlatesMaths::UnitVector3D &up_direction_,
-					const GPlatesMaths::UnitVector3D &un_tilted_up_direction_) :
+					const GPlatesMaths::UnitVector3D &up_direction_) :
 				look_at_position(look_at_position_),
 				view_direction(view_direction_),
-				up_direction(up_direction_),
-				un_tilted_up_direction(un_tilted_up_direction_)
+				up_direction(up_direction_)
 			{  }
 
 			GPlatesMaths::PointOnSphere look_at_position;
 			GPlatesMaths::UnitVector3D view_direction;  // tilted view direction
 			GPlatesMaths::UnitVector3D up_direction;    // tilted up direction
-
-			GPlatesMaths::UnitVector3D un_tilted_up_direction;
 		};
 
 
@@ -457,12 +454,6 @@ namespace GPlatesGui
 		{
 			d_cached_view_frame = boost::none;
 		}
-
-		/**
-		 * The *un-tilted* 'up' vector for the view orientation (before it is tilted).
-		 */
-		GPlatesMaths::UnitVector3D
-		get_un_tilted_up_direction() const;
 
 
 		/**

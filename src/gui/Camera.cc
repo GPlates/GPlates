@@ -53,6 +53,13 @@ const double GPlatesGui::Camera::PERSPECTIVE_FIELD_OF_VIEW_DEGREES = 70.0;
 const double GPlatesGui::Camera::TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW =
 		std::tan(GPlatesMaths::convert_deg_to_rad(GPlatesGui::Camera::PERSPECTIVE_FIELD_OF_VIEW_DEGREES) / 2.0);
 
+// Initial position on the globe that the camera looks at (ie, in globe view only).
+// Note that this is at a (latitude, longitude) of (0, 0).
+const GPlatesMaths::PointOnSphere GPlatesGui::Camera::INITIAL_LOOK_AT_POSITION_ON_GLOBE(GPlatesMaths::UnitVector3D(1, 0, 0));
+// Initial up direction (orthogonal to view direction) of globe camera (ie, in globe view only).
+// Note that 'z' points up in the globe view.
+const GPlatesMaths::UnitVector3D GPlatesGui::Camera::INITIAL_UP_DIRECTION_ON_GLOBE(0, 0, 1);
+
 
 GPlatesGui::Camera::Camera(
 		ViewportProjection::Type viewport_projection,
@@ -567,6 +574,72 @@ GPlatesGui::Camera::get_perspective_tan_half_fovy(
 
 		return TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW * fovy_increase_factor;
 	}
+}
+
+
+GPlatesMaths::Rotation
+GPlatesGui::Camera::get_view_orientation_from_look_at_position_and_rotation_angle(
+		const GPlatesMaths::PointOnSphere &look_at_position,
+		GPlatesMaths::real_t rotation_angle)
+{
+	// Great circle arc rotation from initial look-at position to specified look-at position.
+	// This is a view orientation that is not yet rotated by the specified rotation angle (around look-at position).
+	const GPlatesMaths::Rotation unoriented_view_orientation = GPlatesMaths::Rotation::create(
+			INITIAL_LOOK_AT_POSITION_ON_GLOBE,
+			look_at_position);
+
+	const GPlatesMaths::real_t unoriented_rotation_angle =
+			get_look_at_position_and_rotation_angle_from_view_orientation(unoriented_view_orientation).second;
+
+	// If there's a difference between the desired rotation angle and the unoriented rotation angle then we'll need to rotate.
+	// For example, if unoriented angle is -1.0 and desired angle is 0 then we rotate 1.0 radians (anti-clockwise)).
+	const GPlatesMaths::real_t reorient_rotation_angle = rotation_angle - unoriented_rotation_angle;
+
+	// The rotation angle is around the look-at position.
+	// This works regardless of whether the view is tilted or not.
+	const GPlatesMaths::UnitVector3D &rotation_axis = look_at_position.position_vector();
+	const GPlatesMaths::Rotation reorient_rotation = GPlatesMaths::Rotation::create(rotation_axis, reorient_rotation_angle);
+
+	// The unoriented view orientation moves initial look-at to specified look-at, followed by the
+	// reorient rotation that rotates around the specified look-at to orient view frame relative North
+	// according to the specified rotation angle.
+	return reorient_rotation * unoriented_view_orientation;
+}
+
+
+std::pair<GPlatesMaths::PointOnSphere/*look-at position*/, GPlatesMaths::real_t/*rotation angle*/>
+GPlatesGui::Camera::get_look_at_position_and_rotation_angle_from_view_orientation(
+		const GPlatesMaths::Rotation &view_orientation)
+{
+	// The rotation angle is around the look-at position.
+	// This works regardless of whether the view is tilted or not.
+	const GPlatesMaths::PointOnSphere look_at_position_on_globe = view_orientation * INITIAL_LOOK_AT_POSITION_ON_GLOBE;
+	const GPlatesMaths::UnitVector3D &rotation_axis = look_at_position_on_globe.position_vector();
+
+	const GPlatesMaths::Vector3D vertical_orientation_unnormalised =
+			cross(GPlatesMaths::UnitVector3D::zBasis()/*North pole*/, rotation_axis);
+	if (vertical_orientation_unnormalised.is_zero_magnitude())
+	{
+		// The look-at position happens to be the North pole.
+		// So arbitrarily choose zero to be the rotation angle.
+		return std::make_pair(look_at_position_on_globe, 0);
+	}
+	const GPlatesMaths::UnitVector3D vertical_orientation = vertical_orientation_unnormalised.get_normalisation();
+
+	const GPlatesMaths::UnitVector3D un_tilted_up_direction_on_globe = view_orientation * INITIAL_UP_DIRECTION_ON_GLOBE;
+	const GPlatesMaths::UnitVector3D current_orientation = cross(un_tilted_up_direction_on_globe, rotation_axis).get_normalisation();
+
+	// Current orientation angle relative to North.
+	GPlatesMaths::real_t current_orientation_angle = acos(dot(current_orientation, vertical_orientation));
+
+	// A positive rotation angle indicates a rotation *anti-clockwise* relative to North.
+	// So negate if camera should be rotated *clockwise* relative to North.
+	if (dot(current_orientation, cross(rotation_axis, vertical_orientation)).dval() < 0)
+	{
+		current_orientation_angle = -current_orientation_angle;
+	}
+
+	return std::make_pair(look_at_position_on_globe, current_orientation_angle);
 }
 
 

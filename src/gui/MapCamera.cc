@@ -89,6 +89,38 @@ GPlatesGui::MapCamera::MapCamera(
 }
 
 
+GPlatesMaths::Vector3D
+GPlatesGui::MapCamera::get_look_at_position() const
+{
+	const QPointF &position_on_map = get_look_at_position_on_map();
+	return GPlatesMaths::Vector3D(position_on_map.x(), position_on_map.y(), 0);
+}
+
+
+GPlatesMaths::UnitVector3D
+GPlatesGui::MapCamera::get_view_direction() const
+{
+	if (!d_cached_view_frame)
+	{
+		cache_view_frame();
+	}
+
+	return d_cached_view_frame->view_direction;
+}
+
+
+GPlatesMaths::UnitVector3D
+GPlatesGui::MapCamera::get_up_direction() const
+{
+	if (!d_cached_view_frame)
+	{
+		cache_view_frame();
+	}
+
+	return d_cached_view_frame->up_direction;
+}
+
+
 const QPointF &
 GPlatesGui::MapCamera::get_look_at_position_on_map() const
 {
@@ -151,10 +183,10 @@ GPlatesGui::MapCamera::move_look_at_position_on_map(
 		return;
 	}
 
-	// Update the position on globe.
+	// Update the look-at position on globe.
 	d_look_at_position_on_globe = look_at_position_on_globe.get();
 
-	// Update the position on map.
+	// Update the look-at position on map.
 	d_look_at_position_on_map.set(
 			look_at_position_on_map,
 			d_map_projection.get_projection_settings());
@@ -195,10 +227,10 @@ GPlatesGui::MapCamera::move_look_at_position_on_globe(
 		return;
 	}
 
-	// Update the position on globe.
+	// Update the look-at position on globe.
 	d_look_at_position_on_globe = look_at_position_on_globe;
 
-	// Update the position on map.
+	// Update the look-at position on map.
 	d_look_at_position_on_map.set(
 			look_at_position_on_map,
 			d_map_projection.get_projection_settings());
@@ -207,35 +239,61 @@ GPlatesGui::MapCamera::move_look_at_position_on_globe(
 }
 
 
-GPlatesMaths::Vector3D
-GPlatesGui::MapCamera::get_look_at_position() const
+GPlatesMaths::Rotation
+GPlatesGui::MapCamera::get_view_orientation() const
 {
-	const QPointF &position_on_map = get_look_at_position_on_map();
-	return GPlatesMaths::Vector3D(position_on_map.x(), position_on_map.y(), 0);
+	return get_view_orientation_from_look_at_position_and_rotation_angle(
+			get_look_at_position_on_globe(),
+			get_rotation_angle());
 }
 
 
-GPlatesMaths::UnitVector3D
-GPlatesGui::MapCamera::get_view_direction() const
+void
+GPlatesGui::MapCamera::set_view_orientation(
+		const GPlatesMaths::Rotation &view_orientation,
+		bool only_emit_if_changed)
 {
-	if (!d_cached_view_frame)
+	// Before we access the current look-at position on *map* check that it's valid (in case map projection changed).
+	// This is because calling "get_look_at_position_on_map()" will update it with the new map projection.
+	const bool is_look_at_position_on_map_valid =
+			d_look_at_position_on_map.is_valid(d_map_projection.get_projection_settings());
+
+	// Convert the view orientation into a look-at position and a rotation angle (relative to North).
+	const std::pair<GPlatesMaths::PointOnSphere, GPlatesMaths::real_t> look_at_position_and_rotation_angle =
+			get_look_at_position_and_rotation_angle_from_view_orientation(view_orientation);
+
+	const GPlatesMaths::PointOnSphere &look_at_position_on_globe = look_at_position_and_rotation_angle.first;
+	const GPlatesMaths::real_t rotation_angle = look_at_position_and_rotation_angle.second;
+
+	// The look-at position on *map* corresponding to specified look-at position on *globe*.
+	// This will use the current map projection.
+	const QPointF look_at_position_on_map = convert_position_on_globe_to_map(look_at_position_on_globe);
+
+	if (only_emit_if_changed &&
+		look_at_position_on_globe == d_look_at_position_on_globe &&
+		// It's possible the look-at position on *globe* has not changed but the map projection has.
+		// In which case the look-at position on *map* will have changed.
+		//
+		// Can only compare current and new look-at positions on *map* if they're in the same map projection...
+		(is_look_at_position_on_map_valid && (look_at_position_on_map == get_look_at_position_on_map())) &&
+		rotation_angle == d_rotation_angle)
 	{
-		cache_view_frame();
+		return;
 	}
 
-	return d_cached_view_frame->view_direction;
-}
+	// Update the look-at position on globe.
+	d_look_at_position_on_globe = look_at_position_on_globe;
+	// Update the look-at position on map.
+	d_look_at_position_on_map.set(
+			look_at_position_on_map,
+			d_map_projection.get_projection_settings());
 
+	// Update the rotation angle.
+	d_rotation_angle = rotation_angle;
+	// Invalidate view frame - it now needs updating.
+	invalidate_view_frame();
 
-GPlatesMaths::UnitVector3D
-GPlatesGui::MapCamera::get_up_direction() const
-{
-	if (!d_cached_view_frame)
-	{
-		cache_view_frame();
-	}
-
-	return d_cached_view_frame->up_direction;
+	Q_EMIT camera_changed();
 }
 
 

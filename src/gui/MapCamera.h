@@ -61,6 +61,27 @@ namespace GPlatesGui
 
 
 		/**
+		 * Same as @a get_look_at_position_on_map but returned as a position in 3D space.
+		 */
+		GPlatesMaths::Vector3D
+		get_look_at_position() const override;
+
+		/**
+		 * The view direction.
+		 *
+		 * For perspective viewing this is from the eye position to the look-at position.
+		 */
+		GPlatesMaths::UnitVector3D
+		get_view_direction() const override;
+
+		/**
+		 * The 'up' vector for the view orientation.
+		 */
+		GPlatesMaths::UnitVector3D
+		get_up_direction() const override;
+
+
+		/**
 		 * The position on the map (z=0 plane) that the view is looking at.
 		 */
 		const QPointF &
@@ -109,24 +130,26 @@ namespace GPlatesGui
 
 
 		/**
-		 * Same as @a get_look_at_position_on_map but returned as a position in 3D space.
-		 */
-		GPlatesMaths::Vector3D
-		get_look_at_position() const override;
-
-		/**
-		 * The view direction.
+		 * The camera view orientation (excluding tilt).
 		 *
-		 * For perspective viewing this is from the eye position to the look-at position.
+		 * This is obtained indirectly by combining the look-at position and rotation angle.
 		 */
-		GPlatesMaths::UnitVector3D
-		get_view_direction() const override;
+		GPlatesMaths::Rotation
+		get_view_orientation() const override;
 
 		/**
-		 * The 'up' vector for the view orientation.
+		 * Set the camera view orientation (excluding tilt).
+		 *
+		 * This is set indirectly in the camera by first extracting a look-at position and rotation angle.
+		 *
+		 * Note that this does not change the current tilt angle.
+		 *
+		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
 		 */
-		GPlatesMaths::UnitVector3D
-		get_up_direction() const override;
+		void
+		set_view_orientation(
+				const GPlatesMaths::Rotation &view_orientation,
+				bool only_emit_if_changed = true) override;
 
 
 		/**
@@ -134,6 +157,10 @@ namespace GPlatesGui
 		 * relative to the direction of the North pole.
 		 *
 		 * A positive rotation angle indicates a rotation *anti-clockwise* relative to North.
+		 *
+		 * Note: North is always along the global y-axis (from South to North).
+		 *       It is currently unaffected by the map projection's local North
+		 *       (at any local point along the map projection's curved line of longitude).
 		 */
 		GPlatesMaths::real_t
 		get_rotation_angle() const override
@@ -146,6 +173,10 @@ namespace GPlatesGui
 		 * of @a rotation_angle radians relative to the direction of the North pole.
 		 *
 		 * A positive rotation angle indicates a rotation *anti-clockwise* relative to North.
+		 *
+		 * Note: North is always along the global y-axis (from South to North).
+		 *       It is currently unaffected by the map projection's local North
+		 *       (at any local point along the map projection's curved line of longitude).
 		 *
 		 * Note: An *anti-clockwise* rotation of camera (relative to North) causes the map to
 		 *       rotate *clockwise* relative to the camera (and vice versa).

@@ -26,6 +26,7 @@
 #ifndef GPLATES_GUI_CAMERA_H
 #define GPLATES_GUI_CAMERA_H
 
+#include <utility>  // std::pair
 #include <boost/optional.hpp>
 #include <QObject>
 #include <QPointF>
@@ -33,6 +34,7 @@
 #include "ViewportProjectionType.h"
 
 #include "maths/PointOnSphere.h"
+#include "maths/Rotation.h"
 #include "maths/types.h"
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
@@ -56,10 +58,11 @@ namespace GPlatesGui
 	public:
 
 		/**
-		 * Default amount to pan, rotate or tilt the camera (in radians) in 'pan_*()', 'rotate_*()' and 'tilt_*()' methods.
+		 * Default amount to pan (when fully zoomed out), rotate or tilt the camera (in radians) in 'pan_*()', 'rotate_*()' and 'tilt_*()' methods.
 		 *
-		 * Note: Both *globe* and *map* cameras use radians. For the *map* camera you can think of the map extents
-		 *       (that bound the map projection) as being a rectangle of roughly 360 degrees horizontally and 180 degrees vertically.
+		 * Note: Both *globe* and *map* cameras use radians. For the *map* camera you can think of the map extents (that bound the map projection)
+		 *       as being a rectangle of roughly 360 degrees horizontally and 180 degrees vertically (this is actually what the Rectangular projection is,
+		 *       with the other map projections internally scaled to roughly match that).
 		 */
 		static const double DEFAULT_PAN_ROTATE_TILT_RADIANS;
 
@@ -102,37 +105,6 @@ namespace GPlatesGui
 		GPlatesOpenGL::GLMatrix
 		get_projection_transform(
 				const double &viewport_aspect_ratio) const;
-
-
-		/**
-		 * The position on the globe (unit sphere) that the view is looking at.
-		 *
-		 * Note: For the globe this is the same as @a get_look_at_position.
-		 *       For the map this is equivalent to the map-projection inverse of @a get_look_at_position
-		 *       (ie, the actual look-at position on the z=0 map plane inverse projected back onto the globe).
-		 */
-		virtual
-		GPlatesMaths::PointOnSphere
-		get_look_at_position_on_globe() const = 0;
-
-		/**
-		 * Move the current look-at position to the specified look-at position on the globe.
-		 *
-		 * For the globe this rotates the view along the great circle arc (on the globe) between the current and
-		 * new look-at positions. The view and up directions are rotated by same rotation as look-at position.
-		 *
-		 * For the map this pans the view along the line segment (on the map plane) between the
-		 * current and new look-at positions. The view and up directions are not changed.
-		 *
-		 * Note that this does not change the current tilt angle (in globe or map view).
-		 *
-		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
-		 */
-		virtual
-		void
-		move_look_at_position_on_globe(
-				const GPlatesMaths::PointOnSphere &look_at_position_on_globe,
-				bool only_emit_if_changed = true) = 0;
 
 
 		/**
@@ -182,10 +154,85 @@ namespace GPlatesGui
 
 
 		/**
+		 * The position on the globe (unit sphere) that the view is looking at.
+		 *
+		 * Note: For the globe this is the same as @a get_look_at_position.
+		 *       For the map this is equivalent to the map-projection inverse of @a get_look_at_position
+		 *       (ie, the actual look-at position on the z=0 map plane inverse projected back onto the globe).
+		 */
+		virtual
+		GPlatesMaths::PointOnSphere
+		get_look_at_position_on_globe() const = 0;
+
+		/**
+		 * Move the current look-at position to the specified look-at position on the globe.
+		 *
+		 * For the globe this rotates the view along the great circle arc (on the globe) between the current and
+		 * new look-at positions. The view and up directions are rotated by same rotation as look-at position.
+		 *
+		 * For the map this pans the view along the line segment (on the map plane) between the
+		 * current and new look-at positions. The view and up directions are not changed.
+		 *
+		 * Note that this does not change the current tilt angle (in globe or map view).
+		 *
+		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
+		 */
+		virtual
+		void
+		move_look_at_position_on_globe(
+				const GPlatesMaths::PointOnSphere &look_at_position_on_globe,
+				bool only_emit_if_changed = true) = 0;
+
+
+		/**
+		 * The camera view orientation (excluding tilt).
+		 *
+		 * Note that the view orientation encodes both the look-at position and the orientation of the view frame
+		 * (eg, "up" direction relative to North). This is because the view orientation is a globe rotation that rotates
+		 * both the initial look-at position on globe (to the current look-at position on globe) and the initial view frame
+		 * "view-direction" and "up" vectors (to their current orientation).
+		 *
+		 * The view orientation is obtained directly from the globe camera, but obtained indirectly from the map camera
+		 * (by combining its look-at position and rotation angle).
+		 */
+		virtual
+		GPlatesMaths::Rotation
+		get_view_orientation() const = 0;
+
+		/**
+		 * Set the camera view orientation (excluding tilt).
+		 *
+		 * Note that the view orientation encodes both the look-at position and the orientation of the view frame
+		 * (eg, "up" direction relative to North). This is because the view orientation is a globe rotation that rotates
+		 * both the initial look-at position on globe (to the current look-at position on globe) and the initial view frame
+		 * "view-direction" and "up" vectors (to their current orientation).
+		 *
+		 * The view orientation is set directly in the globe camera, but set indirectly in the map camera
+		 * (by extracting a look-at position and rotation angle from the view orientation).
+		 *
+		 * Note that this does not change the current tilt angle.
+		 *
+		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
+		 */
+		virtual
+		void
+		set_view_orientation(
+				const GPlatesMaths::Rotation &view_orientation,
+				bool only_emit_if_changed = true) = 0;
+
+
+		/**
 		 * The angle (in radians), around the look-at position, of the un-tilted camera "up" direction
 		 * relative to the direction of the North pole.
 		 *
 		 * A positive rotation angle indicates a rotation *anti-clockwise* relative to North.
+		 *
+		 * Note: For the map view North is always along the global y-axis (from South to North).
+		 *       It is currently unaffected by the map projection's local North
+		 *       (at any local point along the map projection's curved line of longitude).
+		 *
+		 * The rotation angle is obtained directly from the map camera, but obtained indirectly from the globe camera
+		 * (by extraction from its view orientation).
 		 */
 		virtual
 		GPlatesMaths::real_t
@@ -197,12 +244,20 @@ namespace GPlatesGui
 		 *
 		 * A positive rotation angle indicates a rotation *anti-clockwise* relative to North.
 		 *
+		 * Note: For the map view North is always along the global y-axis (from South to North).
+		 *       It is currently unaffected by the map projection's local North
+		 *       (at any local point along the map projection's curved line of longitude).
+		 *
 		 * Note: An *anti-clockwise* rotation of camera (relative to North) causes the globe/map to
 		 *       rotate *clockwise* relative to the camera (and vice versa).
 		 *
 		 * Note: This is a rotation of the moving camera around the fixed globe/map.
 		 *       We don't actually rotate the globe/map, instead rotating the view frame
 		 *       (look-at position and view/up directions) to achieve the same effect.
+		 *
+		 * The rotation angle is set directly in the map camera, but set indirectly in the globe camera
+		 * (by extracting a rotation angle from its view orientation and comparing to the specified
+		 * rotation angle, and then adjusting its view orientation accordingly).
 		 *
 		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
 		 */
@@ -541,6 +596,40 @@ namespace GPlatesGui
 
 
 		/**
+		 * Get the view orientation from the specified look-at position and rotation angle (in radians).
+		 *
+		 * The angle is of the rotation, around the look-at position, of the un-tilted camera "up" direction relative to the
+		 * direction of the North pole. A positive rotation angle indicates a rotation *anti-clockwise* relative to North.
+		 *
+		 * Note that the view orientation encodes both the look-at position and the orientation of
+		 * the view frame (eg, "up" direction relative to North). This is because the view orientation
+		 * is a globe rotation that rotates both the initial look-at position (to the current look-at position)
+		 * and the initial view frame "view-direction" and "up" vectors (to their current orientation).
+		 */
+		static
+		GPlatesMaths::Rotation
+		get_view_orientation_from_look_at_position_and_rotation_angle(
+				const GPlatesMaths::PointOnSphere &look_at_position,
+				GPlatesMaths::real_t rotation_angle);
+
+		/**
+		 * Get the look-at position and rotation angle (in radians) from the specified view orientation.
+		 *
+		 * The returned angle is of the rotation, around the look-at position, of the un-tilted camera "up" direction relative
+		 * to the direction of the North pole. A positive rotation angle indicates a rotation *anti-clockwise* relative to North.
+		 *
+		 * Note that the view orientation encodes both the look-at position and the orientation of
+		 * the view frame (eg, "up" direction relative to North). This is because the view orientation
+		 * is a globe rotation that rotates both the initial look-at position (to the current look-at position)
+		 * and the initial view frame "view-direction" and "up" vectors (to their current orientation).
+		 */
+		static
+		std::pair<GPlatesMaths::PointOnSphere/*look-at position*/, GPlatesMaths::real_t/*rotation angle*/>
+		get_look_at_position_and_rotation_angle_from_view_orientation(
+				const GPlatesMaths::Rotation &view_orientation);
+
+
+		/**
 		 * Angle of field-of-view for perspective projection.
 		 */
 		static const double PERSPECTIVE_FIELD_OF_VIEW_DEGREES;
@@ -549,6 +638,16 @@ namespace GPlatesGui
 		static const double TAN_HALF_PERSPECTIVE_FIELD_OF_VIEW;
 
 	private:
+
+		/**
+		 * The initial position on the globe that the camera looks at (ie, in globe view only).
+		 */
+		static const GPlatesMaths::PointOnSphere INITIAL_LOOK_AT_POSITION_ON_GLOBE;
+
+		/**
+		 * Initial up direction (orthogonal to view direction) of globe camera (ie, in globe view only).
+		 */
+		static const GPlatesMaths::UnitVector3D INITIAL_UP_DIRECTION_ON_GLOBE;
 
 		/**
 		 * The viewport projection (orthographic or perspective).
