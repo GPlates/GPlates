@@ -222,9 +222,10 @@ void
 GPlatesGui::Globe::get_globe_orientation_transform(
 		GPlatesOpenGL::GLMatrix &transform) const
 {
-	// TODO: Change this to 'view' orientation and investigate the effect of view tilt.
+	// The orientation of the fixed globe relative to the moving camera (excluding tilt).
+	// TODO: Investigate the effect of view tilt.
 	const GPlatesMaths::Rotation globe_orientation_relative_to_view =
-			d_view_state.get_globe_camera().get_globe_orientation_relative_to_view();
+			d_view_state.get_globe_camera().get_view_orientation().get_reverse();
 
 	const GPlatesMaths::UnitVector3D &axis = globe_orientation_relative_to_view.axis();
 	const GPlatesMaths::real_t angle_in_deg = GPlatesMaths::convert_rad_to_deg(

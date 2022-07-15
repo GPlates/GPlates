@@ -159,8 +159,9 @@ GPlatesQtWidgets::LightingWidget::react_light_direction_attached_to_view_frame_c
 	const bool light_direction_attached_to_view_frame =
 			light_direction_attached_to_view_frame_check_box->isChecked();
 
+	// Orientation of the fixed globe relative to the moving camera (excluding tilt).
 	const GPlatesMaths::Rotation &view_space_transform =
-			d_view_state.get_globe_camera().get_globe_orientation_relative_to_view();
+			d_view_state.get_globe_camera().get_view_orientation().get_reverse();
 
 	GPlatesGui::SceneLightingParameters &scene_lighting_parameters =
 			d_view_state.get_scene_lighting_parameters();

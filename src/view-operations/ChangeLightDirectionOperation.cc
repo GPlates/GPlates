@@ -179,7 +179,8 @@ GPlatesViewOperations::ChangeLightDirectionOperation::get_world_space_light_dire
 	return d_scene_lighting_parameters.is_light_direction_attached_to_view_frame()
 			? GPlatesGui::transform_globe_view_space_light_direction_to_world_space(
 					d_scene_lighting_parameters.get_globe_view_light_direction(),
-					d_globe_camera.get_globe_orientation_relative_to_view())
+					// Orientation of the fixed globe relative to the moving camera (excluding tilt)...
+					d_globe_camera.get_view_orientation().get_reverse())
 			: d_scene_lighting_parameters.get_globe_view_light_direction();
 }
 
@@ -225,7 +226,8 @@ GPlatesViewOperations::ChangeLightDirectionOperation::move_light_direction(
 		const GPlatesMaths::UnitVector3D view_space_light_direction =
 				GPlatesGui::transform_globe_world_space_light_direction_to_view_space(
 						world_space_light_direction,
-						d_globe_camera.get_globe_orientation_relative_to_view());
+						// Orientation of the fixed globe relative to the moving camera (excluding tilt)...
+						d_globe_camera.get_view_orientation().get_reverse());
 		d_scene_lighting_parameters.set_globe_view_light_direction(view_space_light_direction);
 	}
 	else

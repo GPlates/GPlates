@@ -124,27 +124,9 @@ namespace GPlatesGui
 		}
 
 		/**
-		 * The orientation of the fixed globe relative to the moving camera (excluding tilt).
-		 *
-		 * Even though the globe is fixed (in the global universe coordinate system) and the camera moves,
-		 * from the point of view of the camera it looks like the globe is rotating in the opposite direction
-		 * of camera movement.
-		 *
-		 * Note that we don't actually rotate the globe, instead rotating the view frame
-		 * (look-at position and view/up directions) to achieve the same effect.
-		 */
-		GPlatesMaths::Rotation
-		get_globe_orientation_relative_to_view() const
-		{
-			return d_view_orientation.get_reverse();
-		}
-
-		/**
 		 * Set the camera orientation (excluding tilt).
 		 *
 		 * Note that this does not change the current tilt angle.
-		 *
-		 * This sets the inverse orientation set by @a set_globe_orientation_relative_to_view.
 		 *
 		 * If @a only_emit_if_changed is true then only emits 'camera_changed' signal if camera changed.
 		 */
@@ -152,20 +134,6 @@ namespace GPlatesGui
 		set_view_orientation(
 				const GPlatesMaths::Rotation &view_orientation,
 				bool only_emit_if_changed = true);
-
-		/**
-		 * Set the orientation of the fixed globe relative to the moving camera (excluding tilt).
-		 *
-		 * Note that this does not change the current tilt angle.
-		 *
-		 * This sets the inverse orientation set by @a set_view_orientation.
-		 */
-		void
-		set_globe_orientation_relative_to_view(
-				const GPlatesMaths::Rotation &globe_orientation_relative_to_view)
-		{
-			set_view_orientation(globe_orientation_relative_to_view.get_reverse());
-		}
 
 
 		/**

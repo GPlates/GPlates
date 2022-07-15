@@ -433,13 +433,14 @@ GPlatesQtWidgets::GlobeCanvas::set_orientation(
 	//
 	// Note that this is the reverse of the camera orientation which is of the moving camera
 	// relative to the fixed globe.
-	d_globe_camera.set_globe_orientation_relative_to_view(orientation);
+	d_globe_camera.set_view_orientation(orientation.get_reverse());
 }
 
 GPlatesMaths::Rotation
 GPlatesQtWidgets::GlobeCanvas::get_orientation() const
 {
-	return d_globe_camera.get_globe_orientation_relative_to_view();
+	// Orientation of the fixed globe relative to the moving camera (excluding tilt).
+	return d_globe_camera.get_view_orientation().get_reverse();
 }
 
 
