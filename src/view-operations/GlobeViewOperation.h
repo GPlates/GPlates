@@ -164,17 +164,12 @@ namespace GPlatesViewOperations
 		struct RotateAndTiltDragInfo
 		{
 			RotateAndTiltDragInfo(
-					const GPlatesMaths::PointOnSphere &start_look_at_position,
 					// Start mouse window coordinates...
 					const double &start_mouse_window_x,
 					const double &start_mouse_window_y) :
-				look_at_position(start_look_at_position.position_vector()),
 				rotate_from_mouse_window_coord(start_mouse_window_x),
 				tilt_from_mouse_window_coord(start_mouse_window_y)
 			{  }
-
-			// Rotate around the look-at position.
-			GPlatesMaths::UnitVector3D look_at_position;
 
 			//
 			// The mouse window coordinates to rotate/tilt *from* in the next rotate/tilt update.

@@ -455,14 +455,19 @@ GPlatesViewOperations::MapViewOperation::update_drag_rotate_and_tilt(
 	//
 
 	// Each multiple of PI means dragging the full window *width* will *rotate* by PI radians (180 degrees).
+	//
+	// Note that dragging from left to right produces a *positive* delta angle.
 	const double delta_rotation_angle = 3 * GPlatesMaths::PI *
-			(d_rotate_and_tilt_drag_info->rotate_from_mouse_window_coord - rotate_to_mouse_window_coord) / window_width;
+			(rotate_to_mouse_window_coord - d_rotate_and_tilt_drag_info->rotate_from_mouse_window_coord) / window_width;
 
-	// New rotation angle.
-	const GPlatesMaths::real_t rotation_angle = d_map_camera.get_rotation_angle() + delta_rotation_angle;
-
-	d_map_camera.set_rotation_angle(
-			rotation_angle,
+	// Rotate the camera.
+	//
+	// Note that dragging from left to right produces a *positive* delta angle. And when the camera rotates clockwise
+	// it appears that the map is rotating anticlockwise (relative to the camera view).
+	//
+	// Hence dragging from left to right makes the map appear to rotate anticlockwise.
+	d_map_camera.rotate_clockwise(
+			delta_rotation_angle,
 			// Always emit on last update so client can turn off any rendering optimisations now that drag has finished...
 			!d_in_last_update_drag/*only_emit_if_changed*/);
 
@@ -471,13 +476,16 @@ GPlatesViewOperations::MapViewOperation::update_drag_rotate_and_tilt(
 	//
 
 	// Each multiple of PI means dragging the full window *height* will *tilt* by PI radians (180 degrees).
+	//
+	// Note that dragging from bottom to top produces a *positive* delta angle.
 	const double delta_tilt_angle = 1.5 * GPlatesMaths::PI *
 			(tilt_to_mouse_window_coord - d_rotate_and_tilt_drag_info->tilt_from_mouse_window_coord) / window_height;
 
-	const GPlatesMaths::real_t tilt_angle = d_map_camera.get_tilt_angle() + delta_tilt_angle;
-
-	d_map_camera.set_tilt_angle(
-			tilt_angle,
+	// Tilt the camera.
+	//
+	// Note that dragging from bottom to top produces a *positive* delta angle, which causes the camera to tilt more.
+	d_map_camera.tilt_more(
+			delta_tilt_angle,
 			// Always emit on last update so client can turn off any rendering optimisations now that drag has finished...
 			!d_in_last_update_drag/*only_emit_if_changed*/);
 
