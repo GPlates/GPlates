@@ -85,26 +85,6 @@ namespace GPlatesQtWidgets
 
 
 		/**
-		 * Set the orientation of the fixed globe relative to the moving camera (excluding tilt).
-		 *
-		 * The orientation essentially takes the globe and rotates it relative to the view (camera).
-		 * However we don't actually rotate the globe (instead rotating the camera the opposite rotation)
-		 * to achieve the same effect. Which means we rotate the camera by the inverse of the desired orientation.
-		 *
-		 * And for the map view we don't actually set the orientation, instead panning the map and
-		 * ignoring its rotation about the map plane normal (TODO: don't ignore rotation).
-		 */
-		virtual
-		void
-		set_orientation(
-				const GPlatesMaths::Rotation &orientation) = 0;
-
-		virtual
-		GPlatesMaths::Rotation
-		get_orientation() const = 0;
-
-
-		/**
 		 * Returns the dimensions of the viewport in device *independent* pixels (ie, widget size).
 		 *
 		 * Device-independent pixels (widget size) differ from device pixels (OpenGL size).

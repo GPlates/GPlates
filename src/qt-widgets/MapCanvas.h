@@ -193,14 +193,6 @@ namespace GPlatesQtWidgets
 		get_camera() override;
 
 
-		void
-		set_orientation(
-				const GPlatesMaths::Rotation &orientation) override;
-
-		GPlatesMaths::Rotation
-		get_orientation() const override;
-
-
 		/**
 		 * Returns the OpenGL context associated with our QGLWidget viewport.
 		 */

@@ -33,6 +33,7 @@
 #include "ExternalSyncController.h"
 
 #include "AnimationController.h"
+#include "Camera.h"
 #include "ViewportZoom.h"
 
 #include "app-logic/ApplicationState.h"
@@ -474,7 +475,9 @@ GPlatesGui::ExternalSyncController::get_zoom()
 GPlatesMaths::Rotation
 GPlatesGui::ExternalSyncController::get_orientation()
 {
-	return d_reconstruction_view_widget_ptr->active_view().get_orientation();
+	// The orientation is the rotation of the globe/map relative to the view (camera).
+	// This is the inverse of the rotation of view (camera) relative to the globe/map.
+	return d_reconstruction_view_widget_ptr->active_view().get_camera().get_view_orientation().get_reverse();
 }
 
 void
@@ -488,7 +491,9 @@ void
 GPlatesGui::ExternalSyncController::set_orientation(
 	const GPlatesMaths::Rotation &rotation)
 {
-	d_reconstruction_view_widget_ptr->active_view().set_orientation(rotation);
+	// The orientation is the rotation of the globe/map relative to the view (camera).
+	// This is the inverse of the rotation of view (camera) relative to the globe/map.
+	d_reconstruction_view_widget_ptr->active_view().get_camera().set_view_orientation(rotation.get_reverse());
 }
 
 void
