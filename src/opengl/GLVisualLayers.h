@@ -138,7 +138,7 @@ namespace GPlatesOpenGL
 		 * and only shares the list objects if @a objects_from_another_context uses a context
 		 * that shares the same shared state as @a opengl_context.
 		 *
-		 * This basically allows objects that use textures to be shared across QGLWidgets objects
+		 * This basically allows objects that use textures to be shared across QOpenGLWidgets objects
 		 * (or whatever objects have different OpenGL contexts).
 		 * The sharing depends on whether the two OpenGL contexts allow shared textures.
 		 */

@@ -86,14 +86,12 @@
 GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_):
-	QGLWidget(
-			GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with(),
-			parent_),
+	QOpenGLWidget(parent_),
 	d_view_state(view_state),
 	d_gl_context(
 			GPlatesOpenGL::GLContext::create(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
-							new GPlatesOpenGL::GLContextImpl::QGLWidgetImpl(*this)))),
+							new GPlatesOpenGL::GLContextImpl::QOpenGLWidgetImpl(*this)))),
 	d_make_context_current(*d_gl_context),
 	d_initialisedGL(false),
 	d_view_projection(
@@ -123,17 +121,6 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 	d_velocity_legend_overlay(
 			new GPlatesGui::VelocityLegendOverlay())
 {
-	// Since we're using a QPainter inside 'paintEvent()' or more specifically 'paintGL()'
-	// (which is called from 'paintEvent()') then we turn off automatic swapping of the OpenGL
-	// front and back buffers after each 'paintGL()' call. This is because QPainter::end(),
-	// or QPainter's destructor, automatically calls QGLWidget::swapBuffers() if auto buffer swap
-	// is enabled - and this results in two calls to QGLWidget::swapBuffers() - one from QPainter
-	// and one from 'paintEvent()'. So we disable auto buffer swapping and explicitly call it ourself.
-	//
-	// Also we don't want to swap buffers when we're just rendering to a QImage (using OpenGL)
-	// and not rendering to the QGLWidget itself, otherwise the widget will have the wrong content.
-	setAutoBufferSwap(false);
-
 	// Don't fill the background - we already clear the background using OpenGL in 'render_scene()' anyway.
 	//
 	// NOTE: Also there's a problem where QPainter (used in 'paintGL()') uses the background role
@@ -186,7 +173,24 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 
 
 GPlatesQtWidgets::GlobeCanvas::~GlobeCanvas()
-{  }
+{
+	// Note that when our data members that contain OpenGL resources (like 'd_globe') are destroyed they don't actually
+	// destroy the *native* OpenGL resources. Instead the native resource *wrappers* get destroyed (see GLObjectResource)
+	// which just queue the native resources for deallocation with our resource managers (see GLObjectResourceManager).
+	// But when the resource managers get destroyed (when our 'd_gl_context' is destroyed) they also don't destroy the
+	// native resources. Instead, the native resources (queued for destruction) only get destroyed when 'GLContext::begin_render()'
+	// and 'GLContext::end_render()' get called (which only happens when we're actually going to render something).
+	//
+	// As a result, the native resources only get destroyed when the *native* OpenGL context itself is destroyed
+	// (this is taken care of by our base class QOpenGLWidget destructor). And any resources shared between contexts
+	// (eg, textures) are destroyed when all contexts (from GlobeCanvas and MapCanvas) are destroyed (and possibly only
+	// after the top-level window containing those QOpenGLWidget's is also destroyed).
+	//
+	// Also note we could connect to the 'QOpenGLContext::aboutToBeDestroyed' signal, but that also is unnecessary
+	// for us since we never re-parent GlobeCanvas/MapCanvas to a different top-level window and hence are not required
+	// to destroy our resources before rebuilding them again in 'initializeGL()'. The resources only need to be destroyed
+	// once (when GPlates shuts down).
+}
 
 
 double
@@ -487,16 +491,7 @@ void
 GPlatesQtWidgets::GlobeCanvas::paintEvent(
 		QPaintEvent *paint_event)
 {
-	QGLWidget::paintEvent(paint_event);
-
-	// Explicitly swap the OpenGL front and back buffers.
-	// Note that we have already disabled auto buffer swapping because otherwise both the QPainter
-	// in 'paintGL()' and 'QGLWidget::paintEvent()' will call 'QGLWidget::swapBuffers()'
-	// essentially canceling each other out (or causing flickering).
-	if (doubleBuffer() && !autoBufferSwap())
-	{
-		swapBuffers();
-	}
+	QOpenGLWidget::paintEvent(paint_event);
 
 	// If d_mouse_press_info is not boost::none, then mouse is down.
 	Q_EMIT repainted(static_cast<bool>(d_mouse_press_info));
@@ -698,7 +693,7 @@ GPlatesQtWidgets::GlobeCanvas::keyPressEvent(
 			break;
 
 		default:
-			QGLWidget::keyPressEvent(key_event);
+			QOpenGLWidget::keyPressEvent(key_event);
 	}
 }
 
@@ -728,9 +723,9 @@ void
 GPlatesQtWidgets::GlobeCanvas::initializeGL_if_necessary() 
 {
 	// Return early if we've already initialised OpenGL.
-	// This is now necessary because it's not only 'paintEvent()' and other QGLWidget methods
+	// This is now necessary because it's not only 'paintEvent()' and other QOpenGLWidget methods
 	// that call our 'initializeGL()' method - it's now also when a client wants to render the
-	// scene to an image (instead of render/update the QGLWidget itself).
+	// scene to an image (instead of render/update the QOpenGLWidget itself).
 	if (d_initialisedGL)
 	{
 		return;

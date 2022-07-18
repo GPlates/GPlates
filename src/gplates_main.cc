@@ -62,6 +62,8 @@
 
 #include "maths/MathsUtils.h"
 
+#include "opengl/GLContext.h"
+
 #include "presentation/Application.h"
 
 #include "qt-widgets/PythonInitFailedDialog.h"
@@ -805,6 +807,10 @@ internal_main(int argc, char* argv[])
 	// Force usage of desktop OpenGL since we currently link to OpenGL (and make native OpenGL calls).
 	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 #endif
+#if QT_VERSION >= QT_VERSION_CHECK(5,4,0)
+	// Allow OpenGL resource sharing between QOpenGLWidget instances belonging to *different* windows.
+	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
+#endif
 
 	// Enable high DPI pixmaps (for high DPI displays like Apple Retina).
 	//
@@ -851,6 +857,11 @@ internal_main(int argc, char* argv[])
 	// Note: This attribute was added in Qt 5.6 (which our minimum Qt requirement satisfies).
 	QCoreApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
 #endif
+
+	// Set the global default surface format (eg, used by QOpenGLWidget's).
+	//
+	// Note: It is mandatory to call this before constructing the QApplication instance on some platforms (eg, macOS).
+	GPlatesOpenGL::GLContext::set_default_surface_format();
 
 	// GPlatesQApplication is a QApplication that also handles uncaught exceptions in the Qt event thread.
 	GPlatesGui::GPlatesQApplication qapplication(argc, argv);

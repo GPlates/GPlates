@@ -26,9 +26,13 @@
 #ifndef GPLATES_OPENGL_GLCONTEXTIMPL_H
 #define GPLATES_OPENGL_GLCONTEXTIMPL_H
 
-#include <QGLWidget>
+#include <QOpenGLContext>
+#include <QOpenGLWidget>
 
 #include "GLContext.h"
+#include "OpenGLException.h"
+
+#include "global/GPlatesAssert.h"
 
 
 namespace GPlatesOpenGL
@@ -36,30 +40,37 @@ namespace GPlatesOpenGL
 	namespace GLContextImpl
 	{
 		/**
-		 * A derivation of GLContext::Impl for QGLWidget.
+		 * A derivation of GLContext::Impl for QOpenGLWidget.
 		 */
-		class QGLWidgetImpl :
+		class QOpenGLWidgetImpl :
 				public GLContext::Impl
 		{
 		public:
 			explicit
-			QGLWidgetImpl(
-					QGLWidget &qgl_widget) :
-				d_qgl_widget(qgl_widget)
+			QOpenGLWidgetImpl(
+					QOpenGLWidget &opengl_widget) :
+				d_opengl_widget(opengl_widget)
 			{  }
 
 			virtual
 			void
 			make_current()
 			{
-				d_qgl_widget.makeCurrent();
+				d_opengl_widget.makeCurrent();
 			}
 
 			virtual
-			const QGLFormat
-			get_qgl_format() const
+			const QSurfaceFormat
+			get_surface_format() const
 			{
-				return d_qgl_widget.context()->format();
+				// Make sure the QOpenGLContext used by QOpenGLWidget has been initialised.
+				const QOpenGLContext *opengl_context = d_opengl_widget.context();
+				GPlatesGlobal::Assert<OpenGLException>(
+						opengl_context,
+						GPLATES_ASSERTION_SOURCE,
+						"QOpenGLContext not yet initialized.");
+
+				return opengl_context->format();
 			}
 
 			virtual
@@ -67,7 +78,7 @@ namespace GPlatesOpenGL
 			get_width() const
 			{
 				// Dimensions, in OpenGL, are in device pixels.
-				return d_qgl_widget.width() * d_qgl_widget.devicePixelRatio();
+				return d_opengl_widget.width() * d_opengl_widget.devicePixelRatio();
 			}
 
 			virtual
@@ -75,11 +86,11 @@ namespace GPlatesOpenGL
 			get_height() const
 			{
 				// Dimensions, in OpenGL, are in device pixels.
-				return d_qgl_widget.height() * d_qgl_widget.devicePixelRatio();
+				return d_opengl_widget.height() * d_opengl_widget.devicePixelRatio();
 			}
 
 		private:
-			QGLWidget &d_qgl_widget;
+			QOpenGLWidget &d_opengl_widget;
 		};
 	}
 }

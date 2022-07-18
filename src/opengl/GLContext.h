@@ -32,7 +32,7 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <opengl/OpenGL1.h>
-#include <QGLFormat>
+#include <QSurfaceFormat>
 
 #include "GLBuffer.h"
 #include "GLCapabilities.h"
@@ -85,10 +85,10 @@ namespace GPlatesOpenGL
 			void
 			make_current() = 0;
 
-			//! Return the QGLFormat of the QGLContext OpenGL context.
+			//! Return the QSurfaceFormat of the QOpenGLContext OpenGL context.
 			virtual
-			const QGLFormat
-			get_qgl_format() const = 0;
+			const QSurfaceFormat
+			get_surface_format() const = 0;
 
 			//! The width of the framebuffer currently attached to the OpenGL context.
 			virtual
@@ -285,14 +285,16 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the QGLFormat to use when creating a Qt OpenGL context (eg, QGLWidget).
+		 * Set the global default surface format (eg, used by QOpenGLWidget's).
 		 *
 		 * This sets various parameters required for OpenGL rendering in GPlates.
 		 * Such as specifying an alpha-channel.
+		 *
+		 * Note: This should be called before constructing the QApplication instance.
 		 */
 		static
-		QGLFormat
-		get_qgl_format_to_create_context_with();
+		void
+		set_default_surface_format();
 
 
 		/**
@@ -340,14 +342,16 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the QGLFormat of the QGLContext OpenGL context.
+		 * Returns the QSurfaceFormat of the QOpenGLContext OpenGL context.
 		 *
 		 * This can be used to determine the number of colour/depth/stencil bits in the framebuffer.
+		 *
+		 * Throws @a OpenGLException if QOpenGLContext not yet initialised.
 		 */
-		const QGLFormat &
-		get_qgl_format() const
+		QSurfaceFormat
+		get_surface_format() const
 		{
-			return d_qgl_format;
+			return d_context_impl->get_surface_format();
 		}
 
 
@@ -465,11 +469,6 @@ namespace GPlatesOpenGL
 		boost::shared_ptr<Impl> d_context_impl;
 
 		/**
-		 * The format of the OpenGL context.
-		 */
-		QGLFormat d_qgl_format;
-
-		/**
 		 * OpenGL state that can be shared with another context.
 		 */
 		boost::shared_ptr<SharedState> d_shared_state;
@@ -495,7 +494,6 @@ namespace GPlatesOpenGL
 		GLContext(
 				const boost::shared_ptr<Impl> &context_impl) :
 			d_context_impl(context_impl),
-			d_qgl_format(context_impl->get_qgl_format()),
 			d_shared_state(new SharedState()),
 			d_non_shared_state(new NonSharedState())
 		{  }
@@ -505,7 +503,6 @@ namespace GPlatesOpenGL
 				const boost::shared_ptr<Impl> &context_impl,
 				const boost::shared_ptr<SharedState> &shared_state) :
 			d_context_impl(context_impl),
-			d_qgl_format(context_impl->get_qgl_format()),
 			d_shared_state(shared_state),
 			d_non_shared_state(new NonSharedState())
 		{  }

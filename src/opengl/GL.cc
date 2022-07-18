@@ -45,7 +45,7 @@ GPlatesOpenGL::GL::GL(
 	// However it can change when the window (that context is attached to) is resized...
 	d_default_viewport(0, 0, context->get_width(), context->get_height()),
 	// Default draw/read buffer is GL_FRONT if there is no back buffer, otherwise GL_BACK...
-	d_default_draw_read_buffer(context->get_qgl_format().doubleBuffer() ? GL_BACK : GL_FRONT)
+	d_default_draw_read_buffer((context->get_surface_format().swapBehavior() == QSurfaceFormat::DoubleBuffer) ? GL_BACK : GL_FRONT)
 {
 }
 

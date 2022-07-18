@@ -28,6 +28,7 @@
 #include <string>
 #include <utility>
 #include <QDebug>
+#include <QSurfaceFormat>
 #include <QtGlobal>
 
 #include "GLContext.h"
@@ -49,13 +50,16 @@ bool GPlatesOpenGL::GLContext::s_initialised_GLEW = false;
 GPlatesOpenGL::GLCapabilities GPlatesOpenGL::GLContext::s_capabilities;
 
 
-QGLFormat
-GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with()
+void
+GPlatesOpenGL::GLContext::set_default_surface_format()
 {
-	// We turn *off* multisampling because lines actually look better without it...
-	// We need a stencil buffer for filling polygons.
-	// We need an alpha channel in case falling back to main framebuffer for render textures.
-	QGLFormat format(/*QGL::SampleBuffers |*/ QGL::DepthBuffer | QGL::StencilBuffer | QGL::AlphaChannel);
+	QSurfaceFormat default_surface_format;
+
+	// GL_DEPTH24_STENCIL8 is a specified required format (by OpenGL 3.3 core).
+	default_surface_format.setDepthBufferSize(24);
+	default_surface_format.setStencilBufferSize(8);
+
+	default_surface_format.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
 
 	// Use the OpenGL 3.3 core profile with forward compatibility (ie, deprecated functions removed).
 	//
@@ -72,12 +76,9 @@ GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with()
 	// our current min Ubuntu requirement, by Mesa 11.2). It also gives us geometry shaders
 	// (which is useful for rendering wide lines and symbology in general). And removes the need to deal
 	// with all the various OpenGL extensions we've been dealing with. Eventually Apple with remove OpenGL though,
-	// and the hope is we will have access to the Rendering Hardware Interface (RHI) in the upcoming Qt6
-	// (it's currently in Qt5.14 but only accessible to Qt internally). RHI will allow us to use GLSL shaders,
-	// and will provide us with a higher-level interface/abstraction for setting the graphics pipeline state
-	// (that RHI then hands off to OpenGL/Vulkan/Direct3D/Metal). But for now it's OpenGL 3.3.
+	// and the plan is to use Zink (OpenGL on top of Vulkan on top of Metal) on macOS.
 	//
-	format.setVersion(3, 3);
+	default_surface_format.setVersion(3, 3);
 	//
 	// Qt5 versions prior to 5.9 are unable to mix QPainter calls with OpenGL 3.x *core* profile calls:
 	//   https://www.qt.io/blog/2017/01/27/opengl-core-profile-context-support-qpainter
@@ -86,16 +87,16 @@ GPlatesOpenGL::GLContext::get_qgl_format_to_create_context_with()
 	// As mentioned above, this is not an option on macOS, which means macOS requires Qt5.9 or above.
 	//
 #if QT_VERSION >= QT_VERSION_CHECK(5,9,0)
-	format.setProfile(QGLFormat::CoreProfile);
+	default_surface_format.setProfile(QSurfaceFormat::CoreProfile);
 #else // Qt < 5.9 ...
 	#if defined(Q_OS_MACOS)
 		#error "macOS requires Qt5.9 or above."
 	#else //  not macOS ...
-		format.setProfile(QGLFormat::CompatibilityProfile);
+		default_surface_format.setProfile(QSurfaceFormat::CompatibilityProfile);
 	#endif
 #endif
 
-	return format;
+	QSurfaceFormat::setDefaultFormat(default_surface_format);
 }
 
 
@@ -129,41 +130,28 @@ GPlatesOpenGL::GLContext::initialise()
 		s_capabilities.initialise();
 	}
 
-	// The QGLFormat of our OpenGL context.
-	const QGLFormat &qgl_format = get_qgl_format();
+	// The QSurfaceFormat of our OpenGL context.
+	const QSurfaceFormat &surface_format = get_surface_format();
 
 	// Make sure we got OpenGL 3.3 or greater.
-	if (qgl_format.majorVersion() < 3 ||
-		(qgl_format.majorVersion() == 3 && qgl_format.minorVersion() < 3))
+	if (surface_format.majorVersion() < 3 ||
+		(surface_format.majorVersion() == 3 && surface_format.minorVersion() < 3))
 	{
 		throw OpenGLException(
 			GPLATES_ASSERTION_SOURCE,
 			"OpenGL 3.3 or greater is required.");
 	}
 
-	// We require a main framebuffer with an alpha channel.
-	// A lot of main framebuffer and render-target rendering uses an alpha channel.
-	//
-	// TODO: Now that we're guaranteed support for framebuffer objects we no longer need the
-	//       main framebuffer for render-target rendering. Maybe we don't need alpha in main buffer.
-	//       But modern H/W will have it anyway.
-	if (!qgl_format.alpha())
-	{
-		throw OpenGLException(
-				GPLATES_ASSERTION_SOURCE,
-				"Could not get alpha channel on main framebuffer.");
-	}
-
 	// We require a main framebuffer with a stencil buffer (usually interleaved with depth).
 	// A lot of main framebuffer and render-target rendering uses a stencil buffer.
-	if (!qgl_format.stencil())
+	if (surface_format.stencilBufferSize() < 8)
 	{
 		throw OpenGLException(
 				GPLATES_ASSERTION_SOURCE,
 				"Could not get a stencil buffer on the main framebuffer.");
 	}
 
-	qDebug() << "Context QGLFormat:" << qgl_format;
+	qDebug() << "Context QSurfaceFormat:" << surface_format;
 }
 
 

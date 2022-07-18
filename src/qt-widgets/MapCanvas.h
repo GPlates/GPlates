@@ -32,9 +32,9 @@
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
-#include <QGLWidget>
 #include <QImage>
 #include <QMouseEvent>
+#include <QOpenGLWidget>
 #include <QPaintDevice>
 #include <QPointF>
 #include <QSize>
@@ -83,40 +83,12 @@ namespace GPlatesQtWidgets
 	 * Note: This is analogous to GlobeCanvas.
 	 */
 	class MapCanvas : 
-			public QGLWidget,
+			public QOpenGLWidget,
 			public SceneView
 	{
 		Q_OBJECT
 
 	public:
-
-		struct MousePressInfo
-		{
-			MousePressInfo(
-					const QPointF &mouse_screen_position,
-					const boost::optional<QPointF> &mouse_map_position,
-					const GPlatesMaths::PointOnSphere &mouse_position_on_globe,
-					bool mouse_is_on_globe,
-					Qt::MouseButton button,
-					Qt::KeyboardModifiers modifiers):
-				d_mouse_screen_position(mouse_screen_position),
-				d_mouse_map_position(mouse_map_position),
-				d_mouse_position_on_globe(mouse_position_on_globe),
-				d_mouse_is_on_globe(mouse_is_on_globe),
-				d_button(button),
-				d_modifiers(modifiers),
-				d_is_mouse_drag(false)
-			{  }
-
-			QPointF d_mouse_screen_position;
-			boost::optional<QPointF> d_mouse_map_position;
-			GPlatesMaths::PointOnSphere d_mouse_position_on_globe;
-			bool d_mouse_is_on_globe;
-			Qt::MouseButton d_button;
-			Qt::KeyboardModifiers d_modifiers;
-			bool d_is_mouse_drag;
-		};
-
 
 		/**
 		 * Constructor.
@@ -194,7 +166,7 @@ namespace GPlatesQtWidgets
 
 
 		/**
-		 * Returns the OpenGL context associated with our QGLWidget viewport.
+		 * Returns the OpenGL context associated with our QOpenGLWidget viewport.
 		 */
 		GPlatesOpenGL::GLContext::non_null_ptr_type
 		get_gl_context()
@@ -306,32 +278,13 @@ namespace GPlatesQtWidgets
 	protected:
 
 		/**
-		 * This is a virtual override of the function in QGLWidget.
-		 *
-		 * To quote the QGLWidget documentation:
-		 *
-		 * This virtual function is called once before the first call to paintGL() or
-		 * resizeGL(), and then once whenever the widget has been assigned a new
-		 * QGLContext.  Reimplement it in a subclass.
-		 *
-		 * This function should set up any required OpenGL context state.
-		 *
-		 * There is no need to call makeCurrent() because this has already been done when
-		 * this function is called.
+		 * This is a virtual override of the function in QOpenGLWidget.
 		 */
 		void 
 		initializeGL() override;
 
 		/**
-		 * This is a virtual override of the function in QGLWidget.
-		 *
-		 * To quote the QGLWidget documentation:
-		 *
-		 * This virtual function is called whenever the widget has been resized.  The new
-		 * size is passed in width and height.  Reimplement it in a subclass.
-		 *
-		 * There is no need to call makeCurrent() because this has already been done when
-		 * this function is called.
+		 * This is a virtual override of the function in QOpenGLWidget.
 		 */
 		void 
 		resizeGL(
@@ -339,15 +292,7 @@ namespace GPlatesQtWidgets
 				int height) override;
 
 		/**
-		 * This is a virtual override of the function in QGLWidget.
-		 *
-		 * To quote the QGLWidget documentation:
-		 *
-		 * This virtual function is called whenever the widget needs to be painted.
-		 * Reimplement it in a subclass.
-		 *
-		 * There is no need to call makeCurrent() because this has already been done when
-		 * this function is called.
+		 * This is a virtual override of the function in QOpenGLWidget.
 		 */
 		void
 		paintGL() override;
@@ -387,6 +332,34 @@ namespace GPlatesQtWidgets
 
 	private:
 
+		struct MousePressInfo
+		{
+			MousePressInfo(
+					const QPointF &mouse_screen_position,
+					const boost::optional<QPointF> &mouse_map_position,
+					const GPlatesMaths::PointOnSphere &mouse_position_on_globe,
+					bool mouse_is_on_globe,
+					Qt::MouseButton button,
+					Qt::KeyboardModifiers modifiers):
+				d_mouse_screen_position(mouse_screen_position),
+				d_mouse_map_position(mouse_map_position),
+				d_mouse_position_on_globe(mouse_position_on_globe),
+				d_mouse_is_on_globe(mouse_is_on_globe),
+				d_button(button),
+				d_modifiers(modifiers),
+				d_is_mouse_drag(false)
+			{  }
+
+			QPointF d_mouse_screen_position;
+			boost::optional<QPointF> d_mouse_map_position;
+			GPlatesMaths::PointOnSphere d_mouse_position_on_globe;
+			bool d_mouse_is_on_globe;
+			Qt::MouseButton d_button;
+			Qt::KeyboardModifiers d_modifiers;
+			bool d_is_mouse_drag;
+		};
+
+
 		/**
 		 * Utility class to make the OpenGL context current in @a MapCanvas constructor.
 		 *
@@ -413,7 +386,7 @@ namespace GPlatesQtWidgets
 
 		//! Mirrors an OpenGL context and provides a central place to manage low-level OpenGL objects.
 		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
-		//! Makes the OpenGL context current in @a GlobeCanvas constructor so it can call OpenGL.
+		//! Makes the OpenGL context current in @a MapCanvas constructor so it can call OpenGL.
 		MakeGLContextCurrent d_make_context_current;
 
 		//! Is true if OpenGL has been initialised for this canvas.
