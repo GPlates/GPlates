@@ -262,11 +262,14 @@ namespace GPlatesOpenGL
 				// Draw framebuffer resource handle associated with the current OpenGL context...
 				GLuint draw_framebuffer_resource,
 				// Read framebuffer resource handle associated with the current OpenGL context...
-				GLuint read_framebuffer_resource) :
+				GLuint read_framebuffer_resource,
+				// The default framebuffer (defaults to zero)...
+				GLuint default_framebuffer_resource = 0) :
 			d_draw_framebuffer(draw_framebuffer),
 			d_read_framebuffer(read_framebuffer),
 			d_draw_framebuffer_resource(draw_framebuffer_resource),
-			d_read_framebuffer_resource(read_framebuffer_resource)
+			d_read_framebuffer_resource(read_framebuffer_resource),
+			d_default_framebuffer_resource(default_framebuffer_resource)
 		{  }
 
 		virtual
@@ -294,6 +297,8 @@ namespace GPlatesOpenGL
 
 		GLuint d_draw_framebuffer_resource;
 		GLuint d_read_framebuffer_resource;
+
+		GLuint d_default_framebuffer_resource;
 	};
 
 	/**

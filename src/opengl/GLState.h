@@ -163,7 +163,9 @@ namespace GPlatesOpenGL
 				GLenum target,
 				boost::optional<GLFramebuffer::shared_ptr_type> framebuffer,
 				// Framebuffer resource handle associated with the current OpenGL context...
-				GLuint framebuffer_resource);
+				GLuint framebuffer_resource,
+				// Default framebuffer resource (might not be zero, eg, each QOpenGLWidget has its own framebuffer object)...
+				GLuint default_framebuffer_resource);
 
 		//! Binds the renderbuffer object (at the specified target, must be GL_RENDERBUFFER) to the active OpenGL context.
 		void

@@ -45,7 +45,8 @@ GPlatesOpenGL::GL::GL(
 	// However it can change when the window (that context is attached to) is resized...
 	d_default_viewport(0, 0, context->get_width(), context->get_height()),
 	// Default draw/read buffer is GL_FRONT if there is no back buffer, otherwise GL_BACK...
-	d_default_draw_read_buffer((context->get_surface_format().swapBehavior() == QSurfaceFormat::DoubleBuffer) ? GL_BACK : GL_FRONT)
+	d_default_draw_read_buffer((context->get_surface_format().swapBehavior() == QSurfaceFormat::DoubleBuffer) ? GL_BACK : GL_FRONT),
+	d_default_framebuffer_resource(context->get_default_framebuffer_object())
 {
 }
 
@@ -125,7 +126,9 @@ GPlatesOpenGL::GL::BindFramebuffer(
 				target,
 				framebuffer.get(),
 				// Framebuffer resource handle associated with the current OpenGL context...
-				framebuffer.get()->get_resource_handle(*this));
+				framebuffer.get()->get_resource_handle(*this),
+				// Default framebuffer resource (might not be zero, eg, each QOpenGLWidget has its own framebuffer object)...
+				d_default_framebuffer_resource);
 
 		// Ensure the framebuffer's internal state is reflected in the current context.
 		// Each 'GLFramebuffer' instance has one native framebuffer object per OpenGL context.
@@ -136,7 +139,11 @@ GPlatesOpenGL::GL::BindFramebuffer(
 	else
 	{
 		// Unbind.
-		d_current_state->bind_framebuffer(target, boost::none, 0);
+		d_current_state->bind_framebuffer(
+				target,
+				boost::none,
+				d_default_framebuffer_resource/*framebuffer_resource*/,
+				d_default_framebuffer_resource/*default_framebuffer_resource*/);
 	}
 }
 

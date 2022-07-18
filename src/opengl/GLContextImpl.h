@@ -46,22 +46,21 @@ namespace GPlatesOpenGL
 				public GLContext::Impl
 		{
 		public:
+
 			explicit
 			QOpenGLWidgetImpl(
 					QOpenGLWidget &opengl_widget) :
 				d_opengl_widget(opengl_widget)
 			{  }
 
-			virtual
 			void
-			make_current()
+			make_current() override
 			{
 				d_opengl_widget.makeCurrent();
 			}
 
-			virtual
 			const QSurfaceFormat
-			get_surface_format() const
+			get_surface_format() const override
 			{
 				// Make sure the QOpenGLContext used by QOpenGLWidget has been initialised.
 				const QOpenGLContext *opengl_context = d_opengl_widget.context();
@@ -73,17 +72,22 @@ namespace GPlatesOpenGL
 				return opengl_context->format();
 			}
 
-			virtual
+			GLuint
+			get_default_framebuffer_object() const override
+			{
+				// NOTE: Returns 0 if context not yet initialized.
+				return d_opengl_widget.defaultFramebufferObject();
+			}
+
 			unsigned int
-			get_width() const
+			get_width() const override
 			{
 				// Dimensions, in OpenGL, are in device pixels.
 				return d_opengl_widget.width() * d_opengl_widget.devicePixelRatio();
 			}
 
-			virtual
 			unsigned int
-			get_height() const
+			get_height() const override
 			{
 				// Dimensions, in OpenGL, are in device pixels.
 				return d_opengl_widget.height() * d_opengl_widget.devicePixelRatio();

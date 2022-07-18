@@ -658,6 +658,15 @@ namespace GPlatesOpenGL
 		 * (GL_FRONT if there is no back buffer, otherwise GL_BACK).
 		 */
 		GLenum d_default_draw_read_buffer;
+
+		/**
+		 * Default framebuffer resource.
+		 *
+		 * Note: This might not be zero.
+		 *       For example, each QOpenGLWidget has its own framebuffer object
+		 *       (that we treat as our main framebuffer when rendering into it).
+		 */
+		GLuint d_default_framebuffer_resource;
 	};
 }
 

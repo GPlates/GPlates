@@ -598,13 +598,11 @@ GPlatesOpenGL::GLFramebuffer::get_object_state_for_current_context(
 {
 	const GLContext &current_context = gl.get_context();
 
-	context_object_state_seq_type::iterator context_object_state_iter = d_context_object_states.begin();
-	context_object_state_seq_type::iterator context_object_state_end = d_context_object_states.end();
-	for ( ; context_object_state_iter != context_object_state_end; ++context_object_state_iter)
+	for (GLFramebuffer::ContextObjectState &context_object_state : d_context_object_states)
 	{
-		if (context_object_state_iter->context == &current_context)
+		if (context_object_state.context == &current_context)
 		{
-			return *context_object_state_iter;
+			return context_object_state;
 		}
 	}
 

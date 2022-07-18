@@ -329,7 +329,9 @@ GPlatesOpenGL::GLState::bind_framebuffer(
 		GLenum target,
 		boost::optional<GLFramebuffer::shared_ptr_type> framebuffer,
 		// Framebuffer resource handle associated with the current OpenGL context...
-		GLuint framebuffer_resource)
+		GLuint framebuffer_resource,
+		// Default framebuffer resource (might not be zero, eg, each QOpenGLWidget has its own framebuffer object)...
+		GLuint default_framebuffer_resource)
 {
 	// Default framebuffer (bound to zero).
 	boost::optional<GLFramebuffer::shared_ptr_type> draw_framebuffer;
@@ -385,7 +387,8 @@ GPlatesOpenGL::GLState::bind_framebuffer(
 			GLStateSetKeys::KEY_BIND_FRAMEBUFFER,
 			boost::in_place(
 					draw_framebuffer, read_framebuffer,
-					draw_framebuffer_resource, read_framebuffer_resource));
+					draw_framebuffer_resource, read_framebuffer_resource,
+					default_framebuffer_resource));
 }
 
 
