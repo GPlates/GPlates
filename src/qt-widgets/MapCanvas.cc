@@ -429,7 +429,7 @@ void
 GPlatesQtWidgets::MapCanvas::initializeGL() 
 {
 	// Initialise our context-like object first.
-	d_gl_context->initialise();
+	d_gl_context->initialiseGL();
 
 	// Start a render scope (all GL calls should be done inside this scope).
 	//

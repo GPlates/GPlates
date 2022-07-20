@@ -47,6 +47,31 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 
 
 bool GPlatesOpenGL::GLContext::s_initialised_GLEW = false;
+
+//
+// Prefer OpenGL 4.3 (core profile) but allow a minimum of OpenGL 3.3 (core profile) with forward compatibility
+// (forward compatibility means deprecated functions are removed, ie, don't specify 'QSurfaceFormat::DeprecatedFunctions').
+//
+// The OpenGL 3.3 minimum is because, on macOS, we cannot easily retain functionality in OpenGL 1 and 2 and also
+// access OpenGL 3 functionality (required for volume visualization, new symbology, etc). MacOS gives you
+// a choice of either 2.1 (which excludes volume visualization), or 3.2+ (their hardware supports 3.3/4.1)
+// but only as a core profile which means no backward compatibility (and hence no fixed-function pipeline
+// and hence no support for old graphics cards) and also only with forward compatibility (which removes support
+// for wide lines). Previously we supported right back to OpenGL version 1.1 and used OpengGL extensions to
+// provide optional support up to and including version 3 (eg, for volume visualization) when available.
+// However we started running into problems with things like 'texture2D()' not working in GLSL
+// (is called 'texture()' now). So it was easiest to move to OpenGL 3.3, and the time is right since
+// (as of 2020) most hardware in last decade should support 3.3 (and it's also supported on Ubuntu 16.04,
+// our min Ubuntu requirement at that time, by Mesa 11.2). It also gives us geometry shaders
+// (which is useful for rendering wide lines and symbology in general). And removes the need to deal with
+// all the various OpenGL extensions we've been dealing with.
+//
+// Also, Apple has deprecated OpenGL and will eventually remove it altogether.
+// So when that happens the plan is to use Zink (OpenGL on top of Vulkan on top of Metal) on macOS.
+//
+const QPair<int, int> GPlatesOpenGL::GLContext::PREFERRED_OPENGL_VERSION(4, 3);
+const QPair<int, int> GPlatesOpenGL::GLContext::MINIMUM_OPENGL_VERSION(3, 3);
+
 GPlatesOpenGL::GLCapabilities GPlatesOpenGL::GLContext::s_capabilities;
 
 
@@ -55,53 +80,41 @@ GPlatesOpenGL::GLContext::set_default_surface_format()
 {
 	QSurfaceFormat default_surface_format;
 
+	// Set our preferred OpenGL version.
+	//
+	// We might not get our preferred version. According to the "QOpenGLContext::create()" docs:
+	//
+	//   For example, if you request a context that supports OpenGL 4.3 Core profile but the driver and/or
+	//   hardware only supports version 3.2 Core profile contexts then you will get a 3.2 Core profile context.
+	//
+	// But as long as the version we get is greater than or equal to our minimum version then that's fine.
+	// We'll do that check when each widget/context is initialised (see 'initialiseGL()').
+	default_surface_format.setVersion(
+			PREFERRED_OPENGL_VERSION.first/*major*/,
+			PREFERRED_OPENGL_VERSION.second/*minor*/);
+
+	// OpenGL core profile, with forward compatibility (since not specifying 'QSurfaceFormat::DeprecatedFunctions').
+	//
+	// Note: Qt5 versions prior to 5.9 are unable to mix QPainter calls with OpenGL 3.2+ *core* profile calls:
+	//       https://www.qt.io/blog/2017/01/27/opengl-core-profile-context-support-qpainter
+	//       This means Qt < 5.9 must fallback to a *compatibility* profile to support this mixing.
+	//       As mentioned above, this is not an option on macOS, which means macOS would require Qt5.9 or above to enable mixing.
+	//       However we now no longer mix QPainter and OpenGL calls anyway, so it's not a problem.
+	//       But if we returned to mixing we'd just need to ensure Qt >= 5.9 on macOS.
+	default_surface_format.setProfile(QSurfaceFormat::CoreProfile);
+
 	// GL_DEPTH24_STENCIL8 is a specified required format (by OpenGL 3.3 core).
 	default_surface_format.setDepthBufferSize(24);
 	default_surface_format.setStencilBufferSize(8);
 
 	default_surface_format.setSwapBehavior(QSurfaceFormat::DoubleBuffer);
 
-	// Use the OpenGL 3.3 core profile with forward compatibility (ie, deprecated functions removed).
-	//
-	// This is because we cannot easily access OpenGL 3 functionality (required for volume visualization)
-	// on macOS and still retain functionality in OpenGL 1 and 2. MacOS which gives you a choice of either
-	// 2.1 (which excludes volume visualization), or 3.2+ (their hardware supports 3.3/4.1) but only as a
-	// core profile which means no backward compatibility (and hence no fixed-function pipeline and hence
-	// no support for old graphics cards) and also only with forward compatibility (which removes support
-	// for wide lines). Previously we supported right back to OpenGL version 1.1 and used OpengGL extensions to
-	// provide optional support up to and including version 3 (eg, for volume visualization) when available.
-	// However we started running into problems with things like 'texture2D()' not working in GLSL
-	// (is called 'texture()' now). So it was easiest to move to OpenGL 3.3, and the time is right since
-	// (as of 2020) most hardware in last decade should support 3.3 (and it's also supported on Ubuntu 16.04,
-	// our current min Ubuntu requirement, by Mesa 11.2). It also gives us geometry shaders
-	// (which is useful for rendering wide lines and symbology in general). And removes the need to deal
-	// with all the various OpenGL extensions we've been dealing with. Eventually Apple with remove OpenGL though,
-	// and the plan is to use Zink (OpenGL on top of Vulkan on top of Metal) on macOS.
-	//
-	default_surface_format.setVersion(3, 3);
-	//
-	// Qt5 versions prior to 5.9 are unable to mix QPainter calls with OpenGL 3.x *core* profile calls:
-	//   https://www.qt.io/blog/2017/01/27/opengl-core-profile-context-support-qpainter
-	//
-	// This means we must fallback to an OpenGL *compatibility* profile for Qt5 versions less than 5.9.
-	// As mentioned above, this is not an option on macOS, which means macOS requires Qt5.9 or above.
-	//
-#if QT_VERSION >= QT_VERSION_CHECK(5,9,0)
-	default_surface_format.setProfile(QSurfaceFormat::CoreProfile);
-#else // Qt < 5.9 ...
-	#if defined(Q_OS_MACOS)
-		#error "macOS requires Qt5.9 or above."
-	#else //  not macOS ...
-		default_surface_format.setProfile(QSurfaceFormat::CompatibilityProfile);
-	#endif
-#endif
-
 	QSurfaceFormat::setDefaultFormat(default_surface_format);
 }
 
 
 void
-GPlatesOpenGL::GLContext::initialise()
+GPlatesOpenGL::GLContext::initialiseGL()
 {
 	// Currently we only initialise once for the whole application instead of
 	// once for each rendering context.
@@ -133,13 +146,16 @@ GPlatesOpenGL::GLContext::initialise()
 	// The QSurfaceFormat of our OpenGL context.
 	const QSurfaceFormat &surface_format = get_surface_format();
 
-	// Make sure we got OpenGL 3.3 or greater.
-	if (surface_format.majorVersion() < 3 ||
-		(surface_format.majorVersion() == 3 && surface_format.minorVersion() < 3))
+	// Make sure we got our minimum OpenGL version or greater.
+	if (surface_format.majorVersion() < MINIMUM_OPENGL_VERSION.first/*major*/ ||
+		(surface_format.majorVersion() == MINIMUM_OPENGL_VERSION.first/*major*/ &&
+				surface_format.minorVersion() < MINIMUM_OPENGL_VERSION.second/*minor*/))
 	{
 		throw OpenGLException(
-			GPLATES_ASSERTION_SOURCE,
-			"OpenGL 3.3 or greater is required.");
+				GPLATES_ASSERTION_SOURCE,
+				QString("OpenGL %1.%2 (core profile) or greater is required.").arg(
+						MINIMUM_OPENGL_VERSION.first/*major*/,
+						MINIMUM_OPENGL_VERSION.second/*minor*/).toStdString());
 	}
 
 	// We require a main framebuffer with a stencil buffer (usually interleaved with depth).
