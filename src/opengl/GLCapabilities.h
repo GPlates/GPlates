@@ -27,6 +27,7 @@
 #define GPLATES_OPENGL_GLCAPABILITIES_H
 
 #include <boost/noncopyable.hpp>
+#include <QOpenGLContext>
 
 #include <opengl/OpenGL1.h>
 
@@ -135,13 +136,24 @@ namespace GPlatesOpenGL
 		//! The number of texture array layers supported.
 		GLuint gl_max_texture_array_layers;  // GL_MAX_ARRAY_TEXTURE_LAYERS query result
 
-	private:
+
+	private: // For use by @a GLContext...
+
+		//
+		// Only GLContext can create a GLCapabilities - this is to prevent clients
+		// from creating and initialising their own GLCapabilities - it must be initialised
+		// from a GLContext once the GLEW library has been initialised.
+		//
+		friend class GLContext;
 
 		GLCapabilities();
 
 		void
 		initialise(
-				OpenGLFunctions &opengl_functions);
+				OpenGLFunctions &opengl_functions,
+				const QOpenGLContext &opengl_context);
+
+	private:
 
 		/**
 		 * Calls 'glGetIntegerv'.
@@ -153,14 +165,6 @@ namespace GPlatesOpenGL
 		query_integer(
 				OpenGLFunctions &opengl_functions,
 				GLenum pname);
-
-
-		/**
-		 * Only GLContext can create a GLCapabilities - this is to prevent clients
-		 * from creating and initialising their own GLCapabilities - it must be initialised
-		 * from a GLContext once the GLEW library has been initialised.
-		 */
-		friend class GLContext;
 	};
 }
 

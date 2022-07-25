@@ -84,6 +84,11 @@ namespace GPlatesOpenGL
 			~Impl()
 			{  }
 
+			//! Get the underlying QOpenGLContext.
+			virtual
+			const QOpenGLContext &
+			get_opengl_context() const = 0;
+
 			//! Make this context the current context.
 			virtual
 			void
