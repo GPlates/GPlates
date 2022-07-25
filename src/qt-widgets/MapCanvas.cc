@@ -80,7 +80,6 @@ GPlatesQtWidgets::MapCanvas::MapCanvas(
 					// We're sharing the OpenGL context with GlobeCanvas since both
 					// MapCanvas and GlobeCanvas were created with the same QSurfaceFormat...
 					*globe_canvas.get_gl_context())),
-	d_make_context_current(*d_gl_context),
 	d_initialisedGL(false),
 	d_view_projection(
 			GPlatesOpenGL::GLViewport(0, 0, d_gl_context->get_width(), d_gl_context->get_height()),

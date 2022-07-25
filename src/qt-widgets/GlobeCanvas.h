@@ -421,22 +421,6 @@ namespace GPlatesQtWidgets
 		};
 
 		/**
-		 * Utility class to make the QOpenGLWidget's OpenGL context current in @a GlobeCanvas constructor.
-		 *
-		 * This is so we can do OpenGL stuff in the @a GlobeCanvas constructor when normally
-		 * we'd have to wait until 'initializeGL()'.
-		 */
-		struct MakeGLContextCurrent
-		{
-			explicit
-			MakeGLContextCurrent(
-					GPlatesOpenGL::GLContext &gl_context)
-			{
-				gl_context.make_current();
-			}
-		};
-
-		/**
 		 * Typedef for an opaque object that caches a particular painting.
 		 */
 		typedef boost::shared_ptr<void> cache_handle_type;
@@ -446,8 +430,6 @@ namespace GPlatesQtWidgets
 
 		//! Mirrors an OpenGL context and provides a central place to manage low-level OpenGL objects.
 		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
-		//! Makes the QOpenGLWidget's OpenGL context current in @a GlobeCanvas constructor so it can call OpenGL.
-		MakeGLContextCurrent d_make_context_current;
 
 		//! Is true if OpenGL has been initialised for this canvas.
 		bool d_initialisedGL;

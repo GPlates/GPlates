@@ -92,7 +92,6 @@ GPlatesQtWidgets::GlobeCanvas::GlobeCanvas(
 			GPlatesOpenGL::GLContext::create(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
 							new GPlatesOpenGL::GLContextImpl::QOpenGLWidgetImpl(*this)))),
-	d_make_context_current(*d_gl_context),
 	d_initialisedGL(false),
 	d_view_projection(
 			GPlatesOpenGL::GLViewport(0, 0, d_gl_context->get_width(), d_gl_context->get_height()),
