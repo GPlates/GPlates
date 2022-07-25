@@ -29,6 +29,8 @@
 
 #include "GLCapabilities.h"
 
+#include "OpenGLFunctions.h"
+
 #include "global/CompilerWarnings.h"
 
 // We use macros in <GL/glew.h> that contain old-style casts.
@@ -76,14 +78,15 @@ GPlatesOpenGL::GLCapabilities::GLCapabilities() :
 
 
 void
-GPlatesOpenGL::GLCapabilities::initialise()
+GPlatesOpenGL::GLCapabilities::initialise(
+		OpenGLFunctions &opengl_functions)
 {
 	//
 	// Viewport
 	//
 
 	GLint max_viewport_dims[2];
-	glGetIntegerv(GL_MAX_VIEWPORT_DIMS, &max_viewport_dims[0]);
+	opengl_functions.glGetIntegerv(GL_MAX_VIEWPORT_DIMS, &max_viewport_dims[0]);
 	gl_max_viewport_dims[0] = max_viewport_dims[0];
 	gl_max_viewport_dims[1] = max_viewport_dims[1];
 
@@ -92,55 +95,55 @@ GPlatesOpenGL::GLCapabilities::initialise()
 	// Framebuffer
 	//
 
-	gl_max_color_attachments = query_integer(GL_MAX_COLOR_ATTACHMENTS);
-	gl_max_renderbuffer_size = query_integer(GL_MAX_RENDERBUFFER_SIZE);
-	gl_max_draw_buffers = query_integer(GL_MAX_DRAW_BUFFERS);
-	gl_max_dual_source_draw_buffers = query_integer(GL_MAX_DUAL_SOURCE_DRAW_BUFFERS);
-	gl_sub_pixel_bits = query_integer(GL_SUBPIXEL_BITS);
-	gl_max_sample_mask_words = query_integer(GL_MAX_SAMPLE_MASK_WORDS);
+	gl_max_color_attachments = query_integer(opengl_functions, GL_MAX_COLOR_ATTACHMENTS);
+	gl_max_renderbuffer_size = query_integer(opengl_functions, GL_MAX_RENDERBUFFER_SIZE);
+	gl_max_draw_buffers = query_integer(opengl_functions, GL_MAX_DRAW_BUFFERS);
+	gl_max_dual_source_draw_buffers = query_integer(opengl_functions, GL_MAX_DUAL_SOURCE_DRAW_BUFFERS);
+	gl_sub_pixel_bits = query_integer(opengl_functions, GL_SUBPIXEL_BITS);
+	gl_max_sample_mask_words = query_integer(opengl_functions, GL_MAX_SAMPLE_MASK_WORDS);
 
 
 	//
 	// Buffer
 	//
 
-	gl_uniform_buffer_offset_alignment = query_integer(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT);
+	gl_uniform_buffer_offset_alignment = query_integer(opengl_functions, GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT);
 
 
 	//
 	// Shader
 	//
 
-	gl_max_vertex_attribs = query_integer(GL_MAX_VERTEX_ATTRIBS);
-	gl_max_clip_distances = query_integer(GL_MAX_CLIP_DISTANCES);
+	gl_max_vertex_attribs = query_integer(opengl_functions, GL_MAX_VERTEX_ATTRIBS);
+	gl_max_clip_distances = query_integer(opengl_functions, GL_MAX_CLIP_DISTANCES);
 
-	gl_max_combined_texture_image_units = query_integer(GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
-	gl_max_combined_uniform_blocks = query_integer(GL_MAX_COMBINED_UNIFORM_BLOCKS);
+	gl_max_combined_texture_image_units = query_integer(opengl_functions, GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS);
+	gl_max_combined_uniform_blocks = query_integer(opengl_functions, GL_MAX_COMBINED_UNIFORM_BLOCKS);
 
-	gl_max_texture_image_units = query_integer(GL_MAX_TEXTURE_IMAGE_UNITS);
-	gl_max_fragment_uniform_components = query_integer(GL_MAX_FRAGMENT_UNIFORM_COMPONENTS);
-	gl_max_fragment_uniform_blocks = query_integer(GL_MAX_FRAGMENT_UNIFORM_BLOCKS);
+	gl_max_texture_image_units = query_integer(opengl_functions, GL_MAX_TEXTURE_IMAGE_UNITS);
+	gl_max_fragment_uniform_components = query_integer(opengl_functions, GL_MAX_FRAGMENT_UNIFORM_COMPONENTS);
+	gl_max_fragment_uniform_blocks = query_integer(opengl_functions, GL_MAX_FRAGMENT_UNIFORM_BLOCKS);
 
-	gl_max_vertex_texture_image_units = query_integer(GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS);
-	gl_max_vertex_output_components = query_integer(GL_MAX_VERTEX_OUTPUT_COMPONENTS);
-	gl_max_vertex_uniform_components = query_integer(GL_MAX_VERTEX_UNIFORM_COMPONENTS);
-	gl_max_vertex_uniform_blocks = query_integer(GL_MAX_VERTEX_UNIFORM_BLOCKS);
+	gl_max_vertex_texture_image_units = query_integer(opengl_functions, GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS);
+	gl_max_vertex_output_components = query_integer(opengl_functions, GL_MAX_VERTEX_OUTPUT_COMPONENTS);
+	gl_max_vertex_uniform_components = query_integer(opengl_functions, GL_MAX_VERTEX_UNIFORM_COMPONENTS);
+	gl_max_vertex_uniform_blocks = query_integer(opengl_functions, GL_MAX_VERTEX_UNIFORM_BLOCKS);
 
-	gl_max_geometry_texture_image_units = query_integer(GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS);
-	gl_max_geometry_output_vertices = query_integer(GL_MAX_GEOMETRY_OUTPUT_VERTICES);
-	gl_max_geometry_input_components = query_integer(GL_MAX_GEOMETRY_INPUT_COMPONENTS);
-	gl_max_geometry_output_components = query_integer(GL_MAX_GEOMETRY_OUTPUT_COMPONENTS);
-	gl_max_geometry_total_output_components = query_integer(GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS);
-	gl_max_geometry_uniform_components = query_integer(GL_MAX_GEOMETRY_UNIFORM_COMPONENTS);
-	gl_max_geometry_uniform_blocks = query_integer(GL_MAX_GEOMETRY_UNIFORM_BLOCKS);
+	gl_max_geometry_texture_image_units = query_integer(opengl_functions, GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS);
+	gl_max_geometry_output_vertices = query_integer(opengl_functions, GL_MAX_GEOMETRY_OUTPUT_VERTICES);
+	gl_max_geometry_input_components = query_integer(opengl_functions, GL_MAX_GEOMETRY_INPUT_COMPONENTS);
+	gl_max_geometry_output_components = query_integer(opengl_functions, GL_MAX_GEOMETRY_OUTPUT_COMPONENTS);
+	gl_max_geometry_total_output_components = query_integer(opengl_functions, GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS);
+	gl_max_geometry_uniform_components = query_integer(opengl_functions, GL_MAX_GEOMETRY_UNIFORM_COMPONENTS);
+	gl_max_geometry_uniform_blocks = query_integer(opengl_functions, GL_MAX_GEOMETRY_UNIFORM_BLOCKS);
 
 
 	//
 	// Texture
 	//
 
-	gl_max_texture_size = query_integer(GL_MAX_TEXTURE_SIZE);
-	gl_max_cube_map_texture_size = query_integer(GL_MAX_CUBE_MAP_TEXTURE_SIZE);
+	gl_max_texture_size = query_integer(opengl_functions, GL_MAX_TEXTURE_SIZE);
+	gl_max_cube_map_texture_size = query_integer(opengl_functions, GL_MAX_CUBE_MAP_TEXTURE_SIZE);
 
 	// Is GL_EXT_texture_filter_anisotropic supported?
 	//
@@ -150,19 +153,20 @@ GPlatesOpenGL::GLCapabilities::initialise()
 	if (GLEW_EXT_texture_filter_anisotropic)
 	{
 		gl_EXT_texture_filter_anisotropic = true;
-		gl_texture_max_anisotropy = query_integer(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT);
+		gl_texture_max_anisotropy = query_integer(opengl_functions, GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT);
 	}
 
-	gl_max_texture_array_layers = query_integer(GL_MAX_ARRAY_TEXTURE_LAYERS);
+	gl_max_texture_array_layers = query_integer(opengl_functions, GL_MAX_ARRAY_TEXTURE_LAYERS);
 }
 
 
 GLuint
 GPlatesOpenGL::GLCapabilities::query_integer(
+		OpenGLFunctions &opengl_functions,
 		GLenum pname)
 {
 	GLint value;
-	glGetIntegerv(pname, &value);
+	opengl_functions.glGetIntegerv(pname, &value);
 
 	// Returns GLint result as GLuint to avoid unsigned/signed comparison compiler warnings. 
 	return value;

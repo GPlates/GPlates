@@ -179,7 +179,7 @@ GPlatesOpenGL::GLContext::initialiseGL()
 		s_initialised_GLEW = true;
 
 		// Get the OpenGL capabilities and parameters from the current OpenGL implementation.
-		s_capabilities.initialise();
+		s_capabilities.initialise(get_opengl_functions());
 	}
 
 	// The QSurfaceFormat of our OpenGL context.

@@ -34,6 +34,7 @@
 namespace GPlatesOpenGL
 {
 	class GLContext;
+	class OpenGLFunctions;
 
 	/**
 	 * Various OpenGL implementation-dependent capabilities and parameters.
@@ -139,7 +140,8 @@ namespace GPlatesOpenGL
 		GLCapabilities();
 
 		void
-		initialise();
+		initialise(
+				OpenGLFunctions &opengl_functions);
 
 		/**
 		 * Calls 'glGetIntegerv'.
@@ -149,6 +151,7 @@ namespace GPlatesOpenGL
 		static
 		GLuint
 		query_integer(
+				OpenGLFunctions &opengl_functions,
 				GLenum pname);
 
 
