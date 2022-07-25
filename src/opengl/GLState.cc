@@ -37,8 +37,10 @@
 
 
 GPlatesOpenGL::GLState::GLState(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateStore::non_null_ptr_type &state_store) :
+	d_opengl_functions(opengl_functions),
 	d_capabilities(capabilities),
 	d_state_set_keys(state_store->get_state_set_keys()),
 	d_state_set_store(state_store->get_state_set_store()),
@@ -924,7 +926,7 @@ GPlatesOpenGL::GLState::StateScope::apply_state_set(
 	if (state_set_ptr && current_state_set)
 	{
 		// Both state sets exist - this is a transition from the current state to the new state.
-		if (state_set_ptr.get()->apply_state(capabilities, *current_state_set.get(), current_state))
+		if (state_set_ptr.get()->apply_state(current_state.d_opengl_functions, capabilities, *current_state_set.get(), current_state))
 		{
 			// The new state is different than the current state, so record as the new current state.
 			d_state_changed_since_scope_start[state_set_key] = state_set_ptr;
@@ -934,7 +936,7 @@ GPlatesOpenGL::GLState::StateScope::apply_state_set(
 	{
 		// Only the new state set exists - get it to apply its internal state.
 		// This is a transition from the current *default* state to the new state.
-		if (state_set_ptr.get()->apply_from_default_state(capabilities, current_state))
+		if (state_set_ptr.get()->apply_from_default_state(current_state.d_opengl_functions, capabilities, current_state))
 		{
 			// The new state is different than the *default* state, so record as the new current state.
 			d_state_changed_since_scope_start[state_set_key] = state_set_ptr;
@@ -944,7 +946,7 @@ GPlatesOpenGL::GLState::StateScope::apply_state_set(
 	{
 		// Only the current state set exists - get it to apply the default state.
 		// This is a transition from the current state to the *default* state.
-		if (current_state_set.get()->apply_to_default_state(capabilities, current_state))
+		if (current_state_set.get()->apply_to_default_state(current_state.d_opengl_functions, capabilities, current_state))
 		{
 			// The *default* state is different than the current state, so record as the new current state.
 			d_state_changed_since_scope_start[state_set_key] = boost::none;
@@ -970,7 +972,7 @@ GPlatesOpenGL::GLState::StateScope::apply_default_state(
 			// A state set exists (meaning it's *not* the default state).
 			//
 			// Change the state from the current state to the default state.
-			state_set.get()->apply_to_default_state(capabilities, current_state);
+			state_set.get()->apply_to_default_state(current_state.d_opengl_functions, capabilities, current_state);
 
 			// Record the state as the default state.
 			state_set = boost::none;
@@ -994,7 +996,7 @@ GPlatesOpenGL::GLState::StateScope::apply_default_state(
 		if (insert_state_change.second)
 		{
 			// Change the state from the current state to the default state.
-			state_set->apply_to_default_state(capabilities, current_state);
+			state_set->apply_to_default_state(current_state.d_opengl_functions, capabilities, current_state);
 
 			// Record the state as the default state.
 			insert_state_change.first->second = boost::none;
@@ -1025,14 +1027,14 @@ GPlatesOpenGL::GLState::StateScope::apply_state_at_scope_start(
 			if (changed_state_set)
 			{
 				// Change the state from the current state to the state at the start of the scope.
-				state_set_at_start->apply_state(capabilities, *changed_state_set.get(), current_state);
+				state_set_at_start->apply_state(current_state.d_opengl_functions, capabilities, *changed_state_set.get(), current_state);
 			}
 			else
 			{
 				// No state set exists for the current state (meaning it's the default state).
 				//
 				// Change the state from the default state to the state at the start of the scope.
-				state_set_at_start->apply_from_default_state(capabilities, current_state);
+				state_set_at_start->apply_from_default_state(current_state.d_opengl_functions, capabilities, current_state);
 			}
 		}
 		else // in default state at start of scope...
@@ -1042,7 +1044,7 @@ GPlatesOpenGL::GLState::StateScope::apply_state_at_scope_start(
 				// No state set existed at the start of the scope (meaning it's the default state).
 				//
 				// Change the state from the current state to the default state (at the start of the scope).
-				changed_state_set.get()->apply_to_default_state(capabilities, current_state);
+				changed_state_set.get()->apply_to_default_state(current_state.d_opengl_functions, capabilities, current_state);
 			}
 			// else neither state exists (so no state change since both are the default state). 
 		}

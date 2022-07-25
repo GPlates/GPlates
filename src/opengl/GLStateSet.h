@@ -32,6 +32,7 @@ namespace GPlatesOpenGL
 {
 	class GLCapabilities;
 	class GLState;
+	class OpenGLFunctions;
 
 	/**
 	 * Base class for setting any OpenGL *global* state - together all the individual state sets
@@ -71,6 +72,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const = 0;
@@ -103,6 +105,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const = 0;
 
@@ -129,6 +132,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const = 0;
 	};

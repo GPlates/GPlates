@@ -182,6 +182,29 @@ namespace GPlatesOpenGL
 		}
 
 
+		//! Version 3.3 core is always supported (it's our minimum requirement).
+		bool
+		supports_3_3_core() const
+		{
+			return true;
+		}
+
+		//! Returns true if we have OpenGL 4.0 or greater.
+		bool
+		supports_4_0_core() const;
+
+		//! Returns true if we have OpenGL 4.1 or greater.
+		bool
+		supports_4_1_core() const;
+
+		//! Returns true if we have OpenGL 4.2 or greater.
+		bool
+		supports_4_2_core() const;
+
+		//! Returns true if we have OpenGL 4.3 or greater.
+		bool
+		supports_4_3_core() const;
+
 		//
 		// The following methods are equivalent to the OpenGL functions with the same function name
 		// (with a 'gl' prefix) and mostly the same function parameters.
@@ -611,7 +634,13 @@ namespace GPlatesOpenGL
 				GLenum cap,
 				GLuint index = 0) const;
 
-	public: // For use by @a GLContext...
+
+	private: // For use by @a GLContext...
+
+		//
+		// Only @a GLContext should be able to create us.
+		//
+		friend class GLContext;
 
 		/**
 		 * Creates a @a GL object.
@@ -620,9 +649,10 @@ namespace GPlatesOpenGL
 		non_null_ptr_type
 		create(
 				const GLContext::non_null_ptr_type &context,
+				OpenGLFunctions &opengl_functions,
 				const GLStateStore::non_null_ptr_type &state_store)
 		{
-			return non_null_ptr_type(new GL(context, state_store));
+			return non_null_ptr_type(new GL(context, opengl_functions, state_store));
 		}
 
 	private:
@@ -630,6 +660,7 @@ namespace GPlatesOpenGL
 		//! Constructor.
 		GL(
 				const GLContext::non_null_ptr_type &context,
+				OpenGLFunctions &opengl_functions,
 				const GLStateStore::non_null_ptr_type &state_store);
 
 
@@ -637,6 +668,11 @@ namespace GPlatesOpenGL
 		 * Manages objects associated with the current OpenGL context.
 		 */
 		GLContext::non_null_ptr_type d_context;
+
+		/**
+		 * The OpenGL functions.
+		 */
+		OpenGLFunctions &d_opengl_functions;
 
 		/**
 		 * Context capabilities.
@@ -664,7 +700,7 @@ namespace GPlatesOpenGL
 		 *
 		 * Note: This might not be zero.
 		 *       For example, each QOpenGLWidget has its own framebuffer object
-		 *       (that we treat as our main framebuffer when rendering into it).
+		 *       (that we treat as our default framebuffer when rendering into it).
 		 */
 		GLuint d_default_framebuffer_resource;
 	};

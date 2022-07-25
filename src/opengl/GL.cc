@@ -30,6 +30,7 @@
 #include "GL.h"
 
 #include "OpenGLException.h"
+#include "OpenGLFunctions.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -37,10 +38,12 @@
 
 GPlatesOpenGL::GL::GL(
 		const GLContext::non_null_ptr_type &context,
+		OpenGLFunctions &opengl_functions,
 		const GLStateStore::non_null_ptr_type &state_store) :
 	d_context(context),
+	d_opengl_functions(opengl_functions),
 	d_capabilities(context->get_capabilities()),
-	d_current_state(GLState::create(context->get_capabilities(), state_store)),
+	d_current_state(GLState::create(opengl_functions, context->get_capabilities(), state_store)),
 	// Default viewport/scissor starts out as the initial window dimensions returned by context.
 	// However it can change when the window (that context is attached to) is resized...
 	d_default_viewport(0, 0, context->get_width(), context->get_height()),
@@ -48,6 +51,34 @@ GPlatesOpenGL::GL::GL(
 	d_default_draw_read_buffer((context->get_surface_format().swapBehavior() == QSurfaceFormat::DoubleBuffer) ? GL_BACK : GL_FRONT),
 	d_default_framebuffer_resource(context->get_default_framebuffer_object())
 {
+}
+
+
+bool
+GPlatesOpenGL::GL::supports_4_0_core() const
+{
+	return d_opengl_functions.supports_4_0_core();
+}
+
+
+bool
+GPlatesOpenGL::GL::supports_4_1_core() const
+{
+	return d_opengl_functions.supports_4_1_core();
+}
+
+
+bool
+GPlatesOpenGL::GL::supports_4_2_core() const
+{
+	return d_opengl_functions.supports_4_2_core();
+}
+
+
+bool
+GPlatesOpenGL::GL::supports_4_3_core() const
+{
+	return d_opengl_functions.supports_4_3_core();
 }
 
 
@@ -173,7 +204,7 @@ GPlatesOpenGL::GL::BindTexture(
 {
 	d_current_state->bind_texture(
 			texture_target,
-			// Bind to the currently active texture unit (glActiveTexture)...
+			// Bind to the currently active texture unit (set by gl.ActiveTexture)...
 			d_current_state->get_active_texture()/*texture_unit*/,
 			texture);
 }
@@ -945,10 +976,10 @@ GPlatesOpenGL::GL::RenderScope::RenderScope(
 	// to be wrapped by GLState and the GLStateSet derivations. We do this because whenever GL::Viewport()
 	// or GL::Scissor() are called, we pass the default viewport to GLState (which shadows the actual OpenGL
 	// state) and hence our default viewport should represent the actual OpenGL state (as seen by OpenGL).
-	glViewport(
+	d_gl.d_opengl_functions.glViewport(
 			d_gl.d_default_viewport.x(), d_gl.d_default_viewport.y(),
 			d_gl.d_default_viewport.width(), d_gl.d_default_viewport.height());
-	glScissor(
+	d_gl.d_opengl_functions.glScissor(
 			d_gl.d_default_viewport.x(), d_gl.d_default_viewport.y(),
 			d_gl.d_default_viewport.width(), d_gl.d_default_viewport.height());
 

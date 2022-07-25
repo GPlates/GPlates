@@ -57,6 +57,8 @@
 
 namespace GPlatesOpenGL
 {
+	class OpenGLFunctions;
+
 	/**
 	 * Shadows the current global state of an OpenGL 3.3 (core profile) context.
 	 *
@@ -84,10 +86,11 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateStore::non_null_ptr_type &state_store)
 		{
-			return non_null_ptr_type(new GLState(capabilities, state_store));
+			return non_null_ptr_type(new GLState(opengl_functions, capabilities, state_store));
 		}
 
 
@@ -861,6 +864,8 @@ namespace GPlatesOpenGL
 		typedef std::stack<StateScope::shared_ptr_type> save_restore_stack_type;
 
 
+		OpenGLFunctions &d_opengl_functions;
+
 		const GLCapabilities &d_capabilities;
 
 		/**
@@ -907,6 +912,7 @@ namespace GPlatesOpenGL
 
 
 		GLState(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateStore::non_null_ptr_type &state_store);
 
