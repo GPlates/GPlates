@@ -633,8 +633,11 @@ namespace GPlatesOpenGL
 		 * ...so essentially any state set with glVertexAttrib4f, glVertexAttribI4i, etc, prior to a draw call
 		 * is undefined after the draw call so we cannot track it (apparently this was rectified in OpenGL 4.2).
 		 *
-		 * You can either call glVertexAttrib4f, glVertexAttribI4i, etc natively, or perhaps even better
-		 * set a uniform in the vertex shader (eg, a constant colour for the entire drawable).
+		 * A better approach is to instead set a uniform in the vertex shader (eg, a constant colour for the entire drawable).
+		 *
+		 * NOTE: The OpenGL functions glVertexAttrib4f, glVertexAttribI4i, etc, are not available for this class to use anyway.
+		 *       This is because they were not exposed by Qt until 4.4 core (ie, were not available until QOpenGLFunctions_4_4_Core),
+		 *       probably for a reason similar to above, and hence are not available in our @a OpenGLFunctions (used by this class).
 		 */
 
 		void

@@ -59,27 +59,6 @@ GPlatesOpenGL::GLState::reset_to_default()
 
 	// Reset the current state to the default OpenGL state.
 	d_current_state_scope->apply_default_state(*this/*current_state*/, d_capabilities);
-
-	//
-	// Special case: Generic vertex attribute values
-	//
-	// Set default state for generic vertex attributes in case user called glVertexAttrib4f, glVertexAttribI4i, etc.
-	// 
-	// This is global state that we don't shadow because according to the 3.3 core profile spec:
-	//
-	//   If an array corresponding to a generic attribute required by a vertex shader is enabled, the
-	//   corresponding current generic attribute value is undefined after the execution of DrawElementsOneInstance.
-	//
-	// ...so essentially any state set with glVertexAttrib4f, glVertexAttribI4i, etc, prior to a draw call
-	// is undefined after the draw call (apparently this was rectified in OpenGL 4.2) so we cannot track it.
-	//
-	// However the user is still free to call glVertexAttrib4f, glVertexAttribI4i, etc natively and track it themselves.
-	// We're just ensuring it gets set back to the default state.
-	//
-	for (GLuint index = 0; index < d_capabilities.gl_max_vertex_attribs; ++index)
-	{
-		glVertexAttrib4f(index, 0, 0, 0, 1);
-	}
 }
 
 
