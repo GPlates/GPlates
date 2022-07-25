@@ -28,6 +28,11 @@
 #include <string>
 #include <utility>
 #include <QDebug>
+#include <QOpenGLFunctions_4_3_Core>
+#include <QOpenGLFunctions_4_2_Core>
+#include <QOpenGLFunctions_4_1_Core>
+#include <QOpenGLFunctions_4_0_Core>
+#include <QOpenGLFunctions_3_3_Core>
 #include <QSurfaceFormat>
 #include <QtGlobal>
 
@@ -37,7 +42,9 @@
 #include "GLStateStore.h"
 #include "GLUtils.h"
 #include "OpenGLException.h"
+#include "OpenGLFunctions.h"
 
+#include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -113,6 +120,38 @@ GPlatesOpenGL::GLContext::set_default_surface_format()
 }
 
 
+GPlatesOpenGL::GLContext::GLContext(
+		const boost::shared_ptr<Impl> &context_impl) :
+	d_context_impl(context_impl),
+	d_shared_state(new SharedState()),
+	d_non_shared_state(new NonSharedState())
+{
+	// Defined in ".cc" file because...
+	// non_null_ptr destructors require complete type of class they're referring to.
+	// Compiler will call destructors of already-constructed members if constructor throws exception.
+}
+
+
+GPlatesOpenGL::GLContext::GLContext(
+		const boost::shared_ptr<Impl> &context_impl,
+		const boost::shared_ptr<SharedState> &shared_state) :
+	d_context_impl(context_impl),
+	d_shared_state(shared_state),
+	d_non_shared_state(new NonSharedState())
+{
+	// Defined in ".cc" file because...
+	// non_null_ptr destructors require complete type of class they're referring to.
+	// Compiler will call destructors of already-constructed members if constructor throws exception.
+}
+
+
+GPlatesOpenGL::GLContext::~GLContext()
+{
+	// Defined in ".cc" file because...
+	// non_null_ptr destructors require complete type of class they're referring to.
+}
+
+
 void
 GPlatesOpenGL::GLContext::initialiseGL()
 {
@@ -144,7 +183,7 @@ GPlatesOpenGL::GLContext::initialiseGL()
 	}
 
 	// The QSurfaceFormat of our OpenGL context.
-	const QSurfaceFormat &surface_format = get_surface_format();
+	const QSurfaceFormat surface_format = get_surface_format();
 
 	// Make sure we got our minimum OpenGL version or greater.
 	if (surface_format.majorVersion() < MINIMUM_OPENGL_VERSION.first/*major*/ ||
@@ -153,9 +192,9 @@ GPlatesOpenGL::GLContext::initialiseGL()
 	{
 		throw OpenGLException(
 				GPLATES_ASSERTION_SOURCE,
-				QString("OpenGL %1.%2 (core profile) or greater is required.").arg(
-						MINIMUM_OPENGL_VERSION.first/*major*/,
-						MINIMUM_OPENGL_VERSION.second/*minor*/).toStdString());
+				QString("OpenGL %1.%2 (core profile) or greater is required.")
+						.arg(MINIMUM_OPENGL_VERSION.first/*major*/)
+						.arg(MINIMUM_OPENGL_VERSION.second/*minor*/).toStdString());
 	}
 
 	// We require a main framebuffer with a stencil buffer (usually interleaved with depth).
@@ -203,6 +242,104 @@ void
 GPlatesOpenGL::GLContext::end_render()
 {
 	deallocate_queued_object_resources();
+}
+
+
+GPlatesOpenGL::OpenGLFunctions &
+GPlatesOpenGL::GLContext::get_opengl_functions()
+{
+	// Create/initialise the OpenGL functions for this context (if haven't already).
+	if (!d_opengl_functions)
+	{
+		create_opengl_functions();
+	}
+
+	return *d_opengl_functions.get();
+}
+
+
+void
+GPlatesOpenGL::GLContext::create_opengl_functions()
+{
+	// Get the version of OpenGL functions associated with the version of the OpenGL context.
+	if (boost::optional<QOpenGLFunctions_4_3_Core *> opengl_functions_4_3 =
+		get_version_functions<QOpenGLFunctions_4_3_Core>(4, 3))
+	{
+		d_opengl_functions = OpenGLFunctions::create(opengl_functions_4_3.get());
+	}
+	else if (boost::optional<QOpenGLFunctions_4_2_Core *> opengl_functions_4_2 =
+		get_version_functions<QOpenGLFunctions_4_2_Core>(4, 2))
+	{
+		d_opengl_functions = OpenGLFunctions::create(opengl_functions_4_2.get());
+	}
+	else if (boost::optional<QOpenGLFunctions_4_1_Core *> opengl_functions_4_1 =
+		get_version_functions<QOpenGLFunctions_4_1_Core>(4, 1))
+	{
+		d_opengl_functions = OpenGLFunctions::create(opengl_functions_4_1.get());
+	}
+	else if (boost::optional<QOpenGLFunctions_4_0_Core *> opengl_functions_4_0 =
+		get_version_functions<QOpenGLFunctions_4_0_Core>(4, 0))
+	{
+		d_opengl_functions = OpenGLFunctions::create(opengl_functions_4_0.get());
+	}
+	else if (boost::optional<QOpenGLFunctions_3_3_Core *> opengl_functions_3_3 =
+		get_version_functions<QOpenGLFunctions_3_3_Core>(3, 3))
+	{
+		d_opengl_functions = OpenGLFunctions::create(opengl_functions_3_3.get());
+	}
+	else
+	{
+		// The QSurfaceFormat of our OpenGL context.
+		const QSurfaceFormat surface_format = get_surface_format();
+
+		throw OpenGLException(
+				GPLATES_ASSERTION_SOURCE,
+				QString("Failed to access OpenGL functions in valid OpenGL context (version %1.%2 core).")
+						.arg(surface_format.majorVersion())
+						.arg(surface_format.minorVersion()).toStdString());
+	}
+}
+
+
+template <class OpenGLFunctionsType>
+boost::optional<OpenGLFunctionsType *>
+GPlatesOpenGL::GLContext::get_version_functions(
+		int major_version,
+		int minor_version) const
+{
+	QOpenGLVersionProfile version_profile;
+	version_profile.setProfile(QSurfaceFormat::CoreProfile);
+	version_profile.setVersion(major_version, minor_version);
+
+	// See if OpenGL functions are available for the specified version (of core profile) in the context.
+	QAbstractOpenGLFunctions *abstract_opengl_functions = d_context_impl->get_version_functions(version_profile);
+	if (!abstract_opengl_functions)
+	{
+		return boost::none;
+	}
+
+	// Downcast to the expected version functions type.
+	OpenGLFunctionsType *opengl_functions = dynamic_cast<OpenGLFunctionsType *>(abstract_opengl_functions);
+	// If downcast fails then we've made a programming error (mismatched the version number and the class type).
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			opengl_functions,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Initialise the OpenGL functions.
+	//
+	// This only needs to be done once (per instance) and this instance is owned by QOpenGLContext.
+	// Also there is no need to call this as long as this context is current (which is should be),
+	// but we'll call it anyway just in case.
+	if (!opengl_functions->initializeOpenGLFunctions())
+	{
+		throw OpenGLException(
+				GPLATES_ASSERTION_SOURCE,
+				QString("Failed to initialise OpenGL functions in OpenGL %1.%2 (core profile).")
+						.arg(major_version)
+						.arg(minor_version).toStdString());
+	}
+
+	return opengl_functions;
 }
 
 

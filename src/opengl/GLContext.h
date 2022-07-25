@@ -33,6 +33,8 @@
 #include <boost/shared_ptr.hpp>
 #include <opengl/OpenGL1.h>
 #include <QPair>
+#include <QOpenGLContext>
+#include <QOpenGLVersionProfile>
 #include <QSurfaceFormat>
 
 #include "GLBuffer.h"
@@ -56,6 +58,7 @@
 namespace GPlatesOpenGL
 {
 	class GL;
+	class OpenGLFunctions;
 
 	/**
 	 * Mirrors an OpenGL context and provides a central place to manage low-level OpenGL objects.
@@ -90,6 +93,12 @@ namespace GPlatesOpenGL
 			virtual
 			const QSurfaceFormat
 			get_surface_format() const = 0;
+
+			//! Return the OpenGL functions of specified version profile (or null if version/profile not available on context).
+			virtual
+			QAbstractOpenGLFunctions *
+			get_version_functions(
+					const QOpenGLVersionProfile &version_profile) const = 0;
 
 			//! Return default framebuffer resource (might not be zero, eg, each QOpenGLWidget has its own framebuffer object).
 			virtual
@@ -187,7 +196,7 @@ namespace GPlatesOpenGL
 			 * It can be rendered as:
 			 *
 			 *   gl.BindVertexArray(vertex_array);
-			 *   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+			 *   gl.DrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 			 *
 			 * Note: This also creates a new vertex buffer (but no vertex element buffer) that is
 			 *       kept alive by the returned vertex array.
@@ -325,6 +334,9 @@ namespace GPlatesOpenGL
 		{
 			return non_null_ptr_type(new GLContext(context_impl, shared_context.get_shared_state()));
 		}
+
+
+		~GLContext();
 
 
 		/**
@@ -481,11 +493,19 @@ namespace GPlatesOpenGL
 		void
 		end_render();
 
+
 	private:
 		/**
 		 * For delegating to the real OpenGL context.
 		 */
 		boost::shared_ptr<Impl> d_context_impl;
+
+		/**
+		 * The OpenGL functions for the version and profile of this context.
+		 *
+		 * It is created on first access (and context must be current).
+		 */
+		boost::optional<GPlatesGlobal::PointerTraits<OpenGLFunctions>::non_null_ptr_type> d_opengl_functions;
 
 		/**
 		 * OpenGL state that can be shared with another context.
@@ -522,20 +542,45 @@ namespace GPlatesOpenGL
 		//! Constructor.
 		explicit
 		GLContext(
-				const boost::shared_ptr<Impl> &context_impl) :
-			d_context_impl(context_impl),
-			d_shared_state(new SharedState()),
-			d_non_shared_state(new NonSharedState())
-		{  }
+				const boost::shared_ptr<Impl> &context_impl);
 
 		//! Constructor.
 		GLContext(
 				const boost::shared_ptr<Impl> &context_impl,
-				const boost::shared_ptr<SharedState> &shared_state) :
-			d_context_impl(context_impl),
-			d_shared_state(shared_state),
-			d_non_shared_state(new NonSharedState())
-		{  }
+				const boost::shared_ptr<SharedState> &shared_state);
+
+
+		/**
+		 * Returns the OpenGL functions for this context.
+		 */
+		OpenGLFunctions &
+		get_opengl_functions();
+
+		/**
+		 * Create our @a OpenGLFunctions (stored in @a d_opengl_functions).
+		 *
+		 * Throws @a OpenGLException if failed to access OpenGL functions.
+		 */
+		void
+		create_opengl_functions();
+
+		/**
+		 * Returns the OpenGL functions (via Qt) of the specified version core profile in the OpenGL context.
+		 *
+		 * Returns none if request failed. For example, if requesting functions (via specified version)
+		 * that are not in the version (and core profile) of the OpenGL context, such as requesting
+		 * 4.3 core functions from a 3.3 core context.
+		 *
+		 * Throws @a OpenGLException if QOpenGLContext not yet initialised.
+		 *
+		 * Note: The template type pointer 'OpenGLFunctionsType' should match the version (and 'core' profile).
+		 *       For example, 'QOpenGLFunctions_3_3_Core' matches a version 3.3 core profile).
+		 */
+		template <class OpenGLFunctionsType>
+		boost::optional<OpenGLFunctionsType *>
+		get_version_functions(
+				int major_version,
+				int minor_version) const;
 
 		/**
 		 * Deallocates OpenGL objects that have been released but not yet destroyed/deallocated.

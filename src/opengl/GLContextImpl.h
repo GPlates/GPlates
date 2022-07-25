@@ -62,14 +62,15 @@ namespace GPlatesOpenGL
 			const QSurfaceFormat
 			get_surface_format() const override
 			{
-				// Make sure the QOpenGLContext used by QOpenGLWidget has been initialised.
-				const QOpenGLContext *opengl_context = d_opengl_widget.context();
-				GPlatesGlobal::Assert<OpenGLException>(
-						opengl_context,
-						GPLATES_ASSERTION_SOURCE,
-						"QOpenGLContext not yet initialized.");
+				return get_opengl_context()->format();
+			}
 
-				return opengl_context->format();
+			QAbstractOpenGLFunctions *
+			get_version_functions(
+					const QOpenGLVersionProfile &version_profile) const override
+			{
+				// Returns null if requesting functions that are not in the version or profile of the context.
+				return get_opengl_context()->versionFunctions(version_profile);
 			}
 
 			GLuint
@@ -95,6 +96,19 @@ namespace GPlatesOpenGL
 
 		private:
 			QOpenGLWidget &d_opengl_widget;
+
+			const QOpenGLContext *
+			get_opengl_context() const
+			{
+				// Make sure the QOpenGLContext used by QOpenGLWidget has been initialised.
+				const QOpenGLContext *opengl_context = d_opengl_widget.context();
+				GPlatesGlobal::Assert<OpenGLException>(
+						opengl_context,
+						GPLATES_ASSERTION_SOURCE,
+						"QOpenGLContext not yet initialized.");
+
+				return opengl_context;
+			}
 		};
 	}
 }
