@@ -77,6 +77,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -84,12 +85,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -124,6 +127,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -131,12 +135,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -170,6 +176,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -177,12 +184,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -275,6 +284,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -282,12 +292,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -324,6 +336,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -331,12 +344,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -361,6 +376,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -368,12 +384,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -399,6 +417,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -406,12 +425,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -440,6 +461,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -447,12 +469,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -482,6 +506,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -489,12 +514,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -532,6 +559,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -539,12 +567,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -599,6 +629,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -606,12 +637,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -636,6 +669,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -643,12 +677,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -677,6 +713,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -684,12 +721,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -715,6 +754,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -722,12 +762,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -750,6 +792,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -757,12 +800,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -809,6 +854,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -816,12 +862,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -844,6 +892,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -851,12 +900,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -879,6 +930,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -886,12 +938,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -914,6 +968,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -921,12 +976,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -953,6 +1010,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -960,12 +1018,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -998,6 +1058,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1005,12 +1066,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -1034,6 +1097,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1041,12 +1105,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -1079,6 +1145,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1086,12 +1153,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -1124,6 +1193,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1131,12 +1201,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -1160,6 +1232,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1167,12 +1240,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -1196,6 +1271,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1203,12 +1279,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -1242,6 +1320,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1249,12 +1328,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -1282,6 +1363,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1289,12 +1371,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -1319,6 +1403,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1326,12 +1411,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -1355,6 +1442,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1362,12 +1450,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -1391,6 +1481,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1398,12 +1489,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -1428,6 +1521,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1435,12 +1529,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -1465,6 +1561,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1472,12 +1569,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -1502,6 +1601,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1509,12 +1609,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -1537,6 +1639,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1544,12 +1647,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -1605,6 +1710,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1612,12 +1718,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -1653,6 +1761,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1660,12 +1769,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -1721,6 +1832,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1728,12 +1840,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -1765,6 +1879,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1772,12 +1887,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
@@ -1802,6 +1919,7 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLStateSet &current_state_set,
 				const GLState &current_state) const override;
@@ -1809,12 +1927,14 @@ namespace GPlatesOpenGL
 		virtual
 		bool
 		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 
 		virtual
 		bool
 		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const GLState &current_state) const override;
 

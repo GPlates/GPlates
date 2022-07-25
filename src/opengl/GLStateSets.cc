@@ -31,6 +31,7 @@
 
 #include "GLState.h"
 #include "OpenGLException.h"
+#include "OpenGLFunctions.h"
 
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
@@ -53,6 +54,7 @@ GPlatesOpenGL::GLActiveTextureStateSet::GLActiveTextureStateSet(
 
 bool
 GPlatesOpenGL::GLActiveTextureStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -65,13 +67,14 @@ GPlatesOpenGL::GLActiveTextureStateSet::apply_state(
 		return false;
 	}
 
-	glActiveTexture(d_active_texture);
+	opengl_functions.glActiveTexture(d_active_texture);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLActiveTextureStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -81,13 +84,14 @@ GPlatesOpenGL::GLActiveTextureStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glActiveTexture(d_active_texture);
+	opengl_functions.glActiveTexture(d_active_texture);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLActiveTextureStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -97,7 +101,7 @@ GPlatesOpenGL::GLActiveTextureStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glActiveTexture(GL_TEXTURE0);
+	opengl_functions.glActiveTexture(GL_TEXTURE0);
 
 	return true;
 }
@@ -105,6 +109,7 @@ GPlatesOpenGL::GLActiveTextureStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLBindBufferStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -118,13 +123,14 @@ GPlatesOpenGL::GLBindBufferStateSet::apply_state(
 	}
 
 	// Bind the buffer object (can be zero).
-	glBindBuffer(d_target, d_buffer_resource);
+	opengl_functions.glBindBuffer(d_target, d_buffer_resource);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLBindBufferStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -135,13 +141,14 @@ GPlatesOpenGL::GLBindBufferStateSet::apply_from_default_state(
 	}
 
 	// Bind the buffer object.
-	glBindBuffer(d_target, d_buffer_resource);
+	opengl_functions.glBindBuffer(d_target, d_buffer_resource);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLBindBufferStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -152,7 +159,7 @@ GPlatesOpenGL::GLBindBufferStateSet::apply_to_default_state(
 	}
 
 	// The default is zero (no buffer object).
-	glBindBuffer(d_target, 0);
+	opengl_functions.glBindBuffer(d_target, 0);
 
 	return true;
 }
@@ -160,6 +167,7 @@ GPlatesOpenGL::GLBindBufferStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLBindBufferIndexedStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -198,11 +206,11 @@ GPlatesOpenGL::GLBindBufferIndexedStateSet::apply_state(
 		if (indexed_buffer.range)
 		{
 			const Range &range = indexed_buffer.range.get();
-			glBindBufferRange(d_target, index, indexed_buffer.buffer_resource, range.offset, range.size);
+			opengl_functions.glBindBufferRange(d_target, index, indexed_buffer.buffer_resource, range.offset, range.size);
 		}
 		else
 		{
-			glBindBufferBase(d_target, index, indexed_buffer.buffer_resource);
+			opengl_functions.glBindBufferBase(d_target, index, indexed_buffer.buffer_resource);
 		}
 
 		// Calling glBindBufferBase or glBindBufferRange also changes the *general* binding point.
@@ -226,7 +234,7 @@ GPlatesOpenGL::GLBindBufferIndexedStateSet::apply_state(
 		}
 
 		// Unbind the current indexed binding point.
-		glBindBufferBase(d_target, current_index, 0);
+		opengl_functions.glBindBufferBase(d_target, current_index, 0);
 
 		// Calling glBindBufferBase also changes the *general* binding point.
 		current_general_buffer_resource = 0;
@@ -238,7 +246,7 @@ GPlatesOpenGL::GLBindBufferIndexedStateSet::apply_state(
 	if (d_general_buffer_resource != current_general_buffer_resource)
 	{
 		// Note: 'd_general_buffer_resource' can be zero.
-		glBindBuffer(d_target, d_general_buffer_resource);
+		opengl_functions.glBindBuffer(d_target, d_general_buffer_resource);
 
 		applied_state = true;
 	}
@@ -248,6 +256,7 @@ GPlatesOpenGL::GLBindBufferIndexedStateSet::apply_state(
 
 bool
 GPlatesOpenGL::GLBindBufferIndexedStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -270,11 +279,11 @@ GPlatesOpenGL::GLBindBufferIndexedStateSet::apply_from_default_state(
 		if (indexed_buffer.range)
 		{
 			const Range &range = indexed_buffer.range.get();
-			glBindBufferRange(d_target, index, indexed_buffer.buffer_resource, range.offset, range.size);
+			opengl_functions.glBindBufferRange(d_target, index, indexed_buffer.buffer_resource, range.offset, range.size);
 		}
 		else
 		{
-			glBindBufferBase(d_target, index, indexed_buffer.buffer_resource);
+			opengl_functions.glBindBufferBase(d_target, index, indexed_buffer.buffer_resource);
 		}
 
 		// Calling glBindBufferBase or glBindBufferRange also changes the *general* binding point.
@@ -287,7 +296,7 @@ GPlatesOpenGL::GLBindBufferIndexedStateSet::apply_from_default_state(
 	if (d_general_buffer_resource != current_general_buffer_resource)
 	{
 		// Note: 'd_general_buffer_resource' can be zero.
-		glBindBuffer(d_target, d_general_buffer_resource);
+		opengl_functions.glBindBuffer(d_target, d_general_buffer_resource);
 
 		applied_state = true;
 	}
@@ -297,6 +306,7 @@ GPlatesOpenGL::GLBindBufferIndexedStateSet::apply_from_default_state(
 
 bool
 GPlatesOpenGL::GLBindBufferIndexedStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -313,7 +323,7 @@ GPlatesOpenGL::GLBindBufferIndexedStateSet::apply_to_default_state(
 		const GLuint index = indexed_slot.first;
 
 		// Unbind the current indexed binding point.
-		glBindBufferBase(d_target, index, 0);
+		opengl_functions.glBindBufferBase(d_target, index, 0);
 
 		// Calling glBindBufferBase also changes the *general* binding point.
 		current_general_buffer_resource = 0;
@@ -324,7 +334,7 @@ GPlatesOpenGL::GLBindBufferIndexedStateSet::apply_to_default_state(
 	// Unbind the buffer object at the *general* binding point (if a state change detected).
 	if (0 != current_general_buffer_resource)
 	{
-		glBindBuffer(d_target, 0);
+		opengl_functions.glBindBuffer(d_target, 0);
 
 		applied_state = true;
 	}
@@ -335,6 +345,7 @@ GPlatesOpenGL::GLBindBufferIndexedStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLBindFramebufferStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -352,7 +363,7 @@ GPlatesOpenGL::GLBindFramebufferStateSet::apply_state(
 		{
 			// Both draw/read targets are the same so bind them in one call
 			// (even though it's possible only one of the targets has changed).
-			glBindFramebuffer(GL_FRAMEBUFFER, d_draw_framebuffer_resource);
+			opengl_functions.glBindFramebuffer(GL_FRAMEBUFFER, d_draw_framebuffer_resource);
 			applied_state = true;
 		}
 	}
@@ -360,12 +371,12 @@ GPlatesOpenGL::GLBindFramebufferStateSet::apply_state(
 	{
 		if (d_draw_framebuffer_resource != current.d_draw_framebuffer_resource)
 		{
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, d_draw_framebuffer_resource);
+			opengl_functions.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, d_draw_framebuffer_resource);
 			applied_state = true;
 		}
 		if (d_read_framebuffer_resource != current.d_read_framebuffer_resource)
 		{
-			glBindFramebuffer(GL_READ_FRAMEBUFFER, d_read_framebuffer_resource);
+			opengl_functions.glBindFramebuffer(GL_READ_FRAMEBUFFER, d_read_framebuffer_resource);
 			applied_state = true;
 		}
 	}
@@ -375,6 +386,7 @@ GPlatesOpenGL::GLBindFramebufferStateSet::apply_state(
 
 bool
 GPlatesOpenGL::GLBindFramebufferStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -386,7 +398,7 @@ GPlatesOpenGL::GLBindFramebufferStateSet::apply_from_default_state(
 		if (d_draw_framebuffer_resource != d_default_framebuffer_resource)
 		{
 			// Both draw/read targets are the same (and not the default) so bind them in one call.
-			glBindFramebuffer(GL_FRAMEBUFFER, d_draw_framebuffer_resource);
+			opengl_functions.glBindFramebuffer(GL_FRAMEBUFFER, d_draw_framebuffer_resource);
 			applied_state = true;
 		}
 	}
@@ -394,12 +406,12 @@ GPlatesOpenGL::GLBindFramebufferStateSet::apply_from_default_state(
 	{
 		if (d_draw_framebuffer_resource != d_default_framebuffer_resource)
 		{
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, d_draw_framebuffer_resource);
+			opengl_functions.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, d_draw_framebuffer_resource);
 			applied_state = true;
 		}
 		if (d_read_framebuffer_resource != d_default_framebuffer_resource)
 		{
-			glBindFramebuffer(GL_READ_FRAMEBUFFER, d_read_framebuffer_resource);
+			opengl_functions.glBindFramebuffer(GL_READ_FRAMEBUFFER, d_read_framebuffer_resource);
 			applied_state = true;
 		}
 	}
@@ -409,6 +421,7 @@ GPlatesOpenGL::GLBindFramebufferStateSet::apply_from_default_state(
 
 bool
 GPlatesOpenGL::GLBindFramebufferStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -420,7 +433,7 @@ GPlatesOpenGL::GLBindFramebufferStateSet::apply_to_default_state(
 		if (d_draw_framebuffer_resource != d_default_framebuffer_resource)
 		{
 			// Both draw/read targets are the same (and not the default) so bind them in one call.
-			glBindFramebuffer(GL_FRAMEBUFFER, d_default_framebuffer_resource);
+			opengl_functions.glBindFramebuffer(GL_FRAMEBUFFER, d_default_framebuffer_resource);
 			applied_state = true;
 		}
 	}
@@ -428,12 +441,12 @@ GPlatesOpenGL::GLBindFramebufferStateSet::apply_to_default_state(
 	{
 		if (d_draw_framebuffer_resource != d_default_framebuffer_resource)
 		{
-			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, d_default_framebuffer_resource);
+			opengl_functions.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, d_default_framebuffer_resource);
 			applied_state = true;
 		}
 		if (d_read_framebuffer_resource != d_default_framebuffer_resource)
 		{
-			glBindFramebuffer(GL_READ_FRAMEBUFFER, d_default_framebuffer_resource);
+			opengl_functions.glBindFramebuffer(GL_READ_FRAMEBUFFER, d_default_framebuffer_resource);
 			applied_state = true;
 		}
 	}
@@ -444,6 +457,7 @@ GPlatesOpenGL::GLBindFramebufferStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLBindRenderbufferStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -457,13 +471,14 @@ GPlatesOpenGL::GLBindRenderbufferStateSet::apply_state(
 	}
 
 	// Bind the renderbuffer object (can be zero).
-	glBindRenderbuffer(d_target, d_renderbuffer_resource);
+	opengl_functions.glBindRenderbuffer(d_target, d_renderbuffer_resource);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLBindRenderbufferStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -474,13 +489,14 @@ GPlatesOpenGL::GLBindRenderbufferStateSet::apply_from_default_state(
 	}
 
 	// Bind the renderbuffer object.
-	glBindRenderbuffer(d_target, d_renderbuffer_resource);
+	opengl_functions.glBindRenderbuffer(d_target, d_renderbuffer_resource);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLBindRenderbufferStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -491,7 +507,7 @@ GPlatesOpenGL::GLBindRenderbufferStateSet::apply_to_default_state(
 	}
 
 	// The default is zero (no renderbuffer object).
-	glBindRenderbuffer(d_target, 0);
+	opengl_functions.glBindRenderbuffer(d_target, 0);
 
 	return true;
 }
@@ -517,6 +533,7 @@ GPlatesOpenGL::GLBindSamplerStateSet::GLBindSamplerStateSet(
 
 bool
 GPlatesOpenGL::GLBindSamplerStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -533,13 +550,14 @@ GPlatesOpenGL::GLBindSamplerStateSet::apply_state(
 	}
 
 	// Bind the sampler object (can be zero).
-	glBindSampler(d_unit, d_sampler_resource);
+	opengl_functions.glBindSampler(d_unit, d_sampler_resource);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLBindSamplerStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -550,13 +568,14 @@ GPlatesOpenGL::GLBindSamplerStateSet::apply_from_default_state(
 	}
 
 	// Bind the sampler object.
-	glBindSampler(d_unit, d_sampler_resource);
+	opengl_functions.glBindSampler(d_unit, d_sampler_resource);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLBindSamplerStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -567,7 +586,7 @@ GPlatesOpenGL::GLBindSamplerStateSet::apply_to_default_state(
 	}
 
 	// The default is zero (no sampler object).
-	glBindSampler(d_unit, 0);
+	opengl_functions.glBindSampler(d_unit, 0);
 
 	return true;
 }
@@ -596,6 +615,7 @@ GPlatesOpenGL::GLBindTextureStateSet::GLBindTextureStateSet(
 
 bool
 GPlatesOpenGL::GLBindTextureStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -615,16 +635,16 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_state(
 	const GLenum current_active_texture = current_state.get_active_texture();
 	if (d_texture_unit != current_active_texture)
 	{
-		glActiveTexture(d_texture_unit);
+		opengl_functions.glActiveTexture(d_texture_unit);
 	}
 
 	// Bind the texture object (can be zero).
-	glBindTexture(d_texture_target, d_texture_resource);
+	opengl_functions.glBindTexture(d_texture_target, d_texture_resource);
 
 	// Restore active texture.
 	if (current_active_texture != d_texture_unit)
 	{
-		glActiveTexture(current_active_texture);
+		opengl_functions.glActiveTexture(current_active_texture);
 	}
 
 	return true;
@@ -632,6 +652,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_state(
 
 bool
 GPlatesOpenGL::GLBindTextureStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -645,16 +666,16 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_from_default_state(
 	const GLenum current_active_texture = current_state.get_active_texture();
 	if (d_texture_unit != current_active_texture)
 	{
-		glActiveTexture(d_texture_unit);
+		opengl_functions.glActiveTexture(d_texture_unit);
 	}
 
 	// Bind the texture.
-	glBindTexture(d_texture_target, d_texture_resource);
+	opengl_functions.glBindTexture(d_texture_target, d_texture_resource);
 
 	// Restore active texture.
 	if (current_active_texture != d_texture_unit)
 	{
-		glActiveTexture(current_active_texture);
+		opengl_functions.glActiveTexture(current_active_texture);
 	}
 
 	return true;
@@ -662,6 +683,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_from_default_state(
 
 bool
 GPlatesOpenGL::GLBindTextureStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -675,16 +697,16 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_to_default_state(
 	const GLenum current_active_texture = current_state.get_active_texture();
 	if (d_texture_unit != current_active_texture)
 	{
-		glActiveTexture(d_texture_unit);
+		opengl_functions.glActiveTexture(d_texture_unit);
 	}
 
 	// Bind the default unnamed texture 0.
-	glBindTexture(d_texture_target, 0);
+	opengl_functions.glBindTexture(d_texture_target, 0);
 
 	// Restore active texture.
 	if (current_active_texture != d_texture_unit)
 	{
-		glActiveTexture(current_active_texture);
+		opengl_functions.glActiveTexture(current_active_texture);
 	}
 
 	return true;
@@ -693,6 +715,7 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLBindVertexArrayStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -706,13 +729,14 @@ GPlatesOpenGL::GLBindVertexArrayStateSet::apply_state(
 	}
 
 	// Bind the vertex array object (can be zero).
-	glBindVertexArray(d_array_resource);
+	opengl_functions.glBindVertexArray(d_array_resource);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLBindVertexArrayStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -723,13 +747,14 @@ GPlatesOpenGL::GLBindVertexArrayStateSet::apply_from_default_state(
 	}
 
 	// Bind the vertex array object.
-	glBindVertexArray(d_array_resource);
+	opengl_functions.glBindVertexArray(d_array_resource);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLBindVertexArrayStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -740,7 +765,7 @@ GPlatesOpenGL::GLBindVertexArrayStateSet::apply_to_default_state(
 	}
 
 	// The default is zero (no vertex array object).
-    glBindVertexArray(0);
+	opengl_functions.glBindVertexArray(0);
 
 	return true;
 }
@@ -748,6 +773,7 @@ GPlatesOpenGL::GLBindVertexArrayStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLBlendColorStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -765,7 +791,7 @@ GPlatesOpenGL::GLBlendColorStateSet::apply_state(
 		return false;
 	}
 
-	glBlendColor(
+	opengl_functions.glBlendColor(
 			static_cast<GLclampf>(d_red.dval()),
 			static_cast<GLclampf>(d_green.dval()),
 			static_cast<GLclampf>(d_blue.dval()),
@@ -776,6 +802,7 @@ GPlatesOpenGL::GLBlendColorStateSet::apply_state(
 
 bool
 GPlatesOpenGL::GLBlendColorStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -786,7 +813,7 @@ GPlatesOpenGL::GLBlendColorStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glBlendColor(
+	opengl_functions.glBlendColor(
 			static_cast<GLclampf>(d_red.dval()),
 			static_cast<GLclampf>(d_green.dval()),
 			static_cast<GLclampf>(d_blue.dval()),
@@ -797,6 +824,7 @@ GPlatesOpenGL::GLBlendColorStateSet::apply_from_default_state(
 
 bool
 GPlatesOpenGL::GLBlendColorStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -807,7 +835,7 @@ GPlatesOpenGL::GLBlendColorStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glBlendColor(0, 0, 0, 0);
+	opengl_functions.glBlendColor(0, 0, 0, 0);
 
 	return true;
 }
@@ -817,6 +845,7 @@ const GLenum GPlatesOpenGL::GLBlendEquationStateSet::DEFAULT_MODE = GL_FUNC_ADD;
 
 bool
 GPlatesOpenGL::GLBlendEquationStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -834,7 +863,7 @@ GPlatesOpenGL::GLBlendEquationStateSet::apply_state(
 		{
 			// Both RGB/alpha modes are the same so set them in one call
 			// (even though it's possible only one of the modes has changed).
-			glBlendEquation(d_mode_RGB);
+			opengl_functions.glBlendEquation(d_mode_RGB);
 			applied_state = true;
 		}
 	}
@@ -843,7 +872,7 @@ GPlatesOpenGL::GLBlendEquationStateSet::apply_state(
 		if (d_mode_RGB != current.d_mode_RGB ||
 			d_mode_alpha != current.d_mode_alpha)
 		{
-			glBlendEquationSeparate(d_mode_RGB, d_mode_alpha);
+			opengl_functions.glBlendEquationSeparate(d_mode_RGB, d_mode_alpha);
 			applied_state = true;
 		}
 	}
@@ -853,6 +882,7 @@ GPlatesOpenGL::GLBlendEquationStateSet::apply_state(
 
 bool
 GPlatesOpenGL::GLBlendEquationStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -863,14 +893,14 @@ GPlatesOpenGL::GLBlendEquationStateSet::apply_from_default_state(
 		if (d_mode_RGB != DEFAULT_MODE)
 		{
 			// Both RGB/alpha modes are the same so set them in one call.
-			glBlendEquation(d_mode_RGB);
+			opengl_functions.glBlendEquation(d_mode_RGB);
 			applied_state = true;
 		}
 	}
 	else // RGB and alpha modes are different...
 	{
 		// Both RGB and alpha modes are different, so they both cannot be the default state.
-		glBlendEquationSeparate(d_mode_RGB, d_mode_alpha);
+		opengl_functions.glBlendEquationSeparate(d_mode_RGB, d_mode_alpha);
 		applied_state = true;
 	}
 
@@ -879,6 +909,7 @@ GPlatesOpenGL::GLBlendEquationStateSet::apply_from_default_state(
 
 bool
 GPlatesOpenGL::GLBlendEquationStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -889,14 +920,14 @@ GPlatesOpenGL::GLBlendEquationStateSet::apply_to_default_state(
 		if (d_mode_RGB != DEFAULT_MODE)
 		{
 			// Both RGB/alpha modes are the same so set them in one call.
-			glBlendEquation(DEFAULT_MODE);
+			opengl_functions.glBlendEquation(DEFAULT_MODE);
 			applied_state = true;
 		}
 	}
 	else // RGB and alpha modes are different...
 	{
 		// Both RGB and alpha modes are different, so they both cannot be the default state.
-		glBlendEquationSeparate(DEFAULT_MODE, DEFAULT_MODE);
+		opengl_functions.glBlendEquationSeparate(DEFAULT_MODE, DEFAULT_MODE);
 		applied_state = true;
 	}
 
@@ -909,6 +940,7 @@ GPlatesOpenGL::GLBlendFuncStateSet::DEFAULT_FUNC{ GL_ONE, GL_ZERO };
 
 bool
 GPlatesOpenGL::GLBlendFuncStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -926,7 +958,7 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_state(
 		{
 			// Both RGB/alpha funcs are the same so set them in one call
 			// (even though it's possible only one of the funcs has changed).
-			glBlendFunc(d_RGB_func.src, d_RGB_func.dst);
+			opengl_functions.glBlendFunc(d_RGB_func.src, d_RGB_func.dst);
 			applied_state = true;
 		}
 	}
@@ -935,7 +967,7 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_state(
 		if (d_RGB_func != current.d_RGB_func ||
 			d_alpha_func != current.d_alpha_func)
 		{
-			glBlendFuncSeparate(d_RGB_func.src, d_RGB_func.dst, d_alpha_func.src, d_alpha_func.dst);
+			opengl_functions.glBlendFuncSeparate(d_RGB_func.src, d_RGB_func.dst, d_alpha_func.src, d_alpha_func.dst);
 			applied_state = true;
 		}
 	}
@@ -945,6 +977,7 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_state(
 
 bool
 GPlatesOpenGL::GLBlendFuncStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -955,14 +988,14 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_from_default_state(
 		if (d_RGB_func != DEFAULT_FUNC)
 		{
 			// Both RGB/alpha funcs are the same so set them in one call.
-			glBlendFunc(d_RGB_func.src, d_RGB_func.dst);
+			opengl_functions.glBlendFunc(d_RGB_func.src, d_RGB_func.dst);
 			applied_state = true;
 		}
 	}
 	else // RGB and alpha blend funcs are different...
 	{
 		// Both RGB and alpha funcs are different, so they both cannot be the default state.
-		glBlendFuncSeparate(d_RGB_func.src, d_RGB_func.dst, d_alpha_func.src, d_alpha_func.dst);
+		opengl_functions.glBlendFuncSeparate(d_RGB_func.src, d_RGB_func.dst, d_alpha_func.src, d_alpha_func.dst);
 		applied_state = true;
 	}
 
@@ -971,6 +1004,7 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_from_default_state(
 
 bool
 GPlatesOpenGL::GLBlendFuncStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -981,14 +1015,14 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_to_default_state(
 		if (d_RGB_func != DEFAULT_FUNC)
 		{
 			// Both RGB/alpha funcs are the same so set them in one call.
-			glBlendFunc(DEFAULT_FUNC.src, DEFAULT_FUNC.dst);
+			opengl_functions.glBlendFunc(DEFAULT_FUNC.src, DEFAULT_FUNC.dst);
 			applied_state = true;
 		}
 	}
 	else // RGB and alpha blend funcs are different...
 	{
 		// Both RGB and alpha funcs are different, so they both cannot be the default state.
-		glBlendFuncSeparate(DEFAULT_FUNC.src, DEFAULT_FUNC.dst, DEFAULT_FUNC.src, DEFAULT_FUNC.dst);
+		opengl_functions.glBlendFuncSeparate(DEFAULT_FUNC.src, DEFAULT_FUNC.dst, DEFAULT_FUNC.src, DEFAULT_FUNC.dst);
 		applied_state = true;
 	}
 
@@ -998,6 +1032,7 @@ GPlatesOpenGL::GLBlendFuncStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLClampColorStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -1011,13 +1046,14 @@ GPlatesOpenGL::GLClampColorStateSet::apply_state(
 		return false;
 	}
 
-	glClampColor(d_target, d_clamp);
+	opengl_functions.glClampColor(d_target, d_clamp);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLClampColorStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1027,13 +1063,14 @@ GPlatesOpenGL::GLClampColorStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glClampColor(d_target, d_clamp);
+	opengl_functions.glClampColor(d_target, d_clamp);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLClampColorStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1043,7 +1080,7 @@ GPlatesOpenGL::GLClampColorStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glClampColor(d_target, GL_FIXED_ONLY);
+	opengl_functions.glClampColor(d_target, GL_FIXED_ONLY);
 
 	return true;
 }
@@ -1051,6 +1088,7 @@ GPlatesOpenGL::GLClampColorStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLClearColorStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -1068,7 +1106,7 @@ GPlatesOpenGL::GLClearColorStateSet::apply_state(
 		return false;
 	}
 
-	glClearColor(
+	opengl_functions.glClearColor(
 			static_cast<GLclampf>(d_red.dval()),
 			static_cast<GLclampf>(d_green.dval()),
 			static_cast<GLclampf>(d_blue.dval()),
@@ -1079,6 +1117,7 @@ GPlatesOpenGL::GLClearColorStateSet::apply_state(
 
 bool
 GPlatesOpenGL::GLClearColorStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1089,7 +1128,7 @@ GPlatesOpenGL::GLClearColorStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glClearColor(
+	opengl_functions.glClearColor(
 			static_cast<GLclampf>(d_red.dval()),
 			static_cast<GLclampf>(d_green.dval()),
 			static_cast<GLclampf>(d_blue.dval()),
@@ -1100,6 +1139,7 @@ GPlatesOpenGL::GLClearColorStateSet::apply_from_default_state(
 
 bool
 GPlatesOpenGL::GLClearColorStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1110,7 +1150,7 @@ GPlatesOpenGL::GLClearColorStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glClearColor(0, 0, 0, 0);
+	opengl_functions.glClearColor(0, 0, 0, 0);
 
 	return true;
 }
@@ -1118,6 +1158,7 @@ GPlatesOpenGL::GLClearColorStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLClearDepthStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -1132,13 +1173,14 @@ GPlatesOpenGL::GLClearDepthStateSet::apply_state(
 		return false;
 	}
 
-	glClearDepth(static_cast<GLclampd>(d_depth.dval()));
+	opengl_functions.glClearDepth(static_cast<GLclampd>(d_depth.dval()));
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLClearDepthStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1149,13 +1191,14 @@ GPlatesOpenGL::GLClearDepthStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glClearDepth(static_cast<GLclampd>(d_depth.dval()));
+	opengl_functions.glClearDepth(static_cast<GLclampd>(d_depth.dval()));
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLClearDepthStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1166,7 +1209,7 @@ GPlatesOpenGL::GLClearDepthStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glClearDepth(1.0);
+	opengl_functions.glClearDepth(1.0);
 
 	return true;
 }
@@ -1174,6 +1217,7 @@ GPlatesOpenGL::GLClearDepthStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLClearStencilStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -1188,13 +1232,14 @@ GPlatesOpenGL::GLClearStencilStateSet::apply_state(
 		return false;
 	}
 
-	glClearStencil(d_stencil);
+	opengl_functions.glClearStencil(d_stencil);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLClearStencilStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1205,13 +1250,14 @@ GPlatesOpenGL::GLClearStencilStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glClearStencil(d_stencil);
+	opengl_functions.glClearStencil(d_stencil);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLClearStencilStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1222,7 +1268,7 @@ GPlatesOpenGL::GLClearStencilStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glClearStencil(0);
+	opengl_functions.glClearStencil(0);
 
 	return true;
 }
@@ -1233,6 +1279,7 @@ GPlatesOpenGL::GLColorMaskStateSet::DEFAULT_MASK{ GL_TRUE, GL_TRUE, GL_TRUE, GL_
 
 bool
 GPlatesOpenGL::GLColorMaskStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -1247,7 +1294,7 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_state(
 		// If state changed...
 		if (d_masks[0] != current.d_masks[0])
 		{
-			glColorMask(d_masks[0].red, d_masks[0].green, d_masks[0].blue, d_masks[0].alpha);
+			opengl_functions.glColorMask(d_masks[0].red, d_masks[0].green, d_masks[0].blue, d_masks[0].alpha);
 			applied_state = true;
 		}
 	}
@@ -1259,7 +1306,7 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_state(
 			// If state changed...
 			if (d_masks[i] != current.d_masks[i])
 			{
-				glColorMaski(i, d_masks[i].red, d_masks[i].green, d_masks[i].blue, d_masks[i].alpha);
+				opengl_functions.glColorMaski(i, d_masks[i].red, d_masks[i].green, d_masks[i].blue, d_masks[i].alpha);
 				applied_state = true;
 			}
 		}
@@ -1270,6 +1317,7 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_state(
 
 bool
 GPlatesOpenGL::GLColorMaskStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1280,7 +1328,7 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_from_default_state(
 		// If state changed...
 		if (d_masks[0] != DEFAULT_MASK)
 		{
-			glColorMask(d_masks[0].red, d_masks[0].green, d_masks[0].blue, d_masks[0].alpha);
+			opengl_functions.glColorMask(d_masks[0].red, d_masks[0].green, d_masks[0].blue, d_masks[0].alpha);
 			applied_state = true;
 		}
 	}
@@ -1292,7 +1340,7 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_from_default_state(
 			// If state changed...
 			if (d_masks[i] != DEFAULT_MASK)
 			{
-				glColorMaski(i, d_masks[i].red, d_masks[i].green, d_masks[i].blue, d_masks[i].alpha);
+				opengl_functions.glColorMaski(i, d_masks[i].red, d_masks[i].green, d_masks[i].blue, d_masks[i].alpha);
 				applied_state = true;
 			}
 		}
@@ -1303,6 +1351,7 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_from_default_state(
 
 bool
 GPlatesOpenGL::GLColorMaskStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1313,7 +1362,7 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_to_default_state(
 		// If state changed...
 		if (d_masks[0] != DEFAULT_MASK)
 		{
-			glColorMask(DEFAULT_MASK.red, DEFAULT_MASK.green, DEFAULT_MASK.blue, DEFAULT_MASK.alpha);
+			opengl_functions.glColorMask(DEFAULT_MASK.red, DEFAULT_MASK.green, DEFAULT_MASK.blue, DEFAULT_MASK.alpha);
 			applied_state = true;
 		}
 	}
@@ -1325,7 +1374,7 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_to_default_state(
 			// If state changed...
 			if (d_masks[i] != DEFAULT_MASK)
 			{
-				glColorMaski(i, DEFAULT_MASK.red, DEFAULT_MASK.green, DEFAULT_MASK.blue, DEFAULT_MASK.alpha);
+				opengl_functions.glColorMaski(i, DEFAULT_MASK.red, DEFAULT_MASK.green, DEFAULT_MASK.blue, DEFAULT_MASK.alpha);
 				applied_state = true;
 			}
 		}
@@ -1337,6 +1386,7 @@ GPlatesOpenGL::GLColorMaskStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLCullFaceStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -1350,13 +1400,14 @@ GPlatesOpenGL::GLCullFaceStateSet::apply_state(
 		return false;
 	}
 
-	glCullFace(d_mode);
+	opengl_functions.glCullFace(d_mode);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLCullFaceStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1366,13 +1417,14 @@ GPlatesOpenGL::GLCullFaceStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glCullFace(d_mode);
+	opengl_functions.glCullFace(d_mode);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLCullFaceStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1382,7 +1434,7 @@ GPlatesOpenGL::GLCullFaceStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glCullFace(GL_BACK);
+	opengl_functions.glCullFace(GL_BACK);
 
 	return true;
 }
@@ -1390,6 +1442,7 @@ GPlatesOpenGL::GLCullFaceStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLDepthFuncStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -1403,13 +1456,14 @@ GPlatesOpenGL::GLDepthFuncStateSet::apply_state(
 		return false;
 	}
 
-	glDepthFunc(d_depth_func);
+	opengl_functions.glDepthFunc(d_depth_func);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLDepthFuncStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1419,13 +1473,14 @@ GPlatesOpenGL::GLDepthFuncStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glDepthFunc(d_depth_func);
+	opengl_functions.glDepthFunc(d_depth_func);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLDepthFuncStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1435,7 +1490,7 @@ GPlatesOpenGL::GLDepthFuncStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glDepthFunc(GL_LESS);
+	opengl_functions.glDepthFunc(GL_LESS);
 
 	return true;
 }
@@ -1443,6 +1498,7 @@ GPlatesOpenGL::GLDepthFuncStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLDepthMaskStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -1456,13 +1512,14 @@ GPlatesOpenGL::GLDepthMaskStateSet::apply_state(
 		return false;
 	}
 
-	glDepthMask(d_flag);
+	opengl_functions.glDepthMask(d_flag);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLDepthMaskStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1472,13 +1529,14 @@ GPlatesOpenGL::GLDepthMaskStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glDepthMask(d_flag);
+	opengl_functions.glDepthMask(d_flag);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLDepthMaskStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1488,7 +1546,7 @@ GPlatesOpenGL::GLDepthMaskStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glDepthMask(GL_TRUE);
+	opengl_functions.glDepthMask(GL_TRUE);
 
 	return true;
 }
@@ -1496,6 +1554,7 @@ GPlatesOpenGL::GLDepthMaskStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLDepthRangeStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -1509,13 +1568,14 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_state(
 		return false;
 	}
 
-	glDepthRange(d_n.dval(), d_f.dval());
+	opengl_functions.glDepthRange(d_n.dval(), d_f.dval());
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLDepthRangeStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1525,13 +1585,14 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glDepthRange(d_n.dval(), d_f.dval());
+	opengl_functions.glDepthRange(d_n.dval(), d_f.dval());
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLDepthRangeStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1541,7 +1602,7 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glDepthRange(0.0, 1.0);
+	opengl_functions.glDepthRange(0.0, 1.0);
 
 	return true;
 }
@@ -1549,6 +1610,7 @@ GPlatesOpenGL::GLDepthRangeStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLDrawBuffersStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -1562,13 +1624,14 @@ GPlatesOpenGL::GLDrawBuffersStateSet::apply_state(
 		return false;
 	}
 
-	glDrawBuffers(d_draw_buffers.size(), d_draw_buffers.data());
+	opengl_functions.glDrawBuffers(d_draw_buffers.size(), d_draw_buffers.data());
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLDrawBuffersStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1579,13 +1642,14 @@ GPlatesOpenGL::GLDrawBuffersStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glDrawBuffers(d_draw_buffers.size(), d_draw_buffers.data());
+	opengl_functions.glDrawBuffers(d_draw_buffers.size(), d_draw_buffers.data());
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLDrawBuffersStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1596,7 +1660,7 @@ GPlatesOpenGL::GLDrawBuffersStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glDrawBuffer(d_default_draw_buffer);
+	opengl_functions.glDrawBuffer(d_default_draw_buffer);
 
 	return true;
 }
@@ -1604,6 +1668,7 @@ GPlatesOpenGL::GLDrawBuffersStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLEnableStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -1618,11 +1683,11 @@ GPlatesOpenGL::GLEnableStateSet::apply_state(
 
 	if (d_enable)
 	{
-		glEnable(d_cap);
+		opengl_functions.glEnable(d_cap);
 	}
 	else
 	{
-		glDisable(d_cap);
+		opengl_functions.glDisable(d_cap);
 	}
 
 	return true;
@@ -1630,6 +1695,7 @@ GPlatesOpenGL::GLEnableStateSet::apply_state(
 
 bool
 GPlatesOpenGL::GLEnableStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1643,11 +1709,11 @@ GPlatesOpenGL::GLEnableStateSet::apply_from_default_state(
 
 	if (d_enable)
 	{
-		glEnable(d_cap);
+		opengl_functions.glEnable(d_cap);
 	}
 	else
 	{
-		glDisable(d_cap);
+		opengl_functions.glDisable(d_cap);
 	}
 
 	return true;
@@ -1655,6 +1721,7 @@ GPlatesOpenGL::GLEnableStateSet::apply_from_default_state(
 
 bool
 GPlatesOpenGL::GLEnableStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1668,11 +1735,11 @@ GPlatesOpenGL::GLEnableStateSet::apply_to_default_state(
 
 	if (enable_default)
 	{
-		glEnable(d_cap);
+		opengl_functions.glEnable(d_cap);
 	}
 	else
 	{
-		glDisable(d_cap);
+		opengl_functions.glDisable(d_cap);
 	}
 
 	return true;
@@ -1689,6 +1756,7 @@ GPlatesOpenGL::GLEnableStateSet::get_default(
 
 bool
 GPlatesOpenGL::GLEnableIndexedStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -1706,11 +1774,11 @@ GPlatesOpenGL::GLEnableIndexedStateSet::apply_state(
 			// Enable/disable all indices with a single call.
 			if (d_indices[0])
 			{
-				glEnable(d_cap);
+				opengl_functions.glEnable(d_cap);
 			}
 			else
 			{
-				glDisable(d_cap);
+				opengl_functions.glDisable(d_cap);
 			}
 			applied_state = true;
 		}
@@ -1725,11 +1793,11 @@ GPlatesOpenGL::GLEnableIndexedStateSet::apply_state(
 			{
 				if (d_indices[i])
 				{
-					glEnablei(d_cap, i);
+					opengl_functions.glEnablei(d_cap, i);
 				}
 				else
 				{
-					glDisablei(d_cap, i);
+					opengl_functions.glDisablei(d_cap, i);
 				}
 				applied_state = true;
 			}
@@ -1741,6 +1809,7 @@ GPlatesOpenGL::GLEnableIndexedStateSet::apply_state(
 
 bool
 GPlatesOpenGL::GLEnableIndexedStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1756,11 +1825,11 @@ GPlatesOpenGL::GLEnableIndexedStateSet::apply_from_default_state(
 			// Enable/disable all indices with a single call.
 			if (d_indices[0])
 			{
-				glEnable(d_cap);
+				opengl_functions.glEnable(d_cap);
 			}
 			else
 			{
-				glDisable(d_cap);
+				opengl_functions.glDisable(d_cap);
 			}
 			applied_state = true;
 		}
@@ -1775,11 +1844,11 @@ GPlatesOpenGL::GLEnableIndexedStateSet::apply_from_default_state(
 			{
 				if (d_indices[i])
 				{
-					glEnablei(d_cap, i);
+					opengl_functions.glEnablei(d_cap, i);
 				}
 				else
 				{
-					glDisablei(d_cap, i);
+					opengl_functions.glDisablei(d_cap, i);
 				}
 				applied_state = true;
 			}
@@ -1791,6 +1860,7 @@ GPlatesOpenGL::GLEnableIndexedStateSet::apply_from_default_state(
 
 bool
 GPlatesOpenGL::GLEnableIndexedStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1806,11 +1876,11 @@ GPlatesOpenGL::GLEnableIndexedStateSet::apply_to_default_state(
 			// Enable/disable all indices with a single call.
 			if (default_)
 			{
-				glEnable(d_cap);
+				opengl_functions.glEnable(d_cap);
 			}
 			else
 			{
-				glDisable(d_cap);
+				opengl_functions.glDisable(d_cap);
 			}
 			applied_state = true;
 		}
@@ -1825,11 +1895,11 @@ GPlatesOpenGL::GLEnableIndexedStateSet::apply_to_default_state(
 			{
 				if (default_)
 				{
-					glEnablei(d_cap, i);
+					opengl_functions.glEnablei(d_cap, i);
 				}
 				else
 				{
-					glDisablei(d_cap, i);
+					opengl_functions.glDisablei(d_cap, i);
 				}
 				applied_state = true;
 			}
@@ -1842,6 +1912,7 @@ GPlatesOpenGL::GLEnableIndexedStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLFrontFaceStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -1853,13 +1924,14 @@ GPlatesOpenGL::GLFrontFaceStateSet::apply_state(
 		return false;
 	}
 
-	glFrontFace(d_dir);
+	opengl_functions.glFrontFace(d_dir);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLFrontFaceStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1869,13 +1941,14 @@ GPlatesOpenGL::GLFrontFaceStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glFrontFace(d_dir);
+	opengl_functions.glFrontFace(d_dir);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLFrontFaceStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1885,7 +1958,7 @@ GPlatesOpenGL::GLFrontFaceStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glFrontFace(GL_CCW);
+	opengl_functions.glFrontFace(GL_CCW);
 
 	return true;
 }
@@ -1893,6 +1966,7 @@ GPlatesOpenGL::GLFrontFaceStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLHintStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -1904,13 +1978,14 @@ GPlatesOpenGL::GLHintStateSet::apply_state(
 		return false;
 	}
 
-	glHint(d_target, d_hint);
+	opengl_functions.glHint(d_target, d_hint);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLHintStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1920,13 +1995,14 @@ GPlatesOpenGL::GLHintStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glHint(d_target, d_hint);
+	opengl_functions.glHint(d_target, d_hint);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLHintStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1936,7 +2012,7 @@ GPlatesOpenGL::GLHintStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glHint(d_target, GL_DONT_CARE);
+	opengl_functions.glHint(d_target, GL_DONT_CARE);
 
 	return true;
 }
@@ -1944,6 +2020,7 @@ GPlatesOpenGL::GLHintStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLLineWidthStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -1956,13 +2033,14 @@ GPlatesOpenGL::GLLineWidthStateSet::apply_state(
 		return false;
 	}
 
-	glLineWidth(d_width.dval());
+	opengl_functions.glLineWidth(d_width.dval());
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLLineWidthStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1973,13 +2051,14 @@ GPlatesOpenGL::GLLineWidthStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glLineWidth(d_width.dval());
+	opengl_functions.glLineWidth(d_width.dval());
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLLineWidthStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -1990,7 +2069,7 @@ GPlatesOpenGL::GLLineWidthStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glLineWidth(GLfloat(1));
+	opengl_functions.glLineWidth(GLfloat(1));
 
 	return true;
 }
@@ -2048,6 +2127,7 @@ GPlatesOpenGL::GLPixelStoreStateSet::GLPixelStoreStateSet(
 
 bool
 GPlatesOpenGL::GLPixelStoreStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -2064,13 +2144,14 @@ GPlatesOpenGL::GLPixelStoreStateSet::apply_state(
 	}
 
 	// We're not using glPixelStoref (since all parameter types are boolean or integer).
-	glPixelStorei(d_pname, d_param);
+	opengl_functions.glPixelStorei(d_pname, d_param);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLPixelStoreStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2083,13 +2164,14 @@ GPlatesOpenGL::GLPixelStoreStateSet::apply_from_default_state(
 	}
 
 	// We're not using glPixelStoref (since all parameter types are boolean or integer).
-	glPixelStorei(d_pname, d_param);
+	opengl_functions.glPixelStorei(d_pname, d_param);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLPixelStoreStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2102,7 +2184,7 @@ GPlatesOpenGL::GLPixelStoreStateSet::apply_to_default_state(
 	}
 
 	// We're not using glPixelStoref (since all parameter types are boolean or integer).
-	glPixelStorei(d_pname, param_default);
+	opengl_functions.glPixelStorei(d_pname, param_default);
 
 	return true;
 }
@@ -2156,6 +2238,7 @@ GPlatesOpenGL::GLPixelStoreStateSet::get_default(
 
 bool
 GPlatesOpenGL::GLPointSizeStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -2168,13 +2251,14 @@ GPlatesOpenGL::GLPointSizeStateSet::apply_state(
 		return false;
 	}
 
-	glPointSize(d_size.dval());
+	opengl_functions.glPointSize(d_size.dval());
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLPointSizeStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2185,13 +2269,14 @@ GPlatesOpenGL::GLPointSizeStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glPointSize(d_size.dval());
+	opengl_functions.glPointSize(d_size.dval());
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLPointSizeStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2202,7 +2287,7 @@ GPlatesOpenGL::GLPointSizeStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glPointSize(GLfloat(1));
+	opengl_functions.glPointSize(GLfloat(1));
 
 	return true;
 }
@@ -2210,6 +2295,7 @@ GPlatesOpenGL::GLPointSizeStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLPolygonModeStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -2221,13 +2307,14 @@ GPlatesOpenGL::GLPolygonModeStateSet::apply_state(
 		return false;
 	}
 
-	glPolygonMode(GL_FRONT_AND_BACK, d_mode);
+	opengl_functions.glPolygonMode(GL_FRONT_AND_BACK, d_mode);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLPolygonModeStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2237,13 +2324,14 @@ GPlatesOpenGL::GLPolygonModeStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glPolygonMode(GL_FRONT_AND_BACK, d_mode);
+	opengl_functions.glPolygonMode(GL_FRONT_AND_BACK, d_mode);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLPolygonModeStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2253,7 +2341,7 @@ GPlatesOpenGL::GLPolygonModeStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+	opengl_functions.glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 	return true;
 }
@@ -2261,6 +2349,7 @@ GPlatesOpenGL::GLPolygonModeStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLPolygonOffsetStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -2275,13 +2364,14 @@ GPlatesOpenGL::GLPolygonOffsetStateSet::apply_state(
 		return false;
 	}
 
-	glPolygonOffset(d_factor.dval(), d_units.dval());
+	opengl_functions.glPolygonOffset(d_factor.dval(), d_units.dval());
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLPolygonOffsetStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2292,13 +2382,14 @@ GPlatesOpenGL::GLPolygonOffsetStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glPolygonOffset(d_factor.dval(), d_units.dval());
+	opengl_functions.glPolygonOffset(d_factor.dval(), d_units.dval());
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLPolygonOffsetStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2309,7 +2400,7 @@ GPlatesOpenGL::GLPolygonOffsetStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glPolygonMode(GLfloat(0), GLfloat(0));
+	opengl_functions.glPolygonOffset(GLfloat(0), GLfloat(0));
 
 	return true;
 }
@@ -2317,6 +2408,7 @@ GPlatesOpenGL::GLPolygonOffsetStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLPrimitiveRestartIndexStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -2330,13 +2422,14 @@ GPlatesOpenGL::GLPrimitiveRestartIndexStateSet::apply_state(
 		return false;
 	}
 
-	glPrimitiveRestartIndex(d_index);
+	opengl_functions.glPrimitiveRestartIndex(d_index);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLPrimitiveRestartIndexStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2346,13 +2439,14 @@ GPlatesOpenGL::GLPrimitiveRestartIndexStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glPrimitiveRestartIndex(d_index);
+	opengl_functions.glPrimitiveRestartIndex(d_index);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLPrimitiveRestartIndexStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2361,7 +2455,7 @@ GPlatesOpenGL::GLPrimitiveRestartIndexStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glPrimitiveRestartIndex(0);
+	opengl_functions.glPrimitiveRestartIndex(0);
 
 	return true;
 }
@@ -2369,6 +2463,7 @@ GPlatesOpenGL::GLPrimitiveRestartIndexStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLReadBufferStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -2382,13 +2477,14 @@ GPlatesOpenGL::GLReadBufferStateSet::apply_state(
 		return false;
 	}
 
-	glReadBuffer(d_read_buffer);
+	opengl_functions.glReadBuffer(d_read_buffer);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLReadBufferStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2398,13 +2494,14 @@ GPlatesOpenGL::GLReadBufferStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glReadBuffer(d_read_buffer);
+	opengl_functions.glReadBuffer(d_read_buffer);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLReadBufferStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2414,7 +2511,7 @@ GPlatesOpenGL::GLReadBufferStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glReadBuffer(d_default_read_buffer);
+	opengl_functions.glReadBuffer(d_default_read_buffer);
 
 	return true;
 }
@@ -2422,6 +2519,7 @@ GPlatesOpenGL::GLReadBufferStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLSampleCoverageStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -2436,7 +2534,7 @@ GPlatesOpenGL::GLSampleCoverageStateSet::apply_state(
 		return false;
 	}
 
-	glSampleCoverage(
+	opengl_functions.glSampleCoverage(
 			static_cast<GLclampf>(d_value.dval()),
 			d_invert);
 
@@ -2445,6 +2543,7 @@ GPlatesOpenGL::GLSampleCoverageStateSet::apply_state(
 
 bool
 GPlatesOpenGL::GLSampleCoverageStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2455,7 +2554,7 @@ GPlatesOpenGL::GLSampleCoverageStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glSampleCoverage(
+	opengl_functions.glSampleCoverage(
 			static_cast<GLclampf>(d_value.dval()),
 			d_invert);
 
@@ -2464,6 +2563,7 @@ GPlatesOpenGL::GLSampleCoverageStateSet::apply_from_default_state(
 
 bool
 GPlatesOpenGL::GLSampleCoverageStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2474,7 +2574,7 @@ GPlatesOpenGL::GLSampleCoverageStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glSampleCoverage(1, GL_FALSE);
+	opengl_functions.glSampleCoverage(1, GL_FALSE);
 
 	return true;
 }
@@ -2484,6 +2584,7 @@ const GLbitfield GPlatesOpenGL::GLSampleMaskStateSet::DEFAULT_MASK = ~GLbitfield
 
 bool
 GPlatesOpenGL::GLSampleMaskStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -2499,7 +2600,7 @@ GPlatesOpenGL::GLSampleMaskStateSet::apply_state(
 		// If state changed...
 		if (d_masks[i] != current.d_masks[i])
 		{
-			glSampleMaski(i, d_masks[i]);
+			opengl_functions.glSampleMaski(i, d_masks[i]);
 			applied_state = true;
 		}
 	}
@@ -2509,6 +2610,7 @@ GPlatesOpenGL::GLSampleMaskStateSet::apply_state(
 
 bool
 GPlatesOpenGL::GLSampleMaskStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2520,7 +2622,7 @@ GPlatesOpenGL::GLSampleMaskStateSet::apply_from_default_state(
 		// If state changed...
 		if (d_masks[i] != DEFAULT_MASK)
 		{
-			glSampleMaski(i, d_masks[i]);
+			opengl_functions.glSampleMaski(i, d_masks[i]);
 			applied_state = true;
 		}
 	}
@@ -2530,6 +2632,7 @@ GPlatesOpenGL::GLSampleMaskStateSet::apply_from_default_state(
 
 bool
 GPlatesOpenGL::GLSampleMaskStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2541,7 +2644,7 @@ GPlatesOpenGL::GLSampleMaskStateSet::apply_to_default_state(
 		// If state changed...
 		if (d_masks[i] != DEFAULT_MASK)
 		{
-			glSampleMaski(i, DEFAULT_MASK);
+			opengl_functions.glSampleMaski(i, DEFAULT_MASK);
 			applied_state = true;
 		}
 	}
@@ -2552,6 +2655,7 @@ GPlatesOpenGL::GLSampleMaskStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLScissorStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -2565,7 +2669,7 @@ GPlatesOpenGL::GLScissorStateSet::apply_state(
 		return false;
 	}
 
-	glScissor(
+	opengl_functions.glScissor(
 			d_scissor_rectangle.x(), d_scissor_rectangle.y(),
 			d_scissor_rectangle.width(), d_scissor_rectangle.height());
 
@@ -2574,6 +2678,7 @@ GPlatesOpenGL::GLScissorStateSet::apply_state(
 
 bool
 GPlatesOpenGL::GLScissorStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2583,7 +2688,7 @@ GPlatesOpenGL::GLScissorStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glScissor(
+	opengl_functions.glScissor(
 			d_scissor_rectangle.x(), d_scissor_rectangle.y(),
 			d_scissor_rectangle.width(), d_scissor_rectangle.height());
 
@@ -2592,6 +2697,7 @@ GPlatesOpenGL::GLScissorStateSet::apply_from_default_state(
 
 bool
 GPlatesOpenGL::GLScissorStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2601,7 +2707,7 @@ GPlatesOpenGL::GLScissorStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glScissor(
+	opengl_functions.glScissor(
 			d_default_scissor_rectangle.x(), d_default_scissor_rectangle.y(),
 			d_default_scissor_rectangle.width(), d_default_scissor_rectangle.height());
 
@@ -2614,6 +2720,7 @@ GPlatesOpenGL::GLStencilFuncStateSet::DEFAULT_FUNC{ GL_ALWAYS, 0, ~GLuint(0) };
 
 bool
 GPlatesOpenGL::GLStencilFuncStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -2631,7 +2738,7 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_state(
 		{
 			// Both front/back funcs are the same so set them in one call
 			// (even though it's possible only one of the faces has changed).
-			glStencilFunc(d_front_func.func, d_front_func.ref, d_front_func.mask);
+			opengl_functions.glStencilFunc(d_front_func.func, d_front_func.ref, d_front_func.mask);
 			applied_state = true;
 		}
 	}
@@ -2639,12 +2746,12 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_state(
 	{
 		if (d_front_func != current.d_front_func)
 		{
-			glStencilFuncSeparate(GL_FRONT, d_front_func.func, d_front_func.ref, d_front_func.mask);
+			opengl_functions.glStencilFuncSeparate(GL_FRONT, d_front_func.func, d_front_func.ref, d_front_func.mask);
 			applied_state = true;
 		}
 		if (d_back_func != current.d_back_func)
 		{
-			glStencilFuncSeparate(GL_BACK, d_back_func.func, d_back_func.ref, d_back_func.mask);
+			opengl_functions.glStencilFuncSeparate(GL_BACK, d_back_func.func, d_back_func.ref, d_back_func.mask);
 			applied_state = true;
 		}
 	}
@@ -2654,6 +2761,7 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_state(
 
 bool
 GPlatesOpenGL::GLStencilFuncStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2664,7 +2772,7 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_from_default_state(
 		if (d_front_func != DEFAULT_FUNC)
 		{
 			// Both front/back funcs are the same so set them in one call.
-			glStencilFunc(d_front_func.func, d_front_func.ref, d_front_func.mask);
+			opengl_functions.glStencilFunc(d_front_func.func, d_front_func.ref, d_front_func.mask);
 			applied_state = true;
 		}
 	}
@@ -2672,12 +2780,12 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_from_default_state(
 	{
 		if (d_front_func != DEFAULT_FUNC)
 		{
-			glStencilFuncSeparate(GL_FRONT, d_front_func.func, d_front_func.ref, d_front_func.mask);
+			opengl_functions.glStencilFuncSeparate(GL_FRONT, d_front_func.func, d_front_func.ref, d_front_func.mask);
 			applied_state = true;
 		}
 		if (d_back_func != DEFAULT_FUNC)
 		{
-			glStencilFuncSeparate(GL_BACK, d_back_func.func, d_back_func.ref, d_back_func.mask);
+			opengl_functions.glStencilFuncSeparate(GL_BACK, d_back_func.func, d_back_func.ref, d_back_func.mask);
 			applied_state = true;
 		}
 	}
@@ -2687,6 +2795,7 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_from_default_state(
 
 bool
 GPlatesOpenGL::GLStencilFuncStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2697,7 +2806,7 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_to_default_state(
 		if (d_front_func != DEFAULT_FUNC)
 		{
 			// Both front/back funcs are the same so set them in one call.
-			glStencilFunc(DEFAULT_FUNC.func, DEFAULT_FUNC.ref, DEFAULT_FUNC.mask);
+			opengl_functions.glStencilFunc(DEFAULT_FUNC.func, DEFAULT_FUNC.ref, DEFAULT_FUNC.mask);
 			applied_state = true;
 		}
 	}
@@ -2705,12 +2814,12 @@ GPlatesOpenGL::GLStencilFuncStateSet::apply_to_default_state(
 	{
 		if (d_front_func != DEFAULT_FUNC)
 		{
-			glStencilFuncSeparate(GL_FRONT, DEFAULT_FUNC.func, DEFAULT_FUNC.ref, DEFAULT_FUNC.mask);
+			opengl_functions.glStencilFuncSeparate(GL_FRONT, DEFAULT_FUNC.func, DEFAULT_FUNC.ref, DEFAULT_FUNC.mask);
 			applied_state = true;
 		}
 		if (d_back_func != DEFAULT_FUNC)
 		{
-			glStencilFuncSeparate(GL_BACK, DEFAULT_FUNC.func, DEFAULT_FUNC.ref, DEFAULT_FUNC.mask);
+			opengl_functions.glStencilFuncSeparate(GL_BACK, DEFAULT_FUNC.func, DEFAULT_FUNC.ref, DEFAULT_FUNC.mask);
 			applied_state = true;
 		}
 	}
@@ -2723,6 +2832,7 @@ const GLuint GPlatesOpenGL::GLStencilMaskStateSet::DEFAULT_MASK = ~GLuint(0)/*al
 
 bool
 GPlatesOpenGL::GLStencilMaskStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -2740,7 +2850,7 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_state(
 		{
 			// Both front/back masks are the same so set them in one call
 			// (even though it's possible only one of the faces has changed).
-			glStencilMask(d_front_mask);
+			opengl_functions.glStencilMask(d_front_mask);
 			applied_state = true;
 		}
 	}
@@ -2748,12 +2858,12 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_state(
 	{
 		if (d_front_mask != current.d_front_mask)
 		{
-			glStencilMaskSeparate(GL_FRONT, d_front_mask);
+			opengl_functions.glStencilMaskSeparate(GL_FRONT, d_front_mask);
 			applied_state = true;
 		}
 		if (d_back_mask != current.d_back_mask)
 		{
-			glStencilMaskSeparate(GL_BACK, d_back_mask);
+			opengl_functions.glStencilMaskSeparate(GL_BACK, d_back_mask);
 			applied_state = true;
 		}
 	}
@@ -2763,6 +2873,7 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_state(
 
 bool
 GPlatesOpenGL::GLStencilMaskStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2773,7 +2884,7 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_from_default_state(
 		if (d_front_mask != DEFAULT_MASK)
 		{
 			// Both front/back masks are the same so set them in one call.
-			glStencilMask(d_front_mask);
+			opengl_functions.glStencilMask(d_front_mask);
 			applied_state = true;
 		}
 	}
@@ -2781,12 +2892,12 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_from_default_state(
 	{
 		if (d_front_mask != DEFAULT_MASK)
 		{
-			glStencilMaskSeparate(GL_FRONT, d_front_mask);
+			opengl_functions.glStencilMaskSeparate(GL_FRONT, d_front_mask);
 			applied_state = true;
 		}
 		if (d_back_mask != DEFAULT_MASK)
 		{
-			glStencilMaskSeparate(GL_BACK, d_back_mask);
+			opengl_functions.glStencilMaskSeparate(GL_BACK, d_back_mask);
 			applied_state = true;
 		}
 	}
@@ -2796,6 +2907,7 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_from_default_state(
 
 bool
 GPlatesOpenGL::GLStencilMaskStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2806,7 +2918,7 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_to_default_state(
 		if (d_front_mask != DEFAULT_MASK)
 		{
 			// Both front/back masks are the same so set them in one call.
-			glStencilMask(DEFAULT_MASK);
+			opengl_functions.glStencilMask(DEFAULT_MASK);
 			applied_state = true;
 		}
 	}
@@ -2814,12 +2926,12 @@ GPlatesOpenGL::GLStencilMaskStateSet::apply_to_default_state(
 	{
 		if (d_front_mask != DEFAULT_MASK)
 		{
-			glStencilMaskSeparate(GL_FRONT, DEFAULT_MASK);
+			opengl_functions.glStencilMaskSeparate(GL_FRONT, DEFAULT_MASK);
 			applied_state = true;
 		}
 		if (d_back_mask != DEFAULT_MASK)
 		{
-			glStencilMaskSeparate(GL_BACK, DEFAULT_MASK);
+			opengl_functions.glStencilMaskSeparate(GL_BACK, DEFAULT_MASK);
 			applied_state = true;
 		}
 	}
@@ -2833,6 +2945,7 @@ GPlatesOpenGL::GLStencilOpStateSet::DEFAULT_OP{ GL_KEEP, GL_KEEP, GL_KEEP };
 
 bool
 GPlatesOpenGL::GLStencilOpStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -2850,7 +2963,7 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_state(
 		{
 			// Both front/back ops are the same so set them in one call
 			// (even though it's possible only one of the faces has changed).
-			glStencilOp(d_front_op.sfail, d_front_op.dpfail, d_front_op.dppass);
+			opengl_functions.glStencilOp(d_front_op.sfail, d_front_op.dpfail, d_front_op.dppass);
 			applied_state = true;
 		}
 	}
@@ -2858,12 +2971,12 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_state(
 	{
 		if (d_front_op != current.d_front_op)
 		{
-			glStencilOpSeparate(GL_FRONT, d_front_op.sfail, d_front_op.dpfail, d_front_op.dppass);
+			opengl_functions.glStencilOpSeparate(GL_FRONT, d_front_op.sfail, d_front_op.dpfail, d_front_op.dppass);
 			applied_state = true;
 		}
 		if (d_back_op != current.d_back_op)
 		{
-			glStencilOpSeparate(GL_BACK, d_back_op.sfail, d_back_op.dpfail, d_back_op.dppass);
+			opengl_functions.glStencilOpSeparate(GL_BACK, d_back_op.sfail, d_back_op.dpfail, d_back_op.dppass);
 			applied_state = true;
 		}
 	}
@@ -2873,6 +2986,7 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_state(
 
 bool
 GPlatesOpenGL::GLStencilOpStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2883,7 +2997,7 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_from_default_state(
 		if (d_front_op != DEFAULT_OP)
 		{
 			// Both front/back ops are the same so set them in one call.
-			glStencilOp(d_front_op.sfail, d_front_op.dpfail, d_front_op.dppass);
+			opengl_functions.glStencilOp(d_front_op.sfail, d_front_op.dpfail, d_front_op.dppass);
 			applied_state = true;
 		}
 	}
@@ -2891,12 +3005,12 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_from_default_state(
 	{
 		if (d_front_op != DEFAULT_OP)
 		{
-			glStencilOpSeparate(GL_FRONT, d_front_op.sfail, d_front_op.dpfail, d_front_op.dppass);
+			opengl_functions.glStencilOpSeparate(GL_FRONT, d_front_op.sfail, d_front_op.dpfail, d_front_op.dppass);
 			applied_state = true;
 		}
 		if (d_back_op != DEFAULT_OP)
 		{
-			glStencilOpSeparate(GL_BACK, d_back_op.sfail, d_back_op.dpfail, d_back_op.dppass);
+			opengl_functions.glStencilOpSeparate(GL_BACK, d_back_op.sfail, d_back_op.dpfail, d_back_op.dppass);
 			applied_state = true;
 		}
 	}
@@ -2906,6 +3020,7 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_from_default_state(
 
 bool
 GPlatesOpenGL::GLStencilOpStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2916,7 +3031,7 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_to_default_state(
 		if (d_front_op != DEFAULT_OP)
 		{
 			// Both front/back ops are the same so set them in one call.
-			glStencilOp(DEFAULT_OP.sfail, DEFAULT_OP.dpfail, DEFAULT_OP.dppass);
+			opengl_functions.glStencilOp(DEFAULT_OP.sfail, DEFAULT_OP.dpfail, DEFAULT_OP.dppass);
 			applied_state = true;
 		}
 	}
@@ -2924,12 +3039,12 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_to_default_state(
 	{
 		if (d_front_op != DEFAULT_OP)
 		{
-			glStencilOpSeparate(GL_FRONT, DEFAULT_OP.sfail, DEFAULT_OP.dpfail, DEFAULT_OP.dppass);
+			opengl_functions.glStencilOpSeparate(GL_FRONT, DEFAULT_OP.sfail, DEFAULT_OP.dpfail, DEFAULT_OP.dppass);
 			applied_state = true;
 		}
 		if (d_back_op != DEFAULT_OP)
 		{
-			glStencilOpSeparate(GL_BACK, DEFAULT_OP.sfail, DEFAULT_OP.dpfail, DEFAULT_OP.dppass);
+			opengl_functions.glStencilOpSeparate(GL_BACK, DEFAULT_OP.sfail, DEFAULT_OP.dpfail, DEFAULT_OP.dppass);
 			applied_state = true;
 		}
 	}
@@ -2940,6 +3055,7 @@ GPlatesOpenGL::GLStencilOpStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLUseProgramStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -2953,13 +3069,14 @@ GPlatesOpenGL::GLUseProgramStateSet::apply_state(
 	}
 
 	// Use the program.
-	glUseProgram(d_program_resource);
+	opengl_functions.glUseProgram(d_program_resource);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLUseProgramStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2970,13 +3087,14 @@ GPlatesOpenGL::GLUseProgramStateSet::apply_from_default_state(
 	}
 
 	// Use the program.
-	glUseProgram(d_program_resource);
+	opengl_functions.glUseProgram(d_program_resource);
 
 	return true;
 }
 
 bool
 GPlatesOpenGL::GLUseProgramStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -2987,7 +3105,7 @@ GPlatesOpenGL::GLUseProgramStateSet::apply_to_default_state(
 	}
 
 	// The default is zero (no program in use).
-    glUseProgram(0);
+	opengl_functions.glUseProgram(0);
 
 	return true;
 }
@@ -2995,6 +3113,7 @@ GPlatesOpenGL::GLUseProgramStateSet::apply_to_default_state(
 
 bool
 GPlatesOpenGL::GLViewportStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
@@ -3008,7 +3127,7 @@ GPlatesOpenGL::GLViewportStateSet::apply_state(
 		return false;
 	}
 
-	glViewport(
+	opengl_functions.glViewport(
 			d_viewport.x(), d_viewport.y(),
 			d_viewport.width(), d_viewport.height());
 
@@ -3017,6 +3136,7 @@ GPlatesOpenGL::GLViewportStateSet::apply_state(
 
 bool
 GPlatesOpenGL::GLViewportStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -3026,7 +3146,7 @@ GPlatesOpenGL::GLViewportStateSet::apply_from_default_state(
 		return false;
 	}
 
-	glViewport(
+	opengl_functions.glViewport(
 			d_viewport.x(), d_viewport.y(),
 			d_viewport.width(), d_viewport.height());
 
@@ -3035,6 +3155,7 @@ GPlatesOpenGL::GLViewportStateSet::apply_from_default_state(
 
 bool
 GPlatesOpenGL::GLViewportStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		const GLState &current_state) const
 {
@@ -3044,7 +3165,7 @@ GPlatesOpenGL::GLViewportStateSet::apply_to_default_state(
 		return false;
 	}
 
-	glViewport(
+	opengl_functions.glViewport(
 			d_default_viewport.x(), d_default_viewport.y(),
 			d_default_viewport.width(), d_default_viewport.height());
 
