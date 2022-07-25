@@ -50,24 +50,42 @@
 
 namespace GPlatesOpenGL
 {
+	class OpenGLFunctions;
+
 	/**
-	 * Tracks common OpenGL 3.3 (core profile) global context state so it can be automatically restored.
+	 * Public interface for interacting with OpenGL, and tracking common OpenGL *global* state in an OpenGL context.
 	 *
-	 * Only those OpenGL calls that change the global context state are routed through this class.
-	 * All remaining OpenGL calls should be made directly to OpenGL, including calls that change the
-	 * state of OpenGL objects (such as vertex arrays, buffers, textures, programs, framebuffers, etc).
+	 * Global OpenGL state differs from the state of OpenGL *objects* (such as vertex arrays, buffers, textures,
+	 * programs, framebuffers, etc). Global state is things like what textures are bound to which texture units.
 	 *
-	 * Note that only those global context state calls that are commonly used are catered for here.
-	 * Uncatered global context state calls will need to be made directly to OpenGL, and hence will
-	 * have no save/restore ability provided by this class.
+	 * The benefit to tracking *global* context state is that it can be automatically restored
+	 * (see nested class @a StateScope below) without having to explicitly do it (eg, unbinding textures
+	 * when finished drawing with them). This helps avoid bugs where the global state is not what is expected.
+	 * The internal state of resource *objects* must still be explicitly managed but that is usually easier
+	 * since a single resource object is typically managed by a single class/module whereas the global OpenGL state
+	 * is used across the entire application (and therefore harder to manage explicitly).
 	 *
-	 * Some extra OpenGL calls (beyond tracking global context state) are also routed through this class.
-	 * For example, calls that set the state *inside* a vertex array object (hence not global state)
-	 * are also routed through this class so that a single @a GLVertexArray instance can have one
-	 * native vertex array object per OpenGL context. By tracking the state we can create a new
-	 * native object when switching to another context and set its state to match. This is needed
-	 * because vertex array objects (unlike buffer objects) cannot be shared across contexts.
-	 * Another example, similar to @a GLVertexArray, is @a GLFramebuffer.
+	 * The main difference between this class and the lower-level class @a OpenGLFunctions is the latter
+	 * only provides access to the native OpenGL functions (via Qt) and is only used to help implement the
+	 * machinery that supports this class (which includes the resource classes like @a GLTexture).
+	 * Hence functions in @a OpenGLFunctions should not be called by users. They should instead use this
+	 * class @a GL along with the OpenGL resource classes that manage OpenGL resources (such as using
+	 * @a GLTexture to manage a texture object).
+	 *
+	 * Note: The only OpenGL function calls that are catered for here (and in the resource classes @a GLProgram, etc)
+	 *       are those that are currently used by GPlates. If you need to call an OpenGL function not catered for here
+	 *       (and not in a resource class) then it'll need to be added. And if it sets global state then it will
+	 *       need to include global state tracking (in this class).
+	 *
+	 * Note: This class also tracks some resource *object* state (ie, not just *global* context state) but
+	 *       only for the purpose described next (ie, not for the purpose of automatically saving/restoring it).
+	 *       For example, calls that set the state *inside* a vertex array object (hence not global state)
+	 *       are tracked by this class so that a single @a GLVertexArray instance can have one native
+	 *       vertex array object per OpenGL context. By tracking the *object* state we can create a new
+	 *       native object when switching to another OpenGL context (ie, when using an instance of @a GL
+	 *       that refers to a different context) and set its object state to match. This is needed
+	 *       because vertex array objects (unlike buffer objects) cannot be shared across contexts.
+	 *       Another example, similar to @a GLVertexArray, is @a GLFramebuffer.
 	 */
 	class GL :
 			public GPlatesUtils::ReferenceCount<GL>
@@ -122,19 +140,21 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * RAII class to save the global state on entering a scope and restore on exiting the scope.
+		 * RAII class to save the *global* state on entering a scope and restore on exiting the scope.
+		 *
+		 * Note: The *internal* state of resource objects is not saved/restored.
 		 */
 		class StateScope :
 				private boost::noncopyable
 		{
 		public:
 			/**
-			 * Save the current OpenGL state (so it can be restored on exiting the current scope).
+			 * Save the current OpenGL global state (so it can be restored on exiting the current scope).
 			 *
-			 * If @a reset_to_default_state is true then reset to the default OpenGL state after saving.
-			 * This results in the default OpenGL state when entering the current scope.
-			 * Note that this does not affect the state that is saved (and hence restored).
-			 * By default it is not reset (to the default OpenGL state).
+			 * If @a reset_to_default_state is true then reset to the default OpenGL global state after saving.
+			 * This results in the default OpenGL global state when entering the current scope.
+			 * Note that this does not affect the global state that is saved (and hence restored).
+			 * By default it is not reset (to the default OpenGL global state).
 			 */
 			explicit
 			StateScope(
@@ -142,13 +162,13 @@ namespace GPlatesOpenGL
 					bool reset_to_default_state = false);
 
 			/**
-			 * Restores the OpenGL state to what it was on entering the current scope
+			 * Restores the OpenGL global state to what it was on entering the current scope
 			 * (unless @a restore has been called).
 			 */
 			~StateScope();
 
 			/**
-			 * Opportunity to restore the OpenGL state before the scope actually exits (when destructor is called).
+			 * Opportunity to restore the OpenGL global state before the scope actually exits (when destructor is called).
 			 */
 			void
 			restore();
@@ -162,7 +182,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns the @a GLContext passed into the constructor.
 		 *
-		 * Note that a shared pointer is not returned to avoid possibility of cycle shared references
+		 * Note that a shared pointer is not returned to avoid possibility of cyclic shared references
 		 * leading to memory leaks (@a GLContext owns a few resources which should not own it).
 		 */
 		GLContext &
@@ -205,21 +225,59 @@ namespace GPlatesOpenGL
 		bool
 		supports_4_3_core() const;
 
+
+		////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// Set OpenGL state methods.
 		//
-		// The following methods are equivalent to the OpenGL functions with the same function name
-		// (with a 'gl' prefix) and mostly the same function parameters.
+		// The following methods are equivalent to the native OpenGL functions with the same function name
+		// (ie, with a 'gl' prefix). But we exclude the 'gl' prefix so that, for example, a function call to
+		// 'ActiveTexture()' on object 'gl' looks like 'gl.ActiveTexture()' which looks very similar to the
+		// native equivalent 'glActiveTexture()'.
 		//
-		// These methods are not documented, to understand their usage please refer
-		// to the OpenGL 3.3 core profile specification.
+		// There are three categories of methods that set OpenGL state:
+		// 1) Methods that create/delete OpenGL resources (such as textures).
+		//    That functionality is handled *outside* this class using our own OpenGL resource classes that
+		//    manage those resources (such as using @a GLTexture to manage a texture object).
+		// 2) Methods that manipulate *global* state not related to the *internal* state of resources *objects* (or their creation).
+		//    That functionality is handled by this class, and results in some of those methods having slightly different parameters
+		//    than their equivalent native OpenGL functions to account for resource classes (such as @a GLTexture),
+		//    usually accepting the resource *class* as an argument rather than accepting an *integer* handle (native resource).
+		// 3) All other methods (that do NOT set *global* state and do NOT create/delete OpenGL resources).
+		//    That functionality is handled by this class and includes methods that manipulate the *internal* state of resource objects
+		//    (such as 'Uniform4f()') and drawing commands (such as 'DrawArrays()'). However some functionality has moved to the
+		//    resource classes if was more convenient there (eg, @a GLProgram has methods to link a program and get a uniform location
+		//    since it wraps those with extra functionality for convenience, such as caching the location of uniforms upon querying them).
 		//
-		// Any calls not provided below can instead be called with direct native OpenGL calls (with 'gl' prefix).
+		// Note: OpenGL calls for item (1) should use resource classes (like @a GLTexture).
+		//       All other OpenGL calls (ie, items (2) and (3) above) should go through this class (and in some cases the resource classes).
+		//       The lower-level class @a OpenGLFunctions only exists to support the implementation of this class (and the resource classes)
+		//       and should not be used outside of that implementation.
+		//
+		// Note: The *internal* state of resource objects is not saved/restored by @a StateScope.
+		//       Only the *global* state for item (2) above is saved/restored.
+		//
+		// Note: These methods are not documented here, to understand their usage please refer to the
+		//       core profile specifications for OpenGL 3.3 (and above).
 		//
 		// As mentioned above, some extra OpenGL calls (beyond tracking global context state) are also
 		// routed through this class. For example, calls that set the state *inside* a vertex array object
 		// (or a framebuffer object) are object state (not global state) but are nevertheless routed through
-		// this class so that a single @a GLVertexArray instance (or a @GLFramebuffer instance) can have
+		// this class so that a single @a GLVertexArray instance (or a @a GLFramebuffer instance) can have
 		// one native vertex array object (or framebuffer object) per OpenGL context.
-		// NOTE: The state of these objects is *not* saved/restored by @a StateScope (since it is not *global* state).
+		////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+		////////////////////////////////////////
+		//                                    //
+		// Functions in OpenGL 1.0 - 3.3 core //
+		//                                    //
+		////////////////////////////////////////
+
+
+		//
+		//
+		// GLOBAL state (saved/restored by @a StateScope)
+		//
 		//
 
 		void
@@ -367,10 +425,6 @@ namespace GPlatesOpenGL
 				GLuint index);
 
 		void
-		DisableVertexAttribArray(
-				GLuint index);
-
-		void
 		DrawBuffer(
 				GLenum buf);
 
@@ -386,57 +440,6 @@ namespace GPlatesOpenGL
 		Enablei(
 				GLenum cap,
 				GLuint index);
-
-		void
-		EnableVertexAttribArray(
-				GLuint index);
-
-		void
-		FramebufferRenderbuffer(
-				GLenum target,
-				GLenum attachment,
-				GLenum renderbuffertarget,
-				boost::optional<GLRenderbuffer::shared_ptr_type> renderbuffer);
-
-		void
-		FramebufferTexture(
-				GLenum target,
-				GLenum attachment,
-				boost::optional<GLTexture::shared_ptr_type> texture,
-				GLint level);
-
-		void
-		FramebufferTexture1D(
-				GLenum target,
-				GLenum attachment,
-				GLenum textarget,
-				boost::optional<GLTexture::shared_ptr_type> texture,
-				GLint level);
-
-		void
-		FramebufferTexture2D(
-				GLenum target,
-				GLenum attachment,
-				GLenum textarget,
-				boost::optional<GLTexture::shared_ptr_type> texture,
-				GLint level);
-
-		void
-		FramebufferTexture3D(
-				GLenum target,
-				GLenum attachment,
-				GLenum textarget,
-				boost::optional<GLTexture::shared_ptr_type> texture,
-				GLint level,
-				GLint layer);
-
-		void
-		FramebufferTextureLayer(
-				GLenum target,
-				GLenum attachment,
-				boost::optional<GLTexture::shared_ptr_type> texture,
-				GLint level,
-				GLint layer);
 
 		void
 		FrontFace(
@@ -494,8 +497,8 @@ namespace GPlatesOpenGL
 				GLbitfield mask);
 
 		/**
-		 * Note that the default scissor rectangle is the current dimensions (in device pixels) of the
-		 * main framebuffer (ie, not a framebuffer object) currently attached to the OpenGL context.
+		 * Note that the default scissor rectangle is the current dimensions (in device pixels) of the framebuffer
+		 * (either main framebuffer or a framebuffer object) currently attached to the OpenGL context.
 		 */
 		void
 		Scissor(
@@ -545,6 +548,80 @@ namespace GPlatesOpenGL
 				boost::optional<GLProgram::shared_ptr_type> program);
 
 		/**
+		 * Note that the default viewport rectangle is the current dimensions (in device pixels) of the framebuffer
+		 * (either main framebuffer or a framebuffer object) currently attached to the OpenGL context.
+		 */
+		void
+		Viewport(
+				GLint x,
+				GLint y,
+				GLsizei width,
+				GLsizei height);
+
+
+		//
+		//
+		// OBJECT (resource) state (NOT saved/restored by @a StateScope)
+		//
+		//
+
+
+		void
+		DisableVertexAttribArray(
+				GLuint index);
+
+		void
+		EnableVertexAttribArray(
+				GLuint index);
+
+		void
+		FramebufferRenderbuffer(
+				GLenum target,
+				GLenum attachment,
+				GLenum renderbuffertarget,
+				boost::optional<GLRenderbuffer::shared_ptr_type> renderbuffer);
+
+		void
+		FramebufferTexture(
+				GLenum target,
+				GLenum attachment,
+				boost::optional<GLTexture::shared_ptr_type> texture,
+				GLint level);
+
+		void
+		FramebufferTexture1D(
+				GLenum target,
+				GLenum attachment,
+				GLenum textarget,
+				boost::optional<GLTexture::shared_ptr_type> texture,
+				GLint level);
+
+		void
+		FramebufferTexture2D(
+				GLenum target,
+				GLenum attachment,
+				GLenum textarget,
+				boost::optional<GLTexture::shared_ptr_type> texture,
+				GLint level);
+
+		void
+		FramebufferTexture3D(
+				GLenum target,
+				GLenum attachment,
+				GLenum textarget,
+				boost::optional<GLTexture::shared_ptr_type> texture,
+				GLint level,
+				GLint layer);
+
+		void
+		FramebufferTextureLayer(
+				GLenum target,
+				GLenum attachment,
+				boost::optional<GLTexture::shared_ptr_type> texture,
+				GLint level,
+				GLint layer);
+
+		/**
 		 * Note that we don't shadow globe state set by glVertexAttrib4f, glVertexAttribI4i, etc.
 		 *
 		 * This is generic vertex attribute state that only gets used if a vertex array is *not* enabled for
@@ -582,34 +659,51 @@ namespace GPlatesOpenGL
 				GLsizei stride,
 				const GLvoid *pointer);
 
-		/**
-		 * Note that the default viewport rectangle is the current dimensions (in device pixels) of the
-		 * main framebuffer (ie, not a framebuffer object) currently attached to the OpenGL context.
-		 */
-		void
-		Viewport(
-				GLint x,
-				GLint y,
-				GLsizei width,
-				GLsizei height);
+
+		/////////////////////////////////////////////
+		//                                         //
+		// Functions introduced in OpenGL 4.0 core //
+		//                                         //
+		/////////////////////////////////////////////
 
 
-		//
-		// Get state methods.
+		/////////////////////////////////////////////
+		//                                         //
+		// Functions introduced in OpenGL 4.1 core //
+		//                                         //
+		/////////////////////////////////////////////
+
+
+		/////////////////////////////////////////////
+		//                                         //
+		// Functions introduced in OpenGL 4.2 core //
+		//                                         //
+		/////////////////////////////////////////////
+
+
+		/////////////////////////////////////////////
+		//                                         //
+		// Functions introduced in OpenGL 4.3 core //
+		//                                         //
+		/////////////////////////////////////////////
+
+
+		///////////////////////////////////////////////////////////////////////////////////////////////
+		// Get OpenGL state methods.
 		//
 		// Note: Unlike the 'set' methods, only a handful of 'get' methods are typically needed.
 		//       Applications usually set OpenGL state (rather than get it) since retrieving state
 		//       is typically much slower (requiring a round-trip to the driver/GPU).
 		//       However we've shadowed/cached some global state so it's convenient to be able to
 		//       query some of that.
-		//
+		///////////////////////////////////////////////////////////////////////////////////////////////
 
 
 		/**
 		 * Returns the current scissor rectangle.
 		 *
-		 * Note that the default scissor rectangle is the current dimensions (in device pixels) of the
-		 * main framebuffer (ie, not a framebuffer object) currently attached to the OpenGL context.
+		 * Note that the default scissor rectangle is the current dimensions (in device pixels) of the framebuffer
+		 * (either main framebuffer or a framebuffer object) currently attached to the OpenGL context.
 		 */
 		const GLViewport &
 		get_scissor() const;
@@ -617,8 +711,8 @@ namespace GPlatesOpenGL
 		/**
 		 * Returns the current viewport rectangle.
 		 *
-		 * Note that the default viewport rectangle is the current dimensions (in device pixels) of the
-		 * main framebuffer (ie, not a framebuffer object) currently attached to the OpenGL context.
+		 * Note that the default viewport rectangle is the current dimensions (in device pixels) of the framebuffer
+		 * (either main framebuffer or a framebuffer object) currently attached to the OpenGL context.
 		 */
 		const GLViewport &
 		get_viewport() const;
