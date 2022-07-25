@@ -215,6 +215,7 @@ GPlatesOpenGL::GLContext::create_gl()
 {
 	return GL::create(
 			get_non_null_pointer(this),
+			get_opengl_functions(),
 			get_shared_state()->get_state_store(get_capabilities()));
 }
 
@@ -346,14 +347,16 @@ GPlatesOpenGL::GLContext::get_version_functions(
 void
 GPlatesOpenGL::GLContext::deallocate_queued_object_resources()
 {
-	get_non_shared_state()->get_framebuffer_resource_manager()->deallocate_queued_resources();
-	get_non_shared_state()->get_vertex_array_resource_manager()->deallocate_queued_resources();
+	OpenGLFunctions &opengl_functions = get_opengl_functions();
 
-	get_shared_state()->get_texture_resource_manager()->deallocate_queued_resources();
-	get_shared_state()->get_renderbuffer_resource_manager()->deallocate_queued_resources();
-	get_shared_state()->get_buffer_resource_manager()->deallocate_queued_resources();
-	get_shared_state()->get_shader_resource_manager()->deallocate_queued_resources();
-	get_shared_state()->get_program_resource_manager()->deallocate_queued_resources();
+	get_non_shared_state()->get_framebuffer_resource_manager()->deallocate_queued_resources(opengl_functions);
+	get_non_shared_state()->get_vertex_array_resource_manager()->deallocate_queued_resources(opengl_functions);
+
+	get_shared_state()->get_texture_resource_manager()->deallocate_queued_resources(opengl_functions);
+	get_shared_state()->get_renderbuffer_resource_manager()->deallocate_queued_resources(opengl_functions);
+	get_shared_state()->get_buffer_resource_manager()->deallocate_queued_resources(opengl_functions);
+	get_shared_state()->get_shader_resource_manager()->deallocate_queued_resources(opengl_functions);
+	get_shared_state()->get_program_resource_manager()->deallocate_queued_resources(opengl_functions);
 }
 
 

@@ -35,6 +35,7 @@
 namespace GPlatesOpenGL
 {
 	class GLCapabilities;
+	class OpenGLFunctions;
 
 	/**
 	 * Allocates and deallocates OpenGL object resources (such as texture objects).
@@ -67,9 +68,10 @@ namespace GPlatesOpenGL
 		 */
 		ResourceHandleType
 		allocate_resource(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities)
 		{
-			return d_resource_allocator.allocate(capabilities);
+			return d_resource_allocator.allocate(opengl_functions, capabilities);
 		}
 
 		/**
@@ -78,10 +80,11 @@ namespace GPlatesOpenGL
 		template <typename AllocateArg1>
 		ResourceHandleType
 		allocate_resource(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const AllocateArg1 &allocate_arg1)
 		{
-			return d_resource_allocator.allocate(capabilities, allocate_arg1);
+			return d_resource_allocator.allocate(opengl_functions, capabilities, allocate_arg1);
 		}
 
 		/**
@@ -106,11 +109,12 @@ namespace GPlatesOpenGL
 		 * a rendering a frame is a good time.
 		 */
 		void
-		deallocate_queued_resources()
+		deallocate_queued_resources(
+				OpenGLFunctions &opengl_functions)
 		{
 			for (ResourceHandleType resource : d_resource_deallocation_queue)
 			{
-				d_resource_allocator.deallocate(resource);
+				d_resource_allocator.deallocate(opengl_functions, resource);
 			}
 
 			d_resource_deallocation_queue.clear();

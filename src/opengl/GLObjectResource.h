@@ -39,6 +39,7 @@
 namespace GPlatesOpenGL
 {
 	class GLCapabilities;
+	class OpenGLFunctions;
 
 	/**
 	 * An RAII wrapper around an OpenGL object resource (such as a texture object)
@@ -68,12 +69,13 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const typename resource_manager_type::shared_ptr_type &resource_manager)
 		{
 			return non_null_ptr_type(
 					new GLObjectResource(
-							resource_manager->allocate_resource(capabilities),
+							resource_manager->allocate_resource(opengl_functions, capabilities),
 							resource_manager));
 		}
 
@@ -84,13 +86,14 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
+				OpenGLFunctions &opengl_functions,
 				const GLCapabilities &capabilities,
 				const typename resource_manager_type::shared_ptr_type &resource_manager,
 				const AllocateArg1 &allocate_arg1)
 		{
 			return non_null_ptr_type(
 					new GLObjectResource(
-							resource_manager->allocate_resource(capabilities, allocate_arg1),
+							resource_manager->allocate_resource(opengl_functions, capabilities, allocate_arg1),
 							resource_manager));
 		}
 

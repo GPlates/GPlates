@@ -30,6 +30,7 @@
 #include "GL.h"
 #include "GLContext.h"
 #include "OpenGLException.h"
+#include "OpenGLFunctions.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -389,19 +390,21 @@ GPlatesOpenGL::GLVertexArray::update_attribute_array(
 
 GLuint
 GPlatesOpenGL::GLVertexArray::Allocator::allocate(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities)
 {
 	GLuint vertex_array_object;
-	glGenVertexArrays(1, &vertex_array_object);
+	opengl_functions.glGenVertexArrays(1, &vertex_array_object);
 	return vertex_array_object;
 }
 
 
 void
 GPlatesOpenGL::GLVertexArray::Allocator::deallocate(
+		OpenGLFunctions &opengl_functions,
 		GLuint vertex_array_object)
 {
-	glDeleteVertexArrays(1, &vertex_array_object);
+	opengl_functions.glDeleteVertexArrays(1, &vertex_array_object);
 }
 
 

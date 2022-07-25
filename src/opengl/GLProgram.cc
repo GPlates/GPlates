@@ -40,6 +40,7 @@
 #include "GLContext.h"
 #include "GLShader.h"
 #include "OpenGLException.h"
+#include "OpenGLFunctions.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
@@ -55,6 +56,7 @@ GPlatesOpenGL::GLProgram::GLProgram(
 		GL &gl) :
 	d_resource(
 			resource_type::create(
+					gl.get_opengl_functions(),
 					gl.get_capabilities(),
 					gl.get_context().get_shared_state()->get_program_resource_manager()))
 {
@@ -252,9 +254,10 @@ GPlatesOpenGL::GLProgram::output_info_log()
 
 GLuint
 GPlatesOpenGL::GLProgram::Allocator::allocate(
-	const GLCapabilities &capabilities)
+		OpenGLFunctions &opengl_functions,
+		const GLCapabilities &capabilities)
 {
-	const GLuint program = glCreateProgram();
+	const GLuint program = opengl_functions.glCreateProgram();
 
 	GPlatesGlobal::Assert<OpenGLException>(
 		program,
@@ -267,7 +270,8 @@ GPlatesOpenGL::GLProgram::Allocator::allocate(
 
 void
 GPlatesOpenGL::GLProgram::Allocator::deallocate(
-	GLuint program)
+		OpenGLFunctions &opengl_functions,
+		GLuint program)
 {
-	glDeleteProgram(program);
+	opengl_functions.glDeleteProgram(program);
 }

@@ -30,6 +30,7 @@
 #include "GL.h"
 #include "GLContext.h"
 #include "OpenGLException.h"
+#include "OpenGLFunctions.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -673,19 +674,21 @@ GPlatesOpenGL::GLFramebuffer::set_attachment(
 
 GLuint
 GPlatesOpenGL::GLFramebuffer::Allocator::allocate(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities)
 {
 	GLuint fbo;
-	glGenFramebuffers(1, &fbo);
+	opengl_functions.glGenFramebuffers(1, &fbo);
 	return fbo;
 }
 
 
 void
 GPlatesOpenGL::GLFramebuffer::Allocator::deallocate(
+		OpenGLFunctions &opengl_functions,
 		GLuint fbo)
 {
-	glDeleteFramebuffers(1, &fbo);
+	opengl_functions.glDeleteFramebuffers(1, &fbo);
 }
 
 

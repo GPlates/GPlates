@@ -35,6 +35,7 @@
 #include "GLContext.h"
 #include "GLShaderSource.h"
 #include "OpenGLException.h"
+#include "OpenGLFunctions.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
@@ -51,6 +52,7 @@ GPlatesOpenGL::GLShader::GLShader(
 		GLenum shader_type) :
 	d_resource(
 			resource_type::create(
+					gl.get_opengl_functions(),
 					gl.get_capabilities(),
 					gl.get_context().get_shared_state()->get_shader_resource_manager(),
 					shader_type))
@@ -224,10 +226,11 @@ GPlatesOpenGL::GLShader::output_info_log()
 
 GLuint
 GPlatesOpenGL::GLShader::Allocator::allocate(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities,
 		GLenum shader_type)
 {
-	const GLuint shader = glCreateShader(shader_type);
+	const GLuint shader = opengl_functions.glCreateShader(shader_type);
 
 	GPlatesGlobal::Assert<OpenGLException>(
 			shader,
@@ -240,7 +243,8 @@ GPlatesOpenGL::GLShader::Allocator::allocate(
 
 void
 GPlatesOpenGL::GLShader::Allocator::deallocate(
+		OpenGLFunctions &opengl_functions,
 		GLuint shader)
 {
-	glDeleteShader(shader);
+	opengl_functions.glDeleteShader(shader);
 }

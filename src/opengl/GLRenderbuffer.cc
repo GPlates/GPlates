@@ -31,6 +31,7 @@
 
 #include "GL.h"
 #include "GLContext.h"
+#include "OpenGLFunctions.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -38,19 +39,21 @@
 
 GLuint
 GPlatesOpenGL::GLRenderbuffer::Allocator::allocate(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities)
 {
 	GLuint renderbuffer;
-	glGenRenderbuffers(1, &renderbuffer);
+	opengl_functions.glGenRenderbuffers(1, &renderbuffer);
 	return renderbuffer;
 }
 
 
 void
 GPlatesOpenGL::GLRenderbuffer::Allocator::deallocate(
+		OpenGLFunctions &opengl_functions,
 		GLuint renderbuffer)
 {
-	glDeleteRenderbuffers(1, &renderbuffer);
+	opengl_functions.glDeleteRenderbuffers(1, &renderbuffer);
 }
 
 
@@ -58,6 +61,7 @@ GPlatesOpenGL::GLRenderbuffer::GLRenderbuffer(
 		GL &gl) :
 	d_resource(
 			resource_type::create(
+					gl.get_opengl_functions(),
 					gl.get_capabilities(),
 					gl.get_context().get_shared_state()->get_renderbuffer_resource_manager()))
 {

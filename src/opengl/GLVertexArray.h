@@ -49,6 +49,7 @@ namespace GPlatesOpenGL
 {
 	class GL;
 	class GLContext;
+	class OpenGLFunctions;
 
 	/**
 	 * Wrapper around an OpenGL vertex array object.
@@ -139,10 +140,12 @@ namespace GPlatesOpenGL
 		public:
 			GLuint
 			allocate(
+					OpenGLFunctions &opengl_functions,
 					const GLCapabilities &capabilities);
 
 			void
 			deallocate(
+					OpenGLFunctions &opengl_functions,
 					GLuint);
 		};
 

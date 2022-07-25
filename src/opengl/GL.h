@@ -752,6 +752,26 @@ namespace GPlatesOpenGL
 			return non_null_ptr_type(new GL(context, opengl_functions, state_store));
 		}
 
+	private: // For use by OpenGL resource object classes (such as @a GLTexture)...
+
+		//
+		// Only resource object classes should be able to access the low-level OpenGL functions.
+		//
+		friend class GLBuffer;
+		friend class GLFramebuffer;
+		friend class GLProgram;
+		friend class GLRenderbuffer;
+		friend class GLSampler;
+		friend class GLShader;
+		friend class GLTexture;
+		friend class GLVertexArray;
+
+		OpenGLFunctions &
+		get_opengl_functions()
+		{
+			return d_opengl_functions;
+		}
+
 	private:
 
 		//! Constructor.

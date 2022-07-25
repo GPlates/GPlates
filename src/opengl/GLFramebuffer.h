@@ -49,6 +49,7 @@ namespace GPlatesOpenGL
 {
 	class GL;
 	class GLContext;
+	class OpenGLFunctions;
 
 	/**
 	 * A wrapper around an OpenGL framebuffer object.
@@ -140,10 +141,12 @@ namespace GPlatesOpenGL
 		public:
 			GLuint
 			allocate(
+					OpenGLFunctions &opengl_functions,
 					const GLCapabilities &capabilities);
 
 			void
 			deallocate(
+					OpenGLFunctions &opengl_functions,
 					GLuint);
 		};
 

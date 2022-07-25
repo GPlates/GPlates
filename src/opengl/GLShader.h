@@ -46,6 +46,7 @@
 namespace GPlatesOpenGL
 {
 	class GL;
+	class OpenGLFunctions;
 
 	/**
 	 * Wrapper around an OpenGL shader object (vertex, geometry or fragment).
@@ -198,11 +199,13 @@ namespace GPlatesOpenGL
 		public:
 			GLuint
 			allocate(
+					OpenGLFunctions &opengl_functions,
 					const GLCapabilities &capabilities,
 					GLenum shader_type);
 
 			void
 			deallocate(
+					OpenGLFunctions &opengl_functions,
 					GLuint);
 		};
 

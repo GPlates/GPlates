@@ -27,14 +27,16 @@
 
 #include "GLTexture.h"
 
-#include "GLContext.h"
 #include "GL.h"
+#include "GLContext.h"
+#include "OpenGLFunctions.h"
 
 
 GPlatesOpenGL::GLTexture::GLTexture(
 		GL &gl) :
 	d_resource(
 			resource_type::create(
+					gl.get_opengl_functions(),
 					gl.get_capabilities(),
 					gl.get_context().get_shared_state()->get_texture_resource_manager()))
 {
@@ -50,17 +52,19 @@ GPlatesOpenGL::GLTexture::get_resource_handle() const
 
 GLuint
 GPlatesOpenGL::GLTexture::Allocator::allocate(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities)
 {
 	GLuint texture;
-	glGenTextures(1, &texture);
+	opengl_functions.glGenTextures(1, &texture);
 	return texture;
 }
 
 
 void
 GPlatesOpenGL::GLTexture::Allocator::deallocate(
+		OpenGLFunctions &opengl_functions,
 		GLuint texture)
 {
-	glDeleteTextures(1, &texture);
+	opengl_functions.glDeleteTextures(1, &texture);
 }

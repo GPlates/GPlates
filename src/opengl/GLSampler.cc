@@ -27,14 +27,16 @@
 
 #include "GLSampler.h"
 
-#include "GLContext.h"
 #include "GL.h"
+#include "GLContext.h"
+#include "OpenGLFunctions.h"
 
 
 GPlatesOpenGL::GLSampler::GLSampler(
 		GL &gl) :
 	d_resource(
 			resource_type::create(
+					gl.get_opengl_functions(),
 					gl.get_capabilities(),
 					gl.get_context().get_shared_state()->get_sampler_resource_manager()))
 {
@@ -50,17 +52,19 @@ GPlatesOpenGL::GLSampler::get_resource_handle() const
 
 GLuint
 GPlatesOpenGL::GLSampler::Allocator::allocate(
+		OpenGLFunctions &opengl_functions,
 		const GLCapabilities &capabilities)
 {
 	GLuint sampler;
-	glGenSamplers(1, &sampler);
+	opengl_functions.glGenSamplers(1, &sampler);
 	return sampler;
 }
 
 
 void
 GPlatesOpenGL::GLSampler::Allocator::deallocate(
+		OpenGLFunctions &opengl_functions,
 		GLuint sampler)
 {
-	glDeleteSamplers(1, &sampler);
+	opengl_functions.glDeleteSamplers(1, &sampler);
 }

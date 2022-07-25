@@ -45,6 +45,7 @@
 namespace GPlatesOpenGL
 {
 	class GL;
+	class OpenGLFunctions;
 
 	/**
 	 * Wrapper around an OpenGL texture object.
@@ -108,10 +109,12 @@ namespace GPlatesOpenGL
 		public:
 			GLuint
 			allocate(
+					OpenGLFunctions &opengl_functions,
 					const GLCapabilities &capabilities);
 
 			void
 			deallocate(
+					OpenGLFunctions &opengl_functions,
 					GLuint);
 		};
 
