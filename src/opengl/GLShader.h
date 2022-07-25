@@ -148,6 +148,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		shader_source(
+				GL &gl,
 				const GLShaderSource &shader_source);
 
 
@@ -158,7 +159,8 @@ namespace GPlatesOpenGL
 		 * Note that if successfully compiled then nothing is logged.
 		 */
 		void
-		compile_shader();
+		compile_shader(
+				GL &gl);
 
 
 		/**
@@ -229,7 +231,8 @@ namespace GPlatesOpenGL
 				GLenum shader_type);
 
 		void
-		output_info_log();
+		output_info_log(
+				GL &gl);
 	};
 }
 

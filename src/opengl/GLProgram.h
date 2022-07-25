@@ -108,6 +108,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		attach_shader(
+				GL &gl,
 				const GLShader::shared_ptr_to_const_type &shader);
 
 
@@ -116,6 +117,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		detach_shader(
+				GL &gl,
 				const GLShader::shared_ptr_to_const_type &shader);
 
 
@@ -128,12 +130,12 @@ namespace GPlatesOpenGL
 		 * Note that, as dictated by OpenGL, if you re-link a program object you will have to
 		 * load the uniform variables again (because the link initialises them to zero).
 		 *
-		 * NOTE: Use this method instead of calling glLinkProgram directly since this method will also clear
-		 *       the internal mapping of uniform names to uniform locations (used by @a get_uniform_location).
-		 *       If you use glLinkProgram directly then do not use @a get_uniform_location or @a is_active_uniform.
+		 * Note: This method will also clear the internal mapping of uniform names to uniform locations
+		 *       (used by @a get_uniform_location).
 		 */
 		void
-		link_program();
+		link_program(
+				GL &gl);
 
 
 		/**
@@ -145,7 +147,8 @@ namespace GPlatesOpenGL
 		 * NOTE: This method is meant for use during development only.
 		 */
 		void
-		validate_program();
+		validate_program(
+				GL &gl);
 
 
 		//////////////////////////////
@@ -162,13 +165,14 @@ namespace GPlatesOpenGL
 		 *  (2) variable is not actively used in the linked program or
 		 *  (3) variable is a reserved name.
 		 *
-		 * Note that OpenGL will generate an error if this is called before @a link_program is first called.
+		 * Note: OpenGL will generate an error if this is called before @a link_program is first called.
 		 */
 		bool
 		is_active_uniform_in_default_block(
+				GL &gl,
 				const char *uniform_name) const
 		{
-			return get_uniform_location(uniform_name) >= 0;
+			return get_uniform_location(gl, uniform_name) >= 0;
 		}
 
 		/**
@@ -178,21 +182,19 @@ namespace GPlatesOpenGL
 		 * Note: Calling glUniform* with a location of -1 is *not* an error according to OpenGL 3.3 core specification
 		 *       (instead the glUniform* call is silently ignored).
 		 *
-		 * You can use the returned location with a native glUniform* call. Such as:
+		 * You can use the returned location with a gl.Uniform* call. Such as:
 		 *
 		 *   gl.UseProgram(program);
-		 *   glUniform4f(program->get_uniform_location('colour'), red, green, blue, alpha);
+		 *   gl.Uniform4f(program->get_uniform_location('colour'), red, green, blue, alpha);
 		 *
 		 * Internally this calls glGetUniformLocation and caches its results. If this program is
 		 * subsequently re-linked (by another call to @a link_program) then the cache is cleared.
-		 * Caching is the only difference compared to using glGetUniformLocation directly as in:
 		 *
-		 *   glUniform4f(glGetUniformLocation(program->get_resource_handle(), 'colour'), red, green, blue, alpha);
-		 *
-		 * Note that OpenGL will generate an error if this is called before @a link_program is first called.
+		 * Note: OpenGL will generate an error if this is called before @a link_program is first called.
 		 */
 		GLint
 		get_uniform_location(
+				GL &gl,
 				const char *uniform_name) const;
 
 
@@ -205,13 +207,14 @@ namespace GPlatesOpenGL
 		 *  (2) block name is not actively used in the linked program or
 		 *  (3) and error occurred.
 		 *
-		 * Note that OpenGL will generate an error if this is called before @a link_program is first called.
+		 * Note: OpenGL will generate an error if this is called before @a link_program is first called.
 		 */
 		bool
 		is_active_uniform_block(
+				GL &gl,
 				const char *uniform_block_name) const
 		{
-			return get_uniform_block_index(uniform_block_name) != GL_INVALID_INDEX;
+			return get_uniform_block_index(gl, uniform_block_name) != GL_INVALID_INDEX;
 		}
 
 		/**
@@ -219,26 +222,21 @@ namespace GPlatesOpenGL
 		 *
 		 * Returns GL_INVALID_INDEX if @a uniform_block_name is not an active named uniform block.
 		 *
-		 * You can use the returned block index with a native glUniformBlockBinding call. Such as:
+		 * You can use the returned block index with a gl.UniformBlockBinding call. Such as:
 		 *
-		 *   glUniformBlockBinding(
+		 *   gl.UniformBlockBinding(
 		 *       program->get_resource_handle(),
 		 *       program->get_uniform_block_index('Lighting'),
 		 *       2); // uniformBlockBinding
 		 *
 		 * Internally this calls glGetUniformBlockIndex and caches its results. If this program is
 		 * subsequently re-linked (by another call to @a link_program) then the cache is cleared.
-		 * Caching is the only difference compared to using glGetUniformBlockIndex directly as in:
 		 *
-		 *   glUniformBlockBinding(
-		 *       program->get_resource_handle(),
-		 *       glGetUniformBlockIndex(program->get_resource_handle(), 'Lighting'),
-		 *       2); // uniformBlockBinding
-		 *
-		 * Note that OpenGL will generate an error if this is called before @a link_program is first called.
+		 * Note: OpenGL will generate an error if this is called before @a link_program is first called.
 		 */
 		GLuint
 		get_uniform_block_index(
+				GL &gl,
 				const char *uniform_block_name) const;
 
 
@@ -299,7 +297,8 @@ namespace GPlatesOpenGL
 				GL &gl);
 
 		void
-		output_info_log();
+		output_info_log(
+				GL &gl);
 	};
 }
 

@@ -62,6 +62,7 @@ GPlatesOpenGL::GLShader::GLShader(
 
 void
 GPlatesOpenGL::GLShader::shader_source(
+		GL &gl,
 		const GLShaderSource &shader_source)
 {
 	const std::vector<GLShaderSource::CodeSegment> source_code_segments =
@@ -89,12 +90,13 @@ GPlatesOpenGL::GLShader::shader_source(
 	}
 
 	// 'length' is NULL indicating the source strings are null-terminated.
-	glShaderSource(get_resource_handle(), count, strings.get(), NULL);
+	gl.get_opengl_functions().glShaderSource(get_resource_handle(), count, strings.get(), NULL);
 }
 
 
 void
-GPlatesOpenGL::GLShader::compile_shader()
+GPlatesOpenGL::GLShader::compile_shader(
+		GL &gl)
 {
 	// 'shader_source()' should have been called first.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -103,11 +105,11 @@ GPlatesOpenGL::GLShader::compile_shader()
 
 	const GLuint shader_resource_handle = get_resource_handle();
 
-	glCompileShader(shader_resource_handle);
+	gl.get_opengl_functions().glCompileShader(shader_resource_handle);
 
 	// Check the status of the compilation.
 	GLint compile_status;
-	glGetShaderiv(shader_resource_handle, GL_COMPILE_STATUS, &compile_status);
+	gl.get_opengl_functions().glGetShaderiv(shader_resource_handle, GL_COMPILE_STATUS, &compile_status);
 
 	// If the compilation was unsuccessful then log a compile diagnostic message.
 	if (!compile_status)
@@ -115,7 +117,7 @@ GPlatesOpenGL::GLShader::compile_shader()
 		qDebug() << "Unable to compile OpenGL shader source code: ";
 
 		// Log the shader info log.
-		output_info_log();
+		output_info_log(gl);
 
 		throw OpenGLException(
 				GPLATES_EXCEPTION_SOURCE,
@@ -166,7 +168,8 @@ GPlatesOpenGL::GLShader::get_resource_handle() const
 
 
 void
-GPlatesOpenGL::GLShader::output_info_log()
+GPlatesOpenGL::GLShader::output_info_log(
+		GL &gl)
 {
 	// Iterate over the source code segments that were compiled together (in order) and find
 	// any code segments that were loaded from a file.
@@ -202,11 +205,11 @@ GPlatesOpenGL::GLShader::output_info_log()
 
 	// Determine the length of the info log message.
 	GLint info_log_length;
-	glGetShaderiv(shader_resource_handle, GL_INFO_LOG_LENGTH, &info_log_length);
+	gl.get_opengl_functions().glGetShaderiv(shader_resource_handle, GL_INFO_LOG_LENGTH, &info_log_length);
 
 	// Allocate and read the info log message.
 	boost::scoped_array<GLchar> info_log(new GLchar[info_log_length]);
-	glGetShaderInfoLog(shader_resource_handle, info_log_length, NULL, info_log.get());
+	gl.get_opengl_functions().glGetShaderInfoLog(shader_resource_handle, info_log_length, NULL, info_log.get());
 	// ...the returned string is null-terminated.
 
 	qDebug()

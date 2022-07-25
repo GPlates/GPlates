@@ -65,26 +65,29 @@ GPlatesOpenGL::GLProgram::GLProgram(
 
 void
 GPlatesOpenGL::GLProgram::attach_shader(
+		GL &gl,
 		const GLShader::shared_ptr_to_const_type &shader)
 {
 	d_shaders.insert(shader);
 
-	glAttachShader(get_resource_handle(), shader->get_resource_handle());
+	gl.get_opengl_functions().glAttachShader(get_resource_handle(), shader->get_resource_handle());
 }
 
 
 void
 GPlatesOpenGL::GLProgram::detach_shader(
+		GL &gl,
 		const GLShader::shared_ptr_to_const_type &shader)
 {
-	glDetachShader(get_resource_handle(), shader->get_resource_handle());
+	gl.get_opengl_functions().glDetachShader(get_resource_handle(), shader->get_resource_handle());
 
 	d_shaders.erase(shader);
 }
 
 
 void
-GPlatesOpenGL::GLProgram::link_program()
+GPlatesOpenGL::GLProgram::link_program(
+		GL &gl)
 {
 	// First clear our mapping of uniform names to uniform locations (in default uniform block) and
 	// the mapping of uniform block names to uniform block indices (for named uniform blocks).
@@ -97,11 +100,11 @@ GPlatesOpenGL::GLProgram::link_program()
 	const GLuint program_resource_handle = get_resource_handle();
 
 	// Link the attached compiled shader objects into a program.
-	glLinkProgram(program_resource_handle);
+	gl.get_opengl_functions().glLinkProgram(program_resource_handle);
 
 	// Check the status of linking.
 	GLint link_status;
-	glGetProgramiv(program_resource_handle, GL_LINK_STATUS, &link_status);
+	gl.get_opengl_functions().glGetProgramiv(program_resource_handle, GL_LINK_STATUS, &link_status);
 
 	// Log a link diagnostic message if compilation was unsuccessful.
 	if (!link_status)
@@ -109,7 +112,7 @@ GPlatesOpenGL::GLProgram::link_program()
 		qDebug() << "Unable to link OpenGL program: ";
 
 		// Log the program info log.
-		output_info_log();
+		output_info_log(gl);
 
 		throw OpenGLException(
 				GPLATES_EXCEPTION_SOURCE,
@@ -119,15 +122,16 @@ GPlatesOpenGL::GLProgram::link_program()
 
 
 void
-GPlatesOpenGL::GLProgram::validate_program()
+GPlatesOpenGL::GLProgram::validate_program(
+		GL &gl)
 {
 	const GLuint program_resource_handle = get_resource_handle();
 
-	glValidateProgram(program_resource_handle);
+	gl.get_opengl_functions().glValidateProgram(program_resource_handle);
 
 	// Check the validation status.
 	GLint validate_status;
-	glGetProgramiv(program_resource_handle, GL_VALIDATE_STATUS, &validate_status);
+	gl.get_opengl_functions().glGetProgramiv(program_resource_handle, GL_VALIDATE_STATUS, &validate_status);
 
 	if (!validate_status)
 	{
@@ -135,7 +139,7 @@ GPlatesOpenGL::GLProgram::validate_program()
 		qDebug() << "Validation of OpenGL program failed: ";
 
 		// Log the program info log.
-		output_info_log();
+		output_info_log(gl);
 
 		throw OpenGLException(
 				GPLATES_EXCEPTION_SOURCE,
@@ -146,6 +150,7 @@ GPlatesOpenGL::GLProgram::validate_program()
 
 GLint
 GPlatesOpenGL::GLProgram::get_uniform_location(
+		GL &gl,
 		const char *uniform_name) const
 {
 	auto uniform_location_insert_result = d_uniform_locations.insert({ std::string(uniform_name), 0/*dummy index*/ });
@@ -154,7 +159,7 @@ GPlatesOpenGL::GLProgram::get_uniform_location(
 		// The uniform name was inserted which means it didn't already exist.
 		// So find, and assign, its location index.
 		// Note that the location might be -1 (indicating it's not an active uniform).
-		const GLint uniform_location = glGetUniformLocation(get_resource_handle(), uniform_name);
+		const GLint uniform_location = gl.get_opengl_functions().glGetUniformLocation(get_resource_handle(), uniform_name);
 
 		// Override the dummy index (location) with the correct one (or -1 for not-found).
 		uniform_location_insert_result.first->second = uniform_location;
@@ -166,6 +171,7 @@ GPlatesOpenGL::GLProgram::get_uniform_location(
 
 GLuint
 GPlatesOpenGL::GLProgram::get_uniform_block_index(
+		GL &gl,
 		const char *uniform_block_name) const
 {
 	auto uniform_block_index_insert_result = d_uniform_block_indices.insert({ std::string(uniform_block_name), 0/*dummy index*/ });
@@ -174,7 +180,7 @@ GPlatesOpenGL::GLProgram::get_uniform_block_index(
 		// The uniform block name was inserted which means it didn't already exist.
 		// So find, and assign, its block index.
 		// Note that the block index might be GL_INVALID_INDEX (indicating it's not an active named uniform block).
-		const GLuint uniform_block_index = glGetUniformBlockIndex(get_resource_handle(), uniform_block_name);
+		const GLuint uniform_block_index = gl.get_opengl_functions().glGetUniformBlockIndex(get_resource_handle(), uniform_block_name);
 
 		// Override the dummy uniform block index with the correct one (or GL_INVALID_INDEX for not-found).
 		uniform_block_index_insert_result.first->second = uniform_block_index;
@@ -192,7 +198,8 @@ GPlatesOpenGL::GLProgram::get_resource_handle() const
 
 
 void
-GPlatesOpenGL::GLProgram::output_info_log()
+GPlatesOpenGL::GLProgram::output_info_log(
+		GL &gl)
 {
 	std::set<QString> shader_filenames;
 
@@ -214,11 +221,11 @@ GPlatesOpenGL::GLProgram::output_info_log()
 
 	// Determine the length of the info log message.
 	GLint info_log_length;
-	glGetProgramiv(program_resource_handle, GL_INFO_LOG_LENGTH, &info_log_length);
+	gl.get_opengl_functions().glGetProgramiv(program_resource_handle, GL_INFO_LOG_LENGTH, &info_log_length);
 
 	// Allocate and read the info log message.
 	boost::scoped_array<GLchar> info_log(new GLchar[info_log_length]);
-	glGetProgramInfoLog(program_resource_handle, info_log_length, NULL, info_log.get());
+	gl.get_opengl_functions().glGetProgramInfoLog(program_resource_handle, info_log_length, NULL, info_log.get());
 	// ...the returned string is null-terminated.
 
 	// If some of the shader code segments came from files then print that information since

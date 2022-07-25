@@ -156,6 +156,12 @@ namespace GPlatesOpenGL
 		//! Typedef for a resource manager.
 		typedef GLObjectResourceManager<GLuint, Allocator> resource_manager_type;
 
+	private: // For use by @a GL...
+
+		//
+		// Only @a GL should need to call these functions.
+		//
+		friend class GL;
 
 		/**
 		 * Ensure the native framebuffer object associated with the current OpenGL context has
@@ -357,7 +363,7 @@ namespace GPlatesOpenGL
 			 */
 			ContextObjectState(
 					const GLContext &context_,
-					GL &gl);
+					OpenGLFunctions &opengl_functions);
 
 			/**
 			 * The OpenGL context using our framebuffer object.

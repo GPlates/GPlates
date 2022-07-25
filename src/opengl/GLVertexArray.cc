@@ -110,7 +110,7 @@ GPlatesOpenGL::GLVertexArray::synchronise_current_context(
 			element_array_buffer_resource = d_object_state.element_array_buffer.get()->get_resource_handle();
 		}
 
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_array_buffer_resource);
+		gl.get_opengl_functions().glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_array_buffer_resource);
 
 		// Record updated context state.
 		current_context_object_state.object_state.element_array_buffer = d_object_state.element_array_buffer;
@@ -136,11 +136,11 @@ GPlatesOpenGL::GLVertexArray::synchronise_current_context(
 		{
 			if (attribute_array.enabled)
 			{
-				glEnableVertexAttribArray(attribute_index);
+				gl.get_opengl_functions().glEnableVertexAttribArray(attribute_index);
 			}
 			else
 			{
-				glDisableVertexAttribArray(attribute_index);
+				gl.get_opengl_functions().glDisableVertexAttribArray(attribute_index);
 			}
 
 			updated_attribute_array = true;
@@ -148,7 +148,7 @@ GPlatesOpenGL::GLVertexArray::synchronise_current_context(
 
 		if (context_attribute_array.divisor != attribute_array.divisor)
 		{
-			glVertexAttribDivisor(attribute_index, attribute_array.divisor);
+			gl.get_opengl_functions().glVertexAttribDivisor(attribute_index, attribute_array.divisor);
 
 			updated_attribute_array = true;
 		}
@@ -172,7 +172,7 @@ GPlatesOpenGL::GLVertexArray::synchronise_current_context(
 
 			if (attribute_array.integer)
 			{
-				glVertexAttribIPointer(
+				gl.get_opengl_functions().glVertexAttribIPointer(
 						attribute_index,
 						attribute_array.size,
 						attribute_array.type,
@@ -181,7 +181,7 @@ GPlatesOpenGL::GLVertexArray::synchronise_current_context(
 			}
 			else
 			{
-				glVertexAttribPointer(
+				gl.get_opengl_functions().glVertexAttribPointer(
 						attribute_index,
 						attribute_array.size,
 						attribute_array.type,
@@ -210,7 +210,7 @@ GPlatesOpenGL::GLVertexArray::bind_element_array_buffer(
 		GL &gl,
 		boost::optional<GLBuffer::shared_ptr_type> buffer)
 {
-	glBindBuffer(
+	gl.get_opengl_functions().glBindBuffer(
 			GL_ELEMENT_ARRAY_BUFFER,
 			// The buffer resource to bind (or 0 to unbind)...
 			buffer ? buffer.get()->get_resource_handle() : 0);
@@ -234,7 +234,7 @@ GPlatesOpenGL::GLVertexArray::enable_vertex_attrib_array(
 		GL &gl,
 		GLuint index)
 {
-	glEnableVertexAttribArray(index);
+	gl.get_opengl_functions().glEnableVertexAttribArray(index);
 
 	// Record the new vertex array internal state, and the state associated with the current context.
 	ObjectState::AttributeArray attribute_array = get_attribute_array(index);
@@ -248,7 +248,7 @@ GPlatesOpenGL::GLVertexArray::disable_vertex_attrib_array(
 		GL &gl,
 		GLuint index)
 {
-	glDisableVertexAttribArray(index);
+	gl.get_opengl_functions().glDisableVertexAttribArray(index);
 
 	// Record the new vertex array internal state, and the state associated with the current context.
 	ObjectState::AttributeArray attribute_array = get_attribute_array(index);
@@ -263,7 +263,7 @@ GPlatesOpenGL::GLVertexArray::vertex_attrib_divisor(
 		GLuint index,
 		GLuint divisor)
 {
-	glVertexAttribDivisor(index, divisor);
+	gl.get_opengl_functions().glVertexAttribDivisor(index, divisor);
 
 	// Record the new vertex array internal state, and the state associated with the current context.
 	ObjectState::AttributeArray attribute_array = get_attribute_array(index);
@@ -283,7 +283,7 @@ GPlatesOpenGL::GLVertexArray::vertex_attrib_pointer(
 		const GLvoid *pointer,
 		boost::optional<GLBuffer::shared_ptr_type> array_buffer)
 {
-	glVertexAttribPointer(index, size, type, normalized, stride, pointer);
+	gl.get_opengl_functions().glVertexAttribPointer(index, size, type, normalized, stride, pointer);
 
 	// Record the new vertex array internal state, and the state associated with the current context.
 	ObjectState::AttributeArray attribute_array = get_attribute_array(index);
@@ -309,7 +309,7 @@ GPlatesOpenGL::GLVertexArray::vertex_attrib_i_pointer(
 		const GLvoid *pointer,
 		boost::optional<GLBuffer::shared_ptr_type> array_buffer)
 {
-	glVertexAttribIPointer(index, size, type, stride, pointer);
+	gl.get_opengl_functions().glVertexAttribIPointer(index, size, type, stride, pointer);
 
 	// Record the new vertex array internal state, and the state associated with the current context.
 	ObjectState::AttributeArray attribute_array = get_attribute_array(index);
@@ -340,7 +340,7 @@ GPlatesOpenGL::GLVertexArray::get_object_state_for_current_context(
 	}
 
 	// Context not yet encountered so create a new context object state.
-	d_context_object_states.push_back(ContextObjectState(current_context, gl));
+	d_context_object_states.push_back(ContextObjectState(current_context, gl.get_opengl_functions()));
 
 	return d_context_object_states.back();
 }
@@ -410,13 +410,14 @@ GPlatesOpenGL::GLVertexArray::Allocator::deallocate(
 
 GPlatesOpenGL::GLVertexArray::ContextObjectState::ContextObjectState(
 		const GLContext &context_,
-		GL &gl) :
+		OpenGLFunctions &opengl_functions) :
 	context(&context_),
 	// Create a vertex array object resource using the resource manager associated with the context...
 	resource(
 			resource_type::create(
+					opengl_functions,
 					context_.get_capabilities(),
 					context_.get_non_shared_state()->get_vertex_array_resource_manager())),
-	object_state(gl.get_capabilities().gl_max_vertex_attribs)
+	object_state(context_.get_capabilities().gl_max_vertex_attribs)
 {
 }
