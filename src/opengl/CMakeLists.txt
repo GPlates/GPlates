@@ -126,6 +126,8 @@ set(srcs
     OpenGL1.h
     OpenGL3.h
     OpenGLException.h
+    OpenGLFunctions.cc
+    OpenGLFunctions.h
 )
 
 # Add the source files to the gplates static library (or pygplates extension module).
