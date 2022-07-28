@@ -255,7 +255,7 @@ GPlatesOpenGL::GLVisualRasterSource::load_tile(
 	}
 
 	// Load the colours into the texture.
-	glTexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
+	gl.TexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
 			0/*xoffset*/, 0/*yoffset*/, d_tile_texel_dimension, d_tile_texel_dimension,
 			GL_RGBA, GL_UNSIGNED_BYTE, d_tile_working_space.get());
 
@@ -402,7 +402,7 @@ GPlatesOpenGL::GLVisualRasterSource::render_error_text_into_texture(
 	}
 
 	// Load cached image into tile texture.
-	glTexSubImage2D(
+	gl.TexSubImage2D(
 			GL_TEXTURE_2D, 0/*level*/,
 			0/*xoffset*/, 0/*yoffset*/, texel_width, texel_height,
 			GL_RGBA, GL_UNSIGNED_BYTE, error_text_rgba8_array.get());

@@ -77,13 +77,13 @@ GPlatesOpenGL::GLTextureUtils::create_xy_clip_texture_2D(
 	// We *must* use nearest neighbour filtering otherwise the clip texture won't work.
 	// We are relying on the hard transition from white to black to clip for us.
 	//
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	//
 	// The clip texture is a 4x4 image where the centre 2x2 texels are 1.0
@@ -101,10 +101,10 @@ GPlatesOpenGL::GLTextureUtils::create_xy_clip_texture_2D(
 	};
 
 	// Create the texture and load the data into it.
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
+	gl.TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
 
 	// Check there are no OpenGL errors.
-	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 
 	return xy_clip_texture;
 }
@@ -125,13 +125,13 @@ GPlatesOpenGL::GLTextureUtils::create_z_clip_texture_2D(
 	// We *must* use nearest neighbour filtering otherwise the clip texture won't work.
 	// We are relying on the hard transition from white to black to clip for us.
 	//
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	//
 	// The clip texture is a 2x1 image where the one texel is white and the other black.
@@ -142,10 +142,10 @@ GPlatesOpenGL::GLTextureUtils::create_z_clip_texture_2D(
 	const GPlatesGui::rgba8_t mask_image[2] = { mask_zero, mask_one };
 
 	// Create the texture and load the data into it.
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
+	gl.TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
 
 	// Check there are no OpenGL errors.
-	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 
 	return z_clip_texture;
 }

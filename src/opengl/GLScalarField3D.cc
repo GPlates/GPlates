@@ -446,7 +446,7 @@ namespace GPlatesOpenGL
 					new GPlatesGui::rgba8_t[texture_resolution * texture_resolution * texture_depth]);
 
 			// Read all layers of texture array.
-			glGetTexImage(GL_TEXTURE_2D_ARRAY, 0/*lod*/, GL_RGBA, GL_UNSIGNED_BYTE, rgba8_data.get());
+			gl.GetTexImage(GL_TEXTURE_2D_ARRAY, 0/*lod*/, GL_RGBA, GL_UNSIGNED_BYTE, rgba8_data.get());
 
 			// Iterate over the layers of texture array.
 			for (unsigned int layer = 0; layer < texture_depth; ++layer)
@@ -825,7 +825,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 
 	// Draw the full screen quad.
 	gl.BindVertexArray(d_full_screen_quad);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	gl.DrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
 
@@ -851,7 +851,7 @@ GPlatesOpenGL::GLScalarField3D::render_surface_fill_mask(
 
 	// Clear all layers of texture array.
 	gl.ClearColor(); // Clear colour to all zeros.
-	glClear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
+	gl.Clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
 
 	// Set up separate alpha-blending factors for the RGB and Alpha channels.
 	// Doing this means we can minimise OpenGL state changes and simply switch between
@@ -941,7 +941,7 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_depth_range(
 	// volume fill region by comparing with 2.0.
 	gl.ClearColor(2.0f, 2.0f, 1.0f, -1.0f);
 	// Also clear the depth buffer (even though we're not using it).
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// First render the inner sphere.
 	render_inner_sphere_depth_range(gl);
@@ -1026,7 +1026,7 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_walls(
 	// in the range [-1, 1] and 1 corresponds to the far clip plane.
 	gl.ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 	gl.ClearDepth(); // Clear depth to 1.0
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// Disable colour writes of the inner white sphere.
 	// We just want to write the inner sphere depth values into the depth buffer so that
@@ -1242,7 +1242,7 @@ GPlatesOpenGL::GLScalarField3D::render_white_inner_sphere(
 	gl.BindVertexArray(d_inner_sphere_vertex_array);
 
 	// Render the inner sphere.
-	glDrawElements(
+	gl.DrawElements(
 			GL_TRIANGLES,
 			d_inner_sphere_num_vertex_indices/*count*/,
 			GLVertexUtils::ElementTraits<GLuint>::type,
@@ -1263,7 +1263,7 @@ GPlatesOpenGL::GLScalarField3D::render_inner_sphere_depth_range(
 	gl.BindVertexArray(d_inner_sphere_vertex_array);
 
 	// Render the inner sphere.
-	glDrawElements(
+	gl.DrawElements(
 			GL_TRIANGLES,
 			d_inner_sphere_num_vertex_indices/*count*/,
 			GLVertexUtils::ElementTraits<GLuint>::type,
@@ -1571,11 +1571,11 @@ GPlatesOpenGL::GLScalarField3D::initialise_uniform_buffer(
 
 	gl.BindBuffer(GL_UNIFORM_BUFFER, d_uniform_buffer);
 	const GLsizeiptr uniform_buffer_size = bind_range_offset;
-	glBufferData(GL_UNIFORM_BUFFER, uniform_buffer_size, nullptr, GL_DYNAMIC_DRAW);
+	gl.BufferData(GL_UNIFORM_BUFFER, uniform_buffer_size, nullptr, GL_DYNAMIC_DRAW);
 
 	// Write the "CubeFaceCoordinateFrames" data (it never changes).
 	auto bind_range_cube_face_coordinate_frames = d_uniform_buffer_ranges[UniformBlockBinding::CUBE_FACE_COORDINATE_FRAMES];
-	glBufferSubData(
+	gl.BufferSubData(
 			GL_UNIFORM_BUFFER,
 			bind_range_cube_face_coordinate_frames.first/*offset*/,
 			bind_range_cube_face_coordinate_frames.second/*size*/,
@@ -1679,7 +1679,7 @@ GPlatesOpenGL::GLScalarField3D::update_shared_uniform_buffer_blocks(
 			bind_view_projection_block_range.second/*size*/);
 
 	// Update the data in the range in the uniform buffer.
-	glBufferSubData(
+	gl.BufferSubData(
 			GL_UNIFORM_BUFFER,
 			bind_view_projection_block_range.first/*offset*/,
 			bind_view_projection_block_range.second/*size*/,
@@ -1720,7 +1720,7 @@ GPlatesOpenGL::GLScalarField3D::update_shared_uniform_buffer_blocks(
 			bind_scalar_field_block_range.second/*size*/);
 
 	// Update the data in the range in the uniform buffer.
-	glBufferSubData(
+	gl.BufferSubData(
 			GL_UNIFORM_BUFFER,
 			bind_scalar_field_block_range.first/*offset*/,
 			bind_scalar_field_block_range.second/*size*/,
@@ -1772,7 +1772,7 @@ GPlatesOpenGL::GLScalarField3D::update_shared_uniform_buffer_blocks(
 			bind_depth_block_range.second/*size*/);
 
 	// Update the data in the range in the uniform buffer.
-	glBufferSubData(
+	gl.BufferSubData(
 			GL_UNIFORM_BUFFER,
 			bind_depth_block_range.first/*offset*/,
 			bind_depth_block_range.second/*size*/,
@@ -1831,7 +1831,7 @@ GPlatesOpenGL::GLScalarField3D::update_shared_uniform_buffer_blocks(
 			bind_surface_fill_block_range.second/*size*/);
 
 	// Update the data in the range in the uniform buffer.
-	glBufferSubData(
+	gl.BufferSubData(
 			GL_UNIFORM_BUFFER,
 			bind_surface_fill_block_range.first/*offset*/,
 			bind_surface_fill_block_range.second/*size*/,
@@ -1883,7 +1883,7 @@ GPlatesOpenGL::GLScalarField3D::update_shared_uniform_buffer_blocks(
 			bind_lighting_block_range.second/*size*/);
 
 	// Update the data in the range in the uniform buffer.
-	glBufferSubData(
+	gl.BufferSubData(
 			GL_UNIFORM_BUFFER,
 			bind_lighting_block_range.first/*offset*/,
 			bind_lighting_block_range.second/*size*/,
@@ -1930,7 +1930,7 @@ GPlatesOpenGL::GLScalarField3D::update_shared_uniform_buffer_blocks(
 			bind_test_block_range.second/*size*/);
 
 	// Update the data in the range in the uniform buffer.
-	glBufferSubData(
+	gl.BufferSubData(
 			GL_UNIFORM_BUFFER,
 			bind_test_block_range.first/*offset*/,
 			bind_test_block_range.second/*size*/,
@@ -1960,19 +1960,19 @@ GPlatesOpenGL::GLScalarField3D::update_uniform_variables_for_iso_surface(
 	gl.UseProgram(d_iso_surface_program);
 
 	// Enable or disable reads from depth texture.
-	glUniform1i(
-			d_iso_surface_program->get_uniform_location("read_from_depth_texture"),
+	gl.Uniform1i(
+			d_iso_surface_program->get_uniform_location(gl, "read_from_depth_texture"),
 			bool(depth_read_texture));
 
 	// Specify the colour mode.
-	glUniform1i(
-			d_iso_surface_program->get_uniform_location("colour_mode_depth"),
+	gl.Uniform1i(
+			d_iso_surface_program->get_uniform_location(gl, "colour_mode_depth"),
 			colour_mode == GPlatesViewOperations::ScalarField3DRenderParameters::ISOSURFACE_COLOUR_MODE_DEPTH);
-	glUniform1i(
-			d_iso_surface_program->get_uniform_location("colour_mode_isovalue"),
+	gl.Uniform1i(
+			d_iso_surface_program->get_uniform_location(gl, "colour_mode_isovalue"),
 			colour_mode == GPlatesViewOperations::ScalarField3DRenderParameters::ISOSURFACE_COLOUR_MODE_SCALAR);
-	glUniform1i(
-			d_iso_surface_program->get_uniform_location("colour_mode_gradient"),
+	gl.Uniform1i(
+			d_iso_surface_program->get_uniform_location(gl, "colour_mode_gradient"),
 			colour_mode == GPlatesViewOperations::ScalarField3DRenderParameters::ISOSURFACE_COLOUR_MODE_GRADIENT);
 
 	// Set the min/max range of values used to map to colour whether that mapping is a look up
@@ -1997,8 +1997,8 @@ GPlatesOpenGL::GLScalarField3D::update_uniform_variables_for_iso_surface(
 		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 		break;
 	}
-	glUniform2f(
-			d_iso_surface_program->get_uniform_location("min_max_colour_mapping_range"),
+	gl.Uniform2f(
+			d_iso_surface_program->get_uniform_location(gl, "min_max_colour_mapping_range"),
 			min_colour_mapping_range,
 			max_colour_mapping_range);
 
@@ -2057,8 +2057,8 @@ GPlatesOpenGL::GLScalarField3D::update_uniform_variables_for_iso_surface(
 	}
 
 	// Set the parameters associated with isovalue 1.
-	glUniform3f(
-			d_iso_surface_program->get_uniform_location("isovalue1"),
+	gl.Uniform3f(
+			d_iso_surface_program->get_uniform_location(gl, "isovalue1"),
 			emulated_isovalue_parameters.isovalue1,
 			emulated_isovalue_parameters.isovalue1 - emulated_isovalue_parameters.lower_deviation1,
 			emulated_isovalue_parameters.isovalue1 + emulated_isovalue_parameters.upper_deviation1);
@@ -2068,8 +2068,8 @@ GPlatesOpenGL::GLScalarField3D::update_uniform_variables_for_iso_surface(
 // 		<< emulated_isovalue_parameters.upper_deviation1;
 
 	// Set the parameters associated with isovalue 2.
-	glUniform3f(
-			d_iso_surface_program->get_uniform_location("isovalue2"),
+	gl.Uniform3f(
+			d_iso_surface_program->get_uniform_location(gl, "isovalue2"),
 			emulated_isovalue_parameters.isovalue2,
 			emulated_isovalue_parameters.isovalue2 - emulated_isovalue_parameters.lower_deviation2,
 			emulated_isovalue_parameters.isovalue2 + emulated_isovalue_parameters.upper_deviation2);
@@ -2104,24 +2104,24 @@ GPlatesOpenGL::GLScalarField3D::update_uniform_variables_for_iso_surface(
 	}
 	// ...else single or double deviation window.
 
-	glUniform1f(
-			d_iso_surface_program->get_uniform_location("opacity_deviation_surfaces"),
+	gl.Uniform1f(
+			d_iso_surface_program->get_uniform_location(gl, "opacity_deviation_surfaces"),
 			emulated_deviation_window_render_options.opacity_deviation_surfaces);
 // 	qDebug() << "opacity_deviation_surfaces: " << emulated_deviation_window_render_options.opacity_deviation_surfaces;
-	glUniform1i(
-			d_iso_surface_program->get_uniform_location("deviation_window_volume_rendering"),
+	gl.Uniform1i(
+			d_iso_surface_program->get_uniform_location(gl, "deviation_window_volume_rendering"),
 			emulated_deviation_window_render_options.deviation_window_volume_rendering);
 // 	qDebug() << "deviation_window_volume_rendering: " << emulated_deviation_window_render_options.deviation_window_volume_rendering;
-	glUniform1f(
-			d_iso_surface_program->get_uniform_location("opacity_deviation_window_volume_rendering"),
+	gl.Uniform1f(
+			d_iso_surface_program->get_uniform_location(gl, "opacity_deviation_window_volume_rendering"),
 			emulated_deviation_window_render_options.opacity_deviation_window_volume_rendering);
 // 	qDebug() << "opacity_deviation_window_volume_rendering: " << emulated_deviation_window_render_options.opacity_deviation_window_volume_rendering;
-	glUniform1i(
-			d_iso_surface_program->get_uniform_location("surface_deviation_window"),
+	gl.Uniform1i(
+			d_iso_surface_program->get_uniform_location(gl, "surface_deviation_window"),
 			emulated_deviation_window_render_options.surface_deviation_window);
 // 	qDebug() << "surface_deviation_window: " << emulated_deviation_window_render_options.surface_deviation_window;
-	glUniform1f(
-			d_iso_surface_program->get_uniform_location("surface_deviation_isoline_frequency"),
+	gl.Uniform1f(
+			d_iso_surface_program->get_uniform_location(gl, "surface_deviation_isoline_frequency"),
 			emulated_deviation_window_render_options.surface_deviation_window_isoline_frequency);
 // 	qDebug() << "surface_deviation_isoline_frequency: " << emulated_deviation_window_render_options.surface_deviation_window_isoline_frequency;
 
@@ -2129,16 +2129,16 @@ GPlatesOpenGL::GLScalarField3D::update_uniform_variables_for_iso_surface(
 	// Set the quality/performance options.
 	//
 
-	glUniform2f(
-			d_iso_surface_program->get_uniform_location("sampling_rate"),
+	gl.Uniform2f(
+			d_iso_surface_program->get_uniform_location(gl, "sampling_rate"),
 			// Distance between samples - and 2.0 is diameter of the globe...
 			2.0f / quality_performance.sampling_rate,
 			quality_performance.sampling_rate / 2.0f);
 // 	qDebug() << "sampling_rate: "
 // 		<< 2.0f / quality_performance.sampling_rate << ", "
 // 		<< quality_performance.sampling_rate / 2.0f;
-	glUniform1i(
-			d_iso_surface_program->get_uniform_location("bisection_iterations"),
+	gl.Uniform1i(
+			d_iso_surface_program->get_uniform_location(gl, "bisection_iterations"),
 			quality_performance.bisection_iterations);
 // 	qDebug() << "bisection_iterations: " << quality_performance.bisection_iterations;
 }
@@ -2183,16 +2183,16 @@ GPlatesOpenGL::GLScalarField3D::update_uniform_variables_for_cross_sections(
 		// Bind the cross-section shader program so that subsequent glUniform* calls target it.
 		gl.UseProgram(cross_section_program);
 
-		glUniform2f(
-				cross_section_program->get_uniform_location("min_max_colour_mapping_range"),
+		gl.Uniform2f(
+				cross_section_program->get_uniform_location(gl, "min_max_colour_mapping_range"),
 				min_colour_mapping_range,
 				max_colour_mapping_range);
 		// Specify the colour mode.
-		glUniform1i(
-				cross_section_program->get_uniform_location("colour_mode_scalar"),
+		gl.Uniform1i(
+				cross_section_program->get_uniform_location(gl, "colour_mode_scalar"),
 				colour_mode == GPlatesViewOperations::ScalarField3DRenderParameters::CROSS_SECTION_COLOUR_MODE_SCALAR);
-		glUniform1i(
-				cross_section_program->get_uniform_location("colour_mode_gradient"),
+		gl.Uniform1i(
+				cross_section_program->get_uniform_location(gl, "colour_mode_gradient"),
 				colour_mode == GPlatesViewOperations::ScalarField3DRenderParameters::CROSS_SECTION_COLOUR_MODE_GRADIENT);
 	}
 }
@@ -2207,59 +2207,59 @@ GPlatesOpenGL::GLScalarField3D::bind_uniform_buffer_blocks_in_program(
 	// Bind each named uniform block that's active in the shader program.
 	//
 
-	if (program->is_active_uniform_block("CubeFaceCoordinateFrames"))
+	if (program->is_active_uniform_block(gl, "CubeFaceCoordinateFrames"))
 	{
-		glUniformBlockBinding(
-				program->get_resource_handle(),
-				program->get_uniform_block_index("CubeFaceCoordinateFrames"),
+		gl.UniformBlockBinding(
+				program,
+				program->get_uniform_block_index(gl, "CubeFaceCoordinateFrames"),
 				UniformBlockBinding::CUBE_FACE_COORDINATE_FRAMES);
 	}
 
-	if (program->is_active_uniform_block("ViewProjection"))
+	if (program->is_active_uniform_block(gl, "ViewProjection"))
 	{
-		glUniformBlockBinding(
-				program->get_resource_handle(),
-				program->get_uniform_block_index("ViewProjection"),
+		gl.UniformBlockBinding(
+				program,
+				program->get_uniform_block_index(gl, "ViewProjection"),
 				UniformBlockBinding::VIEW_PROJECTION);
 	}
 
-	if (program->is_active_uniform_block("ScalarField"))
+	if (program->is_active_uniform_block(gl, "ScalarField"))
 	{
-		glUniformBlockBinding(
-				program->get_resource_handle(),
-				program->get_uniform_block_index("ScalarField"),
+		gl.UniformBlockBinding(
+				program,
+				program->get_uniform_block_index(gl, "ScalarField"),
 				UniformBlockBinding::SCALAR_FIELD);
 	}
 
-	if (program->is_active_uniform_block("Depth"))
+	if (program->is_active_uniform_block(gl, "Depth"))
 	{
-		glUniformBlockBinding(
-				program->get_resource_handle(),
-				program->get_uniform_block_index("Depth"),
+		gl.UniformBlockBinding(
+				program,
+				program->get_uniform_block_index(gl, "Depth"),
 				UniformBlockBinding::DEPTH);
 	}
 
-	if (program->is_active_uniform_block("SurfaceFill"))
+	if (program->is_active_uniform_block(gl, "SurfaceFill"))
 	{
-		glUniformBlockBinding(
-				program->get_resource_handle(),
-				program->get_uniform_block_index("SurfaceFill"),
+		gl.UniformBlockBinding(
+				program,
+				program->get_uniform_block_index(gl, "SurfaceFill"),
 				UniformBlockBinding::SURFACE_FILL);
 	}
 
-	if (program->is_active_uniform_block("Lighting"))
+	if (program->is_active_uniform_block(gl, "Lighting"))
 	{
-		glUniformBlockBinding(
-				program->get_resource_handle(),
-				program->get_uniform_block_index("Lighting"),
+		gl.UniformBlockBinding(
+				program,
+				program->get_uniform_block_index(gl, "Lighting"),
 				UniformBlockBinding::LIGHTING);
 	}
 
-	if (program->is_active_uniform_block("Test"))
+	if (program->is_active_uniform_block(gl, "Test"))
 	{
-		glUniformBlockBinding(
-				program->get_resource_handle(),
-				program->get_uniform_block_index("Test"),
+		gl.UniformBlockBinding(
+				program,
+				program->get_uniform_block_index(gl, "Test"),
 				UniformBlockBinding::TEST);
 	}
 }
@@ -2281,52 +2281,52 @@ GPlatesOpenGL::GLScalarField3D::initialise_samplers_in_program(
 
 	gl.UseProgram(program);
 
-	const GLint tile_meta_data_sampler_location = program->get_uniform_location("tile_meta_data_sampler");
+	const GLint tile_meta_data_sampler_location = program->get_uniform_location(gl, "tile_meta_data_sampler");
 	if (tile_meta_data_sampler_location >= 0)
 	{
-		glUniform1i(tile_meta_data_sampler_location, Samplers::TILE_META_DATA_SAMPLER);
+		gl.Uniform1i(tile_meta_data_sampler_location, Samplers::TILE_META_DATA_SAMPLER);
 	}
 
-	const GLint field_data_sampler_location = program->get_uniform_location("field_data_sampler");
+	const GLint field_data_sampler_location = program->get_uniform_location(gl, "field_data_sampler");
 	if (field_data_sampler_location >= 0)
 	{
-		glUniform1i(field_data_sampler_location, Samplers::FIELD_DATA_SAMPLER);
+		gl.Uniform1i(field_data_sampler_location, Samplers::FIELD_DATA_SAMPLER);
 	}
 
-	const GLint mask_data_sampler_location = program->get_uniform_location("mask_data_sampler");
+	const GLint mask_data_sampler_location = program->get_uniform_location(gl, "mask_data_sampler");
 	if (mask_data_sampler_location >= 0)
 	{
-		glUniform1i(mask_data_sampler_location, Samplers::MASK_DATA_SAMPLER);
+		gl.Uniform1i(mask_data_sampler_location, Samplers::MASK_DATA_SAMPLER);
 	}
 
-	const GLint depth_radius_to_layer_sampler_location = program->get_uniform_location("depth_radius_to_layer_sampler");
+	const GLint depth_radius_to_layer_sampler_location = program->get_uniform_location(gl, "depth_radius_to_layer_sampler");
 	if (depth_radius_to_layer_sampler_location >= 0)
 	{
-		glUniform1i(depth_radius_to_layer_sampler_location, Samplers::DEPTH_RADIUS_TO_LAYER_SAMPLER);
+		gl.Uniform1i(depth_radius_to_layer_sampler_location, Samplers::DEPTH_RADIUS_TO_LAYER_SAMPLER);
 	}
 
-	const GLint colour_palette_sampler_location = program->get_uniform_location("colour_palette_sampler");
+	const GLint colour_palette_sampler_location = program->get_uniform_location(gl, "colour_palette_sampler");
 	if (colour_palette_sampler_location >= 0)
 	{
-		glUniform1i(colour_palette_sampler_location, Samplers::COLOUR_PALETTE_SAMPLER);
+		gl.Uniform1i(colour_palette_sampler_location, Samplers::COLOUR_PALETTE_SAMPLER);
 	}
 
-	const GLint depth_texture_sampler_location = program->get_uniform_location("depth_texture_sampler");
+	const GLint depth_texture_sampler_location = program->get_uniform_location(gl, "depth_texture_sampler");
 	if (depth_texture_sampler_location >= 0)
 	{
-		glUniform1i(depth_texture_sampler_location, Samplers::DEPTH_TEXTURE_SAMPLER);
+		gl.Uniform1i(depth_texture_sampler_location, Samplers::DEPTH_TEXTURE_SAMPLER);
 	}
 
-	const GLint surface_fill_mask_sampler_location = program->get_uniform_location("surface_fill_mask_sampler");
+	const GLint surface_fill_mask_sampler_location = program->get_uniform_location(gl, "surface_fill_mask_sampler");
 	if (surface_fill_mask_sampler_location >= 0)
 	{
-		glUniform1i(surface_fill_mask_sampler_location, Samplers::SURFACE_FILL_MASK_SAMPLER);
+		gl.Uniform1i(surface_fill_mask_sampler_location, Samplers::SURFACE_FILL_MASK_SAMPLER);
 	}
 
-	const GLint volume_fill_sampler_location = program->get_uniform_location("volume_fill_sampler");
+	const GLint volume_fill_sampler_location = program->get_uniform_location(gl, "volume_fill_sampler");
 	if (volume_fill_sampler_location >= 0)
 	{
-		glUniform1i(volume_fill_sampler_location, Samplers::VOLUME_FILL_SAMPLER);
+		gl.Uniform1i(volume_fill_sampler_location, Samplers::VOLUME_FILL_SAMPLER);
 	}
 }
 
@@ -2365,8 +2365,8 @@ GPlatesOpenGL::GLScalarField3D::initialise_inner_sphere(
 
 	// Set the inner sphere colour (it's the same across the whole sphere).
 	const GPlatesGui::Colour white = GPlatesGui::Colour::get_white();
-	glUniform4f(
-			d_white_inner_sphere_program->get_uniform_location("sphere_colour"),
+	gl.Uniform4f(
+			d_white_inner_sphere_program->get_uniform_location(gl, "sphere_colour"),
 			white.red(), white.green(), white.blue(), white.alpha());
 
 	//
@@ -2398,7 +2398,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_inner_sphere(
 	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_inner_sphere_vertex_element_buffer);
 
 	// Transfer vertex element data to currently bound vertex element buffer object.
-	glBufferData(
+	gl.BufferData(
 			GL_ELEMENT_ARRAY_BUFFER,
 			vertex_elements.size() * sizeof(vertex_elements[0]),
 			vertex_elements.data(),
@@ -2409,7 +2409,7 @@ GPlatesOpenGL::GLScalarField3D::initialise_inner_sphere(
 	gl.BindBuffer(GL_ARRAY_BUFFER, d_inner_sphere_vertex_buffer);
 
 	// Transfer vertex data to currently bound vertex buffer object.
-	glBufferData(
+	gl.BufferData(
 			GL_ARRAY_BUFFER,
 			vertices.size() * sizeof(vertices[0]),
 			vertices.data(),
@@ -2565,8 +2565,8 @@ GPlatesOpenGL::GLScalarField3D::initialise_surface_fill_mask_rendering(
 
 		GLfloat cube_face_view_projection_float_matrix[16];
 		cube_face_view_projection_matrix.get_float_matrix(cube_face_view_projection_float_matrix);
-		glUniformMatrix4fv(
-				d_surface_fill_mask_program->get_uniform_location(
+		gl.UniformMatrix4fv(
+				d_surface_fill_mask_program->get_uniform_location(gl,
 						QString("cube_face_view_projection_matrices[%1]").arg(face).toLatin1().constData()),
 				1, GL_FALSE/*transpose*/, cube_face_view_projection_float_matrix);
 	}
@@ -2692,11 +2692,11 @@ GPlatesOpenGL::GLScalarField3D::create_shader_program(
 
 	// Vertex shader.
 	GLShader::shared_ptr_type vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
-	vertex_shader->shader_source(vertex_shader_source);
-	vertex_shader->compile_shader();
+	vertex_shader->shader_source(gl, vertex_shader_source);
+	vertex_shader->compile_shader(gl);
 
 	// Attach shader to program.
-	program->attach_shader(vertex_shader);
+	program->attach_shader(gl, vertex_shader);
 
 	//
 	// Geometry shader (optional)
@@ -2727,11 +2727,11 @@ GPlatesOpenGL::GLScalarField3D::create_shader_program(
 
 		// Geometry shader.
 		GLShader::shared_ptr_type geometry_shader = GLShader::create(gl, GL_GEOMETRY_SHADER);
-		geometry_shader->shader_source(geometry_shader_source);
-		geometry_shader->compile_shader();
+		geometry_shader->shader_source(gl, geometry_shader_source);
+		geometry_shader->compile_shader(gl);
 
 		// Attach shader to program.
-		program->attach_shader(geometry_shader);
+		program->attach_shader(gl, geometry_shader);
 	}
 
 	//
@@ -2761,14 +2761,14 @@ GPlatesOpenGL::GLScalarField3D::create_shader_program(
 
 	// Fragment shader.
 	GLShader::shared_ptr_type fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	fragment_shader->shader_source(fragment_shader_source);
-	fragment_shader->compile_shader();
+	fragment_shader->shader_source(gl, fragment_shader_source);
+	fragment_shader->compile_shader(gl);
 
 	// Attach shader to program.
-	program->attach_shader(fragment_shader);
+	program->attach_shader(gl, fragment_shader);
 
 	// Finally link the program.
-	program->link_program();
+	program->link_program(gl);
 
 	// Specify texture unit of each sampler that's active in the program.
 	initialise_samplers_in_program(gl, program);
@@ -2790,20 +2790,20 @@ GPlatesOpenGL::GLScalarField3D::create_tile_meta_data_texture_array(
 	gl.BindTexture(GL_TEXTURE_2D_ARRAY, d_tile_meta_data_texture_array);
 
 	// Using nearest-neighbour filtering since don't want to filter pixel metadata.
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels.
 	// Not strictly necessary for nearest-neighbour filtering.
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Create the texture but don't load any data into it.
 	//
 	// NOTE: Since the image data is NULL it doesn't really matter what 'format' and 'type' are -
 	// just use values that are compatible with all internal formats to avoid a possible error.
 
-	glTexImage3D(
+	gl.TexImage3D(
 			GL_TEXTURE_2D_ARRAY, 0, GL_RGB32F,
 			d_tile_meta_data_resolution,
 			d_tile_meta_data_resolution,
@@ -2811,7 +2811,7 @@ GPlatesOpenGL::GLScalarField3D::create_tile_meta_data_texture_array(
 			0, GL_RGB, GL_FLOAT, nullptr);
 
 	// Check there are no OpenGL errors.
-	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -2825,19 +2825,19 @@ GPlatesOpenGL::GLScalarField3D::create_field_data_texture_array(
 	gl.BindTexture(GL_TEXTURE_2D_ARRAY, d_field_data_texture_array);
 
 	// Using linear filtering.
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Clamp texture coordinates to centre of edge texels.
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Create the texture but don't load any data into it.
 	//
 	// NOTE: Since the image data is nullptr it doesn't really matter what 'format' and 'type' are -
 	// just use values that are compatible with all internal formats to avoid a possible error.
 
-	glTexImage3D(
+	gl.TexImage3D(
 			GL_TEXTURE_2D_ARRAY, 0, GL_RGBA32F,
 			d_tile_resolution,
 			d_tile_resolution,
@@ -2845,7 +2845,7 @@ GPlatesOpenGL::GLScalarField3D::create_field_data_texture_array(
 			0, GL_RGBA, GL_FLOAT, nullptr);
 
 	// Check there are no OpenGL errors.
-	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -2859,19 +2859,19 @@ GPlatesOpenGL::GLScalarField3D::create_mask_data_texture_array(
 	gl.BindTexture(GL_TEXTURE_2D_ARRAY, d_mask_data_texture_array);
 
 	// Using linear filtering.
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Clamp texture coordinates to centre of edge texels.
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Create the texture but don't load any data into it.
 	//
 	// NOTE: Since the image data is NULL it doesn't really matter what 'format' and 'type' are -
 	// just use values that are compatible with all internal formats to avoid a possible error.
 
-	glTexImage3D(
+	gl.TexImage3D(
 			GL_TEXTURE_2D_ARRAY, 0, GL_R32F,
 			d_tile_resolution,
 			d_tile_resolution,
@@ -2879,7 +2879,7 @@ GPlatesOpenGL::GLScalarField3D::create_mask_data_texture_array(
 			0, GL_RED, GL_FLOAT, nullptr);
 
 	// Check there are no OpenGL errors.
-	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -2893,24 +2893,24 @@ GPlatesOpenGL::GLScalarField3D::create_depth_radius_to_layer_texture(
 	gl.BindTexture(GL_TEXTURE_1D, d_depth_radius_to_layer_texture);
 
 	// Using linear filtering.
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	gl.TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	gl.TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Clamp texture coordinates to centre of edge texels.
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 
 	// Create the texture but don't load any data into it.
 	//
 	// NOTE: Since the image data is nullptr it doesn't really matter what 'format' and 'type' are -
 	// just use values that are compatible with all internal formats to avoid a possible error.
 
-	glTexImage1D(
+	gl.TexImage1D(
 			GL_TEXTURE_1D, 0, GL_R32F,
 			d_depth_radius_to_layer_resolution,
 			0, GL_RED, GL_FLOAT, nullptr);
 
 	// Check there are no OpenGL errors.
-	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -2924,24 +2924,24 @@ GPlatesOpenGL::GLScalarField3D::create_colour_palette_texture(
 	gl.BindTexture(GL_TEXTURE_1D, d_colour_palette_texture);
 
 	// Using linear filtering.
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	gl.TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	gl.TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Clamp texture coordinates to centre of edge texels.
-	glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 
 	// Create the texture but don't load any data into it.
 	//
 	// NOTE: Since the image data is NULL it doesn't really matter what 'format' and 'type' are -
 	// just use values that are compatible with all internal formats to avoid a possible error.
 
-	glTexImage1D(
+	gl.TexImage1D(
 			GL_TEXTURE_1D, 0, GL_RGBA32F,
 			d_colour_palette_resolution,
 			0, GL_RGBA, GL_FLOAT, nullptr);
 
 	// Check there are no OpenGL errors.
-	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -2955,19 +2955,19 @@ GPlatesOpenGL::GLScalarField3D::create_surface_fill_mask_texture(
 	gl.BindTexture(GL_TEXTURE_2D_ARRAY, d_surface_fill_mask_texture);
 
 	// Linear filtering.
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Clamp texture coordinates to centre of edge texels.
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Create the texture but don't load any data into it.
 	//
 	// NOTE: Since the image data is NULL it doesn't really matter what 'format' and 'type' are -
 	// just use values that are compatible with all internal formats to avoid a possible error.
 
-	glTexImage3D(
+	gl.TexImage3D(
 			// Note: We use a fixed-point internal format (which clamps to [0,1]) instead of
 			//       floating-point (which is un-clamped) such that our rendered surface mask texture
 			//       will have an accumulated value of 1.0 where two polygons overlap (instead of 2.0).
@@ -2980,7 +2980,7 @@ GPlatesOpenGL::GLScalarField3D::create_surface_fill_mask_texture(
 			0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
 	// Check there are no OpenGL errors.
-	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -3000,7 +3000,7 @@ GPlatesOpenGL::GLScalarField3D::create_surface_fill_mask_framebuffer(
 	// Note that *level* 0 is the base mipmap level of each 2D texture in array (not the layer).
 	gl.FramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, d_surface_fill_mask_texture, 0/*level*/);
 
-	const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 	GPlatesGlobal::Assert<OpenGLException>(
 			completeness == GL_FRAMEBUFFER_COMPLETE,
 			GPLATES_ASSERTION_SOURCE,
@@ -3012,16 +3012,14 @@ void
 GPlatesOpenGL::GLScalarField3D::create_volume_fill_texture_sampler(
 		GL &gl)
 {
-	const GLuint volume_fill_texture_sampler = d_volume_fill_texture_sampler->get_resource_handle();
-
 	// Use nearest filtering since this a full-screen texture (full-screen usually point sampled).
-	glSamplerParameteri(volume_fill_texture_sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glSamplerParameteri(volume_fill_texture_sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	gl.SamplerParameteri(d_volume_fill_texture_sampler, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	gl.SamplerParameteri(d_volume_fill_texture_sampler, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	glSamplerParameteri(volume_fill_texture_sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glSamplerParameteri(volume_fill_texture_sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.SamplerParameteri(d_volume_fill_texture_sampler, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.SamplerParameteri(d_volume_fill_texture_sampler, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
 
 
@@ -3047,7 +3045,7 @@ GPlatesOpenGL::GLScalarField3D::update_volume_fill_framebuffer(
 	// blend equations for RGB and Alpha (not R and G).
 	// So two channels contain min/max depth and one channel contains flag indicating volume intersection.
 	gl.BindTexture(GL_TEXTURE_2D, d_volume_fill_texture);
-	glTexImage2D(GL_TEXTURE_2D, 0/*level*/, GL_RGBA32F,
+	gl.TexImage2D(GL_TEXTURE_2D, 0/*level*/, GL_RGBA32F,
 			d_volume_fill_screen_width, d_volume_fill_screen_height,
 			0, GL_RGBA, GL_FLOAT, nullptr);
 
@@ -3062,7 +3060,7 @@ GPlatesOpenGL::GLScalarField3D::update_volume_fill_framebuffer(
 	// In fact a depth buffer (with depth-testing enabled) would interfere with max blending.
 	// But it's needed for rendering volume fill walls (surface normals).
 	gl.BindRenderbuffer(GL_RENDERBUFFER, d_volume_fill_depth_buffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24/*a required format*/,
+	gl.RenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24/*a required format*/,
 			d_volume_fill_screen_width, d_volume_fill_screen_height);
 
 	// Bind the volume fill texture and depth buffer to the framebuffer object.
@@ -3070,7 +3068,7 @@ GPlatesOpenGL::GLScalarField3D::update_volume_fill_framebuffer(
 	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, d_volume_fill_depth_buffer);
 	gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, d_volume_fill_texture, 0/*level*/);
 
-	const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 	GPlatesGlobal::Assert<OpenGLException>(
 			completeness == GL_FRAMEBUFFER_COMPLETE,
 			GPLATES_ASSERTION_SOURCE,
@@ -3100,7 +3098,7 @@ GPlatesOpenGL::GLScalarField3D::load_scalar_field(
 			tile_meta_data = scalar_field_reader.read_tile_meta_data();
 
 	// Upload the tile metadata into the texture array.
-	glTexSubImage3D(
+	gl.TexSubImage3D(
 			GL_TEXTURE_2D_ARRAY, 0,
 			0, 0, 0, // x,y,z offsets
 			scalar_field_reader.get_tile_meta_data_resolution(),
@@ -3131,7 +3129,7 @@ GPlatesOpenGL::GLScalarField3D::load_scalar_field(
 				field_data = scalar_field_reader.read_field_data(layer_index, num_layers_to_read);
 
 		// Upload the current range of field data layers into the texture array.
-		glTexSubImage3D(
+		gl.TexSubImage3D(
 				GL_TEXTURE_2D_ARRAY, 0,
 				0, 0, // x,y offsets
 				layer_index, // z offset
@@ -3165,7 +3163,7 @@ GPlatesOpenGL::GLScalarField3D::load_scalar_field(
 				mask_data = scalar_field_reader.read_mask_data(mask_tile_index, num_tiles_to_read);
 
 		// Upload the current range of mask data into the texture array.
-		glTexSubImage3D(
+		gl.TexSubImage3D(
 				GL_TEXTURE_2D_ARRAY, 0,
 				0, 0, // x,y offsets
 				mask_tile_index, // z offset
@@ -3230,7 +3228,7 @@ GPlatesOpenGL::GLScalarField3D::load_depth_radius_to_layer_texture(
 	gl.BindTexture(GL_TEXTURE_1D, d_depth_radius_to_layer_texture);
 
 	// Upload the depth-radius-to-layer mapping data into the texture.
-	glTexSubImage1D(
+	gl.TexSubImage1D(
 			GL_TEXTURE_1D, 0,
 			0, // x offset
 			d_depth_radius_to_layer_resolution, // width
@@ -3300,7 +3298,7 @@ GPlatesOpenGL::GLScalarField3D::load_colour_palette_texture(
 	gl.BindTexture(GL_TEXTURE_1D, d_colour_palette_texture);
 
 	// Upload the colour palette data into the texture.
-	glTexSubImage1D(
+	gl.TexSubImage1D(
 			GL_TEXTURE_1D, 0,
 			0, // x offset
 			d_colour_palette_resolution, // width
@@ -3314,6 +3312,7 @@ GPlatesOpenGL::GLScalarField3D::CrossSection1DGeometryOnSphereVisitor::CrossSect
 		const GLStreamBuffer::shared_ptr_type &streaming_vertex_buffer) :
 	d_gl(gl),
 	d_map_stream_buffer_scope(
+			gl,
 			d_stream,
 			*streaming_vertex_element_buffer,
 			*streaming_vertex_buffer,
@@ -3405,7 +3404,7 @@ GPlatesOpenGL::GLScalarField3D::CrossSection1DGeometryOnSphereVisitor::render_st
 	// Only render if we've got some data to render.
 	if (d_map_stream_buffer_scope.get_num_streamed_vertex_elements() > 0)
 	{
-		glDrawRangeElements(
+		d_gl.DrawRangeElements(
 				GL_POINTS,
 				d_map_stream_buffer_scope.get_start_streaming_vertex_count()/*start*/,
 				d_map_stream_buffer_scope.get_start_streaming_vertex_count() +
@@ -3425,6 +3424,7 @@ GPlatesOpenGL::GLScalarField3D::CrossSection2DGeometryOnSphereVisitor::CrossSect
 		const GLStreamBuffer::shared_ptr_type &streaming_vertex_buffer) :
 	d_gl(gl),
 	d_map_stream_buffer_scope(
+			gl,
 			d_stream,
 			*streaming_vertex_element_buffer,
 			*streaming_vertex_buffer,
@@ -3575,7 +3575,7 @@ GPlatesOpenGL::GLScalarField3D::CrossSection2DGeometryOnSphereVisitor::render_st
 	// Only render if we've got some data to render.
 	if (d_map_stream_buffer_scope.get_num_streamed_vertex_elements() > 0)
 	{
-		glDrawRangeElements(
+		d_gl.DrawRangeElements(
 				GL_LINES,
 				d_map_stream_buffer_scope.get_start_streaming_vertex_count()/*start*/,
 				d_map_stream_buffer_scope.get_start_streaming_vertex_count() +
@@ -3596,6 +3596,7 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::SurfaceF
 		bool include_polylines) :
 	d_gl(gl),
 	d_map_stream_buffer_scope(
+			gl,
 			d_stream,
 			*streaming_vertex_element_buffer,
 			*streaming_vertex_buffer,
@@ -3938,7 +3939,7 @@ GPlatesOpenGL::GLScalarField3D::SurfaceFillMaskGeometryOnSphereVisitor::render_s
 	// Only render if we've got some data to render.
 	if (d_map_stream_buffer_scope.get_num_streamed_vertex_elements() > 0)
 	{
-		glDrawRangeElements(
+		d_gl.DrawRangeElements(
 				GL_TRIANGLES,
 				d_map_stream_buffer_scope.get_start_streaming_vertex_count()/*start*/,
 				d_map_stream_buffer_scope.get_start_streaming_vertex_count() +
@@ -3959,6 +3960,7 @@ GPlatesOpenGL::GLScalarField3D::VolumeFillBoundaryGeometryOnSphereVisitor::Volum
 		bool include_polylines) :
 	d_gl(gl),
 	d_map_stream_buffer_scope(
+			gl,
 			d_stream,
 			*streaming_vertex_element_buffer,
 			*streaming_vertex_buffer,
@@ -4139,7 +4141,7 @@ GPlatesOpenGL::GLScalarField3D::VolumeFillBoundaryGeometryOnSphereVisitor::rende
 	// Only render if we've got some data to render.
 	if (d_map_stream_buffer_scope.get_num_streamed_vertex_elements() > 0)
 	{
-		glDrawRangeElements(
+		d_gl.DrawRangeElements(
 				GL_LINES/*geometry shader converts lines to triangles*/,
 				d_map_stream_buffer_scope.get_start_streaming_vertex_count()/*start*/,
 				d_map_stream_buffer_scope.get_start_streaming_vertex_count() +

@@ -29,6 +29,7 @@
 
 #include "GLStreamBuffer.h"
 
+#include "GL.h"
 #include "GLUtils.h"
 #include "OpenGLException.h"
 
@@ -48,10 +49,12 @@ GPlatesOpenGL::GLStreamBuffer::GLStreamBuffer(
 
 
 GPlatesOpenGL::GLStreamBuffer::MapScope::MapScope(
+		GL &gl,
 		GLenum target,
 		GLStreamBuffer &stream_buffer,
 		unsigned int minimum_bytes_to_stream,
 		unsigned int stream_alignment) :
+	d_gl(gl),
 	d_target(target),
 	d_stream_buffer(stream_buffer),
 	d_minimum_bytes_to_stream(minimum_bytes_to_stream),
@@ -66,7 +69,7 @@ GPlatesOpenGL::GLStreamBuffer::MapScope::~MapScope()
 	if (d_is_mapped)
 	{
 		// Flushes entire mapped range.
-		glUnmapBuffer(d_target);
+		d_gl.UnmapBuffer(d_target);
 	}
 }
 
@@ -88,7 +91,7 @@ GPlatesOpenGL::GLStreamBuffer::MapScope::map(
 		// Allocate the (uninitialised) data store.
 		//
 		// Data will be specified by the application and used at most a few times (hence 'GL_STREAM_DRAW').
-		glBufferData(d_target, d_stream_buffer.d_buffer_size, nullptr, GL_STREAM_DRAW);
+		d_gl.BufferData(d_target, d_stream_buffer.d_buffer_size, nullptr, GL_STREAM_DRAW);
 
 		d_stream_buffer.d_created_buffer_data_store = true;
 	}
@@ -139,7 +142,7 @@ GPlatesOpenGL::GLStreamBuffer::MapScope::map(
 	}
 
 	// We only need to map the uninitialised region at the end of the buffer.
-	GLvoid *mapped_data = glMapBufferRange(
+	GLvoid *mapped_data = d_gl.MapBufferRange(
 			d_target,
 			d_stream_buffer.d_uninitialised_offset,
 			d_stream_buffer.d_buffer_size - d_stream_buffer.d_uninitialised_offset,
@@ -149,7 +152,7 @@ GPlatesOpenGL::GLStreamBuffer::MapScope::map(
 	if (mapped_data == NULL)
 	{
 		// Log OpenGL error - a mapped data pointer of NULL should generate an OpenGL error.
-		GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+		GLUtils::check_gl_errors(d_gl, GPLATES_ASSERTION_SOURCE);
 
 		throw OpenGLException(
 				GPLATES_ASSERTION_SOURCE,
@@ -182,16 +185,16 @@ GPlatesOpenGL::GLStreamBuffer::MapScope::unmap(
 		//
 		// Note that the offset is zero and not 'd_uninitialised_offset' since the mapped region
 		// was not the entire buffer (only the uninitialised region at the end of the buffer).
-		glFlushMappedBufferRange(d_target, 0, bytes_written);
+		d_gl.FlushMappedBufferRange(d_target, 0, bytes_written);
 
 		// Advance the offset into un-initialised memory.
 		d_stream_buffer.d_uninitialised_offset += bytes_written;
 	}
 
-	if (!glUnmapBuffer(d_target))
+	if (!d_gl.UnmapBuffer(d_target))
 	{
 		// Check OpenGL errors in case glUnmapBuffer used incorrectly.
-		GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+		GLUtils::check_gl_errors(d_gl, GPLATES_ASSERTION_SOURCE);
 
 		// Otherwise the buffer contents have been corrupted.
 		qWarning() << "GLBufferStream::MapScope::unmap: "

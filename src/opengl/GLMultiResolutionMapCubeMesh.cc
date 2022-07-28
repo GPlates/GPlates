@@ -309,7 +309,7 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_mesh(
 	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_meshes_vertex_element_buffer[cube_face]);
 
 	// Transfer vertex element data to currently bound vertex element buffer object.
-	glBufferData(
+	gl.BufferData(
 			GL_ELEMENT_ARRAY_BUFFER,
 			mesh_indices.size() * sizeof(mesh_indices[0]),
 			mesh_indices.data(),
@@ -319,7 +319,7 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_mesh(
 	gl.BindBuffer(GL_ARRAY_BUFFER, d_meshes_vertex_buffer[cube_face]);
 
 	// Transfer vertex data to currently bound vertex buffer object.
-	glBufferData(
+	gl.BufferData(
 			GL_ARRAY_BUFFER,
 			mesh_vertices.size() * sizeof(mesh_vertices[0]),
 			mesh_vertices.data(),
@@ -930,7 +930,7 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::QuadTreeNode::render_mesh_drawable(
 	gl.BindVertexArray(d_mesh_drawable->vertex_array);
 
 	// Draw the vertex array.
-	glDrawRangeElements(
+	gl.DrawRangeElements(
 			GL_TRIANGLES,
 			d_mesh_drawable->start,
 			d_mesh_drawable->end,

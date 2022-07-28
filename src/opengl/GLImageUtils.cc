@@ -84,7 +84,7 @@ GPlatesOpenGL::GLImageUtils::copy_rgba8_framebuffer_into_argb32_qimage(
 	//
 	// NOTE: We don't need to worry about changing the default GL_PACK_ALIGNMENT (rows aligned to 4 bytes)
 	// since our data is RGBA (already 4-byte aligned).
-	glReadPixels(
+	gl.ReadPixels(
 			source_viewport.x(),
 			source_viewport.y(),
 			source_viewport.width(),

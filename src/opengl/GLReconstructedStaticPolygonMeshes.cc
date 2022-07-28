@@ -604,7 +604,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables
 	// Transfer vertex element data to currently bound vertex element buffer object.
 	if (!all_polygon_meshes_indices.empty())
 	{
-		glBufferData(
+		gl.BufferData(
 				GL_ELEMENT_ARRAY_BUFFER,
 				all_polygon_meshes_indices.size() * sizeof(all_polygon_meshes_indices[0]),
 				all_polygon_meshes_indices.data(),
@@ -617,7 +617,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables
 	// Transfer vertex data to currently bound vertex buffer object.
 	if (!all_polygon_meshes_vertices.empty())
 	{
-		glBufferData(
+		gl.BufferData(
 				GL_ARRAY_BUFFER,
 				all_polygon_meshes_vertices.size() * sizeof(all_polygon_meshes_vertices[0]),
 				all_polygon_meshes_vertices.data(),
@@ -1031,7 +1031,7 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::PolygonMeshDrawable::render(
 	gl.BindVertexArray(d_vertex_array);
 
 	// Draw drawable.
-	glDrawRangeElements(
+	gl.DrawRangeElements(
 			GL_TRIANGLES,
 			d_drawable_start,
 			d_drawable_end,

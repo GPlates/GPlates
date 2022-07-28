@@ -666,7 +666,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field_depth_tile(
 	gl.ClearColor();
 	gl.ClearDepth();
 	gl.ClearStencil();
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	// Set the depth at which to render the current layer.
 	d_depth_layers_source.get()->set_depth_layer(gl, depth_layer_index);
@@ -692,7 +692,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field_depth_tile(
 	//
 	// Allocate buffer to read a single layer of cube tile into.
 	boost::scoped_array<float> field_data(new float[4 * tile_resolution * tile_resolution]);
-	glReadPixels(0, 0, tile_resolution, tile_resolution, GL_RGBA, GL_FLOAT, field_data.get());
+	gl.ReadPixels(0, 0, tile_resolution, tile_resolution, GL_RGBA, GL_FLOAT, field_data.get());
 
 	// Map the pixel buffer data.
 	GPlatesFileIO::ScalarField3DFileFormat::FieldDataSample *const field_data_pixels =
@@ -792,11 +792,11 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field_tile_mask(
 
 	// Clear *only* the colour buffer (we need the current stencil buffer contents intact).
 	gl.ClearColor();
-	glClear(GL_COLOR_BUFFER_BIT);
+	gl.Clear(GL_COLOR_BUFFER_BIT);
 
 	// Draw RGBA values of 1.0 into the colour buffer where the stencil buffer is non-zero.
 	gl.BindVertexArray(d_full_screen_quad);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	gl.DrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 	// Read back the data just rendered (directly into client memory).
 	//
@@ -809,7 +809,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::generate_scalar_field_tile_mask(
 	//
 	// Allocate buffer to read a single layer of cube tile into.
 	boost::scoped_array<float> mask_data(new float[4 * tile_resolution * tile_resolution]);
-	glReadPixels(0, 0, tile_resolution, tile_resolution, GL_RGBA, GL_FLOAT, mask_data.get());
+	gl.ReadPixels(0, 0, tile_resolution, tile_resolution, GL_RGBA, GL_FLOAT, mask_data.get());
 
 	// Iterate over the pixels in the stencil mask.
 	for (unsigned int n = 0; n < tile_resolution * tile_resolution; ++n)
@@ -1000,12 +1000,12 @@ GPlatesOpenGL::GLScalarField3DGenerator::create_tile_framebuffer(
 	// Allocate a stencil buffer.
 	// Note that (in OpenGL 3.3 core) an OpenGL implementation is only *required* to provide stencil if a
 	// depth/stencil format is requested, and furthermore GL_DEPTH24_STENCIL8 is a specified required format.
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, d_cube_face_dimension, d_cube_face_dimension);
+	gl.RenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, d_cube_face_dimension, d_cube_face_dimension);
 
 	gl.BindRenderbuffer(GL_RENDERBUFFER, d_tile_colour_buffer);
 
 	// Allocate a floating-point colour (RGBA) buffer.
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA32F, d_cube_face_dimension, d_cube_face_dimension);
+	gl.RenderbufferStorage(GL_RENDERBUFFER, GL_RGBA32F, d_cube_face_dimension, d_cube_face_dimension);
 
 	gl.BindFramebuffer(GL_FRAMEBUFFER, d_tile_framebuffer);
 
@@ -1018,7 +1018,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::create_tile_framebuffer(
 	// Bind tile colour buffer to framebuffer's first colour attachment.
 	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, d_tile_colour_buffer);
 
-	const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 	GPlatesGlobal::Assert<OpenGLException>(
 			completeness == GL_FRAMEBUFFER_COMPLETE,
 			GPLATES_ASSERTION_SOURCE,
@@ -1044,8 +1044,8 @@ GPlatesOpenGL::GLScalarField3DGenerator::compile_link_shader_program(
 
 	// Vertex shader.
 	GLShader::shared_ptr_type render_tile_mask_vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
-	render_tile_mask_vertex_shader->shader_source(render_tile_mask_vertex_shader_source);
-	render_tile_mask_vertex_shader->compile_shader();
+	render_tile_mask_vertex_shader->shader_source(gl, render_tile_mask_vertex_shader_source);
+	render_tile_mask_vertex_shader->compile_shader(gl);
 
 	// Fragment shader source.
 	GLShaderSource render_tile_mask_fragment_shader_source;
@@ -1054,11 +1054,11 @@ GPlatesOpenGL::GLScalarField3DGenerator::compile_link_shader_program(
 
 	// Fragment shader.
 	GLShader::shared_ptr_type render_tile_mask_fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	render_tile_mask_fragment_shader->shader_source(render_tile_mask_fragment_shader_source);
-	render_tile_mask_fragment_shader->compile_shader();
+	render_tile_mask_fragment_shader->shader_source(gl, render_tile_mask_fragment_shader_source);
+	render_tile_mask_fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
-	d_render_tile_mask_program->attach_shader(render_tile_mask_vertex_shader);
-	d_render_tile_mask_program->attach_shader(render_tile_mask_fragment_shader);
-	d_render_tile_mask_program->link_program();
+	d_render_tile_mask_program->attach_shader(gl, render_tile_mask_vertex_shader);
+	d_render_tile_mask_program->attach_shader(gl, render_tile_mask_fragment_shader);
+	d_render_tile_mask_program->link_program(gl);
 }

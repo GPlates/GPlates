@@ -544,7 +544,7 @@ namespace
 		// Note that we clear the colour to (0,0,0,0) and not (0,0,0,1) because we want any transparent
 		// parts of the raster (parts that we don't render) to have an alpha of zero.
 		gl.ClearColor();
-		glClear(GL_COLOR_BUFFER_BIT);
+		gl.Clear(GL_COLOR_BUFFER_BIT);
 
 		// Adjust the projection transform for the current tile.
 		const GPlatesOpenGL::GLTransform::non_null_ptr_to_const_type projection_transform_tile =
@@ -726,7 +726,7 @@ namespace
 						tile_width,
 						tile_height);
 
-		// Bind the pixel buffer as destination for subsequent 'glReadPixels()'.
+		// Bind the pixel buffer as destination for subsequent 'gl.ReadPixels()'.
 		gl.BindBuffer(GL_PIXEL_PACK_BUFFER, tile_pixel_buffer);
 
 		// Request asynchronous transfer of render target data into pixel buffer.
@@ -737,7 +737,7 @@ namespace
 		//
 		// NOTE: We don't need to worry about changing the default GL_PACK_ALIGNMENT (rows aligned to 4 bytes)
 		// since our data is RGBA (already 4-byte aligned).
-		glReadPixels(
+		gl.ReadPixels(
 				current_tile_source_viewport.x(),
 				current_tile_source_viewport.y(),
 				current_tile_source_viewport.width(),
@@ -747,13 +747,13 @@ namespace
 				nullptr);
 
 		// Get read access to the pixel buffer.
-		const GLvoid *tile_data = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+		const GLvoid *tile_data = gl.MapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
 
 		// If there was an error during mapping then report it and throw exception.
 		if (tile_data == NULL)
 		{
 			// Log OpenGL error - a mapped data pointer of NULL should generate an OpenGL error.
-			GPlatesOpenGL::GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+			GPlatesOpenGL::GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 
 			throw GPlatesOpenGL::OpenGLException(
 					GPLATES_ASSERTION_SOURCE,
@@ -773,10 +773,10 @@ namespace
 			}
 		}
 
-		if (!glUnmapBuffer(GL_PIXEL_PACK_BUFFER))
+		if (!gl.UnmapBuffer(GL_PIXEL_PACK_BUFFER))
 		{
-			// Check OpenGL errors in case glUnmapBuffer used incorrectly.
-			GPlatesOpenGL::GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+			// Check OpenGL errors in case gl.UnmapBuffer used incorrectly.
+			GPlatesOpenGL::GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 
 			// Otherwise the buffer contents have been corrupted, so just emit a warning.
 			qWarning() << "ExportRasterAnimationStrategy: Failed to unmap OpenGL buffer object. "
@@ -807,7 +807,7 @@ namespace
 		// The no-data value for a floating-point raw raster.
 		const float no_data_value = GPlatesMaths::quiet_nan<float>();
 
-		// Bind the pixel buffer as destination for subsequent 'glReadPixels()'.
+		// Bind the pixel buffer as destination for subsequent 'gl.ReadPixels()'.
 		gl.BindBuffer(GL_PIXEL_PACK_BUFFER, tile_pixel_buffer);
 
 		// Request asynchronous transfer of render target data into pixel buffer.
@@ -818,7 +818,7 @@ namespace
 		//
 		// NOTE: We don't need to worry about changing the default GL_PACK_ALIGNMENT (rows aligned to 4 bytes)
 		// since our data is RGBA (already 4-byte aligned).
-		glReadPixels(
+		gl.ReadPixels(
 				current_tile_source_viewport.x(),
 				current_tile_source_viewport.y(),
 				current_tile_source_viewport.width(),
@@ -828,13 +828,13 @@ namespace
 				nullptr);
 
 		// Get read access to the pixel buffer.
-		const GLvoid *band_tile_data = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+		const GLvoid *band_tile_data = gl.MapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
 
 		// If there was an error during mapping then report it and throw exception.
 		if (band_tile_data == NULL)
 		{
 			// Log OpenGL error - a mapped data pointer of NULL should generate an OpenGL error.
-			GPlatesOpenGL::GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+			GPlatesOpenGL::GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 
 			throw GPlatesOpenGL::OpenGLException(
 					GPLATES_ASSERTION_SOURCE,
@@ -883,10 +883,10 @@ namespace
 
 		GPlatesPropertyValues::RawRasterUtils::add_no_data_value(*band_tile_data_raster, no_data_value);
 
-		if (!glUnmapBuffer(GL_PIXEL_PACK_BUFFER))
+		if (!gl.UnmapBuffer(GL_PIXEL_PACK_BUFFER))
 		{
-			// Check OpenGL errors in case glUnmapBuffer used incorrectly.
-			GPlatesOpenGL::GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+			// Check OpenGL errors in case gl.UnmapBuffer used incorrectly.
+			GPlatesOpenGL::GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 
 			// Otherwise the buffer contents have been corrupted, so just emit a warning.
 			qWarning() << "ExportRasterAnimationStrategy: Failed to unmap OpenGL buffer object. "
@@ -1547,7 +1547,7 @@ GPlatesGui::ExportRasterAnimationStrategy::GLResources::GLResources(
 	const GLenum colour_renderbuffer_format = (raster_type == Configuration::COLOUR)
 			? GL_RGBA8
 			: GL_RG32F;
-	glRenderbufferStorage(GL_RENDERBUFFER, colour_renderbuffer_format, tile_framebuffer_dimension, tile_framebuffer_dimension);
+	gl.RenderbufferStorage(GL_RENDERBUFFER, colour_renderbuffer_format, tile_framebuffer_dimension, tile_framebuffer_dimension);
 
 	// Bind the framebuffer that'll we subsequently attach the renderbuffer to.
 	gl.BindFramebuffer(GL_FRAMEBUFFER, tile_framebuffer);
@@ -1555,7 +1555,7 @@ GPlatesGui::ExportRasterAnimationStrategy::GLResources::GLResources(
 	// Bind the colour renderbuffer to framebuffer's first colour attachment.
 	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, tile_colour_renderbuffer);
 
-	const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 	GPlatesGlobal::Assert<GPlatesOpenGL::OpenGLException>(
 			completeness == GL_FRAMEBUFFER_COMPLETE,
 			GPLATES_ASSERTION_SOURCE,
@@ -1571,7 +1571,7 @@ GPlatesGui::ExportRasterAnimationStrategy::GLResources::GLResources(
 	const unsigned int pixel_size = (raster_type == Configuration::COLOUR)
 			? 4/*RGBA*/ * sizeof(GLubyte)
 			: 2/*RG*/ * sizeof(GLfloat);
-	glBufferData(
+	gl.BufferData(
 			GL_PIXEL_PACK_BUFFER,
 			tile_framebuffer_dimension * tile_framebuffer_dimension * pixel_size,
 			nullptr,

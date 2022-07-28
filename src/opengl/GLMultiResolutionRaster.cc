@@ -588,7 +588,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::clear_framebuffer(
 	{
 		// Clear the colour buffer.
 		gl.ClearColor(); // Clear colour to all zeros.
-		glClear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
+		gl.Clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
 	}
 }
 
@@ -639,16 +639,16 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 	// Set view projection matrix in the currently bound program.
 	GLfloat view_projection_float_matrix[16];
 	view_projection_transform.get_float_matrix(view_projection_float_matrix);
-	glUniformMatrix4fv(
-			d_render_raster_program->get_uniform_location("view_projection"),
+	gl.UniformMatrix4fv(
+			d_render_raster_program->get_uniform_location(gl, "view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 	if (const GLVisualRasterSource *visual_raster_source = dynamic_cast<const GLVisualRasterSource *>(d_raster_source.get()))
 	{
 		// Visual (colour) rasters require multiplying by their modulate colour.
 		const GPlatesGui::Colour &modulate_colour = visual_raster_source->get_modulate_colour();
-		glUniform4f(
-				d_render_raster_program->get_uniform_location("modulate_color"),
+		gl.Uniform4f(
+				d_render_raster_program->get_uniform_location(gl, "modulate_color"),
 				modulate_colour.red(), modulate_colour.green(), modulate_colour.blue(), modulate_colour.alpha());
 	}
 
@@ -706,7 +706,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 		gl.BindVertexArray(tile.tile_vertices->vertex_array);
 
 		// Draw the current tile.
-		glDrawElements(
+		gl.DrawElements(
 				GL_TRIANGLES,
 				tile.tile_vertices->num_vertex_elements/*count*/,
 				GLVertexUtils::ElementTraits<vertex_element_type>::type,
@@ -839,13 +839,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	// Note: Currently all filtering is 'nearest' instead of 'bilinear'.
 	//       This is because the tiles do not overlap by border by half a texel (to avoid bilinear
 	//       seams between tiles). But this may change (though it would require significant changes).
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
 	// subsequently sampled non-isotropically.
@@ -853,7 +853,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
 	if (capabilities.gl_EXT_texture_filter_anisotropic)
 	{
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
+		gl.TexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
 	}
 
 	// If the source texture contains alpha or coverage and its not in the alpha channel then swizzle the texture
@@ -861,7 +861,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	boost::optional<GLenum> texture_swizzle_alpha = d_raster_source->get_tile_texture_swizzle_alpha();
 	if (texture_swizzle_alpha)
 	{
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, texture_swizzle_alpha.get());
+		gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, texture_swizzle_alpha.get());
 	}
 
 	// Create the texture in OpenGL - this actually creates the texture without any data.
@@ -869,14 +869,14 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	//
 	// NOTE: Since the image data is NULL it doesn't really matter what 'format' and 'type' are -
 	// just use values that are compatible with all internal formats to avoid a possible error.
-	glTexImage2D(
+	gl.TexImage2D(
 			GL_TEXTURE_2D, 0/*level*/,
 			d_raster_source->get_tile_texture_internal_format(),
 			d_tile_texel_dimension, d_tile_texel_dimension,
 			0/*border*/, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
 	// Check there are no OpenGL errors.
-	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -1097,7 +1097,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
 	// NOTE: We could use USAGE_DYNAMIC_DRAW but that is useful if updating every few frames or so.
 	// In our case we typically update much less frequently than that so it's better to use USAGE_STATIC_DRAW
 	// to hint to the driver to store vertices in faster video memory rather than AGP memory.
-	glBufferData(
+	gl.BufferData(
 			GL_ARRAY_BUFFER,
 			vertex_buffer_size_in_bytes,
 			nullptr,  // Allocate memory, but not yet initialized.
@@ -1105,13 +1105,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
 
 	// Get access to the allocated buffer.
 	// NOTE: This is a write-only pointer - it might reference video memory - and cannot be read from.
-	GLvoid *vertex_data_write_ptr = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+	GLvoid *vertex_data_write_ptr = gl.MapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
 
 	// If there was an error during mapping then report it and throw exception.
 	if (vertex_data_write_ptr == NULL)
 	{
 		// Log OpenGL error - a mapped data pointer of NULL should generate an OpenGL error.
-		GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+		GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 
 		throw OpenGLException(
 				GPLATES_ASSERTION_SOURCE,
@@ -1278,10 +1278,10 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
 		}
 	}
 
-	if (!glUnmapBuffer(GL_ARRAY_BUFFER))
+	if (!gl.UnmapBuffer(GL_ARRAY_BUFFER))
 	{
-		// Check OpenGL errors in case glUnmapBuffer used incorrectly.
-		GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+		// Check OpenGL errors in case gl.UnmapBuffer used incorrectly.
+		GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 
 		// Otherwise the buffer contents have been corrupted, so just emit a warning.
 		qWarning() << "GLMultiResolutionRaster: Failed to unmap OpenGL buffer object. "
@@ -1657,25 +1657,25 @@ GPlatesOpenGL::GLMultiResolutionRaster::compile_link_shader_program(
 
 	// Compile vertex shader.
 	GLShader::shared_ptr_type vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
-	vertex_shader->shader_source(vertex_shader_source);
-	vertex_shader->compile_shader();
+	vertex_shader->shader_source(gl, vertex_shader_source);
+	vertex_shader->compile_shader(gl);
 
 	// Compile fragment shader.
 	GLShader::shared_ptr_type fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	fragment_shader->shader_source(fragment_shader_source);
-	fragment_shader->compile_shader();
+	fragment_shader->shader_source(gl, fragment_shader_source);
+	fragment_shader->compile_shader(gl);
 
 	// Link vertex-fragment program.
-	d_render_raster_program->attach_shader(vertex_shader);
-	d_render_raster_program->attach_shader(fragment_shader);
-	d_render_raster_program->link_program();
+	d_render_raster_program->attach_shader(gl, vertex_shader);
+	d_render_raster_program->attach_shader(gl, fragment_shader);
+	d_render_raster_program->link_program(gl);
 
 	gl.UseProgram(d_render_raster_program);
 
 	// All versions of shader program use "source_texture_sampler" as the source texture sampler,
 	// and it is always texture unit 0.
-	glUniform1i(
-			d_render_raster_program->get_uniform_location("source_texture_sampler"),
+	gl.Uniform1i(
+			d_render_raster_program->get_uniform_location(gl, "source_texture_sampler"),
 			0/*texture unit*/);
 }
 
@@ -2524,7 +2524,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::bind_vertex_element_buffer(
 	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_element_buffer);
 
 	// Transfer vertex element data to currently bound vertex element buffer object.
-	glBufferData(
+	gl.BufferData(
 			GL_ELEMENT_ARRAY_BUFFER,
 			num_indices_per_tile * sizeof(vertex_element_type),
 			buffer_data.get(),
@@ -2717,8 +2717,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::RenderSphereNormals
 
 	// Vertex shader.
 	GLShader::shared_ptr_type vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
-	vertex_shader->shader_source(vertex_shader_source);
-	vertex_shader->compile_shader();
+	vertex_shader->shader_source(gl, vertex_shader_source);
+	vertex_shader->compile_shader(gl);
 
 	// Fragment shader source.
 	GLShaderSource fragment_shader_source;
@@ -2726,13 +2726,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::RenderSphereNormals
 
 	// Fragment shader.
 	GLShader::shared_ptr_type fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	fragment_shader->shader_source(fragment_shader_source);
-	fragment_shader->compile_shader();
+	fragment_shader->shader_source(gl, fragment_shader_source);
+	fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
-	d_program->attach_shader(vertex_shader);
-	d_program->attach_shader(fragment_shader);
-	d_program->link_program();
+	d_program->attach_shader(gl, vertex_shader);
+	d_program->attach_shader(gl, fragment_shader);
+	d_program->link_program(gl);
 
 	//
 	// Create a cube - this is one of the simplest primitives that covers the globe.
@@ -2775,7 +2775,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::RenderSphereNormals
 	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_vertex_element_buffer);
 
 	// Transfer vertex element data to currently bound vertex element buffer object.
-	glBufferData(
+	gl.BufferData(
 			GL_ELEMENT_ARRAY_BUFFER,
 			vertex_elements.size() * sizeof(vertex_elements[0]),
 			vertex_elements.data(),
@@ -2785,7 +2785,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::RenderSphereNormals
 	gl.BindBuffer(GL_ARRAY_BUFFER, d_vertex_buffer);
 
 	// Transfer vertex data to currently bound vertex buffer object.
-	glBufferData(
+	gl.BufferData(
 			GL_ARRAY_BUFFER,
 			vertices.size() * sizeof(vertices[0]),
 			vertices.data(),
@@ -2813,15 +2813,15 @@ GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::render(
 	// Set view projection matrix in the currently bound program.
 	GLfloat view_projection_float_matrix[16];
 	view_projection_transform.get_float_matrix(view_projection_float_matrix);
-	glUniformMatrix4fv(
-			d_program->get_uniform_location("view_projection"),
+	gl.UniformMatrix4fv(
+			d_program->get_uniform_location(gl, "view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 	// Bind vertex array object.
 	gl.BindVertexArray(d_vertex_array);
 
 	// Render the cube.
-	glDrawElements(
+	gl.DrawElements(
 			GL_TRIANGLES,
 			d_num_vertex_elements/*count*/,
 			GLVertexUtils::ElementTraits<vertex_element_type>::type,

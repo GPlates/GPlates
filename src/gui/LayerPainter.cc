@@ -138,8 +138,8 @@ GPlatesGui::LayerPainter::initialise(
 	vertex_shader_source.add_code_segment_from_file(RENDER_POINT_LINE_POLYGON_VERTEX_SHADER);
 	// Vertex shader.
 	GPlatesOpenGL::GLShader::shared_ptr_type vertex_shader = GPlatesOpenGL::GLShader::create(gl, GL_VERTEX_SHADER);
-	vertex_shader->shader_source(vertex_shader_source);
-	vertex_shader->compile_shader();
+	vertex_shader->shader_source(gl, vertex_shader_source);
+	vertex_shader->compile_shader(gl);
 
 	// Fragment shader source.
 	GPlatesOpenGL::GLShaderSource fragment_shader_source;
@@ -147,14 +147,14 @@ GPlatesGui::LayerPainter::initialise(
 	fragment_shader_source.add_code_segment_from_file(RENDER_POINT_LINE_POLYGON_FRAGMENT_SHADER);
 	// Fragment shader.
 	GPlatesOpenGL::GLShader::shared_ptr_type fragment_shader = GPlatesOpenGL::GLShader::create(gl, GL_FRAGMENT_SHADER);
-	fragment_shader->shader_source(fragment_shader_source);
-	fragment_shader->compile_shader();
+	fragment_shader->shader_source(gl, fragment_shader_source);
+	fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
 	d_render_point_line_polygon_program = GPlatesOpenGL::GLProgram::create(gl);
-	d_render_point_line_polygon_program->attach_shader(vertex_shader);
-	d_render_point_line_polygon_program->attach_shader(fragment_shader);
-	d_render_point_line_polygon_program->link_program();
+	d_render_point_line_polygon_program->attach_shader(gl, vertex_shader);
+	d_render_point_line_polygon_program->attach_shader(gl, fragment_shader);
+	d_render_point_line_polygon_program->link_program(gl);
 
 	//
 	// Create and initialise the vertex array containing vertices of type 'AxiallySymmetricMeshVertex'.
@@ -204,8 +204,8 @@ GPlatesGui::LayerPainter::initialise(
 	axially_symmetric_mesh_vertex_shader_source.add_code_segment_from_file(RENDER_AXIALLY_SYMMETRIC_MESH_VERTEX_SHADER);
 	// Vertex shader.
 	GPlatesOpenGL::GLShader::shared_ptr_type axially_symmetric_mesh_vertex_shader = GPlatesOpenGL::GLShader::create(gl, GL_VERTEX_SHADER);
-	axially_symmetric_mesh_vertex_shader->shader_source(axially_symmetric_mesh_vertex_shader_source);
-	axially_symmetric_mesh_vertex_shader->compile_shader();
+	axially_symmetric_mesh_vertex_shader->shader_source(gl, axially_symmetric_mesh_vertex_shader_source);
+	axially_symmetric_mesh_vertex_shader->compile_shader(gl);
 
 	// Fragment shader source.
 	GPlatesOpenGL::GLShaderSource axially_symmetric_mesh_fragment_shader_source;
@@ -213,14 +213,14 @@ GPlatesGui::LayerPainter::initialise(
 	axially_symmetric_mesh_fragment_shader_source.add_code_segment_from_file(RENDER_AXIALLY_SYMMETRIC_MESH_FRAGMENT_SHADER);
 	// Fragment shader.
 	GPlatesOpenGL::GLShader::shared_ptr_type axially_symmetric_mesh_fragment_shader = GPlatesOpenGL::GLShader::create(gl, GL_FRAGMENT_SHADER);
-	axially_symmetric_mesh_fragment_shader->shader_source(axially_symmetric_mesh_fragment_shader_source);
-	axially_symmetric_mesh_fragment_shader->compile_shader();
+	axially_symmetric_mesh_fragment_shader->shader_source(gl, axially_symmetric_mesh_fragment_shader_source);
+	axially_symmetric_mesh_fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
 	d_render_axially_symmetric_mesh_program = GPlatesOpenGL::GLProgram::create(gl);
-	d_render_axially_symmetric_mesh_program->attach_shader(axially_symmetric_mesh_vertex_shader);
-	d_render_axially_symmetric_mesh_program->attach_shader(axially_symmetric_mesh_fragment_shader);
-	d_render_axially_symmetric_mesh_program->link_program();
+	d_render_axially_symmetric_mesh_program->attach_shader(gl, axially_symmetric_mesh_vertex_shader);
+	d_render_axially_symmetric_mesh_program->attach_shader(gl, axially_symmetric_mesh_fragment_shader);
+	d_render_axially_symmetric_mesh_program->link_program(gl);
 }
 
 
@@ -868,8 +868,8 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_point_line_polygon_stat
 	// Set view projection matrix in the currently bound program.
 	GLfloat view_projection_float_matrix[16];
 	view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
-	glUniformMatrix4fv(
-			render_point_line_polygon_program->get_uniform_location("view_projection"),
+	gl.UniformMatrix4fv(
+			render_point_line_polygon_program->get_uniform_location(gl, "view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 	if (globe_view_horizon_plane)
@@ -883,14 +883,14 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_point_line_polygon_stat
 		gl.Enable(GL_CLIP_DISTANCE0);
 		GLfloat globe_horizon_float_plane[4];
 		globe_view_horizon_plane->get_float_plane(globe_horizon_float_plane);
-		glUniform4fv(
-				render_point_line_polygon_program->get_uniform_location("globe_view_horizon_plane"),
+		gl.Uniform4fv(
+				render_point_line_polygon_program->get_uniform_location(gl, "globe_view_horizon_plane"),
 				1, globe_horizon_float_plane);
 	}
 
 	// Set the star colour (it never changes).
-	glUniform1i(
-			render_point_line_polygon_program->get_uniform_location("map_view_enabled"),
+	gl.Uniform1i(
+			render_point_line_polygon_program->get_uniform_location(gl, "map_view_enabled"),
 			static_cast<bool>(map_projection));
 
 	// Get the OpenGL light if the runtime system supports it.
@@ -901,8 +901,8 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_point_line_polygon_stat
 		gl_light.get()->get_scene_lighting_parameters().is_lighting_enabled(
 				GPlatesGui::SceneLightingParameters::LIGHTING_GEOMETRY_ON_SPHERE))
 	{
-		glUniform1i(
-				render_point_line_polygon_program->get_uniform_location("lighting_enabled"),
+		gl.Uniform1i(
+				render_point_line_polygon_program->get_uniform_location(gl, "lighting_enabled"),
 				true);
 
 		if (map_projection)
@@ -910,8 +910,8 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_point_line_polygon_stat
 			// Set the (ambient+diffuse) lighting.
 			// For the 2D map views this is constant across the map since the surface normal is
 			// constant (it's a flat surface unlike the globe).
-			glUniform1f(
-					render_point_line_polygon_program->get_uniform_location("map_view_ambient_and_diffuse_lighting"),
+			gl.Uniform1f(
+					render_point_line_polygon_program->get_uniform_location(gl, "map_view_ambient_and_diffuse_lighting"),
 					gl_light.get()->get_map_view_constant_lighting());
 		}
 		else // globe view ...
@@ -919,22 +919,22 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_point_line_polygon_stat
 			// Set the world-space light direction.
 			const GPlatesMaths::UnitVector3D &globe_view_world_space_light_direction =
 					gl_light.get()->get_globe_view_light_direction();
-			glUniform3f(
-					render_point_line_polygon_program->get_uniform_location("globe_view_world_space_light_direction"),
+			gl.Uniform3f(
+					render_point_line_polygon_program->get_uniform_location(gl, "globe_view_world_space_light_direction"),
 					globe_view_world_space_light_direction.x().dval(),
 					globe_view_world_space_light_direction.y().dval(),
 					globe_view_world_space_light_direction.z().dval());
 
 			// Set the light ambient contribution.
-			glUniform1f(
-					render_point_line_polygon_program->get_uniform_location("globe_view_light_ambient_contribution"),
+			gl.Uniform1f(
+					render_point_line_polygon_program->get_uniform_location(gl, "globe_view_light_ambient_contribution"),
 					gl_light.get()->get_scene_lighting_parameters().get_ambient_light_contribution());
 		}
 	}
 	else // light disabled ...
 	{
-		glUniform1i(
-				render_point_line_polygon_program->get_uniform_location("lighting_enabled"),
+		gl.Uniform1i(
+				render_point_line_polygon_program->get_uniform_location(gl, "lighting_enabled"),
 				false);
 	}
 }
@@ -954,8 +954,8 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_axially_symmetric_mesh_
 	// Set view projection matrix in the currently bound program.
 	GLfloat view_projection_float_matrix[16];
 	view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
-	glUniformMatrix4fv(
-			render_axially_symmetric_mesh_program->get_uniform_location("view_projection"),
+	gl.UniformMatrix4fv(
+			render_axially_symmetric_mesh_program->get_uniform_location(gl, "view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 	if (globe_view_horizon_plane)
@@ -969,8 +969,8 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_axially_symmetric_mesh_
 		gl.Enable(GL_CLIP_DISTANCE0);
 		GLfloat globe_horizon_float_plane[4];
 		globe_view_horizon_plane->get_float_plane(globe_horizon_float_plane);
-		glUniform4fv(
-				render_axially_symmetric_mesh_program->get_uniform_location("globe_view_horizon_plane"),
+		gl.Uniform4fv(
+				render_axially_symmetric_mesh_program->get_uniform_location(gl, "globe_view_horizon_plane"),
 				1, globe_horizon_float_plane);
 	}
 
@@ -982,28 +982,28 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_axially_symmetric_mesh_
 		gl_light.get()->get_scene_lighting_parameters().is_lighting_enabled(
 				GPlatesGui::SceneLightingParameters::LIGHTING_DIRECTION_ARROW))
 	{
-		glUniform1i(
-				render_axially_symmetric_mesh_program->get_uniform_location("lighting_enabled"),
+		gl.Uniform1i(
+				render_axially_symmetric_mesh_program->get_uniform_location(gl, "lighting_enabled"),
 				true);
 
 		// Set the world-space light direction.
 		const GPlatesMaths::UnitVector3D &world_space_light_direction =
 				gl_light.get()->get_globe_view_light_direction();
-		glUniform3f(
-				render_axially_symmetric_mesh_program->get_uniform_location("world_space_light_direction"),
+		gl.Uniform3f(
+				render_axially_symmetric_mesh_program->get_uniform_location(gl, "world_space_light_direction"),
 				world_space_light_direction.x().dval(),
 				world_space_light_direction.y().dval(),
 				world_space_light_direction.z().dval());
 
 		// Set the light ambient contribution.
-		glUniform1f(
-				render_axially_symmetric_mesh_program->get_uniform_location("light_ambient_contribution"),
+		gl.Uniform1f(
+				render_axially_symmetric_mesh_program->get_uniform_location(gl, "light_ambient_contribution"),
 				gl_light.get()->get_scene_lighting_parameters().get_ambient_light_contribution());
 	}
 	else // light disabled ...
 	{
-		glUniform1i(
-				render_axially_symmetric_mesh_program->get_uniform_location("lighting_enabled"),
+		gl.Uniform1i(
+				render_axially_symmetric_mesh_program->get_uniform_location(gl, "lighting_enabled"),
 				false);
 	}
 }
@@ -1084,14 +1084,14 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables<VertexType>::draw
 		GLenum mode)
 {
 	// Transfer vertex element data to currently bound vertex element buffer object.
-	glBufferData(
+	gl.BufferData(
 			GL_ELEMENT_ARRAY_BUFFER,
 			d_vertex_elements.size() * sizeof(d_vertex_elements[0]),
 			d_vertex_elements.data(),
 			GL_STREAM_DRAW);
 
 	// Transfer vertex data to currently bound vertex buffer object (ie, currently bound vertex array).
-	glBufferData(
+	gl.BufferData(
 			GL_ARRAY_BUFFER,
 			d_vertices.size() * sizeof(d_vertices[0]),
 			d_vertices.data(),
@@ -1099,7 +1099,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::Drawables<VertexType>::draw
 
 	// Draw the primitives.
 	// NOTE: The caller has already bound this vertex array.
-	glDrawElements(
+	gl.DrawElements(
 			mode,
 			d_vertex_elements.size()/*count*/,
 			GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::type,

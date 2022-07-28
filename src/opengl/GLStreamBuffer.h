@@ -28,14 +28,15 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
-
-#include "opengl/OpenGL1.h"
+#include <opengl/OpenGL1.h>
 
 #include "GLBuffer.h"
 
 
 namespace GPlatesOpenGL
 {
+	class GL;
+
 	/**
 	 * Wrapper around @a GLBuffer for streaming data from application to buffer object (from CPU to GPU).
 	 */
@@ -63,6 +64,7 @@ namespace GPlatesOpenGL
 			 *       this means the vertex array containing it should be bound.
 			 */
 			MapScope(
+					GL &gl,
 					GLenum target,
 					GLStreamBuffer &stream_buffer,
 					unsigned int minimum_bytes_to_stream,
@@ -106,6 +108,7 @@ namespace GPlatesOpenGL
 					unsigned int bytes_written);
 
 		private:
+			GL &d_gl;
 			GLenum d_target;
 			GLStreamBuffer &d_stream_buffer;
 			unsigned int d_minimum_bytes_to_stream;

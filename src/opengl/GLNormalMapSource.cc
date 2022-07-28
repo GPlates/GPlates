@@ -511,7 +511,7 @@ GPlatesOpenGL::GLNormalMapSource::convert_height_field_to_normal_map(
 	gl.PixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
 	// Load the height data into the floating-point texture.
-	glTexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
+	gl.TexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
 		0/*xoffset*/, 0/*yoffset*/, height_map_texel_width, height_map_texel_height,
 		GL_RG, GL_FLOAT, d_tile_height_data_working_space.get());
 
@@ -534,7 +534,7 @@ GPlatesOpenGL::GLNormalMapSource::convert_height_field_to_normal_map(
 	{
 		// Throw OpenGLException if not complete.
 		// This should succeed since we're using GL_RGBA8 texture format (which is required by OpenGL 3.3 core).
-		const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,
 				GPLATES_ASSERTION_SOURCE,
@@ -565,7 +565,7 @@ GPlatesOpenGL::GLNormalMapSource::convert_height_field_to_normal_map(
 	gl.ClearColor(GLclampf(0.5), GLclampf(0.5), GLclampf(1), GLclampf(1));
 
 	// Clear only the colour buffer.
-	glClear(GL_COLOR_BUFFER_BIT);
+	gl.Clear(GL_COLOR_BUFFER_BIT);
 
 	// Bind the shader program for rendering light direction for the 2D map views.
 	gl.UseProgram(d_generate_normals_program);
@@ -574,8 +574,8 @@ GPlatesOpenGL::GLNormalMapSource::convert_height_field_to_normal_map(
 	gl.ActiveTexture(GL_TEXTURE0);
 	gl.BindTexture(GL_TEXTURE_2D, height_field_texture.get());
 	// Set the height field texture sampler to texture unit 0.
-	glUniform1i(
-			d_generate_normals_program->get_uniform_location("height_field_texture_sampler"),
+	gl.Uniform1i(
+			d_generate_normals_program->get_uniform_location(gl, "height_field_texture_sampler"),
 			0);
 
 	// The texture coordinates scale/translate the full-screen quad [0,1] (which maps to the
@@ -584,8 +584,8 @@ GPlatesOpenGL::GLNormalMapSource::convert_height_field_to_normal_map(
 	const float inverse_full_height_map_tile = 1.0f / (d_tile_texel_dimension + 2);
 	const float u_scale = normal_map_texel_width * inverse_full_height_map_tile;
 	const float v_scale = normal_map_texel_height * inverse_full_height_map_tile;
-	glUniform4f(
-			d_generate_normals_program->get_uniform_location("height_field_parameters"),
+	gl.Uniform4f(
+			d_generate_normals_program->get_uniform_location(gl, "height_field_parameters"),
 			u_scale, // scale u
 			v_scale, // scale v
 			inverse_full_height_map_tile, // translate u and v
@@ -595,7 +595,7 @@ GPlatesOpenGL::GLNormalMapSource::convert_height_field_to_normal_map(
 	gl.BindVertexArray(d_full_screen_quad);
 
 	// Draw the full screen quad.
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	gl.DrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
 
@@ -640,7 +640,7 @@ GPlatesOpenGL::GLNormalMapSource::load_default_normal_map(
 	boost::scoped_array<GPlatesGui::rgba8_t> default_normal_image_data(
 			new GPlatesGui::rgba8_t[texel_width * texel_height]);
 	std::fill_n(default_normal_image_data.get(), texel_width * texel_height, default_normal);
-	glTexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
+	gl.TexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
 			0/*xoffset*/, 0/*yoffset*/, texel_width, texel_height,
 			GL_RGBA, GL_UNSIGNED_BYTE, default_normal_image_data.get());
 }
@@ -918,8 +918,8 @@ GPlatesOpenGL::GLNormalMapSource::compile_link_normal_map_generation_shader_prog
 
 	// Vertex shader.
 	GLShader::shared_ptr_type vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
-	vertex_shader->shader_source(vertex_shader_source);
-	vertex_shader->compile_shader();
+	vertex_shader->shader_source(gl, vertex_shader_source);
+	vertex_shader->compile_shader(gl);
 
 	// Fragment shader source.
 	GLShaderSource fragment_shader_source;
@@ -928,13 +928,13 @@ GPlatesOpenGL::GLNormalMapSource::compile_link_normal_map_generation_shader_prog
 
 	// Fragment shader.
 	GLShader::shared_ptr_type fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	fragment_shader->shader_source(fragment_shader_source);
-	fragment_shader->compile_shader();
+	fragment_shader->shader_source(gl, fragment_shader_source);
+	fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
-	d_generate_normals_program->attach_shader(vertex_shader);
-	d_generate_normals_program->attach_shader(fragment_shader);
-	d_generate_normals_program->link_program();
+	d_generate_normals_program->attach_shader(gl, vertex_shader);
+	d_generate_normals_program->attach_shader(gl, fragment_shader);
+	d_generate_normals_program->link_program(gl);
 }
 
 
@@ -946,13 +946,13 @@ GPlatesOpenGL::GLNormalMapSource::create_height_tile_texture(
 	gl.BindTexture(GL_TEXTURE_2D, texture);
 
 	// It's a floating-point texture so use nearest neighbour filtering and no anisotropic.
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// We use RG format (instead of RGBA) since it saves memory.
 	const GLint internalformat = GL_RG32F;
@@ -963,10 +963,10 @@ GPlatesOpenGL::GLNormalMapSource::create_height_tile_texture(
 	//
 	// NOTE: Since the image data is NULL it doesn't really matter what 'format' (and 'type') are so
 	// we just use GL_RGBA (and GL_FLOAT).
-	glTexImage2D(GL_TEXTURE_2D, 0, internalformat,
+	gl.TexImage2D(GL_TEXTURE_2D, 0, internalformat,
 			height_map_texel_dimension, height_map_texel_dimension,
 			0, GL_RGBA, GL_FLOAT, nullptr);
 
 	// Check there are no OpenGL errors.
-	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 }

@@ -163,7 +163,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_gl(
 
 	// Bind the pixel buffer and allocate its memory.
 	gl.BindBuffer(GL_PIXEL_PACK_BUFFER, d_debug_pixel_buffer);
-	glBufferData(GL_PIXEL_PACK_BUFFER, PIXEL_BUFFER_SIZE_IN_BYTES, nullptr, GL_STREAM_READ);
+	gl.BufferData(GL_PIXEL_PACK_BUFFER, PIXEL_BUFFER_SIZE_IN_BYTES, nullptr, GL_STREAM_READ);
 #endif
 }
 
@@ -197,8 +197,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_point_region_of_interest_shade
 
 	// Vertex shader.
 	GLShader::shared_ptr_type small_roi_angle_vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
-	small_roi_angle_vertex_shader->shader_source(small_roi_angle_vertex_shader_source);
-	small_roi_angle_vertex_shader->compile_shader();
+	small_roi_angle_vertex_shader->shader_source(gl, small_roi_angle_vertex_shader_source);
+	small_roi_angle_vertex_shader->compile_shader(gl);
 
 	// Fragment shader source.
 	GLShaderSource small_roi_angle_fragment_shader_source;
@@ -210,14 +210,14 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_point_region_of_interest_shade
 
 	// Fragment shader.
 	GLShader::shared_ptr_type small_roi_angle_fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	small_roi_angle_fragment_shader->shader_source(small_roi_angle_fragment_shader_source);
-	small_roi_angle_fragment_shader->compile_shader();
+	small_roi_angle_fragment_shader->shader_source(gl, small_roi_angle_fragment_shader_source);
+	small_roi_angle_fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
 	d_render_points_of_seed_geometries_with_small_roi_angle_program = GLProgram::create(gl);
-	d_render_points_of_seed_geometries_with_small_roi_angle_program->attach_shader(small_roi_angle_vertex_shader);
-	d_render_points_of_seed_geometries_with_small_roi_angle_program->attach_shader(small_roi_angle_fragment_shader);
-	d_render_points_of_seed_geometries_with_small_roi_angle_program->link_program();
+	d_render_points_of_seed_geometries_with_small_roi_angle_program->attach_shader(gl, small_roi_angle_vertex_shader);
+	d_render_points_of_seed_geometries_with_small_roi_angle_program->attach_shader(gl, small_roi_angle_fragment_shader);
+	d_render_points_of_seed_geometries_with_small_roi_angle_program->link_program(gl);
 
 	//
 	// For larger region-of-interest angles (retains accuracy for angles very near 90 degrees).
@@ -233,8 +233,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_point_region_of_interest_shade
 
 	// Vertex shader.
 	GLShader::shared_ptr_type large_roi_angle_vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
-	large_roi_angle_vertex_shader->shader_source(large_roi_angle_vertex_shader_source);
-	large_roi_angle_vertex_shader->compile_shader();
+	large_roi_angle_vertex_shader->shader_source(gl, large_roi_angle_vertex_shader_source);
+	large_roi_angle_vertex_shader->compile_shader(gl);
 
 	// Fragment shader source.
 	GLShaderSource large_roi_angle_fragment_shader_source;
@@ -246,14 +246,14 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_point_region_of_interest_shade
 
 	// Fragment shader.
 	GLShader::shared_ptr_type large_roi_angle_fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	large_roi_angle_fragment_shader->shader_source(large_roi_angle_fragment_shader_source);
-	large_roi_angle_fragment_shader->compile_shader();
+	large_roi_angle_fragment_shader->shader_source(gl, large_roi_angle_fragment_shader_source);
+	large_roi_angle_fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
 	d_render_points_of_seed_geometries_with_large_roi_angle_program = GLProgram::create(gl);
-	d_render_points_of_seed_geometries_with_large_roi_angle_program->attach_shader(large_roi_angle_vertex_shader);
-	d_render_points_of_seed_geometries_with_large_roi_angle_program->attach_shader(large_roi_angle_fragment_shader);
-	d_render_points_of_seed_geometries_with_large_roi_angle_program->link_program();
+	d_render_points_of_seed_geometries_with_large_roi_angle_program->attach_shader(gl, large_roi_angle_vertex_shader);
+	d_render_points_of_seed_geometries_with_large_roi_angle_program->attach_shader(gl, large_roi_angle_fragment_shader);
+	d_render_points_of_seed_geometries_with_large_roi_angle_program->link_program(gl);
 
 
 	//
@@ -283,57 +283,47 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_point_region_of_interest_shade
 	gl.EnableVertexAttribArray(0);
 	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(PointRegionOfInterestVertex),
 			BUFFER_OFFSET(PointRegionOfInterestVertex, point_centre));
-	glBindAttribLocation(
-			d_render_points_of_seed_geometries_with_small_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_small_roi_angle_program,
 			0, "point_centre");
-	glBindAttribLocation(
-			d_render_points_of_seed_geometries_with_large_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_large_roi_angle_program,
 			0, "point_centre");
 
 	gl.EnableVertexAttribArray(1);
 	gl.VertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(PointRegionOfInterestVertex),
 			BUFFER_OFFSET(PointRegionOfInterestVertex, tangent_frame_weights));
-	glBindAttribLocation(
-			d_render_points_of_seed_geometries_with_small_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_small_roi_angle_program,
 			1, "tangent_frame_weights");
-	glBindAttribLocation(
-			d_render_points_of_seed_geometries_with_large_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_large_roi_angle_program,
 			1, "tangent_frame_weights");
 
 	gl.EnableVertexAttribArray(2);
 	gl.VertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(PointRegionOfInterestVertex),
 			BUFFER_OFFSET(PointRegionOfInterestVertex, world_space_quaternion));
-	glBindAttribLocation(
-			d_render_points_of_seed_geometries_with_small_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_small_roi_angle_program,
 			2, "world_space_quaternion");
-	glBindAttribLocation(
-			d_render_points_of_seed_geometries_with_large_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_large_roi_angle_program,
 			2, "world_space_quaternion");
 
 	gl.EnableVertexAttribArray(3);
 	gl.VertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(PointRegionOfInterestVertex),
 			BUFFER_OFFSET(PointRegionOfInterestVertex, raster_frustum_to_seed_frustum_clip_space_transform));
-	glBindAttribLocation(
-			d_render_points_of_seed_geometries_with_small_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_small_roi_angle_program,
 			3, "raster_frustum_to_seed_frustum_clip_space_transform");
-	glBindAttribLocation(
-			d_render_points_of_seed_geometries_with_large_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_large_roi_angle_program,
 			3, "raster_frustum_to_seed_frustum_clip_space_transform");
 
 	gl.EnableVertexAttribArray(4);
 	gl.VertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(PointRegionOfInterestVertex),
 			BUFFER_OFFSET(PointRegionOfInterestVertex, seed_frustum_to_render_target_clip_space_transform));
-	glBindAttribLocation(
-			d_render_points_of_seed_geometries_with_small_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_small_roi_angle_program,
 			4, "seed_frustum_to_render_target_clip_space_transform");
-	glBindAttribLocation(
-			d_render_points_of_seed_geometries_with_large_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_large_roi_angle_program,
 			4, "seed_frustum_to_render_target_clip_space_transform");
 
 	// Now that we've changed the attribute bindings in the program object we need to
 	// re-link it in order for them to take effect.
-	d_render_points_of_seed_geometries_with_small_roi_angle_program->link_program();
-	d_render_points_of_seed_geometries_with_large_roi_angle_program->link_program();
+	d_render_points_of_seed_geometries_with_small_roi_angle_program->link_program(gl);
+	d_render_points_of_seed_geometries_with_large_roi_angle_program->link_program(gl);
 }
 
 
@@ -366,8 +356,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_line_region_of_interest_shader
 
 	// Vertex shader.
 	GLShader::shared_ptr_type small_roi_angle_vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
-	small_roi_angle_vertex_shader->shader_source(small_roi_angle_vertex_shader_source);
-	small_roi_angle_vertex_shader->compile_shader();
+	small_roi_angle_vertex_shader->shader_source(gl, small_roi_angle_vertex_shader_source);
+	small_roi_angle_vertex_shader->compile_shader(gl);
 
 	// Fragment shader source.
 	GLShaderSource small_roi_angle_fragment_shader_source;
@@ -379,14 +369,14 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_line_region_of_interest_shader
 
 	// Fragment shader.
 	GLShader::shared_ptr_type small_roi_angle_fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	small_roi_angle_fragment_shader->shader_source(small_roi_angle_fragment_shader_source);
-	small_roi_angle_fragment_shader->compile_shader();
+	small_roi_angle_fragment_shader->shader_source(gl, small_roi_angle_fragment_shader_source);
+	small_roi_angle_fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
 	d_render_lines_of_seed_geometries_with_small_roi_angle_program = GLProgram::create(gl);
-	d_render_lines_of_seed_geometries_with_small_roi_angle_program->attach_shader(small_roi_angle_vertex_shader);
-	d_render_lines_of_seed_geometries_with_small_roi_angle_program->attach_shader(small_roi_angle_fragment_shader);
-	d_render_lines_of_seed_geometries_with_small_roi_angle_program->link_program();
+	d_render_lines_of_seed_geometries_with_small_roi_angle_program->attach_shader(gl, small_roi_angle_vertex_shader);
+	d_render_lines_of_seed_geometries_with_small_roi_angle_program->attach_shader(gl, small_roi_angle_fragment_shader);
+	d_render_lines_of_seed_geometries_with_small_roi_angle_program->link_program(gl);
 
 	//
 	// For larger region-of-interest angles (retains accuracy for angles very near 90 degrees).
@@ -402,8 +392,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_line_region_of_interest_shader
 
 	// Vertex shader.
 	GLShader::shared_ptr_type large_roi_angle_vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
-	large_roi_angle_vertex_shader->shader_source(large_roi_angle_vertex_shader_source);
-	large_roi_angle_vertex_shader->compile_shader();
+	large_roi_angle_vertex_shader->shader_source(gl, large_roi_angle_vertex_shader_source);
+	large_roi_angle_vertex_shader->compile_shader(gl);
 
 	// Fragment shader source.
 	GLShaderSource large_roi_angle_fragment_shader_source;
@@ -415,14 +405,14 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_line_region_of_interest_shader
 
 	// Fragment shader.
 	GLShader::shared_ptr_type large_roi_angle_fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	large_roi_angle_fragment_shader->shader_source(large_roi_angle_fragment_shader_source);
-	large_roi_angle_fragment_shader->compile_shader();
+	large_roi_angle_fragment_shader->shader_source(gl, large_roi_angle_fragment_shader_source);
+	large_roi_angle_fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
 	d_render_lines_of_seed_geometries_with_large_roi_angle_program = GLProgram::create(gl);
-	d_render_lines_of_seed_geometries_with_large_roi_angle_program->attach_shader(large_roi_angle_vertex_shader);
-	d_render_lines_of_seed_geometries_with_large_roi_angle_program->attach_shader(large_roi_angle_fragment_shader);
-	d_render_lines_of_seed_geometries_with_large_roi_angle_program->link_program();
+	d_render_lines_of_seed_geometries_with_large_roi_angle_program->attach_shader(gl, large_roi_angle_vertex_shader);
+	d_render_lines_of_seed_geometries_with_large_roi_angle_program->attach_shader(gl, large_roi_angle_fragment_shader);
+	d_render_lines_of_seed_geometries_with_large_roi_angle_program->link_program(gl);
 
 
 	//
@@ -452,67 +442,55 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_line_region_of_interest_shader
 	gl.EnableVertexAttribArray(0);
 	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(LineRegionOfInterestVertex),
 			BUFFER_OFFSET(LineRegionOfInterestVertex, line_arc_start_point));
-	glBindAttribLocation(
-			d_render_lines_of_seed_geometries_with_small_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_small_roi_angle_program,
 			0, "line_arc_start_point");
-	glBindAttribLocation(
-			d_render_lines_of_seed_geometries_with_large_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_large_roi_angle_program,
 			0, "line_arc_start_point");
 
 	gl.EnableVertexAttribArray(1);
 	gl.VertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(LineRegionOfInterestVertex),
 			BUFFER_OFFSET(LineRegionOfInterestVertex, line_arc_normal));
-	glBindAttribLocation(
-			d_render_lines_of_seed_geometries_with_small_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_small_roi_angle_program,
 			1, "line_arc_normal");
-	glBindAttribLocation(
-			d_render_lines_of_seed_geometries_with_large_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_large_roi_angle_program,
 			1, "line_arc_normal");
 
 	gl.EnableVertexAttribArray(2);
 	gl.VertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(LineRegionOfInterestVertex),
 			BUFFER_OFFSET(LineRegionOfInterestVertex, tangent_frame_weights));
-	glBindAttribLocation(
-			d_render_lines_of_seed_geometries_with_small_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_small_roi_angle_program,
 			2, "tangent_frame_weights");
-	glBindAttribLocation(
-			d_render_lines_of_seed_geometries_with_large_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_large_roi_angle_program,
 			2, "tangent_frame_weights");
 
 	gl.EnableVertexAttribArray(3);
 	gl.VertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(LineRegionOfInterestVertex),
 			BUFFER_OFFSET(LineRegionOfInterestVertex, world_space_quaternion));
-	glBindAttribLocation(
-			d_render_lines_of_seed_geometries_with_small_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_small_roi_angle_program,
 			3, "world_space_quaternion");
-	glBindAttribLocation(
-			d_render_lines_of_seed_geometries_with_large_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_large_roi_angle_program,
 			3, "world_space_quaternion");
 
 	gl.EnableVertexAttribArray(4);
 	gl.VertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(LineRegionOfInterestVertex),
 			BUFFER_OFFSET(LineRegionOfInterestVertex, raster_frustum_to_seed_frustum_clip_space_transform));
-	glBindAttribLocation(
-			d_render_lines_of_seed_geometries_with_small_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_small_roi_angle_program,
 			4, "raster_frustum_to_seed_frustum_clip_space_transform");
-	glBindAttribLocation(
-			d_render_lines_of_seed_geometries_with_large_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_large_roi_angle_program,
 			4, "raster_frustum_to_seed_frustum_clip_space_transform");
 
 	gl.EnableVertexAttribArray(5);
 	gl.VertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(LineRegionOfInterestVertex),
 			BUFFER_OFFSET(LineRegionOfInterestVertex, seed_frustum_to_render_target_clip_space_transform));
-	glBindAttribLocation(
-			d_render_lines_of_seed_geometries_with_small_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_small_roi_angle_program,
 			5, "seed_frustum_to_render_target_clip_space_transform");
-	glBindAttribLocation(
-			d_render_lines_of_seed_geometries_with_large_roi_angle_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_large_roi_angle_program,
 			5, "seed_frustum_to_render_target_clip_space_transform");
 
 	// Now that we've changed the attribute bindings in the program object we need to
 	// re-link it in order for them to take effect.
-	d_render_lines_of_seed_geometries_with_small_roi_angle_program->link_program();
-	d_render_lines_of_seed_geometries_with_large_roi_angle_program->link_program();
+	d_render_lines_of_seed_geometries_with_small_roi_angle_program->link_program(gl);
+	d_render_lines_of_seed_geometries_with_large_roi_angle_program->link_program(gl);
 }
 
 
@@ -538,8 +516,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_fill_region_of_interest_shader
 
 	// Vertex shader.
 	GLShader::shared_ptr_type render_fill_of_seed_geometries_vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
-	render_fill_of_seed_geometries_vertex_shader->shader_source(render_fill_of_seed_geometries_vertex_shader_source);
-	render_fill_of_seed_geometries_vertex_shader->compile_shader();
+	render_fill_of_seed_geometries_vertex_shader->shader_source(gl, render_fill_of_seed_geometries_vertex_shader_source);
+	render_fill_of_seed_geometries_vertex_shader->compile_shader(gl);
 
 	// Fragment shader source.
 	GLShaderSource render_fill_of_seed_geometries_fragment_shader_source;
@@ -550,14 +528,14 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_fill_region_of_interest_shader
 
 	// Fragment shader.
 	GLShader::shared_ptr_type render_fill_of_seed_geometries_fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	render_fill_of_seed_geometries_fragment_shader->shader_source(render_fill_of_seed_geometries_fragment_shader_source);
-	render_fill_of_seed_geometries_fragment_shader->compile_shader();
+	render_fill_of_seed_geometries_fragment_shader->shader_source(gl, render_fill_of_seed_geometries_fragment_shader_source);
+	render_fill_of_seed_geometries_fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
 	d_render_fill_of_seed_geometries_program = GLProgram::create(gl);
-	d_render_fill_of_seed_geometries_program->attach_shader(render_fill_of_seed_geometries_vertex_shader);
-	d_render_fill_of_seed_geometries_program->attach_shader(render_fill_of_seed_geometries_fragment_shader);
-	d_render_fill_of_seed_geometries_program->link_program();
+	d_render_fill_of_seed_geometries_program->attach_shader(gl, render_fill_of_seed_geometries_vertex_shader);
+	d_render_fill_of_seed_geometries_program->attach_shader(gl, render_fill_of_seed_geometries_fragment_shader);
+	d_render_fill_of_seed_geometries_program->link_program(gl);
 
 
 	//
@@ -589,34 +567,30 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_fill_region_of_interest_shader
 	gl.EnableVertexAttribArray(0);
 	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(FillRegionOfInterestVertex),
 			BUFFER_OFFSET(FillRegionOfInterestVertex, fill_position));
-	glBindAttribLocation(
-			d_render_fill_of_seed_geometries_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_fill_of_seed_geometries_program,
 			0, "fill_position");
 
 	gl.EnableVertexAttribArray(1);
 	gl.VertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(FillRegionOfInterestVertex),
 			BUFFER_OFFSET(FillRegionOfInterestVertex, world_space_quaternion));
-	glBindAttribLocation(
-			d_render_fill_of_seed_geometries_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_fill_of_seed_geometries_program,
 			1, "world_space_quaternion");
 
 	gl.EnableVertexAttribArray(2);
 	gl.VertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(FillRegionOfInterestVertex),
 			BUFFER_OFFSET(FillRegionOfInterestVertex, raster_frustum_to_seed_frustum_clip_space_transform));
-	glBindAttribLocation(
-			d_render_fill_of_seed_geometries_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_fill_of_seed_geometries_program,
 			2, "raster_frustum_to_seed_frustum_clip_space_transform");
 
 	gl.EnableVertexAttribArray(3);
 	gl.VertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(FillRegionOfInterestVertex),
 			BUFFER_OFFSET(FillRegionOfInterestVertex, seed_frustum_to_render_target_clip_space_transform));
-	glBindAttribLocation(
-			d_render_fill_of_seed_geometries_program->get_resource_handle(),
+	gl.BindAttribLocation(d_render_fill_of_seed_geometries_program,
 			3, "seed_frustum_to_render_target_clip_space_transform");
 
 	// Now that we've changed the attribute bindings in the program object we need to
 	// re-link it in order for them to take effect.
-	d_render_fill_of_seed_geometries_program->link_program();
+	d_render_fill_of_seed_geometries_program->link_program(gl);
 }
 
 
@@ -635,8 +609,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 
 	// Vertex shader.
 	GLShader::shared_ptr_type mask_region_of_interest_moments_vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
-	mask_region_of_interest_moments_vertex_shader->shader_source(mask_region_of_interest_moments_vertex_shader_source);
-	mask_region_of_interest_moments_vertex_shader->compile_shader();
+	mask_region_of_interest_moments_vertex_shader->shader_source(gl, mask_region_of_interest_moments_vertex_shader_source);
+	mask_region_of_interest_moments_vertex_shader->compile_shader(gl);
 
 	// Fragment shader source to copy target raster moments into seed sub-viewport with region-of-interest masking.
 	GLShaderSource mask_region_of_interest_moments_fragment_shader_source;
@@ -646,14 +620,14 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 
 	// Fragment shader.
 	GLShader::shared_ptr_type mask_region_of_interest_moments_fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	mask_region_of_interest_moments_fragment_shader->shader_source(mask_region_of_interest_moments_fragment_shader_source);
-	mask_region_of_interest_moments_fragment_shader->compile_shader();
+	mask_region_of_interest_moments_fragment_shader->shader_source(gl, mask_region_of_interest_moments_fragment_shader_source);
+	mask_region_of_interest_moments_fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
 	d_mask_region_of_interest_moments_program = GLProgram::create(gl);
-	d_mask_region_of_interest_moments_program->attach_shader(mask_region_of_interest_moments_vertex_shader);
-	d_mask_region_of_interest_moments_program->attach_shader(mask_region_of_interest_moments_fragment_shader);
-	d_mask_region_of_interest_moments_program->link_program();
+	d_mask_region_of_interest_moments_program->attach_shader(gl, mask_region_of_interest_moments_vertex_shader);
+	d_mask_region_of_interest_moments_program->attach_shader(gl, mask_region_of_interest_moments_fragment_shader);
+	d_mask_region_of_interest_moments_program->link_program(gl);
 
 	// Vertex shader to copy target raster min/max into seed sub-viewport with region-of-interest masking.
 	GLShaderSource mask_region_of_interest_minmax_vertex_shader_source;
@@ -663,8 +637,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 
 	// Vertex shader.
 	GLShader::shared_ptr_type mask_region_of_interest_minmax_vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
-	mask_region_of_interest_minmax_vertex_shader->shader_source(mask_region_of_interest_minmax_vertex_shader_source);
-	mask_region_of_interest_minmax_vertex_shader->compile_shader();
+	mask_region_of_interest_minmax_vertex_shader->shader_source(gl, mask_region_of_interest_minmax_vertex_shader_source);
+	mask_region_of_interest_minmax_vertex_shader->compile_shader(gl);
 
 	// Fragment shader to copy target raster min/max into seed sub-viewport with region-of-interest masking.
 	GLShaderSource mask_region_of_interest_minmax_fragment_shader_source;
@@ -674,14 +648,14 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 
 	// Fragment shader.
 	GLShader::shared_ptr_type mask_region_of_interest_minmax_fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	mask_region_of_interest_minmax_fragment_shader->shader_source(mask_region_of_interest_minmax_fragment_shader_source);
-	mask_region_of_interest_minmax_fragment_shader->compile_shader();
+	mask_region_of_interest_minmax_fragment_shader->shader_source(gl, mask_region_of_interest_minmax_fragment_shader_source);
+	mask_region_of_interest_minmax_fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
 	d_mask_region_of_interest_minmax_program = GLProgram::create(gl);
-	d_mask_region_of_interest_minmax_program->attach_shader(mask_region_of_interest_minmax_vertex_shader);
-	d_mask_region_of_interest_minmax_program->attach_shader(mask_region_of_interest_minmax_fragment_shader);
-	d_mask_region_of_interest_minmax_program->link_program();
+	d_mask_region_of_interest_minmax_program->attach_shader(gl, mask_region_of_interest_minmax_vertex_shader);
+	d_mask_region_of_interest_minmax_program->attach_shader(gl, mask_region_of_interest_minmax_fragment_shader);
+	d_mask_region_of_interest_minmax_program->link_program(gl);
 
 
 	//
@@ -740,8 +714,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 
 	// Vertex shader.
 	GLShader::shared_ptr_type reduction_vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
-	reduction_vertex_shader->shader_source(reduction_vertex_shader_source);
-	reduction_vertex_shader->compile_shader();
+	reduction_vertex_shader->shader_source(gl, reduction_vertex_shader_source);
+	reduction_vertex_shader->compile_shader(gl);
 
 	//
 	// Fragment shader to calculate the sum of region-of-interest filter results.
@@ -755,14 +729,14 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 
 	// Fragment shader.
 	GLShader::shared_ptr_type reduction_sum_fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	reduction_sum_fragment_shader->shader_source(reduction_sum_fragment_shader_source);
-	reduction_sum_fragment_shader->compile_shader();
+	reduction_sum_fragment_shader->shader_source(gl, reduction_sum_fragment_shader_source);
+	reduction_sum_fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
 	d_reduction_sum_program = GLProgram::create(gl);
-	d_reduction_sum_program->attach_shader(reduction_vertex_shader);
-	d_reduction_sum_program->attach_shader(reduction_sum_fragment_shader);
-	d_reduction_sum_program->link_program();
+	d_reduction_sum_program->attach_shader(gl, reduction_vertex_shader);
+	d_reduction_sum_program->attach_shader(gl, reduction_sum_fragment_shader);
+	d_reduction_sum_program->link_program(gl);
 
 	//
 	// Fragment shader to calculate the minimum of region-of-interest filter results.
@@ -776,14 +750,14 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 
 	// Fragment shader.
 	GLShader::shared_ptr_type reduction_min_fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	reduction_min_fragment_shader->shader_source(reduction_min_fragment_shader_source);
-	reduction_min_fragment_shader->compile_shader();
+	reduction_min_fragment_shader->shader_source(gl, reduction_min_fragment_shader_source);
+	reduction_min_fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
 	d_reduction_min_program = GLProgram::create(gl);
-	d_reduction_min_program->attach_shader(reduction_vertex_shader);
-	d_reduction_min_program->attach_shader(reduction_min_fragment_shader);
-	d_reduction_min_program->link_program();
+	d_reduction_min_program->attach_shader(gl, reduction_vertex_shader);
+	d_reduction_min_program->attach_shader(gl, reduction_min_fragment_shader);
+	d_reduction_min_program->link_program(gl);
 
 	//
 	// Fragment shader to calculate the maximum of region-of-interest filter results.
@@ -797,14 +771,14 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 
 	// Fragment shader.
 	GLShader::shared_ptr_type reduction_max_fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	reduction_max_fragment_shader->shader_source(reduction_max_fragment_shader_source);
-	reduction_max_fragment_shader->compile_shader();
+	reduction_max_fragment_shader->shader_source(gl, reduction_max_fragment_shader_source);
+	reduction_max_fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
 	d_reduction_max_program = GLProgram::create(gl);
-	d_reduction_max_program->attach_shader(reduction_vertex_shader);
-	d_reduction_max_program->attach_shader(reduction_max_fragment_shader);
-	d_reduction_max_program->link_program();
+	d_reduction_max_program->attach_shader(gl, reduction_vertex_shader);
+	d_reduction_max_program->attach_shader(gl, reduction_max_fragment_shader);
+	d_reduction_max_program->link_program(gl);
 }
 
 
@@ -841,7 +815,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_reduction_vertex_element_buffer);
 
 	// Transfer vertex element data to currently bound vertex element buffer object.
-	glBufferData(
+	gl.BufferData(
 			GL_ELEMENT_ARRAY_BUFFER,
 			vertex_elements.size() * sizeof(vertex_elements[0]),
 			vertex_elements.data(),
@@ -851,7 +825,7 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 	gl.BindBuffer(GL_ARRAY_BUFFER, d_reduction_vertex_buffer);
 
 	// Transfer vertex data to currently bound vertex buffer object.
-	glBufferData(
+	gl.BufferData(
 			GL_ARRAY_BUFFER,
 			vertices.size() * sizeof(vertices[0]),
 			vertices.data(),
@@ -2246,7 +2220,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	{
 		// Throw OpenGLException if not complete.
 		// This should succeed since we should only be using texture formats that are required by OpenGL 3.3 core.
-		const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,
 				GPLATES_ASSERTION_SOURCE,
@@ -2261,7 +2235,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	// Clear the region-of-interest mask texture.
 	// Clear colour to all zeros - only those areas inside the regions-of-interest will be non-zero.
 	gl.ClearColor();
-	glClear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
+	gl.Clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
 
 	// The view projection.
 	//
@@ -2395,7 +2369,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	{
 		// Throw OpenGLException if not complete.
 		// This should succeed since we should only be using texture formats that are required by OpenGL 3.3 core.
-		const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,
 				GPLATES_ASSERTION_SOURCE,
@@ -2413,7 +2387,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 		// Clear colour to all zeros - this means pixels outside the regions-of-interest will
 		// have coverage values of zero (causing them to not contribute to the co-registration result).
 		gl.ClearColor();
-		glClear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
+		gl.Clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
 	}
 
 	// We use the same view and projection matrices (set for the target raster) but,
@@ -2495,13 +2469,13 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 	// Set the view-projection matrix.
 	GLfloat view_projection_float_matrix[16];
 	target_raster_view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
-	glUniformMatrix4fv(
-			d_render_points_of_seed_geometries_with_small_roi_angle_program->get_uniform_location("view_projection"),
+	gl.UniformMatrix4fv(
+			d_render_points_of_seed_geometries_with_small_roi_angle_program->get_uniform_location(gl, "view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 	// Set the region-of-interest radius.
-	glUniform1f(
-			d_render_points_of_seed_geometries_with_small_roi_angle_program->get_uniform_location("tan_squared_region_of_interest_angle"),
+	gl.Uniform1f(
+			d_render_points_of_seed_geometries_with_small_roi_angle_program->get_uniform_location(gl, "tan_squared_region_of_interest_angle"),
 			tan_squared_region_of_interest_angle);
 
 	// Bind the point region-of-interest vertex array.
@@ -2516,6 +2490,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 	// For streaming PointRegionOfInterestVertex vertices.
 	point_region_of_interest_stream_primitives_type point_stream;
 	point_region_of_interest_stream_primitives_type::MapStreamBufferScope point_stream_target(
+			gl,
 			point_stream,
 			*d_streaming_vertex_element_buffer,
 			*d_streaming_vertex_buffer,
@@ -2682,7 +2657,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 		// Render the last batch of streamed point region-of-interest geometries (if any).
 		if (point_stream_target.get_num_streamed_vertex_elements() > 0)
 		{
-			glDrawRangeElements(
+			gl.DrawRangeElements(
 					GL_TRIANGLES,
 					point_stream_target.get_start_streaming_vertex_count()/*start*/,
 					point_stream_target.get_start_streaming_vertex_count() +
@@ -2715,7 +2690,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_point_region_of_interest_g
 		// There's not enough vertices or indices so render what we have so far and obtain new stream buffers.
 		if (point_stream_target.stop_streaming())
 		{	// Only render if buffer contents are not undefined...
-			glDrawRangeElements(
+			gl.DrawRangeElements(
 					GL_TRIANGLES,
 					point_stream_target.get_start_streaming_vertex_count()/*start*/,
 					point_stream_target.get_start_streaming_vertex_count() +
@@ -2802,8 +2777,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 		const double tan_squared_region_of_interest_angle = tan_region_of_interest_angle * tan_region_of_interest_angle;
 
 		// Set the region-of-interest radius.
-		glUniform1f(
-				render_points_of_seed_geometries_program->get_uniform_location("tan_squared_region_of_interest_angle"),
+		gl.Uniform1f(
+				render_points_of_seed_geometries_program->get_uniform_location(gl, "tan_squared_region_of_interest_angle"),
 				tan_squared_region_of_interest_angle);
 	}
 	else // Use a shader program that's accurate for angles very near 90 degrees...
@@ -2813,16 +2788,16 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 		gl.UseProgram(render_points_of_seed_geometries_program);
 
 		// Set the region-of-interest radius.
-		glUniform1f(
-				render_points_of_seed_geometries_program->get_uniform_location("cos_region_of_interest_angle"),
+		gl.Uniform1f(
+				render_points_of_seed_geometries_program->get_uniform_location(gl, "cos_region_of_interest_angle"),
 				cos_region_of_interest_angle);
 	}
 
 	// Set the view-projection matrix.
 	GLfloat view_projection_float_matrix[16];
 	target_raster_view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
-	glUniformMatrix4fv(
-			render_points_of_seed_geometries_program->get_uniform_location("view_projection"),
+	gl.UniformMatrix4fv(
+			render_points_of_seed_geometries_program->get_uniform_location(gl, "view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 	// Tangent frame weights used for each 'point' to determine position of a point's fan mesh vertices.
@@ -2853,6 +2828,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 	// For streaming PointRegionOfInterestVertex vertices.
 	point_region_of_interest_stream_primitives_type point_stream;
 	point_region_of_interest_stream_primitives_type::MapStreamBufferScope point_stream_target(
+			gl,
 			point_stream,
 			*d_streaming_vertex_element_buffer,
 			*d_streaming_vertex_buffer,
@@ -3008,7 +2984,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 		// Render the last batch of streamed point region-of-interest geometries (if any).
 		if (point_stream_target.get_num_streamed_vertex_elements() > 0)
 		{
-			glDrawRangeElements(
+			gl.DrawRangeElements(
 					GL_TRIANGLES,
 					point_stream_target.get_start_streaming_vertex_count()/*start*/,
 					point_stream_target.get_start_streaming_vertex_count() +
@@ -3042,7 +3018,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_point_region_of_interest
 		// There's not enough vertices or indices so render what we have so far and obtain new stream buffers.
 		if (point_stream_target.stop_streaming())
 		{	// Only render if buffer contents are not undefined...
-			glDrawRangeElements(
+			gl.DrawRangeElements(
 					GL_TRIANGLES,
 					point_stream_target.get_start_streaming_vertex_count()/*start*/,
 					point_stream_target.get_start_streaming_vertex_count() +
@@ -3164,13 +3140,13 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 	// Set the view-projection matrix.
 	GLfloat view_projection_float_matrix[16];
 	target_raster_view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
-	glUniformMatrix4fv(
-			d_render_lines_of_seed_geometries_with_small_roi_angle_program->get_uniform_location("view_projection"),
+	gl.UniformMatrix4fv(
+			d_render_lines_of_seed_geometries_with_small_roi_angle_program->get_uniform_location(gl, "view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 	// Set the region-of-interest radius.
-	glUniform1f(
-			d_render_lines_of_seed_geometries_with_small_roi_angle_program->get_uniform_location("sin_region_of_interest_angle"),
+	gl.Uniform1f(
+			d_render_lines_of_seed_geometries_with_small_roi_angle_program->get_uniform_location(gl, "sin_region_of_interest_angle"),
 			sin_region_of_interest_angle);
 
 	// Bind the line region-of-interest vertex array.
@@ -3185,6 +3161,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 	// For streaming LineRegionOfInterestVertex vertices.
 	line_region_of_interest_stream_primitives_type line_stream;
 	line_region_of_interest_stream_primitives_type::MapStreamBufferScope line_stream_target(
+			gl,
 			line_stream,
 			*d_streaming_vertex_element_buffer,
 			*d_streaming_vertex_buffer,
@@ -3308,7 +3285,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 		// Render the last batch of streamed line region-of-interest geometries (if any).
 		if (line_stream_target.get_num_streamed_vertex_elements() > 0)
 		{
-			glDrawRangeElements(
+			gl.DrawRangeElements(
 					GL_TRIANGLES,
 					line_stream_target.get_start_streaming_vertex_count()/*start*/,
 					line_stream_target.get_start_streaming_vertex_count() +
@@ -3339,7 +3316,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_bounded_line_region_of_interest_ge
 		// There's not enough vertices or indices so render what we have so far and obtain new stream buffers.
 		if (line_stream_target.stop_streaming())
 		{	// Only render if buffer contents are not undefined...
-			glDrawRangeElements(
+			gl.DrawRangeElements(
 					GL_TRIANGLES,
 					line_stream_target.get_start_streaming_vertex_count()/*start*/,
 					line_stream_target.get_start_streaming_vertex_count() +
@@ -3447,8 +3424,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 		gl.UseProgram(render_lines_of_seed_geometries_program);
 
 		// Set the region-of-interest radius.
-		glUniform1f(
-				render_lines_of_seed_geometries_program->get_uniform_location("sin_region_of_interest_angle"),
+		gl.Uniform1f(
+				render_lines_of_seed_geometries_program->get_uniform_location(gl, "sin_region_of_interest_angle"),
 				sin_region_of_interest_angle);
 	}
 	else // Use a shader program that's accurate for angles very near 90 degrees...
@@ -3471,16 +3448,16 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 				(region_of_interest_radius < GPlatesMaths::HALF_PI)
 				? std::tan(GPlatesMaths::HALF_PI - region_of_interest_radius)
 				: std::tan(GPlatesMaths::HALF_PI);
-		glUniform1f(
-				render_lines_of_seed_geometries_program->get_uniform_location("tan_squared_region_of_interest_complementary_angle"),
+		gl.Uniform1f(
+				render_lines_of_seed_geometries_program->get_uniform_location(gl, "tan_squared_region_of_interest_complementary_angle"),
 				tan_region_of_interest_complementary_angle * tan_region_of_interest_complementary_angle);
 	}
 
 	// Set the view-projection matrix.
 	GLfloat view_projection_float_matrix[16];
 	target_raster_view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
-	glUniformMatrix4fv(
-			render_lines_of_seed_geometries_program->get_uniform_location("view_projection"),
+	gl.UniformMatrix4fv(
+			render_lines_of_seed_geometries_program->get_uniform_location(gl, "view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 	// Tangent frame weights used for each 'line' to determine position of the line's mesh vertices.
@@ -3500,6 +3477,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 	// For streaming LineRegionOfInterestVertex vertices.
 	line_region_of_interest_stream_primitives_type line_stream;
 	line_region_of_interest_stream_primitives_type::MapStreamBufferScope line_stream_target(
+			gl,
 			line_stream,
 			*d_streaming_vertex_element_buffer,
 			*d_streaming_vertex_buffer,
@@ -3626,7 +3604,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 		// Render the last batch of streamed line region-of-interest geometries (if any).
 		if (line_stream_target.get_num_streamed_vertex_elements() > 0)
 		{
-			glDrawRangeElements(
+			gl.DrawRangeElements(
 					GL_TRIANGLES,
 					line_stream_target.get_start_streaming_vertex_count()/*start*/,
 					line_stream_target.get_start_streaming_vertex_count() +
@@ -3658,7 +3636,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_unbounded_line_region_of_interest_
 		// There's not enough vertices or indices so render what we have so far and obtain new stream buffers.
 		if (line_stream_target.stop_streaming())
 		{	// Only render if buffer contents are not undefined...
-			glDrawRangeElements(
+			gl.DrawRangeElements(
 					GL_TRIANGLES,
 					line_stream_target.get_start_streaming_vertex_count()/*start*/,
 					line_stream_target.get_start_streaming_vertex_count() +
@@ -3808,8 +3786,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 	// Set the view-projection matrix.
 	GLfloat view_projection_float_matrix[16];
 	target_raster_view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
-	glUniformMatrix4fv(
-			d_render_fill_of_seed_geometries_program->get_uniform_location("view_projection"),
+	gl.UniformMatrix4fv(
+			d_render_fill_of_seed_geometries_program->get_uniform_location(gl, "view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 	// Bind the fill region-of-interest vertex array.
@@ -3824,6 +3802,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 	// For streaming FillRegionOfInterestVertex vertices.
 	fill_region_of_interest_stream_primitives_type fill_stream;
 	fill_region_of_interest_stream_primitives_type::MapStreamBufferScope fill_stream_target(
+			gl,
 			fill_stream,
 			*d_streaming_vertex_element_buffer,
 			*d_streaming_vertex_buffer,
@@ -3857,7 +3836,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 		{
 			if (fill_stream_target.stop_streaming())
 			{	// Only render if buffer contents are not undefined...
-				glDrawRangeElements(
+				gl.DrawRangeElements(
 						// These are actually rasterised points not quads (triangles)...
 						GL_POINTS,
 						fill_stream_target.get_start_streaming_vertex_count()/*start*/,
@@ -3901,7 +3880,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 			{
 				if (fill_stream_target.stop_streaming())
 				{	// Only render if buffer contents are not undefined...
-					glDrawRangeElements(
+					gl.DrawRangeElements(
 							// These are actually rasterised points not quads (triangles)...
 							GL_POINTS,
 							fill_stream_target.get_start_streaming_vertex_count()/*start*/,
@@ -3946,7 +3925,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 			{
 				if (fill_stream_target.stop_streaming())
 				{	// Only render if buffer contents are not undefined...
-					glDrawRangeElements(
+					gl.DrawRangeElements(
 							// These are actually rasterised points not quads (triangles)...
 							GL_POINTS,
 							fill_stream_target.get_start_streaming_vertex_count()/*start*/,
@@ -3991,7 +3970,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 			{
 				if (fill_stream_target.stop_streaming())
 				{	// Only render if buffer contents are not undefined...
-					glDrawRangeElements(
+					gl.DrawRangeElements(
 							// These are actually rasterised points not quads (triangles)...
 							GL_POINTS,
 							fill_stream_target.get_start_streaming_vertex_count()/*start*/,
@@ -4029,7 +4008,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 				{
 					if (fill_stream_target.stop_streaming())
 					{	// Only render if buffer contents are not undefined...
-						glDrawRangeElements(
+						gl.DrawRangeElements(
 								// These are actually rasterised points not quads (triangles)...
 								GL_POINTS,
 								fill_stream_target.get_start_streaming_vertex_count()/*start*/,
@@ -4058,7 +4037,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_size_point_region_of_
 		// Render the last batch (if any).
 		if (fill_stream_target.get_num_streamed_vertex_elements() > 0)
 		{
-			glDrawRangeElements(
+			gl.DrawRangeElements(
 					// These are actually rasterised points not quads (triangles)...
 					GL_POINTS,
 					fill_stream_target.get_start_streaming_vertex_count()/*start*/,
@@ -4102,8 +4081,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 	// Set the view-projection matrix.
 	GLfloat view_projection_float_matrix[16];
 	target_raster_view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
-	glUniformMatrix4fv(
-			d_render_fill_of_seed_geometries_program->get_uniform_location("view_projection"),
+	gl.UniformMatrix4fv(
+			d_render_fill_of_seed_geometries_program->get_uniform_location(gl, "view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 	// Bind the fill region-of-interest vertex array.
@@ -4118,6 +4097,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 	// For streaming FillRegionOfInterestVertex vertices.
 	fill_region_of_interest_stream_primitives_type fill_stream;
 	fill_region_of_interest_stream_primitives_type::MapStreamBufferScope fill_stream_target(
+			gl,
 			fill_stream,
 			*d_streaming_vertex_element_buffer,
 			*d_streaming_vertex_buffer,
@@ -4157,7 +4137,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 			{
 				if (fill_stream_target.stop_streaming())
 				{	// Only render if buffer contents are not undefined...
-					glDrawRangeElements(
+					gl.DrawRangeElements(
 							// These are actually rasterised lines not quads (triangles)...
 							GL_LINES,
 							fill_stream_target.get_start_streaming_vertex_count()/*start*/,
@@ -4208,7 +4188,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 			{
 				if (fill_stream_target.stop_streaming())
 				{	// Only render if buffer contents are not undefined...
-					glDrawRangeElements(
+					gl.DrawRangeElements(
 							// These are actually rasterised lines not quads (triangles)...
 							GL_LINES,
 							fill_stream_target.get_start_streaming_vertex_count()/*start*/,
@@ -4249,7 +4229,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 				{
 					if (fill_stream_target.stop_streaming())
 					{	// Only render if buffer contents are not undefined...
-						glDrawRangeElements(
+						gl.DrawRangeElements(
 								// These are actually rasterised lines not quads (triangles)...
 								GL_LINES,
 								fill_stream_target.get_start_streaming_vertex_count()/*start*/,
@@ -4278,7 +4258,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_single_pixel_wide_line_region_of_i
 		// Render the last batch (if any).
 		if (fill_stream_target.get_num_streamed_vertex_elements() > 0)
 		{
-			glDrawRangeElements(
+			gl.DrawRangeElements(
 					// These are actually rasterised lines not quads (triangles)...
 					GL_LINES,
 					fill_stream_target.get_start_streaming_vertex_count()/*start*/,
@@ -4325,8 +4305,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 	// Set the view-projection matrix.
 	GLfloat view_projection_float_matrix[16];
 	target_raster_view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
-	glUniformMatrix4fv(
-			d_render_fill_of_seed_geometries_program->get_uniform_location("view_projection"),
+	gl.UniformMatrix4fv(
+			d_render_fill_of_seed_geometries_program->get_uniform_location(gl, "view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 	// Bind the fill region-of-interest vertex array.
@@ -4341,6 +4321,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 	// For streaming LineRegionOfInterestVertex vertices.
 	fill_region_of_interest_stream_primitives_type fill_stream;
 	fill_region_of_interest_stream_primitives_type::MapStreamBufferScope fill_stream_target(
+			gl,
 			fill_stream,
 			*d_streaming_vertex_element_buffer,
 			*d_streaming_vertex_buffer,
@@ -4376,7 +4357,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 		{
 			if (fill_stream_target.stop_streaming())
 			{	// Only render if buffer contents are not undefined...
-				glDrawRangeElements(
+				gl.DrawRangeElements(
 						GL_TRIANGLES,
 						fill_stream_target.get_start_streaming_vertex_count()/*start*/,
 						fill_stream_target.get_start_streaming_vertex_count() +
@@ -4410,7 +4391,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 			{
 				if (fill_stream_target.stop_streaming())
 				{	// Only render if buffer contents are not undefined...
-					glDrawRangeElements(
+					gl.DrawRangeElements(
 							GL_TRIANGLES,
 							fill_stream_target.get_start_streaming_vertex_count()/*start*/,
 							fill_stream_target.get_start_streaming_vertex_count() +
@@ -4436,7 +4417,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 		{
 			if (fill_stream_target.stop_streaming())
 			{	// Only render if buffer contents are not undefined...
-				glDrawRangeElements(
+				gl.DrawRangeElements(
 						GL_TRIANGLES,
 						fill_stream_target.get_start_streaming_vertex_count()/*start*/,
 						fill_stream_target.get_start_streaming_vertex_count() +
@@ -4468,7 +4449,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 			{
 				if (fill_stream_target.stop_streaming())
 				{	// Only render if buffer contents are not undefined...
-					glDrawRangeElements(
+					gl.DrawRangeElements(
 							GL_TRIANGLES,
 							fill_stream_target.get_start_streaming_vertex_count()/*start*/,
 							fill_stream_target.get_start_streaming_vertex_count() +
@@ -4502,7 +4483,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 				{
 					if (fill_stream_target.stop_streaming())
 					{	// Only render if buffer contents are not undefined...
-						glDrawRangeElements(
+						gl.DrawRangeElements(
 								GL_TRIANGLES,
 								fill_stream_target.get_start_streaming_vertex_count()/*start*/,
 								fill_stream_target.get_start_streaming_vertex_count() +
@@ -4528,7 +4509,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 			{
 				if (fill_stream_target.stop_streaming())
 				{	// Only render if buffer contents are not undefined...
-					glDrawRangeElements(
+					gl.DrawRangeElements(
 							GL_TRIANGLES,
 							fill_stream_target.get_start_streaming_vertex_count()/*start*/,
 							fill_stream_target.get_start_streaming_vertex_count() +
@@ -4555,7 +4536,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_fill_region_of_interest_geometries
 		// Render the last batch streamed (if any).
 		if (fill_stream_target.get_num_streamed_vertex_elements() > 0)
 		{
-			glDrawRangeElements(
+			gl.DrawRangeElements(
 					GL_TRIANGLES,
 					fill_stream_target.get_start_streaming_vertex_count()/*start*/,
 					fill_stream_target.get_start_streaming_vertex_count() +
@@ -4593,8 +4574,8 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 		// Bind the shader program for masking target raster with regions-of-interest.
 		gl.UseProgram(mask_region_of_interest_program);
 		// Set the cube face centre - needed to adjust for cube map area-weighting distortion.
-		glUniform3f(
-				mask_region_of_interest_program->get_uniform_location("cube_face_centre"),
+		gl.Uniform3f(
+				mask_region_of_interest_program->get_uniform_location(gl, "cube_face_centre"),
 				cube_face_centre.x().dval(), cube_face_centre.y().dval(), cube_face_centre.z().dval());
 
 		{
@@ -4614,8 +4595,8 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 
 			GLfloat inverse_view_projection_float_matrix[16];
 			inverse_view_projection_matrix->get_float_matrix(inverse_view_projection_float_matrix);
-			glUniformMatrix4fv(
-					mask_region_of_interest_program->get_uniform_location("view_projection_inverse"),
+			gl.UniformMatrix4fv(
+					mask_region_of_interest_program->get_uniform_location(gl, "view_projection_inverse"),
 					1, GL_FALSE/*transpose*/, inverse_view_projection_float_matrix);
 		}
 		break;
@@ -4635,16 +4616,16 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 	}
 
 	// Set the target raster texture sampler to texture unit 0.
-	glUniform1i(
-			mask_region_of_interest_program->get_uniform_location("target_raster_texture_sampler"),
+	gl.Uniform1i(
+			mask_region_of_interest_program->get_uniform_location(gl, "target_raster_texture_sampler"),
 			0/*texture unit*/);
 	// Bind the target raster texture to texture unit 0.
 	gl.ActiveTexture(GL_TEXTURE0);
 	gl.BindTexture(GL_TEXTURE_2D, target_raster_texture);
 
 	// Set the region-of-interest mask texture sampler to texture unit 1.
-	glUniform1i(
-			mask_region_of_interest_program->get_uniform_location("region_of_interest_mask_texture_sampler"),
+	gl.Uniform1i(
+			mask_region_of_interest_program->get_uniform_location(gl, "region_of_interest_mask_texture_sampler"),
 			1/*texture unit*/);
 	// Bind the region-of-interest mask texture to texture unit 1.
 	gl.ActiveTexture(GL_TEXTURE1);
@@ -4662,6 +4643,7 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 	// For streaming MaskRegionOfInterestVertex vertices.
 	mask_region_of_interest_stream_primitives_type mask_stream;
 	mask_region_of_interest_stream_primitives_type::MapStreamBufferScope mask_stream_target(
+			gl,
 			mask_stream,
 			*d_streaming_vertex_element_buffer,
 			*d_streaming_vertex_buffer,
@@ -4724,7 +4706,7 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 		// Render the last batch of streamed primitives (if any).
 		if (mask_stream_target.get_num_streamed_vertex_elements() > 0)
 		{
-			glDrawRangeElements(
+			gl.DrawRangeElements(
 					GL_TRIANGLES,
 					mask_stream_target.get_start_streaming_vertex_count()/*start*/,
 					mask_stream_target.get_start_streaming_vertex_count() +
@@ -4752,7 +4734,7 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_region_of_interes
 		// There's not enough vertices or indices so render what we have so far and obtain new stream buffers.
 		if (mask_stream_target.stop_streaming())
 		{	// Only render if buffer contents are not undefined...
-			glDrawRangeElements(
+			gl.DrawRangeElements(
 					GL_TRIANGLES,
 					mask_stream_target.get_start_streaming_vertex_count()/*start*/,
 					mask_stream_target.get_start_streaming_vertex_count() +
@@ -4850,7 +4832,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_reduction_of_reduce_stage(
 	{
 		// Throw OpenGLException if not complete.
 		// This should succeed since we should only be using texture formats that are required by OpenGL 3.3 core.
-		const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,
 				GPLATES_ASSERTION_SOURCE,
@@ -4869,7 +4851,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_reduction_of_reduce_stage(
 		// Clear colour to all zeros - this means when texels with zero coverage get discarded the framebuffer
 		// will have coverage values of zero (causing them to not contribute to the co-registration result).
 		gl.ClearColor();
-		glClear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
+		gl.Clear(GL_COLOR_BUFFER_BIT); // Clear only the colour buffer.
 	}
 
 	// Determine which reduction operation to use.
@@ -4900,8 +4882,8 @@ GPlatesOpenGL::GLRasterCoRegistration::render_reduction_of_reduce_stage(
 	gl.UseProgram(reduction_program);
 
 	// Set the reduce source texture sampler to texture unit 0.
-	glUniform1i(
-			reduction_program->get_uniform_location("reduce_source_texture_sampler"),
+	gl.Uniform1i(
+			reduction_program->get_uniform_location(gl, "reduce_source_texture_sampler"),
 			0/*texture unit*/);
 	// Bind the source reduce stage texture to texture unit 0.
 	gl.ActiveTexture(GL_TEXTURE0);
@@ -4909,13 +4891,13 @@ GPlatesOpenGL::GLRasterCoRegistration::render_reduction_of_reduce_stage(
 
 	// Set the half-texel offset of the reduce source texture (all reduce textures have same dimension).
 	const double half_texel_offset = 0.5 / TEXTURE_DIMENSION;
-	glUniform2f(
-			reduction_program->get_uniform_location("reduce_source_texture_half_texel_offset"),
+	gl.Uniform2f(
+			reduction_program->get_uniform_location(gl, "reduce_source_texture_half_texel_offset"),
 			half_texel_offset, -half_texel_offset);
 	// Determine which quadrant of the destination reduce texture to render to.
 	// Map the range [-1,1] to one of [-1,0] or [0,1] for both x and y directions.
-	glUniform3f(
-			reduction_program->get_uniform_location("target_quadrant_translate_scale"),
+	gl.Uniform3f(
+			reduction_program->get_uniform_location(gl, "target_quadrant_translate_scale"),
 			0.5 * (src_child_x_offset ? 1 : -1), // translate_x
 			0.5 * (src_child_y_offset ? 1 : -1),  // translate_y
 			0.5); // scale
@@ -4937,7 +4919,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_reduction_of_reduce_stage(
 			GPLATES_ASSERTION_SOURCE);
 
 	// Draw the required number of quads in the reduction vertex array.
-	glDrawRangeElements(
+	gl.DrawRangeElements(
 			GL_TRIANGLES,
 			0/*start*/,
 			4 * num_reduce_quads_spanned - 1/*end*/, // Each quad has four vertices.
@@ -5056,7 +5038,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_target_raster(
 	{
 		// Throw OpenGLException if not complete.
 		// This should succeed since we should only be using texture formats that are required by OpenGL 3.3 core.
-		const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,
 				GPLATES_ASSERTION_SOURCE,
@@ -5070,7 +5052,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_target_raster(
 
 	// Clear the render target (only has colour, no depth/stencil).
 	gl.ClearColor();
-	glClear(GL_COLOR_BUFFER_BIT);
+	gl.Clear(GL_COLOR_BUFFER_BIT);
 
 	// The view projection.
 	const GLViewProjection view_projection(
@@ -5120,22 +5102,22 @@ GPlatesOpenGL::GLRasterCoRegistration::acquire_rgba_float_texture(
 	//
 
 	// Bilinear filtering for GL_TEXTURE_MIN_FILTER and GL_TEXTURE_MAG_FILTER.
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Allocate texture but don't load any data into it.
 	// Leave it uninitialised because we will be rendering into it to initialise it.
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
+	gl.TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
 			TEXTURE_DIMENSION, TEXTURE_DIMENSION,
 			0, GL_RGBA, GL_FLOAT, nullptr);
 
 	// Check there are no OpenGL errors.
-	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 
 	return texture;
 }
@@ -5324,20 +5306,20 @@ GPlatesOpenGL::GLRasterCoRegistration::debug_fixed_point_render_target(
 	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 
-	// Bind the pixel buffer so that all subsequent 'glReadPixels()' calls go into that buffer.
+	// Bind the pixel buffer so that all subsequent 'gl.ReadPixels()' calls go into that buffer.
 	gl.BindBuffer(GL_PIXEL_PACK_BUFFER, d_debug_pixel_buffer);
 
 	// NOTE: We don't need to worry about changing the default GL_PACK_ALIGNMENT (rows aligned to 4 bytes)
 	// since our data is RGBA (already 4-byte aligned).
-	glReadPixels(0, 0, TEXTURE_DIMENSION, TEXTURE_DIMENSION, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+	gl.ReadPixels(0, 0, TEXTURE_DIMENSION, TEXTURE_DIMENSION, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
 	// Map the pixel buffer to access its data.
-	const GLvoid *result_data = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+	const GLvoid *result_data = gl.MapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
 	// If there was an error during mapping then report it and throw exception.
 	if (!result_data)
 	{
 		// Log OpenGL error - a mapped data pointer of NULL should generate an OpenGL error.
-		GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+		GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 
 		throw GPlatesOpenGL::OpenGLException(
 				GPLATES_ASSERTION_SOURCE,
@@ -5369,10 +5351,10 @@ GPlatesOpenGL::GLRasterCoRegistration::debug_fixed_point_render_target(
 		}
 	}
 
-	if (!glUnmapBuffer(GL_PIXEL_PACK_BUFFER))
+	if (!gl.UnmapBuffer(GL_PIXEL_PACK_BUFFER))
 	{
-		// Check OpenGL errors in case glUnmapBuffer used incorrectly.
-		GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+		// Check OpenGL errors in case gl.UnmapBuffer used incorrectly.
+		GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 
 		// Otherwise the buffer contents have been corrupted, so just emit a warning.
 		qWarning() << "GLRasterCoRegistration: Failed to unmap OpenGL buffer object. "
@@ -5411,20 +5393,20 @@ GPlatesOpenGL::GLRasterCoRegistration::debug_floating_point_render_target(
 	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);
 
-	// Bind the pixel buffer so that all subsequent 'glReadPixels()' calls go into that buffer.
+	// Bind the pixel buffer so that all subsequent 'gl.ReadPixels()' calls go into that buffer.
 	gl.BindBuffer(GL_PIXEL_PACK_BUFFER, d_debug_pixel_buffer);
 
 	// NOTE: We don't need to worry about changing the default GL_PACK_ALIGNMENT (rows aligned to 4 bytes)
 	// since our data is floats (each float is already 4-byte aligned).
-	glReadPixels(0, 0, TEXTURE_DIMENSION, TEXTURE_DIMENSION, GL_RGBA, GL_FLOAT, nullptr);
+	gl.ReadPixels(0, 0, TEXTURE_DIMENSION, TEXTURE_DIMENSION, GL_RGBA, GL_FLOAT, nullptr);
 
 	// Map the pixel buffer to access its data.
-	const GLvoid *result_data = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+	const GLvoid *result_data = gl.MapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
 	// If there was an error during mapping then report it and throw exception.
 	if (!result_data)
 	{
 		// Log OpenGL error - a mapped data pointer of NULL should generate an OpenGL error.
-		GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+		GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 
 		throw GPlatesOpenGL::OpenGLException(
 				GPLATES_ASSERTION_SOURCE,
@@ -5463,10 +5445,10 @@ GPlatesOpenGL::GLRasterCoRegistration::debug_floating_point_render_target(
 		}
 	}
 
-	if (!glUnmapBuffer(GL_PIXEL_PACK_BUFFER))
+	if (!gl.UnmapBuffer(GL_PIXEL_PACK_BUFFER))
 	{
-		// Check OpenGL errors in case glUnmapBuffer used incorrectly.
-		GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+		// Check OpenGL errors in case gl.UnmapBuffer used incorrectly.
+		GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 
 		// Otherwise the buffer contents have been corrupted, so just emit a warning.
 		qWarning() << "GLRasterCoRegistration: Failed to unmap OpenGL buffer object. "
@@ -5627,7 +5609,7 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::ResultsQueue(
 
 		// Bind the pixel buffer and allocate its memory.
 		gl.BindBuffer(GL_PIXEL_PACK_BUFFER, buffer);
-		glBufferData(GL_PIXEL_PACK_BUFFER, PIXEL_BUFFER_SIZE_IN_BYTES, nullptr, GL_STREAM_READ);
+		gl.BufferData(GL_PIXEL_PACK_BUFFER, PIXEL_BUFFER_SIZE_IN_BYTES, nullptr, GL_STREAM_READ);
 
 		// Add to our free list of pixel buffers.
 		d_free_pixel_buffers.push_back(buffer);
@@ -5667,7 +5649,7 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::queue_reduce_pyramid_output
 	GLBuffer::shared_ptr_type pixel_buffer = d_free_pixel_buffers.back();
 	d_free_pixel_buffers.pop_back();
 
-	// Bind our framebuffer object to the results texture so that 'glReadPixels' will read from it.
+	// Bind our framebuffer object to the results texture so that 'gl.ReadPixels' will read from it.
 	gl.BindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 
 	// The texture to read from.
@@ -5683,7 +5665,7 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::queue_reduce_pyramid_output
 	{
 		// Throw OpenGLException if not complete.
 		// This should succeed since we should only be using texture formats that are required by OpenGL 3.3 core.
-		const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,
 				GPLATES_ASSERTION_SOURCE,
@@ -5695,7 +5677,7 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::queue_reduce_pyramid_output
 	// Start an asynchronous read back of the results texture to CPU memory (the pixel buffer).
 	// OpenGL won't block until we attempt to read from the pixel buffer (so we delay that as much as possible).
 	//
-	// Bind the pixel buffer so that all subsequent 'glReadPixels()' calls go into that buffer.
+	// Bind the pixel buffer so that all subsequent 'gl.ReadPixels()' calls go into that buffer.
 	//
 	// NOTE: We don't need to worry about changing the default GL_PACK_ALIGNMENT (rows aligned to 4 bytes)
 	// since our data is RGBA (already 4-byte aligned).
@@ -5703,12 +5685,12 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::queue_reduce_pyramid_output
 
 	// Recurse into the reduce quad tree to determine which parts of the results texture need to be read back.
 	//
-	// Normally it's better to have one larger 'glReadPixels' call instead of many small ones.
-	// However our 'glReadPixels()' calls are non-blocking since they're targeting a pixel buffer (async)
-	// so they're not nearly as expensive as a 'glReadPixels' to raw client memory (which would cause
+	// Normally it's better to have one larger 'gl.ReadPixels' call instead of many small ones.
+	// However our 'gl.ReadPixels()' calls are non-blocking since they're targeting a pixel buffer (async)
+	// so they're not nearly as expensive as a 'gl.ReadPixels' to raw client memory (which would cause
 	// the CPU to sync with the GPU thus leaving the GPU pipeline empty and hence stalling the GPU
 	// until we can start feeding it again).
-	// So the only cost for us, per 'glReadPixels', is the time spent in the OpenGL driver setting
+	// So the only cost for us, per 'gl.ReadPixels', is the time spent in the OpenGL driver setting
 	// up the read command which, while not insignificant, is not as significant as a GPU stall so we
 	// don't want to go overboard with the number of read calls but we do want to avoid downloading
 	// TEXTURE_DIMENSION x TEXTURE_DIMENSION pixels of data (with one large read call) when only a
@@ -5764,12 +5746,12 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::flush_least_recently_queued
 	//
 	// Note that this is where blocking occurs if the data is not ready yet (eg, because GPU
 	// is still generating it or still transferring to pixel buffer memory).
-	const GLvoid *result_data = glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
+	const GLvoid *result_data = gl.MapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
 	// If there was an error during mapping then report it and throw exception.
 	if (!result_data)
 	{
 		// Log OpenGL error - a mapped data pointer of NULL should generate an OpenGL error.
-		GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+		GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 
 		throw OpenGLException(
 				GPLATES_ASSERTION_SOURCE,
@@ -5779,10 +5761,10 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::flush_least_recently_queued
 	// Traverse the reduce quad tree and distribute the pixel buffer results to SeedCoRegistration objects.
 	distribute_result_data(gl, result_data, *result.reduce_quad_tree, seed_feature_partial_results);
 
-	if (!glUnmapBuffer(GL_PIXEL_PACK_BUFFER))
+	if (!gl.UnmapBuffer(GL_PIXEL_PACK_BUFFER))
 	{
-		// Check OpenGL errors in case glUnmapBuffer used incorrectly.
-		GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+		// Check OpenGL errors in case gl.UnmapBuffer used incorrectly.
+		GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 
 		// Otherwise the buffer contents have been corrupted, so just emit a warning.
 		qWarning() << "GLRasterCoRegistration: Failed to unmap OpenGL buffer object. "
@@ -5828,7 +5810,7 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::distribute_async_read_back(
 	{
 		// NOTE: We don't need to worry about changing the default GL_PACK_ALIGNMENT (rows aligned to 4 bytes)
 		// since our data is floats (each float is already 4-byte aligned).
-		glReadPixels(
+		gl.ReadPixels(
 				pixel_rect_offset_x,
 				pixel_rect_offset_y,
 				pixel_rect_dimension,
@@ -5921,15 +5903,15 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::distribute_result_data(
 	if (reduce_quad_tree_internal_node.is_sub_tree_full() ||
 		pixel_rect_dimension <= static_cast<GLsizei>(MIN_DISTRIBUTE_READ_BACK_PIXEL_DIMENSION))
 	{
-		// The beginning of the result data for the current 'glReadPixels()' pixel rectangle.
+		// The beginning of the result data for the current 'gl.ReadPixels()' pixel rectangle.
 		const ResultPixel *gl_read_pixels_result_data = result_pixel_data + result_data_pixel_offset;
-		// The dimension of the current 'glReadPixels()' pixel rectangle.
+		// The dimension of the current 'gl.ReadPixels()' pixel rectangle.
 		const GLsizei gl_read_pixels_rect_dimension = pixel_rect_dimension;
 
 		// Recurse into the reduce quad tree to extract data from the current pixel rectangle
-		// that was originally read by a single 'glReadPixels()' call.
+		// that was originally read by a single 'gl.ReadPixels()' call.
 		//
-		// NOTE: The pixel x/y offsets are relative to the 'glReadPixels()' pixel rectangle.
+		// NOTE: The pixel x/y offsets are relative to the 'gl.ReadPixels()' pixel rectangle.
 		distribute_result_data_from_gl_read_pixels_rect(
 				gl,
 				reduce_quad_tree_internal_node,

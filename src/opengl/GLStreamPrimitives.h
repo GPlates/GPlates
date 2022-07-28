@@ -46,6 +46,8 @@
 
 namespace GPlatesOpenGL
 {
+	class GL;
+
 	/**
 	 * Use this when you want to stream points, lines, line strips, triangles, triangle strips or
 	 * triangle fans into the write-only memory of a vertex buffer and a vertex element buffer.
@@ -1042,6 +1044,7 @@ namespace GPlatesOpenGL
 			 *       for the duration of this scope).
 			 */
 			MapStreamBufferScope(
+					GL &gl,
 					GLStaticStreamPrimitives &stream_primitives,
 					GLStreamBuffer &vertex_element_stream_buffer,
 					GLStreamBuffer &vertex_stream_buffer,
@@ -2200,17 +2203,20 @@ namespace GPlatesOpenGL
 
 	template <class VertexType, typename VertexElementType>
 	GLStaticStreamPrimitives<VertexType, VertexElementType>::MapStreamBufferScope::MapStreamBufferScope(
+			GL &gl,
 			GLStaticStreamPrimitives &stream_primitives,
 			GLStreamBuffer &vertex_element_stream_buffer,
 			GLStreamBuffer &vertex_stream_buffer,
 			unsigned int min_bytes_to_stream_in_vertex_element_buffer,
 			unsigned int min_bytes_to_stream_in_vertex_buffer) :
 		d_map_vertex_element_buffer_scope(
+				gl,
 				GL_ELEMENT_ARRAY_BUFFER,
 				vertex_element_stream_buffer,
 				min_bytes_to_stream_in_vertex_element_buffer,
 				sizeof(VertexElementType)/*stream_alignment*/),
 		d_map_vertex_buffer_scope(
+				gl,
 				GL_ARRAY_BUFFER,
 				vertex_stream_buffer,
 				min_bytes_to_stream_in_vertex_buffer,

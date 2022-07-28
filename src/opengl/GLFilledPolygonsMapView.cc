@@ -112,7 +112,7 @@ GPlatesOpenGL::GLFilledPolygonsMapView::render(
 
 	// Clear the stencil buffer.
 	gl.ClearStencil();
-	glClear(GL_STENCIL_BUFFER_BIT);
+	gl.Clear(GL_STENCIL_BUFFER_BIT);
 
 	//
 	// For alpha-blending we want:
@@ -146,8 +146,8 @@ GPlatesOpenGL::GLFilledPolygonsMapView::render(
 	// Set view projection matrix in the currently bound program.
 	GLfloat view_projection_float_matrix[16];
 	view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
-	glUniformMatrix4fv(
-			d_program->get_uniform_location("view_projection"),
+	gl.UniformMatrix4fv(
+			d_program->get_uniform_location(gl, "view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 	// Bind the vertex array before using it to draw.
@@ -169,7 +169,7 @@ GPlatesOpenGL::GLFilledPolygonsMapView::render(
 		gl.Disable(GL_BLEND);
 
 		// Render the current filled drawable.
-		glDrawRangeElements(
+		gl.DrawRangeElements(
 				GL_TRIANGLES,
 				filled_drawable.d_drawable.start,
 				filled_drawable.d_drawable.end,
@@ -198,7 +198,7 @@ GPlatesOpenGL::GLFilledPolygonsMapView::render(
 		// To avoid alpha blending each pixel more than once, the above stencil operation zeros
 		// the stencil buffer value of each pixel that passes the stencil test such that the next
 		// overlapping pixel will then fail the stencil test (avoiding multiple-alpha-blending).
-		glDrawRangeElements(
+		gl.DrawRangeElements(
 				GL_TRIANGLES,
 				filled_drawable.d_drawable.start,
 				filled_drawable.d_drawable.end,
@@ -252,14 +252,14 @@ GPlatesOpenGL::GLFilledPolygonsMapView::write_filled_drawables_to_vertex_array(
 	// Use 'stream' since each filled drawable is accessed only twice...
 
 	// Transfer vertex element data to currently bound vertex element buffer object.
-	glBufferData(
+	gl.BufferData(
 			GL_ELEMENT_ARRAY_BUFFER,
 			filled_drawables.d_drawable_vertex_elements.size() * sizeof(filled_drawables.d_drawable_vertex_elements[0]),
 			filled_drawables.d_drawable_vertex_elements.data(),
 			GL_STREAM_DRAW);
 
 	// Transfer vertex element data to currently bound vertex buffer object.
-	glBufferData(
+	gl.BufferData(
 			GL_ARRAY_BUFFER,
 			filled_drawables.d_drawable_vertices.size() * sizeof(filled_drawables.d_drawable_vertices[0]),
 			filled_drawables.d_drawable_vertices.data(),
@@ -286,8 +286,8 @@ GPlatesOpenGL::GLFilledPolygonsMapView::compile_link_shader_program(
 
 	// Vertex shader.
 	GLShader::shared_ptr_type vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
-	vertex_shader->shader_source(vertex_shader_source);
-	vertex_shader->compile_shader();
+	vertex_shader->shader_source(gl, vertex_shader_source);
+	vertex_shader->compile_shader(gl);
 
 	// Fragment shader source.
 	GLShaderSource fragment_shader_source;
@@ -295,13 +295,13 @@ GPlatesOpenGL::GLFilledPolygonsMapView::compile_link_shader_program(
 
 	// Fragment shader.
 	GLShader::shared_ptr_type fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	fragment_shader->shader_source(fragment_shader_source);
-	fragment_shader->compile_shader();
+	fragment_shader->shader_source(gl, fragment_shader_source);
+	fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
-	d_program->attach_shader(vertex_shader);
-	d_program->attach_shader(fragment_shader);
-	d_program->link_program();
+	d_program->attach_shader(gl, vertex_shader);
+	d_program->attach_shader(gl, fragment_shader);
+	d_program->link_program(gl);
 }
 
 

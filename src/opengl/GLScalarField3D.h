@@ -358,7 +358,7 @@ namespace GPlatesOpenGL
 
 		/**
 		 * The uniform buffer object binding points
-		 * (used with glUniformBlockBinding and gl.BindBufferBase/gl.BindBufferRange).
+		 * (used with gl.UniformBlockBinding and gl.BindBufferBase/gl.BindBufferRange).
 		 *
 		 * There is a limit to how many binding points we can have (queried with GL_MAX_*_UNIFORM_BLOCKS)
 		 * but it is required to be at least 12, so as long as we don't go above 12 we should be fine.

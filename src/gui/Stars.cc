@@ -226,7 +226,7 @@ namespace
 		gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_element_buffer);
 
 		// Transfer vertex element data to currently bound vertex element buffer object.
-		glBufferData(
+		gl.BufferData(
 				GL_ELEMENT_ARRAY_BUFFER,
 				vertex_elements.size() * sizeof(vertex_elements[0]),
 				vertex_elements.data(),
@@ -236,7 +236,7 @@ namespace
 		gl.BindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
 
 		// Transfer vertex data to currently bound vertex buffer object.
-		glBufferData(
+		gl.BufferData(
 				GL_ARRAY_BUFFER,
 				vertices.size() * sizeof(vertices[0]),
 				vertices.data(),
@@ -265,8 +265,8 @@ namespace
 
 		// Vertex shader.
 		GPlatesOpenGL::GLShader::shared_ptr_type vertex_shader = GPlatesOpenGL::GLShader::create(gl, GL_VERTEX_SHADER);
-		vertex_shader->shader_source(vertex_shader_source);
-		vertex_shader->compile_shader();
+		vertex_shader->shader_source(gl, vertex_shader_source);
+		vertex_shader->compile_shader(gl);
 
 		// Fragment shader source.
 		GPlatesOpenGL::GLShaderSource fragment_shader_source;
@@ -274,19 +274,19 @@ namespace
 
 		// Fragment shader.
 		GPlatesOpenGL::GLShader::shared_ptr_type fragment_shader = GPlatesOpenGL::GLShader::create(gl, GL_FRAGMENT_SHADER);
-		fragment_shader->shader_source(fragment_shader_source);
-		fragment_shader->compile_shader();
+		fragment_shader->shader_source(gl, fragment_shader_source);
+		fragment_shader->compile_shader(gl);
 
 		// Vertex-fragment program.
-		program->attach_shader(vertex_shader);
-		program->attach_shader(fragment_shader);
-		program->link_program();
+		program->attach_shader(gl, vertex_shader);
+		program->attach_shader(gl, fragment_shader);
+		program->link_program(gl);
 
 		gl.UseProgram(program);
 
 		// Set the star colour (it never changes).
-		glUniform4f(
-				program->get_uniform_location("star_colour"),
+		gl.Uniform4f(
+				program->get_uniform_location(gl, "star_colour"),
 				colour.red(), colour.green(), colour.blue(), colour.alpha());
 	}
 
@@ -308,7 +308,7 @@ namespace
 		gl.PointSize(SMALL_STARS_SIZE * device_pixel_ratio);
 
 		// Draw the small stars.
-		glDrawRangeElements(
+		gl.DrawRangeElements(
 				GL_POINTS,
 				0/*start*/,
 				num_small_star_vertices - 1/*end*/,
@@ -325,7 +325,7 @@ namespace
 
 		// Draw the large stars.
 		// They come after the small stars in the vertex array.
-		glDrawRangeElements(
+		gl.DrawRangeElements(
 				GL_POINTS,
 				num_small_star_vertices/*start*/,
 				num_small_star_vertices + num_large_star_vertices - 1/*end*/,
@@ -428,8 +428,8 @@ GPlatesGui::Stars::paint(
 	// Set view projection matrix in the currently bound program.
 	GLfloat view_projection_float_matrix[16];
 	view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
-	glUniformMatrix4fv(
-			d_program->get_uniform_location("view_projection"),
+	gl.UniformMatrix4fv(
+			d_program->get_uniform_location(gl, "view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 	// Bind the vertex array.

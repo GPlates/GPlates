@@ -636,7 +636,7 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::generate_scalar_gradient_values(
 	}
 
 	// Load the finite differences into the RGBA texture.
-	glTexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
+	gl.TexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
 			0/*xoffset*/, 0/*yoffset*/, texel_width, texel_height,
 			GL_RGBA, GL_FLOAT, d_tile_scalar_gradient_data_working_space.get());
 
@@ -670,7 +670,7 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::generate_scalar_gradient_values(
 		}
 
 		// Load the one-texel wide column of data from column 'texel_width-1' into column 'texel_width'.
-		glTexSubImage2D(
+		gl.TexSubImage2D(
 				GL_TEXTURE_2D, 0/*level*/,
 				texel_width/*xoffset*/, 0/*yoffset*/, 1/*width*/, texel_height/*height*/,
 				GL_RGBA, GL_FLOAT, d_tile_edge_working_space.get());
@@ -707,7 +707,7 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::generate_scalar_gradient_values(
 		}
 
 		// Load the one-texel wide row of data from row 'texel_height-1' into row 'texel_height'.
-		glTexSubImage2D(
+		gl.TexSubImage2D(
 				GL_TEXTURE_2D, 0/*level*/,
 				0/*xoffset*/, texel_height/*yoffset*/, texels_in_last_row/*width*/, 1/*height*/,
 				GL_RGBA, GL_FLOAT, d_tile_edge_working_space.get());
@@ -808,7 +808,7 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::load_default_scalar_gradient_valu
 	// Set the default scalar and gradient (R,GBA) to all zeros.
 	boost::scoped_array<GLfloat> fill_scalar_gradient_storage(new GLfloat[4 * texel_width * texel_height]);
 	std::fill_n(fill_scalar_gradient_storage.get(), 4 * texel_width * texel_height, GLfloat(0));
-	glTexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
+	gl.TexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
 			0/*xoffset*/, 0/*yoffset*/, texel_width, texel_height,
 			GL_RGBA, GL_FLOAT, fill_scalar_gradient_storage.get());
 }

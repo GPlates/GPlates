@@ -254,7 +254,7 @@ namespace
 		gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_element_buffer);
 
 		// Transfer vertex element data to currently bound vertex element buffer object.
-		glBufferData(
+		gl.BufferData(
 				GL_ELEMENT_ARRAY_BUFFER,
 				vertex_elements.size() * sizeof(vertex_elements[0]),
 				vertex_elements.data(),
@@ -264,7 +264,7 @@ namespace
 		gl.BindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
 
 		// Transfer vertex data to currently bound vertex buffer object.
-		glBufferData(
+		gl.BufferData(
 				GL_ARRAY_BUFFER,
 				vertices.size() * sizeof(vertices[0]),
 				vertices.data(),
@@ -292,8 +292,8 @@ namespace
 
 		// Vertex shader.
 		GPlatesOpenGL::GLShader::shared_ptr_type vertex_shader = GPlatesOpenGL::GLShader::create(gl, GL_VERTEX_SHADER);
-		vertex_shader->shader_source(vertex_shader_source);
-		vertex_shader->compile_shader();
+		vertex_shader->shader_source(gl, vertex_shader_source);
+		vertex_shader->compile_shader(gl);
 
 		// Fragment shader source.
 		GPlatesOpenGL::GLShaderSource fragment_shader_source;
@@ -301,13 +301,13 @@ namespace
 
 		// Fragment shader.
 		GPlatesOpenGL::GLShader::shared_ptr_type fragment_shader = GPlatesOpenGL::GLShader::create(gl, GL_FRAGMENT_SHADER);
-		fragment_shader->shader_source(fragment_shader_source);
-		fragment_shader->compile_shader();
+		fragment_shader->shader_source(gl, fragment_shader_source);
+		fragment_shader->compile_shader(gl);
 
 		// Vertex-fragment program.
-		program->attach_shader(vertex_shader);
-		program->attach_shader(fragment_shader);
-		program->link_program();
+		program->attach_shader(gl, vertex_shader);
+		program->attach_shader(gl, fragment_shader);
+		program->link_program(gl);
 	}
 }
 
@@ -391,8 +391,8 @@ GPlatesGui::MapBackground::paint(
 			d_last_seen_colour = d_view_state->get_background_colour();
 
 			// Set the background colour on currently bound program.
-			glUniform4f(
-					d_program->get_uniform_location("background_colour"),
+			gl.Uniform4f(
+					d_program->get_uniform_location(gl, "background_colour"),
 					d_last_seen_colour->red(), d_last_seen_colour->green(), d_last_seen_colour->blue(), d_last_seen_colour->alpha());
 		}
 	}
@@ -407,8 +407,8 @@ GPlatesGui::MapBackground::paint(
 			d_last_seen_colour = d_constant_colour;
 
 			// Set the background colour on currently bound program.
-			glUniform4f(
-					d_program->get_uniform_location("background_colour"),
+			gl.Uniform4f(
+					d_program->get_uniform_location(gl, "background_colour"),
 					d_last_seen_colour->red(), d_last_seen_colour->green(), d_last_seen_colour->blue(), d_last_seen_colour->alpha());
 		}
 	}
@@ -416,14 +416,14 @@ GPlatesGui::MapBackground::paint(
 	// Set view projection matrix in the currently bound program.
 	GLfloat view_projection_float_matrix[16];
 	view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
-	glUniformMatrix4fv(
-			d_program->get_uniform_location("view_projection"),
+	gl.UniformMatrix4fv(
+			d_program->get_uniform_location(gl, "view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 	// Bind the vertex array.
 	gl.BindVertexArray(d_vertex_array);
 
-	glDrawElements(
+	gl.DrawElements(
 			GL_TRIANGLES,
 			d_num_vertex_indices/*count*/,
 			GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::type,

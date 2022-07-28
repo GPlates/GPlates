@@ -733,8 +733,8 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::set_tile_state(
 	// Load scene tile texture matrix into program.
 	GLfloat scene_tile_texture_float_matrix[16];
 	scene_tile_texture_matrix.get_float_matrix(scene_tile_texture_float_matrix);
-	glUniformMatrix4fv(
-			d_render_tile_to_scene_program->get_uniform_location("scene_tile_texture_matrix"),
+	gl.UniformMatrix4fv(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "scene_tile_texture_matrix"),
 			1, GL_FALSE/*transpose*/, scene_tile_texture_float_matrix);
 
 	// Bind the scene tile texture to texture unit 0.
@@ -744,8 +744,8 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::set_tile_state(
 	// If we've traversed deep enough into the cube quad tree then the cube quad tree mesh
 	// cannot provide a drawable that's bounded by the cube quad tree node tile and so
 	// we need to use a clip texture.
-	glUniform1i(
-			d_render_tile_to_scene_program->get_uniform_location("clip_to_tile_frustum"),
+	gl.Uniform1i(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "clip_to_tile_frustum"),
 			clip_to_tile_frustum);
 	if (clip_to_tile_frustum)
 	{
@@ -762,8 +762,8 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::set_tile_state(
 		// Load clip texture matrix into program.
 		GLfloat clip_texture_float_matrix[16];
 		clip_texture_matrix.get_float_matrix(clip_texture_float_matrix);
-		glUniformMatrix4fv(
-				d_render_tile_to_scene_program->get_uniform_location("clip_texture_matrix"),
+		gl.UniformMatrix4fv(
+				d_render_tile_to_scene_program->get_uniform_location(gl, "clip_texture_matrix"),
 				1, GL_FALSE/*transpose*/, clip_texture_float_matrix);
 
 		// Bind the clip texture to texture unit 1.
@@ -776,22 +776,22 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::set_tile_state(
 					GPlatesGui::SceneLightingParameters::LIGHTING_FILLED_GEOMETRY_ON_SPHERE);
 
 	// Enable lighting if requested.
-	glUniform1i(
-			d_render_tile_to_scene_program->get_uniform_location("lighting_enabled"),
+	gl.Uniform1i(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "lighting_enabled"),
 			lighting_enabled);
 	if (lighting_enabled)
 	{
 		// Set the world-space light direction.
 		const GPlatesMaths::UnitVector3D &globe_view_light_direction = d_light.get()->get_globe_view_light_direction();
-		glUniform3f(
-				d_render_tile_to_scene_program->get_uniform_location("world_space_light_direction"),
+		gl.Uniform3f(
+				d_render_tile_to_scene_program->get_uniform_location(gl, "world_space_light_direction"),
 				globe_view_light_direction.x().dval(),
 				globe_view_light_direction.y().dval(),
 				globe_view_light_direction.z().dval());
 
 		// Set the light ambient contribution.
-		glUniform1f(
-				d_render_tile_to_scene_program->get_uniform_location("light_ambient_contribution"),
+		gl.Uniform1f(
+				d_render_tile_to_scene_program->get_uniform_location(gl, "light_ambient_contribution"),
 				d_light.get()->get_scene_lighting_parameters().get_ambient_light_contribution());
 	}
 
@@ -916,7 +916,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_filled_drawables_to_tile_textur
 	gl.ClearColor();
 	gl.ClearDepth();
 	gl.ClearStencil();
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	// Bind the shader program for rendering *to* the tile texture.
 	gl.UseProgram(d_render_to_tile_program);
@@ -932,8 +932,8 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_filled_drawables_to_tile_textur
 
 	GLfloat view_projection_float_matrix[16];
 	view_projection_matrix.get_float_matrix(view_projection_float_matrix);
-	glUniformMatrix4fv(
-			d_render_to_tile_program->get_uniform_location("view_projection"),
+	gl.UniformMatrix4fv(
+			d_render_to_tile_program->get_uniform_location(gl, "view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 	//
@@ -993,7 +993,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_filled_drawables_to_tile_textur
 		gl.Disable(GL_BLEND);
 
 		// Render the current filled drawable.
-		glDrawRangeElements(
+		gl.DrawRangeElements(
 				GL_TRIANGLES,
 				filled_drawable.d_drawable.start,
 				filled_drawable.d_drawable.end,
@@ -1022,7 +1022,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::render_filled_drawables_to_tile_textur
 		// To avoid alpha blending each pixel more than once, the above stencil operation zeros
 		// the stencil buffer value of each pixel that passes the stencil test such that the next
 		// overlapping pixel will then fail the stencil test (avoiding multiple-alpha-blending).
-		glDrawRangeElements(
+		gl.DrawRangeElements(
 				GL_TRIANGLES,
 				filled_drawable.d_drawable.start,
 				filled_drawable.d_drawable.end,
@@ -1082,32 +1082,32 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_tile_texture(
 	// unlike global rectangular lat/lon rasters that squash near the poles.
 	//
 	// We do enable bilinear filtering (also note that the texture is a fixed-point format).
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
 	// subsequently sampled non-isotropically (such as viewing at an angle near edge of the globe).
 	if (gl.get_capabilities().gl_EXT_texture_filter_anisotropic)
 	{
 		const GLfloat anisotropy = gl.get_capabilities().gl_texture_max_anisotropy;
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+		gl.TexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 	}
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Create the texture in OpenGL - this actually creates the texture without any data.
 	//
 	// NOTE: Since the image data is NULL it doesn't really matter what 'format' (and 'type') are so
 	// we just use GL_RGBA (and GL_UNSIGNED_BYTE).
-	glTexImage2D(GL_TEXTURE_2D, 0/*level*/, GL_RGBA8,
+	gl.TexImage2D(GL_TEXTURE_2D, 0/*level*/, GL_RGBA8,
 			d_tile_texel_dimension, d_tile_texel_dimension,
 			0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
 	// Check there are no OpenGL errors.
-	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -1120,7 +1120,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_tile_stencil_buffer(
 	// Allocate a stencil buffer.
 	// Note that (in OpenGL 3.3 core) an OpenGL implementation is only *required* to provide stencil if a
 	// depth/stencil format is requested, and furthermore GL_DEPTH24_STENCIL8 is a specified required format.
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, d_tile_texel_dimension, d_tile_texel_dimension);
+	gl.RenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, d_tile_texel_dimension, d_tile_texel_dimension);
 }
 
 
@@ -1139,7 +1139,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_tile_texture_framebuffer(
 	// Bind tile texture to framebuffer's first colour attachment.
 	gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, d_tile_texture, 0/*level*/);
 
-	const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 	GPlatesGlobal::Assert<OpenGLException>(
 			completeness == GL_FRAMEBUFFER_COMPLETE,
 			GPLATES_ASSERTION_SOURCE,
@@ -1191,21 +1191,21 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::write_filled_drawables_to_vertex_array
 
 	//
 	// It's not 'stream' because the same filled drawables are accessed many times.
-	// It's not 'dynamic' because we allocate a new buffer (ie, glBufferData does not modify existing buffer).
+	// It's not 'dynamic' because we allocate a new buffer (ie, gl.BufferData does not modify existing buffer).
 	// We really want to encourage this to be in video memory (even though it's only going to live
 	// there for a single rendering frame) because there are many accesses to this buffer as the same
 	// drawables are rendered into multiple tiles (otherwise the PCI bus bandwidth becomes the limiting factor).
 	//
 
 	// Transfer vertex element data to currently bound vertex element buffer object.
-	glBufferData(
+	gl.BufferData(
 			GL_ELEMENT_ARRAY_BUFFER,
 			filled_drawables.d_drawable_vertex_elements.size() * sizeof(filled_drawables.d_drawable_vertex_elements[0]),
 			filled_drawables.d_drawable_vertex_elements.data(),
 			GL_STATIC_DRAW);
 
 	// Transfer vertex element data to currently bound vertex buffer object.
-	glBufferData(
+	gl.BufferData(
 			GL_ARRAY_BUFFER,
 			filled_drawables.d_drawable_vertices.size() * sizeof(filled_drawables.d_drawable_vertices[0]),
 			filled_drawables.d_drawable_vertices.data(),
@@ -1233,8 +1233,8 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::compile_link_shader_programs(
 
 	// Vertex shader.
 	GLShader::shared_ptr_type render_to_tile_vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
-	render_to_tile_vertex_shader->shader_source(render_to_tile_vertex_shader_source);
-	render_to_tile_vertex_shader->compile_shader();
+	render_to_tile_vertex_shader->shader_source(gl, render_to_tile_vertex_shader_source);
+	render_to_tile_vertex_shader->compile_shader(gl);
 
 	// Fragment shader source.
 	GLShaderSource render_to_tile_fragment_shader_source;
@@ -1243,13 +1243,13 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::compile_link_shader_programs(
 
 	// Fragment shader.
 	GLShader::shared_ptr_type render_to_tile_fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	render_to_tile_fragment_shader->shader_source(render_to_tile_fragment_shader_source);
-	render_to_tile_fragment_shader->compile_shader();
+	render_to_tile_fragment_shader->shader_source(gl, render_to_tile_fragment_shader_source);
+	render_to_tile_fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
-	d_render_to_tile_program->attach_shader(render_to_tile_vertex_shader);
-	d_render_to_tile_program->attach_shader(render_to_tile_fragment_shader);
-	d_render_to_tile_program->link_program();
+	d_render_to_tile_program->attach_shader(gl, render_to_tile_vertex_shader);
+	d_render_to_tile_program->attach_shader(gl, render_to_tile_fragment_shader);
+	d_render_to_tile_program->link_program(gl);
 
 	//
 	// Shader program for the final stage of rendering a tile to the scene.
@@ -1263,8 +1263,8 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::compile_link_shader_programs(
 
 	// Vertex shader.
 	GLShader::shared_ptr_type render_tile_to_scene_vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
-	render_tile_to_scene_vertex_shader->shader_source(render_tile_to_scene_vertex_shader_source);
-	render_tile_to_scene_vertex_shader->compile_shader();
+	render_tile_to_scene_vertex_shader->shader_source(gl, render_tile_to_scene_vertex_shader_source);
+	render_tile_to_scene_vertex_shader->compile_shader(gl);
 
 	// Fragment shader source.
 	GLShaderSource render_tile_to_scene_fragment_shader_source;
@@ -1273,25 +1273,25 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::compile_link_shader_programs(
 
 	// Fragment shader.
 	GLShader::shared_ptr_type render_tile_to_scene_fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	render_tile_to_scene_fragment_shader->shader_source(render_tile_to_scene_fragment_shader_source);
-	render_tile_to_scene_fragment_shader->compile_shader();
+	render_tile_to_scene_fragment_shader->shader_source(gl, render_tile_to_scene_fragment_shader_source);
+	render_tile_to_scene_fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
-	d_render_tile_to_scene_program->attach_shader(render_tile_to_scene_vertex_shader);
-	d_render_tile_to_scene_program->attach_shader(render_tile_to_scene_fragment_shader);
-	d_render_tile_to_scene_program->link_program();
+	d_render_tile_to_scene_program->attach_shader(gl, render_tile_to_scene_vertex_shader);
+	d_render_tile_to_scene_program->attach_shader(gl, render_tile_to_scene_fragment_shader);
+	d_render_tile_to_scene_program->link_program(gl);
 
 	// Bind the shader program so we can set some uniform parameters in it.
 	gl.UseProgram(d_render_tile_to_scene_program);
 
 	// Set the tile texture sampler to texture unit 0.
-	glUniform1i(
-			d_render_tile_to_scene_program->get_uniform_location("tile_texture_sampler"),
+	gl.Uniform1i(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "tile_texture_sampler"),
 			0/*texture unit*/);
 
 	// Set the clip texture sampler to texture unit 1.
-	glUniform1i(
-			d_render_tile_to_scene_program->get_uniform_location("clip_texture_sampler"),
+	gl.Uniform1i(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "clip_texture_sampler"),
 			1/*texture unit*/);
 }
 

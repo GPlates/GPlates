@@ -529,8 +529,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 						reconstructed_polygon_mesh_transform_group.get_finite_rotation();
 
 				// Set the rotation for the current rotation group.
-				glUniform4f(
-						d_render_tile_to_scene_program->get_uniform_location("plate_rotation_quaternion"),
+				gl.Uniform4f(
+						d_render_tile_to_scene_program->get_uniform_location(gl, "plate_rotation_quaternion"),
 						transform_group_finite_rotation.x().dval(),
 						transform_group_finite_rotation.y().dval(),
 						transform_group_finite_rotation.z().dval(),
@@ -542,8 +542,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 				// Set view projection matrix for the current rotation group.
 				GLfloat view_projection_transform_group_float_matrix[16];
 				view_projection_transform_group.get_float_matrix(view_projection_transform_group_float_matrix);
-				glUniformMatrix4fv(
-						d_render_tile_to_scene_program->get_uniform_location("view_projection"),
+				gl.UniformMatrix4fv(
+						d_render_tile_to_scene_program->get_uniform_location(gl, "view_projection"),
 						1, GL_FALSE/*transpose*/, view_projection_transform_group_float_matrix);
 
 				render_transform_group(
@@ -575,8 +575,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 		// for the sole transform group since there is no reconstruction here.
 		const GPlatesMaths::UnitQuaternion3D identity_finite_rotation =
 				GPlatesMaths::UnitQuaternion3D::create_identity_rotation();
-		glUniform4f(
-				d_render_tile_to_scene_program->get_uniform_location("plate_rotation_quaternion"),
+		gl.Uniform4f(
+				d_render_tile_to_scene_program->get_uniform_location(gl, "plate_rotation_quaternion"),
 				identity_finite_rotation.x().dval(),
 				identity_finite_rotation.y().dval(),
 				identity_finite_rotation.z().dval(),
@@ -585,8 +585,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render(
 		// Set view projection matrix.
 		GLfloat view_projection_float_matrix[16];
 		view_projection_transform.get_float_matrix(view_projection_float_matrix);
-		glUniformMatrix4fv(
-				d_render_tile_to_scene_program->get_uniform_location("view_projection"),
+		gl.UniformMatrix4fv(
+				d_render_tile_to_scene_program->get_uniform_location(gl, "view_projection"),
 				1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 		render_transform_group(
@@ -1319,8 +1319,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_to
 			// age grid values (ie, ocean crust) and to always render outside the age grid (ie, continental crust).
 			//
 			// Note: Only need to set this variable when 'using_age_grid' shader variable is true.
-			glUniform1i(
-					d_render_tile_to_scene_program->get_uniform_location("using_age_grid_active_polygons"),
+			gl.Uniform1i(
+					d_render_tile_to_scene_program->get_uniform_location(gl, "using_age_grid_active_polygons"),
 					true);
 		}
 
@@ -1338,8 +1338,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_to
 		// We render the active reconstructed polygons first followed by the inactive.
 
 		// Note: Only need to set this variable when 'using_age_grid' shader variable is true.
-		glUniform1i(
-				d_render_tile_to_scene_program->get_uniform_location("using_age_grid_active_polygons"),
+		gl.Uniform1i(
+				d_render_tile_to_scene_program->get_uniform_location(gl, "using_age_grid_active_polygons"),
 				true);
 		render_tile_polygon_drawables(
 				gl,
@@ -1349,8 +1349,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::render_tile_to
 				polygon_mesh_drawables.get());
 
 		// Note: Only need to set this variable when 'using_age_grid' shader variable is true.
-		glUniform1i(
-				d_render_tile_to_scene_program->get_uniform_location("using_age_grid_active_polygons"),
+		gl.Uniform1i(
+				d_render_tile_to_scene_program->get_uniform_location(gl, "using_age_grid_active_polygons"),
 				false);
 		render_tile_polygon_drawables(
 				gl,
@@ -1596,8 +1596,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::set_tile_state
 	// Source raster texture transform.
 	GLfloat source_raster_texture_float_matrix[16];
 	common_tile_draw_state.source_raster_texture_transform.get_float_matrix(source_raster_texture_float_matrix);
-	glUniformMatrix4fv(
-			d_render_tile_to_scene_program->get_uniform_location("source_texture_transform"),
+	gl.UniformMatrix4fv(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "source_texture_transform"),
 			1, GL_FALSE/*transpose*/, source_raster_texture_float_matrix);
 
 	//
@@ -1617,8 +1617,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::set_tile_state
 	// Clip texture transform.
 	GLfloat clip_texture_float_matrix[16];
 	common_tile_draw_state.clip_texture_transform.get_float_matrix(clip_texture_float_matrix);
-	glUniformMatrix4fv(
-			d_render_tile_to_scene_program->get_uniform_location("clip_texture_transform"),
+	gl.UniformMatrix4fv(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "clip_texture_transform"),
 			1, GL_FALSE/*transpose*/, clip_texture_float_matrix);
 
 	//
@@ -1628,8 +1628,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::set_tile_state
 	// Whether we're using the age grid for the current tile (might not be covered by age grid).
 	const bool using_age_grid = static_cast<bool>(common_tile_draw_state.age_grid_texture);
 
-	glUniform1i(
-			d_render_tile_to_scene_program->get_uniform_location("using_age_grid"),
+	gl.Uniform1i(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "using_age_grid"),
 			using_age_grid);
 
 	if (using_age_grid)
@@ -1641,13 +1641,13 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::set_tile_state
 		// Age grid texture transform.
 		GLfloat age_grid_texture_float_matrix[16];
 		common_tile_draw_state.age_grid_texture_transform->get_float_matrix(age_grid_texture_float_matrix);
-		glUniformMatrix4fv(
-				d_render_tile_to_scene_program->get_uniform_location("age_grid_texture_transform"),
+		gl.UniformMatrix4fv(
+				d_render_tile_to_scene_program->get_uniform_location(gl, "age_grid_texture_transform"),
 				1, GL_FALSE/*transpose*/, age_grid_texture_float_matrix);
 
 		// Set the reconstruction time for the age grid test.
-		glUniform1f(
-				d_render_tile_to_scene_program->get_uniform_location("reconstruction_time"),
+		gl.Uniform1f(
+				d_render_tile_to_scene_program->get_uniform_location(gl, "reconstruction_time"),
 				d_reconstruction_time);
 	}
 
@@ -1658,8 +1658,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::set_tile_state
 	// Whether we're using the normal map for the current tile (might not be covered by normal map).
 	const bool using_normal_map = static_cast<bool>(common_tile_draw_state.normal_map_texture);
 
-	glUniform1i(
-			d_render_tile_to_scene_program->get_uniform_location("using_surface_lighting_normal_map"),
+	gl.Uniform1i(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "using_surface_lighting_normal_map"),
 			using_normal_map);
 
 	if (using_normal_map)
@@ -1671,8 +1671,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::set_tile_state
 		// Normal map texture transform.
 		GLfloat normal_map_texture_float_matrix[16];
 		common_tile_draw_state.normal_map_texture_transform->get_float_matrix(normal_map_texture_float_matrix);
-		glUniformMatrix4fv(
-				d_render_tile_to_scene_program->get_uniform_location("normal_map_texture_transform"),
+		gl.UniformMatrix4fv(
+				d_render_tile_to_scene_program->get_uniform_location(gl, "normal_map_texture_transform"),
 				1, GL_FALSE/*transpose*/, normal_map_texture_float_matrix);
 	}
 
@@ -1683,8 +1683,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::set_tile_state
 	// Whether we're using surface lighting.
 	const bool using_surface_lighting = static_cast<bool>(d_light);
 
-	glUniform1i(
-			d_render_tile_to_scene_program->get_uniform_location("using_surface_lighting"),
+	gl.Uniform1i(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "using_surface_lighting"),
 			using_surface_lighting);
 
 	// If we have a light and lighting is enabled for rasters...
@@ -1693,8 +1693,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::set_tile_state
 		// Set the ambient light contribution.
 		//
 		// Note that it's unused in the map view when not using normal maps (but all other shader paths use it).
-		glUniform1f(
-				d_render_tile_to_scene_program->get_uniform_location("ambient_lighting"),
+		gl.Uniform1f(
+				d_render_tile_to_scene_program->get_uniform_location(gl, "ambient_lighting"),
 				d_light.get()->get_scene_lighting_parameters().get_ambient_light_contribution());
 
 		// Whether we're using surface lighting in map view.
@@ -1702,8 +1702,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::set_tile_state
 				static_cast<bool>(d_light.get()->get_map_projection())/*in map view*/;
 
 		// Note: Only need to set this variable when 'using_surface_lighting' shader variable is true.
-		glUniform1i(
-				d_render_tile_to_scene_program->get_uniform_location("using_surface_lighting_in_map_view"),
+		gl.Uniform1i(
+				d_render_tile_to_scene_program->get_uniform_location(gl, "using_surface_lighting_in_map_view"),
 				using_surface_lighting_in_map_view);
 
 		if (using_normal_map)
@@ -1718,8 +1718,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::set_tile_state
 					!using_surface_lighting_normal_map_with_directional_light;
 
 			// Note: Only need to set this variable when 'using_surface_lighting_in_map_view' shader variable is true.
-			glUniform1i(
-					d_render_tile_to_scene_program->get_uniform_location("using_surface_lighting_normal_map_with_no_directional_light"),
+			gl.Uniform1i(
+					d_render_tile_to_scene_program->get_uniform_location(gl, "using_surface_lighting_normal_map_with_no_directional_light"),
 					using_surface_lighting_normal_map_with_no_directional_light);
 
 			if (using_surface_lighting_in_map_view)  // map view...
@@ -1732,8 +1732,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::set_tile_state
 			{
 				// Set the world space light direction.
 				const GPlatesMaths::UnitVector3D &world_space_light_direction = d_light.get()->get_globe_view_light_direction();
-				glUniform3f(
-						d_render_tile_to_scene_program->get_uniform_location("world_space_light_direction_in_globe_view"),
+				gl.Uniform3f(
+						d_render_tile_to_scene_program->get_uniform_location(gl, "world_space_light_direction_in_globe_view"),
 						world_space_light_direction.x().dval(),
 						world_space_light_direction.y().dval(),
 						world_space_light_direction.z().dval());
@@ -1743,16 +1743,16 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::set_tile_state
 		{
 			if (using_surface_lighting_in_map_view)  // map view...
 			{
-				glUniform1f(
-						d_render_tile_to_scene_program->get_uniform_location("ambient_and_diffuse_lighting_in_map_view_with_no_normal_map"),
+				gl.Uniform1f(
+						d_render_tile_to_scene_program->get_uniform_location(gl, "ambient_and_diffuse_lighting_in_map_view_with_no_normal_map"),
 						d_light.get()->get_map_view_constant_lighting());
 			}
 			else // globe view...
 			{
 				// Set the world space light direction.
 				const GPlatesMaths::UnitVector3D &world_space_light_direction = d_light.get()->get_globe_view_light_direction();
-				glUniform3f(
-						d_render_tile_to_scene_program->get_uniform_location("world_space_light_direction_in_globe_view"),
+				gl.Uniform3f(
+						d_render_tile_to_scene_program->get_uniform_location(gl, "world_space_light_direction_in_globe_view"),
 						world_space_light_direction.x().dval(),
 						world_space_light_direction.y().dval(),
 						world_space_light_direction.z().dval());
@@ -1815,8 +1815,8 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::compile_link_s
 
 	// Vertex shader.
 	GLShader::shared_ptr_type vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
-	vertex_shader->shader_source(vertex_shader_source);
-	vertex_shader->compile_shader();
+	vertex_shader->shader_source(gl, vertex_shader_source);
+	vertex_shader->compile_shader(gl);
 
 	// Fragment shader source.
 	GLShaderSource fragment_shader_source;
@@ -1825,13 +1825,13 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::compile_link_s
 
 	// Fragment shader.
 	GLShader::shared_ptr_type fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	fragment_shader->shader_source(fragment_shader_source);
-	fragment_shader->compile_shader();
+	fragment_shader->shader_source(gl, fragment_shader_source);
+	fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
-	d_render_tile_to_scene_program->attach_shader(vertex_shader);
-	d_render_tile_to_scene_program->attach_shader(fragment_shader);
-	d_render_tile_to_scene_program->link_program();
+	d_render_tile_to_scene_program->attach_shader(gl, vertex_shader);
+	d_render_tile_to_scene_program->attach_shader(gl, fragment_shader);
+	d_render_tile_to_scene_program->link_program(gl);
 
 	//
 	// Set some shader program constants that don't change.
@@ -1840,24 +1840,24 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::compile_link_s
 	gl.UseProgram(d_render_tile_to_scene_program);
 
 	// Use texture unit 0 for source texture.
-	glUniform1i(
-			d_render_tile_to_scene_program->get_uniform_location("source_texture_sampler"),
+	gl.Uniform1i(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "source_texture_sampler"),
 			0/*texture unit*/);
 	// Use texture unit 1 for clip texture.
-	glUniform1i(
-			d_render_tile_to_scene_program->get_uniform_location("clip_texture_sampler"),
+	gl.Uniform1i(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "clip_texture_sampler"),
 			1/*texture unit*/);
 	// Use texture unit 2 for age grid.
-	glUniform1i(
-			d_render_tile_to_scene_program->get_uniform_location("age_grid_texture_sampler"),
+	gl.Uniform1i(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "age_grid_texture_sampler"),
 			2/*texture unit*/);
 	// Use texture unit 3 for normal map.
-	glUniform1i(
-			d_render_tile_to_scene_program->get_uniform_location("normal_map_texture_sampler"),
+	gl.Uniform1i(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "normal_map_texture_sampler"),
 			3/*texture unit*/);
 	// Use texture unit 4 for light direction cube map (in map view when using normal maps).
-	glUniform1i(
-			d_render_tile_to_scene_program->get_uniform_location("light_direction_cube_texture_sampler_in_map_view_with_normal_map"),
+	gl.Uniform1i(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "light_direction_cube_texture_sampler_in_map_view_with_normal_map"),
 			4/*texture unit*/);
 }
 

@@ -42,10 +42,11 @@
 
 void
 GPlatesOpenGL::GLUtils::check_gl_errors(
+		GL &gl,
 		const GPlatesUtils::CallStack::Trace &assert_location)
 {
 	GLenum error;
-	while ((error = glGetError()) != GL_NO_ERROR)
+	while ((error = gl.GetError()) != GL_NO_ERROR)
 	{
 		const char *error_message = NULL;
 
@@ -114,7 +115,7 @@ GPlatesOpenGL::GLUtils::create_full_screen_quad(
 	};
 
 	// Transfer vertex data to currently bound vertex buffer object.
-	glBufferData(
+	gl.BufferData(
 			GL_ARRAY_BUFFER,
 			4 * sizeof(GLVertexUtils::Vertex),
 			quad_vertices,

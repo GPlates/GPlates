@@ -151,9 +151,9 @@ namespace GPlatesOpenGL
 				GL &gl);
 
 
-		//////////////////////////////
-		// SETING UNIFORM VARIABLES //
-		//////////////////////////////
+		///////////////////////
+		// UNIFORM VARIABLES //
+		///////////////////////
 
 
 		/**
@@ -185,7 +185,7 @@ namespace GPlatesOpenGL
 		 * You can use the returned location with a gl.Uniform* call. Such as:
 		 *
 		 *   gl.UseProgram(program);
-		 *   gl.Uniform4f(program->get_uniform_location('colour'), red, green, blue, alpha);
+		 *   gl.Uniform4f(program->get_uniform_location(gl, 'colour'), red, green, blue, alpha);
 		 *
 		 * Internally this calls glGetUniformLocation and caches its results. If this program is
 		 * subsequently re-linked (by another call to @a link_program) then the cache is cleared.
@@ -226,7 +226,7 @@ namespace GPlatesOpenGL
 		 *
 		 *   gl.UniformBlockBinding(
 		 *       program->get_resource_handle(),
-		 *       program->get_uniform_block_index('Lighting'),
+		 *       program->get_uniform_block_index(gl, 'Lighting'),
 		 *       2); // uniformBlockBinding
 		 *
 		 * Internally this calls glGetUniformBlockIndex and caches its results. If this program is
@@ -238,7 +238,6 @@ namespace GPlatesOpenGL
 		get_uniform_block_index(
 				GL &gl,
 				const char *uniform_block_name) const;
-
 
 		/**
 		 * Returns the program resource handle.

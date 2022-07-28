@@ -88,8 +88,8 @@ namespace
 
 		// Vertex shader.
 		GPlatesOpenGL::GLShader::shared_ptr_type vertex_shader = GPlatesOpenGL::GLShader::create(gl, GL_VERTEX_SHADER);
-		vertex_shader->shader_source(vertex_shader_source);
-		vertex_shader->compile_shader();
+		vertex_shader->shader_source(gl, vertex_shader_source);
+		vertex_shader->compile_shader(gl);
 
 		// Fragment shader source.
 		GPlatesOpenGL::GLShaderSource fragment_shader_source;
@@ -98,13 +98,13 @@ namespace
 
 		// Fragment shader.
 		GPlatesOpenGL::GLShader::shared_ptr_type fragment_shader = GPlatesOpenGL::GLShader::create(gl, GL_FRAGMENT_SHADER);
-		fragment_shader->shader_source(fragment_shader_source);
-		fragment_shader->compile_shader();
+		fragment_shader->shader_source(gl, fragment_shader_source);
+		fragment_shader->compile_shader(gl);
 
 		// Vertex-fragment program.
-		program->attach_shader(vertex_shader);
-		program->attach_shader(fragment_shader);
-		program->link_program();
+		program->attach_shader(gl, vertex_shader);
+		program->attach_shader(gl, fragment_shader);
+		program->link_program(gl);
 	}
 }
 
@@ -124,8 +124,8 @@ GPlatesGui::BackgroundSphere::BackgroundSphere(
 
 	// Set the background colour in the program object.
 	gl.UseProgram(d_program);
-	glUniform4f(
-			d_program->get_uniform_location("background_color"),
+	gl.Uniform4f(
+			d_program->get_uniform_location(gl, "background_color"),
 			d_background_colour.red(), d_background_colour.green(), d_background_colour.blue(), d_background_colour.alpha());
 }
 
@@ -163,25 +163,25 @@ GPlatesGui::BackgroundSphere::paint(
 	}
 	view_projection.get_inverse_view_transform()->get_float_matrix(view_inverse_float_matrix);
 	view_projection.get_inverse_projection_transform()->get_float_matrix(projection_inverse_float_matrix);
-	glUniformMatrix4fv(
-			d_program->get_uniform_location("view_projection"),
+	gl.UniformMatrix4fv(
+			d_program->get_uniform_location(gl, "view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
-	glUniformMatrix4fv(
-			d_program->get_uniform_location("view_inverse"),
+	gl.UniformMatrix4fv(
+			d_program->get_uniform_location(gl, "view_inverse"),
 			1, GL_FALSE/*transpose*/, view_inverse_float_matrix);
-	glUniformMatrix4fv(
-			d_program->get_uniform_location("projection_inverse"),
+	gl.UniformMatrix4fv(
+			d_program->get_uniform_location(gl, "projection_inverse"),
 			1, GL_FALSE/*transpose*/, projection_inverse_float_matrix);
 
 	// Set the viewport (so shader can convert 'gl_FragCoord' to normalised device coordinates (NDC).
 	const GPlatesOpenGL::GLViewport &viewport = gl.get_viewport();
-	glUniform4f(
-			d_program->get_uniform_location("viewport"),
+	gl.Uniform4f(
+			d_program->get_uniform_location(gl, "viewport"),
 			viewport.x(), viewport.y(), viewport.width(), viewport.height());
 
 	// If depth writes have been enabled then the shader program needs to output z-buffer depth.
-	glUniform1i(
-			d_program->get_uniform_location("write_depth"),
+	gl.Uniform1i(
+			d_program->get_uniform_location(gl, "write_depth"),
 			depth_writes_enabled);
 
 	// Check whether the view state's background colour has changed.
@@ -190,8 +190,8 @@ GPlatesGui::BackgroundSphere::paint(
 		d_background_colour = d_view_state.get_background_colour();
 
 		// Change the background colour in the program object.
-		glUniform4f(
-				d_program->get_uniform_location("background_color"),
+		gl.Uniform4f(
+				d_program->get_uniform_location(gl, "background_color"),
 				d_background_colour.red(), d_background_colour.green(), d_background_colour.blue(), d_background_colour.alpha());
 	}
 
@@ -222,5 +222,5 @@ GPlatesGui::BackgroundSphere::paint(
 
 	// Draw the full screen quad.
 	gl.BindVertexArray(d_full_screen_quad);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	gl.DrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }

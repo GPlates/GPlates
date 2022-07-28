@@ -252,7 +252,7 @@ namespace GPlatesOpenGL
 			gl.BindTexture(GL_TEXTURE_2D, tile_texture);
 
 			// Load cached image into tile texture.
-			glTexSubImage2D(
+			gl.TexSubImage2D(
 					GL_TEXTURE_2D, 0/*level*/,
 					0/*xoffset*/, 0/*yoffset*/, debug_image.width(), debug_image.height(),
 					GL_RGBA, GL_UNSIGNED_BYTE, debug_rgba8_array.get());
@@ -321,8 +321,8 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::render(
 	// Set view projection matrix in shader program.
 	GLfloat view_projection_float_matrix[16];
 	view_projection.get_view_projection_transform().get_float_matrix(view_projection_float_matrix);
-	glUniformMatrix4fv(
-			d_render_tile_to_scene_program->get_uniform_location("view_projection"),
+	gl.UniformMatrix4fv(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
 
 	// First see if the map projection central meridian has changed.
@@ -684,13 +684,13 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::set_tile_state(
 	// Transfer tile texture transform to shader program.
 	GLfloat tile_texture_float_matrix[16];
 	tile_texture_matrix.get_float_matrix(tile_texture_float_matrix);
-	glUniformMatrix4fv(
-			d_render_tile_to_scene_program->get_uniform_location("tile_texture_transform"),
+	gl.UniformMatrix4fv(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "tile_texture_transform"),
 			1, GL_FALSE/*transpose*/, tile_texture_float_matrix);
 
 	// Set whether clipping is enabled.
-	glUniform1i(
-			d_render_tile_to_scene_program->get_uniform_location("using_clip_texture"),
+	gl.Uniform1i(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "using_clip_texture"),
 			clip_to_tile_frustum);
 
 	// If we've traversed deep enough into the cube quad tree then the cube quad tree mesh
@@ -715,8 +715,8 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::set_tile_state(
 		// Transfer clip texture transform to shader program.
 		GLfloat clip_texture_float_matrix[16];
 		clip_texture_matrix.get_float_matrix(clip_texture_float_matrix);
-		glUniformMatrix4fv(
-				d_render_tile_to_scene_program->get_uniform_location("clip_texture_transform"),
+		gl.UniformMatrix4fv(
+				d_render_tile_to_scene_program->get_uniform_location(gl, "clip_texture_transform"),
 				1, GL_FALSE/*transpose*/, clip_texture_float_matrix);
 	}
 
@@ -794,8 +794,8 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::compile_link_shader_program(
 
 	// Vertex shader.
 	GLShader::shared_ptr_type vertex_shader = GLShader::create(gl, GL_VERTEX_SHADER);
-	vertex_shader->shader_source(vertex_shader_source);
-	vertex_shader->compile_shader();
+	vertex_shader->shader_source(gl, vertex_shader_source);
+	vertex_shader->compile_shader(gl);
 
 	// Fragment shader source.
 	GLShaderSource fragment_shader_source;
@@ -804,13 +804,13 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::compile_link_shader_program(
 
 	// Fragment shader.
 	GLShader::shared_ptr_type fragment_shader = GLShader::create(gl, GL_FRAGMENT_SHADER);
-	fragment_shader->shader_source(fragment_shader_source);
-	fragment_shader->compile_shader();
+	fragment_shader->shader_source(gl, fragment_shader_source);
+	fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
-	d_render_tile_to_scene_program->attach_shader(vertex_shader);
-	d_render_tile_to_scene_program->attach_shader(fragment_shader);
-	d_render_tile_to_scene_program->link_program();
+	d_render_tile_to_scene_program->attach_shader(gl, vertex_shader);
+	d_render_tile_to_scene_program->attach_shader(gl, fragment_shader);
+	d_render_tile_to_scene_program->link_program(gl);
 
 	//
 	// Set some shader program constants that don't change.
@@ -819,11 +819,11 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::compile_link_shader_program(
 	gl.UseProgram(d_render_tile_to_scene_program);
 
 	// Use texture unit 0 for tile texture.
-	glUniform1i(
-			d_render_tile_to_scene_program->get_uniform_location("tile_texture_sampler"),
+	gl.Uniform1i(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "tile_texture_sampler"),
 			0/*texture unit*/);
 	// Use texture unit 1 for clip texture.
-	glUniform1i(
-			d_render_tile_to_scene_program->get_uniform_location("clip_texture_sampler"),
+	gl.Uniform1i(
+			d_render_tile_to_scene_program->get_uniform_location(gl, "clip_texture_sampler"),
 			1/*texture unit*/);
 }

@@ -217,8 +217,8 @@ GPlatesOpenGL::GLLight::compile_link_programs(
 
 	// Vertex shader.
 	GPlatesOpenGL::GLShader::shared_ptr_type vertex_shader = GPlatesOpenGL::GLShader::create(gl, GL_VERTEX_SHADER);
-	vertex_shader->shader_source(vertex_shader_source);
-	vertex_shader->compile_shader();
+	vertex_shader->shader_source(gl, vertex_shader_source);
+	vertex_shader->compile_shader(gl);
 
 	// Fragment shader source.
 	GPlatesOpenGL::GLShaderSource fragment_shader_source;
@@ -226,13 +226,13 @@ GPlatesOpenGL::GLLight::compile_link_programs(
 
 	// Fragment shader.
 	GPlatesOpenGL::GLShader::shared_ptr_type fragment_shader = GPlatesOpenGL::GLShader::create(gl, GL_FRAGMENT_SHADER);
-	fragment_shader->shader_source(fragment_shader_source);
-	fragment_shader->compile_shader();
+	fragment_shader->shader_source(gl, fragment_shader_source);
+	fragment_shader->compile_shader(gl);
 
 	// Vertex-fragment program.
-	d_render_map_view_light_direction_program->attach_shader(vertex_shader);
-	d_render_map_view_light_direction_program->attach_shader(fragment_shader);
-	d_render_map_view_light_direction_program->link_program();
+	d_render_map_view_light_direction_program->attach_shader(gl, vertex_shader);
+	d_render_map_view_light_direction_program->attach_shader(gl, fragment_shader);
+	d_render_map_view_light_direction_program->link_program(gl);
 }
 
 
@@ -250,14 +250,14 @@ GPlatesOpenGL::GLLight::create_map_view_light_direction_cube_texture(
 	// Also it enables us to have distinctly different light directions on either side of the
 	// central meridian which we'll make go through the centre of some of the faces of the cube
 	// (which is along a boundary between two columns of pixels - provided texture dimension is even).
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	gl.TexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	gl.TexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels.
 	// Not strictly necessary for nearest-neighbour filtering but it is if later we change to use
 	// linear filtering to avoid seams.
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Create the texture but don't load any data into it.
 	// Leave it uninitialised because we will be rendering into it to initialise it.
@@ -267,7 +267,7 @@ GPlatesOpenGL::GLLight::create_map_view_light_direction_cube_texture(
 	{
 		const GLenum face_target = static_cast<GLenum>(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face);
 
-		glTexImage2D(face_target, 0, GL_RGBA8,
+		gl.TexImage2D(face_target, 0, GL_RGBA8,
 				d_map_view_light_direction_cube_texture_dimension, d_map_view_light_direction_cube_texture_dimension,
 				0,
 				// Since the image data is NULL it doesn't really matter what 'format' and 'type' are - just
@@ -276,7 +276,7 @@ GPlatesOpenGL::GLLight::create_map_view_light_direction_cube_texture(
 	}
 
 	// Check there are no OpenGL errors.
-	GLUtils::check_gl_errors(GPLATES_ASSERTION_SOURCE);
+	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
 }
 
 
@@ -296,7 +296,7 @@ GPlatesOpenGL::GLLight::check_framebuffer_completeness_map_view_light_direction_
 
 	// Throw OpenGLException if not complete.
 	// This should succeed since we're using GL_RGBA8 texture format (which is required by OpenGL 3.3 core).
-	const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 	GPlatesGlobal::Assert<OpenGLException>(
 			completeness == GL_FRAMEBUFFER_COMPLETE,
 			GPLATES_ASSERTION_SOURCE,
@@ -418,14 +418,14 @@ GPlatesOpenGL::GLLight::update_map_view(
 #endif
 	GLfloat view_inverse_float_matrix[16];
 	view_inverse_matrix.get_float_matrix(view_inverse_float_matrix);
-	glUniformMatrix4fv(
-			d_render_map_view_light_direction_program->get_uniform_location("view_inverse"),
+	gl.UniformMatrix4fv(
+			d_render_map_view_light_direction_program->get_uniform_location(gl, "view_inverse"),
 			1, GL_FALSE/*transpose*/, view_inverse_float_matrix);
 
 	// Set the view-space light direction (which is world-space if light not attached to view-space).
 	// The shader program will transform it to world-space.
-	glUniform3f(
-			d_render_map_view_light_direction_program->get_uniform_location("view_space_light_direction"),
+	gl.Uniform3f(
+			d_render_map_view_light_direction_program->get_uniform_location(gl, "view_space_light_direction"),
 			d_scene_lighting_params.get_map_view_light_direction().x().dval(),
 			d_scene_lighting_params.get_map_view_light_direction().y().dval(),
 			d_scene_lighting_params.get_map_view_light_direction().z().dval());
@@ -442,10 +442,10 @@ GPlatesOpenGL::GLLight::update_map_view(
 		gl.FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, face_target, d_map_view_light_direction_cube_texture, 0/*level*/);
 
 		// There's only a colour buffer to clear.
-		glClear(GL_COLOR_BUFFER_BIT);
+		gl.Clear(GL_COLOR_BUFFER_BIT);
 
 		// Draw the full screen quad.
-		glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		gl.DrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 	}
 }
 

@@ -750,13 +750,13 @@ GPlatesQtWidgets::MapCanvas::initialize_off_screen_render_target(
 
 	// Initialise offscreen colour renderbuffer.
 	gl.BindRenderbuffer(GL_RENDERBUFFER, d_off_screen_colour_renderbuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, d_off_screen_render_target_dimension, d_off_screen_render_target_dimension);
+	gl.RenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, d_off_screen_render_target_dimension, d_off_screen_render_target_dimension);
 
 	// Initialise offscreen depth/stencil renderbuffer.
 	// Note that (in OpenGL 3.3 core) an OpenGL implementation is only *required* to provide stencil if a
 	// depth/stencil format is requested, and furthermore GL_DEPTH24_STENCIL8 is a specified required format.
 	gl.BindRenderbuffer(GL_RENDERBUFFER, d_off_screen_depth_stencil_renderbuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, d_off_screen_render_target_dimension, d_off_screen_render_target_dimension);
+	gl.RenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, d_off_screen_render_target_dimension, d_off_screen_render_target_dimension);
 
 	// Bind the framebuffer that'll we subsequently attach the renderbuffers to.
 	gl.BindFramebuffer(GL_FRAMEBUFFER, d_off_screen_framebuffer);
@@ -767,7 +767,7 @@ GPlatesQtWidgets::MapCanvas::initialize_off_screen_render_target(
 	// Bind the depth/stencil renderbuffer to framebuffer's depth/stencil attachment.
 	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, d_off_screen_depth_stencil_renderbuffer);
 
-	const GLenum completeness = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+	const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 	GPlatesGlobal::Assert<GPlatesOpenGL::OpenGLException>(
 			completeness == GL_FRAMEBUFFER_COMPLETE,
 			GPLATES_ASSERTION_SOURCE,
@@ -825,7 +825,7 @@ GPlatesQtWidgets::MapCanvas::render_scene(
 	gl.ClearColor(0, 0, 0, 1); // Clear colour to opaque black
 	gl.ClearDepth(); // Clear depth to 1.0
 	gl.ClearStencil(); // Clear stencil to 0
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
 	const float scale = calculate_scale(

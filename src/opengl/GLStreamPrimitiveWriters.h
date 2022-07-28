@@ -63,7 +63,7 @@ namespace GPlatesOpenGL
 	/**
 	 * Stream writer class to write to a fixed size buffer.
 	 *
-	 * This is one way to write to a vertex buffer (using glMapBuffer/glMapBufferRange).
+	 * This is one way to write to a vertex buffer (using gl.MapBuffer/gl.MapBufferRange).
 	 *
 	 * This is useful when you don't know how many vertices/indices you're going to stream and
 	 * you're not going to re-use the vertices/indices.

@@ -56,6 +56,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		check_gl_errors(
+				GL &gl,
 				const GPlatesUtils::CallStack::Trace &assert_location);
 
 
@@ -71,7 +72,7 @@ namespace GPlatesOpenGL
 		 * It can be rendered as:
 		 *
 		 *   gl.BindVertexArray(vertex_array);
-		 *   glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+		 *   gl.DrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 		 *
 		 * Note: This also creates a new vertex buffer (but no vertex element buffer) that is
 		 *       kept alive by the returned vertex array.
