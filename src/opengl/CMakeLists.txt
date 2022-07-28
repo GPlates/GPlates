@@ -124,7 +124,6 @@ set(srcs
     GLVisualRasterSource.cc
     GLVisualRasterSource.h
     OpenGL1.h
-    OpenGL3.h
     OpenGLException.h
     OpenGLFunctions.cc
     OpenGLFunctions.h

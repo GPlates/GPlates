@@ -25,8 +25,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
-
 #include <cmath>
 #include <vector>
 #include <utility>

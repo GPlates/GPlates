@@ -23,8 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
-
 #include <algorithm>  // std::fill_n
 #include <boost/cast.hpp>
 #include <boost/scoped_array.hpp>

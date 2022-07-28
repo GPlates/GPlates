@@ -1,4 +1,3 @@
-#include <GL/glew.h>
 #include <vector>
 #include <sstream>
 #include <set>

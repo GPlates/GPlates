@@ -23,8 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
-
 #include <string>
 #include <utility>
 #include <QDebug>
@@ -45,15 +43,9 @@
 #include "OpenGLFunctions.h"
 
 #include "global/AssertionFailureException.h"
-#include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-// We use macros in <GL/glew.h> that contain old-style casts.
-DISABLE_GCC_WARNING("-Wold-style-cast")
-
-
-bool GPlatesOpenGL::GLContext::s_initialised_GLEW = false;
 
 //
 // Prefer OpenGL 4.3 (core profile) but allow a minimum of OpenGL 3.3 (core profile) with forward compatibility
@@ -78,8 +70,6 @@ bool GPlatesOpenGL::GLContext::s_initialised_GLEW = false;
 //
 const QPair<int, int> GPlatesOpenGL::GLContext::PREFERRED_OPENGL_VERSION(4, 3);
 const QPair<int, int> GPlatesOpenGL::GLContext::MINIMUM_OPENGL_VERSION(3, 3);
-
-GPlatesOpenGL::GLCapabilities GPlatesOpenGL::GLContext::s_capabilities;
 
 
 void
@@ -155,32 +145,8 @@ GPlatesOpenGL::GLContext::~GLContext()
 void
 GPlatesOpenGL::GLContext::initialiseGL()
 {
-	// Currently we only initialise once for the whole application instead of
-	// once for each rendering context.
-	// This is because the GLEW library would need to be compiled with the GLEW_MX
-	// flag (see http://glew.sourceforge.net/advanced.html under multiple rendering contexts)
-	// and this does not appear to be supported in all package managers (eg, linux and MacOS X).
-	// There's not much information on whether we need one if we share contexts in Qt but
-	// this is the assumption here.
-	if (!s_initialised_GLEW)
-	{
-		GLenum err = glewInit();
-		if (GLEW_OK != err)
-		{
-			// glewInit failed.
-			std::string error_message = std::string("Unable to initialise GLEW: ") +
-					reinterpret_cast<const char *>(glewGetErrorString(err));
-			throw OpenGLException(
-					GPLATES_ASSERTION_SOURCE,
-					error_message.c_str());
-		}
-		//qDebug() << "Status: Using GLEW " << reinterpret_cast<const char *>(glewGetString(GLEW_VERSION));
-
-		s_initialised_GLEW = true;
-
-		// Get the OpenGL capabilities and parameters from the current OpenGL implementation.
-		s_capabilities.initialise(get_opengl_functions(), d_context_impl->get_opengl_context());
-	}
+	// Get the OpenGL capabilities and parameters from the current OpenGL implementation.
+	d_capabilities.initialise(get_opengl_functions(), d_context_impl->get_opengl_context());
 
 	// The QSurfaceFormat of our OpenGL context.
 	const QSurfaceFormat surface_format = get_surface_format();
@@ -220,15 +186,15 @@ GPlatesOpenGL::GLContext::create_gl()
 }
 
 
-const GPlatesOpenGL::GLCapabilities &
+const GPlatesOpenGL::GLCapabilities&
 GPlatesOpenGL::GLContext::get_capabilities() const
 {
-	// GLEW must have been initialised.
+	// The capabilities must have been initialised (which means our 'initialiseGL()' must have been called).
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			s_initialised_GLEW,
+			d_capabilities.is_initialised(),
 			GPLATES_ASSERTION_SOURCE);
 
-	return s_capabilities;
+	return d_capabilities;
 }
 
 

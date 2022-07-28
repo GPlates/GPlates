@@ -23,8 +23,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
-
 #include <cstring> // for memcpy
 #include <set>
 #include <sstream>
@@ -43,13 +41,8 @@
 #include "OpenGLFunctions.h"
 
 #include "global/AssertionFailureException.h"
-#include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
-
-
-// We use macros in <GL/glew.h> that contain old-style casts.
-DISABLE_GCC_WARNING("-Wold-style-cast")
 
 
 GPlatesOpenGL::GLProgram::GLProgram(

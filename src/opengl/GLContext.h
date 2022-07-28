@@ -470,12 +470,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Function to return OpenGL implementation-dependent capabilities and parameters.
 		 *
-		 * NOTE: This used to be a static method (to enable global access).
-		 * However it is now non-static to force clients to access a valid GLContext object.
-		 * This ensures that the GLEW (and hence these parameters) have been initialised before access.
-		 *
 		 * @throws PreconditionViolationError if @a initialiseGL not yet called.
-		 * This method is static only to avoid having to pass around a @a GLContext.
 		 */
 		const GLCapabilities &
 		get_capabilities() const;
@@ -506,6 +501,14 @@ namespace GPlatesOpenGL
 		boost::shared_ptr<Impl> d_context_impl;
 
 		/**
+		 * OpenGL implementation-dependent capabilities and parameters.
+		 *
+		 * Note: This should be the same for all contexts (created for all widgets) since they
+		 *       they all share the same default QSurfaceFormat.
+		 */
+		GLCapabilities d_capabilities;
+
+		/**
 		 * The OpenGL functions for the version and profile of this context.
 		 *
 		 * It is created on first access (and context must be current).
@@ -532,16 +535,6 @@ namespace GPlatesOpenGL
 		 * The *minimum* OpenGL version (in a core profile).
 		 */
 		static const QPair<int, int> MINIMUM_OPENGL_VERSION;
-
-		/**
-		 * Is true if the GLEW library has been initialised (if @a initialiseGL has been called).
-		 */
-		static bool s_initialised_GLEW;
-
-		/**
-		 * OpenGL implementation-dependent capabilities and parameters.
-		 */
-		static GLCapabilities s_capabilities;
 
 
 		//! Constructor.

@@ -186,7 +186,7 @@ namespace GPlatesOpenGL
 		//
 		// Only GLContext can create a GLCapabilities - this is to prevent clients
 		// from creating and initialising their own GLCapabilities - it must be initialised
-		// from a GLContext once the GLEW library has been initialised.
+		// from a GLContext once its QOpenGLContext has been initialised.
 		//
 		friend class GLContext;
 
@@ -196,6 +196,15 @@ namespace GPlatesOpenGL
 		initialise(
 				OpenGLFunctions &opengl_functions,
 				const QOpenGLContext &opengl_context);
+
+		bool
+		is_initialised() const
+		{
+			return d_is_initialised;
+		}
+
+		//! Had @a initialise been called yet.
+		bool d_is_initialised;
 
 	private:
 

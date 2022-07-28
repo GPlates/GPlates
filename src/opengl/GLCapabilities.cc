@@ -23,18 +23,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <opengl/OpenGL3.h>  // Should be included at TOP of ".cc" file.
-
 #include <QDebug>
 
 #include "GLCapabilities.h"
 
 #include "OpenGLFunctions.h"
-
-#include "global/CompilerWarnings.h"
-
-// We use macros in <GL/glew.h> that contain old-style casts.
-DISABLE_GCC_WARNING("-Wold-style-cast")
 
 
 GPlatesOpenGL::GLCapabilities::GLCapabilities() :
@@ -73,7 +66,8 @@ GPlatesOpenGL::GLCapabilities::GLCapabilities() :
 	gl_max_cube_map_texture_size(1024),
 	gl_EXT_texture_filter_anisotropic(false),
 	gl_texture_max_anisotropy(1.0f),
-	gl_max_texture_array_layers(256)
+	gl_max_texture_array_layers(256),
+	d_is_initialised(false)
 {
 	gl_max_viewport_dims[0] = 0;
 	gl_max_viewport_dims[1] = 0;
@@ -169,6 +163,9 @@ GPlatesOpenGL::GLCapabilities::initialise(
 	}
 
 	gl_max_texture_array_layers = query_integer(opengl_functions, GL_MAX_ARRAY_TEXTURE_LAYERS);
+
+	// Capabilities have been successfully initialised.
+	d_is_initialised = true;
 }
 
 
