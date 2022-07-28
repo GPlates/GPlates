@@ -47,6 +47,50 @@ namespace GPlatesOpenGL
 	public:
 
 		//
+		// OpenGL Version (core profile)
+		//
+
+		int gl_major_version;
+		int gl_minor_version;
+
+
+		//! Version 3.3 (core profile) is always supported (it's our minimum requirement).
+		bool
+		supports_3_3_core() const
+		{
+			return true;
+		}
+
+		//! Returns true if we have OpenGL 4.0 (core profile) or greater.
+		bool
+		supports_4_0_core() const
+		{
+			return gl_major_version == 4 && gl_minor_version >= 0;
+		}
+
+		//! Returns true if we have OpenGL 4.1 (core profile) or greater.
+		bool
+		supports_4_1_core() const
+		{
+			return gl_major_version == 4 && gl_minor_version >= 1;
+		}
+
+		//! Returns true if we have OpenGL 4.2 (core profile) or greater.
+		bool
+		supports_4_2_core() const
+		{
+			return gl_major_version == 4 && gl_minor_version >= 2;
+		}
+
+		//! Returns true if we have OpenGL 4.3 (core profile) or greater.
+		bool
+		supports_4_3_core() const
+		{
+			return gl_major_version == 4 && gl_minor_version >= 3;
+		}
+
+
+		//
 		// Viewport
 		//
 

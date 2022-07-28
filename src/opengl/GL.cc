@@ -54,39 +54,21 @@ GPlatesOpenGL::GL::GL(
 }
 
 
-bool
-GPlatesOpenGL::GL::supports_4_0_core() const
-{
-	return d_opengl_functions.supports_4_0_core();
-}
-
-
-bool
-GPlatesOpenGL::GL::supports_4_1_core() const
-{
-	return d_opengl_functions.supports_4_1_core();
-}
-
-
-bool
-GPlatesOpenGL::GL::supports_4_2_core() const
-{
-	return d_opengl_functions.supports_4_2_core();
-}
-
-
-bool
-GPlatesOpenGL::GL::supports_4_3_core() const
-{
-	return d_opengl_functions.supports_4_3_core();
-}
-
-
 void
 GPlatesOpenGL::GL::ActiveTexture(
 		GLenum active_texture_)
 {
 	d_current_state->active_texture(active_texture_);
+}
+
+
+void
+GPlatesOpenGL::GL::BindAttribLocation(
+		GLProgram::shared_ptr_type program,
+		GLuint index,
+		const GLchar *name)
+{
+	d_opengl_functions.glBindAttribLocation(program->get_resource_handle(), index, name);
 }
 
 
@@ -283,6 +265,35 @@ GPlatesOpenGL::GL::BlendFuncSeparate(
 	d_current_state->blend_func_separate(src_RGB, dst_RGB, src_alpha, dst_alpha);
 }
 
+		
+void
+GPlatesOpenGL::GL::BufferData(
+		GLenum target,
+		GLsizeiptr size,
+		const GLvoid *data,
+		GLenum usage)
+{
+	d_opengl_functions.glBufferData(target, size, data, usage);
+}
+
+
+void
+GPlatesOpenGL::GL::BufferSubData(
+		GLenum target,
+		GLintptr offset,
+		GLsizeiptr size,
+		const GLvoid *data)
+{
+	d_opengl_functions.glBufferSubData(target, offset, size, data);
+}
+
+
+GLenum
+GPlatesOpenGL::GL::CheckFramebufferStatus(
+		GLenum target)
+{
+	return d_opengl_functions.glCheckFramebufferStatus(target);
+}
 
 void
 GPlatesOpenGL::GL::ClampColor(
@@ -290,6 +301,14 @@ GPlatesOpenGL::GL::ClampColor(
 		GLenum clamp)
 {
 	d_current_state->clamp_color(target, clamp);
+}
+
+
+void
+GPlatesOpenGL::GL::Clear(
+		GLbitfield mask)
+{
+	d_opengl_functions.glClear(mask);
 }
 
 
@@ -313,6 +332,14 @@ GPlatesOpenGL::GL::ClearDepth(
 
 
 void
+GPlatesOpenGL::GL::ClearStencil(
+		GLint stencil)
+{
+	d_current_state->clear_stencil(stencil);
+}
+
+
+void
 GPlatesOpenGL::GL::ColorMask(
 		GLboolean red,
 		GLboolean green,
@@ -332,14 +359,6 @@ GPlatesOpenGL::GL::ColorMaski(
 		GLboolean alpha)
 {
 	d_current_state->color_maski(buf, red, green, blue, alpha);
-}
-
-
-void
-GPlatesOpenGL::GL::ClearStencil(
-		GLint stencil)
-{
-	d_current_state->clear_stencil(stencil);
 }
 
 
@@ -414,6 +433,16 @@ GPlatesOpenGL::GL::DisableVertexAttribArray(
 
 
 void
+GPlatesOpenGL::GL::DrawArrays(
+		GLenum mode,
+		GLint first,
+		GLsizei count)
+{
+	d_opengl_functions.glDrawArrays(mode, first, count);
+}
+
+
+void
 GPlatesOpenGL::GL::DrawBuffer(
 		GLenum buf)
 {
@@ -458,6 +487,30 @@ GPlatesOpenGL::GL::DrawBuffers(
 
 
 void
+GPlatesOpenGL::GL::DrawElements(
+		GLenum mode,
+		GLsizei count,
+		GLenum type,
+		const GLvoid *indices)
+{
+	d_opengl_functions.glDrawElements(mode, count, type, indices);
+}
+
+
+void
+GPlatesOpenGL::GL::DrawRangeElements(
+		GLenum mode,
+		GLuint start,
+		GLuint end,
+		GLsizei count,
+		GLenum type,
+		const GLvoid *indices)
+{
+	d_opengl_functions.glDrawRangeElements(mode, start, end, count, type, indices);
+}
+
+
+void
 GPlatesOpenGL::GL::Enable(
 		GLenum cap)
 {
@@ -491,6 +544,16 @@ GPlatesOpenGL::GL::EnableVertexAttribArray(
 			"Cannot enable vertex attribute array because a vertex array object is not currently bound.");
 
 	vertex_array.get()->enable_vertex_attrib_array(*this, index);
+}
+
+
+void
+GPlatesOpenGL::GL::FlushMappedBufferRange(
+		GLenum target,
+		GLintptr offset,
+		GLsizeiptr length)
+{
+	d_opengl_functions.glFlushMappedBufferRange(target, offset, length);
 }
 
 
@@ -645,6 +708,25 @@ GPlatesOpenGL::GL::FrontFace(
 }
 
 
+GLenum
+GPlatesOpenGL::GL::GetError()
+{
+	return d_opengl_functions.glGetError();
+}
+
+
+void
+GPlatesOpenGL::GL::GetTexImage(
+		GLenum target,
+		GLint level,
+		GLenum format,
+		GLenum type,
+		GLvoid *pixels)
+{
+	d_opengl_functions.glGetTexImage(target, level, format, type, pixels);
+}
+
+
 void
 GPlatesOpenGL::GL::Hint(
 		GLenum target,
@@ -659,6 +741,26 @@ GPlatesOpenGL::GL::LineWidth(
 		GLfloat width)
 {
 	d_current_state->line_width(width);
+}
+
+
+GLvoid *
+GPlatesOpenGL::GL::MapBuffer(
+		GLenum target,
+		GLenum access)
+{
+	return d_opengl_functions.glMapBuffer(target, access);
+}
+
+
+GLvoid *
+GPlatesOpenGL::GL::MapBufferRange(
+		GLenum target,
+		GLintptr offset,
+		GLsizeiptr length,
+		GLbitfield access)
+{
+	return d_opengl_functions.glMapBufferRange(target, offset, length, access);
 }
 
 
@@ -741,6 +843,31 @@ GPlatesOpenGL::GL::ReadBuffer(
 
 
 void
+GPlatesOpenGL::GL::ReadPixels(
+		GLint x,
+		GLint y,
+		GLsizei width,
+		GLsizei height,
+		GLenum format,
+		GLenum type,
+		GLvoid *pixels)
+{
+	d_opengl_functions.glReadPixels(x, y, width, height, format, type, pixels);
+}
+
+
+void
+GPlatesOpenGL::GL::RenderbufferStorage(
+		GLenum target,
+		GLenum internalformat,
+		GLsizei width,
+		GLsizei height)
+{
+	d_opengl_functions.glRenderbufferStorage(target, internalformat, width, height);
+}
+
+
+void
 GPlatesOpenGL::GL::SampleCoverage(
 		GLclampf value,
 		GLboolean invert)
@@ -755,6 +882,66 @@ GPlatesOpenGL::GL::SampleMaski(
 		GLbitfield mask)
 {
 	d_current_state->sample_maski(mask_number, mask);
+}
+
+
+void
+GPlatesOpenGL::GL::SamplerParameterf(
+		GLSampler::shared_ptr_type sampler,
+		GLenum pname,
+		GLfloat param)
+{
+	d_opengl_functions.glSamplerParameterf(sampler->get_resource_handle(), pname, param);
+}
+
+
+void
+GPlatesOpenGL::GL::SamplerParameterfv(
+		GLSampler::shared_ptr_type sampler,
+		GLenum pname,
+		const GLfloat *param)
+{
+	d_opengl_functions.glSamplerParameterfv(sampler->get_resource_handle(), pname, param);
+}
+
+
+void
+GPlatesOpenGL::GL::SamplerParameteri(
+		GLSampler::shared_ptr_type sampler,
+		GLenum pname,
+		GLint param)
+{
+	d_opengl_functions.glSamplerParameteri(sampler->get_resource_handle(), pname, param);
+}
+
+
+void
+GPlatesOpenGL::GL::SamplerParameteriv(
+		GLSampler::shared_ptr_type sampler,
+		GLenum pname,
+		const GLint *param)
+{
+	d_opengl_functions.glSamplerParameteriv(sampler->get_resource_handle(), pname, param);
+}
+
+
+void
+GPlatesOpenGL::GL::SamplerParameterIiv(
+		GLSampler::shared_ptr_type sampler,
+		GLenum pname,
+		const GLint *param)
+{
+	d_opengl_functions.glSamplerParameterIiv(sampler->get_resource_handle(), pname, param);
+}
+
+
+void
+GPlatesOpenGL::GL::SamplerParameterIuiv(
+		GLSampler::shared_ptr_type sampler,
+		GLenum pname,
+		const GLuint *param)
+{
+	d_opengl_functions.glSamplerParameterIuiv(sampler->get_resource_handle(), pname, param);
 }
 
 
@@ -831,10 +1018,484 @@ GPlatesOpenGL::GL::StencilOpSeparate(
 
 
 void
+GPlatesOpenGL::GL::TexParameterf(GLenum target, GLenum pname, GLfloat param)
+{
+	d_opengl_functions.glTexParameterf(target, pname, param);
+}
+
+
+void
+GPlatesOpenGL::GL::TexParameterfv(GLenum target, GLenum pname, const GLfloat *params)
+{
+	d_opengl_functions.glTexParameterfv(target, pname, params);
+}
+
+
+void
+GPlatesOpenGL::GL::TexParameteri(GLenum target, GLenum pname, GLint param)
+{
+	d_opengl_functions.glTexParameteri(target, pname, param);
+}
+
+
+void
+GPlatesOpenGL::GL::TexParameteriv(GLenum target, GLenum pname, const GLint *params)
+{
+	d_opengl_functions.glTexParameteriv(target, pname, params);
+}
+
+
+void
+GPlatesOpenGL::GL::TexParameterIiv(GLenum target, GLenum pname, const GLint *params)
+{
+	d_opengl_functions.glTexParameterIiv(target, pname, params);
+}
+
+
+void
+GPlatesOpenGL::GL::TexParameterIuiv(GLenum target, GLenum pname, const GLuint *params)
+{
+	d_opengl_functions.glTexParameterIuiv(target, pname, params);
+}
+
+
+void
+GPlatesOpenGL::GL::TexSubImage1D(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid *pixels)
+{
+	d_opengl_functions.glTexSubImage1D(target, level, xoffset, width, format, type, pixels);
+}
+
+
+void
+GPlatesOpenGL::GL::TexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels)
+{
+	d_opengl_functions.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
+}
+
+
+void
+GPlatesOpenGL::GL::TexSubImage3D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid *pixels)
+{
+	d_opengl_functions.glTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
+}
+
+
+void
+GPlatesOpenGL::GL::TexImage1D(
+		GLenum target,
+		GLint level,
+		GLint internalformat,
+		GLsizei width,
+		GLint border,
+		GLenum format,
+		GLenum type,
+		const GLvoid *pixels)
+{
+	d_opengl_functions.glTexImage1D(target, level, internalformat, width, border, format, type, pixels);
+}
+
+
+void
+GPlatesOpenGL::GL::TexImage2D(
+		GLenum target,
+		GLint level,
+		GLint internalformat,
+		GLsizei width,
+		GLsizei height,
+		GLint border,
+		GLenum format,
+		GLenum type,
+		const GLvoid *pixels)
+{
+	d_opengl_functions.glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
+}
+
+
+void
+GPlatesOpenGL::GL::TexImage3D(
+		GLenum target,
+		GLint level,
+		GLint internalformat,
+		GLsizei width,
+		GLsizei height,
+		GLsizei depth,
+		GLint border,
+		GLenum format,
+		GLenum type,
+		const GLvoid *pixels)
+{
+	d_opengl_functions.glTexImage3D(target, level, internalformat, width, height, depth, border, format, type, pixels);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform1f(
+		GLint location,
+		GLfloat v0)
+{
+	d_opengl_functions.glUniform1f(location, v0);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform1fv(
+		GLint location,
+		GLsizei count,
+		const GLfloat *value)
+{
+	d_opengl_functions.glUniform1fv(location, count, value);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform1i(
+		GLint location,
+		GLint v0)
+{
+	d_opengl_functions.glUniform1i(location, v0);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform1iv(
+		GLint location,
+		GLsizei count,
+		const GLint *value)
+{
+	d_opengl_functions.glUniform1iv(location, count, value);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform1ui(
+		GLint location,
+		GLuint v0)
+{
+	d_opengl_functions.glUniform1ui(location, v0);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform1uiv(
+		GLint location,
+		GLsizei count,
+		const GLuint *value)
+{
+	d_opengl_functions.glUniform1uiv(location, count, value);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform2f(
+		GLint location,
+		GLfloat v0,
+		GLfloat v1)
+{
+	d_opengl_functions.glUniform2f(location, v0, v1);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform2fv(
+		GLint location,
+		GLsizei count,
+		const GLfloat *value)
+{
+	d_opengl_functions.glUniform2fv(location, count, value);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform2i(
+		GLint location,
+		GLint v0,
+		GLint v1)
+{
+	d_opengl_functions.glUniform2i(location, v0, v1);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform2iv(
+		GLint location,
+		GLsizei count,
+		const GLint *value)
+{
+	d_opengl_functions.glUniform2iv(location, count, value);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform2ui(
+		GLint location,
+		GLuint v0,
+		GLuint v1)
+{
+	d_opengl_functions.glUniform2ui(location, v0, v1);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform2uiv(
+		GLint location,
+		GLsizei count,
+		const GLuint *value)
+{
+	d_opengl_functions.glUniform2uiv(location, count, value);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform3f(
+		GLint location,
+		GLfloat v0,
+		GLfloat v1,
+		GLfloat v2)
+{
+	d_opengl_functions.glUniform3f(location, v0, v1, v2);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform3fv(
+		GLint location,
+		GLsizei count,
+		const GLfloat *value)
+{
+	d_opengl_functions.glUniform3fv(location, count, value);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform3i(
+		GLint location,
+		GLint v0,
+		GLint v1,
+		GLint v2)
+{
+	d_opengl_functions.glUniform3i(location, v0, v1, v2);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform3iv(
+		GLint location,
+		GLsizei count,
+		const GLint *value)
+{
+	d_opengl_functions.glUniform3iv(location, count, value);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform3ui(
+		GLint location,
+		GLuint v0,
+		GLuint v1,
+		GLuint v2)
+{
+	d_opengl_functions.glUniform3ui(location, v0, v1, v2);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform3uiv(
+		GLint location,
+		GLsizei count,
+		const GLuint *value)
+{
+	d_opengl_functions.glUniform3uiv(location, count, value);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform4f(
+		GLint location,
+		GLfloat v0,
+		GLfloat v1,
+		GLfloat v2,
+		GLfloat v3)
+{
+	d_opengl_functions.glUniform4f(location, v0, v1, v2, v3);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform4fv(
+		GLint location,
+		GLsizei count,
+		const GLfloat *value)
+{
+	d_opengl_functions.glUniform4fv(location, count, value);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform4i(
+		GLint location,
+		GLint v0,
+		GLint v1,
+		GLint v2,
+		GLint v3)
+{
+	d_opengl_functions.glUniform4i(location, v0, v1, v2, v3);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform4iv(
+		GLint location,
+		GLsizei count,
+		const GLint *value)
+{
+	d_opengl_functions.glUniform4iv(location, count, value);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform4ui(
+		GLint location,
+		GLuint v0,
+		GLuint v1,
+		GLuint v2,
+		GLuint v3)
+{
+	d_opengl_functions.glUniform4ui(location, v0, v1, v2, v3);
+}
+
+
+void
+GPlatesOpenGL::GL::Uniform4uiv(
+		GLint location,
+		GLsizei count,
+		const GLuint *value)
+{
+	d_opengl_functions.glUniform4uiv(location, count, value);
+}
+
+
+void
+GPlatesOpenGL::GL::UniformBlockBinding(
+		GLProgram::shared_ptr_type program,
+		GLuint uniformBlockIndex,
+		GLuint uniformBlockBinding)
+{
+	d_opengl_functions.glUniformBlockBinding(program->get_resource_handle(), uniformBlockIndex, uniformBlockBinding);
+}
+
+
+void
+GPlatesOpenGL::GL::UniformMatrix2fv(
+		GLint location,
+		GLsizei count,
+		GLboolean transpose,
+		const GLfloat *value)
+{
+	d_opengl_functions.glUniformMatrix2fv(location, count, transpose, value);
+}
+
+
+void
+GPlatesOpenGL::GL::UniformMatrix2x3fv(
+		GLint location,
+		GLsizei count,
+		GLboolean transpose,
+		const GLfloat *value)
+{
+	d_opengl_functions.glUniformMatrix2x3fv(location, count, transpose, value);
+}
+
+
+void
+GPlatesOpenGL::GL::UniformMatrix2x4fv(
+		GLint location,
+		GLsizei count,
+		GLboolean transpose,
+		const GLfloat *value)
+{
+	d_opengl_functions.glUniformMatrix2x4fv(location, count, transpose, value);
+}
+
+
+void
+GPlatesOpenGL::GL::UniformMatrix3fv(
+		GLint location,
+		GLsizei count,
+		GLboolean transpose,
+		const GLfloat *value)
+{
+	d_opengl_functions.glUniformMatrix3fv(location, count, transpose, value);
+}
+
+
+void
+GPlatesOpenGL::GL::UniformMatrix3x2fv(
+		GLint location,
+		GLsizei count,
+		GLboolean transpose,
+		const GLfloat *value)
+{
+	d_opengl_functions.glUniformMatrix3x2fv(location, count, transpose, value);
+}
+
+
+void
+GPlatesOpenGL::GL::UniformMatrix3x4fv(
+		GLint location,
+		GLsizei count,
+		GLboolean transpose,
+		const GLfloat *value)
+{
+	d_opengl_functions.glUniformMatrix3x4fv(location, count, transpose, value);
+}
+
+
+void
+GPlatesOpenGL::GL::UniformMatrix4fv(
+		GLint location,
+		GLsizei count,
+		GLboolean transpose,
+		const GLfloat *value)
+{
+	d_opengl_functions.glUniformMatrix4fv(location, count, transpose, value);
+}
+
+
+void
+GPlatesOpenGL::GL::UniformMatrix4x2fv(
+		GLint location,
+		GLsizei count,
+		GLboolean transpose,
+		const GLfloat *value)
+{
+	d_opengl_functions.glUniformMatrix4x2fv(location, count, transpose, value);
+}
+
+
+void
+GPlatesOpenGL::GL::UniformMatrix4x3fv(
+		GLint location,
+		GLsizei count,
+		GLboolean transpose,
+		const GLfloat *value)
+{
+	d_opengl_functions.glUniformMatrix4x3fv(location, count, transpose, value);
+}
+
+
+void
 GPlatesOpenGL::GL::UseProgram(
 		boost::optional<GLProgram::shared_ptr_type> program)
 {
 	d_current_state->use_program(program);
+}
+
+
+GLboolean
+GPlatesOpenGL::GL::UnmapBuffer(
+		GLenum target)
+{
+	return d_opengl_functions.glUnmapBuffer(target);
 }
 
 

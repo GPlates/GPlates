@@ -38,6 +38,9 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 
 
 GPlatesOpenGL::GLCapabilities::GLCapabilities() :
+	// OpenGL 3.3 (core profile) is our minimum requirement...
+	gl_major_version(3),
+	gl_minor_version(3),
 	//
 	// Note: Non-zero values represent the minimum required by OpenGL 3.3 (core) for all implementations.
 	//
@@ -82,6 +85,14 @@ GPlatesOpenGL::GLCapabilities::initialise(
 		OpenGLFunctions &opengl_functions,
 		const QOpenGLContext &opengl_context)
 {
+	//
+	// OpenGL version (core profile)
+	//
+
+	gl_major_version = opengl_functions.get_major_version();
+	gl_minor_version = opengl_functions.get_minor_version();
+
+
 	//
 	// Viewport
 	//

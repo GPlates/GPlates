@@ -202,32 +202,8 @@ namespace GPlatesOpenGL
 		}
 
 
-		//! Version 3.3 core is always supported (it's our minimum requirement).
-		bool
-		supports_3_3_core() const
-		{
-			return true;
-		}
-
-		//! Returns true if we have OpenGL 4.0 or greater.
-		bool
-		supports_4_0_core() const;
-
-		//! Returns true if we have OpenGL 4.1 or greater.
-		bool
-		supports_4_1_core() const;
-
-		//! Returns true if we have OpenGL 4.2 or greater.
-		bool
-		supports_4_2_core() const;
-
-		//! Returns true if we have OpenGL 4.3 or greater.
-		bool
-		supports_4_3_core() const;
-
-
 		////////////////////////////////////////////////////////////////////////////////////////////////////////
-		// Set OpenGL state methods.
+		// OpenGL methods.
 		//
 		// The following methods are equivalent to the native OpenGL functions with the same function name
 		// (ie, with a 'gl' prefix). But we exclude the 'gl' prefix so that, for example, a function call to
@@ -244,9 +220,10 @@ namespace GPlatesOpenGL
 		//    usually accepting the resource *class* as an argument rather than accepting an *integer* handle (native resource).
 		// 3) All other methods (that do NOT set *global* state and do NOT create/delete OpenGL resources).
 		//    That functionality is handled by this class and includes methods that manipulate the *internal* state of resource objects
-		//    (such as 'Uniform4f()') and drawing commands (such as 'DrawArrays()'). However some functionality has moved to the
-		//    resource classes if was more convenient there (eg, @a GLProgram has methods to link a program and get a uniform location
-		//    since it wraps those with extra functionality for convenience, such as caching the location of uniforms upon querying them).
+		//    (such as 'Uniform4f()' affecting the currently bound @a GLProgram) and drawing commands (such as 'DrawArrays()').
+		//    However some functionality has moved to the resource classes if was more convenient there (eg, @a GLProgram has a method to
+		//    link a program and a method to get a uniform location since @a GLProgram wraps those with extra functionality for convenience,
+		//    such as checking the link status after linking and caching the location of uniforms upon querying them).
 		//
 		// Note: OpenGL calls for item (1) should use resource classes (like @a GLTexture).
 		//       All other OpenGL calls (ie, items (2) and (3) above) should go through this class (and in some cases the resource classes).
@@ -267,74 +244,76 @@ namespace GPlatesOpenGL
 		////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-		////////////////////////////////////////
-		//                                    //
-		// Functions in OpenGL 1.0 - 3.3 core //
-		//                                    //
-		////////////////////////////////////////
-
-
-		//
-		//
-		// GLOBAL state (saved/restored by @a StateScope)
-		//
-		//
-
+		// OpenGL 1.3
 		void
 		ActiveTexture(
 				GLenum active_texture);
 
-		//! Bind buffer target to buffer object (none means unbind).
+		// OpenGL 2.0
+		//
+		// An alternative is to specify this in the shader instead (supported by our min requirement of OpenGL 3.3).
+		// For example:
+		//
+		//   layout(location=0) in vec4 position;
+		//
+		void
+		BindAttribLocation(
+				GLProgram::shared_ptr_type program,
+				GLuint index,
+				const GLchar *name);
+
+		// OpenGL 1.5
 		void
 		BindBuffer(
 				GLenum target,
-				boost::optional<GLBuffer::shared_ptr_type> buffer);
+				boost::optional<GLBuffer::shared_ptr_type> buffer/*none means unbind*/);
 
-		//! Bind entire buffer object to indexed target (none means unbind).
+		// OpenGL 3.0
 		void
 		BindBufferBase(
 				GLenum target,
 				GLuint index,
-				boost::optional<GLBuffer::shared_ptr_type> buffer);
+				boost::optional<GLBuffer::shared_ptr_type> buffer/*none means unbind*/);
 
-		//! Bind sub-range of buffer object to indexed target (none means unbind).
+		// OpenGL 3.0
 		void
 		BindBufferRange(
 				GLenum target,
 				GLuint index,
-				boost::optional<GLBuffer::shared_ptr_type> buffer,
+				boost::optional<GLBuffer::shared_ptr_type> buffer/*none means unbind*/,
 				GLintptr offset,
 				GLsizeiptr size);
 
-		//! Bind framebuffer target to framebuffer object (none means bind to default framebuffer).
+		// OpenGL 3.0
 		void
 		BindFramebuffer(
 				GLenum target,
-				boost::optional<GLFramebuffer::shared_ptr_type> framebuffer);
+				boost::optional<GLFramebuffer::shared_ptr_type> framebuffer/*none means bind to default framebuffer*/);
 
-		//! Bind renderbuffer target (must be GL_RENDERBUFFER) to renderbuffer object (none means unbind).
+		// OpenGL 3.0
 		void
 		BindRenderbuffer(
 				GLenum target,
-				boost::optional<GLRenderbuffer::shared_ptr_type> renderbuffer);
+				boost::optional<GLRenderbuffer::shared_ptr_type> renderbuffer/*none means unbind*/);
 
-		//! Bind texture unit to sampler object (none means unbind).
+		// OpenGL 3.3
 		void
 		BindSampler(
 				GLuint unit,
-				boost::optional<GLSampler::shared_ptr_type> sampler);
+				boost::optional<GLSampler::shared_ptr_type> sampler/*none means unbind*/);
 
-		//! Bind texture target and active texture unit to texture object (none means unbind).
+		// OpenGL 1.1
 		void
 		BindTexture(
 				GLenum texture_target,
-				boost::optional<GLTexture::shared_ptr_type> texture);
+				boost::optional<GLTexture::shared_ptr_type> texture/*none means unbind*/);
 
-		//! Bind vertex array object (none means unbind).
+		// OpenGL 3.0
 		void
 		BindVertexArray(
-				boost::optional<GLVertexArray::shared_ptr_type> vertex_array);
+				boost::optional<GLVertexArray::shared_ptr_type> vertex_array/*none means unbind*/);
 
+		// OpenGL 1.2
 		void
 		BlendColor(
 				GLclampf red = GLclampf(0.0),
@@ -342,32 +321,64 @@ namespace GPlatesOpenGL
 				GLclampf blue = GLclampf(0.0),
 				GLclampf alpha = GLclampf(0.0));
 
+		// OpenGL 1.2
 		void
 		BlendEquation(
 				GLenum mode);
 
+		// OpenGL 2.0
 		void
 		BlendEquationSeparate(
 				GLenum mode_RGB,
 				GLenum mode_alpha);
 
+		// OpenGL 1.0
 		void
 		BlendFunc(
 				GLenum src,
 				GLenum dst);
 
+		// OpenGL 1.4
 		void
 		BlendFuncSeparate(
 				GLenum src_RGB,
 				GLenum dst_RGB,
 				GLenum src_alpha,
 				GLenum dst_alpha);
+		
+		// OpenGL 1.5
+		void
+		BufferData(
+				GLenum target,
+				GLsizeiptr size,
+				const GLvoid *data,
+				GLenum usage);
 
+		// OpenGL 1.5
+		void
+		BufferSubData(
+				GLenum target,
+				GLintptr offset,
+				GLsizeiptr size,
+				const GLvoid *data);
+
+		// OpenGL 3.0
+		GLenum
+		CheckFramebufferStatus(
+				GLenum target);
+
+		// OpenGL 3.0
 		void
 		ClampColor(
 				GLenum target,
 				GLenum clamp);
 
+		// OpenGL 1.0
+		void
+		Clear(
+				GLbitfield mask);
+
+		// OpenGL 1.0
 		void
 		ClearColor(
 				GLclampf red = GLclampf(0.0),
@@ -375,10 +386,17 @@ namespace GPlatesOpenGL
 				GLclampf blue = GLclampf(0.0),
 				GLclampf alpha = GLclampf(0.0));
 
+		// OpenGL 1.0
 		void
 		ClearDepth(
 				GLclampd depth = GLclampd(1.0));
 
+		// OpenGL 1.0
+		void
+		ClearStencil(
+				GLint stencil = 0);
+
+		// OpenGL 1.0
 		void
 		ColorMask(
 				GLboolean red = GL_TRUE,
@@ -386,6 +404,7 @@ namespace GPlatesOpenGL
 				GLboolean blue = GL_TRUE,
 				GLboolean alpha = GL_TRUE);
 
+		// OpenGL 3.0
 		void
 		ColorMaski(
 				GLuint buf,
@@ -394,112 +413,313 @@ namespace GPlatesOpenGL
 				GLboolean blue = GL_TRUE,
 				GLboolean alpha = GL_TRUE);
 
-		void
-		ClearStencil(
-				GLint stencil = 0);
-
+		// OpenGL 1.0
 		void
 		CullFace(
 				GLenum mode = GL_BACK);
 
+		// OpenGL 1.0
 		void
 		DepthFunc(
 				GLenum func);
 
+		// OpenGL 1.0
 		void
 		DepthMask(
 				GLboolean flag = GL_TRUE);
 
+		// OpenGL 1.0
 		void
 		DepthRange(
 				GLclampd n = 0.0,
 				GLclampd f = 1.0);
 
+		// OpenGL 1.0
 		void
 		Disable(
 				GLenum cap);
 
+		// OpenGL 3.0
 		void
 		Disablei(
 				GLenum cap,
 				GLuint index);
 
+		// OpenGL 2.0
+		void
+		DisableVertexAttribArray(
+				GLuint index);
+
+		// OpenGL 1.1
+		void
+		DrawArrays(
+				GLenum mode,
+				GLint first,
+				GLsizei count);
+
+		// OpenGL 1.0
 		void
 		DrawBuffer(
 				GLenum buf);
 
+		// OpenGL 2.0
 		void
 		DrawBuffers(
 				const std::vector<GLenum> &bufs);
 
+		// OpenGL 1.1
+		void
+		DrawElements(
+				GLenum mode,
+				GLsizei count,
+				GLenum type,
+				const GLvoid *indices);
+
+		// OpenGL 1.2
+		void
+		DrawRangeElements(
+				GLenum mode,
+				GLuint start,
+				GLuint end,
+				GLsizei count,
+				GLenum type,
+				const GLvoid *indices);
+
+		// OpenGL 1.0
 		void
 		Enable(
 				GLenum cap);
 
+		// OpenGL 3.0
 		void
 		Enablei(
 				GLenum cap,
 				GLuint index);
 
+		// OpenGL 2.0
+		void
+		EnableVertexAttribArray(
+				GLuint index);
+
+		// OpenGL 3.0
+		void
+		FlushMappedBufferRange(
+				GLenum target,
+				GLintptr offset,
+				GLsizeiptr length);
+
+		// OpenGL 3.0
+		void
+		FramebufferRenderbuffer(
+				GLenum target,
+				GLenum attachment,
+				GLenum renderbuffertarget,
+				boost::optional<GLRenderbuffer::shared_ptr_type> renderbuffer/*none means detach*/);
+
+		// OpenGL 3.2
+		void
+		FramebufferTexture(
+				GLenum target,
+				GLenum attachment,
+				boost::optional<GLTexture::shared_ptr_type> texture/*none means detach*/,
+				GLint level);
+
+		// OpenGL 3.0
+		void
+		FramebufferTexture1D(
+				GLenum target,
+				GLenum attachment,
+				GLenum textarget,
+				boost::optional<GLTexture::shared_ptr_type> texture/*none means detach*/,
+				GLint level);
+
+		// OpenGL 3.0
+		void
+		FramebufferTexture2D(
+				GLenum target,
+				GLenum attachment,
+				GLenum textarget,
+				boost::optional<GLTexture::shared_ptr_type> texture/*none means detach*/,
+				GLint level);
+
+		// OpenGL 3.0
+		void
+		FramebufferTexture3D(
+				GLenum target,
+				GLenum attachment,
+				GLenum textarget,
+				boost::optional<GLTexture::shared_ptr_type> texture/*none means detach*/,
+				GLint level,
+				GLint layer);
+
+		// OpenGL 3.0
+		void
+		FramebufferTextureLayer(
+				GLenum target,
+				GLenum attachment,
+				boost::optional<GLTexture::shared_ptr_type> texture/*none means detach*/,
+				GLint level,
+				GLint layer);
+
+		// OpenGL 1.0
 		void
 		FrontFace(
 				GLenum dir = GL_CCW);
 
+		// OpenGL 1.0
+		GLenum
+		GetError();
+
+		// OpenGL 1.0
+		void
+		GetTexImage(
+				GLenum target,
+				GLint level,
+				GLenum format,
+				GLenum type,
+				GLvoid *pixels);
+
+		// OpenGL 1.0
 		void
 		Hint(
 				GLenum target,
 				GLenum hint);
 
+		// OpenGL 1.0
 		void
 		LineWidth(
 				GLfloat width = GLfloat(1));
 
+		// OpenGL 1.5
+		GLvoid *
+		MapBuffer(
+				GLenum target,
+				GLenum access);
+
+		// OpenGL 3.0
+		GLvoid *
+		MapBufferRange(
+				GLenum target,
+				GLintptr offset,
+				GLsizeiptr length,
+				GLbitfield access);
+
+		// OpenGL 1.0
 		void
 		PixelStoref(
 				GLenum pname,
 				GLfloat param);
 
+		// OpenGL 1.0
 		void
 		PixelStorei(
 				GLenum pname,
 				GLint param);
 
+		// OpenGL 1.0
 		void
 		PointSize(
 				GLfloat size = GLfloat(1));
 
+		// OpenGL 1.0
 		void
 		PolygonMode(
 				GLenum face = GL_FRONT_AND_BACK,
 				GLenum mode = GL_FILL);
 
+		// OpenGL 1.1
 		void
 		PolygonOffset(
 				GLfloat factor = GLfloat(0),
 				GLfloat units = GLfloat(0));
 
+		// OpenGL 3.1
 		void
 		PrimitiveRestartIndex(
 				GLuint index);
 
+		// OpenGL 1.0
 		void
 		ReadBuffer(
 				GLenum src);
 
+		// OpenGL 1.0
+		void
+		ReadPixels(
+				GLint x,
+				GLint y,
+				GLsizei width,
+				GLsizei height,
+				GLenum format,
+				GLenum type,
+				GLvoid *pixels);
+
+		// OpenGL 3.0
+		void
+		RenderbufferStorage(
+				GLenum target,
+				GLenum internalformat,
+				GLsizei width,
+				GLsizei height);
+
+		// OpenGL 1.3
 		void
 		SampleCoverage(
 				GLclampf value,
 				GLboolean invert);
 
+		// OpenGL 3.2
 		void
 		SampleMaski(
 				GLuint mask_number,
 				GLbitfield mask);
 
-		/**
-		 * Note that the default scissor rectangle is the current dimensions (in device pixels) of the framebuffer
-		 * (either main framebuffer or a framebuffer object) currently attached to the OpenGL context.
-		 */
+		// OpenGL 3.3
+		void
+		SamplerParameterf(
+				GLSampler::shared_ptr_type sampler,
+				GLenum pname,
+				GLfloat param);
+
+		// OpenGL 3.3
+		void
+		SamplerParameterfv(
+				GLSampler::shared_ptr_type sampler,
+				GLenum pname,
+				const GLfloat *param);
+
+		// OpenGL 3.3
+		void
+		SamplerParameteri(
+				GLSampler::shared_ptr_type sampler,
+				GLenum pname,
+				GLint param);
+
+		// OpenGL 3.3
+		void
+		SamplerParameteriv(
+				GLSampler::shared_ptr_type sampler,
+				GLenum pname,
+				const GLint *param);
+
+		// OpenGL 3.3
+		void
+		SamplerParameterIiv(
+				GLSampler::shared_ptr_type sampler,
+				GLenum pname,
+				const GLint *param);
+
+		// OpenGL 3.3
+		void
+		SamplerParameterIuiv(
+				GLSampler::shared_ptr_type sampler,
+				GLenum pname,
+				const GLuint *param);
+
+		// OpenGL 1.0
+		//
+		// Note: The default scissor rectangle is the current dimensions (in device pixels) of the framebuffer
+		//       (either main framebuffer or a framebuffer object) currently attached to the OpenGL context.
 		void
 		Scissor(
 				GLint x,
@@ -507,12 +727,14 @@ namespace GPlatesOpenGL
 				GLsizei width,
 				GLsizei height);
 
+		// OpenGL 1.0
 		void
 		StencilFunc(
 				GLenum func,
 				GLint ref,
 				GLuint mask);
 
+		// OpenGL 2.0
 		void
 		StencilFuncSeparate(
 				GLenum face,
@@ -520,21 +742,25 @@ namespace GPlatesOpenGL
 				GLint ref,
 				GLuint mask);
 
+		// OpenGL 1.0
 		void
 		StencilMask(
 				GLuint mask = ~0/*all ones*/);
 
+		// OpenGL 2.0
 		void
 		StencilMaskSeparate(
 				GLenum face,
 				GLuint mask = ~0/*all ones*/);
 
+		// OpenGL 1.0
 		void
 		StencilOp(
 				GLenum sfail,
 				GLenum dpfail,
 				GLenum dppass);
 
+		// OpenGL 2.0
 		void
 		StencilOpSeparate(
 				GLenum face,
@@ -542,109 +768,415 @@ namespace GPlatesOpenGL
 				GLenum dpfail,
 				GLenum dppass);
 
-		//! Use the program object (none means don't use any program).
+		// OpenGL 1.0
+		void
+		TexParameterf(
+				GLenum target,
+				GLenum pname,
+				GLfloat param);
+
+		// OpenGL 1.0
+		void
+		TexParameterfv(
+				GLenum target,
+				GLenum pname,
+				const GLfloat *params);
+
+		// OpenGL 1.0
+		void
+		TexParameteri(
+				GLenum target,
+				GLenum pname,
+				GLint param);
+
+		// OpenGL 1.0
+		void
+		TexParameteriv(
+				GLenum target,
+				GLenum pname,
+				const GLint *params);
+
+		// OpenGL 3.0
+		void
+		TexParameterIiv(
+				GLenum target,
+				GLenum pname,
+				const GLint *params);
+
+		// OpenGL 3.0
+		void
+		TexParameterIuiv(
+				GLenum target,
+				GLenum pname,
+				const GLuint *params);
+
+		// OpenGL 1.1
+		void
+		TexSubImage1D(
+				GLenum target,
+				GLint level,
+				GLint xoffset,
+				GLsizei width,
+				GLenum format,
+				GLenum type,
+				const GLvoid *pixels);
+
+		// OpenGL 1.1
+		void
+		TexSubImage2D(
+				GLenum target,
+				GLint level,
+				GLint xoffset,
+				GLint yoffset,
+				GLsizei width,
+				GLsizei height,
+				GLenum format,
+				GLenum type,
+				const GLvoid *pixels);
+
+		// OpenGL 1.2
+		void
+		TexSubImage3D(
+				GLenum target,
+				GLint level,
+				GLint xoffset,
+				GLint yoffset,
+				GLint zoffset,
+				GLsizei width,
+				GLsizei height,
+				GLsizei depth,
+				GLenum format,
+				GLenum type,
+				const GLvoid *pixels);
+
+		// OpenGL 1.0
+		void
+		TexImage1D(
+				GLenum target,
+				GLint level,
+				GLint internalformat,
+				GLsizei width,
+				GLint border,
+				GLenum format,
+				GLenum type,
+				const GLvoid *pixels);
+
+		// OpenGL 1.0
+		void
+		TexImage2D(
+				GLenum target,
+				GLint level,
+				GLint internalformat,
+				GLsizei width,
+				GLsizei height,
+				GLint border,
+				GLenum format,
+				GLenum type,
+				const GLvoid *pixels);
+
+		// OpenGL 1.2
+		void
+		TexImage3D(
+				GLenum target,
+				GLint level,
+				GLint internalformat,
+				GLsizei width,
+				GLsizei height,
+				GLsizei depth,
+				GLint border,
+				GLenum format,
+				GLenum type,
+				const GLvoid *pixels);
+
+		// OpenGL 2.0
+		void
+		Uniform1f(
+				GLint location,
+				GLfloat v0);
+
+		// OpenGL 2.0
+		void
+		Uniform1fv(
+				GLint location,
+				GLsizei count,
+				const GLfloat *value);
+
+		// OpenGL 2.0
+		void
+		Uniform1i(
+				GLint location,
+				GLint v0);
+
+		// OpenGL 2.0
+		void
+		Uniform1iv(
+				GLint location,
+				GLsizei count,
+				const GLint *value);
+
+		// OpenGL 3.0
+		void
+		Uniform1ui(
+				GLint location,
+				GLuint v0);
+
+		// OpenGL 3.0
+		void
+		Uniform1uiv(
+				GLint location,
+				GLsizei count,
+				const GLuint *value);
+
+		// OpenGL 2.0
+		void
+		Uniform2f(
+				GLint location,
+				GLfloat v0,
+				GLfloat v1);
+
+		// OpenGL 2.0
+		void
+		Uniform2fv(
+				GLint location,
+				GLsizei count,
+				const GLfloat *value);
+
+		// OpenGL 2.0
+		void
+		Uniform2i(
+				GLint location,
+				GLint v0,
+				GLint v1);
+
+		// OpenGL 2.0
+		void
+		Uniform2iv(
+				GLint location,
+				GLsizei count,
+				const GLint *value);
+
+		// OpenGL 3.0
+		void
+		Uniform2ui(
+				GLint location,
+				GLuint v0,
+				GLuint v1);
+
+		// OpenGL 3.0
+		void
+		Uniform2uiv(
+				GLint location,
+				GLsizei count,
+				const GLuint *value);
+
+		// OpenGL 2.0
+		void
+		Uniform3f(
+				GLint location,
+				GLfloat v0,
+				GLfloat v1,
+				GLfloat v2);
+
+		// OpenGL 2.0
+		void
+		Uniform3fv(
+				GLint location,
+				GLsizei count,
+				const GLfloat *value);
+
+		// OpenGL 2.0
+		void
+		Uniform3i(
+				GLint location,
+				GLint v0,
+				GLint v1,
+				GLint v2);
+
+		// OpenGL 2.0
+		void
+		Uniform3iv(
+				GLint location,
+				GLsizei count,
+				const GLint *value);
+
+		// OpenGL 3.0
+		void
+		Uniform3ui(
+				GLint location,
+				GLuint v0,
+				GLuint v1,
+				GLuint v2);
+
+		// OpenGL 3.0
+		void
+		Uniform3uiv(
+				GLint location,
+				GLsizei count,
+				const GLuint *value);
+
+		// OpenGL 2.0
+		void
+		Uniform4f(
+				GLint location,
+				GLfloat v0,
+				GLfloat v1,
+				GLfloat v2,
+				GLfloat v3);
+
+		// OpenGL 2.0
+		void
+		Uniform4fv(
+				GLint location,
+				GLsizei count,
+				const GLfloat *value);
+
+		// OpenGL 2.0
+		void
+		Uniform4i(
+				GLint location,
+				GLint v0,
+				GLint v1,
+				GLint v2,
+				GLint v3);
+
+		// OpenGL 2.0
+		void
+		Uniform4iv(
+				GLint location,
+				GLsizei count,
+				const GLint *value);
+
+		// OpenGL 3.0
+		void
+		Uniform4ui(
+				GLint location,
+				GLuint v0,
+				GLuint v1,
+				GLuint v2,
+				GLuint v3);
+
+		// OpenGL 3.0
+		void
+		Uniform4uiv(
+				GLint location,
+				GLsizei count,
+				const GLuint *value);
+
+		// OpenGL 3.1
+		void
+		UniformBlockBinding(
+				GLProgram::shared_ptr_type program,
+				GLuint uniformBlockIndex,
+				GLuint uniformBlockBinding);
+
+		// OpenGL 2.0
+		void
+		UniformMatrix2fv(
+				GLint location,
+				GLsizei count,
+				GLboolean transpose,
+				const GLfloat *value);
+
+		// OpenGL 2.1
+		void
+		UniformMatrix2x3fv(
+				GLint location,
+				GLsizei count,
+				GLboolean transpose,
+				const GLfloat *value);
+
+		// OpenGL 2.1
+		void
+		UniformMatrix2x4fv(
+				GLint location,
+				GLsizei count,
+				GLboolean transpose,
+				const GLfloat *value);
+
+		// OpenGL 2.0
+		void
+		UniformMatrix3fv(
+				GLint location,
+				GLsizei count,
+				GLboolean transpose,
+				const GLfloat *value);
+
+		// OpenGL 2.1
+		void
+		UniformMatrix3x2fv(
+				GLint location,
+				GLsizei count,
+				GLboolean transpose,
+				const GLfloat *value);
+
+		// OpenGL 2.1
+		void
+		UniformMatrix3x4fv(
+				GLint location,
+				GLsizei count,
+				GLboolean transpose,
+				const GLfloat *value);
+
+		// OpenGL 2.0
+		void
+		UniformMatrix4fv(
+				GLint location,
+				GLsizei count,
+				GLboolean transpose,
+				const GLfloat *value);
+
+		// OpenGL 2.1
+		void
+		UniformMatrix4x2fv(
+				GLint location,
+				GLsizei count,
+				GLboolean transpose,
+				const GLfloat *value);
+
+		// OpenGL 2.1
+		void
+		UniformMatrix4x3fv(
+				GLint location,
+				GLsizei count,
+				GLboolean transpose,
+				const GLfloat *value);
+
+		// OpenGL 1.5
+		GLboolean
+		UnmapBuffer(
+				GLenum target);
+
+		// OpenGL 2.0
 		void
 		UseProgram(
-				boost::optional<GLProgram::shared_ptr_type> program);
-
-		/**
-		 * Note that the default viewport rectangle is the current dimensions (in device pixels) of the framebuffer
-		 * (either main framebuffer or a framebuffer object) currently attached to the OpenGL context.
-		 */
-		void
-		Viewport(
-				GLint x,
-				GLint y,
-				GLsizei width,
-				GLsizei height);
-
+				boost::optional<GLProgram::shared_ptr_type> program/*none means don't use any program*/);
 
 		//
+		// Note that we don't shadow globe state set by glVertexAttrib4f, glVertexAttribI4i, etc.
 		//
-		// OBJECT (resource) state (NOT saved/restored by @a StateScope)
+		// This is generic vertex attribute state that only gets used if a vertex array is *not* enabled for
+		// a generic attribute required by the vertex shader. However, according to the 3.3 core profile spec:
 		//
+		//   If an array corresponding to a generic attribute required by a vertex shader is enabled, the
+		//   corresponding current generic attribute value is undefined after the execution of DrawElementsOneInstance.
+		//
+		// ...so essentially any state set with glVertexAttrib4f, glVertexAttribI4i, etc, prior to a draw call
+		// is undefined after the draw call so we cannot track it (apparently this was rectified in OpenGL 4.2).
+		//
+		// A better approach is to instead set a uniform in the vertex shader (eg, a constant colour for the entire drawable).
+		//
+		// NOTE: The OpenGL functions glVertexAttrib4f, glVertexAttribI4i, etc, are not available for this class to use anyway.
+		//       This is because they were not exposed by Qt until 4.4 core (ie, were not available until QOpenGLFunctions_4_4_Core),
+		//       probably for a reason similar to above, and hence are not available in our @a OpenGLFunctions (used by this class).
 		//
 
-
-		void
-		DisableVertexAttribArray(
-				GLuint index);
-
-		void
-		EnableVertexAttribArray(
-				GLuint index);
-
-		void
-		FramebufferRenderbuffer(
-				GLenum target,
-				GLenum attachment,
-				GLenum renderbuffertarget,
-				boost::optional<GLRenderbuffer::shared_ptr_type> renderbuffer);
-
-		void
-		FramebufferTexture(
-				GLenum target,
-				GLenum attachment,
-				boost::optional<GLTexture::shared_ptr_type> texture,
-				GLint level);
-
-		void
-		FramebufferTexture1D(
-				GLenum target,
-				GLenum attachment,
-				GLenum textarget,
-				boost::optional<GLTexture::shared_ptr_type> texture,
-				GLint level);
-
-		void
-		FramebufferTexture2D(
-				GLenum target,
-				GLenum attachment,
-				GLenum textarget,
-				boost::optional<GLTexture::shared_ptr_type> texture,
-				GLint level);
-
-		void
-		FramebufferTexture3D(
-				GLenum target,
-				GLenum attachment,
-				GLenum textarget,
-				boost::optional<GLTexture::shared_ptr_type> texture,
-				GLint level,
-				GLint layer);
-
-		void
-		FramebufferTextureLayer(
-				GLenum target,
-				GLenum attachment,
-				boost::optional<GLTexture::shared_ptr_type> texture,
-				GLint level,
-				GLint layer);
-
-		/**
-		 * Note that we don't shadow globe state set by glVertexAttrib4f, glVertexAttribI4i, etc.
-		 *
-		 * This is generic vertex attribute state that only gets used if a vertex array is *not* enabled for
-		 * a generic attribute required by the vertex shader. However, according to the 3.3 core profile spec:
-		 *
-		 *   If an array corresponding to a generic attribute required by a vertex shader is enabled, the
-		 *   corresponding current generic attribute value is undefined after the execution of DrawElementsOneInstance.
-		 *
-		 * ...so essentially any state set with glVertexAttrib4f, glVertexAttribI4i, etc, prior to a draw call
-		 * is undefined after the draw call so we cannot track it (apparently this was rectified in OpenGL 4.2).
-		 *
-		 * A better approach is to instead set a uniform in the vertex shader (eg, a constant colour for the entire drawable).
-		 *
-		 * NOTE: The OpenGL functions glVertexAttrib4f, glVertexAttribI4i, etc, are not available for this class to use anyway.
-		 *       This is because they were not exposed by Qt until 4.4 core (ie, were not available until QOpenGLFunctions_4_4_Core),
-		 *       probably for a reason similar to above, and hence are not available in our @a OpenGLFunctions (used by this class).
-		 */
-
+		// OpenGL 3.3
 		void
 		VertexAttribDivisor(
 				GLuint index,
 				GLuint divisor);
 
+		// OpenGL 3.0
 		void
 		VertexAttribIPointer(
 				GLuint index,
@@ -653,6 +1185,7 @@ namespace GPlatesOpenGL
 				GLsizei stride,
 				const GLvoid *pointer);
 
+		// OpenGL 2.0
 		void
 		VertexAttribPointer(
 				GLuint index,
@@ -662,44 +1195,29 @@ namespace GPlatesOpenGL
 				GLsizei stride,
 				const GLvoid *pointer);
 
-
-		/////////////////////////////////////////////
-		//                                         //
-		// Functions introduced in OpenGL 4.0 core //
-		//                                         //
-		/////////////////////////////////////////////
-
-
-		/////////////////////////////////////////////
-		//                                         //
-		// Functions introduced in OpenGL 4.1 core //
-		//                                         //
-		/////////////////////////////////////////////
-
-
-		/////////////////////////////////////////////
-		//                                         //
-		// Functions introduced in OpenGL 4.2 core //
-		//                                         //
-		/////////////////////////////////////////////
-
-
-		/////////////////////////////////////////////
-		//                                         //
-		// Functions introduced in OpenGL 4.3 core //
-		//                                         //
-		/////////////////////////////////////////////
-
-
-		///////////////////////////////////////////////////////////////////////////////////////////////
-		// Get OpenGL state methods.
+		// OpenGL 1.0
 		//
-		// Note: Unlike the 'set' methods, only a handful of 'get' methods are typically needed.
-		//       Applications usually set OpenGL state (rather than get it) since retrieving state
-		//       is typically much slower (requiring a round-trip to the driver/GPU).
-		//       However we've shadowed/cached some global state so it's convenient to be able to
-		//       query some of that.
-		///////////////////////////////////////////////////////////////////////////////////////////////
+		// Note: The default viewport rectangle is the current dimensions (in device pixels) of the framebuffer
+		//       (either main framebuffer or a framebuffer object) currently attached to the OpenGL context.
+		void
+		Viewport(
+				GLint x,
+				GLint y,
+				GLsizei width,
+				GLsizei height);
+
+
+
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+		// GET *global* OpenGL state methods.
+		//
+		// OpenGL does natively support many 'get' functions to retrieve OpenGL state. However we have not generally
+		// exposed those in this class because applications usually *set* global OpenGL state (rather than get it)
+		// since retrieving state is typically much slower (requiring a round-trip to the driver/GPU).
+		//
+		// However this class does shadow/cache *global* state, so it's convenient to be able to query
+		// some of that (especially since it doesn't require a slow round-trip to the driver/GPU).
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
 		/**

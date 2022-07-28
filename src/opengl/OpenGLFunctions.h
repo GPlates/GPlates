@@ -89,47 +89,29 @@ namespace GPlatesOpenGL
 		{  }
 
 
-		//! Version 3.3 core is always supported (it's our minimum requirement).
-		bool
-		supports_3_3_core() const
+		//! Returns major version of our supported OpenGL version.
+		int
+		get_major_version() const
 		{
-			return true;
+			return d_major_version;
 		}
 
-		//! Returns true if we have OpenGL 4.0 or greater.
-		bool
-		supports_4_0_core() const
+		//! Returns minor version of our supported OpenGL version.
+		int
+		get_minor_version() const
 		{
-			return d_major_version == 4 && d_minor_version >= 0;
-		}
-
-		//! Returns true if we have OpenGL 4.1 or greater.
-		bool
-		supports_4_1_core() const
-		{
-			return d_major_version == 4 && d_minor_version >= 1;
-		}
-
-		//! Returns true if we have OpenGL 4.2 or greater.
-		bool
-		supports_4_2_core() const
-		{
-			return d_major_version == 4 && d_minor_version >= 2;
-		}
-
-		//! Returns true if we have OpenGL 4.3 or greater.
-		bool
-		supports_4_3_core() const
-		{
-			return d_major_version == 4 && d_minor_version >= 3;
+			return d_minor_version;
 		}
 
 
 		//
-		// OpenGL 1.0 - 3.3 core.
+		// OpenGL 1.0 - 3.3 (core profile).
+		//
+		// Note: OpenGL 3.3 (core profile) is our MINIMUM requirement.
 		//
 		virtual void glActiveTexture(GLenum texture) { throw_if_not_overridden("glActiveTexture", 3, 3); }
 		virtual void glAttachShader(GLuint program, GLuint shader) { throw_if_not_overridden("glAttachShader", 3, 3); }
+		virtual void glBindAttribLocation(GLuint program, GLuint index, const GLchar *name) { throw_if_not_overridden("glBindAttribLocation", 3, 3); }
 		virtual void glBindBuffer(GLenum target, GLuint buffer) { throw_if_not_overridden("glBindBuffer", 3, 3); }
 		virtual void glBindBufferBase(GLenum target, GLuint index, GLuint buffer) { throw_if_not_overridden("glBindBufferBase", 3, 3); }
 		virtual void glBindBufferRange(GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size) { throw_if_not_overridden("glBindBufferRange", 3, 3); }
@@ -143,7 +125,11 @@ namespace GPlatesOpenGL
 		virtual void glBlendEquationSeparate(GLenum modeRGB, GLenum modeAlpha) { throw_if_not_overridden("glBlendEquationSeparate", 3, 3); }
 		virtual void glBlendFunc(GLenum sfactor, GLenum dfactor) { throw_if_not_overridden("glBlendFunc", 3, 3); }
 		virtual void glBlendFuncSeparate(GLenum sfactorRGB, GLenum dfactorRGB, GLenum sfactorAlpha, GLenum dfactorAlpha) { throw_if_not_overridden("glBlendFuncSeparate", 3, 3); }
+		virtual void glBufferData(GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage) { throw_if_not_overridden("glBufferData", 3, 3); }
+		virtual void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data) { throw_if_not_overridden("glBufferSubData", 3, 3); }
+		virtual GLenum glCheckFramebufferStatus(GLenum target) { throw_if_not_overridden("glCheckFramebufferStatus", 3, 3); }
 		virtual void glClampColor(GLenum target, GLenum clamp) { throw_if_not_overridden("glClampColor", 3, 3); }
+		virtual void glClear(GLbitfield mask) { throw_if_not_overridden("glClear", 3, 3); }
 		virtual void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha) { throw_if_not_overridden("glClearColor", 3, 3); }
 		virtual void glClearDepth(GLdouble depth) { throw_if_not_overridden("glClearDepth", 3, 3); }
 		virtual void glClearStencil(GLint s) { throw_if_not_overridden("glClearStencil", 3, 3); }
@@ -168,11 +154,15 @@ namespace GPlatesOpenGL
 		virtual void glDisable(GLenum cap) { throw_if_not_overridden("glDisable", 3, 3); }
 		virtual void glDisablei(GLenum target, GLuint index) { throw_if_not_overridden("glDisablei", 3, 3); }
 		virtual void glDisableVertexAttribArray(GLuint index) { throw_if_not_overridden("glDisableVertexAttribArray", 3, 3); }
+		virtual void glDrawArrays(GLenum mode, GLint first, GLsizei count) { throw_if_not_overridden("glDrawArrays", 3, 3); }
 		virtual void glDrawBuffer(GLenum mode) { throw_if_not_overridden("glDrawBuffer", 3, 3); }
 		virtual void glDrawBuffers(GLsizei n, const GLenum *bufs) { throw_if_not_overridden("glDrawBuffers", 3, 3); }
+		virtual void glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices) { throw_if_not_overridden("glDrawElements", 3, 3); }
+		virtual void glDrawRangeElements(GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices) { throw_if_not_overridden("glDrawElements", 3, 3); }
 		virtual void glEnable(GLenum cap) { throw_if_not_overridden("glEnable", 3, 3); }
 		virtual void glEnablei(GLenum target, GLuint index) { throw_if_not_overridden("glEnablei", 3, 3); }
 		virtual void glEnableVertexAttribArray(GLuint index) { throw_if_not_overridden("glEnableVertexAttribArray", 3, 3); }
+		virtual void glFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length) { throw_if_not_overridden("glFlushMappedBufferRange", 3, 3); }
 		virtual void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer) { throw_if_not_overridden("glFramebufferRenderbuffer", 3, 3); }
 		virtual void glFramebufferTexture1D(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level) { throw_if_not_overridden("glFramebufferTexture1D", 3, 3); }
 		virtual void glFramebufferTexture2D(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level) { throw_if_not_overridden("glFramebufferTexture2D", 3, 3); }
@@ -186,24 +176,36 @@ namespace GPlatesOpenGL
 		virtual void glGenSamplers(GLsizei count, GLuint *samplers) { throw_if_not_overridden("glGenSamplers", 3, 3); }
 		virtual void glGenTextures(GLsizei n, GLuint *textures) { throw_if_not_overridden("glGenTextures", 3, 3); }
 		virtual void glGenVertexArrays(GLsizei n, GLuint *arrays) { throw_if_not_overridden("glGenVertexArrays", 3, 3); }
+		virtual GLenum glGetError() { throw_if_not_overridden("glGetError", 3, 3); }
 		virtual void glGetIntegerv(GLenum pname, GLint *params) { throw_if_not_overridden("glGetIntegerv", 3, 3); }
 		virtual void glGetProgramiv(GLuint program, GLenum pname, GLint *params) { throw_if_not_overridden("glGetProgramiv", 3, 3); }
 		virtual void glGetProgramInfoLog(GLuint program, GLsizei bufSize, GLsizei *length, GLchar *infoLog) { throw_if_not_overridden("glGetProgramInfoLog", 3, 3); }
 		virtual void glGetShaderiv(GLuint shader, GLenum pname, GLint *params) { throw_if_not_overridden("glGetShaderiv", 3, 3); }
 		virtual void glGetShaderInfoLog(GLuint shader, GLsizei bufSize, GLsizei *length, GLchar *infoLog) { throw_if_not_overridden("glGetShaderInfoLog", 3, 3); }
+		virtual void glGetTexImage(GLenum target, GLint level, GLenum format, GLenum type, GLvoid *pixels) { throw_if_not_overridden("glGetTexImage", 3, 3); }
 		virtual GLuint glGetUniformBlockIndex(GLuint program, const GLchar *uniformBlockName) { throw_if_not_overridden("glGetUniformBlockIndex", 3, 3); }
 		virtual GLint glGetUniformLocation(GLuint program, const GLchar *name) { throw_if_not_overridden("glGetUniformLocation", 3, 3); }
 		virtual void glHint(GLenum target, GLenum mode) { throw_if_not_overridden("glHint", 3, 3); }
 		virtual void glLineWidth(GLfloat width) { throw_if_not_overridden("glLineWidth", 3, 3); }
 		virtual void glLinkProgram(GLuint program) { throw_if_not_overridden("glLinkProgram", 3, 3); }
+		virtual GLvoid *glMapBuffer(GLenum target, GLenum access) { throw_if_not_overridden("glMapBuffer", 3, 3); }
+		virtual GLvoid *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access) { throw_if_not_overridden("glMapBufferRange", 3, 3); }
 		virtual void glPixelStorei(GLenum pname, GLint param) { throw_if_not_overridden("glPixelStorei", 3, 3); }
 		virtual void glPointSize(GLfloat size) { throw_if_not_overridden("glPointSize", 3, 3); }
 		virtual void glPolygonMode(GLenum face, GLenum mode) { throw_if_not_overridden("glPolygonMode", 3, 3); }
 		virtual void glPolygonOffset(GLfloat factor, GLfloat units) { throw_if_not_overridden("glPolygonOffset", 3, 3); }
 		virtual void glPrimitiveRestartIndex(GLuint index) { throw_if_not_overridden("glPrimitiveRestartIndex", 3, 3); }
 		virtual void glReadBuffer(GLenum mode) { throw_if_not_overridden("glReadBuffer", 3, 3); }
+		virtual void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels) { throw_if_not_overridden("glReadPixels", 3, 3); }
+		virtual void glRenderbufferStorage(GLenum target, GLenum internalformat, GLsizei width, GLsizei height) { throw_if_not_overridden("glRenderbufferStorage", 3, 3); }
 		virtual void glSampleCoverage(GLfloat value, GLboolean invert) { throw_if_not_overridden("glSampleCoverage", 3, 3); }
 		virtual void glSampleMaski(GLuint index, GLbitfield mask) { throw_if_not_overridden("glSampleMaski", 3, 3); }
+		virtual void glSamplerParameterf(GLuint sampler, GLenum pname, GLfloat param) { throw_if_not_overridden("glSamplerParameterf", 3, 3); }
+		virtual void glSamplerParameterfv(GLuint sampler, GLenum pname, const GLfloat *param) { throw_if_not_overridden("glSamplerParameterfv", 3, 3); }
+		virtual void glSamplerParameteri(GLuint sampler, GLenum pname, GLint param) { throw_if_not_overridden("glSamplerParameteri", 3, 3); }
+		virtual void glSamplerParameteriv(GLuint sampler, GLenum pname, const GLint *param) { throw_if_not_overridden("glSamplerParameteriv", 3, 3); }
+		virtual void glSamplerParameterIiv(GLuint sampler, GLenum pname, const GLint *param) { throw_if_not_overridden("glSamplerParameterIiv", 3, 3); }
+		virtual void glSamplerParameterIuiv(GLuint sampler, GLenum pname, const GLuint *param) { throw_if_not_overridden("glSamplerParameterIuiv", 3, 3); }
 		virtual void glScissor(GLint x, GLint y, GLsizei width, GLsizei height) { throw_if_not_overridden("glScissor", 3, 3); }
 		virtual void glShaderSource(GLuint shader, GLsizei count, const GLchar* const *string, const GLint *length) { throw_if_not_overridden("glShaderSource", 3, 3); }
 		virtual void glStencilFunc(GLenum func, GLint ref, GLuint mask) { throw_if_not_overridden("glStencilFunc", 3, 3); }
@@ -212,6 +214,53 @@ namespace GPlatesOpenGL
 		virtual void glStencilMaskSeparate(GLenum face, GLuint mask) { throw_if_not_overridden("glStencilMaskSeparate", 3, 3); }
 		virtual void glStencilOp(GLenum fail, GLenum zfail, GLenum zpass) { throw_if_not_overridden("glStencilOp", 3, 3); }
 		virtual void glStencilOpSeparate(GLenum face, GLenum sfail, GLenum dpfail, GLenum dppass) { throw_if_not_overridden("glStencilOpSeparate", 3, 3); }
+		virtual void glTexParameterf(GLenum target, GLenum pname, GLfloat param) { throw_if_not_overridden("glTexParameterf", 3, 3); }
+		virtual void glTexParameterfv(GLenum target, GLenum pname, const GLfloat *params) { throw_if_not_overridden("glTexParameterfv", 3, 3); }
+		virtual void glTexParameteri(GLenum target, GLenum pname, GLint param) { throw_if_not_overridden("glTexParameteri", 3, 3); }
+		virtual void glTexParameteriv(GLenum target, GLenum pname, const GLint *params) { throw_if_not_overridden("glTexParameteriv", 3, 3); }
+		virtual void glTexParameterIiv(GLenum target, GLenum pname, const GLint *params) { throw_if_not_overridden("glTexParameterIiv", 3, 3); }
+		virtual void glTexParameterIuiv(GLenum target, GLenum pname, const GLuint *params) { throw_if_not_overridden("glTexParameterIuiv", 3, 3); }
+		virtual void glTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid *pixels) { throw_if_not_overridden("glTexSubImage1D", 3, 3); }
+		virtual void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels) { throw_if_not_overridden("glTexSubImage1D", 3, 3); }
+		virtual void glTexSubImage3D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid *pixels) { throw_if_not_overridden("glTexSubImage3D", 3, 3); }
+		virtual void glTexImage1D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid *pixels) { throw_if_not_overridden("glTexSubImage2D", 3, 3); }
+		virtual void glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels) { throw_if_not_overridden("glTexImage2D", 3, 3); }
+		virtual void glTexImage3D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *pixels) { throw_if_not_overridden("glTexImage3D", 3, 3); }
+		virtual void glUniform1f(GLint location, GLfloat v0) { throw_if_not_overridden("glUniform1f", 3, 3); }
+		virtual void glUniform1fv(GLint location, GLsizei count, const GLfloat *value) { throw_if_not_overridden("glUniform1fv", 3, 3); }
+		virtual void glUniform1i(GLint location, GLint v0) { throw_if_not_overridden("glUniform1i", 3, 3); }
+		virtual void glUniform1iv(GLint location, GLsizei count, const GLint *value) { throw_if_not_overridden("glUniform1iv", 3, 3); }
+		virtual void glUniform1ui(GLint location, GLuint v0) { throw_if_not_overridden("glUniform1ui", 3, 3); }
+		virtual void glUniform1uiv(GLint location, GLsizei count, const GLuint *value) { throw_if_not_overridden("glUniform1uiv", 3, 3); }
+		virtual void glUniform2f(GLint location, GLfloat v0, GLfloat v1) { throw_if_not_overridden("glUniform2f", 3, 3); }
+		virtual void glUniform2fv(GLint location, GLsizei count, const GLfloat *value) { throw_if_not_overridden("glUniform2fv", 3, 3); }
+		virtual void glUniform2i(GLint location, GLint v0, GLint v1) { throw_if_not_overridden("glUniform2i", 3, 3); }
+		virtual void glUniform2iv(GLint location, GLsizei count, const GLint *value) { throw_if_not_overridden("glUniform2iv", 3, 3); }
+		virtual void glUniform2ui(GLint location, GLuint v0, GLuint v1) { throw_if_not_overridden("glUniform2ui", 3, 3); }
+		virtual void glUniform2uiv(GLint location, GLsizei count, const GLuint *value) { throw_if_not_overridden("glUniform2uiv", 3, 3); }
+		virtual void glUniform3f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2) { throw_if_not_overridden("glUniform3f", 3, 3); }
+		virtual void glUniform3fv(GLint location, GLsizei count, const GLfloat *value) { throw_if_not_overridden("glUniform3fv", 3, 3); }
+		virtual void glUniform3i(GLint location, GLint v0, GLint v1, GLint v2) { throw_if_not_overridden("glUniform3i", 3, 3); }
+		virtual void glUniform3iv(GLint location, GLsizei count, const GLint *value) { throw_if_not_overridden("glUniform3iv", 3, 3); }
+		virtual void glUniform3ui(GLint location, GLuint v0, GLuint v1, GLuint v2) { throw_if_not_overridden("glUniform3ui", 3, 3); }
+		virtual void glUniform3uiv(GLint location, GLsizei count, const GLuint *value) { throw_if_not_overridden("glUniform3uiv", 3, 3); }
+		virtual void glUniform4f(GLint location, GLfloat v0, GLfloat v1, GLfloat v2, GLfloat v3) { throw_if_not_overridden("glUniform4f", 3, 3); }
+		virtual void glUniform4fv(GLint location, GLsizei count, const GLfloat *value) { throw_if_not_overridden("glUniform4fv", 3, 3); }
+		virtual void glUniform4i(GLint location, GLint v0, GLint v1, GLint v2, GLint v3) { throw_if_not_overridden("glUniform4i", 3, 3); }
+		virtual void glUniform4iv(GLint location, GLsizei count, const GLint *value) { throw_if_not_overridden("glUniform4iv", 3, 3); }
+		virtual void glUniform4ui(GLint location, GLuint v0, GLuint v1, GLuint v2, GLuint v3) { throw_if_not_overridden("glUniform4ui", 3, 3); }
+		virtual void glUniform4uiv(GLint location, GLsizei count, const GLuint *value) { throw_if_not_overridden("glUniform4uiv", 3, 3); }
+		virtual void glUniformBlockBinding(GLuint program, GLuint uniformBlockIndex, GLuint uniformBlockBinding) { throw_if_not_overridden("glUniformBlockBinding", 3, 3); }
+		virtual void glUniformMatrix2fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) { throw_if_not_overridden("glUniformMatrix2fv", 3, 3); }
+		virtual void glUniformMatrix2x3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) { throw_if_not_overridden("glUniformMatrix2x3fv", 3, 3); }
+		virtual void glUniformMatrix2x4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) { throw_if_not_overridden("glUniformMatrix2x4fv", 3, 3); }
+		virtual void glUniformMatrix3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) { throw_if_not_overridden("glUniformMatrix3fv", 3, 3); }
+		virtual void glUniformMatrix3x2fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) { throw_if_not_overridden("glUniformMatrix3x2fv", 3, 3); }
+		virtual void glUniformMatrix3x4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) { throw_if_not_overridden("glUniformMatrix3x4fv", 3, 3); }
+		virtual void glUniformMatrix4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) { throw_if_not_overridden("glUniformMatrix4fv", 3, 3); }
+		virtual void glUniformMatrix4x2fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) { throw_if_not_overridden("glUniformMatrix4x2fv", 3, 3); }
+		virtual void glUniformMatrix4x3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value) { throw_if_not_overridden("glUniformMatrix4x3fv", 3, 3); }
+		virtual GLboolean glUnmapBuffer(GLenum target) { throw_if_not_overridden("glUnmapBuffer", 3, 3); }
 		virtual void glUseProgram(GLuint program) { throw_if_not_overridden("glUseProgram", 3, 3); }
 		virtual void glValidateProgram(GLuint program) { throw_if_not_overridden("glValidateProgram", 3, 3); }
 		virtual void glVertexAttribDivisor(GLuint index, GLuint divisor) { throw_if_not_overridden("glVertexAttribDivisor", 3, 3); }
@@ -221,22 +270,22 @@ namespace GPlatesOpenGL
 
 
 		//
-		// Introduced in OpenGL 4.0 core.
+		// Introduced in OpenGL 4.0 (core profile).
 		//
 
 
 		//
-		// Introduced in OpenGL 4.1 core.
+		// Introduced in OpenGL 4.1 (core profile).
 		//
 
 
 		//
-		// Introduced in OpenGL 4.2 core.
+		// Introduced in OpenGL 4.2 (core profile).
 		//
 
 
 		//
-		// Introduced in OpenGL 4.3 core.
+		// Introduced in OpenGL 4.3 (core profile).
 		//
 
 	protected:
