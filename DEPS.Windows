@@ -40,7 +40,7 @@ Microsoft Visual Studio
   1. Install Visual Studio Community 2015 (14.0) or newer.
   2. Use the same compiler (major version) to build all library dependencies (listed below).
      * This is needed for ABI compatibility during the final link stage (when linking GPlates/pyGPlates).
-     * However some C libraries are suggested below to be installed as pre-compiled such as Python, NetCDF and GLEW.
+     * However some C libraries are suggested below to be installed as pre-compiled such as Python and NetCDF.
        Some of these are likely to have been compiled with different (older) compilers (such as NetCDF).
        This is probably OK since these libraries use the "C" language (or have a "C" interface) which tends to
        have better ABI compatibility support (than C++). Ideally these libraries should also be compiled from source.
@@ -121,11 +121,6 @@ Qwt
        nmake install
   7. Add the Qwt *install* directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\qwt\qwt-6.1.6\msvc2015_64 ).
   8. Add the Qwt library location (inside the *install* directory) to your PATH environment variable (eg, C:\SDK\qwt\qwt-6.1.6\lib\msvc2015_64 ).
-
-GLEW
-  1. Download and extract glew-2.1.0-win32.zip from: http://glew.sourceforge.net/
-  2. Add the GLEW root directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\glew\glew-2.1.0 )
-  3. Add the GLEW \Bin\Release\x64 directory to the PATH environment variable.
 
 Python
   1. Download, and install, the latest Python 3 Windows installer (eg, 'http://www.python.org/downloads/').

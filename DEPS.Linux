@@ -27,7 +27,6 @@ To compile GPlates/pyGPlates, you will need the following programs and libraries
   • cmake (3.10 or newer)
   • g++ (4.8.1 or newer, required to support C++11) 
   • GL library (the OpenGL shared library)
-  • GLEW library (the OpenGL Extension Wrangler Library)
   • Python library (version 2.7 or 3, preferably 3)
   • Boost library headers (version 1.35 or newer)
   • Qt library (version 5.6 or newer)
@@ -60,7 +59,6 @@ Program/library Corresponding Ubuntu packages
 cmake           cmake
 g++             g++
 GL              See note below.
-GLEW            libglew-dev 
 Python          python3-dev python3-numpy
 Boost           libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev 
                 libboost-test-dev libboost-system-dev (See note below regarding Xenial 16.04 and libboost-python-dev)
@@ -76,7 +74,7 @@ Extras          libxrender-dev libice-dev libsm-dev libfreetype6-dev libfontconf
 
 The command to install the dependencies on Ubuntu is (NOTE: prior to Hirsute 21.04 you should also include qt5-default in the list below):
 
-sudo apt-get update; sudo apt-get install cmake libglew-dev python3-dev python3-numpy libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev libqt5opengl5-dev libqt5svg5-dev libqt5xmlpatterns5-dev libgdal-dev libcgal-dev libproj-dev libqwt-qt5-dev zlib1g-dev libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev
+sudo apt-get update; sudo apt-get install cmake python3-dev python3-numpy libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev libqt5opengl5-dev libqt5svg5-dev libqt5xmlpatterns5-dev libgdal-dev libcgal-dev libproj-dev libqwt-qt5-dev zlib1g-dev libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev
 
 How to install via a GUI (recommended)
 

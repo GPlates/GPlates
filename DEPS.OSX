@@ -25,7 +25,6 @@ To compile GPlates/pyGPlates, you will need the following programs and libraries
   • XCode (see "BUILD.OSX" for instructions on how to install)
   • cmake (3.10 or newer)
   • make
-  • GLEW library (the OpenGL Extension Wrangler Library)
   * Python (version 2.7 or 3; preferably 3)
   • Boost library headers (version 1.35 or newer)
   • Qt library (version 5.6 or newer)
@@ -40,7 +39,6 @@ Corresponding package dependencies
 
 Program/library Corresponding Macports packages
 cmake           cmake
-GLEW            glew
 Python          python3[x] py3[x]-numpy; where 'x' is the minor version
 Boost           boost
 Qt              qt5
@@ -67,7 +65,6 @@ Here we briefly describe how to install dependencies using Macports (http://www.
   • You may need to set the path to Macports with "export PATH=/opt/local/bin:/opt/local/sbin:$PATH".
   • Update Macports with 'sudo port -d selfupdate'.
   • Install CMake with 'sudo port install cmake' (or download an installer from http://www.cmake.org ).
-  • Install GLEW with 'sudo port install glew'.
   • Install Python with 'sudo port install python3[x]' where 'x' is the minor version (eg, 'sudo port install python310').
     Also install NumPy with 'sudo port install py3[x]-numpy' (eg, 'sudo port install py310-numpy').
   • Install Boost with 'sudo port install boost +python3[x]'.
@@ -84,7 +81,7 @@ Here we briefly describe how to install dependencies using Macports (http://www.
 
 For example, to install using Python 3.10:
 
-    sudo port -N install cmake glew python310 py310-numpy boost +python310 qt5 qwt-qt5 gdal +netcdf proj cgal5 zlib
+    sudo port -N install cmake python310 py310-numpy boost +python310 qt5 qwt-qt5 gdal +netcdf proj cgal5 zlib
 
 ...note the '-N' *prevents* Macports asking you to confirm dependencies for each port.
 

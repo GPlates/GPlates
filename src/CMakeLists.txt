@@ -18,12 +18,6 @@
 find_package(OpenGL REQUIRED)
 
 #############
-# Find GLEW #
-#
-# CMake 3.1 introduced import targets for GLEW. Our minimum CMake requirement is higher so we don't need to add the imported target ourself.
-find_package(GLEW REQUIRED)
-
-#############
 # Find ZLIB #
 #
 # We use our own "FindZLIB.cmake" module so we can find contrib-built zlibwapi on Windows, which also defines the ZLIB::ZLIB imported target.
@@ -790,9 +784,9 @@ endif()
 ########################
 
 #
-# OpenGL (and GLEW) dependency.
+# OpenGL dependency.
 #
-target_link_libraries(${SOURCE_TARGET} PUBLIC OpenGL::GL GLEW::GLEW)
+target_link_libraries(${SOURCE_TARGET} PUBLIC OpenGL::GL)
 
 #
 # ZLIB dependency.
