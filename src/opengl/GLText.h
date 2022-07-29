@@ -29,7 +29,7 @@
 
 #include <QFont>
 #include <QString>
-#include <opengl/OpenGL1.h>
+#include <qopengl.h>  // For OpenGL constants and typedefs.
 
 #include "gui/Colour.h"
 

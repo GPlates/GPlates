@@ -32,7 +32,7 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
-#include <opengl/OpenGL1.h>
+#include <qopengl.h>  // For OpenGL constants and typedefs.
 
 #include "Colour.h"
 #include "LayerPainter.h"

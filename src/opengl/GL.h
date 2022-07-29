@@ -27,9 +27,9 @@
 #define GPLATES_OPENGL_GL_H
 
 #include <vector>
-#include <opengl/OpenGL1.h>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
+#include <qopengl.h>  // For OpenGL constants and typedefs.
 
 #include "GLBuffer.h"
 #include "GLCapabilities.h"

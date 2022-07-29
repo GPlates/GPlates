@@ -28,7 +28,7 @@
 
 #include <vector>
 #include <boost/optional.hpp>
-#include <opengl/OpenGL1.h>
+#include <qopengl.h>  // For OpenGL constants and typedefs.
 #include <QPointF>
 
 #include "GLBuffer.h"

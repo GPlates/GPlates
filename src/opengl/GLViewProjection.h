@@ -29,7 +29,7 @@
 
 #include <utility>
 #include <boost/optional.hpp>
-#include <opengl/OpenGL1.h>
+#include <qopengl.h>  // For OpenGL constants and typedefs.
 
 #include "maths/PointOnSphere.h"
 #include "maths/Vector3D.h"

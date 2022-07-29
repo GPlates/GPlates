@@ -26,7 +26,7 @@
 #ifndef GPLATES_OPENGL_GLSTATESETKEYS_H
 #define GPLATES_OPENGL_GLSTATESETKEYS_H
 
-#include <opengl/OpenGL1.h>
+#include <qopengl.h>  // For OpenGL constants and typedefs.
 
 #include "utils/ReferenceCount.h"
 

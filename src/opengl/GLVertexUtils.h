@@ -29,7 +29,7 @@
 #include <cstddef>  // offsetof
 #include <boost/cstdint.hpp>
 #include <boost/integer_traits.hpp>
-#include <opengl/OpenGL1.h>
+#include <qopengl.h>  // For OpenGL constants and typedefs.
 
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"

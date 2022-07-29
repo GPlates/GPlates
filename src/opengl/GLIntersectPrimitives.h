@@ -28,7 +28,7 @@
 #define GPLATES_OPENGL_GLINTERSECTPRIMITIVES_H
 
 #include <boost/optional.hpp>
-#include <opengl/OpenGL1.h>
+#include <qopengl.h>  // For OpenGL constants and typedefs.
 
 #include "maths/GreatCircleArc.h"
 #include "maths/MultiPointOnSphere.h"

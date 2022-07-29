@@ -21,7 +21,7 @@
 #ifndef GPLATES_OPENGL_OPENGLFUNCTIONS_H
 #define GPLATES_OPENGL_OPENGLFUNCTIONS_H
 
-#include <qopengl.h>
+#include <qopengl.h>  // For OpenGL constants and typedefs.
 #include <QOpenGLFunctions_4_3_Core>
 #include <QOpenGLFunctions_4_2_Core>
 #include <QOpenGLFunctions_4_1_Core>

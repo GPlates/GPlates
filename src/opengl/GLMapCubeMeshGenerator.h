@@ -29,7 +29,7 @@
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
-#include <opengl/OpenGL1.h>
+#include <qopengl.h>  // For OpenGL constants and typedefs.
 
 #include "GLCubeMeshGenerator.h"
 

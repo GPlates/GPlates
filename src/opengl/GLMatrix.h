@@ -28,7 +28,7 @@
 #define GPLATES_OPENGL_GLMATRIX_H
 
 #include <boost/operators.hpp>
-#include <opengl/OpenGL1.h>
+#include <qopengl.h>  // For OpenGL constants and typedefs.
 
 #include "maths/MathsUtils.h"
 

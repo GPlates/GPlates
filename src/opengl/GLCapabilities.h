@@ -27,9 +27,8 @@
 #define GPLATES_OPENGL_GLCAPABILITIES_H
 
 #include <boost/noncopyable.hpp>
+#include <qopengl.h>  // For OpenGL constants and typedefs.
 #include <QOpenGLContext>
-
-#include <opengl/OpenGL1.h>
 
 
 namespace GPlatesOpenGL

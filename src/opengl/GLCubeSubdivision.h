@@ -27,7 +27,7 @@
 #ifndef GPLATES_OPENGL_GLCUBESUBDIVISION_H
 #define GPLATES_OPENGL_GLCUBESUBDIVISION_H
 
-#include <opengl/OpenGL1.h>
+#include <qopengl.h>  // For OpenGL constants and typedefs.
 
 #include "GLFrustum.h"
 #include "GLIntersectPrimitives.h"

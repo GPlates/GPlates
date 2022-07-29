@@ -31,7 +31,7 @@
 #include <utility>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
-#include <opengl/OpenGL1.h>
+#include <qopengl.h>  // For OpenGL constants and typedefs.
 #include <QPair>
 #include <QOpenGLContext>
 #include <QOpenGLVersionProfile>
