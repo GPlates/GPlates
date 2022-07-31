@@ -44,7 +44,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Useful when converting a byte offset to a 'void *' pointer (for example, in glDrawElements).
 		 */
-		constexpr
+		inline
 		GLvoid *
 		buffer_offset(
 				int num_bytes)

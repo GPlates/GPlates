@@ -47,7 +47,7 @@ GPlatesApi::PyCoregistrationLayerProxy::get_all_seed_features()
 	std::set<GPlatesModel::FeatureHandle*> feature_set;
 	using namespace GPlatesDataMining;
 	
-	for(const GPlatesModel::FeatureHandle::weak_ref feature_ref : d_proxy->get_seed_features())
+	for (const GPlatesModel::FeatureHandle::weak_ref &feature_ref : d_proxy->get_seed_features())
 	{
 		if(feature_ref.is_valid() && feature_set.find(feature_ref.handle_ptr()) == feature_set.end())
 		{

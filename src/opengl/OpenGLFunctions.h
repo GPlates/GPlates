@@ -299,6 +299,7 @@ namespace GPlatesOpenGL
 
 	private:
 
+		[[ noreturn ]]
 		void
 		throw_if_not_overridden(
 				const char *function_name,

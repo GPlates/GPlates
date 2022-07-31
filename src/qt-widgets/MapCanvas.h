@@ -189,7 +189,7 @@ namespace GPlatesQtWidgets
 		//       to not be able to connect them at runtime.
 
 		void
-		update_canvas();
+		update_canvas() override;
 
 	Q_SIGNALS:
 
