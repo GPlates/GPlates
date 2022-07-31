@@ -43,6 +43,7 @@
 #include "GLTexture.h"
 #include "GLUtils.h"
 #include "GLViewport.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
 
@@ -58,8 +59,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GL;
-
 	/**
 	 * A raster that is reconstructed by mapping it onto a set of present-day static polygons and
 	 * reconstructing the polygons (and hence partitioned pieces of the raster).

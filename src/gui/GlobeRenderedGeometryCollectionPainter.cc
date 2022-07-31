@@ -32,8 +32,6 @@
 
 #include "GlobeRenderedGeometryLayerPainter.h"
 
-#include "opengl/GL.h"
-
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryLayer.h"
 #include "view-operations/RenderedGeometryUtils.h"

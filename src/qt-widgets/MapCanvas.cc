@@ -51,7 +51,6 @@
 
 #include "maths/MathsUtils.h"
 
-#include "opengl/GL.h"
 #include "opengl/GLContext.h"
 #include "opengl/GLContextImpl.h"
 #include "opengl/GLImageUtils.h"

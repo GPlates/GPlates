@@ -38,8 +38,8 @@
 #include "gui/AnimationController.h"
 #include "gui/CsvExport.h"
 
-#include "opengl/GL.h"
 #include "opengl/GLContext.h"
+#include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "presentation/ViewState.h"
 

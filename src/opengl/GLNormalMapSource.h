@@ -36,6 +36,7 @@
 #include "GLFramebuffer.h"
 #include "GLProgram.h"
 #include "GLVertexArray.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "gui/Colour.h"
 
@@ -54,8 +55,6 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesOpenGL
 {
-	class GL;
-
 	/**
 	 * A raster source that converts a floating-point raster into a tangent-space normal map for surface lighting.
 	 *

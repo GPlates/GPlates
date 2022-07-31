@@ -30,7 +30,6 @@
 
 #include "GLImageUtils.h"
 
-#include "GL.h"
 #include "GLBuffer.h"
 #include "GLContext.h"
 

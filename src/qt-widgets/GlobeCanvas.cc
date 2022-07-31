@@ -63,15 +63,14 @@
 
 #include "model/FeatureHandle.h"
 
-#include "opengl/GL.h"
 #include "opengl/GLContext.h"
 #include "opengl/GLContextImpl.h"
 #include "opengl/GLImageUtils.h"
 #include "opengl/GLIntersect.h"
 #include "opengl/GLIntersectPrimitives.h"
 #include "opengl/GLTileRender.h"
-#include "opengl/OpenGLException.h"
 #include "opengl/GLViewport.h"
+#include "opengl/OpenGLException.h"
 
 #include "presentation/ViewState.h"
 

@@ -25,8 +25,8 @@
 
 #include "GLTexture.h"
 
-#include "GL.h"
 #include "GLContext.h"
+#include "OpenGL.h"  // For Class GL
 #include "OpenGLFunctions.h"
 
 

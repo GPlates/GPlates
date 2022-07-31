@@ -44,7 +44,6 @@
 #include "maths/Rotation.h"
 #include "maths/UnitVector3D.h"
 
-#include "opengl/GL.h"
 #include "opengl/GLIntersect.h"
 #include "opengl/GLIntersectPrimitives.h"
 

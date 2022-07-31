@@ -34,6 +34,7 @@
 
 #include "GLMultiResolutionRasterSource.h"
 #include "GLTexture.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "global/PointerTraits.h"
 
@@ -52,8 +53,6 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesOpenGL
 {
-	class GL;
-
 	/**
 	 * An arbitrary dimension source of fixed-point RGBA8 data made accessible by a proxied raster.
 	 *

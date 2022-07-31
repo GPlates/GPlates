@@ -27,7 +27,6 @@
 
 #include "GLFilledPolygonsMapView.h"
 
-#include "GL.h"
 #include "GLContext.h"
 #include "GLVertexUtils.h"
 #include "GLViewProjection.h"

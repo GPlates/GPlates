@@ -28,7 +28,6 @@
 
 #include "GLVisualRasterSource.h"
 
-#include "GL.h"
 #include "GLCapabilities.h"
 #include "GLContext.h"
 #include "GLImageUtils.h"

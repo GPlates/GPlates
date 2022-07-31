@@ -44,13 +44,13 @@
 #include "opengl/GLContext.h"
 #include "opengl/GLMatrix.h"
 #include "opengl/GLVisualLayers.h"
+#include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "presentation/VisualLayers.h"
 
 
 namespace GPlatesOpenGL
 {
-	class GL;
 	class GLViewProjection;
 
 	namespace GLIntersect

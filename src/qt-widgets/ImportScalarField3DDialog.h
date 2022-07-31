@@ -38,6 +38,8 @@
 
 #include "model/PropertyValue.h"
 
+#include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
+
 #include "property-values/CoordinateTransformation.h"
 #include "property-values/Georeferencing.h"
 
@@ -56,11 +58,6 @@ namespace GPlatesGui
 {
 	class FileIOFeedback;
 	class UnsavedChangesTracker;
-}
-
-namespace GPlatesOpenGL
-{
-	class GL;
 }
 
 namespace GPlatesPresentation

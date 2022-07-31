@@ -33,7 +33,6 @@
 
 #include "GLMultiResolutionRasterMapView.h"
 
-#include "GL.h"
 #include "GLContext.h"
 #include "GLFrustum.h"
 #include "GLImageUtils.h"

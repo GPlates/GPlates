@@ -43,8 +43,8 @@
 #include "model/ModelUtils.h"
 #include "model/PropertyName.h"
 
-#include "opengl/GL.h"
 #include "opengl/GLContext.h"
+#include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "presentation/Application.h"
 #include "presentation/ViewState.h"

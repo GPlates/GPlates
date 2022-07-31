@@ -40,7 +40,6 @@
 
 #include "maths/MathsUtils.h"
 
-#include "opengl/GL.h"
 #include "opengl/GLMatrix.h"
 #include "opengl/GLStreamPrimitives.h"
 #include "opengl/GLVertexArray.h"

@@ -31,7 +31,9 @@
 #include <utility>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
-#include <qopengl.h>  // For OpenGL constants and typedefs.
+// For OpenGL constants and typedefs...
+// Note: Cannot include "OpenGL.h" due to cyclic dependency with class GL.
+#include <qopengl.h>
 #include <QPair>
 #include <QOpenGLContext>
 #include <QOpenGLVersionProfile>

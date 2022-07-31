@@ -37,6 +37,7 @@
 #include "GLRenderbuffer.h"
 #include "GLScalarFieldDepthLayersSource.h"
 #include "GLVertexArray.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "file-io/ReadErrors.h"
 #include "file-io/ScalarField3DFileFormat.h"
@@ -54,7 +55,6 @@ namespace GPlatesFileIO
 
 namespace GPlatesOpenGL
 {
-	class GL;
 	class GLMatrix;
 
 	/**

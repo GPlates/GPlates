@@ -55,8 +55,6 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/SphericalArea.h"
 
-#include "opengl/GL.h"
-
 #include "view-operations/RenderedArrowedPolyline.h"
 #include "view-operations/RenderedCircleSymbol.h"
 #include "view-operations/RenderedColouredEdgeSurfaceMesh.h"

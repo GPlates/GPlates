@@ -51,13 +51,13 @@
 #include "opengl/GLTexture.h"
 #include "opengl/GLVertexArray.h"
 #include "opengl/GLVisualLayers.h"
+#include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "view-operations/ScalarField3DRenderParameters.h"
 
 
 namespace GPlatesOpenGL
 {
-	class GL;
 	class GLViewProjection;
 }
 

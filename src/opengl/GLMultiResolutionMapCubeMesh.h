@@ -28,7 +28,6 @@
 
 #include <vector>
 #include <boost/optional.hpp>
-#include <qopengl.h>  // For OpenGL constants and typedefs.
 
 #include "GLBuffer.h"
 #include "GLIntersectPrimitives.h"
@@ -39,6 +38,7 @@
 #include "GLUtils.h"
 #include "GLVertexArray.h"
 #include "GLVertexUtils.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -55,8 +55,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GL;
-
 	/**
 	 * A mesh, projected on a 2D map, that is gridded along the cube subdivision tiles.
 	 */

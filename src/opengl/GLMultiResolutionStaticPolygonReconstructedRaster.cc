@@ -34,7 +34,6 @@
 
 #include "GLMultiResolutionStaticPolygonReconstructedRaster.h"
 
-#include "GL.h"
 #include "GLContext.h"
 #include "GLDataRasterSource.h"
 #include "GLIntersect.h"

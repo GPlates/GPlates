@@ -50,6 +50,7 @@
 #include "opengl/GLMultiResolutionRasterInterface.h"
 #include "opengl/GLMultiResolutionStaticPolygonReconstructedRaster.h"
 #include "opengl/GLReconstructedStaticPolygonMeshes.h"
+#include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "property-values/CoordinateTransformation.h"
 #include "property-values/Georeferencing.h"
@@ -60,11 +61,6 @@
 
 #include "utils/SubjectObserverToken.h"
 
-
-namespace GPlatesOpenGL
-{
-	class GL;
-}
 
 namespace GPlatesAppLogic
 {

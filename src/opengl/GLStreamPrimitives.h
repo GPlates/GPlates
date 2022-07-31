@@ -33,11 +33,11 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/utility/in_place_factory.hpp>
-#include <qopengl.h>  // For OpenGL constants and typedefs.
 #include <QtGlobal>
 
 #include "GLStreamBuffer.h"
 #include "GLStreamPrimitiveWriters.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -46,8 +46,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GL;
-
 	/**
 	 * Use this when you want to stream points, lines, line strips, triangles, triangle strips or
 	 * triangle fans into the write-only memory of a vertex buffer and a vertex element buffer.

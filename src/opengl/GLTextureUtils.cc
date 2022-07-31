@@ -27,7 +27,6 @@
 
 #include "GLTextureUtils.h"
 
-#include "GL.h"
 #include "GLUtils.h"
 
 #include "global/GPlatesAssert.h"

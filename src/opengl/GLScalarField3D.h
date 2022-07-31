@@ -30,7 +30,6 @@
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
-#include <qopengl.h>  // For OpenGL constants and typedefs.
 #include <QString>
 
 #include "GLCubeSubdivision.h"
@@ -45,6 +44,7 @@
 #include "GLVertexArray.h"
 #include "GLVertexUtils.h"
 #include "GLViewport.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs.
 
 #include "file-io/ScalarField3DFileFormatReader.h"
 
@@ -63,7 +63,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GL;
 	class GLMatrix;
 	class GLViewProjection;
 

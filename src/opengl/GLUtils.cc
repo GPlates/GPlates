@@ -28,12 +28,11 @@
 
 #include "GLUtils.h"
 
-#include "OpenGLException.h"
-#include "GL.h"
 #include "GLBuffer.h"
 #include "GLContext.h"
 #include "GLVertexArray.h"
 #include "GLVertexUtils.h"
+#include "OpenGLException.h"
 
 #include "global/GPlatesAssert.h"
 

@@ -28,7 +28,6 @@
 
 #include "GLReconstructedStaticPolygonMeshes.h"
 
-#include "GL.h"
 #include "GLIntersect.h"
 #include "GLVertexUtils.h"
 
@@ -43,6 +42,7 @@
 #include "maths/SmallCircleBounds.h"
 
 #include "utils/Profile.h"
+
 
 GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::GLReconstructedStaticPolygonMeshes(
 		GL &gl,

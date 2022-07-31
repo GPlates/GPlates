@@ -38,6 +38,7 @@
 #include "GLCubeSubdivisionCache.h"
 #include "GLMatrix.h"
 #include "GLVertexArray.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "app-logic/ReconstructContext.h"
 #include "app-logic/ReconstructMethodFiniteRotation.h"
@@ -59,8 +60,6 @@ namespace GPlatesMaths
 
 namespace GPlatesOpenGL
 {
-	class GL;
-
 	/**
 	 * Reconstructed static polygons used to reconstruct a raster.
 	 */

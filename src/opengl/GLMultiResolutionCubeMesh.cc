@@ -28,7 +28,6 @@
 
 #include "GLMultiResolutionCubeMesh.h"
 
-#include "GL.h"
 #include "GLCubeMeshGenerator.h"
 #include "GLUtils.h"
 #include "GLVertexUtils.h"

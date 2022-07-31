@@ -30,6 +30,7 @@
 #include <boost/scoped_array.hpp>
 	
 #include "GLMultiResolutionRasterSource.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "property-values/RawRaster.h"
 
@@ -44,8 +45,6 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesOpenGL
 {
-	class GL;
-
 	/**
 	 * An arbitrary dimension source of floating-point data made accessible by a proxied raster.
 	 *

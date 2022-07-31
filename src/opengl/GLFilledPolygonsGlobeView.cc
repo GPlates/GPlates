@@ -31,7 +31,6 @@
 
 #include "GLFilledPolygonsGlobeView.h"
 
-#include "GL.h"
 #include "GLContext.h"
 #include "GLIntersect.h"
 #include "GLMatrix.h"

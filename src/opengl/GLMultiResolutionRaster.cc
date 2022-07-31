@@ -36,7 +36,6 @@
 
 #include "GLMultiResolutionRaster.h"
 
-#include "GL.h"
 #include "GLContext.h"
 #include "GLDataRasterSource.h"
 #include "GLFrustum.h"

@@ -40,7 +40,6 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
-#include "opengl/GL.h"
 #include "opengl/GLMatrix.h"
 #include "opengl/GLShader.h"
 #include "opengl/GLShaderSource.h"

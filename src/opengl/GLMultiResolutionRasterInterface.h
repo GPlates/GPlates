@@ -33,6 +33,7 @@
 #include "GLMatrix.h"
 #include "GLTexture.h"
 #include "GLViewProjection.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "utils/ReferenceCount.h"
 #include "utils/SubjectObserverToken.h"
@@ -40,8 +41,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GL;
-
 	/**
 	 * Interface for a (possibly reconstructed) multi-resolution raster.
 	 *

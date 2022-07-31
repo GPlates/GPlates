@@ -37,7 +37,6 @@
 
 #include "maths/MathsUtils.h"
 
-#include "opengl/GL.h"
 #include "opengl/GLContext.h"
 #include "opengl/GLLight.h"
 #include "opengl/GLViewport.h"

@@ -27,7 +27,6 @@
 
 #include "GLStreamBuffer.h"
 
-#include "GL.h"
 #include "GLUtils.h"
 #include "OpenGLException.h"
 

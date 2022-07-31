@@ -34,7 +34,6 @@
 
 #include "GLScalarField3DGenerator.h"
 
-#include "GL.h"
 #include "GLBuffer.h"
 #include "GLContext.h"
 #include "GLCubeSubdivision.h"

@@ -28,11 +28,11 @@
 #define GPLATES_OPENGL_GLUTILS_H
 
 #include <boost/optional.hpp>
-#include <qopengl.h>  // For OpenGL constants and typedefs.
 
 #include "GLMatrix.h"
 #include "GLTexture.h"
 #include "GLVertexArray.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "gui/Colour.h"
 
@@ -41,8 +41,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GL;
-
 	namespace GLUtils
 	{
 		/**

@@ -27,8 +27,6 @@
 
 #include "GLMultiResolutionRasterInterface.h"
 
-#include "GL.h"
-
 
 float
 GPlatesOpenGL::GLMultiResolutionRasterInterface::get_viewport_dimension_scale(

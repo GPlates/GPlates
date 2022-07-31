@@ -38,7 +38,6 @@
 
 #include "model/ModelUtils.h"
 
-#include "opengl/GL.h"
 #include "opengl/GLRasterCoRegistration.h"
 
 #include "property-values/GmlTimePeriod.h"

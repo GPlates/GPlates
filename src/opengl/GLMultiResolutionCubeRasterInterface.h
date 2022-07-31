@@ -29,10 +29,10 @@
 #include <vector>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
-#include <qopengl.h>  // For OpenGL constants and typedefs.
 
 #include "GLMatrix.h"
 #include "GLTexture.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "maths/CubeCoordinateFrame.h"
 
@@ -42,8 +42,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GL;
-
 	/**
 	 * Interface for any raster data in a multi-resolution cube map.
 	 *

@@ -36,6 +36,7 @@
 #include "GLMultiResolutionRaster.h"
 #include "GLTexture.h"
 #include "GLTextureUtils.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "maths/CubeQuadTree.h"
 #include "maths/CubeQuadTreeLocation.h"
@@ -48,8 +49,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GL;
-
 	/**
 	 * A reconstructed raster rendered into a multi-resolution cube map.
 	 */

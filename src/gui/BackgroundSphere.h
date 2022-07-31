@@ -37,11 +37,11 @@
 
 #include "opengl/GLProgram.h"
 #include "opengl/GLVertexArray.h"
+#include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 
 namespace GPlatesOpenGL
 {
-	class GL;
 	class GLViewProjection;
 }
 

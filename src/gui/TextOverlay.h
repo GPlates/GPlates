@@ -27,15 +27,12 @@
 #ifndef GPLATES_GUI_TEXTOVERLAY_H
 #define GPLATES_GUI_TEXTOVERLAY_H
 
+#include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
+
 
 namespace GPlatesAppLogic
 {
 	class ApplicationState;
-}
-
-namespace GPlatesOpenGL
-{
-	class GL;
 }
 
 namespace GPlatesGui

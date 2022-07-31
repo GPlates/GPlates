@@ -29,9 +29,9 @@
 
 #include "GLShader.h"
 
-#include "GL.h"
 #include "GLContext.h"
 #include "GLShaderSource.h"
+#include "OpenGL.h"  // For Class GL
 #include "OpenGLException.h"
 #include "OpenGLFunctions.h"
 

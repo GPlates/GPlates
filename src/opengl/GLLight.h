@@ -34,6 +34,7 @@
 #include "GLTexture.h"
 #include "GLUtils.h"
 #include "GLVertexArray.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "gui/MapProjection.h"
 #include "gui/SceneLightingParameters.h"
@@ -46,8 +47,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GL;
-
 	/**
 	 * A directional light that encodes light direction for both the 3D globe view and the 2D map views.
 	 *

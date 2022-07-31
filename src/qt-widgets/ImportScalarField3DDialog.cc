@@ -73,7 +73,6 @@
 #include "model/NotificationGuard.h"
 #include "model/TopLevelPropertyInline.h"
 
-#include "opengl/GL.h"
 #include "opengl/GLContext.h"
 #include "opengl/GLScalarField3D.h"
 #include "opengl/GLScalarField3DGenerator.h"

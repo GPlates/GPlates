@@ -28,7 +28,6 @@
 #include <boost/scoped_array.hpp>
 #include <QDebug>
 
-#include "GL.h"
 #include "GLDataRasterSource.h"
 #include "GLContext.h"
 #include "GLUtils.h"

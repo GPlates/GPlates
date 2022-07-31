@@ -38,6 +38,7 @@
 #include "GLTexture.h"
 #include "GLTextureUtils.h"
 #include "GLTransform.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "maths/CubeQuadTree.h"
 
@@ -49,7 +50,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GL;
 	class GLCapabilities;
 	class GLViewport;
 

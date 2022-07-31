@@ -31,14 +31,13 @@
 #include <QString>
 
 #include "GLViewport.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "gui/Colour.h"
 
 
 namespace GPlatesOpenGL
 {
-	class GL;
-
 	namespace GLImageUtils
 	{
 		/**

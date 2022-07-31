@@ -38,7 +38,6 @@
 #include "global/GPlatesAssert.h"
 #include "global/NotYetImplementedException.h"
 
-#include "opengl/GL.h"
 #include "opengl/GLMatrix.h"
 #include "opengl/GLViewport.h"
 #include "opengl/GLViewProjection.h"

@@ -51,11 +51,13 @@
 #include "model/FeatureStoreRootHandle.h"
 #include "model/WeakReferenceCallback.h"
 
+#include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
+
 #include "presentation/ViewState.h"
+
 
 namespace GPlatesOpenGL
 {
-	class GL;
 	class GLViewport;
 }
 

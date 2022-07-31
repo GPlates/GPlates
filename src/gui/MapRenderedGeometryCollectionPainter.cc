@@ -33,8 +33,6 @@
 #include "MapProjection.h"
 #include "MapRenderedGeometryLayerPainter.h"
 
-#include "opengl/GL.h"
-
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryLayer.h"
 #include "view-operations/RenderedGeometryUtils.h"

@@ -52,6 +52,7 @@
 #include "GLReconstructedStaticPolygonMeshes.h"
 #include "GLTexture.h"
 #include "GLVisualRasterSource.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "app-logic/Layer.h"
 #include "app-logic/RasterLayerProxy.h"
@@ -87,7 +88,6 @@ namespace GPlatesAppLogic
 
 namespace GPlatesOpenGL
 {
-	class GL;
 	class GLViewProjection;
 
 	/**

@@ -46,12 +46,13 @@
 
 #include "model/FeatureHandle.h"
 
+#include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
+
 #include "utils/UnicodeStringUtils.h"
 
 
 namespace GPlatesOpenGL
 {
-	class GL;
 	class GLRasterCoRegistration;
 }
 

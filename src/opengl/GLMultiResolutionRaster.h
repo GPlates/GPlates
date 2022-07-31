@@ -45,6 +45,7 @@
 #include "GLViewProjection.h"
 #include "GLVertexArray.h"
 #include "GLVertexUtils.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "maths/PointOnSphere.h"
 #include "maths/Vector3D.h"
@@ -57,7 +58,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GL;
 	class GLFrustum;
 
 	/**

@@ -32,6 +32,7 @@
 #include <boost/scoped_array.hpp>
 	
 #include "GLMultiResolutionRasterSource.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "gui/Colour.h"
 
@@ -50,8 +51,6 @@ namespace GPlatesPropertyValues
 
 namespace GPlatesOpenGL
 {
-	class GL;
-
 	/**
 	 * A raster source that contains depth layers for generating the scalar values and gradients for a 3D scalar field.
 	 *

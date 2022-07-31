@@ -44,8 +44,6 @@
 
 #include "global/PointerTraits.h"
 
-#include "opengl/GLReconstructedStaticPolygonMeshes.h"
-
 #include "maths/CubeQuadTreePartition.h"
 #include "maths/GeometryOnSphere.h"
 #include "maths/PolygonMesh.h"
@@ -54,14 +52,12 @@
 #include "model/FeatureHandle.h"
 #include "model/FeatureId.h"
 
+#include "opengl/GLReconstructedStaticPolygonMeshes.h"
+#include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
+
 #include "utils/KeyValueCache.h"
 #include "utils/SubjectObserverToken.h"
 
-
-namespace GPlatesOpenGL
-{
-	class GL;
-}
 
 namespace GPlatesAppLogic
 {

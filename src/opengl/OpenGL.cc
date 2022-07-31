@@ -26,7 +26,7 @@
 #include <exception>
 #include <QtGlobal>
 
-#include "GL.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "OpenGLException.h"
 #include "OpenGLFunctions.h"

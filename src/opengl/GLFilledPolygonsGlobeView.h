@@ -32,7 +32,6 @@
 #include <boost/optional.hpp>
 #include <boost/ref.hpp>
 #include <boost/utility/in_place_factory.hpp>
-#include <qopengl.h>  // For OpenGL constants and typedefs.
 
 #include "GLBuffer.h"
 #include "GLCubeSubdivisionCache.h"
@@ -47,6 +46,7 @@
 #include "GLVertexUtils.h"
 #include "GLViewport.h"
 #include "GLViewProjection.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
@@ -67,8 +67,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GL;
-
 	/**
 	 * A representation of (reconstructed) filled polygons (static or dynamic) that uses
 	 * multi-resolution cube textures instead of polygons meshes.

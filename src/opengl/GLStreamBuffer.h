@@ -28,15 +28,13 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/shared_ptr.hpp>
-#include <qopengl.h>  // For OpenGL constants and typedefs.
 
 #include "GLBuffer.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 
 namespace GPlatesOpenGL
 {
-	class GL;
-
 	/**
 	 * Wrapper around @a GLBuffer for streaming data from application to buffer object (from CPU to GPU).
 	 */

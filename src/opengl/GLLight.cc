@@ -29,7 +29,6 @@
 
 #include "GLLight.h"
 
-#include "GL.h"
 #include "GLContext.h"
 #include "GLFramebuffer.h"
 #include "GLMatrix.h"

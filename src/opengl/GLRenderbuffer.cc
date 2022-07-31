@@ -27,8 +27,8 @@
 
 #include "GLRenderbuffer.h"
 
-#include "GL.h"
 #include "GLContext.h"
+#include "OpenGL.h"  // For Class GL
 #include "OpenGLFunctions.h"
 
 #include "global/GPlatesAssert.h"

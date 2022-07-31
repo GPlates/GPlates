@@ -32,7 +32,6 @@
 
 #include "GLScalarFieldDepthLayersSource.h"
 
-#include "GL.h"
 #include "GLContext.h"
 #include "GLTextureUtils.h"
 #include "GLUtils.h"

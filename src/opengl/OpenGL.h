@@ -23,8 +23,19 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_OPENGL_GL_H
-#define GPLATES_OPENGL_GL_H
+#ifndef GPLATES_OPENGL_OPENGL_H
+#define GPLATES_OPENGL_OPENGL_H
+
+//
+// Note: This header is called "OpenGL.h" instead of "GL.h" (it would normally be called "GL.h" since it
+//       contains "class GL"). The reason is, on macOS, the OpenGL system header is called <OpenGL/gl.h>
+//       which, when included by <qopengl.h>, ended up including this header instead (when it was called
+//       "opengl/GL.h") since both are the same (when case is ignored).
+//       To avoid this we now call this header "OpenGL.h" instead of "GL.h".
+//       And "OpenGL.h" also includes the OpenGL constants/typedefs (via including <qopengl.h>).
+//       So all clients of class GL should consider "OpenGL.h" the only OpenGL header needing inclusion
+//       (all calls to OpenGL should go through class GL and all OpenGL constants/typedefs are included also).
+//
 
 #include <vector>
 #include <boost/noncopyable.hpp>
@@ -1341,4 +1352,4 @@ namespace GPlatesOpenGL
 	};
 }
 
-#endif // GPLATES_OPENGL_GL_H
+#endif // GPLATES_OPENGL_OPENGL_H

@@ -40,7 +40,6 @@
 #include "maths/SmallCircle.h"
 #include "maths/UnitVector3D.h"
 
-#include "opengl/GL.h"
 #include "opengl/GLContext.h"
 #include "opengl/GLIntersectPrimitives.h"
 #include "opengl/GLMatrix.h"

@@ -38,6 +38,7 @@
 #include "opengl/GLIntersectPrimitives.h"
 #include "opengl/GLTexture.h"
 #include "opengl/GLVisualLayers.h"
+#include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "presentation/VisualLayers.h"
 
@@ -46,7 +47,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GL;
 	class GLViewProjection;
 }
 

@@ -29,15 +29,14 @@
 
 #include <QFont>
 #include <QString>
-#include <qopengl.h>  // For OpenGL constants and typedefs.
+
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "gui/Colour.h"
 
 
 namespace GPlatesOpenGL
 {
-	class GL;
-
 	namespace GLText
 	{
 		/**

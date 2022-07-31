@@ -9,8 +9,6 @@
 # so the build is unaware of the change.
 #
 set(srcs
-    GL.cc
-    GL.h
     GLBuffer.cc
     GLBuffer.h
     GLCapabilities.cc
@@ -123,6 +121,8 @@ set(srcs
     GLVisualLayers.h
     GLVisualRasterSource.cc
     GLVisualRasterSource.h
+    OpenGL.cc
+    OpenGL.h
     OpenGLException.h
     OpenGLFunctions.cc
     OpenGLFunctions.h

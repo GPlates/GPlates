@@ -27,10 +27,8 @@
 #ifndef GPLATES_GUI_VELOCITYLEGENDOVERLAY_H
 #define GPLATES_GUI_VELOCITYLEGENDOVERLAY_H
 
-namespace GPlatesOpenGL
-{
-	class GL;
-}
+#include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
+
 
 namespace GPlatesPresentation
 {

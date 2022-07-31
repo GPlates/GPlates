@@ -40,7 +40,6 @@
 #include "maths/LatLonPoint.h"
 #include "maths/Real.h"
 
-#include "opengl/GL.h"
 #include "opengl/GLViewProjection.h"
 
 #include "utils/Profile.h"

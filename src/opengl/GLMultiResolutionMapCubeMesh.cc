@@ -30,7 +30,6 @@
 
 #include "GLMultiResolutionMapCubeMesh.h"
 
-#include "GL.h"
 #include "GLIntersectPrimitives.h"
 #include "GLUtils.h"
 #include "GLVertexUtils.h"

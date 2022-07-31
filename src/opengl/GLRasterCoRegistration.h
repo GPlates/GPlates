@@ -47,6 +47,7 @@
 #include "GLUtils.h"
 #include "GLVertexArray.h"
 #include "GLVertexUtils.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "app-logic/ReconstructContext.h"
 
@@ -74,7 +75,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GL;
 	class GLViewProjection;
 
 	/**

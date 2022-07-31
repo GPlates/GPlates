@@ -32,7 +32,6 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
-#include <qopengl.h>  // For OpenGL constants and typedefs.
 
 #include "Colour.h"
 #include "LayerPainter.h"
@@ -47,6 +46,7 @@
 #include "opengl/GLFrustum.h"
 #include "opengl/GLIntersectPrimitives.h"
 #include "opengl/GLTexture.h"
+#include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "presentation/VisualLayers.h"
 
@@ -57,7 +57,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GL;
 	class GLViewProjection;
 }
 

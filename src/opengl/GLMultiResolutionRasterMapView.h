@@ -38,13 +38,13 @@
 #include "GLTexture.h"
 #include "GLTransform.h"
 #include "GLViewProjection.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "utils/ReferenceCount.h"
 
 
 namespace GPlatesOpenGL
 {
-	class GL;
 	class GLFrustum;
 
 	/**

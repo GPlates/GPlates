@@ -31,6 +31,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "GLTexture.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
@@ -39,8 +40,6 @@
 
 namespace GPlatesOpenGL
 {
-	class GL;
-
 	/**
 	 * Interface for an arbitrary dimension source of raster data that's used as input
 	 * to a @a GLMultiResolutionRaster.

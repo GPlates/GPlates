@@ -31,7 +31,6 @@
 
 #include "GLText.h"
 
-#include "GL.h"
 #include "GLViewport.h"
 #include "GLViewProjection.h"
 #include "OpenGLException.h"

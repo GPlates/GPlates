@@ -53,6 +53,7 @@
 #include "opengl/GLRenderbuffer.h"
 #include "opengl/GLViewProjection.h"
 #include "opengl/GLVisualLayers.h"
+#include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 
 namespace GPlatesGui
@@ -64,7 +65,6 @@ namespace GPlatesGui
 
 namespace GPlatesOpenGL
 {
-	class GL;
 	class GLTileRender;
 }
 

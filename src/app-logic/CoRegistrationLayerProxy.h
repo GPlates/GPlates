@@ -42,12 +42,13 @@
 
 #include "model/FeatureId.h"
 
+#include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
+
 #include "utils/SubjectObserverToken.h"
 
 
 namespace GPlatesOpenGL
 {
-	class GL;
 	class GLRasterCoRegistration;
 }
 

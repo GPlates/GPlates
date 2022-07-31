@@ -34,9 +34,9 @@
 
 #include "GLProgram.h"
 
-#include "GL.h"
 #include "GLContext.h"
 #include "GLShader.h"
+#include "OpenGL.h"  // For Class GL
 #include "OpenGLException.h"
 #include "OpenGLFunctions.h"
 

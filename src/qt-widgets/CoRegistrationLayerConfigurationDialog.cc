@@ -51,7 +51,6 @@
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
 
-#include "opengl/GL.h"
 #include "opengl/GLContext.h"
 
 #include "presentation/VisualLayer.h"

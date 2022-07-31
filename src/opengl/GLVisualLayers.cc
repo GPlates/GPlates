@@ -28,7 +28,6 @@
 
 #include "GLVisualLayers.h"
 
-#include "GL.h"
 #include "GLCubeSubdivisionCache.h"
 #include "GLMultiResolutionCubeReconstructedRaster.h"
 

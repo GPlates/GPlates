@@ -31,7 +31,6 @@
 
 #include "GLNormalMapSource.h"
 
-#include "GL.h"
 #include "GLCapabilities.h"
 #include "GLContext.h"
 #include "GLShader.h"

@@ -28,20 +28,19 @@
 
 #include <vector>
 #include <boost/optional.hpp>
-#include <qopengl.h>  // For OpenGL constants and typedefs.
 #include <QPointF>
 
 #include "GLBuffer.h"
 #include "GLProgram.h"
 #include "GLVertexArray.h"
 #include "GLVertexUtils.h"
+#include "OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 #include "utils/ReferenceCount.h"
 
 
 namespace GPlatesOpenGL
 {
-	class GL;
 	class GLViewProjection;
 
 	/**

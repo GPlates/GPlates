@@ -28,7 +28,6 @@
 
 #include "GLMultiResolutionCubeReconstructedRaster.h"
 
-#include "GL.h"
 #include "GLContext.h"
 #include "GLTexture.h"
 #include "GLUtils.h"

@@ -34,7 +34,6 @@
 
 #include "GLRasterCoRegistration.h"
 
-#include "GL.h"
 #include "GLBuffer.h"
 #include "GLContext.h"
 #include "GLCubeSubdivision.h"

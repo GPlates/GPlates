@@ -32,7 +32,6 @@
 
 #include "gui/MapProjection.h"
 
-#include "opengl/GL.h"
 #include "opengl/GLContext.h"
 #include "opengl/GLLight.h"
 #include "opengl/GLShaderSource.h"
@@ -41,6 +40,7 @@
 
 #include "utils/CallStackTracker.h"
 #include "utils/Profile.h"
+
 
 namespace GPlatesGui
 {

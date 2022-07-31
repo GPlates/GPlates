@@ -25,8 +25,8 @@
 
 #include "GLVertexArray.h"
 
-#include "GL.h"
 #include "GLContext.h"
+#include "OpenGL.h"  // For Class GL
 #include "OpenGLException.h"
 #include "OpenGLFunctions.h"
 

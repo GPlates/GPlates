@@ -54,7 +54,6 @@
 
 #include "maths/MathsUtils.h"
 
-#include "opengl/GL.h"
 #include "opengl/GLBuffer.h"
 #include "opengl/GLCapabilities.h"
 #include "opengl/GLContext.h"
@@ -68,6 +67,7 @@
 #include "opengl/GLUtils.h"
 #include "opengl/GLViewProjection.h"
 #include "opengl/GLVisualLayers.h"
+#include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 #include "opengl/OpenGLException.h"
 
 #include "presentation/RasterVisualLayerParams.h"
