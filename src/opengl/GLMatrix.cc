@@ -213,7 +213,7 @@ GPlatesOpenGL::GLMatrix::gl_rotate(
 	// multiplying by the identity matrix when we do nothing and return.
 	if (mag_xyz < 1e-12)
 	{
-		qWarning() << "Zero vector passed to GLTransform::gl_rotate().";
+		qWarning() << "Zero vector passed to GLMatrix::gl_rotate().";
 		return *this;
 	}
 
