@@ -147,7 +147,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 	// in the Feature Inspection workflow because it is hooked up to the focused feature geometry.
 	//
 
-	GPlatesCanvasTools::MeasureDistance::non_null_ptr_type measure_distance_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type measure_distance_tool =
 		GPlatesCanvasTools::MeasureDistance::create(
 				status_bar_callback,
 				view_state.get_focused_feature_geometry_builder(),
@@ -172,7 +172,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 	// Click geometry canvas tool.
 	//
 
-	GPlatesCanvasTools::ClickGeometry::non_null_ptr_type click_geometry_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type click_geometry_tool =
 			GPlatesCanvasTools::ClickGeometry::create(
 					status_bar_callback,
 					view_state.get_focused_feature_geometry_builder(),
@@ -200,7 +200,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 	// Move vertex canvas tool.
 	//
 
-	GPlatesCanvasTools::MoveVertex::non_null_ptr_type move_vertex_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type move_vertex_tool =
 			GPlatesCanvasTools::MoveVertex::create(
 					status_bar_callback,
 					view_state.get_focused_feature_geometry_builder(),
@@ -228,7 +228,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 	// Delete vertex canvas tool.
 	//
 
-	GPlatesCanvasTools::DeleteVertex::non_null_ptr_type delete_vertex_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type delete_vertex_tool =
 			GPlatesCanvasTools::DeleteVertex::create(
 					status_bar_callback,
 					view_state.get_focused_feature_geometry_builder(),
@@ -254,7 +254,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 	// Insert vertex canvas tool.
 	//
 
-	GPlatesCanvasTools::InsertVertex::non_null_ptr_type insert_vertex_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type insert_vertex_tool =
 			GPlatesCanvasTools::InsertVertex::create(
 					status_bar_callback,
 					view_state.get_focused_feature_geometry_builder(),
@@ -280,7 +280,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 	// Split feature canvas tool.
 	//
 
-	GPlatesCanvasTools::SplitFeature::non_null_ptr_type split_feature_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type split_feature_tool =
 			GPlatesCanvasTools::SplitFeature::create(
 					status_bar_callback,
 					view_state.get_feature_focus(),

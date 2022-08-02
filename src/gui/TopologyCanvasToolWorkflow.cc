@@ -141,7 +141,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 	// Click geometry canvas tool.
 	//
 
-	GPlatesCanvasTools::ClickGeometry::non_null_ptr_type click_geometry_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type click_geometry_tool =
 			GPlatesCanvasTools::ClickGeometry::create(
 					status_bar_callback,
 					view_state.get_focused_feature_geometry_builder(),
@@ -169,7 +169,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 	// Build line topology canvas tool.
 	//
 
-	GPlatesCanvasTools::BuildTopology::non_null_ptr_type build_line_topology_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type build_line_topology_tool =
 			GPlatesCanvasTools::BuildTopology::create(
 					GPlatesAppLogic::TopologyGeometry::LINE,
 					status_bar_callback,
@@ -195,7 +195,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 	// Build boundary topology canvas tool.
 	//
 
-	GPlatesCanvasTools::BuildTopology::non_null_ptr_type build_boundary_topology_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type build_boundary_topology_tool =
 			GPlatesCanvasTools::BuildTopology::create(
 					GPlatesAppLogic::TopologyGeometry::BOUNDARY,
 					status_bar_callback,
@@ -221,7 +221,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 	// Build network topology canvas tool.
 	//
 
-	GPlatesCanvasTools::BuildTopology::non_null_ptr_type build_network_topology_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type build_network_topology_tool =
 			GPlatesCanvasTools::BuildTopology::create(
 					GPlatesAppLogic::TopologyGeometry::NETWORK,
 					status_bar_callback,
@@ -247,7 +247,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 	// Edit topology canvas tool.
 	//
 
-	GPlatesCanvasTools::EditTopology::non_null_ptr_type edit_topology_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type edit_topology_tool =
 			GPlatesCanvasTools::EditTopology::create(
 					status_bar_callback,
 					view_state,

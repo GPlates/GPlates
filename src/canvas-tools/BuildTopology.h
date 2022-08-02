@@ -69,11 +69,6 @@ namespace GPlatesCanvasTools
 
 	public:
 
-		/**
-		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<BuildTopology>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<BuildTopology> non_null_ptr_type;
-
 		static
 		const non_null_ptr_type
 		create(
