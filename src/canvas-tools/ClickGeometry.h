@@ -67,11 +67,6 @@ namespace GPlatesCanvasTools
 	{
 	public:
 
-		/**
-		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<ClickGeometry>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<ClickGeometry> non_null_ptr_type;
-
 		static
 		const non_null_ptr_type
 		create(

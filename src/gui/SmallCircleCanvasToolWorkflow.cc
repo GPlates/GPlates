@@ -99,7 +99,7 @@ GPlatesGui::SmallCircleCanvasToolWorkflow::create_canvas_tools(
 	// Create small circle canvas tool.
 	//
 
-	GPlatesCanvasTools::CreateSmallCircle::non_null_ptr_type create_small_circle_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type create_small_circle_tool =
 		GPlatesCanvasTools::CreateSmallCircle::create(
 				status_bar_callback,
 				view_state.get_rendered_geometry_collection(),
