@@ -59,12 +59,27 @@ namespace
 	const char *VERTEX_SHADER_SOURCE =
 		R"(
 			uniform mat4 view_projection;
+			uniform float point_size;
 			
 			layout(location = 0) in vec4 position;
+
+			out VertexData
+			{
+				float point_size_scale;
+				float inv_point_size;
+			} vs_out;
 			
 			void main (void)
 			{
 				gl_Position = view_projection * position;
+
+				// Expand the point size by 2 pixels (1 pixel radius expansion) to give space
+				// for one pixel of anti-aliasing outside circumference (see fragment shader).
+				float point_size_expansion = 2;
+				float expanded_point_size = point_size + point_size_expansion;
+				vs_out.point_size_scale = expanded_point_size / point_size;
+				vs_out.inv_point_size = 1.0 / point_size;
+				gl_PointSize = expanded_point_size;
 				
 				// We enabled GL_DEPTH_CLAMP to disable the far clipping plane, but it also disables
 				// near plane (which we still want), so we'll handle that ourself.
@@ -83,24 +98,55 @@ namespace
 	const char *FRAGMENT_SHADER_SOURCE =
 		R"(
 			uniform vec4 star_colour;
+
+			in VertexData
+			{
+				float point_size_scale;
+				float inv_point_size;
+			} fs_in;
 			
 			layout(location = 0) out vec4 colour;
 
 			void main (void)
 			{
 				colour = star_colour;
+
+				// Calculate distance from current fragment centre to the centre of the circular point.
+				//
+				// Note: 'gl_PointCoord' range is [0,1] which we convert to [-1,1] and then
+				//       convert that to [-point_size_scale, point_size_scale] which is a larger range
+				//       than [-1,1]. And now a distance of 1 from point centre is the point circumference.
+				vec2 fragment_to_point_centre = fs_in.point_size_scale * (2 * gl_PointCoord - 1);
+				float distance_to_point_centre = length(fragment_to_point_centre);
+
+				// How much does the distance change compared to its neighbouring pixels?
+				//
+				// Note: We could set 'distance_delta_over_a_pixel = fwidth(distance_to_point_centre)' but that
+				//       it not as stable as hard-coding it.
+				//
+				// We know there are 'point_size' pixels in the distance range [-1, 1]
+				// (so the distance over a pixel is '2 / point_size').
+				float distance_delta_over_a_pixel = 2 * fs_in.inv_point_size;
+
+				// Alpha is 1 when 'distance < 1 - distance_delta_over_a_pixel' and 0 when
+				// 'distance > 1 + distance_delta_over_a_pixel' and smoothly interpolated inbetween.
+				// This corresponds to inside, outside and on circumference (within a 2 pixel margin
+				// which is anti-aliased).
+				colour.a = 1 - smoothstep(
+								1 - distance_delta_over_a_pixel,
+								1 + distance_delta_over_a_pixel,
+								distance_to_point_centre);
 			}
 		)";
 
 	const GLfloat SMALL_STARS_SIZE = 1.4f;
-	const GLfloat LARGE_STARS_SIZE = 2.1f;
+	const GLfloat LARGE_STARS_SIZE = 2.4f;
 
 	const unsigned int NUM_SMALL_STARS = 4250;
 	const unsigned int NUM_LARGE_STARS = 3750;
 
-	// Points sit on a sphere of this radius.
-	// Note that ideally, we'd have these points at infinity - but we can't do
-	// that, because we use an orthographic projection for the globe...
+	// Points sit on a sphere of this radius (note that the Earth globe has radius 1.0).
+	// Ideally we'd have these points at infinity, but a large distance works well.
 	const GLfloat RADIUS = 7.0f;
 
 	typedef GPlatesOpenGL::GLVertexUtils::Vertex vertex_type;
@@ -286,50 +332,6 @@ namespace
 				program->get_uniform_location(gl, "star_colour"),
 				colour.red(), colour.green(), colour.blue(), colour.alpha());
 	}
-
-
-	void
-	draw_stars(
-			GPlatesOpenGL::GL &gl,
-			unsigned int num_small_star_vertices,
-			unsigned int num_small_star_vertex_indices,
-			unsigned int num_large_star_vertices,
-			unsigned int num_large_star_vertex_indices,
-			int device_pixel_ratio)
-	{
-		// Small stars size.
-		//
-		// Note: Multiply point sizes to account for ratio of device pixels to device *independent* pixels.
-		//       On high-DPI displays there are more pixels in the same physical area on screen and so
-		//       without increasing the point size the points would look too small.
-		gl.PointSize(SMALL_STARS_SIZE * device_pixel_ratio);
-
-		// Draw the small stars.
-		gl.DrawRangeElements(
-				GL_POINTS,
-				0/*start*/,
-				num_small_star_vertices - 1/*end*/,
-				num_small_star_vertex_indices/*count*/,
-				GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::type,
-				nullptr/*indices_offset*/);
-
-		// Large stars size.
-		//
-		// Note: Multiply point sizes to account for ratio of device pixels to device *independent* pixels.
-		//       On high-DPI displays there are more pixels in the same physical area on screen and so
-		//       without increasing the point size the points would look too small.
-		gl.PointSize(LARGE_STARS_SIZE * device_pixel_ratio);
-
-		// Draw the large stars.
-		// They come after the small stars in the vertex array.
-		gl.DrawRangeElements(
-				GL_POINTS,
-				num_small_star_vertices/*start*/,
-				num_small_star_vertices + num_large_star_vertices - 1/*end*/,
-				num_large_star_vertex_indices/*count*/,
-				GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::type,
-				GPlatesOpenGL::GLVertexUtils::buffer_offset(num_small_star_vertex_indices * sizeof(vertex_element_type))/*indices_offset*/);
-	}
 }
 
 
@@ -432,11 +434,43 @@ GPlatesGui::Stars::paint(
 	// Bind the vertex array.
 	gl.BindVertexArray(d_vertex_array);
 
-	draw_stars(
-			gl,
-			d_num_small_star_vertices,
-			d_num_small_star_vertex_indices,
-			d_num_large_star_vertices,
-			d_num_large_star_vertex_indices,
-			device_pixel_ratio);
+	// We specify/adjust the point size in the vertex shader.
+	gl.Enable(GL_PROGRAM_POINT_SIZE);
+
+	// Small stars point size.
+	//
+	// Note: Multiply point sizes to account for ratio of device pixels to device *independent* pixels.
+	//       On high-DPI displays there are more pixels in the same physical area on screen and so
+	//       without increasing the point size the points would look too small.
+	gl.Uniform1f(
+			d_program->get_uniform_location(gl, "point_size"),
+			SMALL_STARS_SIZE * device_pixel_ratio);
+
+	// Draw the small stars.
+	gl.DrawRangeElements(
+			GL_POINTS,
+			0/*start*/,
+			d_num_small_star_vertices - 1/*end*/,
+			d_num_small_star_vertex_indices/*count*/,
+			GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::type,
+			nullptr/*indices_offset*/);
+
+	// Large stars point size.
+	//
+	// Note: Multiply point sizes to account for ratio of device pixels to device *independent* pixels.
+	//       On high-DPI displays there are more pixels in the same physical area on screen and so
+	//       without increasing the point size the points would look too small.
+	gl.Uniform1f(
+			d_program->get_uniform_location(gl, "point_size"),
+			LARGE_STARS_SIZE * device_pixel_ratio);
+
+	// Draw the large stars.
+	// They come after the small stars in the vertex array.
+	gl.DrawRangeElements(
+			GL_POINTS,
+			d_num_small_star_vertices/*start*/,
+			d_num_small_star_vertices + d_num_large_star_vertices - 1/*end*/,
+			d_num_large_star_vertex_indices/*count*/,
+			GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::type,
+			GPlatesOpenGL::GLVertexUtils::buffer_offset(d_num_small_star_vertex_indices * sizeof(vertex_element_type))/*indices_offset*/);
 }
