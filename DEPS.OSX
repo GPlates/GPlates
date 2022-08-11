@@ -27,7 +27,7 @@ To compile GPlates/pyGPlates, you will need the following programs and libraries
   • make
   * Python (version 2.7 or 3; preferably 3)
   • Boost library headers (version 1.35 or newer)
-  • Qt library (version 5.6 or newer)
+  • Qt library (version 5.12 or newer)
   • GDAL (Geospatial Data Abstraction Library) (1.3.2 or newer; preferably 2 or newer)
   • CGAL (Computational Geometry Algorithms Library) (4.7 or newer; preferably 4.12 or newer for improved CMake support)
   • PROJ (4.6.0 or newer; preferably 6 or newer)
