@@ -10,13 +10,6 @@
 #####################
 
 
-###############
-# Find OpenGL #
-#
-# Note: CMake 3.8 introduced import targets for OpenGL.
-#       So since our min CMake requirement exceeds this we don't need to add imported targets ourself.
-find_package(OpenGL REQUIRED)
-
 #############
 # Find ZLIB #
 #
@@ -784,11 +777,6 @@ endif()
 ########################
 
 #
-# OpenGL dependency.
-#
-target_link_libraries(${SOURCE_TARGET} PUBLIC OpenGL::GL)
-
-#
 # ZLIB dependency.
 #
 target_link_libraries(${SOURCE_TARGET} PUBLIC ZLIB::ZLIB)
@@ -858,7 +846,7 @@ endif()
 target_link_libraries(${SOURCE_TARGET} PUBLIC Qwt::Qwt)
 # Define Qwt version keywords.
 #
-# Set as usage requirements (INTERFACE) on the OpenGL imported library target.
+# Set as usage requirements (INTERFACE) on the Qwt imported library target.
 #
 # Note: Prior to CMake 3.11 none of the 'target_*()' commands could set INTERFACE_ properties on imported targets.
 if (CMAKE_VERSION VERSION_LESS 3.11)
