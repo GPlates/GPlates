@@ -220,7 +220,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 # Require Qt 5.6 for the Qt::AA_EnableHighDpiScaling attribute (Bionic, our minimum supported Ubuntu, uses Qt 5.9).
-find_package(Qt5 5.6 REQUIRED COMPONENTS Core Gui Network OpenGL Svg Widgets Xml XmlPatterns)
+find_package(Qt5 5.6 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml XmlPatterns)
 
 ############
 # Find Qwt #
@@ -808,7 +808,7 @@ endif()
 #
 # Qt5 dependency.
 #
-target_link_libraries(${SOURCE_TARGET} PUBLIC Qt5::Core Qt5::Gui Qt5::Network Qt5::OpenGL Qt5::Svg Qt5::Widgets Qt5::Xml Qt5::XmlPatterns)
+target_link_libraries(${SOURCE_TARGET} PUBLIC Qt5::Core Qt5::Gui Qt5::Network Qt5::Svg Qt5::Widgets Qt5::Xml Qt5::XmlPatterns)
 # The directory where Qt AUTOIUC auto-generated files ('ui_*.h') get written is automatically added to the
 # INCLUDE_DIRECTORIES target property of the 'gplates-lib' and 'pygplates' targets, but not INTERFACE_INCLUDE_DIRECTORIES.
 # This is fine for 'pygplates' (because nothing links to it), but it means the include directories are not propagated to

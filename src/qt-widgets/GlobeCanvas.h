@@ -41,7 +41,6 @@
 #include <QPaintDevice>
 #include <QPainter>
 #include <QtGlobal>
-#include <QtOpenGL/qgl.h>
 
 #include "SceneView.h"
 
