@@ -100,44 +100,33 @@ void main (void)
 		gl_FragDepth = (z_ndc * gl_DepthRange.diff + gl_DepthRange.near + gl_DepthRange.far) / 2.0;
 	}
 
-	// If the globe is opaque then just set the fragment colour and return.
-	if (background_color.a == 1.0)
+	// Pass through the background RGB.
+	color.rgb = background_color.rgb;
+
+	// Modify background alpha (if it's transparent).
+	if (background_color.a < 1.0)
 	{
-		color = background_color;
+		// Globe is transparent.
 
-		return;
+		// Cosine of angle between globe surface normal and view direction.
+		vec3 normal = front_globe_position;
+		vec3 view_direction = -ray.direction;
+		float cosine_globe_view_angle = dot(normal, view_direction);
+
+		// cosine_globe_view_angle = 1  ->  power = 1
+		// cosine_globe_view_angle = 0  ->  power = large (max 100)
+		float power = 1.0 / max(0.01, cosine_globe_view_angle);
+
+		// Modify the alpha channel of the background colour.
+		//
+		// When 'cosine_globe_view_angle' is 1.0 ('power' is also 1.0) it will not modify the alpha
+		// (since '1 - pow(1 - alpha, 1.0) == alpha').
+		// Non-central rays will increase alpha.
+		color.a = 1.0 - pow(1.0 - background_color.a, power);
 	}
-
-	float shell_thickness = 0.0033;  // Using same value that was in initial C++ non-shader version of this code.
-
-	// Intersect the ray with the slightly expanded globe.
-	Sphere expanded_globe = Sphere(1.0 + shell_thickness);
-	Interval expanded_globe_interval;
-	if (!intersect_line(expanded_globe, ray, expanded_globe_interval))
+	else
 	{
-		// Shouldn't get here since this expanded sphere is bigger than globe and
-		// we already intersected the globe.
-		discard;
+		// Globe is opaque.
+		color.a = 1.0;
 	}
-
-	// The position of second intersection of ray with globe.
-	vec3 back_globe_position = at(ray, globe_interval.to);
-
-	// The position of first and second intersections of ray with expanded globe.
-	vec3 front_expanded_globe_position = at(ray, expanded_globe_interval.from);
-	vec3 back_expanded_globe_position = at(ray, expanded_globe_interval.to);
-
-	// The amount of spherical shell traversed by the ray.
-	float ray_shell_thickness =
-			distance(front_expanded_globe_position, back_expanded_globe_position) -
-			distance(front_globe_position, back_globe_position);
-
-	// Modify the alpha channel of the background colour.
-	// A ray travelling through centre of globe travels through '2 * shell_thickness', and hence
-	// will not modify the alpha (since '1 - pow(1 - alpha, 1.0) == 1.0').
-	// Non-central rays will increase alpha.
-	float alpha = 1.0 - pow(1.0 - background_color.a, ray_shell_thickness / (2 * shell_thickness));
-	
-	// Replace background alpha with newly calculated value.
-	color = vec4(background_color.rgb, alpha);
 }
