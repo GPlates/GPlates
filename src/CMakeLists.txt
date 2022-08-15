@@ -13,7 +13,6 @@
 ###############
 # Find Vulkan #
 #
-# Although we only use Vulkan via Qt we still need the path to the Vulkan headers since Qt's Vulkan-related headers include them.
 find_package(Vulkan REQUIRED)
 
 #############
@@ -226,7 +225,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 # Require Qt 5.12 for Vulkan support in Qt.
-# Actually only macOS requires 5.12 (added support for MoltenVK). Windows and Linux only require Qt 5.10.
+# Actually only macOS requires 5.12 (which added support for MoltenVK). Windows and Linux only require Qt 5.10.
 # However our minimum supported Ubuntu is Focal which uses Qt 5.12 anyway.
 find_package(Qt5 5.12 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml XmlPatterns)
 
@@ -787,7 +786,12 @@ endif()
 #
 # Vulkan dependency.
 #
-target_link_libraries(${SOURCE_TARGET} PUBLIC Vulkan::Vulkan)
+# We only use Vulkan via Qt, so we don't directly include Vulkan headers and we don't 'link' to Vulkan.
+# Side note: Qt also doesn't 'link' to Vulkan (instead it resolves Vulkan functions at runtime).
+#
+# But we still need the include path to the Vulkan headers since we include Qt's headers (like "QVulkanWindow.h")
+# and they include the Vulkan headers.
+target_include_directories(${SOURCE_TARGET} SYSTEM PUBLIC ${Vulkan_INCLUDE_DIRS})
 
 #
 # ZLIB dependency.
