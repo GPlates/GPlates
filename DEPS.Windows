@@ -7,11 +7,14 @@ Table of Contents
  3. Program and library dependencies
 
 Introduction
+============
 
 This page lists the program and library dependencies which need to be satisfied
 to be able to build GPlates/pyGPlates from source on Windows.
 
+
 Environment variables
+=====================
 
 Instructions below may direct you to modify the PATH variable, to add
 directories to the search path for executable files. (Note that the name of the
@@ -27,7 +30,9 @@ To edit the environment variables:
   4. Edit an environment variable in the 'User variables for ...' or 'System variables' section.
      If the environment variable does not exist, click the New button to add it.
 
+
 Program and library dependencies
+================================
 
 The following libraries and binaries are required to build GPlates/pyGPlates.
 If you cannot use, or you cannot obtain, the exact same version as listed, you should
@@ -74,6 +79,13 @@ Microsoft Visual Studio
 CMake
 
   1. Get and install the latest CMake (at least 3.10) from: http://www.cmake.org/
+
+Vulkan
+
+  1. Install the Vulkan SDK from an installer by following these instructions: https://vulkan.lunarg.com/doc/sdk (select the Windows tab).
+     - This simply involves downloading the installer and double-clicking it.
+       * The installer will set the system environment variable VULKAN_SDK to the directory in which the SDK is installed.
+       * The VULKAN_SDK environment variable is used by the GPlates/pyGPlates CMake build to find the Vulkan SDK.
 
 Qt
 

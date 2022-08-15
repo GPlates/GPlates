@@ -6,26 +6,31 @@ Table of Contents
  1. Introduction
  2. Program and library dependencies
  3. Corresponding package dependencies
- 4. Installing OpenGL
+ 4. Installing the Vulkan SDK
  5. Overview of different ways to install non-system dependencies
  6. Installing non-system dependencies using Macports
- 7. Troubleshooting  
+    1. A note about Python
+    2. A note about Qwt
+    3. A note about GDAL
 
 
 Introduction
+============
 
 This page lists the package dependencies which need to be satisfied to be able
 to build GPlates/pyGPlates from source on macOS.
 
 
 Program and library dependencies
+================================
 
 To compile GPlates/pyGPlates, you will need the following programs and libraries installed:
 
   • XCode (see "BUILD.OSX" for instructions on how to install)
   • cmake (3.10 or newer)
   • make
-  * Python (version 2.7 or 3; preferably 3)
+  • Vulkan SDK (version 1.0 or greater)
+  • Python (version 2.7 or 3; preferably 3)
   • Boost library headers (version 1.35 or newer)
   • Qt library (version 5.12 or newer)
   • GDAL (Geospatial Data Abstraction Library) (1.3.2 or newer; preferably 2 or newer)
@@ -36,6 +41,7 @@ To compile GPlates/pyGPlates, you will need the following programs and libraries
 
 
 Corresponding package dependencies
+==================================
 
 Program/library Corresponding Macports packages
 cmake           cmake
@@ -49,7 +55,33 @@ CGAL            cgal5
 zlib            zlib
 
 
+Installing the Vulkan SDK
+=========================
+
+The Vulkan LunarG SDK should be installed, instead of the standard Vulkan packages (such as 'vulkan-loader' on Macports),
+since the SDK includes extras such as the GLSL shader compiler library (used by GPlates/pyGPlates).
+
+Install the Vulkan SDK from a '.dmg' installer by following these instructions: https://vulkan.lunarg.com/doc/sdk (select the Apple tab).
+Note that each version of the SDK supports only the current and last major versions of macOS, and only the latest version of XCode,
+at the time the SDK was made available.
+So you may need to install an older version SDK. If so, then:
+- To find out which SDK version to install, you can visit https://vulkan.lunarg.com/doc/sdk (select the Apple tab) and select
+  an older version (directly under the Windows/Linux/Apple tabs) and look at its System Requirements in the inlined documentation.
+  Then keep changing the version until the system requirements suit your system. Then you can download/install that version of the SDK.
+  For example, on macOS Catalina (10.15) using XCode 12.4 you can install SDK version 1.2.182.0.
+To install Vulkan, download the appropriate installer '.dmg' and run the 'InstallVulkan' application contained within it.
+- You can choose the destination folder to install into (it will default to your home directory, eg, "~/VulkanSDK/1.3.216.0").
+- On newer SDK versions there's an option "System Global Files" that will install to "/usr/local" (if selected).
+  * If this is not selected (or not available on older SDKs) then you'll need to source the "setup-env.sh" script to set needed environment
+    variables (one of these environment variables is VULKAN_SDK which is used by the GPlates/pyGPlates CMake build to find the Vulkan SDK).
+    For example, "source ~/VulkanSDK/1.3.216.0/setup-env.sh".
+    However if you're using Z shell instead of Bash then you can instead run (for example):
+      BASH_SOURCE=~/VulkanSDK/1.3.216.0/setup-env.sh emulate zsh -c '. "$BASH_SOURCE"'
+    Also you can make it persistent (for future logins) by adding it to your "~/.profile" file (or "~/.zprofile" for Z shell).
+
+
 Overview of different ways to install non-system dependencies
+=============================================================
 
 There are multiple ways to install the remaining dependencies.
 You can use Macports (http://www.macports.org) or Homebrew (https://brew.sh/) or Fink (http://www.finkproject.org/).
@@ -58,6 +90,7 @@ Or you can install the dependent packages using precompiled installer packages w
 
 
 Installing non-system dependencies using Macports
+=================================================
 
 Here we briefly describe how to install dependencies using Macports (http://www.macports.org):
   • Install Macports (http://www.macports.org) if it's not already installed (it will ask you to first install XCode).
@@ -87,6 +120,7 @@ For example, to install using Python 3.10:
 
 
 A note about Python
+-------------------
 
 You may need to explicitly specify the Macports Python location. Otherwise the Python framework bundled inside
 the XCode app will instead be found by CMake, which likely has a different Python minor version than the Macports Python
@@ -105,6 +139,7 @@ build GPlates/pyGPlates by typing (see BUILD.OSX):
 
 
 A note about Qwt
+----------------
 
 If Qwt is not found (with a regular 'cmake .') then you can explicitly specify the Qwt include and library locations using QWT_INCLUDE_DIR and QWT_LIBRARY.
 For example, the 'qwt-qt5' Macports package should get installed inside 'qt5', so something like the following might be required:
@@ -114,6 +149,7 @@ For example, the 'qwt-qt5' Macports package should get installed inside 'qt5', s
 
 
 A note about GDAL
+-----------------
 
 If you decide to compile GDAL from source (instead of using Macports) then ensure that GDAL links *statically*
 to PROJ if the PROJ library is in a non-standard location. This ensures GPlates does not generate a dynamic

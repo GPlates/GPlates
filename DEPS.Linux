@@ -4,15 +4,17 @@ Table of Contents
 
  1. Introduction
  2. Program and library dependencies
- 3. Corresponding package dependencies
-     1. For Ubuntu
-         1. Ubuntu packages
-         3. How to install via a GUI (recommended)
-         4. How to install using the command-line (advanced)
-         5. A note about the packages for GL
-     2. For other Linux variants
+ 3. Corresponding package dependencies for Ubuntu
+     1. Installing the Vulkan SDK
+     2. Ubuntu packages
+     3. How to install via a GUI (recommended)
+     4. How to install using the command-line (advanced)
+     6. A note about GDAL
+ 4. Other Linux variants
+
 
 Introduction
+============
 
 This page lists the package dependencies which need to be satisfied to be able
 to build GPlates/pyGPlates from source on Linux.
@@ -20,13 +22,15 @@ to build GPlates/pyGPlates from source on Linux.
 Below, we list the corresponding Ubuntu packages.
 Similar packages should be available on other Linux distributions.
 
+
 Program and library dependencies
+================================
 
 To compile GPlates/pyGPlates, you will need the following programs and libraries installed:
 
   • cmake (3.10 or newer)
   • g++ (4.8.1 or newer, required to support C++11) 
-  • GL library (the OpenGL shared library)
+  • Vulkan SDK (version 1.0 or greater)
   • Python library (version 2.7 or 3, preferably 3)
   • Boost library headers (version 1.35 or newer)
   • Qt library (version 5.12 or newer)
@@ -36,11 +40,11 @@ To compile GPlates/pyGPlates, you will need the following programs and libraries
   • Qwt (6.0.1 or newer; preferably 6.1 or newer)
   • zlib
 
-Corresponding package dependencies
 
-For Ubuntu
+Corresponding package dependencies for Ubuntu
+=============================================
 
-This subsection provides more specific information on resolving the program and
+This section provides more specific information on resolving the program and
 library dependencies on an Ubuntu system.
 
 (Note that GPlates/pyGPlates development at the USyd node occurs on Ubuntu systems, so
@@ -50,39 +54,73 @@ Note that Ubuntu is based upon Debian, so (subject to the availability of the
 appropriate versions of packages) these instructions should also work on a
 Debian system.
 
-Ubuntu packages
 
-The following packages are not installed by default and may need to be
-installed manually:
+Installing the Vulkan SDK
+-------------------------
+
+The Vulkan LunarG SDK should be installed, instead of relying on the standard 'libvulkan-dev' system library, since
+the SDK includes extras such as the GLSL shader compiler library (used by GPlates/pyGPlates).
+
+Install the Vulkan SDK from a tarball by following these instructions: https://vulkan.lunarg.com/doc/sdk (select the Linux tab)
+
+An example is:
+  * Download the tarball "vulkansdk-linux-x86_64-1.3.216.0.tar.gz".
+  * Create a sub-directory "vulkan" in your home directory with "cd ~; mkdir vulkan; cd vulkan".
+  * Run "tar xf ~/Downloads/vulkansdk-linux-x86_64-1.3.216.0.tar.gz".
+  * Run "source 1.3.216.0/setup-env.sh".
+    - This sets the VULKAN_SDK environment variable (needed by the GPlates/pyGPlates CMake build to find the Vulkan SDK).
+    - Also you can make it persistent for future logins by adding the following to the "~/.profile" file:
+      if [ -f "$HOME/vulkan/1.3.216.0/setup-env.sh" ]; then
+          . "$HOME/vulkan/1.3.216.0/setup-env.sh"
+      fi
+
+
+Note: On Focal 20.04 (but not newer Ubuntu versions) an alternative, to installing the SDK via a tarball, is:
+
+  wget -qO - http://packages.lunarg.com/lunarg-signing-key-pub.asc | sudo apt-key add -
+  sudo wget -qO /etc/apt/sources.list.d/lunarg-vulkan-focal.list http://packages.lunarg.com/vulkan/lunarg-vulkan-focal.list
+  sudo apt update
+  sudo apt install vulkan-sdk
+
+
+Ubuntu packages
+---------------
+
+The following packages are not installed by default and may need to be installed manually:
 
 Program/library Corresponding Ubuntu packages
 cmake           cmake
 g++             g++
-GL              See note below.
+Vulkan          vulkan-sdk (see note below about Vulkan)
 Python          python3-dev python3-numpy
-Boost           libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev 
-                libboost-test-dev libboost-system-dev (See note below regarding Xenial 16.04 and libboost-python-dev)
+Boost           libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev
 Qt              libqt5svg5-dev libqt5xmlpatterns5-dev (prior to Hirsute 21.04 you also need qt5-default).
 GDAL            libgdal-dev (or libgdal1-dev for GDAL1 on older systems)
-CGAL            libcgal-dev (may also need libcgal-qt5-dev on Xenial 16.04 due to bug in CGAL cmake)
+CGAL            libcgal-dev
 PROJ            libproj-dev
 Qwt             libqwt-qt5-dev
 zlib            zlib1g-dev
 
-Extras          libxrender-dev libice-dev libsm-dev libfreetype6-dev libfontconfig1-dev  (Ubuntu 14.04 Trusty Tahr and above)
+Extras          libxrender-dev libice-dev libsm-dev libfreetype6-dev libfontconfig1-dev
 
 
-The command to install the dependencies on Ubuntu is (NOTE: prior to Hirsute 21.04 you should also include qt5-default in the list below):
+The command to install the dependencies (except Vulkan) on Ubuntu is:
 
-sudo apt-get update; sudo apt-get install cmake python3-dev python3-numpy libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev libqt5svg5-dev libqt5xmlpatterns5-dev libgdal-dev libcgal-dev libproj-dev libqwt-qt5-dev zlib1g-dev libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev
+sudo apt-get update; sudo apt-get install cmake vulkan-sdk python3-dev python3-numpy libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev libqt5svg5-dev libqt5xmlpatterns5-dev libgdal-dev libcgal-dev libproj-dev libqwt-qt5-dev zlib1g-dev libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev
+
+NOTE: Prior to Hirsute 21.04 you should also include qt5-default in the list above.
+
 
 How to install via a GUI (recommended)
+--------------------------------------
 
 It is recommended that you start the Synaptic Package Manager graphical
 application, and resolve the dependencies by simply searching for the required
 packages and then selecting them for installation.
 
+
 How to install using the command-line (advanced)
+------------------------------------------------
 
 You can determine whether you have a particular package installed on your
 system using the "dpkg-query -l" command, followed by the package name.
@@ -106,34 +144,9 @@ can install it by running the command:
 	sudo apt install libboost-dev
 		(assuming you have permission to run "sudo apt" on your system).
 
-A note about the packages for GL
-
-There appear to be multiple Debian/Ubuntu packages which fulfil the GL library dependency:
-
-  • xlibmesa-gl + xlibmesa-gl-dev; or
-  • libgl1-mesa-dri + libgl1-mesa-glx + libgl1-mesa-dev
-
-The mixture of packages seems to vary from system to system.
-
-Firstly, whatever the mixture of packages on your system, if it fulfils the
-library dependencies, don't change it. ("If it ain't broke, don't fix it.")
-
-If you do need to install an extra package or two to fulfil dependencies, it is
-most likely that you are missing a "-dev" package (since the non-dev packages
-are used by many other packages, and are probably already on your system). In
-that case, you should install the "-dev" package which corresponds to the
-non-dev package already on your system.
-
-If you are also missing a non-dev package, well… time to call the sysadmin.
-
-Note for nvidia card owners: You may find you need to install the
-"nvidia-glx-dev" package to fufil the libGL dependency - but installing this
-package may remove some mesa related packages. Only attempt this if configure
-complains about a missing GL dependency and you are certain you are using the
-nvidia binary driver.  (If you don't know what this means, don't install
-nvidia-glx-dev!)
 
 A note about GDAL
+-----------------
 
 If you decide to compile GDAL from source then ensure that GDAL links *statically*
 to PROJ if the PROJ library is in a non-standard location. This ensures GPlates
@@ -149,6 +162,8 @@ have been installed in /opt/local/):
 ...where '--enable-netcdf4' enables NetCDF version 4 which may require HDF5 '--with-hdf5=/path/to/hdf5' according to https://trac.osgeo.org/gdal/wiki/NetCDF.
 And if using a version of GDAL older than 3.0 then replace '--with-proj=/path/to/proj' with '--with-static-proj4=/path/to/proj4'.
 
-For other Linux variants
+
+Other Linux variants
+====================
 
 There are some sucessful stories about compiling GPlates/pyGPlates on other Linux variants, including Fedora, Debian, Redhat and CentOS.
