@@ -817,14 +817,24 @@ GPlatesQtWidgets::GlobeCanvas::render_scene(
 	gl.DepthMask(GL_TRUE);
 	gl.StencilMask(~0/*all ones*/);
 	//
-	// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
-	// the scene, that are not rendered, to have *opaque* alpha (=1). This appears to be needed on
-	// Mac with Qt5 (alpha=0 is fine on Qt5 Windows/Ubuntu, and on Qt4 for all platforms). Perhaps because
-	// QGLWidget rendering (on Qt5 Mac) is first done to a framebuffer object which is then blended into the
-	// window framebuffer (where having a source alpha of zero would result in the black background not showing).
-	// Or, more likely, maybe a framebuffer object is used on all platforms but the window framebuffer is
-	// white on Mac but already black on Windows/Ubuntu.
-	gl.ClearColor(0, 0, 0, 1); // Clear colour to opaque black
+	// Note that we clear the colour to (0,0,0,0) and not (0,0,0,1) because we want any transparent
+	// parts of the scene (parts that we don't render) to have an alpha of zero.
+	// This is because this code is used not only to render the viewport window but also for exporting images of the
+	// viewport window, and we want image formats supporting transparency (like PNG) to have a transparent background.
+	//
+	// Previously we had this as (0,0,0,1) because alpha=1 it appeared to be needed on macOS with Qt5.
+	// Perhaps because QGLWidget rendering (on Qt5 Mac) was first done to a framebuffer object which was then blended
+	// into the window framebuffer (where having a source alpha of zero would result in the black background not showing).
+	// Or, more likely, maybe a framebuffer object is used on all platforms but the window framebuffer is white on Mac
+	// but already black on Windows/Ubuntu (maybe because we turned off background rendering with
+	// 	"setAutoFillBackground(false)" and "setAttribute(Qt::WA_NoSystemBackground)").
+	//
+	// Since switching to QOpenGLWidget (from QGLWidget) it doesn't appear to be an issue anymore.
+	// But we are now switching again to QVulkanWindow (all our OpenGL rendering will go through Vulkan).
+	//
+	// TODO: Check that alpha=0 works with the QVulkanWindow that we now use (instead of QOpenGLWidget).
+	//
+	gl.ClearColor(); // Clear colour to (transparent) black
 	gl.ClearDepth(); // Clear depth to 1.0
 	gl.ClearStencil(); // Clear stencil to 0
 	gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
