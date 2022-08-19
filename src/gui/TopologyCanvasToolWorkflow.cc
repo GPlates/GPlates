@@ -46,9 +46,8 @@
 #include "presentation/ViewState.h"
 #include "presentation/VisualLayers.h"
 
+#include "qt-widgets/GlobeAndMapCanvas.h"
 #include "qt-widgets/GlobeAndMapWidget.h"
-#include "qt-widgets/GlobeCanvas.h"
-#include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/ReconstructionViewWidget.h"
 #include "qt-widgets/TaskPanel.h"
 #include "qt-widgets/ViewportWindow.h"
@@ -89,8 +88,7 @@ GPlatesGui::TopologyCanvasToolWorkflow::TopologyCanvasToolWorkflow(
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesQtWidgets::ViewportWindow &viewport_window) :
 	CanvasToolWorkflow(
-			viewport_window.globe_canvas(),
-			viewport_window.map_canvas(),
+			viewport_window.globe_and_map_canvas(),
 			CanvasToolWorkflows::WORKFLOW_TOPOLOGY,
 			// The tool to start off with...
 			CanvasToolWorkflows::TOOL_BUILD_BOUNDARY_TOPOLOGY),
@@ -156,13 +154,13 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 	d_globe_click_geometry_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					click_geometry_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_click_geometry_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					click_geometry_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 
 	//
@@ -182,13 +180,13 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 	d_globe_build_line_topology_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					build_line_topology_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_build_line_topology_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					build_line_topology_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 
 	//
@@ -208,13 +206,13 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 	d_globe_build_boundary_topology_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					build_boundary_topology_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_build_boundary_topology_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					build_boundary_topology_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 
 	//
@@ -234,13 +232,13 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 	d_globe_build_network_topology_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					build_network_topology_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_build_network_topology_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					build_network_topology_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 
 	//
@@ -259,13 +257,13 @@ GPlatesGui::TopologyCanvasToolWorkflow::create_canvas_tools(
 	d_globe_edit_topology_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					edit_topology_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_edit_topology_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					edit_topology_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 }
 

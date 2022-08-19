@@ -36,7 +36,7 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
-	class GlobeCanvas;
+	class GlobeAndMapCanvas;
 	class ViewportWindow;
 }
 
@@ -55,7 +55,7 @@ namespace GPlatesCanvasTools
 		 */
 		explicit
 		ZoomGlobe(
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+				GPlatesQtWidgets::GlobeAndMapCanvas &globe_canvas_,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_);
 
 		void
@@ -68,8 +68,7 @@ namespace GPlatesCanvasTools
 		handle_left_click(
 				int screen_width,
 				int screen_height,
-				double click_screen_x,
-				double click_screen_y,
+				const QPointF &click_screen_position,
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
 				bool is_on_globe) override;
 
@@ -77,8 +76,7 @@ namespace GPlatesCanvasTools
 		handle_shift_left_click(
 				int screen_width,
 				int screen_height,
-				double click_screen_x,
-				double click_screen_y,
+				const QPointF &click_screen_position,
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
 				bool is_on_globe) override;
 

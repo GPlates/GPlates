@@ -29,18 +29,15 @@
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <QObject>
+#include <QPointF>
 #include <Qt>
 
+#include "maths/PointOnSphere.h"
 
-namespace GPlatesMaths
-{
-	class PointOnSphere;
-	class LatLonPoint;
-}
 
 namespace GPlatesQtWidgets
 {
-	class GlobeCanvas;
+	class GlobeAndMapCanvas;
 }
 
 namespace GPlatesGui
@@ -49,7 +46,7 @@ namespace GPlatesGui
 
 	/**
 	 * This class adapts the interface of GlobeCanvasTool to the interface expected by the mouse-click
-	 * and mouse-drag signals of GlobeCanvas and directs them to the activate canvas tool.
+	 * and mouse-drag signals of GlobeAndMapCanvas and directs them to the activate canvas tool.
 	 */
 	class GlobeCanvasToolAdapter:
 			public QObject,
@@ -63,20 +60,20 @@ namespace GPlatesGui
 		 */
 		explicit
 		GlobeCanvasToolAdapter(
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas);
+				GPlatesQtWidgets::GlobeAndMapCanvas &globe_canvas);
 
 		~GlobeCanvasToolAdapter()
 		{  }
 
 		/**
-		 * Connects mouse signals from @a GlobeCanvas to the specified canvas tool.
+		 * Connects mouse signals from @a GlobeAndMapCanvas to the specified canvas tool.
 		 */
 		void
 		activate_canvas_tool(
 				GlobeCanvasTool &globe_canvas_tool);
 
 		/**
-		 * Disconnects mouse signals from @a GlobeCanvas to the currently active canvas tool.
+		 * Disconnects mouse signals from @a GlobeAndMapCanvas to the currently active canvas tool.
 		 */
 		void
 		deactivate_canvas_tool();
@@ -87,20 +84,19 @@ namespace GPlatesGui
 		handle_press(
 				int screen_width,
 				int screen_height,
-				double press_screen_x,
-				double press_screen_y,
-				GPlatesMaths::PointOnSphere press_pos_on_globe,
+				QPointF press_screen_position,
+				GPlatesMaths::PointOnSphere press_position_on_globe,
 				bool is_on_globe,
 				Qt::MouseButton button,
-				Qt::KeyboardModifiers modifiers);	
+				Qt::KeyboardModifiers modifiers);
+	
 	
 		void
 		handle_click(
 				int screen_width,
 				int screen_height,
-				double click_screen_x,
-				double click_screen_y,
-				GPlatesMaths::PointOnSphere click_pos_on_globe,
+				QPointF click_screen_position,
+				GPlatesMaths::PointOnSphere click_position_on_globe,
 				bool is_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
@@ -109,15 +105,13 @@ namespace GPlatesGui
 		handle_drag(
 				int screen_width,
 				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				GPlatesMaths::PointOnSphere initial_pos_on_globe,
+				QPointF initial_screen_position,
+				GPlatesMaths::PointOnSphere initial_position_on_globe,
 				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				GPlatesMaths::PointOnSphere current_pos_on_globe,
+				QPointF current_screen_position,
+				GPlatesMaths::PointOnSphere current_position_on_globe,
 				bool is_on_globe,
-				GPlatesMaths::PointOnSphere centre_of_viewport,
+				GPlatesMaths::PointOnSphere centre_of_viewport_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -125,15 +119,13 @@ namespace GPlatesGui
 		handle_release_after_drag(
 				int screen_width,
 				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				GPlatesMaths::PointOnSphere initial_pos_on_globe,
+				QPointF initial_screen_position,
+				GPlatesMaths::PointOnSphere initial_position_on_globe,
 				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				GPlatesMaths::PointOnSphere current_pos_on_globe,
+				QPointF current_screen_position,
+				GPlatesMaths::PointOnSphere current_position_on_globe,
 				bool is_on_globe,
-				GPlatesMaths::PointOnSphere centre_of_viewport,
+				GPlatesMaths::PointOnSphere centre_of_viewport_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
@@ -144,15 +136,14 @@ namespace GPlatesGui
 		handle_move_without_drag(
 				int screen_width,
 				int screen_height,
-				double current_screen_x,
-				double current_screen_y,
-				GPlatesMaths::PointOnSphere current_pos_on_globe,
+				QPointF screen_position,
+				GPlatesMaths::PointOnSphere position_on_globe,
 				bool is_on_globe,
-				GPlatesMaths::PointOnSphere centre_of_viewport);
+				GPlatesMaths::PointOnSphere centre_of_viewport_on_globe);
 
 	private:
 
-		GPlatesQtWidgets::GlobeCanvas &d_globe_canvas;
+		GPlatesQtWidgets::GlobeAndMapCanvas &d_globe_canvas;
 
 		boost::optional<GlobeCanvasTool &> d_active_globe_canvas_tool;
 

@@ -26,13 +26,13 @@
 
 #include "MapCanvasTool.h"
 
-#include "qt-widgets/MapCanvas.h"
+#include "qt-widgets/GlobeAndMapCanvas.h"
 
 #include "view-operations/MapViewOperation.h"
 
 
 GPlatesGui::MapCanvasTool::MapCanvasTool(
-		GPlatesQtWidgets::MapCanvas &map_canvas_,
+		GPlatesQtWidgets::GlobeAndMapCanvas &map_canvas_,
 		GPlatesViewOperations::MapViewOperation &map_view_operation_) :
 	d_map_canvas(map_canvas_),
 	d_map_view_operation(map_view_operation_)

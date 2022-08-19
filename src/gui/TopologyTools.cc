@@ -120,7 +120,6 @@
 
 #include "qt-widgets/CreateFeatureDialog.h"
 #include "qt-widgets/ExportCoordinatesDialog.h"
-#include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/SearchResultsDockWidget.h"
 #include "qt-widgets/TaskPanel.h"
 #include "qt-widgets/TopologyToolsWidget.h"

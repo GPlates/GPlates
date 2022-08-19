@@ -47,7 +47,7 @@ namespace GPlatesAppLogic
 
 namespace GPlatesQtWidgets
 {
-	class GlobeCanvas;
+	class GlobeAndMapCanvas;
 	class ViewportWindow;
 	class FeaturePropertiesDialog;
 }

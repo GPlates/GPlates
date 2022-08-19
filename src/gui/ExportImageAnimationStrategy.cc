@@ -35,8 +35,8 @@
 
 #include "presentation/ViewState.h"
 
+#include "qt-widgets/GlobeAndMapWidget.h"
 #include "qt-widgets/ReconstructionViewWidget.h"
-#include "qt-widgets/SceneView.h"
 #include "qt-widgets/ViewportWindow.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
@@ -73,9 +73,9 @@ GPlatesGui::ExportImageAnimationStrategy::do_export_iteration(
 
 	// Here's where we do the actual work of exporting of the image snapshots,
 	// given frame_index, filename, and target_dir.
-	GPlatesQtWidgets::SceneView &active_scene_view =
+	GPlatesQtWidgets::GlobeAndMapWidget &globe_and_map_widget =
 			d_export_animation_context_ptr->view_state().get_other_view_state()
-				.reconstruction_view_widget().active_view();
+				.reconstruction_view_widget().globe_and_map_widget();
 	GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection =
 			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection();
 	try
@@ -104,10 +104,10 @@ GPlatesGui::ExportImageAnimationStrategy::do_export_iteration(
 		// Note: The returned image could be high DPI (pixel device ratio greater than 1.0).
 		//       In which case the actual pixel dimensions of the image will be larger than requested
 		//       (by the pixel device ratio) but it should still occupy the requested *widget* dimensions.
-		const QImage image = active_scene_view.render_to_qimage(
+		const QImage image = globe_and_map_widget.render_to_qimage(
 				d_configuration->image_resolution_options.image_size
 					? d_configuration->image_resolution_options.image_size.get()
-					: active_scene_view.get_viewport_size());
+					: globe_and_map_widget.get_viewport_size());
 		if (image.isNull())
 		{
 			// Most likely a memory allocation failure.

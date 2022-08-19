@@ -28,8 +28,8 @@
 
 #include "LightingWidget.h"
 
+#include "GlobeAndMapCanvas.h"
 #include "GlobeAndMapWidget.h"
-#include "GlobeCanvas.h"
 #include "ReconstructionViewWidget.h"
 #include "ViewportWindow.h"
 

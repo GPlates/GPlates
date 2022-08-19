@@ -34,11 +34,11 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-#include "qt-widgets/MapCanvas.h"
+#include "qt-widgets/GlobeAndMapCanvas.h"
 
 
 GPlatesGui::MapCanvasToolAdapter::MapCanvasToolAdapter(
-		GPlatesQtWidgets::MapCanvas &map_canvas) :
+		GPlatesQtWidgets::GlobeAndMapCanvas &map_canvas) :
 	d_map_canvas(map_canvas)
 {
 }
@@ -374,7 +374,7 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 {
 	QObject::connect(
 			&d_map_canvas,
-			SIGNAL(mouse_pressed(
+			SIGNAL(mouse_pressed_when_map_active(
 					int,
 					int,
 					QPointF,
@@ -396,7 +396,7 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 
 	QObject::connect(
 			&d_map_canvas,
-			SIGNAL(mouse_clicked(
+			SIGNAL(mouse_clicked_when_map_active(
 					int,
 					int,
 					QPointF,
@@ -418,7 +418,7 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 
 	QObject::connect(
 			&d_map_canvas,
-			SIGNAL(mouse_dragged(
+			SIGNAL(mouse_dragged_when_map_active(
 					int,
 					int,
 					QPointF,
@@ -450,7 +450,7 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 
 	QObject::connect(
 			&d_map_canvas,
-			SIGNAL(mouse_released_after_drag(
+			SIGNAL(mouse_released_after_drag_when_map_active(
 					int,
 					int,
 					QPointF,
@@ -483,7 +483,7 @@ GPlatesGui::MapCanvasToolAdapter::connect_to_map_canvas()
 
 	QObject::connect(
 			&d_map_canvas,
-			SIGNAL(mouse_moved_without_drag(
+			SIGNAL(mouse_moved_without_drag_when_map_active(
 					int,
 					int,
 					QPointF,

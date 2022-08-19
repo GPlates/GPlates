@@ -41,7 +41,6 @@
 #include "presentation/Application.h"
 
 #include "qt-widgets/ReconstructionViewWidget.h"
-#include "qt-widgets/SceneView.h"
 
 
 namespace bp = boost::python;
@@ -53,7 +52,7 @@ namespace GPlatesApi
 	public:
 		ViewportWindow() :
 			d_viewport(GPlatesPresentation::Application::instance().get_main_window()),
-			d_scene_view(d_viewport.reconstruction_view_widget().active_view()),
+			d_camera(d_viewport.reconstruction_view_widget().get_active_camera()),
 			d_zoom(GPlatesPresentation::Application::instance().get_view_state().get_viewport_zoom())
 		{  }
 
@@ -74,7 +73,7 @@ namespace GPlatesApi
 			{
 				GPlatesMaths::LatLonPoint center(lat,lon);
 
-				d_scene_view.get_camera().move_look_at_position_on_globe(
+				d_camera.move_look_at_position_on_globe(
 						make_point_on_sphere(center));
 			}
 			catch(GPlatesMaths::InvalidLatLonException& ex)
@@ -90,7 +89,7 @@ namespace GPlatesApi
 		{
 			DISPATCH_GUI_FUN<void>(boost::bind(&ViewportWindow::move_camera_up,this));
 
-			d_scene_view.get_camera().pan_up();
+			d_camera.pan_up();
 		}
 
 		void
@@ -98,7 +97,7 @@ namespace GPlatesApi
 		{
 			DISPATCH_GUI_FUN<void>(boost::bind(&ViewportWindow::move_camera_down,this));
 
-			d_scene_view.get_camera().pan_down();
+			d_camera.pan_down();
 		}
 
 		void
@@ -106,7 +105,7 @@ namespace GPlatesApi
 		{
 			DISPATCH_GUI_FUN<void>(boost::bind(&ViewportWindow::move_camera_left,this));
 
-			d_scene_view.get_camera().pan_left();
+			d_camera.pan_left();
 		}
 
 		void
@@ -114,7 +113,7 @@ namespace GPlatesApi
 		{
 			DISPATCH_GUI_FUN<void>(boost::bind(&ViewportWindow::move_camera_right, this));
 
-			d_scene_view.get_camera().pan_right();
+			d_camera.pan_right();
 		}
 
 		void
@@ -123,7 +122,7 @@ namespace GPlatesApi
 			DISPATCH_GUI_FUN<void>(boost::bind(&ViewportWindow::rotate_camera_clockwise, this));
 
 			// We want to rotate the globe/map clockwise which means rotating the camera anticlockwise.
-			d_scene_view.get_camera().rotate_anticlockwise();
+			d_camera.rotate_anticlockwise();
 		}
 
 		void
@@ -132,7 +131,7 @@ namespace GPlatesApi
 			DISPATCH_GUI_FUN<void>(boost::bind(&ViewportWindow::rotate_camera_anticlockwise, this));
 
 			// We want to rotate the globe/map anticlockwise which means rotating the camera clockwise.
-			d_scene_view.get_camera().rotate_clockwise();
+			d_camera.rotate_clockwise();
 		}
 
 
@@ -141,7 +140,7 @@ namespace GPlatesApi
 		{
 			DISPATCH_GUI_FUN<void>(boost::bind(&ViewportWindow::reset_camera_orientation, this));
 
-			d_scene_view.get_camera().set_rotation_angle(0);
+			d_camera.set_rotation_angle(0);
 		}
 
 		void
@@ -194,7 +193,7 @@ namespace GPlatesApi
 			boost::optional<GPlatesMaths::LatLonPoint> point = GPlatesGui::locate_focus();
 			if(point)
 			{
-				d_scene_view.get_camera().move_look_at_position_on_globe(
+				d_camera.move_look_at_position_on_globe(
 						make_point_on_sphere(point.get()));
 			}
 		}
@@ -225,7 +224,7 @@ namespace GPlatesApi
 
 	private:
 		GPlatesQtWidgets::ViewportWindow &d_viewport;
-		GPlatesQtWidgets::SceneView & d_scene_view;
+		GPlatesGui::Camera &d_camera;
 		GPlatesGui::ViewportZoom & d_zoom;
 	};
 }

@@ -45,9 +45,8 @@
 
 #include "presentation/ViewState.h"
 
+#include "qt-widgets/GlobeAndMapCanvas.h"
 #include "qt-widgets/GlobeAndMapWidget.h"
-#include "qt-widgets/GlobeCanvas.h"
-#include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/ReconstructionViewWidget.h"
 #include "qt-widgets/ViewportWindow.h"
 
@@ -76,8 +75,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::DigitisationCanvasToolWorkflow(
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesQtWidgets::ViewportWindow &viewport_window) :
 	CanvasToolWorkflow(
-			viewport_window.globe_canvas(),
-			viewport_window.map_canvas(),
+			viewport_window.globe_and_map_canvas(),
 			CanvasToolWorkflows::WORKFLOW_DIGITISATION,
 			// The tool to start off with...
 			CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYLINE),
@@ -132,13 +130,13 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 	d_globe_measure_distance_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					measure_distance_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_measure_distance_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					measure_distance_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 
 	//
@@ -159,13 +157,13 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 	d_globe_digitise_multipoint_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					digitise_multipoint_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_digitise_multipoint_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					digitise_multipoint_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 
 	//
@@ -186,13 +184,13 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 	d_globe_digitise_polyline_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					digitise_polyline_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_digitise_polyline_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					digitise_polyline_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 
 	//
@@ -213,13 +211,13 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 	d_globe_digitise_polygon_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					digitise_polygon_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_digitise_polygon_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					digitise_polygon_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 
 	//
@@ -241,13 +239,13 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 	d_globe_move_vertex_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					move_vertex_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_move_vertex_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					move_vertex_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 
 	//
@@ -267,13 +265,13 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 	d_globe_delete_vertex_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					delete_vertex_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_delete_vertex_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					delete_vertex_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 
 	//
@@ -293,13 +291,13 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 	d_globe_insert_vertex_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					insert_vertex_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_insert_vertex_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					insert_vertex_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 }
 

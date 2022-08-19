@@ -33,12 +33,11 @@
 
 
 GPlatesGui::CanvasToolWorkflow::CanvasToolWorkflow(
-		GPlatesQtWidgets::GlobeCanvas &globe_canvas,
-		GPlatesQtWidgets::MapCanvas &map_canvas,
+		GPlatesQtWidgets::GlobeAndMapCanvas &globe_and_map_canvas,
 		CanvasToolWorkflows::WorkflowType workflow,
 		CanvasToolWorkflows::ToolType selected_tool) :
-	d_globe_canvas_tool_adapter(globe_canvas),
-	d_map_canvas_tool_adapter(map_canvas),
+	d_globe_canvas_tool_adapter(globe_and_map_canvas),
+	d_map_canvas_tool_adapter(globe_and_map_canvas),
 	d_workflow(workflow),
 	d_selected_tool(selected_tool),
 	d_is_workflow_active(false),

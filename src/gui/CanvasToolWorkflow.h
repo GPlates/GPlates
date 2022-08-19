@@ -39,8 +39,7 @@
 
 namespace GPlatesQtWidgets
 {
-	class GlobeCanvas;
-	class MapCanvas;
+	class GlobeAndMapCanvas;
 }
 
 namespace GPlatesGui
@@ -141,8 +140,7 @@ namespace GPlatesGui
 	protected:
 
 		CanvasToolWorkflow(
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas,
-				GPlatesQtWidgets::MapCanvas &map_canvas,
+				GPlatesQtWidgets::GlobeAndMapCanvas &globe_and_map_canvas,
 				CanvasToolWorkflows::WorkflowType workflow,
 				CanvasToolWorkflows::ToolType selected_tool);
 
@@ -211,12 +209,12 @@ namespace GPlatesGui
 
 
 		/**
-		 * Feeds mouse events from @a GlobeCanvas to our selected *globe-view* tool.
+		 * Feeds mouse events from @a GlobeAndMapCanvas to our selected *globe-view* tool.
 		 */
 		GlobeCanvasToolAdapter d_globe_canvas_tool_adapter;
 
 		/**
-		 * Feeds mouse events from @a MapCanvas to our selected *map-view* tool.
+		 * Feeds mouse events from @a GlobeAndMapCanvas to our selected *map-view* tool.
 		 */
 		MapCanvasToolAdapter d_map_canvas_tool_adapter;
 

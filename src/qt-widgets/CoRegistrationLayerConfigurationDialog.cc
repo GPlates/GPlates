@@ -324,7 +324,7 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::create_gl() const
 {
 	// Get an OpenGL context since the (raster) co-registration is accelerated with OpenGL.
 	GPlatesOpenGL::GLContext::non_null_ptr_type gl_context =
-			d_viewport_window->reconstruction_view_widget().globe_and_map_widget().get_active_gl_context();
+			d_viewport_window->reconstruction_view_widget().globe_and_map_widget().get_gl_context();
 
 	// Make sure the context is currently active.
 	gl_context->make_current();

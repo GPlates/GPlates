@@ -286,8 +286,8 @@ set(srcs
     GenerateVelocityDomainTerraDialogUi.ui
     GlobeAndMapWidget.cc
     GlobeAndMapWidget.h
-    GlobeCanvas.cc
-    GlobeCanvas.h
+    GlobeAndMapCanvas.cc
+    GlobeAndMapCanvas.h
     GMenuButton.cc
     GMenuButton.h
     GMenuButtonUi.ui
@@ -377,8 +377,6 @@ set(srcs
     ManageFeatureCollectionsDialogUi.ui
     ManageFeatureCollectionsEditConfigurations.cc
     ManageFeatureCollectionsEditConfigurations.h
-    MapCanvas.cc
-    MapCanvas.h
     MeasureDistanceWidget.cc
     MeasureDistanceWidget.h
     MeasureDistanceWidgetUi.ui
@@ -510,7 +508,6 @@ set(srcs
     ScalarField3DLayerOptionsWidget.cc
     ScalarField3DLayerOptionsWidget.h
     ScalarField3DLayerOptionsWidgetUi.ui
-    SceneView.h
     SearchResultsDockWidget.cc
     SearchResultsDockWidget.h
     SearchResultsDockWidgetUi.ui

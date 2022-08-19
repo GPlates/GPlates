@@ -34,8 +34,8 @@
 
 #include "presentation/ViewState.h"
 
+#include "qt-widgets/GlobeAndMapWidget.h"
 #include "qt-widgets/ReconstructionViewWidget.h"
-#include "qt-widgets/SceneView.h"
 #include "qt-widgets/ViewportWindow.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
@@ -72,9 +72,9 @@ GPlatesGui::ExportSvgAnimationStrategy::do_export_iteration(
 
 	// Here's where we do the actual work of exporting of the SVG snapshots,
 	// given frame_index, filename, and target_dir.
-	GPlatesQtWidgets::SceneView &active_scene_view =
+	GPlatesQtWidgets::GlobeAndMapWidget &globe_and_map_widget =
 			d_export_animation_context_ptr->view_state().get_other_view_state()
-				.reconstruction_view_widget().active_view();
+				.reconstruction_view_widget().globe_and_map_widget();
 	GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection =
 			d_export_animation_context_ptr->view_state().get_rendered_geometry_collection();
 	try
@@ -84,7 +84,7 @@ GPlatesGui::ExportSvgAnimationStrategy::do_export_iteration(
 		svg_generator.setSize(
 				d_configuration->image_resolution_options.image_size
 						? d_configuration->image_resolution_options.image_size.get()
-						: active_scene_view.get_viewport_size());
+						: globe_and_map_widget.get_viewport_size());
 		svg_generator.setFileName(full_filename);
 
 		// Get current rendered layer active state so we can restore later.
@@ -107,7 +107,7 @@ GPlatesGui::ExportSvgAnimationStrategy::do_export_iteration(
 		}
 
 		// Render to the SVG file.
-		active_scene_view.render_opengl_feedback_to_paint_device(svg_generator);
+		globe_and_map_widget.render_opengl_feedback_to_paint_device(svg_generator);
 
 		// Restore previous rendered layer active state.
 		rendered_geometry_collection.restore_main_layer_active_state(prev_rendered_layer_active_state);

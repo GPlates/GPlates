@@ -492,7 +492,7 @@ namespace
 		// Get an OpenGL context.
 		GPlatesOpenGL::GLContext::non_null_ptr_type gl_context =
 				export_animation_context.viewport_window().reconstruction_view_widget()
-						.globe_and_map_widget().get_active_gl_context();
+						.globe_and_map_widget().get_gl_context();
 
 		// Make sure the context is currently active.
 		gl_context->make_current();
@@ -1342,7 +1342,7 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 			// This will be used to render rasters as colour.
 			const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type gl_visual_layers =
 					d_export_animation_context_ptr->viewport_window().reconstruction_view_widget()
-						.globe_and_map_widget().get_active_gl_visual_layers();
+						.globe_and_map_widget().get_gl_visual_layers();
 
 			// Iterate over the colour rasters and export them.
 			for (unsigned int raster_index = 0; raster_index < colour_rasters.size(); ++raster_index)

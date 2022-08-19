@@ -30,15 +30,12 @@
 
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <QStackedLayout>
 #include <QtGlobal>
 #include <QWidget>
 
 #include "global/PointerTraits.h"
 
 #include "maths/PointOnSphere.h"
-#include "maths/Rotation.h"
-#include "maths/types.h"
 
 #include "view-operations/QueryProximityThreshold.h"
 
@@ -67,9 +64,7 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
-	class GlobeCanvas;
-	class MapCanvas;
-	class SceneView;
+	class GlobeAndMapCanvas;
 
 	/**
 	 * This class is responsible for creating and holding the globe and the map,
@@ -90,39 +85,42 @@ namespace GPlatesQtWidgets
 
 		~GlobeAndMapWidget();
 
-		GlobeCanvas &
-		get_globe_canvas();
 
-		const GlobeCanvas &
-		get_globe_canvas() const;
-		
-		MapCanvas &
-		get_map_canvas();
+		GlobeAndMapCanvas &
+		get_globe_and_map_canvas();
 
-		const MapCanvas &
-		get_map_canvas() const;
+		const GlobeAndMapCanvas &
+		get_globe_and_map_canvas() const;
 
-		SceneView &
-		get_active_view();
 
-		const SceneView &
-		get_active_view() const;
-
+		/**
+		 * Return the camera controlling the current view (globe or map camera).
+		 */
 		GPlatesGui::Camera &
 		get_active_camera();
 
+		/**
+		 * Return the camera controlling the current view (globe or map camera).
+		 */
 		const GPlatesGui::Camera &
 		get_active_camera() const;
 
+
+		/**
+		 * Returns true if the globe view is currently active.
+		 */
 		bool
 		is_globe_active() const;
 
+		/**
+		 * Returns true if the map view is currently active (ie, globe view not active).
+		 */
 		bool
 		is_map_active() const;
 
-		virtual
+
 		QSize
-		sizeHint() const;
+		sizeHint() const override;
 
 		/**
 		 * Returns the dimensions of the viewport in device *independent* pixels (ie, widget size).
@@ -148,37 +146,36 @@ namespace GPlatesQtWidgets
 				const QSize &image_size_in_device_independent_pixels);
 
 		/**
-		 * Returns the OpenGL context for the active view.
-		 *
-		 * Since both the globe and map canvases use OpenGL this returns whichever is currently active.
-		 * Note that you should still call "GLContext::make_current()" before using the context
-		 * to ensure it is the currently active OpenGL context.
+		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
+		 */
+		void
+		render_opengl_feedback_to_paint_device(
+				QPaintDevice &feedback_paint_device);
+
+		/**
+		 * Returns the OpenGL context.
 		 */
 		GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLContext>::non_null_ptr_type
-		get_active_gl_context();
+		get_gl_context();
 
 		/**
 		 * Returns the OpenGL layers used to filled polygons, render rasters and scalar fields.
 		 */
 		GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLVisualLayers>::non_null_ptr_type
-		get_active_gl_visual_layers();
+		get_gl_visual_layers();
 
 		void
 		update_canvas();
 
-		virtual
 		double
 		current_proximity_inclusion_threshold(
-				const GPlatesMaths::PointOnSphere &click_pos_on_globe) const;
+				const GPlatesMaths::PointOnSphere &click_pos_on_globe) const override;
 
 		void
 		set_zoom_enabled(
 				bool enabled);
 
 	Q_SIGNALS:
-
-		void
-		update_tools_and_status_message();
 
 		void
 		resized(
@@ -191,16 +188,14 @@ namespace GPlatesQtWidgets
 	protected:
 
 #ifdef GPLATES_PINCH_ZOOM_ENABLED
-		virtual
 		bool
 		event(
-				QEvent *ev);
+				QEvent *ev) override;
 #endif
 
-		virtual
 		void
 		resizeEvent(
-				QResizeEvent *resize_event);
+				QResizeEvent *resize_event) override;
 
 		/**
 		 * This is a virtual override of the function in QWidget.
@@ -215,20 +210,11 @@ namespace GPlatesQtWidgets
 		 *
 		 * The default implementation ignores the event.
 		 */
-		virtual
 		void
 		wheelEvent(
-				QWheelEvent *event);
+				QWheelEvent *event) override;
 
 	private Q_SLOTS:
-
-		void
-		about_to_change_projection(
-				const GPlatesGui::Projection &projection);
-
-		void
-		change_projection(
-			const GPlatesGui::Projection &projection);
 
 		void
 		handle_globe_or_map_repainted(
@@ -240,31 +226,9 @@ namespace GPlatesQtWidgets
 				const GlobeAndMapWidget *existing_widget,
 				QWidget *parent_ = NULL);
 
-		void
-		make_signal_slot_connections();
-
 		GPlatesPresentation::ViewState &d_view_state;
 
-		boost::scoped_ptr<GlobeCanvas> d_globe_canvas_ptr;
-		boost::scoped_ptr<MapCanvas> d_map_canvas_ptr; // NOTE: Must be declared *after* d_globe_canvas_ptr.
-		QStackedLayout *d_layout;
-
-		/**
-		 * Which of globe and map is currently active.
-		 */
-		SceneView *d_active_view_ptr;
-
-		/**
-		 * The camera view orientation of the currently active view.
-		 *
-		 * The view orientation is the combined camera look-at position and the orientation rotation around that look-at position.
-		 */
-		GPlatesMaths::Rotation d_active_camera_view_orientation;
-
-		/**
-		 * The camera tilt of the currently active view.
-		 */
-		GPlatesMaths::real_t d_active_camera_view_tilt;
+		boost::scoped_ptr<GlobeAndMapCanvas> d_globe_and_map_canvas_ptr;
 
 		/**
 		 * Whether zooming (via mouse wheel or pinch gesture) is enabled.

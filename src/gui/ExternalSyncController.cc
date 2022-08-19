@@ -44,7 +44,6 @@
 #include "presentation/ViewState.h"
 
 #include "qt-widgets/ReconstructionViewWidget.h"
-#include "qt-widgets/SceneView.h"
 #include "qt-widgets/ViewportWindow.h"
 
 
@@ -477,7 +476,7 @@ GPlatesGui::ExternalSyncController::get_orientation()
 {
 	// The orientation is the rotation of the globe/map relative to the view (camera).
 	// This is the inverse of the rotation of view (camera) relative to the globe/map.
-	return d_reconstruction_view_widget_ptr->active_view().get_camera().get_view_orientation().get_reverse();
+	return d_reconstruction_view_widget_ptr->get_active_camera().get_view_orientation().get_reverse();
 }
 
 void
@@ -493,7 +492,7 @@ GPlatesGui::ExternalSyncController::set_orientation(
 {
 	// The orientation is the rotation of the globe/map relative to the view (camera).
 	// This is the inverse of the rotation of view (camera) relative to the globe/map.
-	d_reconstruction_view_widget_ptr->active_view().get_camera().set_view_orientation(rotation.get_reverse());
+	d_reconstruction_view_widget_ptr->get_active_camera().set_view_orientation(rotation.get_reverse());
 }
 
 void

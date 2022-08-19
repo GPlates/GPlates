@@ -37,7 +37,7 @@ namespace GPlatesPresentation
 
 namespace GPlatesQtWidgets
 {
-	class MapCanvas;
+	class GlobeAndMapCanvas;
 	class ViewportWindow;
 }
 
@@ -56,7 +56,7 @@ namespace GPlatesCanvasTools
 		 */
 		explicit
 		ZoomMap(
-				GPlatesQtWidgets::MapCanvas &map_canvas_,
+				GPlatesQtWidgets::GlobeAndMapCanvas &map_canvas_,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_);
 
 

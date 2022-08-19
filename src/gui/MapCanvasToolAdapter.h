@@ -26,16 +26,18 @@
 #ifndef GPLATES_GUI_MAPCANVASTOOLADAPTER_H
 #define GPLATES_GUI_MAPCANVASTOOLADAPTER_H
 
+#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <QObject>
 #include <QPointF>
+#include <Qt>
 
 #include "maths/PointOnSphere.h"
 
 
 namespace GPlatesQtWidgets
 {
-	class MapCanvas;
+	class GlobeAndMapCanvas;
 }
 
 namespace GPlatesGui
@@ -44,10 +46,11 @@ namespace GPlatesGui
 
 	/**
 	 * This class adapts the interface of MapCanvasTool to the interface expected by the mouse-click
-	 * and mouse-drag signals of MapCanvas and directs them to the activate canvas tool.
+	 * and mouse-drag signals of GlobeAndMapCanvas and directs them to the activate canvas tool.
 	 */
 	class MapCanvasToolAdapter:
-			public QObject
+			public QObject,
+			private boost::noncopyable
 	{
 		Q_OBJECT
 
@@ -57,20 +60,20 @@ namespace GPlatesGui
 		 */
 		explicit
 		MapCanvasToolAdapter(
-				GPlatesQtWidgets::MapCanvas &map_canvas);
+				GPlatesQtWidgets::GlobeAndMapCanvas &map_canvas);
 
 		~MapCanvasToolAdapter()
 		{  }
 
 		/**
-		 * Connects mouse signals from @a MapCanvas to the specified canvas tool.
+		 * Connects mouse signals from @a GlobeAndMapCanvas to the specified canvas tool.
 		 */
 		void
 		activate_canvas_tool(
 				MapCanvasTool &map_canvas_tool);
 
 		/**
-		 * Disconnects mouse signals from @a MapCanvas to the currently active canvas tool.
+		 * Disconnects mouse signals from @a GlobeAndMapCanvas to the currently active canvas tool.
 		 */
 		void
 		deactivate_canvas_tool();
@@ -133,8 +136,8 @@ namespace GPlatesGui
 				Qt::KeyboardModifiers modifiers);
 
 		/**
-		* The mouse position moved but the left mouse button is NOT down.
-		*/
+		 * The mouse position moved but the left mouse button is NOT down.
+		 */
 		void
 		handle_move_without_drag(
 				int screen_width,
@@ -147,7 +150,7 @@ namespace GPlatesGui
 
 	private:
 
-		GPlatesQtWidgets::MapCanvas &d_map_canvas;
+		GPlatesQtWidgets::GlobeAndMapCanvas &d_map_canvas;
 
 		boost::optional<MapCanvasTool &> d_active_map_canvas_tool;
 

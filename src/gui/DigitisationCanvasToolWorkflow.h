@@ -49,7 +49,6 @@ namespace GPlatesCanvasTools
 
 namespace GPlatesQtWidgets
 {
-	class GlobeCanvas;
 	class ViewportWindow;
 }
 

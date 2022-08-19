@@ -35,10 +35,9 @@
 #include "ReconstructionViewWidget.h"
 
 #include "AnimateControlWidget.h"
+#include "GlobeAndMapCanvas.h"
 #include "GlobeAndMapWidget.h"
-#include "GlobeCanvas.h"
 #include "LeaveFullScreenButton.h"
-#include "MapCanvas.h"
 #include "ProjectionControlWidget.h"
 #include "TimeControlWidget.h"
 #include "ViewportWindow.h"
@@ -205,7 +204,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	// Create a tiny invisible widget with a tiny invisible horizontal layout to
 	// hold the "canvas" area (including the zoom slider). This layout will glue
 	// the zoom slider to the right hand side of the canvas. We set a custom size
-	// policy in an attempt to make sure that the GlobeCanvas+ZoomSlider eat as
+	// policy in an attempt to make sure that the GlobeAndMapWidget+ZoomSlider eat as
 	// much space as possible, leaving the TaskPanel to the default minimum.
 	QWidget *canvas_widget = new QWidget(d_splitter_widget);
 	QSizePolicy canvas_widget_size_policy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -226,7 +225,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 	canvas_widget_layout->setSpacing(2);
 	canvas_widget_layout->setContentsMargins(0, 0, 0, 0);
 
-	// Add GlobeCanvas, MapCanvas to this hand-made widget.
+	// Add GlobeAndMapWidget to this hand-made widget.
 	d_globe_and_map_widget_ptr->setParent(canvas_widget);
 	canvas_widget_layout->addWidget(d_globe_and_map_widget_ptr);
 
@@ -270,27 +269,17 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 
 	// Handle signals to update mouse pointer position
 	QObject::connect(
-			&(d_globe_and_map_widget_ptr->get_globe_canvas()),
+			&d_globe_and_map_widget_ptr->get_globe_and_map_canvas(),
 			SIGNAL(mouse_position_on_globe_changed(GPlatesMaths::PointOnSphere, bool)),
 			this,
 			SLOT(update_mouse_position_on_globe(GPlatesMaths::PointOnSphere, bool)));
 	QObject::connect(
-			&(d_globe_and_map_widget_ptr->get_map_canvas()),
-			SIGNAL(mouse_position_on_map_changed(GPlatesMaths::PointOnSphere, bool)),
-			this,
-			SLOT(update_mouse_position_on_map(GPlatesMaths::PointOnSphere, bool)));
-	QObject::connect(
-			&(view_state.get_projection()),
+			&view_state.get_projection(),
 			SIGNAL(globe_map_projection_changed(const GPlatesGui::Projection &)),
 			this,
 			SLOT(handle_globe_map_projection_changed(const GPlatesGui::Projection &)));
 
 	// Propagate messages up to ViewportWindow
-	QObject::connect(
-			d_globe_and_map_widget_ptr,
-			SIGNAL(update_tools_and_status_message()),
-			this,
-			SLOT(handle_update_tools_and_status_message()));
 	QObject::connect(
 			this,
 			SIGNAL(update_tools_and_status_message()),
@@ -298,8 +287,9 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 			SLOT(update_tools_and_status_message()));
 
 	recalc_camera_position();
+
 	// Focus anything, ANYTHING, other than the time spinbox as it eats hotkeys.
-	globe_canvas().setFocus(Qt::ActiveWindowFocusReason);
+	globe_and_map_widget().setFocus(Qt::ActiveWindowFocusReason);
 }
 
 
@@ -307,11 +297,8 @@ void
 GPlatesQtWidgets::ReconstructionViewWidget::handle_globe_map_projection_changed(
 		const GPlatesGui::Projection &projection)
 {
-	const GPlatesGui::Projection::globe_map_projection_type &globe_map_projection =
-			projection.get_globe_map_projection();
-
-	// Reset the mouse coords label if projection changed.
-	if (globe_map_projection.is_viewing_globe_projection())
+	// Reset the mouse coords label since projection changed.
+	if (projection.get_globe_map_projection().is_viewing_globe_projection())
 	{
 		d_label_mouse_coords->setText(DEFAULT_MOUSE_COORDS_LABEL_TEXT_FOR_GLOBE);
 	}
@@ -319,48 +306,11 @@ GPlatesQtWidgets::ReconstructionViewWidget::handle_globe_map_projection_changed(
 	{
 		d_label_mouse_coords->setText(DEFAULT_MOUSE_COORDS_LABEL_TEXT_FOR_MAP);
 	}
-}
 
+	// Recalculate the camera coords label since projection changed.
+	recalc_camera_position();
 
-GPlatesQtWidgets::GlobeCanvas &
-GPlatesQtWidgets::ReconstructionViewWidget::globe_canvas()
-{
-	return d_globe_and_map_widget_ptr->get_globe_canvas();
-}
-
-
-const GPlatesQtWidgets::GlobeCanvas &
-GPlatesQtWidgets::ReconstructionViewWidget::globe_canvas() const
-{
-	return d_globe_and_map_widget_ptr->get_globe_canvas();
-}
-
-
-GPlatesQtWidgets::MapCanvas &
-GPlatesQtWidgets::ReconstructionViewWidget::map_canvas()
-{
-	return d_globe_and_map_widget_ptr->get_map_canvas();
-}
-
-
-const GPlatesQtWidgets::MapCanvas &
-GPlatesQtWidgets::ReconstructionViewWidget::map_canvas() const
-{
-	return d_globe_and_map_widget_ptr->get_map_canvas();
-}
-
-
-GPlatesQtWidgets::SceneView &
-GPlatesQtWidgets::ReconstructionViewWidget::active_view()
-{
-	return d_globe_and_map_widget_ptr->get_active_view();
-}
-
-
-const GPlatesQtWidgets::SceneView &
-GPlatesQtWidgets::ReconstructionViewWidget::active_view() const
-{
-	return d_globe_and_map_widget_ptr->get_active_view();
+	Q_EMIT update_tools_and_status_message();
 }
 
 
@@ -392,11 +342,17 @@ GPlatesQtWidgets::ReconstructionViewWidget::globe_and_map_widget() const
 }
 
 
-void
-GPlatesQtWidgets::ReconstructionViewWidget::handle_update_tools_and_status_message()
+GPlatesQtWidgets::GlobeAndMapCanvas &
+GPlatesQtWidgets::ReconstructionViewWidget::globe_and_map_canvas()
 {
-	recalc_camera_position();
-	Q_EMIT update_tools_and_status_message();
+	return d_globe_and_map_widget_ptr->get_globe_and_map_canvas();
+}
+
+
+const GPlatesQtWidgets::GlobeAndMapCanvas &
+GPlatesQtWidgets::ReconstructionViewWidget::globe_and_map_canvas() const
+{
+	return d_globe_and_map_widget_ptr->get_globe_and_map_canvas();
 }
 
 
@@ -428,7 +384,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_one(
 	QObject::connect(
 			d_time_control_widget_ptr,
 			SIGNAL(editing_finished()),
-			&(d_globe_and_map_widget_ptr->get_globe_canvas()),
+			&d_globe_and_map_widget_ptr->get_globe_and_map_canvas(),
 			SLOT(setFocus()));
 	
 	// Insert Time and Animate controls.
@@ -504,7 +460,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar(
 	QObject::connect(
 			d_zoom_control_widget_ptr,
 			SIGNAL(editing_finished()),
-			&(d_globe_and_map_widget_ptr->get_globe_canvas()),
+			&d_globe_and_map_widget_ptr->get_globe_and_map_canvas(),
 			SLOT(setFocus()));
 
 	// Insert Zoom control and coordinate labels.
@@ -553,7 +509,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar_with_projections(
 	QObject::connect(
 			d_zoom_control_widget_ptr,
 			SIGNAL(editing_finished()),
-			&(d_globe_and_map_widget_ptr->get_globe_canvas()),
+			&(d_globe_and_map_widget_ptr->get_globe_and_map_canvas()),
 			SLOT(setFocus()));
 
 	// Create the ProjectionControlWidget
@@ -643,31 +599,14 @@ GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_position_on_globe(
 	position_as_string.append(QObject::tr(")"));
 	if (!is_on_globe)
 	{
-		position_as_string.append(QObject::tr(" (off globe)"));
-	}
-
-	d_label_mouse_coords->setText(position_as_string);
-}
-
-
-void
-GPlatesQtWidgets::ReconstructionViewWidget::update_mouse_position_on_map(
-		GPlatesMaths::PointOnSphere position_on_globe,
-		bool is_on_globe)
-{
-	const GPlatesMaths::LatLonPoint lat_lon_position_on_globe = make_lat_lon_point(position_on_globe);
-
-	QLocale locale_;
-	QString lat = locale_.toString(lat_lon_position_on_globe.latitude(), 'f', 2);
-	QString lon = locale_.toString(lat_lon_position_on_globe.longitude(), 'f', 2);
-	QString position_as_string(QObject::tr("(lat: "));
-	position_as_string.append(lat);
-	position_as_string.append(QObject::tr(" ; lon: "));
-	position_as_string.append(lon);
-	position_as_string.append(QObject::tr(")"));
-	if (!is_on_globe)
-	{
-		position_as_string.append(QObject::tr(" (off map)"));
+		if (d_view_state.get_projection().get_globe_map_projection().is_viewing_globe_projection())
+		{
+			position_as_string.append(QObject::tr(" (off globe)"));
+		}
+		else
+		{
+			position_as_string.append(QObject::tr(" (off map)"));
+		}
 	}
 
 	d_label_mouse_coords->setText(position_as_string);
@@ -684,12 +623,12 @@ GPlatesQtWidgets::ReconstructionViewWidget::activate_zoom_spinbox()
 bool
 GPlatesQtWidgets::ReconstructionViewWidget::globe_is_active()
 {
-	return d_globe_and_map_widget_ptr->get_globe_canvas().isVisible();
+	return d_globe_and_map_widget_ptr->is_globe_active();
 }
 
 bool
 GPlatesQtWidgets::ReconstructionViewWidget::map_is_active()
 {
-	return d_globe_and_map_widget_ptr->get_map_canvas().isVisible();
+	return d_globe_and_map_widget_ptr->is_map_active();
 }
 

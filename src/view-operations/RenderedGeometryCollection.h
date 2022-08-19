@@ -67,9 +67,9 @@ namespace GPlatesViewOperations
 	 *   the canvas is redrawn more times than needed. The update guards can be nested so putting
 	 *   too many in is not a problem. For nested guards, only when the highest-level guard exits
 	 *   its scope does the update signal get emitted.
-     * * Currently GlobeCanvas listens to signals from RenderedGeomeryCollection and redraws when
+     * * Currently GlobeAndMapCanvas listens to signals from RenderedGeomeryCollection and redraws when
 	 *   a change is made.
-     * * Globe in GlobeCanvas (and Map in MapCanvas) draws the RenderedGeometryCollection by visiting.
+     * * Globe and Map (in GlobeAndMapCanvas) draw the RenderedGeometryCollection by visiting.
      * * RenderedGeometryFactory is used to create RenderedGeometry objects which are added to
 	 *   RenderedGeometryCollection.
      * * RenderedGeometryFactory contains global functions for creating different types of

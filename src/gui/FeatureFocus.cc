@@ -52,7 +52,6 @@
 #include "presentation/ViewState.h"
 
 #include "qt-widgets/ReconstructionViewWidget.h"
-#include "qt-widgets/SceneView.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryUtils.h"

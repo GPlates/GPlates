@@ -27,13 +27,13 @@
 
 #include "GlobeCanvasTool.h"
 
-#include "qt-widgets/GlobeCanvas.h"
+#include "qt-widgets/GlobeAndMapCanvas.h"
 
 #include "view-operations/GlobeViewOperation.h"
 
 
 GPlatesGui::GlobeCanvasTool::GlobeCanvasTool(
-		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+		GPlatesQtWidgets::GlobeAndMapCanvas &globe_canvas_,
 		GPlatesViewOperations::GlobeViewOperation &globe_view_operation_) :
 	d_globe_canvas(globe_canvas_),
 	d_globe_view_operation(globe_view_operation_)
@@ -48,25 +48,21 @@ void
 GPlatesGui::GlobeCanvasTool::handle_ctrl_left_drag(
 		int screen_width,
 		int screen_height,
-		double initial_screen_x,
-		double initial_screen_y,
-		const GPlatesMaths::PointOnSphere& initial_pos_on_globe,
+		const QPointF &initial_screen_position,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 		bool was_on_globe,
-		double current_screen_x,
-		double current_screen_y,
-		const GPlatesMaths::PointOnSphere& current_pos_on_globe,
+		const QPointF &current_screen_position,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere& centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	if (globe_canvas().isVisible())
 	{
 		pan_globe_by_drag_update(
 				screen_width, screen_height,
-				initial_screen_x, initial_screen_y,
-				initial_pos_on_globe, was_on_globe,
-				current_screen_x, current_screen_y,
-				current_pos_on_globe, is_on_globe,
-				centre_of_viewport);
+				initial_screen_position, initial_position_on_globe, was_on_globe,
+				current_screen_position, current_position_on_globe, is_on_globe,
+				centre_of_viewport_on_globe);
 	}
 }
 
@@ -75,25 +71,21 @@ void
 GPlatesGui::GlobeCanvasTool::handle_ctrl_left_release_after_drag(
 		int screen_width,
 		int screen_height,
-		double initial_screen_x,
-		double initial_screen_y,
-		const GPlatesMaths::PointOnSphere& initial_pos_on_globe,
+		const QPointF &initial_screen_position,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 		bool was_on_globe,
-		double current_screen_x,
-		double current_screen_y,
-		const GPlatesMaths::PointOnSphere& current_pos_on_globe,
+		const QPointF &current_screen_position,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere& centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	if (globe_canvas().isVisible())
 	{
 		pan_globe_by_drag_release(
 				screen_width, screen_height,
-				initial_screen_x, initial_screen_y,
-				initial_pos_on_globe, was_on_globe,
-				current_screen_x, current_screen_y,
-				current_pos_on_globe, is_on_globe,
-				centre_of_viewport);
+				initial_screen_position, initial_position_on_globe, was_on_globe,
+				current_screen_position, current_position_on_globe, is_on_globe,
+				centre_of_viewport_on_globe);
 	}
 }
 
@@ -102,25 +94,21 @@ void
 GPlatesGui::GlobeCanvasTool::handle_shift_ctrl_left_drag(
 		int screen_width,
 		int screen_height,
-		double initial_screen_x,
-		double initial_screen_y,
-		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+		const QPointF &initial_screen_position,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 		bool was_on_globe,
-		double current_screen_x,
-		double current_screen_y,
-		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const QPointF &current_screen_position,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	if (globe_canvas().isVisible())
 	{
 		rotate_and_tilt_globe_by_drag_update(
 				screen_width, screen_height,
-				initial_screen_x, initial_screen_y,
-				initial_pos_on_globe, was_on_globe,
-				current_screen_x, current_screen_y,
-				current_pos_on_globe, is_on_globe,
-				centre_of_viewport);
+				initial_screen_position, initial_position_on_globe, was_on_globe,
+				current_screen_position, current_position_on_globe, is_on_globe,
+				centre_of_viewport_on_globe);
 	}
 }
 
@@ -129,25 +117,21 @@ void
 GPlatesGui::GlobeCanvasTool::handle_shift_ctrl_left_release_after_drag(
 		int screen_width,
 		int screen_height,
-		double initial_screen_x,
-		double initial_screen_y,
-		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+		const QPointF &initial_screen_position,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 		bool was_on_globe,
-		double current_screen_x,
-		double current_screen_y,
-		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const QPointF &current_screen_position,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	if (globe_canvas().isVisible())
 	{
 		rotate_and_tilt_globe_by_drag_release(
 				screen_width, screen_height,
-				initial_screen_x, initial_screen_y,
-				initial_pos_on_globe, was_on_globe,
-				current_screen_x, current_screen_y,
-				current_pos_on_globe, is_on_globe,
-				centre_of_viewport);
+				initial_screen_position, initial_position_on_globe, was_on_globe,
+				current_screen_position, current_position_on_globe, is_on_globe,
+				centre_of_viewport_on_globe);
 	}
 }
 
@@ -156,28 +140,26 @@ void
 GPlatesGui::GlobeCanvasTool::pan_globe_by_drag_update(
 		int screen_width,
 		int screen_height,
-		double initial_screen_x,
-		double initial_screen_y,
-		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+		const QPointF &initial_screen_position,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 		bool was_on_globe,
-		double current_screen_x,
-		double current_screen_y,
-		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const QPointF &current_screen_position,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	if (!d_globe_view_operation.in_drag())
 	{
 		d_globe_view_operation.start_drag(
 				GPlatesViewOperations::GlobeViewOperation::DRAG_PAN,
-				initial_pos_on_globe,
-				initial_screen_x, initial_screen_y,
+				initial_position_on_globe,
+				initial_screen_position,
 				screen_width, screen_height);
 	}
 
 	d_globe_view_operation.update_drag(
-			current_pos_on_globe,
-			current_screen_x, current_screen_y,
+			current_position_on_globe,
+			current_screen_position,
 			screen_width, screen_height,
 			false/*end_of_drag*/);
 }
@@ -187,28 +169,26 @@ void
 GPlatesGui::GlobeCanvasTool::pan_globe_by_drag_release(
 		int screen_width,
 		int screen_height,
-		double initial_screen_x,
-		double initial_screen_y,
-		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+		const QPointF &initial_screen_position,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 		bool was_on_globe,
-		double current_screen_x,
-		double current_screen_y,
-		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const QPointF &current_screen_position,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	if (!d_globe_view_operation.in_drag())
 	{
 		d_globe_view_operation.start_drag(
 				GPlatesViewOperations::GlobeViewOperation::DRAG_PAN,
-				initial_pos_on_globe,
-				initial_screen_x, initial_screen_y,
+				initial_position_on_globe,
+				initial_screen_position,
 				screen_width, screen_height);
 	}
 
 	d_globe_view_operation.update_drag(
-			current_pos_on_globe,
-			current_screen_x, current_screen_y,
+			current_position_on_globe,
+			current_screen_position,
 			screen_width, screen_height,
 			true/*end_of_drag*/);
 }
@@ -218,28 +198,26 @@ void
 GPlatesGui::GlobeCanvasTool::rotate_and_tilt_globe_by_drag_update(
 		int screen_width,
 		int screen_height,
-		double initial_screen_x,
-		double initial_screen_y,
-		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+		const QPointF &initial_screen_position,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 		bool was_on_globe,
-		double current_screen_x,
-		double current_screen_y,
-		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const QPointF &current_screen_position,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	if (!d_globe_view_operation.in_drag())
 	{
 		d_globe_view_operation.start_drag(
 				GPlatesViewOperations::GlobeViewOperation::DRAG_ROTATE_AND_TILT,
-				initial_pos_on_globe,
-				initial_screen_x, initial_screen_y,
+				initial_position_on_globe,
+				initial_screen_position,
 				screen_width, screen_height);
 	}
 
 	d_globe_view_operation.update_drag(
-			current_pos_on_globe,
-			current_screen_x, current_screen_y,
+			current_position_on_globe,
+			current_screen_position,
 			screen_width, screen_height,
 			false/*end_of_drag*/);
 }
@@ -249,28 +227,26 @@ void
 GPlatesGui::GlobeCanvasTool::rotate_and_tilt_globe_by_drag_release(
 		int screen_width,
 		int screen_height,
-		double initial_screen_x,
-		double initial_screen_y,
-		const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+		const QPointF &initial_screen_position,
+		const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 		bool was_on_globe,
-		double current_screen_x,
-		double current_screen_y,
-		const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+		const QPointF &current_screen_position,
+		const GPlatesMaths::PointOnSphere &current_position_on_globe,
 		bool is_on_globe,
-		const GPlatesMaths::PointOnSphere &centre_of_viewport)
+		const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe)
 {
 	if (!d_globe_view_operation.in_drag())
 	{
 		d_globe_view_operation.start_drag(
 				GPlatesViewOperations::GlobeViewOperation::DRAG_ROTATE_AND_TILT,
-				initial_pos_on_globe,
-				initial_screen_x, initial_screen_y,
+				initial_position_on_globe,
+				initial_screen_position,
 				screen_width, screen_height);
 	}
 
 	d_globe_view_operation.update_drag(
-			current_pos_on_globe,
-			current_screen_x, current_screen_y,
+			current_position_on_globe,
+			current_screen_position,
 			screen_width, screen_height,
 			true/*end_of_drag*/);
 }

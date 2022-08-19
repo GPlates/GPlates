@@ -7,11 +7,7 @@
  * Most recent change:
  *   $Date$
  * 
- * Copyright (C) 2003, 2004, 2005, 2006 The University of Sydney, Australia
- *  (under the name "GLCanvas.h")
- * Copyright (C) 2006, 2007, 2010, 2011 The University of Sydney, Australia
- *  (under the name "GlobeCanvas.h")
- * Copyright (C) 2011 Geological Survey of Norway
+ * Copyright (C) 2008, 2009 Geological Survey of Norway.
  *
  * This file is part of GPlates.
  *
@@ -29,42 +25,40 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
  
-#ifndef GPLATES_QTWIDGETS_GLOBECANVAS_H
-#define GPLATES_QTWIDGETS_GLOBECANVAS_H
+#ifndef GPLATES_QTWIDGETS_GLOBEANDMAPCANVAS_H
+#define GPLATES_QTWIDGETS_GLOBEANDMAPCANVAS_H
 
-#include <vector>
+#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QImage>
+#include <QMouseEvent>
 #include <QOpenGLWidget>
 #include <QPaintDevice>
-#include <QPainter>
+#include <QPointF>
+#include <QSize>
 #include <QtGlobal>
 
-#include "SceneView.h"
-
 #include "gui/Globe.h"
+#include "gui/Map.h"
 
+#include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
-#include "maths/MultiPointOnSphere.h"
-#include "maths/PolygonOnSphere.h"
-#include "maths/PolylineOnSphere.h"
 
 #include "opengl/GLContext.h"
-#include "opengl/GLFramebuffer.h"
 #include "opengl/GLMatrix.h"
+#include "opengl/GLFramebuffer.h"
 #include "opengl/GLRenderbuffer.h"
 #include "opengl/GLViewProjection.h"
 #include "opengl/GLVisualLayers.h"
 #include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
-#include "view-operations/RenderedGeometryFactory.h"
-
 
 namespace GPlatesGui
 {
-	class GlobeCamera;
+	class Camera;
+	class Projection;
 	class TextOverlay;
 	class VelocityLegendOverlay;
 }
@@ -79,22 +73,23 @@ namespace GPlatesPresentation
 	class ViewState;
 }
 
-namespace GPlatesQtWidgets 
+namespace GPlatesQtWidgets
 {
-	class GlobeCanvas:
-			public QOpenGLWidget,
-			public SceneView
+	/**
+	 * Paint the globe and map views.
+	 */
+	class GlobeAndMapCanvas : 
+			public QOpenGLWidget
 	{
 		Q_OBJECT
 
 	public:
 
-		explicit
-		GlobeCanvas(
+		GlobeAndMapCanvas(
 				GPlatesPresentation::ViewState &view_state,
 				QWidget *parent_ = nullptr);
 
-		~GlobeCanvas();
+		~GlobeAndMapCanvas();
 
 
 		GPlatesGui::Globe &
@@ -109,36 +104,23 @@ namespace GPlatesQtWidgets
 			return d_globe;
 		}
 
-		/**
-		 * The proximity inclusion threshold is a measure of how close a geometry must be
-		 * to a click-point be considered "hit" by the click.
-		 *
-		 * The proximity inclusion threshold varies with the canvas size and zoom level. 
-		 * It is also dependent upon the position of @a click_point on the globe (since
-		 * positions at the edge of the globe in the current projection are harder to
-		 * target than positions in the centre of the globe).
-		 *
-		 * The fundamental reason for this function derives from the observation that the
-		 * mouse-pointer position on-screen is described by integer coordinates, but the
-		 * geometries on the globe in the 3-D "universe" are described by floating-point
-		 * coordinates which can lie "between" the universe coordinates which correspond to
-		 * the discrete on-screen coordinates.
-		 *
-		 * Hence, even ignoring the issues of usability (ie, whether you want to make the
-		 * user click on some *exact pixel* on-screen) and floating-point comparisons, we
-		 * can't just convert the integer on-screen coordinates of the click-point to
-		 * floating-point universe coordinates and look for hits.
-		 *
-		 * The approach taken by the GPlates GUI is to pick an "epsilon radius" around the
-		 * click-point, then determine which geometries on the globe are "close enough" to
-		 * the click-point (by determining the geometries whose shortest distance from the
-		 * click-point is less than the epsilon radius).  This may be visualised as drawing
-		 * a circle with radius "epsilon" around the click-point on the surface of the
-		 * globe, then determining which geometries pass through the circle.
-		 */
+
+		GPlatesGui::Map &
+		map()
+		{
+			return d_map;
+		}
+
+		const GPlatesGui::Map &
+		map() const
+		{
+			return d_map;
+		}
+
+
 		double
 		current_proximity_inclusion_threshold(
-				const GPlatesMaths::PointOnSphere &click_point) const override;
+				const GPlatesMaths::PointOnSphere &click_point) const;
 
 		/**
 		 * Returns the dimensions of the viewport in device *independent* pixels (ie, widget size).
@@ -148,7 +130,7 @@ namespace GPlatesQtWidgets
 		 * (differing by the device pixel ratio).
 		 */
 		QSize
-		get_viewport_size() const override;
+		get_viewport_size() const;
 
 		/**
 		 * Renders the scene to a QImage of the dimensions specified by @a image_size.
@@ -161,33 +143,47 @@ namespace GPlatesQtWidgets
 		 */
 		QImage
 		render_to_qimage(
-				const QSize &image_size_in_device_independent_pixels) override;
+				const QSize &image_size_in_device_independent_pixels);
 
 		/**
 		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
 		 */
 		void
 		render_opengl_feedback_to_paint_device(
-				QPaintDevice &feedback_paint_device) override;
+				QPaintDevice &feedback_paint_device);
 
 
 		/**
-		 * Return the camera controlling the view.
+		 * Return the camera controlling the current view (globe or map camera).
 		 */
 		const GPlatesGui::Camera &
-		get_camera() const override;
+		get_active_camera() const;
 
 		/**
-		 * Return the camera controlling the view.
+		 * Return the camera controlling the current view (globe or map camera).
 		 */
 		GPlatesGui::Camera &
-		get_camera() override;
+		get_active_camera();
 
 
 		/**
-		 * Returns the OpenGL context associated with this QOpenGLWidget.
-		 *
-		 * This also enables it to be shared across widgets.
+		 * Returns true if the globe view is currently active.
+		 */
+		bool
+		is_globe_active() const;
+
+		/**
+		 * Returns true if the map view is currently active.
+		 */
+		bool
+		is_map_active() const
+		{
+			return !is_globe_active();
+		}
+
+
+		/**
+		 * Returns the OpenGL context associated with our QOpenGLWidget viewport.
 		 */
 		GPlatesOpenGL::GLContext::non_null_ptr_type
 		get_gl_context()
@@ -195,7 +191,9 @@ namespace GPlatesQtWidgets
 			return d_gl_context;
 		}
 
-		//! Returns the persistent OpenGL objects associated with this widget's OpenGL context so it can be shared across widgets.
+		/**
+		 * Returns the OpenGL layers used to filled polygons, render rasters and scalar fields.
+		 */
 		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type
 		get_gl_visual_layers()
 		{
@@ -208,96 +206,165 @@ namespace GPlatesQtWidgets
 		//       to not be able to connect them at runtime.
 
 		void
-		update_canvas() override;
+		update_canvas();
 
 	Q_SIGNALS:
 
 		//
 		// NOTE: These signals do NOT pass by reference (const) since a reference points to an underlying data member and
 		//       that data member can change within the duration of the slot being signaled.
-		//       For example, changing the globe camera causes it to emit a signal that we (GlobeCanvas) use to update the
-		//       current position on globe under the mouse cursor. So if a signaled slot updates the camera and then continues
+		//       For example, changing the map camera causes it to emit a signal that we (GlobeAndMapCanvas) use to update the
+		//       current map position under the mouse cursor. So if a signaled slot updates the camera and then continues
 		//       to use the reference after that then it will find the referenced variable has unexpectedly been updated.
 		//
-
 
 		void
 		mouse_position_on_globe_changed(
 				GPlatesMaths::PointOnSphere position_on_globe,
 				bool is_on_globe);
+			
+		// Mouse pressed when globe is active.
+		void
+		mouse_pressed_when_globe_active(
+				int screen_width,
+				int screen_height,
+				QPointF press_screen_position,
+				GPlatesMaths::PointOnSphere press_position_on_globe,
+				bool is_on_globe,
+				Qt::MouseButton button,
+				Qt::KeyboardModifiers modifiers);
+
+		// Mouse pressed when map is active.
+		void
+		mouse_pressed_when_map_active(
+				int screen_width,
+				int screen_height,
+				QPointF press_screen_position,
+				boost::optional<QPointF> press_map_position,
+				GPlatesMaths::PointOnSphere press_position_on_globe,
+				bool is_on_globe,
+				Qt::MouseButton button,
+				Qt::KeyboardModifiers modifiers);
 				
+
+		// Mouse clicked when globe is active.
 		void
-		mouse_pressed(
+		mouse_clicked_when_globe_active(
 				int screen_width,
 				int screen_height,
-				double press_screen_x,
-				double press_screen_y,
-				GPlatesMaths::PointOnSphere press_pos_on_globe,
+				QPointF click_screen_position,
+				GPlatesMaths::PointOnSphere click_position_on_globe,
 				bool is_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
+		// Mouse clicked when map is active.
 		void
-		mouse_clicked(
+		mouse_clicked_when_map_active(
 				int screen_width,
 				int screen_height,
-				double click_screen_x,
-				double click_screen_y,
-				GPlatesMaths::PointOnSphere click_pos_on_globe,
+				QPointF click_screen_position,
+				boost::optional<QPointF> click_map_position,
+				GPlatesMaths::PointOnSphere click_position_on_globe,
 				bool is_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
+
+		// Mouse dragged when globe is active.
 		void
-		mouse_dragged(
+		mouse_dragged_when_globe_active(
 				int screen_width,
 				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				GPlatesMaths::PointOnSphere initial_pos_on_globe,
+				QPointF initial_screen_position,
+				GPlatesMaths::PointOnSphere initial_position_on_globe,
 				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				GPlatesMaths::PointOnSphere current_pos_on_globe,
+				QPointF current_screen_position,
+				GPlatesMaths::PointOnSphere current_position_on_globe,
 				bool is_on_globe,
-				GPlatesMaths::PointOnSphere centre_of_viewport,
+				GPlatesMaths::PointOnSphere centre_of_viewport_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
+		// Mouse dragged when map is active.
 		void
-		mouse_released_after_drag(
+		mouse_dragged_when_map_active(
 				int screen_width,
 				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				GPlatesMaths::PointOnSphere initial_pos_on_globe,
+				QPointF initial_screen_position,
+				boost::optional<QPointF> initial_map_position,
+				GPlatesMaths::PointOnSphere initial_position_on_globe,
 				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				GPlatesMaths::PointOnSphere current_pos_on_globe,
+				QPointF current_screen_position,
+				boost::optional<QPointF> current_map_position,
+				GPlatesMaths::PointOnSphere current_position_on_globe,
 				bool is_on_globe,
-				GPlatesMaths::PointOnSphere centre_of_viewport,
+				GPlatesMaths::PointOnSphere centre_of_viewport_on_globe,
 				Qt::MouseButton button,
 				Qt::KeyboardModifiers modifiers);
 
-		/**
-		 * The mouse position moved but the left mouse button is NOT down.
-		 */
+
+		// Mouse released after drag when globe is active.
 		void
-		mouse_moved_without_drag(
+		mouse_released_after_drag_when_globe_active(
 				int screen_width,
 				int screen_height,
-				double current_screen_x,
-				double current_screen_y,
-				GPlatesMaths::PointOnSphere current_pos_on_globe,
+				QPointF initial_screen_position,
+				GPlatesMaths::PointOnSphere initial_position_on_globe,
+				bool was_on_globe,
+				QPointF current_screen_position,
+				GPlatesMaths::PointOnSphere current_position_on_globe,
 				bool is_on_globe,
-				GPlatesMaths::PointOnSphere centre_of_viewport);
+				GPlatesMaths::PointOnSphere centre_of_viewport_on_globe,
+				Qt::MouseButton button,
+				Qt::KeyboardModifiers modifiers);
+
+		// Mouse released after drag when map is active.
+		void
+		mouse_released_after_drag_when_map_active(
+				int screen_width,
+				int screen_height,
+				QPointF initial_screen_position,
+				boost::optional<QPointF> initial_map_position,
+				GPlatesMaths::PointOnSphere initial_position_on_globe,
+				bool was_on_globe,
+				QPointF current_screen_position,
+				boost::optional<QPointF> current_map_position,
+				GPlatesMaths::PointOnSphere current_position_on_globe,
+				bool is_on_globe,
+				GPlatesMaths::PointOnSphere centre_of_viewport_on_globe,
+				Qt::MouseButton button,
+				Qt::KeyboardModifiers modifiers);
+
+
+		// Mouse moved without drag when globe is active.
+		void
+		mouse_moved_without_drag_when_globe_active(
+				int screen_width,
+				int screen_height,
+				QPointF screen_position,
+				GPlatesMaths::PointOnSphere position_on_globe,
+				bool is_on_globe,
+				GPlatesMaths::PointOnSphere centre_of_viewport_on_globe);
+
+		// Mouse moved without drag when map is active.
+		void
+		mouse_moved_without_drag_when_map_active(
+				int screen_width,
+				int screen_height,
+				QPointF screen_position,
+				boost::optional<QPointF> map_position,
+				GPlatesMaths::PointOnSphere position_on_globe,
+				bool is_on_globe,
+				GPlatesMaths::PointOnSphere centre_of_viewport_on_globe);
+
 
 		void
 		repainted(
 				bool mouse_down);
 
 	protected:
+
 		/**
 		 * This is a virtual override of the function in QOpenGLWidget.
 		 */
@@ -318,64 +385,21 @@ namespace GPlatesQtWidgets
 		void
 		paintGL() override;
 
+
 		void
 		paintEvent(
 				QPaintEvent *paint_event) override;
 
-		/**
-		 * This is a virtual override of the function in QWidget.
-		 *
-		 * To quote the QWidget documentation:
-		 *
-		 * This event handler, for event event, can be reimplemented in a subclass to
-		 * receive mouse press events for the widget.
-		 *
-		 * If you create new widgets in the mousePressEvent() the mouseReleaseEvent() may
-		 * not end up where you expect, depending on the underlying window system (or X11
-		 * window manager), the widgets' location and maybe more.
-		 *
-		 * The default implementation implements the closing of popup widgets when you
-		 * click outside the window.  For other widget types it does nothing.
-		 */
 		void
 		mousePressEvent(
-				QMouseEvent *event) override;
+				QMouseEvent *mouse_event) override;
 
-		/**
-		 * This is a virtual override of the function in QWidget.
-		 *
-		 * To quote the QWidget documentation:
-		 *
-		 * This event handler, for event event, can be reimplemented in a subclass to
-		 * receive mouse move events for the widget.
-		 *
-		 * If mouse tracking is switched off, mouse move events only occur if a mouse
-		 * button is pressed while the mouse is being moved.  If mouse tracking is switched
-		 * on, mouse move events occur even if no mouse button is pressed.
-		 *
-		 * QMouseEvent::pos() reports the position of the mouse cursor, relative to this
-		 * widget.  For press and release events, the position is usually the same as the
-		 * position of the last mouse move event, but it might be different if the user's
-		 * hand shakes.  This is a feature of the underlying window system, not Qt.
-		 */
-		void
+		void 
 		mouseMoveEvent(
-				QMouseEvent *event) override;
+				QMouseEvent *mouse_event) override;
 
-		/**
-		 * This is a virtual override of the function in QWidget.
-		 *
-		 * To quote the QWidget documentation:
-		 *
-		 * This event handler, for event event, can be reimplemented in a subclass to
-		 * receive mouse release events for the widget.
-		 */
 		void 
 		mouseReleaseEvent(
-				QMouseEvent *event) override;
-
-		void
-		mouseDoubleClickEvent(
 				QMouseEvent *mouse_event) override;
 
 		void
@@ -390,19 +414,23 @@ namespace GPlatesQtWidgets
 		void
 		handle_camera_change();
 
+		void
+		handle_projection_changed(
+				const GPlatesGui::Projection &projection);
+
 	private:
 
 		struct MousePressInfo
 		{
 			MousePressInfo(
-					qreal mouse_screen_position_x,
-					qreal mouse_screen_position_y,
+					const QPointF &mouse_screen_position,
+					const boost::optional<QPointF> &mouse_map_position,
 					const GPlatesMaths::PointOnSphere &mouse_position_on_globe,
 					bool mouse_is_on_globe,
 					Qt::MouseButton button,
 					Qt::KeyboardModifiers modifiers):
-				d_mouse_screen_position_x(mouse_screen_position_x),
-				d_mouse_screen_position_y(mouse_screen_position_y),
+				d_mouse_screen_position(mouse_screen_position),
+				d_mouse_map_position(mouse_map_position),
 				d_mouse_position_on_globe(mouse_position_on_globe),
 				d_mouse_is_on_globe(mouse_is_on_globe),
 				d_button(button),
@@ -410,14 +438,15 @@ namespace GPlatesQtWidgets
 				d_is_mouse_drag(false)
 			{  }
 
-			qreal d_mouse_screen_position_x;
-			qreal d_mouse_screen_position_y;
+			QPointF d_mouse_screen_position;
+			boost::optional<QPointF> d_mouse_map_position;  // Only used when map is active (ie, when globe is inactive).
 			GPlatesMaths::PointOnSphere d_mouse_position_on_globe;
 			bool d_mouse_is_on_globe;
 			Qt::MouseButton d_button;
 			Qt::KeyboardModifiers d_modifiers;
 			bool d_is_mouse_drag;
 		};
+
 
 		/**
 		 * Typedef for an opaque object that caches a particular painting.
@@ -464,33 +493,56 @@ namespace GPlatesQtWidgets
 		 */
 		cache_handle_type d_gl_frame_cache_handle;
 
+		//! The mouse pointer position on the *screen*.
+		QPointF d_mouse_screen_position;
+
+		/**
+		 * The mouse pointer position on the map *plane* (2D plane with z=0), or none if screen view ray
+		 * at the mouse pointer *screen* position does not intersect the map plane.
+		 *
+		 * Note: This is only used when the map is active (ie, when globe is inactive).
+		 */
+		boost::optional<QPointF> d_mouse_position_on_map_plane;
+
 		/**
 		 * If the mouse pointer is on the globe, this is the position of the mouse pointer on the globe.
 		 *
-		 * Otherwise, this is the closest position on the globe to the position of the
-		 * mouse pointer in the 3-D "universe".
+		 * Otherwise, this is the closest position on the globe to the position of the mouse pointer.
+		 *
+		 * When the map is active (ie, when globe is inactive) the mouse pointer is considered to intersect
+		 * the globe if it intersects the map plane at a position that is inside the map projection boundary.
 		 */
 		GPlatesMaths::PointOnSphere d_mouse_position_on_globe;
 
-		//! Whether the mouse pointer is on the globe.
+		/**
+		 * Whether the mouse pointer is on the globe.
+		 *
+		 * When the globe is active (ie, when map is inactive) this is true if the mouse pointer is
+		 * on the globe's sphere.
+		 *
+		 * When the map is active (ie, when globe is inactive) this is true if the mouse pointer is
+		 * on the map plane and inside the map projection boundary.
+		 */
 		bool d_mouse_is_on_globe;
-
-		//! The x-coord of the mouse pointer position on the screen.
-		qreal d_mouse_screen_position_x;
-
-		//! The y-coord of the mouse pointer position on the screen.
-		qreal d_mouse_screen_position_y;
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
 
-		GPlatesGui::Globe d_globe;
-		
-		GPlatesGui::GlobeCamera &d_globe_camera;
+		/**
+		 * The projection determines whether the globe view or map view is currently active
+		 * (as well as whether the view is orthographic or perspective).
+		 */
+		GPlatesGui::Projection &d_projection;
 
-		//! Paints an optional text overlay onto the globe.
+		//! Holds the globe state.
+		GPlatesGui::Globe d_globe;
+
+		//! Holds the map state.
+		GPlatesGui::Map d_map;
+
+		//! Paints an optional text overlay onto the globe/map.
 		boost::scoped_ptr<GPlatesGui::TextOverlay> d_text_overlay;
 
-		//! Paints an optional velocity legend overlay onto the globe.
+		//! Paints an optional velocity legend overlay onto the globe/map.
 		boost::scoped_ptr<GPlatesGui::VelocityLegendOverlay> d_velocity_legend_overlay;
 
 
@@ -510,9 +562,7 @@ namespace GPlatesQtWidgets
 		void
 		set_view();
 
-		/**
-		 * Render the scene.
-		 */
+		//! Render onto the canvas.
 		cache_handle_type
 		render_scene(
 				GPlatesOpenGL::GL &gl,
@@ -534,26 +584,47 @@ namespace GPlatesQtWidgets
 				QImage &image);
 
 		/**
-		 * The point which corresponds to the centre of the viewport.
+		 * The point on the globe which corresponds to the centre of the viewport.
 		 */
 		GPlatesMaths::PointOnSphere
 		centre_of_viewport() const;
+
+		/**
+		 * Returns true if the distance from the current mouse screen position to the position
+		 * when the mouse was first pressed is greater than a threshold.
+		 */
+		bool
+		is_mouse_in_drag() const;
 
 		void
 		update_mouse_screen_position(
 				QMouseEvent *mouse_event);
 
 		void
-		update_mouse_position_on_globe();
+		update_mouse_position_on_globe_or_map();
 
-		//! Calculates scaling for lines, points and text based on size of the paint device.
+		/**
+		 * Update mouse position on globe when globe is active (ie, when map is inactive).
+		 */
+		void
+		update_mouse_position_on_globe(
+				const GPlatesOpenGL::GLIntersect::Ray &camera_ray);
+
+		/**
+		 * Update mouse position on globe when map is active (ie, when globe is inactive).
+		 */
+		void
+		update_mouse_position_on_map(
+				const GPlatesOpenGL::GLIntersect::Ray &camera_ray);
+
+
+		//! Calculate scaling for lines, points and text based on size of the view.
 		float
 		calculate_scale(
 				int paint_device_width_in_device_independent_pixels,
 				int paint_device_height_in_device_independent_pixels) const;
 
 	};
-
 }
 
-#endif  // GPLATES_QTWIDGETS_GLOBECANVAS_H
+#endif // GPLATES_QTWIDGETS_GLOBEANDMAPCANVAS_H

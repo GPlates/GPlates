@@ -53,9 +53,8 @@
 #include "presentation/ViewState.h"
 #include "presentation/VisualLayers.h"
 
+#include "qt-widgets/GlobeAndMapCanvas.h"
 #include "qt-widgets/GlobeAndMapWidget.h"
-#include "qt-widgets/GlobeCanvas.h"
-#include "qt-widgets/MapCanvas.h"
 #include "qt-widgets/ReconstructionViewWidget.h"
 #include "qt-widgets/ViewportWindow.h"
 
@@ -85,8 +84,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::FeatureInspectionCanvasToolWork
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesQtWidgets::ViewportWindow &viewport_window) :
 	CanvasToolWorkflow(
-			viewport_window.globe_canvas(),
-			viewport_window.map_canvas(),
+			viewport_window.globe_and_map_canvas(),
 			CanvasToolWorkflows::WORKFLOW_FEATURE_INSPECTION,
 			// The tool to start off with...
 			CanvasToolWorkflows::TOOL_CLICK_GEOMETRY),
@@ -159,13 +157,13 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 	d_globe_measure_distance_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					measure_distance_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_measure_distance_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					measure_distance_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 
 	//
@@ -187,13 +185,13 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 	d_globe_click_geometry_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					click_geometry_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_click_geometry_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					click_geometry_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 
 	//
@@ -215,13 +213,13 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 	d_globe_move_vertex_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					move_vertex_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_move_vertex_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					move_vertex_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 
 	//
@@ -241,13 +239,13 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 	d_globe_delete_vertex_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					delete_vertex_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_delete_vertex_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					delete_vertex_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 
 	//
@@ -267,13 +265,13 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 	d_globe_insert_vertex_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					insert_vertex_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_insert_vertex_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					insert_vertex_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 
 	//
@@ -295,13 +293,13 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::create_canvas_tools(
 	d_globe_split_feature_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					split_feature_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_split_feature_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					split_feature_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 }
 

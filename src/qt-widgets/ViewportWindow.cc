@@ -67,11 +67,10 @@
 #include "DigitisationWidget.h"
 #include "DockWidget.h"
 #include "FeaturePropertiesDialog.h"
-#include "GlobeCanvas.h"
+#include "GlobeAndMapCanvas.h"
 #include "GlobeAndMapWidget.h"
 #include "ImportRasterDialog.h"
 #include "ImportScalarField3DDialog.h"
-#include "MapCanvas.h"
 #include "PythonConsoleDialog.h"
 #include "QtWidgetUtils.h"
 #include "ReadErrorAccumulationDialog.h"
@@ -944,31 +943,17 @@ GPlatesQtWidgets::ViewportWindow::search_results_dock_widget()
 }
 
 
-GPlatesQtWidgets::GlobeCanvas &
-GPlatesQtWidgets::ViewportWindow::globe_canvas()
+GPlatesQtWidgets::GlobeAndMapCanvas &
+GPlatesQtWidgets::ViewportWindow::globe_and_map_canvas()
 {
-	return d_reconstruction_view_widget_ptr->globe_canvas();
+	return d_reconstruction_view_widget_ptr->globe_and_map_canvas();
 }
 
 
-const GPlatesQtWidgets::GlobeCanvas &
-GPlatesQtWidgets::ViewportWindow::globe_canvas() const
+const GPlatesQtWidgets::GlobeAndMapCanvas &
+GPlatesQtWidgets::ViewportWindow::globe_and_map_canvas() const
 {
-	return d_reconstruction_view_widget_ptr->globe_canvas();
-}
-
-
-GPlatesQtWidgets::MapCanvas &
-GPlatesQtWidgets::ViewportWindow::map_canvas()
-{
-	return d_reconstruction_view_widget_ptr->map_canvas();
-}
-
-
-const GPlatesQtWidgets::MapCanvas &
-GPlatesQtWidgets::ViewportWindow::map_canvas() const
-{
-	return d_reconstruction_view_widget_ptr->map_canvas();
+	return d_reconstruction_view_widget_ptr->globe_and_map_canvas();
 }
 
 
@@ -1422,7 +1407,7 @@ GPlatesQtWidgets::ViewportWindow::enable_stars_display()
 			action_Show_Stars->isChecked());
 	if (reconstruction_view_widget().globe_is_active())
 	{
-		globe_canvas().update_canvas();
+		globe_and_map_canvas().update_canvas();
 	}
 }
 

@@ -28,6 +28,7 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
+#include <QPointF>
 
 #include "RenderedGeometryCollection.h"
 
@@ -83,8 +84,7 @@ namespace GPlatesViewOperations
 		start_drag(
 				MouseDragMode mouse_drag_mode,
 				const GPlatesMaths::PointOnSphere &initial_mouse_pos_on_globe,
-				double initial_mouse_screen_x,
-				double initial_mouse_screen_y,
+				const QPointF &initial_mouse_screen_position,
 				int screen_width,
 				int screen_height);
 
@@ -105,8 +105,7 @@ namespace GPlatesViewOperations
 		void
 		update_drag(
 				const GPlatesMaths::PointOnSphere &mouse_pos_on_globe,
-				double mouse_screen_x,
-				double mouse_screen_y,
+				const QPointF &mouse_screen_position,
 				int screen_width,
 				int screen_height,
 				bool end_of_drag);

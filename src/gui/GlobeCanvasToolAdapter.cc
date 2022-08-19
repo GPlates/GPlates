@@ -33,11 +33,11 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
-#include "qt-widgets/GlobeCanvas.h"
+#include "qt-widgets/GlobeAndMapCanvas.h"
 
 
 GPlatesGui::GlobeCanvasToolAdapter::GlobeCanvasToolAdapter(
-		GPlatesQtWidgets::GlobeCanvas &globe_canvas) :
+		GPlatesQtWidgets::GlobeAndMapCanvas &globe_canvas) :
 	d_globe_canvas(globe_canvas)
 {
 }
@@ -69,9 +69,8 @@ void
 GPlatesGui::GlobeCanvasToolAdapter::handle_press(
 		int screen_width,
 		int screen_height,
-		double press_screen_x,
-		double press_screen_y,
-		GPlatesMaths::PointOnSphere press_pos_on_globe,
+		QPointF press_screen_position,
+		GPlatesMaths::PointOnSphere press_position_on_globe,
 		bool is_on_globe,
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
@@ -84,8 +83,7 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_press(
 		case Qt::NoModifier:
 			get_active_globe_canvas_tool().handle_left_press(
 					screen_width, screen_height,
-					press_screen_x, press_screen_y,
-					press_pos_on_globe, is_on_globe);
+					press_screen_position, press_position_on_globe, is_on_globe);
 			break;
 
 		case Qt::ShiftModifier:
@@ -108,9 +106,8 @@ void
 GPlatesGui::GlobeCanvasToolAdapter::handle_click(
 		int screen_width,
 		int screen_height,
-		double click_screen_x,
-		double click_screen_y,
-		GPlatesMaths::PointOnSphere click_pos_on_globe,
+		QPointF click_screen_position,
+		GPlatesMaths::PointOnSphere click_position_on_globe,
 		bool is_on_globe,
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
@@ -123,29 +120,25 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_click(
 		case Qt::NoModifier:
 			get_active_globe_canvas_tool().handle_left_click(
 					screen_width, screen_height,
-					click_screen_x, click_screen_y,
-					click_pos_on_globe, is_on_globe);
+					click_screen_position, click_position_on_globe, is_on_globe);
 			break;
 
 		case Qt::ShiftModifier:
 			get_active_globe_canvas_tool().handle_shift_left_click(
 					screen_width, screen_height,
-					click_screen_x, click_screen_y,
-					click_pos_on_globe, is_on_globe);
+					click_screen_position, click_position_on_globe, is_on_globe);
 			break;
 
 		case Qt::AltModifier:
 			get_active_globe_canvas_tool().handle_alt_left_click(
 					screen_width, screen_height,
-					click_screen_x, click_screen_y,
-					click_pos_on_globe, is_on_globe);
+					click_screen_position, click_position_on_globe, is_on_globe);
 			break;
 
 		case Qt::ControlModifier:
 			get_active_globe_canvas_tool().handle_ctrl_left_click(
 					screen_width, screen_height,
-					click_screen_x, click_screen_y,
-					click_pos_on_globe, is_on_globe);
+					click_screen_position, click_position_on_globe, is_on_globe);
 			break;
 
 		default:
@@ -157,16 +150,14 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_click(
 				// The user was indeed holding the Shift and Control keys.
 				get_active_globe_canvas_tool().handle_shift_ctrl_left_click(
 						screen_width, screen_height,
-						click_screen_x, click_screen_y,
-						click_pos_on_globe, is_on_globe);
+						click_screen_position, click_position_on_globe, is_on_globe);
 			}
 			else if (modifiers == (Qt::AltModifier | Qt::ControlModifier))
 			{
 				// The user was indeed holding the Alt and Control keys.
 				get_active_globe_canvas_tool().handle_alt_ctrl_left_click(
 						screen_width, screen_height,
-						click_screen_x, click_screen_y,
-						click_pos_on_globe, is_on_globe);
+						click_screen_position, click_position_on_globe, is_on_globe);
 			}
 			break;
 		}
@@ -185,15 +176,13 @@ void
 GPlatesGui::GlobeCanvasToolAdapter::handle_drag(
 		int screen_width,
 		int screen_height,
-		double initial_screen_x,
-		double initial_screen_y,
-		GPlatesMaths::PointOnSphere initial_pos_on_globe,
+		QPointF initial_screen_position,
+		GPlatesMaths::PointOnSphere initial_position_on_globe,
 		bool was_on_globe,
-		double current_screen_x,
-		double current_screen_y,
-		GPlatesMaths::PointOnSphere current_pos_on_globe,
+		QPointF current_screen_position,
+		GPlatesMaths::PointOnSphere current_position_on_globe,
 		bool is_on_globe,
-		GPlatesMaths::PointOnSphere centre_of_viewport,
+		GPlatesMaths::PointOnSphere centre_of_viewport_on_globe,
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
 {
@@ -205,41 +194,33 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_drag(
 		case Qt::NoModifier:
 			get_active_globe_canvas_tool().handle_left_drag(
 					screen_width, screen_height,
-					initial_screen_x, initial_screen_y,
-					initial_pos_on_globe, was_on_globe,
-					current_screen_x, current_screen_y,
-					current_pos_on_globe, is_on_globe,
-					centre_of_viewport);
+					initial_screen_position, initial_position_on_globe, was_on_globe,
+					current_screen_position, current_position_on_globe, is_on_globe,
+					centre_of_viewport_on_globe);
 			break;
 
 		case Qt::ShiftModifier:
 			get_active_globe_canvas_tool().handle_shift_left_drag(
 					screen_width, screen_height,
-					initial_screen_x, initial_screen_y,
-					initial_pos_on_globe, was_on_globe,
-					current_screen_x, current_screen_y,
-					current_pos_on_globe, is_on_globe,
-					centre_of_viewport);
+					initial_screen_position, initial_position_on_globe, was_on_globe,
+					current_screen_position, current_position_on_globe, is_on_globe,
+					centre_of_viewport_on_globe);
 			break;
 
 		case Qt::AltModifier:
 			get_active_globe_canvas_tool().handle_alt_left_drag(
 					screen_width, screen_height,
-					initial_screen_x, initial_screen_y,
-					initial_pos_on_globe, was_on_globe,
-					current_screen_x, current_screen_y,
-					current_pos_on_globe, is_on_globe,
-					centre_of_viewport);
+					initial_screen_position, initial_position_on_globe, was_on_globe,
+					current_screen_position, current_position_on_globe, is_on_globe,
+					centre_of_viewport_on_globe);
 			break;
 
 		case Qt::ControlModifier:
 			get_active_globe_canvas_tool().handle_ctrl_left_drag(
 					screen_width, screen_height,
-					initial_screen_x, initial_screen_y,
-					initial_pos_on_globe, was_on_globe,
-					current_screen_x, current_screen_y,
-					current_pos_on_globe, is_on_globe,
-					centre_of_viewport);
+					initial_screen_position, initial_position_on_globe, was_on_globe,
+					current_screen_position, current_position_on_globe, is_on_globe,
+					centre_of_viewport_on_globe);
 			break;
 
 		default:
@@ -251,22 +232,18 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_drag(
 				// The user was indeed holding the Shift and Control keys.
 				get_active_globe_canvas_tool().handle_shift_ctrl_left_drag(
 						screen_width, screen_height,
-						initial_screen_x, initial_screen_y,
-						initial_pos_on_globe, was_on_globe,
-						current_screen_x, current_screen_y,
-						current_pos_on_globe, is_on_globe,
-						centre_of_viewport);
+						initial_screen_position, initial_position_on_globe, was_on_globe,
+						current_screen_position, current_position_on_globe, is_on_globe,
+						centre_of_viewport_on_globe);
 			}
 			else if (modifiers == (Qt::AltModifier | Qt::ControlModifier))
 			{
 				// The user was indeed holding the Alt and Control keys.
 				get_active_globe_canvas_tool().handle_alt_ctrl_left_drag(
 						screen_width, screen_height,
-						initial_screen_x, initial_screen_y,
-						initial_pos_on_globe, was_on_globe,
-						current_screen_x, current_screen_y,
-						current_pos_on_globe, is_on_globe,
-						centre_of_viewport);
+						initial_screen_position, initial_position_on_globe, was_on_globe,
+						current_screen_position, current_position_on_globe, is_on_globe,
+						centre_of_viewport_on_globe);
 			}
 			break;
 		}
@@ -284,15 +261,13 @@ void
 GPlatesGui::GlobeCanvasToolAdapter::handle_release_after_drag(
 		int screen_width,
 		int screen_height,
-		double initial_screen_x,
-		double initial_screen_y,
-		GPlatesMaths::PointOnSphere initial_pos_on_globe,
+		QPointF initial_screen_position,
+		GPlatesMaths::PointOnSphere initial_position_on_globe,
 		bool was_on_globe,
-		double current_screen_x,
-		double current_screen_y,
-		GPlatesMaths::PointOnSphere current_pos_on_globe,
+		QPointF current_screen_position,
+		GPlatesMaths::PointOnSphere current_position_on_globe,
 		bool is_on_globe,
-		GPlatesMaths::PointOnSphere centre_of_viewport,
+		GPlatesMaths::PointOnSphere centre_of_viewport_on_globe,
 		Qt::MouseButton button,
 		Qt::KeyboardModifiers modifiers)
 {
@@ -303,42 +278,34 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_release_after_drag(
 		{
 		case Qt::NoModifier:
 			get_active_globe_canvas_tool().handle_left_release_after_drag(
-					screen_width, screen_height,
-					initial_screen_x, initial_screen_y,
-					initial_pos_on_globe, was_on_globe,
-					current_screen_x, current_screen_y,
-					current_pos_on_globe, is_on_globe,
-					centre_of_viewport);
+						screen_width, screen_height,
+						initial_screen_position, initial_position_on_globe, was_on_globe,
+						current_screen_position, current_position_on_globe, is_on_globe,
+						centre_of_viewport_on_globe);
 			break;
 
 		case Qt::ShiftModifier:
 			get_active_globe_canvas_tool().handle_shift_left_release_after_drag(
-					screen_width, screen_height,
-					initial_screen_x, initial_screen_y,
-					initial_pos_on_globe, was_on_globe,
-					current_screen_x, current_screen_y,
-					current_pos_on_globe, is_on_globe,
-					centre_of_viewport);
+						screen_width, screen_height,
+						initial_screen_position, initial_position_on_globe, was_on_globe,
+						current_screen_position, current_position_on_globe, is_on_globe,
+						centre_of_viewport_on_globe);
 			break;
 
 		case Qt::AltModifier:
 			get_active_globe_canvas_tool().handle_alt_left_release_after_drag(
-					screen_width, screen_height,
-					initial_screen_x, initial_screen_y,
-					initial_pos_on_globe, was_on_globe,
-					current_screen_x, current_screen_y,
-					current_pos_on_globe, is_on_globe,
-					centre_of_viewport);
+						screen_width, screen_height,
+						initial_screen_position, initial_position_on_globe, was_on_globe,
+						current_screen_position, current_position_on_globe, is_on_globe,
+						centre_of_viewport_on_globe);
 			break;
 
 		case Qt::ControlModifier:
 			get_active_globe_canvas_tool().handle_ctrl_left_release_after_drag(
-					screen_width, screen_height,
-					initial_screen_x, initial_screen_y,
-					initial_pos_on_globe, was_on_globe,
-					current_screen_x, current_screen_y,
-					current_pos_on_globe, is_on_globe,
-					centre_of_viewport);
+						screen_width, screen_height,
+						initial_screen_position, initial_position_on_globe, was_on_globe,
+						current_screen_position, current_position_on_globe, is_on_globe,
+						centre_of_viewport_on_globe);
 			break;
 
 		default:
@@ -350,22 +317,18 @@ GPlatesGui::GlobeCanvasToolAdapter::handle_release_after_drag(
 				// The user was indeed holding the Shift and Control keys.
 				get_active_globe_canvas_tool().handle_shift_ctrl_left_release_after_drag(
 						screen_width, screen_height,
-						initial_screen_x, initial_screen_y,
-						initial_pos_on_globe, was_on_globe,
-						current_screen_x, current_screen_y,
-						current_pos_on_globe, is_on_globe,
-						centre_of_viewport);
+						initial_screen_position, initial_position_on_globe, was_on_globe,
+						current_screen_position, current_position_on_globe, is_on_globe,
+						centre_of_viewport_on_globe);
 			}
 			else if (modifiers == (Qt::AltModifier | Qt::ControlModifier))
 			{
 				// The user was indeed holding the Alt and Control keys.
 				get_active_globe_canvas_tool().handle_alt_ctrl_left_release_after_drag(
 						screen_width, screen_height,
-						initial_screen_x, initial_screen_y,
-						initial_pos_on_globe, was_on_globe,
-						current_screen_x, current_screen_y,
-						current_pos_on_globe, is_on_globe,
-						centre_of_viewport);
+						initial_screen_position, initial_position_on_globe, was_on_globe,
+						current_screen_position, current_position_on_globe, is_on_globe,
+						centre_of_viewport_on_globe);
 			}
 			break;
 		}
@@ -383,17 +346,15 @@ void
 GPlatesGui::GlobeCanvasToolAdapter::handle_move_without_drag(
 		int screen_width,
 		int screen_height,
-		double current_screen_x,
-		double current_screen_y,
-		GPlatesMaths::PointOnSphere current_pos_on_globe,
+		QPointF screen_position,
+		GPlatesMaths::PointOnSphere position_on_globe,
 		bool is_on_globe,
-		GPlatesMaths::PointOnSphere centre_of_viewport)
+		GPlatesMaths::PointOnSphere centre_of_viewport_on_globe)
 {
 	get_active_globe_canvas_tool().handle_move_without_drag(
 			screen_width, screen_height,
-			current_screen_x, current_screen_y,
-			current_pos_on_globe, is_on_globe,
-			centre_of_viewport);
+			screen_position, position_on_globe, is_on_globe,
+			centre_of_viewport_on_globe);
 }
 
 
@@ -402,11 +363,10 @@ GPlatesGui::GlobeCanvasToolAdapter::connect_to_globe_canvas()
 {
 	QObject::connect(
 			&d_globe_canvas,
-			SIGNAL(mouse_pressed(
+			SIGNAL(mouse_pressed_when_globe_active(
 					int,
 					int,
-					double,
-					double,
+					QPointF,
 					GPlatesMaths::PointOnSphere,
 					bool,
 					Qt::MouseButton,
@@ -415,8 +375,7 @@ GPlatesGui::GlobeCanvasToolAdapter::connect_to_globe_canvas()
 			SLOT(handle_press(
 					int,
 					int,
-					double,
-					double,
+					QPointF,
 					GPlatesMaths::PointOnSphere,
 					bool,
 					Qt::MouseButton,
@@ -424,11 +383,10 @@ GPlatesGui::GlobeCanvasToolAdapter::connect_to_globe_canvas()
 
 	QObject::connect(
 			&d_globe_canvas,
-			SIGNAL(mouse_clicked(
+			SIGNAL(mouse_clicked_when_globe_active(
 					int,
 					int,
-					double,
-					double,
+					QPointF,
 					GPlatesMaths::PointOnSphere,
 					bool,
 					Qt::MouseButton,
@@ -437,8 +395,7 @@ GPlatesGui::GlobeCanvasToolAdapter::connect_to_globe_canvas()
 			SLOT(handle_click(
 					int,
 					int,
-					double,
-					double,
+					QPointF,
 					GPlatesMaths::PointOnSphere,
 					bool,
 					Qt::MouseButton,
@@ -446,15 +403,13 @@ GPlatesGui::GlobeCanvasToolAdapter::connect_to_globe_canvas()
 
 	QObject::connect(
 			&d_globe_canvas,
-			SIGNAL(mouse_dragged(
+			SIGNAL(mouse_dragged_when_globe_active(
 					int,
 					int,
-					double,
-					double,
+					QPointF,
 					GPlatesMaths::PointOnSphere,
 					bool,
-					double,
-					double,
+					QPointF,
 					GPlatesMaths::PointOnSphere,
 					bool,
 					GPlatesMaths::PointOnSphere,
@@ -464,12 +419,10 @@ GPlatesGui::GlobeCanvasToolAdapter::connect_to_globe_canvas()
 			SLOT(handle_drag(
 					int,
 					int,
-					double,
-					double,
+					QPointF,
 					GPlatesMaths::PointOnSphere,
 					bool,
-					double,
-					double,
+					QPointF,
 					GPlatesMaths::PointOnSphere,
 					bool,
 					GPlatesMaths::PointOnSphere,
@@ -478,15 +431,13 @@ GPlatesGui::GlobeCanvasToolAdapter::connect_to_globe_canvas()
 
 	QObject::connect(
 			&d_globe_canvas,
-			SIGNAL(mouse_released_after_drag(
+			SIGNAL(mouse_released_after_drag_when_globe_active(
 					int,
 					int,
-					double,
-					double,
+					QPointF,
 					GPlatesMaths::PointOnSphere,
 					bool,
-					double,
-					double,
+					QPointF,
 					GPlatesMaths::PointOnSphere,
 					bool,
 					GPlatesMaths::PointOnSphere,
@@ -496,12 +447,10 @@ GPlatesGui::GlobeCanvasToolAdapter::connect_to_globe_canvas()
 			SLOT(handle_release_after_drag(
 					int,
 					int,
-					double,
-					double,
+					QPointF,
 					GPlatesMaths::PointOnSphere,
 					bool,
-					double,
-					double,
+					QPointF,
 					GPlatesMaths::PointOnSphere,
 					bool,
 					GPlatesMaths::PointOnSphere,
@@ -510,11 +459,10 @@ GPlatesGui::GlobeCanvasToolAdapter::connect_to_globe_canvas()
 
 	QObject::connect(
 			&d_globe_canvas,
-			SIGNAL(mouse_moved_without_drag(
+			SIGNAL(mouse_moved_without_drag_when_globe_active(
 					int,
 					int,
-					double,
-					double,
+					QPointF,
 					GPlatesMaths::PointOnSphere,
 					bool,
 					GPlatesMaths::PointOnSphere)),
@@ -522,8 +470,7 @@ GPlatesGui::GlobeCanvasToolAdapter::connect_to_globe_canvas()
 			SLOT(handle_move_without_drag(
 					int,
 					int,
-					double,
-					double,
+					QPointF,
 					GPlatesMaths::PointOnSphere,
 					bool,
 					GPlatesMaths::PointOnSphere)));

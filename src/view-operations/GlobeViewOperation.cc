@@ -49,8 +49,7 @@ void
 GPlatesViewOperations::GlobeViewOperation::start_drag(
 		MouseDragMode mouse_drag_mode,
 		const GPlatesMaths::PointOnSphere &initial_mouse_pos_on_globe,
-		double initial_mouse_screen_x,
-		double initial_mouse_screen_y,
+		const QPointF &initial_mouse_screen_position,
 		int screen_width,
 		int screen_height)
 {
@@ -63,8 +62,9 @@ GPlatesViewOperations::GlobeViewOperation::start_drag(
 	d_in_last_update_drag = false;
 
 	// Note that OpenGL (window) and Qt (screen) y-axes are the reverse of each other.
-	const double initial_mouse_window_y = screen_height - initial_mouse_screen_y;
-	const double initial_mouse_window_x = initial_mouse_screen_x;
+	const double initial_mouse_window_y = screen_height - initial_mouse_screen_position.y();
+	const double initial_mouse_window_x = initial_mouse_screen_position.x();
+
 
 	switch (mouse_drag_mode)
 	{
@@ -101,8 +101,7 @@ GPlatesViewOperations::GlobeViewOperation::start_drag(
 void
 GPlatesViewOperations::GlobeViewOperation::update_drag(
 		const GPlatesMaths::PointOnSphere &mouse_pos_on_globe,
-		double mouse_screen_x,
-		double mouse_screen_y,
+		const QPointF &mouse_screen_position,
 		int screen_width,
 		int screen_height,
 		bool end_of_drag)
@@ -127,8 +126,8 @@ GPlatesViewOperations::GlobeViewOperation::update_drag(
 	}
 
 	// Note that OpenGL (window) and Qt (screen) y-axes are the reverse of each other.
-	const double mouse_window_y = screen_height - mouse_screen_y;
-	const double mouse_window_x = mouse_screen_x;
+	const double mouse_window_y = screen_height - mouse_screen_position.y();
+	const double mouse_window_x = mouse_screen_position.x();
 
 	switch (mouse_drag_mode)
 	{

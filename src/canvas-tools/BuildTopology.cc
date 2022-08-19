@@ -50,7 +50,6 @@
 
 #include "property-values/XsString.h"
 
-#include "qt-widgets/GlobeCanvas.h"
 #include "qt-widgets/SearchResultsDockWidget.h"
 #include "qt-widgets/TopologyToolsWidget.h"
 #include "qt-widgets/ViewportWindow.h"

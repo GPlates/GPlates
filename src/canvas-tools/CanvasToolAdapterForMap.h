@@ -35,7 +35,7 @@
 
 namespace GPlatesQtWidgets
 {
-	class MapCanvas;
+	class GlobeAndMapCanvas;
 }
 
 namespace  GPlatesViewOperations
@@ -59,7 +59,7 @@ namespace GPlatesCanvasTools
 		 */
 		CanvasToolAdapterForMap(
 				const CanvasTool::non_null_ptr_type &canvas_tool_ptr,
-				GPlatesQtWidgets::MapCanvas &map_canvas_,
+				GPlatesQtWidgets::GlobeAndMapCanvas &map_canvas_,
 				GPlatesViewOperations::MapViewOperation &map_view_operation_);
 
 
@@ -68,7 +68,7 @@ namespace GPlatesCanvasTools
 
 		void
 		handle_deactivation() override;
-		
+
 		void
 		handle_left_press(
 				int screen_width,

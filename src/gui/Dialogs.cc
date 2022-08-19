@@ -46,7 +46,6 @@
 #include "qt-widgets/GPlatesDialog.h"
 #include "qt-widgets/QtWidgetUtils.h"
 #include "qt-widgets/ReconstructionViewWidget.h"
-#include "qt-widgets/SceneView.h"
 #include "qt-widgets/ViewportWindow.h"
 
 ////////////////////////////////////////////////

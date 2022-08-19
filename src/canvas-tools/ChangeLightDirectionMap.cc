@@ -31,7 +31,7 @@
 
 
 GPlatesCanvasTools::ChangeLightDirectionMap::ChangeLightDirectionMap(
-		GPlatesQtWidgets::MapCanvas &map_canvas_,
+		GPlatesQtWidgets::GlobeAndMapCanvas &map_canvas_,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_) :
 	MapCanvasTool(map_canvas_, viewport_window_.get_view_state().get_map_view_operation()),
 	d_viewport_window_ptr(&viewport_window_)

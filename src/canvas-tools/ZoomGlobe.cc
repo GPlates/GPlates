@@ -34,12 +34,12 @@
 
 #include "presentation/ViewState.h"
 
-#include "qt-widgets/GlobeCanvas.h"
+#include "qt-widgets/GlobeAndMapCanvas.h"
 #include "qt-widgets/ViewportWindow.h"
 
 
 GPlatesCanvasTools::ZoomGlobe::ZoomGlobe(
-		GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+		GPlatesQtWidgets::GlobeAndMapCanvas &globe_canvas_,
 		GPlatesQtWidgets::ViewportWindow &viewport_window_) :
 	GlobeCanvasTool(globe_canvas_, viewport_window_.get_view_state().get_globe_view_operation()),
 	d_viewport_window(&viewport_window_),
@@ -80,8 +80,7 @@ void
 GPlatesCanvasTools::ZoomGlobe::handle_left_click(
 		int screen_width,
 		int screen_height,
-		double click_screen_x,
-		double click_screen_y,
+		const QPointF &click_screen_position,
 		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
 		bool is_on_globe)
 {
@@ -94,8 +93,7 @@ void
 GPlatesCanvasTools::ZoomGlobe::handle_shift_left_click(
 		int screen_width,
 		int screen_height,
-		double click_screen_x,
-		double click_screen_y,
+		const QPointF &click_screen_position,
 		const GPlatesMaths::PointOnSphere &click_pos_on_globe,
 		bool is_on_globe)
 {

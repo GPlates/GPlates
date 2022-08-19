@@ -53,7 +53,7 @@ namespace GPlatesOpenGL
 namespace GPlatesGui
 {
 	/**
-	 * Holds the state for MapCanvas (analogous to the Globe class for GlobeCanvas).
+	 * Holds the state for map view (analogous to the Globe class for the globe view).
 	 */
 	class Map
 	{

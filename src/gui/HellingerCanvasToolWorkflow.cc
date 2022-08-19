@@ -25,14 +25,18 @@
 #include "canvas-tools/CanvasToolAdapterForGlobe.h"
 #include "canvas-tools/CanvasToolAdapterForMap.h"
 #include "canvas-tools/SelectHellingerGeometries.h"
+
 #include "presentation/ViewState.h"
-#include "qt-widgets/GlobeCanvas.h"
-#include "qt-widgets/MapCanvas.h"
+
+#include "qt-widgets/GlobeAndMapCanvas.h"
+#include "qt-widgets/GlobeAndMapWidget.h"
 #include "qt-widgets/ViewportWindow.h"
+
 #include "view-operations/RenderedGeometryCollection.h"
 
 #include "Dialogs.h"
 #include "HellingerCanvasToolWorkflow.h"
+
 
 namespace GPlatesGui
 {
@@ -52,8 +56,7 @@ GPlatesGui::HellingerCanvasToolWorkflow::HellingerCanvasToolWorkflow(
 		GPlatesPresentation::ViewState &view_state,
 		GPlatesQtWidgets::ViewportWindow &viewport_window) :
 	CanvasToolWorkflow(
-			viewport_window.globe_canvas(),
-			viewport_window.map_canvas(),
+			viewport_window.globe_and_map_canvas(),
 			CanvasToolWorkflows::WORKFLOW_HELLINGER,
 			// The tool to start off with...
 			CanvasToolWorkflows::TOOL_SELECT_HELLINGER_GEOMETRIES),
@@ -91,13 +94,13 @@ GPlatesGui::HellingerCanvasToolWorkflow::create_canvas_tools(
 	d_globe_select_hellinger_geometries_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					select_hellinger_geometries_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_select_hellinger_geometries_tool.reset(
 			new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					select_hellinger_geometries_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 
 
@@ -116,13 +119,13 @@ GPlatesGui::HellingerCanvasToolWorkflow::create_canvas_tools(
 	d_globe_adjust_pole_estimate_tool.reset(
 				new GPlatesCanvasTools::CanvasToolAdapterForGlobe(
 					adjust_pole_estimate_tool,
-					viewport_window.globe_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_globe_view_operation()));
 	// For the map view.
 	d_map_adjust_pole_estimate_tool.reset(
 				new GPlatesCanvasTools::CanvasToolAdapterForMap(
 					adjust_pole_estimate_tool,
-					viewport_window.map_canvas(),
+					viewport_window.globe_and_map_canvas(),
 					view_state.get_map_view_operation()));
 
 }

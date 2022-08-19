@@ -31,7 +31,7 @@
 
 namespace GPlatesQtWidgets
 {
-	class MapCanvas;
+	class GlobeAndMapCanvas;
 	class ViewportWindow;
 }
 
@@ -52,7 +52,7 @@ namespace GPlatesCanvasTools
 		 * Create a ChangeLightDirectionMap instance.
 		 */
 		ChangeLightDirectionMap(
-				GPlatesQtWidgets::MapCanvas &map_canvas_,
+				GPlatesQtWidgets::GlobeAndMapCanvas &map_canvas_,
 				GPlatesQtWidgets::ViewportWindow &viewport_window_);
 
 	private:

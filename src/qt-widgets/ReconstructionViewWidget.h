@@ -69,14 +69,12 @@ namespace GPlatesGui
 
 namespace GPlatesQtWidgets
 {
+	class GlobeAndMapCanvas;
 	class GlobeAndMapWidget;
-	class GlobeCanvas;
 	class AnimateControlWidget;
 	class ZoomControlWidget;
 	class TimeControlWidget;
-	class MapCanvas;
 	class ProjectionControlWidget;
-	class SceneView;
 	class TaskPanel;
 	class ViewportWindow;
 
@@ -109,23 +107,6 @@ namespace GPlatesQtWidgets
 		insert_task_panel(
 				GPlatesQtWidgets::TaskPanel *task_panel);
 
-		GlobeCanvas &
-		globe_canvas();
-
-		const GlobeCanvas &
-		globe_canvas() const;
-
-		MapCanvas &
-		map_canvas();
-
-		const MapCanvas &
-		map_canvas() const;
-
-		SceneView &
-		active_view();
-
-		const SceneView &
-		active_view() const;
 
 		GPlatesGui::Camera &
 		get_active_camera();
@@ -133,11 +114,20 @@ namespace GPlatesQtWidgets
 		const GPlatesGui::Camera &
 		get_active_camera() const;
 
+
 		GlobeAndMapWidget &
 		globe_and_map_widget();
 
 		const GlobeAndMapWidget &
 		globe_and_map_widget() const;
+
+
+		GlobeAndMapCanvas &
+		globe_and_map_canvas();
+
+		const GlobeAndMapCanvas &
+		globe_and_map_canvas() const;
+
 
 		bool
 		globe_is_active();
@@ -157,17 +147,9 @@ namespace GPlatesQtWidgets
 		update_mouse_position_on_globe(
 				GPlatesMaths::PointOnSphere position_on_globe,
 				bool is_on_globe);
-
-		void
-		update_mouse_position_on_map(
-				GPlatesMaths::PointOnSphere position_on_globe,
-				bool is_on_globe);
 		
 		void
 		activate_zoom_spinbox();
-
-		void
-		handle_update_tools_and_status_message();
 
 	Q_SIGNALS:
 

@@ -35,7 +35,7 @@
 
 namespace GPlatesQtWidgets
 {
-	class MapCanvas;
+	class GlobeAndMapCanvas;
 }
 
 namespace GPlatesViewOperations
@@ -62,7 +62,7 @@ namespace GPlatesGui
 		 */
 		explicit
 		MapCanvasTool(
-				GPlatesQtWidgets::MapCanvas &map_canvas_,
+				GPlatesQtWidgets::GlobeAndMapCanvas &map_canvas_,
 				GPlatesViewOperations::MapViewOperation &map_view_operation_);
 
 		virtual
@@ -623,10 +623,10 @@ namespace GPlatesGui
 
 
 		/**
-		* Handle a mouse movement when left mouse-button is NOT down.
-		*
-		* This function should be invoked in response to intermediate updates of the
-		* mouse-pointer position (as the mouse-pointer is moved about).
+		 * Handle a mouse movement when left mouse-button is NOT down.
+		 *
+		 * This function should be invoked in response to intermediate updates of the
+		 * mouse-pointer position (as the mouse-pointer is moved about).
 		 *
 		 * @a screen_position is the position on the screen (viewport window).
 		 * @a map_position is position on the map plane (z=0), or none if not on plane.
@@ -651,7 +651,7 @@ namespace GPlatesGui
 
 	protected:
 
-		GPlatesQtWidgets::MapCanvas &
+		GPlatesQtWidgets::GlobeAndMapCanvas &
 		map_canvas() const
 		{
 			return d_map_canvas;
@@ -736,7 +736,7 @@ namespace GPlatesGui
 	private:
 
 		//! The map canvas.
-		GPlatesQtWidgets::MapCanvas &d_map_canvas;
+		GPlatesQtWidgets::GlobeAndMapCanvas &d_map_canvas;
 
 		/**
 		 * Used to orient/tilt the map view (converts mouse drags to map camera view changes).

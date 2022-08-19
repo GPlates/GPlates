@@ -29,14 +29,16 @@
 #include <QColorDialog>
 #include <QHeaderView>
 
-#include "SceneView.h"
-#include "ReconstructionViewWidget.h"
 #include "DrawStyleDialog.h"
 
+#include "GlobeAndMapWidget.h"
 #include "PythonArgumentWidget.h"
 #include "QtWidgetUtils.h"
+#include "ReconstructionViewWidget.h"
 #include "VisualLayersComboBox.h"
+
 #include "app-logic/PropertyExtractors.h"
+
 #include "file-io/CptReader.h"
 #include "file-io/ReadErrorAccumulation.h"
 
@@ -54,10 +56,6 @@
 #include "presentation/VisualLayerRegistry.h"
 
 #include "view-operations/RenderedGeometryCollection.h"
-
-#include "GlobeAndMapWidget.h"
-#include "GlobeCanvas.h"
-#include "MapCanvas.h"
 
 
 GPlatesQtWidgets::DrawStyleDialog::DrawStyleDialog(

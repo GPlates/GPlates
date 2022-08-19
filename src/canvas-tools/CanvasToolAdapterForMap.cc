@@ -27,12 +27,12 @@
 
 #include "CanvasToolAdapterForMap.h"
 
-#include "qt-widgets/MapCanvas.h"
+#include "qt-widgets/GlobeAndMapCanvas.h"
 
 
 GPlatesCanvasTools::CanvasToolAdapterForMap::CanvasToolAdapterForMap(
 		const CanvasTool::non_null_ptr_type &canvas_tool_ptr,
-		GPlatesQtWidgets::MapCanvas &map_canvas_,
+		GPlatesQtWidgets::GlobeAndMapCanvas &map_canvas_,
 		GPlatesViewOperations::MapViewOperation &map_view_operation_) :
 	MapCanvasTool(map_canvas_, map_view_operation_),
 	d_canvas_tool_ptr(canvas_tool_ptr)

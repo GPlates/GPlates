@@ -35,7 +35,7 @@
 
 namespace GPlatesQtWidgets
 {
-	class GlobeCanvas;
+	class GlobeAndMapCanvas;
 }
 
 namespace GPlatesViewOperations
@@ -45,7 +45,6 @@ namespace GPlatesViewOperations
 
 namespace GPlatesCanvasTools
 {
-
 	/**
 	 * Adapter class for CanvasTool -> GlobeCanvasTool
 	 */
@@ -60,7 +59,7 @@ namespace GPlatesCanvasTools
 		 */
 		CanvasToolAdapterForGlobe(
 				const CanvasTool::non_null_ptr_type &canvas_tool_ptr,
-				GPlatesQtWidgets::GlobeCanvas &globe_canvas_,
+				GPlatesQtWidgets::GlobeAndMapCanvas &globe_canvas_,
 				GPlatesViewOperations::GlobeViewOperation &globe_view_operation_);
 		
 
@@ -74,247 +73,213 @@ namespace GPlatesCanvasTools
 		handle_left_press(
 				int screen_width,
 				int screen_height,
-				double press_screen_x,
-				double press_screen_y,
-				const GPlatesMaths::PointOnSphere &press_pos_on_globe,
+				const QPointF &press_screen_position,
+				const GPlatesMaths::PointOnSphere &press_position_on_globe,
 				bool is_on_globe) override;
-
 
 		void
 		handle_left_click(
 				int screen_width,
 				int screen_height,
-				double click_screen_x,
-				double click_screen_y,
-				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+				const QPointF &click_screen_position,
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
 				bool is_on_globe) override;
 
 		void
 		handle_left_drag(
 				int screen_width,
 				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const QPointF &initial_screen_position,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const QPointF &current_screen_position,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
 		handle_left_release_after_drag(
 				int screen_width,
 				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const QPointF &initial_screen_position,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const QPointF &current_screen_position,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
 		handle_shift_left_click(
 				int screen_width,
 				int screen_height,
-				double click_screen_x,
-				double click_screen_y,
-				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+				const QPointF &click_screen_position,
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
 				bool is_on_globe) override;
 
 		void
 		handle_shift_left_drag(
 				int screen_width,
 				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const QPointF &initial_screen_position,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const QPointF &current_screen_position,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
 		handle_shift_left_release_after_drag(
 				int screen_width,
 				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const QPointF &initial_screen_position,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const QPointF &current_screen_position,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
 		handle_alt_left_click(
 				int screen_width,
 				int screen_height,
-				double click_screen_x,
-				double click_screen_y,
-				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+				const QPointF &click_screen_position,
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
 				bool is_on_globe) override;
 
 		void
 		handle_alt_left_drag(
 				int screen_width,
 				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const QPointF &initial_screen_position,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const QPointF &current_screen_position,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
 		handle_alt_left_release_after_drag(
 				int screen_width,
 				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const QPointF &initial_screen_position,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const QPointF &current_screen_position,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
 		handle_ctrl_left_click(
 				int screen_width,
 				int screen_height,
-				double click_screen_x,
-				double click_screen_y,
-				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+				const QPointF &click_screen_position,
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
 				bool is_on_globe) override;
 
 		void
 		handle_ctrl_left_drag(
 				int screen_width,
 				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const QPointF &initial_screen_position,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const QPointF &current_screen_position,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
 		handle_ctrl_left_release_after_drag(
 				int screen_width,
 				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const QPointF &initial_screen_position,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const QPointF &current_screen_position,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
 		handle_shift_ctrl_left_click(
 				int screen_width,
 				int screen_height,
-				double click_screen_x,
-				double click_screen_y,
-				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+				const QPointF &click_screen_position,
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
 				bool is_on_globe) override;
 
 		void
 		handle_shift_ctrl_left_drag(
 				int screen_width,
 				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const QPointF &initial_screen_position,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const QPointF &current_screen_position,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
 		handle_shift_ctrl_left_release_after_drag(
 				int screen_width,
 				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const QPointF &initial_screen_position,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const QPointF &current_screen_position,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
 		handle_alt_ctrl_left_click(
 				int screen_width,
 				int screen_height,
-				double click_screen_x,
-				double click_screen_y,
-				const GPlatesMaths::PointOnSphere &click_pos_on_globe,
+				const QPointF &click_screen_position,
+				const GPlatesMaths::PointOnSphere &click_position_on_globe,
 				bool is_on_globe) override;
 
 		void
 		handle_alt_ctrl_left_drag(
 				int screen_width,
 				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const QPointF &initial_screen_position,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const QPointF &current_screen_position,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
 		handle_alt_ctrl_left_release_after_drag(
 				int screen_width,
 				int screen_height,
-				double initial_screen_x,
-				double initial_screen_y,
-				const GPlatesMaths::PointOnSphere &initial_pos_on_globe,
+				const QPointF &initial_screen_position,
+				const GPlatesMaths::PointOnSphere &initial_position_on_globe,
 				bool was_on_globe,
-				double current_screen_x,
-				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const QPointF &current_screen_position,
+				const GPlatesMaths::PointOnSphere &current_position_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &centre_of_viewport) override;
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
 
 		void
 		handle_move_without_drag(
 				int screen_width,
 				int screen_height,
-				double current_screen_x,
-				double current_screen_y,
-				const GPlatesMaths::PointOnSphere &current_pos_on_globe,
+				const QPointF &screen_position,
+				const GPlatesMaths::PointOnSphere &position_on_globe,
 				bool is_on_globe,
-				const GPlatesMaths::PointOnSphere &_centre_of_viewport) override;
-		
+				const GPlatesMaths::PointOnSphere &centre_of_viewport_on_globe) override;
+	
 	private:
-
-		//! A pointer to the CanvasTool instance that we wrap around
+		//! A pointer to the CanvasTool instance that we wrap.
 		CanvasTool::non_null_ptr_type d_canvas_tool_ptr;
 	};
 }

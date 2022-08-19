@@ -26,8 +26,8 @@
 #include <QAction>
 #include <QVariant>
 
+#include "GlobeAndMapCanvas.h"
 #include "ProjectionControlWidget.h"
-#include "MapCanvas.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
