@@ -48,7 +48,6 @@
 #include "gui/GlobeCamera.h"
 #include "gui/MapCamera.h"
 #include "gui/MapProjection.h"
-#include "gui/Projection.h"
 
 #include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
@@ -275,9 +274,13 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 			SLOT(update_mouse_position_on_globe(GPlatesMaths::PointOnSphere, bool)));
 	QObject::connect(
 			&view_state.get_projection(),
-			SIGNAL(globe_map_projection_changed(const GPlatesGui::Projection &)),
+			SIGNAL(globe_map_projection_changed(
+					const GPlatesGui::Projection::globe_map_projection_type &,
+					const GPlatesGui::Projection::globe_map_projection_type &)),
 			this,
-			SLOT(handle_globe_map_projection_changed(const GPlatesGui::Projection &)));
+			SLOT(handle_globe_map_projection_changed(
+					const GPlatesGui::Projection::globe_map_projection_type &,
+					const GPlatesGui::Projection::globe_map_projection_type &)));
 
 	// Propagate messages up to ViewportWindow
 	QObject::connect(
@@ -295,10 +298,11 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 
 void
 GPlatesQtWidgets::ReconstructionViewWidget::handle_globe_map_projection_changed(
-		const GPlatesGui::Projection &projection)
+		const GPlatesGui::Projection::globe_map_projection_type &old_globe_map_projection,
+		const GPlatesGui::Projection::globe_map_projection_type &globe_map_projection)
 {
 	// Reset the mouse coords label since projection changed.
-	if (projection.get_globe_map_projection().is_viewing_globe_projection())
+	if (globe_map_projection.is_viewing_globe_projection())
 	{
 		d_label_mouse_coords->setText(DEFAULT_MOUSE_COORDS_LABEL_TEXT_FOR_GLOBE);
 	}

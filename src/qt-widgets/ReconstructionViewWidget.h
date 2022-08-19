@@ -39,6 +39,7 @@
 #include "GMenuButton.h"
 #include "ZoomSliderWidget.h"
 
+#include "gui/Projection.h"
 #include "gui/ViewportZoom.h"
 
 #include "maths/LatLonPoint.h"
@@ -64,7 +65,6 @@ namespace GPlatesGui
 {
 	class AnimationController;
 	class Camera;
-	class Projection;
 }
 
 namespace GPlatesQtWidgets
@@ -163,7 +163,8 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_globe_map_projection_changed(
-				const GPlatesGui::Projection &projection);
+				const GPlatesGui::Projection::globe_map_projection_type &old_globe_map_projection,
+				const GPlatesGui::Projection::globe_map_projection_type &globe_map_projection);
 
 	private:
 		

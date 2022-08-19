@@ -43,7 +43,6 @@
 #include "gui/GlobeCamera.h"
 #include "gui/MapCamera.h"
 #include "gui/MapProjection.h"
-#include "gui/Projection.h"
 #include "gui/ProjectionException.h"
 #include "gui/TextOverlay.h"
 #include "gui/VelocityLegendOverlay.h"
@@ -145,9 +144,23 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 	// view projections (switching between orthographic and perspective).
 	QObject::connect(
 			&d_projection,
-			SIGNAL(projection_changed(const GPlatesGui::Projection &)),
+			SIGNAL(globe_map_projection_changed(
+					const GPlatesGui::Projection::globe_map_projection_type &,
+					const GPlatesGui::Projection::globe_map_projection_type &)),
 			this,
-			SLOT(handle_projection_changed(const GPlatesGui::Projection &)));
+			SLOT(handle_globe_map_projection_changed(
+					const GPlatesGui::Projection::globe_map_projection_type &,
+					const GPlatesGui::Projection::globe_map_projection_type &)));
+	// Now handle changes to just the viewport projection.
+	QObject::connect(
+			&d_projection,
+			SIGNAL(viewport_projection_changed(
+					GPlatesGui::Projection::viewport_projection_type,
+					GPlatesGui::Projection::viewport_projection_type)),
+			this,
+			SLOT(handle_viewport_projection_changed(
+					GPlatesGui::Projection::viewport_projection_type,
+					GPlatesGui::Projection::viewport_projection_type)));
 
 	// Update our view whenever the globe and map cameras change.
 	//
@@ -808,68 +821,139 @@ GPlatesQtWidgets::GlobeAndMapCanvas::handle_camera_change()
 
 
 void
-GPlatesQtWidgets::GlobeAndMapCanvas::handle_projection_changed(
-		const GPlatesGui::Projection &projection)
+GPlatesQtWidgets::GlobeAndMapCanvas::handle_globe_map_projection_changed(
+		const GPlatesGui::Projection::globe_map_projection_type &old_globe_map_projection,
+		const GPlatesGui::Projection::globe_map_projection_type &globe_map_projection)
 {
-	const GPlatesGui::Projection::globe_map_projection_type &globe_map_projection = projection.get_globe_map_projection();
-	const GPlatesGui::Projection::viewport_projection_type viewport_projection = projection.get_viewport_projection();
-
 	//
 	// We could be switching from the globe camera to map camera (or vice versa).
 	//
-	// So get the camera view orientation and tilt of the current camera (before the projection change) and
-	// set it on the new camera (after the projection change).
+	// If so, then get the camera view orientation, tilt and viewport projection of the old camera
+	// (before the projection change) and set them on the new camera (after the projection change).
 	//
 	// The view orientation is the combined camera look-at position and the orientation rotation around that look-at position.
 	//
+	// Note: Switching between globe and map cameras (transferring view orientation, tilt and viewport projection)
+	//       doesn't necessarily cause the switched-to camera to emit a 'camera_changed' signal.
+	//       This is because the view orientation, tilt and viewport projection might not have changed.
+	//       This can happen if the user is simply switching back and forth between the globe and map views.
+	//       So we'll detect if the 'camera_changed' signal was NOT emitted and essentially handle it ourself
+	//       (by directly calling our 'handle_camera_changed' slot).
+	//
 
-	if (globe_map_projection.is_viewing_globe_projection())  // Switching to globe projection...
+	// If switching from map to globe projection...
+	if (old_globe_map_projection.is_viewing_map_projection() &&
+		globe_map_projection.is_viewing_globe_projection())
 	{
 		const GPlatesGui::MapCamera &map_camera = d_view_state.get_map_camera();
 		GPlatesGui::GlobeCamera &globe_camera = d_view_state.get_globe_camera();
 
-		// Get *map* camera view orientation and tilt.
+		// Get *map* camera view orientation, tilt and viewport projection.
 		const GPlatesMaths::Rotation map_camera_view_orientation = map_camera.get_view_orientation();
-		const GPlatesMaths::real_t map_camera_view_tilt = map_camera.get_tilt_angle();
+		const GPlatesMaths::real_t map_camera_tilt_angle = map_camera.get_tilt_angle();
+		const GPlatesGui::Projection::viewport_projection_type map_viewport_projection = map_camera.get_viewport_projection();
 
-		// Set the *globe* camera view orientation (look-at position and orientation around it) and tilt.
-		globe_camera.set_view_orientation(map_camera_view_orientation);
-		globe_camera.set_tilt_angle(map_camera_view_tilt);
+		bool emitted_camera_change_signal = false;
 
-		// Set the *globe* camera view projection (orthographic or perspective).
-		globe_camera.set_viewport_projection(viewport_projection);
+		// Set the *globe* camera view orientation, tilt and viewport projection.
+		// Also detect if the 'camera_change' signal was emitted.
+		if (map_camera_view_orientation.quat() != globe_camera.get_view_orientation().quat())
+		{
+			globe_camera.set_view_orientation(map_camera_view_orientation);
+			emitted_camera_change_signal = true;
+		}
+		if (map_camera_tilt_angle != globe_camera.get_tilt_angle())
+		{
+			globe_camera.set_tilt_angle(map_camera_tilt_angle);
+			emitted_camera_change_signal = true;
+		}
+		if (map_viewport_projection != globe_camera.get_viewport_projection())
+		{
+			globe_camera.set_viewport_projection(map_viewport_projection);
+			emitted_camera_change_signal = true;
+		}
+
+		if (!emitted_camera_change_signal)
+		{
+			// The globe camera didn't actually change (since the last time it was active).
+			// But we've switched from the map camera. That's a camera change, so we need to handle it.
+			handle_camera_change();
+		}
 	}
-	else // Switching to map projection...
+	// else if switching from globe to map projection...
+	else if (old_globe_map_projection.is_viewing_globe_projection() &&
+			globe_map_projection.is_viewing_map_projection())
 	{
 		const GPlatesGui::GlobeCamera &globe_camera = d_view_state.get_globe_camera();
 		GPlatesGui::MapCamera &map_camera = d_view_state.get_map_camera();
 
-		// Get *globe* camera view orientation and tilt.
+		// Get *globe* camera view orientation, tilt and viewport projection.
 		const GPlatesMaths::Rotation globe_camera_view_orientation = globe_camera.get_view_orientation();
-		const GPlatesMaths::real_t globe_camera_view_tilt = globe_camera.get_tilt_angle();
+		const GPlatesMaths::real_t globe_camera_tilt_angle = globe_camera.get_tilt_angle();
+		const GPlatesGui::Projection::viewport_projection_type globe_viewport_projection = globe_camera.get_viewport_projection();
 
-		// Set the *map* camera view orientation (look-at position and orientation around it) and tilt.
-		map_camera.set_view_orientation(globe_camera_view_orientation);
-		map_camera.set_tilt_angle(globe_camera_view_tilt);
+		bool emitted_camera_change_signal = false;
 
-		// Set the *map* camera view projection (orthographic or perspective).
-		map_camera.set_viewport_projection(viewport_projection);
+		// Set the *map* camera view orientation, tilt and viewport projection.
+		// Also detect if the 'camera_change' signal was emitted.
+		if (globe_camera_view_orientation.quat() != map_camera.get_view_orientation().quat())
+		{
+			map_camera.set_view_orientation(globe_camera_view_orientation);
+			emitted_camera_change_signal = true;
+		}
+		if (globe_camera_tilt_angle != map_camera.get_tilt_angle())
+		{
+			map_camera.set_tilt_angle(globe_camera_tilt_angle);
+			emitted_camera_change_signal = true;
+		}
+		if (globe_viewport_projection != map_camera.get_viewport_projection())
+		{
+			map_camera.set_viewport_projection(globe_viewport_projection);
+			emitted_camera_change_signal = true;
+		}
 
+		// Update the map projection.
+		//
+		// It shouldn't have changed since the last time the map camera was active, but just in case.
+		//
+		// Note: This doesn't emit a 'camera_changed' signal.
+		d_view_state.get_map_projection().set_projection_type(
+				globe_map_projection.get_map_projection_type());
+		d_view_state.get_map_projection().set_central_meridian(
+				globe_map_projection.get_map_central_meridian());
+
+		if (!emitted_camera_change_signal)
+		{
+			// The map camera didn't actually change (since the last time it was active).
+			// But we've switched from the globe camera. That's a camera change, so we need to handle it.
+			handle_camera_change();
+		}
+	}
+	else // switching between two map projections and/or changing central meridian in one map projection...
+	{
 		// Update the map projection.
 		d_view_state.get_map_projection().set_projection_type(
 				globe_map_projection.get_map_projection_type());
 		d_view_state.get_map_projection().set_central_meridian(
 				globe_map_projection.get_map_central_meridian());
-	}
 
-	// We've switched between globe and map cameras so make sure we handle that.
+		// Something changed in the map projection (otherwise we wouldn't be here).
+		// So we need to handle that.
+		handle_camera_change();
+	}
+}
+
+
+void
+GPlatesQtWidgets::GlobeAndMapCanvas::handle_viewport_projection_changed(
+		GPlatesGui::Projection::viewport_projection_type old_viewport_projection,
+		GPlatesGui::Projection::viewport_projection_type viewport_projection)
+{
+	// Change the viewport projection (orthographic or perspective) of the active camera.
 	//
-	// Note: Switching between globe and map cameras and transferring the view orientation and tilt
-	//       (done above) doesn't necessarily cause the switched-to camera to emit a 'camera_changed'
-	//       signal because the view orientation and tilt might not have changed. This can happen
-	//       if the user is simply switching back and forth between globe and map view. So we can't
-	//       rely on the 'camera_changed' signal here. Instead we directly call the associated slot.
-	handle_camera_change();
+	// Note: This will cause the active camera to emit the 'camera_changed' signal which
+	//       will call our 'handle_camera_change' slot.
+	get_active_camera().set_viewport_projection(viewport_projection);
 }
 
 

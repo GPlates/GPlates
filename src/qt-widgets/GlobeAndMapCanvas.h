@@ -42,6 +42,7 @@
 
 #include "gui/Globe.h"
 #include "gui/Map.h"
+#include "gui/Projection.h"
 
 #include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
@@ -58,7 +59,6 @@
 namespace GPlatesGui
 {
 	class Camera;
-	class Projection;
 	class TextOverlay;
 	class VelocityLegendOverlay;
 }
@@ -415,8 +415,14 @@ namespace GPlatesQtWidgets
 		handle_camera_change();
 
 		void
-		handle_projection_changed(
-				const GPlatesGui::Projection &projection);
+		handle_globe_map_projection_changed(
+				const GPlatesGui::Projection::globe_map_projection_type &old_globe_map_projection,
+				const GPlatesGui::Projection::globe_map_projection_type &globe_map_projection);
+
+		void
+		handle_viewport_projection_changed(
+				GPlatesGui::Projection::viewport_projection_type old_viewport_projection,
+				GPlatesGui::Projection::viewport_projection_type viewport_projection);
 
 	private:
 

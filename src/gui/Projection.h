@@ -129,6 +129,14 @@ namespace GPlatesGui
 				return boost::get<globe_projection_type>(d_projection_type);
 			}
 
+
+			//! Returns true if viewing map (otherwise viewing globe).
+			bool
+			is_viewing_map_projection() const
+			{
+				return !is_viewing_globe_projection();
+			}
+
 			/**
 			 * Returns map projection (if viewing map), otherwise throws boost::bad_get).
 			 *
@@ -196,13 +204,16 @@ namespace GPlatesGui
 		{
 			if (globe_map_projection != d_globe_map_projection)
 			{
-				Q_EMIT projection_about_to_change(*this);
-				Q_EMIT globe_map_projection_about_to_change(*this);
+				Q_EMIT projection_about_to_change();
+				Q_EMIT globe_map_projection_about_to_change();
 
+				const globe_map_projection_type old_globe_map_projection = d_globe_map_projection;
 				d_globe_map_projection = globe_map_projection;
 
-				Q_EMIT globe_map_projection_changed(*this);
-				Q_EMIT projection_changed(*this);
+				Q_EMIT globe_map_projection_changed(old_globe_map_projection, d_globe_map_projection);
+				Q_EMIT projection_changed(
+						old_globe_map_projection, d_viewport_projection,  // old
+						d_globe_map_projection, d_viewport_projection);   // new
 			}
 		}
 
@@ -214,13 +225,16 @@ namespace GPlatesGui
 		{
 			if (viewport_projection != d_viewport_projection)
 			{
-				Q_EMIT projection_about_to_change(*this);
-				Q_EMIT viewport_projection_about_to_change(*this);
+				Q_EMIT projection_about_to_change();
+				Q_EMIT viewport_projection_about_to_change();
 
+				const viewport_projection_type old_viewport_projection = d_viewport_projection;
 				d_viewport_projection = viewport_projection;
 
-				Q_EMIT viewport_projection_changed(*this);
-				Q_EMIT projection_changed(*this);
+				Q_EMIT viewport_projection_changed(old_viewport_projection, d_viewport_projection);
+				Q_EMIT projection_changed(
+						d_globe_map_projection, old_viewport_projection,  // old
+						d_globe_map_projection, d_viewport_projection);   // new
 			}
 		}
 
@@ -236,34 +250,50 @@ namespace GPlatesGui
 
 			if (has_globe_map_projection_changed || has_viewport_projection_changed)
 			{
-				Q_EMIT projection_about_to_change(*this);
-				if (has_globe_map_projection_changed)
+				if (has_globe_map_projection_changed && has_viewport_projection_changed)
 				{
-					Q_EMIT globe_map_projection_about_to_change(*this);
-				}
-				if (has_viewport_projection_changed)
-				{
-					Q_EMIT viewport_projection_about_to_change(*this);
-				}
+					Q_EMIT projection_about_to_change();
+					Q_EMIT globe_map_projection_about_to_change();
+					Q_EMIT viewport_projection_about_to_change();
 
-				if (has_globe_map_projection_changed)
-				{
+					const globe_map_projection_type old_globe_map_projection = d_globe_map_projection;
 					d_globe_map_projection = globe_map_projection;
-				}
-				if (has_viewport_projection_changed)
-				{
-					d_viewport_projection = viewport_projection;
-				}
 
-				if (has_viewport_projection_changed)
-				{
-					Q_EMIT viewport_projection_changed(*this);
+					const viewport_projection_type old_viewport_projection = d_viewport_projection;
+					d_viewport_projection = viewport_projection;
+
+					Q_EMIT viewport_projection_changed(old_viewport_projection, d_viewport_projection);
+					Q_EMIT globe_map_projection_changed(old_globe_map_projection, d_globe_map_projection);
+					Q_EMIT projection_changed(
+							old_globe_map_projection, old_viewport_projection,  // old
+							d_globe_map_projection, d_viewport_projection);     // new
 				}
-				if (has_globe_map_projection_changed)
+				else if (has_globe_map_projection_changed)  // but not has_viewport_projection_changed
 				{
-					Q_EMIT globe_map_projection_changed(*this);
+					Q_EMIT projection_about_to_change();
+					Q_EMIT globe_map_projection_about_to_change();
+
+					const globe_map_projection_type old_globe_map_projection = d_globe_map_projection;
+					d_globe_map_projection = globe_map_projection;
+
+					Q_EMIT globe_map_projection_changed(old_globe_map_projection, d_globe_map_projection);
+					Q_EMIT projection_changed(
+							old_globe_map_projection, d_viewport_projection,  // old
+							d_globe_map_projection, d_viewport_projection);     // new
 				}
-				Q_EMIT projection_changed(*this);
+				else // has_viewport_projection_changed but not has_globe_map_projection_changed
+				{
+					Q_EMIT projection_about_to_change();
+					Q_EMIT viewport_projection_about_to_change();
+
+					const viewport_projection_type old_viewport_projection = d_viewport_projection;
+					d_viewport_projection = viewport_projection;
+
+					Q_EMIT viewport_projection_changed(old_viewport_projection, d_viewport_projection);
+					Q_EMIT projection_changed(
+							d_globe_map_projection, old_viewport_projection,  // old
+							d_globe_map_projection, d_viewport_projection);   // new
+				}
 			}
 		}
 
@@ -287,37 +317,49 @@ namespace GPlatesGui
 		}
 
 	Q_SIGNALS:
-		//! Anything about the projection (globe/map or viewport projection) is about to change.
-		void
-		projection_about_to_change(
-				const GPlatesGui::Projection &projection);
+		// NOTE: all signals/slots should use namespace scope for all arguments
+		//       otherwise differences between signals and slots will cause Qt
+		//       to not be able to connect them at runtime.
 
-		//! Anything about the projection (globe/map or viewport projection) just changed.
+		//! Anything about the projection (globe/map and/or viewport projection) is about to change.
+		void
+		projection_about_to_change();
+
+		//! Anything about the projection (globe/map and/or viewport projection) just changed.
 		void
 		projection_changed(
-				const GPlatesGui::Projection &projection);
+				// Old...
+				const GPlatesGui::Projection::globe_map_projection_type &old_globe_map_projection,
+				GPlatesGui::Projection::viewport_projection_type old_viewport_projection,
+				// New...
+				const GPlatesGui::Projection::globe_map_projection_type &globe_map_projection,
+				GPlatesGui::Projection::viewport_projection_type viewport_projection);
 
 
 		//! Globe/map projection is about to change.
 		void
-		globe_map_projection_about_to_change(
-				const GPlatesGui::Projection &projection);
+		globe_map_projection_about_to_change();
 
 		//! Globe/map projection just changed.
 		void
 		globe_map_projection_changed(
-				const GPlatesGui::Projection &projection);
+				// Old...
+				const GPlatesGui::Projection::globe_map_projection_type &old_globe_map_projection,
+				// New...
+				const GPlatesGui::Projection::globe_map_projection_type &globe_map_projection);
 
 
 		//! Viewport projection is about to change.
 		void
-		viewport_projection_about_to_change(
-				const GPlatesGui::Projection &projection);
+		viewport_projection_about_to_change();
 
 		//! Viewport projection just changed.
 		void
 		viewport_projection_changed(
-				const GPlatesGui::Projection &projection);
+				// Old...
+				GPlatesGui::Projection::viewport_projection_type old_viewport_projection,
+				// New...
+				GPlatesGui::Projection::viewport_projection_type viewport_projection);
 
 	private:
 		globe_map_projection_type d_globe_map_projection;

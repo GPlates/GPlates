@@ -32,8 +32,6 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
-#include "gui/Projection.h"
-
 
 GPlatesQtWidgets::ProjectionControlWidget::ProjectionControlWidget(
 		GPlatesGui::Projection &projection,
@@ -96,11 +94,22 @@ GPlatesQtWidgets::ProjectionControlWidget::ProjectionControlWidget(
 	// Listen for projection changes that may occur from some
 	// other source, and update the combobox appropriately.
 	QObject::connect(
-			&d_projection, SIGNAL(globe_map_projection_changed(const GPlatesGui::Projection &)),
-			this, SLOT(handle_globe_map_projection_changed(const GPlatesGui::Projection &)));
+			&d_projection,
+			SIGNAL(globe_map_projection_changed(
+					const GPlatesGui::Projection::globe_map_projection_type &,
+					const GPlatesGui::Projection::globe_map_projection_type &)),
+			this, SLOT(handle_globe_map_projection_changed(
+					const GPlatesGui::Projection::globe_map_projection_type &,
+					const GPlatesGui::Projection::globe_map_projection_type &)));
 	QObject::connect(
-			&d_projection, SIGNAL(viewport_projection_changed(const GPlatesGui::Projection &)),
-			this, SLOT(handle_viewport_projection_changed(const GPlatesGui::Projection &)));
+			&d_projection,
+			SIGNAL(viewport_projection_changed(
+					GPlatesGui::Projection::viewport_projection_type,
+					GPlatesGui::Projection::viewport_projection_type)),
+			this,
+			SLOT(handle_viewport_projection_changed(
+					GPlatesGui::Projection::viewport_projection_type,
+					GPlatesGui::Projection::viewport_projection_type)));
 }
 
 
@@ -248,10 +257,9 @@ GPlatesQtWidgets::ProjectionControlWidget::handle_globe_map_projection_shortcut_
 
 void
 GPlatesQtWidgets::ProjectionControlWidget::handle_globe_map_projection_changed(
-		const GPlatesGui::Projection &projection)
+		const GPlatesGui::Projection::globe_map_projection_type &old_globe_map_projection,
+		const GPlatesGui::Projection::globe_map_projection_type &globe_map_projection)
 {
-	const GPlatesGui::Projection::globe_map_projection_type &globe_map_projection = projection.get_globe_map_projection();
-
 	// Get the globe/map projection index (it's either a globe or map projection).
 	unsigned int projection_index;
 	if (globe_map_projection.is_viewing_globe_projection())
@@ -278,10 +286,11 @@ GPlatesQtWidgets::ProjectionControlWidget::handle_globe_map_projection_changed(
 
 void
 GPlatesQtWidgets::ProjectionControlWidget::handle_viewport_projection_changed(
-		const GPlatesGui::Projection &projection)
+		GPlatesGui::Projection::viewport_projection_type old_viewport_projection,
+		GPlatesGui::Projection::viewport_projection_type viewport_projection)
 {
 	// Get the viewport projection index of the viewport projection.
-	const unsigned int projection_index = projection.get_viewport_projection();
+	const unsigned int projection_index = viewport_projection;
 
 	// Now we can quickly select the appropriate line of the combobox by finding our viewport projection ID
 	// (and not worrying about the text label).

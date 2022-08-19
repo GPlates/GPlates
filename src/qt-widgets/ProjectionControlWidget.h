@@ -32,11 +32,8 @@
 
 #include "ui_ProjectionControlWidgetUi.h"
 
+#include "gui/Projection.h"
 
-namespace GPlatesGui
-{
-	class Projection;
-}
 
 namespace GPlatesQtWidgets
 {
@@ -72,11 +69,13 @@ namespace GPlatesQtWidgets
 	public Q_SLOTS:
 		void
 		handle_globe_map_projection_changed(
-				const GPlatesGui::Projection &);
+				const GPlatesGui::Projection::globe_map_projection_type &,
+				const GPlatesGui::Projection::globe_map_projection_type &);
 
 		void
 		handle_viewport_projection_changed(
-				const GPlatesGui::Projection &);
+				GPlatesGui::Projection::viewport_projection_type old_viewport_projection,
+				GPlatesGui::Projection::viewport_projection_type viewport_projection);
 
 	private:
 
