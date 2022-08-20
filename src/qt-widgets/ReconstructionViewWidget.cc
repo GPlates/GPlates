@@ -59,14 +59,13 @@
 
 namespace
 {
+	// Camera is always *on* the globe/map.
 	const QString
-	DEFAULT_MOUSE_COORDS_LABEL_TEXT_FOR_GLOBE = QObject::tr("(lat: ---.-- ; lon: ---.-- ) (off globe)");
+	INITIAL_CAMERA_COORDS_LABEL_TEXT = QObject::tr("(lat: ---.-- ; lon: ---.-- )");
 
+	// Mouse can be off the globe/map. And initially the globe view is active.
 	const QString
-	DEFAULT_MOUSE_COORDS_LABEL_TEXT_FOR_MAP = QObject::tr("(lat: ---.-- ; lon: ---.-- ) (off map)");
-
-	const QString
-	DEFAULT_CAMERA_COORDS_LABEL_TEXT = QObject::tr("(lat: ---.-- ; lon: ---.-- )");
+	INITIAL_MOUSE_COORDS_LABEL_TEXT = QObject::tr("(lat: ---.-- ; lon: ---.-- ) (off globe)");
 
 	/**
 	 * Wraps Qt widget up inside a frame suitably styled for ReconstructionViewWidget.
@@ -143,7 +142,7 @@ namespace
 	QLabel *
 	new_camera_coords_label()
 	{
-		QLabel *label_ptr = new QLabel(DEFAULT_CAMERA_COORDS_LABEL_TEXT);
+		QLabel *label_ptr = new QLabel(INITIAL_CAMERA_COORDS_LABEL_TEXT);
 		
 		QSizePolicy size(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred);
 		size.setHorizontalStretch(0);
@@ -161,7 +160,7 @@ namespace
 	QLabel *
 	new_mouse_coords_label()
 	{
-		QLabel *label_ptr = new QLabel(DEFAULT_MOUSE_COORDS_LABEL_TEXT_FOR_GLOBE);
+		QLabel *label_ptr = new QLabel(INITIAL_MOUSE_COORDS_LABEL_TEXT);
 		
 		QSizePolicy size(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred);
 		size.setHorizontalStretch(0);
@@ -256,12 +255,12 @@ GPlatesQtWidgets::ReconstructionViewWidget::ReconstructionViewWidget(
 
 	// Handle signals to recalculate the camera position
 	QObject::connect(
-			&(view_state.get_globe_camera()),
+			&view_state.get_globe_camera(),
 			SIGNAL(camera_changed()),
 			this,
 			SLOT(recalc_camera_position()));
 	QObject::connect(
-			&(view_state.get_map_camera()),
+			&view_state.get_map_camera(),
 			SIGNAL(camera_changed()),
 			this,
 			SLOT(recalc_camera_position()));
@@ -301,16 +300,6 @@ GPlatesQtWidgets::ReconstructionViewWidget::handle_globe_map_projection_changed(
 		const GPlatesGui::Projection::globe_map_projection_type &old_globe_map_projection,
 		const GPlatesGui::Projection::globe_map_projection_type &globe_map_projection)
 {
-	// Reset the mouse coords label since projection changed.
-	if (globe_map_projection.is_viewing_globe_projection())
-	{
-		d_label_mouse_coords->setText(DEFAULT_MOUSE_COORDS_LABEL_TEXT_FOR_GLOBE);
-	}
-	else
-	{
-		d_label_mouse_coords->setText(DEFAULT_MOUSE_COORDS_LABEL_TEXT_FOR_MAP);
-	}
-
 	// Recalculate the camera coords label since projection changed.
 	recalc_camera_position();
 
