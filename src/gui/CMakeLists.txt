@@ -187,6 +187,7 @@ set(srcs
     MapGrid.h
     MapProjection.cc
     MapProjection.h
+    MapProjectionException.h
     MapRenderedGeometryCollectionPainter.cc
     MapRenderedGeometryCollectionPainter.h
     MapRenderedGeometryLayerPainter.cc
@@ -200,7 +201,6 @@ set(srcs
     PoleManipulationCanvasToolWorkflow.cc
     PoleManipulationCanvasToolWorkflow.h
     Projection.h
-    ProjectionException.h
     PythonConfiguration.cc
     PythonConfiguration.h
     PythonConsoleHistory.cc

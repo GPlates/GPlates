@@ -752,7 +752,7 @@ GPlatesGui::Dialogs::pop_up_set_projection_dialog()
 					dialog.get_globe_map_projection(),
 					dialog.get_viewport_projection());
 		}
-		catch(GPlatesGui::ProjectionException &e)
+		catch(GPlatesGui::MapProjectionException &e)
 		{
 			qWarning() << e;
 		}

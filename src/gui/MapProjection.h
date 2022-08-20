@@ -32,7 +32,7 @@
 #include <boost/optional.hpp>
 #include <QPointF>
 
-#include "ProjectionException.h"
+#include "MapProjectionException.h"
 
 #include "file-io/Proj.h"
 

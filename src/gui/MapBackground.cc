@@ -34,7 +34,7 @@
 #include "MapBackground.h"
 
 #include "Colour.h"
-#include "ProjectionException.h"
+#include "MapProjectionException.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -189,7 +189,7 @@ namespace
 				}
 			}
 		}
-		catch (const GPlatesGui::ProjectionException &exc)
+		catch (const GPlatesGui::MapProjectionException &exc)
 		{
 			// Ignore exception.
 			qWarning() << exc;

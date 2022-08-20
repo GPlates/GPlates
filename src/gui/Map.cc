@@ -118,7 +118,7 @@ GPlatesGui::Map::paint(
 		// Render the grid lines on the map.
 		d_grid->paint(gl, view_projection);
 	}
-	catch (const GPlatesGui::ProjectionException &exc)
+	catch (const GPlatesGui::MapProjectionException &exc)
 	{
 		// Ignore.
 		qWarning() << exc;

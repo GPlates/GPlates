@@ -41,7 +41,6 @@
 #include "gui/GlobeCamera.h"
 #include "gui/MapCamera.h"
 #include "gui/MapProjection.h"
-#include "gui/ProjectionException.h"
 #include "gui/TextOverlay.h"
 #include "gui/VelocityLegendOverlay.h"
 #include "gui/ViewportZoom.h"

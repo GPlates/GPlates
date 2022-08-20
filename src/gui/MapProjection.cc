@@ -224,14 +224,14 @@ GPlatesGui::MapProjection::set_projection_type(
 	{
 		QString message = QString("Proj4 initialisation failed. ");
 		message.append(projection_args[0]);
-		throw ProjectionException(GPLATES_EXCEPTION_SOURCE,message.toStdString().c_str());
+		throw MapProjectionException(GPLATES_EXCEPTION_SOURCE,message.toStdString().c_str());
 	}
 
 	if (!(d_latlon_projection = pj_init(num_latlon_args,latlon_args)))
 	{
 		QString message = QString("Proj4 initialisation failed. ");
 		message.append(latlon_args[0]);
-		throw ProjectionException(GPLATES_EXCEPTION_SOURCE,message.toStdString().c_str());
+		throw MapProjectionException(GPLATES_EXCEPTION_SOURCE,message.toStdString().c_str());
 	}
 
 #else // using proj5+...
@@ -267,7 +267,7 @@ GPlatesGui::MapProjection::set_projection_type(
 			QString message = QString("Proj initialisation failed: %1: %2")
 				.arg(projection_args[0])
 				.arg(proj_errno_string(proj_context_errno(PJ_DEFAULT_CTX)));
-			throw ProjectionException(GPLATES_EXCEPTION_SOURCE, message.toStdString().c_str());
+			throw MapProjectionException(GPLATES_EXCEPTION_SOURCE, message.toStdString().c_str());
 		}
 	}
 	else // proj6+...
@@ -281,7 +281,7 @@ GPlatesGui::MapProjection::set_projection_type(
 			QString message = QString("Proj initialisation failed: %1: %2")
 				.arg(projection_args[0])
 				.arg(proj_errno_string(proj_context_errno(PJ_DEFAULT_CTX)));
-			throw ProjectionException(GPLATES_EXCEPTION_SOURCE, message.toStdString().c_str());
+			throw MapProjectionException(GPLATES_EXCEPTION_SOURCE, message.toStdString().c_str());
 		}
 
 #if 0 // For proj6.1+, to get a consistent longitude/latitude ordering, but we don't need this...
@@ -293,7 +293,7 @@ GPlatesGui::MapProjection::set_projection_type(
 			QString message = QString("Proj initialisation failed: %1: %2")
 				.arg(projection_args[0])
 				.arg(proj_errno_string(proj_context_errno(PJ_DEFAULT_CTX)));
-			throw ProjectionException(GPLATES_EXCEPTION_SOURCE, message.toStdString().c_str());
+			throw MapProjectionException(GPLATES_EXCEPTION_SOURCE, message.toStdString().c_str());
 		}
 		proj_destroy(d_transformation);
 		d_transformation = transformation_for_GIS;
@@ -444,7 +444,7 @@ GPlatesGui::MapProjection::forward_proj_transform(
 	// Projection transformation.
 	if (0 != pj_transform(d_latlon_projection, d_projection, 1, 0, &x, &y, NULL))
 	{
-		throw ProjectionException(GPLATES_EXCEPTION_SOURCE, "Error in pj_transform.");
+		throw MapProjectionException(GPLATES_EXCEPTION_SOURCE, "Error in pj_transform.");
 	}
 
 #else // using proj5+...
@@ -481,7 +481,7 @@ GPlatesGui::MapProjection::forward_proj_transform(
 
 	if (GPlatesMaths::is_infinity(x) || GPlatesMaths::is_infinity(y))
 	{
-		throw ProjectionException(GPLATES_EXCEPTION_SOURCE, "HUGE_VAL returned from proj transform.");
+		throw MapProjectionException(GPLATES_EXCEPTION_SOURCE, "HUGE_VAL returned from proj transform.");
 	}
 }
 

@@ -25,17 +25,17 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_GUI_PROJECTIONEXCEPTION_H
-#define GPLATES_GUI_PROJECTIONEXCEPTION_H
+#ifndef GPLATES_GUI_MAPPROJECTIONEXCEPTION_H
+#define GPLATES_GUI_MAPPROJECTIONEXCEPTION_H
 
 #include "GuiException.h"
 
 namespace GPlatesGui
 {
 	/**
-	 * A projection error exception.
+	 * A map projection error exception.
 	 */
-	class ProjectionException:
+	class MapProjectionException:
 			public GuiException
 	{
 		public:
@@ -44,20 +44,20 @@ namespace GPlatesGui
 			 * in which the problem occurs.
 			 */
 			explicit
-			ProjectionException(
+			MapProjectionException(
 					const GPlatesUtils::CallStack::Trace &exception_source,
 					const char *msg):
 				GuiException(exception_source),	
 				d_msg(msg) {  }
 
 			virtual
-			~ProjectionException() throw()  {  }
+			~MapProjectionException() throw()  {  }
 
 		protected:
 			virtual const char *
 			exception_name() const
 			{
-				return "ProjectionException";
+				return "MapProjectionException";
 			}
 
 			virtual
@@ -73,5 +73,5 @@ namespace GPlatesGui
 	};
 }
 
-#endif  // GPLATES_GUI_PROJECTIONEXCEPTION_H
+#endif  // GPLATES_GUI_MAPPROJECTIONEXCEPTION_H
 

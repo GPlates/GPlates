@@ -33,7 +33,7 @@
 #include "MapGrid.h"
 
 #include "Colour.h"
-#include "ProjectionException.h"
+#include "MapProjectionException.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -180,7 +180,7 @@ namespace
 							project_lat_lon(lat.dval(), lon.dval(), map_projection));
 				}
 			}
-			catch (const GPlatesGui::ProjectionException &exc)
+			catch (const GPlatesGui::MapProjectionException &exc)
 			{
 				// Ignore exception.
 				qWarning() << exc;
@@ -265,7 +265,7 @@ namespace
 							project_lat_lon(lat.dval(), lon.dval(), map_projection));
 				}
 			}
-			catch (const GPlatesGui::ProjectionException &exc)
+			catch (const GPlatesGui::MapProjectionException &exc)
 			{
 				// Ignore exception.
 				qWarning() << exc;
