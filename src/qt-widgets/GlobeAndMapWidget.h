@@ -28,9 +28,7 @@
 #ifndef GPLATES_QTWIDGETS_GLOBEANDMAPWIDGET_H
 #define GPLATES_QTWIDGETS_GLOBEANDMAPWIDGET_H
 
-#include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
-#include <QtGlobal>
 #include <QWidget>
 
 #include "global/PointerTraits.h"
@@ -40,15 +38,9 @@
 #include "view-operations/QueryProximityThreshold.h"
 
 
-// We only enable the pinch zoom gesture on the Mac.
-#if defined(Q_OS_MACOS)
-#	define GPLATES_PINCH_ZOOM_ENABLED
-#endif
-
 namespace GPlatesGui
 {
 	class Camera;
-	class Projection;
 }
 
 namespace GPlatesOpenGL
@@ -171,48 +163,11 @@ namespace GPlatesQtWidgets
 		current_proximity_inclusion_threshold(
 				const GPlatesMaths::PointOnSphere &click_pos_on_globe) const override;
 
-		void
-		set_zoom_enabled(
-				bool enabled);
-
 	Q_SIGNALS:
-
-		void
-		resized(
-				int new_width, int new_height);
 
 		void
 		repainted(
 				bool mouse_down);
-
-	protected:
-
-#ifdef GPLATES_PINCH_ZOOM_ENABLED
-		bool
-		event(
-				QEvent *ev) override;
-#endif
-
-		void
-		resizeEvent(
-				QResizeEvent *resize_event) override;
-
-		/**
-		 * This is a virtual override of the function in QWidget.
-		 *
-		 * To quote the QWidget documentation:
-		 *
-		 * This event handler, for event event, can be reimplemented in a subclass to
-		 * receive wheel events for the widget.
-		 *
-		 * If you reimplement this handler, it is very important that you ignore() the
-		 * event if you do not handle it, so that the widget's parent can interpret it.
-		 *
-		 * The default implementation ignores the event.
-		 */
-		void
-		wheelEvent(
-				QWheelEvent *event) override;
 
 	private Q_SLOTS:
 
@@ -226,22 +181,7 @@ namespace GPlatesQtWidgets
 				const GlobeAndMapWidget *existing_widget,
 				QWidget *parent_ = NULL);
 
-		GPlatesPresentation::ViewState &d_view_state;
-
 		boost::scoped_ptr<GlobeAndMapCanvas> d_globe_and_map_canvas_ptr;
-
-		/**
-		 * Whether zooming (via mouse wheel or pinch gesture) is enabled.
-		 */
-		bool d_zoom_enabled;
-
-#ifdef GPLATES_PINCH_ZOOM_ENABLED
-		/**
-		 * The viewport zoom percentage at the start of a pinch gesture.
-		 * The value is boost::none if we're currently not in a pinch gesture.
-		 */
-		boost::optional<double> viewport_zoom_at_start_of_pinch;
-#endif
 	};
 }
 

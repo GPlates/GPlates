@@ -27,14 +27,12 @@
 
 #include <cmath>
 #include <iostream>
-#include <QApplication>
 #include <QDebug>
-#include <QLineF>
-#include <QPaintDevice>
-#include <QPaintEngine>
-#include <QPainter>
 
 #include "GlobeAndMapCanvas.h"
+#ifdef GPLATES_PINCH_ZOOM_ENABLED // Defined in GlobeAndMapCanvas.h
+#include <QPinchGesture>
+#endif
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -86,6 +84,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 	// The following unit-vector initialisation value is arbitrary.
 	d_mouse_position_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_is_on_globe(false),
+	d_zoom_enabled(true),
 	d_projection(d_view_state.get_projection()),
 	d_globe(
 			view_state,
@@ -176,6 +175,10 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 			this, SLOT(handle_camera_change()));
 
 	handle_camera_change();
+
+#ifdef GPLATES_PINCH_ZOOM_ENABLED
+	grabGesture(Qt::PinchGesture);
+#endif
 
 	setAttribute(Qt::WA_NoSystemBackground);
 }
@@ -463,6 +466,14 @@ bool
 GPlatesQtWidgets::GlobeAndMapCanvas::is_globe_active() const
 {
 	return d_projection.get_globe_map_projection().is_viewing_globe_projection();
+}
+
+
+void
+GPlatesQtWidgets::GlobeAndMapCanvas::set_zoom_enabled(
+		bool enabled)
+{
+	d_zoom_enabled = enabled;
 }
 
 
@@ -799,6 +810,97 @@ GPlatesQtWidgets::GlobeAndMapCanvas::keyPressEvent(
 			QOpenGLWidget::keyPressEvent(key_event);
 	}
 }
+
+
+void
+GPlatesQtWidgets::GlobeAndMapCanvas::wheelEvent(
+		QWheelEvent *wheel_event)
+{
+	if (d_zoom_enabled)
+	{
+		int delta = wheel_event->angleDelta().y();
+		if (delta == 0)
+		{
+			return;
+		}
+
+		GPlatesGui::ViewportZoom &viewport_zoom = d_view_state.get_viewport_zoom();
+
+		// The number 120 is derived from the Qt docs for QWheelEvent:
+		// http://doc.trolltech.com/4.3/qwheelevent.html#delta
+		static const int NUM_UNITS_PER_STEP = 120;
+
+		double num_levels = static_cast<double>(std::abs(delta)) / NUM_UNITS_PER_STEP;
+		if (delta > 0)
+		{
+			viewport_zoom.zoom_in(num_levels);
+		}
+		else
+		{
+			viewport_zoom.zoom_out(num_levels);
+		}
+	}
+	else
+	{
+		wheel_event->ignore();
+	}
+}
+
+
+#ifdef GPLATES_PINCH_ZOOM_ENABLED
+bool
+GPlatesQtWidgets::GlobeAndMapCanvas::event(
+		QEvent *ev)
+{
+	if (ev->type() == QEvent::Gesture)
+	{
+		if (!d_zoom_enabled)
+		{
+			return false;
+		}
+
+		QGestureEvent *gesture_ev = static_cast<QGestureEvent *>(ev);
+		bool pinch_gesture_found = false;
+
+		for (QGesture *gesture : gesture_ev->activeGestures())
+		{
+			if (gesture->gestureType() == Qt::PinchGesture)
+			{
+				gesture_ev->accept(gesture);
+				pinch_gesture_found = true;
+
+				QPinchGesture *pinch_gesture = static_cast<QPinchGesture *>(gesture);
+
+				// Handle the scaling component of the pinch gesture.
+				GPlatesGui::ViewportZoom &viewport_zoom = d_view_state.get_viewport_zoom();
+				if (pinch_gesture->state() == Qt::GestureStarted)
+				{
+					viewport_zoom_at_start_of_pinch = viewport_zoom.zoom_percent();
+				}
+
+				viewport_zoom.set_zoom_percent(*viewport_zoom_at_start_of_pinch *
+						pinch_gesture->scaleFactor());
+
+				if (pinch_gesture->state() == Qt::GestureFinished)
+				{
+					viewport_zoom_at_start_of_pinch = boost::none;
+				}
+
+				// Handle the rotation component of the pinch gesture.
+				double angle = pinch_gesture->rotationAngle() - pinch_gesture->lastRotationAngle();
+				// We want to rotate the globe or map clockwise which means rotating the camera anticlockwise.
+				get_active_camera().rotate_anticlockwise(angle);
+			}
+		}
+
+		return pinch_gesture_found;
+	}
+	else
+	{
+		return QWidget::event(ev);
+	}
+}
+#endif
 
 
 void

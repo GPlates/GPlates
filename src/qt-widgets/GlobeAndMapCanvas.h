@@ -56,6 +56,12 @@
 #include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 
+ // We only enable the pinch zoom gesture on the Mac.
+#if defined(Q_OS_MACOS)
+#	define GPLATES_PINCH_ZOOM_ENABLED
+#endif
+
+
 namespace GPlatesGui
 {
 	class Camera;
@@ -199,6 +205,13 @@ namespace GPlatesQtWidgets
 		{
 			return d_gl_visual_layers;
 		}
+
+		/**
+		 * Set whether zooming via mouse wheel (or pinch gesture on macOS) is enabled.
+		 */
+		void
+		set_zoom_enabled(
+				bool enabled);
 
 	public Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -406,6 +419,16 @@ namespace GPlatesQtWidgets
 		keyPressEvent(
 				QKeyEvent *key_event) override;
 
+		void
+		wheelEvent(
+				QWheelEvent *wheel_event) override;
+
+#ifdef GPLATES_PINCH_ZOOM_ENABLED
+		bool
+		event(
+				QEvent *ev) override;
+#endif
+
 	private Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
@@ -532,6 +555,21 @@ namespace GPlatesQtWidgets
 		bool d_mouse_is_on_globe;
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
+
+
+		/**
+		 * Whether zooming (via mouse wheel or pinch gesture) is enabled.
+		 */
+		bool d_zoom_enabled;
+
+#ifdef GPLATES_PINCH_ZOOM_ENABLED
+		/**
+		 * The viewport zoom percentage at the start of a pinch gesture.
+		 * The value is boost::none if we're currently not in a pinch gesture.
+		 */
+		boost::optional<double> viewport_zoom_at_start_of_pinch;
+#endif
+
 
 		/**
 		 * The projection determines whether the globe view or map view is currently active
