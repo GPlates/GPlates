@@ -227,7 +227,7 @@ set(CMAKE_AUTORCC ON)
 # Require Qt 5.12 for Vulkan support in Qt.
 # Actually only macOS requires 5.12 (which added support for MoltenVK). Windows and Linux only require Qt 5.10.
 # However our minimum supported Ubuntu is Focal which uses Qt 5.12 anyway.
-find_package(Qt5 5.12 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml XmlPatterns)
+find_package(Qt5 5.12 REQUIRED COMPONENTS Core Gui Network OpenGL Svg Widgets Xml XmlPatterns)
 
 ############
 # Find Qwt #
@@ -825,7 +825,7 @@ endif()
 #
 # Qt5 dependency.
 #
-target_link_libraries(${SOURCE_TARGET} PUBLIC Qt5::Core Qt5::Gui Qt5::Network Qt5::Svg Qt5::Widgets Qt5::Xml Qt5::XmlPatterns)
+target_link_libraries(${SOURCE_TARGET} PUBLIC Qt5::Core Qt5::Gui Qt5::Network Qt5::OpenGL Qt5::Svg Qt5::Widgets Qt5::Xml Qt5::XmlPatterns)
 # The directory where Qt AUTOIUC auto-generated files ('ui_*.h') get written is automatically added to the
 # INCLUDE_DIRECTORIES target property of the 'gplates-lib' and 'pygplates' targets, but not INTERFACE_INCLUDE_DIRECTORIES.
 # This is fine for 'pygplates' (because nothing links to it), but it means the include directories are not propagated to
