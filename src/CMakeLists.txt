@@ -224,6 +224,7 @@ find_package(Boost 1.35 REQUIRED
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
+#
 # Require Qt 5.12 (but use Qt6 when available since it has bug-fixes beyond the Qt5.15 non-commercial version).
 #
 # Qt 5.12 is required for Vulkan support in Qt.
@@ -231,7 +232,10 @@ set(CMAKE_AUTORCC ON)
 # However our minimum supported Ubuntu is Focal which uses Qt 5.12 anyway.
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
 if (QT_VERSION_MAJOR EQUAL 6)
-	find_package(Qt6 REQUIRED COMPONENTS Core Gui Network OpenGL Svg Widgets Xml XmlPatterns)
+	# Temporarily use Core5Compat API (until fully moved to Qt6) so can still use deprecated Qt5 module XmlPatterns.
+	# And other deprecated Qt5 APIs. For example, include Qt5 <QRegExp> instead of Qt6 <QRegularExpression>.
+	# Remove this when no longer supporting Qt5.
+	find_package(Qt6 REQUIRED COMPONENTS Core Gui Network OpenGL Svg Widgets Xml Core5Compat)
 else()
 	find_package(Qt5 5.12 REQUIRED COMPONENTS Core Gui Network OpenGL Svg Widgets Xml XmlPatterns)
 endif()
@@ -840,8 +844,15 @@ target_link_libraries(${SOURCE_TARGET} PUBLIC
 		Qt${QT_VERSION_MAJOR}::OpenGL
 		Qt${QT_VERSION_MAJOR}::Svg
 		Qt${QT_VERSION_MAJOR}::Widgets
-		Qt${QT_VERSION_MAJOR}::Xml
-		Qt${QT_VERSION_MAJOR}::XmlPatterns)
+		Qt${QT_VERSION_MAJOR}::Xml)
+if (QT_VERSION_MAJOR EQUAL 6)
+	# Temporarily use Core5Compat API (until fully moved to Qt6) so can still use deprecated Qt5 module XmlPatterns.
+	# And other deprecated Qt5 APIs. For example, include Qt5 <QRegExp> instead of Qt6 <QRegularExpression>.
+	# Remove this when no longer supporting Qt5.
+	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::Core5Compat)
+else()
+	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt5::XmlPatterns)
+endif()
 # The directory where Qt AUTOIUC auto-generated files ('ui_*.h') get written is automatically added to the
 # INCLUDE_DIRECTORIES target property of the 'gplates-lib' and 'pygplates' targets, but not INTERFACE_INCLUDE_DIRECTORIES.
 # This is fine for 'pygplates' (because nothing links to it), but it means the include directories are not propagated to
