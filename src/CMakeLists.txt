@@ -225,11 +225,14 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 #
-# Require Qt 5.12 (but use Qt6 when available since it has bug-fixes beyond the Qt5.15 non-commercial version).
+# Require Qt 5.15 (but use Qt6 when available since it has bug-fixes beyond the Qt5.15 non-commercial version).
 #
 # Qt 5.12 is required for Vulkan support in Qt.
 # Actually only macOS requires 5.12 (which added support for MoltenVK). Windows and Linux only require Qt 5.10.
 # However our minimum supported Ubuntu is Focal which uses Qt 5.12 anyway.
+#
+# Note: We actually need Qt 5.15 because QVulkanWindow::setQueueCreateInfoModifier(), added in 5.15, enables
+#       us to obtain a Vulkan compute queue (so can use compute shaders).
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
 if (QT_VERSION_MAJOR EQUAL 6)
 	# Temporarily use Core5Compat API (until fully moved to Qt6) so can still use deprecated Qt5 module XmlPatterns.
@@ -237,7 +240,7 @@ if (QT_VERSION_MAJOR EQUAL 6)
 	# Remove this when no longer supporting Qt5.
 	find_package(Qt6 REQUIRED COMPONENTS Core Gui Network OpenGL Svg Widgets Xml Core5Compat)
 else()
-	find_package(Qt5 5.12 REQUIRED COMPONENTS Core Gui Network OpenGL Svg Widgets Xml XmlPatterns)
+	find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Network OpenGL Svg Widgets Xml XmlPatterns)
 endif()
 
 ############
