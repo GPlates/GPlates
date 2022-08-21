@@ -217,17 +217,24 @@ find_package(Boost 1.35 REQUIRED
 		OPTIONAL_COMPONENTS ${_GPLATES_BOOST_OPTIONAL_COMPONENTS})
 
 ############
-# Find Qt5 #
+# Find Qt #
 #
 # CMake automatically runs Qt's moc, uic and rcc code generation tools.
 # See https://doc.qt.io/qt-5/cmake-get-started.html
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
-# Require Qt 5.12 for Vulkan support in Qt.
+# Require Qt 5.12 (but use Qt6 when available since it has bug-fixes beyond the Qt5.15 non-commercial version).
+#
+# Qt 5.12 is required for Vulkan support in Qt.
 # Actually only macOS requires 5.12 (which added support for MoltenVK). Windows and Linux only require Qt 5.10.
 # However our minimum supported Ubuntu is Focal which uses Qt 5.12 anyway.
-find_package(Qt5 5.12 REQUIRED COMPONENTS Core Gui Network OpenGL Svg Widgets Xml XmlPatterns)
+find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
+if (QT_VERSION_MAJOR EQUAL 6)
+	find_package(Qt6 REQUIRED COMPONENTS Core Gui Network OpenGL Svg Widgets Xml XmlPatterns)
+else()
+	find_package(Qt5 5.12 REQUIRED COMPONENTS Core Gui Network OpenGL Svg Widgets Xml XmlPatterns)
+endif()
 
 ############
 # Find Qwt #
@@ -773,7 +780,8 @@ if (GPLATES_BUILD_GPLATES)
 		# but there's nothing to capture unless GPlates is built as a console application. In fact a simple
 		# 'print()' statement in the embedded Python interpreter would have triggered an error.
 		if (FALSE)
-			set_target_properties(gplates PROPERTIES WIN32_EXECUTABLE TRUE)  # This also tells Qt5::Core to link in its WinMain.
+			# This also tells Qt${QT_VERSION_MAJOR}::Core to link in its WinMain.
+			set_target_properties(gplates PROPERTIES WIN32_EXECUTABLE TRUE)
 		endif()
 	endif()
 endif()
@@ -823,9 +831,17 @@ if (TARGET gplates-unit-test)
 endif()
 
 #
-# Qt5 dependency.
+# Qt dependency.
 #
-target_link_libraries(${SOURCE_TARGET} PUBLIC Qt5::Core Qt5::Gui Qt5::Network Qt5::OpenGL Qt5::Svg Qt5::Widgets Qt5::Xml Qt5::XmlPatterns)
+target_link_libraries(${SOURCE_TARGET} PUBLIC
+		Qt${QT_VERSION_MAJOR}::Core
+		Qt${QT_VERSION_MAJOR}::Gui
+		Qt${QT_VERSION_MAJOR}::Network
+		Qt${QT_VERSION_MAJOR}::OpenGL
+		Qt${QT_VERSION_MAJOR}::Svg
+		Qt${QT_VERSION_MAJOR}::Widgets
+		Qt${QT_VERSION_MAJOR}::Xml
+		Qt${QT_VERSION_MAJOR}::XmlPatterns)
 # The directory where Qt AUTOIUC auto-generated files ('ui_*.h') get written is automatically added to the
 # INCLUDE_DIRECTORIES target property of the 'gplates-lib' and 'pygplates' targets, but not INTERFACE_INCLUDE_DIRECTORIES.
 # This is fine for 'pygplates' (because nothing links to it), but it means the include directories are not propagated to
@@ -852,9 +868,9 @@ target_include_directories(${SOURCE_TARGET} PUBLIC
 # Note: Prior to CMake 3.11 none of the 'target_*()' commands could set INTERFACE_ properties on imported targets.
 if (CMAKE_VERSION VERSION_LESS 3.11)
 	# Using 'set_property' since 'set_target_property' cannot append.
-	set_property(TARGET Qt5::Core APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
+	set_property(TARGET Qt${QT_VERSION_MAJOR}::Core APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS QT_NO_KEYWORDS)
 else()
-	target_compile_definitions(Qt5::Core INTERFACE QT_NO_KEYWORDS)
+	target_compile_definitions(Qt${QT_VERSION_MAJOR}::Core INTERFACE QT_NO_KEYWORDS)
 endif()
 
 #
