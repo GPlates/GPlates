@@ -486,11 +486,12 @@ def plate_partitioner_partition_features(
                 unpartitioned_feature = feature.clone()
                 unpartitioned_features.append(unpartitioned_feature)
     
-    # Reverse reconstruct all partitioned features (using their new plate IDs) if their geometries are not at present day.
+    # Reverse reconstruct all partitioned features (using their new plate IDs).
+    # Note: Reverse reconstruct even when reconstruction time is zero
+    #       (since can have non-zero finite rotation at present day, not advisable though).
     reconstruction_time = plate_partitioner._get_reconstruction_time()
-    if reconstruction_time != GeoTimeInstant(0):
-        rotation_model = plate_partitioner._get_rotation_model()
-        reverse_reconstruct(partitioned_features, rotation_model, reconstruction_time)
+    rotation_model = plate_partitioner._get_rotation_model()
+    reverse_reconstruct(partitioned_features, rotation_model, reconstruction_time)
     
     # Return partitioned and unpartitioned features in the format requested by the caller.
     if partition_return == PartitionReturn.combined_partitioned_and_unpartitioned:
