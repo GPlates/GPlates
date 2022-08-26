@@ -970,7 +970,13 @@ void
 GPlatesQtWidgets::MapCanvas::update_mouse_screen_position(
 		QMouseEvent *mouse_event)
 {
-	d_mouse_screen_position = mouse_event->localPos();
+	d_mouse_screen_position = mouse_event->
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+			position()
+#else
+			localPos()
+#endif
+			;
 
 	update_mouse_position_on_map();
 }

@@ -977,8 +977,15 @@ void
 GPlatesQtWidgets::GlobeCanvas::update_mouse_screen_position(
 		QMouseEvent *mouse_event) 
 {
-	d_mouse_screen_position_x = mouse_event->localPos().x();
-	d_mouse_screen_position_y = mouse_event->localPos().y();
+	const QPointF mouse_screen_position = mouse_event->
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+			position()
+#else
+			localPos()
+#endif
+			;
+	d_mouse_screen_position_x = mouse_screen_position.x();
+	d_mouse_screen_position_y = mouse_screen_position.y();
 
 	update_mouse_position_on_globe();
 }
