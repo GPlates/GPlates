@@ -529,7 +529,8 @@ GPlatesModel::Gpgim::read_gpgim_element(
 	// Determine the GPGIM version.
 	//
 
-	const QStringRef gpgim_version_string = xml_reader.attributes().value(
+	// GPGIM version is a QStringView in Qt6 (QStringRef in Qt5).
+	const auto gpgim_version_string = xml_reader.attributes().value(
 			GPlatesUtils::XmlNamespaces::get_gpgim_namespace_qstring(), "version");
 
 	boost::optional<GpgimVersion> gpgim_version = GpgimVersion::create(gpgim_version_string.toString());
