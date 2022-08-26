@@ -479,10 +479,11 @@ endif()
 #
 # std::auto_ptr was deprecated in C++11 (and removed in C++17), so we now use std::unique_ptr introduced in C++11.
 # Also GDAL 2.3 and above require C++11.
-# And CGAL 5.x requires C++14, and this requirement is transitively passed to us via the CGAL::CGAL target
-# where CMake chooses the stricter requirement between our C++11 and CGAL's C++14 (which is C++14).
+# And CGAL 5.x requires C++14.
+# And Qt 6 requires C++17, and this requirement is transitively passed to us via the Qt6 targets (like Qt6::Core)
+# where Qt chooses the stricter requirement between our C++11 and Qt's C++17 (which is C++17)
 #
-# Also note that this avoids the problem of compile errors, when C++14 features are used (eg, by CGAL 5),
+# Also note that this avoids the problem of compile errors, when C++17 features are used (eg, by Qt 6),
 # due to forcing C++11 by specifying '-std=c++11' directly on the compiler command-line.
 target_compile_features(${SOURCE_TARGET} PUBLIC cxx_std_11)
 #
