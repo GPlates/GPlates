@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QtGlobal>
+
 #include "FeatureCollectionFileIO.h"
 
 #include "file-io/ArbitraryXmlReader.h"
@@ -220,6 +222,12 @@ GPlatesAppLogic::FeatureCollectionFileIO::create_file(
 }
 
 
+// Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
+// It has been deprecated since Qt 5.13.
+//
+// TODO: Find a replacement library.
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+
 int
 GPlatesAppLogic::FeatureCollectionFileIO::count_features_in_xml_data(
 		QByteArray &data)
@@ -266,6 +274,8 @@ GPlatesAppLogic::FeatureCollectionFileIO::load_xml_data(
 	emit_handle_read_errors_signal(read_errors);
 //qDebug() << "FeatureCollectionFileIO::load_xml_data() END =========";
 }
+
+#endif  // QT_VERSION < QT_VERSION_CHECK(6,0,0)
 
 
 GPlatesAppLogic::FeatureCollectionFileIO::file_seq_type

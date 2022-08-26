@@ -24,6 +24,30 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QtGlobal>
+
+#include "XQueryUtils.h"
+
+bool 
+GPlatesUtils::XQuery::next_start_element(
+		QXmlStreamReader& reader)
+{
+	while (reader.readNext() != QXmlStreamReader::Invalid) {
+		if (reader.isEndElement())
+			return false;
+		else if (reader.isStartElement())
+			return true;
+	}
+	return false;
+}
+
+
+ // Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
+ // It has been deprecated since Qt 5.13.
+ //
+ // TODO: Find a replacement library.
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+
 #include <QBuffer>
 #include <QXmlQuery>
 #include <QXmlResultItems>
@@ -31,11 +55,7 @@
 #include <QStringList>
 #include <QXmlResultItems>
 
-#include "XQueryUtils.h"
 #include "file-io/GsmlConst.h"
-
-
-
 
 std::vector<QByteArray>
 GPlatesUtils::XQuery::evaluate_features(
@@ -391,30 +411,4 @@ GPlatesUtils::XQuery::wrap_xml_data(
 	out_buf.close();
 }
 
-bool 
-GPlatesUtils::XQuery::next_start_element(
-		QXmlStreamReader& reader)
-{
-	while (reader.readNext() != QXmlStreamReader::Invalid) {
-		if (reader.isEndElement())
-			return false;
-		else if (reader.isStartElement())
-			return true;
-	}
-	return false;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#endif  // QT_VERSION < QT_VERSION_CHECK(6,0,0)
