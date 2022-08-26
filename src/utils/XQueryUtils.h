@@ -27,9 +27,10 @@
 #define GPLATES_UTILS_XQUERYUTILS_H
 
 #include <vector>
+#include <boost/function.hpp>
+#include <QtGlobal>
 #include <QDebug>
 #include <QVariant>
-#include <boost/function.hpp>
 
 #include <QString>
 #include <QBuffer>
@@ -41,6 +42,20 @@ namespace GPlatesUtils
 {
 	namespace XQuery
 	{
+		/*
+		 * The same as QXmlStreamReader::readNextStartElement().
+		 */
+		bool
+		next_start_element(
+				QXmlStreamReader&);
+
+
+		// Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
+		// It has been deprecated since Qt 5.13.
+		//
+		// TODO: Find a replacement library.
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+
 		typedef boost::function<bool (QBuffer&)> IsEmptyFun;
 
 		std::vector<QByteArray>
@@ -107,12 +122,7 @@ namespace GPlatesUtils
 			return (data.size() == 0);
 		}
 
-		/*
-		* The same as QXmlStreamReader::readNextStartElement().
-		*/
-		bool
-		next_start_element(
-				QXmlStreamReader&);
+#endif  // QT_VERSION < QT_VERSION_CHECK(6,0,0)
 	}
 }
 #endif //GPLATES_UTILS_XQUERYUTILS_H
