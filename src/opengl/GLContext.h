@@ -36,6 +36,7 @@
 #include <qopengl.h>
 #include <QPair>
 #include <QOpenGLContext>
+#include <QOpenGLVersionFunctions>  // For QAbstractOpenGLFunctions
 #include <QOpenGLVersionProfile>
 #include <QSurfaceFormat>
 
