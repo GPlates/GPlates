@@ -27,6 +27,7 @@
 #define GPLATES_QT_WIDGETS_COLOURSCALEBUTTON_H
 
 #include <boost/optional.hpp>
+#include <QtGlobal>
 #include <QPixmap>
 #include <QToolButton>
 #include <QString>

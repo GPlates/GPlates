@@ -25,9 +25,9 @@
 
 #include <boost/optional.hpp> 
 #include <QDebug>
-#include <QtWidgets/QDialogButtonBox>
-#include <QtWidgets/QHeaderView>
-#include <QtWidgets/QPushButton>
+#include <QDialogButtonBox>
+#include <QHeaderView>
+#include <QPushButton>
 
 #include "CoRegistrationResultTableDialog.h"
 #include "GlobeAndMapWidget.h"

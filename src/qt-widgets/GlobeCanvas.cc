@@ -36,13 +36,13 @@
 #include <boost/optional.hpp>
 #include <opengl/OpenGL.h>
 
+#include <QtGlobal>
 #include <QDebug>
 #include <QLinearGradient>
 #include <QLocale>
 #include <QPainter>
-#include <QtGui/QMouseEvent>
+#include <QMouseEvent>
 #include <QSizePolicy>
-#include <QtGlobal>
 
 #include "GlobeCanvas.h"
 

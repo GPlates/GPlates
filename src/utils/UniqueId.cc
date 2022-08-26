@@ -30,7 +30,7 @@
 #include <ctime>
 #include <cstdlib>
 
-#include <QtCore/QUuid>
+#include <QUuid>
 #include <QtNetwork/QHostInfo>
 
 #include "UniqueId.h"

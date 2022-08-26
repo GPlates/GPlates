@@ -26,6 +26,7 @@
 #include <string>
 #include <QByteArray>
 #include <QDataStream>
+#include <QIODevice>
 #include <QLocale>
 #include <QtGlobal>
 

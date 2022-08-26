@@ -34,7 +34,7 @@
 #include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/weak_ptr.hpp>
-#include <QtCore/QTimer>
+#include <QTimer>
 #include <QCloseEvent>
 #include <QMainWindow>
 #include <QPointer>

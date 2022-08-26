@@ -28,7 +28,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
-#include <QtCore/qglobal.h>
+#include <qglobal.h>
 
 #include "GPlatesAssert.h"
 #include "AbortException.h"
