@@ -162,7 +162,12 @@ GPlatesQtWidgets::ColourScaleButton::resizeEvent(
 
 void
 GPlatesQtWidgets::ColourScaleButton::enterEvent(
-		QEvent *ev)
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+		QEnterEvent
+#else
+		QEvent
+#endif
+		*ev)
 {
 	d_mouse_inside_button = true;
 
