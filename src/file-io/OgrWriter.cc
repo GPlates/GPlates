@@ -28,6 +28,7 @@
 
 #include <vector>
 #include <boost/foreach.hpp>
+#include <QtGlobal>
 #include <QDebug>
 #include <QDir>
 #include <QFile>
@@ -147,15 +148,21 @@ namespace{
 	get_ogr_field_type_from_qvariant(
 		QVariant &variant)
 	{
-		switch (variant.type())
+		switch (variant.
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+			typeId()
+#else
+			type()
+#endif
+			)
 		{
-		case QVariant::Int:
+		case QMetaType::Int:
 			return OFTInteger;
 			break;
-		case QVariant::Double:
+		case QMetaType::Double:
 			return OFTReal;
 			break;
-		case QVariant::String:
+		case QMetaType::QString:
 			return OFTString;
 			break;
 		default:

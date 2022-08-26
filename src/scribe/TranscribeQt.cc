@@ -207,7 +207,13 @@ GPlatesScribe::transcribe(
 			// Note that we don't also test whether the QDateTime object itself is valid (upon successful streaming)
 			// since it's possible that an invalid QDateTime was saved in the first place.
 			if (qdatetime_array_reader.status() != QDataStream::Ok ||
-				qdatetime_variant.type() != int(QMetaType::QDateTime))
+				qdatetime_variant.
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+					typeId()
+#else
+					type()
+#endif
+						!= int(QMetaType::QDateTime))
 			{
 				return TRANSCRIBE_INCOMPATIBLE;
 			}
