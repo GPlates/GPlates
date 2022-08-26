@@ -23,6 +23,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QtGlobal>
 #include <QDebug>
 #include <QFileDialog>
 #include <QTextStream>
@@ -52,7 +53,11 @@ GPlatesQtWidgets::HellingerStatsDialog::update()
 	if (dataFile.open(QFile::ReadOnly))
 	{
 		QTextStream in(&dataFile);
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+		in.setEncoding(QStringConverter::Utf8);
+#else
 		in.setCodec("UTF-8");
+#endif
 		do
 		{
 			line = in.readLine();
