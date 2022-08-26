@@ -27,6 +27,7 @@
 #define GPLATES_SCRIBE_TRANSCRIBEQT_H
 
 #include <vector>
+#include <QtGlobal>
 #include <QByteArray>
 #include <QDateTime>
 #include <QList>
@@ -184,6 +185,9 @@ namespace GPlatesScribe
 			QStringList &string_list_object,
 			bool transcribed_construct_data);
 
+	// Qt6 defines QVector as an alias to QList.
+	// So they are the same type and QVector will now go through the QList transcribe overload.
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
 	//! Transcribe QVector.
 	template <typename T>
 	TranscribeResult
@@ -191,6 +195,7 @@ namespace GPlatesScribe
 			Scribe &scribe,
 			QVector<T> &vector_object,
 			bool transcribed_construct_data);
+#endif
 }
 
 
@@ -418,6 +423,9 @@ namespace GPlatesScribe
 	}
 
 
+	// Qt6 defines QVector as an alias to QList.
+	// So they are the same type and QVector will now go through the QList transcribe overload.
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
 	template <typename T>
 	TranscribeResult
 	transcribe(
@@ -427,6 +435,7 @@ namespace GPlatesScribe
 	{
 		return transcribe_sequence_protocol(TRANSCRIBE_SOURCE, scribe, vector_object);
 	}
+#endif
 }
 
 #endif // GPLATES_SCRIBE_TRANSCRIBEQT_H
