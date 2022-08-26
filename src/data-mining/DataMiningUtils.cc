@@ -25,6 +25,7 @@
 #include <fstream>
 #include <utility>
 #include <boost/foreach.hpp>
+#include <QtGlobal>
 
 #include "app-logic/ReconstructionLayerProxy.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
@@ -176,18 +177,24 @@ GPlatesDataMining::OpaqueData
 GPlatesDataMining::DataMiningUtils::convert_qvariant_to_Opaque_data(
 		const QVariant& data)
 {
-	switch (data.type())
+	switch (data.
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+		typeId()
+#else
+		type()
+#endif
+		)
 	{
-	case QVariant::Bool:
+	case QMetaType::Bool:
 		return OpaqueData(data.toBool());
 
-	case QVariant::Int:
+	case QMetaType::Int:
 		return OpaqueData(data.toInt());
 		
-	case QVariant::Double:
+	case QMetaType::Double:
 		return OpaqueData(data.toDouble());
 
-	case QVariant::String:
+	case QMetaType::QString:
 		return OpaqueData(data.toString());
 	
 	default:

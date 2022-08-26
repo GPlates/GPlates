@@ -90,7 +90,7 @@ namespace GPlatesScribe
 	/**
 	 * Transcribe QVariant.
 	 *
-	 * NOTE: If the type stored in the QVariant is a user type (ie, not a builtin type - see 'QVariant::Type')
+	 * NOTE: If the type stored in the QVariant is a user type (ie, not a builtin type - see 'QMetaType::Type')
 	 * then it must be registered with 'qRegisterMetaType()' and 'qRegisterMetaTypeStreamOperators()'.
 	 * And it must also supply QDataStream '<<' and '>>' operators for the user type.
 	 * This also applies to any user types that the stored type depends on (if it is a template type).

@@ -22,6 +22,7 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+
 #include "PyFeature.h"
 
 #include "feature-visitors/ShapefileAttributeFinder.h"
@@ -134,21 +135,27 @@ GPlatesApi::Feature::get_properties_by_name(
 				}
 
 				QVariant data = *visitor.found_qvariants_begin();
-				switch (data.type())
+				switch (data.
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+					typeId()
+#else
+					type()
+#endif
+					)
 				{
-					case QVariant::Bool:
+					case QMetaType::Bool:
 						ret.append(data.toBool());
 						break;
 
-					case QVariant::Int:
+					case QMetaType::Int:
 						ret.append(data.toInt());
 						break;
 
-					case QVariant::Double:
+					case QMetaType::Double:
 						ret.append(data.toDouble());
 						break;
 
-					case QVariant::String:
+					case QMetaType::QString:
 						ret.append(PythonUtils::qstring_to_python_string(data.toString()));
 						break;
 					default:

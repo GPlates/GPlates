@@ -25,6 +25,7 @@
 * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
+#include <QtGlobal>
 #include <QMessageBox>
 #include <QVariant>
 
@@ -70,15 +71,21 @@ QString
 GPlatesFileIO::OgrUtils::get_type_qstring_from_qvariant(
 	const QVariant &variant)
 {
-	switch (variant.type())
+	switch (variant.
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+		typeId()
+#else
+		type()
+#endif
+		)
 	{
-	case QVariant::Int:
+	case QMetaType::Int:
 		return QString("integer");
 		break;
-	case QVariant::Double:
+	case QMetaType::Double:
 		return QString("double");
 		break;
-	case QVariant::String:
+	case QMetaType::QString:
 		return QString("string");
 		break;
 	default:

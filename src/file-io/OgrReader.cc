@@ -29,6 +29,7 @@
 
 #include <fstream>
 #include <boost/optional.hpp>
+#include <QtGlobal>
 #include <QDebug>
 #include <QMessageBox>
 #include <QString>
@@ -1494,7 +1495,7 @@ GPlatesFileIO::OgrReader::get_attributes()
 					d_feature_ptr->IsFieldSet(count)
 #endif
 							? QVariant(d_feature_ptr->GetFieldAsInteger(count))
-							: QVariant(QVariant::Int);
+							: QVariant();
 		}
 		else if (field_def_ptr->GetType()==OFTReal){
 			value_variant =
@@ -1504,7 +1505,7 @@ GPlatesFileIO::OgrReader::get_attributes()
 					d_feature_ptr->IsFieldSet(count)
 #endif
 							? QVariant(d_feature_ptr->GetFieldAsDouble(count))
-							: QVariant(QVariant::Double);
+							: QVariant();
 		}
 		else if (field_def_ptr->GetType()==OFTDate)
 		{
@@ -1517,7 +1518,7 @@ GPlatesFileIO::OgrReader::get_attributes()
 					d_feature_ptr->IsFieldSet(count)
 #endif
 							? QVariant(d_feature_ptr->GetFieldAsString(count))
-							: QVariant(QVariant::String);
+							: QVariant();
 		}
 		else
 		{ // If string or other type.
@@ -1528,7 +1529,7 @@ GPlatesFileIO::OgrReader::get_attributes()
 					d_feature_ptr->IsFieldSet(count)
 #endif
 							? QVariant(d_feature_ptr->GetFieldAsString(count))
-							: QVariant(QVariant::String);
+							: QVariant();
 		}
 
 #if 0
@@ -1580,8 +1581,6 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 			continue;
 		}
 
-		QVariant::Type type_ = attribute.type();
-
 		// Make an XsString property for the attribute field name. 
 		GPlatesPropertyValues::XsString::non_null_ptr_type key = 
 			GPlatesPropertyValues::XsString::create(
@@ -1589,8 +1588,15 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 
 		bool ok;
 		// Add the attribute to the dictionary.
-		switch(type_){
-			case QVariant::Int:
+		switch(attribute.
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+			typeId()
+#else
+			type()
+#endif
+			)
+		{
+			case QMetaType::Int:
 			{
 				int i = attribute.toInt(&ok);
 				if (ok)
@@ -1605,7 +1611,7 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 				}
 			}
 			break;
-			case QVariant::Double:
+			case QMetaType::Double:
 			{
 				double d = attribute.toDouble(&ok);
 				if (ok)
@@ -1620,7 +1626,7 @@ GPlatesFileIO::OgrReader::add_attributes_to_feature(
 				}
 			}
 			break;
-			case QVariant::String:
+			case QMetaType::QString:
 			default:
 				GPlatesPropertyValues::XsString::non_null_ptr_type value = 
 					GPlatesPropertyValues::XsString::create(
