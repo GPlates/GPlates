@@ -127,10 +127,10 @@ namespace GPlatesFileIO
 		 *
 		 *            %% - a literal '%' character.
 		 *            %n - the "number" (index + 1) of the frame,
-		 *               — will lie in the inclusive range [1, @a size],
+		 *               - will lie in the inclusive range [1, @a size],
 		 *               - will be padded to the width of the decimal integer representation of @a size.
 		 *            %u - the index of the frame,
-		 *               — will lie in the inclusive range [0, (@a size - 1)],
+		 *               - will lie in the inclusive range [0, (@a size - 1)],
 		 *               - will be padded to the width of the decimal integer representation of (@a size - 1).
 		 *            %f - the reconstruction-time instant of the frame, in printf-style %f format.
 		 *            %d - the reconstruction-time instant of the frame, in printf-style %d format,

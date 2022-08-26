@@ -1633,7 +1633,7 @@ namespace GPlatesFileIO
 			-G128				Solid gray
 			-G127/255/0			Chartreuse, R/G/B-style
 			-G#00ff00			Green, hexadecimal RGB code
-			-G25-0.86-0.82		Chocolate, h-s-v – style
+			-G25-0.86-0.82		Chocolate, h-s-v - style
 			-GDarkOliveGreen1	One of the named colors
 			-Gp300/7			Simple diagonal hachure pattern in b/w at 300 dpi
 			-Gp300/7:Bred		Same, but with red lines on white
@@ -1644,7 +1644,7 @@ namespace GPlatesFileIO
 			chapter 4.14
 			<The Generic Mapping Tools>
 			Version 4.5.7
-			Technical Reference and Cookbook by Pål (Paul)Wessel
+			Technical Reference and Cookbook by Pal (Paul)Wessel
 		*/
 		ColourData 
 		parse_gmt_fill(
