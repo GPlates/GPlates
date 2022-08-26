@@ -337,11 +337,7 @@ namespace GPlatesScribe
 				const key_type &key,
 				const mapped_type &value)
 		{
-			// Insert into the map.
-			// Note that we use QMap::insertMulti() instead of QMap::insert().
-			// This is because it's possible the client has used QMap like a QMultiMap by
-			// storing multiple elements with the same key.
-			return map.insertMulti(key, value);
+			return map.insert(key, value);
 		}
 	};
 
@@ -350,10 +346,71 @@ namespace GPlatesScribe
 	 * QMultiMap transcribe mapping protocol implementation.
 	 */
 	template <class Key, class T>
-	struct TranscribeMap< QMultiMap<Key, T> > :
-			// Delegate to QMap (since QMultiMap inherits from QMap)...
-			public TranscribeMap< QMap<Key, T> > // ...and uses QMap::insertMulti().
+	struct TranscribeMap< QMultiMap<Key, T> >
 	{
+		typedef QMultiMap<Key, T> map_type;
+		typedef typename map_type::key_type key_type;
+		typedef typename map_type::mapped_type mapped_type;
+		typedef typename map_type::iterator map_iterator;
+		typedef typename map_type::const_iterator map_const_iterator;
+
+		static
+		unsigned int
+		get_length(
+				const map_type &map)
+		{
+			return map.size();
+		}
+
+		static
+		std::pair<map_const_iterator, map_const_iterator>
+		get_items(
+				const map_type &map)
+		{
+			return std::make_pair(map.begin(), map.end());
+		}
+
+		static
+		std::pair<map_iterator, map_iterator>
+		get_items(
+				map_type &map)
+		{
+			return std::make_pair(map.begin(), map.end());
+		}
+
+		static
+		const key_type &
+		get_key(
+				map_const_iterator iterator)
+		{
+			return iterator.key();
+		}
+
+		static
+		const mapped_type &
+		get_value(
+				map_const_iterator iterator)
+		{
+			return iterator.value();
+		}
+
+		static
+		void
+		clear(
+				map_type &map)
+		{
+			map.clear();
+		}
+
+		static
+		boost::optional<map_iterator>
+		add_item(
+				map_type &map,
+				const key_type &key,
+				const mapped_type &value)
+		{
+			return map.insert(key, value);
+		}
 	};
 
 
