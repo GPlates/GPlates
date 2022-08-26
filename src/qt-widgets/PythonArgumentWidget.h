@@ -35,19 +35,19 @@
 #include "global/python.h"
 
 #include <QPalette>
-#include <QtCore/QVariant>
-#include <QtWidgets/QAction>
-#include <QtWidgets/QApplication>
-#include <QtWidgets/QButtonGroup>
-#include <QtWidgets/QHBoxLayout>
-#include <QtWidgets/QHeaderView>
-#include <QtWidgets/QLabel>
-#include <QtWidgets/QPushButton>
-#include <QtWidgets/QSpacerItem>
-#include <QtWidgets/QWidget>
-#include <QtWidgets/QColorDialog>
-#include <QtWidgets/QFileDialog>
-#include <QtWidgets/QLineEdit>
+#include <QVariant>
+#include <QAction>
+#include <QApplication>
+#include <QButtonGroup>
+#include <QHBoxLayout>
+#include <QHeaderView>
+#include <QLabel>
+#include <QPushButton>
+#include <QSpacerItem>
+#include <QWidget>
+#include <QColorDialog>
+#include <QFileDialog>
+#include <QLineEdit>
 
 #include "gui/PythonConfiguration.h"
 

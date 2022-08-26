@@ -28,6 +28,7 @@
 
 #include <vector>
 #include <boost/weak_ptr.hpp>
+#include <QtGlobal>
 #include <QLabel>
 #include <QPixmap>
 #include <QWidget>

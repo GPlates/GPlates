@@ -25,7 +25,7 @@
 //
 // This is caused by the following:
 //
-// - Qwt includes <qwt_math.h> which includes <QtCore/qglobal.h> which seems to eventually indirectly
+// - Qwt includes <qwt_math.h> which includes <qglobal.h> which seems to eventually indirectly
 //   include <cmath> but _USE_MATH_DEFINES is not yet defined and hence "M_PI", etc, are not defined,
 // - <qwt_math.h> later defines _USE_MATH_DEFINES and then includes <qmath.h>,
 // - <qmath.h> includes <cmath> but, since <cmath> has already been included, its include guards prevent

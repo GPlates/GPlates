@@ -35,11 +35,12 @@
 #include <vector>
 #include <boost/optional.hpp>
 
+#include <QtGlobal>
 #include <QDebug>
 #include <QLinearGradient>
 #include <QLocale>
 #include <QPainter>
-#include <QtGui/QMouseEvent>
+#include <QMouseEvent>
 #include <QSizePolicy>
 
 #include "GlobeCanvas.h"

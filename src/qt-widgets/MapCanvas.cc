@@ -27,6 +27,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <QtGlobal>
 #include <QApplication>
 #include <QDebug>
 #include <QLineF>
