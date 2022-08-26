@@ -310,7 +310,7 @@ GPlatesGui::GuiDebug::debug_system_paths()
 	qDebug() << "QStandardPaths::PicturesLocation ==" << QStandardPaths::writableLocation(QStandardPaths::PicturesLocation);
 	qDebug() << "QStandardPaths::TempLocation ==" << QStandardPaths::writableLocation(QStandardPaths::TempLocation);
 	qDebug() << "QStandardPaths::HomeLocation ==" << QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
-	qDebug() << "QStandardPaths::DataLocation ==" << QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+	qDebug() << "QStandardPaths::AppLocalDataLocation ==" << QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
 	qDebug() << "QStandardPaths::CacheLocation ==" << QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
 }
 

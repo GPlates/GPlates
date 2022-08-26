@@ -73,9 +73,9 @@ namespace
 		//   Linux: ~/.local/share/GPlates/GPlates/
 		//   Windows 7: C:/Users/*/AppData/Local/GPlates/GPlates/
 		//
-		// NOTE: In Qt5, QStandardPaths::DataLocation (called QDesktopServices::DataLocation in Qt4)
+		// NOTE: In Qt5, QStandardPaths::AppLocalDataLocation (called QDesktopServices::DataLocation in Qt4)
 		// no longer has 'data/' in the path, so this may prevent user scripts from being found.
-		QDir local_scripts_dir(QStandardPaths::writableLocation(QStandardPaths::DataLocation) + "/scripts/");
+		QDir local_scripts_dir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + "/scripts/");
 		defaults.setValue("paths/python_user_script_dir", QVariant(local_scripts_dir.absolutePath()));
 
 		// paths/python_system_script_dir :-

@@ -880,8 +880,8 @@ internal_main(int argc, char* argv[])
 	// Add the default log file to the Qt message handler.
 	//
 	// We do this after QApplication is initialised (via GPlatesQApplication above) since this adds
-	// LogToFileHandler which uses QStandardPaths::DataLocation (when GPlates is installed into a
-	// non-writeable directory) and QStandardPaths::DataLocation does not include the "GPlates/GPlates/"
+	// LogToFileHandler which uses QStandardPaths::AppLocalDataLocation (when GPlates is installed into a
+	// non-writeable directory) and QStandardPaths::AppLocalDataLocation does not include the "GPlates/GPlates/"
 	// suffix until after QApplication is created (and hence the GPlates organization and application
 	// names have been set via QCoreApplication).
 	qt_message_handler.add_log_file_handler();
