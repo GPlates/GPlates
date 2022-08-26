@@ -29,6 +29,7 @@
 #include <iostream>
 #include <limits>
 #include <sstream>
+#include <QtGlobal>
 #include <QDataStream>
 #include <QSysInfo>
 
@@ -471,7 +472,11 @@ GPlatesGui::Colour::to_hsv(
 		const Colour &colour)
 {
 	QColor qcolor = static_cast<QColor>(colour);
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+	float h, s, v, a;
+#else
 	qreal h, s, v, a;
+#endif
 	qcolor.getHsvF(&h, &s, &v, &a);
 	// Qt returns -1 for achromatic colours (ie, grays, where saturation is zero).
 	// Set to a value in the range [0,1] since that's the expected range.
