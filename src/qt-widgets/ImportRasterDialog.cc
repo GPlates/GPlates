@@ -28,6 +28,7 @@
 #include <boost/bind/bind.hpp>
 #include <boost/foreach.hpp>
 #include <QMessageBox>
+#include <QRegularExpression>
 #include <QString>
 #include <QStringList>
 #include <Qt>
@@ -788,7 +789,7 @@ GPlatesQtWidgets::ImportRasterDialog::create_gpml_file_path(
 	if (time_dependent_raster)
 	{
 		// Strip off the time from the file name if it is there.
-		QStringList tokens = base_name.split(QRegExp("[_-]"),
+		QStringList tokens = base_name.split(QRegularExpression("[_-]"),
 #if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
 			Qt::SkipEmptyParts
 #else
