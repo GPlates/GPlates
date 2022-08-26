@@ -57,7 +57,7 @@ namespace GPlatesUtils
 	 *       public GPlatesUtils::QtStreamable<UnitVector3D>
 	 *    ...
 	 *
-	 * See the Barton–Nackman trick (http://en.wikipedia.org/wiki/Barton-Nackman_trick)
+	 * See the Barton-Nackman trick (http://en.wikipedia.org/wiki/Barton-Nackman_trick)
 	 * for details on how this works.
 	 */
 	template <class Derived>
