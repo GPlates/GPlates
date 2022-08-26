@@ -23,6 +23,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QtGlobal>
+
 #include "LineReader.h"
 
 GPlatesFileIO::LineReader::LineReader(
@@ -33,7 +35,11 @@ GPlatesFileIO::LineReader::LineReader(
 {
 	// Assume input text file is UTF8 encoded (which includes the ASCII character set).
 	// If we don't specify this then UTF8 characters will not decoded correctly on reading.
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+	d_text_stream.setEncoding(QStringConverter::Utf8);
+#else
 	d_text_stream.setCodec("UTF-8");
+#endif
 }
 
 
