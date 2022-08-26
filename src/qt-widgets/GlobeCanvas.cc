@@ -42,6 +42,7 @@
 #include <QPainter>
 #include <QtGui/QMouseEvent>
 #include <QSizePolicy>
+#include <QtGlobal>
 
 #include "GlobeCanvas.h"
 
@@ -1437,8 +1438,16 @@ void
 GPlatesQtWidgets::GlobeCanvas::update_mouse_pointer_pos(
 		QMouseEvent *mouse_event) 
 {
-	d_mouse_pointer_screen_pos_x = mouse_event->x();
-	d_mouse_pointer_screen_pos_y = mouse_event->y();
+	const QPoint mouse_pointer_screen_pos = mouse_event->
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+			position().toPoint()
+#else
+			pos()
+#endif
+			;
+	
+	d_mouse_pointer_screen_pos_x = mouse_pointer_screen_pos.x();
+	d_mouse_pointer_screen_pos_y = mouse_pointer_screen_pos.y();
 
 	handle_mouse_pointer_pos_change();
 }

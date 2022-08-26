@@ -33,6 +33,7 @@
 #include <QtOpenGL/qgl.h>
 #include <QPaintEngine>
 #include <QScrollBar>
+#include <QtGlobal>
 
 #include "MapView.h"
 
@@ -241,7 +242,13 @@ void
 GPlatesQtWidgets::MapView::update_mouse_pointer_pos(
 		QMouseEvent *mouse_event)
 {
-	d_mouse_pointer_screen_pos = mouse_event->pos();
+	d_mouse_pointer_screen_pos = mouse_event->
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+			position().toPoint()
+#else
+			pos()
+#endif
+			;
 
 	handle_mouse_pointer_pos_change();
 }

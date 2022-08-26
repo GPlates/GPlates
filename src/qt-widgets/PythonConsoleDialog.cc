@@ -1154,7 +1154,11 @@ GPlatesQtWidgets::ConsoleTextEdit::mousePressEvent(
 {
 	// If the user clicks below the input widget, set focus on it.
 	QRect input_geometry = d_input_textedit->geometry();
-	if (ev->y() > input_geometry.bottom())
+	if (ev->
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+		position().
+#endif
+			y() > input_geometry.bottom())
 	{
 		d_input_textedit->setFocus();
 	}
