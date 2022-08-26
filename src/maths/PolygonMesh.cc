@@ -845,8 +845,7 @@ namespace GPlatesMaths
 			/**
 			 * Compares the lengths of two edges.
 			 */
-			struct EdgeLengthCompare :
-					public std::binary_function<Edge *, Edge *, bool>
+			struct EdgeLengthCompare
 			{
 				bool
 				operator()(

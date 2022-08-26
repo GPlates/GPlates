@@ -289,8 +289,7 @@ namespace GPlatesFileIO
 		 * offset will already be at the correct file offset for the next block (and this is not
 		 * the case for the opposite ordering).
 		 */
-		class SortByFileOffset :
-				public std::binary_function<RasterFileCacheFormat::BlockInfo, RasterFileCacheFormat::BlockInfo, bool>
+		class SortByFileOffset
 		{
 		public:
 			//! Pointer-to-data-member determines which file offset (main or coverage) to use in comparison.

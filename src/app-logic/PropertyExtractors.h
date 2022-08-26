@@ -49,10 +49,7 @@ namespace GPlatesAppLogic
 
 
 	template<typename Adaptee, typename ReturnType>
-	class PropertyExtractorAdapter :
-			public std::unary_function<
-				const GPlatesAppLogic::ReconstructionGeometry &,
-				const boost::optional<ReturnType> >
+	class PropertyExtractorAdapter
 	{
 	public:
 
@@ -89,10 +86,7 @@ namespace GPlatesAppLogic
 	/**
 	 * Extracts the plate ID for use by GenericColourScheme.
 	 */
-	class PlateIdPropertyExtractor :
-			public std::unary_function<
-				const GPlatesAppLogic::ReconstructionGeometry &,
-				const boost::optional<GPlatesModel::integer_plate_id_type> >
+	class PlateIdPropertyExtractor
 	{
 	public:
 		
@@ -106,10 +100,8 @@ namespace GPlatesAppLogic
 	/**
 	 * Extracts the age for use by GenericColourScheme.
 	 */
-	class AgePropertyExtractor :
-			public std::unary_function<
-				const GPlatesAppLogic::ReconstructionGeometry &,
-				const boost::optional<GPlatesMaths::Real> >	{
+	class AgePropertyExtractor
+	{
 	public:
 
 		typedef GPlatesMaths::Real return_type;
@@ -131,10 +123,7 @@ namespace GPlatesAppLogic
 	/**
 	 * Extracts the feature type for use by GenericColourScheme.
 	 */
-	class FeatureTypePropertyExtractor :
-			public std::unary_function<
-				const GPlatesAppLogic::ReconstructionGeometry &,
-				const boost::optional<GPlatesModel::FeatureType> >
+	class FeatureTypePropertyExtractor
 	{
 	public:
 

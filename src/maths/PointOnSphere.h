@@ -28,7 +28,6 @@
 #ifndef GPLATES_MATHS_POINTONSPHERE_H
 #define GPLATES_MATHS_POINTONSPHERE_H
 
-#include <functional>
 #include <iosfwd>
 #include <iterator>  // std::distance
 #include <QDebug>
@@ -530,8 +529,7 @@ namespace GPlatesMaths
 	 * compiled in during the map creation but a truncated version of that point compiled in during the
 	 * map look up (or vice versa). Still it's probably not in the realm of impossibility.
 	 */
-	class PointOnSphereMapPredicate :
-			public std::binary_function<PointOnSphere, PointOnSphere, bool>
+	class PointOnSphereMapPredicate
 	{
 	public:
 		bool
