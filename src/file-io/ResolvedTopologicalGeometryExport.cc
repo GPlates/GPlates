@@ -80,7 +80,7 @@ namespace GPlatesFileIO
 					OgrFormatResolvedTopologicalGeometryExport::export_resolved_topological_geometries(
 						export_per_collection,
 						grouped_recon_geoms_seq,
-						filename,
+						QFileInfo(filename),
 						referenced_files,
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
@@ -92,7 +92,7 @@ namespace GPlatesFileIO
 				case GMT:
 					GMTFormatResolvedTopologicalGeometryExport::export_resolved_topological_geometries(
 						grouped_recon_geoms_seq,
-						filename,
+						QFileInfo(filename),
 						referenced_files,
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
@@ -128,7 +128,7 @@ namespace GPlatesFileIO
 					OgrFormatResolvedTopologicalGeometryExport::export_resolved_topological_sections(
 						export_per_collection,
 						resolved_topological_sections,
-						filename,
+						QFileInfo(filename),
 						referenced_files,
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
@@ -140,7 +140,7 @@ namespace GPlatesFileIO
 				case GMT:
 					GMTFormatResolvedTopologicalGeometryExport::export_resolved_topological_sections(
 						resolved_topological_sections,
-						filename,
+						QFileInfo(filename),
 						referenced_files,
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
