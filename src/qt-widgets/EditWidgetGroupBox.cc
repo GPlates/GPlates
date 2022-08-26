@@ -94,7 +94,7 @@ GPlatesQtWidgets::EditWidgetGroupBox::EditWidgetGroupBox(
 	
 	QVBoxLayout *edit_layout = new QVBoxLayout;
 	edit_layout->setSpacing(0);
-	edit_layout->setMargin(4);
+	edit_layout->setContentsMargins(4,4,4,4);
 	edit_layout->addWidget(d_edit_age_widget_ptr);
 	edit_layout->addWidget(d_edit_angle_widget_ptr);
 	edit_layout->addWidget(d_edit_boolean_widget_ptr);
