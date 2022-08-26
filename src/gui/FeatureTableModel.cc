@@ -512,7 +512,7 @@ namespace
 				get_feature_weak_ref_if_valid(geometry);
 		if (weak_ref_opt) {
 			// Convert raw time_t into a more useful QDateTime.
-			QDateTime created = QDateTime::fromTime_t((*weak_ref_opt)->creation_time());
+			QDateTime created = QDateTime::fromSecsSinceEpoch((*weak_ref_opt)->creation_time());
 			return GPlatesUtils::qdatetime_to_elapsed_duration(created);
 		}
 		return QVariant();
