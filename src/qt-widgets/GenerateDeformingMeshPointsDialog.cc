@@ -595,7 +595,7 @@ GPlatesQtWidgets::GenerateDeformingMeshPointsDialog::setup_pages()
 	QHBoxLayout *plate_id_layout;
 	plate_id_layout = new QHBoxLayout;
 	plate_id_layout->setSpacing(2);
-	plate_id_layout->setMargin(0);
+	plate_id_layout->setContentsMargins(0,0,0,0);
 	plate_id_layout->addWidget(d_plate_id_widget);
 
 	QVBoxLayout *edit_layout;
