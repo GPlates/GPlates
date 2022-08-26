@@ -280,7 +280,7 @@ GPlatesGui::GuiDebug::debug_menu_structure()
 void
 GPlatesGui::GuiDebug::debug_font_metrics()
 {
-	QFontMetrics fm = QApplication::fontMetrics();
+	QFontMetrics fm(QApplication::font());
 
 	qDebug() << "\nFONT METRICS DEBUGGING:";
 	qDebug() << "QApplication::style() == " << QApplication::style()->metaObject()->className();
