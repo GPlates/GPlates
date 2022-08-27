@@ -86,8 +86,8 @@ GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::ReconstructScalar
 
 	scalar_type_combobox->setCursor(QCursor(Qt::ArrowCursor));
 	QObject::connect(
-			scalar_type_combobox, SIGNAL(activated(const QString &)),
-			this, SLOT(handle_scalar_type_combobox_activated(const QString &)));
+			scalar_type_combobox, SIGNAL(activated(int)),
+			this, SLOT(handle_scalar_type_combobox_activated(int)));
 
 	//
 	// Colour palette.
@@ -194,7 +194,7 @@ GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::get_title()
 
 void
 GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::handle_scalar_type_combobox_activated(
-		const QString &text)
+		int index)
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			d_current_visual_layer.lock())
@@ -208,7 +208,7 @@ GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::handle_scalar_typ
 		{
 			boost::optional<GPlatesPropertyValues::ValueObjectType> scalar_type =
 					GPlatesModel::convert_qstring_to_qualified_xml_name<
-							GPlatesPropertyValues::ValueObjectType>(text);
+							GPlatesPropertyValues::ValueObjectType>(scalar_type_combobox->itemText(index));
 			if (scalar_type)
 			{
 				layer_params->set_scalar_type(scalar_type.get());

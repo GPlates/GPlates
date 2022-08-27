@@ -93,7 +93,7 @@ namespace GPlatesQtWidgets
 
 		void
 		handle_band_combobox_activated(
-				const QString &text);
+				int index);
 
 		void
 		handle_select_palette_filename_button_clicked();
