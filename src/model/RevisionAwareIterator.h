@@ -112,11 +112,6 @@ namespace GPlatesModel
 		typedef typename HandleTraits<handle_type>::revision_type revision_type;
 
 		/**
-		 * The type returned by this iterator on dereference, with appropriate const-ness.
-		 */
-		typedef typename RevisionAwareIteratorInternals::Traits<handle_type>::value_type value_type;
-
-		/**
 		 * The type of a weak-ref to the Handle we're iterating over, with appropriate const-ness.
 		 */
 		typedef typename RevisionAwareIteratorInternals::Traits<handle_type>::handle_weak_ref_type handle_weak_ref_type;
@@ -131,6 +126,7 @@ namespace GPlatesModel
 		// Iterator typedefs.
 		//
 		using iterator_category = std::bidirectional_iterator_tag;
+		// Type returned by this iterator on dereference, with appropriate const-ness.
 		using value_type = typename RevisionAwareIteratorInternals::Traits<HandleType>::value_type;
 		using difference_type = std::ptrdiff_t;
 		// The 'pointer' inner type is set to void, because the dereference
