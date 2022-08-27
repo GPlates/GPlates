@@ -52,7 +52,7 @@ namespace {
 #if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
 			typeId()
 #else
-			type()
+			userType()
 #endif
 			)
 		{

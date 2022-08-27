@@ -75,7 +75,7 @@ GPlatesFileIO::OgrUtils::get_type_qstring_from_qvariant(
 #if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
 		typeId()
 #else
-		type()
+		userType()
 #endif
 		)
 	{
