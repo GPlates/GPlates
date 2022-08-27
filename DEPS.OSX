@@ -86,54 +86,80 @@ To include Vulkan support in Qt on macOS you unfortunately need to compile Qt fr
 This is needed because pre-compiled binary versions of Qt (eg, from Macports) do not typically support Vulkan (unlike on Windows and Ubuntu).
 Also, because Qwt depends on Qt you will also need to compile Qwt from source code (but it's much quicker to compile than Qt).
 
-To compile Qt follow the instructions here: https://doc.qt.io/qt-5/macos-building.html
+To compile Qt follow the instructions here:
+  * For Qt6: https://doc.qt.io/qt-6/macos-building.html
+    Note: Qt6 is perhaps more likely to compile successfully for more recent macOS versions (such as macOS 11 and above).
+  * For Qt5: https://doc.qt.io/qt-5/macos-building.html
+    Note: Qt5 is perhaps more likely to compile successfully for less recent macOS versions (such as macOS 10.x).
 For example:
-- Download the Qt5 source code from http://download.qt.io
-  For example, for Qt 5.15.5 download https://download.qt.io/official_releases/qt/5.15/5.15.5/single/qt-everywhere-opensource-src-5.15.5.tar.xz
-- Extract the source code. For example, "tar xjf qt-everywhere-opensource-src-5.15.5.tar.xz".
-- Create a build folder next to it. For example, "mkdir qt-everywhere-src-5.15.5-build".
-  You should now have two folders "qt-everywhere-src-5.15.5" and "qt-everywhere-src-5.15.5-build".
-- Enter the build folder. For example, "cd qt-everywhere-src-5.15.5-build".
+- Download the Qt source code from http://download.qt.io
+  For example, for Qt 6.2.4 download https://download.qt.io/official_releases/qt/6.2/6.2.4/single/qt-everywhere-src-6.2.4.tar.xz
+  (or, for Qt 5.15.5 download https://download.qt.io/official_releases/qt/5.15/5.15.5/single/qt-everywhere-opensource-src-5.15.5.tar.xz)
+- Extract the source code. For example, "tar xjf qt-everywhere-src-6.2.4.tar.xz" (or "tar xjf qt-everywhere-opensource-src-5.15.5.tar.xz").
+- Create a build folder next to it. For example, "mkdir qt-everywhere-src-6.2.4-build" (or "mkdir qt-everywhere-src-5.15.5-build").
+  You should now have two folders "qt-everywhere-src-6.2.4" and "qt-everywhere-src-6.2.4-build"
+  (or "qt-everywhere-src-5.15.5" and "qt-everywhere-src-5.15.5-build").
+- Enter the build folder. For example, "cd qt-everywhere-src-6.2.4-build" (or "cd qt-everywhere-src-5.15.5-build").
 - Configure Qt while specifying the path to the MoltenVK headers (in the Vulkan SDK).
-  For example, "../qt-everywhere-src-5.15.5/configure -I $VULKAN_SDK/../MoltenVK/include".
+  For example, "../qt-everywhere-src-6.2.4/configure -I $VULKAN_SDK/../MoltenVK/include"
+  (or "../qt-everywhere-src-5.15.5/configure -I $VULKAN_SDK/../MoltenVK/include").
   Note: This relies on having the VULKAN_SDK environment (covered in the Vulkan SDK section above).
 - Check that Vulkan support is enabled.
   The 'configure' output should say "Vulkan Yes" (there's a few pages of output you might need to scroll through to find it).
-- Compile Qt by running "make" (or better yet "make -j4").
-  NOTE: Compiling Qt takes a LONG time. So it's best to, for example, run "make -j4" on a 4-core CPU (or "make -j8" on an 8-core CPU, etc).
-        Even then it can take a number of hours.
+- Compile Qt. This differs between Qt5 and Qt6 since the latter uses CMake.
+  For Qt6:
+    Run "cmake --build . --parallel".
+    NOTE: The Qt6 build instructions require you to first install a relatively recent version of CMake (eg, 3.18.4) and Ninja.
+          For example, you can intall these via Macports using "port install cmake" and "port install ninja".
+  For Qt5:
+    Run "make" (or better yet "make -j4").
+    NOTE: Compiling Qt takes a LONG time. So it's best to, for example, run "make -j4" on a 4-core CPU (or "make -j8" on an 8-core CPU, etc).
+          Even then it can take a number of hours.
 - If you get a compile error similar to "out-of-line definition of 'setColorSpace' does not match any declaration in 'QIOSurfaceGraphicsBuffer'"
   then edit "../qt-everywhere-src-5.15.5/qtbase/src/plugins/platforms/cocoa/qiosurfacegraphicsbuffer.h" by adding the line
   "#include <CoreGraphics/CGColorSpace.h>" near the other "#include"s at the top of that file and then continue by running "make" again.
-- And finally we can install Qt by running "sudo make -j1 install".
-  Note the "-j1" since we only want to run one make job for the install (to avoid a potential race condition).
-- You should now have a Qt installation in "/usr/local/Qt-5.15.5/" for example.
+- And finally we can install Qt. This differs between Qt5 and Qt6 since the latter uses CMake.
+  For Qt6:
+    Run "sudo cmake --install .".
+  For Qt5:
+    Run "sudo make -j1 install".
+    Note the "-j1" since we only want to run one make job for the install (to avoid a potential race condition).
+- You should now have a Qt installation in "/usr/local/Qt-6.2.4/" (or "/usr/local/Qt-5.15.5/") for example.
 - You can optionally add Qt to the PATH environment variable (though it's not necessary for compiling/running GPlates/pyGPlates).
-  For example, you can add "export PATH=/usr/local/Qt-5.15.5/bin:$PATH" to your "~/.profile" (or "~/.zprofile") file.
+  For example, you can add "export PATH=/usr/local/Qt-6.2.4/bin:$PATH" (or "export PATH=/usr/local/Qt-5.15.5/bin:$PATH")
+  to your "~/.profile" (or "~/.zprofile") file.
 
 To compile Qwt follow the instructions here: https://qwt.sourceforge.io/qwtinstall.html
+Note: If you compiled Qt6 then compile Qwt 6.2 (instead of 6.1).
 For example:
 - Download the Qwt source code from https://sourceforge.net/projects/qwt/files/qwt/
-  For example, for Qwt 6.1.6 download https://sourceforge.net/projects/qwt/files/qwt/6.1.6/qwt-6.1.6.tar.bz2
-- Extract the source code. For example, "tar xjf qwt-6.1.6.tar.bz2".
-- Enter the extracted folder. For example, "cd qwt-6.1.6".
+  For example, for Qwt 6.2.0 download https://sourceforge.net/projects/qwt/files/qwt/6.2.0/qwt-6.2.0.tar.bz2
+- Extract the source code. For example, "tar xjf qwt-6.2.0.tar.bz2".
+- Enter the extracted folder. For example, "cd qwt-6.2.0".
 - In "qwtconfig.pri", comment out the QWT_INSTALL_PREFIX inside the "unix {...}" block (ie, insert '#').
   This ensures we install Qwt *inside* our Qt installation.
   So we should be left with the line "QWT_INSTALL_PREFX = $$[QT_INSTALL_PREFIX]" (the "win32 {...}" block can be ignored).
 - Create the Makefile using our installed Qt.
-  For example, "/usr/local/Qt5.15.5/bin/qmake qwt.pro".
+  For example, "/usr/local/Qt-6.2.4/bin/qmake qwt.pro".
 - Compile the source code by running "make" (or "make -j4" on a quad-core CPU).
 - Now we need to fix up the install_name of the Qwt library (otherwise the Qwt '.dylib' will fail to load when running GPlates/pyGPlates).
-  Edit "src/Makefile" to replace "-install_name qwt.framework/..." with "-install_name /usr/local/Qt-5.15.5/lib/qwt.framework/..." (eg, if using Qt 5.15.5).
+  Edit "src/Makefile" to replace "-install_name qwt.framework/..." with "-install_name /usr/local/Qt-6.2.4/lib/qwt.framework/..." (eg, if using Qt 6.2.4).
   Run "make clean" and then run "make" (or "make -j4") again. Make sure not to skip the "make clean" step.
   Note: We needed to run "make" in the previous step because it generated the "src/Makefile" (whereas "qmake" only generated "Makefile").
 - And finally we can install Qwt inside the Qt installation by running "sudo make install".
-- You should now have a Qwt framework ("qwt.framaework") in "/usr/local/Qt-5.15.5/lib/" for example.
+  Note: You may get an error installing the examples (such as "No rule to make target `animation'") but it seems you can ignore
+        this since the "qwt.framework" has already been installed just prior to this error (and that's all we need).
+- You should now have a Qwt framework ("qwt.framework") in "/usr/local/Qt-6.2.4/lib/" for example.
 
 Since Qt and Qwt are built from source (and installed in non-system directories) you will need to explicitly specify their location when building GPlates/pyGPlates.
-For example, if you installed Qt 5.15.5 (and installed Qwt inside it) then you can build GPlates/pyGPlates by typing (see BUILD.OSX):
+For example, if you installed Qt 6.2.4 (and installed Qwt inside it) then you can build GPlates/pyGPlates by typing (see BUILD.OSX):
 
-    cmake -D CMAKE_PREFIX_PATH:FILEPATH="/usr/local/Qt5.15.5;/usr/local/Qt5.15.5/lib" .
+    cmake -D CMAKE_PREFIX_PATH:FILEPATH="/usr/local/Qt-6.2.4;/usr/local/Qt-6.2.4/lib" .
+    make
+
+...or, for example, for Qt 5.15.5:
+
+    cmake -D CMAKE_PREFIX_PATH:FILEPATH="/usr/local/Qt-5.15.5;/usr/local/Qt-5.15.5/lib" .
     make
 
 
