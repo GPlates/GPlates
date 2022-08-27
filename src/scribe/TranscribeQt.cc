@@ -212,9 +212,9 @@ GPlatesScribe::transcribe(
 #if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
 					typeId()
 #else
-					type()
+					userType()
 #endif
-						!= int(QMetaType::QDateTime))
+						!= QMetaType::QDateTime)
 			{
 				return TRANSCRIBE_INCOMPATIBLE;
 			}
