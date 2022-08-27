@@ -22,10 +22,14 @@
  * with this program; if not, write to Free Software Foundation, Inc.,
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+
+#include <boost/optional.hpp>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QPushButton>
 #include <QStandardItemModel>
+// Fix Qt6 metatype for boost::optional<GPlatesPropertyValues::GpmlTimeSample> in Q_DECLARE_METATYPE()...
+#include <QTypeInfo_fix.h>
 #include <QVariant>
 
 #include "app-logic/TRSUtils.h"
