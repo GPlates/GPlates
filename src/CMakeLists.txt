@@ -235,8 +235,8 @@ set(CMAKE_AUTORCC ON)
 #       us to obtain a Vulkan compute queue (so can use compute shaders).
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
 if (QT_VERSION_MAJOR EQUAL 6)
-	# Temporarily use Core5Compat API (until fully moved to Qt6) so can still use deprecated Qt5 module XmlPatterns.
-	# And other deprecated Qt5 APIs. For example, include Qt5 <QRegExp> instead of Qt6 <QRegularExpression>.
+	# Temporarily use Core5Compat API (until fully moved to Qt6) so can still use some deprecated Qt5 APIs.
+	# For example, QRegExp instead of QRegularExpression.
 	# Remove Core5Compat when no longer supporting Qt5.
 	#
 	# Also Qt6 moved the QOpenGL* classes from (Gui module in Qt5) back into OpenGL (and new OpenGLWidgets) modules.
@@ -851,8 +851,8 @@ target_link_libraries(${SOURCE_TARGET} PUBLIC
 		Qt${QT_VERSION_MAJOR}::Widgets
 		Qt${QT_VERSION_MAJOR}::Xml)
 if (QT_VERSION_MAJOR EQUAL 6)
-	# Temporarily use Core5Compat API (until fully moved to Qt6) so can still use deprecated Qt5 module XmlPatterns.
-	# And other deprecated Qt5 APIs. For example, include Qt5 <QRegExp> instead of Qt6 <QRegularExpression>.
+	# Temporarily use Core5Compat API (until fully moved to Qt6) so can still use some deprecated Qt5 APIs.
+	# For example, QRegExp instead of QRegularExpression.
 	# Remove this when no longer supporting Qt5.
 	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::Core5Compat)
 	# Qt6 moved the QOpenGL* classes from (Gui module in Qt5) back into OpenGL (and new OpenGLWidgets) modules.
