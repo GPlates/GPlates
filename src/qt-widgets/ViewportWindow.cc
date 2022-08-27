@@ -616,8 +616,14 @@ GPlatesQtWidgets::ViewportWindow::connect_file_menu_actions()
 	QObject::connect(action_Quit, SIGNAL(triggered()),
 			this, SLOT(close()));
 
+	// Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
+	// It has been deprecated since Qt 5.13.
+	//
+	// TODO: Find a replacement library.
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
 	QObject::connect(actionConnect_WFS, SIGNAL(triggered()),
 			&dialogs(), SLOT(pop_up_connect_wfs_dialog()));
+#endif
 }
 
 
