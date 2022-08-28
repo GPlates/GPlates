@@ -31,6 +31,8 @@
 #include <QObject>
 #include <QPointF>
 #include <Qt>
+// Fix Qt6 metatype for boost::optional<QPointF> (used in signal/slots)...
+#include <QTypeInfo_fix.h>
 
 #include "maths/PointOnSphere.h"
 

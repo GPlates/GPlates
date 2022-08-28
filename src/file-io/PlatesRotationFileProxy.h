@@ -30,6 +30,7 @@
 
 #include <boost/tuple/tuple.hpp>
 
+#include <QRegExp>
 #include <QTextStream>
 
 #include "File.h"

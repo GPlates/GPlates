@@ -96,7 +96,7 @@ GPlatesFileIO::ReconstructedScalarCoverageExport::export_reconstructed_scalar_co
 	{
 		GpmlFormatReconstructedScalarCoverageExport::export_reconstructed_scalar_coverages(
 				grouped_reconstructed_scalar_coverage_seq,
-				filename,
+				QFileInfo(filename),
 				model,
 				include_dilatation_strain,
 				include_dilatation_strain_rate,
@@ -127,7 +127,7 @@ GPlatesFileIO::ReconstructedScalarCoverageExport::export_reconstructed_scalar_co
 		{
 			GpmlFormatReconstructedScalarCoverageExport::export_reconstructed_scalar_coverages(
 					grouped_features_iter->feature_geometry_groups,
-					*output_filename_iter,
+					QFileInfo(*output_filename_iter),
 					model,
 					include_dilatation_strain,
 					include_dilatation_strain_rate,
@@ -173,7 +173,7 @@ GPlatesFileIO::ReconstructedScalarCoverageExport::export_reconstructed_scalar_co
 	{
 		GMTFormatReconstructedScalarCoverageExport::export_reconstructed_scalar_coverages(
 				grouped_reconstructed_scalar_coverage_seq,
-				filename,
+				QFileInfo(filename),
 				referenced_files,
 				reconstruction_anchor_plate_id,
 				reconstruction_time,
@@ -207,7 +207,7 @@ GPlatesFileIO::ReconstructedScalarCoverageExport::export_reconstructed_scalar_co
 		{
 			GMTFormatReconstructedScalarCoverageExport::export_reconstructed_scalar_coverages(
 					grouped_features_iter->feature_geometry_groups,
-					*output_filename_iter,
+					QFileInfo(*output_filename_iter),
 					referenced_files,
 					reconstruction_anchor_plate_id,
 					reconstruction_time,

@@ -55,7 +55,8 @@ GPlatesScribe::XmlArchiveReader::XmlArchiveReader(
 	const QXmlStreamAttributes root_element_attributes = d_input_stream.attributes();
 
 	// Read the archive signature string as an attribute.
-	const QStringRef archive_signature =
+	// Archive signature is a QStringView in Qt6 (QStringRef in Qt5).
+	const auto archive_signature =
 			root_element_attributes.value(ArchiveCommon::XML_ARCHIVE_SIGNATURE_ATTRIBUTE_NAME);
 
 	// Throw exception if archive signature is invalid.

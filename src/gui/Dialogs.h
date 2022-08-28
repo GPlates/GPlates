@@ -30,6 +30,7 @@
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/weak_ptr.hpp>
+#include <QtGlobal>
 #include <QPointer>
 
 
@@ -163,8 +164,14 @@ namespace GPlatesGui
 		GPlatesQtWidgets::ConfigureVelocityLegendOverlayDialog &
 		configure_velocity_legend_overlay_dialog();
 
+		// Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
+		// It has been deprecated since Qt 5.13.
+		//
+		// TODO: Find a replacement library.
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
 		GPlatesQtWidgets::ConnectWFSDialog &
 		connect_wfs_dialog();
+#endif
 
 		GPlatesQtWidgets::CreateVGPDialog &
 		create_vgp_dialog();
@@ -285,8 +292,14 @@ namespace GPlatesGui
 		void
 		pop_up_configure_velocity_legend_overlay_dialog();
 
+		// Qt6 removed the QtXmlPatterns module providing support for XPath, XQuery, XSLT, and XML Schema validation.
+		// It has been deprecated since Qt 5.13.
+		//
+		// TODO: Find a replacement library.
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
 		void
 		pop_up_connect_wfs_dialog();
+#endif
 
 		void
 		pop_up_create_vgp_dialog();

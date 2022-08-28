@@ -26,7 +26,12 @@
 #ifndef GPLATES_OPENGL_GLCONTEXTIMPL_H
 #define GPLATES_OPENGL_GLCONTEXTIMPL_H
 
+#include <QtGlobal>
 #include <QOpenGLContext>
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+// Qt6 moved QOpenGLContext::versionFunctions() to QOpenGLVersionFunctionsFactory::get().
+#include <QOpenGLVersionFunctionsFactory>
+#endif
 #include <QOpenGLWidget>
 
 #include "GLContext.h"
@@ -53,11 +58,11 @@ namespace GPlatesOpenGL
 				d_opengl_widget(opengl_widget)
 			{  }
 
-			const QOpenGLContext &
+			QOpenGLContext &
 			get_opengl_context() const override
 			{
 				// Make sure the QOpenGLContext used by QOpenGLWidget has been initialised.
-				const QOpenGLContext *opengl_context = d_opengl_widget.context();
+				QOpenGLContext *opengl_context = d_opengl_widget.context();
 				GPlatesGlobal::Assert<OpenGLException>(
 						opengl_context,
 						GPLATES_ASSERTION_SOURCE,
@@ -83,7 +88,12 @@ namespace GPlatesOpenGL
 					const QOpenGLVersionProfile &version_profile) const override
 			{
 				// Returns null if requesting functions that are not in the version or profile of the context.
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+				// Qt6 moved QOpenGLContext::versionFunctions() to QOpenGLVersionFunctionsFactory::get().
+				return QOpenGLVersionFunctionsFactory::get(version_profile, &get_opengl_context());
+#else
 				return get_opengl_context().versionFunctions(version_profile);
+#endif
 			}
 
 			GLuint

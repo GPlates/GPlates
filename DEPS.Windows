@@ -42,22 +42,25 @@ and function correctly with newer versions of these dependencies.
 
 Microsoft Visual Studio
 
-  1. Install Visual Studio Community 2015 (14.0) or newer.
+  1. Install Visual Studio Community 2019 (version 16) or newer
+     (he dependency library Qt6 supports Visual Studio 2019 and newer).
+     Note: Microsoft Visual C++ uses several different versioning scheme.
+           See https://en.wikipedia.org/wiki/Microsoft_Visual_C%2B%2B#Internal_version_numbering
   2. Use the same compiler (major version) to build all library dependencies (listed below).
      * This is needed for ABI compatibility during the final link stage (when linking GPlates/pyGPlates).
      * However some C libraries are suggested below to be installed as pre-compiled such as Python and NetCDF.
        Some of these are likely to have been compiled with different (older) compilers (such as NetCDF).
        This is probably OK since these libraries use the "C" language (or have a "C" interface) which tends to
        have better ABI compatibility support (than C++). Ideally these libraries should also be compiled from source.
-     * Note that it is OK to build all dependency libraries with VS2015 and then compile/link GPlates/pyGPlates with VS2017 or VS2019.
-       See https://docs.microsoft.com/en-us/cpp/porting/binary-compat-2015-2017?view=vs-2017
+     * Note that it is OK to build all dependency libraries with VS2019 and then compile/link GPlates/pyGPlates with VS2022.
+       See https://docs.microsoft.com/en-us/cpp/porting/binary-compat-2015-2017?view=msvc-170
      * For developers, a good article on ABI compatibility can be found here:
        https://community.kde.org/Policies/Binary_Compatibility_Issues_With_C%2B%2B
   3. For any activities requiring the command line, remember to use the
      developer command prompt shortcut for your Visual Studio 64-bit compiler.
      These are available in the Windows "Start" menu in the folder of your version of Visual Studio.
-     For example, for Visual Studio 2017 you should see "x64 Native Tools Command Prompt for VS 2017"
-     under the "Visual Studio 2017" folder. This starts a command prompt and sets up environment variables,
+     For example, for Visual Studio 2019 you should see "x64 Native Tools Command Prompt for VS 2019"
+     under the "Visual Studio 2019" folder. This starts a command prompt and sets up environment variables,
      allowing use of VC command line applications (such as the compiler, linker, make and build tools).
      Then you can compile the libraries dependencies from within this command prompt.
   4. Typically each dependency library has its own build instructions (covered in the rest of this document below).
@@ -78,7 +81,7 @@ Microsoft Visual Studio
 
 CMake
 
-  1. Get and install the latest CMake (at least 3.10) from: http://www.cmake.org/
+  1. Get and install the latest CMake from: http://www.cmake.org/
 
 Vulkan
 
@@ -89,40 +92,35 @@ Vulkan
 
 Qt
 
-  1. Download the latest Qt5 opensource online installer from: https://www.qt.io/download-open-source
+  1. Download the latest Qt6 opensource online installer from: https://www.qt.io/download-open-source
+     Note that *offline* installers are not available for non-commercial use since Qt 5.15.
      Run the online installer exe:
      - It will ask for the username and password of your Qt account (it will ask you to sign in or create a new account).
      - Accept the obligations of using Qt Open Source (and specify whether you are an individual or a company).
-     - Select 'Custom' installation (we want Qt5, not Qt6 since we don't yet support it).
-     - Under 'Qt 5.15.x' select the compiler you are using.
-       For example, select "MSVC 2015 64-bit" when compiling using Visual Studio 2015.
+     - Select 'Custom' installation.
+     - Under 'Qt' select a version of Qt6 and the compiler you are using.
+       For example, select "6.2.4" and under that select "MSVC 2019 64-bit" when compiling using Visual Studio 2019.
      - Accept the license.
      - Select your Start Menu shortcut.
      - Finish the installation of the pre-built components.
-  2. Alternatively you can download the latest Qt5 opensource *offline* installer from: https://download.qt.io/archive/qt/
-     However, the latest will be Qt 5.14 (not Qt 5.15) since offline installers are no longer supported by Qt (for non-commercial).
-     This is https://download.qt.io/archive/qt/5.14/5.14.2/qt-opensource-windows-x86-5.14.2.exe
-     Note that you now need a Qt account to use the installer (it will ask you to sign in or create a new account).
-     Run the offline installer exe:
-     - Select the pre-built components appropriate for your compiler.
-       For example, select "MSVC 2015 64-bit" when compiling using Visual Studio 2015.
-     - Select the GPL license.
-     - Finish the installation of the pre-built components.
-  3. Alternatively you can compile from source - see https://doc.qt.io/qt-5/windows-building.html
-  4. Add the base of your selected pre-built components directory (assuming you chose step 1 or 2) to the CMAKE_PREFIX_PATH environment variable.
-     For example, "C:\SDK\qt\qt-5.15.3\5.15.3\msvc2015_64".
-  5. Add the Qt \bin directory (associated with your selected pre-built components) to the PATH environment variable.
-     For example, "C:\SDK\qt\qt-5.15.3\5.15.3\msvc2015_64\bin".
-     Note you may need to insert near front of PATH to prioritise over other installed software containing Qt5 DLLs
-     otherwise GPlates/pyGPlates might not start complaining that some symbol in one of the Qt5 DLLs cannot be found.
+  2. Alternatively you can compile from source - see https://doc.qt.io/qt-6/windows-building.html
+  3. Add the base of your selected pre-built components directory (assuming you chose step 1 or 2) to the CMAKE_PREFIX_PATH environment variable.
+     For example, "C:\SDK\qt\6.2.4\msvc2019_64".
+  4. Add the Qt \bin directory (associated with your selected pre-built components) to the PATH environment variable.
+     For example, "C:\SDK\qt\6.2.4\msvc2019_64\bin".
+     Note you may need to insert near front of PATH to prioritise over other installed software containing Qt DLLs
+     otherwise GPlates/pyGPlates might not start complaining that some symbol in one of the Qt DLLs cannot be found.
+    
+    NOTE: Qt 6 uses C++17 features which requires Visual Studio 2017 (version 15.8) or above.
+          But Qt 6 also mentions support for Visual Studio 2019 (or above), so best to use at least Visual Studio 2019.
 
 Qwt
 
-  1. Get the qwt source code zip package from http://sourceforge.net/projects/qwt/files/qwt/6.1.6/
+  1. Get the Qwt 6.2 source code zip package from https://sourceforge.net/projects/qwt/files/qwt/
   2. Extract the files in the package to your preferred location (e.g. C:\SDK\qwt)
-  3. Start a Visual Studio 64-bit command prompt and navigate to your qwt location (e.g. C:\SDK\qwt\qwt-6.1.6 )
+  3. Start a Visual Studio 64-bit command prompt and navigate to your qwt location (e.g. C:\SDK\qwt\qwt-6.2.0 )
   4. Edit the QWT_INSTALL_PREFIX variable in "qwtconfig.pri" to refer to a qwt *install* location that
-     is different than the qwt location, such as a sub-directory (e.g. C:\SDK\qwt\qwt-6.1.6\msvc2015_64 ),
+     is different than the qwt location, such as a sub-directory (e.g. C:\SDK\qwt\qwt-6.2.0\msvc2019_64 ),
      so that 'nmake install' below does not fail (trying to copy the same file on top of itself).
      You should only need to change QWT_INSTALL_PREFIX inside the 'win32 { }' block.
      Note: Qwt should find the Qt installation that was installed in the above step (using qmake found via PATH).
@@ -131,8 +129,8 @@ Qwt
        nmake
   6. Then at the command prompt, run:
        nmake install
-  7. Add the Qwt *install* directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\qwt\qwt-6.1.6\msvc2015_64 ).
-  8. Add the Qwt library location (inside the *install* directory) to your PATH environment variable (eg, C:\SDK\qwt\qwt-6.1.6\lib\msvc2015_64 ).
+  7. Add the Qwt *install* directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\qwt\qwt-6.2.0\msvc2019_64 ).
+  8. Add the Qwt library location (inside the *install* directory) to your PATH environment variable (eg, C:\SDK\qwt\qwt-6.2.0\msvc2019_64\lib ).
 
 Python
   1. Download, and install, the latest Python 3 Windows installer (eg, 'http://www.python.org/downloads/').
@@ -150,17 +148,17 @@ Boost
      NOTE: You can no longer get pre-compiled binaries from http://www.boostpro.com/download
            However there are now binaries available at https://sourceforge.net/projects/boost/files/boost-binaries/
   2. Follow the instructions in the Getting Started guide (eg, at http://www.boost.org/doc/libs/1_78_0/more/getting_started/windows.html )
-     Essentially (for Visual Studio 2015) this involves:
+     Essentially (for Visual Studio 2019) this involves:
      * Starting a Visual Studio 64-bit command prompt.
      * Changing to the boost source code directory (eg, "cd C:\SDK\boost\boost_1_78_0").
      * Running '.\bootstrap.bat' (to create the BoostBuild tools).
-     * Running '.\b2 -j%NUMBER_OF_PROCESSORS% python=3.10 toolset=msvc-14.0 address-model=64 architecture=x86 link=shared threading=multi runtime-link=shared install --prefix=%CD%'
-       where 'msvc-14.0' corresponds to Visual Studio 2015 and 'address-model=64' specifies a 64-bit build.
+     * Running '.\b2 -j%NUMBER_OF_PROCESSORS% python=3.10 toolset=msvc-14.2 address-model=64 architecture=x86 link=shared threading=multi runtime-link=shared install --prefix=%CD%'
+       where 'msvc-14.2' corresponds to Visual Studio 2019 and 'address-model=64' specifies a 64-bit build.
        This installs the headers and the 'shared' libraries (DLLs and their associated ".lib"s).
        These 'shared' libraries are used by GPlates/pyGPlates.
        Note, change 'python=3.10' to your installed Python version (see below regarding compiling for multiple Python versions).
-     * Running '.\b2 -j%NUMBER_OF_PROCESSORS% python=3.10 toolset=msvc-14.0 address-model=64 architecture=x86 link=static threading=multi runtime-link=shared stage --stagedir=%CD%'
-       where 'msvc-14.0' corresponds to Visual Studio 2015 and 'address-model=64' specifies a 64-bit build.
+     * Running '.\b2 -j%NUMBER_OF_PROCESSORS% python=3.10 toolset=msvc-14.2 address-model=64 architecture=x86 link=static threading=multi runtime-link=shared stage --stagedir=%CD%'
+       where 'msvc-14.2' corresponds to Visual Studio 2019 and 'address-model=64' specifies a 64-bit build.
        This installs only the 'static' library versions (library files with the 'lib' prefix) - note the 'stage' target (instead of 'install').
        These 'static' libraries are used by CGAL.
        Note, change 'python=3.10' to your installed Python version (see below regarding compiling for multiple Python versions).
@@ -201,16 +199,16 @@ Proj
          mkdir build
          cd build
      o Configure for building:
-       Here we use Visual Studio 2015 ('-G "Visual Studio 14 2015"') in 64-bit mode ('-A x64').
+       Here we use Visual Studio 2019 ('-G "Visual Studio 16 2019"') in 64-bit mode ('-A x64').
        We set the Proj install path using '-D CMAKE_INSTALL_PREFIX ...' a directory that is different than the root of the extracted source tree.
-       For example, "C:\SDK\proj\proj-8.2.1\msvc2015_64". This ensures GPlates/pyGPlates will find the correct Proj CMake config files (the ones created when installing Proj).
+       For example, "C:\SDK\proj\proj-8.2.1\msvc2019_64". This ensures GPlates/pyGPlates will find the correct Proj CMake config files (the ones created when installing Proj).
        We disable TIFF and CURL support. If they are enabled then the relevant '-D' variables should specify their include/library locations.
        We specify the SQLite3 include/library locations. Note that if SQLite3 is already in the CMAKE_PREFIX_PATH or PATH environment variables then this is not necessary.
        We disable building of projsync since it requires CURL and we don't need to download proj data (we only need 'proj.db' which is included without downloading).
        We disable building of the testing tree since we're not going to test Proj.
        And the final '..' tells CMake the root location of the source tree (ie, parent directory of 'build').
-         cmake -G "Visual Studio 14 2015" -A x64 \
-               -D CMAKE_INSTALL_PREFIX:PATH=C:\SDK\proj\proj-8.2.1\msvc2015_64 \
+         cmake -G "Visual Studio 16 2019" -A x64 \
+               -D CMAKE_INSTALL_PREFIX:PATH=C:\SDK\proj\proj-8.2.1\msvc2019_64 \
                -D ENABLE_CURL:BOOL=OFF \
                -D ENABLE_TIFF:BOOL=OFF \
                -D SQLITE3_INCLUDE_DIR:PATH=C:\SDK\sqlite3\sqlite-amalgamation-3290000 \
@@ -222,10 +220,10 @@ Proj
          cmake --build . --config Release
      o Install Proj (into the CMAKE_INSTALL_PREFIX location specified above):
          cmake --build . --config Release --target install
-  3. Add the *install* 'bin' directory to the PATH environment variable (eg, "C:\SDK\proj\proj-8.2.1\msvc2015_64\bin").
+  3. Add the *install* 'bin' directory to the PATH environment variable (eg, "C:\SDK\proj\proj-8.2.1\msvc2019_64\bin").
      This is so the 'projinfo' executable can be found (currently only used when GPlates/pyGPlates installed/packaged as a standalone bundle).
      Note that by default a static (instead of shared DLL) Proj library is built, so PATH is not actually needed to find a Proj DLL.
-  4. Add the Proj *install* directory (see CMAKE_INSTALL_PREFIX above) to the CMAKE_PREFIX_PATH environment variable (eg, "C:\SDK\proj\proj-8.2.1\msvc2015_64").
+  4. Add the Proj *install* directory (see CMAKE_INSTALL_PREFIX above) to the CMAKE_PREFIX_PATH environment variable (eg, "C:\SDK\proj\proj-8.2.1\msvc2019_64").
      This enables CMake to find Proj when configuring GPlates/pyGPlates (see BUILD.Windows).
      Note that this is not strictly necessary since CMake can find the Proj install prefix using the PATH environment variable (CMake strips off 'bin').
 
@@ -257,8 +255,8 @@ GDAL
     5. Edit the "nmake.opt" file under the section labelled "# PROJ stuff (required dependency: PROJ >= 6)",
        o Uncomment the following two lines and specify the location of the PROJ library (see PROJ above).
        o For example, after editing, you might have something like:
-         PROJ_INCLUDE = -IC:\SDK\proj\proj-8.2.1\msvc2015_64\include
-         PROJ_LIBRARY = C:\SDK\proj\proj-8.2.1\msvc2015_64\lib\proj.lib
+         PROJ_INCLUDE = -IC:\SDK\proj\proj-8.2.1\msvc2019_64\include
+         PROJ_LIBRARY = C:\SDK\proj\proj-8.2.1\msvc2019_64\lib\proj.lib
     5. Edit the "nmake.opt" file under the section labelled "SQLite Libraries",
        o Uncomment the following two lines and specify the location of the SQLite3 library (see SQLite3 above).
        o For example, after editing, you might have something like:
@@ -268,22 +266,23 @@ GDAL
          (instead the SQLite3 amalgamation) and also specifying the '-DHAVE_SPATIALITE' and '-DSPATIALITE_AMALGAMATION' flags in 'SQLITE_INC'.
     6. Start a Visual Studio command prompt (64-bit).
        Run 'nmake /f makefile.vc' with options specifying compiler, 64 bit and the install prefix.
-       For example, to compile using Visual Studio 2015 as 64-bit and install into the "msvc2015_64" sub-directory of source code root, type:
-         nmake /f makefile.vc MSVC_VER=1900 WIN64=1 GDAL_HOME=C:\SDK\gdal\gdal-3.4.2\msvc2015_64 devinstall
+       For example, to compile using Visual Studio 2019 as 64-bit and install into the "msvc2019_64" sub-directory of source code root, type:
+         nmake /f makefile.vc MSVC_VER=1929 WIN64=1 GDAL_HOME=C:\SDK\gdal\gdal-3.4.2\msvc2019_64 devinstall
        o If 'MSVC_VER' is not specified it appears (in "nmake.opt") to default to 1900 (Visual Studio 2015). At least for GDAL 2.3 (and still there for 3.3).
+         Above we specify MSVC_VER=1929 which corresponds to Visual Studio 2019 version 16.10 (and 16.11).
        o 'WIN64=1' specifies a 64-bit build.
        o 'GDAL_HOME' specifies the install location.
-         For example, "C:\SDK\gdal\gdal-3.4.2\msvc2015_64" specifies the "msvc2015_64" sub-directory of the source code root "C:\SDK\gdal\gdal-3.4.2".
+         For example, "C:\SDK\gdal\gdal-3.4.2\msvc2019_64" specifies the "msvc2019_64" sub-directory of the source code root "C:\SDK\gdal\gdal-3.4.2".
        o If you want a debug build then add 'DEBUG=1'.
          NOTE: It appears both debug and release builds use the same filenames (so they just overwrite each other).
                Might need to pick one or the other.
        o The 'devinstall' target ensures the libraries and include files are installed (in addition to GDAL executables and data from 'install' target).
-    7. Add the *install* 'bin' directory to the PATH environment variable (eg, "C:\SDK\gdal\gdal-3.4.2\msvc2015_64\bin").
+    7. Add the *install* 'bin' directory to the PATH environment variable (eg, "C:\SDK\gdal\gdal-3.4.2\msvc2019_64\bin").
        This is so the GDAL DLL can be found at run-time.
-    8. Add the GDAL *install* directory to the CMAKE_PREFIX_PATH environment variable (eg, "C:\SDK\gdal\gdal-3.4.2\msvc2015_64").
+    8. Add the GDAL *install* directory to the CMAKE_PREFIX_PATH environment variable (eg, "C:\SDK\gdal\gdal-3.4.2\msvc2019_64").
        This enables CMake to find GDAL when configuring GPlates/pyGPlates (see BUILD.Windows).
        Note that this is not strictly necessary since CMake can find the GDAL install prefix using the PATH environment variable (CMake strips off 'bin').
-    9. Set the GDAL_DATA environment variable to the installed GDAL data directory (eg, "C:\SDK\gdal\gdal-3.4.2\msvc2015_64\data").
+    9. Set the GDAL_DATA environment variable to the installed GDAL data directory (eg, "C:\SDK\gdal\gdal-3.4.2\msvc2019_64\data").
        This enables GDAL to find its resource data.
     
     NOTE that GDAL 2.3 (and above) use C++11 features which requires Visual Studio 2015 (or above).
@@ -310,8 +309,7 @@ CGAL
     
     NOTE: CGAL 5 (and above) use C++14 features which requires Visual Studio 2015 (or above).
     NOTE: CGAL 4 appears to require Visual Studio 2017 (or above), which introduced __has_include,
-          when compiling GPlates/pyGPlates (even though CGAL docs say VS2015 is fine). So while using VS2015
-          should be fine for compiling the other dependencies, you might need VS2017+ to compile GPlates/pyGPlates.
+          when compiling GPlates/pyGPlates (even though CGAL docs say VS2015 is fine).
           
 
 zlib
@@ -319,7 +317,7 @@ zlib
   1. Download the source code for version 1.2.12 http://zlib.net/
   2. Extract to a location on your hard drive (eg, "C:\SDK\zlib\zlib-1.2.12").
   2. Open the appropriate Visual Studio solution in the 'contrib/vstudio/' directory.
-     For example, for Visual Studio 2015 open 'contrib/vstudio/vc14/zlibvc.sln'.
+     For example, for Visual Studio 2019 open 'contrib/vstudio/vc14/zlibvc.sln'.
   3. Build zlib:
      * Select the 'Release' build type. (GPlates/pyGPlates developers may also want to build 'Debug').
      * Select configuration type 'x64' for a 64-bit build.

@@ -30,7 +30,7 @@
 #include <iostream>
 #include <limits>
 #include <boost/scoped_array.hpp>
-#include <QtCore/qglobal.h>
+#include <qglobal.h>
 #include <QDataStream>
 #include <QDateTime>
 #include <QDebug>

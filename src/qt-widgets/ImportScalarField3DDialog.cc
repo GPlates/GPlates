@@ -30,6 +30,7 @@
 #include <QDebug>
 #include <QFile>
 #include <QMessageBox>
+#include <QRegularExpression>
 #include <QString>
 #include <QStringList>
 #include <QTextStream>
@@ -632,7 +633,7 @@ GPlatesQtWidgets::ImportScalarField3DDialog::create_file_basename_with_path() co
 	QString fixed_file_basename;
 
 	// Strip off the depth from the file name if it is there.
-	QStringList tokens = base_name.split(QRegExp("[_-]"),
+	QStringList tokens = base_name.split(QRegularExpression("[_-]"),
 #if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
 		Qt::SkipEmptyParts
 #else

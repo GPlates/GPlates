@@ -274,7 +274,7 @@ void
 GPlatesQtWidgets::AgeModelManagerDialog::setup_connections()
 {
 	QObject::connect(button_import,SIGNAL(clicked()),this,SLOT(handle_import()));
-	QObject::connect(combo_active_model,SIGNAL(currentIndexChanged(QString)),this,SLOT(handle_combo_box_current_index_changed()));
+	QObject::connect(combo_active_model,SIGNAL(currentIndexChanged(int)),this,SLOT(handle_combo_box_current_index_changed()));
 }
 
 void

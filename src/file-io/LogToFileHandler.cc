@@ -99,7 +99,7 @@ GPlatesFileIO::LogToFileHandler::LogToFileHandler(
 		// macOS   - "~/Library/Application Support/GPlates/GPlates/"
 		// Linux   - "~/.local/share/GPlates/GPlates/".
 		//
-		const QDir app_data_dir(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
+		const QDir app_data_dir(QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation));
 		const QString log_basename = QFileInfo(d_log_file.fileName()).fileName();
 		const QString app_data_log_filename = app_data_dir.absolutePath() + "/" + log_basename;
 

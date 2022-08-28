@@ -451,13 +451,13 @@ GPlatesQtWidgets::HellingerDialog::HellingerDialog(
 
 	// And we need a location to store some temporary files which are used in exchanging data between GPlates and the python scripts.
 	//
-	// NOTE: In Qt5, QStandardPaths::DataLocation (called QDesktopServices::DataLocation in Qt4) no longer has 'data/' in the path.
-	d_path_for_temporary_files = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+	// NOTE: In Qt5, QStandardPaths::AppLocalDataLocation (called QDesktopServices::DataLocation in Qt4) no longer has 'data/' in the path.
+	d_path_for_temporary_files = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
 
 	// This is the path for text files containing fit results
 	//
-	// NOTE: In Qt5, QStandardPaths::DataLocation (called QDesktopServices::DataLocation in Qt4) no longer has 'data/' in the path.
-	d_output_file_path = QStandardPaths::writableLocation(QStandardPaths::DataLocation);
+	// NOTE: In Qt5, QStandardPaths::AppLocalDataLocation (called QDesktopServices::DataLocation in Qt4) no longer has 'data/' in the path.
+	d_output_file_path = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation);
 
 	// The temporary location might not exist - if it doesn't, try to create it.
 	QDir dir(d_path_for_temporary_files);

@@ -30,8 +30,7 @@ product page for Visual Studio.
 
 Version requirements
 
-GPlates/pyGPlates can be built with version 14.0 (2015) of Microsoft Visual C++ (Visual Studio 2015),
-although Visual Studio 2017 (or above) is preferred.
+GPlates/pyGPlates can be built with Visual Studio Community 2019 (version 16) or newer.
 As newer versions of Visual Studio are released, newer versions of the
 dependencies will likely be required; if in doubt, for each dependency, download
 the latest version instead of the version stated in DEPS.Windows.
@@ -46,8 +45,8 @@ Note before starting
 
 For any activities requiring the command line, remember to use the developer command prompt shortcut
 for your Visual Studio 64-bit compiler. These are available in the Windows "Start" menu in the folder
-of your version of Visual Studio. For example, for Visual Studio 2017 you should see
-"x64 Native Tools Command Prompt for VS 2017" under the "Visual Studio 2017" folder.
+of your version of Visual Studio. For example, for Visual Studio 2019 you should see
+"x64 Native Tools Command Prompt for VS 2019" under the "Visual Studio 2019" folder.
 This starts a command prompt and sets up environment variables, allowing use of VC command line
 applications (such as the compiler, linker, make and build tools).
 
@@ -65,7 +64,7 @@ Creating Visual Studio solution and project files with CMake
   4.  Set the 'build' directory to be the same as the 'source' directory for in-place builds or
       to a different directory for out-of-place builds (recommended for developers).
   5.  Click 'Configure'.
-  6.  Specify your version of "Visual Studio" (such as "Visual Studio 15 2017") and specify "x64" as the
+  6.  Specify your version of "Visual Studio" (such as "Visual Studio 16 2019") and specify "x64" as the
       platform for the generator. Note that the library dependencies should also be compiled as 64-bit.
   7.  Once configuration finished you should get no popup messages saying a dependency could not be found.
       If you do then you might need to edit 'CMAKE_PREFIX_PATH' environment variable if it is not referring
@@ -106,8 +105,8 @@ Building
 
   1. Run the Visual Studio Command Prompt.
      * Click the Windows "Start" menu, open the folder containing your version of Visual Studio and
-       run the 64-bit developer command prompt. For example, for Visual Studio 2017 you should see
-       "x64 Native Tools Command Prompt for VS 2017" under the "Visual Studio 2017" folder.
+       run the 64-bit developer command prompt. For example, for Visual Studio 2019 you should see
+       "x64 Native Tools Command Prompt for VS 2019" under the "Visual Studio 2019" folder.
   2. Go to the root 'build' directory (using "cd /d <build_dir>"). 
   3. Type the following on the command-line to build a release version of GPlates:
        msbuild gplates.sln /m /t:gplates /p:Configuration=Release /v:minimal
@@ -120,8 +119,8 @@ Installing
 
   1. Run the Visual Studio Command Prompt.
      * Click the Windows "Start" menu, open the folder containing your version of Visual Studio and
-       run the 64-bit developer command prompt. For example, for Visual Studio 2017 you should see
-       "x64 Native Tools Command Prompt for VS 2017" under the "Visual Studio 2017" folder.
+       run the 64-bit developer command prompt. For example, for Visual Studio 2019 you should see
+       "x64 Native Tools Command Prompt for VS 2019" under the "Visual Studio 2019" folder.
   2. Go to the root 'build' directory (using "cd /d <build_dir>").
   3. Type the following on the command-line to install a standalone version of GPlates (or pyGPlates):
        cmake --install . --prefix <install_dir>

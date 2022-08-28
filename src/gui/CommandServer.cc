@@ -219,9 +219,11 @@ GPlatesGui::CommandServer::create_command(
 		const QString& request)
 {
 	QXmlStreamReader reader(request);
-	if(reader.readNextStartElement() && ("Request" == reader.name()))//assume the first element is "Request" 
+	if(reader.readNextStartElement() &&
+		// Assume the first element is "Request"...
+		(QStringLiteral("Request") == reader.name()))
 	{
-		if(reader.readNextStartElement() && reader.name() == "Name")
+		if(reader.readNextStartElement() && reader.name() == QStringLiteral("Name"))
 		{
 			QString name = reader.readElementText().simplified();
 			if(d_command_map.find(name) != d_command_map.end())
@@ -618,7 +620,7 @@ GPlatesGui::CommandServer::create_get_begin_time_command(
 		QXmlStreamReader& reader)
 {
 	QString id;
-	if(reader.readNextStartElement() && ("FeatureID" == reader.name()))
+	if(reader.readNextStartElement() && (QStringLiteral("FeatureID") == reader.name()))
 	{
 		id = reader.readElementText().simplified();
 	}

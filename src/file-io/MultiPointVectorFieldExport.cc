@@ -98,7 +98,7 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gpm
 	{
 		GpmlFormatMultiPointVectorFieldExport::export_velocity_vector_fields(
 				grouped_velocity_vector_field_seq,
-				filename,
+				QFileInfo(filename),
 				model,
 				referenced_files,
 				reconstruction_anchor_plate_id,
@@ -129,7 +129,7 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gpm
 		{
 			GpmlFormatMultiPointVectorFieldExport::export_velocity_vector_fields(
 					grouped_features_iter->feature_geometry_groups,
-					*output_filename_iter,
+					QFileInfo(*output_filename_iter),
 					model,
 					referenced_files,
 					reconstruction_anchor_plate_id,
@@ -178,7 +178,7 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gmt
 	{
 		GMTFormatMultiPointVectorFieldExport::export_velocity_vector_fields(
 				grouped_velocity_vector_field_seq,
-				filename,
+				QFileInfo(filename),
 				referenced_files,
 				reconstruction_anchor_plate_id,
 				reconstruction_time,
@@ -215,7 +215,7 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_gmt
 		{
 			GMTFormatMultiPointVectorFieldExport::export_velocity_vector_fields(
 					grouped_features_iter->feature_geometry_groups,
-					*output_filename_iter,
+					QFileInfo(*output_filename_iter),
 					referenced_files,
 					reconstruction_anchor_plate_id,
 					reconstruction_time,
@@ -360,7 +360,7 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_ter
 		// Finally we can export to the current velocity file.
 		TerraFormatVelocityVectorFieldExport::export_velocity_vector_fields(
 				grouped_features_iter->feature_geometry_groups,
-				velocity_export_file_name,
+				QFileInfo(velocity_export_file_name),
 				mt,
 				nt,
 				nd,
@@ -479,7 +479,7 @@ GPlatesFileIO::MultiPointVectorFieldExport::export_velocity_vector_fields_to_cit
 		// Finally we can export to the current velocity file.
 		CitcomsFormatVelocityVectorFieldExport::export_global_velocity_vector_fields(
 				grouped_features_iter->feature_geometry_groups,
-				velocity_export_file_name,
+				QFileInfo(velocity_export_file_name),
 				age,
 				include_gmt_export,
 				gmt_velocity_scale,

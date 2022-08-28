@@ -102,7 +102,7 @@ namespace GPlatesApi
 		get_property(bp::object name_)
 		{
 			using namespace GPlatesDataMining;
-			QString name = QString::fromUtf8(bp::extract<const char*>(name_));
+			QString name = QString::fromUtf8(bp::extract<const char*>(name_)());
 			OpaqueData data = DataMiningUtils::get_property_value_by_name(d_handle, name);
 			
 			if(is_empty_opaque(data))

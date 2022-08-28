@@ -69,7 +69,7 @@ namespace GPlatesFileIO
 				case GMT:
 					GMTFormatFlowlinesExport::export_flowlines(
 						grouped_recon_geoms_seq,
-						filename,
+						QFileInfo(filename),
 						referenced_files,
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
@@ -81,7 +81,7 @@ namespace GPlatesFileIO
 				case GEOJSON:
 					OgrFormatFlowlineExport::export_flowlines(
 						grouped_recon_geoms_seq,
-						filename,
+						QFileInfo(filename),
 						referenced_files,
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
@@ -114,7 +114,7 @@ namespace GPlatesFileIO
 				case GEOJSON:
 					OgrFormatFlowlineExport::export_flowlines(
 						grouped_recon_geoms_seq,
-						filename,
+						QFileInfo(filename),
 						referenced_files,
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,
@@ -125,7 +125,7 @@ namespace GPlatesFileIO
 				case GMT:
 					GMTFormatFlowlinesExport::export_flowlines(
 						grouped_recon_geoms_seq,
-						filename,
+						QFileInfo(filename),
 						referenced_files,
 						active_reconstruction_files,
 						reconstruction_anchor_plate_id,

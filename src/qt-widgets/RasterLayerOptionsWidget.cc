@@ -69,8 +69,8 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::RasterLayerOptionsWidget(
 
 	band_combobox->setCursor(QCursor(Qt::ArrowCursor));
 	QObject::connect(
-			band_combobox, SIGNAL(activated(const QString &)),
-			this, SLOT(handle_band_combobox_activated(const QString &)));
+			band_combobox, SIGNAL(activated(int)),
+			this, SLOT(handle_band_combobox_activated(int)));
 
 	opacity_spinbox->setCursor(QCursor(Qt::ArrowCursor));
 	QObject::connect(
@@ -244,7 +244,7 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::get_title()
 
 void
 GPlatesQtWidgets::RasterLayerOptionsWidget::handle_band_combobox_activated(
-		const QString &text)
+		int index)
 {
 	if (boost::shared_ptr<GPlatesPresentation::VisualLayer> locked_visual_layer =
 			d_current_visual_layer.lock())
@@ -256,7 +256,7 @@ GPlatesQtWidgets::RasterLayerOptionsWidget::handle_band_combobox_activated(
 					layer.get_layer_params().get());
 		if (layer_params)
 		{
-			layer_params->set_band_name(GPlatesUtils::UnicodeString(text));
+			layer_params->set_band_name(GPlatesUtils::UnicodeString(band_combobox->itemText(index)));
 		}
 	}
 }

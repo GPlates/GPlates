@@ -27,6 +27,7 @@
 #define GPLATES_SCRIBE_TRANSCRIBEQT_H
 
 #include <vector>
+#include <QtGlobal>
 #include <QByteArray>
 #include <QDateTime>
 #include <QList>
@@ -90,7 +91,7 @@ namespace GPlatesScribe
 	/**
 	 * Transcribe QVariant.
 	 *
-	 * NOTE: If the type stored in the QVariant is a user type (ie, not a builtin type - see 'QVariant::Type')
+	 * NOTE: If the type stored in the QVariant is a user type (ie, not a builtin type - see 'QMetaType::Type')
 	 * then it must be registered with 'qRegisterMetaType()' and 'qRegisterMetaTypeStreamOperators()'.
 	 * And it must also supply QDataStream '<<' and '>>' operators for the user type.
 	 * This also applies to any user types that the stored type depends on (if it is a template type).
@@ -184,6 +185,9 @@ namespace GPlatesScribe
 			QStringList &string_list_object,
 			bool transcribed_construct_data);
 
+	// Qt6 defines QVector as an alias to QList.
+	// So they are the same type and QVector will now go through the QList transcribe overload.
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
 	//! Transcribe QVector.
 	template <typename T>
 	TranscribeResult
@@ -191,6 +195,7 @@ namespace GPlatesScribe
 			Scribe &scribe,
 			QVector<T> &vector_object,
 			bool transcribed_construct_data);
+#endif
 }
 
 
@@ -332,11 +337,7 @@ namespace GPlatesScribe
 				const key_type &key,
 				const mapped_type &value)
 		{
-			// Insert into the map.
-			// Note that we use QMap::insertMulti() instead of QMap::insert().
-			// This is because it's possible the client has used QMap like a QMultiMap by
-			// storing multiple elements with the same key.
-			return map.insertMulti(key, value);
+			return map.insert(key, value);
 		}
 	};
 
@@ -345,10 +346,71 @@ namespace GPlatesScribe
 	 * QMultiMap transcribe mapping protocol implementation.
 	 */
 	template <class Key, class T>
-	struct TranscribeMap< QMultiMap<Key, T> > :
-			// Delegate to QMap (since QMultiMap inherits from QMap)...
-			public TranscribeMap< QMap<Key, T> > // ...and uses QMap::insertMulti().
+	struct TranscribeMap< QMultiMap<Key, T> >
 	{
+		typedef QMultiMap<Key, T> map_type;
+		typedef typename map_type::key_type key_type;
+		typedef typename map_type::mapped_type mapped_type;
+		typedef typename map_type::iterator map_iterator;
+		typedef typename map_type::const_iterator map_const_iterator;
+
+		static
+		unsigned int
+		get_length(
+				const map_type &map)
+		{
+			return map.size();
+		}
+
+		static
+		std::pair<map_const_iterator, map_const_iterator>
+		get_items(
+				const map_type &map)
+		{
+			return std::make_pair(map.begin(), map.end());
+		}
+
+		static
+		std::pair<map_iterator, map_iterator>
+		get_items(
+				map_type &map)
+		{
+			return std::make_pair(map.begin(), map.end());
+		}
+
+		static
+		const key_type &
+		get_key(
+				map_const_iterator iterator)
+		{
+			return iterator.key();
+		}
+
+		static
+		const mapped_type &
+		get_value(
+				map_const_iterator iterator)
+		{
+			return iterator.value();
+		}
+
+		static
+		void
+		clear(
+				map_type &map)
+		{
+			map.clear();
+		}
+
+		static
+		boost::optional<map_iterator>
+		add_item(
+				map_type &map,
+				const key_type &key,
+				const mapped_type &value)
+		{
+			return map.insert(key, value);
+		}
 	};
 
 
@@ -418,6 +480,9 @@ namespace GPlatesScribe
 	}
 
 
+	// Qt6 defines QVector as an alias to QList.
+	// So they are the same type and QVector will now go through the QList transcribe overload.
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
 	template <typename T>
 	TranscribeResult
 	transcribe(
@@ -427,6 +492,7 @@ namespace GPlatesScribe
 	{
 		return transcribe_sequence_protocol(TRANSCRIBE_SOURCE, scribe, vector_object);
 	}
+#endif
 }
 
 #endif // GPLATES_SCRIBE_TRANSCRIBEQT_H

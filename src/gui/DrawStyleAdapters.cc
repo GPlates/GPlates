@@ -77,7 +77,7 @@ GPlatesGui::PythonStyleAdapter::PythonStyleAdapter(
 	{
 		GPlatesApi::PythonInterpreterLocker lock;
 		boost::python::object py_class = d_py_obj.attr("__class__");
-		d_name	=  QString::fromUtf8(boost::python::extract<const char*>(py_class.attr("__name__")));
+		d_name	=  QString::fromUtf8(boost::python::extract<const char*>(py_class.attr("__name__"))());
 
 		init_configuration();
 	}
@@ -134,8 +134,8 @@ GPlatesGui::PythonStyleAdapter::init_configuration()
 		for (int i = 0; i < len; i++)
 		{
 			bp::tuple t = bp::extract<bp::tuple>(tmp_cfg_items[i]);
-			QString key = QString::fromUtf8(bp::extract<const char*>(t[0]));
-			QString value = QString::fromUtf8(bp::extract<const char*>(t[1]));
+			QString key = QString::fromUtf8(bp::extract<const char*>(t[0])());
+			QString value = QString::fromUtf8(bp::extract<const char*>(t[1])());
 			QString sub_key = key.right(key.length() - key.indexOf('/') -1);
 			key.chop(key.length() - key.indexOf('/'));
 			if(key == cfg_name)
@@ -199,7 +199,7 @@ GPlatesGui::PythonStyleAdapter::register_alternative_draw_styles(
 
 		for (int i = 0; i < num_var_items; i++) {
 			bp::tuple variant_tuple = bp::extract<bp::tuple>(var_items[i]);
-			QString variant_name = QString::fromUtf8(bp::extract<const char*>(variant_tuple[0]));
+			QString variant_name = QString::fromUtf8(bp::extract<const char*>(variant_tuple[0])());
 			bp::dict variant_config = bp::extract<bp::dict>(variant_tuple[1]);
 
 			// Create a clone of this StyleAdapter to handle the config variant.
@@ -218,8 +218,8 @@ GPlatesGui::PythonStyleAdapter::register_alternative_draw_styles(
 
 			for (int j = 0; j < num_variant_config_items; j++) {
 				bp::tuple var_cfg_tuple = bp::extract<bp::tuple>(variant_config_items[j]);
-				QString key = QString::fromUtf8(bp::extract<const char*>(var_cfg_tuple[0]));
-				QString val = QString::fromUtf8(bp::extract<const char*>(var_cfg_tuple[1]));
+				QString key = QString::fromUtf8(bp::extract<const char*>(var_cfg_tuple[0])());
+				QString val = QString::fromUtf8(bp::extract<const char*>(var_cfg_tuple[1])());
 
 				// Set the appropriate key-value on the Configuration.
 				ConfigurationItem* cfg_item = variant_cfg.get(key);

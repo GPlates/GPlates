@@ -37,6 +37,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/type_traits/is_same.hpp>
+#include <QRegularExpression>
 #include <QString>
 #include <QStringList>
 #include <QTextStream>
@@ -694,15 +695,15 @@ namespace GPlatesFileIO
 		{
 			// RGB or +RGB, or HSV or +HSV, or CMYK or +CMYK
 			// Also make case insensitive since CPT files exist with "hsv" for example.
-			static const QRegExp rgb_regex("\\+?RGB", Qt::CaseInsensitive);
-			static const QRegExp hsv_regex("\\+?HSV", Qt::CaseInsensitive);
-			static const QRegExp cmyk_regex("\\+?CMYK", Qt::CaseInsensitive);
+			static const QRegularExpression rgb_regex("\\+?RGB", QRegularExpression::CaseInsensitiveOption);
+			static const QRegularExpression hsv_regex("\\+?HSV", QRegularExpression::CaseInsensitiveOption);
+			static const QRegularExpression cmyk_regex("\\+?CMYK", QRegularExpression::CaseInsensitiveOption);
 
 			if (line.startsWith("#"))
 			{
 				// Remove the # and see if the resulting comment is a colour model statement.
 				QString comment = line.right(line.length() - 1);
-				QStringList tokens = comment.split(QRegExp("[=\\s+]"),
+				QStringList tokens = comment.split(QRegularExpression("[=\\s+]"),
 #if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
 					Qt::SkipEmptyParts
 #else
@@ -711,15 +712,15 @@ namespace GPlatesFileIO
 				);
 				if (tokens.count() == 2 && tokens.at(0) == "COLOR_MODEL")
 				{
-					if (rgb_regex.exactMatch(tokens.at(1)))
+					if (rgb_regex.match(tokens.at(1)).hasMatch())
 					{
 						parser_state.colour_model = GPlatesGui::ColourModel::RGB;
 					}
-					else if (hsv_regex.exactMatch(tokens.at(1)))
+					else if (hsv_regex.match(tokens.at(1)).hasMatch())
 					{
 						parser_state.colour_model = GPlatesGui::ColourModel::HSV;
 					}
-					else if (cmyk_regex.exactMatch(tokens.at(1)))
+					else if (cmyk_regex.match(tokens.at(1)).hasMatch())
 					{
 						parser_state.colour_model = GPlatesGui::ColourModel::CMYK;
 					}
@@ -1220,7 +1221,8 @@ namespace GPlatesFileIO
 				}
 
 				// Split the string by whitespace.
-				QStringList tokens = line.split(QRegExp("\\s+"),
+				QStringList tokens = line.split(
+					QRegularExpression("\\s+"),
 #if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
 					Qt::SkipEmptyParts
 #else
@@ -1631,7 +1633,7 @@ namespace GPlatesFileIO
 			-G128				Solid gray
 			-G127/255/0			Chartreuse, R/G/B-style
 			-G#00ff00			Green, hexadecimal RGB code
-			-G25-0.86-0.82		Chocolate, h-s-v – style
+			-G25-0.86-0.82		Chocolate, h-s-v - style
 			-GDarkOliveGreen1	One of the named colors
 			-Gp300/7			Simple diagonal hachure pattern in b/w at 300 dpi
 			-Gp300/7:Bred		Same, but with red lines on white
@@ -1642,7 +1644,7 @@ namespace GPlatesFileIO
 			chapter 4.14
 			<The Generic Mapping Tools>
 			Version 4.5.7
-			Technical Reference and Cookbook by Pål (Paul)Wessel
+			Technical Reference and Cookbook by Pal (Paul)Wessel
 		*/
 		ColourData 
 		parse_gmt_fill(

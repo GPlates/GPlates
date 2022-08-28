@@ -296,12 +296,18 @@ namespace
 		 * Links are either the child links or the parent links.
 		 */
 		class ProfileLinkIterator :
-				public std::iterator<
-						std::iterator_traits<profile_link_map_const_iterator>::iterator_category,
-						ProfileLink>,
 				public boost::equality_comparable<ProfileLinkIterator>
 		{
 		public:
+
+			// Iterator typedefs.
+			using iterator_category = std::iterator_traits<profile_link_map_const_iterator>::iterator_category;
+			using value_type = ProfileLink;
+			using difference_type = std::ptrdiff_t;
+			using pointer = ProfileLink *;
+			using reference = ProfileLink &;
+
+
 			ProfileLinkIterator(
 					const profile_link_map_type &profile_link_map,
 					const profile_link_map_const_iterator &profile_link_map_const_iter) :

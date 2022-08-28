@@ -34,6 +34,9 @@
 #include <QPointer>
 #include <QString>
 #include <QStringList>
+// Fix Qt6 metatype for boost::optional<GPlatesPresentation::SessionManagement::InternalSessionInfo> and
+// boost::optional<GPlatesPresentation::SessionManagement::ProjectInfo> (used in signal/slots)...
+#include <QTypeInfo_fix.h>
 
 #include "InternalSession.h"
 #include "ProjectSession.h"

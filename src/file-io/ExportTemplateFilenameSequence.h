@@ -127,10 +127,10 @@ namespace GPlatesFileIO
 		 *
 		 *            %% - a literal '%' character.
 		 *            %n - the "number" (index + 1) of the frame,
-		 *               — will lie in the inclusive range [1, @a size],
+		 *               - will lie in the inclusive range [1, @a size],
 		 *               - will be padded to the width of the decimal integer representation of @a size.
 		 *            %u - the index of the frame,
-		 *               — will lie in the inclusive range [0, (@a size - 1)],
+		 *               - will lie in the inclusive range [0, (@a size - 1)],
 		 *               - will be padded to the width of the decimal integer representation of (@a size - 1).
 		 *            %f - the reconstruction-time instant of the frame, in printf-style %f format.
 		 *            %d - the reconstruction-time instant of the frame, in printf-style %d format,
@@ -219,11 +219,19 @@ namespace GPlatesFileIO
 	 * Dereferencing iterator returns a 'const QString'.
 	 */
 	class ExportTemplateFilenameSequenceIterator :
-			public std::iterator<std::forward_iterator_tag, const QString>,
 			public boost::equality_comparable<ExportTemplateFilenameSequenceIterator>,
 			public boost::incrementable<ExportTemplateFilenameSequenceIterator>
 	{
 	public:
+
+		// Iterator typedefs.
+		using iterator_category = std::forward_iterator_tag;
+		using value_type = const QString;
+		using difference_type = std::ptrdiff_t;
+		using pointer = const QString *;
+		using reference = const QString &;
+
+
 		ExportTemplateFilenameSequenceIterator() :
 			d_sequence_impl(NULL),
 			d_sequence_index(0)

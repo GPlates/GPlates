@@ -33,6 +33,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/test/floating_point_comparison.hpp>
 #include <boost/weak_ptr.hpp>
+#include <QtGlobal>
 #include <QBuffer>
 #include <QDebug>
 #include <QFile>
@@ -500,8 +501,11 @@ GPlatesUnitTest::TranscribePrimitivesTest::Data::initialise()
 	// Test wrapping a user-defined type into QVariant - requires registration with Qt.
 	qRegisterMetaType<StringWithEmbeddedZeros>(
 			"GPlatesUnitTest::TranscribePrimitivesTest::Data::StringWithEmbeddedZeros");
+#if QT_VERSION < QT_VERSION_CHECK(6,0,0)
+	// No longer required in Qt6 (it can determine it directly from the type).
 	qRegisterMetaTypeStreamOperators<StringWithEmbeddedZeros>(
 			"GPlatesUnitTest::TranscribePrimitivesTest::Data::StringWithEmbeddedZeros");
+#endif
 	const StringWithEmbeddedZeros qvar_string_with_zeros = { test_q_string };
 	qv_reg.setValue(qvar_string_with_zeros);
 

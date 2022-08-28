@@ -151,7 +151,7 @@ GPlatesFileIO::DeformationExport::export_deformation_to_gpml_format(
 	{
 		GpmlFormatDeformationExport::export_deformation(
 				grouped_deformed_feature_geometry_seq,
-				filename,
+				QFileInfo(filename),
 				model,
 				include_principal_strain,
 				include_dilatation_strain,
@@ -184,7 +184,7 @@ GPlatesFileIO::DeformationExport::export_deformation_to_gpml_format(
 		{
 			GpmlFormatDeformationExport::export_deformation(
 					grouped_features_iter->feature_geometry_groups,
-					*output_filename_iter,
+					QFileInfo(*output_filename_iter),
 					model,
 					include_principal_strain,
 					include_dilatation_strain,
@@ -234,7 +234,7 @@ GPlatesFileIO::DeformationExport::export_deformation_to_gmt_format(
 	{
 		GMTFormatDeformationExport::export_deformation(
 				grouped_deformed_feature_geometry_seq,
-				filename,
+				QFileInfo(filename),
 				referenced_files,
 				reconstruction_anchor_plate_id,
 				reconstruction_time,
@@ -270,7 +270,7 @@ GPlatesFileIO::DeformationExport::export_deformation_to_gmt_format(
 		{
 			GMTFormatDeformationExport::export_deformation(
 					grouped_features_iter->feature_geometry_groups,
-					*output_filename_iter,
+					QFileInfo(*output_filename_iter),
 					referenced_files,
 					reconstruction_anchor_plate_id,
 					reconstruction_time,

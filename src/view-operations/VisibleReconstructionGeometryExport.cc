@@ -227,7 +227,7 @@ namespace GPlatesViewOperations
 				GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_sections(
 						topological_sections_filename,
 						GPlatesFileIO::ResolvedTopologicalGeometryExport::get_export_file_format(
-								topological_sections_filename,
+								QFileInfo(topological_sections_filename),
 								file_format_registry),
 						filtered_resolved_topological_section_ptrs,
 						active_files,
@@ -278,7 +278,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 	// Export the RFGs to a file format based on the filename extension.
 	GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_geometries(
 			filename,
-			GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(filename, file_format_registry),
+			GPlatesFileIO::ReconstructedFeatureGeometryExport::get_export_file_format(QFileInfo(filename), file_format_registry),
 			reconstruct_feature_geom_seq,
 			active_files,
 			active_reconstruction_files,
@@ -324,7 +324,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 	// Export the flowlines to a file format based on the filename extension.
 	GPlatesFileIO::ReconstructedFlowlineExport::export_reconstructed_flowlines(
 		filename,
-		GPlatesFileIO::ReconstructedFlowlineExport::get_export_file_format(filename, file_format_registry),
+		GPlatesFileIO::ReconstructedFlowlineExport::get_export_file_format(QFileInfo(filename), file_format_registry),
 		reconstructed_flowline_seq,
 		active_files,
 		active_reconstruction_files,
@@ -369,7 +369,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_recon
 	// Export the flowlines to a file format based on the filename extension.
 	GPlatesFileIO::ReconstructedMotionPathExport::export_reconstructed_motion_paths(
 		filename,
-		GPlatesFileIO::ReconstructedMotionPathExport::get_export_file_format(filename, file_format_registry),
+		GPlatesFileIO::ReconstructedMotionPathExport::get_export_file_format(QFileInfo(filename), file_format_registry),
 		reconstructed_motion_path_seq,
 		active_files,
 		active_reconstruction_files,
@@ -482,7 +482,7 @@ GPlatesViewOperations::VisibleReconstructionGeometryExport::export_visible_resol
 	GPlatesFileIO::ResolvedTopologicalGeometryExport::export_resolved_topological_geometries(
 			topological_geometries_filename,
 			GPlatesFileIO::ResolvedTopologicalGeometryExport::get_export_file_format(
-					topological_geometries_filename,
+					QFileInfo(topological_geometries_filename),
 					file_format_registry),
 			resolved_topologies_seq,
 			active_files,

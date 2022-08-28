@@ -51,19 +51,19 @@ namespace GPlatesViewOperations
 	 * Manages the rendered geometry system for a particular view.
 	 *
      * * All rendering goes through RenderedGeometryCollection. It has main layers
-	 *   (eg, digitisation, reconstruction – same as before) and can have child layers if needed.
+	 *   (eg, digitisation, reconstruction - same as before) and can have child layers if needed.
 	 *   This will be used by the move vertex digitise tool to draw the underlying geometry in
 	 *   one child layer and the vertices to be grabbed/moved in another layer on top.
 	 *   The layers should guarantee the draw order (eg, no z-buffer-fighting artifacts).
      * * RenderedGeometryCollection has a visitor than can visit the main layers, their child
 	 *   layers and the RenderedGeometry objects in those layers.
      * * RenderedGeometryCollection notifies any observers whenever any changes have been made
-	 *   to it or its layers (that way we don’t have to make manual calls to update the canvas
+	 *   to it or its layers (that way we don't have to make manual calls to update the canvas
 	 *   whenever we think it needs updating).
      * * RenderedGeometryCollection::UpdateGuard is just an optimisation that blocks this update
 	 *   signal until the end of the current scope (that way can make multiple changes to
 	 *   RenderedGeometryCollection and have only one update signal and hence only one redraw
-	 *   of canvas). Forgetting to put the guard in doesn’t cause program error. It just means
+	 *   of canvas). Forgetting to put the guard in doesn't cause program error. It just means
 	 *   the canvas is redrawn more times than needed. The update guards can be nested so putting
 	 *   too many in is not a problem. For nested guards, only when the highest-level guard exits
 	 *   its scope does the update signal get emitted.
@@ -74,7 +74,7 @@ namespace GPlatesViewOperations
 	 *   RenderedGeometryCollection.
      * * RenderedGeometryFactory contains global functions for creating different types of
 	 *   RenderedGeometry objects.
-     * * RenderedGeometry is a pimpl pattern (it’s basically just a boost shared_ptr so it can
+     * * RenderedGeometry is a pimpl pattern (it's basically just a boost shared_ptr so it can
 	 *   be copied around and it hides the implementation type).
      * * Only way to get RenderedGeometry implementation type is to visit it.
      * * RenderedPointOnSphere is an implementation type of RenderedGeometry that is used to
