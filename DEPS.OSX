@@ -106,6 +106,9 @@ For example:
   Note: This relies on having the VULKAN_SDK environment (covered in the Vulkan SDK section above).
 - Check that Vulkan support is enabled.
   The 'configure' output should say "Vulkan Yes" (there's a few pages of output you might need to scroll through to find it).
+- Tell Qt where to find the MoltenVK library (in the Vulkan SDK) at runtime by setting the QT_VULKAN_LIB environment variable.
+  For example, "export QT_VULKAN_LIB=$VULKAN_SDK/../MoltenVK/dylib/macOS/libMoltenVK.dylib".
+  Also you can make it persistent (for future logins) by adding it to your "~/.profile" file (or "~/.zprofile" for Z shell).
 - Compile Qt. This differs between Qt5 and Qt6 since the latter uses CMake.
   For Qt6:
     Run "cmake --build . --parallel".
