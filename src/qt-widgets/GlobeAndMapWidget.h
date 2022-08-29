@@ -36,6 +36,7 @@
 
 #include "global/PointerTraits.h"
 
+#include "gui/Colour.h"
 #include "gui/ColourScheme.h"
 
 #include "maths/LatLonPoint.h"
@@ -152,7 +153,8 @@ namespace GPlatesQtWidgets
 		 */
 		QImage
 		render_to_qimage(
-				const QSize &image_size_in_device_independent_pixels);
+				const QSize &image_size_in_device_independent_pixels,
+				const GPlatesGui::Colour &image_clear_colour);
 
 		/**
 		 * Returns the OpenGL context for the active view.

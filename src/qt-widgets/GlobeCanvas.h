@@ -42,6 +42,7 @@
 #include <QPainter>
 #include <QtOpenGL/qgl.h>
 
+#include "gui/Colour.h"
 #include "gui/ColourScheme.h"
 #include "gui/Globe.h"
 #include "gui/ViewportZoom.h"
@@ -252,7 +253,8 @@ namespace GPlatesQtWidgets
 		virtual
 		QImage
 		render_to_qimage(
-				const QSize &image_size_in_device_independent_pixels);
+				const QSize &image_size_in_device_independent_pixels,
+				const GPlatesGui::Colour &image_clear_colour);
 
 		/**
 		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
@@ -684,6 +686,7 @@ namespace GPlatesQtWidgets
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_stars,
 				const GPlatesOpenGL::GLMatrix &projection_transform_text_overlay,
+				const GPlatesGui::Colour &image_clear_colour,
 				QImage &image);
 
 		/**
@@ -697,6 +700,7 @@ namespace GPlatesQtWidgets
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
 				const GPlatesOpenGL::GLMatrix &projection_transform_include_stars,
 				const GPlatesOpenGL::GLMatrix &projection_transform_text_overlay,
+				const GPlatesGui::Colour &clear_colour,
 				int paint_device_width_in_device_independent_pixels,
 				int paint_device_height_in_device_independent_pixels);
 
