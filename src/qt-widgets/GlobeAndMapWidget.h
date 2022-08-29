@@ -35,12 +35,15 @@
 
 #include "maths/PointOnSphere.h"
 
+#include "gui/Colour.h"
+
 #include "view-operations/QueryProximityThreshold.h"
 
 
 namespace GPlatesGui
 {
 	class Camera;
+	class Colour;
 }
 
 namespace GPlatesOpenGL
@@ -131,11 +134,15 @@ namespace GPlatesQtWidgets
 		 * The returned image will be a high-DPI image if this canvas has a device pixel ratio greater than 1.0
 		 * (in which case the returned QImage will have the same device pixel ratio).
 		 *
+		 * The image is cleared to @a image_clear_colour prior to rendering.
+		 * This colour will show through for pixels not rendered (or pixel rendered with transparent alpha).
+		 *
 		 * Returns a null QImage if unable to allocate enough memory for the image data.
 		 */
 		QImage
 		render_to_qimage(
-				const QSize &image_size_in_device_independent_pixels);
+				const QSize &image_size_in_device_independent_pixels,
+				const GPlatesGui::Colour &image_clear_colour);
 
 		/**
 		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.

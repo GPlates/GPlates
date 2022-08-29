@@ -99,6 +99,9 @@ GPlatesGui::ExportImageAnimationStrategy::do_export_iteration(
 			}
 		}
 
+		// Clear the image with transparent black so that, for example, PNG exports will have a transparent background.
+		const GPlatesGui::Colour image_clear_colour(0, 0, 0, 0);
+
 		// Render to the image file.
 		//
 		// Note: The returned image could be high DPI (pixel device ratio greater than 1.0).
@@ -107,7 +110,8 @@ GPlatesGui::ExportImageAnimationStrategy::do_export_iteration(
 		const QImage image = globe_and_map_widget.render_to_qimage(
 				d_configuration->image_resolution_options.image_size
 					? d_configuration->image_resolution_options.image_size.get()
-					: globe_and_map_widget.get_viewport_size());
+					: globe_and_map_widget.get_viewport_size(),
+				image_clear_colour);
 		if (image.isNull())
 		{
 			// Most likely a memory allocation failure.

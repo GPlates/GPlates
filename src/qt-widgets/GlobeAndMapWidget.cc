@@ -128,9 +128,10 @@ GPlatesQtWidgets::GlobeAndMapWidget::get_viewport_size() const
 
 QImage
 GPlatesQtWidgets::GlobeAndMapWidget::render_to_qimage(
-		const QSize &image_size_in_device_independent_pixels)
+		const QSize &image_size_in_device_independent_pixels,
+		const GPlatesGui::Colour &image_clear_colour)
 {
-	return d_globe_and_map_canvas_ptr->render_to_qimage(image_size_in_device_independent_pixels);
+	return d_globe_and_map_canvas_ptr->render_to_qimage(image_size_in_device_independent_pixels, image_clear_colour);
 }
 
 

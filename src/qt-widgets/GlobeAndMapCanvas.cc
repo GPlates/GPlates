@@ -296,7 +296,8 @@ GPlatesQtWidgets::GlobeAndMapCanvas::get_viewport_size() const
 
 QImage
 GPlatesQtWidgets::GlobeAndMapCanvas::render_to_qimage(
-		const QSize &image_size_in_device_independent_pixels)
+		const QSize &image_size_in_device_independent_pixels,
+		const GPlatesGui::Colour &image_clear_colour)
 {
 	// Initialise OpenGL if we haven't already.
 	initializeGL_if_necessary();
@@ -331,9 +332,9 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_qimage(
 		return QImage();
 	}
 
-	// Fill the image with transparent black in case there's an exception during rendering
+	// Fill the image with the clear colour in case there's an exception during rendering
 	// of one of the tiles and the image is incomplete.
-	image.fill(QColor(0,0,0,0).rgba());
+	image.fill(QColor(image_clear_colour).rgba());
 
 	const GPlatesOpenGL::GLViewport image_viewport(
 			0, 0,
@@ -373,6 +374,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_qimage(
 				image_view_transform,
 				image_projection_transform,
 				image_tile_render,
+				image_clear_colour,
 				image);
 		frame_cache_handle->push_back(image_tile_cache_handle);
 	}
@@ -433,11 +435,15 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_opengl_feedback_to_paint_device(
 			feedback_paint_device_viewport.x(), feedback_paint_device_viewport.y(),
 			feedback_paint_device_viewport.width(), feedback_paint_device_viewport.height());
 
+	// Clear colour buffer of the framebuffer (set to transparent black).
+	const GPlatesGui::Colour clear_colour(0, 0, 0, 0);
+
 	// Render the scene to the feedback paint device.
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
 	d_gl_frame_cache_handle = render_scene(
 			*gl,
 			feedback_paint_device_view_projection,
+			clear_colour,
 			// Using device-independent pixels (eg, widget dimensions)...
 			feedback_paint_device.width(),
 			feedback_paint_device.height());
@@ -531,10 +537,23 @@ GPlatesQtWidgets::GlobeAndMapCanvas::paintGL()
 	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
 	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
+	// Clear colour buffer of the main framebuffer.
+	//
+	// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
+	// the scene, that are not rendered, to have *opaque* alpha (=1). This appears to be needed on
+	// Mac with Qt5 (alpha=0 is fine on Qt5 Windows/Ubuntu, and on Qt4 for all platforms). Perhaps because
+	// QGLWidget rendering (on Qt5 Mac) is first done to a framebuffer object which is then blended into the
+	// window framebuffer (where having a source alpha of zero would result in the black background not showing).
+	// Or, more likely, maybe a framebuffer object is used on all platforms but the window framebuffer is white on Mac
+	// but already black on Windows/Ubuntu (maybe because we turned off background rendering with
+	// "setAutoFillBackground(false)" and "setAttribute(Qt::WA_NoSystemBackground)").
+	const GPlatesGui::Colour clear_colour(0, 0, 0, 1);
+
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
 	d_gl_frame_cache_handle = render_scene(
 			*gl,
 			d_view_projection,
+			clear_colour,
 			// Using device-independent pixels (eg, widget dimensions)...
 			width(),
 			height());
@@ -1146,6 +1165,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::cache_handle_type
 GPlatesQtWidgets::GlobeAndMapCanvas::render_scene(
 		GPlatesOpenGL::GL &gl,
 		const GPlatesOpenGL::GLViewProjection &view_projection,
+		const GPlatesGui::Colour &clear_colour,
 		int paint_device_width_in_device_independent_pixels,
 		int paint_device_height_in_device_independent_pixels)
 {
@@ -1159,25 +1179,8 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_scene(
 	//       But these should be enabled by default anyway.
 	gl.DepthMask(GL_TRUE);
 	gl.StencilMask(~0/*all ones*/);
-	//
-	// Note that we clear the colour to (0,0,0,0) and not (0,0,0,1) because we want any transparent
-	// parts of the scene (parts that we don't render) to have an alpha of zero.
-	// This is because this code is used not only to render the viewport window but also for exporting images of the
-	// viewport window, and we want image formats supporting transparency (like PNG) to have a transparent background.
-	//
-	// Previously we had this as (0,0,0,1) because alpha=1 it appeared to be needed on macOS with Qt5.
-	// Perhaps because QGLWidget rendering (on Qt5 Mac) was first done to a framebuffer object which was then blended
-	// into the window framebuffer (where having a source alpha of zero would result in the black background not showing).
-	// Or, more likely, maybe a framebuffer object is used on all platforms but the window framebuffer is white on Mac
-	// but already black on Windows/Ubuntu (maybe because we turned off background rendering with
-	// 	"setAutoFillBackground(false)" and "setAttribute(Qt::WA_NoSystemBackground)").
-	//
-	// Since switching to QOpenGLWidget (from QGLWidget) it doesn't appear to be an issue anymore.
-	// But we are now switching again to QVulkanWindow (all our OpenGL rendering will go through Vulkan).
-	//
-	// TODO: Check that alpha=0 works with the QVulkanWindow that we now use (instead of QOpenGLWidget).
-	//
-	gl.ClearColor(); // Clear colour to (transparent) black
+	// Use the requested clear colour.
+	gl.ClearColor(clear_colour.red(), clear_colour.green(), clear_colour.blue(), clear_colour.alpha());
 	gl.ClearDepth(); // Clear depth to 1.0
 	gl.ClearStencil(); // Clear stencil to 0
 	gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -1248,6 +1251,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_scene_tile_into_image(
 		const GPlatesOpenGL::GLMatrix &image_view_transform,
 		const GPlatesOpenGL::GLMatrix &image_projection_transform,
 		const GPlatesOpenGL::GLTileRender &image_tile_render,
+		const GPlatesGui::Colour &image_clear_colour,
 		QImage &image)
 {
 	// Make sure we leave the OpenGL state the way it was.
@@ -1306,6 +1310,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_scene_tile_into_image(
 	const cache_handle_type tile_cache_handle = render_scene(
 			gl,
 			image_tile_view_projection,
+			image_clear_colour,
 			// Since QImage is just raw pixels its dimensions are in device pixels, but
 			// we need device-independent pixels here (eg, widget dimensions)...
 			image.width() / image.devicePixelRatio(),

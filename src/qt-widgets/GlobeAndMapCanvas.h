@@ -40,6 +40,7 @@
 #include <QSize>
 #include <QtGlobal>
 
+#include "gui/Colour.h"
 #include "gui/Globe.h"
 #include "gui/Map.h"
 #include "gui/Projection.h"
@@ -145,11 +146,15 @@ namespace GPlatesQtWidgets
 		 * The returned image will be a high-DPI image if this canvas has a device pixel ratio greater than 1.0
 		 * (in which case the returned QImage will have the same device pixel ratio).
 		 *
+		 * The image is cleared to @a image_clear_colour prior to rendering.
+		 * This colour will show through for pixels not rendered (or pixel rendered with transparent alpha).
+		 *
 		 * Returns a null QImage if unable to allocate enough memory for the image data.
 		 */
 		QImage
 		render_to_qimage(
-				const QSize &image_size_in_device_independent_pixels);
+				const QSize &image_size_in_device_independent_pixels,
+				const GPlatesGui::Colour &image_clear_colour);
 
 		/**
 		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
@@ -611,6 +616,7 @@ namespace GPlatesQtWidgets
 		render_scene(
 				GPlatesOpenGL::GL &gl,
 				const GPlatesOpenGL::GLViewProjection &view_projection,
+				const GPlatesGui::Colour &clear_colour,
 				int paint_device_width_in_device_independent_pixels,
 				int paint_device_height_in_device_independent_pixels);
 
@@ -625,6 +631,7 @@ namespace GPlatesQtWidgets
 				const GPlatesOpenGL::GLMatrix &image_view_transform,
 				const GPlatesOpenGL::GLMatrix &image_projection_transform,
 				const GPlatesOpenGL::GLTileRender &image_tile_render,
+				const GPlatesGui::Colour &image_clear_colour,
 				QImage &image);
 
 		/**
