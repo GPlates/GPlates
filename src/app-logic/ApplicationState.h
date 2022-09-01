@@ -34,6 +34,7 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QObject>
+#include <QVulkanInstance>
 
 #include "FeatureCollectionFileState.h"
 #include "Layer.h"
@@ -176,7 +177,6 @@ namespace GPlatesAppLogic
 		const UserPreferences &
 		get_user_preferences() const;
 
-
 		/**
 		 * Returns the registry of various ways to reconstruct a feature
 		 * into @a ReconstructedFeatureGeometry objects.
@@ -279,6 +279,23 @@ namespace GPlatesAppLogic
 		get_age_model_collection()
 		{
 			return *d_age_model_collection;
+		}
+
+		/**
+		 * The Vulkan graphics and compute library.
+		 *
+		 * Note: The Vulkan device (used for rendering) is obtained from a QVulkanWindow (see GlobeAndMapCanvas).
+		 */
+		QVulkanInstance &
+		get_vulkan_instance()
+		{
+			return d_vulkan_instance;
+		}
+
+		const QVulkanInstance &
+		get_vulkan_instance() const
+		{
+			return d_vulkan_instance;
 		}
 
 
@@ -603,6 +620,13 @@ namespace GPlatesAppLogic
 		boost::scoped_ptr<AgeModelCollection> d_age_model_collection;
 
 		/**
+		 * The Vulkan graphics and compute library.
+		 *
+		 * Note: The Vulkan device (used for rendering) is obtained from a QVulkanWindow (see GlobeAndMapCanvas).
+		 */
+		QVulkanInstance d_vulkan_instance;
+
+		/**
 		 * Feature IDs of topological sections referenced for *all* times by all topologies
 		 * (topological geometry and network) in all loaded files.
 		 *
@@ -611,6 +635,12 @@ namespace GPlatesAppLogic
 		 */
 		mutable boost::optional< std::set<GPlatesModel::FeatureId> > d_current_topological_sections;
 
+
+		/**
+		 * Initialise the Vulkan graphics and compute library.
+		 */
+		void
+		initialise_vulkan();
 
 		/**
 		 * Make signal/slot connections that coordinate the application logic structure

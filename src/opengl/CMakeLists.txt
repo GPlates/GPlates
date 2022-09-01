@@ -126,6 +126,7 @@ set(srcs
     OpenGLException.h
     OpenGLFunctions.cc
     OpenGLFunctions.h
+    VulkanException.h
 )
 
 # Add the source files to the gplates static library (or pygplates extension module).

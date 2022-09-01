@@ -51,6 +51,8 @@
 
 #include "model/NotificationGuard.h"
 
+#include "opengl/VulkanException.h"
+
 #include "utils/Profile.h"
 
 namespace
@@ -105,6 +107,9 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_callback_feature_store(d_model->root()),
 	d_age_model_collection(new AgeModelCollection())
 {
+	// Initialise the Vulkan graphics and compute library.
+	initialise_vulkan();
+
 	// Register default layer task types with the layer task registry.
 	register_default_layer_task_types(*d_layer_task_registry, *this);
 
@@ -438,6 +443,41 @@ GPlatesAppLogic::ApplicationState::find_current_topological_sections() const
 				d_current_topological_sections.get(),
 				file_ref.get_file().get_feature_collection());
 	}
+}
+
+
+void
+GPlatesAppLogic::ApplicationState::initialise_vulkan()
+{
+	// Prefer the VK_LAYER_KHRONOS_validation layer, with fallback to the
+	// deprecated VK_LAYER_LUNARG_standard_validation layer.
+	//
+	// VK_LAYER_KHRONOS_validation now incorporates (as of the 1.1.106 SDK):
+	// 
+	//   VK_LAYER_GOOGLE_threading
+	//   VK_LAYER_LUNARG_parameter_validation
+	//   VK_LAYER_LUNARG_object_tracker
+	//   VK_LAYER_LUNARG_core_validation
+	//   VK_LAYER_GOOGLE_unique_objects
+	//
+	if (d_vulkan_instance.supportedLayers().contains("VK_LAYER_KHRONOS_validation"))
+	{
+		d_vulkan_instance.setLayers(QByteArrayList() << "VK_LAYER_KHRONOS_validation");
+	}
+	else if (d_vulkan_instance.supportedLayers().contains("VK_LAYER_LUNARG_standard_validation"))
+	{
+		d_vulkan_instance.setLayers(QByteArrayList() << "VK_LAYER_LUNARG_standard_validation");
+	}
+
+	// Initialise Vulkan.
+	if (!d_vulkan_instance.create())
+	{
+		throw GPlatesOpenGL::VulkanException(
+				GPLATES_EXCEPTION_SOURCE,
+				"Failed to create Vulkan instance.");
+	}
+
+	qDebug() << "Vulkan enabled validation layers:" << d_vulkan_instance.layers();
 }
 
 
