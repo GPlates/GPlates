@@ -34,7 +34,7 @@
 #include <boost/shared_ptr.hpp>
 #include <QImage>
 #include <QMouseEvent>
-#include <QOpenGLWidget>
+#include <QOpenGLWindow>
 #include <QPaintDevice>
 #include <QPointF>
 #include <QSize>
@@ -55,12 +55,6 @@
 #include "opengl/GLViewProjection.h"
 #include "opengl/GLVisualLayers.h"
 #include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
-
-
- // We only enable the pinch zoom gesture on the Mac.
-#if defined(Q_OS_MACOS)
-#	define GPLATES_PINCH_ZOOM_ENABLED
-#endif
 
 
 namespace GPlatesGui
@@ -85,16 +79,16 @@ namespace GPlatesQtWidgets
 	/**
 	 * Paint the globe and map views.
 	 */
-	class GlobeAndMapCanvas : 
-			public QOpenGLWidget
+	class GlobeAndMapCanvas :
+			public QOpenGLWindow
 	{
 		Q_OBJECT
 
 	public:
 
+		explicit
 		GlobeAndMapCanvas(
-				GPlatesPresentation::ViewState &view_state,
-				QWidget *parent_ = nullptr);
+				GPlatesPresentation::ViewState &view_state);
 
 		~GlobeAndMapCanvas();
 
@@ -210,13 +204,6 @@ namespace GPlatesQtWidgets
 		{
 			return d_gl_visual_layers;
 		}
-
-		/**
-		 * Set whether zooming via mouse wheel (or pinch gesture on macOS) is enabled.
-		 */
-		void
-		set_zoom_enabled(
-				bool enabled);
 
 	public Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -428,12 +415,6 @@ namespace GPlatesQtWidgets
 		wheelEvent(
 				QWheelEvent *wheel_event) override;
 
-#ifdef GPLATES_PINCH_ZOOM_ENABLED
-		bool
-		event(
-				QEvent *ev) override;
-#endif
-
 	private Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
@@ -560,20 +541,6 @@ namespace GPlatesQtWidgets
 		bool d_mouse_is_on_globe;
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
-
-
-		/**
-		 * Whether zooming (via mouse wheel or pinch gesture) is enabled.
-		 */
-		bool d_zoom_enabled;
-
-#ifdef GPLATES_PINCH_ZOOM_ENABLED
-		/**
-		 * The viewport zoom percentage at the start of a pinch gesture.
-		 * The value is boost::none if we're currently not in a pinch gesture.
-		 */
-		boost::optional<double> viewport_zoom_at_start_of_pinch;
-#endif
 
 
 		/**

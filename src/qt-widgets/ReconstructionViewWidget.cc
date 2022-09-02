@@ -377,7 +377,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_awesomebar_one(
 	QObject::connect(
 			d_time_control_widget_ptr,
 			SIGNAL(editing_finished()),
-			&d_globe_and_map_widget_ptr->get_globe_and_map_canvas(),
+			d_globe_and_map_widget_ptr,
 			SLOT(setFocus()));
 	
 	// Insert Time and Animate controls.
@@ -453,7 +453,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar(
 	QObject::connect(
 			d_zoom_control_widget_ptr,
 			SIGNAL(editing_finished()),
-			&d_globe_and_map_widget_ptr->get_globe_and_map_canvas(),
+			d_globe_and_map_widget_ptr,
 			SLOT(setFocus()));
 
 	// Insert Zoom control and coordinate labels.
@@ -502,7 +502,7 @@ GPlatesQtWidgets::ReconstructionViewWidget::construct_viewbar_with_projections(
 	QObject::connect(
 			d_zoom_control_widget_ptr,
 			SIGNAL(editing_finished()),
-			&(d_globe_and_map_widget_ptr->get_globe_and_map_canvas()),
+			d_globe_and_map_widget_ptr,
 			SLOT(setFocus()));
 
 	// Create the ProjectionControlWidget

@@ -28,7 +28,9 @@
 #ifndef GPLATES_QTWIDGETS_GLOBEANDMAPWIDGET_H
 #define GPLATES_QTWIDGETS_GLOBEANDMAPWIDGET_H
 
+#include <boost/optional.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <QtGlobal>
 #include <QWidget>
 
 #include "global/PointerTraits.h"
@@ -40,10 +42,17 @@
 #include "view-operations/QueryProximityThreshold.h"
 
 
+ // We only enable the pinch zoom gesture on the Mac.
+#if defined(Q_OS_MACOS)
+#	define GPLATES_PINCH_ZOOM_ENABLED
+#endif
+
+
 namespace GPlatesGui
 {
 	class Camera;
 	class Colour;
+	class ViewportZoom;
 }
 
 namespace GPlatesOpenGL
@@ -114,9 +123,6 @@ namespace GPlatesQtWidgets
 		is_map_active() const;
 
 
-		QSize
-		sizeHint() const override;
-
 		/**
 		 * Returns the dimensions of the viewport in device *independent* pixels (ie, widget size).
 		 *
@@ -176,6 +182,14 @@ namespace GPlatesQtWidgets
 		repainted(
 				bool mouse_down);
 
+	protected:
+
+#ifdef GPLATES_PINCH_ZOOM_ENABLED
+		bool
+		event(
+				QEvent *ev) override;
+#endif
+
 	private Q_SLOTS:
 
 		void
@@ -189,6 +203,16 @@ namespace GPlatesQtWidgets
 				QWidget *parent_ = NULL);
 
 		boost::scoped_ptr<GlobeAndMapCanvas> d_globe_and_map_canvas_ptr;
+
+#ifdef GPLATES_PINCH_ZOOM_ENABLED
+		GPlatesGui::ViewportZoom &d_viewport_zoom;
+
+		/**
+		 * The viewport zoom percentage at the start of a pinch gesture.
+		 * The value is boost::none if we're currently not in a pinch gesture.
+		 */
+		boost::optional<double> d_viewport_zoom_at_start_of_pinch;
+#endif
 	};
 }
 

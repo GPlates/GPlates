@@ -27,8 +27,14 @@
 #include <QHBoxLayout>
 
 #include "GlobeAndMapWidget.h"
+#ifdef GPLATES_PINCH_ZOOM_ENABLED // Defined in GlobeAndMapWidget.h
+#include <QPinchGesture>
+#endif
 
 #include "GlobeAndMapCanvas.h"
+
+#include "gui/Camera.h"
+#include "gui/ViewportZoom.h"
 
 #include "opengl/GLContext.h"
 
@@ -39,15 +45,33 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 		GPlatesPresentation::ViewState &view_state,
 		QWidget *parent_) :
 	QWidget(parent_),
-	d_globe_and_map_canvas_ptr(new GlobeAndMapCanvas(view_state, this))
+	d_globe_and_map_canvas_ptr(new GlobeAndMapCanvas(view_state))
+#ifdef GPLATES_PINCH_ZOOM_ENABLED
+	, d_viewport_zoom(view_state.get_viewport_zoom())
+#endif
 {
-	// Add the globe and map to this widget.
+	// The globe-and-map canvas is a QWindow (QOpenGLWindow) so wrap it in a QWidget container.
+	QWidget *globe_and_map_canvas_container =
+			QWidget::createWindowContainer(d_globe_and_map_canvas_ptr.get(), this);
+
+	// Add the globe-and-map canvas container to this widget.
 	QHBoxLayout *layout = new QHBoxLayout(this);
-	layout->addWidget(d_globe_and_map_canvas_ptr.get());
+	layout->addWidget(globe_and_map_canvas_container);
 	layout->setContentsMargins(0, 0, 0, 0);
 
+	// Ensure the globe/map will always expand to fill available space.
+	// A minumum size and non-collapsibility is set on the globe/map basically so users
+	// can't obliterate it and then wonder where their globe/map went.
+	QSizePolicy globe_and_map_size_policy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+	globe_and_map_size_policy.setHorizontalStretch(255);
+	setSizePolicy(globe_and_map_size_policy);
+	setFocusPolicy(Qt::StrongFocus);
+	// Pass focus to the globe-and-map container when we get focus.
+	setFocusProxy(globe_and_map_canvas_container);
+	setMinimumSize(100, 100);
+
 	// Make sure the cursor is always an arrow.
-	d_globe_and_map_canvas_ptr->setCursor(Qt::ArrowCursor);
+	setCursor(Qt::ArrowCursor);
 
 	// Get notified when globe and map get repainted.
 	QObject::connect(
@@ -55,18 +79,18 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 			SIGNAL(repainted(bool)),
 			this,
 			SLOT(handle_globe_or_map_repainted(bool)));
+
+#ifdef GPLATES_PINCH_ZOOM_ENABLED
+	// Gestures are handled in this class (GlobeAndMapWidget) because this class inherits from
+	// QWidget (which has the QWidget::grabGesture() method) whereas GlobeAndMapCanvas inherits from
+	// QWindow via QOpenGLWindow (which does not have this method).
+	grabGesture(Qt::PinchGesture);
+#endif
 }
 
 
 GPlatesQtWidgets::GlobeAndMapWidget::~GlobeAndMapWidget()
 {  }
-
-
-QSize
-GPlatesQtWidgets::GlobeAndMapWidget::sizeHint() const
-{
-	return d_globe_and_map_canvas_ptr->sizeHint();
-}
 
 
 void
@@ -170,3 +194,53 @@ GPlatesQtWidgets::GlobeAndMapWidget::current_proximity_inclusion_threshold(
 {
 	return d_globe_and_map_canvas_ptr->current_proximity_inclusion_threshold(click_pos_on_globe);
 }
+
+
+#ifdef GPLATES_PINCH_ZOOM_ENABLED
+bool
+GPlatesQtWidgets::GlobeAndMapWidget::event(
+		QEvent *ev)
+{
+	if (ev->type() == QEvent::Gesture)
+	{
+		QGestureEvent *gesture_ev = static_cast<QGestureEvent *>(ev);
+		bool pinch_gesture_found = false;
+
+		for (QGesture *gesture : gesture_ev->activeGestures())
+		{
+			if (gesture->gestureType() == Qt::PinchGesture)
+			{
+				gesture_ev->accept(gesture);
+				pinch_gesture_found = true;
+
+				QPinchGesture *pinch_gesture = static_cast<QPinchGesture *>(gesture);
+
+				// Handle the scaling component of the pinch gesture.
+				if (pinch_gesture->state() == Qt::GestureStarted)
+				{
+					d_viewport_zoom_at_start_of_pinch = d_viewport_zoom.zoom_percent();
+				}
+
+				d_viewport_zoom.set_zoom_percent(d_viewport_zoom_at_start_of_pinch.get() *
+						pinch_gesture->scaleFactor());
+
+				if (pinch_gesture->state() == Qt::GestureFinished)
+				{
+					d_viewport_zoom_at_start_of_pinch = boost::none;
+				}
+
+				// Handle the rotation component of the pinch gesture.
+				double angle = pinch_gesture->rotationAngle() - pinch_gesture->lastRotationAngle();
+				// We want to rotate the globe or map clockwise which means rotating the camera anticlockwise.
+				get_active_camera().rotate_anticlockwise(angle);
+			}
+		}
+
+		return pinch_gesture_found;
+	}
+	else
+	{
+		return QWidget::event(ev);
+	}
+}
+#endif

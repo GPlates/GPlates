@@ -31,9 +31,6 @@
 #include <QDebug>
 
 #include "GlobeAndMapCanvas.h"
-#ifdef GPLATES_PINCH_ZOOM_ENABLED // Defined in GlobeAndMapCanvas.h
-#include <QPinchGesture>
-#endif
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -62,14 +59,13 @@
 
 
 GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
-		GPlatesPresentation::ViewState &view_state,
-		QWidget *parent_) :
-	QOpenGLWidget(parent_),
+		GPlatesPresentation::ViewState &view_state) :
+	QOpenGLWindow(),
 	d_view_state(view_state),
 	d_gl_context(
 			GPlatesOpenGL::GLContext::create(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
-							new GPlatesOpenGL::GLContextImpl::QOpenGLWidgetImpl(*this)))),
+							new GPlatesOpenGL::GLContextImpl::QOpenGLWindowImpl(*this)))),
 	d_initialisedGL(false),
 	d_view_projection(
 			GPlatesOpenGL::GLViewport(0, 0, d_gl_context->get_width(), d_gl_context->get_height()),
@@ -84,7 +80,6 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 	// The following unit-vector initialisation value is arbitrary.
 	d_mouse_position_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_is_on_globe(false),
-	d_zoom_enabled(true),
 	d_projection(d_view_state.get_projection()),
 	d_globe(
 			view_state,
@@ -101,33 +96,6 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 	d_text_overlay(new GPlatesGui::TextOverlay(view_state.get_application_state())),
 	d_velocity_legend_overlay(new GPlatesGui::VelocityLegendOverlay())
 {
-	// Don't fill the background - we already clear the background using OpenGL in 'render_scene()' anyway.
-	//
-	// NOTE: Also there's a problem where QPainter (used in 'paintGL()') uses the background role
-	// of the canvas widget to fill the background using glClearColor/glClear - but the clear colour
-	// does not get reset to black (default OpenGL state) in 'QPainter::beginNativePainting()' which
-	// GL requires (the default OpenGL state) and hence it assumes the clear colour is black
-	// when it is not - and hence the background (behind the globe) is *not* black.
-	setAutoFillBackground(false);
-
-	// QWidget::setMouseTracking:
-	//   If mouse tracking is disabled (the default), the widget only receives mouse move
-	//   events when at least one mouse button is pressed while the mouse is being moved.
-	//
-	//   If mouse tracking is enabled, the widget receives mouse move events even if no buttons
-	//   are pressed.
-	//    -- http://doc.trolltech.com/4.3/qwidget.html#mouseTracking-prop
-	setMouseTracking(true);
-	
-	// Ensure the globe/map will always expand to fill available space.
-	// A minumum size and non-collapsibility is set on the globe/map basically so users
-	// can't obliterate it and then wonder where their globe/map went.
-	QSizePolicy globe_and_map_size_policy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-	globe_and_map_size_policy.setHorizontalStretch(255);
-	setSizePolicy(globe_and_map_size_policy);
-	setFocusPolicy(Qt::StrongFocus);
-	setMinimumSize(100, 100);
-
 	// Update our canvas whenever the RenderedGeometryCollection gets updated.
 	// This will cause 'paintGL()' to be called which will visit the rendered
 	// geometry collection and redraw it.
@@ -174,13 +142,10 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 			&d_view_state.get_map_camera(), SIGNAL(camera_changed()),
 			this, SLOT(handle_camera_change()));
 
-	handle_camera_change();
-
-#ifdef GPLATES_PINCH_ZOOM_ENABLED
-	grabGesture(Qt::PinchGesture);
-#endif
-
-	setAttribute(Qt::WA_NoSystemBackground);
+	//
+	// NOTE: This window is not yet initialised (eg, calling width() and height() might return undefined values).
+	//       This might be due to it being managed by "QWidget::createWindowContainer()" (see GlobeAndMapWidget).
+	// 
 }
 
 
@@ -476,14 +441,6 @@ GPlatesQtWidgets::GlobeAndMapCanvas::is_globe_active() const
 
 
 void
-GPlatesQtWidgets::GlobeAndMapCanvas::set_zoom_enabled(
-		bool enabled)
-{
-	d_zoom_enabled = enabled;
-}
-
-
-void
 GPlatesQtWidgets::GlobeAndMapCanvas::update_canvas()
 {
 	update();
@@ -564,7 +521,7 @@ void
 GPlatesQtWidgets::GlobeAndMapCanvas::paintEvent(
 		QPaintEvent *paint_event)
 {
-	QOpenGLWidget::paintEvent(paint_event);
+	QOpenGLWindow::paintEvent(paint_event);
 
 	// If d_mouse_press_info is not boost::none, then mouse is down.
 	Q_EMIT repainted(static_cast<bool>(d_mouse_press_info));
@@ -826,7 +783,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::keyPressEvent(
 			break;
 
 		default:
-			QOpenGLWidget::keyPressEvent(key_event);
+			QOpenGLWindow::keyPressEvent(key_event);
 	}
 }
 
@@ -835,91 +792,28 @@ void
 GPlatesQtWidgets::GlobeAndMapCanvas::wheelEvent(
 		QWheelEvent *wheel_event)
 {
-	if (d_zoom_enabled)
+	int delta = wheel_event->angleDelta().y();
+	if (delta == 0)
 	{
-		int delta = wheel_event->angleDelta().y();
-		if (delta == 0)
-		{
-			return;
-		}
+		return;
+	}
 
-		GPlatesGui::ViewportZoom &viewport_zoom = d_view_state.get_viewport_zoom();
+	GPlatesGui::ViewportZoom &viewport_zoom = d_view_state.get_viewport_zoom();
 
-		// The number 120 is derived from the Qt docs for QWheelEvent:
-		// http://doc.trolltech.com/4.3/qwheelevent.html#delta
-		static const int NUM_UNITS_PER_STEP = 120;
+	// The number 120 is derived from the Qt docs for QWheelEvent:
+	// http://doc.trolltech.com/4.3/qwheelevent.html#delta
+	static const int NUM_UNITS_PER_STEP = 120;
 
-		double num_levels = static_cast<double>(std::abs(delta)) / NUM_UNITS_PER_STEP;
-		if (delta > 0)
-		{
-			viewport_zoom.zoom_in(num_levels);
-		}
-		else
-		{
-			viewport_zoom.zoom_out(num_levels);
-		}
+	double num_levels = static_cast<double>(std::abs(delta)) / NUM_UNITS_PER_STEP;
+	if (delta > 0)
+	{
+		viewport_zoom.zoom_in(num_levels);
 	}
 	else
 	{
-		wheel_event->ignore();
+		viewport_zoom.zoom_out(num_levels);
 	}
 }
-
-
-#ifdef GPLATES_PINCH_ZOOM_ENABLED
-bool
-GPlatesQtWidgets::GlobeAndMapCanvas::event(
-		QEvent *ev)
-{
-	if (ev->type() == QEvent::Gesture)
-	{
-		if (!d_zoom_enabled)
-		{
-			return false;
-		}
-
-		QGestureEvent *gesture_ev = static_cast<QGestureEvent *>(ev);
-		bool pinch_gesture_found = false;
-
-		for (QGesture *gesture : gesture_ev->activeGestures())
-		{
-			if (gesture->gestureType() == Qt::PinchGesture)
-			{
-				gesture_ev->accept(gesture);
-				pinch_gesture_found = true;
-
-				QPinchGesture *pinch_gesture = static_cast<QPinchGesture *>(gesture);
-
-				// Handle the scaling component of the pinch gesture.
-				GPlatesGui::ViewportZoom &viewport_zoom = d_view_state.get_viewport_zoom();
-				if (pinch_gesture->state() == Qt::GestureStarted)
-				{
-					viewport_zoom_at_start_of_pinch = viewport_zoom.zoom_percent();
-				}
-
-				viewport_zoom.set_zoom_percent(*viewport_zoom_at_start_of_pinch *
-						pinch_gesture->scaleFactor());
-
-				if (pinch_gesture->state() == Qt::GestureFinished)
-				{
-					viewport_zoom_at_start_of_pinch = boost::none;
-				}
-
-				// Handle the rotation component of the pinch gesture.
-				double angle = pinch_gesture->rotationAngle() - pinch_gesture->lastRotationAngle();
-				// We want to rotate the globe or map clockwise which means rotating the camera anticlockwise.
-				get_active_camera().rotate_anticlockwise(angle);
-			}
-		}
-
-		return pinch_gesture_found;
-	}
-	else
-	{
-		return QWidget::event(ev);
-	}
-}
-#endif
 
 
 void

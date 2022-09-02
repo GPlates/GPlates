@@ -32,7 +32,7 @@
 // Qt6 moved QOpenGLContext::versionFunctions() to QOpenGLVersionFunctionsFactory::get().
 #include <QOpenGLVersionFunctionsFactory>
 #endif
-#include <QOpenGLWidget>
+#include <QOpenGLWindow>
 
 #include "GLContext.h"
 #include "OpenGLException.h"
@@ -45,24 +45,24 @@ namespace GPlatesOpenGL
 	namespace GLContextImpl
 	{
 		/**
-		 * A derivation of GLContext::Impl for QOpenGLWidget.
+		 * A derivation of GLContext::Impl for QOpenGLWindow.
 		 */
-		class QOpenGLWidgetImpl :
+		class QOpenGLWindowImpl :
 				public GLContext::Impl
 		{
 		public:
 
 			explicit
-			QOpenGLWidgetImpl(
-					QOpenGLWidget &opengl_widget) :
-				d_opengl_widget(opengl_widget)
+			QOpenGLWindowImpl(
+					QOpenGLWindow &opengl_widget) :
+				d_opengl_window(opengl_widget)
 			{  }
 
 			QOpenGLContext &
 			get_opengl_context() const override
 			{
-				// Make sure the QOpenGLContext used by QOpenGLWidget has been initialised.
-				QOpenGLContext *opengl_context = d_opengl_widget.context();
+				// Make sure the QOpenGLContext used by QOpenGLWindow has been initialised.
+				QOpenGLContext *opengl_context = d_opengl_window.context();
 				GPlatesGlobal::Assert<OpenGLException>(
 						opengl_context,
 						GPLATES_ASSERTION_SOURCE,
@@ -74,7 +74,7 @@ namespace GPlatesOpenGL
 			void
 			make_current() override
 			{
-				d_opengl_widget.makeCurrent();
+				d_opengl_window.makeCurrent();
 			}
 
 			const QSurfaceFormat
@@ -100,25 +100,25 @@ namespace GPlatesOpenGL
 			get_default_framebuffer_object() const override
 			{
 				// NOTE: Returns 0 if context not yet initialized.
-				return d_opengl_widget.defaultFramebufferObject();
+				return d_opengl_window.defaultFramebufferObject();
 			}
 
 			unsigned int
 			get_width() const override
 			{
 				// Dimensions, in OpenGL, are in device pixels.
-				return d_opengl_widget.width() * d_opengl_widget.devicePixelRatio();
+				return d_opengl_window.width() * d_opengl_window.devicePixelRatio();
 			}
 
 			unsigned int
 			get_height() const override
 			{
 				// Dimensions, in OpenGL, are in device pixels.
-				return d_opengl_widget.height() * d_opengl_widget.devicePixelRatio();
+				return d_opengl_window.height() * d_opengl_window.devicePixelRatio();
 			}
 
 		private:
-			QOpenGLWidget &d_opengl_widget;
+			QOpenGLWindow &d_opengl_window;
 		};
 	}
 }
