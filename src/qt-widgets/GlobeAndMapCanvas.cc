@@ -39,8 +39,6 @@
 #include "gui/GlobeCamera.h"
 #include "gui/MapCamera.h"
 #include "gui/MapProjection.h"
-#include "gui/TextOverlay.h"
-#include "gui/VelocityLegendOverlay.h"
 #include "gui/ViewportZoom.h"
 
 #include "maths/MathsUtils.h"
@@ -66,35 +64,14 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 			GPlatesOpenGL::GLContext::create(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
 							new GPlatesOpenGL::GLContextImpl::QOpenGLWindowImpl(*this)))),
-	d_initialisedGL(false),
-	d_view_projection(
-			GPlatesOpenGL::GLViewport(0, 0, d_gl_context->get_width(), d_gl_context->get_height()),
-			// Use identity transforms for now, these will get updated when the camera changes...
-			GPlatesOpenGL::GLMatrix::IDENTITY,
-			GPlatesOpenGL::GLMatrix::IDENTITY),
+	d_initialised_gl(false),
 	d_off_screen_render_target_dimension(OFF_SCREEN_RENDER_TARGET_DIMENSION),
-	d_gl_visual_layers(
-			GPlatesOpenGL::GLVisualLayers::create(
-					d_gl_context,
-					view_state.get_application_state())),
 	// The following unit-vector initialisation value is arbitrary.
 	d_mouse_position_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_is_on_globe(false),
-	d_projection(d_view_state.get_projection()),
-	d_globe(
-			view_state,
-			d_gl_visual_layers,
-			view_state.get_rendered_geometry_collection(),
-			view_state.get_visual_layers(),
-			devicePixelRatio()),
-	d_map(
-			view_state,
-			d_gl_visual_layers,
-			view_state.get_rendered_geometry_collection(),
-			view_state.get_visual_layers(),
-			devicePixelRatio()),
-	d_text_overlay(new GPlatesGui::TextOverlay(view_state.get_application_state())),
-	d_velocity_legend_overlay(new GPlatesGui::VelocityLegendOverlay())
+	d_scene(GPlatesGui::Scene::create(view_state, devicePixelRatio())),
+	d_scene_view(GPlatesGui::SceneView::create(view_state)),
+	d_scene_overlays(GPlatesGui::SceneOverlays::create(view_state))
 {
 	// Update our canvas whenever the RenderedGeometryCollection gets updated.
 	// This will cause 'paintGL()' to be called which will visit the rendered
@@ -107,40 +84,12 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 			this,
 			SLOT(update_canvas()));
 
-	// Handle changes in the projection. This includes globe and map projections as well as
-	// view projections (switching between orthographic and perspective).
-	QObject::connect(
-			&d_projection,
-			SIGNAL(globe_map_projection_changed(
-					const GPlatesGui::Projection::globe_map_projection_type &,
-					const GPlatesGui::Projection::globe_map_projection_type &)),
-			this,
-			SLOT(handle_globe_map_projection_changed(
-					const GPlatesGui::Projection::globe_map_projection_type &,
-					const GPlatesGui::Projection::globe_map_projection_type &)));
-	// Now handle changes to just the viewport projection.
-	QObject::connect(
-			&d_projection,
-			SIGNAL(viewport_projection_changed(
-					GPlatesGui::Projection::viewport_projection_type,
-					GPlatesGui::Projection::viewport_projection_type)),
-			this,
-			SLOT(handle_viewport_projection_changed(
-					GPlatesGui::Projection::viewport_projection_type,
-					GPlatesGui::Projection::viewport_projection_type)));
-
-	// Update our view whenever the globe and map cameras change.
+	// Update our canvas whenever the scene view changes.
 	//
-	// Note that the cameras are updated when the zoom changes.
-
-	// Globe camera.
+	// Note that the scene view changes when the globe/map cameras change.
 	QObject::connect(
-			&d_view_state.get_globe_camera(), SIGNAL(camera_changed()),
-			this, SLOT(handle_camera_change()));
-	// Map camera.
-	QObject::connect(
-			&d_view_state.get_map_camera(), SIGNAL(camera_changed()),
-			this, SLOT(handle_camera_change()));
+			&*d_scene_view, SIGNAL(view_changed()),
+			this, SLOT(update_canvas()));
 
 	//
 	// NOTE: This window is not yet initialised (eg, calling width() and height() might return undefined values).
@@ -151,7 +100,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 
 GPlatesQtWidgets::GlobeAndMapCanvas::~GlobeAndMapCanvas()
 {
-	// Note that when our data members that contain OpenGL resources (like 'd_globe' and 'd_map') are destroyed they don't actually
+	// Note that when our data members that contain OpenGL resources (like 'd_scene') are destroyed they don't actually
 	// destroy the *native* OpenGL resources. Instead the native resource *wrappers* get destroyed (see GLObjectResource)
 	// which just queue the native resources for deallocation with our resource managers (see GLObjectResourceManager).
 	// But when the resource managers get destroyed (when our 'd_gl_context' is destroyed) they also don't destroy the
@@ -159,12 +108,9 @@ GPlatesQtWidgets::GlobeAndMapCanvas::~GlobeAndMapCanvas()
 	// and 'GLContext::end_render()' get called (which only happens when we're actually going to render something).
 	//
 	// As a result, the native resources only get destroyed when the *native* OpenGL context itself is destroyed
-	// (this is taken care of by our base class QOpenGLWidget destructor).
+	// (this is taken care of by our base class QOpenGLWindow destructor).
 	//
-	// Also note we could connect to the 'QOpenGLContext::aboutToBeDestroyed' signal, but that also is unnecessary
-	// for us since we never re-parent GlobeAndMapCanvas to a different top-level window and hence are not required
-	// to destroy our resources before rebuilding them again in 'initializeGL()'. The resources only need to be destroyed
-	// once (when GPlates shuts down).
+	// Also we connect to the 'QOpenGLContext::aboutToBeDestroyed' signal to destroy our resources before the OpenGL context is destroyed.
 }
 
 
@@ -172,83 +118,12 @@ double
 GPlatesQtWidgets::GlobeAndMapCanvas::current_proximity_inclusion_threshold(
 		const GPlatesMaths::PointOnSphere &click_point) const
 {
-	// Say we pick an epsilon radius of 3 pixels around the click position.
-	// The larger this radius, the more relaxed the proximity inclusion threshold.
-	//
-	// FIXME:  Do we want this constant to instead be a variable set by a per-user preference,
-	// to enable users to specify their own epsilon radius?  (For example, users with shaky
-	// hands or very high-resolution displays might prefer a larger epsilon radius.)
-	//
-	// Note: We're specifying device *independent* pixels here.
-	//       On high-DPI displays there are more device pixels in the same physical area on screen but we're
-	//       more interested in physical area (which is better represented by device *independent* pixels).
-	const double device_independent_pixel_inclusion_threshold = 3.0;
+	// The viewport should be in device *independent* coordinates.
+	// This way if a user has a high DPI display (like Apple Retina) the higher pixel resolution
+	// does not force them to have more accurate mouse clicks.
+	const GPlatesOpenGL::GLViewport viewport(0, 0, width(), height());
 
-	//
-	// Limit the maximum angular distance on unit sphere.
-	//
-	// Globe view: When the click point is at the circumference of the visible globe, a one viewport pixel variation
-	//             can result in a large traversal on the globe since the globe surface is tangential to the view there.
-	//
-	// Map view: When the map view is tilted the click point can intersect the map plane (z=0) at an acute angle such
-	//           that one viewport pixel can cover a large area on the map.
-	//           Additionally the map projection itself (eg, Rectangular, Mollweide, etc) can further stretch the
-	//           viewport pixel (already projected onto map plane z=0) when it's inverse transformed back onto the globe.
-	//
-	// As such, a small mouse-pointer displacement on-screen can result in significantly different mouse-pointer
-	// displacements on the surface of the globe depending on the location of the click point.
-	//
-	// To take this into account we use the current view and projection transforms (and viewport) to project
-	// one screen pixel area onto the globe and find the maximum deviation of this area projected onto the globe
-	// (in terms of angular distance on the globe).
-	//
-
-	const double max_distance_inclusion_threshold = GPlatesMaths::convert_deg_to_rad(5.0);
-
-	GPlatesOpenGL::GLViewProjection gl_view_projection(
-			// Note: We don't multiply dimensions by device-pixel-ratio since we want our max pixel size to be
-			// in device *independent* coordinates. This way if a user has a high DPI display (like Apple Retina)
-			// the higher pixel resolution does not force them to have more accurate mouse clicks...
-			GPlatesOpenGL::GLViewport(0, 0, width(), height()),
-			d_view_projection.get_view_transform(),
-			// Also note that this projection transform is 'orthographic' or 'perspective', and hence is
-			// only affected by viewport *aspect ratio*, so it is independent of whether we're using
-			// device pixels or device *independent* pixels...
-			d_view_projection.get_projection_transform());
-
-	// If we're viewing the map (instead of globe) then we also need the map projection.
-	//
-	// This is because, for the map view, we need to project one screen pixel area onto the map plane (z=0) and
-	// then inverse transform from the map plane onto the globe (using the map projection, eg, Rectangular, Mollweide, etc).
-	// This finds the maximum deviation of this area projected onto the globe (in terms of angular distance on the globe).
-	boost::optional<const GPlatesGui::MapProjection &> map_projection;
-	if (is_map_active())
-	{
-		map_projection = d_view_state.get_map_projection();
-	}
-
-	// Calculate the maximum distance on the unit-sphere subtended by one viewport pixel projected onto it.
-	boost::optional< std::pair<double/*min*/, double/*max*/> > min_max_device_independent_pixel_size =
-			gl_view_projection.get_min_max_pixel_size_on_globe(click_point, map_projection);
-	// If unable to determine maximum pixel size then just return the maximum allowed proximity threshold.
-	if (!min_max_device_independent_pixel_size)
-	{
-		return std::cos(max_distance_inclusion_threshold);  // Proximity threshold is expected to be a cosine.
-	}
-
-	// Multiply the inclusive distance on unit-sphere (associated with one viewport pixel) by the
-	// number of inclusive viewport pixels.
-	double distance_inclusion_threshold = device_independent_pixel_inclusion_threshold *
-			min_max_device_independent_pixel_size->second/*max*/;
-
-	// Clamp to range to the maximum distance inclusion threshold (if necessary).
-	if (distance_inclusion_threshold > max_distance_inclusion_threshold)
-	{
-		distance_inclusion_threshold = max_distance_inclusion_threshold;
-	}
-
-	// Proximity threshold is expected to be a cosine.
-	return std::cos(distance_inclusion_threshold);
+	return d_scene_view->current_proximity_inclusion_threshold(click_point, viewport);
 }
 
 
@@ -265,7 +140,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_qimage(
 		const GPlatesGui::Colour &image_clear_colour)
 {
 	// Initialise OpenGL if we haven't already.
-	initializeGL_if_necessary();
+	initialize_gl_if_necessary();
 
 	// Make sure the OpenGL context is currently active.
 	d_gl_context->make_current();
@@ -309,12 +184,6 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_qimage(
 	const double image_aspect_ratio = double(image_size_in_device_independent_pixels.width()) /
 			image_size_in_device_independent_pixels.height();
 
-	// Get the view-projection transform for the image.
-	const GPlatesOpenGL::GLMatrix image_view_transform =
-			get_active_camera().get_view_transform();
-	const GPlatesOpenGL::GLMatrix image_projection_transform =
-			get_active_camera().get_projection_transform(image_aspect_ratio);
-
 	// The border is half the point size or line width, rounded up to nearest pixel.
 	// TODO: Use the actual maximum point size or line width to calculate this.
 	const unsigned int image_tile_border = 10;
@@ -336,8 +205,6 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_qimage(
 		// Hold onto the previous frame's cached resources *while* generating the current frame.
 		const cache_handle_type image_tile_cache_handle = render_scene_tile_into_image(
 				*gl,
-				image_view_transform,
-				image_projection_transform,
 				image_tile_render,
 				image_clear_colour,
 				image);
@@ -356,7 +223,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_opengl_feedback_to_paint_device(
 		QPaintDevice &feedback_paint_device)
 {
 	// Initialise OpenGL if we haven't already.
-	initializeGL_if_necessary();
+	initialize_gl_if_necessary();
 
 	// Make sure the OpenGL context is currently active.
 	d_gl_context->make_current();
@@ -372,8 +239,6 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_opengl_feedback_to_paint_device(
 			feedback_paint_device.width() * feedback_paint_device.devicePixelRatio();
 	const unsigned int feedback_paint_device_pixel_height =
 			feedback_paint_device.height() * feedback_paint_device.devicePixelRatio();
-	const double feedback_paint_device_aspect_ratio =
-			double(feedback_paint_device_pixel_width) / feedback_paint_device_pixel_height;
 
 	const GPlatesOpenGL::GLViewport feedback_paint_device_viewport(
 			0, 0,
@@ -381,15 +246,8 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_opengl_feedback_to_paint_device(
 			feedback_paint_device_pixel_height);
 
 	// Get the view-projection transform.
-	const GPlatesOpenGL::GLMatrix feedback_paint_device_view_transform =
-			get_active_camera().get_view_transform();
-	const GPlatesOpenGL::GLMatrix feedback_paint_device_projection_transform =
-			get_active_camera().get_projection_transform(feedback_paint_device_aspect_ratio);
-
-	const GPlatesOpenGL::GLViewProjection feedback_paint_device_view_projection(
-			feedback_paint_device_viewport,
-			feedback_paint_device_view_transform,
-			feedback_paint_device_projection_transform);
+	const GPlatesOpenGL::GLViewProjection feedback_paint_device_view_projection =
+			d_scene_view->get_view_projection(feedback_paint_device_viewport);
 
 	// Set the viewport (and scissor rectangle) to the size of the feedback paint device
 	// (instead of the globe/map canvas) since we're rendering to it (via transform feedback).
@@ -408,35 +266,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_opengl_feedback_to_paint_device(
 	d_gl_frame_cache_handle = render_scene(
 			*gl,
 			feedback_paint_device_view_projection,
-			clear_colour,
-			// Using device-independent pixels (eg, widget dimensions)...
-			feedback_paint_device.width(),
-			feedback_paint_device.height());
-}
-
-
-const GPlatesGui::Camera &
-GPlatesQtWidgets::GlobeAndMapCanvas::get_active_camera() const
-{
-	return is_globe_active()
-			? static_cast<GPlatesGui::Camera &>(d_view_state.get_globe_camera())
-			: static_cast<GPlatesGui::Camera &>(d_view_state.get_map_camera());
-}
-
-
-GPlatesGui::Camera &
-GPlatesQtWidgets::GlobeAndMapCanvas::get_active_camera()
-{
-	return is_globe_active()
-			? static_cast<GPlatesGui::Camera &>(d_view_state.get_globe_camera())
-			: static_cast<GPlatesGui::Camera &>(d_view_state.get_map_camera());
-}
-
-
-bool
-GPlatesQtWidgets::GlobeAndMapCanvas::is_globe_active() const
-{
-	return d_projection.get_globe_map_projection().is_viewing_globe_projection();
+			clear_colour);
 }
 
 
@@ -447,11 +277,23 @@ GPlatesQtWidgets::GlobeAndMapCanvas::update_canvas()
 }
 
 
-void 
+void
 GPlatesQtWidgets::GlobeAndMapCanvas::initializeGL() 
 {
+	initialize_gl();
+}
+
+
+void 
+GPlatesQtWidgets::GlobeAndMapCanvas::initialize_gl()
+{
+	// Call 'shutdown_gl()' when the QOpenGLContext is about to be destroyed.
+	QObject::connect(
+			context(), SIGNAL(aboutToBeDestroyed()),
+			this, SLOT(shutdown_gl()));
+
 	// Initialise our context-like object first.
-	d_gl_context->initialiseGL();
+	d_gl_context->initialise_gl();
 
 	// Start a render scope (all GL calls should be done inside this scope).
 	//
@@ -460,28 +302,46 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initializeGL()
 	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
 	// Create and initialise the offscreen render target.
-	initialize_off_screen_render_target(*gl);
+	create_off_screen_render_target(*gl);
 
 	// NOTE: We should not perform any operation that affects the default framebuffer (such as 'glClear()')
 	//       because it's possible the default framebuffer (associated with this GLWidget) is not yet
 	//       set up correctly despite its OpenGL context being the current rendering context.
 
-	// Initialise those parts of globe and map that require a valid OpenGL context to be bound.
-	d_globe.initialiseGL(*gl);
-	d_map.initialiseGL(*gl);
+	// Initialise the scene.
+	d_scene->initialise_gl(*gl);
 
 	// 'initializeGL()' should only be called once.
-	d_initialisedGL = true;
+	d_initialised_gl = true;
 }
 
 
 void 
-GPlatesQtWidgets::GlobeAndMapCanvas::resizeGL(
-		int new_width,
-		int new_height) 
+GPlatesQtWidgets::GlobeAndMapCanvas::shutdown_gl() 
 {
-	// The canvas dimensions have changed and this affects the projection transform of the view.
-	set_view();
+	// Start a render scope (all GL calls should be done inside this scope).
+	//
+	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
+	{
+		GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
+		GPlatesOpenGL::GL::RenderScope render_scope(*gl);
+
+		// Shutdown the scene.
+		d_scene->shutdown_gl(*gl);
+
+		// Destroy the offscreen render target.
+		destroy_off_screen_render_target(*gl);
+	}
+
+	// Shutdown our context-like object last.
+	d_gl_context->shutdown_gl();
+
+	d_initialised_gl = false;
+
+	// Disconnect 'shutdown_gl()' now that the QOpenGLContext is about to be destroyed.
+	QObject::disconnect(
+			context(), SIGNAL(aboutToBeDestroyed()),
+			this, SLOT(shutdown_gl()));
 }
 
 
@@ -493,6 +353,10 @@ GPlatesQtWidgets::GlobeAndMapCanvas::paintGL()
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
 	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
 	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
+
+	// The viewport is in device pixels since that is what OpenGL will use to render the scene.
+	const GPlatesOpenGL::GLViewport viewport(0, 0, width(), height());
+	const GPlatesOpenGL::GLViewProjection view_projection = d_scene_view->get_view_projection(viewport);
 
 	// Clear colour buffer of the main framebuffer.
 	//
@@ -507,13 +371,14 @@ GPlatesQtWidgets::GlobeAndMapCanvas::paintGL()
 	const GPlatesGui::Colour clear_colour(0, 0, 0, 1);
 
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
-	d_gl_frame_cache_handle = render_scene(
-			*gl,
-			d_view_projection,
-			clear_colour,
-			// Using device-independent pixels (eg, widget dimensions)...
-			width(),
-			height());
+	//
+	// NOTE: We hold onto the previous frame's cached resources *while* generating the current frame
+	// and then release our hold on the previous frame (by assigning the current frame's cache).
+	// This just prevents a render frame from invalidating cached resources of the previous frame
+	// in order to avoid regenerating the same cached resources unnecessarily each frame.
+	// Since the view direction usually differs little from one frame to the next there is a lot
+	// of overlap that we want to reuse (and not recalculate).
+	d_gl_frame_cache_handle = render_scene(*gl, view_projection, clear_colour);
 }
 
 
@@ -816,170 +681,14 @@ GPlatesQtWidgets::GlobeAndMapCanvas::wheelEvent(
 }
 
 
-void
-GPlatesQtWidgets::GlobeAndMapCanvas::handle_camera_change()
-{
-	// The active camera has been modified and this affects the view-projection transform of the view.
-	set_view();
-
-	// The active camera has been modified so make sure our mouse position on globe/map is up-to-date.
-	update_mouse_position_on_globe_or_map();
-
-	// QWidget::update:
-	//   Updates the widget unless updates are disabled or the widget is hidden.
-	//
-	//   This function does not cause an immediate repaint; instead it schedules a paint event
-	//   for processing when Qt returns to the main event loop.
-	//    -- http://doc.trolltech.com/4.3/qwidget.html#update
-	update_canvas();
-}
-
-
-void
-GPlatesQtWidgets::GlobeAndMapCanvas::handle_globe_map_projection_changed(
-		const GPlatesGui::Projection::globe_map_projection_type &old_globe_map_projection,
-		const GPlatesGui::Projection::globe_map_projection_type &globe_map_projection)
-{
-	//
-	// We could be switching from the globe camera to map camera (or vice versa).
-	//
-	// If so, then get the camera view orientation, tilt and viewport projection of the old camera
-	// (before the projection change) and set them on the new camera (after the projection change).
-	//
-	// The view orientation is the combined camera look-at position and the orientation rotation around that look-at position.
-	//
-	// Note: Switching between globe and map cameras (transferring view orientation, tilt and viewport projection)
-	//       doesn't necessarily cause the switched-to camera to emit a 'camera_changed' signal.
-	//       This is because the view orientation, tilt and viewport projection might not have changed.
-	//       This can happen if the user is simply switching back and forth between the globe and map views.
-	//       So we'll detect if the 'camera_changed' signal was NOT emitted and essentially handle it ourself
-	//       (by directly calling our 'handle_camera_changed' slot).
-	//
-
-	// If switching from map to globe projection...
-	if (old_globe_map_projection.is_viewing_map_projection() &&
-		globe_map_projection.is_viewing_globe_projection())
-	{
-		const GPlatesGui::MapCamera &map_camera = d_view_state.get_map_camera();
-		GPlatesGui::GlobeCamera &globe_camera = d_view_state.get_globe_camera();
-
-		// Get *map* camera view orientation, tilt and viewport projection.
-		const GPlatesMaths::Rotation map_camera_view_orientation = map_camera.get_view_orientation();
-		const GPlatesMaths::real_t map_camera_tilt_angle = map_camera.get_tilt_angle();
-		const GPlatesGui::Projection::viewport_projection_type map_viewport_projection = map_camera.get_viewport_projection();
-
-		bool emitted_camera_change_signal = false;
-
-		// Set the *globe* camera view orientation, tilt and viewport projection.
-		// Also detect if the 'camera_change' signal was emitted.
-		if (map_camera_view_orientation.quat() != globe_camera.get_view_orientation().quat())
-		{
-			globe_camera.set_view_orientation(map_camera_view_orientation);
-			emitted_camera_change_signal = true;
-		}
-		if (map_camera_tilt_angle != globe_camera.get_tilt_angle())
-		{
-			globe_camera.set_tilt_angle(map_camera_tilt_angle);
-			emitted_camera_change_signal = true;
-		}
-		if (map_viewport_projection != globe_camera.get_viewport_projection())
-		{
-			globe_camera.set_viewport_projection(map_viewport_projection);
-			emitted_camera_change_signal = true;
-		}
-
-		if (!emitted_camera_change_signal)
-		{
-			// The globe camera didn't actually change (since the last time it was active).
-			// But we've switched from the map camera. That's a camera change, so we need to handle it.
-			handle_camera_change();
-		}
-	}
-	// else if switching from globe to map projection...
-	else if (old_globe_map_projection.is_viewing_globe_projection() &&
-			globe_map_projection.is_viewing_map_projection())
-	{
-		const GPlatesGui::GlobeCamera &globe_camera = d_view_state.get_globe_camera();
-		GPlatesGui::MapCamera &map_camera = d_view_state.get_map_camera();
-
-		// Get *globe* camera view orientation, tilt and viewport projection.
-		const GPlatesMaths::Rotation globe_camera_view_orientation = globe_camera.get_view_orientation();
-		const GPlatesMaths::real_t globe_camera_tilt_angle = globe_camera.get_tilt_angle();
-		const GPlatesGui::Projection::viewport_projection_type globe_viewport_projection = globe_camera.get_viewport_projection();
-
-		bool emitted_camera_change_signal = false;
-
-		// Set the *map* camera view orientation, tilt and viewport projection.
-		// Also detect if the 'camera_change' signal was emitted.
-		if (globe_camera_view_orientation.quat() != map_camera.get_view_orientation().quat())
-		{
-			map_camera.set_view_orientation(globe_camera_view_orientation);
-			emitted_camera_change_signal = true;
-		}
-		if (globe_camera_tilt_angle != map_camera.get_tilt_angle())
-		{
-			map_camera.set_tilt_angle(globe_camera_tilt_angle);
-			emitted_camera_change_signal = true;
-		}
-		if (globe_viewport_projection != map_camera.get_viewport_projection())
-		{
-			map_camera.set_viewport_projection(globe_viewport_projection);
-			emitted_camera_change_signal = true;
-		}
-
-		// Update the map projection.
-		//
-		// It shouldn't have changed since the last time the map camera was active, but just in case.
-		//
-		// Note: This doesn't emit a 'camera_changed' signal.
-		d_view_state.get_map_projection().set_projection_type(
-				globe_map_projection.get_map_projection_type());
-		d_view_state.get_map_projection().set_central_meridian(
-				globe_map_projection.get_map_central_meridian());
-
-		if (!emitted_camera_change_signal)
-		{
-			// The map camera didn't actually change (since the last time it was active).
-			// But we've switched from the globe camera. That's a camera change, so we need to handle it.
-			handle_camera_change();
-		}
-	}
-	else // switching between two map projections and/or changing central meridian in one map projection...
-	{
-		// Update the map projection.
-		d_view_state.get_map_projection().set_projection_type(
-				globe_map_projection.get_map_projection_type());
-		d_view_state.get_map_projection().set_central_meridian(
-				globe_map_projection.get_map_central_meridian());
-
-		// Something changed in the map projection (otherwise we wouldn't be here).
-		// So we need to handle that.
-		handle_camera_change();
-	}
-}
-
-
-void
-GPlatesQtWidgets::GlobeAndMapCanvas::handle_viewport_projection_changed(
-		GPlatesGui::Projection::viewport_projection_type old_viewport_projection,
-		GPlatesGui::Projection::viewport_projection_type viewport_projection)
-{
-	// Change the viewport projection (orthographic or perspective) of the active camera.
-	//
-	// Note: This will cause the active camera to emit the 'camera_changed' signal which
-	//       will call our 'handle_camera_change' slot.
-	get_active_camera().set_viewport_projection(viewport_projection);
-}
-
-
 void 
-GPlatesQtWidgets::GlobeAndMapCanvas::initializeGL_if_necessary()
+GPlatesQtWidgets::GlobeAndMapCanvas::initialize_gl_if_necessary()
 {
 	// Return early if we've already initialised OpenGL.
 	// This is now necessary because it's not only 'paintEvent()' and other QOpenGLWidget methods
 	// that call our 'initializeGL()' method - it's now also when a client wants to render the
 	// scene to an image (instead of render/update the QOpenGLWidget itself).
-	if (d_initialisedGL)
+	if (d_initialised_gl)
 	{
 		return;
 	}
@@ -988,12 +697,12 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initializeGL_if_necessary()
 	// We can't use 'd_gl_context' yet because it hasn't been initialised.
 	makeCurrent();
 
-	initializeGL();
+	initialize_gl();
 }
 
 
 void
-GPlatesQtWidgets::GlobeAndMapCanvas::initialize_off_screen_render_target(
+GPlatesQtWidgets::GlobeAndMapCanvas::create_off_screen_render_target(
 		GPlatesOpenGL::GL &gl)
 {
 	if (d_off_screen_render_target_dimension > gl.get_capabilities().gl_max_texture_size)
@@ -1034,24 +743,13 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initialize_off_screen_render_target(
 
 
 void
-GPlatesQtWidgets::GlobeAndMapCanvas::set_view()
+GPlatesQtWidgets::GlobeAndMapCanvas::destroy_off_screen_render_target(
+		GPlatesOpenGL::GL &gl)
 {
-	// GLContext returns the current width and height of this GLWidget canvas.
-	//
-	// Note: This includes the device-pixel ratio since dimensions, in OpenGL, are in device pixels
-	//       (not the device independent pixels used for widget sizes).
-	const unsigned int canvas_width = d_gl_context->get_width();
-	const unsigned int canvas_height = d_gl_context->get_height();
-	const double canvas_aspect_ratio = double(canvas_width) / canvas_height;
-
-	// Get the view-projection transform.
-	const GPlatesOpenGL::GLMatrix view_transform = get_active_camera().get_view_transform();
-	const GPlatesOpenGL::GLMatrix projection_transform = get_active_camera().get_projection_transform(canvas_aspect_ratio);
-
-	d_view_projection = GPlatesOpenGL::GLViewProjection(
-			GPlatesOpenGL::GLViewport(0, 0, canvas_width, canvas_height),
-			view_transform,
-			projection_transform);
+	// Destroy the framebuffer's renderbuffers and then destory the framebuffer itself.
+	d_off_screen_framebuffer.reset();
+	d_off_screen_colour_renderbuffer.reset();
+	d_off_screen_depth_stencil_renderbuffer.reset();
 }
 
 
@@ -1059,9 +757,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::cache_handle_type
 GPlatesQtWidgets::GlobeAndMapCanvas::render_scene(
 		GPlatesOpenGL::GL &gl,
 		const GPlatesOpenGL::GLViewProjection &view_projection,
-		const GPlatesGui::Colour &clear_colour,
-		int paint_device_width_in_device_independent_pixels,
-		int paint_device_height_in_device_independent_pixels)
+		const GPlatesGui::Colour &clear_colour)
 {
 	PROFILE_FUNC();
 
@@ -1079,61 +775,31 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_scene(
 	gl.ClearStencil(); // Clear stencil to 0
 	gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
+	// Render the scene (into the globe or map view).
 	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
-	const float scale = calculate_scale(
-			paint_device_width_in_device_independent_pixels,
-			paint_device_height_in_device_independent_pixels);
 
 	//
-	// Paint the globe or map (and its contents) depending on whether the globe or map is currently active.
-	//
-	// NOTE: We hold onto the previous frame's cached resources *while* generating the current frame
-	// and then release our hold on the previous frame (by assigning the current frame's cache).
-	// This just prevents a render frame from invalidating cached resources of the previous frame
-	// in order to avoid regenerating the same cached resources unnecessarily each frame.
-	// Since the view direction usually differs little from one frame to the next there is a lot
-	// of overlap that we want to reuse (and not recalculate).
+	// Render the globe or map (and its contents) depending on whether the globe or map is currently active.
 	//
 	cache_handle_type frame_cache_handle;
 	if (is_globe_active())
 	{
-		frame_cache_handle = d_globe.paint(
+		frame_cache_handle = d_scene->render_globe(
 				gl,
 				view_projection,
-				d_view_state.get_globe_camera().get_front_globe_horizon_plane(),
 				viewport_zoom_factor,
-				scale);
+				d_view_state.get_globe_camera().get_front_globe_horizon_plane());
 	}
 	else
 	{
-		frame_cache_handle = d_map.paint(
+		frame_cache_handle = d_scene->render_map(
 				gl,
 				view_projection,
-				viewport_zoom_factor,
-				scale);
+				viewport_zoom_factor);
 	}
 
-	// Note that the overlays are rendered in screen window coordinates, so no view transform is needed.
-
-	// Paint the text overlay.
-	// We use the paint device dimensions (and not the canvas dimensions) in case the paint device
-	// is not the canvas (eg, when rendering to a larger dimension SVG paint device).
-	d_text_overlay->paint(
-			gl,
-			d_view_state.get_text_overlay_settings(),
-			// These are widget dimensions (not device pixels)...
-			paint_device_width_in_device_independent_pixels,
-			paint_device_height_in_device_independent_pixels,
-			scale);
-
-	// Paint the velocity legend overlay
-	d_velocity_legend_overlay->paint(
-			gl,
-			d_view_state.get_velocity_legend_overlay_settings(),
-			// These are widget dimensions (not device pixels)...
-			paint_device_width_in_device_independent_pixels,
-			paint_device_height_in_device_independent_pixels,
-			scale);
+	// Render the 2D overlays on top of the 3D scene just rendered.
+	d_scene_overlays->render(gl, view_projection, devicePixelRatio());
 
 	return frame_cache_handle;
 }
@@ -1142,8 +808,6 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_scene(
 GPlatesQtWidgets::GlobeAndMapCanvas::cache_handle_type
 GPlatesQtWidgets::GlobeAndMapCanvas::render_scene_tile_into_image(
 		GPlatesOpenGL::GL &gl,
-		const GPlatesOpenGL::GLMatrix &image_view_transform,
-		const GPlatesOpenGL::GLMatrix &image_projection_transform,
 		const GPlatesOpenGL::GLTileRender &image_tile_render,
 		const GPlatesGui::Colour &image_clear_colour,
 		QImage &image)
@@ -1183,19 +847,14 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_scene_tile_into_image(
 			image_tile_render_target_viewport.width(),
 			image_tile_render_target_viewport.height());
 
-	// View transform associated with current image tile is same as for whole image.
-	const GPlatesOpenGL::GLMatrix &image_tile_view_transform = image_view_transform;
-
-	// Projection transform associated with current image tile is post-multiplied with the
+	// Projection transform associated with current image tile will be post-multiplied with the
 	// projection transform for the whole image.
-	GPlatesOpenGL::GLMatrix image_tile_projection_transform =
+	const GPlatesOpenGL::GLMatrix image_tile_projection_transform =
 			image_tile_render.get_tile_projection_transform()->get_matrix();
-	image_tile_projection_transform.gl_mult_matrix(image_projection_transform);
 
 	// The view/projection/viewport for the current image tile.
-	const GPlatesOpenGL::GLViewProjection image_tile_view_projection(
-			image_tile_render_target_viewport,  // The viewport that is used for rendering tile.
-			image_tile_view_transform,
+	const GPlatesOpenGL::GLViewProjection image_tile_view_projection = d_scene_view->get_view_projection(
+			image_tile_render_target_viewport,  // viewport used for rendering tile
 			image_tile_projection_transform);
 
 	//
@@ -1204,11 +863,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_scene_tile_into_image(
 	const cache_handle_type tile_cache_handle = render_scene(
 			gl,
 			image_tile_view_projection,
-			image_clear_colour,
-			// Since QImage is just raw pixels its dimensions are in device pixels, but
-			// we need device-independent pixels here (eg, widget dimensions)...
-			image.width() / image.devicePixelRatio(),
-			image.height() / image.devicePixelRatio());
+			image_clear_colour);
 
 	//
 	// Copy the rendered tile into the appropriate sub-rect of the image.
@@ -1442,29 +1097,4 @@ GPlatesQtWidgets::GlobeAndMapCanvas::update_mouse_position_on_map(
 
 		Q_EMIT mouse_position_on_globe_changed(d_mouse_position_on_globe, d_mouse_is_on_globe);
 	}
-}
-
-
-float
-GPlatesQtWidgets::GlobeAndMapCanvas::calculate_scale(
-		int paint_device_width_in_device_independent_pixels,
-		int paint_device_height_in_device_independent_pixels) const
-{
-	// Note that we use regular device *independent* sizes not high-DPI device pixels
-	// (ie, not using device pixel ratio) to calculate scale because font sizes, etc, are
-	// based on these coordinates (it's only OpenGL, really, that deals with device pixels).
-	const int paint_device_dimension = (std::min)(
-			paint_device_width_in_device_independent_pixels,
-			paint_device_height_in_device_independent_pixels);
-	const int min_viewport_dimension = (std::min)(width(), height());
-
-	// If paint device is larger than the viewport then don't scale - this avoids having
-	// too large point/line sizes when exporting large screenshots.
-	if (paint_device_dimension >= min_viewport_dimension)
-	{
-		return 1.0f;
-	}
-
-	// This is useful when rendering the small colouring previews - avoids too large point/line sizes.
-	return static_cast<float>(paint_device_dimension) / static_cast<float>(min_viewport_dimension);
 }

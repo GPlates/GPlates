@@ -45,14 +45,12 @@ namespace GPlatesViewOperations
 		{  }
 
 		/**
-		 * The proximity inclusion threshold is a measure of how close a geometry must be
-		 * to a click-point be considered "hit" by the click.
+		 * The proximity inclusion threshold is a dot product (cosine) measure of how close a geometry
+		 * must be to a click-point be considered "hit" by the click.
 		 *
-		 * This will depend on the projection of the globe.
-		 * For 3D projections the horizon of the globe will need a larger threshold
-		 * than the centre of the globe.
-		 * For 2D projections the threshold will vary with the 'stretch' around the
-		 * clicked-point.
+		 * This will depend on the projection of the globe/map.
+		 * For 3D projections the horizon of the globe will need a larger threshold than the centre of the globe.
+		 * For 2D projections the threshold will vary with the 'stretch' around the clicked-point.
 		 */
 		virtual
 		double

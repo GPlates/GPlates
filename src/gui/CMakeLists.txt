@@ -210,8 +210,14 @@ set(srcs
     RasterColourPalette.cc
     RasterColourPalette.h
     RenderSettings.h
+    Scene.cc
+    Scene.h
     SceneLightingParameters.cc
     SceneLightingParameters.h
+    SceneOverlays.cc
+    SceneOverlays.h
+    SceneView.cc
+    SceneView.h
     SessionMenu.cc
     SessionMenu.h
     SingleColourScheme.cc

@@ -41,9 +41,9 @@
 #include <QtGlobal>
 
 #include "gui/Colour.h"
-#include "gui/Globe.h"
-#include "gui/Map.h"
-#include "gui/Projection.h"
+#include "gui/Scene.h"
+#include "gui/SceneOverlays.h"
+#include "gui/SceneView.h"
 
 #include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
@@ -60,8 +60,6 @@
 namespace GPlatesGui
 {
 	class Camera;
-	class TextOverlay;
-	class VelocityLegendOverlay;
 }
 
 namespace GPlatesOpenGL
@@ -91,32 +89,6 @@ namespace GPlatesQtWidgets
 				GPlatesPresentation::ViewState &view_state);
 
 		~GlobeAndMapCanvas();
-
-
-		GPlatesGui::Globe &
-		globe()
-		{
-			return d_globe;
-		}
-
-		const GPlatesGui::Globe &
-		globe() const
-		{
-			return d_globe;
-		}
-
-
-		GPlatesGui::Map &
-		map()
-		{
-			return d_map;
-		}
-
-		const GPlatesGui::Map &
-		map() const
-		{
-			return d_map;
-		}
 
 
 		double
@@ -162,20 +134,29 @@ namespace GPlatesQtWidgets
 		 * Return the camera controlling the current view (globe or map camera).
 		 */
 		const GPlatesGui::Camera &
-		get_active_camera() const;
+		get_active_camera() const
+		{
+			return d_scene_view->get_active_camera();
+		}
 
 		/**
 		 * Return the camera controlling the current view (globe or map camera).
 		 */
 		GPlatesGui::Camera &
-		get_active_camera();
+		get_active_camera()
+		{
+			return d_scene_view->get_active_camera();
+		}
 
 
 		/**
 		 * Returns true if the globe view is currently active.
 		 */
 		bool
-		is_globe_active() const;
+		is_globe_active() const
+		{
+			return d_scene_view->is_globe_active();
+		}
 
 		/**
 		 * Returns true if the map view is currently active.
@@ -183,7 +164,7 @@ namespace GPlatesQtWidgets
 		bool
 		is_map_active() const
 		{
-			return !is_globe_active();
+			return d_scene_view->is_map_active();
 		}
 
 
@@ -202,7 +183,7 @@ namespace GPlatesQtWidgets
 		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type
 		get_gl_visual_layers()
 		{
-			return d_gl_visual_layers;
+			return d_scene->get_gl_visual_layers();
 		}
 
 	public Q_SLOTS:
@@ -379,14 +360,6 @@ namespace GPlatesQtWidgets
 		/**
 		 * This is a virtual override of the function in QOpenGLWidget.
 		 */
-		void 
-		resizeGL(
-				int width, 
-				int height) override;
-
-		/**
-		 * This is a virtual override of the function in QOpenGLWidget.
-		 */
 		void
 		paintGL() override;
 
@@ -420,18 +393,11 @@ namespace GPlatesQtWidgets
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
 
-		void
-		handle_camera_change();
+		void 
+		initialize_gl();
 
-		void
-		handle_globe_map_projection_changed(
-				const GPlatesGui::Projection::globe_map_projection_type &old_globe_map_projection,
-				const GPlatesGui::Projection::globe_map_projection_type &globe_map_projection);
-
-		void
-		handle_viewport_projection_changed(
-				GPlatesGui::Projection::viewport_projection_type old_viewport_projection,
-				GPlatesGui::Projection::viewport_projection_type viewport_projection);
+		void 
+		shutdown_gl() ;
 
 	private:
 
@@ -475,12 +441,7 @@ namespace GPlatesQtWidgets
 		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
 
 		//! Is true if OpenGL has been initialised for this canvas.
-		bool d_initialisedGL;
-
-		/**
-		 * The current view-projection transform and viewport.
-		 */
-		GPlatesOpenGL::GLViewProjection d_view_projection;
+		bool d_initialised_gl;
 
 		//! Colour renderbuffer object used for offscreen rendering.
 		GPlatesOpenGL::GLRenderbuffer::shared_ptr_type d_off_screen_colour_renderbuffer;
@@ -494,8 +455,20 @@ namespace GPlatesQtWidgets
 		//! Dimensions of square render target used for offscreen rendering.
 		unsigned int d_off_screen_render_target_dimension;
 
-		//! Keeps track of OpenGL objects that persist from one render to another.
-		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
+		/**
+		 * The scene contains the globe and map.
+		 */
+		GPlatesGui::Scene::non_null_ptr_type d_scene;
+
+		/**
+		 * The view (including projection) of the scene (globe and map).
+		 */
+		GPlatesGui::SceneView::non_null_ptr_type d_scene_view;
+
+		/**
+		 * Any overlays that get rendered in 2D, on top of the 3D scene (globe and map).
+		 */
+		GPlatesGui::SceneOverlays::non_null_ptr_type d_scene_overlays;
 
 		/**
 		 * Enables frame-to-frame caching of persistent OpenGL resources.
@@ -543,24 +516,6 @@ namespace GPlatesQtWidgets
 		boost::optional<MousePressInfo> d_mouse_press_info;
 
 
-		/**
-		 * The projection determines whether the globe view or map view is currently active
-		 * (as well as whether the view is orthographic or perspective).
-		 */
-		GPlatesGui::Projection &d_projection;
-
-		//! Holds the globe state.
-		GPlatesGui::Globe d_globe;
-
-		//! Holds the map state.
-		GPlatesGui::Map d_map;
-
-		//! Paints an optional text overlay onto the globe/map.
-		boost::scoped_ptr<GPlatesGui::TextOverlay> d_text_overlay;
-
-		//! Paints an optional velocity legend overlay onto the globe/map.
-		boost::scoped_ptr<GPlatesGui::VelocityLegendOverlay> d_velocity_legend_overlay;
-
 
 		//! Dimensions of square render target used for offscreen rendering.
 		static const unsigned int OFF_SCREEN_RENDER_TARGET_DIMENSION = 1024;
@@ -568,24 +523,24 @@ namespace GPlatesQtWidgets
 
 		//! Calls 'initializeGL()' if it hasn't already been called.
 		void
-		initializeGL_if_necessary();
+		initialize_gl_if_necessary();
 
 		//! Create and initialise the framebuffer and its renderbuffers used for offscreen rendering.
 		void
-		initialize_off_screen_render_target(
+		create_off_screen_render_target(
 				GPlatesOpenGL::GL &gl);
 
+		//! Destroy the framebuffer and its renderbuffers used for offscreen rendering.
 		void
-		set_view();
+		destroy_off_screen_render_target(
+				GPlatesOpenGL::GL &gl);
 
-		//! Render onto the canvas.
+		//! Render the scene into the current framebuffer.
 		cache_handle_type
 		render_scene(
 				GPlatesOpenGL::GL &gl,
 				const GPlatesOpenGL::GLViewProjection &view_projection,
-				const GPlatesGui::Colour &clear_colour,
-				int paint_device_width_in_device_independent_pixels,
-				int paint_device_height_in_device_independent_pixels);
+				const GPlatesGui::Colour &clear_colour);
 
 		/**
 		 * Render one tile of the scene (as specified by @a image_tile_render).
@@ -595,8 +550,6 @@ namespace GPlatesQtWidgets
 		cache_handle_type
 		render_scene_tile_into_image(
 				GPlatesOpenGL::GL &gl,
-				const GPlatesOpenGL::GLMatrix &image_view_transform,
-				const GPlatesOpenGL::GLMatrix &image_projection_transform,
 				const GPlatesOpenGL::GLTileRender &image_tile_render,
 				const GPlatesGui::Colour &image_clear_colour,
 				QImage &image);
@@ -634,14 +587,6 @@ namespace GPlatesQtWidgets
 		void
 		update_mouse_position_on_map(
 				const GPlatesOpenGL::GLIntersect::Ray &camera_ray);
-
-
-		//! Calculate scaling for lines, points and text based on size of the view.
-		float
-		calculate_scale(
-				int paint_device_width_in_device_independent_pixels,
-				int paint_device_height_in_device_independent_pixels) const;
-
 	};
 }
 
