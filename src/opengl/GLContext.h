@@ -331,19 +331,6 @@ namespace GPlatesOpenGL
 		}
 
 
-		/**
-		 * Creates a @a GLContext object that shares state with another context.
-		 */
-		static
-		non_null_ptr_type
-		create(
-				const boost::shared_ptr<Impl> &context_impl,
-				GLContext &shared_context)
-		{
-			return non_null_ptr_type(new GLContext(context_impl, shared_context.get_shared_state()));
-		}
-
-
 		~GLContext();
 
 
@@ -548,11 +535,6 @@ namespace GPlatesOpenGL
 		explicit
 		GLContext(
 				const boost::shared_ptr<Impl> &context_impl);
-
-		//! Constructor.
-		GLContext(
-				const boost::shared_ptr<Impl> &context_impl,
-				const boost::shared_ptr<SharedState> &shared_state);
 
 
 		/**

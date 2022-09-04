@@ -128,11 +128,11 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-				const GLContext::non_null_ptr_type &opengl_context,
 				GPlatesAppLogic::ApplicationState &application_state)
 		{
-			return non_null_ptr_type(new GLVisualLayers(opengl_context, application_state));
+			return non_null_ptr_type(new GLVisualLayers(application_state));
 		}
+
 
 		/**
 		 * The OpenGL context has been created.
@@ -147,26 +147,6 @@ namespace GPlatesOpenGL
 		void
 		shutdown_gl(
 				GL &gl) override;
-
-		/**
-		 * Creates a @a GLVisualLayers object and that always shares the non-list objects
-		 * and only shares the list objects if @a objects_from_another_context uses a context
-		 * that shares the same shared state as @a opengl_context.
-		 *
-		 * This basically allows objects that use textures to be shared across QOpenGLWidgets objects
-		 * (or whatever objects have different OpenGL contexts).
-		 * The sharing depends on whether the two OpenGL contexts allow shared textures.
-		 */
-		static
-		non_null_ptr_type
-		create(
-				const GLContext::non_null_ptr_type &opengl_context,
-				const GLVisualLayers::non_null_ptr_type &objects_from_another_context,
-				GPlatesAppLogic::ApplicationState &application_state)
-		{
-			return non_null_ptr_type(
-					new GLVisualLayers(opengl_context, objects_from_another_context, application_state));
-		}
 
 
 		/**
@@ -852,41 +832,14 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Any objects that do *not* use textures, vertex buffer objects, etc can go here,
-		 * otherwise use @a ListObjects.
-		 *
-		 * These objects will be shared even if two OpenGL contexts don't share list objects.
-		 *
-		 * Objects that might go here are things like vertex arrays (which reside in system memory)
-		 * that are large and hence sharing would reduce memory usage. Because they reside in
-		 * system memory (ie, not dedicated RAM on the graphics card) it doesn't matter which
-		 * OpenGL context is active when we draw them.
-		 * NOTE: Vertex arrays are different from vertex buffer objects - the latter are shared objects.
+		 * All objects from layers and any objects shared by all layers.
 		 */
-		struct NonListObjects
+		struct Objects
 		{
-		};
-
-
-		/**
-		 * Any objects that use textures, vertex buffer objects, etc should go here, otherwise use @a NonListObjects.
-		 */
-		struct ListObjects
-		{
-			ListObjects(
-					const boost::shared_ptr<GLContext::SharedState> &opengl_shared_state,
-					const NonListObjects &non_list_objects);
-
-
-			/**
-			 * Shared textures, etc.
-			 */
-			boost::shared_ptr<GLContext::SharedState> opengl_shared_state;
-
 			/**
 			 * Keeps track of each GL layer associated with each layer proxy (one-to-one).
 			 *
-			 * This is stored in the @a ListObjects structure so that it only gets shared
+			 * This is stored in the @a Objects structure so that it only gets shared
 			 * with others that are using the same OpenGL context.
 			 * If the context is not shared then the layers will not be shared (although the
 			 * non-list objects can still be shared).
@@ -944,7 +897,6 @@ namespace GPlatesOpenGL
 					GL &gl) const;
 
 		private:
-			const NonListObjects &d_non_list_objects;
 
 			/**
 			 * Used to get a mesh for any cube quad tree node.
@@ -989,21 +941,12 @@ namespace GPlatesOpenGL
 		};
 
 
-		// NOTE: The non-list objects *must* be declared *before* the list objects (construction order).
-		boost::shared_ptr<NonListObjects> d_non_list_objects;
-		boost::shared_ptr<ListObjects> d_list_objects;
+		boost::shared_ptr<Objects> d_objects;
 
 
 		//! Constructor.
 		explicit
 		GLVisualLayers(
-				const GLContext::non_null_ptr_type &opengl_context,
-				GPlatesAppLogic::ApplicationState &application_state);
-
-		//! Constructor.
-		GLVisualLayers(
-				const GLContext::non_null_ptr_type &opengl_context,
-				const GLVisualLayers::non_null_ptr_type &objects_from_another_context,
 				GPlatesAppLogic::ApplicationState &application_state);
 
 

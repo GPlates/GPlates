@@ -51,40 +51,9 @@
 
 
 GPlatesOpenGL::GLVisualLayers::GLVisualLayers(
-		const GLContext::non_null_ptr_type &opengl_context,
 		GPlatesAppLogic::ApplicationState &application_state) :
-	d_non_list_objects(new NonListObjects()),
-	d_list_objects(
-			new ListObjects(
-					opengl_context->get_shared_state(),
-					*d_non_list_objects))
+	d_objects(new Objects())
 {
-	make_signal_slot_connections(application_state.get_reconstruct_graph());
-}
-
-
-GPlatesOpenGL::GLVisualLayers::GLVisualLayers(
-		const GLContext::non_null_ptr_type &opengl_context,
-		const GLVisualLayers::non_null_ptr_type &objects_from_another_context,
-		GPlatesAppLogic::ApplicationState &application_state) :
-	// Non-list objects can always be shared
-	d_non_list_objects(objects_from_another_context->d_non_list_objects)
-{
-	// If the OpenGL context shared state for 'this' object is the same as the 'other' object
-	// then we can share the list objects.
-	if (opengl_context->get_shared_state() ==
-		objects_from_another_context->d_list_objects->opengl_shared_state)
-	{
-		d_list_objects = objects_from_another_context->d_list_objects;
-	}
-	else
-	{
-		d_list_objects.reset(
-				new ListObjects(
-						opengl_context->get_shared_state(),
-						*d_non_list_objects));
-	}
-
 	make_signal_slot_connections(application_state.get_reconstruct_graph());
 }
 
@@ -125,7 +94,7 @@ GPlatesOpenGL::GLLight::non_null_ptr_type
 GPlatesOpenGL::GLVisualLayers::get_light(
 		GL &gl) const
 {
-	return d_list_objects->get_light(gl);
+	return d_objects->get_light(gl);
 }
 
 
@@ -142,7 +111,7 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 	PROFILE_FUNC();
 
 	// Get the GL layer corresponding to the layer the raster came from.
-	GLLayer &gl_raster_layer = d_list_objects->gl_layers.get_layer(
+	GLLayer &gl_raster_layer = d_objects->gl_layers.get_layer(
 			resolved_raster->get_raster_layer_proxy());
 
 	// Get the raster layer usage so we can set the colour palette.
@@ -159,7 +128,7 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 	if (resolved_raster->get_age_grid_layer_proxy())
 	{
 		// Get the GL layer corresponding to the layer the age grid came from.
-		GLLayer &gl_age_grid_layer = d_list_objects->gl_layers.get_layer(
+		GLLayer &gl_age_grid_layer = d_objects->gl_layers.get_layer(
 				resolved_raster->get_age_grid_layer_proxy().get());
 
 		age_grid_layer_usage = gl_age_grid_layer.get_age_grid_layer_usage();
@@ -170,7 +139,7 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 	if (resolved_raster->get_normal_map_layer_proxy())
 	{
 		// Get the GL layer corresponding to the layer the normal map came from.
-		GLLayer &gl_normal_map_layer = d_list_objects->gl_layers.get_layer(
+		GLLayer &gl_normal_map_layer = d_objects->gl_layers.get_layer(
 				resolved_raster->get_normal_map_layer_proxy().get());
 
 		normal_map_layer_usage = gl_normal_map_layer.get_normal_map_layer_usage();
@@ -191,7 +160,7 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 		{
 			// The reconstructed static polygon meshes layer usage comes from another layer.
 			// Get the GL layer corresponding to the layer the reconstructed polygons came from.
-			GLLayer &gl_reconstructed_polygons_layer = d_list_objects->gl_layers.get_layer(reconstruct_layer_proxy);
+			GLLayer &gl_reconstructed_polygons_layer = d_objects->gl_layers.get_layer(reconstruct_layer_proxy);
 
 			reconstructed_polygon_meshes_layer_usages.push_back(
 					gl_reconstructed_polygons_layer.get_reconstructed_static_polygon_meshes_layer_usage());
@@ -204,18 +173,18 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 				age_grid_layer_usage,
 				normal_map_layer_usage,
 				normal_map_height_field_scale_factor,
-				d_list_objects->get_light(gl));
+				d_objects->get_light(gl));
 	}
 	else // *not* reconstructing raster...
 	{
 		// Set/update the layer usage inputs.
 		static_polygon_reconstructed_raster_layer_usage->set_non_reconstructing_layer_inputs(
 				gl,
-				d_list_objects->get_multi_resolution_cube_mesh(gl),
+				d_objects->get_multi_resolution_cube_mesh(gl),
 				age_grid_layer_usage,
 				normal_map_layer_usage,
 				normal_map_height_field_scale_factor,
-				d_list_objects->get_light(gl));
+				d_objects->get_light(gl));
 	}
 
 	// Get the map raster layer usage.
@@ -235,7 +204,7 @@ GPlatesOpenGL::GLVisualLayers::render_raster(
 				map_raster_layer_usage->get_multi_resolution_raster_map_view(
 						gl,
 						// The global map cube mesh shared by all layers...
-						d_list_objects->get_multi_resolution_map_cube_mesh(gl, map_projection.get()),
+						d_objects->get_multi_resolution_map_cube_mesh(gl, map_projection.get()),
 						resolved_raster->get_reconstruction_time());
 
 		cache_handle_type cache_handle;
@@ -295,7 +264,7 @@ GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
 	PROFILE_FUNC();
 
 	// Get the GL layer corresponding to the layer the scalar field came from.
-	GLLayer &gl_scalar_field_layer = d_list_objects->gl_layers.get_layer(
+	GLLayer &gl_scalar_field_layer = d_objects->gl_layers.get_layer(
 			resolved_scalar_field->get_scalar_field_3d_layer_proxy());
 
 	// Get the scalar field layer usage.
@@ -358,7 +327,7 @@ GPlatesOpenGL::GLVisualLayers::render_scalar_field_3d(
 				gl,
 				const_colour_palette,
 				colour_palette_value_range,
-				d_list_objects->get_light(gl));
+				d_objects->get_light(gl));
 
 	// Render the scalar field if the runtime systems supports scalar field rendering.
 
@@ -456,7 +425,7 @@ GPlatesOpenGL::GLVisualLayers::render_filled_polygons(
 		const GLViewProjection &view_projection,
 		const GLFilledPolygonsGlobeView::filled_drawables_type &filled_polygons)
 {
-	d_list_objects->get_filled_polygons_globe_view(gl)->render(gl, view_projection, filled_polygons);
+	d_objects->get_filled_polygons_globe_view(gl)->render(gl, view_projection, filled_polygons);
 }
 
 
@@ -466,7 +435,7 @@ GPlatesOpenGL::GLVisualLayers::render_filled_polygons(
 		const GLViewProjection &view_projection,
 		const GLFilledPolygonsMapView::filled_drawables_type &filled_polygons)
 {
-	d_list_objects->get_filled_polygons_map_view(gl)->render(gl, view_projection, filled_polygons);
+	d_objects->get_filled_polygons_map_view(gl)->render(gl, view_projection, filled_polygons);
 }
 
 
@@ -477,7 +446,7 @@ GPlatesOpenGL::GLVisualLayers::handle_layer_about_to_be_removed(
 {
 	GPlatesAppLogic::LayerProxyHandle::non_null_ptr_type layer_proxy_handle = layer.get_layer_proxy_handle();
 
-	d_list_objects->gl_layers.remove_layer(layer_proxy_handle);
+	d_objects->gl_layers.remove_layer(layer_proxy_handle);
 }
 
 
@@ -1753,17 +1722,8 @@ GPlatesOpenGL::GLVisualLayers::GLLayers::remove_layer(
 }
 
 
-GPlatesOpenGL::GLVisualLayers::ListObjects::ListObjects(
-		const boost::shared_ptr<GLContext::SharedState> &opengl_shared_state_input,
-		const NonListObjects &non_list_objects) :
-	opengl_shared_state(opengl_shared_state_input),
-	d_non_list_objects(non_list_objects)
-{
-}
-
-
 GPlatesOpenGL::GLMultiResolutionCubeMesh::non_null_ptr_to_const_type
-GPlatesOpenGL::GLVisualLayers::ListObjects::get_multi_resolution_cube_mesh(
+GPlatesOpenGL::GLVisualLayers::Objects::get_multi_resolution_cube_mesh(
 		GL &gl) const
 {
 	if (!d_multi_resolution_cube_mesh)
@@ -1778,7 +1738,7 @@ GPlatesOpenGL::GLVisualLayers::ListObjects::get_multi_resolution_cube_mesh(
 
 
 GPlatesOpenGL::GLMultiResolutionMapCubeMesh::non_null_ptr_to_const_type
-GPlatesOpenGL::GLVisualLayers::ListObjects::get_multi_resolution_map_cube_mesh(
+GPlatesOpenGL::GLVisualLayers::Objects::get_multi_resolution_map_cube_mesh(
 		GL &gl,
 		const GPlatesGui::MapProjection &map_projection) const
 {
@@ -1799,7 +1759,7 @@ GPlatesOpenGL::GLVisualLayers::ListObjects::get_multi_resolution_map_cube_mesh(
 
 
 GPlatesOpenGL::GLFilledPolygonsGlobeView::non_null_ptr_type
-GPlatesOpenGL::GLVisualLayers::ListObjects::get_filled_polygons_globe_view(
+GPlatesOpenGL::GLVisualLayers::Objects::get_filled_polygons_globe_view(
 		GL &gl) const
 {
 	if (!d_filled_polygons_globe_view)
@@ -1816,7 +1776,7 @@ GPlatesOpenGL::GLVisualLayers::ListObjects::get_filled_polygons_globe_view(
 
 
 GPlatesOpenGL::GLFilledPolygonsMapView::non_null_ptr_type
-GPlatesOpenGL::GLVisualLayers::ListObjects::get_filled_polygons_map_view(
+GPlatesOpenGL::GLVisualLayers::Objects::get_filled_polygons_map_view(
 		GL &gl) const
 {
 	if (!d_filled_polygons_map_view)
@@ -1829,7 +1789,7 @@ GPlatesOpenGL::GLVisualLayers::ListObjects::get_filled_polygons_map_view(
 
 
 GPlatesOpenGL::GLLight::non_null_ptr_type
-GPlatesOpenGL::GLVisualLayers::ListObjects::get_light(
+GPlatesOpenGL::GLVisualLayers::Objects::get_light(
 		GL &gl) const
 {
 	// Create light if first time called.

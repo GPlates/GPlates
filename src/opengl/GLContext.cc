@@ -122,19 +122,6 @@ GPlatesOpenGL::GLContext::GLContext(
 }
 
 
-GPlatesOpenGL::GLContext::GLContext(
-		const boost::shared_ptr<Impl> &context_impl,
-		const boost::shared_ptr<SharedState> &shared_state) :
-	d_context_impl(context_impl),
-	d_shared_state(shared_state),
-	d_non_shared_state(new NonSharedState())
-{
-	// Defined in ".cc" file because...
-	// non_null_ptr destructors require complete type of class they're referring to.
-	// Compiler will call destructors of already-constructed members if constructor throws exception.
-}
-
-
 GPlatesOpenGL::GLContext::~GLContext()
 {
 	// Defined in ".cc" file because...

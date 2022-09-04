@@ -807,10 +807,6 @@ internal_main(int argc, char* argv[])
 	// Force usage of desktop OpenGL since we currently link to OpenGL (and make native OpenGL calls).
 	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
 #endif
-#if QT_VERSION >= QT_VERSION_CHECK(5,4,0)
-	// Allow OpenGL resource sharing between QOpenGLWidget instances belonging to *different* windows.
-	QCoreApplication::setAttribute(Qt::AA_ShareOpenGLContexts);
-#endif
 
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)  // Qt::AA_UseHighDpiPixmaps deprecated in Qt6 (always enabled)
 	// Enable high DPI pixmaps (for high DPI displays like Apple Retina).
@@ -862,7 +858,7 @@ internal_main(int argc, char* argv[])
 	QCoreApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
 #endif
 
-	// Set the global default surface format (eg, used by QOpenGLWidget's).
+	// Set the global default surface format (eg, used by QOpenGLWindow's).
 	//
 	// Note: It is mandatory to call this before constructing the QApplication instance on some platforms (eg, macOS).
 	GPlatesOpenGL::GLContext::set_default_surface_format();
