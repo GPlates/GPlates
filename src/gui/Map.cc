@@ -66,19 +66,28 @@ GPlatesGui::Map::Map(
 
 
 void
-GPlatesGui::Map::initialiseGL(
+GPlatesGui::Map::initialise_gl(
 		GPlatesOpenGL::GL &gl)
 {
-	//
-	// We now have a valid OpenGL context bound so we can initialise members that have OpenGL objects.
-	//
-
 	// Create these objects in place (some as non-copy-constructable).
 	d_grid = boost::in_place(boost::ref(gl), d_view_state.get_map_projection(), d_view_state.get_graticule_settings());
 	d_background = boost::in_place(boost::ref(gl), d_view_state.get_map_projection(), boost::ref(d_view_state));
 
 	// Initialise the rendered geometry collection painter.
-	d_rendered_geom_collection_painter.initialise(gl);
+	d_rendered_geom_collection_painter.initialise_gl(gl);
+}
+
+
+void
+GPlatesGui::Map::shutdown_gl(
+		GPlatesOpenGL::GL &gl)
+{
+	// Shutdown the rendered geometry collection painter.
+	d_rendered_geom_collection_painter.shutdown_gl(gl);
+
+	// Destroy these objects.
+	d_grid = boost::none;
+	d_background = boost::none;
 }
 
 
@@ -86,8 +95,7 @@ GPlatesGui::Map::cache_handle_type
 GPlatesGui::Map::paint(
 		GPlatesOpenGL::GL &gl,
 		const GPlatesOpenGL::GLViewProjection &view_projection,
-		const double &viewport_zoom_factor,
-		float scale)
+		const double &viewport_zoom_factor)
 {
 	cache_handle_type cache_handle;
 
@@ -105,9 +113,6 @@ GPlatesGui::Map::paint(
 					view_projection.get_view_transform()/*view_orientation*/,
 					d_view_state.get_map_projection());
 		}
-
-		// Set the scale factor.
-		d_rendered_geom_collection_painter.set_scale(scale);
 
 		// Render the background of the map.
 		d_background->paint(gl, view_projection);

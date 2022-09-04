@@ -106,6 +106,21 @@ GPlatesOpenGL::GLVisualLayers::make_signal_slot_connections(
 }
 
 
+void
+GPlatesOpenGL::GLVisualLayers::initialise_gl(
+		GPlatesOpenGL::GL &gl)
+{
+}
+
+
+void
+GPlatesOpenGL::GLVisualLayers::shutdown_gl(
+		GPlatesOpenGL::GL &gl)
+{
+	d_objects.reset(new Objects());
+}
+
+
 GPlatesOpenGL::GLLight::non_null_ptr_type
 GPlatesOpenGL::GLVisualLayers::get_light(
 		GL &gl) const

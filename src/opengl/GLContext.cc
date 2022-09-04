@@ -85,7 +85,7 @@ GPlatesOpenGL::GLContext::set_default_surface_format()
 	//   hardware only supports version 3.2 Core profile contexts then you will get a 3.2 Core profile context.
 	//
 	// But as long as the version we get is greater than or equal to our minimum version then that's fine.
-	// We'll do that check when each widget/context is initialised (see 'initialiseGL()').
+	// We'll do that check when each widget/context is initialised (see 'initialise_gl()').
 	default_surface_format.setVersion(
 			PREFERRED_OPENGL_VERSION.first/*major*/,
 			PREFERRED_OPENGL_VERSION.second/*minor*/);
@@ -143,7 +143,7 @@ GPlatesOpenGL::GLContext::~GLContext()
 
 
 void
-GPlatesOpenGL::GLContext::initialiseGL()
+GPlatesOpenGL::GLContext::initialise_gl()
 {
 	// Get the OpenGL capabilities and parameters from the current OpenGL implementation.
 	d_capabilities.initialise(get_opengl_functions(), d_context_impl->get_opengl_context());
@@ -176,6 +176,18 @@ GPlatesOpenGL::GLContext::initialiseGL()
 }
 
 
+void
+GPlatesOpenGL::GLContext::shutdown_gl()
+{
+	deallocate_queued_object_resources();
+
+	d_shared_state->d_full_screen_quad = boost::none;
+	d_shared_state->d_state_store = boost::none;
+
+	d_opengl_functions = boost::none;
+}
+
+
 GPlatesGlobal::PointerTraits<GPlatesOpenGL::GL>::non_null_ptr_type
 GPlatesOpenGL::GLContext::create_gl()
 {
@@ -189,7 +201,7 @@ GPlatesOpenGL::GLContext::create_gl()
 const GPlatesOpenGL::GLCapabilities&
 GPlatesOpenGL::GLContext::get_capabilities() const
 {
-	// The capabilities must have been initialised (which means our 'initialiseGL()' must have been called).
+	// The capabilities must have been initialised (which means our 'initialise_gl()' must have been called).
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_capabilities.is_initialised(),
 			GPLATES_ASSERTION_SOURCE);

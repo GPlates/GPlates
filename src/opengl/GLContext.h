@@ -348,12 +348,16 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Initialises this @a GLContext.
-		 *
-		 * NOTE: An OpenGL context must be current before this is called.
+		 * The OpenGL context has been created.
 		 */
 		void
-		initialiseGL();
+		initialise_gl();
+
+		/**
+		 * The OpenGL context is about to be destroyed.
+		 */
+		void
+		shutdown_gl();
 
 
 		/**
@@ -473,7 +477,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Function to return OpenGL implementation-dependent capabilities and parameters.
 		 *
-		 * @throws PreconditionViolationError if @a initialiseGL not yet called.
+		 * @throws PreconditionViolationError if @a initialise_gl not yet called.
 		 */
 		const GLCapabilities &
 		get_capabilities() const;

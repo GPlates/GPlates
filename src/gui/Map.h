@@ -36,6 +36,7 @@
 #include "MapGrid.h"
 #include "MapRenderedGeometryCollectionPainter.h"
 
+#include "opengl/GLContextLifetime.h"
 #include "opengl/GLVisualLayers.h"
 #include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
@@ -55,7 +56,8 @@ namespace GPlatesGui
 	/**
 	 * Holds the state for map view (analogous to the Globe class for the globe view).
 	 */
-	class Map
+	class Map :
+			public GPlatesOpenGL::GLContextLifetime
 	{
 	public:
 		/**
@@ -71,14 +73,21 @@ namespace GPlatesGui
 				const GPlatesPresentation::VisualLayers &visual_layers,
 				int device_pixel_ratio);
 
+
 		/**
-		 * Initialise any OpenGL state.
-		 *
-		 * This method is called when the OpenGL context is first bound (and hence we can make OpenGL calls).
+		 * The OpenGL context has been created.
 		 */
 		void
-		initialiseGL(
-				GPlatesOpenGL::GL &gl);
+		initialise_gl(
+				GPlatesOpenGL::GL &gl) override;
+
+		/**
+		 * The OpenGL context is about to be destroyed.
+		 */
+		void
+		shutdown_gl(
+				GPlatesOpenGL::GL &gl) override;
+
 
 		/**
 		 * Paint the map and all the visible features and rasters on it.
@@ -89,8 +98,7 @@ namespace GPlatesGui
 		paint(
 				GPlatesOpenGL::GL &gl,
 				const GPlatesOpenGL::GLViewProjection &view_projection,
-				const double &viewport_zoom_factor,
-				float scale);
+				const double &viewport_zoom_factor);
 
 	private:
 

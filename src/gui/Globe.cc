@@ -74,20 +74,30 @@ GPlatesGui::Globe::Globe(
 
 
 void
-GPlatesGui::Globe::initialiseGL(
+GPlatesGui::Globe::initialise_gl(
 		GPlatesOpenGL::GL &gl)
 {
-	//
-	// We now have a valid OpenGL context bound so we can initialise members that have OpenGL objects.
-	//
-
 	// Create these objects in place (some as non-copy-constructable).
 	d_stars = boost::in_place(boost::ref(gl), boost::ref(d_view_state), STARS_COLOUR);
 	d_background_sphere = boost::in_place(boost::ref(gl), boost::ref(d_view_state));
 	d_grid = boost::in_place(boost::ref(gl), d_view_state.get_graticule_settings());
 
 	// Initialise the rendered geometry collection painter.
-	d_rendered_geom_collection_painter.initialise(gl);
+	d_rendered_geom_collection_painter.initialise_gl(gl);
+}
+
+
+void
+GPlatesGui::Globe::shutdown_gl(
+		GPlatesOpenGL::GL &gl)
+{
+	// Shutdown the rendered geometry collection painter.
+	d_rendered_geom_collection_painter.shutdown_gl(gl);
+
+	// Destroy these objects.
+	d_stars = boost::none;
+	d_background_sphere = boost::none;
+	d_grid = boost::none;
 }
 
 
@@ -95,9 +105,8 @@ GPlatesGui::Globe::cache_handle_type
 GPlatesGui::Globe::paint(
 		GPlatesOpenGL::GL &gl,
 		const GPlatesOpenGL::GLViewProjection &view_projection,
-		const GPlatesOpenGL::GLIntersect::Plane &front_globe_horizon_plane,
 		const double &viewport_zoom_factor,
-		float scale)
+		const GPlatesOpenGL::GLIntersect::Plane &front_globe_horizon_plane)
 {
 	// Make sure we leave the OpenGL global state the way it was.
 	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
@@ -143,9 +152,6 @@ GPlatesGui::Globe::paint(
 			has_transparent_background_colour = true;
 		}
 	}
-
-	// Set up rendered geometry collection state.
-	d_rendered_geom_collection_painter.set_scale(scale);
 
 	// If the background colour is transparent then render the rear half of the globe.
 	if (has_transparent_background_colour)

@@ -35,7 +35,7 @@
 #include <boost/shared_ptr.hpp>
 #include <QObject>
 
-#include "GLContext.h"
+#include "GLContextLifetime.h"
 #include "GLLight.h"
 #include "GLMatrix.h"
 #include "GLMultiResolutionCubeMesh.h"
@@ -101,6 +101,7 @@ namespace GPlatesOpenGL
 	 */
 	class GLVisualLayers :
 			public QObject,
+			public GLContextLifetime,
 			public GPlatesUtils::ReferenceCount<GLVisualLayers>
 	{
 		Q_OBJECT
@@ -132,6 +133,20 @@ namespace GPlatesOpenGL
 		{
 			return non_null_ptr_type(new GLVisualLayers(opengl_context, application_state));
 		}
+
+		/**
+		 * The OpenGL context has been created.
+		 */
+		void
+		initialise_gl(
+				GL &gl) override;
+
+		/**
+		* The OpenGL context is about to be destroyed.
+		*/
+		void
+		shutdown_gl(
+				GL &gl) override;
 
 		/**
 		 * Creates a @a GLVisualLayers object and that always shares the non-list objects

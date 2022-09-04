@@ -54,10 +54,18 @@ GPlatesGui::MapRenderedGeometryCollectionPainter::MapRenderedGeometryCollectionP
 
 
 void
-GPlatesGui::MapRenderedGeometryCollectionPainter::initialise(
+GPlatesGui::MapRenderedGeometryCollectionPainter::initialise_gl(
 		GPlatesOpenGL::GL &gl)
 {
-	d_layer_painter.initialise(gl);
+	d_layer_painter.initialise_gl(gl);
+}
+
+
+void
+GPlatesGui::MapRenderedGeometryCollectionPainter::shutdown_gl(
+		GPlatesOpenGL::GL &gl)
+{
+	d_layer_painter.shutdown_gl(gl);
 }
 
 

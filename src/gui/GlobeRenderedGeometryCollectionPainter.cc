@@ -103,10 +103,18 @@ GPlatesGui::GlobeRenderedGeometryCollectionPainter::GlobeRenderedGeometryCollect
 
 
 void
-GPlatesGui::GlobeRenderedGeometryCollectionPainter::initialise(
+GPlatesGui::GlobeRenderedGeometryCollectionPainter::initialise_gl(
 		GPlatesOpenGL::GL &gl)
 {
-	d_layer_painter.initialise(gl);
+	d_layer_painter.initialise_gl(gl);
+}
+
+
+void
+GPlatesGui::GlobeRenderedGeometryCollectionPainter::shutdown_gl(
+		GPlatesOpenGL::GL &gl)
+{
+	d_layer_painter.shutdown_gl(gl);
 }
 
 

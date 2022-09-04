@@ -42,6 +42,7 @@
 #include "maths/UnitQuaternion3D.h"
 
 #include "opengl/GLBuffer.h"
+#include "opengl/GLContextLifetime.h"
 #include "opengl/GLLight.h"
 #include "opengl/GLFilledPolygonsGlobeView.h"
 #include "opengl/GLFilledPolygonsMapView.h"
@@ -69,6 +70,7 @@ namespace GPlatesGui
 	 * Later this interface will include low-level general purpose symbol rendering (marker/line/fill).
 	 */
 	class LayerPainter :
+			public GPlatesOpenGL::GLContextLifetime,
 			private boost::noncopyable
 	{
 	public:
@@ -504,11 +506,18 @@ namespace GPlatesGui
 				boost::optional<const MapProjection &> map_projection = boost::none);
 
 		/**
-		 * Initialise objects requiring @a GL.
+		 * The OpenGL context has been created.
 		 */
 		void
-		initialise(
-				GPlatesOpenGL::GL &gl);
+		initialise_gl(
+				GPlatesOpenGL::GL &gl) override;
+
+		/**
+		 * The OpenGL context is about to be destroyed.
+		 */
+		void
+		shutdown_gl(
+				GPlatesOpenGL::GL &gl) override;
 
 		/**
 		 * Must be called before streaming or queuing any primitives.

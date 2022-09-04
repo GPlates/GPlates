@@ -42,6 +42,7 @@
 #include "maths/Rotation.h"
 
 #include "opengl/GLContext.h"
+#include "opengl/GLContextLifetime.h"
 #include "opengl/GLMatrix.h"
 #include "opengl/GLVisualLayers.h"
 #include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
@@ -73,7 +74,8 @@ namespace GPlatesGui
 {
 	class GlobeCamera;
 
-	class Globe
+	class Globe :
+			public GPlatesOpenGL::GLContextLifetime
 	{
 	public:
 		/**
@@ -91,13 +93,18 @@ namespace GPlatesGui
 
 
 		/**
-		 * Initialise any OpenGL state.
-		 *
-		 * This method is called when the OpenGL context is first bound (and hence we can make OpenGL calls).
+		 * The OpenGL context has been created.
 		 */
 		void
-		initialiseGL(
-				GPlatesOpenGL::GL &gl);
+		initialise_gl(
+				GPlatesOpenGL::GL &gl) override;
+
+		/**
+		 * The OpenGL context is about to be destroyed.
+		 */
+		void
+		shutdown_gl(
+				GPlatesOpenGL::GL &gl) override;
 
 
 		/**
@@ -105,20 +112,19 @@ namespace GPlatesGui
 		 *
 		 * @param view_projection The current view-projection transform and the viewport.
 		 *
-		 * @param front_globe_horizon_plane Plane that separates visible front half of globe from rear
-		 *        (from the camera's point of view). Front of globe is in positive half space of plane.
-		 *
 		 * @param viewport_zoom_factor The magnification of the globe in the viewport window.
 		 *        Value should be one when earth fills viewport and proportionately greater
 		 *        than one when viewport shows only part of the globe.
+		 *
+		 * @param front_globe_horizon_plane Plane that separates visible front half of globe from rear
+		 *        (from the camera's point of view). Front of globe is in positive half space of plane.
 		 */
 		cache_handle_type
 		paint(
 				GPlatesOpenGL::GL &gl,
 				const GPlatesOpenGL::GLViewProjection &view_projection,
-				const GPlatesOpenGL::GLIntersect::Plane &front_globe_horizon_plane,
 				const double &viewport_zoom_factor,
-				float scale);
+				const GPlatesOpenGL::GLIntersect::Plane &front_globe_horizon_plane);
 
 	private:
 
@@ -137,21 +143,21 @@ namespace GPlatesGui
 		/**
 		 * Stars in the background, behind the Earth.
 		 *
-		 * It's optional since it can't be constructed until @a initialiseGL is called (valid OpenGL context).
+		 * It's optional since it can't be constructed until @a initialise_gl is called (valid OpenGL context).
 		 */
 		boost::optional<Stars> d_stars;
 
 		/**
 		 * The background sphere (can be opaque or translucent depending on the background colour's alpha).
 		 *
-		 * It's optional since it can't be constructed until @a initialiseGL is called (valid OpenGL context).
+		 * It's optional since it can't be constructed until @a initialise_gl is called (valid OpenGL context).
 		 */
 		boost::optional<BackgroundSphere> d_background_sphere;
 
 		/**
 		 * Lines of lat and lon on surface of earth.
 		 *
-		 * It's optional since it can't be constructed until @a initialiseGL is called (valid OpenGL context).
+		 * It's optional since it can't be constructed until @a initialise_gl is called (valid OpenGL context).
 		 */
 		boost::optional<SphericalGrid> d_grid;
 

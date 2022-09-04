@@ -86,7 +86,7 @@ GPlatesGui::LayerPainter::LayerPainter(
 
 
 void
-GPlatesGui::LayerPainter::initialise(
+GPlatesGui::LayerPainter::initialise_gl(
 		GPlatesOpenGL::GL &gl)
 {
 	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
@@ -219,6 +219,29 @@ GPlatesGui::LayerPainter::initialise(
 	d_render_axially_symmetric_mesh_program->attach_shader(gl, axially_symmetric_mesh_vertex_shader);
 	d_render_axially_symmetric_mesh_program->attach_shader(gl, axially_symmetric_mesh_fragment_shader);
 	d_render_axially_symmetric_mesh_program->link_program(gl);
+}
+
+
+void
+GPlatesGui::LayerPainter::shutdown_gl(
+		GPlatesOpenGL::GL &gl)
+{
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
+	// Destroy the vertex array and buffers.
+	d_vertex_array.reset();
+	d_vertex_element_buffer.reset();
+	d_vertex_buffer.reset();
+
+	// Destroy the vertex-fragment program.
+	d_render_point_line_polygon_program.reset();
+
+	// Destroy the vertex array containing vertices of type 'AxiallySymmetricMeshVertex'.
+	d_axially_symmetric_mesh_vertex_array.reset();
+
+	// Destroy vertex-fragment program.
+	d_render_axially_symmetric_mesh_program.reset();
 }
 
 

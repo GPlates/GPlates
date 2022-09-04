@@ -16,6 +16,7 @@ set(srcs
     GLContext.cc
     GLContext.h
     GLContextImpl.h
+    GLContextLifetime.h
     GLCubeMeshGenerator.cc
     GLCubeMeshGenerator.h
     GLCubeSubdivision.cc
