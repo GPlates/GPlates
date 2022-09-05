@@ -797,7 +797,7 @@ GPlatesQtWidgets::DrawStyleDialog::show_preview_icons()
 			// Note: The returned image could be high DPI (pixel device ratio greater than 1.0).
 			//       In which case the actual pixel dimensions of the image will be larger than requested
 			//       (by the pixel device ratio) but it should still occupy the requested *icon* dimensions.
-			QImage image = d_globe_and_map_widget_ptr->render_to_qimage(
+			QImage image = d_globe_and_map_widget_ptr->render_to_image(
 					QSize(ICON_SIZE, ICON_SIZE),
 					GPlatesGui::Colour(0, 0, 0, 1));  // Opaque black clear colour
 
@@ -826,7 +826,7 @@ GPlatesQtWidgets::DrawStyleDialog::refresh_current_icon()
 		// Note: The returned image could be high DPI (pixel device ratio greater than 1.0).
 		//       In which case the actual pixel dimensions of the image will be larger than requested
 		//       (by the pixel device ratio) but it should still occupy the requested *icon* dimensions.
-		QImage image = d_globe_and_map_widget_ptr->render_to_qimage(
+		QImage image = d_globe_and_map_widget_ptr->render_to_image(
 				QSize(ICON_SIZE, ICON_SIZE),
 				GPlatesGui::Colour(0, 0, 0, 1));  // Opaque black clear colour
 

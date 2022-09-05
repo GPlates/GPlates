@@ -36,6 +36,7 @@
 #include "global/GPlatesAssert.h"
 #include "global/GPlatesException.h"
 
+#include "gui/Colour.h"
 #include "gui/GlobeCamera.h"
 #include "gui/MapCamera.h"
 #include "gui/MapProjection.h"
@@ -45,15 +46,9 @@
 
 #include "opengl/GLContext.h"
 #include "opengl/GLContextImpl.h"
-#include "opengl/GLImageUtils.h"
-#include "opengl/GLMatrix.h"
-#include "opengl/GLTileRender.h"
 #include "opengl/GLViewport.h"
-#include "opengl/OpenGLException.h"
 
 #include "presentation/ViewState.h"
-
-#include "utils/Profile.h"
 
 
 GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
@@ -65,13 +60,13 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
 							new GPlatesOpenGL::GLContextImpl::QOpenGLWindowImpl(*this)))),
 	d_initialised_gl(false),
-	d_off_screen_render_target_dimension(OFF_SCREEN_RENDER_TARGET_DIMENSION),
 	// The following unit-vector initialisation value is arbitrary.
 	d_mouse_position_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_is_on_globe(false),
 	d_scene(GPlatesGui::Scene::create(view_state, devicePixelRatio())),
 	d_scene_view(GPlatesGui::SceneView::create(view_state)),
-	d_scene_overlays(GPlatesGui::SceneOverlays::create(view_state))
+	d_scene_overlays(GPlatesGui::SceneOverlays::create(view_state)),
+	d_scene_renderer(GPlatesGui::SceneRenderer::create(view_state))
 {
 	// Update our canvas whenever the RenderedGeometryCollection gets updated.
 	// This will cause 'paintGL()' to be called which will visit the rendered
@@ -135,22 +130,25 @@ GPlatesQtWidgets::GlobeAndMapCanvas::get_viewport_size() const
 
 
 QImage
-GPlatesQtWidgets::GlobeAndMapCanvas::render_to_qimage(
+GPlatesQtWidgets::GlobeAndMapCanvas::render_to_image(
 		const QSize &image_size_in_device_independent_pixels,
 		const GPlatesGui::Colour &image_clear_colour)
 {
-	// Initialise OpenGL if we haven't already.
-	initialize_gl_if_necessary();
-
-	// Make sure the OpenGL context is currently active.
-	d_gl_context->make_current();
+	// Make sure the OpenGL context is current, and then initialise OpenGL if we haven't already.
+	//
+	// Note: We're not called from 'paintEvent()' so we can't be sure the OpenGL context is current.
+	//       And we also don't know if 'initializeGL()' has been called yet.
+	makeCurrent();
+	if (!d_initialised_gl)
+	{
+		initialize_gl();
+	}
 
 	// Start a render scope (all GL calls should be done inside this scope).
 	//
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
 	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
 	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
-
 
 	// The image to render/copy the scene into.
 	//
@@ -176,97 +174,16 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_qimage(
 	// of one of the tiles and the image is incomplete.
 	image.fill(QColor(image_clear_colour).rgba());
 
-	const GPlatesOpenGL::GLViewport image_viewport(
-			0, 0,
-			// Use image size in device pixels (used by OpenGL)...
-			image_size_in_device_pixels.width(),
-			image_size_in_device_pixels.height()/*destination_viewport*/);
-	const double image_aspect_ratio = double(image_size_in_device_independent_pixels.width()) /
-			image_size_in_device_independent_pixels.height();
+	// Viewport zoom.
+	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
 
-	// The border is half the point size or line width, rounded up to nearest pixel.
-	// TODO: Use the actual maximum point size or line width to calculate this.
-	const unsigned int image_tile_border = 10;
-	// Set up for rendering the scene into tiles using the offscreen render target.
-	GPlatesOpenGL::GLTileRender image_tile_render(
-			d_off_screen_render_target_dimension/*tile_render_target_width*/,
-			d_off_screen_render_target_dimension/*tile_render_target_height*/,
-			image_viewport/*destination_viewport*/,
-			image_tile_border);
-
-	// Keep track of the cache handles of all rendered tiles.
-	boost::shared_ptr< std::vector<cache_handle_type> > frame_cache_handle(
-			new std::vector<cache_handle_type>());
-
-	// Render the scene tile-by-tile.
-	for (image_tile_render.first_tile(); !image_tile_render.finished(); image_tile_render.next_tile())
-	{
-		// Render the scene to current image tile.
-		// Hold onto the previous frame's cached resources *while* generating the current frame.
-		const cache_handle_type image_tile_cache_handle = render_scene_tile_into_image(
-				*gl,
-				image_tile_render,
-				image_clear_colour,
-				image);
-		frame_cache_handle->push_back(image_tile_cache_handle);
-	}
-
-	// The previous cached resources were kept alive *while* in the rendering loop above.
-	d_gl_frame_cache_handle = frame_cache_handle;
+	// Render the scene into the image.
+	d_scene_renderer->render_to_image(
+			image, *gl,
+			*d_scene, *d_scene_overlays, *d_scene_view,
+			viewport_zoom_factor, image_clear_colour);
 
 	return image;
-}
-
-
-void
-GPlatesQtWidgets::GlobeAndMapCanvas::render_opengl_feedback_to_paint_device(
-		QPaintDevice &feedback_paint_device)
-{
-	// Initialise OpenGL if we haven't already.
-	initialize_gl_if_necessary();
-
-	// Make sure the OpenGL context is currently active.
-	d_gl_context->make_current();
-
-	// Start a render scope (all GL calls should be done inside this scope).
-	//
-	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
-	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
-	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
-
-	// Convert from paint device size to device pixels (used by OpenGL)...
-	const unsigned int feedback_paint_device_pixel_width =
-			feedback_paint_device.width() * feedback_paint_device.devicePixelRatio();
-	const unsigned int feedback_paint_device_pixel_height =
-			feedback_paint_device.height() * feedback_paint_device.devicePixelRatio();
-
-	const GPlatesOpenGL::GLViewport feedback_paint_device_viewport(
-			0, 0,
-			feedback_paint_device_pixel_width,
-			feedback_paint_device_pixel_height);
-
-	// Get the view-projection transform.
-	const GPlatesOpenGL::GLViewProjection feedback_paint_device_view_projection =
-			d_scene_view->get_view_projection(feedback_paint_device_viewport);
-
-	// Set the viewport (and scissor rectangle) to the size of the feedback paint device
-	// (instead of the globe/map canvas) since we're rendering to it (via transform feedback).
-	gl->Viewport(
-			feedback_paint_device_viewport.x(), feedback_paint_device_viewport.y(),
-			feedback_paint_device_viewport.width(), feedback_paint_device_viewport.height());
-	gl->Scissor(
-			feedback_paint_device_viewport.x(), feedback_paint_device_viewport.y(),
-			feedback_paint_device_viewport.width(), feedback_paint_device_viewport.height());
-
-	// Clear colour buffer of the framebuffer (set to transparent black).
-	const GPlatesGui::Colour clear_colour(0, 0, 0, 0);
-
-	// Render the scene to the feedback paint device.
-	// Hold onto the previous frame's cached resources *while* generating the current frame.
-	d_gl_frame_cache_handle = render_scene(
-			*gl,
-			feedback_paint_device_view_projection,
-			clear_colour);
 }
 
 
@@ -280,6 +197,9 @@ GPlatesQtWidgets::GlobeAndMapCanvas::update_canvas()
 void
 GPlatesQtWidgets::GlobeAndMapCanvas::initializeGL() 
 {
+	// Initialise OpenGL.
+	//
+	// Note: The OpenGL context is already current.
 	initialize_gl();
 }
 
@@ -301,15 +221,15 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initialize_gl()
 	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->create_gl();
 	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
-	// Create and initialise the offscreen render target.
-	create_off_screen_render_target(*gl);
-
 	// NOTE: We should not perform any operation that affects the default framebuffer (such as 'glClear()')
 	//       because it's possible the default framebuffer (associated with this GLWidget) is not yet
 	//       set up correctly despite its OpenGL context being the current rendering context.
 
 	// Initialise the scene.
 	d_scene->initialise_gl(*gl);
+
+	// Initialise the scene renderer.
+	d_scene_renderer->initialise_gl(*gl);
 
 	// 'initializeGL()' should only be called once.
 	d_initialised_gl = true;
@@ -329,8 +249,8 @@ GPlatesQtWidgets::GlobeAndMapCanvas::shutdown_gl()
 		// Shutdown the scene.
 		d_scene->shutdown_gl(*gl);
 
-		// Destroy the offscreen render target.
-		destroy_off_screen_render_target(*gl);
+		// Shutdown the scene renderer.
+		d_scene_renderer->shutdown_gl(*gl);
 	}
 
 	// Shutdown our context-like object last.
@@ -356,8 +276,9 @@ GPlatesQtWidgets::GlobeAndMapCanvas::paintGL()
 
 	// The viewport is in device pixels since that is what OpenGL will use to render the scene.
 	const GPlatesOpenGL::GLViewport viewport(0, 0, width(), height());
-	const GPlatesOpenGL::GLViewProjection view_projection = d_scene_view->get_view_projection(viewport);
 
+	// Viewport zoom.
+	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
 	// Clear colour buffer of the main framebuffer.
 	//
 	// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
@@ -366,19 +287,16 @@ GPlatesQtWidgets::GlobeAndMapCanvas::paintGL()
 	// QGLWidget rendering (on Qt5 Mac) is first done to a framebuffer object which is then blended into the
 	// window framebuffer (where having a source alpha of zero would result in the black background not showing).
 	// Or, more likely, maybe a framebuffer object is used on all platforms but the window framebuffer is white on Mac
-	// but already black on Windows/Ubuntu (maybe because we turned off background rendering with
-	// "setAutoFillBackground(false)" and "setAttribute(Qt::WA_NoSystemBackground)").
+	// but already black on Windows/Ubuntu. That was using a QOpenGLWidget and we turned off background rendering with
+	// "setAutoFillBackground(false)" and "setAttribute(Qt::WA_NoSystemBackground)"). Now we use QOpenGLWindow
+	// which does not support those features.
 	const GPlatesGui::Colour clear_colour(0, 0, 0, 1);
 
-	// Hold onto the previous frame's cached resources *while* generating the current frame.
-	//
-	// NOTE: We hold onto the previous frame's cached resources *while* generating the current frame
-	// and then release our hold on the previous frame (by assigning the current frame's cache).
-	// This just prevents a render frame from invalidating cached resources of the previous frame
-	// in order to avoid regenerating the same cached resources unnecessarily each frame.
-	// Since the view direction usually differs little from one frame to the next there is a lot
-	// of overlap that we want to reuse (and not recalculate).
-	d_gl_frame_cache_handle = render_scene(*gl, view_projection, clear_colour);
+
+	// Render the scene into the canvas.
+	d_scene_renderer->render(
+			*gl, *d_scene, *d_scene_overlays, *d_scene_view,
+			viewport, viewport_zoom_factor, clear_colour, devicePixelRatio());
 }
 
 
@@ -678,210 +596,6 @@ GPlatesQtWidgets::GlobeAndMapCanvas::wheelEvent(
 	{
 		viewport_zoom.zoom_out(num_levels);
 	}
-}
-
-
-void 
-GPlatesQtWidgets::GlobeAndMapCanvas::initialize_gl_if_necessary()
-{
-	// Return early if we've already initialised OpenGL.
-	// This is now necessary because it's not only 'paintEvent()' and other QOpenGLWidget methods
-	// that call our 'initializeGL()' method - it's now also when a client wants to render the
-	// scene to an image (instead of render/update the QOpenGLWidget itself).
-	if (d_initialised_gl)
-	{
-		return;
-	}
-
-	// Make sure the OpenGL context is current.
-	// We can't use 'd_gl_context' yet because it hasn't been initialised.
-	makeCurrent();
-
-	initialize_gl();
-}
-
-
-void
-GPlatesQtWidgets::GlobeAndMapCanvas::create_off_screen_render_target(
-		GPlatesOpenGL::GL &gl)
-{
-	if (d_off_screen_render_target_dimension > gl.get_capabilities().gl_max_texture_size)
-	{
-		d_off_screen_render_target_dimension = gl.get_capabilities().gl_max_texture_size;
-	}
-
-	// Create the framebuffer and its renderbuffers.
-	d_off_screen_colour_renderbuffer = GPlatesOpenGL::GLRenderbuffer::create(gl);
-	d_off_screen_depth_stencil_renderbuffer = GPlatesOpenGL::GLRenderbuffer::create(gl);
-	d_off_screen_framebuffer = GPlatesOpenGL::GLFramebuffer::create(gl);
-
-	// Initialise offscreen colour renderbuffer.
-	gl.BindRenderbuffer(GL_RENDERBUFFER, d_off_screen_colour_renderbuffer);
-	gl.RenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, d_off_screen_render_target_dimension, d_off_screen_render_target_dimension);
-
-	// Initialise offscreen depth/stencil renderbuffer.
-	// Note that (in OpenGL 3.3 core) an OpenGL implementation is only *required* to provide stencil if a
-	// depth/stencil format is requested, and furthermore GL_DEPTH24_STENCIL8 is a specified required format.
-	gl.BindRenderbuffer(GL_RENDERBUFFER, d_off_screen_depth_stencil_renderbuffer);
-	gl.RenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, d_off_screen_render_target_dimension, d_off_screen_render_target_dimension);
-
-	// Bind the framebuffer that'll we subsequently attach the renderbuffers to.
-	gl.BindFramebuffer(GL_FRAMEBUFFER, d_off_screen_framebuffer);
-
-	// Bind the colour renderbuffer to framebuffer's first colour attachment.
-	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, d_off_screen_colour_renderbuffer);
-
-	// Bind the depth/stencil renderbuffer to framebuffer's depth/stencil attachment.
-	gl.FramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, d_off_screen_depth_stencil_renderbuffer);
-
-	const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
-	GPlatesGlobal::Assert<GPlatesOpenGL::OpenGLException>(
-			completeness == GL_FRAMEBUFFER_COMPLETE,
-			GPLATES_ASSERTION_SOURCE,
-			"Framebuffer not complete for rendering tiles in globe filled polygons.");
-}
-
-
-void
-GPlatesQtWidgets::GlobeAndMapCanvas::destroy_off_screen_render_target(
-		GPlatesOpenGL::GL &gl)
-{
-	// Destroy the framebuffer's renderbuffers and then destory the framebuffer itself.
-	d_off_screen_framebuffer.reset();
-	d_off_screen_colour_renderbuffer.reset();
-	d_off_screen_depth_stencil_renderbuffer.reset();
-}
-
-
-GPlatesQtWidgets::GlobeAndMapCanvas::cache_handle_type
-GPlatesQtWidgets::GlobeAndMapCanvas::render_scene(
-		GPlatesOpenGL::GL &gl,
-		const GPlatesOpenGL::GLViewProjection &view_projection,
-		const GPlatesGui::Colour &clear_colour)
-{
-	PROFILE_FUNC();
-
-	// Clear the colour and depth buffers of the framebuffer currently bound to GL_DRAW_FRAMEBUFFER target.
-	// We also clear the stencil buffer in case it is used - also it's usually
-	// interleaved with depth so it's more efficient to clear both depth and stencil.
-	//
-	// NOTE: Depth/stencil writes must be enabled for depth/stencil clears to work.
-	//       But these should be enabled by default anyway.
-	gl.DepthMask(GL_TRUE);
-	gl.StencilMask(~0/*all ones*/);
-	// Use the requested clear colour.
-	gl.ClearColor(clear_colour.red(), clear_colour.green(), clear_colour.blue(), clear_colour.alpha());
-	gl.ClearDepth(); // Clear depth to 1.0
-	gl.ClearStencil(); // Clear stencil to 0
-	gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-	// Render the scene (into the globe or map view).
-	const double viewport_zoom_factor = d_view_state.get_viewport_zoom().zoom_factor();
-
-	//
-	// Render the globe or map (and its contents) depending on whether the globe or map is currently active.
-	//
-	cache_handle_type frame_cache_handle;
-	if (is_globe_active())
-	{
-		frame_cache_handle = d_scene->render_globe(
-				gl,
-				view_projection,
-				viewport_zoom_factor,
-				d_view_state.get_globe_camera().get_front_globe_horizon_plane());
-	}
-	else
-	{
-		frame_cache_handle = d_scene->render_map(
-				gl,
-				view_projection,
-				viewport_zoom_factor);
-	}
-
-	// Render the 2D overlays on top of the 3D scene just rendered.
-	d_scene_overlays->render(gl, view_projection, devicePixelRatio());
-
-	return frame_cache_handle;
-}
-
-
-GPlatesQtWidgets::GlobeAndMapCanvas::cache_handle_type
-GPlatesQtWidgets::GlobeAndMapCanvas::render_scene_tile_into_image(
-		GPlatesOpenGL::GL &gl,
-		const GPlatesOpenGL::GLTileRender &image_tile_render,
-		const GPlatesGui::Colour &image_clear_colour,
-		QImage &image)
-{
-	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GL::StateScope save_restore_state(
-			gl,
-			// We're rendering to a render target so reset to the default OpenGL state...
-			true/*reset_to_default_state*/);
-
-	// Bind our offscreen framebuffer object for drawing and reading.
-	// This directs drawing to and reading from the offscreen colour renderbuffer at the first colour attachment, and
-	// its associated depth/stencil renderbuffer at the depth/stencil attachment.
-	gl.BindFramebuffer(GL_FRAMEBUFFER, d_off_screen_framebuffer);
-
-	GPlatesOpenGL::GLViewport image_tile_render_target_viewport;
-	image_tile_render.get_tile_render_target_viewport(image_tile_render_target_viewport);
-
-	GPlatesOpenGL::GLViewport image_tile_render_target_scissor_rect;
-	image_tile_render.get_tile_render_target_scissor_rectangle(image_tile_render_target_scissor_rect);
-
-	// Mask off rendering outside the current tile region in case the tile is smaller than the
-	// render target. Note that the tile's viewport is slightly larger than the tile itself
-	// (the scissor rectangle) in order that fat points and wide lines just outside the tile
-	// have pixels rasterised inside the tile (the projection transform has also been expanded slightly).
-	//
-	// This includes 'glClear()' calls which are bounded by the scissor rectangle.
-	gl.Enable(GL_SCISSOR_TEST);
-	gl.Scissor(
-			image_tile_render_target_scissor_rect.x(),
-			image_tile_render_target_scissor_rect.y(),
-			image_tile_render_target_scissor_rect.width(),
-			image_tile_render_target_scissor_rect.height());
-	gl.Viewport(
-			image_tile_render_target_viewport.x(),
-			image_tile_render_target_viewport.y(),
-			image_tile_render_target_viewport.width(),
-			image_tile_render_target_viewport.height());
-
-	// Projection transform associated with current image tile will be post-multiplied with the
-	// projection transform for the whole image.
-	const GPlatesOpenGL::GLMatrix image_tile_projection_transform =
-			image_tile_render.get_tile_projection_transform()->get_matrix();
-
-	// The view/projection/viewport for the current image tile.
-	const GPlatesOpenGL::GLViewProjection image_tile_view_projection = d_scene_view->get_view_projection(
-			image_tile_render_target_viewport,  // viewport used for rendering tile
-			image_tile_projection_transform);
-
-	//
-	// Render the scene.
-	//
-	const cache_handle_type tile_cache_handle = render_scene(
-			gl,
-			image_tile_view_projection,
-			image_clear_colour);
-
-	//
-	// Copy the rendered tile into the appropriate sub-rect of the image.
-	//
-
-	GPlatesOpenGL::GLViewport current_tile_source_viewport;
-	image_tile_render.get_tile_source_viewport(current_tile_source_viewport);
-
-	GPlatesOpenGL::GLViewport current_tile_destination_viewport;
-	image_tile_render.get_tile_destination_viewport(current_tile_destination_viewport);
-
-	GPlatesOpenGL::GLImageUtils::copy_rgba8_framebuffer_into_argb32_qimage(
-			gl,
-			image,
-			current_tile_source_viewport,
-			current_tile_destination_viewport);
-
-	return tile_cache_handle;
 }
 
 

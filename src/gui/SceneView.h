@@ -27,6 +27,7 @@
 
 #include "maths/PointOnSphere.h"
 
+#include "opengl/GLIntersectPrimitives.h"
 #include "opengl/GLMatrix.h"
 #include "opengl/GLViewport.h"
 #include "opengl/GLViewProjection.h"
@@ -114,6 +115,12 @@ namespace GPlatesGui
 				boost::optional<const GPlatesOpenGL::GLMatrix &> tile_projection_transform = boost::none) const;
 
 		/**
+		 * Returns the plane that separates the visible front half of the globe from invisible rear half.
+		 */
+		GPlatesOpenGL::GLIntersect::Plane
+		get_globe_camera_front_horizon_plane() const;
+
+		/**
 		 * The proximity inclusion threshold is a dot product (cosine) measure of how close a geometry
 		 * must be to a click-point be considered "hit" by the click.
 		 *
@@ -129,6 +136,7 @@ namespace GPlatesGui
 		current_proximity_inclusion_threshold(
 				const GPlatesMaths::PointOnSphere &click_point,
 				const GPlatesOpenGL::GLViewport &viewport) const;
+
 
 	Q_SIGNALS:
 	

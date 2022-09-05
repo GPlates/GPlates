@@ -35,24 +35,19 @@
 #include <QImage>
 #include <QMouseEvent>
 #include <QOpenGLWindow>
-#include <QPaintDevice>
 #include <QPointF>
 #include <QSize>
 #include <QtGlobal>
 
-#include "gui/Colour.h"
 #include "gui/Scene.h"
 #include "gui/SceneOverlays.h"
+#include "gui/SceneRenderer.h"
 #include "gui/SceneView.h"
 
-#include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
 
 #include "opengl/GLContext.h"
 #include "opengl/GLMatrix.h"
-#include "opengl/GLFramebuffer.h"
-#include "opengl/GLRenderbuffer.h"
-#include "opengl/GLViewProjection.h"
 #include "opengl/GLVisualLayers.h"
 #include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
@@ -91,10 +86,6 @@ namespace GPlatesQtWidgets
 		~GlobeAndMapCanvas();
 
 
-		double
-		current_proximity_inclusion_threshold(
-				const GPlatesMaths::PointOnSphere &click_point) const;
-
 		/**
 		 * Returns the dimensions of the viewport in device *independent* pixels (ie, widget size).
 		 *
@@ -118,16 +109,9 @@ namespace GPlatesQtWidgets
 		 * Returns a null QImage if unable to allocate enough memory for the image data.
 		 */
 		QImage
-		render_to_qimage(
+		render_to_image(
 				const QSize &image_size_in_device_independent_pixels,
 				const GPlatesGui::Colour &image_clear_colour);
-
-		/**
-		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
-		 */
-		void
-		render_opengl_feedback_to_paint_device(
-				QPaintDevice &feedback_paint_device);
 
 
 		/**
@@ -185,6 +169,18 @@ namespace GPlatesQtWidgets
 		{
 			return d_scene->get_gl_visual_layers();
 		}
+
+		/**
+		 * The proximity inclusion threshold is a dot product (cosine) measure of how close a geometry
+		 * must be to a click-point be considered "hit" by the click.
+		 *
+		 * This will depend on the projection of the globe/map.
+		 * For 3D projections the horizon of the globe will need a larger threshold than the centre of the globe.
+		 * For 2D projections the threshold will vary with the 'stretch' around the clicked-point.
+		 */
+		double
+		current_proximity_inclusion_threshold(
+				const GPlatesMaths::PointOnSphere &click_point) const;
 
 	public Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
@@ -429,12 +425,6 @@ namespace GPlatesQtWidgets
 		};
 
 
-		/**
-		 * Typedef for an opaque object that caches a particular painting.
-		 */
-		typedef boost::shared_ptr<void> cache_handle_type;
-
-
 		GPlatesPresentation::ViewState &d_view_state;
 
 		//! Mirrors an OpenGL context and provides a central place to manage low-level OpenGL objects.
@@ -442,18 +432,6 @@ namespace GPlatesQtWidgets
 
 		//! Is true if OpenGL has been initialised for this canvas.
 		bool d_initialised_gl;
-
-		//! Colour renderbuffer object used for offscreen rendering.
-		GPlatesOpenGL::GLRenderbuffer::shared_ptr_type d_off_screen_colour_renderbuffer;
-
-		//! Depth/stencil renderbuffer object used for offscreen rendering.
-		GPlatesOpenGL::GLRenderbuffer::shared_ptr_type d_off_screen_depth_stencil_renderbuffer;
-
-		//! Framebuffer object used for offscreen rendering.
-		GPlatesOpenGL::GLFramebuffer::shared_ptr_type d_off_screen_framebuffer;
-
-		//! Dimensions of square render target used for offscreen rendering.
-		unsigned int d_off_screen_render_target_dimension;
 
 		/**
 		 * The scene contains the globe and map.
@@ -471,15 +449,11 @@ namespace GPlatesQtWidgets
 		GPlatesGui::SceneOverlays::non_null_ptr_type d_scene_overlays;
 
 		/**
-		 * Enables frame-to-frame caching of persistent OpenGL resources.
+		 * The scene renderer.
 		 *
-		 * There is a certain amount of caching without this already.
-		 * This just prevents a render frame from invalidating cached resources of the previous frame
-		 * in order to avoid regenerating the same cached resources unnecessarily each frame.
-		 * We hold onto the previous frame's cached resources *while* generating the current frame and
-		 * then release our hold on the previous frame (and continue this pattern each new frame).
+		 * Can render scene into this canvas or into an arbitrary-size QImage.
 		 */
-		cache_handle_type d_gl_frame_cache_handle;
+		GPlatesGui::SceneRenderer::non_null_ptr_type d_scene_renderer;
 
 		//! The mouse pointer position on the *screen*.
 		QPointF d_mouse_screen_position;
@@ -515,44 +489,6 @@ namespace GPlatesQtWidgets
 
 		boost::optional<MousePressInfo> d_mouse_press_info;
 
-
-
-		//! Dimensions of square render target used for offscreen rendering.
-		static const unsigned int OFF_SCREEN_RENDER_TARGET_DIMENSION = 1024;
-
-
-		//! Calls 'initializeGL()' if it hasn't already been called.
-		void
-		initialize_gl_if_necessary();
-
-		//! Create and initialise the framebuffer and its renderbuffers used for offscreen rendering.
-		void
-		create_off_screen_render_target(
-				GPlatesOpenGL::GL &gl);
-
-		//! Destroy the framebuffer and its renderbuffers used for offscreen rendering.
-		void
-		destroy_off_screen_render_target(
-				GPlatesOpenGL::GL &gl);
-
-		//! Render the scene into the current framebuffer.
-		cache_handle_type
-		render_scene(
-				GPlatesOpenGL::GL &gl,
-				const GPlatesOpenGL::GLViewProjection &view_projection,
-				const GPlatesGui::Colour &clear_colour);
-
-		/**
-		 * Render one tile of the scene (as specified by @a image_tile_render).
-		 *
-		 * The sub-rect of @a image to render into is determined by @a image_tile_render.
-		 */
-		cache_handle_type
-		render_scene_tile_into_image(
-				GPlatesOpenGL::GL &gl,
-				const GPlatesOpenGL::GLTileRender &image_tile_render,
-				const GPlatesGui::Colour &image_clear_colour,
-				QImage &image);
 
 		/**
 		 * The point on the globe which corresponds to the centre of the viewport.

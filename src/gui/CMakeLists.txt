@@ -216,6 +216,8 @@ set(srcs
     SceneLightingParameters.h
     SceneOverlays.cc
     SceneOverlays.h
+    SceneRenderer.cc
+    SceneRenderer.h
     SceneView.cc
     SceneView.h
     SessionMenu.cc
