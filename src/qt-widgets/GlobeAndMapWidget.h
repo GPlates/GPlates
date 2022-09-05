@@ -144,16 +144,9 @@ namespace GPlatesQtWidgets
 		 * Returns a null QImage if unable to allocate enough memory for the image data.
 		 */
 		QImage
-		render_to_qimage(
+		render_to_image(
 				const QSize &image_size_in_device_independent_pixels,
 				const GPlatesGui::Colour &image_clear_colour);
-
-		/**
-		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the specified paint device.
-		 */
-		void
-		render_opengl_feedback_to_paint_device(
-				QPaintDevice &feedback_paint_device);
 
 		/**
 		 * Returns the OpenGL context.

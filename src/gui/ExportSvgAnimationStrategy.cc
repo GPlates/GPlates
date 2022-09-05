@@ -25,6 +25,7 @@
 
 #include <exception>
 #include <QDebug>
+#include <QPainter>
 #include <QSvgGenerator>
 
 #include "ExportSvgAnimationStrategy.h"
@@ -106,8 +107,30 @@ GPlatesGui::ExportSvgAnimationStrategy::do_export_iteration(
 			}
 		}
 
-		// Render to the SVG file.
-		globe_and_map_widget.render_opengl_feedback_to_paint_device(svg_generator);
+		// Render to a screenshot image.
+		//
+		// Note: We used to use OpenGL feedback to retrieve the vector geometry screen coordinates
+		//       (ie, after projection from 3D space onto 2D screen). However our rendering pipeline
+		//       now renders symbolised vector geometries into textures that are draped over a heightfield,
+		//       so we've essentially lost the projected vector data (vertices) since they've been
+		//       converted into texture data.
+		//
+		//       So, for now, we'll just render the entire scene into an image and draw that to SVG.
+		//       Unfortunately this means the SVG file will only contain a single image and no vector data.
+		//       This somewhat defeats the reason for having an SVG export in the first place.
+		//
+		// Todo: Find a way to capture at least some vector geometry data in SVG.
+		//       Perhaps exporting vector data as if it was not on a heightfield
+		//       (ie, just on spherical 3D globe or flat 2D map).
+		//       Or just remove SVG export altogether.
+		const QImage screenshot_image = globe_and_map_widget.render_to_image(
+				svg_generator.size(),
+				// Clear the image with transparent black so that the background is transparent...
+				GPlatesGui::Colour(0, 0, 0, 0));
+
+		// Draw the screenshot image to SVG.
+		QPainter painter(&svg_generator);
+		painter.drawImage(0, 0, screenshot_image);
 
 		// Restore previous rendered layer active state.
 		rendered_geometry_collection.restore_main_layer_active_state(prev_rendered_layer_active_state);

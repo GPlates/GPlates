@@ -107,7 +107,7 @@ GPlatesGui::ExportImageAnimationStrategy::do_export_iteration(
 		// Note: The returned image could be high DPI (pixel device ratio greater than 1.0).
 		//       In which case the actual pixel dimensions of the image will be larger than requested
 		//       (by the pixel device ratio) but it should still occupy the requested *widget* dimensions.
-		const QImage image = globe_and_map_widget.render_to_qimage(
+		const QImage image = globe_and_map_widget.render_to_image(
 				d_configuration->image_resolution_options.image_size
 					? d_configuration->image_resolution_options.image_size.get()
 					: globe_and_map_widget.get_viewport_size(),
