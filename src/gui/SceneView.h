@@ -22,6 +22,7 @@
 
 #include <boost/optional.hpp>
 #include <QObject>
+#include <QPointF>
 
 #include "Projection.h"
 
@@ -46,6 +47,7 @@ namespace GPlatesGui
 	class GlobeCamera;
 	class MapCamera;
 	class MapProjection;
+	class ViewportZoom;
 
 	/**
 	 * The view (including projection) of the scene (globe and map).
@@ -80,9 +82,6 @@ namespace GPlatesGui
 		const Camera &
 		get_active_camera() const;
 
-		/**
-		 * Return the camera controlling the current view (globe or map camera).
-		 */
 		Camera &
 		get_active_camera();
 
@@ -104,6 +103,22 @@ namespace GPlatesGui
 
 
 		/**
+		 * Return the viewport zoom.
+		 */
+		const ViewportZoom &
+		get_viewport_zoom() const
+		{
+			return d_viewport_zoom;
+		}
+
+		ViewportZoom &
+		get_viewport_zoom()
+		{
+			return d_viewport_zoom;
+		}
+
+
+		/**
 		 * Get the view-projection transform of the current view, and combine it with the specified viewport.
 		 *
 		 * An optional tile projection transform can pre-multiply the projection transform of the current view
@@ -115,7 +130,40 @@ namespace GPlatesGui
 				boost::optional<const GPlatesOpenGL::GLMatrix &> tile_projection_transform = boost::none) const;
 
 		/**
+		 * Returns the position on the globe (in the current globe or map view) at the specified window coordinate.
+		 *
+		 * When the map is active (ie, when globe is inactive) the window coordinate is considered to intersect
+		 * the globe if it intersects the map plane at a position that is inside the map projection boundary.
+		 * When the map is active @a position_on_map_plane is set to the position on the map plane if the
+		 * window coordinate intersects the map plane (or none if misses). When the globe is active it is set to none.
+		 *
+		 * If the window coordinate misses the globe in globe view (or is outside map projection boundary in map view)
+		 * then the nearest point on the globe horizon visible circumference in globe view (or nearest point on
+		 * the map projection boundary in map view) is returned instead. And @a is_on_globe is set to false.
+		 *
+		 * Window coordinates are typically in the range [0, window_width] and [0, window_height]
+		 * where (0, 0) is bottom-left and (window_width, window_height) is top-right of window.
+		 * Note that we use the OpenGL convention where 'window_x = 0' is the bottom of the window.
+		 * But in Qt it means top, so a Qt mouse y coordinate (for example) needs be inverted
+		 * before passing to this method.
+		 *
+		 * Note that either/both window coordinate could be outside the range[0, window_width] and
+		 * [0, window_height], in which case the window coordinate is not associated with a window pixel
+		 * inside the viewport (visible projected scene).
+		 */
+		GPlatesMaths::PointOnSphere
+		get_position_on_globe_at_window_coord(
+				double window_x,
+				double window_y,
+				int window_width,
+				int window_height,
+				bool &is_on_globe,
+				boost::optional<QPointF> &position_on_map_plane) const;
+
+		/**
 		 * Returns the plane that separates the visible front half of the globe from invisible rear half.
+		 *
+		 * Note: This only applies to the globe view (not the map view).
 		 */
 		GPlatesOpenGL::GLIntersect::Plane
 		get_globe_camera_front_horizon_plane() const;
@@ -177,10 +225,29 @@ namespace GPlatesGui
 
 		MapProjection &d_map_projection;
 
+		ViewportZoom &d_viewport_zoom;
+
 
 		explicit
 		SceneView(
 				GPlatesPresentation::ViewState &view_state);
+
+		/**
+		 * Get position on globe when globe is active (ie, when map is inactive).
+		 */
+		GPlatesMaths::PointOnSphere
+		get_position_on_globe(
+				const GPlatesOpenGL::GLIntersect::Ray &camera_ray,
+				bool &is_on_globe) const;
+
+		/**
+		 * Get position on globe when map is active (ie, when globe is inactive).
+		 */
+		GPlatesMaths::PointOnSphere
+		get_position_on_map(
+				const GPlatesOpenGL::GLIntersect::Ray &camera_ray,
+				bool &is_on_globe,
+				boost::optional<QPointF> &position_on_map_plane) const;
 	};
 }
 

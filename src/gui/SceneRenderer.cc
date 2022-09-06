@@ -23,6 +23,7 @@
 #include "Scene.h"
 #include "SceneOverlays.h"
 #include "SceneView.h"
+#include "ViewportZoom.h"
 
 #include "global/GPlatesAssert.h"
 
@@ -71,7 +72,6 @@ GPlatesGui::SceneRenderer::render(
 		SceneOverlays &scene_overlays,
 		const SceneView &scene_view,
 		const GPlatesOpenGL::GLViewport &viewport,
-		const double &viewport_zoom_factor,
 		const Colour &clear_colour,
 		int device_pixel_ratio)
 {
@@ -91,7 +91,6 @@ GPlatesGui::SceneRenderer::render(
 			scene_overlays,
 			scene_view,
 			view_projection,
-			viewport_zoom_factor,
 			clear_colour,
 			device_pixel_ratio);
 }
@@ -104,7 +103,6 @@ GPlatesGui::SceneRenderer::render_to_image(
 		Scene &scene,
 		SceneOverlays &scene_overlays,
 		const SceneView &scene_view,
-		const double &viewport_zoom_factor,
 		const Colour &image_clear_colour)
 {
 	const GPlatesOpenGL::GLViewport image_viewport(
@@ -134,7 +132,7 @@ GPlatesGui::SceneRenderer::render_to_image(
 		const cache_handle_type image_tile_cache_handle = render_scene_tile_to_image(
 				gl, image, image_viewport, image_tile_render,
 				scene, scene_overlays, scene_view,
-				viewport_zoom_factor, image_clear_colour);
+				image_clear_colour);
 		frame_cache_handle->push_back(image_tile_cache_handle);
 	}
 
@@ -152,7 +150,6 @@ GPlatesGui::SceneRenderer::render_scene_tile_to_image(
 		Scene &scene,
 		SceneOverlays &scene_overlays,
 		const SceneView &scene_view,
-		const double &viewport_zoom_factor,
 		const Colour &image_clear_colour)
 {
 	// Make sure we leave the OpenGL state the way it was.
@@ -205,7 +202,7 @@ GPlatesGui::SceneRenderer::render_scene_tile_to_image(
 	//
 	const cache_handle_type tile_cache_handle = render_scene(
 			gl, scene, scene_overlays, scene_view,
-			image_tile_view_projection, viewport_zoom_factor,
+			image_tile_view_projection,
 			image_clear_colour, image.devicePixelRatio());
 
 	//
@@ -235,7 +232,6 @@ GPlatesGui::SceneRenderer::render_scene(
 		SceneOverlays &scene_overlays,
 		const SceneView &scene_view,
 		const GPlatesOpenGL::GLViewProjection &view_projection,
-		const double &viewport_zoom_factor,
 		const Colour &clear_colour,
 		int device_pixel_ratio)
 {
@@ -264,7 +260,7 @@ GPlatesGui::SceneRenderer::render_scene(
 		frame_cache_handle = scene.render_globe(
 				gl,
 				view_projection,
-				viewport_zoom_factor,
+				scene_view.get_viewport_zoom().zoom_factor(),
 				scene_view.get_globe_camera_front_horizon_plane());
 	}
 	else
@@ -272,7 +268,7 @@ GPlatesGui::SceneRenderer::render_scene(
 		frame_cache_handle = scene.render_map(
 				gl,
 				view_projection,
-				viewport_zoom_factor);
+				scene_view.get_viewport_zoom().zoom_factor());
 	}
 
 	// Render the 2D overlays on top of the 3D scene just rendered.

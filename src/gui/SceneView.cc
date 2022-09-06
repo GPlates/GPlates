@@ -25,6 +25,9 @@
 #include "MapCamera.h"
 #include "MapProjection.h"
 
+#include "global/AssertionFailureException.h"
+#include "global/GPlatesAssert.h"
+
 #include "maths/MathsUtils.h"
 
 #include "presentation/ViewState.h"
@@ -35,7 +38,8 @@ GPlatesGui::SceneView::SceneView(
 	d_projection(view_state.get_projection()),
 	d_globe_camera(view_state.get_globe_camera()),
 	d_map_camera(view_state.get_map_camera()),
-	d_map_projection(view_state.get_map_projection())
+	d_map_projection(view_state.get_map_projection()),
+	d_viewport_zoom(view_state.get_viewport_zoom())
 {
 	// Handle changes in the projection. This includes globe and map projections as well as
 	// view projections (switching between orthographic and perspective).
@@ -207,6 +211,158 @@ GPlatesGui::SceneView::current_proximity_inclusion_threshold(
 
 	// Proximity threshold is expected to be a cosine.
 	return std::cos(distance_inclusion_threshold);
+}
+
+
+GPlatesMaths::PointOnSphere
+GPlatesGui::SceneView::get_position_on_globe_at_window_coord(
+		double window_x,
+		double window_y,
+		int window_width,
+		int window_height,
+		bool &is_on_globe,
+		boost::optional<QPointF> &position_on_map_plane) const
+{
+	// Project screen coordinates into a ray into 3D scene.
+	const GPlatesOpenGL::GLIntersect::Ray camera_ray =
+			get_active_camera().get_camera_ray_at_window_coord(window_x, window_y, window_width, window_height);
+
+	// Determine where/if the mouse camera ray intersects globe.
+	//
+	// When the map is active (ie, when globe is inactive) the camera ray is considered to intersect
+	// the globe if it intersects the map plane at a position that is inside the map projection boundary.
+	if (is_globe_active())
+	{
+		// Position on map plane (z=0) is not used when the globe is active (ie, when map is inactive).
+		position_on_map_plane = boost::none;
+
+		// Update mouse position on globe when globe is active (ie, when map is inactive).
+		return get_position_on_globe(camera_ray, is_on_globe);
+	}
+	else
+	{
+		return get_position_on_map(camera_ray, is_on_globe, position_on_map_plane);
+	}
+}
+
+
+GPlatesMaths::PointOnSphere
+GPlatesGui::SceneView::get_position_on_globe(
+		const GPlatesOpenGL::GLIntersect::Ray &camera_ray,
+		bool &is_on_globe) const
+{
+	// See if camera ray intersects the globe.
+	boost::optional<GPlatesMaths::PointOnSphere> position_on_globe =
+			d_globe_camera.get_position_on_globe_at_camera_ray(camera_ray);
+
+	if (position_on_globe)
+	{
+		// Camera ray, at screen coordinates, intersects the globe.
+		is_on_globe = true;
+	}
+	else
+	{
+		// Camera ray, at screen coordinates, does NOT intersect the globe.
+		is_on_globe = false;
+
+		// Instead get the nearest point on the globe horizon (visible circumference) to the camera ray.
+		position_on_globe = d_globe_camera.get_nearest_globe_horizon_position_at_camera_ray(camera_ray);
+	}
+
+	return position_on_globe.get();
+}
+
+
+GPlatesMaths::PointOnSphere
+GPlatesGui::SceneView::get_position_on_map(
+		const GPlatesOpenGL::GLIntersect::Ray &camera_ray,
+		bool &is_on_globe,
+		boost::optional<QPointF> &position_on_map_plane) const
+{
+	// See if camera ray at screen coordinates intersects the 2D map plane (z=0).
+	//
+	// In perspective view it's possible for a screen pixel ray emanating from the camera eye to
+	// miss the map plane entirely (even though the map plane is infinite).
+	//
+	// Given the camera ray, calculate a position on the map *plane* (2D plane with z=0), or
+	// none if screen view ray (at screen position) does not intersect the map plane.
+	position_on_map_plane = d_map_camera.get_position_on_map_plane_at_camera_ray(camera_ray);
+
+	// Get the position on the globe.
+	boost::optional<GPlatesMaths::LatLonPoint> lat_lon_position_on_globe;
+	if (position_on_map_plane)
+	{
+		// Mouse position is on map plane, so see if it's also inside the map projection boundary.
+		lat_lon_position_on_globe = d_map_projection.inverse_transform(position_on_map_plane.get());
+		if (lat_lon_position_on_globe)
+		{
+			// Mouse position is inside the map projection boundary (so it is also on the globe).
+			is_on_globe = true;
+		}
+		else
+		{
+			// Mouse position is NOT inside the map projection boundary (so it is not on the globe).
+			is_on_globe = false;
+
+			// Camera ray at screen pixel intersects the map plane but not *within* the map projection boundary.
+			//
+			// So get the intersection of line segment (from origin to intersection on map plane) with map projection boundary.
+			// We'll use that to get a new position on the globe (it can be inverse map projected onto the globe).
+			const QPointF map_boundary_point = d_map_projection.get_map_boundary_position(
+					QPointF(0, 0),  // map origin
+					position_on_map_plane.get());
+			lat_lon_position_on_globe = d_map_projection.inverse_transform(map_boundary_point);
+
+			// The map boundary position is guaranteed to be invertible (onto the globe) in the map projection.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					lat_lon_position_on_globe,
+					GPLATES_ASSERTION_SOURCE);
+		}
+	}
+	else
+	{
+		// Mouse position is NOT on the map plane (so it is not on the globe).
+		is_on_globe = false;
+
+		// Camera ray at screen pixel does not intersect the map plane.
+		//
+		// So get the intersection of 2D ray, from map origin in direction of camera ray (projected onto 2D map plane),
+		// with map projection boundary.
+		const QPointF ray_direction(
+				camera_ray.get_direction().x().dval(),
+				camera_ray.get_direction().y().dval());
+		const QPointF ray_origin(0, 0);  // map origin
+
+		const boost::optional<QPointF> map_boundary_point =
+				d_map_camera.get_position_on_map_boundary_intersected_by_2d_camera_ray(ray_direction, ray_origin);
+		if (map_boundary_point)
+		{
+			lat_lon_position_on_globe = d_map_projection.inverse_transform(map_boundary_point.get());
+
+			// The map boundary position is guaranteed to be invertible (onto the globe) in the map projection.
+			GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+					lat_lon_position_on_globe,
+					GPLATES_ASSERTION_SOURCE);
+		}
+		else
+		{
+			// The 3D camera ray direction points straight down (ie, camera ray x and y are zero).
+			//
+			// We shouldn't really get here for a valid camera ray since we already know it did not intersect the
+			// 2D map plane and so if it points straight down then it would have intersected the map plane (z=0).
+			// However it's possible that at 90 degree tilt the camera eye (in perspective viewing) dips just below
+			// the map plane (z=0) due to numerical tolerance and hence just misses the map plane.
+			// But even then the camera view direction would be horizontal and with a field-of-view of 90 degrees or less
+			// there wouldn't be any screen pixel in the view frustum that could look straight down.
+			// So it really should never happen.
+			//
+			// Arbitrarily choose the North pole (again, we shouldn't get here).
+			lat_lon_position_on_globe = GPlatesMaths::LatLonPoint(90, 0);
+		}
+	}
+
+	// Convert inverse-map-projected lat-lon position to new position on the globe.
+	return make_point_on_sphere(lat_lon_position_on_globe.get());
 }
 
 

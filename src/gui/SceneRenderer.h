@@ -106,7 +106,6 @@ namespace GPlatesGui
 				SceneOverlays &scene_overlays,
 				const SceneView &scene_view,
 				const GPlatesOpenGL::GLViewport &viewport,
-				const double &viewport_zoom_factor,
 				const Colour &clear_colour,
 				int device_pixel_ratio);
 
@@ -120,7 +119,6 @@ namespace GPlatesGui
 				Scene &scene,
 				SceneOverlays &scene_overlays,
 				const SceneView &scene_view,
-				const double &viewport_zoom_factor,
 				const Colour &image_clear_colour);
 
 	private:
@@ -181,7 +179,6 @@ namespace GPlatesGui
 				Scene &scene,
 				SceneOverlays &scene_overlays,
 				const SceneView &scene_view,
-				const double &viewport_zoom_factor,
 				const Colour &image_clear_colour);
 
 		//! Render the scene into the current framebuffer using the specified view-projection.
@@ -192,7 +189,6 @@ namespace GPlatesGui
 				SceneOverlays &scene_overlays,
 				const SceneView &scene_view,
 				const GPlatesOpenGL::GLViewProjection &view_projection,
-				const double &viewport_zoom_factor,
 				const Colour &clear_colour,
 				int device_pixel_ratio);
 	};

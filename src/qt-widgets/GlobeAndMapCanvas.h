@@ -425,13 +425,12 @@ namespace GPlatesQtWidgets
 		};
 
 
-		GPlatesPresentation::ViewState &d_view_state;
-
 		//! Mirrors an OpenGL context and provides a central place to manage low-level OpenGL objects.
 		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
 
 		//! Is true if OpenGL has been initialised for this canvas.
 		bool d_initialised_gl;
+
 
 		/**
 		 * The scene contains the globe and map.
@@ -454,6 +453,7 @@ namespace GPlatesQtWidgets
 		 * Can render scene into this canvas or into an arbitrary-size QImage.
 		 */
 		GPlatesGui::SceneRenderer::non_null_ptr_type d_scene_renderer;
+
 
 		//! The mouse pointer position on the *screen*.
 		QPointF d_mouse_screen_position;
@@ -487,6 +487,9 @@ namespace GPlatesQtWidgets
 		 */
 		bool d_mouse_is_on_globe;
 
+		/**
+		 * Information of the current mouse left button press (or none is not currently pressed).
+		 */
 		boost::optional<MousePressInfo> d_mouse_press_info;
 
 
@@ -503,26 +506,12 @@ namespace GPlatesQtWidgets
 		bool
 		is_mouse_in_drag() const;
 
+		/**
+		 * Update the mouse screen position and associated position on globe/map (from mouse event).
+		 */
 		void
-		update_mouse_screen_position(
+		update_mouse_position(
 				QMouseEvent *mouse_event);
-
-		void
-		update_mouse_position_on_globe_or_map();
-
-		/**
-		 * Update mouse position on globe when globe is active (ie, when map is inactive).
-		 */
-		void
-		update_mouse_position_on_globe(
-				const GPlatesOpenGL::GLIntersect::Ray &camera_ray);
-
-		/**
-		 * Update mouse position on globe when map is active (ie, when globe is inactive).
-		 */
-		void
-		update_mouse_position_on_map(
-				const GPlatesOpenGL::GLIntersect::Ray &camera_ray);
 	};
 }
 
