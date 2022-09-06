@@ -15,7 +15,6 @@ set(srcs
     GLCapabilities.h
     GLContext.cc
     GLContext.h
-    GLContextImpl.h
     GLContextLifetime.h
     GLCubeMeshGenerator.cc
     GLCubeMeshGenerator.h

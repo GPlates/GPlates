@@ -45,7 +45,6 @@
 #include "maths/MathsUtils.h"
 
 #include "opengl/GLContext.h"
-#include "opengl/GLContextImpl.h"
 #include "opengl/GLViewport.h"
 
 #include "presentation/ViewState.h"
@@ -54,10 +53,7 @@
 GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 		GPlatesPresentation::ViewState &view_state) :
 	QOpenGLWindow(),
-	d_gl_context(
-			GPlatesOpenGL::GLContext::create(
-					boost::shared_ptr<GPlatesOpenGL::GLContext::Impl>(
-							new GPlatesOpenGL::GLContextImpl::QOpenGLWindowImpl(*this)))),
+	d_gl_context(GPlatesOpenGL::GLContext::create()),
 	d_initialised_gl(false),
 	// The following unit-vector initialisation value is arbitrary.
 	d_mouse_position_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
@@ -206,7 +202,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initialize_gl()
 			this, SLOT(shutdown_gl()));
 
 	// Initialise our context-like object first.
-	d_gl_context->initialise_gl();
+	d_gl_context->initialise_gl(*this);
 
 	// Start a render scope (all GL calls should be done inside this scope).
 	//

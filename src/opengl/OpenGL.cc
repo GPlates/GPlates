@@ -46,8 +46,8 @@ GPlatesOpenGL::GL::GL(
 	// Default viewport/scissor starts out as the initial window dimensions returned by context.
 	// However it can change when the window (that context is attached to) is resized...
 	d_default_viewport(0, 0, context->get_width(), context->get_height()),
-	// Default draw/read buffer is GL_FRONT if there is no back buffer, otherwise GL_BACK...
-	d_default_draw_read_buffer((context->get_surface_format().swapBehavior() == QSurfaceFormat::DoubleBuffer) ? GL_BACK : GL_FRONT),
+	// Default draw/read buffer is the back buffer (GL_BACK)...
+	d_default_draw_read_buffer(GL_BACK),
 	d_default_framebuffer_resource(context->get_default_framebuffer_object())
 {
 }

@@ -25,14 +25,18 @@
 
 #include <string>
 #include <utility>
+#include <QtGlobal>
 #include <QDebug>
 #include <QOpenGLFunctions_4_3_Core>
 #include <QOpenGLFunctions_4_2_Core>
 #include <QOpenGLFunctions_4_1_Core>
 #include <QOpenGLFunctions_4_0_Core>
 #include <QOpenGLFunctions_3_3_Core>
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+ // Qt6 moved QOpenGLContext::versionFunctions() to QOpenGLVersionFunctionsFactory::get().
+#include <QOpenGLVersionFunctionsFactory>
+#endif
 #include <QSurfaceFormat>
-#include <QtGlobal>
 
 #include "GLContext.h"
 
@@ -110,9 +114,7 @@ GPlatesOpenGL::GLContext::set_default_surface_format()
 }
 
 
-GPlatesOpenGL::GLContext::GLContext(
-		const boost::shared_ptr<Impl> &context_impl) :
-	d_context_impl(context_impl),
+GPlatesOpenGL::GLContext::GLContext() :
 	d_shared_state(new SharedState()),
 	d_non_shared_state(new NonSharedState())
 {
@@ -130,103 +132,14 @@ GPlatesOpenGL::GLContext::~GLContext()
 
 
 void
-GPlatesOpenGL::GLContext::initialise_gl()
+GPlatesOpenGL::GLContext::initialise_gl(
+		QOpenGLWindow &opengl_window)
 {
-	// Get the OpenGL capabilities and parameters from the current OpenGL implementation.
-	d_capabilities.initialise(get_opengl_functions(), d_context_impl->get_opengl_context());
+	d_opengl_window = opengl_window;
 
 	// The QSurfaceFormat of our OpenGL context.
-	const QSurfaceFormat surface_format = get_surface_format();
+	const QSurfaceFormat surface_format = d_opengl_window->context()->format();
 
-	// Make sure we got our minimum OpenGL version or greater.
-	if (surface_format.majorVersion() < MINIMUM_OPENGL_VERSION.first/*major*/ ||
-		(surface_format.majorVersion() == MINIMUM_OPENGL_VERSION.first/*major*/ &&
-				surface_format.minorVersion() < MINIMUM_OPENGL_VERSION.second/*minor*/))
-	{
-		throw OpenGLException(
-				GPLATES_ASSERTION_SOURCE,
-				QString("OpenGL %1.%2 (core profile) or greater is required.")
-						.arg(MINIMUM_OPENGL_VERSION.first/*major*/)
-						.arg(MINIMUM_OPENGL_VERSION.second/*minor*/).toStdString());
-	}
-
-	// We require a main framebuffer with a stencil buffer (usually interleaved with depth).
-	// A lot of main framebuffer and render-target rendering uses a stencil buffer.
-	if (surface_format.stencilBufferSize() < 8)
-	{
-		throw OpenGLException(
-				GPLATES_ASSERTION_SOURCE,
-				"Could not get a stencil buffer on the main framebuffer.");
-	}
-
-	qDebug() << "Context QSurfaceFormat:" << surface_format;
-}
-
-
-void
-GPlatesOpenGL::GLContext::shutdown_gl()
-{
-	deallocate_queued_object_resources();
-
-	d_shared_state->d_full_screen_quad = boost::none;
-	d_shared_state->d_state_store = boost::none;
-
-	d_opengl_functions = boost::none;
-}
-
-
-GPlatesGlobal::PointerTraits<GPlatesOpenGL::GL>::non_null_ptr_type
-GPlatesOpenGL::GLContext::create_gl()
-{
-	return GL::create(
-			get_non_null_pointer(this),
-			get_opengl_functions(),
-			get_shared_state()->get_state_store(get_capabilities()));
-}
-
-
-const GPlatesOpenGL::GLCapabilities&
-GPlatesOpenGL::GLContext::get_capabilities() const
-{
-	// The capabilities must have been initialised (which means our 'initialise_gl()' must have been called).
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_capabilities.is_initialised(),
-			GPLATES_ASSERTION_SOURCE);
-
-	return d_capabilities;
-}
-
-
-void
-GPlatesOpenGL::GLContext::begin_render()
-{
-	deallocate_queued_object_resources();
-}
-
-
-void
-GPlatesOpenGL::GLContext::end_render()
-{
-	deallocate_queued_object_resources();
-}
-
-
-GPlatesOpenGL::OpenGLFunctions &
-GPlatesOpenGL::GLContext::get_opengl_functions()
-{
-	// Create/initialise the OpenGL functions for this context (if haven't already).
-	if (!d_opengl_functions)
-	{
-		create_opengl_functions();
-	}
-
-	return *d_opengl_functions.get();
-}
-
-
-void
-GPlatesOpenGL::GLContext::create_opengl_functions()
-{
 	// Get the version of OpenGL functions associated with the version of the OpenGL context.
 	if (boost::optional<QOpenGLFunctions_4_3_Core *> opengl_functions_4_3 =
 		get_version_functions<QOpenGLFunctions_4_3_Core>(4, 3))
@@ -255,15 +168,142 @@ GPlatesOpenGL::GLContext::create_opengl_functions()
 	}
 	else
 	{
-		// The QSurfaceFormat of our OpenGL context.
-		const QSurfaceFormat surface_format = get_surface_format();
-
 		throw OpenGLException(
 				GPLATES_ASSERTION_SOURCE,
 				QString("Failed to access OpenGL functions in valid OpenGL context (version %1.%2 core).")
 						.arg(surface_format.majorVersion())
 						.arg(surface_format.minorVersion()).toStdString());
 	}
+
+	// Make sure we got our minimum OpenGL version or greater.
+	if (surface_format.majorVersion() < MINIMUM_OPENGL_VERSION.first/*major*/ ||
+		(surface_format.majorVersion() == MINIMUM_OPENGL_VERSION.first/*major*/ &&
+				surface_format.minorVersion() < MINIMUM_OPENGL_VERSION.second/*minor*/))
+	{
+		throw OpenGLException(
+				GPLATES_ASSERTION_SOURCE,
+				QString("OpenGL %1.%2 (core profile) or greater is required.")
+						.arg(MINIMUM_OPENGL_VERSION.first/*major*/)
+						.arg(MINIMUM_OPENGL_VERSION.second/*minor*/).toStdString());
+	}
+
+	// We require a main framebuffer with a stencil buffer (usually interleaved with depth).
+	// A lot of main framebuffer and render-target rendering uses a stencil buffer.
+	if (surface_format.stencilBufferSize() < 8)
+	{
+		throw OpenGLException(
+				GPLATES_ASSERTION_SOURCE,
+				"Could not get a stencil buffer on the main framebuffer.");
+	}
+
+	// Get the OpenGL capabilities and parameters from the current OpenGL implementation.
+	d_capabilities.initialise(*d_opengl_functions.get(), *d_opengl_window->context());
+
+	qDebug() << "Context QSurfaceFormat:" << surface_format;
+}
+
+
+void
+GPlatesOpenGL::GLContext::shutdown_gl()
+{
+	deallocate_queued_object_resources();
+
+	d_shared_state->d_full_screen_quad = boost::none;
+	d_shared_state->d_state_store = boost::none;
+
+	d_opengl_functions = boost::none;
+	d_opengl_window = boost::none;
+}
+
+
+void
+GPlatesOpenGL::GLContext::make_current()
+{
+	// We should be between 'initialise_gl()' and 'shutdown_gl()'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_opengl_window,
+			GPLATES_ASSERTION_SOURCE);
+
+	return d_opengl_window->makeCurrent();
+}
+
+
+GLuint
+GPlatesOpenGL::GLContext::get_default_framebuffer_object() const
+{
+	// We should be between 'initialise_gl()' and 'shutdown_gl()'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_opengl_window,
+			GPLATES_ASSERTION_SOURCE);
+
+	return d_opengl_window->defaultFramebufferObject();
+}
+
+
+unsigned int
+GPlatesOpenGL::GLContext::get_width() const
+{
+	// We should be between 'initialise_gl()' and 'shutdown_gl()'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_opengl_window,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Dimensions, in OpenGL, are in device pixels.
+	return d_opengl_window->width() * d_opengl_window->devicePixelRatio();
+}
+
+
+unsigned int
+GPlatesOpenGL::GLContext::get_height() const
+{
+	// We should be between 'initialise_gl()' and 'shutdown_gl()'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_opengl_window,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Dimensions, in OpenGL, are in device pixels.
+	return d_opengl_window->height() * d_opengl_window->devicePixelRatio();
+}
+
+
+GPlatesGlobal::PointerTraits<GPlatesOpenGL::GL>::non_null_ptr_type
+GPlatesOpenGL::GLContext::create_gl()
+{
+	// We should be between 'initialise_gl()' and 'shutdown_gl()'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_opengl_functions,
+			GPLATES_ASSERTION_SOURCE);
+
+	return GL::create(
+			get_non_null_pointer(this),
+			*d_opengl_functions.get(),
+			get_shared_state()->get_state_store(get_capabilities()));
+}
+
+
+const GPlatesOpenGL::GLCapabilities &
+GPlatesOpenGL::GLContext::get_capabilities() const
+{
+	// The capabilities must have been initialised (which means our 'initialise_gl()' must have been called).
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_capabilities.is_initialised(),
+			GPLATES_ASSERTION_SOURCE);
+
+	return d_capabilities;
+}
+
+
+void
+GPlatesOpenGL::GLContext::begin_render()
+{
+	deallocate_queued_object_resources();
+}
+
+
+void
+GPlatesOpenGL::GLContext::end_render()
+{
+	deallocate_queued_object_resources();
 }
 
 
@@ -273,12 +313,23 @@ GPlatesOpenGL::GLContext::get_version_functions(
 		int major_version,
 		int minor_version) const
 {
+	// We should be between 'initialise_gl()' and 'shutdown_gl()'.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_opengl_window,
+			GPLATES_ASSERTION_SOURCE);
+
 	QOpenGLVersionProfile version_profile;
 	version_profile.setProfile(QSurfaceFormat::CoreProfile);
 	version_profile.setVersion(major_version, minor_version);
 
 	// See if OpenGL functions are available for the specified version (of core profile) in the context.
-	QAbstractOpenGLFunctions *abstract_opengl_functions = d_context_impl->get_version_functions(version_profile);
+	QAbstractOpenGLFunctions *abstract_opengl_functions =
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+			// Qt6 moved QOpenGLContext::versionFunctions() to QOpenGLVersionFunctionsFactory::get().
+			QOpenGLVersionFunctionsFactory::get(version_profile, d_opengl_window->context());
+#else
+			d_opengl_window->context()->versionFunctions(version_profile);
+#endif
 	if (!abstract_opengl_functions)
 	{
 		return boost::none;
@@ -312,16 +363,20 @@ GPlatesOpenGL::GLContext::get_version_functions(
 void
 GPlatesOpenGL::GLContext::deallocate_queued_object_resources()
 {
-	OpenGLFunctions &opengl_functions = get_opengl_functions();
+	// If we're between 'initialise_gl()' and 'shutdown_gl()', otherwise wait until then to deallocate.
+	if (d_opengl_functions)
+	{
+		OpenGLFunctions &opengl_functions = *d_opengl_functions.get();
 
-	get_non_shared_state()->get_framebuffer_resource_manager()->deallocate_queued_resources(opengl_functions);
-	get_non_shared_state()->get_vertex_array_resource_manager()->deallocate_queued_resources(opengl_functions);
+		get_non_shared_state()->get_framebuffer_resource_manager()->deallocate_queued_resources(opengl_functions);
+		get_non_shared_state()->get_vertex_array_resource_manager()->deallocate_queued_resources(opengl_functions);
 
-	get_shared_state()->get_texture_resource_manager()->deallocate_queued_resources(opengl_functions);
-	get_shared_state()->get_renderbuffer_resource_manager()->deallocate_queued_resources(opengl_functions);
-	get_shared_state()->get_buffer_resource_manager()->deallocate_queued_resources(opengl_functions);
-	get_shared_state()->get_shader_resource_manager()->deallocate_queued_resources(opengl_functions);
-	get_shared_state()->get_program_resource_manager()->deallocate_queued_resources(opengl_functions);
+		get_shared_state()->get_texture_resource_manager()->deallocate_queued_resources(opengl_functions);
+		get_shared_state()->get_renderbuffer_resource_manager()->deallocate_queued_resources(opengl_functions);
+		get_shared_state()->get_buffer_resource_manager()->deallocate_queued_resources(opengl_functions);
+		get_shared_state()->get_shader_resource_manager()->deallocate_queued_resources(opengl_functions);
+		get_shared_state()->get_program_resource_manager()->deallocate_queued_resources(opengl_functions);
+	}
 }
 
 

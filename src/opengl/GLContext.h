@@ -38,6 +38,7 @@
 #include <QOpenGLContext>
 #include <QOpenGLVersionFunctions>  // For QAbstractOpenGLFunctions
 #include <QOpenGLVersionProfile>
+#include <QOpenGLWindow>
 #include <QSurfaceFormat>
 
 #include "GLBuffer.h"
@@ -75,54 +76,6 @@ namespace GPlatesOpenGL
 
 		//! A convenience typedef for a shared pointer to a const @a GLContext.
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GLContext> non_null_ptr_to_const_type;
-
-
-		/**
-		 * Used to delegate to the real OpenGL context.
-		 */
-		class Impl
-		{
-		public:
-			virtual
-			~Impl()
-			{  }
-
-			//! Get the underlying QOpenGLContext.
-			virtual
-			const QOpenGLContext &
-			get_opengl_context() const = 0;
-
-			//! Make this context the current context.
-			virtual
-			void
-			make_current() = 0;
-
-			//! Return the QSurfaceFormat of the QOpenGLContext OpenGL context.
-			virtual
-			const QSurfaceFormat
-			get_surface_format() const = 0;
-
-			//! Return the OpenGL functions of specified version profile (or null if version/profile not available on context).
-			virtual
-			QAbstractOpenGLFunctions *
-			get_version_functions(
-					const QOpenGLVersionProfile &version_profile) const = 0;
-
-			//! Return default framebuffer resource (might not be zero, eg, each QOpenGLWidget has its own framebuffer object).
-			virtual
-			GLuint
-			get_default_framebuffer_object() const = 0;
-
-			//! The width of the framebuffer currently attached to the OpenGL context.
-			virtual
-			unsigned int
-			get_width() const = 0;
-
-			//! The height of the framebuffer currently attached to the OpenGL context.
-			virtual
-			unsigned int
-			get_height() const = 0;
-		};
 
 
 		/**
@@ -321,13 +274,14 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Creates a @a GLContext object.
+		 *
+		 * We reference the OpenGL context of a particular QOpenGLWindow.
 		 */
 		static
 		non_null_ptr_type
-		create(
-				const boost::shared_ptr<Impl> &context_impl)
+		create()
 		{
-			return non_null_ptr_type(new GLContext(context_impl));
+			return non_null_ptr_type(new GLContext());
 		}
 
 
@@ -338,7 +292,8 @@ namespace GPlatesOpenGL
 		 * The OpenGL context has been created.
 		 */
 		void
-		initialise_gl();
+		initialise_gl(
+				QOpenGLWindow &opengl_window);
 
 		/**
 		 * The OpenGL context is about to be destroyed.
@@ -351,24 +306,7 @@ namespace GPlatesOpenGL
 		 * Sets this context as the active OpenGL context.
 		 */
 		void
-		make_current()
-		{
-			d_context_impl->make_current();
-		}
-
-
-		/**
-		 * Returns the QSurfaceFormat of the QOpenGLContext OpenGL context.
-		 *
-		 * This can be used to determine the number of colour/depth/stencil bits in the framebuffer.
-		 *
-		 * Throws @a OpenGLException if QOpenGLContext not yet initialised.
-		 */
-		QSurfaceFormat
-		get_surface_format() const
-		{
-			return d_context_impl->get_surface_format();
-		}
+		make_current();
 
 
 		/**
@@ -379,10 +317,7 @@ namespace GPlatesOpenGL
 		 *       (that we treat as our main framebuffer when rendering into it).
 		 */
 		GLuint
-		get_default_framebuffer_object() const
-		{
-			return d_context_impl->get_default_framebuffer_object();
-		}
+		get_default_framebuffer_object() const;
 
 
 		/**
@@ -391,10 +326,7 @@ namespace GPlatesOpenGL
 		 * NOTE: Dimensions, in OpenGL, are in device pixels (not the device independent pixels used for widget sizes).
 		 */
 		unsigned int
-		get_width() const
-		{
-			return d_context_impl->get_width();
-		}
+		get_width() const;
 
 
 		/**
@@ -403,10 +335,7 @@ namespace GPlatesOpenGL
 		 * NOTE: Dimensions, in OpenGL, are in device pixels (not the device independent pixels used for widget sizes).
 		 */
 		unsigned int
-		get_height() const
-		{
-			return d_context_impl->get_height();
-		}
+		get_height() const;
 
 
 		/**
@@ -490,9 +419,18 @@ namespace GPlatesOpenGL
 
 	private:
 		/**
-		 * For delegating to the real OpenGL context.
+		 * We reference the QOpenGLContext of a particular QOpenGLWindow.
+		 *
+		 * It's only valid between @a initialise_gl and @a shutdown_gl.
 		 */
-		boost::shared_ptr<Impl> d_context_impl;
+		boost::optional<QOpenGLWindow &> d_opengl_window;
+
+		/**
+		 * The OpenGL functions for the version and profile of this context.
+		 *
+		 * It's only valid between @a initialise_gl and @a shutdown_gl.
+		 */
+		boost::optional<GPlatesGlobal::PointerTraits<OpenGLFunctions>::non_null_ptr_type> d_opengl_functions;
 
 		/**
 		 * OpenGL implementation-dependent capabilities and parameters.
@@ -501,13 +439,6 @@ namespace GPlatesOpenGL
 		 *       they all share the same default QSurfaceFormat.
 		 */
 		GLCapabilities d_capabilities;
-
-		/**
-		 * The OpenGL functions for the version and profile of this context.
-		 *
-		 * It is created on first access (and context must be current).
-		 */
-		boost::optional<GPlatesGlobal::PointerTraits<OpenGLFunctions>::non_null_ptr_type> d_opengl_functions;
 
 		/**
 		 * OpenGL state that can be shared with another context.
@@ -532,24 +463,8 @@ namespace GPlatesOpenGL
 
 
 		//! Constructor.
-		explicit
-		GLContext(
-				const boost::shared_ptr<Impl> &context_impl);
+		GLContext();
 
-
-		/**
-		 * Returns the OpenGL functions for this context.
-		 */
-		OpenGLFunctions &
-		get_opengl_functions();
-
-		/**
-		 * Create our @a OpenGLFunctions (stored in @a d_opengl_functions).
-		 *
-		 * Throws @a OpenGLException if failed to access OpenGL functions.
-		 */
-		void
-		create_opengl_functions();
 
 		/**
 		 * Returns the OpenGL functions (via Qt) of the specified version core profile in the OpenGL context.
@@ -557,8 +472,6 @@ namespace GPlatesOpenGL
 		 * Returns none if request failed. For example, if requesting functions (via specified version)
 		 * that are not in the version (and core profile) of the OpenGL context, such as requesting
 		 * 4.3 core functions from a 3.3 core context.
-		 *
-		 * Throws @a OpenGLException if QOpenGLContext not yet initialised.
 		 *
 		 * Note: The template type pointer 'OpenGLFunctionsType' should match the version (and 'core' profile).
 		 *       For example, 'QOpenGLFunctions_3_3_Core' matches a version 3.3 core profile).
