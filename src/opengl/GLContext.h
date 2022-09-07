@@ -100,6 +100,15 @@ namespace GPlatesOpenGL
 			}
 
 			/**
+			 * Returns the framebuffer resource manager.
+			 */
+			const boost::shared_ptr<GLFramebuffer::resource_manager_type> &
+			get_framebuffer_resource_manager() const
+			{
+				return d_framebuffer_resource_manager;
+			}
+
+			/**
 			 * Returns the shader program resource manager.
 			 */
 			const boost::shared_ptr<GLProgram::resource_manager_type> &
@@ -144,6 +153,15 @@ namespace GPlatesOpenGL
 				return d_texture_resource_manager;
 			}
 
+			/**
+			 * Returns the vertex array resource manager.
+			 */
+			const boost::shared_ptr<GLVertexArray::resource_manager_type> &
+			get_vertex_array_resource_manager() const
+			{
+				return d_vertex_array_resource_manager;
+			}
+
 
 			/**
 			 * Returns a vertex array for rendering a full-screen quad.
@@ -171,11 +189,13 @@ namespace GPlatesOpenGL
 		private:
 
 			boost::shared_ptr<GLBuffer::resource_manager_type> d_buffer_resource_manager;
+			boost::shared_ptr<GLFramebuffer::resource_manager_type> d_framebuffer_resource_manager;
 			boost::shared_ptr<GLProgram::resource_manager_type> d_program_resource_manager;
 			boost::shared_ptr<GLRenderbuffer::resource_manager_type> d_renderbuffer_resource_manager;
 			boost::shared_ptr<GLSampler::resource_manager_type> d_sampler_resource_manager;
 			boost::shared_ptr<GLShader::resource_manager_type> d_shader_resource_manager;
 			boost::shared_ptr<GLTexture::resource_manager_type> d_texture_resource_manager;
+			boost::shared_ptr<GLVertexArray::resource_manager_type> d_vertex_array_resource_manager;
 
 			/**
 			 * Used by @a GL to efficiently allocate @a GLState objects.
@@ -198,65 +218,6 @@ namespace GPlatesOpenGL
 			GLStateStore::non_null_ptr_type
 			get_state_store(
 					const GLCapabilities &capabilities);
-		};
-
-
-		/**
-		 * OpenGL state that *cannot* be shared between contexts.
-		 *
-		 * This is typically *container* objects such as vertex array objects and framebuffer objects.
-		 *
-		 * Note that while framebuffer objects cannot be shared across contexts their contained objects
-		 * (textures and renderbuffers) can be shared across contexts.
-		 * Similarly for vertex array objects (with contained buffer objects).
-		 */
-		class NonSharedState
-		{
-		public:
-			//! Constructor.
-			NonSharedState();
-
-
-			/**
-			 * Returns the framebuffer resource manager.
-			 *
-			 * This is used by @a GLFramebuffer to allocate a native vertex array object per OpenGL context.
-			 *
-			 * Note that even though @a GLFramebuffer objects are implemented such that they can be used
-			 * freely across different OpenGL contexts, the native OpenGL framebuffer objects (resources)
-			 * contained within them can only be used in the context they were created in.
-			 * Hence they are allocated here (in @a NonSharedState, rather than @a SharedState).
-			 * This ensures the native resources are deallocated in the context they were allocated in
-			 * (ie, deallocated when the correct context is active).
-			 */
-			const boost::shared_ptr<GLFramebuffer::resource_manager_type> &
-			get_framebuffer_resource_manager() const
-			{
-				return d_framebuffer_resource_manager;
-			}
-
-			/**
-			 * Returns the vertex array resource manager.
-			 *
-			 * This is used by @a GLVertexArray to allocate a native vertex array object per OpenGL context.
-			 *
-			 * Note that even though @a GLVertexArray objects are implemented such that they can be used
-			 * freely across different OpenGL contexts, the native OpenGL vertex array objects (resources)
-			 * contained within them can only be used in the context they were created in.
-			 * Hence they are allocated here (in @a NonSharedState, rather than @a SharedState).
-			 * This ensures the native resources are deallocated in the context they were allocated in
-			 * (ie, deallocated when the correct context is active).
-			 */
-			const boost::shared_ptr<GLVertexArray::resource_manager_type> &
-			get_vertex_array_resource_manager() const
-			{
-				return d_vertex_array_resource_manager;
-			}
-
-		private:
-
-			boost::shared_ptr<GLFramebuffer::resource_manager_type> d_framebuffer_resource_manager;
-			boost::shared_ptr<GLVertexArray::resource_manager_type> d_vertex_array_resource_manager;
 		};
 
 
@@ -340,24 +301,6 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the OpenGL state that *cannot* be shared with other OpenGL contexts.
-		 */
-		boost::shared_ptr<const NonSharedState>
-		get_non_shared_state() const
-		{
-			return d_non_shared_state;
-		}
-
-		/**
-		 * Returns the OpenGL state that *cannot* be shared with other OpenGL contexts.
-		 */
-		boost::shared_ptr<NonSharedState>
-		get_non_shared_state()
-		{
-			return d_non_shared_state;
-		}
-
-		/**
 		 * Function to return OpenGL implementation-dependent capabilities and parameters.
 		 *
 		 * @throws PreconditionViolationError if @a initialise_gl not yet called.
@@ -411,11 +354,6 @@ namespace GPlatesOpenGL
 		 * OpenGL state that can be shared with another context.
 		 */
 		boost::shared_ptr<SharedState> d_shared_state;
-
-		/**
-		 * OpenGL state that *cannot* be shared with another context.
-		 */
-		boost::shared_ptr<NonSharedState> d_non_shared_state;
 
 
 		/**

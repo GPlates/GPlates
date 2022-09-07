@@ -28,7 +28,6 @@
 #define GPLATES_OPENGL_GLVERTEXARRAY_H
 
 #include <memory> // For std::unique_ptr
-#include <vector>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
@@ -37,29 +36,19 @@
 // Note: Cannot include "OpenGL.h" due to cyclic dependency with class GL.
 #include <qopengl.h>
 
-#include "GLBuffer.h"
 #include "GLObject.h"
 #include "GLObjectResource.h"
 #include "GLObjectResourceManager.h"
-
-#include "utils/SubjectObserverToken.h"
 
 
 namespace GPlatesOpenGL
 {
 	class GL;
 	class GLCapabilities;
-	class GLContext;
 	class OpenGLFunctions;
 
 	/**
 	 * Wrapper around an OpenGL vertex array object.
-	 *
-	 * You can use an instance of this class freely across different OpenGL contexts (eg, globe and map views).
-	 * Normally a vertex array object cannot be shared across OpenGL contexts, so this class internally
-	 * creates a native vertex array object for each context that it encounters. It also remembers the
-	 * vertex array state (such as vertex attribute arrays and buffer bindings) and sets it on each
-	 * new native vertex array object (for each context encountered).
 	 */
 	class GLVertexArray :
 			public GLObject,
@@ -122,14 +111,10 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the vertex array resource handle associated with the current OpenGL context.
-		 *
-		 * Since vertex array objects cannot be shared across OpenGL contexts a separate
-		 * vertex array object resource is created for each context encountered.
+		 * Returns the vertex array resource handle.
 		 */
 		GLuint
-		get_resource_handle(
-				GL &gl) const;
+		get_resource_handle() const;
 
 	public:  // For use by the OpenGL framework...
 
@@ -156,211 +141,14 @@ namespace GPlatesOpenGL
 		//! Typedef for a resource manager.
 		typedef GLObjectResourceManager<GLuint, Allocator> resource_manager_type;
 
-	private: // For use by @a GL...
-
-		//
-		// Only @a GL should need to call these functions.
-		//
-		friend class GL;
-
-		/**
-		 * Ensure the native vertex array object associated with the current OpenGL context has
-		 * up-to-date internal state.
-		 *
-		 * It's possible the state of this vertex array was modified in a different context and
-		 * hence a different native vertex array object was modified (there's a separate one for
-		 * each context since they cannot be shared across contexts) and now we're in a different
-		 * context so the native vertex array object of the current context must be updated to match.
-		 *
-		 * NOTE: This vertex array must currently be bound.
-		 */
-		void
-		synchronise_current_context(
-				GL &gl);
-
-		//! Equivalent to glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, <buffer>) where none corresponds to zero.
-		void
-		bind_element_array_buffer(
-				GL &gl,
-				boost::optional<GLBuffer::shared_ptr_type> buffer);
-
-		//! Equivalent to glEnableVertexAttribArray.
-		void
-		enable_vertex_attrib_array(
-				GL &gl,
-				GLuint index);
-
-		//! Equivalent to glDisableVertexAttribArray.
-		void
-		disable_vertex_attrib_array(
-				GL &gl,
-				GLuint index);
-
-		//! Equivalent to glVertexAttribDivisor.
-		void
-		vertex_attrib_divisor(
-				GL &gl,
-				GLuint index,
-				GLuint divisor);
-
-		//! Equivalent to glVertexAttribPointer.
-		void
-		vertex_attrib_pointer(
-				GL &gl,
-				GLuint index,
-				GLint size,
-				GLenum type,
-				GLboolean normalized,
-				GLsizei stride,
-				const GLvoid *pointer,
-				boost::optional<GLBuffer::shared_ptr_type> array_buffer);
-
-		//! Equivalent to glVertexAttribIPointer.
-		void
-		vertex_attrib_i_pointer(
-				GL &gl,
-				GLuint index,
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				const GLvoid *pointer,
-				boost::optional<GLBuffer::shared_ptr_type> array_buffer);
-
 	private:
-
-		/**
-		 * Keep track of the vertex array object state.
-		 */
-		struct ObjectState
-		{
-			struct AttributeArray
-			{
-				// Default state.
-				AttributeArray() :
-					enabled(GL_FALSE),
-					divisor(0),
-					size(4),
-					type(GL_FLOAT),
-					normalized(GL_FALSE),
-					integer(GL_FALSE),
-					stride(0),
-					pointer(nullptr)
-				{  }
-
-				GLboolean enabled;  // True/false for glEnableVertexAttribArray/glDisableVertexAttribArray.
-				GLuint divisor;
-				GLint size;
-				GLenum type;
-				GLboolean normalized;  // Only applies to glVertexAttribPointer.
-				GLboolean integer;  // True if applies to glVertexAttribIPointer (otherwise glVertexAttribPointer).
-				GLsizei stride;
-				const GLvoid *pointer;
-
-				//! The array buffer bound to the attribute array (if any).
-				boost::optional<GLBuffer::shared_ptr_type> array_buffer;
-			};
-
-			explicit
-			ObjectState(
-					GLuint max_attrib_arrays)
-			{
-				attribute_arrays.resize(max_attrib_arrays);
-			}
-
-			//! The vertex element buffer bound to this vertex array (if any).
-			boost::optional<GLBuffer::shared_ptr_type> element_array_buffer;
-
-			std::vector<AttributeArray> attribute_arrays;
-		};
-
-		/**
-		 * The vertex array object state as currently set in each OpenGL context.
-		 *
-		 * Since vertex array objects cannot be shared across OpenGL contexts, in contrast to
-		 * vertex buffer objects, we create a separate vertex array object for each context.
-		 */
-		struct ContextObjectState
-		{
-			/**
-			 * Constructor creates a new vertex array object resource using the vertex array object
-			 * manager of the specified context.
-			 *
-			 * If the vertex array object is destroyed then the resource will be queued for
-			 * deallocation when this context is the active context and it is used for rendering.
-			 */
-			ContextObjectState(
-					const GLContext &context_,
-					OpenGLFunctions &opengl_functions);
-
-			/**
-			 * The OpenGL context using our vertex array object.
-			 *
-			 * NOTE: This should *not* be a shared pointer otherwise it'll create a cyclic shared reference.
-			 */
-			const GLContext *context;
-
-			//! The vertex array object resource created in a specific OpenGL context.
-			resource_type::non_null_ptr_to_const_type resource;
-
-			/**
-			 * The current state of the native vertex array object in this OpenGL context.
-			 *
-			 * Note that this might be out-of-date if the native vertex array in another context has been
-			 * updated and then we switched to this context (required this native object to be updated).
-			 */
-			ObjectState object_state;
-
-			/**
-			 * Determines if our context state needs updating.
-			 */
-			GPlatesUtils::ObserverToken object_state_observer;
-		};
-
-		/**
-		 * Typedef for a sequence of context object states.
-		 *
-		 * A 'vector' is fine since we're not expecting many OpenGL contexts so searches should be fast.
-		 */
-		typedef std::vector<ContextObjectState> context_object_state_seq_type;
-
-
-		/**
-		 * The vertex array object state for each context that we've encountered.
-		 */
-		mutable context_object_state_seq_type d_context_object_states;
-
-		/**
-		 * The vertex array object state set by the client.
-		 *
-		 * Before a native vertex array object can be used in a particular OpenGL context the state
-		 * in that native object must match this state.
-		 */
-		ObjectState d_object_state;
-
-		/**
-		 * Subject token is invalidated when object state is updated, meaning all contexts need updating.
-		 */
-		GPlatesUtils::SubjectToken d_object_state_subject;
+		resource_type::non_null_ptr_to_const_type d_resource;
 
 
 		//! Constructor.
 		explicit
 		GLVertexArray(
 				GL &gl);
-
-		ContextObjectState &
-		get_object_state_for_current_context(
-				GL &gl) const;
-
-		ObjectState::AttributeArray
-		get_attribute_array(
-				GLuint index);
-
-		void
-		update_attribute_array(
-				GL &gl,
-				GLuint index,
-				const ObjectState::AttributeArray &attribute_array);
 	};
 }
 

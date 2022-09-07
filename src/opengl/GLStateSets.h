@@ -450,13 +450,17 @@ namespace GPlatesOpenGL
 			public GLStateSet
 	{
 		//! Binds a vertex array object (none and 0 mean unbind).
+		explicit
 		GLBindVertexArrayStateSet(
-				boost::optional<GLVertexArray::shared_ptr_type> array,
-				// Array resource handle associated with the current OpenGL context...
-				GLuint array_resource) :
+				boost::optional<GLVertexArray::shared_ptr_type> array) :
 			d_array(array),
-			d_array_resource(array_resource)
-		{  }
+			d_array_resource(0)
+		{
+			if (array)
+			{
+				d_array_resource = array.get()->get_resource_handle();
+			}
+		}
 
 		virtual
 		bool
@@ -482,7 +486,6 @@ namespace GPlatesOpenGL
 
 
 		boost::optional<GLVertexArray::shared_ptr_type> d_array;
-		//! Array resource handle associated with the current OpenGL context.
 		GLuint d_array_resource;
 	};
 

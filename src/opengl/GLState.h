@@ -207,17 +207,15 @@ namespace GPlatesOpenGL
 					boost::in_place(boost::cref(d_capabilities), texture_target, texture_unit, texture));
 		}
 
-		//! Binds the vertex array object to the active OpenGL context (none and 0 mean unbind).
+		//! Binds the vertex array object to the active OpenGL context.
 		void
 		bind_vertex_array(
-				boost::optional<GLVertexArray::shared_ptr_type> array,
-				// Array resource handle associated with the current OpenGL context...
-				GLuint array_resource)
+				boost::optional<GLVertexArray::shared_ptr_type> array)
 		{
 			apply_state_set(
 					d_state_set_store->bind_vertex_array_state_sets,
 					GLStateSetKeys::KEY_BIND_VERTEX_ARRAY,
-					boost::in_place(array, array_resource));
+					boost::in_place(array));
 		}
 
 		void

@@ -699,7 +699,7 @@ GPlatesOpenGL::GLFramebuffer::ContextObjectState::ContextObjectState(
 			resource_type::create(
 					opengl_functions,
 					context_.get_capabilities(),
-					context_.get_non_shared_state()->get_framebuffer_resource_manager())),
+					context_.get_shared_state()->get_framebuffer_resource_manager())),
 	object_state(context_.get_capabilities().gl_max_color_attachments)
 {
 }

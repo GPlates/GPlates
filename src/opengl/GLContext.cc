@@ -86,8 +86,7 @@ GPlatesOpenGL::GLContext::set_default_surface_format()
 
 
 GPlatesOpenGL::GLContext::GLContext() :
-	d_shared_state(new SharedState()),
-	d_non_shared_state(new NonSharedState())
+	d_shared_state(new SharedState())
 {
 	// Defined in ".cc" file because...
 	// non_null_ptr destructors require complete type of class they're referring to.
@@ -285,25 +284,26 @@ GPlatesOpenGL::GLContext::deallocate_queued_object_resources()
 	{
 		OpenGLFunctions &opengl_functions = *d_opengl_functions.get();
 
-		get_non_shared_state()->get_framebuffer_resource_manager()->deallocate_queued_resources(opengl_functions);
-		get_non_shared_state()->get_vertex_array_resource_manager()->deallocate_queued_resources(opengl_functions);
-
-		get_shared_state()->get_texture_resource_manager()->deallocate_queued_resources(opengl_functions);
-		get_shared_state()->get_renderbuffer_resource_manager()->deallocate_queued_resources(opengl_functions);
 		get_shared_state()->get_buffer_resource_manager()->deallocate_queued_resources(opengl_functions);
-		get_shared_state()->get_shader_resource_manager()->deallocate_queued_resources(opengl_functions);
+		get_shared_state()->get_framebuffer_resource_manager()->deallocate_queued_resources(opengl_functions);
 		get_shared_state()->get_program_resource_manager()->deallocate_queued_resources(opengl_functions);
+		get_shared_state()->get_renderbuffer_resource_manager()->deallocate_queued_resources(opengl_functions);
+		get_shared_state()->get_shader_resource_manager()->deallocate_queued_resources(opengl_functions);
+		get_shared_state()->get_texture_resource_manager()->deallocate_queued_resources(opengl_functions);
+		get_shared_state()->get_vertex_array_resource_manager()->deallocate_queued_resources(opengl_functions);
 	}
 }
 
 
 GPlatesOpenGL::GLContext::SharedState::SharedState() :
 	d_buffer_resource_manager(GLBuffer::resource_manager_type::create()),
+	d_framebuffer_resource_manager(GLFramebuffer::resource_manager_type::create()),
 	d_program_resource_manager(GLProgram::resource_manager_type::create()),
 	d_renderbuffer_resource_manager(GLRenderbuffer::resource_manager_type::create()),
 	d_sampler_resource_manager(GLSampler::resource_manager_type::create()),
 	d_shader_resource_manager(GLShader::resource_manager_type::create()),
-	d_texture_resource_manager(GLTexture::resource_manager_type::create())
+	d_texture_resource_manager(GLTexture::resource_manager_type::create()),
+	d_vertex_array_resource_manager(GLVertexArray::resource_manager_type::create())
 {
 }
 
@@ -334,11 +334,4 @@ GPlatesOpenGL::GLContext::SharedState::get_state_store(
 	}
 
 	return d_state_store.get();
-}
-
-
-GPlatesOpenGL::GLContext::NonSharedState::NonSharedState() :
-	d_framebuffer_resource_manager(GLFramebuffer::resource_manager_type::create()),
-	d_vertex_array_resource_manager(GLVertexArray::resource_manager_type::create())
-{
 }

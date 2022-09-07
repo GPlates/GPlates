@@ -40,9 +40,6 @@
 #include "GLObjectResource.h"
 #include "GLObjectResourceManager.h"
 
-#include "global/GPlatesAssert.h"
-#include "global/PreconditionViolationError.h"
-
 
 namespace GPlatesOpenGL
 {
