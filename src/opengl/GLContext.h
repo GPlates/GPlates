@@ -275,7 +275,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Creates a @a GLContext object.
 		 *
-		 * We reference the OpenGL context of a particular QOpenGLWindow.
+		 * We reference the OpenGL context of a particular QOpenGLWindow (see @a initialise_gl).
 		 */
 		static
 		non_null_ptr_type
@@ -289,7 +289,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The OpenGL context has been created (and is used by the specified window).
+		 * The OpenGL context represents the specified QOpenGLWindow.
 		 */
 		void
 		initialise_gl(
@@ -303,41 +303,15 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the default framebuffer resource.
+		 * Access OpenGL.
 		 *
-		 * Note: This might not be zero.
-		 *       For example, each QOpenGLWidget has its own framebuffer object
-		 *       (that we treat as our main framebuffer when rendering into it).
-		 */
-		GLuint
-		get_default_framebuffer_object() const;
-
-
-		/**
-		 * The width (in device pixels) of the framebuffer currently attached to the OpenGL context.
-		 *
-		 * NOTE: Dimensions, in OpenGL, are in device pixels (not the device independent pixels used for widget sizes).
-		 */
-		unsigned int
-		get_width() const;
-
-
-		/**
-		 * The height (in device pixels) of the framebuffer currently attached to the OpenGL context.
-		 *
-		 * NOTE: Dimensions, in OpenGL, are in device pixels (not the device independent pixels used for widget sizes).
-		 */
-		unsigned int
-		get_height() const;
-
-
-		/**
-		 * Creates a global context state to track common OpenGL state.
+		 * The returned object should be used as a local object (on C++ runtime stack) and only
+		 * created/used when need to render something (it should not be stored persistently).
 		 *
 		 * Typically a @a GL is created each time a frame needs drawing.
 		 */
 		GPlatesGlobal::PointerTraits<GL>::non_null_ptr_type
-		create_gl();
+		access_opengl();
 
 
 		/**

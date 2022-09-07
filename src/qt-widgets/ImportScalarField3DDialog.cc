@@ -500,7 +500,7 @@ GPlatesQtWidgets::ImportScalarField3DDialog::create_gl() const
 			d_viewport_window.reconstruction_view_widget().globe_and_map_widget().get_gl_context();
 
 	// Access OpenGL.
-	return gl_context->create_gl();
+	return gl_context->access_opengl();
 }
 
 

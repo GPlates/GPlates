@@ -37,18 +37,21 @@
 
 GPlatesOpenGL::GL::GL(
 		const GLContext::non_null_ptr_type &context,
+		const GLCapabilities &capabilities,
 		OpenGLFunctions &opengl_functions,
-		const GLStateStore::non_null_ptr_type &state_store) :
+		const GLStateStore::non_null_ptr_type &state_store,
+		const GLViewport &default_viewport,
+		const GLuint default_framebuffer_object) :
 	d_context(context),
 	d_opengl_functions(opengl_functions),
-	d_capabilities(context->get_capabilities()),
-	d_current_state(GLState::create(opengl_functions, context->get_capabilities(), state_store)),
+	d_capabilities(capabilities),
+	d_current_state(GLState::create(opengl_functions, capabilities, state_store)),
 	// Default viewport/scissor starts out as the initial window dimensions returned by context.
 	// However it can change when the window (that context is attached to) is resized...
-	d_default_viewport(0, 0, context->get_width(), context->get_height()),
+	d_default_viewport(default_viewport),
 	// Default draw/read buffer is the back buffer (GL_BACK)...
 	d_default_draw_read_buffer(GL_BACK),
-	d_default_framebuffer_resource(context->get_default_framebuffer_object())
+	d_default_framebuffer_resource(default_framebuffer_object)
 {
 }
 
@@ -1625,13 +1628,10 @@ GPlatesOpenGL::GL::RenderScope::RenderScope(
 	d_gl(gl),
 	d_have_ended(false)
 {
-	// On entering this scope set the default viewport/scissor rectangle to the current dimensions
+	// On entering this scope set the default viewport/scissor rectangle to the dimensions
 	// (in device pixels) of the framebuffer currently attached to the OpenGL context.
 	// This is then considered the default viewport for the current rendering scope.
-	// Note that the viewport dimensions can change when the window (attached to context) is resized,
-	// so the default viewport can be different from one render scope to the next.
-	d_gl.d_default_viewport = GLViewport(0, 0, d_gl.d_context->get_width(), d_gl.d_context->get_height());
-
+	//
 	// We explicitly set the viewport/scissor OpenGL state here. This is unusual since it's all meant
 	// to be wrapped by GLState and the GLStateSet derivations. We do this because whenever GL::Viewport()
 	// or GL::Scissor() are called, we pass the default viewport to GLState (which shadows the actual OpenGL

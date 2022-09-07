@@ -1275,10 +1275,16 @@ namespace GPlatesOpenGL
 		non_null_ptr_type
 		create(
 				const GLContext::non_null_ptr_type &context,
+				const GLCapabilities &capabilities,
 				OpenGLFunctions &opengl_functions,
-				const GLStateStore::non_null_ptr_type &state_store)
+				const GLStateStore::non_null_ptr_type &state_store,
+				const GLViewport &default_viewport,
+				const GLuint default_framebuffer_object)
 		{
-			return non_null_ptr_type(new GL(context, opengl_functions, state_store));
+			return non_null_ptr_type(
+					new GL(
+							context, capabilities, opengl_functions, state_store,
+							default_viewport, default_framebuffer_object));
 		}
 
 	private: // For use by OpenGL resource object classes (such as @a GLTexture)...
@@ -1306,8 +1312,11 @@ namespace GPlatesOpenGL
 		//! Constructor.
 		GL(
 				const GLContext::non_null_ptr_type &context,
+				const GLCapabilities &capabilities,
 				OpenGLFunctions &opengl_functions,
-				const GLStateStore::non_null_ptr_type &state_store);
+				const GLStateStore::non_null_ptr_type &state_store,
+				const GLViewport &default_viewport,
+				const GLuint default_framebuffer_object);
 
 
 		/**

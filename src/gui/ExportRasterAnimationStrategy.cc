@@ -495,7 +495,7 @@ namespace
 						.globe_and_map_widget().get_gl_context();
 
 		// Access OpenGL.
-		return gl_context->create_gl();
+		return gl_context->access_opengl();
 	}
 
 

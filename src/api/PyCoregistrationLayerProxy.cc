@@ -93,7 +93,7 @@ GPlatesApi::PyCoregistrationLayerProxy::get_coregistration_data(
 		reconstruction_view_widget().globe_and_map_widget().get_gl_context();
 
 	// Start a render scope (all GL calls should be done inside this scope).
-	GPlatesOpenGL::GL::non_null_ptr_type gl = gl_context->create_gl();
+	GPlatesOpenGL::GL::non_null_ptr_type gl = gl_context->access_opengl();
 	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
 	GPlatesAppLogic::CoRegistrationData::non_null_ptr_type coregistration_data = 

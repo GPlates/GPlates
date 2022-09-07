@@ -167,46 +167,8 @@ GPlatesOpenGL::GLContext::shutdown_gl()
 }
 
 
-GLuint
-GPlatesOpenGL::GLContext::get_default_framebuffer_object() const
-{
-	// We should be between 'initialise_gl()' and 'shutdown_gl()'.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_opengl_window,
-			GPLATES_ASSERTION_SOURCE);
-
-	return d_opengl_window->defaultFramebufferObject();
-}
-
-
-unsigned int
-GPlatesOpenGL::GLContext::get_width() const
-{
-	// We should be between 'initialise_gl()' and 'shutdown_gl()'.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_opengl_window,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Dimensions, in OpenGL, are in device pixels.
-	return d_opengl_window->width() * d_opengl_window->devicePixelRatio();
-}
-
-
-unsigned int
-GPlatesOpenGL::GLContext::get_height() const
-{
-	// We should be between 'initialise_gl()' and 'shutdown_gl()'.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_opengl_window,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Dimensions, in OpenGL, are in device pixels.
-	return d_opengl_window->height() * d_opengl_window->devicePixelRatio();
-}
-
-
 GPlatesGlobal::PointerTraits<GPlatesOpenGL::GL>::non_null_ptr_type
-GPlatesOpenGL::GLContext::create_gl()
+GPlatesOpenGL::GLContext::access_opengl()
 {
 	// We should be between 'initialise_gl()' and 'shutdown_gl()'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
@@ -217,10 +179,22 @@ GPlatesOpenGL::GLContext::create_gl()
 	// Also this sets the default framebuffer object used by the QOpenGLWindow.
 	d_opengl_window->makeCurrent();
 
+	// The default viewport of the QOpenGLWindow.
+	const GLViewport default_viewport(0, 0,
+			// Dimensions, in OpenGL, are in device pixels...
+			d_opengl_window->width() * d_opengl_window->devicePixelRatio(),
+			d_opengl_window->height() * d_opengl_window->devicePixelRatio());
+
+	// The default framebuffer object of the QOpenGLWindow.
+	const GLuint default_framebuffer_object = d_opengl_window->defaultFramebufferObject();
+
 	return GL::create(
 			get_non_null_pointer(this),
+			get_capabilities(),
 			*d_opengl_functions.get(),
-			get_shared_state()->get_state_store(get_capabilities()));
+			get_shared_state()->get_state_store(get_capabilities()),
+			default_viewport,
+			default_framebuffer_object);
 }
 
 
