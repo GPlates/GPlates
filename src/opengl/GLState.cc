@@ -307,30 +307,23 @@ void
 GPlatesOpenGL::GLState::bind_framebuffer(
 		GLenum target,
 		boost::optional<GLFramebuffer::shared_ptr_type> framebuffer,
-		// Framebuffer resource handle associated with the current OpenGL context...
-		GLuint framebuffer_resource,
-		// Default framebuffer resource (might not be zero, eg, each QOpenGLWidget has its own framebuffer object)...
+		// Default framebuffer resource (might not be zero, eg, each QOpenGLWindow has its own framebuffer object)...
 		GLuint default_framebuffer_resource)
 {
 	// Default framebuffer (bound to zero).
 	boost::optional<GLFramebuffer::shared_ptr_type> draw_framebuffer;
 	boost::optional<GLFramebuffer::shared_ptr_type> read_framebuffer;
-	GLuint draw_framebuffer_resource = 0;
-	GLuint read_framebuffer_resource = 0;
 
 	if (target == GL_FRAMEBUFFER)
 	{
 		// Framebuffer is used for both draw and read targets.
 		draw_framebuffer = framebuffer;
-		draw_framebuffer_resource = framebuffer_resource;
 		read_framebuffer = framebuffer;
-		read_framebuffer_resource = framebuffer_resource;
 	}
 	else if (target == GL_DRAW_FRAMEBUFFER)
 	{
 		// Framebuffer is used for draw target only.
 		draw_framebuffer = framebuffer;
-		draw_framebuffer_resource = framebuffer_resource;
 
 		// For read target use framebuffer currently bound to it.
 		boost::optional<const GLBindFramebufferStateSet &> bind_framebuffer_state_set =
@@ -338,7 +331,6 @@ GPlatesOpenGL::GLState::bind_framebuffer(
 		if (bind_framebuffer_state_set)
 		{
 			read_framebuffer = bind_framebuffer_state_set->d_read_framebuffer;
-			read_framebuffer_resource = bind_framebuffer_state_set->d_read_framebuffer_resource;
 		}
 	}
 	else
@@ -349,7 +341,6 @@ GPlatesOpenGL::GLState::bind_framebuffer(
 
 		// Framebuffer is used for read target only.
 		read_framebuffer = framebuffer;
-		read_framebuffer_resource = framebuffer_resource;
 
 		// For draw target use framebuffer currently bound to it.
 		boost::optional<const GLBindFramebufferStateSet &> bind_framebuffer_state_set =
@@ -357,7 +348,6 @@ GPlatesOpenGL::GLState::bind_framebuffer(
 		if (bind_framebuffer_state_set)
 		{
 			draw_framebuffer = bind_framebuffer_state_set->d_draw_framebuffer;
-			draw_framebuffer_resource = bind_framebuffer_state_set->d_draw_framebuffer_resource;
 		}
 	}
 
@@ -366,7 +356,6 @@ GPlatesOpenGL::GLState::bind_framebuffer(
 			GLStateSetKeys::KEY_BIND_FRAMEBUFFER,
 			boost::in_place(
 					draw_framebuffer, read_framebuffer,
-					draw_framebuffer_resource, read_framebuffer_resource,
 					default_framebuffer_resource));
 }
 

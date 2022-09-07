@@ -1354,7 +1354,7 @@ namespace GPlatesOpenGL
 		 * Default framebuffer resource.
 		 *
 		 * Note: This might not be zero.
-		 *       For example, each QOpenGLWidget has its own framebuffer object
+		 *       For example, each QOpenGLWindow has its own framebuffer object
 		 *       (that we treat as our default framebuffer when rendering into it).
 		 */
 		GLuint d_default_framebuffer_resource;

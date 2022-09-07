@@ -268,18 +268,23 @@ namespace GPlatesOpenGL
 		GLBindFramebufferStateSet(
 				boost::optional<GLFramebuffer::shared_ptr_type> draw_framebuffer,
 				boost::optional<GLFramebuffer::shared_ptr_type> read_framebuffer,
-				// Draw framebuffer resource handle associated with the current OpenGL context...
-				GLuint draw_framebuffer_resource,
-				// Read framebuffer resource handle associated with the current OpenGL context...
-				GLuint read_framebuffer_resource,
 				// The default framebuffer (defaults to zero)...
 				GLuint default_framebuffer_resource = 0) :
 			d_draw_framebuffer(draw_framebuffer),
 			d_read_framebuffer(read_framebuffer),
-			d_draw_framebuffer_resource(draw_framebuffer_resource),
-			d_read_framebuffer_resource(read_framebuffer_resource),
+			d_draw_framebuffer_resource(0),
+			d_read_framebuffer_resource(0),
 			d_default_framebuffer_resource(default_framebuffer_resource)
-		{  }
+		{
+			if (draw_framebuffer)
+			{
+				d_draw_framebuffer_resource = draw_framebuffer.get()->get_resource_handle();
+			}
+			if (read_framebuffer)
+			{
+				d_read_framebuffer_resource = read_framebuffer.get()->get_resource_handle();
+			}
+		}
 
 		virtual
 		bool

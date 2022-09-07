@@ -222,7 +222,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Set the global default surface format (eg, used by QOpenGLWidget's).
+		 * Set the global default surface format (eg, used by QOpenGLWindow).
 		 *
 		 * This sets various parameters required for OpenGL rendering in GPlates.
 		 *

@@ -132,32 +132,11 @@ GPlatesOpenGL::GL::BindFramebuffer(
 		GLenum target,
 		boost::optional<GLFramebuffer::shared_ptr_type> framebuffer)
 {
-	if (framebuffer)
-	{
-		// Bind.
-		d_current_state->bind_framebuffer(
-				target,
-				framebuffer.get(),
-				// Framebuffer resource handle associated with the current OpenGL context...
-				framebuffer.get()->get_resource_handle(*this),
-				// Default framebuffer resource (might not be zero, eg, each QOpenGLWidget has its own framebuffer object)...
-				d_default_framebuffer_resource);
-
-		// Ensure the framebuffer's internal state is reflected in the current context.
-		// Each 'GLFramebuffer' instance has one native framebuffer object per OpenGL context.
-		//
-		// NOTE: This must be done after binding to the framebuffer 'target'.
-		framebuffer.get()->synchronise_current_context(*this, target);
-	}
-	else
-	{
-		// Unbind.
-		d_current_state->bind_framebuffer(
-				target,
-				boost::none,
-				d_default_framebuffer_resource/*framebuffer_resource*/,
-				d_default_framebuffer_resource/*default_framebuffer_resource*/);
-	}
+	d_current_state->bind_framebuffer(
+			target,
+			framebuffer.get(),
+			// Default framebuffer resource (might not be zero, eg, each QOpenGLWindow has its own framebuffer object)...
+			d_default_framebuffer_resource);
 }
 
 
@@ -416,21 +395,7 @@ void
 GPlatesOpenGL::GL::DrawBuffer(
 		GLenum buf)
 {
-	// Get the framebuffer object currently bound to 'GL_DRAW_FRAMEBUFFER', if any.
-	boost::optional<GLFramebuffer::shared_ptr_type> framebuffer =
-			d_current_state->get_bind_framebuffer(GL_DRAW_FRAMEBUFFER);
-
-	if (framebuffer)
-	{
-		// Re-route to the framebuffer object (which needs to track its internal state across contexts
-		// since cannot be shared across contexts).
-		framebuffer.get()->draw_buffer(*this, buf);
-	}
-	else
-	{
-		// Drawing to default framebuffer, which is global context state (not framebuffer object state).
-		d_current_state->draw_buffer(buf, d_default_draw_read_buffer);
-	}
+	d_current_state->draw_buffer(buf, d_default_draw_read_buffer);
 }
 
 
@@ -438,21 +403,7 @@ void
 GPlatesOpenGL::GL::DrawBuffers(
 		const std::vector<GLenum> &bufs)
 {
-	// Get the framebuffer object currently bound to 'GL_DRAW_FRAMEBUFFER', if any.
-	boost::optional<GLFramebuffer::shared_ptr_type> framebuffer =
-			d_current_state->get_bind_framebuffer(GL_DRAW_FRAMEBUFFER);
-
-	if (framebuffer)
-	{
-		// Re-route to the framebuffer object (which needs to track its internal state across contexts
-		// since cannot be shared across contexts).
-		framebuffer.get()->draw_buffers(*this, bufs);
-	}
-	else
-	{
-		// Drawing to default framebuffer, which is global context state (not framebuffer object state).
-		d_current_state->draw_buffers(bufs, d_default_draw_read_buffer);
-	}
+	d_current_state->draw_buffers(bufs, d_default_draw_read_buffer);
 }
 
 
@@ -522,19 +473,14 @@ GPlatesOpenGL::GL::FramebufferRenderbuffer(
 		GLenum renderbuffertarget,
 		boost::optional<GLRenderbuffer::shared_ptr_type> renderbuffer)
 {
-	// Re-route framebuffer attachments to the framebuffer object currently bound to 'target'
-	// (which needs to track its internal state across contexts since cannot be shared across contexts).
+	// Either attach the specified renderbuffer or detach.
+	GLuint renderbuffer_resource = 0;
+	if (renderbuffer)
+	{
+		renderbuffer_resource = renderbuffer.get()->get_resource_handle();
+	}
 
-	// Get the framebuffer object currently bound to 'target'.
-	boost::optional<GLFramebuffer::shared_ptr_type> framebuffer = d_current_state->get_bind_framebuffer(target);
-
-	// Can only attach to framebuffer when a framebuffer object is currently bound.
-	GPlatesGlobal::Assert<OpenGLException>(
-			framebuffer,
-			GPLATES_ASSERTION_SOURCE,
-			"Cannot attach to framebuffer because a framebuffer object is not currently bound.");
-
-	framebuffer.get()->framebuffer_renderbuffer(*this, target, attachment, renderbuffertarget, renderbuffer);
+	d_opengl_functions.glFramebufferRenderbuffer(target, attachment, renderbuffertarget, renderbuffer_resource);
 }
 
 
@@ -545,19 +491,14 @@ GPlatesOpenGL::GL::FramebufferTexture(
 		boost::optional<GLTexture::shared_ptr_type> texture,
 		GLint level)
 {
-	// Re-route framebuffer attachments to the framebuffer object currently bound to 'target'
-	// (which needs to track its internal state across contexts since cannot be shared across contexts).
+	// Either attach the specified texture or detach.
+	GLuint texture_resource = 0;
+	if (texture)
+	{
+		texture_resource = texture.get()->get_resource_handle();
+	}
 
-	// Get the framebuffer object currently bound to 'target'.
-	boost::optional<GLFramebuffer::shared_ptr_type> framebuffer = d_current_state->get_bind_framebuffer(target);
-
-	// Can only attach to framebuffer when a framebuffer object is currently bound.
-	GPlatesGlobal::Assert<OpenGLException>(
-			framebuffer,
-			GPLATES_ASSERTION_SOURCE,
-			"Cannot attach to framebuffer because a framebuffer object is not currently bound.");
-
-	framebuffer.get()->framebuffer_texture(*this, target, attachment, texture, level);
+	d_opengl_functions.glFramebufferTexture(target, attachment, texture_resource, level);
 }
 
 
@@ -569,19 +510,14 @@ GPlatesOpenGL::GL::FramebufferTexture1D(
 		boost::optional<GLTexture::shared_ptr_type> texture,
 		GLint level)
 {
-	// Re-route framebuffer attachments to the framebuffer object currently bound to 'target'
-	// (which needs to track its internal state across contexts since cannot be shared across contexts).
+	// Either attach the specified texture or detach.
+	GLuint texture_resource = 0;
+	if (texture)
+	{
+		texture_resource = texture.get()->get_resource_handle();
+	}
 
-	// Get the framebuffer object currently bound to 'target'.
-	boost::optional<GLFramebuffer::shared_ptr_type> framebuffer = d_current_state->get_bind_framebuffer(target);
-
-	// Can only attach to framebuffer when a framebuffer object is currently bound.
-	GPlatesGlobal::Assert<OpenGLException>(
-			framebuffer,
-			GPLATES_ASSERTION_SOURCE,
-			"Cannot attach to framebuffer because a framebuffer object is not currently bound.");
-
-	framebuffer.get()->framebuffer_texture_1D(*this, target, attachment, textarget, texture, level);
+	d_opengl_functions.glFramebufferTexture1D(target, attachment, textarget, texture_resource, level);
 }
 
 
@@ -593,19 +529,14 @@ GPlatesOpenGL::GL::FramebufferTexture2D(
 		boost::optional<GLTexture::shared_ptr_type> texture,
 		GLint level)
 {
-	// Re-route framebuffer attachments to the framebuffer object currently bound to 'target'
-	// (which needs to track its internal state across contexts since cannot be shared across contexts).
+	// Either attach the specified texture or detach.
+	GLuint texture_resource = 0;
+	if (texture)
+	{
+		texture_resource = texture.get()->get_resource_handle();
+	}
 
-	// Get the framebuffer object currently bound to 'target'.
-	boost::optional<GLFramebuffer::shared_ptr_type> framebuffer = d_current_state->get_bind_framebuffer(target);
-
-	// Can only attach to framebuffer when a framebuffer object is currently bound.
-	GPlatesGlobal::Assert<OpenGLException>(
-			framebuffer,
-			GPLATES_ASSERTION_SOURCE,
-			"Cannot attach to framebuffer because a framebuffer object is not currently bound.");
-
-	framebuffer.get()->framebuffer_texture_2D(*this, target, attachment, textarget, texture, level);
+	d_opengl_functions.glFramebufferTexture2D(target, attachment, textarget, texture_resource, level);
 }
 
 
@@ -618,19 +549,14 @@ GPlatesOpenGL::GL::FramebufferTexture3D(
 		GLint level,
 		GLint layer)
 {
-	// Re-route framebuffer attachments to the framebuffer object currently bound to 'target'
-	// (which needs to track its internal state across contexts since cannot be shared across contexts).
+	// Either attach the specified texture or detach.
+	GLuint texture_resource = 0;
+	if (texture)
+	{
+		texture_resource = texture.get()->get_resource_handle();
+	}
 
-	// Get the framebuffer object currently bound to 'target'.
-	boost::optional<GLFramebuffer::shared_ptr_type> framebuffer = d_current_state->get_bind_framebuffer(target);
-
-	// Can only attach to framebuffer when a framebuffer object is currently bound.
-	GPlatesGlobal::Assert<OpenGLException>(
-			framebuffer,
-			GPLATES_ASSERTION_SOURCE,
-			"Cannot attach to framebuffer because a framebuffer object is not currently bound.");
-
-	framebuffer.get()->framebuffer_texture_3D(*this, target, attachment, textarget, texture, level, layer);
+	d_opengl_functions.glFramebufferTexture3D(target, attachment, textarget, texture_resource, level, layer);
 }
 
 
@@ -642,19 +568,14 @@ GPlatesOpenGL::GL::FramebufferTextureLayer(
 		GLint level,
 		GLint layer)
 {
-	// Re-route framebuffer attachments to the framebuffer object currently bound to 'target'
-	// (which needs to track its internal state across contexts since cannot be shared across contexts).
+	// Either attach the specified texture or detach.
+	GLuint texture_resource = 0;
+	if (texture)
+	{
+		texture_resource = texture.get()->get_resource_handle();
+	}
 
-	// Get the framebuffer object currently bound to 'target'.
-	boost::optional<GLFramebuffer::shared_ptr_type> framebuffer = d_current_state->get_bind_framebuffer(target);
-
-	// Can only attach to framebuffer when a framebuffer object is currently bound.
-	GPlatesGlobal::Assert<OpenGLException>(
-			framebuffer,
-			GPLATES_ASSERTION_SOURCE,
-			"Cannot attach to framebuffer because a framebuffer object is not currently bound.");
-
-	framebuffer.get()->framebuffer_texture_layer(*this, target, attachment, texture, level, layer);
+	d_opengl_functions.glFramebufferTextureLayer(target, attachment, texture_resource, level, layer);
 }
 
 
@@ -782,21 +703,7 @@ void
 GPlatesOpenGL::GL::ReadBuffer(
 		GLenum src)
 {
-	// Get the framebuffer object currently bound to 'GL_READ_FRAMEBUFFER', if any.
-	boost::optional<GLFramebuffer::shared_ptr_type> framebuffer =
-			d_current_state->get_bind_framebuffer(GL_READ_FRAMEBUFFER);
-
-	if (framebuffer)
-	{
-		// Re-route to the framebuffer object (which needs to track its internal state across contexts
-		// since cannot be shared across contexts).
-		framebuffer.get()->read_buffer(*this, src);
-	}
-	else
-	{
-		// Reading from the default framebuffer, which is global context state (not framebuffer object state).
-		d_current_state->read_buffer(src, d_default_draw_read_buffer);
-	}
+	d_current_state->read_buffer(src, d_default_draw_read_buffer);
 }
 
 

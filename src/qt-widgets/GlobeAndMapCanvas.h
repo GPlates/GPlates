@@ -153,7 +153,7 @@ namespace GPlatesQtWidgets
 
 
 		/**
-		 * Returns the OpenGL context associated with our QOpenGLWidget viewport.
+		 * Returns the OpenGL context representing our QOpenGLWindow.
 		 */
 		GPlatesOpenGL::GLContext::non_null_ptr_type
 		get_gl_context()
@@ -348,13 +348,13 @@ namespace GPlatesQtWidgets
 	protected:
 
 		/**
-		 * This is a virtual override of the function in QOpenGLWidget.
+		 * This is a virtual override of the function in QOpenGLWindow.
 		 */
 		void 
 		initializeGL() override;
 
 		/**
-		 * This is a virtual override of the function in QOpenGLWidget.
+		 * This is a virtual override of the function in QOpenGLWindow.
 		 */
 		void
 		paintGL() override;

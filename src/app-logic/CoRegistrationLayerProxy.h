@@ -88,7 +88,7 @@ namespace GPlatesAppLogic
 		 * @a gl is required since *raster* co-registration is accelerated using OpenGL.
 		 * If you do not already have a @a GL available then you'll need to retrieve a
 		 * @a GLContext object and use that to create a @a GL. An OpenGL context usually
-		 * requires some kind of operating system window (in Qt this can be a QOpenGLWidget) which is
+		 * requires some kind of operating system window (in Qt this can be a QOpenGLWindow) which is
 		 * what the globe and map views use - see "GlobeAndMapWidget::get_active_gl_context()".
 		 * For situations where there's not typically a window handy (eg, using the GPlates
 		 * python API without using the GPlates application) you'll probably need to create a

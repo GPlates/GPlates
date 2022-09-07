@@ -158,16 +158,14 @@ namespace GPlatesOpenGL
 				GLsizeiptr size);
 
 		/**
-		 * Binds the target to the framebuffer object on the active OpenGL context
-		 * (none and 0 mean bind default framebuffer).
+		 * Binds the framebuffer object (at the specified target) to the active OpenGL context
+		 * (none means bind default framebuffer).
 		 */
 		void
 		bind_framebuffer(
 				GLenum target,
 				boost::optional<GLFramebuffer::shared_ptr_type> framebuffer,
-				// Framebuffer resource handle associated with the current OpenGL context...
-				GLuint framebuffer_resource,
-				// Default framebuffer resource (might not be zero, eg, each QOpenGLWidget has its own framebuffer object)...
+				// Default framebuffer resource (might not be zero, eg, each QOpenGLWindow has its own framebuffer object)...
 				GLuint default_framebuffer_resource);
 
 		//! Binds the renderbuffer object (at the specified target, must be GL_RENDERBUFFER) to the active OpenGL context.
