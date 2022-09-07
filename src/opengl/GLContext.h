@@ -289,7 +289,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The OpenGL context has been created.
+		 * The OpenGL context has been created (and is used by the specified window).
 		 */
 		void
 		initialise_gl(
@@ -452,14 +452,9 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The *preferred* OpenGL version (in a core profile).
+		 * The *required* OpenGL version (in a core profile).
 		 */
-		static const QPair<int, int> PREFERRED_OPENGL_VERSION;
-
-		/**
-		 * The *minimum* OpenGL version (in a core profile).
-		 */
-		static const QPair<int, int> MINIMUM_OPENGL_VERSION;
+		static const QPair<int, int> REQUIRED_OPENGL_VERSION;
 
 
 		//! Constructor.
@@ -471,10 +466,10 @@ namespace GPlatesOpenGL
 		 *
 		 * Returns none if request failed. For example, if requesting functions (via specified version)
 		 * that are not in the version (and core profile) of the OpenGL context, such as requesting
-		 * 4.3 core functions from a 3.3 core context.
+		 * 4.5 core functions from a 3.3 core context.
 		 *
 		 * Note: The template type pointer 'OpenGLFunctionsType' should match the version (and 'core' profile).
-		 *       For example, 'QOpenGLFunctions_3_3_Core' matches a version 3.3 core profile).
+		 *       For example, 'QOpenGLFunctions_4_5_Core' matches a version 4.5 core profile).
 		 */
 		template <class OpenGLFunctionsType>
 		boost::optional<OpenGLFunctionsType *>
