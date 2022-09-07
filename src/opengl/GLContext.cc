@@ -167,18 +167,6 @@ GPlatesOpenGL::GLContext::shutdown_gl()
 }
 
 
-void
-GPlatesOpenGL::GLContext::make_current()
-{
-	// We should be between 'initialise_gl()' and 'shutdown_gl()'.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_opengl_window,
-			GPLATES_ASSERTION_SOURCE);
-
-	return d_opengl_window->makeCurrent();
-}
-
-
 GLuint
 GPlatesOpenGL::GLContext::get_default_framebuffer_object() const
 {
@@ -222,8 +210,12 @@ GPlatesOpenGL::GLContext::create_gl()
 {
 	// We should be between 'initialise_gl()' and 'shutdown_gl()'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_opengl_functions,
+			d_opengl_window && d_opengl_functions,
 			GPLATES_ASSERTION_SOURCE);
+
+	// Make sure the OpenGL context is current.
+	// Also this sets the default framebuffer object used by the QOpenGLWindow.
+	d_opengl_window->makeCurrent();
 
 	return GL::create(
 			get_non_null_pointer(this),

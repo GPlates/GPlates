@@ -303,13 +303,6 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Sets this context as the active OpenGL context.
-		 */
-		void
-		make_current();
-
-
-		/**
 		 * Returns the default framebuffer resource.
 		 *
 		 * Note: This might not be zero.

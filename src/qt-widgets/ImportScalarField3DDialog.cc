@@ -499,11 +499,7 @@ GPlatesQtWidgets::ImportScalarField3DDialog::create_gl() const
 	GPlatesOpenGL::GLContext::non_null_ptr_type gl_context =
 			d_viewport_window.reconstruction_view_widget().globe_and_map_widget().get_gl_context();
 
-	// Make sure the context is currently active.
-	gl_context->make_current();
-
-	// Start a begin_render/end_render scope.
-	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
+	// Access OpenGL.
 	return gl_context->create_gl();
 }
 

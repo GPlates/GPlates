@@ -160,12 +160,7 @@ GPlatesQtWidgets::CoRegistrationResultTableDialog::update()
 	GPlatesOpenGL::GLContext::non_null_ptr_type gl_context =
 			d_viewport_window->reconstruction_view_widget().globe_and_map_widget().get_gl_context();
 
-	// Make sure the context is currently active.
-	gl_context->make_current();
-
 	// Start a render scope (all GL calls should be done inside this scope).
-	//
-	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
 	GPlatesOpenGL::GL::non_null_ptr_type gl = gl_context->create_gl();
 	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
