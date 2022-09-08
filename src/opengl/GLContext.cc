@@ -109,6 +109,8 @@ GPlatesOpenGL::GLContext::initialise_gl(
 	// The QSurfaceFormat of our OpenGL context.
 	const QSurfaceFormat surface_format = d_opengl_window->context()->format();
 
+	qDebug() << "Context QSurfaceFormat:" << surface_format;
+
 	// Make sure we got our required OpenGL version or greater.
 	if (surface_format.majorVersion() < REQUIRED_OPENGL_VERSION.first/*major*/ ||
 		(surface_format.majorVersion() == REQUIRED_OPENGL_VERSION.first/*major*/ &&
@@ -148,7 +150,10 @@ GPlatesOpenGL::GLContext::initialise_gl(
 	// Get the OpenGL capabilities and parameters from the current OpenGL implementation.
 	d_capabilities.initialise(*d_opengl_functions.get(), *d_opengl_window->context());
 
-	qDebug() << "Context QSurfaceFormat:" << surface_format;
+	// Used by GL to efficiently allocate GLState objects.
+	d_state_store = GLStateStore::create(
+			GLStateSetStore::create(),
+			GLStateSetKeys::create(d_capabilities));
 }
 
 
@@ -157,7 +162,7 @@ GPlatesOpenGL::GLContext::shutdown_gl()
 {
 	deallocate_queued_object_resources();
 
-	d_shared_state->d_state_store = boost::none;
+	d_state_store = boost::none;
 
 	d_opengl_functions = boost::none;
 	d_opengl_window = boost::none;
@@ -169,7 +174,7 @@ GPlatesOpenGL::GLContext::access_opengl()
 {
 	// We should be between 'initialise_gl()' and 'shutdown_gl()'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_opengl_window && d_opengl_functions,
+			d_opengl_window && d_opengl_functions && d_capabilities.is_initialised() && d_state_store,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Make sure the OpenGL context is current.
@@ -187,23 +192,11 @@ GPlatesOpenGL::GLContext::access_opengl()
 
 	return GL::create(
 			get_non_null_pointer(this),
-			get_capabilities(),
+			d_capabilities,
 			*d_opengl_functions.get(),
-			get_shared_state()->get_state_store(get_capabilities()),
+			d_state_store.get(),
 			default_viewport,
 			default_framebuffer_object);
-}
-
-
-const GPlatesOpenGL::GLCapabilities &
-GPlatesOpenGL::GLContext::get_capabilities() const
-{
-	// The capabilities must have been initialised (which means our 'initialise_gl()' must have been called).
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_capabilities.is_initialised(),
-			GPLATES_ASSERTION_SOURCE);
-
-	return d_capabilities;
 }
 
 
@@ -303,19 +296,4 @@ GPlatesOpenGL::GLContext::SharedState::SharedState() :
 	d_texture_resource_manager(GLTexture::resource_manager_type::create()),
 	d_vertex_array_resource_manager(GLVertexArray::resource_manager_type::create())
 {
-}
-
-
-GPlatesOpenGL::GLStateStore::non_null_ptr_type
-GPlatesOpenGL::GLContext::SharedState::get_state_store(
-		const GLCapabilities &capabilities)
-{
-	if (!d_state_store)
-	{
-		d_state_store = GLStateStore::create(
-				GLStateSetStore::create(),
-				GLStateSetKeys::create(capabilities));
-	}
-
-	return d_state_store.get();
 }

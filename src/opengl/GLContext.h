@@ -172,23 +172,6 @@ namespace GPlatesOpenGL
 			boost::shared_ptr<GLShader::resource_manager_type> d_shader_resource_manager;
 			boost::shared_ptr<GLTexture::resource_manager_type> d_texture_resource_manager;
 			boost::shared_ptr<GLVertexArray::resource_manager_type> d_vertex_array_resource_manager;
-
-			/**
-			 * Used by @a GL to efficiently allocate @a GLState objects.
-			 *
-			 * It's optional because we can't create it until we have a valid OpenGL context.
-			 * NOTE: Access using @a get_state_store.
-			 */
-			boost::optional<GLStateStore::non_null_ptr_type> d_state_store;
-
-			// To access @a d_state_set_store and @a d_state_set_keys without exposing to clients.
-			friend class GLContext;
-
-
-			//! Create state store if not yet done - an OpenGL context must be valid.
-			GLStateStore::non_null_ptr_type
-			get_state_store(
-					const GLCapabilities &capabilities);
 		};
 
 
@@ -279,15 +262,6 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Function to return OpenGL implementation-dependent capabilities and parameters.
-		 *
-		 * @throws PreconditionViolationError if @a initialise_gl not yet called.
-		 */
-		const GLCapabilities &
-		get_capabilities() const;
-
-
-		/**
 		 * Call this before rendering a scene.
 		 *
 		 * NOTE: Only @a GL need call this.
@@ -327,6 +301,13 @@ namespace GPlatesOpenGL
 		 *       they all share the same default QSurfaceFormat.
 		 */
 		GLCapabilities d_capabilities;
+
+		/**
+		 * Used by @a GL to efficiently allocate @a GLState objects.
+		 *
+		 * It's optional because we can't create it until @a initialise_gl is called.
+		 */
+		boost::optional<GLStateStore::non_null_ptr_type> d_state_store;
 
 		/**
 		 * OpenGL state that can be shared with another context.
