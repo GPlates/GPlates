@@ -162,30 +162,6 @@ namespace GPlatesOpenGL
 				return d_vertex_array_resource_manager;
 			}
 
-
-			/**
-			 * Returns a vertex array for rendering a full-screen quad.
-			 *
-			 * The full-screen quad contains positions only (at vertex attribute index 0) covering
-			 * range [-1,1] for x and y (and where z = 0).
-			 *
-			 * The returned vertex array can be used to draw a full-screen quad in order to apply
-			 * a texture to the screen-space of a render target (eg, using GLSL built-in 'gl_FragCoord').
-			 *
-			 * It can be rendered as:
-			 *
-			 *   gl.BindVertexArray(vertex_array);
-			 *   gl.DrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-			 *
-			 * Note: This also creates a new vertex buffer (but no vertex element buffer) that is
-			 *       kept alive by the returned vertex array.
-			 *
-			 * NOTE: This method maintains a single instance of a full-screen quad that clients can use.
-			 */
-			GLVertexArray::shared_ptr_type
-			get_full_screen_quad(
-					GL &gl);
-
 		private:
 
 			boost::shared_ptr<GLBuffer::resource_manager_type> d_buffer_resource_manager;
@@ -204,11 +180,6 @@ namespace GPlatesOpenGL
 			 * NOTE: Access using @a get_state_store.
 			 */
 			boost::optional<GLStateStore::non_null_ptr_type> d_state_store;
-
-			/**
-			 * The vertex array representing a full screen quad.
-			 */
-			boost::optional<GLVertexArray::shared_ptr_type> d_full_screen_quad;
 
 			// To access @a d_state_set_store and @a d_state_set_keys without exposing to clients.
 			friend class GLContext;

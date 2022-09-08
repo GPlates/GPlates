@@ -39,10 +39,10 @@
 
 #include "maths/MathsUtils.h"
 
-#include "opengl/GLContext.h"
 #include "opengl/GLMatrix.h"
 #include "opengl/GLShader.h"
 #include "opengl/GLShaderSource.h"
+#include "opengl/GLUtils.h"
 #include "opengl/GLVertexArray.h"
 #include "opengl/GLViewProjection.h"
 
@@ -112,7 +112,7 @@ GPlatesGui::BackgroundSphere::BackgroundSphere(
 	d_view_state(view_state),
 	d_background_colour(d_view_state.get_background_colour()),
 	d_program(GPlatesOpenGL::GLProgram::create(gl)),
-	d_full_screen_quad(gl.get_context().get_shared_state()->get_full_screen_quad(gl))
+	d_full_screen_quad(GPlatesOpenGL::GLUtils::create_full_screen_quad(gl))
 {
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GL::StateScope save_restore_state(gl);

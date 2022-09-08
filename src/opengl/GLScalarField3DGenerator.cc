@@ -35,7 +35,6 @@
 #include "GLScalarField3DGenerator.h"
 
 #include "GLBuffer.h"
-#include "GLContext.h"
 #include "GLCubeSubdivision.h"
 #include "GLMultiResolutionRaster.h"
 #include "GLUtils.h"
@@ -250,7 +249,7 @@ GPlatesOpenGL::GLScalarField3DGenerator::GLScalarField3DGenerator(
 	d_tile_colour_buffer(GLRenderbuffer::create(gl)),
 	d_tile_stencil_buffer(GLRenderbuffer::create(gl)),
 	d_tile_framebuffer(GLFramebuffer::create(gl)),
-	d_full_screen_quad(gl.get_context().get_shared_state()->get_full_screen_quad(gl)),
+	d_full_screen_quad(GLUtils::create_full_screen_quad(gl)),
 	d_render_tile_mask_program(GLProgram::create(gl))
 {
 	// Make sure we leave the OpenGL global state the way it was.

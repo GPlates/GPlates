@@ -32,7 +32,6 @@
 #include "GLNormalMapSource.h"
 
 #include "GLCapabilities.h"
-#include "GLContext.h"
 #include "GLShader.h"
 #include "GLShaderSource.h"
 #include "GLTextureUtils.h"
@@ -159,7 +158,7 @@ GPlatesOpenGL::GLNormalMapSource::GLNormalMapSource(
 	d_height_field_texture_cache(GPlatesUtils::ObjectCache<GLTexture>::create(2/*ping-pong between two height textures*/)),
 	d_generate_normals_program(GLProgram::create(gl)),
 	d_generate_normals_framebuffer(GLFramebuffer::create(gl)),
-	d_full_screen_quad(gl.get_context().get_shared_state()->get_full_screen_quad(gl)),
+	d_full_screen_quad(GLUtils::create_full_screen_quad(gl)),
 	d_have_checked_framebuffer_completeness_normal_map_generation(false),
 	d_logged_tile_load_failure_warning(false)
 {

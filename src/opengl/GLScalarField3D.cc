@@ -38,7 +38,6 @@
 #include "GLScalarField3D.h"
 
 #include "GLBuffer.h"
-#include "GLContext.h"
 #include "GLShader.h"
 #include "GLShaderSource.h"
 #include "GLUtils.h"
@@ -565,7 +564,7 @@ GPlatesOpenGL::GLScalarField3D::GLScalarField3D(
 	d_inner_sphere_vertex_buffer(GLBuffer::create(gl)),
 	d_inner_sphere_vertex_element_buffer(GLBuffer::create(gl)),
 	d_inner_sphere_num_vertex_indices(0),
-	d_full_screen_quad(gl.get_context().get_shared_state()->get_full_screen_quad(gl)),
+	d_full_screen_quad(GLUtils::create_full_screen_quad(gl)),
 	d_streaming_vertex_element_buffer(
 			GLStreamBuffer::create(
 					GLBuffer::create(gl),

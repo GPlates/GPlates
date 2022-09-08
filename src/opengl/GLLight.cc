@@ -29,7 +29,6 @@
 
 #include "GLLight.h"
 
-#include "GLContext.h"
 #include "GLFramebuffer.h"
 #include "GLMatrix.h"
 #include "GLShader.h"
@@ -126,7 +125,7 @@ GPlatesOpenGL::GLLight::GLLight(
 	d_map_view_light_direction_cube_texture(GLTexture::create(gl)),
 	d_map_view_light_direction_cube_framebuffer(GLFramebuffer::create(gl)),
 	d_render_map_view_light_direction_program(GLProgram::create(gl)),
-	d_full_screen_quad(gl.get_context().get_shared_state()->get_full_screen_quad(gl))
+	d_full_screen_quad(GLUtils::create_full_screen_quad(gl))
 {
 	compile_link_programs(gl);
 

@@ -37,7 +37,6 @@
 #include "GLContext.h"
 
 #include "GLStateStore.h"
-#include "GLUtils.h"
 #include "OpenGL.h"  // For Class GL
 #include "OpenGLException.h"
 #include "OpenGLFunctions.h"
@@ -158,7 +157,6 @@ GPlatesOpenGL::GLContext::shutdown_gl()
 {
 	deallocate_queued_object_resources();
 
-	d_shared_state->d_full_screen_quad = boost::none;
 	d_shared_state->d_state_store = boost::none;
 
 	d_opengl_functions = boost::none;
@@ -305,20 +303,6 @@ GPlatesOpenGL::GLContext::SharedState::SharedState() :
 	d_texture_resource_manager(GLTexture::resource_manager_type::create()),
 	d_vertex_array_resource_manager(GLVertexArray::resource_manager_type::create())
 {
-}
-
-
-GPlatesOpenGL::GLVertexArray::shared_ptr_type
-GPlatesOpenGL::GLContext::SharedState::get_full_screen_quad(
-		GL &gl)
-{
-	// Create the sole vertex array if it hasn't already been created.
-	if (!d_full_screen_quad)
-	{
-		d_full_screen_quad = GLUtils::create_full_screen_quad(gl);
-	}
-
-	return d_full_screen_quad.get();
 }
 
 
