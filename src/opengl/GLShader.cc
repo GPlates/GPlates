@@ -47,7 +47,7 @@ GPlatesOpenGL::GLShader::GLShader(
 			resource_type::create(
 					gl.get_opengl_functions(),
 					gl.get_capabilities(),
-					gl.get_context().get_shared_state()->get_shader_resource_manager(),
+					gl.get_context().d_shader_resource_manager,
 					shader_type))
 {
 }

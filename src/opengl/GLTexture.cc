@@ -36,7 +36,7 @@ GPlatesOpenGL::GLTexture::GLTexture(
 			resource_type::create(
 					gl.get_opengl_functions(),
 					gl.get_capabilities(),
-					gl.get_context().get_shared_state()->get_texture_resource_manager()))
+					gl.get_context().d_texture_resource_manager))
 {
 }
 

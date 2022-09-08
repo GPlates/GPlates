@@ -36,7 +36,7 @@ GPlatesOpenGL::GLSampler::GLSampler(
 			resource_type::create(
 					gl.get_opengl_functions(),
 					gl.get_capabilities(),
-					gl.get_context().get_shared_state()->get_sampler_resource_manager()))
+					gl.get_context().d_sampler_resource_manager))
 {
 }
 

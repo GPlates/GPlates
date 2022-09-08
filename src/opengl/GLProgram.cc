@@ -51,7 +51,7 @@ GPlatesOpenGL::GLProgram::GLProgram(
 			resource_type::create(
 					gl.get_opengl_functions(),
 					gl.get_capabilities(),
-					gl.get_context().get_shared_state()->get_program_resource_manager()))
+					gl.get_context().d_program_resource_manager))
 {
 }
 

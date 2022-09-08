@@ -79,106 +79,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * OpenGL state that can be shared between contexts (such as texture objects, buffer objects, etc).
-		 */
-		class SharedState
-		{
-		public:
-			//! Constructor.
-			SharedState();
-
-
-			/**
-			 * Returns the buffer resource manager.
-			 *
-			 * The returned resource manager can create an OpenGL buffer object (eg, vertex, pixel).
-			 */
-			const boost::shared_ptr<GLBuffer::resource_manager_type> &
-			get_buffer_resource_manager() const
-			{
-				return d_buffer_resource_manager;
-			}
-
-			/**
-			 * Returns the framebuffer resource manager.
-			 */
-			const boost::shared_ptr<GLFramebuffer::resource_manager_type> &
-			get_framebuffer_resource_manager() const
-			{
-				return d_framebuffer_resource_manager;
-			}
-
-			/**
-			 * Returns the shader program resource manager.
-			 */
-			const boost::shared_ptr<GLProgram::resource_manager_type> &
-			get_program_resource_manager() const
-			{
-				return d_program_resource_manager;
-			}
-
-			/**
-			 * Returns the renderbuffer resource manager.
-			 */
-			const boost::shared_ptr<GLRenderbuffer::resource_manager_type> &
-			get_renderbuffer_resource_manager() const
-			{
-				return d_renderbuffer_resource_manager;
-			}
-
-			/**
-			 * Returns the sampler resource manager.
-			 */
-			const boost::shared_ptr<GLSampler::resource_manager_type> &
-			get_sampler_resource_manager() const
-			{
-				return d_sampler_resource_manager;
-			}
-
-			/**
-			 * Returns the shader resource manager.
-			 */
-			const boost::shared_ptr<GLShader::resource_manager_type> &
-			get_shader_resource_manager() const
-			{
-				return d_shader_resource_manager;
-			}
-
-			/**
-			 * Returns the texture resource manager.
-			 */
-			const boost::shared_ptr<GLTexture::resource_manager_type> &
-			get_texture_resource_manager() const
-			{
-				return d_texture_resource_manager;
-			}
-
-			/**
-			 * Returns the vertex array resource manager.
-			 */
-			const boost::shared_ptr<GLVertexArray::resource_manager_type> &
-			get_vertex_array_resource_manager() const
-			{
-				return d_vertex_array_resource_manager;
-			}
-
-		private:
-
-			boost::shared_ptr<GLBuffer::resource_manager_type> d_buffer_resource_manager;
-			boost::shared_ptr<GLFramebuffer::resource_manager_type> d_framebuffer_resource_manager;
-			boost::shared_ptr<GLProgram::resource_manager_type> d_program_resource_manager;
-			boost::shared_ptr<GLRenderbuffer::resource_manager_type> d_renderbuffer_resource_manager;
-			boost::shared_ptr<GLSampler::resource_manager_type> d_sampler_resource_manager;
-			boost::shared_ptr<GLShader::resource_manager_type> d_shader_resource_manager;
-			boost::shared_ptr<GLTexture::resource_manager_type> d_texture_resource_manager;
-			boost::shared_ptr<GLVertexArray::resource_manager_type> d_vertex_array_resource_manager;
-		};
-
-
-		/**
 		 * Set the global default surface format (eg, used by QOpenGLWindow).
-		 *
-		 * This sets various parameters required for OpenGL rendering in GPlates.
 		 *
 		 * Note: This should be called before constructing the QApplication instance (on macOS at least).
 		 */
@@ -236,48 +137,28 @@ namespace GPlatesOpenGL
 		access_opengl();
 
 
-		/**
-		 * Returns the OpenGL state that can be shared with other OpenGL contexts.
-		 *
-		 * You can compare the pointers returned by @a get_shared_state on two
-		 * different contexts to see if they are sharing or not.
-		 */
-		boost::shared_ptr<const SharedState>
-		get_shared_state() const
-		{
-			return d_shared_state;
-		}
+	private: // For use by OpenGL resource object classes (such as @a GLTexture)...
 
-		/**
-		 * Returns the OpenGL state that can be shared with other OpenGL contexts.
-		 *
-		 * You can compare the pointers returned by @a get_shared_state on two
-		 * different contexts to see if they are sharing or not.
-		 */
-		boost::shared_ptr<SharedState>
-		get_shared_state()
-		{
-			return d_shared_state;
-		}
+		//
+		// Only resource object classes need to access their resource managers.
+		//
+		friend class GLBuffer;
+		friend class GLFramebuffer;
+		friend class GLProgram;
+		friend class GLRenderbuffer;
+		friend class GLSampler;
+		friend class GLShader;
+		friend class GLTexture;
+		friend class GLVertexArray;
 
-
-		/**
-		 * Call this before rendering a scene.
-		 *
-		 * NOTE: Only @a GL need call this.
-		 */
-		void
-		begin_render();
-
-
-		/**
-		 * Call this after rendering a scene.
-		 *
-		 * NOTE: Only @a GL need call this.
-		 */
-		void
-		end_render();
-
+		boost::shared_ptr<GLBuffer::resource_manager_type> d_buffer_resource_manager;
+		boost::shared_ptr<GLFramebuffer::resource_manager_type> d_framebuffer_resource_manager;
+		boost::shared_ptr<GLProgram::resource_manager_type> d_program_resource_manager;
+		boost::shared_ptr<GLRenderbuffer::resource_manager_type> d_renderbuffer_resource_manager;
+		boost::shared_ptr<GLSampler::resource_manager_type> d_sampler_resource_manager;
+		boost::shared_ptr<GLShader::resource_manager_type> d_shader_resource_manager;
+		boost::shared_ptr<GLTexture::resource_manager_type> d_texture_resource_manager;
+		boost::shared_ptr<GLVertexArray::resource_manager_type> d_vertex_array_resource_manager;
 
 	private:
 		/**
@@ -308,11 +189,6 @@ namespace GPlatesOpenGL
 		 * It's optional because we can't create it until @a initialise_gl is called.
 		 */
 		boost::optional<GLStateStore::non_null_ptr_type> d_state_store;
-
-		/**
-		 * OpenGL state that can be shared with another context.
-		 */
-		boost::shared_ptr<SharedState> d_shared_state;
 
 
 		/**
@@ -349,6 +225,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		deallocate_queued_object_resources();
+		friend class GL;
 	};
 }
 

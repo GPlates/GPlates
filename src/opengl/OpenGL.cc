@@ -68,9 +68,6 @@ GPlatesOpenGL::GL::GL(
 			d_default_viewport.x(), d_default_viewport.y(),
 			d_default_viewport.width(), d_default_viewport.height());
 
-	// Begin render scope.
-	d_context->begin_render();
-
 	// Note that we're expecting the current OpenGL state to be the *default* OpenGL state.
 }
 
@@ -80,8 +77,8 @@ GPlatesOpenGL::GL::~GL()
 	// Restore the default state.
 	d_current_state->reset_to_default();
 
-	// End render scope.
-	d_context->end_render();
+	// Deallocate OpenGL objects that have been released but not yet destroyed/deallocated.
+	d_context->deallocate_queued_object_resources();
 }
 
 

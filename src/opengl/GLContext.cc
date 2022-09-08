@@ -85,7 +85,14 @@ GPlatesOpenGL::GLContext::set_default_surface_format()
 
 
 GPlatesOpenGL::GLContext::GLContext() :
-	d_shared_state(new SharedState())
+	d_buffer_resource_manager(GLBuffer::resource_manager_type::create()),
+	d_framebuffer_resource_manager(GLFramebuffer::resource_manager_type::create()),
+	d_program_resource_manager(GLProgram::resource_manager_type::create()),
+	d_renderbuffer_resource_manager(GLRenderbuffer::resource_manager_type::create()),
+	d_sampler_resource_manager(GLSampler::resource_manager_type::create()),
+	d_shader_resource_manager(GLShader::resource_manager_type::create()),
+	d_texture_resource_manager(GLTexture::resource_manager_type::create()),
+	d_vertex_array_resource_manager(GLVertexArray::resource_manager_type::create())
 {
 	// Defined in ".cc" file because...
 	// non_null_ptr destructors require complete type of class they're referring to.
@@ -160,6 +167,7 @@ GPlatesOpenGL::GLContext::initialise_gl(
 void
 GPlatesOpenGL::GLContext::shutdown_gl()
 {
+	// Deallocate OpenGL objects that have been released but not yet destroyed/deallocated.
 	deallocate_queued_object_resources();
 
 	d_state_store = boost::none;
@@ -197,20 +205,6 @@ GPlatesOpenGL::GLContext::access_opengl()
 			d_state_store.get(),
 			default_viewport,
 			default_framebuffer_object);
-}
-
-
-void
-GPlatesOpenGL::GLContext::begin_render()
-{
-	deallocate_queued_object_resources();
-}
-
-
-void
-GPlatesOpenGL::GLContext::end_render()
-{
-	deallocate_queued_object_resources();
 }
 
 
@@ -270,30 +264,19 @@ GPlatesOpenGL::GLContext::get_version_functions(
 void
 GPlatesOpenGL::GLContext::deallocate_queued_object_resources()
 {
-	// If we're between 'initialise_gl()' and 'shutdown_gl()', otherwise wait until then to deallocate.
-	if (d_opengl_functions)
-	{
-		OpenGLFunctions &opengl_functions = *d_opengl_functions.get();
+	// We should be between 'initialise_gl()' and 'shutdown_gl()'.
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			d_opengl_functions,
+			GPLATES_ASSERTION_SOURCE);
 
-		get_shared_state()->get_buffer_resource_manager()->deallocate_queued_resources(opengl_functions);
-		get_shared_state()->get_framebuffer_resource_manager()->deallocate_queued_resources(opengl_functions);
-		get_shared_state()->get_program_resource_manager()->deallocate_queued_resources(opengl_functions);
-		get_shared_state()->get_renderbuffer_resource_manager()->deallocate_queued_resources(opengl_functions);
-		get_shared_state()->get_shader_resource_manager()->deallocate_queued_resources(opengl_functions);
-		get_shared_state()->get_texture_resource_manager()->deallocate_queued_resources(opengl_functions);
-		get_shared_state()->get_vertex_array_resource_manager()->deallocate_queued_resources(opengl_functions);
-	}
-}
+	OpenGLFunctions &opengl_functions = *d_opengl_functions.get();
 
-
-GPlatesOpenGL::GLContext::SharedState::SharedState() :
-	d_buffer_resource_manager(GLBuffer::resource_manager_type::create()),
-	d_framebuffer_resource_manager(GLFramebuffer::resource_manager_type::create()),
-	d_program_resource_manager(GLProgram::resource_manager_type::create()),
-	d_renderbuffer_resource_manager(GLRenderbuffer::resource_manager_type::create()),
-	d_sampler_resource_manager(GLSampler::resource_manager_type::create()),
-	d_shader_resource_manager(GLShader::resource_manager_type::create()),
-	d_texture_resource_manager(GLTexture::resource_manager_type::create()),
-	d_vertex_array_resource_manager(GLVertexArray::resource_manager_type::create())
-{
+	// Deallocate OpenGL objects that have been released but not yet destroyed/deallocated.
+	d_buffer_resource_manager->deallocate_queued_resources(opengl_functions);
+	d_framebuffer_resource_manager->deallocate_queued_resources(opengl_functions);
+	d_program_resource_manager->deallocate_queued_resources(opengl_functions);
+	d_renderbuffer_resource_manager->deallocate_queued_resources(opengl_functions);
+	d_shader_resource_manager->deallocate_queued_resources(opengl_functions);
+	d_texture_resource_manager->deallocate_queued_resources(opengl_functions);
+	d_vertex_array_resource_manager->deallocate_queued_resources(opengl_functions);
 }

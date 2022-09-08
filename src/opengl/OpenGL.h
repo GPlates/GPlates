@@ -153,19 +153,6 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Returns the @a GLContext passed into the constructor.
-		 *
-		 * Note that a shared pointer is not returned to avoid possibility of cyclic shared references
-		 * leading to memory leaks (@a GLContext owns a few resources which should not own it).
-		 */
-		GLContext &
-		get_context() const
-		{
-			return *d_context;
-		}
-
-
-		/**
 		 * Returns the OpenGL implementation-dependent capabilities and parameters.
 		 */
 		const GLCapabilities &
@@ -1252,7 +1239,7 @@ namespace GPlatesOpenGL
 	private: // For use by OpenGL resource object classes (such as @a GLTexture)...
 
 		//
-		// Only resource object classes should be able to access the low-level OpenGL functions.
+		// Only resource object classes should be able to access the low-level OpenGL functions and OpenGL context.
 		//
 		friend class GLBuffer;
 		friend class GLFramebuffer;
@@ -1267,6 +1254,18 @@ namespace GPlatesOpenGL
 		get_opengl_functions()
 		{
 			return d_opengl_functions;
+		}
+
+		/**
+		 * Returns the @a GLContext passed into the constructor.
+		 *
+		 * Note that a shared pointer is not returned to avoid possibility of cyclic shared references
+		 * leading to memory leaks (@a GLContext owns a few resources which should not own it).
+		 */
+		GLContext &
+		get_context() const
+		{
+			return *d_context;
 		}
 
 	private:

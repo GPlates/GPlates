@@ -36,7 +36,7 @@ GPlatesOpenGL::GLVertexArray::GLVertexArray(
 			resource_type::create(
 					gl.get_opengl_functions(),
 					gl.get_capabilities(),
-					gl.get_context().get_shared_state()->get_vertex_array_resource_manager()))
+					gl.get_context().d_vertex_array_resource_manager))
 {
 }
 

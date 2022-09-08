@@ -36,7 +36,7 @@ GPlatesOpenGL::GLBuffer::GLBuffer(
 			resource_type::create(
 					gl.get_opengl_functions(),
 					gl.get_capabilities(),
-					gl.get_context().get_shared_state()->get_buffer_resource_manager()))
+					gl.get_context().d_buffer_resource_manager))
 {
 }
 
