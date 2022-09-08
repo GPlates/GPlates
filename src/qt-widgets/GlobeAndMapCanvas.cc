@@ -260,7 +260,9 @@ GPlatesQtWidgets::GlobeAndMapCanvas::paintGL()
 	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->access_opengl();
 
 	// The viewport is in device pixels since that is what OpenGL will use to render the scene.
-	const GPlatesOpenGL::GLViewport viewport(0, 0, width(), height());
+	const GPlatesOpenGL::GLViewport viewport(0, 0,
+			width() * devicePixelRatio(),
+			height() * devicePixelRatio());
 
 	// Clear colour buffer of the main framebuffer.
 	//
