@@ -264,12 +264,19 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Access OpenGL.
+		 * Access OpenGL for the lifetime of the returned @GL object.
 		 *
 		 * The returned object should be used as a local object (on C++ runtime stack) and only
 		 * created/used when need to render something (it should not be stored persistently).
 		 *
 		 * Typically a @a GL is created each time a frame needs drawing.
+		 *
+		 * The viewport/scissor rectangle is set to the current dimensions (in device pixels) of the
+		 * default framebuffer of the @a QOpenGLWindow passed to @a initialise_gl.
+		 * And this is then considered the default viewport/scissor rectangle for the current rendering scope.
+		 *
+		 * NOTE: OpenGL must be in the default state before entering this scope.
+		 *       On exiting this scope the default OpenGL state is restored.
 		 */
 		GPlatesGlobal::PointerTraits<GL>::non_null_ptr_type
 		access_opengl();

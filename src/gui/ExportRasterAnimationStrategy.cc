@@ -1310,11 +1310,8 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 		// Compress raster if it is supported and has been turned on.
 		const bool export_raster_compress = d_configuration->compress && d_configuration->compress.get();
 
-		// Need an active OpenGL context before any OpenGL rendering.
+		// Start a render scope (all GL calls should be done inside this scope).
 		GPlatesOpenGL::GL::non_null_ptr_type gl = create_gl(*d_export_animation_context_ptr);
-
-		// Start an explicit render scope (all GL calls should be done inside this scope).
-		GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
 		// Initialise the tile framebuffer (and pixel buffer) if first time called for the current export sequence.
 		if (!d_gl_resources)
@@ -1332,10 +1329,6 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 					d_export_animation_context_ptr->view_state(),
 					colour_rasters);
 
-			// End an explicit render scope to exclude any direct modifications of OpenGL via Qt
-			// such as 'update_status_message()' below.
-			render_scope.end();
-
 			// This will be used to render rasters as colour.
 			const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type gl_visual_layers =
 					d_export_animation_context_ptr->viewport_window().reconstruction_view_widget()
@@ -1352,23 +1345,27 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 				export_raster_filename = d_export_animation_context_ptr->target_dir()
 						.absoluteFilePath(export_raster_basename);
 
+				// Reset to the default OpenGL state.
+				//
+				// NOTE: We need to reset to the default OpenGL state before calling 'update_status_message()'
+				//       because it gets Qt to paint which modifies the OpenGL state which confuses GL.
+				//       Previously this caused a bug that was *very* difficult to track down - the bug
+				//       showed up as missing cube map tiles in the (reconstructed) raster image and,
+				//       strangely enough, even some rendering of parts of the actual map canvas.
+				//       The client's contract to GL (within a render scope) is to never modify
+				//       the OpenGL global state directly (to only make changes via GL) because GL
+				//       shadows the OpenGL global state. We can get around that by resetting to the
+				//       default OpenGL state, then doing some direct native OpenGL calls and then restoring.
+				GPlatesOpenGL::GL::StateScope save_restore_state(*gl, true/*reset_to_default_state*/);
+
 				// Notify user which raster we're currently exporting.
 				d_export_animation_context_ptr->update_status_message(
 						QObject::tr("Writing colour raster at frame %2 to file \"%1\"...")
 						.arg(export_raster_filename.get())
 						.arg(frame_index) );
 
-				// Start a begin_render/end_render scope.
-				//
-				// NOTE: We *don't* include the above 'update_status_message()' inside this render scope
-				// because it gets Qt to paint which modifies the OpenGL state which confuses GL.
-				// Previously this caused a bug that was *very* difficult to track down - the bug
-				// showed up as missing cube map tiles in the (reconstructed) raster image and,
-				// strangely enough, even some rendering of parts of the actual map canvas.
-				// The client's contract to GL (within a render scope) is to never modify
-				// the OpenGL global state directly (to only make changes via GL) because GL
-				// shadows the OpenGL global state.
-				GPlatesOpenGL::GL::RenderScope render_scope_inner(*gl);
+				// Restore the OpenGL state to what it was before calling 'update_status_message()'. 
+				save_restore_state.restore();
 
 				export_colour_raster(
 						raster,
@@ -1403,10 +1400,6 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 									*gl,
 									*map_projection));
 
-			// End an explicit render scope to exclude any direct modifications of OpenGL via Qt
-			// such as 'update_status_message()' below.
-			render_scope.end();
-
 			// Iterate over the numerical rasters and export them.
 			for (unsigned int raster_index = 0; raster_index < numerical_rasters.size(); ++raster_index)
 			{
@@ -1418,21 +1411,27 @@ GPlatesGui::ExportRasterAnimationStrategy::do_export_iteration(
 				export_raster_filename = d_export_animation_context_ptr->target_dir()
 						.absoluteFilePath(export_raster_basename);
 
+				// Reset to the default OpenGL state.
+				//
+				// NOTE: We need to reset to the default OpenGL state before calling 'update_status_message()'
+				//       because it gets Qt to paint which modifies the OpenGL state which confuses GL.
+				//       Previously this caused a bug that was *very* difficult to track down - the bug
+				//       showed up as missing cube map tiles in the (reconstructed) raster image and,
+				//       strangely enough, even some rendering of parts of the actual map canvas.
+				//       The client's contract to GL (within a render scope) is to never modify
+				//       the OpenGL global state directly (to only make changes via GL) because GL
+				//       shadows the OpenGL global state. We can get around that by resetting to the
+				//       default OpenGL state, then doing some direct native OpenGL calls and then restoring.
+				GPlatesOpenGL::GL::StateScope save_restore_state(*gl, true/*reset_to_default_state*/);
+
 				// Notify user which raster we're currently exporting.
 				d_export_animation_context_ptr->update_status_message(
 						QObject::tr("Writing numerical raster at frame %2 to file \"%1\"...")
 						.arg(export_raster_filename.get())
 						.arg(frame_index) );
 
-				// Start a begin_render/end_render scope.
-				//
-				// NOTE: We *don't* include the above 'update_status_message()' inside this render scope
-				// because it gets Qt to paint which modifies the OpenGL state which confuses GL.
-				// Previously this caused a bug that was *very* difficult to track down.
-				// The client's contract to GL (within a render scope) is to never modify
-				// the OpenGL global state directly (to only make changes via GL) because GL
-				// shadows the OpenGL global state.
-				GPlatesOpenGL::GL::RenderScope render_scope_inner(*gl);
+				// Restore the OpenGL state to what it was before calling 'update_status_message()'. 
+				save_restore_state.restore();
 
 				export_numerical_raster(
 						raster,
@@ -1507,12 +1506,8 @@ GPlatesGui::ExportRasterAnimationStrategy::wrap_up(
 	// Destroy the tile framebuffer (and pixel buffer) if allocated.
 	if (d_gl_resources)
 	{
-		// Need an active OpenGL context.
+		// Start a render scope (all GL calls should be done inside this scope).
 		GPlatesOpenGL::GL::non_null_ptr_type gl = create_gl(*d_export_animation_context_ptr);
-
-		// Start an explicit render scope (all GL calls, including queueing for deallocation,
-		// should be done inside this scope).
-		GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
 		// Queue framebuffer (and pixel buffer) for deallocation (actually deallocates at end of render scope).
 		d_gl_resources = boost::none;

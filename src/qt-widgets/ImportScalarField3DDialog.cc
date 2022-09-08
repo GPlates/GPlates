@@ -535,7 +535,6 @@ GPlatesQtWidgets::ImportScalarField3DDialog::generate_scalar_field(
 
 	// Start a render scope (all GL calls should be done inside this scope).
 	GPlatesOpenGL::GL::non_null_ptr_type gl = create_gl();
-	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
 	//
 	// Now generate the 3D scalar field file from the depth layers.
@@ -573,12 +572,18 @@ GPlatesQtWidgets::ImportScalarField3DDialog::generate_scalar_field(
 	// Generate the scalar field file.
 	if (!scalar_field_generator->generate_scalar_field(*gl, read_errors))
 	{
-		render_scope.end();
+		// Reset to the default OpenGL state in case 'progress_dialog->close()' gets Qt to paint using
+		// native OpenGL calls (which would state which confuses our GL class that shadows OpenGL state.
+		GPlatesOpenGL::GL::StateScope save_restore_state(*gl, true/*reset_to_default_state*/);
+
 		progress_dialog->close();
 		return false;
 	}
 
-	render_scope.end();
+	// Reset to the default OpenGL state in case 'progress_dialog->close()' gets Qt to paint using
+	// native OpenGL calls (which would state which confuses our GL class that shadows OpenGL state.
+	GPlatesOpenGL::GL::StateScope save_restore_state(*gl, true/*reset_to_default_state*/);
+
 	progress_dialog->close();
 
 	return true;

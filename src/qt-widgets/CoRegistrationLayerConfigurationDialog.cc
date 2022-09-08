@@ -904,7 +904,6 @@ GPlatesQtWidgets::CoRegistrationLayerConfigurationDialog::setup_raster_level_of_
 
 	// Start a render scope (all GL calls should be done inside this scope).
 	GPlatesOpenGL::GL::non_null_ptr_type gl = create_gl();
-	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
 	// Get the multi-resolution raster from the layer proxy.
 	// The number of levels of detail should be independent of time since a time-dependent raster

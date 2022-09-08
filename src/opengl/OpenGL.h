@@ -109,47 +109,6 @@ namespace GPlatesOpenGL
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GL> non_null_ptr_to_const_type;
 
 
-		class StateScope;
-
-		/**
-		 * RAII class to scope all rendering calls (in this class).
-		 *
-		 * All @a GL calls should be done inside this scope.
-		 *
-		 * NOTE: OpenGL must be in the default state before entering this scope.
-		 *       On exiting this scope the default OpenGL state is restored.
-		 *
-		 * On entering this scope the viewport/scissor rectangle is set to the current dimensions
-		 * (in device pixels) of the framebuffer currently attached to the OpenGL context.
-		 * And this is then considered the default viewport for the current rendering scope.
-		 * Note that the viewport dimensions can change when the window (attached to context) is resized,
-		 * so the default viewport can be different from one render scope to the next.
-		 */
-		class RenderScope :
-				private boost::noncopyable
-		{
-		public:
-			explicit
-			RenderScope(
-					GL &gl);
-
-			/**
-			 * Exit the current rendering scope (unless @a end has been called).
-			 */
-			~RenderScope();
-
-			/**
-			 * Opportunity to exit the current scope (before destructor is called).
-			 */
-			void
-			end();
-
-		private:
-			GL &d_gl;
-			bool d_have_ended;
-		};
-
-
 		/**
 		 * RAII class to save the *global* state on entering a scope and restore on exiting the scope.
 		 *
@@ -188,6 +147,9 @@ namespace GPlatesOpenGL
 			GL &d_gl;
 			bool d_have_restored;
 		};
+
+
+		~GL();
 
 
 		/**

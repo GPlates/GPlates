@@ -143,7 +143,6 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_image(
 	//
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
 	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->access_opengl();
-	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
 	// The image to render/copy the scene into.
 	//
@@ -208,7 +207,6 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initialize_gl()
 	//
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
 	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->access_opengl();
-	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
 	// NOTE: We should not perform any operation that affects the default framebuffer (such as 'glClear()')
 	//       because it's possible the default framebuffer (associated with this QOpenGLWindow) is not yet
@@ -233,7 +231,6 @@ GPlatesQtWidgets::GlobeAndMapCanvas::shutdown_gl()
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
 	{
 		GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->access_opengl();
-		GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
 		// Shutdown the scene.
 		d_scene->shutdown_gl(*gl);
@@ -261,7 +258,6 @@ GPlatesQtWidgets::GlobeAndMapCanvas::paintGL()
 	//
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
 	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->access_opengl();
-	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
 	// The viewport is in device pixels since that is what OpenGL will use to render the scene.
 	const GPlatesOpenGL::GLViewport viewport(0, 0, width(), height());

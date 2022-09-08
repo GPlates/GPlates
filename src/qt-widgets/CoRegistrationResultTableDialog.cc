@@ -162,7 +162,6 @@ GPlatesQtWidgets::CoRegistrationResultTableDialog::update()
 
 	// Start a render scope (all GL calls should be done inside this scope).
 	GPlatesOpenGL::GL::non_null_ptr_type gl = gl_context->access_opengl();
-	GPlatesOpenGL::GL::RenderScope render_scope(*gl);
 
 	//
 	// Get the co-registration results (perform the co-registration).

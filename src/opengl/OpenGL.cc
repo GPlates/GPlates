@@ -53,6 +53,35 @@ GPlatesOpenGL::GL::GL(
 	d_default_draw_read_buffer(GL_BACK),
 	d_default_framebuffer_resource(default_framebuffer_object)
 {
+	// On entering this scope set the default viewport/scissor rectangle to the dimensions
+	// (in device pixels) of the framebuffer currently attached to the OpenGL context.
+	// This is then considered the default viewport for the current rendering scope.
+	//
+	// We explicitly set the viewport/scissor OpenGL state here. This is unusual since it's all meant
+	// to be wrapped by GLState and the GLStateSet derivations. We do this because whenever GL::Viewport()
+	// or GL::Scissor() are called, we pass the default viewport to GLState (which shadows the actual OpenGL
+	// state) and hence our default viewport should represent the actual OpenGL state (as seen by OpenGL).
+	d_opengl_functions.glViewport(
+			d_default_viewport.x(), d_default_viewport.y(),
+			d_default_viewport.width(), d_default_viewport.height());
+	d_opengl_functions.glScissor(
+			d_default_viewport.x(), d_default_viewport.y(),
+			d_default_viewport.width(), d_default_viewport.height());
+
+	// Begin render scope.
+	d_context->begin_render();
+
+	// Note that we're expecting the current OpenGL state to be the *default* OpenGL state.
+}
+
+
+GPlatesOpenGL::GL::~GL()
+{
+	// Restore the default state.
+	d_current_state->reset_to_default();
+
+	// End render scope.
+	d_context->end_render();
 }
 
 
@@ -1431,68 +1460,6 @@ GPlatesOpenGL::GL::is_capability_enabled(
 		GLuint index) const
 {
 	return d_current_state->is_capability_enabled(cap, index);
-}
-
-
-GPlatesOpenGL::GL::RenderScope::RenderScope(
-		GL &gl) :
-	d_gl(gl),
-	d_have_ended(false)
-{
-	// On entering this scope set the default viewport/scissor rectangle to the dimensions
-	// (in device pixels) of the framebuffer currently attached to the OpenGL context.
-	// This is then considered the default viewport for the current rendering scope.
-	//
-	// We explicitly set the viewport/scissor OpenGL state here. This is unusual since it's all meant
-	// to be wrapped by GLState and the GLStateSet derivations. We do this because whenever GL::Viewport()
-	// or GL::Scissor() are called, we pass the default viewport to GLState (which shadows the actual OpenGL
-	// state) and hence our default viewport should represent the actual OpenGL state (as seen by OpenGL).
-	d_gl.d_opengl_functions.glViewport(
-			d_gl.d_default_viewport.x(), d_gl.d_default_viewport.y(),
-			d_gl.d_default_viewport.width(), d_gl.d_default_viewport.height());
-	d_gl.d_opengl_functions.glScissor(
-			d_gl.d_default_viewport.x(), d_gl.d_default_viewport.y(),
-			d_gl.d_default_viewport.width(), d_gl.d_default_viewport.height());
-
-	// Begin render scope.
-	d_gl.d_context->begin_render();
-
-	// Note that we're expecting the current OpenGL state to be the *default* OpenGL state.
-}
-
-
-GPlatesOpenGL::GL::RenderScope::~RenderScope()
-{
-	// If an exception is thrown then unfortunately we have to lump it since exceptions cannot leave destructors.
-	// But we log the exception and the location it was emitted.
-	try
-	{
-		end();
-	}
-	catch (std::exception &exc)
-	{
-		qWarning() << "GL: exception thrown during render scope: " << exc.what();
-	}
-	catch (...)
-	{
-		qWarning() << "GL: exception thrown during render scope: Unknown error";
-	}
-}
-
-
-void
-GPlatesOpenGL::GL::RenderScope::end()
-{
-	if (!d_have_ended)
-	{
-		// Restore the default state.
-		d_gl.d_current_state->reset_to_default();
-
-		// End render scope.
-		d_gl.d_context->end_render();
-
-		d_have_ended = true;
-	}
 }
 
 
