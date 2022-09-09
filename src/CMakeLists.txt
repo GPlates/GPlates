@@ -13,7 +13,9 @@
 ###############
 # Find Vulkan #
 #
-find_package(Vulkan REQUIRED)
+if (GPLATES_USE_VULKAN_BACKEND)
+	find_package(Vulkan REQUIRED)
+endif()
 
 #############
 # Find ZLIB #
@@ -232,7 +234,7 @@ set(CMAKE_AUTORCC ON)
 # However our minimum supported Ubuntu is Focal which uses Qt 5.12 anyway.
 #
 # Note: We actually need Qt 5.15 because QVulkanWindow::setQueueCreateInfoModifier(), added in 5.15, enables
-#       us to obtain a Vulkan compute queue (so can use compute shaders).
+#       us to request a Vulkan compute queue (so can use compute shaders).
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
 if (QT_VERSION_MAJOR EQUAL 6)
 	# Temporarily use Core5Compat API (until fully moved to Qt6) so can still use some deprecated Qt5 APIs.
@@ -240,7 +242,12 @@ if (QT_VERSION_MAJOR EQUAL 6)
 	# Remove Core5Compat when no longer supporting Qt5.
 	#
 	# Also Qt6 moved the QOpenGL* classes from (Gui module in Qt5) back into OpenGL (and new OpenGLWidgets) modules.
-	find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml Core5Compat OpenGL OpenGLWidgets)
+	if (GPLATES_USE_VULKAN_BACKEND)
+		# When using Vulkan we still use the OpenGL headers (for constants and typedefs) but don't need OpenGL widgets.
+		find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml Core5Compat OpenGL)
+	else()
+		find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml Core5Compat OpenGL OpenGLWidgets)
+	endif()
 else()
 	find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml XmlPatterns)
 endif()
@@ -809,7 +816,9 @@ endif()
 #
 # But we still need the include path to the Vulkan headers since we include Qt's headers (like "QVulkanWindow.h")
 # and they include the Vulkan headers.
-target_include_directories(${SOURCE_TARGET} SYSTEM PUBLIC ${Vulkan_INCLUDE_DIRS})
+if (GPLATES_USE_VULKAN_BACKEND)
+	target_include_directories(${SOURCE_TARGET} SYSTEM PUBLIC ${Vulkan_INCLUDE_DIRS})
+endif()
 
 #
 # ZLIB dependency.
@@ -856,7 +865,12 @@ if (QT_VERSION_MAJOR EQUAL 6)
 	# Remove this when no longer supporting Qt5.
 	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::Core5Compat)
 	# Qt6 moved the QOpenGL* classes from (Gui module in Qt5) back into OpenGL (and new OpenGLWidgets) modules.
-	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::OpenGL Qt6::OpenGLWidgets)
+	if (GPLATES_USE_VULKAN_BACKEND)
+		# When using Vulkan we still use the OpenGL headers (for constants and typedefs) but don't need OpenGL widgets.
+		target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::OpenGL)
+	else()
+		target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::OpenGL Qt6::OpenGLWidgets)
+	endif()
 else()
 	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt5::XmlPatterns)
 endif()

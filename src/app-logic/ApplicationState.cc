@@ -51,7 +51,10 @@
 
 #include "model/NotificationGuard.h"
 
-#include "opengl/VulkanException.h"
+#include "global/config.h" // For GPLATES_USE_VULKAN_BACKEND
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+#	include "opengl/VulkanException.h"
+#endif
 
 #include "utils/Profile.h"
 
@@ -107,8 +110,10 @@ GPlatesAppLogic::ApplicationState::ApplicationState() :
 	d_callback_feature_store(d_model->root()),
 	d_age_model_collection(new AgeModelCollection())
 {
+#if defined(GPLATES_USE_VULKAN_BACKEND)
 	// Initialise the Vulkan graphics and compute library.
 	initialise_vulkan();
+#endif
 
 	// Register default layer task types with the layer task registry.
 	register_default_layer_task_types(*d_layer_task_registry, *this);
@@ -446,6 +451,7 @@ GPlatesAppLogic::ApplicationState::find_current_topological_sections() const
 }
 
 
+#if defined(GPLATES_USE_VULKAN_BACKEND)
 void
 GPlatesAppLogic::ApplicationState::initialise_vulkan()
 {
@@ -479,6 +485,7 @@ GPlatesAppLogic::ApplicationState::initialise_vulkan()
 
 	qDebug() << "Vulkan enabled validation layers:" << d_vulkan_instance.layers();
 }
+#endif
 
 
 void

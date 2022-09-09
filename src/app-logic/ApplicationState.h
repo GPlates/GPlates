@@ -34,7 +34,11 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <QObject>
-#include <QVulkanInstance>
+
+#include "global/config.h" // For GPLATES_USE_VULKAN_BACKEND
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+#	include <QVulkanInstance>
+#endif
 
 #include "FeatureCollectionFileState.h"
 #include "Layer.h"
@@ -281,6 +285,7 @@ namespace GPlatesAppLogic
 			return *d_age_model_collection;
 		}
 
+#if defined(GPLATES_USE_VULKAN_BACKEND)
 		/**
 		 * The Vulkan graphics and compute library.
 		 *
@@ -297,6 +302,7 @@ namespace GPlatesAppLogic
 		{
 			return d_vulkan_instance;
 		}
+#endif
 
 
 		/**
@@ -620,13 +626,6 @@ namespace GPlatesAppLogic
 		boost::scoped_ptr<AgeModelCollection> d_age_model_collection;
 
 		/**
-		 * The Vulkan graphics and compute library.
-		 *
-		 * Note: The Vulkan device (used for rendering) is obtained from a QVulkanWindow (see GlobeAndMapCanvas).
-		 */
-		QVulkanInstance d_vulkan_instance;
-
-		/**
 		 * Feature IDs of topological sections referenced for *all* times by all topologies
 		 * (topological geometry and network) in all loaded files.
 		 *
@@ -636,11 +635,20 @@ namespace GPlatesAppLogic
 		mutable boost::optional< std::set<GPlatesModel::FeatureId> > d_current_topological_sections;
 
 
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+		/**
+		 * The Vulkan graphics and compute library.
+		 *
+		 * Note: The Vulkan device (used for rendering) is obtained from a QVulkanWindow (see GlobeAndMapCanvas).
+		 */
+		QVulkanInstance d_vulkan_instance;
+
 		/**
 		 * Initialise the Vulkan graphics and compute library.
 		 */
 		void
 		initialise_vulkan();
+#endif
 
 		/**
 		 * Make signal/slot connections that coordinate the application logic structure

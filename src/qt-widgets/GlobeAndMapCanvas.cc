@@ -32,7 +32,10 @@
 
 #include "GlobeAndMapCanvas.h"
 
+#include "app-logic/ApplicationState.h"
+
 #include "global/AssertionFailureException.h"
+#include "global/config.h" // For GPLATES_USE_VULKAN_BACKEND
 #include "global/GPlatesAssert.h"
 #include "global/GPlatesException.h"
 
@@ -52,7 +55,11 @@
 
 GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 		GPlatesPresentation::ViewState &view_state) :
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+	QVulkanWindow(),
+#else
 	QOpenGLWindow(),
+#endif
 	d_gl_context(GPlatesOpenGL::GLContext::create()),
 	d_initialised_gl(false),
 	// The following unit-vector initialisation value is arbitrary.
@@ -63,6 +70,11 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 	d_scene_overlays(GPlatesGui::SceneOverlays::create(view_state)),
 	d_scene_renderer(GPlatesGui::SceneRenderer::create(view_state))
 {
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+	// Set the Vulkan instance in this QVulkanWindow.
+	setVulkanInstance(&view_state.get_application_state().get_vulkan_instance());
+#endif
+
 	// Update our canvas whenever the RenderedGeometryCollection gets updated.
 	// This will cause 'paintGL()' to be called which will visit the rendered
 	// geometry collection and redraw it.
@@ -118,11 +130,13 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_image(
 		const QSize &image_size_in_device_independent_pixels,
 		const GPlatesGui::Colour &image_clear_colour)
 {
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
 	// Make sure the OpenGL context is current, and then initialise OpenGL if we haven't already.
 	//
 	// Note: We're not called from 'paintEvent()' so we can't be sure the OpenGL context is current.
 	//       And we also don't know if 'initializeGL()' has been called yet.
 	makeCurrent();
+#endif
 	if (!d_initialised_gl)
 	{
 		initialize_gl();
@@ -167,9 +181,15 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_image(
 void
 GPlatesQtWidgets::GlobeAndMapCanvas::update_canvas()
 {
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+	requestUpdate();
+#else
 	update();
+#endif
 }
 
+
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
 
 void
 GPlatesQtWidgets::GlobeAndMapCanvas::initializeGL() 
@@ -180,14 +200,18 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initializeGL()
 	initialize_gl();
 }
 
+#endif
+
 
 void 
 GPlatesQtWidgets::GlobeAndMapCanvas::initialize_gl()
 {
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
 	// Call 'shutdown_gl()' when the QOpenGLContext is about to be destroyed.
 	QObject::connect(
 			context(), SIGNAL(aboutToBeDestroyed()),
 			this, SLOT(shutdown_gl()));
+#endif
 
 	// Initialise our context-like object first.
 	d_gl_context->initialise_gl(*this);
@@ -197,7 +221,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initialize_gl()
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
 	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->access_opengl();
 
-	// NOTE: We should not perform any operation that affects the default framebuffer (such as 'glClear()')
+	// NOTE: We should not perform any operation that affects the default framebuffer (such as 'gl.Clear()')
 	//       because it's possible the default framebuffer (associated with this QOpenGLWindow) is not yet
 	//       set up correctly despite its OpenGL context being the current rendering context.
 
@@ -233,15 +257,21 @@ GPlatesQtWidgets::GlobeAndMapCanvas::shutdown_gl()
 
 	d_initialised_gl = false;
 
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
 	// Disconnect 'shutdown_gl()' now that the QOpenGLContext is about to be destroyed.
 	QObject::disconnect(
 			context(), SIGNAL(aboutToBeDestroyed()),
 			this, SLOT(shutdown_gl()));
+#endif
 }
 
 
-void 
+void
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+GPlatesQtWidgets::GlobeAndMapCanvas::paint_gl()
+#else
 GPlatesQtWidgets::GlobeAndMapCanvas::paintGL()
+#endif
 {
 	// Start a render scope (all GL calls should be done inside this scope).
 	//
@@ -272,14 +302,25 @@ GPlatesQtWidgets::GlobeAndMapCanvas::paintGL()
 }
 
 
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
+
 void
 GPlatesQtWidgets::GlobeAndMapCanvas::paintEvent(
 		QPaintEvent *paint_event)
 {
 	QOpenGLWindow::paintEvent(paint_event);
 
-	// If d_mouse_press_info is not boost::none, then mouse is down.
-	Q_EMIT repainted(static_cast<bool>(d_mouse_press_info));
+	emit_repainted();
+}
+
+#endif
+
+
+void
+GPlatesQtWidgets::GlobeAndMapCanvas::emit_repainted()
+{
+	const bool mouse_is_down = static_cast<bool>(d_mouse_press_info);
+	Q_EMIT repainted(mouse_is_down);
 }
 
 
@@ -538,7 +579,12 @@ GPlatesQtWidgets::GlobeAndMapCanvas::keyPressEvent(
 			break;
 
 		default:
-			QOpenGLWindow::keyPressEvent(key_event);
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+			QVulkanWindow
+#else
+			QOpenGLWindow
+#endif
+				::keyPressEvent(key_event);
 	}
 }
 

@@ -167,6 +167,13 @@ endif()
 option(GPLATES_PYTHON_3 "Compile with Python 3 (not Python 2)." true)
 
 
+# Whether to use Vulkan instead of OpenGL.
+#
+# Ultimately we will use Vulkan for all platforms (since macOS deprecated OpenGL and only supports OpenGL 4.1).
+# But development will continue to use OpenGL 4.5 (while porting to Vulkan on a separate development branch).
+option(GPLATES_USE_VULKAN_BACKEND "True to use Vulkan (instead of OpenGL)." true)
+
+
 # Whether to enable GPlates custom CPU profiling functionality.
 #
 # Is false by default. However note that the custom build type 'ProfileGplates' effectively

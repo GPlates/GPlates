@@ -17,6 +17,9 @@
 #cmakedefine GPLATES_STANDALONE_GDAL_DATA_DIR "@GPLATES_STANDALONE_GDAL_DATA_DIR@"
 #cmakedefine GPLATES_STANDALONE_PYTHON_STDLIB_DIR "@GPLATES_STANDALONE_PYTHON_STDLIB_DIR@"
 
+// Whether to use Vulkan instead of OpenGL.
+#cmakedefine GPLATES_USE_VULKAN_BACKEND
+
 /*
  * Whether GPlates compiles in support for profiling CPU usage of source code.
  *

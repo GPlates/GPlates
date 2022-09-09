@@ -32,15 +32,20 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
+#include "global/config.h" // For GPLATES_USE_VULKAN_BACKEND
  // For OpenGL constants and typedefs...
 // Note: Cannot include "OpenGL.h" due to cyclic dependency with class GL.
 #include <qopengl.h>
-#include <QPair>
-#include <QOpenGLContext>
-#include <QOpenGLVersionFunctions>  // For QAbstractOpenGLFunctions
-#include <QOpenGLVersionProfile>
-#include <QOpenGLWindow>
-#include <QSurfaceFormat>
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+#	include <QVulkanInstance>
+#	include <QVulkanWindow>
+#else
+#	include <QPair>
+#	include <QOpenGLContext>
+#	include <QOpenGLVersionFunctions>  // For QAbstractOpenGLFunctions
+#	include <QOpenGLVersionProfile>
+#	include <QOpenGLWindow>
+#endif
 
 #include "GLCapabilities.h"
 
@@ -70,6 +75,7 @@ namespace GPlatesOpenGL
 		typedef GPlatesUtils::non_null_intrusive_ptr<const GLContext> non_null_ptr_to_const_type;
 
 
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
 		/**
 		 * Set the global default surface format (eg, used by QOpenGLWindow).
 		 *
@@ -78,6 +84,7 @@ namespace GPlatesOpenGL
 		static
 		void
 		set_default_surface_format();
+#endif
 
 
 		/**
@@ -97,14 +104,19 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The OpenGL context represents the specified QOpenGLWindow.
+		 * This context represents the specified QVulkanWindow (or QOpenGLWindow).
 		 */
 		void
 		initialise_gl(
-				QOpenGLWindow &opengl_window);
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+			QVulkanWindow &vulkan_window
+#else
+			QOpenGLWindow &opengl_window
+#endif
+		);
 
 		/**
-		 * The OpenGL context is about to be destroyed.
+		 * The OpenGL context (or Vulkan device) is about to be destroyed.
 		 */
 		void
 		shutdown_gl();
@@ -158,12 +170,17 @@ namespace GPlatesOpenGL
 		}
 
 	private:
+
 		/**
-		 * We reference the QOpenGLContext of a particular QOpenGLWindow.
+		 * We reference the VkDevice (or QOpenGLContext) of a particular QVulkanWindow (or QOpenGLWindow).
 		 *
 		 * It's only valid between @a initialise_gl and @a shutdown_gl.
 		 */
-		boost::optional<QOpenGLWindow &> d_opengl_window;
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+		boost::optional<QVulkanWindow &> d_surface;
+#else
+		boost::optional<QOpenGLWindow &> d_surface;
+#endif
 
 		/**
 		 * The OpenGL functions for the version and profile of this context.
@@ -199,16 +216,19 @@ namespace GPlatesOpenGL
 		boost::shared_ptr<GLContext> d_context_handle;
 
 
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
 		/**
 		 * The *required* OpenGL version (in a core profile).
 		 */
 		static const QPair<int, int> REQUIRED_OPENGL_VERSION;
+#endif
 
 
 		//! Constructor.
 		GLContext();
 
 
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
 		/**
 		 * Returns the OpenGL functions (via Qt) of the specified version core profile in the OpenGL context.
 		 *
@@ -221,9 +241,10 @@ namespace GPlatesOpenGL
 		 */
 		template <class OpenGLFunctionsType>
 		boost::optional<OpenGLFunctionsType *>
-		get_version_functions(
+		get_opengl_version_functions(
 				int major_version,
 				int minor_version) const;
+#endif
 	};
 }
 

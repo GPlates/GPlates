@@ -27,12 +27,15 @@
 #include <utility>
 #include <QtGlobal>
 #include <QDebug>
-#include <QOpenGLFunctions_4_5_Core>
-#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
- // Qt6 moved QOpenGLContext::versionFunctions() to QOpenGLVersionFunctionsFactory::get().
-#include <QOpenGLVersionFunctionsFactory>
+#include "global/config.h" // For GPLATES_USE_VULKAN_BACKEND
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
+#	include <QOpenGLFunctions_4_5_Core>
+#	if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+	// Qt6 moved QOpenGLContext::versionFunctions() to QOpenGLVersionFunctionsFactory::get().
+#	include <QOpenGLVersionFunctionsFactory>
+#	endif
+#	include <QSurfaceFormat>
 #endif
-#include <QSurfaceFormat>
 
 #include "GLContext.h"
 
@@ -46,6 +49,7 @@
 #include "global/PreconditionViolationError.h"
 
 
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
 // Require OpenGL 4.5
 //
 // Note: macOS only supports OpenGL version 4.1 (and they've deprecated OpenGL).
@@ -53,8 +57,10 @@
 //       But we'll be switching over to Vulkan soon though (for all platforms).
 //       While that switchover is happening we'll use OpenGL 4.5 (which has similar functionality to Vulkan).
 const QPair<int, int> GPlatesOpenGL::GLContext::REQUIRED_OPENGL_VERSION(4, 5);
+#endif
 
 
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
 void
 GPlatesOpenGL::GLContext::set_default_surface_format()
 {
@@ -82,6 +88,7 @@ GPlatesOpenGL::GLContext::set_default_surface_format()
 
 	QSurfaceFormat::setDefaultFormat(default_surface_format);
 }
+#endif // GPLATES_USE_VULKAN_BACKEND
 
 
 GPlatesOpenGL::GLContext::GLContext()
@@ -105,12 +112,27 @@ GPlatesOpenGL::GLContext::~GLContext()
 
 void
 GPlatesOpenGL::GLContext::initialise_gl(
-		QOpenGLWindow &opengl_window)
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+		QVulkanWindow &vulkan_window
+#else
+		QOpenGLWindow &opengl_window
+#endif
+)
 {
-	d_opengl_window = opengl_window;
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+
+	d_surface = vulkan_window;
+
+	// Create the OpenGL functions wrapper from the Vulkan device functions.
+	QVulkanDeviceFunctions *vulkan_device_functions = d_surface->vulkanInstance()->deviceFunctions(d_surface->device());
+	d_opengl_functions = OpenGLFunctions::create(vulkan_device_functions);
+
+#else
+
+	d_surface = opengl_window;
 
 	// The QSurfaceFormat of our OpenGL context.
-	const QSurfaceFormat surface_format = d_opengl_window->context()->format();
+	const QSurfaceFormat surface_format = d_surface->context()->format();
 
 	qDebug() << "Context QSurfaceFormat:" << surface_format;
 
@@ -128,7 +150,7 @@ GPlatesOpenGL::GLContext::initialise_gl(
 
 	// Get the version of OpenGL functions associated with the version of the OpenGL context.
 	if (boost::optional<QOpenGLFunctions_4_5_Core *> opengl_functions_4_5 =
-		get_version_functions<QOpenGLFunctions_4_5_Core>(4, 5))
+		get_opengl_version_functions<QOpenGLFunctions_4_5_Core>(4, 5))
 	{
 		d_opengl_functions = OpenGLFunctions::create(opengl_functions_4_5.get());
 	}
@@ -150,8 +172,15 @@ GPlatesOpenGL::GLContext::initialise_gl(
 				"Could not get a stencil buffer on the main framebuffer.");
 	}
 
+#endif
+
 	// Get the OpenGL capabilities and parameters from the current OpenGL implementation.
-	d_capabilities.initialise(*d_opengl_functions.get(), *d_opengl_window->context());
+	d_capabilities.initialise(
+			*d_opengl_functions.get()
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
+		, *d_surface->context()
+#endif
+	);
 
 	// Used by GL to efficiently allocate GLState objects.
 	d_state_store = GLStateStore::create(
@@ -166,7 +195,7 @@ GPlatesOpenGL::GLContext::shutdown_gl()
 	d_state_store = boost::none;
 
 	d_opengl_functions = boost::none;
-	d_opengl_window = boost::none;
+	d_surface = boost::none;
 }
 
 
@@ -175,21 +204,29 @@ GPlatesOpenGL::GLContext::access_opengl()
 {
 	// We should be between 'initialise_gl()' and 'shutdown_gl()'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_opengl_window && d_opengl_functions && d_capabilities.is_initialised() && d_state_store,
+			d_surface && d_opengl_functions && d_capabilities.is_initialised() && d_state_store,
 			GPLATES_ASSERTION_SOURCE);
 
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
 	// Make sure the OpenGL context is current.
 	// Also this sets the default framebuffer object used by the QOpenGLWindow.
-	d_opengl_window->makeCurrent();
+	d_surface->makeCurrent();
+#endif
 
 	// The default viewport of the QOpenGLWindow.
 	const GLViewport default_viewport(0, 0,
 			// Dimensions, in OpenGL, are in device pixels...
-			d_opengl_window->width() * d_opengl_window->devicePixelRatio(),
-			d_opengl_window->height() * d_opengl_window->devicePixelRatio());
+			d_surface->width() * d_surface->devicePixelRatio(),
+			d_surface->height() * d_surface->devicePixelRatio());
 
 	// The default framebuffer object of the QOpenGLWindow.
-	const GLuint default_framebuffer_object = d_opengl_window->defaultFramebufferObject();
+	const GLuint default_framebuffer_object =
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+		0
+#else
+		d_surface->defaultFramebufferObject()
+#endif
+		;
 
 	return GL::create(
 			get_non_null_pointer(this),
@@ -213,15 +250,17 @@ GPlatesOpenGL::GLContext::get_opengl_functions()
 }
 
 
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
+
 template <class OpenGLFunctionsType>
 boost::optional<OpenGLFunctionsType *>
-GPlatesOpenGL::GLContext::get_version_functions(
+GPlatesOpenGL::GLContext::get_opengl_version_functions(
 		int major_version,
 		int minor_version) const
 {
 	// We should be between 'initialise_gl()' and 'shutdown_gl()'.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_opengl_window,
+			d_surface,
 			GPLATES_ASSERTION_SOURCE);
 
 	QOpenGLVersionProfile version_profile;
@@ -232,9 +271,9 @@ GPlatesOpenGL::GLContext::get_version_functions(
 	QAbstractOpenGLFunctions *abstract_opengl_functions =
 #if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
 			// Qt6 moved QOpenGLContext::versionFunctions() to QOpenGLVersionFunctionsFactory::get().
-			QOpenGLVersionFunctionsFactory::get(version_profile, d_opengl_window->context());
+			QOpenGLVersionFunctionsFactory::get(version_profile, d_surface->context());
 #else
-			d_opengl_window->context()->versionFunctions(version_profile);
+			d_surface->context()->versionFunctions(version_profile);
 #endif
 	if (!abstract_opengl_functions)
 	{
@@ -264,3 +303,5 @@ GPlatesOpenGL::GLContext::get_version_functions(
 
 	return opengl_functions;
 }
+
+#endif

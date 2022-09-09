@@ -51,6 +51,7 @@
 
 #include "file-io/StandaloneBundle.h"
 
+#include "global/config.h" // For GPLATES_USE_VULKAN_BACKEND
 #include "global/NotYetImplementedException.h"
 #include "global/python.h"
 #include "global/Version.h"
@@ -803,11 +804,6 @@ internal_main(int argc, char* argv[])
 			GPlatesUtils::ComponentManager::Component::hellinger_three_plate());
 	}
 
-#if QT_VERSION >= QT_VERSION_CHECK(5,3,0)
-	// Force usage of desktop OpenGL since we currently link to OpenGL (and make native OpenGL calls).
-	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
-#endif
-
 #if QT_VERSION < QT_VERSION_CHECK(6,0,0)  // Qt::AA_UseHighDpiPixmaps deprecated in Qt6 (always enabled)
 	// Enable high DPI pixmaps (for high DPI displays like Apple Retina).
 	//
@@ -858,10 +854,17 @@ internal_main(int argc, char* argv[])
 	QCoreApplication::setAttribute(Qt::AA_DisableHighDpiScaling);
 #endif
 
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
+#	if QT_VERSION >= QT_VERSION_CHECK(5,3,0)
+	// Force usage of desktop OpenGL since we currently link to OpenGL (and make native OpenGL calls).
+	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+#	endif
+
 	// Set the global default surface format (eg, used by QOpenGLWindow's).
 	//
 	// Note: It is mandatory to call this before constructing the QApplication instance on some platforms (eg, macOS).
 	GPlatesOpenGL::GLContext::set_default_surface_format();
+#endif
 
 	// GPlatesQApplication is a QApplication that also handles uncaught exceptions in the Qt event thread.
 	GPlatesGui::GPlatesQApplication qapplication(argc, argv);

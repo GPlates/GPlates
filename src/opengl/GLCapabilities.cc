@@ -29,6 +29,8 @@
 
 #include "OpenGLFunctions.h"
 
+#include "global/config.h" // For GPLATES_USE_VULKAN_BACKEND
+
 
 GPlatesOpenGL::GLCapabilities::GLCapabilities() :
 	//
@@ -73,8 +75,11 @@ GPlatesOpenGL::GLCapabilities::GLCapabilities() :
 
 void
 GPlatesOpenGL::GLCapabilities::initialise(
-		OpenGLFunctions &opengl_functions,
-		const QOpenGLContext &opengl_context)
+		OpenGLFunctions &opengl_functions
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
+	, const QOpenGLContext &opengl_context
+#endif
+)
 {
 	//
 	// Viewport
@@ -140,6 +145,7 @@ GPlatesOpenGL::GLCapabilities::initialise(
 	gl_max_texture_size = query_integer(opengl_functions, GL_MAX_TEXTURE_SIZE);
 	gl_max_cube_map_texture_size = query_integer(opengl_functions, GL_MAX_CUBE_MAP_TEXTURE_SIZE);
 
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
 	// Is GL_EXT_texture_filter_anisotropic supported?
 	//
 	// Turns out its support is ubiquitous but it was not made core until OpenGL 4.6.
@@ -150,6 +156,7 @@ GPlatesOpenGL::GLCapabilities::initialise(
 		gl_EXT_texture_filter_anisotropic = true;
 		gl_texture_max_anisotropy = query_integer(opengl_functions, GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT);
 	}
+#endif
 
 	gl_max_texture_array_layers = query_integer(opengl_functions, GL_MAX_ARRAY_TEXTURE_LAYERS);
 

@@ -28,7 +28,11 @@
 
 #include <boost/noncopyable.hpp>
 #include <qopengl.h>  // For OpenGL constants and typedefs.
-#include <QOpenGLContext>
+
+#include "global/config.h" // For GPLATES_USE_VULKAN_BACKEND
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
+#	include <QOpenGLContext>
+#endif
 
 
 namespace GPlatesOpenGL
@@ -141,7 +145,7 @@ namespace GPlatesOpenGL
 		//
 		// Only GLContext can create a GLCapabilities - this is to prevent clients
 		// from creating and initialising their own GLCapabilities - it must be initialised
-		// from a GLContext once its QOpenGLContext has been initialised.
+		// from a GLContext once it has been initialised.
 		//
 		friend class GLContext;
 
@@ -149,8 +153,11 @@ namespace GPlatesOpenGL
 
 		void
 		initialise(
-				OpenGLFunctions &opengl_functions,
-				const QOpenGLContext &opengl_context);
+				OpenGLFunctions &opengl_functions
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
+				, const QOpenGLContext& opengl_context
+#endif
+		);
 
 		bool
 		is_initialised() const

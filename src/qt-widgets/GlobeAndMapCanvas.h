@@ -34,10 +34,16 @@
 #include <boost/shared_ptr.hpp>
 #include <QImage>
 #include <QMouseEvent>
-#include <QOpenGLWindow>
 #include <QPointF>
 #include <QSize>
 #include <QtGlobal>
+
+#include "global/config.h" // For GPLATES_USE_VULKAN_BACKEND
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+#	include <QVulkanWindow>
+#else
+#	include <QOpenGLWindow>
+#endif
 
 #include "gui/Scene.h"
 #include "gui/SceneOverlays.h"
@@ -73,7 +79,11 @@ namespace GPlatesQtWidgets
 	 * Paint the globe and map views.
 	 */
 	class GlobeAndMapCanvas :
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+			public QVulkanWindow
+#else
 			public QOpenGLWindow
+#endif
 	{
 		Q_OBJECT
 
@@ -153,7 +163,7 @@ namespace GPlatesQtWidgets
 
 
 		/**
-		 * Returns the OpenGL context representing our QOpenGLWindow.
+		 * Returns the OpenGL context representing our QVulkanWindow (or QOpenGLWindow).
 		 */
 		GPlatesOpenGL::GLContext::non_null_ptr_type
 		get_gl_context()
@@ -347,6 +357,65 @@ namespace GPlatesQtWidgets
 
 	protected:
 
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+
+		/**
+		 * Callbacks when VkDevice is created and destroyed, and when need to render to canvas.
+		 */
+		class VulkanWindowRenderer :
+				public QVulkanWindowRenderer
+		{
+		public:
+			explicit
+			VulkanWindowRenderer(
+					GlobeAndMapCanvas *canvas) :
+				d_canvas(canvas)
+			{  }
+
+			void
+			initResources() override
+			{
+				d_canvas->initialize_gl();
+			}
+
+			void
+			releaseResources() override
+			{
+				d_canvas->shutdown_gl();
+			}
+
+			void
+			startNextFrame() override
+			{
+				// Render the scene.
+				d_canvas->paint_gl();
+
+				// We've finished rendering, so present the rendered frame.
+				d_canvas->frameReady();
+
+				// Emit 'repainted' signal.
+				d_canvas->emit_repainted();
+			}
+
+		private:
+			GlobeAndMapCanvas *d_canvas;
+		};
+
+		/**
+		 * This is a virtual override of the function in QVulkanWindow.
+		 */
+		QVulkanWindowRenderer *
+		createRenderer() override
+		{
+			// This QVulkanWindow takes ownership of returned pointer.
+			return new VulkanWindowRenderer(this);
+		}
+
+		void
+		paint_gl();
+
+#else
+
 		/**
 		 * This is a virtual override of the function in QOpenGLWindow.
 		 */
@@ -363,6 +432,13 @@ namespace GPlatesQtWidgets
 		void
 		paintEvent(
 				QPaintEvent *paint_event) override;
+
+#endif
+
+		//! Emit 'repainted' signal when finished rendering a frame to the canvas.
+		void
+		emit_repainted();
+
 
 		void
 		mousePressEvent(
