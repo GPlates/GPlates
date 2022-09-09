@@ -31,7 +31,8 @@
 #include <utility>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
-// For OpenGL constants and typedefs...
+#include <boost/weak_ptr.hpp>
+ // For OpenGL constants and typedefs...
 // Note: Cannot include "OpenGL.h" due to cyclic dependency with class GL.
 #include <qopengl.h>
 #include <QPair>
@@ -41,27 +42,18 @@
 #include <QOpenGLWindow>
 #include <QSurfaceFormat>
 
-#include "GLBuffer.h"
 #include "GLCapabilities.h"
-#include "GLFramebuffer.h"
-#include "GLProgram.h"
-#include "GLRenderbuffer.h"
-#include "GLSampler.h"
-#include "GLShader.h"
-#include "GLStateStore.h"
-#include "GLTexture.h"
-#include "GLVertexArray.h"
 
 #include "global/PointerTraits.h"
 
 #include "utils/non_null_intrusive_ptr.h"
-#include "utils/ObjectCache.h"
 #include "utils/ReferenceCount.h"
 
 
 namespace GPlatesOpenGL
 {
 	class GL;
+	class GLStateStore;
 	class OpenGLFunctions;
 
 	/**
@@ -119,7 +111,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Access OpenGL for the lifetime of the returned @GL object.
+		 * Access OpenGL for the lifetime of the returned @a GL object.
 		 *
 		 * The returned object should be used as a local object (on C++ runtime stack) and only
 		 * created/used when need to render something (it should not be stored persistently).
@@ -140,25 +132,30 @@ namespace GPlatesOpenGL
 	private: // For use by OpenGL resource object classes (such as @a GLTexture)...
 
 		//
-		// Only resource object classes need to access their resource managers.
+		// Only resource object classes should be able to access the low-level OpenGL functions and OpenGL context.
 		//
-		friend class GLBuffer;
-		friend class GLFramebuffer;
-		friend class GLProgram;
-		friend class GLRenderbuffer;
-		friend class GLSampler;
-		friend class GLShader;
-		friend class GLTexture;
-		friend class GLVertexArray;
+		template <typename ResourceHandleType, class ResourceAllocatorType>
+		friend class GLObjectResource;
 
-		boost::shared_ptr<GLBuffer::resource_manager_type> d_buffer_resource_manager;
-		boost::shared_ptr<GLFramebuffer::resource_manager_type> d_framebuffer_resource_manager;
-		boost::shared_ptr<GLProgram::resource_manager_type> d_program_resource_manager;
-		boost::shared_ptr<GLRenderbuffer::resource_manager_type> d_renderbuffer_resource_manager;
-		boost::shared_ptr<GLSampler::resource_manager_type> d_sampler_resource_manager;
-		boost::shared_ptr<GLShader::resource_manager_type> d_shader_resource_manager;
-		boost::shared_ptr<GLTexture::resource_manager_type> d_texture_resource_manager;
-		boost::shared_ptr<GLVertexArray::resource_manager_type> d_vertex_array_resource_manager;
+		/**
+		 * Access low-level OpenGL functions.
+		 *
+		 * Returns none if not called between @a initialise_gl and @a shutdown_gl.
+		 */
+		boost::optional<OpenGLFunctions &>
+		get_opengl_functions();
+
+		/**
+		 * Access this context without using an owning pointer.
+		 *
+		 * This is used by an OpenGL resource object to ensure this @a GLContext is still alive
+		 * when the time comes for it to deallocate its resource.
+		 */
+		boost::weak_ptr<GLContext>
+		get_context_handle()
+		{
+			return boost::weak_ptr<GLContext>(d_context_handle);
+		}
 
 	private:
 		/**
@@ -186,9 +183,20 @@ namespace GPlatesOpenGL
 		/**
 		 * Used by @a GL to efficiently allocate @a GLState objects.
 		 *
-		 * It's optional because we can't create it until @a initialise_gl is called.
+		 * It's only valid between @a initialise_gl and @a shutdown_gl.
 		 */
-		boost::optional<GLStateStore::non_null_ptr_type> d_state_store;
+		boost::optional<GPlatesGlobal::PointerTraits<GLStateStore>::non_null_ptr_type> d_state_store;
+
+		/**
+		 * A pointer to 'this' context that does not delete it.
+		 *
+		 * This is used by @a GLObjectResource to obtain a boost::weak_ptr<GLContext>,
+		 * via @a get_context_handle, to use later when it deallocates its object resource.
+		 *
+		 * When 'this' @a GLContext is destroyed then this context handle will get destroyed
+		 * indicating to any @a GLObjectResource that it can no longer use 'this' @a GLContext.
+		 */
+		boost::shared_ptr<GLContext> d_context_handle;
 
 
 		/**
@@ -216,16 +224,6 @@ namespace GPlatesOpenGL
 		get_version_functions(
 				int major_version,
 				int minor_version) const;
-
-		/**
-		 * Deallocates OpenGL objects that have been released but not yet destroyed/deallocated.
-		 *
-		 * They are queued for deallocation so that it can be done at a time when the OpenGL
-		 * context is known to be active and hence OpenGL calls can be made.
-		 */
-		void
-		deallocate_queued_object_resources();
-		friend class GL;
 	};
 }
 

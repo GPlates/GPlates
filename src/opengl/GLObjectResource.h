@@ -27,88 +27,74 @@
 #ifndef GPLATES_OPENGL_GLOBJECTRESOURCE_H
 #define GPLATES_OPENGL_GLOBJECTRESOURCE_H
 
+#include <QDebug>
+
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 
-#include "GLObjectResourceManager.h"
-
-#include "utils/non_null_intrusive_ptr.h"
-#include "utils/ReferenceCount.h"
+#include "GLContext.h"
+#include "OpenGLFunctions.h"
 
 
 namespace GPlatesOpenGL
 {
-	class GLCapabilities;
-	class OpenGLFunctions;
-
 	/**
 	 * An RAII wrapper around an OpenGL object resource (such as a texture object)
-	 * that schedules the resource to be deallocated when its destructor is called.
+	 * that deallocates it, through the @a GLContext, when its destructor is called.
 	 */
 	template <typename ResourceHandleType, class ResourceAllocatorType>
-	class GLObjectResource :
-			public GPlatesUtils::ReferenceCount<GLObjectResource<ResourceHandleType,ResourceAllocatorType> >
+	class GLObjectResource
 	{
 	public:
-		//! Typedef for this class type.
-		typedef GLObjectResource<ResourceHandleType, ResourceAllocatorType> this_type;
 
-		//! A convenience typedef for a shared pointer to a non-const @a GLObjectResource.
-		typedef GPlatesUtils::non_null_intrusive_ptr<this_type> non_null_ptr_type;
-
-		//! A convenience typedef for a shared pointer to a const @a GLObjectResource.
-		typedef GPlatesUtils::non_null_intrusive_ptr<const this_type> non_null_ptr_to_const_type;
-
-		//! Typedef for the manager of this resource type.
-		typedef GLObjectResourceManager<ResourceHandleType, ResourceAllocatorType> resource_manager_type;
-
-
-		/**
-		 * Creates a @a GLObjectResource from a resource manager.
-		 */
-		static
-		non_null_ptr_type
-		create(
+		GLObjectResource(
 				OpenGLFunctions &opengl_functions,
-				const GLCapabilities &capabilities,
-				const typename resource_manager_type::shared_ptr_type &resource_manager)
-		{
-			return non_null_ptr_type(
-					new GLObjectResource(
-							resource_manager->allocate_resource(opengl_functions, capabilities),
-							resource_manager));
-		}
+				GLContext &context) :
+			// Allocate OpenGL resource...
+			d_resource_handle(ResourceAllocatorType::allocate(opengl_functions)),
+			d_context_handle(context.get_context_handle())
+		{  }
 
 		/**
 		 * Overload supporting a ResourceAllocatorType::allocate() requiring an extra argument.
 		 */
 		template <typename AllocateArg1>
-		static
-		non_null_ptr_type
-		create(
+		GLObjectResource(
 				OpenGLFunctions &opengl_functions,
-				const GLCapabilities &capabilities,
-				const typename resource_manager_type::shared_ptr_type &resource_manager,
-				const AllocateArg1 &allocate_arg1)
-		{
-			return non_null_ptr_type(
-					new GLObjectResource(
-							resource_manager->allocate_resource(opengl_functions, capabilities, allocate_arg1),
-							resource_manager));
-		}
+				GLContext &context,
+				const AllocateArg1 &allocate_arg1) :
+			// Allocate OpenGL resource...
+			d_resource_handle(ResourceAllocatorType::allocate(opengl_functions, allocate_arg1)),
+			d_context_handle(context.get_context_handle())
+		{  }
 
 
 		~GLObjectResource()
 		{
-			// Only attempt to release the resource if the resource manager still exists.
-			// If it doesn't exist it means the OpenGL context was destroyed which will
-			// in turn destroy all existing resources in that context - which means
-			// we don't have to worry about it and neither does the resource manager.
-			boost::shared_ptr<resource_manager_type> resource_manager = d_resource_manager.lock();
-			if (resource_manager)
+			//
+			// Only attempt to deallocate if the GLContext still exists and it is between initialisation and shutdown.
+			// If all owners of OpenGL resources cleaned up properly then this will be the case.
+			// So if this is not the case then emit a warning.
+			//
+
+			// See if GLContext still exists.
+			boost::shared_ptr<GLContext> context = d_context_handle.lock();
+			if (!context)
 			{
-				resource_manager->queue_resource_for_deallocation(d_resource_handle);
+				qWarning() << "OpenGL resource not destroyed: context no longer exists.";
+				return;
 			}
+
+			// See if GLContext is between initialisation and shutdown.
+			boost::optional<OpenGLFunctions &> opengl_functions = context->get_opengl_functions();
+			if (!opengl_functions)
+			{
+				qWarning() << "OpenGL resource not destroyed: context not active.";
+				return;
+			}
+
+			// Deallocate OpenGL resource.
+			ResourceAllocatorType::deallocate(opengl_functions.get(), d_resource_handle);
 		}
 
 
@@ -123,15 +109,11 @@ namespace GPlatesOpenGL
 
 	private:
 		ResourceHandleType d_resource_handle;
-		boost::weak_ptr<resource_manager_type> d_resource_manager;
 
-
-		GLObjectResource(
-				ResourceHandleType resource_handle,
-				const boost::weak_ptr<resource_manager_type> &resource_manager) :
-			d_resource_handle(resource_handle),
-			d_resource_manager(resource_manager)
-		{  }
+		/**
+		 * A pointer to @a GLContext that does not keep it alive.
+		 */
+		boost::weak_ptr<GLContext> d_context_handle;
 	};
 }
 

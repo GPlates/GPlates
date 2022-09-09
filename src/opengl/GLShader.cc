@@ -29,7 +29,6 @@
 
 #include "GLShader.h"
 
-#include "GLContext.h"
 #include "GLShaderSource.h"
 #include "OpenGL.h"  // For Class GL
 #include "OpenGLException.h"
@@ -43,12 +42,7 @@
 GPlatesOpenGL::GLShader::GLShader(
 		GL &gl,
 		GLenum shader_type) :
-	d_resource(
-			resource_type::create(
-					gl.get_opengl_functions(),
-					gl.get_capabilities(),
-					gl.get_context().d_shader_resource_manager,
-					shader_type))
+	d_resource(gl.get_opengl_functions(), gl.get_context(), shader_type)
 {
 }
 
@@ -156,7 +150,7 @@ GPlatesOpenGL::GLShader::get_file_code_segments() const
 GLuint
 GPlatesOpenGL::GLShader::get_resource_handle() const
 {
-	return d_resource->get_resource_handle();
+	return d_resource.get_resource_handle();
 }
 
 
@@ -223,7 +217,6 @@ GPlatesOpenGL::GLShader::output_info_log(
 GLuint
 GPlatesOpenGL::GLShader::Allocator::allocate(
 		OpenGLFunctions &opengl_functions,
-		const GLCapabilities &capabilities,
 		GLenum shader_type)
 {
 	const GLuint shader = opengl_functions.glCreateShader(shader_type);

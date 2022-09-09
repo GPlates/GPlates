@@ -65,7 +65,6 @@ set(srcs
     GLNormalMapSource.h
     GLObject.h
     GLObjectResource.h
-    GLObjectResourceManager.h
     GLProgram.cc
     GLProgram.h
     GLRasterCoRegistration.cc

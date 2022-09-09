@@ -23,22 +23,28 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <boost/cast.hpp>
-
 #include "GLRenderbuffer.h"
 
-#include "GLContext.h"
 #include "OpenGL.h"  // For Class GL
-#include "OpenGLFunctions.h"
 
-#include "global/GPlatesAssert.h"
-#include "global/PreconditionViolationError.h"
+
+GPlatesOpenGL::GLRenderbuffer::GLRenderbuffer(
+		GL &gl) :
+	d_resource(gl.get_opengl_functions(), gl.get_context())
+{
+}
+
+
+GLuint
+GPlatesOpenGL::GLRenderbuffer::get_resource_handle() const
+{
+	return d_resource.get_resource_handle();
+}
 
 
 GLuint
 GPlatesOpenGL::GLRenderbuffer::Allocator::allocate(
-		OpenGLFunctions &opengl_functions,
-		const GLCapabilities &capabilities)
+		OpenGLFunctions &opengl_functions)
 {
 	GLuint renderbuffer;
 	opengl_functions.glGenRenderbuffers(1, &renderbuffer);
@@ -52,22 +58,4 @@ GPlatesOpenGL::GLRenderbuffer::Allocator::deallocate(
 		GLuint renderbuffer)
 {
 	opengl_functions.glDeleteRenderbuffers(1, &renderbuffer);
-}
-
-
-GPlatesOpenGL::GLRenderbuffer::GLRenderbuffer(
-		GL &gl) :
-	d_resource(
-			resource_type::create(
-					gl.get_opengl_functions(),
-					gl.get_capabilities(),
-					gl.get_context().d_renderbuffer_resource_manager))
-{
-}
-
-
-GLuint
-GPlatesOpenGL::GLRenderbuffer::get_resource_handle() const
-{
-	return d_resource->get_resource_handle();
 }

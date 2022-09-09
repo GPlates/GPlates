@@ -90,17 +90,6 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 
 GPlatesQtWidgets::GlobeAndMapCanvas::~GlobeAndMapCanvas()
 {
-	// Note that when our data members that contain OpenGL resources (like 'd_scene') are destroyed they don't actually
-	// destroy the *native* OpenGL resources. Instead the native resource *wrappers* get destroyed (see GLObjectResource)
-	// which just queue the native resources for deallocation with our resource managers (see GLObjectResourceManager).
-	// But when the resource managers get destroyed (when our 'd_gl_context' is destroyed) they also don't destroy the
-	// native resources. Instead, the native resources (queued for destruction) only get destroyed when 'GLContext::begin_render()'
-	// and 'GLContext::end_render()' get called (which only happens when we're actually going to render something).
-	//
-	// As a result, the native resources only get destroyed when the *native* OpenGL context itself is destroyed
-	// (this is taken care of by our base class QOpenGLWindow destructor).
-	//
-	// Also we connect to the 'QOpenGLContext::aboutToBeDestroyed' signal to destroy our resources before the OpenGL context is destroyed.
 }
 
 

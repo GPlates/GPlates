@@ -76,9 +76,6 @@ GPlatesOpenGL::GL::~GL()
 {
 	// Restore the default state.
 	d_current_state->reset_to_default();
-
-	// Deallocate OpenGL objects that have been released but not yet destroyed/deallocated.
-	d_context->deallocate_queued_object_resources();
 }
 
 

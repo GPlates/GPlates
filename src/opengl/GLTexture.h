@@ -29,7 +29,6 @@
 
 #include <memory> // For std::unique_ptr
 #include <boost/enable_shared_from_this.hpp>
-#include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
 // For OpenGL constants and typedefs...
@@ -38,13 +37,11 @@
 
 #include "GLObject.h"
 #include "GLObjectResource.h"
-#include "GLObjectResourceManager.h"
 
 
 namespace GPlatesOpenGL
 {
 	class GL;
-	class GLCapabilities;
 	class OpenGLFunctions;
 
 	/**
@@ -107,26 +104,20 @@ namespace GPlatesOpenGL
 		class Allocator
 		{
 		public:
+			static
 			GLuint
 			allocate(
-					OpenGLFunctions &opengl_functions,
-					const GLCapabilities &capabilities);
+					OpenGLFunctions &opengl_functions);
 
+			static
 			void
 			deallocate(
 					OpenGLFunctions &opengl_functions,
 					GLuint);
 		};
 
-		//! Typedef for a resource.
-		typedef GLObjectResource<GLuint, Allocator> resource_type;
-
-		//! Typedef for a resource manager.
-		typedef GLObjectResourceManager<GLuint, Allocator> resource_manager_type;
-
 	private:
-		resource_type::non_null_ptr_to_const_type d_resource;
-
+		GLObjectResource<GLuint, Allocator> d_resource;
 
 		//! Constructor.
 		explicit

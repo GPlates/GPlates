@@ -34,7 +34,6 @@
 
 #include "GLProgram.h"
 
-#include "GLContext.h"
 #include "GLShader.h"
 #include "OpenGL.h"  // For Class GL
 #include "OpenGLException.h"
@@ -47,11 +46,7 @@
 
 GPlatesOpenGL::GLProgram::GLProgram(
 		GL &gl) :
-	d_resource(
-			resource_type::create(
-					gl.get_opengl_functions(),
-					gl.get_capabilities(),
-					gl.get_context().d_program_resource_manager))
+	d_resource(gl.get_opengl_functions(), gl.get_context())
 {
 }
 
@@ -186,7 +181,7 @@ GPlatesOpenGL::GLProgram::get_uniform_block_index(
 GLuint
 GPlatesOpenGL::GLProgram::get_resource_handle() const
 {
-	return d_resource->get_resource_handle();
+	return d_resource.get_resource_handle();
 }
 
 
@@ -254,8 +249,7 @@ GPlatesOpenGL::GLProgram::output_info_log(
 
 GLuint
 GPlatesOpenGL::GLProgram::Allocator::allocate(
-		OpenGLFunctions &opengl_functions,
-		const GLCapabilities &capabilities)
+		OpenGLFunctions &opengl_functions)
 {
 	const GLuint program = opengl_functions.glCreateProgram();
 

@@ -38,7 +38,6 @@
 
 #include "GLObject.h"
 #include "GLObjectResource.h"
-#include "GLObjectResourceManager.h"
 #include "GLShaderSource.h"
 
 #include "global/GPlatesAssert.h"
@@ -48,7 +47,6 @@
 namespace GPlatesOpenGL
 {
 	class GL;
-	class GLCapabilities;
 	class OpenGLFunctions;
 
 	/**
@@ -202,27 +200,21 @@ namespace GPlatesOpenGL
 		class Allocator
 		{
 		public:
+			static
 			GLuint
 			allocate(
 					OpenGLFunctions &opengl_functions,
-					const GLCapabilities &capabilities,
 					GLenum shader_type);
 
+			static
 			void
 			deallocate(
 					OpenGLFunctions &opengl_functions,
 					GLuint);
 		};
 
-		//! Typedef for a resource.
-		typedef GLObjectResource<GLuint, Allocator> resource_type;
-
-		//! Typedef for a resource manager.
-		typedef GLObjectResourceManager<GLuint, Allocator> resource_manager_type;
-
 	private:
-
-		resource_type::non_null_ptr_to_const_type d_resource;
+		GLObjectResource<GLuint, Allocator> d_resource;
 
 		//! Source code segments set by @a shader_source.
 		boost::optional< std::vector<SourceCodeSegment> > d_source_code_segments;

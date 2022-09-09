@@ -25,18 +25,12 @@
 
 #include "GLBuffer.h"
 
-#include "GLContext.h"
 #include "OpenGL.h"  // For Class GL
-#include "OpenGLFunctions.h"
 
 
 GPlatesOpenGL::GLBuffer::GLBuffer(
 		GL &gl) :
-	d_resource(
-			resource_type::create(
-					gl.get_opengl_functions(),
-					gl.get_capabilities(),
-					gl.get_context().d_buffer_resource_manager))
+	d_resource(gl.get_opengl_functions(), gl.get_context())
 {
 }
 
@@ -44,14 +38,13 @@ GPlatesOpenGL::GLBuffer::GLBuffer(
 GLuint
 GPlatesOpenGL::GLBuffer::get_resource_handle() const
 {
-	return d_resource->get_resource_handle();
+	return d_resource.get_resource_handle();
 }
 
 
 GLuint
 GPlatesOpenGL::GLBuffer::Allocator::allocate(
-		OpenGLFunctions &opengl_functions,
-		const GLCapabilities &capabilities)
+		OpenGLFunctions &opengl_functions)
 {
 	GLuint buffer_object;
 	opengl_functions.glGenBuffers(1, &buffer_object);

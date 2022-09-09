@@ -25,18 +25,12 @@
 
 #include "GLVertexArray.h"
 
-#include "GLContext.h"
 #include "OpenGL.h"  // For Class GL
-#include "OpenGLFunctions.h"
 
 
 GPlatesOpenGL::GLVertexArray::GLVertexArray(
 		GL &gl) :
-	d_resource(
-			resource_type::create(
-					gl.get_opengl_functions(),
-					gl.get_capabilities(),
-					gl.get_context().d_vertex_array_resource_manager))
+	d_resource(gl.get_opengl_functions(), gl.get_context())
 {
 }
 
@@ -73,14 +67,13 @@ GPlatesOpenGL::GLVertexArray::clear(
 GLuint
 GPlatesOpenGL::GLVertexArray::get_resource_handle() const
 {
-	return d_resource->get_resource_handle();
+	return d_resource.get_resource_handle();
 }
 
 
 GLuint
 GPlatesOpenGL::GLVertexArray::Allocator::allocate(
-		OpenGLFunctions &opengl_functions,
-		const GLCapabilities &capabilities)
+		OpenGLFunctions &opengl_functions)
 {
 	GLuint vertex_array_object;
 	opengl_functions.glGenVertexArrays(1, &vertex_array_object);

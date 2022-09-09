@@ -84,16 +84,12 @@ GPlatesOpenGL::GLContext::set_default_surface_format()
 }
 
 
-GPlatesOpenGL::GLContext::GLContext() :
-	d_buffer_resource_manager(GLBuffer::resource_manager_type::create()),
-	d_framebuffer_resource_manager(GLFramebuffer::resource_manager_type::create()),
-	d_program_resource_manager(GLProgram::resource_manager_type::create()),
-	d_renderbuffer_resource_manager(GLRenderbuffer::resource_manager_type::create()),
-	d_sampler_resource_manager(GLSampler::resource_manager_type::create()),
-	d_shader_resource_manager(GLShader::resource_manager_type::create()),
-	d_texture_resource_manager(GLTexture::resource_manager_type::create()),
-	d_vertex_array_resource_manager(GLVertexArray::resource_manager_type::create())
+GPlatesOpenGL::GLContext::GLContext()
 {
+	// The boost::shared_ptr<> deleter is a lambda function that does nothing
+	// (since we don't actually want to delete 'this').
+	d_context_handle.reset(this, [](GLContext*) {});
+
 	// Defined in ".cc" file because...
 	// non_null_ptr destructors require complete type of class they're referring to.
 	// Compiler will call destructors of already-constructed members if constructor throws exception.
@@ -167,9 +163,6 @@ GPlatesOpenGL::GLContext::initialise_gl(
 void
 GPlatesOpenGL::GLContext::shutdown_gl()
 {
-	// Deallocate OpenGL objects that have been released but not yet destroyed/deallocated.
-	deallocate_queued_object_resources();
-
 	d_state_store = boost::none;
 
 	d_opengl_functions = boost::none;
@@ -205,6 +198,18 @@ GPlatesOpenGL::GLContext::access_opengl()
 			d_state_store.get(),
 			default_viewport,
 			default_framebuffer_object);
+}
+
+
+boost::optional<GPlatesOpenGL::OpenGLFunctions &>
+GPlatesOpenGL::GLContext::get_opengl_functions()
+{
+	if (!d_opengl_functions)
+	{
+		return boost::none;
+	}
+
+	return *d_opengl_functions.get();
 }
 
 
@@ -258,25 +263,4 @@ GPlatesOpenGL::GLContext::get_version_functions(
 	}
 
 	return opengl_functions;
-}
-
-
-void
-GPlatesOpenGL::GLContext::deallocate_queued_object_resources()
-{
-	// We should be between 'initialise_gl()' and 'shutdown_gl()'.
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			d_opengl_functions,
-			GPLATES_ASSERTION_SOURCE);
-
-	OpenGLFunctions &opengl_functions = *d_opengl_functions.get();
-
-	// Deallocate OpenGL objects that have been released but not yet destroyed/deallocated.
-	d_buffer_resource_manager->deallocate_queued_resources(opengl_functions);
-	d_framebuffer_resource_manager->deallocate_queued_resources(opengl_functions);
-	d_program_resource_manager->deallocate_queued_resources(opengl_functions);
-	d_renderbuffer_resource_manager->deallocate_queued_resources(opengl_functions);
-	d_shader_resource_manager->deallocate_queued_resources(opengl_functions);
-	d_texture_resource_manager->deallocate_queued_resources(opengl_functions);
-	d_vertex_array_resource_manager->deallocate_queued_resources(opengl_functions);
 }
