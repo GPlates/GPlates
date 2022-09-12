@@ -458,18 +458,36 @@ endif()
 #
 # Note: Instead of specifying DEB-DEFAULT we emulate it so that the pre-release suffix gets included in the package filename.
 #       And we don't use <DebianRevisionNumber> which is set with CPACK_DEBIAN_PACKAGE_RELEASE since that's for downstream packaging/versioning.
-if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-    SET(_DEBIAN_ARCH amd64)
-else()
-    SET(_DEBIAN_ARCH i386)
-endif()
-# Note: PROJECT_VERSION_PRERELEASE_USER is the version that includes the pre-release version suffix in a form that is suitable
-#       for use in package filenames (unlike PROJECT_VERSION_PRERELEASE). For example, for development 2.3 pre-releases this looks like
-#       gplates_2.3.0-dev1_amd64.deb (when the actual version is 2.3.0~1 - see CPACK_DEBIAN_PACKAGE_VERSION).
-if (GPLATES_BUILD_GPLATES)  # GPlates ...
-    SET(CPACK_DEBIAN_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_DEBIAN_ARCH}.deb")
-else()  # pyGPlates ...
-    SET(CPACK_DEBIAN_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_PYGPLATES_PYTHON_VERSION_SUFFIX}_${_DEBIAN_ARCH}.deb")
+# NOTE: And for <DebianArchitexture> we use the equivalent of CPACK_DEBIAN_PACKAGE_ARCHITECTURE instead of using CMAKE_SYSTEM_NAME
+#       (which CPACK_PACKAGE_FILE_NAME uses).
+#       For Intel this gives us 'amd64' that's traditionaly used in Debian package names (instead of 'x86_64') and
+#       for Arm64 this gives us 'arm64' (instead of 'aarch64').
+#       But we can't access CPACK variables here (ie, at CMake configure time) so we can't access CPACK_DEBIAN_PACKAGE_ARCHITECTURE which is defined as:
+#           "Output of dpkg --print-architecture (or i386 if dpkg is not found)"
+#       So instead we'll implement our own CPACK_DEBIAN_PACKAGE_ARCHITECTURE equivalent (to do the same thing as what CPack does)
+#       but we'll make it private by calling it _DEBIAN_PACKAGE_ARCHITECTURE (to not conflict with CPack's CPACK_DEBIAN_PACKAGE_ARCHITECTURE).
+#
+# TODO: Find a way to apply this to DEB generator *only*.
+#       Could use CPACK_PRE_BUILD_SCRIPTS and access package filename using CPACK_PACKAGE_FILES (but that requires CMake 3.19 - a bit too high).
+#       Could use CPACK_INSTALL_SCRIPTS (requires 3.16) but then don't have access to CPACK_PACKAGE_FILES.
+#       For now we just assume a Linux build that's not standalone will be packaged as Debian (which is the default we set for CPACK_GENERATOR).
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT GPLATES_INSTALL_STANDALONE)
+    find_program(DPKG_CMD dpkg)
+    if (NOT DPKG_CMD)
+        message(WARNING "DEB Generator: Can't find dpkg in your path. Setting _DEBIAN_PACKAGE_ARCHITECTURE to i386.")
+        set(_DEBIAN_PACKAGE_ARCHITECTURE i386)
+    endif()
+    execute_process(COMMAND "${DPKG_CMD}" --print-architecture
+                    OUTPUT_VARIABLE _DEBIAN_PACKAGE_ARCHITECTURE
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+    # Note: PROJECT_VERSION_PRERELEASE_USER is the version that includes the pre-release version suffix in a form that is suitable
+    #       for use in package filenames (unlike PROJECT_VERSION_PRERELEASE). For example, for development 2.3 pre-releases this looks like
+    #       gplates_2.3.0-dev1_amd64.deb (when the actual version is 2.3.0~1 - see CPACK_DEBIAN_PACKAGE_VERSION).
+    if (GPLATES_BUILD_GPLATES)  # GPlates ...
+        SET(CPACK_DEBIAN_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_DEBIAN_PACKAGE_ARCHITECTURE}.deb")
+    else()  # pyGPlates ...
+        SET(CPACK_DEBIAN_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_PYGPLATES_PYTHON_VERSION_SUFFIX}_${_DEBIAN_PACKAGE_ARCHITECTURE}.deb")
+    endif()
 endif()
 
 #   CPACK_DEBIAN_PACKAGE_HOMEPAGE - The URL of the web site for this package, preferably (when applicable) the site
