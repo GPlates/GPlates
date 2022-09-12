@@ -79,7 +79,7 @@ GPlatesGui::HellingerCanvasToolWorkflow::create_canvas_tools(
 	// Create select-hellinger-geometries canvas tool.
 	//
 
-	GPlatesCanvasTools::SelectHellingerGeometries::non_null_ptr_type select_hellinger_geometries_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type select_hellinger_geometries_tool =
 		GPlatesCanvasTools::SelectHellingerGeometries::create(
 				status_bar_callback,
 				view_state.get_rendered_geometry_collection(),
@@ -105,7 +105,7 @@ GPlatesGui::HellingerCanvasToolWorkflow::create_canvas_tools(
 	//
 	// Create adjust-pole-estimate canvas tool.
 	//
-	GPlatesCanvasTools::AdjustFittedPoleEstimate::non_null_ptr_type adjust_pole_estimate_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type adjust_pole_estimate_tool =
 			GPlatesCanvasTools::AdjustFittedPoleEstimate::create(
 				status_bar_callback,
 				view_state.get_rendered_geometry_collection(),

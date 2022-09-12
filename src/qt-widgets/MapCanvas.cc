@@ -201,12 +201,18 @@ GPlatesQtWidgets::MapCanvas::render_scene(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const GPlatesOpenGL::GLMatrix &projection_matrix_scene,
 		const GPlatesOpenGL::GLMatrix &projection_matrix_text_overlay,
+		const GPlatesGui::Colour &clear_colour,
 		int paint_device_width_in_device_independent_pixels,
 		int paint_device_height_in_device_independent_pixels,
 		int map_canvas_paint_device_width_in_device_independent_pixels,
 		int map_canvas_paint_device_height_in_device_independent_pixels)
 {
 	PROFILE_FUNC();
+
+	// Clear the colour buffer of the framebuffer.
+	// NOTE: We leave the depth clears to class Map.
+	renderer.gl_clear_color(clear_colour.red(), clear_colour.green(), clear_colour.blue(), clear_colour.alpha());
+	renderer.gl_clear(GL_COLOR_BUFFER_BIT);
 
 	// Set the projection matrix for the scene.
 	renderer.gl_load_matrix(GL_PROJECTION, projection_matrix_scene);
@@ -304,11 +310,23 @@ GPlatesQtWidgets::MapCanvas::drawBackground(
 			qpaint_device->width(),
 			qpaint_device->height());
 
+	// Clear colour buffer of the main framebuffer.
+	//
+	// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
+	// the scene, that are not rendered, to have *opaque* alpha (=1). This appears to be needed on
+	// Mac with Qt5 (alpha=0 is fine on Qt5 Windows/Ubuntu, and on Qt4 for all platforms). Perhaps because
+	// QGLWidget rendering (on Qt5 Mac) is first done to a framebuffer object which is then blended into the
+	// window framebuffer (where having a source alpha of zero would result in the black background not showing).
+	// Or, more likely, maybe a framebuffer object is used on all platforms but the window framebuffer is
+	// white on Mac but already black on Windows/Ubuntu.
+	const GPlatesGui::Colour clear_colour(0, 0, 0, 1);
+
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
 	d_gl_frame_cache_handle = render_scene(
 			*renderer,
 			projection_matrix_scene,
 			projection_matrix_text_overlay,
+			clear_colour,
 			// Using device-independent pixels (eg, widget dimensions)...
 			qpaint_device->width(),
 			qpaint_device->height(),
@@ -336,7 +354,8 @@ QImage
 GPlatesQtWidgets::MapCanvas::render_to_qimage(
 		QPaintDevice &map_canvas_paint_device,
 		const QTransform &viewport_transform,
-		const QSize &image_size_in_device_independent_pixels)
+		const QSize &image_size_in_device_independent_pixels,
+		const GPlatesGui::Colour &image_clear_colour)
 {
 	// Set up a QPainter to help us with OpenGL text rendering.
 	QPainter painter(&map_canvas_paint_device);
@@ -386,9 +405,9 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 		return QImage();
 	}
 
-	// Fill the image with transparent black in case there's an exception during rendering
+	// Fill the image with the clear colour in case there's an exception during rendering
 	// of one of the tiles and the image is incomplete.
-	image.fill(QColor(0,0,0,0).rgba());
+	image.fill(QColor(image_clear_colour).rgba());
 
 	// Get the frame buffer dimensions (in device pixels).
 	const std::pair<unsigned int/*width*/, unsigned int/*height*/> frame_buffer_dimensions =
@@ -442,6 +461,7 @@ GPlatesQtWidgets::MapCanvas::render_to_qimage(
 		const cache_handle_type tile_cache_handle = render_scene_tile_into_image(
 				*renderer,
 				tile_render,
+				image_clear_colour,
 				image,
 				projection_matrix_scene,
 				projection_matrix_text_overlay,
@@ -459,6 +479,7 @@ GPlatesQtWidgets::MapCanvas::cache_handle_type
 GPlatesQtWidgets::MapCanvas::render_scene_tile_into_image(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const GPlatesOpenGL::GLTileRender &tile_render,
+		const GPlatesGui::Colour &image_clear_colour,
 		QImage &image,
 		const GPlatesOpenGL::GLMatrix &projection_matrix_scene,
 		const GPlatesOpenGL::GLMatrix &projection_matrix_text_overlay,
@@ -514,6 +535,7 @@ GPlatesQtWidgets::MapCanvas::render_scene_tile_into_image(
 			renderer,
 			tile_projection_matrix_scene,
 			tile_projection_matrix_text_overlay,
+			image_clear_colour,
 			// Since QImage is just raw pixels its dimensions are in device pixels, but
 			// we need device-independent pixels here (eg, widget dimensions)...
 			image.width() / image.devicePixelRatio(),
@@ -610,6 +632,9 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 			feedback_paint_device.width(),
 			feedback_paint_device.height());
 
+	// Clear colour buffer of the framebuffer (set to transparent black).
+	const GPlatesGui::Colour clear_colour(0, 0, 0, 0);
+
 	// Render the scene to the feedback paint device.
 	// This will use the main framebuffer for intermediate rendering in some cases.
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
@@ -617,6 +642,7 @@ GPlatesQtWidgets::MapCanvas::render_opengl_feedback_to_paint_device(
 			*renderer,
 			projection_matrix_scene,
 			projection_matrix_text_overlay,
+			clear_colour,
 			// Using device-independent pixels (eg, widget dimensions)...
 			feedback_paint_device.width(),
 			feedback_paint_device.height(),

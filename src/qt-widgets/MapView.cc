@@ -494,7 +494,8 @@ GPlatesQtWidgets::MapView::get_viewport_size() const
 
 QImage
 GPlatesQtWidgets::MapView::render_to_qimage(
-		const QSize &image_size_in_device_independent_pixels)
+		const QSize &image_size_in_device_independent_pixels,
+		const GPlatesGui::Colour &image_clear_colour)
 {
 	// Calculate the world matrix to position the scene appropriately according to the image dimensions.
 	//
@@ -505,7 +506,8 @@ GPlatesQtWidgets::MapView::render_to_qimage(
 			image_size_in_device_independent_pixels.width(),
 			image_size_in_device_independent_pixels.height());
 
-	return map_canvas().render_to_qimage(*d_gl_widget_ptr, world_matrix, image_size_in_device_independent_pixels);
+	return map_canvas().render_to_qimage(
+			*d_gl_widget_ptr, world_matrix, image_size_in_device_independent_pixels, image_clear_colour);
 }
 
 

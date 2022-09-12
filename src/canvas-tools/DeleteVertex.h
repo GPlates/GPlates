@@ -67,11 +67,6 @@ namespace GPlatesCanvasTools
 	{
 	public:
 
-		/**
-		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<DeleteVertex>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<DeleteVertex> non_null_ptr_type;
-
 		virtual
 		~DeleteVertex();
 

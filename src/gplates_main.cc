@@ -828,6 +828,11 @@ internal_main(int argc, char* argv[])
 			GPlatesUtils::ComponentManager::Component::hellinger_three_plate());
 	}
 
+#if QT_VERSION >= QT_VERSION_CHECK(5,3,0)
+	// Force usage of desktop OpenGL since we currently link to OpenGL (and make native OpenGL calls).
+	QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+#endif
+
 	// Enable high DPI pixmaps (for high DPI displays like Apple Retina).
 	//
 	// For example this enables a QImage with a device pixel ratio of 2
