@@ -360,10 +360,29 @@ namespace GPlatesQtWidgets
 #if defined(GPLATES_USE_VULKAN_BACKEND)
 
 		/**
-		 * Choose the index of the VkPhysicalDevice that has a queue family supporting graphics and compute.
+		 * Choose the index of a VkPhysicalDevice that has a queue family supporting both 'graphics' and 'compute'.
 		 */
 		void
 		set_vulkan_physical_device_index();
+
+		/**
+		 * Ensure that either this QVulkanWindow's 'graphics' queue (yet to be created) supports 'compute' or
+		 * request creation of an extra queue from a 'compute' queue family (when the logical device is created).
+		 *
+		 * By default, QVulkanWindow will only create a 'graphics' queue. Note that it's possible (likely)
+		 * that the queue family that the 'graphics' queue belongs to also supports 'compute', in which case
+		 * only one queue is created (aside from possibly a 'present' queue if that's in yet another family).
+		 *
+		 * This function is installed with QVulkanWindow::setQueueCreateInfoModifier().
+		 * Note that when this function is called we will already have selected a physical device (VkPhysicalDevice)
+		 * that has a queue family supporting both 'graphics' and 'compute' (see 'set_vulkan_physical_device_index()').
+		 */
+		void
+		vulkan_queue_create_info_modifier(
+				const VkQueueFamilyProperties *queue_family_properties_seq,
+				uint32_t queue_count,
+				QList<VkDeviceQueueCreateInfo> &queue_create_infos);
+
 
 		/**
 		 * Callbacks when VkDevice is created and destroyed, and when need to render to canvas.
@@ -513,6 +532,12 @@ namespace GPlatesQtWidgets
 		//! Is true if OpenGL has been initialised for this canvas.
 		bool d_initialised_gl;
 
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+		/**
+		 * Vulkan queue family index of 'compute' queue created in the VkDevice of this QVulkanWindow.
+		 */
+		uint32_t d_vulkan_compute_queue_family_index;
+#endif
 
 		/**
 		 * The scene contains the globe and map.

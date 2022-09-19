@@ -28,6 +28,7 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
+#include <boost/bind/bind.hpp>
 #include <boost/optional.hpp>
 #include <QtGlobal>
 #include <QDebug>
@@ -72,6 +73,9 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 #endif
 	d_gl_context(GPlatesOpenGL::GLContext::create()),
 	d_initialised_gl(false),
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+	d_vulkan_compute_queue_family_index(0),
+#endif
 	d_scene(GPlatesGui::Scene::create(view_state, devicePixelRatio())),
 	d_scene_view(GPlatesGui::SceneView::create(view_state)),
 	d_scene_overlays(GPlatesGui::SceneOverlays::create(view_state)),
@@ -81,6 +85,9 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 	d_mouse_is_on_globe(false)
 {
 #if defined(GPLATES_USE_VULKAN_BACKEND)
+
+	using namespace boost::placeholders;  // For _1, _2, etc
+
 	// Set the Vulkan instance in this QVulkanWindow.
 	//
 	// We do this first so that we then subsequently access 'vulkanInstance()' on 'this' QVulkanWindow.
@@ -96,6 +103,11 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 
 	// Choose the index of the VkPhysicalDevice that has a queue family supporting graphics and compute.
 	set_vulkan_physical_device_index();
+
+	// Ensure that either this QVulkanWindow's 'graphics' queue (yet to be created) supports 'compute' or
+	// request creation of an extra queue from a 'compute' queue family (when the logical device is created).
+	setQueueCreateInfoModifier(boost::bind(&GlobeAndMapCanvas::vulkan_queue_create_info_modifier, this, _1, _2, _3));
+
 #endif
 
 	// Update our canvas whenever the RenderedGeometryCollection gets updated.
@@ -384,6 +396,65 @@ GPlatesQtWidgets::GlobeAndMapCanvas::set_vulkan_physical_device_index()
 
 	// Set the desired physical device index in 'this' QVulkanWindow.
 	setPhysicalDeviceIndex(selected_physical_device_index.get());
+}
+
+
+void
+GPlatesQtWidgets::GlobeAndMapCanvas::vulkan_queue_create_info_modifier(
+		const VkQueueFamilyProperties *queue_family_properties_seq,
+		uint32_t queue_count,
+		QList<VkDeviceQueueCreateInfo> &queue_create_infos)
+{
+	// First search the existing queue creation infos to see if one of the queues being created by
+	// 'this' QVulkanWindow supports 'compute' (it's likely the 'graphics' queue also supports 'compute').
+	for (const auto &queue_create_info : queue_create_infos)
+	{
+		if ((queue_family_properties_seq[queue_create_info.queueFamilyIndex].queueFlags & VK_QUEUE_COMPUTE_BIT))
+		{
+			// The current queue (to be created) supports 'compute'.
+			// So we don't need to create an extra 'compute' queue.
+			//
+			// Specify which queue family to obtain (yet to be created) 'compute' queue from.
+			d_vulkan_compute_queue_family_index = queue_create_info.queueFamilyIndex;
+			return;
+		}
+	}
+
+	// Next search the queue families for a family that supports 'compute'.
+	boost::optional<uint32_t> compute_queue_family_index;
+	for (uint32_t queue_family_index = 0; queue_family_index < queue_count; ++queue_family_index)
+	{
+		const VkQueueFamilyProperties &queue_family_properties = queue_family_properties_seq[queue_family_index];
+
+		if ((queue_family_properties.queueFlags & VK_QUEUE_COMPUTE_BIT))
+		{
+			// The current queue family supports 'compute'.
+			compute_queue_family_index = queue_family_index;
+			break;
+		}
+	}
+
+	// We previously selected the physical device with a queue family supporting graphics and compute.
+	// So we should be able to find a queue family supporting compute.
+	GPlatesGlobal::Assert<GPlatesOpenGL::VulkanException>(
+			compute_queue_family_index,
+			GPLATES_ASSERTION_SOURCE,
+			"Failed to find a queue family supporting compute.");
+
+	// Specify the compute queue create info.
+	VkDeviceQueueCreateInfo compute_queue_create_info = {};
+	compute_queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	compute_queue_create_info.queueFamilyIndex = compute_queue_family_index.get();
+	compute_queue_create_info.queueCount = 1;
+	const float queue_priorities[] = { 0 };
+	compute_queue_create_info.pQueuePriorities = queue_priorities;
+
+	// Add the compute queue create info to the caller's list.
+	// The compute queue will get created when the logical device (VkDevice) is created.
+	queue_create_infos.append(compute_queue_create_info);
+
+	// Specify which queue family to obtain (yet to be created) 'compute' queue from.
+	d_vulkan_compute_queue_family_index = compute_queue_family_index.get();
 }
 
 #endif
