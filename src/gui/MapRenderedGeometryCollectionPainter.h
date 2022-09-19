@@ -105,23 +105,20 @@ namespace GPlatesGui
 		set_scale(
 				float scale);
 
-		virtual
 		boost::optional<GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type>
 		get_custom_child_layers_order(
-				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType parent_layer);
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType parent_layer) override;
 
 	private:
 
-		virtual
 		bool
 		visit_main_rendered_layer(
 				const GPlatesViewOperations::RenderedGeometryCollection &rendered_geometry_collection,
-				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type);
+				GPlatesViewOperations::RenderedGeometryCollection::MainLayerType main_rendered_layer_type) override;
 
-		virtual
 		bool
 		visit_rendered_geometry_layer(
-				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer);
+				const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer) override;
 
 
 		//! Typedef for the base class.

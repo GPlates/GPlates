@@ -62,13 +62,13 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 #endif
 	d_gl_context(GPlatesOpenGL::GLContext::create()),
 	d_initialised_gl(false),
-	// The following unit-vector initialisation value is arbitrary.
-	d_mouse_position_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
-	d_mouse_is_on_globe(false),
 	d_scene(GPlatesGui::Scene::create(view_state, devicePixelRatio())),
 	d_scene_view(GPlatesGui::SceneView::create(view_state)),
 	d_scene_overlays(GPlatesGui::SceneOverlays::create(view_state)),
-	d_scene_renderer(GPlatesGui::SceneRenderer::create(view_state))
+	d_scene_renderer(GPlatesGui::SceneRenderer::create(view_state)),
+	// The following unit-vector initialisation value is arbitrary.
+	d_mouse_position_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
+	d_mouse_is_on_globe(false)
 {
 #if defined(GPLATES_USE_VULKAN_BACKEND)
 	// Set the Vulkan instance in this QVulkanWindow.

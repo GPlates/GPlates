@@ -105,7 +105,7 @@ Extras          libxrender-dev libice-dev libsm-dev libfreetype6-dev libfontconf
 
 The command to install the dependencies (except Vulkan) on Ubuntu is:
 
-sudo apt-get update; sudo apt-get install cmake vulkan-sdk python3-dev python3-numpy libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev libqt5svg5-dev libqt5xmlpatterns5-dev libgdal-dev libcgal-dev libproj-dev libqwt-qt5-dev zlib1g-dev libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev
+sudo apt-get update; sudo apt-get install cmake python3-dev python3-numpy libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev libqt5svg5-dev libqt5xmlpatterns5-dev libgdal-dev libcgal-dev libproj-dev libqwt-qt5-dev zlib1g-dev libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev
 
 NOTE: Prior to Hirsute 21.04 you should also include qt5-default in the list above.
 
