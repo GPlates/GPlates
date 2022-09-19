@@ -360,6 +360,12 @@ namespace GPlatesQtWidgets
 #if defined(GPLATES_USE_VULKAN_BACKEND)
 
 		/**
+		 * Choose the index of the VkPhysicalDevice that has a queue family supporting graphics and compute.
+		 */
+		void
+		set_vulkan_physical_device_index();
+
+		/**
 		 * Callbacks when VkDevice is created and destroyed, and when need to render to canvas.
 		 */
 		class VulkanWindowRenderer :

@@ -27,15 +27,22 @@
 
 #include <cmath>
 #include <iostream>
+#include <vector>
+#include <boost/optional.hpp>
 #include <QtGlobal>
 #include <QDebug>
+#include <QString>
+#include "global/config.h" // For GPLATES_USE_VULKAN_BACKEND
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+#	include <QVulkanFunctions>
+#	include <QVulkanInstance>
+#endif
 
 #include "GlobeAndMapCanvas.h"
 
 #include "app-logic/ApplicationState.h"
 
 #include "global/AssertionFailureException.h"
-#include "global/config.h" // For GPLATES_USE_VULKAN_BACKEND
 #include "global/GPlatesAssert.h"
 #include "global/GPlatesException.h"
 
@@ -49,6 +56,9 @@
 
 #include "opengl/GLContext.h"
 #include "opengl/GLViewport.h"
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+#	include "opengl/VulkanException.h"
+#endif
 
 #include "presentation/ViewState.h"
 
@@ -72,7 +82,20 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 {
 #if defined(GPLATES_USE_VULKAN_BACKEND)
 	// Set the Vulkan instance in this QVulkanWindow.
+	//
+	// We do this first so that we then subsequently access 'vulkanInstance()' on 'this' QVulkanWindow.
 	setVulkanInstance(&view_state.get_application_state().get_vulkan_instance());
+
+	// Set PersistentResources flag on our QVulkanWindow.
+	//
+	// This is needed for off-screen rendering (eg, 'render_to_image()').
+	// If disabled then we won't be able to use any Vulkan resources at all when the window is un-exposed.
+	// Because when window is un-exposed it will call QVulkanWindowRenderer::releaseResources() which means,
+	// among other things, we can't even call QVulkanWindow::device() to get the VkDevice to do offscreen rendering.
+	setFlags(PersistentResources);
+
+	// Choose the index of the VkPhysicalDevice that has a queue family supporting graphics and compute.
+	set_vulkan_physical_device_index();
 #endif
 
 	// Update our canvas whenever the RenderedGeometryCollection gets updated.
@@ -264,6 +287,106 @@ GPlatesQtWidgets::GlobeAndMapCanvas::shutdown_gl()
 			this, SLOT(shutdown_gl()));
 #endif
 }
+
+
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+
+void
+GPlatesQtWidgets::GlobeAndMapCanvas::set_vulkan_physical_device_index()
+{
+	// Get the Vulkan instance and instance functions.
+	QVulkanInstance *vulkan_instance = vulkanInstance();
+	QVulkanFunctions *vulkan_functions = vulkan_instance->functions();
+
+	// Get the physical device count.
+	uint32_t physical_device_count;
+	VkResult err = vulkan_functions->vkEnumeratePhysicalDevices(
+			vulkan_instance->vkInstance(),
+			&physical_device_count,
+			nullptr);
+	GPlatesGlobal::Assert<GPlatesOpenGL::VulkanException>(
+			err == VK_SUCCESS,
+			GPLATES_ASSERTION_SOURCE,
+			QStringLiteral("Failed to get physical device count: %1").arg(err).toStdString());
+
+	// Get the physical devices.
+	std::vector<VkPhysicalDevice> physical_devices(physical_device_count);
+	err = vulkan_functions->vkEnumeratePhysicalDevices(
+			vulkan_instance->vkInstance(),
+			&physical_device_count,
+			physical_devices.data());
+	GPlatesGlobal::Assert<GPlatesOpenGL::VulkanException>(
+			err == VK_SUCCESS,
+			GPLATES_ASSERTION_SOURCE,
+			QStringLiteral("Failed to enumerate physical devices: %1").arg(err).toStdString());
+
+	// Find candidate physical devices with a queue family supporting both graphics and compute.
+	//
+	// According to the Vulkan spec...
+	//   "If an implementation exposes any queue family that supports graphics operations, at least one queue family of
+	//    at least one physical device exposed by the implementation must support both graphics and compute operations."
+	//
+	std::vector<uint32_t> candidate_physical_device_indices;
+	for (uint32_t physical_device_index = 0; physical_device_index < physical_device_count; ++physical_device_index)
+	{
+		// Get the queue family property count.
+		uint32_t queue_family_properties_count;
+		vulkan_functions->vkGetPhysicalDeviceQueueFamilyProperties(
+				physical_devices[physical_device_index],
+				&queue_family_properties_count, nullptr);
+
+		// Get the queue family properties.
+		std::vector<VkQueueFamilyProperties> queue_family_properties_seq(queue_family_properties_count);
+		vulkan_functions->vkGetPhysicalDeviceQueueFamilyProperties(
+				physical_devices[physical_device_index],
+				&queue_family_properties_count,
+				queue_family_properties_seq.data());
+
+		// See if any queue family supports both graphics and compute.
+		for (const auto &queue_family_properties : queue_family_properties_seq)
+		{
+			if ((queue_family_properties.queueFlags & VK_QUEUE_GRAPHICS_BIT) &&
+				(queue_family_properties.queueFlags & VK_QUEUE_COMPUTE_BIT))
+			{
+				candidate_physical_device_indices.push_back(physical_device_index);
+				break;
+			}
+		}
+	}
+
+	// Vulkan implementation should have a physical device with a queue family supporting graphics and compute.
+	GPlatesGlobal::Assert<GPlatesOpenGL::VulkanException>(
+			!candidate_physical_device_indices.empty(),
+			GPLATES_ASSERTION_SOURCE,
+			"Failed to find a physical device with a queue family supporting both graphics and compute.");
+
+	// Choose a 'discrete' GPU if found.
+	boost::optional<uint32_t> selected_physical_device_index;
+	for (uint32_t physical_device_index : candidate_physical_device_indices)
+	{
+		VkPhysicalDeviceProperties physical_device_properties;
+		vulkan_functions->vkGetPhysicalDeviceProperties(
+				physical_devices[physical_device_index],
+				&physical_device_properties);
+
+		if (physical_device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+		{
+			selected_physical_device_index = physical_device_index;
+			break;
+		}
+	}
+
+	// Discrete GPU not found, so just choose the first candidate physical device.
+	if (!selected_physical_device_index)
+	{
+		selected_physical_device_index = candidate_physical_device_indices.front();
+	}
+
+	// Set the desired physical device index in 'this' QVulkanWindow.
+	setPhysicalDeviceIndex(selected_physical_device_index.get());
+}
+
+#endif
 
 
 void
