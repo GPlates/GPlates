@@ -99,9 +99,7 @@ namespace GPlatesGui
 		{
 			TOOL_PAN_ROTATE_TILT,
 			TOOL_ZOOM,
-#if 0 // Disable lighting tool until volume visualisation is officially released (in GPlates 1.5)...
 			TOOL_CHANGE_LIGHTING,
-#endif
 			TOOL_MEASURE_DISTANCE,
 			TOOL_CLICK_GEOMETRY,
 			TOOL_DIGITISE_NEW_POLYLINE,
