@@ -55,6 +55,7 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/SphericalArea.h"
 
+#include "view-operations/RenderedArrow.h"
 #include "view-operations/RenderedArrowedPolyline.h"
 #include "view-operations/RenderedCircleSymbol.h"
 #include "view-operations/RenderedColouredEdgeSurfaceMesh.h"
@@ -74,7 +75,6 @@
 #include "view-operations/RenderedSmallCircleArc.h"
 #include "view-operations/RenderedSquareSymbol.h"
 #include "view-operations/RenderedString.h"
-#include "view-operations/RenderedTangentialArrow.h"
 #include "view-operations/RenderedTriangleSymbol.h"
 
 // Temporary includes for symbol testing
@@ -123,6 +123,13 @@ namespace
 	// Variables for drawing velocity arrows.
 	const float GLOBE_TO_MAP_SCALE_FACTOR = 180.;
 	const float MAP_VELOCITY_SCALE_FACTOR = 3.0;
+	// For arrows, we want to keep the projected arrowhead size constant regardless of the
+	// the length of the arrowline, except...
+	//
+	// ...if the ratio of arrowhead size to arrowline length is large enough then
+	// we need to start scaling the arrowhead size by the arrowline length so
+	// that the arrowhead disappears as the arrowline disappears.
+	const float MAX_RATIO_ARROWHEAD_TO_ARROW_BODY_LENGTH = 0.5f;
 	const double ARROWHEAD_BASE_HEIGHT_RATIO = 0.5;
 
 	// Scale factor for symbols.
@@ -1562,22 +1569,22 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_radial_arrow(
 }
 
 void
-GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_tangential_arrow(
-	const GPlatesViewOperations::RenderedTangentialArrow &rendered_tangential_arrow)
+GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_arrow(
+	const GPlatesViewOperations::RenderedArrow &rendered_arrow)
 {
-	const Colour &colour = rendered_tangential_arrow.get_colour();
+	const Colour &colour = rendered_arrow.get_colour();
 
 	// Convert colour from floats to bytes to use less vertex memory.
 	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
 	// Start of arrow.
-	const GPlatesMaths::UnitVector3D &start = rendered_tangential_arrow.get_start_position().position_vector();
+	const GPlatesMaths::UnitVector3D &start = rendered_arrow.get_start_position().position_vector();
 
 	// Calculate position from start point along tangent direction to
 	// end point off the globe. The length of the arrow in world space
 	// is inversely proportional to the zoom or magnification.
 	const GPlatesMaths::Vector3D end = GPlatesMaths::Vector3D(start) +
-			MAP_VELOCITY_SCALE_FACTOR * d_inverse_zoom_factor * rendered_tangential_arrow.get_arrow_direction();
+			MAP_VELOCITY_SCALE_FACTOR * d_inverse_zoom_factor * rendered_arrow.get_vector();
 
 	const GPlatesMaths::Vector3D arrowline = end - GPlatesMaths::Vector3D(start);
 	const GPlatesMaths::real_t arrowline_length = arrowline.magnitude();
@@ -1588,10 +1595,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_tangential_arrow(
 		return;
 	}
 
-	double arrowhead_size =
-			d_inverse_zoom_factor * rendered_tangential_arrow.get_arrowhead_projected_size();
-	const float max_ratio_arrowhead_to_arrowline_length =
-			rendered_tangential_arrow.get_max_ratio_arrowhead_to_arrowline_length();
+	double arrowhead_size = d_inverse_zoom_factor * rendered_arrow.get_arrowhead_size();
 
 	// We want to keep the projected arrowhead size constant regardless of the
 	// the length of the arrowline, except...
@@ -1599,15 +1603,18 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_tangential_arrow(
 	// ...if the ratio of arrowhead size to arrowline length is large enough then
 	// we need to start scaling the arrowhead size by the arrowline length so
 	// that the arrowhead disappears as the arrowline disappears.
-	if (arrowhead_size > max_ratio_arrowhead_to_arrowline_length * arrowline_length.dval())
+	if (arrowhead_size > MAX_RATIO_ARROWHEAD_TO_ARROW_BODY_LENGTH * arrowline_length.dval())
 	{
-		arrowhead_size = max_ratio_arrowhead_to_arrowline_length * arrowline_length.dval();
+		arrowhead_size = MAX_RATIO_ARROWHEAD_TO_ARROW_BODY_LENGTH * arrowline_length.dval();
 	}
 	// Adjust the arrow head size for the map view.
 	arrowhead_size *= GLOBE_TO_MAP_SCALE_FACTOR;
 
 	// Get the drawables for lines of the current line width.
-	const float line_width = rendered_tangential_arrow.get_map_view_arrowline_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+	//
+	// Note: For now just use an unscaled line width of 1.0.
+	//       Later we will render 3D arrows in map view (like globe view).
+	const float line_width = 1.0 * LINE_WIDTH_ADJUSTMENT * d_scale;
 	stream_primitives_type &line_stream =
 			d_layer_painter->drawables_off_the_sphere.get_lines_stream(line_width);
 

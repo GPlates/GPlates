@@ -127,8 +127,8 @@ namespace GPlatesGui
 
 		virtual
 		void
-		visit_rendered_tangential_arrow(
-				const GPlatesViewOperations::RenderedTangentialArrow &rendered_tangential_arrow);
+		visit_rendered_arrow(
+				const GPlatesViewOperations::RenderedArrow &rendered_arrow);
 
 		virtual
 		void

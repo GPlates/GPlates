@@ -30,6 +30,7 @@
 
 namespace GPlatesViewOperations
 {
+	class RenderedArrow;
 	class RenderedArrowedPolyline;
 	class RenderedCircleSymbol;
 	class RenderedColouredEdgeSurfaceMesh;
@@ -52,7 +53,6 @@ namespace GPlatesViewOperations
 	class RenderedSquareSymbol;
 	class RenderedStrainMarkerSymbol;
 	class RenderedString;
-	class RenderedTangentialArrow;
 	class RenderedTriangleSymbol;
 
 	/**
@@ -209,12 +209,12 @@ namespace GPlatesViewOperations
 		/**
 		 * Note that this is not the same as a polyline with a symbol decoration.
 		 *
-		 * This is a single directional arrow tangential to the globe's surface.
+		 * This is a single arrow.
 		 */
 		virtual
 		void
-		visit_rendered_tangential_arrow(
-				const RenderedTangentialArrow &)
+		visit_rendered_arrow(
+				const RenderedArrow &)
 		{  }
 
 		virtual

@@ -32,12 +32,12 @@
 
 #include "RenderedGeometryLayer.h"
 
+#include "RenderedArrow.h"
 #include "RenderedGeometryLayerVisitor.h"
 #include "RenderedGeometryVisitor.h"
 #include "RenderedPointOnSphere.h"
 #include "RenderedRadialArrow.h"
 #include "RenderedSmallCircle.h"
-#include "RenderedTangentialArrow.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/AssertionFailureException.h"
@@ -300,10 +300,10 @@ namespace GPlatesViewOperations
 
 			virtual
 			void
-			visit_rendered_tangential_arrow(
-					const RenderedTangentialArrow &rendered_tangential_arrow)
+			visit_rendered_arrow(
+					const RenderedArrow &rendered_arrow)
 			{
-				d_position_on_sphere = rendered_tangential_arrow.get_start_position();
+				d_position_on_sphere = rendered_arrow.get_start_position();
 			}
 
 		private:

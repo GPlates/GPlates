@@ -42,6 +42,7 @@ set(srcs
     MoveVertexGeometryOperation.cc
     MoveVertexGeometryOperation.h
     QueryProximityThreshold.h
+    RenderedArrow.h
     RenderedArrowedPolyline.h
     RenderedCircleSymbol.h
     RenderedColouredEdgeSurfaceMesh.h
@@ -81,7 +82,6 @@ set(srcs
     RenderedSquareSymbol.h
     RenderedStrainMarkerSymbol.h
     RenderedString.h
-    RenderedTangentialArrow.h
     RenderedTriangleSymbol.h
     ScalarField3DRenderParameters.cc
     ScalarField3DRenderParameters.h

@@ -207,8 +207,8 @@ namespace GPlatesGui
 
 		virtual
 		void
-		visit_rendered_tangential_arrow(
-				const GPlatesViewOperations::RenderedTangentialArrow &rendered_tangential_arrow);
+		visit_rendered_arrow(
+				const GPlatesViewOperations::RenderedArrow &rendered_arrow);
 				
 		virtual
 		void
@@ -462,8 +462,8 @@ namespace GPlatesGui
 		paint_arrow(
 				const GPlatesMaths::Vector3D &start,
 				const GPlatesMaths::Vector3D &end,
-				const GPlatesMaths::UnitVector3D &arrowline_unit_vector,
-				const GPlatesMaths::real_t &arrowline_width,
+				const GPlatesMaths::UnitVector3D &arrow_axis,
+				const GPlatesMaths::real_t &arrow_body_width,
 				const GPlatesMaths::real_t &arrowhead_size,
 				rgba8_t rgba8_color,
 				axially_symmetric_mesh_stream_primitives_type &triangles_stream);

@@ -123,9 +123,10 @@ namespace GPlatesPresentation
 			 */
 			float ratio_zoom_dependent_bin_dimension_to_globe_radius;
 
-			// Arrow body and head scaling.
-			float ratio_arrow_unit_vector_direction_to_globe_radius;
-			float ratio_arrowhead_size_to_globe_radius;
+			// Arrow body length, width and head scaling.
+			float arrow_body_length_scale;
+			float arrowhead_size;
+			float arrow_body_width;
 
 			//
 			// Scalar field render parameters.
