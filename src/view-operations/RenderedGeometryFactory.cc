@@ -41,7 +41,6 @@
 #include "RenderedPointOnSphere.h"
 #include "RenderedPolygonOnSphere.h"
 #include "RenderedPolylineOnSphere.h"
-#include "RenderedRadialArrow.h"
 #include "RenderedReconstructionGeometry.h"
 #include "RenderedResolvedRaster.h"
 #include "RenderedResolvedScalarField3D.h"
@@ -513,31 +512,6 @@ GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrow(
 					colour,
 					arrowhead_size,
 					arrow_body_width));
-
-	return RenderedGeometry(rendered_geom_impl);
-}
-
-GPlatesViewOperations::RenderedGeometry
-GPlatesViewOperations::RenderedGeometryFactory::create_rendered_radial_arrow(
-		const GPlatesMaths::PointOnSphere &position,
-		float arrow_projected_length,
-		float arrowhead_projected_size,
-		float ratio_arrowline_width_to_arrowhead_size,
-		const GPlatesGui::Colour &arrow_colour,
-		RenderedRadialArrow::SymbolType symbol_type,
-		float symbol_size,
-		const GPlatesGui::Colour &symbol_colour)
-{
-	RenderedGeometry::impl_ptr_type rendered_geom_impl(
-			new RenderedRadialArrow(
-					position,
-					arrow_projected_length,
-					arrowhead_projected_size,
-					ratio_arrowline_width_to_arrowhead_size * arrowhead_projected_size,
-					arrow_colour,
-					symbol_type,
-					symbol_size,
-					symbol_colour));
 
 	return RenderedGeometry(rendered_geom_impl);
 }

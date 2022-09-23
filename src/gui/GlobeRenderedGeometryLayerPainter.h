@@ -127,6 +127,11 @@ namespace GPlatesGui
 
 		virtual
 		void
+		visit_rendered_arrow(
+				const GPlatesViewOperations::RenderedArrow &rendered_arrow);
+
+		virtual
+		void
 		visit_rendered_arrowed_polyline(
 			const GPlatesViewOperations::RenderedArrowedPolyline &rendered_arrowed_polyline);
 
@@ -199,16 +204,6 @@ namespace GPlatesGui
 		void
 		visit_rendered_resolved_scalar_field_3d(
 				const GPlatesViewOperations::RenderedResolvedScalarField3D &rendered_resolved_scalar_field);
-
-		virtual
-		void
-		visit_rendered_radial_arrow(
-				const GPlatesViewOperations::RenderedRadialArrow &rendered_radial_arrow);
-
-		virtual
-		void
-		visit_rendered_arrow(
-				const GPlatesViewOperations::RenderedArrow &rendered_arrow);
 				
 		virtual
 		void

@@ -36,7 +36,6 @@
 #include "RenderedGeometry.h"
 #include "RenderedColouredEdgeSurfaceMesh.h"
 #include "RenderedColouredTriangleSurfaceMesh.h"
-#include "RenderedRadialArrow.h"
 
 #include "app-logic/ReconstructionGeometry.h"
 #include "app-logic/ResolvedScalarField3D.h"
@@ -321,48 +320,6 @@ namespace GPlatesViewOperations
 				const GPlatesGui::Colour &colour = DEFAULT_COLOUR,
 				float arrowhead_size = DEFAULT_ARROWHEAD_SIZE,
 				float arrow_body_width = DEFAULT_ARROW_BODY_WIDTH);
-
-		/**
-		 * Creates a single arrow, radial (or normal) to the globe's surface, consisting of a line
-		 * segment with an arrowhead at the end (in the 3D globe view) and a symbol (in 2D map views).
-		 *
-		 * The length of the arrow will automatically scale with viewport zoom such that
-		 * the projected length (onto the viewport window) remains constant.
-		 *
-		 * The @a arrow_projected_length parameter is the length of the arrow when the zoom is such
-		 * that the globe exactly (or pretty closely) fills the viewport window (either top-to-bottom
-		 * if wide-screen otherwise left-to-right).
-		 * For example, a value of 0.1 for @a arrow_projected_length will result in an arrow length
-		 * of 0.1 multiplied by the globe's radius when the globe is zoomed such that it fits the
-		 * viewport window.
-		 *
-		 * @param position on the globe/map.
-		 * @param arrow_projected_length the length of the arrow relative to the globe radius when
-		 *        the globe fills the viewport window (this is a view-dependent scalar).
-		 *        Only in globe view.
-		 * @param arrowhead_projected_size the size of the arrowhead relative to the globe radius when
-		 *        the globe fills the viewport window (this is a view-dependent scalar).
-		 *        Only in globe view.
-		 * @param ratio_arrowhead_size_to_globe_radius the size of the arrowhead relative to the
-		 *        globe radius when the globe fills the viewport window (this is a view-dependent scalar).
-		 *        Only in globe view.
-		 * @param arrow_colour the colour of the arrow (body and head).
-		 *        Only in globe view.
-		 * @param symbol_type type of symbol to draw in map view and at base of arrow in globe view.
-		 * @param symbol_size size of symbol in *scene* coordinates (only in map view).
-		 *        In globe view the symbol size matches the size of the arrow (cylindrical) body.
-		 * @param symbol_colour colour of the symbol.
-		 */
-		RenderedGeometry
-		create_rendered_radial_arrow(
-				const GPlatesMaths::PointOnSphere &position,
-				float arrow_projected_length,
-				float arrowhead_projected_size = DEFAULT_ARROWHEAD_SIZE,
-				float ratio_arrowline_width_to_arrowhead_size = DEFAULT_ARROW_BODY_WIDTH,
-				const GPlatesGui::Colour &arrow_colour = DEFAULT_COLOUR,
-				RenderedRadialArrow::SymbolType symbol_type = RenderedRadialArrow::SYMBOL_FILLED_CIRCLE,
-				float symbol_size = DEFAULT_SYMBOL_SIZE,
-				const GPlatesGui::Colour &symbol_colour = DEFAULT_COLOUR);
 
 		/**
 		 * Creates a composite @a RenderedGeometry containing another @a RenderedGeometry

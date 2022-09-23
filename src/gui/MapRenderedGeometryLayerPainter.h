@@ -122,11 +122,6 @@ namespace GPlatesGui
 
 		virtual
 		void
-		visit_rendered_radial_arrow(
-				const GPlatesViewOperations::RenderedRadialArrow &rendered_radial_arrow);
-
-		virtual
-		void
 		visit_rendered_arrow(
 				const GPlatesViewOperations::RenderedArrow &rendered_arrow);
 

@@ -646,16 +646,13 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_current_pole_arrow_layer()
 	if (!d_mouse_is_over_pole_estimate || (d_active_pole_type != PLATES_1_2_POLE_TYPE))
 	{
 		GPlatesViewOperations::RenderedGeometry pole_12_geometry_arrow =
-				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_radial_arrow(
-					d_current_pole_12,
-					d_hellinger_dialog_ptr->configuration().d_pole_arrow_height/*arrow_projected_length*/,
-					d_hellinger_dialog_ptr->configuration().d_pole_arrow_radius/*arrowhead_projected_size*/,
-					0.5f/*ratio_arrowline_width_to_arrowhead_size*/,
-					GPlatesGui::Colour(0, 0, 1, 0.5f)/*arrow_colour*/,
-					GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS/*symbol_type*/,
-					10.0f/*symbol_size*/,
-					GPlatesGui::Colour::get_blue()/*symbol_colour*/);
-
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrow(
+						d_current_pole_12,  // start
+						d_hellinger_dialog_ptr->configuration().d_pole_arrow_height *
+								GPlatesMaths::Vector3D(d_current_pole_12.position_vector()),  // vector
+						GPlatesGui::Colour(0, 0, 1, 0.5f),
+						d_hellinger_dialog_ptr->configuration().d_pole_arrow_radius,  // arrowhead_size
+						0.5f * d_hellinger_dialog_ptr->configuration().d_pole_arrow_radius);  // arrow_body_width
 		d_current_pole_arrow_layer_ptr->add_rendered_geometry(pole_12_geometry_arrow);
 	}
 
@@ -664,15 +661,13 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_current_pole_arrow_layer()
 		if (!d_mouse_is_over_pole_estimate || (d_active_pole_type != PLATES_1_3_POLE_TYPE))
 		{
 			GPlatesViewOperations::RenderedGeometry pole_13_geometry_arrow =
-					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_radial_arrow(
-						d_current_pole_13,
-						d_hellinger_dialog_ptr->configuration().d_pole_arrow_height/*arrow_projected_length*/,
-						d_hellinger_dialog_ptr->configuration().d_pole_arrow_radius/*arrowhead_projected_size*/,
-						0.5f/*ratio_arrowline_width_to_arrowhead_size*/,
-						GPlatesGui::Colour(0, 0, 1, 0.5f)/*arrow_colour*/,
-						GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS/*symbol_type*/,
-						10.0f/*symbol_size*/,
-						GPlatesGui::Colour::get_blue()/*symbol_colour*/);
+					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrow(
+							d_current_pole_13,  // start
+							d_hellinger_dialog_ptr->configuration().d_pole_arrow_height *
+									GPlatesMaths::Vector3D(d_current_pole_13.position_vector()),  // vector
+							GPlatesGui::Colour(0, 0, 1, 0.5f),
+							d_hellinger_dialog_ptr->configuration().d_pole_arrow_radius,  // arrowhead_size
+							0.5f * d_hellinger_dialog_ptr->configuration().d_pole_arrow_radius);  // arrow_body_width
 
 			d_current_pole_arrow_layer_ptr->add_rendered_geometry(pole_13_geometry_arrow);
 		}
@@ -738,15 +733,13 @@ GPlatesCanvasTools::AdjustFittedPoleEstimate::update_pole_estimate_and_arc_highl
 					POLE_SYMBOL);
 
 		GPlatesViewOperations::RenderedGeometry pole_arrow_geometry =
-				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_radial_arrow(
-					pole,
-					d_hellinger_dialog_ptr->configuration().d_pole_arrow_height/*arrow_projected_length*/,
-					d_hellinger_dialog_ptr->configuration().d_pole_arrow_radius/*arrowhead_projected_size*/,
-					0.5f/*ratio_arrowline_width_to_arrowhead_size*/,
-					GPlatesGui::Colour::get_yellow()/*arrow_colour*/,
-					GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS/*symbol_type*/,
-					10.0f/*symbol_size*/,
-					GPlatesGui::Colour::get_yellow()/*symbol_colour*/);
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrow(
+						pole,  // start
+						d_hellinger_dialog_ptr->configuration().d_pole_arrow_height *
+								GPlatesMaths::Vector3D(pole.position_vector()),  // vector
+						GPlatesGui::Colour::get_yellow(),
+						d_hellinger_dialog_ptr->configuration().d_pole_arrow_radius,  // arrowhead_size
+						0.5f * d_hellinger_dialog_ptr->configuration().d_pole_arrow_radius);  // arrow_body_width
 
 		GPlatesMaths::GreatCircleArc gca_reference = GPlatesMaths::GreatCircleArc::create(pole, reference_arc_end_point);
 		std::vector<GPlatesMaths::PointOnSphere> points;

@@ -31,8 +31,8 @@
 
 #include "RenderedGeometryCollection.h"
 
+#include "RenderedArrow.h"
 #include "RenderedGeometryProximity.h"
-#include "RenderedRadialArrow.h"
 
 #include "maths/PointOnSphere.h"
 
@@ -98,18 +98,13 @@ namespace GPlatesViewOperations
 
 		//! Colour to use for highlighting the light direction arrow.
 		static const GPlatesGui::Colour ARROW_HIGHLIGHT_COLOUR;
-		//! Colour to use for highlighting the light direction symbol.
-		static const GPlatesGui::Colour SYMBOL_HIGHLIGHT_COLOUR;
 
 		//! Colour to use when *not* highlighting the light direction arrow.
 		static const GPlatesGui::Colour ARROW_UNHIGHLIGHT_COLOUR;
-		//! Colour to use when *not* highlighting the light direction symbol.
-		static const GPlatesGui::Colour SYMBOL_UNHIGHLIGHT_COLOUR;
 
-		static const float ARROW_PROJECTED_LENGTH;
-		static const float ARROW_HEAD_PROJECTED_SIZE;
-		static const float RATIO_ARROW_LINE_WIDTH_TO_ARROW_HEAD_SIZE;
-		static const RenderedRadialArrow::SymbolType SYMBOL_TYPE;
+		static const float ARROW_LENGTH;
+		static const float ARROWHEAD_SIZE;
+		static const float ARROW_BODY_WIDTH;
 
 
 		GPlatesGui::SceneLightingParameters &d_scene_lighting_parameters;

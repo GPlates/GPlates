@@ -1193,17 +1193,12 @@ GPlatesQtWidgets::HellingerDialog::draw_pole_result(
 				GPlatesMaths::LatLonPoint(lat,lon));
 
 	GPlatesViewOperations::RenderedGeometry pole_geometry_arrow =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_radial_arrow(
-				point,
-				d_configuration.d_pole_arrow_height/*arrow_projected_length*/,
-				d_configuration.d_pole_arrow_radius/*arrowhead_projected_size*/,
-				0.5f/*ratio_arrowline_width_to_arrowhead_size*/,
-				HellingerConfigurationWidget::get_colour_from_hellinger_colour(
-					colour),
-				GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS/*symbol_type*/,
-				10.0f/*symbol_size*/,
-				HellingerConfigurationWidget::get_colour_from_hellinger_colour(
-					colour)/*symbol_colour*/);
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrow(
+					point,  // start
+					d_configuration.d_pole_arrow_height * GPlatesMaths::Vector3D(point.position_vector()),  // vector
+					HellingerConfigurationWidget::get_colour_from_hellinger_colour(colour),
+					d_configuration.d_pole_arrow_radius,  // arrowhead_size
+					0.5f * d_configuration.d_pole_arrow_radius);  // arrow_body_width
 
 	d_result_layer_ptr->add_rendered_geometry(pole_geometry_arrow);
 }
@@ -1509,17 +1504,12 @@ void GPlatesQtWidgets::HellingerDialog::draw_pole_estimate(
 				llp);
 
 	const GPlatesViewOperations::RenderedGeometry pole_geometry =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_radial_arrow(
-				pole,
-				d_configuration.d_pole_arrow_height/*arrow_projected_length*/,
-				d_configuration.d_pole_arrow_radius/*arrowhead_projected_size*/,
-				0.5f/*ratio_arrowline_width_to_arrowhead_size*/,
-				HellingerConfigurationWidget::get_colour_from_hellinger_colour(
-					colour) /*arrow_colour*/,
-				GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS/*symbol_type*/,
-				5.0f/*symbol_size*/,
-				HellingerConfigurationWidget::get_colour_from_hellinger_colour(
-					colour)/*symbol_colour*/);
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrow(
+					pole,  // start
+					d_configuration.d_pole_arrow_height * GPlatesMaths::Vector3D(pole.position_vector()),  // vector
+					HellingerConfigurationWidget::get_colour_from_hellinger_colour(colour),
+					d_configuration.d_pole_arrow_radius,  // arrowhead_size
+					0.5f * d_configuration.d_pole_arrow_radius);  // arrow_body_width
 
 	d_pole_estimate_layer_ptr->add_rendered_geometry(pole_geometry);
 

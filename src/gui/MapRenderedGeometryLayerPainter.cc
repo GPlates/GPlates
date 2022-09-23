@@ -69,7 +69,6 @@
 #include "view-operations/RenderedPointOnSphere.h"
 #include "view-operations/RenderedPolygonOnSphere.h"
 #include "view-operations/RenderedPolylineOnSphere.h"
-#include "view-operations/RenderedRadialArrow.h"
 #include "view-operations/RenderedResolvedRaster.h"
 #include "view-operations/RenderedSmallCircle.h"
 #include "view-operations/RenderedSmallCircleArc.h"
@@ -1456,119 +1455,6 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_ellipse(
 }
 
 void
-GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_radial_arrow(
-		const GPlatesViewOperations::RenderedRadialArrow &rendered_radial_arrow)
-{
-	// We don't render the radial arrow in the map view (it's radial and hence always pointing
-	// directly out of the map). We only render the symbol.
-
-    const Colour &symbol_colour = rendered_radial_arrow.get_symbol_colour();
-
-	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_symbol_colour = Colour::to_rgba8(symbol_colour);
-
-	// Get the small circle position in scene coordinates.
-	const QPointF small_circle_centre = get_projected_unwrapped_position(rendered_radial_arrow.get_position());
-
-	// The symbol is a small circle with diameter equal to the symbol size.
-	// The symbol size is specified in *scene* coordinates.
-	const double small_circle_radius = 0.5 * rendered_radial_arrow.get_symbol_size() * d_inverse_zoom_factor;
-
-	// Tessellate the circle on the plane of the map.
-	coloured_vertex_seq_type small_circle_vertices;
-	tessellate_on_plane(
-			small_circle_vertices,
-			small_circle_centre,
-			small_circle_radius,
-			SMALL_CIRCLE_ANGULAR_INCREMENT,
-			rgba8_symbol_colour);
-
-	// Draw the small circle outline.
-	// We do this even if we're filling the small circle because it gives a nice soft anti-aliased edge.
-
-	// The factor of 2 gives a nice look.
-	const float small_circle_line_width = 2.0f * LINE_WIDTH_ADJUSTMENT * d_scale;
-
-	// Get the stream for the small circle lines.
-	stream_primitives_type &small_circle_line_stream =
-			d_layer_painter->drawables_on_the_sphere.get_lines_stream(small_circle_line_width);
-
-	// Used to add a line loop to the stream.
-	stream_primitives_type::LineLoops stream_small_circle_line_loops(small_circle_line_stream);
-	stream_small_circle_line_loops.begin_line_loop();
-	BOOST_FOREACH(const coloured_vertex_type &small_circle_vertex, small_circle_vertices)
-	{
-		stream_small_circle_line_loops.add_vertex(small_circle_vertex);
-	}
-	stream_small_circle_line_loops.end_line_loop();
-
-	// Draw the filled small circle.
-	if (rendered_radial_arrow.get_symbol_type() == GPlatesViewOperations::RenderedRadialArrow::SYMBOL_FILLED_CIRCLE)
-	{
-		stream_primitives_type &triangle_stream =
-			d_layer_painter->drawables_on_the_sphere.get_triangles_stream();
-
-		stream_primitives_type::TriangleFans stream_triangle_fans(triangle_stream);
-
-		stream_triangle_fans.begin_triangle_fan();
-
-		// Add centre of small circle (apex of triangle fan).
-		stream_triangle_fans.add_vertex(
-					coloured_vertex_type(small_circle_centre.x(), small_circle_centre.y(), 0, rgba8_symbol_colour));
-
-		// Add small circle points.
-		BOOST_FOREACH(const coloured_vertex_type &small_circle_vertex, small_circle_vertices)
-		{
-			stream_small_circle_line_loops.add_vertex(small_circle_vertex);
-		}
-
-		stream_triangle_fans.end_triangle_fan();
-	}
-
-	// Draw the small circle centre point.
-	if (rendered_radial_arrow.get_symbol_type() == GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_POINT)
-	{
-		// The factor of 2 gives a nice look.
-		const float point_size = 2.0f * POINT_SIZE_ADJUSTMENT * d_scale;
-		stream_primitives_type &point_stream =
-				d_layer_painter->drawables_on_the_sphere.get_points_stream(point_size);
-
-		stream_primitives_type::Points stream_points(point_stream);
-		stream_points.begin_points();
-		stream_points.add_vertex(
-				coloured_vertex_type(small_circle_centre.x(), small_circle_centre.y(), 0, rgba8_symbol_colour));
-		stream_points.end_points();
-	}
-
-	// Draw a cross in the small circle.
-	if (rendered_radial_arrow.get_symbol_type() == GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS)
-	{
-		// The factor of 1.5 ensures the cross is not too fat.
-		const float cross_line_width = 1.5f * LINE_WIDTH_ADJUSTMENT * d_scale;
-
-		// Get the stream for the cross lines.
-		stream_primitives_type &cross_line_stream =
-				d_layer_painter->drawables_on_the_sphere.get_lines_stream(cross_line_width);
-
-		stream_primitives_type::LineStrips stream_cross_line_strips(cross_line_stream);
-
-		stream_cross_line_strips.begin_line_strip();
-		stream_cross_line_strips.add_vertex(
-				coloured_vertex_type(small_circle_centre.x() - small_circle_radius, small_circle_centre.y(), 0, rgba8_symbol_colour));
-		stream_cross_line_strips.add_vertex(
-				coloured_vertex_type(small_circle_centre.x() + small_circle_radius, small_circle_centre.y(), 0, rgba8_symbol_colour));
-		stream_cross_line_strips.end_line_strip();
-
-		stream_cross_line_strips.begin_line_strip();
-		stream_cross_line_strips.add_vertex(
-				coloured_vertex_type(small_circle_centre.x(), small_circle_centre.y() - small_circle_radius, 0, rgba8_symbol_colour));
-		stream_cross_line_strips.add_vertex(
-				coloured_vertex_type(small_circle_centre.x(), small_circle_centre.y() + small_circle_radius, 0, rgba8_symbol_colour));
-		stream_cross_line_strips.end_line_strip();
-	}
-}
-
-void
 GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_arrow(
 	const GPlatesViewOperations::RenderedArrow &rendered_arrow)
 {
@@ -1580,9 +1466,8 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_arrow(
 	// Start of arrow.
 	const GPlatesMaths::UnitVector3D &start = rendered_arrow.get_start_position().position_vector();
 
-	// Calculate position from start point along tangent direction to
-	// end point off the globe. The length of the arrow in world space
-	// is inversely proportional to the zoom or magnification.
+	// Calculate position from start point (on the map) along vector direction to end point (potentially off the map).
+	// The length of the arrow in world space is inversely proportional to the zoom or magnification.
 	const GPlatesMaths::Vector3D end = GPlatesMaths::Vector3D(start) +
 			MAP_VELOCITY_SCALE_FACTOR * d_inverse_zoom_factor * rendered_arrow.get_vector();
 

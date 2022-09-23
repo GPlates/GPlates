@@ -36,7 +36,6 @@
 #include "RenderedGeometryLayerVisitor.h"
 #include "RenderedGeometryVisitor.h"
 #include "RenderedPointOnSphere.h"
-#include "RenderedRadialArrow.h"
 #include "RenderedSmallCircle.h"
 
 #include "global/GPlatesAssert.h"
@@ -288,14 +287,6 @@ namespace GPlatesViewOperations
 					const GPlatesViewOperations::RenderedPointOnSphere &rendered_point_on_sphere)
 			{
 				d_position_on_sphere = rendered_point_on_sphere.get_point_on_sphere();
-			}
-
-			virtual
-			void
-			visit_rendered_radial_arrow(
-					const RenderedRadialArrow &rendered_radial_arrow)
-			{
-				d_position_on_sphere = rendered_radial_arrow.get_position();
 			}
 
 			virtual

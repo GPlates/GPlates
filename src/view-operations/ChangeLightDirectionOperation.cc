@@ -36,24 +36,14 @@
 
 
 // Highlight arrow in yellow with some transparency.
-const GPlatesGui::Colour GPlatesViewOperations::ChangeLightDirectionOperation::ARROW_HIGHLIGHT_COLOUR =
-		GPlatesGui::Colour(1, 1, 0, 0.8f);
-// Highlight symbol in red.
-const GPlatesGui::Colour GPlatesViewOperations::ChangeLightDirectionOperation::SYMBOL_HIGHLIGHT_COLOUR =
-		GPlatesGui::Colour(1, 0, 0, 1);
+const GPlatesGui::Colour GPlatesViewOperations::ChangeLightDirectionOperation::ARROW_HIGHLIGHT_COLOUR = GPlatesGui::Colour(1, 1, 0, 0.8f);
 
 // Unhighlight arrow in white.
-const GPlatesGui::Colour GPlatesViewOperations::ChangeLightDirectionOperation::ARROW_UNHIGHLIGHT_COLOUR =
-		GPlatesGui::Colour::get_white();
-// Unhighlight symbol in white.
-const GPlatesGui::Colour GPlatesViewOperations::ChangeLightDirectionOperation::SYMBOL_UNHIGHLIGHT_COLOUR =
-		GPlatesGui::Colour::get_white();
+const GPlatesGui::Colour GPlatesViewOperations::ChangeLightDirectionOperation::ARROW_UNHIGHLIGHT_COLOUR = GPlatesGui::Colour::get_white();
 
-const float GPlatesViewOperations::ChangeLightDirectionOperation::ARROW_PROJECTED_LENGTH = 0.3f;
-const float GPlatesViewOperations::ChangeLightDirectionOperation::ARROW_HEAD_PROJECTED_SIZE = 0.1f;
-const float GPlatesViewOperations::ChangeLightDirectionOperation::RATIO_ARROW_LINE_WIDTH_TO_ARROW_HEAD_SIZE = 0.5f;
-const GPlatesViewOperations::RenderedRadialArrow::SymbolType GPlatesViewOperations::ChangeLightDirectionOperation::SYMBOL_TYPE =
-		GPlatesViewOperations::RenderedRadialArrow::SYMBOL_FILLED_CIRCLE;
+const float GPlatesViewOperations::ChangeLightDirectionOperation::ARROW_LENGTH = 0.3f;
+const float GPlatesViewOperations::ChangeLightDirectionOperation::ARROWHEAD_SIZE = 0.1f;
+const float GPlatesViewOperations::ChangeLightDirectionOperation::ARROW_BODY_WIDTH = 0.5f * GPlatesViewOperations::ChangeLightDirectionOperation::ARROWHEAD_SIZE;
 
 
 GPlatesViewOperations::ChangeLightDirectionOperation::ChangeLightDirectionOperation(
@@ -195,7 +185,7 @@ GPlatesViewOperations::ChangeLightDirectionOperation::adjust_closeness_inclusion
 	// We're assuming that "arcsin(size) ~ size" for small enough arrow sizes/extents.
 	// And we also adjust for viewport zoom since the rendered arrow is scaled by zoom factor.
 	return GPlatesMaths::cos(
-			0.5 * ARROW_HEAD_PROJECTED_SIZE / d_viewport_zoom.zoom_factor() +
+			0.5 * ARROWHEAD_SIZE / d_viewport_zoom.zoom_factor() +
 				GPlatesMaths::acos(closeness_inclusion_threshold)).dval();
 }
 
@@ -247,19 +237,17 @@ GPlatesViewOperations::ChangeLightDirectionOperation::render_light_direction(
 	// Convert light direction to world-space (from view-space) if necessary.
 	const GPlatesMaths::UnitVector3D world_space_light_direction = get_world_space_light_direction();
 
+	const GPlatesMaths::Vector3D light_direction_arrow_vector = ARROW_LENGTH * world_space_light_direction;
+
 	// Render the light direction as an arrow.
 	// Render symbol in map view with a symbol size of zero so that it doesn't show up because
 	// we don't currently support changing light direction in the map view.
 	const RenderedGeometry light_direction_arrow_rendered_geom =
-			RenderedGeometryFactory::create_rendered_radial_arrow(
+			RenderedGeometryFactory::create_rendered_arrow(
 					GPlatesMaths::PointOnSphere(world_space_light_direction),
-					ARROW_PROJECTED_LENGTH,
-					ARROW_HEAD_PROJECTED_SIZE,
-					RATIO_ARROW_LINE_WIDTH_TO_ARROW_HEAD_SIZE,
+					light_direction_arrow_vector,
 					highlight ? ARROW_HIGHLIGHT_COLOUR : ARROW_UNHIGHLIGHT_COLOUR,
-					SYMBOL_TYPE,
-					// Map symbol size set to zero...
-					0,
-					highlight ? SYMBOL_HIGHLIGHT_COLOUR : SYMBOL_UNHIGHLIGHT_COLOUR);
+					ARROWHEAD_SIZE,
+					ARROW_BODY_WIDTH);
 	d_light_direction_layer_ptr->add_rendered_geometry(light_direction_arrow_rendered_geom);
 }

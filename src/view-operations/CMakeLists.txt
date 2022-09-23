@@ -73,7 +73,6 @@ set(srcs
     RenderedPointOnSphere.h
     RenderedPolygonOnSphere.h
     RenderedPolylineOnSphere.h
-    RenderedRadialArrow.h
     RenderedReconstructionGeometry.h
     RenderedResolvedRaster.h
     RenderedResolvedScalarField3D.h
