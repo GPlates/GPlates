@@ -187,14 +187,22 @@ GPlatesGui::SceneRenderer::render_scene_tile_to_image(
 			image_tile_render_target_viewport.width(),
 			image_tile_render_target_viewport.height());
 
+	// The view/projection/viewport for the *entire* image.
+	const GPlatesOpenGL::GLViewProjection image_view_projection = scene_view.get_view_projection(image_viewport);
+
 	// Projection transform associated with current image tile will be post-multiplied with the
 	// projection transform for the whole image.
-	const GPlatesOpenGL::GLMatrix image_tile_projection_transform =
+	GPlatesOpenGL::GLMatrix image_tile_projection_transform =
 			image_tile_render.get_tile_projection_transform()->get_matrix();
+	image_tile_projection_transform.gl_mult_matrix(image_view_projection.get_projection_transform());
+
+	// Note: The view transform is unaffected by the tile (only the projection transform is affected).
+	const GPlatesOpenGL::GLMatrix image_tile_view_transform = image_view_projection.get_view_transform();
 
 	// The view/projection/viewport for the current image tile.
-	const GPlatesOpenGL::GLViewProjection image_tile_view_projection = scene_view.get_view_projection(
-			image_viewport,  // viewport for the entire image
+	const GPlatesOpenGL::GLViewProjection image_tile_view_projection(
+			image_tile_render_target_viewport,  // viewport for the image *tile*
+			image_tile_view_transform,
 			image_tile_projection_transform);
 
 	//

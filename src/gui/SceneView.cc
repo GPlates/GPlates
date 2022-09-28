@@ -105,27 +105,15 @@ GPlatesGui::SceneView::is_globe_active() const
 
 GPlatesOpenGL::GLViewProjection
 GPlatesGui::SceneView::get_view_projection(
-		const GPlatesOpenGL::GLViewport &viewport,
-		boost::optional<const GPlatesOpenGL::GLMatrix &> tile_projection_transform_opt) const
+		const GPlatesOpenGL::GLViewport &viewport) const
 {
 	// Note that the projection is 'orthographic' or 'perspective', and hence is only affected by the viewport
 	// *aspect ratio*, so it is independent of whether we're using device pixels or device *independent* pixels.
 	const double viewport_aspect_ratio = double(viewport.width()) / viewport.height();
 
 	// Get the view-projection transform.
-	GPlatesOpenGL::GLMatrix view_transform = get_active_camera().get_view_transform();
-	GPlatesOpenGL::GLMatrix projection_transform = get_active_camera().get_projection_transform(viewport_aspect_ratio);
-
-	if (tile_projection_transform_opt)
-	{
-		// The projection transform associated with the tile is post-multiplied with the projection transform of the scene view.
-		//
-		// Note: The view transform is unaffected by the tile (only the projection transform is affected).
-		GPlatesOpenGL::GLMatrix tile_projection_transform = tile_projection_transform_opt.get();
-		tile_projection_transform.gl_mult_matrix(projection_transform);
-
-		projection_transform = tile_projection_transform;
-	}
+	const GPlatesOpenGL::GLMatrix view_transform = get_active_camera().get_view_transform();
+	const GPlatesOpenGL::GLMatrix projection_transform = get_active_camera().get_projection_transform(viewport_aspect_ratio);
 
 	return GPlatesOpenGL::GLViewProjection(viewport, view_transform, projection_transform);
 }

@@ -29,7 +29,6 @@
 #include "maths/PointOnSphere.h"
 
 #include "opengl/GLIntersectPrimitives.h"
-#include "opengl/GLMatrix.h"
 #include "opengl/GLViewport.h"
 #include "opengl/GLViewProjection.h"
 
@@ -121,13 +120,11 @@ namespace GPlatesGui
 		/**
 		 * Get the view-projection transform of the current view, and combine it with the specified viewport.
 		 *
-		 * An optional tile projection transform can pre-multiply the projection transform of the current view
-		 * (see @a GLTileRender).
+		 * Note that the viewport aspect ratio affects the projection transform.
 		 */
 		GPlatesOpenGL::GLViewProjection
 		get_view_projection(
-				const GPlatesOpenGL::GLViewport &viewport,
-				boost::optional<const GPlatesOpenGL::GLMatrix &> tile_projection_transform = boost::none) const;
+				const GPlatesOpenGL::GLViewport &viewport) const;
 
 		/**
 		 * Returns the position on the globe (in the current globe or map view) at the specified window coordinate.
