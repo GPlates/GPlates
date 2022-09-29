@@ -103,7 +103,8 @@ namespace GPlatesOpenGL
 	/**
 	 * Used to bind a buffer object (to a non-indexed target).
 	 *
-	 * This only applies to non-indexed targets (ie, excludes GL_UNIFORM_BUFFER and GL_TRANSFORM_FEEDBACK_BUFFER).
+	 * This only applies to non-indexed targets (ie, excludes
+	 * GL_UNIFORM_BUFFER, GL_TRANSFORM_FEEDBACK_BUFFER, GL_SHADER_STORAGE_BUFFER and GL_ATOMIC_COUNTER_BUFFER).
 	 *
 	 * This is used with glBindBuffer only (not glBindBufferBase and glBindBufferRange).
 	 */
@@ -155,7 +156,8 @@ namespace GPlatesOpenGL
 	/**
 	 * Used to bind a buffer object to an *indexed* target.
 	 *
-	 * This only applies to targets GL_UNIFORM_BUFFER and GL_TRANSFORM_FEEDBACK_BUFFER.
+	 * This only applies to targets GL_UNIFORM_BUFFER, GL_TRANSFORM_FEEDBACK_BUFFER,
+	 * GL_SHADER_STORAGE_BUFFER and GL_ATOMIC_COUNTER_BUFFER.
 	 *
 	 * This is used with glBindBuffer, glBindBufferBase and glBindBufferRange for those two targets
 	 * (since glBindBufferBase and glBindBufferRange affect both the indexed target *and* the
@@ -240,7 +242,7 @@ namespace GPlatesOpenGL
 			}
 		};
 
-		//! GL_UNIFORM_BUFFER or GL_TRANSFORM_FEEDBACK_BUFFER.
+		//! GL_UNIFORM_BUFFER, GL_TRANSFORM_FEEDBACK_BUFFER, GL_SHADER_STORAGE_BUFFER or GL_ATOMIC_COUNTER_BUFFER.
 		GLenum d_target;
 
 		// General binding point - used by glBindBuffer, glBindBufferBase and glBindBufferRange.

@@ -125,7 +125,9 @@ GPlatesOpenGL::GLState::bind_buffer(
 		boost::optional<GLBuffer::shared_ptr_type> buffer)
 {
 	if (target == GL_UNIFORM_BUFFER ||
-		target == GL_TRANSFORM_FEEDBACK_BUFFER)
+		target == GL_TRANSFORM_FEEDBACK_BUFFER ||
+		target == GL_SHADER_STORAGE_BUFFER ||
+		target == GL_ATOMIC_COUNTER_BUFFER)
 	{
 		//
 		// Indexed buffer target.
@@ -192,7 +194,10 @@ GPlatesOpenGL::GLState::bind_buffer_base(
 {
 	// Should only be called for an *indexed* target.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			target == GL_UNIFORM_BUFFER || target == GL_TRANSFORM_FEEDBACK_BUFFER,
+			target == GL_UNIFORM_BUFFER ||
+				target == GL_TRANSFORM_FEEDBACK_BUFFER ||
+				target == GL_SHADER_STORAGE_BUFFER ||
+				target == GL_ATOMIC_COUNTER_BUFFER,
 			GPLATES_ASSERTION_SOURCE);
 
 	const state_set_key_type state_set_key = d_state_set_keys->get_bind_buffer_key(target);
@@ -251,7 +256,10 @@ GPlatesOpenGL::GLState::bind_buffer_range(
 {
 	// Should only be called for an *indexed* target.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			target == GL_UNIFORM_BUFFER || target == GL_TRANSFORM_FEEDBACK_BUFFER,
+			target == GL_UNIFORM_BUFFER ||
+				target == GL_TRANSFORM_FEEDBACK_BUFFER ||
+				target == GL_SHADER_STORAGE_BUFFER ||
+				target == GL_ATOMIC_COUNTER_BUFFER,
 			GPLATES_ASSERTION_SOURCE);
 
 	const state_set_key_type state_set_key = d_state_set_keys->get_bind_buffer_key(target);
@@ -733,7 +741,9 @@ GPlatesOpenGL::GLState::get_bind_buffer(
 		GLenum target) const
 {
 	if (target == GL_UNIFORM_BUFFER ||
-		target == GL_TRANSFORM_FEEDBACK_BUFFER)
+		target == GL_TRANSFORM_FEEDBACK_BUFFER ||
+		target == GL_SHADER_STORAGE_BUFFER ||
+		target == GL_ATOMIC_COUNTER_BUFFER)
 	{
 		// Indexed buffer target.
 		return query_state_set<GLBuffer::shared_ptr_type>(

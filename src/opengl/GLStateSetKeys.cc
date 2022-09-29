@@ -80,20 +80,32 @@ GPlatesOpenGL::GLStateSetKeys::get_bind_buffer_key(
 	case GL_ARRAY_BUFFER:
 		key = KEY_BIND_ARRAY_BUFFER;
 		break;
+	case GL_ATOMIC_COUNTER_BUFFER:
+		key = KEY_BIND_ATOMIC_COUNTER_BUFFER;
+		break;
 	case GL_COPY_READ_BUFFER:
 		key = KEY_BIND_COPY_READ_BUFFER;
 		break;
 	case GL_COPY_WRITE_BUFFER:
 		key = KEY_BIND_COPY_WRITE_BUFFER;
 		break;
+	// The element array buffer binding is not global state in the OpenGL core profile.
+	// The binding is stored in a vertex array object.
+	// And it's invalid to bind an element array buffer when no vertex array object is bound.
+	// Which means it's not really global state in the core profile.
+#if 0
 	case GL_ELEMENT_ARRAY_BUFFER:
 		key = KEY_BIND_ELEMENT_ARRAY_BUFFER;
 		break;
+#endif
 	case GL_PIXEL_PACK_BUFFER:
 		key = KEY_BIND_PIXEL_PACK_BUFFER;
 		break;
 	case GL_PIXEL_UNPACK_BUFFER:
 		key = KEY_BIND_PIXEL_UNPACK_BUFFER;
+		break;
+	case GL_SHADER_STORAGE_BUFFER:
+		key = KEY_BIND_SHADER_STORAGE_BUFFER;
 		break;
 	case GL_TEXTURE_BUFFER:
 		key = KEY_BIND_TEXTURE_BUFFER;

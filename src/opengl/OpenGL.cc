@@ -132,7 +132,7 @@ GPlatesOpenGL::GL::BindBufferBase(
 		GLuint index,
 		boost::optional<GLBuffer::shared_ptr_type> buffer)
 {
-	// Only used for targets GL_UNIFORM_BUFFER and GL_TRANSFORM_FEEDBACK_BUFFER.
+	// Only used for targets GL_UNIFORM_BUFFER, GL_TRANSFORM_FEEDBACK_BUFFER, GL_SHADER_STORAGE_BUFFER and GL_ATOMIC_COUNTER_BUFFER.
 	d_current_state->bind_buffer_base(target, index, buffer);
 }
 
@@ -145,7 +145,7 @@ GPlatesOpenGL::GL::BindBufferRange(
 		GLintptr offset,
 		GLsizeiptr size)
 {
-	// Only used for targets GL_UNIFORM_BUFFER and GL_TRANSFORM_FEEDBACK_BUFFER.
+	// Only used for targets GL_UNIFORM_BUFFER, GL_TRANSFORM_FEEDBACK_BUFFER, GL_SHADER_STORAGE_BUFFER and GL_ATOMIC_COUNTER_BUFFER.
 	d_current_state->bind_buffer_range(target, index, buffer, offset, size);
 }
 
