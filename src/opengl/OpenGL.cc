@@ -338,6 +338,36 @@ GPlatesOpenGL::GL::ClearStencil(
 
 
 void
+GPlatesOpenGL::GL::ClearTexSubImage(
+		GLTexture::shared_ptr_type texture,
+		GLint level,
+		GLint xoffset,
+		GLint yoffset,
+		GLint zoffset,
+		GLsizei width,
+		GLsizei height,
+		GLsizei depth,
+		GLenum format,
+		GLenum type,
+		const void *data)
+{
+	d_opengl_functions.glClearTexSubImage(texture->get_resource_handle(), level, xoffset, yoffset, zoffset, width, height, depth, format, type, data);
+}
+
+
+void
+GPlatesOpenGL::GL::ClearTexImage(
+		GLTexture::shared_ptr_type texture,
+		GLint level,
+		GLenum format,
+		GLenum type,
+		const void *data)
+{
+	d_opengl_functions.glClearTexImage(texture->get_resource_handle(), level, format, type, data);
+}
+
+
+void
 GPlatesOpenGL::GL::ColorMask(
 		GLboolean red,
 		GLboolean green,
@@ -861,6 +891,16 @@ GPlatesOpenGL::GL::Scissor(
 
 
 void
+GPlatesOpenGL::GL::ShaderStorageBlockBinding(
+		GLProgram::shared_ptr_type program,
+		GLuint storageBlockIndex,
+		GLuint storageBlockBinding)
+{
+	d_opengl_functions.glShaderStorageBlockBinding(program->get_resource_handle(), storageBlockIndex, storageBlockBinding);
+}
+
+
+void
 GPlatesOpenGL::GL::StencilFunc(
 		GLenum func,
 		GLint ref,
@@ -1027,6 +1067,28 @@ GPlatesOpenGL::GL::TexImage3D(
 		const GLvoid *pixels)
 {
 	d_opengl_functions.glTexImage3D(target, level, internalformat, width, height, depth, border, format, type, pixels);
+}
+
+
+void
+GPlatesOpenGL::GL::TextureBuffer(
+		GLuint texture,
+		GLenum internalformat,
+		GLuint buffer)
+{
+	d_opengl_functions.glTextureBuffer(texture, internalformat, buffer);
+}
+
+
+void
+GPlatesOpenGL::GL::TextureBufferRange(
+		GLuint texture,
+		GLenum internalformat,
+		GLuint buffer,
+		GLintptr offset,
+		GLsizei size)
+{
+	d_opengl_functions.glTextureBufferRange(texture, internalformat, buffer, offset, size);
 }
 
 

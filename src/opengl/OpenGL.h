@@ -366,6 +366,28 @@ namespace GPlatesOpenGL
 		ClearStencil(
 				GLint stencil = 0);
 
+		void
+		ClearTexSubImage(
+				GLTexture::shared_ptr_type texture,
+				GLint level,
+				GLint xoffset,
+				GLint yoffset,
+				GLint zoffset,
+				GLsizei width,
+				GLsizei height,
+				GLsizei depth,
+				GLenum format,
+				GLenum type,
+				const void *data);
+
+		void
+		ClearTexImage(
+				GLTexture::shared_ptr_type texture,
+				GLint level,
+				GLenum format,
+				GLenum type,
+				const void *data);
+
 		// OpenGL 1.0
 		void
 		ColorMask(
@@ -697,6 +719,12 @@ namespace GPlatesOpenGL
 				GLsizei width,
 				GLsizei height);
 
+		void
+		ShaderStorageBlockBinding(
+				GLProgram::shared_ptr_type program,
+				GLuint storageBlockIndex,
+				GLuint storageBlockBinding);
+
 		// OpenGL 1.0
 		void
 		StencilFunc(
@@ -857,6 +885,20 @@ namespace GPlatesOpenGL
 				GLenum format,
 				GLenum type,
 				const GLvoid *pixels);
+
+		void
+		TextureBuffer(
+				GLuint texture,
+				GLenum internalformat,
+				GLuint buffer);
+
+		void
+		TextureBufferRange(
+				GLuint texture,
+				GLenum internalformat,
+				GLuint buffer,
+				GLintptr offset,
+				GLsizei size);
 
 		// OpenGL 2.0
 		void

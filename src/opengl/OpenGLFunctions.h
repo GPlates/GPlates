@@ -93,6 +93,8 @@ namespace GPlatesOpenGL
 		void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 		void glClearDepth(GLdouble depth);
 		void glClearStencil(GLint s);
+		void glClearTexSubImage(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void* data);
+		void glClearTexImage(GLuint texture, GLint level, GLenum format, GLenum type, const void* data);
 		void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha);
 		void glColorMaski(GLuint index, GLboolean r, GLboolean g, GLboolean b, GLboolean a);
 		void glCompileShader(GLuint shader);
@@ -168,6 +170,7 @@ namespace GPlatesOpenGL
 		void glSamplerParameterIiv(GLuint sampler, GLenum pname, const GLint *param);
 		void glSamplerParameterIuiv(GLuint sampler, GLenum pname, const GLuint *param);
 		void glScissor(GLint x, GLint y, GLsizei width, GLsizei height);
+		void glShaderStorageBlockBinding(GLuint program, GLuint storageBlockIndex, GLuint storageBlockBinding);
 		void glShaderSource(GLuint shader, GLsizei count, const GLchar* const *string, const GLint *length);
 		void glStencilFunc(GLenum func, GLint ref, GLuint mask);
 		void glStencilFuncSeparate(GLenum face, GLenum func, GLint ref, GLuint mask);
@@ -187,6 +190,8 @@ namespace GPlatesOpenGL
 		void glTexImage1D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
 		void glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
 		void glTexImage3D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
+		void glTextureBuffer(GLuint texture, GLenum internalformat, GLuint buffer);
+		void glTextureBufferRange(GLuint texture, GLenum internalformat, GLuint buffer, GLintptr offset, GLsizei size);
 		void glUniform1f(GLint location, GLfloat v0);
 		void glUniform1fv(GLint location, GLsizei count, const GLfloat *value);
 		void glUniform1i(GLint location, GLint v0);

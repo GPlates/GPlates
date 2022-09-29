@@ -145,6 +145,16 @@ void GPlatesOpenGL::OpenGLFunctions::glClearStencil(GLint s)
 	d_functions->glClearStencil(s);
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glClearTexSubImage(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *data)
+{
+	d_functions->glClearTexSubImage(texture, level, xoffset, yoffset, zoffset, width, height, depth, format, type, data);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glClearTexImage(GLuint texture, GLint level, GLenum format, GLenum type, const void *data)
+{
+	d_functions->glClearTexImage(texture, level, format, type, data);
+}
+
 void GPlatesOpenGL::OpenGLFunctions::glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha)
 {
 	d_functions->glColorMask(red, green, blue, alpha);
@@ -520,6 +530,11 @@ void GPlatesOpenGL::OpenGLFunctions::glScissor(GLint x, GLint y, GLsizei width, 
 	d_functions->glScissor(x, y, width, height);
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glShaderStorageBlockBinding(GLuint program, GLuint storageBlockIndex, GLuint storageBlockBinding)
+{
+	d_functions->glShaderStorageBlockBinding(program, storageBlockIndex, storageBlockBinding);
+}
+
 void GPlatesOpenGL::OpenGLFunctions::glShaderSource(GLuint shader, GLsizei count, const GLchar* const* string, const GLint* length)
 {
 	d_functions->glShaderSource(shader, count, string, length);
@@ -613,6 +628,16 @@ void GPlatesOpenGL::OpenGLFunctions::glTexImage2D(GLenum target, GLint level, GL
 void GPlatesOpenGL::OpenGLFunctions::glTexImage3D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid* pixels)
 {
 	d_functions->glTexImage3D(target, level, internalformat, width, height, depth, border, format, type, pixels);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glTextureBuffer(GLuint texture, GLenum internalformat, GLuint buffer)
+{
+	d_functions->glTextureBuffer(texture, internalformat, buffer);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glTextureBufferRange(GLuint texture, GLenum internalformat, GLuint buffer, GLintptr offset, GLsizei size)
+{
+	d_functions->glTextureBufferRange(texture, internalformat, buffer, offset, size);
 }
 
 void GPlatesOpenGL::OpenGLFunctions::glUniform1f(GLint location, GLfloat v0)
