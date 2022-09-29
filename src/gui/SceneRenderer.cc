@@ -17,6 +17,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <QString>
+
 #include "SceneRenderer.h"
 
 #include "Colour.h"
@@ -30,18 +32,40 @@
 #include "opengl/GLCapabilities.h"
 #include "opengl/GLImageUtils.h"
 #include "opengl/GLMatrix.h"
+#include "opengl/GLShader.h"
+#include "opengl/GLShaderSource.h"
 #include "opengl/GLTileRender.h"
+#include "opengl/GLUtils.h"
 #include "opengl/GLViewProjection.h"
 #include "opengl/OpenGL.h"
 #include "opengl/OpenGLException.h"
 
 #include "presentation/ViewState.h"
 
+#include "utils/CallStackTracker.h"
 #include "utils/Profile.h"
+
+
+namespace
+{
+	// Vertex and fragment shader that sorts and blends the list of fragments (per pixel) in depth order.
+	const QString SORT_AND_BLEND_SCENE_FRAGMENTS_VERTEX_SHADER_SOURCE_FILE_NAME = ":/opengl/sort_and_blend_scene_fragments.vert";
+	const QString SORT_AND_BLEND_SCENE_FRAGMENTS_FRAGMENT_SHADER_SOURCE_FILE_NAME = ":/opengl/sort_and_blend_scene_fragments.frag";
+
+	// The maximum allowed scene fragments that can be rendered per pixel on average.
+	// Some pixels will have more fragments that this and most will have less.
+	// As long as the average over all screen pixels is less than this then we have allocated enough storage.
+	const unsigned int MAX_AVERAGE_FRAGMENTS_PER_PIXEL = 4;
+	// Each fragment is a 16 byte 'uvec4'.
+	const unsigned int MAX_AVERAGE_FRAGMENT_BYTES_PER_PIXEL = 16/*bytes per rgba32ui*/ * MAX_AVERAGE_FRAGMENTS_PER_PIXEL;
+}
 
 
 GPlatesGui::SceneRenderer::SceneRenderer(
 		GPlatesPresentation::ViewState &view_state) :
+	d_max_fragment_list_head_pointer_image_width(0),
+	d_max_fragment_list_head_pointer_image_height(0),
+	d_max_fragment_list_storage_buffer_bytes(0),
 	d_off_screen_render_target_dimension(OFF_SCREEN_RENDER_TARGET_DIMENSION)
 {
 }
@@ -51,6 +75,15 @@ void
 GPlatesGui::SceneRenderer::initialise_gl(
 		GPlatesOpenGL::GL &gl)
 {
+	// Create the shader program that sorts and blends the list of fragments (per pixel) in depth order.
+	create_sort_and_blend_scene_fragments_shader_program(gl);
+
+	// Note: We don't create the fragment list buffer and image yet.
+	//       That happens when they are first used, and also when viewport is resized to be larger than them.
+
+	// Create full-screen quad.
+	d_full_screen_quad = GPlatesOpenGL::GLUtils::create_full_screen_quad(gl);
+
 	// Create and initialise the offscreen render target.
 	create_off_screen_render_target(gl);
 }
@@ -62,6 +95,15 @@ GPlatesGui::SceneRenderer::shutdown_gl(
 {
 	// Destroy the offscreen render target.
 	destroy_off_screen_render_target(gl);
+
+	// Destroy the full-screen quad.
+	d_full_screen_quad.reset();
+
+	// Destroy buffers/images containing the per-pixel lists of fragments rendered into the scene.
+	destroy_fragment_list_buffer_and_image(gl);
+
+	// Destroy the shader program that sorts and blends the list of fragments (per pixel) in depth order..
+	d_sort_and_blend_scene_fragments_shader_program.reset();
 }
 
 
@@ -245,6 +287,9 @@ GPlatesGui::SceneRenderer::render_scene(
 {
 	PROFILE_FUNC();
 
+	// Make sure we leave the OpenGL state the way it was.
+	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+
 	// Clear the colour and depth buffers of the framebuffer currently bound to GL_DRAW_FRAMEBUFFER target.
 	// We also clear the stencil buffer in case it is used - also it's usually
 	// interleaved with depth so it's more efficient to clear both depth and stencil.
@@ -258,6 +303,39 @@ GPlatesGui::SceneRenderer::render_scene(
 	gl.ClearDepth(); // Clear depth to 1.0
 	gl.ClearStencil(); // Clear stencil to 0
 	gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+#if 1
+
+	// Create the fragment list buffer/image.
+	//
+	// Note: It only gets (re)created if either (1) not yet created or (2) the current viewport exceeds the buffer/image dimensions.
+	create_fragment_list_buffer_and_image(gl, view_projection.get_viewport());
+
+	// Clear the per-pixel fragment list head pointers (we start with empty per-pixel lists).
+	//
+	// Note that we don't also need to clear the storage buffer containing the fragments because we're just overwriting them from scratch.
+	const GLuint fragment_list_null_pointer = 0xffffffff;
+	gl.ClearTexImage(d_fragment_list_head_pointer_image, 0/*level*/, GL_RED_INTEGER, GL_UNSIGNED_INT, &fragment_list_null_pointer);
+
+	// Render the scene.
+	//
+	// This will add fragments to the per-pixel fragment lists as objects in the scene are rendered.
+	cache_handle_type frame_cache_handle;
+
+	// Bind the fragment list storage buffer.
+	gl.BindBufferBase(GL_SHADER_STORAGE_BUFFER, 0/*index*/, d_fragment_list_storage_buffer);
+
+	// Bind the fragment list head pointer image.
+	gl.BindImageTexture(0, d_fragment_list_head_pointer_image, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
+
+	// Bind the shader program that sorts and blends scene fragments accumulated from rendering the scene.
+	gl.UseProgram(d_sort_and_blend_scene_fragments_shader_program);
+
+	// Draw a full screen quad to process all screen pixels.
+	gl.BindVertexArray(d_full_screen_quad);
+	gl.DrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+#else
 
 	//
 	// Render the globe or map (and its contents) depending on whether the globe or map is currently active.
@@ -278,6 +356,8 @@ GPlatesGui::SceneRenderer::render_scene(
 				view_projection,
 				scene_view.get_viewport_zoom().zoom_factor());
 	}
+
+#endif
 
 	// Render the 2D overlays on top of the 3D scene just rendered.
 	scene_overlays.render(gl, view_projection, device_pixel_ratio);
@@ -331,8 +411,133 @@ void
 GPlatesGui::SceneRenderer::destroy_off_screen_render_target(
 		GPlatesOpenGL::GL &gl)
 {
-	// Destroy the framebuffer's renderbuffers and then destory the framebuffer itself.
+	// Destroy the framebuffer's renderbuffers and then destroy the framebuffer itself.
 	d_off_screen_framebuffer.reset();
 	d_off_screen_colour_renderbuffer.reset();
 	d_off_screen_depth_stencil_renderbuffer.reset();
+}
+
+
+void
+GPlatesGui::SceneRenderer::create_sort_and_blend_scene_fragments_shader_program(
+		GPlatesOpenGL::GL &gl)
+{
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
+	// Vertex shader source.
+	GPlatesOpenGL::GLShaderSource vertex_shader_source;
+	vertex_shader_source.add_code_segment_from_file(SORT_AND_BLEND_SCENE_FRAGMENTS_VERTEX_SHADER_SOURCE_FILE_NAME);
+
+	// Vertex shader.
+	GPlatesOpenGL::GLShader::shared_ptr_type vertex_shader = GPlatesOpenGL::GLShader::create(gl, GL_VERTEX_SHADER);
+	vertex_shader->shader_source(gl, vertex_shader_source);
+	vertex_shader->compile_shader(gl);
+
+	// Fragment shader source.
+	GPlatesOpenGL::GLShaderSource fragment_shader_source;
+	fragment_shader_source.add_code_segment_from_file(SORT_AND_BLEND_SCENE_FRAGMENTS_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+
+	// Fragment shader.
+	GPlatesOpenGL::GLShader::shared_ptr_type fragment_shader = GPlatesOpenGL::GLShader::create(gl, GL_FRAGMENT_SHADER);
+	fragment_shader->shader_source(gl, fragment_shader_source);
+	fragment_shader->compile_shader(gl);
+
+	d_sort_and_blend_scene_fragments_shader_program = GPlatesOpenGL::GLProgram::create(gl);
+
+	// Vertex-fragment program.
+	d_sort_and_blend_scene_fragments_shader_program->attach_shader(gl, vertex_shader);
+	d_sort_and_blend_scene_fragments_shader_program->attach_shader(gl, fragment_shader);
+	d_sort_and_blend_scene_fragments_shader_program->link_program(gl);
+}
+
+
+void
+GPlatesGui::SceneRenderer::create_fragment_list_buffer_and_image(
+		GPlatesOpenGL::GL &gl,
+		const GPlatesOpenGL::GLViewport &viewport)
+{
+	// Check if our image dimensions contain the viewport.
+	if (d_max_fragment_list_head_pointer_image_width < viewport.width() ||
+		d_max_fragment_list_head_pointer_image_height < viewport.height())
+	{
+		// Expand the image dimensions to fit the viewport.
+		if (d_max_fragment_list_head_pointer_image_width < viewport.width())
+		{
+			d_max_fragment_list_head_pointer_image_width = viewport.width();
+		}
+		if (d_max_fragment_list_head_pointer_image_height < viewport.height())
+		{
+			d_max_fragment_list_head_pointer_image_height = viewport.height();
+		}
+
+		// Make sure we leave the OpenGL state the way it was.
+		GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+
+		// Destroy the current image (if it exists).
+		d_fragment_list_head_pointer_image.reset();
+
+		// Create the fragment list head pointer image.
+		d_fragment_list_head_pointer_image = GPlatesOpenGL::GLTexture::create(gl);
+		// Allocate storage for the fragment list head pointer image.
+		// This is a 2D image with dimensions that should match (or exceed) the current viewport dimensions.
+		gl.BindTexture(GL_TEXTURE_2D, d_fragment_list_head_pointer_image);
+		gl.TexImage2D(
+				GL_TEXTURE_2D, 0/*level*/,
+				GL_R32UI,
+				d_max_fragment_list_head_pointer_image_width, d_max_fragment_list_head_pointer_image_height,
+				0/*border*/, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr);
+
+		// Check there are no OpenGL errors.
+		GPlatesOpenGL::GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
+	}
+
+	// Convert the viewport dimensions into the storage buffer space required for the fragment lists.
+	GLsizeiptr viewport_fragment_list_storage_buffer_bytes =
+			GLsizeiptr(MAX_AVERAGE_FRAGMENT_BYTES_PER_PIXEL) * viewport.width() * viewport.height();
+	// Make sure we don't exceed GL_MAX_SHADER_STORAGE_BLOCK_SIZE (which has a minimum value of 128MB).
+	if (viewport_fragment_list_storage_buffer_bytes > GLsizeiptr(gl.get_capabilities().gl_max_shader_storage_block_size))
+	{
+		viewport_fragment_list_storage_buffer_bytes = GLsizeiptr(gl.get_capabilities().gl_max_shader_storage_block_size);
+	}
+
+	// Check if our buffer has storage for enough pixels based on the viewport.
+	if (d_max_fragment_list_storage_buffer_bytes < viewport_fragment_list_storage_buffer_bytes)
+	{
+		// Expand the buffer to support the viewport.
+		d_max_fragment_list_storage_buffer_bytes = viewport_fragment_list_storage_buffer_bytes;
+
+		// Make sure we leave the OpenGL state the way it was.
+		GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+
+		// Destroy the current buffer (if it exists).
+		d_fragment_list_storage_buffer.reset();
+
+		// Create buffer for the per-pixel fragment lists.
+		d_fragment_list_storage_buffer = GPlatesOpenGL::GLBuffer::create(gl);
+		// Allocate storage for all the per-pixel fragment lists.
+		gl.BindBuffer(GL_SHADER_STORAGE_BUFFER, d_fragment_list_storage_buffer);
+		gl.BufferData(
+				GL_SHADER_STORAGE_BUFFER,
+				d_max_fragment_list_storage_buffer_bytes,
+				nullptr,
+				GL_DYNAMIC_COPY);
+
+		// Check there are no OpenGL errors.
+		GPlatesOpenGL::GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
+	}
+}
+
+
+void
+GPlatesGui::SceneRenderer::destroy_fragment_list_buffer_and_image(
+		GPlatesOpenGL::GL &gl)
+{
+	d_fragment_list_storage_buffer.reset();
+	d_fragment_list_head_pointer_image.reset();
+
+	// Make sure the buffer and image get recreated the first time they are needed again.
+	d_max_fragment_list_head_pointer_image_width = 0;
+	d_max_fragment_list_head_pointer_image_height = 0;
+	d_max_fragment_list_storage_buffer_bytes = 0;
 }

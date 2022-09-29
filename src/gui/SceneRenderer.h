@@ -23,16 +23,20 @@
 #include <boost/shared_ptr.hpp>
 #include <QImage>
 
+#include "opengl/OpenGL.h"
+#include "opengl/GLBuffer.h"
 #include "opengl/GLContextLifetime.h"
 #include "opengl/GLFramebuffer.h"
 #include "opengl/GLRenderbuffer.h"
+#include "opengl/GLProgram.h"
+#include "opengl/GLTexture.h"
+#include "opengl/GLVertexArray.h"
 
 #include "utils/ReferenceCount.h"
 
 
 namespace GPlatesOpenGL
 {
-	class GL;
 	class GLTileRender;
 	class GLViewport;
 	class GLViewProjection;
@@ -123,6 +127,33 @@ namespace GPlatesGui
 
 	private:
 
+		//! Shader program that sorts and blends the list of fragments (per pixel) in depth order.
+		GPlatesOpenGL::GLProgram::shared_ptr_type d_sort_and_blend_scene_fragments_shader_program;
+
+		//! Image containing the per-pixel head of list of fragments rendered into the scene.
+		GPlatesOpenGL::GLTexture::shared_ptr_type d_fragment_list_head_pointer_image;
+
+		//! Buffer containing storage for the per-pixel lists of fragments rendered into the scene.
+		GPlatesOpenGL::GLBuffer::shared_ptr_type d_fragment_list_storage_buffer;
+
+		/**
+		 * The maximum image width and height supported by the current fragment list head pointer image.
+		 *
+		 * Initially these are both zero and are expanded as the viewport expands (eg, resized viewport).
+		 */
+		int d_max_fragment_list_head_pointer_image_width;
+		int d_max_fragment_list_head_pointer_image_height;
+
+		/**
+		 * The maximum number of bytes to store fragments in the current fragment list storage buffer.
+		 *
+		 * Initially this is zero and is expanded as the viewport expands (eg, resized viewport).
+		 */
+		GLsizeiptr d_max_fragment_list_storage_buffer_bytes;
+
+		//! Used to draw a full-screen quad.
+		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_full_screen_quad;
+
 		//! Colour renderbuffer object used for offscreen rendering.
 		GPlatesOpenGL::GLRenderbuffer::shared_ptr_type d_off_screen_colour_renderbuffer;
 
@@ -163,6 +194,23 @@ namespace GPlatesGui
 		//! Destroy the framebuffer and its renderbuffers used for offscreen rendering.
 		void
 		destroy_off_screen_render_target(
+				GPlatesOpenGL::GL &gl);
+
+
+		//! Create the shader program that sorts and blends the list of fragments (per pixel) in depth order.
+		void
+		create_sort_and_blend_scene_fragments_shader_program(
+				GPlatesOpenGL::GL &gl);
+
+		//! Create buffers/images containing the per-pixel lists of fragments rendered into the scene.
+		void
+		create_fragment_list_buffer_and_image(
+				GPlatesOpenGL::GL &gl,
+				const GPlatesOpenGL::GLViewport &viewport);
+
+		//! Destroy buffers/images containing the per-pixel lists of fragments rendered into the scene.
+		void
+		destroy_fragment_list_buffer_and_image(
 				GPlatesOpenGL::GL &gl);
 
 		/**
