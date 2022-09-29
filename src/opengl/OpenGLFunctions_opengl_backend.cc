@@ -365,6 +365,11 @@ void GPlatesOpenGL::OpenGLFunctions::glGetIntegerv(GLenum pname, GLint* params)
 	d_functions->glGetIntegerv(pname, params);
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glGetInteger64v(GLenum pname, GLint64* params)
+{
+	d_functions->glGetInteger64v(pname, params);
+}
+
 void GPlatesOpenGL::OpenGLFunctions::glGetProgramiv(GLuint program, GLenum pname, GLint* params)
 {
 	d_functions->glGetProgramiv(program, pname, params);

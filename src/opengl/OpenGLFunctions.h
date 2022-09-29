@@ -137,6 +137,7 @@ namespace GPlatesOpenGL
 		void glGenVertexArrays(GLsizei n, GLuint *arrays);
 		GLenum glGetError();
 		void glGetIntegerv(GLenum pname, GLint *params);
+		void glGetInteger64v(GLenum pname, GLint64* params);
 		void glGetProgramiv(GLuint program, GLenum pname, GLint *params);
 		void glGetProgramInfoLog(GLuint program, GLsizei bufSize, GLsizei *length, GLchar *infoLog);
 		void glGetShaderiv(GLuint shader, GLenum pname, GLint *params);

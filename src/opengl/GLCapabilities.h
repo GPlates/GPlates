@@ -53,74 +53,97 @@ namespace GPlatesOpenGL
 		// Viewport
 		//
 
-		GLuint gl_max_viewport_dims[2]; // GL_MAX_VIEWPORT_DIMS query result
+		GLuint gl_max_viewport_dims[2]; // GL_MAX_VIEWPORT_DIMS
 
 
 		//
 		// Framebuffer
 		//
 
-		GLuint gl_max_color_attachments; // GL_MAX_COLOR_ATTACHMENTS query result
+		GLuint gl_max_color_attachments; // GL_MAX_COLOR_ATTACHMENTS
 
-		GLuint gl_max_renderbuffer_size; // GL_MAX_RENDERBUFFER_SIZE query result
+		GLuint gl_max_renderbuffer_size; // GL_MAX_RENDERBUFFER_SIZE
 
-		GLuint gl_max_draw_buffers; // GL_MAX_DRAW_BUFFERS query result
-		GLuint gl_max_dual_source_draw_buffers; // GL_MAX_DUAL_SOURCE_DRAW_BUFFERS query result
+		GLuint gl_max_draw_buffers; // GL_MAX_DRAW_BUFFERS
+		GLuint gl_max_dual_source_draw_buffers; // GL_MAX_DUAL_SOURCE_DRAW_BUFFERS
 
 		/**
 		 * Number of bits of sub-pixel precision in pixel rasterizer.
 		 *
 		 * OpenGL specifies a minimum of 4 bits, but most consumer hardware these days support 8 bits.
 		 */
-		GLuint gl_sub_pixel_bits; // GL_SUBPIXEL_BITS query result
+		GLuint gl_sub_pixel_bits; // GL_SUBPIXEL_BITS
 
-		GLuint gl_max_sample_mask_words; // GL_MAX_SAMPLE_MASK_WORDS query result
+		GLuint gl_max_sample_mask_words; // GL_MAX_SAMPLE_MASK_WORDS
 
 
 		//
 		// Buffer
 		//
 
-		GLuint gl_uniform_buffer_offset_alignment; // GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT query result
+		// Alignment.
+		GLuint gl_uniform_buffer_offset_alignment; // GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT
+		GLuint gl_shader_storage_buffer_offset_alignment; // GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT
+
+		// Block size.
+		GLuint64 gl_max_uniform_block_size; // GL_MAX_UNIFORM_BLOCK_SIZE
+		GLuint64 gl_max_shader_storage_block_size; // GL_MAX_SHADER_STORAGE_BLOCK_SIZE
+
 
 		//
 		// Shader
 		//
 
-		GLuint gl_max_vertex_attribs; // GL_MAX_VERTEX_ATTRIBS query result
+		GLuint gl_max_vertex_attribs; // GL_MAX_VERTEX_ATTRIBS
 
-		GLuint gl_max_clip_distances; // GL_MAX_CLIP_DISTANCES query result
+		GLuint gl_max_clip_distances; // GL_MAX_CLIP_DISTANCES
 
-		//! Maximum number of texture image units available to vertex/geometry/fragment shaders combined.
-		GLuint gl_max_combined_texture_image_units; // GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS query result
+		// Texture image units.
+		GLuint gl_max_combined_texture_image_units; // GL_MAX_COMBINED_TEXTURE_IMAGE_UNITS
+		GLuint gl_max_vertex_texture_image_units; // GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS
+		GLuint gl_max_texture_image_units/*fragment shader*/; // GL_MAX_TEXTURE_IMAGE_UNITS
+		GLuint gl_max_compute_texture_image_units; // GL_MAX_COMPUTE_TEXTURE_IMAGE_UNITS
+
+		// Image units.
+		GLuint gl_max_image_units/*combined*/; // GL_MAX_IMAGE_UNITS
+		GLuint gl_max_fragment_image_uniforms; // GL_MAX_FRAGMENT_IMAGE_UNIFORMS
+		GLuint gl_max_compute_image_uniforms; // GL_MAX_COMPUTE_IMAGE_UNIFORMS
+
+		// Buffer bindings.
+		GLuint gl_max_uniform_buffer_bindings; // GL_MAX_UNIFORM_BUFFER_BINDINGS
+		GLuint gl_max_shader_storage_buffer_bindings; // GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS
+		GLuint gl_max_atomic_counter_buffer_bindings; // GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS
+
+		// Uniform blocks.
 		GLuint gl_max_combined_uniform_blocks; // GL_MAX_COMBINED_UNIFORM_BLOCKS
-
-		//! Maximum number of texture image units available to fragment shader.
-		GLuint gl_max_texture_image_units; // GL_MAX_TEXTURE_IMAGE_UNITS query result
-		GLuint gl_max_fragment_uniform_components; // GL_MAX_FRAGMENT_UNIFORM_COMPONENTS query result
-		GLuint gl_max_fragment_uniform_blocks; // GL_MAX_FRAGMENT_UNIFORM_BLOCKS
-
-		GLuint gl_max_vertex_texture_image_units; // GL_MAX_VERTEX_TEXTURE_IMAGE_UNITS query result
-		GLuint gl_max_vertex_output_components; // GL_MAX_VERTEX_OUTPUT_COMPONENTS query result
-		GLuint gl_max_vertex_uniform_components; // GL_MAX_VERTEX_UNIFORM_COMPONENTS query result
 		GLuint gl_max_vertex_uniform_blocks; // GL_MAX_VERTEX_UNIFORM_BLOCKS
+		GLuint gl_max_fragment_uniform_blocks; // GL_MAX_FRAGMENT_UNIFORM_BLOCKS
+		GLuint gl_max_compute_uniform_blocks; // GL_MAX_COMPUTE_UNIFORM_BLOCKS
 
-		GLuint gl_max_geometry_texture_image_units; // GL_MAX_GEOMETRY_TEXTURE_IMAGE_UNITS query result
-		GLuint gl_max_geometry_output_vertices; // GL_MAX_GEOMETRY_OUTPUT_VERTICES query result
-		GLuint gl_max_geometry_input_components; // GL_MAX_GEOMETRY_INPUT_COMPONENTS query result
-		GLuint gl_max_geometry_output_components; // GL_MAX_GEOMETRY_OUTPUT_COMPONENTS query result
-		GLuint gl_max_geometry_total_output_components; // GL_MAX_GEOMETRY_TOTAL_OUTPUT_COMPONENTS query result
-		GLuint gl_max_geometry_uniform_components; // GL_MAX_GEOMETRY_UNIFORM_COMPONENTS query result
-		GLuint gl_max_geometry_uniform_blocks; // GL_MAX_GEOMETRY_UNIFORM_BLOCKS
+		// Shader storage blocks.
+		GLuint gl_max_combined_shader_storage_blocks; // GL_MAX_COMBINED_SHADER_STORAGE_BLOCKS
+		GLuint gl_max_fragment_shader_storage_blocks; // GL_MAX_FRAGMENT_SHADER_STORAGE_BLOCKS
+		GLuint gl_max_compute_shader_storage_blocks; // GL_MAX_COMPUTE_SHADER_STORAGE_BLOCKS
 
-		
+		// Atomic counters.
+		GLuint gl_max_combined_atomic_counters; // GL_MAX_COMBINED_ATOMIC_COUNTERS
+		GLuint gl_max_fragment_atomic_counters; // GL_MAX_FRAGMENT_ATOMIC_COUNTERS
+		GLuint gl_max_compute_atomic_counters; // GL_MAX_COMPUTE_ATOMIC_COUNTERS
+
+		// Atomic counter buffers.
+		GLuint gl_max_combined_atomic_counter_buffers; // GL_MAX_COMBINED_ATOMIC_COUNTER_BUFFERS
+		GLuint gl_max_fragment_atomic_counter_buffers; // GL_MAX_FRAGMENT_ATOMIC_COUNTER_BUFFERS
+		GLuint gl_max_compute_atomic_counter_buffers; // GL_MAX_COMPUTE_ATOMIC_COUNTER_BUFFERS
+
 		//
 		// Texture
 		//
 
-		GLuint gl_max_texture_size; // GL_MAX_TEXTURE_SIZE query result
+		GLuint gl_max_texture_size; // GL_MAX_TEXTURE_SIZE
 
-		GLuint gl_max_cube_map_texture_size; // GL_MAX_CUBE_MAP_TEXTURE_SIZE query result
+		GLuint gl_max_texture_buffer_size; // GL_MAX_TEXTURE_BUFFER_SIZE
+
+		GLuint gl_max_cube_map_texture_size; // GL_MAX_CUBE_MAP_TEXTURE_SIZE
 
 		/**
 		 * Is GL_EXT_texture_filter_anisotropic supported?
@@ -134,10 +157,10 @@ namespace GPlatesOpenGL
 		 * The maximum texture filtering anisotropy supported by the
 		 * GL_EXT_texture_filter_anisotropic extension (or 1.0 if it's not supported).
 		 */
-		GLfloat gl_texture_max_anisotropy; // GL_TEXTURE_MAX_ANISOTROPY query result
+		GLfloat gl_texture_max_anisotropy; // GL_TEXTURE_MAX_ANISOTROPY
 
 		//! The number of texture array layers supported.
-		GLuint gl_max_texture_array_layers;  // GL_MAX_ARRAY_TEXTURE_LAYERS query result
+		GLuint gl_max_texture_array_layers;  // GL_MAX_ARRAY_TEXTURE_LAYERS
 
 
 	private: // For use by @a GLContext...
@@ -178,6 +201,17 @@ namespace GPlatesOpenGL
 		static
 		GLuint
 		query_integer(
+				OpenGLFunctions &opengl_functions,
+				GLenum pname);
+
+		/**
+		 * Calls 'glGetInteger64v'.
+		 *
+		 * Returns GLint64 result as GLuint64 to avoid unsigned/signed comparison compiler warnings.
+		 */
+		static
+		GLuint64
+		query_integer64(
 				OpenGLFunctions &opengl_functions,
 				GLenum pname);
 	};
