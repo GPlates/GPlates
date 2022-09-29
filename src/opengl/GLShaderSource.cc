@@ -34,8 +34,8 @@
 // The filename of the shader source file (Qt resource) containing shader utilities.
 const QString GPlatesOpenGL::GLShaderSource::UTILS_FILE_NAME(":/opengl/utils.glsl");
 
-// Use OpenGL 3.3 core which in GLSL is "#version 330" without also specifying "compatibility".
-const char *GPlatesOpenGL::GLShaderSource::SHADER_VERSION_STRING = "#version 330\n";
+// Use OpenGL 4.5 core "#version 450 core".
+const char *GPlatesOpenGL::GLShaderSource::SHADER_VERSION_STRING = "#version 450 core\n";
 
 
 GPlatesOpenGL::GLShaderSource
