@@ -170,6 +170,10 @@ namespace GPlatesOpenGL
 		get_bind_buffer_key(
 				GLenum target) const;
 
+		key_type
+		get_bind_image_texture_key(
+				GLuint image_unit) const;
+
 		//! For binding renderbuffer objects (note: @a target must be GL_RENDERBUFFER).
 		key_type
 		get_bind_renderbuffer_key(
@@ -243,6 +247,7 @@ namespace GPlatesOpenGL
 
 		key_type d_enable_clip_distance_zero_base_key;
 		key_type d_texture_image_unit_zero_base_key;
+		key_type d_image_unit_zero_base_key;
 
 		unsigned int d_num_state_set_keys;
 

@@ -168,6 +168,23 @@ namespace GPlatesOpenGL
 				// Default framebuffer resource (might not be zero, eg, each QOpenGLWindow has its own framebuffer object)...
 				GLuint default_framebuffer_resource);
 
+		//! Binds the texture object (at the specified image unit) to the active OpenGL context.
+		void
+		bind_image_texture(
+				GLuint image_unit,
+				boost::optional<GLTexture::shared_ptr_type> texture,
+				GLint level,
+				GLboolean layered,
+				GLint layer,
+				GLenum access,
+				GLenum format)
+		{
+			apply_state_set(
+					d_state_set_store->bind_image_texture_state_sets,
+					d_state_set_keys->get_bind_image_texture_key(image_unit),
+					boost::in_place(boost::cref(d_capabilities), image_unit, texture, level, layered, layer, access, format));
+		}
+
 		//! Binds the renderbuffer object (at the specified target, must be GL_RENDERBUFFER) to the active OpenGL context.
 		void
 		bind_renderbuffer(
@@ -661,6 +678,16 @@ namespace GPlatesOpenGL
 		boost::optional<GLFramebuffer::shared_ptr_type>
 		get_bind_framebuffer(
 				GLenum target) const;
+
+		//! Returns the texture object bound on the specified image unit - boost::none implies the default no binding.
+		boost::optional<GLTexture::shared_ptr_type>
+		get_bind_image_texture(
+				GLuint image_unit) const
+		{
+			return query_state_set<GLTexture::shared_ptr_type>(
+					d_state_set_keys->get_bind_image_texture_key(image_unit),
+					&GLBindImageTextureStateSet::d_texture);
+		}
 
 		//! Returns the sampler object bound on the specified texture unit - boost::none implies the default no binding.
 		boost::optional<GLSampler::shared_ptr_type>

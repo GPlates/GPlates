@@ -453,6 +453,110 @@ GPlatesOpenGL::GLBindFramebufferStateSet::apply_to_default_state(
 }
 
 
+GPlatesOpenGL::GLBindImageTextureStateSet::GLBindImageTextureStateSet(
+		const GLCapabilities &capabilities,
+		GLuint image_unit,
+		boost::optional<GLTexture::shared_ptr_type> texture,
+		GLint level,
+		GLboolean layered,
+		GLint layer,
+		GLenum access,
+		GLenum format) :
+	d_image_unit(image_unit),
+	d_texture(texture),
+	d_texture_resource(0),
+	d_level(level),
+	d_layered(layered),
+	d_layer(layer),
+	d_access(access),
+	d_format(format)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			image_unit < capabilities.gl_max_image_units,
+			GPLATES_ASSERTION_SOURCE);
+
+	if (texture)
+	{
+		d_texture_resource = texture.get()->get_resource_handle();
+	}
+}
+
+bool
+GPlatesOpenGL::GLBindImageTextureStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
+		const GLCapabilities &capabilities,
+		const GLStateSet &current_state_set,
+		const GLState &current_state) const
+{
+	// Throws exception if downcast fails...
+	const GLBindImageTextureStateSet &current = dynamic_cast<const GLBindImageTextureStateSet &>(current_state_set);
+
+	// Note we're NOT comparing the image unit (it should be the same for 'this' and 'current_state_set').
+	//
+	// Return early if no state change...
+	if (d_texture_resource == current.d_texture_resource &&
+		d_level == current.d_level &&
+		d_layered == current.d_layered &&
+		d_layer == current.d_layer &&
+		d_access == current.d_access &&
+		d_format == current.d_format)
+	{
+		return false;
+	}
+
+	// Bind the texture object (can be zero).
+	opengl_functions.glBindImageTexture(d_image_unit, d_texture_resource, d_level, d_layered, d_layer, d_access, d_format);
+
+	return true;
+}
+
+bool
+GPlatesOpenGL::GLBindImageTextureStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_texture_resource == 0 &&
+		d_level == 0 &&
+		d_layered == GL_FALSE &&
+		d_layer == 0 &&
+		d_access == GL_READ_ONLY &&
+		d_format == GL_R8)
+	{
+		return false;
+	}
+
+	// Bind the texture object.
+	opengl_functions.glBindImageTexture(d_image_unit, d_texture_resource, d_level, d_layered, d_layer, d_access, d_format);
+
+	return true;
+}
+
+bool
+GPlatesOpenGL::GLBindImageTextureStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_texture_resource == 0 &&
+		d_level == 0 &&
+		d_layered == GL_FALSE &&
+		d_layer == 0 &&
+		d_access == GL_READ_ONLY &&
+		d_format == GL_R8)
+	{
+		return false;
+	}
+
+	// The default is zero (no texture object).
+	opengl_functions.glBindImageTexture(d_image_unit, 0, 0/*level*/, GL_FALSE/*layered*/, 0/*layer*/, GL_READ_ONLY/*access*/, GL_R8/*format*/);
+
+	return true;
+}
+
+
 bool
 GPlatesOpenGL::GLBindRenderbufferStateSet::apply_state(
 		OpenGLFunctions &opengl_functions,

@@ -164,6 +164,20 @@ GPlatesOpenGL::GL::BindFramebuffer(
 
 
 void
+GPlatesOpenGL::GL::BindImageTexture(
+		GLuint image_unit,
+		boost::optional<GLTexture::shared_ptr_type> texture,
+		GLint level,
+		GLboolean layered,
+		GLint layer,
+		GLenum access,
+		GLenum format)
+{
+	d_current_state->bind_image_texture(image_unit, texture, level, layered, layer, access, format);
+}
+
+
+void
 GPlatesOpenGL::GL::BindRenderbuffer(
 		GLenum target,
 		boost::optional<GLRenderbuffer::shared_ptr_type> renderbuffer)

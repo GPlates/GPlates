@@ -250,6 +250,16 @@ namespace GPlatesOpenGL
 				GLenum target,
 				boost::optional<GLFramebuffer::shared_ptr_type> framebuffer/*none means bind to default framebuffer*/);
 
+		void
+		BindImageTexture(
+				GLuint image_unit,
+				boost::optional<GLTexture::shared_ptr_type> texture/*none means unbind*/,
+				GLint level,
+				GLboolean layered,
+				GLint layer,
+				GLenum access,
+				GLenum format);
+
 		// OpenGL 3.0
 		void
 		BindRenderbuffer(

@@ -75,6 +75,7 @@ namespace GPlatesOpenGL
 		void glBindBufferBase(GLenum target, GLuint index, GLuint buffer);
 		void glBindBufferRange(GLenum target, GLuint index, GLuint buffer, GLintptr offset, GLsizeiptr size);
 		void glBindFramebuffer(GLenum target, GLuint framebuffer);
+		void glBindImageTexture(GLuint image_unit, GLuint texture, GLint level, GLboolean layered, GLint layer, GLenum access, GLenum format);
 		void glBindRenderbuffer(GLenum target, GLuint renderbuffer);
 		void glBindSampler(GLuint unit, GLuint sampler);
 		void glBindTexture(GLenum target, GLuint texture);

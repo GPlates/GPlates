@@ -57,6 +57,10 @@ GPlatesOpenGL::GLStateSetKeys::GLStateSetKeys(
 			NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS *
 			d_capabilities.gl_max_combined_texture_image_units;
 
+	// Image units.
+	d_image_unit_zero_base_key = current_key;
+	current_key += d_capabilities.gl_max_image_units;
+
 	d_num_state_set_keys = current_key;
 
 	//qDebug() << "GLStateSetKeys: Number keys: " << d_num_state_set_keys;
@@ -109,6 +113,18 @@ GPlatesOpenGL::GLStateSetKeys::get_bind_buffer_key(
 	}
 
 	return key;
+}
+
+
+GPlatesOpenGL::GLStateSetKeys::key_type
+GPlatesOpenGL::GLStateSetKeys::get_bind_image_texture_key(
+		GLuint image_unit) const
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			image_unit < d_capabilities.gl_max_image_units,
+			GPLATES_ASSERTION_SOURCE);
+
+	return d_image_unit_zero_base_key + image_unit;
 }
 
 

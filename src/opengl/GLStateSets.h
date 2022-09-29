@@ -319,6 +319,57 @@ namespace GPlatesOpenGL
 	};
 
 	/**
+	 * Used to bind a texture to an image unit.
+	 */
+	struct GLBindImageTextureStateSet :
+			public GLStateSet
+	{
+		//! Binds a texture object.
+		GLBindImageTextureStateSet(
+				const GLCapabilities &capabilities,
+				GLuint image_unit,
+				boost::optional<GLTexture::shared_ptr_type> texture,
+				GLint level,
+				GLboolean layered,
+				GLint layer,
+				GLenum access,
+				GLenum format);
+
+		virtual
+		bool
+		apply_state(
+				OpenGLFunctions &opengl_functions,
+				const GLCapabilities &capabilities,
+				const GLStateSet &current_state_set,
+				const GLState &current_state) const override;
+
+		virtual
+		bool
+		apply_from_default_state(
+				OpenGLFunctions &opengl_functions,
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const override;
+
+		virtual
+		bool
+		apply_to_default_state(
+				OpenGLFunctions &opengl_functions,
+				const GLCapabilities &capabilities,
+				const GLState &current_state) const override;
+
+
+		GLuint d_image_unit;
+		boost::optional<GLTexture::shared_ptr_type> d_texture;
+		GLuint d_texture_resource;
+
+		GLint d_level;
+		GLboolean d_layered;
+		GLint d_layer;
+		GLenum d_access;
+		GLenum d_format;
+	};
+
+	/**
 	 * Used to bind a renderbuffer object.
 	 */
 	struct GLBindRenderbufferStateSet :

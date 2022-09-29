@@ -55,6 +55,11 @@ void GPlatesOpenGL::OpenGLFunctions::glBindFramebuffer(GLenum target, GLuint fra
 	d_functions->glBindFramebuffer(target, framebuffer);
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glBindImageTexture(GLuint image_unit, GLuint texture, GLint level, GLboolean layered, GLint layer, GLenum access, GLenum format)
+{
+	d_functions->glBindImageTexture(image_unit, texture, level, layered, layer, access, format);
+}
+
 void GPlatesOpenGL::OpenGLFunctions::glBindRenderbuffer(GLenum target, GLuint renderbuffer)
 {
 	d_functions->glBindRenderbuffer(target, renderbuffer);
