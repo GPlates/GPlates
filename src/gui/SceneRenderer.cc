@@ -63,6 +63,7 @@ namespace
 
 GPlatesGui::SceneRenderer::SceneRenderer(
 		GPlatesPresentation::ViewState &view_state) :
+	d_view_state(view_state),
 	d_max_fragment_list_head_pointer_image_width(0),
 	d_max_fragment_list_head_pointer_image_height(0),
 	d_max_fragment_list_storage_buffer_bytes(0),
@@ -75,6 +76,9 @@ void
 GPlatesGui::SceneRenderer::initialise_gl(
 		GPlatesOpenGL::GL &gl)
 {
+	// Initialise the background stars.
+	d_stars.initialise_gl(gl);
+
 	// Create the shader program that sorts and blends the list of fragments (per pixel) in depth order.
 	create_sort_and_blend_scene_fragments_shader_program(gl);
 
@@ -104,6 +108,9 @@ GPlatesGui::SceneRenderer::shutdown_gl(
 
 	// Destroy the shader program that sorts and blends the list of fragments (per pixel) in depth order..
 	d_sort_and_blend_scene_fragments_shader_program.reset();
+
+	// Destroy the background stars.
+	d_stars.shutdown_gl(gl);
 }
 
 
@@ -327,6 +334,20 @@ GPlatesGui::SceneRenderer::render_scene(
 
 	// Bind the fragment list head pointer image.
 	gl.BindImageTexture(0, d_fragment_list_head_pointer_image, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
+
+	//
+	// Render the background stars.
+	//
+	if (d_view_state.get_show_stars())
+	{
+		d_stars.render(gl, view_projection, device_pixel_ratio);
+	}
+
+	//
+	// Render the scene.
+	//
+	// This will add fragments to the per-pixel fragment lists as objects in the scene are rendered.
+	cache_handle_type frame_cache_handle;
 
 	// Bind the shader program that sorts and blends scene fragments accumulated from rendering the scene.
 	gl.UseProgram(d_sort_and_blend_scene_fragments_shader_program);

@@ -23,6 +23,8 @@
 #include <boost/shared_ptr.hpp>
 #include <QImage>
 
+#include "Stars.h"
+
 #include "opengl/OpenGL.h"
 #include "opengl/GLBuffer.h"
 #include "opengl/GLContextLifetime.h"
@@ -126,6 +128,11 @@ namespace GPlatesGui
 				const Colour &image_clear_colour);
 
 	private:
+
+		GPlatesPresentation::ViewState &d_view_state;
+
+		//! Stars in the background (in globe and map views).
+		Stars d_stars;
 
 		//! Shader program that sorts and blends the list of fragments (per pixel) in depth order.
 		GPlatesOpenGL::GLProgram::shared_ptr_type d_sort_and_blend_scene_fragments_shader_program;
