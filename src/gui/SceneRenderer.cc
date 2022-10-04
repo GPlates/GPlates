@@ -22,6 +22,7 @@
 #include "SceneRenderer.h"
 
 #include "Colour.h"
+#include "MapProjection.h"
 #include "Scene.h"
 #include "SceneOverlays.h"
 #include "SceneView.h"
@@ -64,6 +65,7 @@ namespace
 GPlatesGui::SceneRenderer::SceneRenderer(
 		GPlatesPresentation::ViewState &view_state) :
 	d_view_state(view_state),
+	d_map_projection(view_state.get_map_projection()),
 	d_max_fragment_list_head_pointer_image_width(0),
 	d_max_fragment_list_head_pointer_image_height(0),
 	d_max_fragment_list_storage_buffer_bytes(0),
@@ -340,7 +342,15 @@ GPlatesGui::SceneRenderer::render_scene(
 	//
 	if (d_view_state.get_show_stars())
 	{
-		d_stars.render(gl, view_projection, device_pixel_ratio);
+		d_stars.render(
+				gl,
+				view_projection,
+				device_pixel_ratio,
+				scene_view.is_map_active()
+						// Expand the star positions radially in the 2D map views so that they're outside the map bounding sphere...
+						? d_map_projection.get_map_bounding_radius()
+						// The default of 1.0 works for the 3D globe view...
+						: 1.0);
 	}
 
 	//

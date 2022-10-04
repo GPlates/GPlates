@@ -52,6 +52,7 @@ namespace GPlatesPresentation
 namespace GPlatesGui
 {
 	class Colour;
+	class MapProjection;
 	class Scene;
 	class SceneOverlays;
 	class SceneView;
@@ -130,6 +131,7 @@ namespace GPlatesGui
 	private:
 
 		GPlatesPresentation::ViewState &d_view_state;
+		MapProjection &d_map_projection;
 
 		//! Stars in the background (in globe and map views).
 		Stars d_stars;

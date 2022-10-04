@@ -22,6 +22,7 @@
 //
 
 uniform mat4 view_projection;
+uniform float radius_multiplier;
 uniform float point_size;
 
 layout(location = 0) in vec4 position;
@@ -34,7 +35,10 @@ out VertexData
 
 void main()
 {
-    gl_Position = view_projection * position;
+    // Expand the position away from the origin by the requested amount.
+    vec4 radius_expanded_position = vec4(radius_multiplier * position.xyz, 1);
+
+    gl_Position = view_projection * radius_expanded_position;
 
     // Expand the point size by 2 pixels (1 pixel radius expansion) to give space
     // for one pixel of anti-aliasing outside circumference (see fragment shader).

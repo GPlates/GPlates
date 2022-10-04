@@ -1409,12 +1409,8 @@ GPlatesQtWidgets::ViewportWindow::handle_render_settings_changed()
 void
 GPlatesQtWidgets::ViewportWindow::enable_stars_display()
 {
-	get_view_state().set_show_stars(
-			action_Show_Stars->isChecked());
-	if (reconstruction_view_widget().globe_is_active())
-	{
-		globe_and_map_canvas().update_canvas();
-	}
+	get_view_state().set_show_stars(action_Show_Stars->isChecked());
+	globe_and_map_canvas().update_canvas();
 }
 
 void

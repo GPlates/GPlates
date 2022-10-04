@@ -102,7 +102,8 @@ void
 GPlatesGui::Stars::render(
 		GPlatesOpenGL::GL &gl,
 		const GPlatesOpenGL::GLViewProjection &view_projection,
-		int device_pixel_ratio)
+		int device_pixel_ratio,
+		const double &radius_multiplier)
 {
 	// Make sure we leave the OpenGL global state the way it was.
 	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
@@ -151,6 +152,14 @@ GPlatesGui::Stars::render(
 	gl.UniformMatrix4fv(
 			d_program->get_uniform_location(gl, "view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
+
+	// Set the radius multiplier.
+	//
+	// This is used for the 2D map views to expand the positions of the stars radially so that they're
+	// outside the map bounding sphere. A value of 1.0 works for the 3D globe view.
+	gl.Uniform1f(
+			d_program->get_uniform_location(gl, "radius_multiplier"),
+			radius_multiplier);
 
 	// Bind the vertex array.
 	gl.BindVertexArray(d_vertex_array);

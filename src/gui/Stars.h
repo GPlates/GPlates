@@ -88,12 +88,16 @@ namespace GPlatesGui
 		 *
 		 * Note: @a device_pixel_ratio is used on high-DPI displays where there are more pixels in the
 		 *       same physical area on screen and so the point size of the stars is increased to compensate.
+		 *
+		 * Note: @a radius_multiplier is useful for the 2D map views to expand the positions of the stars radially
+		 *       so that they're outside the map bounding sphere. The default of 1.0 works for the 3D globe view.
 		 */
 		void
 		render(
 				GPlatesOpenGL::GL &gl,
 				const GPlatesOpenGL::GLViewProjection &view_projection,
-				int device_pixel_ratio);
+				int device_pixel_ratio,
+				const double &radius_multiplier = 1.0);
 
 	private:
 
