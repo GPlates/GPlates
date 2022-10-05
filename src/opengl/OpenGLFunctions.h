@@ -86,12 +86,17 @@ namespace GPlatesOpenGL
 		void glBlendFunc(GLenum sfactor, GLenum dfactor);
 		void glBlendFuncSeparate(GLenum sfactorRGB, GLenum dfactorRGB, GLenum sfactorAlpha, GLenum dfactorAlpha);
 		void glBufferData(GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
+		void glBufferStorage(GLenum target, GLsizeiptr size, const void* data, GLbitfield flags);
 		void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data);
 		GLenum glCheckFramebufferStatus(GLenum target);
 		void glClampColor(GLenum target, GLenum clamp);
 		void glClear(GLbitfield mask);
+		void glClearBufferData(GLenum target, GLenum internalformat, GLenum format, GLenum type, const void *data);
+		void glClearBufferSubData(GLenum target, GLenum internalformat, GLintptr offset, GLsizeiptr size, GLenum format, GLenum type, const void *data);
 		void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 		void glClearDepth(GLdouble depth);
+		void glClearNamedBufferData(GLuint buffer, GLenum internalformat, GLenum format, GLenum type, const void *data);
+		void glClearNamedBufferSubData(GLuint buffer, GLenum internalformat, GLintptr offset, GLsizei size, GLenum format, GLenum type, const void *data);
 		void glClearStencil(GLint s);
 		void glClearTexSubImage(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void* data);
 		void glClearTexImage(GLuint texture, GLint level, GLenum format, GLenum type, const void* data);
@@ -153,6 +158,10 @@ namespace GPlatesOpenGL
 		void glLinkProgram(GLuint program);
 		GLvoid *glMapBuffer(GLenum target, GLenum access);
 		GLvoid *glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access);
+		void glMemoryBarrier(GLbitfield barriers);
+		void glMemoryBarrierByRegion(GLbitfield barriers);
+		void glNamedBufferStorage(GLuint buffer, GLsizei size, const void* data, GLbitfield flags);
+		void glNamedBufferSubData(GLuint buffer, GLintptr offset, GLsizei size, const void* data);
 		void glPixelStorei(GLenum pname, GLint param);
 		void glPointSize(GLfloat size);
 		void glPolygonMode(GLenum face, GLenum mode);
@@ -184,6 +193,9 @@ namespace GPlatesOpenGL
 		void glTexParameteriv(GLenum target, GLenum pname, const GLint *params);
 		void glTexParameterIiv(GLenum target, GLenum pname, const GLint *params);
 		void glTexParameterIuiv(GLenum target, GLenum pname, const GLuint *params);
+		void glTexStorage1D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width);
+		void glTexStorage2D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height);
+		void glTexStorage3D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth);
 		void glTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid *pixels);
 		void glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels);
 		void glTexSubImage3D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid *pixels);

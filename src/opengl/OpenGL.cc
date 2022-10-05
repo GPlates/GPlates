@@ -276,6 +276,17 @@ GPlatesOpenGL::GL::BufferData(
 
 
 void
+GPlatesOpenGL::GL::BufferStorage(
+		GLenum target,
+		GLsizeiptr size,
+		const void *data,
+		GLbitfield flags)
+{
+	d_opengl_functions.glBufferStorage(target, size, data, flags);
+}
+
+
+void
 GPlatesOpenGL::GL::BufferSubData(
 		GLenum target,
 		GLintptr offset,
@@ -311,6 +322,32 @@ GPlatesOpenGL::GL::Clear(
 
 
 void
+GPlatesOpenGL::GL::ClearBufferData(
+		GLenum target,
+		GLenum internalformat,
+		GLenum format,
+		GLenum type,
+		const void *data)
+{
+	d_opengl_functions.glClearBufferData(target, internalformat, format, type, data);
+}
+
+
+void
+GPlatesOpenGL::GL::ClearBufferSubData(
+		GLenum target,
+		GLenum internalformat,
+		GLintptr offset,
+		GLsizeiptr size,
+		GLenum format,
+		GLenum type,
+		const void *data)
+{
+	d_opengl_functions.glClearBufferSubData(target, internalformat, offset, size, format, type, data);
+}
+
+
+void
 GPlatesOpenGL::GL::ClearColor(
 		GLclampf red,
 		GLclampf green,
@@ -326,6 +363,32 @@ GPlatesOpenGL::GL::ClearDepth(
 		GLclampd depth)
 {
 	d_current_state->clear_depth(depth);
+}
+
+
+void
+GPlatesOpenGL::GL::ClearNamedBufferData(
+		GLBuffer::shared_ptr_type buffer,
+		GLenum internalformat,
+		GLenum format,
+		GLenum type,
+		const void *data)
+{
+	d_opengl_functions.glClearNamedBufferData(buffer->get_resource_handle(), internalformat, format, type, data);
+}
+
+
+void
+GPlatesOpenGL::GL::ClearNamedBufferSubData(
+		GLBuffer::shared_ptr_type buffer,
+		GLenum internalformat,
+		GLintptr offset,
+		GLsizei size,
+		GLenum format,
+		GLenum type,
+		const void *data)
+{
+	d_opengl_functions.glClearNamedBufferSubData(buffer->get_resource_handle(), internalformat, offset, size, format, type, data);
 }
 
 
@@ -711,6 +774,44 @@ GPlatesOpenGL::GL::MapBufferRange(
 
 
 void
+GPlatesOpenGL::GL::MemoryBarrier(
+		GLbitfield barriers)
+{
+	d_opengl_functions.glMemoryBarrier(barriers);
+}
+
+
+void
+GPlatesOpenGL::GL::MemoryBarrierByRegion(
+		GLbitfield barriers)
+{
+	d_opengl_functions.glMemoryBarrierByRegion(barriers);
+}
+
+
+void
+GPlatesOpenGL::GL::NamedBufferStorage(
+		GLBuffer::shared_ptr_type buffer,
+		GLsizei size,
+		const void *data,
+		GLbitfield flags)
+{
+	d_opengl_functions.glNamedBufferStorage(buffer->get_resource_handle(), size, data, flags);
+}
+
+
+void
+GPlatesOpenGL::GL::NamedBufferSubData(
+		GLBuffer::shared_ptr_type buffer,
+		GLintptr offset,
+		GLsizei size,
+		const void *data)
+{
+	d_opengl_functions.glNamedBufferSubData(buffer->get_resource_handle(), offset, size, data);
+}
+
+
+void
 GPlatesOpenGL::GL::PixelStoref(
 		GLenum pname,
 		GLfloat param)
@@ -998,6 +1099,42 @@ void
 GPlatesOpenGL::GL::TexParameterIuiv(GLenum target, GLenum pname, const GLuint *params)
 {
 	d_opengl_functions.glTexParameterIuiv(target, pname, params);
+}
+
+
+void
+GPlatesOpenGL::GL::TexStorage1D(
+		GLenum target,
+		GLsizei levels,
+		GLenum internalformat,
+		GLsizei width)
+{
+	d_opengl_functions.glTexStorage1D(target, levels, internalformat, width);
+}
+
+
+void
+GPlatesOpenGL::GL::TexStorage2D(
+		GLenum target,
+		GLsizei levels,
+		GLenum internalformat,
+		GLsizei width,
+		GLsizei height)
+{
+	d_opengl_functions.glTexStorage2D(target, levels, internalformat, width, height);
+}
+
+
+void
+GPlatesOpenGL::GL::TexStorage3D(
+		GLenum target,
+		GLsizei levels,
+		GLenum internalformat,
+		GLsizei width,
+		GLsizei height,
+		GLsizei depth)
+{
+	d_opengl_functions.glTexStorage3D(target, levels, internalformat, width, height, depth);
 }
 
 

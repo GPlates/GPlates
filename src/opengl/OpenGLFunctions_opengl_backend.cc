@@ -110,6 +110,11 @@ void GPlatesOpenGL::OpenGLFunctions::glBufferData(GLenum target, GLsizeiptr size
 	d_functions->glBufferData(target, size, data, usage);
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glBufferStorage(GLenum target, GLsizeiptr size, const void* data, GLbitfield flags)
+{
+	d_functions->glBufferStorage(target, size, data, flags);
+}
+
 void GPlatesOpenGL::OpenGLFunctions::glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid* data)
 {
 	d_functions->glBufferSubData(target, offset, size, data);
@@ -130,6 +135,16 @@ void GPlatesOpenGL::OpenGLFunctions::glClear(GLbitfield mask)
 	d_functions->glClear(mask);
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glClearBufferData(GLenum target, GLenum internalformat, GLenum format, GLenum type, const void *data)
+{
+	d_functions->glClearBufferData(target, internalformat, format, type, data);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glClearBufferSubData(GLenum target, GLenum internalformat, GLintptr offset, GLsizeiptr size, GLenum format, GLenum type, const void *data)
+{
+	d_functions->glClearBufferSubData(target, internalformat, offset, size, format, type, data);
+}
+
 void GPlatesOpenGL::OpenGLFunctions::glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
 {
 	d_functions->glClearColor(red, green, blue, alpha);
@@ -138,6 +153,16 @@ void GPlatesOpenGL::OpenGLFunctions::glClearColor(GLfloat red, GLfloat green, GL
 void GPlatesOpenGL::OpenGLFunctions::glClearDepth(GLdouble depth)
 {
 	d_functions->glClearDepth(depth);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glClearNamedBufferData(GLuint buffer, GLenum internalformat, GLenum format, GLenum type, const void *data)
+{
+	d_functions->glClearNamedBufferData(buffer, internalformat, format, type, data);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glClearNamedBufferSubData(GLuint buffer, GLenum internalformat, GLintptr offset, GLsizei size, GLenum format, GLenum type, const void *data)
+{
+	d_functions->glClearNamedBufferSubData(buffer, internalformat, offset, size, format, type, data);
 }
 
 void GPlatesOpenGL::OpenGLFunctions::glClearStencil(GLint s)
@@ -445,6 +470,26 @@ GLvoid * GPlatesOpenGL::OpenGLFunctions::glMapBufferRange(GLenum target, GLintpt
 	return d_functions->glMapBufferRange(target, offset, length, access);
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glMemoryBarrier(GLbitfield barriers)
+{
+	d_functions->glMemoryBarrier(barriers);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glMemoryBarrierByRegion(GLbitfield barriers)
+{
+	d_functions->glMemoryBarrierByRegion(barriers);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glNamedBufferStorage(GLuint buffer, GLsizei size, const void* data, GLbitfield flags)
+{
+	d_functions->glNamedBufferStorage(buffer, size, data, flags);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glNamedBufferSubData(GLuint buffer, GLintptr offset, GLsizei size, const void* data)
+{
+	d_functions->glNamedBufferSubData(buffer, offset, size, data);
+}
+
 void GPlatesOpenGL::OpenGLFunctions::glPixelStorei(GLenum pname, GLint param)
 {
 	d_functions->glPixelStorei(pname, param);
@@ -598,6 +643,21 @@ void GPlatesOpenGL::OpenGLFunctions::glTexParameterIiv(GLenum target, GLenum pna
 void GPlatesOpenGL::OpenGLFunctions::glTexParameterIuiv(GLenum target, GLenum pname, const GLuint* params)
 {
 	d_functions->glTexParameterIuiv(target, pname, params);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glTexStorage1D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width)
+{
+	d_functions->glTexStorage1D(target, levels, internalformat, width);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glTexStorage2D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height)
+{
+	d_functions->glTexStorage2D(target, levels, internalformat, width, height);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glTexStorage3D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth)
+{
+	d_functions->glTexStorage3D(target, levels, internalformat, width, height, depth);
 }
 
 void GPlatesOpenGL::OpenGLFunctions::glTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid* pixels)

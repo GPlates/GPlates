@@ -324,6 +324,13 @@ namespace GPlatesOpenGL
 				const GLvoid *data,
 				GLenum usage);
 
+		void
+		BufferStorage(
+				GLenum target,
+				GLsizeiptr size,
+				const void *data,
+				GLbitfield flags);
+
 		// OpenGL 1.5
 		void
 		BufferSubData(
@@ -348,6 +355,24 @@ namespace GPlatesOpenGL
 		Clear(
 				GLbitfield mask);
 
+		void
+		ClearBufferData(
+				GLenum target,
+				GLenum internalformat,
+				GLenum format,
+				GLenum type,
+				const void *data);
+
+		void
+		ClearBufferSubData(
+				GLenum target,
+				GLenum internalformat,
+				GLintptr offset,
+				GLsizeiptr size,
+				GLenum format,
+				GLenum type,
+				const void *data);
+
 		// OpenGL 1.0
 		void
 		ClearColor(
@@ -360,6 +385,24 @@ namespace GPlatesOpenGL
 		void
 		ClearDepth(
 				GLclampd depth = GLclampd(1.0));
+
+		void
+		ClearNamedBufferData(
+				GLBuffer::shared_ptr_type buffer,
+				GLenum internalformat,
+				GLenum format,
+				GLenum type,
+				const void *data);
+
+		void
+		ClearNamedBufferSubData(
+				GLBuffer::shared_ptr_type buffer,
+				GLenum internalformat,
+				GLintptr offset,
+				GLsizei size,
+				GLenum format,
+				GLenum type,
+				const void *data);
 
 		// OpenGL 1.0
 		void
@@ -596,6 +639,28 @@ namespace GPlatesOpenGL
 				GLsizeiptr length,
 				GLbitfield access);
 
+		void
+		MemoryBarrier(
+				GLbitfield barriers);
+
+		void
+		MemoryBarrierByRegion(
+				GLbitfield barriers);
+
+		void
+		NamedBufferStorage(
+				GLBuffer::shared_ptr_type buffer,
+				GLsizei size,
+				const void *data,
+				GLbitfield flags);
+
+		void
+		NamedBufferSubData(
+				GLBuffer::shared_ptr_type buffer,
+				GLintptr offset,
+				GLsizei size,
+				const void *data);
+
 		// OpenGL 1.0
 		void
 		PixelStoref(
@@ -807,6 +872,30 @@ namespace GPlatesOpenGL
 				GLenum target,
 				GLenum pname,
 				const GLuint *params);
+
+		void
+		TexStorage1D(
+				GLenum target,
+				GLsizei levels,
+				GLenum internalformat,
+				GLsizei width);
+
+		void
+		TexStorage2D(
+				GLenum target,
+				GLsizei levels,
+				GLenum internalformat,
+				GLsizei width,
+				GLsizei height);
+
+		void
+		TexStorage3D(
+				GLenum target,
+				GLsizei levels,
+				GLenum internalformat,
+				GLsizei width,
+				GLsizei height,
+				GLsizei depth);
 
 		// OpenGL 1.1
 		void

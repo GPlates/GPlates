@@ -25,8 +25,7 @@ namespace GPlatesOpenGL
 	class GL;
 
 	/**
-	 * Base class for any OpenGL object such as texture object, buffer object, vertex array object,
-	 * shader object, program object, framebuffer object.
+	 * Interface for creating and destroying OpenGL resources when initialising and shutting down OpenGL.
 	 */
 	class GLContextLifetime
 	{
