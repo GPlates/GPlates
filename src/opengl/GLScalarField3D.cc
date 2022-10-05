@@ -527,16 +527,16 @@ GPlatesOpenGL::GLScalarField3D::GLScalarField3D(
 	d_gradient_magnitude_max(0),
 	d_gradient_magnitude_mean(0),
 	d_gradient_magnitude_standard_deviation(0),
-	d_tile_meta_data_texture_array(GLTexture::create(gl)),
-	d_field_data_texture_array(GLTexture::create(gl)),
-	d_mask_data_texture_array(GLTexture::create(gl)),
-	d_depth_radius_to_layer_texture(GLTexture::create(gl)),
+	d_tile_meta_data_texture_array(GLTexture::create(gl, GL_TEXTURE_2D_ARRAY)),
+	d_field_data_texture_array(GLTexture::create(gl, GL_TEXTURE_2D_ARRAY)),
+	d_mask_data_texture_array(GLTexture::create(gl, GL_TEXTURE_2D_ARRAY)),
+	d_depth_radius_to_layer_texture(GLTexture::create(gl, GL_TEXTURE_1D)),
 	d_depth_radius_to_layer_resolution(
 			// Can't be larger than the maximum texture dimension for the current system...
 			(DEPTH_RADIUS_TO_LAYER_RESOLUTION > gl.get_capabilities().gl_max_texture_size)
 			? gl.get_capabilities().gl_max_texture_size
 			: DEPTH_RADIUS_TO_LAYER_RESOLUTION),
-	d_colour_palette_texture(GLTexture::create(gl)),
+	d_colour_palette_texture(GLTexture::create(gl, GL_TEXTURE_1D)),
 	d_colour_palette_resolution(
 			// Can't be larger than the maximum texture dimension for the current system...
 			(COLOUR_PALETTE_RESOLUTION > gl.get_capabilities().gl_max_texture_size)
@@ -546,7 +546,7 @@ GPlatesOpenGL::GLScalarField3D::GLScalarField3D(
 	d_uniform_buffer_ranges{},  // zero-initialization of each range - we'll properly initialize later
 	d_cross_section_vertex_array(GLVertexArray::create(gl)),
 	d_surface_fill_mask_vertex_array(GLVertexArray::create(gl)),
-	d_surface_fill_mask_texture(GLTexture::create(gl)),
+	d_surface_fill_mask_texture(GLTexture::create(gl, GL_TEXTURE_2D)),
 	d_surface_fill_mask_framebuffer(GLFramebuffer::create(gl)),
 	d_surface_fill_mask_resolution(
 			// Can't be larger than the maximum texture dimension for the current system...
@@ -555,7 +555,7 @@ GPlatesOpenGL::GLScalarField3D::GLScalarField3D(
 			: SURFACE_FILL_MASK_RESOLUTION),
 	d_volume_fill_boundary_vertex_array(GLVertexArray::create(gl)),
 	d_volume_fill_texture_sampler(GLSampler::create(gl)),
-	d_volume_fill_texture(GLTexture::create(gl)),
+	d_volume_fill_texture(GLTexture::create(gl, GL_TEXTURE_2D)),
 	d_volume_fill_depth_buffer(GLRenderbuffer::create(gl)),
 	d_volume_fill_framebuffer(GLFramebuffer::create(gl)),
 	d_volume_fill_screen_width(0),

@@ -47,7 +47,7 @@ GPlatesOpenGL::GLBuffer::Allocator::allocate(
 		OpenGLFunctions &opengl_functions)
 {
 	GLuint buffer_object;
-	opengl_functions.glGenBuffers(1, &buffer_object);
+	opengl_functions.glCreateBuffers(1, &buffer_object);
 	return buffer_object;
 }
 

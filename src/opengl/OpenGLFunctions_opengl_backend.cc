@@ -195,14 +195,44 @@ void GPlatesOpenGL::OpenGLFunctions::glCompileShader(GLuint shader)
 	d_functions->glCompileShader(shader);
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glCreateBuffers(GLsizei n, GLuint* buffers)
+{
+	d_functions->glCreateBuffers(n, buffers);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glCreateFramebuffers(GLsizei n, GLuint* framebuffers)
+{
+	d_functions->glCreateFramebuffers(n, framebuffers);
+}
+
 GLuint GPlatesOpenGL::OpenGLFunctions::glCreateProgram()
 {
 	return d_functions->glCreateProgram();
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glCreateRenderbuffers(GLsizei n, GLuint* renderbuffers)
+{
+	d_functions->glCreateRenderbuffers(n, renderbuffers);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glCreateSamplers(GLsizei count, GLuint* samplers)
+{
+	d_functions->glCreateSamplers(count, samplers);
+}
+
 GLuint GPlatesOpenGL::OpenGLFunctions::glCreateShader(GLenum type)
 {
 	return d_functions->glCreateShader(type);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glCreateTextures(GLenum target, GLsizei n, GLuint* textures)
+{
+	d_functions->glCreateTextures(target, n, textures);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glCreateVertexArrays(GLsizei n, GLuint* arrays)
+{
+	d_functions->glCreateVertexArrays(n, arrays);
 }
 
 void GPlatesOpenGL::OpenGLFunctions::glCullFace(GLenum mode)
@@ -363,36 +393,6 @@ void GPlatesOpenGL::OpenGLFunctions::glFramebufferTextureLayer(GLenum target, GL
 void GPlatesOpenGL::OpenGLFunctions::glFrontFace(GLenum mode)
 {
 	d_functions->glFrontFace(mode);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glGenBuffers(GLsizei n, GLuint* buffers)
-{
-	d_functions->glGenBuffers(n, buffers);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glGenFramebuffers(GLsizei n, GLuint* framebuffers)
-{
-	d_functions->glGenFramebuffers(n, framebuffers);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glGenRenderbuffers(GLsizei n, GLuint* renderbuffers)
-{
-	d_functions->glGenRenderbuffers(n, renderbuffers);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glGenSamplers(GLsizei count, GLuint* samplers)
-{
-	d_functions->glGenSamplers(count, samplers);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glGenTextures(GLsizei n, GLuint* textures)
-{
-	d_functions->glGenTextures(n, textures);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glGenVertexArrays(GLsizei n, GLuint* arrays)
-{
-	d_functions->glGenVertexArrays(n, arrays);
 }
 
 GLenum GPlatesOpenGL::OpenGLFunctions::glGetError()

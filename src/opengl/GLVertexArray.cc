@@ -76,7 +76,7 @@ GPlatesOpenGL::GLVertexArray::Allocator::allocate(
 		OpenGLFunctions &opengl_functions)
 {
 	GLuint vertex_array_object;
-	opengl_functions.glGenVertexArrays(1, &vertex_array_object);
+	opengl_functions.glCreateVertexArrays(1, &vertex_array_object);
 	return vertex_array_object;
 }
 

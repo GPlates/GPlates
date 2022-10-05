@@ -103,8 +103,14 @@ namespace GPlatesOpenGL
 		void glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha);
 		void glColorMaski(GLuint index, GLboolean r, GLboolean g, GLboolean b, GLboolean a);
 		void glCompileShader(GLuint shader);
+		void glCreateBuffers(GLsizei n, GLuint *buffers);
+		void glCreateFramebuffers(GLsizei n, GLuint *framebuffers);
 		GLuint glCreateProgram();
+		void glCreateRenderbuffers(GLsizei n, GLuint *renderbuffers);
+		void glCreateSamplers(GLsizei count, GLuint *samplers);
 		GLuint glCreateShader(GLenum type);
+		void glCreateTextures(GLenum target, GLsizei n, GLuint *textures);
+		void glCreateVertexArrays(GLsizei n, GLuint *arrays);
 		void glCullFace(GLenum mode);
 		void glDeleteBuffers(GLsizei n, const GLuint *buffers);
 		void glDeleteFramebuffers(GLsizei n, const GLuint *framebuffers);
@@ -137,12 +143,6 @@ namespace GPlatesOpenGL
 		void glFramebufferTexture(GLenum target, GLenum attachment, GLuint texture, GLint level);
 		void glFramebufferTextureLayer(GLenum target, GLenum attachment, GLuint texture, GLint level, GLint layer);
 		void glFrontFace(GLenum mode);
-		void glGenBuffers(GLsizei n, GLuint *buffers);
-		void glGenFramebuffers(GLsizei n, GLuint *framebuffers);
-		void glGenRenderbuffers(GLsizei n, GLuint *renderbuffers);
-		void glGenSamplers(GLsizei count, GLuint *samplers);
-		void glGenTextures(GLsizei n, GLuint *textures);
-		void glGenVertexArrays(GLsizei n, GLuint *arrays);
 		GLenum glGetError();
 		void glGetIntegerv(GLenum pname, GLint *params);
 		void glGetInteger64v(GLenum pname, GLint64* params);

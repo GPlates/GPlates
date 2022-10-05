@@ -5086,7 +5086,7 @@ GPlatesOpenGL::GLRasterCoRegistration::acquire_rgba_float_texture(
 
 	// Create a new object and add it to the cache.
 	const GLTexture::shared_ptr_type texture = d_rgba_float_texture_cache->allocate_object(
-			GLTexture::create_unique(gl));
+			GLTexture::create_unique(gl, GL_TEXTURE_2D));
 
 	// Make sure we leave the OpenGL global state the way it was.
 	GL::StateScope save_restore_state(gl);

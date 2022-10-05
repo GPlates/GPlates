@@ -197,7 +197,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::GLFilledPolygonsGlobeView(
 			(boost::numeric_cast<GLuint>(TILE_MAX_VIEWPORT_DIMENSION) > gl.get_capabilities().gl_max_texture_size)
 					? gl.get_capabilities().gl_max_texture_size
 					: TILE_MAX_VIEWPORT_DIMENSION),
-	d_tile_texture(GLTexture::create(gl)),
+	d_tile_texture(GLTexture::create(gl, GL_TEXTURE_2D)),
 	d_tile_stencil_buffer(GLRenderbuffer::create(gl)),
 	d_tile_texture_framebuffer(GLFramebuffer::create(gl)),
 	d_render_to_tile_program(GLProgram::create(gl)),

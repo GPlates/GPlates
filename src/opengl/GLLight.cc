@@ -122,7 +122,7 @@ GPlatesOpenGL::GLLight::GLLight(
 	d_map_projection(map_projection),
 	d_map_view_light_direction_cube_texture_dimension(
 			(std::min)(MAP_VIEW_LIGHT_DIRECTION_CUBE_TEXTURE_DIMENSION, gl.get_capabilities().gl_max_cube_map_texture_size)),
-	d_map_view_light_direction_cube_texture(GLTexture::create(gl)),
+	d_map_view_light_direction_cube_texture(GLTexture::create(gl, GL_TEXTURE_CUBE_MAP)),
 	d_map_view_light_direction_cube_framebuffer(GLFramebuffer::create(gl)),
 	d_render_map_view_light_direction_program(GLProgram::create(gl)),
 	d_full_screen_quad(GLUtils::create_full_screen_quad(gl))
