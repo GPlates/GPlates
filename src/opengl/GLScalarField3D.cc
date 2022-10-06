@@ -544,7 +544,7 @@ GPlatesOpenGL::GLScalarField3D::GLScalarField3D(
 	d_uniform_buffer_ranges{},  // zero-initialization of each range - we'll properly initialize later
 	d_cross_section_vertex_array(GLVertexArray::create(gl)),
 	d_surface_fill_mask_vertex_array(GLVertexArray::create(gl)),
-	d_surface_fill_mask_texture(GLTexture::create(gl, GL_TEXTURE_2D)),
+	d_surface_fill_mask_texture(GLTexture::create(gl, GL_TEXTURE_2D_ARRAY)),
 	d_surface_fill_mask_framebuffer(GLFramebuffer::create(gl)),
 	d_surface_fill_mask_resolution(
 			// Can't be larger than the maximum texture dimension for the current system...
