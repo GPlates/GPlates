@@ -23,8 +23,10 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <sstream>
 #include <vector>
 #include <QDebug>
+#include <QString>
 
 #include "GLUtils.h"
 
@@ -35,6 +37,8 @@
 #include "OpenGLException.h"
 
 #include "global/GPlatesAssert.h"
+
+#include "utils/CallStackTracker.h"
 
 
 void
@@ -78,7 +82,17 @@ GPlatesOpenGL::GLUtils::check_gl_errors(
 			break;
 		}
 
+		// Push the location of the caller onto the call stack writing out the call stack trace.
+		GPlatesUtils::CallStackTracker call_stack_tracker(assert_location);
+
+		// Get the call stack trace as a string.
+		std::ostringstream call_stack_string_stream;
+		GPlatesUtils::CallStack::instance().write_call_stack_trace(call_stack_string_stream);
+
+		// Output the warning message.
 		qWarning() << "OpenGL error: " << error_message;
+		// Also write out the call-stack - it's useful to know where this error happened.
+		qWarning("    %s", QString::fromStdString(call_stack_string_stream.str()).toLatin1().data());
 
 #ifdef GPLATES_DEBUG
 		GPlatesGlobal::Abort(assert_location);
