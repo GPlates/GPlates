@@ -76,8 +76,6 @@ namespace GPlatesOpenGL
 		 */
 		enum
 		{
-			KEY_ACTIVE_TEXTURE,
-			KEY_ALPHA_FUNC,
 			KEY_BIND_ARRAY_BUFFER,
 			KEY_BIND_ATOMIC_COUNTER_BUFFER,
 			KEY_BIND_COPY_READ_BUFFER,
@@ -182,12 +180,11 @@ namespace GPlatesOpenGL
 
 		key_type
 		get_bind_sampler_key(
-				GLuint unit) const;
+				GLuint sampler_unit) const;
 
 		key_type
 		get_bind_texture_key(
-				GLenum texture_target,
-				GLenum texture_unit) const;
+				GLuint texture_unit) const;
 
 		key_type
 		get_clamp_color_key(
@@ -226,27 +223,10 @@ namespace GPlatesOpenGL
 
 	private:
 
-		//! Key offsets within a particular texture *image* unit - offsets repeat for each subsequent texture unit.
-		enum TextureImageUnitKeyOffsetType
-		{
-			TEXTURE_IMAGE_UNIT_KEY_BIND_SAMPLER,
-			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_1D,
-			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_1D_ARRAY,
-			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D,
-			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_ARRAY,
-			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_MULTISAMPLE,
-			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_MULTISAMPLE_ARRAY,
-			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_3D,
-			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_BUFFER,
-			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_CUBE_MAP,
-			TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_RECTANGLE,
-
-			NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS // Must be last.
-		};
-
 		const GLCapabilities &d_capabilities;
 
 		key_type d_enable_clip_distance_zero_base_key;
+		key_type d_sampler_unit_zero_base_key;
 		key_type d_texture_image_unit_zero_base_key;
 		key_type d_image_unit_zero_base_key;
 
@@ -256,12 +236,6 @@ namespace GPlatesOpenGL
 		//! Default constructor can only be called by @a create.
 		GLStateSetKeys(
 				const GLCapabilities &capabilities);
-
-		//! Calculate a key for a texture parameter in the specified texture *image* unit.
-		key_type
-		get_texture_image_unit_key_from_key_offset(
-				GLuint unit,
-				TextureImageUnitKeyOffsetType key_offset) const;
 	};
 }
 

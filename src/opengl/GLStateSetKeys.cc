@@ -51,11 +51,13 @@ GPlatesOpenGL::GLStateSetKeys::GLStateSetKeys(
 	d_enable_clip_distance_zero_base_key = current_key;
 	current_key += d_capabilities.gl_max_clip_distances;
 
+	// Sampler units.
+	d_sampler_unit_zero_base_key = current_key;
+	current_key += d_capabilities.gl_max_combined_texture_image_units;
+
 	// Texture units.
 	d_texture_image_unit_zero_base_key = current_key;
-	current_key +=
-			NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS *
-			d_capabilities.gl_max_combined_texture_image_units;
+	current_key += d_capabilities.gl_max_combined_texture_image_units;
 
 	// Image units.
 	d_image_unit_zero_base_key = current_key;
@@ -154,56 +156,25 @@ GPlatesOpenGL::GLStateSetKeys::get_bind_renderbuffer_key(
 
 GPlatesOpenGL::GLStateSetKeys::key_type
 GPlatesOpenGL::GLStateSetKeys::get_bind_sampler_key(
-		GLuint unit) const
+		GLuint sampler_unit) const
 {
-	return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_SAMPLER);
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			sampler_unit < d_capabilities.gl_max_combined_texture_image_units,
+			GPLATES_ASSERTION_SOURCE);
+
+	return d_sampler_unit_zero_base_key + sampler_unit;
 }
 
 
 GPlatesOpenGL::GLStateSetKeys::key_type
 GPlatesOpenGL::GLStateSetKeys::get_bind_texture_key(
-		GLenum texture_target,
-		GLenum texture_unit) const
+		GLuint texture_unit) const
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + d_capabilities.gl_max_combined_texture_image_units,
+			texture_unit < d_capabilities.gl_max_combined_texture_image_units,
 			GPLATES_ASSERTION_SOURCE);
 
-	// Convert from enum to integer.
-	const GLuint unit = texture_unit - GL_TEXTURE0;
-
-	switch (texture_target)
-	{
-	case GL_TEXTURE_1D:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_1D);
-	case GL_TEXTURE_2D:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D);
-	case GL_TEXTURE_3D:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_3D);
-	case GL_TEXTURE_CUBE_MAP:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_CUBE_MAP);
-	case GL_TEXTURE_RECTANGLE:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_RECTANGLE);
-	case GL_TEXTURE_1D_ARRAY:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_1D_ARRAY);
-	case GL_TEXTURE_2D_ARRAY:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_ARRAY);
-	case GL_TEXTURE_2D_MULTISAMPLE:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_MULTISAMPLE);
-	case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_MULTISAMPLE_ARRAY);
-	case GL_TEXTURE_BUFFER:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_BUFFER);
-
-	default:
-		// Unsupported texture target type.
-		GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
-		break;
-	}
-
-	// Shouldn't get there - keep the compiler happy.
-	throw GPlatesGlobal::AbortException(GPLATES_EXCEPTION_SOURCE);
+	return d_texture_image_unit_zero_base_key + texture_unit;
 }
 
 
@@ -412,13 +383,4 @@ GPlatesOpenGL::GLStateSetKeys::get_pixel_store_key(
 	}
 
 	return key;
-}
-
-
-GPlatesOpenGL::GLStateSetKeys::key_type
-GPlatesOpenGL::GLStateSetKeys::get_texture_image_unit_key_from_key_offset(
-		GLuint unit,
-		TextureImageUnitKeyOffsetType key_offset) const
-{
-	return d_texture_image_unit_zero_base_key + unit * NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS + key_offset;
 }

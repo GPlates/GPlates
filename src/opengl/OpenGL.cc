@@ -80,14 +80,6 @@ GPlatesOpenGL::GL::~GL()
 
 
 void
-GPlatesOpenGL::GL::ActiveTexture(
-		GLenum active_texture_)
-{
-	d_current_state->active_texture(active_texture_);
-}
-
-
-void
 GPlatesOpenGL::GL::BindAttribLocation(
 		GLProgram::shared_ptr_type program,
 		GLuint index,
@@ -196,15 +188,11 @@ GPlatesOpenGL::GL::BindSampler(
 
 
 void
-GPlatesOpenGL::GL::BindTexture(
-		GLenum texture_target,
+GPlatesOpenGL::GL::BindTextureUnit(
+		GLuint unit,
 		boost::optional<GLTexture::shared_ptr_type> texture)
 {
-	d_current_state->bind_texture(
-			texture_target,
-			// Bind to the currently active texture unit (set by gl.ActiveTexture)...
-			d_current_state->get_active_texture()/*texture_unit*/,
-			texture);
+	d_current_state->bind_texture_unit(unit, texture);
 }
 
 

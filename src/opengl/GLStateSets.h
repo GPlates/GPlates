@@ -64,43 +64,6 @@ namespace GPlatesOpenGL
 
 
 	/**
-	 * Used to set the active texture unit.
-	 */
-	struct GLActiveTextureStateSet :
-			public GLStateSet
-	{
-		explicit
-		GLActiveTextureStateSet(
-				const GLCapabilities &capabilities,
-				GLenum active_texture);
-
-		virtual
-		bool
-		apply_state(
-				OpenGLFunctions &opengl_functions,
-				const GLCapabilities &capabilities,
-				const GLStateSet &current_state_set,
-				const GLState &current_state) const override;
-
-		virtual
-		bool
-		apply_from_default_state(
-				OpenGLFunctions &opengl_functions,
-				const GLCapabilities &capabilities,
-				const GLState &current_state) const override;
-
-		virtual
-		bool
-		apply_to_default_state(
-				OpenGLFunctions &opengl_functions,
-				const GLCapabilities &capabilities,
-				const GLState &current_state) const override;
-
-
-		GLenum d_active_texture;
-	};
-
-	/**
 	 * Used to bind a buffer object (to a non-indexed target).
 	 *
 	 * This only applies to non-indexed targets (ie, excludes
@@ -465,12 +428,10 @@ namespace GPlatesOpenGL
 	struct GLBindTextureStateSet :
 			public GLStateSet
 	{
-		//! Binds a texture object.
+		//! Default state.
 		GLBindTextureStateSet(
 				const GLCapabilities &capabilities,
-				GLenum texture_target,
-				GLenum texture_unit,
-				boost::optional<GLTexture::shared_ptr_type> texture);
+				GLuint texture_unit);
 
 		virtual
 		bool
@@ -495,10 +456,34 @@ namespace GPlatesOpenGL
 				const GLState &current_state) const override;
 
 
-		GLenum d_texture_target;
-		GLenum d_texture_unit;
-		boost::optional<GLTexture::shared_ptr_type> d_texture;
-		GLuint d_texture_resource;
+		enum TextureTargetType
+		{
+			TARGET_TEXTURE_1D,
+			TARGET_TEXTURE_1D_ARRAY,
+			TARGET_TEXTURE_2D,
+			TARGET_TEXTURE_2D_ARRAY,
+			TARGET_TEXTURE_2D_MULTISAMPLE,
+			TARGET_TEXTURE_2D_MULTISAMPLE_ARRAY,
+			TARGET_TEXTURE_3D,
+			TARGET_TEXTURE_CUBE_MAP,
+			TARGET_TEXTURE_CUBE_MAP_ARRAY,
+			TARGET_TEXTURE_BUFFER,
+			TARGET_TEXTURE_RECTANGLE,
+
+			NUM_TARGETS // Must be last.
+		};
+
+		//! Utility function to return texture target index given the specified texture target.
+		static
+		TextureTargetType
+		get_texture_target_index(
+				GLenum texture_target);
+
+
+		GLuint d_texture_unit;
+		boost::optional<GLTexture::shared_ptr_type> d_target_textures[NUM_TARGETS];
+		// If true then all target textures are unbound (must be consistent with 'd_target_textures' array).
+		bool d_in_default_state;
 	};
 
 	/**

@@ -167,8 +167,8 @@ namespace GPlatesOpenGL
 		//
 		// The following methods are equivalent to the native OpenGL functions with the same function name
 		// (ie, with a 'gl' prefix). But we exclude the 'gl' prefix so that, for example, a function call to
-		// 'ActiveTexture()' on object 'gl' looks like 'gl.ActiveTexture()' which looks very similar to the
-		// native equivalent 'glActiveTexture()'.
+		// 'BindTextureUnit()' on object 'gl' looks like 'gl.BindTextureUnit()' which looks very similar to the
+		// native equivalent 'glBindTextureUnit()'.
 		//
 		// There are three categories of methods that set OpenGL state:
 		// 1) Methods that create/delete OpenGL resources (such as textures).
@@ -203,11 +203,6 @@ namespace GPlatesOpenGL
 		// one native vertex array object (or framebuffer object) per OpenGL context.
 		////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-		// OpenGL 1.3
-		void
-		ActiveTexture(
-				GLenum active_texture);
 
 		// OpenGL 2.0
 		//
@@ -272,10 +267,9 @@ namespace GPlatesOpenGL
 				GLuint unit,
 				boost::optional<GLSampler::shared_ptr_type> sampler/*none means unbind*/);
 
-		// OpenGL 1.1
 		void
-		BindTexture(
-				GLenum texture_target,
+		BindTextureUnit(
+				GLuint unit,
 				boost::optional<GLTexture::shared_ptr_type> texture/*none means unbind*/);
 
 		// OpenGL 3.0

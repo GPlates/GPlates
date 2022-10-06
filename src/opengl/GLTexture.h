@@ -92,6 +92,16 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Returns the target this texture was created with.
+		 */
+		GLenum
+		get_target() const
+		{
+			return d_target;
+		}
+
+
+		/**
 		 * Returns the texture resource handle.
 		 */
 		GLuint
@@ -120,6 +130,7 @@ namespace GPlatesOpenGL
 		};
 
 	private:
+		GLenum d_target;
 		GLObjectResource<GLuint, Allocator> d_resource;
 
 		//! Constructor.

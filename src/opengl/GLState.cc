@@ -369,6 +369,64 @@ GPlatesOpenGL::GLState::bind_framebuffer(
 
 
 void
+GPlatesOpenGL::GLState::bind_texture_unit(
+		GLuint texture_unit,
+		boost::optional<GLTexture::shared_ptr_type> texture)
+{
+	const state_set_key_type state_set_key = d_state_set_keys->get_bind_texture_key(texture_unit);
+
+	// Bind/unbind the texture at the binding point associated with the texture's 'target'.
+	boost::shared_ptr<GLBindTextureStateSet> new_state_set;
+	if (texture)
+	{
+		//
+		// Set the requested state (in copy of current state).
+		//
+		// Because the state includes bindings for all texture targets (for the specified texture unit).
+		//
+
+		// Get the current state.
+		boost::optional<const GLBindTextureStateSet &> current_state_set =
+				query_state_set<GLBindTextureStateSet>(state_set_key);
+
+		// Copy the current state.
+		if (current_state_set)
+		{
+			new_state_set = create_state_set(
+					d_state_set_store->bind_texture_state_sets,
+					// Copy construction...
+					boost::in_place(boost::cref(current_state_set.get())));
+		}
+		else
+		{
+			new_state_set = create_state_set(
+					d_state_set_store->bind_texture_state_sets,
+					// Default state...
+					boost::in_place(boost::cref(d_capabilities), texture_unit));
+		}
+
+		const GLBindTextureStateSet::TextureTargetType texture_target_type =
+				GLBindTextureStateSet::get_texture_target_index(texture.get()->get_target());
+
+		// Modify the current state.
+		new_state_set->d_target_textures[texture_target_type] = texture.get();
+		new_state_set->d_in_default_state = false;
+	}
+	else // unbind
+	{
+		// Calling glBindTextureUnit() with texture resource 0 will unbind texture an ALL targets.
+		// So our new state set is the default state.
+		new_state_set = create_state_set(
+				d_state_set_store->bind_texture_state_sets,
+				// Default state...
+				boost::in_place(boost::cref(d_capabilities), texture_unit));
+	}
+
+	apply_state_set(state_set_key, new_state_set);
+}
+
+
+void
 GPlatesOpenGL::GLState::color_maski(
 		GLuint buf,
 		GLboolean red,

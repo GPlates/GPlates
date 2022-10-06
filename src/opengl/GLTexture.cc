@@ -31,6 +31,7 @@
 GPlatesOpenGL::GLTexture::GLTexture(
 		GL &gl,
 		GLenum target) :
+	d_target(target),
 	d_resource(gl.get_opengl_functions(), gl.get_context(), target)
 {
 }

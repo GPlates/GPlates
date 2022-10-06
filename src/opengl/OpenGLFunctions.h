@@ -68,7 +68,6 @@ namespace GPlatesOpenGL
 		}
 
 
-		void glActiveTexture(GLenum texture);
 		void glAttachShader(GLuint program, GLuint shader);
 		void glBindAttribLocation(GLuint program, GLuint index, const GLchar *name);
 		void glBindBuffer(GLenum target, GLuint buffer);
@@ -78,7 +77,7 @@ namespace GPlatesOpenGL
 		void glBindImageTexture(GLuint image_unit, GLuint texture, GLint level, GLboolean layered, GLint layer, GLenum access, GLenum format);
 		void glBindRenderbuffer(GLenum target, GLuint renderbuffer);
 		void glBindSampler(GLuint unit, GLuint sampler);
-		void glBindTexture(GLenum target, GLuint texture);
+		void glBindTextureUnit(GLuint unit, GLuint texture);
 		void glBindVertexArray(GLuint array);
 		void glBlendColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 		void glBlendEquation(GLenum mode);

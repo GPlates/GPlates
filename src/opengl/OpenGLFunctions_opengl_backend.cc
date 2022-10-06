@@ -20,11 +20,6 @@
 #include "OpenGLFunctions.h"
 
 
-void GPlatesOpenGL::OpenGLFunctions::glActiveTexture(GLenum texture)
-{
-	d_functions->glActiveTexture(texture);
-}
-
 void GPlatesOpenGL::OpenGLFunctions::glAttachShader(GLuint program, GLuint shader)
 {
 	d_functions->glAttachShader(program, shader);
@@ -70,9 +65,9 @@ void GPlatesOpenGL::OpenGLFunctions::glBindSampler(GLuint unit, GLuint sampler)
 	d_functions->glBindSampler(unit, sampler);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glBindTexture(GLenum target, GLuint texture)
+void GPlatesOpenGL::OpenGLFunctions::glBindTextureUnit(GLuint unit, GLuint texture)
 {
-	d_functions->glBindTexture(target, texture);
+	d_functions->glBindTextureUnit(unit, texture);
 }
 
 void GPlatesOpenGL::OpenGLFunctions::glBindVertexArray(GLuint array)
