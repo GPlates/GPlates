@@ -3010,6 +3010,8 @@ GPlatesOpenGL::GLScalarField3D::load_scalar_field(
 			tile_meta_data = scalar_field_reader.read_tile_meta_data();
 
 	// Upload the tile metadata into the texture array.
+	//
+	// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (12 bytes) are a multiple of 4.
 	gl.TextureSubImage3D(
 			d_tile_meta_data_texture_array, 0,
 			0, 0, 0, // x,y,z offsets
@@ -3039,6 +3041,8 @@ GPlatesOpenGL::GLScalarField3D::load_scalar_field(
 				field_data = scalar_field_reader.read_field_data(layer_index, num_layers_to_read);
 
 		// Upload the current range of field data layers into the texture array.
+		//
+		// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (16 bytes) are a multiple of 4.
 		gl.TextureSubImage3D(
 				d_field_data_texture_array, 0,
 				0, 0, // x,y offsets
@@ -3071,6 +3075,8 @@ GPlatesOpenGL::GLScalarField3D::load_scalar_field(
 				mask_data = scalar_field_reader.read_mask_data(mask_tile_index, num_tiles_to_read);
 
 		// Upload the current range of mask data into the texture array.
+		//
+		// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (4 bytes) are a multiple of 4.
 		gl.TextureSubImage3D(
 				d_mask_data_texture_array, 0,
 				0, 0, // x,y offsets
@@ -3131,6 +3137,8 @@ GPlatesOpenGL::GLScalarField3D::load_depth_radius_to_layer_texture(
 	depth_layer_mapping.push_back(d_num_depth_layers - 1/*layer*/);
 
 	// Upload the depth-radius-to-layer mapping data into the texture.
+	//
+	// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (4 bytes) are a multiple of 4.
 	gl.TextureSubImage1D(
 			d_depth_radius_to_layer_texture, 0,
 			0, // x offset
@@ -3196,6 +3204,8 @@ GPlatesOpenGL::GLScalarField3D::load_colour_palette_texture(
 	}
 
 	// Upload the colour palette data into the texture.
+	//
+	// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (16 bytes) are a multiple of 4.
 	gl.TextureSubImage1D(
 			d_colour_palette_texture, 0,
 			0, // x offset

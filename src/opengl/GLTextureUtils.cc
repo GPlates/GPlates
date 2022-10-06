@@ -94,6 +94,7 @@ GPlatesOpenGL::GLTextureUtils::create_xy_clip_texture_2D(
 
 	// Create the texture and load the data into it.
 	gl.TextureStorage2D(xy_clip_texture, 1/*levels*/, GL_RGBA8, 4, 4);
+	// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (4 bytes) are a multiple of 4.
 	gl.TextureSubImage2D(xy_clip_texture, 0/*level*/, 0, 0, 4, 4, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
 
 	// Check there are no OpenGL errors.
@@ -131,6 +132,7 @@ GPlatesOpenGL::GLTextureUtils::create_z_clip_texture_2D(
 
 	// Create the texture and load the data into it.
 	gl.TextureStorage2D(z_clip_texture, 1/*levels*/, GL_RGBA8, 2, 1);
+	// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (4 bytes) are a multiple of 4.
 	gl.TextureSubImage2D(z_clip_texture, 0/*level*/, 0, 0, 2, 1, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
 
 	// Check there are no OpenGL errors.

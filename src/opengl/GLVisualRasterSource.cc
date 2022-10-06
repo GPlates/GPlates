@@ -140,9 +140,6 @@ GPlatesOpenGL::GLVisualRasterSource::load_tile(
 					d_raster_colour_palette);
 	PROFILE_END(profile_proxy_raster);
 
-	// Our client memory image buffers are byte aligned.
-	gl.PixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
 	// If there was an error accessing raster colours...
 	if (!raster_region_opt)
 	{
@@ -246,6 +243,8 @@ GPlatesOpenGL::GLVisualRasterSource::load_tile(
 	}
 
 	// Load the colours into the texture.
+	//
+	// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (4 bytes) are a multiple of 4.
 	gl.TextureSubImage2D(target_texture, 0/*level*/,
 			0/*xoffset*/, 0/*yoffset*/, d_tile_texel_dimension, d_tile_texel_dimension,
 			GL_RGBA, GL_UNSIGNED_BYTE, d_tile_working_space.get());
@@ -393,6 +392,8 @@ GPlatesOpenGL::GLVisualRasterSource::render_error_text_into_texture(
 	}
 
 	// Load cached image into tile texture.
+	//
+	// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (4 bytes) are a multiple of 4.
 	gl.TextureSubImage2D(
 			target_texture, 0/*level*/,
 			0/*xoffset*/, 0/*yoffset*/, texel_width, texel_height,

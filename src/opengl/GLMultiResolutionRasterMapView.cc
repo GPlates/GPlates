@@ -244,6 +244,8 @@ namespace GPlatesOpenGL
 					debug_rgba8_array);
 
 			// Load cached image into tile texture.
+			//
+			// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (4 bytes) are a multiple of 4.
 			gl.TextureSubImage2D(
 					tile_texture, 0/*level*/,
 					0/*xoffset*/, 0/*yoffset*/, debug_image.width(), debug_image.height(),

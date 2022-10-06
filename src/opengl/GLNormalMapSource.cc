@@ -499,14 +499,12 @@ GPlatesOpenGL::GLNormalMapSource::convert_height_field_to_normal_map(
 	const unsigned int height_map_texel_width = normal_map_texel_width + 2;
 	const unsigned int height_map_texel_height = normal_map_texel_height + 2;
 
-	// Our client memory image buffers are byte aligned.
-	// Not really needed since default alignment is 4 (which is alignment of GL_FLOAT anyway).
-	gl.PixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
 	// Load the height data into the floating-point texture.
+	//
+	// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (8 bytes) are a multiple of 4.
 	gl.TextureSubImage2D(height_field_texture.get(), 0/*level*/,
-		0/*xoffset*/, 0/*yoffset*/, height_map_texel_width, height_map_texel_height,
-		GL_RG, GL_FLOAT, d_tile_height_data_working_space.get());
+			0/*xoffset*/, 0/*yoffset*/, height_map_texel_width, height_map_texel_height,
+			GL_RG, GL_FLOAT, d_tile_height_data_working_space.get());
 
 	// Make sure we leave the OpenGL state the way it was.
 	GL::StateScope save_restore_state(
@@ -615,9 +613,6 @@ GPlatesOpenGL::GLNormalMapSource::load_default_normal_map(
 		d_logged_tile_load_failure_warning = true;
 	}
 
-	// Our client memory image buffers are byte aligned.
-	gl.PixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
 	// The default normal is normal to the surface with (x,y,z) of (0,0,1).
 	// We also need to convert the x and y components from the range [-1,1] to [0,255] and
 	// the z component from the range [0,1] to [0,255].
@@ -629,6 +624,7 @@ GPlatesOpenGL::GLNormalMapSource::load_default_normal_map(
 	boost::scoped_array<GPlatesGui::rgba8_t> default_normal_image_data(
 			new GPlatesGui::rgba8_t[texel_width * texel_height]);
 	std::fill_n(default_normal_image_data.get(), texel_width * texel_height, default_normal);
+	// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (4 bytes) are a multiple of 4.
 	gl.TextureSubImage2D(target_texture, 0/*level*/,
 			0/*xoffset*/, 0/*yoffset*/, texel_width, texel_height,
 			GL_RGBA, GL_UNSIGNED_BYTE, default_normal_image_data.get());
