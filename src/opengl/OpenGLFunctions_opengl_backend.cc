@@ -425,9 +425,9 @@ void GPlatesOpenGL::OpenGLFunctions::glGetShaderInfoLog(GLuint shader, GLsizei b
 	d_functions->glGetShaderInfoLog(shader, bufSize, length, infoLog);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glGetTexImage(GLenum target, GLint level, GLenum format, GLenum type, GLvoid* pixels)
+void GPlatesOpenGL::OpenGLFunctions::glGetTextureImage(GLuint texture, GLint level, GLenum format, GLenum type, GLsizei bufSize, void* pixels)
 {
-	d_functions->glGetTexImage(target, level, format, type, pixels);
+	d_functions->glGetTextureImage(texture, level, format, type, bufSize, pixels);
 }
 
 GLuint GPlatesOpenGL::OpenGLFunctions::glGetUniformBlockIndex(GLuint program, const GLchar *uniformBlockName)
@@ -610,79 +610,64 @@ void GPlatesOpenGL::OpenGLFunctions::glStencilOpSeparate(GLenum face, GLenum sfa
 	d_functions->glStencilOpSeparate(face, sfail, dpfail, dppass);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexParameterf(GLenum target, GLenum pname, GLfloat param)
+void GPlatesOpenGL::OpenGLFunctions::glTextureParameterf(GLuint texture, GLenum pname, GLfloat param)
 {
-	d_functions->glTexParameterf(target, pname, param);
+	d_functions->glTextureParameterf(texture, pname, param);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexParameterfv(GLenum target, GLenum pname, const GLfloat* params)
+void GPlatesOpenGL::OpenGLFunctions::glTextureParameterfv(GLuint texture, GLenum pname, const GLfloat* params)
 {
-	d_functions->glTexParameterfv(target, pname, params);
+	d_functions->glTextureParameterfv(texture, pname, params);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexParameteri(GLenum target, GLenum pname, GLint param)
+void GPlatesOpenGL::OpenGLFunctions::glTextureParameteri(GLuint texture, GLenum pname, GLint param)
 {
-	d_functions->glTexParameteri(target, pname, param);
+	d_functions->glTextureParameteri(texture, pname, param);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexParameteriv(GLenum target, GLenum pname, const GLint* params)
+void GPlatesOpenGL::OpenGLFunctions::glTextureParameteriv(GLuint texture, GLenum pname, const GLint* params)
 {
-	d_functions->glTexParameteriv(target, pname, params);
+	d_functions->glTextureParameteriv(texture, pname, params);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexParameterIiv(GLenum target, GLenum pname, const GLint* params)
+void GPlatesOpenGL::OpenGLFunctions::glTextureParameterIiv(GLuint texture, GLenum pname, const GLint* params)
 {
-	d_functions->glTexParameterIiv(target, pname, params);
+	d_functions->glTextureParameterIiv(texture, pname, params);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexParameterIuiv(GLenum target, GLenum pname, const GLuint* params)
+void GPlatesOpenGL::OpenGLFunctions::glTextureParameterIuiv(GLuint texture, GLenum pname, const GLuint* params)
 {
-	d_functions->glTexParameterIuiv(target, pname, params);
+	d_functions->glTextureParameterIuiv(texture, pname, params);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexStorage1D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width)
+void GPlatesOpenGL::OpenGLFunctions::glTextureStorage1D(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width)
 {
-	d_functions->glTexStorage1D(target, levels, internalformat, width);
+	d_functions->glTextureStorage1D(texture, levels, internalformat, width);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexStorage2D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height)
+void GPlatesOpenGL::OpenGLFunctions::glTextureStorage2D(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height)
 {
-	d_functions->glTexStorage2D(target, levels, internalformat, width, height);
+	d_functions->glTextureStorage2D(texture, levels, internalformat, width, height);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexStorage3D(GLenum target, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth)
+void GPlatesOpenGL::OpenGLFunctions::glTextureStorage3D(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth)
 {
-	d_functions->glTexStorage3D(target, levels, internalformat, width, height, depth);
+	d_functions->glTextureStorage3D(texture, levels, internalformat, width, height, depth);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid* pixels)
+void GPlatesOpenGL::OpenGLFunctions::glTextureSubImage1D(GLuint texture, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid* pixels)
 {
-	d_functions->glTexSubImage1D(target, level, xoffset, width, format, type, pixels);
+	d_functions->glTextureSubImage1D(texture, level, xoffset, width, format, type, pixels);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid* pixels)
+void GPlatesOpenGL::OpenGLFunctions::glTextureSubImage2D(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid* pixels)
 {
-	d_functions->glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
+	d_functions->glTextureSubImage2D(texture, level, xoffset, yoffset, width, height, format, type, pixels);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexSubImage3D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid* pixels)
+void GPlatesOpenGL::OpenGLFunctions::glTextureSubImage3D(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid* pixels)
 {
-	d_functions->glTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glTexImage1D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid* pixels)
-{
-	d_functions->glTexImage1D(target, level, internalformat, width, border, format, type, pixels);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* pixels)
-{
-	d_functions->glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glTexImage3D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid* pixels)
-{
-	d_functions->glTexImage3D(target, level, internalformat, width, height, depth, border, format, type, pixels);
+	d_functions->glTextureSubImage3D(texture, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
 }
 
 void GPlatesOpenGL::OpenGLFunctions::glTextureBuffer(GLuint texture, GLenum internalformat, GLuint buffer)

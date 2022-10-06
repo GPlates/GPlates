@@ -599,14 +599,14 @@ namespace GPlatesOpenGL
 		GLenum
 		GetError();
 
-		// OpenGL 1.0
 		void
-		GetTexImage(
-				GLenum target,
+		GetTextureImage(
+				GLTexture::shared_ptr_type texture,
 				GLint level,
 				GLenum format,
 				GLenum type,
-				GLvoid *pixels);
+				GLsizei bufSize,
+				void *pixels);
 
 		// OpenGL 1.0
 		void
@@ -825,76 +825,69 @@ namespace GPlatesOpenGL
 				GLenum dpfail,
 				GLenum dppass);
 
-		// OpenGL 1.0
 		void
-		TexParameterf(
-				GLenum target,
+		TextureParameterf(
+				GLTexture::shared_ptr_type texture,
 				GLenum pname,
 				GLfloat param);
 
-		// OpenGL 1.0
 		void
-		TexParameterfv(
-				GLenum target,
+		TextureParameterfv(
+				GLTexture::shared_ptr_type texture,
 				GLenum pname,
 				const GLfloat *params);
 
-		// OpenGL 1.0
 		void
-		TexParameteri(
-				GLenum target,
+		TextureParameteri(
+				GLTexture::shared_ptr_type texture,
 				GLenum pname,
 				GLint param);
 
-		// OpenGL 1.0
 		void
-		TexParameteriv(
-				GLenum target,
+		TextureParameteriv(
+				GLTexture::shared_ptr_type texture,
 				GLenum pname,
 				const GLint *params);
 
-		// OpenGL 3.0
 		void
-		TexParameterIiv(
-				GLenum target,
+		TextureParameterIiv(
+				GLTexture::shared_ptr_type texture,
 				GLenum pname,
 				const GLint *params);
 
-		// OpenGL 3.0
 		void
-		TexParameterIuiv(
-				GLenum target,
+		TextureParameterIuiv(
+				GLTexture::shared_ptr_type texture,
 				GLenum pname,
 				const GLuint *params);
 
 		void
-		TexStorage1D(
-				GLenum target,
+		TextureStorage1D(
+				GLTexture::shared_ptr_type texture,
 				GLsizei levels,
 				GLenum internalformat,
 				GLsizei width);
 
 		void
-		TexStorage2D(
-				GLenum target,
+		TextureStorage2D(
+				GLTexture::shared_ptr_type texture,
 				GLsizei levels,
 				GLenum internalformat,
 				GLsizei width,
 				GLsizei height);
 
 		void
-		TexStorage3D(
-				GLenum target,
+		TextureStorage3D(
+				GLTexture::shared_ptr_type texture,
 				GLsizei levels,
 				GLenum internalformat,
 				GLsizei width,
 				GLsizei height,
 				GLsizei depth);
 
-		// OpenGL 1.1
 		void
-		TexSubImage1D(
-				GLenum target,
+		TextureSubImage1D(
+				GLTexture::shared_ptr_type texture,
 				GLint level,
 				GLint xoffset,
 				GLsizei width,
@@ -902,10 +895,9 @@ namespace GPlatesOpenGL
 				GLenum type,
 				const GLvoid *pixels);
 
-		// OpenGL 1.1
 		void
-		TexSubImage2D(
-				GLenum target,
+		TextureSubImage2D(
+				GLTexture::shared_ptr_type texture,
 				GLint level,
 				GLint xoffset,
 				GLint yoffset,
@@ -915,10 +907,9 @@ namespace GPlatesOpenGL
 				GLenum type,
 				const GLvoid *pixels);
 
-		// OpenGL 1.2
 		void
-		TexSubImage3D(
-				GLenum target,
+		TextureSubImage3D(
+				GLTexture::shared_ptr_type texture,
 				GLint level,
 				GLint xoffset,
 				GLint yoffset,
@@ -930,56 +921,17 @@ namespace GPlatesOpenGL
 				GLenum type,
 				const GLvoid *pixels);
 
-		// OpenGL 1.0
-		void
-		TexImage1D(
-				GLenum target,
-				GLint level,
-				GLint internalformat,
-				GLsizei width,
-				GLint border,
-				GLenum format,
-				GLenum type,
-				const GLvoid *pixels);
-
-		// OpenGL 1.0
-		void
-		TexImage2D(
-				GLenum target,
-				GLint level,
-				GLint internalformat,
-				GLsizei width,
-				GLsizei height,
-				GLint border,
-				GLenum format,
-				GLenum type,
-				const GLvoid *pixels);
-
-		// OpenGL 1.2
-		void
-		TexImage3D(
-				GLenum target,
-				GLint level,
-				GLint internalformat,
-				GLsizei width,
-				GLsizei height,
-				GLsizei depth,
-				GLint border,
-				GLenum format,
-				GLenum type,
-				const GLvoid *pixels);
-
 		void
 		TextureBuffer(
-				GLuint texture,
+				GLTexture::shared_ptr_type texture,
 				GLenum internalformat,
-				GLuint buffer);
+				GLBuffer::shared_ptr_type buffer);
 
 		void
 		TextureBufferRange(
-				GLuint texture,
+				GLTexture::shared_ptr_type texture,
 				GLenum internalformat,
-				GLuint buffer,
+				GLBuffer::shared_ptr_type buffer,
 				GLintptr offset,
 				GLsizei size);
 

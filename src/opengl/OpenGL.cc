@@ -713,14 +713,15 @@ GPlatesOpenGL::GL::GetError()
 
 
 void
-GPlatesOpenGL::GL::GetTexImage(
-		GLenum target,
+GPlatesOpenGL::GL::GetTextureImage(
+		GLTexture::shared_ptr_type texture,
 		GLint level,
 		GLenum format,
 		GLenum type,
-		GLvoid *pixels)
+		GLsizei bufSize,
+		void *pixels)
 {
-	d_opengl_functions.glGetTexImage(target, level, format, type, pixels);
+	d_opengl_functions.glGetTextureImage(texture->get_resource_handle(), level, format, type, bufSize, pixels);
 }
 
 
@@ -1049,171 +1050,168 @@ GPlatesOpenGL::GL::StencilOpSeparate(
 
 
 void
-GPlatesOpenGL::GL::TexParameterf(GLenum target, GLenum pname, GLfloat param)
+GPlatesOpenGL::GL::TextureParameterf(
+		GLTexture::shared_ptr_type texture,
+		GLenum pname,
+		GLfloat param)
 {
-	d_opengl_functions.glTexParameterf(target, pname, param);
+	d_opengl_functions.glTextureParameterf(texture->get_resource_handle(), pname, param);
 }
 
 
 void
-GPlatesOpenGL::GL::TexParameterfv(GLenum target, GLenum pname, const GLfloat *params)
+GPlatesOpenGL::GL::TextureParameterfv(
+		GLTexture::shared_ptr_type texture,
+		GLenum pname,
+		const GLfloat *params)
 {
-	d_opengl_functions.glTexParameterfv(target, pname, params);
+	d_opengl_functions.glTextureParameterfv(texture->get_resource_handle(), pname, params);
 }
 
 
 void
-GPlatesOpenGL::GL::TexParameteri(GLenum target, GLenum pname, GLint param)
+GPlatesOpenGL::GL::TextureParameteri(
+		GLTexture::shared_ptr_type texture,
+		GLenum pname,
+		GLint param)
 {
-	d_opengl_functions.glTexParameteri(target, pname, param);
+	d_opengl_functions.glTextureParameteri(texture->get_resource_handle(), pname, param);
 }
 
 
 void
-GPlatesOpenGL::GL::TexParameteriv(GLenum target, GLenum pname, const GLint *params)
+GPlatesOpenGL::GL::TextureParameteriv(
+		GLTexture::shared_ptr_type texture,
+		GLenum pname,
+		const GLint *params)
 {
-	d_opengl_functions.glTexParameteriv(target, pname, params);
+	d_opengl_functions.glTextureParameteriv(texture->get_resource_handle(), pname, params);
 }
 
 
 void
-GPlatesOpenGL::GL::TexParameterIiv(GLenum target, GLenum pname, const GLint *params)
+GPlatesOpenGL::GL::TextureParameterIiv(
+		GLTexture::shared_ptr_type texture,
+		GLenum pname,
+		const GLint *params)
 {
-	d_opengl_functions.glTexParameterIiv(target, pname, params);
+	d_opengl_functions.glTextureParameterIiv(texture->get_resource_handle(), pname, params);
 }
 
 
 void
-GPlatesOpenGL::GL::TexParameterIuiv(GLenum target, GLenum pname, const GLuint *params)
+GPlatesOpenGL::GL::TextureParameterIuiv(
+		GLTexture::shared_ptr_type texture,
+		GLenum pname,
+		const GLuint *params)
 {
-	d_opengl_functions.glTexParameterIuiv(target, pname, params);
+	d_opengl_functions.glTextureParameterIuiv(texture->get_resource_handle(), pname, params);
 }
 
 
 void
-GPlatesOpenGL::GL::TexStorage1D(
-		GLenum target,
+GPlatesOpenGL::GL::TextureStorage1D(
+		GLTexture::shared_ptr_type texture,
 		GLsizei levels,
 		GLenum internalformat,
 		GLsizei width)
 {
-	d_opengl_functions.glTexStorage1D(target, levels, internalformat, width);
+	d_opengl_functions.glTextureStorage1D(texture->get_resource_handle(), levels, internalformat, width);
 }
 
 
 void
-GPlatesOpenGL::GL::TexStorage2D(
-		GLenum target,
+GPlatesOpenGL::GL::TextureStorage2D(
+		GLTexture::shared_ptr_type texture,
 		GLsizei levels,
 		GLenum internalformat,
 		GLsizei width,
 		GLsizei height)
 {
-	d_opengl_functions.glTexStorage2D(target, levels, internalformat, width, height);
+	d_opengl_functions.glTextureStorage2D(texture->get_resource_handle(), levels, internalformat, width, height);
 }
 
 
 void
-GPlatesOpenGL::GL::TexStorage3D(
-		GLenum target,
+GPlatesOpenGL::GL::TextureStorage3D(
+		GLTexture::shared_ptr_type texture,
 		GLsizei levels,
 		GLenum internalformat,
 		GLsizei width,
 		GLsizei height,
 		GLsizei depth)
 {
-	d_opengl_functions.glTexStorage3D(target, levels, internalformat, width, height, depth);
+	d_opengl_functions.glTextureStorage3D(texture->get_resource_handle(), levels, internalformat, width, height, depth);
 }
 
 
 void
-GPlatesOpenGL::GL::TexSubImage1D(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid *pixels)
-{
-	d_opengl_functions.glTexSubImage1D(target, level, xoffset, width, format, type, pixels);
-}
-
-
-void
-GPlatesOpenGL::GL::TexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels)
-{
-	d_opengl_functions.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
-}
-
-
-void
-GPlatesOpenGL::GL::TexSubImage3D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid *pixels)
-{
-	d_opengl_functions.glTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
-}
-
-
-void
-GPlatesOpenGL::GL::TexImage1D(
-		GLenum target,
+GPlatesOpenGL::GL::TextureSubImage1D(
+		GLTexture::shared_ptr_type texture,
 		GLint level,
-		GLint internalformat,
+		GLint xoffset,
 		GLsizei width,
-		GLint border,
 		GLenum format,
 		GLenum type,
 		const GLvoid *pixels)
 {
-	d_opengl_functions.glTexImage1D(target, level, internalformat, width, border, format, type, pixels);
+	d_opengl_functions.glTextureSubImage1D(texture->get_resource_handle(), level, xoffset, width, format, type, pixels);
 }
 
 
 void
-GPlatesOpenGL::GL::TexImage2D(
-		GLenum target,
+GPlatesOpenGL::GL::TextureSubImage2D(
+		GLTexture::shared_ptr_type texture,
 		GLint level,
-		GLint internalformat,
+		GLint xoffset,
+		GLint yoffset,
 		GLsizei width,
 		GLsizei height,
-		GLint border,
 		GLenum format,
 		GLenum type,
 		const GLvoid *pixels)
 {
-	d_opengl_functions.glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
+	d_opengl_functions.glTextureSubImage2D(texture->get_resource_handle(), level, xoffset, yoffset, width, height, format, type, pixels);
 }
 
 
 void
-GPlatesOpenGL::GL::TexImage3D(
-		GLenum target,
+GPlatesOpenGL::GL::TextureSubImage3D(
+		GLTexture::shared_ptr_type texture,
 		GLint level,
-		GLint internalformat,
+		GLint xoffset,
+		GLint yoffset,
+		GLint zoffset,
 		GLsizei width,
 		GLsizei height,
 		GLsizei depth,
-		GLint border,
 		GLenum format,
 		GLenum type,
 		const GLvoid *pixels)
 {
-	d_opengl_functions.glTexImage3D(target, level, internalformat, width, height, depth, border, format, type, pixels);
+	d_opengl_functions.glTextureSubImage3D(texture->get_resource_handle(), level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
 }
 
 
 void
 GPlatesOpenGL::GL::TextureBuffer(
-		GLuint texture,
+		GLTexture::shared_ptr_type texture,
 		GLenum internalformat,
-		GLuint buffer)
+		GLBuffer::shared_ptr_type buffer)
 {
-	d_opengl_functions.glTextureBuffer(texture, internalformat, buffer);
+	d_opengl_functions.glTextureBuffer(texture->get_resource_handle(), internalformat, buffer->get_resource_handle());
 }
 
 
 void
 GPlatesOpenGL::GL::TextureBufferRange(
-		GLuint texture,
+		GLTexture::shared_ptr_type texture,
 		GLenum internalformat,
-		GLuint buffer,
+		GLBuffer::shared_ptr_type buffer,
 		GLintptr offset,
 		GLsizei size)
 {
-	d_opengl_functions.glTextureBufferRange(texture, internalformat, buffer, offset, size);
+	d_opengl_functions.glTextureBufferRange(texture->get_resource_handle(), internalformat, buffer->get_resource_handle(), offset, size);
 }
 
 
