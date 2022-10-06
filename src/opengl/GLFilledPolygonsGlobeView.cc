@@ -735,8 +735,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::set_tile_state(
 			1, GL_FALSE/*transpose*/, scene_tile_texture_float_matrix);
 
 	// Bind the scene tile texture to texture unit 0.
-	gl.ActiveTexture(GL_TEXTURE0);
-	gl.BindTexture(GL_TEXTURE_2D, d_tile_texture);
+	gl.BindTextureUnit(0, d_tile_texture);
 
 	// If we've traversed deep enough into the cube quad tree then the cube quad tree mesh
 	// cannot provide a drawable that's bounded by the cube quad tree node tile and so
@@ -764,8 +763,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::set_tile_state(
 				1, GL_FALSE/*transpose*/, clip_texture_float_matrix);
 
 		// Bind the clip texture to texture unit 1.
-		gl.ActiveTexture(GL_TEXTURE1);
-		gl.BindTexture(GL_TEXTURE_2D, d_multi_resolution_cube_mesh->get_clip_texture());
+		gl.BindTextureUnit(1, d_multi_resolution_cube_mesh->get_clip_texture());
 	}
 
 	const bool lighting_enabled = d_light &&
@@ -1072,36 +1070,30 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_tile_texture(
 {
 	//PROFILE_FUNC();
 
-	gl.BindTexture(GL_TEXTURE_2D, d_tile_texture);
-
 	// No mipmaps needed so we specify no mipmap filtering.
 	// We're not using mipmaps because our cube mapping does not have much distortion
 	// unlike global rectangular lat/lon rasters that squash near the poles.
 	//
 	// We do enable bilinear filtering (also note that the texture is a fixed-point format).
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	gl.TextureParameteri(d_tile_texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	gl.TextureParameteri(d_tile_texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
 	// subsequently sampled non-isotropically (such as viewing at an angle near edge of the globe).
 	if (gl.get_capabilities().gl_EXT_texture_filter_anisotropic)
 	{
 		const GLfloat anisotropy = gl.get_capabilities().gl_texture_max_anisotropy;
-		gl.TexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+		gl.TextureParameterf(d_tile_texture, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 	}
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(d_tile_texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(d_tile_texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Create the texture in OpenGL - this actually creates the texture without any data.
-	//
-	// NOTE: Since the image data is NULL it doesn't really matter what 'format' (and 'type') are so
-	// we just use GL_RGBA (and GL_UNSIGNED_BYTE).
-	gl.TexImage2D(GL_TEXTURE_2D, 0/*level*/, GL_RGBA8,
-			d_tile_texel_dimension, d_tile_texel_dimension,
-			0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+	gl.TextureStorage2D(d_tile_texture, 1/*levels*/, GL_RGBA8,
+			d_tile_texel_dimension, d_tile_texel_dimension);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);

@@ -458,12 +458,6 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::create_tile_texture(
 {
 	const GLCapabilities& capabilities = gl.get_capabilities();
 
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	// Bind the texture.
-	gl.BindTexture(GL_TEXTURE_2D, tile_texture);
-
 	//
 	// No mipmaps needed so we specify no mipmap filtering.
 	// We're not using mipmaps because our cube mapping does not have much distortion
@@ -471,8 +465,8 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::create_tile_texture(
 	//
 
 	// Bilinear filtering for GL_TEXTURE_MIN_FILTER and GL_TEXTURE_MAG_FILTER.
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	gl.TextureParameteri(tile_texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	gl.TextureParameteri(tile_texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
 	// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
 	// subsequently sampled non-isotropically.
@@ -480,31 +474,27 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::create_tile_texture(
 	// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
 	if (capabilities.gl_EXT_texture_filter_anisotropic)
 	{
-		gl.TexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
+		gl.TextureParameterf(tile_texture, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
 	}
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(tile_texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(tile_texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// If the source texture contains alpha or coverage and its not in the alpha channel then swizzle the texture
 	// so it is copied to the alpha channel (eg, a data RG texture copies coverage from G to A).
 	boost::optional<GLenum> texture_swizzle_alpha = d_reconstructed_raster->get_tile_texture_swizzle_alpha();
 	if (texture_swizzle_alpha)
 	{
-		gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, texture_swizzle_alpha.get());
+		gl.TextureParameteri(tile_texture, GL_TEXTURE_SWIZZLE_A, texture_swizzle_alpha.get());
 	}
 
 	// Create the texture but don't load any data into it.
 	// Leave it uninitialised because we will be rendering into it to initialise it.
-	//
-	// NOTE: Since the image data is NULL it doesn't really matter what 'format' and 'type' are -
-	// just use values that are compatible with all internal formats to avoid a possible error.
-	gl.TexImage2D(GL_TEXTURE_2D, 0,
+	gl.TextureStorage2D(tile_texture, 1/*levels*/,
 			d_reconstructed_raster->get_tile_texture_internal_format(),
-			d_tile_texel_dimension, d_tile_texel_dimension,
-			0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+			d_tile_texel_dimension, d_tile_texel_dimension);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);

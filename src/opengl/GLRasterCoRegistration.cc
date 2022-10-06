@@ -4617,16 +4617,14 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 			mask_region_of_interest_program->get_uniform_location(gl, "target_raster_texture_sampler"),
 			0/*texture unit*/);
 	// Bind the target raster texture to texture unit 0.
-	gl.ActiveTexture(GL_TEXTURE0);
-	gl.BindTexture(GL_TEXTURE_2D, target_raster_texture);
+	gl.BindTextureUnit(0, target_raster_texture);
 
 	// Set the region-of-interest mask texture sampler to texture unit 1.
 	gl.Uniform1i(
 			mask_region_of_interest_program->get_uniform_location(gl, "region_of_interest_mask_texture_sampler"),
 			1/*texture unit*/);
 	// Bind the region-of-interest mask texture to texture unit 1.
-	gl.ActiveTexture(GL_TEXTURE1);
-	gl.BindTexture(GL_TEXTURE_2D, region_of_interest_mask_texture);
+	gl.BindTextureUnit(1, region_of_interest_mask_texture);
 
 	// Bind the mask target raster with regions-of-interest vertex array.
 	gl.BindVertexArray(d_mask_region_of_interest_vertex_array);
@@ -4883,8 +4881,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_reduction_of_reduce_stage(
 			reduction_program->get_uniform_location(gl, "reduce_source_texture_sampler"),
 			0/*texture unit*/);
 	// Bind the source reduce stage texture to texture unit 0.
-	gl.ActiveTexture(GL_TEXTURE0);
-	gl.BindTexture(GL_TEXTURE_2D, src_reduce_stage_texture);
+	gl.BindTextureUnit(0, src_reduce_stage_texture);
 
 	// Set the half-texel offset of the reduce source texture (all reduce textures have same dimension).
 	const double half_texel_offset = 0.5 / TEXTURE_DIMENSION;
@@ -5088,30 +5085,23 @@ GPlatesOpenGL::GLRasterCoRegistration::acquire_rgba_float_texture(
 	const GLTexture::shared_ptr_type texture = d_rgba_float_texture_cache->allocate_object(
 			GLTexture::create_unique(gl, GL_TEXTURE_2D));
 
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	// Bind the texture.
-	gl.BindTexture(GL_TEXTURE_2D, texture);
-
 	//
 	// No mipmaps needed so we specify no mipmap filtering.
 	//
 
 	// Bilinear filtering for GL_TEXTURE_MIN_FILTER and GL_TEXTURE_MAG_FILTER.
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	gl.TextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	gl.TextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Allocate texture but don't load any data into it.
 	// Leave it uninitialised because we will be rendering into it to initialise it.
-	gl.TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
-			TEXTURE_DIMENSION, TEXTURE_DIMENSION,
-			0, GL_RGBA, GL_FLOAT, nullptr);
+	gl.TextureStorage2D(texture, 1/*levels*/, GL_RGBA32F,
+			TEXTURE_DIMENSION, TEXTURE_DIMENSION);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);

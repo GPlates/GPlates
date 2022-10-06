@@ -688,16 +688,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 	boost::shared_ptr<std::vector<ClientCacheTile> > cached_tiles(new std::vector<ClientCacheTile>());
 	cached_tiles->reserve(tiles.size());
 
-	// We'll bind our tile texture to unit 0.
-	gl.ActiveTexture(GL_TEXTURE0);
-
 	// Render each tile.
 	for (GLMultiResolutionRaster::tile_handle_type tile_handle : tiles)
 	{
 		const Tile tile = get_tile(tile_handle, gl);
 
-		// Bind the current tile's texture.
-		gl.BindTexture(GL_TEXTURE_2D, tile.tile_texture->texture);
+		// Bind the current tile's texture to texture unit 0.
+		gl.BindTextureUnit(0, tile.tile_texture->texture);
 
 		// Bind the current tile's vertices.
 		gl.BindVertexArray(tile.tile_vertices->vertex_array);
@@ -830,19 +827,16 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 {
 	const GLCapabilities &capabilities = gl.get_capabilities();
 
-	// Bind the texture.
-	gl.BindTexture(GL_TEXTURE_2D, texture);
-
 	// Note: Currently all filtering is 'nearest' instead of 'bilinear'.
 	//       This is because the tiles do not overlap by border by half a texel (to avoid bilinear
 	//       seams between tiles). But this may change (though it would require significant changes).
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	gl.TextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	gl.TextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
 	// subsequently sampled non-isotropically.
@@ -850,7 +844,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
 	if (capabilities.gl_EXT_texture_filter_anisotropic)
 	{
-		gl.TexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
+		gl.TextureParameterf(texture, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
 	}
 
 	// If the source texture contains alpha or coverage and its not in the alpha channel then swizzle the texture
@@ -858,19 +852,15 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	boost::optional<GLenum> texture_swizzle_alpha = d_raster_source->get_tile_texture_swizzle_alpha();
 	if (texture_swizzle_alpha)
 	{
-		gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, texture_swizzle_alpha.get());
+		gl.TextureParameteri(texture, GL_TEXTURE_SWIZZLE_A, texture_swizzle_alpha.get());
 	}
 
 	// Create the texture in OpenGL - this actually creates the texture without any data.
 	// We'll be getting our raster source to load image data into the texture.
-	//
-	// NOTE: Since the image data is NULL it doesn't really matter what 'format' and 'type' are -
-	// just use values that are compatible with all internal formats to avoid a possible error.
-	gl.TexImage2D(
-			GL_TEXTURE_2D, 0/*level*/,
+	gl.TextureStorage2D(
+			texture, 1/*levels*/,
 			d_raster_source->get_tile_texture_internal_format(),
-			d_tile_texel_dimension, d_tile_texel_dimension,
-			0/*border*/, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+			d_tile_texel_dimension, d_tile_texel_dimension);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);

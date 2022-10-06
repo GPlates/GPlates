@@ -435,14 +435,12 @@ namespace GPlatesOpenGL
 			// Make sure we leave the OpenGL global state the way it was.
 			GL::StateScope save_restore_state(gl);
 
-			gl.BindTexture(GL_TEXTURE_2D_ARRAY, texture);
-
 			// Allocate for all layers of texture array.
-			boost::scoped_array<GPlatesGui::rgba8_t> rgba8_data(
-					new GPlatesGui::rgba8_t[texture_resolution * texture_resolution * texture_depth]);
+			const unsigned int num_texels = texture_resolution * texture_resolution * texture_depth;
+			boost::scoped_array<GPlatesGui::rgba8_t> rgba8_data(new GPlatesGui::rgba8_t[num_texels]);
 
 			// Read all layers of texture array.
-			gl.GetTexImage(GL_TEXTURE_2D_ARRAY, 0/*lod*/, GL_RGBA, GL_UNSIGNED_BYTE, rgba8_data.get());
+			gl.GetTextureImage(texture, 0/*level*/, GL_RGBA, GL_UNSIGNED_BYTE, num_texels * sizeof(GPlatesGui::rgba8_t), rgba8_data.get());
 
 			// Iterate over the layers of texture array.
 			for (unsigned int layer = 0; layer < texture_depth; ++layer)
@@ -729,8 +727,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 	if (depth_read_texture)
 	{
 		// Bind the depth texture to its texture unit.
-		gl.ActiveTexture(GL_TEXTURE0 + Samplers::DEPTH_TEXTURE_SAMPLER);
-		gl.BindTexture(GL_TEXTURE_2D, depth_read_texture.get());
+		gl.BindTextureUnit(Samplers::DEPTH_TEXTURE_SAMPLER, depth_read_texture.get());
 	}
 
 	if (surface_fill_mask)
@@ -742,8 +739,7 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 				surface_fill_mask->treat_polylines_as_polygons);
 
 		// Bind the surface fill mask texture.
-		gl.ActiveTexture(GL_TEXTURE0 + Samplers::SURFACE_FILL_MASK_SAMPLER);
-		gl.BindTexture(GL_TEXTURE_2D, d_surface_fill_mask_texture);
+		gl.BindTextureUnit(Samplers::SURFACE_FILL_MASK_SAMPLER, d_surface_fill_mask_texture);
 
 		if (surface_fill_mask->show_walls)
 		{
@@ -776,30 +772,24 @@ GPlatesOpenGL::GLScalarField3D::render_iso_surface(
 		//
 		// Note: The same volume fill texture contains either the walls (surface normals + depth) or
 		//       depth range (depending on the path taken above).
-		gl.ActiveTexture(GL_TEXTURE0 + Samplers::VOLUME_FILL_SAMPLER);
-		gl.BindTexture(GL_TEXTURE_2D, d_volume_fill_texture);
+		gl.BindTextureUnit(Samplers::VOLUME_FILL_SAMPLER, d_volume_fill_texture);
 		gl.BindSampler(Samplers::VOLUME_FILL_SAMPLER, d_volume_fill_texture_sampler);
 	}
 
 	// Bind the tile metadata texture sampler.
-	gl.ActiveTexture(GL_TEXTURE0 + Samplers::TILE_META_DATA_SAMPLER);
-	gl.BindTexture(GL_TEXTURE_2D_ARRAY, d_tile_meta_data_texture_array);
+	gl.BindTextureUnit(Samplers::TILE_META_DATA_SAMPLER, d_tile_meta_data_texture_array);
 
 	// Bind the field data texture sampler.
-	gl.ActiveTexture(GL_TEXTURE0 + Samplers::FIELD_DATA_SAMPLER);
-	gl.BindTexture(GL_TEXTURE_2D_ARRAY, d_field_data_texture_array);
+	gl.BindTextureUnit(Samplers::FIELD_DATA_SAMPLER, d_field_data_texture_array);
 
 	// Bind the mask data texture sampler.
-	gl.ActiveTexture(GL_TEXTURE0 + Samplers::MASK_DATA_SAMPLER);
-	gl.BindTexture(GL_TEXTURE_2D_ARRAY, d_mask_data_texture_array);
+	gl.BindTextureUnit(Samplers::MASK_DATA_SAMPLER, d_mask_data_texture_array);
 
 	// Bind the 1D depth radius to layer texture sampler.
-	gl.ActiveTexture(GL_TEXTURE0 + Samplers::DEPTH_RADIUS_TO_LAYER_SAMPLER);
-	gl.BindTexture(GL_TEXTURE_1D, d_depth_radius_to_layer_texture);
+	gl.BindTextureUnit(Samplers::DEPTH_RADIUS_TO_LAYER_SAMPLER, d_depth_radius_to_layer_texture);
 
 	// Bind the 1D colour palette texture sampler.
-	gl.ActiveTexture(GL_TEXTURE0 + Samplers::COLOUR_PALETTE_SAMPLER);
-	gl.BindTexture(GL_TEXTURE_1D, d_colour_palette_texture);
+	gl.BindTextureUnit(Samplers::COLOUR_PALETTE_SAMPLER, d_colour_palette_texture);
 
 	// Bind the shader program for rendering iso-surface.
 	gl.UseProgram(d_iso_surface_program);
@@ -1036,8 +1026,7 @@ GPlatesOpenGL::GLScalarField3D::render_volume_fill_walls(
 	gl.ColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
 	// Bind the surface fill mask texture.
-	gl.ActiveTexture(GL_TEXTURE0 + Samplers::SURFACE_FILL_MASK_SAMPLER);
-	gl.BindTexture(GL_TEXTURE_2D, d_surface_fill_mask_texture);
+	gl.BindTextureUnit(Samplers::SURFACE_FILL_MASK_SAMPLER, d_surface_fill_mask_texture);
 
 	// Bind the shader program for rendering the volume fill walls.
 	gl.UseProgram(d_volume_fill_wall_surface_normal_program);
@@ -1105,29 +1094,23 @@ GPlatesOpenGL::GLScalarField3D::render_cross_sections(
 				surface_fill_mask->treat_polylines_as_polygons);
 
 		// Bind the surface fill mask texture.
-		gl.ActiveTexture(GL_TEXTURE0 + Samplers::SURFACE_FILL_MASK_SAMPLER);
-		gl.BindTexture(GL_TEXTURE_2D, d_surface_fill_mask_texture);
+		gl.BindTextureUnit(Samplers::SURFACE_FILL_MASK_SAMPLER, d_surface_fill_mask_texture);
 	}
 
 	// Bind the tile metadata texture sampler.
-	gl.ActiveTexture(GL_TEXTURE0 + Samplers::TILE_META_DATA_SAMPLER);
-	gl.BindTexture(GL_TEXTURE_2D_ARRAY, d_tile_meta_data_texture_array);
+	gl.BindTextureUnit(Samplers::TILE_META_DATA_SAMPLER, d_tile_meta_data_texture_array);
 
 	// Bind the field data texture sampler.
-	gl.ActiveTexture(GL_TEXTURE0 + Samplers::FIELD_DATA_SAMPLER);
-	gl.BindTexture(GL_TEXTURE_2D_ARRAY, d_field_data_texture_array);
+	gl.BindTextureUnit(Samplers::FIELD_DATA_SAMPLER, d_field_data_texture_array);
 
 	// Bind the mask data texture sampler.
-	gl.ActiveTexture(GL_TEXTURE0 + Samplers::MASK_DATA_SAMPLER);
-	gl.BindTexture(GL_TEXTURE_2D_ARRAY, d_mask_data_texture_array);
+	gl.BindTextureUnit(Samplers::MASK_DATA_SAMPLER, d_mask_data_texture_array);
 
 	// Bind the 1D depth radius to layer texture sampler.
-	gl.ActiveTexture(GL_TEXTURE0 + Samplers::DEPTH_RADIUS_TO_LAYER_SAMPLER);
-	gl.BindTexture(GL_TEXTURE_1D, d_depth_radius_to_layer_texture);
+	gl.BindTextureUnit(Samplers::DEPTH_RADIUS_TO_LAYER_SAMPLER, d_depth_radius_to_layer_texture);
 
 	// Bind the 1D colour palette texture sampler.
-	gl.ActiveTexture(GL_TEXTURE0 + Samplers::COLOUR_PALETTE_SAMPLER);
-	gl.BindTexture(GL_TEXTURE_1D, d_colour_palette_texture);
+	gl.BindTextureUnit(Samplers::COLOUR_PALETTE_SAMPLER, d_colour_palette_texture);
 
 	// Bind the cross-section vertex array.
 	gl.BindVertexArray(d_cross_section_vertex_array);
@@ -2780,31 +2763,21 @@ void
 GPlatesOpenGL::GLScalarField3D::create_tile_meta_data_texture_array(
 		GL &gl)
 {
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	gl.BindTexture(GL_TEXTURE_2D_ARRAY, d_tile_meta_data_texture_array);
-
 	// Using nearest-neighbour filtering since don't want to filter pixel metadata.
-	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	gl.TextureParameteri(d_tile_meta_data_texture_array, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	gl.TextureParameteri(d_tile_meta_data_texture_array, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels.
 	// Not strictly necessary for nearest-neighbour filtering.
-	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(d_tile_meta_data_texture_array, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(d_tile_meta_data_texture_array, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Create the texture but don't load any data into it.
-	//
-	// NOTE: Since the image data is NULL it doesn't really matter what 'format' and 'type' are -
-	// just use values that are compatible with all internal formats to avoid a possible error.
-
-	gl.TexImage3D(
-			GL_TEXTURE_2D_ARRAY, 0, GL_RGB32F,
+	gl.TextureStorage3D(
+			d_tile_meta_data_texture_array, 1/*levels*/, GL_RGB32F,
 			d_tile_meta_data_resolution,
 			d_tile_meta_data_resolution,
-			6, // One layer per cube face.
-			0, GL_RGB, GL_FLOAT, nullptr);
+			6); // One layer per cube face.
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
@@ -2815,30 +2788,20 @@ void
 GPlatesOpenGL::GLScalarField3D::create_field_data_texture_array(
 		GL &gl)
 {
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	gl.BindTexture(GL_TEXTURE_2D_ARRAY, d_field_data_texture_array);
-
 	// Using linear filtering.
-	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	gl.TextureParameteri(d_field_data_texture_array, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	gl.TextureParameteri(d_field_data_texture_array, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Clamp texture coordinates to centre of edge texels.
-	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(d_field_data_texture_array, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(d_field_data_texture_array, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Create the texture but don't load any data into it.
-	//
-	// NOTE: Since the image data is nullptr it doesn't really matter what 'format' and 'type' are -
-	// just use values that are compatible with all internal formats to avoid a possible error.
-
-	gl.TexImage3D(
-			GL_TEXTURE_2D_ARRAY, 0, GL_RGBA32F,
+	gl.TextureStorage3D(
+			d_field_data_texture_array, 1/*levels*/, GL_RGBA32F,
 			d_tile_resolution,
 			d_tile_resolution,
-			d_num_active_tiles * d_num_depth_layers,
-			0, GL_RGBA, GL_FLOAT, nullptr);
+			d_num_active_tiles * d_num_depth_layers);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
@@ -2849,30 +2812,20 @@ void
 GPlatesOpenGL::GLScalarField3D::create_mask_data_texture_array(
 		GL &gl)
 {
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	gl.BindTexture(GL_TEXTURE_2D_ARRAY, d_mask_data_texture_array);
-
 	// Using linear filtering.
-	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	gl.TextureParameteri(d_mask_data_texture_array, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	gl.TextureParameteri(d_mask_data_texture_array, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Clamp texture coordinates to centre of edge texels.
-	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(d_mask_data_texture_array, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(d_mask_data_texture_array, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Create the texture but don't load any data into it.
-	//
-	// NOTE: Since the image data is NULL it doesn't really matter what 'format' and 'type' are -
-	// just use values that are compatible with all internal formats to avoid a possible error.
-
-	gl.TexImage3D(
-			GL_TEXTURE_2D_ARRAY, 0, GL_R32F,
+	gl.TextureStorage3D(
+			d_mask_data_texture_array, 1/*levels*/, GL_R32F,
 			d_tile_resolution,
 			d_tile_resolution,
-			d_num_active_tiles,
-			0, GL_RED, GL_FLOAT, nullptr);
+			d_num_active_tiles);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
@@ -2883,27 +2836,17 @@ void
 GPlatesOpenGL::GLScalarField3D::create_depth_radius_to_layer_texture(
 		GL &gl)
 {
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	gl.BindTexture(GL_TEXTURE_1D, d_depth_radius_to_layer_texture);
-
 	// Using linear filtering.
-	gl.TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	gl.TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	gl.TextureParameteri(d_depth_radius_to_layer_texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	gl.TextureParameteri(d_depth_radius_to_layer_texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Clamp texture coordinates to centre of edge texels.
-	gl.TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(d_depth_radius_to_layer_texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 
 	// Create the texture but don't load any data into it.
-	//
-	// NOTE: Since the image data is nullptr it doesn't really matter what 'format' and 'type' are -
-	// just use values that are compatible with all internal formats to avoid a possible error.
-
-	gl.TexImage1D(
-			GL_TEXTURE_1D, 0, GL_R32F,
-			d_depth_radius_to_layer_resolution,
-			0, GL_RED, GL_FLOAT, nullptr);
+	gl.TextureStorage1D(
+			d_depth_radius_to_layer_texture, 1/*levels*/, GL_R32F,
+			d_depth_radius_to_layer_resolution);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
@@ -2914,27 +2857,17 @@ void
 GPlatesOpenGL::GLScalarField3D::create_colour_palette_texture(
 		GL &gl)
 {
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	gl.BindTexture(GL_TEXTURE_1D, d_colour_palette_texture);
-
 	// Using linear filtering.
-	gl.TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	gl.TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	gl.TextureParameteri(d_colour_palette_texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	gl.TextureParameteri(d_colour_palette_texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Clamp texture coordinates to centre of edge texels.
-	gl.TexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(d_colour_palette_texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 
 	// Create the texture but don't load any data into it.
-	//
-	// NOTE: Since the image data is NULL it doesn't really matter what 'format' and 'type' are -
-	// just use values that are compatible with all internal formats to avoid a possible error.
-
-	gl.TexImage1D(
-			GL_TEXTURE_1D, 0, GL_RGBA32F,
-			d_colour_palette_resolution,
-			0, GL_RGBA, GL_FLOAT, nullptr);
+	gl.TextureStorage1D(
+			d_colour_palette_texture, 1/*levels*/, GL_RGBA32F,
+			d_colour_palette_resolution);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
@@ -2945,35 +2878,25 @@ void
 GPlatesOpenGL::GLScalarField3D::create_surface_fill_mask_texture(
 		GL &gl)
 {
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	gl.BindTexture(GL_TEXTURE_2D_ARRAY, d_surface_fill_mask_texture);
-
 	// Linear filtering.
-	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	gl.TextureParameteri(d_surface_fill_mask_texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	gl.TextureParameteri(d_surface_fill_mask_texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Clamp texture coordinates to centre of edge texels.
-	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	gl.TexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(d_surface_fill_mask_texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(d_surface_fill_mask_texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Create the texture but don't load any data into it.
-	//
-	// NOTE: Since the image data is NULL it doesn't really matter what 'format' and 'type' are -
-	// just use values that are compatible with all internal formats to avoid a possible error.
-
-	gl.TexImage3D(
+	gl.TextureStorage3D(
 			// Note: We use a fixed-point internal format (which clamps to [0,1]) instead of
 			//       floating-point (which is un-clamped) such that our rendered surface mask texture
 			//       will have an accumulated value of 1.0 where two polygons overlap (instead of 2.0).
 			//       And that means we can use a value of 0.5 to separate areas covered by the surface
 			//       mask from areas not covered (noting that surface mask is bilinearly filtered).
-			GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8,
+			d_surface_fill_mask_texture, 1/*levels*/, GL_RGBA8,
 			d_surface_fill_mask_resolution,
 			d_surface_fill_mask_resolution,
-			6,  // texture depth is 6 cube faces
-			0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+			6);  // texture depth is 6 cube faces
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
@@ -3040,10 +2963,8 @@ GPlatesOpenGL::GLScalarField3D::update_volume_fill_framebuffer(
 	// We only really need a two-channel RG texture, but alpha-blending min/max can only have separate
 	// blend equations for RGB and Alpha (not R and G).
 	// So two channels contain min/max depth and one channel contains flag indicating volume intersection.
-	gl.BindTexture(GL_TEXTURE_2D, d_volume_fill_texture);
-	gl.TexImage2D(GL_TEXTURE_2D, 0/*level*/, GL_RGBA32F,
-			d_volume_fill_screen_width, d_volume_fill_screen_height,
-			0, GL_RGBA, GL_FLOAT, nullptr);
+	gl.TextureStorage2D(d_volume_fill_texture, 1/*levels*/, GL_RGBA32F,
+			d_volume_fill_screen_width, d_volume_fill_screen_height);
 
 	// (Re)allocate the depth buffer to the current screen dimensions.
 	//
@@ -3080,22 +3001,17 @@ GPlatesOpenGL::GLScalarField3D::load_scalar_field(
 	// Load the depth-radius-to-layer 1D texture mapping.
 	load_depth_radius_to_layer_texture(gl);
 
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
 	//
 	// Read the tile metadata from the file.
 	//
-
-	gl.BindTexture(GL_TEXTURE_2D_ARRAY, d_tile_meta_data_texture_array);
 
 	// This is a relatively small amount of data so we don't need to worry about memory usage.
 	boost::shared_array<GPlatesFileIO::ScalarField3DFileFormat::TileMetaData>
 			tile_meta_data = scalar_field_reader.read_tile_meta_data();
 
 	// Upload the tile metadata into the texture array.
-	gl.TexSubImage3D(
-			GL_TEXTURE_2D_ARRAY, 0,
+	gl.TextureSubImage3D(
+			d_tile_meta_data_texture_array, 0,
 			0, 0, 0, // x,y,z offsets
 			scalar_field_reader.get_tile_meta_data_resolution(),
 			scalar_field_reader.get_tile_meta_data_resolution(),
@@ -3105,8 +3021,6 @@ GPlatesOpenGL::GLScalarField3D::load_scalar_field(
 	//
 	// Read the field data from the file.
 	//
-
-	gl.BindTexture(GL_TEXTURE_2D_ARRAY, d_field_data_texture_array);
 
 	// Avoid excessive memory use from reading entire field into a single large memory array by
 	// reading sub-sections in multiple iterations.
@@ -3125,8 +3039,8 @@ GPlatesOpenGL::GLScalarField3D::load_scalar_field(
 				field_data = scalar_field_reader.read_field_data(layer_index, num_layers_to_read);
 
 		// Upload the current range of field data layers into the texture array.
-		gl.TexSubImage3D(
-				GL_TEXTURE_2D_ARRAY, 0,
+		gl.TextureSubImage3D(
+				d_field_data_texture_array, 0,
 				0, 0, // x,y offsets
 				layer_index, // z offset
 				scalar_field_reader.get_tile_resolution(),
@@ -3140,8 +3054,6 @@ GPlatesOpenGL::GLScalarField3D::load_scalar_field(
 	//
 	// Read the mask data from the file.
 	//
-
-	gl.BindTexture(GL_TEXTURE_2D_ARRAY, d_mask_data_texture_array);
 
 	// Avoid excessive memory use from reading entire mask into a single large memory array by
 	// reading sub-sections in multiple iterations.
@@ -3159,8 +3071,8 @@ GPlatesOpenGL::GLScalarField3D::load_scalar_field(
 				mask_data = scalar_field_reader.read_mask_data(mask_tile_index, num_tiles_to_read);
 
 		// Upload the current range of mask data into the texture array.
-		gl.TexSubImage3D(
-				GL_TEXTURE_2D_ARRAY, 0,
+		gl.TextureSubImage3D(
+				d_mask_data_texture_array, 0,
 				0, 0, // x,y offsets
 				mask_tile_index, // z offset
 				scalar_field_reader.get_tile_resolution(),
@@ -3218,14 +3130,9 @@ GPlatesOpenGL::GLScalarField3D::load_depth_radius_to_layer_texture(
 	// Last texel is layer 'd_num_depth_layers - 1'.
 	depth_layer_mapping.push_back(d_num_depth_layers - 1/*layer*/);
 
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	gl.BindTexture(GL_TEXTURE_1D, d_depth_radius_to_layer_texture);
-
 	// Upload the depth-radius-to-layer mapping data into the texture.
-	gl.TexSubImage1D(
-			GL_TEXTURE_1D, 0,
+	gl.TextureSubImage1D(
+			d_depth_radius_to_layer_texture, 0,
 			0, // x offset
 			d_depth_radius_to_layer_resolution, // width
 			GL_RED, GL_FLOAT, &depth_layer_mapping[0]);
@@ -3288,14 +3195,9 @@ GPlatesOpenGL::GLScalarField3D::load_colour_palette_texture(
 		colour_palette_data.push_back(texel_colour.alpha());
 	}
 
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	gl.BindTexture(GL_TEXTURE_1D, d_colour_palette_texture);
-
 	// Upload the colour palette data into the texture.
-	gl.TexSubImage1D(
-			GL_TEXTURE_1D, 0,
+	gl.TextureSubImage1D(
+			d_colour_palette_texture, 0,
 			0, // x offset
 			d_colour_palette_resolution, // width
 			GL_RGBA, GL_FLOAT, &colour_palette_data[0]);

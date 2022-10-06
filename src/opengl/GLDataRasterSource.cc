@@ -193,12 +193,6 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 					texel_height);
 	PROFILE_END(profile_proxy_raster_coverage);
 
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	// Bind target texture before uploading to it.
-	gl.BindTexture(GL_TEXTURE_2D, target_texture);
-
 	// Our client memory image buffers are byte aligned.
 	gl.PixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
@@ -245,7 +239,7 @@ GPlatesOpenGL::GLDataRasterSource::load_tile(
 	//
 	// Note: We load the entire tile, not just the region. These can differ at the right and bottom edges
 	//       of the raster (if the raster width or height is not an integer multiple of the tile dimension).
-	gl.TexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
+	gl.TextureSubImage2D(target_texture, 0/*level*/,
 			0/*xoffset*/, 0/*yoffset*/, d_tile_texel_dimension, d_tile_texel_dimension,
 			GL_RG, GL_FLOAT, d_tile_pack_working_space.get());
 
@@ -281,7 +275,7 @@ GPlatesOpenGL::GLDataRasterSource::handle_error_loading_source_raster(
 	// Set the data/coverage values to zero for all pixels.
 	// Use RG-only format.
 	std::fill_n(d_tile_pack_working_space.get(), 2 * d_tile_texel_dimension * d_tile_texel_dimension, GLfloat(0));
-	gl.TexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
+	gl.TextureSubImage2D(target_texture, 0/*level*/,
 			0/*xoffset*/, 0/*yoffset*/, d_tile_texel_dimension, d_tile_texel_dimension,
 			GL_RG, GL_FLOAT, d_tile_pack_working_space.get());
 }
