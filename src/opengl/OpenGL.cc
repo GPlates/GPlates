@@ -738,7 +738,12 @@ void
 GPlatesOpenGL::GL::LineWidth(
 		GLfloat width)
 {
-	d_current_state->line_width(width);
+	// We use OpenGL 4.5 core profile, with "forward compatibility" which removes support for deprecated wide lines.
+	// They're not well-supported on macOS anyway (even in Vulkan).
+	// So just set the line width to 1.0 for now (to avoid an OpenGL error getting flagged).
+	//
+	// TODO: Replace wide lines altogether - with rectangle geometry and an anti-aliasing fragment shader.
+	d_current_state->line_width(1.0f/*width*/);
 }
 
 
