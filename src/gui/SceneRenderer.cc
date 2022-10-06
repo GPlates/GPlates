@@ -84,6 +84,8 @@ GPlatesGui::SceneRenderer::initialise_gl(
 	// Create the shader program that sorts and blends the list of fragments (per pixel) in depth order.
 	create_sort_and_blend_scene_fragments_shader_program(gl);
 
+	// Create buffer for fragment list allocator atomic counter.
+	create_fragment_list_allocator_atomic_counter_buffer(gl);
 	// Note: We don't create the fragment list buffer and image yet.
 	//       That happens when they are first used, and also when viewport is resized to be larger than them.
 
@@ -106,7 +108,7 @@ GPlatesGui::SceneRenderer::shutdown_gl(
 	d_full_screen_quad.reset();
 
 	// Destroy buffers/images containing the per-pixel lists of fragments rendered into the scene.
-	destroy_fragment_list_buffer_and_image(gl);
+	destroy_fragment_list_resources(gl);
 
 	// Destroy the shader program that sorts and blends the list of fragments (per pixel) in depth order..
 	d_sort_and_blend_scene_fragments_shader_program.reset();
@@ -299,43 +301,13 @@ GPlatesGui::SceneRenderer::render_scene(
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
 
-	// Clear the colour and depth buffers of the framebuffer currently bound to GL_DRAW_FRAMEBUFFER target.
-	// We also clear the stencil buffer in case it is used - also it's usually
-	// interleaved with depth so it's more efficient to clear both depth and stencil.
+	// Clear the colour buffer of the framebuffer currently bound to GL_DRAW_FRAMEBUFFER target using the requested clear colour.
 	//
-	// NOTE: Depth/stencil writes must be enabled for depth/stencil clears to work.
-	//       But these should be enabled by default anyway.
-	gl.DepthMask(GL_TRUE);
-	gl.StencilMask(~0/*all ones*/);
-	// Use the requested clear colour.
+	// Note: We don't use depth or stencil buffers.
 	gl.ClearColor(clear_colour.red(), clear_colour.green(), clear_colour.blue(), clear_colour.alpha());
-	gl.ClearDepth(); // Clear depth to 1.0
-	gl.ClearStencil(); // Clear stencil to 0
-	gl.Clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	gl.Clear(GL_COLOR_BUFFER_BIT);
 
 #if 1
-
-	// Create the fragment list buffer/image.
-	//
-	// Note: It only gets (re)created if either (1) not yet created or (2) the current viewport exceeds the buffer/image dimensions.
-	create_fragment_list_buffer_and_image(gl, view_projection.get_viewport());
-
-	// Clear the per-pixel fragment list head pointers (we start with empty per-pixel lists).
-	//
-	// Note that we don't also need to clear the storage buffer containing the fragments because we're just overwriting them from scratch.
-	const GLuint fragment_list_null_pointer = 0xffffffff;
-	gl.ClearTexImage(d_fragment_list_head_pointer_image, 0/*level*/, GL_RED_INTEGER, GL_UNSIGNED_INT, &fragment_list_null_pointer);
-
-	// Render the scene.
-	//
-	// This will add fragments to the per-pixel fragment lists as objects in the scene are rendered.
-	cache_handle_type frame_cache_handle;
-
-	// Bind the fragment list storage buffer.
-	gl.BindBufferBase(GL_SHADER_STORAGE_BUFFER, 0/*index*/, d_fragment_list_storage_buffer);
-
-	// Bind the fragment list head pointer image.
-	gl.BindImageTexture(0, d_fragment_list_head_pointer_image, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
 
 	//
 	// Render the background stars.
@@ -354,12 +326,43 @@ GPlatesGui::SceneRenderer::render_scene(
 	}
 
 	//
+	// Prepare for rendering the scene.
+	//
+	// After this, all objects rendered into the scene will add fragments to per-pixel fragment lists.
+
+	// Create the fragment list storage buffer and head pointer image.
+	//
+	// Note: They only gets (re)created if either (1) not yet created or (2) the current viewport exceeds the buffer/image dimensions.
+	create_fragment_list_storage_buffer_and_head_pointer_image(gl, view_projection.get_viewport());
+
+	// Clear the per-pixel fragment list head pointers (we start with empty per-pixel lists).
+	//
+	// Note that we don't also need to clear the storage buffer containing the fragments because we're just overwriting them from scratch.
+	const GLuint fragment_list_null_pointer = 0xffffffff;
+	gl.ClearTexImage(d_fragment_list_head_pointer_image, 0/*level*/, GL_RED_INTEGER, GL_UNSIGNED_INT, &fragment_list_null_pointer);
+
+	// Bind the fragment list allocator atomic counter buffer.
+	gl.BindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0/*index*/, d_fragment_list_allocator_atomic_counter_buffer);
+
+	// Clear the counter of the fragment list allocator.
+	const GLuint fragment_list_allocator_initial_count = 0;
+	gl.ClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &fragment_list_allocator_initial_count);
+
+	// Bind the fragment list storage buffer.
+	gl.BindBufferBase(GL_SHADER_STORAGE_BUFFER, 0/*index*/, d_fragment_list_storage_buffer);
+
+	// Bind the fragment list head pointer image.
+	gl.BindImageTexture(0, d_fragment_list_head_pointer_image, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
+
+	//
 	// Render the scene.
 	//
-	// This will add fragments to the per-pixel fragment lists as objects in the scene are rendered.
+	// All objects rendered into the scene will add fragments to per-pixel fragment lists instead of
+	// rendering directly to the framebuffer.
 	cache_handle_type frame_cache_handle;
 
-	// Bind the shader program that sorts and blends scene fragments accumulated from rendering the scene.
+	// Bind the shader program that sorts and blends scene fragments accumulated from rendering the scene and
+	// renders them into the framebuffer.
 	gl.UseProgram(d_sort_and_blend_scene_fragments_shader_program);
 
 	// Draw a full screen quad to process all screen pixels.
@@ -367,6 +370,8 @@ GPlatesGui::SceneRenderer::render_scene(
 	gl.DrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
 #else
+
+	gl.Clear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 	//
 	// Render the globe or map (and its contents) depending on whether the globe or map is currently active.
@@ -421,7 +426,7 @@ GPlatesGui::SceneRenderer::create_off_screen_render_target(
 	gl.BindRenderbuffer(GL_RENDERBUFFER, d_off_screen_depth_stencil_renderbuffer);
 	gl.RenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, d_off_screen_render_target_dimension, d_off_screen_render_target_dimension);
 
-	// Bind the framebuffer that'll we subsequently attach the renderbuffers to.
+	// Bind the framebuffer that we'll subsequently attach the renderbuffers to.
 	gl.BindFramebuffer(GL_FRAMEBUFFER, d_off_screen_framebuffer);
 
 	// Bind the colour renderbuffer to framebuffer's first colour attachment.
@@ -484,7 +489,7 @@ GPlatesGui::SceneRenderer::create_sort_and_blend_scene_fragments_shader_program(
 
 
 void
-GPlatesGui::SceneRenderer::create_fragment_list_buffer_and_image(
+GPlatesGui::SceneRenderer::create_fragment_list_storage_buffer_and_head_pointer_image(
 		GPlatesOpenGL::GL &gl,
 		const GPlatesOpenGL::GLViewport &viewport)
 {
@@ -502,22 +507,18 @@ GPlatesGui::SceneRenderer::create_fragment_list_buffer_and_image(
 			d_max_fragment_list_head_pointer_image_height = viewport.height();
 		}
 
-		// Make sure we leave the OpenGL state the way it was.
-		GPlatesOpenGL::GL::StateScope save_restore_state(gl);
-
 		// Destroy the current image (if it exists).
 		d_fragment_list_head_pointer_image.reset();
 
 		// Create the fragment list head pointer image.
-		d_fragment_list_head_pointer_image = GPlatesOpenGL::GLTexture::create(gl);
+		d_fragment_list_head_pointer_image = GPlatesOpenGL::GLTexture::create(gl, GL_TEXTURE_2D);
 		// Allocate storage for the fragment list head pointer image.
 		// This is a 2D image with dimensions that should match (or exceed) the current viewport dimensions.
-		gl.BindTexture(GL_TEXTURE_2D, d_fragment_list_head_pointer_image);
-		gl.TexImage2D(
-				GL_TEXTURE_2D, 0/*level*/,
+		gl.TextureStorage2D(
+				d_fragment_list_head_pointer_image,
+				1/*levels*/,
 				GL_R32UI,
-				d_max_fragment_list_head_pointer_image_width, d_max_fragment_list_head_pointer_image_height,
-				0/*border*/, GL_RED_INTEGER, GL_UNSIGNED_INT, nullptr);
+				d_max_fragment_list_head_pointer_image_width, d_max_fragment_list_head_pointer_image_height);
 
 		// Check there are no OpenGL errors.
 		GPlatesOpenGL::GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
@@ -538,21 +539,17 @@ GPlatesGui::SceneRenderer::create_fragment_list_buffer_and_image(
 		// Expand the buffer to support the viewport.
 		d_max_fragment_list_storage_buffer_bytes = viewport_fragment_list_storage_buffer_bytes;
 
-		// Make sure we leave the OpenGL state the way it was.
-		GPlatesOpenGL::GL::StateScope save_restore_state(gl);
-
 		// Destroy the current buffer (if it exists).
 		d_fragment_list_storage_buffer.reset();
 
 		// Create buffer for the per-pixel fragment lists.
 		d_fragment_list_storage_buffer = GPlatesOpenGL::GLBuffer::create(gl);
 		// Allocate storage for all the per-pixel fragment lists.
-		gl.BindBuffer(GL_SHADER_STORAGE_BUFFER, d_fragment_list_storage_buffer);
-		gl.BufferData(
-				GL_SHADER_STORAGE_BUFFER,
+		gl.NamedBufferStorage(
+				d_fragment_list_storage_buffer,
 				d_max_fragment_list_storage_buffer_bytes,
 				nullptr,
-				GL_DYNAMIC_COPY);
+				0/*flags*/);
 
 		// Check there are no OpenGL errors.
 		GPlatesOpenGL::GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
@@ -561,9 +558,28 @@ GPlatesGui::SceneRenderer::create_fragment_list_buffer_and_image(
 
 
 void
-GPlatesGui::SceneRenderer::destroy_fragment_list_buffer_and_image(
+GPlatesGui::SceneRenderer::create_fragment_list_allocator_atomic_counter_buffer(
 		GPlatesOpenGL::GL &gl)
 {
+	// Create buffer for the atomic counter (used when allocating from fragment list storage).
+	d_fragment_list_allocator_atomic_counter_buffer = GPlatesOpenGL::GLBuffer::create(gl);
+	// Allocate space for a single atomic counter used when allocating from fragment list storage.
+	gl.NamedBufferStorage(
+			d_fragment_list_allocator_atomic_counter_buffer,
+			sizeof(GLuint),
+			nullptr,
+			0/*flags*/);
+
+	// Check there are no OpenGL errors.
+	GPlatesOpenGL::GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
+}
+
+
+void
+GPlatesGui::SceneRenderer::destroy_fragment_list_resources(
+		GPlatesOpenGL::GL &gl)
+{
+	d_fragment_list_allocator_atomic_counter_buffer.reset();
 	d_fragment_list_storage_buffer.reset();
 	d_fragment_list_head_pointer_image.reset();
 

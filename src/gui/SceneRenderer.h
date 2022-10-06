@@ -145,6 +145,9 @@ namespace GPlatesGui
 		//! Buffer containing storage for the per-pixel lists of fragments rendered into the scene.
 		GPlatesOpenGL::GLBuffer::shared_ptr_type d_fragment_list_storage_buffer;
 
+		//! Buffer containing a single atomic counter used when allocating from fragment list storage.
+		GPlatesOpenGL::GLBuffer::shared_ptr_type d_fragment_list_allocator_atomic_counter_buffer;
+
 		/**
 		 * The maximum image width and height supported by the current fragment list head pointer image.
 		 *
@@ -211,15 +214,20 @@ namespace GPlatesGui
 		create_sort_and_blend_scene_fragments_shader_program(
 				GPlatesOpenGL::GL &gl);
 
-		//! Create buffers/images containing the per-pixel lists of fragments rendered into the scene.
+		//! Create storage buffer and head pointer image representing the per-pixel lists of fragments rendered into the scene.
 		void
-		create_fragment_list_buffer_and_image(
+		create_fragment_list_storage_buffer_and_head_pointer_image(
 				GPlatesOpenGL::GL &gl,
 				const GPlatesOpenGL::GLViewport &viewport);
 
-		//! Destroy buffers/images containing the per-pixel lists of fragments rendered into the scene.
+		//! Create the buffer containing a single atomic counter used when allocating from fragment list storage.
 		void
-		destroy_fragment_list_buffer_and_image(
+		create_fragment_list_allocator_atomic_counter_buffer(
+				GPlatesOpenGL::GL &gl);
+
+		//! Destroy resources (buffers/images) used for the per-pixel lists of fragments rendered into the scene.
+		void
+		destroy_fragment_list_resources(
 				GPlatesOpenGL::GL &gl);
 
 		/**

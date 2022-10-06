@@ -39,7 +39,7 @@ void main()
     // Extract the fragments from the fragment list associated with the current pixel.
     uint fragment_count = 0;
     uint current_fragment_pointer = imageLoad(fragment_list_head_pointer_image, ivec2(gl_FragCoord).xy).x;
-    while (current_fragment_pointer != 0xffffffff && fragment_count < MAX_FRAGMENTS )
+    while (current_fragment_pointer != 0xffffffff && fragment_count < MAX_FRAGMENTS)
     {
         uvec4 fragment = fragment_list_storage.fragments[current_fragment_pointer];
 
