@@ -1554,17 +1554,14 @@ GPlatesGui::ExportRasterAnimationStrategy::GLResources::GLResources(
 	// Create the pixel buffer to read back framebuffer data.
 	tile_pixel_buffer = GPlatesOpenGL::GLBuffer::create(gl);
 
-	// Bind pixel buffer object.
-	gl.BindBuffer(GL_PIXEL_PACK_BUFFER, tile_pixel_buffer);
-
 	// Allocate the pixel buffer data store.
 	const unsigned int pixel_size = (raster_type == Configuration::COLOUR)
 			? 4/*RGBA*/ * sizeof(GLubyte)
 			: 2/*RG*/ * sizeof(GLfloat);
-	gl.BufferData(
-			GL_PIXEL_PACK_BUFFER,
+	gl.NamedBufferStorage(
+			tile_pixel_buffer,
 			tile_framebuffer_dimension * tile_framebuffer_dimension * pixel_size,
 			nullptr,
 			// Data will be modified repeatedly by the GL and read by the application...
-			GL_DYNAMIC_READ);
+			GL_MAP_READ_BIT);
 }

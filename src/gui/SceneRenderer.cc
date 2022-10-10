@@ -307,7 +307,7 @@ GPlatesGui::SceneRenderer::render_scene(
 	gl.ClearColor(clear_colour.red(), clear_colour.green(), clear_colour.blue(), clear_colour.alpha());
 	gl.Clear(GL_COLOR_BUFFER_BIT);
 
-#if 1
+#if 0
 
 	//
 	// Render the background stars.
@@ -339,14 +339,16 @@ GPlatesGui::SceneRenderer::render_scene(
 	//
 	// Note that we don't also need to clear the storage buffer containing the fragments because we're just overwriting them from scratch.
 	const GLuint fragment_list_null_pointer = 0xffffffff;
-	gl.ClearTexImage(d_fragment_list_head_pointer_image, 0/*level*/, GL_RED_INTEGER, GL_UNSIGNED_INT, &fragment_list_null_pointer);
-
-	// Bind the fragment list allocator atomic counter buffer.
-	gl.BindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0/*index*/, d_fragment_list_allocator_atomic_counter_buffer);
+	gl.ClearTexImage(d_fragment_list_head_pointer_image,
+			0/*level*/, GL_RED_INTEGER, GL_UNSIGNED_INT, &fragment_list_null_pointer);
 
 	// Clear the counter of the fragment list allocator.
 	const GLuint fragment_list_allocator_initial_count = 0;
-	gl.ClearBufferData(GL_ATOMIC_COUNTER_BUFFER, GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &fragment_list_allocator_initial_count);
+	gl.ClearNamedBufferData(d_fragment_list_allocator_atomic_counter_buffer,
+			GL_R32UI, GL_RED_INTEGER, GL_UNSIGNED_INT, &fragment_list_allocator_initial_count);
+
+	// Bind the fragment list allocator atomic counter buffer.
+	gl.BindBufferBase(GL_ATOMIC_COUNTER_BUFFER, 0/*index*/, d_fragment_list_allocator_atomic_counter_buffer);
 
 	// Bind the fragment list storage buffer.
 	gl.BindBufferBase(GL_SHADER_STORAGE_BUFFER, 0/*index*/, d_fragment_list_storage_buffer);
@@ -421,7 +423,7 @@ GPlatesGui::SceneRenderer::create_off_screen_render_target(
 	gl.RenderbufferStorage(GL_RENDERBUFFER, GL_RGBA8, d_off_screen_render_target_dimension, d_off_screen_render_target_dimension);
 
 	// Initialise offscreen depth/stencil renderbuffer.
-	// Note that (in OpenGL 3.3 core) an OpenGL implementation is only *required* to provide stencil if a
+	// Note that (in modern OpenGL) an OpenGL implementation is only *required* to provide stencil if a
 	// depth/stencil format is requested, and furthermore GL_DEPTH24_STENCIL8 is a specified required format.
 	gl.BindRenderbuffer(GL_RENDERBUFFER, d_off_screen_depth_stencil_renderbuffer);
 	gl.RenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, d_off_screen_render_target_dimension, d_off_screen_render_target_dimension);

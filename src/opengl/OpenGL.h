@@ -303,22 +303,6 @@ namespace GPlatesOpenGL
 				const GLvoid *data,
 				GLenum usage);
 
-		void
-		BufferStorage(
-				GLenum target,
-				GLsizeiptr size,
-				const void *data,
-				GLbitfield flags);
-
-		// OpenGL 1.5
-		void
-		BufferSubData(
-				GLenum target,
-				GLintptr offset,
-				GLsizeiptr size,
-				const GLvoid *data);
-
-		// OpenGL 3.0
 		GLenum
 		CheckFramebufferStatus(
 				GLenum target);
@@ -332,25 +316,6 @@ namespace GPlatesOpenGL
 		Clear(
 				GLbitfield mask);
 
-		void
-		ClearBufferData(
-				GLenum target,
-				GLenum internalformat,
-				GLenum format,
-				GLenum type,
-				const void *data);
-
-		void
-		ClearBufferSubData(
-				GLenum target,
-				GLenum internalformat,
-				GLintptr offset,
-				GLsizeiptr size,
-				GLenum format,
-				GLenum type,
-				const void *data);
-
-		// OpenGL 1.0
 		void
 		ClearColor(
 				GLclampf red = GLclampf(0.0),
@@ -448,7 +413,8 @@ namespace GPlatesOpenGL
 				GLuint index);
 
 		void
-		DisableVertexAttribArray(
+		DisableVertexArrayAttrib(
+				GLVertexArray::shared_ptr_type vertex_array,
 				GLuint index);
 
 		void
@@ -491,7 +457,8 @@ namespace GPlatesOpenGL
 				GLuint index);
 
 		void
-		EnableVertexAttribArray(
+		EnableVertexArrayAttrib(
+				GLVertexArray::shared_ptr_type vertex_array,
 				GLuint index);
 
 		void
@@ -598,6 +565,13 @@ namespace GPlatesOpenGL
 				GLsizei size,
 				const void *data,
 				GLbitfield flags);
+
+		void
+		NamedBufferData(
+				GLBuffer::shared_ptr_type buffer,
+				GLsizei size,
+				const void *data,
+				GLenum usage);
 
 		void
 		NamedBufferSubData(
@@ -1089,46 +1063,55 @@ namespace GPlatesOpenGL
 		UseProgram(
 				boost::optional<GLProgram::shared_ptr_type> program/*none means don't use any program*/);
 
-		//
-		// Note that we don't shadow globe state set by glVertexAttrib4f, glVertexAttribI4i, etc.
-		//
-		// This is generic vertex attribute state that only gets used if a vertex array is *not* enabled for
-		// a generic attribute required by the vertex shader. However, according to the 3.3 core profile spec:
-		//
-		//   If an array corresponding to a generic attribute required by a vertex shader is enabled, the
-		//   corresponding current generic attribute value is undefined after the execution of DrawElementsOneInstance.
-		//
-		// ...so essentially any state set with glVertexAttrib4f, glVertexAttribI4i, etc, prior to a draw call
-		// is undefined after the draw call so we cannot track it (apparently this was rectified in OpenGL 4.2).
-		//
-		// A better approach is to instead set a uniform in the vertex shader (eg, a constant colour for the entire drawable).
-		//
-		// NOTE: The OpenGL functions glVertexAttrib4f, glVertexAttribI4i, etc, are not available for this class to use anyway.
-		//       This is because they were not exposed by Qt until 4.4 core (ie, were not available until QOpenGLFunctions_4_4_Core),
-		//       probably for a reason similar to above, and hence are not available in our @a OpenGLFunctions (used by this class).
-		//
+		void
+		VertexArrayAttribBinding(
+				GLVertexArray::shared_ptr_type vertex_array,
+				GLuint attribindex,
+				GLuint bindingindex);
 
 		void
-		VertexAttribDivisor(
-				GLuint index,
-				GLuint divisor);
-
-		void
-		VertexAttribIPointer(
-				GLuint index,
-				GLint size,
-				GLenum type,
-				GLsizei stride,
-				const GLvoid *pointer);
-
-		void
-		VertexAttribPointer(
-				GLuint index,
+		VertexArrayAttribFormat(
+				GLVertexArray::shared_ptr_type vertex_array,
+				GLuint attribindex,
 				GLint size,
 				GLenum type,
 				GLboolean normalized,
-				GLsizei stride,
-				const GLvoid *pointer);
+				GLuint relativeoffset);
+
+		void
+		VertexArrayAttribIFormat(
+				GLVertexArray::shared_ptr_type vertex_array,
+				GLuint attribindex,
+				GLint size,
+				GLenum type,
+				GLuint relativeoffset);
+
+		void
+		VertexArrayAttribLFormat(
+				GLVertexArray::shared_ptr_type vertex_array,
+				GLuint attribindex,
+				GLint size,
+				GLenum type,
+				GLuint relativeoffset);
+
+		void
+		VertexArrayBindingDivisor(
+				GLVertexArray::shared_ptr_type vertex_array,
+				GLuint bindingindex,
+				GLuint divisor);
+
+		void
+		VertexArrayElementBuffer(
+				GLVertexArray::shared_ptr_type vertex_array,
+				GLBuffer::shared_ptr_type buffer);
+
+		void
+		VertexArrayVertexBuffer(
+				GLVertexArray::shared_ptr_type vertex_array,
+				GLuint bindingindex,
+				GLBuffer::shared_ptr_type buffer,
+				GLintptr offset,
+				GLsizei stride);
 
 		// Note: The default viewport rectangle is the current dimensions (in device pixels) of the framebuffer
 		//       (either main framebuffer or a framebuffer object) currently attached to the OpenGL context.

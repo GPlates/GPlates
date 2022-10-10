@@ -263,28 +263,6 @@ GPlatesOpenGL::GL::BufferData(
 }
 
 
-void
-GPlatesOpenGL::GL::BufferStorage(
-		GLenum target,
-		GLsizeiptr size,
-		const void *data,
-		GLbitfield flags)
-{
-	d_opengl_functions.glBufferStorage(target, size, data, flags);
-}
-
-
-void
-GPlatesOpenGL::GL::BufferSubData(
-		GLenum target,
-		GLintptr offset,
-		GLsizeiptr size,
-		const GLvoid *data)
-{
-	d_opengl_functions.glBufferSubData(target, offset, size, data);
-}
-
-
 GLenum
 GPlatesOpenGL::GL::CheckFramebufferStatus(
 		GLenum target)
@@ -306,32 +284,6 @@ GPlatesOpenGL::GL::Clear(
 		GLbitfield mask)
 {
 	d_opengl_functions.glClear(mask);
-}
-
-
-void
-GPlatesOpenGL::GL::ClearBufferData(
-		GLenum target,
-		GLenum internalformat,
-		GLenum format,
-		GLenum type,
-		const void *data)
-{
-	d_opengl_functions.glClearBufferData(target, internalformat, format, type, data);
-}
-
-
-void
-GPlatesOpenGL::GL::ClearBufferSubData(
-		GLenum target,
-		GLenum internalformat,
-		GLintptr offset,
-		GLsizeiptr size,
-		GLenum format,
-		GLenum type,
-		const void *data)
-{
-	d_opengl_functions.glClearBufferSubData(target, internalformat, offset, size, format, type, data);
 }
 
 
@@ -492,10 +444,11 @@ GPlatesOpenGL::GL::Disablei(
 
 
 void
-GPlatesOpenGL::GL::DisableVertexAttribArray(
+GPlatesOpenGL::GL::DisableVertexArrayAttrib(
+		GLVertexArray::shared_ptr_type vertex_array,
 		GLuint index)
 {
-	d_opengl_functions.glDisableVertexAttribArray(index);
+	d_opengl_functions.glDisableVertexArrayAttrib(vertex_array->get_resource_handle(), index);
 }
 
 
@@ -567,10 +520,11 @@ GPlatesOpenGL::GL::Enablei(
 
 
 void
-GPlatesOpenGL::GL::EnableVertexAttribArray(
+GPlatesOpenGL::GL::EnableVertexArrayAttrib(
+		GLVertexArray::shared_ptr_type vertex_array,
 		GLuint index)
 {
-	d_opengl_functions.glEnableVertexAttribArray(index);
+	d_opengl_functions.glEnableVertexArrayAttrib(vertex_array->get_resource_handle(), index);
 }
 
 
@@ -791,6 +745,17 @@ GPlatesOpenGL::GL::NamedBufferStorage(
 		GLbitfield flags)
 {
 	d_opengl_functions.glNamedBufferStorage(buffer->get_resource_handle(), size, data, flags);
+}
+
+
+void
+GPlatesOpenGL::GL::NamedBufferData(
+		GLBuffer::shared_ptr_type buffer,
+		GLsizei size,
+		const void *data,
+		GLenum usage)
+{
+	d_opengl_functions.glNamedBufferData(buffer->get_resource_handle(), size, data, usage);
 }
 
 
@@ -1575,14 +1540,6 @@ GPlatesOpenGL::GL::UniformMatrix4x3fv(
 }
 
 
-void
-GPlatesOpenGL::GL::UseProgram(
-		boost::optional<GLProgram::shared_ptr_type> program)
-{
-	d_current_state->use_program(program);
-}
-
-
 GLboolean
 GPlatesOpenGL::GL::UnmapBuffer(
 		GLenum target)
@@ -1592,36 +1549,88 @@ GPlatesOpenGL::GL::UnmapBuffer(
 
 
 void
-GPlatesOpenGL::GL::VertexAttribDivisor(
-		GLuint index,
-		GLuint divisor)
+GPlatesOpenGL::GL::UseProgram(
+		boost::optional<GLProgram::shared_ptr_type> program)
 {
-	d_opengl_functions.glVertexAttribDivisor(index, divisor);
+	d_current_state->use_program(program);
 }
 
 
 void
-GPlatesOpenGL::GL::VertexAttribIPointer(
-		GLuint index,
-		GLint size,
-		GLenum type,
-		GLsizei stride,
-		const GLvoid *pointer)
+GPlatesOpenGL::GL::VertexArrayAttribBinding(
+		GLVertexArray::shared_ptr_type vertex_array,
+		GLuint attribindex,
+		GLuint bindingindex)
 {
-	d_opengl_functions.glVertexAttribIPointer(index, size, type, stride, pointer);
+	d_opengl_functions.glVertexArrayAttribBinding(vertex_array->get_resource_handle(), attribindex, bindingindex);
 }
 
 
 void
-GPlatesOpenGL::GL::VertexAttribPointer(
-		GLuint index,
+GPlatesOpenGL::GL::VertexArrayAttribFormat(
+		GLVertexArray::shared_ptr_type vertex_array,
+		GLuint attribindex,
 		GLint size,
 		GLenum type,
 		GLboolean normalized,
-		GLsizei stride,
-		const GLvoid *pointer)
+		GLuint relativeoffset)
 {
-	d_opengl_functions.glVertexAttribPointer(index, size, type, normalized, stride, pointer);
+	d_opengl_functions.glVertexArrayAttribFormat(vertex_array->get_resource_handle(), attribindex, size, type, normalized, relativeoffset);
+}
+
+
+void
+GPlatesOpenGL::GL::VertexArrayAttribIFormat(
+		GLVertexArray::shared_ptr_type vertex_array,
+		GLuint attribindex,
+		GLint size,
+		GLenum type,
+		GLuint relativeoffset)
+{
+	d_opengl_functions.glVertexArrayAttribIFormat(vertex_array->get_resource_handle(), attribindex, size, type, relativeoffset);
+}
+
+
+void
+GPlatesOpenGL::GL::VertexArrayAttribLFormat(
+		GLVertexArray::shared_ptr_type vertex_array,
+		GLuint attribindex,
+		GLint size,
+		GLenum type,
+		GLuint relativeoffset)
+{
+	d_opengl_functions.glVertexArrayAttribLFormat(vertex_array->get_resource_handle(), attribindex, size, type, relativeoffset);
+}
+
+
+void
+GPlatesOpenGL::GL::VertexArrayBindingDivisor(
+		GLVertexArray::shared_ptr_type vertex_array,
+		GLuint bindingindex,
+		GLuint divisor)
+{
+	d_opengl_functions.glVertexArrayBindingDivisor(vertex_array->get_resource_handle(), bindingindex, divisor);
+}
+
+
+void
+GPlatesOpenGL::GL::VertexArrayElementBuffer(
+		GLVertexArray::shared_ptr_type vertex_array,
+		GLBuffer::shared_ptr_type buffer)
+{
+	d_opengl_functions.glVertexArrayElementBuffer(vertex_array->get_resource_handle(), buffer->get_resource_handle());
+}
+
+
+void
+GPlatesOpenGL::GL::VertexArrayVertexBuffer(
+		GLVertexArray::shared_ptr_type vertex_array,
+		GLuint bindingindex,
+		GLBuffer::shared_ptr_type buffer,
+		GLintptr offset,
+		GLsizei stride)
+{
+	d_opengl_functions.glVertexArrayVertexBuffer(vertex_array->get_resource_handle(), bindingindex, buffer->get_resource_handle(), offset, stride);
 }
 
 

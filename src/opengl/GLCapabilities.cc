@@ -48,6 +48,7 @@ GPlatesOpenGL::GLCapabilities::GLCapabilities() :
 	gl_max_uniform_block_size(16384), // 16KB
 	gl_max_shader_storage_block_size(134217728), // 128MB
 	gl_max_vertex_attribs(16),
+	gl_max_vertex_attrib_bindings(16),
 	gl_max_clip_distances(8),
 	gl_max_combined_texture_image_units(48),
 	gl_max_vertex_texture_image_units(16),
@@ -135,6 +136,7 @@ GPlatesOpenGL::GLCapabilities::initialise(
 	//
 
 	gl_max_vertex_attribs = query_integer(opengl_functions, GL_MAX_VERTEX_ATTRIBS);
+	gl_max_vertex_attrib_bindings = query_integer(opengl_functions, GL_MAX_VERTEX_ATTRIB_BINDINGS);
 	gl_max_clip_distances = query_integer(opengl_functions, GL_MAX_CLIP_DISTANCES);
 
 	// Texture image units.

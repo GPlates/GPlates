@@ -856,7 +856,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * The number of texels along a tiles edge (horizontal or vertical since it's square).
+		 * The number of texels along a tile's edge (horizontal or vertical since it's square).
 		 */
 		unsigned int d_tile_texel_dimension;
 
@@ -871,6 +871,13 @@ namespace GPlatesOpenGL
 		 * See @a MAX_NUM_TEXELS_PER_VERTEX for more details.
 		 */
 		texels_per_vertex_fixed_point_type d_num_texels_per_vertex;
+
+		/**
+		 * The number of vertices along a tile's edge (horizontal or vertical since it's square).
+		 *
+		 * Note: Some tiles are partially filled (along boundary of raster).
+		 */
+		unsigned int d_tile_vertex_dimension;
 
 		/**
 		 * All tiles of all resolution are grouped into one array for easy lookup for clients.
@@ -1070,8 +1077,8 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Binds a vertex element buffer that indexes into a uniform mesh of triangles covering a tile
-		 * with @a num_vertices_along_tile_x_edge by @a num_vertices_along_tile_y_edge vertices.
+		 * Binds a vertex element buffer (to the specified vertex array) that indexes into a uniform mesh of triangles
+		 * covering a tile with @a num_vertices_along_tile_x_edge by @a num_vertices_along_tile_y_edge vertices.
 		 *
 		 * If a matching vertex element buffer is not found then one is created and cached.
 		 * This enables sharing of a vertex element buffer by multiple tiles.
@@ -1081,8 +1088,9 @@ namespace GPlatesOpenGL
 		 * Returns the number of indices (vertex elements) in tile.
 		 */
 		GLsizei
-		bind_vertex_element_buffer(
+		bind_vertex_element_buffer_to_vertex_array(
 				GL &gl,
+				const GLVertexArray::shared_ptr_type &vertex_array,
 				const unsigned int num_vertices_along_tile_x_edge,
 				const unsigned int num_vertices_along_tile_y_edge);
 

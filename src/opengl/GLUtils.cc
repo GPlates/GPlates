@@ -105,17 +105,6 @@ GPlatesOpenGL::GLVertexArray::shared_ptr_type
 GPlatesOpenGL::GLUtils::create_full_screen_quad(
 		GL &gl)
 {
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	// Bind vertex array object.
-	GLVertexArray::shared_ptr_type vertex_array = GLVertexArray::create(gl);
-	gl.BindVertexArray(vertex_array);
-
-	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-	GLBuffer::shared_ptr_type vertex_buffer = GLBuffer::create(gl);
-	gl.BindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-
 	// The vertices for the full-screen quad (as a tri-strip).
 	const GLVertexUtils::Vertex quad_vertices[4] =
 	{  //  x,  y, z
@@ -125,18 +114,24 @@ GPlatesOpenGL::GLUtils::create_full_screen_quad(
 		GLVertexUtils::Vertex(1,  1, 0)
 	};
 
-	// Transfer vertex data to currently bound vertex buffer object.
-	gl.BufferData(
-			GL_ARRAY_BUFFER,
+	// Transfer vertex data to a vertex buffer object.
+	GLBuffer::shared_ptr_type vertex_buffer = GLBuffer::create(gl);
+	gl.NamedBufferStorage(
+			vertex_buffer,
 			4 * sizeof(GLVertexUtils::Vertex),
 			quad_vertices,
-			GL_STATIC_DRAW);
+			0/*flags*/);
 
-	// Specify vertex attributes (position) in currently bound vertex buffer object.
-	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-	// to currently bound vertex array object.
-	gl.EnableVertexAttribArray(0);
-	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLVertexUtils::Vertex), BUFFER_OFFSET(GLVertexUtils::Vertex, x));
+	// Create vertex array object.
+	GLVertexArray::shared_ptr_type vertex_array = GLVertexArray::create(gl);
+
+	// Bind vertex buffer object to the vertex array object.
+	gl.VertexArrayVertexBuffer(vertex_array, 0/*bindingindex*/, vertex_buffer, 0/*offset*/, sizeof(GLVertexUtils::Vertex));
+
+	// Specify vertex attributes (position) in the vertex buffer object.
+	gl.EnableVertexArrayAttrib(vertex_array, 0);
+	gl.VertexArrayAttribFormat(vertex_array, 0, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(GLVertexUtils::Vertex, x));
+	gl.VertexArrayAttribBinding(vertex_array, 0, 0/*bindingindex*/);
 
 	return vertex_array;
 }

@@ -85,13 +85,9 @@ namespace GPlatesOpenGL
 		void glBlendFunc(GLenum sfactor, GLenum dfactor);
 		void glBlendFuncSeparate(GLenum sfactorRGB, GLenum dfactorRGB, GLenum sfactorAlpha, GLenum dfactorAlpha);
 		void glBufferData(GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
-		void glBufferStorage(GLenum target, GLsizeiptr size, const void* data, GLbitfield flags);
-		void glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data);
 		GLenum glCheckFramebufferStatus(GLenum target);
 		void glClampColor(GLenum target, GLenum clamp);
 		void glClear(GLbitfield mask);
-		void glClearBufferData(GLenum target, GLenum internalformat, GLenum format, GLenum type, const void *data);
-		void glClearBufferSubData(GLenum target, GLenum internalformat, GLintptr offset, GLsizeiptr size, GLenum format, GLenum type, const void *data);
 		void glClearColor(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
 		void glClearDepth(GLdouble depth);
 		void glClearNamedBufferData(GLuint buffer, GLenum internalformat, GLenum format, GLenum type, const void *data);
@@ -125,7 +121,7 @@ namespace GPlatesOpenGL
 		void glDetachShader(GLuint program, GLuint shader);
 		void glDisable(GLenum cap);
 		void glDisablei(GLenum target, GLuint index);
-		void glDisableVertexAttribArray(GLuint index);
+		void glDisableVertexArrayAttrib(GLuint vaobj, GLuint index);
 		void glDrawArrays(GLenum mode, GLint first, GLsizei count);
 		void glDrawBuffer(GLenum mode);
 		void glDrawBuffers(GLsizei n, const GLenum *bufs);
@@ -133,7 +129,7 @@ namespace GPlatesOpenGL
 		void glDrawRangeElements(GLenum mode, GLuint start, GLuint end, GLsizei count, GLenum type, const GLvoid *indices);
 		void glEnable(GLenum cap);
 		void glEnablei(GLenum target, GLuint index);
-		void glEnableVertexAttribArray(GLuint index);
+		void glEnableVertexArrayAttrib(GLuint vaobj, GLuint index);
 		void glFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length);
 		void glFramebufferRenderbuffer(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
 		void glFramebufferTexture1D(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
@@ -160,6 +156,7 @@ namespace GPlatesOpenGL
 		void glMemoryBarrier(GLbitfield barriers);
 		void glMemoryBarrierByRegion(GLbitfield barriers);
 		void glNamedBufferStorage(GLuint buffer, GLsizei size, const void* data, GLbitfield flags);
+		void glNamedBufferData(GLuint buffer, GLsizei size, const void* data, GLenum usage);
 		void glNamedBufferSubData(GLuint buffer, GLintptr offset, GLsizei size, const void* data);
 		void glPixelStorei(GLenum pname, GLint param);
 		void glPointSize(GLfloat size);
@@ -237,9 +234,13 @@ namespace GPlatesOpenGL
 		GLboolean glUnmapBuffer(GLenum target);
 		void glUseProgram(GLuint program);
 		void glValidateProgram(GLuint program);
-		void glVertexAttribDivisor(GLuint index, GLuint divisor);
-		void glVertexAttribIPointer(GLuint index, GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
-		void glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid *pointer);
+		void glVertexArrayAttribBinding(GLuint vaobj, GLuint attribindex, GLuint bindingindex);
+		void glVertexArrayAttribFormat(GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLboolean normalized, GLuint relativeoffset);
+		void glVertexArrayAttribIFormat(GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLuint relativeoffset);
+		void glVertexArrayAttribLFormat(GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLuint relativeoffset);
+		void glVertexArrayBindingDivisor(GLuint vaobj, GLuint bindingindex, GLuint divisor);
+		void glVertexArrayElementBuffer(GLuint vaobj, GLuint buffer);
+		void glVertexArrayVertexBuffer(GLuint vaobj, GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride);
 		void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
 	private:

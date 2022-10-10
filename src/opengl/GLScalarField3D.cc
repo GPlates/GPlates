@@ -1547,15 +1547,13 @@ GPlatesOpenGL::GLScalarField3D::initialise_uniform_buffer(
 	//
 	// Allocate the uniform buffer (now that we know the full buffer size).
 	//
-
-	gl.BindBuffer(GL_UNIFORM_BUFFER, d_uniform_buffer);
 	const GLsizeiptr uniform_buffer_size = bind_range_offset;
-	gl.BufferData(GL_UNIFORM_BUFFER, uniform_buffer_size, nullptr, GL_DYNAMIC_DRAW);
+	gl.NamedBufferStorage(d_uniform_buffer, uniform_buffer_size, nullptr, GL_DYNAMIC_STORAGE_BIT);
 
 	// Write the "CubeFaceCoordinateFrames" data (it never changes).
 	auto bind_range_cube_face_coordinate_frames = d_uniform_buffer_ranges[UniformBlockBinding::CUBE_FACE_COORDINATE_FRAMES];
-	gl.BufferSubData(
-			GL_UNIFORM_BUFFER,
+	gl.NamedBufferSubData(
+			d_uniform_buffer,
 			bind_range_cube_face_coordinate_frames.first/*offset*/,
 			bind_range_cube_face_coordinate_frames.second/*size*/,
 			&uniform_buffer_data_cube_face_coordinate_frames[0]);
@@ -1658,8 +1656,8 @@ GPlatesOpenGL::GLScalarField3D::update_shared_uniform_buffer_blocks(
 			bind_view_projection_block_range.second/*size*/);
 
 	// Update the data in the range in the uniform buffer.
-	gl.BufferSubData(
-			GL_UNIFORM_BUFFER,
+	gl.NamedBufferSubData(
+			d_uniform_buffer,
 			bind_view_projection_block_range.first/*offset*/,
 			bind_view_projection_block_range.second/*size*/,
 			&view_projection_block);
@@ -1699,8 +1697,8 @@ GPlatesOpenGL::GLScalarField3D::update_shared_uniform_buffer_blocks(
 			bind_scalar_field_block_range.second/*size*/);
 
 	// Update the data in the range in the uniform buffer.
-	gl.BufferSubData(
-			GL_UNIFORM_BUFFER,
+	gl.NamedBufferSubData(
+			d_uniform_buffer,
 			bind_scalar_field_block_range.first/*offset*/,
 			bind_scalar_field_block_range.second/*size*/,
 			&scalar_field_block);
@@ -1751,8 +1749,8 @@ GPlatesOpenGL::GLScalarField3D::update_shared_uniform_buffer_blocks(
 			bind_depth_block_range.second/*size*/);
 
 	// Update the data in the range in the uniform buffer.
-	gl.BufferSubData(
-			GL_UNIFORM_BUFFER,
+	gl.NamedBufferSubData(
+			d_uniform_buffer,
 			bind_depth_block_range.first/*offset*/,
 			bind_depth_block_range.second/*size*/,
 			&depth_block);
@@ -1810,8 +1808,8 @@ GPlatesOpenGL::GLScalarField3D::update_shared_uniform_buffer_blocks(
 			bind_surface_fill_block_range.second/*size*/);
 
 	// Update the data in the range in the uniform buffer.
-	gl.BufferSubData(
-			GL_UNIFORM_BUFFER,
+	gl.NamedBufferSubData(
+			d_uniform_buffer,
 			bind_surface_fill_block_range.first/*offset*/,
 			bind_surface_fill_block_range.second/*size*/,
 			&surface_fill_block);
@@ -1862,8 +1860,8 @@ GPlatesOpenGL::GLScalarField3D::update_shared_uniform_buffer_blocks(
 			bind_lighting_block_range.second/*size*/);
 
 	// Update the data in the range in the uniform buffer.
-	gl.BufferSubData(
-			GL_UNIFORM_BUFFER,
+	gl.NamedBufferSubData(
+			d_uniform_buffer,
 			bind_lighting_block_range.first/*offset*/,
 			bind_lighting_block_range.second/*size*/,
 			&lighting_block);
@@ -1909,8 +1907,8 @@ GPlatesOpenGL::GLScalarField3D::update_shared_uniform_buffer_blocks(
 			bind_test_block_range.second/*size*/);
 
 	// Update the data in the range in the uniform buffer.
-	gl.BufferSubData(
-			GL_UNIFORM_BUFFER,
+	gl.NamedBufferSubData(
+			d_uniform_buffer,
 			bind_test_block_range.first/*offset*/,
 			bind_test_block_range.second/*size*/,
 			&test_block);
@@ -2370,36 +2368,34 @@ GPlatesOpenGL::GLScalarField3D::initialise_inner_sphere(
 	// Load vertices into vertex array.
 	//
 
-	// Bind vertex array object.
-	gl.BindVertexArray(d_inner_sphere_vertex_array);
-
-	// Bind vertex element buffer object to currently bound vertex array object.
-	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_inner_sphere_vertex_element_buffer);
-
 	// Transfer vertex element data to currently bound vertex element buffer object.
-	gl.BufferData(
-			GL_ELEMENT_ARRAY_BUFFER,
+	gl.NamedBufferStorage(
+			d_inner_sphere_vertex_element_buffer,
 			vertex_elements.size() * sizeof(vertex_elements[0]),
 			vertex_elements.data(),
-			GL_STATIC_DRAW);
+			0/*flags*/);
 	d_inner_sphere_num_vertex_indices = vertex_elements.size();
 
-	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-	gl.BindBuffer(GL_ARRAY_BUFFER, d_inner_sphere_vertex_buffer);
-
 	// Transfer vertex data to currently bound vertex buffer object.
-	gl.BufferData(
-			GL_ARRAY_BUFFER,
+	gl.NamedBufferStorage(
+			d_inner_sphere_vertex_buffer,
 			vertices.size() * sizeof(vertices[0]),
 			vertices.data(),
-			GL_STATIC_DRAW);
+			0/*flags*/);
+
+	// Bind vertex element buffer object to the vertex array object.
+	gl.VertexArrayElementBuffer(d_inner_sphere_vertex_array, d_inner_sphere_vertex_element_buffer);
+
+	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
+	gl.VertexArrayVertexBuffer(d_inner_sphere_vertex_array,
+			0/*bindingindex*/, d_inner_sphere_vertex_buffer, 0/*offset*/, sizeof(GLVertexUtils::Vertex));
 
 	// Specify vertex attributes (position) in currently bound vertex buffer object.
 	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
 	// to currently bound vertex array object.
-	gl.EnableVertexAttribArray(0);
-	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-			sizeof(GLVertexUtils::Vertex), BUFFER_OFFSET(GLVertexUtils::Vertex, x));
+	gl.EnableVertexArrayAttrib(d_inner_sphere_vertex_array, 0);
+	gl.VertexArrayAttribFormat(d_inner_sphere_vertex_array, 0, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(GLVertexUtils::Vertex, x));
+	gl.VertexArrayAttribBinding(d_inner_sphere_vertex_array, 0, 0/*bindingindex*/);
 }
 
 
@@ -2430,30 +2426,23 @@ GPlatesOpenGL::GLScalarField3D::initialise_cross_section_rendering(
 					CROSS_SECTION_GEOMETRY_SHADER_SOURCE_FILE_NAME/*geometry shader*/,
 					"#define CROSS_SECTION_2D\n");
 
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
 	//
 	// Initialise the vertex array for rendering cross-section geometry.
 	//
 
-	// Bind vertex array object.
-	gl.BindVertexArray(d_cross_section_vertex_array);
+	// Bind vertex element buffer object to the vertex array object.
+	gl.VertexArrayElementBuffer(d_cross_section_vertex_array, d_streaming_vertex_element_buffer->get_buffer());
 
-	// Bind vertex element buffer object to currently bound vertex array object.
-	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_streaming_vertex_element_buffer->get_buffer());
+	// Bind vertex buffer object to the vertex array object.
+	gl.VertexArrayVertexBuffer(d_cross_section_vertex_array,
+			0/*bindingindex*/, d_streaming_vertex_buffer->get_buffer(), 0/*offset*/, sizeof(CrossSectionVertex));
 
-	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-	gl.BindBuffer(GL_ARRAY_BUFFER, d_streaming_vertex_buffer->get_buffer());
-
-	// Specify vertex attributes in currently bound vertex buffer object.
-	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-	// to currently bound vertex array object.
+	// Specify vertex attributes.
 	//
 	// The "surface_point" attribute data is index 0, and a 'vec3' vertex attribute.
-	gl.EnableVertexAttribArray(0);
-	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-			sizeof(CrossSectionVertex), BUFFER_OFFSET(CrossSectionVertex, surface_point[0]));
+	gl.EnableVertexArrayAttrib(d_cross_section_vertex_array, 0);
+	gl.VertexArrayAttribFormat(d_cross_section_vertex_array, 0,
+			3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(CrossSectionVertex, surface_point[0]));
 }
 
 
@@ -2554,24 +2543,20 @@ GPlatesOpenGL::GLScalarField3D::initialise_surface_fill_mask_rendering(
 	// Initialise the vertex array for rendering surface fill mask.
 	//
 
-	// Bind vertex array object.
-	gl.BindVertexArray(d_surface_fill_mask_vertex_array);
+	// Bind vertex element buffer object to the vertex array object.
+	gl.VertexArrayElementBuffer(d_surface_fill_mask_vertex_array, d_streaming_vertex_element_buffer->get_buffer());
 
-	// Bind vertex element buffer object to currently bound vertex array object.
-	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_streaming_vertex_element_buffer->get_buffer());
+	// Bind vertex buffer object to the vertex array object.
+	gl.VertexArrayVertexBuffer(d_surface_fill_mask_vertex_array,
+			0/*bindingindex*/, d_streaming_vertex_buffer->get_buffer(), 0/*offset*/, sizeof(SurfaceFillMaskVertex));
 
-	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-	gl.BindBuffer(GL_ARRAY_BUFFER, d_streaming_vertex_buffer->get_buffer());
-
-	// Specify vertex attributes in currently bound vertex buffer object.
-	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-	// to currently bound vertex array object.
+	// Specify vertex attributes.
 	//
 	// The "surface_point" attribute data is index 0, and is the surface point packed in the
 	// (x,y,z) components of 'vec4' vertex attribute.
-	gl.EnableVertexAttribArray(0);
-	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-			sizeof(SurfaceFillMaskVertex), BUFFER_OFFSET(SurfaceFillMaskVertex, surface_point[0]));
+	gl.EnableVertexArrayAttrib(d_surface_fill_mask_vertex_array, 0);
+	gl.VertexArrayAttribFormat(d_surface_fill_mask_vertex_array, 0,
+			3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(SurfaceFillMaskVertex, surface_point[0]));
 }
 
 
@@ -2606,24 +2591,20 @@ GPlatesOpenGL::GLScalarField3D::initialise_volume_fill_boundary_rendering(
 	// Initialise the vertex array for rendering volume fill boundary.
 	//
 
-	// Bind vertex array object.
-	gl.BindVertexArray(d_volume_fill_boundary_vertex_array);
+	// Bind vertex element buffer object to the vertex array object.
+	gl.VertexArrayElementBuffer(d_volume_fill_boundary_vertex_array, d_streaming_vertex_element_buffer->get_buffer());
 
-	// Bind vertex element buffer object to currently bound vertex array object.
-	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_streaming_vertex_element_buffer->get_buffer());
+	// Bind vertex buffer object to the vertex array object.
+	gl.VertexArrayVertexBuffer(d_volume_fill_boundary_vertex_array,
+			0/*bindingindex*/, d_streaming_vertex_buffer->get_buffer(), 0/*offset*/, sizeof(VolumeFillBoundaryVertex));
 
-	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-	gl.BindBuffer(GL_ARRAY_BUFFER, d_streaming_vertex_buffer->get_buffer());
-
-	// Specify vertex attributes in currently bound vertex buffer object.
-	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-	// to currently bound vertex array object.
+	// Specify vertex attributes.
 	//
 	// The "surface_point" attribute data is index 0, and is the surface point packed in the
 	// (x,y,z) components of 'vec4' vertex attribute.
-	gl.EnableVertexAttribArray(0);
-	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,
-			sizeof(VolumeFillBoundaryVertex), BUFFER_OFFSET(VolumeFillBoundaryVertex, surface_point[0]));
+	gl.EnableVertexArrayAttrib(d_volume_fill_boundary_vertex_array, 0);
+	gl.VertexArrayAttribFormat(d_volume_fill_boundary_vertex_array, 0,
+			3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(VolumeFillBoundaryVertex, surface_point[0]));
 }
 
 

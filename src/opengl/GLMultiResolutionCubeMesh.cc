@@ -181,37 +181,30 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::create_cube_face_vertex_and_index_arra
 	d_meshes_vertex_buffer[cube_face] = vertex_buffer;
 	d_meshes_vertex_element_buffer[cube_face] = vertex_element_buffer;
 
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	// Bind vertex array object.
-	gl.BindVertexArray(vertex_array);
-
-	// Bind vertex element buffer object to currently bound vertex array object.
-	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_element_buffer);
-
-	// Transfer vertex element data to currently bound vertex element buffer object.
-	gl.BufferData(
-			GL_ELEMENT_ARRAY_BUFFER,
+	// Transfer vertex element data to the vertex element buffer object.
+	gl.NamedBufferStorage(
+			vertex_element_buffer,
 			mesh_indices.size() * sizeof(mesh_indices[0]),
 			mesh_indices.data(),
-			GL_STATIC_DRAW);
+			0/*flags*/);
 
-	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-	gl.BindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-
-	// Transfer vertex data to currently bound vertex buffer object.
-	gl.BufferData(
-			GL_ARRAY_BUFFER,
+	// Transfer vertex data to the vertex buffer object.
+	gl.NamedBufferStorage(
+			vertex_buffer,
 			mesh_vertices.size() * sizeof(mesh_vertices[0]),
 			mesh_vertices.data(),
-			GL_STATIC_DRAW);
+			0/*flags*/);
 
-	// Specify vertex attributes (position) in currently bound vertex buffer object.
-	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-	// to currently bound vertex array object.
-	gl.EnableVertexAttribArray(0);
-	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLVertexUtils::Vertex), BUFFER_OFFSET(GLVertexUtils::Vertex, x));
+	// Bind vertex element buffer object to the vertex array object.
+	gl.VertexArrayElementBuffer(vertex_array, vertex_element_buffer);
+
+	// Bind vertex buffer object to the vertex array object.
+	gl.VertexArrayVertexBuffer(vertex_array, 0/*bindingindex*/, vertex_buffer, 0/*offset*/, sizeof(GLVertexUtils::Vertex));
+
+	// Specify vertex attributes (position).
+	gl.EnableVertexArrayAttrib(vertex_array, 0);
+	gl.VertexArrayAttribFormat(vertex_array, 0, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(GLVertexUtils::Vertex, x));
+	gl.VertexArrayAttribBinding(vertex_array, 0, 0/*bindingindex*/);
 }
 
 

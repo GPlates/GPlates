@@ -96,6 +96,7 @@ namespace GPlatesOpenGL
 		//
 
 		GLuint gl_max_vertex_attribs; // GL_MAX_VERTEX_ATTRIBS
+		GLuint gl_max_vertex_attrib_bindings; // GL_MAX_VERTEX_ATTRIB_BINDINGS
 
 		GLuint gl_max_clip_distances; // GL_MAX_CLIP_DISTANCES
 

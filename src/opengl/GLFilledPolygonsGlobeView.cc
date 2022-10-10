@@ -1140,22 +1140,20 @@ void
 GPlatesOpenGL::GLFilledPolygonsGlobeView::create_drawables_vertex_array(
 		GL &gl)
 {
-	// Bind vertex array object.
-	gl.BindVertexArray(d_drawables_vertex_array);
+	// Bind vertex element buffer object to the vertex array object.
+	gl.VertexArrayElementBuffer(d_drawables_vertex_array, d_drawables_vertex_element_buffer);
 
-	// Bind vertex element buffer object to currently bound vertex array object.
-	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_drawables_vertex_element_buffer);
+	// Bind vertex buffer object to the vertex array object.
+	gl.VertexArrayVertexBuffer(d_drawables_vertex_array, 0/*bindingindex*/, d_drawables_vertex_buffer, 0/*offset*/, sizeof(drawable_vertex_type));
 
-	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-	gl.BindBuffer(GL_ARRAY_BUFFER, d_drawables_vertex_buffer);
+	// Specify vertex attributes (position and colour).
+	gl.EnableVertexArrayAttrib(d_drawables_vertex_array, 0);
+	gl.VertexArrayAttribFormat(d_drawables_vertex_array, 0, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(drawable_vertex_type, x));
+	gl.VertexArrayAttribBinding(d_drawables_vertex_array, 0, 0/*bindingindex*/);
 
-	// Specify vertex attributes (position and colour) in currently bound vertex buffer object.
-	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-	// to currently bound vertex array object.
-	gl.EnableVertexAttribArray(0);
-	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(drawable_vertex_type), BUFFER_OFFSET(drawable_vertex_type, x));
-	gl.EnableVertexAttribArray(1);
-	gl.VertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(drawable_vertex_type), BUFFER_OFFSET(drawable_vertex_type, colour));
+	gl.EnableVertexArrayAttrib(d_drawables_vertex_array, 1);
+	gl.VertexArrayAttribFormat(d_drawables_vertex_array, 1, 4, GL_UNSIGNED_BYTE, GL_TRUE, ATTRIB_OFFSET_IN_VERTEX(drawable_vertex_type, colour));
+	gl.VertexArrayAttribBinding(d_drawables_vertex_array, 1, 0/*bindingindex*/);
 }
 
 
@@ -1166,36 +1164,24 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::write_filled_drawables_to_vertex_array
 {
 	//PROFILE_FUNC();
 
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	// Bind the vertex array - this binds the vertex *element* buffer (before we load data into it).
-	gl.BindVertexArray(d_drawables_vertex_array);
-
-	// Bind vertex buffer object (before we load data into it).
-	//
-	// Note: Unlike the vertex *element* buffer this vertex buffer binding is not stored in vertex array object state.
-	//       So we have to explicitly bind the vertex buffer before storing data in it.
-	gl.BindBuffer(GL_ARRAY_BUFFER, d_drawables_vertex_buffer);
-
 	//
 	// It's not 'stream' because the same filled drawables are accessed many times.
-	// It's not 'dynamic' because we allocate a new buffer (ie, gl.BufferData does not modify existing buffer).
+	// It's not 'dynamic' because we allocate a new buffer (ie, gl.NamedBufferData does not modify existing buffer).
 	// We really want to encourage this to be in video memory (even though it's only going to live
 	// there for a single rendering frame) because there are many accesses to this buffer as the same
 	// drawables are rendered into multiple tiles (otherwise the PCI bus bandwidth becomes the limiting factor).
 	//
 
-	// Transfer vertex element data to currently bound vertex element buffer object.
-	gl.BufferData(
-			GL_ELEMENT_ARRAY_BUFFER,
+	// Transfer vertex element data to the vertex element buffer object.
+	gl.NamedBufferData(
+			d_drawables_vertex_element_buffer,
 			filled_drawables.d_drawable_vertex_elements.size() * sizeof(filled_drawables.d_drawable_vertex_elements[0]),
 			filled_drawables.d_drawable_vertex_elements.data(),
 			GL_STATIC_DRAW);
 
-	// Transfer vertex element data to currently bound vertex buffer object.
-	gl.BufferData(
-			GL_ARRAY_BUFFER,
+	// Transfer vertex element data to the vertex buffer object.
+	gl.NamedBufferData(
+			d_drawables_vertex_buffer,
 			filled_drawables.d_drawable_vertices.size() * sizeof(filled_drawables.d_drawable_vertices[0]),
 			filled_drawables.d_drawable_vertices.data(),
 			GL_STATIC_DRAW);
