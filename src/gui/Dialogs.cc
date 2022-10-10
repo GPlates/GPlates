@@ -43,6 +43,7 @@
 
 #include "presentation/ViewState.h"
 
+#include "qt-widgets/GlobeAndMapWidget.h"
 #include "qt-widgets/GPlatesDialog.h"
 #include "qt-widgets/QtWidgetUtils.h"
 #include "qt-widgets/ReconstructionViewWidget.h"
@@ -297,7 +298,7 @@ GPlatesGui::Dialogs::pop_up_configure_graticules_dialog()
 {
 	if (configure_graticules_dialog().exec(view_state().get_graticule_settings()) == QDialog::Accepted)
 	{
-		viewport_window().reconstruction_view_widget().update();
+		viewport_window().reconstruction_view_widget().globe_and_map_widget().update_canvas();
 	}
 }
 
@@ -322,7 +323,7 @@ GPlatesGui::Dialogs::pop_up_configure_text_overlay_dialog()
 {
 	if (configure_text_overlay_dialog().exec(view_state().get_text_overlay_settings()) == QDialog::Accepted)
 	{
-		viewport_window().reconstruction_view_widget().update();
+		viewport_window().reconstruction_view_widget().globe_and_map_widget().update_canvas();
 	}
 }
 
@@ -346,7 +347,7 @@ GPlatesGui::Dialogs::pop_up_configure_velocity_legend_overlay_dialog()
 {
 	if (configure_velocity_legend_overlay_dialog().exec(view_state().get_velocity_legend_overlay_settings()) == QDialog::Accepted)
 	{
-		viewport_window().reconstruction_view_widget().update();
+		viewport_window().reconstruction_view_widget().globe_and_map_widget().update_canvas();
 	}
 }
 

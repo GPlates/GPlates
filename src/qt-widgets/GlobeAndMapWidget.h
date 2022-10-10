@@ -160,6 +160,14 @@ namespace GPlatesQtWidgets
 		GPlatesGlobal::PointerTraits<GPlatesOpenGL::GLVisualLayers>::non_null_ptr_type
 		get_gl_visual_layers();
 
+		/**
+		 * Update the globe and map canvas.
+		 *
+		 * NOTE: This is better than calling QWidget::update() on this GlobeAndMapWidget.
+		 *       Presumably because our child GlobeAndMapCanvas is a native OpenGL/Vulkan window
+		 *       wrapped in a call to QWidget::createWindowContainer() and somehow a QWidget::update()
+		 *       does not get passed through.
+		 */
 		void
 		update_canvas();
 
