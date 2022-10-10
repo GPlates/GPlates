@@ -2439,7 +2439,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::bind_vertex_element_buffer(
 		// Bind vertex element buffer object.
 		//
 		// NOTE: Also binds element buffer to the currently bound vertex array object.
-		//       So caller must ensure a vertex array object is currently bound (required by OpenGL 3.3 core).
+		//       So caller must ensure a vertex array object is currently bound (required by modern OpenGL).
 		gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_element_buffer);
 
 		return num_indices_per_tile;
@@ -2507,7 +2507,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::bind_vertex_element_buffer(
 	// Bind vertex element buffer object.
 	//
 	// NOTE: Also binds element buffer to the currently bound vertex array object.
-	//       So caller must ensure a vertex array object is currently bound (required by OpenGL 3.3 core).
+	//       So caller must ensure a vertex array object is currently bound (required by modern OpenGL).
 	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_element_buffer);
 
 	// Transfer vertex element data to currently bound vertex element buffer object.

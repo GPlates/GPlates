@@ -485,7 +485,7 @@ namespace GPlatesOpenGL
 		/**
 		 * glPolygonMode.
 		 *
-		 * NOTE: OpenGL 3.3 core requires 'face' (parameter of glPolygonMode) to be 'GL_FRONT_AND_BACK'.
+		 * NOTE: Modern OpenGL requires 'face' (parameter of glPolygonMode) to be 'GL_FRONT_AND_BACK'.
 		 */
 		void
 		polygon_mode(

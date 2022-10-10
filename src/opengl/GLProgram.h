@@ -178,7 +178,7 @@ namespace GPlatesOpenGL
 		 * Get the uniform location index (in default uniform block) of the specified uniform variable name.
 		 *
 		 * Returns -1 if @a uniform_name is not an active uniform.
-		 * Note: Calling glUniform* with a location of -1 is *not* an error according to OpenGL 3.3 core specification
+		 * Note: Calling glUniform* with a location of -1 is *not* an error according to the OpenGL specification
 		 *       (instead the glUniform* call is silently ignored).
 		 *
 		 * You can use the returned location with a gl.Uniform* call. Such as:

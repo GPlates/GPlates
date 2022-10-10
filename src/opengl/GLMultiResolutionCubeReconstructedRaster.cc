@@ -256,7 +256,7 @@ GPlatesOpenGL::GLMultiResolutionCubeReconstructedRaster::render_raster_data_into
 	if (!d_have_checked_tile_framebuffer_completeness)
 	{
 		// Throw OpenGLException if not complete.
-		// This should succeed since we should only be using texture formats that are required by OpenGL 3.3 core.
+		// This should succeed since we should only be using texture formats that are required by modern OpenGL.
 		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,

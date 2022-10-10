@@ -2216,7 +2216,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	if (!d_have_checked_framebuffer_completeness)
 	{
 		// Throw OpenGLException if not complete.
-		// This should succeed since we should only be using texture formats that are required by OpenGL 3.3 core.
+		// This should succeed since we should only be using texture formats that are required by modern OpenGL.
 		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,
@@ -2365,7 +2365,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	if (!d_have_checked_framebuffer_completeness)
 	{
 		// Throw OpenGLException if not complete.
-		// This should succeed since we should only be using texture formats that are required by OpenGL 3.3 core.
+		// This should succeed since we should only be using texture formats that are required by modern OpenGL.
 		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,
@@ -4826,7 +4826,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_reduction_of_reduce_stage(
 	if (!d_have_checked_framebuffer_completeness)
 	{
 		// Throw OpenGLException if not complete.
-		// This should succeed since we should only be using texture formats that are required by OpenGL 3.3 core.
+		// This should succeed since we should only be using texture formats that are required by modern OpenGL.
 		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,
@@ -5031,7 +5031,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_target_raster(
 	if (!d_have_checked_framebuffer_completeness)
 	{
 		// Throw OpenGLException if not complete.
-		// This should succeed since we should only be using texture formats that are required by OpenGL 3.3 core.
+		// This should succeed since we should only be using texture formats that are required by modern OpenGL.
 		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,
@@ -5651,7 +5651,7 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::queue_reduce_pyramid_output
 	if (!have_checked_framebuffer_completeness)
 	{
 		// Throw OpenGLException if not complete.
-		// This should succeed since we should only be using texture formats that are required by OpenGL 3.3 core.
+		// This should succeed since we should only be using texture formats that are required by modern OpenGL.
 		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,

@@ -524,7 +524,7 @@ GPlatesOpenGL::GLNormalMapSource::convert_height_field_to_normal_map(
 	if (!d_have_checked_framebuffer_completeness_normal_map_generation)
 	{
 		// Throw OpenGLException if not complete.
-		// This should succeed since we're using GL_RGBA8 texture format (which is required by OpenGL 3.3 core).
+		// This should succeed since we're using GL_RGBA8 texture format (which is required by modern OpenGL).
 		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,

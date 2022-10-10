@@ -280,7 +280,7 @@ GPlatesOpenGL::GLLight::check_framebuffer_completeness_map_view_light_direction_
 			GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X, d_map_view_light_direction_cube_texture, 0/*level*/);
 
 	// Throw OpenGLException if not complete.
-	// This should succeed since we're using GL_RGBA8 texture format (which is required by OpenGL 3.3 core).
+	// This should succeed since we're using GL_RGBA8 texture format (which is required by modern OpenGL).
 	const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 	GPlatesGlobal::Assert<OpenGLException>(
 			completeness == GL_FRAMEBUFFER_COMPLETE,

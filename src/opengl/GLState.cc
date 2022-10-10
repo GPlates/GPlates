@@ -477,7 +477,7 @@ GPlatesOpenGL::GLState::enable(
 
 	if (d_state_set_keys->is_capability_indexed(cap))
 	{
-		// According to the 3.3 core spec:
+		// According to the OpenGL spec:
 		//
 		//   In general, passing an indexed capability to glEnable or glDisable will enable or disable
 		//   that capability for all indices, respectively.

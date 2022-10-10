@@ -251,7 +251,7 @@ GPlatesOpenGL::GL::BlendFuncSeparate(
 	d_current_state->blend_func_separate(src_RGB, dst_RGB, src_alpha, dst_alpha);
 }
 
-		
+
 void
 GPlatesOpenGL::GL::BufferData(
 		GLenum target,
@@ -835,7 +835,7 @@ GPlatesOpenGL::GL::PolygonMode(
 		GLenum face,
 		GLenum mode)
 {
-	// OpenGL 3.3 core requires 'face' to be 'GL_FRONT_AND_BACK'.
+	// Modern OpenGL requires 'face' to be 'GL_FRONT_AND_BACK'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			face == GL_FRONT_AND_BACK,
 			GPLATES_ASSERTION_SOURCE);

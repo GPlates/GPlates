@@ -53,6 +53,7 @@ namespace GPlatesOpenGL
 		// Viewport
 		//
 
+		GLuint gl_max_viewports; // GL_MAX_VIEWPORTS
 		GLuint gl_max_viewport_dims[2]; // GL_MAX_VIEWPORT_DIMS
 
 

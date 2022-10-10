@@ -146,7 +146,7 @@ namespace GPlatesOpenGL
 			KEY_PIXEL_STORE_UNPACK_IMAGE_HEIGHT,
 			KEY_PIXEL_STORE_UNPACK_SKIP_IMAGES,
 			KEY_POINT_SIZE,
-			// OpenGL 3.3 core requires 'face' (parameter of glPolygonMode) to be 'GL_FRONT_AND_BACK'...
+			// Modern OpenGL requires 'face' (parameter of glPolygonMode) to be 'GL_FRONT_AND_BACK'...
 			KEY_POLYGON_MODE_FRONT_AND_BACK,
 			KEY_POLYGON_OFFSET,
 			KEY_PRIMITIVE_RESTART_INDEX,

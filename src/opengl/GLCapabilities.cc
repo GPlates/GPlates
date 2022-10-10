@@ -34,8 +34,9 @@
 
 GPlatesOpenGL::GLCapabilities::GLCapabilities() :
 	//
-	// Note: Non-zero values represent the minimum required by OpenGL 3.3 (core) for all implementations.
+	// Note: Non-zero values represent the minimum required by OpenGL for all implementations.
 	//
+	gl_max_viewports(16),
 	gl_max_color_attachments(8),
 	gl_max_renderbuffer_size(1024),
 	gl_max_draw_buffers(8),
@@ -95,6 +96,8 @@ GPlatesOpenGL::GLCapabilities::initialise(
 	//
 	// Viewport
 	//
+
+	gl_max_viewports = query_integer(opengl_functions, GL_MAX_VIEWPORTS);
 
 	GLint max_viewport_dims[2];
 	opengl_functions.glGetIntegerv(GL_MAX_VIEWPORT_DIMS, &max_viewport_dims[0]);

@@ -80,7 +80,7 @@ GPlatesOpenGL::GLContext::set_default_surface_format()
 	// Forward compatibility removes support for wide lines (but wide lines are not supported on macOS anyway, and that includes Vulkan).
 	default_surface_format.setProfile(QSurfaceFormat::CoreProfile);
 
-	// GL_DEPTH24_STENCIL8 is a specified required format (by OpenGL 3.3 core).
+	// GL_DEPTH24_STENCIL8 is a specified required format (by modern OpenGL).
 	default_surface_format.setDepthBufferSize(24);
 	default_surface_format.setStencilBufferSize(8);
 

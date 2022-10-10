@@ -182,7 +182,7 @@ GPlatesOpenGL::GLStateSetKeys::key_type
 GPlatesOpenGL::GLStateSetKeys::get_clamp_color_key(
 		GLenum target) const
 {
-	// OpenGL 3.3 core supports only the GL_CLAMP_READ_COLOR target.
+	// Modern OpenGL supports only the GL_CLAMP_READ_COLOR target.
 	// GL_CLAMP_VERTEX_COLOR and GL_CLAMP_FRAGMENT_COLOR have been deprecated (removed in core).
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			target == GL_CLAMP_READ_COLOR,
@@ -254,8 +254,6 @@ GPlatesOpenGL::GLStateSetKeys::get_capability_key(
 	// Unsupported capability.
 	qWarning() << "glEnable/glDisable capability not supported.";
 	GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
-
-	return 0;  // Avoid compiler error - shouldn't get here though (due to abort).
 }
 
 
@@ -263,8 +261,8 @@ bool
 GPlatesOpenGL::GLStateSetKeys::is_capability_indexed(
 		GLenum cap) const
 {
-	// In OpenGL 3.3 core the only indexed capability (glEnablei/glDisablei) is blending.
-	return cap == GL_BLEND;
+	// The only indexed capabilities (glEnablei/glDisablei) are blending and scissor test.
+	return cap == GL_BLEND || cap == GL_SCISSOR_TEST;
 }
 
 
@@ -272,17 +270,19 @@ GLuint
 GPlatesOpenGL::GLStateSetKeys::get_num_capability_indices(
 		GLenum cap) const
 {
-	// In OpenGL 3.3 core the only indexed capability (glEnablei/glDisablei) is blending.
+	// The only indexed capabilities (glEnablei/glDisablei) are blending and scissor test.
 	if (cap == GL_BLEND)
 	{
 		return d_capabilities.gl_max_draw_buffers;
+	}
+	else if (cap == GL_SCISSOR_TEST)
+	{
+		return d_capabilities.gl_max_viewports;
 	}
 
 	// Indexing not supported for specified capability.
 	qWarning() << "Indexing (glEnablei/glDisablei) not supported for capability.";
 	GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
-
-	return 0;  // Avoid compiler error - shouldn't get here though (due to abort).
 }
 
 

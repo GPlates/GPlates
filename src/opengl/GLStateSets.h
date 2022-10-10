@@ -1435,7 +1435,7 @@ namespace GPlatesOpenGL
 	/**
 	 * Used to set the polygon mode.
 	 *
-	 * NOTE: OpenGL 3.3 core requires 'face' (parameter of glPolygonMode) to be 'GL_FRONT_AND_BACK'.
+	 * NOTE: Modern OpenGL requires 'face' (parameter of glPolygonMode) to be 'GL_FRONT_AND_BACK'.
 	 */
 	struct GLPolygonModeStateSet :
 			public GLStateSet

@@ -1107,7 +1107,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_tile_stencil_buffer(
 	gl.BindRenderbuffer(GL_RENDERBUFFER, d_tile_stencil_buffer);
 
 	// Allocate a stencil buffer.
-	// Note that (in OpenGL 3.3 core) an OpenGL implementation is only *required* to provide stencil if a
+	// Note that (in modern OpenGL) an OpenGL implementation is only *required* to provide stencil if a
 	// depth/stencil format is requested, and furthermore GL_DEPTH24_STENCIL8 is a specified required format.
 	gl.RenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, d_tile_texel_dimension, d_tile_texel_dimension);
 }
