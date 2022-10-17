@@ -81,6 +81,7 @@ GPlatesOpenGL::GLCapabilities::initialise(
 #endif
 )
 {
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
 	//
 	// Viewport
 	//
@@ -159,6 +160,7 @@ GPlatesOpenGL::GLCapabilities::initialise(
 #endif
 
 	gl_max_texture_array_layers = query_integer(opengl_functions, GL_MAX_ARRAY_TEXTURE_LAYERS);
+#endif
 
 	// Capabilities have been successfully initialised.
 	d_is_initialised = true;

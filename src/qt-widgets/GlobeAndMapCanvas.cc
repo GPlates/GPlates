@@ -251,6 +251,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initialize_gl()
 	// Initialise our context-like object first.
 	d_gl_context->initialise_gl(*this);
 
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
 	// Start a render scope (all GL calls should be done inside this scope).
 	//
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
@@ -265,6 +266,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initialize_gl()
 
 	// Initialise the scene renderer.
 	d_scene_renderer->initialise_gl(*gl);
+#endif
 
 	// 'initializeGL()' should only be called once.
 	d_initialised_gl = true;
@@ -274,6 +276,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initialize_gl()
 void 
 GPlatesQtWidgets::GlobeAndMapCanvas::shutdown_gl() 
 {
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
 	// Start a render scope (all GL calls should be done inside this scope).
 	//
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
@@ -286,6 +289,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::shutdown_gl()
 		// Shutdown the scene renderer.
 		d_scene_renderer->shutdown_gl(*gl);
 	}
+#endif
 
 	// Shutdown our context-like object last.
 	d_gl_context->shutdown_gl();
@@ -467,6 +471,8 @@ GPlatesQtWidgets::GlobeAndMapCanvas::paint_gl()
 GPlatesQtWidgets::GlobeAndMapCanvas::paintGL()
 #endif
 {
+#if !defined(GPLATES_USE_VULKAN_BACKEND)
+
 	// Start a render scope (all GL calls should be done inside this scope).
 	//
 	// NOTE: Before calling this, OpenGL should be in the default OpenGL state.
@@ -493,6 +499,31 @@ GPlatesQtWidgets::GlobeAndMapCanvas::paintGL()
 
 	// Render the scene into the canvas.
 	d_scene_renderer->render(*gl, *d_scene, *d_scene_overlays, *d_scene_view, viewport, clear_colour, devicePixelRatio());
+
+#else
+
+	QVulkanDeviceFunctions *device_functions = vulkanInstance()->deviceFunctions(device());
+
+	VkClearColorValue clearColor = { { 1.0f, 0.0f, 0.0f, 1.0f } };
+	VkClearDepthStencilValue clearDS = { 1.0f, 0 };
+	VkClearValue clearValues[3];
+	memset(clearValues, 0, sizeof(clearValues));
+	clearValues[0].color = clearValues[2].color = clearColor;
+	clearValues[1].depthStencil = clearDS;
+
+	VkRenderPassBeginInfo rpBeginInfo;
+	memset(&rpBeginInfo, 0, sizeof(rpBeginInfo));
+	rpBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	rpBeginInfo.renderPass = defaultRenderPass();
+	rpBeginInfo.framebuffer = currentFramebuffer();
+	rpBeginInfo.renderArea.extent.width = swapChainImageSize().width();
+	rpBeginInfo.renderArea.extent.height = swapChainImageSize().height();
+	rpBeginInfo.clearValueCount = sampleCountFlagBits() > VK_SAMPLE_COUNT_1_BIT ? 3 : 2;
+	rpBeginInfo.pClearValues = clearValues;
+	device_functions->vkCmdBeginRenderPass(currentCommandBuffer(), &rpBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+	device_functions->vkCmdEndRenderPass(currentCommandBuffer());
+
+#endif
 }
 
 
