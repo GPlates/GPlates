@@ -407,7 +407,7 @@ void
 GPlatesQtWidgets::GlobeAndMapCanvas::vulkan_queue_create_info_modifier(
 		const VkQueueFamilyProperties *queue_family_properties_seq,
 		uint32_t queue_count,
-		QList<VkDeviceQueueCreateInfo> &queue_create_infos)
+		vulkan_queue_create_info_seq_type &queue_create_infos)
 {
 	// First search the existing queue creation infos to see if one of the queues being created by
 	// 'this' QVulkanWindow supports 'compute' (it's likely the 'graphics' queue also supports 'compute').

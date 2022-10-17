@@ -365,6 +365,12 @@ namespace GPlatesQtWidgets
 		void
 		set_vulkan_physical_device_index();
 
+		// QVulkanWindow::setQueueCreateInfoModifier() changed signature in Qt6 (using QList instead of QVector).
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+		typedef QList<VkDeviceQueueCreateInfo> vulkan_queue_create_info_seq_type;
+#else
+		typedef QVector<VkDeviceQueueCreateInfo> vulkan_queue_create_info_seq_type;
+#endif
 		/**
 		 * Ensure that either this QVulkanWindow's 'graphics' queue (yet to be created) supports 'compute' or
 		 * request creation of an extra queue from a 'compute' queue family (when the logical device is created).
@@ -381,7 +387,7 @@ namespace GPlatesQtWidgets
 		vulkan_queue_create_info_modifier(
 				const VkQueueFamilyProperties *queue_family_properties_seq,
 				uint32_t queue_count,
-				QList<VkDeviceQueueCreateInfo> &queue_create_infos);
+				vulkan_queue_create_info_seq_type &queue_create_infos);
 
 
 		/**
