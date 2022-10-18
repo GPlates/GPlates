@@ -320,31 +320,13 @@ GPlatesQtWidgets::GlobeAndMapCanvas::shutdown_gl()
 void
 GPlatesQtWidgets::GlobeAndMapCanvas::set_vulkan_physical_device_index()
 {
-	// Get the Vulkan instance and instance functions.
-	QVulkanInstance *vulkan_instance = vulkanInstance();
-	QVulkanFunctions *vulkan_functions = vulkan_instance->functions();
-
-	// Get the physical device count.
-	uint32_t physical_device_count;
-	VkResult err = vulkan_functions->vkEnumeratePhysicalDevices(
-			vulkan_instance->vkInstance(),
-			&physical_device_count,
-			nullptr);
-	GPlatesGlobal::Assert<GPlatesOpenGL::VulkanException>(
-			err == VK_SUCCESS,
-			GPLATES_ASSERTION_SOURCE,
-			QStringLiteral("Failed to get physical device count: %1").arg(err).toStdString());
+	// Get the Vulkan instance.
+	//
+	// Note: We don't access 'd_vulkan' since it has not been initialised yet.
+	vk::Instance vulkan_instance = vulkanInstance()->vkInstance();
 
 	// Get the physical devices.
-	std::vector<VkPhysicalDevice> physical_devices(physical_device_count);
-	err = vulkan_functions->vkEnumeratePhysicalDevices(
-			vulkan_instance->vkInstance(),
-			&physical_device_count,
-			physical_devices.data());
-	GPlatesGlobal::Assert<GPlatesOpenGL::VulkanException>(
-			err == VK_SUCCESS,
-			GPLATES_ASSERTION_SOURCE,
-			QStringLiteral("Failed to enumerate physical devices: %1").arg(err).toStdString());
+	const std::vector<vk::PhysicalDevice> physical_devices = vulkan_instance.enumeratePhysicalDevices();
 
 	// Find candidate physical devices with a queue family supporting both graphics and compute.
 	//
@@ -353,26 +335,17 @@ GPlatesQtWidgets::GlobeAndMapCanvas::set_vulkan_physical_device_index()
 	//    at least one physical device exposed by the implementation must support both graphics and compute operations."
 	//
 	std::vector<uint32_t> candidate_physical_device_indices;
-	for (uint32_t physical_device_index = 0; physical_device_index < physical_device_count; ++physical_device_index)
+	for (uint32_t physical_device_index = 0; physical_device_index < physical_devices.size(); ++physical_device_index)
 	{
-		// Get the queue family property count.
-		uint32_t queue_family_properties_count;
-		vulkan_functions->vkGetPhysicalDeviceQueueFamilyProperties(
-				physical_devices[physical_device_index],
-				&queue_family_properties_count, nullptr);
-
 		// Get the queue family properties.
-		std::vector<VkQueueFamilyProperties> queue_family_properties_seq(queue_family_properties_count);
-		vulkan_functions->vkGetPhysicalDeviceQueueFamilyProperties(
-				physical_devices[physical_device_index],
-				&queue_family_properties_count,
-				queue_family_properties_seq.data());
+		const std::vector<vk::QueueFamilyProperties> queue_family_properties_seq =
+				physical_devices[physical_device_index].getQueueFamilyProperties();
 
 		// See if any queue family supports both graphics and compute.
 		for (const auto &queue_family_properties : queue_family_properties_seq)
 		{
-			if ((queue_family_properties.queueFlags & VK_QUEUE_GRAPHICS_BIT) &&
-				(queue_family_properties.queueFlags & VK_QUEUE_COMPUTE_BIT))
+			if ((queue_family_properties.queueFlags & vk::QueueFlagBits::eGraphics) &&
+				(queue_family_properties.queueFlags & vk::QueueFlagBits::eCompute))
 			{
 				candidate_physical_device_indices.push_back(physical_device_index);
 				break;
@@ -390,12 +363,10 @@ GPlatesQtWidgets::GlobeAndMapCanvas::set_vulkan_physical_device_index()
 	boost::optional<uint32_t> selected_physical_device_index;
 	for (uint32_t physical_device_index : candidate_physical_device_indices)
 	{
-		VkPhysicalDeviceProperties physical_device_properties;
-		vulkan_functions->vkGetPhysicalDeviceProperties(
-				physical_devices[physical_device_index],
-				&physical_device_properties);
+		const vk::PhysicalDeviceProperties physical_device_properties =
+				physical_devices[physical_device_index].getProperties();
 
-		if (physical_device_properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+		if (physical_device_properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
 		{
 			selected_physical_device_index = physical_device_index;
 			break;
@@ -421,7 +392,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::vulkan_queue_create_info_modifier(
 {
 	// First search the existing queue creation infos to see if one of the queues being created by
 	// 'this' QVulkanWindow supports 'compute' (it's likely the 'graphics' queue also supports 'compute').
-	for (const auto &queue_create_info : queue_create_infos)
+	for (const VkDeviceQueueCreateInfo &queue_create_info : queue_create_infos)
 	{
 		if ((queue_family_properties_seq[queue_create_info.queueFamilyIndex].queueFlags & VK_QUEUE_COMPUTE_BIT))
 		{
@@ -456,16 +427,18 @@ GPlatesQtWidgets::GlobeAndMapCanvas::vulkan_queue_create_info_modifier(
 			"Failed to find a queue family supporting compute.");
 
 	// Specify the compute queue create info.
-	VkDeviceQueueCreateInfo compute_queue_create_info = {};
-	compute_queue_create_info.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	compute_queue_create_info.queueFamilyIndex = compute_queue_family_index.get();
-	compute_queue_create_info.queueCount = 1;
-	const float queue_priorities[] = { 0 };
-	compute_queue_create_info.pQueuePriorities = queue_priorities;
+	const vk::DeviceQueueCreateInfo compute_queue_create_info =
+	{
+		{}, // flags
+		compute_queue_family_index.get(), // queueFamilyIndex
+		1, // queueCount
+		{ 0 } // pQueuePriorities
+	};
 
 	// Add the compute queue create info to the caller's list.
 	// The compute queue will get created when the logical device (VkDevice) is created.
-	queue_create_infos.append(compute_queue_create_info);
+	queue_create_infos.append(
+			static_cast<const VkDeviceQueueCreateInfo &>(compute_queue_create_info));
 
 	// Specify which queue family to obtain (yet to be created) 'compute' queue from.
 	d_vulkan_compute_queue_family_index = compute_queue_family_index.get();
