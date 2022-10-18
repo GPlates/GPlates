@@ -287,7 +287,7 @@ namespace GPlatesAppLogic
 
 #if defined(GPLATES_USE_VULKAN_BACKEND)
 		/**
-		 * The Vulkan graphics and compute library.
+		 * The Vulkan instance.
 		 *
 		 * Note: The Vulkan device (used for rendering) is obtained from a QVulkanWindow (see GlobeAndMapCanvas).
 		 */

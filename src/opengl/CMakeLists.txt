@@ -124,6 +124,8 @@ set(srcs
     OpenGL.h
     OpenGLException.h
     OpenGLFunctions.h
+    VulkanHpp.cc
+    VulkanHpp.h
 )
 
 # Using Vulkan or OpenGL backend.

@@ -54,6 +54,7 @@
 #include "global/config.h" // For GPLATES_USE_VULKAN_BACKEND
 #if defined(GPLATES_USE_VULKAN_BACKEND)
 #	include "opengl/VulkanException.h"
+#	include "opengl/VulkanHpp.h"
 #endif
 
 #include "utils/Profile.h"
@@ -482,8 +483,16 @@ GPlatesAppLogic::ApplicationState::initialise_vulkan()
 				GPLATES_EXCEPTION_SOURCE,
 				"Failed to create Vulkan instance.");
 	}
-
 	qDebug() << "Vulkan enabled validation layers:" << d_vulkan_instance.layers();
+
+	//
+	// Initialise the Vulkan-Hpp C++ interface (around the Vulkan C interface).
+	//
+	// From here onward we'll be able to use the Vulkan-Hpp C++ interface.
+	//
+	GPlatesOpenGL::VulkanHpp::initialise(
+			reinterpret_cast<PFN_vkGetInstanceProcAddr>(d_vulkan_instance.getInstanceProcAddr("vkGetInstanceProcAddr")),
+			d_vulkan_instance.vkInstance());
 }
 #endif
 
