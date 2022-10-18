@@ -20,7 +20,18 @@
 #ifndef GPLATES_OPENGL_VULKAN_H
 #define GPLATES_OPENGL_VULKAN_H
 
+//
+// VMA memory allocator.
+//
+#define VMA_VULKAN_VERSION 1000000 // Vulkan 1.0
+// Get VMA to fetch Vulkan function pointers dynamically using vkGetInstanceProcAddr/vkGetDeviceProcAddr.
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
+#define VMA_STATIC_VULKAN_FUNCTIONS 0
+#include <vma/vk_mem_alloc.h>
+
+//
 // The Vulkan-Hpp C++ interface (around the Vulkan C interface).
+//
 #include "VulkanHpp.h"
 
 #include "utils/ReferenceCount.h"
@@ -45,15 +56,27 @@ namespace GPlatesOpenGL
 		typedef GPlatesUtils::non_null_intrusive_ptr<const Vulkan> non_null_ptr_to_const_type;
 
 
+		/**
+		 * Create a @a Vulkan object.
+		 *
+		 * Note: @a vkGetInstanceProcAddr_ can be obtained from QVulkanInstance using:
+		 *
+		 *           reinterpret_cast<PFN_vkGetInstanceProcAddr>(
+		 *               qvulkan_instance.getInstanceProcAddr("vkGetInstanceProcAddr"))
+		 */
 		static
 		non_null_ptr_type
 		create(
+				PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr_,
 				vk::Instance instance,
 				vk::PhysicalDevice physical_device,
 				vk::Device device)
 		{
-			return non_null_ptr_type(new Vulkan(instance, physical_device, device));
+			return non_null_ptr_type(new Vulkan(vkGetInstanceProcAddr_, instance, physical_device, device));
 		}
+
+
+		~Vulkan();
 
 
 		/**
@@ -88,11 +111,26 @@ namespace GPlatesOpenGL
 		vk::PhysicalDevice d_physical_device;
 		vk::Device d_device;
 
+		/**
+		 * VMA allocator.
+		 *
+		 * All our buffer and image allocations will go through this.
+		 */
+		VmaAllocator d_vma_allocator;
+
 
 		Vulkan(
+				PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr_,
 				vk::Instance instance,
 				vk::PhysicalDevice physical_device,
 				vk::Device device);
+
+		void
+		initialise_vma_allocator(
+				PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr_);
+
+		void
+		destroy_vma_allocator();
 	};
 }
 

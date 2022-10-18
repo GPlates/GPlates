@@ -19,19 +19,31 @@
 
 #include "VulkanHpp.h"
 
+#include "VulkanException.h"
+
+#include "global/GPlatesAssert.h"
+
 
 // This must be used exactly once in our source code to provide storage for the default dynamic dispatcher.
 // This is needed since we're indirectly defining VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE via defining VK_NO_PROTOTYPES.
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
+namespace
+{
+	PFN_vkGetInstanceProcAddr s_vkGetInstanceProcAddr = 0;
+}
+
 
 void
 GPlatesOpenGL::VulkanHpp::initialise(
-		PFN_vkGetInstanceProcAddr get_instance_proc_addr,
+		PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr_,
 		VkInstance instance)
 {
+	// Store the vkGetInstanceProcAddr function pointer so clients can access it later.
+	s_vkGetInstanceProcAddr = vkGetInstanceProcAddr_;
+
 	// Initialise the Vulkan-Hpp global function pointers (like 'vkCreateInstance').
-	VULKAN_HPP_DEFAULT_DISPATCHER.init(get_instance_proc_addr);
+	VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr_);
 
 	// Initialise all remaining Vulkan-Hpp function pointers for instance.
 	VULKAN_HPP_DEFAULT_DISPATCHER.init(instance);
@@ -44,4 +56,16 @@ GPlatesOpenGL::VulkanHpp::initialise(
 	//       (for example QVulkanWindow will destroy and create a new VkDevice on a lost device).
 	//       In any case, such a speed improvement is not really necessary for our application since
 	//       we're not making a lot of Vulkan calls (compared to a game for example).
+}
+
+
+PFN_vkGetInstanceProcAddr
+GPlatesOpenGL::VulkanHpp::get_vkGetInstanceProcAddr()
+{
+	GPlatesGlobal::Assert<VulkanException>(
+			s_vkGetInstanceProcAddr,
+			GPLATES_EXCEPTION_SOURCE,
+			"Accessed get_vkGetInstanceProcAddr() before VulkanHpp initialised.");
+
+	return s_vkGetInstanceProcAddr;
 }

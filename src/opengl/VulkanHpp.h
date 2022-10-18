@@ -46,11 +46,22 @@ namespace GPlatesOpenGL
 		 *   GPlatesOpenGL::VulkanHpp::initialise(
 		 *       reinterpret_cast<PFN_vkGetInstanceProcAddr>(qvulkan_instance.getInstanceProcAddr("vkGetInstanceProcAddr")),
 		 *       qvulkan_instance.vkInstance());
+		 *
+		 * Note: Subsequent calls to @a get_vkGetInstanceProcAddr will return this @a vkGetInstanceProcAddr_.
 		 */
 		void
 		initialise(
-				PFN_vkGetInstanceProcAddr get_instance_proc_addr,
+				PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr_,
 				VkInstance instance);
+
+
+		/**
+		 * Returns the function pointer 'vkGetInstanceProcAddr' passed into @a initialise.
+		 *
+		 * Throws @a VulkanException if @a initialise has not yet been called.
+		 */
+		PFN_vkGetInstanceProcAddr
+		get_vkGetInstanceProcAddr();
 	}
 }
 

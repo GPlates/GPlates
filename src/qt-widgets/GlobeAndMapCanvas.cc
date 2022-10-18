@@ -251,6 +251,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initialize_gl()
 
 	// A new VkDevice just got created, so create a new Vulkan object used to render.
 	d_vulkan = GPlatesOpenGL::Vulkan::create(
+			GPlatesOpenGL::VulkanHpp::get_vkGetInstanceProcAddr(),
 			vulkanInstance()->vkInstance(),
 			physicalDevice(),
 			device());

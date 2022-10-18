@@ -491,6 +491,7 @@ GPlatesAppLogic::ApplicationState::initialise_vulkan()
 	// From here onward we'll be able to use the Vulkan-Hpp C++ interface.
 	//
 	GPlatesOpenGL::VulkanHpp::initialise(
+			// Function pointer to vkGetInstanceProcAddr...
 			reinterpret_cast<PFN_vkGetInstanceProcAddr>(d_vulkan_instance.getInstanceProcAddr("vkGetInstanceProcAddr")),
 			d_vulkan_instance.vkInstance());
 }
