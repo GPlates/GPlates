@@ -124,6 +124,8 @@ set(srcs
     OpenGL.h
     OpenGLException.h
     OpenGLFunctions.h
+    Vulkan.cc
+    Vulkan.h
     VulkanHpp.cc
     VulkanHpp.h
 )

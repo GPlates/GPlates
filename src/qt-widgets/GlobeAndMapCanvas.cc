@@ -58,6 +58,7 @@
 #include "opengl/GLContext.h"
 #include "opengl/GLViewport.h"
 #if defined(GPLATES_USE_VULKAN_BACKEND)
+#	include "opengl/Vulkan.h"
 #	include "opengl/VulkanException.h"
 #endif
 
@@ -248,6 +249,12 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initialize_gl()
 			this, SLOT(shutdown_gl()));
 #endif
 
+	// A new VkDevice just got created, so create a new Vulkan object used to render.
+	d_vulkan = GPlatesOpenGL::Vulkan::create(
+			vulkanInstance()->vkInstance(),
+			physicalDevice(),
+			device());
+
 	// Initialise our context-like object first.
 	d_gl_context->initialise_gl(*this);
 
@@ -293,6 +300,9 @@ GPlatesQtWidgets::GlobeAndMapCanvas::shutdown_gl()
 
 	// Shutdown our context-like object last.
 	d_gl_context->shutdown_gl();
+
+	// Our VkDevice is about to be destroyed, so destroy our Vulkan object used to render.
+	d_vulkan = boost::none;
 
 	d_initialised_gl = false;
 

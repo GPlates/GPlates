@@ -45,6 +45,8 @@
 #	include <QOpenGLWindow>
 #endif
 
+#include "global/PointerTraits.h"
+
 #include "gui/Scene.h"
 #include "gui/SceneOverlays.h"
 #include "gui/SceneRenderer.h"
@@ -65,7 +67,9 @@ namespace GPlatesGui
 
 namespace GPlatesOpenGL
 {
-	class GLTileRender;
+#if defined(GPLATES_USE_VULKAN_BACKEND)
+	class Vulkan;
+#endif
 }
 
 namespace GPlatesPresentation
@@ -539,6 +543,13 @@ namespace GPlatesQtWidgets
 		bool d_initialised_gl;
 
 #if defined(GPLATES_USE_VULKAN_BACKEND)
+		/**
+		 * Reference to the Vulkan graphics and compute library.
+		 *
+		 * Note: We set the Vulkan device in it via our QVulkanWindow.
+		 */
+		boost::optional<GPlatesGlobal::PointerTraits<GPlatesOpenGL::Vulkan>::non_null_ptr_type> d_vulkan;
+
 		/**
 		 * Vulkan queue family index of 'compute' queue created in the VkDevice of this QVulkanWindow.
 		 */
