@@ -47,7 +47,7 @@ GPlatesOpenGL::GLSampler::Allocator::allocate(
 		OpenGLFunctions &opengl_functions)
 {
 	GLuint sampler;
-	opengl_functions.glGenSamplers(1, &sampler);
+	opengl_functions.glCreateSamplers(1, &sampler);
 	return sampler;
 }
 

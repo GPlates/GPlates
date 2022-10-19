@@ -243,14 +243,11 @@ namespace GPlatesOpenGL
 					debug_image.convertToFormat(QImage::Format_ARGB32),
 					debug_rgba8_array);
 
-			// Make sure we leave the OpenGL global state the way it was.
-			GL::StateScope save_restore_state(gl);
-
-			gl.BindTexture(GL_TEXTURE_2D, tile_texture);
-
 			// Load cached image into tile texture.
-			gl.TexSubImage2D(
-					GL_TEXTURE_2D, 0/*level*/,
+			//
+			// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (4 bytes) are a multiple of 4.
+			gl.TextureSubImage2D(
+					tile_texture, 0/*level*/,
 					0/*xoffset*/, 0/*yoffset*/, debug_image.width(), debug_image.height(),
 					GL_RGBA, GL_UNSIGNED_BYTE, debug_rgba8_array.get());
 		}
@@ -668,8 +665,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::set_tile_state(
 	//
 
 	// Bind tile texture to texture unit 0.
-	gl.ActiveTexture(GL_TEXTURE0);
-	gl.BindTexture(GL_TEXTURE_2D, tile_texture);
+	gl.BindTextureUnit(0, tile_texture);
 
 	// Used to transform tile texture coordinates to account for partial coverage of current tile.
 	GLMatrix tile_texture_matrix;
@@ -696,8 +692,7 @@ GPlatesOpenGL::GLMultiResolutionRasterMapView::set_tile_state(
 	if (clip_to_tile_frustum)
 	{
 		// Bind clip texture to texture unit 1.
-		gl.ActiveTexture(GL_TEXTURE1);
-		gl.BindTexture(GL_TEXTURE_2D, d_multi_resolution_map_cube_mesh->get_clip_texture());
+		gl.BindTextureUnit(1, d_multi_resolution_map_cube_mesh->get_clip_texture());
 
 		// State for the clip texture.
 		//

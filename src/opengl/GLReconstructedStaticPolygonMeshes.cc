@@ -590,43 +590,37 @@ GPlatesOpenGL::GLReconstructedStaticPolygonMeshes::create_polygon_mesh_drawables
 		d_present_day_polygon_mesh_drawables.push_back(polygon_mesh_drawable);
 	}
 
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	// Bind vertex array object.
-	gl.BindVertexArray(d_polygon_meshes_vertex_array);
-
-	// Bind vertex element buffer object to currently bound vertex array object.
-	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_polygon_meshes_vertex_element_buffer);
-
-	// Transfer vertex element data to currently bound vertex element buffer object.
+	// Transfer vertex element data to the vertex element buffer object.
 	if (!all_polygon_meshes_indices.empty())
 	{
-		gl.BufferData(
-				GL_ELEMENT_ARRAY_BUFFER,
+		gl.NamedBufferStorage(
+				d_polygon_meshes_vertex_element_buffer,
 				all_polygon_meshes_indices.size() * sizeof(all_polygon_meshes_indices[0]),
 				all_polygon_meshes_indices.data(),
-				GL_STATIC_DRAW);
+				0/*flags*/);
 	}
 
-	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-	gl.BindBuffer(GL_ARRAY_BUFFER, d_polygon_meshes_vertex_buffer);
-
-	// Transfer vertex data to currently bound vertex buffer object.
+	// Transfer vertex data to the vertex buffer object.
 	if (!all_polygon_meshes_vertices.empty())
 	{
-		gl.BufferData(
-				GL_ARRAY_BUFFER,
+		gl.NamedBufferStorage(
+				d_polygon_meshes_vertex_buffer,
 				all_polygon_meshes_vertices.size() * sizeof(all_polygon_meshes_vertices[0]),
 				all_polygon_meshes_vertices.data(),
-				GL_STATIC_DRAW);
+				0/*flags*/);
 	}
 
-	// Specify vertex attributes (position) in currently bound vertex buffer object.
-	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-	// to currently bound vertex array object.
-	gl.EnableVertexAttribArray(0);
-	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLVertexUtils::Vertex), BUFFER_OFFSET(GLVertexUtils::Vertex, x));
+	// Bind vertex element buffer object to the vertex array object.
+	gl.VertexArrayElementBuffer(d_polygon_meshes_vertex_array, d_polygon_meshes_vertex_element_buffer);
+
+	// Bind vertex buffer object to the vertex array object.
+	gl.VertexArrayVertexBuffer(d_polygon_meshes_vertex_array,
+			0/*bindingindex*/, d_polygon_meshes_vertex_buffer, 0/*offset*/, sizeof(GLVertexUtils::Vertex));
+
+	// Specify vertex attributes (position).
+	gl.EnableVertexArrayAttrib(d_polygon_meshes_vertex_array, 0);
+	gl.VertexArrayAttribFormat(d_polygon_meshes_vertex_array, 0, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(GLVertexUtils::Vertex, x));
+	gl.VertexArrayAttribBinding(d_polygon_meshes_vertex_array, 0, 0/*bindingindex*/);
 }
 
 

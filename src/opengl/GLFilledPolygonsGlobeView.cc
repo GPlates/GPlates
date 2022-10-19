@@ -197,7 +197,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::GLFilledPolygonsGlobeView(
 			(boost::numeric_cast<GLuint>(TILE_MAX_VIEWPORT_DIMENSION) > gl.get_capabilities().gl_max_texture_size)
 					? gl.get_capabilities().gl_max_texture_size
 					: TILE_MAX_VIEWPORT_DIMENSION),
-	d_tile_texture(GLTexture::create(gl)),
+	d_tile_texture(GLTexture::create(gl, GL_TEXTURE_2D)),
 	d_tile_stencil_buffer(GLRenderbuffer::create(gl)),
 	d_tile_texture_framebuffer(GLFramebuffer::create(gl)),
 	d_render_to_tile_program(GLProgram::create(gl)),
@@ -735,8 +735,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::set_tile_state(
 			1, GL_FALSE/*transpose*/, scene_tile_texture_float_matrix);
 
 	// Bind the scene tile texture to texture unit 0.
-	gl.ActiveTexture(GL_TEXTURE0);
-	gl.BindTexture(GL_TEXTURE_2D, d_tile_texture);
+	gl.BindTextureUnit(0, d_tile_texture);
 
 	// If we've traversed deep enough into the cube quad tree then the cube quad tree mesh
 	// cannot provide a drawable that's bounded by the cube quad tree node tile and so
@@ -764,8 +763,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::set_tile_state(
 				1, GL_FALSE/*transpose*/, clip_texture_float_matrix);
 
 		// Bind the clip texture to texture unit 1.
-		gl.ActiveTexture(GL_TEXTURE1);
-		gl.BindTexture(GL_TEXTURE_2D, d_multi_resolution_cube_mesh->get_clip_texture());
+		gl.BindTextureUnit(1, d_multi_resolution_cube_mesh->get_clip_texture());
 	}
 
 	const bool lighting_enabled = d_light &&
@@ -1072,36 +1070,30 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_tile_texture(
 {
 	//PROFILE_FUNC();
 
-	gl.BindTexture(GL_TEXTURE_2D, d_tile_texture);
-
 	// No mipmaps needed so we specify no mipmap filtering.
 	// We're not using mipmaps because our cube mapping does not have much distortion
 	// unlike global rectangular lat/lon rasters that squash near the poles.
 	//
 	// We do enable bilinear filtering (also note that the texture is a fixed-point format).
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	gl.TextureParameteri(d_tile_texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	gl.TextureParameteri(d_tile_texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
 	// subsequently sampled non-isotropically (such as viewing at an angle near edge of the globe).
 	if (gl.get_capabilities().gl_EXT_texture_filter_anisotropic)
 	{
 		const GLfloat anisotropy = gl.get_capabilities().gl_texture_max_anisotropy;
-		gl.TexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
+		gl.TextureParameterf(d_tile_texture, GL_TEXTURE_MAX_ANISOTROPY_EXT, anisotropy);
 	}
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(d_tile_texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(d_tile_texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Create the texture in OpenGL - this actually creates the texture without any data.
-	//
-	// NOTE: Since the image data is NULL it doesn't really matter what 'format' (and 'type') are so
-	// we just use GL_RGBA (and GL_UNSIGNED_BYTE).
-	gl.TexImage2D(GL_TEXTURE_2D, 0/*level*/, GL_RGBA8,
-			d_tile_texel_dimension, d_tile_texel_dimension,
-			0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+	gl.TextureStorage2D(d_tile_texture, 1/*levels*/, GL_RGBA8,
+			d_tile_texel_dimension, d_tile_texel_dimension);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
@@ -1115,7 +1107,7 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::create_tile_stencil_buffer(
 	gl.BindRenderbuffer(GL_RENDERBUFFER, d_tile_stencil_buffer);
 
 	// Allocate a stencil buffer.
-	// Note that (in OpenGL 3.3 core) an OpenGL implementation is only *required* to provide stencil if a
+	// Note that (in modern OpenGL) an OpenGL implementation is only *required* to provide stencil if a
 	// depth/stencil format is requested, and furthermore GL_DEPTH24_STENCIL8 is a specified required format.
 	gl.RenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, d_tile_texel_dimension, d_tile_texel_dimension);
 }
@@ -1148,22 +1140,20 @@ void
 GPlatesOpenGL::GLFilledPolygonsGlobeView::create_drawables_vertex_array(
 		GL &gl)
 {
-	// Bind vertex array object.
-	gl.BindVertexArray(d_drawables_vertex_array);
+	// Bind vertex element buffer object to the vertex array object.
+	gl.VertexArrayElementBuffer(d_drawables_vertex_array, d_drawables_vertex_element_buffer);
 
-	// Bind vertex element buffer object to currently bound vertex array object.
-	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_drawables_vertex_element_buffer);
+	// Bind vertex buffer object to the vertex array object.
+	gl.VertexArrayVertexBuffer(d_drawables_vertex_array, 0/*bindingindex*/, d_drawables_vertex_buffer, 0/*offset*/, sizeof(drawable_vertex_type));
 
-	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-	gl.BindBuffer(GL_ARRAY_BUFFER, d_drawables_vertex_buffer);
+	// Specify vertex attributes (position and colour).
+	gl.EnableVertexArrayAttrib(d_drawables_vertex_array, 0);
+	gl.VertexArrayAttribFormat(d_drawables_vertex_array, 0, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(drawable_vertex_type, x));
+	gl.VertexArrayAttribBinding(d_drawables_vertex_array, 0, 0/*bindingindex*/);
 
-	// Specify vertex attributes (position and colour) in currently bound vertex buffer object.
-	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-	// to currently bound vertex array object.
-	gl.EnableVertexAttribArray(0);
-	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(drawable_vertex_type), BUFFER_OFFSET(drawable_vertex_type, x));
-	gl.EnableVertexAttribArray(1);
-	gl.VertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(drawable_vertex_type), BUFFER_OFFSET(drawable_vertex_type, colour));
+	gl.EnableVertexArrayAttrib(d_drawables_vertex_array, 1);
+	gl.VertexArrayAttribFormat(d_drawables_vertex_array, 1, 4, GL_UNSIGNED_BYTE, GL_TRUE, ATTRIB_OFFSET_IN_VERTEX(drawable_vertex_type, colour));
+	gl.VertexArrayAttribBinding(d_drawables_vertex_array, 1, 0/*bindingindex*/);
 }
 
 
@@ -1174,36 +1164,24 @@ GPlatesOpenGL::GLFilledPolygonsGlobeView::write_filled_drawables_to_vertex_array
 {
 	//PROFILE_FUNC();
 
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	// Bind the vertex array - this binds the vertex *element* buffer (before we load data into it).
-	gl.BindVertexArray(d_drawables_vertex_array);
-
-	// Bind vertex buffer object (before we load data into it).
-	//
-	// Note: Unlike the vertex *element* buffer this vertex buffer binding is not stored in vertex array object state.
-	//       So we have to explicitly bind the vertex buffer before storing data in it.
-	gl.BindBuffer(GL_ARRAY_BUFFER, d_drawables_vertex_buffer);
-
 	//
 	// It's not 'stream' because the same filled drawables are accessed many times.
-	// It's not 'dynamic' because we allocate a new buffer (ie, gl.BufferData does not modify existing buffer).
+	// It's not 'dynamic' because we allocate a new buffer (ie, gl.NamedBufferData does not modify existing buffer).
 	// We really want to encourage this to be in video memory (even though it's only going to live
 	// there for a single rendering frame) because there are many accesses to this buffer as the same
 	// drawables are rendered into multiple tiles (otherwise the PCI bus bandwidth becomes the limiting factor).
 	//
 
-	// Transfer vertex element data to currently bound vertex element buffer object.
-	gl.BufferData(
-			GL_ELEMENT_ARRAY_BUFFER,
+	// Transfer vertex element data to the vertex element buffer object.
+	gl.NamedBufferData(
+			d_drawables_vertex_element_buffer,
 			filled_drawables.d_drawable_vertex_elements.size() * sizeof(filled_drawables.d_drawable_vertex_elements[0]),
 			filled_drawables.d_drawable_vertex_elements.data(),
 			GL_STATIC_DRAW);
 
-	// Transfer vertex element data to currently bound vertex buffer object.
-	gl.BufferData(
-			GL_ARRAY_BUFFER,
+	// Transfer vertex element data to the vertex buffer object.
+	gl.NamedBufferData(
+			d_drawables_vertex_buffer,
 			filled_drawables.d_drawable_vertices.size() * sizeof(filled_drawables.d_drawable_vertices[0]),
 			filled_drawables.d_drawable_vertices.data(),
 			GL_STATIC_DRAW);

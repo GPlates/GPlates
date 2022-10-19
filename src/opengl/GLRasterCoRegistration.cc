@@ -158,9 +158,8 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_gl(
 	// A pixel buffer object for debugging render targets.
 	d_debug_pixel_buffer = GLBuffer::create(gl);
 
-	// Bind the pixel buffer and allocate its memory.
-	gl.BindBuffer(GL_PIXEL_PACK_BUFFER, d_debug_pixel_buffer);
-	gl.BufferData(GL_PIXEL_PACK_BUFFER, PIXEL_BUFFER_SIZE_IN_BYTES, nullptr, GL_STREAM_READ);
+	// Allocate memory for the pixel buffer.
+	gl.NamedBufferStorage(d_debug_pixel_buffer, PIXEL_BUFFER_SIZE_IN_BYTES, nullptr, 0/*flags*/);
 #endif
 }
 
@@ -259,63 +258,54 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_point_region_of_interest_shade
 
 	d_point_region_of_interest_vertex_array = GLVertexArray::create(gl);
 
-	// Bind vertex array object.
-	gl.BindVertexArray(d_point_region_of_interest_vertex_array);
+	// Bind vertex element buffer object to the vertex array object.
+	gl.VertexArrayElementBuffer(d_point_region_of_interest_vertex_array, d_streaming_vertex_element_buffer->get_buffer());
 
-	// Bind vertex element buffer object to currently bound vertex array object.
-	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_streaming_vertex_element_buffer->get_buffer());
+	// Bind vertex buffer object to the vertex array object.
+	gl.VertexArrayVertexBuffer(d_point_region_of_interest_vertex_array,
+			0/*bindingindex*/, d_streaming_vertex_buffer->get_buffer(), 0/*offset*/, sizeof(PointRegionOfInterestVertex));
 
-	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-	gl.BindBuffer(GL_ARRAY_BUFFER, d_streaming_vertex_buffer->get_buffer());
-
-	// Specify vertex attributes in currently bound vertex buffer object.
-	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-	// to currently bound vertex array object.
+	// Specify vertex attributes.
 	//
 	// The following reflects the structure of 'struct PointRegionOfInterestVertex'.
 	// It tells OpenGL how the elements of the vertex are packed together in the vertex and
 	// which parts of the vertex bind to the named attributes in the shader program.
 	//
 
-	gl.EnableVertexAttribArray(0);
-	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(PointRegionOfInterestVertex),
-			BUFFER_OFFSET(PointRegionOfInterestVertex, point_centre));
-	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_small_roi_angle_program,
-			0, "point_centre");
-	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_large_roi_angle_program,
-			0, "point_centre");
+	gl.EnableVertexArrayAttrib(d_point_region_of_interest_vertex_array, 0);
+	gl.VertexArrayAttribFormat(d_point_region_of_interest_vertex_array, 0,
+			3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(PointRegionOfInterestVertex, point_centre));
+	gl.VertexArrayAttribBinding(d_point_region_of_interest_vertex_array, 0, 0/*bindingindex*/);
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_small_roi_angle_program, 0, "point_centre");
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_large_roi_angle_program, 0, "point_centre");
 
-	gl.EnableVertexAttribArray(1);
-	gl.VertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(PointRegionOfInterestVertex),
-			BUFFER_OFFSET(PointRegionOfInterestVertex, tangent_frame_weights));
-	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_small_roi_angle_program,
-			1, "tangent_frame_weights");
-	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_large_roi_angle_program,
-			1, "tangent_frame_weights");
+	gl.EnableVertexArrayAttrib(d_point_region_of_interest_vertex_array, 1);
+	gl.VertexArrayAttribFormat(d_point_region_of_interest_vertex_array, 1,
+			3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(PointRegionOfInterestVertex, tangent_frame_weights));
+	gl.VertexArrayAttribBinding(d_point_region_of_interest_vertex_array, 1, 0/*bindingindex*/);
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_small_roi_angle_program, 1, "tangent_frame_weights");
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_large_roi_angle_program, 1, "tangent_frame_weights");
 
-	gl.EnableVertexAttribArray(2);
-	gl.VertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(PointRegionOfInterestVertex),
-			BUFFER_OFFSET(PointRegionOfInterestVertex, world_space_quaternion));
-	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_small_roi_angle_program,
-			2, "world_space_quaternion");
-	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_large_roi_angle_program,
-			2, "world_space_quaternion");
+	gl.EnableVertexArrayAttrib(d_point_region_of_interest_vertex_array, 2);
+	gl.VertexArrayAttribFormat(d_point_region_of_interest_vertex_array, 2,
+			4, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(PointRegionOfInterestVertex, world_space_quaternion));
+	gl.VertexArrayAttribBinding(d_point_region_of_interest_vertex_array, 2, 0/*bindingindex*/);
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_small_roi_angle_program, 2, "world_space_quaternion");
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_large_roi_angle_program, 2, "world_space_quaternion");
 
-	gl.EnableVertexAttribArray(3);
-	gl.VertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(PointRegionOfInterestVertex),
-			BUFFER_OFFSET(PointRegionOfInterestVertex, raster_frustum_to_seed_frustum_clip_space_transform));
-	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_small_roi_angle_program,
-			3, "raster_frustum_to_seed_frustum_clip_space_transform");
-	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_large_roi_angle_program,
-			3, "raster_frustum_to_seed_frustum_clip_space_transform");
+	gl.EnableVertexArrayAttrib(d_point_region_of_interest_vertex_array, 3);
+	gl.VertexArrayAttribFormat(d_point_region_of_interest_vertex_array, 3,
+			3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(PointRegionOfInterestVertex, raster_frustum_to_seed_frustum_clip_space_transform));
+	gl.VertexArrayAttribBinding(d_point_region_of_interest_vertex_array, 3, 0/*bindingindex*/);
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_small_roi_angle_program, 3, "raster_frustum_to_seed_frustum_clip_space_transform");
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_large_roi_angle_program, 3, "raster_frustum_to_seed_frustum_clip_space_transform");
 
-	gl.EnableVertexAttribArray(4);
-	gl.VertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(PointRegionOfInterestVertex),
-			BUFFER_OFFSET(PointRegionOfInterestVertex, seed_frustum_to_render_target_clip_space_transform));
-	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_small_roi_angle_program,
-			4, "seed_frustum_to_render_target_clip_space_transform");
-	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_large_roi_angle_program,
-			4, "seed_frustum_to_render_target_clip_space_transform");
+	gl.EnableVertexArrayAttrib(d_point_region_of_interest_vertex_array, 4);
+	gl.VertexArrayAttribFormat(d_point_region_of_interest_vertex_array, 4,
+			3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(PointRegionOfInterestVertex, seed_frustum_to_render_target_clip_space_transform));
+	gl.VertexArrayAttribBinding(d_point_region_of_interest_vertex_array, 4, 0/*bindingindex*/);
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_small_roi_angle_program, 4, "seed_frustum_to_render_target_clip_space_transform");
+	gl.BindAttribLocation(d_render_points_of_seed_geometries_with_large_roi_angle_program, 4, "seed_frustum_to_render_target_clip_space_transform");
 
 	// Now that we've changed the attribute bindings in the program object we need to
 	// re-link it in order for them to take effect.
@@ -418,71 +408,61 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_line_region_of_interest_shader
 
 	d_line_region_of_interest_vertex_array = GLVertexArray::create(gl);
 
-	// Bind vertex array object.
-	gl.BindVertexArray(d_line_region_of_interest_vertex_array);
-
 	// Bind vertex element buffer object to currently bound vertex array object.
-	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_streaming_vertex_element_buffer->get_buffer());
+	gl.VertexArrayElementBuffer(d_line_region_of_interest_vertex_array, d_streaming_vertex_element_buffer->get_buffer());
 
-	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-	gl.BindBuffer(GL_ARRAY_BUFFER, d_streaming_vertex_buffer->get_buffer());
+	// Bind vertex buffer object to the vertex array object.
+	gl.VertexArrayVertexBuffer(d_line_region_of_interest_vertex_array,
+			0/*bindingindex*/, d_streaming_vertex_buffer->get_buffer(), 0/*offset*/, sizeof(LineRegionOfInterestVertex));
 
-	// Specify vertex attributes in currently bound vertex buffer object.
-	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-	// to currently bound vertex array object.
+	// Specify vertex attributes.
 	//
 	// The following reflects the structure of 'struct LineRegionOfInterestVertex'.
 	// It tells OpenGL how the elements of the vertex are packed together in the vertex and
 	// which parts of the vertex bind to the named attributes in the shader program.
 	//
 
-	gl.EnableVertexAttribArray(0);
-	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(LineRegionOfInterestVertex),
-			BUFFER_OFFSET(LineRegionOfInterestVertex, line_arc_start_point));
-	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_small_roi_angle_program,
-			0, "line_arc_start_point");
-	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_large_roi_angle_program,
-			0, "line_arc_start_point");
+	gl.EnableVertexArrayAttrib(d_line_region_of_interest_vertex_array, 0);
+	gl.VertexArrayAttribFormat(d_line_region_of_interest_vertex_array, 0,
+			3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(LineRegionOfInterestVertex, line_arc_start_point));
+	gl.VertexArrayAttribBinding(d_line_region_of_interest_vertex_array, 0, 0/*bindingindex*/);
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_small_roi_angle_program, 0, "line_arc_start_point");
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_large_roi_angle_program, 0, "line_arc_start_point");
 
-	gl.EnableVertexAttribArray(1);
-	gl.VertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(LineRegionOfInterestVertex),
-			BUFFER_OFFSET(LineRegionOfInterestVertex, line_arc_normal));
-	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_small_roi_angle_program,
-			1, "line_arc_normal");
-	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_large_roi_angle_program,
-			1, "line_arc_normal");
+	gl.EnableVertexArrayAttrib(d_line_region_of_interest_vertex_array, 1);
+	gl.VertexArrayAttribFormat(d_line_region_of_interest_vertex_array, 1,
+			3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(LineRegionOfInterestVertex, line_arc_normal));
+	gl.VertexArrayAttribBinding(d_line_region_of_interest_vertex_array, 1, 0/*bindingindex*/);
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_small_roi_angle_program, 1, "line_arc_normal");
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_large_roi_angle_program, 1, "line_arc_normal");
 
-	gl.EnableVertexAttribArray(2);
-	gl.VertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(LineRegionOfInterestVertex),
-			BUFFER_OFFSET(LineRegionOfInterestVertex, tangent_frame_weights));
-	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_small_roi_angle_program,
-			2, "tangent_frame_weights");
-	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_large_roi_angle_program,
-			2, "tangent_frame_weights");
+	gl.EnableVertexArrayAttrib(d_line_region_of_interest_vertex_array, 2);
+	gl.VertexArrayAttribFormat(d_line_region_of_interest_vertex_array, 2,
+			2, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(LineRegionOfInterestVertex, tangent_frame_weights));
+	gl.VertexArrayAttribBinding(d_line_region_of_interest_vertex_array, 2, 0/*bindingindex*/);
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_small_roi_angle_program, 2, "tangent_frame_weights");
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_large_roi_angle_program, 2, "tangent_frame_weights");
 
-	gl.EnableVertexAttribArray(3);
-	gl.VertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(LineRegionOfInterestVertex),
-			BUFFER_OFFSET(LineRegionOfInterestVertex, world_space_quaternion));
-	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_small_roi_angle_program,
-			3, "world_space_quaternion");
-	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_large_roi_angle_program,
-			3, "world_space_quaternion");
+	gl.EnableVertexArrayAttrib(d_line_region_of_interest_vertex_array, 3);
+	gl.VertexArrayAttribFormat(d_line_region_of_interest_vertex_array, 3,
+			4, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(LineRegionOfInterestVertex, world_space_quaternion));
+	gl.VertexArrayAttribBinding(d_line_region_of_interest_vertex_array, 3, 0/*bindingindex*/);
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_small_roi_angle_program, 3, "world_space_quaternion");
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_large_roi_angle_program, 3, "world_space_quaternion");
 
-	gl.EnableVertexAttribArray(4);
-	gl.VertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(LineRegionOfInterestVertex),
-			BUFFER_OFFSET(LineRegionOfInterestVertex, raster_frustum_to_seed_frustum_clip_space_transform));
-	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_small_roi_angle_program,
-			4, "raster_frustum_to_seed_frustum_clip_space_transform");
-	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_large_roi_angle_program,
-			4, "raster_frustum_to_seed_frustum_clip_space_transform");
+	gl.EnableVertexArrayAttrib(d_line_region_of_interest_vertex_array, 4);
+	gl.VertexArrayAttribFormat(d_line_region_of_interest_vertex_array, 4,
+			3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(LineRegionOfInterestVertex, raster_frustum_to_seed_frustum_clip_space_transform));
+	gl.VertexArrayAttribBinding(d_line_region_of_interest_vertex_array, 4, 0/*bindingindex*/);
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_small_roi_angle_program, 4, "raster_frustum_to_seed_frustum_clip_space_transform");
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_large_roi_angle_program, 4, "raster_frustum_to_seed_frustum_clip_space_transform");
 
-	gl.EnableVertexAttribArray(5);
-	gl.VertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE, sizeof(LineRegionOfInterestVertex),
-			BUFFER_OFFSET(LineRegionOfInterestVertex, seed_frustum_to_render_target_clip_space_transform));
-	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_small_roi_angle_program,
-			5, "seed_frustum_to_render_target_clip_space_transform");
-	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_large_roi_angle_program,
-			5, "seed_frustum_to_render_target_clip_space_transform");
+	gl.EnableVertexArrayAttrib(d_line_region_of_interest_vertex_array, 5);
+	gl.VertexArrayAttribFormat(d_line_region_of_interest_vertex_array, 5,
+			3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(LineRegionOfInterestVertex, seed_frustum_to_render_target_clip_space_transform));
+	gl.VertexArrayAttribBinding(d_line_region_of_interest_vertex_array, 5, 0/*bindingindex*/);
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_small_roi_angle_program, 5, "seed_frustum_to_render_target_clip_space_transform");
+	gl.BindAttribLocation(d_render_lines_of_seed_geometries_with_large_roi_angle_program,  5, "seed_frustum_to_render_target_clip_space_transform");
 
 	// Now that we've changed the attribute bindings in the program object we need to
 	// re-link it in order for them to take effect.
@@ -543,47 +523,43 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_fill_region_of_interest_shader
 
 	d_fill_region_of_interest_vertex_array = GLVertexArray::create(gl);
 
-	// Bind vertex array object.
-	gl.BindVertexArray(d_fill_region_of_interest_vertex_array);
+	// Bind vertex element buffer object to the vertex array object.
+	gl.VertexArrayElementBuffer(d_fill_region_of_interest_vertex_array, d_streaming_vertex_element_buffer->get_buffer());
 
-	// Bind vertex element buffer object to currently bound vertex array object.
-	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_streaming_vertex_element_buffer->get_buffer());
+	// Bind vertex buffer object to the vertex array object.
+	gl.VertexArrayVertexBuffer(d_fill_region_of_interest_vertex_array,
+			0/*bindingindex*/, d_streaming_vertex_buffer->get_buffer(), 0/*offset*/, sizeof(FillRegionOfInterestVertex));
 
-	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-	gl.BindBuffer(GL_ARRAY_BUFFER, d_streaming_vertex_buffer->get_buffer());
-
-	// Specify vertex attributes in currently bound vertex buffer object.
-	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-	// to currently bound vertex array object.
+	// Specify vertex attributes.
 	//
 	// The following reflects the structure of 'struct FillRegionOfInterestVertex'.
 	// It tells OpenGL how the elements of the vertex are packed together in the vertex and
 	// which parts of the vertex bind to the named attributes in the shader program.
 	//
 
-	gl.EnableVertexAttribArray(0);
-	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(FillRegionOfInterestVertex),
-			BUFFER_OFFSET(FillRegionOfInterestVertex, fill_position));
-	gl.BindAttribLocation(d_render_fill_of_seed_geometries_program,
-			0, "fill_position");
+	gl.EnableVertexArrayAttrib(d_fill_region_of_interest_vertex_array, 0);
+	gl.VertexArrayAttribFormat(d_fill_region_of_interest_vertex_array, 0,
+			3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(FillRegionOfInterestVertex, fill_position));
+	gl.VertexArrayAttribBinding(d_fill_region_of_interest_vertex_array, 0, 0/*bindingindex*/);
+	gl.BindAttribLocation(d_render_fill_of_seed_geometries_program, 0, "fill_position");
 
-	gl.EnableVertexAttribArray(1);
-	gl.VertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, sizeof(FillRegionOfInterestVertex),
-			BUFFER_OFFSET(FillRegionOfInterestVertex, world_space_quaternion));
-	gl.BindAttribLocation(d_render_fill_of_seed_geometries_program,
-			1, "world_space_quaternion");
+	gl.EnableVertexArrayAttrib(d_fill_region_of_interest_vertex_array, 1);
+	gl.VertexArrayAttribFormat(d_fill_region_of_interest_vertex_array, 1,
+			4, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(FillRegionOfInterestVertex, world_space_quaternion));
+	gl.VertexArrayAttribBinding(d_fill_region_of_interest_vertex_array, 1, 0/*bindingindex*/);
+	gl.BindAttribLocation(d_render_fill_of_seed_geometries_program, 1, "world_space_quaternion");
 
-	gl.EnableVertexAttribArray(2);
-	gl.VertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(FillRegionOfInterestVertex),
-			BUFFER_OFFSET(FillRegionOfInterestVertex, raster_frustum_to_seed_frustum_clip_space_transform));
-	gl.BindAttribLocation(d_render_fill_of_seed_geometries_program,
-			2, "raster_frustum_to_seed_frustum_clip_space_transform");
+	gl.EnableVertexArrayAttrib(d_fill_region_of_interest_vertex_array, 2);
+	gl.VertexArrayAttribFormat(d_fill_region_of_interest_vertex_array, 2,
+			3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(FillRegionOfInterestVertex, raster_frustum_to_seed_frustum_clip_space_transform));
+	gl.VertexArrayAttribBinding(d_fill_region_of_interest_vertex_array, 2, 0/*bindingindex*/);
+	gl.BindAttribLocation(d_render_fill_of_seed_geometries_program, 2, "raster_frustum_to_seed_frustum_clip_space_transform");
 
-	gl.EnableVertexAttribArray(3);
-	gl.VertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(FillRegionOfInterestVertex),
-			BUFFER_OFFSET(FillRegionOfInterestVertex, seed_frustum_to_render_target_clip_space_transform));
-	gl.BindAttribLocation(d_render_fill_of_seed_geometries_program,
-			3, "seed_frustum_to_render_target_clip_space_transform");
+	gl.EnableVertexArrayAttrib(d_fill_region_of_interest_vertex_array, 3);
+	gl.VertexArrayAttribFormat(d_fill_region_of_interest_vertex_array, 3,
+			3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(FillRegionOfInterestVertex, seed_frustum_to_render_target_clip_space_transform));
+	gl.VertexArrayAttribBinding(d_fill_region_of_interest_vertex_array, 3, 0/*bindingindex*/);
+	gl.BindAttribLocation(d_render_fill_of_seed_geometries_program, 3, "seed_frustum_to_render_target_clip_space_transform");
 
 	// Now that we've changed the attribute bindings in the program object we need to
 	// re-link it in order for them to take effect.
@@ -663,32 +639,33 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_mask_region_of_interest_shader
 
 	d_mask_region_of_interest_vertex_array = GLVertexArray::create(gl);
 
-	// Bind vertex array object.
-	gl.BindVertexArray(d_mask_region_of_interest_vertex_array);
+	// Bind vertex element buffer object to the vertex array object.
+	gl.VertexArrayElementBuffer(d_mask_region_of_interest_vertex_array, d_streaming_vertex_element_buffer->get_buffer());
 
-	// Bind vertex element buffer object to currently bound vertex array object.
-	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_streaming_vertex_element_buffer->get_buffer());
+	// Bind vertex buffer object to the vertex array object.
+	gl.VertexArrayVertexBuffer(d_mask_region_of_interest_vertex_array,
+			0/*bindingindex*/, d_streaming_vertex_buffer->get_buffer(), 0/*offset*/, sizeof(MaskRegionOfInterestVertex));
 
-	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-	gl.BindBuffer(GL_ARRAY_BUFFER, d_streaming_vertex_buffer->get_buffer());
-
-	// Specify vertex attributes in currently bound vertex buffer object.
-	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-	// to currently bound vertex array object.
+	// Specify vertex attributes.
 	//
 	// The following reflects the structure of 'struct MaskRegionOfInterestVertex'.
 	// It tells OpenGL how the elements of the vertex are packed together in the vertex and
 	// which parts of the vertex bind to the named attributes in the shader program.
 	//
-	gl.EnableVertexAttribArray(0);
-	gl.VertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(MaskRegionOfInterestVertex),
-			BUFFER_OFFSET(MaskRegionOfInterestVertex, screen_space_position));
-	gl.EnableVertexAttribArray(1);
-	gl.VertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(MaskRegionOfInterestVertex),
-			BUFFER_OFFSET(MaskRegionOfInterestVertex, raster_frustum_to_seed_frustum_clip_space_transform));
-	gl.EnableVertexAttribArray(2);
-	gl.VertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(MaskRegionOfInterestVertex),
-			BUFFER_OFFSET(MaskRegionOfInterestVertex, seed_frustum_to_render_target_clip_space_transform));
+	gl.EnableVertexArrayAttrib(d_mask_region_of_interest_vertex_array, 0);
+	gl.VertexArrayAttribFormat(d_mask_region_of_interest_vertex_array, 0,
+			2, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(MaskRegionOfInterestVertex, screen_space_position));
+	gl.VertexArrayAttribBinding(d_mask_region_of_interest_vertex_array, 0, 0/*bindingindex*/);
+
+	gl.EnableVertexArrayAttrib(d_mask_region_of_interest_vertex_array, 1);
+	gl.VertexArrayAttribFormat(d_mask_region_of_interest_vertex_array, 1,
+			3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(MaskRegionOfInterestVertex, raster_frustum_to_seed_frustum_clip_space_transform));
+	gl.VertexArrayAttribBinding(d_mask_region_of_interest_vertex_array, 1, 0/*bindingindex*/);
+
+	gl.EnableVertexArrayAttrib(d_mask_region_of_interest_vertex_array, 2);
+	gl.VertexArrayAttribFormat(d_mask_region_of_interest_vertex_array, 2,
+			3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(MaskRegionOfInterestVertex, seed_frustum_to_render_target_clip_space_transform));
+	gl.VertexArrayAttribBinding(d_mask_region_of_interest_vertex_array, 2, 0/*bindingindex*/);
 }
 
 
@@ -805,38 +782,35 @@ GPlatesOpenGL::GLRasterCoRegistration::initialise_reduction_of_region_of_interes
 	d_reduction_vertex_buffer = GLBuffer::create(gl);
 	d_reduction_vertex_element_buffer = GLBuffer::create(gl);
 
-	// Bind vertex array object.
-	gl.BindVertexArray(d_reduction_vertex_array);
-
-	// Bind vertex element buffer object to currently bound vertex array object.
-	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_reduction_vertex_element_buffer);
-
 	// Transfer vertex element data to currently bound vertex element buffer object.
-	gl.BufferData(
-			GL_ELEMENT_ARRAY_BUFFER,
+	gl.NamedBufferStorage(
+			d_reduction_vertex_element_buffer,
 			vertex_elements.size() * sizeof(vertex_elements[0]),
 			vertex_elements.data(),
-			GL_STATIC_DRAW);
-
-	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-	gl.BindBuffer(GL_ARRAY_BUFFER, d_reduction_vertex_buffer);
+			0/*flags*/);
 
 	// Transfer vertex data to currently bound vertex buffer object.
-	gl.BufferData(
-			GL_ARRAY_BUFFER,
+	gl.NamedBufferStorage(
+			d_reduction_vertex_buffer,
 			vertices.size() * sizeof(vertices[0]),
 			vertices.data(),
-			GL_STATIC_DRAW);
+			0/*flags*/);
 
-	// Specify vertex attributes (position and texture coord) in currently bound vertex buffer object.
-	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-	// to currently bound vertex array object.
-	gl.EnableVertexAttribArray(0);
-	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLVertexUtils::TextureVertex),
-			BUFFER_OFFSET(GLVertexUtils::TextureVertex, x));
-	gl.EnableVertexAttribArray(1);
-	gl.VertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(GLVertexUtils::TextureVertex),
-			BUFFER_OFFSET(GLVertexUtils::TextureVertex, u));
+	// Bind vertex element buffer object to the vertex array object.
+	gl.VertexArrayElementBuffer(d_reduction_vertex_array, d_reduction_vertex_element_buffer);
+
+	// Bind vertex buffer object to the vertex array object.
+	gl.VertexArrayVertexBuffer(d_reduction_vertex_array,
+			0/*bindingindex*/, d_reduction_vertex_buffer, 0/*offset*/, sizeof(GLVertexUtils::TextureVertex));
+
+	// Specify vertex attributes (position and texture coord).
+	gl.EnableVertexArrayAttrib(d_reduction_vertex_array, 0);
+	gl.VertexArrayAttribFormat(d_reduction_vertex_array, 0, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(GLVertexUtils::TextureVertex, x));
+	gl.VertexArrayAttribBinding(d_reduction_vertex_array, 0, 0/*bindingindex*/);
+
+	gl.EnableVertexArrayAttrib(d_reduction_vertex_array, 1);
+	gl.VertexArrayAttribFormat(d_reduction_vertex_array, 1, 2, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(GLVertexUtils::TextureVertex, u));
+	gl.VertexArrayAttribBinding(d_reduction_vertex_array, 1, 0/*bindingindex*/);
 }
 
 
@@ -2216,7 +2190,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	if (!d_have_checked_framebuffer_completeness)
 	{
 		// Throw OpenGLException if not complete.
-		// This should succeed since we should only be using texture formats that are required by OpenGL 3.3 core.
+		// This should succeed since we should only be using texture formats that are required by modern OpenGL.
 		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,
@@ -2365,7 +2339,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_seed_geometries_in_reduce_stage_re
 	if (!d_have_checked_framebuffer_completeness)
 	{
 		// Throw OpenGLException if not complete.
-		// This should succeed since we should only be using texture formats that are required by OpenGL 3.3 core.
+		// This should succeed since we should only be using texture formats that are required by modern OpenGL.
 		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,
@@ -4617,16 +4591,14 @@ GPlatesOpenGL::GLRasterCoRegistration::mask_target_raster_with_regions_of_intere
 			mask_region_of_interest_program->get_uniform_location(gl, "target_raster_texture_sampler"),
 			0/*texture unit*/);
 	// Bind the target raster texture to texture unit 0.
-	gl.ActiveTexture(GL_TEXTURE0);
-	gl.BindTexture(GL_TEXTURE_2D, target_raster_texture);
+	gl.BindTextureUnit(0, target_raster_texture);
 
 	// Set the region-of-interest mask texture sampler to texture unit 1.
 	gl.Uniform1i(
 			mask_region_of_interest_program->get_uniform_location(gl, "region_of_interest_mask_texture_sampler"),
 			1/*texture unit*/);
 	// Bind the region-of-interest mask texture to texture unit 1.
-	gl.ActiveTexture(GL_TEXTURE1);
-	gl.BindTexture(GL_TEXTURE_2D, region_of_interest_mask_texture);
+	gl.BindTextureUnit(1, region_of_interest_mask_texture);
 
 	// Bind the mask target raster with regions-of-interest vertex array.
 	gl.BindVertexArray(d_mask_region_of_interest_vertex_array);
@@ -4828,7 +4800,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_reduction_of_reduce_stage(
 	if (!d_have_checked_framebuffer_completeness)
 	{
 		// Throw OpenGLException if not complete.
-		// This should succeed since we should only be using texture formats that are required by OpenGL 3.3 core.
+		// This should succeed since we should only be using texture formats that are required by modern OpenGL.
 		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,
@@ -4883,8 +4855,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_reduction_of_reduce_stage(
 			reduction_program->get_uniform_location(gl, "reduce_source_texture_sampler"),
 			0/*texture unit*/);
 	// Bind the source reduce stage texture to texture unit 0.
-	gl.ActiveTexture(GL_TEXTURE0);
-	gl.BindTexture(GL_TEXTURE_2D, src_reduce_stage_texture);
+	gl.BindTextureUnit(0, src_reduce_stage_texture);
 
 	// Set the half-texel offset of the reduce source texture (all reduce textures have same dimension).
 	const double half_texel_offset = 0.5 / TEXTURE_DIMENSION;
@@ -5034,7 +5005,7 @@ GPlatesOpenGL::GLRasterCoRegistration::render_target_raster(
 	if (!d_have_checked_framebuffer_completeness)
 	{
 		// Throw OpenGLException if not complete.
-		// This should succeed since we should only be using texture formats that are required by OpenGL 3.3 core.
+		// This should succeed since we should only be using texture formats that are required by modern OpenGL.
 		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,
@@ -5086,32 +5057,25 @@ GPlatesOpenGL::GLRasterCoRegistration::acquire_rgba_float_texture(
 
 	// Create a new object and add it to the cache.
 	const GLTexture::shared_ptr_type texture = d_rgba_float_texture_cache->allocate_object(
-			GLTexture::create_unique(gl));
-
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	// Bind the texture.
-	gl.BindTexture(GL_TEXTURE_2D, texture);
+			GLTexture::create_unique(gl, GL_TEXTURE_2D));
 
 	//
 	// No mipmaps needed so we specify no mipmap filtering.
 	//
 
 	// Bilinear filtering for GL_TEXTURE_MIN_FILTER and GL_TEXTURE_MAG_FILTER.
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	gl.TextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	gl.TextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Allocate texture but don't load any data into it.
 	// Leave it uninitialised because we will be rendering into it to initialise it.
-	gl.TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F,
-			TEXTURE_DIMENSION, TEXTURE_DIMENSION,
-			0, GL_RGBA, GL_FLOAT, nullptr);
+	gl.TextureStorage2D(texture, 1/*levels*/, GL_RGBA32F,
+			TEXTURE_DIMENSION, TEXTURE_DIMENSION);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
@@ -5604,9 +5568,8 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::ResultsQueue(
 		// Allocate enough memory in each pixel buffer to read back a 4-channel floating-point texture.
 		GLBuffer::shared_ptr_type buffer = GLBuffer::create(gl);
 
-		// Bind the pixel buffer and allocate its memory.
-		gl.BindBuffer(GL_PIXEL_PACK_BUFFER, buffer);
-		gl.BufferData(GL_PIXEL_PACK_BUFFER, PIXEL_BUFFER_SIZE_IN_BYTES, nullptr, GL_STREAM_READ);
+		// Allocate memory for the pixel buffer.
+		gl.NamedBufferStorage(buffer, PIXEL_BUFFER_SIZE_IN_BYTES, nullptr, 0/*flags*/);
 
 		// Add to our free list of pixel buffers.
 		d_free_pixel_buffers.push_back(buffer);
@@ -5661,7 +5624,7 @@ GPlatesOpenGL::GLRasterCoRegistration::ResultsQueue::queue_reduce_pyramid_output
 	if (!have_checked_framebuffer_completeness)
 	{
 		// Throw OpenGLException if not complete.
-		// This should succeed since we should only be using texture formats that are required by OpenGL 3.3 core.
+		// This should succeed since we should only be using texture formats that are required by modern OpenGL.
 		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,

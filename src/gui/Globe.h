@@ -142,10 +142,8 @@ namespace GPlatesGui
 
 		/**
 		 * Stars in the background, behind the Earth.
-		 *
-		 * It's optional since it can't be constructed until @a initialise_gl is called (valid OpenGL context).
 		 */
-		boost::optional<Stars> d_stars;
+		Stars d_stars;
 
 		/**
 		 * The background sphere (can be opaque or translucent depending on the background colour's alpha).

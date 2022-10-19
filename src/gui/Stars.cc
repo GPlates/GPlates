@@ -26,7 +26,6 @@
  */
 
 #include <cmath>
-#include <boost/function.hpp>
 #include <boost/random/mersenne_twister.hpp>
 #include <boost/random/uniform_real.hpp>
 #include <boost/random/variate_generator.hpp>
@@ -43,9 +42,7 @@
 #include "opengl/GLMatrix.h"
 #include "opengl/GLShader.h"
 #include "opengl/GLShaderSource.h"
-#include "opengl/GLStreamPrimitives.h"
 #include "opengl/GLVertexArray.h"
-#include "opengl/GLVertexUtils.h"
 #include "opengl/GLViewProjection.h"
 
 #include "presentation/ViewState.h"
@@ -55,341 +52,63 @@
 
 namespace
 {
-	// Vertex and fragment shader source code to render stars (points) in the 3D globe views (perspective and orthographic).
-	const char *VERTEX_SHADER_SOURCE =
-		R"(
-			uniform mat4 view_projection;
-			uniform float point_size;
-			
-			layout(location = 0) in vec4 position;
-
-			out VertexData
-			{
-				float point_size_scale;
-				float inv_point_size;
-			} vs_out;
-			
-			void main (void)
-			{
-				gl_Position = view_projection * position;
-
-				// Expand the point size by 2 pixels (1 pixel radius expansion) to give space
-				// for one pixel of anti-aliasing outside circumference (see fragment shader).
-				float point_size_expansion = 2;
-				float expanded_point_size = point_size + point_size_expansion;
-				vs_out.point_size_scale = expanded_point_size / point_size;
-				vs_out.inv_point_size = 1.0 / point_size;
-				gl_PointSize = expanded_point_size;
-				
-				// We enabled GL_DEPTH_CLAMP to disable the far clipping plane, but it also disables
-				// near plane (which we still want), so we'll handle that ourself.
-				//
-				// Inside near clip plane means:
-				//
-				//   -gl_Position.w <= gl_Position.z
-				//
-				// ...or:
-				//
-				//   gl_Position.z + gl_Position.w >= 0
-				//
-				gl_ClipDistance[0] = gl_Position.z + gl_Position.w;
-			}
-		)";
-	const char *FRAGMENT_SHADER_SOURCE =
-		R"(
-			uniform vec4 star_colour;
-
-			in VertexData
-			{
-				float point_size_scale;
-				float inv_point_size;
-			} fs_in;
-			
-			layout(location = 0) out vec4 colour;
-
-			void main (void)
-			{
-				colour = star_colour;
-
-				// Calculate distance from current fragment centre to the centre of the circular point.
-				//
-				// Note: 'gl_PointCoord' range is [0,1] which we convert to [-1,1] and then
-				//       convert that to [-point_size_scale, point_size_scale] which is a larger range
-				//       than [-1,1]. And now a distance of 1 from point centre is the point circumference.
-				vec2 fragment_to_point_centre = fs_in.point_size_scale * (2 * gl_PointCoord - 1);
-				float distance_to_point_centre = length(fragment_to_point_centre);
-
-				// How much does the distance change compared to its neighbouring pixels?
-				//
-				// Note: We could set 'distance_delta_over_a_pixel = fwidth(distance_to_point_centre)' but that
-				//       it not as stable as hard-coding it.
-				//
-				// We know there are 'point_size' pixels in the distance range [-1, 1]
-				// (so the distance over a pixel is '2 / point_size').
-				float distance_delta_over_a_pixel = 2 * fs_in.inv_point_size;
-
-				// Alpha is 1 when 'distance < 1 - distance_delta_over_a_pixel' and 0 when
-				// 'distance > 1 + distance_delta_over_a_pixel' and smoothly interpolated inbetween.
-				// This corresponds to inside, outside and on circumference (within a 2 pixel margin
-				// which is anti-aliased).
-				colour.a = 1 - smoothstep(
-								1 - distance_delta_over_a_pixel,
-								1 + distance_delta_over_a_pixel,
-								distance_to_point_centre);
-			}
-		)";
-
-	const GLfloat SMALL_STARS_SIZE = 1.4f;
-	const GLfloat LARGE_STARS_SIZE = 2.4f;
-
-	const unsigned int NUM_SMALL_STARS = 4250;
-	const unsigned int NUM_LARGE_STARS = 3750;
-
-	// Points sit on a sphere of this radius (note that the Earth globe has radius 1.0).
-	// Ideally we'd have these points at infinity, but a large distance works well.
-	const GLfloat RADIUS = 7.0f;
-
-	typedef GPlatesOpenGL::GLVertexUtils::Vertex vertex_type;
-	typedef GLushort vertex_element_type;
-	typedef GPlatesOpenGL::GLDynamicStreamPrimitives<vertex_type, vertex_element_type> stream_primitives_type;
-
-
-	void
-	stream_stars(
-			stream_primitives_type &stream,
-			boost::function< double () > &rand,
-			unsigned int num_stars)
-	{
-		bool ok = true;
-
-		stream_primitives_type::Points stream_points(stream);
-		stream_points.begin_points();
-
-		unsigned int points_generated = 0;
-		while (points_generated != num_stars)
-		{
-			// See http://mathworld.wolfram.com/SpherePointPicking.html for a discussion
-			// of picking points uniformly on the surface of a sphere.
-			// We use the method attributed to Marsaglia (1972).
-			double x_1 = rand();
-			double x_2 = rand();
-			double x_1_sq = x_1 * x_1;
-			double x_2_sq = x_2 * x_2;
-
-			double stuff_under_sqrt = 1 - x_1_sq - x_2_sq;
-			if (stuff_under_sqrt < 0)
-			{
-				continue;
-			}
-			double sqrt_part = std::sqrt(stuff_under_sqrt);
-
-			double x = 2 * x_1 * sqrt_part;
-			double y = 2 * x_2 * sqrt_part;
-			double z = 1 - 2 * (x_1_sq + x_2_sq);
-
-			// Randomising the distance to the stars gives a nicer 3D effect.
-			double radius = RADIUS + rand();
-
-			vertex_type vertex(x * radius, y * radius, z * radius);
-			ok = ok && stream_points.add_vertex(vertex);
-
-			++points_generated;
-		}
-
-		stream_points.end_points();
-
-		// Since we added vertices/indices to a std::vector we shouldn't have run out of space.
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				ok,
-				GPLATES_ASSERTION_SOURCE);
-	}
-
-
-	void
-	create_stars(
-			std::vector<vertex_type> &vertices,
-			std::vector<vertex_element_type> &vertex_elements,
-			unsigned int &num_small_star_vertices,
-			unsigned int &num_small_star_vertex_indices,
-			unsigned int &num_large_star_vertices,
-			unsigned int &num_large_star_vertex_indices,
-			boost::function< double () > &rand)
-	{
-		stream_primitives_type stream;
-
-		stream_primitives_type::StreamTarget stream_target(stream);
-
-		stream_target.start_streaming(
-				boost::in_place(boost::ref(vertices)),
-				boost::in_place(boost::ref(vertex_elements)));
-
-		// Stream the small stars.
-		stream_stars(stream, rand, NUM_SMALL_STARS);
-
-		num_small_star_vertices = stream_target.get_num_streamed_vertices();
-		num_small_star_vertex_indices = stream_target.get_num_streamed_vertex_elements();
-
-		stream_target.stop_streaming();
-
-		// We re-start streaming so that we can get a separate stream count for the large stars.
-		// However the large stars still get appended onto 'vertices' and 'vertex_elements'.
-		stream_target.start_streaming(
-				boost::in_place(boost::ref(vertices)),
-				boost::in_place(boost::ref(vertex_elements)));
-
-		// Stream the large stars.
-		stream_stars(stream, rand, NUM_LARGE_STARS);
-
-		num_large_star_vertices = stream_target.get_num_streamed_vertices();
-		num_large_star_vertex_indices = stream_target.get_num_streamed_vertex_elements();
-
-		stream_target.stop_streaming();
-
-		// We're using 16-bit indices (ie, 65536 vertices) so make sure we've not exceeded that many vertices.
-		// Shouldn't get close really but check to be sure.
-		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				vertices.size() - 1 <= GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::MAX_INDEXABLE_VERTEX,
-				GPLATES_ASSERTION_SOURCE);
-	}
-
-
-	void
-	load_stars(
-			GPlatesOpenGL::GL &gl,
-			GPlatesOpenGL::GLVertexArray::shared_ptr_type vertex_array,
-			GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_buffer,
-			GPlatesOpenGL::GLBuffer::shared_ptr_type vertex_element_buffer,
-			const std::vector<vertex_type> &vertices,
-			const std::vector<vertex_element_type> &vertex_elements)
-	{
-		// Bind vertex array object.
-		gl.BindVertexArray(vertex_array);
-
-		// Bind vertex element buffer object to currently bound vertex array object.
-		gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_element_buffer);
-
-		// Transfer vertex element data to currently bound vertex element buffer object.
-		gl.BufferData(
-				GL_ELEMENT_ARRAY_BUFFER,
-				vertex_elements.size() * sizeof(vertex_elements[0]),
-				vertex_elements.data(),
-				GL_STATIC_DRAW);
-
-		// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-		gl.BindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-
-		// Transfer vertex data to currently bound vertex buffer object.
-		gl.BufferData(
-				GL_ARRAY_BUFFER,
-				vertices.size() * sizeof(vertices[0]),
-				vertices.data(),
-				GL_STATIC_DRAW);
-
-		// Specify vertex attributes (position) in currently bound vertex buffer object.
-		// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-		// to currently bound vertex array object.
-		gl.EnableVertexAttribArray(0);
-		gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_type), BUFFER_OFFSET(vertex_type, x));
-	}
-
-
-	void
-	compile_link_program(
-			GPlatesOpenGL::GL &gl,
-			GPlatesOpenGL::GLProgram::shared_ptr_type program,
-			const GPlatesGui::Colour &colour)
-	{
-		// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
-		TRACK_CALL_STACK();
-
-		// Vertex shader source.
-		GPlatesOpenGL::GLShaderSource vertex_shader_source;
-		vertex_shader_source.add_code_segment(VERTEX_SHADER_SOURCE);
-
-		// Vertex shader.
-		GPlatesOpenGL::GLShader::shared_ptr_type vertex_shader = GPlatesOpenGL::GLShader::create(gl, GL_VERTEX_SHADER);
-		vertex_shader->shader_source(gl, vertex_shader_source);
-		vertex_shader->compile_shader(gl);
-
-		// Fragment shader source.
-		GPlatesOpenGL::GLShaderSource fragment_shader_source;
-		fragment_shader_source.add_code_segment(FRAGMENT_SHADER_SOURCE);
-
-		// Fragment shader.
-		GPlatesOpenGL::GLShader::shared_ptr_type fragment_shader = GPlatesOpenGL::GLShader::create(gl, GL_FRAGMENT_SHADER);
-		fragment_shader->shader_source(gl, fragment_shader_source);
-		fragment_shader->compile_shader(gl);
-
-		// Vertex-fragment program.
-		program->attach_shader(gl, vertex_shader);
-		program->attach_shader(gl, fragment_shader);
-		program->link_program(gl);
-
-		gl.UseProgram(program);
-
-		// Set the star colour (it never changes).
-		gl.Uniform4f(
-				program->get_uniform_location(gl, "star_colour"),
-				colour.red(), colour.green(), colour.blue(), colour.alpha());
-	}
+	// Vertex and fragment shader source code to renders stars (points) in the background of the scene.
+	const QString STARS_VERTEX_SHADER_SOURCE_FILE_NAME = ":/opengl/stars.vert";
+	const QString STARS_FRAGMENT_SHADER_SOURCE_FILE_NAME = ":/opengl/stars.frag";
 }
 
 
+const GPlatesGui::Colour GPlatesGui::Stars::DEFAULT_COLOUR(0.75f, 0.75f, 0.75f);
+
+
 GPlatesGui::Stars::Stars(
-		GPlatesOpenGL::GL &gl,
-		GPlatesPresentation::ViewState &view_state,
 		const GPlatesGui::Colour &colour) :
-	d_view_state(view_state),
-	d_program(GPlatesOpenGL::GLProgram::create(gl)),
-	d_vertex_array(GPlatesOpenGL::GLVertexArray::create(gl)),
-	d_vertex_buffer(GPlatesOpenGL::GLBuffer::create(gl)),
-	d_vertex_element_buffer(GPlatesOpenGL::GLBuffer::create(gl)),
+	d_colour(colour),
 	d_num_small_star_vertices(0),
 	d_num_small_star_vertex_indices(0),
 	d_num_large_star_vertices(0),
 	d_num_large_star_vertex_indices(0)
 {
-	// Make sure we leave the OpenGL global state the way it was.
-	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
-
-	compile_link_program(gl, d_program, colour);
-
-	// Set up the random number generator.
-	// It generates doubles uniformly from -1.0 to 1.0 inclusive.
-	// Note that we use a fixed seed (0), so that the pattern of stars does not
-	// change between sessions. This is useful when trying to reproduce screenshots
-	// between sessions.
-	boost::mt19937 gen(0);
-	boost::uniform_real<> dist(-1.0, 1.0);
-	boost::function< double () > rand(
-			boost::variate_generator<boost::mt19937&, boost::uniform_real<> >(gen, dist));
-
-	std::vector<vertex_type> vertices;
-	std::vector<vertex_element_type> vertex_elements;
-	create_stars(
-			vertices,
-			vertex_elements,
-			d_num_small_star_vertices, d_num_small_star_vertex_indices,
-			d_num_large_star_vertices, d_num_large_star_vertex_indices,
-			rand);
-
-	load_stars(gl, d_vertex_array, d_vertex_buffer, d_vertex_element_buffer, vertices, vertex_elements);
 }
 
 
 void
-GPlatesGui::Stars::paint(
+GPlatesGui::Stars::initialise_gl(
+		GPlatesOpenGL::GL &gl)
+{
+	create_shader_program(gl);
+
+	std::vector<vertex_type> vertices;
+	std::vector<vertex_element_type> vertex_elements;
+	create_stars(vertices, vertex_elements);
+	load_stars(gl, vertices, vertex_elements);
+}
+
+void
+GPlatesGui::Stars::shutdown_gl(
+		GPlatesOpenGL::GL &gl)
+{
+	d_vertex_element_buffer.reset();
+	d_vertex_buffer.reset();
+	d_vertex_array.reset();
+	d_program.reset();
+}
+
+
+void
+GPlatesGui::Stars::render(
 		GPlatesOpenGL::GL &gl,
 		const GPlatesOpenGL::GLViewProjection &view_projection,
-		int device_pixel_ratio)
+		int device_pixel_ratio,
+		const double &radius_multiplier)
 {
-	if (!d_view_state.get_show_stars())
-	{
-		return;
-	}
-
 	// Make sure we leave the OpenGL global state the way it was.
 	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
+
+	// Disable depth testing and depth writes.
+	// Stars are rendered in the background and don't really need depth sorting.
+	gl.Disable(GL_DEPTH_TEST);
+	gl.DepthMask(GL_FALSE);
 
 	// Enabling depth clamping disables the near and far clip planes (and clamps depth values outside).
 	// This means the stars (which are beyond the far clip plane) get rendered (with the far depth 1.0).
@@ -430,6 +149,14 @@ GPlatesGui::Stars::paint(
 	gl.UniformMatrix4fv(
 			d_program->get_uniform_location(gl, "view_projection"),
 			1, GL_FALSE/*transpose*/, view_projection_float_matrix);
+
+	// Set the radius multiplier.
+	//
+	// This is used for the 2D map views to expand the positions of the stars radially so that they're
+	// outside the map bounding sphere. A value of 1.0 works for the 3D globe view.
+	gl.Uniform1f(
+			d_program->get_uniform_location(gl, "radius_multiplier"),
+			radius_multiplier);
 
 	// Bind the vertex array.
 	gl.BindVertexArray(d_vertex_array);
@@ -473,4 +200,185 @@ GPlatesGui::Stars::paint(
 			d_num_large_star_vertex_indices/*count*/,
 			GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::type,
 			GPlatesOpenGL::GLVertexUtils::buffer_offset(d_num_small_star_vertex_indices * sizeof(vertex_element_type))/*indices_offset*/);
+}
+
+
+void
+GPlatesGui::Stars::create_shader_program(
+		GPlatesOpenGL::GL &gl)
+{
+	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
+	TRACK_CALL_STACK();
+
+	// Vertex shader source.
+	GPlatesOpenGL::GLShaderSource vertex_shader_source;
+	vertex_shader_source.add_code_segment_from_file(STARS_VERTEX_SHADER_SOURCE_FILE_NAME);
+
+	// Vertex shader.
+	GPlatesOpenGL::GLShader::shared_ptr_type vertex_shader = GPlatesOpenGL::GLShader::create(gl, GL_VERTEX_SHADER);
+	vertex_shader->shader_source(gl, vertex_shader_source);
+	vertex_shader->compile_shader(gl);
+
+	// Fragment shader source.
+	GPlatesOpenGL::GLShaderSource fragment_shader_source;
+	fragment_shader_source.add_code_segment_from_file(STARS_FRAGMENT_SHADER_SOURCE_FILE_NAME);
+
+	// Fragment shader.
+	GPlatesOpenGL::GLShader::shared_ptr_type fragment_shader = GPlatesOpenGL::GLShader::create(gl, GL_FRAGMENT_SHADER);
+	fragment_shader->shader_source(gl, fragment_shader_source);
+	fragment_shader->compile_shader(gl);
+
+	// Vertex-fragment program.
+	d_program = GPlatesOpenGL::GLProgram::create(gl);
+	d_program->attach_shader(gl, vertex_shader);
+	d_program->attach_shader(gl, fragment_shader);
+	d_program->link_program(gl);
+
+	gl.UseProgram(d_program);
+
+	// Set the star colour (it never changes).
+	gl.Uniform4f(
+			d_program->get_uniform_location(gl, "star_colour"),
+			d_colour.red(), d_colour.green(), d_colour.blue(), d_colour.alpha());
+}
+
+
+void
+GPlatesGui::Stars::create_stars(
+		std::vector<vertex_type> &vertices,
+		std::vector<vertex_element_type> &vertex_elements)
+{
+	// Set up the random number generator.
+	// It generates doubles uniformly from -1.0 to 1.0 inclusive.
+	// Note that we use a fixed seed (0), so that the pattern of stars does not
+	// change between sessions. This is useful when trying to reproduce screenshots
+	// between sessions.
+	boost::mt19937 gen(0);
+	boost::uniform_real<> dist(-1.0, 1.0);
+	boost::function< double () > rand(
+			boost::variate_generator<boost::mt19937&, boost::uniform_real<> >(gen, dist));
+
+	stream_primitives_type stream;
+
+	stream_primitives_type::StreamTarget stream_target(stream);
+
+	stream_target.start_streaming(
+			boost::in_place(boost::ref(vertices)),
+			boost::in_place(boost::ref(vertex_elements)));
+
+	// Stream the small stars.
+	stream_stars(stream, rand, NUM_SMALL_STARS);
+
+	d_num_small_star_vertices = stream_target.get_num_streamed_vertices();
+	d_num_small_star_vertex_indices = stream_target.get_num_streamed_vertex_elements();
+
+	stream_target.stop_streaming();
+
+	// We re-start streaming so that we can get a separate stream count for the large stars.
+	// However the large stars still get appended onto 'vertices' and 'vertex_elements'.
+	stream_target.start_streaming(
+			boost::in_place(boost::ref(vertices)),
+			boost::in_place(boost::ref(vertex_elements)));
+
+	// Stream the large stars.
+	stream_stars(stream, rand, NUM_LARGE_STARS);
+
+	d_num_large_star_vertices = stream_target.get_num_streamed_vertices();
+	d_num_large_star_vertex_indices = stream_target.get_num_streamed_vertex_elements();
+
+	stream_target.stop_streaming();
+
+	// We're using 16-bit indices (ie, 65536 vertices) so make sure we've not exceeded that many vertices.
+	// Shouldn't get close really but check to be sure.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			vertices.size() - 1 <= GPlatesOpenGL::GLVertexUtils::ElementTraits<vertex_element_type>::MAX_INDEXABLE_VERTEX,
+			GPLATES_ASSERTION_SOURCE);
+}
+
+
+void
+GPlatesGui::Stars::stream_stars(
+		stream_primitives_type &stream,
+		boost::function< double () > &rand,
+		unsigned int num_stars)
+{
+	bool ok = true;
+
+	stream_primitives_type::Points stream_points(stream);
+	stream_points.begin_points();
+
+	unsigned int points_generated = 0;
+	while (points_generated != num_stars)
+	{
+		// See http://mathworld.wolfram.com/SpherePointPicking.html for a discussion
+		// of picking points uniformly on the surface of a sphere.
+		// We use the method attributed to Marsaglia (1972).
+		double x_1 = rand();
+		double x_2 = rand();
+		double x_1_sq = x_1 * x_1;
+		double x_2_sq = x_2 * x_2;
+
+		double stuff_under_sqrt = 1 - x_1_sq - x_2_sq;
+		if (stuff_under_sqrt < 0)
+		{
+			continue;
+		}
+		double sqrt_part = std::sqrt(stuff_under_sqrt);
+
+		double x = 2 * x_1 * sqrt_part;
+		double y = 2 * x_2 * sqrt_part;
+		double z = 1 - 2 * (x_1_sq + x_2_sq);
+
+		// Randomising the distance to the stars gives a nicer 3D effect.
+		double radius = RADIUS + rand();
+
+		vertex_type vertex(x * radius, y * radius, z * radius);
+		ok = ok && stream_points.add_vertex(vertex);
+
+		++points_generated;
+	}
+
+	stream_points.end_points();
+
+	// Since we added vertices/indices to a std::vector we shouldn't have run out of space.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			ok,
+			GPLATES_ASSERTION_SOURCE);
+}
+
+
+void
+GPlatesGui::Stars::load_stars(
+		GPlatesOpenGL::GL &gl,
+		const std::vector<vertex_type> &vertices,
+		const std::vector<vertex_element_type> &vertex_elements)
+{
+	// Transfer vertex element data to the vertex element buffer object.
+	d_vertex_element_buffer = GPlatesOpenGL::GLBuffer::create(gl);
+	gl.NamedBufferStorage(
+			d_vertex_element_buffer,
+			vertex_elements.size() * sizeof(vertex_elements[0]),
+			vertex_elements.data(),
+			0/*flags*/);
+
+	// Transfer vertex data to the vertex buffer object.
+	d_vertex_buffer = GPlatesOpenGL::GLBuffer::create(gl);
+	gl.NamedBufferStorage(
+			d_vertex_buffer,
+			vertices.size() * sizeof(vertices[0]),
+			vertices.data(),
+			0/*flags*/);
+
+	d_vertex_array = GPlatesOpenGL::GLVertexArray::create(gl);
+
+	// Bind vertex element buffer object to the vertex array object.
+	gl.VertexArrayElementBuffer(d_vertex_array, d_vertex_element_buffer);
+
+	// Bind vertex buffer object to vertex array object.
+	gl.VertexArrayVertexBuffer(d_vertex_array, 0/*bindingindex*/, d_vertex_buffer, 0/*offset*/, sizeof(vertex_type));
+
+	// Specify vertex attributes (position) in the vertex buffer object.
+	gl.EnableVertexArrayAttrib(d_vertex_array, 0);
+	gl.VertexArrayAttribFormat(d_vertex_array, 0, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(vertex_type, x));
+	gl.VertexArrayAttribBinding(d_vertex_array, 0, 0/*bindingindex*/);
 }

@@ -38,73 +38,6 @@
 #include "maths/Real.h"
 
 
-GPlatesOpenGL::GLActiveTextureStateSet::GLActiveTextureStateSet(
-		const GLCapabilities &capabilities,
-		GLenum active_texture) :
-	d_active_texture(active_texture)
-{
-	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			active_texture >= GL_TEXTURE0 &&
-				active_texture < GL_TEXTURE0 + capabilities.gl_max_combined_texture_image_units,
-			GPLATES_ASSERTION_SOURCE);
-}
-
-
-bool
-GPlatesOpenGL::GLActiveTextureStateSet::apply_state(
-		OpenGLFunctions &opengl_functions,
-		const GLCapabilities &capabilities,
-		const GLStateSet &current_state_set,
-		const GLState &current_state) const
-{
-	// Return early if no state change...
-	if (d_active_texture ==
-			// Throws exception if downcast fails...
-			dynamic_cast<const GLActiveTextureStateSet &>(current_state_set).d_active_texture)
-	{
-		return false;
-	}
-
-	opengl_functions.glActiveTexture(d_active_texture);
-
-	return true;
-}
-
-bool
-GPlatesOpenGL::GLActiveTextureStateSet::apply_from_default_state(
-		OpenGLFunctions &opengl_functions,
-		const GLCapabilities &capabilities,
-		const GLState &current_state) const
-{
-	// Return early if no state change...
-	if (d_active_texture == GL_TEXTURE0)
-	{
-		return false;
-	}
-
-	opengl_functions.glActiveTexture(d_active_texture);
-
-	return true;
-}
-
-bool
-GPlatesOpenGL::GLActiveTextureStateSet::apply_to_default_state(
-		OpenGLFunctions &opengl_functions,
-		const GLCapabilities &capabilities,
-		const GLState &current_state) const
-{
-	// Return early if no state change...
-	if (GL_TEXTURE0 == d_active_texture)
-	{
-		return false;
-	}
-
-	opengl_functions.glActiveTexture(GL_TEXTURE0);
-
-	return true;
-}
-
-
 bool
 GPlatesOpenGL::GLBindBufferStateSet::apply_state(
 		OpenGLFunctions &opengl_functions,
@@ -453,6 +386,110 @@ GPlatesOpenGL::GLBindFramebufferStateSet::apply_to_default_state(
 }
 
 
+GPlatesOpenGL::GLBindImageTextureStateSet::GLBindImageTextureStateSet(
+		const GLCapabilities &capabilities,
+		GLuint image_unit,
+		boost::optional<GLTexture::shared_ptr_type> texture,
+		GLint level,
+		GLboolean layered,
+		GLint layer,
+		GLenum access,
+		GLenum format) :
+	d_image_unit(image_unit),
+	d_texture(texture),
+	d_texture_resource(0),
+	d_level(level),
+	d_layered(layered),
+	d_layer(layer),
+	d_access(access),
+	d_format(format)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			image_unit < capabilities.gl_max_image_units,
+			GPLATES_ASSERTION_SOURCE);
+
+	if (texture)
+	{
+		d_texture_resource = texture.get()->get_resource_handle();
+	}
+}
+
+bool
+GPlatesOpenGL::GLBindImageTextureStateSet::apply_state(
+		OpenGLFunctions &opengl_functions,
+		const GLCapabilities &capabilities,
+		const GLStateSet &current_state_set,
+		const GLState &current_state) const
+{
+	// Throws exception if downcast fails...
+	const GLBindImageTextureStateSet &current = dynamic_cast<const GLBindImageTextureStateSet &>(current_state_set);
+
+	// Note we're NOT comparing the image unit (it should be the same for 'this' and 'current_state_set').
+	//
+	// Return early if no state change...
+	if (d_texture_resource == current.d_texture_resource &&
+		d_level == current.d_level &&
+		d_layered == current.d_layered &&
+		d_layer == current.d_layer &&
+		d_access == current.d_access &&
+		d_format == current.d_format)
+	{
+		return false;
+	}
+
+	// Bind the texture object (can be zero).
+	opengl_functions.glBindImageTexture(d_image_unit, d_texture_resource, d_level, d_layered, d_layer, d_access, d_format);
+
+	return true;
+}
+
+bool
+GPlatesOpenGL::GLBindImageTextureStateSet::apply_from_default_state(
+		OpenGLFunctions &opengl_functions,
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_texture_resource == 0 &&
+		d_level == 0 &&
+		d_layered == GL_FALSE &&
+		d_layer == 0 &&
+		d_access == GL_READ_ONLY &&
+		d_format == GL_R8)
+	{
+		return false;
+	}
+
+	// Bind the texture object.
+	opengl_functions.glBindImageTexture(d_image_unit, d_texture_resource, d_level, d_layered, d_layer, d_access, d_format);
+
+	return true;
+}
+
+bool
+GPlatesOpenGL::GLBindImageTextureStateSet::apply_to_default_state(
+		OpenGLFunctions &opengl_functions,
+		const GLCapabilities &capabilities,
+		const GLState &current_state) const
+{
+	// Return early if no state change...
+	if (d_texture_resource == 0 &&
+		d_level == 0 &&
+		d_layered == GL_FALSE &&
+		d_layer == 0 &&
+		d_access == GL_READ_ONLY &&
+		d_format == GL_R8)
+	{
+		return false;
+	}
+
+	// The default is zero (no texture object).
+	opengl_functions.glBindImageTexture(d_image_unit, 0, 0/*level*/, GL_FALSE/*layered*/, 0/*layer*/, GL_READ_ONLY/*access*/, GL_R8/*format*/);
+
+	return true;
+}
+
+
 bool
 GPlatesOpenGL::GLBindRenderbufferStateSet::apply_state(
 		OpenGLFunctions &opengl_functions,
@@ -592,23 +629,13 @@ GPlatesOpenGL::GLBindSamplerStateSet::apply_to_default_state(
 
 GPlatesOpenGL::GLBindTextureStateSet::GLBindTextureStateSet(
 		const GLCapabilities &capabilities,
-		GLenum texture_target,
-		GLenum texture_unit,
-		boost::optional<GLTexture::shared_ptr_type> texture) :
-	d_texture_target(texture_target),
+		GLuint texture_unit) :
 	d_texture_unit(texture_unit),
-	d_texture(texture),
-	d_texture_resource(0)
+	d_in_default_state(true)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + capabilities.gl_max_combined_texture_image_units,
+			texture_unit < capabilities.gl_max_combined_texture_image_units,
 			GPLATES_ASSERTION_SOURCE);
-
-	if (texture)
-	{
-		d_texture_resource = texture.get()->get_resource_handle();
-	}
 }
 
 bool
@@ -618,34 +645,87 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_state(
 		const GLStateSet &current_state_set,
 		const GLState &current_state) const
 {
-	// Note the only state we're comparing is the texture object (resource handle).
-	// The texture target or texture unit should be the same for 'this' and 'current_state_set'.
+	// Throws exception if downcast fails...
+	const GLBindTextureStateSet &current = dynamic_cast<const GLBindTextureStateSet &>(current_state_set);
+
+	// Note the only state we're comparing are the texture objects (resource handles).
+	// The texture unit should be the same for 'this' and 'current_state_set'.
 	//
-	// Return early if no state change...
-	if (d_texture_resource ==
-			// Throws exception if downcast fails...
-			dynamic_cast<const GLBindTextureStateSet &>(current_state_set).d_texture_resource)
+	// Return early if both in default state (which means all texture targets are unbound)...
+	if (d_in_default_state && current.d_in_default_state)
 	{
 		return false;
 	}
 
-	// Make sure the correct texture unit is currently active when binding texture.
-	const GLenum current_active_texture = current_state.get_active_texture();
-	if (d_texture_unit != current_active_texture)
+	// If currently in default state but the new state (our state) is not the default state.
+	if (current.d_in_default_state)
 	{
-		opengl_functions.glActiveTexture(d_texture_unit);
+		// Bind the texture(s) to target(s).
+		for (unsigned int target_index = 0; target_index < NUM_TARGETS; ++target_index)
+		{
+			if (d_target_textures[target_index])
+			{
+				opengl_functions.glBindTextureUnit(
+						d_texture_unit,
+						d_target_textures[target_index].get()->get_resource_handle());
+			}
+		}
+
+		return true;
 	}
-
-	// Bind the texture object (can be zero).
-	opengl_functions.glBindTexture(d_texture_target, d_texture_resource);
-
-	// Restore active texture.
-	if (current_active_texture != d_texture_unit)
+	// Else if not currently in default state but the new state (our state) is the default state.
+	else if (d_in_default_state)
 	{
-		opengl_functions.glActiveTexture(current_active_texture);
-	}
+		// Bind the default unnamed texture 0.
+		// This unbinds textures bound on all texture targets.
+		opengl_functions.glBindTextureUnit(d_texture_unit, 0);
 
-	return true;
+		return true;
+	}
+	// Else not currently in default state and the new state (our state) is also not the default state.
+	else
+	{
+		bool changed_state = false;
+
+		// One or more targets in the current state have bound textures and
+		// one or more targets in the new state (our state) have bound textures.
+		//
+		// So first see if there's a target with a bound texture in the current state but not in the new state.
+		// If so then the only way we can unbind that target is to unbind all targets.
+		bool unbound = false;
+		for (unsigned int target_index = 0; target_index < NUM_TARGETS; ++target_index)
+		{
+			if (current.d_target_textures[target_index] && !d_target_textures[target_index])
+			{
+				// This unbinds textures bound on all texture targets.
+				opengl_functions.glBindTextureUnit(d_texture_unit, 0);
+				unbound = true;
+				changed_state = true;
+				break;
+			}
+		}
+
+		// Bind the texture(s) to target(s).
+		for (unsigned int target_index = 0; target_index < NUM_TARGETS; ++target_index)
+		{
+			// If we have a target to bind.
+			if (d_target_textures[target_index])
+			{
+				// We need to bind to the target if all targets were unbound or if the new texture is
+				// different to the current texture (including if no current texture bound).
+				if (unbound ||
+					(d_target_textures[target_index].get() != current.d_target_textures[target_index]))
+				{
+					opengl_functions.glBindTextureUnit(
+							d_texture_unit,
+							d_target_textures[target_index].get()->get_resource_handle());
+					changed_state = true;
+				}
+			}
+		}
+
+		return changed_state;
+	}
 }
 
 bool
@@ -655,25 +735,20 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_from_default_state(
 		const GLState &current_state) const
 {
 	// Return early if no state change...
-	if (d_texture_resource == 0)
+	if (d_in_default_state)
 	{
 		return false;
 	}
 
-	// Make sure the correct texture unit is currently active when binding texture.
-	const GLenum current_active_texture = current_state.get_active_texture();
-	if (d_texture_unit != current_active_texture)
+	// Bind the texture(s) to target(s).
+	for (unsigned int target_index = 0; target_index < NUM_TARGETS; ++target_index)
 	{
-		opengl_functions.glActiveTexture(d_texture_unit);
-	}
-
-	// Bind the texture.
-	opengl_functions.glBindTexture(d_texture_target, d_texture_resource);
-
-	// Restore active texture.
-	if (current_active_texture != d_texture_unit)
-	{
-		opengl_functions.glActiveTexture(current_active_texture);
+		if (d_target_textures[target_index])
+		{
+			opengl_functions.glBindTextureUnit(
+					d_texture_unit,
+					d_target_textures[target_index].get()->get_resource_handle());
+		}
 	}
 
 	return true;
@@ -686,28 +761,51 @@ GPlatesOpenGL::GLBindTextureStateSet::apply_to_default_state(
 		const GLState &current_state) const
 {
 	// Return early if no state change...
-	if (d_texture_resource == 0)
+	if (d_in_default_state)
 	{
 		return false;
 	}
 
-	// Make sure the correct texture unit is currently active when unbinding texture.
-	const GLenum current_active_texture = current_state.get_active_texture();
-	if (d_texture_unit != current_active_texture)
-	{
-		opengl_functions.glActiveTexture(d_texture_unit);
-	}
-
 	// Bind the default unnamed texture 0.
-	opengl_functions.glBindTexture(d_texture_target, 0);
-
-	// Restore active texture.
-	if (current_active_texture != d_texture_unit)
-	{
-		opengl_functions.glActiveTexture(current_active_texture);
-	}
+	// This unbinds textures bound on all texture targets.
+	opengl_functions.glBindTextureUnit(d_texture_unit, 0);
 
 	return true;
+}
+
+GPlatesOpenGL::GLBindTextureStateSet::TextureTargetType
+GPlatesOpenGL::GLBindTextureStateSet::get_texture_target_index(
+		GLenum texture_target)
+{
+	switch (texture_target)
+	{
+	case GL_TEXTURE_1D:
+		return TARGET_TEXTURE_1D;
+	case GL_TEXTURE_1D_ARRAY:
+		return TARGET_TEXTURE_1D_ARRAY;
+	case GL_TEXTURE_2D:
+		return TARGET_TEXTURE_2D;
+	case GL_TEXTURE_2D_ARRAY:
+		return TARGET_TEXTURE_2D_ARRAY;
+	case GL_TEXTURE_2D_MULTISAMPLE:
+		return TARGET_TEXTURE_2D_MULTISAMPLE;
+	case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
+		return TARGET_TEXTURE_2D_MULTISAMPLE_ARRAY;
+	case GL_TEXTURE_3D:
+		return TARGET_TEXTURE_3D;
+	case GL_TEXTURE_CUBE_MAP:
+		return TARGET_TEXTURE_CUBE_MAP;
+	case GL_TEXTURE_CUBE_MAP_ARRAY:
+		return TARGET_TEXTURE_CUBE_MAP_ARRAY;
+	case GL_TEXTURE_BUFFER:
+		return TARGET_TEXTURE_BUFFER;
+	case GL_TEXTURE_RECTANGLE:
+		return TARGET_TEXTURE_RECTANGLE;
+
+	default:
+		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+		break;
+	}
 }
 
 

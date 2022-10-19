@@ -544,7 +544,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::render_raster_data_into_tile_texture
 	if (!d_have_checked_tile_framebuffer_completeness)
 	{
 		// Throw OpenGLException if not complete.
-		// This should succeed since we should only be using texture formats that are required by OpenGL 3.3 core.
+		// This should succeed since we should only be using texture formats that are required by modern OpenGL.
 		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,
@@ -651,34 +651,24 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::create_tile_texture(
 		const GLTexture::shared_ptr_type &tile_texture,
 		const CubeQuadTreeNode &tile)
 {
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	// Bind the texture.
-	gl.BindTexture(GL_TEXTURE_2D, tile_texture);
-
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(tile_texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(tile_texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// If the source texture contains alpha or coverage and its not in the alpha channel then swizzle the texture
 	// so it is copied to the alpha channel (eg, a data RG texture copies coverage from G to A).
 	boost::optional<GLenum> texture_swizzle_alpha = d_multi_resolution_raster->get_tile_texture_swizzle_alpha();
 	if (texture_swizzle_alpha)
 	{
-		gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, texture_swizzle_alpha.get());
+		gl.TextureParameteri(tile_texture, GL_TEXTURE_SWIZZLE_A, texture_swizzle_alpha.get());
 	}
 
 	// Create the texture but don't load any data into it.
 	// Leave it uninitialised because we will be rendering into it to initialise it.
-	//
-	// NOTE: Since the image data is NULL it doesn't really matter what 'format' and 'type' are -
-	// just use values that are compatible with all internal formats to avoid a possible error.
-	gl.TexImage2D(GL_TEXTURE_2D, 0,
+	gl.TextureStorage2D(tile_texture, 1/*levels*/,
 			d_multi_resolution_raster->get_tile_texture_internal_format(),
-			d_tile_texel_dimension, d_tile_texel_dimension,
-			0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+			d_tile_texel_dimension, d_tile_texel_dimension);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
@@ -691,13 +681,7 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::set_tile_texture_filtering(
 		const GLTexture::shared_ptr_type &tile_texture,
 		const CubeQuadTreeNode &tile)
 {
-	const GLCapabilities& capabilities = gl.get_capabilities();
-
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	// Bind the texture.
-	gl.BindTexture(GL_TEXTURE_2D, tile_texture);
+	const GLCapabilities &capabilities = gl.get_capabilities();
 
 	//
 	// No mipmaps needed so we specify no mipmap filtering.
@@ -708,24 +692,24 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::set_tile_texture_filtering(
 	if (d_multi_resolution_raster->tile_texture_is_visual())
 	{
 		// Use nearest filtering for the 'min' filter since it displays a visually crisper image.
-		gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		gl.TextureParameteri(tile_texture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 		// For the 'mag' filter, only if it's a leaf node do we specify bilinear filtering - since only
 		// then will the texture start to magnify (the bilinear makes it smooth instead of pixellated).
 		if (tile.d_is_leaf_node)
 		{
-			gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			gl.TextureParameteri(tile_texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		}
 		else
 		{
-			gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			gl.TextureParameteri(tile_texture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		}
 	}
 	else // a non-visual texture (eg, regular data, normal map or scalar field data)...
 	{
 		// Use binlinear filtering.
-		gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		gl.TextureParameteri(tile_texture, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		gl.TextureParameteri(tile_texture, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	}
 
 	// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
@@ -734,6 +718,6 @@ GPlatesOpenGL::GLMultiResolutionCubeRaster::set_tile_texture_filtering(
 	// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
 	if (capabilities.gl_EXT_texture_filter_anisotropic)
 	{
-		gl.TexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
+		gl.TextureParameterf(tile_texture, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
 	}
 }

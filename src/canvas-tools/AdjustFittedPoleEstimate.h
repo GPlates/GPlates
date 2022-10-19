@@ -36,6 +36,7 @@
 #include "maths/GreatCircleArc.h"
 #include "maths/MultiPointOnSphere.h"
 
+#include "view-operations/RenderedArrow.h"
 #include "view-operations/RenderedCircleSymbol.h"
 #include "view-operations/RenderedCrossSymbol.h"
 #include "view-operations/RenderedGeometryCollection.h"
@@ -43,7 +44,6 @@
 #include "view-operations/RenderedMultiPointOnSphere.h"
 #include "view-operations/RenderedPointOnSphere.h"
 #include "view-operations/RenderedPolylineOnSphere.h"
-#include "view-operations/RenderedRadialArrow.h"
 #include "view-operations/RenderedSquareSymbol.h"
 #include "view-operations/RenderedStrainMarkerSymbol.h"
 #include "view-operations/RenderedTriangleSymbol.h"
@@ -99,6 +99,16 @@ namespace GPlatesCanvasTools
 				d_vertex_index(vertex_index)
 			{  }
 
+
+			virtual
+			void
+			visit_rendered_arrow(
+					const GPlatesViewOperations::RenderedArrow &rendered_arrow)
+			{
+				d_geometry.reset(
+						rendered_arrow.get_start_position().get_geometry_on_sphere());
+			}
+
 			virtual
 			void
 			visit_rendered_point_on_sphere(
@@ -107,7 +117,6 @@ namespace GPlatesCanvasTools
 				d_geometry.reset(
 						rendered_point_on_sphere.get_point_on_sphere().get_geometry_on_sphere());
 			}
-
 
 			virtual
 			void
@@ -171,15 +180,6 @@ namespace GPlatesCanvasTools
 			{
 				d_geometry.reset(
 							rendered_polyline.get_polyline_on_sphere());
-			}
-
-			virtual
-			void
-			visit_rendered_radial_arrow(
-					const GPlatesViewOperations::RenderedRadialArrow &rendered_radial_arrow)
-			{
-				d_geometry.reset(
-						rendered_radial_arrow.get_position().get_geometry_on_sphere());
 			}
 
 			boost::optional<GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type>

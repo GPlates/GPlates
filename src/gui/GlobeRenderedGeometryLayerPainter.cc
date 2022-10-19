@@ -53,6 +53,7 @@
 
 #include "utils/Profile.h"
 
+#include "view-operations/RenderedArrow.h"
 #include "view-operations/RenderedArrowedPolyline.h"
 #include "view-operations/RenderedCircleSymbol.h"
 #include "view-operations/RenderedColouredEdgeSurfaceMesh.h"
@@ -68,7 +69,6 @@
 #include "view-operations/RenderedPointOnSphere.h"
 #include "view-operations/RenderedPolygonOnSphere.h"
 #include "view-operations/RenderedPolylineOnSphere.h"
-#include "view-operations/RenderedRadialArrow.h"
 #include "view-operations/RenderedResolvedRaster.h"
 #include "view-operations/RenderedResolvedScalarField3D.h"
 #include "view-operations/RenderedSmallCircle.h"
@@ -76,7 +76,6 @@
 #include "view-operations/RenderedSquareSymbol.h"
 #include "view-operations/RenderedStrainMarkerSymbol.h"
 #include "view-operations/RenderedString.h"
-#include "view-operations/RenderedTangentialArrow.h"
 #include "view-operations/RenderedTriangleSymbol.h"
 
 // Temporary includes for triangle testing
@@ -96,6 +95,14 @@ namespace
 	const double SMALL_CIRCLE_ANGULAR_INCREMENT = GPlatesMaths::convert_deg_to_rad(1);
 
 	const double TWO_PI = 2. * GPlatesMaths::PI;
+
+	// For arrows, we want to keep the projected arrowhead size constant regardless of the
+	// the length of the arrow body, except...
+	//
+	// ...if the ratio of arrowhead size to arrow body length is large enough then
+	// we need to start scaling the arrowhead size by the arrow body length so
+	// that the arrowhead disappears as the arrow body disappears.
+	const float MAX_RATIO_ARROWHEAD_TO_ARROW_BODY_LENGTH = 0.5f;
 
 	const double ARROWHEAD_BASE_HEIGHT_RATIO = 0.5;
 	const double COSINE_ARROWHEAD_BASE_HEIGHT_RATIO = std::cos(std::atan(ARROWHEAD_BASE_HEIGHT_RATIO));
@@ -869,28 +876,27 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_resolved_scalar_fi
 
 
 void
-GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_radial_arrow(
-		const GPlatesViewOperations::RenderedRadialArrow &rendered_radial_arrow)
+GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_arrow(
+		const GPlatesViewOperations::RenderedArrow &rendered_arrow)
 {
 	if (d_paint_region != PAINT_SURFACE)
 	{
 		return;
 	}
 
-	const GPlatesMaths::Vector3D start(
-			rendered_radial_arrow.get_position().position_vector());
+	const GPlatesMaths::Vector3D arrow_start(
+			rendered_arrow.get_start_position().position_vector());
 
-	// Calculate position from start point along radial/normal direction to
-	// end point off the globe. The length of the arrow in world space
-	// is inversely proportional to the zoom or magnification.
-	const GPlatesMaths::Vector3D end = (1 +
-			d_inverse_zoom_factor * rendered_radial_arrow.get_arrow_projected_length()) * start;
+	// Calculate position from start point (on the globe) along vector direction to end point (off the globe).
+	// The length of the arrow in world space is inversely proportional to the zoom or magnification.
+	const GPlatesMaths::Vector3D arrow_end = GPlatesMaths::Vector3D(arrow_start) +
+			d_inverse_zoom_factor * rendered_arrow.get_vector();
 
-	const GPlatesMaths::Vector3D arrowline = end - start;
-	const GPlatesMaths::real_t arrowline_length = arrowline.magnitude();
+	const GPlatesMaths::Vector3D arrow_body_vector = arrow_end - arrow_start;
+	const GPlatesMaths::real_t arrow_body_length = arrow_body_vector.magnitude();
 
 	// Avoid divide-by-zero - and if arrow length is near zero it won't be visible.
-	if (arrowline_length == 0)
+	if (arrow_body_length == 0)
 	{
 		return;
 	}
@@ -905,254 +911,55 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_radial_arrow(
 	// is not affected by our hierarchical view frustum culling in 'get_visible_rendered_geometries()'.
 	//
 	// Use a bounding sphere around the arrow - we also know that the arrowhead will always fit
-	// within this bounding sphere because it's axis is never longer than the arrow line and
-	// the angle of its cone (relative to the arrow line) is 45 degrees, and the maximum arrowhead
-	// length is typically limited to half the arrowline length.
+	// within this bounding sphere because it's axis is never longer than the arrow body and
+	// the angle of its cone (relative to the arrow body) is 45 degrees, and the maximum arrowhead
+	// length is typically limited to half the arrow body length.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_frustum_planes,
 			GPLATES_ASSERTION_SOURCE);
 	if (!GPlatesOpenGL::GLIntersect::intersect_sphere_frustum(
 		GPlatesOpenGL::GLIntersect::Sphere(
-				start + 0.5 * arrowline/*arrow midpoint*/,
-				0.5 * arrowline_length/*arrow radius*/),
+				arrow_start + 0.5 * arrow_body_vector/*arrow midpoint*/,
+				0.5 * arrow_body_length/*arrow radius*/),
 		d_frustum_planes->get_planes(),
 		GPlatesOpenGL::GLFrustum::ALL_PLANES_ACTIVE_MASK))
 	{
 		return;
 	}
 
-	//
-	// Render the arrow.
-	//
-
-	const Colour &arrow_colour = get_vector_geometry_colour(rendered_radial_arrow.get_arrow_colour());
-
-	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_arrow_colour = Colour::to_rgba8(arrow_colour);
-
-	const GPlatesMaths::UnitVector3D &arrowline_unit_vector =
-			rendered_radial_arrow.get_position().position_vector();
-
-	GPlatesMaths::real_t arrowhead_size =
-			d_inverse_zoom_factor * rendered_radial_arrow.get_arrowhead_projected_size();
-
-	const GPlatesMaths::real_t arrowline_width =
-			d_inverse_zoom_factor * rendered_radial_arrow.get_projected_arrowline_width();
-	
-	paint_arrow(
-			start,
-			end,
-			arrowline_unit_vector,
-			arrowline_width,
-			arrowhead_size,
-			rgba8_arrow_colour,
-			d_layer_painter->drawables_off_the_sphere.get_axially_symmetric_mesh_triangles_stream());
-
-	//
-	// Render the symbol.
-	//
-
-    const Colour &symbol_colour = get_vector_geometry_colour(rendered_radial_arrow.get_symbol_colour());
-
-	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_symbol_colour = Colour::to_rgba8(symbol_colour);
-
-	// The symbol is a small circle with diameter equal to the arrowline width.
-	const GPlatesMaths::real_t small_circle_radius = 0.5 * arrowline_width;
-	const GPlatesMaths::SmallCircle small_circle = GPlatesMaths::SmallCircle::create_colatitude(
-			rendered_radial_arrow.get_position().position_vector(),
-			small_circle_radius);
-
-	std::vector<GPlatesMaths::PointOnSphere> small_circle_points;
-	tessellate(small_circle_points, small_circle, SMALL_CIRCLE_ANGULAR_INCREMENT);
-
-	// Draw the small circle outline.
-	// We do this even if we're filling the small circle because it makes it nicely visible around
-	// the base of the arrow body because it extends out past the cylinder of the arrow body.
-
-	// The factor of 2 makes the small circle nicely visible around the base of the arrow body.
-	const float small_circle_line_width = 2.0f * LINE_WIDTH_ADJUSTMENT * d_scale;
-
-	// Get the stream for the small circle lines.
-	stream_primitives_type &small_circle_line_stream =
-			d_layer_painter->drawables_on_the_sphere.get_lines_stream(small_circle_line_width);
-
-	// Used to add a line loop to the stream.
-	stream_primitives_type::LineLoops stream_small_circle_line_loops(small_circle_line_stream);
-	stream_small_circle_line_loops.begin_line_loop();
-	for (unsigned int i = 0; i < small_circle_points.size(); ++i)
-	{
-		stream_small_circle_line_loops.add_vertex(
-				coloured_vertex_type(small_circle_points[i].position_vector(), rgba8_symbol_colour));
-	}
-	stream_small_circle_line_loops.end_line_loop();
-
-	// Draw the filled small circle.
-	if (rendered_radial_arrow.get_symbol_type() == GPlatesViewOperations::RenderedRadialArrow::SYMBOL_FILLED_CIRCLE)
-	{
-		stream_primitives_type &triangle_stream =
-			d_layer_painter->drawables_on_the_sphere.get_triangles_stream();
-
-		stream_primitives_type::TriangleFans stream_triangle_fans(triangle_stream);
-
-		stream_triangle_fans.begin_triangle_fan();
-
-		// Add centre of small circle (apex of triangle fan).
-		stream_triangle_fans.add_vertex(
-					coloured_vertex_type(rendered_radial_arrow.get_position().position_vector(), rgba8_symbol_colour));
-
-		// Add small circle points.
-		for (unsigned int i = 0; i < small_circle_points.size(); ++i)
-		{
-			stream_triangle_fans.add_vertex(
-					coloured_vertex_type(small_circle_points[i].position_vector(), rgba8_symbol_colour));
-		}
-
-		stream_triangle_fans.end_triangle_fan();
-	}
-
-	// Draw the small circle centre point.
-	if (rendered_radial_arrow.get_symbol_type() == GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_POINT)
-	{
-		// Factor of 2 makes the makes the point more visible when the cylinder of the arrow body
-		// is transparent.
-		const float point_size = 2.0f * POINT_SIZE_ADJUSTMENT * d_scale;
-		stream_primitives_type &point_stream =
-				d_layer_painter->drawables_on_the_sphere.get_points_stream(point_size);
-
-		stream_primitives_type::Points stream_points(point_stream);
-		stream_points.begin_points();
-		stream_points.add_vertex(
-				coloured_vertex_type(rendered_radial_arrow.get_position().position_vector(), rgba8_symbol_colour));
-		stream_points.end_points();
-	}
-
-	// Draw a cross in the small circle.
-	if (rendered_radial_arrow.get_symbol_type() == GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS)
-	{
-		// Create tangent space where 'y' direction points to the north pole.
-		const GPlatesMaths::Vector3D tangent_space_z(rendered_radial_arrow.get_position().position_vector());
-		const GPlatesMaths::Vector3D tangent_space_x_dir =
-				cross(GPlatesMaths::UnitVector3D::zBasis(), tangent_space_z);
-		const GPlatesMaths::Vector3D tangent_space_x =
-				(tangent_space_x_dir.magSqrd() > 0)
-				? GPlatesMaths::Vector3D(tangent_space_x_dir.get_normalisation())
-				: GPlatesMaths::Vector3D(
-						generate_perpendicular(rendered_radial_arrow.get_position().position_vector()));
-		const GPlatesMaths::Vector3D tangent_space_y = cross(tangent_space_z, tangent_space_x);
-
-		// The factor of 1.5 ensures the cross is not too fat.
-		const float cross_line_width = 1.5f * LINE_WIDTH_ADJUSTMENT * d_scale;
-
-		// Get the stream for the cross lines.
-		stream_primitives_type &cross_line_stream =
-				d_layer_painter->drawables_on_the_sphere.get_lines_stream(cross_line_width);
-
-		stream_primitives_type::LineStrips stream_cross_line_strips(cross_line_stream);
-
-		stream_cross_line_strips.begin_line_strip();
-		stream_cross_line_strips.add_vertex(
-				coloured_vertex_type(tangent_space_z - small_circle_radius * tangent_space_x, rgba8_symbol_colour));
-		stream_cross_line_strips.add_vertex(
-				coloured_vertex_type(tangent_space_z + small_circle_radius * tangent_space_x, rgba8_symbol_colour));
-		stream_cross_line_strips.end_line_strip();
-
-		stream_cross_line_strips.begin_line_strip();
-		stream_cross_line_strips.add_vertex(
-				coloured_vertex_type(tangent_space_z - small_circle_radius * tangent_space_y, rgba8_symbol_colour));
-		stream_cross_line_strips.add_vertex(
-				coloured_vertex_type(tangent_space_z + small_circle_radius * tangent_space_y, rgba8_symbol_colour));
-		stream_cross_line_strips.end_line_strip();
-	}
-}
-
-
-void
-GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_tangential_arrow(
-		const GPlatesViewOperations::RenderedTangentialArrow &rendered_tangential_arrow)
-{
-	if (d_paint_region != PAINT_SURFACE)
-	{
-		return;
-	}
-
-	const GPlatesMaths::Vector3D start(
-			rendered_tangential_arrow.get_start_position().position_vector());
-
-	// Calculate position from start point along tangent direction to
-	// end point off the globe. The length of the arrow in world space
-	// is inversely proportional to the zoom or magnification.
-	const GPlatesMaths::Vector3D end = GPlatesMaths::Vector3D(start) +
-			d_inverse_zoom_factor * rendered_tangential_arrow.get_arrow_direction();
-
-	const GPlatesMaths::Vector3D arrowline = end - start;
-	const GPlatesMaths::real_t arrowline_length = arrowline.magnitude();
-
-	// Avoid divide-by-zero - and if arrow length is near zero it won't be visible.
-	if (arrowline_length == 0)
-	{
-		return;
-	}
-
-	// Cull the rendered arrow if it's outside the view frustum.
-	// This helps a lot for high zoom levels where the zoom-dependent binning of rendered arrows
-	// creates a large number of arrow bins to such an extent that CPU profiling shows the drawing
-	// of each arrow (setting up the arrow geometry) to consume most of the rendering time.
-	// Note that the zoom-dependent binning cannot take advantage of the rendered geometries
-	// spatial partition (because arrows are off the sphere and also arrow length is not known
-	// ahead of time so bounds cannot be determined for placement in spatial partition) and hence
-	// is not affected by our hierarchical view frustum culling in 'get_visible_rendered_geometries()'.
-	//
-	// Use a bounding sphere around the arrow - we also know that the arrowhead will always fit
-	// within this bounding sphere because it's axis is never longer than the arrow line and
-	// the angle of its cone (relative to the arrow line) is 45 degrees, and the maximum arrowhead
-	// length is typically limited to half the arrowline length.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_frustum_planes,
-			GPLATES_ASSERTION_SOURCE);
-	if (!GPlatesOpenGL::GLIntersect::intersect_sphere_frustum(
-		GPlatesOpenGL::GLIntersect::Sphere(
-				start + 0.5 * arrowline/*arrow midpoint*/,
-				0.5 * arrowline_length/*arrow radius*/),
-		d_frustum_planes->get_planes(),
-		GPlatesOpenGL::GLFrustum::ALL_PLANES_ACTIVE_MASK))
-	{
-		return;
-	}
-
-	const Colour &colour = get_vector_geometry_colour(rendered_tangential_arrow.get_colour());
+	const Colour &colour = get_vector_geometry_colour(rendered_arrow.get_colour());
 
 	// Convert colour from floats to bytes to use less vertex memory.
 	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
-	const GPlatesMaths::UnitVector3D arrowline_unit_vector((1.0 / arrowline_length) * arrowline);
+	const GPlatesMaths::UnitVector3D arrow_unit_vector((1.0 / arrow_body_length) * arrow_body_vector);
 
-	GPlatesMaths::real_t arrowhead_size =
-			d_inverse_zoom_factor * rendered_tangential_arrow.get_arrowhead_projected_size();
-
-	const float max_ratio_arrowhead_to_arrowline_length =
-			rendered_tangential_arrow.get_max_ratio_arrowhead_to_arrowline_length();
+	GPlatesMaths::real_t arrow_body_width = d_inverse_zoom_factor * rendered_arrow.get_arrow_body_width();
+	GPlatesMaths::real_t arrowhead_size = d_inverse_zoom_factor * rendered_arrow.get_arrowhead_size();
 
 	// We want to keep the projected arrowhead size constant regardless of the
-	// the length of the arrowline, except...
+	// the length of the arrow body, except...
 	//
-	// ...if the ratio of arrowhead size to arrowline length is large enough then
-	// we need to start scaling the arrowhead size by the arrowline length so
-	// that the arrowhead disappears as the arrowline disappears.
-	if (arrowhead_size > max_ratio_arrowhead_to_arrowline_length * arrowline_length)
+	// ...if the ratio of arrowhead size to arrow body length is large enough then
+	// we need to start scaling the arrowhead size by the arrow body length so
+	// that the arrowhead disappears as the arrow body disappears.
+	const GPlatesMaths::real_t max_arrowhead_size = MAX_RATIO_ARROWHEAD_TO_ARROW_BODY_LENGTH * arrow_body_length;
+	if (arrowhead_size.dval() > max_arrowhead_size.dval())
 	{
-		arrowhead_size = max_ratio_arrowhead_to_arrowline_length * arrowline_length;
-	}
+		const double scale = max_arrowhead_size.dval() / arrowhead_size.dval();
 
-	const GPlatesMaths::real_t arrowline_width =
-			rendered_tangential_arrow.get_globe_view_ratio_arrowline_width_to_arrowhead_size() * arrowhead_size;
+		arrowhead_size *= scale;
+
+		// Also linearly shrink the arrow body width.
+		arrow_body_width *= scale;
+	}
 	
 	// Render the arrow.
 	paint_arrow(
-			start,
-			end,
-			arrowline_unit_vector,
-			arrowline_width,
+			arrow_start,
+			arrow_end,
+			arrow_unit_vector,
+			arrow_body_width,
 			arrowhead_size,
 			rgba8_color,
 			d_layer_painter->drawables_off_the_sphere.get_axially_symmetric_mesh_triangles_stream());
@@ -1302,7 +1109,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_arrowed_polyline(
 		return;
 	}
 
-	// Based on the "visit_rendered_tangential_arrow" code 
+	// Based on the "visit_rendered_arrow" code 
 
 	const Colour &colour = get_vector_geometry_colour(rendered_arrowed_polyline.get_colour());
 
@@ -1750,8 +1557,8 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::visit_rendered_strain_marker_symb
 	// hierarchical view frustum culling in 'get_visible_rendered_geometries()'.
 	//
 	// Use a bounding sphere around the strain marker arrows - we also know that the arrowheads will
-	// always fit within this bounding sphere because their axes are never longer than the arrow lines
-	// and the angle of its cones (relative to the arrow lines) is 45 degrees, and the maximum arrowhead
+	// always fit within this bounding sphere because their axes are never longer than the arrow bodys
+	// and the angle of its cones (relative to the arrow bodys) is 45 degrees, and the maximum arrowhead
 	// length is typically limited to half the arrowline length.
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			d_frustum_planes,
@@ -2323,7 +2130,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_arrow(
 		const GPlatesMaths::Vector3D &start,
 		const GPlatesMaths::Vector3D &end,
 		const GPlatesMaths::UnitVector3D &arrow_axis,
-		const GPlatesMaths::real_t &arrowline_width,
+		const GPlatesMaths::real_t &arrow_body_width,
 		const GPlatesMaths::real_t &arrowhead_size,
 		rgba8_t rgba8_color,
 		axially_symmetric_mesh_stream_primitives_type &triangles_stream)
@@ -2355,7 +2162,7 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_arrow(
 	const GPlatesMaths::Vector3D &centre_start_circle = start;
 	const GPlatesMaths::Vector3D centre_end_circle = end - arrowhead_size * arrow_axis;
 
-	const GPlatesMaths::real_t arrowline_half_width = 0.5 * arrowline_width;
+	const GPlatesMaths::real_t arrow_body_half_width = 0.5 * arrow_body_width;
 
 	static const int NUM_VERTICES_IN_UNIT_CIRCLE = 8;
 	static const double s_vertex_angle =
@@ -2376,28 +2183,28 @@ GPlatesGui::GlobeRenderedGeometryLayerPainter::paint_arrow(
 	// Generate the cylinder start vertices in the frame of reference of the arrow's axis.
 	const GPlatesMaths::Vector3D start_circle[] =
 	{
-		centre_start_circle + arrowline_half_width * (s_unit_circle[0][0] * arrow_x_axis + s_unit_circle[0][1] * arrow_y_axis),
-		centre_start_circle + arrowline_half_width * (s_unit_circle[1][0] * arrow_x_axis + s_unit_circle[1][1] * arrow_y_axis),
-		centre_start_circle + arrowline_half_width * (s_unit_circle[2][0] * arrow_x_axis + s_unit_circle[2][1] * arrow_y_axis),
-		centre_start_circle + arrowline_half_width * (s_unit_circle[3][0] * arrow_x_axis + s_unit_circle[3][1] * arrow_y_axis),
-		centre_start_circle + arrowline_half_width * (s_unit_circle[4][0] * arrow_x_axis + s_unit_circle[4][1] * arrow_y_axis),
-		centre_start_circle + arrowline_half_width * (s_unit_circle[5][0] * arrow_x_axis + s_unit_circle[5][1] * arrow_y_axis),
-		centre_start_circle + arrowline_half_width * (s_unit_circle[6][0] * arrow_x_axis + s_unit_circle[6][1] * arrow_y_axis),
-		centre_start_circle + arrowline_half_width * (s_unit_circle[7][0] * arrow_x_axis + s_unit_circle[7][1] * arrow_y_axis)
+		centre_start_circle + arrow_body_half_width * (s_unit_circle[0][0] * arrow_x_axis + s_unit_circle[0][1] * arrow_y_axis),
+		centre_start_circle + arrow_body_half_width * (s_unit_circle[1][0] * arrow_x_axis + s_unit_circle[1][1] * arrow_y_axis),
+		centre_start_circle + arrow_body_half_width * (s_unit_circle[2][0] * arrow_x_axis + s_unit_circle[2][1] * arrow_y_axis),
+		centre_start_circle + arrow_body_half_width * (s_unit_circle[3][0] * arrow_x_axis + s_unit_circle[3][1] * arrow_y_axis),
+		centre_start_circle + arrow_body_half_width * (s_unit_circle[4][0] * arrow_x_axis + s_unit_circle[4][1] * arrow_y_axis),
+		centre_start_circle + arrow_body_half_width * (s_unit_circle[5][0] * arrow_x_axis + s_unit_circle[5][1] * arrow_y_axis),
+		centre_start_circle + arrow_body_half_width * (s_unit_circle[6][0] * arrow_x_axis + s_unit_circle[6][1] * arrow_y_axis),
+		centre_start_circle + arrow_body_half_width * (s_unit_circle[7][0] * arrow_x_axis + s_unit_circle[7][1] * arrow_y_axis)
 	};
 	BOOST_STATIC_ASSERT(NUM_VERTICES_IN_UNIT_CIRCLE == (sizeof(start_circle) / sizeof(start_circle[0])));
 
 	// Generate the cylinder end vertices in the frame of reference of the arrow's axis.
 	const GPlatesMaths::Vector3D end_circle[] =
 	{
-		centre_end_circle + arrowline_half_width * (s_unit_circle[0][0] * arrow_x_axis + s_unit_circle[0][1] * arrow_y_axis),
-		centre_end_circle + arrowline_half_width * (s_unit_circle[1][0] * arrow_x_axis + s_unit_circle[1][1] * arrow_y_axis),
-		centre_end_circle + arrowline_half_width * (s_unit_circle[2][0] * arrow_x_axis + s_unit_circle[2][1] * arrow_y_axis),
-		centre_end_circle + arrowline_half_width * (s_unit_circle[3][0] * arrow_x_axis + s_unit_circle[3][1] * arrow_y_axis),
-		centre_end_circle + arrowline_half_width * (s_unit_circle[4][0] * arrow_x_axis + s_unit_circle[4][1] * arrow_y_axis),
-		centre_end_circle + arrowline_half_width * (s_unit_circle[5][0] * arrow_x_axis + s_unit_circle[5][1] * arrow_y_axis),
-		centre_end_circle + arrowline_half_width * (s_unit_circle[6][0] * arrow_x_axis + s_unit_circle[6][1] * arrow_y_axis),
-		centre_end_circle + arrowline_half_width * (s_unit_circle[7][0] * arrow_x_axis + s_unit_circle[7][1] * arrow_y_axis)
+		centre_end_circle + arrow_body_half_width * (s_unit_circle[0][0] * arrow_x_axis + s_unit_circle[0][1] * arrow_y_axis),
+		centre_end_circle + arrow_body_half_width * (s_unit_circle[1][0] * arrow_x_axis + s_unit_circle[1][1] * arrow_y_axis),
+		centre_end_circle + arrow_body_half_width * (s_unit_circle[2][0] * arrow_x_axis + s_unit_circle[2][1] * arrow_y_axis),
+		centre_end_circle + arrow_body_half_width * (s_unit_circle[3][0] * arrow_x_axis + s_unit_circle[3][1] * arrow_y_axis),
+		centre_end_circle + arrow_body_half_width * (s_unit_circle[4][0] * arrow_x_axis + s_unit_circle[4][1] * arrow_y_axis),
+		centre_end_circle + arrow_body_half_width * (s_unit_circle[5][0] * arrow_x_axis + s_unit_circle[5][1] * arrow_y_axis),
+		centre_end_circle + arrow_body_half_width * (s_unit_circle[6][0] * arrow_x_axis + s_unit_circle[6][1] * arrow_y_axis),
+		centre_end_circle + arrow_body_half_width * (s_unit_circle[7][0] * arrow_x_axis + s_unit_circle[7][1] * arrow_y_axis)
 	};
 	BOOST_STATIC_ASSERT(NUM_VERTICES_IN_UNIT_CIRCLE == (sizeof(end_circle) / sizeof(end_circle[0])));
 

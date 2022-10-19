@@ -80,14 +80,6 @@ GPlatesOpenGL::GL::~GL()
 
 
 void
-GPlatesOpenGL::GL::ActiveTexture(
-		GLenum active_texture_)
-{
-	d_current_state->active_texture(active_texture_);
-}
-
-
-void
 GPlatesOpenGL::GL::BindAttribLocation(
 		GLProgram::shared_ptr_type program,
 		GLuint index,
@@ -132,7 +124,7 @@ GPlatesOpenGL::GL::BindBufferBase(
 		GLuint index,
 		boost::optional<GLBuffer::shared_ptr_type> buffer)
 {
-	// Only used for targets GL_UNIFORM_BUFFER and GL_TRANSFORM_FEEDBACK_BUFFER.
+	// Only used for targets GL_UNIFORM_BUFFER, GL_TRANSFORM_FEEDBACK_BUFFER, GL_SHADER_STORAGE_BUFFER and GL_ATOMIC_COUNTER_BUFFER.
 	d_current_state->bind_buffer_base(target, index, buffer);
 }
 
@@ -145,7 +137,7 @@ GPlatesOpenGL::GL::BindBufferRange(
 		GLintptr offset,
 		GLsizeiptr size)
 {
-	// Only used for targets GL_UNIFORM_BUFFER and GL_TRANSFORM_FEEDBACK_BUFFER.
+	// Only used for targets GL_UNIFORM_BUFFER, GL_TRANSFORM_FEEDBACK_BUFFER, GL_SHADER_STORAGE_BUFFER and GL_ATOMIC_COUNTER_BUFFER.
 	d_current_state->bind_buffer_range(target, index, buffer, offset, size);
 }
 
@@ -160,6 +152,20 @@ GPlatesOpenGL::GL::BindFramebuffer(
 			framebuffer.get(),
 			// Default framebuffer resource (might not be zero, eg, each QOpenGLWindow has its own framebuffer object)...
 			d_default_framebuffer_resource);
+}
+
+
+void
+GPlatesOpenGL::GL::BindImageTexture(
+		GLuint image_unit,
+		boost::optional<GLTexture::shared_ptr_type> texture,
+		GLint level,
+		GLboolean layered,
+		GLint layer,
+		GLenum access,
+		GLenum format)
+{
+	d_current_state->bind_image_texture(image_unit, texture, level, layered, layer, access, format);
 }
 
 
@@ -182,15 +188,11 @@ GPlatesOpenGL::GL::BindSampler(
 
 
 void
-GPlatesOpenGL::GL::BindTexture(
-		GLenum texture_target,
+GPlatesOpenGL::GL::BindTextureUnit(
+		GLuint unit,
 		boost::optional<GLTexture::shared_ptr_type> texture)
 {
-	d_current_state->bind_texture(
-			texture_target,
-			// Bind to the currently active texture unit (set by gl.ActiveTexture)...
-			d_current_state->get_active_texture()/*texture_unit*/,
-			texture);
+	d_current_state->bind_texture_unit(unit, texture);
 }
 
 
@@ -249,7 +251,7 @@ GPlatesOpenGL::GL::BlendFuncSeparate(
 	d_current_state->blend_func_separate(src_RGB, dst_RGB, src_alpha, dst_alpha);
 }
 
-		
+
 void
 GPlatesOpenGL::GL::BufferData(
 		GLenum target,
@@ -258,17 +260,6 @@ GPlatesOpenGL::GL::BufferData(
 		GLenum usage)
 {
 	d_opengl_functions.glBufferData(target, size, data, usage);
-}
-
-
-void
-GPlatesOpenGL::GL::BufferSubData(
-		GLenum target,
-		GLintptr offset,
-		GLsizeiptr size,
-		const GLvoid *data)
-{
-	d_opengl_functions.glBufferSubData(target, offset, size, data);
 }
 
 
@@ -316,10 +307,66 @@ GPlatesOpenGL::GL::ClearDepth(
 
 
 void
+GPlatesOpenGL::GL::ClearNamedBufferData(
+		GLBuffer::shared_ptr_type buffer,
+		GLenum internalformat,
+		GLenum format,
+		GLenum type,
+		const void *data)
+{
+	d_opengl_functions.glClearNamedBufferData(buffer->get_resource_handle(), internalformat, format, type, data);
+}
+
+
+void
+GPlatesOpenGL::GL::ClearNamedBufferSubData(
+		GLBuffer::shared_ptr_type buffer,
+		GLenum internalformat,
+		GLintptr offset,
+		GLsizei size,
+		GLenum format,
+		GLenum type,
+		const void *data)
+{
+	d_opengl_functions.glClearNamedBufferSubData(buffer->get_resource_handle(), internalformat, offset, size, format, type, data);
+}
+
+
+void
 GPlatesOpenGL::GL::ClearStencil(
 		GLint stencil)
 {
 	d_current_state->clear_stencil(stencil);
+}
+
+
+void
+GPlatesOpenGL::GL::ClearTexSubImage(
+		GLTexture::shared_ptr_type texture,
+		GLint level,
+		GLint xoffset,
+		GLint yoffset,
+		GLint zoffset,
+		GLsizei width,
+		GLsizei height,
+		GLsizei depth,
+		GLenum format,
+		GLenum type,
+		const void *data)
+{
+	d_opengl_functions.glClearTexSubImage(texture->get_resource_handle(), level, xoffset, yoffset, zoffset, width, height, depth, format, type, data);
+}
+
+
+void
+GPlatesOpenGL::GL::ClearTexImage(
+		GLTexture::shared_ptr_type texture,
+		GLint level,
+		GLenum format,
+		GLenum type,
+		const void *data)
+{
+	d_opengl_functions.glClearTexImage(texture->get_resource_handle(), level, format, type, data);
 }
 
 
@@ -397,10 +444,11 @@ GPlatesOpenGL::GL::Disablei(
 
 
 void
-GPlatesOpenGL::GL::DisableVertexAttribArray(
+GPlatesOpenGL::GL::DisableVertexArrayAttrib(
+		GLVertexArray::shared_ptr_type vertex_array,
 		GLuint index)
 {
-	d_opengl_functions.glDisableVertexAttribArray(index);
+	d_opengl_functions.glDisableVertexArrayAttrib(vertex_array->get_resource_handle(), index);
 }
 
 
@@ -472,10 +520,11 @@ GPlatesOpenGL::GL::Enablei(
 
 
 void
-GPlatesOpenGL::GL::EnableVertexAttribArray(
+GPlatesOpenGL::GL::EnableVertexArrayAttrib(
+		GLVertexArray::shared_ptr_type vertex_array,
 		GLuint index)
 {
-	d_opengl_functions.glEnableVertexAttribArray(index);
+	d_opengl_functions.glEnableVertexArrayAttrib(vertex_array->get_resource_handle(), index);
 }
 
 
@@ -618,14 +667,15 @@ GPlatesOpenGL::GL::GetError()
 
 
 void
-GPlatesOpenGL::GL::GetTexImage(
-		GLenum target,
+GPlatesOpenGL::GL::GetTextureImage(
+		GLTexture::shared_ptr_type texture,
 		GLint level,
 		GLenum format,
 		GLenum type,
-		GLvoid *pixels)
+		GLsizei bufSize,
+		void *pixels)
 {
-	d_opengl_functions.glGetTexImage(target, level, format, type, pixels);
+	d_opengl_functions.glGetTextureImage(texture->get_resource_handle(), level, format, type, bufSize, pixels);
 }
 
 
@@ -642,7 +692,12 @@ void
 GPlatesOpenGL::GL::LineWidth(
 		GLfloat width)
 {
-	d_current_state->line_width(width);
+	// We use OpenGL 4.5 core profile, with "forward compatibility" which removes support for deprecated wide lines.
+	// They're not well-supported on macOS anyway (even in Vulkan).
+	// So just set the line width to 1.0 for now (to avoid an OpenGL error getting flagged).
+	//
+	// TODO: Replace wide lines altogether - with rectangle geometry and an anti-aliasing fragment shader.
+	d_current_state->line_width(1.0f/*width*/);
 }
 
 
@@ -663,6 +718,55 @@ GPlatesOpenGL::GL::MapBufferRange(
 		GLbitfield access)
 {
 	return d_opengl_functions.glMapBufferRange(target, offset, length, access);
+}
+
+
+void
+GPlatesOpenGL::GL::MemoryBarrier(
+		GLbitfield barriers)
+{
+	d_opengl_functions.glMemoryBarrier(barriers);
+}
+
+
+void
+GPlatesOpenGL::GL::MemoryBarrierByRegion(
+		GLbitfield barriers)
+{
+	d_opengl_functions.glMemoryBarrierByRegion(barriers);
+}
+
+
+void
+GPlatesOpenGL::GL::NamedBufferStorage(
+		GLBuffer::shared_ptr_type buffer,
+		GLsizei size,
+		const void *data,
+		GLbitfield flags)
+{
+	d_opengl_functions.glNamedBufferStorage(buffer->get_resource_handle(), size, data, flags);
+}
+
+
+void
+GPlatesOpenGL::GL::NamedBufferData(
+		GLBuffer::shared_ptr_type buffer,
+		GLsizei size,
+		const void *data,
+		GLenum usage)
+{
+	d_opengl_functions.glNamedBufferData(buffer->get_resource_handle(), size, data, usage);
+}
+
+
+void
+GPlatesOpenGL::GL::NamedBufferSubData(
+		GLBuffer::shared_ptr_type buffer,
+		GLintptr offset,
+		GLsizei size,
+		const void *data)
+{
+	d_opengl_functions.glNamedBufferSubData(buffer->get_resource_handle(), offset, size, data);
 }
 
 
@@ -696,7 +800,7 @@ GPlatesOpenGL::GL::PolygonMode(
 		GLenum face,
 		GLenum mode)
 {
-	// OpenGL 3.3 core requires 'face' to be 'GL_FRONT_AND_BACK'.
+	// Modern OpenGL requires 'face' to be 'GL_FRONT_AND_BACK'.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			face == GL_FRONT_AND_BACK,
 			GPLATES_ASSERTION_SOURCE);
@@ -847,6 +951,16 @@ GPlatesOpenGL::GL::Scissor(
 
 
 void
+GPlatesOpenGL::GL::ShaderStorageBlockBinding(
+		GLProgram::shared_ptr_type program,
+		GLuint storageBlockIndex,
+		GLuint storageBlockBinding)
+{
+	d_opengl_functions.glShaderStorageBlockBinding(program->get_resource_handle(), storageBlockIndex, storageBlockBinding);
+}
+
+
+void
 GPlatesOpenGL::GL::StencilFunc(
 		GLenum func,
 		GLint ref,
@@ -906,113 +1020,168 @@ GPlatesOpenGL::GL::StencilOpSeparate(
 
 
 void
-GPlatesOpenGL::GL::TexParameterf(GLenum target, GLenum pname, GLfloat param)
+GPlatesOpenGL::GL::TextureParameterf(
+		GLTexture::shared_ptr_type texture,
+		GLenum pname,
+		GLfloat param)
 {
-	d_opengl_functions.glTexParameterf(target, pname, param);
+	d_opengl_functions.glTextureParameterf(texture->get_resource_handle(), pname, param);
 }
 
 
 void
-GPlatesOpenGL::GL::TexParameterfv(GLenum target, GLenum pname, const GLfloat *params)
+GPlatesOpenGL::GL::TextureParameterfv(
+		GLTexture::shared_ptr_type texture,
+		GLenum pname,
+		const GLfloat *params)
 {
-	d_opengl_functions.glTexParameterfv(target, pname, params);
+	d_opengl_functions.glTextureParameterfv(texture->get_resource_handle(), pname, params);
 }
 
 
 void
-GPlatesOpenGL::GL::TexParameteri(GLenum target, GLenum pname, GLint param)
+GPlatesOpenGL::GL::TextureParameteri(
+		GLTexture::shared_ptr_type texture,
+		GLenum pname,
+		GLint param)
 {
-	d_opengl_functions.glTexParameteri(target, pname, param);
+	d_opengl_functions.glTextureParameteri(texture->get_resource_handle(), pname, param);
 }
 
 
 void
-GPlatesOpenGL::GL::TexParameteriv(GLenum target, GLenum pname, const GLint *params)
+GPlatesOpenGL::GL::TextureParameteriv(
+		GLTexture::shared_ptr_type texture,
+		GLenum pname,
+		const GLint *params)
 {
-	d_opengl_functions.glTexParameteriv(target, pname, params);
+	d_opengl_functions.glTextureParameteriv(texture->get_resource_handle(), pname, params);
 }
 
 
 void
-GPlatesOpenGL::GL::TexParameterIiv(GLenum target, GLenum pname, const GLint *params)
+GPlatesOpenGL::GL::TextureParameterIiv(
+		GLTexture::shared_ptr_type texture,
+		GLenum pname,
+		const GLint *params)
 {
-	d_opengl_functions.glTexParameterIiv(target, pname, params);
+	d_opengl_functions.glTextureParameterIiv(texture->get_resource_handle(), pname, params);
 }
 
 
 void
-GPlatesOpenGL::GL::TexParameterIuiv(GLenum target, GLenum pname, const GLuint *params)
+GPlatesOpenGL::GL::TextureParameterIuiv(
+		GLTexture::shared_ptr_type texture,
+		GLenum pname,
+		const GLuint *params)
 {
-	d_opengl_functions.glTexParameterIuiv(target, pname, params);
+	d_opengl_functions.glTextureParameterIuiv(texture->get_resource_handle(), pname, params);
 }
 
 
 void
-GPlatesOpenGL::GL::TexSubImage1D(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid *pixels)
+GPlatesOpenGL::GL::TextureStorage1D(
+		GLTexture::shared_ptr_type texture,
+		GLsizei levels,
+		GLenum internalformat,
+		GLsizei width)
 {
-	d_opengl_functions.glTexSubImage1D(target, level, xoffset, width, format, type, pixels);
+	d_opengl_functions.glTextureStorage1D(texture->get_resource_handle(), levels, internalformat, width);
 }
 
 
 void
-GPlatesOpenGL::GL::TexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels)
-{
-	d_opengl_functions.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
-}
-
-
-void
-GPlatesOpenGL::GL::TexSubImage3D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid *pixels)
-{
-	d_opengl_functions.glTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
-}
-
-
-void
-GPlatesOpenGL::GL::TexImage1D(
-		GLenum target,
-		GLint level,
-		GLint internalformat,
+GPlatesOpenGL::GL::TextureStorage2D(
+		GLTexture::shared_ptr_type texture,
+		GLsizei levels,
+		GLenum internalformat,
 		GLsizei width,
-		GLint border,
-		GLenum format,
-		GLenum type,
-		const GLvoid *pixels)
+		GLsizei height)
 {
-	d_opengl_functions.glTexImage1D(target, level, internalformat, width, border, format, type, pixels);
+	d_opengl_functions.glTextureStorage2D(texture->get_resource_handle(), levels, internalformat, width, height);
 }
 
 
 void
-GPlatesOpenGL::GL::TexImage2D(
-		GLenum target,
-		GLint level,
-		GLint internalformat,
+GPlatesOpenGL::GL::TextureStorage3D(
+		GLTexture::shared_ptr_type texture,
+		GLsizei levels,
+		GLenum internalformat,
 		GLsizei width,
 		GLsizei height,
-		GLint border,
-		GLenum format,
-		GLenum type,
-		const GLvoid *pixels)
+		GLsizei depth)
 {
-	d_opengl_functions.glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
+	d_opengl_functions.glTextureStorage3D(texture->get_resource_handle(), levels, internalformat, width, height, depth);
 }
 
 
 void
-GPlatesOpenGL::GL::TexImage3D(
-		GLenum target,
+GPlatesOpenGL::GL::TextureSubImage1D(
+		GLTexture::shared_ptr_type texture,
 		GLint level,
-		GLint internalformat,
+		GLint xoffset,
+		GLsizei width,
+		GLenum format,
+		GLenum type,
+		const GLvoid *pixels)
+{
+	d_opengl_functions.glTextureSubImage1D(texture->get_resource_handle(), level, xoffset, width, format, type, pixels);
+}
+
+
+void
+GPlatesOpenGL::GL::TextureSubImage2D(
+		GLTexture::shared_ptr_type texture,
+		GLint level,
+		GLint xoffset,
+		GLint yoffset,
+		GLsizei width,
+		GLsizei height,
+		GLenum format,
+		GLenum type,
+		const GLvoid *pixels)
+{
+	d_opengl_functions.glTextureSubImage2D(texture->get_resource_handle(), level, xoffset, yoffset, width, height, format, type, pixels);
+}
+
+
+void
+GPlatesOpenGL::GL::TextureSubImage3D(
+		GLTexture::shared_ptr_type texture,
+		GLint level,
+		GLint xoffset,
+		GLint yoffset,
+		GLint zoffset,
 		GLsizei width,
 		GLsizei height,
 		GLsizei depth,
-		GLint border,
 		GLenum format,
 		GLenum type,
 		const GLvoid *pixels)
 {
-	d_opengl_functions.glTexImage3D(target, level, internalformat, width, height, depth, border, format, type, pixels);
+	d_opengl_functions.glTextureSubImage3D(texture->get_resource_handle(), level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
+}
+
+
+void
+GPlatesOpenGL::GL::TextureBuffer(
+		GLTexture::shared_ptr_type texture,
+		GLenum internalformat,
+		GLBuffer::shared_ptr_type buffer)
+{
+	d_opengl_functions.glTextureBuffer(texture->get_resource_handle(), internalformat, buffer->get_resource_handle());
+}
+
+
+void
+GPlatesOpenGL::GL::TextureBufferRange(
+		GLTexture::shared_ptr_type texture,
+		GLenum internalformat,
+		GLBuffer::shared_ptr_type buffer,
+		GLintptr offset,
+		GLsizei size)
+{
+	d_opengl_functions.glTextureBufferRange(texture->get_resource_handle(), internalformat, buffer->get_resource_handle(), offset, size);
 }
 
 
@@ -1371,14 +1540,6 @@ GPlatesOpenGL::GL::UniformMatrix4x3fv(
 }
 
 
-void
-GPlatesOpenGL::GL::UseProgram(
-		boost::optional<GLProgram::shared_ptr_type> program)
-{
-	d_current_state->use_program(program);
-}
-
-
 GLboolean
 GPlatesOpenGL::GL::UnmapBuffer(
 		GLenum target)
@@ -1388,36 +1549,88 @@ GPlatesOpenGL::GL::UnmapBuffer(
 
 
 void
-GPlatesOpenGL::GL::VertexAttribDivisor(
-		GLuint index,
-		GLuint divisor)
+GPlatesOpenGL::GL::UseProgram(
+		boost::optional<GLProgram::shared_ptr_type> program)
 {
-	d_opengl_functions.glVertexAttribDivisor(index, divisor);
+	d_current_state->use_program(program);
 }
 
 
 void
-GPlatesOpenGL::GL::VertexAttribIPointer(
-		GLuint index,
-		GLint size,
-		GLenum type,
-		GLsizei stride,
-		const GLvoid *pointer)
+GPlatesOpenGL::GL::VertexArrayAttribBinding(
+		GLVertexArray::shared_ptr_type vertex_array,
+		GLuint attribindex,
+		GLuint bindingindex)
 {
-	d_opengl_functions.glVertexAttribIPointer(index, size, type, stride, pointer);
+	d_opengl_functions.glVertexArrayAttribBinding(vertex_array->get_resource_handle(), attribindex, bindingindex);
 }
 
 
 void
-GPlatesOpenGL::GL::VertexAttribPointer(
-		GLuint index,
+GPlatesOpenGL::GL::VertexArrayAttribFormat(
+		GLVertexArray::shared_ptr_type vertex_array,
+		GLuint attribindex,
 		GLint size,
 		GLenum type,
 		GLboolean normalized,
-		GLsizei stride,
-		const GLvoid *pointer)
+		GLuint relativeoffset)
 {
-	d_opengl_functions.glVertexAttribPointer(index, size, type, normalized, stride, pointer);
+	d_opengl_functions.glVertexArrayAttribFormat(vertex_array->get_resource_handle(), attribindex, size, type, normalized, relativeoffset);
+}
+
+
+void
+GPlatesOpenGL::GL::VertexArrayAttribIFormat(
+		GLVertexArray::shared_ptr_type vertex_array,
+		GLuint attribindex,
+		GLint size,
+		GLenum type,
+		GLuint relativeoffset)
+{
+	d_opengl_functions.glVertexArrayAttribIFormat(vertex_array->get_resource_handle(), attribindex, size, type, relativeoffset);
+}
+
+
+void
+GPlatesOpenGL::GL::VertexArrayAttribLFormat(
+		GLVertexArray::shared_ptr_type vertex_array,
+		GLuint attribindex,
+		GLint size,
+		GLenum type,
+		GLuint relativeoffset)
+{
+	d_opengl_functions.glVertexArrayAttribLFormat(vertex_array->get_resource_handle(), attribindex, size, type, relativeoffset);
+}
+
+
+void
+GPlatesOpenGL::GL::VertexArrayBindingDivisor(
+		GLVertexArray::shared_ptr_type vertex_array,
+		GLuint bindingindex,
+		GLuint divisor)
+{
+	d_opengl_functions.glVertexArrayBindingDivisor(vertex_array->get_resource_handle(), bindingindex, divisor);
+}
+
+
+void
+GPlatesOpenGL::GL::VertexArrayElementBuffer(
+		GLVertexArray::shared_ptr_type vertex_array,
+		GLBuffer::shared_ptr_type buffer)
+{
+	d_opengl_functions.glVertexArrayElementBuffer(vertex_array->get_resource_handle(), buffer->get_resource_handle());
+}
+
+
+void
+GPlatesOpenGL::GL::VertexArrayVertexBuffer(
+		GLVertexArray::shared_ptr_type vertex_array,
+		GLuint bindingindex,
+		GLBuffer::shared_ptr_type buffer,
+		GLintptr offset,
+		GLsizei stride)
+{
+	d_opengl_functions.glVertexArrayVertexBuffer(vertex_array->get_resource_handle(), bindingindex, buffer->get_resource_handle(), offset, stride);
 }
 
 

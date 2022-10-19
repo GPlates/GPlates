@@ -92,9 +92,6 @@ GPlatesGui::LayerPainter::initialise_gl(
 	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
 	TRACK_CALL_STACK();
 
-	// Make sure we leave the OpenGL global state the way it was.
-	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
-
 	//
 	// Create the vertex buffers.
 	//
@@ -109,22 +106,20 @@ GPlatesGui::LayerPainter::initialise_gl(
 
 	d_vertex_array = GPlatesOpenGL::GLVertexArray::create(gl);
 
-	// Bind vertex array object.
-	gl.BindVertexArray(d_vertex_array);
+	// Bind vertex element buffer object to the vertex array object.
+	gl.VertexArrayElementBuffer(d_vertex_array, d_vertex_element_buffer);
 
-	// Bind vertex element buffer object to currently bound vertex array object.
-	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_vertex_element_buffer);
+	// Bind vertex buffer object to vertex array object.
+	gl.VertexArrayVertexBuffer(d_vertex_array, 0/*bindingindex*/, d_vertex_buffer, 0/*offset*/, sizeof(coloured_vertex_type));
 
-	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-	gl.BindBuffer(GL_ARRAY_BUFFER, d_vertex_buffer);
+	// Specify vertex attributes (position and colour).
+	gl.EnableVertexArrayAttrib(d_vertex_array, 0);
+	gl.VertexArrayAttribFormat(d_vertex_array, 0, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(coloured_vertex_type, x));
+	gl.VertexArrayAttribBinding(d_vertex_array, 0, 0/*bindingindex*/);
 
-	// Specify vertex attributes (position and colour) in currently bound vertex buffer object.
-	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-	// to currently bound vertex array object.
-	gl.EnableVertexAttribArray(0);
-	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(coloured_vertex_type), BUFFER_OFFSET(coloured_vertex_type, x));
-	gl.EnableVertexAttribArray(1);
-	gl.VertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(coloured_vertex_type), BUFFER_OFFSET(coloured_vertex_type, colour));
+	gl.EnableVertexArrayAttrib(d_vertex_array, 1);
+	gl.VertexArrayAttribFormat(d_vertex_array, 1, 4, GL_UNSIGNED_BYTE, GL_TRUE, ATTRIB_OFFSET_IN_VERTEX(coloured_vertex_type, colour));
+	gl.VertexArrayAttribBinding(d_vertex_array, 1, 0/*bindingindex*/);
 
 	//
 	// Create the shader program to render points, lines and polygons.
@@ -160,37 +155,45 @@ GPlatesGui::LayerPainter::initialise_gl(
 
 	d_axially_symmetric_mesh_vertex_array = GPlatesOpenGL::GLVertexArray::create(gl);
 
-	// Bind vertex array object.
-	gl.BindVertexArray(d_axially_symmetric_mesh_vertex_array);
+	// Bind vertex element buffer object to the vertex array object.
+	gl.VertexArrayElementBuffer(d_axially_symmetric_mesh_vertex_array, d_vertex_element_buffer);
 
-	// Bind vertex element buffer object to currently bound vertex array object.
-	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_vertex_element_buffer);
+	// Bind vertex buffer object to the vertex array object.
+	gl.VertexArrayVertexBuffer(d_axially_symmetric_mesh_vertex_array, 0/*bindingindex*/, d_vertex_buffer, 0/*offset*/, sizeof(AxiallySymmetricMeshVertex));
 
-	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-	gl.BindBuffer(GL_ARRAY_BUFFER, d_vertex_buffer);
-
-	// Specify vertex attributes in currently bound vertex buffer object.
-	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-	// to currently bound vertex array object.
+	// Specify vertex attributes.
 	//
 	// The following reflects the structure of 'struct AxiallySymmetricMeshVertex'.
 	// It tells OpenGL how the elements of the vertex are packed together in the vertex and
 	// which parts of the vertex bind to the named attributes in the shader program.
 	//
-	gl.EnableVertexAttribArray(0);
-	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(AxiallySymmetricMeshVertex), BUFFER_OFFSET(AxiallySymmetricMeshVertex, world_space_position));
-	gl.EnableVertexAttribArray(1);
-	gl.VertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(AxiallySymmetricMeshVertex), BUFFER_OFFSET(AxiallySymmetricMeshVertex, colour));
-	gl.EnableVertexAttribArray(2);
-	gl.VertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(AxiallySymmetricMeshVertex), BUFFER_OFFSET(AxiallySymmetricMeshVertex, world_space_x_axis));
-	gl.EnableVertexAttribArray(3);
-	gl.VertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(AxiallySymmetricMeshVertex), BUFFER_OFFSET(AxiallySymmetricMeshVertex, world_space_y_axis));
-	gl.EnableVertexAttribArray(4);
-	gl.VertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(AxiallySymmetricMeshVertex), BUFFER_OFFSET(AxiallySymmetricMeshVertex, world_space_z_axis));
-	gl.EnableVertexAttribArray(5);
-	gl.VertexAttribPointer(5, 2, GL_FLOAT, GL_FALSE, sizeof(AxiallySymmetricMeshVertex), BUFFER_OFFSET(AxiallySymmetricMeshVertex, model_space_radial_position));
-	gl.EnableVertexAttribArray(6);
-	gl.VertexAttribPointer(6, 2, GL_FLOAT, GL_FALSE, sizeof(AxiallySymmetricMeshVertex), BUFFER_OFFSET(AxiallySymmetricMeshVertex, radial_and_axial_normal_weights));
+	gl.EnableVertexArrayAttrib(d_axially_symmetric_mesh_vertex_array, 0);
+	gl.VertexArrayAttribFormat(d_axially_symmetric_mesh_vertex_array, 0, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(AxiallySymmetricMeshVertex, world_space_position));
+	gl.VertexArrayAttribBinding(d_axially_symmetric_mesh_vertex_array, 0, 0/*bindingindex*/);
+
+	gl.EnableVertexArrayAttrib(d_axially_symmetric_mesh_vertex_array, 1);
+	gl.VertexArrayAttribFormat(d_axially_symmetric_mesh_vertex_array, 1, 4, GL_UNSIGNED_BYTE, GL_TRUE, ATTRIB_OFFSET_IN_VERTEX(AxiallySymmetricMeshVertex, colour));
+	gl.VertexArrayAttribBinding(d_axially_symmetric_mesh_vertex_array, 1, 0/*bindingindex*/);
+
+	gl.EnableVertexArrayAttrib(d_axially_symmetric_mesh_vertex_array, 2);
+	gl.VertexArrayAttribFormat(d_axially_symmetric_mesh_vertex_array, 2, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(AxiallySymmetricMeshVertex, world_space_x_axis));
+	gl.VertexArrayAttribBinding(d_axially_symmetric_mesh_vertex_array, 2, 0/*bindingindex*/);
+
+	gl.EnableVertexArrayAttrib(d_axially_symmetric_mesh_vertex_array, 3);
+	gl.VertexArrayAttribFormat(d_axially_symmetric_mesh_vertex_array, 3, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(AxiallySymmetricMeshVertex, world_space_y_axis));
+	gl.VertexArrayAttribBinding(d_axially_symmetric_mesh_vertex_array, 3, 0/*bindingindex*/);
+
+	gl.EnableVertexArrayAttrib(d_axially_symmetric_mesh_vertex_array, 4);
+	gl.VertexArrayAttribFormat(d_axially_symmetric_mesh_vertex_array, 4, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(AxiallySymmetricMeshVertex, world_space_z_axis));
+	gl.VertexArrayAttribBinding(d_axially_symmetric_mesh_vertex_array, 4, 0/*bindingindex*/);
+
+	gl.EnableVertexArrayAttrib(d_axially_symmetric_mesh_vertex_array, 5);
+	gl.VertexArrayAttribFormat(d_axially_symmetric_mesh_vertex_array, 5, 2, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(AxiallySymmetricMeshVertex, model_space_radial_position));
+	gl.VertexArrayAttribBinding(d_axially_symmetric_mesh_vertex_array, 5, 0/*bindingindex*/);
+
+	gl.EnableVertexArrayAttrib(d_axially_symmetric_mesh_vertex_array, 6);
+	gl.VertexArrayAttribFormat(d_axially_symmetric_mesh_vertex_array, 6, 2, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(AxiallySymmetricMeshVertex, radial_and_axial_normal_weights));
+	gl.VertexArrayAttribBinding(d_axially_symmetric_mesh_vertex_array, 6, 0/*bindingindex*/);
 
 	//
 	// Create shader program to render axially symmetric meshes.

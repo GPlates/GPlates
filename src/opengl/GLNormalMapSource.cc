@@ -489,7 +489,7 @@ GPlatesOpenGL::GLNormalMapSource::convert_height_field_to_normal_map(
 	{
 		// No unused texture so create a new one...
 		height_field_texture = d_height_field_texture_cache->allocate_object(
-				GLTexture::create_unique(gl));
+				GLTexture::create_unique(gl, GL_TEXTURE_2D));
 
 		// The texture was just allocated so we need to create it in OpenGL.
 		create_height_tile_texture(gl, height_field_texture.get());
@@ -499,17 +499,12 @@ GPlatesOpenGL::GLNormalMapSource::convert_height_field_to_normal_map(
 	const unsigned int height_map_texel_width = normal_map_texel_width + 2;
 	const unsigned int height_map_texel_height = normal_map_texel_height + 2;
 
-	// Bind height texture before uploading to it.
-	gl.BindTexture(GL_TEXTURE_2D, height_field_texture.get());
-
-	// Our client memory image buffers are byte aligned.
-	// Not really needed since default alignment is 4 (which is alignment of GL_FLOAT anyway).
-	gl.PixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
 	// Load the height data into the floating-point texture.
-	gl.TexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
-		0/*xoffset*/, 0/*yoffset*/, height_map_texel_width, height_map_texel_height,
-		GL_RG, GL_FLOAT, d_tile_height_data_working_space.get());
+	//
+	// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (8 bytes) are a multiple of 4.
+	gl.TextureSubImage2D(height_field_texture.get(), 0/*level*/,
+			0/*xoffset*/, 0/*yoffset*/, height_map_texel_width, height_map_texel_height,
+			GL_RG, GL_FLOAT, d_tile_height_data_working_space.get());
 
 	// Make sure we leave the OpenGL state the way it was.
 	GL::StateScope save_restore_state(
@@ -529,7 +524,7 @@ GPlatesOpenGL::GLNormalMapSource::convert_height_field_to_normal_map(
 	if (!d_have_checked_framebuffer_completeness_normal_map_generation)
 	{
 		// Throw OpenGLException if not complete.
-		// This should succeed since we're using GL_RGBA8 texture format (which is required by OpenGL 3.3 core).
+		// This should succeed since we're using GL_RGBA8 texture format (which is required by modern OpenGL).
 		const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 		GPlatesGlobal::Assert<OpenGLException>(
 				completeness == GL_FRAMEBUFFER_COMPLETE,
@@ -567,8 +562,7 @@ GPlatesOpenGL::GLNormalMapSource::convert_height_field_to_normal_map(
 	gl.UseProgram(d_generate_normals_program);
 
 	// Bind the height field texture to texture unit 0.
-	gl.ActiveTexture(GL_TEXTURE0);
-	gl.BindTexture(GL_TEXTURE_2D, height_field_texture.get());
+	gl.BindTextureUnit(0, height_field_texture.get());
 	// Set the height field texture sampler to texture unit 0.
 	gl.Uniform1i(
 			d_generate_normals_program->get_uniform_location(gl, "height_field_texture_sampler"),
@@ -619,12 +613,6 @@ GPlatesOpenGL::GLNormalMapSource::load_default_normal_map(
 		d_logged_tile_load_failure_warning = true;
 	}
 
-	// Bind target texture before uploading to it.
-	gl.BindTexture(GL_TEXTURE_2D, target_texture);
-
-	// Our client memory image buffers are byte aligned.
-	gl.PixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
 	// The default normal is normal to the surface with (x,y,z) of (0,0,1).
 	// We also need to convert the x and y components from the range [-1,1] to [0,255] and
 	// the z component from the range [0,1] to [0,255].
@@ -636,7 +624,8 @@ GPlatesOpenGL::GLNormalMapSource::load_default_normal_map(
 	boost::scoped_array<GPlatesGui::rgba8_t> default_normal_image_data(
 			new GPlatesGui::rgba8_t[texel_width * texel_height]);
 	std::fill_n(default_normal_image_data.get(), texel_width * texel_height, default_normal);
-	gl.TexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
+	// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (4 bytes) are a multiple of 4.
+	gl.TextureSubImage2D(target_texture, 0/*level*/,
 			0/*xoffset*/, 0/*yoffset*/, texel_width, texel_height,
 			GL_RGBA, GL_UNSIGNED_BYTE, default_normal_image_data.get());
 }
@@ -939,16 +928,14 @@ GPlatesOpenGL::GLNormalMapSource::create_height_tile_texture(
 		GL &gl,
 		const GLTexture::shared_ptr_type &texture) const
 {
-	gl.BindTexture(GL_TEXTURE_2D, texture);
-
 	// It's a floating-point texture so use nearest neighbour filtering and no anisotropic.
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	gl.TextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	gl.TextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// We use RG format (instead of RGBA) since it saves memory.
 	const GLint internalformat = GL_RG32F;
@@ -956,12 +943,8 @@ GPlatesOpenGL::GLNormalMapSource::create_height_tile_texture(
 	const unsigned int height_map_texel_dimension = d_tile_texel_dimension + 2;
 
 	// Create the texture in OpenGL - this actually creates the texture without any data.
-	//
-	// NOTE: Since the image data is NULL it doesn't really matter what 'format' (and 'type') are so
-	// we just use GL_RGBA (and GL_FLOAT).
-	gl.TexImage2D(GL_TEXTURE_2D, 0, internalformat,
-			height_map_texel_dimension, height_map_texel_dimension,
-			0, GL_RGBA, GL_FLOAT, nullptr);
+	gl.TextureStorage2D(texture, 1/*levels*/, internalformat,
+			height_map_texel_dimension, height_map_texel_dimension);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);

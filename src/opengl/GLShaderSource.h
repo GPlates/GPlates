@@ -42,7 +42,7 @@ namespace GPlatesOpenGL
 	 *
 	 * One or more shader source code segments can be grouped together before they are compiled.
 	 *
-	 * NOTE: The "#version 330" directive (GLSL equivalent of OpenGL 3.3 core profile) is internally
+	 * NOTE: The "#version 450 core" directive (GLSL equivalent of OpenGL 4.5 core profile) is internally
 	 *       specified as an extra shader segment that is internally added as the first code segment.
 	 *       
 	 *       This is because the "#version" directive must come before any non-commented source code
@@ -164,7 +164,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Shader source version string.
 		 *
-		 * Use OpenGL 3.3 core which in GLSL is "#version 330" without also specifying "compatibility".
+		 * Use OpenGL 4.5 core which in GLSL is "#version 450 core".
 		 */
 		static const char *SHADER_VERSION_STRING;
 

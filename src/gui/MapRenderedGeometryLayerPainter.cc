@@ -46,6 +46,7 @@
 
 #include "maths/AngularDistance.h"
 #include "maths/AngularExtent.h"
+#include "maths/CartesianConvMatrix3D.h"
 #include "maths/EllipseGenerator.h"
 #include "maths/GreatCircle.h"
 #include "maths/MathsUtils.h"
@@ -55,6 +56,7 @@
 #include "maths/PolylineOnSphere.h"
 #include "maths/SphericalArea.h"
 
+#include "view-operations/RenderedArrow.h"
 #include "view-operations/RenderedArrowedPolyline.h"
 #include "view-operations/RenderedCircleSymbol.h"
 #include "view-operations/RenderedColouredEdgeSurfaceMesh.h"
@@ -68,13 +70,11 @@
 #include "view-operations/RenderedPointOnSphere.h"
 #include "view-operations/RenderedPolygonOnSphere.h"
 #include "view-operations/RenderedPolylineOnSphere.h"
-#include "view-operations/RenderedRadialArrow.h"
 #include "view-operations/RenderedResolvedRaster.h"
 #include "view-operations/RenderedSmallCircle.h"
 #include "view-operations/RenderedSmallCircleArc.h"
 #include "view-operations/RenderedSquareSymbol.h"
 #include "view-operations/RenderedString.h"
-#include "view-operations/RenderedTangentialArrow.h"
 #include "view-operations/RenderedTriangleSymbol.h"
 
 // Temporary includes for symbol testing
@@ -122,8 +122,17 @@ namespace
 
 	// Variables for drawing velocity arrows.
 	const float GLOBE_TO_MAP_SCALE_FACTOR = 180.;
-	const float MAP_VELOCITY_SCALE_FACTOR = 3.0;
+	// For arrows, we want to keep the projected arrowhead size constant regardless of the
+	// the length of the arrowline, except...
+	//
+	// ...if the ratio of arrowhead size to arrowline length is large enough then
+	// we need to start scaling the arrowhead size by the arrowline length so
+	// that the arrowhead disappears as the arrowline disappears.
+	const float MAX_RATIO_ARROWHEAD_TO_ARROW_BODY_LENGTH = 0.5f;
+
 	const double ARROWHEAD_BASE_HEIGHT_RATIO = 0.5;
+	const double COSINE_ARROWHEAD_BASE_HEIGHT_RATIO = std::cos(std::atan(ARROWHEAD_BASE_HEIGHT_RATIO));
+	const double SINE_ARROWHEAD_BASE_HEIGHT_RATIO = std::sin(std::atan(ARROWHEAD_BASE_HEIGHT_RATIO));
 
 	// Scale factor for symbols.
 	const double SYMBOL_SCALE_FACTOR = 1.8;
@@ -1449,149 +1458,108 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_ellipse(
 }
 
 void
-GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_radial_arrow(
-		const GPlatesViewOperations::RenderedRadialArrow &rendered_radial_arrow)
+GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_arrow(
+	const GPlatesViewOperations::RenderedArrow &rendered_arrow)
 {
-	// We don't render the radial arrow in the map view (it's radial and hence always pointing
-	// directly out of the map). We only render the symbol.
-
-    const Colour &symbol_colour = rendered_radial_arrow.get_symbol_colour();
-
-	// Convert colour from floats to bytes to use less vertex memory.
-	const rgba8_t rgba8_symbol_colour = Colour::to_rgba8(symbol_colour);
-
-	// Get the small circle position in scene coordinates.
-	const QPointF small_circle_centre = get_projected_unwrapped_position(rendered_radial_arrow.get_position());
-
-	// The symbol is a small circle with diameter equal to the symbol size.
-	// The symbol size is specified in *scene* coordinates.
-	const double small_circle_radius = 0.5 * rendered_radial_arrow.get_symbol_size() * d_inverse_zoom_factor;
-
-	// Tessellate the circle on the plane of the map.
-	coloured_vertex_seq_type small_circle_vertices;
-	tessellate_on_plane(
-			small_circle_vertices,
-			small_circle_centre,
-			small_circle_radius,
-			SMALL_CIRCLE_ANGULAR_INCREMENT,
-			rgba8_symbol_colour);
-
-	// Draw the small circle outline.
-	// We do this even if we're filling the small circle because it gives a nice soft anti-aliased edge.
-
-	// The factor of 2 gives a nice look.
-	const float small_circle_line_width = 2.0f * LINE_WIDTH_ADJUSTMENT * d_scale;
-
-	// Get the stream for the small circle lines.
-	stream_primitives_type &small_circle_line_stream =
-			d_layer_painter->drawables_on_the_sphere.get_lines_stream(small_circle_line_width);
-
-	// Used to add a line loop to the stream.
-	stream_primitives_type::LineLoops stream_small_circle_line_loops(small_circle_line_stream);
-	stream_small_circle_line_loops.begin_line_loop();
-	BOOST_FOREACH(const coloured_vertex_type &small_circle_vertex, small_circle_vertices)
-	{
-		stream_small_circle_line_loops.add_vertex(small_circle_vertex);
-	}
-	stream_small_circle_line_loops.end_line_loop();
-
-	// Draw the filled small circle.
-	if (rendered_radial_arrow.get_symbol_type() == GPlatesViewOperations::RenderedRadialArrow::SYMBOL_FILLED_CIRCLE)
-	{
-		stream_primitives_type &triangle_stream =
-			d_layer_painter->drawables_on_the_sphere.get_triangles_stream();
-
-		stream_primitives_type::TriangleFans stream_triangle_fans(triangle_stream);
-
-		stream_triangle_fans.begin_triangle_fan();
-
-		// Add centre of small circle (apex of triangle fan).
-		stream_triangle_fans.add_vertex(
-					coloured_vertex_type(small_circle_centre.x(), small_circle_centre.y(), 0, rgba8_symbol_colour));
-
-		// Add small circle points.
-		BOOST_FOREACH(const coloured_vertex_type &small_circle_vertex, small_circle_vertices)
-		{
-			stream_small_circle_line_loops.add_vertex(small_circle_vertex);
-		}
-
-		stream_triangle_fans.end_triangle_fan();
-	}
-
-	// Draw the small circle centre point.
-	if (rendered_radial_arrow.get_symbol_type() == GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_POINT)
-	{
-		// The factor of 2 gives a nice look.
-		const float point_size = 2.0f * POINT_SIZE_ADJUSTMENT * d_scale;
-		stream_primitives_type &point_stream =
-				d_layer_painter->drawables_on_the_sphere.get_points_stream(point_size);
-
-		stream_primitives_type::Points stream_points(point_stream);
-		stream_points.begin_points();
-		stream_points.add_vertex(
-				coloured_vertex_type(small_circle_centre.x(), small_circle_centre.y(), 0, rgba8_symbol_colour));
-		stream_points.end_points();
-	}
-
-	// Draw a cross in the small circle.
-	if (rendered_radial_arrow.get_symbol_type() == GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS)
-	{
-		// The factor of 1.5 ensures the cross is not too fat.
-		const float cross_line_width = 1.5f * LINE_WIDTH_ADJUSTMENT * d_scale;
-
-		// Get the stream for the cross lines.
-		stream_primitives_type &cross_line_stream =
-				d_layer_painter->drawables_on_the_sphere.get_lines_stream(cross_line_width);
-
-		stream_primitives_type::LineStrips stream_cross_line_strips(cross_line_stream);
-
-		stream_cross_line_strips.begin_line_strip();
-		stream_cross_line_strips.add_vertex(
-				coloured_vertex_type(small_circle_centre.x() - small_circle_radius, small_circle_centre.y(), 0, rgba8_symbol_colour));
-		stream_cross_line_strips.add_vertex(
-				coloured_vertex_type(small_circle_centre.x() + small_circle_radius, small_circle_centre.y(), 0, rgba8_symbol_colour));
-		stream_cross_line_strips.end_line_strip();
-
-		stream_cross_line_strips.begin_line_strip();
-		stream_cross_line_strips.add_vertex(
-				coloured_vertex_type(small_circle_centre.x(), small_circle_centre.y() - small_circle_radius, 0, rgba8_symbol_colour));
-		stream_cross_line_strips.add_vertex(
-				coloured_vertex_type(small_circle_centre.x(), small_circle_centre.y() + small_circle_radius, 0, rgba8_symbol_colour));
-		stream_cross_line_strips.end_line_strip();
-	}
-}
-
-void
-GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_tangential_arrow(
-	const GPlatesViewOperations::RenderedTangentialArrow &rendered_tangential_arrow)
-{
-	const Colour &colour = rendered_tangential_arrow.get_colour();
+	const Colour &colour = rendered_arrow.get_colour();
 
 	// Convert colour from floats to bytes to use less vertex memory.
 	const rgba8_t rgba8_color = Colour::to_rgba8(colour);
 
-	// Start of arrow.
-	const GPlatesMaths::UnitVector3D &start = rendered_tangential_arrow.get_start_position().position_vector();
+	// Arrow start position (base of arrow).
+	const GPlatesMaths::PointOnSphere arrow_start_globe = rendered_arrow.get_start_position();
+	const GPlatesMaths::LatLonPoint arrow_start_llp = make_lat_lon_point(arrow_start_globe);
+	const GPlatesMaths::Vector3D arrow_start_vec(arrow_start_globe.position_vector());
 
-	// Calculate position from start point along tangent direction to
-	// end point off the globe. The length of the arrow in world space
-	// is inversely proportional to the zoom or magnification.
-	const GPlatesMaths::Vector3D end = GPlatesMaths::Vector3D(start) +
-			MAP_VELOCITY_SCALE_FACTOR * d_inverse_zoom_factor * rendered_tangential_arrow.get_arrow_direction();
+	const double central_longitude = d_map_projection.central_meridian();
+	const double arrow_start_latitude = arrow_start_llp.latitude();
+	const double arrow_start_longitude = arrow_start_llp.longitude();
 
-	const GPlatesMaths::Vector3D arrowline = end - GPlatesMaths::Vector3D(start);
-	const GPlatesMaths::real_t arrowline_length = arrowline.magnitude();
+	// Transform vector to local North/East/Down frame.
+	GPlatesMaths::CartesianConvMatrix3D ccm(arrow_start_globe);
+	const GPlatesMaths::Vector3D arrow_vector_ned = convert_from_geocentric_to_north_east_down(
+			ccm,
+			rendered_arrow.get_vector());
+
+	// Convert North is y, East is x and negate down (to get up).
+	const double arrow_vector_x = arrow_vector_ned.y().dval();
+	const double arrow_vector_y = arrow_vector_ned.x().dval();
+	const double arrow_vector_z = -arrow_vector_ned.z().dval();
+
+	// Local x and y directions (East and North).
+	const GPlatesMaths::Vector3D ccm_x = ccm.east();
+	const GPlatesMaths::Vector3D ccm_y = ccm.north();
+
+	// Move start/base of arrow slightly in the local x and y directions (East and North).
+	//
+	// Note: Make sure we don't sample outside map projection boundary.
+	const double delta = 1e-5;
+	const GPlatesMaths::Vector3D arrow_start_plus_delta_x = arrow_start_longitude < central_longitude
+			? arrow_start_vec + delta * ccm_x
+			: arrow_start_vec;
+	const GPlatesMaths::Vector3D arrow_start_minus_delta_x = arrow_start_longitude < central_longitude
+			? arrow_start_vec
+			: arrow_start_vec - delta * ccm_x;
+	const GPlatesMaths::Vector3D arrow_start_plus_delta_y = arrow_start_latitude < 0
+			? arrow_start_vec + delta * ccm_y
+			: arrow_start_vec;
+	const GPlatesMaths::Vector3D arrow_start_minus_delta_y = arrow_start_latitude < 0
+			? arrow_start_vec
+			: arrow_start_vec - delta * ccm_y;
+	
+	// The map projection of the local delta x and y vectors (East and North).
+	const QPointF arrow_start_map_plus_delta_x = d_map_projection.forward_transform(
+			make_lat_lon_point(GPlatesMaths::PointOnSphere(arrow_start_plus_delta_x.get_normalisation())));
+	const QPointF arrow_start_map_minus_delta_x = d_map_projection.forward_transform(
+			make_lat_lon_point(GPlatesMaths::PointOnSphere(arrow_start_minus_delta_x.get_normalisation())));
+	const QPointF arrow_start_map_plus_delta_y = d_map_projection.forward_transform(
+			make_lat_lon_point(GPlatesMaths::PointOnSphere(arrow_start_plus_delta_y.get_normalisation())));
+	const QPointF arrow_start_map_minus_delta_y = d_map_projection.forward_transform(
+			make_lat_lon_point(GPlatesMaths::PointOnSphere(arrow_start_minus_delta_y.get_normalisation())));
+
+	// Calculate 2D map projection warping (at start/base position of arrow).
+	const double dXdx = (arrow_start_map_plus_delta_x.x() - arrow_start_map_minus_delta_x.x()) / delta;
+	const double dYdx = (arrow_start_map_plus_delta_x.y() - arrow_start_map_minus_delta_x.y()) / delta;
+	const double dXdy = (arrow_start_map_plus_delta_y.x() - arrow_start_map_minus_delta_y.x()) / delta;
+	const double dYdy = (arrow_start_map_plus_delta_y.y() - arrow_start_map_minus_delta_y.y()) / delta;
+
+	// Transform 2D (x,y) vector direction according to map projection warping.
+	double arrow_vector_map_x = dXdx * arrow_vector_x + dXdy * arrow_vector_y;
+	double arrow_vector_map_y = dYdx * arrow_vector_x + dYdy * arrow_vector_y;
+	const double arrow_vector_map_z = arrow_vector_z;
+
+	// Transform may stretch 2D (x,y) vector.
+	const double arrow_vector_map_xy_length = std::sqrt(arrow_vector_map_x * arrow_vector_map_x + arrow_vector_map_y * arrow_vector_map_y);
+	const double arrow_vector_xy_length = std::sqrt(arrow_vector_x * arrow_vector_x + arrow_vector_y * arrow_vector_y);
+	const double arrow_vector_xy_scale = (arrow_vector_map_xy_length > 0) ? (arrow_vector_xy_length / arrow_vector_map_xy_length) : 0;
+
+	// Make 2D (x,y) vector the same length as before - we effectively just rotating it.
+	arrow_vector_map_x *= arrow_vector_xy_scale;
+	arrow_vector_map_y *= arrow_vector_xy_scale;
+
+	// The final arrow vector is 3D map projection space (2D map projection space and vertical dimension).
+	const GPlatesMaths::Vector3D arrow_vector(arrow_vector_map_x, arrow_vector_map_y, arrow_vector_map_z);
+
+	const QPointF arrow_start_map = get_projected_unwrapped_position(arrow_start_globe);
+	const GPlatesMaths::Vector3D arrow_start(arrow_start_map.x(), arrow_start_map.y(), 0.0);
+
+	// Calculate position from start point (on the globe) along vector direction to end point (off the globe).
+	// The length of the arrow in world space is inversely proportional to the zoom or magnification.
+	const GPlatesMaths::Vector3D arrow_end = arrow_start + GLOBE_TO_MAP_SCALE_FACTOR * d_inverse_zoom_factor * arrow_vector;
+
+	const GPlatesMaths::Vector3D arrow_body_vector = arrow_end - arrow_start;
+	const GPlatesMaths::real_t arrow_body_length = arrow_body_vector.magnitude();
 
 	// Avoid divide-by-zero - and if arrow length is near zero it won't be visible.
-	if (arrowline_length == 0)
+	if (arrow_body_length == 0)
 	{
 		return;
 	}
 
-	double arrowhead_size =
-			d_inverse_zoom_factor * rendered_tangential_arrow.get_arrowhead_projected_size();
-	const float max_ratio_arrowhead_to_arrowline_length =
-			rendered_tangential_arrow.get_max_ratio_arrowhead_to_arrowline_length();
+	const GPlatesMaths::UnitVector3D arrow_unit_vector((1.0 / arrow_body_length) * arrow_body_vector);
+
+	GPlatesMaths::real_t arrow_body_width = GLOBE_TO_MAP_SCALE_FACTOR * d_inverse_zoom_factor * rendered_arrow.get_arrow_body_width();
+	GPlatesMaths::real_t arrowhead_size = GLOBE_TO_MAP_SCALE_FACTOR * d_inverse_zoom_factor * rendered_arrow.get_arrowhead_size();
 
 	// We want to keep the projected arrowhead size constant regardless of the
 	// the length of the arrowline, except...
@@ -1599,32 +1567,26 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_tangential_arrow(
 	// ...if the ratio of arrowhead size to arrowline length is large enough then
 	// we need to start scaling the arrowhead size by the arrowline length so
 	// that the arrowhead disappears as the arrowline disappears.
-	if (arrowhead_size > max_ratio_arrowhead_to_arrowline_length * arrowline_length.dval())
+	const GPlatesMaths::real_t max_arrowhead_size = MAX_RATIO_ARROWHEAD_TO_ARROW_BODY_LENGTH * arrow_body_length;
+	if (arrowhead_size.dval() > max_arrowhead_size.dval())
 	{
-		arrowhead_size = max_ratio_arrowhead_to_arrowline_length * arrowline_length.dval();
+		const double scale = max_arrowhead_size.dval() / arrowhead_size.dval();
+
+		arrowhead_size *= scale;
+
+		// Also linearly shrink the arrow body width.
+		arrow_body_width *= scale;
 	}
-	// Adjust the arrow head size for the map view.
-	arrowhead_size *= GLOBE_TO_MAP_SCALE_FACTOR;
-
-	// Get the drawables for lines of the current line width.
-	const float line_width = rendered_tangential_arrow.get_map_view_arrowline_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
-	stream_primitives_type &line_stream =
-			d_layer_painter->drawables_off_the_sphere.get_lines_stream(line_width);
-
-	// Render a single line arc for the arrow body.
-	//
-	// By rendering as a great circle arc the path will not necessarily be a straight line after
-	// map projection which will visually show the path taken that is equivalent to a straight-line
-	// (great circle arc) tangent on the 3D globe.
-	const GPlatesMaths::PointOnSphere arrow_end_points[2] =
-	{
-		GPlatesMaths::PointOnSphere(start),
-		GPlatesMaths::PointOnSphere(end.get_normalisation())
-	};
-	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type arrow =
-			GPlatesMaths::PolylineOnSphere::create(arrow_end_points, arrow_end_points + 2);
-
-	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(arrow, rgba8_color, line_stream, arrowhead_size);
+	
+	// Render the arrow.
+	paint_arrow(
+			arrow_start,
+			arrow_end,
+			arrow_unit_vector,
+			arrow_body_width,
+			arrowhead_size,
+			rgba8_color,
+			d_layer_painter->drawables_off_the_sphere.get_axially_symmetric_mesh_triangles_stream());
 }
 
 void
@@ -2677,4 +2639,437 @@ GPlatesGui::MapRenderedGeometryLayerPainter::get_projected_unwrapped_position(
 	d_map_projection.forward_transform(x, y);
 
 	return QPointF(x, y);
+}
+
+
+void
+GPlatesGui::MapRenderedGeometryLayerPainter::paint_arrow(
+		const GPlatesMaths::Vector3D &start,
+		const GPlatesMaths::Vector3D &end,
+		const GPlatesMaths::UnitVector3D &arrow_axis,
+		const GPlatesMaths::real_t &arrow_body_width,
+		const GPlatesMaths::real_t &arrowhead_size,
+		rgba8_t rgba8_color,
+		axially_symmetric_mesh_stream_primitives_type &triangles_stream)
+{
+	// Find an orthonormal basis using 'arrow_axis'.
+	const GPlatesMaths::UnitVector3D &arrow_z_axis = arrow_axis;
+	const GPlatesMaths::UnitVector3D arrow_y_axis = generate_perpendicular(arrow_z_axis);
+	const GPlatesMaths::UnitVector3D arrow_x_axis( cross(arrow_y_axis, arrow_z_axis) );
+
+	//
+	// Render the arrow head.
+	//
+	// We render the arrow head first because, for transparent arrows, it looks better.
+	//
+
+	paint_arrow_head_3D(
+			end,
+			arrow_x_axis,
+			arrow_y_axis,
+			arrow_z_axis,
+			arrowhead_size,
+			rgba8_color,
+			triangles_stream);
+
+	//
+	// Render the arrow body.
+	//
+
+	const GPlatesMaths::Vector3D &centre_start_circle = start;
+	const GPlatesMaths::Vector3D centre_end_circle = end - arrowhead_size * arrow_axis;
+
+	const GPlatesMaths::real_t arrow_body_half_width = 0.5 * arrow_body_width;
+
+	static const int NUM_VERTICES_IN_UNIT_CIRCLE = 8;
+	static const double s_vertex_angle =
+			2 * GPlatesMaths::PI / NUM_VERTICES_IN_UNIT_CIRCLE;
+	static const GPlatesMaths::real_t s_unit_circle[][2] =
+	{
+		{ GPlatesMaths::cos(0 * s_vertex_angle), GPlatesMaths::sin(0 * s_vertex_angle) },
+		{ GPlatesMaths::cos(1 * s_vertex_angle), GPlatesMaths::sin(1 * s_vertex_angle) },
+		{ GPlatesMaths::cos(2 * s_vertex_angle), GPlatesMaths::sin(2 * s_vertex_angle) },
+		{ GPlatesMaths::cos(3 * s_vertex_angle), GPlatesMaths::sin(3 * s_vertex_angle) },
+		{ GPlatesMaths::cos(4 * s_vertex_angle), GPlatesMaths::sin(4 * s_vertex_angle) },
+		{ GPlatesMaths::cos(5 * s_vertex_angle), GPlatesMaths::sin(5 * s_vertex_angle) },
+		{ GPlatesMaths::cos(6 * s_vertex_angle), GPlatesMaths::sin(6 * s_vertex_angle) },
+		{ GPlatesMaths::cos(7 * s_vertex_angle), GPlatesMaths::sin(7 * s_vertex_angle) }
+	};
+	BOOST_STATIC_ASSERT(NUM_VERTICES_IN_UNIT_CIRCLE == (sizeof(s_unit_circle) / sizeof(s_unit_circle[0])));
+
+	// Generate the cylinder start vertices in the frame of reference of the arrow's axis.
+	const GPlatesMaths::Vector3D start_circle[] =
+	{
+		centre_start_circle + arrow_body_half_width * (s_unit_circle[0][0] * arrow_x_axis + s_unit_circle[0][1] * arrow_y_axis),
+		centre_start_circle + arrow_body_half_width * (s_unit_circle[1][0] * arrow_x_axis + s_unit_circle[1][1] * arrow_y_axis),
+		centre_start_circle + arrow_body_half_width * (s_unit_circle[2][0] * arrow_x_axis + s_unit_circle[2][1] * arrow_y_axis),
+		centre_start_circle + arrow_body_half_width * (s_unit_circle[3][0] * arrow_x_axis + s_unit_circle[3][1] * arrow_y_axis),
+		centre_start_circle + arrow_body_half_width * (s_unit_circle[4][0] * arrow_x_axis + s_unit_circle[4][1] * arrow_y_axis),
+		centre_start_circle + arrow_body_half_width * (s_unit_circle[5][0] * arrow_x_axis + s_unit_circle[5][1] * arrow_y_axis),
+		centre_start_circle + arrow_body_half_width * (s_unit_circle[6][0] * arrow_x_axis + s_unit_circle[6][1] * arrow_y_axis),
+		centre_start_circle + arrow_body_half_width * (s_unit_circle[7][0] * arrow_x_axis + s_unit_circle[7][1] * arrow_y_axis)
+	};
+	BOOST_STATIC_ASSERT(NUM_VERTICES_IN_UNIT_CIRCLE == (sizeof(start_circle) / sizeof(start_circle[0])));
+
+	// Generate the cylinder end vertices in the frame of reference of the arrow's axis.
+	const GPlatesMaths::Vector3D end_circle[] =
+	{
+		centre_end_circle + arrow_body_half_width * (s_unit_circle[0][0] * arrow_x_axis + s_unit_circle[0][1] * arrow_y_axis),
+		centre_end_circle + arrow_body_half_width * (s_unit_circle[1][0] * arrow_x_axis + s_unit_circle[1][1] * arrow_y_axis),
+		centre_end_circle + arrow_body_half_width * (s_unit_circle[2][0] * arrow_x_axis + s_unit_circle[2][1] * arrow_y_axis),
+		centre_end_circle + arrow_body_half_width * (s_unit_circle[3][0] * arrow_x_axis + s_unit_circle[3][1] * arrow_y_axis),
+		centre_end_circle + arrow_body_half_width * (s_unit_circle[4][0] * arrow_x_axis + s_unit_circle[4][1] * arrow_y_axis),
+		centre_end_circle + arrow_body_half_width * (s_unit_circle[5][0] * arrow_x_axis + s_unit_circle[5][1] * arrow_y_axis),
+		centre_end_circle + arrow_body_half_width * (s_unit_circle[6][0] * arrow_x_axis + s_unit_circle[6][1] * arrow_y_axis),
+		centre_end_circle + arrow_body_half_width * (s_unit_circle[7][0] * arrow_x_axis + s_unit_circle[7][1] * arrow_y_axis)
+	};
+	BOOST_STATIC_ASSERT(NUM_VERTICES_IN_UNIT_CIRCLE == (sizeof(end_circle) / sizeof(end_circle[0])));
+
+	//
+	// Render the cylinder.
+	//
+
+	axially_symmetric_mesh_stream_primitives_type::Primitives stream_cylinder_mesh(triangles_stream);
+
+	bool ok = stream_cylinder_mesh.begin_primitive(
+			2 * NUM_VERTICES_IN_UNIT_CIRCLE/*max_num_vertices*/,
+			3 * 2 * NUM_VERTICES_IN_UNIT_CIRCLE/*max_num_vertex_elements*/);
+
+	// Since we added vertices/indices to a std::vector we shouldn't have run out of space.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			ok,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Add the cylinder start vertices.
+	for (int n = 0; n < NUM_VERTICES_IN_UNIT_CIRCLE; ++n)
+	{
+		stream_cylinder_mesh.add_vertex(
+				axially_symmetric_mesh_vertex_type(
+						start_circle[n],
+						rgba8_color,
+						arrow_x_axis,
+						arrow_y_axis,
+						arrow_z_axis,
+						s_unit_circle[n][0].dval()/*model_space_x_position*/,
+						s_unit_circle[n][1].dval()/*model_space_y_position*/,
+						1/*radial_normal_weight*/,
+						0/*axial_normal_weight*/));
+	}
+
+	// Add the cylinder end vertices.
+	for (int n = 0; n < NUM_VERTICES_IN_UNIT_CIRCLE; ++n)
+	{
+		stream_cylinder_mesh.add_vertex(
+				axially_symmetric_mesh_vertex_type(
+						end_circle[n],
+						rgba8_color,
+						arrow_x_axis,
+						arrow_y_axis,
+						arrow_z_axis,
+						s_unit_circle[n][0].dval()/*model_space_x_position*/,
+						s_unit_circle[n][1].dval()/*model_space_y_position*/,
+						1/*radial_normal_weight*/,
+						0/*axial_normal_weight*/));
+	}
+
+	// Add the cylinder vertex elements.
+	// Make outward facing triangles counter-clockwise (this is the default front-facing OpenGL mode).
+	for (int n = 0; n < NUM_VERTICES_IN_UNIT_CIRCLE - 1; ++n)
+	{
+		// First triangle of current quad.
+		stream_cylinder_mesh.add_vertex_element(n);
+		stream_cylinder_mesh.add_vertex_element(n + 1);
+		stream_cylinder_mesh.add_vertex_element(n + NUM_VERTICES_IN_UNIT_CIRCLE);
+
+		// Second triangle of current quad.
+		stream_cylinder_mesh.add_vertex_element(n + 1 + NUM_VERTICES_IN_UNIT_CIRCLE);
+		stream_cylinder_mesh.add_vertex_element(n + NUM_VERTICES_IN_UNIT_CIRCLE);
+		stream_cylinder_mesh.add_vertex_element(n + 1);
+	}
+
+	// Wrap-around cylinder vertex elements.
+	// First triangle of current quad.
+	stream_cylinder_mesh.add_vertex_element(NUM_VERTICES_IN_UNIT_CIRCLE - 1);
+	stream_cylinder_mesh.add_vertex_element(0);
+	stream_cylinder_mesh.add_vertex_element(2 * NUM_VERTICES_IN_UNIT_CIRCLE - 1);
+	// Second triangle of current quad.
+	stream_cylinder_mesh.add_vertex_element(NUM_VERTICES_IN_UNIT_CIRCLE);
+	stream_cylinder_mesh.add_vertex_element(2 * NUM_VERTICES_IN_UNIT_CIRCLE - 1);
+	stream_cylinder_mesh.add_vertex_element(0);
+
+	stream_cylinder_mesh.end_primitive();
+
+	//
+	// Render the cap to close off the start of the cylinder.
+	//
+	// We don't need one at the end of the cylinder because the arrow head closes it off for us
+	// (because the cylinder abuts the arrow head cone).
+	//
+
+	axially_symmetric_mesh_stream_primitives_type::Primitives stream_start_cap_mesh(triangles_stream);
+
+	ok = stream_start_cap_mesh.begin_primitive(
+			NUM_VERTICES_IN_UNIT_CIRCLE + 1/*max_num_vertices*/,
+			3 * NUM_VERTICES_IN_UNIT_CIRCLE/*max_num_vertex_elements*/);
+
+	// Since we added vertices/indices to a std::vector we shouldn't have run out of space.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			ok,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Add the triangle fan vertex at the centre of the start cap.
+	stream_start_cap_mesh.add_vertex(
+			axially_symmetric_mesh_vertex_type(
+					start,
+					rgba8_color,
+					arrow_x_axis,
+					arrow_y_axis,
+					arrow_z_axis,
+					0/*model_space_x_position*/,
+					0/*model_space_y_position*/,
+					0/*radial_normal_weight*/,
+					-1/*axial_normal_weight*/));
+
+	// Add the start cap vertices.
+	// Note that we can't share the cylinder vertices because the radial/axial normal weights are different.
+	for (int n = 0; n < NUM_VERTICES_IN_UNIT_CIRCLE; ++n)
+	{
+		stream_start_cap_mesh.add_vertex(
+				axially_symmetric_mesh_vertex_type(
+						start_circle[n],
+						rgba8_color,
+						arrow_x_axis,
+						arrow_y_axis,
+						arrow_z_axis,
+						s_unit_circle[n][0].dval()/*model_space_x_position*/,
+						s_unit_circle[n][1].dval()/*model_space_y_position*/,
+						0/*radial_normal_weight*/,
+						-1/*axial_normal_weight*/));
+	}
+
+	// Add the start cap vertex elements.
+	// Make outward facing triangles counter-clockwise (this is the default front-facing OpenGL mode).
+	for (int n = 0; n < NUM_VERTICES_IN_UNIT_CIRCLE - 1; ++n)
+	{
+		stream_start_cap_mesh.add_vertex_element(0); // Fan centre.
+		stream_start_cap_mesh.add_vertex_element(n + 2);
+		stream_start_cap_mesh.add_vertex_element(n + 1);
+	}
+	// Wrap-around start circle vertex elements.
+	stream_start_cap_mesh.add_vertex_element(0); // Fan centre.
+	stream_start_cap_mesh.add_vertex_element(1);
+	stream_start_cap_mesh.add_vertex_element(NUM_VERTICES_IN_UNIT_CIRCLE);
+
+	stream_start_cap_mesh.end_primitive();
+}
+
+
+void
+GPlatesGui::MapRenderedGeometryLayerPainter::paint_arrow_head_3D(
+		const GPlatesMaths::Vector3D &apex,
+		const GPlatesMaths::UnitVector3D &cone_x_axis,
+		const GPlatesMaths::UnitVector3D &cone_y_axis,
+		const GPlatesMaths::UnitVector3D &cone_z_axis,
+		const GPlatesMaths::real_t &cone_axis_mag,
+		rgba8_t rgba8_color,
+		axially_symmetric_mesh_stream_primitives_type &triangles_stream)
+{
+	const GPlatesMaths::Vector3D cone_axis = cone_axis_mag * cone_z_axis;
+	const GPlatesMaths::Vector3D centre_base_circle = apex - cone_axis;
+
+	static const int NUM_VERTICES_IN_BASE_UNIT_CIRCLE = 12;
+	static const double s_vertex_angle =
+			2 * GPlatesMaths::PI / NUM_VERTICES_IN_BASE_UNIT_CIRCLE;
+	static const GPlatesMaths::real_t s_base_unit_circle[][2] =
+	{
+		{ GPlatesMaths::cos(0 * s_vertex_angle), GPlatesMaths::sin(0 * s_vertex_angle) },
+		{ GPlatesMaths::cos(1 * s_vertex_angle), GPlatesMaths::sin(1 * s_vertex_angle) },
+		{ GPlatesMaths::cos(2 * s_vertex_angle), GPlatesMaths::sin(2 * s_vertex_angle) },
+		{ GPlatesMaths::cos(3 * s_vertex_angle), GPlatesMaths::sin(3 * s_vertex_angle) },
+		{ GPlatesMaths::cos(4 * s_vertex_angle), GPlatesMaths::sin(4 * s_vertex_angle) },
+		{ GPlatesMaths::cos(5 * s_vertex_angle), GPlatesMaths::sin(5 * s_vertex_angle) },
+		{ GPlatesMaths::cos(6 * s_vertex_angle), GPlatesMaths::sin(6 * s_vertex_angle) },
+		{ GPlatesMaths::cos(7 * s_vertex_angle), GPlatesMaths::sin(7 * s_vertex_angle) },
+		{ GPlatesMaths::cos(8 * s_vertex_angle), GPlatesMaths::sin(8 * s_vertex_angle) },
+		{ GPlatesMaths::cos(9 * s_vertex_angle), GPlatesMaths::sin(9 * s_vertex_angle) },
+		{ GPlatesMaths::cos(10 * s_vertex_angle), GPlatesMaths::sin(10 * s_vertex_angle) },
+		{ GPlatesMaths::cos(11 * s_vertex_angle), GPlatesMaths::sin(11 * s_vertex_angle) }
+	};
+	BOOST_STATIC_ASSERT(NUM_VERTICES_IN_BASE_UNIT_CIRCLE == (sizeof(s_base_unit_circle) / sizeof(s_base_unit_circle[0])));
+
+	// Radius of cone base circle is proportional to the distance from the apex to
+	// the centre of the base circle.
+	const GPlatesMaths::real_t radius_cone_circle = ARROWHEAD_BASE_HEIGHT_RATIO * cone_axis_mag;
+
+	// Generate the cone vertices in the frame of reference of the cone axis.
+	const GPlatesMaths::Vector3D cone_base_circle[] =
+	{
+		centre_base_circle + radius_cone_circle * (s_base_unit_circle[0][0] * cone_x_axis + s_base_unit_circle[0][1] * cone_y_axis),
+		centre_base_circle + radius_cone_circle * (s_base_unit_circle[1][0] * cone_x_axis + s_base_unit_circle[1][1] * cone_y_axis),
+		centre_base_circle + radius_cone_circle * (s_base_unit_circle[2][0] * cone_x_axis + s_base_unit_circle[2][1] * cone_y_axis),
+		centre_base_circle + radius_cone_circle * (s_base_unit_circle[3][0] * cone_x_axis + s_base_unit_circle[3][1] * cone_y_axis),
+		centre_base_circle + radius_cone_circle * (s_base_unit_circle[4][0] * cone_x_axis + s_base_unit_circle[4][1] * cone_y_axis),
+		centre_base_circle + radius_cone_circle * (s_base_unit_circle[5][0] * cone_x_axis + s_base_unit_circle[5][1] * cone_y_axis),
+		centre_base_circle + radius_cone_circle * (s_base_unit_circle[6][0] * cone_x_axis + s_base_unit_circle[6][1] * cone_y_axis),
+		centre_base_circle + radius_cone_circle * (s_base_unit_circle[7][0] * cone_x_axis + s_base_unit_circle[7][1] * cone_y_axis),
+		centre_base_circle + radius_cone_circle * (s_base_unit_circle[8][0] * cone_x_axis + s_base_unit_circle[8][1] * cone_y_axis),
+		centre_base_circle + radius_cone_circle * (s_base_unit_circle[9][0] * cone_x_axis + s_base_unit_circle[9][1] * cone_y_axis),
+		centre_base_circle + radius_cone_circle * (s_base_unit_circle[10][0] * cone_x_axis + s_base_unit_circle[10][1] * cone_y_axis),
+		centre_base_circle + radius_cone_circle * (s_base_unit_circle[11][0] * cone_x_axis + s_base_unit_circle[11][1] * cone_y_axis)
+	};
+	BOOST_STATIC_ASSERT(NUM_VERTICES_IN_BASE_UNIT_CIRCLE == (sizeof(cone_base_circle) / sizeof(cone_base_circle[0])));
+
+	const GLfloat radial_normal_weight = COSINE_ARROWHEAD_BASE_HEIGHT_RATIO;
+	const GLfloat axial_normal_weight = SINE_ARROWHEAD_BASE_HEIGHT_RATIO;
+
+	//
+	// Render the curved surface of the cone.
+	//
+
+	axially_symmetric_mesh_stream_primitives_type::Primitives stream_cone_surface_mesh(triangles_stream);
+
+	bool ok = stream_cone_surface_mesh.begin_primitive(
+			NUM_VERTICES_IN_BASE_UNIT_CIRCLE + 1/*max_num_vertices*/,
+			3 * NUM_VERTICES_IN_BASE_UNIT_CIRCLE/*max_num_vertex_elements*/);
+
+	// Since we added vertices/indices to a std::vector we shouldn't have run out of space.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			ok,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Add the cone apex vertex.
+	stream_cone_surface_mesh.add_vertex(
+			axially_symmetric_mesh_vertex_type(
+					apex,
+					rgba8_color,
+					cone_x_axis,
+					cone_y_axis,
+					cone_z_axis,
+					0/*model_space_x_position*/,
+					0/*model_space_y_position*/,
+					radial_normal_weight,
+					axial_normal_weight));
+
+	// Add the cone base circle vertices.
+	for (int n = 0; n < NUM_VERTICES_IN_BASE_UNIT_CIRCLE; ++n)
+	{
+		stream_cone_surface_mesh.add_vertex(
+				axially_symmetric_mesh_vertex_type(
+						cone_base_circle[n],
+						rgba8_color,
+						cone_x_axis,
+						cone_y_axis,
+						cone_z_axis,
+						s_base_unit_circle[n][0].dval()/*model_space_x_position*/,
+						s_base_unit_circle[n][1].dval()/*model_space_y_position*/,
+						radial_normal_weight,
+						axial_normal_weight));
+	}
+
+	// Add the cone surface vertex elements.
+	// Make outward facing triangles counter-clockwise (this is the default front-facing OpenGL mode).
+	for (int n = 0; n < NUM_VERTICES_IN_BASE_UNIT_CIRCLE - 1; ++n)
+	{
+		stream_cone_surface_mesh.add_vertex_element(0); // Fan centre.
+		stream_cone_surface_mesh.add_vertex_element(n + 1);
+		stream_cone_surface_mesh.add_vertex_element(n + 2);
+	}
+	// Wrap-around cone base circle vertex elements.
+	stream_cone_surface_mesh.add_vertex_element(0); // Fan centre.
+	stream_cone_surface_mesh.add_vertex_element(NUM_VERTICES_IN_BASE_UNIT_CIRCLE);
+	stream_cone_surface_mesh.add_vertex_element(1);
+
+	stream_cone_surface_mesh.end_primitive();
+
+	//
+	// Render the cone cap to close off the cone.
+	//
+
+	axially_symmetric_mesh_stream_primitives_type::Primitives stream_cone_cap_mesh(triangles_stream);
+
+	ok = stream_cone_cap_mesh.begin_primitive(
+			NUM_VERTICES_IN_BASE_UNIT_CIRCLE + 1/*max_num_vertices*/,
+			3 * NUM_VERTICES_IN_BASE_UNIT_CIRCLE/*max_num_vertex_elements*/);
+
+	// Since we added vertices/indices to a std::vector we shouldn't have run out of space.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			ok,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Add the triangle fan vertex at the centre of the cone base circle.
+	stream_cone_cap_mesh.add_vertex(
+			axially_symmetric_mesh_vertex_type(
+					centre_base_circle,
+					rgba8_color,
+					cone_x_axis,
+					cone_y_axis,
+					cone_z_axis,
+					0/*model_space_x_position*/,
+					0/*model_space_y_position*/,
+					0/*radial_normal_weight*/,
+					-1/*axial_normal_weight*/));
+
+	// Add the cone cap vertices.
+	// Note that we can't share the cone base circles vertices from the cone surface above
+	// because the radial/axial normal weights are different.
+	for (int n = 0; n < NUM_VERTICES_IN_BASE_UNIT_CIRCLE; ++n)
+	{
+		stream_cone_cap_mesh.add_vertex(
+				axially_symmetric_mesh_vertex_type(
+						cone_base_circle[n],
+						rgba8_color,
+						cone_x_axis,
+						cone_y_axis,
+						cone_z_axis,
+						s_base_unit_circle[n][0].dval()/*model_space_x_position*/,
+						s_base_unit_circle[n][1].dval()/*model_space_y_position*/,
+						0/*radial_normal_weight*/,
+						-1/*axial_normal_weight*/));
+	}
+
+	// Add the cone cap vertex elements.
+	// Make outward facing triangles counter-clockwise (this is the default front-facing OpenGL mode).
+	for (int n = 0; n < NUM_VERTICES_IN_BASE_UNIT_CIRCLE - 1; ++n)
+	{
+		stream_cone_cap_mesh.add_vertex_element(0); // Fan centre.
+		stream_cone_cap_mesh.add_vertex_element(n + 2);
+		stream_cone_cap_mesh.add_vertex_element(n + 1);
+	}
+	// Wrap-around cone base circle vertex elements.
+	stream_cone_cap_mesh.add_vertex_element(0); // Fan centre.
+	stream_cone_cap_mesh.add_vertex_element(1);
+	stream_cone_cap_mesh.add_vertex_element(NUM_VERTICES_IN_BASE_UNIT_CIRCLE);
+
+	stream_cone_cap_mesh.end_primitive();
+}
+
+
+void
+GPlatesGui::MapRenderedGeometryLayerPainter::paint_arrow_head_2D(
+		const GPlatesMaths::UnitVector3D &apex,
+		const GPlatesMaths::UnitVector3D &direction,
+		const GPlatesMaths::real_t &size,
+		rgba8_t rgba8_color,
+		stream_primitives_type &triangles_stream)
+{
+	// A vector perpendicular to the arrow direction, for forming the base of the triangle.
+	const GPlatesMaths::UnitVector3D perpendicular_direction =
+			GPlatesMaths::cross(direction, apex).get_normalisation();
+
+	const GPlatesMaths::Vector3D base = GPlatesMaths::Vector3D(apex) - size * direction;
+	const GPlatesMaths::Vector3D base_corners[2] =
+	{
+		base - ARROWHEAD_BASE_HEIGHT_RATIO * size * perpendicular_direction,
+		base + ARROWHEAD_BASE_HEIGHT_RATIO * size * perpendicular_direction
+	};
+
+	stream_primitives_type::Triangles stream_triangles(triangles_stream);
+
+	stream_triangles.begin_triangles();
+
+	stream_triangles.add_vertex(coloured_vertex_type(apex, rgba8_color));
+	stream_triangles.add_vertex(coloured_vertex_type(base_corners[0], rgba8_color));
+	stream_triangles.add_vertex(coloured_vertex_type(base_corners[1], rgba8_color));
+
+	stream_triangles.end_triangles();
 }

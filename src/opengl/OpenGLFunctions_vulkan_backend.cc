@@ -22,11 +22,6 @@
 #include "global/NotYetImplementedException.h"
 
 
-void GPlatesOpenGL::OpenGLFunctions::glActiveTexture(GLenum texture)
-{
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
-}
-
 void GPlatesOpenGL::OpenGLFunctions::glAttachShader(GLuint program, GLuint shader)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
@@ -57,6 +52,11 @@ void GPlatesOpenGL::OpenGLFunctions::glBindFramebuffer(GLenum target, GLuint fra
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glBindImageTexture(GLuint image_unit, GLuint texture, GLint level, GLboolean layered, GLint layer, GLenum access, GLenum format)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
 void GPlatesOpenGL::OpenGLFunctions::glBindRenderbuffer(GLenum target, GLuint renderbuffer)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
@@ -67,7 +67,7 @@ void GPlatesOpenGL::OpenGLFunctions::glBindSampler(GLuint unit, GLuint sampler)
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glBindTexture(GLenum target, GLuint texture)
+void GPlatesOpenGL::OpenGLFunctions::glBindTextureUnit(GLuint unit, GLuint texture)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
@@ -107,11 +107,6 @@ void GPlatesOpenGL::OpenGLFunctions::glBufferData(GLenum target, GLsizeiptr size
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid* data)
-{
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
-}
-
 GLenum GPlatesOpenGL::OpenGLFunctions::glCheckFramebufferStatus(GLenum target)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
@@ -137,7 +132,27 @@ void GPlatesOpenGL::OpenGLFunctions::glClearDepth(GLdouble depth)
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glClearNamedBufferData(GLuint buffer, GLenum internalformat, GLenum format, GLenum type, const void *data)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glClearNamedBufferSubData(GLuint buffer, GLenum internalformat, GLintptr offset, GLsizei size, GLenum format, GLenum type, const void *data)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
 void GPlatesOpenGL::OpenGLFunctions::glClearStencil(GLint s)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glClearTexSubImage(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *data)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glClearTexImage(GLuint texture, GLint level, GLenum format, GLenum type, const void *data)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
@@ -157,12 +172,42 @@ void GPlatesOpenGL::OpenGLFunctions::glCompileShader(GLuint shader)
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glCreateBuffers(GLsizei n, GLuint* buffers)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glCreateFramebuffers(GLsizei n, GLuint* framebuffers)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
 GLuint GPlatesOpenGL::OpenGLFunctions::glCreateProgram()
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glCreateRenderbuffers(GLsizei n, GLuint* renderbuffers)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glCreateSamplers(GLsizei count, GLuint* samplers)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
 GLuint GPlatesOpenGL::OpenGLFunctions::glCreateShader(GLenum type)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glCreateTextures(GLenum target, GLsizei n, GLuint* textures)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glCreateVertexArrays(GLsizei n, GLuint* arrays)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
@@ -242,7 +287,7 @@ void GPlatesOpenGL::OpenGLFunctions::glDisablei(GLenum target, GLuint index)
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glDisableVertexAttribArray(GLuint index)
+void GPlatesOpenGL::OpenGLFunctions::glDisableVertexArrayAttrib(GLuint vaobj, GLuint index)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
@@ -277,12 +322,12 @@ void GPlatesOpenGL::OpenGLFunctions::glEnable(GLenum cap)
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glEnablei(GLenum target, GLuint index)
+void GPlatesOpenGL::OpenGLFunctions::glEnableVertexArrayAttrib(GLuint vaobj, GLuint index)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glEnableVertexAttribArray(GLuint index)
+void GPlatesOpenGL::OpenGLFunctions::glEnablei(GLenum target, GLuint index)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
@@ -327,42 +372,17 @@ void GPlatesOpenGL::OpenGLFunctions::glFrontFace(GLenum mode)
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glGenBuffers(GLsizei n, GLuint* buffers)
-{
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glGenFramebuffers(GLsizei n, GLuint* framebuffers)
-{
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glGenRenderbuffers(GLsizei n, GLuint* renderbuffers)
-{
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glGenSamplers(GLsizei count, GLuint* samplers)
-{
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glGenTextures(GLsizei n, GLuint* textures)
-{
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glGenVertexArrays(GLsizei n, GLuint* arrays)
-{
-	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
-}
-
 GLenum GPlatesOpenGL::OpenGLFunctions::glGetError()
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
 void GPlatesOpenGL::OpenGLFunctions::glGetIntegerv(GLenum pname, GLint* params)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glGetInteger64v(GLenum pname, GLint64* params)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
@@ -387,7 +407,7 @@ void GPlatesOpenGL::OpenGLFunctions::glGetShaderInfoLog(GLuint shader, GLsizei b
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glGetTexImage(GLenum target, GLint level, GLenum format, GLenum type, GLvoid* pixels)
+void GPlatesOpenGL::OpenGLFunctions::glGetTextureImage(GLuint texture, GLint level, GLenum format, GLenum type, GLsizei bufSize, void* pixels)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
@@ -423,6 +443,31 @@ GLvoid * GPlatesOpenGL::OpenGLFunctions::glMapBuffer(GLenum target, GLenum acces
 }
 
 GLvoid * GPlatesOpenGL::OpenGLFunctions::glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glMemoryBarrier(GLbitfield barriers)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glMemoryBarrierByRegion(GLbitfield barriers)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glNamedBufferStorage(GLuint buffer, GLsizei size, const void* data, GLbitfield flags)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glNamedBufferData(GLuint buffer, GLsizei size, const void* data, GLenum usage)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glNamedBufferSubData(GLuint buffer, GLintptr offset, GLsizei size, const void* data)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
@@ -512,6 +557,11 @@ void GPlatesOpenGL::OpenGLFunctions::glScissor(GLint x, GLint y, GLsizei width, 
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glShaderStorageBlockBinding(GLuint program, GLuint storageBlockIndex, GLuint storageBlockBinding)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
 void GPlatesOpenGL::OpenGLFunctions::glShaderSource(GLuint shader, GLsizei count, const GLchar* const* string, const GLint* length)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
@@ -547,62 +597,72 @@ void GPlatesOpenGL::OpenGLFunctions::glStencilOpSeparate(GLenum face, GLenum sfa
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexParameterf(GLenum target, GLenum pname, GLfloat param)
+void GPlatesOpenGL::OpenGLFunctions::glTextureParameterf(GLuint texture, GLenum pname, GLfloat param)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexParameterfv(GLenum target, GLenum pname, const GLfloat* params)
+void GPlatesOpenGL::OpenGLFunctions::glTextureParameterfv(GLuint texture, GLenum pname, const GLfloat* params)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexParameteri(GLenum target, GLenum pname, GLint param)
+void GPlatesOpenGL::OpenGLFunctions::glTextureParameteri(GLuint texture, GLenum pname, GLint param)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexParameteriv(GLenum target, GLenum pname, const GLint* params)
+void GPlatesOpenGL::OpenGLFunctions::glTextureParameteriv(GLuint texture, GLenum pname, const GLint* params)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexParameterIiv(GLenum target, GLenum pname, const GLint* params)
+void GPlatesOpenGL::OpenGLFunctions::glTextureParameterIiv(GLuint texture, GLenum pname, const GLint* params)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexParameterIuiv(GLenum target, GLenum pname, const GLuint* params)
+void GPlatesOpenGL::OpenGLFunctions::glTextureParameterIuiv(GLuint texture, GLenum pname, const GLuint* params)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid* pixels)
+void GPlatesOpenGL::OpenGLFunctions::glTextureStorage1D(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid* pixels)
+void GPlatesOpenGL::OpenGLFunctions::glTextureStorage2D(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexSubImage3D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid* pixels)
+void GPlatesOpenGL::OpenGLFunctions::glTextureStorage3D(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexImage1D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid* pixels)
+void GPlatesOpenGL::OpenGLFunctions::glTextureSubImage1D(GLuint texture, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid* pixels)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* pixels)
+void GPlatesOpenGL::OpenGLFunctions::glTextureSubImage2D(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid* pixels)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexImage3D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid* pixels)
+void GPlatesOpenGL::OpenGLFunctions::glTextureSubImage3D(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid* pixels)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glTextureBuffer(GLuint texture, GLenum internalformat, GLuint buffer)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glTextureBufferRange(GLuint texture, GLenum internalformat, GLuint buffer, GLintptr offset, GLsizei size)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
@@ -792,17 +852,37 @@ void GPlatesOpenGL::OpenGLFunctions::glValidateProgram(GLuint program)
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glVertexAttribDivisor(GLuint index, GLuint divisor)
+void GPlatesOpenGL::OpenGLFunctions::glVertexArrayAttribBinding(GLuint vaobj, GLuint attribindex, GLuint bindingindex)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glVertexAttribIPointer(GLuint index, GLint size, GLenum type, GLsizei stride, const GLvoid* pointer)
+void GPlatesOpenGL::OpenGLFunctions::glVertexArrayAttribFormat(GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLboolean normalized, GLuint relativeoffset)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid* pointer)
+void GPlatesOpenGL::OpenGLFunctions::glVertexArrayAttribIFormat(GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLuint relativeoffset)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glVertexArrayAttribLFormat(GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLuint relativeoffset)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glVertexArrayBindingDivisor(GLuint vaobj, GLuint bindingindex, GLuint divisor)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glVertexArrayElementBuffer(GLuint vaobj, GLuint buffer)
+{
+	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glVertexArrayVertexBuffer(GLuint vaobj, GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride)
 {
 	throw GPlatesGlobal::NotYetImplementedException(GPLATES_EXCEPTION_SOURCE);
 }

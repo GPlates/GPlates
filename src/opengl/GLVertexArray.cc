@@ -35,35 +35,6 @@ GPlatesOpenGL::GLVertexArray::GLVertexArray(
 }
 
 
-void
-GPlatesOpenGL::GLVertexArray::clear(
-		GL &gl)
-{
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	// Bind this vertex array first.
-	// Note that this is context state (not VAO state) and will get restored on leaving the current scope.
-	gl.BindVertexArray(shared_from_this());
-
-	// Unbind element array buffer.
-	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, boost::none);
-
-	// Unbind array buffer.
-	// Note that this is context state (not VAO state) and will get restored on leaving the current scope.
-	gl.BindBuffer(GL_ARRAY_BUFFER, boost::none);
-
-	// Reset the attribute arrays.
-	const unsigned int num_attribute_arrays = gl.get_capabilities().gl_max_vertex_attribs;
-	for (GLuint attribute_index = 0; attribute_index < num_attribute_arrays; ++attribute_index)
-	{
-		gl.DisableVertexAttribArray(attribute_index);
-		gl.VertexAttribDivisor(attribute_index, 0);
-		gl.VertexAttribPointer(attribute_index, 4, GL_FLOAT, GL_FALSE, 0, nullptr);
-	}
-}
-
-
 GLuint
 GPlatesOpenGL::GLVertexArray::get_resource_handle() const
 {
@@ -76,7 +47,7 @@ GPlatesOpenGL::GLVertexArray::Allocator::allocate(
 		OpenGLFunctions &opengl_functions)
 {
 	GLuint vertex_array_object;
-	opengl_functions.glGenVertexArrays(1, &vertex_array_object);
+	opengl_functions.glCreateVertexArrays(1, &vertex_array_object);
 	return vertex_array_object;
 }
 

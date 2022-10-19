@@ -257,36 +257,34 @@ namespace
 			const std::vector<vertex_type> &vertices,
 			const std::vector<vertex_element_type> &vertex_elements)
 	{
-		// Bind vertex array object.
-		gl.BindVertexArray(vertex_array);
-
-		// Bind vertex element buffer object to currently bound vertex array object.
-		gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_element_buffer);
-
-		// Transfer vertex element data to currently bound vertex element buffer object.
-		gl.BufferData(
-				GL_ELEMENT_ARRAY_BUFFER,
+		// Transfer vertex element data to the vertex element buffer object.
+		gl.NamedBufferData(
+				vertex_element_buffer,
 				vertex_elements.size() * sizeof(vertex_elements[0]),
 				vertex_elements.data(),
 				GL_STATIC_DRAW);
 
-		// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-		gl.BindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
-
-		// Transfer vertex data to currently bound vertex buffer object.
-		gl.BufferData(
-				GL_ARRAY_BUFFER,
+		// Transfer vertex data to the vertex buffer object.
+		gl.NamedBufferData(
+				vertex_buffer,
 				vertices.size() * sizeof(vertices[0]),
 				vertices.data(),
 				GL_STATIC_DRAW);
 
-		// Specify vertex attributes (position and colour) in currently bound vertex buffer object.
-		// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-		// to currently bound vertex array object.
-		gl.EnableVertexAttribArray(0);
-		gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_type), BUFFER_OFFSET(vertex_type, x));
-		gl.EnableVertexAttribArray(1);
-		gl.VertexAttribPointer(1, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(vertex_type), BUFFER_OFFSET(vertex_type, colour));
+		// Bind vertex element buffer object to the vertex array object.
+		gl.VertexArrayElementBuffer(vertex_array, vertex_element_buffer);
+
+		// Bind vertex buffer object to vertex array object.
+		gl.VertexArrayVertexBuffer(vertex_array, 0/*bindingindex*/, vertex_buffer, 0/*offset*/, sizeof(vertex_type));
+
+		// Specify vertex attributes (position and colour) in the vertex array object.
+		gl.EnableVertexArrayAttrib(vertex_array, 0);
+		gl.VertexArrayAttribFormat(vertex_array, 0, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(vertex_type, x));
+		gl.VertexArrayAttribBinding(vertex_array, 0, 0/*bindingindex*/);
+
+		gl.EnableVertexArrayAttrib(vertex_array, 1);
+		gl.VertexArrayAttribFormat(vertex_array, 1, 4, GL_UNSIGNED_BYTE, GL_TRUE, ATTRIB_OFFSET_IN_VERTEX(vertex_type, colour));
+		gl.VertexArrayAttribBinding(vertex_array, 1, 0/*bindingindex*/);
 	}
 
 
@@ -334,9 +332,6 @@ GPlatesGui::SphericalGrid::SphericalGrid(
 	d_vertex_element_buffer(GPlatesOpenGL::GLBuffer::create(gl)),
 	d_num_vertex_indices(0)
 {
-	// Make sure we leave the OpenGL global state the way it was.
-	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
-
 	compile_link_program(gl, d_program);
 }
 

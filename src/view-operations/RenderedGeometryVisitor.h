@@ -30,6 +30,7 @@
 
 namespace GPlatesViewOperations
 {
+	class RenderedArrow;
 	class RenderedArrowedPolyline;
 	class RenderedCircleSymbol;
 	class RenderedColouredEdgeSurfaceMesh;
@@ -43,7 +44,6 @@ namespace GPlatesViewOperations
 	class RenderedPointOnSphere;
 	class RenderedPolygonOnSphere;
 	class RenderedPolylineOnSphere;
-	class RenderedRadialArrow;
 	class RenderedReconstructionGeometry;
 	class RenderedResolvedRaster;
 	class RenderedResolvedScalarField3D;
@@ -52,7 +52,6 @@ namespace GPlatesViewOperations
 	class RenderedSquareSymbol;
 	class RenderedStrainMarkerSymbol;
 	class RenderedString;
-	class RenderedTangentialArrow;
 	class RenderedTriangleSymbol;
 
 	/**
@@ -67,6 +66,18 @@ namespace GPlatesViewOperations
 	public:
 		virtual
 		~ConstRenderedGeometryVisitor()
+		{  }
+
+
+		/**
+		 * Note that this is not the same as a polyline with a symbol decoration.
+		 *
+		 * This is a single arrow.
+		 */
+		virtual
+		void
+		visit_rendered_arrow(
+				const RenderedArrow &)
 		{  }
 
 		virtual
@@ -147,12 +158,6 @@ namespace GPlatesViewOperations
 				const RenderedColouredPolygonOnSphere &)
 		{  }
 
-		virtual
-		void
-		visit_rendered_radial_arrow(
-				const RenderedRadialArrow &)
-		{  }
-
 		/**
 		 * This rendered geometry is a composite object as opposed to the others.
 		 *
@@ -204,17 +209,6 @@ namespace GPlatesViewOperations
 		void
 		visit_rendered_string(
 				const RenderedString &)
-		{  }
-
-		/**
-		 * Note that this is not the same as a polyline with a symbol decoration.
-		 *
-		 * This is a single directional arrow tangential to the globe's surface.
-		 */
-		virtual
-		void
-		visit_rendered_tangential_arrow(
-				const RenderedTangentialArrow &)
 		{  }
 
 		virtual

@@ -122,7 +122,7 @@ GPlatesOpenGL::GLLight::GLLight(
 	d_map_projection(map_projection),
 	d_map_view_light_direction_cube_texture_dimension(
 			(std::min)(MAP_VIEW_LIGHT_DIRECTION_CUBE_TEXTURE_DIMENSION, gl.get_capabilities().gl_max_cube_map_texture_size)),
-	d_map_view_light_direction_cube_texture(GLTexture::create(gl)),
+	d_map_view_light_direction_cube_texture(GLTexture::create(gl, GL_TEXTURE_CUBE_MAP)),
 	d_map_view_light_direction_cube_framebuffer(GLFramebuffer::create(gl)),
 	d_render_map_view_light_direction_program(GLProgram::create(gl)),
 	d_full_screen_quad(GLUtils::create_full_screen_quad(gl))
@@ -236,40 +236,29 @@ void
 GPlatesOpenGL::GLLight::create_map_view_light_direction_cube_texture(
 		GL &gl)
 {
-	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
-
-	gl.BindTexture(GL_TEXTURE_CUBE_MAP, d_map_view_light_direction_cube_texture);
-
 	// Using nearest-neighbour filtering since the 'pixelation' of the light direction is not
 	// noticeable once it goes through the dot product with the surface normals.
 	// Also it enables us to have distinctly different light directions on either side of the
 	// central meridian which we'll make go through the centre of some of the faces of the cube
 	// (which is along a boundary between two columns of pixels - provided texture dimension is even).
-	gl.TexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	gl.TexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	gl.TextureParameteri(d_map_view_light_direction_cube_texture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	gl.TextureParameteri(d_map_view_light_direction_cube_texture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels.
 	// Not strictly necessary for nearest-neighbour filtering but it is if later we change to use
 	// linear filtering to avoid seams.
-	gl.TexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	gl.TexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(d_map_view_light_direction_cube_texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(d_map_view_light_direction_cube_texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Create the texture but don't load any data into it.
 	// Leave it uninitialised because we will be rendering into it to initialise it.
 
-	// Initialise all six faces of the cube texture.
-	for (unsigned int face = 0; face < 6; ++face)
-	{
-		const GLenum face_target = static_cast<GLenum>(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face);
-
-		gl.TexImage2D(face_target, 0, GL_RGBA8,
-				d_map_view_light_direction_cube_texture_dimension, d_map_view_light_direction_cube_texture_dimension,
-				0,
-				// Since the image data is NULL it doesn't really matter what 'format' and 'type' are - just
-				// use values that are compatible with all internal color formats to avoid a possible error...
-				GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-	}
+	// Initialise the cube texture.
+	gl.TextureStorage2D(
+			d_map_view_light_direction_cube_texture,
+			1/*levels*/,
+			GL_RGBA8,
+			d_map_view_light_direction_cube_texture_dimension, d_map_view_light_direction_cube_texture_dimension);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
@@ -291,7 +280,7 @@ GPlatesOpenGL::GLLight::check_framebuffer_completeness_map_view_light_direction_
 			GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X, d_map_view_light_direction_cube_texture, 0/*level*/);
 
 	// Throw OpenGLException if not complete.
-	// This should succeed since we're using GL_RGBA8 texture format (which is required by OpenGL 3.3 core).
+	// This should succeed since we're using GL_RGBA8 texture format (which is required by modern OpenGL).
 	const GLenum completeness = gl.CheckFramebufferStatus(GL_FRAMEBUFFER);
 	GPlatesGlobal::Assert<OpenGLException>(
 			completeness == GL_FRAMEBUFFER_COMPLETE,

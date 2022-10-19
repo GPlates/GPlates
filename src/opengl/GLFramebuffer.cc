@@ -47,7 +47,7 @@ GPlatesOpenGL::GLFramebuffer::Allocator::allocate(
 		OpenGLFunctions &opengl_functions)
 {
 	GLuint fbo;
-	opengl_functions.glGenFramebuffers(1, &fbo);
+	opengl_functions.glCreateFramebuffers(1, &fbo);
 	return fbo;
 }
 

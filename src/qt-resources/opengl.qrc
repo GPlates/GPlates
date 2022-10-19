@@ -21,6 +21,10 @@
     <file>opengl/scalar_field_3d/utils.glsl</file>
     <file>opengl/scalar_field_3d/volume_fill_wall_geometry_shader.glsl</file>
     <file>opengl/scalar_field_3d/volume_fill_wall_surface_normal_fragment_shader.glsl</file>
+    <file>opengl/sort_and_blend_scene_fragments.frag</file>
+    <file>opengl/sort_and_blend_scene_fragments.vert</file>
+    <file>opengl/stars.frag</file>
+    <file>opengl/stars.vert</file>
     <file>opengl/utils.glsl</file>
   </qresource>
 </RCC>

@@ -296,41 +296,34 @@ GPlatesOpenGL::GLMultiResolutionMapCubeMesh::create_cube_face_mesh(
 		}
 	}
 
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	// Bind vertex array object.
-	gl.BindVertexArray(d_meshes_vertex_array[cube_face]);
-
-	// Bind vertex element buffer object to currently bound vertex array object.
-	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_meshes_vertex_element_buffer[cube_face]);
-
-	// Transfer vertex element data to currently bound vertex element buffer object.
-	gl.BufferData(
-			GL_ELEMENT_ARRAY_BUFFER,
+	// Transfer vertex element data to the vertex element buffer object.
+	gl.NamedBufferStorage(
+			d_meshes_vertex_element_buffer[cube_face],
 			mesh_indices.size() * sizeof(mesh_indices[0]),
 			mesh_indices.data(),
-			GL_STATIC_DRAW);
+			0/*flags*/);
 
-	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-	gl.BindBuffer(GL_ARRAY_BUFFER, d_meshes_vertex_buffer[cube_face]);
-
-	// Transfer vertex data to currently bound vertex buffer object.
-	gl.BufferData(
-			GL_ARRAY_BUFFER,
+	// Transfer vertex data to the vertex buffer object.
+	gl.NamedBufferStorage(
+			d_meshes_vertex_buffer[cube_face],
 			mesh_vertices.size() * sizeof(mesh_vertices[0]),
 			mesh_vertices.data(),
-			GL_STATIC_DRAW);
+			0/*flags*/);
 
-	// Specify vertex attributes (position and texture coords) in currently bound vertex buffer object.
-	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-	// to currently bound vertex array object.
-	gl.EnableVertexAttribArray(0);
-	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLVertexUtils::Texture3DVertex),
-			BUFFER_OFFSET(GLVertexUtils::Texture3DVertex, x));
-	gl.EnableVertexAttribArray(1);
-	gl.VertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(GLVertexUtils::Texture3DVertex),
-			BUFFER_OFFSET(GLVertexUtils::Texture3DVertex, s));
+	// Bind vertex element buffer object to the vertex array object.
+	gl.VertexArrayElementBuffer(d_meshes_vertex_array[cube_face], d_meshes_vertex_element_buffer[cube_face]);
+
+	// Bind vertex buffer object to the vertex array object.
+	gl.VertexArrayVertexBuffer(d_meshes_vertex_array[cube_face], 0/*bindingindex*/, d_meshes_vertex_buffer[cube_face], 0/*offset*/, sizeof(GLVertexUtils::Texture3DVertex));
+
+	// Specify vertex attributes (position and texture coords).
+	gl.EnableVertexArrayAttrib(d_meshes_vertex_array[cube_face], 0);
+	gl.VertexArrayAttribFormat(d_meshes_vertex_array[cube_face], 0, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(GLVertexUtils::Texture3DVertex, x));
+	gl.VertexArrayAttribBinding(d_meshes_vertex_array[cube_face], 0, 0/*bindingindex*/);
+
+	gl.EnableVertexArrayAttrib(d_meshes_vertex_array[cube_face], 1);
+	gl.VertexArrayAttribFormat(d_meshes_vertex_array[cube_face], 1, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(GLVertexUtils::Texture3DVertex, s));
+	gl.VertexArrayAttribBinding(d_meshes_vertex_array[cube_face], 1, 0/*bindingindex*/);
 
 	return cube_face_root_quad_tree_node;
 }

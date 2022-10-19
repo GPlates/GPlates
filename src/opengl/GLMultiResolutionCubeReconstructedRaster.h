@@ -66,7 +66,7 @@ namespace GPlatesOpenGL
 					GL &gl_,
 					const GLMultiResolutionStaticPolygonReconstructedRaster::cache_handle_type &source_cache_handle_ =
 							GLMultiResolutionStaticPolygonReconstructedRaster::cache_handle_type()) :
-				texture(GLTexture::create(gl_)),
+				texture(GLTexture::create(gl_, GL_TEXTURE_2D)),
 				source_cache_handle(source_cache_handle_)
 			{  }
 

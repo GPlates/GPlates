@@ -53,13 +53,13 @@ namespace GPlatesOpenGL
 		}
 
 		/**
-		 * Useful when converting the offset of an attribute (data member) of a vertex class to a 'void *' pointer
-		 * (for example, in glVertexAttribPointer).
+		 * The offset of an attribute within the vertex class that it's a data member of.
+		 *
+		 * This simply delegates to the standard library macro 'offsetof'.
 		 *
 		 * Note that @a vertex_class should be a standard-layout class (dictated by the C++11 'offsetof' function macro).
 		 */
-#define BUFFER_OFFSET(vertex_class, vertex_data_member) \
-		GPlatesOpenGL::GLVertexUtils::buffer_offset(offsetof(vertex_class, vertex_data_member))
+		#define ATTRIB_OFFSET_IN_VERTEX(vertex_class, vertex_attribute) offsetof(vertex_class, vertex_attribute)
 
 
 		/**

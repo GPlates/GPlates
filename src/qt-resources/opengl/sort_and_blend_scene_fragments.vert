@@ -17,45 +17,13 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_OPENGL_GLCONTEXTLIFETIME_H
-#define GPLATES_OPENGL_GLCONTEXTLIFETIME_H
+//
+// Sorts and blends a list of fragments (per pixel) in depth order in the final scene.
+//
 
-namespace GPlatesOpenGL
+layout (location = 0) in vec4 position;
+
+void main()
 {
-	class GL;
-
-	/**
-	 * Interface for creating and destroying OpenGL resources when initialising and shutting down OpenGL.
-	 */
-	class GLContextLifetime
-	{
-	public:
-
-		virtual
-		~GLContextLifetime()
-		{  }
-
-
-		/**
-		 * The OpenGL context has been created.
-		 *
-		 * So any OpenGL resources can be created now.
-		 */
-		virtual
-		void
-		initialise_gl(
-				GL &gl) = 0;
-
-		/**
-		 * The OpenGL context is about to be destroyed.
-		 *
-		 * So any OpenGL resources should now be destroyed.
-		 */
-		virtual
-		void
-		shutdown_gl(
-				GL &gl) = 0;
-	};
+    gl_Position = position;
 }
-
-#endif // GPLATES_OPENGL_GLCONTEXTLIFETIME_H

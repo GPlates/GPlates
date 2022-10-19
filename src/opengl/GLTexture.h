@@ -72,9 +72,10 @@ namespace GPlatesOpenGL
 		static
 		shared_ptr_type
 		create(
-				GL &gl)
+				GL &gl,
+				GLenum target)
 		{
-			return shared_ptr_type(new GLTexture(gl));
+			return shared_ptr_type(new GLTexture(gl, target));
 		}
 
 		/**
@@ -83,9 +84,20 @@ namespace GPlatesOpenGL
 		static
 		std::unique_ptr<GLTexture>
 		create_unique(
-				GL &gl)
+				GL &gl,
+				GLenum target)
 		{
-			return std::unique_ptr<GLTexture>(new GLTexture(gl));
+			return std::unique_ptr<GLTexture>(new GLTexture(gl, target));
+		}
+
+
+		/**
+		 * Returns the target this texture was created with.
+		 */
+		GLenum
+		get_target() const
+		{
+			return d_target;
 		}
 
 
@@ -107,7 +119,8 @@ namespace GPlatesOpenGL
 			static
 			GLuint
 			allocate(
-					OpenGLFunctions &opengl_functions);
+					OpenGLFunctions &opengl_functions,
+					GLenum target);
 
 			static
 			void
@@ -117,12 +130,13 @@ namespace GPlatesOpenGL
 		};
 
 	private:
+		GLenum d_target;
 		GLObjectResource<GLuint, Allocator> d_resource;
 
 		//! Constructor.
-		explicit
 		GLTexture(
-				GL &gl);
+				GL &gl,
+				GLenum target);
 	};
 }
 

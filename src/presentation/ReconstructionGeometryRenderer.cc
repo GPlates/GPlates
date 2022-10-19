@@ -276,10 +276,11 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 	fill_polylines(fill_polylines_),
 	fill_modulate_colour(1, 1, 1, 1),
 	ratio_zoom_dependent_bin_dimension_to_globe_radius(0),
-	ratio_arrow_unit_vector_direction_to_globe_radius(
+	arrow_body_length_scale(
 			rendered_geometry_parameters_.get_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius()),
-	ratio_arrowhead_size_to_globe_radius(
+	arrowhead_size(
 			rendered_geometry_parameters_.get_reconstruction_layer_ratio_arrowhead_size_to_globe_radius()),
+	arrow_body_width(arrowhead_size * GPlatesViewOperations::RenderedGeometryFactory::DEFAULT_RATIO_ARROW_BODY_WIDTH_TO_ARROWHEAD_SIZE),
 	scalar_coverage_colour_palette(GPlatesGui::RasterColourPalette::create()),
 	raster_colour_palette(GPlatesGui::RasterColourPalette::create()),
 	normal_map_height_field_scale_factor(1),
@@ -386,8 +387,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visi
 		const VelocityFieldCalculatorVisualLayerParams &params)
 {
 	d_render_params.ratio_zoom_dependent_bin_dimension_to_globe_radius = params.get_arrow_spacing();
-	d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius = params.get_arrow_body_scale();
-	d_render_params.ratio_arrowhead_size_to_globe_radius = params.get_arrowhead_scale();
+	d_render_params.arrow_body_length_scale = params.get_arrow_body_scale();
+	d_render_params.arrowhead_size = params.get_arrowhead_scale();
+	d_render_params.arrow_body_width = d_render_params.arrowhead_size *
+			GPlatesViewOperations::RenderedGeometryFactory::DEFAULT_RATIO_ARROW_BODY_WIDTH_TO_ARROWHEAD_SIZE;
 }
 
 
@@ -665,12 +668,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			// This means it was inside the network but outside any interior rigid blocks on the network.
 			// The arrow should be rendered black.
 			const GPlatesViewOperations::RenderedGeometry rendered_arrow =
-					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_tangential_arrow(
+					GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrow(
 							point,
-							velocity.d_vector,
-							d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
+							d_render_params.arrow_body_length_scale * velocity.d_vector,
 							get_colour(GPlatesGui::Colour::get_black(), d_override_colour),
-							d_render_params.ratio_arrowhead_size_to_globe_radius);
+							d_render_params.arrowhead_size,
+							d_render_params.arrow_body_width);
 			// Render the rendered geometry.
 			render(rendered_arrow);
 
@@ -706,12 +709,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 				}
 
 				const GPlatesViewOperations::RenderedGeometry rendered_arrow =
-						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_tangential_arrow(
+						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrow(
 								point,
-								velocity.d_vector,
-								d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
+								d_render_params.arrow_body_length_scale * velocity.d_vector,
 								get_palette_colour(*plate_id_palette, plate_id.get(), d_override_colour),
-								d_render_params.ratio_arrowhead_size_to_globe_radius);
+								d_render_params.arrowhead_size,
+								d_render_params.arrow_body_width);
 
 				// Render the rendered geometry.
 				render(rendered_arrow);
@@ -719,12 +722,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			else
 			{
 				const GPlatesViewOperations::RenderedGeometry rendered_arrow =
-						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_tangential_arrow(
+						GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrow(
 								point,
-								velocity.d_vector,
-								d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
+								d_render_params.arrow_body_length_scale * velocity.d_vector,
 								get_colour(GPlatesGui::Colour::get_olive(), d_override_colour),
-								d_render_params.ratio_arrowhead_size_to_globe_radius);
+								d_render_params.arrowhead_size,
+								d_render_params.arrow_body_width);
 
 				// Render the rendered geometry.
 				render(rendered_arrow);
@@ -2408,12 +2411,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 
 		// Create a RenderedGeometry using the velocity vector.
 		const GPlatesViewOperations::RenderedGeometry rendered_vector =
-			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_tangential_arrow(
+			GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrow(
 				point,
-				velocity_vector,
-				d_render_params.ratio_arrow_unit_vector_direction_to_globe_radius,
+				d_render_params.arrow_body_length_scale * velocity_vector,
 				velocity_colour,
-				d_render_params.ratio_arrowhead_size_to_globe_radius);
+				d_render_params.arrowhead_size,
+				d_render_params.arrow_body_width);
 
 		// Create a RenderedGeometry for storing the ReconstructionGeometry and
 		// a RenderedGeometry associated with it.

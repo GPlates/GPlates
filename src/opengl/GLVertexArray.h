@@ -90,24 +90,6 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Clears this vertex array.
-		 *
-		 * This includes the following:
-		 *  - disable all attribute arrays
-		 *  - set attribute divisor to zero
-		 *  - unbind element array buffer
-		 *  - unbind all attribute array buffers
-		 *  - reset all attribute array parameters
-		 *
-		 * This method is useful when reusing a vertex array and you don't know what attribute
-		 * arrays were previously enabled on the vertex array for example.
-		 */
-		void
-		clear(
-				GL &gl);
-
-
-		/**
 		 * Returns the vertex array resource handle.
 		 */
 		GLuint

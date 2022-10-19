@@ -20,11 +20,6 @@
 #include "OpenGLFunctions.h"
 
 
-void GPlatesOpenGL::OpenGLFunctions::glActiveTexture(GLenum texture)
-{
-	d_functions->glActiveTexture(texture);
-}
-
 void GPlatesOpenGL::OpenGLFunctions::glAttachShader(GLuint program, GLuint shader)
 {
 	d_functions->glAttachShader(program, shader);
@@ -55,6 +50,11 @@ void GPlatesOpenGL::OpenGLFunctions::glBindFramebuffer(GLenum target, GLuint fra
 	d_functions->glBindFramebuffer(target, framebuffer);
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glBindImageTexture(GLuint image_unit, GLuint texture, GLint level, GLboolean layered, GLint layer, GLenum access, GLenum format)
+{
+	d_functions->glBindImageTexture(image_unit, texture, level, layered, layer, access, format);
+}
+
 void GPlatesOpenGL::OpenGLFunctions::glBindRenderbuffer(GLenum target, GLuint renderbuffer)
 {
 	d_functions->glBindRenderbuffer(target, renderbuffer);
@@ -65,9 +65,9 @@ void GPlatesOpenGL::OpenGLFunctions::glBindSampler(GLuint unit, GLuint sampler)
 	d_functions->glBindSampler(unit, sampler);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glBindTexture(GLenum target, GLuint texture)
+void GPlatesOpenGL::OpenGLFunctions::glBindTextureUnit(GLuint unit, GLuint texture)
 {
-	d_functions->glBindTexture(target, texture);
+	d_functions->glBindTextureUnit(unit, texture);
 }
 
 void GPlatesOpenGL::OpenGLFunctions::glBindVertexArray(GLuint array)
@@ -100,14 +100,9 @@ void GPlatesOpenGL::OpenGLFunctions::glBlendFuncSeparate(GLenum sfactorRGB, GLen
 	d_functions->glBlendFuncSeparate(sfactorRGB, dfactorRGB, sfactorAlpha, dfactorAlpha);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glBufferData(GLenum target, GLsizeiptr size, const GLvoid* data, GLenum usage)
+void GPlatesOpenGL::OpenGLFunctions::glBufferData(GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage)
 {
 	d_functions->glBufferData(target, size, data, usage);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid* data)
-{
-	d_functions->glBufferSubData(target, offset, size, data);
 }
 
 GLenum GPlatesOpenGL::OpenGLFunctions::glCheckFramebufferStatus(GLenum target)
@@ -135,9 +130,29 @@ void GPlatesOpenGL::OpenGLFunctions::glClearDepth(GLdouble depth)
 	d_functions->glClearDepth(depth);
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glClearNamedBufferData(GLuint buffer, GLenum internalformat, GLenum format, GLenum type, const void *data)
+{
+	d_functions->glClearNamedBufferData(buffer, internalformat, format, type, data);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glClearNamedBufferSubData(GLuint buffer, GLenum internalformat, GLintptr offset, GLsizei size, GLenum format, GLenum type, const void *data)
+{
+	d_functions->glClearNamedBufferSubData(buffer, internalformat, offset, size, format, type, data);
+}
+
 void GPlatesOpenGL::OpenGLFunctions::glClearStencil(GLint s)
 {
 	d_functions->glClearStencil(s);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glClearTexSubImage(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *data)
+{
+	d_functions->glClearTexSubImage(texture, level, xoffset, yoffset, zoffset, width, height, depth, format, type, data);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glClearTexImage(GLuint texture, GLint level, GLenum format, GLenum type, const void *data)
+{
+	d_functions->glClearTexImage(texture, level, format, type, data);
 }
 
 void GPlatesOpenGL::OpenGLFunctions::glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha)
@@ -155,14 +170,44 @@ void GPlatesOpenGL::OpenGLFunctions::glCompileShader(GLuint shader)
 	d_functions->glCompileShader(shader);
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glCreateBuffers(GLsizei n, GLuint* buffers)
+{
+	d_functions->glCreateBuffers(n, buffers);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glCreateFramebuffers(GLsizei n, GLuint* framebuffers)
+{
+	d_functions->glCreateFramebuffers(n, framebuffers);
+}
+
 GLuint GPlatesOpenGL::OpenGLFunctions::glCreateProgram()
 {
 	return d_functions->glCreateProgram();
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glCreateRenderbuffers(GLsizei n, GLuint* renderbuffers)
+{
+	d_functions->glCreateRenderbuffers(n, renderbuffers);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glCreateSamplers(GLsizei count, GLuint* samplers)
+{
+	d_functions->glCreateSamplers(count, samplers);
+}
+
 GLuint GPlatesOpenGL::OpenGLFunctions::glCreateShader(GLenum type)
 {
 	return d_functions->glCreateShader(type);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glCreateTextures(GLenum target, GLsizei n, GLuint* textures)
+{
+	d_functions->glCreateTextures(target, n, textures);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glCreateVertexArrays(GLsizei n, GLuint* arrays)
+{
+	d_functions->glCreateVertexArrays(n, arrays);
 }
 
 void GPlatesOpenGL::OpenGLFunctions::glCullFace(GLenum mode)
@@ -240,9 +285,9 @@ void GPlatesOpenGL::OpenGLFunctions::glDisablei(GLenum target, GLuint index)
 	d_functions->glDisablei(target, index);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glDisableVertexAttribArray(GLuint index)
+void GPlatesOpenGL::OpenGLFunctions::glDisableVertexArrayAttrib(GLuint vaobj, GLuint index)
 {
-	d_functions->glDisableVertexAttribArray(index);
+	d_functions->glDisableVertexArrayAttrib(vaobj, index);
 }
 
 void GPlatesOpenGL::OpenGLFunctions::glDrawArrays(GLenum mode, GLint first, GLsizei count)
@@ -275,14 +320,14 @@ void GPlatesOpenGL::OpenGLFunctions::glEnable(GLenum cap)
 	d_functions->glEnable(cap);
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glEnableVertexArrayAttrib(GLuint vaobj, GLuint index)
+{
+	d_functions->glEnableVertexArrayAttrib(vaobj, index);
+}
+
 void GPlatesOpenGL::OpenGLFunctions::glEnablei(GLenum target, GLuint index)
 {
 	d_functions->glEnablei(target, index);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glEnableVertexAttribArray(GLuint index)
-{
-	d_functions->glEnableVertexAttribArray(index);
 }
 
 void GPlatesOpenGL::OpenGLFunctions::glFlushMappedBufferRange(GLenum target, GLintptr offset, GLsizeiptr length)
@@ -325,36 +370,6 @@ void GPlatesOpenGL::OpenGLFunctions::glFrontFace(GLenum mode)
 	d_functions->glFrontFace(mode);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glGenBuffers(GLsizei n, GLuint* buffers)
-{
-	d_functions->glGenBuffers(n, buffers);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glGenFramebuffers(GLsizei n, GLuint* framebuffers)
-{
-	d_functions->glGenFramebuffers(n, framebuffers);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glGenRenderbuffers(GLsizei n, GLuint* renderbuffers)
-{
-	d_functions->glGenRenderbuffers(n, renderbuffers);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glGenSamplers(GLsizei count, GLuint* samplers)
-{
-	d_functions->glGenSamplers(count, samplers);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glGenTextures(GLsizei n, GLuint* textures)
-{
-	d_functions->glGenTextures(n, textures);
-}
-
-void GPlatesOpenGL::OpenGLFunctions::glGenVertexArrays(GLsizei n, GLuint* arrays)
-{
-	d_functions->glGenVertexArrays(n, arrays);
-}
-
 GLenum GPlatesOpenGL::OpenGLFunctions::glGetError()
 {
 	return d_functions->glGetError();
@@ -363,6 +378,11 @@ GLenum GPlatesOpenGL::OpenGLFunctions::glGetError()
 void GPlatesOpenGL::OpenGLFunctions::glGetIntegerv(GLenum pname, GLint* params)
 {
 	d_functions->glGetIntegerv(pname, params);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glGetInteger64v(GLenum pname, GLint64* params)
+{
+	d_functions->glGetInteger64v(pname, params);
 }
 
 void GPlatesOpenGL::OpenGLFunctions::glGetProgramiv(GLuint program, GLenum pname, GLint* params)
@@ -385,9 +405,9 @@ void GPlatesOpenGL::OpenGLFunctions::glGetShaderInfoLog(GLuint shader, GLsizei b
 	d_functions->glGetShaderInfoLog(shader, bufSize, length, infoLog);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glGetTexImage(GLenum target, GLint level, GLenum format, GLenum type, GLvoid* pixels)
+void GPlatesOpenGL::OpenGLFunctions::glGetTextureImage(GLuint texture, GLint level, GLenum format, GLenum type, GLsizei bufSize, void* pixels)
 {
-	d_functions->glGetTexImage(target, level, format, type, pixels);
+	d_functions->glGetTextureImage(texture, level, format, type, bufSize, pixels);
 }
 
 GLuint GPlatesOpenGL::OpenGLFunctions::glGetUniformBlockIndex(GLuint program, const GLchar *uniformBlockName)
@@ -423,6 +443,31 @@ GLvoid * GPlatesOpenGL::OpenGLFunctions::glMapBuffer(GLenum target, GLenum acces
 GLvoid * GPlatesOpenGL::OpenGLFunctions::glMapBufferRange(GLenum target, GLintptr offset, GLsizeiptr length, GLbitfield access)
 {
 	return d_functions->glMapBufferRange(target, offset, length, access);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glMemoryBarrier(GLbitfield barriers)
+{
+	d_functions->glMemoryBarrier(barriers);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glMemoryBarrierByRegion(GLbitfield barriers)
+{
+	d_functions->glMemoryBarrierByRegion(barriers);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glNamedBufferStorage(GLuint buffer, GLsizei size, const void* data, GLbitfield flags)
+{
+	d_functions->glNamedBufferStorage(buffer, size, data, flags);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glNamedBufferData(GLuint buffer, GLsizei size, const void* data, GLenum usage)
+{
+	d_functions->glNamedBufferData(buffer, size, data, usage);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glNamedBufferSubData(GLuint buffer, GLintptr offset, GLsizei size, const void* data)
+{
+	d_functions->glNamedBufferSubData(buffer, offset, size, data);
 }
 
 void GPlatesOpenGL::OpenGLFunctions::glPixelStorei(GLenum pname, GLint param)
@@ -510,6 +555,11 @@ void GPlatesOpenGL::OpenGLFunctions::glScissor(GLint x, GLint y, GLsizei width, 
 	d_functions->glScissor(x, y, width, height);
 }
 
+void GPlatesOpenGL::OpenGLFunctions::glShaderStorageBlockBinding(GLuint program, GLuint storageBlockIndex, GLuint storageBlockBinding)
+{
+	d_functions->glShaderStorageBlockBinding(program, storageBlockIndex, storageBlockBinding);
+}
+
 void GPlatesOpenGL::OpenGLFunctions::glShaderSource(GLuint shader, GLsizei count, const GLchar* const* string, const GLint* length)
 {
 	d_functions->glShaderSource(shader, count, string, length);
@@ -545,64 +595,74 @@ void GPlatesOpenGL::OpenGLFunctions::glStencilOpSeparate(GLenum face, GLenum sfa
 	d_functions->glStencilOpSeparate(face, sfail, dpfail, dppass);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexParameterf(GLenum target, GLenum pname, GLfloat param)
+void GPlatesOpenGL::OpenGLFunctions::glTextureParameterf(GLuint texture, GLenum pname, GLfloat param)
 {
-	d_functions->glTexParameterf(target, pname, param);
+	d_functions->glTextureParameterf(texture, pname, param);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexParameterfv(GLenum target, GLenum pname, const GLfloat* params)
+void GPlatesOpenGL::OpenGLFunctions::glTextureParameterfv(GLuint texture, GLenum pname, const GLfloat* params)
 {
-	d_functions->glTexParameterfv(target, pname, params);
+	d_functions->glTextureParameterfv(texture, pname, params);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexParameteri(GLenum target, GLenum pname, GLint param)
+void GPlatesOpenGL::OpenGLFunctions::glTextureParameteri(GLuint texture, GLenum pname, GLint param)
 {
-	d_functions->glTexParameteri(target, pname, param);
+	d_functions->glTextureParameteri(texture, pname, param);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexParameteriv(GLenum target, GLenum pname, const GLint* params)
+void GPlatesOpenGL::OpenGLFunctions::glTextureParameteriv(GLuint texture, GLenum pname, const GLint* params)
 {
-	d_functions->glTexParameteriv(target, pname, params);
+	d_functions->glTextureParameteriv(texture, pname, params);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexParameterIiv(GLenum target, GLenum pname, const GLint* params)
+void GPlatesOpenGL::OpenGLFunctions::glTextureParameterIiv(GLuint texture, GLenum pname, const GLint* params)
 {
-	d_functions->glTexParameterIiv(target, pname, params);
+	d_functions->glTextureParameterIiv(texture, pname, params);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexParameterIuiv(GLenum target, GLenum pname, const GLuint* params)
+void GPlatesOpenGL::OpenGLFunctions::glTextureParameterIuiv(GLuint texture, GLenum pname, const GLuint* params)
 {
-	d_functions->glTexParameterIuiv(target, pname, params);
+	d_functions->glTextureParameterIuiv(texture, pname, params);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexSubImage1D(GLenum target, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid* pixels)
+void GPlatesOpenGL::OpenGLFunctions::glTextureStorage1D(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width)
 {
-	d_functions->glTexSubImage1D(target, level, xoffset, width, format, type, pixels);
+	d_functions->glTextureStorage1D(texture, levels, internalformat, width);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid* pixels)
+void GPlatesOpenGL::OpenGLFunctions::glTextureStorage2D(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height)
 {
-	d_functions->glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
+	d_functions->glTextureStorage2D(texture, levels, internalformat, width, height);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexSubImage3D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid* pixels)
+void GPlatesOpenGL::OpenGLFunctions::glTextureStorage3D(GLuint texture, GLsizei levels, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth)
 {
-	d_functions->glTexSubImage3D(target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
+	d_functions->glTextureStorage3D(texture, levels, internalformat, width, height, depth);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexImage1D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLint border, GLenum format, GLenum type, const GLvoid* pixels)
+void GPlatesOpenGL::OpenGLFunctions::glTextureSubImage1D(GLuint texture, GLint level, GLint xoffset, GLsizei width, GLenum format, GLenum type, const GLvoid* pixels)
 {
-	d_functions->glTexImage1D(target, level, internalformat, width, border, format, type, pixels);
+	d_functions->glTextureSubImage1D(texture, level, xoffset, width, format, type, pixels);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid* pixels)
+void GPlatesOpenGL::OpenGLFunctions::glTextureSubImage2D(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid* pixels)
 {
-	d_functions->glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
+	d_functions->glTextureSubImage2D(texture, level, xoffset, yoffset, width, height, format, type, pixels);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glTexImage3D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const GLvoid* pixels)
+void GPlatesOpenGL::OpenGLFunctions::glTextureSubImage3D(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const GLvoid* pixels)
 {
-	d_functions->glTexImage3D(target, level, internalformat, width, height, depth, border, format, type, pixels);
+	d_functions->glTextureSubImage3D(texture, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glTextureBuffer(GLuint texture, GLenum internalformat, GLuint buffer)
+{
+	d_functions->glTextureBuffer(texture, internalformat, buffer);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glTextureBufferRange(GLuint texture, GLenum internalformat, GLuint buffer, GLintptr offset, GLsizei size)
+{
+	d_functions->glTextureBufferRange(texture, internalformat, buffer, offset, size);
 }
 
 void GPlatesOpenGL::OpenGLFunctions::glUniform1f(GLint location, GLfloat v0)
@@ -790,19 +850,39 @@ void GPlatesOpenGL::OpenGLFunctions::glValidateProgram(GLuint program)
 	d_functions->glValidateProgram(program);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glVertexAttribDivisor(GLuint index, GLuint divisor)
+void GPlatesOpenGL::OpenGLFunctions::glVertexArrayAttribBinding(GLuint vaobj, GLuint attribindex, GLuint bindingindex)
 {
-	d_functions->glVertexAttribDivisor(index, divisor);
+	d_functions->glVertexArrayAttribBinding(vaobj, attribindex, bindingindex);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glVertexAttribIPointer(GLuint index, GLint size, GLenum type, GLsizei stride, const GLvoid* pointer)
+void GPlatesOpenGL::OpenGLFunctions::glVertexArrayAttribFormat(GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLboolean normalized, GLuint relativeoffset)
 {
-	d_functions->glVertexAttribIPointer(index, size, type, stride, pointer);
+	d_functions->glVertexArrayAttribFormat(vaobj, attribindex, size, type, normalized, relativeoffset);
 }
 
-void GPlatesOpenGL::OpenGLFunctions::glVertexAttribPointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid* pointer)
+void GPlatesOpenGL::OpenGLFunctions::glVertexArrayAttribIFormat(GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLuint relativeoffset)
 {
-	d_functions->glVertexAttribPointer(index, size, type, normalized, stride, pointer);
+	d_functions->glVertexArrayAttribIFormat(vaobj, attribindex, size, type, relativeoffset);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glVertexArrayAttribLFormat(GLuint vaobj, GLuint attribindex, GLint size, GLenum type, GLuint relativeoffset)
+{
+	d_functions->glVertexArrayAttribLFormat(vaobj, attribindex, size, type, relativeoffset);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glVertexArrayBindingDivisor(GLuint vaobj, GLuint bindingindex, GLuint divisor)
+{
+	d_functions->glVertexArrayBindingDivisor(vaobj, bindingindex, divisor);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glVertexArrayElementBuffer(GLuint vaobj, GLuint buffer)
+{
+	d_functions->glVertexArrayElementBuffer(vaobj, buffer);
+}
+
+void GPlatesOpenGL::OpenGLFunctions::glVertexArrayVertexBuffer(GLuint vaobj, GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride)
+{
+	d_functions->glVertexArrayVertexBuffer(vaobj, bindingindex, buffer, offset, stride);
 }
 
 void GPlatesOpenGL::OpenGLFunctions::glViewport(GLint x, GLint y, GLsizei width, GLsizei height)

@@ -385,6 +385,11 @@ GPlatesOpenGL::GLMultiResolutionRaster::GLMultiResolutionRaster(
 	// looking smooth and curved instead of coarsely tessellated on the globe.
 	d_num_texels_per_vertex = calculate_num_texels_per_vertex();
 
+	// The number of vertices along a tile's edge.
+	//
+	// Note: The '<< 16' is because 'd_num_texels_per_vertex' is a 16:16 fixed-point type.
+	d_tile_vertex_dimension = 1 + ((d_tile_texel_dimension << 16) / d_num_texels_per_vertex);
+
 	// Create the levels of details and within each one create an oriented bounding box
 	// tree (used to quickly find visible tiles) where the drawable tiles are in the
 	// leaf nodes of the OBB tree.
@@ -688,16 +693,13 @@ GPlatesOpenGL::GLMultiResolutionRaster::render(
 	boost::shared_ptr<std::vector<ClientCacheTile> > cached_tiles(new std::vector<ClientCacheTile>());
 	cached_tiles->reserve(tiles.size());
 
-	// We'll bind our tile texture to unit 0.
-	gl.ActiveTexture(GL_TEXTURE0);
-
 	// Render each tile.
 	for (GLMultiResolutionRaster::tile_handle_type tile_handle : tiles)
 	{
 		const Tile tile = get_tile(tile_handle, gl);
 
-		// Bind the current tile's texture.
-		gl.BindTexture(GL_TEXTURE_2D, tile.tile_texture->texture);
+		// Bind the current tile's texture to texture unit 0.
+		gl.BindTextureUnit(0, tile.tile_texture->texture);
 
 		// Bind the current tile's vertices.
 		gl.BindVertexArray(tile.tile_vertices->vertex_array);
@@ -830,19 +832,16 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 {
 	const GLCapabilities &capabilities = gl.get_capabilities();
 
-	// Bind the texture.
-	gl.BindTexture(GL_TEXTURE_2D, texture);
-
 	// Note: Currently all filtering is 'nearest' instead of 'bilinear'.
 	//       This is because the tiles do not overlap by border by half a texel (to avoid bilinear
 	//       seams between tiles). But this may change (though it would require significant changes).
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	gl.TextureParameteri(texture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	gl.TextureParameteri(texture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	// Specify anisotropic filtering (if supported) to reduce aliasing in case tile texture is
 	// subsequently sampled non-isotropically.
@@ -850,7 +849,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	// Anisotropic filtering is an ubiquitous extension (that didn't become core until OpenGL 4.6).
 	if (capabilities.gl_EXT_texture_filter_anisotropic)
 	{
-		gl.TexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
+		gl.TextureParameterf(texture, GL_TEXTURE_MAX_ANISOTROPY_EXT, capabilities.gl_texture_max_anisotropy);
 	}
 
 	// If the source texture contains alpha or coverage and its not in the alpha channel then swizzle the texture
@@ -858,19 +857,15 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_texture(
 	boost::optional<GLenum> texture_swizzle_alpha = d_raster_source->get_tile_texture_swizzle_alpha();
 	if (texture_swizzle_alpha)
 	{
-		gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_A, texture_swizzle_alpha.get());
+		gl.TextureParameteri(texture, GL_TEXTURE_SWIZZLE_A, texture_swizzle_alpha.get());
 	}
 
 	// Create the texture in OpenGL - this actually creates the texture without any data.
 	// We'll be getting our raster source to load image data into the texture.
-	//
-	// NOTE: Since the image data is NULL it doesn't really matter what 'format' and 'type' are -
-	// just use values that are compatible with all internal formats to avoid a possible error.
-	gl.TexImage2D(
-			GL_TEXTURE_2D, 0/*level*/,
+	gl.TextureStorage2D(
+			texture, 1/*levels*/,
 			d_raster_source->get_tile_texture_internal_format(),
-			d_tile_texel_dimension, d_tile_texel_dimension,
-			0/*border*/, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+			d_tile_texel_dimension, d_tile_texel_dimension);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
@@ -893,56 +888,136 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile_vertices(
 			tile_vertices = lod_tile.tile_vertices->set_cached_object(
 					std::unique_ptr<TileVertices>(new TileVertices(gl)));
 
-			// Bind the new tile vertex array.
-			gl.BindVertexArray(tile_vertices->vertex_array);
-
-			// Bind the new vertex buffer object (used by vertex attribute arrays, not vertex array object).
-			gl.BindBuffer(GL_ARRAY_BUFFER, tile_vertices->vertex_buffer);
-
 			//
-			// Specify vertex attributes (eg, position) in currently bound vertex buffer object.
-			// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-			// to currently bound vertex array object.
+			// Bind the new vertex buffer object to the vertex array object, and specify vertex attributes (eg, position).
 			//
 			if (dynamic_cast<GLVisualRasterSource *>(d_raster_source.get()))
 			{
-				gl.EnableVertexAttribArray(0);
-				gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(visual_vertex_type), BUFFER_OFFSET(visual_vertex_type, x));
-				gl.EnableVertexAttribArray(1);
-				gl.VertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(visual_vertex_type), BUFFER_OFFSET(visual_vertex_type, u));
+				// Allocate storage in the new vertex buffer object for a full tile (even if this is a partial tile)
+				// since buffer can later be reused for a different tile.
+				gl.NamedBufferStorage(
+						tile_vertices->vertex_buffer,
+						d_tile_vertex_dimension * d_tile_vertex_dimension * sizeof(visual_vertex_type),
+						nullptr,
+						GL_MAP_WRITE_BIT/*flags*/);
+
+				// Bind the vertex buffer object to the vertex array object.
+				gl.VertexArrayVertexBuffer(
+						tile_vertices->vertex_array,
+						0/*bindingindex*/,
+						tile_vertices->vertex_buffer,
+						0/*offset*/,
+						sizeof(visual_vertex_type));
+
+				gl.EnableVertexArrayAttrib(tile_vertices->vertex_array, 0);
+				gl.VertexArrayAttribFormat(tile_vertices->vertex_array, 0, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(visual_vertex_type, x));
+				gl.VertexArrayAttribBinding(tile_vertices->vertex_array, 0, 0/*bindingindex*/);
+
+				gl.EnableVertexArrayAttrib(tile_vertices->vertex_array, 1);
+				gl.VertexArrayAttribFormat(tile_vertices->vertex_array, 1, 2, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(visual_vertex_type, u));
+				gl.VertexArrayAttribBinding(tile_vertices->vertex_array, 1, 0/*bindingindex*/);
 			}
 			else if (dynamic_cast<GLDataRasterSource *>(d_raster_source.get()))
 			{
-				gl.EnableVertexAttribArray(0);
-				gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(data_vertex_type), BUFFER_OFFSET(data_vertex_type, x));
-				gl.EnableVertexAttribArray(1);
-				gl.VertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(data_vertex_type), BUFFER_OFFSET(data_vertex_type, u));
+				// Allocate storage in the new vertex buffer object for a full tile (even if this is a partial tile)
+				// since buffer can later be reused for a different tile.
+				gl.NamedBufferStorage(
+						tile_vertices->vertex_buffer,
+						d_tile_vertex_dimension * d_tile_vertex_dimension * sizeof(data_vertex_type),
+						nullptr,
+						GL_MAP_WRITE_BIT/*flags*/);
+
+				// Bind the vertex buffer object to the vertex array object.
+				gl.VertexArrayVertexBuffer(
+						tile_vertices->vertex_array,
+						0/*bindingindex*/,
+						tile_vertices->vertex_buffer,
+						0/*offset*/,
+						sizeof(data_vertex_type));
+
+				gl.EnableVertexArrayAttrib(tile_vertices->vertex_array, 0);
+				gl.VertexArrayAttribFormat(tile_vertices->vertex_array, 0, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(data_vertex_type, x));
+				gl.VertexArrayAttribBinding(tile_vertices->vertex_array, 0, 0/*bindingindex*/);
+
+				gl.EnableVertexArrayAttrib(tile_vertices->vertex_array, 1);
+				gl.VertexArrayAttribFormat(tile_vertices->vertex_array, 1, 2, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(data_vertex_type, u));
+				gl.VertexArrayAttribBinding(tile_vertices->vertex_array, 1, 0/*bindingindex*/);
 			}
 			else if (dynamic_cast<GLNormalMapSource *>(d_raster_source.get()))
 			{
-				gl.EnableVertexAttribArray(0);
-				gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(normal_map_vertex_type), BUFFER_OFFSET(normal_map_vertex_type, x));
-				gl.EnableVertexAttribArray(1);
-				gl.VertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(normal_map_vertex_type), BUFFER_OFFSET(normal_map_vertex_type, u));
-				gl.EnableVertexAttribArray(2);
-				gl.VertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(normal_map_vertex_type), BUFFER_OFFSET(normal_map_vertex_type, tangent_x));
-				gl.EnableVertexAttribArray(3);
-				gl.VertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(normal_map_vertex_type), BUFFER_OFFSET(normal_map_vertex_type, binormal_x));
-				gl.EnableVertexAttribArray(4);
-				gl.VertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(normal_map_vertex_type), BUFFER_OFFSET(normal_map_vertex_type, normal_x));
+				// Allocate storage in the new vertex buffer object for a full tile (even if this is a partial tile)
+				// since buffer can later be reused for a different tile.
+				gl.NamedBufferStorage(
+						tile_vertices->vertex_buffer,
+						d_tile_vertex_dimension * d_tile_vertex_dimension * sizeof(normal_map_vertex_type),
+						nullptr,
+						GL_MAP_WRITE_BIT/*flags*/);
+
+				// Bind the vertex buffer object to the vertex array object.
+				gl.VertexArrayVertexBuffer(
+						tile_vertices->vertex_array,
+						0/*bindingindex*/,
+						tile_vertices->vertex_buffer,
+						0/*offset*/,
+						sizeof(normal_map_vertex_type));
+
+				gl.EnableVertexArrayAttrib(tile_vertices->vertex_array, 0);
+				gl.VertexArrayAttribFormat(tile_vertices->vertex_array, 0, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(normal_map_vertex_type, x));
+				gl.VertexArrayAttribBinding(tile_vertices->vertex_array, 0, 0/*bindingindex*/);
+
+				gl.EnableVertexArrayAttrib(tile_vertices->vertex_array, 1);
+				gl.VertexArrayAttribFormat(tile_vertices->vertex_array, 1, 2, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(normal_map_vertex_type, u));
+				gl.VertexArrayAttribBinding(tile_vertices->vertex_array, 1, 0/*bindingindex*/);
+
+				gl.EnableVertexArrayAttrib(tile_vertices->vertex_array, 2);
+				gl.VertexArrayAttribFormat(tile_vertices->vertex_array, 2, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(normal_map_vertex_type, tangent_x));
+				gl.VertexArrayAttribBinding(tile_vertices->vertex_array, 2, 0/*bindingindex*/);
+
+				gl.EnableVertexArrayAttrib(tile_vertices->vertex_array, 3);
+				gl.VertexArrayAttribFormat(tile_vertices->vertex_array, 3, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(normal_map_vertex_type, binormal_x));
+				gl.VertexArrayAttribBinding(tile_vertices->vertex_array, 3, 0/*bindingindex*/);
+
+				gl.EnableVertexArrayAttrib(tile_vertices->vertex_array, 4);
+				gl.VertexArrayAttribFormat(tile_vertices->vertex_array, 4, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(normal_map_vertex_type, normal_x));
+				gl.VertexArrayAttribBinding(tile_vertices->vertex_array, 4, 0/*bindingindex*/);
 			}
 			else if (dynamic_cast<GLScalarFieldDepthLayersSource *>(d_raster_source.get()))
 			{
-				gl.EnableVertexAttribArray(0);
-				gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(scalar_field_depth_layer_vertex_type), BUFFER_OFFSET(scalar_field_depth_layer_vertex_type, x));
-				gl.EnableVertexAttribArray(1);
-				gl.VertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(scalar_field_depth_layer_vertex_type), BUFFER_OFFSET(scalar_field_depth_layer_vertex_type, u));
-				gl.EnableVertexAttribArray(2);
-				gl.VertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(scalar_field_depth_layer_vertex_type), BUFFER_OFFSET(scalar_field_depth_layer_vertex_type, tangent_x));
-				gl.EnableVertexAttribArray(3);
-				gl.VertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(scalar_field_depth_layer_vertex_type), BUFFER_OFFSET(scalar_field_depth_layer_vertex_type, binormal_x));
-				gl.EnableVertexAttribArray(4);
-				gl.VertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(scalar_field_depth_layer_vertex_type), BUFFER_OFFSET(scalar_field_depth_layer_vertex_type, normal_x));
+				// Allocate storage in the new vertex buffer object for a full tile (even if this is a partial tile)
+				// since buffer can later be reused for a different tile.
+				gl.NamedBufferStorage(
+						tile_vertices->vertex_buffer,
+						d_tile_vertex_dimension * d_tile_vertex_dimension * sizeof(scalar_field_depth_layer_vertex_type),
+						nullptr,
+						GL_MAP_WRITE_BIT/*flags*/);
+
+				// Bind the vertex buffer object to the vertex array object.
+				gl.VertexArrayVertexBuffer(
+						tile_vertices->vertex_array,
+						0/*bindingindex*/,
+						tile_vertices->vertex_buffer,
+						0/*offset*/,
+						sizeof(scalar_field_depth_layer_vertex_type));
+
+				gl.EnableVertexArrayAttrib(tile_vertices->vertex_array, 0);
+				gl.VertexArrayAttribFormat(tile_vertices->vertex_array, 0, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(scalar_field_depth_layer_vertex_type, x));
+				gl.VertexArrayAttribBinding(tile_vertices->vertex_array, 0, 0/*bindingindex*/);
+
+				gl.EnableVertexArrayAttrib(tile_vertices->vertex_array, 1);
+				gl.VertexArrayAttribFormat(tile_vertices->vertex_array, 1, 2, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(scalar_field_depth_layer_vertex_type, u));
+				gl.VertexArrayAttribBinding(tile_vertices->vertex_array, 1, 0/*bindingindex*/);
+
+				gl.EnableVertexArrayAttrib(tile_vertices->vertex_array, 2);
+				gl.VertexArrayAttribFormat(tile_vertices->vertex_array, 2, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(scalar_field_depth_layer_vertex_type, tangent_x));
+				gl.VertexArrayAttribBinding(tile_vertices->vertex_array, 2, 0/*bindingindex*/);
+
+				gl.EnableVertexArrayAttrib(tile_vertices->vertex_array, 3);
+				gl.VertexArrayAttribFormat(tile_vertices->vertex_array, 3, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(scalar_field_depth_layer_vertex_type, binormal_x));
+				gl.VertexArrayAttribBinding(tile_vertices->vertex_array, 3, 0/*bindingindex*/);
+
+				gl.EnableVertexArrayAttrib(tile_vertices->vertex_array, 4);
+				gl.VertexArrayAttribFormat(tile_vertices->vertex_array, 4, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(scalar_field_depth_layer_vertex_type, normal_x));
+				gl.VertexArrayAttribBinding(tile_vertices->vertex_array, 4, 0/*bindingindex*/);
 			}
 			else
 			{
@@ -950,9 +1025,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile_vertices(
 				GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
 			}
 		}
-
-		// Bind the tile vertex array (before we bind the vertex element buffer).
-		gl.BindVertexArray(tile_vertices->vertex_array);
 
 		// Bind the vertex element buffer for the current tile to the vertex array.
 		// We have to do this each time we recycle (or create) a tile since the previous vertex
@@ -962,8 +1034,11 @@ GPlatesOpenGL::GLMultiResolutionRaster::get_tile_vertices(
 		// the number of vertices in each dimension.
 		//
 		// When we draw the vertex array it will use this vertex element buffer.
-		tile_vertices->num_vertex_elements =
-				bind_vertex_element_buffer(gl, lod_tile.x_num_vertices, lod_tile.y_num_vertices);
+		tile_vertices->num_vertex_elements = bind_vertex_element_buffer_to_vertex_array(
+				gl,
+				tile_vertices->vertex_array,
+				lod_tile.x_num_vertices,
+				lod_tile.y_num_vertices);
 
 		// Load the tile vertices.
 		load_vertices_into_tile_vertex_buffer(gl, lod_tile, *tile_vertices);
@@ -1080,25 +1155,11 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
 		vertex_size = 0;  // Shouldn't get there, but keep compiler happy.
 	}
 
-	// Allocate memory for the vertex array.
-	const unsigned int vertex_buffer_size_in_bytes = num_vertices_in_tile * vertex_size;
-
 	// Bind vertex buffer object (before we load data into it).
 	//
 	// Note: Unlike the vertex *element* buffer this vertex buffer binding is not stored in vertex array object state.
 	//       So we don't have to ensure a vertex array object is currently bound.
 	gl.BindBuffer(GL_ARRAY_BUFFER, tile_vertices.vertex_buffer);
-
-	// The memory is allocated directly in the vertex buffer.
-	//
-	// NOTE: We could use USAGE_DYNAMIC_DRAW but that is useful if updating every few frames or so.
-	// In our case we typically update much less frequently than that so it's better to use USAGE_STATIC_DRAW
-	// to hint to the driver to store vertices in faster video memory rather than AGP memory.
-	gl.BufferData(
-			GL_ARRAY_BUFFER,
-			vertex_buffer_size_in_bytes,
-			nullptr,  // Allocate memory, but not yet initialized.
-			GL_STATIC_DRAW);
 
 	// Get access to the allocated buffer.
 	// NOTE: This is a write-only pointer - it might reference video memory - and cannot be read from.
@@ -1605,9 +1666,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::compile_link_shader_program(
 	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
 	TRACK_CALL_STACK();
 
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
 	// Vertex shader source.
 	GLShaderSource vertex_shader_source;
 	vertex_shader_source.add_code_segment_from_file(GLShaderSource::UTILS_FILE_NAME);
@@ -1666,6 +1724,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::compile_link_shader_program(
 	d_render_raster_program->attach_shader(gl, vertex_shader);
 	d_render_raster_program->attach_shader(gl, fragment_shader);
 	d_render_raster_program->link_program(gl);
+
+	// Make sure we leave the OpenGL global state the way it was.
+	GL::StateScope save_restore_state(gl);
 
 	gl.UseProgram(d_render_raster_program);
 
@@ -2414,8 +2475,9 @@ GPlatesOpenGL::GLMultiResolutionRaster::create_oriented_bounding_box_builder(
 
 
 GLsizei
-GPlatesOpenGL::GLMultiResolutionRaster::bind_vertex_element_buffer(
+GPlatesOpenGL::GLMultiResolutionRaster::bind_vertex_element_buffer_to_vertex_array(
 		GL &gl,
+		const GLVertexArray::shared_ptr_type &vertex_array,
 		const unsigned int num_vertices_along_tile_x_edge,
 		const unsigned int num_vertices_along_tile_y_edge)
 {
@@ -2446,11 +2508,8 @@ GPlatesOpenGL::GLMultiResolutionRaster::bind_vertex_element_buffer(
 	{
 		GLBuffer::shared_ptr_type vertex_element_buffer = vertex_element_buffer_iter->second;
 
-		// Bind vertex element buffer object.
-		//
-		// NOTE: Also binds element buffer to the currently bound vertex array object.
-		//       So caller must ensure a vertex array object is currently bound (required by OpenGL 3.3 core).
-		gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_element_buffer);
+		// Bind vertex element buffer object to the vertex array object.
+		gl.VertexArrayElementBuffer(vertex_array, vertex_element_buffer);
 
 		return num_indices_per_tile;
 	}
@@ -2505,7 +2564,7 @@ GPlatesOpenGL::GLMultiResolutionRaster::bind_vertex_element_buffer(
 		}
 	}
 
-	// Set up the vertex element buffer.
+	// Set up the new vertex element buffer.
 	GLBuffer::shared_ptr_type vertex_element_buffer = GLBuffer::create(gl);
 
 	// Add to our map of vertex element arrays.
@@ -2514,18 +2573,15 @@ GPlatesOpenGL::GLMultiResolutionRaster::bind_vertex_element_buffer(
 	d_vertex_element_buffers.insert(vertex_element_buffer_map_type::value_type(
 			vertex_dimensions, vertex_element_buffer));
 
-	// Bind vertex element buffer object.
-	//
-	// NOTE: Also binds element buffer to the currently bound vertex array object.
-	//       So caller must ensure a vertex array object is currently bound (required by OpenGL 3.3 core).
-	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertex_element_buffer);
-
-	// Transfer vertex element data to currently bound vertex element buffer object.
-	gl.BufferData(
-			GL_ELEMENT_ARRAY_BUFFER,
+	// Transfer vertex element data to the vertex element buffer object.
+	gl.NamedBufferStorage(
+			vertex_element_buffer,
 			num_indices_per_tile * sizeof(vertex_element_type),
 			buffer_data.get(),
-			GL_STATIC_DRAW);
+			0/*flags*/);
+
+	// Bind vertex element buffer object to the vertex array object.
+	gl.VertexArrayElementBuffer(vertex_array, vertex_element_buffer);
 
 	return num_indices_per_tile;
 }
@@ -2705,9 +2761,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::RenderSphereNormals
 	// Add this scope to the call stack trace printed if exception thrown in this scope (eg, failure to compile/link shader).
 	TRACK_CALL_STACK();
 
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
 	// Vertex shader source.
 	GLShaderSource vertex_shader_source;
 	vertex_shader_source.add_code_segment(RENDER_SPHERE_NORMALS_VERTEX_SHADER_SOURCE);
@@ -2765,34 +2818,30 @@ GPlatesOpenGL::GLMultiResolutionRaster::RenderSphereNormals::RenderSphereNormals
 
 	d_num_vertex_elements = vertex_elements.size();
 
-	// Bind vertex array object.
-	gl.BindVertexArray(d_vertex_array);
-
-	// Bind vertex element buffer object to currently bound vertex array object.
-	gl.BindBuffer(GL_ELEMENT_ARRAY_BUFFER, d_vertex_element_buffer);
-
-	// Transfer vertex element data to currently bound vertex element buffer object.
-	gl.BufferData(
-			GL_ELEMENT_ARRAY_BUFFER,
+	// Transfer vertex element data to the vertex element buffer object.
+	gl.NamedBufferStorage(
+			d_vertex_element_buffer,
 			vertex_elements.size() * sizeof(vertex_elements[0]),
 			vertex_elements.data(),
-			GL_STATIC_DRAW);
+			0/*flags*/);
 
-	// Bind vertex buffer object (used by vertex attribute arrays, not vertex array object).
-	gl.BindBuffer(GL_ARRAY_BUFFER, d_vertex_buffer);
-
-	// Transfer vertex data to currently bound vertex buffer object.
-	gl.BufferData(
-			GL_ARRAY_BUFFER,
+	// Transfer vertex data to the vertex buffer object.
+	gl.NamedBufferStorage(
+			d_vertex_buffer,
 			vertices.size() * sizeof(vertices[0]),
 			vertices.data(),
-			GL_STATIC_DRAW);
+			0/*flags*/);
 
-	// Specify vertex attributes (position only) in currently bound vertex buffer object.
-	// This transfers each vertex attribute array (parameters + currently bound vertex buffer object)
-	// to currently bound vertex array object.
-	gl.EnableVertexAttribArray(0);
-	gl.VertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(GLVertexUtils::Vertex), BUFFER_OFFSET(GLVertexUtils::Vertex, x));
+	// Bind vertex element buffer object to the vertex array object.
+	gl.VertexArrayElementBuffer(d_vertex_array, d_vertex_element_buffer);
+
+	// Bind vertex buffer object to the vertex array object.
+	gl.VertexArrayVertexBuffer(d_vertex_array, 0/*bindingindex*/, d_vertex_buffer, 0/*offset*/, sizeof(GLVertexUtils::Vertex));
+
+	// Specify vertex attributes (position only).
+	gl.EnableVertexArrayAttrib(d_vertex_array, 0);
+	gl.VertexArrayAttribFormat(d_vertex_array, 0, 3, GL_FLOAT, GL_FALSE, ATTRIB_OFFSET_IN_VERTEX(GLVertexUtils::Vertex, x));
+	gl.VertexArrayAttribBinding(d_vertex_array, 0, 0/*bindingindex*/);
 }
 
 

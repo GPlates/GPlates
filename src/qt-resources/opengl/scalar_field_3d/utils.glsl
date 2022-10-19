@@ -162,7 +162,7 @@ get_tile_uv_coordinates(
 	// Normally texture edge clamping, in 'tile_meta_data_sampler', would take care of that for us but 'tile_offset_uv'
 	// is also used to determine the field tile layer for 'field_data_sampler' and it can get out-of-sync otherwise.
 	// This was noticeable as a sliver of rendered pixels appearing in the middle of nowhere at a cube face boundary.
-	tile_offset_uv = clamp(floor(tile_meta_data_resolution * cube_face_coordinate_uv), 0.0, tile_meta_data_resolution - 1);
+	tile_offset_uv = clamp(floor(tile_meta_data_resolution * cube_face_coordinate_uv), 0.0, float(tile_meta_data_resolution - 1));
 
 	// Determine the 2D texture coordinates within the tile metadata texture layer.
 	// The tile metadata texture array uses nearest neighbour filtering so just place coordinates at texel centres.

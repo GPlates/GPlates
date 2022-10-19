@@ -36,7 +36,6 @@
 #include "RenderedGeometry.h"
 #include "RenderedColouredEdgeSurfaceMesh.h"
 #include "RenderedColouredTriangleSurfaceMesh.h"
-#include "RenderedRadialArrow.h"
 
 #include "app-logic/ReconstructionGeometry.h"
 #include "app-logic/ResolvedScalarField3D.h"
@@ -108,20 +107,25 @@ namespace GPlatesViewOperations
 		const GPlatesGui::Colour DEFAULT_COLOUR = GPlatesGui::Colour::get_white();
 
 		/**
-		 * Determines the default size of an arrowhead relative to the globe radius
-		 * when the globe fills the viewport window.
-		 * This is a view-dependent scalar.
-		 */
-		const float DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS = 0.03f;
-
-		/**
-		 * Determines the default ratio of the width of an arrowline relative to the size of its arrowhead.
+		 * Default size of an arrowhead relative to the globe radius when the globe fills the viewport window.
 		 *
-		 * The size of an arrowhead is actually is length (along the arrowline), not its width -
+		 * The size of an arrowhead is actually its length (along the arrow body), not its width -
 		 * the arrowhead width to arrowhead length ratio is fixed in the rendering engine in order
 		 * to give the arrowhead a nice shape.
+		 *
+		 * This is a view-dependent scalar.
 		 */
-		const float DEFAULT_RATIO_ARROWLINE_WIDTH_TO_ARROWHEAD_SIZE = 0.2f;
+		const float DEFAULT_ARROWHEAD_SIZE = 0.03f;
+
+		/**
+		 * Default ratio of size of an arrow body's width relative to the arrowhead size.
+		 */
+		const float DEFAULT_RATIO_ARROW_BODY_WIDTH_TO_ARROWHEAD_SIZE = 0.2f;
+
+		/**
+		 * Default size of an arrow body's width relative to the globe radius when the globe fills the viewport window.
+		 */
+		const float DEFAULT_ARROW_BODY_WIDTH = DEFAULT_RATIO_ARROW_BODY_WIDTH_TO_ARROWHEAD_SIZE * DEFAULT_ARROWHEAD_SIZE;
 
 		/**
 		 * Determines the size of symbol rendered geometries.
@@ -281,98 +285,41 @@ namespace GPlatesViewOperations
 				const ScalarField3DRenderParameters &scalar_field_render_parameters);
 
 		/**
-		 * Creates a single arrow, tangential to the globe's surface, consisting of a straight line
-		 * segment (in 3D globe view) and an arc (in 2D map views) with an arrowhead at the end.
+		 * Creates a single arrow with a base on the surface of the Earth rendered as a
+		 * cylindrical arrow body and conical arrow head.
 		 *
 		 * The length of the arrow will automatically scale with viewport zoom such that
 		 * the projected length (onto the viewport window) remains constant.
+		 * For example, a @a vector of magnitude 0.5 will be roughly half the viewport window when
+		 * the globe is zoomed (such that it fits the viewport window) but also remain half the
+		 * viewport window when the globe is zoomed in.
 		 *
-		 * Note: because the projected length remains constant with zoom, arrows near each other,
-		 * and pointing in the same direction, may overlap when zoomed out.
+		 * Note: Because the projected length remains constant with zoom, arrows near each other,
+		 *       and pointing in the same direction, may overlap when zoomed out.
 		 *
-		 * The @a ratio_unit_vector_direction_to_globe_radius parameter is the length ratio of a
-		 * unit-length arrow to the globe's radius when the zoom is such that the globe exactly
-		 * (or pretty closely) fills the viewport window (either top-to-bottom if wide-screen
-		 * otherwise left-to-right).
-		 * Additional scaling occurs when @a arrow_direction is not a unit vector.
-		 * For example, a value of 0.1 for @a ratio_unit_vector_direction_to_globe_radius
-		 * will result in a velocity of magnitude 0.5 being drawn as an arc line of
-		 * distance 0.1 * 0.5 = 0.05 multiplied by the globe's radius when the globe is zoomed
-		 * such that it fits the viewport window.
-		 *
-		 * In a similar manner the projected size of the arrowhead remains constant with zoom
-		 * except when the arrowhead size becomes greater than half the arrow length in which
-		 * scaling changes such that the arrow head is always half the arrow length - this
-		 * makes the arrowhead size scale to zero with the arrow length.
+		 * The same viewport scaling applies to the width of the arrow body and to `the size of the
+		 * arrowhead such that their projected size remains constant with zoom.
+		 * One exception is when the arrowhead size becomes greater than half the arrow length,
+		 * in which case the scaling changes such that the arrow head is always half the arrow length
+		 * (and the arrow body width is scaled the same). This makes the arrowhead size (and arrow body width)
+		 * scale to zero with the arrow length.
 		 * And tiny arrows have tiny arrowheads that may not even be visible (if smaller than a pixel).
 		 *
-		 * @param start the start position of the arrow.
-		 * @param arrow_direction the direction of the arrow (does not have to be unit-length).
-		 *        Note that even though the direction is not constrained to be tangential to the globe's
-		 *        surface (because it can be an arbitrary vector), in the 2D map views only the
-		 *        tangential component is rendered.
-		 * @param ratio_unit_vector_direction_to_globe_radius determines projected length
-		 *        of a unit-vector arrow. There is no default value for this because it is not
-		 *        known how the user has already scaled @a arrow_direction which is dependent
-		 *        on the user's calculations (something this interface should not know about).
+		 * @param start the base position of the arrow on the Earth's surface.
+		 * @param vector the direction and length of the arrow (does not have to be unit-length).
 		 * @param colour is the colour of the arrow (body and head).
-		 * @param ratio_arrowhead_size_to_globe_radius the size of the arrowhead relative to the
+		 * @param arrowhead_size the size of the arrowhead relative to the
 				  globe radius when the globe fills the viewport window (this is a view-dependent scalar).
-		 * @param globe_view_ratio_arrowline_width_to_arrowhead_size width of line (or body) of arrow
-		 *        as a ratio of the size of the arrowhead (as rendered in 3D globe view).
-		 * @param map_view_arrowline_width_hint width of line (or body) of arrow (as rendered in 2D map views).
+		 * @param arrow_body_width the width of arrow body relative to the
+				  globe radius when the globe fills the viewport window (this is a view-dependent scalar)
 		 */
 		RenderedGeometry
-		create_rendered_tangential_arrow(
+		create_rendered_arrow(
 				const GPlatesMaths::PointOnSphere &start,
-				const GPlatesMaths::Vector3D &arrow_direction,
-				const float ratio_unit_vector_direction_to_globe_radius,
+				const GPlatesMaths::Vector3D &vector,
 				const GPlatesGui::Colour &colour = DEFAULT_COLOUR,
-				const float ratio_arrowhead_size_to_globe_radius = DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS,
-				const float globe_view_ratio_arrowline_width_to_arrowhead_size = DEFAULT_RATIO_ARROWLINE_WIDTH_TO_ARROWHEAD_SIZE,
-				const float map_view_arrowline_width_hint = DEFAULT_LINE_WIDTH_HINT);
-
-		/**
-		 * Creates a single arrow, radial (or normal) to the globe's surface, consisting of a line
-		 * segment with an arrowhead at the end (in the 3D globe view) and a symbol (in 2D map views).
-		 *
-		 * The length of the arrow will automatically scale with viewport zoom such that
-		 * the projected length (onto the viewport window) remains constant.
-		 *
-		 * The @a arrow_projected_length parameter is the length of the arrow when the zoom is such
-		 * that the globe exactly (or pretty closely) fills the viewport window (either top-to-bottom
-		 * if wide-screen otherwise left-to-right).
-		 * For example, a value of 0.1 for @a arrow_projected_length will result in an arrow length
-		 * of 0.1 multiplied by the globe's radius when the globe is zoomed such that it fits the
-		 * viewport window.
-		 *
-		 * @param position on the globe/map.
-		 * @param arrow_projected_length the length of the arrow relative to the globe radius when
-		 *        the globe fills the viewport window (this is a view-dependent scalar).
-		 *        Only in globe view.
-		 * @param arrowhead_projected_size the size of the arrowhead relative to the globe radius when
-		 *        the globe fills the viewport window (this is a view-dependent scalar).
-		 *        Only in globe view.
-		 * @param ratio_arrowhead_size_to_globe_radius the size of the arrowhead relative to the
-		 *        globe radius when the globe fills the viewport window (this is a view-dependent scalar).
-		 *        Only in globe view.
-		 * @param arrow_colour the colour of the arrow (body and head).
-		 *        Only in globe view.
-		 * @param symbol_type type of symbol to draw in map view and at base of arrow in globe view.
-		 * @param symbol_size size of symbol in *scene* coordinates (only in map view).
-		 *        In globe view the symbol size matches the size of the arrow (cylindrical) body.
-		 * @param symbol_colour colour of the symbol.
-		 */
-		RenderedGeometry
-		create_rendered_radial_arrow(
-				const GPlatesMaths::PointOnSphere &position,
-				float arrow_projected_length,
-				float arrowhead_projected_size = DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS,
-				float ratio_arrowline_width_to_arrowhead_size = DEFAULT_RATIO_ARROWLINE_WIDTH_TO_ARROWHEAD_SIZE,
-				const GPlatesGui::Colour &arrow_colour = DEFAULT_COLOUR,
-				RenderedRadialArrow::SymbolType symbol_type = RenderedRadialArrow::SYMBOL_FILLED_CIRCLE,
-				float symbol_size = DEFAULT_SYMBOL_SIZE,
-				const GPlatesGui::Colour &symbol_colour = DEFAULT_COLOUR);
+				float arrowhead_size = DEFAULT_ARROWHEAD_SIZE,
+				float arrow_body_width = DEFAULT_ARROW_BODY_WIDTH);
 
 		/**
 		 * Creates a composite @a RenderedGeometry containing another @a RenderedGeometry
@@ -433,7 +380,7 @@ namespace GPlatesViewOperations
 		create_rendered_arrowed_polyline(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type,
 				const GPlatesGui::Colour &colour = DEFAULT_COLOUR,
-				const float ratio_arrowhead_size_to_globe_radius = DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS,
+				const float ratio_arrowhead_size_to_globe_radius = DEFAULT_ARROWHEAD_SIZE,
 				const float arrowline_width_hint = DEFAULT_LINE_WIDTH_HINT);
 
 

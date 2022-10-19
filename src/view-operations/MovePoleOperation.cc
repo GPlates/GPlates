@@ -40,25 +40,14 @@
 
 
 // Highlight arrow in yellow with some transparency.
-const GPlatesGui::Colour GPlatesViewOperations::MovePoleOperation::ARROW_HIGHLIGHT_COLOUR =
-		GPlatesGui::Colour(1, 1, 0, 0.5f);
-// Highlight symbol in red.
-const GPlatesGui::Colour GPlatesViewOperations::MovePoleOperation::SYMBOL_HIGHLIGHT_COLOUR =
-		GPlatesGui::Colour(1, 0, 0, 1);
+const GPlatesGui::Colour GPlatesViewOperations::MovePoleOperation::ARROW_HIGHLIGHT_COLOUR = GPlatesGui::Colour(1, 1, 0, 0.5f);
 
 // Unhighlight arrow in white.
-const GPlatesGui::Colour GPlatesViewOperations::MovePoleOperation::ARROW_UNHIGHLIGHT_COLOUR =
-		GPlatesGui::Colour::get_white();
-// Unhighlight symbol in white.
-const GPlatesGui::Colour GPlatesViewOperations::MovePoleOperation::SYMBOL_UNHIGHLIGHT_COLOUR =
-		GPlatesGui::Colour::get_white();
+const GPlatesGui::Colour GPlatesViewOperations::MovePoleOperation::ARROW_UNHIGHLIGHT_COLOUR = GPlatesGui::Colour::get_white();
 
-const float GPlatesViewOperations::MovePoleOperation::ARROW_PROJECTED_LENGTH = 0.3f;
-const float GPlatesViewOperations::MovePoleOperation::ARROW_HEAD_PROJECTED_SIZE = 0.12f;
-const float GPlatesViewOperations::MovePoleOperation::RATIO_ARROW_LINE_WIDTH_TO_ARROW_HEAD_SIZE = 0.5f;
-const GPlatesViewOperations::RenderedRadialArrow::SymbolType GPlatesViewOperations::MovePoleOperation::SYMBOL_TYPE =
-		GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS;
-const float GPlatesViewOperations::MovePoleOperation::SYMBOL_SIZE = 10.0f;
+const float GPlatesViewOperations::MovePoleOperation::ARROW_LENGTH = 0.3f;
+const float GPlatesViewOperations::MovePoleOperation::ARROWHEAD_SIZE = 0.12f;
+const float GPlatesViewOperations::MovePoleOperation::ARROW_BODY_WIDTH = 0.5f * GPlatesViewOperations::MovePoleOperation::ARROWHEAD_SIZE;
 
 
 GPlatesViewOperations::MovePoleOperation::MovePoleOperation(
@@ -257,7 +246,7 @@ GPlatesViewOperations::MovePoleOperation::adjust_closeness_inclusion_threshold(
 	// We're assuming that "arcsin(size) ~ size" for small enough arrow sizes/extents.
 	// And we also adjust for viewport zoom since the rendered arrow is scaled by zoom factor.
 	return GPlatesMaths::cos(
-			0.5 * ARROW_HEAD_PROJECTED_SIZE / d_viewport_zoom.zoom_factor() +
+			0.5 * ARROWHEAD_SIZE / d_viewport_zoom.zoom_factor() +
 				GPlatesMaths::acos(closeness_inclusion_threshold)).dval();
 }
 
@@ -299,9 +288,9 @@ GPlatesViewOperations::MovePoleOperation::test_proximity_to_pole_on_map(
 	const QPointF difference = point_on_scene - pole_on_scene;
 	const qreal distance = sqrt(difference.x() * difference.x() + difference.y() * difference.y());
 
-	// The symbol size is in map *scene* coordinates so we can just directly compare.
-	// Also take into account the zoom factor since symbol size is zoom-dependent.
-	return distance <= SYMBOL_SIZE / d_viewport_zoom.zoom_factor();
+	// Choose a threshold distance in map *scene* coordinates.
+	// Also take into account the zoom factor since we want to reduce the threshold as we zoom in.
+	return distance <= 10.0 / d_viewport_zoom.zoom_factor();
 }
 
 
@@ -323,17 +312,17 @@ GPlatesViewOperations::MovePoleOperation::render_pole(
 	// We should only be rendering the pole if it's currently enabled.
 	if (d_move_pole_widget.get_pole())
 	{
+		const GPlatesMaths::Vector3D pole_arrow_vector = ARROW_LENGTH *
+				GPlatesMaths::Vector3D(d_move_pole_widget.get_pole()->position_vector());
+
 		// Render the pole as an arrow.
 		const RenderedGeometry pole_arrow_rendered_geom =
-				RenderedGeometryFactory::create_rendered_radial_arrow(
-						d_move_pole_widget.get_pole().get(),
-						ARROW_PROJECTED_LENGTH,
-						ARROW_HEAD_PROJECTED_SIZE,
-						RATIO_ARROW_LINE_WIDTH_TO_ARROW_HEAD_SIZE,
+				RenderedGeometryFactory::create_rendered_arrow(
+						d_move_pole_widget.get_pole().get(),  // start position
+						pole_arrow_vector,
 						highlight ? ARROW_HIGHLIGHT_COLOUR : ARROW_UNHIGHLIGHT_COLOUR,
-						SYMBOL_TYPE,
-						SYMBOL_SIZE,
-						highlight ? SYMBOL_HIGHLIGHT_COLOUR : SYMBOL_UNHIGHLIGHT_COLOUR);
+						ARROWHEAD_SIZE,
+						ARROW_BODY_WIDTH);
 		d_pole_layer_ptr->add_rendered_geometry(pole_arrow_rendered_geom);
 	}
 }

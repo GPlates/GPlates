@@ -63,24 +63,19 @@ GPlatesOpenGL::GLTexture::shared_ptr_type
 GPlatesOpenGL::GLTextureUtils::create_xy_clip_texture_2D(
 		GL &gl)
 {
-	// Make sure we leave the OpenGL global state the way it was.
-	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
-
-	GLTexture::shared_ptr_type xy_clip_texture = GLTexture::create(gl);
-
-	gl.BindTexture(GL_TEXTURE_2D, xy_clip_texture);
+	GLTexture::shared_ptr_type xy_clip_texture = GLTexture::create(gl, GL_TEXTURE_2D);
 
 	//
 	// We *must* use nearest neighbour filtering otherwise the clip texture won't work.
 	// We are relying on the hard transition from white to black to clip for us.
 	//
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	gl.TextureParameteri(xy_clip_texture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	gl.TextureParameteri(xy_clip_texture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(xy_clip_texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(xy_clip_texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	//
 	// The clip texture is a 4x4 image where the centre 2x2 texels are 1.0
@@ -98,7 +93,9 @@ GPlatesOpenGL::GLTextureUtils::create_xy_clip_texture_2D(
 	};
 
 	// Create the texture and load the data into it.
-	gl.TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 4, 4, 0, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
+	gl.TextureStorage2D(xy_clip_texture, 1/*levels*/, GL_RGBA8, 4, 4);
+	// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (4 bytes) are a multiple of 4.
+	gl.TextureSubImage2D(xy_clip_texture, 0/*level*/, 0, 0, 4, 4, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);
@@ -111,24 +108,19 @@ GPlatesOpenGL::GLTexture::shared_ptr_type
 GPlatesOpenGL::GLTextureUtils::create_z_clip_texture_2D(
 		GL &gl)
 {
-	// Make sure we leave the OpenGL global state the way it was.
-	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
-
-	GLTexture::shared_ptr_type z_clip_texture = GLTexture::create(gl);
-
-	gl.BindTexture(GL_TEXTURE_2D, z_clip_texture);
+	GLTexture::shared_ptr_type z_clip_texture = GLTexture::create(gl, GL_TEXTURE_2D);
 
 	//
 	// We *must* use nearest neighbour filtering otherwise the clip texture won't work.
 	// We are relying on the hard transition from white to black to clip for us.
 	//
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	gl.TextureParameteri(z_clip_texture, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	gl.TextureParameteri(z_clip_texture, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
 	// Clamp texture coordinates to centre of edge texels -
 	// it's easier for hardware to implement - and doesn't affect our calculations.
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	gl.TexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(z_clip_texture, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	gl.TextureParameteri(z_clip_texture, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	//
 	// The clip texture is a 2x1 image where the one texel is white and the other black.
@@ -139,7 +131,9 @@ GPlatesOpenGL::GLTextureUtils::create_z_clip_texture_2D(
 	const GPlatesGui::rgba8_t mask_image[2] = { mask_zero, mask_one };
 
 	// Create the texture and load the data into it.
-	gl.TexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, 2, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
+	gl.TextureStorage2D(z_clip_texture, 1/*levels*/, GL_RGBA8, 2, 1);
+	// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (4 bytes) are a multiple of 4.
+	gl.TextureSubImage2D(z_clip_texture, 0/*level*/, 0, 0, 2, 1, GL_RGBA, GL_UNSIGNED_BYTE, mask_image);
 
 	// Check there are no OpenGL errors.
 	GLUtils::check_gl_errors(gl, GPLATES_ASSERTION_SOURCE);

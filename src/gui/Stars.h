@@ -28,12 +28,19 @@
 #ifndef GPLATES_GUI_STARS_H
 #define GPLATES_GUI_STARS_H
 
+#include <vector>
+#include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
+#include "Colour.h"
+
 #include "opengl/GLBuffer.h"
+#include "opengl/GLContextLifetime.h"
 #include "opengl/GLProgram.h"
+#include "opengl/GLStreamPrimitives.h"
 #include "opengl/GLVertexArray.h"
+#include "opengl/GLVertexUtils.h"
 #include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
 
@@ -42,42 +49,97 @@ namespace GPlatesOpenGL
 	class GLViewProjection;
 }
 
-namespace GPlatesPresentation
-{
-	class ViewState;
-}
-
 namespace GPlatesGui
 {
-	class Colour;
-
 	/**
-	 * Draws a random collection of stars in the background in the 3D globe view.
+	 * Draws a random collection of stars in the background.
 	 */
 	class Stars:
-			private boost::noncopyable
+			public GPlatesOpenGL::GLContextLifetime
 	{
 	public:
 
+		//! Default colour of the stars.
+		static const GPlatesGui::Colour DEFAULT_COLOUR;
+
+
+		explicit
 		Stars(
-				GPlatesOpenGL::GL &gl,
-				GPlatesPresentation::ViewState &view_state,
-				const GPlatesGui::Colour &colour);
+				const GPlatesGui::Colour &colour = DEFAULT_COLOUR);
+
 
 		/**
-		 * Paint the stars.
+		 * The OpenGL context has been created.
+		 */
+		void
+		initialise_gl(
+				GPlatesOpenGL::GL &gl) override;
+
+		/**
+		 * The OpenGL context is about to be destroyed.
+		 */
+		void
+		shutdown_gl(
+				GPlatesOpenGL::GL &gl) override;
+
+
+		/**
+		 * Render the stars.
 		 *
 		 * Note: @a device_pixel_ratio is used on high-DPI displays where there are more pixels in the
 		 *       same physical area on screen and so the point size of the stars is increased to compensate.
+		 *
+		 * Note: @a radius_multiplier is useful for the 2D map views to expand the positions of the stars radially
+		 *       so that they're outside the map bounding sphere. The default of 1.0 works for the 3D globe view.
 		 */
 		void
-		paint(
+		render(
 				GPlatesOpenGL::GL &gl,
 				const GPlatesOpenGL::GLViewProjection &view_projection,
-				int device_pixel_ratio);
+				int device_pixel_ratio,
+				const double &radius_multiplier = 1.0);
 
 	private:
-		GPlatesPresentation::ViewState &d_view_state;
+
+		static constexpr GLfloat SMALL_STARS_SIZE = 1.4f;
+		static constexpr GLfloat LARGE_STARS_SIZE = 2.4f;
+
+		static const unsigned int NUM_SMALL_STARS = 4250;
+		static const unsigned int NUM_LARGE_STARS = 3750;
+
+		// Points sit on a sphere of this radius (note that the Earth globe has radius 1.0).
+		// Ideally we'd have these points at infinity, but a large distance works well.
+		static const constexpr GLfloat RADIUS = 7.0f;
+
+		typedef GPlatesOpenGL::GLVertexUtils::Vertex vertex_type;
+		typedef GLushort vertex_element_type;
+		typedef GPlatesOpenGL::GLDynamicStreamPrimitives<vertex_type, vertex_element_type> stream_primitives_type;
+
+
+		void
+		create_shader_program(
+				GPlatesOpenGL::GL &gl);
+
+		void
+		create_stars(
+				std::vector<vertex_type> &vertices,
+				std::vector<vertex_element_type> &vertex_elements);
+
+		void
+		stream_stars(
+				stream_primitives_type &stream,
+				boost::function< double () > &rand,
+				unsigned int num_stars);
+
+		void
+		load_stars(
+				GPlatesOpenGL::GL &gl,
+				const std::vector<vertex_type> &vertices,
+				const std::vector<vertex_element_type> &vertex_elements);
+
+
+		//! Colour of the stars.
+		GPlatesGui::Colour d_colour;
 
 		//! Shader program to render stars.
 		GPlatesOpenGL::GLProgram::shared_ptr_type d_program;

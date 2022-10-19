@@ -55,7 +55,7 @@ namespace GPlatesViewOperations
 			d_reconstruction_layer_line_width_hint(1.5f),
 			d_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius(0.05f),
 			d_reconstruction_layer_ratio_arrowhead_size_to_globe_radius(
-					RenderedGeometryFactory::DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS),
+					RenderedGeometryFactory::DEFAULT_ARROWHEAD_SIZE),
 			d_reconstruction_layer_arrow_spacing(0.175f),
 			d_choose_feature_tool_point_size_hint(4.0f),
 			d_choose_feature_tool_line_width_hint(2.5f),

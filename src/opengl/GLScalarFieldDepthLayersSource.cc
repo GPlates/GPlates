@@ -266,15 +266,6 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::load_tile(
 			level < d_level_of_detail_dimensions.size(),
 			GPLATES_ASSERTION_SOURCE);
 
-	// Make sure we leave the OpenGL global state the way it was.
-	GL::StateScope save_restore_state(gl);
-
-	// Bind target texture before uploading to it.
-	gl.BindTexture(GL_TEXTURE_2D, target_texture);
-
-	// Our client memory image buffers are byte aligned.
-	gl.PixelStorei(GL_UNPACK_ALIGNMENT, 1);
-
 	// The dimensions of the current level of detail of the entire raster.
 	const unsigned int lod_texel_width = d_level_of_detail_dimensions[level].first; 
 	const unsigned int lod_texel_height = d_level_of_detail_dimensions[level].second; 
@@ -633,7 +624,9 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::generate_scalar_gradient_values(
 	}
 
 	// Load the finite differences into the RGBA texture.
-	gl.TexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
+	//
+	// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (16 bytes) are a multiple of 4.
+	gl.TextureSubImage2D(target_texture, 0/*level*/,
 			0/*xoffset*/, 0/*yoffset*/, texel_width, texel_height,
 			GL_RGBA, GL_FLOAT, d_tile_scalar_gradient_data_working_space.get());
 
@@ -667,8 +660,10 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::generate_scalar_gradient_values(
 		}
 
 		// Load the one-texel wide column of data from column 'texel_width-1' into column 'texel_width'.
-		gl.TexSubImage2D(
-				GL_TEXTURE_2D, 0/*level*/,
+		//
+		// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (16 bytes) are a multiple of 4.
+		gl.TextureSubImage2D(
+				target_texture, 0/*level*/,
 				texel_width/*xoffset*/, 0/*yoffset*/, 1/*width*/, texel_height/*height*/,
 				GL_RGBA, GL_FLOAT, d_tile_edge_working_space.get());
 	}
@@ -704,8 +699,10 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::generate_scalar_gradient_values(
 		}
 
 		// Load the one-texel wide row of data from row 'texel_height-1' into row 'texel_height'.
-		gl.TexSubImage2D(
-				GL_TEXTURE_2D, 0/*level*/,
+		//
+		// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (16 bytes) are a multiple of 4.
+		gl.TextureSubImage2D(
+				target_texture, 0/*level*/,
 				0/*xoffset*/, texel_height/*yoffset*/, texels_in_last_row/*width*/, 1/*height*/,
 				GL_RGBA, GL_FLOAT, d_tile_edge_working_space.get());
 	}
@@ -805,7 +802,8 @@ GPlatesOpenGL::GLScalarFieldDepthLayersSource::load_default_scalar_gradient_valu
 	// Set the default scalar and gradient (R,GBA) to all zeros.
 	boost::scoped_array<GLfloat> fill_scalar_gradient_storage(new GLfloat[4 * texel_width * texel_height]);
 	std::fill_n(fill_scalar_gradient_storage.get(), 4 * texel_width * texel_height, GLfloat(0));
-	gl.TexSubImage2D(GL_TEXTURE_2D, 0/*level*/,
+	// Note: The default GL_UNPACK_ALIGNMENT of 4 works since our source texels (16 bytes) are a multiple of 4.
+	gl.TextureSubImage2D(target_texture, 0/*level*/,
 			0/*xoffset*/, 0/*yoffset*/, texel_width, texel_height,
 			GL_RGBA, GL_FLOAT, fill_scalar_gradient_storage.get());
 }

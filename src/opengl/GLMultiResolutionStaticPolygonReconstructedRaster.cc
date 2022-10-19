@@ -1587,8 +1587,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::set_tile_state
 	//
 
 	// Bind source texture to texture unit 0.
-	gl.ActiveTexture(GL_TEXTURE0);
-	gl.BindTexture(GL_TEXTURE_2D, common_tile_draw_state.source_raster_texture);
+	gl.BindTextureUnit(0, common_tile_draw_state.source_raster_texture);
 
 	// Source raster texture transform.
 	GLfloat source_raster_texture_float_matrix[16];
@@ -1608,8 +1607,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::set_tile_state
 	// leave clipping on always.
 
 	// Bind clip texture to texture unit 1.
-	gl.ActiveTexture(GL_TEXTURE1);
-	gl.BindTexture(GL_TEXTURE_2D, d_xy_clip_texture);
+	gl.BindTextureUnit(1, d_xy_clip_texture);
 
 	// Clip texture transform.
 	GLfloat clip_texture_float_matrix[16];
@@ -1632,8 +1630,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::set_tile_state
 	if (using_age_grid)
 	{
 		// Bind age grid texture to texture unit 2.
-		gl.ActiveTexture(GL_TEXTURE2);
-		gl.BindTexture(GL_TEXTURE_2D, common_tile_draw_state.age_grid_texture.get());
+		gl.BindTextureUnit(2, common_tile_draw_state.age_grid_texture.get());
 
 		// Age grid texture transform.
 		GLfloat age_grid_texture_float_matrix[16];
@@ -1662,8 +1659,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::set_tile_state
 	if (using_normal_map)
 	{
 		// Bind normal map to texture unit 3.
-		gl.ActiveTexture(GL_TEXTURE3);
-		gl.BindTexture(GL_TEXTURE_2D, common_tile_draw_state.normal_map_texture.get());
+		gl.BindTextureUnit(3, common_tile_draw_state.normal_map_texture.get());
 
 		// Normal map texture transform.
 		GLfloat normal_map_texture_float_matrix[16];
@@ -1722,8 +1718,7 @@ GPlatesOpenGL::GLMultiResolutionStaticPolygonReconstructedRaster::set_tile_state
 			if (using_surface_lighting_in_map_view)  // map view...
 			{
 				// Bind the light direction cube texture to texture unit 4.
-				gl.ActiveTexture(GL_TEXTURE4);
-				gl.BindTexture(GL_TEXTURE_2D, d_light.get()->get_map_view_light_direction_cube_map_texture());
+				gl.BindTextureUnit(4, d_light.get()->get_map_view_light_direction_cube_map_texture());
 			}
 			else // globe view...
 			{

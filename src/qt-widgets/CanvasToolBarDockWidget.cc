@@ -305,12 +305,10 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_view_workflow()
 			view_workflow,
 			GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM,
 			action_Zoom);
-#if 0 // Disable lighting tool until volume visualisation is officially released (in GPlates 1.5)...
 	add_tool_action_to_workflow(
 			view_workflow,
 			GPlatesGui::CanvasToolWorkflows::TOOL_CHANGE_LIGHTING,
 			action_Change_Lighting);
-#endif
 }
 
 
@@ -636,9 +634,7 @@ GPlatesQtWidgets::CanvasToolBarDockWidget::set_up_canvas_tool_shortcuts()
 	// (using that same shortcut) we should target.
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_PAN_ROTATE_TILT, action_Drag);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_ZOOM, action_Zoom);
-#if 0 // Disable lighting tool until volume visualisation is officially released (in GPlates 1.5)...
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_CHANGE_LIGHTING, action_Change_Lighting);
-#endif
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_MEASURE_DISTANCE, action_Measure_Distance);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_CLICK_GEOMETRY, action_Click_Geometry);
 	add_canvas_tool_shortcut(GPlatesGui::CanvasToolWorkflows::TOOL_DIGITISE_NEW_POLYLINE, action_Digitise_New_Polyline);

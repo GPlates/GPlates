@@ -47,7 +47,7 @@ GPlatesOpenGL::GLRenderbuffer::Allocator::allocate(
 		OpenGLFunctions &opengl_functions)
 {
 	GLuint renderbuffer;
-	opengl_functions.glGenRenderbuffers(1, &renderbuffer);
+	opengl_functions.glCreateRenderbuffers(1, &renderbuffer);
 	return renderbuffer;
 }
 

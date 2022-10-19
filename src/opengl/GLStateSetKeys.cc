@@ -51,11 +51,17 @@ GPlatesOpenGL::GLStateSetKeys::GLStateSetKeys(
 	d_enable_clip_distance_zero_base_key = current_key;
 	current_key += d_capabilities.gl_max_clip_distances;
 
+	// Sampler units.
+	d_sampler_unit_zero_base_key = current_key;
+	current_key += d_capabilities.gl_max_combined_texture_image_units;
+
 	// Texture units.
 	d_texture_image_unit_zero_base_key = current_key;
-	current_key +=
-			NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS *
-			d_capabilities.gl_max_combined_texture_image_units;
+	current_key += d_capabilities.gl_max_combined_texture_image_units;
+
+	// Image units.
+	d_image_unit_zero_base_key = current_key;
+	current_key += d_capabilities.gl_max_image_units;
 
 	d_num_state_set_keys = current_key;
 
@@ -76,20 +82,32 @@ GPlatesOpenGL::GLStateSetKeys::get_bind_buffer_key(
 	case GL_ARRAY_BUFFER:
 		key = KEY_BIND_ARRAY_BUFFER;
 		break;
+	case GL_ATOMIC_COUNTER_BUFFER:
+		key = KEY_BIND_ATOMIC_COUNTER_BUFFER;
+		break;
 	case GL_COPY_READ_BUFFER:
 		key = KEY_BIND_COPY_READ_BUFFER;
 		break;
 	case GL_COPY_WRITE_BUFFER:
 		key = KEY_BIND_COPY_WRITE_BUFFER;
 		break;
+	// The element array buffer binding is not global state in the OpenGL core profile.
+	// The binding is stored in a vertex array object.
+	// And it's invalid to bind an element array buffer when no vertex array object is bound.
+	// Which means it's not really global state in the core profile.
+#if 0
 	case GL_ELEMENT_ARRAY_BUFFER:
 		key = KEY_BIND_ELEMENT_ARRAY_BUFFER;
 		break;
+#endif
 	case GL_PIXEL_PACK_BUFFER:
 		key = KEY_BIND_PIXEL_PACK_BUFFER;
 		break;
 	case GL_PIXEL_UNPACK_BUFFER:
 		key = KEY_BIND_PIXEL_UNPACK_BUFFER;
+		break;
+	case GL_SHADER_STORAGE_BUFFER:
+		key = KEY_BIND_SHADER_STORAGE_BUFFER;
 		break;
 	case GL_TEXTURE_BUFFER:
 		key = KEY_BIND_TEXTURE_BUFFER;
@@ -113,6 +131,18 @@ GPlatesOpenGL::GLStateSetKeys::get_bind_buffer_key(
 
 
 GPlatesOpenGL::GLStateSetKeys::key_type
+GPlatesOpenGL::GLStateSetKeys::get_bind_image_texture_key(
+		GLuint image_unit) const
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			image_unit < d_capabilities.gl_max_image_units,
+			GPLATES_ASSERTION_SOURCE);
+
+	return d_image_unit_zero_base_key + image_unit;
+}
+
+
+GPlatesOpenGL::GLStateSetKeys::key_type
 GPlatesOpenGL::GLStateSetKeys::get_bind_renderbuffer_key(
 		GLenum target) const
 {
@@ -126,56 +156,25 @@ GPlatesOpenGL::GLStateSetKeys::get_bind_renderbuffer_key(
 
 GPlatesOpenGL::GLStateSetKeys::key_type
 GPlatesOpenGL::GLStateSetKeys::get_bind_sampler_key(
-		GLuint unit) const
+		GLuint sampler_unit) const
 {
-	return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_SAMPLER);
+	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
+			sampler_unit < d_capabilities.gl_max_combined_texture_image_units,
+			GPLATES_ASSERTION_SOURCE);
+
+	return d_sampler_unit_zero_base_key + sampler_unit;
 }
 
 
 GPlatesOpenGL::GLStateSetKeys::key_type
 GPlatesOpenGL::GLStateSetKeys::get_bind_texture_key(
-		GLenum texture_target,
-		GLenum texture_unit) const
+		GLuint texture_unit) const
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			texture_unit >= GL_TEXTURE0 &&
-					texture_unit < GL_TEXTURE0 + d_capabilities.gl_max_combined_texture_image_units,
+			texture_unit < d_capabilities.gl_max_combined_texture_image_units,
 			GPLATES_ASSERTION_SOURCE);
 
-	// Convert from enum to integer.
-	const GLuint unit = texture_unit - GL_TEXTURE0;
-
-	switch (texture_target)
-	{
-	case GL_TEXTURE_1D:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_1D);
-	case GL_TEXTURE_2D:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D);
-	case GL_TEXTURE_3D:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_3D);
-	case GL_TEXTURE_CUBE_MAP:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_CUBE_MAP);
-	case GL_TEXTURE_RECTANGLE:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_RECTANGLE);
-	case GL_TEXTURE_1D_ARRAY:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_1D_ARRAY);
-	case GL_TEXTURE_2D_ARRAY:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_ARRAY);
-	case GL_TEXTURE_2D_MULTISAMPLE:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_MULTISAMPLE);
-	case GL_TEXTURE_2D_MULTISAMPLE_ARRAY:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_2D_MULTISAMPLE_ARRAY);
-	case GL_TEXTURE_BUFFER:
-		return get_texture_image_unit_key_from_key_offset(unit, TEXTURE_IMAGE_UNIT_KEY_BIND_TEXTURE_BUFFER);
-
-	default:
-		// Unsupported texture target type.
-		GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
-		break;
-	}
-
-	// Shouldn't get there - keep the compiler happy.
-	throw GPlatesGlobal::AbortException(GPLATES_EXCEPTION_SOURCE);
+	return d_texture_image_unit_zero_base_key + texture_unit;
 }
 
 
@@ -183,7 +182,7 @@ GPlatesOpenGL::GLStateSetKeys::key_type
 GPlatesOpenGL::GLStateSetKeys::get_clamp_color_key(
 		GLenum target) const
 {
-	// OpenGL 3.3 core supports only the GL_CLAMP_READ_COLOR target.
+	// Modern OpenGL supports only the GL_CLAMP_READ_COLOR target.
 	// GL_CLAMP_VERTEX_COLOR and GL_CLAMP_FRAGMENT_COLOR have been deprecated (removed in core).
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			target == GL_CLAMP_READ_COLOR,
@@ -255,8 +254,6 @@ GPlatesOpenGL::GLStateSetKeys::get_capability_key(
 	// Unsupported capability.
 	qWarning() << "glEnable/glDisable capability not supported.";
 	GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
-
-	return 0;  // Avoid compiler error - shouldn't get here though (due to abort).
 }
 
 
@@ -264,8 +261,8 @@ bool
 GPlatesOpenGL::GLStateSetKeys::is_capability_indexed(
 		GLenum cap) const
 {
-	// In OpenGL 3.3 core the only indexed capability (glEnablei/glDisablei) is blending.
-	return cap == GL_BLEND;
+	// The only indexed capabilities (glEnablei/glDisablei) are blending and scissor test.
+	return cap == GL_BLEND || cap == GL_SCISSOR_TEST;
 }
 
 
@@ -273,17 +270,19 @@ GLuint
 GPlatesOpenGL::GLStateSetKeys::get_num_capability_indices(
 		GLenum cap) const
 {
-	// In OpenGL 3.3 core the only indexed capability (glEnablei/glDisablei) is blending.
+	// The only indexed capabilities (glEnablei/glDisablei) are blending and scissor test.
 	if (cap == GL_BLEND)
 	{
 		return d_capabilities.gl_max_draw_buffers;
+	}
+	else if (cap == GL_SCISSOR_TEST)
+	{
+		return d_capabilities.gl_max_viewports;
 	}
 
 	// Indexing not supported for specified capability.
 	qWarning() << "Indexing (glEnablei/glDisablei) not supported for capability.";
 	GPlatesGlobal::Abort(GPLATES_EXCEPTION_SOURCE);
-
-	return 0;  // Avoid compiler error - shouldn't get here though (due to abort).
 }
 
 
@@ -384,13 +383,4 @@ GPlatesOpenGL::GLStateSetKeys::get_pixel_store_key(
 	}
 
 	return key;
-}
-
-
-GPlatesOpenGL::GLStateSetKeys::key_type
-GPlatesOpenGL::GLStateSetKeys::get_texture_image_unit_key_from_key_offset(
-		GLuint unit,
-		TextureImageUnitKeyOffsetType key_offset) const
-{
-	return d_texture_image_unit_zero_base_key + unit * NUM_TEXTURE_IMAGE_UNIT_KEY_OFFSETS + key_offset;
 }

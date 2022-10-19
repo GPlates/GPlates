@@ -1409,12 +1409,8 @@ GPlatesQtWidgets::ViewportWindow::handle_render_settings_changed()
 void
 GPlatesQtWidgets::ViewportWindow::enable_stars_display()
 {
-	get_view_state().set_show_stars(
-			action_Show_Stars->isChecked());
-	if (reconstruction_view_widget().globe_is_active())
-	{
-		globe_and_map_canvas().update_canvas();
-	}
+	get_view_state().set_show_stars(action_Show_Stars->isChecked());
+	globe_and_map_canvas().update_canvas();
 }
 
 void
@@ -1506,11 +1502,9 @@ GPlatesQtWidgets::ViewportWindow::handle_canvas_tool_activated(
 		// We don't pick a tab - the previous tab from another canvas tool workflow will remain.
 		break;
 
-#if 0 // Disable lighting tool until volume visualisation is officially released (in GPlates 1.5)...
 	case GPlatesGui::CanvasToolWorkflows::TOOL_CHANGE_LIGHTING:
 		d_task_panel_ptr->choose_lighting_tab();
 		break;
-#endif
 
 	case GPlatesGui::CanvasToolWorkflows::TOOL_CLICK_GEOMETRY:
 		d_task_panel_ptr->choose_feature_tab();

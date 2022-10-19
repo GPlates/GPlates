@@ -29,8 +29,10 @@
 
 
 GPlatesOpenGL::GLTexture::GLTexture(
-		GL &gl) :
-	d_resource(gl.get_opengl_functions(), gl.get_context())
+		GL &gl,
+		GLenum target) :
+	d_target(target),
+	d_resource(gl.get_opengl_functions(), gl.get_context(), target)
 {
 }
 
@@ -44,10 +46,11 @@ GPlatesOpenGL::GLTexture::get_resource_handle() const
 
 GLuint
 GPlatesOpenGL::GLTexture::Allocator::allocate(
-		OpenGLFunctions &opengl_functions)
+		OpenGLFunctions &opengl_functions,
+		GLenum target)
 {
 	GLuint texture;
-	opengl_functions.glGenTextures(1, &texture);
+	opengl_functions.glCreateTextures(target, 1, &texture);
 	return texture;
 }
 

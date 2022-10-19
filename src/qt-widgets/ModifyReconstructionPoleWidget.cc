@@ -1038,17 +1038,18 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_adjustment_pole()
 	// We should only be rendering the pole if it's currently enabled.
 	if (d_move_pole_widget.get_pole())
 	{
-		// Render the pole as a very non-intrusive semi-transparent arrow with cross symbol.
+		const GPlatesMaths::Vector3D adjustment_pole_arrow_vector = 0.3 *
+				GPlatesMaths::Vector3D(d_move_pole_widget.get_pole()->position_vector());
+
+		// Render the pole as a very non-intrusive semi-transparent arrow.
 		const GPlatesViewOperations::RenderedGeometry adjustment_pole_arrow_rendered_geom =
-				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_radial_arrow(
-						d_move_pole_widget.get_pole().get(),
-						0.3f/*arrow_projected_length*/,
-						0.12f/*arrowhead_projected_size*/,
-						0.5f/*ratio_arrowline_width_to_arrowhead_size*/,
-						GPlatesGui::Colour(1, 1, 1, 0.5f)/*arrow_colour*/,
-						GPlatesViewOperations::RenderedRadialArrow::SYMBOL_CIRCLE_WITH_CROSS/*symbol_type*/,
-						10.0f/*symbol_size*/,
-						GPlatesGui::Colour::get_white()/*symbol_colour*/);
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_arrow(
+						d_move_pole_widget.get_pole().get(),  // start position
+						adjustment_pole_arrow_vector,
+						GPlatesGui::Colour(1, 1, 1, 0.5f),
+						0.12f,  // arrowhead_size
+						0.5f * 0.12f);  // arrow_body_width
+
 		d_adjustment_pole_layer_ptr->add_rendered_geometry(adjustment_pole_arrow_rendered_geom);
 	}
 }
