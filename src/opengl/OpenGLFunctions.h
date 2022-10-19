@@ -23,8 +23,6 @@
 
 #include <qopengl.h>  // For OpenGL constants and typedefs.
 
-#include <QOpenGLFunctions_4_5_Core>
-
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
 
@@ -48,13 +46,12 @@ namespace GPlatesOpenGL
 		typedef GPlatesUtils::non_null_intrusive_ptr<const OpenGLFunctions> non_null_ptr_to_const_type;
 
 
-		//! Create OpenGL function for version 4.5 core profile.
+		//! Create OpenGL functions.
 		static
 		non_null_ptr_type
-		create(
-				QOpenGLFunctions_4_5_Core *functions)
+		create()
 		{
-			return non_null_ptr_type(new OpenGLFunctions(functions));
+			return non_null_ptr_type(new OpenGLFunctions());
 		}
 
 
@@ -232,15 +229,6 @@ namespace GPlatesOpenGL
 		void glVertexArrayElementBuffer(GLuint vaobj, GLuint buffer);
 		void glVertexArrayVertexBuffer(GLuint vaobj, GLuint bindingindex, GLuint buffer, GLintptr offset, GLsizei stride);
 		void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
-
-	private:
-		QOpenGLFunctions_4_5_Core *d_functions;
-
-
-		OpenGLFunctions(
-				QOpenGLFunctions_4_5_Core *functions) :
-			d_functions(functions)
-		{  }
 	};
 }
 

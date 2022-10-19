@@ -62,6 +62,7 @@
 namespace GPlatesOpenGL
 {
 	class OpenGLFunctions;
+	class Vulkan;
 
 	/**
 	 * Public interface for interacting with OpenGL, and tracking common OpenGL *global* state in an OpenGL context.
@@ -150,6 +151,17 @@ namespace GPlatesOpenGL
 
 
 		~GL();
+
+
+		/**
+		 * Temporarily storing Vulkan object in this class so clients can access it as they are
+		 * gradually converted from OpenGL to Vulkan.
+		 */
+		Vulkan &
+		get_vulkan()
+		{
+			return d_vulkan;
+		}
 
 
 		/**
@@ -1179,6 +1191,7 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
+				Vulkan &vulkan,
 				const GLContext::non_null_ptr_type &context,
 				const GLCapabilities &capabilities,
 				OpenGLFunctions &opengl_functions,
@@ -1188,7 +1201,7 @@ namespace GPlatesOpenGL
 		{
 			return non_null_ptr_type(
 					new GL(
-							context, capabilities, opengl_functions, state_store,
+							vulkan, context, capabilities, opengl_functions, state_store,
 							default_viewport, default_framebuffer_object));
 		}
 
@@ -1228,6 +1241,7 @@ namespace GPlatesOpenGL
 
 		//! Constructor.
 		GL(
+				Vulkan &vulkan,
 				const GLContext::non_null_ptr_type &context,
 				const GLCapabilities &capabilities,
 				OpenGLFunctions &opengl_functions,
@@ -1235,6 +1249,12 @@ namespace GPlatesOpenGL
 				const GLViewport &default_viewport,
 				const GLuint default_framebuffer_object);
 
+
+		/**
+		 * Temporarily storing Vulkan object in this class so clients can access it as they are
+		 * gradually converted from OpenGL to Vulkan.
+		 */
+		Vulkan &d_vulkan;
 
 		/**
 		 * Manages objects associated with the current OpenGL context.

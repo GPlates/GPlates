@@ -176,7 +176,7 @@ namespace GPlatesOpenGL
 		void
 		initialise(
 				OpenGLFunctions &opengl_functions,
-				const QOpenGLContext& opengl_context);
+				const QOpenGLContext &opengl_context);
 
 		bool
 		is_initialised() const

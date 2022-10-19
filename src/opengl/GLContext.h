@@ -32,14 +32,6 @@
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/weak_ptr.hpp>
- // For OpenGL constants and typedefs...
-// Note: Cannot include "OpenGL.h" due to cyclic dependency with class GL.
-#include <qopengl.h>
-#include <QPair>
-#include <QOpenGLContext>
-#include <QOpenGLVersionFunctions>  // For QAbstractOpenGLFunctions
-#include <QOpenGLVersionProfile>
-#include <QOpenGLWindow>
 
 #include "GLCapabilities.h"
 
@@ -54,6 +46,7 @@ namespace GPlatesOpenGL
 	class GL;
 	class GLStateStore;
 	class OpenGLFunctions;
+	class Vulkan;
 
 	/**
 	 * Mirrors an OpenGL context and provides a central place to manage low-level OpenGL objects.
@@ -70,19 +63,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Set the global default surface format (eg, used by QOpenGLWindow).
-		 *
-		 * Note: This should be called before constructing the QApplication instance (on macOS at least).
-		 */
-		static
-		void
-		set_default_surface_format();
-
-
-		/**
 		 * Creates a @a GLContext object.
-		 *
-		 * We reference the OpenGL context of a particular QOpenGLWindow (see @a initialise_gl).
 		 */
 		static
 		non_null_ptr_type
@@ -96,11 +77,11 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * This context represents the specified QOpenGLWindow.
+		 * The OpenGL context has been created.
 		 */
 		void
 		initialise_gl(
-			QOpenGLWindow &opengl_window);
+				Vulkan &vulkan);
 
 		/**
 		 * The OpenGL context is about to be destroyed.
@@ -159,13 +140,6 @@ namespace GPlatesOpenGL
 	private:
 
 		/**
-		 * We reference the QOpenGLContext of a particular QOpenGLWindow.
-		 *
-		 * It's only valid between @a initialise_gl and @a shutdown_gl.
-		 */
-		boost::optional<QOpenGLWindow &> d_surface;
-
-		/**
 		 * The OpenGL functions for the version and profile of this context.
 		 *
 		 * It's only valid between @a initialise_gl and @a shutdown_gl.
@@ -198,32 +172,15 @@ namespace GPlatesOpenGL
 		 */
 		boost::shared_ptr<GLContext> d_context_handle;
 
-
 		/**
-		 * The *required* OpenGL version (in a core profile).
+		 * Temporarily storing Vulkan object in this class so can be passed into class GL where
+		 * clients can access it as they are gradually converted from OpenGL to Vulkan.
 		 */
-		static const QPair<int, int> REQUIRED_OPENGL_VERSION;
+		boost::optional<Vulkan &> d_vulkan;
 
 
 		//! Constructor.
 		GLContext();
-
-
-		/**
-		 * Returns the OpenGL functions (via Qt) of the specified version core profile in the OpenGL context.
-		 *
-		 * Returns none if request failed. For example, if requesting functions (via specified version)
-		 * that are not in the version (and core profile) of the OpenGL context, such as requesting
-		 * 4.5 core functions from a 3.3 core context.
-		 *
-		 * Note: The template type pointer 'OpenGLFunctionsType' should match the version (and 'core' profile).
-		 *       For example, 'QOpenGLFunctions_4_5_Core' matches a version 4.5 core profile).
-		 */
-		template <class OpenGLFunctionsType>
-		boost::optional<OpenGLFunctionsType *>
-		get_opengl_version_functions(
-				int major_version,
-				int minor_version) const;
 	};
 }
 

@@ -156,6 +156,9 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_image(
 			d_vulkan,
 			GPLATES_ASSERTION_SOURCE);
 
+	// Start a render scope (all GL calls should be done inside this scope).
+	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->access_opengl();
+
 	// The image to render/copy the scene into.
 	//
 	// Handle high DPI displays (eg, Apple Retina) by rendering image in high-res device pixels.
@@ -204,22 +207,36 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initialise_vulkan_resources()
 			physicalDevice(),
 			device());
 
+	d_gl_context->initialise_gl(*d_vulkan.get());
+
+	// Start a render scope (all GL calls should be done inside this scope).
+	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->access_opengl();
+
+#if 0
 	// Initialise the scene.
-	d_scene->initialise_gl(*d_vulkan.get());
+	d_scene->initialise_gl(*gl);
 
 	// Initialise the scene renderer.
-	d_scene_renderer->initialise_gl(*d_vulkan.get());
+	d_scene_renderer->initialise_gl(*gl);
+#endif
 }
 
 
 void 
 GPlatesQtWidgets::GlobeAndMapCanvas::release_vulkan_resources() 
 {
+	// Start a render scope (all GL calls should be done inside this scope).
+	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->access_opengl();
+
+#if 0
 	// Shutdown the scene.
 	d_scene->shutdown_gl(*gl);
 
 	// Shutdown the scene renderer.
 	d_scene_renderer->shutdown_gl(*gl);
+#endif
+
+	d_gl_context->shutdown_gl();
 
 	// Our VkDevice is about to be destroyed, so destroy our Vulkan object used to render.
 	d_vulkan = boost::none;
@@ -229,6 +246,8 @@ GPlatesQtWidgets::GlobeAndMapCanvas::release_vulkan_resources()
 void
 GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window()
 {
+#if 0
+
 	// We need a Vulkan device (VkDevice) which means this QVulkanWindow must be exposed/shown.
 	//
 	// Note: This should never fail since we're called by our QVulkanWindowRenderer which only calls
@@ -237,7 +256,8 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window()
 			d_vulkan,
 			GPLATES_ASSERTION_SOURCE);
 
-#if 0
+	// Start a render scope (all GL calls should be done inside this scope).
+	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->access_opengl();
 
 	// The viewport is in device pixels since that is what OpenGL will use to render the scene.
 	const GPlatesOpenGL::GLViewport viewport(0, 0,

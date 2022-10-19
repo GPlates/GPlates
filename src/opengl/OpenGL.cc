@@ -36,12 +36,14 @@
 
 
 GPlatesOpenGL::GL::GL(
+		Vulkan &vulkan,
 		const GLContext::non_null_ptr_type &context,
 		const GLCapabilities &capabilities,
 		OpenGLFunctions &opengl_functions,
 		const GLStateStore::non_null_ptr_type &state_store,
 		const GLViewport &default_viewport,
 		const GLuint default_framebuffer_object) :
+	d_vulkan(vulkan),
 	d_context(context),
 	d_opengl_functions(opengl_functions),
 	d_capabilities(capabilities),
@@ -53,6 +55,7 @@ GPlatesOpenGL::GL::GL(
 	d_default_draw_read_buffer(GL_BACK),
 	d_default_framebuffer_resource(default_framebuffer_object)
 {
+#if 0
 	// On entering this scope set the default viewport/scissor rectangle to the dimensions
 	// (in device pixels) of the framebuffer currently attached to the OpenGL context.
 	// This is then considered the default viewport for the current rendering scope.
@@ -67,6 +70,7 @@ GPlatesOpenGL::GL::GL(
 	d_opengl_functions.glScissor(
 			d_default_viewport.x(), d_default_viewport.y(),
 			d_default_viewport.width(), d_default_viewport.height());
+#endif
 
 	// Note that we're expecting the current OpenGL state to be the *default* OpenGL state.
 }
