@@ -29,10 +29,7 @@
 #include <boost/noncopyable.hpp>
 #include <qopengl.h>  // For OpenGL constants and typedefs.
 
-#include "global/config.h" // For GPLATES_USE_VULKAN_BACKEND
-#if !defined(GPLATES_USE_VULKAN_BACKEND)
-#	include <QOpenGLContext>
-#endif
+#include <QOpenGLContext>
 
 
 namespace GPlatesOpenGL
@@ -178,11 +175,8 @@ namespace GPlatesOpenGL
 
 		void
 		initialise(
-				OpenGLFunctions &opengl_functions
-#if !defined(GPLATES_USE_VULKAN_BACKEND)
-				, const QOpenGLContext& opengl_context
-#endif
-		);
+				OpenGLFunctions &opengl_functions,
+				const QOpenGLContext& opengl_context);
 
 		bool
 		is_initialised() const

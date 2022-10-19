@@ -38,12 +38,7 @@
 #include <QSize>
 #include <QtGlobal>
 
-#include "global/config.h" // For GPLATES_USE_VULKAN_BACKEND
-#if defined(GPLATES_USE_VULKAN_BACKEND)
-#	include <QVulkanWindow>
-#else
-#	include <QOpenGLWindow>
-#endif
+#include <QVulkanWindow>
 
 #include "global/PointerTraits.h"
 
@@ -67,9 +62,7 @@ namespace GPlatesGui
 
 namespace GPlatesOpenGL
 {
-#if defined(GPLATES_USE_VULKAN_BACKEND)
 	class Vulkan;
-#endif
 }
 
 namespace GPlatesPresentation
@@ -83,11 +76,7 @@ namespace GPlatesQtWidgets
 	 * Paint the globe and map views.
 	 */
 	class GlobeAndMapCanvas :
-#if defined(GPLATES_USE_VULKAN_BACKEND)
 			public QVulkanWindow
-#else
-			public QOpenGLWindow
-#endif
 	{
 		Q_OBJECT
 
@@ -121,6 +110,8 @@ namespace GPlatesQtWidgets
 		 * This colour will show through for pixels not rendered (or pixel rendered with transparent alpha).
 		 *
 		 * Returns a null QImage if unable to allocate enough memory for the image data.
+		 *
+		 * Throws @a PreconditionViolationError if this window have not yet been exposed/shown.
 		 */
 		QImage
 		render_to_image(
@@ -167,7 +158,7 @@ namespace GPlatesQtWidgets
 
 
 		/**
-		 * Returns the OpenGL context representing our QVulkanWindow (or QOpenGLWindow).
+		 * Returns the OpenGL context representing our QOpenGLWindow.
 		 */
 		GPlatesOpenGL::GLContext::non_null_ptr_type
 		get_gl_context()
@@ -361,39 +352,6 @@ namespace GPlatesQtWidgets
 
 	protected:
 
-#if defined(GPLATES_USE_VULKAN_BACKEND)
-
-		/**
-		 * Choose the index of a VkPhysicalDevice that has a queue family supporting both 'graphics' and 'compute'.
-		 */
-		void
-		set_vulkan_physical_device_index();
-
-		// QVulkanWindow::setQueueCreateInfoModifier() changed signature in Qt6 (using QList instead of QVector).
-#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
-		typedef QList<VkDeviceQueueCreateInfo> vulkan_queue_create_info_seq_type;
-#else
-		typedef QVector<VkDeviceQueueCreateInfo> vulkan_queue_create_info_seq_type;
-#endif
-		/**
-		 * Ensure that either this QVulkanWindow's 'graphics' queue (yet to be created) supports 'compute' or
-		 * request creation of an extra queue from a 'compute' queue family (when the logical device is created).
-		 *
-		 * By default, QVulkanWindow will only create a 'graphics' queue. Note that it's possible (likely)
-		 * that the queue family that the 'graphics' queue belongs to also supports 'compute', in which case
-		 * only one queue is created (aside from possibly a 'present' queue if that's in yet another family).
-		 *
-		 * This function is installed with QVulkanWindow::setQueueCreateInfoModifier().
-		 * Note that when this function is called we will already have selected a physical device (VkPhysicalDevice)
-		 * that has a queue family supporting both 'graphics' and 'compute' (see 'set_vulkan_physical_device_index()').
-		 */
-		void
-		vulkan_queue_create_info_modifier(
-				const VkQueueFamilyProperties *queue_family_properties_seq,
-				uint32_t queue_count,
-				vulkan_queue_create_info_seq_type &queue_create_infos);
-
-
 		/**
 		 * Callbacks when VkDevice is created and destroyed, and when need to render to canvas.
 		 */
@@ -410,20 +368,20 @@ namespace GPlatesQtWidgets
 			void
 			initResources() override
 			{
-				d_canvas->initialize_gl();
+				d_canvas->initialise_vulkan_resources();
 			}
 
 			void
 			releaseResources() override
 			{
-				d_canvas->shutdown_gl();
+				d_canvas->release_vulkan_resources();
 			}
 
 			void
 			startNextFrame() override
 			{
 				// Render the scene.
-				d_canvas->paint_gl();
+				d_canvas->render_to_window();
 
 				// We've finished rendering, so present the rendered frame.
 				d_canvas->frameReady();
@@ -447,28 +405,7 @@ namespace GPlatesQtWidgets
 		}
 
 		void
-		paint_gl();
-
-#else
-
-		/**
-		 * This is a virtual override of the function in QOpenGLWindow.
-		 */
-		void 
-		initializeGL() override;
-
-		/**
-		 * This is a virtual override of the function in QOpenGLWindow.
-		 */
-		void
-		paintGL() override;
-
-
-		void
-		paintEvent(
-				QPaintEvent *paint_event) override;
-
-#endif
+		render_to_window();
 
 		//! Emit 'repainted' signal when finished rendering a frame to the canvas.
 		void
@@ -501,10 +438,10 @@ namespace GPlatesQtWidgets
 		//       to not be able to connect them at runtime.
 
 		void 
-		initialize_gl();
+		initialise_vulkan_resources();
 
 		void 
-		shutdown_gl() ;
+		release_vulkan_resources() ;
 
 	private:
 
@@ -539,10 +476,6 @@ namespace GPlatesQtWidgets
 		//! Mirrors an OpenGL context and provides a central place to manage low-level OpenGL objects.
 		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
 
-		//! Is true if OpenGL has been initialised for this canvas.
-		bool d_initialised_gl;
-
-#if defined(GPLATES_USE_VULKAN_BACKEND)
 		/**
 		 * Reference to the Vulkan graphics and compute library.
 		 *
@@ -554,7 +487,6 @@ namespace GPlatesQtWidgets
 		 * Vulkan queue family index of 'compute' queue created in the VkDevice of this QVulkanWindow.
 		 */
 		uint32_t d_vulkan_compute_queue_family_index;
-#endif
 
 		/**
 		 * The scene contains the globe and map.
@@ -636,6 +568,37 @@ namespace GPlatesQtWidgets
 		void
 		update_mouse_position(
 				QMouseEvent *mouse_event);
+
+
+		/**
+		 * Choose the index of a VkPhysicalDevice that has a queue family supporting both 'graphics' and 'compute'.
+		 */
+		void
+		set_vulkan_physical_device_index();
+
+		// QVulkanWindow::setQueueCreateInfoModifier() changed signature in Qt6 (using QList instead of QVector).
+#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
+		typedef QList<VkDeviceQueueCreateInfo> vulkan_queue_create_info_seq_type;
+#else
+		typedef QVector<VkDeviceQueueCreateInfo> vulkan_queue_create_info_seq_type;
+#endif
+		/**
+		 * Ensure that either this QVulkanWindow's 'graphics' queue (yet to be created) supports 'compute' or
+		 * request creation of an extra queue from a 'compute' queue family (when the logical device is created).
+		 *
+		 * By default, QVulkanWindow will only create a 'graphics' queue. Note that it's possible (likely)
+		 * that the queue family that the 'graphics' queue belongs to also supports 'compute', in which case
+		 * only one queue is created (aside from possibly a 'present' queue if that's in yet another family).
+		 *
+		 * This function is installed with QVulkanWindow::setQueueCreateInfoModifier().
+		 * Note that when this function is called we will already have selected a physical device (VkPhysicalDevice)
+		 * that has a queue family supporting both 'graphics' and 'compute' (see 'set_vulkan_physical_device_index()').
+		 */
+		void
+		vulkan_queue_create_info_modifier(
+				const VkQueueFamilyProperties *queue_family_properties_seq,
+				uint32_t queue_count,
+				vulkan_queue_create_info_seq_type &queue_create_infos);
 	};
 }
 

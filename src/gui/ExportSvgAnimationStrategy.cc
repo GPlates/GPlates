@@ -127,6 +127,14 @@ GPlatesGui::ExportSvgAnimationStrategy::do_export_iteration(
 				svg_generator.size(),
 				// Clear the image with transparent black so that the background is transparent...
 				GPlatesGui::Colour(0, 0, 0, 0));
+		if (screenshot_image.isNull())
+		{
+			// Most likely a memory allocation failure.
+			d_export_animation_context_ptr->update_status_message(
+				QObject::tr("Error exporting to SVG file \"%1\" due to insufficient memory")
+						.arg(full_filename));
+			return false;
+		}
 
 		// Draw the screenshot image to SVG.
 		QPainter painter(&svg_generator);

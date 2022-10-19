@@ -123,19 +123,14 @@ set(srcs
     OpenGL.cc
     OpenGL.h
     OpenGLException.h
+    OpenGLFunctions.cc
     OpenGLFunctions.h
     Vulkan.cc
     Vulkan.h
+    VulkanException.h
     VulkanHpp.cc
     VulkanHpp.h
 )
-
-# Using Vulkan or OpenGL backend.
-if (GPLATES_USE_VULKAN_BACKEND)
-    list(APPEND srcs OpenGLFunctions_vulkan_backend.cc VulkanException.h)
-else()
-    list(APPEND srcs OpenGLFunctions_opengl_backend.cc)
-endif()
 
 # Add the source files to the gplates static library (or pygplates extension module).
 target_sources_util(${SOURCE_TARGET} PRIVATE ${srcs})

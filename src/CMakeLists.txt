@@ -13,9 +13,7 @@
 ###############
 # Find Vulkan #
 #
-if (GPLATES_USE_VULKAN_BACKEND)
-	find_package(Vulkan REQUIRED)
-endif()
+find_package(Vulkan REQUIRED)
 
 #############
 # Find ZLIB #
@@ -242,12 +240,9 @@ if (QT_VERSION_MAJOR EQUAL 6)
 	# Remove Core5Compat when no longer supporting Qt5.
 	#
 	# Also Qt6 moved the QOpenGL* classes from (Gui module in Qt5) back into OpenGL (and new OpenGLWidgets) modules.
-	if (GPLATES_USE_VULKAN_BACKEND)
-		# When using Vulkan we still use the OpenGL headers (for constants and typedefs) but don't need OpenGL widgets.
-		find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml Core5Compat OpenGL)
-	else()
-		find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml Core5Compat OpenGL OpenGLWidgets)
-	endif()
+	#
+	# TODO: Remove the OpenGL and OpenGLWidgets modules when we've fulled ported from OpenGL to Vulkan.
+	find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml Core5Compat OpenGL OpenGLWidgets)
 else()
 	find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml XmlPatterns)
 endif()
@@ -811,14 +806,13 @@ endif()
 #
 # Vulkan dependency.
 #
-# We only use Vulkan via Qt, so we don't directly include Vulkan headers and we don't 'link' to Vulkan.
-# Side note: Qt also doesn't 'link' to Vulkan (instead it resolves Vulkan functions at runtime).
+# We don't 'link' directly to Vulkan. Instead we dynamically resolve all Vulkan functions pointers at runtime (starting with Qt's
+# QVulkanInstance to get a 'VkInstance' and a 'vkGetInstanceProcAddr()' function that we use to resolve all remaining Vulkan functions).
+# Side note: Qt also doesn't 'link' directly to Vulkan (instead it resolves 'vkGetInstanceProcAddr' at runtime).
 #
-# But we still need the include path to the Vulkan headers since we include Qt's headers (like "QVulkanWindow.h")
-# and they include the Vulkan headers.
-if (GPLATES_USE_VULKAN_BACKEND)
-	target_include_directories(${SOURCE_TARGET} SYSTEM PUBLIC ${Vulkan_INCLUDE_DIRS})
-endif()
+# But we still need the include path to the Vulkan headers since we include them in our source code.
+# Side note: Qt also includes the Vulkan headers (eg "QVulkanWindow.h" includes the Vulkan headers).
+target_include_directories(${SOURCE_TARGET} SYSTEM PUBLIC ${Vulkan_INCLUDE_DIRS})
 
 #
 # ZLIB dependency.
@@ -865,12 +859,9 @@ if (QT_VERSION_MAJOR EQUAL 6)
 	# Remove this when no longer supporting Qt5.
 	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::Core5Compat)
 	# Qt6 moved the QOpenGL* classes from (Gui module in Qt5) back into OpenGL (and new OpenGLWidgets) modules.
-	if (GPLATES_USE_VULKAN_BACKEND)
-		# When using Vulkan we still use the OpenGL headers (for constants and typedefs) but don't need OpenGL widgets.
-		target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::OpenGL)
-	else()
-		target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::OpenGL Qt6::OpenGLWidgets)
-	endif()
+	#
+	# TODO: Remove the OpenGL and OpenGLWidgets modules when we've fulled ported from OpenGL to Vulkan.
+	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt6::OpenGL Qt6::OpenGLWidgets)
 else()
 	target_link_libraries(${SOURCE_TARGET} PUBLIC Qt5::XmlPatterns)
 endif()

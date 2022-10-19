@@ -23,12 +23,7 @@
 
 #include <qopengl.h>  // For OpenGL constants and typedefs.
 
-#include "global/config.h" // For GPLATES_USE_VULKAN_BACKEND
-#if defined(GPLATES_USE_VULKAN_BACKEND)
-#	include <QVulkanDeviceFunctions>
-#else
-#	include <QOpenGLFunctions_4_5_Core>
-#endif
+#include <QOpenGLFunctions_4_5_Core>
 
 #include "utils/non_null_intrusive_ptr.h"
 #include "utils/ReferenceCount.h"
@@ -57,12 +52,7 @@ namespace GPlatesOpenGL
 		static
 		non_null_ptr_type
 		create(
-#if defined(GPLATES_USE_VULKAN_BACKEND)
-			QVulkanDeviceFunctions *functions
-#else
-			QOpenGLFunctions_4_5_Core *functions
-#endif
-		)
+				QOpenGLFunctions_4_5_Core *functions)
 		{
 			return non_null_ptr_type(new OpenGLFunctions(functions));
 		}
@@ -244,20 +234,11 @@ namespace GPlatesOpenGL
 		void glViewport(GLint x, GLint y, GLsizei width, GLsizei height);
 
 	private:
-#if defined(GPLATES_USE_VULKAN_BACKEND)
-		QVulkanDeviceFunctions *d_functions;
-#else
 		QOpenGLFunctions_4_5_Core *d_functions;
-#endif
 
 
 		OpenGLFunctions(
-#if defined(GPLATES_USE_VULKAN_BACKEND)
-				QVulkanDeviceFunctions *functions
-#else
-				QOpenGLFunctions_4_5_Core *functions
-#endif
-				) :
+				QOpenGLFunctions_4_5_Core *functions) :
 			d_functions(functions)
 		{  }
 	};

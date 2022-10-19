@@ -142,6 +142,8 @@ namespace GPlatesQtWidgets
 		 * This colour will show through for pixels not rendered (or pixel rendered with transparent alpha).
 		 *
 		 * Returns a null QImage if unable to allocate enough memory for the image data.
+		 *
+		 * Throws @a PreconditionViolationError if this window have not yet been exposed/shown.
 		 */
 		QImage
 		render_to_image(
