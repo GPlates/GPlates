@@ -98,8 +98,7 @@ namespace GPlatesPropertyValues
 			 * Helper class to support @a convert_integer_raster_to_float_raster.
 			 */
 			template<typename IntType, typename FloatType>
-			class IntegerToFloat :
-					public std::unary_function<IntType, FloatType>
+			class IntegerToFloat
 			{
 			public:
 
@@ -212,8 +211,7 @@ namespace GPlatesPropertyValues
 			template<class RawRasterType>
 			class CreateCoverageRawRaster<RawRasterType, true>
 			{
-				class CoverageFunctor :
-						public std::unary_function<typename RawRasterType::element_type, CoverageRawRaster::element_type>
+				class CoverageFunctor
 				{
 				public:
 

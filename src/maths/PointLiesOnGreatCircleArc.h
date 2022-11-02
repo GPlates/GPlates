@@ -28,8 +28,6 @@
 #ifndef GPLATES_MATHS_POINTLIESONGREATCIRCLEARC_H
 #define GPLATES_MATHS_POINTLIESONGREATCIRCLEARC_H
 
-#include <functional>  /* std::unary_function */
-
 #include "GreatCircleArc.h"
 
 namespace GPlatesMaths
@@ -44,19 +42,14 @@ namespace GPlatesMaths
 	 *   std::list< PointOnSphere > point_list = ...;
 	 *   GreatCircleArc test_arc = ...;
 	 *
+	 *   PointIsOnGreatCircleArc point_is_on_arc(test_arc);
 	 *   point_list.remove_if(
-	 *    std::not1(
-	 *     PointIsOnGreatCircleArc(test_arc)));
+	 *       [&](const PointOnSphere &point) { return !point_is_on_arc(point); });
 	 * @endcode
 	 * This snippet of code removes all the points in @a point_list which
 	 * are not on the @a test_arc.
-	 *
-	 * See Josuttis99, Chapter 8 "STL Function Objects", and in particular
-	 * section 8.2.4 "User-Defined Function Objects for Function Adapters",
-	 * for more information about @a std::unary_function.
 	 */
-	class PointLiesOnGreatCircleArc:
-			public std::unary_function< PointOnSphere, bool >
+	class PointLiesOnGreatCircleArc
 	{
 
 	  public:

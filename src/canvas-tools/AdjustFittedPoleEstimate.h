@@ -201,10 +201,6 @@ namespace GPlatesCanvasTools
 		//! Convenience typedef for GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type
 		typedef GPlatesViewOperations::RenderedGeometryCollection::child_layer_owner_ptr_type child_layer_ptr_type;
 
-		/**
-		 * Convenience typedef for GPlatesUtils::non_null_intrusive_ptr<AdjustFittedPoleEstimate>.
-		 */
-		typedef GPlatesUtils::non_null_intrusive_ptr<AdjustFittedPoleEstimate> non_null_ptr_type;
 
 		static
 		const non_null_ptr_type

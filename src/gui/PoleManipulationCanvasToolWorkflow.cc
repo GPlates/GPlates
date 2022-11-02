@@ -113,7 +113,7 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::create_canvas_tools(
 	// Click geometry canvas tool.
 	//
 
-	GPlatesCanvasTools::ClickGeometry::non_null_ptr_type click_geometry_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type click_geometry_tool =
 			GPlatesCanvasTools::ClickGeometry::create(
 					status_bar_callback,
 					view_state.get_focused_feature_geometry_builder(),
@@ -142,7 +142,7 @@ GPlatesGui::PoleManipulationCanvasToolWorkflow::create_canvas_tools(
 	// Manipulate pole canvas tool.
 	//
 
-	GPlatesCanvasTools::ManipulatePole::non_null_ptr_type manipulate_pole_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type manipulate_pole_tool =
 			GPlatesCanvasTools::ManipulatePole::create(
 					status_bar_callback,
 					view_state.get_rendered_geometry_collection(),

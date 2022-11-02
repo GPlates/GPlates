@@ -55,8 +55,7 @@ namespace GPlatesGui
 	namespace ConfigGuiUtils
 	{
 
-		class MapValueEquals:
-				public std::unary_function<QString,bool>
+		class MapValueEquals
 		{
 		public:
 			explicit

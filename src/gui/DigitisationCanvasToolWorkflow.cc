@@ -120,7 +120,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 	// also have one in the Digitisation workflow because it is hooked up to the digitised geometry.
 	//
 
-	GPlatesCanvasTools::MeasureDistance::non_null_ptr_type measure_distance_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type measure_distance_tool =
 		GPlatesCanvasTools::MeasureDistance::create(
 				status_bar_callback,
 				view_state.get_digitise_geometry_builder(),
@@ -146,7 +146,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 	// Digitise multipoint canvas tool.
 	//
 
-	GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type digitise_multipoint_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type digitise_multipoint_tool =
 			GPlatesCanvasTools::DigitiseGeometry::create(
 					status_bar_callback,
 					GPlatesMaths::GeometryType::MULTIPOINT,
@@ -174,7 +174,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 	// Digitise polyline canvas tool.
 	//
 
-	GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type digitise_polyline_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type digitise_polyline_tool =
 			GPlatesCanvasTools::DigitiseGeometry::create(
 					status_bar_callback,
 					GPlatesMaths::GeometryType::POLYLINE,
@@ -202,7 +202,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 	// Digitise polygon canvas tool.
 	//
 
-	GPlatesCanvasTools::DigitiseGeometry::non_null_ptr_type digitise_polygon_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type digitise_polygon_tool =
 			GPlatesCanvasTools::DigitiseGeometry::create(
 					status_bar_callback,
 					GPlatesMaths::GeometryType::POLYGON,
@@ -230,7 +230,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 	// Move vertex canvas tool.
 	//
 
-	GPlatesCanvasTools::MoveVertex::non_null_ptr_type move_vertex_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type move_vertex_tool =
 			GPlatesCanvasTools::MoveVertex::create(
 					status_bar_callback,
 					view_state.get_digitise_geometry_builder(),
@@ -259,7 +259,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 	// Delete vertex canvas tool.
 	//
 
-	GPlatesCanvasTools::DeleteVertex::non_null_ptr_type delete_vertex_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type delete_vertex_tool =
 			GPlatesCanvasTools::DeleteVertex::create(
 					status_bar_callback,
 					view_state.get_digitise_geometry_builder(),
@@ -286,7 +286,7 @@ GPlatesGui::DigitisationCanvasToolWorkflow::create_canvas_tools(
 	// Insert vertex canvas tool.
 	//
 
-	GPlatesCanvasTools::InsertVertex::non_null_ptr_type insert_vertex_tool =
+	GPlatesCanvasTools::CanvasTool::non_null_ptr_type insert_vertex_tool =
 			GPlatesCanvasTools::InsertVertex::create(
 					status_bar_callback,
 					view_state.get_digitise_geometry_builder(),

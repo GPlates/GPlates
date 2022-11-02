@@ -28,7 +28,7 @@
 #ifndef GPLATES_MODEL_REVISIONAWAREITERATOR_H
 #define GPLATES_MODEL_REVISIONAWAREITERATOR_H
 
-#include <iterator>  /* iterator, bidirectional_iterator_tag */
+#include <iterator>  /* bidirectional_iterator_tag */
 #include <boost/operators.hpp>
 
 #include "FeatureCollectionHandle.h"
@@ -90,19 +90,6 @@ namespace GPlatesModel
 	 */
 	template<class HandleType>
 	class RevisionAwareIterator :
-			public std::iterator<
-				std::bidirectional_iterator_tag,
-				typename RevisionAwareIteratorInternals::Traits<HandleType>::value_type,
-				ptrdiff_t,
-				// The 'pointer' inner type is set to void, because the dereference
-				// operator returns a temporary, and it is not desirable to take a pointer
-				// to a temporary.
-				void,
-				// The 'reference' inner type is not a reference, because the dereference
-				// operator returns a temporary, and it is not desirable to take a reference
-				// to a temporary.
-				typename RevisionAwareIteratorInternals::Traits<HandleType>::value_type
-			>,
 			public boost::equivalent<RevisionAwareIterator<HandleType> >,
 			public boost::equality_comparable<RevisionAwareIterator<HandleType> >
 	{
@@ -125,11 +112,6 @@ namespace GPlatesModel
 		typedef typename HandleTraits<handle_type>::revision_type revision_type;
 
 		/**
-		 * The type returned by this iterator on dereference, with appropriate const-ness.
-		 */
-		typedef typename RevisionAwareIteratorInternals::Traits<handle_type>::value_type value_type;
-
-		/**
 		 * The type of a weak-ref to the Handle we're iterating over, with appropriate const-ness.
 		 */
 		typedef typename RevisionAwareIteratorInternals::Traits<handle_type>::handle_weak_ref_type handle_weak_ref_type;
@@ -138,6 +120,24 @@ namespace GPlatesModel
 		 * The type used to index the elements of the container.
 		 */
 		typedef container_size_type index_type;
+
+
+		//
+		// Iterator typedefs.
+		//
+		using iterator_category = std::bidirectional_iterator_tag;
+		// Type returned by this iterator on dereference, with appropriate const-ness.
+		using value_type = typename RevisionAwareIteratorInternals::Traits<HandleType>::value_type;
+		using difference_type = std::ptrdiff_t;
+		// The 'pointer' inner type is set to void, because the dereference
+		// operator returns a temporary, and it is not desirable to take a pointer
+		// to a temporary.
+		using pointer = void;
+		// The 'reference' inner type is not a reference, because the dereference
+		// operator returns a temporary, and it is not desirable to take a reference
+		// to a temporary.
+		using reference = typename RevisionAwareIteratorInternals::Traits<HandleType>::value_type;
+
 
 		/**
 		 * Default constructor.

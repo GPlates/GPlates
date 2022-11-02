@@ -844,10 +844,7 @@ namespace GPlatesAppLogic
 			 * Functor class for accessing function values at delaunay vertices.
 			 */
 			template <typename DataType>
-			class UncachedDataAccess :
-					public std::unary_function<
-							delaunay_point_2_type,
-							std::pair<DataType, bool> >
+			class UncachedDataAccess
 			{
 			public:
 
@@ -889,10 +886,7 @@ namespace GPlatesAppLogic
 			 * Functor class for accessing, and caching, function values at delaunay vertices.
 			 */
 			template <class VertexHandleToDataMapType>
-			class CachedDataAccess :
-					public std::unary_function<
-							delaunay_point_2_type,
-							std::pair<typename VertexHandleToDataMapType::mapped_type, bool> >
+			class CachedDataAccess
 			{
 			public:
 

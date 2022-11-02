@@ -27,7 +27,6 @@
 #define GPLATES_MATHS_POLYGREATCIRCLEARCBOUNDINGTREE_H
 
 #include <algorithm>
-#include <functional>
 #include <iterator>  // std::distance, std::advance
 #include <utility>
 #include <vector>
@@ -325,8 +324,7 @@ namespace GPlatesMaths
 		/**
 		 * Used to sort partitions by their number of bounded arcs.
 		 */
-		class SortPartitionsByNumBoundedArcs :
-				public std::binary_function<unsigned int/*node index*/, unsigned int/*node index*/, bool>
+		class SortPartitionsByNumBoundedArcs
 		{
 		public:
 			explicit
