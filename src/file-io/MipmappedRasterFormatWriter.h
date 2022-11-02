@@ -34,6 +34,7 @@
 #include <vector>
 #include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
+#include <boost/scoped_array.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/type_traits/is_floating_point.hpp>
 #include <boost/type_traits/is_integral.hpp>
@@ -987,7 +988,7 @@ namespace GPlatesFileIO
 
 				// Allocate a buffer for reading.
 				const unsigned int read_buffer_size = 1024 * 1024;
-				boost::scoped_ptr<char> read_buffer(new char[read_buffer_size]);
+				boost::scoped_array<char> read_buffer(new char[read_buffer_size]);
 				// Append the temporary mipmap file to the output file.
 				while (true)
 				{
