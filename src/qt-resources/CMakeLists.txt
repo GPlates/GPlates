@@ -10,10 +10,12 @@
 #
 set(srcs
     gpgim.qrc
-    opengl.qrc
     python.qrc
     qt_widgets.qrc
 )
 
 # Add the source files to the gplates static library (or pygplates extension module).
 target_sources_util(${SOURCE_TARGET} PRIVATE ${srcs})
+
+# Traverse vulkan sub-directory.
+add_subdirectory(vulkan)
