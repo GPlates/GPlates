@@ -1,20 +1,12 @@
 #
-# List the GLSL shader files (*.vert, *.frag, *.tesc, *.tese, *.comp).
+# Read the list of input GLSL shader files (*.vert, *.frag, *.tesc, *.tese, *.comp) to compile.
 #
-# These shader files may in turn #include ".glsl" files containing GLSL code (such as functions).
-# But those ".glsl" dependency files should not be listed here.
-#
-# These GLSL shader files are compiled to binary Vulkan SPIR-V shader files that are then listed in a "vulkan.qrc" file
+# These GLSL shader files are compiled to binary Vulkan SPIR-V shader files that are then listed in the "vulkan.qrc" file
 # and hence are included as resources in the GPlates static library (or pyGPlates extension module).
 #
-# Note that CMake discourages use of the 'file(GLOB)' CMake command to automatically collect source files.
-# One of the reasons is if source files are added or removed, CMake is not automatically re-run,
-# so the build is unaware of the change.
+# The "read_sources()" function is in "Utils.cmake".
 #
-set(shaders
-    stars.vert stars.frag
-)
-
+read_sources(cmake_shader_sources.txt shaders)
 
 # Find the "glslc" compiler.
 find_program(GLSLC "glslc")
@@ -104,8 +96,8 @@ file(APPEND ${vulkan_qrc_in} [[
 ]])
 
 # Copy the "vulkan.qrc.in" file (that we just wrote) to the "vulkan.qrc" file.
-# But only if the contents change - this avoids unnecessarily re-generating the
-# "qrc_vulkan.cpp" file (from "vulkan.qrc") every time CMake runs - instead it'll
+# But only if the contents change - this avoids unnecessarily triggering re-generation
+# of the "qrc_vulkan.cpp" file (from "vulkan.qrc") every time CMake runs - instead it'll
 # only get re-generated when we add or remove a shader file (in variable "shaders").
 configure_file(${vulkan_qrc_in} ${vulkan_qrc} COPYONLY)
 
@@ -139,7 +131,7 @@ target_sources_util(${SOURCE_TARGET} PRIVATE ${vulkan_qrc})
 # from "vulkan.qrc", and it would chain to our custom compile command above.
 # However that doesn't seem to work (and using 'qt_add_resources()' instead of AUTORCC didn't work either).
 #
-# So we'll just make our custom command a dependency of a custom target and then add that as a dependency of ${SOURCE_TARGET}.
+# So we'll just make our custom commands be dependencies of a custom target and then add that as a dependency of ${SOURCE_TARGET}.
 # This means our Vulkan SPIR-V shaders will get compiled (when their dependency GLSL shaders are modified). And since the
 # Vulkan SPIR-V shaders are listed in "vulkan.qrc" (and have changed), the "vulkan.qrc" file will get compiled to "qrc_vulkan.cpp" by Qt.
 add_custom_target(vulkan-spirv DEPENDS ${vulkan_shaders})

@@ -1,0 +1,8 @@
+#
+# List the GLSL shader files (*.vert, *.frag, *.tesc, *.tese, *.comp).
+#
+# These shader files may in turn #include ".glsl" files containing GLSL code (such as functions).
+# But those ".glsl" dependency files should not be listed here.
+#
+stars.frag
+stars.vert
