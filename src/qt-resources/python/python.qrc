@@ -1,0 +1,7 @@
+<RCC>
+  <qresource prefix="/">
+    <file>scripts/colouring/ArbitraryColours.py</file>
+    <file>scripts/colouring/ColorByProperty.py</file>
+    <file>scripts/colouring/draw_style_demo.py</file>
+  </qresource>
+</RCC>

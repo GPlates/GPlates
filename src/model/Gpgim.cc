@@ -254,7 +254,7 @@ namespace GPlatesModel
 }
 
 
-const QString GPlatesModel::Gpgim::CORE_GPGIM_RESOURCE_FILENAME = ":/gpgim/gpgim.xml";
+const QString GPlatesModel::Gpgim::CORE_GPGIM_RESOURCE_FILENAME = ":/gpgim.xml";
 
 
 GPlatesModel::Gpgim::Gpgim()

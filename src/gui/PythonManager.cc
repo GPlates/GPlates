@@ -353,9 +353,9 @@ GPlatesGui::PythonManager::get_internal_scripts()
 {
 	QMap<QString/*module name*/, QString> modules;
 
-	// Iterate recursively over all files/directories in the ":/python/scripts/" resources directory.
+	// Iterate recursively over all files/directories in the ":/scripts/" resources directory.
 	QDirIterator module_dir_iterator(
-			":/python/scripts",
+			":/scripts",
 			QStringList("*.py"),
 			QDir::Files,
 			QDirIterator::Subdirectories);

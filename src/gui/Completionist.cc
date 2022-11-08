@@ -176,7 +176,7 @@ GPlatesGui::Completionist::install_completer(
 	// EditAgeWidget with different ones depending on the timescale selected, if any. It should certainly
 	// default to whatever timescale is the "GPlates Standard", but it might be nice to be able to complete
 	// names from user-selected timescales too, provided GPlates is aware of them.
-	QAbstractItemModel *model = get_model_for_dictionary(":gpgim/timescales/ICC2012.xml");
+	QAbstractItemModel *model = get_model_for_dictionary(":/timescales/ICC2012.xml");
 	CustomCompleter *completer = new CustomCompleter(&widget);
 	completer->setModel(model);
 	

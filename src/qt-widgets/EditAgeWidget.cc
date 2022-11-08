@@ -249,7 +249,7 @@ GPlatesQtWidgets::EditAgeWidget::EditAgeWidget(
 	// Here's the fun one: Get a dictionary of suitable Timescale Age Band names and add them as completable entries to the
 	// appropriate QLineEdits.
 	// Note: Obviously in this case we are just installing the default completion dictionary that's built into
-	// GPlates, the :gpgim/timescales/ICC2012.xml file. In an ideal world, we'd be able to swap out for a
+	// GPlates, the :/gpgim/timescales/ICC2012.xml file. In an ideal world, we'd be able to swap out for a
 	// different completer using a different timescale, if the user has selected some other timescale that GPlates
 	// is aware of - but for now it's quite reasonable to assume that there is One True Timescale that GPlates uses
 	// for everything name-related.

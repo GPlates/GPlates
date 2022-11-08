@@ -1,0 +1,7 @@
+<RCC>
+  <qresource prefix="/">
+    <file>gpgim.xml</file>
+    <file>units.xml</file>
+    <file>timescales/ICC2012.xml</file>
+  </qresource>
+</RCC>
