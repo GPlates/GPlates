@@ -43,7 +43,7 @@
       <string>Leave Full Screen</string>
      </property>
      <property name="icon" >
-      <iconset resource="../qt-resources/qt_widgets.qrc" >:/leave_fullscreen_monitor_32.png</iconset>
+      <iconset resource="../qt-resources/qt_resources.qrc" >:/leave_fullscreen_monitor_32.png</iconset>
      </property>
      <property name="iconSize" >
       <size>
@@ -65,7 +65,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc" />
+  <include location="../qt-resources/qt_resources.qrc" />
  </resources>
  <connections/>
 </ui>

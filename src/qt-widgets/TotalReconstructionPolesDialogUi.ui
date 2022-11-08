@@ -20,7 +20,7 @@
    <string>Total Reconstruction Poles</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../qt-resources/qt_widgets.qrc">
+   <iconset resource="../qt-resources/qt_resources.qrc">
     <normaloff>:/gplates_logo_16.png</normaloff>:/gplates_logo_16.png</iconset>
   </property>
   <layout class="QGridLayout">
@@ -509,7 +509,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections>
   <connection>

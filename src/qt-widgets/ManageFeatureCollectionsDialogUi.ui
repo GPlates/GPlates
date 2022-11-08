@@ -17,7 +17,7 @@
    <string>Manage Feature Collections</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../qt-resources/qt_widgets.qrc">
+   <iconset resource="../qt-resources/qt_resources.qrc">
     <normaloff>:/gnome_preferences_desktop_16.png</normaloff>:/gnome_preferences_desktop_16.png</iconset>
   </property>
   <property name="sizeGripEnabled">
@@ -79,7 +79,7 @@
      <item>
       <widget class="QLabel" name="label_unsaved_changes_swatch">
        <property name="pixmap">
-        <pixmap resource="../qt-resources/qt_widgets.qrc">:/info_sign_16.png</pixmap>
+        <pixmap resource="../qt-resources/qt_resources.qrc">:/info_sign_16.png</pixmap>
        </property>
       </widget>
      </item>
@@ -106,7 +106,7 @@
      <item>
       <widget class="QLabel" name="label_no_presence_on_disk_swatch">
        <property name="pixmap">
-        <pixmap resource="../qt-resources/qt_widgets.qrc">:/info_sign_16.png</pixmap>
+        <pixmap resource="../qt-resources/qt_resources.qrc">:/info_sign_16.png</pixmap>
        </property>
       </widget>
      </item>
@@ -281,10 +281,10 @@
   <tabstop>table_feature_collections</tabstop>
  </tabstops>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
-  <include location="../qt-resources/qt_widgets.qrc"/>
-  <include location="../qt-resources/qt_widgets.qrc"/>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections>
   <connection>

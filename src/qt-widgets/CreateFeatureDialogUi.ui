@@ -14,7 +14,7 @@
    <string>Create Feature</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../qt-resources/qt_widgets.qrc">
+   <iconset resource="../qt-resources/qt_resources.qrc">
     <normaloff>:/gplates_logo_16.png</normaloff>:/gplates_logo_16.png</iconset>
   </property>
   <property name="sizeGripEnabled">
@@ -220,7 +220,7 @@
         <string>Pre&amp;vious</string>
        </property>
        <property name="icon">
-        <iconset resource="../qt-resources/qt_widgets.qrc">
+        <iconset resource="../qt-resources/qt_resources.qrc">
          <normaloff>:/gnome_go_previous_16.png</normaloff>:/gnome_go_previous_16.png</iconset>
        </property>
        <property name="autoDefault">
@@ -234,7 +234,7 @@
         <string>Ne&amp;xt</string>
        </property>
        <property name="icon">
-        <iconset resource="../qt-resources/qt_widgets.qrc">
+        <iconset resource="../qt-resources/qt_resources.qrc">
          <normaloff>:/gnome_go_next_16.png</normaloff>:/gnome_go_next_16.png</iconset>
        </property>
       </widget>
@@ -264,7 +264,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections/>
 </ui>

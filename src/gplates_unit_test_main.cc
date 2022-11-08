@@ -121,7 +121,7 @@ bool init_unit_test()
 	// Initialise Qt resources that exist in the static 'qt-resources' library.
 	Q_INIT_RESOURCE(gpgim);
 	Q_INIT_RESOURCE(python);
-	Q_INIT_RESOURCE(qt_widgets);
+	Q_INIT_RESOURCE(qt_resources);
 	Q_INIT_RESOURCE(vulkan);
 
 	// Sanity check: Proceed only if we have access to infinity and NaN.

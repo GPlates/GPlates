@@ -17,7 +17,7 @@
    <string>About GPlates</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../qt-resources/qt_widgets.qrc">
+   <iconset resource="../qt-resources/qt_resources.qrc">
     <normaloff>:/gplates_logo_16.png</normaloff>:/gplates_logo_16.png</iconset>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -45,7 +45,7 @@
         <string/>
        </property>
        <property name="pixmap">
-        <pixmap resource="../qt-resources/qt_widgets.qrc">:/GPlates-icon-160x160-opaque.png</pixmap>
+        <pixmap resource="../qt-resources/qt_resources.qrc">:/GPlates-icon-160x160-opaque.png</pixmap>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
@@ -225,8 +225,8 @@ p, li { white-space: pre-wrap; }
   <tabstop>text_Copyright</tabstop>
  </tabstops>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections>
   <connection>

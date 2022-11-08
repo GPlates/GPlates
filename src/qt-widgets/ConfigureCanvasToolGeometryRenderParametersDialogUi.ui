@@ -14,7 +14,7 @@
    <string>Configure Geometry Rendering</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../qt-resources/qt_widgets.qrc">
+   <iconset resource="../qt-resources/qt_resources.qrc">
     <normaloff>:/GPlates-icon-160x160-opaque.png</normaloff>:/GPlates-icon-160x160-opaque.png</iconset>
   </property>
   <property name="modal">
@@ -344,7 +344,7 @@
            <string/>
           </property>
           <property name="pixmap">
-           <pixmap resource="../qt-resources/qt_widgets.qrc">:/gnome_dialog_warning_16.png</pixmap>
+           <pixmap resource="../qt-resources/qt_resources.qrc">:/gnome_dialog_warning_16.png</pixmap>
           </property>
          </widget>
         </item>
@@ -441,7 +441,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections>
   <connection>

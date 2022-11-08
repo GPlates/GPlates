@@ -17,7 +17,7 @@
    <string>Re-map File Attributes</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="../qt-resources/qt_widgets.qrc">
+   <iconset resource="../qt-resources/qt_resources.qrc">
     <normaloff>:/gnome_document_properties_22.png</normaloff>:/gnome_document_properties_22.png</iconset>
   </property>
   <layout class="QGridLayout">
@@ -47,7 +47,7 @@
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections/>
 </ui>

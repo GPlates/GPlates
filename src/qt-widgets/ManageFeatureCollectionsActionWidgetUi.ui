@@ -54,7 +54,7 @@ p, li { white-space: pre-wrap; }
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="../qt-resources/qt_widgets.qrc">
+      <iconset resource="../qt-resources/qt_resources.qrc">
        <normaloff>:/gnome_document_properties_22.png</normaloff>:/gnome_document_properties_22.png</iconset>
      </property>
      <property name="iconSize">
@@ -85,7 +85,7 @@ p, li { white-space: pre-wrap; }
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="../qt-resources/qt_widgets.qrc">
+      <iconset resource="../qt-resources/qt_resources.qrc">
        <normaloff>:/gnome_save_22.png</normaloff>:/gnome_save_22.png</iconset>
      </property>
      <property name="iconSize">
@@ -115,7 +115,7 @@ p, li { white-space: pre-wrap; }
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="../qt-resources/qt_widgets.qrc">
+      <iconset resource="../qt-resources/qt_resources.qrc">
        <normaloff>:/gnome_save_as_22.png</normaloff>:/gnome_save_as_22.png</iconset>
      </property>
      <property name="iconSize">
@@ -146,7 +146,7 @@ p, li { white-space: pre-wrap; }
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="../qt-resources/qt_widgets.qrc">
+      <iconset resource="../qt-resources/qt_resources.qrc">
        <normaloff>:/save_a_copy_22.png</normaloff>:/save_a_copy_22.png</iconset>
      </property>
      <property name="iconSize">
@@ -174,7 +174,7 @@ p, li { white-space: pre-wrap; }
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="../qt-resources/qt_widgets.qrc">
+      <iconset resource="../qt-resources/qt_resources.qrc">
        <normaloff>:/gnome_view_refresh_22.png</normaloff>:/gnome_view_refresh_22.png</iconset>
      </property>
      <property name="iconSize">
@@ -204,7 +204,7 @@ p, li { white-space: pre-wrap; }
       <string/>
      </property>
      <property name="icon">
-      <iconset resource="../qt-resources/qt_widgets.qrc">
+      <iconset resource="../qt-resources/qt_resources.qrc">
        <normaloff>:/gnome_media_eject_22.png</normaloff>:/gnome_media_eject_22.png</iconset>
      </property>
      <property name="iconSize">
@@ -218,7 +218,7 @@ p, li { white-space: pre-wrap; }
   </layout>
  </widget>
  <resources>
-  <include location="../qt-resources/qt_widgets.qrc"/>
+  <include location="../qt-resources/qt_resources.qrc"/>
  </resources>
  <connections/>
 </ui>
