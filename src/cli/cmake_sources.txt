@@ -1,0 +1,23 @@
+#
+# List of non-generated source files (*.h, *.cc, *.ui, *.qrc).
+#
+CliAssignPlateIdsCommand.cc
+CliAssignPlateIdsCommand.h
+CliCommand.h
+CliCommandDispatcher.cc
+CliCommandDispatcher.h
+CliCommandRegistry.h
+CliConvertFileFormatCommand.cc
+CliConvertFileFormatCommand.h
+CliEquivalentTotalRotation.cc
+CliEquivalentTotalRotation.h
+CliFeatureCollectionFileIO.cc
+CliFeatureCollectionFileIO.h
+CliInvalidOptionValue.h
+CliReconstructCommand.cc
+CliReconstructCommand.h
+CliRelativeTotalRotation.cc
+CliRelativeTotalRotation.h
+CliRequiredOptionNotPresent.h
+CliStageRotationCommand.cc
+CliStageRotationCommand.h

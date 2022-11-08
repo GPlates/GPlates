@@ -1,89 +1,9 @@
 #
-# List the non-generated source files (*.h, *.cc, *.ui, *.qrc).
+# Read the list of non-generated source files (*.h, *.cc, *.ui, *.qrc).
 #
-# You can either explicitly add/remove source files here, or
-# run 'python cmake/add_sources.py' to automatically list them (here).
+# The "read_sources_util()" function is in "Utils.cmake".
 #
-# Note that CMake discourages use of the 'file(GLOB)' CMake command to automatically collect source files.
-# One of the reasons is if source files are added or removed, CMake is not automatically re-run,
-# so the build is unaware of the change.
-#
-set(srcs
-    AnimationSequenceUtils.cc
-    AnimationSequenceUtils.h
-    Base2Utils.cc
-    Base2Utils.h
-    CallStackTracker.cc
-    CallStackTracker.h
-    CommandLineParser.cc
-    CommandLineParser.h
-    ComponentManager.h
-    ConfigBundle.cc
-    ConfigBundle.h
-    ConfigBundleUtils.cc
-    ConfigBundleUtils.h
-    ConfigInterface.h
-    CopyConst.h
-    CopyOnWrite.h
-    Counter64.h
-    DeferredCallEvent.cc
-    DeferredCallEvent.h
-    Earth.cc
-    Earth.h
-    Endian.h
-    Environment.cc
-    Environment.h
-    FunctionTypes.h
-    GeometryCreationUtils.h
-    HasFunction.h
-    IdStringSet.cc
-    IdStringSet.h
-    IntrusiveSinglyLinkedList.h
-    KeyValueCache.h
-    LatLonAreaSampling.h
-    Mapper.h
-    NetworkUtils.cc
-    NetworkUtils.h
-    non_null_intrusive_ptr.h
-    NullIntrusivePointerHandler.cc
-    NullIntrusivePointerHandler.h
-    NullNonNullIntrusivePointerException.h
-    ObjectCache.h
-    ObjectPool.h
-    OverloadResolution.h
-    Parse.h
-    Profile.cc
-    Profile.h
-    QtFormattingUtils.h
-    QtStreamable.h
-    Reducer.h
-    ReferenceCount.h
-    SafeBool.h
-    Select.h
-    SetConst.h
-    Singleton.h
-    SmartNodeLinkedList.h
-    StringFormattingUtils.cc
-    StringFormattingUtils.h
-    StringSet.cc
-    StringSet.h
-    StringUtils.cc
-    StringUtils.h
-    SubjectObserverToken.h
-    TypeTraits.h
-    UnicodeString.cc
-    UnicodeString.h
-    UnicodeStringUtils.h
-    UniqueId.cc
-    UniqueId.h
-    VirtualProxy.h
-    XmlNamespaces.cc
-    XmlNamespaces.h
-    XPath.cc
-    XPath.h
-    XQueryUtils.cc
-    XQueryUtils.h
-)
+read_sources_util(cmake_sources.txt sources)
 
 # Add the source files to the gplates static library (or pygplates extension module).
-target_sources_util(${SOURCE_TARGET} PRIVATE ${srcs})
+target_sources_util(${SOURCE_TARGET} PRIVATE ${sources})

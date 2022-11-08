@@ -4,9 +4,9 @@
 # These GLSL shader files are compiled to binary Vulkan SPIR-V shader files that are then listed in the "vulkan.qrc" file
 # and hence are included as resources in the GPlates static library (or pyGPlates extension module).
 #
-# The "read_sources()" function is in "Utils.cmake".
+# The "read_sources_util()" function is in "Utils.cmake".
 #
-read_sources(cmake_shader_sources.txt shaders)
+read_sources_util(cmake_shader_sources.txt shaders)
 
 # Find the "glslc" compiler.
 find_program(GLSLC "glslc")

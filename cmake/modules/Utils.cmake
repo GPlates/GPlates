@@ -40,7 +40,7 @@ function(target_sources_util target)
 endfunction()
 
 #
-# read_sources:
+# read_sources_util:
 #
 # Reads a list of source files from a file named 'source_list_filebase' (in current source directory).
 # Returns list of source files in the list variable 'sources'.
@@ -50,7 +50,7 @@ endfunction()
 #
 # Note: Lines in the list file 'source_list_filebase' starting with '#' are ignored.
 #
-function(read_sources source_list_filebase sources)
+function(read_sources_util source_list_filebase sources)
 	# Read the list file containing the source files (ignoring lines starting with '#').
 	#
 	# Note that CMake discourages use of the 'file(GLOB)' CMake command to automatically collect source files.
