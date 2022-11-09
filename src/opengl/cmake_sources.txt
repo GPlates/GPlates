@@ -122,3 +122,5 @@ Vulkan.h
 VulkanException.h
 VulkanHpp.cc
 VulkanHpp.h
+VulkanUtils.cc
+VulkanUtils.h
