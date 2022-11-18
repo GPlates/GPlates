@@ -44,38 +44,6 @@ if (GPLATES_INSTALL_STANDALONE)
     # Install GPlates or pyGPlates as a standalone bundle (by copying dependency libraries during installation).
     #
 
-    # Minimum CMake version required at *configure* time.
-    #
-    # This version of CMake is required to prevent errors at *configure* time.
-    #
-    # - Currently we're using Qt plugin targets which were added in CMake 3.12.
-    #   Note that we don't delay this error until install time because we need to access the target
-    #   to find its location (to set up the install command) and this needs to be done at configure time.
-    set (CMAKE_VERSION_REQUIRED_AT_CONFIGURE_TIME 3.12)
-
-    if (CMAKE_VERSION VERSION_LESS ${CMAKE_VERSION_REQUIRED_AT_CONFIGURE_TIME})
-        message(FATAL_ERROR "CMake version ${CMAKE_VERSION_REQUIRED_AT_CONFIGURE_TIME} or greater is needed when GPLATES_INSTALL_STANDALONE is ON")
-    endif()
-
-    # Minimum CMake version required at *install* time.
-    #
-    # This version of CMake is required to prevent errors at *install* time.
-    #
-    # - Currently we're using file(GET_RUNTIME_DEPENDENCIES) which was added in CMake 3.16.
-    # - And we use FOLLOW_SYMLINK_CHAIN in file(INSTALL) which requires CMake 3.15.
-    # - And we also use generator expressions in install(CODE) which requires CMake 3.14.
-    set (CMAKE_VERSION_REQUIRED_AT_INSTALL_TIME 3.16)
-
-    # Check the CMake minimum requirement at *install* time thus allowing users to build with a lower requirement
-    # (if they just plan to run the build locally and don't plan to install/deploy).
-    install(
-            CODE "
-                if (CMAKE_VERSION VERSION_LESS ${CMAKE_VERSION_REQUIRED_AT_INSTALL_TIME})
-                    message(FATAL_ERROR \"CMake version ${CMAKE_VERSION_REQUIRED_AT_INSTALL_TIME} or greater is required when *installing* ${BUILD_TARGET}\")
-                endif()
-            "
-    )
-
     # On Apple, warn if a code signing identity has not been specified.
     #
     # This can avoid wasted time trying to notarize a package (created via cpack) only to fail because it was not code signed.
@@ -271,6 +239,7 @@ if (GPLATES_INSTALL_STANDALONE)
     # executes at 'install' time into the install prefix location ${CMAKE_INSTALL_PREFIX} (evaluated at 'install' time).
     #
     # Note: The command "install(CODE)" requires CMake 3.14 since we're using generator expressions in the code.
+    #       And using FOLLOW_SYMLINK_CHAIN in file(INSTALL) requires CMake 3.15.
     #
     # Note: When using CODE with double quotes, as with install(CODE "<code>"), variable subsitution is *enabled*.
     #       So we use this when transferring variables.

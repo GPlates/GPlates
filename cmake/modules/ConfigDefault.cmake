@@ -184,8 +184,6 @@ option(GPLATES_PROFILE_CODE "Enable GPlates custom CPU profiling functionality."
 # Pre-compiled headers are turned off by default.
 #
 # Developers may want to turn this on using the cmake command-line or cmake GUI.
-#
-# Only CMake 3.16 and above support pre-compiled headers natively.
 if (COMMAND target_precompile_headers)
 	option(GPLATES_USE_PRECOMPILED_HEADERS "Use pre-compiled headers to speed up build times." false)
 endif()
