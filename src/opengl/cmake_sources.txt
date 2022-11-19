@@ -117,8 +117,8 @@ OpenGL.h
 OpenGLException.h
 OpenGLFunctions.cc
 OpenGLFunctions.h
-Vulkan.cc
-Vulkan.h
+VulkanDevice.cc
+VulkanDevice.h
 VulkanException.h
 VulkanHpp.cc
 VulkanHpp.h
