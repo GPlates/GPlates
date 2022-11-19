@@ -598,6 +598,8 @@ VisualLayersWidgetUi.ui
 VisualLayerWidget.cc
 VisualLayerWidget.h
 VisualLayerWidgetUi.ui
+VulkanWindow.cc
+VulkanWindow.h
 ZoomControlWidget.cc
 ZoomControlWidget.h
 ZoomControlWidgetUi.ui
