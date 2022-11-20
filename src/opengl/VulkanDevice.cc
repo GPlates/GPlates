@@ -18,6 +18,7 @@
  */
 
 #include <limits>
+#include <vector>
 #include <boost//optional.hpp>
 
 #include "VulkanDevice.h"
@@ -62,44 +63,76 @@ void
 GPlatesOpenGL::VulkanDevice::create_device(
 		boost::optional<const SurfaceInfo &> surface_info)
 {
-	// Select physical device.
+	//
+	// Select a physical device.
 	//
 	// Also initialise physical device properties/features and graphics/compute queue family.
 	// And if an optional vk::SurfaceKHR is provided then return the present queue family.
+	//
 	select_physical_device(surface_info);
 
+	//
+	// Device queues.
+	//
 	const float queue_priority = 0;
 	std::vector<vk::DeviceQueueCreateInfo> device_queue_infos;
 	// The graphics+compute queue info.
 	vk::DeviceQueueCreateInfo graphics_and_compute_device_queue_info;
-	graphics_and_compute_device_queue_info.setQueueFamilyIndex(d_graphics_and_compute_queue_family)
-			.setQueueCount(1).setQueuePriorities(queue_priority);
+	graphics_and_compute_device_queue_info
+			.setQueueFamilyIndex(d_graphics_and_compute_queue_family)
+			.setQueueCount(1)
+			.setQueuePriorities(queue_priority);
 	device_queue_infos.push_back(graphics_and_compute_device_queue_info);
 	// The present queue info.
 	if (surface_info)
 	{
-		// If the present queue family is not the graphics+compute queue family then create a new queue.
+		// If the present queue family is not the graphics+compute queue family
+		// then request creation of a new (present) queue.
 		if (surface_info->present_queue_family != d_graphics_and_compute_queue_family)
 		{
 			vk::DeviceQueueCreateInfo present_device_queue_info;
-			present_device_queue_info.setQueueFamilyIndex(surface_info->present_queue_family)
-					.setQueueCount(1).setQueuePriorities(queue_priority);
+			present_device_queue_info
+					.setQueueFamilyIndex(surface_info->present_queue_family)
+					.setQueueCount(1)
+					.setQueuePriorities(queue_priority);
 			device_queue_infos.push_back(present_device_queue_info);
 		}
 	}
 
-	// Device info.
-	vk::DeviceCreateInfo device_info;
-	device_info.setQueueCreateInfos(device_queue_infos).setPEnabledFeatures(&d_physical_device_features);
+	//
+	// Device extensions.
+	//
+	std::vector<const char *> device_extensions;
+	// If we have a surface then a swapchain will need to be created
+	// (note that we don't create the swapchain, our caller is responsible for that).
+	if (surface_info)
+	{
+		device_extensions.push_back("VK_KHR_swapchain");
+	}
 
+	//
 	// Create the logical device.
+	//
+	vk::DeviceCreateInfo device_info;
+	device_info
+			.setQueueCreateInfos(device_queue_infos)
+			.setPEnabledFeatures(&d_physical_device_features)
+			.setPEnabledExtensionNames(device_extensions);
 	d_device = d_physical_device.createDevice(device_info);
+
+	// Get the graphics+compute queue from the logical device.
+	//
+	// Note: We don't retrieve the present queue (which could be same as graphics+compute queue), even if
+	//       a vk::SurfaceKHR was provided, because that's the responsibility of whoever creates the swapchain.
+	d_graphics_and_compute_queue = d_device.getQueue(d_graphics_and_compute_queue_family, 0/*queueIndex*/);
 }
 
 
 void
 GPlatesOpenGL::VulkanDevice::destroy_device()
 {
+	d_device.waitIdle();
+	d_device.destroy();
 }
 
 
@@ -130,6 +163,15 @@ GPlatesOpenGL::VulkanDevice::select_physical_device(
 	for (unsigned int physical_device_index = 0; physical_device_index < physical_devices.size(); ++physical_device_index)
 	{
 		vk::PhysicalDevice physical_device = physical_devices[physical_device_index];
+
+		// Get the features of the current physical device.
+		const vk::PhysicalDeviceFeatures features = physical_device.getFeatures();
+
+		// Check that the current physical device supports the features we require.
+		if (!check_physical_device_features(physical_device, features))
+		{
+			continue;
+		}
 
 		// Get the queue family properties of current physical device.
 		const std::vector<vk::QueueFamilyProperties> queue_family_properties = physical_device.getQueueFamilyProperties();
@@ -198,6 +240,10 @@ GPlatesOpenGL::VulkanDevice::select_physical_device(
 	d_physical_device = physical_devices[selected_physical_device_info->physical_device_index];
 	d_physical_device_properties = d_physical_device.getProperties();
 	d_physical_device_features = d_physical_device.getFeatures();
+	// Disable robust buffer access in release builds (for improved performance).
+#if !defined(GPLATES_DEBUG)
+	d_physical_device_features.setRobustBufferAccess(false);
+#endif
 	d_graphics_and_compute_queue_family = selected_physical_device_info->graphics_and_compute_queue_family;
 
 	// If a vk::SurfaceKHR was provided then also return the present queue family to the caller.
@@ -209,10 +255,34 @@ GPlatesOpenGL::VulkanDevice::select_physical_device(
 
 
 bool
+GPlatesOpenGL::VulkanDevice::check_physical_device_features(
+		vk::PhysicalDevice physical_device,
+		const vk::PhysicalDeviceFeatures &features) const
+{
+	//
+	// For feature support on different platforms/systems see http://vulkan.gpuinfo.org/listfeaturescore10.php
+	//
+	// Note that wide lines is not typically supported on macOS.
+	//
+	return
+			// Rendering stars disables the near and far clip planes (and clamps depth values outside)...
+			features.depthClamp &&
+			// Order-independent transparency writes to memory (and uses atomics) in fragment shaders...
+			features.fragmentStoresAndAtomics &&
+			// Rendering stars uses points sizes greater than 1.0...
+			features.largePoints &&
+			// Many textures use anisotropic filtering...
+			features.samplerAnisotropy &&
+			// Clip distances are used in some shaders...
+			features.shaderClipDistance;
+}
+
+
+bool
 GPlatesOpenGL::VulkanDevice::get_physical_device_graphics_and_compute_queue_family(
 		vk::PhysicalDevice physical_device,
 		const std::vector<vk::QueueFamilyProperties> &queue_family_properties,
-		std::uint32_t &graphics_and_compute_queue_family)
+		std::uint32_t &graphics_and_compute_queue_family) const
 {
 	//
 	// See if the physical device has a queue family supporting both graphics and compute.
@@ -248,7 +318,7 @@ GPlatesOpenGL::VulkanDevice::get_physical_device_present_queue_family(
 		vk::SurfaceKHR surface,
 		std::uint32_t num_queue_families,
 		std::uint32_t graphics_and_compute_queue_family,
-		std::uint32_t &present_queue_family)
+		std::uint32_t &present_queue_family) const
 {
 	// First see if the graphics+compute queue family supports present.
 	if (physical_device.getSurfaceSupportKHR(graphics_and_compute_queue_family, surface))

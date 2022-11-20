@@ -118,7 +118,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Return the properties of the Vulkan physical device (that the logical device was created from).
 		 */
-		vk::PhysicalDeviceProperties
+		const vk::PhysicalDeviceProperties &
 		get_physical_device_properties()
 		{
 			return d_physical_device_properties;
@@ -127,7 +127,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Return the enabled features of the Vulkan physical device (that the logical device was created from).
 		 */
-		vk::PhysicalDeviceFeatures
+		const vk::PhysicalDeviceFeatures &
 		get_physical_device_features()
 		{
 			return d_physical_device_features;
@@ -140,6 +140,24 @@ namespace GPlatesOpenGL
 		get_device()
 		{
 			return d_device;
+		}
+
+		/**
+		 * Return the graphics+compute queue family.
+		 */
+		std::uint32_t
+		get_graphics_and_compute_queue_family() const
+		{
+			return d_graphics_and_compute_queue_family;
+		}
+
+		/**
+		 * Return the graphics+compute queue.
+		 */
+		vk::Queue
+		get_graphics_and_compute_queue()
+		{
+			return d_graphics_and_compute_queue;
 		}
 
 		/**
@@ -165,6 +183,7 @@ namespace GPlatesOpenGL
 
 		// Logical device.
 		vk::Device d_device;
+		vk::Queue d_graphics_and_compute_queue;
 
 
 		struct SurfaceInfo
@@ -203,7 +222,7 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Select physical device.
+		 * Select a physical device.
 		 *
 		 * Also initialise physical device properties/features and graphics/compute queue family.
 		 *
@@ -214,10 +233,15 @@ namespace GPlatesOpenGL
 				boost::optional<const SurfaceInfo &> surface_info);
 
 		bool
+		check_physical_device_features(
+				vk::PhysicalDevice physical_device,
+				const vk::PhysicalDeviceFeatures &features) const;
+
+		bool
 		get_physical_device_graphics_and_compute_queue_family(
 				vk::PhysicalDevice physical_device,
 				const std::vector<vk::QueueFamilyProperties> &queue_family_properties,
-				std::uint32_t &graphics_and_compute_queue_family);
+				std::uint32_t &graphics_and_compute_queue_family) const;
 
 		bool
 		get_physical_device_present_queue_family(
@@ -225,7 +249,7 @@ namespace GPlatesOpenGL
 				vk::SurfaceKHR surface,
 				std::uint32_t num_queue_families,
 				std::uint32_t graphics_and_compute_queue_family,
-				std::uint32_t &present_queue_family);
+				std::uint32_t &present_queue_family) const;
 
 
 		void
