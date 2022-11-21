@@ -54,8 +54,25 @@ GPlatesOpenGL::VulkanDevice::VulkanDevice(
 
 GPlatesOpenGL::VulkanDevice::~VulkanDevice()
 {
-	destroy_vma_allocator();
-	destroy_device();
+	if (d_device)
+	{
+		// First make sure all commands in all queues have finished before we start destroying things.
+		//
+		// Note: It's OK to wait here since destroying a device is not a performance-critical part of the code.
+		d_device.waitIdle();
+	}
+
+	if (d_vma_allocator)
+	{
+		// Destroy the VMA allocator.
+		vmaDestroyAllocator(d_vma_allocator);
+	}
+
+	if (d_device)
+	{
+		// Destroy the logical device.
+		d_device.destroy();
+	}
 }
 
 
@@ -125,14 +142,6 @@ GPlatesOpenGL::VulkanDevice::create_device(
 	// Note: We don't retrieve the present queue (which could be same as graphics+compute queue), even if
 	//       a vk::SurfaceKHR was provided, because that's the responsibility of whoever creates the swapchain.
 	d_graphics_and_compute_queue = d_device.getQueue(d_graphics_and_compute_queue_family, 0/*queueIndex*/);
-}
-
-
-void
-GPlatesOpenGL::VulkanDevice::destroy_device()
-{
-	d_device.waitIdle();
-	d_device.destroy();
 }
 
 
@@ -372,12 +381,4 @@ GPlatesOpenGL::VulkanDevice::initialise_vma_allocator()
 	allocator_create_info.device = d_device;
 	allocator_create_info.pVulkanFunctions = &vulkan_functions;
 	vmaCreateAllocator(&allocator_create_info, &d_vma_allocator);
-}
-
-
-void
-GPlatesOpenGL::VulkanDevice::destroy_vma_allocator()
-{
-	// Destroy the VMA allocator.
-	vmaDestroyAllocator(d_vma_allocator);
 }

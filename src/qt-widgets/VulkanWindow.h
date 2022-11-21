@@ -62,7 +62,8 @@ namespace GPlatesQtWidgets
 		virtual
 		void
 		render_to_window(
-				GPlatesOpenGL::VulkanDevice &vulkan_device) = 0;
+				GPlatesOpenGL::VulkanDevice &vulkan_device,
+				GPlatesOpenGL::VulkanSwapchain &vulkan_swapchain) = 0;
 
 
 		void
@@ -75,33 +76,36 @@ namespace GPlatesQtWidgets
 
 	private:
 
+		//! Called every time the window needs to be updated (rendered into).
 		void
-		create_vulkan_device();
-
-		void
-		destroy_vulkan_device();
-
+		update_window();
 
 		void
-		create_vulkan_swapchain();
+		create_vulkan_device_and_swapchain();
 
 		void
-		destroy_vulkan_swapchain();
+		destroy_vulkan_device_and_swapchain();
 
+		//! The current size of the window (in device pixels).
+		QSize
+		window_size() const
+		{
+			return size() * devicePixelRatio();
+		}
+
+
+		struct VulkanDeviceAndSwapChain
+		{
+			GPlatesOpenGL::VulkanDevice::non_null_ptr_type device;
+			GPlatesOpenGL::VulkanSwapchain::non_null_ptr_type swapchain;
+		};
 
 		/**
-		 * The Vulkan logical device.
+		 * The Vulkan logical device and swapchain.
 		 *
 		 * It is first created when this window is first exposed.
 		 */
-		boost::optional<GPlatesOpenGL::VulkanDevice::non_null_ptr_type> d_vulkan_device;
-
-		/**
-		 * The Vulkan swapchain.
-		 *
-		 * It is first created when this window is first exposed.
-		 */
-		boost::optional<GPlatesOpenGL::VulkanSwapchain::non_null_ptr_type> d_vulkan_swapchain;
+		boost::optional<VulkanDeviceAndSwapChain> d_vulkan_device_and_swapchain;
 	};
 }
 

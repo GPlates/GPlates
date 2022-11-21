@@ -217,9 +217,6 @@ namespace GPlatesOpenGL
 		create_device(
 				boost::optional<const SurfaceInfo &> surface_info);
 
-		void
-		destroy_device();
-
 
 		/**
 		 * Select a physical device.
@@ -254,9 +251,6 @@ namespace GPlatesOpenGL
 
 		void
 		initialise_vma_allocator();
-
-		void
-		destroy_vma_allocator();
 	};
 }
 

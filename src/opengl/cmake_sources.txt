@@ -122,5 +122,7 @@ VulkanDevice.h
 VulkanException.h
 VulkanHpp.cc
 VulkanHpp.h
+VulkanSwapchain.cc
+VulkanSwapchain.h
 VulkanUtils.cc
 VulkanUtils.h
