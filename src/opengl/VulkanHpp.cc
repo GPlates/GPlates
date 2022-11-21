@@ -53,7 +53,7 @@ GPlatesOpenGL::VulkanHpp::initialise(
 	//       passed in (instead going directly to the VkDevice used when 'vkGetDeviceProcAddr()' was called).
 	//       However this means only that particular 'VkDevice' can be used with those function pointers and
 	//       we'd rather not have to re-fetch those specialised function pointers with each VkDevice
-	//       (for example QVulkanWindow will destroy and create a new VkDevice on a lost device).
+	//       (for example VulkanWindow will destroy and create a new VkDevice on a lost device).
 	//       In any case, such a speed improvement is not really necessary for our application since
 	//       we're not making a lot of Vulkan calls (compared to a game for example).
 }

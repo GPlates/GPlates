@@ -81,6 +81,15 @@ GPlatesQtWidgets::VulkanWindow::event(
 void
 GPlatesQtWidgets::VulkanWindow::update_window()
 {
+	// Return early (without rendering to window) if the window area is zero (eg, minimized).
+	//
+	// The Vulkan spec also states that a swapchain cannot be created when the window size is (0, 0),
+	// until the size changes.
+	if (window_size().isEmpty())
+	{
+		return;
+	}
+
 	if (d_vulkan_device_and_swapchain)
 	{
 		// If the window size is different than the swapchain size then the window was resized and

@@ -68,7 +68,7 @@ namespace GPlatesOpenGL
 		QSize
 		get_swapchain_size() const
 		{
-			return d_swapchain_size;
+			return QSize(d_swapchain_size.width, d_swapchain_size.height);
 		}
 
 		/**
@@ -88,7 +88,7 @@ namespace GPlatesOpenGL
 		std::uint32_t d_present_queue_family;
 
 		vk::SwapchainKHR d_swapchain;
-		QSize d_swapchain_size;
+		vk::Extent2D d_swapchain_size;
 
 
 		VulkanSwapchain(
