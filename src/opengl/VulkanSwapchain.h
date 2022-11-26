@@ -21,7 +21,7 @@
 #define GPLATES_OPENGL_VULKANSWAPCHAIN_H
 
 #include <cstdint>
-#include <QSize>
+#include <vector>
 
 #include "VulkanHpp.h"
 
@@ -32,6 +32,9 @@ namespace GPlatesOpenGL
 {
 	class VulkanDevice;
 
+	/**
+	 * Vulkan swapchain and the presentation queue.
+	 */
 	class VulkanSwapchain :
 			public GPlatesUtils::ReferenceCount<VulkanSwapchain>
 	{
@@ -53,9 +56,9 @@ namespace GPlatesOpenGL
 				VulkanDevice &vulkan_device,
 				vk::SurfaceKHR surface,
 				std::uint32_t present_queue_family,
-				const QSize &window_size)
+				const vk::Extent2D &swapchain_size)
 		{
-			return non_null_ptr_type(new VulkanSwapchain(vulkan_device, surface, present_queue_family, window_size));
+			return non_null_ptr_type(new VulkanSwapchain(vulkan_device, surface, present_queue_family, swapchain_size));
 		}
 
 
@@ -63,13 +66,85 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Return the present queue family.
+		 *
+		 * This may or may not be the same as the graphics+compute queue family in @a VulkanDevice.
+		 */
+		std::uint32_t
+		get_present_queue_family() const
+		{
+			return d_present_queue_family;
+		}
+
+		/**
+		 * Return the present queue.
+		 *
+		 * This may or may not be the same as the graphics+compute queue in @a VulkanDevice.
+		 * It is the same only if the present and graphics+compute queue *family* are the same.
+		 */
+		vk::Queue
+		get_present_queue()
+		{
+			return d_present_queue;
+		}
+
+
+		/**
+		 * Returns the swapchain.
+		 */
+		vk::SwapchainKHR
+		get_swapchain() const
+		{
+			return d_swapchain;
+		}
+
+		/**
+		 * Returns the image format of the swapchain images.
+		 */
+		vk::Format
+		get_swapchain_image_format() const
+		{
+			return d_swapchain_image_format;
+		}
+
+		/**
 		 * Returns the current swapchain size (in device pixels).
 		 */
-		QSize
+		vk::Extent2D
 		get_swapchain_size() const
 		{
-			return QSize(d_swapchain_size.width, d_swapchain_size.height);
+			return d_swapchain_size;
 		}
+
+		/**
+		 * Returns the render pass to use when rendering to a swapchain image.
+		 */
+		vk::RenderPass
+		get_swapchain_render_pass() const
+		{
+			return d_render_pass;
+		}
+
+		/**
+		 * Returns the swapchain image at specified swapchain image index.
+		 */
+		vk::Image
+		get_swapchain_image(
+				std::uint32_t swapchain_image_index) const;
+
+		/**
+		 * Returns the swapchain image view at specified swapchain image index.
+		 */
+		vk::ImageView
+		get_swapchain_image_view(
+				std::uint32_t swapchain_image_index) const;
+
+		/**
+		 * Returns the swapchain framebuffer at specified swapchain image index.
+		 */
+		vk::Framebuffer
+		get_swapchain_framebuffer(
+				std::uint32_t swapchain_image_index) const;
 
 		/**
 		 * Re-create the vk::SwapchainKHR.
@@ -78,24 +153,46 @@ namespace GPlatesOpenGL
 		 */
 		void
 		recreate_swapchain(
-				const QSize &window_size);
+				const vk::Extent2D &swapchain_size);
 
 	private:
+
+		struct RenderTarget
+		{
+			vk::Image image;
+			vk::ImageView image_view;
+			vk::Framebuffer frame_buffer;
+		};
 
 		VulkanDevice &d_vulkan_device;
 
 		vk::SurfaceKHR d_surface;
 		std::uint32_t d_present_queue_family;
+		vk::Queue d_present_queue;
 
 		vk::SwapchainKHR d_swapchain;
+		vk::Format d_swapchain_image_format;
 		vk::Extent2D d_swapchain_size;
 
+		vk::RenderPass d_render_pass;
+		//! Each swapchain image has an associated framebuffer.
+		std::vector<RenderTarget> d_render_targets;
 
 		VulkanSwapchain(
 				VulkanDevice &vulkan_device,
 				vk::SurfaceKHR surface,
 				std::uint32_t present_queue_family,
-				const QSize &window_size);
+				const vk::Extent2D &swapchain_size);
+
+		void
+		create_swapchain(
+				const vk::Extent2D &swapchain_size)
+		{
+			recreate_swapchain(swapchain_size);
+		}
+
+		void
+		create_render_pass();
 	};
 }
 

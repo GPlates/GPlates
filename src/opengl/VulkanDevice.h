@@ -44,12 +44,9 @@
 namespace GPlatesOpenGL
 {
 	/**
-	 * Higher-level interface to some of the more complex/verbose areas of Vulkan.
+	 * Vulkan device and the features and properties of its associated physical device.
 	 *
-	 * This is designed to be used in combination with the Vulkan interface.
-	 *
-	 * Also provides access to higher-level Vulkan objects in one place
-	 * (such as the Vulkan instance, physical device and logical device).
+	 * Also contains the graphics+compute queue, and a VMA memory allocator (for buffers and images).
 	 */
 	class VulkanDevice :
 			public GPlatesUtils::ReferenceCount<VulkanDevice>
