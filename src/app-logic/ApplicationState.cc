@@ -450,6 +450,8 @@ GPlatesAppLogic::ApplicationState::find_current_topological_sections() const
 void
 GPlatesAppLogic::ApplicationState::initialise_vulkan()
 {
+	// Only enable Vulkan validation layers in debug builds.
+#ifdef GPLATES_DEBUG
 	// Prefer the VK_LAYER_KHRONOS_validation layer, with fallback to the
 	// deprecated VK_LAYER_LUNARG_standard_validation layer.
 	//
@@ -469,6 +471,7 @@ GPlatesAppLogic::ApplicationState::initialise_vulkan()
 	{
 		d_vulkan_instance.setLayers(QByteArrayList() << "VK_LAYER_LUNARG_standard_validation");
 	}
+#endif
 
 	// Initialise Vulkan.
 	if (!d_vulkan_instance.create())
@@ -477,7 +480,10 @@ GPlatesAppLogic::ApplicationState::initialise_vulkan()
 				GPLATES_EXCEPTION_SOURCE,
 				"Failed to create Vulkan instance.");
 	}
+
+#ifdef GPLATES_DEBUG
 	qDebug() << "Vulkan enabled validation layers:" << d_vulkan_instance.layers();
+#endif
 
 	//
 	// Initialise the Vulkan-Hpp C++ interface (around the Vulkan C interface).

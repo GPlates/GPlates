@@ -54,15 +54,15 @@
 
 #include "opengl/GLContext.h"
 #include "opengl/GLViewport.h"
-#include "opengl/Vulkan.h"
+#include "opengl/VulkanDevice.h"
 #include "opengl/VulkanException.h"
+#include "opengl/VulkanSwapchain.h"
 
 #include "presentation/ViewState.h"
 
 
 GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 		GPlatesPresentation::ViewState &view_state) :
-	QVulkanWindow(),
 	d_gl_context(GPlatesOpenGL::GLContext::create()),
 	d_vulkan_compute_queue_family_index(0),
 	d_scene(GPlatesGui::Scene::create(view_state, devicePixelRatio())),
@@ -73,27 +73,10 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 	d_mouse_position_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_is_on_globe(false)
 {
-	using namespace boost::placeholders;  // For _1, _2, etc
-
-	// Set the Vulkan instance in this QVulkanWindow.
+	// Set the Vulkan instance in this QWindow.
 	//
-	// We do this first so that we then subsequently access 'vulkanInstance()' on 'this' QVulkanWindow.
+	// We do this first so that we then subsequently access 'vulkanInstance()' on 'this' QWindow.
 	setVulkanInstance(&view_state.get_application_state().get_vulkan_instance());
-
-	// Set PersistentResources flag on our QVulkanWindow.
-	//
-	// This is needed for off-screen rendering (eg, 'render_to_image()').
-	// If disabled then we won't be able to use any Vulkan resources at all when the window is un-exposed.
-	// Because when the window is un-exposed it will call QVulkanWindowRenderer::releaseResources() which means,
-	// among other things, we can't even call QVulkanWindow::device() to get the VkDevice to do offscreen rendering.
-	setFlags(PersistentResources);
-
-	// Choose the index of the VkPhysicalDevice that has a queue family supporting graphics and compute.
-	set_vulkan_physical_device_index();
-
-	// Ensure that either this QVulkanWindow's 'graphics' queue (yet to be created) supports 'compute' or
-	// request creation of an extra queue from a 'compute' queue family (when the logical device is created).
-	setQueueCreateInfoModifier(boost::bind(&GlobeAndMapCanvas::vulkan_queue_create_info_modifier, this, _1, _2, _3));
 
 
 	// Update our canvas whenever the RenderedGeometryCollection gets updated.
@@ -151,7 +134,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_image(
 		const QSize &image_size_in_device_independent_pixels,
 		const GPlatesGui::Colour &image_clear_colour)
 {
-	// We need a Vulkan device (VkDevice) which means this QVulkanWindow must be exposed/shown.
+	// We need a Vulkan device (VkDevice) which means this VulkanWindow must be exposed/shown.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_vulkan,
 			GPLATES_ASSERTION_SOURCE);
@@ -197,17 +180,11 @@ GPlatesQtWidgets::GlobeAndMapCanvas::update_canvas()
 }
 
 
-void 
-GPlatesQtWidgets::GlobeAndMapCanvas::initialise_vulkan_resources()
+void
+GPlatesQtWidgets::GlobeAndMapCanvas::initialise_vulkan_resources(
+		GPlatesOpenGL::VulkanDevice &vulkan_device)
 {
-	// A new VkDevice just got created, so create a new Vulkan object used to render.
-	d_vulkan = GPlatesOpenGL::Vulkan::create(
-			GPlatesOpenGL::VulkanHpp::get_vkGetInstanceProcAddr(),
-			vulkanInstance()->vkInstance(),
-			physicalDevice(),
-			device());
-
-	d_gl_context->initialise_gl(*d_vulkan.get());
+	d_gl_context->initialise_gl(vulkan_device);
 
 	// Start a render scope (all GL calls should be done inside this scope).
 	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->access_opengl();
@@ -222,8 +199,9 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initialise_vulkan_resources()
 }
 
 
-void 
-GPlatesQtWidgets::GlobeAndMapCanvas::release_vulkan_resources() 
+void
+GPlatesQtWidgets::GlobeAndMapCanvas::release_vulkan_resources(
+		GPlatesOpenGL::VulkanDevice &vulkan_device) 
 {
 	// Start a render scope (all GL calls should be done inside this scope).
 	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->access_opengl();
@@ -237,72 +215,168 @@ GPlatesQtWidgets::GlobeAndMapCanvas::release_vulkan_resources()
 #endif
 
 	d_gl_context->shutdown_gl();
-
-	// Our VkDevice is about to be destroyed, so destroy our Vulkan object used to render.
-	d_vulkan = boost::none;
 }
 
 
 void
-GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window()
+GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
+		GPlatesOpenGL::VulkanDevice &vulkan_device,
+		GPlatesOpenGL::VulkanSwapchain &vulkan_swapchain)
 {
-#if 0
+	// Size of the current window/swapchain in device pixels.
+	const vk::Extent2D swapchain_size = vulkan_swapchain.get_swapchain_size();
+	// The viewport is in device pixels since that is what Vulkan will use to render the scene.
+	const GPlatesOpenGL::GLViewport viewport(0, 0, swapchain_size.width, swapchain_size.height);
 
-	// We need a Vulkan device (VkDevice) which means this QVulkanWindow must be exposed/shown.
 	//
-	// Note: This should never fail since we're called by our QVulkanWindowRenderer which only calls
-	//       us after first calling 'initialise_gl()' when it creates the Vulkan device.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_vulkan,
-			GPLATES_ASSERTION_SOURCE);
+	// Acquire the next available swapchain image.
+	//
 
-	// Start a render scope (all GL calls should be done inside this scope).
-	GPlatesOpenGL::GL::non_null_ptr_type gl = d_gl_context->access_opengl();
+	vk::Semaphore swapchain_image_available_semaphore;
+	vk::Fence frame_fence;
 
-	// The viewport is in device pixels since that is what OpenGL will use to render the scene.
-	const GPlatesOpenGL::GLViewport viewport(0, 0,
-			width() * devicePixelRatio(),
-			height() * devicePixelRatio());
+	vulkan_device.get_device().waitForFences(frame_fence, true, UINT64_MAX);
+	vulkan_device.get_device().resetFences(frame_fence);
 
-	// Clear colour buffer of the main framebuffer.
+	std::uint32_t swapchain_image_index;
+	const vk::Result acquire_next_image_result = vulkan_device.get_device().acquireNextImageKHR(
+			vulkan_swapchain.get_swapchain(),
+			UINT64_MAX,
+			swapchain_image_available_semaphore,
+			nullptr,  // fence
+			&swapchain_image_index);
+	if (acquire_next_image_result != vk::Result::eSuccess)
+	{
+		if (acquire_next_image_result == vk::Result::eErrorOutOfDateKHR ||
+			acquire_next_image_result == vk::Result::eSuboptimalKHR)
+		{
+			// Either surface is no longer compatible with the swapchain (vk::Result::eErrorOutOfDateKHR) or
+			// swapchain no longer matches but we can still present to the surface (vk::Result::eSuboptimalKHR).
+			//
+			// In either case we'll recreate the swapchain and render again.
+			vulkan_swapchain.recreate_swapchain(swapchain_size);
+			update_canvas();
+			return;
+		}
+
+		throw GPlatesOpenGL::VulkanException(
+				GPLATES_EXCEPTION_SOURCE,
+				"Failed to acquire next Vulkan swapchain image.");
+	}
+
+	//
+	// Swapchain render pass (for rendering to swapchain image).
+	//
+
+	vk::CommandBuffer swapchain_command_buffer;
+
+	const vk::RenderPass swapchain_render_pass = vulkan_swapchain.get_swapchain_render_pass();
+	const vk::Framebuffer swapchain_framebuffer = vulkan_swapchain.get_swapchain_framebuffer(swapchain_image_index);
+
+	// Clear colour of the swapchain framebuffer.
 	//
 	// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
-	// the scene, that are not rendered, to have *opaque* alpha (=1). This appears to be needed on
-	// Mac with Qt5 (alpha=0 is fine on Qt5 Windows/Ubuntu, and on Qt4 for all platforms). Perhaps because
-	// QGLWidget rendering (on Qt5 Mac) is first done to a framebuffer object which is then blended into the
-	// window framebuffer (where having a source alpha of zero would result in the black background not showing).
-	// Or, more likely, maybe a framebuffer object is used on all platforms but the window framebuffer is white on Mac
-	// but already black on Windows/Ubuntu. That was using a QOpenGLWidget and we turned off background rendering with
-	// "setAutoFillBackground(false)" and "setAttribute(Qt::WA_NoSystemBackground)"). Now we use QOpenGLWindow
-	// which does not support those features, so it may no longer be an issue.
-	const GPlatesGui::Colour clear_colour(0, 0, 0, 1);
+	// the scene, that are not rendered, to have *opaque* alpha (=1). This ensures that if there
+	// is any further alpha composition of the framebuffer (see VkCompositeAlphaFlagBitsKHR) then
+	// it will have no effect. For example, we won't get our black background converted to white
+	// if the window background colour happens to be white.
+	const vk::ClearColorValue swapchain_clear_colour = std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f };
+	// Clear depth/stencil of the swapchain framebuffer.
+	const vk::ClearDepthStencilValue swapchain_clear_depth_stencil = { 1.0f, 0 };
+
+	// Begin swapchain render pass to the current swapchain framebuffer.
+	const vk::Rect2D swapchain_render_area = { {0, 0}, swapchain_size };
+	const vk::ClearValue swapchain_clear_values[2] = { swapchain_clear_colour, swapchain_clear_depth_stencil };
+	vk::RenderPassBeginInfo swapchain_render_pass_begin_info;
+	swapchain_render_pass_begin_info
+			.setRenderPass(swapchain_render_pass)
+			.setFramebuffer(swapchain_framebuffer)
+			.setRenderArea(swapchain_render_area)
+			.setClearValues(swapchain_clear_values);
+	swapchain_command_buffer.beginRenderPass(swapchain_render_pass_begin_info, vk::SubpassContents::eInline);
+
+	// Render the scene.
+	//
+	// This records Vulkan commands into the swapchain command buffer, and also into other command buffers
+	// (eg, that render into textures that are in turn used to render into the swapchain framebuffer).
+	d_scene_renderer->render(vulkan_device, *d_scene, *d_scene_overlays, *d_scene_view, viewport, devicePixelRatio());
+
+	// End swapchain render pass.
+	swapchain_command_buffer.endRenderPass();
 
 
-	// Render the scene into the canvas.
-	d_scene_renderer->render(*gl, *d_scene, *d_scene_overlays, *d_scene_view, viewport, clear_colour, devicePixelRatio());
+	//
+	// Submit our graphics+compute command buffers.
+	//
 
-#else
+	// Two submission batches.
+	vk::SubmitInfo graphics_and_compute_submit_infos[2];
 
-	const vk::ClearColorValue clearColor = std::array<float, 4>{ 1.0f, 0.0f, 0.0f, 1.0f };
-	const vk::ClearDepthStencilValue clearDS = { 1.0f, 0 };
-	const vk::ClearValue clearValues[3] = { clearColor, clearDS, clearColor };
-	const uint32_t clearValueCount = sampleCountFlagBits() > VK_SAMPLE_COUNT_1_BIT ? 3 : 2;
-	const vk::Rect2D renderArea = {
-			{0, 0},
-			{static_cast<uint32_t>(swapChainImageSize().width()), static_cast<uint32_t>(swapChainImageSize().height())} };
+	// Swapchain command buffer submission batch happens next.
+	//
+	// This is the only batch that writes to the swapchain image.
+	// And so it must not write until the swapchain image is ready to render into.
+	vk::SubmitInfo &swapchain_command_buffer_submit_info = graphics_and_compute_submit_infos[1];
+	// This should be the same as the srcStageMask in the render pass subpass dependency in order to form a dependency *chain*.
+	const vk::PipelineStageFlags swapchain_command_buffer_wait_dst_stage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
+	swapchain_command_buffer_submit_info
+			.setWaitSemaphoreCount(1)
+			// Wait until the acquired swapchain image is ready to be rendered into...
+			.setPWaitSemaphores(&swapchain_image_available_semaphore)
+			// ...and wait at the colour attachment output stage (which writes to the swapchain image)...
+			.setPWaitDstStageMask(&swapchain_command_buffer_wait_dst_stage)
+			.setCommandBuffers(swapchain_command_buffer);
 
-	const vk::RenderPassBeginInfo rpBeginInfo =
-	{
-		defaultRenderPass(),
-		currentFramebuffer(),
-		renderArea,
-		clearValueCount,
-		clearValues
-	};
-	vk::CommandBuffer(currentCommandBuffer()).beginRenderPass(rpBeginInfo, vk::SubpassContents::eInline);
-	vk::CommandBuffer(currentCommandBuffer()).endRenderPass();
+	// Submit the two submission batches to the graphics+compute queue.
+	//
+	// And signal the current frame fence when completed
+	// (so the command buffers, etc, can be recorded again in a later frame).
+	vulkan_device.get_graphics_and_compute_queue().submit(graphics_and_compute_submit_infos, frame_fence);
 
+
+	//
+	// Queue the current swapchain image for presentation.
+	//
+
+#if QT_VERSION >= QT_VERSION_CHECK(5,15,0)
+	// Called *before* queuing a present operation.
+	vulkanInstance()->presentAboutToBeQueued(this);
 #endif
+
+	// Submit the present operation to the present queue.
+	vk::SwapchainKHR swapchain = vulkan_swapchain.get_swapchain();
+	vk::PresentInfoKHR present_info;
+	present_info
+			.setPImageIndices(&swapchain_image_index)
+			.setSwapchains(swapchain);
+	const vk::Result present_result = vulkan_swapchain.get_present_queue().presentKHR(&present_info);
+	if (present_result != vk::Result::eSuccess &&
+		// Swapchain no longer matches but we can still present to the surface, so might as well
+		// since we've already generated and submitted commands for the current frame...
+		present_result != vk::Result::eSuboptimalKHR)
+	{
+		if (present_result == vk::Result::eErrorOutOfDateKHR)
+		{
+			// Surface is no longer compatible with the swapchain and we cannot present.
+			// So recreate the swapchain and render again.
+			vulkan_swapchain.recreate_swapchain(swapchain_size);
+			update_canvas();
+			return;
+		}
+
+		throw GPlatesOpenGL::VulkanException(
+				GPLATES_EXCEPTION_SOURCE,
+				"Failed to present Vulkan swapchain image.");
+	}
+
+	// Called *after* queuing a present operation.
+	vulkanInstance()->presentQueued(this);
+
+
+	//
+	// Emit 'repainted' signal.
+	//
+	emit_repainted();
 }
 
 
@@ -569,7 +643,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::keyPressEvent(
 			break;
 
 		default:
-			QVulkanWindow::keyPressEvent(key_event);
+			VulkanWindow::keyPressEvent(key_event);
 	}
 }
 
@@ -665,132 +739,4 @@ GPlatesQtWidgets::GlobeAndMapCanvas::update_mouse_position(
 
 		Q_EMIT mouse_position_on_globe_changed(d_mouse_position_on_globe, d_mouse_is_on_globe);
 	}
-}
-
-
-void
-GPlatesQtWidgets::GlobeAndMapCanvas::set_vulkan_physical_device_index()
-{
-	// Get the Vulkan instance.
-	//
-	// Note: We don't access 'd_vulkan' since it has not yet been initialised.
-	vk::Instance vulkan_instance = vulkanInstance()->vkInstance();
-
-	// Get the physical devices.
-	const std::vector<vk::PhysicalDevice> physical_devices = vulkan_instance.enumeratePhysicalDevices();
-
-	// Find candidate physical devices with a queue family supporting both graphics and compute.
-	//
-	// According to the Vulkan spec...
-	//   "If an implementation exposes any queue family that supports graphics operations, at least one queue family of
-	//    at least one physical device exposed by the implementation must support both graphics and compute operations."
-	//
-	std::vector<uint32_t> candidate_physical_device_indices;
-	for (uint32_t physical_device_index = 0; physical_device_index < physical_devices.size(); ++physical_device_index)
-	{
-		// Get the queue family properties.
-		const std::vector<vk::QueueFamilyProperties> queue_family_properties_seq =
-				physical_devices[physical_device_index].getQueueFamilyProperties();
-
-		// See if any queue family supports both graphics and compute.
-		for (const auto &queue_family_properties : queue_family_properties_seq)
-		{
-			if ((queue_family_properties.queueFlags & vk::QueueFlagBits::eGraphics) &&
-				(queue_family_properties.queueFlags & vk::QueueFlagBits::eCompute))
-			{
-				candidate_physical_device_indices.push_back(physical_device_index);
-				break;
-			}
-		}
-	}
-
-	// Vulkan implementation should have a physical device with a queue family supporting graphics and compute.
-	GPlatesGlobal::Assert<GPlatesOpenGL::VulkanException>(
-			!candidate_physical_device_indices.empty(),
-			GPLATES_ASSERTION_SOURCE,
-			"Failed to find a physical device with a queue family supporting both graphics and compute.");
-
-	// Choose a 'discrete' GPU if found.
-	boost::optional<uint32_t> selected_physical_device_index;
-	for (uint32_t physical_device_index : candidate_physical_device_indices)
-	{
-		const vk::PhysicalDeviceProperties physical_device_properties =
-				physical_devices[physical_device_index].getProperties();
-
-		if (physical_device_properties.deviceType == vk::PhysicalDeviceType::eDiscreteGpu)
-		{
-			selected_physical_device_index = physical_device_index;
-			break;
-		}
-	}
-
-	// Discrete GPU not found, so just choose the first candidate physical device.
-	if (!selected_physical_device_index)
-	{
-		selected_physical_device_index = candidate_physical_device_indices.front();
-	}
-
-	// Set the desired physical device index in 'this' QVulkanWindow.
-	setPhysicalDeviceIndex(selected_physical_device_index.get());
-}
-
-
-void
-GPlatesQtWidgets::GlobeAndMapCanvas::vulkan_queue_create_info_modifier(
-		const VkQueueFamilyProperties *queue_family_properties_seq,
-		uint32_t queue_count,
-		vulkan_queue_create_info_seq_type &queue_create_infos)
-{
-	// First search the existing queue creation infos to see if one of the queues being created by
-	// 'this' QVulkanWindow supports 'compute' (it's likely the 'graphics' queue also supports 'compute').
-	for (const VkDeviceQueueCreateInfo &queue_create_info : queue_create_infos)
-	{
-		if ((queue_family_properties_seq[queue_create_info.queueFamilyIndex].queueFlags & VK_QUEUE_COMPUTE_BIT))
-		{
-			// The current queue (to be created) supports 'compute'.
-			// So we don't need to create an extra 'compute' queue.
-			//
-			// Specify which queue family to obtain (yet to be created) 'compute' queue from.
-			d_vulkan_compute_queue_family_index = queue_create_info.queueFamilyIndex;
-			return;
-		}
-	}
-
-	// Next search the queue families for a family that supports 'compute'.
-	boost::optional<uint32_t> compute_queue_family_index;
-	for (uint32_t queue_family_index = 0; queue_family_index < queue_count; ++queue_family_index)
-	{
-		const VkQueueFamilyProperties &queue_family_properties = queue_family_properties_seq[queue_family_index];
-
-		if ((queue_family_properties.queueFlags & VK_QUEUE_COMPUTE_BIT))
-		{
-			// The current queue family supports 'compute'.
-			compute_queue_family_index = queue_family_index;
-			break;
-		}
-	}
-
-	// We previously selected the physical device with a queue family supporting graphics and compute.
-	// So we should be able to find a queue family supporting compute.
-	GPlatesGlobal::Assert<GPlatesOpenGL::VulkanException>(
-			compute_queue_family_index,
-			GPLATES_ASSERTION_SOURCE,
-			"Failed to find a queue family supporting compute.");
-
-	// Specify the compute queue create info.
-	const vk::DeviceQueueCreateInfo compute_queue_create_info =
-	{
-		{}, // flags
-		compute_queue_family_index.get(), // queueFamilyIndex
-		1, // queueCount
-		{ 0 } // pQueuePriorities
-	};
-
-	// Add the compute queue create info to the caller's list.
-	// The compute queue will get created when the logical device (VkDevice) is created.
-	queue_create_infos.append(
-			static_cast<const VkDeviceQueueCreateInfo &>(compute_queue_create_info));
-
-	// Specify which queue family to obtain (yet to be created) 'compute' queue from.
-	d_vulkan_compute_queue_family_index = compute_queue_family_index.get();
 }

@@ -24,6 +24,7 @@
 #include <QWindow>
 
 #include "opengl/VulkanDevice.h"
+#include "opengl/VulkanHpp.h"
 #include "opengl/VulkanSwapchain.h"
 
 
@@ -66,6 +67,20 @@ namespace GPlatesQtWidgets
 				GPlatesOpenGL::VulkanSwapchain &vulkan_swapchain) = 0;
 
 
+		/**
+		 * The current size of the window in device pixels.
+		 */
+		vk::Extent2D
+		get_swapchain_size() const
+		{
+			const QSize size_in_device_pixels = size() * devicePixelRatio();
+			return vk::Extent2D(
+					static_cast<std::uint32_t>(size_in_device_pixels.width()),
+					static_cast<std::uint32_t>(size_in_device_pixels.height()));
+		}
+
+	protected:
+
 		void
 		exposeEvent(
 				QExposeEvent *expose_event) override;
@@ -85,13 +100,6 @@ namespace GPlatesQtWidgets
 
 		void
 		destroy_vulkan_device_and_swapchain();
-
-		//! The current size of the window (in device pixels).
-		QSize
-		window_size() const
-		{
-			return size() * devicePixelRatio();
-		}
 
 
 		struct VulkanDeviceAndSwapChain

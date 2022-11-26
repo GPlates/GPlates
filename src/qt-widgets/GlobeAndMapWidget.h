@@ -124,8 +124,8 @@ namespace GPlatesQtWidgets
 		/**
 		 * Returns the dimensions of the viewport in device *independent* pixels (ie, widget size).
 		 *
-		 * Device-independent pixels (widget size) differ from device pixels (OpenGL size).
-		 * Widget dimensions are device independent whereas OpenGL uses device pixels
+		 * Device-independent pixels (widget size) differ from device pixels (Vulkan size).
+		 * Widget dimensions are device independent whereas Vulkan uses device pixels
 		 * (differing by the device pixel ratio).
 		 */
 		QSize
@@ -166,7 +166,7 @@ namespace GPlatesQtWidgets
 		 * Update the globe and map canvas.
 		 *
 		 * NOTE: This is better than calling QWidget::update() on this GlobeAndMapWidget.
-		 *       Presumably because our child GlobeAndMapCanvas is a native OpenGL/Vulkan window
+		 *       Presumably because our child GlobeAndMapCanvas is a native Vulkan window
 		 *       wrapped in a call to QWidget::createWindowContainer() and somehow a QWidget::update()
 		 *       does not get passed through.
 		 */

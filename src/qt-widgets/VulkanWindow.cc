@@ -26,7 +26,7 @@
 #include "global/GPlatesAssert.h"
 
 #include "opengl/VulkanDevice.h"
-#include "opengl/VulkanHpp.h"
+#include "opengl/VulkanException.h"
 
 
 GPlatesQtWidgets::VulkanWindow::VulkanWindow(
@@ -85,7 +85,7 @@ GPlatesQtWidgets::VulkanWindow::update_window()
 	//
 	// The Vulkan spec also states that a swapchain cannot be created when the window size is (0, 0),
 	// until the size changes.
-	if (window_size().isEmpty())
+	if (size().isEmpty())
 	{
 		return;
 	}
@@ -94,9 +94,9 @@ GPlatesQtWidgets::VulkanWindow::update_window()
 	{
 		// If the window size is different than the swapchain size then the window was resized and
 		// the swapchain needs to be recreated.
-		if (window_size() != d_vulkan_device_and_swapchain->swapchain->get_swapchain_size())
+		if (get_swapchain_size() != d_vulkan_device_and_swapchain->swapchain->get_swapchain_size())
 		{
-			d_vulkan_device_and_swapchain->swapchain->recreate_swapchain(window_size());
+			d_vulkan_device_and_swapchain->swapchain->recreate_swapchain(get_swapchain_size());
 		}
 	}
 	else
@@ -105,6 +105,7 @@ GPlatesQtWidgets::VulkanWindow::update_window()
 		create_vulkan_device_and_swapchain();
 	}
 
+	// Ask subclass to render into this window.
 	render_to_window(
 			*d_vulkan_device_and_swapchain->device,
 			*d_vulkan_device_and_swapchain->swapchain);
@@ -124,6 +125,10 @@ GPlatesQtWidgets::VulkanWindow::create_vulkan_device_and_swapchain()
 	vk::Instance instance = qvulkan_instance->vkInstance();
 	// Create (or get if already created) the Vulkan surface for this window.
 	vk::SurfaceKHR surface = qvulkan_instance->surfaceForWindow(this);
+	GPlatesGlobal::Assert<GPlatesOpenGL::VulkanException>(
+			surface,
+			GPLATES_ASSERTION_SOURCE,
+			"Failed to retrieve Vulkan surface handle from window.");
 
 	// Create the Vulkan device.
 	std::uint32_t present_queue_family;
@@ -132,7 +137,7 @@ GPlatesQtWidgets::VulkanWindow::create_vulkan_device_and_swapchain()
 
 	// Create the Vulkan swapchain.
 	GPlatesOpenGL::VulkanSwapchain::non_null_ptr_type vulkan_swapchain =
-			GPlatesOpenGL::VulkanSwapchain::create(*vulkan_device, surface, present_queue_family, window_size());
+			GPlatesOpenGL::VulkanSwapchain::create(*vulkan_device, surface, present_queue_family, get_swapchain_size());
 
 	// Keep a record of the Vulkan device and swapchain.
 	d_vulkan_device_and_swapchain = VulkanDeviceAndSwapChain{ vulkan_device, vulkan_swapchain };

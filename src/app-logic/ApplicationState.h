@@ -285,7 +285,7 @@ namespace GPlatesAppLogic
 		/**
 		 * The Vulkan instance.
 		 *
-		 * Note: The Vulkan device (used for rendering) is obtained from a QVulkanWindow (see GlobeAndMapCanvas).
+		 * Note: The Vulkan device (used for rendering) is obtained from a VulkanWindow (see GlobeAndMapCanvas).
 		 */
 		QVulkanInstance &
 		get_vulkan_instance()
@@ -632,7 +632,7 @@ namespace GPlatesAppLogic
 		/**
 		 * The Vulkan instance.
 		 *
-		 * Note: The Vulkan device (used for rendering) is obtained from a QVulkanWindow (see GlobeAndMapCanvas).
+		 * Note: The Vulkan device (used for rendering) is obtained from a VulkanWindow (see GlobeAndMapCanvas).
 		 */
 		QVulkanInstance d_vulkan_instance;
 

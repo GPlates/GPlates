@@ -50,7 +50,9 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 	, d_viewport_zoom(view_state.get_viewport_zoom())
 #endif
 {
-	// The globe-and-map canvas is a QWindow (QOpenGLWindow) so wrap it in a QWidget container.
+	// The globe-and-map canvas is a QWindow so wrap it in a QWidget container.
+	// The container manages the globe-and-map canvas (ie, is its parent).
+	// And the parent of the container is 'this' globe-and-map widget.
 	QWidget *globe_and_map_canvas_container =
 			QWidget::createWindowContainer(d_globe_and_map_canvas_ptr.get(), this);
 
@@ -83,7 +85,7 @@ GPlatesQtWidgets::GlobeAndMapWidget::GlobeAndMapWidget(
 #ifdef GPLATES_PINCH_ZOOM_ENABLED
 	// Gestures are handled in this class (GlobeAndMapWidget) because this class inherits from
 	// QWidget (which has the QWidget::grabGesture() method) whereas GlobeAndMapCanvas inherits from
-	// QWindow via QOpenGLWindow (which does not have this method).
+	// QWindow (which does not have this method).
 	grabGesture(Qt::PinchGesture);
 #endif
 }

@@ -38,7 +38,7 @@
 #include <QSize>
 #include <QtGlobal>
 
-#include <QVulkanWindow>
+#include "VulkanWindow.h"
 
 #include "global/PointerTraits.h"
 
@@ -60,11 +60,6 @@ namespace GPlatesGui
 	class Camera;
 }
 
-namespace GPlatesOpenGL
-{
-	class Vulkan;
-}
-
 namespace GPlatesPresentation
 {
 	class ViewState;
@@ -76,12 +71,16 @@ namespace GPlatesQtWidgets
 	 * Paint the globe and map views.
 	 */
 	class GlobeAndMapCanvas :
-			public QVulkanWindow
+			public VulkanWindow
 	{
 		Q_OBJECT
 
 	public:
 
+		/**
+		 * Note: The parent window is not set here, instead it's set in @a GlobeAndMapWidget using a window container
+		 *       (via 'QWidget::createWindowContainer').
+		 */
 		explicit
 		GlobeAndMapCanvas(
 				GPlatesPresentation::ViewState &view_state);
@@ -92,8 +91,8 @@ namespace GPlatesQtWidgets
 		/**
 		 * Returns the dimensions of the viewport in device *independent* pixels (ie, widget size).
 		 *
-		 * Device-independent pixels (widget size) differ from device pixels (OpenGL size).
-		 * Widget dimensions are device independent whereas OpenGL uses device pixels
+		 * Device-independent pixels (widget size) differ from device pixels (Vulkan size).
+		 * Widget dimensions are device independent whereas Vulkan uses device pixels
 		 * (differing by the device pixel ratio).
 		 */
 		QSize
@@ -353,59 +352,27 @@ namespace GPlatesQtWidgets
 	protected:
 
 		/**
-		 * Callbacks when VkDevice is created and destroyed, and when need to render to canvas.
+		 * Notified, by base class @a VulkanWindow, that Vulkan device was just created.
 		 */
-		class VulkanWindowRenderer :
-				public QVulkanWindowRenderer
-		{
-		public:
-			explicit
-			VulkanWindowRenderer(
-					GlobeAndMapCanvas *canvas) :
-				d_canvas(canvas)
-			{  }
-
-			void
-			initResources() override
-			{
-				d_canvas->initialise_vulkan_resources();
-			}
-
-			void
-			releaseResources() override
-			{
-				d_canvas->release_vulkan_resources();
-			}
-
-			void
-			startNextFrame() override
-			{
-				// Render the scene.
-				d_canvas->render_to_window();
-
-				// We've finished rendering, so present the rendered frame.
-				d_canvas->frameReady();
-
-				// Emit 'repainted' signal.
-				d_canvas->emit_repainted();
-			}
-
-		private:
-			GlobeAndMapCanvas *d_canvas;
-		};
+		void
+		initialise_vulkan_resources(
+				GPlatesOpenGL::VulkanDevice &vulkan_device) override;
 
 		/**
-		 * This is a virtual override of the function in QVulkanWindow.
+		 * Notified, by base class @a VulkanWindow, that Vulkan device is about to be destroyed.
 		 */
-		QVulkanWindowRenderer *
-		createRenderer() override
-		{
-			// This QVulkanWindow takes ownership of returned pointer.
-			return new VulkanWindowRenderer(this);
-		}
-
 		void
-		render_to_window();
+		release_vulkan_resources(
+				GPlatesOpenGL::VulkanDevice &vulkan_device) override;
+
+		/**
+		 * Called by base class @a VulkanWindow whenever a frame should be rendered into the window.
+		 */
+		void
+		render_to_window(
+				GPlatesOpenGL::VulkanDevice &vulkan_device,
+				GPlatesOpenGL::VulkanSwapchain &vulkan_swapchain) override;
+
 
 		//! Emit 'repainted' signal when finished rendering a frame to the canvas.
 		void
@@ -436,12 +403,6 @@ namespace GPlatesQtWidgets
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
-
-		void 
-		initialise_vulkan_resources();
-
-		void 
-		release_vulkan_resources() ;
 
 	private:
 
@@ -477,14 +438,7 @@ namespace GPlatesQtWidgets
 		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
 
 		/**
-		 * Reference to the Vulkan graphics and compute library.
-		 *
-		 * Note: We set the Vulkan device in it via our QVulkanWindow.
-		 */
-		boost::optional<GPlatesGlobal::PointerTraits<GPlatesOpenGL::Vulkan>::non_null_ptr_type> d_vulkan;
-
-		/**
-		 * Vulkan queue family index of 'compute' queue created in the VkDevice of this QVulkanWindow.
+		 * Vulkan queue family index of 'compute' queue created in the VkDevice of this VulkanWindow.
 		 */
 		uint32_t d_vulkan_compute_queue_family_index;
 
@@ -568,37 +522,6 @@ namespace GPlatesQtWidgets
 		void
 		update_mouse_position(
 				QMouseEvent *mouse_event);
-
-
-		/**
-		 * Choose the index of a VkPhysicalDevice that has a queue family supporting both 'graphics' and 'compute'.
-		 */
-		void
-		set_vulkan_physical_device_index();
-
-		// QVulkanWindow::setQueueCreateInfoModifier() changed signature in Qt6 (using QList instead of QVector).
-#if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
-		typedef QList<VkDeviceQueueCreateInfo> vulkan_queue_create_info_seq_type;
-#else
-		typedef QVector<VkDeviceQueueCreateInfo> vulkan_queue_create_info_seq_type;
-#endif
-		/**
-		 * Ensure that either this QVulkanWindow's 'graphics' queue (yet to be created) supports 'compute' or
-		 * request creation of an extra queue from a 'compute' queue family (when the logical device is created).
-		 *
-		 * By default, QVulkanWindow will only create a 'graphics' queue. Note that it's possible (likely)
-		 * that the queue family that the 'graphics' queue belongs to also supports 'compute', in which case
-		 * only one queue is created (aside from possibly a 'present' queue if that's in yet another family).
-		 *
-		 * This function is installed with QVulkanWindow::setQueueCreateInfoModifier().
-		 * Note that when this function is called we will already have selected a physical device (VkPhysicalDevice)
-		 * that has a queue family supporting both 'graphics' and 'compute' (see 'set_vulkan_physical_device_index()').
-		 */
-		void
-		vulkan_queue_create_info_modifier(
-				const VkQueueFamilyProperties *queue_family_properties_seq,
-				uint32_t queue_count,
-				vulkan_queue_create_info_seq_type &queue_create_infos);
 	};
 }
 
