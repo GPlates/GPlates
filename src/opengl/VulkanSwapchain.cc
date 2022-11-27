@@ -38,23 +38,25 @@ GPlatesOpenGL::VulkanSwapchain::VulkanSwapchain(
 	// Note: This may or may not be the same as the graphics+compute queue in VulkanDevice.
 	d_present_queue = vulkan_device.get_device().getQueue(d_present_queue_family, 0/*queueIndex*/);
 
+	// Create swapchain first, then render pass and finally the render targets (image views and framebuffers).
 	create_swapchain(swapchain_size);
 	create_render_pass();
+	create_render_targets();
 }
 
 
 GPlatesOpenGL::VulkanSwapchain::~VulkanSwapchain()
 {
-	if (d_swapchain)
-	{
-		// First make sure all commands in all queues have finished.
-		// This is in case any commands are still operating on an acquired swapchain image.
-		//
-		// Note: It's OK to wait here since destroying a swapchain is not a performance-critical part of the code.
-		d_vulkan_device.get_device().waitIdle();
+	// First make sure all commands in all queues have finished.
+	// This is in case any commands are still operating on an acquired swapchain image.
+	//
+	// Note: It's OK to wait here since destroying a swapchain is not a performance-critical part of the code.
+	d_vulkan_device.get_device().waitIdle();
 
-		d_vulkan_device.get_device().destroySwapchainKHR(d_swapchain);
-	}
+	// Destroy the render targets (image views and framebuffers), then render pass and finally the swapchain.
+	destroy_render_targets();
+	destroy_render_pass();
+	destroy_swapchain();
 }
 
 
@@ -93,7 +95,7 @@ GPlatesOpenGL::VulkanSwapchain::get_swapchain_framebuffer(
 			GPLATES_ASSERTION_SOURCE,
 			"Swapchain image index >= number of images");
 
-	return d_render_targets[swapchain_image_index].frame_buffer;
+	return d_render_targets[swapchain_image_index].framebuffer;
 }
 
 
@@ -107,6 +109,32 @@ GPlatesOpenGL::VulkanSwapchain::recreate_swapchain(
 	// Note: It's OK to wait here since recreating a swapchain is not a performance-critical part of the code.
 	d_vulkan_device.get_device().waitIdle();
 
+	// Destroy render targets (an image view and framebuffer associated with each swapchain image).
+	destroy_render_targets();
+	// Destroy render pass (shouldn't really need to, but do anyway since it depends on swapchain image format
+	// determined in new swapchain).
+	destroy_render_pass();
+
+	// Recreate the swapchain, which passes in the old swapchain (to aid in presentation resource reuse),
+	// so we'll keep track of the old swapchain and destroy it after the new swapchain is created.
+	vk::SwapchainKHR old_swapchain = d_swapchain;
+	create_swapchain(swapchain_size);
+	// Destroy the *old* swapchain (not the current swapchain just created, which 'destroy_swapchain()' would do).
+	if (old_swapchain)
+	{
+		d_vulkan_device.get_device().destroySwapchainKHR(old_swapchain);
+	}
+
+	// Create the render pass and the render targets (image views and framebuffers).
+	create_render_pass();
+	create_render_targets();
+}
+
+
+void
+GPlatesOpenGL::VulkanSwapchain::create_swapchain(
+		const vk::Extent2D &swapchain_size)
+{
 	// Get the supported surface formats.
 	const std::vector<vk::SurfaceFormatKHR> supported_surface_formats =
 			d_vulkan_device.get_physical_device().getSurfaceFormatsKHR(d_surface);
@@ -218,8 +246,8 @@ GPlatesOpenGL::VulkanSwapchain::recreate_swapchain(
 	vk::SwapchainKHR old_swapchain = d_swapchain;
 
 	// Create the new swapchain.
-	vk::SwapchainCreateInfoKHR swapchain_info;
-	swapchain_info
+	vk::SwapchainCreateInfoKHR swapchain_create_info;
+	swapchain_create_info
 			.setSurface(d_surface)
 			.setMinImageCount(min_num_swapchain_images)
 			.setImageFormat(d_swapchain_image_format)
@@ -233,11 +261,17 @@ GPlatesOpenGL::VulkanSwapchain::recreate_swapchain(
 			.setPresentMode(present_mode)
 			.setClipped(true)
 			.setOldSwapchain(old_swapchain);
-	d_swapchain = d_vulkan_device.get_device().createSwapchainKHR(swapchain_info);
+	d_swapchain = d_vulkan_device.get_device().createSwapchainKHR(swapchain_create_info);
+}
 
-	if (old_swapchain)
+
+void
+GPlatesOpenGL::VulkanSwapchain::destroy_swapchain()
+{
+	if (d_swapchain)
 	{
-		d_vulkan_device.get_device().destroySwapchainKHR(old_swapchain);
+		d_vulkan_device.get_device().destroySwapchainKHR(d_swapchain);
+		d_swapchain = nullptr;
 	}
 }
 
@@ -246,8 +280,8 @@ void
 GPlatesOpenGL::VulkanSwapchain::create_render_pass()
 {
 	// Swapchain image attachment.
-	vk::AttachmentDescription swapchain_image_attachment;
-	swapchain_image_attachment
+	vk::AttachmentDescription swapchain_image_attachment_description;
+	swapchain_image_attachment_description
 			.setFormat(d_swapchain_image_format)
 			.setSamples(vk::SampleCountFlagBits::e1)
 			// We'll clear the colour attachment on input...
@@ -272,8 +306,8 @@ GPlatesOpenGL::VulkanSwapchain::create_render_pass()
 			.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
 	// One subpass using a single colour attachment.
-	vk::SubpassDescription subpass;
-	subpass
+	vk::SubpassDescription subpass_description;
+	subpass_description
 			.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
 			.setColorAttachments(colour_attachment_reference);
 
@@ -297,10 +331,77 @@ GPlatesOpenGL::VulkanSwapchain::create_render_pass()
 			// Colour attachment clear is a write operation...
 			.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
 
-	vk::RenderPassCreateInfo render_pass_info;
-	render_pass_info
-			.setAttachments(swapchain_image_attachment)
-			.setSubpasses(subpass)
+	vk::RenderPassCreateInfo render_pass_create_info;
+	render_pass_create_info
+			.setAttachments(swapchain_image_attachment_description)
+			.setSubpasses(subpass_description)
 			.setDependencies(subpass_dependency);
-	d_render_pass = d_vulkan_device.get_device().createRenderPass(render_pass_info);
+	d_render_pass = d_vulkan_device.get_device().createRenderPass(render_pass_create_info);
+}
+
+
+void
+GPlatesOpenGL::VulkanSwapchain::destroy_render_pass()
+{
+	if (d_render_pass)
+	{
+		d_vulkan_device.get_device().destroyRenderPass(d_render_pass);
+		d_render_pass = nullptr;
+	}
+}
+
+
+void
+GPlatesOpenGL::VulkanSwapchain::create_render_targets()
+{
+	// Get the swapchain images.
+	const std::vector<vk::Image> swapchain_images = d_vulkan_device.get_device().getSwapchainImagesKHR(d_swapchain);
+
+	// For each swapchain image, create an image view and a framebuffer.
+	for (vk::Image image : swapchain_images)
+	{
+		// Create image view.
+		vk::ImageViewCreateInfo image_view_create_info;
+		image_view_create_info
+				.setImage(image)
+				.setViewType(vk::ImageViewType::e2D)
+				.setFormat(d_swapchain_image_format)
+				.setComponents({})  // identity swizzle
+				.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 } );
+		vk::ImageView image_view = d_vulkan_device.get_device().createImageView(image_view_create_info);
+
+		// Create framebuffer.
+		vk::FramebufferCreateInfo framebuffer_create_info;
+		framebuffer_create_info
+				.setRenderPass(d_render_pass)
+				.setAttachments(image_view)
+				.setWidth(d_swapchain_size.width)
+				.setHeight(d_swapchain_size.height)
+				.setLayers(1);
+		vk::Framebuffer framebuffer = d_vulkan_device.get_device().createFramebuffer(framebuffer_create_info);
+
+		const RenderTarget render_target = { image, image_view, framebuffer };
+		d_render_targets.push_back(render_target);
+	}
+}
+
+
+void
+GPlatesOpenGL::VulkanSwapchain::destroy_render_targets()
+{
+	// For each swapchain image, destroy the image view and framebuffer referencing it.
+	for (const RenderTarget &render_target : d_render_targets)
+	{
+		// Destroy image view and framebuffer but not swapchain image itself (it belongs to the swapchain).
+		if (render_target.image_view)
+		{
+			d_vulkan_device.get_device().destroyImageView(render_target.image_view);
+		}
+		if (render_target.framebuffer)
+		{
+			d_vulkan_device.get_device().destroyFramebuffer(render_target.framebuffer);
+		}
+	}
+
+	d_render_targets.clear();  // Set size back to zero.
 }

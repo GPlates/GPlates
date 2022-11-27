@@ -126,6 +126,15 @@ namespace GPlatesOpenGL
 		}
 
 		/**
+		 * Returns the number of swapchain images.
+		 */
+		std::uint32_t
+		get_num_swapchain_images() const
+		{
+			return d_render_targets.size();
+		}
+
+		/**
 		 * Returns the swapchain image at specified swapchain image index.
 		 */
 		vk::Image
@@ -147,7 +156,7 @@ namespace GPlatesOpenGL
 				std::uint32_t swapchain_image_index) const;
 
 		/**
-		 * Re-create the vk::SwapchainKHR.
+		 * Re-create the vk::SwapchainKHR, and its associate image views and framebuffers.
 		 *
 		 * This is useful when the surface window is resized.
 		 */
@@ -161,7 +170,7 @@ namespace GPlatesOpenGL
 		{
 			vk::Image image;
 			vk::ImageView image_view;
-			vk::Framebuffer frame_buffer;
+			vk::Framebuffer framebuffer;
 		};
 
 		VulkanDevice &d_vulkan_device;
@@ -186,13 +195,24 @@ namespace GPlatesOpenGL
 
 		void
 		create_swapchain(
-				const vk::Extent2D &swapchain_size)
-		{
-			recreate_swapchain(swapchain_size);
-		}
+				const vk::Extent2D &swapchain_size);
+
+		void
+		destroy_swapchain();
+
 
 		void
 		create_render_pass();
+
+		void
+		destroy_render_pass();
+
+
+		void
+		create_render_targets();
+
+		void
+		destroy_render_targets();
 	};
 }
 
