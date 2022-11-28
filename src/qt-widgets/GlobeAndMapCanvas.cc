@@ -228,10 +228,33 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 
 	// Resources associated with the current (buffered) frame.
 	vk::Semaphore swapchain_image_available_semaphore;
-	vk::Fence frame_fence;
+	vk::Semaphore frame_rendering_finished_semaphore = d_vulkan_frame.get_rendering_finished_semaphore();
+	vk::Fence frame_rendering_finished_fence = d_vulkan_frame.get_rendering_finished_fence();
+	vk::CommandBuffer swapchain_command_buffer = d_vulkan_frame.get_default_graphics_and_compute_command_buffer();
 
-	vulkan_device.get_device().waitForFences(frame_fence, true, UINT64_MAX);
-	vulkan_device.get_device().resetFences(frame_fence);
+	// Make sure the GPU has finished rendering in frame N-2 so that we can use that frame's command buffers, fences, semaphores, etc
+	// for the current frame N.
+	const vk::Result wait_for_frame_result = vulkan_device.get_device().waitForFences(frame_rendering_finished_fence, true, UINT64_MAX);
+	if (wait_for_frame_result != vk::Result::eSuccess)
+	{
+		if (wait_for_frame_result == vk::Result::eErrorDeviceLost)
+		{
+			// Recreate the logical device/swapchain (which also notifies us to release and
+			// re-initialise our Vulkan resources) and then render again.
+			device_lost();
+			update_canvas();
+			return;
+		}
+
+		throw GPlatesOpenGL::VulkanException(
+				GPLATES_EXCEPTION_SOURCE,
+				"Failed to wait for next Vulkan frame.");
+	}
+	vulkan_device.get_device().resetFences(frame_rendering_finished_fence);  // Reset to the unsignaled state.
+
+	//
+	// Acquire the next available swapchain image.
+	//
 
 	std::uint32_t swapchain_image_index;
 	const vk::Result acquire_next_image_result = vulkan_device.get_device().acquireNextImageKHR(
@@ -250,6 +273,15 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 			//
 			// In either case we'll recreate the swapchain and render again.
 			vulkan_swapchain.recreate_swapchain(swapchain_size);
+			update_canvas();
+			return;
+		}
+
+		if (acquire_next_image_result == vk::Result::eErrorDeviceLost)
+		{
+			// Recreate the logical device/swapchain (which also notifies us to release and
+			// re-initialise our Vulkan resources) and then render again.
+			device_lost();
 			update_canvas();
 			return;
 		}
@@ -346,7 +378,25 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 	//
 	// And signal the current frame fence when completed
 	// (so the command buffers, etc, can be recorded again in a later frame).
-	vulkan_device.get_graphics_and_compute_queue().submit(graphics_and_compute_submit_infos, frame_fence);
+	const vk::Result graphics_and_compute_submit_result = vulkan_device.get_graphics_and_compute_queue().submit(
+			num_graphics_and_compute_submissions,
+			graphics_and_compute_submit_infos,
+			frame_rendering_finished_fence);
+	if (graphics_and_compute_submit_result != vk::Result::eSuccess)
+	{
+		if (graphics_and_compute_submit_result == vk::Result::eErrorDeviceLost)
+		{
+			// Recreate the logical device/swapchain (which also notifies us to release and
+			// re-initialise our Vulkan resources) and then render again.
+			device_lost();
+			update_canvas();
+			return;
+		}
+
+		throw GPlatesOpenGL::VulkanException(
+				GPLATES_EXCEPTION_SOURCE,
+				"Failed to submit Vulkan graphics+compute.");
+	}
 
 
 	//
@@ -377,6 +427,15 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 			// Surface is no longer compatible with the swapchain and we cannot present.
 			// So recreate the swapchain and render again.
 			vulkan_swapchain.recreate_swapchain(swapchain_size);
+			update_canvas();
+			return;
+		}
+
+		if (present_result == vk::Result::eErrorDeviceLost)
+		{
+			// Recreate the logical device/swapchain (which also notifies us to release and
+			// re-initialise our Vulkan resources) and then render again.
+			device_lost();
 			update_canvas();
 			return;
 		}

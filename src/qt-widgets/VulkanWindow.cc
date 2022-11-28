@@ -37,6 +37,44 @@ GPlatesQtWidgets::VulkanWindow::VulkanWindow(
 }
 
 
+GPlatesOpenGL::VulkanDevice &
+GPlatesQtWidgets::VulkanWindow::get_vulkan_device()
+{
+	GPlatesGlobal::Assert<GPlatesOpenGL::VulkanException>(
+			d_vulkan_device_and_swapchain,
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to query Vulkan device before window first exposed (or lost device).");
+
+	return *d_vulkan_device_and_swapchain->device;
+}
+
+
+GPlatesOpenGL::VulkanSwapchain &
+GPlatesQtWidgets::VulkanWindow::get_vulkan_swapchain()
+{
+	GPlatesGlobal::Assert<GPlatesOpenGL::VulkanException>(
+			d_vulkan_device_and_swapchain,
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to query Vulkan device before window first exposed (or lost device).");
+
+	return *d_vulkan_device_and_swapchain->swapchain;
+}
+
+
+void
+GPlatesQtWidgets::VulkanWindow::device_lost()
+{
+	// Destroy the device (and swapchain).
+	// The next window update will create a new device (and a new swapchain).
+	if (d_vulkan_device_and_swapchain)
+	{
+		// Note that this first waits for the GPU to be idle, then notifies subclass to
+		// release resources and finally destroys the device/swapchain.
+		destroy_vulkan_device_and_swapchain();
+	}
+}
+
+
 void
 GPlatesQtWidgets::VulkanWindow::exposeEvent(
 		QExposeEvent *expose_event)

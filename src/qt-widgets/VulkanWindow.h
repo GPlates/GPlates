@@ -79,6 +79,31 @@ namespace GPlatesQtWidgets
 					static_cast<std::uint32_t>(size_in_device_pixels.height()));
 		}
 
+		/**
+		 * Returns the Vulkan logical device.
+		 *
+		 * It is only available after this window is first exposed.
+		 */
+		GPlatesOpenGL::VulkanDevice &
+		get_vulkan_device();
+
+		/**
+		 * Returns the Vulkan swapchain.
+		 *
+		 * It is only available after this window is first exposed.
+		 */
+		GPlatesOpenGL::VulkanSwapchain &
+		get_vulkan_swapchain();
+
+		/**
+		 * Subclass should call this when the Vulkan logical device is lost (vk::Result::eErrorDeviceLost)
+		 * and then request a window update (eg, call "requestUpdate()" on us).
+		 *
+		 * This is ensure a new logical device (and swapchain) is created when the window is next updated.
+		 */
+		void
+		device_lost();
+
 	protected:
 
 		void
