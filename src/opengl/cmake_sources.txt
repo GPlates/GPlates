@@ -120,6 +120,8 @@ OpenGLFunctions.h
 VulkanDevice.cc
 VulkanDevice.h
 VulkanException.h
+VulkanFrame.cc
+VulkanFrame.h
 VulkanHpp.cc
 VulkanHpp.h
 VulkanSwapchain.cc
