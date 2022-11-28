@@ -53,6 +53,7 @@
 #include "opengl/GLMatrix.h"
 #include "opengl/GLVisualLayers.h"
 #include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
+#include "opengl/VulkanFrame.h"
 
 
 namespace GPlatesGui
@@ -438,9 +439,9 @@ namespace GPlatesQtWidgets
 		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
 
 		/**
-		 * Vulkan queue family index of 'compute' queue created in the VkDevice of this VulkanWindow.
+		 * Frame buffering for asynchronous Vulkan rendering.
 		 */
-		uint32_t d_vulkan_compute_queue_family_index;
+		GPlatesOpenGL::VulkanFrame d_vulkan_frame;
 
 		/**
 		 * The scene contains the globe and map.

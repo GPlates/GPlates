@@ -211,6 +211,12 @@ GPlatesOpenGL::VulkanSwapchain::create_swapchain(
 	// Currently we only render to the swapchain using it as a framebuffer colour attachment.
 	const vk::ImageUsageFlags swapchain_usage = vk::ImageUsageFlagBits::eColorAttachment;
 
+	// Swapchain image sharing mode.
+	//
+	// Exclusive means if the present queue family is not the graphics+compute queue family then we'll need
+	// to transfer image ownership from the graphics+compute queue to the present queue before displaying it.
+	const vk::SharingMode swapchain_sharing_mode = vk::SharingMode::eExclusive;
+
 	// Surface pre-transform.
 	//
 	// We don't want any transformations to occur, so if the identity transform is supported then use it,
@@ -255,7 +261,7 @@ GPlatesOpenGL::VulkanSwapchain::create_swapchain(
 			.setImageExtent(d_swapchain_size)
 			.setImageUsage(swapchain_usage)
 			.setImageArrayLayers(1)
-			.setImageSharingMode(vk::SharingMode::eExclusive)
+			.setImageSharingMode(swapchain_sharing_mode)
 			.setPreTransform(pre_transform)
 			.setCompositeAlpha(composite_alpha)
 			.setPresentMode(present_mode)
