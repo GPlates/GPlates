@@ -38,8 +38,6 @@
 //
 #include "VulkanHpp.h"
 
-#include "utils/ReferenceCount.h"
-
 
 namespace GPlatesOpenGL
 {
@@ -48,27 +46,30 @@ namespace GPlatesOpenGL
 	 *
 	 * Also contains the graphics+compute queue, and a VMA memory allocator (for buffers and images).
 	 */
-	class VulkanDevice :
-			public GPlatesUtils::ReferenceCount<VulkanDevice>
+	class VulkanDevice
 	{
 	public:
 
-		typedef GPlatesUtils::non_null_intrusive_ptr<VulkanDevice> non_null_ptr_type;
-		typedef GPlatesUtils::non_null_intrusive_ptr<const VulkanDevice> non_null_ptr_to_const_type;
+		/**
+		 * Construct a @a VulkanDevice.
+		 *
+		 * Note: This does not actually create a vk::Device, that happens in @a create_device or @a create_device_for_surface.
+		 */
+		explicit
+		VulkanDevice(
+				vk::Instance instance);
 
 
 		/**
 		 * Create a Vulkan logical device.
 		 *
+		 * Note: Before this, @a get_device() will be equal to nullptr.
+		 *       This can be used to test whether the device has not yet been created, or has been destroyed.
+		 *
 		 * NOTE: VulkanHpp::initialise() must have been called first.
 		 */
-		static
-		non_null_ptr_type
-		create(
-				vk::Instance instance)
-		{
-			return non_null_ptr_type(new VulkanDevice(instance));
-		}
+		void
+		create_device();
 
 		/**
 		 * Create a Vulkan logical device supporting presentation to a Vulkan surface.
@@ -76,22 +77,24 @@ namespace GPlatesOpenGL
 		 * The present queue family is returned in @a present_queue_family.
 		 * This will be the graphics+compute queue family if it supports present (otherwise a different family).
 		 *
+		 * Note: Before this, @a get_device() will be equal to nullptr.
+		 *       This can be used to test whether the device has not yet been created, or has been destroyed.
+		 *
 		 * NOTE: VulkanHpp::initialise() must have been called first.
 		 */
-		static
-		non_null_ptr_type
-		create_for_surface(
-				vk::Instance instance,
+		void
+		create_device_for_surface(
 				vk::SurfaceKHR surface,
-				std::uint32_t &present_queue_family)
-		{
-			const SurfaceInfo surface_info{ surface, present_queue_family };
+				std::uint32_t &present_queue_family);
 
-			return non_null_ptr_type(new VulkanDevice(instance, surface_info));
-		}
-
-
-		~VulkanDevice();
+		/**
+		 * Destroy the Vulkan logical device.
+		 *
+		 * Note: After this, @a get_device() will be equal to nullptr.
+		 *       This can be used to test whether the device has not yet been created, or has been destroyed.
+		 */
+		void
+		destroy_device();
 
 
 		/**
@@ -205,14 +208,9 @@ namespace GPlatesOpenGL
 		VmaAllocator d_vma_allocator;
 
 
-		VulkanDevice(
-				vk::Instance instance,
-				boost::optional<const SurfaceInfo &> surface_info = boost::none);
-
-
 		void
-		create_device(
-				boost::optional<const SurfaceInfo &> surface_info);
+		create_device_internal(
+				boost::optional<const SurfaceInfo &> surface_info = boost::none);
 
 
 		/**

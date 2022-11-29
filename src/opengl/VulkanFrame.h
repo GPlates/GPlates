@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <vector>
 
+#include "VulkanDeviceLifetime.h"
 #include "VulkanHpp.h"
 
 
@@ -36,7 +37,8 @@ namespace GPlatesOpenGL
 	 * For example, this enables the CPU to record command buffers for frame N while the GPU is
 	 * executing command buffers from the previous frame N-1.
 	 */
-	class VulkanFrame
+	class VulkanFrame :
+			public VulkanDeviceLifetime
 	{
 	public:
 
@@ -46,21 +48,6 @@ namespace GPlatesOpenGL
 		explicit
 		VulkanFrame(
 				std::uint32_t num_buffered_frames = 2);
-
-
-		/**
-		 * Vulkan device was just created.
-		 */
-		void
-		initialise_vulkan_resources(
-				GPlatesOpenGL::VulkanDevice &vulkan_device);
-
-		/**
-		 * Vulkan device is about to be destroyed.
-		 */
-		void
-		release_vulkan_resources(
-				GPlatesOpenGL::VulkanDevice &vulkan_device);
 
 
 		/**
@@ -114,6 +101,21 @@ namespace GPlatesOpenGL
 		 */
 		vk::Fence
 		get_rendering_finished_fence();
+
+
+		/**
+		 * Vulkan device was just created.
+		 */
+		void
+		initialise_vulkan_resources(
+				VulkanDevice &vulkan_device) override;
+
+		/**
+		 * Vulkan device is about to be destroyed.
+		 */
+		void
+		release_vulkan_resources(
+				VulkanDevice &vulkan_device) override;
 
 	private:
 

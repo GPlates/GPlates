@@ -25,38 +25,88 @@
 #include "global/GPlatesAssert.h"
 
 
-GPlatesOpenGL::VulkanSwapchain::VulkanSwapchain(
+GPlatesOpenGL::VulkanSwapchain::VulkanSwapchain() :
+	d_present_queue_family(UINT32_MAX),
+	d_swapchain_image_format(vk::Format::eUndefined)
+{
+}
+
+
+void
+GPlatesOpenGL::VulkanSwapchain::create_swapchain(
 		VulkanDevice &vulkan_device,
 		vk::SurfaceKHR surface,
 		std::uint32_t present_queue_family,
-		const vk::Extent2D &swapchain_size) :
-	d_vulkan_device(vulkan_device),
-	d_surface(surface),
-	d_present_queue_family(present_queue_family)
+		const vk::Extent2D &swapchain_size)
 {
+	d_surface = surface;
+	d_present_queue_family = present_queue_family;
+
 	// Get the present queue from the logical device.
 	// Note: This may or may not be the same as the graphics+compute queue in VulkanDevice.
 	d_present_queue = vulkan_device.get_device().getQueue(d_present_queue_family, 0/*queueIndex*/);
 
 	// Create swapchain first, then render pass and finally the render targets (image views and framebuffers).
-	create_swapchain(swapchain_size);
-	create_render_pass();
-	create_render_targets();
+	create_swapchain_internal(vulkan_device, swapchain_size);
+	create_render_pass(vulkan_device);
+	create_render_targets(vulkan_device);
 }
 
 
-GPlatesOpenGL::VulkanSwapchain::~VulkanSwapchain()
+void
+GPlatesOpenGL::VulkanSwapchain::recreate_swapchain(
+		VulkanDevice &vulkan_device,
+		const vk::Extent2D &swapchain_size)
 {
+	// Destroy the render targets (image views and framebuffers).
+	destroy_render_targets(vulkan_device);
+
+	// Destroy the render pass.
+	destroy_render_pass(vulkan_device);
+
+	// Recreate the swapchain, which passes in the old swapchain (to aid in presentation resource reuse),
+	// so we'll keep track of the old swapchain and destroy it after the new swapchain is created.
+	vk::SwapchainKHR old_swapchain = d_swapchain;
+	create_swapchain_internal(vulkan_device, swapchain_size);
+	// Destroy the *old* swapchain (not the current swapchain just created, which 'destroy_swapchain()' would do).
+	if (old_swapchain)
+	{
+		vulkan_device.get_device().destroySwapchainKHR(old_swapchain);
+	}
+
+	// Create the render pass and the render targets (image views and framebuffers).
+	create_render_pass(vulkan_device);
+	create_render_targets(vulkan_device);
+}
+
+
+void
+GPlatesOpenGL::VulkanSwapchain::destroy_swapchain(
+		VulkanDevice &vulkan_device)
+{
+	GPlatesGlobal::Assert<VulkanException>(
+			d_swapchain,
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to destroy Vulkan swapchain without first creating it.");
+
 	// First make sure all commands in all queues have finished.
 	// This is in case any commands are still operating on an acquired swapchain image.
 	//
 	// Note: It's OK to wait here since destroying a swapchain is not a performance-critical part of the code.
-	d_vulkan_device.get_device().waitIdle();
+	vulkan_device.get_device().waitIdle();
 
-	// Destroy the render targets (image views and framebuffers), then render pass and finally the swapchain.
-	destroy_render_targets();
-	destroy_render_pass();
-	destroy_swapchain();
+	// Destroy the render targets (image views and framebuffers).
+	destroy_render_targets(vulkan_device);
+
+	// Destroy the render pass.
+	destroy_render_pass(vulkan_device);
+
+	// And finally destroy the swapchain.
+	destroy_swapchain_internal(vulkan_device);
+
+	// Reset some members.
+	d_swapchain_image_format = vk::Format::eUndefined;
+	d_swapchain_size = vk::Extent2D{};  // Zero extent.
 }
 
 
@@ -100,44 +150,13 @@ GPlatesOpenGL::VulkanSwapchain::get_swapchain_framebuffer(
 
 
 void
-GPlatesOpenGL::VulkanSwapchain::recreate_swapchain(
-		const vk::Extent2D &swapchain_size)
-{
-	// First make sure all commands in all queues have finished.
-	// This is in case any commands are still operating on an acquired swapchain image.
-	//
-	// Note: It's OK to wait here since recreating a swapchain is not a performance-critical part of the code.
-	d_vulkan_device.get_device().waitIdle();
-
-	// Destroy render targets (an image view and framebuffer associated with each swapchain image).
-	destroy_render_targets();
-	// Destroy render pass (shouldn't really need to, but do anyway since it depends on swapchain image format
-	// determined in new swapchain).
-	destroy_render_pass();
-
-	// Recreate the swapchain, which passes in the old swapchain (to aid in presentation resource reuse),
-	// so we'll keep track of the old swapchain and destroy it after the new swapchain is created.
-	vk::SwapchainKHR old_swapchain = d_swapchain;
-	create_swapchain(swapchain_size);
-	// Destroy the *old* swapchain (not the current swapchain just created, which 'destroy_swapchain()' would do).
-	if (old_swapchain)
-	{
-		d_vulkan_device.get_device().destroySwapchainKHR(old_swapchain);
-	}
-
-	// Create the render pass and the render targets (image views and framebuffers).
-	create_render_pass();
-	create_render_targets();
-}
-
-
-void
-GPlatesOpenGL::VulkanSwapchain::create_swapchain(
+GPlatesOpenGL::VulkanSwapchain::create_swapchain_internal(
+		VulkanDevice &vulkan_device,
 		const vk::Extent2D &swapchain_size)
 {
 	// Get the supported surface formats.
 	const std::vector<vk::SurfaceFormatKHR> supported_surface_formats =
-			d_vulkan_device.get_physical_device().getSurfaceFormatsKHR(d_surface);
+			vulkan_device.get_physical_device().getSurfaceFormatsKHR(d_surface);
 
 	// There is at least one supported supported surface format.
 	// We'll use it if we can't find our desired format.
@@ -158,7 +177,7 @@ GPlatesOpenGL::VulkanSwapchain::create_swapchain(
 
 	// Get the surface capabilities.
 	const vk::SurfaceCapabilitiesKHR surface_capabilities =
-			d_vulkan_device.get_physical_device().getSurfaceCapabilitiesKHR(d_surface);
+			vulkan_device.get_physical_device().getSurfaceCapabilitiesKHR(d_surface);
 
 	// Number of swapchain images.
 	std::uint32_t min_num_swapchain_images = 2;  // Double buffer
@@ -267,23 +286,22 @@ GPlatesOpenGL::VulkanSwapchain::create_swapchain(
 			.setPresentMode(present_mode)
 			.setClipped(true)
 			.setOldSwapchain(old_swapchain);
-	d_swapchain = d_vulkan_device.get_device().createSwapchainKHR(swapchain_create_info);
+	d_swapchain = vulkan_device.get_device().createSwapchainKHR(swapchain_create_info);
 }
 
 
 void
-GPlatesOpenGL::VulkanSwapchain::destroy_swapchain()
+GPlatesOpenGL::VulkanSwapchain::destroy_swapchain_internal(
+		VulkanDevice &vulkan_device)
 {
-	if (d_swapchain)
-	{
-		d_vulkan_device.get_device().destroySwapchainKHR(d_swapchain);
-		d_swapchain = nullptr;
-	}
+	vulkan_device.get_device().destroySwapchainKHR(d_swapchain);
+	d_swapchain = nullptr;
 }
 
 
 void
-GPlatesOpenGL::VulkanSwapchain::create_render_pass()
+GPlatesOpenGL::VulkanSwapchain::create_render_pass(
+		VulkanDevice &vulkan_device)
 {
 	// Swapchain image attachment.
 	vk::AttachmentDescription swapchain_image_attachment_description;
@@ -342,26 +360,25 @@ GPlatesOpenGL::VulkanSwapchain::create_render_pass()
 			.setAttachments(swapchain_image_attachment_description)
 			.setSubpasses(subpass_description)
 			.setDependencies(subpass_dependency);
-	d_render_pass = d_vulkan_device.get_device().createRenderPass(render_pass_create_info);
+	d_render_pass = vulkan_device.get_device().createRenderPass(render_pass_create_info);
 }
 
 
 void
-GPlatesOpenGL::VulkanSwapchain::destroy_render_pass()
+GPlatesOpenGL::VulkanSwapchain::destroy_render_pass(
+		VulkanDevice &vulkan_device)
 {
-	if (d_render_pass)
-	{
-		d_vulkan_device.get_device().destroyRenderPass(d_render_pass);
-		d_render_pass = nullptr;
-	}
+	vulkan_device.get_device().destroyRenderPass(d_render_pass);
+	d_render_pass = nullptr;
 }
 
 
 void
-GPlatesOpenGL::VulkanSwapchain::create_render_targets()
+GPlatesOpenGL::VulkanSwapchain::create_render_targets(
+		VulkanDevice &vulkan_device)
 {
 	// Get the swapchain images.
-	const std::vector<vk::Image> swapchain_images = d_vulkan_device.get_device().getSwapchainImagesKHR(d_swapchain);
+	const std::vector<vk::Image> swapchain_images = vulkan_device.get_device().getSwapchainImagesKHR(d_swapchain);
 
 	// For each swapchain image, create an image view and a framebuffer.
 	for (vk::Image image : swapchain_images)
@@ -374,7 +391,7 @@ GPlatesOpenGL::VulkanSwapchain::create_render_targets()
 				.setFormat(d_swapchain_image_format)
 				.setComponents({})  // identity swizzle
 				.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 } );
-		vk::ImageView image_view = d_vulkan_device.get_device().createImageView(image_view_create_info);
+		vk::ImageView image_view = vulkan_device.get_device().createImageView(image_view_create_info);
 
 		// Create framebuffer.
 		vk::FramebufferCreateInfo framebuffer_create_info;
@@ -384,7 +401,7 @@ GPlatesOpenGL::VulkanSwapchain::create_render_targets()
 				.setWidth(d_swapchain_size.width)
 				.setHeight(d_swapchain_size.height)
 				.setLayers(1);
-		vk::Framebuffer framebuffer = d_vulkan_device.get_device().createFramebuffer(framebuffer_create_info);
+		vk::Framebuffer framebuffer = vulkan_device.get_device().createFramebuffer(framebuffer_create_info);
 
 		const RenderTarget render_target = { image, image_view, framebuffer };
 		d_render_targets.push_back(render_target);
@@ -393,20 +410,15 @@ GPlatesOpenGL::VulkanSwapchain::create_render_targets()
 
 
 void
-GPlatesOpenGL::VulkanSwapchain::destroy_render_targets()
+GPlatesOpenGL::VulkanSwapchain::destroy_render_targets(
+		VulkanDevice &vulkan_device)
 {
 	// For each swapchain image, destroy the image view and framebuffer referencing it.
 	for (const RenderTarget &render_target : d_render_targets)
 	{
 		// Destroy image view and framebuffer but not swapchain image itself (it belongs to the swapchain).
-		if (render_target.image_view)
-		{
-			d_vulkan_device.get_device().destroyImageView(render_target.image_view);
-		}
-		if (render_target.framebuffer)
-		{
-			d_vulkan_device.get_device().destroyFramebuffer(render_target.framebuffer);
-		}
+		vulkan_device.get_device().destroyImageView(render_target.image_view);
+		vulkan_device.get_device().destroyFramebuffer(render_target.framebuffer);
 	}
 
 	d_render_targets.clear();  // Set size back to zero.

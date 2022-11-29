@@ -353,14 +353,14 @@ namespace GPlatesQtWidgets
 	protected:
 
 		/**
-		 * Notified, by base class @a VulkanWindow, that Vulkan device was just created.
+		 * The Vulkan device was just created.
 		 */
 		void
 		initialise_vulkan_resources(
 				GPlatesOpenGL::VulkanDevice &vulkan_device) override;
 
 		/**
-		 * Notified, by base class @a VulkanWindow, that Vulkan device is about to be destroyed.
+		 * The Vulkan device is about to be destroyed.
 		 */
 		void
 		release_vulkan_resources(

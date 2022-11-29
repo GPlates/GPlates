@@ -30,10 +30,18 @@
 
 
 GPlatesQtWidgets::VulkanWindow::VulkanWindow(
+		QVulkanInstance &qvulkan_instance,
 		QWindow *parent_) :
-	QWindow(parent_)
+	QWindow(parent_),
+	d_vulkan_device(qvulkan_instance.vkInstance())
 {
+	// Set surface type to Vulkan.
 	setSurfaceType(QSurface::VulkanSurface);
+
+	// Set the Vulkan instance in this QWindow.
+	//
+	// We do this first so that we then subsequently access 'vulkanInstance()' on 'this' QWindow.
+	setVulkanInstance(&qvulkan_instance);
 }
 
 
@@ -41,11 +49,11 @@ GPlatesOpenGL::VulkanDevice &
 GPlatesQtWidgets::VulkanWindow::get_vulkan_device()
 {
 	GPlatesGlobal::Assert<GPlatesOpenGL::VulkanException>(
-			d_vulkan_device_and_swapchain,
+			d_vulkan_device.get_device(),
 			GPLATES_ASSERTION_SOURCE,
 			"Attempted to query Vulkan device before window first exposed (or lost device).");
 
-	return *d_vulkan_device_and_swapchain->device;
+	return d_vulkan_device;
 }
 
 
@@ -53,11 +61,11 @@ GPlatesOpenGL::VulkanSwapchain &
 GPlatesQtWidgets::VulkanWindow::get_vulkan_swapchain()
 {
 	GPlatesGlobal::Assert<GPlatesOpenGL::VulkanException>(
-			d_vulkan_device_and_swapchain,
+			d_vulkan_swapchain.get_swapchain(),
 			GPLATES_ASSERTION_SOURCE,
-			"Attempted to query Vulkan device before window first exposed (or lost device).");
+			"Attempted to query Vulkan swapchain before window first exposed (or lost device).");
 
-	return *d_vulkan_device_and_swapchain->swapchain;
+	return d_vulkan_swapchain;
 }
 
 
@@ -66,7 +74,7 @@ GPlatesQtWidgets::VulkanWindow::device_lost()
 {
 	// Destroy the device (and swapchain).
 	// The next window update will create a new device (and a new swapchain).
-	if (d_vulkan_device_and_swapchain)
+	if (d_vulkan_device.get_device())
 	{
 		// Note that this first waits for the GPU to be idle, then notifies subclass to
 		// release resources and finally destroys the device/swapchain.
@@ -101,7 +109,7 @@ GPlatesQtWidgets::VulkanWindow::event(
 		// Vulkan requires the swapchain be destroyed before the surface.
 		if (static_cast<QPlatformSurfaceEvent*>(event)->surfaceEventType() == QPlatformSurfaceEvent::SurfaceAboutToBeDestroyed)
 		{
-			if (d_vulkan_device_and_swapchain)
+			if (d_vulkan_device.get_device())
 			{
 				destroy_vulkan_device_and_swapchain();
 			}
@@ -128,25 +136,31 @@ GPlatesQtWidgets::VulkanWindow::update_window()
 		return;
 	}
 
-	if (d_vulkan_device_and_swapchain)
+	if (!d_vulkan_device.get_device())
 	{
-		// If the window size is different than the swapchain size then the window was resized and
-		// the swapchain needs to be recreated.
-		if (get_swapchain_size() != d_vulkan_device_and_swapchain->swapchain->get_swapchain_size())
-		{
-			d_vulkan_device_and_swapchain->swapchain->recreate_swapchain(get_swapchain_size());
-		}
-	}
-	else
-	{
+		// We don't have a Vulkan device so we shouldn't have a swapchain either.
+		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+				!d_vulkan_swapchain.get_swapchain(),
+				GPLATES_ASSERTION_SOURCE);
+
 		// We haven't yet created the Vulkan device and swapchain, so do that now.
 		create_vulkan_device_and_swapchain();
 	}
 
+	// Should now have both a Vulkan device and a swapchain.
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_vulkan_device.get_device() && d_vulkan_swapchain.get_swapchain(),
+			GPLATES_ASSERTION_SOURCE);
+
+	// If the window size is different than the swapchain size then the window was resized and
+	// the swapchain needs to be recreated.
+	if (get_window_size_in_device_pixels() != d_vulkan_swapchain.get_swapchain_size())
+	{
+		d_vulkan_swapchain.recreate_swapchain(d_vulkan_device, get_window_size_in_device_pixels());
+	}
+
 	// Ask subclass to render into this window.
-	render_to_window(
-			*d_vulkan_device_and_swapchain->device,
-			*d_vulkan_device_and_swapchain->swapchain);
+	render_to_window(d_vulkan_device, d_vulkan_swapchain);
 }
 
 
@@ -154,15 +168,11 @@ void
 GPlatesQtWidgets::VulkanWindow::create_vulkan_device_and_swapchain()
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			!d_vulkan_device_and_swapchain,
+			!d_vulkan_device.get_device() && !d_vulkan_swapchain.get_swapchain(),
 			GPLATES_ASSERTION_SOURCE);
 
-	QVulkanInstance *qvulkan_instance = vulkanInstance();
-
-	// Vulkan instance.
-	vk::Instance instance = qvulkan_instance->vkInstance();
 	// Create (or get if already created) the Vulkan surface for this window.
-	vk::SurfaceKHR surface = qvulkan_instance->surfaceForWindow(this);
+	vk::SurfaceKHR surface = vulkanInstance()->surfaceForWindow(this);
 	GPlatesGlobal::Assert<GPlatesOpenGL::VulkanException>(
 			surface,
 			GPLATES_ASSERTION_SOURCE,
@@ -170,18 +180,19 @@ GPlatesQtWidgets::VulkanWindow::create_vulkan_device_and_swapchain()
 
 	// Create the Vulkan device.
 	std::uint32_t present_queue_family;
-	GPlatesOpenGL::VulkanDevice::non_null_ptr_type vulkan_device =
-			GPlatesOpenGL::VulkanDevice::create_for_surface(instance, surface, present_queue_family);
+	d_vulkan_device.create_device_for_surface(
+			surface,
+			present_queue_family);
 
 	// Create the Vulkan swapchain.
-	GPlatesOpenGL::VulkanSwapchain::non_null_ptr_type vulkan_swapchain =
-			GPlatesOpenGL::VulkanSwapchain::create(*vulkan_device, surface, present_queue_family, get_swapchain_size());
-
-	// Keep a record of the Vulkan device and swapchain.
-	d_vulkan_device_and_swapchain = VulkanDeviceAndSwapChain{ vulkan_device, vulkan_swapchain };
+	d_vulkan_swapchain.create_swapchain(
+			d_vulkan_device,
+			surface,
+			present_queue_family,
+			get_window_size_in_device_pixels());
 
 	// Notify subclass that Vulkan device was created.
-	initialise_vulkan_resources(*vulkan_device);
+	initialise_vulkan_resources(d_vulkan_device);
 }
 
 
@@ -189,18 +200,19 @@ void
 GPlatesQtWidgets::VulkanWindow::destroy_vulkan_device_and_swapchain()
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_vulkan_device_and_swapchain,
+			d_vulkan_device.get_device() && d_vulkan_swapchain.get_swapchain(),
 			GPLATES_ASSERTION_SOURCE);
 
-	// First make sure all commands in all queues have finished before we start destroying things.
+	// First make sure all commands in all queues have finished before we ask clients to start destroying things.
 	//
 	// Note: It's OK to wait here since destroying a device/swapchain is not a performance-critical part of the code.
-	d_vulkan_device_and_swapchain->device->get_device().waitIdle();
+	d_vulkan_device.get_device().waitIdle();
 
 	// Then notify our subclass that the Vulkan device is about to be destroyed.
-	release_vulkan_resources(*d_vulkan_device_and_swapchain->device);
+	release_vulkan_resources(d_vulkan_device);
 
 	// Finally destroy the Vulkan device and swapchain.
 	// Note that the swapchain is destroyed first (and then the device).
-	d_vulkan_device_and_swapchain = boost::none;
+	d_vulkan_swapchain.destroy_swapchain(d_vulkan_device);
+	d_vulkan_device.destroy_device();
 }

@@ -21,9 +21,11 @@
 #define GPLATES_QT_WIDGETS_VULKANWINDOW_H
 
 #include <boost/optional.hpp>
+#include <QVulkanInstance>
 #include <QWindow>
 
 #include "opengl/VulkanDevice.h"
+#include "opengl/VulkanDeviceLifetime.h"
 #include "opengl/VulkanHpp.h"
 #include "opengl/VulkanSwapchain.h"
 
@@ -31,31 +33,17 @@
 namespace GPlatesQtWidgets
 {
 	class VulkanWindow :
-			public QWindow
+			public QWindow,
+			public GPlatesOpenGL::VulkanDeviceLifetime
 	{
 	public:
 
 		explicit
 		VulkanWindow(
+				QVulkanInstance &qvulkan_instance,
 				QWindow *parent_ = nullptr);
 
 	protected:
-
-		/**
-		 * Notify subclass that Vulkan device was just created.
-		 */
-		virtual
-		void
-		initialise_vulkan_resources(
-				GPlatesOpenGL::VulkanDevice &vulkan_device) = 0;
-
-		/**
-		 * Notify subclass that Vulkan device is about to be destroyed.
-		 */
-		virtual
-		void
-		release_vulkan_resources(
-				GPlatesOpenGL::VulkanDevice &vulkan_device) = 0;
 
 		/**
 		 * Called when a frame should be rendered into the window by subclass.
@@ -71,7 +59,7 @@ namespace GPlatesQtWidgets
 		 * The current size of the window in device pixels.
 		 */
 		vk::Extent2D
-		get_swapchain_size() const
+		get_window_size_in_device_pixels() const
 		{
 			const QSize size_in_device_pixels = size() * devicePixelRatio();
 			return vk::Extent2D(
@@ -127,18 +115,19 @@ namespace GPlatesQtWidgets
 		destroy_vulkan_device_and_swapchain();
 
 
-		struct VulkanDeviceAndSwapChain
-		{
-			GPlatesOpenGL::VulkanDevice::non_null_ptr_type device;
-			GPlatesOpenGL::VulkanSwapchain::non_null_ptr_type swapchain;
-		};
+		/**
+		 * The Vulkan logical device.
+		 *
+		 * It is first initialised when this window is first exposed.
+		 */
+		GPlatesOpenGL::VulkanDevice d_vulkan_device;
 
 		/**
-		 * The Vulkan logical device and swapchain.
+		 * The Vulkan logical swapchain.
 		 *
-		 * It is first created when this window is first exposed.
+		 * It is first initialised when this window is first exposed.
 		 */
-		boost::optional<VulkanDeviceAndSwapChain> d_vulkan_device_and_swapchain;
+		GPlatesOpenGL::VulkanSwapchain d_vulkan_swapchain;
 	};
 }
 

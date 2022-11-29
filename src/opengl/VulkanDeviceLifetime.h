@@ -17,45 +17,42 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_OPENGL_GLCONTEXTLIFETIME_H
-#define GPLATES_OPENGL_GLCONTEXTLIFETIME_H
+#ifndef GPLATES_OPENGL_VULKANDEVICELIFETIME_H
+#define GPLATES_OPENGL_VULKANDEVICELIFETIME_H
 
 namespace GPlatesOpenGL
 {
-	class GL;
+	class VulkanDevice;
 
 	/**
-	 * Interface for creating and destroying OpenGL resources when initialising and shutting down OpenGL.
+	 * Interface for initialising Vulkan resources (objects) when the Vulkan device is created, and
+	 * releasing resources when device is about to be destroyed.
 	 */
-	class GLContextLifetime
+	class VulkanDeviceLifetime
 	{
 	public:
 
 		virtual
-		~GLContextLifetime()
+		~VulkanDeviceLifetime()
 		{  }
 
 
 		/**
-		 * The OpenGL context has been created.
-		 *
-		 * So any OpenGL resources can be created now.
+		 * The Vulkan device was just created.
 		 */
 		virtual
 		void
-		initialise_gl(
-				GL &gl) = 0;
+		initialise_vulkan_resources(
+				VulkanDevice &vulkan_device) = 0;
 
 		/**
-		 * The OpenGL context is about to be destroyed.
-		 *
-		 * So any OpenGL resources should now be destroyed.
+		 * The Vulkan device is about to be destroyed.
 		 */
 		virtual
 		void
-		shutdown_gl(
-				GL &gl) = 0;
+		release_vulkan_resources(
+				VulkanDevice &vulkan_device) = 0;
 	};
 }
 
-#endif // GPLATES_OPENGL_GLCONTEXTLIFETIME_H
+#endif // GPLATES_OPENGL_VULKANDEVICELIFETIME_H

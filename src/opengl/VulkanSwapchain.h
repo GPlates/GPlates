@@ -25,8 +25,6 @@
 
 #include "VulkanHpp.h"
 
-#include "utils/ReferenceCount.h"
-
 
 namespace GPlatesOpenGL
 {
@@ -35,34 +33,58 @@ namespace GPlatesOpenGL
 	/**
 	 * Vulkan swapchain and the presentation queue.
 	 */
-	class VulkanSwapchain :
-			public GPlatesUtils::ReferenceCount<VulkanSwapchain>
+	class VulkanSwapchain
 	{
 	public:
 
-		typedef GPlatesUtils::non_null_intrusive_ptr<VulkanSwapchain> non_null_ptr_type;
-		typedef GPlatesUtils::non_null_intrusive_ptr<const VulkanSwapchain> non_null_ptr_to_const_type;
+		/**
+		 * Construct a @a VulkanSwapchain.
+		 *
+		 * Note: This does not actually create a vk::SwapchainKHR, that happens in @a create_swapchain (and @a recreate_swapchain).
+		 */
+		VulkanSwapchain();
 
 
 		/**
-		 * Create a Vulkan swapchain.
+		 * Create a Vulkan swapchain (and its associated image views and framebuffers) supporting
+		 * presentation to the specified Vulkan surface.
 		 *
-		 * NOTE: The lifetime of the returned @a VulkanSwapchain must not be longer
-		 *       than the lifetime of @a vulkan_device (because it's used in our destructor).
+		 * The present queue family is returned in @a present_queue_family.
+		 * This will be the graphics+compute queue family if it supports present (otherwise a different family).
+		 *
+		 * Note: Before this, @a get_device() will be equal to nullptr.
+		 *       This can be used to test whether the device has not yet been created, or has been destroyed.
+		 *
+		 * NOTE: VulkanHpp::initialise() must have been called first.
 		 */
-		static
-		non_null_ptr_type
-		create(
+		void
+		create_swapchain(
 				VulkanDevice &vulkan_device,
 				vk::SurfaceKHR surface,
 				std::uint32_t present_queue_family,
-				const vk::Extent2D &swapchain_size)
-		{
-			return non_null_ptr_type(new VulkanSwapchain(vulkan_device, surface, present_queue_family, swapchain_size));
-		}
+				const vk::Extent2D &swapchain_size);
 
+		/**
+		 * Re-create the swapchain (and its associated image views and framebuffers).
+		 *
+		 * This is useful when the surface window is resized.
+		 *
+		 * Note: This should be called between @a create_swapchain and @a destroy_swapchain.
+		 */
+		void
+		recreate_swapchain(
+				VulkanDevice &vulkan_device,
+				const vk::Extent2D &swapchain_size);
 
-		~VulkanSwapchain();
+		/**
+		 * Destroy the Vulkan swapchain (and its associated image views and framebuffers).
+		 *
+		 * Note: After this, @a get_swapchain() will be equal to nullptr.
+		 *       This can be used to test whether the swapchain has not yet been created, or has been destroyed.
+		 */
+		void
+		destroy_swapchain(
+				VulkanDevice &vulkan_device);
 
 
 		/**
@@ -155,15 +177,6 @@ namespace GPlatesOpenGL
 		get_swapchain_framebuffer(
 				std::uint32_t swapchain_image_index) const;
 
-		/**
-		 * Re-create the vk::SwapchainKHR, and its associate image views and framebuffers.
-		 *
-		 * This is useful when the surface window is resized.
-		 */
-		void
-		recreate_swapchain(
-				const vk::Extent2D &swapchain_size);
-
 	private:
 
 		struct RenderTarget
@@ -172,8 +185,6 @@ namespace GPlatesOpenGL
 			vk::ImageView image_view;
 			vk::Framebuffer framebuffer;
 		};
-
-		VulkanDevice &d_vulkan_device;
 
 		vk::SurfaceKHR d_surface;
 		std::uint32_t d_present_queue_family;
@@ -187,32 +198,33 @@ namespace GPlatesOpenGL
 		//! Each swapchain image has an associated framebuffer.
 		std::vector<RenderTarget> d_render_targets;
 
-		VulkanSwapchain(
+
+		void
+		create_swapchain_internal(
 				VulkanDevice &vulkan_device,
-				vk::SurfaceKHR surface,
-				std::uint32_t present_queue_family,
 				const vk::Extent2D &swapchain_size);
 
 		void
-		create_swapchain(
-				const vk::Extent2D &swapchain_size);
-
-		void
-		destroy_swapchain();
+		destroy_swapchain_internal(
+				VulkanDevice &vulkan_device);
 
 
 		void
-		create_render_pass();
+		create_render_pass(
+				VulkanDevice &vulkan_device);
 
 		void
-		destroy_render_pass();
+		destroy_render_pass(
+				VulkanDevice &vulkan_device);
 
 
 		void
-		create_render_targets();
+		create_render_targets(
+				VulkanDevice &vulkan_device);
 
 		void
-		destroy_render_targets();
+		destroy_render_targets(
+				VulkanDevice &vulkan_device);
 	};
 }
 

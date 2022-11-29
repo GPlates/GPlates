@@ -7,7 +7,6 @@ GLCapabilities.cc
 GLCapabilities.h
 GLContext.cc
 GLContext.h
-GLContextLifetime.h
 GLCubeMeshGenerator.cc
 GLCubeMeshGenerator.h
 GLCubeSubdivision.cc
@@ -121,6 +120,7 @@ Vulkan.cc
 Vulkan.h
 VulkanDevice.cc
 VulkanDevice.h
+VulkanDeviceLifetime.h
 VulkanException.h
 VulkanFrame.cc
 VulkanFrame.h

@@ -39,47 +39,70 @@
 
 
 GPlatesOpenGL::VulkanDevice::VulkanDevice(
-		vk::Instance instance,
-		boost::optional<const SurfaceInfo &> surface_info) :
+		vk::Instance instance) :
 	d_instance(instance),
-	d_graphics_and_compute_queue_family(std::numeric_limits<std::uint32_t>::max())
+	d_graphics_and_compute_queue_family(std::numeric_limits<std::uint32_t>::max()),
+	d_vma_allocator{}
 {
-	// Create the logical device.
-	create_device(surface_info);
-
-	// Initialise the VMA allocator (for allocating buffers and images).
-	initialise_vma_allocator();
-}
-
-
-GPlatesOpenGL::VulkanDevice::~VulkanDevice()
-{
-	if (d_device)
-	{
-		// First make sure all commands in all queues have finished before we start destroying things.
-		//
-		// Note: It's OK to wait here since destroying a device is not a performance-critical part of the code.
-		d_device.waitIdle();
-	}
-
-	if (d_vma_allocator)
-	{
-		// Destroy the VMA allocator.
-		vmaDestroyAllocator(d_vma_allocator);
-	}
-
-	if (d_device)
-	{
-		// Destroy the logical device.
-		d_device.destroy();
-	}
 }
 
 
 void
-GPlatesOpenGL::VulkanDevice::create_device(
+GPlatesOpenGL::VulkanDevice::create_device()
+{
+	// Create the logical device.
+	create_device_internal();
+}
+
+
+void
+GPlatesOpenGL::VulkanDevice::create_device_for_surface(
+		vk::SurfaceKHR surface,
+		std::uint32_t &present_queue_family)
+{
+	const SurfaceInfo surface_info{ surface, present_queue_family };
+
+	// Create the logical device.
+	create_device_internal(surface_info);
+}
+
+
+void
+GPlatesOpenGL::VulkanDevice::destroy_device()
+{
+	GPlatesGlobal::Assert<VulkanException>(
+			d_device,
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to destroy Vulkan device without first creating it.");
+
+	// First make sure all commands in all queues have finished before we start destroying things.
+	//
+	// Note: It's OK to wait here since destroying a device is not a performance-critical part of the code.
+	d_device.waitIdle();
+
+	// Destroy the VMA allocator.
+	vmaDestroyAllocator(d_vma_allocator);
+	d_vma_allocator = {};
+
+	// Destroy the logical device.
+	d_device.destroy();
+	d_device = nullptr;
+
+	// Reset some members.
+	d_physical_device = nullptr;  // Owned by Vulkan instance (which we're not destroying).
+	d_graphics_and_compute_queue = nullptr;  // Owned by device (which was destroyed when device was destroyed).
+}
+
+
+void
+GPlatesOpenGL::VulkanDevice::create_device_internal(
 		boost::optional<const SurfaceInfo &> surface_info)
 {
+	GPlatesGlobal::Assert<VulkanException>(
+			!d_device,
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to create Vulkan device without first destroying it.");
+
 	//
 	// Select a physical device.
 	//
@@ -142,6 +165,11 @@ GPlatesOpenGL::VulkanDevice::create_device(
 	// Note: We don't retrieve the present queue (which could be same as graphics+compute queue), even if
 	//       a vk::SurfaceKHR was provided, because that's the responsibility of whoever creates the swapchain.
 	d_graphics_and_compute_queue = d_device.getQueue(d_graphics_and_compute_queue_family, 0/*queueIndex*/);
+
+	//
+	// Initialise the VMA allocator (for allocating buffers and images).
+	//
+	initialise_vma_allocator();
 }
 
 

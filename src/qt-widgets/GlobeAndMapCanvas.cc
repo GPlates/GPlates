@@ -64,6 +64,9 @@
 
 GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 		GPlatesPresentation::ViewState &view_state) :
+	// VulkanWindow is a QWindow (not a QWidget), so its parent is a QWidget container (created by GlobeAndMapWidget).
+	// So no parent is passed in here...
+	VulkanWindow(view_state.get_application_state().get_vulkan_instance()),
 	d_gl_context(GPlatesOpenGL::GLContext::create()),
 	d_scene(GPlatesGui::Scene::create(view_state, devicePixelRatio())),
 	d_scene_view(GPlatesGui::SceneView::create(view_state)),
@@ -73,12 +76,6 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 	d_mouse_position_on_globe(GPlatesMaths::UnitVector3D(1, 0, 0)),
 	d_mouse_is_on_globe(false)
 {
-	// Set the Vulkan instance in this QWindow.
-	//
-	// We do this first so that we then subsequently access 'vulkanInstance()' on 'this' QWindow.
-	setVulkanInstance(&view_state.get_application_state().get_vulkan_instance());
-
-
 	// Update our canvas whenever the RenderedGeometryCollection gets updated.
 	// This will cause 'paintGL()' to be called which will visit the rendered
 	// geometry collection and redraw it.
