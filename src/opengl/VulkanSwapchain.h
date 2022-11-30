@@ -52,8 +52,8 @@ namespace GPlatesOpenGL
 		 * The present queue family is returned in @a present_queue_family.
 		 * This will be the graphics+compute queue family if it supports present (otherwise a different family).
 		 *
-		 * Note: Before this, @a get_device() will be equal to nullptr.
-		 *       This can be used to test whether the device has not yet been created, or has been destroyed.
+		 * Note: Before this, @a get_swapchain() will be equal to nullptr.
+		 *       This can be used to test whether the swapchain has not yet been created, or has been destroyed.
 		 *
 		 * NOTE: VulkanHpp::initialise() must have been called first.
 		 */

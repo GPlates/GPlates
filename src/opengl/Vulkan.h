@@ -36,7 +36,8 @@ namespace GPlatesOpenGL
 
 		Vulkan(
 				VulkanDevice &vulkan_device,
-				VulkanFrame &vulkan_frame);
+				VulkanFrame &vulkan_frame,
+				vk::RenderPass default_render_pass);
 
 
 		/**
@@ -96,19 +97,29 @@ namespace GPlatesOpenGL
 		}
 
 		/**
+		 * Return the render pass used for rendering into the default framebuffer (eg, swapchain).
+		 */
+		vk::RenderPass
+		get_default_render_pass()
+		{
+			return d_default_render_pass;
+		}
+
+		/**
 		 * Access the command buffer for rendering into the default framebuffer (eg, swapchain)
-		 * using commands suitable for submission to a graphics+compute queue.
+		 * using the default render pass (with commands allowed within a render pass).
 		 */
 		vk::CommandBuffer
-		get_default_graphics_and_compute_command_buffer()
+		get_default_render_pass_command_buffer()
 		{
-			return d_vulkan_frame.get_default_graphics_and_compute_command_buffer();
+			return d_vulkan_frame.get_default_render_pass_command_buffer();
 		}
 
 	private:
 
 		VulkanDevice &d_vulkan_device;
 		VulkanFrame &d_vulkan_frame;
+		vk::RenderPass d_default_render_pass;
 	};
 }
 

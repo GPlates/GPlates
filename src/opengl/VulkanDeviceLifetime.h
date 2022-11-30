@@ -27,6 +27,13 @@ namespace GPlatesOpenGL
 	/**
 	 * Interface for initialising Vulkan resources (objects) when the Vulkan device is created, and
 	 * releasing resources when device is about to be destroyed.
+	 *
+	 * This is done using initialise/release methods instead of constructor/destructor since it's possible
+	 * for Vulkan to have a lost device that we attempt to recover from by destroying and recreating the
+	 * Vulkan device (which means the application needs to release and recreate its Vulkan resources).
+	 * This also means that if an exception is thrown then resources are not cleaned up (but if an exception
+	 * is thrown in rendering code then it's usually unrecoverable, ie, leads to aborting the application,
+	 * and the operating system will then clean up the resources, including GPU resources/memory).
 	 */
 	class VulkanDeviceLifetime
 	{

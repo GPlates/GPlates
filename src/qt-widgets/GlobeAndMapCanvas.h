@@ -53,7 +53,7 @@
 #include "opengl/GLMatrix.h"
 #include "opengl/GLVisualLayers.h"
 #include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
-#include "opengl/VulkanFrame.h"
+#include "opengl/VulkanSwapchainFrame.h"
 
 
 namespace GPlatesGui
@@ -441,7 +441,7 @@ namespace GPlatesQtWidgets
 		/**
 		 * Frame buffering for asynchronous Vulkan rendering.
 		 */
-		GPlatesOpenGL::VulkanFrame d_vulkan_frame;
+		GPlatesOpenGL::VulkanSwapchainFrame d_vulkan_frame;
 
 		/**
 		 * The scene contains the globe and map.

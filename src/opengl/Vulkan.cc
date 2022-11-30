@@ -22,8 +22,10 @@
 
 GPlatesOpenGL::Vulkan::Vulkan(
 		VulkanDevice &vulkan_device,
-		VulkanFrame &vulkan_frame) :
+		VulkanFrame &vulkan_frame,
+		vk::RenderPass default_render_pass) :
 	d_vulkan_device(vulkan_device),
-	d_vulkan_frame(vulkan_frame)
+	d_vulkan_frame(vulkan_frame),
+	d_default_render_pass(default_render_pass)
 {
 }

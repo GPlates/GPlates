@@ -50,7 +50,7 @@ GPlatesOpenGL::VulkanFrame::begin_command_buffers()
 		vk::CommandBufferBeginInfo command_buffer_begin_info;
 		command_buffer_begin_info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 
-		buffered_frame.default_graphics_and_compute_command_buffer.begin(command_buffer_begin_info);
+		buffered_frame.default_render_pass_command_buffer.begin(command_buffer_begin_info);
 	}
 }
 
@@ -60,20 +60,20 @@ GPlatesOpenGL::VulkanFrame::end_command_buffers()
 {
 	for (auto &buffered_frame : d_buffered_frames)
 	{
-		buffered_frame.default_graphics_and_compute_command_buffer.end();
+		buffered_frame.default_render_pass_command_buffer.end();
 	}
 }
 
 
 vk::CommandBuffer
-GPlatesOpenGL::VulkanFrame::get_default_graphics_and_compute_command_buffer()
+GPlatesOpenGL::VulkanFrame::get_default_render_pass_command_buffer()
 {
 	GPlatesGlobal::Assert<VulkanException>(
 			d_buffered_frames.size() == d_num_buffered_frames,
 			GPLATES_ASSERTION_SOURCE,
 			"Vulkan frame not initialised.");
 
-	return d_buffered_frames[d_frame_index % d_num_buffered_frames].default_graphics_and_compute_command_buffer;
+	return d_buffered_frames[d_frame_index % d_num_buffered_frames].default_render_pass_command_buffer;
 }
 
 
@@ -162,7 +162,7 @@ GPlatesOpenGL::VulkanFrame::release_vulkan_resources(
 		// Free command buffer.
 		vulkan_device.get_device().freeCommandBuffers(
 				d_graphics_and_compute_command_pool,
-				buffered_frame.default_graphics_and_compute_command_buffer);
+				buffered_frame.default_render_pass_command_buffer);
 
 		// Destroy semaphore.
 		vulkan_device.get_device().destroySemaphore(buffered_frame.rendering_finished_semaphore);

@@ -57,6 +57,7 @@ namespace GPlatesOpenGL
 		 * For example, this will increment frame N-1 to become frame N, and for double-buffered resources
 		 * this will now access buffer resources at index 'N % 2' (for frame N).
 		 */
+		virtual
 		void
 		next_frame();
 
@@ -67,22 +68,24 @@ namespace GPlatesOpenGL
 		 * This implicitly resets each command buffer (ie, command pool was created with 'eResetCommandBuffer' flag).
 		 * And each command buffer can only be submitted once (ie, each command buffer must be re-recorded each frame).
 		 */
+		virtual
 		void
 		begin_command_buffers();
 
 		/**
 		 * End recording into all command buffers.
 		 */
+		virtual
 		void
 		end_command_buffers();
 
 
 		/**
 		 * Access the command buffer for rendering into the default framebuffer (eg, swapchain)
-		 * using commands suitable for submission to a graphics+compute queue.
+		 * using the default render pass (with commands allowed within a render pass).
 		 */
 		vk::CommandBuffer
-		get_default_graphics_and_compute_command_buffer();
+		get_default_render_pass_command_buffer();
 
 
 		/**
@@ -117,20 +120,23 @@ namespace GPlatesOpenGL
 		release_vulkan_resources(
 				VulkanDevice &vulkan_device) override;
 
+	protected:
+
+		std::uint32_t d_num_buffered_frames;
+		std::uint32_t d_frame_index;
+
 	private:
 
 		struct BufferedFrame
 		{
-			vk::CommandBuffer default_graphics_and_compute_command_buffer;
+			vk::CommandBuffer default_render_pass_command_buffer;
 			vk::Semaphore rendering_finished_semaphore;
 			vk::Fence rendering_finished_fence;
 		};
 
 		vk::CommandPool d_graphics_and_compute_command_pool;
 
-		std::uint32_t d_num_buffered_frames;
 		std::vector<BufferedFrame> d_buffered_frames;
-		std::uint32_t d_frame_index;
 	};
 }
 
