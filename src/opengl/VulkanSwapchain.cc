@@ -58,6 +58,12 @@ GPlatesOpenGL::VulkanSwapchain::recreate_swapchain(
 		VulkanDevice &vulkan_device,
 		const vk::Extent2D &swapchain_size)
 {
+	// First make sure all commands in all queues have finished.
+	// This is in case any commands are still operating on an acquired swapchain image.
+	//
+	// Note: It's OK to wait here since destroying a swapchain is not a performance-critical part of the code.
+	vulkan_device.get_device().waitIdle();
+
 	// Destroy the render targets (image views and framebuffers).
 	destroy_render_targets(vulkan_device);
 

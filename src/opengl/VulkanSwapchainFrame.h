@@ -51,7 +51,10 @@ namespace GPlatesOpenGL
 		 * Semaphore to signal when the acquired swapchain image (for the current frame) is ready to be rendered into.
 		 */
 		vk::Semaphore
-		get_swapchain_image_available_semaphore();
+		get_swapchain_image_available_semaphore()
+		{
+			return get_swapchain_buffered_frame().swapchain_image_available_semaphore;
+		}
 
 
 		/**
@@ -76,6 +79,13 @@ namespace GPlatesOpenGL
 		};
 
 		std::vector<SwapchainBufferedFrame> d_swapchain_buffered_frames;
+
+
+		/**
+		 * Returns the @a SwapchainBufferedFrame that corresponds to the current frame index.
+		 */
+		SwapchainBufferedFrame &
+		get_swapchain_buffered_frame();
 	};
 }
 

@@ -33,15 +33,15 @@ GPlatesOpenGL::VulkanSwapchainFrame::VulkanSwapchainFrame(
 }
 
 
-vk::Semaphore
-GPlatesOpenGL::VulkanSwapchainFrame::get_swapchain_image_available_semaphore()
+GPlatesOpenGL::VulkanSwapchainFrame::SwapchainBufferedFrame &
+GPlatesOpenGL::VulkanSwapchainFrame::get_swapchain_buffered_frame()
 {
 	GPlatesGlobal::Assert<VulkanException>(
 			d_swapchain_buffered_frames.size() == d_num_buffered_frames,
 			GPLATES_ASSERTION_SOURCE,
 			"Vulkan swapchain frame not initialised.");
 
-	return d_swapchain_buffered_frames[d_frame_index % d_num_buffered_frames].swapchain_image_available_semaphore;
+	return d_swapchain_buffered_frames[d_frame_index % d_num_buffered_frames];
 }
 
 

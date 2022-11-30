@@ -44,60 +44,36 @@ GPlatesOpenGL::VulkanFrame::next_frame()
 void
 GPlatesOpenGL::VulkanFrame::begin_command_buffers()
 {
-	for (auto &buffered_frame : d_buffered_frames)
-	{
-		// Each command buffer will only be submitted once.
-		vk::CommandBufferBeginInfo command_buffer_begin_info;
-		command_buffer_begin_info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+	BufferedFrame &buffered_frame = get_buffered_frame();
 
-		buffered_frame.default_render_pass_command_buffer.begin(command_buffer_begin_info);
-	}
+	// Each command buffer will only be submitted once.
+	vk::CommandBufferBeginInfo command_buffer_begin_info;
+	command_buffer_begin_info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+
+	// Begin command buffer for default render pass.
+	buffered_frame.default_render_pass_command_buffer.begin(command_buffer_begin_info);
 }
 
 
 void
 GPlatesOpenGL::VulkanFrame::end_command_buffers()
 {
-	for (auto &buffered_frame : d_buffered_frames)
-	{
-		buffered_frame.default_render_pass_command_buffer.end();
-	}
+	BufferedFrame &buffered_frame = get_buffered_frame();
+
+	// End command buffer for default render pass.
+	buffered_frame.default_render_pass_command_buffer.end();
 }
 
 
-vk::CommandBuffer
-GPlatesOpenGL::VulkanFrame::get_default_render_pass_command_buffer()
+GPlatesOpenGL::VulkanFrame::BufferedFrame &
+GPlatesOpenGL::VulkanFrame::get_buffered_frame()
 {
 	GPlatesGlobal::Assert<VulkanException>(
 			d_buffered_frames.size() == d_num_buffered_frames,
 			GPLATES_ASSERTION_SOURCE,
 			"Vulkan frame not initialised.");
 
-	return d_buffered_frames[d_frame_index % d_num_buffered_frames].default_render_pass_command_buffer;
-}
-
-
-vk::Semaphore
-GPlatesOpenGL::VulkanFrame::get_rendering_finished_semaphore()
-{
-	GPlatesGlobal::Assert<VulkanException>(
-			d_buffered_frames.size() == d_num_buffered_frames,
-			GPLATES_ASSERTION_SOURCE,
-			"Vulkan frame not initialised.");
-
-	return d_buffered_frames[d_frame_index % d_num_buffered_frames].rendering_finished_semaphore;
-}
-
-
-vk::Fence
-GPlatesOpenGL::VulkanFrame::get_rendering_finished_fence()
-{
-	GPlatesGlobal::Assert<VulkanException>(
-			d_buffered_frames.size() == d_num_buffered_frames,
-			GPLATES_ASSERTION_SOURCE,
-			"Vulkan frame not initialised.");
-
-	return d_buffered_frames[d_frame_index % d_num_buffered_frames].rendering_finished_fence;
+	return d_buffered_frames[d_frame_index % d_num_buffered_frames];
 }
 
 

@@ -439,9 +439,9 @@ namespace GPlatesQtWidgets
 		GPlatesOpenGL::GLContext::non_null_ptr_type d_gl_context;
 
 		/**
-		 * Frame buffering for asynchronous Vulkan rendering.
+		 * Frame buffering for asynchronous Vulkan rendering to the swapchain.
 		 */
-		GPlatesOpenGL::VulkanSwapchainFrame d_vulkan_frame;
+		GPlatesOpenGL::VulkanSwapchainFrame d_vulkan_swapchain_frame;
 
 		/**
 		 * The scene contains the globe and map.

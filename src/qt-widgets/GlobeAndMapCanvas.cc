@@ -176,7 +176,7 @@ void
 GPlatesQtWidgets::GlobeAndMapCanvas::initialise_vulkan_resources(
 		GPlatesOpenGL::VulkanDevice &vulkan_device)
 {
-	d_vulkan_frame.initialise_vulkan_resources(vulkan_device);
+	d_vulkan_swapchain_frame.initialise_vulkan_resources(vulkan_device);
 }
 
 
@@ -184,7 +184,7 @@ void
 GPlatesQtWidgets::GlobeAndMapCanvas::release_vulkan_resources(
 		GPlatesOpenGL::VulkanDevice &vulkan_device) 
 {
-	d_vulkan_frame.release_vulkan_resources(vulkan_device);
+	d_vulkan_swapchain_frame.release_vulkan_resources(vulkan_device);
 }
 
 
@@ -221,12 +221,12 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 	//
 
 	// Start a new frame.
-	d_vulkan_frame.next_frame();
+	d_vulkan_swapchain_frame.next_frame();
 
 	// Semaphores/fences associated with the current (buffered) frame.
-	vk::Semaphore swapchain_image_available_semaphore = d_vulkan_frame.get_swapchain_image_available_semaphore();
-	vk::Semaphore frame_rendering_finished_semaphore = d_vulkan_frame.get_rendering_finished_semaphore();
-	vk::Fence frame_rendering_finished_fence = d_vulkan_frame.get_rendering_finished_fence();
+	vk::Semaphore swapchain_image_available_semaphore = d_vulkan_swapchain_frame.get_swapchain_image_available_semaphore();
+	vk::Semaphore frame_rendering_finished_semaphore = d_vulkan_swapchain_frame.get_rendering_finished_semaphore();
+	vk::Fence frame_rendering_finished_fence = d_vulkan_swapchain_frame.get_rendering_finished_fence();
 
 	// Make sure the GPU has finished rendering in frame N-2 so that we can use that frame's command buffers, fences, semaphores, etc
 	// for the current frame N.
@@ -291,7 +291,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 	//
 	// Begin recording into all command buffers.
 	//
-	d_vulkan_frame.begin_command_buffers();
+	d_vulkan_swapchain_frame.begin_command_buffers();
 
 
 	//
@@ -300,7 +300,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 
 	vk::RenderPass swapchain_render_pass = vulkan_swapchain.get_swapchain_render_pass();
 	vk::Framebuffer swapchain_framebuffer = vulkan_swapchain.get_swapchain_framebuffer(swapchain_image_index);
-	vk::CommandBuffer swapchain_command_buffer = d_vulkan_frame.get_default_render_pass_command_buffer();
+	vk::CommandBuffer swapchain_command_buffer = d_vulkan_swapchain_frame.get_default_render_pass_command_buffer();
 
 	// Clear colour of the swapchain framebuffer.
 	//
@@ -329,7 +329,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 	//
 	// This records Vulkan commands into the swapchain command buffer, and also into other command buffers
 	// (eg, that render into textures that are in turn used to render into the swapchain framebuffer).
-	GPlatesOpenGL::Vulkan vulkan(vulkan_device, d_vulkan_frame, swapchain_render_pass);
+	GPlatesOpenGL::Vulkan vulkan(vulkan_device, d_vulkan_swapchain_frame, swapchain_render_pass);
 	d_scene_renderer->render(vulkan, *d_scene, *d_scene_overlays, *d_scene_view, viewport, devicePixelRatio());
 
 	// End swapchain render pass.
@@ -339,7 +339,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 	//
 	// End recording into all command buffers.
 	//
-	d_vulkan_frame.end_command_buffers();
+	d_vulkan_swapchain_frame.end_command_buffers();
 
 
 	//

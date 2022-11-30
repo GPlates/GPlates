@@ -85,14 +85,20 @@ namespace GPlatesOpenGL
 		 * using the default render pass (with commands allowed within a render pass).
 		 */
 		vk::CommandBuffer
-		get_default_render_pass_command_buffer();
+		get_default_render_pass_command_buffer()
+		{
+			return get_buffered_frame().default_render_pass_command_buffer;
+		}
 
 
 		/**
 		 * Semaphore to signal when the GPU has finished rendering a frame.
 		 */
 		vk::Semaphore
-		get_rendering_finished_semaphore();
+		get_rendering_finished_semaphore()
+		{
+			return get_buffered_frame().rendering_finished_semaphore;
+		}
 
 		/**
 		 * Fence to signal when the GPU has finished rendering a frame.
@@ -103,7 +109,10 @@ namespace GPlatesOpenGL
 		 *       When the wait returns the buffered resources are then available for use by the CPU.
 		 */
 		vk::Fence
-		get_rendering_finished_fence();
+		get_rendering_finished_fence()
+		{
+			return get_buffered_frame().rendering_finished_fence;
+		}
 
 
 		/**
@@ -137,6 +146,13 @@ namespace GPlatesOpenGL
 		vk::CommandPool d_graphics_and_compute_command_pool;
 
 		std::vector<BufferedFrame> d_buffered_frames;
+
+
+		/**
+		 * Returns the @a BufferedFrame that corresponds to the current frame index.
+		 */
+		BufferedFrame &
+		get_buffered_frame();
 	};
 }
 
