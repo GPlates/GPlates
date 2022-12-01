@@ -26,54 +26,39 @@
 #include "global/GPlatesAssert.h"
 
 
-GPlatesOpenGL::VulkanFrame::VulkanFrame(
-		std::uint32_t num_buffered_frames) :
-	d_num_buffered_frames(num_buffered_frames),
-	d_frame_index(0)
+GPlatesOpenGL::VulkanFrame::VulkanFrame() :
+	d_frame_number(0)
 {
 }
 
 
-void
-GPlatesOpenGL::VulkanFrame::next_frame()
+vk::Fence
+GPlatesOpenGL::VulkanFrame::next_frame(
+		vk::Device device)
 {
-	++d_frame_index;
-}
+	// First increment the frame number (to move onto the next frame).
+	++d_frame_number;
 
+	// Make sure the device (GPU) has finished drawing frame "d_frame_number - NUM_ASYNC_FRAMES"
+	// so that clients can use that frame's resources (command buffers, etc) for the current frame.
+	vk::Fence async_frame_fence = d_async_frame_fences[get_frame_index()];
+	const vk::Result wait_for_frame_result = device.waitForFences(async_frame_fence, true, UINT64_MAX);
+	if (wait_for_frame_result != vk::Result::eSuccess)
+	{
+		if (wait_for_frame_result == vk::Result::eErrorDeviceLost)
+		{
+			return nullptr;
+		}
 
-void
-GPlatesOpenGL::VulkanFrame::begin_command_buffers()
-{
-	BufferedFrame &buffered_frame = get_buffered_frame();
+		throw GPlatesOpenGL::VulkanException(
+				GPLATES_EXCEPTION_SOURCE,
+				"Failed to wait for next Vulkan asynchronous frame.");
+	}
 
-	// Each command buffer will only be submitted once.
-	vk::CommandBufferBeginInfo command_buffer_begin_info;
-	command_buffer_begin_info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+	// Reset to the unsignaled state.
+	device.resetFences(async_frame_fence);
 
-	// Begin command buffer for default render pass.
-	buffered_frame.default_render_pass_command_buffer.begin(command_buffer_begin_info);
-}
-
-
-void
-GPlatesOpenGL::VulkanFrame::end_command_buffers()
-{
-	BufferedFrame &buffered_frame = get_buffered_frame();
-
-	// End command buffer for default render pass.
-	buffered_frame.default_render_pass_command_buffer.end();
-}
-
-
-GPlatesOpenGL::VulkanFrame::BufferedFrame &
-GPlatesOpenGL::VulkanFrame::get_buffered_frame()
-{
-	GPlatesGlobal::Assert<VulkanException>(
-			d_buffered_frames.size() == d_num_buffered_frames,
-			GPLATES_ASSERTION_SOURCE,
-			"Vulkan frame not initialised.");
-
-	return d_buffered_frames[d_frame_index % d_num_buffered_frames];
+	return async_frame_fence;
 }
 
 
@@ -81,50 +66,15 @@ void
 GPlatesOpenGL::VulkanFrame::initialise_vulkan_resources(
 		GPlatesOpenGL::VulkanDevice &vulkan_device)
 {
-	// Create the graphics+compute command pool.
-	//
-	// Note that we not creating a separate command pool for each buffered frame.
-	// Each command buffer will tend to be used for a specific purpose (eg, default command buffer
-	// used to render into default framebuffer) and so will have consistent memory allocations (from pool).
-	vk::CommandPoolCreateInfo graphics_and_compute_command_pool_create_info;
-	graphics_and_compute_command_pool_create_info
-			// Each command buffer can be reset (eg, implictly by beginning a command buffer).
-			// And each command buffer will not be re-used (ie, used once and then reset)...
-			.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer | vk::CommandPoolCreateFlagBits::eTransient)
-			.setQueueFamilyIndex(vulkan_device.get_graphics_and_compute_queue_family());
-	d_graphics_and_compute_command_pool = vulkan_device.get_device().createCommandPool(graphics_and_compute_command_pool_create_info);
-
-	// Allocate a default graphics+compute command buffer for each buffered frame.
-	vk::CommandBufferAllocateInfo default_graphics_and_compute_command_buffer_allocate_info;
-	default_graphics_and_compute_command_buffer_allocate_info
-			.setCommandPool(d_graphics_and_compute_command_pool)
-			.setLevel(vk::CommandBufferLevel::ePrimary)
-			.setCommandBufferCount(d_num_buffered_frames);
-	const std::vector<vk::CommandBuffer> default_graphics_and_compute_command_buffers =
-			vulkan_device.get_device().allocateCommandBuffers(default_graphics_and_compute_command_buffer_allocate_info);
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			default_graphics_and_compute_command_buffers.size() == d_num_buffered_frames,
-			GPLATES_ASSERTION_SOURCE);
-
-	// Create/allocate resources for each buffered frame.
-	for (std::uint32_t buffered_frame_index = 0; buffered_frame_index < d_num_buffered_frames; ++buffered_frame_index)
+	// Create a fence for each asynchronous frame.
+	for (unsigned int frame_index = 0; frame_index < NUM_ASYNC_FRAMES; ++frame_index)
 	{
-		// Get a previously allocated command buffer.
-		vk::CommandBuffer default_graphics_and_compute_command_buffer = default_graphics_and_compute_command_buffers[buffered_frame_index];
-
-		// Create a semaphore.
-		vk::SemaphoreCreateInfo semaphore_create_info;
-		vk::Semaphore rendering_finished_semaphore = vulkan_device.get_device().createSemaphore(semaphore_create_info);
-
-		// Create a fence in the signaled state.
+		// Create a fence in the signaled state (so that the first wait on fence will return immediately).
 		vk::FenceCreateInfo fence_create_info(vk::FenceCreateFlagBits::eSignaled);
-		vk::Fence rendering_finished_fence = vulkan_device.get_device().createFence(fence_create_info);
-
-		BufferedFrame buffered_frame = { default_graphics_and_compute_command_buffer, rendering_finished_semaphore, rendering_finished_fence };
-		d_buffered_frames.push_back(buffered_frame);
+		d_async_frame_fences[frame_index] = vulkan_device.get_device().createFence(fence_create_info);
 	}
 
-	d_frame_index = 0;
+	d_frame_number = 0;
 }
 
 
@@ -132,23 +82,10 @@ void
 GPlatesOpenGL::VulkanFrame::release_vulkan_resources(
 		GPlatesOpenGL::VulkanDevice &vulkan_device)
 {
-	// Destroy/free resources for each buffered frame.
-	for (auto &buffered_frame : d_buffered_frames)
+	// Destroy the asynchronous frame fences.
+	for (unsigned int frame_index = 0; frame_index < NUM_ASYNC_FRAMES; ++frame_index)
 	{
-		// Free command buffer.
-		vulkan_device.get_device().freeCommandBuffers(
-				d_graphics_and_compute_command_pool,
-				buffered_frame.default_render_pass_command_buffer);
-
-		// Destroy semaphore.
-		vulkan_device.get_device().destroySemaphore(buffered_frame.rendering_finished_semaphore);
-
-		// Destroy fence.
-		vulkan_device.get_device().destroyFence(buffered_frame.rendering_finished_fence);
+		vulkan_device.get_device().destroyFence(d_async_frame_fences[frame_index]);
+		d_async_frame_fences[frame_index] = nullptr;
 	}
-
-	// Destroy the graphics+compute command pool.
-	vulkan_device.get_device().destroyCommandPool(d_graphics_and_compute_command_pool);
-
-	d_buffered_frames.clear();
 }

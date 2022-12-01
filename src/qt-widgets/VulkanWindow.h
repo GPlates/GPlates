@@ -25,7 +25,6 @@
 #include <QWindow>
 
 #include "opengl/VulkanDevice.h"
-#include "opengl/VulkanDeviceLifetime.h"
 #include "opengl/VulkanHpp.h"
 #include "opengl/VulkanSwapchain.h"
 
@@ -33,8 +32,7 @@
 namespace GPlatesQtWidgets
 {
 	class VulkanWindow :
-			public QWindow,
-			public GPlatesOpenGL::VulkanDeviceLifetime
+			public QWindow
 	{
 	public:
 
@@ -44,6 +42,23 @@ namespace GPlatesQtWidgets
 				QWindow *parent_ = nullptr);
 
 	protected:
+
+		/**
+		 * The Vulkan device was just created.
+		 */
+		virtual
+		void
+		initialise_vulkan_resources(
+				GPlatesOpenGL::VulkanDevice &vulkan_device,
+				GPlatesOpenGL::VulkanSwapchain &vulkan_swapchain) = 0;
+
+		/**
+		 * The Vulkan device is about to be destroyed.
+		 */
+		virtual
+		void
+		release_vulkan_resources(
+				GPlatesOpenGL::VulkanDevice &vulkan_device) = 0;
 
 		/**
 		 * Called when a frame should be rendered into the window by subclass.

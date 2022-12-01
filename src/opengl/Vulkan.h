@@ -22,13 +22,17 @@
 
 #include "VulkanDevice.h"
 #include "VulkanFrame.h"
+
+//
+// The Vulkan-Hpp C++ interface (around the Vulkan C interface).
+//
 #include "VulkanHpp.h"
 
 
 namespace GPlatesOpenGL
 {
 	/**
-	 * Central place to access Vulkan device and command buffers for use by most clients needing access to Vulkan.
+	 * Central place for most clients to access the Vulkan (logical) device and asynchronous frames.
 	 */
 	class Vulkan
 	{
@@ -36,8 +40,12 @@ namespace GPlatesOpenGL
 
 		Vulkan(
 				VulkanDevice &vulkan_device,
-				VulkanFrame &vulkan_frame,
-				vk::RenderPass default_render_pass);
+				VulkanFrame &vulkan_frame);
+
+
+		//
+		// Vulkan instance and physical device.
+		//
 
 
 		/**
@@ -76,6 +84,12 @@ namespace GPlatesOpenGL
 			return d_vulkan_device.get_physical_device_features();
 		}
 
+
+		//
+		// Vulkan logical device.
+		//
+
+
 		/**
 		 * Return the Vulkan logical device.
 		 */
@@ -83,6 +97,26 @@ namespace GPlatesOpenGL
 		get_device()
 		{
 			return d_vulkan_device.get_device();
+		}
+
+		/**
+		 * Return the graphics+compute queue family.
+		 */
+		std::uint32_t
+		get_graphics_and_compute_queue_family() const
+		{
+			return d_vulkan_device.get_graphics_and_compute_queue_family();
+		}
+
+		/**
+		 * Return the graphics+compute queue.
+		 *
+		 * Note that this queue can also be used for transfer operations.
+		 */
+		vk::Queue
+		get_graphics_and_compute_queue()
+		{
+			return d_vulkan_device.get_graphics_and_compute_queue();
 		}
 
 		/**
@@ -96,30 +130,55 @@ namespace GPlatesOpenGL
 			return d_vulkan_device.get_vma_allocator();
 		}
 
+
+		//
+		// Asynchronous frame rendering.
+		//
+
+
 		/**
-		 * Return the render pass used for rendering into the default framebuffer (eg, swapchain).
+		 * The maximum number of frames that the host (CPU) can record/queue commands ahead of the device (GPU).
+		 *
+		 * For example, when this value is 2 then the host can record command buffers for frames N-1 and N
+		 * while the device is still executing command buffers for frame N-2.
+		 *
+		 * Note: Each "frame" is determined by a call to @a next_frame.
 		 */
-		vk::RenderPass
-		get_default_render_pass()
+		static constexpr unsigned int NUM_ASYNC_FRAMES = VulkanFrame::NUM_ASYNC_FRAMES;
+
+		/**
+		 * The current frame *number*.
+		 *
+		 * If the current frame number is "N" then the device (GPU) has finished rendering frame "N - NUM_ASYNC_FRAMES".
+		 *
+		 * This means clients should buffer NUM_ASYNC_FRAMES worth of dynamic resources to ensure
+		 * they do not modify resources that the device (GPU) is still using.
+		 * An example is the host (CPU) recording into command buffers that the device (GPU) is still using.
+		 */
+		std::int64_t
+		get_frame_number() const
 		{
-			return d_default_render_pass;
+			return d_vulkan_frame.get_frame_number();
 		}
 
 		/**
-		 * Access the command buffer for rendering into the default framebuffer (eg, swapchain)
-		 * using the default render pass (with commands allowed within a render pass).
+		 * The frame *index* is in the range [0, NUM_ASYNC_FRAMES - 1].
+		 *
+		 * The resources at this index are no longer in use by the device (GPU) and can safely be re-used.
+		 *
+		 * It's value is "get_frame_number() % NUM_ASYNC_FRAMES" and can be used by clients to index
+		 * index their own buffer of resources (eg, an array of size NUM_ASYNC_FRAMES).
 		 */
-		vk::CommandBuffer
-		get_default_render_pass_command_buffer()
+		unsigned int
+		get_frame_index() const
 		{
-			return d_vulkan_frame.get_default_render_pass_command_buffer();
+			return d_vulkan_frame.get_frame_index();
 		}
 
 	private:
 
 		VulkanDevice &d_vulkan_device;
 		VulkanFrame &d_vulkan_frame;
-		vk::RenderPass d_default_render_pass;
 	};
 }
 

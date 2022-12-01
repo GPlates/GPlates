@@ -17,7 +17,6 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include <limits>
 #include <vector>
 #include <boost//optional.hpp>
 
@@ -41,34 +40,43 @@
 GPlatesOpenGL::VulkanDevice::VulkanDevice(
 		vk::Instance instance) :
 	d_instance(instance),
-	d_graphics_and_compute_queue_family(std::numeric_limits<std::uint32_t>::max()),
+	d_graphics_and_compute_queue_family(UINT32_MAX),
 	d_vma_allocator{}
 {
 }
 
 
 void
-GPlatesOpenGL::VulkanDevice::create_device()
+GPlatesOpenGL::VulkanDevice::create()
 {
-	// Create the logical device.
-	create_device_internal();
+	create_internal();
 }
 
 
 void
-GPlatesOpenGL::VulkanDevice::create_device_for_surface(
+GPlatesOpenGL::VulkanDevice::create_for_surface(
 		vk::SurfaceKHR surface,
 		std::uint32_t &present_queue_family)
 {
 	const SurfaceInfo surface_info{ surface, present_queue_family };
-
-	// Create the logical device.
-	create_device_internal(surface_info);
+	create_internal(surface_info);
 }
 
 
 void
-GPlatesOpenGL::VulkanDevice::destroy_device()
+GPlatesOpenGL::VulkanDevice::create_internal(
+		boost::optional<const SurfaceInfo &> surface_info)
+{
+	// Create the logical device.
+	create_device(surface_info);
+
+	// Create the VMA allocator (for allocating buffers and images).
+	create_vma_allocator();
+}
+
+
+void
+GPlatesOpenGL::VulkanDevice::destroy()
 {
 	GPlatesGlobal::Assert<VulkanException>(
 			d_device,
@@ -95,7 +103,7 @@ GPlatesOpenGL::VulkanDevice::destroy_device()
 
 
 void
-GPlatesOpenGL::VulkanDevice::create_device_internal(
+GPlatesOpenGL::VulkanDevice::create_device(
 		boost::optional<const SurfaceInfo &> surface_info)
 {
 	GPlatesGlobal::Assert<VulkanException>(
@@ -165,11 +173,6 @@ GPlatesOpenGL::VulkanDevice::create_device_internal(
 	// Note: We don't retrieve the present queue (which could be same as graphics+compute queue), even if
 	//       a vk::SurfaceKHR was provided, because that's the responsibility of whoever creates the swapchain.
 	d_graphics_and_compute_queue = d_device.getQueue(d_graphics_and_compute_queue_family, 0/*queueIndex*/);
-
-	//
-	// Initialise the VMA allocator (for allocating buffers and images).
-	//
-	initialise_vma_allocator();
 }
 
 
@@ -225,7 +228,7 @@ GPlatesOpenGL::VulkanDevice::select_physical_device(
 
 		// If a vk::SurfaceKHR was provided then see if any queue family supports present
 		// (preferring the graphics+compute queue family, if it supports present).
-		std::uint32_t present_queue_family = std::numeric_limits<std::uint32_t>::max();
+		std::uint32_t present_queue_family = UINT32_MAX;
 		if (surface_info)
 		{
 			if (!get_physical_device_present_queue_family(
@@ -339,6 +342,8 @@ GPlatesOpenGL::VulkanDevice::get_physical_device_graphics_and_compute_queue_fami
 	// See if any queue family supports both graphics and compute.
 	for (std::uint32_t queue_family_index = 0; queue_family_index < queue_family_properties.size(); ++queue_family_index)
 	{
+		// Note that a queue supporting graphics or compute operations also supports transfer operations
+		// (the Vulkan spec states that reporting 'vk::QueueFlagBits::eTransfer' is not need in this case).
 		if ((queue_family_properties[queue_family_index].queueFlags & vk::QueueFlagBits::eGraphics) &&
 			(queue_family_properties[queue_family_index].queueFlags & vk::QueueFlagBits::eCompute))
 		{
@@ -388,7 +393,7 @@ GPlatesOpenGL::VulkanDevice::get_physical_device_present_queue_family(
 
 
 void
-GPlatesOpenGL::VulkanDevice::initialise_vma_allocator()
+GPlatesOpenGL::VulkanDevice::create_vma_allocator()
 {
 	// Get the function pointer 'vkGetInstanceProcAddr'.
 	PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr_ = VulkanHpp::get_vkGetInstanceProcAddr();

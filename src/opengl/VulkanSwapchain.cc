@@ -33,7 +33,7 @@ GPlatesOpenGL::VulkanSwapchain::VulkanSwapchain() :
 
 
 void
-GPlatesOpenGL::VulkanSwapchain::create_swapchain(
+GPlatesOpenGL::VulkanSwapchain::create(
 		VulkanDevice &vulkan_device,
 		vk::SurfaceKHR surface,
 		std::uint32_t present_queue_family,
@@ -47,14 +47,14 @@ GPlatesOpenGL::VulkanSwapchain::create_swapchain(
 	d_present_queue = vulkan_device.get_device().getQueue(d_present_queue_family, 0/*queueIndex*/);
 
 	// Create swapchain first, then render pass and finally the render targets (image views and framebuffers).
-	create_swapchain_internal(vulkan_device, swapchain_size);
+	create_swapchain(vulkan_device, swapchain_size);
 	create_render_pass(vulkan_device);
 	create_render_targets(vulkan_device);
 }
 
 
 void
-GPlatesOpenGL::VulkanSwapchain::recreate_swapchain(
+GPlatesOpenGL::VulkanSwapchain::recreate(
 		VulkanDevice &vulkan_device,
 		const vk::Extent2D &swapchain_size)
 {
@@ -73,8 +73,8 @@ GPlatesOpenGL::VulkanSwapchain::recreate_swapchain(
 	// Recreate the swapchain, which passes in the old swapchain (to aid in presentation resource reuse),
 	// so we'll keep track of the old swapchain and destroy it after the new swapchain is created.
 	vk::SwapchainKHR old_swapchain = d_swapchain;
-	create_swapchain_internal(vulkan_device, swapchain_size);
-	// Destroy the *old* swapchain (not the current swapchain just created, which 'destroy_swapchain()' would do).
+	create_swapchain(vulkan_device, swapchain_size);
+	// Destroy the *old* swapchain (not the current swapchain just created, which 'destroy()' would do).
 	if (old_swapchain)
 	{
 		vulkan_device.get_device().destroySwapchainKHR(old_swapchain);
@@ -87,7 +87,7 @@ GPlatesOpenGL::VulkanSwapchain::recreate_swapchain(
 
 
 void
-GPlatesOpenGL::VulkanSwapchain::destroy_swapchain(
+GPlatesOpenGL::VulkanSwapchain::destroy(
 		VulkanDevice &vulkan_device)
 {
 	GPlatesGlobal::Assert<VulkanException>(
@@ -108,7 +108,7 @@ GPlatesOpenGL::VulkanSwapchain::destroy_swapchain(
 	destroy_render_pass(vulkan_device);
 
 	// And finally destroy the swapchain.
-	destroy_swapchain_internal(vulkan_device);
+	destroy_swapchain(vulkan_device);
 
 	// Reset some members.
 	d_swapchain_image_format = vk::Format::eUndefined;
@@ -156,7 +156,7 @@ GPlatesOpenGL::VulkanSwapchain::get_swapchain_framebuffer(
 
 
 void
-GPlatesOpenGL::VulkanSwapchain::create_swapchain_internal(
+GPlatesOpenGL::VulkanSwapchain::create_swapchain(
 		VulkanDevice &vulkan_device,
 		const vk::Extent2D &swapchain_size)
 {
@@ -297,7 +297,7 @@ GPlatesOpenGL::VulkanSwapchain::create_swapchain_internal(
 
 
 void
-GPlatesOpenGL::VulkanSwapchain::destroy_swapchain_internal(
+GPlatesOpenGL::VulkanSwapchain::destroy_swapchain(
 		VulkanDevice &vulkan_device)
 {
 	vulkan_device.get_device().destroySwapchainKHR(d_swapchain);

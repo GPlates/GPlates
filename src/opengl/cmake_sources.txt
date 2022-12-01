@@ -128,7 +128,5 @@ VulkanHpp.cc
 VulkanHpp.h
 VulkanSwapchain.cc
 VulkanSwapchain.h
-VulkanSwapchainFrame.cc
-VulkanSwapchainFrame.h
 VulkanUtils.cc
 VulkanUtils.h

@@ -156,7 +156,7 @@ GPlatesQtWidgets::VulkanWindow::update_window()
 	// the swapchain needs to be recreated.
 	if (get_window_size_in_device_pixels() != d_vulkan_swapchain.get_swapchain_size())
 	{
-		d_vulkan_swapchain.recreate_swapchain(d_vulkan_device, get_window_size_in_device_pixels());
+		d_vulkan_swapchain.recreate(d_vulkan_device, get_window_size_in_device_pixels());
 	}
 
 	// Ask subclass to render into this window.
@@ -180,19 +180,19 @@ GPlatesQtWidgets::VulkanWindow::create_vulkan_device_and_swapchain()
 
 	// Create the Vulkan device.
 	std::uint32_t present_queue_family;
-	d_vulkan_device.create_device_for_surface(
+	d_vulkan_device.create_for_surface(
 			surface,
 			present_queue_family);
 
 	// Create the Vulkan swapchain.
-	d_vulkan_swapchain.create_swapchain(
+	d_vulkan_swapchain.create(
 			d_vulkan_device,
 			surface,
 			present_queue_family,
 			get_window_size_in_device_pixels());
 
 	// Notify subclass that Vulkan device was created.
-	initialise_vulkan_resources(d_vulkan_device);
+	initialise_vulkan_resources(d_vulkan_device, d_vulkan_swapchain);
 }
 
 
@@ -213,6 +213,6 @@ GPlatesQtWidgets::VulkanWindow::destroy_vulkan_device_and_swapchain()
 
 	// Finally destroy the Vulkan device and swapchain.
 	// Note that the swapchain is destroyed first (and then the device).
-	d_vulkan_swapchain.destroy_swapchain(d_vulkan_device);
-	d_vulkan_device.destroy_device();
+	d_vulkan_swapchain.destroy(d_vulkan_device);
+	d_vulkan_device.destroy();
 }

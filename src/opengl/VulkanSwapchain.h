@@ -40,7 +40,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Construct a @a VulkanSwapchain.
 		 *
-		 * Note: This does not actually create a vk::SwapchainKHR, that happens in @a create_swapchain (and @a recreate_swapchain).
+		 * Note: This does not actually create a vk::SwapchainKHR, that happens in @a create (and @a recreate).
 		 */
 		VulkanSwapchain();
 
@@ -58,7 +58,7 @@ namespace GPlatesOpenGL
 		 * NOTE: VulkanHpp::initialise() must have been called first.
 		 */
 		void
-		create_swapchain(
+		create(
 				VulkanDevice &vulkan_device,
 				vk::SurfaceKHR surface,
 				std::uint32_t present_queue_family,
@@ -69,10 +69,10 @@ namespace GPlatesOpenGL
 		 *
 		 * This is useful when the surface window is resized.
 		 *
-		 * Note: This should be called between @a create_swapchain and @a destroy_swapchain.
+		 * Note: This should be called between @a create and @a destroy.
 		 */
 		void
-		recreate_swapchain(
+		recreate(
 				VulkanDevice &vulkan_device,
 				const vk::Extent2D &swapchain_size);
 
@@ -83,7 +83,7 @@ namespace GPlatesOpenGL
 		 *       This can be used to test whether the swapchain has not yet been created, or has been destroyed.
 		 */
 		void
-		destroy_swapchain(
+		destroy(
 				VulkanDevice &vulkan_device);
 
 
@@ -200,12 +200,12 @@ namespace GPlatesOpenGL
 
 
 		void
-		create_swapchain_internal(
+		create_swapchain(
 				VulkanDevice &vulkan_device,
 				const vk::Extent2D &swapchain_size);
 
 		void
-		destroy_swapchain_internal(
+		destroy_swapchain(
 				VulkanDevice &vulkan_device);
 
 

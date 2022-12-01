@@ -23,7 +23,6 @@
 #include <cstdint>
 #include <vector>
 
-#include "VulkanDeviceLifetime.h"
 #include "VulkanHpp.h"
 
 
@@ -32,87 +31,16 @@ namespace GPlatesOpenGL
 	class VulkanDevice;
 
 	/**
-	 * Manages asynchronous frame rendering by buffering resources over two or more frames.
+	 * Manages asynchronous frame rendering used by clients to buffer dynamic resources over two or more frames.
 	 *
-	 * For example, this enables the CPU to record command buffers for frame N while the GPU is
-	 * executing command buffers from the previous frame N-1.
+	 * For example, this enables the host (CPU) to record command buffers for frame N while the device (GPU)
+	 * is executing command buffers from the previous frame N-1.
 	 */
-	class VulkanFrame :
-			public VulkanDeviceLifetime
+	class VulkanFrame
 	{
 	public:
 
-		/**
-		 * By default, this creates a double-buffered set of resources.
-		 */
-		explicit
-		VulkanFrame(
-				std::uint32_t num_buffered_frames = 2);
-
-
-		/**
-		 * Increment the frame index to the next frame.
-		 *
-		 * This will result in accessing a different set of buffered resources.
-		 * For example, this will increment frame N-1 to become frame N, and for double-buffered resources
-		 * this will now access buffer resources at index 'N % 2' (for frame N).
-		 */
-		virtual
-		void
-		next_frame();
-
-
-		/**
-		 * Begin recording into all command buffers.
-		 *
-		 * This implicitly resets each command buffer (ie, command pool was created with 'eResetCommandBuffer' flag).
-		 * And each command buffer can only be submitted once (ie, each command buffer must be re-recorded each frame).
-		 */
-		virtual
-		void
-		begin_command_buffers();
-
-		/**
-		 * End recording into all command buffers.
-		 */
-		virtual
-		void
-		end_command_buffers();
-
-
-		/**
-		 * Access the command buffer for rendering into the default framebuffer (eg, swapchain)
-		 * using the default render pass (with commands allowed within a render pass).
-		 */
-		vk::CommandBuffer
-		get_default_render_pass_command_buffer()
-		{
-			return get_buffered_frame().default_render_pass_command_buffer;
-		}
-
-
-		/**
-		 * Semaphore to signal when the GPU has finished rendering a frame.
-		 */
-		vk::Semaphore
-		get_rendering_finished_semaphore()
-		{
-			return get_buffered_frame().rendering_finished_semaphore;
-		}
-
-		/**
-		 * Fence to signal when the GPU has finished rendering a frame.
-		 *
-		 * Note: For double-buffered resources, waiting on this fence will wait for the GPU to
-		 *       finish drawing frame N-2 (for current frame N). And if N < 2 then waiting will
-		 *       return immediately since fence is initially created in the signaled state.
-		 *       When the wait returns the buffered resources are then available for use by the CPU.
-		 */
-		vk::Fence
-		get_rendering_finished_fence()
-		{
-			return get_buffered_frame().rendering_finished_fence;
-		}
+		VulkanFrame();
 
 
 		/**
@@ -120,39 +48,79 @@ namespace GPlatesOpenGL
 		 */
 		void
 		initialise_vulkan_resources(
-				VulkanDevice &vulkan_device) override;
+				VulkanDevice &vulkan_device);
 
 		/**
 		 * Vulkan device is about to be destroyed.
 		 */
 		void
 		release_vulkan_resources(
-				VulkanDevice &vulkan_device) override;
+				VulkanDevice &vulkan_device);
 
-	protected:
 
-		std::uint32_t d_num_buffered_frames;
-		std::uint32_t d_frame_index;
+		//
+		// Asynchronous frame rendering.
+		//
+
+		/**
+		 * The maximum number of frames that the host (CPU) can record/queue commands ahead of the device (GPU).
+		 *
+		 * For example, when this value is 2 then the host can record command buffers for frames N-1 and N
+		 * while the device is still executing command buffers for frame N-2.
+		 *
+		 * Note: Each "frame" is determined by a call to @a next_frame.
+		 */
+		static constexpr unsigned int NUM_ASYNC_FRAMES = 2;
+
+		/**
+		 * Increment the frame number and wait for the device (GPU) to finish rendering the frame from
+		 * NUM_ASYNC_FRAMES frames ago, or return nullptr if device lost (vk::Result::eErrorDeviceLost).
+		 *
+		 * For example, if calling @a next_frame increments the frame number to "N" then we wait for
+		 * the device (GPU) to finish rendering frame "N - NUM_ASYNC_FRAMES".
+		 *
+		 * This means clients should buffer NUM_ASYNC_FRAMES worth of dynamic resources to ensure
+		 * they do not modify resources that the device (GPU) is still using.
+		 * An example is the host (CPU) recording into command buffers that the device (GPU) is still using.
+		 *
+		 * NOTE: The caller should signal the returned fence when rendering for the frame (N) has finished.
+		 *       This can be done by passing it to the final queue submission for the frame (N).
+		 */
+		vk::Fence
+		next_frame(
+				vk::Device device);
+
+		/**
+		 * The frame *number* is simply incremented at each call to @a next_frame.
+		 */
+		std::int64_t
+		get_frame_number() const
+		{
+			return d_frame_number;
+		}
+
+		/**
+		 * The frame *index* is in the range [0, NUM_ASYNC_FRAMES - 1].
+		 *
+		 * Due to the wait in @a next_frame, the resources at this index are no longer in use
+		 * by the device (GPU) and can safely be re-used.
+		 *
+		 * It's value is "get_frame_number() % NUM_ASYNC_FRAMES" and can be used by clients to index
+		 * index their own buffer of resources (eg, an array of size NUM_ASYNC_FRAMES).
+		 */
+		unsigned int
+		get_frame_index() const
+		{
+			return static_cast<unsigned int>(d_frame_number % NUM_ASYNC_FRAMES);
+		}
 
 	private:
 
-		struct BufferedFrame
-		{
-			vk::CommandBuffer default_render_pass_command_buffer;
-			vk::Semaphore rendering_finished_semaphore;
-			vk::Fence rendering_finished_fence;
-		};
-
-		vk::CommandPool d_graphics_and_compute_command_pool;
-
-		std::vector<BufferedFrame> d_buffered_frames;
-
-
 		/**
-		 * Returns the @a BufferedFrame that corresponds to the current frame index.
+		 * Fences for asynchronous frames.
 		 */
-		BufferedFrame &
-		get_buffered_frame();
+		vk::Fence d_async_frame_fences[NUM_ASYNC_FRAMES];
+		std::int64_t d_frame_number;
 	};
 }
 

@@ -33,9 +33,7 @@
 #define VMA_STATIC_VULKAN_FUNCTIONS 0
 #include <vma/vk_mem_alloc.h>
 
-//
 // The Vulkan-Hpp C++ interface (around the Vulkan C interface).
-//
 #include "VulkanHpp.h"
 
 
@@ -53,7 +51,7 @@ namespace GPlatesOpenGL
 		/**
 		 * Construct a @a VulkanDevice.
 		 *
-		 * Note: This does not actually create a vk::Device, that happens in @a create_device or @a create_device_for_surface.
+		 * Note: This does not actually create a vk::Device, that happens in @a create or @a create_for_surface.
 		 */
 		explicit
 		VulkanDevice(
@@ -69,7 +67,7 @@ namespace GPlatesOpenGL
 		 * NOTE: VulkanHpp::initialise() must have been called first.
 		 */
 		void
-		create_device();
+		create();
 
 		/**
 		 * Create a Vulkan logical device supporting presentation to a Vulkan surface.
@@ -83,7 +81,7 @@ namespace GPlatesOpenGL
 		 * NOTE: VulkanHpp::initialise() must have been called first.
 		 */
 		void
-		create_device_for_surface(
+		create_for_surface(
 				vk::SurfaceKHR surface,
 				std::uint32_t &present_queue_family);
 
@@ -94,7 +92,7 @@ namespace GPlatesOpenGL
 		 *       This can be used to test whether the device has not yet been created, or has been destroyed.
 		 */
 		void
-		destroy_device();
+		destroy();
 
 
 		/**
@@ -153,6 +151,8 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Return the graphics+compute queue.
+		 *
+		 * Note that this queue can also be used for transfer operations.
 		 */
 		vk::Queue
 		get_graphics_and_compute_queue()
@@ -186,6 +186,14 @@ namespace GPlatesOpenGL
 		vk::Queue d_graphics_and_compute_queue;
 
 
+		/**
+		 * VMA allocator.
+		 *
+		 * Buffer and image allocations can go through this.
+		 */
+		VmaAllocator d_vma_allocator;
+
+
 		struct SurfaceInfo
 		{
 			vk::SurfaceKHR surface;
@@ -200,16 +208,12 @@ namespace GPlatesOpenGL
 		};
 
 
-		/**
-		 * VMA allocator.
-		 *
-		 * Buffer and image allocations can go through this.
-		 */
-		VmaAllocator d_vma_allocator;
-
+		void
+		create_internal(
+				boost::optional<const SurfaceInfo &> surface_info = boost::none);
 
 		void
-		create_device_internal(
+		create_device(
 				boost::optional<const SurfaceInfo &> surface_info = boost::none);
 
 
@@ -245,7 +249,7 @@ namespace GPlatesOpenGL
 
 
 		void
-		initialise_vma_allocator();
+		create_vma_allocator();
 	};
 }
 
