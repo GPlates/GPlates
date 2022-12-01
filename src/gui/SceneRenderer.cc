@@ -28,6 +28,7 @@
 #include "SceneView.h"
 #include "ViewportZoom.h"
 
+#include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
 #include "opengl/GLCapabilities.h"
@@ -44,7 +45,6 @@
 #include "presentation/ViewState.h"
 
 #include "utils/CallStackTracker.h"
-#include "utils/Profile.h"
 
 
 namespace
@@ -75,12 +75,49 @@ GPlatesGui::SceneRenderer::SceneRenderer(
 
 
 void
-GPlatesGui::SceneRenderer::initialise_gl(
-		GPlatesOpenGL::GL &gl)
+GPlatesGui::SceneRenderer::initialise_vulkan_resources(
+		GPlatesOpenGL::VulkanDevice &vulkan_device,
+		vk::RenderPass default_render_pass)
 {
-	// Initialise the background stars.
-	d_stars.initialise_gl(gl);
+	//
+	// Create a graphics+compute command pool.
+	//
+	// Note that we not creating a separate command pool for each asynchronous frame.
+	// Each command buffer will tend to be used for a specific purpose (eg, default command buffer
+	// used to render into default framebuffer) and so will have consistent memory allocations (from pool).
+	vk::CommandPoolCreateInfo graphics_and_compute_command_pool_create_info;
+	graphics_and_compute_command_pool_create_info
+			// Each command buffer can be reset (eg, implictly by beginning a command buffer).
+			// And each command buffer will not be re-used (ie, used once and then reset)...
+			.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer | vk::CommandPoolCreateFlagBits::eTransient)
+			.setQueueFamilyIndex(vulkan_device.get_graphics_and_compute_queue_family());
+	d_graphics_and_compute_command_pool = vulkan_device.get_device().createCommandPool(graphics_and_compute_command_pool_create_info);
 
+	// Set render pass for rendering to the default framebuffer.
+	d_default_render_pass = default_render_pass;
+
+	//
+	// Allocate a command buffer, for each asynchronous frame, for recording within default render pass.
+	//
+	vk::CommandBufferAllocateInfo default_render_pass_command_buffer_allocate_info;
+	default_render_pass_command_buffer_allocate_info
+			.setCommandPool(d_graphics_and_compute_command_pool)
+			.setLevel(vk::CommandBufferLevel::ePrimary)
+			.setCommandBufferCount(GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES);
+	const std::vector<vk::CommandBuffer> default_render_pass_command_buffers =
+			vulkan_device.get_device().allocateCommandBuffers(default_render_pass_command_buffer_allocate_info);
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			default_render_pass_command_buffers.size() == GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES,
+			GPLATES_ASSERTION_SOURCE);
+	for (unsigned int frame_index = 0; frame_index < GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES; ++frame_index)
+	{
+		d_default_render_pass_command_buffers[frame_index] = default_render_pass_command_buffers[frame_index];
+	}
+
+	// Initialise the background stars.
+	//d_stars.initialise_vulkan_resources(vulkan_device);
+
+#if 0
 	// Create the shader program that sorts and blends the list of fragments (per pixel) in depth order.
 	create_sort_and_blend_scene_fragments_shader_program(gl);
 
@@ -94,13 +131,15 @@ GPlatesGui::SceneRenderer::initialise_gl(
 
 	// Create and initialise the offscreen render target.
 	create_off_screen_render_target(gl);
+#endif
 }
 
 
 void
-GPlatesGui::SceneRenderer::shutdown_gl(
-		GPlatesOpenGL::GL &gl)
+GPlatesGui::SceneRenderer::release_vulkan_resources(
+		GPlatesOpenGL::VulkanDevice &vulkan_device)
 {
+#if 0
 	// Destroy the offscreen render target.
 	destroy_off_screen_render_target(gl);
 
@@ -112,23 +151,78 @@ GPlatesGui::SceneRenderer::shutdown_gl(
 
 	// Destroy the shader program that sorts and blends the list of fragments (per pixel) in depth order..
 	d_sort_and_blend_scene_fragments_shader_program.reset();
+#endif
 
 	// Destroy the background stars.
-	d_stars.shutdown_gl(gl);
+	//d_stars.release_vulkan_resources(vulkan_device);
+
+	// Free the default render pass command buffers.
+	for (unsigned int frame_index = 0; frame_index < GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES; ++frame_index)
+	{
+		// Free command buffer.
+		vulkan_device.get_device().freeCommandBuffers(
+				d_graphics_and_compute_command_pool,
+				d_default_render_pass_command_buffers[frame_index]);
+	}
+
+	// Reset default render pass.
+	d_default_render_pass = nullptr;
+
+	// Destroy the graphics+compute command pool.
+	vulkan_device.get_device().destroyCommandPool(d_graphics_and_compute_command_pool);
+	d_graphics_and_compute_command_pool = nullptr;
 }
 
 
 void
 GPlatesGui::SceneRenderer::render(
-		GPlatesOpenGL::GL &gl,
+		GPlatesOpenGL::Vulkan &vulkan,
+		vk::Framebuffer default_frame_buffer,
 		Scene &scene,
 		SceneOverlays &scene_overlays,
 		const SceneView &scene_view,
 		const GPlatesOpenGL::GLViewport &viewport,
-		const Colour &clear_colour,
 		int device_pixel_ratio)
 {
 	const GPlatesOpenGL::GLViewProjection view_projection = scene_view.get_view_projection(viewport);
+
+	// Access the command buffer for use in the current asynchronous frame.
+	vk::CommandBuffer default_render_pass_command_buffer = d_default_render_pass_command_buffers[vulkan.get_frame_index()];
+
+	//
+	// Begin recording into the command buffer for the default render pass.
+	//
+	vk::CommandBufferBeginInfo command_buffer_begin_info;
+	// Command buffer will only be submitted once.
+	command_buffer_begin_info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+	// Begin implicitly resets the command buffer (because command pool was created with 'eResetCommandBuffer' flag).
+	default_render_pass_command_buffer.begin(command_buffer_begin_info);
+
+
+	//
+	// Default render pass (for rendering to default framebuffer).
+	//
+	// Clear colour of the default framebuffer.
+	//
+	// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
+	// the scene, that are not rendered, to have *opaque* alpha (=1). This ensures that if there is any
+	// further alpha composition of the framebuffer (we attempt to set vk::CompositeAlphaFlagBitsKHR::eOpaque
+	// in VulkanSwapchain, if it's supported, to avoid further composition) then it will have no effect.
+	// For example, we don't want our black background converted to white if the underlying surface happens to be white.
+	const vk::ClearColorValue default_clear_colour = std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f };
+	// Clear depth/stencil of the default framebuffer.
+	const vk::ClearDepthStencilValue default_clear_depth_stencil = { 1.0f, 0 };
+
+	// Begin default render pass to the current default framebuffer.
+	const vk::Rect2D default_render_area = viewport.get_rect2D();
+	const vk::ClearValue default_clear_values[2] = { default_clear_colour, default_clear_depth_stencil };
+	vk::RenderPassBeginInfo default_render_pass_begin_info;
+	default_render_pass_begin_info
+			.setRenderPass(d_default_render_pass)
+			.setFramebuffer(default_frame_buffer)
+			.setRenderArea(default_render_area)
+			.setClearValues(default_clear_values);
+	default_render_pass_command_buffer.beginRenderPass(default_render_pass_begin_info, vk::SubpassContents::eInline);
 
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
 	//
@@ -139,20 +233,25 @@ GPlatesGui::SceneRenderer::render(
 	// Since the view direction usually differs little from one frame to the next there is a lot
 	// of overlap that we want to reuse (and not recalculate).
 	d_gl_frame_cache_handle = render_scene(
-			gl,
+			vulkan,
 			scene,
 			scene_overlays,
 			scene_view,
 			view_projection,
-			clear_colour,
 			device_pixel_ratio);
+
+	// End default render pass.
+	default_render_pass_command_buffer.endRenderPass();
+
+	// End recording into default command buffer.
+	default_render_pass_command_buffer.end();
 }
 
 
 void
 GPlatesGui::SceneRenderer::render_to_image(
 		QImage &image,
-		GPlatesOpenGL::GL &gl,
+		GPlatesOpenGL::VulkanDevice &vulkan_device,
 		Scene &scene,
 		SceneOverlays &scene_overlays,
 		const SceneView &scene_view,
@@ -177,13 +276,20 @@ GPlatesGui::SceneRenderer::render_to_image(
 	boost::shared_ptr< std::vector<cache_handle_type> > frame_cache_handle(
 			new std::vector<cache_handle_type>());
 
+	// TODO: Create default render pass from the colour format of the swapchain so that it's compatible
+	//       with swapchain render pass because graphics pipelines (in rendered scene) all assume
+	//       the same render pass (ie, we're not expecting there to be two versions of each pipeline).
+	vk::RenderPass default_render_pass;
+	GPlatesOpenGL::VulkanFrame vulkan_frame(2/*num_buffered_frames*/);
+	GPlatesOpenGL::Vulkan vulkan(vulkan_device, vulkan_frame, default_render_pass);
+
 	// Render the scene tile-by-tile.
 	for (image_tile_render.first_tile(); !image_tile_render.finished(); image_tile_render.next_tile())
 	{
 		// Render the scene to current image tile.
 		// Hold onto the previous frame's cached resources *while* generating the current frame.
 		const cache_handle_type image_tile_cache_handle = render_scene_tile_to_image(
-				gl, image, image_viewport, image_tile_render,
+				vulkan, image, image_viewport, image_tile_render,
 				scene, scene_overlays, scene_view,
 				image_clear_colour);
 		frame_cache_handle->push_back(image_tile_cache_handle);
@@ -196,7 +302,7 @@ GPlatesGui::SceneRenderer::render_to_image(
 
 GPlatesGui::SceneRenderer::cache_handle_type
 GPlatesGui::SceneRenderer::render_scene_tile_to_image(
-		GPlatesOpenGL::GL &gl,
+		GPlatesOpenGL::Vulkan &vulkan,
 		QImage &image,
 		const GPlatesOpenGL::GLViewport &image_viewport,
 		const GPlatesOpenGL::GLTileRender &image_tile_render,
@@ -205,6 +311,13 @@ GPlatesGui::SceneRenderer::render_scene_tile_to_image(
 		const SceneView &scene_view,
 		const Colour &image_clear_colour)
 {
+	GPlatesOpenGL::GLViewport image_tile_render_target_viewport;
+	image_tile_render.get_tile_render_target_viewport(image_tile_render_target_viewport);
+
+	GPlatesOpenGL::GLViewport image_tile_render_target_scissor_rect;
+	image_tile_render.get_tile_render_target_scissor_rectangle(image_tile_render_target_scissor_rect);
+
+#if 0
 	// Make sure we leave the OpenGL state the way it was.
 	GPlatesOpenGL::GL::StateScope save_restore_state(
 			gl,
@@ -215,12 +328,6 @@ GPlatesGui::SceneRenderer::render_scene_tile_to_image(
 	// This directs drawing to and reading from the offscreen colour renderbuffer at the first colour attachment, and
 	// its associated depth/stencil renderbuffer at the depth/stencil attachment.
 	gl.BindFramebuffer(GL_FRAMEBUFFER, d_off_screen_framebuffer);
-
-	GPlatesOpenGL::GLViewport image_tile_render_target_viewport;
-	image_tile_render.get_tile_render_target_viewport(image_tile_render_target_viewport);
-
-	GPlatesOpenGL::GLViewport image_tile_render_target_scissor_rect;
-	image_tile_render.get_tile_render_target_scissor_rectangle(image_tile_render_target_scissor_rect);
 
 	// Mask off rendering outside the current tile region in case the tile is smaller than the
 	// render target. Note that the tile's viewport is slightly larger than the tile itself
@@ -239,6 +346,14 @@ GPlatesGui::SceneRenderer::render_scene_tile_to_image(
 			image_tile_render_target_viewport.y(),
 			image_tile_render_target_viewport.width(),
 			image_tile_render_target_viewport.height());
+
+	// Clear the colour buffer of the framebuffer currently bound to GL_DRAW_FRAMEBUFFER target using the requested clear colour.
+	//
+	// Note: We don't use depth or stencil buffers.
+	gl.ClearColor(image_clear_colour.red(), image_clear_colour.green(), image_clear_colour.blue(), image_clear_colour.alpha());
+	gl.Clear(GL_COLOR_BUFFER_BIT);
+
+#endif
 
 	// The view/projection/viewport for the *entire* image.
 	const GPlatesOpenGL::GLViewProjection image_view_projection = scene_view.get_view_projection(image_viewport);
@@ -262,9 +377,9 @@ GPlatesGui::SceneRenderer::render_scene_tile_to_image(
 	// Render the scene.
 	//
 	const cache_handle_type tile_cache_handle = render_scene(
-			gl, scene, scene_overlays, scene_view,
+			vulkan, scene, scene_overlays, scene_view,
 			image_tile_view_projection,
-			image_clear_colour, image.devicePixelRatio());
+			image.devicePixelRatio());
 
 	//
 	// Copy the rendered tile into the appropriate sub-rect of the image.
@@ -276,11 +391,13 @@ GPlatesGui::SceneRenderer::render_scene_tile_to_image(
 	GPlatesOpenGL::GLViewport current_tile_destination_viewport;
 	image_tile_render.get_tile_destination_viewport(current_tile_destination_viewport);
 
+#if 0
 	GPlatesOpenGL::GLImageUtils::copy_rgba8_framebuffer_into_argb32_qimage(
 			gl,
 			image,
 			current_tile_source_viewport,
 			current_tile_destination_viewport);
+#endif
 
 	return tile_cache_handle;
 }
@@ -288,34 +405,23 @@ GPlatesGui::SceneRenderer::render_scene_tile_to_image(
 
 GPlatesGui::SceneRenderer::cache_handle_type
 GPlatesGui::SceneRenderer::render_scene(
-		GPlatesOpenGL::GL &gl,
+		GPlatesOpenGL::Vulkan &vulkan,
 		Scene &scene,
 		SceneOverlays &scene_overlays,
 		const SceneView &scene_view,
 		const GPlatesOpenGL::GLViewProjection &view_projection,
-		const Colour &clear_colour,
 		int device_pixel_ratio)
 {
-	PROFILE_FUNC();
-
-	// Make sure we leave the OpenGL state the way it was.
-	GPlatesOpenGL::GL::StateScope save_restore_state(gl);
-
-	// Clear the colour buffer of the framebuffer currently bound to GL_DRAW_FRAMEBUFFER target using the requested clear colour.
-	//
-	// Note: We don't use depth or stencil buffers.
-	gl.ClearColor(clear_colour.red(), clear_colour.green(), clear_colour.blue(), clear_colour.alpha());
-	gl.Clear(GL_COLOR_BUFFER_BIT);
-
-#if 0
+#if 1
 
 	//
 	// Render the background stars.
 	//
 	if (d_view_state.get_show_stars())
 	{
+		/*
 		d_stars.render(
-				gl,
+				vulkan,
 				view_projection,
 				device_pixel_ratio,
 				scene_view.is_map_active()
@@ -323,8 +429,10 @@ GPlatesGui::SceneRenderer::render_scene(
 						? d_map_projection.get_map_bounding_radius()
 						// The default of 1.0 works for the 3D globe view...
 						: 1.0);
+		*/
 	}
 
+#if 0
 	//
 	// Prepare for rendering the scene.
 	//
@@ -355,6 +463,7 @@ GPlatesGui::SceneRenderer::render_scene(
 
 	// Bind the fragment list head pointer image.
 	gl.BindImageTexture(0, d_fragment_list_head_pointer_image, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32UI);
+#endif
 
 	//
 	// Render the scene.
@@ -363,6 +472,7 @@ GPlatesGui::SceneRenderer::render_scene(
 	// rendering directly to the framebuffer.
 	cache_handle_type frame_cache_handle;
 
+#if 0
 	// Bind the shader program that sorts and blends scene fragments accumulated from rendering the scene and
 	// renders them into the framebuffer.
 	gl.UseProgram(d_sort_and_blend_scene_fragments_shader_program);
@@ -370,6 +480,7 @@ GPlatesGui::SceneRenderer::render_scene(
 	// Draw a full screen quad to process all screen pixels.
 	gl.BindVertexArray(d_full_screen_quad);
 	gl.DrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+#endif
 
 #else
 
@@ -397,8 +508,10 @@ GPlatesGui::SceneRenderer::render_scene(
 
 #endif
 
+#if 0
 	// Render the 2D overlays on top of the 3D scene just rendered.
 	scene_overlays.render(gl, view_projection, device_pixel_ratio);
+#endif
 
 	return frame_cache_handle;
 }

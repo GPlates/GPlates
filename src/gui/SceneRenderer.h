@@ -23,16 +23,14 @@
 #include <boost/shared_ptr.hpp>
 #include <QImage>
 
-#include "Stars.h"
-
-#include "opengl/OpenGL.h"
 #include "opengl/GLBuffer.h"
-#include "opengl/GLContextLifetime.h"
 #include "opengl/GLFramebuffer.h"
 #include "opengl/GLRenderbuffer.h"
 #include "opengl/GLProgram.h"
 #include "opengl/GLTexture.h"
 #include "opengl/GLVertexArray.h"
+#include "opengl/Stars.h"
+#include "opengl/Vulkan.h"
 
 #include "utils/ReferenceCount.h"
 
@@ -61,7 +59,6 @@ namespace GPlatesGui
 	 * Render the scene in the scene's view (globe and map views).
 	 */
 	class SceneRenderer :
-			public GPlatesOpenGL::GLContextLifetime,
 			public GPlatesUtils::ReferenceCount<SceneRenderer>
 	{
 	public:
@@ -89,18 +86,19 @@ namespace GPlatesGui
 
 
 		/**
-		 * The OpenGL context has been created.
+		 * The Vulkan device was just created.
 		 */
 		void
-		initialise_gl(
-				GPlatesOpenGL::GL &gl) override;
+		initialise_vulkan_resources(
+				GPlatesOpenGL::VulkanDevice &vulkan_device,
+				vk::RenderPass default_render_pass);
 
 		/**
-		 * The OpenGL context is about to be destroyed.
+		 * The Vulkan device is about to be destroyed.
 		 */
 		void
-		shutdown_gl(
-				GPlatesOpenGL::GL &gl) override;
+		release_vulkan_resources(
+				GPlatesOpenGL::VulkanDevice &vulkan_device);
 
 
 		/**
@@ -108,12 +106,12 @@ namespace GPlatesGui
 		 */
 		void
 		render(
-				GPlatesOpenGL::GL &gl,
+				GPlatesOpenGL::Vulkan &vulkan,
+				vk::Framebuffer default_frame_buffer,
 				Scene &scene,
 				SceneOverlays &scene_overlays,
 				const SceneView &scene_view,
 				const GPlatesOpenGL::GLViewport &viewport,
-				const Colour &clear_colour,
 				int device_pixel_ratio);
 
 		/**
@@ -122,7 +120,7 @@ namespace GPlatesGui
 		void
 		render_to_image(
 				QImage &image,
-				GPlatesOpenGL::GL &gl,
+				GPlatesOpenGL::VulkanDevice &vulkan_device,
 				Scene &scene,
 				SceneOverlays &scene_overlays,
 				const SceneView &scene_view,
@@ -134,7 +132,16 @@ namespace GPlatesGui
 		MapProjection &d_map_projection;
 
 		//! Stars in the background (in globe and map views).
-		Stars d_stars;
+		GPlatesOpenGL::Stars d_stars;
+
+		//! Vulkan command pool for allocating graphics+compute command buffers.
+		vk::CommandPool d_graphics_and_compute_command_pool;
+
+		//! Vulkan render pass for rendering to the default framebuffer.
+		vk::RenderPass d_default_render_pass;
+
+		//! Vulkan command buffer for recording within default render pass.
+		vk::CommandBuffer d_default_render_pass_command_buffers[GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES];
 
 		//! Shader program that sorts and blends the list of fragments (per pixel) in depth order.
 		GPlatesOpenGL::GLProgram::shared_ptr_type d_sort_and_blend_scene_fragments_shader_program;
@@ -237,7 +244,7 @@ namespace GPlatesGui
 		 */
 		cache_handle_type
 		render_scene_tile_to_image(
-				GPlatesOpenGL::GL &gl,
+				GPlatesOpenGL::Vulkan &vulkan,
 				QImage &image,
 				const GPlatesOpenGL::GLViewport &image_viewport,
 				const GPlatesOpenGL::GLTileRender &image_tile_render,
@@ -249,12 +256,11 @@ namespace GPlatesGui
 		//! Render the scene into the current framebuffer using the specified view-projection.
 		cache_handle_type
 		render_scene(
-				GPlatesOpenGL::GL &gl,
+				GPlatesOpenGL::Vulkan &vulkan,
 				Scene &scene,
 				SceneOverlays &scene_overlays,
 				const SceneView &scene_view,
 				const GPlatesOpenGL::GLViewProjection &view_projection,
-				const Colour &clear_colour,
 				int device_pixel_ratio);
 	};
 }

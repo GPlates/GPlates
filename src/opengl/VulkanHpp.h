@@ -20,6 +20,10 @@
 #ifndef GPLATES_OPENGL_VULKANHPP_H
 #define GPLATES_OPENGL_VULKANHPP_H
 
+//
+// The Vulkan-Hpp C++ interface (around the Vulkan C interface).
+//
+
 // No prototypes since we're not linking directly to the Vulkan loader library.
 #define VK_NO_PROTOTYPES
 // Speed up compilation.

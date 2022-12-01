@@ -27,14 +27,16 @@
 #ifndef GPLATES_OPENGL_GLVIEWPORT_H
 #define GPLATES_OPENGL_GLVIEWPORT_H
 
+#include <cstdint>
 #include <boost/operators.hpp>
-#include <qopengl.h>  // For OpenGL constants and typedefs.
+
+#include "VulkanHpp.h"
 
 
 namespace GPlatesOpenGL
 {
 	/**
-	 * OpenGL viewport parameters.
+	 * Vulkan viewport parameters.
 	 */
 	class GLViewport :
 			public boost::equality_comparable<GLViewport>
@@ -49,10 +51,10 @@ namespace GPlatesOpenGL
 
 		//! Constructor.
 		GLViewport(
-				GLint x_,
-				GLint y_,
-				GLsizei width_,
-				GLsizei height_)
+				std::int32_t x_,
+				std::int32_t y_,
+				std::uint32_t width_,
+				std::uint32_t height_)
 		{
 			set_viewport(x_, y_, width_, height_);
 		}
@@ -63,53 +65,46 @@ namespace GPlatesOpenGL
 		 */
 		void
 		set_viewport(
-				GLint x_,
-				GLint y_,
-				GLsizei width_,
-				GLsizei height_)
+				std::int32_t x_,
+				std::int32_t y_,
+				std::uint32_t width_,
+				std::uint32_t height_)
 		{
-			d_viewport.x = x_;
-			d_viewport.y = y_;
-			d_viewport.width = width_;
-			d_viewport.height = height_;
+			d_x = x_;
+			d_y = y_;
+			d_width = width_;
+			d_height = height_;
 		}
 
 
-		GLint
+		std::int32_t
 		x() const
 		{
-			return d_viewport.x;
+			return d_x;
 		}
 
-		GLint
+		std::int32_t
 		y() const
 		{
-			return d_viewport.y;
+			return d_y;
 		}
 
-		GLsizei
+		std::uint32_t
 		width() const
 		{
-			return d_viewport.width;
+			return d_width;
 		}
 
-		GLsizei
+		std::uint32_t
 		height() const
 		{
-			return d_viewport.height;
+			return d_height;
 		}
 
-
-		//! Typedef for an array of four integers representing the viewport parameters.
-		typedef GLint viewport_type[4];
-
-		/**
-		 * Returns the viewport parameters as an array of four integers.
-		 */
-		const viewport_type &
-		get_viewport() const
+		vk::Rect2D
+		get_rect2D() const
 		{
-			return d_viewport.viewport;
+			return { {d_x, d_y}, {d_width, d_height} };
 		}
 
 
@@ -118,30 +113,17 @@ namespace GPlatesOpenGL
 		operator==(
 				const GLViewport &other) const
 		{
-			return d_viewport.x == other.d_viewport.x &&
-				d_viewport.y == other.d_viewport.y &&
-				d_viewport.width == other.d_viewport.width &&
-				d_viewport.height == other.d_viewport.height;
+			return d_x == other.d_x &&
+				d_y == other.d_y &&
+				d_width == other.d_width &&
+				d_height == other.d_height;
 		}
 
 	private:
-		struct Viewport
-		{
-			union
-			{
-				GLint viewport[4];
-
-				struct
-				{
-					GLint x;
-					GLint y;
-					GLsizei width;
-					GLsizei height;
-				};
-			};
-		};
-
-		Viewport d_viewport;
+		std::int32_t d_x;
+		std::int32_t d_y;
+		std::uint32_t d_width;
+		std::uint32_t d_height;
 	};
 }
 

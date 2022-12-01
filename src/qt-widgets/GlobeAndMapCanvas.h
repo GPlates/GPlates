@@ -53,7 +53,8 @@
 #include "opengl/GLMatrix.h"
 #include "opengl/GLVisualLayers.h"
 #include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
-#include "opengl/VulkanSwapchainFrame.h"
+#include "opengl/VulkanFrame.h"
+#include "opengl/VulkanHpp.h"
 
 
 namespace GPlatesGui
@@ -357,7 +358,8 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		initialise_vulkan_resources(
-				GPlatesOpenGL::VulkanDevice &vulkan_device) override;
+				GPlatesOpenGL::VulkanDevice &vulkan_device,
+				GPlatesOpenGL::VulkanSwapchain &vulkan_swapchain) override;
 
 		/**
 		 * The Vulkan device is about to be destroyed.
@@ -441,7 +443,17 @@ namespace GPlatesQtWidgets
 		/**
 		 * Frame buffering for asynchronous Vulkan rendering to the swapchain.
 		 */
-		GPlatesOpenGL::VulkanSwapchainFrame d_vulkan_swapchain_frame;
+		GPlatesOpenGL::VulkanFrame d_vulkan_frame;
+
+		/**
+		 * Semaphore to signal when the acquired swapchain image is ready to be rendered into.
+		 */
+		vk::Semaphore d_swapchain_image_available_semaphores[GPlatesOpenGL::VulkanFrame::NUM_ASYNC_FRAMES];
+
+		/**
+		 * Semaphore to signal when the device (GPU) has finished rendering to a swapchain image.
+		 */
+		vk::Semaphore d_swapchain_image_presentable_semaphores[GPlatesOpenGL::VulkanFrame::NUM_ASYNC_FRAMES];
 
 		/**
 		 * The scene contains the globe and map.

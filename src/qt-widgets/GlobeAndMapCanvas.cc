@@ -174,9 +174,24 @@ GPlatesQtWidgets::GlobeAndMapCanvas::update_canvas()
 
 void
 GPlatesQtWidgets::GlobeAndMapCanvas::initialise_vulkan_resources(
-		GPlatesOpenGL::VulkanDevice &vulkan_device)
+		GPlatesOpenGL::VulkanDevice &vulkan_device,
+		GPlatesOpenGL::VulkanSwapchain &vulkan_swapchain)
 {
-	d_vulkan_swapchain_frame.initialise_vulkan_resources(vulkan_device);
+	// Initialise Vulkan frame.
+	d_vulkan_frame.initialise_vulkan_resources(vulkan_device);
+
+	// Create semaphores:
+	// - to signal when an acquired swapchain image is ready to be rendered into, and
+	// - to signal when the device (GPU) has finished rendering to a swapchain image.
+	for (unsigned int frame_index = 0; frame_index < GPlatesOpenGL::VulkanFrame::NUM_ASYNC_FRAMES; ++frame_index)
+	{
+		vk::SemaphoreCreateInfo semaphore_create_info;
+		d_swapchain_image_available_semaphores[frame_index] = vulkan_device.get_device().createSemaphore(semaphore_create_info);
+		d_swapchain_image_presentable_semaphores[frame_index] = vulkan_device.get_device().createSemaphore(semaphore_create_info);
+	}
+
+	// Initialise resources in scene renderer.
+	d_scene_renderer->initialise_vulkan_resources(vulkan_device, vulkan_swapchain.get_swapchain_render_pass());
 }
 
 
@@ -184,7 +199,18 @@ void
 GPlatesQtWidgets::GlobeAndMapCanvas::release_vulkan_resources(
 		GPlatesOpenGL::VulkanDevice &vulkan_device) 
 {
-	d_vulkan_swapchain_frame.release_vulkan_resources(vulkan_device);
+	// Release resources in scene renderer.
+	d_scene_renderer->release_vulkan_resources(vulkan_device);
+
+	// Destroy semaphores.
+	for (unsigned int frame_index = 0; frame_index < GPlatesOpenGL::VulkanFrame::NUM_ASYNC_FRAMES; ++frame_index)
+	{
+		vulkan_device.get_device().destroySemaphore(d_swapchain_image_available_semaphores[frame_index]);
+		vulkan_device.get_device().destroySemaphore(d_swapchain_image_presentable_semaphores[frame_index]);
+	}
+
+	// Release Vulkan frame.
+	d_vulkan_frame.release_vulkan_resources(vulkan_device);
 }
 
 
@@ -220,33 +246,25 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 	// vertical sync to display image B (which has the effect of displaying the same swapchain image A for two frames instead of one).
 	//
 
-	// Start a new frame.
-	d_vulkan_swapchain_frame.next_frame();
-
-	// Semaphores/fences associated with the current (buffered) frame.
-	vk::Semaphore swapchain_image_available_semaphore = d_vulkan_swapchain_frame.get_swapchain_image_available_semaphore();
-	vk::Semaphore frame_rendering_finished_semaphore = d_vulkan_swapchain_frame.get_rendering_finished_semaphore();
-	vk::Fence frame_rendering_finished_fence = d_vulkan_swapchain_frame.get_rendering_finished_fence();
-
-	// Make sure the GPU has finished rendering in frame N-2 so that we can use that frame's command buffers, fences, semaphores, etc
-	// for the current frame N.
-	const vk::Result wait_for_frame_result = vulkan_device.get_device().waitForFences(frame_rendering_finished_fence, true, UINT64_MAX);
-	if (wait_for_frame_result != vk::Result::eSuccess)
+	// Start the next frame.
+	//
+	// This waits until the device (GPU) has finished drawing frame N-2 so that we can reuse that frame's resources for the current frame N.
+	// We just need to signal the returned fence when the current frame has finished (so that frame N+2 will wait properly).
+	vk::Fence frame_rendering_finished_fence = d_vulkan_frame.next_frame(vulkan_device.get_device());
+	if (!frame_rendering_finished_fence)
 	{
-		if (wait_for_frame_result == vk::Result::eErrorDeviceLost)
-		{
-			// Recreate the logical device/swapchain (which also notifies us to release and
-			// re-initialise our Vulkan resources) and then render again.
-			device_lost();
-			update_canvas();
-			return;
-		}
-
-		throw GPlatesOpenGL::VulkanException(
-				GPLATES_EXCEPTION_SOURCE,
-				"Failed to wait for next Vulkan frame.");
+		// We've encountered a lost device.
+		//
+		// Recreate the logical device/swapchain (which also notifies us to release and
+		// re-initialise our Vulkan resources) and then render again.
+		device_lost();
+		update_canvas();
+		return;
 	}
-	vulkan_device.get_device().resetFences(frame_rendering_finished_fence);  // Reset to the unsignaled state.
+
+	// Semaphores associated with the current frame.
+	vk::Semaphore swapchain_image_available_semaphore = d_swapchain_image_available_semaphores[d_vulkan_frame.get_frame_index()];
+	vk::Semaphore swapchain_image_presentable_semaphore = d_swapchain_image_presentable_semaphores[d_vulkan_frame.get_frame_index()];
 
 	//
 	// Acquire the next available swapchain image.
@@ -268,7 +286,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 			// swapchain no longer matches but we can still present to the surface (vk::Result::eSuboptimalKHR).
 			//
 			// In either case we'll recreate the swapchain and render again.
-			vulkan_swapchain.recreate_swapchain(vulkan_device, swapchain_size);
+			vulkan_swapchain.recreate(vulkan_device, swapchain_size);
 			update_canvas();
 			return;
 		}
@@ -289,57 +307,19 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 
 
 	//
-	// Begin recording into all command buffers.
-	//
-	d_vulkan_swapchain_frame.begin_command_buffers();
-
-
-	//
-	// Swapchain render pass (for rendering to swapchain image).
-	//
-
-	vk::RenderPass swapchain_render_pass = vulkan_swapchain.get_swapchain_render_pass();
-	vk::Framebuffer swapchain_framebuffer = vulkan_swapchain.get_swapchain_framebuffer(swapchain_image_index);
-	vk::CommandBuffer swapchain_command_buffer = d_vulkan_swapchain_frame.get_default_render_pass_command_buffer();
-
-	// Clear colour of the swapchain framebuffer.
-	//
-	// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
-	// the scene, that are not rendered, to have *opaque* alpha (=1). This ensures that if there is any
-	// further alpha composition of the framebuffer (we attempt to set vk::CompositeAlphaFlagBitsKHR::eOpaque
-	// in VulkanSwapchain, if it's supported, to avoid further composition) then it will have no effect.
-	// For example, we don't want our black background converted to white if the underlying surface happens to be white.
-	const vk::ClearColorValue swapchain_clear_colour = std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f };
-	// Clear depth/stencil of the swapchain framebuffer.
-	const vk::ClearDepthStencilValue swapchain_clear_depth_stencil = { 1.0f, 0 };
-
-	// Begin swapchain render pass to the current swapchain framebuffer.
-	const vk::Rect2D swapchain_render_area = { {0, 0}, swapchain_size };
-	const vk::ClearValue swapchain_clear_values[2] = { swapchain_clear_colour, swapchain_clear_depth_stencil };
-	vk::RenderPassBeginInfo swapchain_render_pass_begin_info;
-	swapchain_render_pass_begin_info
-			.setRenderPass(swapchain_render_pass)
-			.setFramebuffer(swapchain_framebuffer)
-			.setRenderArea(swapchain_render_area)
-			.setClearValues(swapchain_clear_values);
-	swapchain_command_buffer.beginRenderPass(swapchain_render_pass_begin_info, vk::SubpassContents::eInline);
-
-	//
 	// Render the scene.
 	//
+
+	// Swapchain render target.
+	vk::Framebuffer swapchain_framebuffer = vulkan_swapchain.get_swapchain_framebuffer(swapchain_image_index);
+
 	// This records Vulkan commands into the swapchain command buffer, and also into other command buffers
 	// (eg, that render into textures that are in turn used to render into the swapchain framebuffer).
-	GPlatesOpenGL::Vulkan vulkan(vulkan_device, d_vulkan_swapchain_frame, swapchain_render_pass);
-	d_scene_renderer->render(vulkan, *d_scene, *d_scene_overlays, *d_scene_view, viewport, devicePixelRatio());
+	GPlatesOpenGL::Vulkan vulkan(vulkan_device, d_vulkan_frame);
+	d_scene_renderer->render(vulkan, swapchain_framebuffer, *d_scene, *d_scene_overlays, *d_scene_view, viewport, devicePixelRatio());
 
-	// End swapchain render pass.
-	swapchain_command_buffer.endRenderPass();
-
-
-	//
-	// End recording into all command buffers.
-	//
-	d_vulkan_swapchain_frame.end_command_buffers();
+	// Extract command buffers from 'vulkan'.
+	vk::CommandBuffer swapchain_command_buffer;
 
 
 	//
@@ -369,7 +349,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 			.setPWaitDstStageMask(&swapchain_command_buffer_wait_dst_stage)
 			.setCommandBuffers(swapchain_command_buffer)
 			// Signal when the GPU has finished drawing...
-			.setSignalSemaphores(frame_rendering_finished_semaphore);
+			.setSignalSemaphores(swapchain_image_presentable_semaphore);
 
 	// Submit the two submission batches to the graphics+compute queue.
 	//
@@ -410,7 +390,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 	vk::PresentInfoKHR present_info;
 	present_info
 			// Wait until the GPU has finished drawing into this swapchain image before presenting it...
-			.setWaitSemaphores(frame_rendering_finished_semaphore)
+			.setWaitSemaphores(swapchain_image_presentable_semaphore)
 			.setPImageIndices(&swapchain_image_index)
 			.setSwapchains(swapchain);
 	const vk::Result present_result = vulkan_swapchain.get_present_queue().presentKHR(&present_info);
@@ -423,7 +403,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 		{
 			// Surface is no longer compatible with the swapchain and we cannot present.
 			// So recreate the swapchain and render again.
-			vulkan_swapchain.recreate_swapchain(vulkan_device, swapchain_size);
+			vulkan_swapchain.recreate(vulkan_device, swapchain_size);
 			update_canvas();
 			return;
 		}
