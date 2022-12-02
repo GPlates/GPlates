@@ -77,9 +77,10 @@ foreach(shader IN LISTS shaders)
         COMMAND ${GLSLC} --target-env=vulkan1.0 -std=450core -c ${glsl_shader} -o ${vulkan_shader}
         DEPENDS ${glsl_shader_dependencies})
 
-    # Append the current vulkan shader filename to a "<file></file>"" line of the "vulkan.qrc.in" file.
+    # Append the current vulkan shader file basename to a "<file></file>"" line of the "vulkan.qrc.in" file.
     # Note: We add a newline to the string being appended.
-    file(APPEND ${vulkan_qrc_in} "        <file>${vulkan_shader}</file>
+    file(RELATIVE_PATH vulkan_shader_basename ${CMAKE_CURRENT_BINARY_DIR} ${vulkan_shader})
+    file(APPEND ${vulkan_qrc_in} "        <file>${vulkan_shader_basename}</file>
 ")
 
     # Keep a list of all GLSL shaders and their dependencies.
