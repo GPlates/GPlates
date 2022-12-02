@@ -87,7 +87,7 @@ GPlatesGui::SceneRenderer::initialise_vulkan_resources(
 	// used to render into default framebuffer) and so will have consistent memory allocations (from pool).
 	vk::CommandPoolCreateInfo graphics_and_compute_command_pool_create_info;
 	graphics_and_compute_command_pool_create_info
-			// Each command buffer can be reset (eg, implictly by beginning a command buffer).
+			// Each command buffer can be reset (eg, implicitly by beginning a command buffer).
 			// And each command buffer will not be re-used (ie, used once and then reset)...
 			.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer | vk::CommandPoolCreateFlagBits::eTransient)
 			.setQueueFamilyIndex(vulkan_device.get_graphics_and_compute_queue_family());
@@ -115,7 +115,7 @@ GPlatesGui::SceneRenderer::initialise_vulkan_resources(
 	}
 
 	// Initialise the background stars.
-	//d_stars.initialise_vulkan_resources(vulkan_device);
+	d_stars.initialise_vulkan_resources(vulkan_device, default_render_pass);
 
 #if 0
 	// Create the shader program that sorts and blends the list of fragments (per pixel) in depth order.
@@ -163,6 +163,7 @@ GPlatesGui::SceneRenderer::release_vulkan_resources(
 		vulkan_device.get_device().freeCommandBuffers(
 				d_graphics_and_compute_command_pool,
 				d_default_render_pass_command_buffers[frame_index]);
+		d_default_render_pass_command_buffers[frame_index] = nullptr;
 	}
 
 	// Reset default render pass.
@@ -188,6 +189,9 @@ GPlatesGui::SceneRenderer::render(
 
 	// Access the command buffer for use in the current asynchronous frame.
 	vk::CommandBuffer default_render_pass_command_buffer = d_default_render_pass_command_buffers[vulkan.get_frame_index()];
+	// Let 'vulkan' know which command buffer is used to render into default framebuffer
+	// (so it can submit it to the graphics+compute queue at the end of the frame).
+	vulkan.set_default_render_pass_command_buffer(default_render_pass_command_buffer);
 
 	//
 	// Begin recording into the command buffer for the default render pass.
@@ -252,6 +256,7 @@ void
 GPlatesGui::SceneRenderer::render_to_image(
 		QImage &image,
 		GPlatesOpenGL::VulkanDevice &vulkan_device,
+		GPlatesOpenGL::VulkanFrame &vulkan_frame,
 		Scene &scene,
 		SceneOverlays &scene_overlays,
 		const SceneView &scene_view,
@@ -276,20 +281,13 @@ GPlatesGui::SceneRenderer::render_to_image(
 	boost::shared_ptr< std::vector<cache_handle_type> > frame_cache_handle(
 			new std::vector<cache_handle_type>());
 
-	// TODO: Create default render pass from the colour format of the swapchain so that it's compatible
-	//       with swapchain render pass because graphics pipelines (in rendered scene) all assume
-	//       the same render pass (ie, we're not expecting there to be two versions of each pipeline).
-	vk::RenderPass default_render_pass;
-	GPlatesOpenGL::VulkanFrame vulkan_frame(2/*num_buffered_frames*/);
-	GPlatesOpenGL::Vulkan vulkan(vulkan_device, vulkan_frame, default_render_pass);
-
 	// Render the scene tile-by-tile.
 	for (image_tile_render.first_tile(); !image_tile_render.finished(); image_tile_render.next_tile())
 	{
 		// Render the scene to current image tile.
 		// Hold onto the previous frame's cached resources *while* generating the current frame.
 		const cache_handle_type image_tile_cache_handle = render_scene_tile_to_image(
-				vulkan, image, image_viewport, image_tile_render,
+				vulkan_device, vulkan_frame, image, image_viewport, image_tile_render,
 				scene, scene_overlays, scene_view,
 				image_clear_colour);
 		frame_cache_handle->push_back(image_tile_cache_handle);
@@ -302,7 +300,8 @@ GPlatesGui::SceneRenderer::render_to_image(
 
 GPlatesGui::SceneRenderer::cache_handle_type
 GPlatesGui::SceneRenderer::render_scene_tile_to_image(
-		GPlatesOpenGL::Vulkan &vulkan,
+		GPlatesOpenGL::VulkanDevice &vulkan_device,
+		GPlatesOpenGL::VulkanFrame &vulkan_frame,
 		QImage &image,
 		const GPlatesOpenGL::GLViewport &image_viewport,
 		const GPlatesOpenGL::GLTileRender &image_tile_render,
@@ -372,6 +371,10 @@ GPlatesGui::SceneRenderer::render_scene_tile_to_image(
 			image_tile_render_target_viewport,  // viewport for the image *tile*
 			image_tile_view_transform,
 			image_tile_projection_transform);
+
+	vk::Fence frame_rendering_finished_fence = vulkan_frame.next_frame(vulkan_device.get_device());
+
+	GPlatesOpenGL::Vulkan vulkan(vulkan_device, vulkan_frame);
 
 	//
 	// Render the scene.

@@ -91,7 +91,7 @@ GPlatesOpenGL::GLImageUtils::copy_rgba8_framebuffer_into_argb32_qimage(
 			rgba8_pixel_buffer.get());
 
 	// Iterate over the pixel lines in the rendered tile and copy into a sub-rect of the image.
-	for (GLsizei tile_y = 0; tile_y < source_viewport.height(); ++tile_y)
+	for (unsigned int tile_y = 0; tile_y < source_viewport.height(); ++tile_y)
 	{
 		// Source pixel data.
 		const GPlatesGui::rgba8_t *src_pixel_data = rgba8_pixel_buffer.get() + tile_y * source_viewport.width();

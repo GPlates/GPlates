@@ -175,10 +175,36 @@ namespace GPlatesOpenGL
 			return d_vulkan_frame.get_frame_index();
 		}
 
+
+		/**
+		 * Set the command buffer used to render within the default render pass in the current frame.
+		 *
+		 * This should be set by the client that first selects/specifies this command buffer.
+		 */
+		void
+		set_default_render_pass_command_buffer(
+				vk::CommandBuffer command_buffer)
+		{
+			d_default_render_pass_command_buffer = command_buffer;
+		}
+
+		/**
+		 * Get the command buffer used to render within the default render pass in the current frame.
+		 *
+		 * This is used at the end of the frame when submitting commands buffers to the graphics+compute queue.
+		 */
+		vk::CommandBuffer
+		get_default_render_pass_command_buffer()
+		{
+			return d_default_render_pass_command_buffer;
+		}
+
 	private:
 
 		VulkanDevice &d_vulkan_device;
 		VulkanFrame &d_vulkan_frame;
+
+		vk::CommandBuffer d_default_render_pass_command_buffer;
 	};
 }
 

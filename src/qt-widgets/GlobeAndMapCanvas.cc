@@ -159,7 +159,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_image(
 	image.fill(QColor(image_clear_colour).rgba());
 
 	// Render the scene into the image.
-	d_scene_renderer->render_to_image(image, vulkan_device, *d_scene, *d_scene_overlays, *d_scene_view, image_clear_colour);
+	d_scene_renderer->render_to_image(image, vulkan_device, d_vulkan_frame, *d_scene, *d_scene_overlays, *d_scene_view, image_clear_colour);
 
 	return image;
 }
@@ -318,8 +318,11 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 	GPlatesOpenGL::Vulkan vulkan(vulkan_device, d_vulkan_frame);
 	d_scene_renderer->render(vulkan, swapchain_framebuffer, *d_scene, *d_scene_overlays, *d_scene_view, viewport, devicePixelRatio());
 
-	// Extract command buffers from 'vulkan'.
-	vk::CommandBuffer swapchain_command_buffer;
+	// Retrieve the command buffer used to render within the default render pass.
+	//
+	// This is separated from other command buffers because this is the only command buffer that renders into the swapchain
+	// and we that to wait until the swapchain image is ready to be rendered into (unlike the other command buffers).
+	vk::CommandBuffer swapchain_command_buffer = vulkan.get_default_render_pass_command_buffer();
 
 
 	//

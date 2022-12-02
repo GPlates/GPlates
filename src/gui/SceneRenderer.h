@@ -40,6 +40,8 @@ namespace GPlatesOpenGL
 	class GLTileRender;
 	class GLViewport;
 	class GLViewProjection;
+	class VulkanDevice;
+	class VulkanFrame;
 }
 
 namespace GPlatesPresentation
@@ -121,6 +123,7 @@ namespace GPlatesGui
 		render_to_image(
 				QImage &image,
 				GPlatesOpenGL::VulkanDevice &vulkan_device,
+				GPlatesOpenGL::VulkanFrame &vulkan_frame,
 				Scene &scene,
 				SceneOverlays &scene_overlays,
 				const SceneView &scene_view,
@@ -160,8 +163,8 @@ namespace GPlatesGui
 		 *
 		 * Initially these are both zero and are expanded as the viewport expands (eg, resized viewport).
 		 */
-		int d_max_fragment_list_head_pointer_image_width;
-		int d_max_fragment_list_head_pointer_image_height;
+		unsigned int d_max_fragment_list_head_pointer_image_width;
+		unsigned int d_max_fragment_list_head_pointer_image_height;
 
 		/**
 		 * The maximum number of bytes to store fragments in the current fragment list storage buffer.
@@ -244,7 +247,8 @@ namespace GPlatesGui
 		 */
 		cache_handle_type
 		render_scene_tile_to_image(
-				GPlatesOpenGL::Vulkan &vulkan,
+				GPlatesOpenGL::VulkanDevice &vulkan_device,
+				GPlatesOpenGL::VulkanFrame &vulkan_frame,
 				QImage &image,
 				const GPlatesOpenGL::GLViewport &image_viewport,
 				const GPlatesOpenGL::GLTileRender &image_tile_render,
