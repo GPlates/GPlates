@@ -79,43 +79,8 @@ GPlatesGui::SceneRenderer::initialise_vulkan_resources(
 		GPlatesOpenGL::VulkanDevice &vulkan_device,
 		vk::RenderPass default_render_pass)
 {
-	//
-	// Create a graphics+compute command pool.
-	//
-	// Note that we not creating a separate command pool for each asynchronous frame.
-	// Each command buffer will tend to be used for a specific purpose (eg, default command buffer
-	// used to render into default framebuffer) and so will have consistent memory allocations (from pool).
-	vk::CommandPoolCreateInfo graphics_and_compute_command_pool_create_info;
-	graphics_and_compute_command_pool_create_info
-			// Each command buffer can be reset (eg, implicitly by beginning a command buffer).
-			// And each command buffer will not be re-used (ie, used once and then reset)...
-			.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer | vk::CommandPoolCreateFlagBits::eTransient)
-			.setQueueFamilyIndex(vulkan_device.get_graphics_and_compute_queue_family());
-	d_graphics_and_compute_command_pool = vulkan_device.get_device().createCommandPool(graphics_and_compute_command_pool_create_info);
-
-	// Set render pass for rendering to the default framebuffer.
-	d_default_render_pass = default_render_pass;
-
-	//
-	// Allocate a command buffer, for each asynchronous frame, for recording within default render pass.
-	//
-	vk::CommandBufferAllocateInfo default_render_pass_command_buffer_allocate_info;
-	default_render_pass_command_buffer_allocate_info
-			.setCommandPool(d_graphics_and_compute_command_pool)
-			.setLevel(vk::CommandBufferLevel::ePrimary)
-			.setCommandBufferCount(GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES);
-	const std::vector<vk::CommandBuffer> default_render_pass_command_buffers =
-			vulkan_device.get_device().allocateCommandBuffers(default_render_pass_command_buffer_allocate_info);
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			default_render_pass_command_buffers.size() == GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES,
-			GPLATES_ASSERTION_SOURCE);
-	for (unsigned int frame_index = 0; frame_index < GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES; ++frame_index)
-	{
-		d_default_render_pass_command_buffers[frame_index] = default_render_pass_command_buffers[frame_index];
-	}
-
 	// Initialise the background stars.
-	d_stars.initialise_vulkan_resources(vulkan_device, default_render_pass);
+	//d_stars.initialise_vulkan_resources(vulkan_device, default_render_pass);
 
 #if 0
 	// Create the shader program that sorts and blends the list of fragments (per pixel) in depth order.
@@ -155,30 +120,13 @@ GPlatesGui::SceneRenderer::release_vulkan_resources(
 
 	// Destroy the background stars.
 	//d_stars.release_vulkan_resources(vulkan_device);
-
-	// Free the default render pass command buffers.
-	for (unsigned int frame_index = 0; frame_index < GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES; ++frame_index)
-	{
-		// Free command buffer.
-		vulkan_device.get_device().freeCommandBuffers(
-				d_graphics_and_compute_command_pool,
-				d_default_render_pass_command_buffers[frame_index]);
-		d_default_render_pass_command_buffers[frame_index] = nullptr;
-	}
-
-	// Reset default render pass.
-	d_default_render_pass = nullptr;
-
-	// Destroy the graphics+compute command pool.
-	vulkan_device.get_device().destroyCommandPool(d_graphics_and_compute_command_pool);
-	d_graphics_and_compute_command_pool = nullptr;
 }
 
 
 void
 GPlatesGui::SceneRenderer::render(
 		GPlatesOpenGL::Vulkan &vulkan,
-		vk::Framebuffer default_frame_buffer,
+		vk::CommandBuffer default_render_pass_command_buffer,
 		Scene &scene,
 		SceneOverlays &scene_overlays,
 		const SceneView &scene_view,
@@ -186,47 +134,6 @@ GPlatesGui::SceneRenderer::render(
 		int device_pixel_ratio)
 {
 	const GPlatesOpenGL::GLViewProjection view_projection = scene_view.get_view_projection(viewport);
-
-	// Access the command buffer for use in the current asynchronous frame.
-	vk::CommandBuffer default_render_pass_command_buffer = d_default_render_pass_command_buffers[vulkan.get_frame_index()];
-	// Let 'vulkan' know which command buffer is used to render into default framebuffer
-	// (so it can submit it to the graphics+compute queue at the end of the frame).
-	vulkan.set_default_render_pass_command_buffer(default_render_pass_command_buffer);
-
-	//
-	// Begin recording into the command buffer for the default render pass.
-	//
-	vk::CommandBufferBeginInfo command_buffer_begin_info;
-	// Command buffer will only be submitted once.
-	command_buffer_begin_info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-	// Begin implicitly resets the command buffer (because command pool was created with 'eResetCommandBuffer' flag).
-	default_render_pass_command_buffer.begin(command_buffer_begin_info);
-
-
-	//
-	// Default render pass (for rendering to default framebuffer).
-	//
-	// Clear colour of the default framebuffer.
-	//
-	// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
-	// the scene, that are not rendered, to have *opaque* alpha (=1). This ensures that if there is any
-	// further alpha composition of the framebuffer (we attempt to set vk::CompositeAlphaFlagBitsKHR::eOpaque
-	// in VulkanSwapchain, if it's supported, to avoid further composition) then it will have no effect.
-	// For example, we don't want our black background converted to white if the underlying surface happens to be white.
-	const vk::ClearColorValue default_clear_colour = std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f };
-	// Clear depth/stencil of the default framebuffer.
-	const vk::ClearDepthStencilValue default_clear_depth_stencil = { 1.0f, 0 };
-
-	// Begin default render pass to the current default framebuffer.
-	const vk::Rect2D default_render_area = viewport.get_rect2D();
-	const vk::ClearValue default_clear_values[2] = { default_clear_colour, default_clear_depth_stencil };
-	vk::RenderPassBeginInfo default_render_pass_begin_info;
-	default_render_pass_begin_info
-			.setRenderPass(d_default_render_pass)
-			.setFramebuffer(default_frame_buffer)
-			.setRenderArea(default_render_area)
-			.setClearValues(default_clear_values);
-	default_render_pass_command_buffer.beginRenderPass(default_render_pass_begin_info, vk::SubpassContents::eInline);
 
 	// Hold onto the previous frame's cached resources *while* generating the current frame.
 	//
@@ -238,17 +145,12 @@ GPlatesGui::SceneRenderer::render(
 	// of overlap that we want to reuse (and not recalculate).
 	d_gl_frame_cache_handle = render_scene(
 			vulkan,
+			default_render_pass_command_buffer,
 			scene,
 			scene_overlays,
 			scene_view,
 			view_projection,
 			device_pixel_ratio);
-
-	// End default render pass.
-	default_render_pass_command_buffer.endRenderPass();
-
-	// End recording into default command buffer.
-	default_render_pass_command_buffer.end();
 }
 
 
@@ -373,14 +275,16 @@ GPlatesGui::SceneRenderer::render_scene_tile_to_image(
 			image_tile_projection_transform);
 
 	vk::Fence frame_rendering_finished_fence = vulkan_frame.next_frame(vulkan_device.get_device());
-
 	GPlatesOpenGL::Vulkan vulkan(vulkan_device, vulkan_frame);
+	// TODO: Use 'vulkan_frame.get_frame_index()' to choose between NUM_ASYNC_FRAMES command buffers passed by caller.
+	vk::CommandBuffer default_render_pass_command_buffer;
 
 	//
 	// Render the scene.
 	//
 	const cache_handle_type tile_cache_handle = render_scene(
-			vulkan, scene, scene_overlays, scene_view,
+			vulkan, default_render_pass_command_buffer,
+			scene, scene_overlays, scene_view,
 			image_tile_view_projection,
 			image.devicePixelRatio());
 
@@ -409,6 +313,7 @@ GPlatesGui::SceneRenderer::render_scene_tile_to_image(
 GPlatesGui::SceneRenderer::cache_handle_type
 GPlatesGui::SceneRenderer::render_scene(
 		GPlatesOpenGL::Vulkan &vulkan,
+		vk::CommandBuffer default_render_pass_command_buffer,
 		Scene &scene,
 		SceneOverlays &scene_overlays,
 		const SceneView &scene_view,
@@ -416,23 +321,21 @@ GPlatesGui::SceneRenderer::render_scene(
 		int device_pixel_ratio)
 {
 #if 1
-
 	//
 	// Render the background stars.
 	//
 	if (d_view_state.get_show_stars())
 	{
-		/*
-		d_stars.render(
-				vulkan,
-				view_projection,
-				device_pixel_ratio,
-				scene_view.is_map_active()
-						// Expand the star positions radially in the 2D map views so that they're outside the map bounding sphere...
-						? d_map_projection.get_map_bounding_radius()
-						// The default of 1.0 works for the 3D globe view...
-						: 1.0);
-		*/
+		//d_stars.render(
+		//		vulkan,
+		//		default_render_pass_command_buffer,
+		//		view_projection,
+		//		device_pixel_ratio,
+		//		scene_view.is_map_active()
+		//				// Expand the star positions radially in the 2D map views so that they're outside the map bounding sphere...
+		//				? d_map_projection.get_map_bounding_radius()
+		//				// The default of 1.0 works for the 3D globe view...
+		//				: 1.0);
 	}
 
 #if 0

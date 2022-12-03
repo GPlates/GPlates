@@ -448,6 +448,16 @@ namespace GPlatesQtWidgets
 
 
 		/**
+		 * Vulkan command pool for allocating command buffers for graphics+compute queue.
+		 */
+		vk::CommandPool d_graphics_and_compute_command_pool;
+
+		/**
+		 * Vulkan command buffer for recording within default render pass.
+		 */
+		vk::CommandBuffer d_default_render_pass_command_buffers[GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES];
+
+		/**
 		 * Semaphore to signal when the acquired swapchain image is ready to be rendered into.
 		 */
 		vk::Semaphore d_swapchain_image_available_semaphores[GPlatesOpenGL::VulkanFrame::NUM_ASYNC_FRAMES];
@@ -459,11 +469,11 @@ namespace GPlatesQtWidgets
 
 
 		/**
-		 * Command pool used when transferring ownership of exclusive swapchain image from graphics+compute queue to present queue.
+		 * Vulkan command pool for allocating command buffers for present queue.
 		 *
 		 * Note: Only used if both queues are from different queue families.
 		 */
-		vk::CommandPool d_queue_transfer_swapchain_image_command_pool;
+		vk::CommandPool d_present_command_pool;
 
 		/**
 		 * Command buffer for transferring ownership of exclusive swapchain image from graphics+compute queue to present queue.

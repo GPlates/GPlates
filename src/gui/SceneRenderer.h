@@ -109,7 +109,7 @@ namespace GPlatesGui
 		void
 		render(
 				GPlatesOpenGL::Vulkan &vulkan,
-				vk::Framebuffer default_frame_buffer,
+				vk::CommandBuffer default_render_pass_command_buffer,
 				Scene &scene,
 				SceneOverlays &scene_overlays,
 				const SceneView &scene_view,
@@ -136,15 +136,6 @@ namespace GPlatesGui
 
 		//! Stars in the background (in globe and map views).
 		GPlatesOpenGL::Stars d_stars;
-
-		//! Vulkan command pool for allocating graphics+compute command buffers.
-		vk::CommandPool d_graphics_and_compute_command_pool;
-
-		//! Vulkan render pass for rendering to the default framebuffer.
-		vk::RenderPass d_default_render_pass;
-
-		//! Vulkan command buffer for recording within default render pass.
-		vk::CommandBuffer d_default_render_pass_command_buffers[GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES];
 
 		//! Shader program that sorts and blends the list of fragments (per pixel) in depth order.
 		GPlatesOpenGL::GLProgram::shared_ptr_type d_sort_and_blend_scene_fragments_shader_program;
@@ -261,6 +252,7 @@ namespace GPlatesGui
 		cache_handle_type
 		render_scene(
 				GPlatesOpenGL::Vulkan &vulkan,
+				vk::CommandBuffer default_render_pass_command_buffer,
 				Scene &scene,
 				SceneOverlays &scene_overlays,
 				const SceneView &scene_view,
