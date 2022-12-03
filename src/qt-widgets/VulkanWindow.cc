@@ -209,7 +209,7 @@ GPlatesQtWidgets::VulkanWindow::destroy_vulkan_device_and_swapchain()
 	d_vulkan_device.get_device().waitIdle();
 
 	// Then notify our subclass that the Vulkan device is about to be destroyed.
-	release_vulkan_resources(d_vulkan_device);
+	release_vulkan_resources(d_vulkan_device, d_vulkan_swapchain);
 
 	// Finally destroy the Vulkan device and swapchain.
 	// Note that the swapchain is destroyed first (and then the device).

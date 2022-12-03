@@ -58,7 +58,8 @@ namespace GPlatesQtWidgets
 		virtual
 		void
 		release_vulkan_resources(
-				GPlatesOpenGL::VulkanDevice &vulkan_device) = 0;
+				GPlatesOpenGL::VulkanDevice &vulkan_device,
+				GPlatesOpenGL::VulkanSwapchain &vulkan_swapchain) = 0;
 
 		/**
 		 * Called when a frame should be rendered into the window by subclass.

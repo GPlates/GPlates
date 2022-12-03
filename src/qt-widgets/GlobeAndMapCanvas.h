@@ -366,7 +366,8 @@ namespace GPlatesQtWidgets
 		 */
 		void
 		release_vulkan_resources(
-				GPlatesOpenGL::VulkanDevice &vulkan_device) override;
+				GPlatesOpenGL::VulkanDevice &vulkan_device,
+				GPlatesOpenGL::VulkanSwapchain &vulkan_swapchain) override;
 
 		/**
 		 * Called by base class @a VulkanWindow whenever a frame should be rendered into the window.
@@ -445,6 +446,7 @@ namespace GPlatesQtWidgets
 		 */
 		GPlatesOpenGL::VulkanFrame d_vulkan_frame;
 
+
 		/**
 		 * Semaphore to signal when the acquired swapchain image is ready to be rendered into.
 		 */
@@ -453,7 +455,30 @@ namespace GPlatesQtWidgets
 		/**
 		 * Semaphore to signal when the device (GPU) has finished rendering to a swapchain image.
 		 */
-		vk::Semaphore d_swapchain_image_presentable_semaphores[GPlatesOpenGL::VulkanFrame::NUM_ASYNC_FRAMES];
+		vk::Semaphore d_swapchain_image_rendering_finished_semaphores[GPlatesOpenGL::VulkanFrame::NUM_ASYNC_FRAMES];
+
+
+		/**
+		 * Command pool used when transferring ownership of exclusive swapchain image from graphics+compute queue to present queue.
+		 *
+		 * Note: Only used if both queues are from different queue families.
+		 */
+		vk::CommandPool d_queue_transfer_swapchain_image_command_pool;
+
+		/**
+		 * Command buffer for transferring ownership of exclusive swapchain image from graphics+compute queue to present queue.
+		 *
+		 * Note: Only used if both queues are from different queue families.
+		 */
+		vk::CommandBuffer d_queue_transfer_swapchain_image_command_buffers[GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES];
+
+		/**
+		 * Semaphore to signal when a swapchain image has been transferred from graphics+compute queue to present queue.
+		 *
+		 * Note: Only used if both queues are from different queue families.
+		 */
+		vk::Semaphore d_queue_transfer_swapchain_image_semaphores[GPlatesOpenGL::VulkanFrame::NUM_ASYNC_FRAMES];
+
 
 		/**
 		 * The scene contains the globe and map.

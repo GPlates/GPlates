@@ -341,10 +341,11 @@ GPlatesOpenGL::VulkanSwapchain::create_render_pass(
 			.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
 			.setColorAttachments(colour_attachment_reference);
 
-	// One subpass external dependency to ensure swapchain image layout transition, from eUndefined to
-	// eColorAttachmentOptimal, happens *after* image is acquired.
-	vk::SubpassDependency subpass_dependency;
-	subpass_dependency
+	vk::SubpassDependency subpass_dependencies[2];
+	// One subpass external dependency to ensure swapchain image layout transition (from eUndefined to
+	// eColorAttachmentOptimal) happens *after* image is acquired (which happens before stage
+	// eColorAttachmentOutput since that is the wait stage on the image acquire semaphore).
+	subpass_dependencies[0]
 			// Synchronise with commands before the render pass...
 			.setSrcSubpass(VK_SUBPASS_EXTERNAL)
 			// Only one subpass...
@@ -353,19 +354,36 @@ GPlatesOpenGL::VulkanSwapchain::create_render_pass(
 			// This means this dependency will also wait for the swapchain image to be acquired.
 			// The layout transition will then happen after that...
 			.setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-			// Block colour attachment writes by the subpass (but stages before that are not blocked, eg, vertex shader)...
+			// Block colour attachment writes by the subpass (but stages before that are not blocked, eg, vertex shader).
+			// The layout transition will then happen before that...
 			.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
 			// Swapchain image acquire signals a semaphore, which ensures all writes are made available, so
 			// no need to specify a src access mask. In any case, there's no writes in the presentation engine...
 			.setSrcAccessMask({})
-			// Colour attachment clear is a write operation...
+			// Colour attachment clear (in render pass) is a write operation...
 			.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
+	// And one subpass external dependency to ensure swapchain image layout transition (from eColorAttachmentOptimal
+	// to ePresentSrcKHR) happens *before* image queue ownership is (potentially) released from graphics+compute queue
+	// (if present queue in a different queue family than graphics+compute queue).
+	subpass_dependencies[1]
+			// Only one subpass...
+			.setSrcSubpass(0)
+			// Synchronise with commands after the render pass...
+			.setDstSubpass(VK_SUBPASS_EXTERNAL)
+			// Wait for the swapchain image to be rendered to (in colour attachment stage)...
+			.setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+			// Chain dependency with the subsequent (potential) queue ownership image release pipeline barrier...
+			.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
+			// Colour attachment writes should be made available (before subsequent queue ownership release)...
+			.setSrcAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
+			// Colour attachment reads/writes should be made visible (before subsequent queue ownership release)...
+			.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite);
 
 	vk::RenderPassCreateInfo render_pass_create_info;
 	render_pass_create_info
 			.setAttachments(swapchain_image_attachment_description)
 			.setSubpasses(subpass_description)
-			.setDependencies(subpass_dependency);
+			.setDependencies(subpass_dependencies);
 	d_render_pass = vulkan_device.get_device().createRenderPass(render_pass_create_info);
 }
 
