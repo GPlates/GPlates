@@ -214,6 +214,7 @@ namespace GPlatesOpenGL
 
 		void
 		create_device(
+				bool &use_KHR_dedicated_allocation,
 				boost::optional<const SurfaceInfo &> surface_info = boost::none);
 
 
@@ -248,8 +249,15 @@ namespace GPlatesOpenGL
 				std::uint32_t &present_queue_family) const;
 
 
+		bool
+		is_device_extension_available(
+				const char *device_extension,
+				const std::vector<vk::ExtensionProperties> &available_device_extension_properties);
+
+
 		void
-		create_vma_allocator();
+		create_vma_allocator(
+				bool use_KHR_dedicated_allocation);
 	};
 }
 

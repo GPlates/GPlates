@@ -67,11 +67,14 @@ void
 GPlatesOpenGL::VulkanDevice::create_internal(
 		boost::optional<const SurfaceInfo &> surface_info)
 {
+	// Our VMA allocator can use the VK_KHR_dedicated_allocation extension (if available and we've enabled it).
+	bool use_KHR_dedicated_allocation = false;
+
 	// Create the logical device.
-	create_device(surface_info);
+	create_device(use_KHR_dedicated_allocation, surface_info);
 
 	// Create the VMA allocator (for allocating buffers and images).
-	create_vma_allocator();
+	create_vma_allocator(use_KHR_dedicated_allocation);
 }
 
 
@@ -104,6 +107,7 @@ GPlatesOpenGL::VulkanDevice::destroy()
 
 void
 GPlatesOpenGL::VulkanDevice::create_device(
+		bool &use_KHR_dedicated_allocation,
 		boost::optional<const SurfaceInfo &> surface_info)
 {
 	GPlatesGlobal::Assert<VulkanException>(
@@ -118,6 +122,7 @@ GPlatesOpenGL::VulkanDevice::create_device(
 	// And if an optional vk::SurfaceKHR is provided then return the present queue family.
 	//
 	select_physical_device(surface_info);
+
 
 	//
 	// Device queues.
@@ -147,16 +152,44 @@ GPlatesOpenGL::VulkanDevice::create_device(
 		}
 	}
 
+
 	//
 	// Device extensions.
 	//
-	std::vector<const char *> device_extensions;
+
+	// Device extensions that we'll enable (and that are available).
+	std::vector<const char *> enabled_device_extensions;
+
+	// Get the available device extensions.
+	const std::vector<vk::ExtensionProperties> available_device_extension_properties =
+			d_physical_device.enumerateDeviceExtensionProperties();
+
 	// If we have a surface then a swapchain will need to be created
 	// (note that we don't create the swapchain, our caller is responsible for that).
 	if (surface_info)
 	{
-		device_extensions.push_back("VK_KHR_swapchain");
+		// We need the VK_KHR_swapchain device extension to render to a window/surface.
+		// It should be available on systems with a display.
+		GPlatesGlobal::Assert<VulkanException>(
+				is_device_extension_available("VK_KHR_swapchain", available_device_extension_properties),
+				GPLATES_ASSERTION_SOURCE,
+				"The Vulkan extension VK_KHR_swapchain must be supported (for rendering to windows/surfaces).");
+		enabled_device_extensions.push_back("VK_KHR_swapchain");
 	}
+
+	// Our VMA allocator will automatically use the following extensions if they're available and enabled.
+
+	const bool have_KHR_dedicated_allocation = is_device_extension_available(
+			"VK_KHR_dedicated_allocation", available_device_extension_properties);
+	if (have_KHR_dedicated_allocation) enabled_device_extensions.push_back("VK_KHR_dedicated_allocation");
+
+	const bool have_KHR_get_memory_requirements2 = is_device_extension_available(
+			"VK_KHR_get_memory_requirements2", available_device_extension_properties);
+	if (have_KHR_get_memory_requirements2) enabled_device_extensions.push_back("VK_KHR_get_memory_requirements2");
+
+	// Let the VMA allocator know whether it can use 'VK_KHR_dedicated_allocation'.
+	use_KHR_dedicated_allocation = have_KHR_dedicated_allocation && have_KHR_get_memory_requirements2;
+
 
 	//
 	// Create the logical device.
@@ -165,7 +198,7 @@ GPlatesOpenGL::VulkanDevice::create_device(
 	device_info
 			.setQueueCreateInfos(device_queue_infos)
 			.setPEnabledFeatures(&d_physical_device_features)
-			.setPEnabledExtensionNames(device_extensions);
+			.setPEnabledExtensionNames(enabled_device_extensions);
 	d_device = d_physical_device.createDevice(device_info);
 
 	// Get the graphics+compute queue from the logical device.
@@ -392,8 +425,26 @@ GPlatesOpenGL::VulkanDevice::get_physical_device_present_queue_family(
 }
 
 
+bool
+GPlatesOpenGL::VulkanDevice::is_device_extension_available(
+		const char *device_extension,
+		const std::vector<vk::ExtensionProperties> &available_device_extension_properties)
+{
+	for (const auto &available_device_extension_property : available_device_extension_properties)
+	{
+		if (QString::fromUtf8(device_extension) == QString::fromUtf8(available_device_extension_property.extensionName))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+
 void
-GPlatesOpenGL::VulkanDevice::create_vma_allocator()
+GPlatesOpenGL::VulkanDevice::create_vma_allocator(
+		bool use_KHR_dedicated_allocation)
 {
 	// Get the function pointer 'vkGetInstanceProcAddr'.
 	PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr_ = VulkanHpp::get_vkGetInstanceProcAddr();
@@ -415,5 +466,15 @@ GPlatesOpenGL::VulkanDevice::create_vma_allocator()
 	allocator_create_info.physicalDevice = d_physical_device;
 	allocator_create_info.device = d_device;
 	allocator_create_info.pVulkanFunctions = &vulkan_functions;
+	// Get the VMA allocator to use the VK_KHR_dedicated_allocation extension (if available and we've enabled it).
+	// This allows dedicated allocations for buffer/image resources when the driver decides its more efficient.
+	if (use_KHR_dedicated_allocation)
+	{
+		// Note that the VMA docs tell us the following validation error can be ignored:
+		//
+		//   "vkBindBufferMemory(): Binding memory to buffer 0x2d but vkGetBufferMemoryRequirements() has not been called on that buffer. "
+		//
+		allocator_create_info.flags |= VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT;
+	}
 	vmaCreateAllocator(&allocator_create_info, &d_vma_allocator);
 }
