@@ -118,6 +118,8 @@ OpenGLFunctions.cc
 OpenGLFunctions.h
 Vulkan.cc
 Vulkan.h
+VulkanBuffer.cc
+VulkanBuffer.h
 VulkanDevice.cc
 VulkanDevice.h
 VulkanDeviceLifetime.h

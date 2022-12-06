@@ -317,6 +317,7 @@ GPlatesOpenGL::VulkanDevice::select_physical_device(
 #if !defined(GPLATES_DEBUG)
 	d_physical_device_features.setRobustBufferAccess(false);
 #endif
+	d_physical_device_memory_properties = d_physical_device.getMemoryProperties();
 	d_graphics_and_compute_queue_family = selected_physical_device_info->graphics_and_compute_queue_family;
 
 	// If a vk::SurfaceKHR was provided then also return the present queue family to the caller.

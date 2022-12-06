@@ -132,6 +132,15 @@ namespace GPlatesOpenGL
 		}
 
 		/**
+		 * Return the memory properties of the Vulkan physical device (that the logical device was created from).
+		 */
+		const vk::PhysicalDeviceMemoryProperties &
+		get_physical_device_memory_properties()
+		{
+			return d_physical_device_memory_properties;
+		}
+
+		/**
 		 * Return the Vulkan logical device.
 		 */
 		vk::Device
@@ -179,6 +188,7 @@ namespace GPlatesOpenGL
 		vk::PhysicalDevice d_physical_device;
 		vk::PhysicalDeviceProperties d_physical_device_properties;
 		vk::PhysicalDeviceFeatures d_physical_device_features;
+		vk::PhysicalDeviceMemoryProperties d_physical_device_memory_properties;
 		std::uint32_t d_graphics_and_compute_queue_family;
 
 		// Logical device.
