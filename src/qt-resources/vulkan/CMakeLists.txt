@@ -122,7 +122,7 @@ if (GPLATES_VULKAN_UPDATE_GLSL_DEPENDENCIES)
 endif()
 
 # Add the vulkan shaders "vulkan.qrc" file to the gplates static library (or pygplates extension module).
-target_sources_util(${SOURCE_TARGET} PRIVATE ${vulkan_qrc})
+target_sources(${SOURCE_TARGET} PRIVATE ${vulkan_qrc})
 
 # It seems we need a custom target to ensure our Vulkan shaders get compiled (when their dependency files are modified).
 #

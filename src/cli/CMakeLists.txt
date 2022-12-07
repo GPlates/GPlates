@@ -7,5 +7,5 @@ if (TARGET gplates-lib)
     read_sources_util(cmake_sources.txt sources)
 
     # Add the source files to the gplates static library.
-    target_sources_util(gplates-lib PRIVATE ${sources})
+    target_sources(gplates-lib PRIVATE ${sources})
 endif()

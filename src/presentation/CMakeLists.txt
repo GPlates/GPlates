@@ -6,4 +6,4 @@
 read_sources_util(cmake_sources.txt sources)
 
 # Add the source files to the gplates static library (or pygplates extension module).
-target_sources_util(${SOURCE_TARGET} PRIVATE ${sources})
+target_sources(${SOURCE_TARGET} PRIVATE ${sources})

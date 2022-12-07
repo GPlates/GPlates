@@ -12,5 +12,5 @@ if (TARGET gplates-unit-test)
     read_sources_util(cmake_sources.txt sources)
 
     # Add the source files to the gplates "unit test" executable.
-    target_sources_util(gplates-unit-test PRIVATE ${sources})
+    target_sources(gplates-unit-test PRIVATE ${sources})
 endif()

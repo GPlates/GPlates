@@ -306,7 +306,7 @@ else()  # pygplates ...
 	#
 	# Note that module libraries default to position-independent code, but we'll set it anyway.
 	set_target_properties(pygplates PROPERTIES POSITION_INDEPENDENT_CODE ON)
-	target_sources_util(pygplates PRIVATE
+	target_sources(pygplates PRIVATE
 		${PROJECT_BINARY_DIR}/src/global/Version.cc
 		${PROJECT_BINARY_DIR}/src/global/License.cc
 		${PROJECT_BINARY_DIR}/src/global/config.h)
@@ -675,7 +675,7 @@ if (GPLATES_BUILD_GPLATES)
 		set(GPlates_ICON "${PROJECT_SOURCE_DIR}/cmake/distribution/gplates_desktop_icon.rc")
 	endif()
 	if (GPlates_ICON)
-		target_sources_util(gplates PRIVATE ${GPlates_ICON})
+		target_sources(gplates PRIVATE ${GPlates_ICON})
 	endif()
 
 	if (APPLE)
