@@ -159,14 +159,11 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 #
-# Require Qt 5.15 (but use Qt6 when available since it has bug-fixes beyond the Qt5.15 non-commercial version).
+# Require Qt 5.12 (but use Qt6 when available since it has bug-fixes beyond the Qt5.15 non-commercial version).
 #
 # Qt 5.12 is required for Vulkan support in Qt.
 # Actually only macOS requires 5.12 (which added support for MoltenVK). Windows and Linux only require Qt 5.10.
 # However our minimum supported Ubuntu is Focal which uses Qt 5.12 anyway.
-#
-# Note: We actually need Qt 5.15 because QVulkanWindow::setQueueCreateInfoModifier(), added in 5.15, enables
-#       us to request a Vulkan compute queue (so can use compute shaders).
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
 if (QT_VERSION_MAJOR EQUAL 6)
 	# Temporarily use Core5Compat API (until fully moved to Qt6) so can still use some deprecated Qt5 APIs.
@@ -178,7 +175,7 @@ if (QT_VERSION_MAJOR EQUAL 6)
 	# TODO: Remove the OpenGL and OpenGLWidgets modules when we've fulled ported from OpenGL to Vulkan.
 	find_package(Qt6 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml Core5Compat OpenGL OpenGLWidgets)
 else()
-	find_package(Qt5 5.15 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml XmlPatterns)
+	find_package(Qt5 5.12 REQUIRED COMPONENTS Core Gui Network Svg Widgets Xml XmlPatterns)
 endif()
 
 ############
@@ -731,7 +728,7 @@ endif()
 # Side note: Qt also doesn't 'link' directly to Vulkan (instead it resolves 'vkGetInstanceProcAddr' at runtime).
 #
 # But we still need the include path to the Vulkan headers since we include them in our source code.
-# Side note: Qt also includes the Vulkan headers (eg "QVulkanWindow.h" includes the Vulkan headers).
+# Side note: Qt also includes the Vulkan headers (eg "QVulkanInstance.h" includes the Vulkan headers).
 target_include_directories(${SOURCE_TARGET} SYSTEM PUBLIC ${Vulkan_INCLUDE_DIRS})
 
 #
@@ -872,10 +869,6 @@ include(TestPythonEmbedding)
 
 #
 # Include code to *install* the ${BUILD_TARGET} target (either 'gplates' or 'pygplates').
-#
-# This is done in the same directory scope that the targets were created in since this is required by CMake <= 3.12
-# (once CMake 3.13 or above is our minimum requirement then this will no longer be necessary).
-# Note that, while 'include()' pulls in content from another directory, it pulls it into the *current* directory scope.
 #
 include(Install)
 
