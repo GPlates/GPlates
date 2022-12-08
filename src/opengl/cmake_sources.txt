@@ -124,7 +124,6 @@ VulkanBuffer.cc
 VulkanBuffer.h
 VulkanDevice.cc
 VulkanDevice.h
-VulkanDeviceLifetime.h
 VulkanException.h
 VulkanFrame.cc
 VulkanFrame.h
