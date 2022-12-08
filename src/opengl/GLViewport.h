@@ -101,8 +101,19 @@ namespace GPlatesOpenGL
 			return d_height;
 		}
 
+		vk::Viewport
+		get_vulkan_viewport(
+				float min_depth = 0,
+				float max_depth = 1) const
+		{
+			return {
+					static_cast<float>(d_x), static_cast<float>(d_y),
+					static_cast<float>(d_width), static_cast<float>(d_height),
+					min_depth, max_depth };
+		}
+
 		vk::Rect2D
-		get_rect2D() const
+		get_vulkan_rect_2D() const
 		{
 			return { {d_x, d_y}, {d_width, d_height} };
 		}

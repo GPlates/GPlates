@@ -1,12 +1,4 @@
-/* $Id$ */
-
 /**
- * @file 
- * File specific comments.
- *
- * Most recent change:
- *   $Date$
- * 
  * Copyright (C) 2010 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -28,20 +20,18 @@
 #ifndef GPLATES_GUI_STARS_H
 #define GPLATES_GUI_STARS_H
 
+#include <cstdint>
 #include <vector>
 #include <boost/function.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
-#include "Colour.h"
+#include "GLStreamPrimitives.h"
+#include "GLVertexUtils.h"
+#include "Vulkan.h"
+#include "VulkanBuffer.h"
 
-#include "opengl/GLBuffer.h"
-#include "opengl/GLContextLifetime.h"
-#include "opengl/GLProgram.h"
-#include "opengl/GLStreamPrimitives.h"
-#include "opengl/GLVertexArray.h"
-#include "opengl/GLVertexUtils.h"
-#include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
+#include "gui/Colour.h"
 
 
 namespace GPlatesOpenGL
@@ -49,13 +39,12 @@ namespace GPlatesOpenGL
 	class GLViewProjection;
 }
 
-namespace GPlatesGui
+namespace GPlatesOpenGL
 {
 	/**
 	 * Draws a random collection of stars in the background.
 	 */
-	class Stars:
-			public GPlatesOpenGL::GLContextLifetime
+	class Stars
 	{
 	public:
 
@@ -69,18 +58,20 @@ namespace GPlatesGui
 
 
 		/**
-		 * The OpenGL context has been created.
+		 * The Vulkan device has been created.
 		 */
 		void
-		initialise_gl(
-				GPlatesOpenGL::GL &gl) override;
+		initialise_vulkan_resources(
+				VulkanDevice &vulkan_device,
+				vk::RenderPass default_render_pass,
+				vk::CommandBuffer initialisation_command_buffer);
 
 		/**
-		 * The OpenGL context is about to be destroyed.
+		 * The Vulkan device is about to be destroyed.
 		 */
 		void
-		shutdown_gl(
-				GPlatesOpenGL::GL &gl) override;
+		release_vulkan_resources(
+				VulkanDevice &vulkan_device);
 
 
 		/**
@@ -94,36 +85,58 @@ namespace GPlatesGui
 		 */
 		void
 		render(
-				GPlatesOpenGL::GL &gl,
-				const GPlatesOpenGL::GLViewProjection &view_projection,
+				Vulkan &vulkan,
+				vk::CommandBuffer command_buffer,
+				const GLViewProjection &view_projection,
 				int device_pixel_ratio,
 				const double &radius_multiplier = 1.0);
 
 	private:
 
-		static constexpr GLfloat SMALL_STARS_SIZE = 1.4f;
-		static constexpr GLfloat LARGE_STARS_SIZE = 2.4f;
+		static constexpr float SMALL_STARS_SIZE = 1.4f;
+		static constexpr float LARGE_STARS_SIZE = 2.4f;
 
 		static const unsigned int NUM_SMALL_STARS = 4250;
 		static const unsigned int NUM_LARGE_STARS = 3750;
 
 		// Points sit on a sphere of this radius (note that the Earth globe has radius 1.0).
 		// Ideally we'd have these points at infinity, but a large distance works well.
-		static const constexpr GLfloat RADIUS = 7.0f;
+		static const constexpr double RADIUS = 7.0f;
 
-		typedef GPlatesOpenGL::GLVertexUtils::Vertex vertex_type;
-		typedef GLushort vertex_element_type;
-		typedef GPlatesOpenGL::GLDynamicStreamPrimitives<vertex_type, vertex_element_type> stream_primitives_type;
+		typedef GLVertexUtils::Vertex vertex_type;
+		typedef std::uint32_t vertex_index_type;
+		typedef GLDynamicStreamPrimitives<vertex_type, vertex_index_type> stream_primitives_type;
+
+		//
+		// layout (push_constant) uniform PushConstants
+		// {
+		//     mat4 view_projection;
+		//     vec4 star_colour;
+		//     float radius_multiplier;
+		//     float point_size;
+		// };
+		//
+		// NOTE: This fits within the minimum required size limit of 128 bytes for push constants.
+		//       And push constants use the std430 layout.
+		//
+		struct PushConstants
+		{
+			GLfloat view_projection[16];
+			GLfloat star_colour[4];
+			GLfloat radius_multiplier;
+			GLfloat point_size;
+		};
 
 
 		void
-		create_shader_program(
-				GPlatesOpenGL::GL &gl);
+		create_graphics_pipeline(
+				VulkanDevice &vulkan_device,
+				vk::RenderPass default_render_pass);
 
 		void
 		create_stars(
 				std::vector<vertex_type> &vertices,
-				std::vector<vertex_element_type> &vertex_elements);
+				std::vector<vertex_index_type> &vertex_indices);
 
 		void
 		stream_stars(
@@ -133,20 +146,27 @@ namespace GPlatesGui
 
 		void
 		load_stars(
-				GPlatesOpenGL::GL &gl,
+				VulkanDevice &vulkan_device,
+				vk::CommandBuffer initialisation_command_buffer,
 				const std::vector<vertex_type> &vertices,
-				const std::vector<vertex_element_type> &vertex_elements);
+				const std::vector<vertex_index_type> &vertex_indices);
 
 
 		//! Colour of the stars.
 		GPlatesGui::Colour d_colour;
 
-		//! Shader program to render stars.
-		GPlatesOpenGL::GLProgram::shared_ptr_type d_program;
+		vk::PipelineLayout d_pipeline_layout;
+		vk::Pipeline d_graphics_pipeline;
 
-		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_vertex_array;
-		GPlatesOpenGL::GLBuffer::shared_ptr_type d_vertex_buffer;
-		GPlatesOpenGL::GLBuffer::shared_ptr_type d_vertex_element_buffer;
+		//! Host vertex buffer (used for staging in initialisation).
+		VulkanBuffer d_host_vertex_buffer;
+		//!  Device vertex buffer (used by GPU during rendering).
+		VulkanBuffer d_device_vertex_buffer;
+
+		//! Host index buffer (used for staging in initialisation).
+		VulkanBuffer d_host_index_buffer;
+		//! Device index buffer (used by GPU during rendering).
+		VulkanBuffer d_device_index_buffer;
 
 		unsigned int d_num_small_star_vertices;
 		unsigned int d_num_small_star_vertex_indices;

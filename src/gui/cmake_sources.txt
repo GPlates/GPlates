@@ -220,8 +220,6 @@ SmallCircleCanvasToolWorkflow.cc
 SmallCircleCanvasToolWorkflow.h
 SphericalGrid.cc
 SphericalGrid.h
-Stars.cc
-Stars.h
 Symbol.cc
 Symbol.h
 TextOverlay.cc

@@ -21,12 +21,12 @@
 // Renders stars (points) in the background of the scene.
 //
 
-layout (set = 0, binding = 0) uniform Uniform
+layout (push_constant) uniform PushConstants
 {
     mat4 view_projection;
+    vec4 star_colour;
     float radius_multiplier;
     float point_size;
-    vec4 star_colour;
 };
 
 layout (location = 0) in VertexData
