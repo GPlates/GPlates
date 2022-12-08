@@ -36,7 +36,6 @@
 #include "MapGrid.h"
 #include "MapRenderedGeometryCollectionPainter.h"
 
-#include "opengl/GLContextLifetime.h"
 #include "opengl/GLVisualLayers.h"
 #include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
@@ -56,8 +55,7 @@ namespace GPlatesGui
 	/**
 	 * Holds the state for map view (analogous to the Globe class for the globe view).
 	 */
-	class Map :
-			public GPlatesOpenGL::GLContextLifetime
+	class Map
 	{
 	public:
 		/**
@@ -79,14 +77,14 @@ namespace GPlatesGui
 		 */
 		void
 		initialise_gl(
-				GPlatesOpenGL::GL &gl) override;
+				GPlatesOpenGL::GL &gl);
 
 		/**
 		 * The OpenGL context is about to be destroyed.
 		 */
 		void
 		shutdown_gl(
-				GPlatesOpenGL::GL &gl) override;
+				GPlatesOpenGL::GL &gl);
 
 
 		/**

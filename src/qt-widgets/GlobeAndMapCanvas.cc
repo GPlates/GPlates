@@ -189,7 +189,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initialise_vulkan_resources(
 	vk::CommandPoolCreateInfo graphics_and_compute_command_pool_create_info;
 	graphics_and_compute_command_pool_create_info
 			// Each command buffer can be reset (eg, implicitly by beginning a command buffer).
-			// And each command buffer will not be re-used (ie, used once and then reset)...
+			// And each command buffer will not be re-used (ie, used once and then reset implicitly)...
 			.setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer | vk::CommandPoolCreateFlagBits::eTransient)
 			.setQueueFamilyIndex(vulkan_device.get_graphics_and_compute_queue_family());
 	d_graphics_and_compute_command_pool = vulkan_device.get_device().createCommandPool(graphics_and_compute_command_pool_create_info);
@@ -247,24 +247,68 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initialise_vulkan_resources(
 				.setCommandPool(d_present_command_pool)
 				.setLevel(vk::CommandBufferLevel::ePrimary)
 				.setCommandBufferCount(GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES);
-		const std::vector<vk::CommandBuffer> queue_transfer_swapchain_image_command_buffers =
+		const std::vector<vk::CommandBuffer> transfer_swapchain_image_to_present_queue_command_buffers =
 				vulkan_device.get_device().allocateCommandBuffers(present_command_buffer_allocate_info);
 		GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-				queue_transfer_swapchain_image_command_buffers.size() == GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES,
+				transfer_swapchain_image_to_present_queue_command_buffers.size() == GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES,
 				GPLATES_ASSERTION_SOURCE);
 
 		for (unsigned int frame_index = 0; frame_index < GPlatesOpenGL::VulkanFrame::NUM_ASYNC_FRAMES; ++frame_index)
 		{
-			d_queue_transfer_swapchain_image_command_buffers[frame_index] = queue_transfer_swapchain_image_command_buffers[frame_index];
+			d_transfer_swapchain_image_to_present_queue_command_buffers[frame_index] =
+					transfer_swapchain_image_to_present_queue_command_buffers[frame_index];
 
 			// Create semaphores to signal when a swapchain image has been transferred.
 			vk::SemaphoreCreateInfo semaphore_create_info;
-			d_queue_transfer_swapchain_image_semaphores[frame_index] = vulkan_device.get_device().createSemaphore(semaphore_create_info);
+			d_transferred_swapchain_image_to_present_queue_semaphores[frame_index] =
+					vulkan_device.get_device().createSemaphore(semaphore_create_info);
 		}
 	}
 
+
+	//
+	// Allocate a command buffer just for clients to use during initialisation, and then free the command buffer afterwards.
+	//
+	// This allows clients to use the command buffer for things like staging resource uploads to device (GPU) memory.
+	//
+
+	// Allocate initialisation command buffer.
+	vk::CommandBufferAllocateInfo initialisation_command_buffer_allocate_info;
+	initialisation_command_buffer_allocate_info
+			.setCommandPool(d_graphics_and_compute_command_pool)
+			.setLevel(vk::CommandBufferLevel::ePrimary)
+			.setCommandBufferCount(1);
+	const std::vector<vk::CommandBuffer> initialisation_command_buffers =
+			vulkan_device.get_device().allocateCommandBuffers(initialisation_command_buffer_allocate_info);
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			initialisation_command_buffers.size() == 1,
+			GPLATES_ASSERTION_SOURCE);
+	vk::CommandBuffer initialisation_command_buffer = initialisation_command_buffers[0];
+
+	// Begin recording into the initialisation command buffer.
+	vk::CommandBufferBeginInfo initialisation_command_buffer_begin_info;
+	// Command buffer will only be submitted once.
+	initialisation_command_buffer_begin_info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+	initialisation_command_buffer.begin(initialisation_command_buffer_begin_info);
+
 	// Initialise resources in scene renderer.
-	d_scene_renderer->initialise_vulkan_resources(vulkan_device, vulkan_swapchain.get_swapchain_render_pass());
+	d_scene_renderer->initialise_vulkan_resources(vulkan_device, vulkan_swapchain.get_swapchain_render_pass(), initialisation_command_buffer);
+
+	// End recording into the initialisation command buffer.
+	initialisation_command_buffer.end();
+
+	// Submit the initialisation command buffer.
+	vk::SubmitInfo initialisation_command_buffer_submit_info;
+	initialisation_command_buffer_submit_info.setCommandBuffers(initialisation_command_buffer);
+	vulkan_device.get_graphics_and_compute_queue().submit(initialisation_command_buffer_submit_info);
+
+	// Make sure any commands (eg, copy commands) have finished before we free the command buffer.
+	//
+	// Note: It's OK to wait here since initialisation is not a performance-critical part of the code.
+	vulkan_device.get_graphics_and_compute_queue().waitIdle();
+
+	// Free initialisation command buffer.
+	vulkan_device.get_device().freeCommandBuffers(d_graphics_and_compute_command_pool, initialisation_command_buffer);
 }
 
 
@@ -283,11 +327,11 @@ GPlatesQtWidgets::GlobeAndMapCanvas::release_vulkan_resources(
 		{
 			vulkan_device.get_device().freeCommandBuffers(
 					d_present_command_pool,
-					d_queue_transfer_swapchain_image_command_buffers[frame_index]);
-			d_queue_transfer_swapchain_image_command_buffers[frame_index] = nullptr;
+					d_transfer_swapchain_image_to_present_queue_command_buffers[frame_index]);
+			d_transfer_swapchain_image_to_present_queue_command_buffers[frame_index] = nullptr;
 
-			vulkan_device.get_device().destroySemaphore(d_queue_transfer_swapchain_image_semaphores[frame_index]);
-			d_queue_transfer_swapchain_image_semaphores[frame_index] = nullptr;
+			vulkan_device.get_device().destroySemaphore(d_transferred_swapchain_image_to_present_queue_semaphores[frame_index]);
+			d_transferred_swapchain_image_to_present_queue_semaphores[frame_index] = nullptr;
 		}
 
 		// Destroy the command pool.
@@ -387,6 +431,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 
 	vk::Semaphore swapchain_image_presentable_semaphore;
 	vk::Semaphore transferred_swapchain_image_to_present_queue_semaphore;
+	vk::CommandBuffer transfer_swapchain_image_to_present_queue_command_buffer;
 	// There's only one fence ('frame_rendering_finished_fence') but we need to place it at the end of the frame to ensure all our
 	// asynchronous frame resources are protected (ie, so we don't re-use them later when the GPU is still accessing them).
 	// So one of the following two fences will remain as NULL (ie, not get initialised).
@@ -397,8 +442,13 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 	if (vulkan_swapchain.get_present_queue_family() != vulkan_device.get_graphics_and_compute_queue_family())
 	{
 		// Swapchain image is presentable when it has been transferred to the present queue.
-		transferred_swapchain_image_to_present_queue_semaphore = d_queue_transfer_swapchain_image_semaphores[d_vulkan_frame.get_frame_index()];
+		transferred_swapchain_image_to_present_queue_semaphore =
+				d_transferred_swapchain_image_to_present_queue_semaphores[d_vulkan_frame.get_frame_index()];
 		swapchain_image_presentable_semaphore = transferred_swapchain_image_to_present_queue_semaphore;
+
+		// Command buffer on present queue used to acquire exclusive ownership of the swapchain image.
+		transfer_swapchain_image_to_present_queue_command_buffer =
+				d_transfer_swapchain_image_to_present_queue_command_buffers[d_vulkan_frame.get_frame_index()];
 
 		// End-of-frame happens when swapchain image has been transferred to the present queue,
 		// which happens *after* the swapchain image has been rendered (in the graphics+compute queue).
@@ -482,13 +532,13 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 	// further alpha composition of the framebuffer (we attempt to set vk::CompositeAlphaFlagBitsKHR::eOpaque
 	// in VulkanSwapchain, if it's supported, to avoid further composition) then it will have no effect.
 	// For example, we don't want our black background converted to white if the underlying surface happens to be white.
-	const vk::ClearColorValue default_clear_colour = std::array<float, 4>{ 1.0f, 0.0f, 0.0f, 1.0f };
+	const vk::ClearColorValue default_clear_colour = std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f };
 	// Clear depth/stencil of the default framebuffer.
 	const vk::ClearDepthStencilValue default_clear_depth_stencil = { 1.0f, 0 };
 
 	// Begin default render pass to the swapchain framebuffer.
 	//
-	const vk::Rect2D default_render_area = viewport.get_rect2D();
+	const vk::Rect2D default_render_area = viewport.get_vulkan_rect_2D();
 	const vk::ClearValue default_clear_values[2] = { default_clear_colour, default_clear_depth_stencil };
 	vk::RenderPassBeginInfo default_render_pass_begin_info;
 	default_render_pass_begin_info
@@ -602,15 +652,12 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 		// Acquire exclusive ownership of the swapchain image for the present queue.
 		// This is the second part of the release/acquire queue ownership transfer.
 
-		// Access the present command buffer for use in the current asynchronous frame.
-		vk::CommandBuffer present_swapchain_acquire_command_buffer = d_queue_transfer_swapchain_image_command_buffers[vulkan.get_frame_index()];
-
 		// Begin recording into the present command buffer.
 		vk::CommandBufferBeginInfo present_command_buffer_begin_info;
 		// Command buffer will only be submitted once.
 		present_command_buffer_begin_info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 		// Begin implicitly resets the command buffer (because command pool was created with 'eResetCommandBuffer' flag).
-		present_swapchain_acquire_command_buffer.begin(present_command_buffer_begin_info);
+		transfer_swapchain_image_to_present_queue_command_buffer.begin(present_command_buffer_begin_info);
 
 		// Pipeline barrier to acquire exclusive ownership of the swapchain image for the present queue.
 		vk::ImageMemoryBarrier present_swapchain_acquire_image_barrier;
@@ -623,7 +670,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 				.setDstQueueFamilyIndex(vulkan_swapchain.get_present_queue_family())
 				.setImage(vulkan_swapchain.get_swapchain_image(swapchain_image_index))
 				.setSubresourceRange({vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1});
-		present_swapchain_acquire_command_buffer.pipelineBarrier(
+		transfer_swapchain_image_to_present_queue_command_buffer.pipelineBarrier(
 				vk::PipelineStageFlagBits::eTopOfPipe,     // No waiting (taken care of by semaphore wait).
 				vk::PipelineStageFlagBits::eBottomOfPipe,  // No waiting (taken care of by semaphore signal).
 				{},  // dependencyFlags
@@ -632,7 +679,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 				present_swapchain_acquire_image_barrier);
 
 		// End recording into the present command buffer.
-		present_swapchain_acquire_command_buffer.end();
+		transfer_swapchain_image_to_present_queue_command_buffer.end();
 
 		const vk::PipelineStageFlags present_command_buffer_wait_dst_stage = vk::PipelineStageFlagBits::eAllCommands;
 		vk::SubmitInfo present_command_buffer_submit_info;
@@ -641,7 +688,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 				// Wait until the GPU has finished drawing into the swapchain image...
 				.setPWaitSemaphores(&swapchain_image_rendering_finished_semaphore)
 				.setPWaitDstStageMask(&present_command_buffer_wait_dst_stage)
-				.setCommandBuffers(present_swapchain_acquire_command_buffer)
+				.setCommandBuffers(transfer_swapchain_image_to_present_queue_command_buffer)
 				// Signal when the swapchain image ownership has been transferred to the present queue...
 				.setSignalSemaphores(transferred_swapchain_image_to_present_queue_semaphore);
 

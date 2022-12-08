@@ -42,7 +42,6 @@
 #include "maths/UnitQuaternion3D.h"
 
 #include "opengl/GLBuffer.h"
-#include "opengl/GLContextLifetime.h"
 #include "opengl/GLLight.h"
 #include "opengl/GLFilledPolygonsGlobeView.h"
 #include "opengl/GLFilledPolygonsMapView.h"
@@ -70,7 +69,6 @@ namespace GPlatesGui
 	 * Later this interface will include low-level general purpose symbol rendering (marker/line/fill).
 	 */
 	class LayerPainter :
-			public GPlatesOpenGL::GLContextLifetime,
 			private boost::noncopyable
 	{
 	public:
@@ -510,14 +508,14 @@ namespace GPlatesGui
 		 */
 		void
 		initialise_gl(
-				GPlatesOpenGL::GL &gl) override;
+				GPlatesOpenGL::GL &gl);
 
 		/**
 		 * The OpenGL context is about to be destroyed.
 		 */
 		void
 		shutdown_gl(
-				GPlatesOpenGL::GL &gl) override;
+				GPlatesOpenGL::GL &gl);
 
 		/**
 		 * Must be called before streaming or queuing any primitives.

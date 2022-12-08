@@ -35,7 +35,6 @@
 #include <boost/shared_ptr.hpp>
 #include <QObject>
 
-#include "GLContextLifetime.h"
 #include "GLLight.h"
 #include "GLMatrix.h"
 #include "GLMultiResolutionCubeMesh.h"
@@ -101,7 +100,6 @@ namespace GPlatesOpenGL
 	 */
 	class GLVisualLayers :
 			public QObject,
-			public GLContextLifetime,
 			public GPlatesUtils::ReferenceCount<GLVisualLayers>
 	{
 		Q_OBJECT
@@ -139,14 +137,14 @@ namespace GPlatesOpenGL
 		 */
 		void
 		initialise_gl(
-				GL &gl) override;
+				GL &gl);
 
 		/**
 		* The OpenGL context is about to be destroyed.
 		*/
 		void
 		shutdown_gl(
-				GL &gl) override;
+				GL &gl);
 
 
 		/**

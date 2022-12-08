@@ -40,7 +40,7 @@ GPlatesQtWidgets::VulkanWindow::VulkanWindow(
 
 	// Set the Vulkan instance in this QWindow.
 	//
-	// We do this first so that we then subsequently access 'vulkanInstance()' on 'this' QWindow.
+	// We can then subsequently access 'vulkanInstance()' on 'this' QWindow.
 	setVulkanInstance(&qvulkan_instance);
 }
 

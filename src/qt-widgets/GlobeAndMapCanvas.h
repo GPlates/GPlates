@@ -480,14 +480,14 @@ namespace GPlatesQtWidgets
 		 *
 		 * Note: Only used if both queues are from different queue families.
 		 */
-		vk::CommandBuffer d_queue_transfer_swapchain_image_command_buffers[GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES];
+		vk::CommandBuffer d_transfer_swapchain_image_to_present_queue_command_buffers[GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES];
 
 		/**
 		 * Semaphore to signal when a swapchain image has been transferred from graphics+compute queue to present queue.
 		 *
 		 * Note: Only used if both queues are from different queue families.
 		 */
-		vk::Semaphore d_queue_transfer_swapchain_image_semaphores[GPlatesOpenGL::VulkanFrame::NUM_ASYNC_FRAMES];
+		vk::Semaphore d_transferred_swapchain_image_to_present_queue_semaphores[GPlatesOpenGL::VulkanFrame::NUM_ASYNC_FRAMES];
 
 
 		/**

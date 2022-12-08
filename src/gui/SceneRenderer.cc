@@ -77,10 +77,11 @@ GPlatesGui::SceneRenderer::SceneRenderer(
 void
 GPlatesGui::SceneRenderer::initialise_vulkan_resources(
 		GPlatesOpenGL::VulkanDevice &vulkan_device,
-		vk::RenderPass default_render_pass)
+		vk::RenderPass default_render_pass,
+		vk::CommandBuffer initialisation_command_buffer)
 {
 	// Initialise the background stars.
-	//d_stars.initialise_vulkan_resources(vulkan_device, default_render_pass);
+	d_stars.initialise_vulkan_resources(vulkan_device, default_render_pass, initialisation_command_buffer);
 
 #if 0
 	// Create the shader program that sorts and blends the list of fragments (per pixel) in depth order.
@@ -118,8 +119,8 @@ GPlatesGui::SceneRenderer::release_vulkan_resources(
 	d_sort_and_blend_scene_fragments_shader_program.reset();
 #endif
 
-	// Destroy the background stars.
-	//d_stars.release_vulkan_resources(vulkan_device);
+	// Release the background stars.
+	d_stars.release_vulkan_resources(vulkan_device);
 }
 
 
@@ -326,16 +327,16 @@ GPlatesGui::SceneRenderer::render_scene(
 	//
 	if (d_view_state.get_show_stars())
 	{
-		//d_stars.render(
-		//		vulkan,
-		//		default_render_pass_command_buffer,
-		//		view_projection,
-		//		device_pixel_ratio,
-		//		scene_view.is_map_active()
-		//				// Expand the star positions radially in the 2D map views so that they're outside the map bounding sphere...
-		//				? d_map_projection.get_map_bounding_radius()
-		//				// The default of 1.0 works for the 3D globe view...
-		//				: 1.0);
+		d_stars.render(
+				vulkan,
+				default_render_pass_command_buffer,
+				view_projection,
+				device_pixel_ratio,
+				scene_view.is_map_active()
+						// Expand the star positions radially in the 2D map views so that they're outside the map bounding sphere...
+						? d_map_projection.get_map_bounding_radius()
+						// The default of 1.0 works for the 3D globe view...
+						: 1.0);
 	}
 
 #if 0

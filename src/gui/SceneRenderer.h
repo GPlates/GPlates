@@ -89,11 +89,14 @@ namespace GPlatesGui
 
 		/**
 		 * The Vulkan device was just created.
+		 *
+		 * The initialisation command buffer will be submitted to the graphics+compute queue upon return.
 		 */
 		void
 		initialise_vulkan_resources(
 				GPlatesOpenGL::VulkanDevice &vulkan_device,
-				vk::RenderPass default_render_pass);
+				vk::RenderPass default_render_pass,
+				vk::CommandBuffer initialisation_command_buffer);
 
 		/**
 		 * The Vulkan device is about to be destroyed.

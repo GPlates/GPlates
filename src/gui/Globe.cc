@@ -72,7 +72,9 @@ GPlatesGui::Globe::initialise_gl(
 		GPlatesOpenGL::GL &gl)
 {
 	// Create these objects in place (some as non-copy-constructable).
+#if 0
 	d_stars.initialise_gl(gl);
+#endif
 	d_background_sphere = boost::in_place(boost::ref(gl), boost::ref(d_view_state));
 	d_grid = boost::in_place(boost::ref(gl), d_view_state.get_graticule_settings());
 
@@ -89,7 +91,9 @@ GPlatesGui::Globe::shutdown_gl(
 	d_rendered_geom_collection_painter.shutdown_gl(gl);
 
 	// Destroy these objects.
+#if 0
 	d_stars.shutdown_gl(gl);
+#endif
 	d_background_sphere = boost::none;
 	d_grid = boost::none;
 }
@@ -257,7 +261,9 @@ GPlatesGui::Globe::render_stars(
 		GPlatesOpenGL::GL &gl,
 		const GPlatesOpenGL::GLViewProjection &view_projection)
 {
+#if 0
 	d_stars.render(gl, view_projection, d_device_pixel_ratio);
+#endif
 }
 
 

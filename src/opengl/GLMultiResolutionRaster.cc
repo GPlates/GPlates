@@ -1129,32 +1129,6 @@ GPlatesOpenGL::GLMultiResolutionRaster::load_vertices_into_tile_vertex_buffer(
 		}
 	}
 
-	// Vertex size depends on the source raster type.
-	unsigned int vertex_size;
-	if (dynamic_cast<GLVisualRasterSource *>(d_raster_source.get()))
-	{
-		vertex_size = sizeof(visual_vertex_type);
-	}
-	else if (dynamic_cast<GLDataRasterSource *>(d_raster_source.get()))
-	{
-		vertex_size = sizeof(data_vertex_type);
-	}
-	else if (dynamic_cast<GLNormalMapSource *>(d_raster_source.get()))
-	{
-		vertex_size = sizeof(normal_map_vertex_type);
-	}
-	else if (dynamic_cast<GLScalarFieldDepthLayersSource *>(d_raster_source.get()))
-	{
-		vertex_size = sizeof(scalar_field_depth_layer_vertex_type);
-	}
-	else
-	{
-		// Unexpected type of raster source (its derivation of GLMultiResolutionRasterSource wasn't catered for above).
-		GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
-
-		vertex_size = 0;  // Shouldn't get there, but keep compiler happy.
-	}
-
 	// Bind vertex buffer object (before we load data into it).
 	//
 	// Note: Unlike the vertex *element* buffer this vertex buffer binding is not stored in vertex array object state.

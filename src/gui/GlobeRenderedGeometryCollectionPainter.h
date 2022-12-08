@@ -35,7 +35,6 @@
 #include "LayerPainter.h"
 
 #include "opengl/GLContext.h"
-#include "opengl/GLContextLifetime.h"
 #include "opengl/GLIntersectPrimitives.h"
 #include "opengl/GLTexture.h"
 #include "opengl/GLVisualLayers.h"
@@ -66,7 +65,6 @@ namespace GPlatesGui
 	class GlobeRenderedGeometryCollectionPainter :
 			private GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<
 				GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type>,
-			public GPlatesOpenGL::GLContextLifetime,
 			private boost::noncopyable
 	{
 	public:
@@ -87,14 +85,14 @@ namespace GPlatesGui
 		 */
 		void
 		initialise_gl(
-				GPlatesOpenGL::GL &gl) override;
+				GPlatesOpenGL::GL &gl);
 
 		/**
 		 * The OpenGL context is about to be destroyed.
 		 */
 		void
 		shutdown_gl(
-				GPlatesOpenGL::GL &gl) override;
+				GPlatesOpenGL::GL &gl);
 
 		/**
 		 * Returns true if any rendered layer has sub-surface geometries.

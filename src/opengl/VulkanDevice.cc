@@ -433,7 +433,8 @@ GPlatesOpenGL::VulkanDevice::is_device_extension_available(
 {
 	for (const auto &available_device_extension_property : available_device_extension_properties)
 	{
-		if (QString::fromUtf8(device_extension) == QString::fromUtf8(available_device_extension_property.extensionName))
+		const char *available_device_extension = available_device_extension_property.extensionName;
+		if (QString::fromUtf8(device_extension) == QString::fromUtf8(available_device_extension))
 		{
 			return true;
 		}

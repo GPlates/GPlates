@@ -33,7 +33,6 @@
 #include "LayerPainter.h"
 
 #include "opengl/GLContext.h"
-#include "opengl/GLContextLifetime.h"
 #include "opengl/GLVisualLayers.h"
 #include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
 
@@ -59,7 +58,6 @@ namespace GPlatesGui
 	class MapRenderedGeometryCollectionPainter :
 			private GPlatesViewOperations::ConstRenderedGeometryCollectionVisitor<
 				GPlatesPresentation::VisualLayers::rendered_geometry_layer_seq_type>,
-			public GPlatesOpenGL::GLContextLifetime,
 			private boost::noncopyable
 	{
 	public:
@@ -81,14 +79,14 @@ namespace GPlatesGui
 		 */
 		void
 		initialise_gl(
-				GPlatesOpenGL::GL &gl) override;
+				GPlatesOpenGL::GL &gl);
 
 		/**
 		 * The OpenGL context is about to be destroyed.
 		 */
 		void
 		shutdown_gl(
-				GPlatesOpenGL::GL &gl) override;
+				GPlatesOpenGL::GL &gl);
 
 		/**
 		 * Draw the rendered geometries.

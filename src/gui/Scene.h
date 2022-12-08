@@ -26,7 +26,6 @@
 #include "Globe.h"
 #include "Map.h"
 
-#include "opengl/GLContextLifetime.h"
 #include "opengl/GLVisualLayers.h"
 
 #include "utils/ReferenceCount.h"
@@ -54,7 +53,6 @@ namespace GPlatesGui
 	 * The scene contains the globe and map.
 	 */
 	class Scene :
-			public GPlatesOpenGL::GLContextLifetime,
 			public GPlatesUtils::ReferenceCount<Scene>
 	{
 	public:
@@ -87,14 +85,14 @@ namespace GPlatesGui
 		 */
 		void
 		initialise_gl(
-				GPlatesOpenGL::GL &gl) override;
+				GPlatesOpenGL::GL &gl);
 
 		/**
 		 * The OpenGL context is about to be destroyed.
 		 */
 		void
 		shutdown_gl(
-				GPlatesOpenGL::GL &gl) override;
+				GPlatesOpenGL::GL &gl);
 
 
 		/**

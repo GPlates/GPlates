@@ -35,17 +35,16 @@
 #include "Colour.h"
 #include "GlobeRenderedGeometryCollectionPainter.h"
 #include "SphericalGrid.h"
-#include "Stars.h"
 
 #include "maths/UnitVector3D.h"
 #include "maths/PointOnSphere.h"
 #include "maths/Rotation.h"
 
 #include "opengl/GLContext.h"
-#include "opengl/GLContextLifetime.h"
 #include "opengl/GLMatrix.h"
 #include "opengl/GLVisualLayers.h"
 #include "opengl/OpenGL.h"  // For Class GL and the OpenGL constants/typedefs
+#include "opengl/Stars.h"
 
 #include "presentation/VisualLayers.h"
 
@@ -74,8 +73,7 @@ namespace GPlatesGui
 {
 	class GlobeCamera;
 
-	class Globe :
-			public GPlatesOpenGL::GLContextLifetime
+	class Globe
 	{
 	public:
 		/**
@@ -97,14 +95,14 @@ namespace GPlatesGui
 		 */
 		void
 		initialise_gl(
-				GPlatesOpenGL::GL &gl) override;
+				GPlatesOpenGL::GL &gl);
 
 		/**
 		 * The OpenGL context is about to be destroyed.
 		 */
 		void
 		shutdown_gl(
-				GPlatesOpenGL::GL &gl) override;
+				GPlatesOpenGL::GL &gl);
 
 
 		/**
@@ -143,7 +141,7 @@ namespace GPlatesGui
 		/**
 		 * Stars in the background, behind the Earth.
 		 */
-		Stars d_stars;
+		GPlatesOpenGL::Stars d_stars;
 
 		/**
 		 * The background sphere (can be opaque or translucent depending on the background colour's alpha).
