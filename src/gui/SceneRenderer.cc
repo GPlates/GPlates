@@ -76,12 +76,12 @@ GPlatesGui::SceneRenderer::SceneRenderer(
 
 void
 GPlatesGui::SceneRenderer::initialise_vulkan_resources(
-		GPlatesOpenGL::VulkanDevice &vulkan_device,
+		GPlatesOpenGL::Vulkan &vulkan,
 		vk::RenderPass default_render_pass,
 		vk::CommandBuffer initialisation_command_buffer)
 {
 	// Initialise the background stars.
-	d_stars.initialise_vulkan_resources(vulkan_device, default_render_pass, initialisation_command_buffer);
+	d_stars.initialise_vulkan_resources(vulkan, default_render_pass, initialisation_command_buffer);
 
 #if 0
 	// Create the shader program that sorts and blends the list of fragments (per pixel) in depth order.
@@ -103,7 +103,7 @@ GPlatesGui::SceneRenderer::initialise_vulkan_resources(
 
 void
 GPlatesGui::SceneRenderer::release_vulkan_resources(
-		GPlatesOpenGL::VulkanDevice &vulkan_device)
+		GPlatesOpenGL::Vulkan &vulkan)
 {
 #if 0
 	// Destroy the offscreen render target.
@@ -120,7 +120,7 @@ GPlatesGui::SceneRenderer::release_vulkan_resources(
 #endif
 
 	// Release the background stars.
-	d_stars.release_vulkan_resources(vulkan_device);
+	d_stars.release_vulkan_resources(vulkan);
 }
 
 
@@ -158,8 +158,7 @@ GPlatesGui::SceneRenderer::render(
 void
 GPlatesGui::SceneRenderer::render_to_image(
 		QImage &image,
-		GPlatesOpenGL::VulkanDevice &vulkan_device,
-		GPlatesOpenGL::VulkanFrame &vulkan_frame,
+		GPlatesOpenGL::Vulkan &vulkan,
 		Scene &scene,
 		SceneOverlays &scene_overlays,
 		const SceneView &scene_view,
@@ -190,7 +189,7 @@ GPlatesGui::SceneRenderer::render_to_image(
 		// Render the scene to current image tile.
 		// Hold onto the previous frame's cached resources *while* generating the current frame.
 		const cache_handle_type image_tile_cache_handle = render_scene_tile_to_image(
-				vulkan_device, vulkan_frame, image, image_viewport, image_tile_render,
+				vulkan, image, image_viewport, image_tile_render,
 				scene, scene_overlays, scene_view,
 				image_clear_colour);
 		frame_cache_handle->push_back(image_tile_cache_handle);
@@ -203,8 +202,7 @@ GPlatesGui::SceneRenderer::render_to_image(
 
 GPlatesGui::SceneRenderer::cache_handle_type
 GPlatesGui::SceneRenderer::render_scene_tile_to_image(
-		GPlatesOpenGL::VulkanDevice &vulkan_device,
-		GPlatesOpenGL::VulkanFrame &vulkan_frame,
+		GPlatesOpenGL::Vulkan &vulkan,
 		QImage &image,
 		const GPlatesOpenGL::GLViewport &image_viewport,
 		const GPlatesOpenGL::GLTileRender &image_tile_render,
@@ -275,8 +273,7 @@ GPlatesGui::SceneRenderer::render_scene_tile_to_image(
 			image_tile_view_transform,
 			image_tile_projection_transform);
 
-	vk::Fence frame_rendering_finished_fence = vulkan_frame.next_frame(vulkan_device.get_device());
-	GPlatesOpenGL::Vulkan vulkan(vulkan_device, vulkan_frame);
+	vk::Fence frame_rendering_finished_fence = vulkan.next_frame();
 	// TODO: Use 'vulkan_frame.get_frame_index()' to choose between NUM_ASYNC_FRAMES command buffers passed by caller.
 	vk::CommandBuffer default_render_pass_command_buffer;
 

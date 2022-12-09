@@ -31,14 +31,14 @@ GPlatesOpenGL::VulkanBuffer::VulkanBuffer() :
 
 
 GPlatesOpenGL::VulkanBuffer::VulkanBuffer(
-		VulkanDevice &vulkan_device,
+		Vulkan &vulkan,
 		const vk::BufferCreateInfo &buffer_create_info,
 		const VmaAllocationCreateInfo &allocation_create_info,
 		const GPlatesUtils::CallStack::Trace &caller_location) :
 	VulkanBuffer()
 {
 	if (vmaCreateBuffer(
-			vulkan_device.get_vma_allocator(),
+			vulkan.get_vma_allocator(),
 			&static_cast<const VkBufferCreateInfo &>(buffer_create_info),
 			&allocation_create_info,
 			&d_buffer,
@@ -50,7 +50,7 @@ GPlatesOpenGL::VulkanBuffer::VulkanBuffer(
 
 	// See if allocation is host visible and non-coherent.
 	VkMemoryPropertyFlags memory_property_flags;
-	vmaGetAllocationMemoryProperties(vulkan_device.get_vma_allocator(), d_allocation, &memory_property_flags);
+	vmaGetAllocationMemoryProperties(vulkan.get_vma_allocator(), d_allocation, &memory_property_flags);
 	if ((memory_property_flags & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)) ==
 		VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
 	{
@@ -61,10 +61,10 @@ GPlatesOpenGL::VulkanBuffer::VulkanBuffer(
 
 void
 GPlatesOpenGL::VulkanBuffer::destroy(
-		VulkanDevice &vulkan_device,
+		Vulkan &vulkan,
 		VulkanBuffer &buffer)
 {
-	vmaDestroyBuffer(vulkan_device.get_vma_allocator(), buffer.d_buffer, buffer.d_allocation);
+	vmaDestroyBuffer(vulkan.get_vma_allocator(), buffer.d_buffer, buffer.d_allocation);
 
 	buffer.d_buffer = VK_NULL_HANDLE;
 	buffer.d_allocation = VK_NULL_HANDLE;
@@ -74,11 +74,11 @@ GPlatesOpenGL::VulkanBuffer::destroy(
 
 void *
 GPlatesOpenGL::VulkanBuffer::map_memory(
-		VulkanDevice &vulkan_device,
+		Vulkan &vulkan,
 		const GPlatesUtils::CallStack::Trace &caller_location)
 {
 	void *data;
-	if (vmaMapMemory(vulkan_device.get_vma_allocator(), d_allocation, &data) != VK_SUCCESS)
+	if (vmaMapMemory(vulkan.get_vma_allocator(), d_allocation, &data) != VK_SUCCESS)
 	{
 		throw VulkanException(caller_location, "Failed to map buffer memory.");
 	}
@@ -89,14 +89,14 @@ GPlatesOpenGL::VulkanBuffer::map_memory(
 
 void
 GPlatesOpenGL::VulkanBuffer::flush_mapped_memory(
-		VulkanDevice &vulkan_device,
+		Vulkan &vulkan,
 		vk::DeviceSize offset,
 		vk::DeviceSize size,
 		const GPlatesUtils::CallStack::Trace &caller_location)
 {
 	if (d_is_host_visible_and_non_coherent)
 	{
-		if (vmaFlushAllocation(vulkan_device.get_vma_allocator(), d_allocation, offset, size) != VK_SUCCESS)
+		if (vmaFlushAllocation(vulkan.get_vma_allocator(), d_allocation, offset, size) != VK_SUCCESS)
 		{
 			throw VulkanException(caller_location, "Failed to flush mapped buffer memory.");
 		}
@@ -106,14 +106,14 @@ GPlatesOpenGL::VulkanBuffer::flush_mapped_memory(
 
 void
 GPlatesOpenGL::VulkanBuffer::invalidate_mapped_memory(
-		VulkanDevice &vulkan_device,
+		Vulkan &vulkan,
 		vk::DeviceSize offset,
 		vk::DeviceSize size,
 		const GPlatesUtils::CallStack::Trace &caller_location)
 {
 	if (d_is_host_visible_and_non_coherent)
 	{
-		if (vmaInvalidateAllocation(vulkan_device.get_vma_allocator(), d_allocation, offset, size) != VK_SUCCESS)
+		if (vmaInvalidateAllocation(vulkan.get_vma_allocator(), d_allocation, offset, size) != VK_SUCCESS)
 		{
 			throw VulkanException(caller_location, "Failed to invalidate mapped buffer memory.");
 		}
@@ -123,7 +123,7 @@ GPlatesOpenGL::VulkanBuffer::invalidate_mapped_memory(
 
 void
 GPlatesOpenGL::VulkanBuffer::unmap_memory(
-		VulkanDevice &vulkan_device)
+		Vulkan &vulkan)
 {
-	vmaUnmapMemory(vulkan_device.get_vma_allocator(), d_allocation);
+	vmaUnmapMemory(vulkan.get_vma_allocator(), d_allocation);
 }

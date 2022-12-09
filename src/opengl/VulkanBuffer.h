@@ -20,8 +20,7 @@
 #ifndef GPLATES_OPENGL_VULKANBUFFER_H
 #define GPLATES_OPENGL_VULKANBUFFER_H
 
-#include "VulkanDevice.h"
-#include "VulkanHpp.h"
+#include "Vulkan.h"
 
 #include "utils/CallStackTracker.h"
 
@@ -29,8 +28,7 @@
 namespace GPlatesOpenGL
 {
 	/**
-	 * Convenience wrapper around a vk::Buffer and its associated VmaAllocation
-	 * (allocated using the VmaAllocator in VulkanDevice).
+	 * Convenience wrapper around a vk::Buffer and its associated VmaAllocation (allocated using VmaAllocator).
 	 */
 	class VulkanBuffer
 	{
@@ -42,12 +40,12 @@ namespace GPlatesOpenGL
 		static
 		VulkanBuffer
 		create(
-				VulkanDevice &vulkan_device,
+				Vulkan &vulkan,
 				const vk::BufferCreateInfo &buffer_create_info,
 				const VmaAllocationCreateInfo &allocation_create_info,
 				const GPlatesUtils::CallStack::Trace &caller_location)
 		{
-			return VulkanBuffer(vulkan_device, buffer_create_info, allocation_create_info, caller_location);
+			return VulkanBuffer(vulkan, buffer_create_info, allocation_create_info, caller_location);
 		}
 
 		/**
@@ -58,7 +56,7 @@ namespace GPlatesOpenGL
 		static
 		void
 		destroy(
-				VulkanDevice &vulkan_device,
+				Vulkan &vulkan,
 				VulkanBuffer &buffer);
 
 
@@ -68,7 +66,7 @@ namespace GPlatesOpenGL
 
 		void *
 		map_memory(
-				VulkanDevice &vulkan_device,
+				Vulkan &vulkan,
 				const GPlatesUtils::CallStack::Trace &caller_location);
 
 		/**
@@ -80,7 +78,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		flush_mapped_memory(
-				VulkanDevice &vulkan_device,
+				Vulkan &vulkan,
 				vk::DeviceSize offset,
 				vk::DeviceSize size,
 				const GPlatesUtils::CallStack::Trace &caller_location);
@@ -94,14 +92,14 @@ namespace GPlatesOpenGL
 		 */
 		void
 		invalidate_mapped_memory(
-				VulkanDevice &vulkan_device,
+				Vulkan &vulkan,
 				vk::DeviceSize offset,
 				vk::DeviceSize size,
 				const GPlatesUtils::CallStack::Trace &caller_location);
 
 		void
 		unmap_memory(
-				VulkanDevice &vulkan_device);
+				Vulkan &vulkan);
 
 
 		vk::Buffer
@@ -119,7 +117,7 @@ namespace GPlatesOpenGL
 	private:
 
 		VulkanBuffer(
-				VulkanDevice &vulkan_device,
+				Vulkan &vulkan,
 				const vk::BufferCreateInfo &buffer_create_info,
 				const VmaAllocationCreateInfo &allocation_create_info,
 				const GPlatesUtils::CallStack::Trace &caller_location);

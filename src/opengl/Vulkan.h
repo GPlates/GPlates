@@ -147,6 +147,26 @@ namespace GPlatesOpenGL
 		static constexpr unsigned int NUM_ASYNC_FRAMES = VulkanFrame::NUM_ASYNC_FRAMES;
 
 		/**
+		 * Increment the frame number and wait for the device (GPU) to finish rendering the frame from
+		 * NUM_ASYNC_FRAMES frames ago, or return nullptr if device lost (vk::Result::eErrorDeviceLost).
+		 *
+		 * For example, if calling @a next_frame increments the frame number to "N" then we wait for
+		 * the device (GPU) to finish rendering frame "N - NUM_ASYNC_FRAMES".
+		 *
+		 * This means clients should buffer NUM_ASYNC_FRAMES worth of dynamic resources to ensure
+		 * they do not modify resources that the device (GPU) is still using.
+		 * An example is the host (CPU) recording into command buffers that the device (GPU) is still using.
+		 *
+		 * NOTE: The caller should signal the returned fence when rendering for the frame (N) has finished.
+		 *       This can be done by passing it to the final queue submission for the frame (N).
+		 */
+		vk::Fence
+		next_frame()
+		{
+			return d_vulkan_frame.next_frame(get_device());
+		}
+
+		/**
 		 * The current frame *number*.
 		 *
 		 * If the current frame number is "N" then the device (GPU) has finished rendering frame "N - NUM_ASYNC_FRAMES".

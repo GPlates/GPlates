@@ -62,7 +62,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		initialise_vulkan_resources(
-				VulkanDevice &vulkan_device,
+				GPlatesOpenGL::Vulkan &vulkan,
 				vk::RenderPass default_render_pass,
 				vk::CommandBuffer initialisation_command_buffer);
 
@@ -71,7 +71,7 @@ namespace GPlatesOpenGL
 		 */
 		void
 		release_vulkan_resources(
-				VulkanDevice &vulkan_device);
+				GPlatesOpenGL::Vulkan &vulkan);
 
 
 		/**
@@ -130,7 +130,7 @@ namespace GPlatesOpenGL
 
 		void
 		create_graphics_pipeline(
-				VulkanDevice &vulkan_device,
+				GPlatesOpenGL::Vulkan &vulkan,
 				vk::RenderPass default_render_pass);
 
 		void
@@ -146,7 +146,7 @@ namespace GPlatesOpenGL
 
 		void
 		load_stars(
-				VulkanDevice &vulkan_device,
+				GPlatesOpenGL::Vulkan &vulkan,
 				vk::CommandBuffer initialisation_command_buffer,
 				const std::vector<vertex_type> &vertices,
 				const std::vector<vertex_index_type> &vertex_indices);

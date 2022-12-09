@@ -40,8 +40,6 @@ namespace GPlatesOpenGL
 	class GLTileRender;
 	class GLViewport;
 	class GLViewProjection;
-	class VulkanDevice;
-	class VulkanFrame;
 }
 
 namespace GPlatesPresentation
@@ -94,7 +92,7 @@ namespace GPlatesGui
 		 */
 		void
 		initialise_vulkan_resources(
-				GPlatesOpenGL::VulkanDevice &vulkan_device,
+				GPlatesOpenGL::Vulkan &vulkan,
 				vk::RenderPass default_render_pass,
 				vk::CommandBuffer initialisation_command_buffer);
 
@@ -103,7 +101,7 @@ namespace GPlatesGui
 		 */
 		void
 		release_vulkan_resources(
-				GPlatesOpenGL::VulkanDevice &vulkan_device);
+				GPlatesOpenGL::Vulkan &vulkan);
 
 
 		/**
@@ -125,8 +123,7 @@ namespace GPlatesGui
 		void
 		render_to_image(
 				QImage &image,
-				GPlatesOpenGL::VulkanDevice &vulkan_device,
-				GPlatesOpenGL::VulkanFrame &vulkan_frame,
+				GPlatesOpenGL::Vulkan &vulkan,
 				Scene &scene,
 				SceneOverlays &scene_overlays,
 				const SceneView &scene_view,
@@ -241,8 +238,7 @@ namespace GPlatesGui
 		 */
 		cache_handle_type
 		render_scene_tile_to_image(
-				GPlatesOpenGL::VulkanDevice &vulkan_device,
-				GPlatesOpenGL::VulkanFrame &vulkan_frame,
+				GPlatesOpenGL::Vulkan &vulkan,
 				QImage &image,
 				const GPlatesOpenGL::GLViewport &image_viewport,
 				const GPlatesOpenGL::GLTileRender &image_tile_render,
