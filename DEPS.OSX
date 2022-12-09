@@ -71,8 +71,8 @@ To install Vulkan, download the appropriate installer '.dmg' and run the 'Instal
 - You can choose the destination folder to install into (it will default to your home directory, eg, "~/VulkanSDK/1.3.216.0").
 - On newer SDK versions there's an option "System Global Files" that will also copy to "/usr/local" (if selected).
   Note that it's not necessary to select this option.
-- Source the "setup-env.sh" script to set needed environment variables - one of these environment variables is VULKAN_SDK
-  (which is used by the GPlates/pyGPlates CMake build to find the Vulkan SDK, and can also be used when compiling Qt below).
+- Source the "setup-env.sh" script to set needed environment variables - one of these environment variables is VULKAN_SDK which is used
+  by the GPlates/pyGPlates CMake build to find the Vulkan SDK (when using CMake 3.18 or higher), and can also be used when compiling Qt below.
   For example, "source ~/VulkanSDK/1.3.216.0/setup-env.sh".
   However if you're using Z shell instead of Bash then you can instead run (for example):
     BASH_SOURCE=~/VulkanSDK/1.3.216.0/setup-env.sh emulate zsh -c '. "$BASH_SOURCE"'

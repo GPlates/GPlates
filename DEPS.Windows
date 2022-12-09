@@ -88,7 +88,7 @@ Vulkan
   1. Install the Vulkan SDK from an installer by following these instructions: https://vulkan.lunarg.com/doc/sdk (select the Windows tab).
      - This simply involves downloading the installer and double-clicking it.
        * The installer will set the system environment variable VULKAN_SDK to the directory in which the SDK is installed.
-       * The VULKAN_SDK environment variable is used by the GPlates/pyGPlates CMake build to find the Vulkan SDK.
+       * The VULKAN_SDK environment variable is used by the GPlates/pyGPlates CMake build to find the Vulkan SDK (when using CMake 3.18 or higher).
 
 Qt
 

@@ -69,6 +69,8 @@ An example is:
   * Run "tar xf ~/Downloads/vulkansdk-linux-x86_64-1.3.216.0.tar.gz".
   * Run "source 1.3.216.0/setup-env.sh".
     - This sets the VULKAN_SDK environment variable (needed by the GPlates/pyGPlates CMake build to find the Vulkan SDK).
+      Note: CMake 3.18 (or higher) is required to detect VULKAN_SDK, otherwise it may find the system vulkan library (not as complete as the SDK).
+            Ubuntu Focal (20.04) uses CMake 3.16, so you may need to add the "Vulkan_ROOT" CMake environment variable (set to the same directory as $VULKAN_SDK).
     - Also you can make it persistent for future logins by adding the following to the "~/.profile" file:
       if [ -f "$HOME/vulkan/1.3.216.0/setup-env.sh" ]; then
           . "$HOME/vulkan/1.3.216.0/setup-env.sh"
