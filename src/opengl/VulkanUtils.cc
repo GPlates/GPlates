@@ -50,3 +50,22 @@ GPlatesOpenGL::VulkanUtils::load_shader_code(
 
 	return shader_code;
 }
+
+
+GPlatesOpenGL::GLMatrix
+GPlatesOpenGL::VulkanUtils::from_opengl_clip_space()
+{
+	// Matrix used to pre-multiply OpenGL projection transforms before passing them to Vulkan.
+	static const double FROM_OPENGL_CLIP_SPACE[16] =
+	{
+		1.0,  0.0,  0.0,  0.0,
+		// Flip the 'y' direction since the Vulkan viewport is top-to-bottom (instead of bottom-to-top in OpenGL)...
+		0.0, -1.0,  0.0,  0.0,
+		// Convert NDC 'z' from [-1, 1] to [0, 1] since Vulkan's viewport transform expects NDC 'z' to be in range [0, 1]...
+		0.0,  0.0,  0.5,  0.5,
+		0.0,  0.0,  0.0,  1.0
+	};
+	static const GLMatrix FROM_OPENGL_CLIP_SPACE_MATRIX(FROM_OPENGL_CLIP_SPACE);
+
+	return FROM_OPENGL_CLIP_SPACE_MATRIX;
+}

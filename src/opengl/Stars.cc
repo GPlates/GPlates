@@ -29,7 +29,6 @@
 #include "Stars.h"
 
 #include "GLMatrix.h"
-#include "GLVertexArray.h"
 #include "GLViewProjection.h"
 #include "VulkanException.h"
 #include "VulkanUtils.h"
@@ -126,8 +125,11 @@ GPlatesOpenGL::Stars::render(
 	//
 	PushConstants push_constants;
 
+	// Convert clip space from OpenGL to Vulkan and pre-multiply projection transform.
+	GLMatrix vulkan_view_projection = VulkanUtils::from_opengl_clip_space();
+	vulkan_view_projection.gl_mult_matrix(view_projection.get_view_projection_transform());
 	// Set view projection matrix.
-	view_projection.get_view_projection_transform().get_float_matrix(push_constants.view_projection);
+	vulkan_view_projection.get_float_matrix(push_constants.view_projection);
 
 	// Set the star colour.
 	push_constants.star_colour[0] = d_colour.red();
@@ -139,7 +141,7 @@ GPlatesOpenGL::Stars::render(
 	//
 	// This is used for the 2D map views to expand the positions of the stars radially so that they're
 	// outside the map bounding sphere. A value of 1.0 works for the 3D globe view.
-	push_constants.radius_multiplier = static_cast<GLfloat>(radius_multiplier);
+	push_constants.radius_multiplier = static_cast<float>(radius_multiplier);
 
 	// Small stars point size.
 	//
@@ -170,7 +172,7 @@ GPlatesOpenGL::Stars::render(
 			d_pipeline_layout,
 			vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
 			// Update only the point size...
-			offsetof(PushConstants, point_size), sizeof(GLfloat), &push_constants.point_size);
+			offsetof(PushConstants, point_size), sizeof(float), &push_constants.point_size);
 
 	// Draw the large stars.
 	// Their vertex indices (in the sole index buffer) come after the small star vertex indices.

@@ -24,6 +24,8 @@
 #include <vector>
 #include <QString>
 
+#include "GLMatrix.h"
+
 
 namespace GPlatesOpenGL
 {
@@ -35,6 +37,25 @@ namespace GPlatesOpenGL
 		std::vector<std::uint32_t>
 		load_shader_code(
 				QString shader_filename);
+
+		/**
+		 * Matrix to pre-multiply OpenGL projection transforms before passing them to Vulkan.
+		 *
+		 * Vulkan changed the following (in relation to OpenGL):
+		 * 1) The Vulkan viewport is top-to-bottom (instead of bottom-to-top in OpenGL).
+		 * 2) The Vulkan viewport transformation converts the normalized device coordinate (NDC) z
+		 *    in the range [0, 1] to framebuffer coordinate z in range [0, 1]
+		 *    (using zf = zd, assuming a minDepth and maxDepth of 0 and 1).
+		 *    Whereas OpenGL converts NDC z from [-1, 1] to window (framebuffer) z in [0, 1]
+		 *    (using zw = 0.5 * zd + 0.5, assuming default glDepthRange n and f values of 0 and 1).
+		 *
+		 * For case (1), the returned matrix flips the 'y' direction.
+		 * For case (2), the returned matrix also converts NDC 'z' from [-1, 1] to [0, 1] (which is what Vulkan expects).
+		 * Well, it actually converts clip coordinates zc and wc (using zc' = 0.5 * zc + 0.5 * wc)
+		 * such that zd' = zc'/wc = 0.5 * zc/wc + 0.5 = 0.5 * zd + 0.5 (and then Vulkan uses zf = zd').
+		 */
+		GLMatrix
+		from_opengl_clip_space();
 	}
 }
 

@@ -59,16 +59,12 @@ void main()
     vs_out.inv_point_size = 1.0 / point_size;
     gl_PointSize = expanded_point_size;
     
-    // We enabled GL_DEPTH_CLAMP to disable the far clipping plane, but it also disables
+    // We enabled depth clamping to disable the far clipping plane, but it also disables
     // near plane (which we still want), so we'll handle that ourself.
     //
     // Inside near clip plane means:
     //
-    //   -gl_Position.w <= gl_Position.z
+    //   gl_Position.z >= 0
     //
-    // ...or:
-    //
-    //   gl_Position.z + gl_Position.w >= 0
-    //
-    gl_ClipDistance[0] = gl_Position.z + gl_Position.w;
+    gl_ClipDistance[0] = gl_Position.z;
 }

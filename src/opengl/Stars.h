@@ -121,10 +121,10 @@ namespace GPlatesOpenGL
 		//
 		struct PushConstants
 		{
-			GLfloat view_projection[16];
-			GLfloat star_colour[4];
-			GLfloat radius_multiplier;
-			GLfloat point_size;
+			float view_projection[16];
+			float star_colour[4];
+			float radius_multiplier;
+			float point_size;
 		};
 
 
