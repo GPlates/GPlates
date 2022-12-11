@@ -80,11 +80,14 @@ void
 GPlatesOpenGL::Stars::release_vulkan_resources(
 		Vulkan &vulkan)
 {
+	// Vulkan memory allocator.
+	VmaAllocator vma_allocator = vulkan.get_vma_allocator();
+
 	// Destroy the buffers.
-	VulkanBuffer::destroy(vulkan, d_host_vertex_buffer);
-	VulkanBuffer::destroy(vulkan, d_device_vertex_buffer);
-	VulkanBuffer::destroy(vulkan, d_host_index_buffer);
-	VulkanBuffer::destroy(vulkan, d_device_index_buffer);
+	VulkanBuffer::destroy(vma_allocator, d_host_vertex_buffer);
+	VulkanBuffer::destroy(vma_allocator, d_device_vertex_buffer);
+	VulkanBuffer::destroy(vma_allocator, d_host_index_buffer);
+	VulkanBuffer::destroy(vma_allocator, d_device_index_buffer);
 
 	// Destroy the pipeline layout and graphics pipeline.
 	vulkan.get_device().destroyPipelineLayout(d_pipeline_layout);
@@ -217,7 +220,8 @@ GPlatesOpenGL::Stars::create_graphics_pipeline(
 	vertex_attribute_description
 			.setLocation(0)
 			.setBinding(0)
-			.setFormat(vk::Format::eR32G32B32Sfloat);
+			.setFormat(vk::Format::eR32G32B32Sfloat)
+			.setOffset(0);
 	vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info;
 	vertex_input_state_create_info
 			.setVertexBindingDescriptions(vertex_binding_description)
@@ -440,6 +444,9 @@ GPlatesOpenGL::Stars::load_stars(
 		const std::vector<vertex_type> &vertices,
 		const std::vector<vertex_index_type> &vertex_indices)
 {
+	// Vulkan memory allocator.
+	VmaAllocator vma_allocator = vulkan.get_vma_allocator();
+
 	// Common buffer parameters.
 	vk::BufferCreateInfo buffer_create_info;
 	buffer_create_info.setSharingMode(vk::SharingMode::eExclusive);
@@ -457,12 +464,12 @@ GPlatesOpenGL::Stars::load_stars(
 	// Host vertex buffer.
 	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eTransferSrc);
 	allocation_create_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;  // host mappable
-	d_host_vertex_buffer = VulkanBuffer::create(vulkan, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
+	d_host_vertex_buffer = VulkanBuffer::create(vma_allocator, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
 
 	// Device vertex buffer.
 	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer);
 	allocation_create_info.flags = 0;  // device local memory
-	d_device_vertex_buffer = VulkanBuffer::create(vulkan, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
+	d_device_vertex_buffer = VulkanBuffer::create(vma_allocator, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
 
 	//
 	// Create host (staging) and device (final) index buffers.
@@ -472,29 +479,29 @@ GPlatesOpenGL::Stars::load_stars(
 	// Host index buffer.
 	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eTransferSrc);
 	allocation_create_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;  // host mappable
-	d_host_index_buffer = VulkanBuffer::create(vulkan, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
+	d_host_index_buffer = VulkanBuffer::create(vma_allocator, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
 
 	// Device index buffer.
 	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer);
 	allocation_create_info.flags = 0;  // device local memory
-	d_device_index_buffer = VulkanBuffer::create(vulkan, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
+	d_device_index_buffer = VulkanBuffer::create(vma_allocator, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
 
 
 	//
 	// Copy the vertices into the mapped host vertex buffer.
 	//
-	void *host_vertex_buffer_data = d_host_vertex_buffer.map_memory(vulkan, GPLATES_EXCEPTION_SOURCE);
+	void *host_vertex_buffer_data = d_host_vertex_buffer.map_memory(vma_allocator, GPLATES_EXCEPTION_SOURCE);
 	std::memcpy(host_vertex_buffer_data, vertices.data(), vertices.size() * sizeof(vertex_type));
-	d_host_vertex_buffer.flush_mapped_memory(vulkan, 0, VK_WHOLE_SIZE, GPLATES_EXCEPTION_SOURCE);
-	d_host_vertex_buffer.unmap_memory(vulkan);
+	d_host_vertex_buffer.flush_mapped_memory(vma_allocator, 0, VK_WHOLE_SIZE, GPLATES_EXCEPTION_SOURCE);
+	d_host_vertex_buffer.unmap_memory(vma_allocator);
 
 	//
 	// Copy the vertex indices into the mapped host index buffer.
 	//
-	void *host_index_buffer_data = d_host_index_buffer.map_memory(vulkan, GPLATES_EXCEPTION_SOURCE);
+	void *host_index_buffer_data = d_host_index_buffer.map_memory(vma_allocator, GPLATES_EXCEPTION_SOURCE);
 	std::memcpy(host_index_buffer_data, vertex_indices.data(), vertex_indices.size() * sizeof(vertex_index_type));
-	d_host_index_buffer.flush_mapped_memory(vulkan, 0, VK_WHOLE_SIZE, GPLATES_EXCEPTION_SOURCE);
-	d_host_index_buffer.unmap_memory(vulkan);
+	d_host_index_buffer.flush_mapped_memory(vma_allocator, 0, VK_WHOLE_SIZE, GPLATES_EXCEPTION_SOURCE);
+	d_host_index_buffer.unmap_memory(vma_allocator);
 
 
 	//

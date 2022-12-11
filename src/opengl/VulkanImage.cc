@@ -17,35 +17,35 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "VulkanBuffer.h"
+#include "VulkanImage.h"
 
 #include "VulkanException.h"
 
 
-GPlatesOpenGL::VulkanBuffer::VulkanBuffer() :
-	d_buffer(VK_NULL_HANDLE),
+GPlatesOpenGL::VulkanImage::VulkanImage() :
+	d_image(VK_NULL_HANDLE),
 	d_allocation(VK_NULL_HANDLE),
 	d_is_host_visible_and_non_coherent(false)
 {
 }
 
 
-GPlatesOpenGL::VulkanBuffer::VulkanBuffer(
+GPlatesOpenGL::VulkanImage::VulkanImage(
 		VmaAllocator vma_allocator,
-		const vk::BufferCreateInfo &buffer_create_info,
+		const vk::ImageCreateInfo &image_create_info,
 		const VmaAllocationCreateInfo &allocation_create_info,
 		const GPlatesUtils::CallStack::Trace &caller_location) :
-	VulkanBuffer()
+	VulkanImage()
 {
-	if (vmaCreateBuffer(
+	if (vmaCreateImage(
 			vma_allocator,
-			&static_cast<const VkBufferCreateInfo &>(buffer_create_info),
+			&static_cast<const VkImageCreateInfo &>(image_create_info),
 			&allocation_create_info,
-			&d_buffer,
+			&d_image,
 			&d_allocation,
 			nullptr) != VK_SUCCESS)
 	{
-		throw VulkanException(caller_location, "Failed to create buffer.");
+		throw VulkanException(caller_location, "Failed to create image.");
 	}
 
 	// See if allocation is host visible and non-coherent.
@@ -60,27 +60,27 @@ GPlatesOpenGL::VulkanBuffer::VulkanBuffer(
 
 
 void
-GPlatesOpenGL::VulkanBuffer::destroy(
+GPlatesOpenGL::VulkanImage::destroy(
 		VmaAllocator vma_allocator,
-		VulkanBuffer &buffer)
+		VulkanImage &image)
 {
-	vmaDestroyBuffer(vma_allocator, buffer.d_buffer, buffer.d_allocation);
+	vmaDestroyImage(vma_allocator, image.d_image, image.d_allocation);
 
-	buffer.d_buffer = VK_NULL_HANDLE;
-	buffer.d_allocation = VK_NULL_HANDLE;
-	buffer.d_is_host_visible_and_non_coherent = false;
+	image.d_image = VK_NULL_HANDLE;
+	image.d_allocation = VK_NULL_HANDLE;
+	image.d_is_host_visible_and_non_coherent = false;
 }
 
 
 void *
-GPlatesOpenGL::VulkanBuffer::map_memory(
+GPlatesOpenGL::VulkanImage::map_memory(
 		VmaAllocator vma_allocator,
 		const GPlatesUtils::CallStack::Trace &caller_location)
 {
 	void *data;
 	if (vmaMapMemory(vma_allocator, d_allocation, &data) != VK_SUCCESS)
 	{
-		throw VulkanException(caller_location, "Failed to map buffer memory.");
+		throw VulkanException(caller_location, "Failed to map image memory.");
 	}
 
 	return data;
@@ -88,7 +88,7 @@ GPlatesOpenGL::VulkanBuffer::map_memory(
 
 
 void
-GPlatesOpenGL::VulkanBuffer::flush_mapped_memory(
+GPlatesOpenGL::VulkanImage::flush_mapped_memory(
 		VmaAllocator vma_allocator,
 		vk::DeviceSize offset,
 		vk::DeviceSize size,
@@ -98,14 +98,14 @@ GPlatesOpenGL::VulkanBuffer::flush_mapped_memory(
 	{
 		if (vmaFlushAllocation(vma_allocator, d_allocation, offset, size) != VK_SUCCESS)
 		{
-			throw VulkanException(caller_location, "Failed to flush mapped buffer memory.");
+			throw VulkanException(caller_location, "Failed to flush mapped image memory.");
 		}
 	}
 }
 
 
 void
-GPlatesOpenGL::VulkanBuffer::invalidate_mapped_memory(
+GPlatesOpenGL::VulkanImage::invalidate_mapped_memory(
 		VmaAllocator vma_allocator,
 		vk::DeviceSize offset,
 		vk::DeviceSize size,
@@ -115,14 +115,14 @@ GPlatesOpenGL::VulkanBuffer::invalidate_mapped_memory(
 	{
 		if (vmaInvalidateAllocation(vma_allocator, d_allocation, offset, size) != VK_SUCCESS)
 		{
-			throw VulkanException(caller_location, "Failed to invalidate mapped buffer memory.");
+			throw VulkanException(caller_location, "Failed to invalidate mapped image memory.");
 		}
 	}
 }
 
 
 void
-GPlatesOpenGL::VulkanBuffer::unmap_memory(
+GPlatesOpenGL::VulkanImage::unmap_memory(
 		VmaAllocator vma_allocator)
 {
 	vmaUnmapMemory(vma_allocator, d_allocation);

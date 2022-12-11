@@ -24,14 +24,8 @@
 #include <vector>
 #include <boost/optional.hpp>
 
-//
-// VMA memory allocator.
-//
-#define VMA_VULKAN_VERSION 1000000 // Vulkan 1.0
-// Get VMA to fetch Vulkan function pointers dynamically using vkGetInstanceProcAddr/vkGetDeviceProcAddr.
-#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
-#define VMA_STATIC_VULKAN_FUNCTIONS 0
-#include <vma/vk_mem_alloc.h>
+// The VMA memory allocator.
+#include "VulkanMemoryAllocator.h"
 
 // The Vulkan-Hpp C++ interface (around the Vulkan C interface).
 #include "VulkanHpp.h"

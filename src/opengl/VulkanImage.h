@@ -17,8 +17,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#ifndef GPLATES_OPENGL_VULKANBUFFER_H
-#define GPLATES_OPENGL_VULKANBUFFER_H
+#ifndef GPLATES_OPENGL_VULKANIMAGE_H
+#define GPLATES_OPENGL_VULKANIMAGE_H
 
 #include "VulkanHpp.h"
 #include "VulkanMemoryAllocator.h"
@@ -29,40 +29,40 @@
 namespace GPlatesOpenGL
 {
 	/**
-	 * Convenience wrapper around a vk::Buffer and its associated VmaAllocation (allocated using VmaAllocator).
+	 * Convenience wrapper around a vk::Image and its associated VmaAllocation (allocated using VmaAllocator).
 	 */
-	class VulkanBuffer
+	class VulkanImage
 	{
 	public:
 
 		/**
-		 * Create a vk:Buffer (and bind it to an allocated VmaAllocation).
+		 * Create a vk:Image (and bind it to an allocated VmaAllocation).
 		 */
 		static
-		VulkanBuffer
+		VulkanImage
 		create(
 				VmaAllocator vma_allocator,
-				const vk::BufferCreateInfo &buffer_create_info,
+				const vk::ImageCreateInfo &image_create_info,
 				const VmaAllocationCreateInfo &allocation_create_info,
 				const GPlatesUtils::CallStack::Trace &caller_location)
 		{
-			return VulkanBuffer(vma_allocator, buffer_create_info, allocation_create_info, caller_location);
+			return VulkanImage(vma_allocator, image_create_info, allocation_create_info, caller_location);
 		}
 
 		/**
-		 * Destroy a vk:Buffer (and free its associated VmaAllocation).
+		 * Destroy a vk:Image (and free its associated VmaAllocation).
 		 *
-		 * Note that the buffer and allocation handles can be VK_NULL_HANDLE (in which case nothing happens).
+		 * Note that the image and allocation handles can be VK_NULL_HANDLE (in which case nothing happens).
 		 */
 		static
 		void
 		destroy(
 				VmaAllocator vma_allocator,
-				VulkanBuffer &buffer);
+				VulkanImage &image);
 
 
-		//! Construct a VK_NULL_HANDLE buffer (and associated VK_NULL_HANDLE memory allocation).
-		VulkanBuffer();
+		//! Construct a VK_NULL_HANDLE image (and associated VK_NULL_HANDLE memory allocation).
+		VulkanImage();
 
 
 		void *
@@ -103,10 +103,10 @@ namespace GPlatesOpenGL
 				VmaAllocator vma_allocator);
 
 
-		vk::Buffer
-		get_buffer()
+		vk::Image
+		get_image()
 		{
-			return d_buffer;
+			return d_image;
 		}
 
 		VmaAllocation
@@ -117,13 +117,13 @@ namespace GPlatesOpenGL
 
 	private:
 
-		VulkanBuffer(
+		VulkanImage(
 				VmaAllocator vma_allocator,
-				const vk::BufferCreateInfo &buffer_create_info,
+				const vk::ImageCreateInfo &image_create_info,
 				const VmaAllocationCreateInfo &allocation_create_info,
 				const GPlatesUtils::CallStack::Trace &caller_location);
 
-		VkBuffer d_buffer;
+		VkImage d_image;
 		VmaAllocation d_allocation;
 
 		// True if memory allocation is host visible and non-coherent.
@@ -131,4 +131,4 @@ namespace GPlatesOpenGL
 	};
 }
 
-#endif // GPLATES_OPENGL_VULKANBUFFER_H
+#endif // GPLATES_OPENGL_VULKANIMAGE_H

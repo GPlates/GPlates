@@ -21,15 +21,6 @@
 #include <boost//optional.hpp>
 
 #include "VulkanDevice.h"
- // Enable VMA implementation. Only one '.cc' file should define this.
-//
-// Note: It's OK that this header is also included in our "VulkanDevice.h" because the
-//       VMA_IMPLEMENTATION part of the header doesn't not have an include guard around it.
-//
-// NOTE: We include this AFTER "VulkanDevice.h" since that contains some VMA preprocessor defines
-//       that determine the behaviour of VMA (and we don't want to repeat them here).
-#define VMA_IMPLEMENTATION
-#include <vma/vk_mem_alloc.h>
 
 #include "VulkanException.h"
 #include "VulkanHpp.h"

@@ -129,6 +129,10 @@ VulkanFrame.cc
 VulkanFrame.h
 VulkanHpp.cc
 VulkanHpp.h
+VulkanImage.cc
+VulkanImage.h
+VulkanMemoryAllocator.cc
+VulkanMemoryAllocator.h
 VulkanSwapchain.cc
 VulkanSwapchain.h
 VulkanUtils.cc
