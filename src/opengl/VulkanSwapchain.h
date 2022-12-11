@@ -22,8 +22,10 @@
 
 #include <cstdint>
 #include <vector>
+#include <boost/optional.hpp>
 
 #include "VulkanHpp.h"
+#include "VulkanImage.h"
 
 
 namespace GPlatesOpenGL
@@ -49,8 +51,11 @@ namespace GPlatesOpenGL
 		 * Create a Vulkan swapchain (and its associated image views and framebuffers) supporting
 		 * presentation to the specified Vulkan surface.
 		 *
-		 * The present queue family is returned in @a present_queue_family.
-		 * This will be the graphics+compute queue family if it supports present (otherwise a different family).
+		 * The present queue family is specified with @a present_queue_family.
+		 * This may or may not be the same as the graphics+compute queue family in @a VulkanDevice.
+		 *
+		 * If @a create_depth_stencil_attachment is true then a single depth/stencil image is created and
+		 * added to each swapchain image framebuffer.
 		 *
 		 * Note: Before this, @a get_swapchain() will be equal to nullptr.
 		 *       This can be used to test whether the swapchain has not yet been created, or has been destroyed.
@@ -62,7 +67,8 @@ namespace GPlatesOpenGL
 				VulkanDevice &vulkan_device,
 				vk::SurfaceKHR surface,
 				std::uint32_t present_queue_family,
-				const vk::Extent2D &swapchain_size);
+				const vk::Extent2D &swapchain_size,
+				bool create_depth_stencil_attachment);
 
 		/**
 		 * Re-create the swapchain (and its associated image views and framebuffers).
@@ -153,7 +159,7 @@ namespace GPlatesOpenGL
 		std::uint32_t
 		get_num_swapchain_images() const
 		{
-			return d_render_targets.size();
+			return d_swapchain_images.size();
 		}
 
 		/**
@@ -179,11 +185,14 @@ namespace GPlatesOpenGL
 
 	private:
 
-		struct RenderTarget
+		/**
+		 * An optional single depth/stencil image shared by all swapchain images/framebuffers.
+		 */
+		struct DepthStencilImage
 		{
-			vk::Image image;
+			vk::Format format;
+			VulkanImage image;
 			vk::ImageView image_view;
-			vk::Framebuffer framebuffer;
 		};
 
 		vk::SurfaceKHR d_surface;
@@ -195,8 +204,17 @@ namespace GPlatesOpenGL
 		vk::Extent2D d_swapchain_size;
 
 		vk::RenderPass d_render_pass;
+
+		//! Swapchain images.
+		std::vector<vk::Image> d_swapchain_images;
+		//! Swapchain image views.
+		std::vector<vk::ImageView> d_swapchain_image_views;
+
+		//! Optional depth/stencil image shared by all swapchain images/framebuffers.
+		boost::optional<DepthStencilImage> d_depth_stencil_image;
+
 		//! Each swapchain image has an associated framebuffer.
-		std::vector<RenderTarget> d_render_targets;
+		std::vector<vk::Framebuffer> d_framebuffers;
 
 
 		void
@@ -210,6 +228,24 @@ namespace GPlatesOpenGL
 
 
 		void
+		create_swapchain_image_views(
+				VulkanDevice &vulkan_device);
+		
+		void
+		destroy_swapchain_image_views(
+				VulkanDevice &vulkan_device);
+
+
+		void
+		create_depth_stencil_image(
+				VulkanDevice &vulkan_device);
+
+		void
+		destroy_depth_stencil_image(
+				VulkanDevice &vulkan_device);
+
+
+		void
 		create_render_pass(
 				VulkanDevice &vulkan_device);
 
@@ -219,11 +255,11 @@ namespace GPlatesOpenGL
 
 
 		void
-		create_render_targets(
+		create_framebuffers(
 				VulkanDevice &vulkan_device);
 
 		void
-		destroy_render_targets(
+		destroy_framebuffers(
 				VulkanDevice &vulkan_device);
 	};
 }

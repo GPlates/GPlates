@@ -63,10 +63,13 @@ namespace GPlatesOpenGL
 		//
 
 		/**
-		 * The maximum number of frames that the host (CPU) can record/queue commands ahead of the device (GPU).
+		 * The maximum number of frames that the host (CPU) and device (GPU) can be processing asynchronously.
 		 *
-		 * For example, when this value is 2 then the host can record command buffers for frames N-1 and N
-		 * while the device is still executing command buffers for frame N-2.
+		 * For example, for 2 asynchronous frames the host can record a command buffer for frame N while the device
+		 * is still executing a command buffer for frame N-1. The host must then wait for the device to finish frame N-1
+		 * before it can record frame N+1.
+		 * And for 3 asynchronous frames, the device can be drawing frame N-2 while the host is recording frames N-1 and then N.
+		 * The host must then wait for the device to finish frame N-2 before it can record frame N+1.
 		 *
 		 * Note: Each "frame" is determined by a call to @a next_frame.
 		 */
@@ -74,14 +77,13 @@ namespace GPlatesOpenGL
 
 		/**
 		 * Increment the frame number and wait for the device (GPU) to finish rendering the frame from
-		 * NUM_ASYNC_FRAMES frames ago, or return nullptr if device lost (vk::Result::eErrorDeviceLost).
+		 * NUM_ASYNC_FRAMES frames ago, or return nullptr if device is lost (vk::Result::eErrorDeviceLost).
 		 *
 		 * For example, if calling @a next_frame increments the frame number to "N" then we wait for
 		 * the device (GPU) to finish rendering frame "N - NUM_ASYNC_FRAMES".
 		 *
-		 * This means clients should buffer NUM_ASYNC_FRAMES worth of dynamic resources to ensure
-		 * they do not modify resources that the device (GPU) is still using.
-		 * An example is the host (CPU) recording into command buffers that the device (GPU) is still using.
+		 * This means clients should buffer NUM_ASYNC_FRAMES worth of dynamic resources to ensure they do not modify
+		 * resources that the device (GPU) is still using (eg, recording into a command buffer that the device is still using).
 		 *
 		 * NOTE: The caller should signal the returned fence when rendering for the frame (N) has finished.
 		 *       This can be done by passing it to the final queue submission for the frame (N).

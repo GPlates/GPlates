@@ -189,7 +189,8 @@ GPlatesQtWidgets::VulkanWindow::create_vulkan_device_and_swapchain()
 			d_vulkan_device,
 			surface,
 			present_queue_family,
-			get_window_size_in_device_pixels());
+			get_window_size_in_device_pixels(),
+			true/*create_depth_stencil_attachment*/);
 
 	// Notify subclass that Vulkan device was created.
 	initialise_vulkan_resources(d_vulkan_device, d_vulkan_swapchain);

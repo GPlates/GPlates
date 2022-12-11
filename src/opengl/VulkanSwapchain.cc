@@ -22,6 +22,7 @@
 #include "VulkanDevice.h"
 #include "VulkanException.h"
 
+#include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
 
@@ -37,7 +38,8 @@ GPlatesOpenGL::VulkanSwapchain::create(
 		VulkanDevice &vulkan_device,
 		vk::SurfaceKHR surface,
 		std::uint32_t present_queue_family,
-		const vk::Extent2D &swapchain_size)
+		const vk::Extent2D &swapchain_size,
+		bool create_depth_stencil_attachment)
 {
 	d_surface = surface;
 	d_present_queue_family = present_queue_family;
@@ -46,10 +48,16 @@ GPlatesOpenGL::VulkanSwapchain::create(
 	// Note: This may or may not be the same as the graphics+compute queue in VulkanDevice.
 	d_present_queue = vulkan_device.get_device().getQueue(d_present_queue_family, 0/*queueIndex*/);
 
-	// Create swapchain first, then render pass and finally the render targets (image views and framebuffers).
+	// Create swapchain first, then swapchain image views (from swapchain images),
+	// then create optional depth/stencil image, then render pass and finally the framebuffers.
 	create_swapchain(vulkan_device, swapchain_size);
+	create_swapchain_image_views(vulkan_device);
+	if (create_depth_stencil_attachment)
+	{
+		create_depth_stencil_image(vulkan_device);
+	}
 	create_render_pass(vulkan_device);
-	create_render_targets(vulkan_device);
+	create_framebuffers(vulkan_device);
 }
 
 
@@ -64,11 +72,16 @@ GPlatesOpenGL::VulkanSwapchain::recreate(
 	// Note: It's OK to wait here since destroying a swapchain is not a performance-critical part of the code.
 	vulkan_device.get_device().waitIdle();
 
-	// Destroy the render targets (image views and framebuffers).
-	destroy_render_targets(vulkan_device);
-
-	// Destroy the render pass.
+	// Destroy framebuffers first, then render pass, then depth/stencil image (if using one),
+	// then swapchain image views (from swapchain images).
+	destroy_framebuffers(vulkan_device);
 	destroy_render_pass(vulkan_device);
+	bool using_depth_stencil_image = static_cast<bool>(d_depth_stencil_image);
+	if (using_depth_stencil_image)
+	{
+		destroy_depth_stencil_image(vulkan_device);
+	}
+	destroy_swapchain_image_views(vulkan_device);
 
 	// Recreate the swapchain, which passes in the old swapchain (to aid in presentation resource reuse),
 	// so we'll keep track of the old swapchain and destroy it after the new swapchain is created.
@@ -80,9 +93,15 @@ GPlatesOpenGL::VulkanSwapchain::recreate(
 		vulkan_device.get_device().destroySwapchainKHR(old_swapchain);
 	}
 
-	// Create the render pass and the render targets (image views and framebuffers).
+	// Create the swapchain image views (from swapchain images), then create depth/stencil image (if using one),
+	// then render pass and finally the framebuffers.
+	create_swapchain_image_views(vulkan_device);
+	if (using_depth_stencil_image)
+	{
+		create_depth_stencil_image(vulkan_device);
+	}
 	create_render_pass(vulkan_device);
-	create_render_targets(vulkan_device);
+	create_framebuffers(vulkan_device);
 }
 
 
@@ -101,18 +120,16 @@ GPlatesOpenGL::VulkanSwapchain::destroy(
 	// Note: It's OK to wait here since destroying a swapchain is not a performance-critical part of the code.
 	vulkan_device.get_device().waitIdle();
 
-	// Destroy the render targets (image views and framebuffers).
-	destroy_render_targets(vulkan_device);
-
-	// Destroy the render pass.
+	// Destroy framebuffers first, then render pass, then depth/stencil image (if using one),
+	// then swapchain image views (from swapchain images), and finally the swapchain.
+	destroy_framebuffers(vulkan_device);
 	destroy_render_pass(vulkan_device);
-
-	// And finally destroy the swapchain.
+	if (d_depth_stencil_image)
+	{
+		destroy_depth_stencil_image(vulkan_device);
+	}
+	destroy_swapchain_image_views(vulkan_device);
 	destroy_swapchain(vulkan_device);
-
-	// Reset some members.
-	d_swapchain_image_format = vk::Format::eUndefined;
-	d_swapchain_size = vk::Extent2D{};  // Zero extent.
 }
 
 
@@ -121,11 +138,11 @@ GPlatesOpenGL::VulkanSwapchain::get_swapchain_image(
 		std::uint32_t swapchain_image_index) const
 {
 	GPlatesGlobal::Assert<VulkanException>(
-			swapchain_image_index < d_render_targets.size(),
+			swapchain_image_index < d_swapchain_images.size(),
 			GPLATES_ASSERTION_SOURCE,
 			"Swapchain image index >= number of images");
 
-	return d_render_targets[swapchain_image_index].image;
+	return d_swapchain_images[swapchain_image_index];
 }
 
 
@@ -134,11 +151,11 @@ GPlatesOpenGL::VulkanSwapchain::get_swapchain_image_view(
 		std::uint32_t swapchain_image_index) const
 {
 	GPlatesGlobal::Assert<VulkanException>(
-			swapchain_image_index < d_render_targets.size(),
+			swapchain_image_index < d_swapchain_image_views.size(),
 			GPLATES_ASSERTION_SOURCE,
 			"Swapchain image index >= number of images");
 
-	return d_render_targets[swapchain_image_index].image_view;
+	return d_swapchain_image_views[swapchain_image_index];
 }
 
 
@@ -147,11 +164,11 @@ GPlatesOpenGL::VulkanSwapchain::get_swapchain_framebuffer(
 		std::uint32_t swapchain_image_index) const
 {
 	GPlatesGlobal::Assert<VulkanException>(
-			swapchain_image_index < d_render_targets.size(),
+			swapchain_image_index < d_framebuffers.size(),
 			GPLATES_ASSERTION_SOURCE,
 			"Swapchain image index >= number of images");
 
-	return d_render_targets[swapchain_image_index].framebuffer;
+	return d_framebuffers[swapchain_image_index];
 }
 
 
@@ -293,6 +310,9 @@ GPlatesOpenGL::VulkanSwapchain::create_swapchain(
 			.setClipped(true)
 			.setOldSwapchain(old_swapchain);
 	d_swapchain = vulkan_device.get_device().createSwapchainKHR(swapchain_create_info);
+
+	// Get the swapchain images (from the swapchain).
+	d_swapchain_images = vulkan_device.get_device().getSwapchainImagesKHR(d_swapchain);
 }
 
 
@@ -302,6 +322,134 @@ GPlatesOpenGL::VulkanSwapchain::destroy_swapchain(
 {
 	vulkan_device.get_device().destroySwapchainKHR(d_swapchain);
 	d_swapchain = nullptr;
+
+	// Reset some members.
+	d_swapchain_image_format = vk::Format::eUndefined;
+	d_swapchain_size = vk::Extent2D{};  // Zero extent.
+	// Note that the swapchain images are owned by the swapchain (ie, we don't destroy them).
+	d_swapchain_images.clear();  // Set size back to zero.
+}
+
+
+void
+GPlatesOpenGL::VulkanSwapchain::create_swapchain_image_views(
+		VulkanDevice &vulkan_device)
+{
+	// For each swapchain image, create an image view.
+	for (vk::Image swapchain_image : d_swapchain_images)
+	{
+		// Create swapchain image view.
+		vk::ImageViewCreateInfo swapchain_image_view_create_info;
+		swapchain_image_view_create_info
+				.setImage(swapchain_image)
+				.setViewType(vk::ImageViewType::e2D)
+				.setFormat(d_swapchain_image_format)
+				.setComponents({})  // identity swizzle
+				.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 } );
+		vk::ImageView swapchain_image_view = vulkan_device.get_device().createImageView(swapchain_image_view_create_info);
+
+		d_swapchain_image_views.push_back(swapchain_image_view);
+	}
+}
+
+
+void
+GPlatesOpenGL::VulkanSwapchain::destroy_swapchain_image_views(
+		VulkanDevice &vulkan_device)
+{
+	// For each swapchain image, destroy the swapchain image view.
+	for (vk::ImageView swapchain_image_view : d_swapchain_image_views)
+	{
+		// Destroy swapchain image *view* and framebuffer but not swapchain image itself (it belongs to the swapchain).
+		vulkan_device.get_device().destroyImageView(swapchain_image_view);
+	}
+
+	d_swapchain_image_views.clear();  // Set size back to zero.
+}
+
+
+void
+GPlatesOpenGL::VulkanSwapchain::create_depth_stencil_image(
+		VulkanDevice &vulkan_device)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			!d_depth_stencil_image,
+			GPLATES_ASSERTION_SOURCE);
+
+	// Determine depth/stencil format.
+	//
+	// The Vulkan spec states that one of the following depth/stencil formats must be supported (as a depth/stencil attachment):
+	// - VK_FORMAT_D24_UNORM_S8_UINT
+	// - VK_FORMAT_D32_SFLOAT_S8_UINT
+	// ...so we'll prefer VK_FORMAT_D24_UNORM_S8_UINT if it's supported, otherwise VK_FORMAT_D32_SFLOAT_S8_UINT.
+	vk::Format depth_stencil_format = vk::Format::eUndefined;
+	if (vulkan_device.get_physical_device().getFormatProperties(vk::Format::eD24UnormS8Uint).optimalTilingFeatures &
+		vk::FormatFeatureFlagBits::eDepthStencilAttachment)
+	{
+		depth_stencil_format = vk::Format::eD24UnormS8Uint;
+	}
+	else
+	{
+		GPlatesGlobal::Assert<VulkanException>(
+				vulkan_device.get_physical_device().getFormatProperties(vk::Format::eD32SfloatS8Uint).optimalTilingFeatures &
+					vk::FormatFeatureFlagBits::eDepthStencilAttachment,
+				GPLATES_ASSERTION_SOURCE,
+				"Vulkan should support either VK_FORMAT_D24_UNORM_S8_UINT or VK_FORMAT_D32_SFLOAT_S8_UINT as a depth/stencil attachment");
+
+		depth_stencil_format = vk::Format::eD32SfloatS8Uint;
+	}
+
+	// Create an image for use as a depth/stencil attachment.
+	vk::ImageCreateInfo depth_stencil_image_create_info;
+	depth_stencil_image_create_info
+			.setImageType(vk::ImageType::e2D)
+			.setFormat(depth_stencil_format)
+			.setExtent({ d_swapchain_size.width, d_swapchain_size.height, 1 })
+			.setMipLevels(1)
+			.setArrayLayers(1)
+			.setSamples(vk::SampleCountFlagBits::e1)
+			.setTiling(vk::ImageTiling::eOptimal)
+			// Specifying transient attachment enables image to be allocated using VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT...
+			.setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransientAttachment)
+			.setSharingMode(vk::SharingMode::eExclusive)
+			.setInitialLayout(vk::ImageLayout::eUndefined);
+	// Depth/stencil allocation.
+	VmaAllocationCreateInfo depth_stencil_allocation_create_info = {};
+	depth_stencil_allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
+	depth_stencil_allocation_create_info.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+	depth_stencil_allocation_create_info.preferredFlags = VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+	VulkanImage depth_stencil_image = VulkanImage::create(
+			vulkan_device.get_vma_allocator(),
+			depth_stencil_image_create_info,
+			depth_stencil_allocation_create_info,
+			GPLATES_EXCEPTION_SOURCE);
+
+	// Create depth/stencil image view.
+	vk::ImageViewCreateInfo depth_stencil_image_view_create_info;
+	depth_stencil_image_view_create_info
+			.setImage(depth_stencil_image.get_image())
+			.setViewType(vk::ImageViewType::e2D)
+			.setFormat(depth_stencil_format)
+			.setComponents({})  // identity swizzle
+			.setSubresourceRange({ vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil, 0, 1, 0, 1 } );
+	vk::ImageView depth_stencil_image_view = vulkan_device.get_device().createImageView(depth_stencil_image_view_create_info);
+
+	d_depth_stencil_image = DepthStencilImage{ depth_stencil_format, depth_stencil_image, depth_stencil_image_view };
+}
+
+
+void
+GPlatesOpenGL::VulkanSwapchain::destroy_depth_stencil_image(
+		VulkanDevice &vulkan_device)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_depth_stencil_image,
+			GPLATES_ASSERTION_SOURCE);
+
+	vulkan_device.get_device().destroyImageView(d_depth_stencil_image->image_view);
+	VulkanImage::destroy(vulkan_device.get_vma_allocator(), d_depth_stencil_image->image);
+
+	d_depth_stencil_image = boost::none;
 }
 
 
@@ -309,6 +457,8 @@ void
 GPlatesOpenGL::VulkanSwapchain::create_render_pass(
 		VulkanDevice &vulkan_device)
 {
+	std::vector<vk::AttachmentDescription> attachment_descriptions;
+
 	// Swapchain image attachment.
 	vk::AttachmentDescription swapchain_image_attachment_description;
 	swapchain_image_attachment_description
@@ -328,6 +478,9 @@ GPlatesOpenGL::VulkanSwapchain::create_render_pass(
 			// Final layout should be presentable (usable by presentation engine)...
 			.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
 
+	// Swapchain image is the first attachment (and only attachment if not using depth/stencil).
+	attachment_descriptions.push_back(swapchain_image_attachment_description);
+
 	// Colour attachment references swapchain image attachment.
 	vk::AttachmentReference colour_attachment_reference;
 	colour_attachment_reference
@@ -335,17 +488,55 @@ GPlatesOpenGL::VulkanSwapchain::create_render_pass(
 			// Subpass renders to attachment, so it should be in an optimal image layout...
 			.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
-	// One subpass using a single colour attachment.
+	// Optional depth/stencil attachment references optional depth/stencil image attachment.
+	vk::AttachmentReference depth_stencil_attachment_reference;
+	if (d_depth_stencil_image)
+	{
+		// Depth/stencil image attachment.
+		vk::AttachmentDescription depth_stencil_image_attachment_description;
+		depth_stencil_image_attachment_description
+				.setFormat(d_depth_stencil_image->format)
+				.setSamples(vk::SampleCountFlagBits::e1)
+				// We'll clear the depth attachment on load...
+				.setLoadOp(vk::AttachmentLoadOp::eClear)
+				// Don't care about depth store...
+				.setStoreOp(vk::AttachmentStoreOp::eDontCare)
+				// We'll clear the stencil attachment on load...
+				.setStencilLoadOp(vk::AttachmentLoadOp::eClear)
+				// Don't care about stencil store...
+				.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+				// Not preserving initial contents of depth/stencil image.
+				.setInitialLayout(vk::ImageLayout::eUndefined)
+				// Final layout leave as optimal (from subpass)...
+				.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+
+		// Depth/stencil image is the second attachment.
+		attachment_descriptions.push_back(depth_stencil_image_attachment_description);
+
+		// Depth/stencil attachment references depth/stencil image attachment.
+		depth_stencil_attachment_reference
+				.setAttachment(1)
+				// Subpass uses attachment as a depth/stencil buffer, so it should be in an optimal image layout...
+				.setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
+	}
+
+	// One subpass using a single colour attachment (and optional depth/stencil attachment).
 	vk::SubpassDescription subpass_description;
 	subpass_description
 			.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
 			.setColorAttachments(colour_attachment_reference);
+	if (d_depth_stencil_image)
+	{
+		subpass_description.setPDepthStencilAttachment(&depth_stencil_attachment_reference);
+	}
 
-	vk::SubpassDependency subpass_dependencies[2];
+	std::vector<vk::SubpassDependency> subpass_dependencies;
+
 	// One subpass external dependency to ensure swapchain image layout transition (from eUndefined to
 	// eColorAttachmentOptimal) happens *after* image is acquired (which happens before stage
 	// eColorAttachmentOutput since that is the wait stage on the image acquire semaphore).
-	subpass_dependencies[0]
+	vk::SubpassDependency swapchain_image_acquire_subpass_dependency;
+	swapchain_image_acquire_subpass_dependency
 			// Synchronise with commands before the render pass...
 			.setSrcSubpass(VK_SUBPASS_EXTERNAL)
 			// Only one subpass...
@@ -362,10 +553,13 @@ GPlatesOpenGL::VulkanSwapchain::create_render_pass(
 			.setSrcAccessMask({})
 			// Colour attachment clear (in render pass) is a write operation...
 			.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentWrite);
+	subpass_dependencies.push_back(swapchain_image_acquire_subpass_dependency);
+
 	// And one subpass external dependency to ensure swapchain image layout transition (from eColorAttachmentOptimal
 	// to ePresentSrcKHR) happens *before* image queue ownership is (potentially) released from graphics+compute queue
 	// (if present queue in a different queue family than graphics+compute queue).
-	subpass_dependencies[1]
+	vk::SubpassDependency swapchain_image_release_subpass_dependency;
+	swapchain_image_release_subpass_dependency
 			// Only one subpass...
 			.setSrcSubpass(0)
 			// Synchronise with commands after the render pass...
@@ -378,10 +572,42 @@ GPlatesOpenGL::VulkanSwapchain::create_render_pass(
 			.setSrcAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
 			// Colour attachment reads/writes should be made visible (before subsequent queue ownership release)...
 			.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite);
+	subpass_dependencies.push_back(swapchain_image_release_subpass_dependency);
 
+	if (d_depth_stencil_image)
+	{
+		// One subpass external dependency to ensure depth/stencil writes to shared depth/stencil attachment in a previous render pass
+		// (which used the *same* shared depth/stencil image, but with a different swapchain colour image) do not overlap with
+		// depth/stencil writes in the next render pass...
+		vk::SubpassDependency shared_depth_stencil_subpass_dependency;
+		shared_depth_stencil_subpass_dependency
+				// Synchronise with commands before the render pass...
+				.setSrcSubpass(VK_SUBPASS_EXTERNAL)
+				// Only one subpass...
+				.setDstSubpass(0)
+				// Wait for any depth/stencil writes to shared depth/stencil attachment from previous render pass
+				// (which used the *same* shared depth/stencil image, but with a different swapchain colour image).
+				// The layout transition will then happen after that.
+				// Note: The depth/stencil store op happens in the LATE_FRAGMENT_TESTS stage...
+				.setSrcStageMask(vk::PipelineStageFlagBits::eLateFragmentTests)
+				// Block depth/stencil attachment access in the subpass (but stages before that are not blocked, eg, vertex shader).
+				// The layout transition will then happen before that.
+				// Note: The depth/stencil load op (clear) happens in the EARLY_FRAGMENT_TESTS stage...
+				.setDstStageMask(vk::PipelineStageFlagBits::eEarlyFragmentTests)
+				// Make *available* any depth/stencil writes to shared depth/stencil attachment from previous render pass
+				// (which used the *same* shared depth/stencil image, but with a different swapchain colour image)...
+				.setSrcAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentWrite)
+				// Make *visible* any depth/stencil writes to shared depth/stencil attachment from previous render pass
+				// (which used the *same* shared depth/stencil image, but with a different swapchain colour image).
+				// Note: Depth/stencil attachment clear (in render pass) is a write operation...
+				.setDstAccessMask(vk::AccessFlagBits::eDepthStencilAttachmentWrite);
+		subpass_dependencies.push_back(shared_depth_stencil_subpass_dependency);
+	}
+
+	// Create the render pass.
 	vk::RenderPassCreateInfo render_pass_create_info;
 	render_pass_create_info
-			.setAttachments(swapchain_image_attachment_description)
+			.setAttachments(attachment_descriptions)
 			.setSubpasses(subpass_description)
 			.setDependencies(subpass_dependencies);
 	d_render_pass = vulkan_device.get_device().createRenderPass(render_pass_create_info);
@@ -398,52 +624,44 @@ GPlatesOpenGL::VulkanSwapchain::destroy_render_pass(
 
 
 void
-GPlatesOpenGL::VulkanSwapchain::create_render_targets(
+GPlatesOpenGL::VulkanSwapchain::create_framebuffers(
 		VulkanDevice &vulkan_device)
 {
-	// Get the swapchain images.
-	const std::vector<vk::Image> swapchain_images = vulkan_device.get_device().getSwapchainImagesKHR(d_swapchain);
-
-	// For each swapchain image, create an image view and a framebuffer.
-	for (vk::Image image : swapchain_images)
+	// For each swapchain image view, create a framebuffer.
+	for (vk::ImageView swapchain_image_view : d_swapchain_image_views)
 	{
-		// Create image view.
-		vk::ImageViewCreateInfo image_view_create_info;
-		image_view_create_info
-				.setImage(image)
-				.setViewType(vk::ImageViewType::e2D)
-				.setFormat(d_swapchain_image_format)
-				.setComponents({})  // identity swizzle
-				.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 } );
-		vk::ImageView image_view = vulkan_device.get_device().createImageView(image_view_create_info);
+		// Framebuffer attachments (swapchain image view and optional shared depth/stencil image view).
+		std::vector<vk::ImageView> attachments;
+		attachments.push_back(swapchain_image_view);
+		if (d_depth_stencil_image)
+		{
+			attachments.push_back(d_depth_stencil_image->image_view);
+		}
 
 		// Create framebuffer.
 		vk::FramebufferCreateInfo framebuffer_create_info;
 		framebuffer_create_info
 				.setRenderPass(d_render_pass)
-				.setAttachments(image_view)
+				.setAttachments(attachments)
 				.setWidth(d_swapchain_size.width)
 				.setHeight(d_swapchain_size.height)
 				.setLayers(1);
 		vk::Framebuffer framebuffer = vulkan_device.get_device().createFramebuffer(framebuffer_create_info);
 
-		const RenderTarget render_target = { image, image_view, framebuffer };
-		d_render_targets.push_back(render_target);
+		d_framebuffers.push_back(framebuffer);
 	}
 }
 
 
 void
-GPlatesOpenGL::VulkanSwapchain::destroy_render_targets(
+GPlatesOpenGL::VulkanSwapchain::destroy_framebuffers(
 		VulkanDevice &vulkan_device)
 {
-	// For each swapchain image, destroy the image view and framebuffer referencing it.
-	for (const RenderTarget &render_target : d_render_targets)
+	// For each swapchain image, destroy the framebuffer referencing its image view.
+	for (vk::Framebuffer framebuffer : d_framebuffers)
 	{
-		// Destroy image view and framebuffer but not swapchain image itself (it belongs to the swapchain).
-		vulkan_device.get_device().destroyImageView(render_target.image_view);
-		vulkan_device.get_device().destroyFramebuffer(render_target.framebuffer);
+		vulkan_device.get_device().destroyFramebuffer(framebuffer);
 	}
 
-	d_render_targets.clear();  // Set size back to zero.
+	d_framebuffers.clear();  // Set size back to zero.
 }
