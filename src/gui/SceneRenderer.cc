@@ -23,7 +23,6 @@
 
 #include "Colour.h"
 #include "MapProjection.h"
-#include "Scene.h"
 #include "SceneOverlays.h"
 #include "SceneView.h"
 #include "ViewportZoom.h"
@@ -66,6 +65,7 @@ GPlatesGui::SceneRenderer::SceneRenderer(
 		GPlatesPresentation::ViewState &view_state) :
 	d_view_state(view_state),
 	d_map_projection(view_state.get_map_projection()),
+	d_gl_visual_layers(GPlatesOpenGL::GLVisualLayers::create(view_state.get_application_state())),
 	d_max_fragment_list_head_pointer_image_width(0),
 	d_max_fragment_list_head_pointer_image_height(0),
 	d_max_fragment_list_storage_buffer_bytes(0),
@@ -128,7 +128,6 @@ void
 GPlatesGui::SceneRenderer::render(
 		GPlatesOpenGL::Vulkan &vulkan,
 		vk::CommandBuffer default_render_pass_command_buffer,
-		Scene &scene,
 		SceneOverlays &scene_overlays,
 		const SceneView &scene_view,
 		const GPlatesOpenGL::GLViewport &viewport,
@@ -147,7 +146,6 @@ GPlatesGui::SceneRenderer::render(
 	d_gl_frame_cache_handle = render_scene(
 			vulkan,
 			default_render_pass_command_buffer,
-			scene,
 			scene_overlays,
 			scene_view,
 			view_projection,
@@ -159,7 +157,6 @@ void
 GPlatesGui::SceneRenderer::render_to_image(
 		QImage &image,
 		GPlatesOpenGL::Vulkan &vulkan,
-		Scene &scene,
 		SceneOverlays &scene_overlays,
 		const SceneView &scene_view,
 		const Colour &image_clear_colour)
@@ -190,7 +187,7 @@ GPlatesGui::SceneRenderer::render_to_image(
 		// Hold onto the previous frame's cached resources *while* generating the current frame.
 		const cache_handle_type image_tile_cache_handle = render_scene_tile_to_image(
 				vulkan, image, image_viewport, image_tile_render,
-				scene, scene_overlays, scene_view,
+				scene_overlays, scene_view,
 				image_clear_colour);
 		frame_cache_handle->push_back(image_tile_cache_handle);
 	}
@@ -206,7 +203,6 @@ GPlatesGui::SceneRenderer::render_scene_tile_to_image(
 		QImage &image,
 		const GPlatesOpenGL::GLViewport &image_viewport,
 		const GPlatesOpenGL::GLTileRender &image_tile_render,
-		Scene &scene,
 		SceneOverlays &scene_overlays,
 		const SceneView &scene_view,
 		const Colour &image_clear_colour)
@@ -282,7 +278,7 @@ GPlatesGui::SceneRenderer::render_scene_tile_to_image(
 	//
 	const cache_handle_type tile_cache_handle = render_scene(
 			vulkan, default_render_pass_command_buffer,
-			scene, scene_overlays, scene_view,
+			scene_overlays, scene_view,
 			image_tile_view_projection,
 			image.devicePixelRatio());
 
@@ -312,7 +308,6 @@ GPlatesGui::SceneRenderer::cache_handle_type
 GPlatesGui::SceneRenderer::render_scene(
 		GPlatesOpenGL::Vulkan &vulkan,
 		vk::CommandBuffer default_render_pass_command_buffer,
-		Scene &scene,
 		SceneOverlays &scene_overlays,
 		const SceneView &scene_view,
 		const GPlatesOpenGL::GLViewProjection &view_projection,

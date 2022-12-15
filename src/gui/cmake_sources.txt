@@ -202,8 +202,6 @@ PythonManager.h
 RasterColourPalette.cc
 RasterColourPalette.h
 RenderSettings.h
-Scene.cc
-Scene.h
 SceneLightingParameters.cc
 SceneLightingParameters.h
 SceneOverlays.cc

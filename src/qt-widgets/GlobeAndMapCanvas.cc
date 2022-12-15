@@ -61,6 +61,8 @@
 
 #include "presentation/ViewState.h"
 
+#include "view-operations/RenderedGeometryCollection.h"
+
 
 GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 		GPlatesPresentation::ViewState &view_state) :
@@ -68,7 +70,6 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 	// So no parent is passed in here...
 	VulkanWindow(view_state.get_application_state().get_vulkan_instance()),
 	d_gl_context(GPlatesOpenGL::GLContext::create()),
-	d_scene(GPlatesGui::Scene::create(view_state, devicePixelRatio())),
 	d_scene_view(GPlatesGui::SceneView::create(view_state)),
 	d_scene_overlays(GPlatesGui::SceneOverlays::create(view_state)),
 	d_scene_renderer(GPlatesGui::SceneRenderer::create(view_state)),
@@ -159,7 +160,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_image(
 	image.fill(QColor(image_clear_colour).rgba());
 
 	// Render the scene into the image.
-	d_scene_renderer->render_to_image(image, vulkan, *d_scene, *d_scene_overlays, *d_scene_view, image_clear_colour);
+	d_scene_renderer->render_to_image(image, vulkan, *d_scene_overlays, *d_scene_view, image_clear_colour);
 
 	return image;
 }
@@ -561,7 +562,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 	//
 	// This records Vulkan commands into the swapchain command buffer, and also into other command buffers
 	// (eg, that render into textures that are in turn used to render into the swapchain framebuffer).
-	d_scene_renderer->render(vulkan, swapchain_command_buffer, *d_scene, *d_scene_overlays, *d_scene_view, viewport, devicePixelRatio());
+	d_scene_renderer->render(vulkan, swapchain_command_buffer, *d_scene_overlays, *d_scene_view, viewport, devicePixelRatio());
 
 	// End default render pass to the swapchain framebuffer.
 	//

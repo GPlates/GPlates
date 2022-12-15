@@ -29,6 +29,7 @@
 #include "opengl/GLProgram.h"
 #include "opengl/GLTexture.h"
 #include "opengl/GLVertexArray.h"
+#include "opengl/GLVisualLayers.h"
 #include "opengl/Stars.h"
 #include "opengl/Vulkan.h"
 
@@ -51,7 +52,6 @@ namespace GPlatesGui
 {
 	class Colour;
 	class MapProjection;
-	class Scene;
 	class SceneOverlays;
 	class SceneView;
 
@@ -74,7 +74,7 @@ namespace GPlatesGui
 
 
 		/**
-		 * Creates a new @a Scene object.
+		 * Creates a new @a SceneRenderer object.
 		 */
 		static
 		non_null_ptr_type
@@ -111,7 +111,6 @@ namespace GPlatesGui
 		render(
 				GPlatesOpenGL::Vulkan &vulkan,
 				vk::CommandBuffer default_render_pass_command_buffer,
-				Scene &scene,
 				SceneOverlays &scene_overlays,
 				const SceneView &scene_view,
 				const GPlatesOpenGL::GLViewport &viewport,
@@ -124,15 +123,27 @@ namespace GPlatesGui
 		render_to_image(
 				QImage &image,
 				GPlatesOpenGL::Vulkan &vulkan,
-				Scene &scene,
 				SceneOverlays &scene_overlays,
 				const SceneView &scene_view,
 				const Colour &image_clear_colour);
+
+
+		/**
+		 * Returns the OpenGL layers used to filled polygons, render rasters and scalar fields.
+		 */
+		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type
+		get_gl_visual_layers()
+		{
+			return d_gl_visual_layers;
+		}
 
 	private:
 
 		GPlatesPresentation::ViewState &d_view_state;
 		MapProjection &d_map_projection;
+
+		//! Keeps track of OpenGL objects that persist from one render to another.
+		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
 
 		//! Stars in the background (in globe and map views).
 		GPlatesOpenGL::Stars d_stars;
@@ -242,7 +253,6 @@ namespace GPlatesGui
 				QImage &image,
 				const GPlatesOpenGL::GLViewport &image_viewport,
 				const GPlatesOpenGL::GLTileRender &image_tile_render,
-				Scene &scene,
 				SceneOverlays &scene_overlays,
 				const SceneView &scene_view,
 				const Colour &image_clear_colour);
@@ -252,7 +262,6 @@ namespace GPlatesGui
 		render_scene(
 				GPlatesOpenGL::Vulkan &vulkan,
 				vk::CommandBuffer default_render_pass_command_buffer,
-				Scene &scene,
 				SceneOverlays &scene_overlays,
 				const SceneView &scene_view,
 				const GPlatesOpenGL::GLViewProjection &view_projection,

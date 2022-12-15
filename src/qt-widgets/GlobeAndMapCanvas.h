@@ -42,7 +42,6 @@
 
 #include "global/PointerTraits.h"
 
-#include "gui/Scene.h"
 #include "gui/SceneOverlays.h"
 #include "gui/SceneRenderer.h"
 #include "gui/SceneView.h"
@@ -173,7 +172,7 @@ namespace GPlatesQtWidgets
 		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type
 		get_gl_visual_layers()
 		{
-			return d_scene->get_gl_visual_layers();
+			return d_scene_renderer->get_gl_visual_layers();
 		}
 
 		/**
@@ -489,11 +488,6 @@ namespace GPlatesQtWidgets
 		 */
 		vk::Semaphore d_transferred_swapchain_image_to_present_queue_semaphores[GPlatesOpenGL::VulkanFrame::NUM_ASYNC_FRAMES];
 
-
-		/**
-		 * The scene contains the globe and map.
-		 */
-		GPlatesGui::Scene::non_null_ptr_type d_scene;
 
 		/**
 		 * The view (including projection) of the scene (globe and map).

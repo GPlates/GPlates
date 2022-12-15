@@ -64,7 +64,7 @@ namespace GPlatesGui
 
 
 		/**
-		 * Creates a new @a Scene object.
+		 * Creates a new @a SceneView object.
 		 */
 		static
 		non_null_ptr_type

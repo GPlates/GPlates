@@ -126,6 +126,7 @@
 
 #include "presentation/SessionManagement.h"
 #include "presentation/ViewState.h"
+#include "presentation/VisualLayers.h"
 
 #include "utils/ComponentManager.h"
 #include "utils/DeferredCallEvent.h"
