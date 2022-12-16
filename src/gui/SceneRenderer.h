@@ -29,7 +29,7 @@
 #include "opengl/GLProgram.h"
 #include "opengl/GLTexture.h"
 #include "opengl/GLVertexArray.h"
-#include "opengl/GLVisualLayers.h"
+#include "opengl/RenderedGeometryRenderer.h"
 #include "opengl/Stars.h"
 #include "opengl/Vulkan.h"
 
@@ -134,7 +134,7 @@ namespace GPlatesGui
 		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type
 		get_gl_visual_layers()
 		{
-			return d_gl_visual_layers;
+			return d_rendered_geometry_renderer.get_gl_visual_layers();
 		}
 
 	private:
@@ -142,8 +142,8 @@ namespace GPlatesGui
 		GPlatesPresentation::ViewState &d_view_state;
 		MapProjection &d_map_projection;
 
-		//! Keeps track of OpenGL objects that persist from one render to another.
-		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
+		//! Draw the rendered geometries in the layers of the rendered geometry collection.
+		GPlatesOpenGL::RenderedGeometryRenderer d_rendered_geometry_renderer;
 
 		//! Stars in the background (in globe and map views).
 		GPlatesOpenGL::Stars d_stars;

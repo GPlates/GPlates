@@ -220,7 +220,7 @@ GPlatesOpenGL::Stars::create_graphics_pipeline(
 	vertex_attribute_description
 			.setLocation(0)
 			.setBinding(0)
-			.setFormat(vk::Format::eR32G32B32Sfloat)
+			.setFormat(vk::Format::eR32G32B32Sfloat)  // format supports VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT
 			.setOffset(0);
 	vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info;
 	vertex_input_state_create_info

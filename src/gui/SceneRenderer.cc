@@ -65,7 +65,7 @@ GPlatesGui::SceneRenderer::SceneRenderer(
 		GPlatesPresentation::ViewState &view_state) :
 	d_view_state(view_state),
 	d_map_projection(view_state.get_map_projection()),
-	d_gl_visual_layers(GPlatesOpenGL::GLVisualLayers::create(view_state.get_application_state())),
+	d_rendered_geometry_renderer(view_state),
 	d_max_fragment_list_head_pointer_image_width(0),
 	d_max_fragment_list_head_pointer_image_height(0),
 	d_max_fragment_list_storage_buffer_bytes(0),
@@ -313,7 +313,6 @@ GPlatesGui::SceneRenderer::render_scene(
 		const GPlatesOpenGL::GLViewProjection &view_projection,
 		int device_pixel_ratio)
 {
-#if 1
 	//
 	// Render the background stars.
 	//
@@ -369,7 +368,13 @@ GPlatesGui::SceneRenderer::render_scene(
 	//
 	// All objects rendered into the scene will add fragments to per-pixel fragment lists instead of
 	// rendering directly to the framebuffer.
-	cache_handle_type frame_cache_handle;
+
+	const cache_handle_type frame_cache_handle = d_rendered_geometry_renderer.render(
+			vulkan,
+			view_projection,
+			scene_view.get_viewport_zoom().zoom_factor(),
+			// Render the globe or map (and its contents) depending on whether the globe or map is currently active...
+			scene_view.is_globe_active());
 
 #if 0
 	// Bind the shader program that sorts and blends scene fragments accumulated from rendering the scene and
@@ -381,31 +386,6 @@ GPlatesGui::SceneRenderer::render_scene(
 	gl.DrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 #endif
 
-#else
-
-	gl.Clear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-	//
-	// Render the globe or map (and its contents) depending on whether the globe or map is currently active.
-	//
-	cache_handle_type frame_cache_handle;
-	if (scene_view.is_globe_active())
-	{
-		frame_cache_handle = scene.render_globe(
-				gl,
-				view_projection,
-				scene_view.get_viewport_zoom().zoom_factor(),
-				scene_view.get_globe_camera_front_horizon_plane());
-	}
-	else
-	{
-		frame_cache_handle = scene.render_map(
-				gl,
-				view_projection,
-				scene_view.get_viewport_zoom().zoom_factor());
-	}
-
-#endif
 
 #if 0
 	// Render the 2D overlays on top of the 3D scene just rendered.

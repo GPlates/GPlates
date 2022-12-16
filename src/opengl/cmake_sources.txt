@@ -116,6 +116,8 @@ OpenGL.h
 OpenGLException.h
 OpenGLFunctions.cc
 OpenGLFunctions.h
+RenderedGeometryRenderer.cc
+RenderedGeometryRenderer.h
 Stars.cc
 Stars.h
 Vulkan.cc
