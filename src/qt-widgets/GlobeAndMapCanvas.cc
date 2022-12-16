@@ -289,29 +289,25 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initialise_vulkan_resources(
 			GPLATES_ASSERTION_SOURCE);
 	vk::CommandBuffer initialisation_command_buffer = initialisation_command_buffers[0];
 
-	// Begin recording into the initialisation command buffer.
-	vk::CommandBufferBeginInfo initialisation_command_buffer_begin_info;
-	// Command buffer will only be submitted once.
-	initialisation_command_buffer_begin_info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-	initialisation_command_buffer.begin(initialisation_command_buffer_begin_info);
+	// Create a fence that clients can use when submitting their initialisation commands.
+	//
+	// For example, clients can create a one-time staging buffer for uploading then submit copy command then
+	// destroy staging buffer once submit has finished (when fence signaled).
+	vk::FenceCreateInfo initialisation_submit_fence_create_info;
+	vk::Fence initialisation_submit_fence = vulkan.get_device().createFence(initialisation_submit_fence_create_info);
 
 	// Initialise resources in scene renderer.
-	d_scene_renderer->initialise_vulkan_resources(vulkan, vulkan_swapchain.get_swapchain_render_pass(), initialisation_command_buffer);
+	d_scene_renderer->initialise_vulkan_resources(
+			vulkan,
+			vulkan_swapchain.get_swapchain_render_pass(),
+			initialisation_command_buffer,
+			initialisation_submit_fence);
 
-	// End recording into the initialisation command buffer.
-	initialisation_command_buffer.end();
-
-	// Submit the initialisation command buffer.
-	vk::SubmitInfo initialisation_command_buffer_submit_info;
-	initialisation_command_buffer_submit_info.setCommandBuffers(initialisation_command_buffer);
-	vulkan.get_graphics_and_compute_queue().submit(initialisation_command_buffer_submit_info);
-
-	// Make sure any commands (eg, copy commands) have finished before we free the command buffer.
+	// Release initialisation command buffer and fence.
 	//
-	// Note: It's OK to wait here since initialisation is not a performance-critical part of the code.
-	vulkan.get_graphics_and_compute_queue().waitIdle();
-
-	// Free initialisation command buffer.
+	// If any clients recorded and submitted commands using the initialisation command buffer then they should also
+	// have waited on the submit fence. So we should be able to destroy the command buffer and fence.
+	vulkan.get_device().destroyFence(initialisation_submit_fence);
 	vulkan.get_device().freeCommandBuffers(d_graphics_and_compute_command_pool, initialisation_command_buffer);
 }
 

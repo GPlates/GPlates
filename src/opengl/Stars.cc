@@ -61,7 +61,8 @@ void
 GPlatesOpenGL::Stars::initialise_vulkan_resources(
 		Vulkan &vulkan,
 		vk::RenderPass default_render_pass,
-		vk::CommandBuffer initialisation_command_buffer)
+		vk::CommandBuffer initialisation_command_buffer,
+		vk::Fence initialisation_submit_fence)
 {
 	// Add this scope to the call stack trace printed if exception thrown in this scope.
 	TRACK_CALL_STACK();
@@ -73,7 +74,7 @@ GPlatesOpenGL::Stars::initialise_vulkan_resources(
 	std::vector<vertex_type> vertices;
 	std::vector<vertex_index_type> vertex_indices;
 	create_stars(vertices, vertex_indices);
-	load_stars(vulkan, initialisation_command_buffer, vertices, vertex_indices);
+	load_stars(vulkan, initialisation_command_buffer, initialisation_submit_fence, vertices, vertex_indices);
 }
 
 void
@@ -83,11 +84,9 @@ GPlatesOpenGL::Stars::release_vulkan_resources(
 	// Vulkan memory allocator.
 	VmaAllocator vma_allocator = vulkan.get_vma_allocator();
 
-	// Destroy the buffers.
-	VulkanBuffer::destroy(vma_allocator, d_host_vertex_buffer);
-	VulkanBuffer::destroy(vma_allocator, d_device_vertex_buffer);
-	VulkanBuffer::destroy(vma_allocator, d_host_index_buffer);
-	VulkanBuffer::destroy(vma_allocator, d_device_index_buffer);
+	// Destroy the vertex/index buffers.
+	VulkanBuffer::destroy(vma_allocator, d_vertex_buffer);
+	VulkanBuffer::destroy(vma_allocator, d_index_buffer);
 
 	// Destroy the pipeline layout and graphics pipeline.
 	vulkan.get_device().destroyPipelineLayout(d_pipeline_layout);
@@ -111,8 +110,8 @@ GPlatesOpenGL::Stars::render(
 	command_buffer.setScissor(0, view_projection.get_viewport().get_vulkan_rect_2D());
 
 	// Bind vertex/index buffers.
-	command_buffer.bindVertexBuffers(0, d_device_vertex_buffer.get_buffer(), vk::DeviceSize(0));
-	command_buffer.bindIndexBuffer(d_device_index_buffer.get_buffer(), vk::DeviceSize(0), vk::IndexType::eUint32);
+	command_buffer.bindVertexBuffers(0, d_vertex_buffer.get_buffer(), vk::DeviceSize(0));
+	command_buffer.bindIndexBuffer(d_index_buffer.get_buffer(), vk::DeviceSize(0), vk::IndexType::eUint32);
 
 	//
 	// layout (push_constant) uniform PushConstants
@@ -441,6 +440,7 @@ void
 GPlatesOpenGL::Stars::load_stars(
 		GPlatesOpenGL::Vulkan &vulkan,
 		vk::CommandBuffer initialisation_command_buffer,
+		vk::Fence initialisation_submit_fence,
 		const std::vector<vertex_type> &vertices,
 		const std::vector<vertex_index_type> &vertex_indices)
 {
@@ -457,75 +457,81 @@ GPlatesOpenGL::Stars::load_stars(
 
 
 	//
-	// Create host (staging) and device (final) vertex buffers.
+	// Create staging and final vertex buffers.
 	//
 	buffer_create_info.setSize(vertices.size() * sizeof(vertex_type));
 
-	// Host vertex buffer.
+	// Staging vertex buffer (in mappable host memory).
 	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eTransferSrc);
 	allocation_create_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;  // host mappable
-	d_host_vertex_buffer = VulkanBuffer::create(vma_allocator, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
+	VulkanBuffer staging_vertex_buffer = VulkanBuffer::create(vma_allocator, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
 
-	// Device vertex buffer.
+	// Final vertex buffer (in device local memory).
 	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eVertexBuffer);
 	allocation_create_info.flags = 0;  // device local memory
-	d_device_vertex_buffer = VulkanBuffer::create(vma_allocator, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
+	d_vertex_buffer = VulkanBuffer::create(vma_allocator, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
 
 	//
-	// Create host (staging) and device (final) index buffers.
+	// Create staging and final index buffers.
 	//
 	buffer_create_info.setSize(vertex_indices.size() * sizeof(vertex_index_type));
 
-	// Host index buffer.
+	// Staging index buffer (in mappable host memory).
 	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eTransferSrc);
 	allocation_create_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT;  // host mappable
-	d_host_index_buffer = VulkanBuffer::create(vma_allocator, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
+	VulkanBuffer staging_index_buffer = VulkanBuffer::create(vma_allocator, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
 
-	// Device index buffer.
+	// Final index buffer (in device local memory).
 	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eIndexBuffer);
 	allocation_create_info.flags = 0;  // device local memory
-	d_device_index_buffer = VulkanBuffer::create(vma_allocator, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
+	d_index_buffer = VulkanBuffer::create(vma_allocator, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
 
 
 	//
-	// Copy the vertices into the mapped host vertex buffer.
+	// Copy the vertices into the mapped staging vertex buffer.
 	//
-	void *host_vertex_buffer_data = d_host_vertex_buffer.map_memory(vma_allocator, GPLATES_EXCEPTION_SOURCE);
-	std::memcpy(host_vertex_buffer_data, vertices.data(), vertices.size() * sizeof(vertex_type));
-	d_host_vertex_buffer.flush_mapped_memory(vma_allocator, 0, VK_WHOLE_SIZE, GPLATES_EXCEPTION_SOURCE);
-	d_host_vertex_buffer.unmap_memory(vma_allocator);
+	void *staging_vertex_buffer_data = staging_vertex_buffer.map_memory(vma_allocator, GPLATES_EXCEPTION_SOURCE);
+	std::memcpy(staging_vertex_buffer_data, vertices.data(), vertices.size() * sizeof(vertex_type));
+	staging_vertex_buffer.flush_mapped_memory(vma_allocator, 0, VK_WHOLE_SIZE, GPLATES_EXCEPTION_SOURCE);
+	staging_vertex_buffer.unmap_memory(vma_allocator);
 
 	//
-	// Copy the vertex indices into the mapped host index buffer.
+	// Copy the vertex indices into the mapped staging index buffer.
 	//
-	void *host_index_buffer_data = d_host_index_buffer.map_memory(vma_allocator, GPLATES_EXCEPTION_SOURCE);
-	std::memcpy(host_index_buffer_data, vertex_indices.data(), vertex_indices.size() * sizeof(vertex_index_type));
-	d_host_index_buffer.flush_mapped_memory(vma_allocator, 0, VK_WHOLE_SIZE, GPLATES_EXCEPTION_SOURCE);
-	d_host_index_buffer.unmap_memory(vma_allocator);
+	void *staging_index_buffer_data = staging_index_buffer.map_memory(vma_allocator, GPLATES_EXCEPTION_SOURCE);
+	std::memcpy(staging_index_buffer_data, vertex_indices.data(), vertex_indices.size() * sizeof(vertex_index_type));
+	staging_index_buffer.flush_mapped_memory(vma_allocator, 0, VK_WHOLE_SIZE, GPLATES_EXCEPTION_SOURCE);
+	staging_index_buffer.unmap_memory(vma_allocator);
 
 
+	// Begin recording into the initialisation command buffer.
+	vk::CommandBufferBeginInfo initialisation_command_buffer_begin_info;
+	// Command buffer will only be submitted once.
+	initialisation_command_buffer_begin_info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+	initialisation_command_buffer.begin(initialisation_command_buffer_begin_info);
+
 	//
-	// Copy vertices from staging buffer to final device buffer.
+	// Copy vertices from staging host buffer to final device buffer.
 	//
 	vk::BufferCopy vertex_buffer_copy;
 	vertex_buffer_copy.setSrcOffset(0).setDstOffset(0).setSize(vertices.size() * sizeof(vertex_type));
 	initialisation_command_buffer.copyBuffer(
-			d_host_vertex_buffer.get_buffer(),
-			d_device_vertex_buffer.get_buffer(),
+			staging_vertex_buffer.get_buffer(),
+			d_vertex_buffer.get_buffer(),
 			vertex_buffer_copy);
 
 	//
-	// Copy vertex indices from staging buffer to final device buffer.
+	// Copy vertex indices from staging host buffer to final device buffer.
 	//
 	vk::BufferCopy index_buffer_copy;
 	index_buffer_copy.setSrcOffset(0).setDstOffset(0).setSize(vertex_indices.size() * sizeof(vertex_index_type));
 	initialisation_command_buffer.copyBuffer(
-			d_host_index_buffer.get_buffer(),
-			d_device_index_buffer.get_buffer(),
+			staging_index_buffer.get_buffer(),
+			d_index_buffer.get_buffer(),
 			index_buffer_copy);
 
 
-	// Pipeline barrier to wait for staging transfers to complete before using the vertex/index data.
+	// Pipeline barrier to wait for staging transfer writes to be made available before using the vertex/index data.
 	vk::MemoryBarrier memory_barrier;
 	memory_barrier
 			.setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
@@ -537,4 +543,24 @@ GPlatesOpenGL::Stars::load_stars(
 			memory_barrier,  // memoryBarriers
 			{},  // bufferMemoryBarriers
 			{});  // imageMemoryBarriers
+
+	// End recording into the initialisation command buffer.
+	initialisation_command_buffer.end();
+
+	// Submit the initialisation command buffer.
+	vk::SubmitInfo initialisation_command_buffer_submit_info;
+	initialisation_command_buffer_submit_info.setCommandBuffers(initialisation_command_buffer);
+	vulkan.get_graphics_and_compute_queue().submit(initialisation_command_buffer_submit_info, initialisation_submit_fence);
+
+	// Wait for the copy commands to finish.
+	// Note: It's OK to wait since initialisation is not a performance-critical part of the code.
+	if (vulkan.get_device().waitForFences(initialisation_submit_fence, true, UINT64_MAX) != vk::Result::eSuccess)
+	{
+		throw VulkanException(GPLATES_EXCEPTION_SOURCE, "Error waiting for initialisation of stars.");
+	}
+	vulkan.get_device().resetFences(initialisation_submit_fence);
+
+	// Destroy staging buffers now that device is no longer using them.
+	VulkanBuffer::destroy(vma_allocator, staging_vertex_buffer);
+	VulkanBuffer::destroy(vma_allocator, staging_index_buffer);
 }

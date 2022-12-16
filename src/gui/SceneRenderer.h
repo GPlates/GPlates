@@ -88,13 +88,15 @@ namespace GPlatesGui
 		/**
 		 * The Vulkan device was just created.
 		 *
-		 * The initialisation command buffer will be submitted to the graphics+compute queue upon return.
+		 * The initialisation command buffer and fence can be used to submit initialisation commands to the graphics+compute queue.
+		 * If the command buffer is submitted then wait for the fence (and reset it for the next client that uses it).
 		 */
 		void
 		initialise_vulkan_resources(
 				GPlatesOpenGL::Vulkan &vulkan,
 				vk::RenderPass default_render_pass,
-				vk::CommandBuffer initialisation_command_buffer);
+				vk::CommandBuffer initialisation_command_buffer,
+				vk::Fence initialisation_submit_fence);
 
 		/**
 		 * The Vulkan device is about to be destroyed.

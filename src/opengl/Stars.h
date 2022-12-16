@@ -64,7 +64,8 @@ namespace GPlatesOpenGL
 		initialise_vulkan_resources(
 				GPlatesOpenGL::Vulkan &vulkan,
 				vk::RenderPass default_render_pass,
-				vk::CommandBuffer initialisation_command_buffer);
+				vk::CommandBuffer initialisation_command_buffer,
+				vk::Fence initialisation_submit_fence);
 
 		/**
 		 * The Vulkan device is about to be destroyed.
@@ -148,6 +149,7 @@ namespace GPlatesOpenGL
 		load_stars(
 				GPlatesOpenGL::Vulkan &vulkan,
 				vk::CommandBuffer initialisation_command_buffer,
+				vk::Fence initialisation_submit_fence,
 				const std::vector<vertex_type> &vertices,
 				const std::vector<vertex_index_type> &vertex_indices);
 
@@ -158,15 +160,9 @@ namespace GPlatesOpenGL
 		vk::PipelineLayout d_pipeline_layout;
 		vk::Pipeline d_graphics_pipeline;
 
-		//! Host vertex buffer (used for staging in initialisation).
-		VulkanBuffer d_host_vertex_buffer;
-		//!  Device vertex buffer (used by GPU during rendering).
-		VulkanBuffer d_device_vertex_buffer;
-
-		//! Host index buffer (used for staging in initialisation).
-		VulkanBuffer d_host_index_buffer;
-		//! Device index buffer (used by GPU during rendering).
-		VulkanBuffer d_device_index_buffer;
+		// Vertex/index buffers (static buffers in device local memory).
+		VulkanBuffer d_vertex_buffer;
+		VulkanBuffer d_index_buffer;
 
 		unsigned int d_num_small_star_vertices;
 		unsigned int d_num_small_star_vertex_indices;

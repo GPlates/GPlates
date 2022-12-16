@@ -78,10 +78,11 @@ void
 GPlatesGui::SceneRenderer::initialise_vulkan_resources(
 		GPlatesOpenGL::Vulkan &vulkan,
 		vk::RenderPass default_render_pass,
-		vk::CommandBuffer initialisation_command_buffer)
+		vk::CommandBuffer initialisation_command_buffer,
+		vk::Fence initialisation_submit_fence)
 {
 	// Initialise the background stars.
-	d_stars.initialise_vulkan_resources(vulkan, default_render_pass, initialisation_command_buffer);
+	d_stars.initialise_vulkan_resources(vulkan, default_render_pass, initialisation_command_buffer, initialisation_submit_fence);
 
 #if 0
 	// Create the shader program that sorts and blends the list of fragments (per pixel) in depth order.
