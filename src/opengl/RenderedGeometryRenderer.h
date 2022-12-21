@@ -20,12 +20,15 @@
 #ifndef GPLATES_OPENGL_RENDERED_GEOMETRY_RENDERER_H
 #define GPLATES_OPENGL_RENDERED_GEOMETRY_RENDERER_H
 
+#include <cstdint>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 #include <boost/shared_ptr.hpp>
 
 #include "GLVisualLayers.h"
+#include "RenderedArrowRenderer.h"
 #include "Vulkan.h"
+#include "VulkanBuffer.h"
 
 #include "gui/Colour.h"
 
@@ -67,14 +70,13 @@ namespace GPlatesOpenGL
 
 		/**
 		 * The Vulkan device was just created.
-		 *
-		 * The initialisation command buffer will be submitted to the graphics+compute queue upon return.
 		 */
 		void
 		initialise_vulkan_resources(
 				Vulkan &vulkan,
 				vk::RenderPass default_render_pass,
-				vk::CommandBuffer initialisation_command_buffer);
+				vk::CommandBuffer initialisation_command_buffer,
+				vk::Fence initialisation_submit_fence);
 
 		/**
 		 * The Vulkan device is about to be destroyed.
@@ -93,6 +95,7 @@ namespace GPlatesOpenGL
 		cache_handle_type
 		render(
 				Vulkan &vulkan,
+				vk::CommandBuffer command_buffer,
 				const GLViewProjection &view_projection,
 				const double &viewport_zoom_factor,
 				bool is_globe_active,
@@ -109,6 +112,11 @@ namespace GPlatesOpenGL
 
 	private:
 
+		void
+		visit_rendered_arrow(
+				const GPlatesViewOperations::RenderedArrow &rendered_arrow) override;
+
+
 		/**
 		 * Returns true if any rendered geometry layer has sub-surface geometries.
 		 */
@@ -122,30 +130,30 @@ namespace GPlatesOpenGL
 		struct VisitationParams
 		{
 			VisitationParams(
-					GPlatesOpenGL::Vulkan &vulkan,
-					const GPlatesOpenGL::GLViewProjection &view_projection,
-					const double &viewport_zoom_factor,
-					bool is_globe_active,
+					GPlatesOpenGL::Vulkan &vulkan_,
+					const GPlatesOpenGL::GLViewProjection &view_projection_,
+					const double &viewport_zoom_factor_,
+					bool is_globe_active_,
 					// Used for sub-surfaces...
-					bool improve_performance_reduce_quality_of_sub_surfaces_hint = false) :
-				d_vulkan(&vulkan),
-				d_view_projection(view_projection),
-				d_inverse_viewport_zoom_factor(1.0 / viewport_zoom_factor),
-				d_is_globe_active(is_globe_active),
-				d_improve_performance_reduce_quality_of_sub_surfaces_hint(improve_performance_reduce_quality_of_sub_surfaces_hint),
-				d_cache_handle(new std::vector<cache_handle_type>())
+					bool improve_performance_reduce_quality_of_sub_surfaces_hint_ = false) :
+				vulkan(&vulkan_),
+				view_projection(view_projection_),
+				inverse_viewport_zoom_factor(1.0 / viewport_zoom_factor_),
+				is_globe_active(is_globe_active_),
+				improve_performance_reduce_quality_of_sub_surfaces_hint(improve_performance_reduce_quality_of_sub_surfaces_hint_),
+				cache_handle(new std::vector<cache_handle_type>())
 			{  }
 
-			GPlatesOpenGL::Vulkan *d_vulkan;
-			GPlatesOpenGL::GLViewProjection d_view_projection;
-			double d_inverse_viewport_zoom_factor;
-			bool d_is_globe_active;
+			GPlatesOpenGL::Vulkan *vulkan;
+			GPlatesOpenGL::GLViewProjection view_projection;
+			double inverse_viewport_zoom_factor;
+			bool is_globe_active;
 
 			// Used for sub-surfaces...
-			bool d_improve_performance_reduce_quality_of_sub_surfaces_hint;
+			bool improve_performance_reduce_quality_of_sub_surfaces_hint;
 
 			// Cache of rendered geometry layers.
-			boost::shared_ptr<std::vector<cache_handle_type> > d_cache_handle;
+			boost::shared_ptr<std::vector<cache_handle_type> > cache_handle;
 		};
 
 
@@ -158,6 +166,12 @@ namespace GPlatesOpenGL
 		 * Keeps track of OpenGL-related objects that persist from one render to the next.
 		 */
 		GPlatesOpenGL::GLVisualLayers::non_null_ptr_type d_gl_visual_layers;
+
+		/**
+		 * Renders rendered geometries of type @a RenderedArrow.
+		 */
+		RenderedArrowRenderer d_rendered_arrow_renderer;
+
 
 		/**
 		 * Parameters that are only available when a @a RenderedGeometryCollection is visiting us.

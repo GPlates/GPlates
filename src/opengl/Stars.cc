@@ -48,11 +48,7 @@ const GPlatesGui::Colour GPlatesOpenGL::Stars::DEFAULT_COLOUR(0.75f, 0.75f, 0.75
 
 GPlatesOpenGL::Stars::Stars(
 		const GPlatesGui::Colour &colour) :
-	d_colour(colour),
-	d_num_small_star_vertices(0),
-	d_num_small_star_vertex_indices(0),
-	d_num_large_star_vertices(0),
-	d_num_large_star_vertex_indices(0)
+	d_colour(colour)
 {
 }
 
@@ -268,29 +264,17 @@ GPlatesOpenGL::Stars::create_graphics_pipeline(
 	//
 	// Colour blend state.
 	//
-	//
-	// For alpha-blending we want:
-	//
-	//   RGB = A_src * RGB_src + (1-A_src) * RGB_dst
-	//     A =     1 *   A_src + (1-A_src) *   A_dst
-	//
-	// ...so we need to use separate (src,dst) blend factors for the RGB and alpha channels...
-	//
-	//   RGB uses (A_src, 1 - A_src)
-	//     A uses (    1, 1 - A_src)
-	//
-	// ...this enables the destination to be a texture that is subsequently blended into the final scene.
-	// In this case the destination alpha must be correct in order to properly blend the texture into the final scene.
-	// However if we're rendering directly into the scene (ie, no render-to-texture) then destination alpha is not
-	// actually used (since only RGB in the final scene is visible) and therefore could use same blend factors as RGB.
-	//
 	vk::PipelineColorBlendAttachmentState blend_attachment_state;
 	blend_attachment_state
 			.setBlendEnable(true)
+			// RGB = A_src * RGB_src + (1-A_src) * RGB_dst ...
 			.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
 			.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+			.setColorBlendOp(vk::BlendOp::eAdd)
+			//   A =     1 *   A_src + (1-A_src) *   A_dst ...
 			.setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
 			.setDstAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+			.setAlphaBlendOp(vk::BlendOp::eAdd)
 			.setColorWriteMask(
 					vk::ColorComponentFlagBits::eR |
 					vk::ColorComponentFlagBits::eG |
@@ -421,7 +405,12 @@ GPlatesOpenGL::Stars::stream_stars(
 		// Randomising the distance to the stars gives a nicer 3D effect.
 		double radius = RADIUS + rand();
 
-		vertex_type vertex(x * radius, y * radius, z * radius);
+		const vertex_type vertex =
+		{
+			static_cast<float>(x * radius),
+			static_cast<float>(y * radius),
+			static_cast<float>(z * radius)
+		};
 		ok = ok && stream_points.add_vertex(vertex);
 
 		++points_generated;

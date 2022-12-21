@@ -27,7 +27,6 @@
 #include <boost/optional.hpp>
 
 #include "GLStreamPrimitives.h"
-#include "GLVertexUtils.h"
 #include "Vulkan.h"
 #include "VulkanBuffer.h"
 
@@ -104,7 +103,11 @@ namespace GPlatesOpenGL
 		// Ideally we'd have these points at infinity, but a large distance works well.
 		static const constexpr double RADIUS = 7.0f;
 
-		typedef GLVertexUtils::Vertex vertex_type;
+		struct Vertex
+		{
+			float x, y, z;
+		};
+		typedef Vertex vertex_type;
 		typedef std::uint32_t vertex_index_type;
 		typedef GLDynamicStreamPrimitives<vertex_type, vertex_index_type> stream_primitives_type;
 
@@ -164,10 +167,10 @@ namespace GPlatesOpenGL
 		VulkanBuffer d_vertex_buffer;
 		VulkanBuffer d_index_buffer;
 
-		unsigned int d_num_small_star_vertices;
-		unsigned int d_num_small_star_vertex_indices;
-		unsigned int d_num_large_star_vertices;
-		unsigned int d_num_large_star_vertex_indices;
+		unsigned int d_num_small_star_vertices = 0;
+		unsigned int d_num_small_star_vertex_indices = 0;
+		unsigned int d_num_large_star_vertices = 0;
+		unsigned int d_num_large_star_vertex_indices = 0;
 	};
 }
 

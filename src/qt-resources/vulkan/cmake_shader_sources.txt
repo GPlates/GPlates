@@ -4,5 +4,7 @@
 # These shader files may in turn #include ".glsl" files containing GLSL code (such as functions).
 # But those ".glsl" dependency files should not be listed here.
 #
+arrows.frag
+arrows.vert
 stars.frag
 stars.vert

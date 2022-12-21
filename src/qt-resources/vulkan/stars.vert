@@ -29,7 +29,7 @@ layout (push_constant) uniform PushConstants
     float point_size;
 };
 
-layout (location = 0) in vec4 position;
+layout (location = 0) in vec3 position;
 
 layout (location = 0) out VertexData
 {

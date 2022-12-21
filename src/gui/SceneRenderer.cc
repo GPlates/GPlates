@@ -84,6 +84,9 @@ GPlatesGui::SceneRenderer::initialise_vulkan_resources(
 	// Initialise the background stars.
 	d_stars.initialise_vulkan_resources(vulkan, default_render_pass, initialisation_command_buffer, initialisation_submit_fence);
 
+	// Initialise rendered geometry renderer.
+	d_rendered_geometry_renderer.initialise_vulkan_resources(vulkan, default_render_pass, initialisation_command_buffer, initialisation_submit_fence);
+
 #if 0
 	// Create the shader program that sorts and blends the list of fragments (per pixel) in depth order.
 	create_sort_and_blend_scene_fragments_shader_program(gl);
@@ -119,6 +122,9 @@ GPlatesGui::SceneRenderer::release_vulkan_resources(
 	// Destroy the shader program that sorts and blends the list of fragments (per pixel) in depth order..
 	d_sort_and_blend_scene_fragments_shader_program.reset();
 #endif
+
+	// Release the rendered geometry renderer.
+	d_rendered_geometry_renderer.release_vulkan_resources(vulkan);
 
 	// Release the background stars.
 	d_stars.release_vulkan_resources(vulkan);
@@ -372,6 +378,7 @@ GPlatesGui::SceneRenderer::render_scene(
 
 	const cache_handle_type frame_cache_handle = d_rendered_geometry_renderer.render(
 			vulkan,
+			default_render_pass_command_buffer,
 			view_projection,
 			scene_view.get_viewport_zoom().zoom_factor(),
 			// Render the globe or map (and its contents) depending on whether the globe or map is currently active...

@@ -17,10 +17,25 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <cmath>
+#include <cstddef>  // offsetof
+#include <cstring>
+#include <vector>
+
 #include "RenderedGeometryRenderer.h"
+
+#include "GLMatrix.h"
+#include "GLViewProjection.h"
+#include "VulkanException.h"
+#include "VulkanUtils.h"
+
+#include "global/GPlatesAssert.h"
+
+#include "maths/MathsUtils.h"
 
 #include "presentation/ViewState.h"
 
+#include "view-operations/RenderedArrow.h"
 #include "view-operations/RenderedGeometryCollection.h"
 #include "view-operations/RenderedGeometryLayer.h"
 
@@ -75,7 +90,8 @@ namespace GPlatesOpenGL
 GPlatesOpenGL::RenderedGeometryRenderer::RenderedGeometryRenderer(
 		GPlatesPresentation::ViewState &view_state) :
 	d_rendered_geometry_collection(view_state.get_rendered_geometry_collection()),
-	d_gl_visual_layers(GLVisualLayers::create(view_state.get_application_state()))
+	d_gl_visual_layers(GLVisualLayers::create(view_state.get_application_state())),
+	d_rendered_arrow_renderer(view_state.get_scene_lighting_parameters())
 {
 }
 
@@ -84,8 +100,11 @@ void
 GPlatesOpenGL::RenderedGeometryRenderer::initialise_vulkan_resources(
 		Vulkan &vulkan,
 		vk::RenderPass default_render_pass,
-		vk::CommandBuffer initialisation_command_buffer)
+		vk::CommandBuffer initialisation_command_buffer,
+		vk::Fence initialisation_submit_fence)
 {
+	d_rendered_arrow_renderer.initialise_vulkan_resources(
+			vulkan, default_render_pass, initialisation_command_buffer, initialisation_submit_fence);
 }
 
 
@@ -93,12 +112,14 @@ void
 GPlatesOpenGL::RenderedGeometryRenderer::release_vulkan_resources(
 		Vulkan &vulkan)
 {
+	d_rendered_arrow_renderer.release_vulkan_resources(vulkan);
 }
 
 
 GPlatesOpenGL::RenderedGeometryRenderer::cache_handle_type
 GPlatesOpenGL::RenderedGeometryRenderer::render(
 		Vulkan &vulkan,
+		vk::CommandBuffer command_buffer,
 		const GLViewProjection &view_projection,
 		const double &viewport_zoom_factor,
 		bool is_globe_active,
@@ -112,16 +133,34 @@ GPlatesOpenGL::RenderedGeometryRenderer::render(
 			is_globe_active,
 			improve_performance_reduce_quality_of_sub_surfaces_hint);
 
-	// Render the rendered geometry layers.
+	// Visit the rendered geometry layers.
 	d_rendered_geometry_collection.accept_visitor(*this);
 
+	// Render any arrows (each arrow is a 3D mesh).
+	d_rendered_arrow_renderer.render(vulkan, command_buffer, view_projection, is_globe_active);
+
 	// Get the cache handle for all the rendered geometry layers.
-	const cache_handle_type cache_handle = d_visitation_params->d_cache_handle;
+	const cache_handle_type cache_handle = d_visitation_params->cache_handle;
 
 	// These parameters are only used for the duration of this 'render()' method.
 	d_visitation_params = boost::none;
 
 	return cache_handle;
+}
+
+
+void
+GPlatesOpenGL::RenderedGeometryRenderer::visit_rendered_arrow(
+		const GPlatesViewOperations::RenderedArrow &rendered_arrow)
+{
+	d_rendered_arrow_renderer.add(
+			*d_visitation_params->vulkan,
+			GPlatesMaths::Vector3D(rendered_arrow.get_start_position().position_vector()),
+			rendered_arrow.get_vector(),
+			rendered_arrow.get_arrow_body_width(),
+			rendered_arrow.get_arrowhead_size(),
+			rendered_arrow.get_colour(),
+			d_visitation_params->inverse_viewport_zoom_factor);
 }
 
 
