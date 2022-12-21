@@ -29,6 +29,28 @@
 // Speed up compilation.
 #define VULKAN_HPP_NO_SPACESHIP_OPERATOR  // removes the spaceship operator on structures (available with C++20)
 #define VULKAN_HPP_NO_TO_STRING           // removes the various vk::to_string functions on enums and bitmasks
+
+#if defined(_WIN32)
+// Including "windows.h" before the Vulkan header appears to be necessary because "windows.h" defines
+// (indirectly) the macro MemoryBarrier that conflicts with vk::MemoryBarrier, and if that macro is defined
+// then "vulkan/vulkan.hpp" will un-define it, but if "windows.h" is included after "vulkan/vulkan.hpp" then
+// this won't happen and there'll be a conflict.
+//
+// Note: Defining VK_USE_PLATFORM_WIN32_KHR also results in "windows.h" getting included but
+//       doing that currently introduces other compiler errors in "vulkan/vulkan.hpp".
+//
+// However including "windows.h" currently generates a lot of extra compiler errors (and it's a fairly heavyweight header too).
+// So instead of including it, any code that encounters this error can un-define "MemoryBarrier" just before using vk::MemoryBarrier.
+// For example:
+//
+// #if defined(MemoryBarrier)
+// #  undef MemoryBarrier
+// #endif
+// vk::MemoryBarrier memory_barrier;
+//
+// TODO: Find a better solution. This is a bit hacky and error prone.
+#endif
+
 #include <vulkan/vulkan.hpp>
 
 

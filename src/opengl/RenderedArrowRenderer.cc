@@ -701,6 +701,9 @@ GPlatesOpenGL::RenderedArrowRenderer::load_arrow_mesh(
 			d_index_buffer.get_buffer(),
 			index_buffer_copy);
 
+#if defined(_WIN32) && defined(MemoryBarrier) // See "VulkanHpp.h" for why this is necessary.
+#	undef MemoryBarrier
+#endif
 	// Pipeline barrier to wait for staging transfer writes to be made available before using the vertex/index data.
 	vk::MemoryBarrier memory_barrier;
 	memory_barrier
