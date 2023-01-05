@@ -76,11 +76,19 @@ GPlatesOpenGL::RenderedArrowRenderer::release_vulkan_resources(
 	// Destroy the vertex/index/instance buffers.
 	VulkanBuffer::destroy(vma_allocator, d_vertex_buffer);
 	VulkanBuffer::destroy(vma_allocator, d_index_buffer);
-	for (unsigned int instance = 0; instance < Vulkan::NUM_ASYNC_FRAMES; ++instance)
+	for (auto &instance_buffers : d_async_instance_buffers)
 	{
-		VulkanBuffer::destroy(vma_allocator, d_instance_buffers[instance]);
-		d_instance_buffer_mapped_pointers[instance] = nullptr;
+		for (auto &instance_buffer : instance_buffers)
+		{
+			VulkanBuffer::destroy(vma_allocator, instance_buffer.buffer);
+		}
+		instance_buffers.clear();
 	}
+	for (auto &instance_buffer : d_available_instance_buffers)
+	{
+		VulkanBuffer::destroy(vma_allocator, instance_buffer.buffer);
+	}
+	d_available_instance_buffers.clear();
 
 	d_num_vertex_indices = 0;
 	d_num_arrows_to_render = 0;
@@ -168,14 +176,47 @@ GPlatesOpenGL::RenderedArrowRenderer::add(
 	arrow_instance.colour[2] = arrow_colour.green();
 	arrow_instance.colour[3] = arrow_colour.alpha();
 
-	// Copy the arrow instance data into the persistently-mapped instance buffer.
-	void *arrow_instance_buffer_mapped_pointer = d_instance_buffer_mapped_pointers[vulkan.get_frame_index()];
-	const std::uint32_t arrow_instance_index = d_num_arrows_to_render++;
+
+	// Instance buffers used for rendering the current frame.
+	auto &instance_buffers = d_async_instance_buffers[vulkan.get_frame_index()];
+
+	// If we're encountering a new frame then the resources used NUM_ASYNC_FRAMES frames ago are now available for re-use.
+	if (d_num_arrows_to_render == 0)
+	{
+		d_available_instance_buffers.insert(
+				d_available_instance_buffers.end(),
+				instance_buffers.begin(),
+				instance_buffers.end());
+		instance_buffers.clear();
+	}
+
+	// The arrow instance index into the current instance buffer.
+	const std::uint32_t instance_index_in_current_buffer = d_num_arrows_to_render % NUM_ARROWS_PER_INSTANCE_BUFFER;
+
+	// If we need to use a new instance buffer then get one that's available or create a new one.
+	if (instance_index_in_current_buffer == 0)
+	{
+		// Create new instance buffer if none currently available.
+		if (d_available_instance_buffers.empty())
+		{
+			d_available_instance_buffers.push_back(create_instance_buffer(vulkan));
+		}
+
+		// Pop available instance buffer and use for current frame.
+		instance_buffers.push_back(d_available_instance_buffers.back());
+		d_available_instance_buffers.pop_back();
+	}
+
+	// The instance buffer that we're currently rendering into.
+	MeshInstanceBuffer &instance_buffer = instance_buffers.back();
+	// Copy the arrow instance data into the current instance buffer.
 	std::memcpy(
-			// Pointer to current arrow instance within the buffer...
-			static_cast<std::uint8_t *>(arrow_instance_buffer_mapped_pointer) + arrow_instance_index * sizeof(MeshInstance),
+			// Pointer to current arrow instance within persistently-mapped buffer...
+			static_cast<std::uint8_t *>(instance_buffer.mapped_pointer) + instance_index_in_current_buffer * sizeof(MeshInstance),
 			&arrow_instance,
 			sizeof(MeshInstance));
+
+	++d_num_arrows_to_render;
 }
 
 
@@ -198,18 +239,6 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 	// Set viewport and scissor rects.
 	command_buffer.setViewport(0, view_projection.get_viewport().get_vulkan_viewport());
 	command_buffer.setScissor(0, view_projection.get_viewport().get_vulkan_rect_2D());
-
-	// Bind the vertex buffers.
-	vk::Buffer vertex_buffers[2] =
-	{
-		d_vertex_buffer.get_buffer(),
-		d_instance_buffers[vulkan.get_frame_index()].get_buffer()
-	};
-	vk::DeviceSize vertex_buffer_offsets[2] = { 0, 0 };
-	command_buffer.bindVertexBuffers(0, vertex_buffers, vertex_buffer_offsets);
-
-	// Bind the index buffer.
-	command_buffer.bindIndexBuffer(d_index_buffer.get_buffer(), vk::DeviceSize(0), vk::IndexType::eUint32);
 
 	//
 	// Push constants for arrows.
@@ -253,11 +282,37 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 			// Update all push constants...
 			0, sizeof(PushConstants), &push_constants);
 
-	// Draw the arrows.
-	//
-	// There's a single arrow mesh that gets instanced by the number of arrows.
-	// Each instance supplies an arrow position and direction in world space, a body/head width/length and a colour.
-	command_buffer.drawIndexed(d_num_vertex_indices, d_num_arrows_to_render, 0, 0, 0);
+	// Bind the arrow mesh vertex and index buffers.
+	command_buffer.bindVertexBuffers(0, d_vertex_buffer.get_buffer(), vk::DeviceSize(0));
+	command_buffer.bindIndexBuffer(d_index_buffer.get_buffer(), vk::DeviceSize(0), vk::IndexType::eUint32);
+
+	// Bind and draw the arrow instance buffers of the current frame.
+	auto &instance_buffers = d_async_instance_buffers[vulkan.get_frame_index()];
+	for (unsigned int instance_buffer_index = 0; instance_buffer_index < instance_buffers.size(); ++instance_buffer_index)
+	{
+		auto &instance_buffer = instance_buffers[instance_buffer_index];
+
+		// All instance buffers, except the last, render the full number of arrows that fit in an instance buffer.
+		const unsigned int num_arrows_in_instance_buffer = (instance_buffer_index == instance_buffers.size() - 1)
+				? (d_num_arrows_to_render % NUM_ARROWS_PER_INSTANCE_BUFFER)
+				: NUM_ARROWS_PER_INSTANCE_BUFFER;
+
+		// Bind arrow instance buffer.
+		command_buffer.bindVertexBuffers(1, instance_buffer.buffer.get_buffer(), vk::DeviceSize(0));
+
+		// Flush the mapped instance data (only happens if instance buffer is in *non-coherent* host-visible memory).
+		instance_buffer.buffer.flush_mapped_memory(
+				vulkan.get_vma_allocator(),
+				0,
+				num_arrows_in_instance_buffer * sizeof(MeshInstance),
+				GPLATES_EXCEPTION_SOURCE);
+
+		// Draw arrows in the instance buffer.
+		//
+		// There's a single arrow mesh that gets instanced by the number of arrows.
+		// Each instance supplies an arrow position and direction in world space, a body/head width/length and a colour.
+		command_buffer.drawIndexed(d_num_vertex_indices, num_arrows_in_instance_buffer, 0, 0, 0);
+	}
 
 	// Reset the number of arrows to render.
 	d_num_arrows_to_render = 0;
@@ -581,7 +636,7 @@ GPlatesOpenGL::RenderedArrowRenderer::load_arrow_mesh(
 		const std::vector<std::uint32_t> &vertex_indices)
 {
 	//
-	// Instance/vertex/index buffers.
+	// Vertex/index buffers.
 	//
 
 	// Vulkan memory allocator.
@@ -643,32 +698,6 @@ GPlatesOpenGL::RenderedArrowRenderer::load_arrow_mesh(
 	std::memcpy(staging_index_buffer_data, vertex_indices.data(), vertex_indices.size() * sizeof(std::uint32_t));
 	staging_index_buffer.flush_mapped_memory(vma_allocator, 0, VK_WHOLE_SIZE, GPLATES_EXCEPTION_SOURCE);
 	staging_index_buffer.unmap_memory(vma_allocator);
-
-
-	//
-	// Create dynamic instance buffers.
-	//
-	// These will be written to every frame (in alternatively fashion, for double-buffered asynchronous frame rendering).
-	//
-	buffer_create_info.setSize(NUM_ARROWS_PER_INSTANCE_BUFFER * sizeof(MeshInstance));
-	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eVertexBuffer);
-	// Instance buffer should be mappable (in host memory) and preferably also in device local memory.
-	allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;  // prefer device local
-	allocation_create_info.flags =
-			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | // host mappable
-			VMA_ALLOCATION_CREATE_MAPPED_BIT; // persistently mapped
-
-	// Create a buffer for each asynchronous frame.
-	for (unsigned int instance = 0; instance < Vulkan::NUM_ASYNC_FRAMES; ++instance)
-	{
-		// Create instance buffer.
-		d_instance_buffers[instance] = VulkanBuffer::create(vma_allocator, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
-
-		// Get persistently-mapped pointer to start of instance buffer.
-		VmaAllocationInfo allocation_info;
-		vmaGetAllocationInfo(vma_allocator, d_instance_buffers[instance].get_allocation(), &allocation_info);
-		d_instance_buffer_mapped_pointers[instance] = allocation_info.pMappedData;
-	}
 
 
 	//
@@ -736,4 +765,37 @@ GPlatesOpenGL::RenderedArrowRenderer::load_arrow_mesh(
 	// Destroy staging buffers now that device is no longer using them.
 	VulkanBuffer::destroy(vma_allocator, staging_vertex_buffer);
 	VulkanBuffer::destroy(vma_allocator, staging_index_buffer);
+}
+
+
+GPlatesOpenGL::RenderedArrowRenderer::MeshInstanceBuffer
+GPlatesOpenGL::RenderedArrowRenderer::create_instance_buffer(
+		Vulkan &vulkan)
+{
+	// Vulkan memory allocator.
+	VmaAllocator vma_allocator = vulkan.get_vma_allocator();
+
+	// Buffer parameters.
+	vk::BufferCreateInfo buffer_create_info;
+	buffer_create_info.setSharingMode(vk::SharingMode::eExclusive);
+	buffer_create_info.setSize(NUM_ARROWS_PER_INSTANCE_BUFFER * sizeof(MeshInstance));
+	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eVertexBuffer);
+
+	// Allocation parameters.
+	VmaAllocationCreateInfo allocation_create_info = {};
+	// Instance buffer should be mappable (in host memory) and preferably also in device local memory.
+	allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;  // prefer device local
+	allocation_create_info.flags =
+			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | // host mappable
+			VMA_ALLOCATION_CREATE_MAPPED_BIT; // persistently mapped
+
+	// Create instance buffer.
+	VulkanBuffer instance_buffer = VulkanBuffer::create(vma_allocator, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
+
+	// Get persistently-mapped pointer to start of instance buffer.
+	VmaAllocationInfo allocation_info;
+	vmaGetAllocationInfo(vma_allocator, instance_buffer.get_allocation(), &allocation_info);
+	void *instance_buffer_mapped_pointer = allocation_info.pMappedData;
+
+	return { instance_buffer, instance_buffer_mapped_pointer };
 }

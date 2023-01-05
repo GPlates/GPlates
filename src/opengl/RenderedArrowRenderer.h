@@ -170,6 +170,15 @@ namespace GPlatesOpenGL
 			float colour[4];  // arrow colour
 		};
 
+		struct MeshInstanceBuffer
+		{
+			//! Vertex buffer containing per-instance data.
+			VulkanBuffer buffer;
+
+			//! Persistently mapped pointer to the per-instance buffer.
+			void *mapped_pointer = nullptr;
+		};
+
 
 		void
 		create_graphics_pipeline(
@@ -188,6 +197,10 @@ namespace GPlatesOpenGL
 				vk::Fence initialisation_submit_fence,
 				const std::vector<MeshVertex> &vertices,
 				const std::vector<std::uint32_t> &vertex_indices);
+
+		MeshInstanceBuffer
+		create_instance_buffer(
+				Vulkan &vulkan);
 
 
 		/**
@@ -230,13 +243,21 @@ namespace GPlatesOpenGL
 		VulkanBuffer d_vertex_buffer;
 		//! Index buffer (static buffer).
 		VulkanBuffer d_index_buffer;
-		//! Vertex buffer containing per-instance data (dynamic buffers).
-		VulkanBuffer d_instance_buffers[Vulkan::NUM_ASYNC_FRAMES];
-		//! Persistently mapped pointers to the per-instance buffers.
-		void *d_instance_buffer_mapped_pointers[Vulkan::NUM_ASYNC_FRAMES] = {};
 
 		//! Number of vertex indices for the single arrow mesh.
 		std::uint32_t d_num_vertex_indices = 0;
+
+		/**
+		 * Instance buffers that are available for use (not currently being used).
+		 */
+		std::vector<MeshInstanceBuffer> d_available_instance_buffers;
+
+		/**
+		 * Instance buffer currently being used.
+		 *
+		 * Note: Each asynchronous frame can render one or more instance buffers.
+		 */
+		std::vector<MeshInstanceBuffer> d_async_instance_buffers[Vulkan::NUM_ASYNC_FRAMES];
 
 		/**
 		 * Number of arrows to render.
