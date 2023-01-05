@@ -308,7 +308,28 @@ GPlatesOpenGL::VulkanDevice::select_physical_device(
 #if !defined(GPLATES_DEBUG)
 	d_physical_device_features.setRobustBufferAccess(false);
 #endif
+
+	// Device memory properties.
 	d_physical_device_memory_properties = d_physical_device.getMemoryProperties();
+#if defined(GPLATES_DEBUG)
+	qDebug() << "Vulkan device memory heaps:";
+	for (unsigned int mem_heap_index = 0; mem_heap_index < d_physical_device_memory_properties.memoryHeapCount; ++mem_heap_index)
+	{
+		qDebug() << "    Heap" << mem_heap_index
+				<< ((d_physical_device_memory_properties.memoryHeaps[mem_heap_index].flags & vk::MemoryHeapFlagBits::eDeviceLocal) ? ": DeviceLocal" : "");
+		qDebug() << "        Size ="
+				<< static_cast<double>(d_physical_device_memory_properties.memoryHeaps[mem_heap_index].size) / (1024*1024) << "MB";
+		for (unsigned int mem_type_index = 0; mem_type_index < d_physical_device_memory_properties.memoryTypeCount; ++mem_type_index)
+		{
+			if (mem_heap_index == d_physical_device_memory_properties.memoryTypes[mem_type_index].heapIndex)
+			{
+				qDebug().noquote() << QString("        Type %1:").arg(mem_type_index)
+						<< QString::fromStdString(vk::to_string(d_physical_device_memory_properties.memoryTypes[mem_type_index].propertyFlags));
+			}
+		}
+	}
+#endif
+
 	d_graphics_and_compute_queue_family = selected_physical_device_info->graphics_and_compute_queue_family;
 
 	// If a vk::SurfaceKHR was provided then also return the present queue family to the caller.
