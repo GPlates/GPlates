@@ -93,21 +93,21 @@ GPlatesOpenGL::Stars::release_vulkan_resources(
 void
 GPlatesOpenGL::Stars::render(
 		Vulkan &vulkan,
-		vk::CommandBuffer command_buffer,
+		vk::CommandBuffer default_render_pass_command_buffer,
 		const GLViewProjection &view_projection,
 		int device_pixel_ratio,
 		const double &radius_multiplier)
 {
 	// Bind the graphics pipeline.
-	command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, d_graphics_pipeline);
+	default_render_pass_command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, d_graphics_pipeline);
 
 	// Set viewport and scissor rects.
-	command_buffer.setViewport(0, view_projection.get_viewport().get_vulkan_viewport());
-	command_buffer.setScissor(0, view_projection.get_viewport().get_vulkan_rect_2D());
+	default_render_pass_command_buffer.setViewport(0, view_projection.get_viewport().get_vulkan_viewport());
+	default_render_pass_command_buffer.setScissor(0, view_projection.get_viewport().get_vulkan_rect_2D());
 
 	// Bind vertex/index buffers.
-	command_buffer.bindVertexBuffers(0, d_vertex_buffer.get_buffer(), vk::DeviceSize(0));
-	command_buffer.bindIndexBuffer(d_index_buffer.get_buffer(), vk::DeviceSize(0), vk::IndexType::eUint32);
+	default_render_pass_command_buffer.bindVertexBuffers(0, d_vertex_buffer.get_buffer(), vk::DeviceSize(0));
+	default_render_pass_command_buffer.bindIndexBuffer(d_index_buffer.get_buffer(), vk::DeviceSize(0), vk::IndexType::eUint32);
 
 	//
 	// layout (push_constant) uniform PushConstants
@@ -149,14 +149,14 @@ GPlatesOpenGL::Stars::render(
 	push_constants.point_size = SMALL_STARS_SIZE * device_pixel_ratio;
 
 	// Set the push constants for the small stars.
-	command_buffer.pushConstants(
+	default_render_pass_command_buffer.pushConstants(
 			d_pipeline_layout,
 			vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
 			// Update all push constants...
 			0, sizeof(PushConstants), &push_constants);
 
 	// Draw the small stars.
-	command_buffer.drawIndexed(d_num_small_star_vertex_indices, 1, 0, 0, 0);
+	default_render_pass_command_buffer.drawIndexed(d_num_small_star_vertex_indices, 1, 0, 0, 0);
 
 	// Large stars point size.
 	//
@@ -166,7 +166,7 @@ GPlatesOpenGL::Stars::render(
 	push_constants.point_size = LARGE_STARS_SIZE * device_pixel_ratio;
 
 	// Update the push constants for the large stars.
-	command_buffer.pushConstants(
+	default_render_pass_command_buffer.pushConstants(
 			d_pipeline_layout,
 			vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
 			// Update only the point size...
@@ -174,7 +174,7 @@ GPlatesOpenGL::Stars::render(
 
 	// Draw the large stars.
 	// Their vertex indices (in the sole index buffer) come after the small star vertex indices.
-	command_buffer.drawIndexed(d_num_large_star_vertex_indices, 1, d_num_small_star_vertex_indices, 0, 0);
+	default_render_pass_command_buffer.drawIndexed(d_num_large_star_vertex_indices, 1, d_num_small_star_vertex_indices, 0, 0);
 }
 
 

@@ -119,7 +119,8 @@ GPlatesOpenGL::RenderedGeometryRenderer::release_vulkan_resources(
 GPlatesOpenGL::RenderedGeometryRenderer::cache_handle_type
 GPlatesOpenGL::RenderedGeometryRenderer::render(
 		Vulkan &vulkan,
-		vk::CommandBuffer command_buffer,
+		vk::CommandBuffer preprocess_command_buffer,
+		vk::CommandBuffer default_render_pass_command_buffer,
 		const GLViewProjection &view_projection,
 		const double &viewport_zoom_factor,
 		bool is_globe_active,
@@ -137,7 +138,12 @@ GPlatesOpenGL::RenderedGeometryRenderer::render(
 	d_rendered_geometry_collection.accept_visitor(*this);
 
 	// Render any arrows (each arrow is a 3D mesh).
-	d_rendered_arrow_renderer.render(vulkan, command_buffer, view_projection, is_globe_active);
+	d_rendered_arrow_renderer.render(
+			vulkan,
+			preprocess_command_buffer,
+			default_render_pass_command_buffer,
+			view_projection,
+			is_globe_active);
 
 	// Get the cache handle for all the rendered geometry layers.
 	const cache_handle_type cache_handle = d_visitation_params->cache_handle;

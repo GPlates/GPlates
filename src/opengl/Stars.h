@@ -86,7 +86,7 @@ namespace GPlatesOpenGL
 		void
 		render(
 				Vulkan &vulkan,
-				vk::CommandBuffer command_buffer,
+				vk::CommandBuffer default_render_pass_command_buffer,
 				const GLViewProjection &view_projection,
 				int device_pixel_ratio,
 				const double &radius_multiplier = 1.0);

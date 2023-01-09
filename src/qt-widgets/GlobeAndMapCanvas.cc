@@ -199,15 +199,34 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initialise_vulkan_resources(
 	d_graphics_and_compute_command_pool = vulkan.get_device().createCommandPool(graphics_and_compute_command_pool_create_info);
 
 	//
+	// Allocate a command buffer, for each asynchronous frame, for recording preprocessing tasks that will be
+	// submitted prior to the default render pass.
+	//
+	vk::CommandBufferAllocateInfo preprocess_command_buffer_allocate_info;
+	preprocess_command_buffer_allocate_info
+			.setCommandPool(d_graphics_and_compute_command_pool)
+			.setLevel(vk::CommandBufferLevel::ePrimary)
+			.setCommandBufferCount(GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES);
+	const std::vector<vk::CommandBuffer> preprocess_command_buffers =
+			vulkan.get_device().allocateCommandBuffers(preprocess_command_buffer_allocate_info);
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			preprocess_command_buffers.size() == GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES,
+			GPLATES_ASSERTION_SOURCE);
+	for (unsigned int frame_index = 0; frame_index < GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES; ++frame_index)
+	{
+		d_preprocess_command_buffers[frame_index] = preprocess_command_buffers[frame_index];
+	}
+
+	//
 	// Allocate a command buffer, for each asynchronous frame, for recording within the default render pass.
 	//
-	vk::CommandBufferAllocateInfo graphics_and_compute_command_buffer_allocate_info;
-	graphics_and_compute_command_buffer_allocate_info
+	vk::CommandBufferAllocateInfo default_render_pass_command_buffer_allocate_info;
+	default_render_pass_command_buffer_allocate_info
 			.setCommandPool(d_graphics_and_compute_command_pool)
 			.setLevel(vk::CommandBufferLevel::ePrimary)
 			.setCommandBufferCount(GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES);
 	const std::vector<vk::CommandBuffer> default_render_pass_command_buffers =
-			vulkan.get_device().allocateCommandBuffers(graphics_and_compute_command_buffer_allocate_info);
+			vulkan.get_device().allocateCommandBuffers(default_render_pass_command_buffer_allocate_info);
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 			default_render_pass_command_buffers.size() == GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES,
 			GPLATES_ASSERTION_SOURCE);
@@ -362,6 +381,16 @@ GPlatesQtWidgets::GlobeAndMapCanvas::release_vulkan_resources(
 		d_default_render_pass_command_buffers[frame_index] = nullptr;
 	}
 
+	// Free the preprocess command buffers.
+	for (unsigned int frame_index = 0; frame_index < GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES; ++frame_index)
+	{
+		// Free command buffer.
+		vulkan.get_device().freeCommandBuffers(
+				d_graphics_and_compute_command_pool,
+				d_preprocess_command_buffers[frame_index]);
+		d_preprocess_command_buffers[frame_index] = nullptr;
+	}
+
 	// Destroy the graphics+compute command pool.
 	vulkan.get_device().destroyCommandPool(d_graphics_and_compute_command_pool);
 	d_graphics_and_compute_command_pool = nullptr;
@@ -426,6 +455,13 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 	//
 	// Vulkan resources associated with the current asynchronous frame.
 	//
+
+	// Preprocess command buffer associated with the current frame.
+	//
+	// Note: The preprocess command buffer will be submitted before the default render pass command buffer.
+	//       But users are responsible for any needed synchronisation between commands across the two command buffers (eg, using pipeline barriers).
+	//       And both command buffers will be submitted to the same queue (the graphics+compute queue).
+	vk::CommandBuffer preprocess_command_buffer = d_preprocess_command_buffers[d_vulkan_frame.get_frame_index()];
 
 	// Default render pass command buffer associated with the current frame.
 	//
@@ -519,13 +555,14 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 	// Render the scene.
 	//
 
-	// Begin recording into the command buffer for the default render pass (rendering into swapchain framebuffer).
+	// Begin recording into the command buffers for preprocessing and the default render pass (rendering into swapchain framebuffer).
 	//
-	vk::CommandBufferBeginInfo swapchain_command_buffer_begin_info;
+	vk::CommandBufferBeginInfo command_buffer_begin_info;
 	// Command buffer will only be submitted once.
-	swapchain_command_buffer_begin_info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+	command_buffer_begin_info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 	// Begin implicitly resets the command buffer (because command pool was created with 'eResetCommandBuffer' flag).
-	swapchain_command_buffer.begin(swapchain_command_buffer_begin_info);
+	preprocess_command_buffer.begin(command_buffer_begin_info);
+	swapchain_command_buffer.begin(command_buffer_begin_info);
 
 	//
 	// Default render pass (for rendering to default framebuffer).
@@ -558,7 +595,14 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 	//
 	// This records Vulkan commands into the swapchain command buffer, and also into other command buffers
 	// (eg, that render into textures that are in turn used to render into the swapchain framebuffer).
-	d_scene_renderer->render(vulkan, swapchain_command_buffer, *d_scene_overlays, *d_scene_view, viewport, devicePixelRatio());
+	d_scene_renderer->render(
+			vulkan,
+			preprocess_command_buffer,
+			swapchain_command_buffer,
+			*d_scene_overlays,
+			*d_scene_view,
+			viewport,
+			devicePixelRatio());
 
 	// End default render pass to the swapchain framebuffer.
 	//
@@ -593,8 +637,9 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 				graphics_compute_swapchain_release_image_barrier);
 	}
 
-	// End recording into the command buffer for the default render pass (rendering into swapchain framebuffer).
+	// End recording into the command buffers for preprocessing and the default render pass (rendering into swapchain framebuffer).
 	//
+	preprocess_command_buffer.end();
 	swapchain_command_buffer.end();
 
 
@@ -603,18 +648,25 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 	//
 
 	// Two batches submitted in the following order:
-	//   1) The non-swapchain command buffers (eg, rendering into textures).
+	//   1) The non-swapchain command buffers (eg, preprocessing such as rendering into textures).
 	//   2) The swapchain command buffer (eg, using textures from (1) when rendering into the swapchain image).
 	// Only submission (2) needs to wait for the acquired image, whereas submission (1) can happen before that.
 	const std::uint32_t num_graphics_and_compute_submissions = 2;
 	vk::SubmitInfo graphics_and_compute_submit_infos[num_graphics_and_compute_submissions];
-	vk::SubmitInfo &swapchain_command_buffer_submit_info = graphics_and_compute_submit_infos[1];
+
+	// The preprocess command buffer submission batch happens first.
+	//
+	// This batch does *not* write to the swapchain image.
+	// And so it does *not* need to wait until the swapchain image is ready to render into.
+	vk::SubmitInfo &preprocess_command_buffer_submit_info = graphics_and_compute_submit_infos[0];
+	preprocess_command_buffer_submit_info.setCommandBuffers(preprocess_command_buffer);
 
 	// The swapchain command buffer submission batch happens next.
 	//
 	// This is the only batch that writes to the swapchain image.
 	// And so it must not write until the swapchain image is ready to render into.
-
+	vk::SubmitInfo &swapchain_command_buffer_submit_info = graphics_and_compute_submit_infos[1];
+	//
 	// This should be the same as the srcStageMask in the render pass subpass dependency in order to form a dependency *chain*.
 	const vk::PipelineStageFlags swapchain_command_buffer_wait_dst_stage = vk::PipelineStageFlagBits::eColorAttachmentOutput;
 	swapchain_command_buffer_submit_info

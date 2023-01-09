@@ -95,7 +95,8 @@ namespace GPlatesOpenGL
 		cache_handle_type
 		render(
 				Vulkan &vulkan,
-				vk::CommandBuffer command_buffer,
+				vk::CommandBuffer preprocess_command_buffer,
+				vk::CommandBuffer default_render_pass_command_buffer,
 				const GLViewProjection &view_projection,
 				const double &viewport_zoom_factor,
 				bool is_globe_active,

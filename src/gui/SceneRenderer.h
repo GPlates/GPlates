@@ -112,6 +112,7 @@ namespace GPlatesGui
 		void
 		render(
 				GPlatesOpenGL::Vulkan &vulkan,
+				vk::CommandBuffer preprocess_command_buffer,
 				vk::CommandBuffer default_render_pass_command_buffer,
 				SceneOverlays &scene_overlays,
 				const SceneView &scene_view,
@@ -263,6 +264,7 @@ namespace GPlatesGui
 		cache_handle_type
 		render_scene(
 				GPlatesOpenGL::Vulkan &vulkan,
+				vk::CommandBuffer preprocess_command_buffer,
 				vk::CommandBuffer default_render_pass_command_buffer,
 				SceneOverlays &scene_overlays,
 				const SceneView &scene_view,

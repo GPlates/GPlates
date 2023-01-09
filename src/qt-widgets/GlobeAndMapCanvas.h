@@ -452,6 +452,11 @@ namespace GPlatesQtWidgets
 		vk::CommandPool d_graphics_and_compute_command_pool;
 
 		/**
+		 * Vulkan command buffer for recording preprocessing tasks that will be submitted prior to the default render pass.
+		 */
+		vk::CommandBuffer d_preprocess_command_buffers[GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES];
+
+		/**
 		 * Vulkan command buffer for recording within default render pass.
 		 */
 		vk::CommandBuffer d_default_render_pass_command_buffers[GPlatesOpenGL::Vulkan::NUM_ASYNC_FRAMES];

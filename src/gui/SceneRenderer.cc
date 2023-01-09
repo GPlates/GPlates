@@ -134,6 +134,7 @@ GPlatesGui::SceneRenderer::release_vulkan_resources(
 void
 GPlatesGui::SceneRenderer::render(
 		GPlatesOpenGL::Vulkan &vulkan,
+		vk::CommandBuffer preprocess_command_buffer,
 		vk::CommandBuffer default_render_pass_command_buffer,
 		SceneOverlays &scene_overlays,
 		const SceneView &scene_view,
@@ -152,6 +153,7 @@ GPlatesGui::SceneRenderer::render(
 	// of overlap that we want to reuse (and not recalculate).
 	d_gl_frame_cache_handle = render_scene(
 			vulkan,
+			preprocess_command_buffer,
 			default_render_pass_command_buffer,
 			scene_overlays,
 			scene_view,
@@ -278,13 +280,15 @@ GPlatesGui::SceneRenderer::render_scene_tile_to_image(
 
 	vk::Fence frame_rendering_finished_fence = vulkan.next_frame();
 	// TODO: Use 'vulkan_frame.get_frame_index()' to choose between NUM_ASYNC_FRAMES command buffers passed by caller.
+	vk::CommandBuffer preprocess_command_buffer;
 	vk::CommandBuffer default_render_pass_command_buffer;
 
 	//
 	// Render the scene.
 	//
 	const cache_handle_type tile_cache_handle = render_scene(
-			vulkan, default_render_pass_command_buffer,
+			vulkan,
+			default_render_pass_command_buffer, preprocess_command_buffer,
 			scene_overlays, scene_view,
 			image_tile_view_projection,
 			image.devicePixelRatio());
@@ -314,6 +318,7 @@ GPlatesGui::SceneRenderer::render_scene_tile_to_image(
 GPlatesGui::SceneRenderer::cache_handle_type
 GPlatesGui::SceneRenderer::render_scene(
 		GPlatesOpenGL::Vulkan &vulkan,
+		vk::CommandBuffer preprocess_command_buffer,
 		vk::CommandBuffer default_render_pass_command_buffer,
 		SceneOverlays &scene_overlays,
 		const SceneView &scene_view,
@@ -378,6 +383,7 @@ GPlatesGui::SceneRenderer::render_scene(
 
 	const cache_handle_type frame_cache_handle = d_rendered_geometry_renderer.render(
 			vulkan,
+			preprocess_command_buffer,
 			default_render_pass_command_buffer,
 			view_projection,
 			scene_view.get_viewport_zoom().zoom_factor(),
