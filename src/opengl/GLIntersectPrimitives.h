@@ -28,7 +28,6 @@
 #define GPLATES_OPENGL_GLINTERSECTPRIMITIVES_H
 
 #include <boost/optional.hpp>
-#include <qopengl.h>  // For OpenGL constants and typedefs.
 
 #include "maths/GreatCircleArc.h"
 #include "maths/MultiPointOnSphere.h"
@@ -234,11 +233,18 @@ namespace GPlatesOpenGL
 			}
 
 			/**
-			 * Returns the plane coefficients a, b, c, d as an array of GLfloat.
+			 * Returns the *normalized* plane coefficients a, b, c, d as an array of float.
 			 */
 			void
 			get_float_plane(
-					GLfloat float_plane[4]) const;
+					float float_plane[4]) const;
+
+			/**
+			 * Returns the *un-normalized* plane coefficients a, b, c, d as an array of float.
+			 */
+			void
+			get_float_plane_unnormalised(
+					float float_plane[4]) const;
 
 		private:
 

@@ -95,7 +95,21 @@ GPlatesOpenGL::GLIntersect::Plane::classify_point(
 
 void
 GPlatesOpenGL::GLIntersect::Plane::get_float_plane(
-		GLfloat float_plane[4]) const
+		float float_plane[4]) const
+{
+	const GPlatesMaths::real_t inv_magnitude_normal = get_inv_magnitude_normal();
+
+	float_plane[0] = inv_magnitude_normal.dval() * d_normal.x().dval();
+	float_plane[1] = inv_magnitude_normal.dval() * d_normal.y().dval();
+	float_plane[2] = inv_magnitude_normal.dval() * d_normal.z().dval();
+
+	float_plane[3] = inv_magnitude_normal.dval() * d_signed_distance_to_origin_unnormalised.dval();
+}
+
+
+void
+GPlatesOpenGL::GLIntersect::Plane::get_float_plane_unnormalised(
+		float float_plane[4]) const
 {
 	float_plane[0] = d_normal.x().dval();
 	float_plane[1] = d_normal.y().dval();

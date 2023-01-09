@@ -409,7 +409,7 @@ GPlatesGui::SphericalGrid::paint(
 	// in a second pass and finally the front of the globe in a third pass.
 	gl.Enable(GL_CLIP_DISTANCE0);
 	GLfloat globe_horizon_float_plane[4];
-	globe_horizon_plane.get_float_plane(globe_horizon_float_plane);
+	globe_horizon_plane.get_float_plane_unnormalised(globe_horizon_float_plane);
 	gl.Uniform4fv(
 			d_program->get_uniform_location(gl, "globe_horizon_plane"),
 			1, globe_horizon_float_plane);

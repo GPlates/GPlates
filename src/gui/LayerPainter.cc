@@ -906,7 +906,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_point_line_polygon_stat
 		// in a second pass and finally the front of the globe in a third pass.
 		gl.Enable(GL_CLIP_DISTANCE0);
 		GLfloat globe_horizon_float_plane[4];
-		globe_view_horizon_plane->get_float_plane(globe_horizon_float_plane);
+		globe_view_horizon_plane->get_float_plane_unnormalised(globe_horizon_float_plane);
 		gl.Uniform4fv(
 				render_point_line_polygon_program->get_uniform_location(gl, "globe_view_horizon_plane"),
 				1, globe_horizon_float_plane);
@@ -992,7 +992,7 @@ GPlatesGui::LayerPainter::PointLinePolygonDrawables::set_axially_symmetric_mesh_
 		// in a second pass and finally the front of the globe in a third pass.
 		gl.Enable(GL_CLIP_DISTANCE0);
 		GLfloat globe_horizon_float_plane[4];
-		globe_view_horizon_plane->get_float_plane(globe_horizon_float_plane);
+		globe_view_horizon_plane->get_float_plane_unnormalised(globe_horizon_float_plane);
 		gl.Uniform4fv(
 				render_axially_symmetric_mesh_program->get_uniform_location(gl, "globe_view_horizon_plane"),
 				1, globe_horizon_float_plane);
