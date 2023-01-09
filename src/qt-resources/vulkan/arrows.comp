@@ -1,0 +1,143 @@
+/**
+ * Copyright (C) 2022 The University of Sydney, Australia
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+//
+// Culls arrows outside the view frustum.
+//
+
+layout (push_constant) uniform PushConstants
+{
+    vec4 frustum_planes[6];
+    uint num_input_arrow_instances;
+};
+
+struct ArrowInstance
+{
+    // Position (x, y, z) in world space of base of arrow
+    float world_space_start_position[3];
+    // World-space frame of reference of arrow instance.
+    float world_space_x_axis[3];
+    float world_space_y_axis[3];
+    float world_space_z_axis[3];  // direction arrow is pointing
+    // Arrow's body/head width/length.
+    float arrow_body_width;
+    float arrowhead_width;
+    float arrow_body_length;
+    float arrowhead_length;
+    // Arrow colour.
+    float colour[4];
+};
+
+layout (set = 0, binding = 0) readonly buffer InputArrowInstances
+{
+    ArrowInstance instances[];
+} input_arrow_instances;
+
+layout (set = 0, binding = 1) writeonly buffer OutputArrowInstances
+{
+    ArrowInstance instances[];
+} output_arrow_instances;
+
+// Same layout as VkDrawIndexedIndirectCommand
+struct IndexedIndirectCommand
+{
+    uint indexCount;
+    uint instanceCount;
+    uint firstIndex;
+    uint vertexOffset;
+    uint firstInstance;
+};
+
+layout (set = 0, binding = 2) buffer IndirectDraw
+{
+    IndexedIndirectCommand command;
+} indirect_draw;
+
+layout (local_size_x_id = 1) in;  // Set 'local_size_x' using the Vulkan API
+
+
+/*
+ * Returns true if sphere intersects frustum.
+ *
+ * This test is conservative, so sphere can be outside frustum and still return true.
+ */
+bool
+sphere_intersects_frustum(
+        vec3 sphere_centre,
+        float sphere_radius)
+{
+    for (int i = 0; i < 6; i++)
+    {
+        if (dot(vec4(sphere_centre, 1.0), frustum_planes[i]) + sphere_radius < 0.0)
+        {
+            // Sphere is outside a single frustum plane.
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void
+get_arrow_bounding_sphere(
+        ArrowInstance arrow_instance,
+        out vec3 arrow_bounding_sphere_centre,
+        out float arrow_bounding_sphere_radius)
+{
+    // Middle of arrow is half the total length (arrod body length plus arrowhead length).
+    arrow_bounding_sphere_radius = 0.5 * (arrow_instance.arrow_body_length + arrow_instance.arrowhead_length);
+
+    // Bounding sphere centre is halfway along length of arrow in direction of arrow starting from arrow base.
+    vec3 arrow_start_position = vec3(
+            arrow_instance.world_space_start_position[0],
+            arrow_instance.world_space_start_position[1],
+            arrow_instance.world_space_start_position[2]);
+    vec3 arrow_direction = vec3(
+            arrow_instance.world_space_z_axis[0],
+            arrow_instance.world_space_z_axis[1],
+            arrow_instance.world_space_z_axis[2]);
+    arrow_bounding_sphere_centre = arrow_start_position + arrow_bounding_sphere_radius * arrow_direction;
+}
+
+
+void main()
+{
+    uint input_arrow_instance_index = gl_GlobalInvocationID.x;
+
+    if (input_arrow_instance_index < num_input_arrow_instances)
+    {
+        // Get the bounding sphere of the arrow instance (in world space).
+        vec3 arrow_bounding_sphere_centre;
+        float arrow_bounding_sphere_radius;
+        get_arrow_bounding_sphere(
+                input_arrow_instances.instances[input_arrow_instance_index],
+                arrow_bounding_sphere_centre,
+                arrow_bounding_sphere_radius);
+
+        // See if arrow instance is visible (in view frustum).
+        if (sphere_intersects_frustum(arrow_bounding_sphere_centre, arrow_bounding_sphere_radius))
+        {
+            // Increment output arrow instance count.
+            uint output_arrow_instance_index = atomicAdd(indirect_draw.command.instanceCount, 1);
+
+            // Copy arrow instance to the output buffer.
+            output_arrow_instances.instances[output_arrow_instance_index] = input_arrow_instances.instances[input_arrow_instance_index];
+        }
+    }
+}

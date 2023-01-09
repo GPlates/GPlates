@@ -24,11 +24,13 @@
 
 #include "RenderedArrowRenderer.h"
 
+#include "GLFrustum.h"
 #include "GLMatrix.h"
 #include "GLViewProjection.h"
 #include "VulkanException.h"
 #include "VulkanUtils.h"
 
+#include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
 #include "gui/SceneLightingParameters.h"
@@ -55,7 +57,10 @@ GPlatesOpenGL::RenderedArrowRenderer::initialise_vulkan_resources(
 	// Add this scope to the call stack trace printed if exception thrown in this scope.
 	TRACK_CALL_STACK();
 
-	// Create the graphics pipeline.
+	// Create the compute pipeline (to cull arrows outside the view frustum prior to rendering).
+	create_compute_pipeline(vulkan);
+
+	// Create the graphics pipeline (to render arrows frustum culled by the compute shader).
 	create_graphics_pipeline(vulkan, default_render_pass);
 
 	// Create the arrow mesh and load it into the vertex/index buffers.
@@ -76,26 +81,31 @@ GPlatesOpenGL::RenderedArrowRenderer::release_vulkan_resources(
 	// Destroy the vertex/index/instance buffers.
 	VulkanBuffer::destroy(vma_allocator, d_vertex_buffer);
 	VulkanBuffer::destroy(vma_allocator, d_index_buffer);
-	for (auto &instance_buffers : d_async_instance_buffers)
+	for (auto &instance_resources : d_async_instance_resources)
 	{
-		for (auto &instance_buffer : instance_buffers)
+		for (auto &instance_resource : instance_resources)
 		{
-			VulkanBuffer::destroy(vma_allocator, instance_buffer.buffer);
+			instance_resource.destroy(vulkan);
 		}
-		instance_buffers.clear();
+		instance_resources.clear();
 	}
-	for (auto &instance_buffer : d_available_instance_buffers)
+	for (auto &instance_resource : d_available_instance_resources)
 	{
-		VulkanBuffer::destroy(vma_allocator, instance_buffer.buffer);
+		instance_resource.destroy(vulkan);
 	}
-	d_available_instance_buffers.clear();
+	d_available_instance_resources.clear();
 
 	d_num_vertex_indices = 0;
 	d_num_arrows_to_render = 0;
 
-	// Destroy the pipeline layout and graphics pipeline.
-	vulkan.get_device().destroyPipelineLayout(d_pipeline_layout);
+	// Destroy the graphics pipeline layout and pipeline.
 	vulkan.get_device().destroyPipeline(d_graphics_pipeline);
+	vulkan.get_device().destroyPipelineLayout(d_graphics_pipeline_layout);
+
+	// Destroy the compute pipeline layout and pipeline.
+	vulkan.get_device().destroyPipeline(d_compute_pipeline);
+	vulkan.get_device().destroyPipelineLayout(d_compute_pipeline_layout);
+	vulkan.get_device().destroyDescriptorSetLayout(d_compute_descriptor_set_layout);
 }
 
 
@@ -172,22 +182,22 @@ GPlatesOpenGL::RenderedArrowRenderer::add(
 	arrow_instance.world_space_z_axis[2] = arrow_z_axis.z().dval();
 	// Copy arrow colour into instance data.
 	arrow_instance.colour[0] = arrow_colour.red();
-	arrow_instance.colour[1] = arrow_colour.blue();
-	arrow_instance.colour[2] = arrow_colour.green();
+	arrow_instance.colour[1] = arrow_colour.green();
+	arrow_instance.colour[2] = arrow_colour.blue();
 	arrow_instance.colour[3] = arrow_colour.alpha();
 
 
-	// Instance buffers used for rendering the current frame.
-	auto &instance_buffers = d_async_instance_buffers[vulkan.get_frame_index()];
+	// Instance resources used for rendering the current frame.
+	auto &instance_resources = d_async_instance_resources[vulkan.get_frame_index()];
 
 	// If we're encountering a new frame then the resources used NUM_ASYNC_FRAMES frames ago are now available for re-use.
 	if (d_num_arrows_to_render == 0)
 	{
-		d_available_instance_buffers.insert(
-				d_available_instance_buffers.end(),
-				instance_buffers.begin(),
-				instance_buffers.end());
-		instance_buffers.clear();
+		d_available_instance_resources.insert(
+				d_available_instance_resources.end(),
+				instance_resources.begin(),
+				instance_resources.end());
+		instance_resources.clear();
 	}
 
 	// The arrow instance index into the current instance buffer.
@@ -196,23 +206,23 @@ GPlatesOpenGL::RenderedArrowRenderer::add(
 	// If we need to use a new instance buffer then get one that's available or create a new one.
 	if (instance_index_in_current_buffer == 0)
 	{
-		// Create new instance buffer if none currently available.
-		if (d_available_instance_buffers.empty())
+		// Create a new instance resource if none currently available.
+		if (d_available_instance_resources.empty())
 		{
-			d_available_instance_buffers.push_back(create_instance_buffer(vulkan));
+			d_available_instance_resources.push_back(create_instance_resource(vulkan));
 		}
 
-		// Pop available instance buffer and use for current frame.
-		instance_buffers.push_back(d_available_instance_buffers.back());
-		d_available_instance_buffers.pop_back();
+		// Pop available instance resources and use for current frame.
+		instance_resources.push_back(d_available_instance_resources.back());
+		d_available_instance_resources.pop_back();
 	}
 
-	// The instance buffer that we're currently rendering into.
-	MeshInstanceBuffer &instance_buffer = instance_buffers.back();
+	// The instance resource that we're currently rendering with.
+	InstanceResource &instance_resource = instance_resources.back();
 	// Copy the arrow instance data into the current instance buffer.
 	std::memcpy(
 			// Pointer to current arrow instance within persistently-mapped buffer...
-			static_cast<std::uint8_t *>(instance_buffer.mapped_pointer) + instance_index_in_current_buffer * sizeof(MeshInstance),
+			static_cast<std::uint8_t *>(instance_resource.mapped_pointer) + instance_index_in_current_buffer * sizeof(MeshInstance),
 			&arrow_instance,
 			sizeof(MeshInstance));
 
@@ -223,7 +233,8 @@ GPlatesOpenGL::RenderedArrowRenderer::add(
 void
 GPlatesOpenGL::RenderedArrowRenderer::render(
 		Vulkan &vulkan,
-		vk::CommandBuffer command_buffer,
+		vk::CommandBuffer preprocess_command_buffer,
+		vk::CommandBuffer default_render_pass_command_buffer,
 		const GLViewProjection &view_projection,
 		bool is_globe_active)
 {
@@ -233,15 +244,162 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 		return;
 	}
 
-	// Bind the graphics pipeline.
-	command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, d_graphics_pipeline);
+	// Convert clip space from OpenGL to Vulkan and pre-multiply projection transform.
+	GLMatrix vulkan_view_projection = VulkanUtils::from_opengl_clip_space();
+	vulkan_view_projection.gl_mult_matrix(view_projection.get_view_projection_transform());
 
-	// Set viewport and scissor rects.
-	command_buffer.setViewport(0, view_projection.get_viewport().get_vulkan_viewport());
-	command_buffer.setScissor(0, view_projection.get_viewport().get_vulkan_rect_2D());
 
 	//
-	// Push constants for arrows.
+	// Compute pipeline.
+	//
+
+	// Bind the compute pipeline.
+	preprocess_command_buffer.bindPipeline(vk::PipelineBindPoint::eCompute, d_compute_pipeline);
+
+	//
+	// Compute push constants.
+	//
+	// layout (push_constant) uniform PushConstants
+	// {
+	//     vec4 frustum_planes[6];
+	//     uint num_input_arrow_instances;
+	// };
+	//
+	// NOTE: This fits within the minimum required size limit of 128 bytes for push constants.
+	//       And push constants use the std430 layout.
+	//
+	ComputePushConstants compute_push_constants = {};
+
+	// Set the frustum planes.
+	GLFrustum frustum(vulkan_view_projection);
+	const GLIntersect::Plane *frustum_planes = frustum.get_planes();
+	for (unsigned int n = 0; n < 6; ++n)
+	{
+		frustum_planes[n].get_float_plane(compute_push_constants.frustum_planes[n]);
+	}
+
+	// Set the frustum plane push constants.
+	preprocess_command_buffer.pushConstants(
+			d_compute_pipeline_layout,
+			vk::ShaderStageFlagBits::eCompute,
+			// Update only the frustum planes...
+			offsetof(ComputePushConstants, frustum_planes),
+			sizeof(ComputePushConstants::frustum_planes),
+			&compute_push_constants.frustum_planes);
+
+	// Initialise the command in each indirect draw buffer.
+	// Note: The instance count needs to be reset to zero at every frame (the other data is static).
+	for (auto &instance_resource : d_async_instance_resources[vulkan.get_frame_index()])
+	{
+		vk::DrawIndexedIndirectCommand draw_indexed_indirect_command;
+		draw_indexed_indirect_command
+				.setIndexCount(d_num_vertex_indices)
+				.setInstanceCount(0)  // the only dynamic data in the command
+				.setFirstIndex(0)
+				.setVertexOffset(0)
+				.setFirstInstance(0);
+		preprocess_command_buffer.updateBuffer(
+				instance_resource.indirect_draw_buffer.get_buffer(),
+				vk::DeviceSize(0),
+				vk::DeviceSize(sizeof(vk::DrawIndexedIndirectCommand)),
+				&draw_indexed_indirect_command);
+	}
+
+	// Pipeline barrier to wait for the above copy operations to complete before accessing in compute shader.
+#if defined(_WIN32) && defined(MemoryBarrier) // See "VulkanHpp.h" for why this is necessary.
+#	undef MemoryBarrier
+#endif
+	vk::MemoryBarrier reset_indirect_draw_memory_barrier;
+	reset_indirect_draw_memory_barrier
+			.setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
+			.setDstAccessMask(vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite);
+	preprocess_command_buffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eTransfer,
+			vk::PipelineStageFlagBits::eComputeShader,
+			{},  // dependencyFlags
+			reset_indirect_draw_memory_barrier,  // memoryBarriers
+			{},  // bufferMemoryBarriers
+			{});  // imageMemoryBarriers
+
+	// Bind the arrow instance buffers of the current frame.
+	auto &instance_resources = d_async_instance_resources[vulkan.get_frame_index()];
+	for (unsigned int instance_resource_index = 0; instance_resource_index < instance_resources.size(); ++instance_resource_index)
+	{
+		auto &instance_resource = instance_resources[instance_resource_index];
+
+		// All instance buffers, except the last, render the full number of arrows that fit in an instance buffer.
+		const unsigned int num_arrows_in_instance_buffer = (instance_resource_index == instance_resources.size() - 1)
+				? (d_num_arrows_to_render % NUM_ARROWS_PER_INSTANCE_BUFFER)
+				: NUM_ARROWS_PER_INSTANCE_BUFFER;
+
+		// Flush the mapped instance data (only happens if instance buffer is in *non-coherent* host-visible memory).
+		//
+		// Note: Writes to host mapped memory are automatically made visible to the device (GPU) when command buffer is submitted.
+		instance_resource.instance_buffer.flush_mapped_memory(
+				vulkan.get_vma_allocator(),
+				0,
+				num_arrows_in_instance_buffer * sizeof(MeshInstance),
+				GPLATES_EXCEPTION_SOURCE);
+
+		// Bind the descriptor set (containing storage buffer descriptors used by compute shader).
+		preprocess_command_buffer.bindDescriptorSets(
+				vk::PipelineBindPoint::eCompute,
+				d_compute_pipeline_layout,
+				0/*firstSet*/,
+				instance_resource.compute_descriptor_set,
+				nullptr/*dynamicOffsets*/);
+
+		// Set the number-of-instances push constant.
+		compute_push_constants.num_input_arrow_instances = num_arrows_in_instance_buffer;
+		preprocess_command_buffer.pushConstants(
+				d_compute_pipeline_layout,
+				vk::ShaderStageFlagBits::eCompute,
+				// Update only the number of arrow instances...
+				offsetof(ComputePushConstants, num_input_arrow_instances),
+				sizeof(ComputePushConstants::num_input_arrow_instances),
+				&compute_push_constants.num_input_arrow_instances);
+
+		// Get compute shader to find the visible arrows (it culls arrows outside the view frustum).
+		std::uint32_t num_arrow_work_groups = num_arrows_in_instance_buffer / COMPUTE_SHADER_WORK_GROUP_SIZE;
+		if (num_arrows_in_instance_buffer % COMPUTE_SHADER_WORK_GROUP_SIZE) ++num_arrow_work_groups;
+		preprocess_command_buffer.dispatch(num_arrow_work_groups, 1, 1);
+	}
+
+
+	// Pipeline barrier to wait for compute shader writes to be made available before using as vertex data and indirect draw data.
+	//
+	// Note: The preprocess command buffer (containing our compute shader dispatches) will be submitted before the
+	//       default render pass command buffer (containing our indirect draws).
+	//       And both command buffers will be submitted to the same queue (the graphics+compute queue).
+#if defined(_WIN32) && defined(MemoryBarrier) // See "VulkanHpp.h" for why this is necessary.
+#	undef MemoryBarrier
+#endif
+	vk::MemoryBarrier compute_to_graphics_memory_barrier;
+	compute_to_graphics_memory_barrier
+			.setSrcAccessMask(vk::AccessFlagBits::eShaderWrite)
+			.setDstAccessMask(vk::AccessFlagBits::eVertexAttributeRead | vk::AccessFlagBits::eIndirectCommandRead);
+	preprocess_command_buffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eComputeShader,
+			vk::PipelineStageFlagBits::eVertexInput | vk::PipelineStageFlagBits::eDrawIndirect,
+			{},  // dependencyFlags
+			compute_to_graphics_memory_barrier,  // memoryBarriers
+			{},  // bufferMemoryBarriers
+			{});  // imageMemoryBarriers
+
+
+	//
+	// Graphics pipeline.
+	//
+
+	// Bind the graphics pipeline.
+	default_render_pass_command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, d_graphics_pipeline);
+
+	// Set viewport and scissor rects.
+	default_render_pass_command_buffer.setViewport(0, view_projection.get_viewport().get_vulkan_viewport());
+	default_render_pass_command_buffer.setScissor(0, view_projection.get_viewport().get_vulkan_rect_2D());
+
+	//
+	// Graphics push constants.
 	//
 	// layout (push_constant) uniform PushConstants
 	// {
@@ -254,68 +412,122 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 	// NOTE: This fits within the minimum required size limit of 128 bytes for push constants.
 	//       And push constants use the std430 layout.
 	//
-	PushConstants push_constants = {};
+	GraphicsPushConstants graphics_push_constants = {};
 
-	// Convert clip space from OpenGL to Vulkan and pre-multiply projection transform.
-	GLMatrix vulkan_view_projection = VulkanUtils::from_opengl_clip_space();
-	vulkan_view_projection.gl_mult_matrix(view_projection.get_view_projection_transform());
 	// Set view projection matrix.
-	vulkan_view_projection.get_float_matrix(push_constants.view_projection);
+	vulkan_view_projection.get_float_matrix(graphics_push_constants.view_projection);
 
 	// Is lighting enabled for arrows?
-	push_constants.lighting_enabled = d_scene_lighting_parameters.is_lighting_enabled(
+	graphics_push_constants.lighting_enabled = d_scene_lighting_parameters.is_lighting_enabled(
 			GPlatesGui::SceneLightingParameters::LIGHTING_DIRECTION_ARROW);
-	if (push_constants.lighting_enabled)
+	if (graphics_push_constants.lighting_enabled)
 	{
 		// Light direction.
-		push_constants.world_space_light_direction[0] = d_scene_lighting_parameters.get_globe_view_light_direction().x().dval();
-		push_constants.world_space_light_direction[1] = d_scene_lighting_parameters.get_globe_view_light_direction().y().dval();
-		push_constants.world_space_light_direction[2] = d_scene_lighting_parameters.get_globe_view_light_direction().z().dval();
+		graphics_push_constants.world_space_light_direction[0] = d_scene_lighting_parameters.get_globe_view_light_direction().x().dval();
+		graphics_push_constants.world_space_light_direction[1] = d_scene_lighting_parameters.get_globe_view_light_direction().y().dval();
+		graphics_push_constants.world_space_light_direction[2] = d_scene_lighting_parameters.get_globe_view_light_direction().z().dval();
 		// Ambient light contribution.
-		push_constants.light_ambient_contribution = d_scene_lighting_parameters.get_ambient_light_contribution();
+		graphics_push_constants.light_ambient_contribution = d_scene_lighting_parameters.get_ambient_light_contribution();
 	}
 
 	// Set the push constants.
-	command_buffer.pushConstants(
-			d_pipeline_layout,
+	default_render_pass_command_buffer.pushConstants(
+			d_graphics_pipeline_layout,
 			vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment,
 			// Update all push constants...
-			0, sizeof(PushConstants), &push_constants);
+			0, sizeof(GraphicsPushConstants), &graphics_push_constants);
 
 	// Bind the arrow mesh vertex and index buffers.
-	command_buffer.bindVertexBuffers(0, d_vertex_buffer.get_buffer(), vk::DeviceSize(0));
-	command_buffer.bindIndexBuffer(d_index_buffer.get_buffer(), vk::DeviceSize(0), vk::IndexType::eUint32);
+	default_render_pass_command_buffer.bindVertexBuffers(0, d_vertex_buffer.get_buffer(), vk::DeviceSize(0));
+	default_render_pass_command_buffer.bindIndexBuffer(d_index_buffer.get_buffer(), vk::DeviceSize(0), vk::IndexType::eUint32);
 
-	// Bind and draw the arrow instance buffers of the current frame.
-	auto &instance_buffers = d_async_instance_buffers[vulkan.get_frame_index()];
-	for (unsigned int instance_buffer_index = 0; instance_buffer_index < instance_buffers.size(); ++instance_buffer_index)
+	// Bind and draw the visible arrow instance buffers of the current frame.
+	for (auto &instance_resource : d_async_instance_resources[vulkan.get_frame_index()])
 	{
-		auto &instance_buffer = instance_buffers[instance_buffer_index];
+		// Bind visible arrow instance buffer.
+		default_render_pass_command_buffer.bindVertexBuffers(1, instance_resource.visible_instance_buffer.get_buffer(), vk::DeviceSize(0));
 
-		// All instance buffers, except the last, render the full number of arrows that fit in an instance buffer.
-		const unsigned int num_arrows_in_instance_buffer = (instance_buffer_index == instance_buffers.size() - 1)
-				? (d_num_arrows_to_render % NUM_ARROWS_PER_INSTANCE_BUFFER)
-				: NUM_ARROWS_PER_INSTANCE_BUFFER;
-
-		// Bind arrow instance buffer.
-		command_buffer.bindVertexBuffers(1, instance_buffer.buffer.get_buffer(), vk::DeviceSize(0));
-
-		// Flush the mapped instance data (only happens if instance buffer is in *non-coherent* host-visible memory).
-		instance_buffer.buffer.flush_mapped_memory(
-				vulkan.get_vma_allocator(),
-				0,
-				num_arrows_in_instance_buffer * sizeof(MeshInstance),
-				GPLATES_EXCEPTION_SOURCE);
-
-		// Draw arrows in the instance buffer.
+		// Draw visible arrows (in view frustum).
 		//
 		// There's a single arrow mesh that gets instanced by the number of arrows.
 		// Each instance supplies an arrow position and direction in world space, a body/head width/length and a colour.
-		command_buffer.drawIndexed(d_num_vertex_indices, num_arrows_in_instance_buffer, 0, 0, 0);
+		//
+		// Note: The draw command parameters are sourced from the buffer (parameters that were written by compute shader).
+		default_render_pass_command_buffer.drawIndexedIndirect(instance_resource.indirect_draw_buffer.get_buffer(), 0, 1, sizeof(vk::DrawIndexedIndirectCommand));
 	}
 
 	// Reset the number of arrows to render.
 	d_num_arrows_to_render = 0;
+}
+
+
+void
+GPlatesOpenGL::RenderedArrowRenderer::create_compute_pipeline(
+		Vulkan &vulkan)
+{
+	//
+	// Shader stage.
+	//
+	// Compute shader.
+	const std::vector<std::uint32_t> compute_shader_code = VulkanUtils::load_shader_code(":/arrows.comp.spv");
+	vk::UniqueShaderModule compute_shader_module = vulkan.get_device().createShaderModuleUnique({ {}, {compute_shader_code} });
+	// Specialization constants (set the 'local_size_x' in the compute shader).
+	std::uint32_t specialization_data[1] = { COMPUTE_SHADER_WORK_GROUP_SIZE };
+	vk::SpecializationMapEntry specialization_map_entries[1] = { { 1/*constant_id*/, 0/*offset*/, sizeof(std::uint32_t) }};
+	vk::SpecializationInfo specialization_info;
+	specialization_info
+			.setMapEntries(specialization_map_entries)
+			.setData<std::uint32_t>(specialization_data);
+	vk::PipelineShaderStageCreateInfo shader_stage_create_info;
+	shader_stage_create_info
+			.setStage(vk::ShaderStageFlagBits::eCompute)
+			.setModule(compute_shader_module.get())
+			.setPName("main")
+			.setPSpecializationInfo(&specialization_info);
+
+	//
+	// Pipeline layout.
+	//
+	// Descriptor set layout.
+	vk::DescriptorSetLayoutBinding descriptor_set_layout_bindings[3];
+	descriptor_set_layout_bindings[0]
+			.setBinding(0)
+			.setDescriptorType(vk::DescriptorType::eStorageBuffer)
+			.setDescriptorCount(1)
+			.setStageFlags(vk::ShaderStageFlagBits::eCompute);
+	descriptor_set_layout_bindings[1]
+			.setBinding(1)
+			.setDescriptorType(vk::DescriptorType::eStorageBuffer)
+			.setDescriptorCount(1)
+			.setStageFlags(vk::ShaderStageFlagBits::eCompute);
+	descriptor_set_layout_bindings[2]
+			.setBinding(2)
+			.setDescriptorType(vk::DescriptorType::eStorageBuffer)
+			.setDescriptorCount(1)
+			.setStageFlags(vk::ShaderStageFlagBits::eCompute);
+	vk::DescriptorSetLayoutCreateInfo descriptor_set_layout_create_info;
+	descriptor_set_layout_create_info.setBindings(descriptor_set_layout_bindings);
+	d_compute_descriptor_set_layout = vulkan.get_device().createDescriptorSetLayout(descriptor_set_layout_create_info);
+	// Push constants.
+	vk::PushConstantRange push_constant_range;
+	push_constant_range
+			.setStageFlags(vk::ShaderStageFlagBits::eCompute)
+			.setOffset(0)
+			.setSize(sizeof(ComputePushConstants));
+	vk::PipelineLayoutCreateInfo pipeline_layout_create_info;
+	pipeline_layout_create_info
+			.setSetLayouts(d_compute_descriptor_set_layout)
+			.setPushConstantRanges(push_constant_range);
+	d_compute_pipeline_layout = vulkan.get_device().createPipelineLayout(pipeline_layout_create_info);
+
+	//
+	// Compute pipeline.
+	//
+	vk::ComputePipelineCreateInfo compute_pipeline_info;
+	compute_pipeline_info
+			.setStage(shader_stage_create_info)
+			.setLayout(d_compute_pipeline_layout);
+	d_compute_pipeline = vulkan.get_device().createComputePipeline({}, compute_pipeline_info).value;
 }
 
 
@@ -445,10 +657,10 @@ GPlatesOpenGL::RenderedArrowRenderer::create_graphics_pipeline(
 	push_constant_range
 			.setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
 			.setOffset(0)
-			.setSize(sizeof(PushConstants));
+			.setSize(sizeof(GraphicsPushConstants));
 	vk::PipelineLayoutCreateInfo pipeline_layout_create_info;
 	pipeline_layout_create_info.setPushConstantRanges(push_constant_range);
-	d_pipeline_layout = vulkan.get_device().createPipelineLayout(pipeline_layout_create_info);
+	d_graphics_pipeline_layout = vulkan.get_device().createPipelineLayout(pipeline_layout_create_info);
 
 	//
 	// Graphics pipeline.
@@ -464,7 +676,7 @@ GPlatesOpenGL::RenderedArrowRenderer::create_graphics_pipeline(
 			.setPDepthStencilState(&depth_stencil_state_create_info)
 			.setPColorBlendState(&color_blend_state_create_info)
 			.setPDynamicState(&dynamic_state_create_info)
-			.setLayout(d_pipeline_layout)
+			.setLayout(d_graphics_pipeline_layout)
 			.setRenderPass(default_render_pass);
 	d_graphics_pipeline = vulkan.get_device().createGraphicsPipeline({}, graphics_pipeline_info).value;
 }
@@ -768,8 +980,8 @@ GPlatesOpenGL::RenderedArrowRenderer::load_arrow_mesh(
 }
 
 
-GPlatesOpenGL::RenderedArrowRenderer::MeshInstanceBuffer
-GPlatesOpenGL::RenderedArrowRenderer::create_instance_buffer(
+GPlatesOpenGL::RenderedArrowRenderer::InstanceResource
+GPlatesOpenGL::RenderedArrowRenderer::create_instance_resource(
 		Vulkan &vulkan)
 {
 	// Vulkan memory allocator.
@@ -778,11 +990,18 @@ GPlatesOpenGL::RenderedArrowRenderer::create_instance_buffer(
 	// Buffer parameters.
 	vk::BufferCreateInfo buffer_create_info;
 	buffer_create_info.setSharingMode(vk::SharingMode::eExclusive);
-	buffer_create_info.setSize(NUM_ARROWS_PER_INSTANCE_BUFFER * sizeof(MeshInstance));
-	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eVertexBuffer);
 
 	// Allocation parameters.
 	VmaAllocationCreateInfo allocation_create_info = {};
+
+	//
+	// Instances buffer.
+	//
+
+	buffer_create_info.setSize(NUM_ARROWS_PER_INSTANCE_BUFFER * sizeof(MeshInstance));
+	// Buffer is read by compute shader (as a storage buffer).
+	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eStorageBuffer);
+
 	// Instance buffer should be mappable (in host memory) and preferably also in device local memory.
 	allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;  // prefer device local
 	allocation_create_info.flags =
@@ -797,5 +1016,86 @@ GPlatesOpenGL::RenderedArrowRenderer::create_instance_buffer(
 	vmaGetAllocationInfo(vma_allocator, instance_buffer.get_allocation(), &allocation_info);
 	void *instance_buffer_mapped_pointer = allocation_info.pMappedData;
 
-	return { instance_buffer, instance_buffer_mapped_pointer };
+	//
+	// Visible instances buffer.
+	//
+
+	buffer_create_info.setSize(NUM_ARROWS_PER_INSTANCE_BUFFER * sizeof(MeshInstance));
+	// Buffer is written (by compute shader) as a storage buffer and read as a vertex buffer.
+	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eVertexBuffer);
+
+	allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
+	allocation_create_info.flags = 0;  // device local memory
+
+	// Create visible instance buffer.
+	VulkanBuffer visible_instance_buffer = VulkanBuffer::create(vma_allocator, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
+
+	//
+	// Indirect draw buffer.
+	//
+
+	buffer_create_info.setSize(sizeof(vk::DrawIndexedIndirectCommand));
+	// Buffer is destination of a copy, and written (by compute shader) as a storage buffer, and read as an indirect buffer.
+	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eIndirectBuffer);
+
+	allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
+	allocation_create_info.flags = 0;  // device local memory
+
+	// Create indirect draw buffer.
+	VulkanBuffer indirect_draw_buffer = VulkanBuffer::create(vma_allocator, buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
+
+	//
+	// Descriptor set.
+	//
+
+	// Create descriptor pool.
+	vk::DescriptorPoolSize compute_descriptor_pool_size;
+	compute_descriptor_pool_size
+			.setType(vk::DescriptorType::eStorageBuffer)
+			.setDescriptorCount(3);  // only use 3 storage buffers in compute shader
+	vk::DescriptorPoolCreateInfo compute_descriptor_pool_create_info;
+	compute_descriptor_pool_create_info
+			.setMaxSets(1)
+			.setPoolSizes(compute_descriptor_pool_size);
+	vk::DescriptorPool compute_descriptor_pool = vulkan.get_device().createDescriptorPool(compute_descriptor_pool_create_info);
+
+	// Allocate descriptor set.
+	vk::DescriptorSetAllocateInfo compute_descriptor_set_allocate_info;
+	compute_descriptor_set_allocate_info
+			.setDescriptorPool(compute_descriptor_pool)
+			.setSetLayouts(d_compute_descriptor_set_layout);
+	const std::vector<vk::DescriptorSet> compute_descriptor_sets =
+			vulkan.get_device().allocateDescriptorSets(compute_descriptor_set_allocate_info);
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			compute_descriptor_sets.size() == 1,
+			GPLATES_ASSERTION_SOURCE);
+	vk::DescriptorSet compute_descriptor_set = compute_descriptor_sets[0];
+
+	vk::WriteDescriptorSet compute_descriptor_writes[3];
+	// Descriptor write for instance buffer.
+	vk::DescriptorBufferInfo instance_descriptor_buffer_info;
+	instance_descriptor_buffer_info.setBuffer(instance_buffer.get_buffer()).setOffset(vk::DeviceSize(0)).setRange(VK_WHOLE_SIZE);
+	compute_descriptor_writes[0]
+			.setDstSet(compute_descriptor_set).setDstBinding(0).setDstArrayElement(0).setDescriptorCount(1)
+			.setDescriptorType(vk::DescriptorType::eStorageBuffer)
+			.setBufferInfo(instance_descriptor_buffer_info);
+	// Descriptor write for visible instance buffer.
+	vk::DescriptorBufferInfo visible_instance_descriptor_buffer_info;
+	visible_instance_descriptor_buffer_info.setBuffer(visible_instance_buffer.get_buffer()).setOffset(vk::DeviceSize(0)).setRange(VK_WHOLE_SIZE);
+	compute_descriptor_writes[1]
+			.setDstSet(compute_descriptor_set).setDstBinding(1).setDstArrayElement(0).setDescriptorCount(1)
+			.setDescriptorType(vk::DescriptorType::eStorageBuffer)
+			.setBufferInfo(visible_instance_descriptor_buffer_info);
+	// Descriptor write for indirect draw buffer.
+	vk::DescriptorBufferInfo indirect_draw_descriptor_buffer_info;
+	indirect_draw_descriptor_buffer_info.setBuffer(indirect_draw_buffer.get_buffer()).setOffset(vk::DeviceSize(0)).setRange(VK_WHOLE_SIZE);
+	compute_descriptor_writes[2]
+			.setDstSet(compute_descriptor_set).setDstBinding(2).setDstArrayElement(0).setDescriptorCount(1)
+			.setDescriptorType(vk::DescriptorType::eStorageBuffer)
+			.setBufferInfo(indirect_draw_descriptor_buffer_info);
+
+	// Update descriptor set.
+	vulkan.get_device().updateDescriptorSets(compute_descriptor_writes, nullptr/*descriptorCopies*/);
+
+	return { instance_buffer, instance_buffer_mapped_pointer, visible_instance_buffer, indirect_draw_buffer, compute_descriptor_pool, compute_descriptor_set };
 }

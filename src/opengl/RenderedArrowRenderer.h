@@ -91,14 +91,33 @@ namespace GPlatesOpenGL
 		void
 		render(
 				Vulkan &vulkan,
-				vk::CommandBuffer command_buffer,
+				vk::CommandBuffer preprocess_command_buffer,
+				vk::CommandBuffer default_render_pass_command_buffer,
 				const GLViewProjection &view_projection,
 				bool is_globe_active);
 
 	private:
 
 		//
-		// Push constants.
+		// Compute push constants.
+		//
+		// layout (push_constant) uniform PushConstants
+		// {
+		//     vec4 frustum_planes[6];
+		//     uint num_input_arrow_instances;
+		// };
+		//
+		// NOTE: This fits within the minimum required size limit of 128 bytes for push constants.
+		//       And push constants use the std430 layout.
+		//
+		struct ComputePushConstants
+		{
+			float frustum_planes[6][4];
+			std::uint32_t num_input_arrow_instances;
+		};
+
+		//
+		// Graphics push constants.
 		//
 		// layout (push_constant) uniform PushConstants
 		// {
@@ -111,7 +130,7 @@ namespace GPlatesOpenGL
 		// NOTE: This fits within the minimum required size limit of 128 bytes for push constants.
 		//       And push constants use the std430 layout.
 		//
-		struct PushConstants
+		struct GraphicsPushConstants
 		{
 			float view_projection[16];
 			float world_space_light_direction[3];
@@ -170,15 +189,41 @@ namespace GPlatesOpenGL
 			float colour[4];  // arrow colour
 		};
 
-		struct MeshInstanceBuffer
+		struct InstanceResource
 		{
-			//! Vertex buffer containing per-instance data.
-			VulkanBuffer buffer;
+			//! Vertex buffer containing per-instance data of all arrows.
+			VulkanBuffer instance_buffer;
 
 			//! Persistently mapped pointer to the per-instance buffer.
 			void *mapped_pointer = nullptr;
+
+			//! Vertex buffer containing per-instance data of those arrows visible in the view frustum.
+			VulkanBuffer visible_instance_buffer;
+
+			//! Contains draw command data vk::DrawIndexedIndirectCommand, used by vk::CommandBuffer::drawIndexedIndirect().
+			VulkanBuffer indirect_draw_buffer;
+
+			//! Descriptor pool to allocate descriptor set.
+			vk::DescriptorPool compute_descriptor_pool;
+
+			//! Descriptor set referencing the above (storage) buffers.
+			vk::DescriptorSet compute_descriptor_set;
+
+			void
+			destroy(
+					Vulkan &vulkan)
+			{
+				VulkanBuffer::destroy(vulkan.get_vma_allocator(), instance_buffer);
+				VulkanBuffer::destroy(vulkan.get_vma_allocator(), visible_instance_buffer);
+				VulkanBuffer::destroy(vulkan.get_vma_allocator(), indirect_draw_buffer);
+				vulkan.get_device().destroyDescriptorPool(compute_descriptor_pool);  // also frees compute descriptor set
+			}
 		};
 
+
+		void
+		create_compute_pipeline(
+				Vulkan &vulkan);
 
 		void
 		create_graphics_pipeline(
@@ -198,20 +243,30 @@ namespace GPlatesOpenGL
 				const std::vector<MeshVertex> &vertices,
 				const std::vector<std::uint32_t> &vertex_indices);
 
-		MeshInstanceBuffer
-		create_instance_buffer(
+		InstanceResource
+		create_instance_resource(
 				Vulkan &vulkan);
 
 
 		/**
-		 * Number of arrow instances per dynamic vertex buffer (each instance consumes sizeof(MeshInstance) bytes).
+		 * Arbitrary compute shader work group size(x).
+		 *
+		 * Note: Should be less than vk::PhysicalDeviceLimits::maxComputeWorkGroupInvocations (min 128).
 		 */
-		static const unsigned int NUM_ARROWS_PER_INSTANCE_BUFFER = 50000;  // ~4MB (at 80 bytes per instance)
+		static constexpr unsigned int COMPUTE_SHADER_WORK_GROUP_SIZE = 16;
+
+		/**
+		 * Number of arrow instances per dynamic buffer.
+		 *
+		 * Note: Should be less than vk::PhysicalDeviceLimits::maxComputeWorkGroupCount[0] (min 65535) multiplied by
+		 *       @a COMPUTE_SHADER_WORK_GROUP_SIZE. For example, 65536 * 16 = 1,048,560.
+		 */
+		static constexpr unsigned int NUM_ARROWS_PER_INSTANCE_BUFFER = 50000;  // ~4MB (at 80 bytes per instance)
 
 		/**
 		 * Arrow mesh tessellation (how many vertices in a circular cross-section of arrow body or head).
 		 */
-		static const unsigned int NUM_VERTICES_IN_ARROW_CIRCULAR_CROSS_SECTION = 16;
+		static constexpr unsigned int NUM_VERTICES_IN_ARROW_CIRCULAR_CROSS_SECTION = 16;
 
 		/**
 		 * Ratio of an arrowhead width to length.
@@ -235,8 +290,13 @@ namespace GPlatesOpenGL
 		 */
 		const GPlatesGui::SceneLightingParameters &d_scene_lighting_parameters;
 
+		// Compute pipeline and layout.
+		vk::DescriptorSetLayout d_compute_descriptor_set_layout;
+		vk::PipelineLayout d_compute_pipeline_layout;
+		vk::Pipeline d_compute_pipeline;
+
 		// Graphics pipeline and layout.
-		vk::PipelineLayout d_pipeline_layout;
+		vk::PipelineLayout d_graphics_pipeline_layout;
 		vk::Pipeline d_graphics_pipeline;
 
 		//! Vertex buffer containing per-vertex data (static buffer).
@@ -248,16 +308,16 @@ namespace GPlatesOpenGL
 		std::uint32_t d_num_vertex_indices = 0;
 
 		/**
-		 * Instance buffers that are available for use (not currently being used).
+		 * Instance resources that are available for use (not currently being used).
 		 */
-		std::vector<MeshInstanceBuffer> d_available_instance_buffers;
+		std::vector<InstanceResource> d_available_instance_resources;
 
 		/**
-		 * Instance buffer currently being used.
+		 * Instance resources currently being used.
 		 *
-		 * Note: Each asynchronous frame can render one or more instance buffers.
+		 * Note: Each asynchronous frame can render one or more instance buffers (depending on the number of arrows).
 		 */
-		std::vector<MeshInstanceBuffer> d_async_instance_buffers[Vulkan::NUM_ASYNC_FRAMES];
+		std::vector<InstanceResource> d_async_instance_resources[Vulkan::NUM_ASYNC_FRAMES];
 
 		/**
 		 * Number of arrows to render.
