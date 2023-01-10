@@ -214,7 +214,7 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 	// {
 	//     vec4 frustum_planes[6];
 	//     float inverse_viewport_zoom_factor;
-	//     float max_ratio_arrowhead_to_arrow_body_length;
+	//     float max_ratio_arrowhead_length_to_arrow_length;
 	//     float arrowhead_width_to_length_ratio;
 	//     uint num_input_arrow_instances;
 	// };
@@ -234,7 +234,7 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 
 	// Extra push constants.
 	compute_push_constants.inverse_viewport_zoom_factor = inverse_viewport_zoom_factor;
-	compute_push_constants.max_ratio_arrowhead_to_arrow_body_length = MAX_RATIO_ARROWHEAD_TO_ARROW_BODY_LENGTH;
+	compute_push_constants.max_ratio_arrowhead_length_to_arrow_length = MAX_RATIO_ARROWHEAD_LENGTH_TO_ARROW_LENGTH;
 	compute_push_constants.arrowhead_width_to_length_ratio = ARROWHEAD_WIDTH_TO_LENGTH_RATIO;
 
 	// Set all push constants except the number of instances.

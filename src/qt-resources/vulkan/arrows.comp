@@ -25,7 +25,7 @@ layout (push_constant) uniform PushConstants
 {
     vec4 frustum_planes[6];
     float inverse_viewport_zoom_factor;
-    float max_ratio_arrowhead_to_arrow_body_length;
+    float max_ratio_arrowhead_length_to_arrow_length;
     float arrowhead_width_to_length_ratio;
     uint num_input_arrow_instances;
 };
@@ -154,47 +154,42 @@ void main()
     // Input arrow instance.
     const InputArrowInstance input_arrow_instance = input_arrow_instances.instances[input_arrow_instance_index];
     const vec3 arrow_start = input_arrow_instance.arrow_start;
-    const vec3 arrow_vector = input_arrow_instance.arrow_vector;
+    vec3 arrow_vector = input_arrow_instance.arrow_vector;
     float arrow_body_width = input_arrow_instance.arrow_body_width;
     float arrowhead_length = input_arrow_instance.arrowhead_length;
     vec4 arrow_colour = input_arrow_instance.colour;
 
-    // Calculate position from start point along vector direction to end point.
-    // The length of the arrow in world space is inversely proportional to the zoom (or magnification).
-    const vec3 arrow_end = arrow_start + inverse_viewport_zoom_factor * arrow_vector;
+    // Scale the arrow vector, the arrow body width and arrowhead length according to the zoom.
+    arrow_vector *= inverse_viewport_zoom_factor;
+    arrow_body_width *= inverse_viewport_zoom_factor;
+    arrowhead_length *= inverse_viewport_zoom_factor;
 
-    const vec3 arrow_body_vector = arrow_end - arrow_start;
-    const float arrow_body_length = length(arrow_body_vector);
-
+    const float arrow_length = length(arrow_vector);
     // Avoid divide-by-zero - and if arrow length is near zero it won't be visible.
-    if (arrow_body_length == 0)
+    if (arrow_length == 0)
     {
         return;
     }
-    const vec3 arrow_unit_vector = (1.0 / arrow_body_length) * arrow_body_vector;
+    const vec3 arrow_unit_vector = (1.0 / arrow_length) * arrow_vector;
 
     // See if arrow instance is visible (in view frustum).
-    float arrow_bounding_sphere_radius = 0.5 * arrow_body_length;
+    float arrow_bounding_sphere_radius = 0.5 * arrow_length;
     vec3 arrow_bounding_sphere_centre = arrow_start + arrow_bounding_sphere_radius * arrow_unit_vector;
     if (!sphere_intersects_frustum(arrow_bounding_sphere_centre, arrow_bounding_sphere_radius))
     {
         return;
     }
 
-    // Also scale the arrow body width and arrowhead length according to the zoom.
-    arrow_body_width *= inverse_viewport_zoom_factor;
-    arrowhead_length *= inverse_viewport_zoom_factor;
-
-    // We want to keep the projected arrowhead size constant regardless of the
-    // the length of the arrow body, except...
+    // We want to keep the projected arrowhead length constant regardless of the
+    // the length of the arrow, except...
     //
-    // ...if the ratio of arrowhead size to arrow body length is large enough then
-    // we need to start scaling the arrowhead size by the arrow body length so
-    // that the arrowhead disappears as the arrow body disappears.
-    const float max_arrowhead_size = max_ratio_arrowhead_to_arrow_body_length * arrow_body_length;
-    if (arrowhead_length > max_arrowhead_size)
+    // ...if the ratio of arrowhead length to arrow length is large enough then
+    // we need to start scaling the arrowhead length by the arrow length so
+    // that the arrowhead disappears as the arrow disappears.
+    const float max_arrowhead_length = max_ratio_arrowhead_length_to_arrow_length * arrow_length;
+    if (arrowhead_length > max_arrowhead_length)
     {
-        const float arrow_scale = max_arrowhead_size / arrowhead_length;
+        const float arrow_scale = max_arrowhead_length / arrowhead_length;
 
         arrowhead_length *= arrow_scale;
 
@@ -202,6 +197,9 @@ void main()
         arrow_body_width *= arrow_scale;
     }
     const float arrowhead_width = arrowhead_width_to_length_ratio * arrowhead_length;
+
+    // Arrow body length is the total arrow length minus the arrowhead length.
+    const float arrow_body_length = arrow_length - arrowhead_length;
 
     // Find an orthonormal basis using 'arrow_unit_vector'.
     const vec3 arrow_z_axis = arrow_unit_vector;

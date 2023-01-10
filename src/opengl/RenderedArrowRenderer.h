@@ -105,7 +105,7 @@ namespace GPlatesOpenGL
 		// {
 		//     vec4 frustum_planes[6];
 		//     float inverse_viewport_zoom_factor;
-		//     float max_ratio_arrowhead_to_arrow_body_length;
+		//     float max_ratio_arrowhead_length_to_arrow_length;
 		//     float arrowhead_width_to_length_ratio;
 		//     uint num_input_arrow_instances;
 		// };
@@ -117,7 +117,7 @@ namespace GPlatesOpenGL
 		{
 			float frustum_planes[6][4];
 			float inverse_viewport_zoom_factor;
-			float max_ratio_arrowhead_to_arrow_body_length;
+			float max_ratio_arrowhead_length_to_arrow_length;
 			float arrowhead_width_to_length_ratio;
 			std::uint32_t num_input_arrow_instances;
 		};
@@ -295,14 +295,14 @@ namespace GPlatesOpenGL
 		static constexpr float ARROWHEAD_WIDTH_TO_LENGTH_RATIO = 0.5;
 
 		/**
-		 * We want to keep the projected arrowhead size constant regardless of the
-		 * the length of the arrow body, except...
+		 * We want to keep the projected arrowhead length constant regardless of the
+		 * the length of the arrow, except...
 		 *
-		 * ...if the ratio of arrowhead size to arrow body length is large enough then
-		 * we need to start scaling the arrowhead size by the arrow body length so
-		 * that the arrowhead disappears as the arrow body disappears.
+		 * ...if the ratio of arrowhead length to arrow length is large enough then
+		 * we need to start scaling the arrowhead length by the arrow length so
+		 * that the arrowhead disappears as the arrow disappears.
 		 */
-		static constexpr float MAX_RATIO_ARROWHEAD_TO_ARROW_BODY_LENGTH = 0.5;
+		static constexpr float MAX_RATIO_ARROWHEAD_LENGTH_TO_ARROW_LENGTH = 0.5;
 
 
 		/**
