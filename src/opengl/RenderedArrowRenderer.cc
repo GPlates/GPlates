@@ -116,70 +116,20 @@ GPlatesOpenGL::RenderedArrowRenderer::add(
 		const GPlatesMaths::Vector3D &arrow_vector,
 		float arrow_body_width,
 		float arrowhead_length,
-		const GPlatesGui::Colour &arrow_colour,
-		const double &inverse_viewport_zoom_factor)
+		const GPlatesGui::Colour &arrow_colour)
 {
-	// Calculate position from start point along vector direction to end point.
-	// The length of the arrow in world space is inversely proportional to the zoom (or magnification).
-	const GPlatesMaths::Vector3D arrow_end = arrow_start + inverse_viewport_zoom_factor * arrow_vector;
-
-	const GPlatesMaths::Vector3D arrow_body_vector = arrow_end - arrow_start;
-	const GPlatesMaths::real_t arrow_body_length = arrow_body_vector.magnitude();
-
-	// Avoid divide-by-zero - and if arrow length is near zero it won't be visible.
-	if (arrow_body_length == 0)
-	{
-		return;
-	}
-	const GPlatesMaths::UnitVector3D arrow_unit_vector((1.0 / arrow_body_length) * arrow_body_vector);
-
-	// Also scale the arrow body width and arrowhead length according to the zoom.
-	arrow_body_width *= inverse_viewport_zoom_factor;
-	arrowhead_length *= inverse_viewport_zoom_factor;
-
-	// We want to keep the projected arrowhead size constant regardless of the
-	// the length of the arrow body, except...
-	//
-	// ...if the ratio of arrowhead size to arrow body length is large enough then
-	// we need to start scaling the arrowhead size by the arrow body length so
-	// that the arrowhead disappears as the arrow body disappears.
-	const float max_arrowhead_size = MAX_RATIO_ARROWHEAD_TO_ARROW_BODY_LENGTH * arrow_body_length.dval();
-	if (arrowhead_length > max_arrowhead_size)
-	{
-		const float arrow_scale = max_arrowhead_size / arrowhead_length;
-
-		arrowhead_length *= arrow_scale;
-
-		// Also linearly shrink the arrow body width.
-		arrow_body_width *= arrow_scale;
-	}
-	const float arrowhead_width = ARROWHEAD_WIDTH_TO_LENGTH_RATIO * arrowhead_length;
-
-	// Find an orthonormal basis using 'arrow_unit_vector'.
-	const GPlatesMaths::UnitVector3D &arrow_z_axis = arrow_unit_vector;
-	const GPlatesMaths::UnitVector3D arrow_y_axis = generate_perpendicular(arrow_z_axis);
-	const GPlatesMaths::UnitVector3D arrow_x_axis( cross(arrow_y_axis, arrow_z_axis) );
-
 	MeshInstance arrow_instance;
 	// Copy arrow start position into instance data.
-	arrow_instance.world_space_start_position[0] = arrow_start.x().dval();
-	arrow_instance.world_space_start_position[1] = arrow_start.y().dval();
-	arrow_instance.world_space_start_position[2] = arrow_start.z().dval();
-	// Copy arrow position weights into instance data.
+	arrow_instance.arrow_start[0] = arrow_start.x().dval();
+	arrow_instance.arrow_start[1] = arrow_start.y().dval();
+	arrow_instance.arrow_start[2] = arrow_start.z().dval();
+	// Copy arrow vector into instance data.
+	arrow_instance.arrow_vector[0] = arrow_vector.x().dval();
+	arrow_instance.arrow_vector[1] = arrow_vector.y().dval();
+	arrow_instance.arrow_vector[2] = arrow_vector.z().dval();
+	// Copy arrow body length and arrowhead width into instance data.
 	arrow_instance.arrow_body_width = arrow_body_width;
-	arrow_instance.arrowhead_width = arrowhead_width;
-	arrow_instance.arrow_body_length = arrow_body_length.dval();
 	arrow_instance.arrowhead_length = arrowhead_length;
-	// Copy orthonormal basis into instance data.
-	arrow_instance.world_space_x_axis[0] = arrow_x_axis.x().dval();
-	arrow_instance.world_space_x_axis[1] = arrow_x_axis.y().dval();
-	arrow_instance.world_space_x_axis[2] = arrow_x_axis.z().dval();
-	arrow_instance.world_space_y_axis[0] = arrow_y_axis.x().dval();
-	arrow_instance.world_space_y_axis[1] = arrow_y_axis.y().dval();
-	arrow_instance.world_space_y_axis[2] = arrow_y_axis.z().dval();
-	arrow_instance.world_space_z_axis[0] = arrow_z_axis.x().dval();
-	arrow_instance.world_space_z_axis[1] = arrow_z_axis.y().dval();
-	arrow_instance.world_space_z_axis[2] = arrow_z_axis.z().dval();
 	// Copy arrow colour into instance data.
 	arrow_instance.colour[0] = arrow_colour.red();
 	arrow_instance.colour[1] = arrow_colour.green();
@@ -236,6 +186,7 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 		vk::CommandBuffer preprocess_command_buffer,
 		vk::CommandBuffer default_render_pass_command_buffer,
 		const GLViewProjection &view_projection,
+		const double &inverse_viewport_zoom_factor,
 		bool is_globe_active)
 {
 	// Return early if no arrows to render.
@@ -262,6 +213,9 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 	// layout (push_constant) uniform PushConstants
 	// {
 	//     vec4 frustum_planes[6];
+	//     float inverse_viewport_zoom_factor;
+	//     float max_ratio_arrowhead_to_arrow_body_length;
+	//     float arrowhead_width_to_length_ratio;
 	//     uint num_input_arrow_instances;
 	// };
 	//
@@ -278,14 +232,19 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 		frustum_planes[n].get_float_plane(compute_push_constants.frustum_planes[n]);
 	}
 
-	// Set the frustum plane push constants.
+	// Extra push constants.
+	compute_push_constants.inverse_viewport_zoom_factor = inverse_viewport_zoom_factor;
+	compute_push_constants.max_ratio_arrowhead_to_arrow_body_length = MAX_RATIO_ARROWHEAD_TO_ARROW_BODY_LENGTH;
+	compute_push_constants.arrowhead_width_to_length_ratio = ARROWHEAD_WIDTH_TO_LENGTH_RATIO;
+
+	// Set all push constants except the number of instances.
 	preprocess_command_buffer.pushConstants(
 			d_compute_pipeline_layout,
 			vk::ShaderStageFlagBits::eCompute,
-			// Update only the frustum planes...
-			offsetof(ComputePushConstants, frustum_planes),
-			sizeof(ComputePushConstants::frustum_planes),
-			&compute_push_constants.frustum_planes);
+			// Update everything except the number of instances...
+			0,
+			offsetof(ComputePushConstants, num_input_arrow_instances),  // size
+			&compute_push_constants);
 
 	// Initialise the command in each indirect draw buffer.
 	// Note: The instance count needs to be reset to zero at every frame (the other data is static).
@@ -305,7 +264,7 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 				&draw_indexed_indirect_command);
 	}
 
-	// Pipeline barrier to wait for the above copy operations to complete before accessing in compute shader.
+	// Pipeline barrier to wait for the above copy (update buffer) operations to complete before accessing in compute shader.
 #if defined(_WIN32) && defined(MemoryBarrier) // See "VulkanHpp.h" for why this is necessary.
 #	undef MemoryBarrier
 #endif
@@ -556,27 +515,25 @@ GPlatesOpenGL::RenderedArrowRenderer::create_graphics_pipeline(
 	// Per-vertex data.
 	vertex_binding_descriptions[0].setBinding(0).setStride(sizeof(MeshVertex)).setInputRate(vk::VertexInputRate::eVertex);
 	// Per-instance data.
-	vertex_binding_descriptions[1].setBinding(1).setStride(sizeof(MeshInstance)).setInputRate(vk::VertexInputRate::eInstance);
+	vertex_binding_descriptions[1].setBinding(1).setStride(sizeof(VisibleMeshInstance)).setInputRate(vk::VertexInputRate::eInstance);
 
-	vk::VertexInputAttributeDescription vertex_attribute_descriptions[8];
+	vk::VertexInputAttributeDescription vertex_attribute_descriptions[7];
 	// Per-vertex attributes.
 	vertex_attribute_descriptions[0].setLocation(0).setBinding(0).setFormat(vk::Format::eR32G32B32A32Sfloat)
 			.setOffset(offsetof(MeshVertex, model_space_normalised_radial_position));
 	vertex_attribute_descriptions[1].setLocation(1).setBinding(0).setFormat(vk::Format::eR32G32B32A32Sfloat)
 			.setOffset(offsetof(MeshVertex, arrow_body_width_weight));
 	// Per-instance attributes.
-	vertex_attribute_descriptions[2].setLocation(2).setBinding(1).setFormat(vk::Format::eR32G32B32Sfloat)
-			.setOffset(offsetof(MeshInstance, world_space_start_position));
-	vertex_attribute_descriptions[3].setLocation(3).setBinding(1).setFormat(vk::Format::eR32G32B32Sfloat)
-			.setOffset(offsetof(MeshInstance, world_space_x_axis));
-	vertex_attribute_descriptions[4].setLocation(4).setBinding(1).setFormat(vk::Format::eR32G32B32Sfloat)
-			.setOffset(offsetof(MeshInstance, world_space_y_axis));
-	vertex_attribute_descriptions[5].setLocation(5).setBinding(1).setFormat(vk::Format::eR32G32B32Sfloat)
-			.setOffset(offsetof(MeshInstance, world_space_z_axis));
+	vertex_attribute_descriptions[2].setLocation(2).setBinding(1).setFormat(vk::Format::eR32G32B32A32Sfloat)
+			.setOffset(offsetof(VisibleMeshInstance, world_space_start_position));
+	vertex_attribute_descriptions[3].setLocation(3).setBinding(1).setFormat(vk::Format::eR32G32B32A32Sfloat)
+			.setOffset(offsetof(VisibleMeshInstance, world_space_x_axis));
+	vertex_attribute_descriptions[4].setLocation(4).setBinding(1).setFormat(vk::Format::eR32G32B32A32Sfloat)
+			.setOffset(offsetof(VisibleMeshInstance, world_space_y_axis));
+	vertex_attribute_descriptions[5].setLocation(5).setBinding(1).setFormat(vk::Format::eR32G32B32A32Sfloat)
+			.setOffset(offsetof(VisibleMeshInstance, world_space_z_axis));
 	vertex_attribute_descriptions[6].setLocation(6).setBinding(1).setFormat(vk::Format::eR32G32B32A32Sfloat)
-			.setOffset(offsetof(MeshInstance, arrow_body_width));
-	vertex_attribute_descriptions[7].setLocation(7).setBinding(1).setFormat(vk::Format::eR32G32B32A32Sfloat)
-			.setOffset(offsetof(MeshInstance, colour));
+			.setOffset(offsetof(VisibleMeshInstance, colour));
 
 	vk::PipelineVertexInputStateCreateInfo vertex_input_state_create_info;
 	vertex_input_state_create_info
@@ -1020,7 +977,7 @@ GPlatesOpenGL::RenderedArrowRenderer::create_instance_resource(
 	// Visible instances buffer.
 	//
 
-	buffer_create_info.setSize(NUM_ARROWS_PER_INSTANCE_BUFFER * sizeof(MeshInstance));
+	buffer_create_info.setSize(NUM_ARROWS_PER_INSTANCE_BUFFER * sizeof(VisibleMeshInstance));
 	// Buffer is written (by compute shader) as a storage buffer and read as a vertex buffer.
 	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eVertexBuffer);
 

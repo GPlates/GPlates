@@ -143,6 +143,7 @@ GPlatesOpenGL::RenderedGeometryRenderer::render(
 			preprocess_command_buffer,
 			default_render_pass_command_buffer,
 			view_projection,
+			d_visitation_params->inverse_viewport_zoom_factor,
 			is_globe_active);
 
 	// Get the cache handle for all the rendered geometry layers.
@@ -165,8 +166,7 @@ GPlatesOpenGL::RenderedGeometryRenderer::visit_rendered_arrow(
 			rendered_arrow.get_vector(),
 			rendered_arrow.get_arrow_body_width(),
 			rendered_arrow.get_arrowhead_size(),
-			rendered_arrow.get_colour(),
-			d_visitation_params->inverse_viewport_zoom_factor);
+			rendered_arrow.get_colour());
 }
 
 

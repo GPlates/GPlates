@@ -82,8 +82,7 @@ namespace GPlatesOpenGL
 				const GPlatesMaths::Vector3D &arrow_vector,
 				float arrow_body_width,
 				float arrowhead_length,
-				const GPlatesGui::Colour &arrow_colour,
-				const double &inverse_viewport_zoom_factor);
+				const GPlatesGui::Colour &arrow_colour);
 
 		/**
 		 * Draw the rendered arrows added so far (by @a add).
@@ -94,6 +93,7 @@ namespace GPlatesOpenGL
 				vk::CommandBuffer preprocess_command_buffer,
 				vk::CommandBuffer default_render_pass_command_buffer,
 				const GLViewProjection &view_projection,
+				const double &inverse_viewport_zoom_factor,
 				bool is_globe_active);
 
 	private:
@@ -104,6 +104,9 @@ namespace GPlatesOpenGL
 		// layout (push_constant) uniform PushConstants
 		// {
 		//     vec4 frustum_planes[6];
+		//     float inverse_viewport_zoom_factor;
+		//     float max_ratio_arrowhead_to_arrow_body_length;
+		//     float arrowhead_width_to_length_ratio;
 		//     uint num_input_arrow_instances;
 		// };
 		//
@@ -113,6 +116,9 @@ namespace GPlatesOpenGL
 		struct ComputePushConstants
 		{
 			float frustum_planes[6][4];
+			float inverse_viewport_zoom_factor;
+			float max_ratio_arrowhead_to_arrow_body_length;
+			float arrowhead_width_to_length_ratio;
 			std::uint32_t num_input_arrow_instances;
 		};
 
@@ -168,25 +174,40 @@ namespace GPlatesOpenGL
 		};
 
 		/**
-		 * Per-instance data for an arrow.
+		 * Per-instance data for an arrow (used as *input* to view-frustum-culling compute shader).
+		 *
+		 * Member alignment follows std430 layout (used by storage buffer in compute shader).
 		 */
 		struct MeshInstance
 		{
-			float world_space_start_position[3];  // (x, y, z) position in world space of base of arrow
+			alignas(16)/*vec3*/ float arrow_start[3];  // (x, y, z) position in world space of base of arrow
+			float arrow_body_width;  // fills alignment padding
+			alignas(16)/*vec3*/ float arrow_vector[3];  // direction and magnitude of arrow in world space
+			float arrowhead_length;  // fills alignment padding
 
-			// World-space frame of reference of arrow instance.
-			// This is used to transform the model-space position and surface normal to world space.
-			float world_space_x_axis[3];
-			float world_space_y_axis[3];
-			float world_space_z_axis[3];  // direction arrow is pointing
+			alignas(16)/*vec4*/ float colour[4];  // arrow colour
+		};
 
-			// This arrow's body/head width/length.
-			float arrow_body_width;
-			float arrowhead_width;
-			float arrow_body_length;
-			float arrowhead_length;
+		/**
+		 * Per-instance data for an arrow that is visible (*output* of view-frustum-culling compute shader).
+		 *
+		 * Member alignment follows std430 layout (used by storage buffer in compute shader).
+		 */
+		struct VisibleMeshInstance
+		{
+			alignas(16)/*vec3*/ float world_space_start_position[3];  // (x, y, z) position in world space of base of arrow
+			float arrow_body_width;  // fills alignment padding
 
-			float colour[4];  // arrow colour
+			alignas(16)/*vec3*/ float world_space_x_axis[3];  // frame of reference of arrow instance
+			float arrowhead_width;  // fills alignment padding
+
+			alignas(16)/*vec3*/ float world_space_y_axis[3];  // frame of reference of arrow instance
+			float arrow_body_length;  // fills alignment padding
+
+			alignas(16)/*vec3*/ float world_space_z_axis[3];  // direction arrow is pointing (unit vector)
+			float arrowhead_length;  // fills alignment padding
+
+			alignas(16)/*vec4*/ float colour[4];  // arrow colour
 		};
 
 		struct InstanceResource
@@ -261,7 +282,7 @@ namespace GPlatesOpenGL
 		 * Note: Should be less than vk::PhysicalDeviceLimits::maxComputeWorkGroupCount[0] (min 65535) multiplied by
 		 *       @a COMPUTE_SHADER_WORK_GROUP_SIZE. For example, 65536 * 16 = 1,048,560.
 		 */
-		static constexpr unsigned int NUM_ARROWS_PER_INSTANCE_BUFFER = 50000;  // ~4MB (at 80 bytes per instance)
+		static constexpr unsigned int NUM_ARROWS_PER_INSTANCE_BUFFER = 50000;  // ~4MB (at 80 bytes per visible instance)
 
 		/**
 		 * Arrow mesh tessellation (how many vertices in a circular cross-section of arrow body or head).

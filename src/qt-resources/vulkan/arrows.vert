@@ -39,14 +39,14 @@ layout (location = 1, component = 3) in float arrowhead_length_weight;  // 1.0 i
 
 // Attributes at per-instance rate (ie, per-arrow rate).
 layout (location = 2) in vec3 world_space_start_position;  // (x, y, z) position in world space of base of arrow
+layout (location = 2, component = 3) in float arrow_body_width;
 layout (location = 3) in vec3 world_space_x_axis;          // arbitrary x-axis orthogonal to arrow direction (z-axis)
+layout (location = 3, component = 3) in float arrowhead_width;
 layout (location = 4) in vec3 world_space_y_axis;          // arbitrary y-axis orthogonal to arrow direction (z-axis)
+layout (location = 4, component = 3) in float arrow_body_length;
 layout (location = 5) in vec3 world_space_z_axis;          // arrow direction
-layout (location = 6, component = 0) in float arrow_body_width;
-layout (location = 6, component = 1) in float arrowhead_width;
-layout (location = 6, component = 2) in float arrow_body_length;
-layout (location = 6, component = 3) in float arrowhead_length;
-layout (location = 7) in vec4 colour;
+layout (location = 5, component = 3) in float arrowhead_length;
+layout (location = 6) in vec4 colour;
 
 layout (location = 0) out VertexData
 {

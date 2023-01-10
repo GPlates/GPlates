@@ -18,40 +18,54 @@
  */
 
 //
-// Culls arrows outside the view frustum.
+// Scales arrows according to viewport zoom and culls arrows outside the view frustum.
 //
 
 layout (push_constant) uniform PushConstants
 {
     vec4 frustum_planes[6];
+    float inverse_viewport_zoom_factor;
+    float max_ratio_arrowhead_to_arrow_body_length;
+    float arrowhead_width_to_length_ratio;
     uint num_input_arrow_instances;
 };
 
-struct ArrowInstance
+struct InputArrowInstance
+{
+    vec3 arrow_start;  // (x, y, z) position in world space of base of arrow
+    float arrow_body_width;  // fills alignment padding
+    vec3 arrow_vector;  // direction and magnitude of arrow in world space
+    float arrowhead_length;  // fills alignment padding
+    vec4 colour;  // arrow colour
+};
+
+struct OutputArrowInstance
 {
     // Position (x, y, z) in world space of base of arrow
-    float world_space_start_position[3];
-    // World-space frame of reference of arrow instance.
-    float world_space_x_axis[3];
-    float world_space_y_axis[3];
-    float world_space_z_axis[3];  // direction arrow is pointing
-    // Arrow's body/head width/length.
-    float arrow_body_width;
-    float arrowhead_width;
-    float arrow_body_length;
-    float arrowhead_length;
+    vec3 world_space_start_position;
+    float arrow_body_width;  // fills alignment padding
+
+    vec3 world_space_x_axis;  // frame of reference of arrow instance
+    float arrowhead_width;  // fills alignment padding
+
+    vec3 world_space_y_axis;  // frame of reference of arrow instance
+    float arrow_body_length;  // fills alignment padding
+
+    vec3 world_space_z_axis;  // direction arrow is pointing (unit vector)
+    float arrowhead_length;  // fills alignment padding
+
     // Arrow colour.
-    float colour[4];
+    vec4 colour;
 };
 
 layout (set = 0, binding = 0) readonly buffer InputArrowInstances
 {
-    ArrowInstance instances[];
+    InputArrowInstance instances[];
 } input_arrow_instances;
 
 layout (set = 0, binding = 1) writeonly buffer OutputArrowInstances
 {
-    ArrowInstance instances[];
+    OutputArrowInstance instances[];
 } output_arrow_instances;
 
 // Same layout as VkDrawIndexedIndirectCommand
@@ -94,50 +108,114 @@ sphere_intersects_frustum(
     return true;
 }
 
-void
-get_arrow_bounding_sphere(
-        ArrowInstance arrow_instance,
-        out vec3 arrow_bounding_sphere_centre,
-        out float arrow_bounding_sphere_radius)
+/*
+ * Generate an arbitray perpendicular unit vector to the specified vector.
+ */
+vec3
+generate_perpendicular(
+        vec3 vector)
 {
-    // Middle of arrow is half the total length (arrod body length plus arrowhead length).
-    arrow_bounding_sphere_radius = 0.5 * (arrow_instance.arrow_body_length + arrow_instance.arrowhead_length);
-
-    // Bounding sphere centre is halfway along length of arrow in direction of arrow starting from arrow base.
-    vec3 arrow_start_position = vec3(
-            arrow_instance.world_space_start_position[0],
-            arrow_instance.world_space_start_position[1],
-            arrow_instance.world_space_start_position[2]);
-    vec3 arrow_direction = vec3(
-            arrow_instance.world_space_z_axis[0],
-            arrow_instance.world_space_z_axis[1],
-            arrow_instance.world_space_z_axis[2]);
-    arrow_bounding_sphere_centre = arrow_start_position + arrow_bounding_sphere_radius * arrow_direction;
+    // Use the basis vector that's most perpendicular (lowest dot product) to the input vector.
+    if (vector.x < vector.y)
+    {
+        if (vector.x < vector.z)
+        {
+            return normalize(cross(vector, vec3(1,0,0)));
+        }
+        else  // vector.z <= vector.x
+        {
+            return normalize(cross(vector, vec3(0,0,1)));
+        }
+    }
+    else  // vector.y <= vector.x
+    {
+        if (vector.y < vector.z)
+        {
+            return normalize(cross(vector, vec3(0,1,0)));
+        }
+        else  // vector.z <= vector.y
+        {
+            return normalize(cross(vector, vec3(0,0,1)));
+        }
+    }
 }
 
 
 void main()
 {
-    uint input_arrow_instance_index = gl_GlobalInvocationID.x;
+    const uint input_arrow_instance_index = gl_GlobalInvocationID.x;
 
-    if (input_arrow_instance_index < num_input_arrow_instances)
+    // Number of instances might not be a multiple of the work group size.
+    if (input_arrow_instance_index >= num_input_arrow_instances)
     {
-        // Get the bounding sphere of the arrow instance (in world space).
-        vec3 arrow_bounding_sphere_centre;
-        float arrow_bounding_sphere_radius;
-        get_arrow_bounding_sphere(
-                input_arrow_instances.instances[input_arrow_instance_index],
-                arrow_bounding_sphere_centre,
-                arrow_bounding_sphere_radius);
-
-        // See if arrow instance is visible (in view frustum).
-        if (sphere_intersects_frustum(arrow_bounding_sphere_centre, arrow_bounding_sphere_radius))
-        {
-            // Increment output arrow instance count.
-            uint output_arrow_instance_index = atomicAdd(indirect_draw.command.instanceCount, 1);
-
-            // Copy arrow instance to the output buffer.
-            output_arrow_instances.instances[output_arrow_instance_index] = input_arrow_instances.instances[input_arrow_instance_index];
-        }
+        return;
     }
+
+    // Input arrow instance.
+    const InputArrowInstance input_arrow_instance = input_arrow_instances.instances[input_arrow_instance_index];
+    const vec3 arrow_start = input_arrow_instance.arrow_start;
+    const vec3 arrow_vector = input_arrow_instance.arrow_vector;
+    float arrow_body_width = input_arrow_instance.arrow_body_width;
+    float arrowhead_length = input_arrow_instance.arrowhead_length;
+    vec4 arrow_colour = input_arrow_instance.colour;
+
+    // Calculate position from start point along vector direction to end point.
+    // The length of the arrow in world space is inversely proportional to the zoom (or magnification).
+    const vec3 arrow_end = arrow_start + inverse_viewport_zoom_factor * arrow_vector;
+
+    const vec3 arrow_body_vector = arrow_end - arrow_start;
+    const float arrow_body_length = length(arrow_body_vector);
+
+    // Avoid divide-by-zero - and if arrow length is near zero it won't be visible.
+    if (arrow_body_length == 0)
+    {
+        return;
+    }
+    const vec3 arrow_unit_vector = (1.0 / arrow_body_length) * arrow_body_vector;
+
+    // See if arrow instance is visible (in view frustum).
+    float arrow_bounding_sphere_radius = 0.5 * arrow_body_length;
+    vec3 arrow_bounding_sphere_centre = arrow_start + arrow_bounding_sphere_radius * arrow_unit_vector;
+    if (!sphere_intersects_frustum(arrow_bounding_sphere_centre, arrow_bounding_sphere_radius))
+    {
+        return;
+    }
+
+    // Also scale the arrow body width and arrowhead length according to the zoom.
+    arrow_body_width *= inverse_viewport_zoom_factor;
+    arrowhead_length *= inverse_viewport_zoom_factor;
+
+    // We want to keep the projected arrowhead size constant regardless of the
+    // the length of the arrow body, except...
+    //
+    // ...if the ratio of arrowhead size to arrow body length is large enough then
+    // we need to start scaling the arrowhead size by the arrow body length so
+    // that the arrowhead disappears as the arrow body disappears.
+    const float max_arrowhead_size = max_ratio_arrowhead_to_arrow_body_length * arrow_body_length;
+    if (arrowhead_length > max_arrowhead_size)
+    {
+        const float arrow_scale = max_arrowhead_size / arrowhead_length;
+
+        arrowhead_length *= arrow_scale;
+
+        // Also linearly shrink the arrow body width.
+        arrow_body_width *= arrow_scale;
+    }
+    const float arrowhead_width = arrowhead_width_to_length_ratio * arrowhead_length;
+
+    // Find an orthonormal basis using 'arrow_unit_vector'.
+    const vec3 arrow_z_axis = arrow_unit_vector;
+    const vec3 arrow_y_axis = generate_perpendicular(arrow_z_axis);
+    const vec3 arrow_x_axis = cross(arrow_y_axis, arrow_z_axis);
+
+    // Increment output arrow instance count.
+    uint output_arrow_instance_index = atomicAdd(indirect_draw.command.instanceCount, 1);
+
+    // Write output arrow instance to the output buffer.
+    output_arrow_instances.instances[output_arrow_instance_index] = OutputArrowInstance(
+            arrow_start, arrow_body_width,
+            arrow_x_axis, arrowhead_width,
+            arrow_y_axis, arrow_body_length,
+            arrow_z_axis, arrowhead_length,
+            arrow_colour);
 }
