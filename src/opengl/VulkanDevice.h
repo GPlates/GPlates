@@ -234,9 +234,8 @@ namespace GPlatesOpenGL
 				boost::optional<const SurfaceInfo &> surface_info);
 
 		bool
-		check_physical_device_features(
-				vk::PhysicalDevice physical_device,
-				const vk::PhysicalDeviceFeatures &features) const;
+		check_physical_device_capabilities(
+				vk::PhysicalDevice physical_device) const;
 
 		bool
 		get_physical_device_graphics_and_compute_queue_family(

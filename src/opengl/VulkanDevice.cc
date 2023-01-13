@@ -228,11 +228,8 @@ GPlatesOpenGL::VulkanDevice::select_physical_device(
 	{
 		vk::PhysicalDevice physical_device = physical_devices[physical_device_index];
 
-		// Get the features of the current physical device.
-		const vk::PhysicalDeviceFeatures features = physical_device.getFeatures();
-
-		// Check that the current physical device supports the features we require.
-		if (!check_physical_device_features(physical_device, features))
+		// Check that the current physical device supports the capabilities we require.
+		if (!check_physical_device_capabilities(physical_device))
 		{
 			continue;
 		}
@@ -341,9 +338,8 @@ GPlatesOpenGL::VulkanDevice::select_physical_device(
 
 
 bool
-GPlatesOpenGL::VulkanDevice::check_physical_device_features(
-		vk::PhysicalDevice physical_device,
-		const vk::PhysicalDeviceFeatures &features) const
+GPlatesOpenGL::VulkanDevice::check_physical_device_capabilities(
+		vk::PhysicalDevice physical_device) const
 {
 	//
 	// For feature support on different platforms/systems see http://vulkan.gpuinfo.org/listfeaturescore10.php
@@ -352,7 +348,8 @@ GPlatesOpenGL::VulkanDevice::check_physical_device_features(
 	//
 	// Note that wide lines and geometry shaders are not typically supported on macOS (so we don't use them).
 	//
-	return
+	const vk::PhysicalDeviceFeatures features = physical_device.getFeatures();
+	const bool features_supported =
 			// Rendering stars disables the near and far clip planes (and clamps depth values outside)...
 			features.depthClamp &&
 			// Order-independent transparency writes to memory (and uses atomics) in fragment shaders...
@@ -363,6 +360,21 @@ GPlatesOpenGL::VulkanDevice::check_physical_device_features(
 			features.samplerAnisotropy &&
 			// Clip distances are used in some shaders (eg, rendering stars)...
 			features.shaderClipDistance;
+
+	//
+	// Check format feature support for specific formats.
+	//
+	const vk::FormatFeatureFlags format_features_32bit_float =
+			vk::FormatFeatureFlagBits::eSampledImageFilterLinear | vk::FormatFeatureFlagBits::eColorAttachmentBlend;
+	const bool format_features_supported =
+			// Require linear filtering/blending of 32-bit floating-point images (Vulkan guarantees this for 16-bit floats but not 32-bit).
+			// Pretty much all desktop Windows, Linux and macOS hardware should support this though...
+			(physical_device.getFormatProperties(vk::Format::eR32Sfloat).optimalTilingFeatures & format_features_32bit_float) == format_features_32bit_float &&
+			(physical_device.getFormatProperties(vk::Format::eR32G32Sfloat).optimalTilingFeatures & format_features_32bit_float) == format_features_32bit_float &&
+			(physical_device.getFormatProperties(vk::Format::eR32G32B32A32Sfloat).optimalTilingFeatures & format_features_32bit_float) == format_features_32bit_float;
+			
+
+	return features_supported && format_features_supported;
 }
 
 
