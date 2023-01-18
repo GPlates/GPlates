@@ -520,7 +520,7 @@ GPlatesOpenGL::Stars::load_stars(
 			index_buffer_copy);
 
 
-	// Pipeline barrier to wait for staging transfer writes to be made available before using the vertex/index data.
+	// Pipeline barrier to wait for staging transfer writes to be visible as vertex/index data.
 	vk::MemoryBarrier memory_barrier;
 	memory_barrier
 			.setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)

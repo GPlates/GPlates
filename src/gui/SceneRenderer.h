@@ -29,6 +29,7 @@
 #include "opengl/GLProgram.h"
 #include "opengl/GLTexture.h"
 #include "opengl/GLVertexArray.h"
+#include "opengl/MapProjectionImage.h"
 #include "opengl/RenderedGeometryRenderer.h"
 #include "opengl/Stars.h"
 #include "opengl/Vulkan.h"
@@ -143,7 +144,10 @@ namespace GPlatesGui
 	private:
 
 		GPlatesPresentation::ViewState &d_view_state;
+
 		MapProjection &d_map_projection;
+		//! Image that maps latitude/longitude to map projection space.
+		GPlatesOpenGL::MapProjectionImage d_map_projection_image;
 
 		//! Draw the rendered geometries in the layers of the rendered geometry collection.
 		GPlatesOpenGL::RenderedGeometryRenderer d_rendered_geometry_renderer;

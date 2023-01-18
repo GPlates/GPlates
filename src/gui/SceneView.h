@@ -158,14 +158,6 @@ namespace GPlatesGui
 				boost::optional<QPointF> &position_on_map_plane) const;
 
 		/**
-		 * Returns the plane that separates the visible front half of the globe from invisible rear half.
-		 *
-		 * Note: This only applies to the globe view (not the map view).
-		 */
-		GPlatesOpenGL::GLIntersect::Plane
-		get_globe_camera_front_horizon_plane() const;
-
-		/**
 		 * The proximity inclusion threshold is a dot product (cosine) measure of how close a geometry
 		 * must be to a click-point be considered "hit" by the click.
 		 *

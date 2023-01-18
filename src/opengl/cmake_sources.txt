@@ -111,6 +111,8 @@ GLVisualLayers.cc
 GLVisualLayers.h
 GLVisualRasterSource.cc
 GLVisualRasterSource.h
+MapProjectionImage.cc
+MapProjectionImage.h
 OpenGL.cc
 OpenGL.h
 OpenGLException.h

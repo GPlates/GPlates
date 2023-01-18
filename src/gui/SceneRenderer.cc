@@ -81,6 +81,12 @@ GPlatesGui::SceneRenderer::initialise_vulkan_resources(
 		vk::CommandBuffer initialisation_command_buffer,
 		vk::Fence initialisation_submit_fence)
 {
+	// Initialise the map projection image.
+	d_map_projection_image.initialise_vulkan_resources(
+			vulkan,
+			initialisation_command_buffer,
+			initialisation_submit_fence);
+
 	// Initialise the background stars.
 	d_stars.initialise_vulkan_resources(vulkan, default_render_pass, initialisation_command_buffer, initialisation_submit_fence);
 
@@ -128,6 +134,9 @@ GPlatesGui::SceneRenderer::release_vulkan_resources(
 
 	// Release the background stars.
 	d_stars.release_vulkan_resources(vulkan);
+
+	// Release the map projection image.
+	d_map_projection_image.release_vulkan_resources(vulkan);
 }
 
 
@@ -325,6 +334,13 @@ GPlatesGui::SceneRenderer::render_scene(
 		const GPlatesOpenGL::GLViewProjection &view_projection,
 		int device_pixel_ratio)
 {
+	// If the map view is active then see if the map projection image needs updating
+	// (if map projection changed in any way since the last update).
+	if (scene_view.is_map_active())
+	{
+		d_map_projection_image.update(vulkan, preprocess_command_buffer, d_map_projection);
+	}
+
 	//
 	// Render the background stars.
 	//

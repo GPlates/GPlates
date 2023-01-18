@@ -119,13 +119,6 @@ GPlatesGui::SceneView::get_view_projection(
 }
 
 
-GPlatesOpenGL::GLIntersect::Plane
-GPlatesGui::SceneView::get_globe_camera_front_horizon_plane() const
-{
-	return d_globe_camera.get_front_globe_horizon_plane();
-}
-
-
 double
 GPlatesGui::SceneView::current_proximity_inclusion_threshold(
 		const GPlatesMaths::PointOnSphere &click_point,
