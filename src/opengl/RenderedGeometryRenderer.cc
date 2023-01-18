@@ -129,7 +129,7 @@ GPlatesOpenGL::RenderedGeometryRenderer::render(
 		const GLViewProjection &view_projection,
 		const double &viewport_zoom_factor,
 		bool is_map_active,
-		const MapProjectionImage &map_projection_image,
+		const double &map_projection_central_meridian,
 		bool improve_performance_reduce_quality_of_sub_surfaces_hint)
 {
 	// Initialise our visitation parameters so our visit methods can access them.
@@ -151,7 +151,7 @@ GPlatesOpenGL::RenderedGeometryRenderer::render(
 			view_projection,
 			d_visitation_params->inverse_viewport_zoom_factor,
 			is_map_active,
-			map_projection_image);  // only used if 'is_map_active' is true
+			map_projection_central_meridian);  // only used if 'is_map_active' is true
 
 	// Get the cache handle for all the rendered geometry layers.
 	const cache_handle_type cache_handle = d_visitation_params->cache_handle;

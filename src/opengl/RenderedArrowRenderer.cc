@@ -199,7 +199,7 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 		const GLViewProjection &view_projection,
 		const double &inverse_viewport_zoom_factor,
 		bool is_map_active,
-		const MapProjectionImage &map_projection_image)
+		const double &map_projection_central_meridian)
 {
 	// Return early if no arrows to render.
 	if (d_num_arrows_to_render == 0)
@@ -254,7 +254,7 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 	compute_push_constants.arrowhead_width_to_length_ratio = ARROWHEAD_WIDTH_TO_LENGTH_RATIO;
 	compute_push_constants.use_map_projection = is_map_active;
 	compute_push_constants.map_projection_central_meridian =
-			(is_map_active ? GPlatesMaths::convert_deg_to_rad(map_projection_image.get_central_meridian()) : 0.0);
+			(is_map_active ? GPlatesMaths::convert_deg_to_rad(map_projection_central_meridian) : 0.0);
 
 	// Set all push constants except the number of instances.
 	preprocess_command_buffer.pushConstants(

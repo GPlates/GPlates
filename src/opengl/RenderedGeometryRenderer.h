@@ -102,7 +102,7 @@ namespace GPlatesOpenGL
 				const GLViewProjection &view_projection,
 				const double &viewport_zoom_factor,
 				bool is_map_active,
-				const MapProjectionImage &map_projection_image,  // only used if 'is_map_active' is true
+				const double &map_projection_central_meridian,  // only used if 'is_map_active' is true
 				bool improve_performance_reduce_quality_of_sub_surfaces_hint = false);
 
 		/**

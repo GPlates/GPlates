@@ -94,7 +94,7 @@ const float PI = radians(180);
 const float HALF_PI = radians(180) / 2.0;
 
 /*
- * Project a position on the unit sphere onto the 2D map projection.
+ * Project a 3D position on the unit sphere onto the 2D map projection.
  */
 vec2
 map_project_position(

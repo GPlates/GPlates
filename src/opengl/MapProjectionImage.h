@@ -21,8 +21,8 @@
 #define GPLATES_OPENGL_MAP_PROJECTION_IMAGE_H
 
 #include <cstdint>
+#include <map>
 #include <vector>
-#include <boost/optional.hpp>
 
 #include "Vulkan.h"
 #include "VulkanBuffer.h"
@@ -73,13 +73,16 @@ namespace GPlatesOpenGL
 				vk::CommandBuffer preprocess_command_buffer,
 				const GPlatesGui::MapProjection &d_map_projection);
 
-		/**
-		 * Returns the central longitude (degrees) of the map projection in the most recent call to @a update, or 0.0 if not yet called.
-		 */
-		double
-		get_central_meridian() const;
-
 	private:
+
+		/**
+		 * Staging buffer for uploading to an image of a specific map projection type.
+		 */
+		struct StagingBuffer
+		{
+			//! Contains map projection forward transform image data.
+			VulkanBuffer forward_transform_buffer;
+		};
 
 		/**
 		 * Texel containing (x, y) result of the map projection of a (longitude, latitude) position.
@@ -90,17 +93,26 @@ namespace GPlatesOpenGL
 			float y;
 		};
 
+
+		StagingBuffer
+		create_staging_buffer(
+				Vulkan &vulkan,
+				const GPlatesGui::MapProjection &map_projection);
+
+
 		static constexpr vk::Format TEXEL_FORMAT = vk::Format::eR32G32Sfloat;  // format for struct Texel
 		static constexpr unsigned int NUM_TEXEL_INTERVALS_PER_90_DEGREES = 90;
 		static constexpr double TEXEL_INTERVAL_IN_DEGREES = 90.0 / NUM_TEXEL_INTERVALS_PER_90_DEGREES;
 		static constexpr unsigned int IMAGE_WIDTH = 4 * NUM_TEXEL_INTERVALS_PER_90_DEGREES + 1;
 		static constexpr unsigned int IMAGE_HEIGHT = 2 * NUM_TEXEL_INTERVALS_PER_90_DEGREES + 1;
 
-		boost::optional<GPlatesGui::MapProjectionSettings> d_last_seen_map_projection_settings;
-
-		VulkanBuffer d_staging_buffer;
-		//! Persistently mapped pointer to staging buffer.
-		void *d_staging_buffer_mapped_pointer = nullptr;
+		/**
+		 * Each map projection type caches its own staging buffer.
+		 *
+		 * This enables us to switch between them to upload to image when switching map projections.
+		 * They only need to calculate map projection when first used.
+		 */
+		std::map<GPlatesGui::MapProjection::Type, StagingBuffer> d_staging_buffers;
 
 		vk::Sampler d_sampler;
 		VulkanImage d_image;

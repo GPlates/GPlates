@@ -414,7 +414,7 @@ GPlatesGui::SceneRenderer::render_scene(
 			scene_view.get_viewport_zoom().zoom_factor(),
 			// Render the globe or map (and its contents) depending on whether the globe or map is currently active...
 			scene_view.is_map_active(),
-			d_map_projection_image);  // only used if 'is_map_active' is true
+			d_map_projection.central_meridian());  // only used if 'is_map_active' is true
 
 #if 0
 	// Bind the shader program that sorts and blends scene fragments accumulated from rendering the scene and
