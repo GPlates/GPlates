@@ -20,19 +20,23 @@
 //
 // Scales arrows according to viewport zoom and culls arrows outside the view frustum.
 //
+// And performs map projection (when map view is active).
+//
 
 layout (push_constant) uniform PushConstants
 {
     vec4 frustum_planes[6];
-    float inverse_viewport_zoom_factor;
+    float arrow_size_scale_factor;
     float max_ratio_arrowhead_length_to_arrow_length;
     float arrowhead_width_to_length_ratio;
+    bool use_map_projection;  // true/false if rendering in map/globe view
+    float map_projection_central_meridian;  // only used if 'use_map_projection' is true
     uint num_input_arrow_instances;
 };
 
 struct InputArrowInstance
 {
-    vec3 arrow_start;  // (x, y, z) position in world space of base of arrow
+    vec3 arrow_start;  // (x, y, z) position on globe of base of arrow
     float arrow_body_width;  // fills alignment padding
     vec3 arrow_vector;  // direction and magnitude of arrow in world space
     float arrowhead_length;  // fills alignment padding
@@ -41,8 +45,7 @@ struct InputArrowInstance
 
 struct OutputArrowInstance
 {
-    // Position (x, y, z) in world space of base of arrow
-    vec3 world_space_start_position;
+    vec3 world_space_start_position;  // (x, y, z) position in world space of base of arrow
     float arrow_body_width;  // fills alignment padding
 
     vec3 world_space_x_axis;  // frame of reference of arrow instance
@@ -83,8 +86,93 @@ layout (set = 0, binding = 2) buffer IndirectDraw
     IndexedIndirectCommand command;
 } indirect_draw;
 
+layout (set = 1, binding = 0) uniform sampler2D map_projection_sampler;
+
 layout (local_size_x_id = 1) in;  // Set 'local_size_x' using the Vulkan API
 
+const float PI = radians(180);
+const float HALF_PI = radians(180) / 2.0;
+
+/*
+ * Project a position on the unit sphere onto the 2D map projection.
+ */
+vec2
+map_project_position(
+        vec3 position)
+{
+    // Get latitude from position on sphere.
+    float latitude = asin(position.z);  // in range [-PI/2, PI/2]
+
+    // Get longitude from position on sphere.
+    float longitude = atan(position.y, position.x);  // in range [-PI, PI]
+    // Centre about the central meridian (so it has a longitude of zero).
+    longitude -= map_projection_central_meridian;    // in range [-PI - central_meridian, PI - central_meridian]
+
+    // Ensure longitude is in the range [-PI, PI] by:
+    // wrapping [-PI - |central_meridian|, -PI] to [PI - |central_meridian|, PI] when central_meridian > 0, and
+    // wrapping [PI, PI + |central_meridian|] to [-PI, -PI + |central_meridian|] when central_meridian < 0.
+    if (longitude < -PI)  // central_meridian > 0
+    {
+        longitude += 2 * PI;
+    }
+    else if (longitude > PI)  // central_meridian < 0
+    {
+        longitude -= 2 * PI;
+    }
+
+    // Map projection texture coordinate uses longitude and latitude.
+    vec2 map_projection_tex_coord = vec2(
+            // Convert longitude from [-PI, PI] to [0, 1]...
+            (longitude + PI) / (2 * PI),
+            // Convert latitude from [-PI/2, PI/2] to [0, 1]...
+            (latitude + HALF_PI) / PI);
+
+    // Adjust for half texel since boundary of [0, 1] range maps to the texel centres of the boundary texels.
+    // Everything in between is linearly interpolated.
+    vec2 map_projection_resolution = textureSize(map_projection_sampler, 0);
+    map_projection_tex_coord = ((map_projection_resolution - 1) * map_projection_tex_coord + 0.5) / map_projection_resolution;
+
+    // Sample map projection texture to get 2D position on map projection plane.
+    return texture(map_projection_sampler, map_projection_tex_coord).xy;
+}
+
+/*
+ * Project a 3D vector onto the 2D map projection.
+ *
+ * The final map projected vector is actually a 3D vector where the 2D (x,y) component is in the 2D map plane and
+ * the z component is along the z-axis of 3D map projection space.
+ */
+vec3
+map_project_vector(
+        vec3 position,  // position of base of vector on the unit sphere
+        vec3 vector)
+{
+    //
+    // Find the local East, North and down directions at 'position' on the unit sphere.
+    //
+
+    vec3 local_east = cross(vec3(0,0,1)/*global North*/, position);
+    float len_local_east = length(local_east);
+    if (len_local_east == 0)
+    {
+        // Position is at the North pole, so all tangential directions point towards North.
+        // So just choose an arbitrary tangential direction (eg, global East).
+        local_east = vec3(0,1,0);  // global East
+    }
+    else
+    {
+        local_east /= len_local_east;  // normalize
+    }
+
+    vec3 local_north = cross(position, local_east);  // no need to normalize (cross of two perpendicular unit vectors)
+    vec3 local_down = -position;
+
+    // Convert vector into local (East, North, down) frame of reference.
+    return vec3(
+            dot(vector, local_east),
+            dot(vector, local_north),
+            dot(vector, local_down));
+}
 
 /*
  * Returns true if sphere intersects frustum.
@@ -153,16 +241,28 @@ void main()
 
     // Input arrow instance.
     const InputArrowInstance input_arrow_instance = input_arrow_instances.instances[input_arrow_instance_index];
-    const vec3 arrow_start = input_arrow_instance.arrow_start;
+    vec3 arrow_start = input_arrow_instance.arrow_start;
     vec3 arrow_vector = input_arrow_instance.arrow_vector;
     float arrow_body_width = input_arrow_instance.arrow_body_width;
     float arrowhead_length = input_arrow_instance.arrowhead_length;
     vec4 arrow_colour = input_arrow_instance.colour;
 
-    // Scale the arrow vector, the arrow body width and arrowhead length according to the zoom.
-    arrow_vector *= inverse_viewport_zoom_factor;
-    arrow_body_width *= inverse_viewport_zoom_factor;
-    arrowhead_length *= inverse_viewport_zoom_factor;
+    // Scale the arrow vector, the arrow body width and arrowhead length according to the zoom (and whether in map view or not).
+    arrow_vector *= arrow_size_scale_factor;
+    arrow_body_width *= arrow_size_scale_factor;
+    arrowhead_length *= arrow_size_scale_factor;
+
+    // If using a map projection then project the arrow start and arrow vector onto the map projection.
+    if (use_map_projection)
+    {
+        // Map project arrow start position and vector.
+        vec2 arrow_start_on_map = map_project_position(arrow_start);
+        vec3 arrow_vector_on_map = map_project_vector(arrow_start, arrow_vector);
+
+        // Overwrite arrow start position and vector with map projected versions.
+        arrow_start = vec3(arrow_start_on_map, 0.0);  // z component in map projection space is zero (ie, on map plane)
+        arrow_vector = arrow_vector_on_map;
+    }
 
     const float arrow_length = length(arrow_vector);
     // Avoid divide-by-zero - and if arrow length is near zero it won't be visible.

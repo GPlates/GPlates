@@ -28,7 +28,8 @@
 
 #include "gui/Colour.h"
 
-#include "maths/UnitVector3D.h"
+#include "maths/PointOnSphere.h"
+#include "maths/Vector3D.h"
 
 
 namespace GPlatesGui
@@ -38,6 +39,7 @@ namespace GPlatesGui
 
 namespace GPlatesOpenGL
 {
+	class MapProjectionImage;
 	class GLViewProjection;
 
 	/**
@@ -59,6 +61,7 @@ namespace GPlatesOpenGL
 		initialise_vulkan_resources(
 				Vulkan &vulkan,
 				vk::RenderPass default_render_pass,
+				const MapProjectionImage &map_projection_image,
 				vk::CommandBuffer initialisation_command_buffer,
 				vk::Fence initialisation_submit_fence);
 
@@ -78,7 +81,7 @@ namespace GPlatesOpenGL
 		void
 		add(
 				Vulkan &vulkan,
-				const GPlatesMaths::Vector3D &arrow_start,
+				const GPlatesMaths::PointOnSphere &arrow_start,
 				const GPlatesMaths::Vector3D &arrow_vector,
 				float arrow_body_width,
 				float arrowhead_length,
@@ -94,7 +97,8 @@ namespace GPlatesOpenGL
 				vk::CommandBuffer default_render_pass_command_buffer,
 				const GLViewProjection &view_projection,
 				const double &inverse_viewport_zoom_factor,
-				bool is_globe_active);
+				bool is_map_active,
+				const MapProjectionImage &map_projection_image);  // only used if 'is_map_active' is true
 
 	private:
 
@@ -104,9 +108,11 @@ namespace GPlatesOpenGL
 		// layout (push_constant) uniform PushConstants
 		// {
 		//     vec4 frustum_planes[6];
-		//     float inverse_viewport_zoom_factor;
+		//     float arrow_size_scale_factor;
 		//     float max_ratio_arrowhead_length_to_arrow_length;
 		//     float arrowhead_width_to_length_ratio;
+		//     bool use_map_projection;
+		//     float map_projection_central_meridian;
 		//     uint num_input_arrow_instances;
 		// };
 		//
@@ -115,10 +121,12 @@ namespace GPlatesOpenGL
 		//
 		struct ComputePushConstants
 		{
-			float frustum_planes[6][4];
-			float inverse_viewport_zoom_factor;
+			alignas(16)/*vec4*/ float frustum_planes[6][4];
+			float arrow_size_scale_factor;
 			float max_ratio_arrowhead_length_to_arrow_length;
 			float arrowhead_width_to_length_ratio;
+			std::uint32_t/*bool*/ use_map_projection;  // true/false if rendering in map/globe view
+			float map_projection_central_meridian;  // only used if 'use_map_projection' is true
 			std::uint32_t num_input_arrow_instances;
 		};
 
@@ -138,8 +146,8 @@ namespace GPlatesOpenGL
 		//
 		struct GraphicsPushConstants
 		{
-			float view_projection[16];
-			float world_space_light_direction[3];
+			alignas(16)/*vec4*/ float view_projection[16];
+			alignas(16)/*vec3*/ float world_space_light_direction[3];
 			std::uint32_t/*bool*/ lighting_enabled;
 			float light_ambient_contribution;
 		};
@@ -180,7 +188,7 @@ namespace GPlatesOpenGL
 		 */
 		struct MeshInstance
 		{
-			alignas(16)/*vec3*/ float arrow_start[3];  // (x, y, z) position in world space of base of arrow
+			alignas(16)/*vec3*/ float arrow_start[3];  // (x, y, z) position on globe of base of arrow
 			float arrow_body_width;  // fills alignment padding
 			alignas(16)/*vec3*/ float arrow_vector[3];  // direction and magnitude of arrow in world space
 			float arrowhead_length;  // fills alignment padding
@@ -264,6 +272,11 @@ namespace GPlatesOpenGL
 				const std::vector<MeshVertex> &vertices,
 				const std::vector<std::uint32_t> &vertex_indices);
 
+		void
+		create_map_projection_descriptor_set(
+				Vulkan &vulkan,
+				const MapProjectionImage &map_projection_image);
+
 		InstanceResource
 		create_instance_resource(
 				Vulkan &vulkan);
@@ -304,6 +317,15 @@ namespace GPlatesOpenGL
 		 */
 		static constexpr float MAX_RATIO_ARROWHEAD_LENGTH_TO_ARROW_LENGTH = 0.5;
 
+		/**
+		 * Scale factor to apply to the arrow dimensions (full length, body width, head length).
+		 *
+		 * The globe view has a globe of radius 1.0 (diameter 2.0) whereas the map projection typically
+		 * has a longitude range of 360.0 (map projection x,y space is in degrees), so scale the
+		 * map projected arrows by 360.0 / 2.0 = 180.0.
+		 */
+		static constexpr float MAP_PROJECTED_ARROW_SCALE_FACTOR = 180.0;
+
 
 		/**
 		 * Lighting parameters such as whether lighting enabled for rendered arrows,
@@ -311,8 +333,15 @@ namespace GPlatesOpenGL
 		 */
 		const GPlatesGui::SceneLightingParameters &d_scene_lighting_parameters;
 
+		// Descriptor set layouts.
+		vk::DescriptorSetLayout d_instance_descriptor_set_layout;
+		vk::DescriptorSetLayout d_map_projection_descriptor_set_layout;
+
+		// Descriptor pool/set for the map projection texture.
+		vk::DescriptorPool d_map_projection_descriptor_pool;
+		vk::DescriptorSet d_map_projection_descriptor_set;
+
 		// Compute pipeline and layout.
-		vk::DescriptorSetLayout d_compute_descriptor_set_layout;
 		vk::PipelineLayout d_compute_pipeline_layout;
 		vk::Pipeline d_compute_pipeline;
 

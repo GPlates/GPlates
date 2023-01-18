@@ -100,11 +100,16 @@ void
 GPlatesOpenGL::RenderedGeometryRenderer::initialise_vulkan_resources(
 		Vulkan &vulkan,
 		vk::RenderPass default_render_pass,
+		const MapProjectionImage &map_projection_image,
 		vk::CommandBuffer initialisation_command_buffer,
 		vk::Fence initialisation_submit_fence)
 {
 	d_rendered_arrow_renderer.initialise_vulkan_resources(
-			vulkan, default_render_pass, initialisation_command_buffer, initialisation_submit_fence);
+			vulkan,
+			default_render_pass,
+			map_projection_image,
+			initialisation_command_buffer,
+			initialisation_submit_fence);
 }
 
 
@@ -123,7 +128,8 @@ GPlatesOpenGL::RenderedGeometryRenderer::render(
 		vk::CommandBuffer default_render_pass_command_buffer,
 		const GLViewProjection &view_projection,
 		const double &viewport_zoom_factor,
-		bool is_globe_active,
+		bool is_map_active,
+		const MapProjectionImage &map_projection_image,
 		bool improve_performance_reduce_quality_of_sub_surfaces_hint)
 {
 	// Initialise our visitation parameters so our visit methods can access them.
@@ -131,7 +137,7 @@ GPlatesOpenGL::RenderedGeometryRenderer::render(
 			vulkan,
 			view_projection,
 			viewport_zoom_factor,
-			is_globe_active,
+			is_map_active,
 			improve_performance_reduce_quality_of_sub_surfaces_hint);
 
 	// Visit the rendered geometry layers.
@@ -144,7 +150,8 @@ GPlatesOpenGL::RenderedGeometryRenderer::render(
 			default_render_pass_command_buffer,
 			view_projection,
 			d_visitation_params->inverse_viewport_zoom_factor,
-			is_globe_active);
+			is_map_active,
+			map_projection_image);  // only used if 'is_map_active' is true
 
 	// Get the cache handle for all the rendered geometry layers.
 	const cache_handle_type cache_handle = d_visitation_params->cache_handle;
@@ -162,7 +169,7 @@ GPlatesOpenGL::RenderedGeometryRenderer::visit_rendered_arrow(
 {
 	d_rendered_arrow_renderer.add(
 			*d_visitation_params->vulkan,
-			GPlatesMaths::Vector3D(rendered_arrow.get_start_position().position_vector()),
+			rendered_arrow.get_start_position(),
 			rendered_arrow.get_vector(),
 			rendered_arrow.get_arrow_body_width(),
 			rendered_arrow.get_arrowhead_size(),

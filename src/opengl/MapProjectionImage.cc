@@ -252,7 +252,7 @@ GPlatesOpenGL::MapProjectionImage::update(
 		{
 			// Make sure the longitude is within [-180+epsilon, 180-epsilon] around the central meridian longitude.
 			const double epsilon = 1e-6;
-			// 
+			//
 			// This is to prevent subsequent map projection from wrapping (-180 -> +180 or vice versa) due to
 			// the map projection code receiving a longitude value slightly outside that range or the map
 			// projection code itself having numerical precision issues.

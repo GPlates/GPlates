@@ -19,7 +19,7 @@
 
 #include <cmath>
 #include <cstddef>  // offsetof
-#include <cstring>
+#include <cstring>  // memcpy
 #include <vector>
 
 #include "RenderedArrowRenderer.h"
@@ -27,6 +27,7 @@
 #include "GLFrustum.h"
 #include "GLMatrix.h"
 #include "GLViewProjection.h"
+#include "MapProjectionImage.h"
 #include "VulkanException.h"
 #include "VulkanUtils.h"
 
@@ -51,6 +52,7 @@ void
 GPlatesOpenGL::RenderedArrowRenderer::initialise_vulkan_resources(
 		Vulkan &vulkan,
 		vk::RenderPass default_render_pass,
+		const MapProjectionImage &map_projection_image,
 		vk::CommandBuffer initialisation_command_buffer,
 		vk::Fence initialisation_submit_fence)
 {
@@ -68,6 +70,9 @@ GPlatesOpenGL::RenderedArrowRenderer::initialise_vulkan_resources(
 	std::vector<std::uint32_t> vertex_indices;
 	create_arrow_mesh(vertices, vertex_indices);
 	load_arrow_mesh(vulkan, initialisation_command_buffer, initialisation_submit_fence, vertices, vertex_indices);
+
+	// Create descriptor set for map projection texture.
+	create_map_projection_descriptor_set(vulkan, map_projection_image);
 }
 
 
@@ -105,14 +110,20 @@ GPlatesOpenGL::RenderedArrowRenderer::release_vulkan_resources(
 	// Destroy the compute pipeline layout and pipeline.
 	vulkan.get_device().destroyPipeline(d_compute_pipeline);
 	vulkan.get_device().destroyPipelineLayout(d_compute_pipeline_layout);
-	vulkan.get_device().destroyDescriptorSetLayout(d_compute_descriptor_set_layout);
+
+	// Destroy descriptor set layouts.
+	vulkan.get_device().destroyDescriptorSetLayout(d_instance_descriptor_set_layout);
+	vulkan.get_device().destroyDescriptorSetLayout(d_map_projection_descriptor_set_layout);
+
+	// Destroy descriptor pool/set for the map projection texture.
+	vulkan.get_device().destroyDescriptorPool(d_map_projection_descriptor_pool);  // also frees descriptor set
 }
 
 
 void
 GPlatesOpenGL::RenderedArrowRenderer::add(
 		Vulkan &vulkan,
-		const GPlatesMaths::Vector3D &arrow_start,
+		const GPlatesMaths::PointOnSphere &arrow_start,
 		const GPlatesMaths::Vector3D &arrow_vector,
 		float arrow_body_width,
 		float arrowhead_length,
@@ -120,9 +131,9 @@ GPlatesOpenGL::RenderedArrowRenderer::add(
 {
 	MeshInstance arrow_instance;
 	// Copy arrow start position into instance data.
-	arrow_instance.arrow_start[0] = arrow_start.x().dval();
-	arrow_instance.arrow_start[1] = arrow_start.y().dval();
-	arrow_instance.arrow_start[2] = arrow_start.z().dval();
+	arrow_instance.arrow_start[0] = arrow_start.position_vector().x().dval();
+	arrow_instance.arrow_start[1] = arrow_start.position_vector().y().dval();
+	arrow_instance.arrow_start[2] = arrow_start.position_vector().z().dval();
 	// Copy arrow vector into instance data.
 	arrow_instance.arrow_vector[0] = arrow_vector.x().dval();
 	arrow_instance.arrow_vector[1] = arrow_vector.y().dval();
@@ -187,7 +198,8 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 		vk::CommandBuffer default_render_pass_command_buffer,
 		const GLViewProjection &view_projection,
 		const double &inverse_viewport_zoom_factor,
-		bool is_globe_active)
+		bool is_map_active,
+		const MapProjectionImage &map_projection_image)
 {
 	// Return early if no arrows to render.
 	if (d_num_arrows_to_render == 0)
@@ -213,9 +225,11 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 	// layout (push_constant) uniform PushConstants
 	// {
 	//     vec4 frustum_planes[6];
-	//     float inverse_viewport_zoom_factor;
+	//     float arrow_size_scale_factor;
 	//     float max_ratio_arrowhead_length_to_arrow_length;
 	//     float arrowhead_width_to_length_ratio;
+	//     bool use_map_projection;
+	//     float map_projection_central_meridian;
 	//     uint num_input_arrow_instances;
 	// };
 	//
@@ -233,9 +247,14 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 	}
 
 	// Extra push constants.
-	compute_push_constants.inverse_viewport_zoom_factor = inverse_viewport_zoom_factor;
+	compute_push_constants.arrow_size_scale_factor = inverse_viewport_zoom_factor *
+			// Apply map projected arrow scale factor only in map view...
+			(is_map_active ? MAP_PROJECTED_ARROW_SCALE_FACTOR : 1.0);
 	compute_push_constants.max_ratio_arrowhead_length_to_arrow_length = MAX_RATIO_ARROWHEAD_LENGTH_TO_ARROW_LENGTH;
 	compute_push_constants.arrowhead_width_to_length_ratio = ARROWHEAD_WIDTH_TO_LENGTH_RATIO;
+	compute_push_constants.use_map_projection = is_map_active;
+	compute_push_constants.map_projection_central_meridian =
+			(is_map_active ? GPlatesMaths::convert_deg_to_rad(map_projection_image.get_central_meridian()) : 0.0);
 
 	// Set all push constants except the number of instances.
 	preprocess_command_buffer.pushConstants(
@@ -253,7 +272,7 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 		vk::DrawIndexedIndirectCommand draw_indexed_indirect_command;
 		draw_indexed_indirect_command
 				.setIndexCount(d_num_vertex_indices)
-				.setInstanceCount(0)  // the only dynamic data in the command
+				.setInstanceCount(0)  // the only dynamic data in the command (updated by compute shader)
 				.setFirstIndex(0)
 				.setVertexOffset(0)
 				.setFirstInstance(0);
@@ -300,12 +319,16 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 				num_arrows_in_instance_buffer * sizeof(MeshInstance),
 				GPLATES_EXCEPTION_SOURCE);
 
-		// Bind the descriptor set (containing storage buffer descriptors used by compute shader).
+		// Bind the descriptor sets used by compute shader.
+		//
+		// Set 0: Instance and indirect draw storage buffer descriptors.
+		// Set 1: Map projection image descriptor.
+		//        Note: this is only used when map is active, but still must be bound since is "statically" used in shader.
 		preprocess_command_buffer.bindDescriptorSets(
 				vk::PipelineBindPoint::eCompute,
 				d_compute_pipeline_layout,
 				0/*firstSet*/,
-				instance_resource.compute_descriptor_set,
+				{ instance_resource.compute_descriptor_set, d_map_projection_descriptor_set },
 				nullptr/*dynamicOffsets*/);
 
 		// Set the number-of-instances push constant.
@@ -318,14 +341,14 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 				sizeof(ComputePushConstants::num_input_arrow_instances),
 				&compute_push_constants.num_input_arrow_instances);
 
-		// Get compute shader to find the visible arrows (it culls arrows outside the view frustum).
+		// Dispatch compute shader.
 		std::uint32_t num_arrow_work_groups = num_arrows_in_instance_buffer / COMPUTE_SHADER_WORK_GROUP_SIZE;
 		if (num_arrows_in_instance_buffer % COMPUTE_SHADER_WORK_GROUP_SIZE) ++num_arrow_work_groups;
 		preprocess_command_buffer.dispatch(num_arrow_work_groups, 1, 1);
 	}
 
 
-	// Pipeline barrier to wait for compute shader writes to be made available before using as vertex data and indirect draw data.
+	// Pipeline barrier to wait for compute shader writes to be made visible for use as vertex data and indirect draw data.
 	//
 	// Note: The preprocess command buffer (containing our compute shader dispatches) will be submitted before the
 	//       default render pass command buffer (containing our indirect draws).
@@ -382,9 +405,13 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 	if (graphics_push_constants.lighting_enabled)
 	{
 		// Light direction.
-		graphics_push_constants.world_space_light_direction[0] = d_scene_lighting_parameters.get_globe_view_light_direction().x().dval();
-		graphics_push_constants.world_space_light_direction[1] = d_scene_lighting_parameters.get_globe_view_light_direction().y().dval();
-		graphics_push_constants.world_space_light_direction[2] = d_scene_lighting_parameters.get_globe_view_light_direction().z().dval();
+		const GPlatesMaths::UnitVector3D &world_space_light_direction = is_map_active
+				? d_scene_lighting_parameters.get_map_view_light_direction()
+				: d_scene_lighting_parameters.get_globe_view_light_direction();
+		graphics_push_constants.world_space_light_direction[0] = world_space_light_direction.x().dval();
+		graphics_push_constants.world_space_light_direction[1] = world_space_light_direction.y().dval();
+		graphics_push_constants.world_space_light_direction[2] = world_space_light_direction.z().dval();
+
 		// Ambient light contribution.
 		graphics_push_constants.light_ambient_contribution = d_scene_lighting_parameters.get_ambient_light_contribution();
 	}
@@ -432,7 +459,7 @@ GPlatesOpenGL::RenderedArrowRenderer::create_compute_pipeline(
 	vk::UniqueShaderModule compute_shader_module = vulkan.get_device().createShaderModuleUnique({ {}, {compute_shader_code} });
 	// Specialization constants (set the 'local_size_x' in the compute shader).
 	std::uint32_t specialization_data[1] = { COMPUTE_SHADER_WORK_GROUP_SIZE };
-	vk::SpecializationMapEntry specialization_map_entries[1] = { { 1/*constant_id*/, 0/*offset*/, sizeof(std::uint32_t) }};
+	vk::SpecializationMapEntry specialization_map_entries[1] = { { 1/*constant_id*/, 0/*offset*/, sizeof(std::uint32_t) } };
 	vk::SpecializationInfo specialization_info;
 	specialization_info
 			.setMapEntries(specialization_map_entries)
@@ -447,35 +474,52 @@ GPlatesOpenGL::RenderedArrowRenderer::create_compute_pipeline(
 	//
 	// Pipeline layout.
 	//
-	// Descriptor set layout.
-	vk::DescriptorSetLayoutBinding descriptor_set_layout_bindings[3];
-	descriptor_set_layout_bindings[0]
+
+	// Instance descriptor set layout.
+	vk::DescriptorSetLayoutBinding instance_descriptor_set_layout_bindings[3];
+	instance_descriptor_set_layout_bindings[0]
 			.setBinding(0)
 			.setDescriptorType(vk::DescriptorType::eStorageBuffer)
 			.setDescriptorCount(1)
 			.setStageFlags(vk::ShaderStageFlagBits::eCompute);
-	descriptor_set_layout_bindings[1]
+	instance_descriptor_set_layout_bindings[1]
 			.setBinding(1)
 			.setDescriptorType(vk::DescriptorType::eStorageBuffer)
 			.setDescriptorCount(1)
 			.setStageFlags(vk::ShaderStageFlagBits::eCompute);
-	descriptor_set_layout_bindings[2]
+	instance_descriptor_set_layout_bindings[2]
 			.setBinding(2)
 			.setDescriptorType(vk::DescriptorType::eStorageBuffer)
 			.setDescriptorCount(1)
 			.setStageFlags(vk::ShaderStageFlagBits::eCompute);
-	vk::DescriptorSetLayoutCreateInfo descriptor_set_layout_create_info;
-	descriptor_set_layout_create_info.setBindings(descriptor_set_layout_bindings);
-	d_compute_descriptor_set_layout = vulkan.get_device().createDescriptorSetLayout(descriptor_set_layout_create_info);
+	vk::DescriptorSetLayoutCreateInfo instance_descriptor_set_layout_create_info;
+	instance_descriptor_set_layout_create_info.setBindings(instance_descriptor_set_layout_bindings);
+	d_instance_descriptor_set_layout = vulkan.get_device().createDescriptorSetLayout(instance_descriptor_set_layout_create_info);
+
+	// Map projection descriptor set layout.
+	vk::DescriptorSetLayoutBinding map_projection_descriptor_set_layout_bindings[1];
+	map_projection_descriptor_set_layout_bindings[0]
+			.setBinding(0)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setDescriptorCount(1)
+			.setStageFlags(vk::ShaderStageFlagBits::eCompute);
+	vk::DescriptorSetLayoutCreateInfo map_projection_descriptor_set_layout_create_info;
+	map_projection_descriptor_set_layout_create_info.setBindings(map_projection_descriptor_set_layout_bindings);
+	d_map_projection_descriptor_set_layout = vulkan.get_device().createDescriptorSetLayout(map_projection_descriptor_set_layout_create_info);
+
+	// Descriptor set layouts.
+	vk::DescriptorSetLayout descriptor_set_layouts[2] = { d_instance_descriptor_set_layout, d_map_projection_descriptor_set_layout };
+
 	// Push constants.
 	vk::PushConstantRange push_constant_range;
 	push_constant_range
 			.setStageFlags(vk::ShaderStageFlagBits::eCompute)
 			.setOffset(0)
 			.setSize(sizeof(ComputePushConstants));
+
 	vk::PipelineLayoutCreateInfo pipeline_layout_create_info;
 	pipeline_layout_create_info
-			.setSetLayouts(d_compute_descriptor_set_layout)
+			.setSetLayouts(descriptor_set_layouts)
 			.setPushConstantRanges(push_constant_range);
 	d_compute_pipeline_layout = vulkan.get_device().createPipelineLayout(pipeline_layout_create_info);
 
@@ -902,7 +946,7 @@ GPlatesOpenGL::RenderedArrowRenderer::load_arrow_mesh(
 #if defined(_WIN32) && defined(MemoryBarrier) // See "VulkanHpp.h" for why this is necessary.
 #	undef MemoryBarrier
 #endif
-	// Pipeline barrier to wait for staging transfer writes to be made available before using the vertex/index data.
+	// Pipeline barrier to wait for staging transfer writes to be made visible for use as vertex/index data.
 	vk::MemoryBarrier memory_barrier;
 	memory_barrier
 			.setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
@@ -934,6 +978,47 @@ GPlatesOpenGL::RenderedArrowRenderer::load_arrow_mesh(
 	// Destroy staging buffers now that device is no longer using them.
 	VulkanBuffer::destroy(vma_allocator, staging_vertex_buffer);
 	VulkanBuffer::destroy(vma_allocator, staging_index_buffer);
+}
+
+
+void
+GPlatesOpenGL::RenderedArrowRenderer::create_map_projection_descriptor_set(
+		Vulkan &vulkan,
+		const MapProjectionImage &map_projection_image)
+{
+	// Create descriptor pool.
+	vk::DescriptorPoolSize descriptor_pool_size;
+	descriptor_pool_size
+			.setType(vk::DescriptorType::eCombinedImageSampler)
+			.setDescriptorCount(1);
+	vk::DescriptorPoolCreateInfo descriptor_pool_create_info;
+	descriptor_pool_create_info
+			.setMaxSets(1)
+			.setPoolSizes(descriptor_pool_size);
+	d_map_projection_descriptor_pool = vulkan.get_device().createDescriptorPool(descriptor_pool_create_info);
+
+	// Allocate descriptor set.
+	vk::DescriptorSetAllocateInfo descriptor_set_allocate_info;
+	descriptor_set_allocate_info
+			.setDescriptorPool(d_map_projection_descriptor_pool)
+			.setSetLayouts(d_map_projection_descriptor_set_layout);
+	const std::vector<vk::DescriptorSet> descriptor_sets =
+			vulkan.get_device().allocateDescriptorSets(descriptor_set_allocate_info);
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			descriptor_sets.size() == 1,
+			GPLATES_ASSERTION_SOURCE);
+	d_map_projection_descriptor_set = descriptor_sets[0];
+
+	// Descriptor write for map projection texture.
+	vk::DescriptorImageInfo map_projection_descriptor_image_info = map_projection_image.get_descriptor_image_info();
+	vk::WriteDescriptorSet descriptor_writes[1];
+	descriptor_writes[0]
+			.setDstSet(d_map_projection_descriptor_set).setDstBinding(0).setDstArrayElement(0).setDescriptorCount(1)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setImageInfo(map_projection_descriptor_image_info);
+
+	// Update descriptor set.
+	vulkan.get_device().updateDescriptorSets(descriptor_writes, nullptr/*descriptorCopies*/);
 }
 
 
@@ -1020,7 +1105,7 @@ GPlatesOpenGL::RenderedArrowRenderer::create_instance_resource(
 	vk::DescriptorSetAllocateInfo compute_descriptor_set_allocate_info;
 	compute_descriptor_set_allocate_info
 			.setDescriptorPool(compute_descriptor_pool)
-			.setSetLayouts(d_compute_descriptor_set_layout);
+			.setSetLayouts(d_instance_descriptor_set_layout);
 	const std::vector<vk::DescriptorSet> compute_descriptor_sets =
 			vulkan.get_device().allocateDescriptorSets(compute_descriptor_set_allocate_info);
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(

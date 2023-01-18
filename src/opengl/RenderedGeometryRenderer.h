@@ -48,6 +48,7 @@ namespace GPlatesViewOperations
 namespace GPlatesOpenGL
 {
 	class GLViewProjection;
+	class MapProjectionImage;
 
 	/**
 	 * Draw the rendered geometries in the layers of a rendered geometry collection.
@@ -75,6 +76,7 @@ namespace GPlatesOpenGL
 		initialise_vulkan_resources(
 				Vulkan &vulkan,
 				vk::RenderPass default_render_pass,
+				const MapProjectionImage &map_projection_image,
 				vk::CommandBuffer initialisation_command_buffer,
 				vk::Fence initialisation_submit_fence);
 
@@ -99,7 +101,8 @@ namespace GPlatesOpenGL
 				vk::CommandBuffer default_render_pass_command_buffer,
 				const GLViewProjection &view_projection,
 				const double &viewport_zoom_factor,
-				bool is_globe_active,
+				bool is_map_active,
+				const MapProjectionImage &map_projection_image,  // only used if 'is_map_active' is true
 				bool improve_performance_reduce_quality_of_sub_surfaces_hint = false);
 
 		/**
@@ -134,13 +137,13 @@ namespace GPlatesOpenGL
 					GPlatesOpenGL::Vulkan &vulkan_,
 					const GPlatesOpenGL::GLViewProjection &view_projection_,
 					const double &viewport_zoom_factor_,
-					bool is_globe_active_,
+					bool is_map_active_,
 					// Used for sub-surfaces...
 					bool improve_performance_reduce_quality_of_sub_surfaces_hint_ = false) :
 				vulkan(&vulkan_),
 				view_projection(view_projection_),
 				inverse_viewport_zoom_factor(1.0 / viewport_zoom_factor_),
-				is_globe_active(is_globe_active_),
+				is_map_active(is_map_active_),
 				improve_performance_reduce_quality_of_sub_surfaces_hint(improve_performance_reduce_quality_of_sub_surfaces_hint_),
 				cache_handle(new std::vector<cache_handle_type>())
 			{  }
@@ -148,7 +151,7 @@ namespace GPlatesOpenGL
 			GPlatesOpenGL::Vulkan *vulkan;
 			GPlatesOpenGL::GLViewProjection view_projection;
 			double inverse_viewport_zoom_factor;
-			bool is_globe_active;
+			bool is_map_active;
 
 			// Used for sub-surfaces...
 			bool improve_performance_reduce_quality_of_sub_surfaces_hint;
