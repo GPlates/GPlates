@@ -59,6 +59,10 @@ GPlatesOpenGL::RenderedArrowRenderer::initialise_vulkan_resources(
 	// Add this scope to the call stack trace printed if exception thrown in this scope.
 	TRACK_CALL_STACK();
 
+	// Map projection image dimensions.
+	d_map_projection_image_width = map_projection_image.get_image_width();
+	d_map_projection_image_height = map_projection_image.get_image_height();
+
 	// Create the compute pipeline (to cull arrows outside the view frustum prior to rendering).
 	create_compute_pipeline(vulkan);
 
@@ -71,7 +75,7 @@ GPlatesOpenGL::RenderedArrowRenderer::initialise_vulkan_resources(
 	create_arrow_mesh(vertices, vertex_indices);
 	load_arrow_mesh(vulkan, initialisation_command_buffer, initialisation_submit_fence, vertices, vertex_indices);
 
-	// Create descriptor set for map projection texture.
+	// Create descriptor set for map projection textures.
 	create_map_projection_descriptor_set(vulkan, map_projection_image);
 }
 
@@ -225,11 +229,12 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 	// layout (push_constant) uniform PushConstants
 	// {
 	//     vec4 frustum_planes[6];
+	//     bool use_map_projection;
+	//     float map_projection_central_meridian;
+	//     vec2 map_projection_image_size;
 	//     float arrow_size_scale_factor;
 	//     float max_ratio_arrowhead_length_to_arrow_length;
 	//     float arrowhead_width_to_length_ratio;
-	//     bool use_map_projection;
-	//     float map_projection_central_meridian;
 	//     uint num_input_arrow_instances;
 	// };
 	//
@@ -246,15 +251,18 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 		frustum_planes[n].get_float_plane(compute_push_constants.frustum_planes[n]);
 	}
 
+	// Map projection push constants (only used if map is active).
+	compute_push_constants.use_map_projection = is_map_active;
+	compute_push_constants.map_projection_central_meridian = GPlatesMaths::convert_deg_to_rad(map_projection_central_meridian);
+	compute_push_constants.map_projection_image_size[0] = d_map_projection_image_width;
+	compute_push_constants.map_projection_image_size[1] = d_map_projection_image_height;
+
 	// Extra push constants.
 	compute_push_constants.arrow_size_scale_factor = inverse_viewport_zoom_factor *
 			// Apply map projected arrow scale factor only in map view...
 			(is_map_active ? MAP_PROJECTED_ARROW_SCALE_FACTOR : 1.0);
 	compute_push_constants.max_ratio_arrowhead_length_to_arrow_length = MAX_RATIO_ARROWHEAD_LENGTH_TO_ARROW_LENGTH;
 	compute_push_constants.arrowhead_width_to_length_ratio = ARROWHEAD_WIDTH_TO_LENGTH_RATIO;
-	compute_push_constants.use_map_projection = is_map_active;
-	compute_push_constants.map_projection_central_meridian =
-			(is_map_active ? GPlatesMaths::convert_deg_to_rad(map_projection_central_meridian) : 0.0);
 
 	// Set all push constants except the number of instances.
 	preprocess_command_buffer.pushConstants(
@@ -497,9 +505,16 @@ GPlatesOpenGL::RenderedArrowRenderer::create_compute_pipeline(
 	d_instance_descriptor_set_layout = vulkan.get_device().createDescriptorSetLayout(instance_descriptor_set_layout_create_info);
 
 	// Map projection descriptor set layout.
-	vk::DescriptorSetLayoutBinding map_projection_descriptor_set_layout_bindings[1];
+	vk::DescriptorSetLayoutBinding map_projection_descriptor_set_layout_bindings[2];
+	// Forward transform image binding.
 	map_projection_descriptor_set_layout_bindings[0]
 			.setBinding(0)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setDescriptorCount(1)
+			.setStageFlags(vk::ShaderStageFlagBits::eCompute);
+	// Jacobian matrix image binding.
+	map_projection_descriptor_set_layout_bindings[1]
+			.setBinding(1)
 			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
 			.setDescriptorCount(1)
 			.setStageFlags(vk::ShaderStageFlagBits::eCompute);
@@ -990,7 +1005,7 @@ GPlatesOpenGL::RenderedArrowRenderer::create_map_projection_descriptor_set(
 	vk::DescriptorPoolSize descriptor_pool_size;
 	descriptor_pool_size
 			.setType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(1);
+			.setDescriptorCount(2);
 	vk::DescriptorPoolCreateInfo descriptor_pool_create_info;
 	descriptor_pool_create_info
 			.setMaxSets(1)
@@ -1009,13 +1024,18 @@ GPlatesOpenGL::RenderedArrowRenderer::create_map_projection_descriptor_set(
 			GPLATES_ASSERTION_SOURCE);
 	d_map_projection_descriptor_set = descriptor_sets[0];
 
-	// Descriptor write for map projection texture.
-	vk::DescriptorImageInfo map_projection_descriptor_image_info = map_projection_image.get_descriptor_image_info();
-	vk::WriteDescriptorSet descriptor_writes[1];
+	// Descriptor writes for the map projection textures.
+	vk::DescriptorImageInfo forward_transform_descriptor_image_info = map_projection_image.get_forward_transform_descriptor_image_info();
+	vk::DescriptorImageInfo jacobian_matrix_descriptor_image_info = map_projection_image.get_jacobian_matrix_descriptor_image_info();
+	vk::WriteDescriptorSet descriptor_writes[2];
 	descriptor_writes[0]
 			.setDstSet(d_map_projection_descriptor_set).setDstBinding(0).setDstArrayElement(0).setDescriptorCount(1)
 			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setImageInfo(map_projection_descriptor_image_info);
+			.setImageInfo(forward_transform_descriptor_image_info);
+	descriptor_writes[1]
+			.setDstSet(d_map_projection_descriptor_set).setDstBinding(1).setDstArrayElement(0).setDescriptorCount(1)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setImageInfo(jacobian_matrix_descriptor_image_info);
 
 	// Update descriptor set.
 	vulkan.get_device().updateDescriptorSets(descriptor_writes, nullptr/*descriptorCopies*/);

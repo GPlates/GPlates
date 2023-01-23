@@ -26,11 +26,12 @@
 layout (push_constant) uniform PushConstants
 {
     vec4 frustum_planes[6];
+    bool use_map_projection;  // true/false if rendering in map/globe view
+    float map_projection_central_meridian;  // only used if 'use_map_projection' is true
+    vec2 map_projection_image_size;
     float arrow_size_scale_factor;
     float max_ratio_arrowhead_length_to_arrow_length;
     float arrowhead_width_to_length_ratio;
-    bool use_map_projection;  // true/false if rendering in map/globe view
-    float map_projection_central_meridian;  // only used if 'use_map_projection' is true
     uint num_input_arrow_instances;
 };
 
@@ -86,20 +87,44 @@ layout (set = 0, binding = 2) buffer IndirectDraw
     IndexedIndirectCommand command;
 } indirect_draw;
 
-layout (set = 1, binding = 0) uniform sampler2D map_projection_sampler;
+layout (set = 1, binding = 0) uniform sampler2D map_projection_forward_transform_sampler;
+layout (set = 1, binding = 1) uniform sampler2D map_projection_jacobian_matrix_sampler;
 
 layout (local_size_x_id = 1) in;  // Set 'local_size_x' using the Vulkan API
 
 const float PI = radians(180);
 const float HALF_PI = radians(180) / 2.0;
 
-/*
- * Project a 3D position on the unit sphere onto the 2D map projection.
- */
-vec2
-map_project_position(
-        vec3 position)
+struct MapProjectedPositionAndVector
 {
+    vec2 map_position;
+    vec3 map_vector;
+};
+
+/*
+ * Project a 3D position (on the unit sphere) and a 3D vector onto the 2D map projection.
+ *
+ * The final map projected vector is actually a 3D vector where the 2D (x,y) component is in the 2D map plane and
+ * the z component is along the z-axis of 3D map projection space.
+ */
+MapProjectedPositionAndVector
+map_project(
+        vec3 position,
+        vec3 vector)
+{
+    // If the 'position' is at either pole (North or South) then we cannot determine its longitude (atan(0,0) is undefined), and
+    // we cannot determine the direction of 'vector' relative to the position's local East and North (which are indeterminate).
+    float cos_latitude = length(position.xy);  // 'position' is a unit vector
+    if (cos_latitude < 2e-7)
+    {
+        // Zero vector will cause arrow to be culled.
+        vec3 culled_map_vector = vec3(0);
+        // Arbitrary map position (doesn't matter since arrow will get culled anyway).
+        vec2 culled_map_position = vec2(0, 0);
+
+        return MapProjectedPositionAndVector(culled_map_position, culled_map_vector);
+    }
+
     // Get latitude from position on sphere.
     float latitude = asin(position.z);  // in range [-PI/2, PI/2]
 
@@ -129,49 +154,46 @@ map_project_position(
 
     // Adjust for half texel since boundary of [0, 1] range maps to the texel centres of the boundary texels.
     // Everything in between is linearly interpolated.
-    vec2 map_projection_resolution = textureSize(map_projection_sampler, 0);
-    map_projection_tex_coord = ((map_projection_resolution - 1) * map_projection_tex_coord + 0.5) / map_projection_resolution;
+    map_projection_tex_coord = ((map_projection_image_size - 1) * map_projection_tex_coord + 0.5) / map_projection_image_size;
 
-    // Sample map projection texture to get 2D position on map projection plane.
-    return texture(map_projection_sampler, map_projection_tex_coord).xy;
-}
+    // Sample map projection forward transform texture to get 2D position on map projection plane.
+    vec2 map_position = texture(map_projection_forward_transform_sampler, map_projection_tex_coord).xy;
 
-/*
- * Project a 3D vector onto the 2D map projection.
- *
- * The final map projected vector is actually a 3D vector where the 2D (x,y) component is in the 2D map plane and
- * the z component is along the z-axis of 3D map projection space.
- */
-vec3
-map_project_vector(
-        vec3 position,  // position of base of vector on the unit sphere
-        vec3 vector)
-{
-    //
     // Find the local East, North and down directions at 'position' on the unit sphere.
-    //
-
-    vec3 local_east = cross(vec3(0,0,1)/*global North*/, position);
-    float len_local_east = length(local_east);
-    if (len_local_east == 0)
-    {
-        // Position is at the North pole, so all tangential directions point towards North.
-        // So just choose an arbitrary tangential direction (eg, global East).
-        local_east = vec3(0,1,0);  // global East
-    }
-    else
-    {
-        local_east /= len_local_east;  // normalize
-    }
-
-    vec3 local_north = cross(position, local_east);  // no need to normalize (cross of two perpendicular unit vectors)
+    vec3 local_east = normalize(cross(vec3(0,0,1)/*global North*/, position));  // should not get divide-by-zero (since not at either pole)
+    vec3 local_north = cross(position, local_east);  // no need to normalize (since cross of two perpendicular unit vectors)
     vec3 local_down = -position;
 
     // Convert vector into local (East, North, down) frame of reference.
-    return vec3(
+    vec3 local_vector = vec3(
             dot(vector, local_east),
             dot(vector, local_north),
             dot(vector, local_down));
+
+    // Sample map projection Jacobian matrix texture.
+    vec4 jacobian_matrix_elements = texture(map_projection_jacobian_matrix_sampler, map_projection_tex_coord);
+    mat2 jacobian_matrix = mat2(
+            jacobian_matrix_elements.x/*dxdlon*/, jacobian_matrix_elements.z/*dydlon*/,   // first column
+            jacobian_matrix_elements.y/*dxdlat*/, jacobian_matrix_elements.w/*dydlat*/);  // second column
+
+    // Convert 2D local (East, North) vector to (longitude, latitude) since the Jacobian matrix contains
+    // partial derivatives relative to (longitude, latitude).
+    //
+    // North requires no conversion since distance from South to North is PI radians which equals the distance of latitude (having range [-PI/2, PI/2]).
+    // But East requires conversion (depending on the latitude) since the small circle distance of constant latitude has distance 2*PI*cos(latitude) radians
+    // (whereas the longitude distance is always 2*PI, regardless of latitude, since longitude range is always [-PI, PI]).
+    vec2 lon_lat_vector = vec2(local_vector.x / cos_latitude, local_vector.y);  // should not get divide-by-zero (since 'cos_latitude' is non-zero; position not at either pole)
+
+	// Transform 2D vector direction according to map projection warping.
+    vec2 map_vector_2D = jacobian_matrix * lon_lat_vector;
+
+	// Make 2D vector the same length as before - we're effectively just rotating it.
+    map_vector_2D = length(local_vector.xy) * normalize(map_vector_2D);
+
+	// The final vector is in 3D map projection space (2D map projection space and vertical dimension).
+    vec3 map_vector = vec3(map_vector_2D, local_vector.z);
+    
+    return MapProjectedPositionAndVector(map_position, map_vector);
 }
 
 /*
@@ -256,12 +278,11 @@ void main()
     if (use_map_projection)
     {
         // Map project arrow start position and vector.
-        vec2 arrow_start_on_map = map_project_position(arrow_start);
-        vec3 arrow_vector_on_map = map_project_vector(arrow_start, arrow_vector);
+        MapProjectedPositionAndVector map_projected_position_and_vector = map_project(arrow_start, arrow_vector);
 
         // Overwrite arrow start position and vector with map projected versions.
-        arrow_start = vec3(arrow_start_on_map, 0.0);  // z component in map projection space is zero (ie, on map plane)
-        arrow_vector = arrow_vector_on_map;
+        arrow_start = vec3(map_projected_position_and_vector.map_position, 0.0);  // z component in map projection space is zero (ie, on map plane)
+        arrow_vector = map_projected_position_and_vector.map_vector;
     }
 
     const float arrow_length = length(arrow_vector);

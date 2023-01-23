@@ -46,16 +46,6 @@
 namespace 
 {
 	const double MIN_SCALE_FACTOR = 1e-8;
-
-	// The Proj library has issues with the Mercator projection at the poles (ie, latitudes -90 and 90).
-	// So we clamp latitude slightly inside the poles.
-	// And we do this for all projections for consistency.
-	//
-	// Note: The clamping epsilon also determines the height range of the Mercator map projection.
-	//       Eg, changing from 1e-3  to 1e-5 increases the range quite noticeably.
-	const double CLAMP_LATITUDE_NEAR_POLES_EPSILON = 1e-5;
-	const double MIN_LATITUDE = -90.0 + CLAMP_LATITUDE_NEAR_POLES_EPSILON;
-	const double MAX_LATITUDE = 90.0 - CLAMP_LATITUDE_NEAR_POLES_EPSILON;
 	
 	// The distance threshold in map projected space (after scaling) for comparing original (x, y)
 	// with inverted and forward transformed (x, y).

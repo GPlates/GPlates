@@ -252,6 +252,20 @@ namespace GPlatesGui
 		 */
 		double
 		get_map_bounding_radius() const;
+
+
+		/**
+		 * The Proj library has issues with the Mercator projection at the poles (ie, latitudes -90 and 90).
+		 * So we clamp latitude slightly inside the poles.
+		 *
+		 * Note: We do this for all map projections for consistency.
+		 *
+		 * Note: The clamping epsilon also determines the height range of the Mercator map projection.
+		 *       Eg, changing from 1e-3  to 1e-5 increases the range quite noticeably.
+		 */
+		static constexpr double CLAMP_LATITUDE_NEAR_POLES_EPSILON = 1e-5;
+		static constexpr double MIN_LATITUDE = -90.0 + CLAMP_LATITUDE_NEAR_POLES_EPSILON;
+		static constexpr double MAX_LATITUDE = 90.0 - CLAMP_LATITUDE_NEAR_POLES_EPSILON;
 			
 	private:
 

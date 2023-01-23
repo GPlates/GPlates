@@ -46,11 +46,10 @@ GPlatesOpenGL::MapProjectionImage::initialise_vulkan_resources(
 			.setAddressModeV(vk::SamplerAddressMode::eClampToEdge);
 	d_sampler = vulkan.get_device().createSampler(sampler_create_info);
 
-	// Create the image.
+	// Image and allocation create info parameters common to both images (forward transform and Jacobian matrix).
 	vk::ImageCreateInfo image_create_info;
 	image_create_info
 			.setImageType(vk::ImageType::e2D)
-			.setFormat(TEXEL_FORMAT)
 			.setExtent({ IMAGE_WIDTH, IMAGE_HEIGHT, 1 })
 			.setMipLevels(1)
 			.setArrayLayers(1)
@@ -62,27 +61,47 @@ GPlatesOpenGL::MapProjectionImage::initialise_vulkan_resources(
 	// Image allocation.
 	VmaAllocationCreateInfo image_allocation_create_info = {};
 	image_allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
-	d_image = VulkanImage::create(
+
+	// Create the forward transform image.
+	image_create_info.setFormat(FORWARD_TRANSFORM_TEXEL_FORMAT);
+	d_forward_transform_image = VulkanImage::create(
 			vulkan.get_vma_allocator(),
 			image_create_info,
 			image_allocation_create_info,
 			GPLATES_EXCEPTION_SOURCE);
 
-	// Create image view.
+	// Create the Jacobian matrix image.
+	image_create_info.setFormat(JACOBIAN_MATRIX_TEXEL_FORMAT);
+	d_jacobian_matrix_image = VulkanImage::create(
+			vulkan.get_vma_allocator(),
+			image_create_info,
+			image_allocation_create_info,
+			GPLATES_EXCEPTION_SOURCE);
+
+	// Image view create info parameters common to both image views (forward transform and Jacobian matrix).
 	vk::ImageViewCreateInfo image_view_create_info;
 	image_view_create_info
-			.setImage(d_image.get_image())
 			.setViewType(vk::ImageViewType::e2D)
-			.setFormat(TEXEL_FORMAT)
 			.setComponents({})  // identity swizzle
 			.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 } );
-	d_image_view = vulkan.get_device().createImageView(image_view_create_info);
+
+	// Create forward transform image view.
+	image_view_create_info
+			.setImage(d_forward_transform_image.get_image())
+			.setFormat(FORWARD_TRANSFORM_TEXEL_FORMAT);
+	d_forward_transform_image_view = vulkan.get_device().createImageView(image_view_create_info);
+
+	// Create Jacobian matrix image view.
+	image_view_create_info
+			.setImage(d_jacobian_matrix_image.get_image())
+			.setFormat(JACOBIAN_MATRIX_TEXEL_FORMAT);
+	d_jacobian_matrix_image_view = vulkan.get_device().createImageView(image_view_create_info);
 
 
 	//
-	// Transition the image layout for optimal shader reads.
+	// Transition the both image layouts (forward transform and Jacobian matrix) for optimal shader reads.
 	//
-	// This is only to avoid the validation layers complaining since the image can be bound for optimal shader reads
+	// This is only to avoid the validation layers complaining since an image can be bound for optimal shader reads
 	// via a descriptor set (by a client) when the globe is active (ie, when not rendering to a map view).
 	// It needs to be bound because it's "statically" used, even though the shader will not actually sample the image (since not in map view).
 	//
@@ -93,7 +112,10 @@ GPlatesOpenGL::MapProjectionImage::initialise_vulkan_resources(
 	initialisation_command_buffer_begin_info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
 	initialisation_command_buffer.begin(initialisation_command_buffer_begin_info);
 
-	// Pipeline barrier to transition to an image layout suitable for a transfer destination.
+	//
+	// Pipeline barrier to transition both images to an image layout suitable for a transfer destination.
+	//
+
 	vk::ImageMemoryBarrier pre_clear_image_memory_barrier;
 	pre_clear_image_memory_barrier
 			.setSrcAccessMask({})
@@ -102,29 +124,44 @@ GPlatesOpenGL::MapProjectionImage::initialise_vulkan_resources(
 			.setNewLayout(vk::ImageLayout::eTransferDstOptimal)
 			.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
 			.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-			.setImage(d_image.get_image())
 			.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
+
+	vk::ImageMemoryBarrier pre_clear_forward_transform_image_memory_barrier(pre_clear_image_memory_barrier);
+	pre_clear_forward_transform_image_memory_barrier.setImage(d_forward_transform_image.get_image());
+
+	vk::ImageMemoryBarrier pre_clear_jacobian_matrix_image_memory_barrier(pre_clear_image_memory_barrier);
+	pre_clear_jacobian_matrix_image_memory_barrier.setImage(d_jacobian_matrix_image.get_image());
+
 	initialisation_command_buffer.pipelineBarrier(
 			vk::PipelineStageFlagBits::eTopOfPipe,  // don't need to wait to access freshly allocated memory
 			vk::PipelineStageFlagBits::eTransfer,
 			{},  // dependencyFlags
 			{},  // memoryBarriers
 			{},  // bufferMemoryBarriers
-			pre_clear_image_memory_barrier);  // imageMemoryBarriers
+			{ pre_clear_forward_transform_image_memory_barrier, pre_clear_jacobian_matrix_image_memory_barrier });  // imageMemoryBarriers
 
-	// Clear the image.
 	//
-	// This is not really necessary since a call to 'update()' will overwrite the image (when switching map projections).
-	// But we have to transition the image layout for optimal shader reads anyway, so might as well clear the image also.
+	// Clear both images.
+	//
+	// This is not really necessary since a call to 'update()' will overwrite these images (when switching map projections).
+	// But we have to transition to an image layout for optimal shader reads anyway, so might as well clear the images also.
 	const vk::ClearColorValue clear_value = std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f };
 	const vk::ImageSubresourceRange sub_resource_range = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
 	initialisation_command_buffer.clearColorImage(
-			d_image.get_image(),
+			d_forward_transform_image.get_image(),
+			vk::ImageLayout::eTransferDstOptimal,
+			clear_value,
+			sub_resource_range);
+	initialisation_command_buffer.clearColorImage(
+			d_jacobian_matrix_image.get_image(),
 			vk::ImageLayout::eTransferDstOptimal,
 			clear_value,
 			sub_resource_range);
 
-	// Pipeline barrier to transition to an image layout suitable for optimal shader reads.
+	//
+	// Pipeline barrier to transition both images to an image layout suitable for optimal shader reads.
+	//
+
 	vk::ImageMemoryBarrier post_clear_image_memory_barrier;
 	post_clear_image_memory_barrier
 			.setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
@@ -133,8 +170,14 @@ GPlatesOpenGL::MapProjectionImage::initialise_vulkan_resources(
 			.setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
 			.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
 			.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-			.setImage(d_image.get_image())
 			.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
+
+	vk::ImageMemoryBarrier post_clear_forward_transform_image_memory_barrier(post_clear_image_memory_barrier);
+	post_clear_forward_transform_image_memory_barrier.setImage(d_forward_transform_image.get_image());
+
+	vk::ImageMemoryBarrier post_clear_jacobian_matrix_image_memory_barrier(post_clear_image_memory_barrier);
+	post_clear_jacobian_matrix_image_memory_barrier.setImage(d_jacobian_matrix_image.get_image());
+
 	initialisation_command_buffer.pipelineBarrier(
 			vk::PipelineStageFlagBits::eTransfer,
 			// Don't need to wait since image won't be used until 'update()' is called (and that will wait)...
@@ -142,7 +185,7 @@ GPlatesOpenGL::MapProjectionImage::initialise_vulkan_resources(
 			{},  // dependencyFlags
 			{},  // memoryBarriers
 			{},  // bufferMemoryBarriers
-			post_clear_image_memory_barrier);  // imageMemoryBarriers
+			{ post_clear_forward_transform_image_memory_barrier, post_clear_jacobian_matrix_image_memory_barrier });  // imageMemoryBarriers
 
 	// End recording into the initialisation command buffer.
 	initialisation_command_buffer.end();
@@ -169,8 +212,11 @@ GPlatesOpenGL::MapProjectionImage::release_vulkan_resources(
 	// Vulkan memory allocator.
 	VmaAllocator vma_allocator = vulkan.get_vma_allocator();
 
-	vulkan.get_device().destroyImageView(d_image_view);
-	VulkanImage::destroy(vma_allocator, d_image);
+	vulkan.get_device().destroyImageView(d_forward_transform_image_view);
+	VulkanImage::destroy(vma_allocator, d_forward_transform_image);
+
+	vulkan.get_device().destroyImageView(d_jacobian_matrix_image_view);
+	VulkanImage::destroy(vma_allocator, d_jacobian_matrix_image);
 
 	vulkan.get_device().destroySampler(d_sampler);
 
@@ -179,18 +225,12 @@ GPlatesOpenGL::MapProjectionImage::release_vulkan_resources(
 		StagingBuffer &staging_buffer = staging_buffer_entry.second;
 
 		VulkanBuffer::destroy(vma_allocator, staging_buffer.forward_transform_buffer);
+		VulkanBuffer::destroy(vma_allocator, staging_buffer.jacobian_matrix_buffer);
 	}
 
 	// Clear all our staging buffers so that they'll get recreated and repopulated
 	// (that is, if 'initialise_vulkan_resources()' is called again, eg, due to a lost device).
 	d_staging_buffers.clear();
-}
-
-
-vk::DescriptorImageInfo
-GPlatesOpenGL::MapProjectionImage::get_descriptor_image_info() const
-{
-	return { d_sampler, d_image_view, vk::ImageLayout::eShaderReadOnlyOptimal };
 }
 
 
@@ -200,10 +240,18 @@ GPlatesOpenGL::MapProjectionImage::update(
 		vk::CommandBuffer preprocess_command_buffer,
 		const GPlatesGui::MapProjection &map_projection)
 {
-	// If first time visiting current map projection *type* then create and fill a staging buffer for it.
-	//
-	// Note: changing the central meridian does not change the staging buffer contents (see 'create_staging_buffer()' for details).
 	const auto map_projection_type = map_projection.get_projection_settings().get_projection_type();
+
+	// Only need to update the map projection images if the map projection *type* changed.
+	//
+	// Note: Changing the central meridian does not change the staging buffer contents (see 'create_staging_buffer()' for details).
+	if (d_last_updated_map_projection_type == map_projection_type)
+	{
+		return;
+	}
+	d_last_updated_map_projection_type = map_projection_type;
+
+	// If first time visiting the current map projection *type* then create, fill and cache a staging buffer for it.
 	if (d_staging_buffers.find(map_projection_type) == d_staging_buffers.end())
 	{
 		d_staging_buffers[map_projection_type] = create_staging_buffer(vulkan, map_projection);
@@ -212,8 +260,11 @@ GPlatesOpenGL::MapProjectionImage::update(
 	// Get the staging buffer associated with the map projection *type*.
 	StagingBuffer &staging_buffer = d_staging_buffers[map_projection_type];
 
-	// Pipeline barrier to wait for any commands that read from the image before we copy new data into it.
-	// And also transition to an image layout suitable for a transfer destination.
+	//
+	// Pipeline barrier to wait for any commands that read from the images before we copy new data into them.
+	// And also transition both images to an image layout suitable for a transfer destination.
+	//
+
 	vk::ImageMemoryBarrier pre_update_image_memory_barrier;
 	pre_update_image_memory_barrier
 			.setSrcAccessMask({})  // no writes to make available (image is only read from)
@@ -222,17 +273,26 @@ GPlatesOpenGL::MapProjectionImage::update(
 			.setNewLayout(vk::ImageLayout::eTransferDstOptimal)
 			.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
 			.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-			.setImage(d_image.get_image())
 			.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
+
+	vk::ImageMemoryBarrier pre_update_forward_transform_image_memory_barrier(pre_update_image_memory_barrier);
+	pre_update_forward_transform_image_memory_barrier.setImage(d_forward_transform_image.get_image());
+
+	vk::ImageMemoryBarrier pre_update_jacobian_matrix_image_memory_barrier(pre_update_image_memory_barrier);
+	pre_update_jacobian_matrix_image_memory_barrier.setImage(d_jacobian_matrix_image.get_image());
+
 	preprocess_command_buffer.pipelineBarrier(
 			vk::PipelineStageFlagBits::eAllCommands,
 			vk::PipelineStageFlagBits::eTransfer,
 			{},  // dependencyFlags
 			{},  // memoryBarriers
 			{},  // bufferMemoryBarriers
-			pre_update_image_memory_barrier);  // imageMemoryBarriers
+			{ pre_update_forward_transform_image_memory_barrier, pre_update_jacobian_matrix_image_memory_barrier });  // imageMemoryBarriers
 
-	// Copy image data from staging buffer to image.
+	//
+	// Copy image data from staging buffers to images.
+	//
+
 	vk::BufferImageCopy buffer_image_copy;
 	buffer_image_copy
 			.setBufferOffset(0)
@@ -241,14 +301,23 @@ GPlatesOpenGL::MapProjectionImage::update(
 			.setImageSubresource({vk::ImageAspectFlagBits::eColor, 0, 0, 1})
 			.setImageOffset({0, 0, 0})
 			.setImageExtent({IMAGE_WIDTH, IMAGE_HEIGHT, 1});
+
 	preprocess_command_buffer.copyBufferToImage(
 			staging_buffer.forward_transform_buffer.get_buffer(),
-			d_image.get_image(),
+			d_forward_transform_image.get_image(),
+			vk::ImageLayout::eTransferDstOptimal,
+			buffer_image_copy);
+	preprocess_command_buffer.copyBufferToImage(
+			staging_buffer.jacobian_matrix_buffer.get_buffer(),
+			d_jacobian_matrix_image.get_image(),
 			vk::ImageLayout::eTransferDstOptimal,
 			buffer_image_copy);
 
+	//
 	// Pipeline barrier to wait for staging transfer writes to be made visible for image reads from any shader.
-	// And also transition to an image layout suitable for shader reads.
+	// And also transition both images to an image layout suitable for shader reads.
+	//
+
 	vk::ImageMemoryBarrier post_update_image_memory_barrier;
 	post_update_image_memory_barrier
 			.setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
@@ -257,15 +326,21 @@ GPlatesOpenGL::MapProjectionImage::update(
 			.setNewLayout(vk::ImageLayout::eShaderReadOnlyOptimal)
 			.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
 			.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-			.setImage(d_image.get_image())
 			.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
+
+	vk::ImageMemoryBarrier post_update_forward_transform_image_memory_barrier(post_update_image_memory_barrier);
+	post_update_forward_transform_image_memory_barrier.setImage(d_forward_transform_image.get_image());
+
+	vk::ImageMemoryBarrier post_update_jacobian_matrix_image_memory_barrier(post_update_image_memory_barrier);
+	post_update_jacobian_matrix_image_memory_barrier.setImage(d_jacobian_matrix_image.get_image());
+
 	preprocess_command_buffer.pipelineBarrier(
 			vk::PipelineStageFlagBits::eTransfer,
 			vk::PipelineStageFlagBits::eAllCommands,
 			{},  // dependencyFlags
 			{},  // memoryBarriers
 			{},  // bufferMemoryBarriers
-			post_update_image_memory_barrier);  // imageMemoryBarriers
+			{ post_update_forward_transform_image_memory_barrier, post_update_jacobian_matrix_image_memory_barrier });  // imageMemoryBarriers
 }
 
 
@@ -280,15 +355,26 @@ GPlatesOpenGL::MapProjectionImage::create_staging_buffer(
 
 	StagingBuffer staging_buffer = {};
 
+	// Buffer and allocation create info parameters common to both buffers (forward transform and Jacobian matrix).
 	vk::BufferCreateInfo staging_buffer_create_info;
 	staging_buffer_create_info
-			.setSize(IMAGE_WIDTH * IMAGE_WIDTH * sizeof(Texel))
 			.setUsage(vk::BufferUsageFlagBits::eTransferSrc)
 			.setSharingMode(vk::SharingMode::eExclusive);
 	VmaAllocationCreateInfo staging_buffer_allocation_create_info = {};
 	staging_buffer_allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
 	staging_buffer_allocation_create_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT; // host mappable
+
+	// Create the forward transform buffer.
+	staging_buffer_create_info.setSize(IMAGE_WIDTH * IMAGE_HEIGHT * sizeof(ForwardTransformTexel));
 	staging_buffer.forward_transform_buffer = VulkanBuffer::create(
+			vulkan.get_vma_allocator(),
+			staging_buffer_create_info,
+			staging_buffer_allocation_create_info,
+			GPLATES_EXCEPTION_SOURCE);
+
+	// Create the Jacobian matrix buffer.
+	staging_buffer_create_info.setSize(IMAGE_WIDTH * IMAGE_HEIGHT * sizeof(JacobianMatrixTexel));
+	staging_buffer.jacobian_matrix_buffer = VulkanBuffer::create(
 			vulkan.get_vma_allocator(),
 			staging_buffer_create_info,
 			staging_buffer_allocation_create_info,
@@ -298,24 +384,26 @@ GPlatesOpenGL::MapProjectionImage::create_staging_buffer(
 	// Update the staging buffer.
 	//
 	// Note: The central meridian does not affect the staging buffer contents because the buffer contains
-	//       map projected values (output of the map projection forward transform) and these values
-	//       are independent of the central meridian (see below).
+	//       map projected values (output of the map projection forward transform and Jacobian matrix) and
+	//       these values are independent of the central meridian (see below).
 	//
 
-	// Map staging buffer.
+	// Map forward transform and Jacobian matrix buffers.
 	void *const staging_buffer_forward_transform_mapped_pointer =
 			staging_buffer.forward_transform_buffer.map_memory(vulkan.get_vma_allocator(), GPLATES_EXCEPTION_SOURCE);
+	void *const staging_buffer_jacobian_matrix_mapped_pointer =
+			staging_buffer.jacobian_matrix_buffer.map_memory(vulkan.get_vma_allocator(), GPLATES_EXCEPTION_SOURCE);
 
-	std::vector<Texel> row_of_texels;
-	row_of_texels.reserve(IMAGE_WIDTH);
+	std::vector<ForwardTransformTexel> row_of_forward_transform_texels;
+	row_of_forward_transform_texels.resize(IMAGE_WIDTH);
+	std::vector<JacobianMatrixTexel> row_of_jacobian_matrix_texels;
+	row_of_jacobian_matrix_texels.resize(IMAGE_WIDTH);
 	for (unsigned int row = 0; row < IMAGE_HEIGHT; ++row)
 	{
-		const double latitude = -90 + row * TEXEL_INTERVAL_IN_DEGREES;
-
 		for (unsigned int column = 0; column < IMAGE_WIDTH; ++column)
 		{
 			// Make sure the longitude is within [-180+epsilon, 180-epsilon] around the central meridian longitude.
-			const double epsilon = 1e-6;
+			const double longitude_epsilon = 1e-6/*approx 0.1 metres at equator*/;
 			//
 			// This is to prevent subsequent map projection from wrapping (-180 -> +180 or vice versa) due to
 			// the map projection code receiving a longitude value slightly outside that range or the map
@@ -329,35 +417,128 @@ GPlatesOpenGL::MapProjectionImage::create_staging_buffer(
 			double longitude = map_projection.central_meridian();
 			if (column == 0)
 			{
-				longitude += -180 + epsilon;
+				longitude += -180 + longitude_epsilon;
 			}
 			else if (column == IMAGE_WIDTH - 1)
 			{
-				longitude += 180 - epsilon;
+				longitude += 180 - longitude_epsilon;
 			}
 			else
 			{
 				longitude += -180 + column * TEXEL_INTERVAL_IN_DEGREES;
 			}
 
+			// Make sure the latitude is within the clamped range accepted by MapProjection which is slightly inside [-90, 90].
+			double latitude;
+			if (row == 0)
+			{
+				latitude = GPlatesGui::MapProjection::MIN_LATITUDE;
+			}
+			else if (row == IMAGE_HEIGHT - 1)
+			{
+				latitude = GPlatesGui::MapProjection::MAX_LATITUDE;
+			}
+			else
+			{
+				// Note: Our 'TEXEL_INTERVAL_IN_DEGREES' is much larger than 'MapProjection::CLAMP_LATITUDE_NEAR_POLES_EPSILON'.
+				//       So we don't need to check our non-boundary latitudes.
+				latitude = -90 + row * TEXEL_INTERVAL_IN_DEGREES;
+			}
+
+			//
+			// Map (longitude, latitude) to map projection space (x, y).
+			//
+
 			double x = longitude;
 			double y = latitude;
 			map_projection.forward_transform(x, y);
 
-			row_of_texels[column] = { static_cast<float>(x), static_cast<float>(y) };
+			row_of_forward_transform_texels[column] = { static_cast<float>(x), static_cast<float>(y) };
+
+			//
+			// Map (longitude, latitude) to map projection space partial derivatives (dxdlon, dxdlat, dydlon, dydlat).
+			//
+
+			// Derivative delta in (longitude, latitude) space.
+			// It's arbitrarily small enough to get good accuracy for the derivatives,
+			// but not too small that we run into numerical precision issues.
+			const double delta_lon_lat_for_derivs = 1e-5;
+
+			// Move the first and last columns slightly inward (by the delta) so the derivative calculations
+			// don't sample outside our longitude range.
+			double longitude_for_derivs = longitude;
+			if (column == 0)
+			{
+				longitude_for_derivs += delta_lon_lat_for_derivs;
+			}
+			else if (column == IMAGE_WIDTH - 1)
+			{
+				longitude_for_derivs -= delta_lon_lat_for_derivs;
+			}
+
+			// Move the first and last rows slightly inward (by the delta) so the derivative calculations
+			// don't sample outside our latitude range.
+			double latitude_for_derivs = latitude;
+			if (row == 0)
+			{
+				latitude_for_derivs += delta_lon_lat_for_derivs;
+			}
+			else if (row == IMAGE_HEIGHT - 1)
+			{
+				latitude_for_derivs -= delta_lon_lat_for_derivs;
+			}
+
+			// Sample map projection at (longitude + delta, latitude).
+			double x_at_lon_plus_delta = longitude_for_derivs + delta_lon_lat_for_derivs;
+			double y_at_lon_plus_delta = latitude_for_derivs;
+			map_projection.forward_transform(x_at_lon_plus_delta, y_at_lon_plus_delta);
+
+			// Sample map projection at (longitude - delta, latitude).
+			double x_at_lon_minus_delta = longitude_for_derivs - delta_lon_lat_for_derivs;
+			double y_at_lon_minus_delta = latitude_for_derivs;
+			map_projection.forward_transform(x_at_lon_minus_delta, y_at_lon_minus_delta);
+
+			// Sample map projection at (longitude, latitude + delta).
+			double x_at_lat_plus_delta = longitude_for_derivs;
+			double y_at_lat_plus_delta = latitude_for_derivs + delta_lon_lat_for_derivs;
+			map_projection.forward_transform(x_at_lat_plus_delta, y_at_lat_plus_delta);
+
+			// Sample map projection at (longitude, latitude - delta).
+			double x_at_lat_minus_delta = longitude_for_derivs;
+			double y_at_lat_minus_delta = latitude_for_derivs - delta_lon_lat_for_derivs;
+			map_projection.forward_transform(x_at_lat_minus_delta, y_at_lat_minus_delta);
+
+			// Jacobian matrix.
+			const double dxdlon = (x_at_lon_plus_delta - x_at_lon_minus_delta) / (2 * delta_lon_lat_for_derivs);
+			const double dxdlat = (x_at_lat_plus_delta - x_at_lat_minus_delta) / (2 * delta_lon_lat_for_derivs);
+			const double dydlon = (y_at_lon_plus_delta - y_at_lon_minus_delta) / (2 * delta_lon_lat_for_derivs);
+			const double dydlat = (y_at_lat_plus_delta - y_at_lat_minus_delta) / (2 * delta_lon_lat_for_derivs);
+
+			row_of_jacobian_matrix_texels[column] = {
+					static_cast<float>(dxdlon), static_cast<float>(dxdlat),
+					static_cast<float>(dydlon), static_cast<float>(dydlat)};
 		}
 
-		// Copy the row into the staging buffer.
+		// Copy the row into the forward transform buffer.
 		std::memcpy(
-				// Pointer to row within mapped staging buffer...
-				static_cast<Texel *>(staging_buffer_forward_transform_mapped_pointer) + row * IMAGE_WIDTH,
-				row_of_texels.data(),
-				IMAGE_WIDTH * sizeof(Texel));
+				// Pointer to row within mapped forward transform buffer...
+				static_cast<ForwardTransformTexel *>(staging_buffer_forward_transform_mapped_pointer) + row * IMAGE_WIDTH,
+				row_of_forward_transform_texels.data(),
+				IMAGE_WIDTH * sizeof(ForwardTransformTexel));
+
+		// Copy the row into the Jacobian matrix buffer.
+		std::memcpy(
+				// Pointer to row within mapped Jacobian matrix buffer...
+				static_cast<JacobianMatrixTexel *>(staging_buffer_jacobian_matrix_mapped_pointer) + row * IMAGE_WIDTH,
+				row_of_jacobian_matrix_texels.data(),
+				IMAGE_WIDTH * sizeof(JacobianMatrixTexel));
 	}
 
-	// Flush and unmap staging buffer.
+	// Flush and unmap forward transform and Jacobian matrix buffers.
 	staging_buffer.forward_transform_buffer.flush_mapped_memory(vulkan.get_vma_allocator(), 0, VK_WHOLE_SIZE, GPLATES_EXCEPTION_SOURCE);
+	staging_buffer.jacobian_matrix_buffer.flush_mapped_memory(vulkan.get_vma_allocator(), 0, VK_WHOLE_SIZE, GPLATES_EXCEPTION_SOURCE);
 	staging_buffer.forward_transform_buffer.unmap_memory(vulkan.get_vma_allocator());
+	staging_buffer.jacobian_matrix_buffer.unmap_memory(vulkan.get_vma_allocator());
 
 	return staging_buffer;
 }
