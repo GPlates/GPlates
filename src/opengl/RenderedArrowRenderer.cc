@@ -59,10 +59,6 @@ GPlatesOpenGL::RenderedArrowRenderer::initialise_vulkan_resources(
 	// Add this scope to the call stack trace printed if exception thrown in this scope.
 	TRACK_CALL_STACK();
 
-	// Map projection image dimensions.
-	d_map_projection_image_width = map_projection_image.get_image_width();
-	d_map_projection_image_height = map_projection_image.get_image_height();
-
 	// Create the compute pipeline (to cull arrows outside the view frustum prior to rendering).
 	create_compute_pipeline(vulkan);
 
@@ -231,7 +227,6 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 	//     vec4 frustum_planes[6];
 	//     bool use_map_projection;
 	//     float map_projection_central_meridian;
-	//     vec2 map_projection_image_size;
 	//     float arrow_size_scale_factor;
 	//     float max_ratio_arrowhead_length_to_arrow_length;
 	//     float arrowhead_width_to_length_ratio;
@@ -254,8 +249,6 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 	// Map projection push constants (only used if map is active).
 	compute_push_constants.use_map_projection = is_map_active;
 	compute_push_constants.map_projection_central_meridian = GPlatesMaths::convert_deg_to_rad(map_projection_central_meridian);
-	compute_push_constants.map_projection_image_size[0] = d_map_projection_image_width;
-	compute_push_constants.map_projection_image_size[1] = d_map_projection_image_height;
 
 	// Extra push constants.
 	compute_push_constants.arrow_size_scale_factor = inverse_viewport_zoom_factor *

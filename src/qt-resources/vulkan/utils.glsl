@@ -23,50 +23,66 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+
 /*
- * Shader source code to bilinearly interpolate a *non-mipmapped*,
- * *non-anisotropically filtered* 2D texture.
+ * Get the texture coordinate to use for a 'textureGather()' call, and get the bilinear weights
+ * to use for bilinearly interopolating the results of the 'textureGather()'.
  *
- * Returns the four (nearest) sampled texels and the interpolation coefficients.
+ * The returned texture coordinate is in the middle of the four texel centres sampled by 'textureGather()'.
+ * In other words, the texture coordinate is equal distance from all four texel centres.
  *
- * 'tex_dimensions' should contain the following (xyzw) components:
- *	x: texture width,
- *	y: texture height,
- *	z: inverse texture width,
- *	w: inverse texture height.
+ * The reason for that is 'textureGather()' uses the rules for LINEAR filtering are used to
+ * identify the four texels and those rules involve conversion from floating-point coordinates
+ * to fixed-point (with VkPhysicalDeviceLimits::subTexelPrecisionBits "fraction bits").
+ * However Vulkan does not state whether the floor() operation (to determine integer texel coordinates)
+ * should be floating-point or fixed-point. If it's fixed-point then it's possible that round-to-nearest
+ * could round the last 1/512 of a texel to the next texel (assuming 8 fraction bits, ie, 1/256 of a texel).
+ *   See https://www.reedbeta.com/blog/texture-gathers-and-coordinate-precision/
+ *
+ * The sub-texel precision is also why a 'textureGather()' might be used instead of LINEAR filtering with 'texture()'.
+ * By calculating our own bilinear weights we get full floating-point precision and hence more accuracy when the
+ * caller does the bilinear filtering themselves.
  */
+
 void
-bilinearly_interpolate(
-		sampler2D tex_sampler,
-		vec2 tex_coords,
-		vec4 tex_dimensions,
-		out vec4 tex11,
-		out vec4 tex21,
-		out vec4 tex12,
-		out vec4 tex22,
-		out vec2 interp)
+get_texture_gather_unnormalized_bilinear_params(
+		ivec2 texture_size,
+		vec2 texture_uv,  // unnormalized texture coordinates
+		out vec2 gather_texture_coord,
+		out vec2 bilinear_weight)
 {
-	// Multiply tex coords by texture dimensions to convert to unnormalised form.
-	vec2 uv = tex_coords * tex_dimensions.xy;
+	vec2 gather_uv = floor(texture_uv - 0.5) + 1.0;
+	gather_texture_coord = gather_uv / texture_size;
 
-	vec4 st;
+    bilinear_weight = texture_uv - gather_uv + 0.5;
+}
 
-	// The lower-left texel centre.
-	st.xy = floor(uv - 0.5) + 0.5;
-	// The upper-right texel centre.
-	st.zw = st.xy + 1;
+void
+get_texture_gather_bilinear_params(
+		ivec2 texture_size,
+		vec2 texture_coord,
+		out vec2 gather_texture_coord,
+		out vec2 bilinear_weight)
+{
+	get_texture_gather_unnormalized_bilinear_params(
+			texture_size,
+			texture_coord * texture_size,  // unnormalized texture coordinates
+			gather_texture_coord,
+			bilinear_weight);
+}
 
-	// The bilinear interpolation coefficients.
-	interp = uv - st.xy;
-
-	// Multiply tex coords by inverse texture dimensions to return to normalised form.
-	st *= tex_dimensions.zwzw;
-
-	// Sample texture at 4 nearest texels.
-	tex11 = texture(tex_sampler, st.xy);
-	tex21 = texture(tex_sampler, st.zy);
-	tex12 = texture(tex_sampler, st.xw);
-	tex22 = texture(tex_sampler, st.zw);
+/*
+ * Bilinearly filter the specified result of a 'textureGather()' call using the specified bilinear weights.
+ */
+float
+bilinearly_interpolate_texture_gather(
+		vec4 texture_gather,
+		vec2 bilinear_weight)
+{
+    return mix(
+            mix(texture_gather[3], texture_gather[2], bilinear_weight.x),
+            mix(texture_gather[0], texture_gather[1], bilinear_weight.x),
+            bilinear_weight.y);
 }
 
 

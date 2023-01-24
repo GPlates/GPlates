@@ -23,12 +23,13 @@
 // And performs map projection (when map view is active).
 //
 
+#include "utils.glsl"
+
 layout (push_constant) uniform PushConstants
 {
     vec4 frustum_planes[6];
     bool use_map_projection;  // true/false if rendering in map/globe view
     float map_projection_central_meridian;  // only used if 'use_map_projection' is true
-    vec2 map_projection_image_size;
     float arrow_size_scale_factor;
     float max_ratio_arrowhead_length_to_arrow_length;
     float arrowhead_width_to_length_ratio;
@@ -146,18 +147,37 @@ map_project(
     }
 
     // Map projection texture coordinate uses longitude and latitude.
-    vec2 map_projection_tex_coord = vec2(
-            // Convert longitude from [-PI, PI] to [0, 1]...
-            (longitude + PI) / (2 * PI),
-            // Convert latitude from [-PI/2, PI/2] to [0, 1]...
-            (latitude + HALF_PI) / PI);
+    //
+    // Convert longitude from [-PI, PI] to [0, 1].
+    float longitude_normalized = (longitude + PI) / (2 * PI);
+    // Convert latitude from [-PI/2, PI/2] to [0, 1].
+    float latitude_normalized = (latitude + HALF_PI) / PI;
+
+    // All map projection images are the same size (so we can choose any of them to determine dimensions).
+    ivec2 map_projection_image_size = textureSize(map_projection_forward_transform_sampler, 0);
 
     // Adjust for half texel since boundary of [0, 1] range maps to the texel centres of the boundary texels.
-    // Everything in between is linearly interpolated.
-    map_projection_tex_coord = ((map_projection_image_size - 1) * map_projection_tex_coord + 0.5) / map_projection_image_size;
+    // Everything inside the interior is linearly interpolated.
+    vec2 map_projection_uv = (map_projection_image_size - 1) * vec2(longitude_normalized, latitude_normalized) + 0.5;
+
+    // We'll be using 'textureGather()' and doing our own bilinear filtering to get better accuracy than builtin texture bilinear filtering.
+    // This is because builtin texture bilinear filtering typically has only 8 bits of accuracy to its bilinear weights.
+    vec2 map_projection_gather_texture_coord;
+    vec2 map_projection_bilinear_weight;
+    get_texture_gather_unnormalized_bilinear_params(
+            map_projection_image_size,
+            map_projection_uv,  // unnormalized texture coordinates
+            map_projection_gather_texture_coord,
+            map_projection_bilinear_weight);
 
     // Sample map projection forward transform texture to get 2D position on map projection plane.
-    vec2 map_position = texture(map_projection_forward_transform_sampler, map_projection_tex_coord).xy;
+    vec2 map_position = vec2(
+            bilinearly_interpolate_texture_gather(
+                    textureGather(map_projection_forward_transform_sampler, map_projection_gather_texture_coord, 0/*x*/),
+                    map_projection_bilinear_weight),
+            bilinearly_interpolate_texture_gather(
+                    textureGather(map_projection_forward_transform_sampler, map_projection_gather_texture_coord, 1/*y*/),
+                    map_projection_bilinear_weight));
 
     // Find the local East, North and down directions at 'position' on the unit sphere.
     vec3 local_east = normalize(cross(vec3(0,0,1)/*global North*/, position));  // should not get divide-by-zero (since not at either pole)
@@ -171,7 +191,19 @@ map_project(
             dot(vector, local_down));
 
     // Sample map projection Jacobian matrix texture.
-    vec4 jacobian_matrix_elements = texture(map_projection_jacobian_matrix_sampler, map_projection_tex_coord);
+    vec4 jacobian_matrix_elements = vec4(
+            bilinearly_interpolate_texture_gather(
+                    textureGather(map_projection_jacobian_matrix_sampler, map_projection_gather_texture_coord, 0),
+                    map_projection_bilinear_weight),
+            bilinearly_interpolate_texture_gather(
+                    textureGather(map_projection_jacobian_matrix_sampler, map_projection_gather_texture_coord, 1),
+                    map_projection_bilinear_weight),
+            bilinearly_interpolate_texture_gather(
+                    textureGather(map_projection_jacobian_matrix_sampler, map_projection_gather_texture_coord, 2),
+                    map_projection_bilinear_weight),
+            bilinearly_interpolate_texture_gather(
+                    textureGather(map_projection_jacobian_matrix_sampler, map_projection_gather_texture_coord, 3),
+                    map_projection_bilinear_weight));
     mat2 jacobian_matrix = mat2(
             jacobian_matrix_elements.x/*dxdlon*/, jacobian_matrix_elements.z/*dydlon*/,   // first column
             jacobian_matrix_elements.y/*dxdlat*/, jacobian_matrix_elements.w/*dydlat*/);  // second column
@@ -278,11 +310,11 @@ void main()
     if (use_map_projection)
     {
         // Map project arrow start position and vector.
-        MapProjectedPositionAndVector map_projected_position_and_vector = map_project(arrow_start, arrow_vector);
+        MapProjectedPositionAndVector map_projected_arrow = map_project(arrow_start, arrow_vector);
 
         // Overwrite arrow start position and vector with map projected versions.
-        arrow_start = vec3(map_projected_position_and_vector.map_position, 0.0);  // z component in map projection space is zero (ie, on map plane)
-        arrow_vector = map_projected_position_and_vector.map_vector;
+        arrow_start = vec3(map_projected_arrow.map_position, 0.0);  // z component in map projection space is zero (ie, on map plane)
+        arrow_vector = map_projected_arrow.map_vector;
     }
 
     const float arrow_length = length(arrow_vector);

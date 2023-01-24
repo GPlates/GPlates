@@ -110,7 +110,6 @@ namespace GPlatesOpenGL
 		//     vec4 frustum_planes[6];
 		//     bool use_map_projection;
 		//     float map_projection_central_meridian;
-		//     vec2 map_projection_image_size;
 		//     float arrow_size_scale_factor;
 		//     float max_ratio_arrowhead_length_to_arrow_length;
 		//     float arrowhead_width_to_length_ratio;
@@ -120,13 +119,11 @@ namespace GPlatesOpenGL
 		// NOTE: This fits within the minimum required size limit of 128 bytes for push constants.
 		//       And push constants use the std430 layout.
 		//
-		struct ComputePushConstants  // NOTE: currently consumes 128 bytes (the minimum required size limit for push constants)
+		struct ComputePushConstants
 		{
 			alignas(16)/*vec4*/ float frustum_planes[6][4];
 			std::uint32_t/*bool*/ use_map_projection;  // true/false if rendering in map/globe view
 			float map_projection_central_meridian;  // only used if 'use_map_projection' is true
-			// NOTE: Alignment is 8 bytes, so be sure to fill alignment padding before it (eg, with 4-byte components)...
-			alignas(8)/*vec2*/ float map_projection_image_size[2];
 			float arrow_size_scale_factor;
 			float max_ratio_arrowhead_length_to_arrow_length;
 			float arrowhead_width_to_length_ratio;
@@ -335,10 +332,6 @@ namespace GPlatesOpenGL
 		 * the light direction and ambient contribution.
 		 */
 		const GPlatesGui::SceneLightingParameters &d_scene_lighting_parameters;
-
-		// Map projection image dimensions.
-		std::uint32_t d_map_projection_image_width = 0;
-		std::uint32_t d_map_projection_image_height = 0;
 
 		// Descriptor set layouts.
 		vk::DescriptorSetLayout d_instance_descriptor_set_layout;
