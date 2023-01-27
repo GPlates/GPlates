@@ -460,9 +460,66 @@ GPlatesOpenGL::MapProjectionImage::create_staging_buffer(
 			//
 
 			// Derivative delta in (longitude, latitude) space.
-			// It's arbitrarily small enough to get good accuracy for the derivatives,
-			// but not too small that we run into numerical precision issues.
-			const double delta_lon_lat_for_derivs = 1e-5;
+			// It should be small enough to get good accuracy for the derivatives,
+			// but not too small that we run into numerical precision issues with the Proj library.
+			//
+			// The following are error measurements between the actual and computed (in compute shader) map projected positions and unit-vectors (directions)
+			// of 50,000 arrows for different derivative delta values. The position error is distance in (x,y) map projection space between the two positions
+			// (noting that each map projection is approximately 360 in width), and vector error is distance between the two unit vectors.
+			// In the following, the order of map projections is Rectangular, Mercator, Mollweide and Robinson.
+			//
+			//   delta_lon_lat_for_derivs = 1e-5:
+			//   RMS position error:  1.23108e-05 , Max position error: 5.06184e-05 , RMS vector error:  3.00003e-06 , Max vector error: 4.97866e-06
+			//   RMS position error:  0.0142877 , Max position error: 0.211496 , RMS vector error:  0.000262877 , Max vector error: 0.00415843
+			//   RMS position error:  0.0031077 , Max position error: 0.0346373 , RMS vector error:  0.000144097 , Max vector error: 0.00478129
+			//   RMS position error:  0.00189213 , Max position error: 0.00946791 , RMS vector error:  0.0859115 , Max vector error: 1.01257
+			//
+			//   delta_lon_lat_for_derivs = 1e-4:
+			//   RMS position error:  1.23108e-05 , Max position error: 5.06184e-05 , RMS vector error:  3.00003e-06 , Max vector error: 4.97866e-06
+			//   RMS position error:  0.0142877 , Max position error: 0.211496 , RMS vector error:  0.000262877 , Max vector error: 0.00415843
+			//   RMS position error:  0.0031077 , Max position error: 0.0346373 , RMS vector error:  0.000144097 , Max vector error: 0.00478129
+			//   RMS position error:  0.00149643 , Max position error: 0.0077787 , RMS vector error:  0.00797961 , Max vector error: 0.0612052
+			//
+			//   delta_lon_lat_for_derivs = 1e-3:
+			//   RMS position error:  1.23108e-05 , Max position error: 5.06184e-05 , RMS vector error:  3.00003e-06 , Max vector error: 4.97866e-06
+			//   RMS position error:  0.0142877 , Max position error: 0.211496 , RMS vector error:  0.000262878 , Max vector error: 0.00415843
+			//   RMS position error:  0.0031077 , Max position error: 0.0346373 , RMS vector error:  0.000144096 , Max vector error: 0.00478129
+			//   RMS position error:  0.00149328 , Max position error: 0.00811773 , RMS vector error:  0.000809906 , Max vector error: 0.00961482
+			//
+			//   delta_lon_lat_for_derivs = 5e-3:
+			//   RMS position error:  1.23108e-05 , Max position error: 5.06184e-05 , RMS vector error:  3.00003e-06 , Max vector error: 4.97866e-06
+			//   RMS position error:  0.0142877 , Max position error: 0.211496 , RMS vector error:  0.000262886 , Max vector error: 0.00415855
+			//   RMS position error:  0.0031077 , Max position error: 0.0346373 , RMS vector error:  0.000144096 , Max vector error: 0.00478144
+			//   RMS position error:  0.00149336 , Max position error: 0.00815432 , RMS vector error:  0.000218747 , Max vector error: 0.0127383
+			//
+			//   delta_lon_lat_for_derivs = 1e-2:
+			//   RMS position error:  1.23108e-05 , Max position error: 5.06184e-05 , RMS vector error:  3.00003e-06 , Max vector error: 4.97866e-06
+			//   RMS position error:  0.0142877 , Max position error: 0.211496 , RMS vector error:  0.000262921 , Max vector error: 0.00415902
+			//   RMS position error:  0.0031077 , Max position error: 0.0346373 , RMS vector error:  0.000144102 , Max vector error: 0.00478155
+			//   RMS position error:  0.00149336 , Max position error: 0.00815432 , RMS vector error:  0.000170958 , Max vector error: 0.01313
+			//
+			// The errors for most projections are (mostly) unchanged with varying derivative delta values.
+			// Except the Robinson projection which has very large vector (direction) errors for 1e-5.
+			// It's only when derivative delta is increased to 1e-3 that the error becomes acceptable.
+			// Further increases to the derivative delta progressively increase the errors again, so it seems 1-e3 is the sweet spot.
+			//
+			// The Robinson projection is the only projection that uses a lookup table, and the Proj library encodes the table as single precision,
+			// and there's a rounding of latitude to integer (in order to index the table). So having a derivative delta that is too small must somehow
+			// be interacting with the lookup table unfavourably. Also it appears to happen only for specific latitudes - it was noticed for latitudes around
+			// 35 +/- 0.5 degrees (positive or negative latitude) and also 65 +/- 0.5 degrees (positive only it seems, but might have had too few samples there).
+			// For example:
+			//
+			//     lon/lat: 74.1903 35.3408 , position error: 0.00404441 , vector error: 0.526679 , original vector: "(0.635099, 0.772431, -4.06282e-09)" , compute shader vector: "(0.939477, 0.342611, 1.90348e-08)"
+			//
+			// Interestingly, looking at the Robinson lookup table (https://en.wikipedia.org/wiki/Robinson_projection), the latitudes 35 and 65
+			// fall right on the lookup table's 5-degree interval boundaries. So I wouldn't be surprised if the polynomial interpolation coefficients don't
+			// match up on either for the adjacent intervals at 35 and 65 degrees as well as for other 5-degree latitudes in the table.
+			// Also a derivative delta of 1e-5 is in degrees, which for 35 degrees is a factor of ~3e-7 (1e-5 / 35) which is getting pretty close to
+			// single-precision floating-point accuracy (which is the accuracy of the polynomial interpolation coefficients in the Proj library).
+			// Increasing the derivative delta to 1e-3 is an increase by a factor of 100 and appears to significantly reduce the error.
+			// Note: The Proj source code is at https://github.com/OSGeo/PROJ/blob/master/src/projections/robin.cpp
+			//
+			const double delta_lon_lat_for_derivs = 1e-3;
 
 			// Move the first and last columns slightly inward (by the delta) so the derivative calculations
 			// don't sample outside our longitude range.
