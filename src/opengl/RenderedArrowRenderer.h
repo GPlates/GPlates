@@ -337,7 +337,7 @@ namespace GPlatesOpenGL
 		vk::DescriptorSetLayout d_instance_descriptor_set_layout;
 		vk::DescriptorSetLayout d_map_projection_descriptor_set_layout;
 
-		// Descriptor pool/set for the map projection texture.
+		// Descriptor pool/set for the map projection textures.
 		vk::DescriptorPool d_map_projection_descriptor_pool;
 		vk::DescriptorSet d_map_projection_descriptor_set;
 

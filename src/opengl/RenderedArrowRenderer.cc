@@ -498,18 +498,12 @@ GPlatesOpenGL::RenderedArrowRenderer::create_compute_pipeline(
 	d_instance_descriptor_set_layout = vulkan.get_device().createDescriptorSetLayout(instance_descriptor_set_layout_create_info);
 
 	// Map projection descriptor set layout.
-	vk::DescriptorSetLayoutBinding map_projection_descriptor_set_layout_bindings[2];
-	// Forward transform image binding.
+	vk::DescriptorSetLayoutBinding map_projection_descriptor_set_layout_bindings[1];
+	// Map projection image array binding.
 	map_projection_descriptor_set_layout_bindings[0]
 			.setBinding(0)
 			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(1)
-			.setStageFlags(vk::ShaderStageFlagBits::eCompute);
-	// Jacobian matrix image binding.
-	map_projection_descriptor_set_layout_bindings[1]
-			.setBinding(1)
-			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(1)
+			.setDescriptorCount(2)
 			.setStageFlags(vk::ShaderStageFlagBits::eCompute);
 	vk::DescriptorSetLayoutCreateInfo map_projection_descriptor_set_layout_create_info;
 	map_projection_descriptor_set_layout_create_info.setBindings(map_projection_descriptor_set_layout_bindings);
@@ -1018,17 +1012,16 @@ GPlatesOpenGL::RenderedArrowRenderer::create_map_projection_descriptor_set(
 	d_map_projection_descriptor_set = descriptor_sets[0];
 
 	// Descriptor writes for the map projection textures.
-	vk::DescriptorImageInfo forward_transform_descriptor_image_info = map_projection_image.get_forward_transform_descriptor_image_info();
-	vk::DescriptorImageInfo jacobian_matrix_descriptor_image_info = map_projection_image.get_jacobian_matrix_descriptor_image_info();
-	vk::WriteDescriptorSet descriptor_writes[2];
+	vk::DescriptorImageInfo descriptor_image_infos[2] =
+	{
+		map_projection_image.get_forward_transform_descriptor_image_info(),
+		map_projection_image.get_jacobian_matrix_descriptor_image_info()
+	};
+	vk::WriteDescriptorSet descriptor_writes[1];
 	descriptor_writes[0]
-			.setDstSet(d_map_projection_descriptor_set).setDstBinding(0).setDstArrayElement(0).setDescriptorCount(1)
+			.setDstSet(d_map_projection_descriptor_set).setDstBinding(0).setDstArrayElement(0).setDescriptorCount(2)
 			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setImageInfo(forward_transform_descriptor_image_info);
-	descriptor_writes[1]
-			.setDstSet(d_map_projection_descriptor_set).setDstBinding(1).setDstArrayElement(0).setDescriptorCount(1)
-			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setImageInfo(jacobian_matrix_descriptor_image_info);
+			.setImageInfo(descriptor_image_infos);
 
 	// Update descriptor set.
 	vulkan.get_device().updateDescriptorSets(descriptor_writes, nullptr/*descriptorCopies*/);

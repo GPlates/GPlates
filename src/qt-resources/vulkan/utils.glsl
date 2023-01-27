@@ -75,7 +75,7 @@ get_texture_gather_bilinear_params(
  * Bilinearly filter the specified result of a 'textureGather()' call using the specified bilinear weights.
  */
 float
-bilinearly_interpolate_texture_gather(
+bilinearly_interpolate_gather(
 		vec4 texture_gather,
 		vec2 bilinear_weight)
 {
@@ -84,6 +84,28 @@ bilinearly_interpolate_texture_gather(
             mix(texture_gather[0], texture_gather[1], bilinear_weight.x),
             bilinear_weight.y);
 }
+
+/*
+ * Bilinearly filter the specified array of 4 float, vec2, vec3 or vec4 (in same order as returned by 'textureGather()')
+ * using the specified bilinear weights.
+ */
+
+#define BILINEARLY_INTERPOLATE_GATHER_TEMPLATE(type) \
+		type \
+		bilinearly_interpolate_gather( \
+				type gather[4], \
+				vec2 bilinear_weight) \
+		{ \
+			return mix( \
+					mix(gather[3], gather[2], bilinear_weight.x), \
+					mix(gather[0], gather[1], bilinear_weight.x), \
+					bilinear_weight.y); \
+		}
+
+BILINEARLY_INTERPOLATE_GATHER_TEMPLATE(float)
+BILINEARLY_INTERPOLATE_GATHER_TEMPLATE(vec2)
+BILINEARLY_INTERPOLATE_GATHER_TEMPLATE(vec3)
+BILINEARLY_INTERPOLATE_GATHER_TEMPLATE(vec4)
 
 
 /*
