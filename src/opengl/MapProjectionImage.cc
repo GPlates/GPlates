@@ -596,16 +596,19 @@ GPlatesOpenGL::MapProjectionImage::create_staging_buffer(
 			map_projection.forward_transform(x_at_lat_minus_delta, y_at_lat_minus_delta);
 
 			// Jacobian matrix.
-			const double dx_dlon = (x_at_lon_plus_delta - x_at_lon_minus_delta) / (2 * delta_lon_lat_for_derivs);
-			const double dx_dlat = (x_at_lat_plus_delta - x_at_lat_minus_delta) / (2 * delta_lon_lat_for_derivs);
-			const double dy_dlon = (y_at_lon_plus_delta - y_at_lon_minus_delta) / (2 * delta_lon_lat_for_derivs);
-			const double dy_dlat = (y_at_lat_plus_delta - y_at_lat_minus_delta) / (2 * delta_lon_lat_for_derivs);
+			const double dx_dlon_radians = (x_at_lon_plus_delta - x_at_lon_minus_delta) / (2 * delta_lon_lat_for_derivs_radians);
+			const double dx_dlat_radians = (x_at_lat_plus_delta - x_at_lat_minus_delta) / (2 * delta_lon_lat_for_derivs_radians);
+			const double dy_dlon_radians = (y_at_lon_plus_delta - y_at_lon_minus_delta) / (2 * delta_lon_lat_for_derivs_radians);
+			const double dy_dlat_radians = (y_at_lat_plus_delta - y_at_lat_minus_delta) / (2 * delta_lon_lat_for_derivs_radians);
 
 			// Store map projection Jacobian matrix in second image.
-			texel2.values[0] = static_cast<float>(dx_dlon);
-			texel2.values[1] = static_cast<float>(dx_dlat);
-			texel2.values[2] = static_cast<float>(dy_dlon);
-			texel2.values[3] = static_cast<float>(dy_dlat);
+			//
+			// Note: Using radians for longitude and latitude since Vulkan shaders will use GLSL atan() and asin() functions
+			//       to get longitude and latitude (and those functions returns results in radians).
+			texel2.values[0] = static_cast<float>(dx_dlon_radians);
+			texel2.values[1] = static_cast<float>(dx_dlat_radians);
+			texel2.values[2] = static_cast<float>(dy_dlon_radians);
+			texel2.values[3] = static_cast<float>(dy_dlat_radians);
 
 			//
 			// Map (longitude, latitude) to map projection space first-order partial derivatives.
@@ -639,26 +642,38 @@ GPlatesOpenGL::MapProjectionImage::create_staging_buffer(
 			map_projection.forward_transform(x_at_lon_minus_delta_lat_minus_delta, y_at_lon_minus_delta_lat_minus_delta);
 
 			// Hessian matrix (for 'x').
-			const double ddx_dlon_dlon = (x_at_lon_plus_delta - 2 * x + x_at_lon_minus_delta) / (delta_lon_lat_for_derivs * delta_lon_lat_for_derivs);
-			const double ddx_dlat_dlat = (x_at_lat_plus_delta - 2 * x + x_at_lat_minus_delta) / (delta_lon_lat_for_derivs * delta_lon_lat_for_derivs);
-			const double ddx_dlon_dlat = (x_at_lon_plus_delta_lat_plus_delta - x_at_lon_plus_delta_lat_minus_delta - x_at_lon_minus_delta_lat_plus_delta + x_at_lon_minus_delta_lat_minus_delta) /
-					(4 * delta_lon_lat_for_derivs * delta_lon_lat_for_derivs);
+			const double ddx_dlon_dlon_radians = (x_at_lon_plus_delta - 2 * x + x_at_lon_minus_delta) /
+					(delta_lon_lat_for_derivs_radians * delta_lon_lat_for_derivs_radians);
+			const double ddx_dlat_dlat_radians = (x_at_lat_plus_delta - 2 * x + x_at_lat_minus_delta) /
+					(delta_lon_lat_for_derivs_radians * delta_lon_lat_for_derivs_radians);
+			const double ddx_dlon_dlat_radians = (x_at_lon_plus_delta_lat_plus_delta - x_at_lon_plus_delta_lat_minus_delta -
+							x_at_lon_minus_delta_lat_plus_delta + x_at_lon_minus_delta_lat_minus_delta) /
+					(4 * delta_lon_lat_for_derivs_radians * delta_lon_lat_for_derivs_radians);
 
 			// Hessian matrix (for 'y1').
-			const double ddy_dlon_dlon = (y_at_lon_plus_delta - 2 * y + y_at_lon_minus_delta) / (delta_lon_lat_for_derivs * delta_lon_lat_for_derivs);
-			const double ddy_dlat_dlat = (y_at_lat_plus_delta - 2 * y + y_at_lat_minus_delta) / (delta_lon_lat_for_derivs * delta_lon_lat_for_derivs);
-			const double ddy_dlon_dlat = (y_at_lon_plus_delta_lat_plus_delta - y_at_lon_plus_delta_lat_minus_delta - y_at_lon_minus_delta_lat_plus_delta + y_at_lon_minus_delta_lat_minus_delta) /
-					(4 * delta_lon_lat_for_derivs * delta_lon_lat_for_derivs);
+			const double ddy_dlon_dlon_radians = (y_at_lon_plus_delta - 2 * y + y_at_lon_minus_delta) /
+					(delta_lon_lat_for_derivs_radians * delta_lon_lat_for_derivs_radians);
+			const double ddy_dlat_dlat_radians = (y_at_lat_plus_delta - 2 * y + y_at_lat_minus_delta) /
+					(delta_lon_lat_for_derivs_radians * delta_lon_lat_for_derivs_radians);
+			const double ddy_dlon_dlat_radians = (y_at_lon_plus_delta_lat_plus_delta - y_at_lon_plus_delta_lat_minus_delta -
+							y_at_lon_minus_delta_lat_plus_delta + y_at_lon_minus_delta_lat_minus_delta) /
+					(4 * delta_lon_lat_for_derivs_radians * delta_lon_lat_for_derivs_radians);
 
 			// Store the diagonal Hessian matrix elements in the third image.
-			texel3.values[0] = static_cast<float>(ddx_dlon_dlon);
-			texel3.values[1] = static_cast<float>(ddx_dlat_dlat);
-			texel3.values[2] = static_cast<float>(ddy_dlon_dlon);
-			texel3.values[3] = static_cast<float>(ddy_dlat_dlat);
+			//
+			// Note: Using radians for longitude and latitude since Vulkan shaders will use GLSL atan() and asin() functions
+			//       to get longitude and latitude (and those functions returns results in radians).
+			texel3.values[0] = static_cast<float>(ddx_dlon_dlon_radians);
+			texel3.values[1] = static_cast<float>(ddx_dlat_dlat_radians);
+			texel3.values[2] = static_cast<float>(ddy_dlon_dlon_radians);
+			texel3.values[3] = static_cast<float>(ddy_dlat_dlat_radians);
 
 			// Store the off-diagonal symmetric Hessian matrix elements in the first image.
-			texel1.values[2] = static_cast<float>(ddx_dlon_dlat);
-			texel1.values[3] = static_cast<float>(ddy_dlon_dlat);
+			//
+			// Note: Using radians for longitude and latitude since Vulkan shaders will use GLSL atan() and asin() functions
+			//       to get longitude and latitude (and those functions returns results in radians).
+			texel1.values[2] = static_cast<float>(ddx_dlon_dlat_radians);
+			texel1.values[3] = static_cast<float>(ddy_dlon_dlat_radians);
 		}
 
 		// Copy a row into each buffer.
