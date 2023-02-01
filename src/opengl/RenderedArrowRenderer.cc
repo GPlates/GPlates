@@ -34,16 +34,20 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+#include "gui/MapProjection.h"
 #include "gui/SceneLightingParameters.h"
 
+#include "maths/CartesianConvMatrix3D.h"
 #include "maths/MathsUtils.h"
 
 #include "utils/CallStackTracker.h"
 
 
 GPlatesOpenGL::RenderedArrowRenderer::RenderedArrowRenderer(
-		const GPlatesGui::SceneLightingParameters &scene_lighting_parameters) :
-	d_scene_lighting_parameters(scene_lighting_parameters)
+		const GPlatesGui::SceneLightingParameters &scene_lighting_parameters,
+		const GPlatesGui::MapProjection &map_projection) :
+	d_scene_lighting_parameters(scene_lighting_parameters),
+	d_map_projection(map_projection)
 {
 }
 
@@ -360,14 +364,254 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 	vk::MemoryBarrier compute_to_graphics_memory_barrier;
 	compute_to_graphics_memory_barrier
 			.setSrcAccessMask(vk::AccessFlagBits::eShaderWrite)
-			.setDstAccessMask(vk::AccessFlagBits::eVertexAttributeRead | vk::AccessFlagBits::eIndirectCommandRead);
+			.setDstAccessMask(vk::AccessFlagBits::eVertexAttributeRead | vk::AccessFlagBits::eIndirectCommandRead | vk::AccessFlagBits::eTransferWrite);
 	preprocess_command_buffer.pipelineBarrier(
 			vk::PipelineStageFlagBits::eComputeShader,
-			vk::PipelineStageFlagBits::eVertexInput | vk::PipelineStageFlagBits::eDrawIndirect,
+			vk::PipelineStageFlagBits::eVertexInput | vk::PipelineStageFlagBits::eDrawIndirect | vk::PipelineStageFlagBits::eTransfer,
 			{},  // dependencyFlags
 			compute_to_graphics_memory_barrier,  // memoryBarriers
 			{},  // bufferMemoryBarriers
 			{});  // imageMemoryBarriers
+
+#if 1
+	// Buffer parameters.
+	vk::BufferCreateInfo buffer_create_info;
+	buffer_create_info
+			.setSharingMode(vk::SharingMode::eExclusive)
+			.setUsage(vk::BufferUsageFlagBits::eTransferDst);
+	// Allocation parameters.
+	VmaAllocationCreateInfo allocation_create_info = {};
+	allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
+	allocation_create_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
+
+	buffer_create_info.setSize(NUM_ARROWS_PER_INSTANCE_BUFFER * sizeof(MeshInstance));
+	VulkanBuffer instance_buffer = VulkanBuffer::create(vulkan.get_vma_allocator(), buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
+	buffer_create_info.setSize(NUM_ARROWS_PER_INSTANCE_BUFFER * sizeof(VisibleMeshInstance));
+	VulkanBuffer visible_instance_buffer = VulkanBuffer::create(vulkan.get_vma_allocator(), buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
+	buffer_create_info.setSize(sizeof(vk::DrawIndexedIndirectCommand));
+	VulkanBuffer indirect_draw_buffer = VulkanBuffer::create(vulkan.get_vma_allocator(), buffer_create_info, allocation_create_info, GPLATES_EXCEPTION_SOURCE);
+
+	vk::BufferCopy buffer_copy;
+	buffer_copy.setSrcOffset(0).setDstOffset(0).setSize(NUM_ARROWS_PER_INSTANCE_BUFFER * sizeof(MeshInstance));
+	preprocess_command_buffer.copyBuffer(
+			instance_resources[0].instance_buffer.get_buffer(),
+			instance_buffer.get_buffer(),
+			buffer_copy);
+	buffer_copy.setSrcOffset(0).setDstOffset(0).setSize(NUM_ARROWS_PER_INSTANCE_BUFFER * sizeof(VisibleMeshInstance));
+	preprocess_command_buffer.copyBuffer(
+			instance_resources[0].visible_instance_buffer.get_buffer(),
+			visible_instance_buffer.get_buffer(),
+			buffer_copy);
+	buffer_copy.setSrcOffset(0).setDstOffset(0).setSize(sizeof(vk::DrawIndexedIndirectCommand));
+	preprocess_command_buffer.copyBuffer(
+			instance_resources[0].indirect_draw_buffer.get_buffer(),
+			indirect_draw_buffer.get_buffer(),
+			buffer_copy);
+
+#if defined(_WIN32) && defined(MemoryBarrier) // See "VulkanHpp.h" for why this is necessary.
+#	undef MemoryBarrier
+#endif
+	// Pipeline barrier to wait for staging transfer writes to be made visible for use as vertex/index data.
+	vk::MemoryBarrier memory_barrier;
+	memory_barrier
+			.setSrcAccessMask(vk::AccessFlagBits::eTransferWrite)
+			.setDstAccessMask(vk::AccessFlagBits::eHostRead);
+	preprocess_command_buffer.pipelineBarrier(
+			vk::PipelineStageFlagBits::eTransfer,
+			vk::PipelineStageFlagBits::eHost,
+			{},  // dependencyFlags
+			memory_barrier,  // memoryBarriers
+			{},  // bufferMemoryBarriers
+			{});  // imageMemoryBarriers
+
+	// End recording into the preprocess command buffer.
+	preprocess_command_buffer.end();
+
+	vk::FenceCreateInfo preprocess_submit_fence_create_info;
+	vk::Fence preprocess_submit_fence = vulkan.get_device().createFence(preprocess_submit_fence_create_info);
+
+	// Submit the preprocess command buffer.
+	vk::SubmitInfo preprocess_command_buffer_submit_info;
+	preprocess_command_buffer_submit_info.setCommandBuffers(preprocess_command_buffer);
+	vulkan.get_graphics_and_compute_queue().submit(preprocess_command_buffer_submit_info, preprocess_submit_fence);
+
+	if (vulkan.get_device().waitForFences(preprocess_submit_fence, true, UINT64_MAX) != vk::Result::eSuccess)
+	{
+		throw VulkanException(GPLATES_EXCEPTION_SOURCE, "Error waiting for preprocess of arrows.");
+	}
+	vulkan.get_device().destroyFence(preprocess_submit_fence);
+
+	// Read the buffers.
+	const MeshInstance *instance_buffer_data = static_cast<const MeshInstance *>(instance_buffer.map_memory(vulkan.get_vma_allocator(), GPLATES_EXCEPTION_SOURCE));
+	const VisibleMeshInstance *visible_instance_buffer_data = static_cast<const VisibleMeshInstance *>(visible_instance_buffer.map_memory(vulkan.get_vma_allocator(), GPLATES_EXCEPTION_SOURCE));
+	const vk::DrawIndexedIndirectCommand *indirect_draw_buffer_data = static_cast<const vk::DrawIndexedIndirectCommand *>(indirect_draw_buffer.map_memory(vulkan.get_vma_allocator(), GPLATES_EXCEPTION_SOURCE));
+
+	instance_buffer.invalidate_mapped_memory(vulkan.get_vma_allocator(), 0, VK_WHOLE_SIZE, GPLATES_EXCEPTION_SOURCE);
+	visible_instance_buffer.invalidate_mapped_memory(vulkan.get_vma_allocator(), 0, VK_WHOLE_SIZE, GPLATES_EXCEPTION_SOURCE);
+	indirect_draw_buffer.invalidate_mapped_memory(vulkan.get_vma_allocator(), 0, VK_WHOLE_SIZE, GPLATES_EXCEPTION_SOURCE);
+
+	if (is_map_active)
+	{
+		double rms_position_error = 0.0;
+		double max_square_position_error = 0.0;
+		double rms_vector_error = 0.0;
+		double max_square_vector_error = 0.0;
+		const unsigned int num_arrows = indirect_draw_buffer_data->instanceCount;
+		for (unsigned int index = 0; index < num_arrows; ++index)
+		{
+			const VisibleMeshInstance &visible_instance = visible_instance_buffer_data[index];
+			//qDebug() << "input_arrow_instance_index" << visible_instance.input_arrow_instance_index;
+			const MeshInstance &mesh_instance = instance_buffer_data[visible_instance.input_arrow_instance_index];
+
+			//
+			// Arrow position
+			//
+
+			const GPlatesMaths::PointOnSphere arrow_start_point(GPlatesMaths::Vector3D(
+					mesh_instance.arrow_start[0],
+					mesh_instance.arrow_start[1],
+					mesh_instance.arrow_start[2]).get_normalisation());
+			const GPlatesMaths::LatLonPoint arrow_start_llp = make_lat_lon_point(arrow_start_point);
+
+			const QPointF map_arrow_start = d_map_projection.forward_transform(arrow_start_llp);
+			const QPointF compute_map_arrow_start = QPointF(visible_instance.world_space_start_position[0], visible_instance.world_space_start_position[1]);
+
+			const QPointF position_error = compute_map_arrow_start - map_arrow_start;
+			const double square_position_error = QPointF::dotProduct(position_error, position_error);
+			if (square_position_error > max_square_position_error)
+			{
+				max_square_position_error = square_position_error;
+			}
+
+			rms_position_error += square_position_error;
+
+
+			//
+			// Arrow vector
+			//
+
+			// Arrow start position (base of arrow).
+			const GPlatesMaths::Vector3D arrow_start_vec(arrow_start_point.position_vector());
+			const GPlatesMaths::Vector3D arrow_vec(mesh_instance.arrow_vector[0], mesh_instance.arrow_vector[1], mesh_instance.arrow_vector[2]);
+
+			const double central_longitude = d_map_projection.central_meridian();
+			const double arrow_start_latitude = arrow_start_llp.latitude();
+			const double arrow_start_longitude = arrow_start_llp.longitude();
+
+			// Transform vector to local North/East/Down frame.
+			GPlatesMaths::CartesianConvMatrix3D ccm(arrow_start_point);
+			const GPlatesMaths::Vector3D arrow_vector_ned =
+					convert_from_geocentric_to_north_east_down(ccm, arrow_vec);
+
+			// Convert North is y, East is x and negate down (to get up).
+			const double arrow_vector_x = arrow_vector_ned.y().dval();
+			const double arrow_vector_y = arrow_vector_ned.x().dval();
+			const double arrow_vector_z = -arrow_vector_ned.z().dval();
+
+			// Local x and y directions (East and North).
+			const GPlatesMaths::Vector3D ccm_x = ccm.east();
+			const GPlatesMaths::Vector3D ccm_y = ccm.north();
+
+			// Move start/base of arrow slightly in the local x and y directions (East and North).
+			//
+			// Note: Make sure we don't sample outside map projection boundary.
+			const double delta = 1e-5;
+			const GPlatesMaths::Vector3D arrow_start_plus_delta_x = arrow_start_longitude < central_longitude
+					? arrow_start_vec + delta * ccm_x
+					: arrow_start_vec;
+			const GPlatesMaths::Vector3D arrow_start_minus_delta_x = arrow_start_longitude < central_longitude
+					? arrow_start_vec
+					: arrow_start_vec - delta * ccm_x;
+			const GPlatesMaths::Vector3D arrow_start_plus_delta_y = arrow_start_latitude < 0
+					? arrow_start_vec + delta * ccm_y
+					: arrow_start_vec;
+			const GPlatesMaths::Vector3D arrow_start_minus_delta_y = arrow_start_latitude < 0
+					? arrow_start_vec
+					: arrow_start_vec - delta * ccm_y;
+	
+			// The map projection of the local delta x and y vectors (East and North).
+			const QPointF arrow_start_map_plus_delta_x = d_map_projection.forward_transform(
+					make_lat_lon_point(GPlatesMaths::PointOnSphere(arrow_start_plus_delta_x.get_normalisation())));
+			const QPointF arrow_start_map_minus_delta_x = d_map_projection.forward_transform(
+					make_lat_lon_point(GPlatesMaths::PointOnSphere(arrow_start_minus_delta_x.get_normalisation())));
+			const QPointF arrow_start_map_plus_delta_y = d_map_projection.forward_transform(
+					make_lat_lon_point(GPlatesMaths::PointOnSphere(arrow_start_plus_delta_y.get_normalisation())));
+			const QPointF arrow_start_map_minus_delta_y = d_map_projection.forward_transform(
+					make_lat_lon_point(GPlatesMaths::PointOnSphere(arrow_start_minus_delta_y.get_normalisation())));
+
+			// Calculate 2D map projection warping (at start/base position of arrow).
+			const double dXdx = (arrow_start_map_plus_delta_x.x() - arrow_start_map_minus_delta_x.x()) / delta;
+			const double dYdx = (arrow_start_map_plus_delta_x.y() - arrow_start_map_minus_delta_x.y()) / delta;
+			const double dXdy = (arrow_start_map_plus_delta_y.x() - arrow_start_map_minus_delta_y.x()) / delta;
+			const double dYdy = (arrow_start_map_plus_delta_y.y() - arrow_start_map_minus_delta_y.y()) / delta;
+
+			// Transform 2D (x,y) vector direction according to map projection warping.
+			double arrow_vector_map_x = dXdx * arrow_vector_x + dXdy * arrow_vector_y;
+			double arrow_vector_map_y = dYdx * arrow_vector_x + dYdy * arrow_vector_y;
+			const double arrow_vector_map_z = arrow_vector_z;
+
+			// Transform may stretch 2D (x,y) vector.
+			const double arrow_vector_map_xy_length = std::sqrt(arrow_vector_map_x * arrow_vector_map_x + arrow_vector_map_y * arrow_vector_map_y);
+			const double arrow_vector_xy_length = std::sqrt(arrow_vector_x * arrow_vector_x + arrow_vector_y * arrow_vector_y);
+			const double arrow_vector_xy_scale = (arrow_vector_map_xy_length > 0) ? (arrow_vector_xy_length / arrow_vector_map_xy_length) : 0;
+
+			// Make 2D (x,y) vector the same length as before - we effectively just rotating it.
+			arrow_vector_map_x *= arrow_vector_xy_scale;
+			arrow_vector_map_y *= arrow_vector_xy_scale;
+
+			// The final arrow vector is 3D map projection space (2D map projection space and vertical dimension).
+			const GPlatesMaths::Vector3D arrow_vector_map(
+					GPlatesMaths::Vector3D(arrow_vector_map_x, arrow_vector_map_y, arrow_vector_map_z).get_normalisation());
+
+			const GPlatesMaths::Vector3D compute_arrow_vector_map(
+					visible_instance.world_space_z_axis[0],
+					visible_instance.world_space_z_axis[1],
+					visible_instance.world_space_z_axis[2]);
+
+			const GPlatesMaths::Vector3D vector_error = compute_arrow_vector_map - arrow_vector_map;
+			const double square_vector_error = vector_error.magSqrd().dval();
+			if (square_vector_error > max_square_vector_error)
+			{
+				max_square_vector_error = square_vector_error;
+			}
+			if (square_position_error > 1.0 * 1.0)
+			{
+				qDebug() << "  lon/lat:" << arrow_start_longitude << arrow_start_latitude
+						<< ", position error:" << std::sqrt(square_position_error)
+						<< ", vector error:" << std::sqrt(square_vector_error)
+						<< ", original vector:" << arrow_vector_map
+						<< ", compute shader vector:" << compute_arrow_vector_map;
+			}
+
+			rms_vector_error += square_vector_error;
+		}
+
+		rms_position_error = std::sqrt(rms_position_error / num_arrows);
+		rms_vector_error = std::sqrt(rms_vector_error / num_arrows);
+
+		qDebug() << "Num visible arrows (1st buffer):" << num_arrows
+			<< ", RMS position error: " << rms_position_error
+			<< ", Max position error:"
+			<< std::sqrt(max_square_position_error)
+			<< ", RMS vector error: " << rms_vector_error
+			<< ", Max vector error:"
+			<< std::sqrt(max_square_vector_error);
+	}
+
+	instance_buffer.unmap_memory(vulkan.get_vma_allocator());
+	visible_instance_buffer.unmap_memory(vulkan.get_vma_allocator());
+	indirect_draw_buffer.unmap_memory(vulkan.get_vma_allocator());
+
+	VulkanBuffer::destroy(vulkan.get_vma_allocator(), instance_buffer);
+	VulkanBuffer::destroy(vulkan.get_vma_allocator(), visible_instance_buffer);
+	VulkanBuffer::destroy(vulkan.get_vma_allocator(), indirect_draw_buffer);
+
+	// Begin recording into the initialisation command buffer.
+	vk::CommandBufferBeginInfo preprocess_command_buffer_begin_info;
+	// Command buffer will only be submitted once.
+	preprocess_command_buffer_begin_info.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+	preprocess_command_buffer.begin(preprocess_command_buffer_begin_info);
+#endif
 
 
 	//
@@ -1044,7 +1288,7 @@ GPlatesOpenGL::RenderedArrowRenderer::create_instance_resource(
 
 	buffer_create_info.setSize(NUM_ARROWS_PER_INSTANCE_BUFFER * sizeof(MeshInstance));
 	// Buffer is read by compute shader (as a storage buffer).
-	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eStorageBuffer);
+	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eStorageBuffer);
 
 	// Instance buffer should be mappable (in host memory) and preferably also in device local memory.
 	allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;  // prefer device local
@@ -1066,7 +1310,7 @@ GPlatesOpenGL::RenderedArrowRenderer::create_instance_resource(
 
 	buffer_create_info.setSize(NUM_ARROWS_PER_INSTANCE_BUFFER * sizeof(VisibleMeshInstance));
 	// Buffer is written (by compute shader) as a storage buffer and read as a vertex buffer.
-	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eVertexBuffer);
+	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eVertexBuffer);
 
 	allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
 	allocation_create_info.flags = 0;  // device local memory
@@ -1080,7 +1324,7 @@ GPlatesOpenGL::RenderedArrowRenderer::create_instance_resource(
 
 	buffer_create_info.setSize(sizeof(vk::DrawIndexedIndirectCommand));
 	// Buffer is destination of a copy, and written (by compute shader) as a storage buffer, and read as an indirect buffer.
-	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eIndirectBuffer);
+	buffer_create_info.setUsage(vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst | vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eIndirectBuffer);
 
 	allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
 	allocation_create_info.flags = 0;  // device local memory

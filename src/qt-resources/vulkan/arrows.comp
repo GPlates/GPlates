@@ -61,6 +61,8 @@ struct OutputArrowInstance
 
     // Arrow colour.
     vec4 colour;
+
+    uint input_instance_index;
 };
 
 layout (set = 0, binding = 0) readonly buffer InputArrowInstances
@@ -411,5 +413,6 @@ void main()
             arrow_x_axis, arrowhead_width,
             arrow_y_axis, arrow_body_length,
             arrow_z_axis, arrowhead_length,
-            arrow_colour);
+            arrow_colour,
+            input_arrow_instance_index);
 }

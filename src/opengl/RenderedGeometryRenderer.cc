@@ -91,7 +91,7 @@ GPlatesOpenGL::RenderedGeometryRenderer::RenderedGeometryRenderer(
 		GPlatesPresentation::ViewState &view_state) :
 	d_rendered_geometry_collection(view_state.get_rendered_geometry_collection()),
 	d_gl_visual_layers(GLVisualLayers::create(view_state.get_application_state())),
-	d_rendered_arrow_renderer(view_state.get_scene_lighting_parameters())
+	d_rendered_arrow_renderer(view_state.get_scene_lighting_parameters(), view_state.get_map_projection())
 {
 }
 
