@@ -42,6 +42,12 @@
 
 #include "utils/CallStackTracker.h"
 
+extern
+void
+robin_forward_transform(
+		double &longitude,
+		double &latitude);
+
 
 GPlatesOpenGL::RenderedArrowRenderer::RenderedArrowRenderer(
 		const GPlatesGui::SceneLightingParameters &scene_lighting_parameters,
@@ -473,7 +479,18 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 					mesh_instance.arrow_start[2]).get_normalisation());
 			const GPlatesMaths::LatLonPoint arrow_start_llp = make_lat_lon_point(arrow_start_point);
 
-			const QPointF map_arrow_start = d_map_projection.forward_transform(arrow_start_llp);
+			double x = arrow_start_llp.longitude();
+			double y = arrow_start_llp.latitude();
+			if (d_map_projection.projection_type() == GPlatesGui::MapProjection::NUM_PROJECTIONS)
+			{
+				robin_forward_transform(x, y);
+			}
+			else
+			{
+				d_map_projection.forward_transform(x, y);
+			}
+			const QPointF map_arrow_start(x, y);
+			//const QPointF map_arrow_start = d_map_projection.forward_transform(arrow_start_llp);
 			const QPointF compute_map_arrow_start = QPointF(visible_instance.world_space_start_position[0], visible_instance.world_space_start_position[1]);
 
 			const QPointF position_error = compute_map_arrow_start - map_arrow_start;
