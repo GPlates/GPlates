@@ -46,10 +46,11 @@ GPlatesOpenGL::MapProjectionImage::initialise_vulkan_resources(
 			.setAddressModeV(vk::SamplerAddressMode::eClampToEdge);
 	d_sampler = vulkan.get_device().createSampler(sampler_create_info);
 
-	// Image and allocation create info parameters common to both images (forward transform and Jacobian matrix).
+	// Image and allocation create info parameters common to all images.
 	vk::ImageCreateInfo image_create_info;
 	image_create_info
 			.setImageType(vk::ImageType::e2D)
+			.setFormat(TEXEL_FORMAT)
 			.setExtent({ IMAGE_WIDTH, IMAGE_HEIGHT, 1 })
 			.setMipLevels(1)
 			.setArrayLayers(1)
@@ -62,48 +63,39 @@ GPlatesOpenGL::MapProjectionImage::initialise_vulkan_resources(
 	VmaAllocationCreateInfo image_allocation_create_info = {};
 	image_allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
 
-	// Create the forward transform image.
-	image_create_info.setFormat(FORWARD_TRANSFORM_TEXEL_FORMAT);
-	d_forward_transform_image = VulkanImage::create(
-			vulkan.get_vma_allocator(),
-			image_create_info,
-			image_allocation_create_info,
-			GPLATES_EXCEPTION_SOURCE);
+	// Create the images.
+	for (unsigned int n = 0; n < NUM_IMAGES; ++n)
+	{
+		d_images[n] = VulkanImage::create(
+				vulkan.get_vma_allocator(),
+				image_create_info,
+				image_allocation_create_info,
+				GPLATES_EXCEPTION_SOURCE);
+	}
 
-	// Create the Jacobian matrix image.
-	image_create_info.setFormat(JACOBIAN_MATRIX_TEXEL_FORMAT);
-	d_jacobian_matrix_image = VulkanImage::create(
-			vulkan.get_vma_allocator(),
-			image_create_info,
-			image_allocation_create_info,
-			GPLATES_EXCEPTION_SOURCE);
-
-	// Image view create info parameters common to both image views (forward transform and Jacobian matrix).
+	// Image view create info parameters common to all image views.
 	vk::ImageViewCreateInfo image_view_create_info;
 	image_view_create_info
 			.setViewType(vk::ImageViewType::e2D)
+			.setFormat(TEXEL_FORMAT)
 			.setComponents({})  // identity swizzle
-			.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 } );
+			.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
 
-	// Create forward transform image view.
-	image_view_create_info
-			.setImage(d_forward_transform_image.get_image())
-			.setFormat(FORWARD_TRANSFORM_TEXEL_FORMAT);
-	d_forward_transform_image_view = vulkan.get_device().createImageView(image_view_create_info);
+	// Create the image views.
+	for (unsigned int n = 0; n < NUM_IMAGES; ++n)
+	{
+		image_view_create_info.setImage(d_images[n].get_image());
 
-	// Create Jacobian matrix image view.
-	image_view_create_info
-			.setImage(d_jacobian_matrix_image.get_image())
-			.setFormat(JACOBIAN_MATRIX_TEXEL_FORMAT);
-	d_jacobian_matrix_image_view = vulkan.get_device().createImageView(image_view_create_info);
+		d_image_views[n] = vulkan.get_device().createImageView(image_view_create_info);
+	}
 
 
 	//
-	// Transition the both image layouts (forward transform and Jacobian matrix) for optimal shader reads.
+	// Transition the all image layouts for optimal shader reads.
 	//
 	// This is only to avoid the validation layers complaining since an image can be bound for optimal shader reads
 	// via a descriptor set (by a client) when the globe is active (ie, when not rendering to a map view).
-	// It needs to be bound because it's "statically" used, even though the shader will not actually sample the image (since not in map view).
+	// It needs to be bound because it's "statically" used, even though the shader will not actually sample the image (if not in map view).
 	//
 
 	// Begin recording into the initialisation command buffer.
@@ -113,7 +105,7 @@ GPlatesOpenGL::MapProjectionImage::initialise_vulkan_resources(
 	initialisation_command_buffer.begin(initialisation_command_buffer_begin_info);
 
 	//
-	// Pipeline barrier to transition both images to an image layout suitable for a transfer destination.
+	// Pipeline barrier to transition all images to an image layout suitable for a transfer destination.
 	//
 
 	vk::ImageMemoryBarrier pre_clear_image_memory_barrier;
@@ -126,11 +118,12 @@ GPlatesOpenGL::MapProjectionImage::initialise_vulkan_resources(
 			.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
 			.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
 
-	vk::ImageMemoryBarrier pre_clear_forward_transform_image_memory_barrier(pre_clear_image_memory_barrier);
-	pre_clear_forward_transform_image_memory_barrier.setImage(d_forward_transform_image.get_image());
-
-	vk::ImageMemoryBarrier pre_clear_jacobian_matrix_image_memory_barrier(pre_clear_image_memory_barrier);
-	pre_clear_jacobian_matrix_image_memory_barrier.setImage(d_jacobian_matrix_image.get_image());
+	vk::ImageMemoryBarrier pre_clear_image_memory_barriers[NUM_IMAGES];
+	for (unsigned int n = 0; n < NUM_IMAGES; ++n)
+	{
+		pre_clear_image_memory_barriers[n] = pre_clear_image_memory_barrier;
+		pre_clear_image_memory_barriers[n].setImage(d_images[n].get_image());
+	}
 
 	initialisation_command_buffer.pipelineBarrier(
 			vk::PipelineStageFlagBits::eTopOfPipe,  // don't need to wait to access freshly allocated memory
@@ -138,28 +131,26 @@ GPlatesOpenGL::MapProjectionImage::initialise_vulkan_resources(
 			{},  // dependencyFlags
 			{},  // memoryBarriers
 			{},  // bufferMemoryBarriers
-			{ pre_clear_forward_transform_image_memory_barrier, pre_clear_jacobian_matrix_image_memory_barrier });  // imageMemoryBarriers
+			pre_clear_image_memory_barriers);  // imageMemoryBarriers
 
 	//
-	// Clear both images.
+	// Clear all images.
 	//
 	// This is not really necessary since a call to 'update()' will overwrite these images (when switching map projections).
 	// But we have to transition to an image layout for optimal shader reads anyway, so might as well clear the images also.
 	const vk::ClearColorValue clear_value = std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f };
 	const vk::ImageSubresourceRange sub_resource_range = { vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 };
-	initialisation_command_buffer.clearColorImage(
-			d_forward_transform_image.get_image(),
-			vk::ImageLayout::eTransferDstOptimal,
-			clear_value,
-			sub_resource_range);
-	initialisation_command_buffer.clearColorImage(
-			d_jacobian_matrix_image.get_image(),
-			vk::ImageLayout::eTransferDstOptimal,
-			clear_value,
-			sub_resource_range);
+	for (unsigned int n = 0; n < NUM_IMAGES; ++n)
+	{
+		initialisation_command_buffer.clearColorImage(
+				d_images[n].get_image(),
+				vk::ImageLayout::eTransferDstOptimal,
+				clear_value,
+				sub_resource_range);
+	}
 
 	//
-	// Pipeline barrier to transition both images to an image layout suitable for optimal shader reads.
+	// Pipeline barrier to transition all images to an image layout suitable for optimal shader reads.
 	//
 
 	vk::ImageMemoryBarrier post_clear_image_memory_barrier;
@@ -172,20 +163,21 @@ GPlatesOpenGL::MapProjectionImage::initialise_vulkan_resources(
 			.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
 			.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
 
-	vk::ImageMemoryBarrier post_clear_forward_transform_image_memory_barrier(post_clear_image_memory_barrier);
-	post_clear_forward_transform_image_memory_barrier.setImage(d_forward_transform_image.get_image());
-
-	vk::ImageMemoryBarrier post_clear_jacobian_matrix_image_memory_barrier(post_clear_image_memory_barrier);
-	post_clear_jacobian_matrix_image_memory_barrier.setImage(d_jacobian_matrix_image.get_image());
+	vk::ImageMemoryBarrier post_clear_image_memory_barriers[NUM_IMAGES];
+	for (unsigned int n = 0; n < NUM_IMAGES; ++n)
+	{
+		post_clear_image_memory_barriers[n] = post_clear_image_memory_barrier;
+		post_clear_image_memory_barriers[n].setImage(d_images[n].get_image());
+	}
 
 	initialisation_command_buffer.pipelineBarrier(
 			vk::PipelineStageFlagBits::eTransfer,
-			// Don't need to wait since image won't be used until 'update()' is called (and that will wait)...
+			// Don't need to wait since images won't be used until 'update()' is called (and that will wait)...
 			vk::PipelineStageFlagBits::eBottomOfPipe,
 			{},  // dependencyFlags
 			{},  // memoryBarriers
 			{},  // bufferMemoryBarriers
-			{ post_clear_forward_transform_image_memory_barrier, post_clear_jacobian_matrix_image_memory_barrier });  // imageMemoryBarriers
+			post_clear_image_memory_barriers);  // imageMemoryBarriers
 
 	// End recording into the initialisation command buffer.
 	initialisation_command_buffer.end();
@@ -212,11 +204,11 @@ GPlatesOpenGL::MapProjectionImage::release_vulkan_resources(
 	// Vulkan memory allocator.
 	VmaAllocator vma_allocator = vulkan.get_vma_allocator();
 
-	vulkan.get_device().destroyImageView(d_forward_transform_image_view);
-	VulkanImage::destroy(vma_allocator, d_forward_transform_image);
-
-	vulkan.get_device().destroyImageView(d_jacobian_matrix_image_view);
-	VulkanImage::destroy(vma_allocator, d_jacobian_matrix_image);
+	for (unsigned int n = 0; n < NUM_IMAGES; ++n)
+	{
+		vulkan.get_device().destroyImageView(d_image_views[n]);
+		VulkanImage::destroy(vma_allocator, d_images[n]);
+	}
 
 	vulkan.get_device().destroySampler(d_sampler);
 
@@ -224,13 +216,28 @@ GPlatesOpenGL::MapProjectionImage::release_vulkan_resources(
 	{
 		StagingBuffer &staging_buffer = staging_buffer_entry.second;
 
-		VulkanBuffer::destroy(vma_allocator, staging_buffer.forward_transform_buffer);
-		VulkanBuffer::destroy(vma_allocator, staging_buffer.jacobian_matrix_buffer);
+		for (unsigned int n = 0; n < NUM_IMAGES; ++n)
+		{
+			VulkanBuffer::destroy(vma_allocator, staging_buffer.buffers[n]);
+		}
 	}
 
 	// Clear all our staging buffers so that they'll get recreated and repopulated
 	// (that is, if 'initialise_vulkan_resources()' is called again, eg, due to a lost device).
 	d_staging_buffers.clear();
+}
+
+
+std::vector<vk::DescriptorImageInfo>
+GPlatesOpenGL::MapProjectionImage::get_descriptor_image_infos() const
+{
+	std::vector<vk::DescriptorImageInfo> descriptor_image_infos;
+	for (unsigned int n = 0; n < NUM_IMAGES; ++n)
+	{
+		descriptor_image_infos.push_back({ d_sampler, d_image_views[n], vk::ImageLayout::eShaderReadOnlyOptimal });
+	}
+
+	return descriptor_image_infos;
 }
 
 
@@ -267,19 +274,20 @@ GPlatesOpenGL::MapProjectionImage::update(
 
 	vk::ImageMemoryBarrier pre_update_image_memory_barrier;
 	pre_update_image_memory_barrier
-			.setSrcAccessMask({})  // no writes to make available (image is only read from)
+			.setSrcAccessMask({})  // no writes to make available (images are only read from)
 			.setDstAccessMask(vk::AccessFlagBits::eTransferWrite)
-			.setOldLayout(vk::ImageLayout::eUndefined)  // not interested in retaining contents of image
+			.setOldLayout(vk::ImageLayout::eUndefined)  // not interested in retaining contents of images
 			.setNewLayout(vk::ImageLayout::eTransferDstOptimal)
 			.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
 			.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
 			.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
 
-	vk::ImageMemoryBarrier pre_update_forward_transform_image_memory_barrier(pre_update_image_memory_barrier);
-	pre_update_forward_transform_image_memory_barrier.setImage(d_forward_transform_image.get_image());
-
-	vk::ImageMemoryBarrier pre_update_jacobian_matrix_image_memory_barrier(pre_update_image_memory_barrier);
-	pre_update_jacobian_matrix_image_memory_barrier.setImage(d_jacobian_matrix_image.get_image());
+	vk::ImageMemoryBarrier pre_update_image_memory_barriers[NUM_IMAGES];
+	for (unsigned int n = 0; n < NUM_IMAGES; ++n)
+	{
+		pre_update_image_memory_barriers[n] = pre_update_image_memory_barrier;
+		pre_update_image_memory_barriers[n].setImage(d_images[n].get_image());
+	}
 
 	preprocess_command_buffer.pipelineBarrier(
 			vk::PipelineStageFlagBits::eAllCommands,
@@ -287,7 +295,7 @@ GPlatesOpenGL::MapProjectionImage::update(
 			{},  // dependencyFlags
 			{},  // memoryBarriers
 			{},  // bufferMemoryBarriers
-			{ pre_update_forward_transform_image_memory_barrier, pre_update_jacobian_matrix_image_memory_barrier });  // imageMemoryBarriers
+			pre_update_image_memory_barriers);  // imageMemoryBarriers
 
 	//
 	// Copy image data from staging buffers to images.
@@ -302,20 +310,18 @@ GPlatesOpenGL::MapProjectionImage::update(
 			.setImageOffset({0, 0, 0})
 			.setImageExtent({IMAGE_WIDTH, IMAGE_HEIGHT, 1});
 
-	preprocess_command_buffer.copyBufferToImage(
-			staging_buffer.forward_transform_buffer.get_buffer(),
-			d_forward_transform_image.get_image(),
-			vk::ImageLayout::eTransferDstOptimal,
-			buffer_image_copy);
-	preprocess_command_buffer.copyBufferToImage(
-			staging_buffer.jacobian_matrix_buffer.get_buffer(),
-			d_jacobian_matrix_image.get_image(),
-			vk::ImageLayout::eTransferDstOptimal,
-			buffer_image_copy);
+	for (unsigned int n = 0; n < NUM_IMAGES; ++n)
+	{
+		preprocess_command_buffer.copyBufferToImage(
+				staging_buffer.buffers[n].get_buffer(),
+				d_images[n].get_image(),
+				vk::ImageLayout::eTransferDstOptimal,
+				buffer_image_copy);
+	}
 
 	//
 	// Pipeline barrier to wait for staging transfer writes to be made visible for image reads from any shader.
-	// And also transition both images to an image layout suitable for shader reads.
+	// And also transition all images to an image layout suitable for shader reads.
 	//
 
 	vk::ImageMemoryBarrier post_update_image_memory_barrier;
@@ -328,11 +334,12 @@ GPlatesOpenGL::MapProjectionImage::update(
 			.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
 			.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
 
-	vk::ImageMemoryBarrier post_update_forward_transform_image_memory_barrier(post_update_image_memory_barrier);
-	post_update_forward_transform_image_memory_barrier.setImage(d_forward_transform_image.get_image());
-
-	vk::ImageMemoryBarrier post_update_jacobian_matrix_image_memory_barrier(post_update_image_memory_barrier);
-	post_update_jacobian_matrix_image_memory_barrier.setImage(d_jacobian_matrix_image.get_image());
+	vk::ImageMemoryBarrier post_update_image_memory_barriers[NUM_IMAGES];
+	for (unsigned int n = 0; n < NUM_IMAGES; ++n)
+	{
+		post_update_image_memory_barriers[n] = post_update_image_memory_barrier;
+		post_update_image_memory_barriers[n].setImage(d_images[n].get_image());
+	}
 
 	preprocess_command_buffer.pipelineBarrier(
 			vk::PipelineStageFlagBits::eTransfer,
@@ -340,7 +347,7 @@ GPlatesOpenGL::MapProjectionImage::update(
 			{},  // dependencyFlags
 			{},  // memoryBarriers
 			{},  // bufferMemoryBarriers
-			{ post_update_forward_transform_image_memory_barrier, post_update_jacobian_matrix_image_memory_barrier });  // imageMemoryBarriers
+			post_update_image_memory_barriers);  // imageMemoryBarriers
 }
 
 
@@ -355,7 +362,7 @@ GPlatesOpenGL::MapProjectionImage::create_staging_buffer(
 
 	StagingBuffer staging_buffer = {};
 
-	// Buffer and allocation create info parameters common to both buffers (forward transform and Jacobian matrix).
+	// Buffer and allocation create info parameters common to all buffers.
 	vk::BufferCreateInfo staging_buffer_create_info;
 	staging_buffer_create_info
 			.setUsage(vk::BufferUsageFlagBits::eTransferSrc)
@@ -364,21 +371,16 @@ GPlatesOpenGL::MapProjectionImage::create_staging_buffer(
 	staging_buffer_allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
 	staging_buffer_allocation_create_info.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT; // host mappable
 
-	// Create the forward transform buffer.
-	staging_buffer_create_info.setSize(IMAGE_WIDTH * IMAGE_HEIGHT * sizeof(ForwardTransformTexel));
-	staging_buffer.forward_transform_buffer = VulkanBuffer::create(
-			vulkan.get_vma_allocator(),
-			staging_buffer_create_info,
-			staging_buffer_allocation_create_info,
-			GPLATES_EXCEPTION_SOURCE);
-
-	// Create the Jacobian matrix buffer.
-	staging_buffer_create_info.setSize(IMAGE_WIDTH * IMAGE_HEIGHT * sizeof(JacobianMatrixTexel));
-	staging_buffer.jacobian_matrix_buffer = VulkanBuffer::create(
-			vulkan.get_vma_allocator(),
-			staging_buffer_create_info,
-			staging_buffer_allocation_create_info,
-			GPLATES_EXCEPTION_SOURCE);
+	// Create the buffers.
+	for (unsigned int n = 0; n < NUM_IMAGES; ++n)
+	{
+		staging_buffer_create_info.setSize(IMAGE_WIDTH * IMAGE_HEIGHT * sizeof(Texel)/*all images have same-size texels*/);
+		staging_buffer.buffers[n] = VulkanBuffer::create(
+				vulkan.get_vma_allocator(),
+				staging_buffer_create_info,
+				staging_buffer_allocation_create_info,
+				GPLATES_EXCEPTION_SOURCE);
+	}
 
 	//
 	// Update the staging buffer.
@@ -389,19 +391,29 @@ GPlatesOpenGL::MapProjectionImage::create_staging_buffer(
 	//
 
 	// Map forward transform and Jacobian matrix buffers.
-	void *const staging_buffer_forward_transform_mapped_pointer =
-			staging_buffer.forward_transform_buffer.map_memory(vulkan.get_vma_allocator(), GPLATES_EXCEPTION_SOURCE);
-	void *const staging_buffer_jacobian_matrix_mapped_pointer =
-			staging_buffer.jacobian_matrix_buffer.map_memory(vulkan.get_vma_allocator(), GPLATES_EXCEPTION_SOURCE);
+	void *staging_buffer_mapped_pointer[NUM_IMAGES];
+	for (unsigned int n = 0; n < NUM_IMAGES; ++n)
+	{
+		staging_buffer_mapped_pointer[n] = staging_buffer.buffers[n].map_memory(vulkan.get_vma_allocator(), GPLATES_EXCEPTION_SOURCE);
+	}
 
-	std::vector<ForwardTransformTexel> row_of_forward_transform_texels;
-	row_of_forward_transform_texels.resize(IMAGE_WIDTH);
-	std::vector<JacobianMatrixTexel> row_of_jacobian_matrix_texels;
-	row_of_jacobian_matrix_texels.resize(IMAGE_WIDTH);
+	// Allocate a single row of texels for each image.
+	std::vector<Texel> row_of_texels[NUM_IMAGES];
+	for (unsigned int n = 0; n < NUM_IMAGES; ++n)
+	{
+		row_of_texels[n].resize(IMAGE_WIDTH);
+	}
+
+	// Fill the buffers with map projection data.
 	for (unsigned int row = 0; row < IMAGE_HEIGHT; ++row)
 	{
 		for (unsigned int column = 0; column < IMAGE_WIDTH; ++column)
 		{
+			// Current texel in each image.
+			Texel &texel1 = row_of_texels[0][column];
+			Texel &texel2 = row_of_texels[1][column];
+			Texel &texel3 = row_of_texels[2][column];
+
 			// Make sure the longitude is within [-180+epsilon, 180-epsilon] around the central meridian longitude.
 			const double longitude_epsilon = 1e-6/*approx 0.1 metres at equator*/;
 			//
@@ -446,20 +458,8 @@ GPlatesOpenGL::MapProjectionImage::create_staging_buffer(
 			}
 
 			//
-			// Map (longitude, latitude) to map projection space (x, y).
+			// The delta used to calculate derivatives in (longitude, latitude) space.
 			//
-
-			double x = longitude;
-			double y = latitude;
-			map_projection.forward_transform(x, y);
-
-			row_of_forward_transform_texels[column] = { static_cast<float>(x), static_cast<float>(y) };
-
-			//
-			// Map (longitude, latitude) to map projection space partial derivatives (dxdlon, dxdlat, dydlon, dydlat).
-			//
-
-			// Derivative delta in (longitude, latitude) space.
 			// It should be small enough to get good accuracy for the derivatives,
 			// but not too small that we run into numerical precision issues with the Proj library.
 			//
@@ -513,89 +513,171 @@ GPlatesOpenGL::MapProjectionImage::create_staging_buffer(
 			//
 			// Interestingly, looking at the Robinson lookup table (https://en.wikipedia.org/wiki/Robinson_projection), the latitudes 35 and 65
 			// fall right on the lookup table's 5-degree interval boundaries. So I wouldn't be surprised if the polynomial interpolation coefficients don't
-			// match up on either for the adjacent intervals at 35 and 65 degrees as well as for other 5-degree latitudes in the table.
+			// match up on either side for the adjacent intervals at 35 and 65 degrees as well as for other 5-degree latitudes in the table.
+			// Increasing the derivative delta to 1e-3 is an increase by a factor of 100 and appears to significantly reduce the error
+			// (which makes sense, since this possible misalignment offset would be reduced by 100 when calculating derivatives).
+			//
 			// Also a derivative delta of 1e-5 is in degrees, which for 35 degrees is a factor of ~3e-7 (1e-5 / 35) which is getting pretty close to
 			// single-precision floating-point accuracy (which is the accuracy of the polynomial interpolation coefficients in the Proj library).
-			// Increasing the derivative delta to 1e-3 is an increase by a factor of 100 and appears to significantly reduce the error.
+			// UPDATE: Temporarily copying the Proj code (version 8.0.1) into our code and converting their float coefficients to double
+			//         doesn't significantly reduce the error. So the problem is more likely the misalignment at 35 and 65 degrees mentioned above.
 			// Note: The Proj source code is at https://github.com/OSGeo/PROJ/blob/master/src/projections/robin.cpp
+			//   Robinson projection only:
+			//   // delta_lon_lat_for_derivs = 1e-2 ...
+			//   RMS position error:  0.0036003 , Max position error: 0.022695    // using Proj library
+			//   RMS position error:  0.00356503 , Max position error: 0.0224696  // using our impl of Robin (float coeffs initialised from double)
+			//   RMS position error:  0.00343327 , Max position error: 0.0204588  // using our impl of Robin (double coeffs)
+			//   // delta_lon_lat_for_derivs = 1e-5 ...
+			//   RMS position error:  34.5264 , Max position error: 352.087       // using Proj library
+			//   RMS position error:  34.5317 , Max position error: 348.645       // using our impl of Robin (float coeffs initialised from double)
+			//   RMS position error:  29.9408 , Max position error: 335.406       // using our impl of Robin (double coeffs)
 			//
-			const double delta_lon_lat_for_derivs = 1e-3;
+			const double delta_lon_lat_for_derivs = (map_projection.projection_type() == GPlatesGui::MapProjection::ROBINSON) ? 1e-2 : 1e-5;
+			const double delta_lon_lat_for_derivs_radians = GPlatesMaths::convert_deg_to_rad(delta_lon_lat_for_derivs);
 
-			// Move the first and last columns slightly inward (by the delta) so the derivative calculations
-			// don't sample outside our longitude range.
-			double longitude_for_derivs = longitude;
+			// Move the first and last columns slightly inward (by the delta) so the derivative calculations don't sample outside our longitude range.
+			//
+			// Note: We do this even for the mapping of (longitude, latitude) to (x, y) since that (x, y) value is also used in the 2nd order derivatives.
 			if (column == 0)
 			{
-				longitude_for_derivs += delta_lon_lat_for_derivs;
+				longitude += delta_lon_lat_for_derivs;
 			}
 			else if (column == IMAGE_WIDTH - 1)
 			{
-				longitude_for_derivs -= delta_lon_lat_for_derivs;
+				longitude -= delta_lon_lat_for_derivs;
 			}
 
-			// Move the first and last rows slightly inward (by the delta) so the derivative calculations
-			// don't sample outside our latitude range.
-			double latitude_for_derivs = latitude;
+			// Move the first and last rows slightly inward (by the delta) so the derivative calculations don't sample outside our latitude range.
+			//
+			// Note: We do this even for the mapping of (longitude, latitude) to (x, y) since that (x, y) value is also used in the 2nd order derivatives.
 			if (row == 0)
 			{
-				latitude_for_derivs += delta_lon_lat_for_derivs;
+				latitude += delta_lon_lat_for_derivs;
 			}
 			else if (row == IMAGE_HEIGHT - 1)
 			{
-				latitude_for_derivs -= delta_lon_lat_for_derivs;
+				latitude -= delta_lon_lat_for_derivs;
 			}
 
+			//
+			// Map (longitude, latitude) to map projection space (x, y).
+			//
+
+			double x = longitude;
+			double y = latitude;
+			map_projection.forward_transform(x, y);
+
+			// Store map projection (x, y) in first image.
+			texel1.values[0] = static_cast<float>(x);
+			texel1.values[1] = static_cast<float>(y);
+
+			//
+			// Map (longitude, latitude) to map projection space first-order partial derivatives dx/dlon, dx/dlat, dy/dlon, dy/dlat.
+			//
+
 			// Sample map projection at (longitude + delta, latitude).
-			double x_at_lon_plus_delta = longitude_for_derivs + delta_lon_lat_for_derivs;
-			double y_at_lon_plus_delta = latitude_for_derivs;
+			double x_at_lon_plus_delta = longitude + delta_lon_lat_for_derivs;
+			double y_at_lon_plus_delta = latitude;
 			map_projection.forward_transform(x_at_lon_plus_delta, y_at_lon_plus_delta);
 
 			// Sample map projection at (longitude - delta, latitude).
-			double x_at_lon_minus_delta = longitude_for_derivs - delta_lon_lat_for_derivs;
-			double y_at_lon_minus_delta = latitude_for_derivs;
+			double x_at_lon_minus_delta = longitude - delta_lon_lat_for_derivs;
+			double y_at_lon_minus_delta = latitude;
 			map_projection.forward_transform(x_at_lon_minus_delta, y_at_lon_minus_delta);
 
 			// Sample map projection at (longitude, latitude + delta).
-			double x_at_lat_plus_delta = longitude_for_derivs;
-			double y_at_lat_plus_delta = latitude_for_derivs + delta_lon_lat_for_derivs;
+			double x_at_lat_plus_delta = longitude;
+			double y_at_lat_plus_delta = latitude + delta_lon_lat_for_derivs;
 			map_projection.forward_transform(x_at_lat_plus_delta, y_at_lat_plus_delta);
 
 			// Sample map projection at (longitude, latitude - delta).
-			double x_at_lat_minus_delta = longitude_for_derivs;
-			double y_at_lat_minus_delta = latitude_for_derivs - delta_lon_lat_for_derivs;
+			double x_at_lat_minus_delta = longitude;
+			double y_at_lat_minus_delta = latitude - delta_lon_lat_for_derivs;
 			map_projection.forward_transform(x_at_lat_minus_delta, y_at_lat_minus_delta);
 
 			// Jacobian matrix.
-			const double dxdlon = (x_at_lon_plus_delta - x_at_lon_minus_delta) / (2 * delta_lon_lat_for_derivs);
-			const double dxdlat = (x_at_lat_plus_delta - x_at_lat_minus_delta) / (2 * delta_lon_lat_for_derivs);
-			const double dydlon = (y_at_lon_plus_delta - y_at_lon_minus_delta) / (2 * delta_lon_lat_for_derivs);
-			const double dydlat = (y_at_lat_plus_delta - y_at_lat_minus_delta) / (2 * delta_lon_lat_for_derivs);
+			const double dx_dlon = (x_at_lon_plus_delta - x_at_lon_minus_delta) / (2 * delta_lon_lat_for_derivs);
+			const double dx_dlat = (x_at_lat_plus_delta - x_at_lat_minus_delta) / (2 * delta_lon_lat_for_derivs);
+			const double dy_dlon = (y_at_lon_plus_delta - y_at_lon_minus_delta) / (2 * delta_lon_lat_for_derivs);
+			const double dy_dlat = (y_at_lat_plus_delta - y_at_lat_minus_delta) / (2 * delta_lon_lat_for_derivs);
 
-			row_of_jacobian_matrix_texels[column] = {
-					static_cast<float>(dxdlon), static_cast<float>(dxdlat),
-					static_cast<float>(dydlon), static_cast<float>(dydlat)};
+			// Store map projection Jacobian matrix in second image.
+			texel2.values[0] = static_cast<float>(dx_dlon);
+			texel2.values[1] = static_cast<float>(dx_dlat);
+			texel2.values[2] = static_cast<float>(dy_dlon);
+			texel2.values[3] = static_cast<float>(dy_dlat);
+
+			//
+			// Map (longitude, latitude) to map projection space first-order partial derivatives.
+			//
+			// The 2nd order partial derivatives are:
+			//   d(dx/dlon)/dlon, d(dx/dlat)/dlat, d(dx/dlon)/dlat (for 'x') and
+			//   d(dy/dlon)/dlon, d(dy/dlat)/dlat, d(dy/dlon)/dlat (for 'y').
+			//
+			// Note: d(dx/dlon)/dlat and d(dx/dlat)/dlon are the same (so we only need to calculate one of them).
+			//       d(dy/dlon)/dlat and d(dy/dlat)/dlon are also the same.
+			//
+
+			// Sample map projection at (longitude + delta, latitude + delta).
+			double x_at_lon_plus_delta_lat_plus_delta = longitude + delta_lon_lat_for_derivs;
+			double y_at_lon_plus_delta_lat_plus_delta = latitude + delta_lon_lat_for_derivs;
+			map_projection.forward_transform(x_at_lon_plus_delta_lat_plus_delta, y_at_lon_plus_delta_lat_plus_delta);
+
+			// Sample map projection at (longitude + delta, latitude - delta).
+			double x_at_lon_plus_delta_lat_minus_delta = longitude + delta_lon_lat_for_derivs;
+			double y_at_lon_plus_delta_lat_minus_delta = latitude - delta_lon_lat_for_derivs;
+			map_projection.forward_transform(x_at_lon_plus_delta_lat_minus_delta, y_at_lon_plus_delta_lat_minus_delta);
+
+			// Sample map projection at (longitude - delta, latitude + delta).
+			double x_at_lon_minus_delta_lat_plus_delta = longitude - delta_lon_lat_for_derivs;
+			double y_at_lon_minus_delta_lat_plus_delta = latitude + delta_lon_lat_for_derivs;
+			map_projection.forward_transform(x_at_lon_minus_delta_lat_plus_delta, y_at_lon_minus_delta_lat_plus_delta);
+
+			// Sample map projection at (longitude - delta, latitude - delta).
+			double x_at_lon_minus_delta_lat_minus_delta = longitude - delta_lon_lat_for_derivs;
+			double y_at_lon_minus_delta_lat_minus_delta = latitude - delta_lon_lat_for_derivs;
+			map_projection.forward_transform(x_at_lon_minus_delta_lat_minus_delta, y_at_lon_minus_delta_lat_minus_delta);
+
+			// Hessian matrix (for 'x').
+			const double ddx_dlon_dlon = (x_at_lon_plus_delta - 2 * x + x_at_lon_minus_delta) / (delta_lon_lat_for_derivs * delta_lon_lat_for_derivs);
+			const double ddx_dlat_dlat = (x_at_lat_plus_delta - 2 * x + x_at_lat_minus_delta) / (delta_lon_lat_for_derivs * delta_lon_lat_for_derivs);
+			const double ddx_dlon_dlat = (x_at_lon_plus_delta_lat_plus_delta - x_at_lon_plus_delta_lat_minus_delta - x_at_lon_minus_delta_lat_plus_delta + x_at_lon_minus_delta_lat_minus_delta) /
+					(4 * delta_lon_lat_for_derivs * delta_lon_lat_for_derivs);
+
+			// Hessian matrix (for 'y1').
+			const double ddy_dlon_dlon = (y_at_lon_plus_delta - 2 * y + y_at_lon_minus_delta) / (delta_lon_lat_for_derivs * delta_lon_lat_for_derivs);
+			const double ddy_dlat_dlat = (y_at_lat_plus_delta - 2 * y + y_at_lat_minus_delta) / (delta_lon_lat_for_derivs * delta_lon_lat_for_derivs);
+			const double ddy_dlon_dlat = (y_at_lon_plus_delta_lat_plus_delta - y_at_lon_plus_delta_lat_minus_delta - y_at_lon_minus_delta_lat_plus_delta + y_at_lon_minus_delta_lat_minus_delta) /
+					(4 * delta_lon_lat_for_derivs * delta_lon_lat_for_derivs);
+
+			// Store the diagonal Hessian matrix elements in the third image.
+			texel3.values[0] = static_cast<float>(ddx_dlon_dlon);
+			texel3.values[1] = static_cast<float>(ddx_dlat_dlat);
+			texel3.values[2] = static_cast<float>(ddy_dlon_dlon);
+			texel3.values[3] = static_cast<float>(ddy_dlat_dlat);
+
+			// Store the off-diagonal symmetric Hessian matrix elements in the first image.
+			texel1.values[2] = static_cast<float>(ddx_dlon_dlat);
+			texel1.values[3] = static_cast<float>(ddy_dlon_dlat);
 		}
 
-		// Copy the row into the forward transform buffer.
-		std::memcpy(
-				// Pointer to row within mapped forward transform buffer...
-				static_cast<ForwardTransformTexel *>(staging_buffer_forward_transform_mapped_pointer) + row * IMAGE_WIDTH,
-				row_of_forward_transform_texels.data(),
-				IMAGE_WIDTH * sizeof(ForwardTransformTexel));
-
-		// Copy the row into the Jacobian matrix buffer.
-		std::memcpy(
-				// Pointer to row within mapped Jacobian matrix buffer...
-				static_cast<JacobianMatrixTexel *>(staging_buffer_jacobian_matrix_mapped_pointer) + row * IMAGE_WIDTH,
-				row_of_jacobian_matrix_texels.data(),
-				IMAGE_WIDTH * sizeof(JacobianMatrixTexel));
+		// Copy a row into each buffer.
+		for (unsigned int n = 0; n < NUM_IMAGES; ++n)
+		{
+			std::memcpy(
+					// Pointer to row within mapped buffer...
+					static_cast<Texel *>(staging_buffer_mapped_pointer[n]) + row * IMAGE_WIDTH,
+					row_of_texels[n].data(),
+					IMAGE_WIDTH * sizeof(Texel));
+		}
 	}
 
 	// Flush and unmap forward transform and Jacobian matrix buffers.
-	staging_buffer.forward_transform_buffer.flush_mapped_memory(vulkan.get_vma_allocator(), 0, VK_WHOLE_SIZE, GPLATES_EXCEPTION_SOURCE);
-	staging_buffer.jacobian_matrix_buffer.flush_mapped_memory(vulkan.get_vma_allocator(), 0, VK_WHOLE_SIZE, GPLATES_EXCEPTION_SOURCE);
-	staging_buffer.forward_transform_buffer.unmap_memory(vulkan.get_vma_allocator());
-	staging_buffer.jacobian_matrix_buffer.unmap_memory(vulkan.get_vma_allocator());
+	for (unsigned int n = 0; n < NUM_IMAGES; ++n)
+	{
+		staging_buffer.buffers[n].flush_mapped_memory(vulkan.get_vma_allocator(), 0, VK_WHOLE_SIZE, GPLATES_EXCEPTION_SOURCE);
+		staging_buffer.buffers[n].unmap_memory(vulkan.get_vma_allocator());
+	}
 
 	return staging_buffer;
 }

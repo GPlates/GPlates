@@ -326,6 +326,11 @@ namespace GPlatesOpenGL
 		 */
 		static constexpr float MAP_PROJECTED_ARROW_SCALE_FACTOR = 180.0;
 
+		/**
+		 * The number of images of map projection data provided by class @a MapProjectionImage.
+		 */
+		static constexpr unsigned int NUM_MAP_PROJECTION_IMAGES = 3;
+
 
 		/**
 		 * Lighting parameters such as whether lighting enabled for rendered arrows,

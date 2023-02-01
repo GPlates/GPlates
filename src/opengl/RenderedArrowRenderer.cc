@@ -503,7 +503,7 @@ GPlatesOpenGL::RenderedArrowRenderer::create_compute_pipeline(
 	map_projection_descriptor_set_layout_bindings[0]
 			.setBinding(0)
 			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(2)
+			.setDescriptorCount(NUM_MAP_PROJECTION_IMAGES)
 			.setStageFlags(vk::ShaderStageFlagBits::eCompute);
 	vk::DescriptorSetLayoutCreateInfo map_projection_descriptor_set_layout_create_info;
 	map_projection_descriptor_set_layout_create_info.setBindings(map_projection_descriptor_set_layout_bindings);
@@ -992,7 +992,7 @@ GPlatesOpenGL::RenderedArrowRenderer::create_map_projection_descriptor_set(
 	vk::DescriptorPoolSize descriptor_pool_size;
 	descriptor_pool_size
 			.setType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(2);
+			.setDescriptorCount(NUM_MAP_PROJECTION_IMAGES);
 	vk::DescriptorPoolCreateInfo descriptor_pool_create_info;
 	descriptor_pool_create_info
 			.setMaxSets(1)
@@ -1012,14 +1012,10 @@ GPlatesOpenGL::RenderedArrowRenderer::create_map_projection_descriptor_set(
 	d_map_projection_descriptor_set = descriptor_sets[0];
 
 	// Descriptor writes for the map projection textures.
-	vk::DescriptorImageInfo descriptor_image_infos[2] =
-	{
-		map_projection_image.get_forward_transform_descriptor_image_info(),
-		map_projection_image.get_jacobian_matrix_descriptor_image_info()
-	};
+	const std::vector<vk::DescriptorImageInfo> descriptor_image_infos = map_projection_image.get_descriptor_image_infos();
 	vk::WriteDescriptorSet descriptor_writes[1];
 	descriptor_writes[0]
-			.setDstSet(d_map_projection_descriptor_set).setDstBinding(0).setDstArrayElement(0).setDescriptorCount(2)
+			.setDstSet(d_map_projection_descriptor_set).setDstBinding(0).setDstArrayElement(0).setDescriptorCount(NUM_MAP_PROJECTION_IMAGES)
 			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
 			.setImageInfo(descriptor_image_infos);
 

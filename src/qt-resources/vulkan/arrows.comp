@@ -88,7 +88,7 @@ layout (set = 0, binding = 2) buffer IndirectDraw
     IndexedIndirectCommand command;
 } indirect_draw;
 
-layout (set = 1, binding = 0) uniform sampler2D map_projection_samplers[2];
+layout (set = 1, binding = 0) uniform sampler2D map_projection_samplers[3];
 
 layout (local_size_x_id = 1) in;  // Set 'local_size_x' using the Vulkan API
 
@@ -169,21 +169,29 @@ map_project(
             map_projection_gather_texture_coord,
             map_projection_bilinear_weight);
 
-    // Sample map projection forward transform texture to get 2D position on map projection plane.
-    vec4 map_position_x_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 0/*x*/);
-    vec4 map_position_y_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 1/*y*/);
+    // Sample the first map projection texture.
+    vec4             x_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 0);
+    vec4             y_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 1);
+    vec4 ddx_dlon_dlat_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 2);
+    vec4 ddy_dlon_dlat_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 3);
 
-    // Sample map projection Jacobian matrix texture.
-    vec4 dxdlon_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 0);
-    vec4 dxdlat_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 1);
-    vec4 dydlon_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 2);
-    vec4 dydlat_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 3);
+    // Sample the second map projection texture.
+    vec4 dx_dlon_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 0);
+    vec4 dx_dlat_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 1);
+    vec4 dy_dlon_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 2);
+    vec4 dy_dlat_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 3);
+
+    // Sample the third map projection texture.
+    vec4 ddx_dlon_dlon_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 0);
+    vec4 ddx_dlat_dlat_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 1);
+    vec4 ddy_dlon_dlon_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 2);
+    vec4 ddy_dlat_dlat_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 3);
 
     // Size of a texel in (longitude, latitude) space.
     // The texel is square, so its width and height should be the same, but we'll calculate them both anyway (just in case different).
     vec2 lon_lat_texel_size = vec2(2 * PI, PI) / (map_projection_image_size - 1);
     // Get the delta (longitude, latitude) of the actual (longitude, latitude) from each of the texel centres.
-    // Note that some delta will be negative.
+    // Note that some deltas will be negative.
     vec2 dlon_dlat_gather[4] =
     {
         vec2(map_projection_bilinear_weight.x, (map_projection_bilinear_weight.y - 1)) * lon_lat_texel_size,
@@ -192,27 +200,35 @@ map_project(
         vec2(map_projection_bilinear_weight.x, map_projection_bilinear_weight.y) * lon_lat_texel_size
     };
 
-    // Gather the map positions and Jacobian matrices of the 4 texels of the bilinear filter and use them to
+    // Gather the map positions and Jacobian/Hessian matrices of the 4 texels of the bilinear filter and use them to
     // calculate 4 extrapolated map positions at the actual (longitude, latitude) position from each of the 4 texels.
-    vec2 map_position_interpolate_gather[4];
+    vec2 xy_interpolate_gather[4];
     for (int n = 0; n < 4; ++n)
     {
-        vec2 map_position_gather = vec2(
-                map_position_x_gather[n],
-                map_position_y_gather[n]);
-
-        mat2 jacobian_gather = mat2(
-                dxdlon_gather[n], dydlon_gather[n],   // first column
-                dxdlat_gather[n], dydlat_gather[n]);  // second column
+        vec2 x_gradient_gather = vec2(dx_dlon_gather[n], dx_dlat_gather[n]);
+        vec2 y_gradient_gather = vec2(dy_dlon_gather[n], dy_dlat_gather[n]);
+        
+        mat2 x_hessian_gather = mat2(
+                ddx_dlon_dlon_gather[n], ddx_dlon_dlat_gather[n],   // first column
+                ddx_dlon_dlat_gather[n], ddx_dlat_dlat_gather[n]);  // second column
+        
+        mat2 y_hessian_gather = mat2(
+                ddy_dlon_dlon_gather[n], ddy_dlon_dlat_gather[n],   // first column
+                ddy_dlon_dlat_gather[n], ddy_dlat_dlat_gather[n]);  // second column
         
         // Extrapolate from texel centre to actual position (between the 4 texel centres).
-        map_position_interpolate_gather[n] = map_position_gather + jacobian_gather * dlon_dlat_gather[n];
+        xy_interpolate_gather[n].x = x_gather[n] +
+                dot(x_gradient_gather, dlon_dlat_gather[n]) +
+                0.5 * dot(dlon_dlat_gather[n], x_hessian_gather * dlon_dlat_gather[n]);
+        xy_interpolate_gather[n].y = y_gather[n] +
+                dot(y_gradient_gather, dlon_dlat_gather[n]) +
+                0.5 * dot(dlon_dlat_gather[n], y_hessian_gather * dlon_dlat_gather[n]);
     }
 
     // Bilinearly interpolate the 4 extrapolated map positions.
     // The bilinear weights will naturally favour texels whose centre (longitude, latitude) is closer to the actual (longitude, latitude).
     vec2 map_position = bilinearly_interpolate_gather(
-            map_position_interpolate_gather,
+            xy_interpolate_gather,
             map_projection_bilinear_weight);
 
     // Find the local East, North and down directions at 'position' on the unit sphere.
@@ -226,14 +242,14 @@ map_project(
             dot(vector, local_north),
             dot(vector, local_down));
 
-    float dxdlon = bilinearly_interpolate_gather(dxdlon_gather, map_projection_bilinear_weight);
-    float dxdlat = bilinearly_interpolate_gather(dxdlat_gather, map_projection_bilinear_weight);
-    float dydlon = bilinearly_interpolate_gather(dydlon_gather, map_projection_bilinear_weight);
-    float dydlat = bilinearly_interpolate_gather(dydlat_gather, map_projection_bilinear_weight);
+    float dx_dlon = bilinearly_interpolate_gather(dx_dlon_gather, map_projection_bilinear_weight);
+    float dx_dlat = bilinearly_interpolate_gather(dx_dlat_gather, map_projection_bilinear_weight);
+    float dy_dlon = bilinearly_interpolate_gather(dy_dlon_gather, map_projection_bilinear_weight);
+    float dy_dlat = bilinearly_interpolate_gather(dy_dlat_gather, map_projection_bilinear_weight);
 
     mat2 jacobian_matrix = mat2(
-            dxdlon, dydlon,   // first column
-            dxdlat, dydlat);  // second column
+            dx_dlon, dy_dlon,   // first column
+            dx_dlat, dy_dlat);  // second column
 
     // Convert 2D local (East, North) vector to (longitude, latitude) since the Jacobian matrix contains
     // partial derivatives relative to (longitude, latitude).
