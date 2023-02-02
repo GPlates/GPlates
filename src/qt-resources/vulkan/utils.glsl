@@ -1,10 +1,4 @@
-/* $Id$ */
-
 /**
- * \file 
- * $Revision$
- * $Date$
- * 
  * Copyright (C) 2013 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -23,6 +17,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#ifndef UTILS_GLSL
+#define UTILS_GLSL
 
 /*
  * Get the texture coordinate to use for a 'textureGather()' call, and get the bilinear weights
@@ -282,6 +278,61 @@ hsv_to_rgb(
 	}
 
 	return rgb;
+}
+
+/*
+ * Generate an arbitray perpendicular unit vector to the specified vector.
+ */
+vec3
+generate_perpendicular(
+        vec3 vector)
+{
+    // Use the basis vector that's most perpendicular (lowest dot product) to the input vector.
+    if (vector.x < vector.y)
+    {
+        if (vector.x < vector.z)
+        {
+            return normalize(cross(vector, vec3(1,0,0)));
+        }
+        else  // vector.z <= vector.x
+        {
+            return normalize(cross(vector, vec3(0,0,1)));
+        }
+    }
+    else  // vector.y <= vector.x
+    {
+        if (vector.y < vector.z)
+        {
+            return normalize(cross(vector, vec3(0,1,0)));
+        }
+        else  // vector.z <= vector.y
+        {
+            return normalize(cross(vector, vec3(0,0,1)));
+        }
+    }
+}
+
+/*
+ * Returns true if sphere intersects frustum.
+ *
+ * This test is conservative, so sphere can be outside frustum and still return true.
+ */
+bool
+sphere_intersects_frustum(
+        vec3 sphere_centre,
+        float sphere_radius,
+		vec4 frustum_planes[6])
+{
+    for (int i = 0; i < 6; i++)
+    {
+        if (dot(vec4(sphere_centre, 1.0), frustum_planes[i]) + sphere_radius < 0.0)
+        {
+            // Sphere is outside a single frustum plane.
+            return false;
+        }
+    }
+
+    return true;
 }
 
 struct Ray
@@ -587,3 +638,5 @@ convert_screen_space_depth_to_ray_lambda(
 	vec3 world_position = screen_to_world(vec3(screen_coord, screen_space_depth), model_view_inverse, projection_inverse).xyz;
 	return length(world_position - ray_origin);
 }
+
+#endif // UTILS_GLSL

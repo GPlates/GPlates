@@ -23,6 +23,7 @@
 // And performs map projection (when map view is active).
 //
 
+#include "map_projection.glsl"
 #include "utils.glsl"
 
 layout (push_constant) uniform PushConstants
@@ -92,277 +93,6 @@ layout (set = 1, binding = 0) uniform sampler2D map_projection_samplers[3];
 
 layout (local_size_x_id = 1) in;  // Set 'local_size_x' using the Vulkan API
 
-const float PI = radians(180);
-const float HALF_PI = radians(180) / 2.0;
-
-struct MapProjectedPositionAndVector
-{
-    vec2 map_position;
-    vec3 map_vector;
-};
-
-/*
- * Project a 3D position (on the unit sphere) and a 3D vector onto the 2D map projection.
- *
- * The final map projected vector is actually a 3D vector where the 2D (x,y) component is in the 2D map plane and
- * the z component is along the z-axis of 3D map projection space.
- */
-MapProjectedPositionAndVector
-map_project(
-        vec3 position,
-        vec3 vector)
-{
-    // If the 'position' is at either pole (North or South) then we cannot determine its longitude (atan(0,0) is undefined), and
-    // we cannot determine the direction of 'vector' relative to the position's local East and North (which are indeterminate).
-    float cos_latitude = length(position.xy);  // 'position' is a unit vector
-    if (cos_latitude < 2e-7)
-    {
-        // Zero vector will cause arrow to be culled.
-        vec3 culled_map_vector = vec3(0);
-        // Arbitrary map position (doesn't matter since arrow will get culled anyway).
-        vec2 culled_map_position = vec2(0);
-
-        return MapProjectedPositionAndVector(culled_map_position, culled_map_vector);
-    }
-
-    // Get latitude from position on sphere.
-    float latitude = asin(position.z);  // in range [-PI/2, PI/2]
-
-    // Get longitude from position on sphere.
-    float longitude = atan(position.y, position.x);  // in range [-PI, PI]
-    // Centre about the central meridian (so it has a longitude of zero).
-    longitude -= map_projection_central_meridian;    // in range [-PI - central_meridian, PI - central_meridian]
-
-    // Ensure longitude is in the range [-PI, PI] by:
-    // wrapping [-PI - |central_meridian|, -PI] to [PI - |central_meridian|, PI] when central_meridian > 0, and
-    // wrapping [PI, PI + |central_meridian|] to [-PI, -PI + |central_meridian|] when central_meridian < 0.
-    if (longitude < -PI)  // central_meridian > 0
-    {
-        longitude += 2 * PI;
-    }
-    else if (longitude > PI)  // central_meridian < 0
-    {
-        longitude -= 2 * PI;
-    }
-
-    // Map projection texture coordinate uses longitude and latitude.
-    //
-    // Convert longitude from [-PI, PI] to [0, 1].
-    float longitude_normalized = (longitude + PI) / (2 * PI);
-    // Convert latitude from [-PI/2, PI/2] to [0, 1].
-    float latitude_normalized = (latitude + HALF_PI) / PI;
-
-    // All map projection images are the same size (so we can choose any of them to determine dimensions).
-    ivec2 map_projection_image_size = textureSize(map_projection_samplers[0], 0);
-
-    // Adjust for half texel since boundary of [0, 1] range maps to the texel centres of the boundary texels.
-    // Everything inside the interior is linearly interpolated.
-    vec2 map_projection_uv = (map_projection_image_size - 1) * vec2(longitude_normalized, latitude_normalized) + 0.5;
-
-    // We'll be using 'textureGather()' and doing our own bilinear filtering to get better accuracy than builtin texture bilinear filtering.
-    // This is because builtin texture bilinear filtering typically has only 8 bits of accuracy to its bilinear weights.
-    vec2 map_projection_gather_texture_coord;
-    vec2 map_projection_bilinear_weight;
-    get_texture_gather_unnormalized_bilinear_params(
-            map_projection_image_size,
-            map_projection_uv,  // unnormalized texture coordinates
-            map_projection_gather_texture_coord,
-            map_projection_bilinear_weight);
-
-    // Sample the first map projection texture.
-    vec4             x_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 0);
-    vec4             y_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 1);
-    vec4 ddx_dlon_dlat_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 2);
-    vec4 ddy_dlon_dlat_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 3);
-
-    // Sample the second map projection texture.
-    vec4 dx_dlon_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 0);
-    vec4 dx_dlat_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 1);
-    vec4 dy_dlon_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 2);
-    vec4 dy_dlat_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 3);
-
-    // Sample the third map projection texture.
-    vec4 ddx_dlon_dlon_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 0);
-    vec4 ddx_dlat_dlat_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 1);
-    vec4 ddy_dlon_dlon_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 2);
-    vec4 ddy_dlat_dlat_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 3);
-
-    // Size of a texel in (longitude, latitude) space.
-    // The texel is square, so its width and height should be the same, but we'll calculate them both anyway (just in case different).
-    vec2 lon_lat_texel_size = vec2(2 * PI, PI) / (map_projection_image_size - 1);
-    // Get the delta (longitude, latitude) of the actual (longitude, latitude) from each of the texel centres.
-    // Note that some deltas will be negative.
-    vec2 dlon_dlat_gather[4] =
-    {
-        vec2(map_projection_bilinear_weight.x, (map_projection_bilinear_weight.y - 1)) * lon_lat_texel_size,
-        vec2((map_projection_bilinear_weight.x - 1), (map_projection_bilinear_weight.y - 1)) * lon_lat_texel_size,
-        vec2((map_projection_bilinear_weight.x - 1), map_projection_bilinear_weight.y) * lon_lat_texel_size,
-        vec2(map_projection_bilinear_weight.x, map_projection_bilinear_weight.y) * lon_lat_texel_size
-    };
-
-    // Gather the map positions and Jacobian/Hessian matrices of the 4 texels of the bilinear filter and use them to
-    // calculate 4 extrapolated map positions at the actual (longitude, latitude) position from each of the 4 texels.
-    vec2 xy_interpolate_gather[4];
-    for (int n = 0; n < 4; ++n)
-    {
-        // The gradients of the map projection 'x' and 'y' coordinates.
-        // Note: These two gradients together are equivalent to the 2x2 Jacobian matrix.
-        vec2 x_gradient_gather = vec2(dx_dlon_gather[n], dx_dlat_gather[n]);
-        vec2 y_gradient_gather = vec2(dy_dlon_gather[n], dy_dlat_gather[n]);
-        
-        // The Hessian matrix (2nd order derivatives) of the map projection 'x' coordinate.
-        mat2 x_hessian_gather = mat2(
-                ddx_dlon_dlon_gather[n], ddx_dlon_dlat_gather[n],   // first column
-                ddx_dlon_dlat_gather[n], ddx_dlat_dlat_gather[n]);  // second column
-        
-        // The Hessian matrix (2nd order derivatives) of the map projection 'y' coordinate.
-        mat2 y_hessian_gather = mat2(
-                ddy_dlon_dlon_gather[n], ddy_dlon_dlat_gather[n],   // first column
-                ddy_dlon_dlat_gather[n], ddy_dlat_dlat_gather[n]);  // second column
-        
-        // Extrapolate from the current texel centre to the actual position (between the 4 texel centres).
-        //
-        // Each separate 'x' and 'y' extrapolation is equivalent to the 2nd-order Taylor series expansion:
-        //
-        //   f(x) = f(a) + (x - a) * Df(a) + 0.5 * (x - a) * D2f(a) * (x - a)
-        //
-        // ...where 'a' represents the texel centre and 'x' represents the actual position.
-        //
-        xy_interpolate_gather[n].x = x_gather[n] +
-                dot(x_gradient_gather, dlon_dlat_gather[n]) +
-                0.5 * dot(dlon_dlat_gather[n], x_hessian_gather * dlon_dlat_gather[n]);
-        xy_interpolate_gather[n].y = y_gather[n] +
-                dot(y_gradient_gather, dlon_dlat_gather[n]) +
-                0.5 * dot(dlon_dlat_gather[n], y_hessian_gather * dlon_dlat_gather[n]);
-    }
-
-    // Bilinearly interpolate the 4 extrapolated map positions.
-    // The bilinear weights will naturally favour texels whose centre (longitude, latitude) is closer to the actual (longitude, latitude).
-    vec2 map_position = bilinearly_interpolate_gather(
-            xy_interpolate_gather,
-            map_projection_bilinear_weight);
-
-    // Find the local East, North and down directions at 'position' on the unit sphere.
-    vec3 local_east = normalize(cross(vec3(0,0,1)/*global North*/, position));  // should not get divide-by-zero (since not at either pole)
-    vec3 local_north = cross(position, local_east);  // no need to normalize (since cross of two perpendicular unit vectors)
-    vec3 local_down = -position;
-
-    // Convert vector into local (East, North, down) frame of reference.
-    vec3 local_vector = vec3(
-            dot(vector, local_east),
-            dot(vector, local_north),
-            dot(vector, local_down));
-
-    // Bilinearly interpolate the Jacobian matrix between the 4 texel centres.
-    //
-    // We could have used the Hessian matrices as 1st order derivatives (Hessian is derivative of the Jacobian) in order to
-    // extrapolate the Jacobian matrix from each of the 4 texel centres, similar to how the map position is extrapolated.
-    // But unlike the map position extrapolation we don't have a 2nd order derivative (ie, derivative of Hessian) to handle curvature,
-    // and the curvature is what gets us better accuracy than no extrapolation at all. So the accuracy of no extrapolation
-    // (ie, just simply using the Jacobian) is actually a bit better than using extrapolated results (ie, Jacobian linearly extrapolated using Hessian).
-    // In either case (with or without extrapolation) we still bilinearly interpolate the results of the 4 texels.
-    // And so, simply bilinearly interpolating the Jacobian (gradients) can be thought of as roughly following the gradient curvature
-    // (eg, a direction vector will change direction as its start position moves from one texel centre towards an adjacent one)
-    // which might explain why the results are better than linear extrapolation.
-    //
-    // For example, here are some error measurements between the actual and computed (in compute shader) map projected unit-vectors (directions) of 50,000 arrows.
-    // There are two sets, the first is extrapolated (Hessian matrices used to extrapolate Jacobian) and the second is simply the Jacobian (ie, no extrapolation).
-    // Both sets are bilinearly interpolated. And in each set, the order of map projections is Rectangular, Mercator, Mollweide and Robinson.
-    //
-    // Extrapolation (only first order):
-    //   RMS vector error:  3.02999e-06 , Max vector error: 8.57958e-06
-    //   RMS vector error:  0.000266945 , Max vector error: 0.00422571
-    //   RMS vector error:  0.000178484 , Max vector error: 0.00555581
-    //   RMS vector error:  0.0049463   , Max vector error: 0.0326202
-    //
-    // No extrapolation:
-    //   RMS vector error:  3.00003e-06 , Max vector error: 4.97866e-06
-    //   RMS vector error:  0.000262877 , Max vector error: 0.00415843
-    //   RMS vector error:  0.000144097 , Max vector error: 0.00478129
-    //   RMS vector error:  0.000170958 , Max vector error: 0.01313
-    //
-    float dx_dlon = bilinearly_interpolate_gather(dx_dlon_gather, map_projection_bilinear_weight);
-    float dx_dlat = bilinearly_interpolate_gather(dx_dlat_gather, map_projection_bilinear_weight);
-    float dy_dlon = bilinearly_interpolate_gather(dy_dlon_gather, map_projection_bilinear_weight);
-    float dy_dlat = bilinearly_interpolate_gather(dy_dlat_gather, map_projection_bilinear_weight);
-    mat2 jacobian_matrix = mat2(
-            dx_dlon, dy_dlon,   // first column
-            dx_dlat, dy_dlat);  // second column
-
-    // Convert 2D local (East, North) vector to (longitude, latitude) since the Jacobian matrix contains
-    // partial derivatives relative to (longitude, latitude).
-    //
-    // North requires no conversion since distance from South to North is PI radians which equals the distance of latitude (having range [-PI/2, PI/2]).
-    // But East requires conversion (depending on the latitude) since the small circle distance of constant latitude has distance 2*PI*cos(latitude) radians
-    // (whereas the longitude distance is always 2*PI, regardless of latitude, since longitude range is always [-PI, PI]).
-    vec2 lon_lat_vector = vec2(local_vector.x / cos_latitude, local_vector.y);  // should not get divide-by-zero (since 'cos_latitude' is non-zero; position not at either pole)
-
-	// Transform 2D vector direction according to map projection warping.
-    vec2 map_vector_2D = jacobian_matrix * lon_lat_vector;
-
-	// Make 2D vector the same length as before - we're effectively just rotating it.
-    map_vector_2D = length(local_vector.xy) * normalize(map_vector_2D);
-
-	// The final vector is in 3D map projection space (2D map projection space and vertical dimension).
-    vec3 map_vector = vec3(map_vector_2D, local_vector.z);
-    
-    return MapProjectedPositionAndVector(map_position, map_vector);
-}
-
-/*
- * Returns true if sphere intersects frustum.
- *
- * This test is conservative, so sphere can be outside frustum and still return true.
- */
-bool
-sphere_intersects_frustum(
-        vec3 sphere_centre,
-        float sphere_radius)
-{
-    for (int i = 0; i < 6; i++)
-    {
-        if (dot(vec4(sphere_centre, 1.0), frustum_planes[i]) + sphere_radius < 0.0)
-        {
-            // Sphere is outside a single frustum plane.
-            return false;
-        }
-    }
-
-    return true;
-}
-
-/*
- * Generate an arbitray perpendicular unit vector to the specified vector.
- */
-vec3
-generate_perpendicular(
-        vec3 vector)
-{
-    // Use the basis vector that's most perpendicular (lowest dot product) to the input vector.
-    if (vector.x < vector.y)
-    {
-        if (vector.x < vector.z)
-        {
-            return normalize(cross(vector, vec3(1,0,0)));
-        }
-        else  // vector.z <= vector.x
-        {
-            return normalize(cross(vector, vec3(0,0,1)));
-        }
-    }
-    else  // vector.y <= vector.x
-    {
-        if (vector.y < vector.z)
-        {
-            return normalize(cross(vector, vec3(0,1,0)));
-        }
-        else  // vector.z <= vector.y
-        {
-            return normalize(cross(vector, vec3(0,0,1)));
-        }
-    }
-}
-
 
 void main()
 {
@@ -391,7 +121,11 @@ void main()
     if (use_map_projection)
     {
         // Map project arrow start position and vector.
-        MapProjectedPositionAndVector map_projected_arrow = map_project(arrow_start, arrow_vector);
+        MapProjectedPositionAndVector map_projected_arrow = map_project(
+                arrow_start,
+                arrow_vector,
+                map_projection_central_meridian,
+                map_projection_samplers);
 
         // Overwrite arrow start position and vector with map projected versions.
         arrow_start = vec3(map_projected_arrow.map_position, 0.0);  // z component in map projection space is zero (ie, on map plane)
@@ -409,7 +143,7 @@ void main()
     // See if arrow instance is visible (in view frustum).
     float arrow_bounding_sphere_radius = 0.5 * arrow_length;
     vec3 arrow_bounding_sphere_centre = arrow_start + arrow_bounding_sphere_radius * arrow_unit_vector;
-    if (!sphere_intersects_frustum(arrow_bounding_sphere_centre, arrow_bounding_sphere_radius))
+    if (!sphere_intersects_frustum(arrow_bounding_sphere_centre, arrow_bounding_sphere_radius, frustum_planes))
     {
         return;
     }
