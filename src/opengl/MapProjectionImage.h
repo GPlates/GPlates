@@ -153,11 +153,11 @@ namespace GPlatesOpenGL
 
 		// Parameters common to both the forward transform and Jacobian matrix images.
 		//
-		// The delay when first switching to a map projection is noticeable when this is above 90.
-		static constexpr unsigned int NUM_TEXEL_INTERVALS_PER_90_DEGREES = 90;
-		static constexpr double TEXEL_INTERVAL_IN_DEGREES = 90.0 / NUM_TEXEL_INTERVALS_PER_90_DEGREES;
-		static constexpr unsigned int IMAGE_WIDTH = 4 * NUM_TEXEL_INTERVALS_PER_90_DEGREES + 1;
-		static constexpr unsigned int IMAGE_HEIGHT = 2 * NUM_TEXEL_INTERVALS_PER_90_DEGREES + 1;
+		// The delay when first switching to a map projection is significant when this is above 180 (on a circa 2013 CPU).
+		static constexpr unsigned int NUM_TEXEL_INTERVALS_PER_180_DEGREES = 180;
+		static constexpr double TEXEL_INTERVAL_IN_DEGREES = 180.0 / NUM_TEXEL_INTERVALS_PER_180_DEGREES;
+		static constexpr unsigned int IMAGE_WIDTH = 2 * NUM_TEXEL_INTERVALS_PER_180_DEGREES + 1;
+		static constexpr unsigned int IMAGE_HEIGHT = NUM_TEXEL_INTERVALS_PER_180_DEGREES + 1;
 
 
 		/**
