@@ -34,7 +34,6 @@
 
 namespace GPlatesGui
 {
-	class MapProjection;
 	class SceneLightingParameters;
 }
 
@@ -52,8 +51,7 @@ namespace GPlatesOpenGL
 
 		explicit
 		RenderedArrowRenderer(
-				const GPlatesGui::SceneLightingParameters &scene_lighting_parameters,
-				const GPlatesGui::MapProjection &map_projection);
+				const GPlatesGui::SceneLightingParameters &scene_lighting_parameters);
 
 
 		/**
@@ -218,7 +216,6 @@ namespace GPlatesOpenGL
 			float arrowhead_length;  // fills alignment padding
 
 			alignas(16)/*vec4*/ float colour[4];  // arrow colour
-			std::uint32_t input_arrow_instance_index;
 		};
 
 		struct InstanceResource
@@ -340,8 +337,6 @@ namespace GPlatesOpenGL
 		 * the light direction and ambient contribution.
 		 */
 		const GPlatesGui::SceneLightingParameters &d_scene_lighting_parameters;
-
-		const GPlatesGui::MapProjection &d_map_projection;
 
 		// Descriptor set layouts.
 		vk::DescriptorSetLayout d_instance_descriptor_set_layout;

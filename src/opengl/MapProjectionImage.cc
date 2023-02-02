@@ -29,116 +29,6 @@
 #include "utils/CallStackTracker.h"
 
 
-#define V(C,z) (C.c0 + z * (C.c1 + z * (C.c2 + z * C.c3)))
-
-namespace { // anonymous namespace
-struct COEFS {
-    double c0, c1, c2, c3;
-};
-} // anonymous namespace
-
-static const struct COEFS X[] = {
-    {1.0, 2.2199e-17, -7.15515e-05, 3.1103e-06},
-    {0.9986, -0.000482243, -2.4897e-05, -1.3309e-06},
-    {0.9954, -0.00083103, -4.48605e-05, -9.86701e-07},
-    {0.99, -0.00135364, -5.9661e-05, 3.6777e-06},
-    {0.9822, -0.00167442, -4.49547e-06, -5.72411e-06},
-    {0.973, -0.00214868, -9.03571e-05, 1.8736e-08},
-    {0.96, -0.00305085, -9.00761e-05, 1.64917e-06},
-    {0.9427, -0.00382792, -6.53386e-05, -2.6154e-06},
-    {0.9216, -0.00467746, -0.00010457, 4.81243e-06},
-    {0.8962, -0.00536223, -3.23831e-05, -5.43432e-06},
-    {0.8679, -0.00609363, -0.000113898, 3.32484e-06},
-    {0.835, -0.00698325, -6.40253e-05, 9.34959e-07},
-    {0.7986, -0.00755338, -5.00009e-05, 9.35324e-07},
-    {0.7597, -0.00798324, -3.5971e-05, -2.27626e-06},
-    {0.7186, -0.00851367, -7.01149e-05, -8.6303e-06},
-    {0.6732, -0.00986209, -0.000199569, 1.91974e-05},
-    {0.6213, -0.010418, 8.83923e-05, 6.24051e-06},
-    {0.5722, -0.00906601, 0.000182, 6.24051e-06},
-    {0.5322, -0.00677797, 0.000275608, 6.24051e-06}
-};
-
-static const struct COEFS Y[] = {
-    {-5.20417e-18, 0.0124, 1.21431e-18, -8.45284e-11},
-    {0.062, 0.0124, -1.26793e-09, 4.22642e-10},
-    {0.124, 0.0124, 5.07171e-09, -1.60604e-09},
-    {0.186, 0.0123999, -1.90189e-08, 6.00152e-09},
-    {0.248, 0.0124002, 7.10039e-08, -2.24e-08},
-    {0.31, 0.0123992, -2.64997e-07, 8.35986e-08},
-    {0.372, 0.0124029, 9.88983e-07, -3.11994e-07},
-    {0.434, 0.0123893, -3.69093e-06, -4.35621e-07},
-
-    {0.4958, 0.0123198, -1.02252e-05, -3.45523e-07},
-    {0.5571, 0.0121916, -1.54081e-05, -5.82288e-07},
-    {0.6176, 0.0119938, -2.41424e-05, -5.25327e-07},
-    {0.6769, 0.011713, -3.20223e-05, -5.16405e-07},
-    {0.7346, 0.0113541, -3.97684e-05, -6.09052e-07},
-    {0.7903, 0.0109107, -4.89042e-05, -1.04739e-06},
-    {0.8435, 0.0103431, -6.4615e-05, -1.40374e-09},
-    {0.8936, 0.00969686, -6.4636e-05, -8.547e-06},
-    {0.9394, 0.00840947, -0.000192841, -4.2106e-06},
-    {0.9761, 0.00616527, -0.000256, -4.2106e-06},
-    {1.0, 0.00328947, -0.000319159, -4.2106e-06}
-};
-
-#define FXC 0.8487
-#define FYC 1.3523
-#define C1  11.45915590261646417544
-#define RC1 0.08726646259971647884
-#define NODES   18
-#define ONEEPS  1.000001
-#define EPS 1e-10
-/* Not sure at all of the appropriate number for MAX_ITER... */
-#define MAX_ITER 100
-
-bool robin_debug = false;
-
-void
-robin_forward_transform(
-		double &longitude,
-		double &latitude)
-{           /* Spheroidal, forward */
-
-	longitude = GPlatesMaths::convert_deg_to_rad(longitude);
-	latitude = GPlatesMaths::convert_deg_to_rad(latitude);
-
-	double x = 0;
-	double y = 0;
-    long i;
-    double dphi;
-
-    dphi = fabs(latitude);
-    i = isnan(latitude) ? -1 : lround(floor(dphi * C1 + 1e-15));
-    if( i < 0 )
-	{
-        qWarning() << "Outside domain";
-		longitude = x;
-		latitude = y;
-        return;
-    }
-    if (i >= NODES) i = NODES;
-    dphi = GPlatesMaths::convert_rad_to_deg(dphi - RC1 * i);
-    x = V(X[i], dphi) * FXC * longitude;
-    y = V(Y[i], dphi) * FYC;
-    if (latitude < 0.) y = -y;
-
-	if (robin_debug)
-	{
-		qDebug()
-				<< qSetRealNumberPrecision(12)
-				<< "  i" << i << ", dphi" << dphi
-				<< qSetRealNumberPrecision(6);
-	}
-
-	x *= 60;
-	y *= 60;
-
-	longitude = x;
-	latitude = y;
-}
-
-
 void
 GPlatesOpenGL::MapProjectionImage::initialise_vulkan_resources(
 		Vulkan &vulkan,
@@ -700,24 +590,7 @@ GPlatesOpenGL::MapProjectionImage::create_staging_buffer(
 
 			double x = longitude;
 			double y = latitude;
-			if (map_projection.projection_type() == GPlatesGui::MapProjection::NUM_PROJECTIONS)
-			{
-				if (GPlatesMaths::are_almost_exactly_equal(latitude, 45.0))
-				{
-					robin_debug = true;
-					qDebug() << "Robin: y";
-				}
-				robin_forward_transform(x, y);
-				if (GPlatesMaths::are_almost_exactly_equal(latitude, 45.0))
-				{
-					robin_debug = false;
-				}
-			}
-			else
-			{
-				map_projection.forward_transform(x, y);
-			}
-			//map_projection.forward_transform(x, y);
+			map_projection.forward_transform(x, y);
 
 			// Store map projection (x, y) in first image.
 			texel1.values[0] = static_cast<float>(x);
@@ -730,72 +603,22 @@ GPlatesOpenGL::MapProjectionImage::create_staging_buffer(
 			// Sample map projection at (longitude + delta, latitude).
 			double x_at_lon_plus_delta = longitude + delta_lon_lat_for_derivs;
 			double y_at_lon_plus_delta = latitude;
-			if (map_projection.projection_type() == GPlatesGui::MapProjection::NUM_PROJECTIONS)
-			{
-				robin_forward_transform(x_at_lon_plus_delta, y_at_lon_plus_delta);
-			}
-			else
-			{
-				map_projection.forward_transform(x_at_lon_plus_delta, y_at_lon_plus_delta);
-			}
-			//map_projection.forward_transform(x_at_lon_plus_delta, y_at_lon_plus_delta);
+			map_projection.forward_transform(x_at_lon_plus_delta, y_at_lon_plus_delta);
 
 			// Sample map projection at (longitude - delta, latitude).
 			double x_at_lon_minus_delta = longitude - delta_lon_lat_for_derivs;
 			double y_at_lon_minus_delta = latitude;
-			if (map_projection.projection_type() == GPlatesGui::MapProjection::NUM_PROJECTIONS)
-			{
-				robin_forward_transform(x_at_lon_minus_delta, y_at_lon_minus_delta);
-			}
-			else
-			{
-				map_projection.forward_transform(x_at_lon_minus_delta, y_at_lon_minus_delta);
-			}
-			//map_projection.forward_transform(x_at_lon_minus_delta, y_at_lon_minus_delta);
+			map_projection.forward_transform(x_at_lon_minus_delta, y_at_lon_minus_delta);
 
 			// Sample map projection at (longitude, latitude + delta).
 			double x_at_lat_plus_delta = longitude;
 			double y_at_lat_plus_delta = latitude + delta_lon_lat_for_derivs;
-			if (map_projection.projection_type() == GPlatesGui::MapProjection::NUM_PROJECTIONS)
-			{
-				if (GPlatesMaths::are_almost_exactly_equal(latitude, 45.0))
-				{
-					robin_debug = true;
-					qDebug() << "Robin: y_at_lat_plus_delta";
-				}
-				robin_forward_transform(x_at_lat_plus_delta, y_at_lat_plus_delta);
-				if (GPlatesMaths::are_almost_exactly_equal(latitude, 45.0))
-				{
-					robin_debug = false;
-				}
-			}
-			else
-			{
-				map_projection.forward_transform(x_at_lat_plus_delta, y_at_lat_plus_delta);
-			}
-			//map_projection.forward_transform(x_at_lat_plus_delta, y_at_lat_plus_delta);
+			map_projection.forward_transform(x_at_lat_plus_delta, y_at_lat_plus_delta);
 
 			// Sample map projection at (longitude, latitude - delta).
 			double x_at_lat_minus_delta = longitude;
 			double y_at_lat_minus_delta = latitude - delta_lon_lat_for_derivs;
-			if (map_projection.projection_type() == GPlatesGui::MapProjection::NUM_PROJECTIONS)
-			{
-				if (GPlatesMaths::are_almost_exactly_equal(latitude, 45.0))
-				{
-					robin_debug = true;
-					qDebug() << "Robin: y_at_lat_minus_delta";
-				}
-				robin_forward_transform(x_at_lat_minus_delta, y_at_lat_minus_delta);
-				if (GPlatesMaths::are_almost_exactly_equal(latitude, 45.0))
-				{
-					robin_debug = false;
-				}
-			}
-			else
-			{
-				map_projection.forward_transform(x_at_lat_minus_delta, y_at_lat_minus_delta);
-			}
-			//map_projection.forward_transform(x_at_lat_minus_delta, y_at_lat_minus_delta);
+			map_projection.forward_transform(x_at_lat_minus_delta, y_at_lat_minus_delta);
 
 			// Jacobian matrix.
 			const double dx_dlon_radians = (x_at_lon_plus_delta - x_at_lon_minus_delta) / (2 * delta_lon_lat_for_derivs_radians);
@@ -826,54 +649,22 @@ GPlatesOpenGL::MapProjectionImage::create_staging_buffer(
 			// Sample map projection at (longitude + delta, latitude + delta).
 			double x_at_lon_plus_delta_lat_plus_delta = longitude + delta_lon_lat_for_derivs;
 			double y_at_lon_plus_delta_lat_plus_delta = latitude + delta_lon_lat_for_derivs;
-			if (map_projection.projection_type() == GPlatesGui::MapProjection::NUM_PROJECTIONS)
-			{
-				robin_forward_transform(x_at_lon_plus_delta_lat_plus_delta, y_at_lon_plus_delta_lat_plus_delta);
-			}
-			else
-			{
-				map_projection.forward_transform(x_at_lon_plus_delta_lat_plus_delta, y_at_lon_plus_delta_lat_plus_delta);
-			}
-			//map_projection.forward_transform(x_at_lon_plus_delta_lat_plus_delta, y_at_lon_plus_delta_lat_plus_delta);
+			map_projection.forward_transform(x_at_lon_plus_delta_lat_plus_delta, y_at_lon_plus_delta_lat_plus_delta);
 
 			// Sample map projection at (longitude + delta, latitude - delta).
 			double x_at_lon_plus_delta_lat_minus_delta = longitude + delta_lon_lat_for_derivs;
 			double y_at_lon_plus_delta_lat_minus_delta = latitude - delta_lon_lat_for_derivs;
-			if (map_projection.projection_type() == GPlatesGui::MapProjection::NUM_PROJECTIONS)
-			{
-				robin_forward_transform(x_at_lon_plus_delta_lat_minus_delta, y_at_lon_plus_delta_lat_minus_delta);
-			}
-			else
-			{
-				map_projection.forward_transform(x_at_lon_plus_delta_lat_minus_delta, y_at_lon_plus_delta_lat_minus_delta);
-			}
-			//map_projection.forward_transform(x_at_lon_plus_delta_lat_minus_delta, y_at_lon_plus_delta_lat_minus_delta);
+			map_projection.forward_transform(x_at_lon_plus_delta_lat_minus_delta, y_at_lon_plus_delta_lat_minus_delta);
 
 			// Sample map projection at (longitude - delta, latitude + delta).
 			double x_at_lon_minus_delta_lat_plus_delta = longitude - delta_lon_lat_for_derivs;
 			double y_at_lon_minus_delta_lat_plus_delta = latitude + delta_lon_lat_for_derivs;
-			if (map_projection.projection_type() == GPlatesGui::MapProjection::NUM_PROJECTIONS)
-			{
-				robin_forward_transform(x_at_lon_minus_delta_lat_plus_delta, y_at_lon_minus_delta_lat_plus_delta);
-			}
-			else
-			{
-				map_projection.forward_transform(x_at_lon_minus_delta_lat_plus_delta, y_at_lon_minus_delta_lat_plus_delta);
-			}
-			//map_projection.forward_transform(x_at_lon_minus_delta_lat_plus_delta, y_at_lon_minus_delta_lat_plus_delta);
+			map_projection.forward_transform(x_at_lon_minus_delta_lat_plus_delta, y_at_lon_minus_delta_lat_plus_delta);
 
 			// Sample map projection at (longitude - delta, latitude - delta).
 			double x_at_lon_minus_delta_lat_minus_delta = longitude - delta_lon_lat_for_derivs;
 			double y_at_lon_minus_delta_lat_minus_delta = latitude - delta_lon_lat_for_derivs;
-			if (map_projection.projection_type() == GPlatesGui::MapProjection::NUM_PROJECTIONS)
-			{
-				robin_forward_transform(x_at_lon_minus_delta_lat_minus_delta, y_at_lon_minus_delta_lat_minus_delta);
-			}
-			else
-			{
-				map_projection.forward_transform(x_at_lon_minus_delta_lat_minus_delta, y_at_lon_minus_delta_lat_minus_delta);
-			}
-			//map_projection.forward_transform(x_at_lon_minus_delta_lat_minus_delta, y_at_lon_minus_delta_lat_minus_delta);
+			map_projection.forward_transform(x_at_lon_minus_delta_lat_minus_delta, y_at_lon_minus_delta_lat_minus_delta);
 
 			// Hessian matrix (for 'x').
 			const double ddx_dlon_dlon_radians = (x_at_lon_plus_delta - 2 * x + x_at_lon_minus_delta) /
@@ -908,28 +699,6 @@ GPlatesOpenGL::MapProjectionImage::create_staging_buffer(
 			//       to get longitude and latitude (and those functions returns results in radians).
 			texel1.values[2] = static_cast<float>(ddx_dlon_dlat_radians);
 			texel1.values[3] = static_cast<float>(ddy_dlon_dlat_radians);
-
-			if (GPlatesMaths::are_almost_exactly_equal(latitude, 45.0))
-			{
-				qDebug()
-						<< qSetRealNumberPrecision(12)
-						<< "(lon, lat):" << longitude << latitude
-						<< ", x" << x
-						<< ", y" << y
-						<< ", y_at_lat_plus_delta" << y_at_lat_plus_delta
-						<< ", y_at_lat_minus_delta" << y_at_lat_minus_delta
-						<< ", dx_dlon" << dx_dlon_radians
-						<< ", dx_dlat" << dx_dlat_radians
-						<< ", dy_dlon" << dy_dlon_radians
-						<< ", dy_dlat" << dy_dlat_radians
-						<< ", ddx_dlon_dlon:" << ddx_dlon_dlon_radians
-						<< ", ddx_dlat_dlat:" << ddx_dlat_dlat_radians
-						<< ", ddx_dlon_dlat:" << ddx_dlon_dlat_radians
-						<< ", ddy_dlon_dlon:" << ddy_dlon_dlon_radians
-						<< ", ddy_dlat_dlat:" << ddy_dlat_dlat_radians
-						<< ", ddy_dlon_dlat:" << ddy_dlon_dlat_radians
-						<< qSetRealNumberPrecision(6);
-			}
 		}
 
 		// Copy a row into each buffer.
