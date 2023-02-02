@@ -121,15 +121,22 @@ void main()
     if (use_map_projection)
     {
         // Map project arrow start position and vector.
-        MapProjectedPositionAndVector map_projected_arrow = map_project(
-                arrow_start,
-                arrow_vector,
+        vec2 map_position;
+        vec3 map_vector;
+        if (!map_project_position_and_vector(
+                map_position, map_vector,
+                arrow_start, arrow_vector,
                 map_projection_central_meridian,
-                map_projection_samplers);
+                map_projection_samplers))
+        {
+            // The position is too close to either pole (North or South) to determine the direction of the vector
+            // relative to the position's local East and North (since they are indeterminate).
+            return;  // cull the arrow
+        }
 
         // Overwrite arrow start position and vector with map projected versions.
-        arrow_start = vec3(map_projected_arrow.map_position, 0.0);  // z component in map projection space is zero (ie, on map plane)
-        arrow_vector = map_projected_arrow.map_vector;
+        arrow_start = vec3(map_position, 0.0);  // z component in map projection space is zero (ie, on map plane)
+        arrow_vector = map_vector;
     }
 
     const float arrow_length = length(arrow_vector);

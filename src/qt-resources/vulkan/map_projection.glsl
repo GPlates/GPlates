@@ -28,46 +28,36 @@
 
 #include "utils.glsl"
 
-struct MapProjectedPositionAndVector
-{
-    vec2 map_position;
-    vec3 map_vector;
-};
-
 /*
- * Project a 3D position (on the unit sphere) and a 3D vector onto the 2D map projection.
+ * Get the longitude and latitude (in radians) from the specified position on the unit sphere.
  *
- * The final map projected vector is actually a 3D vector where the 2D (x,y) component is in the 2D map plane and
- * the z component is along the z-axis of 3D map projection space.
+ * Returns false if the specified position is too close to either pole (North or South) to determine its longitude.
+ *
+ * Note: Returned longitude is in the range [-PI, PI] and is centred on the central meridian (such that it will return a longitude of zero).
+ *       Returned latitude is in the range [-PI/2, PI/2].
  */
-MapProjectedPositionAndVector
-map_project(
+bool
+get_map_projection_longitude_and_latitude(
+        out float longitude,
+        out float latitude,
+        out float cos_latitude,
         vec3 position,
-        vec3 vector,
         float map_projection_central_meridian,
-        sampler2D map_projection_samplers[3])
+        const float PI,
+        const float HALF_PI)
 {
-    // If the 'position' is at either pole (North or South) then we cannot determine its longitude (atan(0,0) is undefined), and
-    // we cannot determine the direction of 'vector' relative to the position's local East and North (which are indeterminate).
-    float cos_latitude = length(position.xy);  // 'position' is a unit vector
+    // If the 'position' is too close to either pole (North or South) then we cannot determine its longitude (atan(0,0) is undefined).
+    cos_latitude = length(position.xy);  // 'position' is a unit vector
     if (cos_latitude < 2e-7)
     {
-        // Zero vector will cause arrow to be culled.
-        vec3 culled_map_vector = vec3(0);
-        // Arbitrary map position (doesn't matter since arrow will get culled anyway).
-        vec2 culled_map_position = vec2(0);
-
-        return MapProjectedPositionAndVector(culled_map_position, culled_map_vector);
+        return false;
     }
 
-    const float PI = radians(180);
-    const float HALF_PI = PI / 2.0;
-
     // Get latitude from position on sphere.
-    float latitude = asin(position.z);  // in range [-PI/2, PI/2]
+    latitude = asin(position.z);  // in range [-PI/2, PI/2]
 
     // Get longitude from position on sphere.
-    float longitude = atan(position.y, position.x);  // in range [-PI, PI]
+    longitude = atan(position.y, position.x);  // in range [-PI, PI]
     // Centre about the central meridian (so it has a longitude of zero).
     longitude -= map_projection_central_meridian;    // in range [-PI - central_meridian, PI - central_meridian]
 
@@ -83,6 +73,24 @@ map_project(
         longitude -= 2 * PI;
     }
 
+    return true;
+}
+
+/*
+ * Get the map projection texture gather parameters such as texture coordinates for 'textureGather()' and its bilinear weights.
+ *
+ * Note: Longitude should be in the range [-PI, PI] and latitude in the range [-PI/2, PI/2].
+ */
+void
+get_map_projection_texture_gather_params(
+        out vec2 map_projection_gather_texture_coord,
+        out vec2 map_projection_bilinear_weight,
+        ivec2 map_projection_image_size,
+        float longitude,
+        float latitude,
+        const float PI,
+        const float HALF_PI)
+{
     // Map projection texture coordinate uses longitude and latitude.
     //
     // Convert longitude from [-PI, PI] to [0, 1].
@@ -90,41 +98,48 @@ map_project(
     // Convert latitude from [-PI/2, PI/2] to [0, 1].
     float latitude_normalized = (latitude + HALF_PI) / PI;
 
-    // All map projection images are the same size (so we can choose any of them to determine dimensions).
-    ivec2 map_projection_image_size = textureSize(map_projection_samplers[0], 0);
-
     // Adjust for half texel since boundary of [0, 1] range maps to the texel centres of the boundary texels.
     // Everything inside the interior is linearly interpolated.
     vec2 map_projection_uv = (map_projection_image_size - 1) * vec2(longitude_normalized, latitude_normalized) + 0.5;
 
     // We'll be using 'textureGather()' and doing our own bilinear filtering to get better accuracy than builtin texture bilinear filtering.
     // This is because builtin texture bilinear filtering typically has only 8 bits of accuracy to its bilinear weights.
-    vec2 map_projection_gather_texture_coord;
-    vec2 map_projection_bilinear_weight;
     get_texture_gather_unnormalized_bilinear_params(
             map_projection_image_size,
             map_projection_uv,  // unnormalized texture coordinates
             map_projection_gather_texture_coord,
             map_projection_bilinear_weight);
+}
 
-    // Sample the first map projection texture.
-    vec4             x_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 0);
-    vec4             y_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 1);
-    vec4 ddx_dlon_dlat_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 2);
-    vec4 ddy_dlon_dlat_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 3);
+/*
+ * Implementation function for projecting a 3D position (on the unit sphere) onto the 2D map projection.
+ */
+void
+map_project_position_impl(
+        out vec2 map_position,
+        ivec2 map_projection_image_size,
+        vec2 map_projection_bilinear_weight,
 
-    // Sample the second map projection texture.
-    vec4 dx_dlon_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 0);
-    vec4 dx_dlat_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 1);
-    vec4 dy_dlon_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 2);
-    vec4 dy_dlat_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 3);
+        // Sampled from the first map projection texture...
+        vec4             x_gather,
+        vec4             y_gather,
+        vec4 ddx_dlon_dlat_gather,
+        vec4 ddy_dlon_dlat_gather,
 
-    // Sample the third map projection texture.
-    vec4 ddx_dlon_dlon_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 0);
-    vec4 ddx_dlat_dlat_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 1);
-    vec4 ddy_dlon_dlon_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 2);
-    vec4 ddy_dlat_dlat_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 3);
+        // Sampled from the second map projection texture...
+        vec4 dx_dlon_gather,
+        vec4 dx_dlat_gather,
+        vec4 dy_dlon_gather,
+        vec4 dy_dlat_gather,
 
+        // Sampled from the third map projection texture...
+        vec4 ddx_dlon_dlon_gather,
+        vec4 ddx_dlat_dlat_gather,
+        vec4 ddy_dlon_dlon_gather,
+        vec4 ddy_dlat_dlat_gather,
+
+        const float PI)
+{
     // Size of a texel in (longitude, latitude) space.
     // The texel is square, so its width and height should be the same, but we'll calculate them both anyway (just in case different).
     vec2 lon_lat_texel_size = vec2(2 * PI, PI) / (map_projection_image_size - 1);
@@ -176,9 +191,104 @@ map_project(
 
     // Bilinearly interpolate the 4 extrapolated map positions.
     // The bilinear weights will naturally favour texels whose centre (longitude, latitude) is closer to the actual (longitude, latitude).
-    vec2 map_position = bilinearly_interpolate_gather(
+    map_position = bilinearly_interpolate_gather(
             xy_interpolate_gather,
             map_projection_bilinear_weight);
+}
+
+/*
+ * Project a 3D position (on the unit sphere) onto the 2D map projection (defined by the 3 specified textures).
+ */
+void
+map_project_position(
+        out vec2 map_position,
+        vec3 position,
+        float map_projection_central_meridian,
+        sampler2D map_projection_samplers[3])
+{
+    const float PI = radians(180);
+    const float HALF_PI = PI / 2.0;
+
+    // Get longitude and latitude from 'position'.
+    float longitude;
+    float latitude;
+    float cos_latitude;
+    if (!get_map_projection_longitude_and_latitude(
+            longitude, latitude, cos_latitude,
+            position, map_projection_central_meridian,
+            PI, HALF_PI))
+    {
+        // The position is too close to either pole (North or South) to determine its longitude.
+        // In this case we will just use a longitude of zero (and snap the latitude to the pole).
+        longitude = 0.0;
+        latitude = (position.z > 0) ? HALF_PI : -HALF_PI;
+        cos_latitude = 0.0;
+    }
+
+    // All map projection images are the same size (so we can choose any of them to determine dimensions).
+    ivec2 map_projection_image_size = textureSize(map_projection_samplers[0], 0);
+
+    // Get the map projection texture gather coordinates and bilinear weights.
+    vec2 map_projection_gather_texture_coord;
+    vec2 map_projection_bilinear_weight;
+    get_map_projection_texture_gather_params(
+            map_projection_gather_texture_coord, map_projection_bilinear_weight, map_projection_image_size,
+            longitude, latitude,
+            PI, HALF_PI);
+
+    // Sample the first map projection texture.
+    vec4             x_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 0);
+    vec4             y_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 1);
+    vec4 ddx_dlon_dlat_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 2);
+    vec4 ddy_dlon_dlat_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 3);
+
+    // Sample the second map projection texture.
+    vec4 dx_dlon_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 0);
+    vec4 dx_dlat_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 1);
+    vec4 dy_dlon_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 2);
+    vec4 dy_dlat_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 3);
+
+    // Sample the third map projection texture.
+    vec4 ddx_dlon_dlon_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 0);
+    vec4 ddx_dlat_dlat_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 1);
+    vec4 ddy_dlon_dlon_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 2);
+    vec4 ddy_dlat_dlat_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 3);
+
+    // Map project the position.
+    map_project_position_impl(
+            map_position, map_projection_image_size, map_projection_bilinear_weight,
+
+            // Sampled from the first map projection texture...
+            x_gather, y_gather,
+            ddx_dlon_dlat_gather, ddy_dlon_dlat_gather,
+
+            // Sampled from the second map projection texture...
+            dx_dlon_gather, dx_dlat_gather,
+            dy_dlon_gather, dy_dlat_gather,
+
+            // Sampled from the third map projection texture...
+            ddx_dlon_dlon_gather, ddx_dlat_dlat_gather,
+            ddy_dlon_dlon_gather, ddy_dlat_dlat_gather,
+
+            PI);
+}
+
+/*
+ * Implementation function for projecting a 3D vector onto the 2D map projection.
+ */
+void
+map_project_vector_impl(
+        out vec3 map_vector,
+        vec3 position,
+        float cos_latitude,
+        vec3 vector,
+        vec2 map_projection_bilinear_weight,
+        // Sampled from the second map projection texture...
+        vec4 dx_dlon_gather,
+        vec4 dx_dlat_gather,
+        vec4 dy_dlon_gather,
+        vec4 dy_dlat_gather)
+{
 
     // Find the local East, North and down directions at 'position' on the unit sphere.
     vec3 local_east = normalize(cross(vec3(0,0,1)/*global North*/, position));  // should not get divide-by-zero (since not at either pole)
@@ -242,9 +352,158 @@ map_project(
     map_vector_2D = length(local_vector.xy) * normalize(map_vector_2D);
 
 	// The final vector is in 3D map projection space (2D map projection space and vertical dimension).
-    vec3 map_vector = vec3(map_vector_2D, local_vector.z);
+    map_vector = vec3(map_vector_2D, local_vector.z);
+}
+
+/*
+ * Project a 3D vector onto the 2D map projection (defined by the 3 specified textures).
+ *
+ * Returns false if the specified position is too close to either pole (North or South) to determine
+ * the direction of the vector relative to the position's local East and North (since they are indeterminate).
+ *
+ * The final map projected vector is actually a 3D vector where the 2D (x,y) component is in the 2D map plane and
+ * the z component is along the z-axis of 3D map projection space.
+ */
+bool
+map_project_vector(
+        out vec3 map_vector,
+        vec3 position,
+        vec3 vector,
+        float map_projection_central_meridian,
+        sampler2D map_projection_samplers[3])
+{
+    const float PI = radians(180);
+    const float HALF_PI = PI / 2.0;
+
+    // Get longitude and latitude from 'position'.
+    float longitude;
+    float latitude;
+    float cos_latitude;
+    if (!get_map_projection_longitude_and_latitude(
+            longitude, latitude, cos_latitude,
+            position, map_projection_central_meridian,
+            PI, HALF_PI))
+    {
+        // The position is too close to either pole (North or South) to determine the direction of the vector relative to
+        // the position's local East and North (since they are indeterminate).
+        return false;
+    }
+
+    // All map projection images are the same size (so we can choose any of them to determine dimensions).
+    ivec2 map_projection_image_size = textureSize(map_projection_samplers[0], 0);
+
+    // Get the map projection texture gather coordinates and bilinear weights.
+    vec2 map_projection_gather_texture_coord;
+    vec2 map_projection_bilinear_weight;
+    get_map_projection_texture_gather_params(
+            map_projection_gather_texture_coord, map_projection_bilinear_weight, map_projection_image_size,
+            longitude, latitude,
+            PI, HALF_PI);
+
+    // Sample the second map projection texture.
+    vec4 dx_dlon_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 0);
+    vec4 dx_dlat_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 1);
+    vec4 dy_dlon_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 2);
+    vec4 dy_dlat_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 3);
+
+    // Map project the vector.
+    map_project_vector_impl(
+            map_vector, position, cos_latitude, vector, map_projection_bilinear_weight,
+            // Sampled from the second map projection texture...
+            dx_dlon_gather, dx_dlat_gather, dy_dlon_gather, dy_dlat_gather);
     
-    return MapProjectedPositionAndVector(map_position, map_vector);
+    return true;
+}
+
+/*
+ * Project a 3D position (on the unit sphere) and a 3D vector onto the 2D map projection (defined by the 3 specified textures).
+ *
+ * Returns false if the specified position is too close to either pole (North or South) to determine
+ * the direction of the vector relative to the position's local East and North (since they are indeterminate).
+ *
+ * The final map projected vector is actually a 3D vector where the 2D (x,y) component is in the 2D map plane and
+ * the z component is along the z-axis of 3D map projection space.
+ */
+bool
+map_project_position_and_vector(
+        out vec2 map_position,
+        out vec3 map_vector,
+        vec3 position,
+        vec3 vector,
+        float map_projection_central_meridian,
+        sampler2D map_projection_samplers[3])
+{
+    const float PI = radians(180);
+    const float HALF_PI = PI / 2.0;
+
+    // Get longitude and latitude from 'position'.
+    float longitude;
+    float latitude;
+    float cos_latitude;
+    if (!get_map_projection_longitude_and_latitude(
+            longitude, latitude, cos_latitude,
+            position, map_projection_central_meridian,
+            PI, HALF_PI))
+    {
+        // The position is too close to either pole (North or South) to determine the direction of the vector relative to
+        // the position's local East and North (since they are indeterminate).
+        return false;
+    }
+
+    // All map projection images are the same size (so we can choose any of them to determine dimensions).
+    ivec2 map_projection_image_size = textureSize(map_projection_samplers[0], 0);
+
+    // Get the map projection texture gather coordinates and bilinear weights.
+    vec2 map_projection_gather_texture_coord;
+    vec2 map_projection_bilinear_weight;
+    get_map_projection_texture_gather_params(
+            map_projection_gather_texture_coord, map_projection_bilinear_weight, map_projection_image_size,
+            longitude, latitude,
+            PI, HALF_PI);
+
+    // Sample the first map projection texture.
+    vec4             x_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 0);
+    vec4             y_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 1);
+    vec4 ddx_dlon_dlat_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 2);
+    vec4 ddy_dlon_dlat_gather = textureGather(map_projection_samplers[0], map_projection_gather_texture_coord, 3);
+
+    // Sample the second map projection texture.
+    vec4 dx_dlon_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 0);
+    vec4 dx_dlat_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 1);
+    vec4 dy_dlon_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 2);
+    vec4 dy_dlat_gather = textureGather(map_projection_samplers[1], map_projection_gather_texture_coord, 3);
+
+    // Sample the third map projection texture.
+    vec4 ddx_dlon_dlon_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 0);
+    vec4 ddx_dlat_dlat_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 1);
+    vec4 ddy_dlon_dlon_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 2);
+    vec4 ddy_dlat_dlat_gather = textureGather(map_projection_samplers[2], map_projection_gather_texture_coord, 3);
+
+    // Map project the position.
+    map_project_position_impl(
+            map_position, map_projection_image_size, map_projection_bilinear_weight,
+
+            // Sampled from the first map projection texture...
+            x_gather, y_gather,
+            ddx_dlon_dlat_gather, ddy_dlon_dlat_gather,
+
+            // Sampled from the second map projection texture...
+            dx_dlon_gather, dx_dlat_gather,
+            dy_dlon_gather, dy_dlat_gather,
+
+            // Sampled from the third map projection texture...
+            ddx_dlon_dlon_gather, ddx_dlat_dlat_gather,
+            ddy_dlon_dlon_gather, ddy_dlat_dlat_gather,
+
+            PI);
+
+    // Map project the vector.
+    map_project_vector_impl(
+            map_vector, position, cos_latitude, vector, map_projection_bilinear_weight,
+            // Sampled from the second map projection texture...
+            dx_dlon_gather, dx_dlat_gather, dy_dlon_gather, dy_dlat_gather);
+    
+    return true;
 }
 
 #endif // MAP_PROJECTION_GLSL
