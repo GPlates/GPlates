@@ -1,0 +1,84 @@
+package:
+  name: pygplates
+  version: 0.38
+  
+source:
+  path: ../../../
+
+build:
+  skip: True  # [py<37]
+  skip: True  # [win and vc<14]
+  number: 0
+
+requirements:
+  build:
+    - cmake
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+  host:
+    - {{ cdt('xorg-x11-proto-devel') }}  # [linux]
+    - {{ cdt('mesa-libgl-devel') }}      # [linux]
+    - {{ cdt('libx11-devel') }}          # [linux]
+    - {{ cdt('libxext-devel') }}         # [linux]
+    - {{ cdt('libxrender-devel') }}      # [linux]
+    - {{ cdt('mesa-libgl-devel') }}      # [linux]
+    - {{ cdt('mesa-libegl-devel') }}     # [linux]
+    - {{ cdt('mesa-dri-drivers') }}      # [linux]
+    - {{ cdt('libxau-devel') }}          # [linux]
+    - {{ cdt('libdrm-devel') }}          # [linux]
+    - {{ cdt('libxcomposite-devel') }}   # [linux]
+    - {{ cdt('libxcursor-devel') }}      # [linux]
+    - {{ cdt('libxi-devel') }}           # [linux]
+    - {{ cdt('libxrandr-devel') }}       # [linux]
+    - {{ cdt('libxscrnsaver-devel') }}   # [linux]
+    - {{ cdt('libxtst-devel') }}         # [linux]
+    - {{ cdt('libselinux-devel') }}      # [linux]
+    - cgal-cpp
+    - glew
+    - python
+    - qt-main
+    - boost
+    - libgdal
+    - proj
+    - qwt
+    - zlib
+  run:
+    - {{ cdt('xorg-x11-proto-devel') }}  # [linux]
+    - {{ cdt('mesa-libgl-devel') }}      # [linux]
+    - {{ cdt('libx11-devel') }}          # [linux]
+    - {{ cdt('libxext-devel') }}         # [linux]
+    - {{ cdt('libxrender-devel') }}      # [linux]
+    - {{ cdt('mesa-libgl-devel') }}      # [linux]
+    - {{ cdt('mesa-libegl-devel') }}     # [linux]
+    - {{ cdt('mesa-dri-drivers') }}      # [linux]
+    - {{ cdt('libxau-devel') }}          # [linux]
+    - {{ cdt('libdrm-devel') }}          # [linux]
+    - {{ cdt('libxcomposite-devel') }}   # [linux]
+    - {{ cdt('libxcursor-devel') }}      # [linux]
+    - {{ cdt('libxi-devel') }}           # [linux]
+    - {{ cdt('libxrandr-devel') }}       # [linux]
+    - {{ cdt('libxscrnsaver-devel') }}   # [linux]
+    - {{ cdt('libxtst-devel') }}         # [linux]
+    - {{ cdt('libselinux-devel') }}      # [linux]
+    - cgal-cpp
+    - glew
+    - python
+    - qt-main
+    - boost
+    - libgdal
+    - proj
+    - qwt
+    - zlib
+
+test:
+  imports:
+    - pygplates
+
+about:
+  summary: ''
+  description: ''
+
+extra:
+  recipe-maintainers:
+    - jc
+
