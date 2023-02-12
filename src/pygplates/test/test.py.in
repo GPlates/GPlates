@@ -17,7 +17,7 @@ sys.path.insert(1, PYGPLATES_PATH)
 # If on Windows and Python >= 3.8 then we need to specify the paths to all dependency DLLs of the
 # pygplates '.pyd' since Python 3.8 no longer searches for these using the PATH environment variable.
 if platform.system() == 'Windows':
-    if sys.version_info[0] > 3 or (sys.version_info[0] == 3 and sys.version_info[1] >= 8):
+    if sys.version_info >= (3, 8):
         # If we're in a conda environment then don't add the paths (conda already ensures dependencies are loaded correctly).
         if not os.environ.get('CONDA_PREFIX'):
             # Just add all the paths in the PATH environment variable.
