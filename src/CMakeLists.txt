@@ -451,7 +451,6 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 if (NOT GPLATES_BUILD_GPLATES)
 	# Traverse pygplates sub-directory.
-	# Currently contains tests for pygplates. 
 	add_subdirectory(pygplates)
 endif()
 

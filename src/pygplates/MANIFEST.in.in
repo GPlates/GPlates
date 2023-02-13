@@ -1,0 +1,3 @@
+# The 'pygplates' directory (a Python package) is first installed using CMake and
+# then we package it here using setuptools (via 'setup.py').
+recursive-include pygplates *
