@@ -1,10 +1,4 @@
-/* $Id$ */
-
 /**
- * \file 
- * $Revision$
- * $Date$
- * 
  * Copyright (C) 2019 The University of Sydney, Australia
  *
  * This file is part of GPlates.
@@ -33,11 +27,13 @@
 QString
 GPlatesGlobal::License::get_copyright_string()
 {
-    return QString("@GPLATES_COPYRIGHT_STRING@");
+    // Interpret as raw string literal since can be multi-line.
+    return QString(R"(@GPLATES_COPYRIGHT_STRING@)");
 }
 
 QString
 GPlatesGlobal::License::get_html_copyright_string()
 {
-    return QString("@GPLATES_HTML_COPYRIGHT_STRING@");
+    // Interpret as raw string literal since can be multi-line.
+    return QString(R"(@GPLATES_HTML_COPYRIGHT_STRING@)");
 }

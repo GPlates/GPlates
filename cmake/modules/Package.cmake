@@ -212,10 +212,14 @@ endif()
 #
 #   Used, for example, the introduction screen of a CPack-generated Windows installer to describe the project.
 #
-SET(CPACK_PACKAGE_DESCRIPTION_FILE "${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageDescription.txt")
+# TODO: Once our min CMake requirement is >= 3.12 we can use CPACK_PACKAGE_DESCRIPTION (instead of a description file).
+set(PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_BINARY_DIR}/PackageDescription.txt")
+file(WRITE "${PACKAGE_DESCRIPTION_FILE}" "${GPLATES_PACKAGE_DESCRIPTION}")
+SET(CPACK_PACKAGE_DESCRIPTION_FILE "${PACKAGE_DESCRIPTION_FILE}")
 
 #   CPACK_PACKAGE_DESCRIPTION_SUMMARY - Short description of the project (only a few words).
 #
+# TODO: Once our min CMake requirement is >= 3.12 we can instead rely on default value of PROJECT_DESCRIPTION (and specify that in 'project()' command).
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${GPLATES_PACKAGE_DESCRIPTION_SUMMARY}")
 
 #   CPACK_RESOURCE_FILE_LICENSE - License to be embedded in the installer.
@@ -225,20 +229,27 @@ SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${GPLATES_PACKAGE_DESCRIPTION_SUMMARY}")
 #   used by some CPack generators like NSIS. If you want to install a license file (may be the same as this one)
 #   along with your project, you must add an appropriate CMake install() command in your CMakeLists.txt.
 #
-SET(CPACK_RESOURCE_FILE_LICENSE "${GPLATES_SOURCE_DISTRIBUTION_DIR}/LicenseFile.txt")
+set(PACKAGE_LICENSE_FILE "${CMAKE_CURRENT_BINARY_DIR}/LicenseFile.txt")
+file(WRITE "${PACKAGE_LICENSE_FILE}" "${GPLATES_PACKAGE_LICENSE}")
+SET(CPACK_RESOURCE_FILE_LICENSE "${PACKAGE_LICENSE_FILE}")
 
 #   CPACK_RESOURCE_FILE_README - ReadMe file to be embedded in the installer.
 #
 #    It typically describes in some detail the purpose of the project during the installation.
 #    Not all CPack generators use this file.
 #
-SET(CPACK_RESOURCE_FILE_README "${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageReadMe.txt")
+set(PACKAGE_README_FILE "${CMAKE_CURRENT_BINARY_DIR}/PackageReadMe.txt")
+file(WRITE "${PACKAGE_README_FILE}" "${GPLATES_PACKAGE_DESCRIPTION}")
+SET(CPACK_RESOURCE_FILE_README "${PACKAGE_README_FILE}")
 
 #   CPACK_RESOURCE_FILE_WELCOME - Welcome file to be embedded in the installer.
 #
 #   It welcomes users to this installer. Typically used in the graphical installers on Windows and Mac OS X.
 #
-SET(CPACK_RESOURCE_FILE_WELCOME "${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageWelcome.txt")
+set(PACKAGE_WELCOME_FILE "${CMAKE_CURRENT_BINARY_DIR}/PackageWelcome.txt")
+file(WRITE "${PACKAGE_WELCOME_FILE}" "Welcome to the ${PROJECT_NAME} installer. This program will guide you through the installation of this software.
+")  # newline
+SET(CPACK_RESOURCE_FILE_WELCOME "${PACKAGE_WELCOME_FILE}")
 
 #   CPACK_PACKAGE_EXECUTABLES - Lists each of the executables and associated text label to be used to create Start Menu shortcuts.
 #
