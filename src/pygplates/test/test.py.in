@@ -23,7 +23,9 @@ if platform.system() == 'Windows':
             # Just add all the paths in the PATH environment variable.
             env_path = os.environ.get('PATH')
             if env_path:
-                for dll_path in env_path.split(os.pathsep):
+                # Note that we reverse the order of PATH since 'os.add_dll_directory()'
+                # appears to insert to the front of the DLL search order.
+                for dll_path in reversed(env_path.split(os.pathsep)):
                     if dll_path and os.path.exists(dll_path):
                         os.add_dll_directory(dll_path)
 
