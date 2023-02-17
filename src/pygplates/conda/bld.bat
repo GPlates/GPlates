@@ -1,16 +1,11 @@
-echo CMAKE_PREFIX_PATH:PATH=%PREFIX%;%LIBRARY_PREFIX%
-echo CMAKE_INSTALL_PREFIX:PATH=%SP_DIR%
-echo %SRC_DIR%
-echo %CMAKE_GENERATOR%
-
 set BUILD_TYPE=Release
 
 :: Configure pyGPlates.
 ::
 :: Note that CMAKE_BUILD_TYPE is ignored for multi-configuration tools (eg, Visual Studio).
+:: Note that CMAKE_INSTALL_PREFIX refers to Python's site-packages location.
 :: Note that Boost_ROOT helps avoid finding the Boost library using inherited env var PATH
 ::      (which can reference a Boost outside of conda). Also, CGAL looks for Boost too.
-:: Note that CMAKE_INSTALL_PREFIX refers to Python's site-packages location.
 cmake -G "%CMAKE_GENERATOR%" ^
       -D CMAKE_BUILD_TYPE=%BUILD_TYPE% ^
       -D GPLATES_BUILD_GPLATES:BOOL=FALSE ^

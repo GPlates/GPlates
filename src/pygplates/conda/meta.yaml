@@ -33,9 +33,9 @@ requirements:
     - {{ cdt('libxscrnsaver-devel') }}   # [linux]
     - {{ cdt('libxtst-devel') }}         # [linux]
     - {{ cdt('libselinux-devel') }}      # [linux]
+    - python >=3.7
     - cgal-cpp
     - glew
-    - python
     - qt-main
     - boost
     - libgdal
@@ -43,26 +43,9 @@ requirements:
     - qwt
     - zlib
   run:
-    - {{ cdt('xorg-x11-proto-devel') }}  # [linux]
-    - {{ cdt('mesa-libgl-devel') }}      # [linux]
-    - {{ cdt('libx11-devel') }}          # [linux]
-    - {{ cdt('libxext-devel') }}         # [linux]
-    - {{ cdt('libxrender-devel') }}      # [linux]
-    - {{ cdt('mesa-libgl-devel') }}      # [linux]
-    - {{ cdt('mesa-libegl-devel') }}     # [linux]
-    - {{ cdt('mesa-dri-drivers') }}      # [linux]
-    - {{ cdt('libxau-devel') }}          # [linux]
-    - {{ cdt('libdrm-devel') }}          # [linux]
-    - {{ cdt('libxcomposite-devel') }}   # [linux]
-    - {{ cdt('libxcursor-devel') }}      # [linux]
-    - {{ cdt('libxi-devel') }}           # [linux]
-    - {{ cdt('libxrandr-devel') }}       # [linux]
-    - {{ cdt('libxscrnsaver-devel') }}   # [linux]
-    - {{ cdt('libxtst-devel') }}         # [linux]
-    - {{ cdt('libselinux-devel') }}      # [linux]
+    - python >=3.7
     - cgal-cpp
     - glew
-    - python
     - qt-main
     - boost
     - libgdal
