@@ -693,7 +693,6 @@ class IntegerFloatCase(unittest.TestCase):
         pygplates.XsInteger(np.int32(-1000))
         pygplates.XsInteger(np.int16(-1000))
         pygplates.XsInteger(np.uint8(100))
-        pygplates.XsInteger(np.int(-1000))
         pygplates.XsInteger(np.uint(1000))
         self.assertTrue(pygplates.XsInteger(np.uint(1000)).get_integer() == 1000)
         
@@ -704,7 +703,6 @@ class IntegerFloatCase(unittest.TestCase):
         pygplates.XsDouble(np.longlong(-1000))
         pygplates.XsDouble(np.int64(1000))
         pygplates.XsDouble(np.int32(-1000))
-        pygplates.XsDouble(np.int(-1000))
         pygplates.XsDouble(np.uint(1000))
         pygplates.XsDouble(np.float64(1000))
         pygplates.XsDouble(np.float32(-1000))
