@@ -55,6 +55,7 @@
 using namespace boost::python;
 
 // For PyUnicode_Check and PyString_Check below.
+PUSH_GCC_WARNINGS
 DISABLE_GCC_WARNING("-Wold-style-cast")
 
 QString
@@ -74,7 +75,7 @@ GPlatesApi::PythonUtils::to_QString(const object &obj)
 }
 
 // See above.
-ENABLE_GCC_WARNING("-Wold-style-cast")
+POP_GCC_WARNINGS
 
 
 namespace

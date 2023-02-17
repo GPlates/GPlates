@@ -88,8 +88,7 @@ namespace GPlatesAppLogic
 		 * Predicate to test if the geometry *points* bounding small circle intersects the
 		 * resolved boundary bounding small circle.
 		 */
-		class IntersectGeometryPointsAndResolvedBoundarySmallCircleBounds :
-				public std::unary_function<ResolvedTopologicalBoundary::non_null_ptr_type, bool>
+		class IntersectGeometryPointsAndResolvedBoundarySmallCircleBounds
 		{
 		public:
 
@@ -118,8 +117,7 @@ namespace GPlatesAppLogic
 		 * Predicate to test if the geometry *points* bounding small circle intersects the
 		 * resolved network bounding small circle.
 		 */
-		class IntersectGeometryPointsAndResolvedNetworkSmallCircleBounds :
-				public std::unary_function<ResolvedTopologicalNetwork::non_null_ptr_type, bool>
+		class IntersectGeometryPointsAndResolvedNetworkSmallCircleBounds
 		{
 		public:
 
@@ -1275,23 +1273,23 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_resolved_topologies(
 
 		if (!resolved_boundaries.empty())
 		{
+			IntersectGeometryPointsAndResolvedBoundarySmallCircleBounds intersects(&geometry_points_small_circle_bounds);
 			resolved_boundaries.erase(
 					std::remove_if(
 							resolved_boundaries.begin(),
 							resolved_boundaries.end(),
-							std::not1(IntersectGeometryPointsAndResolvedBoundarySmallCircleBounds(
-									&geometry_points_small_circle_bounds))),
+							[&](const ResolvedTopologicalBoundary::non_null_ptr_type &rtb) { return !intersects(rtb); }),
 					resolved_boundaries.end());
 		}
 
 		if (!resolved_networks.empty())
 		{
+			IntersectGeometryPointsAndResolvedNetworkSmallCircleBounds intersects(&geometry_points_small_circle_bounds);
 			resolved_networks.erase(
 					std::remove_if(
 							resolved_networks.begin(),
 							resolved_networks.end(),
-							std::not1(IntersectGeometryPointsAndResolvedNetworkSmallCircleBounds(
-									&geometry_points_small_circle_bounds))),
+							[&](const ResolvedTopologicalNetwork::non_null_ptr_type &rtn) { return !intersects(rtn); }),
 					resolved_networks.end());
 		}
 	}
