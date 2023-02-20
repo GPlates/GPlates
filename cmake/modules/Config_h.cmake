@@ -67,7 +67,7 @@ set(GPLATES_STANDALONE_GDAL_DATA_DIR gdal_data)
 # Note: Only used when GPLATES_INSTALL_STANDALONE is true.
 #       And only used for gplates (not pygplates since that's imported by an external
 #       non-embedded Python interpreter that has its own Python standard library).
-if (GPLATES_INSTALL_STANDALONE)
+if (GPLATES_INSTALL_STANDALONE AND GPLATES_BUILD_GPLATES)
   if (APPLE)
     # On Apple we're expecting Python to be a framework.
     if (GPLATES_PYTHON_STDLIB_DIR MATCHES "/Python\\.framework/")
