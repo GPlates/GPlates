@@ -1,6 +1,6 @@
 package:
   name: pygplates
-  version: 0.38
+  version: 0.39
   
 source:
   path: ../../../
@@ -66,10 +66,14 @@ test:
     - pygplates
 
 about:
-  summary: ''
-  description: ''
+  home: https://www.gplates.org/
+  summary: 'Python library for fine-grained access to GPlates functionality'
+  license: GPL-2.0-only
+  license_family: GPL
+  license_file: COPYING
+  doc_url: https://www.gplates.org/docs/pygplates/index.html
 
 extra:
   recipe-maintainers:
-    - jc
+    - jcannon-gplates
 
