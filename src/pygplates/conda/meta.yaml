@@ -13,6 +13,7 @@ build:
 requirements:
   build:
     - cmake
+    - make  # [not win]
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     # CDT packages should be in 'build' section (instead of 'host').
@@ -41,7 +42,7 @@ requirements:
     # These 'host' libraries (for linking at build time) should get automatically propagated to 'run' libraries
     # (for linking at run time) if these libraries specified 'run_exports' in their packages.
     # So we shouldn't also need to specify them in our 'run' requirements - however it seems we still need to.
-    - python >=3.7
+    - python
     - cgal-cpp
     - glew
     - qt-main
@@ -51,7 +52,7 @@ requirements:
     - qwt
     - zlib
   run:
-    - python >=3.7
+    - python
     - cgal-cpp
     - glew
     - qt-main
@@ -76,4 +77,3 @@ about:
 extra:
   recipe-maintainers:
     - jcannon-gplates
-
