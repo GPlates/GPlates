@@ -1,7 +1,7 @@
 package:
   name: pygplates
   version: 0.39
-  
+
 source:
   path: ../../../
 
@@ -13,7 +13,7 @@ build:
 requirements:
   build:
     - cmake
-    - make  # [not win]
+    - make  # [unix]
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
     # CDT packages should be in 'build' section (instead of 'host').
@@ -45,6 +45,7 @@ requirements:
     - python
     - cgal-cpp
     - glew
+    - libglu     # [linux]
     - qt-main
     - boost
     - libgdal
@@ -54,9 +55,10 @@ requirements:
   run:
     - python
     - cgal-cpp
-    - gmp        # [not win]
+    - gmp        # [unix]
     - mpir       # [win]
     - glew
+    - libglu     # [linux]
     - qt-main
     - boost
     - boost-cpp
