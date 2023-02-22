@@ -21,7 +21,6 @@ requirements:
     # was then found in the sysroot (at '<build_prefix>/x86_64-conda-linux-gnu/sysroot/usr/lib/libGL.so').
     # Also CDT packages are not installed at runtime (only build-time).
     - {{ cdt('xorg-x11-proto-devel') }}  # [linux]
-    - {{ cdt('mesa-libgl-devel') }}      # [linux]
     - {{ cdt('libx11-devel') }}          # [linux]
     - {{ cdt('libxext-devel') }}         # [linux]
     - {{ cdt('libxrender-devel') }}      # [linux]
@@ -37,6 +36,8 @@ requirements:
     - {{ cdt('libxscrnsaver-devel') }}   # [linux]
     - {{ cdt('libxtst-devel') }}         # [linux]
     - {{ cdt('libselinux-devel') }}      # [linux]
+    - {{ cdt('libxxf86vm-devel') }}      # [linux]
+    - {{ cdt('libxdamage-devel') }}      # [linux]
   host:
     - pip
     # These 'host' libraries (for linking at build time) should get automatically propagated to 'run' libraries
@@ -45,7 +46,8 @@ requirements:
     - python
     - cgal-cpp
     - glew
-    - libglu     # [linux]
+    - libglu          # [linux]
+    - xorg-libxfixes  # [linux]
     - qt-main
     - boost
     - libgdal
