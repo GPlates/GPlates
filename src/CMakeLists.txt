@@ -568,7 +568,13 @@ endif()
 if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 	# If we've been asked to do parallel builds in Visual Studio within a project.
 	if (GPLATES_MSVC_PARALLEL_BUILD)
-		target_compile_options(${SOURCE_TARGET} PUBLIC /MP)
+		if (GPLATES_MSVC_PARALLEL_BUILD_PROCESSES)
+			# User specified the number of parallel build processes.
+			target_compile_options(${SOURCE_TARGET} PUBLIC /MP${GPLATES_MSVC_PARALLEL_BUILD_PROCESSES})
+		else()
+			# Use all available CPUs.
+			target_compile_options(${SOURCE_TARGET} PUBLIC /MP)
+		endif()
 	endif()
 	# If we've been asked to output a list of header files included by source files.
 	if (GPLATES_MSVC_SHOW_INCLUDES)

@@ -281,6 +281,9 @@ if (MSVC)
 	#
 	# This is on by default otherwise compilation will take a long time.
 	option(GPLATES_MSVC_PARALLEL_BUILD "Enable parallel builds within each Visual Studio project." true)
+	#
+	# Allow user to specify the number of parallel build processes (defaults to zero which indicates uses all available CPUs).
+	set(GPLATES_MSVC_PARALLEL_BUILD_PROCESSES 0 CACHE STRING "Number of parallel build processes (if GPLATES_MSVC_PARALLEL_BUILD enabled). Set to zero for max.")
 endif()
 
 
