@@ -10,10 +10,6 @@ import platform
 import types
 import unittest
 
-# Import the built pygplates library (not any other one installed on the system).
-PYGPLATES_PATH = "$<TARGET_FILE_DIR:pygplates>"  # CMake changes this to the actual path to the built version of pygplates.
-sys.path.insert(1, PYGPLATES_PATH)
-
 # If on Windows and Python >= 3.8 then we need to specify the paths to all dependency DLLs of the
 # pygplates '.pyd' since Python 3.8 no longer searches for these using the PATH environment variable.
 if platform.system() == 'Windows':
