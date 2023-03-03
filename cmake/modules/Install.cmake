@@ -175,13 +175,20 @@ else()  # pyGPlates ...
     #
     # Notes for the "__init__.py" source code:
     #
-    # Once we've imported symbols from the pygplates shared library (C++) into the namespace of this package
-    # (also called pygplates) we can rename it to something more private (with a leading underscore).
-    # We can't delete it completely since the "import *" does not import private variables (with leading underscores)
-    # and we need to keep those private variables (usually implementation details) alive.
+    # Previously, once we imported symbols from the pygplates shared library (C++) into the namespace of this package (also called pygplates),
+    # we used to delete 'pygplates.pygplates' (after renaming it to something more private with a leading underscore).
+    # However we no longer do this because the '__module__' attribute of objects in pygplates remain as 'pygplates.pygplates'
+    # (since 'pygplates.{pyd,so}' is in 'pygplates/' package). And the '__module__' attribute is used during pickling
+    # (at least 'dill' appears to use it), so deleting what it references interferes with pickling (at least for 'dill').
     #
-    # This also means we don't have pygplates.<symbol> and pygplates.pygplates.<symbol>.
-    # Instead we have pygplates.<symbol> and pygplates._impl.<symbol>.
+    # This does mean we have both pygplates.<symbol> and pygplates.pygplates.<symbol>. The former being the public API.
+    #
+    # We could change the name of the module to '_pygplates' (so that we have pygplates.<symbol> and pygplates._pygplates.<symbol>) but it would
+    # require a lot of potentially confusing changes. For example, pygplates tests run on the build target (rather than the installed Python package),
+    # which would be '_pygplates'.{pyd,so}, and therefore the tests would need to 'import _pygplates' instead of 'import pygplates'.
+    # Also GPlates embeds 'pygplates' (not '_pygplates') and so we'd need to use a module name of 'pygplates' when building GPlates
+    # and '_pygplates' when building pyGPlates. So it's easier just to keep it as 'pygplates' (instead of '_pygplates').
+    #
     file(WRITE "${PYGPLATES_INIT_PY}" [[
 # Import the pygplates shared library (C++).
 from .pygplates import *
