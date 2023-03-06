@@ -48,9 +48,9 @@ namespace GPlatesApi
 	//
 	// The following to/from Python conversions are handled:
 	//
-	// To Python                                  str
-	//     /\                                      /\
-	//     |                                       |
+	// To Python                                  str    unicode (Python 2)   bytes (Python 3)
+	//     /\                                      /\      |                    |
+	//     |                                       |----------------------------
 	//     |                                       \/
 	//     |                                     QString
 	//     |                                       /\
@@ -106,7 +106,7 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 				// 'str' is now unicode (unlike Python 2) and 'bytes' is a sequence of bytes
 				// (similar to 'str' in Python 2).
 				//
-				// For Python 3 we return don't need to encode our C++ unicode QString into
+				// For Python 3 we don't need to encode our C++ unicode QString into
 				// a sequence of bytes (since Python 3 'str' is unicode).
 				// So we just convert our QString into std::wstring and then let boost python
 				// do its implicit conversion from std::wstring to Python 'str'.
@@ -209,7 +209,7 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 			else // PyBytes_Check(obj)
 			{
 				// Decode as UTF8.
-				new (storage) QString(QString::fromUtf8(bp::extract<const char*>(obj)));
+				new (storage) QString(QString::fromStdString(bp::extract<std::string>(obj)));
 			}
 #else
 			// Handle Python 'str' and  'unicode' since we can handle more than one type
@@ -219,7 +219,7 @@ DISABLE_GCC_WARNING("-Wold-style-cast")
 			if (PyString_Check(obj))
 			{
 				// Decode as UTF8.
-				new (storage) QString(QString::fromUtf8(bp::extract<const char*>(obj)));
+				new (storage) QString(QString::fromStdString(bp::extract<std::string>(obj)));
 			}
 			else // PyUnicode_Check(obj)
 			{
