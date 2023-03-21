@@ -12,14 +12,13 @@ build:
 
 requirements:
   build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - numpy                                  # [build_platform != target_platform]
     - cmake
     - make  # [unix]
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
-    # CDT packages should be in 'build' section (instead of 'host').
-    # For example, this fixes inability of CMake to find GL library at build time. On Ubuntu 22.04, the GL library
-    # was then found in the sysroot (at '<build_prefix>/x86_64-conda-linux-gnu/sysroot/usr/lib/libGL.so').
-    # Also CDT packages are not installed at runtime (only build-time).
     - {{ cdt('xorg-x11-proto-devel') }}  # [linux]
     - {{ cdt('libx11-devel') }}          # [linux]
     - {{ cdt('libxext-devel') }}         # [linux]
@@ -40,10 +39,8 @@ requirements:
     - {{ cdt('libxdamage-devel') }}      # [linux]
   host:
     - pip
-    # These 'host' libraries (for linking at build time) should get automatically propagated to 'run' libraries
-    # (for linking at run time) if these libraries specified 'run_exports' in their packages.
-    # So we shouldn't also need to specify them in our 'run' requirements - however it seems we still need to.
     - python
+    - numpy
     - cgal-cpp
     - glew
     - libglu          # [linux]
@@ -56,6 +53,7 @@ requirements:
     - zlib
   run:
     - python
+    - {{ pin_compatible('numpy') }}
     - cgal-cpp
     - gmp        # [unix]
     - mpir       # [win]

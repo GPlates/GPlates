@@ -15,6 +15,28 @@ Libraries in the 'host' section (for linking at build time) should get automatic
 (for linking at run time) if these libraries specified 'run_exports' in their packages.
 So we shouldn't also need to specify them in our 'run' requirements - however it seems we still need to.
 
+NumPy is a dependency since pygplates optionally uses the NumPy C API when available (to allow users to specify numpy ints/floats where Python ints/floats are accepted in pygplates).
+There are build conflicts when building "locally" (eg, with "conda build ...") that are not present for automated "conda-forge" builds.
+When conda-forge re-renders the pygplates feedstock it currently specifies numpy version 1.20 for Python 3.8/3.9, 1.21 for 3.10 and 1.23 for 3.11.
+However "local" builds with Python 3.10, for example, result in a conflict with the default NumPy version 1.16 (at the time of writing).
+The current solution (until the default version is bumped up in the conda-build tool) is provided in the local "conda_build_config.yaml" file, which contains:
+    python:
+    - 3.8
+    - 3.9
+    - 3.10
+    - 3.11
+    numpy:
+    - 1.20
+    - 1.20
+    - 1.21
+    - 1.23
+    zip_keys:
+    - python
+    - numpy
+This ensures the correct NumPy version is used for each Python version (to avoid build conflicts).
+However, that section of "conda_build_config.yaml" should not be committed to the feedstock because conda-forge re-renders globally pinned versions (eg, NumPy) into our feedstock for us.
+Specifying, eg, "--numpy 1.21" on the conda-build command-line is another option for local builds.
+
 
 References
 ----------
@@ -39,6 +61,14 @@ How do I fix the libGL.so.1 import error?
   ImportError: libGL.so.1: cannot open shared object file: No such file or directory
 - https://conda-forge.org/docs/maintainer/maintainer_faq.html#mfaq-libgl-so-1
 - https://conda-forge.org/docs/maintainer/knowledge_base.html#libgl
+
+Building against NumPy (need to use 'pin_compatible' when using NumPy C API) - https://conda-forge.org/docs/maintainer/knowledge_base.html#building-against-numpy
+
+Conda-forge transfers globally pinned versions to a feedstock (eg, transferring NumPy versions) - https://conda-forge.org/docs/maintainer/pinning_deps.html#globally-pinned-packages
+
+Python 3.10 is not compatible with NumPy 1.16 according to https://github.com/conda/conda-build/commit/daeda52d75323f92af29fb91002b1f683c5606ab, which says:
+  "Python 3.10 and numpy 1.16 are not compatible so to move forward with supporting Python 3.10 and soon 3.11 we will need to also bump up the default numpy variant."
+Note that they bumped it up to 1.21 in conda-build, but that was only in December 2022 (3 months ago), so hasn’t made it into the current version (3.23.3) of conda-build.
 
 Avoid overlinking errors. Eg, on Windows we need 'mpir' instead of 'gmp'. It's used by CGAL but we apparently link directly to it (probably since CGAL is now a header-only library).
   ERROR (pygplates,Lib/site-packages/pygplates/pygplates.pyd): Needed DSO Library/bin/mpir.dll found in ['mpir']
