@@ -89,6 +89,8 @@ set(srcs
     PythonInterpreterLocker.h
     PythonInterpreterUnlocker.cc
     PythonInterpreterUnlocker.h
+    PythonPickle.cc
+    PythonPickle.h
     PythonRunner.cc
     PythonRunner.h
     PythonUtils.cc

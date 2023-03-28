@@ -43,6 +43,9 @@
 // Exceptions
 void export_exceptions();
 
+// Pickle
+void export_pickle();
+
 // utils namespace
 void export_earth();
 void export_strings();
@@ -133,6 +136,8 @@ export_cpp_python_api()
 	//       ...
 	//
 	export_exceptions();
+
+	export_pickle();
 
 
 #ifdef GPLATES_PYTHON_EMBEDDING
