@@ -28,6 +28,7 @@
 
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "global/python.h"
 
@@ -235,6 +236,8 @@ export_lat_lon_point()
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesMaths::LatLonPoint>>())
 	;
 
 	// Non-member conversion function...
