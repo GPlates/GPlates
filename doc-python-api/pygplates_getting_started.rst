@@ -7,29 +7,53 @@ This document covers installation of pyGPlates and a tutorial to get you started
 
 .. contents::
    :local:
-   :depth: 3
+   :depth: 2
 
 .. _pygplates_getting_started_installation:
 
-Installation
-------------
+Installing pyGPlates
+--------------------
 
 This section covers the installation of pyGPlates.
 
-.. _pygplates_getting_started_installation_external:
+.. contents::
+   :local:
+   :depth: 1
 
-Installing pyGPlates
-^^^^^^^^^^^^^^^^^^^^
+.. _pygplates_getting_started_install_using_conda:
 
-This release includes the following download files:
+Install using conda
+^^^^^^^^^^^^^^^^^^^
+
+We recommend installing pyGPlates using `conda <https://docs.conda.io/projects/conda/en/latest/user-guide/index.html>`_.
+
+To install the latest stable version of pyGPlates type the following in a terminal or command window
+(on macOS and Ubuntu this is a *Terminal* window, and on Windows you'll need to open an *Anaconda prompt* from the Start menu):
 ::
 
-  # Documentation:
-  pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_docs.zip
+  conda install -c conda-forge pygplates
 
-  # Source code:
-  pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src.zip
-  pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src.tar.bz2
+We recommend installing pyGPlates into a new conda environment.
+For example, the following creates and activates a Python 3.10 environment named ``pygplates_py310`` containing pyGPlates and all its dependency libraries:
+::
+
+  conda create -n pygplates_py310 -c conda-forge python=3.10 pygplates
+  conda activate pygplates_py310
+
+You can then use pyGPlates. For example, to see the pyGPlates version:
+::
+
+  python -c "import pygplates; print(pygplates.__version__)"
+
+.. _pygplates_getting_started_install_from_precompiled:
+
+Install from pre-compiled binaries
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Pre-compiled pyGPlates binaries are available if you decide not to use the recommended approach of :ref:`installing using conda <pygplates_getting_started_install_using_conda>`.
+
+This release includes the following pre-compiled pyGPlates files for download:
+::
 
   # Pre-compiled for Windows:
   pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py37_win64.zip
@@ -55,58 +79,35 @@ This release includes the following download files:
   pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py39_ubuntu-21.10-amd64.deb
   pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_ubuntu-22.04-amd64.deb
 
-The following sections cover these files and their installation.
+You'll need to select the pre-compiled version of pyGPlates matching your operating system (and CPU architecture) and matching your existing Python installation.
+For example, if you are using macOS on an M1 system and your version of Python is ``3.10`` then you'll need to download ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_py310_Darwin-arm64.zip``.
+
+To find out your version of Python you can type the following in a *Terminal* or *Command* window:
+::
+
+  python --version
+
+.. note:: If you don't have an existing Python installation then you can install a standalone Python package available at `<http://www.python.org>`_.
+
+If you attempt to import pyGPlates into a Python interpreter with a different version then you will get an error.
+For example, on Windows if you attempt to import pyGPlates pre-compiled for ``3.7.x`` into Python ``3.8.x`` then you will get an error similar to:
+::
+
+  ImportError: Module use of python37.dll conflicts with this version of Python.
+
+And on macOS the error message is more cryptic:
+::
+
+  Fatal Python error: PyThreadState_Get: no current thread
+
+...but means the same thing (a Python version mismatch between pyGPlates and the Python interpreter).
+
+The following sections cover these pre-compiled pyGPlates files and their installation.
 
 .. contents::
    :local:
-   :depth: 2
+   :depth: 1
 
-Documentation
-"""""""""""""
-
-- ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_docs.zip``
-
-If you extract this zip file to your hard drive and then open ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_docs/index.html``
-in a web browser you will see the :ref:`front page <pygplates_index>` of this documentation.
-  
-Compiling from source code
-""""""""""""""""""""""""""
-
-PyGPlates source code:
-
-- ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src.zip``
-- ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src.tar.bz2``
-
-The source code is typically used to compile pyGPlates on a Linux system (other than Ubuntu) where a
-pre-compiled version of pyGPlates is not available.
-
-Extracting either of these archive files creates a directory ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src``
-containing the pyGPlates source code.
-  
-To compile pyGPlates follow the instructions in the files ``BUILD.Linux`` and ``DEPS.Linux`` in the root directory
-``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src`` of the source code.
-Once the dependency libraries have been installed then this process essentially boils down to executing
-the following commands in a *Terminal* in the root source code directory:
-::
-  
-  cmake .
-  make
-
-...which, on successful completion, should result in a ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src/bin/pygplates.so`` library.
-  
-.. note:: On a quad-core system you can speed up compilation using ``make -j 4``.
-
-Next you can tell Python where to find pyGPlates using the ``PYTHONPATH`` environment variable.
-For example, if you extracted and compiled the source code in your home directory you could type the following in a *Terminal* window
-(or you can add it to your shell startup file):
-::
-
-  export PYTHONPATH=$PYTHONPATH:~/pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src/bin
-
-.. note:: ``pygplates.so`` is in the local ``bin`` directory after compilation.
-
-.. note:: ``BUILD.Linux`` also covers *installing* ``pygplates.so`` to a location of your choice (or the default location ``/usr/local/lib``).
-  
 Pre-compiled for Windows
 """"""""""""""""""""""""
 
@@ -224,139 +225,57 @@ To do this type the following in a *Terminal* window (or you can add it to your 
 
 .. note:: PyGPlates is installed to ``/usr/lib/`` (not ``/usr/lib/pygplates/@PYGPLATES_VERSION_PRERELEASE_USER@/`` like previous versions).
 
-Installing Python
-^^^^^^^^^^^^^^^^^
+.. _pygplates_getting_started_install_from_source_code:
 
-In order to execute Python source code in an :ref:`external <pygplates_introduction_using_pygplates_external>` Python
-interpreter you will need a Python installation. macOS typically comes with a Python installation.
-However for Windows you will need to install Python.
+Install from source code
+^^^^^^^^^^^^^^^^^^^^^^^^
 
-Python is available as a standalone package by following the download link at `<http://www.python.org>`_.
-
-And as noted in :ref:`pygplates_using_the_correct_python_version` you will need to install the
-correct version of Python if you are using a pre-compiled version of pyGPlates.
-
-.. _pygplates_using_the_correct_python_version:
-
-Using the correct Python version
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-As noted in :ref:`pygplates_getting_started_installation_external` the pre-compiled macOS and Windows pyGPlates
-libraries have been compiled for a specific version of Python (such as 64-bit Python 3.8.x on macOS).
-So if you attempt to import pyGPlates into a Python interpreter with a different version then you
-will get an error.
-
-For example, on Windows if you attempt to import a pre-compiled pyGPlates library compiled for
-64-bit Python **3.7.x** into a 64-bit Python **3.8.x** interpreter then you will get an error similar to:
+This release includes the following pyGPlates source code files for download:
 ::
 
-  ImportError: Module use of python37.dll conflicts with this version of Python.
+  pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src.zip
+  pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src.tar.bz2
 
-And on macOS the error message (in a similar situation) is more cryptic:
+Extracting either of these archive files creates a directory ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src``
+containing the pyGPlates source code.
+
+The source code is typically used to compile pyGPlates on a system (typically Linux) where the other installation methods are not available.
+  
+On a Linux system, to compile pyGPlates follow the instructions in the files ``BUILD.Linux`` and ``DEPS.Linux`` in the root directory
+``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src`` of the source code.
+Once the dependency libraries have been installed then this process essentially boils down to executing
+the following commands in a *Terminal* in the root source code directory:
+::
+  
+  cmake .
+  make
+
+...which, on successful completion, should result in a ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src/bin/pygplates.so`` library.
+  
+.. note:: On a quad-core system you can speed up compilation using ``make -j 4``.
+
+Next you can tell Python where to find pyGPlates using the ``PYTHONPATH`` environment variable.
+For example, if you extracted and compiled the source code in your home directory you could type the following in a *Terminal* window
+(or you can add it to your shell startup file):
 ::
 
-  Fatal Python error: PyThreadState_Get: no current thread
+  export PYTHONPATH=$PYTHONPATH:~/pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_src/bin
 
-...but means the same thing (a Python version mismatch between pyGPlates and the Python interpreter).
+.. note:: ``pygplates.so`` is in the local ``bin`` directory after compilation.
 
-It is also important to use matching architectures (32-bit versus 64-bit).
+.. note:: ``BUILD.Linux`` also covers *installing* ``pygplates.so`` to a location of your choice (or the default location ``/usr/local/lib``).
 
-For example, on Windows if you attempt to import a pre-compiled pyGPlates library (compiled for
-**32-bit** Python 2.7.x) into a **64-bit** Python 2.7.x interpreter then you will get the following
-error:
+Install documentation
+^^^^^^^^^^^^^^^^^^^^^
+
+This release includes the following pyGPlates documentation file for download:
 ::
 
-  ImportError: DLL load failed: %1 is not a valid Win32 application.
+  # Documentation:
+  pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_docs.zip
 
-And for macOS, pyGPlates is currently compiled for 64-bit only. However if you use a **32-bit** Python
-then you will get the following error:
-::
-
-  ... no suitable image found.  Did find: .../pygplates.so: mach-o, but wrong architecture
-
-To find out which Python interpreter version you are currently using you can type the following
-in the *Terminal* or *Command* window:
-::
-
-  python --version
-
-However, on Windows, this will only tell you the python version that will be used to run your
-script if you run your script like this:
-::
-
-  python my_script.py
-
-But if you run it without prefixing ``python`` as in:
-::
-
-  my_script.py
-
-...then it might use the Windows registry and find a different version of python (different than
-the version returned by ``python --version``). This can happen if you have, for example, an ArcGIS
-installation. If this happens then you might get an error message similar to the following:
-::
-
-  'import site' failed; use -v for traceback
-
-...or a more verbose version...
-::
-
-  'import site' failed; use -v for traceback
-  Traceback (most recent call last):
-    File "D:\Users\john\Development\gplates\my_script.py", line 20, in <module>
-      import argparse
-    File "C:\SDK\python\Python-2.7.6\lib\argparse.py", line 86, in <module>
-      import copy as _copy
-    File "C:\SDK\python\Python-2.7.6\lib\copy.py", line 52, in <module>
-      import weakref
-    File "C:\SDK\python\Python-2.7.6\lib\weakref.py", line 12, in <module>
-      import UserDict
-    File "C:\SDK\python\Python-2.7.6\lib\UserDict.py", line 84, in <module>
-      _abcoll.MutableMapping.register(IterableUserDict)
-    File "C:\SDK\python\Python-2.7.6\lib\abc.py", line 109, in register
-      if issubclass(subclass, cls):
-    File "C:\SDK\python\Python-2.7.6\lib\abc.py", line 184, in __subclasscheck__
-      cls._abc_negative_cache.add(subclass)
-    File "C:\SDK\python\Python-2.7.6\lib\_weakrefset.py", line 84, in add
-      self.data.add(ref(item, self._remove))
-  TypeError: cannot create weak reference to 'classobj' object
-
-...where, in the above example, a Python **2.6.x** interpreter was used (found in "C:\\Python26\\ArcGIS10.0"
-presumably via the Windows registry) but it loaded the Python **2.7.6** standard libraries
-(the ``PYTHONHOME`` environment variable was set to "C:\\SDK\\python\\Python-2.7.6").
-
-.. note:: The above error had nothing to do with pyGPlates (it could happen with any python script
-   regardless of whether it imported pyGPlates or not).
-
-So, on Windows, it is usually best to run your python script as:
-::
-
-  python my_script.py
-
-
-.. _pygplates_miscellaneous_issues:
-
-Miscellaneous issues
-^^^^^^^^^^^^^^^^^^^^
-
-Windows runtime library error
-"""""""""""""""""""""""""""""
-
-On Windows operating systems it is possible to get the following error when importing pyGPlates or
-other Python C extension modules (that use native libraries):
-
-.. figure:: images/MSVC_runtime_error.png
-
-This can happen because a regular Python 2.7 installation contains these files in the main directory (the directory
-where the Python interpreter executable ``python.exe`` is located):
-
-* ``msvcr90.dll``
-* ``Microsoft.VC90.CRT.manifest``
-
-If this is the case then a potential solution is to:
-
-#. Create a sub-directory called ``Microsoft.VC90.CRT``, and
-#. Move the above files into that sub-directory.
+If you extract this zip file to your hard drive and then open ``pygplates_@PYGPLATES_VERSION_PRERELEASE_USER@_docs/index.html``
+in a web browser you will see the :ref:`front page <pygplates_index>` of this documentation.
 
 
 .. _pygplates_getting_started_tutorial:
@@ -492,17 +411,12 @@ Setting up the script
 
 Next open up a terminal or command window (on macOS and Ubuntu this is a *Terminal* window, and on Windows this is a *Command* window).
 
-| We may need to let Python know where to find pyGPlates by setting the ``PYTHONPATH`` environment variable
-  as covered in :ref:`pygplates_getting_started_installation_external`.
-| For example on macOS this can be done by typing:
+.. note:: If we're **not** :ref:`installing using conda <pygplates_getting_started_install_using_conda>` then we may need to let Python know
+   where to find pyGPlates by setting the ``PYTHONPATH`` environment variable (see :ref:`pygplates_getting_started_install_from_precompiled`).
+   For example on macOS this can be done by typing ``export PYTHONPATH=$PYTHONPATH:/path/to/pygplates``
+   where ``/path/to/pygplates`` is replaced with the directory where you extracted pyGPlates.
 
-::
-
-  export PYTHONPATH=$PYTHONPATH:/path/to/pygplates
-
-...where ``/path/to/pygplates`` is replaced with the directory where you extracted pyGPlates.
-
-| Next change the current working directory to the directory containing the ``tutorial.py`` file.
+| Then change the current working directory to the directory containing the ``tutorial.py`` file.
 | For example, on macOS or Linux:
 
 ::
@@ -516,12 +430,6 @@ Next run the Python script by typing:
 ::
 
   python tutorial.py
-
-If any errors were generated they might be due to a version incompatibility between the Python you are using and the
-pyGPlates you have installed - please see :ref:`pygplates_using_the_correct_python_version` for more details.
-
-.. note:: We are running our Python script through an *external* Python interpreter - see
-   :ref:`pygplates_introduction_external_vs_embedded`.
 
 Output of the script
 """"""""""""""""""""

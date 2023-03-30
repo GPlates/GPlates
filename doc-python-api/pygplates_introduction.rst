@@ -125,7 +125,7 @@ the ``my_python_script.py`` script.
   
   print('Imported pyGPlates version: {}'.format(pygplates.Version.get_imported_version()))
 
-.. note:: You will need to :ref:`install <pygplates_getting_started_installation_external>` pyGPlates so that the
+.. note:: You will need to :ref:`install <pygplates_getting_started_installation>` pyGPlates so that the
    Python interpreter can find it when you execute ``python my_python_script.py``.
 
 .. _pygplates_introduction_using_pygplates_embedded:
