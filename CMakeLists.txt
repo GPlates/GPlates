@@ -6,7 +6,7 @@
 #       but are safe to use with policies (see 'cmake_policy' command) up to the maximum version.
 #       Specifying a maximum version means we don't need 'cmake_policy' calls for running CMake versions
 #       in that [min, max] range.
-cmake_minimum_required(VERSION 3.16...3.25 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.16...3.26 FATAL_ERROR)
 
 # Where to find our CMake modules.
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
