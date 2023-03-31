@@ -39,6 +39,11 @@ else()
     set(PROJECT_VERSION_PRERELEASE_USER ${PYGPLATES_VERSION_PRERELEASE_USER})
     set(PROJECT_VERSION_PRERELEASE_SUFFIX ${PYGPLATES_VERSION_PRERELEASE_SUFFIX})
     set(PROJECT_VERSION_PRERELEASE_SUFFIX_USER ${PYGPLATES_VERSION_PRERELEASE_SUFFIX_USER})
+
+    # Enable testing of pyGPlates (either via running 'ctest', or 'make test', or building 'RUN_TESTS' in Visual Studio).
+    enable_testing()
+    # Print test output when test fails - when running tests with 'make test' or building 'RUN_TESTS' (in Visual Studio).
+    list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")  # Ignored if CMake < 3.17
 endif()
 
 #

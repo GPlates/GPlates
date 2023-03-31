@@ -318,11 +318,11 @@ def find_crossovers(
     |                                                                  | pole to determine the crossover type according to the                            |
     |                                                                  | presence of the following strings/tags:                                          |
     |                                                                  |                                                                                  |
-    |                                                                  | - \@xo_ig : *CrossoverType.ignore*                                               |
-    |                                                                  | - \@xo_ys : *CrossoverType.synch_old_crossover_and_stages*                       |
-    |                                                                  | - \@xo_yf : *CrossoverType.synch_old_crossover_only*                             |
-    |                                                                  | - \@xo_os : *CrossoverType.synch_young_crossover_and_stages*                     |
-    |                                                                  | - \@xo_of : *CrossoverType.synch_young_crossover_only*                           |
+    |                                                                  | - \\@xo_ig : *CrossoverType.ignore*                                               |
+    |                                                                  | - \\@xo_ys : *CrossoverType.synch_old_crossover_and_stages*                       |
+    |                                                                  | - \\@xo_yf : *CrossoverType.synch_old_crossover_only*                             |
+    |                                                                  | - \\@xo_os : *CrossoverType.synch_young_crossover_and_stages*                     |
+    |                                                                  | - \\@xo_of : *CrossoverType.synch_young_crossover_only*                           |
     |                                                                  |                                                                                  |
     |                                                                  | ...and if none of those tags are present then the crossover                      |
     |                                                                  | type is *CrossoverType.unknown*.                                                 |
@@ -350,7 +350,7 @@ def find_crossovers(
     | *CrossoverType.synch_young_crossover_only*                       | All crossovers will be of type *CrossoverType.synch_young_crossover_only*.       |
     +------------------------------------------------------------------+----------------------------------------------------------------------------------+
     
-    Find all crossovers in a rotation file where crossover types are determined by '\@xo_' tags
+    Find all crossovers in a rotation file where crossover types are determined by '\\@xo_' tags
     in the young crossover description/comment:
     ::
     
@@ -660,11 +660,11 @@ def synchronise_crossovers(
     |                                                                  | pole to determine the crossover type according to the                            |
     |                                                                  | presence of the following strings/tags:                                          |
     |                                                                  |                                                                                  |
-    |                                                                  | - \@xo_ig : *CrossoverType.ignore*                                               |
-    |                                                                  | - \@xo_ys : *CrossoverType.synch_old_crossover_and_stages*                       |
-    |                                                                  | - \@xo_yf : *CrossoverType.synch_old_crossover_only*                             |
-    |                                                                  | - \@xo_os : *CrossoverType.synch_young_crossover_and_stages*                     |
-    |                                                                  | - \@xo_of : *CrossoverType.synch_young_crossover_only*                           |
+    |                                                                  | - \\@xo_ig : *CrossoverType.ignore*                                               |
+    |                                                                  | - \\@xo_ys : *CrossoverType.synch_old_crossover_and_stages*                       |
+    |                                                                  | - \\@xo_yf : *CrossoverType.synch_old_crossover_only*                             |
+    |                                                                  | - \\@xo_os : *CrossoverType.synch_young_crossover_and_stages*                     |
+    |                                                                  | - \\@xo_of : *CrossoverType.synch_young_crossover_only*                           |
     |                                                                  |                                                                                  |
     |                                                                  | ...and if none of those tags are present then the crossover                      |
     |                                                                  | type is *CrossoverType.unknown*.                                                 |
@@ -701,7 +701,7 @@ def synchronise_crossovers(
     *CrossoverType.unknown*). The appended list elements are sorted by crossover time.
     
     Synchronise all crossovers found in a rotation file (and save modifications back to the same rotation file)
-    where crossover types are determined by '\@xo_' tags in the young crossover description/comment:
+    where crossover types are determined by '\\@xo_' tags in the young crossover description/comment:
     ::
     
       pygplates.synchronise_crossovers('rotations.rot')
