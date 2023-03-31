@@ -15,28 +15,6 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/MANIFEST.in.in ${CMAKE_CURRENT_BINARY
 # Copy the license file to where 'setup.py' will get run so that it will get included by default when building a wheel.
 configure_file(${PROJECT_SOURCE_DIR}/COPYING ${CMAKE_CURRENT_BINARY_DIR}/COPYING COPYONLY)
 
-# The Python installation executable.
-#
-# This is usually just the Python installation that we detected with 'find_package()'.
-set(PYTHON_INSTALLATION_EXECUTABLE ${GPLATES_PYTHON_EXECUTABLE})
-#
-# However, if this build is part of a conda build (eg, a "conda build ..." command) then we use the conda-build
-# environment variable PYTHON as the Python installation.
-#
-# This is important when cross-compiling (eg, when conda-forge is building for the 'osx-arm64' platform) because
-# we want to install into the conda 'host' Python prefix (ie, for the target platform) instead of installing into
-# the conda 'build' Python prefix, otherwise we'll get the error:
-#
-#   "Empty package; python present in build and host deps.  You probably picked up the build environment's python  executable.
-#    You need to alter your recipe to  use the PYTHON env var in your recipe to run that executable."
-#
-# When not cross-compiling there's only a 'host' prefix (conda only installs Python into the 'host' prefix, not also the 'build' prefix).
-# In this situation the PYTHON environment variable should be the same as our GPLATES_PYTHON_EXECUTABLE anyway.
-#
-if (DEFINED ENV{CONDA_BUILD} AND ("$ENV{CONDA_BUILD}" EQUAL 1))
-    set(PYTHON_INSTALLATION_EXECUTABLE $ENV{PYTHON})
-endif()
-
 #
 # Create a custom target to install pygplates into the Python site-packages directory.
 #
@@ -69,8 +47,8 @@ add_custom_target(install-into-python
     #
     # Then run 'pip install' to copy the local installation into site-packages...
     #
-    # Note: We could instead have run "${PYTHON_INSTALLATION_EXECUTABLE} setup.py install" but 'pip install' is the standard way now and Python >=3.4 comes with pip.
-    COMMAND ${PYTHON_INSTALLATION_EXECUTABLE} -m pip install "${CMAKE_CURRENT_BINARY_DIR}")
+    # Note: We could instead have run "${GPLATES_PYTHON_EXECUTABLE} setup.py install" but 'pip install' is the standard way now and Python >=3.4 comes with pip.
+    COMMAND ${GPLATES_PYTHON_EXECUTABLE} -m pip install "${CMAKE_CURRENT_BINARY_DIR}")
 # Make sure 'pygplates' gets built before we try to install it.
 add_dependencies(install-into-python ${BUILD_TARGET})
 

@@ -9,6 +9,10 @@
 # Find dependencies #
 #####################
 
+# Detect if this build is part of a conda build (eg, a "conda build ..." command).
+if (DEFINED ENV{CONDA_BUILD} AND ("$ENV{CONDA_BUILD}" EQUAL 1))
+    set(GPLATES_CONDA_BUILD TRUE)
+endif()
 
 ###############
 # Find OpenGL #
@@ -63,20 +67,54 @@ find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter Developm
 set(GPLATES_PYTHON_VERSION_MAJOR ${Python${_PYTHON_MAJOR_VER}_VERSION_MAJOR})
 set(GPLATES_PYTHON_VERSION_MINOR ${Python${_PYTHON_MAJOR_VER}_VERSION_MINOR})
 
-# Get the Python interpreter executable.
-set(GPLATES_PYTHON_EXECUTABLE ${Python${GPLATES_PYTHON_VERSION_MAJOR}_EXECUTABLE})
+# Get the Python interpreter executable (GPLATES_PYTHON_EXECUTABLE).
+if (GPLATES_CONDA_BUILD)
+	# This build is part of a conda build (eg, a "conda build ..." command) so we use the conda-build
+	# environment variable PYTHON as the Python installation.
+	#
+	# This is important when cross-compiling (eg, when conda-forge is building for the 'osx-arm64' platform) because
+	# we want to install into the conda 'host' Python prefix (ie, for the target platform) instead of installing into
+	# the conda 'build' Python prefix (since find_package() finds the Python in the build prefix), otherwise we'll get the error:
+	#
+	#   "Empty package; python present in build and host deps.  You probably picked up the build environment's python  executable.
+	#    You need to alter your recipe to  use the PYTHON env var in your recipe to run that executable."
+	#
+	# When not cross-compiling there's only a 'host' prefix (conda only installs Python into the 'host' prefix, not also the 'build' prefix).
+	# In this situation the PYTHON environment variable should be the same as that found with 'find_package(Python2/3)'.
+	#
+	# Note: The Python major.minor versions will match between the 'build' and 'host' prefixes, so we can still use
+	#       'GPLATES_PYTHON_VERSION_MAJOR' and 'GPLATES_PYTHON_VERSION_MINOR' (obtained from 'build' prefix when cross-compiling).
 
-# Get the Python standard library location.
-#
-# Note: find_package(Python2) and find_package(Python3) have the Python2_STDLIB and Python3_STDLIB variables.
-set(GPLATES_PYTHON_STDLIB_DIR ${Python${GPLATES_PYTHON_VERSION_MAJOR}_STDLIB})
+	# Python interpreter executable from conda-build PYTHON environment variable ('host' prefix).
+	set(GPLATES_PYTHON_EXECUTABLE $ENV{PYTHON})
+else()
+	# Python interpreter executable from 'find_package(Python2/3)'.
+	set(GPLATES_PYTHON_EXECUTABLE ${Python${GPLATES_PYTHON_VERSION_MAJOR}_EXECUTABLE})
+endif()
 
 # Make sure Python interpreter exists before we use it.
 if (NOT EXISTS ${GPLATES_PYTHON_EXECUTABLE})
 	message(FATAL_ERROR "Python interpreter was not found")
 endif()
 
+# Get the Python standard library location (GPLATES_PYTHON_STDLIB_DIR).
+if (GPLATES_CONDA_BUILD)
+	# Get the 'host' prefix Python to print the standard library location.
+	execute_process(COMMAND ${GPLATES_PYTHON_EXECUTABLE} "-c" "from __future__ import print_function; import sysconfig; print(sysconfig.get_path('stdlib'));"
+		RESULT_VARIABLE _PYTHON_STDLIB_RESULT
+		OUTPUT_VARIABLE GPLATES_PYTHON_STDLIB_DIR
+		ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+	if (_PYTHON_STDLIB_RESULT)
+		message(FATAL_ERROR "Unable to find Python standard library location")
+	endif()
+else()
+	# Python standard library location from 'find_package(Python2/3)' (provides Python{2/3}_STDLIB variable).
+	set(GPLATES_PYTHON_STDLIB_DIR ${Python${GPLATES_PYTHON_VERSION_MAJOR}_STDLIB})
+endif()
+
 # Get the Python prefix directory (GPLATES_PYTHON_PREFIX_DIR).
+#
+# Note: When building with conda this will be the 'host' prefix Python.
 execute_process(COMMAND ${GPLATES_PYTHON_EXECUTABLE} "-c" "from __future__ import print_function; import sys; print(sys.prefix);"
 	RESULT_VARIABLE _PYTHON_PREFIX_RESULT
 	OUTPUT_VARIABLE GPLATES_PYTHON_PREFIX_DIR
@@ -90,14 +128,25 @@ file(TO_CMAKE_PATH ${GPLATES_PYTHON_EXECUTABLE} GPLATES_PYTHON_EXECUTABLE)
 file(TO_CMAKE_PATH ${GPLATES_PYTHON_STDLIB_DIR} GPLATES_PYTHON_STDLIB_DIR)
 file(TO_CMAKE_PATH ${GPLATES_PYTHON_PREFIX_DIR} GPLATES_PYTHON_PREFIX_DIR)
 
-#
-# Find the Python NumPy include directories (and store in GPLATES_Python_NumPy_INCLUDE_DIRS if found).
-#
-# We called find_package(Python2) or find_package(Python3) with optional NumPy component.
-# If NumPy was not found then numpy hasn't been installed into Python.
-if (Python${GPLATES_PYTHON_VERSION_MAJOR}_NumPy_FOUND)
-	set(GPLATES_Python_NumPy_INCLUDE_DIRS ${Python${GPLATES_PYTHON_VERSION_MAJOR}_NumPy_INCLUDE_DIRS})
+# Find the Python NumPy include directories (and store in GPLATES_PYTHON_NUMPY_INCLUDE_DIRS if found).
+if (GPLATES_CONDA_BUILD)
+	# Get the 'host' prefix Python to import numpy and then print out the numpy include directory.
+	execute_process(COMMAND "${GPLATES_PYTHON_EXECUTABLE}" "-c" "from __future__ import print_function; import numpy as np; print(np.get_include());"
+		RESULT_VARIABLE _NUMPY_RESULT
+		OUTPUT_VARIABLE _NUMPY_OUTPUT
+		ERROR_QUIET
+		OUTPUT_STRIP_TRAILING_WHITESPACE)
+	if (NOT _NUMPY_RESULT)  # success
+		file(TO_CMAKE_PATH ${_NUMPY_OUTPUT} GPLATES_PYTHON_NUMPY_INCLUDE_DIRS)  # Convert '\' to '/' in paths.
+	endif()
 else()
+	# We called find_package(Python2) or find_package(Python3) with optional NumPy component.
+	if (Python${GPLATES_PYTHON_VERSION_MAJOR}_NumPy_FOUND)
+		set(GPLATES_PYTHON_NUMPY_INCLUDE_DIRS ${Python${GPLATES_PYTHON_VERSION_MAJOR}_NumPy_INCLUDE_DIRS})
+	endif()
+endif()
+# If NumPy was not found then numpy hasn't been installed into Python.
+if (NOT GPLATES_PYTHON_NUMPY_INCLUDE_DIRS)
 	# Warn that numpy was not found.
 	message(WARNING [[
 	Unable to 'import numpy':
@@ -838,8 +887,8 @@ else()  # TARGET Python2::Python
 	endif()
 endif()
 # Add the NumPy include directories if found.
-if (GPLATES_Python_NumPy_INCLUDE_DIRS)
-	target_include_directories(${SOURCE_TARGET} SYSTEM PUBLIC ${GPLATES_Python_NumPy_INCLUDE_DIRS})
+if (GPLATES_PYTHON_NUMPY_INCLUDE_DIRS)
+	target_include_directories(${SOURCE_TARGET} SYSTEM PUBLIC ${GPLATES_PYTHON_NUMPY_INCLUDE_DIRS})
 endif()
 if (GPLATES_BUILD_GPLATES)
 	# Python is embedded in the GPlates application (as opposed to pygplates which is a Python extension library).
