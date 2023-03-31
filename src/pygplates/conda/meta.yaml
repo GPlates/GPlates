@@ -68,8 +68,12 @@ requirements:
     - zlib
 
 test:
+  source_files:
+    - src/pygplates/test
   imports:
     - pygplates
+  commands:
+    - python src/pygplates/test/test.py
 
 about:
   home: https://www.gplates.org/
