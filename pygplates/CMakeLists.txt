@@ -50,7 +50,7 @@ add_custom_target(install-into-python
     # Note: We could instead have run "${GPLATES_PYTHON_EXECUTABLE} setup.py install" but 'pip install' is the standard way now and Python >=3.4 comes with pip.
     COMMAND ${GPLATES_PYTHON_EXECUTABLE} -m pip install "${CMAKE_CURRENT_BINARY_DIR}")
 # Make sure 'pygplates' gets built before we try to install it.
-add_dependencies(install-into-python ${BUILD_TARGET})
+add_dependencies(install-into-python pygplates)
 
 #
 # Traverse test sub-directory.

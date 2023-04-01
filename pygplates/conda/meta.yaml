@@ -3,7 +3,7 @@ package:
   version: 0.39
 
 source:
-  path: ../../../
+  path: ../../
 
 build:
   skip: True  # [py<37]
@@ -69,11 +69,11 @@ requirements:
 
 test:
   source_files:
-    - src/pygplates/test
+    - pygplates/test
   imports:
     - pygplates
   commands:
-    - python src/pygplates/test/test.py
+    - python pygplates/test/test.py
 
 about:
   home: https://www.gplates.org/

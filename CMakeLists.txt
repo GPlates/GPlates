@@ -63,7 +63,7 @@ include (CustomBuildConfigs)
 add_subdirectory(src)
 
 #
-# Document either GPlates or pyGPlates.
+# GPlates or pyGPlates specific sub-directories.
 #
 if (GPLATES_BUILD_GPLATES)
     #
@@ -72,11 +72,12 @@ if (GPLATES_BUILD_GPLATES)
     add_subdirectory(doc-cpp)
 else()
     #
-    # Recurse into python API documentation sub-directory.
+    # Recurse into the sub-directory for testing/installing the pyGPlates Python module.
     #
-    # NOTE: We add this subdirectory after 'src' because it adds a custom target to build the
-    #       Sphinx documentation and that target depends on the 'pygplates' target
-    #       (to ensure pygplates gets built first since Sphinx imports pygplates to search its docstrings).
+	add_subdirectory(pygplates)
+
+    #
+    # Recurse into the sub-directory for generating the Python API documentation.
     #
     add_subdirectory(doc-python-api)
 endif()

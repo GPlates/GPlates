@@ -154,6 +154,11 @@ if (NOT GPLATES_PYTHON_NUMPY_INCLUDE_DIRS)
 		To enable this functionality please install NumPy and then re-run CMake (to enable use of NumPy C-API).]])
 endif()
 
+# Set the Python executable in the parent scope (parent directory).
+#
+# When building pyGPlates it is used to test/install the pyGPlates Python module and to generate the pyGPlates API documentation.
+set(GPLATES_PYTHON_EXECUTABLE ${GPLATES_PYTHON_EXECUTABLE} PARENT_SCOPE)
+
 ##############
 # Find Boost #
 #
@@ -419,11 +424,6 @@ endforeach()
 # Enable the location of each target to be specified using the FOLDER target property (for Visual Studio and XCode).
 # This also enables the default placement of some targets created by CMake under a folder called "CMakePredefinedTargets".
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
-if (NOT GPLATES_BUILD_GPLATES)
-	# Traverse pygplates sub-directory.
-	add_subdirectory(pygplates)
-endif()
 
 
 #############################
