@@ -41,12 +41,12 @@ endif()
 
 # Do we have the NumPy C-API include directories?
 #
-# If GPLATES_Python_NumPy_INCLUDE_DIRS is set then it's also been added
+# If GPLATES_PYTHON_NUMPY_INCLUDE_DIRS is set then it's also been added
 # to the target include directories so we don't have to do that here
 # (in other words in the source code we just need "#include <numpy/arrayobject.h>").
-if (GPLATES_Python_NumPy_INCLUDE_DIRS)
+if (GPLATES_PYTHON_NUMPY_INCLUDE_DIRS)
   # Also make sure "numpy/arrayobject.h" actually exists.
-  if (EXISTS "${GPLATES_Python_NumPy_INCLUDE_DIRS}/numpy/arrayobject.h")
+  if (EXISTS "${GPLATES_PYTHON_NUMPY_INCLUDE_DIRS}/numpy/arrayobject.h")
     set(GPLATES_HAVE_NUMPY_C_API 1)
   endif()
 endif()

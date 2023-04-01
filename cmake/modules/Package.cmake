@@ -564,12 +564,8 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
         check_package_contact_script(${_install_script})
 
         # List of CMake script(s) to execute before installing the files to be packaged.
-        if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.16)
-            set(CPACK_INSTALL_SCRIPTS "${_install_script}")
-        else()
-            # Only a single install script supported prior to CMake 3.16.
-            set(CPACK_INSTALL_SCRIPT "${_install_script}")
-        endif()
+        # Note: CMake 3.16 added support for multiple scripts (CPACK_INSTALL_SCRIPTS), but still supports single script (CPACK_INSTALL_SCRIPT).
+        set(CPACK_INSTALL_SCRIPTS "${_install_script}")
     endif()
 endif()
 

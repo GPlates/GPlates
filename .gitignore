@@ -63,4 +63,3 @@ __pycache__/
 /src/global/License.cc
 /src/global/Version.cc
 /src/global/config.h
-/src/pygplates/test/test_*.py
