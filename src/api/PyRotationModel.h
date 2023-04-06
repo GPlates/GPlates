@@ -94,48 +94,6 @@ namespace GPlatesApi
 
 
 		/**
-		 * Create a rotation model (from a sequence of rotation feature collection files) that will cache
-		 * reconstruction trees up to a cache size of @a reconstruction_tree_cache_size.
-		 *
-		 * If @a extend_total_reconstruction_poles_to_distant_past is true then each moving plate
-		 * sequence is extended back to the distant past such that any @a ReconstructionTree objects
-		 * created from the @a ReconstructionGraph will not cause reconstructed geometries to snap
-		 * back to their present day positions. See @a GPlatesAppLogic::create_reconstruction_graph for more details.
-		 *
-		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and @a get_rotation
-		 * do not specify their 'anchor_plate_id' parameter.
-		 */
-		static
-		non_null_ptr_type
-		create(
-				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &rotation_features,
-				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
-				bool extend_total_reconstruction_poles_to_distant_past = false,
-				GPlatesModel::integer_plate_id_type default_anchor_plate_id = 0);
-
-
-		/**
-		 * Create a rotation model (from a sequence of rotation feature collections) that will cache
-		 * reconstruction trees up to a cache size of @a reconstruction_tree_cache_size.
-		 *
-		 * If @a extend_total_reconstruction_poles_to_distant_past is true then each moving plate
-		 * sequence is extended back to the distant past such that any @a ReconstructionTree objects
-		 * created from the @a ReconstructionGraph will not cause reconstructed geometries to snap
-		 * back to their present day positions. See @a GPlatesAppLogic::create_reconstruction_graph for more details.
-		 *
-		 * @a default_anchor_plate_id the anchor plate used when @a get_reconstruction_tree and @a get_rotation
-		 * do not specify their 'anchor_plate_id' parameter.
-		 */
-		static
-		non_null_ptr_type
-		create(
-				const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &rotation_features,
-				unsigned int reconstruction_tree_cache_size = DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE,
-				bool extend_total_reconstruction_poles_to_distant_past = false,
-				GPlatesModel::integer_plate_id_type default_anchor_plate_id = 0);
-
-
-		/**
 		 * Instead of directly creating reconstruction trees the returned rotation model will get them
 		 * from the existing @a rotation_model.
 		 *

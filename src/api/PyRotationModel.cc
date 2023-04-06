@@ -254,21 +254,6 @@ GPlatesApi::RotationModel::create(
 	std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
 	rotation_features.get_files(feature_collection_files);
 
-	return create(
-			feature_collection_files,
-			reconstruction_tree_cache_size,
-			extend_total_reconstruction_poles_to_distant_past,
-			default_anchor_plate_id);
-}
-
-
-GPlatesApi::RotationModel::non_null_ptr_type
-GPlatesApi::RotationModel::create(
-		const std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files,
-		unsigned int reconstruction_tree_cache_size,
-		bool extend_total_reconstruction_poles_to_distant_past,
-		GPlatesModel::integer_plate_id_type default_anchor_plate_id)
-{
 	// Convert the feature collections (in the files) to weak refs (for ReconstructionTreeCreator).
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> feature_collection_refs;
 	BOOST_FOREACH(
@@ -295,35 +280,6 @@ GPlatesApi::RotationModel::create(
 			new RotationModel(
 					feature_collection_files,
 					cached_reconstruction_tree_creator_impl));
-}
-
-
-GPlatesApi::RotationModel::non_null_ptr_type
-GPlatesApi::RotationModel::create(
-		const std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> &feature_collections,
-		unsigned int reconstruction_tree_cache_size,
-		bool extend_total_reconstruction_poles_to_distant_past,
-		GPlatesModel::integer_plate_id_type default_anchor_plate_id)
-{
-	// Create feature collection files with empty filenames.
-	std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
-	BOOST_FOREACH(
-			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
-			feature_collections)
-	{
-		// Create a file with an empty filename - since we don't know if feature collection
-		// came from a file or not.
-		GPlatesFileIO::File::non_null_ptr_type feature_collection_file =
-				GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(), feature_collection);
-
-		feature_collection_files.push_back(feature_collection_file);
-	}
-
-	return create(
-			feature_collection_files,
-			reconstruction_tree_cache_size,
-			extend_total_reconstruction_poles_to_distant_past,
-			default_anchor_plate_id);
 }
 
 
