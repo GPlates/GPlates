@@ -202,7 +202,7 @@ GPlatesAppLogic::create_cached_reconstruction_tree_creator_impl(
 			reconstruction_tree_cache_size > 0,
 			GPLATES_ASSERTION_SOURCE);
 
-	return CachedReconstructionTreeCreatorImpl::create(
+	return CachedReconstructionTreeGeneratorImpl::create(
 			reconstruction_feature_collections,
 			extend_total_reconstruction_poles_to_distant_past,
 			default_anchor_plate_id,
@@ -220,7 +220,7 @@ GPlatesAppLogic::create_cached_reconstruction_tree_adaptor_impl(
 			reconstruction_tree_cache_size > 0,
 			GPLATES_ASSERTION_SOURCE);
 
-	return CachedReconstructionTreeCreatorImpl::create(
+	return CachedReconstructionTreeAdaptorImpl::create(
 			reconstruction_tree_creator,
 			default_anchor_plate_id,
 			reconstruction_tree_cache_size);
@@ -244,41 +244,11 @@ GPlatesAppLogic::create_uncached_reconstruction_tree_creator(
 
 
 GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::CachedReconstructionTreeCreatorImpl(
-		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections,
-		bool extend_total_reconstruction_poles_to_distant_past,
-		GPlatesModel::integer_plate_id_type default_anchor_plate_id,
+		const create_reconstruction_tree_function_type &create_reconstruction_tree_function,
+		const get_default_anchor_plate_id_function_type &get_default_anchor_plate_id_function,
 		unsigned int reconstruction_tree_cache_size) :
-	d_create_reconstruction_tree_function(
-			boost::bind(
-					&CachedReconstructionTreeCreatorImpl::create_reconstruction_tree_from_reconstruction_graph,
-					this,
-					boost::placeholders::_1,
-					// Non-null intrusive pointer to reconstruction graph gets copied by boost-bind...
-					create_reconstruction_graph(
-							reconstruction_feature_collections,
-							extend_total_reconstruction_poles_to_distant_past))),
-	d_get_default_anchor_plate_id_function([=]() { return default_anchor_plate_id; }),
-	d_cache(d_create_reconstruction_tree_function, reconstruction_tree_cache_size)
-{
-}
-
-
-GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::CachedReconstructionTreeCreatorImpl(
-		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		boost::optional<GPlatesModel::integer_plate_id_type> default_anchor_plate_id,
-		unsigned int reconstruction_tree_cache_size) :
-	d_create_reconstruction_tree_function(
-			boost::bind(
-					&CachedReconstructionTreeCreatorImpl::create_reconstruction_tree_from_reconstruction_tree_creator,
-					this,
-					boost::placeholders::_1,
-					reconstruction_tree_creator)),
-	d_get_default_anchor_plate_id_function([=]()
-		{
-			// Return the specified default anchor plate ID (if specified), otherwise ask the adapted reconstruction tree creator.
-			// Note we copied in [=] 'reconstruction_tree_creator' but it just contains a non-null pointer (so it's a cheap copy).
-			return default_anchor_plate_id ? default_anchor_plate_id.get() : reconstruction_tree_creator.get_default_anchor_plate_id();
-		}),
+	d_create_reconstruction_tree_function(create_reconstruction_tree_function),
+	d_get_default_anchor_plate_id_function(get_default_anchor_plate_id_function),
 	d_cache(d_create_reconstruction_tree_function, reconstruction_tree_cache_size)
 {
 }
@@ -297,9 +267,7 @@ GPlatesAppLogic::ReconstructionTree::non_null_ptr_to_const_type
 GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::get_reconstruction_tree_default_anchored_plate_id(
 		const double &reconstruction_time)
 {
-	const GPlatesModel::integer_plate_id_type default_anchor_plate_id = d_get_default_anchor_plate_id_function();
-
-	return d_cache.get_value(cache_key_type(reconstruction_time, default_anchor_plate_id));
+	return get_reconstruction_tree(reconstruction_time, get_default_anchor_plate_id());
 }
 
 
@@ -325,8 +293,46 @@ GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::clear_cache()
 }
 
 
-GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::cache_value_type
-GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::create_reconstruction_tree_from_reconstruction_graph(
+GPlatesAppLogic::CachedReconstructionTreeGeneratorImpl::CachedReconstructionTreeGeneratorImpl(
+		const std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> &reconstruction_feature_collections,
+		bool extend_total_reconstruction_poles_to_distant_past,
+		GPlatesModel::integer_plate_id_type default_anchor_plate_id,
+		unsigned int reconstruction_tree_cache_size) :
+	CachedReconstructionTreeGeneratorImpl(
+			create_reconstruction_graph(
+					reconstruction_feature_collections,
+					extend_total_reconstruction_poles_to_distant_past),
+			default_anchor_plate_id,
+			reconstruction_tree_cache_size)
+{
+}
+
+
+GPlatesAppLogic::CachedReconstructionTreeGeneratorImpl::CachedReconstructionTreeGeneratorImpl(
+		ReconstructionGraph::non_null_ptr_to_const_type reconstruction_graph,
+		GPlatesModel::integer_plate_id_type default_anchor_plate_id,
+		unsigned int reconstruction_tree_cache_size) :
+	CachedReconstructionTreeCreatorImpl(
+			// create_reconstruction_tree_function ...
+			boost::bind(
+					&CachedReconstructionTreeGeneratorImpl::create_reconstruction_tree_from_reconstruction_graph,
+					this,
+					boost::placeholders::_1,
+					// Non-null intrusive pointer to reconstruction graph gets copied by boost-bind...
+					reconstruction_graph),
+			// get_default_anchor_plate_id_function ...
+			[=]()
+			{
+				return default_anchor_plate_id;
+			},
+			// reconstruction_tree_cache_size ...
+			reconstruction_tree_cache_size)
+{
+}
+
+
+GPlatesAppLogic::CachedReconstructionTreeGeneratorImpl::cache_value_type
+GPlatesAppLogic::CachedReconstructionTreeGeneratorImpl::create_reconstruction_tree_from_reconstruction_graph(
 		const cache_key_type &key,
 		ReconstructionGraph::non_null_ptr_to_const_type reconstruction_graph)
 {
@@ -340,8 +346,32 @@ GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::create_reconstruction_tree
 }
 
 
-GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::cache_value_type
-GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::create_reconstruction_tree_from_reconstruction_tree_creator(
+GPlatesAppLogic::CachedReconstructionTreeAdaptorImpl::CachedReconstructionTreeAdaptorImpl(
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		boost::optional<GPlatesModel::integer_plate_id_type> default_anchor_plate_id,
+		unsigned int reconstruction_tree_cache_size) :
+	CachedReconstructionTreeCreatorImpl(
+			// create_reconstruction_tree_function ...
+			boost::bind(
+					&CachedReconstructionTreeAdaptorImpl::create_reconstruction_tree_from_reconstruction_tree_creator,
+					this,
+					boost::placeholders::_1,
+					reconstruction_tree_creator),
+			// get_default_anchor_plate_id_function ...
+			[=]()
+			{
+				// Return the specified default anchor plate ID (if specified), otherwise ask the adapted reconstruction tree creator.
+				// Note we copied in [=] 'reconstruction_tree_creator' but it just contains a non-null pointer (so it's a cheap copy).
+				return default_anchor_plate_id ? default_anchor_plate_id.get() : reconstruction_tree_creator.get_default_anchor_plate_id();
+			},
+			// reconstruction_tree_cache_size ...
+			reconstruction_tree_cache_size)
+{
+}
+
+
+GPlatesAppLogic::CachedReconstructionTreeAdaptorImpl::cache_value_type
+GPlatesAppLogic::CachedReconstructionTreeAdaptorImpl::create_reconstruction_tree_from_reconstruction_tree_creator(
 		const cache_key_type &key,
 		const ReconstructionTreeCreator &reconstruction_tree_creator)
 {
