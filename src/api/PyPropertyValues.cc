@@ -36,11 +36,11 @@
 
 #include "PyFeature.h"
 #include "PyInformationModel.h"
+#include "PyQualifiedXmlNames.h"
+#include "PyRevisionedVector.h"
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
-#include "PyQualifiedXmlNames.h"
-#include "PyRevisionedVector.h"
 
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructionFeatureProperties.h"

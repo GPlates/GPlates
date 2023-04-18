@@ -28,6 +28,7 @@
 
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
@@ -38,6 +39,9 @@
 #include "maths/Real.h"
 
 #include "property-values/GeoTimeInstant.h"
+
+#include "scribe/Scribe.h"
+#include "scribe/TranscribeDelegateProtocol.h"
 
 
 namespace bp = boost::python;
@@ -149,6 +153,57 @@ namespace GPlatesApi
 	private:
 
 		GPlatesPropertyValues::GeoTimeInstant d_geo_time_instant;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GeoTimeInstant> &geo_time_instant)
+		{
+			//
+			// Using transcribe delegate protocol so that GPlatesApi::GeoTimeInstant and GPlatesPropertyValues::GeoTimeInstant
+			// can be used interchangeably (ie, are transcription compatible).
+			//
+			if (scribe.is_saving())
+			{
+				save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, geo_time_instant->d_geo_time_instant);
+			}
+			else // loading...
+			{
+				GPlatesScribe::LoadRef<GPlatesPropertyValues::GeoTimeInstant> time_instant =
+						GPlatesScribe::load_delegate_protocol<GPlatesPropertyValues::GeoTimeInstant>(TRANSCRIBE_SOURCE, scribe);
+				if (!time_instant.is_valid())
+				{
+					return scribe.get_transcribe_result();
+				}
+
+				geo_time_instant.construct_object(time_instant);
+			}
+
+			return GPlatesScribe::TRANSCRIBE_SUCCESS;
+		}
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data)
+		{
+			// If not already transcribed in 'transcribe_construct_data()'.
+			if (!transcribed_construct_data)
+			{
+				//
+				// Using transcribe delegate protocol so that GPlatesApi::GeoTimeInstant and GPlatesPropertyValues::GeoTimeInstant
+				// can be used interchangeably (ie, are transcription compatible).
+				//
+				return transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, d_geo_time_instant);
+			}
+
+			return GPlatesScribe::TRANSCRIBE_SUCCESS;
+		}
 	};
 
 	boost::shared_ptr<GeoTimeInstant>
@@ -685,6 +740,8 @@ export_geo_time_instant()
 		.def("__le__", &GPlatesApi::geo_time_instant_le)
 		.def("__gt__", &GPlatesApi::geo_time_instant_gt)
 		.def("__ge__", &GPlatesApi::geo_time_instant_ge)
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesApi::GeoTimeInstant>>())
 	;
 
 	// Enable boost::optional<GPlatesApi::GeoTimeInstant> to be passed to and from python.

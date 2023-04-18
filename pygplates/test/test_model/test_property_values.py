@@ -3,6 +3,7 @@ Unit tests for the pygplates property values.
 """
 
 import os
+import pickle
 import unittest
 import pygplates
 
@@ -179,6 +180,11 @@ class GeoTimeInstantCase(unittest.TestCase):
         self.assertTrue(self.real_time1.get_value() >= self.real_time1)
         self.assertTrue(self.real_time1 >= self.real_time1.get_value())
         self.assertTrue(self.real_time1.get_value() >= self.real_time1.get_value())
+    
+    def test_pickle(self):
+        self.assertTrue(self.real_time1 == pickle.loads(pickle.dumps(self.real_time1)))
+        self.assertTrue(self.distant_past == pickle.loads(pickle.dumps(self.distant_past)))
+        self.assertTrue(self.distant_future == pickle.loads(pickle.dumps(self.distant_future)))
 
 
 class GmlDataBlockCase(unittest.TestCase):
