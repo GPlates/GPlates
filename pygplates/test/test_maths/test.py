@@ -4,6 +4,7 @@ Unit tests for the pygplates maths API.
 
 import math
 import os
+import pickle
 import unittest
 import pygplates
 # Test using numpy if it's available...
@@ -380,6 +381,11 @@ class FiniteRotationCase(unittest.TestCase):
                 pygplates.FiniteRotation.interpolate,
                 self.finite_rotation, finite_rotation2,
                 10, 20, pygplates.GeoTimeInstant.create_distant_past())
+    
+    def test_pickle(self):
+        finite_rotation = pygplates.FiniteRotation((10,20), math.radians(30))
+        pickled_finite_rotation = pickle.loads(pickle.dumps(finite_rotation))
+        self.assertTrue(pickled_finite_rotation == finite_rotation)
 
 
 class GreatCircleArcCase(unittest.TestCase):
@@ -499,6 +505,13 @@ class LatLonPointCase(unittest.TestCase):
         self.assertAlmostEqual(x, 0)
         self.assertAlmostEqual(y, 1)
         self.assertAlmostEqual(z, 0)
+    
+    def test_pickle(self):
+        lat_lon_point = pygplates.LatLonPoint(10, 20)
+        pickled_lat_lon_point = pickle.loads(pickle.dumps(lat_lon_point))
+        self.assertAlmostEqual(lat_lon_point.get_latitude(), pickled_lat_lon_point.get_latitude())
+        self.assertAlmostEqual(lat_lon_point.get_longitude(), pickled_lat_lon_point.get_longitude())
+
 
 def assert_almost_equal_tuple(unit_test_case, tuple1, tuple2):
     unit_test_case.assertTrue(len(tuple1) == len(tuple2))
@@ -671,6 +684,11 @@ class Vector3DCase(unittest.TestCase):
         
         self.assertRaises(pygplates.UnableToNormaliseZeroVectorError, pygplates.Vector3D(0,0,0).to_normalised)
         self.assertRaises(pygplates.UnableToNormaliseZeroVectorError, pygplates.Vector3D.create_normalised, 0, 0, 0)
+    
+    def test_pickle(self):
+        vector = pygplates.Vector3D(10, 20, 30)
+        pickled_vector = pickle.loads(pickle.dumps(vector))
+        self.assertTrue(pickled_vector == vector)
 
 
 class IntegerFloatCase(unittest.TestCase):

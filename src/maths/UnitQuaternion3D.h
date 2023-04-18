@@ -35,6 +35,9 @@
 #include "Vector3D.h"
 #include "UnitVector3D.h"
 
+ // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/QtStreamable.h"
 
 
@@ -411,6 +414,21 @@ namespace GPlatesMaths {
 		real_t m_scalar_part;
 
 		Vector3D m_vector_part;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<UnitQuaternion3D> &unit_quaternion);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 
 	};
 

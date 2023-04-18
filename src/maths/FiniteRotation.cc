@@ -51,6 +51,8 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "scribe/Scribe.h"
+
 
 namespace
 {
@@ -302,6 +304,59 @@ GPlatesMaths::FiniteRotation::operator*(
 	//      = (2 * uq_s * uq_s - 1) * v + 2 * [uq_s * uq_v x v + (uq_v . v) * uq_v]
 	//
 	return (2.0 * uq_s * uq_s - 1.0) * vect + 2.0 * (cross(uq_s * uq_v, vect) + dot(uq_v, vect) * uq_v);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::FiniteRotation::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<FiniteRotation> &finite_rotation)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, finite_rotation->d_unit_quat, "unit_quat");
+		scribe.save(TRANSCRIBE_SOURCE, finite_rotation->d_axis_hint, "axis_hint");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<UnitQuaternion3D> unit_quat_ = scribe.load<UnitQuaternion3D>(TRANSCRIBE_SOURCE, "unit_quat");
+		if (!unit_quat_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<boost::optional<UnitVector3D>> axis_hint_ = scribe.load<boost::optional<UnitVector3D>>(TRANSCRIBE_SOURCE, "axis_hint");
+		if (!axis_hint_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		finite_rotation.construct_object(unit_quat_, axis_hint_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::FiniteRotation::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_unit_quat, "unit_quat"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_axis_hint, "axis_hint"))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

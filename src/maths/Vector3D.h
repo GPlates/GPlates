@@ -33,6 +33,9 @@
 #include "types.h"  /* real_t */
 #include "GenericVectorOps3D.h"
 
+ // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/QtStreamable.h"
 
 
@@ -144,7 +147,24 @@ namespace GPlatesMaths
 		get_normalisation() const;
 
 	protected:
+
 		real_t d_x, d_y, d_z;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<Vector3D> &vector);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
+
 	};
 }
 

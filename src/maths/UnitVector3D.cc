@@ -36,6 +36,8 @@
 
 #include "global/GPlatesAssert.h"
 
+#include "scribe/Scribe.h"
+
 #include "utils/CallStackTracker.h"
 
 
@@ -107,6 +109,71 @@ GPlatesMaths::UnitVector3D::check_validity()
 				<< HighPrecision<double>(mag - 1.0);
 #endif
 	}
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::UnitVector3D::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<UnitVector3D> &unit_vector)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, unit_vector->d_x, "x");
+		scribe.save(TRANSCRIBE_SOURCE, unit_vector->d_y, "y");
+		scribe.save(TRANSCRIBE_SOURCE, unit_vector->d_z, "z");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<real_t> x_ = scribe.load<real_t>(TRANSCRIBE_SOURCE, "x");
+		if (!x_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<real_t> y_ = scribe.load<real_t>(TRANSCRIBE_SOURCE, "y");
+		if (!y_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<real_t> z_ = scribe.load<real_t>(TRANSCRIBE_SOURCE, "z");
+		if (!z_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		unit_vector.construct_object(x_, y_, z_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::UnitVector3D::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_x, "x"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_y, "y"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_z, "z"))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 
