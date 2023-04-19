@@ -64,6 +64,9 @@ class EnumerationCase(unittest.TestCase):
                 pygplates.Enumeration.set_content, self.enumeration, unknown_enum_content)
         self.enumeration.set_content(unknown_enum_content, pygplates.VerifyInformationModel.no)
         self.assertTrue(self.enumeration.get_content() == unknown_enum_content)
+    
+    def test_pickle(self):
+        self.assertTrue(self.enum_type == pickle.loads(pickle.dumps(self.enum_type)))
 
 
 class GeoTimeInstantCase(unittest.TestCase):

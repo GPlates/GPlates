@@ -27,15 +27,18 @@
 #include <sstream>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
+#include <boost/shared_ptr.hpp>
 
 #include "PyQualifiedXmlNames.h"
 
 #include "PythonConverterUtils.h"
+#include "PythonPickle.h"
 
 #include "global/python.h"
 
 #include "model/FeatureType.h"
 #include "model/PropertyName.h"
+#include "model/TranscribeQualifiedXmlName.h"
 
 #include "property-values/EnumerationType.h"
 #include "property-values/StructuralType.h"
@@ -152,6 +155,8 @@ export_qualified_xml_name(
 		.def(bp::self >= bp::self)
 		// For '__str__' convert to a qualified XML string...
 		.def("__str__", &GPlatesModel::convert_qualified_xml_name_to_qstring<qualified_xml_name_type>)
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<qualified_xml_name_type>>())
 	;
 
 

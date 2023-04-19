@@ -3,6 +3,7 @@ Unit tests for the pygplates model API.
 """
 
 import os
+import pickle
 import unittest
 import pygplates
 
@@ -286,6 +287,14 @@ class FeatureCase(unittest.TestCase):
         # Since 'gpml:NotAValidFeatureType' is not a (GPGIM) recognised type it should raise an error by default.
         self.assertRaises(pygplates.InformationModelError, pygplates.Feature,
                 pygplates.FeatureType.create_gpml('NotAValidFeatureType'))
+    
+    def test_feature_type_pickle(self):
+        feature_type = self.feature.get_feature_type()
+        self.assertTrue(feature_type == pickle.loads(pickle.dumps(feature_type)))
+    
+    def test_scalar_type_pickle(self):
+        scalar_type = pygplates.ScalarType.gpml_crustal_thickness
+        self.assertTrue(scalar_type == pickle.loads(pickle.dumps(scalar_type)))
 
 # Not including RevisionId yet since it is not really needed in the python API user (we can add it later though)...
 #    def test_revision_id(self):
@@ -948,6 +957,9 @@ class PropertyNameCase(unittest.TestCase):
             pygplates.PropertyName))
         self.assertEquals(self.feature_valid_time.get_name().to_qualified_string(),
                 'gml:validTime')
+    
+    def test_pickle(self):
+        self.assertTrue(self.feature_name.get_name() == pickle.loads(pickle.dumps(self.feature_name.get_name())))
 
 
 class PropertyValueCase(unittest.TestCase):
