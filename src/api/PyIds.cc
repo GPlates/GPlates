@@ -30,6 +30,7 @@
 #include <boost/optional.hpp>
 
 #include "PythonConverterUtils.h"
+#include "PythonPickle.h"
 
 #include "model/FeatureId.h"
 #include "model/RevisionId.h"
@@ -52,6 +53,44 @@ namespace GPlatesApi
 	{
 		// Use the Python built-in 'hash()' function on the string form of the feature ID.
 		return bp::object(PyObject_Hash(bp::object(feature_id.get()).ptr()));
+	}
+
+	typedef boost::shared_ptr<GPlatesModel::FeatureId> feature_id_pickle_type;
+
+	namespace PythonPickle
+	{
+		/**
+		 * We specialize transcribing (for pickling) of FeatureId to avoid implementing a general transcribe
+		 * of FeatureId (since not sure the best way to do that with FeatureId back-refs).
+		 */
+		template <>
+		class Transcribe<feature_id_pickle_type>
+		{
+		public:
+
+			static
+			void
+			pickle(
+					GPlatesScribe::Scribe &scribe,
+					const feature_id_pickle_type &feature_id)
+			{
+				scribe.save(TRANSCRIBE_SOURCE, feature_id->get(), "feature_id");
+			}
+
+			static
+			feature_id_pickle_type
+			unpickle(
+					GPlatesScribe::Scribe &scribe)
+			{
+				GPlatesScribe::LoadRef<GPlatesUtils::UnicodeString> feature_id =
+						scribe.load<GPlatesUtils::UnicodeString>(TRANSCRIBE_SOURCE, "feature_id");
+				GPlatesGlobal::Assert<GPlatesScribe::Exceptions::UnsupportedVersion>(
+						feature_id.is_valid(),
+						GPLATES_ASSERTION_SOURCE);
+
+				return feature_id_pickle_type(new GPlatesModel::FeatureId(feature_id));
+			}
+		};
 	}
 }
 
@@ -116,6 +155,8 @@ export_feature_id()
 		.def("__str__",
 				&GPlatesModel::FeatureId::get,
 				bp::return_value_policy<bp::copy_const_reference>())
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesApi::feature_id_pickle_type>())
 	;
 
 	// Enable boost::optional<FeatureId> to be passed to and from python.

@@ -279,6 +279,10 @@ class FeatureCase(unittest.TestCase):
         feature_id = self.feature.get_feature_id()
         self.assertTrue(isinstance(feature_id, pygplates.FeatureId))
         self.assertEquals('GPlates-d13bba7f-57f5-419d-bbd4-105a8e72e177', feature_id.get_string())
+    
+    def test_feature_id_pickle(self):
+        feature_id = self.feature.get_feature_id()
+        self.assertTrue(feature_id == pickle.loads(pickle.dumps(feature_id)))
 
     def test_feature_type(self):
         feature_type = self.feature.get_feature_type()
