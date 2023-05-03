@@ -79,6 +79,7 @@ set(srcs
     TopLevelProperty.h
     TopLevelPropertyInline.cc
     TopLevelPropertyInline.h
+    TranscribeIdTypeGenerator.h
     TranscribeQualifiedXmlName.h
     TranscribeStringContentTypeGenerator.h
     types.h
