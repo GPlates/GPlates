@@ -38,6 +38,9 @@
 #include "model/XmlAttributeName.h"
 #include "model/XmlAttributeValue.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/QtStreamable.h"
 
 
@@ -312,6 +315,20 @@ namespace GPlatesPropertyValues
 
 		ValueObjectType d_value_object_type;
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GmlDataBlockCoordinateList> &gml_data_block_coord_list);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 
@@ -319,7 +336,6 @@ namespace GPlatesPropertyValues
 	operator<<(
 			std::ostream &os,
 			const GmlDataBlockCoordinateList &gml_data_block_coordinate_list);
-
 }
 
 #endif  // GPLATES_PROPERTYVALUES_GMLDATABLOCKCOORDINATELIST_H

@@ -263,6 +263,9 @@ class GmlDataBlockCase(unittest.TestCase):
         self.assertTrue(self.gml_data_block.get_scalar_values(self.velocity_colat_type) is None)
         self.assertTrue(self.gml_data_block.get_scalar_values(self.velocity_lon_type) == self.velocity_lon_values)
 
+    def test_pickle(self):
+        self.assertTrue(self.gml_data_block == pickle.loads(pickle.dumps(self.gml_data_block)))
+
 
 class GmlLineStringCase(unittest.TestCase):
     def setUp(self):

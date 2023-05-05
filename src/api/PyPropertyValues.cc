@@ -41,6 +41,7 @@
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructionFeatureProperties.h"
@@ -533,7 +534,7 @@ namespace GPlatesApi
 				GPlatesPropertyValues::ValueObjectType/*scalar type*/,
 				std::vector<double>/*scalars*/> scalar_type_to_values_map;
 
-		for (auto scalar_type_object_to_values_object : scalar_type_object_to_values_object_map)
+		for (const auto &scalar_type_object_to_values_object : scalar_type_object_to_values_object_map)
 		{
 			bp::extract<GPlatesPropertyValues::ValueObjectType> extract_scalar_type(scalar_type_object_to_values_object.first);
 			if (!extract_scalar_type.check())
@@ -552,7 +553,7 @@ namespace GPlatesApi
 			PythonExtractUtils::extract_iterable(scalar_values, scalar_type_object_to_values_object.second, type_error_string);
 
 			// Make sure the each scalar type has the same number of scalar values.
-			for (auto scalar_type_to_values : scalar_type_to_values_map)
+			for (const auto &scalar_type_to_values : scalar_type_to_values_map)
 			{
 				if (scalar_values.size() != scalar_type_to_values.second.size())
 				{
@@ -590,7 +591,7 @@ namespace GPlatesApi
 		std::vector<GPlatesPropertyValues::GmlDataBlockCoordinateList::non_null_ptr_type> coordinate_lists;
 
 		// Store each map entry (scalar type and scalar values) in a GmlDataBlockCoordinateList.
-		for (auto scalar_type_to_values : scalar_type_to_values_map)
+		for (const auto &scalar_type_to_values : scalar_type_to_values_map)
 		{
 			const GPlatesPropertyValues::ValueObjectType &scalar_type = scalar_type_to_values.first;
 			const std::vector<double> &scalar_values = scalar_type_to_values.second;
@@ -931,6 +932,8 @@ export_gml_data_block()
 				"    gml_data_block.remove(pygplates.ScalarType.create_gpml('VelocityColat'))\n"
 				"\n"
 				"  .. note:: If *scalar_type* does not exist in the data block then it is ignored and nothing is done.\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).

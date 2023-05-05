@@ -118,6 +118,7 @@ set(srcs
     RawRasterUtils.cc
     RawRasterUtils.h
     ScalarCoverageStatistics.h
+    ScribeExportPropertyValues.h
     SpatialReferenceSystem.cc
     SpatialReferenceSystem.h
     StructuralType.h
