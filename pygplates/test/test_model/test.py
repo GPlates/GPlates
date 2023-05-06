@@ -278,6 +278,14 @@ class FeatureCase(unittest.TestCase):
     
     def test_feature(self):
         self.assertTrue(self.feature)
+    
+    def test_pickle(self):
+        pickled_feature = pickle.loads(pickle.dumps(self.feature))
+        self.assertTrue(len(pickled_feature) == len(self.feature))
+        for property_index, property in enumerate(self.feature):
+            self.assertTrue(property == pickled_feature[property_index])
+            self.assertTrue(property == pickle.loads(pickle.dumps(property)))
+            self.assertTrue(property.get_value() == pickle.loads(pickle.dumps(property.get_value())))
 
     def test_feature_id(self):
         feature_id = self.feature.get_feature_id()

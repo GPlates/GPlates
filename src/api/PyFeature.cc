@@ -42,6 +42,7 @@
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructionTreeCreator.h"
@@ -3764,6 +3765,8 @@ export_feature()
 #endif
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesModel::FeatureHandle::non_null_ptr_type>())
 
 		.def("clone",
 				&GPlatesApi::feature_handle_clone,
