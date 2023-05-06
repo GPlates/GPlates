@@ -1339,6 +1339,91 @@ namespace GPlatesApi
 		return cloned_feature;
 	}
 
+	//
+	// Support for "__getitem__".
+	//
+	// But we only allowing indexing with an index. We don't allow slices because it makes less
+	// sense (since indexing properties is really just an alternative to iterating in a 'for' loop).
+	//
+	bp::object
+	feature_handle_get_item(
+			GPlatesModel::FeatureHandle &feature_handle,
+			boost::python::object property_index_object)
+	{
+		// The property index should be an integer.
+		bp::extract<long> extract_property_index(property_index_object);
+		if (!extract_property_index.check())
+		{
+			PyErr_SetString(PyExc_TypeError, "Invalid property index type, must be an integer (slices not allowed)");
+			bp::throw_error_already_set();
+
+			return bp::object();  // Cannot get here.
+		}
+
+		long property_index = extract_property_index();
+		if (property_index < 0)
+		{
+			property_index += feature_handle.size();
+		}
+
+		if (property_index >= boost::numeric_cast<long>(feature_handle.size()) ||
+			property_index < 0)
+		{
+			PyErr_SetString(PyExc_IndexError, "Property index out of range");
+			bp::throw_error_already_set();
+		}
+
+		GPlatesModel::FeatureHandle::iterator property_iter = feature_handle.begin();
+		// NOTE: 'property_iter' is not random access, so must increment 'property_index' times...
+		std::advance(property_iter, property_index);
+		GPlatesModel::TopLevelProperty::non_null_ptr_type property = *property_iter;
+
+		return bp::object(property);
+	}
+
+	// Temporarily comment out until we merge the python-model-revisions branch into this (python-api) branch.
+#if 0
+	//
+	// Support for "__setitem__".
+	//
+	// But we only allowing indexing with an index. We don't allow slices because it makes less
+	// sense (since indexing properties is really just an alternative to iterating in a 'for' loop
+	// to get a property, modify it and then set it back in the feature at same index).
+	//
+	void
+	feature_handle_set_item(
+			GPlatesModel::FeatureHandle &feature_handle,
+			boost::python::object property_index_object,
+			GPlatesModel::TopLevelProperty::non_null_ptr_type property)
+	{
+		// Property index should be an integer.
+		bp::extract<long> extract_property_index(property_index_object);
+		if (!extract_property_index.check())
+		{
+			PyErr_SetString(PyExc_TypeError, "Invalid property index type, must be an integer (slices not allowed)");
+			bp::throw_error_already_set();
+		}
+
+		long property_index = extract_property_index();
+		if (property_index < 0)
+		{
+			property_index += feature_handle.size();
+		}
+
+		if (property_index >= boost::numeric_cast<long>(feature_handle.size()) ||
+			property_index < 0)
+		{
+			PyErr_SetString(PyExc_IndexError, "Property index out of range");
+			bp::throw_error_already_set();
+		}
+
+		GPlatesModel::FeatureHandle::iterator property_iter = feature_handle.begin();
+		// NOTE: 'property_iter' is not random access, so must increment 'index' times...
+		std::advance(property_iter, property_index);
+		*property_iter = property;
+	}
+#endif
+
 	bp::object
 	feature_handle_add_property_internal(
 			GPlatesModel::FeatureHandle &feature_handle,
@@ -3518,6 +3603,7 @@ export_feature()
 					"=========================== ==========================================================\n"
 					"``len(f)``                  number of properties in feature *f*\n"
 					"``for p in f``              iterates over the properties *p* in feature *f*\n"
+					"``f[i]``                    the property of *f* at index *i*\n"
 					"=========================== ==========================================================\n"
 					"\n"
 					"For example:\n"
@@ -3621,7 +3707,10 @@ export_feature()
 					"For other properties the generic :meth:`set`, :meth:`get` and :meth:`get_value` "
 					"methods will still need to be used.\n"
 					"\n"
-					"A feature can be deep copied using :meth:`clone`.\n",
+					"A feature can be deep copied using :meth:`clone`.\n"
+					"\n"
+					".. versionchanged:: 0.40\n"
+					"   Can index a property in feature *f* with ``f[i]``.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -3668,6 +3757,11 @@ export_feature()
 				"        pygplates.FeatureType.gpml_unclassified_feature)\n")
 		.def("__iter__", bp::iterator<GPlatesModel::FeatureHandle>())
 		.def("__len__", &GPlatesModel::FeatureHandle::size)
+		.def("__getitem__", &GPlatesApi::feature_handle_get_item)
+		// Temporarily comment out until we merge the python-model-revisions branch into this (python-api) branch.
+#if 0
+		.def("__setitem__", &GPlatesApi::feature_handle_set_item)
+#endif
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 

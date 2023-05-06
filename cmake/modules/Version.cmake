@@ -143,7 +143,7 @@ set_prerelease_version(
 # The pyGPlates version (MAJOR.MINOR.PATCH).
 #
 set(PYGPLATES_VERSION_MAJOR 0)
-set(PYGPLATES_VERSION_MINOR 39)
+set(PYGPLATES_VERSION_MINOR 40)
 set(PYGPLATES_VERSION_PATCH 0)
 
 # The pyGPlates version without the pre-release suffix

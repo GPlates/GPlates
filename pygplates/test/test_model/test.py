@@ -271,6 +271,10 @@ class FeatureCase(unittest.TestCase):
 
     def test_len(self):
         self.assertEquals(len(self.feature), self.property_count)
+
+    def test_get_item(self):
+        for property_index, property in enumerate(self.feature):
+            self.assertTrue(property == self.feature[property_index])
     
     def test_feature(self):
         self.assertTrue(self.feature)
