@@ -490,6 +490,10 @@ class GpmlConstantValueCase(unittest.TestCase):
         
         # Test that this does not crash due to dangling parent reference to non-existent constant value wrapper.
         self.property_value3.set_plate_id(101)
+    
+    def test_pickle(self):
+        self.assertTrue(self.property_value1 == pickle.loads(pickle.dumps(self.property_value1)))
+        self.assertTrue(self.property_value2 == pickle.loads(pickle.dumps(self.property_value2)))
 
 
 class GpmlFiniteRotationCase(unittest.TestCase):

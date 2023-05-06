@@ -34,6 +34,9 @@
 
 #include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
+#include "model/TranscribeQualifiedXmlName.h"
+
+#include "scribe/Scribe.h"
 
 
 const GPlatesPropertyValues::StructuralType
@@ -98,4 +101,119 @@ GPlatesPropertyValues::GpmlConstantValue::bubble_up(
 
 	// Create a new revision for the child property value.
 	return revision.value.clone_revision(transaction);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlConstantValue::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlConstantValue> &gpml_constant_value)
+{
+	if (scribe.is_saving())
+	{
+		// Save the property value.
+		scribe.save(TRANSCRIBE_SOURCE, gpml_constant_value->value(), "value");
+
+		// Save the property value type.
+		scribe.save(TRANSCRIBE_SOURCE, gpml_constant_value->get_value_type(), "value_type");
+
+		// Save the optional description.
+		scribe.save(TRANSCRIBE_SOURCE, gpml_constant_value->get_description(), "description");
+	}
+	else // loading
+	{
+		// Load the property value.
+		GPlatesScribe::LoadRef<PropertyValue::non_null_ptr_type> value =
+				scribe.load<PropertyValue::non_null_ptr_type>(TRANSCRIBE_SOURCE, "value");
+		if (!value.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Load the property value type.
+		GPlatesScribe::LoadRef<StructuralType> value_type =
+				scribe.load<StructuralType>(TRANSCRIBE_SOURCE, "value_type");
+		if (!value_type.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Load the optional description.
+		boost::optional<GPlatesUtils::UnicodeString> description;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, description, "description"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_constant_value.construct_object(
+				boost::ref(transaction),  // non-const ref
+				value,
+				value_type,
+				description);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlConstantValue::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			// Save the property value.
+			scribe.save(TRANSCRIBE_SOURCE, value(), "value");
+
+			// Save the property value type.
+			scribe.save(TRANSCRIBE_SOURCE, get_value_type(), "value_type");
+
+			// Save the optional description.
+			scribe.save(TRANSCRIBE_SOURCE, get_description(), "description");
+		}
+		else // loading
+		{
+			// Load the property value.
+			GPlatesScribe::LoadRef<PropertyValue::non_null_ptr_type> value =
+					scribe.load<PropertyValue::non_null_ptr_type>(TRANSCRIBE_SOURCE, "value");
+			if (!value.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Load the property value type.
+			GPlatesScribe::LoadRef<StructuralType> value_type =
+					scribe.load<StructuralType>(TRANSCRIBE_SOURCE, "value_type");
+			if (!value_type.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Load the optional description.
+			boost::optional<GPlatesUtils::UnicodeString> description;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, description, "description"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property.
+			set_value(value);
+			d_value_type = value_type;
+			set_description(description);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlConstantValue>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

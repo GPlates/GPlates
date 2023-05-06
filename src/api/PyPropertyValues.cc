@@ -1750,6 +1750,8 @@ export_gpml_constant_value()
 				"\n"
 				"  :param description: description of this constant value wrapper\n"
 				"  :type description: string or None\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type>())
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.

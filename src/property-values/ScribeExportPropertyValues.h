@@ -20,6 +20,7 @@
 #ifndef GPLATES_DATA_MINING_SCRIBEEXPORTPROPERTYVALUES_H
 #define GPLATES_DATA_MINING_SCRIBEEXPORTPROPERTYVALUES_H
 
+#include "GpmlConstantValue.h"
 #include "GmlDataBlock.h"
 #include "GmlDataBlockCoordinateList.h"
 
@@ -34,6 +35,9 @@
  *******************************************************************************
  */
 #define SCRIBE_EXPORT_PROPERTY_VALUES \
+		\
+		((GPlatesPropertyValues::GpmlConstantValue, \
+			"GPlatesPropertyValues::GpmlConstantValue")) \
 		\
 		((GPlatesPropertyValues::GmlDataBlock, \
 			"GPlatesPropertyValues::GmlDataBlock")) \

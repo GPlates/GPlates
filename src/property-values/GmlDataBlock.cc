@@ -165,6 +165,7 @@ GPlatesPropertyValues::GmlDataBlock::transcribe(
 		}
 	}
 
+	// Record base/derived inheritance relationship.
 	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GmlDataBlock>(TRANSCRIBE_SOURCE))
 	{
 		return scribe.get_transcribe_result();
