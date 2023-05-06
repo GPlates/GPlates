@@ -38,11 +38,16 @@ DISABLE_MSVC_WARNING(4181)
 
 #include "TopLevelPropertyInline.h"
 
+#include "BubbleUpRevisionHandler.h"
 #include "FeatureVisitor.h"
 #include "ModelTransaction.h"
+#include "TranscribeQualifiedXmlName.h"
+#include "TranscribeStringContentTypeGenerator.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
+
+#include "scribe/Scribe.h"
 
 #include "utils/UnicodeStringUtils.h"
 
@@ -143,6 +148,146 @@ GPlatesModel::TopLevelPropertyInline::bubble_up(
 			GPLATES_ASSERTION_SOURCE);
 
 	return child_revision.get();
+}
+
+#include "property-values/GpmlPlateId.h"
+
+GPlatesScribe::TranscribeResult
+GPlatesModel::TopLevelPropertyInline::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<TopLevelPropertyInline> &top_level_property_inline)
+{
+	if (scribe.is_saving())
+	{
+		// Save the property name.
+		scribe.save(TRANSCRIBE_SOURCE, top_level_property_inline->get_property_name(), "property_name");
+
+		// Save the property values.
+		const std::vector<PropertyValue::non_null_ptr_type> property_values(
+				top_level_property_inline->begin(),
+				top_level_property_inline->end());
+		scribe.save(TRANSCRIBE_SOURCE, property_values, "property_values");
+
+		// Save the XML attributes.
+		scribe.save(TRANSCRIBE_SOURCE, top_level_property_inline->get_xml_attributes(), "xml_attributes");
+	}
+	else // loading
+	{
+		// Load the property name.
+		GPlatesScribe::LoadRef<PropertyName> property_name = scribe.load<PropertyName>(TRANSCRIBE_SOURCE, "property_name");
+		if (!property_name.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Load the property values.
+		std::vector<PropertyValue::non_null_ptr_type> property_values;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, property_values, "property_values"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Load the XML attributes.
+		xml_attributes_type xml_attributes;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, xml_attributes, "xml_attributes"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property.
+		GPlatesModel::ModelTransaction transaction;
+		top_level_property_inline.construct_object(
+				boost::ref(transaction),  // non-const ref
+				property_name,
+				property_values.begin(),
+				property_values.end(),
+				xml_attributes);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesModel::TopLevelPropertyInline::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			// Save the property name.
+			scribe.save(TRANSCRIBE_SOURCE, get_property_name(), "property_name");
+
+			// Save the property values.
+			const std::vector<PropertyValue::non_null_ptr_type> property_values(begin(), end());
+			scribe.save(TRANSCRIBE_SOURCE, property_values, "property_values");
+
+			// Save the XML attributes.
+			scribe.save(TRANSCRIBE_SOURCE, get_xml_attributes(), "xml_attributes");
+		}
+		else // loading
+		{
+			// Load the property name.
+			GPlatesScribe::LoadRef<PropertyName> property_name = scribe.load<PropertyName>(TRANSCRIBE_SOURCE, "property_name");
+			if (!property_name.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+			d_property_name = property_name;
+
+			// Load the property values.
+			std::vector<PropertyValue::non_null_ptr_type> property_values;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, property_values, "property_values"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Load the XML attributes.
+			xml_attributes_type xml_attributes;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, xml_attributes, "xml_attributes"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Modify 'this' TopLevelPropertyInline object.
+			//
+			// There's no set method for assigning revisioned property values and XML attributes.
+			// So we do the equivalent inline here.
+			BubbleUpRevisionHandler revision_handler(this);
+			Revision &revision = revision_handler.get_revision<Revision>();
+
+			// Set the XML attributes.
+			revision.xml_attributes = xml_attributes;
+
+			// First remove any property values.
+			for (auto &revisioned_property_value : revision.values)
+			{
+				revisioned_property_value.detach(revision_handler.get_model_transaction());
+			}
+			revision.values.clear();
+
+			// Then add our loaded property values.
+			for (auto property_value : property_values)
+			{
+				revision.values.push_back(
+						RevisionedReference<PropertyValue>::attach(
+								revision_handler.get_model_transaction(), *this, property_value));
+			}
+
+			revision_handler.commit();
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::TopLevelProperty, TopLevelPropertyInline>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

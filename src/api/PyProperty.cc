@@ -28,6 +28,7 @@
 
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -132,6 +133,8 @@ export_top_level_property()
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesModel::TopLevelProperty::non_null_ptr_type>())
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.

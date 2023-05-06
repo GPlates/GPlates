@@ -942,6 +942,13 @@ class PropertyCase(unittest.TestCase):
         self.assertTrue(isinstance(self.property3.get_time_dependent_container(), pygplates.GpmlPiecewiseAggregation))
         self.assertTrue(isinstance(self.property4.get_time_dependent_container(), pygplates.GpmlIrregularSampling))
         self.assertTrue(isinstance(self.property5.get_time_dependent_container(), pygplates.GpmlConstantValue))
+    
+    def test_pickle(self):
+        self.assertTrue(self.property1 == pickle.loads(pickle.dumps(self.property1)))
+        self.assertTrue(self.property2 == pickle.loads(pickle.dumps(self.property2)))
+        self.assertTrue(self.property3 == pickle.loads(pickle.dumps(self.property3)))
+        self.assertTrue(self.property4 == pickle.loads(pickle.dumps(self.property4)))
+        self.assertTrue(self.property5 == pickle.loads(pickle.dumps(self.property5)))
 
 
 class PropertyNameCase(unittest.TestCase):

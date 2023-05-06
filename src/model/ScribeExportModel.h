@@ -1,11 +1,5 @@
-/* $Id$ */
-
 /**
- * \file 
- * $Revision$
- * $Date$
- * 
- * Copyright (C) 2015 The University of Sydney, Australia
+ * Copyright (C) 2023 The University of Sydney, Australia
  *
  * This file is part of GPlates.
  *
@@ -23,28 +17,26 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
-#include "model/ScribeExportModel.h"
+#ifndef GPLATES_DATA_MINING_SCRIBEEXPORTMODEL_H
+#define GPLATES_DATA_MINING_SCRIBEEXPORTMODEL_H
 
-#include "property-values/ScribeExportPropertyValues.h"
-
-#include "scribe/ScribeExportExternal.h"
-#include "scribe/ScribeExportRegistration.h"
+#include "TopLevelPropertyInline.h"
 
 
 /**
- * Group all classes/types to be scribe export registered for the 'pygplates' dynamic/shared library.
+ * Scribe export registered classes/types in the 'property-values' source sub-directory.
  *
  * See "ScribeExportRegistration.h" for more details.
- */
-#define SCRIBE_EXPORT_PYGPLATES \
-		SCRIBE_EXPORT_MODEL \
-		SCRIBE_EXPORT_PROPERTY_VALUES \
-		SCRIBE_EXPORT_EXTERNAL
-
-
-/**
- * Scribe export register all the above classes/types.
  *
- * See "ScribeExportRegistration.h" for more details.
+ *******************************************************************************
+ * WARNING: Changing the string ids will break backward/forward compatibility. *
+ *******************************************************************************
  */
-SCRIBE_EXPORT_REGISTRATION(SCRIBE_EXPORT_PYGPLATES)
+#define SCRIBE_EXPORT_MODEL \
+		\
+		((GPlatesModel::TopLevelPropertyInline, \
+			"GPlatesModel::TopLevelPropertyInline")) \
+		\
+
+
+#endif // GPLATES_DATA_MINING_SCRIBEEXPORTMODEL_H

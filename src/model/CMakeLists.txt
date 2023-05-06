@@ -72,6 +72,7 @@ set(srcs
     RevisionedReference.h
     RevisionedVector.h
     RevisionId.h
+    ScribeExportModel.h
     StringContentTypeGenerator.h
     StringSetSingletons.cc
     StringSetSingletons.h
