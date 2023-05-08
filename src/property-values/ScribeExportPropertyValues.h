@@ -20,9 +20,14 @@
 #ifndef GPLATES_DATA_MINING_SCRIBEEXPORTPROPERTYVALUES_H
 #define GPLATES_DATA_MINING_SCRIBEEXPORTPROPERTYVALUES_H
 
-#include "GpmlConstantValue.h"
 #include "GmlDataBlock.h"
 #include "GmlDataBlockCoordinateList.h"
+#include "GpmlConstantValue.h"
+#include "GpmlPlateId.h"
+#include "XsBoolean.h"
+#include "XsDouble.h"
+#include "XsInteger.h"
+#include "XsString.h"
 
 
 /**
@@ -36,14 +41,29 @@
  */
 #define SCRIBE_EXPORT_PROPERTY_VALUES \
 		\
-		((GPlatesPropertyValues::GpmlConstantValue, \
-			"GPlatesPropertyValues::GpmlConstantValue")) \
-		\
 		((GPlatesPropertyValues::GmlDataBlock, \
 			"GPlatesPropertyValues::GmlDataBlock")) \
 		\
 		((GPlatesPropertyValues::GmlDataBlockCoordinateList, \
 			"GPlatesPropertyValues::GmlDataBlockCoordinateList")) \
+		\
+		((GPlatesPropertyValues::GpmlConstantValue, \
+			"GPlatesPropertyValues::GpmlConstantValue")) \
+		\
+		((GPlatesPropertyValues::GpmlPlateId, \
+			"GPlatesPropertyValues::GpmlPlateId")) \
+		\
+		((GPlatesPropertyValues::XsBoolean, \
+			"GPlatesPropertyValues::XsBoolean")) \
+		\
+		((GPlatesPropertyValues::XsDouble, \
+			"GPlatesPropertyValues::XsDouble")) \
+		\
+		((GPlatesPropertyValues::XsInteger, \
+			"GPlatesPropertyValues::XsInteger")) \
+		\
+		((GPlatesPropertyValues::XsString, \
+			"GPlatesPropertyValues::XsString")) \
 		\
 
 

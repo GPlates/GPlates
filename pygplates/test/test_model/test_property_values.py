@@ -492,8 +492,8 @@ class GpmlConstantValueCase(unittest.TestCase):
         self.property_value3.set_plate_id(101)
     
     def test_pickle(self):
-        self.assertTrue(self.property_value1 == pickle.loads(pickle.dumps(self.property_value1)))
-        self.assertTrue(self.property_value2 == pickle.loads(pickle.dumps(self.property_value2)))
+        self.assertTrue(self.gpml_constant_value1 == pickle.loads(pickle.dumps(self.gpml_constant_value1)))
+        self.assertTrue(self.gpml_constant_value2 == pickle.loads(pickle.dumps(self.gpml_constant_value2)))
 
 
 class GpmlFiniteRotationCase(unittest.TestCase):
@@ -794,6 +794,9 @@ class GpmlPlateIdCase(unittest.TestCase):
         new_plate_id = 201
         self.gpml_plate_id.set_plate_id(new_plate_id)
         self.assertTrue(self.gpml_plate_id.get_plate_id() == new_plate_id)
+    
+    def test_pickle(self):
+        self.assertTrue(self.gpml_plate_id == pickle.loads(pickle.dumps(self.gpml_plate_id)))
 
 
 class GpmlPolarityChronIdCase(unittest.TestCase):
@@ -1192,6 +1195,9 @@ class XsBooleanCase(unittest.TestCase):
         new_boolean = False
         self.xs_boolean.set_boolean(new_boolean)
         self.assertTrue(self.xs_boolean.get_boolean() == new_boolean)
+    
+    def test_pickle(self):
+        self.assertTrue(self.xs_boolean == pickle.loads(pickle.dumps(self.xs_boolean)))
 
 
 class XsDoubleCase(unittest.TestCase):
@@ -1206,6 +1212,9 @@ class XsDoubleCase(unittest.TestCase):
         new_double = -100.2
         self.xs_double.set_double(new_double)
         self.assertTrue(self.xs_double.get_double() == new_double)
+    
+    def test_pickle(self):
+        self.assertTrue(self.xs_double == pickle.loads(pickle.dumps(self.xs_double)))
 
 
 class XsIntegerCase(unittest.TestCase):
@@ -1220,6 +1229,9 @@ class XsIntegerCase(unittest.TestCase):
         new_integer = -100
         self.xs_integer.set_integer(new_integer)
         self.assertTrue(self.xs_integer.get_integer() == new_integer)
+    
+    def test_pickle(self):
+        self.assertTrue(self.xs_integer == pickle.loads(pickle.dumps(self.xs_integer)))
 
 
 class XsStringCase(unittest.TestCase):
@@ -1234,6 +1246,9 @@ class XsStringCase(unittest.TestCase):
         new_string = 'another-string-for-testing'
         self.xs_string.set_string(new_string)
         self.assertTrue(self.xs_string.get_string() == new_string)
+    
+    def test_pickle(self):
+        self.assertTrue(self.xs_string == pickle.loads(pickle.dumps(self.xs_string)))
 
 
 def suite():

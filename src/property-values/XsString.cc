@@ -30,6 +30,9 @@
 #include "XsString.h"
 
 #include "model/BubbleUpRevisionHandler.h"
+#include "model/TranscribeStringContentTypeGenerator.h"
+
+#include "scribe/Scribe.h"
 
 
 const GPlatesPropertyValues::StructuralType
@@ -53,3 +56,63 @@ GPlatesPropertyValues::XsString::print_to(
 	return os << get_current_revision<Revision>().value.get();
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::XsString::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<XsString> &xs_string)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, xs_string->get_value(), "value");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GPlatesPropertyValues::TextContent> value =
+				scribe.load<GPlatesPropertyValues::TextContent>(TRANSCRIBE_SOURCE, "value");
+		if (!value.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		xs_string.construct_object(value);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::XsString::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_value(), "value");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GPlatesPropertyValues::TextContent> value =
+					scribe.load<GPlatesPropertyValues::TextContent>(TRANSCRIBE_SOURCE, "value");
+			if (!value.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			set_value(value);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, XsString>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

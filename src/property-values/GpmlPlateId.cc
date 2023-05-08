@@ -31,6 +31,8 @@
 
 #include "model/BubbleUpRevisionHandler.h"
 
+#include "scribe/Scribe.h"
+
 
 const GPlatesPropertyValues::StructuralType
 GPlatesPropertyValues::GpmlPlateId::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("plateId");
@@ -53,3 +55,61 @@ GPlatesPropertyValues::GpmlPlateId::print_to(
 	return os << get_current_revision<Revision>().value;
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlPlateId::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlPlateId> &gpml_plate_id)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gpml_plate_id->get_value(), "value");
+	}
+	else // loading
+	{
+		GPlatesModel::integer_plate_id_type value;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, value, "value"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		gpml_plate_id.construct_object(value);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlPlateId::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_value(), "value");
+		}
+		else // loading
+		{
+			GPlatesModel::integer_plate_id_type value;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, value, "value"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			set_value(value);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlPlateId>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

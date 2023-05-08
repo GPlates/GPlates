@@ -3355,6 +3355,8 @@ export_gpml_plate_id()
 				"\n"
 				"  :param plate_id: integer plate id\n"
 				"  :type plate_id: int\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -4968,6 +4970,8 @@ export_xs_boolean()
 				"\n"
 				"  :param boolean_value: the boolean value\n"
 				"  :type boolean_value: bool\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::XsBoolean::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -5025,6 +5029,8 @@ export_xs_double()
 				"\n"
 				"  :param float_value: the floating-point value\n"
 				"  :type float_value: float\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::XsDouble::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -5081,6 +5087,8 @@ export_xs_integer()
 				"\n"
 				"  :param integer_value: the integer value\n"
 				"  :type integer_value: int\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::XsInteger::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -5148,6 +5156,8 @@ export_xs_string()
 				"\n"
 				"  :param string: the string\n"
 				"  :type string: string\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::XsString::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
