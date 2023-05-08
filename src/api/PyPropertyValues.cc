@@ -1337,6 +1337,8 @@ export_gml_time_instant()
 				"\n"
 				"  :param time_position: the time position\n"
 				"  :type time_position: float or :class:`GeoTimeInstant`\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -1494,6 +1496,8 @@ export_gml_time_period()
 				"\n"
 				"  .. note:: *time_position* is considered to lie *within* a time period if it "
 				"coincides with the :meth:`begin<get_begin_time>` or :meth:`end<get_end_time>` time.\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -3291,6 +3295,8 @@ export_gpml_piecewise_aggregation()
 				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
 				"\n"
 				"  .. versionadded:: 0.21\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type>())
 	;
 
 	// Make 'GpmlPiecewiseAggregation' look like a python list (RevisionedVector<GpmlTimeWindow>).
@@ -4043,6 +4049,8 @@ export_gpml_time_window()
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type>())
 	;
 
 	// Create a python class "GpmlTimeWindowList" for RevisionedVector<GpmlTimeWindow> that behaves like a list of GpmlTimeWindow.

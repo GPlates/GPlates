@@ -34,6 +34,9 @@
 #include "global/GPlatesAssert.h"
 
 #include "model/BubbleUpRevisionHandler.h"
+#include "model/TranscribeQualifiedXmlName.h"
+
+#include "scribe/Scribe.h"
 
 
 const GPlatesPropertyValues::StructuralType
@@ -80,4 +83,101 @@ GPlatesPropertyValues::GpmlPiecewiseAggregation::bubble_up(
 
 	// To keep compiler happy - won't be able to get past 'Abort()'.
 	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlPiecewiseAggregation::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlPiecewiseAggregation> &gpml_piecewise_aggregation)
+{
+	if (scribe.is_saving())
+	{
+		// Get the current list of time windows.
+		std::vector<GpmlTimeWindow::non_null_ptr_type> time_windows_;
+		for (GpmlTimeWindow::non_null_ptr_type time_window : gpml_piecewise_aggregation->time_windows())
+		{
+			time_windows_.push_back(time_window);
+		}
+
+		scribe.save(TRANSCRIBE_SOURCE, time_windows_, "time_windows");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_piecewise_aggregation->get_value_type(), "value_type");
+	}
+	else // loading
+	{
+		// Load the time windows.
+		std::vector<GpmlTimeWindow::non_null_ptr_type> time_windows_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, time_windows_, "time_windows"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<StructuralType> value_type_ = scribe.load<StructuralType>(TRANSCRIBE_SOURCE, "value_type");
+		if (!value_type_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_piecewise_aggregation.construct_object(
+				boost::ref(transaction),  // non-const ref
+				GPlatesModel::RevisionedVector<GpmlTimeWindow>::create(
+						time_windows_.begin(),
+						time_windows_.end()),
+				value_type_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlPiecewiseAggregation::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			// Get the current list of time windows.
+			std::vector<GpmlTimeWindow::non_null_ptr_type> time_windows_;
+			for (GpmlTimeWindow::non_null_ptr_type time_window : time_windows())
+			{
+				time_windows_.push_back(time_window);
+			}
+
+			scribe.save(TRANSCRIBE_SOURCE, time_windows_, "time_windows");
+			scribe.save(TRANSCRIBE_SOURCE, get_value_type(), "value_type");
+		}
+		else // loading
+		{
+			// Load the time windows.
+			std::vector<GpmlTimeWindow::non_null_ptr_type> time_windows_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, time_windows_, "time_windows"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			GPlatesScribe::LoadRef<StructuralType> value_type_ = scribe.load<StructuralType>(TRANSCRIBE_SOURCE, "value_type");
+			if (!value_type_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			time_windows().assign(time_windows_.begin(), time_windows_.end());
+			d_value_type = value_type_;
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlPiecewiseAggregation>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

@@ -381,6 +381,9 @@ class GmlTimeInstantCase(unittest.TestCase):
         new_geo_time_instant = pygplates.GeoTimeInstant(20)
         self.gml_time_instant1.set_time(new_geo_time_instant)
         self.assertTrue(self.gml_time_instant1.get_time() == new_geo_time_instant)
+    
+    def test_pickle(self):
+        self.assertTrue(self.gml_time_instant1 == pickle.loads(pickle.dumps(self.gml_time_instant1)))
 
 
 class GmlTimePeriodCase(unittest.TestCase):
@@ -419,6 +422,9 @@ class GmlTimePeriodCase(unittest.TestCase):
                 self.gml_time_period.set_end_time, pygplates.GeoTimeInstant(5.5))
         self.assertRaises(pygplates.GmlTimePeriodBeginTimeLaterThanEndTimeError,
                 pygplates.GmlTimePeriod, 1.0, 2.0)
+    
+    def test_pickle(self):
+        self.assertTrue(self.gml_time_period == pickle.loads(pickle.dumps(self.gml_time_period)))
 
 
 class GpmlArrayCase(unittest.TestCase):
@@ -780,6 +786,9 @@ class GpmlPiecewiseAggregationCase(unittest.TestCase):
                 self.gpml_piecewise_aggregation[1].get_end_time())]
         self.assertTrue(list(self.gpml_piecewise_aggregation) ==
                 [pygplates.GpmlTimeWindow(pygplates.XsInteger(i), bt, et) for i, bt, et in [(0,1,0), (10,3,1), (3,4,3)]])
+    
+    def test_pickle(self):
+        self.assertTrue(self.gpml_piecewise_aggregation == pickle.loads(pickle.dumps(self.gpml_piecewise_aggregation)))
 
 
 class GpmlPlateIdCase(unittest.TestCase):
@@ -960,6 +969,9 @@ class GpmlTimeWindowCase(unittest.TestCase):
         # Same property value instance.
         self.gpml_time_window.set_value(self.gpml_time_window2.get_value())
         self.assertTrue(self.gpml_time_window == self.gpml_time_window2)
+    
+    def test_pickle(self):
+        self.assertTrue(self.gpml_time_window == pickle.loads(pickle.dumps(self.gpml_time_window)))
 
 
 class GpmlTopologicalSectionCase(unittest.TestCase):

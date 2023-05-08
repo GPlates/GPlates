@@ -22,8 +22,12 @@
 
 #include "GmlDataBlock.h"
 #include "GmlDataBlockCoordinateList.h"
+#include "GmlTimeInstant.h"
+#include "GmlTimePeriod.h"
 #include "GpmlConstantValue.h"
+#include "GpmlPiecewiseAggregation.h"
 #include "GpmlPlateId.h"
+#include "GpmlTimeWindow.h"
 #include "XsBoolean.h"
 #include "XsDouble.h"
 #include "XsInteger.h"
@@ -47,11 +51,23 @@
 		((GPlatesPropertyValues::GmlDataBlockCoordinateList, \
 			"GPlatesPropertyValues::GmlDataBlockCoordinateList")) \
 		\
+		((GPlatesPropertyValues::GmlTimeInstant, \
+			"GPlatesPropertyValues::GmlTimeInstant")) \
+		\
+		((GPlatesPropertyValues::GmlTimePeriod, \
+			"GPlatesPropertyValues::GmlTimePeriod")) \
+		\
 		((GPlatesPropertyValues::GpmlConstantValue, \
 			"GPlatesPropertyValues::GpmlConstantValue")) \
 		\
+		((GPlatesPropertyValues::GpmlPiecewiseAggregation, \
+			"GPlatesPropertyValues::GpmlPiecewiseAggregation")) \
+		\
 		((GPlatesPropertyValues::GpmlPlateId, \
 			"GPlatesPropertyValues::GpmlPlateId")) \
+		\
+		((GPlatesPropertyValues::GpmlTimeWindow, \
+			"GPlatesPropertyValues::GpmlTimeWindow")) \
 		\
 		((GPlatesPropertyValues::XsBoolean, \
 			"GPlatesPropertyValues::XsBoolean")) \
