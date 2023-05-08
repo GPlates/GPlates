@@ -34,6 +34,9 @@
 
 #include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
+#include "model/TranscribeQualifiedXmlName.h"
+
+#include "scribe/Scribe.h"
 
 
 namespace
@@ -198,6 +201,147 @@ GPlatesPropertyValues::GpmlTimeSample::bubble_up(
 
 	// To keep compiler happy - won't be able to get past 'Abort()'.
 	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlTimeSample::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlTimeSample> &gpml_time_sample)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gpml_time_sample->value(), "value");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_time_sample->valid_time(), "time");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_time_sample->description(), "description");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_time_sample->get_value_type(), "value_type");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_time_sample->is_disabled(), "disabled");
+	}
+	else // loading
+	{
+		// Load the property value.
+		GPlatesScribe::LoadRef<GPlatesModel::PropertyValue::non_null_ptr_type> value_ =
+				scribe.load<GPlatesModel::PropertyValue::non_null_ptr_type>(TRANSCRIBE_SOURCE, "value");
+		if (!value_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Load the valid time.
+		GPlatesScribe::LoadRef<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type> time_ =
+				scribe.load<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type>(TRANSCRIBE_SOURCE, "time");
+		if (!time_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Load the description.
+		boost::optional<XsString::non_null_ptr_type> description_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, description_, "description"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Load the value type.
+		GPlatesScribe::LoadRef<StructuralType> value_type_ = scribe.load<StructuralType>(TRANSCRIBE_SOURCE, "value_type");
+		if (!value_type_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Load the disabled boolean.
+		bool disabled_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, disabled_, "disabled"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_time_sample.construct_object(
+				boost::ref(transaction),  // non-const ref
+				value_,
+				time_,
+				description_,
+				value_type_,
+				disabled_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlTimeSample::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, value(), "value");
+			scribe.save(TRANSCRIBE_SOURCE, valid_time(), "time");
+			scribe.save(TRANSCRIBE_SOURCE, description(), "description");
+			scribe.save(TRANSCRIBE_SOURCE, get_value_type(), "value_type");
+			scribe.save(TRANSCRIBE_SOURCE, is_disabled(), "disabled");
+		}
+		else // loading
+		{
+			// Load the property value.
+			GPlatesScribe::LoadRef<GPlatesModel::PropertyValue::non_null_ptr_type> value_ =
+					scribe.load<GPlatesModel::PropertyValue::non_null_ptr_type>(TRANSCRIBE_SOURCE, "value");
+			if (!value_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Load the valid time.
+			GPlatesScribe::LoadRef<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type> time_ =
+					scribe.load<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type>(TRANSCRIBE_SOURCE, "time");
+			if (!time_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Load the description.
+			boost::optional<XsString::non_null_ptr_type> description_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, description_, "description"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Load the value type.
+			GPlatesScribe::LoadRef<StructuralType> value_type_ = scribe.load<StructuralType>(TRANSCRIBE_SOURCE, "value_type");
+			if (!value_type_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Load the disabled boolean.
+			bool disabled_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, disabled_, "disabled"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			set_value(value_);
+			set_valid_time(time_);
+			set_description(description_);
+			set_disabled(disabled_);
+			d_value_type = value_type_;
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlTimeSample>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

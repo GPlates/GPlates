@@ -26,7 +26,6 @@
  */
 
 #include <iostream>
-#include <boost/foreach.hpp>
 
 #include "GpmlIrregularSampling.h"
 
@@ -38,6 +37,9 @@
 #include "model/BubbleUpRevisionHandler.h"
 #include "model/Metadata.h"
 #include "model/NotificationGuard.h"
+#include "model/TranscribeQualifiedXmlName.h"
+
+#include "scribe/Scribe.h"
 
 
 namespace
@@ -153,14 +155,14 @@ GPlatesPropertyValues::GpmlIrregularSampling::set_disabled(
 	NotificationGuard model_notification_guard(get_model());
 
 	//first, remove all DISABLED_SEQUENCE_FLAG
-	BOOST_FOREACH(GpmlTimeSample::non_null_ptr_type sample, samples)
+	for (GpmlTimeSample::non_null_ptr_type sample : samples)
 	{
 		GpmlFiniteRotation *trs_pole = dynamic_cast<GpmlFiniteRotation *>(sample->value().get());
 		if(trs_pole)
 		{
 			const MetadataContainer &meta_data = trs_pole->get_metadata();
 			MetadataContainer new_meta_data;
-			BOOST_FOREACH(Metadata::shared_ptr_type m, meta_data)
+			for (Metadata::shared_ptr_type m : meta_data)
 			{
 				if(m->get_name() != Metadata::DISABLED_SEQUENCE_FLAG)
 				{
@@ -197,14 +199,14 @@ GPlatesPropertyValues::GpmlIrregularSampling::contains_disabled_sequence_flag() 
 
 	const RevisionedVector<GpmlTimeSample> &samples = time_samples();
 
-	BOOST_FOREACH(GpmlTimeSample::non_null_ptr_to_const_type sample, samples)
+	for (GpmlTimeSample::non_null_ptr_to_const_type sample : samples)
 	{
 		const GpmlFiniteRotation *trs_pole = 
 			dynamic_cast<const GpmlFiniteRotation *>(sample->value().get());
 		if(trs_pole)
 		{
 			const MetadataContainer &meta_data = trs_pole->get_metadata();
-			BOOST_FOREACH(const Metadata::shared_ptr_type m, meta_data)
+			for (const Metadata::shared_ptr_type m : meta_data)
 			{
 				if((m->get_name() == Metadata::DISABLED_SEQUENCE_FLAG) && 
 					!m->get_content().compare("true",Qt::CaseInsensitive))
@@ -264,6 +266,123 @@ GPlatesPropertyValues::GpmlIrregularSampling::bubble_up(
 
 	// To keep compiler happy - won't be able to get past 'Abort()'.
 	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlIrregularSampling::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlIrregularSampling> &gpml_irregular_sampling)
+{
+	if (scribe.is_saving())
+	{
+		// Get the current list of time samples.
+		std::vector<GpmlTimeSample::non_null_ptr_type> time_samples_;
+		for (GpmlTimeSample::non_null_ptr_type time_sample : gpml_irregular_sampling->time_samples())
+		{
+			time_samples_.push_back(time_sample);
+		}
+
+		scribe.save(TRANSCRIBE_SOURCE, time_samples_, "time_samples");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_irregular_sampling->interpolation_function(), "interpolation_function");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_irregular_sampling->get_value_type(), "value_type");
+	}
+	else // loading
+	{
+		// Load the time samples.
+		std::vector<GpmlTimeSample::non_null_ptr_type> time_samples_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, time_samples_, "time_samples"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Load the interpolation function.
+		boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interpolation_function_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, interpolation_function_, "interpolation_function"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Load the value type.
+		GPlatesScribe::LoadRef<StructuralType> value_type_ = scribe.load<StructuralType>(TRANSCRIBE_SOURCE, "value_type");
+		if (!value_type_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_irregular_sampling.construct_object(
+				boost::ref(transaction),  // non-const ref
+				GPlatesModel::RevisionedVector<GpmlTimeSample>::create(
+						time_samples_.begin(),
+						time_samples_.end()),
+				interpolation_function_,
+				value_type_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlIrregularSampling::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			// Get the current list of time samples.
+			std::vector<GpmlTimeSample::non_null_ptr_type> time_samples_;
+			for (GpmlTimeSample::non_null_ptr_type time_sample : time_samples())
+			{
+				time_samples_.push_back(time_sample);
+			}
+
+			scribe.save(TRANSCRIBE_SOURCE, time_samples_, "time_samples");
+			scribe.save(TRANSCRIBE_SOURCE, interpolation_function(), "interpolation_function");
+			scribe.save(TRANSCRIBE_SOURCE, get_value_type(), "value_type");
+		}
+		else // loading
+		{
+			// Load the time samples.
+			std::vector<GpmlTimeSample::non_null_ptr_type> time_samples_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, time_samples_, "time_samples"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Load the interpolation function.
+			boost::optional<GpmlInterpolationFunction::non_null_ptr_type> interpolation_function_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, interpolation_function_, "interpolation_function"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Load the value type.
+			GPlatesScribe::LoadRef<StructuralType> value_type_ = scribe.load<StructuralType>(TRANSCRIBE_SOURCE, "value_type");
+			if (!value_type_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			time_samples().assign(time_samples_.begin(), time_samples_.end());
+			set_interpolation_function(interpolation_function_);
+			d_value_type = value_type_;
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlIrregularSampling>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

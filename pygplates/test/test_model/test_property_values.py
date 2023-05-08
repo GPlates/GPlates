@@ -584,6 +584,9 @@ class GpmlIrregularSamplingCase(unittest.TestCase):
         
         # Need at least one time sample to create a GpmlIrregularSampling.
         self.assertRaises(RuntimeError, pygplates.GpmlIrregularSampling, [])
+    
+    def test_pickle(self):
+        self.assertTrue(self.gpml_irregular_sampling == pickle.loads(pickle.dumps(self.gpml_irregular_sampling)))
 
 
 class GpmlKeyValueDictionaryCase(unittest.TestCase):
@@ -918,6 +921,10 @@ class GpmlTimeSampleCase(unittest.TestCase):
         # Same property value instance.
         self.gpml_time_sample1.set_value(self.gpml_time_sample2.get_value())
         self.assertTrue(self.gpml_time_sample1 == self.gpml_time_sample2)
+    
+    def test_pickle(self):
+        self.assertTrue(self.gpml_time_sample1 == pickle.loads(pickle.dumps(self.gpml_time_sample1)))
+        self.assertTrue(self.gpml_time_sample2 == pickle.loads(pickle.dumps(self.gpml_time_sample2)))
 
 
 class GpmlTimeWindowCase(unittest.TestCase):

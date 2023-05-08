@@ -25,8 +25,11 @@
 #include "GmlTimeInstant.h"
 #include "GmlTimePeriod.h"
 #include "GpmlConstantValue.h"
+#include "GpmlFiniteRotationSlerp.h"
+#include "GpmlIrregularSampling.h"
 #include "GpmlPiecewiseAggregation.h"
 #include "GpmlPlateId.h"
+#include "GpmlTimeSample.h"
 #include "GpmlTimeWindow.h"
 #include "XsBoolean.h"
 #include "XsDouble.h"
@@ -60,11 +63,20 @@
 		((GPlatesPropertyValues::GpmlConstantValue, \
 			"GPlatesPropertyValues::GpmlConstantValue")) \
 		\
+		((GPlatesPropertyValues::GpmlFiniteRotationSlerp, \
+			"GPlatesPropertyValues::GpmlFiniteRotationSlerp")) \
+		\
+		((GPlatesPropertyValues::GpmlIrregularSampling, \
+			"GPlatesPropertyValues::GpmlIrregularSampling")) \
+		\
 		((GPlatesPropertyValues::GpmlPiecewiseAggregation, \
 			"GPlatesPropertyValues::GpmlPiecewiseAggregation")) \
 		\
 		((GPlatesPropertyValues::GpmlPlateId, \
 			"GPlatesPropertyValues::GpmlPlateId")) \
+		\
+		((GPlatesPropertyValues::GpmlTimeSample, \
+			"GPlatesPropertyValues::GpmlTimeSample")) \
 		\
 		((GPlatesPropertyValues::GpmlTimeWindow, \
 			"GPlatesPropertyValues::GpmlTimeWindow")) \

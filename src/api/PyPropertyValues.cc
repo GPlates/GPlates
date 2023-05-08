@@ -1869,6 +1869,8 @@ export_gpml_finite_rotation_slerp()
 				"  ::\n"
 				"\n"
 				"    finite_rotation_slerp = pygplates.GpmlFiniteRotationSlerp()\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlFiniteRotationSlerp::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -2229,6 +2231,8 @@ export_gpml_irregular_sampling()
 				"  :param interpolation_function: the function used to interpolate between time samples\n"
 				"  :type interpolation_function: an instance derived from :class:`GpmlInterpolationFunction`, or None\n")
 #endif
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type>())
 	;
 
 	// Make 'GpmlIrregularSampling' look like a python list (RevisionedVector<GpmlTimeSample>).
@@ -3859,6 +3863,8 @@ export_gpml_time_sample()
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>())
 	;
 
 	// Create a python class "GpmlTimeSampleList" for RevisionedVector<GpmlTimeSample> that behaves like a list of GpmlTimeSample.

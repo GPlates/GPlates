@@ -55,6 +55,7 @@ set(srcs
     GpmlFeatureSnapshotReference.h
     GpmlFiniteRotation.cc
     GpmlFiniteRotation.h
+    GpmlFiniteRotationSlerp.cc
     GpmlFiniteRotationSlerp.h
     GpmlHotSpotTrailMark.cc
     GpmlHotSpotTrailMark.h

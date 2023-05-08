@@ -29,6 +29,8 @@
 
 #include "GpmlInterpolationFunction.h"
 
+#include "scribe/Scribe.h"
+
 
 const GPlatesPropertyValues::StructuralType
 GPlatesPropertyValues::GpmlInterpolationFunction::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("InterpolationFunction");
@@ -44,3 +46,17 @@ GPlatesPropertyValues::GpmlInterpolationFunction::print_to(
 	return os << value_type_as_string;
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlInterpolationFunction::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlInterpolationFunction>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
