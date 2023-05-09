@@ -82,6 +82,7 @@ set(srcs
     TopLevelPropertyInline.h
     TranscribeIdTypeGenerator.h
     TranscribeQualifiedXmlName.h
+    TranscribeRevisionedVector.h
     TranscribeStringContentTypeGenerator.h
     types.h
     WeakObserver.h

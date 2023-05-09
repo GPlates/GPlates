@@ -40,6 +40,7 @@
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "global/CompilerWarnings.h"
 
@@ -49,6 +50,7 @@
 #include <boost/python/slice.hpp>
 
 #include "model/RevisionedVector.h"
+#include "model/TranscribeRevisionedVector.h"
 
 
 namespace GPlatesApi
@@ -560,6 +562,12 @@ namespace GPlatesApi
 					.def(GPlatesApi::NoHashDefVisitor(false, true))
 					.def(bp::self == bp::self)
 					.def(bp::self != bp::self)
+			;
+
+			// And pickle support.
+			revisioned_vector_class
+					.def(GPlatesApi::PythonPickle::PickleDefVisitor<
+							typename GPlatesModel::RevisionedVector<RevisionableType>::non_null_ptr_type>())
 			;
 		}
 

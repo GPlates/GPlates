@@ -47,6 +47,9 @@
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/non_null_intrusive_ptr.h"
 
 
@@ -880,6 +883,22 @@ namespace GPlatesModel
 			vector_element_revisioned_reference_type elements;
 		};
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		// NOTE: Implementation is in "TranscribeRevisionedVector.h" to avoid including "Scribe.h" here.
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<RevisionedVector<RevisionableType>> &revisioned_vector);
+
+		// NOTE: Implementation is in "TranscribeRevisionedVector.h" to avoid including "Scribe.h" here.
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 }
 
