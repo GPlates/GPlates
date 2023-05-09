@@ -225,17 +225,11 @@ std::ostream &
 GPlatesPropertyValues::GpmlIrregularSampling::print_to(
 		std::ostream &os) const
 {
-	const GPlatesModel::RevisionedVector<GpmlTimeSample> &samples = time_samples();
-
 	os << "[ ";
 
-	GPlatesModel::RevisionedVector<GpmlTimeSample>::const_iterator samples_iter =
-			samples.begin();
-	GPlatesModel::RevisionedVector<GpmlTimeSample>::const_iterator samples_end =
-			samples.end();
-	for ( ; samples_iter != samples_end; ++samples_iter)
+	for (GpmlTimeSample::non_null_ptr_to_const_type time_sample : time_samples())
 	{
-		os << **samples_iter;
+		os << *time_sample;
 	}
 
 	return os << " ]";
@@ -277,21 +271,18 @@ GPlatesPropertyValues::GpmlIrregularSampling::transcribe_construct_data(
 	if (scribe.is_saving())
 	{
 		// Get the current list of time samples.
-		std::vector<GpmlTimeSample::non_null_ptr_type> time_samples_;
-		for (GpmlTimeSample::non_null_ptr_type time_sample : gpml_irregular_sampling->time_samples())
-		{
-			time_samples_.push_back(time_sample);
-		}
-
+		GPlatesModel::RevisionedVector<GpmlTimeSample>::non_null_ptr_type time_samples_ = &gpml_irregular_sampling->time_samples();
 		scribe.save(TRANSCRIBE_SOURCE, time_samples_, "time_samples");
+
 		scribe.save(TRANSCRIBE_SOURCE, gpml_irregular_sampling->interpolation_function(), "interpolation_function");
 		scribe.save(TRANSCRIBE_SOURCE, gpml_irregular_sampling->get_value_type(), "value_type");
 	}
 	else // loading
 	{
 		// Load the time samples.
-		std::vector<GpmlTimeSample::non_null_ptr_type> time_samples_;
-		if (!scribe.transcribe(TRANSCRIBE_SOURCE, time_samples_, "time_samples"))
+		GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlTimeSample>::non_null_ptr_type> time_samples_ =
+				scribe.load<GPlatesModel::RevisionedVector<GpmlTimeSample>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "time_samples");
+		if (!time_samples_.is_valid())
 		{
 			return scribe.get_transcribe_result();
 		}
@@ -314,9 +305,7 @@ GPlatesPropertyValues::GpmlIrregularSampling::transcribe_construct_data(
 		GPlatesModel::ModelTransaction transaction;
 		gpml_irregular_sampling.construct_object(
 				boost::ref(transaction),  // non-const ref
-				GPlatesModel::RevisionedVector<GpmlTimeSample>::create(
-						time_samples_.begin(),
-						time_samples_.end()),
+				time_samples_,
 				interpolation_function_,
 				value_type_);
 		transaction.commit();
@@ -336,21 +325,18 @@ GPlatesPropertyValues::GpmlIrregularSampling::transcribe(
 		if (scribe.is_saving())
 		{
 			// Get the current list of time samples.
-			std::vector<GpmlTimeSample::non_null_ptr_type> time_samples_;
-			for (GpmlTimeSample::non_null_ptr_type time_sample : time_samples())
-			{
-				time_samples_.push_back(time_sample);
-			}
-
+			GPlatesModel::RevisionedVector<GpmlTimeSample>::non_null_ptr_type time_samples_ = &time_samples();
 			scribe.save(TRANSCRIBE_SOURCE, time_samples_, "time_samples");
+
 			scribe.save(TRANSCRIBE_SOURCE, interpolation_function(), "interpolation_function");
 			scribe.save(TRANSCRIBE_SOURCE, get_value_type(), "value_type");
 		}
 		else // loading
 		{
 			// Load the time samples.
-			std::vector<GpmlTimeSample::non_null_ptr_type> time_samples_;
-			if (!scribe.transcribe(TRANSCRIBE_SOURCE, time_samples_, "time_samples"))
+			GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GpmlTimeSample>::non_null_ptr_type> time_samples_ =
+					scribe.load<GPlatesModel::RevisionedVector<GpmlTimeSample>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "time_samples");
+			if (!time_samples_.is_valid())
 			{
 				return scribe.get_transcribe_result();
 			}
@@ -370,7 +356,13 @@ GPlatesPropertyValues::GpmlIrregularSampling::transcribe(
 			}
 
 			// Set the property value.
-			time_samples().assign(time_samples_.begin(), time_samples_.end());
+			{
+				// Set the time samples.
+				GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+				Revision &revision = revision_handler.get_revision<Revision>();
+				revision.time_samples.change(revision_handler.get_model_transaction(), time_samples_);
+				revision_handler.commit();
+			}
 			set_interpolation_function(interpolation_function_);
 			d_value_type = value_type_;
 		}

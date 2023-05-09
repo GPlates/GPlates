@@ -34,6 +34,7 @@
 #include "global/GPlatesAssert.h"
 
 #include "model/BubbleUpRevisionHandler.h"
+#include "model/TranscribeRevisionedVector.h"
 
 #include "scribe/Scribe.h"
 
@@ -46,14 +47,10 @@ std::ostream &
 GPlatesPropertyValues::GmlDataBlock::print_to(
 		std::ostream &os) const
 {
-	const GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList> &tuple_list_ = tuple_list();
-
 	os << "[ ";
 
 	bool first = true;
-	GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::const_iterator tuple_list_iter = tuple_list_.begin();
-	GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::const_iterator tuple_list_end = tuple_list_.end();
-	for ( ; tuple_list_iter != tuple_list_end; ++tuple_list_iter)
+	for (GmlDataBlockCoordinateList::non_null_ptr_to_const_type coord_list : tuple_list())
 	{
 		if (first)
 		{
@@ -63,7 +60,7 @@ GPlatesPropertyValues::GmlDataBlock::print_to(
 		{
 			os << " , ";
 		}
-		os << **tuple_list_iter;
+		os << *coord_list;
 	}
 
 	return os << " ]";
@@ -99,21 +96,16 @@ GPlatesPropertyValues::GmlDataBlock::transcribe_construct_data(
 {
 	if (scribe.is_saving())
 	{
-		// Get the current tuple list.
-		std::vector<GmlDataBlockCoordinateList::non_null_ptr_type> tuple_list_;
-		for (GmlDataBlockCoordinateList::non_null_ptr_type list_ : gml_data_block->tuple_list())
-		{
-			tuple_list_.push_back(list_);
-		}
-
 		// Save the tuple list.
+		GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::non_null_ptr_type tuple_list_ = &gml_data_block->tuple_list();
 		scribe.save(TRANSCRIBE_SOURCE, tuple_list_, "tuple_list");
 	}
 	else // loading
 	{
 		// Load the tuple list.
-		std::vector<GmlDataBlockCoordinateList::non_null_ptr_type> tuple_list_;
-		if (!scribe.transcribe(TRANSCRIBE_SOURCE, tuple_list_, "tuple_list"))
+		GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::non_null_ptr_type> tuple_list_ =
+				scribe.load<GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "tuple_list");
+		if (!tuple_list_.is_valid())
 		{
 			return scribe.get_transcribe_result();
 		}
@@ -122,9 +114,7 @@ GPlatesPropertyValues::GmlDataBlock::transcribe_construct_data(
 		GPlatesModel::ModelTransaction transaction;
 		gml_data_block.construct_object(
 				boost::ref(transaction),  // non-const ref
-				GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::create(
-						tuple_list_.begin(),
-						tuple_list_.end()));
+				tuple_list_);
 		transaction.commit();
 	}
 
@@ -141,27 +131,25 @@ GPlatesPropertyValues::GmlDataBlock::transcribe(
 	{
 		if (scribe.is_saving())
 		{
-			// Get the current tuple list.
-			std::vector<GmlDataBlockCoordinateList::non_null_ptr_type> tuple_list_;
-			for (GmlDataBlockCoordinateList::non_null_ptr_type list_ : tuple_list())
-			{
-				tuple_list_.push_back(list_);
-			}
-
 			// Save the tuple list.
-			scribe.save(TRANSCRIBE_SOURCE, tuple_list_, "tuple_list");
+			scribe.save(TRANSCRIBE_SOURCE, tuple_list(), "tuple_list");
 		}
 		else // loading
 		{
 			// Load the tuple list.
-			std::vector<GmlDataBlockCoordinateList::non_null_ptr_type> tuple_list_;
-			if (!scribe.transcribe(TRANSCRIBE_SOURCE, tuple_list_, "tuple_list"))
+			GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::non_null_ptr_type> tuple_list_ =
+					scribe.load<GPlatesModel::RevisionedVector<GmlDataBlockCoordinateList>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "tuple_list");
+			if (!tuple_list_.is_valid())
 			{
 				return scribe.get_transcribe_result();
 			}
 
 			// Set the property value.
-			tuple_list().assign(tuple_list_.begin(), tuple_list_.end());
+			GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+			revision_handler.get_revision<Revision>().tuple_list.change(
+					revision_handler.get_model_transaction(),
+					tuple_list_);
+			revision_handler.commit();
 		}
 	}
 

@@ -40,15 +40,20 @@ std::ostream &
 GPlatesPropertyValues::GpmlArray::print_to(
                 std::ostream &os) const
 {
-	const GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue> &members_ = members();
-
 	os << "[ ";
 
-	GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::const_iterator members_iter = members_.begin();
-	GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::const_iterator members_end = members_.end();
-	for ( ; members_iter != members_end; ++members_iter)
+	bool first = true;
+	for (GPlatesModel::PropertyValue::non_null_ptr_to_const_type property_value : members())
 	{
-		os << **members_iter;
+		if (first)
+		{
+			first = false;
+		}
+		else
+		{
+			os << " , ";
+		}
+		os << *property_value;
 	}
 
 	return os << " ]";

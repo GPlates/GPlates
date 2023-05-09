@@ -587,6 +587,10 @@ class GpmlIrregularSamplingCase(unittest.TestCase):
     
     def test_pickle(self):
         self.assertTrue(self.gpml_irregular_sampling == pickle.loads(pickle.dumps(self.gpml_irregular_sampling)))
+        # Test pickling of list of GpmlTimeSample (returned by GpmlIrregularSampling.get_enabled_time_samples())...
+        self.assertTrue(self.gpml_irregular_sampling.get_enabled_time_samples() == pickle.loads(pickle.dumps(self.gpml_irregular_sampling.get_enabled_time_samples())))
+        # Test pickling of GpmlTimeSampleList (returned by GpmlIrregularSampling.get_time_samples())...
+        self.assertTrue(self.gpml_irregular_sampling.get_time_samples() == pickle.loads(pickle.dumps(self.gpml_irregular_sampling.get_time_samples())))
 
 
 class GpmlKeyValueDictionaryCase(unittest.TestCase):
@@ -792,6 +796,8 @@ class GpmlPiecewiseAggregationCase(unittest.TestCase):
     
     def test_pickle(self):
         self.assertTrue(self.gpml_piecewise_aggregation == pickle.loads(pickle.dumps(self.gpml_piecewise_aggregation)))
+        # Test pickling of GpmlTimeSampleList (returned by GpmlIrregularSampling.get_time_samples())...
+        self.assertTrue(self.gpml_piecewise_aggregation.get_time_windows() == pickle.loads(pickle.dumps(self.gpml_piecewise_aggregation.get_time_windows())))
 
 
 class GpmlPlateIdCase(unittest.TestCase):

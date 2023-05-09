@@ -36,6 +36,9 @@
 #include "XsInteger.h"
 #include "XsString.h"
 
+#include "model/RevisionedVector.h"
+#include "model/TranscribeRevisionedVector.h"
+
 
 /**
  * Scribe export registered classes/types in the 'property-values' source sub-directory.
@@ -53,6 +56,9 @@
 		\
 		((GPlatesPropertyValues::GmlDataBlockCoordinateList, \
 			"GPlatesPropertyValues::GmlDataBlockCoordinateList")) \
+		\
+		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>, \
+			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>")) \
 		\
 		((GPlatesPropertyValues::GmlTimeInstant, \
 			"GPlatesPropertyValues::GmlTimeInstant")) \
@@ -78,8 +84,14 @@
 		((GPlatesPropertyValues::GpmlTimeSample, \
 			"GPlatesPropertyValues::GpmlTimeSample")) \
 		\
+		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>, \
+			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>")) \
+		\
 		((GPlatesPropertyValues::GpmlTimeWindow, \
 			"GPlatesPropertyValues::GpmlTimeWindow")) \
+		\
+		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>, \
+			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>")) \
 		\
 		((GPlatesPropertyValues::XsBoolean, \
 			"GPlatesPropertyValues::XsBoolean")) \
