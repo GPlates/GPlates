@@ -36,6 +36,9 @@
 
 #include "model/BubbleUpRevisionHandler.h"
 
+#include "scribe/Scribe.h"
+#include "scribe/TranscribeEnumProtocol.h"
+
 
 const GPlatesPropertyValues::StructuralType
 GPlatesPropertyValues::GmlPoint::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gml("Point");
@@ -81,6 +84,107 @@ GPlatesPropertyValues::GmlPoint::print_to(
 		std::ostream &os) const
 {
 	return os << get_point();
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlPoint::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GmlPoint> &gml_point)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gml_point->get_point(), "point");
+		scribe.save(TRANSCRIBE_SOURCE, gml_point->gml_property(), "gml_property");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GPlatesMaths::PointOnSphere> point_ =
+				scribe.load<GPlatesMaths::PointOnSphere>(TRANSCRIBE_SOURCE, "point");
+		if (!point_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<GmlProperty> gml_property_ =
+				scribe.load<GmlProperty>(TRANSCRIBE_SOURCE, "gml_property");
+		if (!gml_property_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		gml_point.construct_object(point_, gml_property_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GmlPoint::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_point(), "point");
+			scribe.save(TRANSCRIBE_SOURCE, gml_property(), "gml_property");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<GPlatesMaths::PointOnSphere> point_ =
+					scribe.load<GPlatesMaths::PointOnSphere>(TRANSCRIBE_SOURCE, "point");
+			if (!point_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			GPlatesScribe::LoadRef<GmlProperty> gml_property_ =
+					scribe.load<GmlProperty>(TRANSCRIBE_SOURCE, "gml_property");
+			if (!gml_property_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			set_point(point_);
+			set_gml_property(gml_property_);
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GmlPoint>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		GmlPoint::GmlProperty &gml_property,
+		bool transcribed_construct_data)
+{
+	// WARNING: Changing the string ids will break backward/forward compatibility.
+	//          So don't change the string ids even if the enum name changes.
+	static const GPlatesScribe::EnumValue enum_values[] =
+	{
+		GPlatesScribe::EnumValue("POS", GmlPoint::POS),
+		GPlatesScribe::EnumValue("COORDINATES", GmlPoint::COORDINATES)
+	};
+
+	return GPlatesScribe::transcribe_enum_protocol(
+			TRANSCRIBE_SOURCE,
+			scribe,
+			gml_property,
+			enum_values,
+			enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
 }
 
 

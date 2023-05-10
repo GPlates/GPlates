@@ -345,6 +345,10 @@ class GmlPointCase(unittest.TestCase):
         new_point = pygplates.PointOnSphere(0,0,1)
         self.gml_point.set_point(new_point)
         self.assertTrue(self.gml_point.get_point() == new_point)
+    
+    def test_pickle(self):
+        pickled_gml_point = pickle.loads(pickle.dumps(self.gml_point))
+        self.assertTrue(pickled_gml_point == self.gml_point)
 
 
 class GmlPolygonCase(unittest.TestCase):

@@ -5,6 +5,7 @@ Unit tests for the pygplates geometries on sphere.
 import math
 import os
 import unittest
+import pickle
 import pygplates
 # Test using numpy if it's available...
 try:
@@ -170,6 +171,11 @@ class PointOnSphereCase(unittest.TestCase):
     def test_get_centroid(self):
         point = pygplates.PointOnSphere(0, 1, 0)
         self.assertEqual(point.get_centroid(), point)
+    
+    def test_pickle(self):
+        point_on_sphere = pygplates.PointOnSphere(self.xyz)
+        pickled_point_on_sphere = pickle.loads(pickle.dumps(point_on_sphere))
+        self.assertTrue(pickled_point_on_sphere == point_on_sphere)
 
 
 class MultiPointOnSphereCase(unittest.TestCase):

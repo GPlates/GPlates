@@ -39,6 +39,9 @@
 #include "TrailingLatLonCoordinateException.h"
 #include "InvalidLatLonCoordinateException.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/QtStreamable.h"
 
 
@@ -174,6 +177,20 @@ namespace GPlatesMaths
 		 */
 		UnitVector3D d_position_vector;
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<PointOnSphere> &point_on_sphere);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 
@@ -285,6 +302,20 @@ namespace GPlatesMaths
 		 */
 		PointOnSphere d_position;
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<PointGeometryOnSphere> &point_geometry_on_sphere);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 

@@ -37,6 +37,9 @@
 #include "ProximityCriteria.h"
 #include "MathsUtils.h"
 
+#include "scribe/Scribe.h"
+#include "scribe/TranscribeDelegateProtocol.h"
+
 
 const GPlatesMaths::PointOnSphere GPlatesMaths::PointOnSphere::north_pole =
 		GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(90.0, 0.0));
@@ -113,11 +116,127 @@ GPlatesMaths::PointOnSphere::get_point_geometry_on_sphere() const
 }
 
 
+GPlatesScribe::TranscribeResult
+GPlatesMaths::PointOnSphere::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<PointOnSphere> &point_on_sphere)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, point_on_sphere->d_position_vector, "position_vector");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<UnitVector3D> position_vector_ =
+				scribe.load<UnitVector3D>(TRANSCRIBE_SOURCE, "position_vector");
+		if (!position_vector_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		point_on_sphere.construct_object(position_vector_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::PointOnSphere::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, d_position_vector, "position_vector");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<UnitVector3D> position_vector_ =
+					scribe.load<UnitVector3D>(TRANSCRIBE_SOURCE, "position_vector");
+			if (!position_vector_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			d_position_vector = position_vector_;
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
 void
 GPlatesMaths::PointGeometryOnSphere::accept_visitor(
 		ConstGeometryOnSphereVisitor &visitor) const
 {
 	visitor.visit_point_on_sphere(this);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::PointGeometryOnSphere::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<PointGeometryOnSphere> &point_geometry_on_sphere)
+{
+	if (scribe.is_saving())
+	{
+		// Make PointGeometryOnSphere transcription compatible with PointOnSphere.
+		GPlatesScribe::save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, point_geometry_on_sphere->d_position);
+	}
+	else // loading
+	{
+		// Make PointGeometryOnSphere transcription compatible with PointOnSphere.
+		GPlatesScribe::LoadRef<PointOnSphere> position_ =
+				GPlatesScribe::load_delegate_protocol<PointOnSphere>(TRANSCRIBE_SOURCE, scribe);
+		if (!position_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		point_geometry_on_sphere.construct_object(position_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::PointGeometryOnSphere::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			// Make PointGeometryOnSphere transcription compatible with PointOnSphere.
+			GPlatesScribe::save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, d_position);
+		}
+		else // loading
+		{
+			// Make PointGeometryOnSphere transcription compatible with PointOnSphere.
+			GPlatesScribe::LoadRef<PointOnSphere> position_ =
+					GPlatesScribe::load_delegate_protocol<PointOnSphere>(TRANSCRIBE_SOURCE, scribe);
+			if (!position_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			d_position = position_;
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GeometryOnSphere, PointGeometryOnSphere>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

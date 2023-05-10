@@ -22,6 +22,7 @@
 
 #include "GmlDataBlock.h"
 #include "GmlDataBlockCoordinateList.h"
+#include "GmlPoint.h"
 #include "GmlTimeInstant.h"
 #include "GmlTimePeriod.h"
 #include "GpmlConstantValue.h"
@@ -59,6 +60,9 @@
 		\
 		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>, \
 			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>")) \
+		\
+		((GPlatesPropertyValues::GmlPoint, \
+			"GPlatesPropertyValues::GmlPoint")) \
 		\
 		((GPlatesPropertyValues::GmlTimeInstant, \
 			"GPlatesPropertyValues::GmlTimeInstant")) \
