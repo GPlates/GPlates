@@ -303,6 +303,10 @@ class GmlMultiPointCase(unittest.TestCase):
                 [pygplates.PointOnSphere(-1, 0, 0), pygplates.PointOnSphere(0, -1, 0)])
         self.gml_multi_point.set_multi_point(new_multi_point)
         self.assertTrue(self.gml_multi_point.get_multi_point() == new_multi_point)
+    
+    def test_pickle(self):
+        pickled_gml_multi_point = pickle.loads(pickle.dumps(self.gml_multi_point))
+        self.assertTrue(pickled_gml_multi_point == self.gml_multi_point)
 
 
 class GmlOrientableCurveCase(unittest.TestCase):

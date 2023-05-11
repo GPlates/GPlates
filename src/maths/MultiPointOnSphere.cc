@@ -33,6 +33,8 @@
 #include "ProximityCriteria.h"
 #include "SmallCircleBounds.h"
 
+#include "scribe/Scribe.h"
+
 #include "utils/ReferenceCount.h"
 
 
@@ -222,6 +224,26 @@ GPlatesMaths::MultiPointOnSphere::get_bounding_small_circle() const
 	}
 
 	return d_cached_calculations->bounding_small_circle.get();
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::MultiPointOnSphere::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_points, "points"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GeometryOnSphere, MultiPointOnSphere>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

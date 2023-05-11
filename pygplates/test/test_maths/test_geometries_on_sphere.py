@@ -295,6 +295,10 @@ class MultiPointOnSphereCase(unittest.TestCase):
     
     def test_centroid(self):
         self.assertTrue(isinstance(self.multi_point.get_centroid(), pygplates.PointOnSphere))
+    
+    def test_pickle(self):
+        pickled_multi_point = pickle.loads(pickle.dumps(self.multi_point))
+        self.assertTrue(pickled_multi_point == self.multi_point)
 
 
 class PolylineOnSphereCase(unittest.TestCase):

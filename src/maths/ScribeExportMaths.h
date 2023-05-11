@@ -20,6 +20,7 @@
 #ifndef GPLATES_DATA_MINING_SCRIBEEXPORTMATHS_H
 #define GPLATES_DATA_MINING_SCRIBEEXPORTMATHS_H
 
+#include "MultiPointOnSphere.h"
 #include "PointOnSphere.h"
 
 
@@ -33,6 +34,9 @@
  *******************************************************************************
  */
 #define SCRIBE_EXPORT_MATHS \
+		\
+		((GPlatesMaths::MultiPointOnSphere, \
+			"GPlatesMaths::MultiPointOnSphere")) \
 		\
 		((GPlatesMaths::PointGeometryOnSphere, \
 			"GPlatesMaths::PointGeometryOnSphere")) \

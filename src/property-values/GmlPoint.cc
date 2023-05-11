@@ -110,7 +110,11 @@ GPlatesPropertyValues::GmlPoint::transcribe_construct_data(
 				scribe.load<GmlProperty>(TRANSCRIBE_SOURCE, "gml_property");
 		if (!gml_property_.is_valid())
 		{
-			return scribe.get_transcribe_result();
+			// Failed to load GmlProperty (eg, a future GPlates might have removed it).
+			// Just leave as the default (POS).
+			gml_point.construct_object(point_, POS);
+
+			return GPlatesScribe::TRANSCRIBE_SUCCESS;
 		}
 
 		// Create the property value.
@@ -142,16 +146,22 @@ GPlatesPropertyValues::GmlPoint::transcribe(
 				return scribe.get_transcribe_result();
 			}
 
+			// Set the point.
+			set_point(point_);
+
 			GPlatesScribe::LoadRef<GmlProperty> gml_property_ =
 					scribe.load<GmlProperty>(TRANSCRIBE_SOURCE, "gml_property");
 			if (!gml_property_.is_valid())
 			{
-				return scribe.get_transcribe_result();
+				// Failed to load GmlProperty (eg, a future GPlates might have removed it).
+				// Just leave as the default (POS).
+				set_gml_property(POS);
 			}
-
-			// Set the property value.
-			set_point(point_);
-			set_gml_property(gml_property_);
+			else
+			{
+				// GmlProperty exists in transcription.
+				set_gml_property(gml_property_);
+			}
 		}
 	}
 

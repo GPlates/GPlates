@@ -1052,6 +1052,8 @@ export_gml_multi_point()
 				"\n"
 				"  :param multi_point: the multi-point geometry\n"
 				"  :type multi_point: :class:`MultiPointOnSphere`\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
