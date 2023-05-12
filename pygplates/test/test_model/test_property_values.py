@@ -285,6 +285,10 @@ class GmlLineStringCase(unittest.TestCase):
                 pygplates.PointOnSphere(0, 0, 1)])
         self.gml_line_string.set_polyline(new_polyline)
         self.assertTrue(self.gml_line_string.get_polyline() == new_polyline)
+    
+    def test_pickle(self):
+        pickled_gml_line_string = pickle.loads(pickle.dumps(self.gml_line_string))
+        self.assertTrue(pickled_gml_line_string == self.gml_line_string)
 
 
 class GmlMultiPointCase(unittest.TestCase):
@@ -329,6 +333,10 @@ class GmlOrientableCurveCase(unittest.TestCase):
         new_gml_line_string = pygplates.GmlLineString(new_polyline)
         self.gml_orientable_curve.set_base_curve(new_gml_line_string)
         self.assertTrue(self.gml_orientable_curve.get_base_curve() == new_gml_line_string)
+    
+    def test_pickle(self):
+        pickled_gml_orientable_curve = pickle.loads(pickle.dumps(self.gml_orientable_curve))
+        self.assertTrue(pickled_gml_orientable_curve == self.gml_orientable_curve)
 
 
 class GmlPointCase(unittest.TestCase):

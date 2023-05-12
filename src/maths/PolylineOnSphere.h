@@ -45,6 +45,9 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 namespace GPlatesMaths
 {
@@ -871,8 +874,7 @@ namespace GPlatesMaths
 		generate_segments_and_swap(
 				PolylineOnSphere &poly,
 				PointForwardIter begin,
-				PointForwardIter end,
-				bool check_distinct_points);
+				PointForwardIter end);
 
 
 		/**
@@ -898,6 +900,15 @@ namespace GPlatesMaths
 		 * This pointer is NULL until the first calculation is requested.
 		 */
 		mutable boost::intrusive_ptr<PolylineOnSphereImpl::CachedCalculations> d_cached_calculations;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 
@@ -1020,8 +1031,21 @@ namespace GPlatesMaths
 			PointForwardIter end,
 			bool check_distinct_points)
 	{
+		// NOTE: We ignore determination of insufficient distinct points if we are *not*
+		// throwing an exception for it.
+		const ConstructionParameterValidity v =
+				evaluate_construction_parameter_validity(
+						begin,
+						end,
+						check_distinct_points);
+		if (v != VALID)
+		{
+			throw InvalidPointsForPolylineConstructionError(GPLATES_EXCEPTION_SOURCE, v);
+		}
+
+		// Create a new polyline.
 		non_null_ptr_type ptr(new PolylineOnSphere());
-		generate_segments_and_swap(*ptr, begin, end, check_distinct_points);
+		generate_segments_and_swap(*ptr, begin, end);
 		return ptr;
 	}
 
@@ -1076,21 +1100,8 @@ namespace GPlatesMaths
 	PolylineOnSphere::generate_segments_and_swap(
 			PolylineOnSphere &poly,
 			PointForwardIter begin,
-			PointForwardIter end,
-			bool check_distinct_points)
+			PointForwardIter end)
 	{
-		// NOTE: We ignore determination of insufficient distinct points if we are *not*
-		// throwing an exception for it.
-		ConstructionParameterValidity v =
-				evaluate_construction_parameter_validity(
-						begin,
-						end,
-						check_distinct_points);
-		if (v != VALID)
-		{
-			throw InvalidPointsForPolylineConstructionError(GPLATES_EXCEPTION_SOURCE, v);
-		}
-
 		// Make it easier to provide strong exception safety by appending the new segments
 		// to a temporary sequence (rather than putting them directly into 'd_seq').
 		seq_type tmp_seq;

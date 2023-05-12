@@ -43,6 +43,8 @@
 
 #include "global/InvalidParametersException.h"
 
+#include "scribe/Scribe.h"
+
 #include "utils/ReferenceCount.h"
 
 
@@ -314,6 +316,40 @@ GPlatesMaths::PolylineOnSphere::get_bounding_tree() const
 	}
 
 	return d_cached_calculations->polyline_bounding_tree.get();
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::PolylineOnSphere::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// Transcribe the vertices instead of segments because the segments (great circle arcs)
+	// contain duplicate vertices (end of segment contains same vertex as start of next segment).
+	if (scribe.is_saving())
+	{
+		const std::vector<PointOnSphere> vertices(vertex_begin(), vertex_end());
+		scribe.save(TRANSCRIBE_SOURCE, vertices, "vertices");
+	}
+	else // loading
+	{
+		std::vector<PointOnSphere> vertices;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, vertices, "vertices"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Add the vertices (as great circle arc segments).
+		generate_segments_and_swap(*this, vertices.begin(), vertices.end());
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GeometryOnSphere, PolylineOnSphere>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

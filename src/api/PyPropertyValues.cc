@@ -988,6 +988,8 @@ export_gml_line_string()
 				"\n"
 				"  :param polyline: the polyline geometry\n"
 				"  :type polyline: :class:`PolylineOnSphere`\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlLineString::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -1131,6 +1133,8 @@ export_gml_orientable_curve()
 				"\n"
 				"  :param base_curve: the line string (polyline) property value\n"
 				"  :type base_curve: :class:`GmlLineString`\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).

@@ -715,6 +715,10 @@ class PolylineOnSphereCase(unittest.TestCase):
         self.assertTrue(tessellated[5] == pygplates.FiniteRotation((1,0,0), 2 * math.pi / 6) * self.points[1])
         self.assertTrue(tessellated[7] == pygplates.FiniteRotation((1,0,0), math.pi / 6) * self.points[2])
         self.assertTrue(tessellated[8] == pygplates.FiniteRotation((1,0,0), 2 * math.pi / 6) * self.points[2])
+    
+    def test_pickle(self):
+        pickled_polyline = pickle.loads(pickle.dumps(self.polyline))
+        self.assertTrue(pickled_polyline == self.polyline)
 
 
 class PolygonOnSphereCase(unittest.TestCase):

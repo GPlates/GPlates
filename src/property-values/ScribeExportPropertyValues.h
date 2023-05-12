@@ -22,7 +22,9 @@
 
 #include "GmlDataBlock.h"
 #include "GmlDataBlockCoordinateList.h"
+#include "GmlLineString.h"
 #include "GmlMultiPoint.h"
+#include "GmlOrientableCurve.h"
 #include "GmlPoint.h"
 #include "GmlTimeInstant.h"
 #include "GmlTimePeriod.h"
@@ -62,8 +64,14 @@
 		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>, \
 			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>")) \
 		\
+		((GPlatesPropertyValues::GmlLineString, \
+			"GPlatesPropertyValues::GmlLineString")) \
+		\
 		((GPlatesPropertyValues::GmlMultiPoint, \
 			"GPlatesPropertyValues::GmlMultiPoint")) \
+		\
+		((GPlatesPropertyValues::GmlOrientableCurve, \
+			"GPlatesPropertyValues::GmlOrientableCurve")) \
 		\
 		((GPlatesPropertyValues::GmlPoint, \
 			"GPlatesPropertyValues::GmlPoint")) \

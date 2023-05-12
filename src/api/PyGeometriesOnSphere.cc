@@ -2561,6 +2561,8 @@ export_polyline_on_sphere()
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere>>())
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.

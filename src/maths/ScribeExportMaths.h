@@ -22,6 +22,7 @@
 
 #include "MultiPointOnSphere.h"
 #include "PointOnSphere.h"
+#include "PolylineOnSphere.h"
 
 
 /**
@@ -40,6 +41,9 @@
 		\
 		((GPlatesMaths::PointGeometryOnSphere, \
 			"GPlatesMaths::PointGeometryOnSphere")) \
+		\
+		((GPlatesMaths::PolylineOnSphere, \
+			"GPlatesMaths::PolylineOnSphere")) \
 		\
 
 
