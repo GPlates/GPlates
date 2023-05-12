@@ -42,6 +42,10 @@
 
 #include "global/PointerTraits.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
+
 namespace GPlatesMaths
 {
 	class FiniteRotation;
@@ -406,6 +410,21 @@ namespace GPlatesMaths
 		static
 		real_t
 		get_zero_length_threshold_cosine();
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GreatCircleArc> &great_circle_arc);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 

@@ -717,8 +717,9 @@ class PolylineOnSphereCase(unittest.TestCase):
         self.assertTrue(tessellated[8] == pygplates.FiniteRotation((1,0,0), 2 * math.pi / 6) * self.points[2])
     
     def test_pickle(self):
-        pickled_polyline = pickle.loads(pickle.dumps(self.polyline))
-        self.assertTrue(pickled_polyline == self.polyline)
+        self.assertTrue(self.polyline == pickle.loads(pickle.dumps(self.polyline)))
+        self.assertTrue(self.polyline.get_points() == pickle.loads(pickle.dumps(self.polyline.get_points())))
+        self.assertTrue(self.polyline.get_segments() == pickle.loads(pickle.dumps(self.polyline.get_segments())))
 
 
 class PolygonOnSphereCase(unittest.TestCase):
@@ -1120,6 +1121,21 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertTrue(tessellated[8] == pygplates.FiniteRotation((1,0,0), 2 * math.pi / 6) * self.points[2])
         self.assertTrue(tessellated[10] == pygplates.FiniteRotation((0,0,1), math.pi / 6) * self.points[3])
         self.assertTrue(tessellated[11] == pygplates.FiniteRotation((0,0,1), 2 * math.pi / 6) * self.points[3])
+    
+    def test_pickle(self):
+        self.assertTrue(self.polygon == pickle.loads(pickle.dumps(self.polygon)))
+        self.assertTrue(self.polygon.get_points() == pickle.loads(pickle.dumps(self.polygon.get_points())))
+        self.assertTrue(self.polygon.get_segments() == pickle.loads(pickle.dumps(self.polygon.get_segments())))
+        self.assertTrue(self.polygon.get_exterior_ring_points() == pickle.loads(pickle.dumps(self.polygon.get_exterior_ring_points())))
+        self.assertTrue(self.polygon.get_exterior_ring_segments() == pickle.loads(pickle.dumps(self.polygon.get_exterior_ring_segments())))
+
+        self.assertTrue(self.polygon_with_interior == pickle.loads(pickle.dumps(self.polygon_with_interior)))
+        self.assertTrue(self.polygon_with_interior.get_points() == pickle.loads(pickle.dumps(self.polygon_with_interior.get_points())))
+        self.assertTrue(self.polygon_with_interior.get_segments() == pickle.loads(pickle.dumps(self.polygon_with_interior.get_segments())))
+        self.assertTrue(self.polygon_with_interior.get_exterior_ring_points() == pickle.loads(pickle.dumps(self.polygon_with_interior.get_exterior_ring_points())))
+        self.assertTrue(self.polygon_with_interior.get_exterior_ring_segments() == pickle.loads(pickle.dumps(self.polygon_with_interior.get_exterior_ring_segments())))
+        self.assertTrue(self.polygon_with_interior.get_interior_ring_points(0) == pickle.loads(pickle.dumps(self.polygon_with_interior.get_interior_ring_points(0))))
+        self.assertTrue(self.polygon_with_interior.get_interior_ring_segments(0) == pickle.loads(pickle.dumps(self.polygon_with_interior.get_interior_ring_segments(0))))
 
 
 def suite():

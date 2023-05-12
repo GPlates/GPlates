@@ -31,6 +31,7 @@
 
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/python.h"
@@ -390,6 +391,8 @@ export_great_circle_arc()
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesMaths::GreatCircleArc>>())
 	;
 
 	// Enable boost::optional<GreatCircleArc> to be passed to and from python.

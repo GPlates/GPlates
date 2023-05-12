@@ -38,6 +38,8 @@
 #include "Rotation.h"
 #include "Vector3D.h"
 
+#include "scribe/Scribe.h"
+
 
 namespace GPlatesMaths
 {
@@ -617,6 +619,61 @@ GPlatesMaths::GreatCircleArc::evaluate_construction_parameter_validity(
 	}
 
 	return VALID;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::GreatCircleArc::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GreatCircleArc> &great_circle_arc)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, great_circle_arc->start_point(), "start_point");
+		scribe.save(TRANSCRIBE_SOURCE, great_circle_arc->end_point(), "end_point");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<PointOnSphere> start_point_ = scribe.load<PointOnSphere>(TRANSCRIBE_SOURCE, "start_point");
+		GPlatesScribe::LoadRef<PointOnSphere> end_point_ = scribe.load<PointOnSphere>(TRANSCRIBE_SOURCE, "end_point");
+		if (!start_point_.is_valid() ||
+			!end_point_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the great circle arc.
+		great_circle_arc.construct_object(
+				start_point_,
+				end_point_,
+				dot(start_point_->position_vector(), end_point_->position_vector()));
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::GreatCircleArc::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_start_point, "start_point") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_end_point, "end_point"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		if (scribe.is_loading())
+		{
+			d_dot_of_endpoints = dot(d_start_point.position_vector(), d_end_point.position_vector());
+			d_cached_on_demand = CachedOnDemand();
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

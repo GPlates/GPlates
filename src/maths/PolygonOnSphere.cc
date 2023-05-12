@@ -47,6 +47,8 @@
 #include "global/InvalidParametersException.h"
 #include "global/UninitialisedIteratorException.h"
 
+#include "scribe/Scribe.h"
+
 #include "utils/ReferenceCount.h"
 
 
@@ -802,6 +804,91 @@ GPlatesMaths::PolygonOnSphere::get_interior_ring_bounding_tree(
 			GPLATES_ASSERTION_SOURCE);
 
 	return *d_cached_calculations->interior_polygon_bounding_trees.get()[interior_ring_index];
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesMaths::PolygonOnSphere::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	// Transcribe the vertices of each ring instead of segments because the segments (great circle arcs)
+	// contain duplicate vertices (end of segment contains same vertex as start of next segment).
+	if (scribe.is_saving())
+	{
+		// Exterior ring.
+		const std::vector<PointOnSphere> exterior_ring_vertices_(exterior_ring_vertex_begin(), exterior_ring_vertex_end());
+		scribe.save(TRANSCRIBE_SOURCE, exterior_ring_vertices_, "exterior_ring");
+
+		const GPlatesScribe::ObjectTag interior_rings_tag("interior_rings");
+
+		// Number of interior rings.
+		const unsigned int num_interior_rings = number_of_interior_rings();
+		scribe.save(TRANSCRIBE_SOURCE, num_interior_rings, interior_rings_tag.sequence_size());
+
+		// Interior rings.
+		for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+		{
+			const std::vector<PointOnSphere> interior_vertices_(
+					interior_ring_vertex_begin(interior_ring_index),
+					interior_ring_vertex_end(interior_ring_index));
+			scribe.save(TRANSCRIBE_SOURCE, interior_vertices_, interior_rings_tag[interior_ring_index]);
+		}
+	}
+	else // loading
+	{
+		// Exterior ring.
+		std::vector<PointOnSphere> exterior_ring_vertices_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, exterior_ring_vertices_, "exterior_ring"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		const GPlatesScribe::ObjectTag interior_rings_tag("interior_rings");
+
+		// Number of interior rings.
+		unsigned int num_interior_rings;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, num_interior_rings, interior_rings_tag.sequence_size()))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		if (num_interior_rings > 0)
+		{
+			// Interior rings.
+			std::vector<std::vector<PointOnSphere>> interior_rings;
+			interior_rings.resize(num_interior_rings);
+
+			for (unsigned int interior_ring_index = 0; interior_ring_index < num_interior_rings; ++interior_ring_index)
+			{
+				if (!scribe.transcribe(TRANSCRIBE_SOURCE, interior_rings[interior_ring_index], interior_rings_tag[interior_ring_index]))
+				{
+					return scribe.get_transcribe_result();
+				}
+			}
+
+			// Add the exterior and interior rings (as great circle arc segments).
+			generate_rings_and_swap(
+					*this,
+					exterior_ring_vertices_.begin(), exterior_ring_vertices_.end(),
+					interior_rings.begin(), interior_rings.end());
+		}
+		else // num_interior_rings == 0 ...
+		{
+			// Add the exterior ring only (as great circle arc segments).
+			generate_rings_and_swap(
+					*this,
+					exterior_ring_vertices_.begin(), exterior_ring_vertices_.end());
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GeometryOnSphere, PolygonOnSphere>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

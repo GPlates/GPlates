@@ -287,8 +287,7 @@ class GmlLineStringCase(unittest.TestCase):
         self.assertTrue(self.gml_line_string.get_polyline() == new_polyline)
     
     def test_pickle(self):
-        pickled_gml_line_string = pickle.loads(pickle.dumps(self.gml_line_string))
-        self.assertTrue(pickled_gml_line_string == self.gml_line_string)
+        self.assertTrue(self.gml_line_string == pickle.loads(pickle.dumps(self.gml_line_string)))
 
 
 class GmlMultiPointCase(unittest.TestCase):
@@ -309,8 +308,7 @@ class GmlMultiPointCase(unittest.TestCase):
         self.assertTrue(self.gml_multi_point.get_multi_point() == new_multi_point)
     
     def test_pickle(self):
-        pickled_gml_multi_point = pickle.loads(pickle.dumps(self.gml_multi_point))
-        self.assertTrue(pickled_gml_multi_point == self.gml_multi_point)
+        self.assertTrue(self.gml_multi_point == pickle.loads(pickle.dumps(self.gml_multi_point)))
 
 
 class GmlOrientableCurveCase(unittest.TestCase):
@@ -335,8 +333,7 @@ class GmlOrientableCurveCase(unittest.TestCase):
         self.assertTrue(self.gml_orientable_curve.get_base_curve() == new_gml_line_string)
     
     def test_pickle(self):
-        pickled_gml_orientable_curve = pickle.loads(pickle.dumps(self.gml_orientable_curve))
-        self.assertTrue(pickled_gml_orientable_curve == self.gml_orientable_curve)
+        self.assertTrue(self.gml_orientable_curve == pickle.loads(pickle.dumps(self.gml_orientable_curve)))
 
 
 class GmlPointCase(unittest.TestCase):
@@ -359,8 +356,7 @@ class GmlPointCase(unittest.TestCase):
         self.assertTrue(self.gml_point.get_point() == new_point)
     
     def test_pickle(self):
-        pickled_gml_point = pickle.loads(pickle.dumps(self.gml_point))
-        self.assertTrue(pickled_gml_point == self.gml_point)
+        self.assertTrue(self.gml_point == pickle.loads(pickle.dumps(self.gml_point)))
 
 
 class GmlPolygonCase(unittest.TestCase):
@@ -381,6 +377,9 @@ class GmlPolygonCase(unittest.TestCase):
                 pygplates.PointOnSphere(0, 0, 1)])
         self.gml_polygon.set_polygon(new_polygon)
         self.assertTrue(self.gml_polygon.get_polygon() == new_polygon)
+    
+    def test_pickle(self):
+        self.assertTrue(self.gml_polygon == pickle.loads(pickle.dumps(self.gml_polygon)))
 
 
 class GmlTimeInstantCase(unittest.TestCase):

@@ -123,12 +123,14 @@ GPlatesMaths::PointOnSphere::transcribe_construct_data(
 {
 	if (scribe.is_saving())
 	{
-		scribe.save(TRANSCRIBE_SOURCE, point_on_sphere->d_position_vector, "position_vector");
+		// Make PointOnSphere transcription compatible with UnitVector3D.
+		GPlatesScribe::save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, point_on_sphere->d_position_vector);
 	}
 	else // loading
 	{
+		// Make PointOnSphere transcription compatible with UnitVector3D.
 		GPlatesScribe::LoadRef<UnitVector3D> position_vector_ =
-				scribe.load<UnitVector3D>(TRANSCRIBE_SOURCE, "position_vector");
+				GPlatesScribe::load_delegate_protocol<UnitVector3D>(TRANSCRIBE_SOURCE, scribe);
 		if (!position_vector_.is_valid())
 		{
 			return scribe.get_transcribe_result();
@@ -150,12 +152,14 @@ GPlatesMaths::PointOnSphere::transcribe(
 	{
 		if (scribe.is_saving())
 		{
-			scribe.save(TRANSCRIBE_SOURCE, d_position_vector, "position_vector");
+			// Make PointOnSphere transcription compatible with UnitVector3D.
+			GPlatesScribe::save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, d_position_vector);
 		}
 		else // loading
 		{
+			// Make PointOnSphere transcription compatible with UnitVector3D.
 			GPlatesScribe::LoadRef<UnitVector3D> position_vector_ =
-					scribe.load<UnitVector3D>(TRANSCRIBE_SOURCE, "position_vector");
+					GPlatesScribe::load_delegate_protocol<UnitVector3D>(TRANSCRIBE_SOURCE, scribe);
 			if (!position_vector_.is_valid())
 			{
 				return scribe.get_transcribe_result();

@@ -26,6 +26,7 @@
 #include "GmlMultiPoint.h"
 #include "GmlOrientableCurve.h"
 #include "GmlPoint.h"
+#include "GmlPolygon.h"
 #include "GmlTimeInstant.h"
 #include "GmlTimePeriod.h"
 #include "GpmlConstantValue.h"
@@ -75,6 +76,9 @@
 		\
 		((GPlatesPropertyValues::GmlPoint, \
 			"GPlatesPropertyValues::GmlPoint")) \
+		\
+		((GPlatesPropertyValues::GmlPolygon, \
+			"GPlatesPropertyValues::GmlPolygon")) \
 		\
 		((GPlatesPropertyValues::GmlTimeInstant, \
 			"GPlatesPropertyValues::GmlTimeInstant")) \

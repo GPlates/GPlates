@@ -1274,6 +1274,8 @@ export_gml_polygon()
 				"\n"
 				"  :param polygon: the polygon geometry\n"
 				"  :type polygon: :class:`PolygonOnSphere`\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlPolygon::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).

@@ -45,6 +45,9 @@
 
 #include "global/PreconditionViolationError.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 namespace GPlatesMaths
 {
@@ -1836,8 +1839,7 @@ namespace GPlatesMaths
 		generate_rings_and_swap(
 				PolygonOnSphere &polygon,
 				PointForwardIter exterior_begin,
-				PointForwardIter exterior_end,
-				bool check_distinct_points);
+				PointForwardIter exterior_end);
 
 
 		/**
@@ -1858,8 +1860,7 @@ namespace GPlatesMaths
 				PointForwardIter exterior_begin,
 				PointForwardIter exterior_end,
 				PointCollectionForwardIter interior_rings_begin,
-				PointCollectionForwardIter interior_rings_end,
-				bool check_distinct_points);
+				PointCollectionForwardIter interior_rings_end);
 
 
 		/**
@@ -1905,6 +1906,15 @@ namespace GPlatesMaths
 		 * This pointer is NULL until the first calculation is requested.
 		 */
 		mutable boost::intrusive_ptr<PolygonOnSphereImpl::CachedCalculations> d_cached_calculations;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 
@@ -2094,8 +2104,18 @@ namespace GPlatesMaths
 			PointForwardIter exterior_end,
 			bool check_distinct_points)
 	{
+		const ConstructionParameterValidity v =
+				evaluate_construction_parameter_validity(
+						exterior_begin,
+						exterior_end,
+						check_distinct_points);
+		if (v != VALID)
+		{
+			throw InvalidPointsForPolygonConstructionError(GPLATES_EXCEPTION_SOURCE, v);
+		}
+
 		non_null_ptr_type ptr(new PolygonOnSphere());
-		generate_rings_and_swap(*ptr, exterior_begin, exterior_end, check_distinct_points);
+		generate_rings_and_swap(*ptr, exterior_begin, exterior_end);
 		return ptr;
 	}
 
@@ -2109,12 +2129,37 @@ namespace GPlatesMaths
 			PointCollectionForwardIter interior_rings_end,
 			bool check_distinct_points)
 	{
+		const ConstructionParameterValidity exterior_validity =
+				evaluate_construction_parameter_validity(
+						exterior_begin,
+						exterior_end,
+						check_distinct_points);
+		if (exterior_validity != VALID)
+		{
+			throw InvalidPointsForPolygonConstructionError(GPLATES_EXCEPTION_SOURCE, exterior_validity);
+		}
+
+		unsigned int interior_index = 0;
+		for (PointCollectionForwardIter interior_rings_iter = interior_rings_begin;
+			interior_rings_iter != interior_rings_end;
+			++interior_rings_iter, ++interior_index)
+		{
+			const ConstructionParameterValidity interior_validity =
+					evaluate_construction_parameter_validity(
+							interior_rings_iter->begin(),
+							interior_rings_iter->end(),
+							check_distinct_points);
+			if (interior_validity != VALID)
+			{
+				throw InvalidPointsForPolygonConstructionError(GPLATES_EXCEPTION_SOURCE, interior_validity);
+			}
+		}
+
 		non_null_ptr_type ptr(new PolygonOnSphere());
 		generate_rings_and_swap(
 				*ptr,
 				exterior_begin, exterior_end,
-				interior_rings_begin, interior_rings_end,
-				check_distinct_points);
+				interior_rings_begin, interior_rings_end);
 		return ptr;
 	}
 
@@ -2170,19 +2215,8 @@ namespace GPlatesMaths
 	PolygonOnSphere::generate_rings_and_swap(
 			PolygonOnSphere &polygon,
 	 		PointForwardIter exterior_begin,
-			PointForwardIter exterior_end,
-			bool check_distinct_points)
+			PointForwardIter exterior_end)
 	{
-		const ConstructionParameterValidity v =
-				evaluate_construction_parameter_validity(
-						exterior_begin,
-						exterior_end,
-						check_distinct_points);
-		if (v != VALID)
-		{
-			throw InvalidPointsForPolygonConstructionError(GPLATES_EXCEPTION_SOURCE, v);
-		}
-
 		// Make it easier to provide strong exception safety by appending the new segments
 		// to a temporary sequence (rather than putting them directly into 'd_exterior_ring').
 		ring_type exterior;
@@ -2198,19 +2232,8 @@ namespace GPlatesMaths
 	 		PointForwardIter exterior_begin,
 			PointForwardIter exterior_end,
 			PointCollectionForwardIter interior_rings_begin,
-			PointCollectionForwardIter interior_rings_end,
-			bool check_distinct_points)
+			PointCollectionForwardIter interior_rings_end)
 	{
-		const ConstructionParameterValidity exterior_validity =
-				evaluate_construction_parameter_validity(
-						exterior_begin,
-						exterior_end,
-						check_distinct_points);
-		if (exterior_validity != VALID)
-		{
-			throw InvalidPointsForPolygonConstructionError(GPLATES_EXCEPTION_SOURCE, exterior_validity);
-		}
-
 		// Make it easier to provide strong exception safety by appending to temporary rings
 		// and then swapping them into 'polygon'.
 
@@ -2225,16 +2248,6 @@ namespace GPlatesMaths
 			interior_rings_iter != interior_rings_end;
 			++interior_rings_iter, ++interior_index)
 		{
-			const ConstructionParameterValidity interior_validity =
-					evaluate_construction_parameter_validity(
-							interior_rings_iter->begin(),
-							interior_rings_iter->end(),
-							check_distinct_points);
-			if (interior_validity != VALID)
-			{
-				throw InvalidPointsForPolygonConstructionError(GPLATES_EXCEPTION_SOURCE, interior_validity);
-			}
-
 			generate_ring(
 					interiors[interior_index],
 					interior_rings_iter->begin(),
