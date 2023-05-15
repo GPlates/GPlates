@@ -37,9 +37,12 @@
 
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/Version.h"
+
+#include "scribe/Scribe.h"
 
 
 namespace bp = boost::python;
@@ -335,6 +338,59 @@ GPlatesApi::Version::operator<(
 }
 
 
+GPlatesScribe::TranscribeResult
+GPlatesApi::Version::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<Version> &version)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, version->d_major, "major");
+		scribe.save(TRANSCRIBE_SOURCE, version->d_minor, "minor");
+		scribe.save(TRANSCRIBE_SOURCE, version->d_patch, "patch");
+	}
+	else // loading
+	{
+		unsigned int major, minor, patch;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, major, "major") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, minor, "minor") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, patch, "patch"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		version.construct_object(major, minor, patch);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesApi::Version::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_major, "major") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_minor, "minor") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_patch, "patch"))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_prerelease_suffix, "prerelease_suffix"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
 std::ostream &
 GPlatesApi::operator<<(
 		std::ostream &os,
@@ -605,6 +661,8 @@ export_version()
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesApi::Version>>())
 	;
 
 	// Enable boost::optional<Version> to be passed to and from python.

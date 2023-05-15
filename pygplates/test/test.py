@@ -6,6 +6,7 @@ Unit tests for the pygplates native library.
 
 import os
 import sys
+import pickle
 import platform
 import types
 import unittest
@@ -153,6 +154,10 @@ class VersionCase(unittest.TestCase):
         self.assertTrue(pygplates.Version(20).get_prerelease_suffix() is None)  # 'Version(revision)' is deprecated
         self.assertTrue(pygplates.Version(20) < pygplates.Version(21))  # 'Version(revision)' is deprecated
         self.assertTrue(pygplates.Version(20) < pygplates.Version(0, 21))  # 'Version(revision)' is deprecated
+
+    def test_pickle(self):
+        for version in (pygplates.Version(0, 1), pygplates.Version('0.34.dev1'), pygplates.Version('0.34a2'), pygplates.Version('0.34b1'), pygplates.Version('0.34rc1')):
+            self.assertTrue(version == pickle.loads(pickle.dumps(version)))
 
 
 def suite():

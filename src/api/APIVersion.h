@@ -34,6 +34,11 @@
 
 #include "global/python.h"
 
+// Normally we only include the heavyweight "Scribe.h" in '.cc' files where possible.
+// However we need to use an inline friend function to transcribe nested private class PrereleaseSuffix.
+#include "scribe/Scribe.h"
+#include "scribe/TranscribeEnumProtocol.h"
+
 #include "utils/QtStreamable.h"
 
 
@@ -167,6 +172,62 @@ namespace GPlatesApi
 		boost::optional<PrereleaseSuffix>
 		extract_prerelease_suffix(
 				QString prerelease_suffix_string);
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<Version> &version);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
+
+		friend
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				PrereleaseSuffix::Type &type,
+				bool transcribed_construct_data)
+		{
+			// WARNING: Changing the string ids will break backward/forward compatibility.
+			//          So don't change the string ids even if the enum name changes.
+			static const GPlatesScribe::EnumValue enum_values[] =
+			{
+				GPlatesScribe::EnumValue("DEVELOPMENT", PrereleaseSuffix::DEVELOPMENT),
+				GPlatesScribe::EnumValue("ALPHA", PrereleaseSuffix::ALPHA),
+				GPlatesScribe::EnumValue("BETA", PrereleaseSuffix::BETA),
+				GPlatesScribe::EnumValue("RELEASE_CANDIDATE", PrereleaseSuffix::RELEASE_CANDIDATE)
+			};
+
+			return GPlatesScribe::transcribe_enum_protocol(
+					TRANSCRIBE_SOURCE,
+					scribe,
+					type,
+					enum_values,
+					enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
+		}
+
+		friend
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				PrereleaseSuffix &prerelease_suffix,
+				bool transcribed_construct_data)
+		{
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, prerelease_suffix.type, "type") ||
+				!scribe.transcribe(TRANSCRIBE_SOURCE, prerelease_suffix.number, "number"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			return GPlatesScribe::TRANSCRIBE_SUCCESS;
+		}
 	};
 
 
