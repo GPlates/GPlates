@@ -433,6 +433,8 @@ export_enumeration()
 				"  ::\n"
 				"\n"
 				"    dip_slip_enum.set_content('Extension')\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::Enumeration::non_null_ptr_type>())
 	;
 
 #if 0  // Not registering Enumeration because it represents many different structural types (it stores an EnumerationType).

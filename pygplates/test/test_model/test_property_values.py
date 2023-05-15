@@ -67,6 +67,8 @@ class EnumerationCase(unittest.TestCase):
     
     def test_pickle(self):
         self.assertTrue(self.enum_type == pickle.loads(pickle.dumps(self.enum_type)))
+        self.assertTrue(self.enum_content == pickle.loads(pickle.dumps(self.enum_content)))
+        self.assertTrue(self.enumeration == pickle.loads(pickle.dumps(self.enumeration)))
 
 
 class GeoTimeInstantCase(unittest.TestCase):

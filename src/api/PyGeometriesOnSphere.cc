@@ -1533,14 +1533,14 @@ namespace GPlatesApi
 		}
 		else // loading
 		{
-			GPlatesScribe::LoadRef<PolyGeometryType> poly_geometry =
+			GPlatesScribe::LoadRef<PolyGeometryType> poly_geometry_ =
 					scribe.load<PolyGeometryType>(TRANSCRIBE_SOURCE, "poly_geometry");
-			if (!poly_geometry.is_valid())
+			if (!poly_geometry_.is_valid())
 			{
 				return scribe.get_transcribe_result();
 			}
 
-			poly_geometry_view.construct_object(poly_geometry);
+			poly_geometry_view.construct_object(poly_geometry_);
 		}
 
 		return GPlatesScribe::TRANSCRIBE_SUCCESS;

@@ -20,6 +20,7 @@
 #ifndef GPLATES_DATA_MINING_SCRIBEEXPORTPROPERTYVALUES_H
 #define GPLATES_DATA_MINING_SCRIBEEXPORTPROPERTYVALUES_H
 
+#include "Enumeration.h"
 #include "GmlDataBlock.h"
 #include "GmlDataBlockCoordinateList.h"
 #include "GmlLineString.h"
@@ -55,6 +56,9 @@
  *******************************************************************************
  */
 #define SCRIBE_EXPORT_PROPERTY_VALUES \
+		\
+		((GPlatesPropertyValues::Enumeration, \
+			"GPlatesPropertyValues::Enumeration")) \
 		\
 		((GPlatesPropertyValues::GmlDataBlock, \
 			"GPlatesPropertyValues::GmlDataBlock")) \
