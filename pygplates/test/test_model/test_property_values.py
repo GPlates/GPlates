@@ -473,6 +473,9 @@ class GpmlArrayCase(unittest.TestCase):
         
         # Need at least one time sample to create a GpmlArray.
         self.assertRaises(RuntimeError, pygplates.GpmlArray, [])
+    
+    def test_pickle(self):
+        self.assertTrue(self.gpml_array == pickle.loads(pickle.dumps(self.gpml_array)))
 
 
 class GpmlConstantValueCase(unittest.TestCase):

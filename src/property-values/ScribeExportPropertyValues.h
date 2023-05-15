@@ -30,6 +30,7 @@
 #include "GmlPolygon.h"
 #include "GmlTimeInstant.h"
 #include "GmlTimePeriod.h"
+#include "GpmlArray.h"
 #include "GpmlConstantValue.h"
 #include "GpmlFiniteRotationSlerp.h"
 #include "GpmlIrregularSampling.h"
@@ -42,6 +43,7 @@
 #include "XsInteger.h"
 #include "XsString.h"
 
+#include "model/PropertyValue.h"
 #include "model/RevisionedVector.h"
 #include "model/TranscribeRevisionedVector.h"
 
@@ -66,9 +68,6 @@
 		((GPlatesPropertyValues::GmlDataBlockCoordinateList, \
 			"GPlatesPropertyValues::GmlDataBlockCoordinateList")) \
 		\
-		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>, \
-			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>")) \
-		\
 		((GPlatesPropertyValues::GmlLineString, \
 			"GPlatesPropertyValues::GmlLineString")) \
 		\
@@ -90,6 +89,9 @@
 		((GPlatesPropertyValues::GmlTimePeriod, \
 			"GPlatesPropertyValues::GmlTimePeriod")) \
 		\
+		((GPlatesPropertyValues::GpmlArray, \
+			"GPlatesPropertyValues::GpmlArray")) \
+		\
 		((GPlatesPropertyValues::GpmlConstantValue, \
 			"GPlatesPropertyValues::GpmlConstantValue")) \
 		\
@@ -108,14 +110,20 @@
 		((GPlatesPropertyValues::GpmlTimeSample, \
 			"GPlatesPropertyValues::GpmlTimeSample")) \
 		\
-		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>, \
-			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>")) \
-		\
 		((GPlatesPropertyValues::GpmlTimeWindow, \
 			"GPlatesPropertyValues::GpmlTimeWindow")) \
 		\
+		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>, \
+			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>")) \
+		\
+		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>, \
+			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>")) \
+		\
 		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>, \
 			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>")) \
+		\
+		((GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>, \
+			"GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>")) \
 		\
 		((GPlatesPropertyValues::XsBoolean, \
 			"GPlatesPropertyValues::XsBoolean")) \

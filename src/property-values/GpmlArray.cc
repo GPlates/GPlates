@@ -30,6 +30,9 @@
 #include "global/GPlatesAssert.h"
 
 #include "model/BubbleUpRevisionHandler.h"
+#include "model/TranscribeQualifiedXmlName.h"
+
+#include "scribe/Scribe.h"
 
 
 const GPlatesPropertyValues::StructuralType
@@ -79,4 +82,99 @@ GPlatesPropertyValues::GpmlArray::bubble_up(
 
 	// To keep compiler happy - won't be able to get past 'Abort()'.
 	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlArray::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlArray> &gpml_array)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gpml_array->get_value_type(), "value_type");
+
+		// Save the members.
+		GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::non_null_ptr_type members_ = &gpml_array->members();
+		scribe.save(TRANSCRIBE_SOURCE, members_, "members");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<StructuralType> value_type_ = scribe.load<StructuralType>(TRANSCRIBE_SOURCE, "value_type");
+		if (!value_type_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Load the members.
+		GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::non_null_ptr_type> members_ =
+				scribe.load<GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "members");
+		if (!members_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_array.construct_object(
+				boost::ref(transaction),  // non-const ref
+				members_,
+				value_type_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlArray::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_value_type(), "value_type");
+
+			// Save the members.
+			GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::non_null_ptr_type members_ = &members();
+			scribe.save(TRANSCRIBE_SOURCE, members_, "members");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<StructuralType> value_type_ = scribe.load<StructuralType>(TRANSCRIBE_SOURCE, "value_type");
+			if (!value_type_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Load the members.
+			GPlatesScribe::LoadRef<GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::non_null_ptr_type> members_ =
+					scribe.load<GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>::non_null_ptr_type>(TRANSCRIBE_SOURCE, "members");
+			if (!members_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			d_value_type = value_type_;
+			{
+				GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+				revision_handler.get_revision<Revision>().members.change(
+						revision_handler.get_model_transaction(),
+						members_);
+				revision_handler.commit();
+			}
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlArray>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

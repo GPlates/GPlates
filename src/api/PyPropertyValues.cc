@@ -1615,7 +1615,8 @@ export_gpml_array()
 					// there is no publicly-accessible default constructor...
 					bp::no_init);
 
-	gpml_array_class.def("__init__",
+	gpml_array_class
+		.def("__init__",
 			bp::make_constructor(
 					&GPlatesApi::gpml_array_create,
 					bp::default_call_policies(),
@@ -1634,7 +1635,10 @@ export_gpml_array()
 			"\n"
 			"  ::\n"
 			"\n"
-			"    array = pygplates.GpmlArray(elements)\n");
+			"    array = pygplates.GpmlArray(elements)\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlArray::non_null_ptr_type>())
+	;
 
 	// Make 'GpmlArray' look like a python list (RevisionedVector<PropertyValue>).
 	GPlatesApi::wrap_python_class_as_revisioned_vector<
