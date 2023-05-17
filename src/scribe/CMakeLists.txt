@@ -21,6 +21,8 @@ set(srcs
     ScribeBinaryArchiveReader.h
     ScribeBinaryArchiveWriter.cc
     ScribeBinaryArchiveWriter.h
+    ScribeBool.cc
+    ScribeBool.h
     ScribeConstructObject.h
     ScribeExceptions.cc
     ScribeExceptions.h
