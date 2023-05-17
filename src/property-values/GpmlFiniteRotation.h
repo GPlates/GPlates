@@ -41,6 +41,10 @@
 #include "model/Metadata.h"
 #include "model/PropertyValue.h"
 
+#include "scribe/ScribeLoadRef.h"
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
@@ -321,6 +325,33 @@ namespace GPlatesPropertyValues
 			return non_null_ptr_type(new GpmlFiniteRotation(*this, context));
 		}
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlFiniteRotation> &gpml_finite_rotation);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
+
+		static
+		void
+		save_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				const GpmlFiniteRotation &gpml_finite_rotation);
+
+		static
+		bool
+		load_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::LoadRef<GPlatesMaths::FiniteRotation> &finite_rotation_,
+				GPlatesModel::MetadataContainer &metadata_);
 	};
 }
 

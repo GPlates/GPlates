@@ -32,8 +32,10 @@
 #include "GmlTimePeriod.h"
 #include "GpmlArray.h"
 #include "GpmlConstantValue.h"
+#include "GpmlFiniteRotation.h"
 #include "GpmlFiniteRotationSlerp.h"
 #include "GpmlIrregularSampling.h"
+#include "GpmlMetadata.h"
 #include "GpmlPiecewiseAggregation.h"
 #include "GpmlPlateId.h"
 #include "GpmlTimeSample.h"
@@ -95,11 +97,17 @@
 		((GPlatesPropertyValues::GpmlConstantValue, \
 			"GPlatesPropertyValues::GpmlConstantValue")) \
 		\
+		((GPlatesPropertyValues::GpmlFiniteRotation, \
+			"GPlatesPropertyValues::GpmlFiniteRotation")) \
+		\
 		((GPlatesPropertyValues::GpmlFiniteRotationSlerp, \
 			"GPlatesPropertyValues::GpmlFiniteRotationSlerp")) \
 		\
 		((GPlatesPropertyValues::GpmlIrregularSampling, \
 			"GPlatesPropertyValues::GpmlIrregularSampling")) \
+		\
+		((GPlatesPropertyValues::GpmlMetadata, \
+			"GPlatesPropertyValues::GpmlMetadata")) \
 		\
 		((GPlatesPropertyValues::GpmlPiecewiseAggregation, \
 			"GPlatesPropertyValues::GpmlPiecewiseAggregation")) \

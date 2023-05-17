@@ -1834,6 +1834,8 @@ export_gpml_finite_rotation()
 				"\n"
 				"  :param finite_rotation: the finite rotation\n"
 				"  :type finite_rotation: :class:`FiniteRotation`\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).

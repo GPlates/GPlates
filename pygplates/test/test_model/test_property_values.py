@@ -536,6 +536,9 @@ class GpmlFiniteRotationCase(unittest.TestCase):
         self.gpml_finite_rotation.set_finite_rotation(new_finite_rotation)
         self.assertTrue(pygplates.FiniteRotation.are_equivalent(
                 self.gpml_finite_rotation.get_finite_rotation(), new_finite_rotation))
+    
+    def test_pickle(self):
+        self.assertTrue(self.gpml_finite_rotation == pickle.loads(pickle.dumps(self.gpml_finite_rotation)))
 
 
 # Not including interpolation function since it is not really used (yet) in GPlates and hence

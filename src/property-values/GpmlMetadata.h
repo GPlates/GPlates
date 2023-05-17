@@ -37,6 +37,9 @@
 #include "model/Metadata.h"
 #include "model/PropertyValue.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 // Enable GPlatesFeatureVisitors::getPropertyValue() to work with this property value.
 // First parameter is the namespace qualified property value class.
@@ -210,6 +213,32 @@ namespace GPlatesPropertyValues
 			GPlatesModel::FeatureCollectionMetadata metadata;
 		};
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlMetadata> &gpml_metadata);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
+
+		static
+		void
+		save_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				const GpmlMetadata &gpml_metadata);
+
+		static
+		bool
+		load_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesModel::FeatureCollectionMetadata &metadata_);
 	};
 
 }
