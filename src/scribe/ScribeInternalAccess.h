@@ -56,7 +56,7 @@ namespace GPlatesScribe
 	TranscribeResult transcribe(Scribe &, boost::shared_ptr<T> &, bool);
 
 	template <typename ObjectType>
-	TranscribeResult transcribe_smart_pointer_protocol(
+	Bool transcribe_smart_pointer_protocol(
 			const GPlatesUtils::CallStack::Trace &, Scribe &, ObjectType *&, bool);
 
 	namespace TranscribeUtils
@@ -215,9 +215,9 @@ namespace GPlatesScribe
 		template <typename ObjectType>
 		friend class InternalUtils::TranscribeOwningPointerTemplate;
 
-		// Allow smart pointer protocol to call 'Scribe::transcribe_smart_pointer()'.
+		// Allow smart pointer protocol to call 'Scribe::transcribe_smart_pointer()' and construct 'Bool' objects.
 		template <typename ObjectType>
-		friend TranscribeResult transcribe_smart_pointer_protocol(
+		friend Bool transcribe_smart_pointer_protocol(
 				const GPlatesUtils::CallStack::Trace &, Scribe &, ObjectType *&, bool);
 
 		// Allow delegate protocol to call 'Scribe::transcribe_delegate()',

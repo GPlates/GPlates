@@ -391,6 +391,21 @@ GPlatesApi::Version::transcribe(
 }
 
 
+GPlatesScribe::TranscribeResult
+GPlatesApi::Version::PrereleaseSuffix::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, type, "type") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, number, "number"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
 std::ostream &
 GPlatesApi::operator<<(
 		std::ostream &os,
