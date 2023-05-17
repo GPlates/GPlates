@@ -223,7 +223,7 @@ namespace GPlatesScribe
 		// Allow delegate protocol to call 'Scribe::transcribe_delegate()',
 		// 'Scribe::load_delegate()' and 'Scribe::load_delegate()'.
 		template <typename ObjectType>
-		friend TranscribeResult transcribe_delegate_protocol(
+		friend Bool transcribe_delegate_protocol(
 				const GPlatesUtils::CallStack::Trace &, Scribe &, ObjectType &);
 		template <typename ObjectType>
 		friend void save_delegate_protocol(

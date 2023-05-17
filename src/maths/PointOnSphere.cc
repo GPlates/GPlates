@@ -124,7 +124,7 @@ GPlatesMaths::PointOnSphere::transcribe_construct_data(
 	if (scribe.is_saving())
 	{
 		// Make PointOnSphere transcription compatible with UnitVector3D.
-		GPlatesScribe::save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, point_on_sphere->d_position_vector);
+		save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, point_on_sphere->d_position_vector);
 	}
 	else // loading
 	{
@@ -153,7 +153,7 @@ GPlatesMaths::PointOnSphere::transcribe(
 		if (scribe.is_saving())
 		{
 			// Make PointOnSphere transcription compatible with UnitVector3D.
-			GPlatesScribe::save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, d_position_vector);
+			save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, d_position_vector);
 		}
 		else // loading
 		{
@@ -189,7 +189,7 @@ GPlatesMaths::PointGeometryOnSphere::transcribe_construct_data(
 	if (scribe.is_saving())
 	{
 		// Make PointGeometryOnSphere transcription compatible with PointOnSphere.
-		GPlatesScribe::save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, point_geometry_on_sphere->d_position);
+		save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, point_geometry_on_sphere->d_position);
 	}
 	else // loading
 	{
@@ -218,7 +218,7 @@ GPlatesMaths::PointGeometryOnSphere::transcribe(
 		if (scribe.is_saving())
 		{
 			// Make PointGeometryOnSphere transcription compatible with PointOnSphere.
-			GPlatesScribe::save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, d_position);
+			save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, d_position);
 		}
 		else // loading
 		{

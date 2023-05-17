@@ -57,17 +57,15 @@ namespace GPlatesModel
 					revisioned_vector->end());
 
 			// Save the elements.
-			GPlatesScribe::save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, elements);
+			save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, elements);
 		}
 		else // loading...
 		{
 			// Load the elements.
 			std::vector<element_type> elements;
-			const GPlatesScribe::TranscribeResult transcribe_elements_result =
-					GPlatesScribe::transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, elements);
-			if (transcribe_elements_result != GPlatesScribe::TRANSCRIBE_SUCCESS)
+			if (!transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, elements))
 			{
-				return transcribe_elements_result;
+				return scribe.get_transcribe_result();
 			}
 
 			// Create the revisioned vector.
@@ -98,17 +96,15 @@ namespace GPlatesModel
 				const std::vector<element_type> elements(begin(), end());
 
 				// Save the elements.
-				GPlatesScribe::save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, elements);
+				save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, elements);
 			}
 			else // loading...
 			{
 				// Load the elements.
 				std::vector<element_type> elements;
-				const GPlatesScribe::TranscribeResult transcribe_elements_result =
-						GPlatesScribe::transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, elements);
-				if (transcribe_elements_result != GPlatesScribe::TRANSCRIBE_SUCCESS)
+				if (!transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, elements))
 				{
-					return transcribe_elements_result;
+					return scribe.get_transcribe_result();
 				}
 
 				// Set the elements.

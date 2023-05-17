@@ -199,7 +199,10 @@ namespace GPlatesApi
 				// Using transcribe delegate protocol so that GPlatesApi::GeoTimeInstant and GPlatesPropertyValues::GeoTimeInstant
 				// can be used interchangeably (ie, are transcription compatible).
 				//
-				return transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, d_geo_time_instant);
+				if (!transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, d_geo_time_instant))
+				{
+					return scribe.get_transcribe_result();
+				}
 			}
 
 			return GPlatesScribe::TRANSCRIBE_SUCCESS;

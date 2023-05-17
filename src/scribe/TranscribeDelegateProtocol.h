@@ -27,6 +27,7 @@
 #define GPLATES_SCRIBE_TRANSCRIBEDELEGATEPROTOCOL_H
 
 #include "Scribe.h"
+#include "ScribeBool.h"
 #include "ScribeInternalAccess.h"
 #include "TranscribeResult.h"
 
@@ -53,7 +54,12 @@ namespace GPlatesScribe
 	 *			QStringWrapper &wrapper,
 	 *			bool transcribed_construct_data)
 	 *   {
-	 *		return transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, wrapper.qstring);
+	 *		if (!transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, wrapper.qstring))
+	 *		{
+	 *			return scribe.get_transcribe_result();
+	 *		}
+	 *
+	 *		return GPlatesScribe::TRANSCRIBE_SUCCESS;
 	 *   }
 	 *	 
 	 * Note that there are no options in 'transcribe_delegate_protocol()' and the delegated object
@@ -90,7 +96,7 @@ namespace GPlatesScribe
 	 *   }
 	 */
 	template <typename ObjectType>
-	TranscribeResult
+	Bool
 	transcribe_delegate_protocol(
 			const GPlatesUtils::CallStack::Trace &transcribe_source, // Use 'TRANSCRIBE_SOURCE' here
 			Scribe &scribe,
@@ -99,18 +105,19 @@ namespace GPlatesScribe
 		// Track the file/line of the call site for exception messages.
 		GPlatesUtils::CallStackTracker call_stack_tracker(transcribe_source);
 
-		if (!ScribeInternalAccess::transcribe_delegate(scribe, object))
-		{
-			return scribe.get_transcribe_result();
-		}
-
-		return TRANSCRIBE_SUCCESS;
+		// Wrap in a Bool object to force caller to check return code.
+		return ScribeInternalAccess::create_bool(
+				transcribe_source,
+				ScribeInternalAccess::transcribe_delegate(scribe, object),
+				scribe.is_loading()/*require_check*/);
 	}
 
 
 	/**
-	 * Similar to @a transcribe_delegate_protocol but used on the *save* path when need to use
-	 * @a load_delegate_protocol on the *load* path.
+	 * Similar to @a transcribe_delegate_protocol but used on the *save* path
+	 * (when need to use @a load_delegate_protocol on the *load* path).
+	 *
+	 *   save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, object);
 	 */
 	template <typename ObjectType>
 	void
@@ -129,6 +136,16 @@ namespace GPlatesScribe
 	/**
 	 * Similar to @a transcribe_delegate_protocol but used on the *load* path when ObjectType
 	 * has no default constructor.
+	 *
+	 * Note: You'll need to specify 'GPlatesScribe::load_delegate_protocol<ObjectType>()' instead of
+	 *       'load_delegate_protocol<ObjectType>()'.
+	 *
+	 *  GPlatesScribe::LoadRef<ObjectType> object =
+	 *  		GPlatesScribe::load_delegate_protocol<ObjectType>(TRANSCRIBE_SOURCE, scribe);
+	 *  if (!object.is_valid())
+	 *  {
+	 *  	return scribe.get_transcribe_result();
+	 *  }
 	 */
 	template <typename ObjectType>
 	LoadRef<ObjectType>

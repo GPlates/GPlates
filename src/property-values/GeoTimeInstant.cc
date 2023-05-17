@@ -235,17 +235,14 @@ GPlatesPropertyValues::GeoTimeInstant::transcribe_construct_data(
 	//
 	if (scribe.is_saving())
 	{
-		transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, geo_time_instant->d_value);
+		save_delegate_protocol(TRANSCRIBE_SOURCE, scribe, geo_time_instant->d_value);
 	}
 	else // loading...
 	{
 		double value;
-
-		const GPlatesScribe::TranscribeResult transcribe_result =
-				transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, value);
-		if (transcribe_result != GPlatesScribe::TRANSCRIBE_SUCCESS)
+		if (!transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, value))
 		{
-			return transcribe_result;
+			return scribe.get_transcribe_result();
 		}
 
 		//
@@ -295,11 +292,9 @@ GPlatesPropertyValues::GeoTimeInstant::transcribe(
 		// Note that +/- Infinity and NaN (float and double) are handled properly by the
 		// scribe archive writers/readers.
 		//
-		const GPlatesScribe::TranscribeResult transcribe_result =
-				transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, d_value);
-		if (transcribe_result != GPlatesScribe::TRANSCRIBE_SUCCESS)
+		if (!transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, d_value))
 		{
-			return transcribe_result;
+			return scribe.get_transcribe_result();
 		}
 
 		if (scribe.is_loading())

@@ -1070,7 +1070,12 @@ namespace GPlatesPresentation
 			{
 				// Might as well make transcription compatible with the boost variant we are wrapping.
 				// Helps if later we remove the wrapper for some reason.
-				return transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, d_value);
+				if (!transcribe_delegate_protocol(TRANSCRIBE_SOURCE, scribe, d_value))
+				{
+					return scribe.get_transcribe_result();
+				}
+
+				return GPlatesScribe::TRANSCRIBE_SUCCESS;
 			}
 		};
 
