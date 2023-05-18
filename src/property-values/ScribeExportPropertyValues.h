@@ -41,6 +41,7 @@
 #include "GpmlOldPlatesHeader.h"
 #include "GpmlPiecewiseAggregation.h"
 #include "GpmlPlateId.h"
+#include "GpmlPolarityChronId.h"
 #include "GpmlTimeSample.h"
 #include "GpmlTimeWindow.h"
 #include "XsBoolean.h"
@@ -126,6 +127,9 @@
 		\
 		((GPlatesPropertyValues::GpmlPlateId, \
 			"GPlatesPropertyValues::GpmlPlateId")) \
+		\
+		((GPlatesPropertyValues::GpmlPolarityChronId, \
+			"GPlatesPropertyValues::GpmlPolarityChronId")) \
 		\
 		((GPlatesPropertyValues::GpmlTimeSample, \
 			"GPlatesPropertyValues::GpmlTimeSample")) \

@@ -877,6 +877,9 @@ class GpmlPolarityChronIdCase(unittest.TestCase):
         # Violate the era class invariant.
         self.assertRaises(pygplates.InformationModelError, pygplates.GpmlPolarityChronId, 'UnknownEra')
         self.assertRaises(pygplates.InformationModelError, pygplates.GpmlPolarityChronId.set_era, self.gpml_polarity_chron_id, 'UnknownEra')
+    
+    def test_pickle(self):
+        self.assertTrue(self.gpml_polarity_chron_id == pickle.loads(pickle.dumps(self.gpml_polarity_chron_id)))
 
 
 class GpmlPropertyDelegateCase(unittest.TestCase):

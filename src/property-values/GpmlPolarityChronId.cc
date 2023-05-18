@@ -31,6 +31,8 @@
 
 #include "model/BubbleUpRevisionHandler.h"
 
+#include "scribe/Scribe.h"
+
 
 const GPlatesPropertyValues::StructuralType
 GPlatesPropertyValues::GpmlPolarityChronId::STRUCTURAL_TYPE = GPlatesPropertyValues::StructuralType::create_gpml("PolarityChronId");
@@ -88,3 +90,78 @@ GPlatesPropertyValues::GpmlPolarityChronId::print_to(
 	return os;
 }
 
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlPolarityChronId::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlPolarityChronId> &gpml_polarity_chron_id)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gpml_polarity_chron_id->get_era(), "era");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_polarity_chron_id->get_major_region(), "major_region");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_polarity_chron_id->get_minor_region(), "minor_region");
+	}
+	else // loading
+	{
+		boost::optional<QString> era_;
+		boost::optional<unsigned int> major_region_;
+		boost::optional<QString> minor_region_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, era_, "era") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, major_region_, "major_region") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, minor_region_, "minor_region"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		gpml_polarity_chron_id.construct_object(era_, major_region_, minor_region_);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlPolarityChronId::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, get_era(), "era");
+			scribe.save(TRANSCRIBE_SOURCE, get_major_region(), "major_region");
+			scribe.save(TRANSCRIBE_SOURCE, get_minor_region(), "minor_region");
+		}
+		else // loading
+		{
+			boost::optional<QString> era_;
+			boost::optional<unsigned int> major_region_;
+			boost::optional<QString> minor_region_;
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, era_, "era") ||
+				!scribe.transcribe(TRANSCRIBE_SOURCE, major_region_, "major_region") ||
+				!scribe.transcribe(TRANSCRIBE_SOURCE, minor_region_, "minor_region"))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+			Revision &revision = revision_handler.get_revision<Revision>();
+			revision.era = era_;
+			revision.major_region = major_region_;
+			revision.minor_region = minor_region_;
+			revision_handler.commit();
+		}
+	}
+
+	// Record base/derived inheritance relationship.
+	if (!scribe.transcribe_base<GPlatesModel::PropertyValue, GpmlPolarityChronId>(TRANSCRIBE_SOURCE))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}

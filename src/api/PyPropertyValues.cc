@@ -3557,6 +3557,8 @@ export_gpml_polarity_chron_id()
 				"located in - the letters a-z are used for the initial sub-region, and if further polarity "
 				"reversals have been discovered within that chron, a second letter is appended, and so on\n"
 				"  :type minor_region: string\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlPolarityChronId::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
