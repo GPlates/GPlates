@@ -35,6 +35,8 @@
 #include "GpmlFiniteRotation.h"
 #include "GpmlFiniteRotationSlerp.h"
 #include "GpmlIrregularSampling.h"
+#include "GpmlKeyValueDictionary.h"
+#include "GpmlKeyValueDictionaryElement.h"
 #include "GpmlMetadata.h"
 #include "GpmlPiecewiseAggregation.h"
 #include "GpmlPlateId.h"
@@ -106,6 +108,12 @@
 		((GPlatesPropertyValues::GpmlIrregularSampling, \
 			"GPlatesPropertyValues::GpmlIrregularSampling")) \
 		\
+		((GPlatesPropertyValues::GpmlKeyValueDictionary, \
+			"GPlatesPropertyValues::GpmlKeyValueDictionary")) \
+		\
+		((GPlatesPropertyValues::GpmlKeyValueDictionaryElement, \
+			"GPlatesPropertyValues::GpmlKeyValueDictionaryElement")) \
+		\
 		((GPlatesPropertyValues::GpmlMetadata, \
 			"GPlatesPropertyValues::GpmlMetadata")) \
 		\
@@ -123,6 +131,9 @@
 		\
 		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>, \
 			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>")) \
+		\
+		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>, \
+			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>")) \
 		\
 		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>, \
 			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>")) \

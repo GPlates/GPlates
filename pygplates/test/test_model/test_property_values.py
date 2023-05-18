@@ -699,6 +699,9 @@ class GpmlKeyValueDictionaryCase(unittest.TestCase):
                 self.assertTrue(self.gpml_key_value_dictionary.get(str(i)) == i)
         self.assertFalse(self.gpml_key_value_dictionary.get(str(1)))
         self.assertTrue(self.gpml_key_value_dictionary.get(str(1), 1) == 1)
+    
+    def test_pickle(self):
+        self.assertTrue(self.gpml_key_value_dictionary == pickle.loads(pickle.dumps(self.gpml_key_value_dictionary)))
 
 
 class GpmlOldPlatesHeaderCase(unittest.TestCase):

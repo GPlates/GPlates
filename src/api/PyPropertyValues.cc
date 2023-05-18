@@ -2866,6 +2866,8 @@ export_gpml_key_value_dictionary()
 				"  :type key: string\n"
 				"\n"
 				"  If *key* does not exist in the dictionary then it is ignored and nothing is done.\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).

@@ -34,6 +34,9 @@
 
 #include "model/BubbleUpRevisionHandler.h"
 #include "model/ModelTransaction.h"
+#include "model/TranscribeQualifiedXmlName.h"
+
+#include "scribe/Scribe.h"
 
 
 GPlatesPropertyValues::GpmlKeyValueDictionaryElement::non_null_ptr_type
@@ -97,6 +100,104 @@ GPlatesPropertyValues::GpmlKeyValueDictionaryElement::bubble_up(
 
 	// To keep compiler happy - won't be able to get past 'Abort()'.
 	return GPlatesModel::Revision::non_null_ptr_type(NULL);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlKeyValueDictionaryElement::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpmlKeyValueDictionaryElement> &gpml_key_value_dictionary_element)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gpml_key_value_dictionary_element->key(), "key");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_key_value_dictionary_element->value(), "value");
+		scribe.save(TRANSCRIBE_SOURCE, gpml_key_value_dictionary_element->get_value_type(), "value_type");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<XsString::non_null_ptr_type> key_ =
+				scribe.load<XsString::non_null_ptr_type>(TRANSCRIBE_SOURCE, "key");
+		if (!key_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<GPlatesModel::PropertyValue::non_null_ptr_type> value_ =
+				scribe.load<GPlatesModel::PropertyValue::non_null_ptr_type>(TRANSCRIBE_SOURCE, "value");
+		if (!value_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<StructuralType> value_type_ =
+				scribe.load<StructuralType>(TRANSCRIBE_SOURCE, "value_type");
+		if (!value_type_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the property value.
+		GPlatesModel::ModelTransaction transaction;
+		gpml_key_value_dictionary_element.construct_object(
+				boost::ref(transaction),  // non-const ref
+				key_,
+				value_,
+				value_type_);
+		transaction.commit();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesPropertyValues::GpmlKeyValueDictionaryElement::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, key(), "key");
+			scribe.save(TRANSCRIBE_SOURCE, value(), "value");
+			scribe.save(TRANSCRIBE_SOURCE, get_value_type(), "value_type");
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<XsString::non_null_ptr_type> key_ =
+					scribe.load<XsString::non_null_ptr_type>(TRANSCRIBE_SOURCE, "key");
+			if (!key_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			GPlatesScribe::LoadRef<GPlatesModel::PropertyValue::non_null_ptr_type> value_ =
+					scribe.load<GPlatesModel::PropertyValue::non_null_ptr_type>(TRANSCRIBE_SOURCE, "value");
+			if (!value_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			GPlatesScribe::LoadRef<StructuralType> value_type_ =
+					scribe.load<StructuralType>(TRANSCRIBE_SOURCE, "value_type");
+			if (!value_type_.is_valid())
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Set the property value.
+			GPlatesModel::BubbleUpRevisionHandler revision_handler(this);
+			Revision &revision = revision_handler.get_revision<Revision>();
+			revision.key.change(revision_handler.get_model_transaction(), key_);
+			revision.value.change(revision_handler.get_model_transaction(), value_);
+			revision_handler.commit();
+			d_value_type = value_type_;
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 
