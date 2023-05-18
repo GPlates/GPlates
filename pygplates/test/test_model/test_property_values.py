@@ -894,6 +894,9 @@ class GpmlPropertyDelegateCase(unittest.TestCase):
         self.assertTrue(self.gpml_property_delegate.get_feature_id() == self.feature_id)
         self.assertTrue(self.gpml_property_delegate.get_property_name() == self.property_name)
         self.assertTrue(self.gpml_property_delegate.get_property_type() == self.property_type)
+    
+    def test_pickle(self):
+        self.assertTrue(self.gpml_property_delegate == pickle.loads(pickle.dumps(self.gpml_property_delegate)))
 
 
 class GpmlTimeSampleCase(unittest.TestCase):
@@ -1238,6 +1241,10 @@ class GpmlTopologicalGeometryCase(unittest.TestCase):
         topological_network_with_no_interiors = pygplates.GpmlTopologicalNetwork(self.network_boundary_sections)
         self.assertTrue(list(topological_network_with_no_interiors.get_boundary_sections()) == self.network_boundary_sections)
         self.assertFalse(topological_network_with_no_interiors.get_interiors())
+    
+    def test_pickle(self):
+        # Pickle 'GpmlPropertyDelegateList'.
+        self.assertTrue(self.topological_network.get_interiors() == pickle.loads(pickle.dumps(self.topological_network.get_interiors())))
 
 
 class XsBooleanCase(unittest.TestCase):

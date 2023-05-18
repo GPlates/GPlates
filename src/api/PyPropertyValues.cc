@@ -3634,7 +3634,9 @@ export_gpml_property_delegate()
 				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
 				"\n"
 				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n")
-		;
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type>())
+	;
 
 	// Create a python class "GpmlPropertyDelegateList" for RevisionedVector<GpmlPropertyDelegate> that behaves like a list of GpmlPropertyDelegate.
 	//

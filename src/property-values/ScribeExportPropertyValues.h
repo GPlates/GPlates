@@ -42,6 +42,7 @@
 #include "GpmlPiecewiseAggregation.h"
 #include "GpmlPlateId.h"
 #include "GpmlPolarityChronId.h"
+#include "GpmlPropertyDelegate.h"
 #include "GpmlTimeSample.h"
 #include "GpmlTimeWindow.h"
 #include "XsBoolean.h"
@@ -131,6 +132,9 @@
 		((GPlatesPropertyValues::GpmlPolarityChronId, \
 			"GPlatesPropertyValues::GpmlPolarityChronId")) \
 		\
+		((GPlatesPropertyValues::GpmlPropertyDelegate, \
+			"GPlatesPropertyValues::GpmlPropertyDelegate")) \
+		\
 		((GPlatesPropertyValues::GpmlTimeSample, \
 			"GPlatesPropertyValues::GpmlTimeSample")) \
 		\
@@ -142,6 +146,9 @@
 		\
 		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>, \
 			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>")) \
+		\
+		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate>, \
+			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate>")) \
 		\
 		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>, \
 			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>")) \
