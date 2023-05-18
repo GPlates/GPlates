@@ -763,6 +763,9 @@ class GpmlOldPlatesHeaderCase(unittest.TestCase):
         self.assertTrue(self.gpml_old_plates_header.get_colour_code() == 24)
         self.gpml_old_plates_header.set_number_of_points(25)
         self.assertTrue(self.gpml_old_plates_header.get_number_of_points() == 25)
+    
+    def test_pickle(self):
+        self.assertTrue(self.gpml_old_plates_header == pickle.loads(pickle.dumps(self.gpml_old_plates_header)))
 
 
 class GpmlPiecewiseAggregationCase(unittest.TestCase):

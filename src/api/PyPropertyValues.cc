@@ -3144,6 +3144,8 @@ export_gpml_old_plates_header()
 				"\n"
 				"  :param number_of_points: number of points\n"
 				"  :type number_of_points: int\n")
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).

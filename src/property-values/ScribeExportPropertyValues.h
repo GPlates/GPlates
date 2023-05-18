@@ -38,6 +38,7 @@
 #include "GpmlKeyValueDictionary.h"
 #include "GpmlKeyValueDictionaryElement.h"
 #include "GpmlMetadata.h"
+#include "GpmlOldPlatesHeader.h"
 #include "GpmlPiecewiseAggregation.h"
 #include "GpmlPlateId.h"
 #include "GpmlTimeSample.h"
@@ -116,6 +117,9 @@
 		\
 		((GPlatesPropertyValues::GpmlMetadata, \
 			"GPlatesPropertyValues::GpmlMetadata")) \
+		\
+		((GPlatesPropertyValues::GpmlOldPlatesHeader, \
+			"GPlatesPropertyValues::GpmlOldPlatesHeader")) \
 		\
 		((GPlatesPropertyValues::GpmlPiecewiseAggregation, \
 			"GPlatesPropertyValues::GpmlPiecewiseAggregation")) \
