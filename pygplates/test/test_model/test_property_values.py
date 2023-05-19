@@ -1132,6 +1132,10 @@ class GpmlTopologicalSectionCase(unittest.TestCase):
                 pygplates.GmlPoint)
         self.topological_point_section.set_property_delegate(new_point_property_delegate)
         self.assertTrue(self.topological_point_section.get_property_delegate() == new_point_property_delegate)
+    
+    def test_pickle(self):
+        self.assertTrue(self.topological_point_section == pickle.loads(pickle.dumps(self.topological_point_section)))
+        self.assertTrue(self.topological_line_section == pickle.loads(pickle.dumps(self.topological_line_section)))
 
 
 class GpmlTopologicalGeometryCase(unittest.TestCase):
@@ -1243,6 +1247,8 @@ class GpmlTopologicalGeometryCase(unittest.TestCase):
         self.assertFalse(topological_network_with_no_interiors.get_interiors())
     
     def test_pickle(self):
+        # Pickle 'GpmlTopologicalSectionList'.
+        self.assertTrue(self.topological_network.get_boundary_sections() == pickle.loads(pickle.dumps(self.topological_network.get_boundary_sections())))
         # Pickle 'GpmlPropertyDelegateList'.
         self.assertTrue(self.topological_network.get_interiors() == pickle.loads(pickle.dumps(self.topological_network.get_interiors())))
 

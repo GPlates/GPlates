@@ -33,6 +33,9 @@
 
 #include "model/PropertyValue.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/UnicodeStringUtils.h"
 
 
@@ -112,6 +115,14 @@ namespace GPlatesPropertyValues
 			PropertyValue(revision)
 		{  }
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 }

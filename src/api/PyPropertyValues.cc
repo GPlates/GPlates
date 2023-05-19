@@ -4691,7 +4691,9 @@ export_gpml_topological_line_section()
 			"\n"
 			"  :param reverse_orientation: whether the line was reversed when contributing to the parent topology\n"
 			"  :type reverse_orientation: bool\n")
-		;
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTopologicalLineSection::non_null_ptr_type>())
+	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
 	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlTopologicalLineSection>();
@@ -4869,7 +4871,9 @@ export_gpml_topological_point()
 			"\n"
 			"  :param gpml_property_delegate: the point geometry property value\n"
 			"  :type gpml_property_delegate: :class:`GpmlPropertyDelegate`\n")
-		;
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTopologicalPoint::non_null_ptr_type>())
+	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
 	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlTopologicalPoint>();
