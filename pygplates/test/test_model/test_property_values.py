@@ -1247,7 +1247,12 @@ class GpmlTopologicalGeometryCase(unittest.TestCase):
         self.assertFalse(topological_network_with_no_interiors.get_interiors())
     
     def test_pickle(self):
+        self.assertTrue(self.topological_line == pickle.loads(pickle.dumps(self.topological_line)))
+        self.assertTrue(self.topological_polygon == pickle.loads(pickle.dumps(self.topological_polygon)))
+        self.assertTrue(self.topological_network == pickle.loads(pickle.dumps(self.topological_network)))
         # Pickle 'GpmlTopologicalSectionList'.
+        self.assertTrue(self.topological_line.get_sections() == pickle.loads(pickle.dumps(self.topological_line.get_sections())))
+        self.assertTrue(self.topological_polygon.get_exterior_sections() == pickle.loads(pickle.dumps(self.topological_polygon.get_exterior_sections())))
         self.assertTrue(self.topological_network.get_boundary_sections() == pickle.loads(pickle.dumps(self.topological_network.get_boundary_sections())))
         # Pickle 'GpmlPropertyDelegateList'.
         self.assertTrue(self.topological_network.get_interiors() == pickle.loads(pickle.dumps(self.topological_network.get_interiors())))

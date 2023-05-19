@@ -45,8 +45,11 @@
 #include "GpmlPropertyDelegate.h"
 #include "GpmlTimeSample.h"
 #include "GpmlTimeWindow.h"
+#include "GpmlTopologicalLine.h"
 #include "GpmlTopologicalLineSection.h"
+#include "GpmlTopologicalNetwork.h"
 #include "GpmlTopologicalPoint.h"
+#include "GpmlTopologicalPolygon.h"
 #include "GpmlTopologicalSection.h"
 #include "XsBoolean.h"
 #include "XsDouble.h"
@@ -144,11 +147,20 @@
 		((GPlatesPropertyValues::GpmlTimeWindow, \
 			"GPlatesPropertyValues::GpmlTimeWindow")) \
 		\
+		((GPlatesPropertyValues::GpmlTopologicalLine, \
+			"GPlatesPropertyValues::GpmlTopologicalLine")) \
+		\
 		((GPlatesPropertyValues::GpmlTopologicalLineSection, \
 			"GPlatesPropertyValues::GpmlTopologicalLineSection")) \
 		\
+		((GPlatesPropertyValues::GpmlTopologicalNetwork, \
+			"GPlatesPropertyValues::GpmlTopologicalNetwork")) \
+		\
 		((GPlatesPropertyValues::GpmlTopologicalPoint, \
 			"GPlatesPropertyValues::GpmlTopologicalPoint")) \
+		\
+		((GPlatesPropertyValues::GpmlTopologicalPolygon, \
+			"GPlatesPropertyValues::GpmlTopologicalPolygon")) \
 		\
 		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>, \
 			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>")) \

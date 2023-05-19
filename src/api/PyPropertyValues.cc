@@ -4614,7 +4614,9 @@ export_gpml_topological_line()
 			"\n"
 			"    # Append a section\n"
 			"    sections.append(pygplates.GpmlTopologicalPoint(...))\n")
-		;
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTopologicalLine::non_null_ptr_type>())
+	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
 	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlTopologicalLine>();
@@ -4811,7 +4813,9 @@ export_gpml_topological_network()
 			"\n"
 			"    # Append an interior\n"
 			"    interiors.append(pygplates.GpmlPropertyDelegate(...))\n")
-		;
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTopologicalNetwork::non_null_ptr_type>())
+	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
 	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlTopologicalNetwork>();
@@ -4959,7 +4963,9 @@ export_gpml_topological_polygon()
 			"    boundary_sections.append(pygplates.GpmlTopologicalLineSection(...))\n"
 			"\n"
 			"  .. versionadded:: 0.24\n")
-		;
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTopologicalPolygon::non_null_ptr_type>())
+	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
 	GPlatesApi::register_structural_type<GPlatesPropertyValues::GpmlTopologicalPolygon>();

@@ -263,9 +263,11 @@ The following subset of property value classes represent the *topological* secti
    :toctree: generated
 
    pygplates.GpmlTopologicalSection
+   pygplates.GpmlTopologicalSectionList
    pygplates.GpmlTopologicalPoint
    pygplates.GpmlTopologicalLineSection
    pygplates.GpmlPropertyDelegate
+   pygplates.GpmlPropertyDelegateList
 
 
 The following subset of property value classes are time-dependent wrappers.
@@ -281,19 +283,17 @@ These are what enable the above :class:`property values<pygplates.PropertyValue>
    pygplates.GpmlIrregularSampling
    pygplates.GpmlPiecewiseAggregation
 
-The following support classes are closed related to property values
-(but are not actual :class:`property values<pygplates.PropertyValue>`).
+The following time sample and time window classes are used by the above time-dependent wrappers to
+contain :class:`property values<pygplates.PropertyValue>`.
 
 .. autosummary::
    :nosignatures:
    :toctree: generated
 
-   pygplates.GpmlPropertyDelegateList
    pygplates.GpmlTimeSample
    pygplates.GpmlTimeSampleList
    pygplates.GpmlTimeWindow
    pygplates.GpmlTimeWindowList
-   pygplates.GpmlTopologicalSectionList
 
 Geometry
 --------

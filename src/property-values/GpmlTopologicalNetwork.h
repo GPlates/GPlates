@@ -42,6 +42,9 @@
 
 #include "property-values/GpmlPropertyDelegate.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 // Enable GPlatesFeatureVisitors::get_property_value() to work with this property value.
 // First parameter is the namespace qualified property value class.
@@ -381,6 +384,20 @@ namespace GPlatesPropertyValues
 			GPlatesModel::RevisionedReference<GPlatesModel::RevisionedVector<GpmlPropertyDelegate> > interior_geometries;
 		};
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<GpmlTopologicalNetwork> &gpml_topological_network);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 }
 
