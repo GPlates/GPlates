@@ -40,6 +40,15 @@ For example, the following creates and activates a Python 3.10 environment named
   conda create -n pygplates_py310 -c conda-forge python=3.10 pygplates
   conda activate pygplates_py310
 
+.. note:: | Be sure remove any prior versions of pyGPlates from the ``PYTHONPATH`` environment variable.
+          | Otherwise you will likely get an ``ImportError`` when ``pygplates`` gets imported.
+          | For example, pyGPlates versions 0.36 and older do not support ``conda`` and instead required
+            :ref:`installing a pre-compiled binary <pygplates_getting_started_install_from_precompiled>`
+            (or :ref:`installing from source code <pygplates_getting_started_install_from_source_code>`),
+            which included adding that installed location to the ``PYTHONPATH`` environment variable.
+          | So, if you have installed previous versions in this way then you'll need to remove all those
+            installed locations from the ``PYTHONPATH`` environment variable (when using ``conda``).
+
 You can then use pyGPlates. For example, to see the pyGPlates version:
 ::
 
