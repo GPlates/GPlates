@@ -69,7 +69,7 @@ GLEW            libglew-dev
 Python          python3-dev python3-numpy
 Boost           libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev 
                 libboost-test-dev libboost-system-dev (See note below regarding Xenial 16.04 and libboost-python-dev)
-Qt              qt5-default libqt5opengl5-dev libqt5svg5-dev libqt5xmlpatterns5-dev (starting with Hirsute 21.04 you should exclude qt5-default).
+Qt              libqt5opengl5-dev libqt5svg5-dev libqt5xmlpatterns5-dev (starting with Hirsute 21.04 you should also include qt5-default).
 GDAL            libgdal-dev (or libgdal1-dev for GDAL1 on older systems)
 CGAL            libcgal-dev (may also need libcgal-qt5-dev on Xenial 16.04 due to bug in CGAL cmake)
 PROJ.4          libproj-dev
@@ -79,9 +79,9 @@ zlib            zlib1g-dev
 Extras          libxrender-dev libice-dev libsm-dev libfreetype6-dev libfontconfig1-dev  (Ubuntu 14.04 Trusty Tahr and above)
 
 
-The command to install the dependencies on Ubuntu is (NOTE: starting with Hirsute 21.04 you should exclude qt5-default from the list below):
+The command to install the dependencies on Ubuntu is (NOTE: starting with Hirsute 21.04 you should also include qt5-default from the list below):
 
-sudo apt-get update; sudo apt-get install cmake libglew-dev python3-dev python3-numpy libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev qt5-default libqt5opengl5-dev libqt5svg5-dev libqt5xmlpatterns5-dev libgdal-dev libcgal-dev libproj-dev libqwt-qt5-dev zlib1g-dev libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev
+sudo apt-get update; sudo apt-get install cmake libglew-dev python3-dev python3-numpy libboost-dev libboost-python-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libboost-system-dev libqt5opengl5-dev libqt5svg5-dev libqt5xmlpatterns5-dev libgdal-dev libcgal-dev libproj-dev libqwt-qt5-dev zlib1g-dev libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev
 (For Ubuntu releases before 14.04 Trusty Tahr, the libfreetype6-dev libfontconfig1-dev libxrender-dev libice-dev libsm-dev are not required.)
 
 How to install via a GUI (recommended)
