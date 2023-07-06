@@ -145,6 +145,13 @@ class DateLineWrapperCase(unittest.TestCase):
         self.assertEquals(len(wrapped_polygons[0].get_exterior_points()), 10)
         self.assertEquals(len(wrapped_polygons[0].get_is_original_exterior_point_flags()), 10)
 
+        # Ensure exception not raised when tessellation threshold outside range [0, 180].
+        try:
+            date_line_wrapper.wrap(point, -0.1)  # threshold clamped to 0
+            date_line_wrapper.wrap(point, 180.1)  # threshold clamped to 180
+        except:
+            self.fail("Unexpected exception when tessellation threshold outside range [0, 180]")
+
 class FiniteRotationCase(unittest.TestCase):
     def setUp(self):
         self.pole = pygplates.PointOnSphere(0, 0, 1)

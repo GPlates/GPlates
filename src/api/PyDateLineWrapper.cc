@@ -55,8 +55,19 @@ namespace GPlatesApi
 		boost::optional<GPlatesMaths::AngularExtent> tessellate;
 		if (tessellate_degrees)
 		{
-			tessellate = GPlatesMaths::AngularExtent::create_from_angle(
-				GPlatesMaths::convert_deg_to_rad(tessellate_degrees.get()));
+			double tessellate_radians = GPlatesMaths::convert_deg_to_rad(tessellate_degrees.get());
+
+			// Clamp to the range [0, PI].
+			if (tessellate_radians < 0)
+			{
+				tessellate_radians = 0;
+			}
+			else if (tessellate_radians > GPlatesMaths::PI)
+			{
+				tessellate_radians = GPlatesMaths::PI;
+			}
+
+			tessellate = GPlatesMaths::AngularExtent::create_from_angle(tessellate_radians);
 		}
 
 		const GPlatesMaths::GeometryType::Value geometry_type =
@@ -379,7 +390,8 @@ export_date_line_wrapper()
 				"\n"
 				"  :param geometry: the geometry to wrap\n"
 				"  :type geometry: :class:`GeometryOnSphere`\n"
-				"  :param tessellate_degrees: optional tessellation threshold (in degrees)\n"
+				"  :param tessellate_degrees: optional tessellation threshold (in degrees) - "
+				"threshold is clamped to the range [0, 180] if specified\n"
 				"  :type tessellate_degrees: float or None\n"
 				"\n"
 				"  The following table maps the input geometry type to the return type:\n"
@@ -537,7 +549,10 @@ export_date_line_wrapper()
 				"     - get_is_original_point_flags()\n"
 				"     - get_number_of_interior_rings()\n"
 				"     - get_interior_points(interior_ring_index)\n"
-				"     - get_is_original_interior_point_flags(interior_ring_index)\n")
+				"     - get_is_original_interior_point_flags(interior_ring_index)\n"
+				"\n"
+				".. versionchanged:: 0.41\n"
+					"   tessellation threshold is clamped to the range [0, 180] to avoid an exception.\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

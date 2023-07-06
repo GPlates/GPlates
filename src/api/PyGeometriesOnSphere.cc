@@ -253,6 +253,16 @@ namespace GPlatesApi
 		GPlatesMaths::AngularExtent threshold_storage = GPlatesMaths::AngularExtent::PI/*dummy value*/;
 		if (distance_threshold_radians)
 		{
+			// Clamp to the range [0, PI].
+			if (distance_threshold_radians->is_precisely_less_than(0))
+			{
+				distance_threshold_radians.get() = 0;
+			}
+			else if (distance_threshold_radians->is_precisely_greater_than(GPlatesMaths::PI))
+			{
+				distance_threshold_radians.get() = GPlatesMaths::PI;
+			}
+
 			threshold_storage = GPlatesMaths::AngularExtent::create_from_angle(distance_threshold_radians.get());
 			minimum_distance_threshold = threshold_storage;
 		}
@@ -406,7 +416,7 @@ export_geometry_on_sphere()
 				"  :param geometry2: the second geometry\n"
 				"  :type geometry2: :class:`GeometryOnSphere`\n"
 				"  :param distance_threshold_radians: optional distance threshold in radians - "
-				"threshold should be in the range [0,PI] if specified\n"
+				"threshold is clamped to the range [0, PI] if specified\n"
 				"  :type distance_threshold_radians: float or None\n"
 				"  :param return_closest_positions: whether to also return the closest point on each "
 				"geometry - default is ``False``\n"
@@ -538,7 +548,10 @@ export_geometry_on_sphere()
 				"            polygon,\n"
 				"            return_closest_positions=True,\n"
 				"            return_closest_indices=True,\n"
-				"            geometry2_is_solid=True)\n")
+				"            geometry2_is_solid=True)\n"
+				"\n"
+				".. versionchanged:: 0.41\n"
+				"   distance threshold is clamped to the range [0, PI] to avoid an exception.\n")
 		.staticmethod("distance")
 	;
 
@@ -2289,8 +2302,10 @@ export_polyline_on_sphere()
 				"    except pygplates.InvalidPointsForPolylineConstructionError:\n"
 				"        ... # Handle failure to convert 'geometry' to a PolylineOnSphere.\n"
 				"\n"
-				"  .. note:: If *geometry* is a polygon then only its exterior ring is converted "
-				"(interior rings are ignored).\n")
+				"  .. note:: | If *geometry* is a polygon then only its exterior ring is converted "
+				"(interior rings are ignored).\n"
+				"            | And the last point in the created polyline matches the first point to "
+				"ensure the polyline forms a closed ring.\n")
 		.def("rotation_interpolate",
 				&GPlatesApi::polyline_on_sphere_rotation_interpolate,
 				(bp::arg("from_polyline"), bp::arg("to_polyline"),

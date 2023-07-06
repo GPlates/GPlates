@@ -57,6 +57,12 @@ class GeometryOnSphereCase(unittest.TestCase):
         # Test using distance thresholds.
         self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(polyline1, polyline2, math.pi / 18), math.pi / 19)
         self.assertTrue(pygplates.GeometryOnSphere.distance(polyline1, polyline2, math.pi / 20) is None)
+        # Ensure exception not raised when distance threshold outside range [0, PI].
+        try:
+            self.assertTrue(pygplates.GeometryOnSphere.distance(polyline1, polyline2, -0.1) is None)  # threshold clamped to zero
+            self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(polyline1, polyline2, math.pi + 0.1), math.pi / 19)  # threshold clamped to PI
+        except:
+            self.fail("Unexpected exception when distance threshold outside range [0, PI]")
         
         # Read some test data.
         # The distances were determined using the Measure canvas tool in GPlates.
