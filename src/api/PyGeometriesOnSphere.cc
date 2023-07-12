@@ -3539,10 +3539,11 @@ export_polygon_on_sphere()
 		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesApi::PolygonOnSphereRingArcsView>>())
 	;
 
+
 	//
 	// PolygonOnSphere - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
-	bp::scope polygon_on_sphere_class = bp::class_<
+	bp::class_<
 			GPlatesMaths::PolygonOnSphere,
 			// This wrapped type is immutable so it's desireable to wrap it as a *const* object.
 			// However boost-python currently does not compile when wrapping *const* objects
@@ -4254,26 +4255,40 @@ export_polygon_on_sphere()
 		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>>())
 	;
 
-	// An enumeration nested within python class PolygonOnSphere (due to above 'bp::scope').
-	bp::enum_<GPlatesMaths::PolygonOrientation::Orientation>("Orientation")
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>();
+
+
+	// An enumeration for use with python class PolygonOnSphere.
+	//
+	// Note: We used to nest this inside class PolygonOnSphere by 'bp::scope'ing PolygonOnSphere's bp::class_.
+	//       However pickle was then unable to find it because the type was still recorded as 'pygplates.Orientation'
+	//       instead of 'pygplates.PolygonOnSphere.Orientation'. So now we define it at the module level, so pickle
+	//       can find it, and explicitly add a 'Orientation' attribute to 'PolygonOnSphere' for pygplates users.
+	bp::enum_<GPlatesMaths::PolygonOrientation::Orientation>("PolygonOnSphereOrientation")
 			.value("clockwise", GPlatesMaths::PolygonOrientation::CLOCKWISE)
 			.value("counter_clockwise", GPlatesMaths::PolygonOrientation::COUNTERCLOCKWISE);
+	// Nest enumeration within python class PolygonOnSphere (as 'PolygonOnSphere.Orientation').
+	bp::scope().attr("PolygonOnSphere").attr("Orientation") = bp::scope().attr("PolygonOnSphereOrientation");
 
 	// Enable boost::optional<GPlatesMaths::PolygonOrientation::Orientation> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::PolygonOrientation::Orientation>();
 
-	// An enumeration nested within python class PolygonOnSphere (due to above 'bp::scope').
-	bp::enum_<GPlatesMaths::PolygonPartitioner::Result>("PartitionResult")
+	// An enumeration for use with python class PolygonOnSphere.
+	//
+	// Note: We used to nest this inside class PolygonOnSphere by 'bp::scope'ing PolygonOnSphere's bp::class_.
+	//       However pickle was then unable to find it because the type was still recorded as 'pygplates.PartitionResult'
+	//       instead of 'pygplates.PolygonOnSphere.PartitionResult'. So now we define it at the module level, so pickle
+	//       can find it, and explicitly add a 'PartitionResult' attribute to 'PolygonOnSphere' for pygplates users.
+	bp::enum_<GPlatesMaths::PolygonPartitioner::Result>("PolygonOnSpherePartitionResult")
 			.value("inside", GPlatesMaths::PolygonPartitioner::GEOMETRY_INSIDE)
 			.value("outside", GPlatesMaths::PolygonPartitioner::GEOMETRY_OUTSIDE)
 			.value("intersecting", GPlatesMaths::PolygonPartitioner::GEOMETRY_INTERSECTING);
+	// Nest enumeration within python class PolygonOnSphere (as 'PolygonOnSphere.PartitionResult').
+	bp::scope().attr("PolygonOnSphere").attr("PartitionResult") = bp::scope().attr("PolygonOnSpherePartitionResult");
 
 	// Enable boost::optional<GPlatesMaths::PolygonPartitioner::Result> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesMaths::PolygonPartitioner::Result>();
-
-
-	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
-	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>();
 }
 
 

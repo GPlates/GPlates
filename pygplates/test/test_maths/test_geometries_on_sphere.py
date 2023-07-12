@@ -85,9 +85,9 @@ class GeometryOnSphereCase(unittest.TestCase):
         # The polyline intersects the polygon.
         self.assertAlmostEqual(distance, 0)
         self.assertAlmostEqual(pygplates.GeometryOnSphere.distance(closest_point1, closest_point2), 0)
-    
+
     def test_get_centroid(self):
-        # Test all geometry types have a 'get_controid()' method.
+        # Test all geometry types have a 'get_centroid()' method.
         self.assertTrue(isinstance(pygplates.PointOnSphere(0, 1, 0).get_centroid(), pygplates.PointOnSphere))
         self.assertTrue(isinstance(pygplates.MultiPointOnSphere([(0, 0), (10, 10)]).get_centroid(), pygplates.PointOnSphere))
         self.assertTrue(isinstance(pygplates.PolylineOnSphere([(0, 0), (10, 10)]).get_centroid(), pygplates.PointOnSphere))
@@ -1142,6 +1142,12 @@ class PolygonOnSphereCase(unittest.TestCase):
         self.assertTrue(self.polygon_with_interior.get_exterior_ring_segments() == pickle.loads(pickle.dumps(self.polygon_with_interior.get_exterior_ring_segments())))
         self.assertTrue(self.polygon_with_interior.get_interior_ring_points(0) == pickle.loads(pickle.dumps(self.polygon_with_interior.get_interior_ring_points(0))))
         self.assertTrue(self.polygon_with_interior.get_interior_ring_segments(0) == pickle.loads(pickle.dumps(self.polygon_with_interior.get_interior_ring_segments(0))))
+
+        # Test boost-python enum types nested in PolygonOnSphere ('PolygonOnSphere.Orientation' and 'PolygonOnSphere.PartitionResult').
+        # These are also defined at the module level so that pickle can find them.
+        # This is why we're only testing "nested" enums (regular boost-python enums defined at the module level are pickled fine).
+        self.assertTrue(self.polygon.get_orientation() == pickle.loads(pickle.dumps(self.polygon.get_orientation())))
+        self.assertTrue(self.polygon.partition(pygplates.PointOnSphere(0, 0)) == pickle.loads(pickle.dumps(self.polygon.partition(pygplates.PointOnSphere(0, 0)))))
 
 
 def suite():
