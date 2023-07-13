@@ -28,6 +28,7 @@
 
 #include <string>
 #include <QByteArray>
+#include <QMap>
 #include <QString>
 #include <QStringList>
 
@@ -80,6 +81,8 @@
 		\
 		\
 		(((QByteArray), "QByteArray")) \
+		/* Used as a feature collection tag (boost::any) for OGR model-to-attribute mapping. */ \
+		(((QMap<QString, QString>), "QMap<QString, QString>")) \
 		(((QString), "QString")) \
 		(((QStringList), "QStringList")) \
 		\

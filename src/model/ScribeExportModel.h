@@ -20,6 +20,7 @@
 #ifndef GPLATES_DATA_MINING_SCRIBEEXPORTMODEL_H
 #define GPLATES_DATA_MINING_SCRIBEEXPORTMODEL_H
 
+#include "GpgimVersion.h"
 #include "TopLevelPropertyInline.h"
 
 
@@ -33,6 +34,10 @@
  *******************************************************************************
  */
 #define SCRIBE_EXPORT_MODEL \
+		\
+		/* Used as a feature collection tag (boost::any) in GPML files. */ \
+		(((GPlatesModel::GpgimVersion), \
+			"GPlatesModel::GpgimVersion")) \
 		\
 		(((GPlatesModel::TopLevelPropertyInline), \
 			"GPlatesModel::TopLevelPropertyInline")) \

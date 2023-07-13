@@ -39,6 +39,9 @@
 
 #include "global/PointerTraits.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/ReferenceCount.h"
 
 
@@ -119,14 +122,20 @@ namespace GPlatesModel
 		 * feature collection.
 		 */
 		tags_type &
-		tags();
+		tags()
+		{
+			return d_tags;
+		}
 
 		/**
 		 * Returns the collectino of miscellaneous metadata associated with this
 		 * feature collection.
 		 */
 		const tags_type &
-		tags() const;
+		tags() const
+		{
+			return d_tags;
+		}
 
 	private:
 
@@ -157,6 +166,15 @@ namespace GPlatesModel
 		 * if most feature collection handles have such a tag.
 		 */
 		tags_type d_tags;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 }
 

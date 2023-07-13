@@ -34,6 +34,8 @@
 
 #include "global/LogException.h"
 
+#include "scribe/Scribe.h"
+
 
 const std::string GPlatesModel::GpgimVersion::FEATURE_COLLECTION_TAG("gpgim:version");
 
@@ -199,6 +201,53 @@ GPlatesModel::GpgimVersion::operator<(
 	}
 
 	return false;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesModel::GpgimVersion::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<GpgimVersion> &gpgim_version)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, gpgim_version->d_major, "major");
+		scribe.save(TRANSCRIBE_SOURCE, gpgim_version->d_minor, "minor");
+		scribe.save(TRANSCRIBE_SOURCE, gpgim_version->d_revision, "revision");
+	}
+	else // loading
+	{
+		unsigned int major, minor, revision;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, major, "major") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, minor, "minor") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, revision, "revision"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		gpgim_version.construct_object(major, minor, revision);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesModel::GpgimVersion::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_major, "major") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_minor, "minor") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_revision, "revision"))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

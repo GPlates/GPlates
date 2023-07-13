@@ -35,6 +35,7 @@
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "file-io/FeatureCollectionFileFormatRegistry.h"
 #include "file-io/ReadErrorAccumulation.h"
@@ -929,6 +930,8 @@ export_feature_collection()
 #if 0
 		.def("__setitem__", &GPlatesApi::feature_collection_handle_set_item)
 #endif
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>())
 		.def("add",
 				&GPlatesApi::feature_collection_handle_add,
 				(bp::arg("feature")),

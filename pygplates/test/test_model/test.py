@@ -850,6 +850,16 @@ class FeatureCollectionCase(unittest.TestCase):
         self.assertFalse(self.feature_collection.get(
                 lambda feature: feature.get_feature_type() == pygplates.FeatureType.create_gpml('Isochron'),
                 pygplates.FeatureReturn.all))
+    
+    def test_pickle(self):
+        pickled_feature_collection = pickle.loads(pickle.dumps(self.feature_collection))
+        self.assertTrue(len(pickled_feature_collection) == len(self.feature_collection))
+        for feature_index, feature in enumerate(self.feature_collection):
+            pickled_feature = pickled_feature_collection[feature_index]
+            self.assertTrue(len(pickled_feature) == len(feature))
+            for property_index, property in enumerate(feature):
+                pickled_property = pickled_feature[property_index]
+                self.assertTrue(pickled_property == property)
 
 
 class FeatureCollectionFileFormatRegistryCase(unittest.TestCase):
