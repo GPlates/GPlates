@@ -106,21 +106,21 @@
  *
  *	#define SCRIBE_EXPORT_APP_LOGIC \
  *		\
- *		((GPlatesAppLogic::MyClassA, "MyClassA")) \
+ *		(((GPlatesAppLogic::MyClassA), "MyClassA")) \
  *		\
- *		((GPlatesAppLogic::MyClassB, "MyClassB")) \
+ *		(((GPlatesAppLogic::MyClassB), "MyClassB")) \
  *		\
  *		...
  *
  * To register a class or type, add a line to an export macro that looks like:
  *
- *     ((<ClassType>, <ClassIdName>)) \
+ *     (((<ClassType>), <ClassIdName>)) \
  *
  * ...where <ClassType> is replaced by your class or type, and <ClassIdName> is replaced by a
  * unique string identifier.
  * For example, to register class MyClass add the following:
  *
- *     ((MyClass, "MyClass")) \
+ *     (((MyClass), "MyClass")) \
  *
  * NOTE: The <ClassIdName> identifier should be unique across all registrations.
  * In other words, no two registrations should have the same <ClassIdName> identifier.
@@ -130,7 +130,7 @@
  * change the name of your class. For example if you changed class MyClass to class YourClass then
  * you should still try to register as:
  *
- *     ((YourClass, "MyClass")) \
+ *     (((YourClass), "MyClass")) \
  *
  * ...because changing the identifier will break backward/forward compatibility between GPlates releases.
  * This is because the identifier is written to, and read from, the transcription (archive).
@@ -141,6 +141,10 @@
  * A boost preprocessor sequence looks like '(a)(b)(c)'.
  * In our case the sequence elements are boost preprocessor 2-tuples where a 2-tuple looks like '(x,y)'.
  * So a sequence of 2-tuples looks like '((ax,ay))((bx,by))((cx,cy))'.
+ * And the first element of the 2-tuple is the class type, and it has parentheses around it because
+ * it might be a class type with commas in it (eg, 'QMap<QString, QString>') which would normally
+ * be considered two macro arguments (instead of one) - by wrapping in parentheses we turn it into one
+ * argument - and later we have macros that remove the parentheses.
  */
 
 
@@ -186,7 +190,7 @@
 			 * Create a group of export registration classes for class types/ids defined in a boost \
 			 * preprocessor sequence that looks like: \
 			 * \
-			 *		((MyClassA, "MyClassA"))((MyClassB, "MyClassB"))... \
+			 *		(((MyClassA), "MyClassA"))(((MyClassB), "MyClassB"))... \
 			 * \
 			 * ...which defines the following export registration calls... \
 			 * \
@@ -219,12 +223,20 @@
  * because that would require the caller to also be a friend of the parent class.
  */
 #define GPLATES_ACCESS_EXPORT_REGISTER_CLASS_TYPE( \
-				class_type, \
+				class_type_in_parentheses, \
 				class_id_name) \
 		\
 		export_registered_classes.push_back( \
 				boost::cref( \
-						GPlatesScribe::ExportRegistry::instance().register_class_type<class_type>(class_id_name)));
+						GPlatesScribe::ExportRegistry::instance().register_class_type< \
+								SCRIBE_EXPORT_CLASS_TYPE_FROM_PARENTHESES(class_type_in_parentheses)>(class_id_name)));
+
+ // Convert arguments in parentheses to just the arguments (without parentheses).
+ // For example, converts '(QMap<QString, QString>)' to 'QMap<QString, QString>'.
+#define SCRIBE_EXPORT_CLASS_TYPE_FROM_PARENTHESES(CLASS_TYPE_IN_PARENTHESES) \
+		SCRIBE_EXPORT_MACRO_AND_ARGS_IN_PARENTHESES(SCRIBE_EXPORT_REPLACE_WITH_ARGS CLASS_TYPE_IN_PARENTHESES)
+#define SCRIBE_EXPORT_MACRO_AND_ARGS_IN_PARENTHESES(MACRO_AND_ARGS_IN_PARENTHESES) MACRO_AND_ARGS_IN_PARENTHESES
+#define SCRIBE_EXPORT_REPLACE_WITH_ARGS(...) __VA_ARGS__
 
 #define GPLATES_ACCESS_EXPORT_REGISTER_CLASS_TYPE_MACRO(r, data, elem) \
 		GPLATES_ACCESS_EXPORT_REGISTER_CLASS_TYPE( \

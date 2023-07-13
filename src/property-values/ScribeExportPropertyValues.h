@@ -72,127 +72,127 @@
  */
 #define SCRIBE_EXPORT_PROPERTY_VALUES \
 		\
-		((GPlatesPropertyValues::Enumeration, \
+		(((GPlatesPropertyValues::Enumeration), \
 			"GPlatesPropertyValues::Enumeration")) \
 		\
-		((GPlatesPropertyValues::GmlDataBlock, \
+		(((GPlatesPropertyValues::GmlDataBlock), \
 			"GPlatesPropertyValues::GmlDataBlock")) \
 		\
-		((GPlatesPropertyValues::GmlDataBlockCoordinateList, \
+		(((GPlatesPropertyValues::GmlDataBlockCoordinateList), \
 			"GPlatesPropertyValues::GmlDataBlockCoordinateList")) \
 		\
-		((GPlatesPropertyValues::GmlLineString, \
+		(((GPlatesPropertyValues::GmlLineString), \
 			"GPlatesPropertyValues::GmlLineString")) \
 		\
-		((GPlatesPropertyValues::GmlMultiPoint, \
+		(((GPlatesPropertyValues::GmlMultiPoint), \
 			"GPlatesPropertyValues::GmlMultiPoint")) \
 		\
-		((GPlatesPropertyValues::GmlOrientableCurve, \
+		(((GPlatesPropertyValues::GmlOrientableCurve), \
 			"GPlatesPropertyValues::GmlOrientableCurve")) \
 		\
-		((GPlatesPropertyValues::GmlPoint, \
+		(((GPlatesPropertyValues::GmlPoint), \
 			"GPlatesPropertyValues::GmlPoint")) \
 		\
-		((GPlatesPropertyValues::GmlPolygon, \
+		(((GPlatesPropertyValues::GmlPolygon), \
 			"GPlatesPropertyValues::GmlPolygon")) \
 		\
-		((GPlatesPropertyValues::GmlTimeInstant, \
+		(((GPlatesPropertyValues::GmlTimeInstant), \
 			"GPlatesPropertyValues::GmlTimeInstant")) \
 		\
-		((GPlatesPropertyValues::GmlTimePeriod, \
+		(((GPlatesPropertyValues::GmlTimePeriod), \
 			"GPlatesPropertyValues::GmlTimePeriod")) \
 		\
-		((GPlatesPropertyValues::GpmlArray, \
+		(((GPlatesPropertyValues::GpmlArray), \
 			"GPlatesPropertyValues::GpmlArray")) \
 		\
-		((GPlatesPropertyValues::GpmlConstantValue, \
+		(((GPlatesPropertyValues::GpmlConstantValue), \
 			"GPlatesPropertyValues::GpmlConstantValue")) \
 		\
-		((GPlatesPropertyValues::GpmlFiniteRotation, \
+		(((GPlatesPropertyValues::GpmlFiniteRotation), \
 			"GPlatesPropertyValues::GpmlFiniteRotation")) \
 		\
-		((GPlatesPropertyValues::GpmlFiniteRotationSlerp, \
+		(((GPlatesPropertyValues::GpmlFiniteRotationSlerp), \
 			"GPlatesPropertyValues::GpmlFiniteRotationSlerp")) \
 		\
-		((GPlatesPropertyValues::GpmlIrregularSampling, \
+		(((GPlatesPropertyValues::GpmlIrregularSampling), \
 			"GPlatesPropertyValues::GpmlIrregularSampling")) \
 		\
-		((GPlatesPropertyValues::GpmlKeyValueDictionary, \
+		(((GPlatesPropertyValues::GpmlKeyValueDictionary), \
 			"GPlatesPropertyValues::GpmlKeyValueDictionary")) \
 		\
-		((GPlatesPropertyValues::GpmlKeyValueDictionaryElement, \
+		(((GPlatesPropertyValues::GpmlKeyValueDictionaryElement), \
 			"GPlatesPropertyValues::GpmlKeyValueDictionaryElement")) \
 		\
-		((GPlatesPropertyValues::GpmlMetadata, \
+		(((GPlatesPropertyValues::GpmlMetadata), \
 			"GPlatesPropertyValues::GpmlMetadata")) \
 		\
-		((GPlatesPropertyValues::GpmlOldPlatesHeader, \
+		(((GPlatesPropertyValues::GpmlOldPlatesHeader), \
 			"GPlatesPropertyValues::GpmlOldPlatesHeader")) \
 		\
-		((GPlatesPropertyValues::GpmlPiecewiseAggregation, \
+		(((GPlatesPropertyValues::GpmlPiecewiseAggregation), \
 			"GPlatesPropertyValues::GpmlPiecewiseAggregation")) \
 		\
-		((GPlatesPropertyValues::GpmlPlateId, \
+		(((GPlatesPropertyValues::GpmlPlateId), \
 			"GPlatesPropertyValues::GpmlPlateId")) \
 		\
-		((GPlatesPropertyValues::GpmlPolarityChronId, \
+		(((GPlatesPropertyValues::GpmlPolarityChronId), \
 			"GPlatesPropertyValues::GpmlPolarityChronId")) \
 		\
-		((GPlatesPropertyValues::GpmlPropertyDelegate, \
+		(((GPlatesPropertyValues::GpmlPropertyDelegate), \
 			"GPlatesPropertyValues::GpmlPropertyDelegate")) \
 		\
-		((GPlatesPropertyValues::GpmlTimeSample, \
+		(((GPlatesPropertyValues::GpmlTimeSample), \
 			"GPlatesPropertyValues::GpmlTimeSample")) \
 		\
-		((GPlatesPropertyValues::GpmlTimeWindow, \
+		(((GPlatesPropertyValues::GpmlTimeWindow), \
 			"GPlatesPropertyValues::GpmlTimeWindow")) \
 		\
-		((GPlatesPropertyValues::GpmlTopologicalLine, \
+		(((GPlatesPropertyValues::GpmlTopologicalLine), \
 			"GPlatesPropertyValues::GpmlTopologicalLine")) \
 		\
-		((GPlatesPropertyValues::GpmlTopologicalLineSection, \
+		(((GPlatesPropertyValues::GpmlTopologicalLineSection), \
 			"GPlatesPropertyValues::GpmlTopologicalLineSection")) \
 		\
-		((GPlatesPropertyValues::GpmlTopologicalNetwork, \
+		(((GPlatesPropertyValues::GpmlTopologicalNetwork), \
 			"GPlatesPropertyValues::GpmlTopologicalNetwork")) \
 		\
-		((GPlatesPropertyValues::GpmlTopologicalPoint, \
+		(((GPlatesPropertyValues::GpmlTopologicalPoint), \
 			"GPlatesPropertyValues::GpmlTopologicalPoint")) \
 		\
-		((GPlatesPropertyValues::GpmlTopologicalPolygon, \
+		(((GPlatesPropertyValues::GpmlTopologicalPolygon), \
 			"GPlatesPropertyValues::GpmlTopologicalPolygon")) \
 		\
-		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>, \
+		(((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>), \
 			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GmlDataBlockCoordinateList>")) \
 		\
-		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>, \
+		(((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>), \
 			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlKeyValueDictionaryElement>")) \
 		\
-		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate>, \
+		(((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate>), \
 			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlPropertyDelegate>")) \
 		\
-		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>, \
+		(((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>), \
 			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeSample>")) \
 		\
-		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>, \
+		(((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>), \
 			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTimeWindow>")) \
 		\
-		((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>, \
+		(((GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>), \
 			"GPlatesModel::RevisionedVector<GPlatesPropertyValues::GpmlTopologicalSection>")) \
 		\
-		((GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>, \
+		(((GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>), \
 			"GPlatesModel::RevisionedVector<GPlatesModel::PropertyValue>")) \
 		\
-		((GPlatesPropertyValues::XsBoolean, \
+		(((GPlatesPropertyValues::XsBoolean), \
 			"GPlatesPropertyValues::XsBoolean")) \
 		\
-		((GPlatesPropertyValues::XsDouble, \
+		(((GPlatesPropertyValues::XsDouble), \
 			"GPlatesPropertyValues::XsDouble")) \
 		\
-		((GPlatesPropertyValues::XsInteger, \
+		(((GPlatesPropertyValues::XsInteger), \
 			"GPlatesPropertyValues::XsInteger")) \
 		\
-		((GPlatesPropertyValues::XsString, \
+		(((GPlatesPropertyValues::XsString), \
 			"GPlatesPropertyValues::XsString")) \
 		\
 

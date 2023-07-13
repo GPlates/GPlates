@@ -34,7 +34,7 @@
  */
 #define SCRIBE_EXPORT_MODEL \
 		\
-		((GPlatesModel::TopLevelPropertyInline, \
+		(((GPlatesModel::TopLevelPropertyInline), \
 			"GPlatesModel::TopLevelPropertyInline")) \
 		\
 

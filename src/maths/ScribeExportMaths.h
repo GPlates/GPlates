@@ -37,16 +37,16 @@
  */
 #define SCRIBE_EXPORT_MATHS \
 		\
-		((GPlatesMaths::MultiPointOnSphere, \
+		(((GPlatesMaths::MultiPointOnSphere), \
 			"GPlatesMaths::MultiPointOnSphere")) \
 		\
-		((GPlatesMaths::PointGeometryOnSphere, \
+		(((GPlatesMaths::PointGeometryOnSphere), \
 			"GPlatesMaths::PointGeometryOnSphere")) \
 		\
-		((GPlatesMaths::PolygonOnSphere, \
+		(((GPlatesMaths::PolygonOnSphere), \
 			"GPlatesMaths::PolygonOnSphere")) \
 		\
-		((GPlatesMaths::PolylineOnSphere, \
+		(((GPlatesMaths::PolylineOnSphere), \
 			"GPlatesMaths::PolylineOnSphere")) \
 		\
 
