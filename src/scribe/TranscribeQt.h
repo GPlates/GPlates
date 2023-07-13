@@ -333,10 +333,7 @@ namespace GPlatesScribe
 				const mapped_type &value)
 		{
 			// Insert into the map.
-			// Note that we use QMap::insertMulti() instead of QMap::insert().
-			// This is because it's possible the client has used QMap like a QMultiMap by
-			// storing multiple elements with the same key.
-			return map.insertMulti(key, value);
+			return map.insert(key, value);
 		}
 	};
 
@@ -347,8 +344,20 @@ namespace GPlatesScribe
 	template <class Key, class T>
 	struct TranscribeMap< QMultiMap<Key, T> > :
 			// Delegate to QMap (since QMultiMap inherits from QMap)...
-			public TranscribeMap< QMap<Key, T> > // ...and uses QMap::insertMulti().
+			public TranscribeMap< QMap<Key, T> >
 	{
+		typedef QMultiMap<Key, T> map_type;
+
+		static
+		boost::optional<map_iterator>
+		add_item(
+				map_type &map,
+				const key_type &key,
+				const mapped_type &value)
+		{
+			// Insert into the map.
+			return map.insert(key, value);
+		}
 	};
 
 
