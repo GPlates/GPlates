@@ -315,7 +315,14 @@ namespace
 				const GPlatesAppLogic::ReconstructionLayerProxy::non_null_ptr_type &
 						reconstruction_layer_output = reconstruction_layer_outputs[reconstruction_layer_index];
 
-				if (reconstruction_layer_output->get_reconstruction_tree() == reconstruction_tree)
+				// See if both reconstruction trees were created from the same reconstruction graph (with same time and anchor plate).
+				//
+				// Note: We no longer compare reconstruction tree pointers because reconstruction tree creators typically have an internal
+				//       cache of reconstruction trees, and so it's possible that the cache gets invalidated because some other client requests
+				//       reconstruction trees at more reconstruction times than fits in the cache thus causing a new reconstruction tree to be
+				//       created that is equivalent to an original reconstruction tree but does not compare equal (because it's a new instance).
+				//       So instead it's more robust to see if both reconstruction trees were generated from the same reconstruction graph.
+				if (reconstruction_layer_output->get_reconstruction_tree()->created_from_same_graph_with_same_parameters(*reconstruction_tree))
 				{
 					reconstruction_feature_collections = reconstruction_layer_output->get_current_reconstruction_feature_collections();
 					break;
