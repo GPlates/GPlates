@@ -26,6 +26,7 @@
 #ifndef GPLATES_SCRIBE_TRANSCRIBEBOOST_H
 #define GPLATES_SCRIBE_TRANSCRIBEBOOST_H
 
+#include <boost/any.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/mpl/empty.hpp>
 #include <boost/mpl/front.hpp>
@@ -54,6 +55,17 @@ namespace GPlatesScribe
 	//
 
 	class Scribe;
+
+	/**
+	 * Transcribe boost::any.
+	 *
+	 * NOTE: The type stored in the boost::any must be export registered (see 'ScribeExportRegistration.h').
+	 */
+	TranscribeResult
+	transcribe(
+			Scribe &scribe,
+			boost::any &any_object,
+			bool transcribed_construct_data);
 
 	//! Transcribe boost::intrusive_ptr.
 	template <typename T>

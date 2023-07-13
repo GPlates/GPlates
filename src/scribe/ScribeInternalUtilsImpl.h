@@ -40,6 +40,44 @@ namespace GPlatesScribe
 	{
 		template <typename ObjectType>
 		void
+		TranscribeAnyObjectTemplate<ObjectType>::save_object(
+				Scribe &scribe,
+				const boost::any &any_object,
+				boost::true_type) const
+		{
+			// Extract the boost::any internal object.
+			//
+			// Throws 'bad_any_cast' if internal object does not have type 'ObjectType'.
+			const ObjectType &object = boost::any_cast<const ObjectType &>(any_object);
+
+			// Save the internal object.
+			scribe.save(TRANSCRIBE_SOURCE, object, "object");
+		}
+
+
+		template <typename ObjectType>
+		bool
+		TranscribeAnyObjectTemplate<ObjectType>::load_object(
+				Scribe &scribe,
+				boost::any &any_object,
+				boost::true_type) const
+		{
+			// Load the internal object (of boost::any).
+			LoadRef<ObjectType> object = scribe.load<ObjectType>(TRANSCRIBE_SOURCE, "object");
+			if (!object.is_valid())
+			{
+				return false;
+			}
+
+			// Assign the loaded object to the boost::any object.
+			any_object = object.get();
+
+			return true;
+		}
+
+
+		template <typename ObjectType>
+		void
 		TranscribeOwningPointerTemplate<ObjectType>::save_object(
 				Scribe &scribe,
 				void *object_memory,

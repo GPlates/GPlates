@@ -58,14 +58,17 @@ namespace GPlatesScribe
 		ExportClassType(
 				const std::string &type_id_name_,
 				const std::type_info &type_info_,
+				const InternalUtils::TranscribeAnyObject::non_null_ptr_to_const_type &transcribe_any_object_,
 				const InternalUtils::TranscribeOwningPointer::non_null_ptr_to_const_type &transcribe_owning_pointer_) :
 			type_id_name(type_id_name_),
 			type_info(type_info_),
+			transcribe_any_object(transcribe_any_object_),
 			transcribe_owning_pointer(transcribe_owning_pointer_)
 		{  }
 
 		std::string type_id_name;
 		boost::reference_wrapper<const std::type_info> type_info;
+		InternalUtils::TranscribeAnyObject::non_null_ptr_to_const_type transcribe_any_object;  // for transcribing boost::any
 		InternalUtils::TranscribeOwningPointer::non_null_ptr_to_const_type transcribe_owning_pointer;
 	};
 
@@ -73,7 +76,7 @@ namespace GPlatesScribe
 	/**
 	 * Used to register types to the scribe system so that they can be transcribed through
 	 * base class pointers (ie, where the pointer dereference type is not the actual object type)
-	 * and transcribed as stored types inside boost::variant.
+	 * and transcribed as stored types inside boost::variant and boost::any.
 	 */
 	class ExportRegistry :
 			public GPlatesUtils::Singleton<ExportRegistry>
@@ -204,6 +207,7 @@ namespace GPlatesScribe
 				ExportClassType(
 						class_id_name,
 						boost::cref(typeid(Type))/*type_info*/,
+						InternalUtils::TranscribeAnyObjectTemplate<Type>::create(),
 						InternalUtils::TranscribeOwningPointerTemplate<Type>::create()));
 
 		// Store the registered class type in the class id name map.

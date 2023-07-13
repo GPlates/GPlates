@@ -37,7 +37,7 @@
  *
  * The following classes/types should be export registered:
  *  1) All non-abstract *polymorphic* classes (ie, have 'virtual' methods) and that get transcribed, and
- *  2) All types used in any boost::variant objects that get transcribed.
+ *  2) All types used in any boost::variant and boost::any objects that get transcribed.
  *
  * For example, export registration is required when a base class pointer to a derived class object
  * is transcribed because otherwise, when the transcribed archive is loaded, the type of derived
@@ -84,8 +84,8 @@
  *		};
  *
  *
- * You'll notice that many non-polymorphic types (like the fundamental integer/float types) are
- * listed in 'SCRIBE_EXPORT_EXTERNAL'. This is in case they are used inside a transcribed boost::variant.
+ * You'll notice that many non-polymorphic types (like the fundamental integer/float types) are listed in
+ * 'SCRIBE_EXPORT_EXTERNAL'. This is in case they are used inside a transcribed boost::variant or boost::any.
  *
  *
  *

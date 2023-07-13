@@ -29,9 +29,12 @@
 #include <functional>
 #include <typeinfo>
 #include <utility>
+#include <boost/any.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/type_traits/is_copy_constructible.hpp>
 #include <boost/type_traits/is_polymorphic.hpp>
 
+#include "ScribeExceptions.h"
 #include "ScribeOptions.h"
 #include "Transcribe.h"
 #include "TranscriptionScribeContext.h"
@@ -293,6 +296,149 @@ namespace GPlatesScribe
 		{
 			return Implementation::shared_ptr_cast<T>(ptr, typename boost::is_polymorphic<U>::type());
 		}
+
+
+		/**
+		 * Interface for loading/saving an object as a boost::any.
+		 *
+		 * This interface does not know the type of the object being loaded/saved.
+		 */
+		class TranscribeAnyObject :
+				public GPlatesUtils::ReferenceCount<TranscribeAnyObject>
+		{
+		public:
+
+			// Convenience typedefs for a shared pointer to a @a TranscribeAnyObject.
+			typedef GPlatesUtils::non_null_intrusive_ptr<TranscribeAnyObject> non_null_ptr_type;
+			typedef GPlatesUtils::non_null_intrusive_ptr<const TranscribeAnyObject> non_null_ptr_to_const_type;
+
+			virtual
+			~TranscribeAnyObject()
+			{  }
+
+
+			/**
+			 * Saves the specified boost::any object to the archive.
+			 *
+			 * If the saved object inside boost::any is not the same type used by the derived @a TranscribeAnyObjectTemplate class
+			 * then a 'bad_any_cast' exception is thrown.
+			 */
+			virtual
+			void
+			save_object(
+					Scribe &scribe,
+					const boost::any &any_object) const = 0;
+
+
+			/**
+			 * Loads a boost::any object from the archive (into @a any_object).
+			 *
+			 * The loaded object inside boost::any is the same type used by the derived @a TranscribeAnyObjectTemplate class.
+			 *
+			 * Returns true if transcribe was successful.
+			 */
+			virtual
+			bool
+			load_object(
+					Scribe &scribe,
+					boost::any &any_object) const = 0;
+		};
+
+
+		/**
+		 * Load/save an object as a boost::any.
+		 */
+		template <typename ObjectType>
+		class TranscribeAnyObjectTemplate :
+				public TranscribeAnyObject
+		{
+		public:
+
+			typedef TranscribeAnyObjectTemplate<ObjectType> this_type;
+
+			// Convenience typedefs for a shared pointer to a 'TranscribeAnyObjectTemplate<ObjectType>'.
+			typedef GPlatesUtils::non_null_intrusive_ptr<this_type> non_null_ptr_type;
+			typedef GPlatesUtils::non_null_intrusive_ptr<const this_type> non_null_ptr_to_const_type;
+
+
+			/**
+			 * Creates an instance of 'TranscribeAnyObjectTemplate<ObjectType>'.
+			 */
+			static
+			non_null_ptr_type
+			create()
+			{
+				return non_null_ptr_type(new TranscribeAnyObjectTemplate());
+			}
+
+
+			/**
+			 * Saves the specified boost::any object to the archive.
+			 */
+			virtual
+			void
+			save_object(
+					Scribe &scribe,
+					const boost::any &any_object) const
+			{
+				// If the boost::any internal object is not copy constructible then we avoid instantiating
+				// code that extracts and transcribes the internal object (instead we throw an exception).
+				save_object(scribe, any_object, boost::is_copy_constructible<ObjectType>());
+			}
+
+
+			/**
+			 * Loads a boost::any object from the archive (into @a any_object).
+			 */
+			virtual
+			bool
+			load_object(
+					Scribe &scribe,
+					boost::any &any_object) const
+			{
+				// If the boost::any internal object is not copy constructible then we avoid instantiating
+				// code that transcribes and assigns the internal object (instead we throw an exception).
+				return load_object(scribe, any_object, boost::is_copy_constructible<ObjectType>());
+			}
+
+		private:
+
+			TranscribeAnyObjectTemplate()
+			{  }
+
+
+			// Implementation is in "ScribeInternalUtilsImpl.h" since it includes heavyweight "Scribe.h".
+			void
+			save_object(
+					Scribe &scribe,
+					const boost::any &any_object,
+					boost::true_type) const;
+
+			void
+			save_object(
+					Scribe &scribe,
+					const boost::any &any_object,
+					boost::false_type) const
+			{
+				throw Exceptions::ScribeUserError(GPLATES_EXCEPTION_SOURCE, "boost::any internal object is not copy constructible");
+			}
+
+			// Implementation is in "ScribeInternalUtilsImpl.h" since it includes heavyweight "Scribe.h".
+			bool
+			load_object(
+					Scribe &scribe,
+					boost::any &any_object,
+					boost::true_type) const;
+
+			bool
+			load_object(
+					Scribe &scribe,
+					boost::any &any_object,
+					boost::false_type) const
+			{
+				throw Exceptions::ScribeUserError(GPLATES_EXCEPTION_SOURCE, "boost::any internal object is not copy constructible");
+			}
+		};
 
 
 		/**

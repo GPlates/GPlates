@@ -51,6 +51,7 @@ set(srcs
     ScribeXmlArchiveWriter.h
     Transcribe.h
     TranscribeArray.h
+    TranscribeBoost.cc
     TranscribeBoost.h
     TranscribeContext.h
     TranscribeDelegateProtocol.h
