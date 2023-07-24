@@ -54,6 +54,10 @@ namespace GPlatesOpenGL
 		 * The present queue family is specified with @a present_queue_family.
 		 * This may or may not be the same as the graphics+compute queue family in @a VulkanDevice.
 		 *
+		 * If @a sample_count is greater than one then each single-sample swapchain colour image also gets an
+		 * associated multi-sample image that is rendered into during a render pass and resolved into the
+		 * single-sample swapchain image at the end of the render pass.
+		 *
 		 * If @a create_depth_stencil_attachment is true then a single depth/stencil image is created and
 		 * added to each swapchain image framebuffer.
 		 *
@@ -68,6 +72,7 @@ namespace GPlatesOpenGL
 				vk::SurfaceKHR surface,
 				std::uint32_t present_queue_family,
 				const vk::Extent2D &swapchain_size,
+				vk::SampleCountFlagBits sample_count,
 				bool create_depth_stencil_attachment);
 
 		/**
@@ -177,13 +182,43 @@ namespace GPlatesOpenGL
 				std::uint32_t swapchain_image_index) const;
 
 		/**
-		 * Returns the swapchain framebuffer at specified swapchain image index.
+		 * Returns the sample count used for the render pass and colour/depth-stencil attachments in the framebuffer.
+		 *
+		 * If this is greater than one then rendering will be into a MSAA colour image (instead of
+		 * into the single-sample swapchain image) and the MSAA image will be resolved into the
+		 * single-sample swapchain image at the end of the render pass.
+		 */
+		vk::SampleCountFlagBits
+		get_sample_count() const
+		{
+			return d_sample_count;
+		}
+
+		/**
+		 * Returns the framebuffer at specified swapchain image index.
 		 */
 		vk::Framebuffer
-		get_swapchain_framebuffer(
+		get_framebuffer(
 				std::uint32_t swapchain_image_index) const;
 
+		/**
+		 * Returns the framebuffer clear values.
+		 */
+		std::vector<vk::ClearValue>
+		get_framebuffer_clear_values() const;
+
 	private:
+
+		/**
+		 * Optional MSAA colour image (only used when the sample count is greater than one).
+		 *
+		 * Each swapchain image will (optionally) have an associated MSAA image.
+		 */
+		struct MSAAImage
+		{
+			VulkanImage image;
+			vk::ImageView image_view;
+		};
 
 		/**
 		 * An optional single depth/stencil image shared by all swapchain images/framebuffers.
@@ -199,6 +234,9 @@ namespace GPlatesOpenGL
 		std::uint32_t d_present_queue_family;
 		vk::Queue d_present_queue;
 
+		vk::SampleCountFlagBits d_sample_count;
+		bool d_using_msaa;
+
 		vk::SwapchainKHR d_swapchain;
 		vk::Format d_swapchain_image_format;
 		vk::Extent2D d_swapchain_size;
@@ -210,8 +248,12 @@ namespace GPlatesOpenGL
 		//! Swapchain image views.
 		std::vector<vk::ImageView> d_swapchain_image_views;
 
+		//! Optionally, each swapchain image has an associated MSAA image (only used when sample count is greater than one).
+		boost::optional<std::vector<MSAAImage>> d_msaa_images;
+
 		//! Optional depth/stencil image shared by all swapchain images/framebuffers.
 		boost::optional<DepthStencilImage> d_depth_stencil_image;
+		bool d_using_depth_stencil;
 
 		//! Each swapchain image has an associated framebuffer.
 		std::vector<vk::Framebuffer> d_framebuffers;
@@ -233,6 +275,15 @@ namespace GPlatesOpenGL
 		
 		void
 		destroy_swapchain_image_views(
+				VulkanDevice &vulkan_device);
+
+
+		void
+		create_msaa_images(
+				VulkanDevice &vulkan_device);
+
+		void
+		destroy_msaa_images(
 				VulkanDevice &vulkan_device);
 
 

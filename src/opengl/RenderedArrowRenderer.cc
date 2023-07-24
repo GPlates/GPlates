@@ -52,6 +52,7 @@ void
 GPlatesOpenGL::RenderedArrowRenderer::initialise_vulkan_resources(
 		Vulkan &vulkan,
 		vk::RenderPass default_render_pass,
+		vk::SampleCountFlagBits default_render_pass_sample_count,
 		const MapProjectionImage &map_projection_image,
 		vk::CommandBuffer initialisation_command_buffer,
 		vk::Fence initialisation_submit_fence)
@@ -63,7 +64,7 @@ GPlatesOpenGL::RenderedArrowRenderer::initialise_vulkan_resources(
 	create_compute_pipeline(vulkan);
 
 	// Create the graphics pipeline (to render arrows frustum culled by the compute shader).
-	create_graphics_pipeline(vulkan, default_render_pass);
+	create_graphics_pipeline(vulkan, default_render_pass, default_render_pass_sample_count);
 
 	// Create the arrow mesh and load it into the vertex/index buffers.
 	std::vector<MeshVertex> vertices;
@@ -539,7 +540,8 @@ GPlatesOpenGL::RenderedArrowRenderer::create_compute_pipeline(
 void
 GPlatesOpenGL::RenderedArrowRenderer::create_graphics_pipeline(
 		Vulkan &vulkan,
-		vk::RenderPass default_render_pass)
+		vk::RenderPass default_render_pass,
+		vk::SampleCountFlagBits default_render_pass_sample_count)
 {
 	//
 	// Shader stages.
@@ -611,7 +613,9 @@ GPlatesOpenGL::RenderedArrowRenderer::create_graphics_pipeline(
 	//
 	// Multisample state.
 	//
-	vk::PipelineMultisampleStateCreateInfo multisample_state_create_info;  // default
+	vk::PipelineMultisampleStateCreateInfo multisample_state_create_info;
+	// Sample count must match the render pass.
+	multisample_state_create_info.setRasterizationSamples(default_render_pass_sample_count);
 
 	//
 	// Depth stencil state.

@@ -100,6 +100,7 @@ void
 GPlatesOpenGL::RenderedGeometryRenderer::initialise_vulkan_resources(
 		Vulkan &vulkan,
 		vk::RenderPass default_render_pass,
+		vk::SampleCountFlagBits default_render_pass_sample_count,
 		const MapProjectionImage &map_projection_image,
 		vk::CommandBuffer initialisation_command_buffer,
 		vk::Fence initialisation_submit_fence)
@@ -107,6 +108,7 @@ GPlatesOpenGL::RenderedGeometryRenderer::initialise_vulkan_resources(
 	d_rendered_arrow_renderer.initialise_vulkan_resources(
 			vulkan,
 			default_render_pass,
+			default_render_pass_sample_count,
 			map_projection_image,
 			initialisation_command_buffer,
 			initialisation_submit_fence);

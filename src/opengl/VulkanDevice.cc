@@ -493,7 +493,7 @@ GPlatesOpenGL::VulkanDevice::create_vma_allocator(
 	allocator_create_info.device = d_device;
 	allocator_create_info.pVulkanFunctions = &vulkan_functions;
 	// Get the VMA allocator to use the VK_KHR_dedicated_allocation extension (if available and we've enabled it).
-	// This allows dedicated allocations for buffer/image resources when the driver decides its more efficient.
+	// This allows dedicated allocations for buffer/image resources when the driver decides it's more efficient.
 	if (use_KHR_dedicated_allocation)
 	{
 		// Note that the VMA docs tell us the following validation error can be ignored:

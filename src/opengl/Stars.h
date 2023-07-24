@@ -63,6 +63,7 @@ namespace GPlatesOpenGL
 		initialise_vulkan_resources(
 				GPlatesOpenGL::Vulkan &vulkan,
 				vk::RenderPass default_render_pass,
+				vk::SampleCountFlagBits default_render_pass_sample_count,
 				vk::CommandBuffer initialisation_command_buffer,
 				vk::Fence initialisation_submit_fence);
 
@@ -135,7 +136,8 @@ namespace GPlatesOpenGL
 		void
 		create_graphics_pipeline(
 				GPlatesOpenGL::Vulkan &vulkan,
-				vk::RenderPass default_render_pass);
+				vk::RenderPass default_render_pass,
+				vk::SampleCountFlagBits default_render_pass_sample_count);
 
 		void
 		create_stars(

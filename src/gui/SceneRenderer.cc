@@ -78,6 +78,7 @@ void
 GPlatesGui::SceneRenderer::initialise_vulkan_resources(
 		GPlatesOpenGL::Vulkan &vulkan,
 		vk::RenderPass default_render_pass,
+		vk::SampleCountFlagBits default_render_pass_sample_count,
 		vk::CommandBuffer initialisation_command_buffer,
 		vk::Fence initialisation_submit_fence)
 {
@@ -91,6 +92,7 @@ GPlatesGui::SceneRenderer::initialise_vulkan_resources(
 	d_stars.initialise_vulkan_resources(
 			vulkan,
 			default_render_pass,
+			default_render_pass_sample_count,
 			initialisation_command_buffer,
 			initialisation_submit_fence);
 
@@ -98,6 +100,7 @@ GPlatesGui::SceneRenderer::initialise_vulkan_resources(
 	d_rendered_geometry_renderer.initialise_vulkan_resources(
 			vulkan,
 			default_render_pass,
+			default_render_pass_sample_count,
 			d_map_projection_image,
 			initialisation_command_buffer,
 			initialisation_submit_fence);

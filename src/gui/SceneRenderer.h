@@ -96,6 +96,7 @@ namespace GPlatesGui
 		initialise_vulkan_resources(
 				GPlatesOpenGL::Vulkan &vulkan,
 				vk::RenderPass default_render_pass,
+				vk::SampleCountFlagBits default_render_pass_sample_count,
 				vk::CommandBuffer initialisation_command_buffer,
 				vk::Fence initialisation_submit_fence);
 

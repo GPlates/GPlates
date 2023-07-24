@@ -184,12 +184,23 @@ GPlatesQtWidgets::VulkanWindow::create_vulkan_device_and_swapchain()
 			surface,
 			present_queue_family);
 
+	// Use MSAA unless the device-pixel-ratio is greater than 1.0
+	// (because then the pixels are so small that we effectively already have anti-aliasing).
+	vk::SampleCountFlagBits sample_count = vk::SampleCountFlagBits::e1;
+	if (devicePixelRatio() == 1)
+	{
+		// Use 4xMSAA since Vulkan requires its support for colour and depth/stencil attachments.
+		// And 4xMSAA is a good quality/performance trade-off.
+		sample_count = vk::SampleCountFlagBits::e4;
+	}
+
 	// Create the Vulkan swapchain.
 	d_vulkan_swapchain.create(
 			d_vulkan_device,
 			surface,
 			present_queue_family,
 			get_window_size_in_device_pixels(),
+			sample_count,
 			true/*create_depth_stencil_attachment*/);
 
 	// Notify subclass that Vulkan device was created.

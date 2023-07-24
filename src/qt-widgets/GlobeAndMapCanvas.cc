@@ -319,6 +319,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::initialise_vulkan_resources(
 	d_scene_renderer->initialise_vulkan_resources(
 			vulkan,
 			vulkan_swapchain.get_swapchain_render_pass(),
+			vulkan_swapchain.get_sample_count(),
 			initialisation_command_buffer,
 			initialisation_submit_fence);
 
@@ -546,10 +547,6 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 				"Failed to acquire next Vulkan swapchain image.");
 	}
 
-	// Swapchain render target.
-	vk::Framebuffer swapchain_framebuffer = vulkan_swapchain.get_swapchain_framebuffer(swapchain_image_index);
-	vk::Image swapchain_image = vulkan_swapchain.get_swapchain_image(swapchain_image_index);
-
 
 	//
 	// Render the scene.
@@ -568,26 +565,14 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 	// Default render pass (for rendering to default framebuffer).
 	//
 
-	// Clear colour of the default framebuffer.
-	//
-	// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
-	// the scene, that are not rendered, to have *opaque* alpha (=1). This ensures that if there is any
-	// further alpha composition of the framebuffer (we attempt to set vk::CompositeAlphaFlagBitsKHR::eOpaque
-	// in VulkanSwapchain, if it's supported, to avoid further composition) then it will have no effect.
-	// For example, we don't want our black background converted to white if the underlying surface happens to be white.
-	const vk::ClearColorValue default_clear_colour = std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f };
-	// Clear depth/stencil of the default framebuffer.
-	const vk::ClearDepthStencilValue default_clear_depth_stencil = { 1.0f, 0 };
-
 	// Begin default render pass to the swapchain framebuffer.
 	//
-	const vk::Rect2D default_render_area = viewport.get_vulkan_rect_2D();
-	const vk::ClearValue default_clear_values[2] = { default_clear_colour, default_clear_depth_stencil };
+	const std::vector<vk::ClearValue> default_clear_values = vulkan_swapchain.get_framebuffer_clear_values();
 	vk::RenderPassBeginInfo default_render_pass_begin_info;
 	default_render_pass_begin_info
 			.setRenderPass(vulkan_swapchain.get_swapchain_render_pass())
-			.setFramebuffer(swapchain_framebuffer)
-			.setRenderArea(default_render_area)
+			.setFramebuffer(vulkan_swapchain.get_framebuffer(swapchain_image_index))
+			.setRenderArea(viewport.get_vulkan_rect_2D())
 			.setClearValues(default_clear_values);
 	swapchain_command_buffer.beginRenderPass(default_render_pass_begin_info, vk::SubpassContents::eInline);
 
@@ -624,7 +609,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::render_to_window(
 				.setNewLayout(vk::ImageLayout::ePresentSrcKHR)  // Keep the layout.
 				.setSrcQueueFamilyIndex(vulkan.get_graphics_and_compute_queue_family())
 				.setDstQueueFamilyIndex(vulkan_swapchain.get_present_queue_family())
-				.setImage(swapchain_image)
+				.setImage(vulkan_swapchain.get_swapchain_image(swapchain_image_index))
 				.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 });
 		swapchain_command_buffer.pipelineBarrier(
 				// Wait on colour attachment stage.

@@ -17,6 +17,8 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <array>
+
 #include "VulkanSwapchain.h"
 
 #include "VulkanDevice.h"
@@ -28,7 +30,10 @@
 
 GPlatesOpenGL::VulkanSwapchain::VulkanSwapchain() :
 	d_present_queue_family(UINT32_MAX),
-	d_swapchain_image_format(vk::Format::eUndefined)
+	d_sample_count(vk::SampleCountFlagBits::e1),
+	d_using_msaa(false),
+	d_swapchain_image_format(vk::Format::eUndefined),
+	d_using_depth_stencil(false)
 {
 }
 
@@ -39,8 +44,14 @@ GPlatesOpenGL::VulkanSwapchain::create(
 		vk::SurfaceKHR surface,
 		std::uint32_t present_queue_family,
 		const vk::Extent2D &swapchain_size,
+		vk::SampleCountFlagBits sample_count,
 		bool create_depth_stencil_attachment)
 {
+	GPlatesGlobal::Assert<VulkanException>(
+			!d_swapchain,
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to create Vulkan swapchain that has already been created.");
+
 	d_surface = surface;
 	d_present_queue_family = present_queue_family;
 
@@ -48,11 +59,20 @@ GPlatesOpenGL::VulkanSwapchain::create(
 	// Note: This may or may not be the same as the graphics+compute queue in VulkanDevice.
 	d_present_queue = vulkan_device.get_device().getQueue(d_present_queue_family, 0/*queueIndex*/);
 
-	// Create swapchain first, then swapchain image views (from swapchain images),
-	// then create optional depth/stencil image, then render pass and finally the framebuffers.
+	// Optional MSAA and depth/stencil.
+	d_sample_count = sample_count;
+	d_using_msaa = sample_count != vk::SampleCountFlagBits::e1;  // use MSAA if sample count > 1
+	d_using_depth_stencil = create_depth_stencil_attachment;
+
+	// Create swapchain first, then swapchain image views (from swapchain images), then create optional
+	// MSAA images, then create optional depth/stencil image, then render pass and finally the framebuffers.
 	create_swapchain(vulkan_device, swapchain_size);
 	create_swapchain_image_views(vulkan_device);
-	if (create_depth_stencil_attachment)
+	if (d_using_msaa)
+	{
+		create_msaa_images(vulkan_device);
+	}
+	if (d_using_depth_stencil)
 	{
 		create_depth_stencil_image(vulkan_device);
 	}
@@ -66,20 +86,28 @@ GPlatesOpenGL::VulkanSwapchain::recreate(
 		VulkanDevice &vulkan_device,
 		const vk::Extent2D &swapchain_size)
 {
+	GPlatesGlobal::Assert<VulkanException>(
+			d_swapchain,
+			GPLATES_ASSERTION_SOURCE,
+			"Attempted to recreate Vulkan swapchain without first creating it.");
+
 	// First make sure all commands in all queues have finished.
 	// This is in case any commands are still operating on an acquired swapchain image.
 	//
 	// Note: It's OK to wait here since destroying a swapchain is not a performance-critical part of the code.
 	vulkan_device.get_device().waitIdle();
 
-	// Destroy framebuffers first, then render pass, then depth/stencil image (if using one),
-	// then swapchain image views (from swapchain images).
+	// Destroy framebuffers first, then render pass, then depth/stencil image (if using one), then
+	// MSAA images (if using them), then swapchain image views (from swapchain images).
 	destroy_framebuffers(vulkan_device);
 	destroy_render_pass(vulkan_device);
-	bool using_depth_stencil_image = static_cast<bool>(d_depth_stencil_image);
-	if (using_depth_stencil_image)
+	if (d_using_depth_stencil)
 	{
 		destroy_depth_stencil_image(vulkan_device);
+	}
+	if (d_using_msaa)
+	{
+		destroy_msaa_images(vulkan_device);
 	}
 	destroy_swapchain_image_views(vulkan_device);
 
@@ -93,10 +121,14 @@ GPlatesOpenGL::VulkanSwapchain::recreate(
 		vulkan_device.get_device().destroySwapchainKHR(old_swapchain);
 	}
 
-	// Create the swapchain image views (from swapchain images), then create depth/stencil image (if using one),
-	// then render pass and finally the framebuffers.
+	// Create the swapchain image views (from swapchain images), then create MSAA images (if using them),
+	// then create depth/stencil image (if using one), then render pass and finally the framebuffers.
 	create_swapchain_image_views(vulkan_device);
-	if (using_depth_stencil_image)
+	if (d_using_msaa)
+	{
+		create_msaa_images(vulkan_device);
+	}
+	if (d_using_depth_stencil)
 	{
 		create_depth_stencil_image(vulkan_device);
 	}
@@ -120,13 +152,17 @@ GPlatesOpenGL::VulkanSwapchain::destroy(
 	// Note: It's OK to wait here since destroying a swapchain is not a performance-critical part of the code.
 	vulkan_device.get_device().waitIdle();
 
-	// Destroy framebuffers first, then render pass, then depth/stencil image (if using one),
-	// then swapchain image views (from swapchain images), and finally the swapchain.
+	// Destroy framebuffers first, then render pass, then depth/stencil image (if using one), then
+	// MSAA images (if using them), then swapchain image views (from swapchain images), and finally the swapchain.
 	destroy_framebuffers(vulkan_device);
 	destroy_render_pass(vulkan_device);
-	if (d_depth_stencil_image)
+	if (d_using_depth_stencil)
 	{
 		destroy_depth_stencil_image(vulkan_device);
+	}
+	if (d_using_msaa)
+	{
+		destroy_msaa_images(vulkan_device);
 	}
 	destroy_swapchain_image_views(vulkan_device);
 	destroy_swapchain(vulkan_device);
@@ -160,7 +196,7 @@ GPlatesOpenGL::VulkanSwapchain::get_swapchain_image_view(
 
 
 vk::Framebuffer
-GPlatesOpenGL::VulkanSwapchain::get_swapchain_framebuffer(
+GPlatesOpenGL::VulkanSwapchain::get_framebuffer(
 		std::uint32_t swapchain_image_index) const
 {
 	GPlatesGlobal::Assert<VulkanException>(
@@ -169,6 +205,41 @@ GPlatesOpenGL::VulkanSwapchain::get_swapchain_framebuffer(
 			"Swapchain image index >= number of images");
 
 	return d_framebuffers[swapchain_image_index];
+}
+
+
+std::vector<vk::ClearValue>
+GPlatesOpenGL::VulkanSwapchain::get_framebuffer_clear_values() const
+{
+	std::vector<vk::ClearValue> clear_values;
+
+	// Clear colour of the framebuffer.
+	//
+	// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
+	// the scene, that are not rendered, to have *opaque* alpha (=1).
+	// This ensures that if there is any further alpha composition of the framebuffer
+	// (we attempt to set vk::CompositeAlphaFlagBitsKHR::eOpaque, if it's supported, to avoid further composition)
+	// then it will have no effect.
+	// For example, we don't want our black background converted to white if the underlying surface happens to be white.
+	const vk::ClearColorValue clear_colour = std::array<float, 4>{ 0.0f, 0.0f, 0.0f, 1.0f };
+
+	// First clear value is for swapchain image attachment.
+	clear_values.push_back(clear_colour);
+
+	// Next clear value is for optional MSAA image attachment.
+	if (d_using_msaa)
+	{
+		clear_values.push_back(clear_colour);
+	}
+
+	// Last clear value is for optional depth/stencil image attachment.
+	if (d_using_depth_stencil)
+	{
+		const vk::ClearDepthStencilValue clear_depth_stencil = { 1.0f, 0 };
+		clear_values.push_back(clear_depth_stencil);
+	}
+
+	return clear_values;
 }
 
 
@@ -360,7 +431,7 @@ GPlatesOpenGL::VulkanSwapchain::destroy_swapchain_image_views(
 	// For each swapchain image, destroy the swapchain image view.
 	for (vk::ImageView swapchain_image_view : d_swapchain_image_views)
 	{
-		// Destroy swapchain image *view* and framebuffer but not swapchain image itself (it belongs to the swapchain).
+		// Destroy swapchain image *view* but not swapchain image itself (it belongs to the swapchain).
 		vulkan_device.get_device().destroyImageView(swapchain_image_view);
 	}
 
@@ -369,11 +440,85 @@ GPlatesOpenGL::VulkanSwapchain::destroy_swapchain_image_views(
 
 
 void
+GPlatesOpenGL::VulkanSwapchain::create_msaa_images(
+		VulkanDevice &vulkan_device)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_using_msaa && !d_msaa_images,
+			GPLATES_ASSERTION_SOURCE);
+
+	d_msaa_images = std::vector<MSAAImage>();
+
+	// For each swapchain image, create a MSAA image (and image view).
+	for (std::uint32_t swapchain_image_index = 0;
+		swapchain_image_index < d_swapchain_images.size();
+		++swapchain_image_index)
+	{
+		// Create an image for use as a MSAA colour attachment.
+		vk::ImageCreateInfo msaa_image_create_info;
+		msaa_image_create_info
+				.setImageType(vk::ImageType::e2D)
+				.setFormat(d_swapchain_image_format)
+				.setExtent({ d_swapchain_size.width, d_swapchain_size.height, 1 })
+				.setMipLevels(1)
+				.setArrayLayers(1)
+				.setSamples(d_sample_count)
+				.setTiling(vk::ImageTiling::eOptimal)
+				// Specifying transient attachment enables image to be allocated using VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT...
+				.setUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransientAttachment)
+				.setSharingMode(vk::SharingMode::eExclusive)
+				.setInitialLayout(vk::ImageLayout::eUndefined);
+		// Allocation for MSAA image.
+		VmaAllocationCreateInfo msaa_allocation_create_info = {};
+		msaa_allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
+		msaa_allocation_create_info.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
+		msaa_allocation_create_info.preferredFlags = VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+		VulkanImage msaa_image = VulkanImage::create(
+				vulkan_device.get_vma_allocator(),
+				msaa_image_create_info,
+				msaa_allocation_create_info,
+				GPLATES_EXCEPTION_SOURCE);
+
+		// Create MSAA image view.
+		vk::ImageViewCreateInfo msaa_image_view_create_info;
+		msaa_image_view_create_info
+				.setImage(msaa_image.get_image())
+				.setViewType(vk::ImageViewType::e2D)
+				.setFormat(d_swapchain_image_format)
+				.setComponents({})  // identity swizzle
+				.setSubresourceRange({ vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1 } );
+		vk::ImageView msaa_image_view = vulkan_device.get_device().createImageView(msaa_image_view_create_info);
+
+		// MSAA image and image view.
+		d_msaa_images->push_back({ msaa_image, msaa_image_view });
+	}
+}
+
+
+void
+GPlatesOpenGL::VulkanSwapchain::destroy_msaa_images(
+		VulkanDevice &vulkan_device)
+{
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			d_using_msaa && d_msaa_images,
+			GPLATES_ASSERTION_SOURCE);
+
+	for (MSAAImage &msaa_image : d_msaa_images.get())
+	{
+		vulkan_device.get_device().destroyImageView(msaa_image.image_view);
+		VulkanImage::destroy(vulkan_device.get_vma_allocator(), msaa_image.image);
+	}
+
+	d_msaa_images = boost::none;
+}
+
+
+void
 GPlatesOpenGL::VulkanSwapchain::create_depth_stencil_image(
 		VulkanDevice &vulkan_device)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			!d_depth_stencil_image,
+			d_using_depth_stencil && !d_depth_stencil_image,
 			GPLATES_ASSERTION_SOURCE);
 
 	// Determine depth/stencil format.
@@ -407,13 +552,13 @@ GPlatesOpenGL::VulkanSwapchain::create_depth_stencil_image(
 			.setExtent({ d_swapchain_size.width, d_swapchain_size.height, 1 })
 			.setMipLevels(1)
 			.setArrayLayers(1)
-			.setSamples(vk::SampleCountFlagBits::e1)
+			.setSamples(d_sample_count)
 			.setTiling(vk::ImageTiling::eOptimal)
 			// Specifying transient attachment enables image to be allocated using VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT...
 			.setUsage(vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransientAttachment)
 			.setSharingMode(vk::SharingMode::eExclusive)
 			.setInitialLayout(vk::ImageLayout::eUndefined);
-	// Depth/stencil allocation.
+	// Allocation for depth/stencil image.
 	VmaAllocationCreateInfo depth_stencil_allocation_create_info = {};
 	depth_stencil_allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
 	depth_stencil_allocation_create_info.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
@@ -443,7 +588,7 @@ GPlatesOpenGL::VulkanSwapchain::destroy_depth_stencil_image(
 		VulkanDevice &vulkan_device)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			d_depth_stencil_image,
+			d_using_depth_stencil && d_depth_stencil_image,
 			GPLATES_ASSERTION_SOURCE);
 
 	vulkan_device.get_device().destroyImageView(d_depth_stencil_image->image_view);
@@ -463,10 +608,10 @@ GPlatesOpenGL::VulkanSwapchain::create_render_pass(
 	vk::AttachmentDescription swapchain_image_attachment_description;
 	swapchain_image_attachment_description
 			.setFormat(d_swapchain_image_format)
-			.setSamples(vk::SampleCountFlagBits::e1)
-			// We'll clear the colour attachment on input...
-			.setLoadOp(vk::AttachmentLoadOp::eClear)
-			// We'll keep the colour attachment output...
+			.setSamples(vk::SampleCountFlagBits::e1)  // swapchain image is always single-sample
+			// We'll clear the colour attachment (except for MSAA since this will be target of MSAA resolve)...
+			.setLoadOp(d_using_msaa ? vk::AttachmentLoadOp::eDontCare : vk::AttachmentLoadOp::eClear)
+			// We'll keep the colour attachment contents after the render pass...
 			.setStoreOp(vk::AttachmentStoreOp::eStore)
 			// Don't care about stencil load/store...
 			.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
@@ -478,25 +623,62 @@ GPlatesOpenGL::VulkanSwapchain::create_render_pass(
 			// Final layout should be presentable (usable by presentation engine)...
 			.setFinalLayout(vk::ImageLayout::ePresentSrcKHR);
 
-	// Swapchain image is the first attachment (and only attachment if not using depth/stencil).
+	// Swapchain image is the first attachment (and only attachment if not using MSAA or depth/stencil).
+	const std::uint32_t swapchain_image_attachment_index = attachment_descriptions.size();
 	attachment_descriptions.push_back(swapchain_image_attachment_description);
 
-	// Colour attachment references swapchain image attachment.
+	// Colour attachment references swapchain image attachment (unless using MSAA - see below).
 	vk::AttachmentReference colour_attachment_reference;
 	colour_attachment_reference
-			.setAttachment(0)
+			.setAttachment(swapchain_image_attachment_index)
 			// Subpass renders to attachment, so it should be in an optimal image layout...
 			.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
 
+	// If we're using MSAA then a resolve attachment references the swapchain image attachment and
+	// the colour attachment references a new MSAA image attachment.
+	vk::AttachmentReference resolve_attachment_reference;
+	if (d_using_msaa)
+	{
+		// MSAA image attachment.
+		vk::AttachmentDescription msaa_image_attachment_description;
+		msaa_image_attachment_description
+				.setFormat(d_swapchain_image_format)
+				.setSamples(d_sample_count)
+				// We'll clear the MSAA attachment on load (since we'll be rendering to this attachment after that)...
+				.setLoadOp(vk::AttachmentLoadOp::eClear)
+				// Not keeping the MSAA attachment contents after the render pass (used only to resolve into swapchain image)...
+				.setStoreOp(vk::AttachmentStoreOp::eDontCare)
+				// Don't care about stencil load/store...
+				.setStencilLoadOp(vk::AttachmentLoadOp::eDontCare)
+				.setStencilStoreOp(vk::AttachmentStoreOp::eDontCare)
+				// Not preserving initial contents of MSAA image.
+				.setInitialLayout(vk::ImageLayout::eUndefined)
+				// Final layout leave as optimal (from subpass)...
+				.setFinalLayout(vk::ImageLayout::eColorAttachmentOptimal);
+
+		// MSAA image is the next attachment.
+		const std::uint32_t msaa_attachment_index = attachment_descriptions.size();
+		attachment_descriptions.push_back(msaa_image_attachment_description);
+
+		// The colour attachment now references the MSAA image attachment.
+		colour_attachment_reference.setAttachment(msaa_attachment_index);
+
+		// The resolve attachment now references the swapchain image attachment.
+		resolve_attachment_reference
+				.setAttachment(swapchain_image_attachment_index)
+				// Subpass resolves MSAA attachment to resolve attachment, so optimal image layout is fine...
+				.setLayout(vk::ImageLayout::eColorAttachmentOptimal);
+	}
+
 	// Optional depth/stencil attachment references optional depth/stencil image attachment.
 	vk::AttachmentReference depth_stencil_attachment_reference;
-	if (d_depth_stencil_image)
+	if (d_using_depth_stencil)
 	{
 		// Depth/stencil image attachment.
 		vk::AttachmentDescription depth_stencil_image_attachment_description;
 		depth_stencil_image_attachment_description
 				.setFormat(d_depth_stencil_image->format)
-				.setSamples(vk::SampleCountFlagBits::e1)
+				.setSamples(d_sample_count)
 				// We'll clear the depth attachment on load...
 				.setLoadOp(vk::AttachmentLoadOp::eClear)
 				// Don't care about depth store...
@@ -510,22 +692,27 @@ GPlatesOpenGL::VulkanSwapchain::create_render_pass(
 				// Final layout leave as optimal (from subpass)...
 				.setFinalLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
 
-		// Depth/stencil image is the second attachment.
+		// Depth/stencil image is the last attachment.
+		const std::uint32_t depth_stencil_attachment_index = attachment_descriptions.size();
 		attachment_descriptions.push_back(depth_stencil_image_attachment_description);
 
 		// Depth/stencil attachment references depth/stencil image attachment.
 		depth_stencil_attachment_reference
-				.setAttachment(1)
+				.setAttachment(depth_stencil_attachment_index)
 				// Subpass uses attachment as a depth/stencil buffer, so it should be in an optimal image layout...
 				.setLayout(vk::ImageLayout::eDepthStencilAttachmentOptimal);
 	}
 
-	// One subpass using a single colour attachment (and optional depth/stencil attachment).
+	// One subpass using a single colour attachment, and optional resolve attachment, and optional depth/stencil attachment.
 	vk::SubpassDescription subpass_description;
 	subpass_description
 			.setPipelineBindPoint(vk::PipelineBindPoint::eGraphics)
 			.setColorAttachments(colour_attachment_reference);
-	if (d_depth_stencil_image)
+	if (d_using_msaa)
+	{
+		subpass_description.setPResolveAttachments(&resolve_attachment_reference);
+	}
+	if (d_using_depth_stencil)
 	{
 		subpass_description.setPDepthStencilAttachment(&depth_stencil_attachment_reference);
 	}
@@ -574,7 +761,7 @@ GPlatesOpenGL::VulkanSwapchain::create_render_pass(
 			.setDstAccessMask(vk::AccessFlagBits::eColorAttachmentRead | vk::AccessFlagBits::eColorAttachmentWrite);
 	subpass_dependencies.push_back(swapchain_image_release_subpass_dependency);
 
-	if (d_depth_stencil_image)
+	if (d_using_depth_stencil)
 	{
 		// One subpass external dependency to ensure depth/stencil writes to shared depth/stencil attachment in a previous render pass
 		// (which used the *same* shared depth/stencil image, but with a different swapchain colour image) do not overlap with
@@ -628,12 +815,24 @@ GPlatesOpenGL::VulkanSwapchain::create_framebuffers(
 		VulkanDevice &vulkan_device)
 {
 	// For each swapchain image view, create a framebuffer.
-	for (vk::ImageView swapchain_image_view : d_swapchain_image_views)
+	for (std::uint32_t swapchain_image_index = 0;
+		swapchain_image_index < d_swapchain_images.size();
+		++swapchain_image_index)
 	{
-		// Framebuffer attachments (swapchain image view and optional shared depth/stencil image view).
+		// Framebuffer attachments.
 		std::vector<vk::ImageView> attachments;
-		attachments.push_back(swapchain_image_view);
-		if (d_depth_stencil_image)
+
+		// The swapchain image view is first.
+		attachments.push_back(d_swapchain_image_views[swapchain_image_index]);
+
+		// Optional MSAA image (if using MSAA) is next.
+		if (d_using_msaa)
+		{
+			attachments.push_back(d_msaa_images.get()[swapchain_image_index].image_view);
+		}
+
+		// Optional depth/stencil image is last.
+		if (d_using_depth_stencil)
 		{
 			attachments.push_back(d_depth_stencil_image->image_view);
 		}
