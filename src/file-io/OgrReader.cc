@@ -1066,7 +1066,7 @@ GPlatesFileIO::OgrReader::read_features(
 
 		d_geometry_ptr = d_feature_ptr->GetGeometryRef();
 		if (d_geometry_ptr == NULL){
-			read_errors.d_recoverable_errors.push_back(
+			read_errors.d_warnings.push_back(
 				GPlatesFileIO::ReadErrorOccurrence(
 					e_source,
 					e_location,

@@ -41,19 +41,18 @@ namespace GPlatesFileIO
 	{
 		namespace
 		{
-#if !defined(GPLATES_PYTHON_EMBEDDING)  // pygplates
-			// This should be initialised with 'set_pygplates_bundle_directory()' just after the
+#	if !defined(GPLATES_PYTHON_EMBEDDING)  // pygplates
+			// This should be initialised with 'initialise()' just after the
 			// non-embedded pygplates module was imported by an external (non-embedded Python interpreter).
 			boost::optional<QString> pygplates_bundle_directory;
-#endif
+#	endif
 		}
 
+#if defined(GPLATES_INSTALL_STANDALONE)
 
 		boost::optional<QString>
 		get_bundle_root_directory()
 		{
-#if defined(GPLATES_INSTALL_STANDALONE)
-
 #	if defined(GPLATES_PYTHON_EMBEDDING)  // gplates
 
 #		if defined(Q_OS_MACOS)
@@ -66,14 +65,10 @@ namespace GPlatesFileIO
 #		endif
 
 #	else  // pygplates
-			// Note that this should have been initialised with 'set_pygplates_bundle_directory()' just after
-			// the non-embedded pygplates module was imported by an external (non-embedded Python interpreter).
+			// Note that this should have been initialised with 'initialise()' just after the
+			// non-embedded pygplates module was imported by an external (non-embedded Python interpreter).
 			return pygplates_bundle_directory;
 #	endif
-
-#else  // not a standalone bundle
-			return boost::none;
-#endif
 		}
 
 
@@ -89,9 +84,9 @@ namespace GPlatesFileIO
 			QString bundle_resources_dir = bundle_root_dir.get();
 
 			// With GPlates on macOS the resources directory is 'gplates.app/Contents/Resources'.
-#if defined(GPLATES_PYTHON_EMBEDDING)/*gplates*/ && defined(Q_OS_MACOS)
+#	if defined(GPLATES_PYTHON_EMBEDDING)/*gplates*/ && defined(Q_OS_MACOS)
 			bundle_resources_dir += "/gplates.app/Contents/Resources";
-#endif
+#	endif
 
 			return bundle_resources_dir;
 		}
@@ -118,6 +113,9 @@ namespace GPlatesFileIO
 
 			return bundle_data_dir.absolutePath();
 		}
+
+#endif // GPLATES_INSTALL_STANDALONE
+
 	}
 }
 
@@ -125,13 +123,13 @@ namespace GPlatesFileIO
 void
 GPlatesFileIO::StandaloneBundle::initialise(
 #if !defined(GPLATES_PYTHON_EMBEDDING)  // pygplates
-		QString bundle_directory
+		QString pygplates_import_directory
 #endif
 )
 {
-#if !defined(GPLATES_PYTHON_EMBEDDING)  // pygplates
-	pygplates_bundle_directory = bundle_directory;
-#endif
+#	if !defined(GPLATES_PYTHON_EMBEDDING)  // pygplates
+	pygplates_bundle_directory = pygplates_import_directory;
+#	endif
 
 #if defined(GPLATES_INSTALL_STANDALONE)
 
@@ -179,21 +177,39 @@ GPlatesFileIO::StandaloneBundle::initialise(
 boost::optional<QString>
 GPlatesFileIO::StandaloneBundle::get_proj_data_directory()
 {
+#if defined(GPLATES_INSTALL_STANDALONE)
+
 	return get_bundle_data_directory(GPLATES_STANDALONE_PROJ_DATA_DIR);
+
+#else  // not a standalone bundle
+
+	return boost::none;
+
+#endif
 }
 
 
 boost::optional<QString>
 GPlatesFileIO::StandaloneBundle::get_gdal_data_directory()
 {
+#if defined(GPLATES_INSTALL_STANDALONE)
+
 	return get_bundle_data_directory(GPLATES_STANDALONE_GDAL_DATA_DIR);
+
+#else  // not a standalone bundle
+
+	return boost::none;
+
+#endif
 }
 
 
 boost::optional<QString>
 GPlatesFileIO::StandaloneBundle::get_python_standard_library_directory()
 {
-#if defined(GPLATES_PYTHON_EMBEDDING)  // gplates
+#if defined(GPLATES_INSTALL_STANDALONE)
+
+#	if defined(GPLATES_PYTHON_EMBEDDING)  // gplates
 
 	// Get the bundle root directory.
 	boost::optional<QString> bundle_root_dir = get_bundle_root_directory();
@@ -204,9 +220,9 @@ GPlatesFileIO::StandaloneBundle::get_python_standard_library_directory()
 	QString bundle_python_stdlib_dir = bundle_root_dir.get();
 
 	// On macOS the bundle Python standard library is relative to the frameworks directory.
-#	if defined(Q_OS_MACOS)
+#		if defined(Q_OS_MACOS)
 	bundle_python_stdlib_dir += "/gplates.app/Contents/Frameworks";
-#	endif
+#		endif
 
 	bundle_python_stdlib_dir = bundle_python_stdlib_dir + "/" + GPLATES_STANDALONE_PYTHON_STDLIB_DIR;
 
@@ -219,10 +235,16 @@ GPlatesFileIO::StandaloneBundle::get_python_standard_library_directory()
 
 	return bundle_python_stdlib_dir;
 
-#else // pygplates
+#	else // pygplates
 
 	// Pygplates is imported by an external non-embedded Python interpreter
 	// that has its own Python standard library.
+	return boost::none;
+
+#	endif
+
+#else  // not a standalone bundle
+
 	return boost::none;
 
 #endif

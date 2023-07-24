@@ -143,7 +143,7 @@ set_prerelease_version(
 # The pyGPlates version (MAJOR.MINOR.PATCH).
 #
 set(PYGPLATES_VERSION_MAJOR 0)
-set(PYGPLATES_VERSION_MINOR 36)
+set(PYGPLATES_VERSION_MINOR 39)
 set(PYGPLATES_VERSION_PATCH 0)
 
 # The pyGPlates version without the pre-release suffix
@@ -173,3 +173,41 @@ check_prerelease_suffix("${PYGPLATES_VERSION_PRERELEASE_SUFFIX}")
 set_prerelease_version(
 		"${PYGPLATES_VERSION}" "${PYGPLATES_VERSION_PRERELEASE_SUFFIX}"
 		PYGPLATES_VERSION_PRERELEASE PYGPLATES_VERSION_PRERELEASE_USER PYGPLATES_VERSION_PRERELEASE_SUFFIX_USER)
+
+
+#
+# Get the Python PEP 440 version from the pyGPlates version and optional pre-release suffix.
+#
+function(set_prerelease_PEP440_version version version_prerelease_suffix version_prerelease_PEP440)
+	# For a pre-release append the pre-release version in PEP 440 format.
+	if (version_prerelease_suffix)
+		# Note that the 'check_prerelease_suffix()' function has already guaranteed a
+		# prerelease suffix match with the regular expression "^((alpha|beta|rc)\.)?[0-9]+$".
+		if (version_prerelease_suffix MATCHES [[^([0-9]+)$]])
+			set(_version_prerelease_PEP440_suffix ".dev${CMAKE_MATCH_1}")
+		elseif (version_prerelease_suffix MATCHES [[^alpha\.([0-9]+)$]])
+			set(_version_prerelease_PEP440_suffix "a${CMAKE_MATCH_1}")
+		elseif (version_prerelease_suffix MATCHES [[^beta\.([0-9]+)$]])
+			set(_version_prerelease_PEP440_suffix "b${CMAKE_MATCH_1}")
+		elseif (version_prerelease_suffix MATCHES [[^rc\.([0-9]+)$]])
+			set(_version_prerelease_PEP440_suffix "rc${CMAKE_MATCH_1}")
+		else()
+			message(FATAL_ERROR "${version_prerelease_suffix} should be <N>, alpha.<N>, beta.<N> or rc.<N>")
+		endif()
+		set(_version_prerelease_PEP440 ${version}${_version_prerelease_PEP440_suffix})
+	else()
+		set(_version_prerelease_PEP440 ${version})
+	endif()
+
+	# Set caller's variables.
+	set(${version_prerelease_PEP440} ${_version_prerelease_PEP440} PARENT_SCOPE)
+endfunction()
+
+#
+# Full Python PEP 440 pyGPlates version including PEP 440 pre-release suffix:
+#
+# PYGPLATES_VERSION_PRERELEASE_PEP440
+#
+set_prerelease_PEP440_version(
+		"${PYGPLATES_VERSION}" "${PYGPLATES_VERSION_PRERELEASE_SUFFIX}"
+		PYGPLATES_VERSION_PRERELEASE_PEP440)

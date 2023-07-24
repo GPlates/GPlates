@@ -215,7 +215,7 @@ For example, if you installed Python 3.10 via Macports then build GPlates/pyGPla
 
 ...or, equivalently, set the environment variable Python3_ROOT and then build GPlates/pyGPlates:
 
-    export Python3_ROOT_DIR:PATH=/opt/local/Library/Frameworks/Python.framework/Versions/3.10
+    export Python3_ROOT_DIR=/opt/local/Library/Frameworks/Python.framework/Versions/3.10
     cmake .
     make
 

@@ -31,9 +31,9 @@ include(GNUInstallDirs)
 #   cmake --build .
 #   cmake --install . --prefix staging  # Should now have a 'pygplates-build/staging/' directory
 #
-# However in most cases you wouldn't typically install directly like this. More likely you'd create a package
+# For GPlates, in most cases you wouldn't typically install directly like this. More likely you'd create a package
 # using CPack (see Package.cmake) which will, in turn, install to its own staging area prior to creating a package.
-# Although soon we will also build pygplates packages using Conda (directly using the 'install' phase in its build script).
+# However for pyGPlates, we use the install phase to setup our staging area for creating a Python package using setuptools.
 #
 
 #
@@ -79,53 +79,97 @@ endif()
 # Note: GPlates uses RUNTIME and BUNDLE entity types.
 #       PyGPlates is a module library which always uses the LIBRARY entity type (according to CMake: "Module libraries are always treated as LIBRARY targets").
 #
-if (GPLATES_INSTALL_STANDALONE)
-    #
-    # For standalone we want to bundle everything together so it's relocatable, and it's easier to place gplates or pygplates
-    # in the base install directory (along with 'qt.conf', which has to be in the same directory).
-    #
-    if (GPLATES_BUILD_GPLATES)  # GPlates ...
+# Note: For standalone we want to bundle everything together so it's relocatable, and it's easier to place gplates or pygplates
+#       in the base install directory (along with 'qt.conf', which has to be in the same directory).
+#
+if (GPLATES_BUILD_GPLATES)  # GPlates ...
+
+    if (GPLATES_INSTALL_STANDALONE)
+        #
+        # For a standalone installation bundle everything together in the base install directory.
+        #
         # For Windows this means 'gplates.exe' ultimately gets installed into, for example, "C:\Program Files\GPlates\GPlates 2.3.0"
         # instead of "C:\Program Files\GPlates\GPlates 2.3.0\bin". And we copy the dependency DLLs into the same directory as gplates (so it can find them).
         # For macOS this means you immediately see the app bundle in the base directory (rather than in a 'bin' sub-directory).
         # For Linux the standalone version is typically packaged as an archive (not a '.deb') and the extracted gplates executable will be immediately visible (in base directory).
         set(STANDALONE_BASE_INSTALL_DIR .)
-    
+
         # Install the gplates target.
         install(TARGETS gplates
             RUNTIME # Windows and Linux
                 DESTINATION ${STANDALONE_BASE_INSTALL_DIR}
             BUNDLE # Apple
                 DESTINATION ${STANDALONE_BASE_INSTALL_DIR})
-    else()  # pyGPlates ...
-        # Similar logic applies to 'pygplates' except we install into a 'pygplates' directory since we make pygplates a "Python package" with the pygplates module library in the
-        # 'pygplates/' directory as well as an '__init__.py' to find its runtime location (needed to locate the GDAL/PROJ data bundled with pygplates).
+    else() # not standalone
         #
-        # Note that we only do this for standalone installations because non-standalone installations have GDAL/PROJ installed in a standard location and so GDAL/PROJ are able to
-        # find their data directories, which means we don't need to bundle them up with pygplates and so we don't need to make pygplates a "Python package" (with an '__init__.py' file).
-        # In other words, we just leave it as a single pygplates shared library file (such as 'pygplates.so' or 'pygplates.pyd') and don't need a 'pygplates/' directory.
-        set(STANDALONE_BASE_INSTALL_DIR pygplates)
-    
-        # Install the pygplates target.
-        install(TARGETS pygplates
-            LIBRARY # Windows, Apple and Linux
-                DESTINATION ${STANDALONE_BASE_INSTALL_DIR})
-    endif()
-else() # not standalone
-    #
-    # When not a standalone installation just use the standard install locations ('bin' and 'lib').
-    #
-    if (GPLATES_BUILD_GPLATES)  # GPlates ...
+        # When not a standalone installation just use the standard install locations ('bin' and 'lib').
+        #
         install(TARGETS gplates
             RUNTIME # Windows and Linux
                 DESTINATION ${CMAKE_INSTALL_BINDIR}
             BUNDLE # Apple
                 DESTINATION ${CMAKE_INSTALL_BINDIR})
-    else()  # pyGPlates ...
-        install(TARGETS pygplates
-            LIBRARY
-                DESTINATION ${CMAKE_INSTALL_LIBDIR})
     endif()
+
+else()  # pyGPlates ...
+
+    #
+    # For 'pygplates' we install the pygplates module library into a 'pygplates/' sub-directory of the base directory since we are making
+    # pygplates a "Python package" (with the pygplates module library in a 'pygplates/' directory as well as an '__init__.py').
+    #
+    # For a standalone installation this enables the pygplates module library to find its runtime location (needed to locate the GDAL/PROJ data bundled with pygplates).
+    #
+    # When not a standalone installation, GDAL/PROJ are installed in a standard location and so GDAL/PROJ are able to find their own data directories, which means
+    # we don't need to bundle them up with pygplates. But we'll still retain the 'pygplates/' package directory (and '__init__.py') rather than leaving it as a
+    # single pygplates shared library file (such as 'pygplates.so' or 'pygplates.pyd') in the base directory (ie, not in a 'pygplates/' sub-directory).
+    #
+    set(PYGPLATES_PYTHON_PACKAGE_DIR pygplates)
+    if (GPLATES_INSTALL_STANDALONE)
+        set(STANDALONE_BASE_INSTALL_DIR ${PYGPLATES_PYTHON_PACKAGE_DIR})
+    endif()
+
+    # Install the pygplates target.
+    install(TARGETS pygplates
+        LIBRARY # Windows, Apple and Linux
+            DESTINATION ${PYGPLATES_PYTHON_PACKAGE_DIR})
+
+    ########################################################################################################################
+    # Create and install an "__init__.py" file for pygplates in same directory as the pygplates library (on all platforms) #
+    ########################################################################################################################
+    #
+    # This is because pygplates is a "Python package" where the pygplates module library is in the *base* 'pygplates/' directory as well as '__init__.py'.
+    set(PYGPLATES_INIT_PY "${CMAKE_CURRENT_BINARY_DIR}/__init__.py")
+    # Note that we allow no indentation in the file content to avoid Python 'unexpected indent' errors.
+    #
+    # Notes for the "__init__.py" source code:
+    #
+    # Previously, once we imported symbols from the pygplates shared library (C++) into the namespace of this package (also called pygplates),
+    # we used to delete 'pygplates.pygplates' (after renaming it to something more private with a leading underscore).
+    # However we no longer do this because the '__module__' attribute of objects in pygplates remain as 'pygplates.pygplates'
+    # (since 'pygplates.{pyd,so}' is in 'pygplates/' package). And the '__module__' attribute is used during pickling
+    # (at least 'dill' appears to use it), so deleting what it references interferes with pickling (at least for 'dill').
+    #
+    # This does mean we have both pygplates.<symbol> and pygplates.pygplates.<symbol>. The former being the public API.
+    #
+    # We could change the name of the module to '_pygplates' (so that we have pygplates.<symbol> and pygplates._pygplates.<symbol>) but it would
+    # require a lot of potentially confusing changes. For example, pygplates tests run on the build target (rather than the installed Python package),
+    # which would be '_pygplates'.{pyd,so}, and therefore the tests would need to 'import _pygplates' instead of 'import pygplates'.
+    # Also GPlates embeds 'pygplates' (not '_pygplates') and so we'd need to use a module name of 'pygplates' when building GPlates
+    # and '_pygplates' when building pyGPlates. So it's easier just to keep it as 'pygplates' (instead of '_pygplates').
+    #
+    file(WRITE "${PYGPLATES_INIT_PY}" [[
+# Import the pygplates shared library (C++).
+from .pygplates import *
+# Import any private symbols (with leading underscore).
+from .pygplates import __version__
+from .pygplates import __doc__
+
+# Let the pygplates shared library (C++) know of its imported location.
+import os.path
+pygplates._post_import(os.path.dirname(__file__))
+]])
+    install(FILES "${PYGPLATES_INIT_PY}" DESTINATION ${PYGPLATES_PYTHON_PACKAGE_DIR})
+
 endif()
 
 
@@ -318,43 +362,6 @@ if (GPLATES_INSTALL_STANDALONE)
             endif()
         endfunction()
 
-    else()  # pyGPlates ...
-
-        ########################################################################################################################
-        # Create and install an "__init__.py" file for pygplates in same directory as the pygplates library (on all platforms) #
-        ########################################################################################################################
-        #
-        # This is because we make pygplates a "Python package" where the pygplates module library is in the *base* 'pygplates/' directory
-        # as well as an '__init__.py' to find its runtime location (needed to locate the GDAL/PROJ data bundled with pygplates).
-        set(PYGPLATES_INIT_PY "${CMAKE_CURRENT_BINARY_DIR}/__init__.py")
-        # Note that we allow no indentation in the file content to avoid Python 'unexpected indent' errors.
-        #
-        # Notes for the "__init__.py" source code:
-        #
-        # Once we've imported symbols from the pygplates shared library (C++) into the namespace of this package
-        # (also called pygplates) we can rename it to something more private (with a leading underscore).
-        # We can't delete it completely since the "import *" does not import private variables (with leading underscores)
-        # and we need to keep those private variables (usually implementation details) alive.
-        #
-        # This also means we don't have pygplates.<symbol> and pygplates.pygplates.<symbol>.
-        # Instead we have pygplates.<symbol> and pygplates._impl.<symbol>.
-        file(WRITE "${PYGPLATES_INIT_PY}" [[
-# Import the pygplates shared library (C++).
-from .pygplates import *
-# Import any private symbols (with leading underscore).
-from .pygplates import __version__
-from .pygplates import __doc__
-
-# Let the pygplates shared library (C++) know of its imported location.
-import os.path
-pygplates._post_import(os.path.dirname(__file__))
-
-# Rename '.pygplates' to '._impl' so we don't have both pygplates.<symbol> and pygplates.pygplates.<symbol>.
-_impl = pygplates
-del pygplates
-]])
-        install(FILES "${PYGPLATES_INIT_PY}" DESTINATION ${STANDALONE_BASE_INSTALL_DIR})
-    
     endif()
 
     #############################################################################################
@@ -1300,5 +1307,5 @@ del pygplates
                     set_rpath(${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${_target_file_name})
                 ]]
         )
-    endif()
-endif()
+    endif()  # if (WIN32) ... elif (APPLE) ... else ...
+endif()  # GPLATES_INSTALL_STANDALONE

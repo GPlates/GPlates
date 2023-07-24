@@ -212,10 +212,14 @@ endif()
 #
 #   Used, for example, the introduction screen of a CPack-generated Windows installer to describe the project.
 #
-SET(CPACK_PACKAGE_DESCRIPTION_FILE "${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageDescription.txt")
+# TODO: Once our min CMake requirement is >= 3.12 we can use CPACK_PACKAGE_DESCRIPTION (instead of a description file).
+set(PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_BINARY_DIR}/PackageDescription.txt")
+file(WRITE "${PACKAGE_DESCRIPTION_FILE}" "${GPLATES_PACKAGE_DESCRIPTION}")
+SET(CPACK_PACKAGE_DESCRIPTION_FILE "${PACKAGE_DESCRIPTION_FILE}")
 
 #   CPACK_PACKAGE_DESCRIPTION_SUMMARY - Short description of the project (only a few words).
 #
+# TODO: Once our min CMake requirement is >= 3.12 we can instead rely on default value of PROJECT_DESCRIPTION (and specify that in 'project()' command).
 SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${GPLATES_PACKAGE_DESCRIPTION_SUMMARY}")
 
 #   CPACK_RESOURCE_FILE_LICENSE - License to be embedded in the installer.
@@ -225,20 +229,27 @@ SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${GPLATES_PACKAGE_DESCRIPTION_SUMMARY}")
 #   used by some CPack generators like NSIS. If you want to install a license file (may be the same as this one)
 #   along with your project, you must add an appropriate CMake install() command in your CMakeLists.txt.
 #
-SET(CPACK_RESOURCE_FILE_LICENSE "${GPLATES_SOURCE_DISTRIBUTION_DIR}/LicenseFile.txt")
+set(PACKAGE_LICENSE_FILE "${CMAKE_CURRENT_BINARY_DIR}/LicenseFile.txt")
+file(WRITE "${PACKAGE_LICENSE_FILE}" "${GPLATES_PACKAGE_LICENSE}")
+SET(CPACK_RESOURCE_FILE_LICENSE "${PACKAGE_LICENSE_FILE}")
 
 #   CPACK_RESOURCE_FILE_README - ReadMe file to be embedded in the installer.
 #
 #    It typically describes in some detail the purpose of the project during the installation.
 #    Not all CPack generators use this file.
 #
-SET(CPACK_RESOURCE_FILE_README "${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageReadMe.txt")
+set(PACKAGE_README_FILE "${CMAKE_CURRENT_BINARY_DIR}/PackageReadMe.txt")
+file(WRITE "${PACKAGE_README_FILE}" "${GPLATES_PACKAGE_DESCRIPTION}")
+SET(CPACK_RESOURCE_FILE_README "${PACKAGE_README_FILE}")
 
 #   CPACK_RESOURCE_FILE_WELCOME - Welcome file to be embedded in the installer.
 #
 #   It welcomes users to this installer. Typically used in the graphical installers on Windows and Mac OS X.
 #
-SET(CPACK_RESOURCE_FILE_WELCOME "${GPLATES_SOURCE_DISTRIBUTION_DIR}/PackageWelcome.txt")
+set(PACKAGE_WELCOME_FILE "${CMAKE_CURRENT_BINARY_DIR}/PackageWelcome.txt")
+file(WRITE "${PACKAGE_WELCOME_FILE}" "Welcome to the ${PROJECT_NAME} installer. This program will guide you through the installation of this software.
+")  # newline
+SET(CPACK_RESOURCE_FILE_WELCOME "${PACKAGE_WELCOME_FILE}")
 
 #   CPACK_PACKAGE_EXECUTABLES - Lists each of the executables and associated text label to be used to create Start Menu shortcuts.
 #
@@ -458,18 +469,36 @@ endif()
 #
 # Note: Instead of specifying DEB-DEFAULT we emulate it so that the pre-release suffix gets included in the package filename.
 #       And we don't use <DebianRevisionNumber> which is set with CPACK_DEBIAN_PACKAGE_RELEASE since that's for downstream packaging/versioning.
-if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-    SET(_DEBIAN_ARCH amd64)
-else()
-    SET(_DEBIAN_ARCH i386)
-endif()
-# Note: PROJECT_VERSION_PRERELEASE_USER is the version that includes the pre-release version suffix in a form that is suitable
-#       for use in package filenames (unlike PROJECT_VERSION_PRERELEASE). For example, for development 2.3 pre-releases this looks like
-#       gplates_2.3.0-dev1_amd64.deb (when the actual version is 2.3.0~1 - see CPACK_DEBIAN_PACKAGE_VERSION).
-if (GPLATES_BUILD_GPLATES)  # GPlates ...
-    SET(CPACK_DEBIAN_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_DEBIAN_ARCH}.deb")
-else()  # pyGPlates ...
-    SET(CPACK_DEBIAN_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_PYGPLATES_PYTHON_VERSION_SUFFIX}_${_DEBIAN_ARCH}.deb")
+# NOTE: And for <DebianArchitexture> we use the equivalent of CPACK_DEBIAN_PACKAGE_ARCHITECTURE instead of using CMAKE_SYSTEM_NAME
+#       (which CPACK_PACKAGE_FILE_NAME uses).
+#       For Intel this gives us 'amd64' that's traditionaly used in Debian package names (instead of 'x86_64') and
+#       for Arm64 this gives us 'arm64' (instead of 'aarch64').
+#       But we can't access CPACK variables here (ie, at CMake configure time) so we can't access CPACK_DEBIAN_PACKAGE_ARCHITECTURE which is defined as:
+#           "Output of dpkg --print-architecture (or i386 if dpkg is not found)"
+#       So instead we'll implement our own CPACK_DEBIAN_PACKAGE_ARCHITECTURE equivalent (to do the same thing as what CPack does)
+#       but we'll make it private by calling it _DEBIAN_PACKAGE_ARCHITECTURE (to not conflict with CPack's CPACK_DEBIAN_PACKAGE_ARCHITECTURE).
+#
+# TODO: Find a way to apply this to DEB generator *only*.
+#       Could use CPACK_PRE_BUILD_SCRIPTS and access package filename using CPACK_PACKAGE_FILES (but that requires CMake 3.19 - a bit too high).
+#       Could use CPACK_INSTALL_SCRIPTS (requires 3.16) but then don't have access to CPACK_PACKAGE_FILES.
+#       For now we just assume a Linux build that's not standalone will be packaged as Debian (which is the default we set for CPACK_GENERATOR).
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT GPLATES_INSTALL_STANDALONE)
+    find_program(DPKG_CMD dpkg)
+    if (NOT DPKG_CMD)
+        message(WARNING "DEB Generator: Can't find dpkg in your path. Setting _DEBIAN_PACKAGE_ARCHITECTURE to i386.")
+        set(_DEBIAN_PACKAGE_ARCHITECTURE i386)
+    endif()
+    execute_process(COMMAND "${DPKG_CMD}" --print-architecture
+                    OUTPUT_VARIABLE _DEBIAN_PACKAGE_ARCHITECTURE
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+    # Note: PROJECT_VERSION_PRERELEASE_USER is the version that includes the pre-release version suffix in a form that is suitable
+    #       for use in package filenames (unlike PROJECT_VERSION_PRERELEASE). For example, for development 2.3 pre-releases this looks like
+    #       gplates_2.3.0-dev1_amd64.deb (when the actual version is 2.3.0~1 - see CPACK_DEBIAN_PACKAGE_VERSION).
+    if (GPLATES_BUILD_GPLATES)  # GPlates ...
+        SET(CPACK_DEBIAN_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_DEBIAN_PACKAGE_ARCHITECTURE}.deb")
+    else()  # pyGPlates ...
+        SET(CPACK_DEBIAN_FILE_NAME "${_PROJECT_NAME_LOWER}_${PROJECT_VERSION_PRERELEASE_USER}_${_PYGPLATES_PYTHON_VERSION_SUFFIX}_${_DEBIAN_PACKAGE_ARCHITECTURE}.deb")
+    endif()
 endif()
 
 #   CPACK_DEBIAN_PACKAGE_HOMEPAGE - The URL of the web site for this package, preferably (when applicable) the site
@@ -539,7 +568,6 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
         set(CPACK_INSTALL_SCRIPTS "${_install_script}")
     endif()
 endif()
-
 
 
 #########

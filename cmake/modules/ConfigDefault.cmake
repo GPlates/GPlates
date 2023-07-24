@@ -1,68 +1,135 @@
 #
-# Useful CMAKE variables.
+# Useful CMake variables.
 #
 # Many of these variables are cache variables that can be configured using 'cmake -D <name>=<value> ...', or via ccmake or cmake-gui.
 # This file doesn't need to be edited in those cases.
 #
 
 
-# A short description of the GPlates project (only a few words).
+# A short description of the GPlates (or pyGPlates) project (only a few words).
 #
-# CMake (>= 3.16) uses this as the first line of Debian package description and Debian doesn't want first word to be same name as package name (eg, 'gplates').
-set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "Desktop software for the interactive visualisation of plate tectonics.")
+# CMake (>= 3.16) uses this as the first line of Debian package description and Debian doesn't want first word to be same name as package name ('GPlates' or 'PyGPlates').
+if (GPLATES_BUILD_GPLATES) # GPlates ...
+	set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "Desktop software for the interactive visualisation of plate tectonics.")
+else() # pyGPlates ...
+	set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "Python library for fine-grained access to GPlates functionality.")
+endif()
 
 
-# The GPlates package vendor.
+# A longer description of the GPlates (or pyGPlates) project.
+if (GPLATES_BUILD_GPLATES) # GPlates ...
+
+	set(GPLATES_PACKAGE_DESCRIPTION [[
+GPlates is a plate-tectonics program. Manipulate reconstructions of geological and paleo-geographic features through geological time. Interactively visualize vector, raster and volume data.
+
+Documentation is available at https://www.gplates.org/docs
+
+GPlates can:
+- handle and visualise data in a variety of geometries and formats, including raster data
+- link plate kinematics to geodynamic models
+- serve as an interactive client in a grid-computing network
+- facilitate the production of high-quality paleo-geographic maps
+
+Features of GPlates
+-------------------
+
+Feature Data IO - Load/save geological, geographic and tectonic feature data.
+
+Data Visualization - Visualize vector/raster data on a globe or in one of the map projections.
+
+Reconstruction Tools - Modify reconstructions graphically.
+
+Cookie-cutting - Assign reconstruction/rotation poles to feature data by cookie-cutting with plate polygons.
+
+3D Scalar Data - Visualize sub-surface 3D scalar fields.
+
+Surface Velocities - Calculate surface velocities in topological plate polygons and deforming meshes.
+
+Reconstruct Data - Reconstruct/rotate feature data (vector and raster data).
+
+Export Data - Export reconstructed data as a time-sequence of exported files.
+
+Edit Feature - Query and edit feature properties and geometries.
+
+Deforming - Track crustal extension/contraction inside deforming regions.
+]])
+
+else() # pyGPlates ...
+
+	set(GPLATES_PACKAGE_DESCRIPTION [[
+PyGPlates is the GPlates Python library enabling fine-grained access to GPlates functionality.
+
+Documentation is available at https://www.gplates.org/docs/pygplates/index.html
+]])
+
+endif()
+
+
+# The GPlates (or pyGPlates) package vendor.
 set(GPLATES_PACKAGE_VENDOR "Earthbyte project")
 
 
-# The GPlates package contact (Debian requires a name and email address - so use format 'FirstName LastName <EmailAddress>').
+# The GPlates (or pyGPlates) package contact (Debian requires a name and email address - so use format 'FirstName LastName <EmailAddress>').
 #
 # NOTE: Leave it as the *empty* string here (so it doesn't get committed to source code control).
 #       It is currently only needed when creating Debian packages (using cpack) where the developer should set it using 'cmake -D', or CMake GUI, or 'ccmake'.
 set(GPLATES_PACKAGE_CONTACT "" CACHE STRING "Package contact/maintainer. Use format 'FirstName LastName <EmailAddress>'.")
 
 
+# The GPlates (or pyGPlates) package license.
+set(GPLATES_PACKAGE_LICENSE [[
+Copyright (C) 2003-2023 The University of Sydney, Australia.
+Copyright (C) 2007-2023 The Geological Survey of Norway.
+Copyright (C) 2004-2023 California Institute of Technology.
+This is free software. You may redistribute copies of it under the terms of
+the GNU General Public License version 2 <http://www.gnu.org/licenses/gpl.html>.
+There is NO WARRANTY, to the extent permitted by law.
+]])
+
+
 # The GPlates copyright - string version to be used in a source file.
-set(GPLATES_COPYRIGHT_STRING "")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2003-2022 The University of Sydney, Australia\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2004-2022 California Institute of Technology\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}Copyright (C) 2007-2022 The Geological Survey of Norway\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}The GPlates source code also contains code derived from:\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING} * ReconTreeViewer (James Boyden)\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING} * Boost intrusive_ptr (Peter Dimov)\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING} * Loki ScopeGuard (Andrei Alexandrescu, Petru Marginean, Joshua Lehrer)\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING} * Loki RefToValue (Richard Sposato, Peter Kummel)\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}The GPlates source tree additionally contains icons from the GNOME desktop\\n")
-set(GPLATES_COPYRIGHT_STRING "${GPLATES_COPYRIGHT_STRING}environment, the Inkscape vector graphics editor and the Tango icon library.")
+set(GPLATES_COPYRIGHT_STRING [[
+Copyright (C) 2003-2023 The University of Sydney, Australia
+Copyright (C) 2004-2023 California Institute of Technology
+Copyright (C) 2007-2023 The Geological Survey of Norway
+
+The GPlates source code also contains code derived from:
+ * ReconTreeViewer (James Boyden)
+ * Boost intrusive_ptr (Peter Dimov)
+ * Loki ScopeGuard (Andrei Alexandrescu, Petru Marginean, Joshua Lehrer)
+ * Loki RefToValue (Richard Sposato, Peter Kummel)
+
+The GPlates source tree additionally contains icons from the GNOME desktop
+environment, the Inkscape vector graphics editor and the Tango icon library.
+]])
 
 # The GPlates copyright for html.
-set(GPLATES_HTML_COPYRIGHT_STRING "")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}<html><body>\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2003-2022 The University of Sydney, Australia<br />\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2004-2022 California Institute of Technology<br />\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}Copyright &copy; 2007-2022 The Geological Survey of Norway<br />\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}<br />\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}The GPlates source code also contains code derived from: <ul>\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING} <li> ReconTreeViewer (James Boyden) </li>\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING} <li> Boost intrusive_ptr (Peter Dimov) </li>\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING} <li> Loki ScopeGuard (Andrei Alexandrescu, Petru Marginean, Joshua Lehrer) </li>\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING} <li> Loki RefToValue (Richard Sposato, Peter Kummel) </li>\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</ul>\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}The GPlates source tree additionally contains icons from the GNOME desktop\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}environment, the Inkscape vector graphics editor and the Tango icon library.\\n")
-set(GPLATES_HTML_COPYRIGHT_STRING "${GPLATES_HTML_COPYRIGHT_STRING}</body></html>\\n")
+set(GPLATES_HTML_COPYRIGHT_STRING [[
+<html><body>
+Copyright &copy; 2003-2023 The University of Sydney, Australia<br />
+Copyright &copy; 2004-2023 California Institute of Technology<br />
+Copyright &copy; 2007-2023 The Geological Survey of Norway<br />
+<br />
+
+The GPlates source code also contains code derived from: <ul>
+ <li> ReconTreeViewer (James Boyden) </li>
+ <li> Boost intrusive_ptr (Peter Dimov) </li>
+ <li> Loki ScopeGuard (Andrei Alexandrescu, Petru Marginean, Joshua Lehrer) </li>
+ <li> Loki RefToValue (Richard Sposato, Peter Kummel) </li>
+</ul>
+
+The GPlates source tree additionally contains icons from the GNOME desktop
+environment, the Inkscape vector graphics editor and the Tango icon library.
+</body></html>
+]])
 
 # The pyGPlates copyright - string version to be used in Python API documentation.
-# We don't include 'Copyright' since we're using Sphinx for documentation and it prepends it to our copyright string.
-set(PYGPLATES_DOCS_COPYRIGHT_STRING "")
-set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2003-2022 The University of Sydney, Australia\\n")
-set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2004-2022 California Institute of Technology\\n")
-set(PYGPLATES_DOCS_COPYRIGHT_STRING "${PYGPLATES_DOCS_COPYRIGHT_STRING}(C) 2007-2022 The Geological Survey of Norway\\n")
+# We don't include the word 'Copyright' since we're using Sphinx for documentation and it prepends it to our copyright string.
+set(PYGPLATES_DOCS_COPYRIGHT_STRING [[
+(C) 2003-2023 The University of Sydney, Australia
+(C) 2004-2023 California Institute of Technology
+(C) 2007-2023 The Geological Survey of Norway
+]])
 
 
 # GPLATES_PUBLIC_RELEASE - Official public release (GPlates or pyGPlates depending on GPLATES_BUILD_GPLATES).
@@ -212,6 +279,9 @@ if (MSVC)
 	#
 	# This is on by default otherwise compilation will take a long time.
 	option(GPLATES_MSVC_PARALLEL_BUILD "Enable parallel builds within each Visual Studio project." true)
+	#
+	# Allow user to specify the number of parallel build processes (defaults to zero which indicates uses all available CPUs).
+	set(GPLATES_MSVC_PARALLEL_BUILD_PROCESSES 0 CACHE STRING "Number of parallel build processes (if GPLATES_MSVC_PARALLEL_BUILD enabled). Set to zero for max.")
 endif()
 
 
