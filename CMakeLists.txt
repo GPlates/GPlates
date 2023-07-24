@@ -1,12 +1,12 @@
 # Modern CMake requires CMake version 3.
 #
-# Ubuntu Bionic (18.04 LTS) provides CMake 3.10, so we'll make this the minimum requirement.
+# Ubuntu Focal (20.04 LTS) provides CMake 3.16, so we'll make this the minimum requirement.
 #
 # Note: There's a "..." between min and max versions which means we need to use the minimum version
 #       but are safe to use with policies (see 'cmake_policy' command) up to the maximum version.
 #       Specifying a maximum version means we don't need 'cmake_policy' calls for running CMake versions
-#       in that [min, max] range. Note that CMake version prior to 3.12 apparently ignore the "...<max>" part.
-cmake_minimum_required(VERSION 3.10...3.23 FATAL_ERROR)
+#       in that [min, max] range.
+cmake_minimum_required(VERSION 3.16...3.26 FATAL_ERROR)
 
 # Where to find our CMake modules.
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake/modules)
@@ -39,6 +39,11 @@ else()
     set(PROJECT_VERSION_PRERELEASE_USER ${PYGPLATES_VERSION_PRERELEASE_USER})
     set(PROJECT_VERSION_PRERELEASE_SUFFIX ${PYGPLATES_VERSION_PRERELEASE_SUFFIX})
     set(PROJECT_VERSION_PRERELEASE_SUFFIX_USER ${PYGPLATES_VERSION_PRERELEASE_SUFFIX_USER})
+
+    # Enable testing of pyGPlates (either via running 'ctest', or 'make test', or building 'RUN_TESTS' in Visual Studio).
+    enable_testing()
+    # Print test output when test fails - when running tests with 'make test' or building 'RUN_TESTS' (in Visual Studio).
+    list(APPEND CMAKE_CTEST_ARGUMENTS "--output-on-failure")  # Ignored if CMake < 3.17
 endif()
 
 #
@@ -58,7 +63,7 @@ include (CustomBuildConfigs)
 add_subdirectory(src)
 
 #
-# Document either GPlates or pyGPlates.
+# GPlates or pyGPlates specific sub-directories.
 #
 if (GPLATES_BUILD_GPLATES)
     #
@@ -67,11 +72,12 @@ if (GPLATES_BUILD_GPLATES)
     add_subdirectory(doc)
 else()
     #
-    # Recurse into python API documentation sub-directory.
+    # Recurse into the sub-directory for testing/installing the pyGPlates Python module.
     #
-    # NOTE: We add this subdirectory after 'src' because it adds a custom target to build the
-    #       Sphinx documentation and that target depends on the 'pygplates' target
-    #       (to ensure pygplates gets built first since Sphinx imports pygplates to search its docstrings).
+    add_subdirectory(pygplates)
+
+    #
+    # Recurse into the sub-directory for generating the Python API documentation.
     #
     add_subdirectory(doc-python-api)
 endif()

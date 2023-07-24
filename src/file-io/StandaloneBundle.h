@@ -61,7 +61,7 @@ namespace GPlatesFileIO
 		void
 		initialise(
 #if !defined(GPLATES_PYTHON_EMBEDDING)  // compiling pygplates (not gplates)
-			QString bundle_directory
+			QString pygplates_import_directory
 #endif
 		);
 

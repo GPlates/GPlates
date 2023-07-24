@@ -77,30 +77,41 @@ endif()
 # Therefore a specific build configuration must be chosen even if the generated build system supports multiple configurations.
 SET(CMAKE_TRY_COMPILE_CONFIGURATION Release)
 
-# Save the current PYTHONHOME environment variable, and then set it to the directory of the Python interpreter executable.
-# This is necessary with Anaconda to avoid the following error:
-#   Fatal Python error: initfsencoding: unable to load the file system codec
-#   ModuleNotFoundError: No module named 'encodings'
-# ...since otherwise it appears to set the sys.path relative to the current working directory (ie, starting with './').
-# A relative path prevents Python from finding its standard library (presumably because the current working directory is
-# not the Python prefix) and therefore cannot import a module from it.
-# Setting PYTHONHOME to the Python prefix is a workaround that seems to avoid relative paths. See the following forum post:
-#   https://github.com/ContinuumIO/anaconda-issues/issues/10660#issuecomment-479199400
-# An alternative could be to set the current working directory (of try_run) to the Python prefix (instead of setting PYTHONHOME).
-set(_CURRENT_PYTHONHOME $ENV{PYTHONHOME})
-set(ENV{PYTHONHOME} ${GPLATES_PYTHON_PREFIX_DIR})
-#message(STATUS "New PYTHONHOME: $ENV{PYTHONHOME}")
-# Compile and run the test executable.
-TRY_RUN(PYTHON_EMBEDDING_RUNS PYTHON_EMBEDDING_COMPILES
-	${CMAKE_BINARY_DIR}
-	${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test_python_embedding.cc
-	CMAKE_FLAGS "-DLINK_DIRECTORIES:STRING=${python_embedding_LIB_DIRS}" "-DINCLUDE_DIRECTORIES=${python_embedding_INCLUDE_DIRS}"
-	LINK_LIBRARIES ${python_embedding_LIBS}
-	COMPILE_OUTPUT_VARIABLE PYTHON_EMBEDDING_COMPILE_OUTPUT
-	RUN_OUTPUT_VARIABLE PYTHON_EMBEDDING_RUN_OUTPUT)
-# Restore the previous PYTHONHOME environment variable.
-set(ENV{PYTHONHOME} ${_CURRENT_PYTHONHOME})
-#message(STATUS "Old PYTHONHOME: $ENV{PYTHONHOME}")
+if (CMAKE_CROSSCOMPILING)
+	# Compile the test executable.
+	# We don't run the executable because it's built for the target platform (we're cross-compiling, so it cannot be run on build platform).
+	TRY_COMPILE(PYTHON_EMBEDDING_COMPILES
+		${CMAKE_BINARY_DIR}
+		${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test_python_embedding.cc
+		CMAKE_FLAGS "-DLINK_DIRECTORIES:STRING=${python_embedding_LIB_DIRS}" "-DINCLUDE_DIRECTORIES=${python_embedding_INCLUDE_DIRS}"
+		LINK_LIBRARIES ${python_embedding_LIBS}
+		OUTPUT_VARIABLE PYTHON_EMBEDDING_COMPILE_OUTPUT)
+else()
+	# Save the current PYTHONHOME environment variable, and then set it to the directory of the Python interpreter executable.
+	# This is necessary with Anaconda to avoid the following error:
+	#   Fatal Python error: initfsencoding: unable to load the file system codec
+	#   ModuleNotFoundError: No module named 'encodings'
+	# ...since otherwise it appears to set the sys.path relative to the current working directory (ie, starting with './').
+	# A relative path prevents Python from finding its standard library (presumably because the current working directory is
+	# not the Python prefix) and therefore cannot import a module from it.
+	# Setting PYTHONHOME to the Python prefix is a workaround that seems to avoid relative paths. See the following forum post:
+	#   https://github.com/ContinuumIO/anaconda-issues/issues/10660#issuecomment-479199400
+	# An alternative could be to set the current working directory (of try_run) to the Python prefix (instead of setting PYTHONHOME).
+	set(_CURRENT_PYTHONHOME $ENV{PYTHONHOME})
+	set(ENV{PYTHONHOME} ${GPLATES_PYTHON_PREFIX_DIR})
+	#message(STATUS "New PYTHONHOME: $ENV{PYTHONHOME}")
+	# Compile and run the test executable.
+	TRY_RUN(PYTHON_EMBEDDING_RUNS PYTHON_EMBEDDING_COMPILES
+		${CMAKE_BINARY_DIR}
+		${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeTmp/test_python_embedding.cc
+		CMAKE_FLAGS "-DLINK_DIRECTORIES:STRING=${python_embedding_LIB_DIRS}" "-DINCLUDE_DIRECTORIES=${python_embedding_INCLUDE_DIRS}"
+		LINK_LIBRARIES ${python_embedding_LIBS}
+		COMPILE_OUTPUT_VARIABLE PYTHON_EMBEDDING_COMPILE_OUTPUT
+		RUN_OUTPUT_VARIABLE PYTHON_EMBEDDING_RUN_OUTPUT)
+	# Restore the previous PYTHONHOME environment variable.
+	set(ENV{PYTHONHOME} ${_CURRENT_PYTHONHOME})
+	#message(STATUS "Old PYTHONHOME: $ENV{PYTHONHOME}")
+endif()
 
 IF(NOT PYTHON_EMBEDDING_COMPILES)
 	MESSAGE(STATUS "Python embedding test program compile output:")
@@ -108,17 +119,20 @@ IF(NOT PYTHON_EMBEDDING_COMPILES)
 	MESSAGE(FATAL_ERROR "Python embedding test program could not be compiled.")
 ENDIF(NOT PYTHON_EMBEDDING_COMPILES)
 
-IF(PYTHON_EMBEDDING_RUNS EQUAL 1 # Program above returns 1 if exception thrown.
-		OR PYTHON_EMBEDDING_RUNS STREQUAL FAILED_TO_RUN # The program crashed.
-		)
-	MESSAGE(STATUS "Python embedding test program output: ${PYTHON_EMBEDDING_RUN_OUTPUT}")
-	MESSAGE(FATAL_ERROR "Python embedding test program failed to run correctly. "
-		"Check that the Python and Boost.Python libraries are in your system path."
-		"If you have multiple Python installations, make sure that the version of "
-		"Python that GPlates is being linked against is the same version of Python "
-		"that Boost.Python was built against. In particular, on macOS, if "
-		"Boost.Python was installed using MacPorts, provide the following CMake flag: "
-		"-DCMAKE_FRAMEWORK_PATH=/opt/local/Library/Frameworks")
-ENDIF(PYTHON_EMBEDDING_RUNS EQUAL 1 OR PYTHON_EMBEDDING_RUNS STREQUAL FAILED_TO_RUN)
+if (NOT CMAKE_CROSSCOMPILING)
+	# The test executable is only run if we're not cross-compiling.
+	IF(PYTHON_EMBEDDING_RUNS EQUAL 1 # Program above returns 1 if exception thrown.
+			OR PYTHON_EMBEDDING_RUNS STREQUAL FAILED_TO_RUN # The program crashed.
+			)
+		MESSAGE(STATUS "Python embedding test program output: ${PYTHON_EMBEDDING_RUN_OUTPUT}")
+		MESSAGE(FATAL_ERROR "Python embedding test program failed to run correctly. "
+			"Check that the Python and Boost.Python libraries are in your system path."
+			"If you have multiple Python installations, make sure that the version of "
+			"Python that GPlates is being linked against is the same version of Python "
+			"that Boost.Python was built against. In particular, on macOS, if "
+			"Boost.Python was installed using MacPorts, provide the following CMake flag: "
+			"-DCMAKE_FRAMEWORK_PATH=/opt/local/Library/Frameworks")
+	ENDIF(PYTHON_EMBEDDING_RUNS EQUAL 1 OR PYTHON_EMBEDDING_RUNS STREQUAL FAILED_TO_RUN)
+endif()
 
 MESSAGE(STATUS "Python embedding test passed.")
