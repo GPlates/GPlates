@@ -477,11 +477,12 @@ namespace GPlatesModel
 	{
 		using namespace std;
 		typedef BasicRevisionInternals::ChildPredicateAdapter<child_predicate_type, child_type> adapter_type;
+		adapter_type adapter(clone_children_predicate);
 		remove_copy_if(
 				other.d_children.begin(),
 				other.d_children.end(),
 				back_inserter(d_children),
-				not1(adapter_type(clone_children_predicate)));
+				[&](typename adapter_type::argument_type child) { return !adapter(child); });
 
 		// The use of ChildPredicateAdapter has a side-effect in that our d_children
 		// container contains no NULL elements, which is rather convenient.

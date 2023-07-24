@@ -55,6 +55,7 @@
 #include "utils/Profile.h"
 
 
+PUSH_GCC_WARNINGS
 DISABLE_GCC_WARNING("-Wshadow")
 
 
@@ -845,8 +846,7 @@ namespace GPlatesMaths
 			/**
 			 * Compares the lengths of two edges.
 			 */
-			struct EdgeLengthCompare :
-					public std::binary_function<Edge *, Edge *, bool>
+			struct EdgeLengthCompare
 			{
 				bool
 				operator()(
@@ -1218,7 +1218,7 @@ GPlatesMaths::PolygonMesh::initialise(
 }
 
 // See above.
-ENABLE_GCC_WARNING("-Wshadow")
+POP_GCC_WARNINGS
 
 
 boost::optional<GPlatesMaths::PolygonMesh::non_null_ptr_to_const_type>
