@@ -59,6 +59,28 @@ if (GPLATES_INSTALL_STANDALONE)
                 "
         )
     endif()
+
+    # Installing Qt6 plugins does not work with Qt versions 6.0 - 6.3 (according to https://bugreports.qt.io/browse/QTBUG-94066).
+    # Note that intalling Qt5 plugins is fine though.
+    #
+    # Check at *install* time thus allowing users to build with Qt versions 6.0 - 6.3
+    # (if they just plan to run the build locally and don't plan to deploy to other machines).
+    #
+    # This should not affect Linux platforms since they are not usually built as standalone
+    # (because the Linux binary package manager is used to install dependencies on the user's system).
+    # If it is an issue (eg, installing to a staging area when building a pyGPlates Python package) then
+    # an option is to use Qt5 (instead of Qt6).
+    #
+    # For Windows and macOS this just means Qt 6.4 (or above) should be installed if you want to deploy.
+    install(
+            CODE "
+                set(QT_VERSION_MAJOR [[${QT_VERSION_MAJOR}]])
+                set(QT_VERSION_MINOR [[${QT_VERSION_MINOR}]])
+                if (QT_VERSION_MAJOR EQUAL 6 AND QT_VERSION_MINOR LESS 4)
+                    message(FATAL_ERROR [[Installing Qt6 plugins requires Qt version 6.4 or above]])
+                endif()
+            "
+    )
 endif()
 
 
@@ -582,7 +604,13 @@ if (GPLATES_INSTALL_STANDALONE)
     #
     # This works on Qt5.
     # But only works on Qt6 for versions 6.4 and above (according to https://bugreports.qt.io/browse/QTBUG-94066).
-    # TODO: Need to find a workaround when deploying with Qt versions 6.0 - 6.3.
+    #
+    # This should not affect Linux platforms since they are not usually built as standalone
+    # (because the Linux binary package manager is used to install dependencies on the user's system).
+    # If it is an issue (eg, installing to a staging area when building a pyGPlates Python package) then
+    # an option is to use Qt5 (instead of Qt6).
+    #
+    # For Windows and macOS this just means Qt 6.4 (or above) should be installed if you want to deploy.
     if (QT_VERSION_MAJOR EQUAL 5 OR
         (QT_VERSION_MAJOR EQUAL 6 AND QT_VERSION_MINOR GREATER_EQUAL 4))
         # Install common platform *independent* plugins (used by GPlates and pyGPlates).
