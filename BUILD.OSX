@@ -38,8 +38,19 @@ Commands to build GPlates/pyGPlates
  2. Change your working directory (if not already) into the base directory of the source code.
  3. Build GPlates (or pyGPlates) by typing:
 
-    cmake .
+    cmake -D CMAKE_PREFIX_PATH:FILEPATH=<path_to_qt> .
     make
+
+    Note that since Qt and Qwt are built from source (see DEPS.OSX) you will need to explicitly specify their location when building GPlates/pyGPlates.
+    For example, if you installed Qt 6.2.4 (and installed Qwt inside it) then you can build GPlates/pyGPlates by typing:
+    
+        cmake -D CMAKE_PREFIX_PATH:FILEPATH="/usr/local/Qt-6.2.4;/usr/local/Qt-6.2.4/lib" .
+        make
+    
+    ...or, for example, for Qt 5.15.5:
+    
+        cmake -D CMAKE_PREFIX_PATH:FILEPATH="/usr/local/Qt-5.15.5;/usr/local/Qt-5.15.5/lib" .
+        make
 
 The GPlates application
 
