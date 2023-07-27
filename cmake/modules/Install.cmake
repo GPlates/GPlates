@@ -60,6 +60,34 @@ if (GPLATES_INSTALL_STANDALONE)
         )
     endif()
 
+    # On Windows, require Qt6 when installing.
+    #
+    # With the official pre-built Qt binaries, the default graphics driver is:
+    # - Qt5: OpenGL 2.1  (see https://doc.qt.io/qt-5/windows-requirements.html#graphics-drivers)
+    # - Qt6: Direct3D 11 (see https://doc.qt.io/qt-6/windows-graphics.html)
+    #
+    # We are now using Vulkan (instead of OpenGL as used previously) so this wouldn't normally affect us.
+    # However since Qt5 defaults to OpenGL it will look for a desktop OpenGL driver and if that does not support OpenGL 2.1 then it will
+    # fallback to the ANGLE or software DLLs (because the pre-built Qt binaries are configured for 'dynamic' OpenGL).
+    # This fallback relies on the ANGLE or software DLLs being present. They are dynamically loaded, rather than being dynamically linked, and
+    # so are not found by file(GET_RUNTIME_DEPENDENCIES) and so are not deployed. (However 'windeployqt' will include those ANGLE and software DLLs).
+    # Qt6, on the other hand, uses Direct3D by default (instead of OpenGL) and also does not use ANGLE (as a fallback when using OpenGL; although it
+    # still falls back to the software DLL). So we should not get an error that 'libEGL' or 'opengl32sw' DLLs cannot be loaded (due to not being present).
+    #
+    # So, on Windows, we require Qt6 (instead of Qt5) when installing GPlates/pyGPlates.
+    if (WIN32)
+        # Check at *install* time thus allowing users to build on Windows using Qt5 instead of Qt6
+        # (if they just plan to run the build locally and don't plan to deploy to other machines).
+        install(
+                CODE "
+                    set(QT_VERSION_MAJOR [[${QT_VERSION_MAJOR}]])
+                    if (QT_VERSION_MAJOR LESS 6)
+                        message(FATAL_ERROR [[Installing on Windows requires Qt6 or above (not Qt5)]])
+                    endif()
+                "
+        )
+    endif()
+
     # Installing Qt6 plugins does not work with Qt versions 6.0 - 6.3 (according to https://bugreports.qt.io/browse/QTBUG-94066).
     # Note that intalling Qt5 plugins is fine though.
     #
@@ -286,13 +314,6 @@ if (GPLATES_INSTALL_STANDALONE)
     #
     # Note that we don't get Qt to deploy its libraries/plugins to our install location (using windeployqt/macdeployqt).
     # Instead we find the Qt library dependencies ourself and we explicitly list the Qt plugins we expect to use.
-    # On Windows: The official pre-built Qt binaries are configured for 'dynamic' OpenGL (see https://doc.qt.io/qt-5/windows-requirements.html).
-    #             This means the normal desktop OpenGL drivers will be used where sufficient, otherwise Qt falls back to ANGLE or software OpenGL.
-    #             This fallback relies on the ANGLE or software DLLs being present. They are dynamically loaded, rather than being dynamically linked, and
-    #             so are not found by file(GET_RUNTIME_DEPENDENCIES) and so are not deployed. However 'windeployqt' will include those ANGLE and software DLLs.
-    #             But the fact that we're not using 'windeployqt' is fine because GPlates uses OpenGL 3.3 which is above what ANGLE and software supports
-    #             and so Qt cannot fallback. Hence not deploying the ANGLE and software DLLs is not a problem. GPlates also tells Qt not to fall back by
-    #             specifying the Qt::AA_UseDesktopOpenGL attribute (in the C++ code).
     # On macOS:   The Qt deployment tool 'macdeployqt' actually deploys more than just the Qt libraries/plugins (and the libraries they depend on).
     #             It also deploys all libraries that GPlates depends on (eg, Boost, GDAL, etc). But we're already doing this via file(GET_RUNTIME_DEPENDENCIES)
     #             and we're explicitly listing the Qt plugins. So we don't really need to use 'macdeployqt'.

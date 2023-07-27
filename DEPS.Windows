@@ -93,7 +93,7 @@ Vulkan
 Qt
 
   1. Download the latest Qt6 opensource online installer from: https://www.qt.io/download-open-source
-     Note that *offline* installers are not available for non-commercial use since Qt 5.15.
+     Note that *offline* installers are not available for non-commercial use.
      Run the online installer exe:
      - It will ask for the username and password of your Qt account (it will ask you to sign in or create a new account).
      - Accept the obligations of using Qt Open Source (and specify whether you are an individual or a company).
