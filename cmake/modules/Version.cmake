@@ -10,8 +10,8 @@
 # Now we build *either* GPlates or pyGPlates. If you need to build both then create two separate out-of-place CMake builds
 # (out-of-place means the binary artifacts are created in a directory separate from the source code).
 #
-# NOTE: THIS IS CURRENTLY THE MAIN BRANCH (SO 'GPLATES_BUILD_GPLATES' DEFAULTS TO 'TRUE').
-#       YOU SHOULD ONLY BUILD 'gplates'. YOU SHOULDN'T BUILD 'pygplates' UNTIL THE PYGPLATES BRANCH HAS BEEN FULLY MERGED TO MAIN
+# NOTE: THIS IS CURRENTLY THE GPLATES BRANCH (SO 'GPLATES_BUILD_GPLATES' DEFAULTS TO 'TRUE').
+#       YOU SHOULD ONLY BUILD 'gplates'. YOU SHOULDN'T BUILD 'pygplates' UNTIL THE PYGPLATES BRANCH HAS BEEN FULLY MERGED TO THE GPLATES BRANCH
 #       (WHICH CAN ONLY HAPPEN ONCE WE'VE COMPLETELY UPDATED THE INTERNAL MODEL IN THE PYGPLATES BRANCH).
 #
 option(GPLATES_BUILD_GPLATES "True to build GPlates (false to build pyGPlates)." true)
@@ -98,8 +98,8 @@ endfunction()
 #
 # The GPlates version.
 #
-set(GPLATES_VERSION_MAJOR 2)
-set(GPLATES_VERSION_MINOR 4)
+set(GPLATES_VERSION_MAJOR 3)
+set(GPLATES_VERSION_MINOR 0)
 set(GPLATES_VERSION_PATCH 0)
 
 # The pyGPlates version without the pre-release suffix
@@ -111,7 +111,7 @@ set(GPLATES_VERSION ${GPLATES_VERSION_MAJOR}.${GPLATES_VERSION_MINOR}.${GPLATES_
 #
 # See note about pre-release version suffixes above.
 #
-set(GPLATES_VERSION_PRERELEASE_SUFFIX "2")
+set(GPLATES_VERSION_PRERELEASE_SUFFIX "1")
 # Ensure pre-release contains only dot-separated alphanumeric identifiers.
 check_prerelease_suffix("${GPLATES_VERSION_PRERELEASE_SUFFIX}")
 
