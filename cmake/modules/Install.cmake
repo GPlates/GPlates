@@ -65,6 +65,37 @@ if (GPLATES_INSTALL_STANDALONE)
             )
         endif()
     endif()
+
+    # Installing Qt6 plugins does not work with Qt versions 6.0 - 6.3 (according to https://bugreports.qt.io/browse/QTBUG-94066).
+    # Note that intalling Qt5 plugins is fine though.
+    #
+    # Check at *install* time thus allowing users to build with Qt versions 6.0 - 6.3
+    # (if they just plan to run the build locally and don't plan to deploy to other machines).
+    #
+    # This should not affect Linux platforms since they are not usually built as standalone
+    # (because the Linux binary package manager is used to install dependencies on the user's system).
+    # If it is an issue then an option is to use Qt5 (instead of Qt6).
+    #
+    # For Windows and macOS this just means Qt 6.4 (or above) should be installed if you want to deploy.
+    #
+    # UPDATE: We only install Qt plugins for GPlates (not pyGPlates).
+    #         This is because deployment for pyGPlates involves creating wheels and using auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows)
+    #         to check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
+    #         And auditwheel/delocate/delvewheel don't copy/fix dependencies of plugins.
+    #         However, fortunately pyGPlates doesn't need the Qt plugins, so we'll leave them out (until/if this changes in the future).
+    #         Also, it turns out the Qt plugins are not evening loading anyway (I think) because the pyGPlates module initialisation
+    #         (in 'src/api/PyGPlatesModule.cc') does not create a QApplication, which uses 'qt.conf' (via QCoreApplication) to find the plugins.
+    if (GPLATES_BUILD_GPLATES)  # GPlates ...
+        install(
+                CODE "
+                    set(QT_VERSION_MAJOR [[${QT_VERSION_MAJOR}]])
+                    set(QT_VERSION_MINOR [[${QT_VERSION_MINOR}]])
+                    if (QT_VERSION_MAJOR EQUAL 6 AND QT_VERSION_MINOR LESS 4)
+                        message(FATAL_ERROR [[Installing Qt6 plugins requires Qt version 6.4 or above]])
+                    endif()
+                "
+        )
+    endif()
 endif()
 
 
@@ -693,7 +724,12 @@ if (GPLATES_INSTALL_STANDALONE)
     if (GPLATES_BUILD_GPLATES)  # GPlates ...
         # This works on Qt5.
         # But only works on Qt6 for versions 6.4 and above (according to https://bugreports.qt.io/browse/QTBUG-94066).
-        # TODO: Need to find a workaround when deploying with Qt versions 6.0 - 6.3.
+        #
+        # This should not affect Linux platforms since they are not usually built as standalone
+        # (because the Linux binary package manager is used to install dependencies on the user's system).
+        # If it is an issue then an option is to use Qt5 (instead of Qt6).
+        #
+        # For Windows and macOS this just means Qt 6.4 (or above) should be installed if you want to deploy.
         if (QT_VERSION_MAJOR EQUAL 5 OR
             (QT_VERSION_MAJOR EQUAL 6 AND QT_VERSION_MINOR GREATER_EQUAL 4))
             # Install common platform *independent* plugins used by GPlates.
