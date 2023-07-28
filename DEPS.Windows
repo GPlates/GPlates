@@ -99,15 +99,15 @@ Qt
      - Accept the obligations of using Qt Open Source (and specify whether you are an individual or a company).
      - Select 'Custom' installation.
      - Under 'Qt' select a version of Qt6 and the compiler you are using.
-       For example, select "6.2.4" and under that select "MSVC 2019 64-bit" when compiling using Visual Studio 2019.
+       For example, select "6.5.2" and under that select "MSVC 2019 64-bit" when compiling using Visual Studio 2019.
      - Accept the license.
      - Select your Start Menu shortcut.
      - Finish the installation of the pre-built components.
   2. Alternatively you can compile from source - see https://doc.qt.io/qt-6/windows-building.html
   3. Add the base of your selected pre-built components directory (assuming you chose step 1 or 2) to the CMAKE_PREFIX_PATH environment variable.
-     For example, "C:\SDK\qt\6.2.4\msvc2019_64".
+     For example, "C:\SDK\qt\6.5.2\msvc2019_64".
   4. Add the Qt \bin directory (associated with your selected pre-built components) to the PATH environment variable.
-     For example, "C:\SDK\qt\6.2.4\msvc2019_64\bin".
+     For example, "C:\SDK\qt\6.5.2\msvc2019_64\bin".
      Note you may need to insert near front of PATH to prioritise over other installed software containing Qt DLLs
      otherwise GPlates/pyGPlates might not start complaining that some symbol in one of the Qt DLLs cannot be found.
     
