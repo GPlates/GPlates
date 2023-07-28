@@ -30,6 +30,7 @@
 
 #include <map>
 #include <iterator>
+#include <QObject>
 #include <QString>
 
 #include "ColourScheme.h"
