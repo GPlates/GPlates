@@ -31,6 +31,7 @@
 #include <boost/noncopyable.hpp>
 #include <boost/weak_ptr.hpp>
 #include <QtGlobal>
+#include <QObject>
 #include <QPointer>
 
 
