@@ -636,7 +636,6 @@ if (GPLATES_INSTALL_STANDALONE)
         (QT_VERSION_MAJOR EQUAL 6 AND QT_VERSION_MINOR GREATER_EQUAL 4))
         # Install common platform *independent* plugins (used by GPlates and pyGPlates).
         # Note: This list was obtained by running the Qt deployment tool (windeployqt/macdeployqt) on GPlates (to see which plugins it deployed).
-        install_qt_plugin(Qt${QT_VERSION_MAJOR}::QGenericEnginePlugin)
         install_qt_plugin(Qt${QT_VERSION_MAJOR}::QSvgIconPlugin)
         install_qt_plugin(Qt${QT_VERSION_MAJOR}::QGifPlugin)
         install_qt_plugin(Qt${QT_VERSION_MAJOR}::QICOPlugin)
