@@ -1,4 +1,6 @@
-[![GPlates logo](src/qt-resources/GPlates-icon-160x160-opaque.png)](https://www.gplates.org/)
+<p align="center">
+  <img width="350"  src="https://github.com/GPlates/GPlates/assets/2688316/57d378d5-ef43-4185-b282-b7da8f612797" alt="GPlates Logo">
+</p>
 
 __GPlates__ is a desktop application for the interactive visualisation of plate tectonics.
 
