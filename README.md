@@ -63,7 +63,7 @@ GPlates and pyGPlates are licensed for distribution under the GNU [General Publi
 * [GLEW](http://glew.sourceforge.net/)
 * [PROJ](https://proj.org/) 4.6 or above (preferably 6 or above)
 * [Python](http://python.org/) 3.7 or above (or 2.7)
-* [Qt](https://www.qt.io/) 5.6 or above
+* [Qt](https://www.qt.io/) 5.6 - 5.15 (__note__: 6.x will only be supported for GPlates 3.0)
 * [Qwt](https://qwt.sourceforge.io/) 6.0.1 or above (preferably 6.1 or above)
 
 #### Repository
