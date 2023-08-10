@@ -122,6 +122,8 @@ RenderedArrowRenderer.cc
 RenderedArrowRenderer.h
 RenderedGeometryRenderer.cc
 RenderedGeometryRenderer.h
+SceneTile.cc
+SceneTile.h
 Stars.cc
 Stars.h
 Vulkan.cc

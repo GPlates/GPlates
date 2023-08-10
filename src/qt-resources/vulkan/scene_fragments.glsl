@@ -22,7 +22,7 @@
 
 //
 // Objects rendered into the scene can add fragments to per-pixel fragment lists sorted by depth,
-// which can then be blended (per pixel depth order) into the final scene framebuffer.
+// which can then be blended (in per-pixel depth order) into the final scene framebuffer.
 //
 // Each singly linked fragment list is lock-free (non-blocking) and so will complete its operations even if other invocations halt.
 // This is important because the Vulkan spec states that:
@@ -43,16 +43,24 @@ struct SceneFragment
     float z;      // depth (eg, gl_FragCoord.z)
 };
 
-
+//
+// Using 'coherent' storage images/buffers so that writes from invocations are visible to each other.
+// For example, multiple L1 caches near the GPU cores are not used, instead the single L2 cache is used as the point of coherence.
+//
 // A 2D storage image containing head pointers (uint indices) for each pixel.
 layout (set = SCENE_FRAGMENTS_SET, binding = SCENE_FRAGMENTS_BINDING, r32ui) uniform coherent uimage2D scene_fragments_list_head_pointer_image;
-
-// A storage buffer containing all the scene fragments, and a global allocation pointer (uint index).
-layout (set = SCENE_FRAGMENTS_SET, binding = SCENE_FRAGMENTS_BINDING + 1) coherent buffer SceneFragmentsListStorage
+//
+// A storage buffer containing all the scene fragments.
+layout (set = SCENE_FRAGMENTS_SET, binding = SCENE_FRAGMENTS_BINDING + 1) coherent buffer SceneFragmentsStorage
+{
+    SceneFragment fragments[];
+} scene_fragments_storage;
+//
+// A storage buffer containing the global allocation pointer (uint index).
+layout (set = SCENE_FRAGMENTS_SET, binding = SCENE_FRAGMENTS_BINDING + 2) coherent buffer SceneFragmentsAllocator
 {
     uint alloc_fragment_pointer;  // starts at 1 (so that 0 can be used as null pointer)
-    SceneFragment fragments[];
-} scene_fragments_list_storage;
+} scene_fragments_allocator;
 
 
 /*
@@ -63,9 +71,11 @@ allocate_scene_fragment(
         vec4 fragment_colour,
         float fragment_z)
 {
-    uint fragment_pointer = atomicAdd(scene_fragments_list_storage.alloc_fragment_pointer, 1);
+    // Allocate a new index into the fragment storage buffer.
+    uint fragment_pointer = atomicAdd(scene_fragments_allocator.alloc_fragment_pointer, 1);
 
-    scene_fragments_list_storage.fragments[fragment_pointer] = SceneFragment(
+    // Construct the new fragment (in the fragment storage buffer).
+    scene_fragments_storage.fragments[fragment_pointer] = SceneFragment(
             0,  // next_fragment_pointer
             packUnorm4x8(fragment_colour),
             fragment_z);
@@ -97,24 +107,24 @@ search_scene_fragment(
     {
         // If the fragment 'z' value is less than the next fragment then the caller will need to
         // insert a new fragment just before the next fragment.
-        if (fragment_z < scene_fragments_list_storage.fragments[next_fragment_pointer].z)
+        if (fragment_z < scene_fragments_storage.fragments[next_fragment_pointer].z)
         {
             return true;
         }
 
         // Our fragment will be behind the next fragment.
         // So if the next fragment is opaque then our fragment will not be visible.
-        float next_fragment_alpha = unpackUnorm4x8(scene_fragments_list_storage.fragments[next_fragment_pointer].colour).a;
+        float next_fragment_alpha = unpackUnorm4x8(scene_fragments_storage.fragments[next_fragment_pointer].colour).a;
         if (next_fragment_alpha == 1.0)
         {
             return  false;
         }
 
         previous_fragment_pointer = next_fragment_pointer;
-        next_fragment_pointer = scene_fragments_list_storage.fragments[previous_fragment_pointer].next_fragment_pointer;
+        next_fragment_pointer = scene_fragments_storage.fragments[previous_fragment_pointer].next_fragment_pointer;
     }
 
-    // Caller will need to insert a new fragment at the tail of the list.
+    // Caller will need to insert a new fragment at the tail of the list (or head if list is empty).
     return true;
 }
 
@@ -131,7 +141,7 @@ insert_scene_fragment_at_head(
         uint head_fragment_pointer)
 {
     // New fragment's next pointer points to head fragment.
-    scene_fragments_list_storage.fragments[fragment_pointer].next_fragment_pointer = head_fragment_pointer;
+    scene_fragments_storage.fragments[fragment_pointer].next_fragment_pointer = head_fragment_pointer;
 
     // Make sure writes to our new fragment have completed before we let other invocations know of its existence
     // (by atomically inserting it into the fragment list).
@@ -160,7 +170,7 @@ insert_scene_fragment(
         uint next_fragment_pointer)
 {
     // New fragment's next pointer points to next fragment.
-    scene_fragments_list_storage.fragments[fragment_pointer].next_fragment_pointer = next_fragment_pointer;
+    scene_fragments_storage.fragments[fragment_pointer].next_fragment_pointer = next_fragment_pointer;
 
     // Make sure writes to our new fragment have completed before we let other invocations know of its existence
     // (by atomically inserting it into the fragment list).
@@ -169,7 +179,7 @@ insert_scene_fragment(
     // Attempt to store new pointer (to new fragment) in *previous* fragment's next pointer, and return true if successful.
     // This will fail if another invocation has just updated the next pointer in the previous fragment.
     return atomicCompSwap(
-            scene_fragments_list_storage.fragments[previous_fragment_pointer].next_fragment_pointer,
+            scene_fragments_storage.fragments[previous_fragment_pointer].next_fragment_pointer,
             next_fragment_pointer,
             fragment_pointer) == next_fragment_pointer;
 }
@@ -210,9 +220,9 @@ add_fragment_to_scene(
         {
             // If we've already allocated/constructed a fragment then it'll remain allocated but unused.
             //
-            // Note: It's possible the fragment is already allocated because we may have tried to insert it but failed
+            // Note: It's possible the fragment has already been allocated because we may have tried to insert it but failed
             //       (because another invocation inserted a fragment just before it) and hence we tried again to search
-            //       where to insert and found that the fragment is now occluded (by the other invocation's fragment).
+            //       (where to insert) and found that the fragment is now occluded (by that other invocation's fragment).
             return false;
         }
 
