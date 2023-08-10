@@ -36,11 +36,52 @@ namespace GPlatesOpenGL
 {
 	/**
 	 * Images mapping latitude and longitude to:
-	 * - map projection space (x, y),
-	 * - first-order partial derivatives dx/dlon, dx/dlat, dy/dlon, dy/dlat, and
-	 * - second-order partial derivatives:
-	 *   + d(dx/dlon)/dlon, d(dx/dlat)/dlat, d(dx/dlon)/dlat (for 'x') and
-	 *   + d(dy/dlon)/dlon, d(dy/dlat)/dlat, d(dy/dlon)/dlat (for 'y').
+	 *
+	 *   - map projection space (x, y),
+	 *
+	 *   - first-order partial derivatives dx/dlon, dx/dlat, dy/dlon, dy/dlat, and
+	 *
+	 *   - second-order partial derivatives:
+	 *     + d(dx/dlon)/dlon, d(dx/dlat)/dlat, d(dx/dlon)/dlat (for 'x') and
+	 *     + d(dy/dlon)/dlon, d(dy/dlat)/dlat, d(dy/dlon)/dlat (for 'y').
+	 *
+	 * Each texel in each image represents data at a specific (longitude, latitude) coordinate.
+	 *
+	 * The forward transform data maps (longitude, latitude) to map projection space coordinates (x, y).
+	 *
+	 * The Jacobian matrix data contains the four 1st order partial derivatives of map projection output coordinates (x, y)
+	 * relative to the input coordinates (longitude, latitude).
+	 * These are dx/dlon, dx/dlat, dy/dlon, dy/dlat.
+	 *
+	 * The Hessian matrix data contains the eight 2nd order partial derivatives of map projection output coordinates (x, y)
+	 * relative to the input coordinates (longitude, latitude).
+	 * The Hessian matrix of 'x' has 4 components and Hessian matrix of 'y' has 4 components.
+	 * However, since Hessian matrices are symmetric we only store 3 components each.
+	 * These are d(dx/dlon)/dlon, d(dx/dlat)/dlat, d(dx/dlon)/dlat (for 'x') and d(dy/dlon)/dlon, d(dy/dlat)/dlat, d(dy/dlon)/dlat (for 'y').
+	 * The off-diagonal elements are stored in the first image and the diagonal elements in the third image.
+	 *
+	 * Each texel in the FIRST image contains 4 components:
+	 *   0: forward transformed x coordinate
+	 *   1: forward transformed y coordinate
+	 *   2: Hessian matrix d(dx/dlon)/dlat (same as d(dx/dlat)/dlon since Hessian matrix is symmetric)
+	 *   3: Hessian matrix d(dy/dlon)/dlat (same as d(dy/dlat)/dlon since Hessian matrix is symmetric)
+	 *
+	 * Each texel in the SECOND image contains 4 components:
+	 *   0: Jacobian matrix dx/dlon
+	 *   1: Jacobian matrix dx/dlat
+	 *   2: Jacobian matrix dy/dlon
+	 *   3: Jacobian matrix dy/dlat
+	 *
+	 * Each texel in the THIRD image contains 4 components:
+	 *   0: Hessian matrix d(dx/dlon)/dlon
+	 *   1: Hessian matrix d(dx/dlat)/dlat
+	 *   2: Hessian matrix d(dy/dlon)/dlon
+	 *   3: Hessian matrix d(dy/dlat)/dlat
+	 *
+	 * The image width represents the longitude range [-180, 180] and the image height represents the latitude range [-90, 90].
+	 * Note that the ranges start/end at the boundary texel centres to ensure linear interpolation within boundary texels.
+	 * For example, the leftmost texels represent the longitude -180 at their texel centres, and so the longitude -180
+	 * should have a texture coordinate S of 0.5/image_width (instead of 0.0).
 	 */
 	class MapProjectionImage
 	{
@@ -87,50 +128,46 @@ namespace GPlatesOpenGL
 
 
 		/**
-		 * Return the descriptor image infos for the three images containing map projection data (to be used for shader reads).
+		 * Returns the number of images containing map projection data.
+		 */
+		unsigned int
+		get_num_images() const
+		{
+			return NUM_IMAGES;
+		}
+
+
+		/**
+		 * Return the structure used to write to the (specified) descriptor set and binding (used in shader).
 		 *
-		 * Each texel in each image represents data at a specific (longitude, latitude) coordinate.
-		 *
-		 * The forward transform data maps (longitude, latitude) to map projection space coordinates (x, y).
-		 *
-		 * The Jacobian matrix data contains the four 1st order partial derivatives of map projection output coordinates (x, y)
-		 * relative to the input coordinates (longitude, latitude).
-		 * These are dx/dlon, dx/dlat, dy/dlon, dy/dlat.
-		 *
-		 * The Hessian matrix data contains the eight 2nd order partial derivatives of map projection output coordinates (x, y)
-		 * relative to the input coordinates (longitude, latitude).
-		 * The Hessian matrix of 'x' has 4 components and Hessian matrix of 'y' has 4 components.
-		 * However, since Hessian matrices are symmetric we only store 3 components each.
-		 * These are d(dx/dlon)/dlon, d(dx/dlat)/dlat, d(dx/dlon)/dlat (for 'x') and d(dy/dlon)/dlon, d(dy/dlat)/dlat, d(dy/dlon)/dlat (for 'y').
-		 * The off-diagonal elements are stored in the first image and the diagonal elements in the third image.
-		 *
-		 * Each texel in the FIRST image contains 4 components:
-		 *   0: forward transformed x coordinate
-		 *   1: forward transformed y coordinate
-		 *   2: Hessian matrix d(dx/dlon)/dlat (same as d(dx/dlat)/dlon since Hessian matrix is symmetric)
-		 *   3: Hessian matrix d(dy/dlon)/dlat (same as d(dy/dlat)/dlon since Hessian matrix is symmetric)
-		 *
-		 * Each texel in the SECOND image contains 4 components:
-		 *   0: Jacobian matrix dx/dlon
-		 *   1: Jacobian matrix dx/dlat
-		 *   2: Jacobian matrix dy/dlon
-		 *   3: Jacobian matrix dy/dlat
-		 *
-		 * Each texel in the THIRD image contains 4 components:
-		 *   0: Hessian matrix d(dx/dlon)/dlon
-		 *   1: Hessian matrix d(dx/dlat)/dlat
-		 *   2: Hessian matrix d(dy/dlon)/dlon
-		 *   3: Hessian matrix d(dy/dlat)/dlat
-		 *
-		 * The image width represents the longitude range [-180, 180] and the image height represents the latitude range [-90, 90].
-		 * Note that the ranges start/end at the boundary texel centres to ensure linear interpolation within boundary texels.
-		 * For example, the leftmost texels represent the longitude -180 at their texel centres, and so the longitude -180
-		 * should have a texture coordinate S of 0.5/image_width (instead of 0.0).
+		 * This writes the three images (in an array) containing map projection data (to be used for shader reads).
 		 *
 		 * This method can be called once @a initialise_vulkan_resources has been called (and before @a update is first called).
 		 */
-		std::vector<vk::DescriptorImageInfo>
-		get_descriptor_image_infos() const;
+		vk::WriteDescriptorSet
+		get_write_descriptor_set(
+				vk::DescriptorSet descriptor_set,
+				std::uint32_t binding) const;
+
+		/**
+		 * Return the descriptor set layout binding for the image array containing map projection data.
+		 *
+		 * Specify the binding point (used in shader) and which pipeline shader stages will access these bindings.
+		 *
+		 * This method can be called once @a initialise_vulkan_resources has been called (and before @a update is first called).
+		 */
+		vk::DescriptorSetLayoutBinding
+		get_descriptor_set_layout_binding(
+				std::uint32_t binding,
+				vk::ShaderStageFlags shader_stage_flags) const;
+
+		/**
+		 * Return the descriptor pool size of image array (three images) containing map projection data.
+		 *
+		 * This method can be called once @a initialise_vulkan_resources has been called (and before @a update is first called).
+		 */
+		vk::DescriptorPoolSize
+		get_descriptor_pool_size() const;
 
 
 		/**
@@ -151,7 +188,7 @@ namespace GPlatesOpenGL
 		//! Format for all images (all images contains texels with 4 floating-point values).
 		static constexpr vk::Format TEXEL_FORMAT = vk::Format::eR32G32B32A32Sfloat;
 
-		// Parameters common to both the forward transform and Jacobian matrix images.
+		// Parameters common to all images (containing forward transform, and Jacobian and Hessian matrices).
 		//
 		// The delay when first switching to a map projection is significant when this is above 180 (on a circa 2013 CPU).
 		static constexpr unsigned int NUM_TEXEL_INTERVALS_PER_180_DEGREES = 180;

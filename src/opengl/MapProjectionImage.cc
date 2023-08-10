@@ -63,6 +63,7 @@ GPlatesOpenGL::MapProjectionImage::initialise_vulkan_resources(
 	// Image allocation.
 	VmaAllocationCreateInfo image_allocation_create_info = {};
 	image_allocation_create_info.usage = VMA_MEMORY_USAGE_AUTO;
+	image_allocation_create_info.flags = 0;  // device local memory
 
 	// Create the images.
 	for (unsigned int n = 0; n < NUM_IMAGES; ++n)
@@ -229,18 +230,63 @@ GPlatesOpenGL::MapProjectionImage::release_vulkan_resources(
 }
 
 
-std::vector<vk::DescriptorImageInfo>
-GPlatesOpenGL::MapProjectionImage::get_descriptor_image_infos() const
+vk::WriteDescriptorSet
+GPlatesOpenGL::MapProjectionImage::get_write_descriptor_set(
+		vk::DescriptorSet descriptor_set,
+		std::uint32_t binding) const
 {
 	std::vector<vk::DescriptorImageInfo> descriptor_image_infos;
 	for (unsigned int n = 0; n < NUM_IMAGES; ++n)
 	{
-		descriptor_image_infos.push_back({ d_sampler, d_image_views[n], vk::ImageLayout::eShaderReadOnlyOptimal });
+		vk::DescriptorImageInfo descriptor_image_info;
+		descriptor_image_info
+				.setSampler(d_sampler)
+				.setImageView(d_image_views[n])
+				.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
+
+		descriptor_image_infos.push_back(descriptor_image_info);
 	}
 
-	return descriptor_image_infos;
+	vk::WriteDescriptorSet descriptor_write;
+	descriptor_write
+			.setDstSet(descriptor_set)
+			.setDstBinding(binding)
+			.setDstArrayElement(0)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setImageInfo(descriptor_image_infos);
+
+	return descriptor_write;
 }
 
+
+vk::DescriptorSetLayoutBinding
+GPlatesOpenGL::MapProjectionImage::get_descriptor_set_layout_binding(
+		std::uint32_t binding,
+		vk::ShaderStageFlags shader_stage_flags) const
+{
+	// Map projection image array binding.
+	vk::DescriptorSetLayoutBinding descriptor_set_layout_binding;
+	descriptor_set_layout_binding
+			.setBinding(binding)
+			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
+			.setDescriptorCount(NUM_IMAGES)
+			.setStageFlags(shader_stage_flags);
+
+	return descriptor_set_layout_binding;
+}
+
+
+vk::DescriptorPoolSize
+GPlatesOpenGL::MapProjectionImage::get_descriptor_pool_size() const
+{
+	// Allocate enough for the three map projection images.
+	vk::DescriptorPoolSize descriptor_pool_size;
+	descriptor_pool_size
+			.setType(vk::DescriptorType::eCombinedImageSampler)
+			.setDescriptorCount(NUM_IMAGES);
+
+	return descriptor_pool_size;
+}
 
 void
 GPlatesOpenGL::MapProjectionImage::update(
@@ -270,7 +316,7 @@ GPlatesOpenGL::MapProjectionImage::update(
 
 	//
 	// Pipeline barrier to wait for any commands that read from the images before we copy new data into them.
-	// And also transition both images to an image layout suitable for a transfer destination.
+	// And also transition all images to an image layout suitable for a transfer destination.
 	//
 
 	vk::ImageMemoryBarrier pre_update_image_memory_barrier;
