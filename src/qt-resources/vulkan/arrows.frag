@@ -21,7 +21,7 @@
 // Renders arrows.
 //
 
-#include "utils.glsl"
+#include "utils/utils.glsl"
 
 layout (push_constant) uniform PushConstants
 {

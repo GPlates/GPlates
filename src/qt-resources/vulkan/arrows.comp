@@ -23,8 +23,8 @@
 // And performs map projection (when map view is active).
 //
 
-#include "map_projection.glsl"
-#include "utils.glsl"
+#include "utils/map_projection.glsl"
+#include "utils/utils.glsl"
 
 layout (push_constant) uniform PushConstants
 {
