@@ -41,6 +41,7 @@ namespace GPlatesOpenGL
 {
 	class MapProjectionImage;
 	class GLViewProjection;
+	class SceneTile;
 
 	/**
 	 * Draw rendered arrows.
@@ -62,6 +63,7 @@ namespace GPlatesOpenGL
 				Vulkan &vulkan,
 				vk::RenderPass default_render_pass,
 				vk::SampleCountFlagBits default_render_pass_sample_count,
+				const SceneTile &scene_tile,
 				const MapProjectionImage &map_projection_image,
 				vk::CommandBuffer initialisation_command_buffer,
 				vk::Fence initialisation_submit_fence);
@@ -253,11 +255,13 @@ namespace GPlatesOpenGL
 
 		void
 		create_compute_pipeline(
-				Vulkan &vulkan);
+				Vulkan &vulkan,
+				const MapProjectionImage &map_projection_image);
 
 		void
 		create_graphics_pipeline(
 				Vulkan &vulkan,
+				const SceneTile &scene_tile,
 				vk::RenderPass default_render_pass,
 				vk::SampleCountFlagBits default_render_pass_sample_count);
 
@@ -273,6 +277,11 @@ namespace GPlatesOpenGL
 				vk::Fence initialisation_submit_fence,
 				const std::vector<MeshVertex> &vertices,
 				const std::vector<std::uint32_t> &vertex_indices);
+
+		void
+		create_scene_tile_descriptor_set(
+				Vulkan &vulkan,
+				const SceneTile &scene_tile);
 
 		void
 		create_map_projection_descriptor_set(
@@ -329,9 +338,14 @@ namespace GPlatesOpenGL
 		static constexpr float MAP_PROJECTED_ARROW_SCALE_FACTOR = 180.0;
 
 		/**
-		 * The number of images of map projection data provided by class @a MapProjectionImage.
+		 * The scene tile 'binding' used in the graphics pipeline.
 		 */
-		static constexpr unsigned int NUM_MAP_PROJECTION_IMAGES = 3;
+		static constexpr unsigned int SCENE_TILE_BINDING = 0;
+
+		/**
+		 * The map projection image 'binding' used in the compute pipeline.
+		 */
+		static constexpr unsigned int MAP_PROJECTION_IMAGE_BINDING = 0;
 
 
 		/**
@@ -342,10 +356,15 @@ namespace GPlatesOpenGL
 
 		// Descriptor set layouts.
 		vk::DescriptorSetLayout d_instance_descriptor_set_layout;
+		vk::DescriptorSetLayout d_scene_tile_descriptor_set_layout;
 		vk::DescriptorSetLayout d_map_projection_descriptor_set_layout;
 
-		// Descriptor pool/set for the map projection textures.
+		// Descriptor pools.
+		vk::DescriptorPool d_scene_tile_descriptor_pool;
 		vk::DescriptorPool d_map_projection_descriptor_pool;
+
+		// Descriptor sets.
+		vk::DescriptorSet d_scene_tile_descriptor_set;
 		vk::DescriptorSet d_map_projection_descriptor_set;
 
 		// Compute pipeline and layout.

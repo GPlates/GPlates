@@ -28,6 +28,7 @@
 #include "GLMatrix.h"
 #include "GLViewProjection.h"
 #include "MapProjectionImage.h"
+#include "SceneTile.h"
 #include "VulkanException.h"
 #include "VulkanUtils.h"
 
@@ -53,6 +54,7 @@ GPlatesOpenGL::RenderedArrowRenderer::initialise_vulkan_resources(
 		Vulkan &vulkan,
 		vk::RenderPass default_render_pass,
 		vk::SampleCountFlagBits default_render_pass_sample_count,
+		const SceneTile &scene_tile,
 		const MapProjectionImage &map_projection_image,
 		vk::CommandBuffer initialisation_command_buffer,
 		vk::Fence initialisation_submit_fence)
@@ -61,16 +63,19 @@ GPlatesOpenGL::RenderedArrowRenderer::initialise_vulkan_resources(
 	TRACK_CALL_STACK();
 
 	// Create the compute pipeline (to cull arrows outside the view frustum prior to rendering).
-	create_compute_pipeline(vulkan);
+	create_compute_pipeline(vulkan, map_projection_image);
 
 	// Create the graphics pipeline (to render arrows frustum culled by the compute shader).
-	create_graphics_pipeline(vulkan, default_render_pass, default_render_pass_sample_count);
+	create_graphics_pipeline(vulkan, scene_tile, default_render_pass, default_render_pass_sample_count);
 
 	// Create the arrow mesh and load it into the vertex/index buffers.
 	std::vector<MeshVertex> vertices;
 	std::vector<std::uint32_t> vertex_indices;
 	create_arrow_mesh(vertices, vertex_indices);
 	load_arrow_mesh(vulkan, initialisation_command_buffer, initialisation_submit_fence, vertices, vertex_indices);
+
+	// Create descriptor set for scene tiles.
+	create_scene_tile_descriptor_set(vulkan, scene_tile);
 
 	// Create descriptor set for map projection textures.
 	create_map_projection_descriptor_set(vulkan, map_projection_image);
@@ -114,9 +119,11 @@ GPlatesOpenGL::RenderedArrowRenderer::release_vulkan_resources(
 
 	// Destroy descriptor set layouts.
 	vulkan.get_device().destroyDescriptorSetLayout(d_instance_descriptor_set_layout);
+	vulkan.get_device().destroyDescriptorSetLayout(d_scene_tile_descriptor_set_layout);
 	vulkan.get_device().destroyDescriptorSetLayout(d_map_projection_descriptor_set_layout);
 
-	// Destroy descriptor pool/set for the map projection texture.
+	// Destroy descriptor pools/sets.
+	vulkan.get_device().destroyDescriptorPool(d_scene_tile_descriptor_pool);  // also frees descriptor set
 	vulkan.get_device().destroyDescriptorPool(d_map_projection_descriptor_pool);  // also frees descriptor set
 }
 
@@ -321,7 +328,7 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 				num_arrows_in_instance_buffer * sizeof(MeshInstance),
 				GPLATES_EXCEPTION_SOURCE);
 
-		// Bind the descriptor sets used by compute shader.
+		// Bind the descriptor sets used by compute pipeline.
 		//
 		// Set 0: Instance and indirect draw storage buffer descriptors.
 		// Set 1: Map projection image descriptor.
@@ -425,6 +432,16 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 			// Update all push constants...
 			0, sizeof(GraphicsPushConstants), &graphics_push_constants);
 
+	// Bind the descriptor sets used by graphics pipeline.
+	//
+	// Set 0: Scene tile image/buffer descriptors.
+	default_render_pass_command_buffer.bindDescriptorSets(
+			vk::PipelineBindPoint::eGraphics,
+			d_graphics_pipeline_layout,
+			0/*firstSet*/,
+			d_scene_tile_descriptor_set,
+			nullptr/*dynamicOffsets*/);
+
 	// Bind the arrow mesh vertex and index buffers.
 	default_render_pass_command_buffer.bindVertexBuffers(0, d_vertex_buffer.get_buffer(), vk::DeviceSize(0));
 	default_render_pass_command_buffer.bindIndexBuffer(d_index_buffer.get_buffer(), vk::DeviceSize(0), vk::IndexType::eUint32);
@@ -451,7 +468,8 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 
 void
 GPlatesOpenGL::RenderedArrowRenderer::create_compute_pipeline(
-		Vulkan &vulkan)
+		Vulkan &vulkan,
+		const MapProjectionImage &map_projection_image)
 {
 	//
 	// Shader stage.
@@ -499,18 +517,15 @@ GPlatesOpenGL::RenderedArrowRenderer::create_compute_pipeline(
 	d_instance_descriptor_set_layout = vulkan.get_device().createDescriptorSetLayout(instance_descriptor_set_layout_create_info);
 
 	// Map projection descriptor set layout.
-	vk::DescriptorSetLayoutBinding map_projection_descriptor_set_layout_bindings[1];
-	// Map projection image array binding.
-	map_projection_descriptor_set_layout_bindings[0]
-			.setBinding(0)
-			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(NUM_MAP_PROJECTION_IMAGES)
-			.setStageFlags(vk::ShaderStageFlagBits::eCompute);
+	const vk::DescriptorSetLayoutBinding map_projection_descriptor_set_layout_binding =
+			map_projection_image.get_descriptor_set_layout_binding(MAP_PROJECTION_IMAGE_BINDING, vk::ShaderStageFlagBits::eCompute);
 	vk::DescriptorSetLayoutCreateInfo map_projection_descriptor_set_layout_create_info;
-	map_projection_descriptor_set_layout_create_info.setBindings(map_projection_descriptor_set_layout_bindings);
+	map_projection_descriptor_set_layout_create_info.setBindings(map_projection_descriptor_set_layout_binding);
 	d_map_projection_descriptor_set_layout = vulkan.get_device().createDescriptorSetLayout(map_projection_descriptor_set_layout_create_info);
 
-	// Descriptor set layouts.
+	// Descriptor set layouts:
+	// - set 0: instance descriptors
+	// - set 1: map projection descriptors
 	vk::DescriptorSetLayout descriptor_set_layouts[2] = { d_instance_descriptor_set_layout, d_map_projection_descriptor_set_layout };
 
 	// Push constants.
@@ -540,6 +555,7 @@ GPlatesOpenGL::RenderedArrowRenderer::create_compute_pipeline(
 void
 GPlatesOpenGL::RenderedArrowRenderer::create_graphics_pipeline(
 		Vulkan &vulkan,
+		const SceneTile &scene_tile,
 		vk::RenderPass default_render_pass,
 		vk::SampleCountFlagBits default_render_pass_sample_count)
 {
@@ -620,31 +636,23 @@ GPlatesOpenGL::RenderedArrowRenderer::create_graphics_pipeline(
 	//
 	// Depth stencil state.
 	//
-	vk::PipelineDepthStencilStateCreateInfo depth_stencil_state_create_info;
-	depth_stencil_state_create_info
-			.setDepthTestEnable(true)
-			.setDepthWriteEnable(true)
-			.setDepthCompareOp(vk::CompareOp::eLess);
+	// Disable depth testing and depth writes.
+	// Arrows are rendered to per-pixel fragment lists in a storage image/buffer instead of framebuffer
+	// (and later blended, in per-pixel depth order, into the framebuffer by the scene renderer).
+	vk::PipelineDepthStencilStateCreateInfo depth_stencil_state_create_info;  // default disables both
 
 	//
 	// Colour blend state.
 	//
+	// Note: We disable colour writes because we're not writing to the framebuffer
+	//       (since fragment shader is instead adding fragment to a per-pixel fragment list in a storage image/buffer)
+	//       and so our colour attachment output will be undefined.
+	//       The fragments will later get blended (in per-pixel depth order) into the framebuffer by the scene renderer.
+	//
 	vk::PipelineColorBlendAttachmentState blend_attachment_state;
 	blend_attachment_state
-			.setBlendEnable(true)
-			// RGB = A_src * RGB_src + (1-A_src) * RGB_dst ...
-			.setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
-			.setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
-			.setColorBlendOp(vk::BlendOp::eAdd)
-			//   A =     1 *   A_src + (1-A_src) *   A_dst ...
-			.setSrcAlphaBlendFactor(vk::BlendFactor::eOne)
-			.setDstAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
-			.setAlphaBlendOp(vk::BlendOp::eAdd)
-			.setColorWriteMask(
-					vk::ColorComponentFlagBits::eR |
-					vk::ColorComponentFlagBits::eG |
-					vk::ColorComponentFlagBits::eB |
-					vk::ColorComponentFlagBits::eA);
+			.setBlendEnable(false)
+			.setColorWriteMask({});
 	vk::PipelineColorBlendStateCreateInfo color_blend_state_create_info;
 	color_blend_state_create_info.setAttachments(blend_attachment_state);
 
@@ -659,6 +667,18 @@ GPlatesOpenGL::RenderedArrowRenderer::create_graphics_pipeline(
 	//
 	// Pipeline layout.
 	//
+
+	// Scene tile descriptor set layout.
+	const std::vector<vk::DescriptorSetLayoutBinding> scene_tile_descriptor_set_layout_bindings = scene_tile
+			.get_descriptor_set_layout_bindings(SCENE_TILE_BINDING, vk::ShaderStageFlagBits::eFragment);
+	vk::DescriptorSetLayoutCreateInfo scene_tile_descriptor_set_layout_create_info;
+	scene_tile_descriptor_set_layout_create_info.setBindings(scene_tile_descriptor_set_layout_bindings);
+	d_scene_tile_descriptor_set_layout = vulkan.get_device().createDescriptorSetLayout(scene_tile_descriptor_set_layout_create_info);
+
+	// Descriptor set layouts:
+	// - set 0: scene tile descriptors
+	vk::DescriptorSetLayout descriptor_set_layouts[1] = { d_scene_tile_descriptor_set_layout };
+
 	// We only use push constants (and no descriptor sets).
 	vk::PushConstantRange push_constant_range;
 	push_constant_range
@@ -666,7 +686,9 @@ GPlatesOpenGL::RenderedArrowRenderer::create_graphics_pipeline(
 			.setOffset(0)
 			.setSize(sizeof(GraphicsPushConstants));
 	vk::PipelineLayoutCreateInfo pipeline_layout_create_info;
-	pipeline_layout_create_info.setPushConstantRanges(push_constant_range);
+	pipeline_layout_create_info
+			.setSetLayouts(descriptor_set_layouts)
+			.setPushConstantRanges(push_constant_range);
 	d_graphics_pipeline_layout = vulkan.get_device().createPipelineLayout(pipeline_layout_create_info);
 
 	//
@@ -988,15 +1010,44 @@ GPlatesOpenGL::RenderedArrowRenderer::load_arrow_mesh(
 
 
 void
+GPlatesOpenGL::RenderedArrowRenderer::create_scene_tile_descriptor_set(
+		Vulkan &vulkan,
+		const SceneTile &scene_tile)
+{
+	// Create descriptor pool.
+	const std::vector<vk::DescriptorPoolSize> descriptor_pool_sizes = scene_tile.get_descriptor_pool_sizes();
+	vk::DescriptorPoolCreateInfo descriptor_pool_create_info;
+	descriptor_pool_create_info.setMaxSets(1).setPoolSizes(descriptor_pool_sizes);
+	d_scene_tile_descriptor_pool = vulkan.get_device().createDescriptorPool(descriptor_pool_create_info);
+
+	// Allocate descriptor set.
+	vk::DescriptorSetAllocateInfo descriptor_set_allocate_info;
+	descriptor_set_allocate_info
+			.setDescriptorPool(d_scene_tile_descriptor_pool)
+			.setSetLayouts(d_scene_tile_descriptor_set_layout);
+	const std::vector<vk::DescriptorSet> descriptor_sets =
+			vulkan.get_device().allocateDescriptorSets(descriptor_set_allocate_info);
+	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+			descriptor_sets.size() == 1,
+			GPLATES_ASSERTION_SOURCE);
+	d_scene_tile_descriptor_set = descriptor_sets[0];
+
+	// Descriptor writes.
+	const std::vector<vk::WriteDescriptorSet> descriptor_writes = scene_tile
+			.get_write_descriptor_sets(d_scene_tile_descriptor_set, SCENE_TILE_BINDING);
+
+	// Update descriptor set.
+	vulkan.get_device().updateDescriptorSets(descriptor_writes, nullptr/*descriptorCopies*/);
+}
+
+
+void
 GPlatesOpenGL::RenderedArrowRenderer::create_map_projection_descriptor_set(
 		Vulkan &vulkan,
 		const MapProjectionImage &map_projection_image)
 {
 	// Create descriptor pool.
-	vk::DescriptorPoolSize descriptor_pool_size;
-	descriptor_pool_size
-			.setType(vk::DescriptorType::eCombinedImageSampler)
-			.setDescriptorCount(NUM_MAP_PROJECTION_IMAGES);
+	const vk::DescriptorPoolSize descriptor_pool_size = map_projection_image.get_descriptor_pool_size();
 	vk::DescriptorPoolCreateInfo descriptor_pool_create_info;
 	descriptor_pool_create_info
 			.setMaxSets(1)
@@ -1015,16 +1066,12 @@ GPlatesOpenGL::RenderedArrowRenderer::create_map_projection_descriptor_set(
 			GPLATES_ASSERTION_SOURCE);
 	d_map_projection_descriptor_set = descriptor_sets[0];
 
-	// Descriptor writes for the map projection textures.
-	const std::vector<vk::DescriptorImageInfo> descriptor_image_infos = map_projection_image.get_descriptor_image_infos();
-	vk::WriteDescriptorSet descriptor_writes[1];
-	descriptor_writes[0]
-			.setDstSet(d_map_projection_descriptor_set).setDstBinding(0).setDstArrayElement(0).setDescriptorCount(NUM_MAP_PROJECTION_IMAGES)
-			.setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
-			.setImageInfo(descriptor_image_infos);
+	// Descriptor write for the map projection textures.
+	const vk::WriteDescriptorSet descriptor_write = map_projection_image
+			.get_write_descriptor_set(d_map_projection_descriptor_set, MAP_PROJECTION_IMAGE_BINDING);
 
 	// Update descriptor set.
-	vulkan.get_device().updateDescriptorSets(descriptor_writes, nullptr/*descriptorCopies*/);
+	vulkan.get_device().updateDescriptorSets(descriptor_write, nullptr/*descriptorCopies*/);
 }
 
 

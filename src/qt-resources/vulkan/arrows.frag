@@ -31,6 +31,10 @@ layout (push_constant) uniform PushConstants
     float light_ambient_contribution;
 };
 
+const uint SCENE_TILE_DESCRIPTOR_SET = 0;
+const uint SCENE_TILE_DESCRIPTOR_BINDING = 0;
+#include "utils/scene_tile.glsl"
+
 layout (location = 0) in VertexData
 {
 	vec3 world_space_sphere_normal;
@@ -43,10 +47,10 @@ layout (location = 0) in VertexData
 	vec2 model_space_radial_and_axial_normal_weights;
 } fs_in;
 
-layout (location = 0) out vec4 colour;
-
 void main (void)
 {
+	vec4 colour;
+
 	if (lighting_enabled)
 	{
 		// Calculate the model-space normal of the arrow mesh at the current fragment location.
@@ -83,4 +87,12 @@ void main (void)
 		// Simply return the vertex colour.
 		colour = fs_in.colour;
 	}
+
+	// Add this fragment to the per-pixel fragment list (sorted by depth) for the current fragment coordinate.
+	// It will later get blended (in per-pixel depth order) into the framebuffer.
+	//
+	// Note: We don't have the usual "layout (location = 0) out vec4 colour;" declaration because
+	//       we're not writing to the framebuffer and so our colour attachment output will be undefined
+	//       which is why we also mask colour attachment writes (using the Vulkan API).
+	scene_tile_add_fragment(colour, gl_FragCoord.z);
 }
