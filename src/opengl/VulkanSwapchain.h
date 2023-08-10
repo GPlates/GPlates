@@ -150,7 +150,11 @@ namespace GPlatesOpenGL
 		}
 
 		/**
-		 * Returns the render pass to use when rendering to a swapchain image.
+		 * Returns the render pass (containing a single subpass) to use when rendering to a swapchain image.
+		 *
+		 * Pipeline barriers can be used inside the (sole) subpass for non-attachment reads/writes using fragment shader.
+		 * For example, writing to non-attachment storage images/buffers using fragment shader, then emitting a barrier,
+		 * then reading from them using another fragment shader (all done within subpass).
 		 */
 		vk::RenderPass
 		get_swapchain_render_pass() const

@@ -719,6 +719,29 @@ GPlatesOpenGL::VulkanSwapchain::create_render_pass(
 
 	std::vector<vk::SubpassDependency> subpass_dependencies;
 
+	// One subpass self-dependency to allow users to use a pipeline barrier inside (the subpass of) this render pass.
+	// This is configured such that any pipeline barriers must be for non-attachment reads/writes using fragment shader.
+	// For example, writing to non-attachment storage images/buffers using fragment shader, then a emitting barrier,
+	// then reading from them using another fragment shader (all done within subpass).
+	//
+	// Note: Unlike subpass dependencies that are not a self-dependency, a self-dependency does not actually
+	//       create a memory dependency (it only places constraints on pipeline barriers in the subpass, and
+	//       the barriers must be explicitly created by the user).
+	vk::SubpassDependency non_attachment_subpass_self_dependency;
+	non_attachment_subpass_self_dependency
+			// Self-dependency (on sole subpass) uses same src/dst subpass indices...
+			.setSrcSubpass(0)
+			.setDstSubpass(0)
+			// Fragment shader reads/writes before a pipeline barrier will be available/visible before
+			// fragment shader reads/writes after the pipeline barrier...
+			.setSrcStageMask(vk::PipelineStageFlagBits::eFragmentShader)
+			.setDstStageMask(vk::PipelineStageFlagBits::eFragmentShader)
+			.setSrcAccessMask(vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite)
+			.setDstAccessMask(vk::AccessFlagBits::eShaderRead | vk::AccessFlagBits::eShaderWrite)
+			// Required for a subpass self-dependency when it specifies framebuffer-space stages (as we have)...
+			.setDependencyFlags(vk::DependencyFlagBits::eByRegion);
+	subpass_dependencies.push_back(non_attachment_subpass_self_dependency);
+
 	// One subpass external dependency to ensure swapchain image layout transition (from eUndefined to
 	// eColorAttachmentOptimal) happens *after* image is acquired (which happens before stage
 	// eColorAttachmentOutput since that is the wait stage on the image acquire semaphore).
@@ -730,10 +753,10 @@ GPlatesOpenGL::VulkanSwapchain::create_render_pass(
 			.setDstSubpass(0)
 			// Chain dependency with the wait stage of the image acquire semaphore.
 			// This means this dependency will also wait for the swapchain image to be acquired.
-			// The layout transition will then happen after that...
+			// The layout transition (from eUndefined to eColorAttachmentOptimal) will then happen after that...
 			.setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
 			// Block colour attachment writes by the subpass (but stages before that are not blocked, eg, vertex shader).
-			// The layout transition will then happen before that...
+			// The layout transition (from eUndefined to eColorAttachmentOptimal) will happen before that...
 			.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
 			// Swapchain image acquire signals a semaphore, which ensures all writes are made available, so
 			// no need to specify a src access mask. In any case, there's no writes in the presentation engine...
@@ -751,9 +774,11 @@ GPlatesOpenGL::VulkanSwapchain::create_render_pass(
 			.setSrcSubpass(0)
 			// Synchronise with commands after the render pass...
 			.setDstSubpass(VK_SUBPASS_EXTERNAL)
-			// Wait for the swapchain image to be rendered to (in colour attachment stage)...
+			// Wait for the swapchain image to be rendered to (in colour attachment stage).
+			// The layout transition (from eColorAttachmentOptimal to ePresentSrcKHR) will then happen after that...
 			.setSrcStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
-			// Chain dependency with the subsequent (potential) queue ownership image release pipeline barrier...
+			// Chain dependency with the subsequent (potential) queue ownership image release pipeline barrier.
+			// The layout transition (from eColorAttachmentOptimal to ePresentSrcKHR) will happen before that...
 			.setDstStageMask(vk::PipelineStageFlagBits::eColorAttachmentOutput)
 			// Colour attachment writes should be made available (before subsequent queue ownership release)...
 			.setSrcAccessMask(vk::AccessFlagBits::eColorAttachmentWrite)
@@ -774,11 +799,11 @@ GPlatesOpenGL::VulkanSwapchain::create_render_pass(
 				.setDstSubpass(0)
 				// Wait for any depth/stencil writes to shared depth/stencil attachment from previous render pass
 				// (which used the *same* shared depth/stencil image, but with a different swapchain colour image).
-				// The layout transition will then happen after that.
+				// The layout transition (from eUndefined to eDepthStencilAttachmentOptimal) will then happen after that.
 				// Note: The depth/stencil store op happens in the LATE_FRAGMENT_TESTS stage...
 				.setSrcStageMask(vk::PipelineStageFlagBits::eLateFragmentTests)
 				// Block depth/stencil attachment access in the subpass (but stages before that are not blocked, eg, vertex shader).
-				// The layout transition will then happen before that.
+				// The layout transition (from eUndefined to eDepthStencilAttachmentOptimal) will happen before that.
 				// Note: The depth/stencil load op (clear) happens in the EARLY_FRAGMENT_TESTS stage...
 				.setDstStageMask(vk::PipelineStageFlagBits::eEarlyFragmentTests)
 				// Make *available* any depth/stencil writes to shared depth/stencil attachment from previous render pass

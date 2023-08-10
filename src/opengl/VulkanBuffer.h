@@ -104,13 +104,13 @@ namespace GPlatesOpenGL
 
 
 		vk::Buffer
-		get_buffer()
+		get_buffer() const
 		{
 			return d_buffer;
 		}
 
 		VmaAllocation
-		get_allocation()
+		get_allocation() const
 		{
 			return d_allocation;
 		}

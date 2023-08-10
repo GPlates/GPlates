@@ -104,13 +104,13 @@ namespace GPlatesOpenGL
 
 
 		vk::Image
-		get_image()
+		get_image() const
 		{
 			return d_image;
 		}
 
 		VmaAllocation
-		get_allocation()
+		get_allocation() const
 		{
 			return d_allocation;
 		}
