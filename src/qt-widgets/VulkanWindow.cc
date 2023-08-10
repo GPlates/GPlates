@@ -189,7 +189,7 @@ GPlatesQtWidgets::VulkanWindow::create_vulkan_device_and_swapchain()
 	vk::SampleCountFlagBits sample_count = vk::SampleCountFlagBits::e1;
 	if (devicePixelRatio() == 1)
 	{
-		// Use 4xMSAA since Vulkan requires its support for colour and depth/stencil attachments.
+		// Use 4xMSAA since Vulkan requires its support for colour (and depth/stencil) attachments.
 		// And 4xMSAA is a good quality/performance trade-off.
 		sample_count = vk::SampleCountFlagBits::e4;
 	}
@@ -201,7 +201,10 @@ GPlatesQtWidgets::VulkanWindow::create_vulkan_device_and_swapchain()
 			present_queue_family,
 			get_window_size_in_device_pixels(),
 			sample_count,
-			true/*create_depth_stencil_attachment*/);
+			// Depth sorting of the scene happens when rendering to per-pixel fragment lists in a storage image/buffer
+			// (which are later blended, in per-pixel depth order, into the swapchain framebuffer by the scene renderer).
+			// So we don't need a depth buffer attachment in the swapchain framebuffer...
+			false/*create_depth_stencil_attachment*/);
 
 	// Notify subclass that Vulkan device was created.
 	initialise_vulkan_resources(d_vulkan_device, d_vulkan_swapchain);

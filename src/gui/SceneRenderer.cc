@@ -356,6 +356,11 @@ GPlatesGui::SceneRenderer::render_scene(
 	//
 	// Render the background stars.
 	//
+	// Note: Stars are not part of order-independent-transparency and hence are not rendered to
+	//       per-pixel fragment lists (like other 3D objects). This is because stars are always
+	//       rendered into the background and hence don't need any depth sorting. Also the stars are
+	//       rendered behind the far clip plane and, due to depth clamping, always have a depth of 1.0.
+	//
 	if (d_view_state.get_show_stars())
 	{
 		d_stars.render(
