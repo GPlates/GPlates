@@ -154,10 +154,22 @@ GPlatesOpenGL::SceneTile::release_vulkan_resources(
 std::vector<vk::WriteDescriptorSet>
 GPlatesOpenGL::SceneTile::get_write_descriptor_sets(
 		vk::DescriptorSet descriptor_set,
-		std::uint32_t binding) const
+		std::uint32_t binding,
+		std::vector<vk::DescriptorImageInfo> &descriptor_image_infos,
+		std::vector<vk::DescriptorBufferInfo> &descriptor_buffer_infos) const
 {
+	// These structures need to exist beyond this function since they are
+	// referenced by the returned vk::WriteDescriptorSet structures.
+	//
+	// We have one descriptor image.
+	descriptor_image_infos.resize(1);
+	vk::DescriptorImageInfo &fragment_list_head_descriptor_image_info = descriptor_image_infos[0];
+	// We have two descriptor buffers.
+	descriptor_buffer_infos.resize(2);
+	vk::DescriptorBufferInfo &fragment_storage_descriptor_buffer_info = descriptor_buffer_infos[0];
+	vk::DescriptorBufferInfo &fragment_allocator_descriptor_buffer_info = descriptor_buffer_infos[1];
+
 	// Fragment list head image.
-	vk::DescriptorImageInfo fragment_list_head_descriptor_image_info;
 	fragment_list_head_descriptor_image_info
 			.setImageView(d_fragment_list_head_image_view)
 			.setImageLayout(vk::ImageLayout::eGeneral);
@@ -170,7 +182,6 @@ GPlatesOpenGL::SceneTile::get_write_descriptor_sets(
 			.setImageInfo(fragment_list_head_descriptor_image_info);
 
 	// Fragment storage buffer.
-	vk::DescriptorBufferInfo fragment_storage_descriptor_buffer_info;
 	fragment_storage_descriptor_buffer_info
 			.setBuffer(d_fragment_storage_buffer.get_buffer())
 			.setOffset(vk::DeviceSize(0))
@@ -184,7 +195,6 @@ GPlatesOpenGL::SceneTile::get_write_descriptor_sets(
 			.setBufferInfo(fragment_storage_descriptor_buffer_info);
 
 	// Fragment allocator buffer.
-	vk::DescriptorBufferInfo fragment_allocator_descriptor_buffer_info;
 	fragment_allocator_descriptor_buffer_info
 			.setBuffer(d_fragment_allocator_buffer.get_buffer())
 			.setOffset(vk::DeviceSize(0))

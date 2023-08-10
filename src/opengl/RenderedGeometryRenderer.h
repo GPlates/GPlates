@@ -49,6 +49,7 @@ namespace GPlatesOpenGL
 {
 	class GLViewProjection;
 	class MapProjectionImage;
+	class SceneTile;
 
 	/**
 	 * Draw the rendered geometries in the layers of a rendered geometry collection.
@@ -77,6 +78,7 @@ namespace GPlatesOpenGL
 				Vulkan &vulkan,
 				vk::RenderPass default_render_pass,
 				vk::SampleCountFlagBits default_render_pass_sample_count,
+				const SceneTile &scene_tile,
 				const MapProjectionImage &map_projection_image,
 				vk::CommandBuffer initialisation_command_buffer,
 				vk::Fence initialisation_submit_fence);

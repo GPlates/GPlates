@@ -1033,8 +1033,14 @@ GPlatesOpenGL::RenderedArrowRenderer::create_scene_tile_descriptor_set(
 	d_scene_tile_descriptor_set = descriptor_sets[0];
 
 	// Descriptor writes.
-	const std::vector<vk::WriteDescriptorSet> descriptor_writes = scene_tile
-			.get_write_descriptor_sets(d_scene_tile_descriptor_set, SCENE_TILE_BINDING);
+	std::vector<vk::DescriptorImageInfo> descriptor_image_infos;
+	std::vector<vk::DescriptorBufferInfo> descriptor_buffer_infos;
+	const std::vector<vk::WriteDescriptorSet> descriptor_writes =
+			scene_tile.get_write_descriptor_sets(
+					d_scene_tile_descriptor_set,
+					SCENE_TILE_BINDING,
+					descriptor_image_infos,
+					descriptor_buffer_infos);
 
 	// Update descriptor set.
 	vulkan.get_device().updateDescriptorSets(descriptor_writes, nullptr/*descriptorCopies*/);
@@ -1067,8 +1073,12 @@ GPlatesOpenGL::RenderedArrowRenderer::create_map_projection_descriptor_set(
 	d_map_projection_descriptor_set = descriptor_sets[0];
 
 	// Descriptor write for the map projection textures.
-	const vk::WriteDescriptorSet descriptor_write = map_projection_image
-			.get_write_descriptor_set(d_map_projection_descriptor_set, MAP_PROJECTION_IMAGE_BINDING);
+	std::vector<vk::DescriptorImageInfo> descriptor_image_infos;
+	vk::WriteDescriptorSet descriptor_write =
+			map_projection_image.get_write_descriptor_set(
+					d_map_projection_descriptor_set,
+					MAP_PROJECTION_IMAGE_BINDING,
+					descriptor_image_infos);
 
 	// Update descriptor set.
 	vulkan.get_device().updateDescriptorSets(descriptor_write, nullptr/*descriptorCopies*/);

@@ -233,9 +233,9 @@ GPlatesOpenGL::MapProjectionImage::release_vulkan_resources(
 vk::WriteDescriptorSet
 GPlatesOpenGL::MapProjectionImage::get_write_descriptor_set(
 		vk::DescriptorSet descriptor_set,
-		std::uint32_t binding) const
+		std::uint32_t binding,
+		std::vector<vk::DescriptorImageInfo> &descriptor_image_infos) const
 {
-	std::vector<vk::DescriptorImageInfo> descriptor_image_infos;
 	for (unsigned int n = 0; n < NUM_IMAGES; ++n)
 	{
 		vk::DescriptorImageInfo descriptor_image_info;
@@ -244,6 +244,8 @@ GPlatesOpenGL::MapProjectionImage::get_write_descriptor_set(
 				.setImageView(d_image_views[n])
 				.setImageLayout(vk::ImageLayout::eShaderReadOnlyOptimal);
 
+		// These structures need to exist beyond this function since they are
+		// referenced by the returned vk::WriteDescriptorSet structure.
 		descriptor_image_infos.push_back(descriptor_image_info);
 	}
 

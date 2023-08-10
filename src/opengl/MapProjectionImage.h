@@ -147,7 +147,9 @@ namespace GPlatesOpenGL
 		vk::WriteDescriptorSet
 		get_write_descriptor_set(
 				vk::DescriptorSet descriptor_set,
-				std::uint32_t binding) const;
+				std::uint32_t binding,
+				// This needs to exist beyond function since referenced by the returned vk::WriteDescriptorSet structure...
+				std::vector<vk::DescriptorImageInfo> &descriptor_image_infos) const;
 
 		/**
 		 * Return the descriptor set layout binding for the image array containing map projection data.

@@ -86,7 +86,10 @@ namespace GPlatesOpenGL
 		std::vector<vk::WriteDescriptorSet>
 		get_write_descriptor_sets(
 				vk::DescriptorSet descriptor_set,
-				std::uint32_t binding) const;
+				std::uint32_t binding,
+				// These need to exist beyond function since referenced by the returned vk::WriteDescriptorSet structures...
+				std::vector<vk::DescriptorImageInfo> &descriptor_image_infos,
+				std::vector<vk::DescriptorBufferInfo> &descriptor_buffer_infos) const;
 
 		/**
 		 * Return the descriptor set layout bindings.
