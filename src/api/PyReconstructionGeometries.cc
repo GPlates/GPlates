@@ -1915,7 +1915,11 @@ export_resolved_topological_sub_segment()
 		.def("get_feature",
 				&GPlatesApi::resolved_topological_geometry_sub_segment_get_topological_section_feature,
 				"get_feature()\n"
-				"  Same as :meth:`get_topological_section_feature`.\n")
+				"  Same as :meth:`get_topological_section_feature`.\n"
+				"\n"
+				"  .. warning:: | The geometry in the feature is **present day** geometry - it is NOT "
+				"reconstructed like :meth:`get_geometry` is.\n"
+				"               | See :meth:`get_resolved_feature` for a **resolved** feature containing reconstructed geometry.\n")
 		.def("get_resolved_geometry",
 				&GPlatesApi::resolved_topological_geometry_sub_segment_get_resolved_geometry,
 				"get_resolved_geometry()\n"
@@ -1975,7 +1979,9 @@ export_resolved_topological_sub_segment()
 				"geometry of the topological section, not just the "
 				"part that contributes to the sub-segment.\n"
 				"\n"
-				"  .. seealso:: :meth:`get_resolved_feature`\n")
+				"  .. warning:: | The geometry in the feature is **present day** geometry - it is NOT "
+				"reconstructed like :meth:`get_topological_section_geometry` is.\n"
+				"               | See :meth:`get_resolved_feature` for a **resolved** feature containing reconstructed geometry.\n")
 		.def("was_geometry_reversed_in_topology",
 				&GPlatesAppLogic::ResolvedTopologicalGeometrySubSegment::get_use_reverse,
 				"was_geometry_reversed_in_topology()\n"
@@ -2346,11 +2352,17 @@ export_resolved_topological_shared_sub_segment()
 				"geometry of the topological section, not just the "
 				"part that contributes to the shared sub-segment.\n"
 				"\n"
-				"  .. seealso:: :meth:`get_resolved_feature`\n")
+				"  .. warning:: | The geometry in the feature is **present day** geometry - it is NOT "
+				"reconstructed like :meth:`get_topological_section_geometry` is.\n"
+				"               | See :meth:`get_resolved_feature` for a **resolved** feature containing reconstructed geometry.\n")
 		.def("get_feature",
 				&GPlatesApi::resolved_topological_shared_sub_segment_get_topological_section_feature,
 				"get_feature()\n"
-				"  Same as :meth:`get_topological_section_feature`.\n")
+				"  Same as :meth:`get_topological_section_feature`.\n"
+				"\n"
+				"  .. warning:: | The geometry in the feature is **present day** geometry - it is NOT "
+				"reconstructed like :meth:`get_geometry` is.\n"
+				"               | See :meth:`get_resolved_feature` for a **resolved** feature containing reconstructed geometry.\n")
 		.def("get_sharing_resolved_topologies",
 				&GPlatesApi::ResolvedTopologicalSharedSubSegmentWrapper::get_sharing_resolved_topologies,
 				"get_sharing_resolved_topologies()\n"
@@ -2575,11 +2587,20 @@ export_resolved_topological_section()
 				"  :rtype: :class:`Feature`\n"
 				"\n"
 				"  .. note:: The geometry in the returned feature represents the **entire** geometry of the "
-				"topological section, not just the parts that contribute to resolved topological boundaries.\n")
+				"topological section, not just the parts that contribute to resolved topological boundaries.\n"
+				"\n"
+				"  .. warning:: | The geometry in the feature is **present day** geometry - it is NOT reconstructed "
+				"like :meth:`get_topological_section_geometry` is.\n"
+				"               | See :meth:`ResolvedTopologicalSharedSubSegment.get_resolved_feature` "
+				"(via :meth:`get_shared_sub_segments`) for a **resolved** feature containing reconstructed geometry.\n")
 		.def("get_feature",
 				&GPlatesApi::resolved_topological_section_get_topological_section_feature,
 				"get_feature()\n"
-				"  Same as :meth:`get_topological_section_feature`.\n")
+				"  Same as :meth:`get_topological_section_feature`.\n"
+				"\n"
+				"  .. warning:: | The geometry in the feature is **present day** geometry - it is NOT reconstructed.\n"
+				"               | See :meth:`ResolvedTopologicalSharedSubSegment.get_resolved_feature` "
+				"(via :meth:`get_shared_sub_segments`) for a **resolved** feature containing reconstructed geometry.\n")
 		.def("get_topological_section",
 				&GPlatesApi::ResolvedTopologicalSectionWrapper::get_reconstruction_geometry,
 				bp::return_value_policy<bp::copy_const_reference>(),
