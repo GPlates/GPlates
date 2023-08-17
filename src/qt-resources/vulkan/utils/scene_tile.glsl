@@ -38,7 +38,10 @@
 //
 
 //
-// NOTE: Callers should define SCENE_TILE_DESCRIPTOR_SET and SCENE_TILE_DESCRIPTOR_BINDING as integer constant expressions BEFORE including this header.
+// NOTE: Callers should define the following as integer constant expressions BEFORE including this header:
+//       * SCENE_TILE_DESCRIPTOR_SET - the descriptor set.
+//       * SCENE_TILE_DESCRIPTOR_BINDING - the first descriptor binding (subsequent bindings increment this).
+//       * SCENE_TILE_DIMENSION_CONSTANT_ID - the 'constant_id' of the specialization constant for the scene tile dimension.
 //
 
 struct SceneTileFragment
@@ -47,6 +50,8 @@ struct SceneTileFragment
     uint colour;  // colour packed with packUnorm4x8()
     float z;      // depth (eg, gl_FragCoord.z)
 };
+
+//layout (constant_id = SCENE_TILE_DIMENSION_CONSTANT_ID) const uint scene_tile_dimension = 1024;
 
 //
 // Using 'coherent' storage images/buffers so that writes from invocations are visible to each other.
@@ -67,6 +72,33 @@ layout (set = SCENE_TILE_DESCRIPTOR_SET, binding = SCENE_TILE_DESCRIPTOR_BINDING
     uint alloc_fragment_pointer;  // starts at 1 (so that 0 can be used as null pointer)
 } scene_tile_allocator;
 
+
+/*
+ * Clear the scene tile in preparation for rendering fragments to it.
+ *
+ * This zeroes the fragment list head image (at the current fragment coordinate) and resets the fragment allocator.
+ *
+ * This can be used when rendering a fullscreen "quad" to clear all pixels.
+ */
+void
+scene_tile_clear_fragments()
+{
+    ivec2 fragment_coord = ivec2(gl_FragCoord.xy);
+
+    // Zero fragment list head image at the current fragment coordinate.
+    imageStore(
+            scene_tile_list_head_pointer_image,
+            fragment_coord,
+            uvec4(0));
+    
+    // Only one fragment (coordinate) needs to reset the fragment allocator.
+    // Arbitrarily choose the fragment with zero coordinates.
+    if (fragment_coord == vec2(0, 0))
+    {
+        // Allocator starts at 1 so than 0 can be used as a null pointer.
+        scene_tile_allocator.alloc_fragment_pointer = 1;
+    }
+}
 
 /*
  * Allocate and construct (with null next pointer) a scene fragment in the storage buffer.
@@ -103,7 +135,7 @@ scene_tile_search_fragment(
     // Start at the head of the fragment list.
     uint head_fragment_pointer = imageLoad(
             scene_tile_list_head_pointer_image,
-            ivec2(gl_FragCoord).xy).x;
+            ivec2(gl_FragCoord.xy)).r;
 
     previous_fragment_pointer = 0;
     next_fragment_pointer = head_fragment_pointer;
@@ -156,7 +188,7 @@ scene_tile_insert_fragment_at_head(
     // This will fail if another invocation has just updated the head pointer in the image.
     return imageAtomicCompSwap(
             scene_tile_list_head_pointer_image,
-            ivec2(gl_FragCoord).xy,
+            ivec2(gl_FragCoord.xy),
             head_fragment_pointer,
             fragment_pointer) == head_fragment_pointer;
 }
@@ -263,6 +295,41 @@ scene_tile_add_fragment(
 
     // Shouldn't be able to get here.
     return false;
+}
+
+/*
+ * Blend the scene tile.
+ *
+ * This traverses the fragment list (at the current fragment coordinate) and blends the fragments in depth order.
+ *
+ * This can be used when rendering a fullscreen "quad" to blend all pixels.
+ */
+vec4
+scene_tile_blend_fragments()
+{
+    vec4 colour = vec4(0);
+
+    // Get fragment list head pointer.
+    uint current_fragment_pointer = imageLoad(
+            scene_tile_list_head_pointer_image,
+            ivec2(gl_FragCoord.xy)).r;
+
+    // Traverse the front-to-back-sorted fragments and blend them.
+    while (current_fragment_pointer != 0)
+    {
+        SceneTileFragment fragment = scene_tile_storage.fragments[current_fragment_pointer];
+
+        // Extract the fragment colour (from a 32-bit unsigned integer).
+        vec4 fragment_colour = unpackUnorm4x8(fragment.colour);
+        // Pre-multiply the fragment RGB by its alpha.
+        fragment_colour.rgb *= fragment_colour.a;
+        // Blend the fragment colour behind the accumulated front-to-back "colour".
+    	colour += (1 - colour.a) * fragment_colour;
+
+        current_fragment_pointer = fragment.next_fragment_pointer;
+    }
+
+    return colour;
 }
 
 #endif // SCENE_TILE_GLSL
