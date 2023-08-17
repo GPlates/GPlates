@@ -33,6 +33,7 @@ layout (push_constant) uniform PushConstants
 
 const uint SCENE_TILE_DESCRIPTOR_SET = 0;
 const uint SCENE_TILE_DESCRIPTOR_BINDING = 0;
+const uint SCENE_TILE_DIMENSION_CONSTANT_ID = 0;
 #include "utils/scene_tile.glsl"
 
 layout (location = 0) in VertexData
