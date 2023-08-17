@@ -155,6 +155,7 @@ namespace GPlatesOpenGL
 		 * Pipeline barriers can be used inside the (sole) subpass for non-attachment reads/writes using fragment shader.
 		 * For example, writing to non-attachment storage images/buffers using fragment shader, then emitting a barrier,
 		 * then reading from them using another fragment shader (all done within subpass).
+		 * These pipeline barriers must specify "vk::DependencyFlagBits::eByRegion" (as dictated by the Vulkan spec).
 		 */
 		vk::RenderPass
 		get_swapchain_render_pass() const

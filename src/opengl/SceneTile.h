@@ -30,6 +30,8 @@
 
 namespace GPlatesOpenGL
 {
+	class GLViewProjection;
+
 	/**
 	 * Provides order-independent-transparency of 3D scene objects using per-pixel fragment lists (sorted by depth).
 	 *
@@ -55,6 +57,8 @@ namespace GPlatesOpenGL
 		void
 		initialise_vulkan_resources(
 				Vulkan &vulkan,
+				vk::RenderPass default_render_pass,
+				vk::SampleCountFlagBits default_render_pass_sample_count,
 				vk::CommandBuffer initialisation_command_buffer,
 				vk::Fence initialisation_submit_fence);
 
@@ -116,13 +120,43 @@ namespace GPlatesOpenGL
 		 * Clear the scene fragment images/buffers in preparation for rendering a tile.
 		 *
 		 * This clears the fragment list head pointers and resets the global fragment allocator.
+		 *
+		 * NOTE: This is done inside a render pass (since it uses graphics operations to perform the clear).
 		 */
 		void
 		clear(
 				Vulkan &vulkan,
-				vk::CommandBuffer preprocess_command_buffer);
+				vk::CommandBuffer default_render_pass_command_buffer,
+				const GLViewProjection &view_projection);
+
+
+		/**
+		 * Renders a tile by blending per-pixel fragment lists into the framebuffer.
+		 */
+		void
+		render(
+				Vulkan &vulkan,
+				vk::CommandBuffer default_render_pass_command_buffer,
+				const GLViewProjection &view_projection);
 
 	private:
+
+		void
+		create_graphics_pipelines(
+				Vulkan &vulkan,
+				vk::RenderPass default_render_pass,
+				vk::SampleCountFlagBits default_render_pass_sample_count);
+
+		void
+		create_descriptors(
+				Vulkan &vulkan,
+				vk::CommandBuffer initialisation_command_buffer,
+				vk::Fence initialisation_submit_fence);
+
+		void
+		create_descriptor_set(
+				Vulkan &vulkan);
+
 
 		//! Format for the storage image containing fragment list head pointers (a single unsigned 32-bit integer).
 		static constexpr vk::Format FRAGMENT_LIST_HEAD_IMAGE_TEXEL_FORMAT = vk::Format::eR32Uint;
@@ -138,6 +172,27 @@ namespace GPlatesOpenGL
 		//! Each fragment consumes this many bytes in the storage buffer (including the list 'next' pointer).
 		static const unsigned int NUM_BYTES_PER_FRAGMENT = 12;
 
+		//! The descriptor 'binding' used in the graphics pipeline.
+		static constexpr unsigned int DESCRIPTOR_BINDING = 0;
+
+
+		// Descriptor set layout.
+		vk::DescriptorSetLayout d_descriptor_set_layout;
+
+		// Descriptor pool.
+		vk::DescriptorPool d_descriptor_pool;
+
+		// Descriptor set.
+		vk::DescriptorSet d_descriptor_set;
+
+		// The graphics pipeline layout.
+		vk::PipelineLayout d_graphics_pipeline_layout;
+
+		// The "clear" graphics pipeline and layout.
+		vk::Pipeline d_clear_graphics_pipeline;
+
+		// The "blend" graphics pipeline.
+		vk::Pipeline d_blend_graphics_pipeline;
 
 		//! The number of fragments that can be contained in the storage buffer.
 		std::uint32_t d_num_fragments_in_storage;

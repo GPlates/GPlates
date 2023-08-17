@@ -109,6 +109,15 @@ GPlatesOpenGL::RenderedArrowRenderer::release_vulkan_resources(
 	d_num_vertex_indices = 0;
 	d_num_arrows_to_render = 0;
 
+	// Destroy descriptor pools/sets.
+	vulkan.get_device().destroyDescriptorPool(d_scene_tile_descriptor_pool);  // also frees descriptor set
+	vulkan.get_device().destroyDescriptorPool(d_map_projection_descriptor_pool);  // also frees descriptor set
+
+	// Destroy descriptor set layouts.
+	vulkan.get_device().destroyDescriptorSetLayout(d_instance_descriptor_set_layout);
+	vulkan.get_device().destroyDescriptorSetLayout(d_scene_tile_descriptor_set_layout);
+	vulkan.get_device().destroyDescriptorSetLayout(d_map_projection_descriptor_set_layout);
+
 	// Destroy the graphics pipeline layout and pipeline.
 	vulkan.get_device().destroyPipeline(d_graphics_pipeline);
 	vulkan.get_device().destroyPipelineLayout(d_graphics_pipeline_layout);
@@ -116,15 +125,6 @@ GPlatesOpenGL::RenderedArrowRenderer::release_vulkan_resources(
 	// Destroy the compute pipeline layout and pipeline.
 	vulkan.get_device().destroyPipeline(d_compute_pipeline);
 	vulkan.get_device().destroyPipelineLayout(d_compute_pipeline_layout);
-
-	// Destroy descriptor set layouts.
-	vulkan.get_device().destroyDescriptorSetLayout(d_instance_descriptor_set_layout);
-	vulkan.get_device().destroyDescriptorSetLayout(d_scene_tile_descriptor_set_layout);
-	vulkan.get_device().destroyDescriptorSetLayout(d_map_projection_descriptor_set_layout);
-
-	// Destroy descriptor pools/sets.
-	vulkan.get_device().destroyDescriptorPool(d_scene_tile_descriptor_pool);  // also frees descriptor set
-	vulkan.get_device().destroyDescriptorPool(d_map_projection_descriptor_pool);  // also frees descriptor set
 }
 
 
@@ -670,7 +670,7 @@ GPlatesOpenGL::RenderedArrowRenderer::create_graphics_pipeline(
 
 	// Scene tile descriptor set layout.
 	const std::vector<vk::DescriptorSetLayoutBinding> scene_tile_descriptor_set_layout_bindings = scene_tile
-			.get_descriptor_set_layout_bindings(SCENE_TILE_BINDING, vk::ShaderStageFlagBits::eFragment);
+			.get_descriptor_set_layout_bindings(SCENE_TILE_DESCRIPTOR_BINDING, vk::ShaderStageFlagBits::eFragment);
 	vk::DescriptorSetLayoutCreateInfo scene_tile_descriptor_set_layout_create_info;
 	scene_tile_descriptor_set_layout_create_info.setBindings(scene_tile_descriptor_set_layout_bindings);
 	d_scene_tile_descriptor_set_layout = vulkan.get_device().createDescriptorSetLayout(scene_tile_descriptor_set_layout_create_info);
@@ -679,7 +679,7 @@ GPlatesOpenGL::RenderedArrowRenderer::create_graphics_pipeline(
 	// - set 0: scene tile descriptors
 	vk::DescriptorSetLayout descriptor_set_layouts[1] = { d_scene_tile_descriptor_set_layout };
 
-	// We only use push constants (and no descriptor sets).
+	// Push constants.
 	vk::PushConstantRange push_constant_range;
 	push_constant_range
 			.setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment)
@@ -720,7 +720,7 @@ GPlatesOpenGL::RenderedArrowRenderer::create_arrow_mesh(
 	// Create arrow mesh.
 	//
 	// NOTE: We orient front-facing triangles counter-clockwise (in Vulkan framebuffer space).
-	//       Vulkan is opposite to OpenGL since Vulkan 'y' is top-down (OpenGL is bottom-up).
+	//       Vulkan is opposite to OpenGL since Vulkan framebuffer 'y' is top-down (OpenGL is bottom-up).
 	//       This means the triangles look clockwise in OpenGL but are counter-clockwise in Vulkan.
 	//
 
@@ -1038,7 +1038,7 @@ GPlatesOpenGL::RenderedArrowRenderer::create_scene_tile_descriptor_set(
 	const std::vector<vk::WriteDescriptorSet> descriptor_writes =
 			scene_tile.get_write_descriptor_sets(
 					d_scene_tile_descriptor_set,
-					SCENE_TILE_BINDING,
+					SCENE_TILE_DESCRIPTOR_BINDING,
 					descriptor_image_infos,
 					descriptor_buffer_infos);
 
