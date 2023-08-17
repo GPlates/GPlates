@@ -23,14 +23,11 @@
 #include <boost/shared_ptr.hpp>
 #include <QImage>
 
-#include "opengl/GLBuffer.h"
 #include "opengl/GLFramebuffer.h"
 #include "opengl/GLRenderbuffer.h"
-#include "opengl/GLProgram.h"
-#include "opengl/GLTexture.h"
-#include "opengl/GLVertexArray.h"
 #include "opengl/MapProjectionImage.h"
 #include "opengl/RenderedGeometryRenderer.h"
+#include "opengl/SceneTile.h"
 #include "opengl/Stars.h"
 #include "opengl/Vulkan.h"
 
@@ -146,6 +143,9 @@ namespace GPlatesGui
 
 		GPlatesPresentation::ViewState &d_view_state;
 
+		//! Render the scene in tiles using order-independent-transparency.
+		GPlatesOpenGL::SceneTile d_scene_tile;
+
 		MapProjection &d_map_projection;
 		//! Image that maps latitude/longitude to map projection space.
 		GPlatesOpenGL::MapProjectionImage d_map_projection_image;
@@ -155,36 +155,6 @@ namespace GPlatesGui
 
 		//! Stars in the background (in globe and map views).
 		GPlatesOpenGL::Stars d_stars;
-
-		//! Shader program that sorts and blends the list of fragments (per pixel) in depth order.
-		GPlatesOpenGL::GLProgram::shared_ptr_type d_sort_and_blend_scene_fragments_shader_program;
-
-		//! Image containing the per-pixel head of list of fragments rendered into the scene.
-		GPlatesOpenGL::GLTexture::shared_ptr_type d_fragment_list_head_pointer_image;
-
-		//! Buffer containing storage for the per-pixel lists of fragments rendered into the scene.
-		GPlatesOpenGL::GLBuffer::shared_ptr_type d_fragment_list_storage_buffer;
-
-		//! Buffer containing a single atomic counter used when allocating from fragment list storage.
-		GPlatesOpenGL::GLBuffer::shared_ptr_type d_fragment_list_allocator_atomic_counter_buffer;
-
-		/**
-		 * The maximum image width and height supported by the current fragment list head pointer image.
-		 *
-		 * Initially these are both zero and are expanded as the viewport expands (eg, resized viewport).
-		 */
-		unsigned int d_max_fragment_list_head_pointer_image_width;
-		unsigned int d_max_fragment_list_head_pointer_image_height;
-
-		/**
-		 * The maximum number of bytes to store fragments in the current fragment list storage buffer.
-		 *
-		 * Initially this is zero and is expanded as the viewport expands (eg, resized viewport).
-		 */
-		GLsizeiptr d_max_fragment_list_storage_buffer_bytes;
-
-		//! Used to draw a full-screen quad.
-		GPlatesOpenGL::GLVertexArray::shared_ptr_type d_full_screen_quad;
 
 		//! Colour renderbuffer object used for offscreen rendering.
 		GPlatesOpenGL::GLRenderbuffer::shared_ptr_type d_off_screen_colour_renderbuffer;
@@ -228,27 +198,6 @@ namespace GPlatesGui
 		destroy_off_screen_render_target(
 				GPlatesOpenGL::GL &gl);
 
-
-		//! Create the shader program that sorts and blends the list of fragments (per pixel) in depth order.
-		void
-		create_sort_and_blend_scene_fragments_shader_program(
-				GPlatesOpenGL::GL &gl);
-
-		//! Create storage buffer and head pointer image representing the per-pixel lists of fragments rendered into the scene.
-		void
-		create_fragment_list_storage_buffer_and_head_pointer_image(
-				GPlatesOpenGL::GL &gl,
-				const GPlatesOpenGL::GLViewport &viewport);
-
-		//! Create the buffer containing a single atomic counter used when allocating from fragment list storage.
-		void
-		create_fragment_list_allocator_atomic_counter_buffer(
-				GPlatesOpenGL::GL &gl);
-
-		//! Destroy resources (buffers/images) used for the per-pixel lists of fragments rendered into the scene.
-		void
-		destroy_fragment_list_resources(
-				GPlatesOpenGL::GL &gl);
 
 		/**
 		 * Render one tile of the scene (as specified by @a image_tile_render).
