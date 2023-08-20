@@ -47,11 +47,19 @@
 struct SceneTileFragment
 {
     uint next_fragment_pointer;  // pointer to next fragment in a linked list (or zero)
-    uint colour;  // colour packed with packUnorm4x8()
-    float z;      // depth (eg, gl_FragCoord.z)
+    uint colour;   // colour packed with packUnorm4x8()
+    float z;       // depth (eg, gl_FragCoord.z)
+    int coverage;  // sample coverage of fragment (supports up to 32 MSAA using gl_SampleMaskIn[0])
 };
 
 //layout (constant_id = SCENE_TILE_DIMENSION_CONSTANT_ID) const uint scene_tile_dimension = 1024;
+layout (constant_id = SCENE_TILE_SAMPLE_COUNT_CONSTANT_ID) const uint scene_tile_sample_count = 1;
+
+// The sample mask covering all samples in a pixel.
+//
+// Only supports a sample count <= 31.
+// However, 31 bits of coverage is enough (we currently only use 4 samples per fragment).
+const uint scene_tile_sample_mask = (1 << scene_tile_sample_count) - 1;
 
 //
 // Using 'coherent' storage images/buffers so that writes from invocations are visible to each other.
@@ -115,7 +123,10 @@ scene_tile_allocate_fragment(
     scene_tile_storage.fragments[fragment_pointer] = SceneTileFragment(
             0,  // next_fragment_pointer
             packUnorm4x8(fragment_colour),
-            fragment_z);
+            fragment_z,
+            // Only supports a sample count <= 32.
+            // However, 32 bits of coverage is enough (we currently only use 4 samples per fragment)...
+            gl_SampleMaskIn[0]);
 
     return fragment_pointer;
 }
@@ -142,23 +153,36 @@ scene_tile_search_fragment(
 
     while (next_fragment_pointer != 0)
     {
+        SceneTileFragment next_fragment = scene_tile_storage.fragments[next_fragment_pointer];
+
         // If the fragment 'z' value is less than the next fragment then the caller will need to
         // insert a new fragment just before the next fragment.
-        if (fragment_z < scene_tile_storage.fragments[next_fragment_pointer].z)
+        if (fragment_z < next_fragment.z)
         {
             return true;
         }
 
-        // Our fragment will be behind the next fragment.
-        // So if the next fragment is opaque then our fragment will not be visible.
-        float next_fragment_alpha = unpackUnorm4x8(scene_tile_storage.fragments[next_fragment_pointer].colour).a;
-        if (next_fragment_alpha == 1.0)
+        // Our fragment could be behind the next fragment.
+        //
+        // So if the next fragment is opaque and it covers all samples in the current pixel
+        // then our fragment will not be visible.
+        //
+        // We ensure all samples are covered because it's possible that two adjacent triangles
+        // both cover a single pixel (eg, 3 samples from first triangle and 1 from second, for 4xMSAA)
+        // and each triangle will contribute its own fragment and hence the two fragments cannot
+        // obscure each other. Later the sample-rate shading (ie, fragment shader invoked per-sample)
+        // will blend each sample separately (and the samples cannot overlap/obscure each other).
+        if (next_fragment.coverage == scene_tile_sample_mask)
         {
-            return  false;
+            float next_fragment_alpha = unpackUnorm4x8(next_fragment.colour).a;
+            if (next_fragment_alpha == 1.0)
+            {
+                return  false;
+            }
         }
 
         previous_fragment_pointer = next_fragment_pointer;
-        next_fragment_pointer = scene_tile_storage.fragments[previous_fragment_pointer].next_fragment_pointer;
+        next_fragment_pointer = next_fragment.next_fragment_pointer;
     }
 
     // Caller will need to insert a new fragment at the tail of the list (or head if list is empty).
@@ -255,6 +279,9 @@ scene_tile_add_fragment(
         uint next_fragment_pointer;
         if (!scene_tile_search_fragment(previous_fragment_pointer, next_fragment_pointer, fragment_z))
         {
+            // The current fragment is completely behind (coverage-wise) an existing opaque fragment,
+            // so we won't add it (since it won't be visible).
+            //
             // If we've already allocated/constructed a fragment then it'll remain allocated but unused.
             //
             // Note: It's possible the fragment has already been allocated because we may have tried to insert it but failed
@@ -319,12 +346,16 @@ scene_tile_blend_fragments()
     {
         SceneTileFragment fragment = scene_tile_storage.fragments[current_fragment_pointer];
 
-        // Extract the fragment colour (from a 32-bit unsigned integer).
-        vec4 fragment_colour = unpackUnorm4x8(fragment.colour);
-        // Pre-multiply the fragment RGB by its alpha.
-        fragment_colour.rgb *= fragment_colour.a;
-        // Blend the fragment colour behind the accumulated front-to-back "colour".
-    	colour += (1 - colour.a) * fragment_colour;
+        // If the current sample is covered by the fragment's coverage mask then blend the fragment's colour.
+        if ((fragment.coverage & (1 << gl_SampleID)) != 0)
+        {
+            // Extract the fragment colour (from a 32-bit unsigned integer).
+            vec4 fragment_colour = unpackUnorm4x8(fragment.colour);
+            // Pre-multiply the fragment RGB by its alpha.
+            fragment_colour.rgb *= fragment_colour.a;
+            // Blend the fragment colour behind the accumulated front-to-back "colour".
+            colour += (1 - colour.a) * fragment_colour;
+        }
 
         current_fragment_pointer = fragment.next_fragment_pointer;
     }

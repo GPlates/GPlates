@@ -25,6 +25,7 @@
 #include <QString>
 
 #include "GLMatrix.h"
+#include "VulkanHpp.h"
 
 
 namespace GPlatesOpenGL
@@ -56,6 +57,13 @@ namespace GPlatesOpenGL
 		 */
 		GLMatrix
 		from_opengl_clip_space();
+
+		/**
+		 * Convert the sample count enumeration to an integer sample count.
+		 */
+		unsigned int
+		get_sample_count(
+				vk::SampleCountFlagBits sample_count);
 	}
 }
 

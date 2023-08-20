@@ -170,10 +170,12 @@ namespace GPlatesOpenGL
 		static const unsigned int FRAGMENT_TILE_DIMENSION = 1024;
 
 		//! Each fragment consumes this many bytes in the storage buffer (including the list 'next' pointer).
-		static const unsigned int NUM_BYTES_PER_FRAGMENT = 12;
+		static const unsigned int NUM_BYTES_PER_FRAGMENT = 16;
 
-		//! The descriptor 'binding' used in the graphics pipeline.
+		//! The descriptor 'binding' used in the graphics pipelines.
 		static constexpr unsigned int DESCRIPTOR_BINDING = 0;
+		//! The sample count 'constant_id' used in the graphics pipelines.
+		static constexpr unsigned int SAMPLE_COUNT_CONSTANT_ID = 1;
 
 
 		// Descriptor set layout.

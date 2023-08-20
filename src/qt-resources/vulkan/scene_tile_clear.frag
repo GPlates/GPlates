@@ -24,6 +24,7 @@
 const uint SCENE_TILE_DESCRIPTOR_SET = 0;
 const uint SCENE_TILE_DESCRIPTOR_BINDING = 0;
 const uint SCENE_TILE_DIMENSION_CONSTANT_ID = 0;
+const uint SCENE_TILE_SAMPLE_COUNT_CONSTANT_ID = 1;
 #include "utils/scene_tile.glsl"
 
 void main()

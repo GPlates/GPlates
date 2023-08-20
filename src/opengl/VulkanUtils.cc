@@ -21,6 +21,8 @@
 
 #include "VulkanUtils.h"
 
+#include "VulkanException.h"
+
 #include "file-io/ErrorOpeningFileForReadingException.h"
 
 
@@ -68,4 +70,24 @@ GPlatesOpenGL::VulkanUtils::from_opengl_clip_space()
 	static const GLMatrix FROM_OPENGL_CLIP_SPACE_MATRIX(FROM_OPENGL_CLIP_SPACE);
 
 	return FROM_OPENGL_CLIP_SPACE_MATRIX;
+}
+
+
+unsigned int
+GPlatesOpenGL::VulkanUtils::get_sample_count(
+		vk::SampleCountFlagBits sample_count)
+{
+	switch (sample_count)
+	{
+	case vk::SampleCountFlagBits::e1: return 1;
+	case vk::SampleCountFlagBits::e2: return 2;
+	case vk::SampleCountFlagBits::e4: return 4;
+	case vk::SampleCountFlagBits::e8: return 8;
+	case vk::SampleCountFlagBits::e16: return 16;
+	case vk::SampleCountFlagBits::e32: return 32;
+	case vk::SampleCountFlagBits::e64: return 64;
+
+	default:
+		throw VulkanException(GPLATES_EXCEPTION_SOURCE, "Unexpected sample count");
+	}
 }

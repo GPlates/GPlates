@@ -337,14 +337,12 @@ namespace GPlatesOpenGL
 		 */
 		static constexpr float MAP_PROJECTED_ARROW_SCALE_FACTOR = 180.0;
 
-		/**
-		 * The scene tile descriptor 'binding' used in the graphics pipeline.
-		 */
+		//! The scene tile descriptor 'binding' used in the graphics pipeline.
 		static constexpr unsigned int SCENE_TILE_DESCRIPTOR_BINDING = 0;
+		//! The scene tile sample count 'constant_id' used in the graphics pipeline.
+		static constexpr unsigned int SCENE_TILE_SAMPLE_COUNT_CONSTANT_ID = 1;
 
-		/**
-		 * The map projection image 'binding' used in the compute pipeline.
-		 */
+		//! The map projection image 'binding' used in the compute pipeline.
 		static constexpr unsigned int MAP_PROJECTION_IMAGE_BINDING = 0;
 
 
