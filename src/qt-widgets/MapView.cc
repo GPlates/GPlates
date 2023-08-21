@@ -397,9 +397,6 @@ GPlatesQtWidgets::MapView::mouse_pointer_llp()
 
 	QPointF canvas_pos = mapToScene(d_mouse_pointer_screen_pos);
 
-	double x_mouse_pos = canvas_pos.x();
-	double y_mouse_pos = canvas_pos.y();
-
 	// The proj library returns valid longitudes even when the screen coordinates are 
 	// far to the right, or left, of the map itself. To determine if the mouse position is off
 	// the map, I'm transforming the returned lat-lon back into screen coordinates. 
@@ -407,7 +404,7 @@ GPlatesQtWidgets::MapView::mouse_pointer_llp()
 	// I'm going to use the longitude value for comparison. 
 
 	// This stores the x screen coordinate, for comparison with the forward-transformed longitude.  
-	double screen_x = x_mouse_pos;
+	double screen_x = canvas_pos.x();
 
 	// I haven't put any great deal of thought into a suitable tolerance here. 
 	double tolerance = 1.;
@@ -415,7 +412,7 @@ GPlatesQtWidgets::MapView::mouse_pointer_llp()
 	boost::optional<GPlatesMaths::LatLonPoint> llp;
 
 
-	llp = d_map_canvas_ptr->map().projection().inverse_transform(x_mouse_pos,y_mouse_pos);
+	llp = d_map_canvas_ptr->map().projection().inverse_transform(canvas_pos);
 
 	if (!llp)
 	{
@@ -569,17 +566,15 @@ boost::optional<GPlatesMaths::LatLonPoint>
 GPlatesQtWidgets::MapView::camera_llp() const
 {
 	const GPlatesGui::MapTransform::point_type &centre_of_viewport = d_map_transform.get_centre_of_viewport();
-	double x_pos = centre_of_viewport.x();
-	double y_pos = centre_of_viewport.y();
 
 	// This stores the x screen coordinate, for comparison with the forward-transformed longitude.  
-	double screen_x = x_pos;
+	double screen_x = centre_of_viewport.x();
 
 	// Tolerance for comparing forward transformed longitude with screen longitude. 
 	double tolerance = 1.;
 
 	boost::optional<GPlatesMaths::LatLonPoint> llp =
-		d_map_canvas_ptr->map().projection().inverse_transform(x_pos,y_pos);
+		d_map_canvas_ptr->map().projection().inverse_transform(centre_of_viewport);
 		
 	if (!llp)
 	{
@@ -762,11 +757,9 @@ GPlatesQtWidgets::MapView::current_proximity_inclusion_threshold(
 #else
 	threshold_point.setY(scene_mouse_position.y());
 #endif
-	double x_ = threshold_point.x();
-	double y_ = threshold_point.y();
 
 	boost::optional<GPlatesMaths::LatLonPoint> llp = 
-		map_canvas().map().projection().inverse_transform(x_, y_);
+		map_canvas().map().projection().inverse_transform(threshold_point);
 
 	if (!llp)
 	{

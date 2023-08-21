@@ -151,12 +151,10 @@ namespace
 		const GPlatesMaths::PointOnSphere &point,
 		const GPlatesGui::MapProjection &projection)
 	{
-		double lat;
-		double lon;
-		projection.forward_transform(point, lon, lat);
+		const QPointF projected_point = projection.forward_transform(point);
 
 		qDebug() << "Vertex: " << point.position_vector();
-		qDebug() << QPointF(lon, lat);
+		qDebug() << projected_point;
 		qDebug();
 	}
 
@@ -286,7 +284,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::MapRenderedGeometryLayerPainter(
 	d_dateline_wrapper(
 			GPlatesMaths::DateLineWrapper::create(
 					// Move the dateline wrapping to be [-180 + central_meridian, central_meridian + 180]...
-					map_projection->central_llp().longitude()))
+					map_projection->central_meridian()))
 {
 }
 
@@ -1163,7 +1161,7 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_triangle_su
 
 				if (use_wrapped_coordinates)
 				{
-					const double central_longitude = d_map_projection->central_llp().longitude();
+					const double central_longitude = d_map_projection->central_meridian();
 
 					GPlatesMaths::LatLonPoint edge_mid_lat_lon_point = make_lat_lon_point(edge_mid_point);
 
@@ -2738,7 +2736,7 @@ QPointF
 GPlatesGui::MapRenderedGeometryLayerPainter::get_projected_wrapped_position(
 		const GPlatesMaths::LatLonPoint &lat_lon_point) const
 {
-	const double &central_longitude = d_map_projection->central_llp().longitude();
+	const double central_longitude = d_map_projection->central_meridian();
 
 	double x = lat_lon_point.longitude();
 	double y = lat_lon_point.latitude();

@@ -90,11 +90,8 @@ GPlatesGui::MapCanvasTool::qpointf_to_point_on_sphere(
 		const QPointF &point,
 		const GPlatesGui::MapProjection &projection)
 {
-	double x = point.x();
-	double y = point.y();
-
 	boost::optional<GPlatesMaths::LatLonPoint> llp =
-			projection.inverse_transform(x, y);
+			projection.inverse_transform(point);
 	if (!llp)
 	{
 		return boost::none;
