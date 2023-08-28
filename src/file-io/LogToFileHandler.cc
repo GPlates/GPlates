@@ -101,6 +101,15 @@ GPlatesFileIO::LogToFileHandler::LogToFileHandler(
 		// Linux   - "~/.local/share/GPlates/GPlates/".
 		//
 		const QDir app_data_dir(QStandardPaths::writableLocation(QStandardPaths::DataLocation));
+		// Make sure the directory exists before we try to open the log file for writing in it.
+		if (!app_data_dir.exists())
+		{
+			if (!app_data_dir.mkpath("."))
+			{
+				throw GPlatesFileIO::ErrorOpeningFileForWritingException(GPLATES_EXCEPTION_SOURCE,
+						QFileInfo(d_log_file).absoluteFilePath());
+			}
+		}
 		const QString log_basename = QFileInfo(d_log_file.fileName()).fileName();
 		const QString app_data_log_filename = app_data_dir.absolutePath() + "/" + log_basename;
 
