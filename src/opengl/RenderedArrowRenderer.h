@@ -339,8 +339,15 @@ namespace GPlatesOpenGL
 
 		//! The scene tile descriptor 'binding' used in the graphics pipeline.
 		static constexpr unsigned int SCENE_TILE_DESCRIPTOR_BINDING = 0;
-		//! The scene tile sample count 'constant_id' used in the graphics pipeline.
-		static constexpr unsigned int SCENE_TILE_SAMPLE_COUNT_CONSTANT_ID = 1;
+
+		//! The tile dimension 'constant_id' used in the graphics pipelines.
+		static constexpr unsigned int SCENE_TILE_DIMENSION_CONSTANT_ID = 0;
+		//! The total number of fragments (in storage) 'constant_id' used in the graphics pipelines.
+		static constexpr unsigned int SCENE_TILE_NUM_FRAGMENTS_IN_STORAGE_CONSTANT_ID = 1;
+		//! The maximum number of fragments (per sample) 'constant_id' used in the graphics pipelines.
+		static constexpr unsigned int SCENE_TILE_MAX_FRAGMENTS_PER_SAMPLE_CONSTANT_ID = 2;
+		//! The sample count 'constant_id' used in the graphics pipelines.
+		static constexpr unsigned int SCENE_TILE_SAMPLE_COUNT_CONSTANT_ID = 3;
 
 		//! The map projection image 'binding' used in the compute pipeline.
 		static constexpr unsigned int MAP_PROJECTION_IMAGE_BINDING = 0;

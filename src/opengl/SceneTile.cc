@@ -29,18 +29,6 @@
 #include "utils/CallStackTracker.h"
 
 
-namespace
-{
-	//
-	// The allowed number of scene fragments that can be rendered per pixel on average.
-	//
-	// Some pixels will have more fragments that this and most will have less.
-	// As long as the average over all screen pixels is less than this then we have allocated enough storage.
-	//
-	const unsigned int AVERAGE_FRAGMENTS_PER_PIXEL = 4;
-}
-
-
 GPlatesOpenGL::SceneTile::SceneTile() :
 	d_num_fragments_in_storage(0)
 {
@@ -57,6 +45,17 @@ GPlatesOpenGL::SceneTile::initialise_vulkan_resources(
 {
 	// Add this scope to the call stack trace printed if exception thrown in this scope.
 	TRACK_CALL_STACK();
+
+	// Determine size of fragment storage buffer and ensure it doesn't exceed maximum storage buffer range.
+	//
+	// We do this upfront because this gets passed as a specialisation constant to the graphics pipelines.
+	//
+	// Note: Vulkan guarantees support of at least 128MB for the maximum storage buffer range.
+	d_num_fragments_in_storage = FRAGMENT_TILE_DIMENSION * FRAGMENT_TILE_DIMENSION * REQUESTED_NUM_FRAGMENTS_IN_STORAGE_PER_PIXEL;
+	if (d_num_fragments_in_storage * NUM_BYTES_PER_FRAGMENT > vulkan.get_physical_device_properties().limits.maxStorageBufferRange)
+	{
+		d_num_fragments_in_storage = vulkan.get_physical_device_properties().limits.maxStorageBufferRange / NUM_BYTES_PER_FRAGMENT;
+	}
 
 	// Create the "clear" and "blend" graphics pipelines.
 	create_graphics_pipelines(vulkan, default_render_pass, default_render_pass_sample_count);
@@ -94,6 +93,45 @@ GPlatesOpenGL::SceneTile::release_vulkan_resources(
 	vulkan.get_device().destroyPipeline(d_clear_graphics_pipeline);
 	vulkan.get_device().destroyPipeline(d_blend_graphics_pipeline);
 	vulkan.get_device().destroyPipelineLayout(d_graphics_pipeline_layout);
+}
+
+
+void
+GPlatesOpenGL::SceneTile::get_specialization_constants(
+		std::vector<std::uint32_t> &fragment_shader_specialization_data,
+		std::vector<vk::SpecializationMapEntry> &fragment_shader_specialization_map_entries,
+		std::uint32_t tile_dimension_constant_id,
+		std::uint32_t num_fragments_in_storage_constant_id,
+		std::uint32_t max_fragments_per_sample_constant_id,
+		std::uint32_t sample_count_constant_id,
+		vk::SampleCountFlagBits default_render_pass_sample_count) const
+{
+	// The data offset might not be zero if the caller already has specialization data of its own.
+	const std::uint32_t data_offset = fragment_shader_specialization_data.size() * sizeof(std::uint32_t);
+
+	// Tile dimension.
+	fragment_shader_specialization_data.push_back(
+			FRAGMENT_TILE_DIMENSION);
+	fragment_shader_specialization_map_entries.push_back(
+			{ tile_dimension_constant_id, data_offset, sizeof(std::uint32_t) });
+
+	// Total number of fragments in buffer storage.
+	fragment_shader_specialization_data.push_back(
+			d_num_fragments_in_storage);
+	fragment_shader_specialization_map_entries.push_back(
+			{ num_fragments_in_storage_constant_id, data_offset + sizeof(std::uint32_t), sizeof(std::uint32_t) });
+
+	// Maximum number of fragments per sample.
+	fragment_shader_specialization_data.push_back(
+			MAX_FRAGMENTS_PER_SAMPLE);
+	fragment_shader_specialization_map_entries.push_back(
+			{ max_fragments_per_sample_constant_id, data_offset + 2 * sizeof(std::uint32_t), sizeof(std::uint32_t) });
+
+	// Number of samples (per pixel).
+	fragment_shader_specialization_data.push_back(
+			VulkanUtils::get_sample_count(default_render_pass_sample_count));
+	fragment_shader_specialization_map_entries.push_back(
+			{ sample_count_constant_id, data_offset + 3 * sizeof(std::uint32_t), sizeof(std::uint32_t) });
 }
 
 
@@ -340,12 +378,17 @@ GPlatesOpenGL::SceneTile::create_graphics_pipelines(
 	clear_pipeline_shader_stage_create_infos[0].setStage(vk::ShaderStageFlagBits::eVertex).setModule(vertex_shader_module.get()).setPName("main");
 	blend_pipeline_shader_stage_create_infos[0].setStage(vk::ShaderStageFlagBits::eVertex).setModule(vertex_shader_module.get()).setPName("main");
 
-	// Fragment shader specialization constants (set the sample count in the fragment shader).
-	std::uint32_t fragment_shader_specialization_data[1] = { VulkanUtils::get_sample_count(default_render_pass_sample_count) };
-	vk::SpecializationMapEntry fragment_shader_specialization_map_entries[1] =
-	{
-		{ SAMPLE_COUNT_CONSTANT_ID/*constant_id*/, 0/*offset*/, sizeof(std::uint32_t) }
-	};
+	// Fragment shader specialization constants.
+	std::vector<std::uint32_t> fragment_shader_specialization_data;
+	std::vector<vk::SpecializationMapEntry> fragment_shader_specialization_map_entries;
+	get_specialization_constants(
+			fragment_shader_specialization_data,
+			fragment_shader_specialization_map_entries,
+			FRAGMENT_TILE_DIMENSION_CONSTANT_ID,
+			NUM_FRAGMENTS_IN_STORAGE_CONSTANT_ID,
+			MAX_FRAGMENTS_PER_SAMPLE_CONSTANT_ID,
+			SAMPLE_COUNT_CONSTANT_ID,
+			default_render_pass_sample_count);
 	vk::SpecializationInfo fragment_shader_specialization_info;
 	fragment_shader_specialization_info
 			.setMapEntries(fragment_shader_specialization_map_entries)
@@ -392,7 +435,7 @@ GPlatesOpenGL::SceneTile::create_graphics_pipelines(
 	//
 	// Rasterization state.
 	//
-	// Fullscreen quad or oriented clockwise.
+	// Fullscreen quad is oriented clockwise.
 	vk::PipelineRasterizationStateCreateInfo rasterization_state_create_info;
 	rasterization_state_create_info
 			.setPolygonMode(vk::PolygonMode::eFill)
@@ -554,15 +597,6 @@ GPlatesOpenGL::SceneTile::create_descriptors(
 	// Create the fragment list head image view.
 	d_fragment_list_head_image_view = vulkan.get_device().createImageView(fragment_list_head_image_view_create_info);
 
-
-	// Determine size of fragment storage buffer and ensure it doesn't exceed maximum storage buffer range.
-	//
-	// Note: Vulkan guarantees support of at least 128MB for the maximum storage buffer range.
-	d_num_fragments_in_storage = FRAGMENT_TILE_DIMENSION * FRAGMENT_TILE_DIMENSION * AVERAGE_FRAGMENTS_PER_PIXEL;
-	if (d_num_fragments_in_storage * NUM_BYTES_PER_FRAGMENT > vulkan.get_physical_device_properties().limits.maxStorageBufferRange)
-	{
-		d_num_fragments_in_storage = vulkan.get_physical_device_properties().limits.maxStorageBufferRange / NUM_BYTES_PER_FRAGMENT;
-	}
 
 	// Buffer and allocation create info parameters for fragment storage buffer.
 	vk::BufferCreateInfo fragment_storage_buffer_create_info;

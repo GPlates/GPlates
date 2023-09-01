@@ -81,6 +81,25 @@ namespace GPlatesOpenGL
 
 
 		/**
+		 * Add specialization constants (used by this scene tile) to the specified data and map entry arrays.
+		 *
+		 * The specified "constant IDs" are those used in the caller's fragment shader.
+		 *
+		 * The specified specialization data (and associated map entries) can be non-empty when
+		 * calling this function if the caller already has specialization data of its own.
+		 */
+		void
+		get_specialization_constants(
+				std::vector<std::uint32_t> &fragment_shader_specialization_data,
+				std::vector<vk::SpecializationMapEntry> &fragment_shader_specialization_map_entries,
+				std::uint32_t tile_dimension_constant_id,
+				std::uint32_t num_fragments_in_storage_constant_id,
+				std::uint32_t max_fragments_per_sample_constant_id,
+				std::uint32_t sample_count_constant_id,
+				vk::SampleCountFlagBits default_render_pass_sample_count) const;
+
+
+		/**
 		 * Return the structures used to write to the (specified) descriptor set and binding (used in shader).
 		 *
 		 * This writes the fragment list head image, and fragment storage and allocator buffers.
@@ -172,10 +191,37 @@ namespace GPlatesOpenGL
 		//! Each fragment consumes this many bytes in the storage buffer (including the list 'next' pointer).
 		static const unsigned int NUM_BYTES_PER_FRAGMENT = 16;
 
+		/**
+		 * The number of scene fragments (per pixel) requested for storage.
+		 *
+		 * The actual number in storage may be less if the total requested tile storage exceeds the
+		 * maximum storage buffer range (Vulkan guarantees support for at least 128MB).
+		 */
+		static const unsigned int REQUESTED_NUM_FRAGMENTS_IN_STORAGE_PER_PIXEL = 8;
+
+		/**
+		 * The maximum number of fragments covering any sample (in a pixel).
+		 *
+		 * Only this many fragments (closest to the viewer in z) are blended together into the framebuffer.
+		 *
+		 * Note: This is per-sample (rather than per-pixel). So, for example, with 4 samples per pixel (4xMSAA)
+		 *       it is possible (though unlikely) that each sample is covered by separate fragments
+		 *       (eg, 4 adjacent triangles intersect a single pixel with each triangle covering a single sample).
+		 *       This would result in 4x the number of fragments than if a single triangle covered the entire pixel.
+		 */
+		static const unsigned int MAX_FRAGMENTS_PER_SAMPLE = 6;
+
 		//! The descriptor 'binding' used in the graphics pipelines.
 		static constexpr unsigned int DESCRIPTOR_BINDING = 0;
+
+		//! The tile dimension 'constant_id' used in the graphics pipelines.
+		static constexpr unsigned int FRAGMENT_TILE_DIMENSION_CONSTANT_ID = 0;
+		//! The total number of fragments (in storage) 'constant_id' used in the graphics pipelines.
+		static constexpr unsigned int NUM_FRAGMENTS_IN_STORAGE_CONSTANT_ID = 1;
+		//! The maximum number of fragments (per sample) 'constant_id' used in the graphics pipelines.
+		static constexpr unsigned int MAX_FRAGMENTS_PER_SAMPLE_CONSTANT_ID = 2;
 		//! The sample count 'constant_id' used in the graphics pipelines.
-		static constexpr unsigned int SAMPLE_COUNT_CONSTANT_ID = 1;
+		static constexpr unsigned int SAMPLE_COUNT_CONSTANT_ID = 3;
 
 
 		// Descriptor set layout.

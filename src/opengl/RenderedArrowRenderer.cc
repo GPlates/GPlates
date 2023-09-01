@@ -570,12 +570,17 @@ GPlatesOpenGL::RenderedArrowRenderer::create_graphics_pipeline(
 	// Fragment shader.
 	const std::vector<std::uint32_t> fragment_shader_code = VulkanUtils::load_shader_code(":/arrows.frag.spv");
 	vk::UniqueShaderModule fragment_shader_module = vulkan.get_device().createShaderModuleUnique({ {}, {fragment_shader_code} });
-	// Fragment shader specialization constants (set the sample count in the fragment shader).
-	std::uint32_t fragment_shader_specialization_data[1] = { VulkanUtils::get_sample_count(default_render_pass_sample_count) };
-	vk::SpecializationMapEntry fragment_shader_specialization_map_entries[1] =
-	{
-		{ SCENE_TILE_SAMPLE_COUNT_CONSTANT_ID/*constant_id*/, 0/*offset*/, sizeof(std::uint32_t) }
-	};
+	// Fragment shader specialization constants.
+	std::vector<std::uint32_t> fragment_shader_specialization_data;
+	std::vector<vk::SpecializationMapEntry> fragment_shader_specialization_map_entries;
+	scene_tile.get_specialization_constants(
+			fragment_shader_specialization_data,
+			fragment_shader_specialization_map_entries,
+			SCENE_TILE_DIMENSION_CONSTANT_ID,
+			SCENE_TILE_NUM_FRAGMENTS_IN_STORAGE_CONSTANT_ID,
+			SCENE_TILE_MAX_FRAGMENTS_PER_SAMPLE_CONSTANT_ID,
+			SCENE_TILE_SAMPLE_COUNT_CONSTANT_ID,
+			default_render_pass_sample_count);
 	vk::SpecializationInfo fragment_shader_specialization_info;
 	fragment_shader_specialization_info
 			.setMapEntries(fragment_shader_specialization_map_entries)
