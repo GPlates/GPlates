@@ -29,6 +29,7 @@ layout (push_constant) uniform PushConstants
     vec3 world_space_light_direction;
     bool lighting_enabled;
     float light_ambient_contribution;
+    bool use_map_projection;  // true/false if rendering in map/globe view
 };
 
 const uint SCENE_TILE_DESCRIPTOR_SET = 0;
@@ -41,7 +42,6 @@ const uint SCENE_TILE_SAMPLE_COUNT_CONSTANT_ID = 3;
 
 layout (location = 0) in VertexData
 {
-	vec3 world_space_sphere_normal;
 	vec4 colour;
 	vec3 world_space_x_axis;
 	vec3 world_space_y_axis;
@@ -49,6 +49,8 @@ layout (location = 0) in VertexData
 	// The model-space coordinates are interpolated across the geometry.
 	vec2 model_space_radial_position;
 	vec2 model_space_radial_and_axial_normal_weights;
+	// Only used in the 3D globe views (not the 2D map views).
+	vec3 world_space_sphere_normal;
 } fs_in;
 
 void main (void)
@@ -76,15 +78,16 @@ void main (void)
 		// Note that neither the light direction nor the surface normal need be normalised.
 		float lambert = lambert_diffuse_lighting(world_space_light_direction, world_space_mesh_normal);
 		
-		// Need to clamp the lambert term to zero when the (unperturbed) sphere normal
-		// faces away from the light direction otherwise the mesh surface will appear
-		// to be lit *through* the globe (ie, not shadowed by the globe).
-		// NOTE: This is not necessary for the 2D map views (but currently we only render axially symmetric meshes in 3D globe views.
-		// The factor of 8 gives a linear falloff from 1.0 to a lower bound when dot product is below 1/8.
-		// We use a non-zero lower bound so that the mesh retains some diffuse lighting in shadow to help visualise its shape better.
-		// NOTE: Using float instead of integer parameters to 'clamp' otherwise driver compiler
-		// crashes on some systems complaining cannot find (integer overload of) function in 'stdlib'.
-		lambert *= clamp(8 * dot(world_space_light_direction, fs_in.world_space_sphere_normal), 0.3, 1.0);
+		if (!use_map_projection)
+		{
+			// Need to clamp the lambert term to zero when the globe normal faces away from the light direction
+			// otherwise the arrow will appear to be lit *through* the globe (ie, not shadowed by the globe).
+			// The factor of 8 gives a linear falloff from 1.0 to a lower bound when dot product is below 1/8.
+			// We use a non-zero lower bound so that the mesh retains some diffuse lighting in shadow to help visualise its shape better.
+			//
+			// Note: This is only necessary in the 3D globe views (not the 2D map views).
+			lambert *= clamp(8 * dot(world_space_light_direction, fs_in.world_space_sphere_normal), 0.3, 1.0);
+		}
 
 		// Blend between ambient and diffuse lighting.
 		float ambient_and_diffuse_lighting = mix_ambient_with_diffuse_lighting(lambert, light_ambient_contribution);

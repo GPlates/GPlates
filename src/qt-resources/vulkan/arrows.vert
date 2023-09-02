@@ -27,6 +27,7 @@ layout (push_constant) uniform PushConstants
     vec3 world_space_light_direction;
     bool lighting_enabled;
     float light_ambient_contribution;
+    bool use_map_projection;  // true/false if rendering in map/globe view
 };
 
 // Attributes at per-vertex rate.
@@ -50,7 +51,6 @@ layout (location = 6) in vec4 colour;
 
 layout (location = 0) out VertexData
 {
-	vec3 world_space_sphere_normal;
 	vec4 colour;
 	vec3 world_space_x_axis;
 	vec3 world_space_y_axis;
@@ -58,6 +58,8 @@ layout (location = 0) out VertexData
 	// The model-space coordinates are interpolated across the geometry.
 	vec2 model_space_radial_position;
 	vec2 model_space_radial_and_axial_normal_weights;
+	// Only used in the 3D globe views (not the 2D map views).
+	vec3 world_space_sphere_normal;
 } vs_out;
 
 out gl_PerVertex
@@ -103,11 +105,15 @@ void main()
 	if (lighting_enabled)
 	{
 		// Pass to fragment shader.
-		vs_out.world_space_sphere_normal = normalize(world_space_position);
 		vs_out.world_space_x_axis = world_space_x_axis;
 		vs_out.world_space_y_axis = world_space_y_axis;
 		vs_out.world_space_z_axis = world_space_z_axis;
 		vs_out.model_space_radial_position = model_space_radial_position;
 		vs_out.model_space_radial_and_axial_normal_weights = model_space_radial_and_axial_normal_weights;
+        if (!use_map_projection)
+        {
+            // Only used in the 3D globe views (not the 2D map views).
+            vs_out.world_space_sphere_normal = normalize(world_space_position);
+        }
 	}
 }

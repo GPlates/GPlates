@@ -425,6 +425,9 @@ GPlatesOpenGL::RenderedArrowRenderer::render(
 		graphics_push_constants.light_ambient_contribution = d_scene_lighting_parameters.get_ambient_light_contribution();
 	}
 
+	// Map projection push constants (only used if map is active).
+	graphics_push_constants.use_map_projection = is_map_active;
+
 	// Set the push constants.
 	default_render_pass_command_buffer.pushConstants(
 			d_graphics_pipeline_layout,

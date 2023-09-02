@@ -142,6 +142,7 @@ namespace GPlatesOpenGL
 		//     vec3 world_space_light_direction;
 		//     bool lighting_enabled;
 		//     float light_ambient_contribution;
+		//     bool use_map_projection;
 		// };
 		//
 		// NOTE: This fits within the minimum required size limit of 128 bytes for push constants.
@@ -153,6 +154,7 @@ namespace GPlatesOpenGL
 			alignas(16)/*vec3*/ float world_space_light_direction[3];
 			std::uint32_t/*bool*/ lighting_enabled;
 			float light_ambient_contribution;
+			std::uint32_t/*bool*/ use_map_projection;  // true/false if rendering in map/globe view
 		};
 
 
