@@ -65,6 +65,12 @@ void main (void)
 		
 		// Convert the model-space normal to world-space (the same space the light direction is in).
 		vec3 world_space_mesh_normal = mat3(fs_in.world_space_x_axis, fs_in.world_space_y_axis, fs_in.world_space_z_axis) * model_space_mesh_normal;
+		// Reverse the world-space normal if this fragment belongs to a back-facing mesh triangle.
+		// A back face can be visible if the arrow is semi-transparent.
+		if (!gl_FrontFacing)
+		{
+			world_space_mesh_normal = -world_space_mesh_normal;
+		}
 		
 		// Apply the Lambert diffuse lighting using the world-space normal.
 		// Note that neither the light direction nor the surface normal need be normalised.

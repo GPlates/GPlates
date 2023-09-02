@@ -639,10 +639,13 @@ GPlatesOpenGL::RenderedArrowRenderer::create_graphics_pipeline(
 	//
 	// Rasterization state.
 	//
+	// Note: We do not discard back-facing triangles in case any arrows are semi-transparent.
+	//       Semi-transparent arrows look better when the back faces are also rendered.
+	//
 	vk::PipelineRasterizationStateCreateInfo rasterization_state_create_info;
 	rasterization_state_create_info
 			.setPolygonMode(vk::PolygonMode::eFill)
-			.setCullMode(vk::CullModeFlagBits::eBack)
+			.setCullMode(vk::CullModeFlagBits::eNone)
 			.setFrontFace(vk::FrontFace::eCounterClockwise);
 
 	//
