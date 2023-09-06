@@ -284,8 +284,8 @@ scene_tile_allocate_fragment(
         // Avoid incrementing alloc fragment pointer if we've exceeded total number of fragments in storage.
         // This helps prevent the potential for it to wraparound back to zero (and incorrectly start allocating again)...
         scene_tile_allocator.alloc_fragment_index >= scene_tile_num_fragments_in_storage ||
-        // Allocate a new index into the fragment storage buffer and it hasn't exceeded total number of fragments in storage.
-        // This is necessary because another invocation might have allocated the last fragment in storage between
+        // Allocate a new index into the fragment storage buffer and check it hasn't exceeded total number of fragments in storage.
+        // This second check is necessary because another invocation might have allocated the last fragment in storage between
         // when we checked (just above) and when we allocated just now (with atomic increment).
         (fragment_pointer = atomicAdd(scene_tile_allocator.alloc_fragment_index, 1)) >= scene_tile_num_fragments_in_storage)
     {
@@ -363,27 +363,35 @@ scene_tile_deallocate_fragment(
  * Search the fragment list (at the current fragment coordinate) in order of increasing 'z' to
  * find the previous and next fragments.
  *
+ * The starting location of the search is specified with 'previous_fragment_pointer' (it's input and output).
+ * Note that the location 'next_fragment_pointer' is output only.
+ *
+ * The accumulated pixel occlusion is specified with 'pixel_occlusion' (it's input and output) and will
+ * be updated using all fragments closer (in 'z') to the incoming fragment.
+ *
  * Returns false if a fragment at 'z' would be behind an opaque fragment (and hence not visible) or
  * there are already enough (max allowed) closer fragments (in z order).
  */
 bool
 scene_tile_search_fragment(
-        out uint previous_fragment_pointer,
+        inout SceneTilePixelOcclusion pixel_occlusion,
+        inout uint previous_fragment_pointer,
         out uint next_fragment_pointer,
-        out SceneTilePixelOcclusion pixel_occlusion,
         float fragment_z,
         int fragment_coverage)
 {
-    // Track the occlusion caused by the closest fragments at the current pixel coordinate.
-    scene_tile_pixel_occlusion_clear(pixel_occlusion);
-    
-    // Start at the head of the fragment list.
-    uint head_fragment_pointer = imageLoad(
-            scene_tile_list_head_pointer_image,
-            ivec2(gl_FragCoord.xy)).r;
-
-    previous_fragment_pointer = 0;
-    next_fragment_pointer = head_fragment_pointer;
+    if (previous_fragment_pointer == 0)
+    {
+        // Start at the head of the fragment list.
+        next_fragment_pointer = imageLoad(
+                scene_tile_list_head_pointer_image,
+                ivec2(gl_FragCoord.xy)).r;
+    }
+    else
+    {
+        // Start at the previous fragment.
+        next_fragment_pointer = SCENE_TILE_GET_FRAGMENT(previous_fragment_pointer).next_fragment_pointer;
+    }
 
     while (next_fragment_pointer != 0)
     {
@@ -506,13 +514,18 @@ scene_tile_add_fragment(
     // Because we may never add a fragment (if it's behind existing opaque fragments and hence not visible).
     uint fragment_pointer = 0;
 
+    // Track the occlusion caused by the closest fragments at the current pixel coordinate.
+    SceneTilePixelOcclusion pixel_occlusion;
+    scene_tile_pixel_occlusion_clear(pixel_occlusion);
+
+    // The position in the fragment list.
+    uint previous_fragment_pointer = 0;  // start at the head of the list
+    uint next_fragment_pointer;
+
     while (true)
     {
         // Search in order of increasing fragment 'z' to find the previous and next fragments of our fragment.
-        uint previous_fragment_pointer;
-        uint next_fragment_pointer;
-        SceneTilePixelOcclusion pixel_occlusion;
-        if (!scene_tile_search_fragment(previous_fragment_pointer, next_fragment_pointer, pixel_occlusion, fragment_z, fragment_coverage))
+        if (!scene_tile_search_fragment(pixel_occlusion, previous_fragment_pointer, next_fragment_pointer, fragment_z, fragment_coverage))
         {
             // All samples covered by the current fragment are either behind existing opaque fragments or
             // the list of fragments has exceeded a maximum length.
@@ -570,7 +583,11 @@ scene_tile_add_fragment(
         }
 
         // If we get here then another invocation inserted just where we were attempting to insert.
-        // So try again from the start of the fragment list.
+        // So try again from the current position in the fragment list.
+        //
+        // Note: We don't need to start at the head because we know the incoming fragment 'z' is greater than
+        //       the previous fragment 'z', so we can just continue from there. The fragment inserted by the other
+        //       invocation is the previous fragment's *next* fragment (which will get tested in the next search).
     }
 
     // Shouldn't be able to get here.
