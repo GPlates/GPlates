@@ -194,8 +194,16 @@ namespace GPlatesOpenGL
 		/**
 		 * The number of scene fragments (per pixel) requested for storage.
 		 *
+		 * The total number of fragments requested for storage is this value multiplied by the square of the tile dimension.
+		 *
 		 * The actual number in storage may be less if the total requested tile storage exceeds the
 		 * maximum storage buffer range (Vulkan guarantees support for at least 128MB).
+		 *
+		 * Ideally this should be a power-of-two value because any unused high-order bits in a 32-bit uint are used as
+		 * a fragment tag bits (to help avoid the ABA problem - see https://en.wikipedia.org/wiki/ABA_problem).
+		 * If this value is a power-of-two then the total number of fragments in storage will be a power-of-two and use
+		 * up the lower-order bits exactly, leaving the remaining high-order bits for use as tag bits (the more the better).
+		 * But of course the memory usage should be considered first and foremost.
 		 */
 		static const unsigned int REQUESTED_NUM_FRAGMENTS_IN_STORAGE_PER_PIXEL = 8;
 

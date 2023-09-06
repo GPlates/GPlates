@@ -47,6 +47,12 @@
 //       * SCENE_TILE_SAMPLE_COUNT_CONSTANT_ID - the 'constant_id' of the specialization constant for the (multi)sample count.
 //
 
+
+/*
+ * Information for a fragment generated at a pixel coordinate.
+ *
+ * Multiple fragments can get generated at the same pixel coordinate.
+ */
 struct SceneTileFragment
 {
     uint next_fragment_pointer;  // pointer to next fragment in a linked list (or zero)
@@ -55,15 +61,18 @@ struct SceneTileFragment
     int coverage;  // sample coverage of fragment (supports up to 32 MSAA using gl_SampleMaskIn[0])
 };
 
+
 layout (constant_id = SCENE_TILE_DIMENSION_CONSTANT_ID) const uint scene_tile_dimension = 1024;
 // Vulkan guarantees support of at least 128MB for the maximum storage buffer size.
 layout (constant_id = SCENE_TILE_NUM_FRAGMENTS_IN_STORAGE_CONSTANT_ID) const uint scene_tile_num_fragments_in_storage = 128 * 1024 * 1024 / 16/*fragment size*/;
 layout (constant_id = SCENE_TILE_MAX_FRAGMENTS_PER_SAMPLE_CONSTANT_ID) const uint scene_tile_max_fragments_per_sample = 8;
 layout (constant_id = SCENE_TILE_SAMPLE_COUNT_CONSTANT_ID) const uint scene_tile_sample_count = 1;
 
+
 //
 // Using 'coherent' storage images/buffers so that writes from invocations are visible to each other.
 // For example, multiple L1 caches near the GPU cores are not used, instead the single L2 cache is used as the point of coherence.
+//
 // Using 'volatile' storage images/buffers since the same location/variable can be accessed repeatedly, and other invocations may
 // modify these variables inbetween these accesses (and so variable should be refetched from memory on each access).
 //
@@ -79,8 +88,156 @@ layout (set = SCENE_TILE_DESCRIPTOR_SET, binding = SCENE_TILE_DESCRIPTOR_BINDING
 // A storage buffer containing the global allocation pointer (uint index).
 layout (set = SCENE_TILE_DESCRIPTOR_SET, binding = SCENE_TILE_DESCRIPTOR_BINDING + 2) coherent volatile buffer SceneTileAllocator
 {
-    uint alloc_fragment_pointer;  // starts at 1 (so that 0 can be used as null pointer)
+    // Allocate fragments from storage until it runs out...
+    uint alloc_fragment_index;    // starts at 1 (so that 0 can be used as null pointer)
+    // ...then allocate from the free list (which contains deallocated fragments).
+    uint alloc_fragment_free_list;
 } scene_tile_allocator;
+
+
+// Mask that removes any marked and tagged bits.
+const uint scene_tile_unmarked_untagged_fragment_pointer_mask = scene_tile_num_fragments_in_storage - 1;
+
+// Mask for the mark bits.
+// This is just a single bit (the highest-order bit) for marking a fragment for deallocation.
+const uint scene_tile_marked_fragment_pointer_mask = 0x80000000;
+
+// Mask that removes any marked bits (but keeps any tagged bits and pointer bits).
+const uint scene_tile_unmarked_fragment_pointer_mask = scene_tile_marked_fragment_pointer_mask ^ 0xffffffff;
+
+// Mask for the tagged bits.
+// These are all the remaining bits not used for the pointer and not used for marking.
+const uint scene_tile_tag_fragment_pointer_mask = scene_tile_unmarked_untagged_fragment_pointer_mask ^ 0x7fffffff;
+
+// Mask that removes any tagged bits (but keeps any marked bits and pointer bits).
+const uint scene_tile_untagged_fragment_pointer_mask = scene_tile_tag_fragment_pointer_mask ^ 0xffffffff;
+
+// Returns true if fragment pointer is marked (for deallocation).
+#define SCENE_TILE_IS_MARKED(fragment_pointer) \
+    ((fragment_pointer & scene_tile_marked_fragment_pointer_mask) != 0)
+
+// Returns the unmarked fragment pointer (with mark bit zeroed but not the tag bits).
+#define SCENE_TILE_GET_UNMARKED_FRAGMENT_POINTER(fragment_pointer) \
+    (fragment_pointer & scene_tile_unmarked_fragment_pointer_mask)
+
+// Returns the untagged fragment pointer (with tagged bits zeroed but not the marked bit).
+#define SCENE_TILE_GET_UNTAGGED_FRAGMENT_POINTER(fragment_pointer) \
+    (fragment_pointer & scene_tile_untagged_fragment_pointer_mask)
+
+// Return the fragment pointer with an incremented tag.
+#define SCENE_TILE_GET_INCREMENTED_TAG_FRAGMENT_POINTER(fragment_pointer) \
+    /* Isolate the tags bits and increment them (can wraparound)... */ \
+    ((((fragment_pointer & scene_tile_tag_fragment_pointer_mask) + 1) & scene_tile_tag_fragment_pointer_mask) | \
+        /* Bring back the mark and pointer bits... */ \
+        (fragment_pointer & scene_tile_untagged_fragment_pointer_mask))
+
+// Convert a fragment pointer to a fragment index (into storage buffer).
+// This returns the unmarked and untagged fragment pointer (with marked and tagged bits zeroed).
+#define SCENE_TILE_GET_FRAGMENT_INDEX(fragment_pointer) \
+    (fragment_pointer & scene_tile_unmarked_untagged_fragment_pointer_mask)
+
+// Return the fragment in storage pointed to by the specified fragment pointer.
+#define SCENE_TILE_GET_FRAGMENT(fragment_pointer) \
+    scene_tile_storage.fragments[SCENE_TILE_GET_FRAGMENT_INDEX(fragment_pointer)]
+
+
+/*
+ * Track the occlusion caused by the closest fragments at a pixel coordinate.
+ *
+ * Keeps track of how many fragments (in a pixel list) cover each sample of the pixel and
+ * their accumulated occlusion (alpha).
+ */
+struct SceneTilePixelOcclusion
+{
+    uint num_fragments_per_sample[scene_tile_sample_count];
+    float alpha_per_sample[scene_tile_sample_count];
+};
+
+/*
+ * Clear the pixel occlusion.
+ */
+void
+scene_tile_pixel_occlusion_clear(
+        out SceneTilePixelOcclusion pixel_occlusion)
+{
+    for (uint sample_id = 0; sample_id < scene_tile_sample_count; ++sample_id)
+    {
+        pixel_occlusion.num_fragments_per_sample[sample_id] = 0;
+        pixel_occlusion.alpha_per_sample[sample_id] = 0.0;
+    }
+}
+
+/*
+ * Update the occlusion (alpha), and length of fragment list, for samples covered by the next closest (in z) fragment.
+ *
+ * Note: This function should be called in order of increasing fragment 'z' (depth).
+ *
+ * One reason we do this on a per-sample basis is because it's possible that two adjacent triangles both
+ * cover a single pixel (eg, 3 samples from first triangle and 1 from second, for 4xMSAA) and each
+ * triangle will contribute its own fragment and hence the two fragments cannot obscure each other
+ * (because they're adjacent in screen space). Also, the triangles don't have to be adjacent, they
+ * can belong to separate primitives that do have overlapping samples (in z).
+ */
+void
+scene_tile_pixel_occlusion_update(
+        inout SceneTilePixelOcclusion pixel_occlusion,
+        SceneTileFragment fragment)
+{
+    float fragment_alpha = unpackUnorm4x8(fragment.colour).a;
+
+    for (uint sample_id = 0; sample_id < scene_tile_sample_count; ++sample_id)
+    {
+        // If the incoming fragment covers the current sample.
+        if ((fragment.coverage & (1 << sample_id)) != 0)
+        {
+            // Increment the number of fragments covering the current sample (to include the incoming fragment).
+            pixel_occlusion.num_fragments_per_sample[sample_id]++;
+
+            // Accumulate alpha at the current sample (to include the incoming fragment).
+            pixel_occlusion.alpha_per_sample[sample_id] += (1 - pixel_occlusion.alpha_per_sample[sample_id]) * fragment_alpha;
+        }
+    }
+}
+
+/*
+ * Return whether the next closest (in z) fragment is occluded by closer fragments (added with calls to 'scene_tile_pixel_occlusion_update()').
+ *
+ * If all samples covered by the incoming fragment have been occluded then fragment itself is occluded.
+ */
+bool
+scene_tile_pixel_occlusion_is_fragment_occluded(
+        SceneTilePixelOcclusion pixel_occlusion,
+        int fragment_coverage)
+{
+    // See if any samples (covered by the incoming fragment) are occluded by closer (z) fragments or
+    // if the maximum number of fragments are already closer (z).
+    for (uint sample_id = 0; sample_id < scene_tile_sample_count; ++sample_id)
+    {
+        // If the incoming fragment covers the current sample.
+        if ((fragment_coverage & (1 << sample_id)) != 0)
+        {
+            // See if the number of (closer) fragments covering the current sample has reached the maximum.
+            if (pixel_occlusion.num_fragments_per_sample[sample_id] >= scene_tile_max_fragments_per_sample)
+            {
+                continue;  // sample occluded
+            }
+
+            // See if the accumulated alpha at the current sample is enough to occlude.
+            if (pixel_occlusion.alpha_per_sample[sample_id] > 0.99)
+            {
+                continue;  // sample occluded
+            }
+
+            // If we get here then the current sample is not yet covered by the maximum number of
+            // fragments (per sample) and is not occluded by them (so far).
+            // Therefore the incoming fragment is not fully occluded.
+            return false;
+        }
+    }
+
+    // All samples covered by the incoming fragment have been occluded, so the fragment itself is occluded.
+    return  true;
+}
 
 
 /*
@@ -105,8 +262,8 @@ scene_tile_clear_fragments()
     // Arbitrarily choose the fragment with zero coordinates.
     if (fragment_coord == vec2(0, 0))
     {
-        // Allocator starts at 1 so that 0 can be used as a null pointer.
-        scene_tile_allocator.alloc_fragment_pointer = 1;
+        scene_tile_allocator.alloc_fragment_index = 1;    // starts at 1 so 0 can be used as null pointer
+        scene_tile_allocator.alloc_fragment_free_list = 0;  // initially empty free list
     }
 }
 
@@ -119,27 +276,52 @@ scene_tile_allocate_fragment(
         float fragment_z,
         int fragment_coverage)
 {
-    // Avoid incrementing alloc fragment pointer if we've exceeded total number of fragments in storage.
-    // This helps prevent the potential for it to wraparound back to zero (and incorrectly start allocating again).
-    if (scene_tile_allocator.alloc_fragment_pointer > scene_tile_num_fragments_in_storage)
-    {
-        return 0;
-    }
+    // Pointer to the fragment to be allocated.
+    uint fragment_pointer;
 
-    // Allocate a new index into the fragment storage buffer.
-    uint fragment_pointer = atomicAdd(scene_tile_allocator.alloc_fragment_pointer, 1);
-
-    // Test the allocated fragment pointer (again) to ensure it hasn't exceeded total number of fragments in storage.
-    //
-    // This is necessary because another invocation might have allocated the last fragment in storage between
-    // when we first checked and when we allocated (with atomic increment).
-    if (fragment_pointer > scene_tile_num_fragments_in_storage)
+    // First attempt to allocate from global storage.
+    if (
+        // Avoid incrementing alloc fragment pointer if we've exceeded total number of fragments in storage.
+        // This helps prevent the potential for it to wraparound back to zero (and incorrectly start allocating again)...
+        scene_tile_allocator.alloc_fragment_index >= scene_tile_num_fragments_in_storage ||
+        // Allocate a new index into the fragment storage buffer and it hasn't exceeded total number of fragments in storage.
+        // This is necessary because another invocation might have allocated the last fragment in storage between
+        // when we checked (just above) and when we allocated just now (with atomic increment).
+        (fragment_pointer = atomicAdd(scene_tile_allocator.alloc_fragment_index, 1)) >= scene_tile_num_fragments_in_storage)
     {
-        return 0;
+        // We've run out of global storage, so instead allocate from the free list.
+        while (true)
+        {
+            fragment_pointer = scene_tile_allocator.alloc_fragment_free_list;
+            if (fragment_pointer == 0)
+            {
+                // The free list is empty, so we're unable to allocate a new fragment.
+                return 0;
+            }
+
+            // The next fragment in the free list.
+            uint next_fragment_pointer = SCENE_TILE_GET_FRAGMENT(fragment_pointer).next_fragment_pointer;
+
+            // Attempt to store new head pointer (the next fragment in free list) into free list, and return true if successful.
+            // This will fail if another invocation has just updated the head pointer.
+            if (atomicCompSwap(
+                    scene_tile_allocator.alloc_fragment_free_list,
+                    fragment_pointer,
+                    next_fragment_pointer) == fragment_pointer)
+            {
+                // Increment the tag on the fragment pointer (to help avoid the ABA problem - see top of this file).
+                fragment_pointer = SCENE_TILE_GET_INCREMENTED_TAG_FRAGMENT_POINTER(fragment_pointer);
+
+                break;  // succeeded
+            }
+
+            // If we get here then another invocation added or removed the head of the free list.
+            // So try removing the (new) head again.
+        }
     }
 
     // Construct the new fragment (in the fragment storage buffer).
-    scene_tile_storage.fragments[fragment_pointer] = SceneTileFragment(
+    SCENE_TILE_GET_FRAGMENT(fragment_pointer) = SceneTileFragment(
             0,  // next_fragment_pointer
             packUnorm4x8(fragment_colour),
             fragment_z,
@@ -149,27 +331,51 @@ scene_tile_allocate_fragment(
 }
 
 /*
+ * Deallocate a fragment that has NOT been added to the scene (not added to a per-pixel fragment list).
+ */
+void
+scene_tile_deallocate_fragment(
+        uint fragment_pointer)
+{
+    while (true)
+    {
+        // The deallocated pointer will become the head of the free list.
+        // So the current head of the free list will then become the next fragment in the free list.
+        uint next_fragment_pointer = scene_tile_allocator.alloc_fragment_free_list;
+        SCENE_TILE_GET_FRAGMENT(fragment_pointer).next_fragment_pointer = next_fragment_pointer;
+
+        // Attempt to store new head pointer (the deallocated fragment) into free list, and return true if successful.
+        // This will fail if another invocation has just updated the head pointer.
+        if (atomicCompSwap(
+                scene_tile_allocator.alloc_fragment_free_list,
+                next_fragment_pointer,
+                fragment_pointer) == next_fragment_pointer)
+        {
+            return;  // succeeded
+        }
+
+        // If we get here then another invocation added or removed the head of the free list.
+        // So try adding to the head again.
+    }
+}
+
+/*
  * Search the fragment list (at the current fragment coordinate) in order of increasing 'z' to
  * find the previous and next fragments.
  *
- * Returns false if a fragment at 'z' would be behind an opaque fragment (and hence not visible).
+ * Returns false if a fragment at 'z' would be behind an opaque fragment (and hence not visible) or
+ * there are already enough (max allowed) closer fragments (in z order).
  */
 bool
 scene_tile_search_fragment(
         out uint previous_fragment_pointer,
         out uint next_fragment_pointer,
+        out SceneTilePixelOcclusion pixel_occlusion,
         float fragment_z,
         int fragment_coverage)
 {
-    // Keep track of how many fragments (in the list) cover each sample of the current pixel and
-    // their accumulated occlusion (alpha).
-    uint num_fragments_per_sample[scene_tile_sample_count];
-    float alpha_per_sample[scene_tile_sample_count];
-    for (uint sample_id = 0; sample_id < scene_tile_sample_count; ++sample_id)
-    {
-        num_fragments_per_sample[sample_id] = 0;
-        alpha_per_sample[sample_id] = 0.0;
-    }
+    // Track the occlusion caused by the closest fragments at the current pixel coordinate.
+    scene_tile_pixel_occlusion_clear(pixel_occlusion);
     
     // Start at the head of the fragment list.
     uint head_fragment_pointer = imageLoad(
@@ -181,7 +387,7 @@ scene_tile_search_fragment(
 
     while (next_fragment_pointer != 0)
     {
-        SceneTileFragment next_fragment = scene_tile_storage.fragments[next_fragment_pointer];
+        SceneTileFragment next_fragment = SCENE_TILE_GET_FRAGMENT(next_fragment_pointer);
 
         // If the fragment 'z' value is less than the next fragment then the caller will need to
         // insert a new fragment just before the next fragment.
@@ -192,59 +398,11 @@ scene_tile_search_fragment(
 
         // Update the occlusion (alpha), and length of fragment list, for samples covered by the next fragment.
         //
-        // One reason we do this on a per-sample basis is because it's possible that two adjacent triangles both
-        // cover a single pixel (eg, 3 samples from first triangle and 1 from second, for 4xMSAA) and each
-        // triangle will contribute its own fragment and hence the two fragments cannot obscure each other
-        // (because they're adjacent in screen space). Also, the triangles don't have to be adjacent, they
-        // can belong to separate primitives that do have overlapping samples (in z).
-        //
         // Later the sample-rate shading (ie, fragment shader invoked per-sample) will blend each sample separately.
-        int next_fragment_coverage = next_fragment.coverage;
-        float next_fragment_alpha = unpackUnorm4x8(next_fragment.colour).a;
-        for (uint sample_id = 0; sample_id < scene_tile_sample_count; ++sample_id)
-        {
-            // If the *next* fragment covers the current sample.
-            if ((next_fragment_coverage & (1 << sample_id)) != 0)
-            {
-                // Increment the number of fragments covering the current sample (to include the next fragment).
-                num_fragments_per_sample[sample_id]++;
-
-                // Accumulate alpha at the current sample (to include the next fragment).
-                alpha_per_sample[sample_id] += (1 - alpha_per_sample[sample_id]) * next_fragment_alpha;
-            }
-        }
+        scene_tile_pixel_occlusion_update(pixel_occlusion, next_fragment);
         
-        // See if any samples (covered by the incoming fragment) are occluded by closer (z) fragments or
-        // if there are already the maximum number of fragments that are closer (z).
-        bool all_fragment_covered_samples_rejected = true;
-        for (uint sample_id = 0; sample_id < scene_tile_sample_count; ++sample_id)
-        {
-            // If the *incoming* fragment covers the current sample.
-            if ((fragment_coverage & (1 << sample_id)) != 0)
-            {
-                // See if the number of fragments covering the current sample has reached the maximum.
-                if (num_fragments_per_sample[sample_id] >= scene_tile_max_fragments_per_sample)
-                {
-                    continue;  // sample rejected
-                }
-
-                // See if the accumulated alpha at the current sample is enough to occlude.
-                if (alpha_per_sample[sample_id] == 1.0)
-                {
-                    continue;  // sample rejected
-                }
-
-                // If we get here then the current sample is not yet covered by the maximum number of
-                // fragments (per sample) and is not occluded by them (so far).
-                //
-                // Note: We only need one sample to pass in order to proceed to the next fragment.
-                all_fragment_covered_samples_rejected = false;
-                break;
-            }
-        }
-        
-        // If all samples covered by the incoming fragment have been rejected then the fragment itself is rejected.
-        if (all_fragment_covered_samples_rejected)
+        // If the incoming fragment samples are occluded by closer fragments then reject the fragment.
+        if (scene_tile_pixel_occlusion_is_fragment_occluded(pixel_occlusion, fragment_coverage))
         {
             return false;
         }
@@ -270,7 +428,7 @@ scene_tile_insert_fragment_at_head(
         uint head_fragment_pointer)
 {
     // New fragment's next pointer points to head fragment.
-    scene_tile_storage.fragments[fragment_pointer].next_fragment_pointer = head_fragment_pointer;
+    SCENE_TILE_GET_FRAGMENT(fragment_pointer).next_fragment_pointer = head_fragment_pointer;
 
     // Make sure writes to our new fragment have completed before we let other invocations know of its existence
     // (by atomically inserting it into the fragment list).
@@ -299,7 +457,7 @@ scene_tile_insert_fragment(
         uint next_fragment_pointer)
 {
     // New fragment's next pointer points to next fragment.
-    scene_tile_storage.fragments[fragment_pointer].next_fragment_pointer = next_fragment_pointer;
+    SCENE_TILE_GET_FRAGMENT(fragment_pointer).next_fragment_pointer = next_fragment_pointer;
 
     // Make sure writes to our new fragment have completed before we let other invocations know of its existence
     // (by atomically inserting it into the fragment list).
@@ -308,7 +466,7 @@ scene_tile_insert_fragment(
     // Attempt to store new pointer (to new fragment) in *previous* fragment's next pointer, and return true if successful.
     // This will fail if another invocation has just updated the next pointer in the previous fragment.
     return atomicCompSwap(
-            scene_tile_storage.fragments[previous_fragment_pointer].next_fragment_pointer,
+            SCENE_TILE_GET_FRAGMENT(previous_fragment_pointer).next_fragment_pointer,
             next_fragment_pointer,
             fragment_pointer) == next_fragment_pointer;
 }
@@ -329,6 +487,8 @@ scene_tile_add_fragment(
         // We're a helper invocation, so nothing to do.
         return false;
     }
+
+    fragment_colour.a = 0.5;
 
     if (fragment_colour.a == 0)
     {
@@ -351,18 +511,25 @@ scene_tile_add_fragment(
         // Search in order of increasing fragment 'z' to find the previous and next fragments of our fragment.
         uint previous_fragment_pointer;
         uint next_fragment_pointer;
-        if (!scene_tile_search_fragment(previous_fragment_pointer, next_fragment_pointer, fragment_z, fragment_coverage))
+        SceneTilePixelOcclusion pixel_occlusion;
+        if (!scene_tile_search_fragment(previous_fragment_pointer, next_fragment_pointer, pixel_occlusion, fragment_z, fragment_coverage))
         {
             // All samples covered by the current fragment are either behind existing opaque fragments or
             // the list of fragments has exceeded a maximum length.
             //
             // So we won't add the current fragment.
-            //
-            // If we've already allocated/constructed a fragment then it'll remain allocated but will be unused.
+
+            // If we've already allocated a fragment then deallocate it now.
             //
             // Note: It's possible the fragment has already been allocated because we may have tried to insert it but failed
             //       (because another invocation inserted a fragment just before it) and hence we tried again to search
             //       (where to insert) and found that the fragment is now occluded (by that other invocation's fragment).
+            if (fragment_pointer != 0)
+            {
+                // The fragment hasn't been added to a per-pixel fragment list, so it's OK to call 'scene_tile_deallocate_fragment()'.
+                scene_tile_deallocate_fragment(fragment_pointer);
+            }
+
             return false;
         }
 
@@ -433,7 +600,7 @@ scene_tile_blend_fragments()
     // Traverse the front-to-back-sorted fragments and blend them.
     while (current_fragment_pointer != 0)
     {
-        SceneTileFragment fragment = scene_tile_storage.fragments[current_fragment_pointer];
+        SceneTileFragment fragment = SCENE_TILE_GET_FRAGMENT(current_fragment_pointer);
 
         // If the current sample is covered by the fragment's coverage mask then blend the fragment's colour.
         //
@@ -449,7 +616,7 @@ scene_tile_blend_fragments()
 
             // If the current fragment is opaque then no subsequent fragments in the list will be visible.
             // This just potentially saves some global memory access/latency.
-            if (fragment_colour.a == 1.0)
+            if (fragment_colour.a > 0.99)
             {
                 break;
             }

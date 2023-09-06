@@ -32,6 +32,8 @@ layout (push_constant) uniform PushConstants
     bool use_map_projection;  // true/false if rendering in map/globe view
 };
 
+// This fragment shader renders arrows into the scene tile (rather than directly to the framebuffer).
+// All scene tile fragments are subsequently blended in z-order into the framebuffer (using a different fragment shader).
 const uint SCENE_TILE_DESCRIPTOR_SET = 0;
 const uint SCENE_TILE_DESCRIPTOR_BINDING = 0;
 const uint SCENE_TILE_DIMENSION_CONSTANT_ID = 0;
