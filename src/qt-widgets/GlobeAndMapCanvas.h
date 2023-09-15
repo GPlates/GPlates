@@ -402,6 +402,10 @@ namespace GPlatesQtWidgets
 		wheelEvent(
 				QWheelEvent *wheel_event) override;
 
+		void
+		exposeEvent(
+				QExposeEvent *expose_event) override;
+
 	private Q_SLOTS:
 		// NOTE: all signals/slots should use namespace scope for all arguments
 		//       otherwise differences between signals and slots will cause Qt
@@ -564,11 +568,18 @@ namespace GPlatesQtWidgets
 		is_mouse_in_drag() const;
 
 		/**
-		 * Update the mouse screen position and associated position on globe/map (from mouse event).
+		 * Extracts the mouse screen position from the mouse event.
+		 */
+		QPointF
+		get_mouse_position(
+				QMouseEvent *mouse_event);
+
+		/**
+		 * Update the mouse screen position and associated position on globe/map.
 		 */
 		void
 		update_mouse_position(
-				QMouseEvent *mouse_event);
+				const QPointF &mouse_screen_position);
 	};
 }
 

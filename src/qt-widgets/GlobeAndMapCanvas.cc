@@ -31,6 +31,7 @@
 #include <boost/bind/bind.hpp>
 #include <boost/optional.hpp>
 #include <QtGlobal>
+#include <QCursor>
 #include <QDebug>
 #include <QString>
 #include <QVulkanInstance>
@@ -818,7 +819,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::mousePressEvent(
 		return;
 	}
 
-	update_mouse_position(press_event);
+	update_mouse_position(get_mouse_position(press_event));
 
 	d_mouse_press_info =
 			MousePressInfo(
@@ -859,7 +860,7 @@ void
 GPlatesQtWidgets::GlobeAndMapCanvas::mouseMoveEvent(
 	QMouseEvent *move_event)
 {
-	update_mouse_position(move_event);
+	update_mouse_position(get_mouse_position(move_event));
 
 	if (d_mouse_press_info)
 	{
@@ -960,7 +961,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::mouseReleaseEvent(
 		return;
 	}
 
-	update_mouse_position(release_event);
+	update_mouse_position(get_mouse_position(release_event));
 
 	if (is_mouse_in_drag())
 	{
@@ -1094,6 +1095,49 @@ GPlatesQtWidgets::GlobeAndMapCanvas::wheelEvent(
 }
 
 
+void
+GPlatesQtWidgets::GlobeAndMapCanvas::exposeEvent(
+		QExposeEvent *expose_event)
+{
+	if (isExposed())
+	{
+		// This window has just been exposed so it's possible the user has switched to another
+		// application (eg, alt+tab), then moved the mouse cursor, then switched back to GPlates.
+		// In this case our reported mouse position on the globe will be incorrect unless we get the new
+		// mouse position from the cursor and update our mouse position.
+		//
+		// Note: We update our mouse screen position even if the cursor is outside our window.
+		//       Otherwise the last reported position (eg, inside the window) would have remained
+		//       displayed even though the mouse position is no longer there.
+		QPoint mouse_screen_position = mapFromGlobal(QCursor::pos());
+
+		// Clamp the mouse 'x' position to be inside the window.
+		if (mouse_screen_position.x() < 0)
+		{
+			mouse_screen_position.setX(0);
+		}
+		else if (mouse_screen_position.x() > width())
+		{
+			mouse_screen_position.setX(width());
+		}
+
+		// Clamp the mouse 'y' position to be inside the window.
+		if (mouse_screen_position.y() < 0)
+		{
+			mouse_screen_position.setY(0);
+		}
+		else if (mouse_screen_position.y() > height())
+		{
+			mouse_screen_position.setY(height());
+		}
+
+		update_mouse_position(mouse_screen_position);
+	}
+
+	VulkanWindow::exposeEvent(expose_event);
+}
+
+
 GPlatesMaths::PointOnSphere
 GPlatesQtWidgets::GlobeAndMapCanvas::centre_of_viewport() const
 {
@@ -1122,17 +1166,25 @@ GPlatesQtWidgets::GlobeAndMapCanvas::is_mouse_in_drag() const
 }
 
 
-void
-GPlatesQtWidgets::GlobeAndMapCanvas::update_mouse_position(
+QPointF
+GPlatesQtWidgets::GlobeAndMapCanvas::get_mouse_position(
 		QMouseEvent *mouse_event)
 {
-	d_mouse_screen_position = mouse_event->
+	return mouse_event->
 #if QT_VERSION >= QT_VERSION_CHECK(6,0,0)
 			position()
 #else
 			localPos()
 #endif
 			;
+}
+
+
+void
+GPlatesQtWidgets::GlobeAndMapCanvas::update_mouse_position(
+		const QPointF &mouse_screen_position)
+{
+	d_mouse_screen_position = mouse_screen_position;
 
 	// Note that OpenGL and Qt y-axes are the reverse of each other.
 	const double mouse_window_y = height() - d_mouse_screen_position.y();
