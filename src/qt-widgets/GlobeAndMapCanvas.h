@@ -411,6 +411,9 @@ namespace GPlatesQtWidgets
 		//       otherwise differences between signals and slots will cause Qt
 		//       to not be able to connect them at runtime.
 
+		void
+		handle_view_changed();
+
 	private:
 
 		struct MousePressInfo
@@ -580,6 +583,14 @@ namespace GPlatesQtWidgets
 		void
 		update_mouse_position(
 				const QPointF &mouse_screen_position);
+
+		/**
+		 * Update the position on globe/map.
+		 *
+		 * This is useful when the camera or projection changes but the mouse position does not change.
+		 */
+		void
+		update_mouse_position_on_globe_and_map();
 	};
 }
 

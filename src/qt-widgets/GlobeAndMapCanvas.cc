@@ -79,8 +79,8 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 	d_mouse_is_on_globe(false)
 {
 	// Update our canvas whenever the RenderedGeometryCollection gets updated.
-	// This will cause 'paintGL()' to be called which will visit the rendered
-	// geometry collection and redraw it.
+	// This will indirectly cause 'render_to_window()' to be called which will
+	// visit the rendered geometry collection and redraw it.
 	QObject::connect(
 			&view_state.get_rendered_geometry_collection(),
 			SIGNAL(collection_was_updated(
@@ -94,7 +94,7 @@ GPlatesQtWidgets::GlobeAndMapCanvas::GlobeAndMapCanvas(
 	// Note that the scene view changes when the globe/map cameras change.
 	QObject::connect(
 			&*d_scene_view, SIGNAL(view_changed()),
-			this, SLOT(update_canvas()));
+			this, SLOT(handle_view_changed()));
 
 	//
 	// NOTE: This window is not yet initialised (eg, calling width() and height() might return undefined values).
@@ -173,6 +173,19 @@ GPlatesQtWidgets::GlobeAndMapCanvas::update_canvas()
 	requestUpdate();
 }
 
+
+void
+GPlatesQtWidgets::GlobeAndMapCanvas::handle_view_changed()
+{
+	// It's possible the camera or projection has changed but without the mouse position changing.
+	// This can happen if the keyboard was used to change the camera or projection.
+	// In this case we don't need to update the mouse screen position. Instead we only need to update
+	// the position on the globe/map that the current mouse screen position projects onto.
+	update_mouse_position_on_globe_and_map();
+
+	// Redraw the canvas.
+	update_canvas();
+}
 
 void
 GPlatesQtWidgets::GlobeAndMapCanvas::initialise_vulkan_resources(
@@ -1186,6 +1199,13 @@ GPlatesQtWidgets::GlobeAndMapCanvas::update_mouse_position(
 {
 	d_mouse_screen_position = mouse_screen_position;
 
+	update_mouse_position_on_globe_and_map();
+}
+
+
+void
+GPlatesQtWidgets::GlobeAndMapCanvas::update_mouse_position_on_globe_and_map()
+{
 	// Note that OpenGL and Qt y-axes are the reverse of each other.
 	const double mouse_window_y = height() - d_mouse_screen_position.y();
 	const double mouse_window_x = d_mouse_screen_position.x();
