@@ -41,6 +41,7 @@
 #include "PyReconstructionTree.h"
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/python.h"
@@ -51,6 +52,8 @@
 #include "model/types.h"
 
 #include "property-values/GeoTimeInstant.h"
+
+#include "scribe/Scribe.h"
 
 
 namespace bp = boost::python;
@@ -254,17 +257,12 @@ GPlatesApi::RotationModel::create(
 	std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
 	rotation_features.get_files(feature_collection_files);
 
-	// Convert the feature collections (in the files) to weak refs (for ReconstructionTreeCreator).
+	// Extract the feature collections to weak refs (in the files) for ReconstructionTreeCreator.
 	std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> feature_collection_refs;
-	BOOST_FOREACH(
-			GPlatesFileIO::File::non_null_ptr_type feature_collection_file,
-			feature_collection_files)
+	for (GPlatesFileIO::File::non_null_ptr_type feature_collection_file : feature_collection_files)
 	{
-		GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection =
-				GPlatesUtils::get_non_null_pointer(
-						feature_collection_file->get_reference().get_feature_collection().handle_ptr());
-
-		feature_collection_refs.push_back(feature_collection->reference());
+		feature_collection_refs.push_back(
+				feature_collection_file->get_reference().get_feature_collection());
 	}
 
 	// Create a cached reconstruction tree creator.
@@ -279,7 +277,11 @@ GPlatesApi::RotationModel::create(
 	return non_null_ptr_type(
 			new RotationModel(
 					feature_collection_files,
-					cached_reconstruction_tree_creator_impl));
+					cached_reconstruction_tree_creator_impl,
+					// Only needed to assist with transcribing...
+					reconstruction_tree_cache_size,
+					extend_total_reconstruction_poles_to_distant_past,
+					default_anchor_plate_id));
 }
 
 
@@ -306,7 +308,11 @@ GPlatesApi::RotationModel::create(
 	return non_null_ptr_type(
 			new RotationModel(
 					feature_collection_files,
-					cached_reconstruction_tree_adaptor_impl));
+					cached_reconstruction_tree_adaptor_impl,
+					// Only needed to assist with transcribing...
+					reconstruction_tree_cache_size,
+					rotation_model->d_extend_total_reconstruction_poles_to_distant_past,
+					default_anchor_plate_id ? default_anchor_plate_id.get() : rotation_model->d_default_anchor_plate_id));
 }
 
 
@@ -411,6 +417,195 @@ GPlatesApi::RotationModel::get_files(
 			feature_collection_files.end(),
 			d_feature_collection_files.begin(),
 			d_feature_collection_files.end());
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesApi::RotationModel::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<RotationModel> &rotation_model)
+{
+	if (scribe.is_saving())
+	{
+		save_construct_data(scribe, rotation_model.get_object());
+	}
+	else // loading
+	{
+		std::vector<GPlatesFileIO::File::non_null_ptr_type> feature_collection_files;
+		unsigned int reconstruction_tree_cache_size;
+		bool extend_total_reconstruction_poles_to_distant_past;
+		GPlatesModel::integer_plate_id_type default_anchor_plate_id;
+		if (!load_construct_data(
+				scribe,
+				feature_collection_files,
+				reconstruction_tree_cache_size,
+				extend_total_reconstruction_poles_to_distant_past,
+				default_anchor_plate_id))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Extract the feature collections to weak refs (in the files) for ReconstructionTreeCreator.
+		std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> feature_collection_refs;
+		for (auto feature_collection_file : feature_collection_files)
+		{
+			feature_collection_refs.push_back(
+					feature_collection_file->get_reference().get_feature_collection());
+		}
+
+		// Create a cached reconstruction tree creator.
+		const GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::non_null_ptr_type
+				cached_reconstruction_tree_creator_impl =
+						GPlatesAppLogic::create_cached_reconstruction_tree_creator_impl(
+								feature_collection_refs,
+								extend_total_reconstruction_poles_to_distant_past,
+								default_anchor_plate_id,
+								reconstruction_tree_cache_size);
+
+		// Create the rotation model.
+		rotation_model.construct_object(
+				feature_collection_files,
+				cached_reconstruction_tree_creator_impl,
+				reconstruction_tree_cache_size,
+				extend_total_reconstruction_poles_to_distant_past,
+				default_anchor_plate_id);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesApi::RotationModel::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			save_construct_data(scribe, *this);
+		}
+		else // loading
+		{
+			if (!load_construct_data(
+					scribe,
+					d_feature_collection_files,
+					d_reconstruction_tree_cache_size,
+					d_extend_total_reconstruction_poles_to_distant_past,
+					d_default_anchor_plate_id))
+			{
+				return scribe.get_transcribe_result();
+			}
+
+			// Extract the feature collections to weak refs (in the files) for ReconstructionTreeCreator.
+			std::vector<GPlatesModel::FeatureCollectionHandle::weak_ref> feature_collection_refs;
+			for (auto feature_collection_file : d_feature_collection_files)
+			{
+				feature_collection_refs.push_back(
+						feature_collection_file->get_reference().get_feature_collection());
+			}
+
+			// Create a cached reconstruction tree creator.
+			//
+			// Note: The existing cached reconstruction tree creator in 'this' rotation model must be old data
+			//       because 'transcribed_construct_data' is false (ie, it was not transcribed) and so 'this'
+			//       object must've been created first (using unknown constructor arguments) and *then* transcribed.
+			d_cached_reconstruction_tree_creator_impl =
+					GPlatesAppLogic::create_cached_reconstruction_tree_creator_impl(
+							feature_collection_refs,
+							d_extend_total_reconstruction_poles_to_distant_past,
+							d_default_anchor_plate_id,
+							d_reconstruction_tree_cache_size);
+			d_reconstruction_tree_creator = GPlatesAppLogic::ReconstructionTreeCreator(
+					d_cached_reconstruction_tree_creator_impl);
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+void
+GPlatesApi::RotationModel::save_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		const RotationModel &rotation_model)
+{
+	const GPlatesScribe::ObjectTag files_tag("files");
+
+	// Save number of feature collection files.
+	const unsigned int num_files = rotation_model.d_feature_collection_files.size();
+	scribe.save(TRANSCRIBE_SOURCE, num_files, files_tag.sequence_size());
+
+	// Save the feature collection files (feature collections and their filenames).
+	for (unsigned int file_index = 0; file_index < num_files; ++file_index)
+	{
+		const auto feature_collection_file = rotation_model.d_feature_collection_files[file_index];
+
+		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection(
+				feature_collection_file->get_reference().get_feature_collection().handle_ptr());
+		const QString filename =
+				feature_collection_file->get_reference().get_file_info().get_qfileinfo().absoluteFilePath();
+
+		scribe.save(TRANSCRIBE_SOURCE, feature_collection, files_tag[file_index]("feature_collection"));
+		scribe.save(TRANSCRIBE_SOURCE, filename, files_tag[file_index]("filename"));
+	}
+
+	// Save data members are only needed to assist with transcribing.
+	scribe.save(TRANSCRIBE_SOURCE, rotation_model.d_reconstruction_tree_cache_size, "reconstruction_tree_cache_size");
+	scribe.save(TRANSCRIBE_SOURCE, rotation_model.d_extend_total_reconstruction_poles_to_distant_past, "extend_total_reconstruction_poles_to_distant_past");
+	scribe.save(TRANSCRIBE_SOURCE, rotation_model.d_default_anchor_plate_id, "default_anchor_plate_id");
+}
+
+
+bool
+GPlatesApi::RotationModel::load_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files,
+		unsigned int &reconstruction_tree_cache_size,
+		bool &extend_total_reconstruction_poles_to_distant_past,
+		GPlatesModel::integer_plate_id_type &default_anchor_plate_id)
+{
+	const GPlatesScribe::ObjectTag files_tag("files");
+
+	// Number of feature collection files.
+	unsigned int num_files;
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, num_files, files_tag.sequence_size()))
+	{
+		return false;
+	}
+
+	// Load the feature collection files (feature collections and their filenames).
+	for (unsigned int file_index = 0; file_index < num_files; ++file_index)
+	{
+		GPlatesScribe::LoadRef<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> feature_collection =
+				scribe.load<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(
+						TRANSCRIBE_SOURCE,
+						files_tag[file_index]("feature_collection"));
+		if (!feature_collection.is_valid())
+		{
+			return false;
+		}
+
+		QString filename;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, filename, files_tag[file_index]("filename")))
+		{
+			return false;
+		}
+
+		feature_collection_files.push_back(
+				GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(filename), feature_collection));
+	}
+
+	// Load data members are only needed to assist with transcribing.
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, reconstruction_tree_cache_size, "reconstruction_tree_cache_size") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, extend_total_reconstruction_poles_to_distant_past, "extend_total_reconstruction_poles_to_distant_past") ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, default_anchor_plate_id, "default_anchor_plate_id"))
+	{
+		return false;
+	}
+
+	return true;
 }
 
 
@@ -782,6 +977,8 @@ export_rotation_model()
 				"  .. versionadded:: 0.29\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesApi::RotationModel::non_null_ptr_type>())
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.

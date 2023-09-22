@@ -45,6 +45,9 @@
 
 #include "property-values/GeoTimeInstant.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/ReferenceCount.h"
 
 
@@ -190,10 +193,18 @@ namespace GPlatesApi
 
 		RotationModel(
 				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files,
-				GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::non_null_ptr_type cached_reconstruction_tree_creator_impl) :
+				GPlatesAppLogic::CachedReconstructionTreeCreatorImpl::non_null_ptr_type cached_reconstruction_tree_creator_impl,
+				// Only needed to assist with transcribing...
+				unsigned int reconstruction_tree_cache_size,
+				bool extend_total_reconstruction_poles_to_distant_past,
+				GPlatesModel::integer_plate_id_type default_anchor_plate_id) :
 			d_feature_collection_files(feature_collection_files),
 			d_cached_reconstruction_tree_creator_impl(cached_reconstruction_tree_creator_impl),
-			d_reconstruction_tree_creator(cached_reconstruction_tree_creator_impl)
+			d_reconstruction_tree_creator(cached_reconstruction_tree_creator_impl),
+			// Only needed to assist with transcribing...
+			d_reconstruction_tree_cache_size(reconstruction_tree_cache_size),
+			d_extend_total_reconstruction_poles_to_distant_past(extend_total_reconstruction_poles_to_distant_past),
+			d_default_anchor_plate_id(default_anchor_plate_id)
 		{  }
 
 
@@ -216,6 +227,40 @@ namespace GPlatesApi
 		 */
 		GPlatesAppLogic::ReconstructionTreeCreator d_reconstruction_tree_creator;
 
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<RotationModel> &rotation_model);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
+
+		static
+		void
+		save_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				const RotationModel &rotation_model);
+
+		static
+		bool
+		load_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				std::vector<GPlatesFileIO::File::non_null_ptr_type> &feature_collection_files,
+				unsigned int &reconstruction_tree_cache_size,
+				bool &extend_total_reconstruction_poles_to_distant_past,
+				GPlatesModel::integer_plate_id_type &default_anchor_plate_id);
+
+		// These data members are only needed to assist with transcribing.
+		unsigned int d_reconstruction_tree_cache_size;
+		bool d_extend_total_reconstruction_poles_to_distant_past;
+		GPlatesModel::integer_plate_id_type d_default_anchor_plate_id;
 	};
 
 

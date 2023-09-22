@@ -4,6 +4,7 @@ Unit tests for the pygplates application logic API.
 
 import math
 import os
+import pickle
 import shutil
 import unittest
 import pygplates
@@ -1871,6 +1872,23 @@ class RotationModelCase(unittest.TestCase):
         self.assertTrue(
             non_zero_present_day_rotation_model.get_rotation(10.0, 801, 0.0) ==
             non_zero_present_day_rotation_model.get_rotation(10.0, 801) * non_zero_present_day_rotation_model.get_rotation(0.0, 801).get_inverse())
+    
+    def test_pickle(self):
+        pickled_rotation_model = pickle.loads(pickle.dumps(self.rotation_model))
+        self.assertTrue(pickled_rotation_model.get_rotation(self.to_time, 802) ==
+                        self.rotation_model.get_rotation(self.to_time, 802))
+        self.assertTrue(pickled_rotation_model.get_rotation(self.to_time, 802, fixed_plate_id=291, anchor_plate_id=802) ==
+                        self.rotation_model.get_rotation(self.to_time, 802, fixed_plate_id=291, anchor_plate_id=802))
+        # Test a rotation model that delegates to an existing rotation model.
+        rotation_model_delegator = pygplates.RotationModel(self.rotation_model, default_anchor_plate_id=701)
+        pickled_rotation_model_delegator = pickle.loads(pickle.dumps(rotation_model_delegator))
+        self.assertTrue(pickled_rotation_model_delegator.get_rotation(self.to_time, 802) ==
+                        rotation_model_delegator.get_rotation(self.to_time, 802))
+        # Test a rotation model with non-zero default anchor plate ID (to ensure default anchor plate ID is transcribed).
+        rotation_model_non_zero_default_anchor = pygplates.RotationModel(self.rotations, default_anchor_plate_id=701)
+        pickled_rotation_model_non_zero_default_anchor = pickle.loads(pickle.dumps(rotation_model_non_zero_default_anchor))
+        self.assertTrue(pickled_rotation_model_non_zero_default_anchor.get_rotation(self.to_time, 802) ==
+                        rotation_model_non_zero_default_anchor.get_rotation(self.to_time, 802))
 
 
 class TopologicalModelCase(unittest.TestCase):
