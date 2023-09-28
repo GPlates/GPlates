@@ -43,6 +43,7 @@
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
+#include "PythonPickle.h"
 
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/ScalarCoverageEvolution.h"
@@ -60,6 +61,8 @@
 
 #include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
+
+#include "scribe/Scribe.h"
 
 
 namespace bp = boost::python;
@@ -552,38 +555,68 @@ GPlatesApi::TopologicalModel::create(
 				anchor_plate_id ? anchor_plate_id.get() : 0);
 	}
 
-	// If no resolve topology parameters specified then use default values.
+	// Get the topological files.
+	std::vector<GPlatesFileIO::File::non_null_ptr_type> topological_files;
+	topological_features.get_files(topological_files);
+
+	// Get the associated resolved topology parameters.
+	std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> resolve_topology_parameters;
+	topological_features.get_resolve_topology_parameters(resolve_topology_parameters);
+
+	// If no default resolve topology parameters specified then use default values.
 	if (!default_resolve_topology_parameters)
 	{
 		default_resolve_topology_parameters = ResolveTopologyParameters::create();
 	}
 
 	return non_null_ptr_type(
-			new TopologicalModel(topological_features, rotation_model.get(), default_resolve_topology_parameters.get()));
+			new TopologicalModel(
+					rotation_model.get(),
+					topological_files,
+					resolve_topology_parameters,
+					default_resolve_topology_parameters.get()));
 }
 
 
 GPlatesApi::TopologicalModel::TopologicalModel(
-		const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features,
 		const RotationModel::non_null_ptr_type &rotation_model,
+		const std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
+		const std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> &resolve_topology_parameters,
 		ResolveTopologyParameters::non_null_ptr_to_const_type default_resolve_topology_parameters) :
 	d_rotation_model(rotation_model),
-	d_topological_section_reconstruct_context(d_reconstruct_method_registry),
-	d_topological_section_reconstruct_context_state(
-			d_topological_section_reconstruct_context.create_context_state(
-					GPlatesAppLogic::ReconstructMethodInterface::Context(
-							GPlatesAppLogic::ReconstructParams(),
-							d_rotation_model->get_reconstruction_tree_creator())))
+	d_topological_files(topological_files),
+	d_resolve_topology_parameters(resolve_topology_parameters),
+	d_default_resolve_topology_parameters(default_resolve_topology_parameters),
+	d_topological_section_reconstruct_context(d_reconstruct_method_registry)
 {
-	// Get the topological feature collections / files.
-	topological_features.get_feature_collections(d_topological_feature_collections);
-	topological_features.get_files(d_topological_files);
-	// Get the associated resolved topology parameters.
-	std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> resolve_topology_parameters_list;
-	topological_features.get_resolve_topology_parameters(resolve_topology_parameters_list);
+	initialise_topological_reconstruction();
+}
+
+
+void
+GPlatesApi::TopologicalModel::initialise_topological_reconstruction()
+{
+	// Clear the data members we're about to initialise in case this function called during transcribing.
+	d_topological_feature_collections.clear();
+	d_topological_line_features.clear();
+	d_topological_boundary_features.clear();
+	d_topological_network_features_map.clear();
+	d_topological_section_regular_features.clear();
+	// Also clear any caches.
+	d_cached_topological_snapshots.clear();
+
+	// Extract a feature collection from each topological file.
+	for (auto topological_file : d_topological_files)
+	{
+		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type topological_feature_collection(
+				topological_file->get_reference().get_feature_collection().handle_ptr());
+
+		d_topological_feature_collections.push_back(topological_feature_collection);
+	}
+
 	// Each feature collection has an optional associated resolve topology parameters.
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
-			resolve_topology_parameters_list.size() == d_topological_feature_collections.size(),
+			d_resolve_topology_parameters.size() == d_topological_feature_collections.size(),
 			GPLATES_ASSERTION_SOURCE);
 
 	// Separate into regular features (used as topological sections for topological lines/boundaries/networks),
@@ -598,12 +631,12 @@ GPlatesApi::TopologicalModel::TopologicalModel(
 	for (unsigned int feature_collection_index = 0; feature_collection_index < num_feature_collections; ++feature_collection_index)
 	{
 		auto feature_collection = d_topological_feature_collections[feature_collection_index];
-		auto resolve_topology_parameters = resolve_topology_parameters_list[feature_collection_index];
+		auto resolve_topology_parameters = d_resolve_topology_parameters[feature_collection_index];
 
 		// If current feature collection did not specify resolve topology parameters then use the default parameters.
 		if (!resolve_topology_parameters)
 		{
-			resolve_topology_parameters = default_resolve_topology_parameters;
+			resolve_topology_parameters = d_default_resolve_topology_parameters;
 		}
 
 		for (auto feature : *feature_collection)
@@ -638,6 +671,12 @@ GPlatesApi::TopologicalModel::TopologicalModel(
 			}
 		}
 	}
+
+	d_topological_section_reconstruct_context_state =
+			d_topological_section_reconstruct_context.create_context_state(
+					GPlatesAppLogic::ReconstructMethodInterface::Context(
+							GPlatesAppLogic::ReconstructParams(),
+							d_rotation_model->get_reconstruction_tree_creator()));
 
 	// Set the topological section regular features in the reconstruct context.
 	d_topological_section_reconstruct_context.set_features(d_topological_section_regular_features);
@@ -927,6 +966,176 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 			GPlatesAppLogic::ScalarCoverageTimeSpan::create(initial_scalar_coverage, geometry_time_span);
 
 	return ReconstructedGeometryTimeSpan::create(geometry_time_span, scalar_coverage_time_span);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesApi::TopologicalModel::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<TopologicalModel> &topological_model)
+{
+	if (scribe.is_saving())
+	{
+		save_construct_data(scribe, topological_model.get_object());
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<RotationModel::non_null_ptr_type> rotation_model;
+		std::vector<GPlatesFileIO::File::non_null_ptr_type> topological_files;
+		std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> resolve_topology_parameters;
+		GPlatesScribe::LoadRef<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters;
+		if (!load_construct_data(
+				scribe,
+				rotation_model,
+				topological_files,
+				resolve_topology_parameters,
+				default_resolve_topology_parameters))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		// Create the topological model.
+		topological_model.construct_object(
+				rotation_model,
+				topological_files,
+				resolve_topology_parameters,
+				default_resolve_topology_parameters);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesApi::TopologicalModel::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			save_construct_data(scribe, *this);
+		}
+		else // loading
+		{
+			GPlatesScribe::LoadRef<RotationModel::non_null_ptr_type> rotation_model;
+			GPlatesScribe::LoadRef<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters;
+			if (!load_construct_data(
+					scribe,
+					rotation_model,
+					d_topological_files,
+					d_resolve_topology_parameters,
+					default_resolve_topology_parameters))
+			{
+				return scribe.get_transcribe_result();
+			}
+			d_rotation_model = rotation_model.get();
+			d_default_resolve_topology_parameters = default_resolve_topology_parameters.get();
+
+			// Initialise topological reconstruction (based on the construct parameters we just loaded).
+			//
+			// Note: The existing topological reconstruction in 'this' topological model must be old data
+			//       because 'transcribed_construct_data' is false (ie, it was not transcribed) and so 'this'
+			//       object must've been created first (using unknown constructor arguments) and *then* transcribed.
+			initialise_topological_reconstruction();
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+void
+GPlatesApi::TopologicalModel::save_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		const TopologicalModel &topological_model)
+{
+	// Save the rotation model.
+	scribe.save(TRANSCRIBE_SOURCE, topological_model.d_rotation_model, "rotation_model");
+
+	const GPlatesScribe::ObjectTag files_tag("files");
+
+	// Save number of topological files.
+	const unsigned int num_files = topological_model.d_topological_files.size();
+	scribe.save(TRANSCRIBE_SOURCE, num_files, files_tag.sequence_size());
+
+	// Save the topological files (feature collections and their filenames).
+	for (unsigned int file_index = 0; file_index < num_files; ++file_index)
+	{
+		const auto feature_collection_file = topological_model.d_topological_files[file_index];
+
+		const GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection(
+				feature_collection_file->get_reference().get_feature_collection().handle_ptr());
+		const QString filename =
+				feature_collection_file->get_reference().get_file_info().get_qfileinfo().absoluteFilePath();
+
+		scribe.save(TRANSCRIBE_SOURCE, feature_collection, files_tag[file_index]("feature_collection"));
+		scribe.save(TRANSCRIBE_SOURCE, filename, files_tag[file_index]("filename"));
+	}
+
+	// Save the resolved topology parameters.
+	scribe.save(TRANSCRIBE_SOURCE, topological_model.d_resolve_topology_parameters, "resolve_topology_parameters");
+	scribe.save(TRANSCRIBE_SOURCE, topological_model.d_default_resolve_topology_parameters, "default_resolve_topology_parameters");
+}
+
+
+bool
+GPlatesApi::TopologicalModel::load_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::LoadRef<RotationModel::non_null_ptr_type> &rotation_model,
+		std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
+		const std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> &resolve_topology_parameters,
+		GPlatesScribe::LoadRef<ResolveTopologyParameters::non_null_ptr_to_const_type> &default_resolve_topology_parameters)
+{
+	// Load the rotation model.
+	rotation_model = scribe.load<RotationModel::non_null_ptr_type>(TRANSCRIBE_SOURCE, "rotation_model");
+	if (!rotation_model.is_valid())
+	{
+		return false;
+	}
+
+	const GPlatesScribe::ObjectTag files_tag("files");
+
+	// Number of topological files.
+	unsigned int num_files;
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, num_files, files_tag.sequence_size()))
+	{
+		return false;
+	}
+
+	// Load the topological files (feature collections and their filenames).
+	for (unsigned int file_index = 0; file_index < num_files; ++file_index)
+	{
+		GPlatesScribe::LoadRef<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> feature_collection =
+				scribe.load<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>(
+						TRANSCRIBE_SOURCE,
+						files_tag[file_index]("feature_collection"));
+		if (!feature_collection.is_valid())
+		{
+			return false;
+		}
+
+		QString filename;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, filename, files_tag[file_index]("filename")))
+		{
+			return false;
+		}
+
+		topological_files.push_back(
+				GPlatesFileIO::File::create_file(GPlatesFileIO::FileInfo(filename), feature_collection));
+	}
+
+	// Load the resolved topology parameters.
+	default_resolve_topology_parameters = scribe.load<ResolveTopologyParameters::non_null_ptr_to_const_type>(
+			TRANSCRIBE_SOURCE, "default_resolve_topology_parameters");
+	if (!default_resolve_topology_parameters.is_valid() ||
+		!scribe.transcribe(TRANSCRIBE_SOURCE, resolve_topology_parameters, "resolve_topology_parameters"))
+	{
+		return false;
+	}
+
+	return true;
 }
 
 
@@ -1471,6 +1680,8 @@ export_topological_model()
 				"of :meth:`get_rotation_model`.\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesApi::TopologicalModel::non_null_ptr_type>())
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.

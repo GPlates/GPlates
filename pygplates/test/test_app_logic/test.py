@@ -2135,6 +2135,48 @@ class TopologicalModelCase(unittest.TestCase):
         self.assertTrue(reconstructed_multipoint_time_span.get_scalar_values(20, pygplates.ScalarType.gpml_crustal_stretching_factor) == [1.0, 1.0, 1.0])
         scalars_dict = reconstructed_multipoint_time_span.get_scalar_values(20, return_inactive_points=True)
         self.assertTrue(len(scalars_dict) >= 2)
+    
+    def test_pickle(self):
+        # Pickle a TopologicalModel.
+        pickled_topological_model = pickle.loads(pickle.dumps(self.topological_model))
+        self.assertTrue(pickled_topological_model.get_rotation_model().get_rotation(100, 802) ==
+                        self.topological_model.get_rotation_model().get_rotation(100, 802))
+        # Check snapshots of the original and pickled topological models.
+        resolved_topologies = self.topological_model.topological_snapshot(10.0).get_resolved_topologies(same_order_as_topological_features=True)
+        pickled_resolved_topologies = pickled_topological_model.topological_snapshot(10.0).get_resolved_topologies(same_order_as_topological_features=True)
+        self.assertTrue(len(pickled_resolved_topologies) == len(resolved_topologies))
+        for index in range(len(pickled_resolved_topologies)):
+            self.assertTrue(pickled_resolved_topologies[index].get_resolved_geometry() == resolved_topologies[index].get_resolved_geometry())
+        # Check reconstructed geometry time spans of the original and pickled topological models.
+        reconstructed_time_span = self.topological_model.reconstruct_geometry(
+                pygplates.MultiPointOnSphere([(0,0), (10,10)]),
+                initial_time=20.0,
+                oldest_time=30.0,
+                youngest_time=10.0,
+                reconstruction_plate_id=802,
+                initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
+        pickled_reconstructed_time_span = pickled_topological_model.reconstruct_geometry(
+                pygplates.MultiPointOnSphere([(0,0), (10,10)]),
+                initial_time=20.0,
+                oldest_time=30.0,
+                youngest_time=10.0,
+                reconstruction_plate_id=802,
+                initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
+        self.assertTrue(pickled_reconstructed_time_span.get_geometry_points(10.0) == reconstructed_time_span.get_geometry_points(10.0))
+        self.assertTrue(pickled_reconstructed_time_span.get_scalar_values(10.0) == reconstructed_time_span.get_scalar_values(10.0))
+        # Check the topology point locations explicitly (since resolved topologies are not equality comparable).
+        pickled_topology_point_locations = pickled_reconstructed_time_span.get_topology_point_locations(10.0)
+        topology_point_locations = reconstructed_time_span.get_topology_point_locations(10.0)
+        self.assertTrue(len(pickled_topology_point_locations) == len(topology_point_locations))
+        for index in range(len(pickled_topology_point_locations)):
+            pickled_located_in_resolved_boundary = pickled_topology_point_locations[index].located_in_resolved_boundary()
+            located_in_resolved_boundary = topology_point_locations[index].located_in_resolved_boundary()
+            self.assertTrue((pickled_located_in_resolved_boundary is None and located_in_resolved_boundary is None) or
+                            pickled_located_in_resolved_boundary.get_resolved_geometry() == located_in_resolved_boundary.get_resolved_geometry())
+            pickled_located_in_resolved_network = pickled_topology_point_locations[index].located_in_resolved_network()
+            located_in_resolved_network = topology_point_locations[index].located_in_resolved_network()
+            self.assertTrue((pickled_located_in_resolved_network is None and located_in_resolved_network is None) or
+                            pickled_located_in_resolved_network.get_resolved_geometry() == located_in_resolved_network.get_resolved_geometry())
 
 
 class TopologicalSnapshotCase(unittest.TestCase):

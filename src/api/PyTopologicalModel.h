@@ -57,6 +57,10 @@
 #include "property-values/GeoTimeInstant.h"
 #include "property-values/ValueObjectType.h"
 
+#include "scribe/ScribeLoadRef.h"
+ // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 #include "utils/ReferenceCount.h"
 
 
@@ -342,6 +346,14 @@ namespace GPlatesApi
 		std::vector<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type> d_topological_feature_collections;
 		std::vector<GPlatesFileIO::File::non_null_ptr_type> d_topological_files;
 
+		/**
+		 * Optional resolved topology parameters for each topological feature collection/file.
+		 */
+		std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> d_resolve_topology_parameters;
+
+		//! Default resolved topology parameters for those topological feature collection/file with no parameters.
+		ResolveTopologyParameters::non_null_ptr_to_const_type d_default_resolve_topology_parameters;
+
 		// Separate the topological features into regular features (used as topological sections for
 		// topological lines/boundaries/networks), topological lines (can also be used as topological
 		// sections for topological boundaries/networks), topological boundaries and topological networks.
@@ -368,9 +380,16 @@ namespace GPlatesApi
 
 
 		TopologicalModel(
-				const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features,
 				const RotationModel::non_null_ptr_type &rotation_model,
+				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
+				const std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> &resolve_topology_parameters,
 				ResolveTopologyParameters::non_null_ptr_to_const_type default_resolve_topology_parameters);
+
+		/**
+		 * Set up for topological reconstruction once the topological files/parameters have been constructed.
+		 */
+		void
+		initialise_topological_reconstruction();
 
 		/**
 		 * Resolves topologies for the specified time and returns them as a topological snapshot.
@@ -380,6 +399,36 @@ namespace GPlatesApi
 		TopologicalSnapshot::non_null_ptr_type
 		create_topological_snapshot(
 				const double &reconstruction_time);
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<TopologicalModel> &topological_model);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
+
+		static
+		void
+		save_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				const TopologicalModel &topological_model);
+
+		static
+		bool
+		load_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::LoadRef<RotationModel::non_null_ptr_type> &rotation_model,
+				std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
+				const std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> &resolve_topology_parameters,
+				GPlatesScribe::LoadRef<ResolveTopologyParameters::non_null_ptr_to_const_type> &default_resolve_topology_parameters);
 	};
 }
 

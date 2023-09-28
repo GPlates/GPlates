@@ -28,8 +28,11 @@
 #include "PyResolveTopologyParameters.h"
 
 #include "PythonConverterUtils.h"
+#include "PythonPickle.h"
 
 #include "global/python.h"
+
+#include "scribe/Scribe.h"
 
 
 namespace bp = boost::python;
@@ -67,6 +70,54 @@ GPlatesApi::ResolveTopologyParameters::ResolveTopologyParameters(
 	strain_rate_clamping.max_total_strain_rate = max_total_strain_rate;
 
 	d_topology_network_params.set_strain_rate_clamping(strain_rate_clamping);
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesApi::ResolveTopologyParameters::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<ResolveTopologyParameters> &resolved_topology_parameters)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, resolved_topology_parameters->d_topology_network_params, "topology_network_params");
+	}
+	else // loading
+	{
+		GPlatesAppLogic::TopologyNetworkParams topology_network_params;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, topology_network_params, "topology_network_params"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		resolved_topology_parameters.construct_object(topology_network_params);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesApi::ResolveTopologyParameters::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (scribe.is_saving())
+		{
+			scribe.save(TRANSCRIBE_SOURCE, d_topology_network_params, "topology_network_params");
+		}
+		else // loading
+		{
+			if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_topology_network_params, "topology_network_params"))
+			{
+				return scribe.get_transcribe_result();
+			}
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 
@@ -130,6 +181,8 @@ export_resolve_topology_parameters()
 							bp::arg("max_clamped_strain_rate") =
 								GPlatesApi::ResolveTopologyParameters::DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_strain_rate_clamping().max_total_strain_rate)),
 			resolve_topology_parameters_constructor_docstring_stream.str().c_str())
+		// Pickle support...
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesApi::ResolveTopologyParameters::non_null_ptr_type>())
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
