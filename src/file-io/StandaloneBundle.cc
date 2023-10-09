@@ -42,7 +42,7 @@ namespace GPlatesFileIO
 		namespace
 		{
 #if !defined(GPLATES_PYTHON_EMBEDDING)  // pygplates
-			// This should be initialised with 'set_pygplates_bundle_directory()' just after the
+			// This should be initialised with 'StandaloneBundle::initialise()' just after the
 			// non-embedded pygplates module was imported by an external (non-embedded Python interpreter).
 			boost::optional<QString> pygplates_bundle_directory;
 #endif
@@ -98,8 +98,8 @@ namespace GPlatesFileIO
 
 
 		boost::optional<QString>
-		get_bundle_data_directory(
-				QString data_dir_relative_to_resources_dir)
+		get_bundle_resources_sub_directory(
+				QString dir_relative_to_resources_dir)
 		{
 			// Get the bundle resources directory.
 			boost::optional<QString> bundle_resources_dir = get_bundle_resources_directory();
@@ -108,15 +108,15 @@ namespace GPlatesFileIO
 				return boost::none;
 			}
 
-			// See if the bundle data directory (in the resources directory) exists.
-			// If it does then it means the requested data was included in the standalone bundle.
-			QDir bundle_data_dir(bundle_resources_dir.get() + "/" + data_dir_relative_to_resources_dir);
-			if (!bundle_data_dir.exists())
+			// See if the sub-directory (in the resources directory) exists.
+			// If it does then it means the requested installation files were included in the standalone bundle.
+			QDir bundle_resources_sub_dir(bundle_resources_dir.get() + "/" + dir_relative_to_resources_dir);
+			if (!bundle_resources_sub_dir.exists())
 			{
 				return boost::none;
 			}
 
-			return bundle_data_dir.absolutePath();
+			return bundle_resources_sub_dir.absolutePath();
 		}
 	}
 }
@@ -172,6 +172,18 @@ GPlatesFileIO::StandaloneBundle::initialise(
 		CPLSetConfigOption("GDAL_DATA", bundle_gdal_data_dir.c_str());
 	}
 
+	//
+	// Let the GDAL dependency library know where to find its plugins (eg, 'gdal_netCDF.{dll,dylib,so}').
+	//
+	boost::optional<QString> bundle_gdal_plugins_directory = get_gdal_plugins_directory();
+	if (bundle_gdal_plugins_directory &&
+		QDir(bundle_gdal_plugins_directory.get()).exists())
+	{
+		const std::string bundle_gdal_plugins_dir = bundle_gdal_plugins_directory->toStdString();
+
+		CPLSetConfigOption("GDAL_DRIVER_PATH", bundle_gdal_plugins_dir.c_str());
+	}
+
 #endif
 }
 
@@ -179,14 +191,21 @@ GPlatesFileIO::StandaloneBundle::initialise(
 boost::optional<QString>
 GPlatesFileIO::StandaloneBundle::get_proj_data_directory()
 {
-	return get_bundle_data_directory(GPLATES_STANDALONE_PROJ_DATA_DIR);
+	return get_bundle_resources_sub_directory(GPLATES_STANDALONE_PROJ_DATA_DIR);
 }
 
 
 boost::optional<QString>
 GPlatesFileIO::StandaloneBundle::get_gdal_data_directory()
 {
-	return get_bundle_data_directory(GPLATES_STANDALONE_GDAL_DATA_DIR);
+	return get_bundle_resources_sub_directory(GPLATES_STANDALONE_GDAL_DATA_DIR);
+}
+
+
+boost::optional<QString>
+GPlatesFileIO::StandaloneBundle::get_gdal_plugins_directory()
+{
+	return get_bundle_resources_sub_directory(GPLATES_STANDALONE_GDAL_PLUGINS_DIR);
 }
 
 

@@ -53,11 +53,12 @@ endif()
 
 # The sub-directories of standalone base installation directory (or sub-dirs of
 # 'gplates.app/Contents/Resources/' dir of base installation for GPlates macOS app bundle)
-# to place data from the Proj (eg, 'proj.db') and GDAL libraries.
+# to place data/plugins from the Proj (eg, 'proj.db') and GDAL libraries.
 #
 # Note: Only used when GPLATES_INSTALL_STANDALONE is true.
 set(GPLATES_STANDALONE_PROJ_DATA_DIR proj_data)
 set(GPLATES_STANDALONE_GDAL_DATA_DIR gdal_data)
+set(GPLATES_STANDALONE_GDAL_PLUGINS_DIR gdal_plugins)
 
 # GPLATES_STANDALONE_PYTHON_STDLIB_DIR
 #

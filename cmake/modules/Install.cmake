@@ -478,6 +478,126 @@ del pygplates
         endif()
     endif()
 
+    ##########################################################################################################
+    # Copy the GDAL library plugins (eg, NetCDF) into standalone bundle (unless compiled into core library). #
+    ##########################################################################################################
+    #
+    # Find the GDAL home directory (the GDAL plugins will be in a sub-directory depending on the platform).
+    if (WIN32)
+        # The 'gdal-config' command is not available on Windows. Instead we'll use the GDAL_HOME environment variable (that we asked the user to set).
+        set(_gdal_home_dir $ENV{GDAL_HOME})
+        if (NOT _gdal_home_dir)
+            message(WARNING "GDAL_HOME environment variable not set - any GDAL library plugins not compiled into core library will not be included in standalone bundle.")
+        endif()
+    else() # Apple or Linux
+        # Find the 'gdal-config' command (should be able to find via PATH environment variable).
+        find_program(GDAL_CONFIG_COMMAND "gdal-config")
+        if (GDAL_CONFIG_COMMAND)
+            # Run 'gdal-config --prefix' to get directory that GDAL was install into.
+            execute_process(COMMAND ${GDAL_CONFIG_COMMAND} --prefix
+                RESULT_VARIABLE _gdal_config_result
+                OUTPUT_VARIABLE _gdal_config_output
+                ERROR_QUIET OUTPUT_STRIP_TRAILING_WHITESPACE)
+            if (NOT _gdal_config_result)  # success
+                set(_gdal_home_dir ${_gdal_config_output})
+            else()
+                message(WARNING "'gdal-config --prefix' failed - any GDAL library plugins not compiled into core library will not be included in standalone bundle.")
+            endif()
+        else()
+            message(WARNING "Unable to find 'gdal-config' command - any GDAL library plugins not compiled into core library will not be included in standalone bundle.")
+        endif()
+    endif()
+    #
+    if (_gdal_home_dir)
+        file(TO_CMAKE_PATH ${_gdal_home_dir} _gdal_home_dir)
+        if (EXISTS "${_gdal_home_dir}")
+            # Remove the trailing '/' if there is one.
+            string(REGEX REPLACE "/+$" "" _gdal_home_dir "${_gdal_home_dir}")
+        else()
+            message(WARNING "GDAL home directory \"${_gdal_home_dir}\" does not exist - any GDAL library plugins not compiled into core library will not be included in standalone bundle.")
+        endif()
+    endif()
+    #
+    # The GDAL 'plugins' install directory (relative to base install location).
+    #
+    # For gplates...
+    if (APPLE)
+        # On macOS place in 'gplates.app/Contents/Resources/gdal_plugins/'.
+        set(GDAL_PLUGINS_INSTALL_PREFIX_gplates "gplates.app/Contents/Resources/${GPLATES_STANDALONE_GDAL_PLUGINS_DIR}")
+    else() # Windows or Linux
+        # On Windows, and Linux, place in the 'gdal_plugins/' sub-directory of the directory containing the executable.
+        set(GDAL_PLUGINS_INSTALL_PREFIX_gplates "${GPLATES_STANDALONE_GDAL_PLUGINS_DIR}")
+    endif()
+    # For pygplates...
+    set(GDAL_PLUGINS_INSTALL_PREFIX_pygplates "${GPLATES_STANDALONE_GDAL_PLUGINS_DIR}")
+    #
+    # Function to install a GDAL plugin. Call as...
+    #
+    #   install_gdal_plugin(gdal_plugin_short_name install_component [EXCLUDE_FROM_ALL])
+    #
+    # ...and the full path to installed plugin file will be added to 'GDAL_PLUGINS_${install_component}'.
+    function(install_gdal_plugin gdal_plugin_short_name install_component)
+        if (NOT EXISTS "${_gdal_home_dir}")
+            return()
+        endif()
+
+        # Get the source file location of the GDAL plugin.
+        if (WIN32)
+            set(_gdal_plugin_path ${_gdal_home_dir}/bin/gdalplugins/gdal_${gdal_plugin_short_name}.dll)
+        elseif (APPLE)
+            # If the GDAL home directory is inside a framework then it has a different plugin path.
+            if (_gdal_home_dir MATCHES "[^/]+\\.framework/")
+                set(_gdal_plugin_path ${_gdal_home_dir}/PlugIns/gdal_${gdal_plugin_short_name}.dylib)
+            else()
+                set(_gdal_plugin_path ${_gdal_home_dir}/lib/gdalplugins/gdal_${gdal_plugin_short_name}.dylib)
+            endif()
+        else()  # Linux
+            set(_gdal_plugin_path ${_gdal_home_dir}/lib/gdalplugins/gdal_${gdal_plugin_short_name}.so)
+        endif()
+
+        if (NOT EXISTS "${_gdal_plugin_path}")
+            # Report message at install time since it's not an error if plugin is compiled into core GDAL library.
+            install(
+                    CODE "message(\"GDAL plugin ${_gdal_plugin_path} not found, so not installed (might be compiled into core GDAL library though)\")"
+                    COMPONENT ${install_component} ${ARGN})
+            return()
+        endif()
+
+        # The plugin install directory (relative to ${CMAKE_INSTALL_PREFIX}).
+        set(_install_gdal_plugin_dir ${STANDALONE_BASE_INSTALL_DIR_${install_component}}/${GDAL_PLUGINS_INSTALL_PREFIX_${install_component}})
+
+        # Install the GDAL plugin.
+        install(FILES "${_gdal_plugin_path}"
+            DESTINATION ${_install_gdal_plugin_dir}
+            COMPONENT ${install_component}
+            ${ARGN})
+
+        # Extract plugin filename.
+        get_filename_component(_gdal_plugin_file "${_gdal_plugin_path}" NAME)
+
+        # Use square brackets to avoid evaluating ${CMAKE_INSTALL_PREFIX} at configure time (should be done at install time).
+        string(CONCAT _installed_gdal_plugin
+            [[${CMAKE_INSTALL_PREFIX}/]]
+            ${_install_gdal_plugin_dir}/
+            ${_gdal_plugin_file})
+
+        # Add full path to installed plugin file to the plugin list.
+        set(_installed_gdal_plugin_list ${GDAL_PLUGINS_${install_component}})
+        list(APPEND _installed_gdal_plugin_list "${_installed_gdal_plugin}")
+        # Set caller's plugin list. This will be, for example, GDAL_PLUGINS_gplates or GDAL_PLUGINS_pygplates.
+        set(GDAL_PLUGINS_${install_component} ${_installed_gdal_plugin_list} PARENT_SCOPE)
+    endfunction()
+    #
+    # Install the GDAL plugins (if not already compiled into the core GDAL library).
+    #
+    # Each installed plugin (full installed path) is added to GDAL_PLUGINS_<comp> (which is a list variable).
+    # And each installed path has ${CMAKE_INSTALL_PREFIX} in it (to be evaluated at install time).
+    # Later we will pass GDAL_PLUGINS_<comp> to file(GET_RUNTIME_DEPENDENCIES) to find its dependencies and install them also.
+    #
+    # NetCDF plugin.
+    install_gdal_plugin(netCDF gplates)
+    install_gdal_plugin(netCDF pygplates EXCLUDE_FROM_ALL)
+
 
     ###############################################
     # Install the Visual Studio runtime libraries #
@@ -543,7 +663,7 @@ del pygplates
     #
     #   install_qt5_plugin(qt_plugin_target install_component [EXCLUDE_FROM_ALL])
     #
-    # ...and the full path to installed plugin file will be added to 'installed_qt_plugin_list'.
+    # ...and the full path to installed plugin file will be added to 'QT_PLUGINS_${install_component}'.
     function(install_qt5_plugin qt_plugin_target install_component)
         # Get the target file location of the Qt plugin target.
         #
@@ -680,12 +800,13 @@ del pygplates
                 # Note: Using \"${QT_PLUGINS_<comp>}\"" instead of [[${QT_PLUGINS_<comp>}]] because install code needs to evaluate
                 #       ${CMAKE_INSTALL_PREFIX} (inside QT_PLUGINS_<comp>). And a side note, it does this at install time...
                 CODE "set(QT_PLUGINS \"${QT_PLUGINS_${install_component}}\")"
+                CODE "set(GDAL_PLUGINS \"${GDAL_PLUGINS_${install_component}}\")"
                 CODE "set(install_component [[${install_component}]])"
                 CODE [[
                     unset(ARGUMENT_EXECUTABLES)
                     unset(ARGUMENT_BUNDLE_EXECUTABLE)
-                    # Search the Qt plugins regardless of whether installing gplates or pygplates.
-                    set(ARGUMENT_MODULES MODULES ${QT_PLUGINS})
+                    # Search the Qt and GDAL plugins regardless of whether installing gplates or pygplates.
+                    set(ARGUMENT_MODULES MODULES ${QT_PLUGINS} ${GDAL_PLUGINS})
                     # Component 'gplates' is an executable and component 'pygplates' is a module.
                     if (install_component STREQUAL "gplates")
                         # Add gplates to the list of executables to search.
@@ -1208,6 +1329,7 @@ del pygplates
                     # Note: Using \"${QT_PLUGINS_<comp>}\"" instead of [[${QT_PLUGINS_<comp>}]] because install code needs to evaluate
                     #       ${CMAKE_INSTALL_PREFIX} (inside QT_PLUGINS_<comp>). And a side note, it does this at install time...
                     CODE "set(QT_PLUGINS \"${QT_PLUGINS_${install_component}}\")"
+                    CODE "set(GDAL_PLUGINS \"${GDAL_PLUGINS_${install_component}}\")"
                     #
                     # Fix up the path to each *direct* dependency of GPlates/pyGPlates, its Qt plugins and their installed dependencies.
                     #
@@ -1222,7 +1344,7 @@ del pygplates
                         endforeach()
 
                         # Fix the dependency install names in each installed Qt plugin.
-                        foreach(_qt_plugin ${QT_PLUGINS})
+                        foreach(_qt_plugin ${QT_PLUGINS} ${GDAL_PLUGINS})
                             fix_dependency_install_names(${_qt_plugin})
                             # Sign *after* fixing dependencies (since we cannot modify after signing).
                             codesign(${_qt_plugin})
@@ -1358,6 +1480,7 @@ del pygplates
                     # Note: Using \"${QT_PLUGINS_<comp>}\"" instead of [[${QT_PLUGINS_<comp>}]] because install code needs to evaluate
                     #       ${CMAKE_INSTALL_PREFIX} (inside QT_PLUGINS_<comp>). And a side note, it does this at install time...
                     CODE "set(QT_PLUGINS \"${QT_PLUGINS_${install_component}}\")"
+                    CODE "set(GDAL_PLUGINS \"${GDAL_PLUGINS_${install_component}}\")"
                     #
                     # Set the RPATH of gplates/pygplates, its Qt plugins and their installed dependencies so that they all can find their direct dependencies.
                     #
@@ -1371,7 +1494,7 @@ del pygplates
                         endforeach()
 
                         # Set the RPATH in each installed Qt plugin.
-                        foreach(_qt_plugin ${QT_PLUGINS})
+                        foreach(_qt_plugin ${QT_PLUGINS} ${GDAL_PLUGINS})
                             set_rpath(${_qt_plugin})
                         endforeach()
 

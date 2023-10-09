@@ -86,6 +86,12 @@ namespace GPlatesFileIO
 		get_gdal_data_directory();
 
 		/**
+		 * Return the location of the GDAL plugins in the standalone bundle.
+		 */
+		boost::optional<QString>
+		get_gdal_plugins_directory();
+
+		/**
 		 * Return the location of the Python standard library in the standalone bundle.
 		 *
 		 * Note: This is only used for gplates (not pygplates since that's imported by an external

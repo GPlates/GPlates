@@ -289,7 +289,9 @@ GDAL
     8. Add the GDAL *install* directory to the CMAKE_PREFIX_PATH environment variable (eg, "C:\SDK\gdal\gdal-3.3.0\msvc2015_64").
        This enables CMake to find GDAL when configuring GPlates (see BUILD.Windows).
        Note that this is not strictly necessary since CMake can find the GDAL install prefix using the PATH environment variable (CMake strips off 'bin').
-    9. Set the GDAL_DATA environment variable to the installed GDAL data directory (eg, "C:\SDK\gdal\gdal-3.3.0\msvc2015_64\data").
+    9. Set the GDAL_HOME environment variable to the installed GDAL directory (eg, "C:\SDK\gdal\gdal-3.3.0\msvc2015_64").
+       This enables GPlates to deploy GDAL plugins.
+       Set the GDAL_DATA environment variable to the installed GDAL data directory (eg, "C:\SDK\gdal\gdal-3.3.0\msvc2015_64\data").
        This enables GDAL to find its resource data.
     
     NOTE that GDAL 2.3 (and above) use C++11 features which requires Visual Studio 2015 (or above).
