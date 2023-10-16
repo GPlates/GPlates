@@ -180,4 +180,8 @@ def suite():
     return suite
 
 if __name__ == "__main__":
-    unittest.TextTestRunner().run(suite())
+    test_result = unittest.TextTestRunner().run(suite())
+    if test_result.wasSuccessful():
+        sys.exit(0)
+    else:
+        sys.exit(1)
