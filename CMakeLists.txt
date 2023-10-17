@@ -74,7 +74,7 @@ else()
     #
     # Recurse into the sub-directory for testing/installing the pyGPlates Python module.
     #
-	add_subdirectory(pygplates)
+    add_subdirectory(pygplates)
 
     #
     # Recurse into the sub-directory for generating the Python API documentation.

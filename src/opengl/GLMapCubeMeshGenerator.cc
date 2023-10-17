@@ -25,6 +25,9 @@
 
 #include "GLMapCubeMeshGenerator.h"
 
+#include "maths/LatLonPoint.h"
+#include "maths/PointOnSphere.h"
+
 
 GPlatesOpenGL::GLMapCubeMeshGenerator::GLMapCubeMeshGenerator(
 		const GPlatesGui::MapProjection &map_projection,
@@ -90,7 +93,7 @@ GPlatesOpenGL::GLMapCubeMeshGenerator::create_cube_face_quadrant_mesh_vertices(
 	const double dateline_test_espsilon =
 			std::sin(std::atan(0.5 / (std::sqrt(2.0) * cube_face_quadrant_dimension_in_vertex_spacing)));
 
-	const double &central_meridian_longitude = d_map_projection.central_llp().longitude();
+	const double central_meridian_longitude = d_map_projection.central_meridian();
 
 	// Iterate over the vertices of the quadrant of the cube face.
 	for (unsigned int y = 0; y < cube_face_quadrant_dimension_in_vertex_samples; ++y)
@@ -179,7 +182,7 @@ GPlatesOpenGL::GLMapCubeMeshGenerator::create_pole_mesh_vertex(
 		const double &pole_longitude,
 		bool north_pole) const
 {
-	const double &central_meridian_longitude = d_map_projection.central_llp().longitude();
+	const double central_meridian_longitude = d_map_projection.central_meridian();
 
 	// The map-projected point - it's not yet projected though.
 	Point2D map_point =
