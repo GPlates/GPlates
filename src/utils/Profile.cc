@@ -43,6 +43,12 @@
 #include <functional>
 
 #if defined(_WIN32)
+// Note: Prevent windows.h from defining min/max macros since these
+//       interfere with things like 'std::numeric_limits<int>::max()' which
+//       is used in boost::pool (via ObjectPool) starting with Boost 1.80.
+#ifndef NOMINMAX
+#	define NOMINMAX
+#endif
 // Including up top (instead of just including below, when needed) somehow avoids compile error:
 //    qatomic_msvc.h(320): error C2668: '_InterlockedCompareExchange': ambiguous call to overloaded function
 #include <windows.h>
