@@ -269,7 +269,7 @@ class FeatureCase(unittest.TestCase):
         self.assertTrue(len(feature_clone) != len(self.feature))
 
     def test_len(self):
-        self.assertEquals(len(self.feature), self.property_count)
+        self.assertEqual(len(self.feature), self.property_count)
     
     def test_feature(self):
         self.assertTrue(self.feature)
@@ -277,12 +277,12 @@ class FeatureCase(unittest.TestCase):
     def test_feature_id(self):
         feature_id = self.feature.get_feature_id()
         self.assertTrue(isinstance(feature_id, pygplates.FeatureId))
-        self.assertEquals('GPlates-d13bba7f-57f5-419d-bbd4-105a8e72e177', feature_id.get_string())
+        self.assertEqual('GPlates-d13bba7f-57f5-419d-bbd4-105a8e72e177', feature_id.get_string())
 
     def test_feature_type(self):
         feature_type = self.feature.get_feature_type()
         self.assertTrue(isinstance(feature_type, pygplates.FeatureType))
-        self.assertEquals(feature_type, pygplates.FeatureType.create_gpml('Volcano'))
+        self.assertEqual(feature_type, pygplates.FeatureType.create_gpml('Volcano'))
         # Since 'gpml:NotAValidFeatureType' is not a (GPGIM) recognised type it should raise an error by default.
         self.assertRaises(pygplates.InformationModelError, pygplates.Feature,
                 pygplates.FeatureType.create_gpml('NotAValidFeatureType'))
@@ -291,7 +291,7 @@ class FeatureCase(unittest.TestCase):
 #    def test_revision_id(self):
 #        revision_id = self.feature.get_revision_id()
 #        self.assertTrue(isinstance(revision_id, pygplates.RevisionId))
-#        self.assertEquals('GPlates-d172eaab-931f-484e-a8b6-0605e2dacd18', revision_id.get_string())
+#        self.assertEqual('GPlates-d172eaab-931f-484e-a8b6-0605e2dacd18', revision_id.get_string())
 
     def test_is_iterable(self):
         """
@@ -583,13 +583,13 @@ class FeatureCollectionCase(unittest.TestCase):
     def test_construct(self):
         # Create new empty feature collection.
         new_feature_collection = pygplates.FeatureCollection()
-        self.assertEquals(len(new_feature_collection), 0)
+        self.assertEqual(len(new_feature_collection), 0)
         # Create new feature collection from existing features.
         new_feature_collection = pygplates.FeatureCollection([feature for feature in self.feature_collection])
-        self.assertEquals(len(new_feature_collection), len(self.feature_collection))
+        self.assertEqual(len(new_feature_collection), len(self.feature_collection))
         # A feature collection is also an iterable over features.
         new_feature_collection = pygplates.FeatureCollection(self.feature_collection)
-        self.assertEquals(len(new_feature_collection), len(self.feature_collection))
+        self.assertEqual(len(new_feature_collection), len(self.feature_collection))
         # Modifications to feature list (not features themselves) should not affect original
         # since 'new_feature_collection' is a shallow copy.
         new_feature_collection.remove(lambda feature: True)
@@ -606,7 +606,7 @@ class FeatureCollectionCase(unittest.TestCase):
         self.assertTrue(len(feature_collection_clone) != len(self.feature_collection))
 
     def test_len(self):
-        self.assertEquals(len(self.feature_collection), self.feature_count)
+        self.assertEqual(len(self.feature_collection), self.feature_count)
 
     def test_get_item(self):
         for feature_index, feature in enumerate(self.feature_collection):
@@ -859,7 +859,7 @@ class FeatureCollectionFileFormatRegistryCase(unittest.TestCase):
             self.file_format_registry.read(None)
             self.assertTrue(False, "Loading invalid file name should fail")
         except Exception as e:
-            self.assertEquals(e.__class__.__name__, 'TypeError')
+            self.assertEqual(e.__class__.__name__, 'TypeError')
 
     def test_unsupported_file_format(self):
         # Unsupported file format exception.
@@ -941,12 +941,12 @@ class PropertyNameCase(unittest.TestCase):
         # Feature property: gml:name
         self.assertTrue(isinstance(self.feature_name.get_name(), 
             pygplates.PropertyName))
-        self.assertEquals(self.feature_name.get_name().to_qualified_string(),
+        self.assertEqual(self.feature_name.get_name().to_qualified_string(),
                 'gml:name')
         # Feature property: gml:validTime
         self.assertTrue(isinstance(self.feature_valid_time.get_name(), 
             pygplates.PropertyName))
-        self.assertEquals(self.feature_valid_time.get_name().to_qualified_string(),
+        self.assertEqual(self.feature_valid_time.get_name().to_qualified_string(),
                 'gml:validTime')
 
 

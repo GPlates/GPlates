@@ -83,8 +83,8 @@ class InterpolateTotalReconstructionSequenceTestCase(unittest.TestCase):
         self.assertTrue(total_reconstruction_pole)
         fixed_plate_id, moving_plate_id, total_reconstruction_pole_rotations = total_reconstruction_pole
         self.assertTrue(isinstance(total_reconstruction_pole_rotations, pygplates.GpmlIrregularSampling))
-        self.assertEquals(fixed_plate_id, 901)
-        self.assertEquals(moving_plate_id, 2)
+        self.assertEqual(fixed_plate_id, 901)
+        self.assertEqual(moving_plate_id, 2)
 
     def test_set(self):
         gpml_irregular_sampling = pygplates.GpmlIrregularSampling(
@@ -121,8 +121,8 @@ class InterpolateTotalReconstructionSequenceTestCase(unittest.TestCase):
         self.assertTrue(total_reconstruction_pole)
         fixed_plate_id, moving_plate_id, total_reconstruction_pole_rotations = total_reconstruction_pole
         interpolated_finite_rotation = total_reconstruction_pole_rotations.get_value(12.2).get_finite_rotation()
-        self.assertEquals(fixed_plate_id, 901)
-        self.assertEquals(moving_plate_id, 2)
+        self.assertEqual(fixed_plate_id, 901)
+        self.assertEqual(moving_plate_id, 2)
         pole, angle = interpolated_finite_rotation.get_euler_pole_and_angle()
         self.assertTrue(abs(angle) > 0.1785 and abs(angle) < 0.179)
         # TODO: Compare pole.
@@ -1584,7 +1584,7 @@ class ReconstructionTreeCase(unittest.TestCase):
         for child_edge in child_edges:
             self.assertTrue(child_edge.get_fixed_plate_id() == edge.get_moving_plate_id())
             chld_edge_count += 1
-        self.assertEquals(chld_edge_count, len(child_edges))
+        self.assertEqual(chld_edge_count, len(child_edges))
     
     def test_anchor_plate_edges(self):
         anchor_plate_edges = self.reconstruction_tree.get_anchor_plate_edges()
@@ -1596,7 +1596,7 @@ class ReconstructionTreeCase(unittest.TestCase):
         for edge in anchor_plate_edges:
             self.assertTrue(edge.get_fixed_plate_id() == self.reconstruction_tree.get_anchor_plate_id())
             edge_count += 1
-        self.assertEquals(edge_count, len(anchor_plate_edges))
+        self.assertEqual(edge_count, len(anchor_plate_edges))
     
     def test_edges(self):
         edges = self.reconstruction_tree.get_edges()
@@ -1607,7 +1607,7 @@ class ReconstructionTreeCase(unittest.TestCase):
         edge_count = 0
         for edge in edges:
             edge_count += 1
-        self.assertEquals(edge_count, len(edges))
+        self.assertEqual(edge_count, len(edges))
 
     def test_get_parent_traversal(self):
         edge = self.reconstruction_tree.get_edge(907)
