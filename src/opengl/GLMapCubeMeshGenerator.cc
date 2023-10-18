@@ -25,6 +25,7 @@
 
 #include "GLMapCubeMeshGenerator.h"
 
+#include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
 
 
