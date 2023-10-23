@@ -351,7 +351,7 @@ namespace GPlatesApi
 		 */
 		std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> d_resolve_topology_parameters;
 
-		//! Default resolved topology parameters for those topological feature collection/file with no parameters.
+		//! Default resolved topology parameters for those topological feature collections/files with no parameters.
 		ResolveTopologyParameters::non_null_ptr_to_const_type d_default_resolve_topology_parameters;
 
 		// Separate the topological features into regular features (used as topological sections for

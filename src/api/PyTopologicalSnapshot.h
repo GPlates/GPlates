@@ -41,6 +41,8 @@
 #include "app-logic/ResolvedTopologicalNetwork.h"
 #include "app-logic/ResolvedTopologicalSection.h"
 
+#include "file-io/File.h"
+
 #include "global/python.h"
 
 #include "maths/PolygonOrientation.h"
@@ -49,6 +51,10 @@
 #include "model/types.h"
 
 #include "property-values/GeoTimeInstant.h"
+
+#include "scribe/ScribeLoadRef.h"
+ // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
 
 #include "utils/ReferenceCount.h"
 
@@ -123,14 +129,17 @@ namespace GPlatesApi
 				const std::vector<GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
 				const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
 				const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
-				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
 				const RotationModel::non_null_ptr_type &rotation_model,
+				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
+				const std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> &resolve_topology_parameters,
+				ResolveTopologyParameters::non_null_ptr_to_const_type default_resolve_topology_parameters,
 				const double &reconstruction_time)
 		{
 			return non_null_ptr_type(
 					new TopologicalSnapshot(
 							resolved_topological_lines, resolved_topological_boundaries, resolved_topological_networks,
-							topological_files, rotation_model, reconstruction_time));
+							rotation_model, topological_files, resolve_topology_parameters, default_resolve_topology_parameters,
+							reconstruction_time));
 		}
 
 
@@ -259,8 +268,27 @@ namespace GPlatesApi
 
 	private:
 
-		std::vector<GPlatesFileIO::File::non_null_ptr_type> d_topological_files;
+		/**
+		 * Rotation model associated with topological features.
+		 */
 		RotationModel::non_null_ptr_type d_rotation_model;
+
+		/**
+		 * Topological files.
+		 */
+		std::vector<GPlatesFileIO::File::non_null_ptr_type> d_topological_files;
+
+		/**
+		 * Optional resolved topology parameters for each topological feature collection/file.
+		 */
+		std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> d_resolve_topology_parameters;
+
+		//! Default resolved topology parameters for those topological files with no parameters.
+		ResolveTopologyParameters::non_null_ptr_to_const_type d_default_resolve_topology_parameters;
+
+		/**
+		 * Reconstruction time of snapshot.
+		 */
 		double d_reconstruction_time;
 
 		std::vector<GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type> d_resolved_topological_lines;
@@ -280,25 +308,27 @@ namespace GPlatesApi
 
 
 		TopologicalSnapshot(
-				const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features_argument,
 				const RotationModel::non_null_ptr_type &rotation_model,
-				const double &reconstruction_time,
-				ResolveTopologyParameters::non_null_ptr_to_const_type default_resolve_topology_parameters);
+				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
+				const std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> &resolve_topology_parameters,
+				ResolveTopologyParameters::non_null_ptr_to_const_type default_resolve_topology_parameters,
+				const double &reconstruction_time);
 
 		TopologicalSnapshot(
 				const std::vector<GPlatesAppLogic::ResolvedTopologicalLine::non_null_ptr_type> &resolved_topological_lines,
 				const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type> &resolved_topological_boundaries,
 				const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type> &resolved_topological_networks,
-				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
 				const RotationModel::non_null_ptr_type &rotation_model,
-				const double &reconstruction_time) :
-			d_topological_files(topological_files),
-			d_rotation_model(rotation_model),
-			d_reconstruction_time(reconstruction_time),
-			d_resolved_topological_lines(resolved_topological_lines),
-			d_resolved_topological_boundaries(resolved_topological_boundaries),
-			d_resolved_topological_networks(resolved_topological_networks)
-		{  }
+				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
+				const std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> &resolve_topology_parameters,
+				ResolveTopologyParameters::non_null_ptr_to_const_type default_resolve_topology_parameters,
+				const double &reconstruction_time);
+
+		/**
+		 * Set up for topological reconstruction once the topological files/parameters have been constructed.
+		 */
+		void
+		initialise_resolved_topologies();
 
 		/**
 		 * Finds all sub-segments shared by resolved topology boundaries and/or network boundaries
@@ -321,6 +351,37 @@ namespace GPlatesApi
 		std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type>
 		sort_resolved_topological_sections(
 				const std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> &resolved_topological_sections) const;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<TopologicalSnapshot> &topological_snapshot);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
+
+		static
+		void
+		save_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				const TopologicalSnapshot &topological_snapshot);
+
+		static
+		bool
+		load_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::LoadRef<RotationModel::non_null_ptr_type> &rotation_model,
+				std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
+				const std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> &resolve_topology_parameters,
+				GPlatesScribe::LoadRef<ResolveTopologyParameters::non_null_ptr_to_const_type> &default_resolve_topology_parameters,
+				double &reconstruction_time);
 	};
 }
 

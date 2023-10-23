@@ -2313,6 +2313,22 @@ class TopologicalSnapshotCase(unittest.TestCase):
         _internal_test_export_files(self, snapshot, 'tmp.gmt', 'tmp_sections.gmt')  # OGRGMT
         _internal_test_export_files(self, snapshot, 'tmp.geojson', 'tmp_sections.geojson')  # GeoJSON
         _internal_test_export_files(self, snapshot, 'tmp.json', 'tmp_sections.json')  # GeoJSON
+    
+    def test_pickle(self):
+        snapshot = pygplates.TopologicalSnapshot(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10))
+        
+        # Pickle the TopologicalSnapshot.
+        pickled_snapshot = pickle.loads(pickle.dumps(snapshot))
+        self.assertTrue(pickled_snapshot.get_rotation_model().get_rotation(100, 802) == snapshot.get_rotation_model().get_rotation(100, 802))
+        # Check the original and pickled topological snapshots.
+        resolved_topologies = snapshot.get_resolved_topologies(same_order_as_topological_features=True)
+        pickled_resolved_topologies = pickled_snapshot.get_resolved_topologies(same_order_as_topological_features=True)
+        self.assertTrue(len(pickled_resolved_topologies) == len(resolved_topologies))
+        for index in range(len(pickled_resolved_topologies)):
+            self.assertTrue(pickled_resolved_topologies[index].get_resolved_geometry() == resolved_topologies[index].get_resolved_geometry())
 
 
 def suite():

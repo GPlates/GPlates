@@ -545,6 +545,9 @@ GPlatesApi::TopologicalModel::create(
 				boost::get<FeatureCollectionSequenceFunctionArgument>(rotation_model_argument);
 
 		// Create a new rotation model (from rotation features).
+		//
+		// Note: We're creating our own RotationModel from scratch (as opposed to adapting an existing one)
+		//       to avoid having two rotation models (each with their own cache) thus doubling the cache memory usage.
 		rotation_model = RotationModel::create(
 				rotation_feature_collections_function_argument,
 				// Start off with a cache size of 1 (later we'll increase it as needed)...
@@ -824,7 +827,8 @@ GPlatesApi::TopologicalModel::create_topological_snapshot(
 
 	return TopologicalSnapshot::create(
 			resolved_lines, resolved_boundaries, resolved_networks,
-			d_topological_files, d_rotation_model, reconstruction_time);
+			d_rotation_model, d_topological_files, d_resolve_topology_parameters, d_default_resolve_topology_parameters,
+			reconstruction_time);
 }
 
 
