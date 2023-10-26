@@ -74,7 +74,12 @@ export_feature_id()
 			"hashable (can be used as a key in a ``dict``).\n"
 			"\n"
 			"The format of a feature ID is 'GPlates-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' where each "
-			"*x* is a hexadecimal digit (0-9, a-f).\n",
+			"*x* is a hexadecimal digit (0-9, a-f).\n"
+			"\n"
+			"A *FeatureId* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n",
 			bp::no_init)
 		.def("create_unique_id",
 				&GPlatesApi::feature_id_create_unique_id,

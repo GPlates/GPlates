@@ -538,7 +538,11 @@ namespace GPlatesApi
 					"python ``list`` in that the following operations are supported:\n"
 					"\n"
 					<< GPlatesApi::get_python_list_operations_docstring(class_name.c_str())
-					<< "\n";
+					<< "\n"
+					<< "A *" << class_name << "* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n";
 
 			//
 			// RevisionedVector - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).

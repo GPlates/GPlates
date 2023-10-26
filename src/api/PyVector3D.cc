@@ -263,7 +263,12 @@ export_vector_3d()
 					"  vector = (\n"
 					"      x_weight * pygplates.Vector3D.x_axis +\n"
 					"      y_weight * pygplates.Vector3D.y_axis +\n"
-					"      z_weight * pygplates.Vector3D.z_axis)\n",
+					"      z_weight * pygplates.Vector3D.z_axis)\n"
+					"\n"
+					"A *Vector3D* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					bp::init<GPlatesMaths::Real, GPlatesMaths::Real, GPlatesMaths::Real>(
 							(bp::arg("x"), bp::arg("y"), bp::arg("z")),
 							// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...

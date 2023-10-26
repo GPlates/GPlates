@@ -173,7 +173,12 @@ export_great_circle_arc()
 					"A great-circle arc on the surface of the unit globe.\n"
 					"\n"
 					"Great circle arcs are equality (``==``, ``!=``) comparable (but not hashable "
-					"- cannot be used as a key in a ``dict``).\n",
+					"- cannot be used as a key in a ``dict``).\n"
+					"\n"
+					"A *GreatCircleArc* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)

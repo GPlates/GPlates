@@ -636,7 +636,12 @@ export_geo_time_instant()
 					"  # assert(time20Ma.get_value() > time10Ma)\n"
 					"  # assert(time20Ma < pygplates.GeoTimeInstant.create_distant_past())\n"
 					"  # assert(time20Ma.get_value() < pygplates.GeoTimeInstant.create_distant_past())\n"
-					"  # assert(20 < pygplates.GeoTimeInstant.create_distant_past())\n",
+					"  # assert(20 < pygplates.GeoTimeInstant.create_distant_past())\n"
+					"\n"
+					"A *GeoTimeInstant* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)

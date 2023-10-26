@@ -1502,7 +1502,12 @@ export_topological_model()
 					"TopologicalModel",
 					"A history of topologies over geological time.\n"
 					"\n"
-					"  .. versionadded:: 0.30\n",
+					"A *TopologicalModel* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionadded:: 0.30\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)

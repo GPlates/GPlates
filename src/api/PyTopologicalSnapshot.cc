@@ -1065,7 +1065,12 @@ export_topological_snapshot()
 					"TopologicalSnapshot",
 					"A snapshot of topologies at a specific geological time.\n"
 					"\n"
-					"  .. versionadded:: 0.30\n",
+					"A *TopologicalSnapshot* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionadded:: 0.30\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)

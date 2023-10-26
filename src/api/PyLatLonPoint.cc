@@ -124,7 +124,12 @@ export_lat_lon_point()
 					"As a convenience the North and South poles are available as class attributes:\n"
 					"\n"
 					"* ``pygplates.LatLonPoint.north_pole``\n"
-					"* ``pygplates.LatLonPoint.south_pole``\n",
+					"* ``pygplates.LatLonPoint.south_pole``\n"
+					"\n"
+					"A *LatLonPoint* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					bp::init<double,double>(
 							(bp::arg("latitude"), bp::arg("longitude")),
 							"__init__(latitude, longitude)\n"

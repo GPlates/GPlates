@@ -500,8 +500,9 @@ export_version()
 			"``(.dev|a|b|rc)N`` is an optional pre-release suffix. Examples include ``1.0.0`` for an official release, "
 			"``1.0.0.dev1`` for a first development pre-release and ``1.0.0rc1`` for a first release candidate.\n"
 			"\n"
-			"All comparison operators (==, !=, <, <=, >, >=) are supported and Version is "
-			"hashable (can be used as a key in a ``dict``).\n"
+			"All comparison operators (==, !=, <, <=, >, >=) are supported and ``Version`` is "
+			"hashable (can be used as a key in a ``dict``). "
+			"And ``Version`` can be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
 			"\n"
 			"| During the lifespan of pyGPlates, the :meth:`imported pyGPlates version<get_imported_version>` "
 			"has been updated for each API change. So it can be used to ensure new API additions are "
@@ -527,7 +528,10 @@ export_version()
 			"\n"
 			"There is also a ``pygplates.__version__`` string which will also print ``"
 			<< GPlatesApi::Version::get_imported_version().get_version_string().toStdString() <<
-			"``.\n";
+			"``.\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n";
 
 	//
 	// Version - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).

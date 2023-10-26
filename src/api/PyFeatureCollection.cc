@@ -812,8 +812,13 @@ export_feature_collection()
 					"\n"
 					".. note:: A feature collection can be deep copied using :meth:`clone`.\n"
 					"\n"
+					"A *FeatureCollection* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
 					".. versionchanged:: 0.31\n"
-					"   Can index a feature in feature collection *fc* with ``fc[i]``.\n",
+					"   Can index a feature in feature collection *fc* with ``fc[i]``.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)

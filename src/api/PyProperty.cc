@@ -86,7 +86,12 @@ export_top_level_property()
 					"\n"
 					"Properties are equality (``==``, ``!=``) comparable (but not hashable "
 					"- cannot be used as a key in a ``dict``). This includes comparing the property value "
-					"in the two properties being compared (see :class:`PropertyValue`) as well as the property name.\n",
+					"in the two properties being compared (see :class:`PropertyValue`) as well as the property name.\n"
+					"\n"
+					"A *Property* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)

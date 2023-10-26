@@ -960,7 +960,12 @@ export_point_on_sphere()
 					"Convenience class static data are available for the North and South poles:\n"
 					"\n"
 					"* ``pygplates.PointOnSphere.north_pole``\n"
-					"* ``pygplates.PointOnSphere.south_pole``\n",
+					"* ``pygplates.PointOnSphere.south_pole``\n"
+					"\n"
+					"A *PointOnSphere* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1339,7 +1344,12 @@ export_multi_point_on_sphere()
 					"There are also methods that return the sequence of points as (latitude,longitude) "
 					"values and (x,y,z) values contained in lists and numpy arrays "
 					"(:meth:`GeometryOnSphere.to_lat_lon_list`, :meth:`GeometryOnSphere.to_lat_lon_array`, "
-					":meth:`GeometryOnSphere.to_xyz_list` and :meth:`GeometryOnSphere.to_xyz_array`).\n",
+					":meth:`GeometryOnSphere.to_xyz_list` and :meth:`GeometryOnSphere.to_xyz_array`).\n"
+					"\n"
+					"A *MultiPointOnSphere* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -2169,7 +2179,12 @@ export_polyline_on_sphere()
 					"  points.append(pygplates.PointOnSphere(...))\n"
 					"\n"
 					"  # 'polyline' now references a new PolylineOnSphere instance.\n"
-					"  polyline = pygplates.PolylineOnSphere(points)\n",
+					"  polyline = pygplates.PolylineOnSphere(points)\n"
+					"\n"
+					"A *PolylineOnSphere* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -3627,9 +3642,14 @@ export_polygon_on_sphere()
 					".. note:: A polygon closes the loop between the last and first points in its exterior ring "
 					"(created from the polyline) so there's no need to make the first and last points equal.\n"
 					"\n"
+					"A *PolygonOnSphere* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
 					".. versionchanged:: 0.36\n"
 					"   :meth:`get_points<GeometryOnSphere.get_points>` and :meth:`get_segments` now include "
-					"points and segments from interior rings (as do the operations listed in the table above).\n",
+					"points and segments from interior rings (as do the operations listed in the table above).\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)

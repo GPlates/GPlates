@@ -240,7 +240,12 @@ export_enumeration_type()
 			"The namespace-qualified type of an enumeration.\n"
 			"\n"
 			"All comparison operators (==, !=, <, <=, >, >=) are supported. EnumerationType is "
-			"hashable (can be used as a key in a ``dict``).\n",
+			"hashable (can be used as a key in a ``dict``).\n"
+			"\n"
+			"An *EnumerationType* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n",
 			bp::no_init/*force usage of create functions*/);
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	enumeration_type_class.def("create_gpml",
@@ -395,7 +400,12 @@ export_feature_type()
 			"* `pygplates.FeatureType.gpml_unconformity <http://www.gplates.org/docs/gpgim/#gpml:Unconformity>`_\n"
 			"* `pygplates.FeatureType.gpml_unknown_contact <http://www.gplates.org/docs/gpgim/#gpml:UnknownContact>`_\n"
 			"* `pygplates.FeatureType.gpml_virtual_geomagnetic_pole <http://www.gplates.org/docs/gpgim/#gpml:VirtualGeomagneticPole>`_\n"
-			"* `pygplates.FeatureType.gpml_volcano <http://www.gplates.org/docs/gpgim/#gpml:Volcano>`_\n",
+			"* `pygplates.FeatureType.gpml_volcano <http://www.gplates.org/docs/gpgim/#gpml:Volcano>`_\n"
+			"\n"
+			"A *FeatureType* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n",
 			bp::no_init/*force usage of create functions*/);
 
 	// Some common feature types...
@@ -608,7 +618,12 @@ export_property_name()
 			"* `pygplates.PropertyName.gpml_pole_position <http://www.gplates.org/docs/gpgim/#gpml:polePosition>`_\n"
 			"* `pygplates.PropertyName.gpml_position <http://www.gplates.org/docs/gpgim/#gpml:position>`_\n"
 			"* `pygplates.PropertyName.gpml_seed_points <http://www.gplates.org/docs/gpgim/#gpml:seedPoints>`_\n"
-			"* `pygplates.PropertyName.gpml_unclassified_geometry <http://www.gplates.org/docs/gpgim/#gpml:unclassifiedGeometry>`_\n",
+			"* `pygplates.PropertyName.gpml_unclassified_geometry <http://www.gplates.org/docs/gpgim/#gpml:unclassifiedGeometry>`_\n"
+			"\n"
+			"A *PropertyName* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n",
 			bp::no_init/*force usage of create functions*/);
 
 	// Some common property names...
@@ -758,7 +773,12 @@ export_scalar_type()
 			"* pygplates.ScalarType.gpml_crustal_thickness\n"
 			"* pygplates.ScalarType.gpml_crustal_stretching_factor\n"
 			"* pygplates.ScalarType.gpml_crustal_thinning_factor\n"
-			"* pygplates.ScalarType.gpml_tectonic_subsidence\n",
+			"* pygplates.ScalarType.gpml_tectonic_subsidence\n"
+			"\n"
+			"A *ScalarType* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n",
 			bp::no_init/*force usage of create functions*/);
 
 	// Some common scalar types...
@@ -1004,7 +1024,12 @@ export_structural_type()
 			"The namespace-qualified structural type.\n"
 			"\n"
 			"All comparison operators (==, !=, <, <=, >, >=) are supported. StructuralType is "
-			"hashable (can be used as a key in a ``dict``).\n",
+			"hashable (can be used as a key in a ``dict``).\n"
+			"\n"
+			"A *StructuralType* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n",
 			bp::no_init/*force usage of create functions*/);
 	// Select the create functions appropriate for this QualifiedXmlName type...
 	structural_type_class.def("create_gpml",

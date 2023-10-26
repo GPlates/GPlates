@@ -451,12 +451,16 @@ export_finite_rotation()
 					"finite_rotation1, finite_rotation2, time1, time2, target_time)\n"
 					"\n"
 					"Finite rotations are equality (``==``, ``!=``) comparable (but not hashable "
-					"- cannot be used as a key in a ``dict``).\n"
-					"\n"
+					"- cannot be used as a key in a ``dict``). "
 					"Finite rotations can also be compared using :meth:`are_equivalent` to detect "
 					"equivalent rotations (that rotate a geometry to the same final position but might rotate "
 					"in opposite directions around the globe). A finite rotation can be tested to see if "
-					"it is an :meth:`identity<represents_identity_rotation>` rotation (no rotation).\n",
+					"it is an :meth:`identity<represents_identity_rotation>` rotation (no rotation).\n"
+					"\n"
+					"A *FiniteRotation* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)

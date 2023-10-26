@@ -168,7 +168,12 @@ export_resolve_topology_parameters()
 					"ResolveTopologyParameters",
 					"Specify parameters used to resolve topologies.\n"
 					"\n"
-					"  .. versionadded:: 0.31\n",
+					"A *ResolveTopologyParameters* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionadded:: 0.31\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)

@@ -371,7 +371,12 @@ export_enumeration()
 			boost::noncopyable>(
 					"Enumeration",
 					"A property value that represents a finite set of accepted (string) values per "
-					"enumeration type.\n",
+					"enumeration type.\n"
+					"\n"
+					"An *Enumeration* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -837,7 +842,12 @@ export_gml_data_block()
 					"\n"
 					"* :meth:`get_scalar_values`\n"
 					"* :meth:`set`\n"
-					"* :meth:`remove`\n",
+					"* :meth:`remove`\n"
+					"\n"
+					"A *GmlDataBlock* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -958,7 +968,12 @@ export_gml_line_string()
 			bp::bases<GPlatesModel::PropertyValue>,
 			boost::noncopyable>(
 					"GmlLineString",
-					"A property value representing a polyline geometry.\n",
+					"A property value representing a polyline geometry.\n"
+					"\n"
+					"A *GmlLineString* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1024,7 +1039,12 @@ export_gml_multi_point()
 			bp::bases<GPlatesModel::PropertyValue>,
 			boost::noncopyable>(
 					"GmlMultiPoint",
-					"A property value representing a multi-point geometry.\n",
+					"A property value representing a multi-point geometry.\n"
+					"\n"
+					"A *GmlMultiPoint* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1098,7 +1118,12 @@ export_gml_orientable_curve()
 					"GmlOrientableCurve",
 					"A property value representing a polyline geometry with a positive or negative orientation. "
 					"However, currently the orientation is always positive so this is essentially no different "
-					"than a :class:`GmlLineString`.\n",
+					"than a :class:`GmlLineString`.\n"
+					"\n"
+					"A *GmlOrientableCurve* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1172,7 +1197,12 @@ export_gml_point()
 			bp::bases<GPlatesModel::PropertyValue>,
 			boost::noncopyable>(
 					"GmlPoint",
-					"A property value representing a point geometry.\n",
+					"A property value representing a point geometry.\n"
+					"\n"
+					"A *GmlPoint* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1242,7 +1272,12 @@ export_gml_polygon()
 			bp::bases<GPlatesModel::PropertyValue>,
 			boost::noncopyable>(
 					"GmlPolygon",
-					"A property value representing a polygon geometry.\n",
+					"A property value representing a polygon geometry.\n"
+					"\n"
+					"A *GmlPolygon* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1300,7 +1335,12 @@ export_gml_time_instant()
 			bp::bases<GPlatesModel::PropertyValue>,
 			boost::noncopyable>(
 					"GmlTimeInstant",
-					"A property value representing an instant in geological time.\n",
+					"A property value representing an instant in geological time.\n"
+					"\n"
+					"A *GmlTimeInstant* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1437,7 +1477,12 @@ export_gml_time_period()
 			bp::bases<GPlatesModel::PropertyValue>,
 			boost::noncopyable>(
 					"GmlTimePeriod",
-					"A property value representing a period in geological time (time of appearance to time of disappearance).\n",
+					"A property value representing a period in geological time (time of appearance to time of disappearance).\n"
+					"\n"
+					"A *GmlTimePeriod* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1599,7 +1644,12 @@ export_gpml_array()
 			"\n"
 			<< GPlatesApi::get_python_list_operations_docstring(gpml_array_class_name) <<
 			"\n"
-			"All elements should have the same type (such as :class:`GmlTimePeriod`).\n";
+			"All elements should have the same type (such as :class:`GmlTimePeriod`).\n"
+			"\n"
+			<< "A *" << gpml_array_class_name << "* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n";
 
 	//
 	// GpmlArray - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
@@ -1716,7 +1766,12 @@ export_gpml_constant_value()
 					"the reading phase (by the GPML file format reader). This usually works for the "
 					"simpler :class:`GpmlConstantValue` time-dependent wrapper but does not always "
 					"work for the more advanced :class:`GpmlIrregularSampling` and "
-					":class:`GpmlPiecewiseAggregation` time-dependent wrapper types.\n",
+					":class:`GpmlPiecewiseAggregation` time-dependent wrapper types.\n"
+					"\n"
+					"A *GpmlConstantValue* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1801,7 +1856,12 @@ export_gpml_finite_rotation()
 			bp::bases<GPlatesModel::PropertyValue>,
 			boost::noncopyable>(
 					"GpmlFiniteRotation",
-					"A property value that represents a finite rotation.",
+					"A property value that represents a finite rotation.\n"
+					"\n"
+					"A *GpmlFiniteRotation* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -1876,7 +1936,12 @@ export_gpml_finite_rotation_slerp()
 					"There are no (non-static) methods or attributes in this class. The presence of an instance of this "
 					"property value is simply intended to signal that interpolation should be Spherical "
 					"Linear intERPolation (SLERP). Currently this is the only type of interpolation function "
-					"(the only type derived from :class:`GpmlInterpolationFunction`).\n",
+					"(the only type derived from :class:`GpmlInterpolationFunction`).\n"
+					"\n"
+					"A *GpmlFiniteRotationSlerp* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -2117,6 +2182,11 @@ export_gpml_irregular_sampling()
 			"  irregular_sampling = pygplates.GpmlIrregularSampling([pygplates.GpmlTimeSample(...), ...])\n"
 			"  ...\n"
 			"  irregular_sampling.sort(key = lambda ts: ts.get_time())\n"
+			"\n"
+			<< "A *" << gpml_irregular_sampling_class_name << "* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n"
 			"\n"
 			"In addition to the above ``list``-style operations there are also the following methods...\n";
 
@@ -2777,7 +2847,12 @@ export_gpml_key_value_dictionary()
 					"\n"
 					"* :meth:`get`\n"
 					"* :meth:`set`\n"
-					"* :meth:`remove`\n",
+					"* :meth:`remove`\n"
+					"\n"
+					"A *GpmlKeyValueDictionary* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -2894,7 +2969,12 @@ export_gpml_old_plates_header()
 			bp::bases<GPlatesModel::PropertyValue>,
 			boost::noncopyable>(
 					"GpmlOldPlatesHeader",
-					"A property value containing metadata inherited from imported PLATES data files.\n",
+					"A property value containing metadata inherited from imported PLATES data files.\n"
+					"\n"
+					"A *GpmlOldPlatesHeader* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+				"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -3254,6 +3334,11 @@ export_gpml_piecewise_aggregation()
 			"          piecewise_aggregation[2].get_begin_time(),\n"
 			"          piecewise_aggregation[1].get_end_time())]\n"
 			"\n"
+			<< "A *" << gpml_piecewise_aggregation_class_name << "* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n"
+			"\n"
 			"In addition to the above ``list``-style operations there are also the following methods...\n";
 
 	//
@@ -3355,7 +3440,12 @@ export_gpml_plate_id()
 					"GpmlPlateId",
 					"A property value that represents a plate id. A plate id is an integer that "
 					"identifies a particular tectonic plate and is typically used to look up a "
-					"rotation in a :class:`ReconstructionTree`.",
+					"rotation in a :class:`ReconstructionTree`.\n"
+					"\n"
+					"A *GpmlPlateId* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -3466,7 +3556,12 @@ export_gpml_polarity_chron_id()
 			boost::noncopyable>(
 					"GpmlPolarityChronId",
 					"A property value that identifies an :class:`Isochron<FeatureType>` or "
-					":class:`MagneticAnomalyIdentification<FeatureType>`.",
+					":class:`MagneticAnomalyIdentification<FeatureType>`.\n"
+					"\n"
+					"A *GpmlPolarityChronId* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -3582,7 +3677,12 @@ export_gpml_property_delegate()
 					"GpmlPropertyDelegate",
 					"A property value that represents a reference, or delegation, to a property in another feature.\n"
 					"\n"
-					"  .. versionadded:: 0.21\n",
+					"A *GpmlPropertyDelegate* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionadded:: 0.21\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -3761,7 +3861,12 @@ export_gpml_time_sample()
 					"Time samples are equality (``==``, ``!=``) comparable (but not hashable "
 					"- cannot be used as a key in a ``dict``). This includes comparing the property value "
 					"in the two time samples being compared (see :class:`PropertyValue`) as well as the time instant, "
-					"description string and disabled flag.\n",
+					"description string and disabled flag.\n"
+					"\n"
+					"A *GpmlTimeSample* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -3983,7 +4088,12 @@ export_gpml_time_window()
 					"\n"
 					"Time windows are equality (``==``, ``!=``) comparable (but not hashable "
 					"- cannot be used as a key in a ``dict``). This includes comparing the property value "
-					"in the two time windows being compared (see :class:`PropertyValue`) as well as the time period.\n",
+					"in the two time windows being compared (see :class:`PropertyValue`) as well as the time period.\n"
+					"\n"
+					"A *GpmlTimeWindow* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -4582,7 +4692,12 @@ export_gpml_topological_line()
 			"GpmlTopologicalLine",
 			"A topological line geometry that is resolved from topological sections.\n"
 			"\n"
-			"  .. versionadded:: 0.21\n",
+			"A *GpmlTopologicalLine* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionadded:: 0.21\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)
@@ -4644,7 +4759,12 @@ export_gpml_topological_line_section()
 			"GpmlTopologicalLineSection",
 			"A topological section referencing a line geometry.\n"
 			"\n"
-			"  .. versionadded:: 0.21\n",
+			"A *GpmlTopologicalLineSection* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionadded:: 0.21\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)
@@ -4764,7 +4884,12 @@ export_gpml_topological_network()
 			"\n"
 			".. note:: If an interior geometry is a polygon then it becomes an interior rigid block.\n"
 			"\n"
-			"  .. versionadded:: 0.21\n",
+			"A *GpmlTopologicalNetwork* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionadded:: 0.21\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)
@@ -4843,7 +4968,12 @@ export_gpml_topological_point()
 			"GpmlTopologicalPoint",
 			"A topological section referencing a point geometry.\n"
 			"\n"
-			"  .. versionadded:: 0.21\n",
+			"A *GpmlTopologicalPoint* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionadded:: 0.21\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)
@@ -4925,7 +5055,12 @@ export_gpml_topological_polygon()
 			"GpmlTopologicalPolygon",
 			"A topological polygon geometry that is resolved from topological sections.\n"
 			"\n"
-			"  .. versionadded:: 0.21\n",
+			"A *GpmlTopologicalPolygon* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionadded:: 0.21\n"
+			"\n"
+			".. versionchanged:: 0.42\n"
+			"   Added pickle support.\n",
 			// We need this (even though "__init__" is defined) since
 			// there is no publicly-accessible default constructor...
 			bp::no_init)
@@ -4988,7 +5123,12 @@ export_xs_boolean()
 					"XsBoolean",
 					"A property value that represents a boolean value. "
 					"The 'Xs' prefix is there since this type of property value is associated with the "
-					"*XML Schema Instance Namespace*.\n",
+					"*XML Schema Instance Namespace*.\n"
+					"\n"
+					"An *XsBoolean* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -5047,7 +5187,12 @@ export_xs_double()
 					"A property value that represents a *double*-precision floating-point number. "
 					"Note that, in python, the ``float`` built-in type is double-precision. "
 					"The 'Xs' prefix is there since this type of property value is associated with the "
-					"*XML Schema Instance Namespace*.\n",
+					"*XML Schema Instance Namespace*.\n"
+					"\n"
+					"An *XsDouble* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -5105,7 +5250,12 @@ export_xs_integer()
 					"XsInteger",
 					"A property value that represents an integer number. "
 					"The 'Xs' prefix is there since this type of property value is associated with the "
-					"*XML Schema Instance Namespace*.\n",
+					"*XML Schema Instance Namespace*.\n"
+					"\n"
+					"An *XsInteger* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -5173,7 +5323,12 @@ export_xs_string()
 					"XsString",
 					"A property value that represents a string. "
 					"The 'Xs' prefix is there since this type of property value is associated with the "
-					"*XML Schema Instance Namespace*.\n",
+					"*XML Schema Instance Namespace*.\n"
+					"\n"
+					"An *XsString* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)

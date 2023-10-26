@@ -711,11 +711,11 @@ export_rotation_model()
 			"    ...\n"
 			"    rotation_model = pygplates.RotationModel(['rotations.rot', rotation_adjustments])\n"
 			"\n"
-			"  .. versionchanged:: 0.25\n"
+			".. versionchanged:: 0.25\n"
 			"     Added *extend_total_reconstruction_poles_to_distant_past* argument and "
 			"removed *clone_rotation_features* argument.\n"
 			"\n"
-			"  .. versionchanged:: 0.26\n"
+			".. versionchanged:: 0.26\n"
 			"     Added *default_anchor_plate_id* argument.\n"
 			;
 
@@ -744,7 +744,12 @@ export_rotation_model()
 					"reconstruction trees associated with different reconstruction times to be re-used "
 					"instead of re-creating them, provided they have not been evicted from the cache. "
 					"This benefit also applies when querying rotations with :meth:`get_rotation` since "
-					"it, in turn, requests reconstruction trees.\n",
+					"it, in turn, requests reconstruction trees.\n"
+					"\n"
+					"A *RotationModel* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionchanged:: 0.42\n"
+					"   Added pickle support.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
