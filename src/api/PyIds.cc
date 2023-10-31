@@ -124,7 +124,10 @@ export_feature_id()
 				&GPlatesModel::FeatureId::get,
 				bp::return_value_policy<bp::copy_const_reference>())
 		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesModel::FeatureId>>())
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesModel::FeatureId>>(
+				// Since we are providing the only constructor (__init__ for pickling) we need its
+				// docstring to document that this class cannot be instantiated from Python...
+				true/*document_class_as_non_instantiable*/))
 	;
 
 	// Enable boost::optional<FeatureId> to be passed to and from python.

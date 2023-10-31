@@ -661,6 +661,12 @@ export_geo_time_instant()
 				"  ::\n"
 				"\n"
 				"    time_instant = pygplates.GeoTimeInstant(time_value)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesApi::GeoTimeInstant>>())
 		.def("create_distant_past",
 				&GPlatesApi::GeoTimeInstant::create_distant_past,
 				"create_distant_past()\n"
@@ -748,8 +754,6 @@ export_geo_time_instant()
 		.def("__le__", &GPlatesApi::geo_time_instant_le)
 		.def("__gt__", &GPlatesApi::geo_time_instant_gt)
 		.def("__ge__", &GPlatesApi::geo_time_instant_ge)
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesApi::GeoTimeInstant>>())
 	;
 
 	// Enable boost::optional<GPlatesApi::GeoTimeInstant> to be passed to and from python.

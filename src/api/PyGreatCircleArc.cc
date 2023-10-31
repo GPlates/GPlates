@@ -207,6 +207,12 @@ export_great_circle_arc()
 				"  ::\n"
 				"\n"
 				"    great_circle_arc = pygplates.GreatCircleArc(start_point, end_point)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesMaths::GreatCircleArc>>())
 		.def("get_start_point",
 				&GPlatesMaths::GreatCircleArc::start_point,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -396,8 +402,6 @@ export_great_circle_arc()
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesMaths::GreatCircleArc>>())
 	;
 
 	// Enable boost::optional<GreatCircleArc> to be passed to and from python.

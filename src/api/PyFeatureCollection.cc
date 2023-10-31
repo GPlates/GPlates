@@ -871,6 +871,12 @@ export_feature_collection()
 				"       for feature in original_feature_collection:\n"
 				"           # Changing the reconstruction plate ID affects both original and shallow copy collections.\n"
 				"           feature.set_reconstruction_plate_id(...)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>())
 		.def("read",
 				&GPlatesApi::feature_collection_handle_read,
 				(bp::arg("filename")),
@@ -935,8 +941,6 @@ export_feature_collection()
 #if 0
 		.def("__setitem__", &GPlatesApi::feature_collection_handle_set_item)
 #endif
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesModel::FeatureCollectionHandle::non_null_ptr_type>())
 		.def("add",
 				&GPlatesApi::feature_collection_handle_add,
 				(bp::arg("feature")),

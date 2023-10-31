@@ -1119,6 +1119,12 @@ export_topological_snapshot()
 			"\n"
 			"  .. versionchanged:: 0.31\n"
 			"     Added *default_resolve_topology_parameters* argument.\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesApi::TopologicalSnapshot::non_null_ptr_type>())
 		.def("get_resolved_topologies",
 				&GPlatesApi::topological_snapshot_get_resolved_topologies,
 				(bp::arg("resolve_topology_types") = GPlatesApi::ResolveTopologyType::DEFAULT_RESOLVE_TOPOLOGY_TYPES,
@@ -1282,8 +1288,6 @@ export_topological_snapshot()
 				"of :meth:`get_rotation_model`.\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesApi::TopologicalSnapshot::non_null_ptr_type>())
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.

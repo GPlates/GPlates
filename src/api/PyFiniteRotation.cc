@@ -537,6 +537,12 @@ export_finite_rotation()
 				"  ::\n"
 				"\n"
 				"    identity_finite_rotation = pygplates.FiniteRotation()\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesMaths::FiniteRotation>>())
 		.def("create_identity_rotation",
 				&GPlatesApi::finite_rotation_create_identity_rotation,
 				"create_identity_rotation()\n"
@@ -947,8 +953,6 @@ export_finite_rotation()
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesMaths::FiniteRotation>>())
 	;
 
 	// Enable boost::optional<FiniteRotation> to be passed to and from python.

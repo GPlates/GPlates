@@ -350,19 +350,6 @@ BOOST_PYTHON_MODULE(pygplates)
 	// Sphinx is used to generate API documentation (see http://sphinx-doc.org) and it
 	// uses the first docstring line as the function signature (if it looks like a signature).
 	//
-	// The following limitations apply to using ReStructuredText in Sphinx's autodoc extension
-	// (autodoc imports modules and looks up their docstrings):
-	//  - '::' to indicate end-of-paragraph must be on a separate line,
-	//  - the docstrings on special methods such as '__init__', '__str__', '__lt__' are ignored
-	//    by Sphinx (by default). However we use the :special-members: Sphinx directive which includes
-	//    all special members. Normally this is too much, but we ask Sphinx not to document classes
-	//    or methods that have no docstring - and our current policy is not to have docstrings for
-	//    special members other than '__init__'.
-	//    We could have used the "autoclass_content='both'" setting in the 'conf.py' file to only
-	//    include the '__init__' special method, but it concatenates '__init__'s docstring into
-	//    the class docstring and we'd rather keep it separate since ':param:', ':type:' and ':rtype:'
-	//    directives (in docstrings) only work when applied within a *method* docstring (ie, no class docstring).
-	//
 	bp::docstring_options module_docstring_options(
 			true/*show_user_defined*/,
 			false/*show_py_signatures*/,

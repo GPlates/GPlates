@@ -20,6 +20,7 @@
 #ifndef GPLATES_API_PYTHONPICKLE_H
 #define GPLATES_API_PYTHONPICKLE_H
 
+#include <string>
 #include <QBuffer>
 #include <QByteArray>
 #include <QDataStream>
@@ -241,16 +242,55 @@ namespace GPlatesApi
 		{
 		public:
 
+			/**
+			 * Construct a visitor to handle pickling/unpicking for an object type.
+			 *
+			 * Optionally document the pickled class as non-instantiable (in docstring of __init__ method generated for pickling).
+			 *
+			 * This is useful when a class's only constructor (__init__) is for pickling (ie, the class does not define its own __init__ methods).
+			 * In this case, if you hadn't provided pickle support for your class then you would just have had bp::no_init which causes boost-python
+			 * to automatically generate the __init__ docstring: "Raises an exception\nThis class cannot be instantiated from Python\n".
+			 * However, because an __init__ method is generated (for pickling) then boost-python will not do this.
+			 * And so the user reading the API documentation could get confused (and think the class *can* be constructed).
+			 * In this case you can set @a document_init_as_non_instantiable to 'true' so that a note about this is added to the docstring.
+			 */
+			PickleDefVisitor(
+					bool document_class_as_non_instantiable = false) :
+				d_document_class_as_non_instantiable(document_class_as_non_instantiable)
+			{  }
+
 			template <class PythonClassType>
 			void
 			visit(
 					PythonClassType &python_class) const
 			{
-				python_class
-						.def("__init__", boost::python::make_constructor(&Impl::init<ObjectHolderType>))
-						.def_pickle(Impl::PickleSuite<ObjectHolderType>())
-				;
+				std::string constructor_docstring;
+				if (d_document_class_as_non_instantiable)
+				{
+					// Document class as non-instantiable.
+					constructor_docstring =
+							"You cannot directly instantiate this class from Python.\n"
+							"\n"
+							".. note:: This constructor is only provided for `pickle <https://docs.python.org/3/library/pickle.html>`_ support.\n";
+				}
+				else
+				{
+					// Note: Instead of an empty (or no) docstring we use a single space.
+					//       This prevents boost-python from duplicating the docstring of the last
+					//       __init__ method added to the class.
+					constructor_docstring = " ";
+				}
+
+				python_class.def(
+						"__init__",
+						boost::python::make_constructor(&Impl::init<ObjectHolderType>),
+						constructor_docstring.c_str());
+
+				python_class.def_pickle(Impl::PickleSuite<ObjectHolderType>());
 			}
+			
+		private:
+			bool d_document_class_as_non_instantiable;
 		};
 	}
 }

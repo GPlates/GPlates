@@ -406,6 +406,12 @@ export_enumeration()
 				"    dip_slip_enum = pygplates.Enumeration(\n"
 				"        pygplates.EnumerationType.create_gpml('DipSlipEnumeration'),\n"
 				"        'Extension')\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::Enumeration::non_null_ptr_type>())
 		.def("get_type",
 				&GPlatesPropertyValues::Enumeration::get_type,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -438,8 +444,6 @@ export_enumeration()
 				"  ::\n"
 				"\n"
 				"    dip_slip_enum.set_content('Extension')\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::Enumeration::non_null_ptr_type>())
 	;
 
 #if 0  // Not registering Enumeration because it represents many different structural types (it stores an EnumerationType).
@@ -881,6 +885,12 @@ export_gml_data_block()
 				"        {\n"
 				"            pygplates.ScalarType.create_gpml('VelocityColat') : [-1.5, -1.6, -1.55],\n"
 				"            pygplates.ScalarType.create_gpml('VelocityLon') : [0.36, 0.37, 0.376]})\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>())
 		.def("__iter__", &GPlatesApi::gml_data_block_get_iter)
 		.def("__len__", &GPlatesApi::gml_data_block_len)
 		.def("__contains__", &GPlatesApi::gml_data_block_contains_scalar_type)
@@ -944,8 +954,6 @@ export_gml_data_block()
 				"    gml_data_block.remove(pygplates.ScalarType.create_gpml('VelocityColat'))\n"
 				"\n"
 				"  .. note:: If *scalar_type* does not exist in the data block then it is ignored and nothing is done.\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlDataBlock::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -991,6 +999,12 @@ export_gml_line_string()
 				"  ::\n"
 				"\n"
 				"   line_string_property = pygplates.GmlLineString(polyline)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlLineString::non_null_ptr_type>())
 		.def("get_polyline",
 				&GPlatesPropertyValues::GmlLineString::get_polyline,
 				"get_polyline()\n"
@@ -1005,8 +1019,6 @@ export_gml_line_string()
 				"\n"
 				"  :param polyline: the polyline geometry\n"
 				"  :type polyline: :class:`PolylineOnSphere`\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlLineString::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -1062,6 +1074,12 @@ export_gml_multi_point()
 				"  ::\n"
 				"\n"
 				"    multi_point_property = pygplates.GmlMultiPoint(multi_point)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type>())
 		.def("get_multi_point",
 				&GPlatesPropertyValues::GmlMultiPoint::get_multipoint,
 				"get_multi_point()\n"
@@ -1076,8 +1094,6 @@ export_gml_multi_point()
 				"\n"
 				"  :param multi_point: the multi-point geometry\n"
 				"  :type multi_point: :class:`MultiPointOnSphere`\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlMultiPoint::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -1146,6 +1162,12 @@ export_gml_orientable_curve()
 				"\n"
 				"  .. note:: Currently the orientation is always *positive* "
 				"so this is essentially no different than a :class:`GmlLineString`.\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type>())
 		.def("get_base_curve",
 				base_curve,
 				"get_base_curve()\n"
@@ -1160,8 +1182,6 @@ export_gml_orientable_curve()
 				"\n"
 				"  :param base_curve: the line string (polyline) property value\n"
 				"  :type base_curve: :class:`GmlLineString`\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlOrientableCurve::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -1221,6 +1241,12 @@ export_gml_point()
 				"  ::\n"
 				"\n"
 				"    point_property = pygplates.GmlPoint(point)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlPoint::non_null_ptr_type>())
 		.def("get_point",
 				&GPlatesPropertyValues::GmlPoint::get_point,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -1237,8 +1263,6 @@ export_gml_point()
 				"  :param point: the point geometry\n"
 				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (latitude,longitude)"
 				", in degrees, or tuple (x,y,z)\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlPoint::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -1295,6 +1319,12 @@ export_gml_polygon()
 				"  ::\n"
 				"\n"
 				"   polygon_property = pygplates.GmlPolygon(polygon)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlPolygon::non_null_ptr_type>())
 		.def("get_polygon",
 				// We ignore interior polygons for now - later they will get stored in a single PolygonOnSphere...
 				&GPlatesPropertyValues::GmlPolygon::get_polygon,
@@ -1311,8 +1341,6 @@ export_gml_polygon()
 				"\n"
 				"  :param polygon: the polygon geometry\n"
 				"  :type polygon: :class:`PolygonOnSphere`\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlPolygon::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -1359,6 +1387,12 @@ export_gml_time_instant()
 				"\n"
 				"    begin_time_instant = pygplates.GmlTimeInstant(pygplates.GeoTimeInstant.create_distant_past())\n"
 				"    end_time_instant = pygplates.GmlTimeInstant(0)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type>())
 		.def("get_time",
 				&GPlatesPropertyValues::GmlTimeInstant::get_time_position,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -1389,8 +1423,6 @@ export_gml_time_instant()
 				"\n"
 				"  :param time_position: the time position\n"
 				"  :type time_position: float or :class:`GeoTimeInstant`\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlTimeInstant::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -1503,6 +1535,12 @@ export_gml_time_period()
 				"  ::\n"
 				"\n"
 				"    time_period = pygplates.GmlTimePeriod(pygplates.GeoTimeInstant.create_distant_past(), 0)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type>())
 		.def("get_begin_time",
 				&GPlatesApi::gml_time_period_get_begin_time,
 				"get_begin_time()\n"
@@ -1553,8 +1591,6 @@ export_gml_time_period()
 				"\n"
 				"  .. note:: *time_position* is considered to lie *within* a time period if it "
 				"coincides with the :meth:`begin<get_begin_time>` or :meth:`end<get_end_time>` time.\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GmlTimePeriod::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -1687,6 +1723,10 @@ export_gpml_array()
 			"\n"
 			"    array = pygplates.GpmlArray(elements)\n")
 		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
 		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlArray::non_null_ptr_type>())
 	;
 
@@ -1795,6 +1835,12 @@ export_gpml_constant_value()
 					"  ::\n"
 					"\n"
 					"    constant_property_value = pygplates.GpmlConstantValue(property_value)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type>())
 		// This is a private method (has leading '_'), and we don't provide a docstring...
 		// This method is accessed by pure python API code.
 		.def("_get_value",
@@ -1825,8 +1871,6 @@ export_gpml_constant_value()
 				"\n"
 				"  :param description: description of this constant value wrapper\n"
 				"  :type description: string or None\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlConstantValue::non_null_ptr_type>())
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
@@ -1879,6 +1923,12 @@ export_gpml_finite_rotation()
 				"  ::\n"
 				"\n"
 				"    finite_rotation_property = pygplates.GpmlFiniteRotation(finite_rotation)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type>())
 		.def("get_finite_rotation",
 				&GPlatesPropertyValues::GpmlFiniteRotation::get_finite_rotation,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -1894,8 +1944,6 @@ export_gpml_finite_rotation()
 				"\n"
 				"  :param finite_rotation: the finite rotation\n"
 				"  :type finite_rotation: :class:`FiniteRotation`\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlFiniteRotation::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -1953,6 +2001,10 @@ export_gpml_finite_rotation_slerp()
 				"\n"
 				"    finite_rotation_slerp = pygplates.GpmlFiniteRotationSlerp()\n")
 		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
 		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlFiniteRotationSlerp::non_null_ptr_type>())
 	;
 
@@ -2248,6 +2300,12 @@ export_gpml_irregular_sampling()
 				"  ::\n"
 				"\n"
 				"    irregular_sampling = pygplates.GpmlIrregularSampling(time_samples)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type>())
 		.def("get_time_samples",
 				&GPlatesApi::gpml_irregular_sampling_get_time_samples,
 				"get_time_samples()\n"
@@ -2319,8 +2377,6 @@ export_gpml_irregular_sampling()
 				"  :param interpolation_function: the function used to interpolate between time samples\n"
 				"  :type interpolation_function: an instance derived from :class:`GpmlInterpolationFunction`, or None\n")
 #endif
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlIrregularSampling::non_null_ptr_type>())
 	;
 
 	// Make 'GpmlIrregularSampling' look like a python list (RevisionedVector<GpmlTimeSample>).
@@ -2884,6 +2940,12 @@ export_gpml_key_value_dictionary()
 				"\n"
 				"    dictionary = pygplates.GpmlKeyValueDictionary(\n"
 				"        {'name' : 'Test', 'id' : 23})\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type>())
 		.def("__iter__", &GPlatesApi::gpml_key_value_dictionary_get_iter)
 		.def("__len__", &GPlatesApi::gpml_key_value_dictionary_len)
 		.def("__contains__", &GPlatesApi::gpml_key_value_dictionary_contains_key)
@@ -2941,8 +3003,6 @@ export_gpml_key_value_dictionary()
 				"  :type key: string\n"
 				"\n"
 				"  If *key* does not exist in the dictionary then it is ignored and nothing is done.\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlKeyValueDictionary::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -3037,6 +3097,12 @@ export_gpml_old_plates_header()
 				"  :param number_of_points: number of points - not counting the final 'terminator' "
 				"point (99.0000,99.0000)\n"
 				"  :type number_of_points: int\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type>())
 		.def("get_region_number",
 				&GPlatesPropertyValues::GpmlOldPlatesHeader::get_region_number,
 				"get_region_number()\n"
@@ -3224,8 +3290,6 @@ export_gpml_old_plates_header()
 				"\n"
 				"  :param number_of_points: number of points\n"
 				"  :type number_of_points: int\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlOldPlatesHeader::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -3374,6 +3438,12 @@ export_gpml_piecewise_aggregation()
 				"  ::\n"
 				"\n"
 				"    piecewise_aggregation = pygplates.GpmlPiecewiseAggregation(time_windows)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type>())
 		.def("get_time_windows",
 				&GPlatesApi::gpml_piecewise_aggregation_get_time_windows,
 				"get_time_windows()\n"
@@ -3406,8 +3476,6 @@ export_gpml_piecewise_aggregation()
 				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n"
 				"\n"
 				"  .. versionadded:: 0.21\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlPiecewiseAggregation::non_null_ptr_type>())
 	;
 
 	// Make 'GpmlPiecewiseAggregation' look like a python list (RevisionedVector<GpmlTimeWindow>).
@@ -3463,6 +3531,12 @@ export_gpml_plate_id()
 				"  ::\n"
 				"\n"
 				"    plate_id_property = pygplates.GpmlPlateId(plate_id)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type>())
 		.def("get_plate_id",
 				&GPlatesPropertyValues::GpmlPlateId::get_value,
 				"get_plate_id()\n"
@@ -3477,8 +3551,6 @@ export_gpml_plate_id()
 				"\n"
 				"  :param plate_id: integer plate id\n"
 				"  :type plate_id: int\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlPlateId::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -3595,6 +3667,12 @@ export_gpml_polarity_chron_id()
 				"\n"
 				"    # Create the identifier 'C34ad' for Cenozoic isochron, major region 34, sub region a, sub region d:\n"
 				"    polarity_chron_id_property = pygplates.GpmlPolarityChronId('Cenozoic', 34, 'ad')\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlPolarityChronId::non_null_ptr_type>())
 		.def("get_era",
 				&GPlatesPropertyValues::GpmlPolarityChronId::get_era,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -3652,8 +3730,6 @@ export_gpml_polarity_chron_id()
 				"located in - the letters a-z are used for the initial sub-region, and if further polarity "
 				"reversals have been discovered within that chron, a second letter is appended, and so on\n"
 				"  :type minor_region: string\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlPolarityChronId::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -3702,8 +3778,8 @@ export_gpml_property_delegate()
 				"  :type property_name: :class:`PropertyName`\n"
 				"  :param property_type: the type of the referenced property\n"
 				"  :type property_type: a class object of a property type (derived from :class:`PropertyValue`) "
-			"except :class:`Enumeration` and time-dependent wrappers :class:`GpmlConstantValue`, "
-			":class:`GpmlIrregularSampling` and :class:`GpmlPiecewiseAggregation`.\n"
+				"except :class:`Enumeration` and time-dependent wrappers :class:`GpmlConstantValue`, "
+				":class:`GpmlIrregularSampling` and :class:`GpmlPiecewiseAggregation`.\n"
 				"\n"
 				"  ::\n"
 				"\n"
@@ -3711,6 +3787,12 @@ export_gpml_property_delegate()
 				"        referenced_feature.get_feature_id(),\n"
 				"        pygplates.PropertyName.gpml_center_line_of,\n"
 				"        pygplates.GmlLineString)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type>())
 		.def("get_feature_id",
 				&GPlatesPropertyValues::GpmlPropertyDelegate::get_feature_id,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -3734,8 +3816,6 @@ export_gpml_property_delegate()
 				"  For example, it might return ``pygplates.GmlLineString`` which is a *class* object (not an instance).\n"
 				"\n"
 				"  :rtype: a class object of the property type (derived from :class:`PropertyValue`)\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlPropertyDelegate::non_null_ptr_type>())
 	;
 
 	// Create a python class "GpmlPropertyDelegateList" for RevisionedVector<GpmlPropertyDelegate> that behaves like a list of GpmlPropertyDelegate.
@@ -3894,6 +3974,12 @@ export_gpml_time_sample()
 				"  ::\n"
 				"\n"
 				"    time_sample = pygplates.GpmlTimeSample(property_value, time)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>())
 		.def("get_value",
 				&GPlatesApi::gpml_time_sample_get_value,
 				"get_value()\n"
@@ -3994,8 +4080,6 @@ export_gpml_time_sample()
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTimeSample::non_null_ptr_type>())
 	;
 
 	// Create a python class "GpmlTimeSampleList" for RevisionedVector<GpmlTimeSample> that behaves like a list of GpmlTimeSample.
@@ -4119,6 +4203,12 @@ export_gpml_time_window()
 				"\n"
 				"  Note that *begin_time* must be further in the past than the *end_time* "
 				"``begin_time > end_time``.\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type>())
 		.def("get_value",
 				&GPlatesApi::gpml_time_window_get_value,
 				"get_value()\n"
@@ -4191,8 +4281,6 @@ export_gpml_time_window()
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTimeWindow::non_null_ptr_type>())
 	;
 
 	// Create a python class "GpmlTimeWindowList" for RevisionedVector<GpmlTimeWindow> that behaves like a list of GpmlTimeWindow.
@@ -4715,6 +4803,12 @@ export_gpml_topological_line()
 			"  ::\n"
 			"\n"
 			"    topological_line = pygplates.GpmlTopologicalLine(topological_sections)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTopologicalLine::non_null_ptr_type>())
 		.def("get_sections",
 			&GPlatesApi::gpml_topological_line_get_sections,
 			"get_sections()\n"
@@ -4729,8 +4823,6 @@ export_gpml_topological_line()
 			"\n"
 			"    # Append a section\n"
 			"    sections.append(pygplates.GpmlTopologicalPoint(...))\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTopologicalLine::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -4785,6 +4877,12 @@ export_gpml_topological_line_section()
 			"  ::\n"
 			"\n"
 			"    topological_line_section = pygplates.GpmlTopologicalLineSection(line_property_delegate, false)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTopologicalLineSection::non_null_ptr_type>())
 		.def("get_property_delegate",
 			get_property_delegate,
 			"get_property_delegate()\n"
@@ -4813,8 +4911,6 @@ export_gpml_topological_line_section()
 			"\n"
 			"  :param reverse_orientation: whether the line was reversed when contributing to the parent topology\n"
 			"  :type reverse_orientation: bool\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTopologicalLineSection::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -4910,6 +5006,12 @@ export_gpml_topological_network()
 			"  ::\n"
 			"\n"
 			"    topological_network = pygplates.GpmlTopologicalNetwork(boundary_sections, interiors)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTopologicalNetwork::non_null_ptr_type>())
 		.def("get_boundary_sections",
 			&GPlatesApi::gpml_topological_network_get_boundary_sections,
 			"get_boundary_sections()\n"
@@ -4938,8 +5040,6 @@ export_gpml_topological_network()
 			"\n"
 			"    # Append an interior\n"
 			"    interiors.append(pygplates.GpmlPropertyDelegate(...))\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTopologicalNetwork::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -4991,6 +5091,12 @@ export_gpml_topological_point()
 			"  ::\n"
 			"\n"
 			"    topological_point_section = pygplates.GpmlTopologicalPoint(point_property_delegate)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTopologicalPoint::non_null_ptr_type>())
 		.def("get_property_delegate",
 			get_property_delegate,
 			"get_property_delegate()\n"
@@ -5005,8 +5111,6 @@ export_gpml_topological_point()
 			"\n"
 			"  :param gpml_property_delegate: the point geometry property value\n"
 			"  :type gpml_property_delegate: :class:`GpmlPropertyDelegate`\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTopologicalPoint::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -5078,6 +5182,12 @@ export_gpml_topological_polygon()
 			"  ::\n"
 			"\n"
 			"    topological_polygon = pygplates.GpmlTopologicalPolygon(topological_sections)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTopologicalPolygon::non_null_ptr_type>())
 		.def("get_exterior_sections",
 			&GPlatesApi::gpml_topological_polygon_get_exterior_sections,
 			"get_exterior_sections()\n"
@@ -5098,8 +5208,6 @@ export_gpml_topological_polygon()
 			"    boundary_sections.append(pygplates.GpmlTopologicalLineSection(...))\n"
 			"\n"
 			"  .. versionadded:: 0.24\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::GpmlTopologicalPolygon::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -5146,6 +5254,12 @@ export_xs_boolean()
 				"  ::\n"
 				"\n"
 				"    boolean_property = pygplates.XsBoolean(boolean_value)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::XsBoolean::non_null_ptr_type>())
 		.def("get_boolean",
 				&GPlatesPropertyValues::XsBoolean::get_value,
 				"get_boolean()\n"
@@ -5160,8 +5274,6 @@ export_xs_boolean()
 				"\n"
 				"  :param boolean_value: the boolean value\n"
 				"  :type boolean_value: bool\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::XsBoolean::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -5210,6 +5322,12 @@ export_xs_double()
 				"  ::\n"
 				"\n"
 				"    float_property = pygplates.XsDouble(float_value)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::XsDouble::non_null_ptr_type>())
 		.def("get_double",
 				&GPlatesPropertyValues::XsDouble::get_value,
 				"get_double()\n"
@@ -5224,8 +5342,6 @@ export_xs_double()
 				"\n"
 				"  :param float_value: the floating-point value\n"
 				"  :type float_value: float\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::XsDouble::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -5273,6 +5389,12 @@ export_xs_integer()
 				"  ::\n"
 				"\n"
 				"    integer_property = pygplates.XsInteger(integer_value)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::XsInteger::non_null_ptr_type>())
 		.def("get_integer",
 				&GPlatesPropertyValues::XsInteger::get_value,
 				"get_integer()\n"
@@ -5287,8 +5409,6 @@ export_xs_integer()
 				"\n"
 				"  :param integer_value: the integer value\n"
 				"  :type integer_value: int\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::XsInteger::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).
@@ -5346,6 +5466,12 @@ export_xs_string()
 				"  ::\n"
 				"\n"
 				"    string_property = pygplates.XsString(string)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::XsString::non_null_ptr_type>())
 		.def("get_string",
 				&GPlatesPropertyValues::XsString::get_value,
 				bp::return_value_policy<bp::copy_const_reference>(),
@@ -5361,8 +5487,6 @@ export_xs_string()
 				"\n"
 				"  :param string: the string\n"
 				"  :type string: string\n")
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesPropertyValues::XsString::non_null_ptr_type>())
 	;
 
 	// Register property value type as a structural type (GPlatesPropertyValues::StructuralType).

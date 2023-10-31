@@ -3761,6 +3761,12 @@ export_feature()
 				"    # This does the same thing as the code above.\n"
 				"    unclassified_feature = pygplates.Feature(\n"
 				"        pygplates.FeatureType.gpml_unclassified_feature)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesModel::FeatureHandle::non_null_ptr_type>())
 		.def("__iter__", bp::iterator<GPlatesModel::FeatureHandle>())
 		.def("__len__", &GPlatesModel::FeatureHandle::size)
 		.def("__getitem__", &GPlatesApi::feature_handle_get_item)
@@ -3770,8 +3776,6 @@ export_feature()
 #endif
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesModel::FeatureHandle::non_null_ptr_type>())
 
 		.def("clone",
 				&GPlatesApi::feature_handle_clone,

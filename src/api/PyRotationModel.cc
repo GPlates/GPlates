@@ -846,6 +846,12 @@ export_rotation_model()
 			"  .. note:: This :meth:`constructor<__init__>` just returns a reference to the existing *rotation_model* "
 			"because a *RotationModel* object is immutable (contains no operations or methods that modify its state) and "
 			"hence a deep copy of *rotation_model* is not needed.\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesApi::RotationModel::non_null_ptr_type>())
 		.def("get_rotation",
 				&GPlatesApi::RotationModel::get_rotation,
 				(bp::arg("to_time"),
@@ -982,8 +988,6 @@ export_rotation_model()
 				"  .. versionadded:: 0.29\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesApi::RotationModel::non_null_ptr_type>())
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.

@@ -571,7 +571,10 @@ namespace GPlatesApi
 			// And pickle support.
 			revisioned_vector_class
 					.def(GPlatesApi::PythonPickle::PickleDefVisitor<
-							typename GPlatesModel::RevisionedVector<RevisionableType>::non_null_ptr_type>())
+							typename GPlatesModel::RevisionedVector<RevisionableType>::non_null_ptr_type>(
+									// Since we are providing the only constructor (__init__ for pickling) we need its
+									// docstring to document that this class cannot be instantiated from Python...
+									true/*document_class_as_non_instantiable*/))
 			;
 		}
 

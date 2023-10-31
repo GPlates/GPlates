@@ -185,8 +185,12 @@ export_resolve_topology_parameters()
 								GPlatesApi::ResolveTopologyParameters::DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_strain_rate_clamping().enable_clamping,
 							bp::arg("max_clamped_strain_rate") =
 								GPlatesApi::ResolveTopologyParameters::DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_strain_rate_clamping().max_total_strain_rate)),
-			resolve_topology_parameters_constructor_docstring_stream.str().c_str())
+				resolve_topology_parameters_constructor_docstring_stream.str().c_str())
 		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
 		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesApi::ResolveTopologyParameters::non_null_ptr_type>())
 	;
 

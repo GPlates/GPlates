@@ -111,6 +111,12 @@ export_top_level_property()
 				"  ::\n"
 				"\n"
 				"    property = pygplates.Property(property_name, property_value)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesModel::TopLevelProperty::non_null_ptr_type>())
 		.def("clone",
 				&GPlatesModel::TopLevelProperty::clone,
 				"clone()\n"
@@ -138,8 +144,6 @@ export_top_level_property()
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesModel::TopLevelProperty::non_null_ptr_type>())
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.

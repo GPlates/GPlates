@@ -156,7 +156,10 @@ export_qualified_xml_name(
 		// For '__str__' convert to a qualified XML string...
 		.def("__str__", &GPlatesModel::convert_qualified_xml_name_to_qstring<qualified_xml_name_type>)
 		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<qualified_xml_name_type>>())
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<qualified_xml_name_type>>(
+				// Since we are providing the only constructor (__init__ for pickling) we need its
+				// docstring to document that this class cannot be instantiated from Python...
+				true/*document_class_as_non_instantiable*/))
 	;
 
 

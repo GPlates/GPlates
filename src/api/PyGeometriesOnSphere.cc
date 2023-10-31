@@ -1056,6 +1056,12 @@ export_point_on_sphere()
 				"\n"
 				"    # If (x,y,z) might not be on the unit globe.\n"
 				"    point = pygplates.PointOnSphere(x, y, z, normalise=True)\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>>())
 		// Static property 'pygplates.PointOnSphere.north_pole'...
 		.def_readonly("north_pole", GPlatesApi::point_on_sphere_north_pole.get())
 		// Static property 'pygplates.PointOnSphere.south_pole'...
@@ -1131,8 +1137,6 @@ export_point_on_sphere()
 		// Generate '__str__' from 'operator<<'...
 		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
 		.def(bp::self_ns::str(bp::self))
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PointGeometryOnSphere>>())
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
@@ -1437,6 +1441,12 @@ export_multi_point_on_sphere()
 				"\n"
 				"  .. note:: If *geometry* is a polygon then points from both its exterior and "
 				"interior rings are added to the multipoint.\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere>>())
 		.def("get_centroid",
 				&GPlatesApi::multi_point_on_sphere_get_centroid,
 				"get_centroid()\n"
@@ -1455,8 +1465,6 @@ export_multi_point_on_sphere()
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::MultiPointOnSphere>>())
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
@@ -2321,6 +2329,12 @@ export_polyline_on_sphere()
 				"(interior rings are ignored).\n"
 				"            | And the last point in the created polyline matches the first point to "
 				"ensure the polyline forms a closed ring.\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere>>())
 		.def("rotation_interpolate",
 				&GPlatesApi::polyline_on_sphere_rotation_interpolate,
 				(bp::arg("from_polyline"), bp::arg("to_polyline"),
@@ -2665,8 +2679,6 @@ export_polyline_on_sphere()
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolylineOnSphere>>())
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
@@ -3821,6 +3833,12 @@ export_polygon_on_sphere()
 				"\n"
 				"  .. note:: The created polygon will have no interior rings unless *geometry* is also a "
 				":class:`PolygonOnSphere` and has interior rings.\n")
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>>())
 		.def("get_segments",
 				&GPlatesApi::polygon_on_sphere_get_arcs_view,
 				"get_segments()\n"
@@ -4271,8 +4289,6 @@ export_polygon_on_sphere()
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
 		.def(bp::self == bp::self)
 		.def(bp::self != bp::self)
-		// Pickle support...
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesUtils::non_null_intrusive_ptr<GPlatesMaths::PolygonOnSphere>>())
 	;
 
 	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
