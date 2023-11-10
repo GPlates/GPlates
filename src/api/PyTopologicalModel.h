@@ -236,12 +236,10 @@ namespace GPlatesApi
 
 
 		/**
-		 * Returns the topological snapshot (resolved topologies) for the specified time (creating and caching them if necessary).
-		 *
-		 * Raises ValueError if @a reconstruction_time is not an integral value.
+		 * Creates the topological snapshot (resolved topologies) for the specified time.
 		 */
 		TopologicalSnapshot::non_null_ptr_type
-		get_topological_snapshot(
+		create_topological_snapshot(
 				const double &reconstruction_time);
 
 
@@ -321,9 +319,6 @@ namespace GPlatesApi
 
 	private:
 
-		//! Typedef for a mapping of (integral) times to topological snapshots (resolved topologies).
-		typedef std::map<GPlatesMaths::real_t/*time*/, TopologicalSnapshot::non_null_ptr_type> topological_snapshots_type;
-
 		//! Typedef for a sequence of topological features.
 		typedef std::vector<GPlatesModel::FeatureHandle::weak_ref> topological_features_seq_type;
 
@@ -373,11 +368,6 @@ namespace GPlatesApi
 		GPlatesAppLogic::ReconstructContext d_topological_section_reconstruct_context;
 		GPlatesAppLogic::ReconstructContext::context_state_reference_type d_topological_section_reconstruct_context_state;
 
-		/**
-		 * Cache of topological snapshots (resolved topologies) at various (integer) time instants.
-		 */
-		topological_snapshots_type d_cached_topological_snapshots;
-
 
 		TopologicalModel(
 				const RotationModel::non_null_ptr_type &rotation_model,
@@ -390,15 +380,6 @@ namespace GPlatesApi
 		 */
 		void
 		initialise_topological_reconstruction();
-
-		/**
-		 * Resolves topologies for the specified time and returns them as a topological snapshot.
-		 *
-		 * @a reconstruction_time should be an integral value.
-		 */
-		TopologicalSnapshot::non_null_ptr_type
-		create_topological_snapshot(
-				const double &reconstruction_time);
 
 	private: // Transcribe...
 

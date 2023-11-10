@@ -103,8 +103,7 @@ namespace GPlatesApi
 			bp::throw_error_already_set();
 		}
 
-		// TopologicalModel::get_topological_snapshot() checks that the reconstruction time is an integral value.
-		return topological_model->get_topological_snapshot(reconstruction_time.value());
+		return topological_model->create_topological_snapshot(reconstruction_time.value());
 	}
 
 
@@ -605,8 +604,6 @@ GPlatesApi::TopologicalModel::initialise_topological_reconstruction()
 	d_topological_boundary_features.clear();
 	d_topological_network_features_map.clear();
 	d_topological_section_regular_features.clear();
-	// Also clear any caches.
-	d_cached_topological_snapshots.clear();
 
 	// Extract a feature collection from each topological file.
 	for (auto topological_file : d_topological_files)
@@ -683,49 +680,6 @@ GPlatesApi::TopologicalModel::initialise_topological_reconstruction()
 
 	// Set the topological section regular features in the reconstruct context.
 	d_topological_section_reconstruct_context.set_features(d_topological_section_regular_features);
-}
-
-
-GPlatesApi::TopologicalSnapshot::non_null_ptr_type
-GPlatesApi::TopologicalModel::get_topological_snapshot(
-		const double &reconstruction_time_arg)
-{
-	const GPlatesMaths::real_t reconstruction_time = std::round(reconstruction_time_arg);
-	if (!GPlatesMaths::are_almost_exactly_equal(reconstruction_time.dval(), reconstruction_time_arg))
-	{
-		PyErr_SetString(PyExc_ValueError, "Reconstruction time should be an integral value.");
-		bp::throw_error_already_set();
-	}
-
-	// Return existing snapshot if we've already cached one for the specified reconstruction time.
-	auto topological_snapshot_find_result = d_cached_topological_snapshots.find(reconstruction_time);
-	if (topological_snapshot_find_result != d_cached_topological_snapshots.end())
-	{
-		return topological_snapshot_find_result->second;
-	}
-
-	//
-	// Create a new snapshot.
-	//
-
-	// First we want to have a suitably large reconstruction tree cache size in our rotation model to
-	// avoid slowing down our reconstruct-by-topologies (which happens if reconstruction trees are
-	// continually evicted and re-populated as we reconstruct different geometries through time).
-	//
-	// The +1 accounts for the extra time step used to generate deformed geometries (and velocities).
-	const unsigned int reconstruction_tree_cache_size = d_cached_topological_snapshots.size() + 1;
-	d_rotation_model->get_cached_reconstruction_tree_creator_impl()->set_maximum_cache_size(
-			reconstruction_tree_cache_size);
-
-	// Create snapshot.
-	TopologicalSnapshot::non_null_ptr_type topological_snapshot =
-			create_topological_snapshot(reconstruction_time.dval());
-
-	// Cache snapshot.
-	d_cached_topological_snapshots.insert(
-			topological_snapshots_type::value_type(reconstruction_time, topological_snapshot));
-
-	return topological_snapshot;
 }
 
 
@@ -901,21 +855,28 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 		bp::throw_error_already_set();
 	}
 
+	const unsigned int num_time_slots = time_range.get_num_time_slots();
+
+	// First we want to have a suitably large reconstruction tree cache size in our rotation model to
+	// avoid slowing down our reconstruct-by-topologies (which happens if reconstruction trees are
+	// continually evicted and re-populated as we reconstruct different geometries through time).
+	//
+	// The +1 accounts for the extra time step used to generate deformed geometries (and velocities).
+	d_rotation_model->get_cached_reconstruction_tree_creator_impl()->set_maximum_cache_size(num_time_slots + 1);
+
 	// Create our resolved topology (boundary/network) time spans.
 	GPlatesAppLogic::TopologyReconstruct::resolved_boundary_time_span_type::non_null_ptr_type resolved_boundary_time_span =
 			GPlatesAppLogic::TopologyReconstruct::resolved_boundary_time_span_type::create(time_range);
 	GPlatesAppLogic::TopologyReconstruct::resolved_network_time_span_type::non_null_ptr_type resolved_network_time_span =
 			GPlatesAppLogic::TopologyReconstruct::resolved_network_time_span_type::create(time_range);
 
-	const unsigned int num_time_slots = time_range.get_num_time_slots();
-
 	// Iterate over the time slots and fill in the resolved topological boundaries/networks.
 	for (unsigned int time_slot = 0; time_slot < num_time_slots; ++time_slot)
 	{
 		const double time = time_range.get_time(time_slot);
 
-		// Get topological snapshot (it'll either be cached or generated on demand).
-		TopologicalSnapshot::non_null_ptr_type topological_snapshot = get_topological_snapshot(time);
+		// Create a topological snapshot at the current time.
+		TopologicalSnapshot::non_null_ptr_type topological_snapshot = create_topological_snapshot(time);
 
 		resolved_boundary_time_span->set_sample_in_time_slot(topological_snapshot->get_resolved_topological_boundaries(), time_slot);
 		resolved_network_time_span->set_sample_in_time_slot(topological_snapshot->get_resolved_topological_networks(), time_slot);
@@ -1574,10 +1535,13 @@ export_topological_model()
 				"topological_snapshot(reconstruction_time)\n"
 				"  Returns a snapshot of resolved topologies at the requested reconstruction time.\n"
 				"\n"
-				"  :param reconstruction_time: the geological time of the snapshot (must have an *integral* value)\n"
+				"  :param reconstruction_time: the geological time of the snapshot\n"
 				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 				"  :rtype: :class:`TopologicalSnapshot`\n"
-				"  :raises: ValueError if *reconstruction_time* is not an *integral* value\n")
+				"  :raises: ValueError if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n"
+				"\n"
+				"  .. versionchanged:: 0.43\n"
+				"     *reconstruction_time* no longer required to be integral.\n")
 		.def("reconstruct_geometry",
 				&GPlatesApi::TopologicalModel::reconstruct_geometry,
 				(bp::arg("geometry"),

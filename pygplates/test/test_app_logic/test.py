@@ -1929,7 +1929,7 @@ class TopologicalModelCase(unittest.TestCase):
                 self.rotation_model)
 
     def test_get_topological_snapshot(self):
-        topological_snapshot = self.topological_model.topological_snapshot(10.0)
+        topological_snapshot = self.topological_model.topological_snapshot(10.5)  # note: it should allow a non-integral time
         self.assertTrue(topological_snapshot.get_anchor_plate_id() == self.topological_model.get_anchor_plate_id())
         self.assertTrue(topological_snapshot.get_rotation_model() == self.topological_model.get_rotation_model())
 
