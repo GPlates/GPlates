@@ -638,13 +638,13 @@ if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
 		set(_DISABLE_WARNINGS
 				-Wno-clobbered -Wno-maybe-uninitialized)
 
-		# Disable '-Wuninitialized' for g++ >= 12 and Boost 1.80.
+		# Disable '-Wuninitialized' for g++ >= 12 and Boost <= 1.80.
 		#
 		# G++ 12 started treating some '-Wmaybe-uninitialized' warnings as '-Wuninitialized'
-		# warnings creating a problem for boost::function in Boost 1.80 (but Boost fixed it
-		# for 1.81 by disabling same warning: https://github.com/boostorg/function/pull/43)...
+		# warnings creating a problem for boost::function in Boost 1.80 and ealier (but Boost fixed
+		# it for 1.81 by disabling same warning: https://github.com/boostorg/function/pull/43)...
 		if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12)
-			if (Boost_VERSION VERSION_EQUAL 1.80.0)
+			if (Boost_VERSION VERSION_LESS_EQUAL 1.80.0)
 				list(APPEND _DISABLE_WARNINGS -Wno-uninitialized)
 			endif()
 		endif()
