@@ -99,8 +99,6 @@ namespace GPlatesGui
 						return ":/age_traditional.cpt";
 					case Modern:
 						return ":/age_modern.cpt";
-					case Batlow:
-						return ":/age_batlow.cpt";
 
 					default:
 						break;
@@ -129,6 +127,8 @@ namespace GPlatesGui
 						return ":/topo_etopo1.cpt";
 					case Geo:
 						return ":/topo_geo.cpt";
+					case Relief:
+						return ":/topo_relief.cpt";
 
 					default:
 						break;
@@ -1178,8 +1178,6 @@ GPlatesGui::BuiltinColourPalettes::Age::get_palette_name(
 		return "Traditional";
 	case Modern:
 		return "Modern";
-	case Batlow:
-		return "Batlow";
 
 	default:
 		break;
@@ -1211,7 +1209,6 @@ GPlatesGui::BuiltinColourPalettes::Age::transcribe(
 		GPlatesScribe::EnumValue("Legacy", Legacy),
 		GPlatesScribe::EnumValue("Traditional", Traditional),
 		GPlatesScribe::EnumValue("Modern", Modern),
-		GPlatesScribe::EnumValue("Batlow", Batlow)
 	};
 
 	return GPlatesScribe::transcribe_enum_protocol(
@@ -1233,6 +1230,8 @@ GPlatesGui::BuiltinColourPalettes::Topography::get_palette_name(
 		return "Etopo1";
 	case Geo:
 		return "Geo";
+	case Relief:
+		return "Relief";
 
 	default:
 		break;
@@ -1263,6 +1262,7 @@ GPlatesGui::BuiltinColourPalettes::Topography::transcribe(
 	{
 		GPlatesScribe::EnumValue("Etopo1", Etopo1),
 		GPlatesScribe::EnumValue("Geo", Geo),
+		GPlatesScribe::EnumValue("Relief", Relief),
 	};
 
 	return GPlatesScribe::transcribe_enum_protocol(

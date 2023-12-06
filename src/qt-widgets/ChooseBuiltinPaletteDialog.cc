@@ -45,10 +45,10 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::ChooseBuiltinPaletteDialog(
 	d_age_legacy_button(new ColourScaleButton(this)),
 	d_age_traditional_button(new ColourScaleButton(this)),
 	d_age_modern_button(new ColourScaleButton(this)),
-	d_age_batlow_button(new ColourScaleButton(this)),
 	// Topography palettes...
 	d_topography_etopo1_button(new ColourScaleButton(this)),
 	d_topography_geo_button(new ColourScaleButton(this)),
+	d_topography_relief_button(new ColourScaleButton(this)),
 	// SCM palettes...
 	d_scm_batlow_button(new ColourScaleButton(this)),
 	d_scm_hawaii_button(new ColourScaleButton(this)),
@@ -103,11 +103,11 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::ChooseBuiltinPaletteDialog(
 	add_colour_scale_button(d_age_legacy_button, age_legacy_placeholder);
 	add_colour_scale_button(d_age_traditional_button, age_traditional_placeholder);
 	add_colour_scale_button(d_age_modern_button, age_modern_placeholder);
-	add_colour_scale_button(d_age_batlow_button, age_batlow_placeholder);
 
 	// Topography palettes.
 	add_colour_scale_button(d_topography_etopo1_button, topo_etopo1_placeholder);
 	add_colour_scale_button(d_topography_geo_button, topo_geo_placeholder);
+	add_colour_scale_button(d_topography_relief_button, topo_relief_placeholder);
 
 	// SCM palettes.
 	add_colour_scale_button(d_scm_batlow_button, SCM_batlow_placeholder);
@@ -232,10 +232,6 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::get_builtin_colour_palette_type(
 	{
 		return create_palette_type(GPlatesGui::BuiltinColourPalettes::Age::Modern);
 	}
-	if (colour_scale_button == d_age_batlow_button)
-	{
-		return create_palette_type(GPlatesGui::BuiltinColourPalettes::Age::Batlow);
-	}
 
 	// Topography palettes.
 	if (colour_scale_button == d_topography_etopo1_button)
@@ -245,6 +241,10 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::get_builtin_colour_palette_type(
 	if (colour_scale_button == d_topography_geo_button)
 	{
 		return create_palette_type(GPlatesGui::BuiltinColourPalettes::Topography::Geo);
+	}
+	if (colour_scale_button == d_topography_relief_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::Topography::Relief);
 	}
 
 	// SCM palettes.

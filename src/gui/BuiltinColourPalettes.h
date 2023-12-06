@@ -128,8 +128,7 @@ namespace GPlatesGui
 			{
 				Legacy,       // Original palette used in GPlates 2.2
 				Traditional,  // New default palette for GPlates 2.3
-				Modern,       // Alternative palette for GPlates 2.3
-				Batlow        // New alternative palette for GPlates 2.4
+				Modern        // Alternative palette for GPlates 2.3
 			};
 
 			/**
@@ -168,13 +167,16 @@ namespace GPlatesGui
 
 		/**
 		 * Topography palettes.
+		 *
+		 * Added in GPlates 2.4.
 		 */
 		namespace Topography
 		{
 			enum Type
 			{
-				Etopo1,       // Default palette used in GPlates 2.4
-				Geo           // Alternative palette for GPlates 2.4
+				Etopo1,
+				Geo,
+				Relief
 			};
 
 			/**

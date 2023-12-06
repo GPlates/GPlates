@@ -153,9 +153,9 @@
         <file>age_legacy.cpt</file>
         <file>age_traditional.cpt</file>
         <file>age_modern.cpt</file>
-        <file>age_batlow.cpt</file>
         <file>topo_etopo1.cpt</file>
         <file>topo_geo.cpt</file>
+        <file>topo_relief.cpt</file>
         <file>scm_batlow.cpt</file>
         <file>scm_hawaii.cpt</file>
         <file>scm_oslo.cpt</file>

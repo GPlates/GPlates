@@ -344,7 +344,7 @@
    <item>
     <widget class="QGroupBox" name="SCM_groupbox">
      <property name="title">
-      <string>Scientific Colour Maps by Crameri</string>
+      <string>Scientific Colour Maps</string>
      </property>
      <property name="alignment">
       <set>Qt::AlignCenter</set>
@@ -518,9 +518,6 @@
            <item>
             <widget class="QWidget" name="age_modern_placeholder" native="true"/>
            </item>
-           <item>
-            <widget class="QWidget" name="age_batlow_placeholder" native="true"/>
-           </item>
           </layout>
          </widget>
         </item>
@@ -535,6 +532,9 @@
            </item>
            <item>
             <widget class="QWidget" name="topo_geo_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="topo_relief_placeholder" native="true"/>
            </item>
           </layout>
          </widget>
