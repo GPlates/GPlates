@@ -128,7 +128,8 @@ namespace GPlatesGui
 			{
 				Legacy,       // Original palette used in GPlates 2.2
 				Traditional,  // New default palette for GPlates 2.3
-				Modern        // Alternative palette for GPlates 2.3
+				Modern,       // Alternative palette for GPlates 2.3
+				Batlow        // New alternative palette for GPlates 2.4
 			};
 
 			/**

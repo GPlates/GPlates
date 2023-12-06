@@ -45,6 +45,7 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::ChooseBuiltinPaletteDialog(
 	d_age_legacy_button(new ColourScaleButton(this)),
 	d_age_traditional_button(new ColourScaleButton(this)),
 	d_age_modern_button(new ColourScaleButton(this)),
+	d_age_batlow_button(new ColourScaleButton(this)),
 	// ColorBrewer sequential multi-hue palettes...
 	d_BuGn_button(new ColourScaleButton(this)),
 	d_BuPu_button(new ColourScaleButton(this)),
@@ -82,6 +83,7 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::ChooseBuiltinPaletteDialog(
 	add_colour_scale_button(d_age_legacy_button, age_legacy_placeholder);
 	add_colour_scale_button(d_age_traditional_button, age_traditional_placeholder);
 	add_colour_scale_button(d_age_modern_button, age_modern_placeholder);
+	add_colour_scale_button(d_age_batlow_button, age_batlow_placeholder);
 
 	// ColorBrewer sequential multi-hue palettes.
 	add_colour_scale_button(d_BuGn_button, BuGn_placeholder);
@@ -187,6 +189,10 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::get_builtin_colour_palette_type(
 	if (colour_scale_button == d_age_modern_button)
 	{
 		return create_palette_type(GPlatesGui::BuiltinColourPalettes::Age::Modern);
+	}
+	if (colour_scale_button == d_age_batlow_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::Age::Batlow);
 	}
 
 	// ColorBrewer sequential multi-hue palettes.

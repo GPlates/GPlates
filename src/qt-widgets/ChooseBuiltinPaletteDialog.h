@@ -121,6 +121,7 @@ namespace GPlatesQtWidgets
 		ColourScaleButton *d_age_legacy_button;
 		ColourScaleButton *d_age_traditional_button;
 		ColourScaleButton *d_age_modern_button;
+		ColourScaleButton *d_age_batlow_button;
 
 		// ColorBrewer sequential multi-hue palettes.
 		ColourScaleButton *d_BuGn_button;

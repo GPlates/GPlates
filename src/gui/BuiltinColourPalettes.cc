@@ -69,6 +69,8 @@ namespace GPlatesGui
 						return ":/age_traditional.cpt";
 					case Modern:
 						return ":/age_modern.cpt";
+					case Batlow:
+						return ":/age_batlow.cpt";
 
 					default:
 						break;
@@ -1056,6 +1058,8 @@ GPlatesGui::BuiltinColourPalettes::Age::get_palette_name(
 		return "Age (traditional)";
 	case Modern:
 		return "Age (modern)";
+	case Batlow:
+		return "Age (batlow)";
 
 	default:
 		break;
@@ -1103,7 +1107,8 @@ GPlatesGui::BuiltinColourPalettes::Age::transcribe(
 	{
 		GPlatesScribe::EnumValue("Legacy", Legacy),
 		GPlatesScribe::EnumValue("Traditional", Traditional),
-		GPlatesScribe::EnumValue("Modern", Modern)
+		GPlatesScribe::EnumValue("Modern", Modern),
+		GPlatesScribe::EnumValue("Batlow", Batlow)
 	};
 
 	return GPlatesScribe::transcribe_enum_protocol(

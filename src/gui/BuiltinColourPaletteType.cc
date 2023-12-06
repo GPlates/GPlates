@@ -158,6 +158,7 @@ GPlatesGui::BuiltinColourPaletteType::transcribe(
 	// This is a new field added in GPlates 2.3.
 	// If the field doesn't exist then we're loading a project created by GPlates 2.2 or earlier,
 	// in which case we'll use the legacy age palette (used by GPlates 2.2 and earlier).
+	// Or it could be a new age palette added after GPlates 2.3 (we'll also default to legacy age palette).
 	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_age_type, "age_type"))
 	{
 		d_age_type = BuiltinColourPalettes::Age::Legacy;
