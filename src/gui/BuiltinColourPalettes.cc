@@ -140,6 +140,67 @@ namespace GPlatesGui
 			}
 		}
 
+		namespace SCM
+		{
+			namespace
+			{
+				/**
+				 * Returns the filename of the requested SCM CPT file (stored internally as a resource).
+				 */
+				QString
+				get_cpt_filename(
+						Type type)
+				{
+					switch (type)
+					{
+					// Sequential...
+					case Batlow:
+						return ":/scm_batlow.cpt";
+					case Hawaii:
+						return ":/scm_hawaii.cpt";
+					case Oslo:
+						return ":/scm_oslo.cpt";
+					case Lapaz:
+						return ":/scm_lapaz.cpt";
+					case Lajolla:
+						return ":/scm_lajolla.cpt";
+					case Buda:
+						return ":/scm_buda.cpt";
+					case Davos:
+						return ":/scm_davos.cpt";
+					case Tokyo:
+						return ":/scm_tokyo.cpt";
+
+					// Diverging...
+					case Vik:
+						return ":/scm_vik.cpt";
+					case Roma:
+						return ":/scm_roma.cpt";
+					case Broc:
+						return ":/scm_broc.cpt";
+					case Berlin:
+						return ":/scm_berlin.cpt";
+					case Lisbon:
+						return ":/scm_lisbon.cpt";
+					case Bam:
+						return ":/scm_bam.cpt";
+
+					// Multi-sequential...
+					case Oleron:
+						return ":/scm_oleron.cpt";
+					case Bukavu:
+						return ":/scm_bukavu.cpt";
+
+					default:
+						break;
+					}
+
+					// Shouldn't be able to get here.
+					GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+				}
+			}
+		}
+
 		namespace ColorBrewer
 		{
 			/*
@@ -1202,6 +1263,109 @@ GPlatesGui::BuiltinColourPalettes::Topography::transcribe(
 	{
 		GPlatesScribe::EnumValue("Etopo1", Etopo1),
 		GPlatesScribe::EnumValue("Geo", Geo),
+	};
+
+	return GPlatesScribe::transcribe_enum_protocol(
+			TRANSCRIBE_SOURCE,
+			scribe,
+			type,
+			enum_values,
+			enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
+}
+
+
+QString
+GPlatesGui::BuiltinColourPalettes::SCM::get_palette_name(
+		Type type)
+{
+	switch (type)
+	{
+		// Sequential...
+	case Batlow:
+		return "Batlow";
+	case Hawaii:
+		return "Hawaii";
+	case Oslo:
+		return "Oslo";
+	case Lapaz:
+		return "Lapaz";
+	case Lajolla:
+		return "Lajolla";
+	case Buda:
+		return "Buda";
+	case Davos:
+		return "Davos";
+	case Tokyo:
+		return "Tokyo";
+
+	// Diverging...
+	case Vik:
+		return "Vik";
+	case Roma:
+		return "Roma";
+	case Broc:
+		return "Broc";
+	case Berlin:
+		return "Berlin";
+	case Lisbon:
+		return "Lisbon";
+	case Bam:
+		return "Bam";
+
+	// Multi-sequential...
+	case Oleron:
+		return "Oleron";
+	case Bukavu:
+		return "Bukavu";
+
+	default:
+		break;
+	}
+
+	// Shouldn't be able to get here.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+}
+
+
+GPlatesGui::ColourPalette<double>::non_null_ptr_type
+GPlatesGui::BuiltinColourPalettes::SCM::create_palette(
+		Type type)
+{
+	return BuiltinColourPalettes::create_palette(get_cpt_filename(type));
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesGui::BuiltinColourPalettes::SCM::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		Type &type,
+		bool transcribed_construct_data)
+{
+	// WARNING: Changing the string ids will break backward/forward compatibility.
+	//          So don't change the string ids even if the enum name changes.
+	static const GPlatesScribe::EnumValue enum_values[] =
+	{
+		// Sequential...
+		GPlatesScribe::EnumValue("Batlow", Batlow),
+		GPlatesScribe::EnumValue("Hawaii", Hawaii),
+		GPlatesScribe::EnumValue("Oslo", Oslo),
+		GPlatesScribe::EnumValue("Lapaz", Lapaz),
+		GPlatesScribe::EnumValue("Lajolla", Lajolla),
+		GPlatesScribe::EnumValue("Buda", Buda),
+		GPlatesScribe::EnumValue("Davos", Davos),
+		GPlatesScribe::EnumValue("Tokyo", Tokyo),
+
+		// Diverging...
+		GPlatesScribe::EnumValue("Vik", Vik),
+		GPlatesScribe::EnumValue("Roma", Roma),
+		GPlatesScribe::EnumValue("Broc", Broc),
+		GPlatesScribe::EnumValue("Berlin", Berlin),
+		GPlatesScribe::EnumValue("Lisbon", Lisbon),
+		GPlatesScribe::EnumValue("Bam", Bam),
+
+		// Multi-sequential...
+		GPlatesScribe::EnumValue("Oleron", Oleron),
+		GPlatesScribe::EnumValue("Bukavu", Bukavu),
 	};
 
 	return GPlatesScribe::transcribe_enum_protocol(

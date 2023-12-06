@@ -48,6 +48,12 @@ const GPlatesGui::BuiltinColourPalettes::Topography::Type
 GPlatesGui::BuiltinColourPaletteType::DEFAULT_TOPOGRAPHY_TYPE =
 GPlatesGui::BuiltinColourPalettes::Topography::Etopo1;
 
+// GPlates 2.4 added new SCM palettes.
+// The default palette is batlow.
+const GPlatesGui::BuiltinColourPalettes::SCM::Type
+GPlatesGui::BuiltinColourPaletteType::DEFAULT_SCM_TYPE =
+GPlatesGui::BuiltinColourPalettes::SCM::Batlow;
+
 const GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::Type
 GPlatesGui::BuiltinColourPaletteType::DEFAULT_COLORBREWER_SEQUENTIAL_TYPE =
 		GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::OrRd/*arbitrary*/;
@@ -62,6 +68,7 @@ GPlatesGui::BuiltinColourPaletteType::BuiltinColourPaletteType(
 	d_palette_type(AGE_PALETTE),
 	d_age_type(age_type),
 	d_topography_type(DEFAULT_TOPOGRAPHY_TYPE),
+	d_scm_type(DEFAULT_SCM_TYPE),
 	d_colorbrewer_sequential_type(DEFAULT_COLORBREWER_SEQUENTIAL_TYPE),
 	d_colorbrewer_diverging_type(DEFAULT_COLORBREWER_DIVERGING_TYPE)
 {
@@ -73,6 +80,19 @@ GPlatesGui::BuiltinColourPaletteType::BuiltinColourPaletteType(
 	d_palette_type(TOPOGRAPHY_PALETTE),
 	d_age_type(DEFAULT_AGE_TYPE),
 	d_topography_type(topography_type),
+	d_scm_type(DEFAULT_SCM_TYPE),
+	d_colorbrewer_sequential_type(DEFAULT_COLORBREWER_SEQUENTIAL_TYPE),
+	d_colorbrewer_diverging_type(DEFAULT_COLORBREWER_DIVERGING_TYPE)
+{
+}
+
+
+GPlatesGui::BuiltinColourPaletteType::BuiltinColourPaletteType(
+		BuiltinColourPalettes::SCM::Type scm_type) :
+	d_palette_type(SCM_PALETTE),
+	d_age_type(DEFAULT_AGE_TYPE),
+	d_topography_type(DEFAULT_TOPOGRAPHY_TYPE),
+	d_scm_type(scm_type),
 	d_colorbrewer_sequential_type(DEFAULT_COLORBREWER_SEQUENTIAL_TYPE),
 	d_colorbrewer_diverging_type(DEFAULT_COLORBREWER_DIVERGING_TYPE)
 {
@@ -86,6 +106,7 @@ GPlatesGui::BuiltinColourPaletteType::BuiltinColourPaletteType(
 	d_parameters(parameters),
 	d_age_type(DEFAULT_AGE_TYPE),
 	d_topography_type(DEFAULT_TOPOGRAPHY_TYPE),
+	d_scm_type(DEFAULT_SCM_TYPE),
 	d_colorbrewer_sequential_type(colorbrewer_sequential_type),
 	d_colorbrewer_diverging_type(DEFAULT_COLORBREWER_DIVERGING_TYPE)
 {
@@ -99,6 +120,7 @@ GPlatesGui::BuiltinColourPaletteType::BuiltinColourPaletteType(
 	d_parameters(parameters),
 	d_age_type(DEFAULT_AGE_TYPE),
 	d_topography_type(DEFAULT_TOPOGRAPHY_TYPE),
+	d_scm_type(DEFAULT_SCM_TYPE),
 	d_colorbrewer_sequential_type(DEFAULT_COLORBREWER_SEQUENTIAL_TYPE),
 	d_colorbrewer_diverging_type(colorbrewer_diverging_type)
 {
@@ -117,6 +139,10 @@ GPlatesGui::BuiltinColourPaletteType::create_palette() const
 	case TOPOGRAPHY_PALETTE:
 		return GPlatesGui::RasterColourPalette::create<double>(
 				BuiltinColourPalettes::Topography::create_palette(d_topography_type));
+
+	case SCM_PALETTE:
+		return GPlatesGui::RasterColourPalette::create<double>(
+				BuiltinColourPalettes::SCM::create_palette(d_scm_type));
 
 	case COLORBREWER_SEQUENTIAL_PALETTE:
 		return GPlatesGui::RasterColourPalette::create<double>(
@@ -153,6 +179,9 @@ GPlatesGui::BuiltinColourPaletteType::get_palette_name() const
 
 	case TOPOGRAPHY_PALETTE:
 		return BuiltinColourPalettes::Topography::get_palette_name(d_topography_type);
+
+	case SCM_PALETTE:
+		return BuiltinColourPalettes::SCM::get_palette_name(d_scm_type);
 
 	case COLORBREWER_SEQUENTIAL_PALETTE:
 		return BuiltinColourPalettes::ColorBrewer::Sequential::get_palette_name(d_colorbrewer_sequential_type);
@@ -195,6 +224,12 @@ GPlatesGui::BuiltinColourPaletteType::transcribe(
 	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_topography_type, "topography_type"))
 	{
 		d_topography_type = DEFAULT_TOPOGRAPHY_TYPE;
+	}
+
+	// This is a new field added in GPlates 2.4.
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_scm_type, "scm_type"))
+	{
+		d_scm_type = DEFAULT_SCM_TYPE;
 	}
 
 	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_colorbrewer_sequential_type, "colorbrewer_sequential_type"))
@@ -261,6 +296,7 @@ GPlatesGui::transcribe(
 	{
 		GPlatesScribe::EnumValue("AGE_PALETTE", BuiltinColourPaletteType::AGE_PALETTE),
 		GPlatesScribe::EnumValue("TOPOGRAPHY_PALETTE", BuiltinColourPaletteType::TOPOGRAPHY_PALETTE),
+		GPlatesScribe::EnumValue("SCM_PALETTE", BuiltinColourPaletteType::SCM_PALETTE),
 		GPlatesScribe::EnumValue("COLORBREWER_SEQUENTIAL_PALETTE", BuiltinColourPaletteType::COLORBREWER_SEQUENTIAL_PALETTE),
 		GPlatesScribe::EnumValue("COLORBREWER_DIVERGING_PALETTE", BuiltinColourPaletteType::COLORBREWER_DIVERGING_PALETTE)
 	};

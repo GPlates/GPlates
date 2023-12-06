@@ -156,6 +156,22 @@
         <file>age_batlow.cpt</file>
         <file>topo_etopo1.cpt</file>
         <file>topo_geo.cpt</file>
+        <file>scm_batlow.cpt</file>
+        <file>scm_hawaii.cpt</file>
+        <file>scm_oslo.cpt</file>
+        <file>scm_lapaz.cpt</file>
+        <file>scm_lajolla.cpt</file>
+        <file>scm_buda.cpt</file>
+        <file>scm_davos.cpt</file>
+        <file>scm_tokyo.cpt</file>
+        <file>scm_oleron.cpt</file>
+        <file>scm_bukavu.cpt</file>
+        <file>scm_vik.cpt</file>
+        <file>scm_roma.cpt</file>
+        <file>scm_broc.cpt</file>
+        <file>scm_berlin.cpt</file>
+        <file>scm_lisbon.cpt</file>
+        <file>scm_bam.cpt</file>
         <file>gnome_zoom_fit_best_16.png</file>
         <file>gnome_zoom_fit_best_22.png</file>
         <file>gnome_object_flip_horizontal_purple_16.png</file>

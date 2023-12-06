@@ -49,6 +49,23 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::ChooseBuiltinPaletteDialog(
 	// Topography palettes...
 	d_topography_etopo1_button(new ColourScaleButton(this)),
 	d_topography_geo_button(new ColourScaleButton(this)),
+	// SCM palettes...
+	d_scm_batlow_button(new ColourScaleButton(this)),
+	d_scm_hawaii_button(new ColourScaleButton(this)),
+	d_scm_oslo_button(new ColourScaleButton(this)),
+	d_scm_lapaz_button(new ColourScaleButton(this)),
+	d_scm_lajolla_button(new ColourScaleButton(this)),
+	d_scm_buda_button(new ColourScaleButton(this)),
+	d_scm_davos_button(new ColourScaleButton(this)),
+	d_scm_tokyo_button(new ColourScaleButton(this)),
+	d_scm_vik_button(new ColourScaleButton(this)),
+	d_scm_roma_button(new ColourScaleButton(this)),
+	d_scm_broc_button(new ColourScaleButton(this)),
+	d_scm_berlin_button(new ColourScaleButton(this)),
+	d_scm_lisbon_button(new ColourScaleButton(this)),
+	d_scm_bam_button(new ColourScaleButton(this)),
+	d_scm_oleron_button(new ColourScaleButton(this)),
+	d_scm_bukavu_button(new ColourScaleButton(this)),
 	// ColorBrewer sequential multi-hue palettes...
 	d_BuGn_button(new ColourScaleButton(this)),
 	d_BuPu_button(new ColourScaleButton(this)),
@@ -91,6 +108,24 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::ChooseBuiltinPaletteDialog(
 	// Topography palettes.
 	add_colour_scale_button(d_topography_etopo1_button, topo_etopo1_placeholder);
 	add_colour_scale_button(d_topography_geo_button, topo_geo_placeholder);
+
+	// SCM palettes.
+	add_colour_scale_button(d_scm_batlow_button, SCM_batlow_placeholder);
+	add_colour_scale_button(d_scm_hawaii_button, SCM_hawaii_placeholder);
+	add_colour_scale_button(d_scm_oslo_button, SCM_oslo_placeholder);
+	add_colour_scale_button(d_scm_lapaz_button, SCM_lapaz_placeholder);
+	add_colour_scale_button(d_scm_lajolla_button, SCM_lajolla_placeholder);
+	add_colour_scale_button(d_scm_buda_button, SCM_buda_placeholder);
+	add_colour_scale_button(d_scm_davos_button, SCM_davos_placeholder);
+	add_colour_scale_button(d_scm_tokyo_button, SCM_tokyo_placeholder);
+	add_colour_scale_button(d_scm_vik_button, SCM_vik_placeholder);
+	add_colour_scale_button(d_scm_roma_button, SCM_roma_placeholder);
+	add_colour_scale_button(d_scm_broc_button, SCM_broc_placeholder);
+	add_colour_scale_button(d_scm_berlin_button, SCM_berlin_placeholder);
+	add_colour_scale_button(d_scm_lisbon_button, SCM_lisbon_placeholder);
+	add_colour_scale_button(d_scm_bam_button, SCM_bam_placeholder);
+	add_colour_scale_button(d_scm_oleron_button, SCM_oleron_placeholder);
+	add_colour_scale_button(d_scm_bukavu_button, SCM_bukavu_placeholder);
 
 	// ColorBrewer sequential multi-hue palettes.
 	add_colour_scale_button(d_BuGn_button, BuGn_placeholder);
@@ -201,6 +236,7 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::get_builtin_colour_palette_type(
 	{
 		return create_palette_type(GPlatesGui::BuiltinColourPalettes::Age::Batlow);
 	}
+
 	// Topography palettes.
 	if (colour_scale_button == d_topography_etopo1_button)
 	{
@@ -209,6 +245,72 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::get_builtin_colour_palette_type(
 	if (colour_scale_button == d_topography_geo_button)
 	{
 		return create_palette_type(GPlatesGui::BuiltinColourPalettes::Topography::Geo);
+	}
+
+	// SCM palettes.
+	if (colour_scale_button == d_scm_batlow_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Batlow);
+	}
+	if (colour_scale_button == d_scm_hawaii_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Hawaii);
+	}
+	if (colour_scale_button == d_scm_oslo_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Oslo);
+	}
+	if (colour_scale_button == d_scm_lapaz_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Lapaz);
+	}
+	if (colour_scale_button == d_scm_lajolla_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Lajolla);
+	}
+	if (colour_scale_button == d_scm_buda_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Buda);
+	}
+	if (colour_scale_button == d_scm_davos_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Davos);
+	}
+	if (colour_scale_button == d_scm_tokyo_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Tokyo);
+	}
+	if (colour_scale_button == d_scm_vik_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Vik);
+	}
+	if (colour_scale_button == d_scm_roma_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Roma);
+	}
+	if (colour_scale_button == d_scm_broc_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Broc);
+	}
+	if (colour_scale_button == d_scm_berlin_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Berlin);
+	}
+	if (colour_scale_button == d_scm_lisbon_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Lisbon);
+	}
+	if (colour_scale_button == d_scm_bam_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Bam);
+	}
+	if (colour_scale_button == d_scm_oleron_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Oleron);
+	}
+	if (colour_scale_button == d_scm_bukavu_button)
+	{
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::SCM::Bukavu);
 	}
 
 	// ColorBrewer sequential multi-hue palettes.
@@ -343,6 +445,14 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::create_palette_type(
 		GPlatesGui::BuiltinColourPalettes::Topography::Type topography_type)
 {
 	return GPlatesGui::BuiltinColourPaletteType(topography_type);
+}
+
+
+GPlatesGui::BuiltinColourPaletteType
+GPlatesQtWidgets::ChooseBuiltinPaletteDialog::create_palette_type(
+		GPlatesGui::BuiltinColourPalettes::SCM::Type scm_type)
+{
+	return GPlatesGui::BuiltinColourPaletteType(scm_type);
 }
 
 

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>311</width>
-    <height>555</height>
+    <height>732</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,10 +21,25 @@
    <bool>true</bool>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
+   <property name="leftMargin">
+    <number>6</number>
+   </property>
+   <property name="topMargin">
+    <number>6</number>
+   </property>
+   <property name="rightMargin">
+    <number>6</number>
+   </property>
+   <property name="bottomMargin">
+    <number>6</number>
+   </property>
    <item>
     <widget class="QGroupBox" name="colorbrewer_groupbox">
      <property name="title">
       <string>ColorBrewer</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
      </property>
      <layout class="QVBoxLayout" name="verticalLayout">
       <property name="leftMargin">
@@ -327,44 +342,207 @@
     </widget>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_3">
-     <item>
-      <widget class="QGroupBox" name="age_groupbox">
-       <property name="title">
-        <string>Age</string>
-       </property>
-       <layout class="QHBoxLayout" name="horizontalLayout">
+    <widget class="QGroupBox" name="SCM_groupbox">
+     <property name="title">
+      <string>Scientific Colour Maps by Crameri</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_5">
+      <property name="leftMargin">
+       <number>3</number>
+      </property>
+      <property name="topMargin">
+       <number>3</number>
+      </property>
+      <property name="rightMargin">
+       <number>3</number>
+      </property>
+      <property name="bottomMargin">
+       <number>3</number>
+      </property>
+      <item>
+       <widget class="QGroupBox" name="SCM_sequential_groupbox">
+        <property name="title">
+         <string>Sequential</string>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_10">
+         <property name="leftMargin">
+          <number>3</number>
+         </property>
+         <property name="topMargin">
+          <number>3</number>
+         </property>
+         <property name="rightMargin">
+          <number>3</number>
+         </property>
+         <property name="bottomMargin">
+          <number>3</number>
+         </property>
+         <item>
+          <widget class="QWidget" name="SCM_batlow_placeholder" native="true"/>
+         </item>
+         <item>
+          <widget class="QWidget" name="SCM_hawaii_placeholder" native="true"/>
+         </item>
+         <item>
+          <widget class="QWidget" name="SCM_oslo_placeholder" native="true"/>
+         </item>
+         <item>
+          <widget class="QWidget" name="SCM_lapaz_placeholder" native="true"/>
+         </item>
+         <item>
+          <widget class="QWidget" name="SCM_lajolla_placeholder" native="true"/>
+         </item>
+         <item>
+          <widget class="QWidget" name="SCM_buda_placeholder" native="true"/>
+         </item>
+         <item>
+          <widget class="QWidget" name="SCM_davos_placeholder" native="true"/>
+         </item>
+         <item>
+          <widget class="QWidget" name="SCM_tokyo_placeholder" native="true"/>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_8">
         <item>
-         <widget class="QWidget" name="age_legacy_placeholder" native="true"/>
+         <widget class="QGroupBox" name="SCM_diverging_groupbox">
+          <property name="title">
+           <string>Diverging</string>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_9">
+           <property name="leftMargin">
+            <number>3</number>
+           </property>
+           <property name="topMargin">
+            <number>3</number>
+           </property>
+           <property name="rightMargin">
+            <number>3</number>
+           </property>
+           <property name="bottomMargin">
+            <number>3</number>
+           </property>
+           <item>
+            <widget class="QWidget" name="SCM_vik_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="SCM_roma_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="SCM_broc_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="SCM_berlin_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="SCM_lisbon_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="SCM_bam_placeholder" native="true"/>
+           </item>
+          </layout>
+         </widget>
         </item>
         <item>
-         <widget class="QWidget" name="age_traditional_placeholder" native="true"/>
-        </item>
-        <item>
-         <widget class="QWidget" name="age_modern_placeholder" native="true"/>
-        </item>
-        <item>
-         <widget class="QWidget" name="age_batlow_placeholder" native="true"/>
+         <widget class="QGroupBox" name="SCM_multi_sequential_groupbox">
+          <property name="title">
+           <string>Multi-sequential</string>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_11">
+           <property name="leftMargin">
+            <number>3</number>
+           </property>
+           <property name="topMargin">
+            <number>3</number>
+           </property>
+           <property name="rightMargin">
+            <number>3</number>
+           </property>
+           <property name="bottomMargin">
+            <number>3</number>
+           </property>
+           <item>
+            <widget class="QWidget" name="SCM_oleron_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="SCM_bukavu_placeholder" native="true"/>
+           </item>
+          </layout>
+         </widget>
         </item>
        </layout>
-      </widget>
-     </item>
-     <item>
-      <widget class="QGroupBox" name="topo_groupbox">
-       <property name="title">
-        <string>Topography</string>
-       </property>
-       <layout class="QHBoxLayout" name="horizontalLayout_7">
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="other_groupbox">
+     <property name="title">
+      <string>Other</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_6">
+      <property name="leftMargin">
+       <number>3</number>
+      </property>
+      <property name="topMargin">
+       <number>3</number>
+      </property>
+      <property name="rightMargin">
+       <number>3</number>
+      </property>
+      <property name="bottomMargin">
+       <number>3</number>
+      </property>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
         <item>
-         <widget class="QWidget" name="topo_etopo1_placeholder" native="true"/>
+         <widget class="QGroupBox" name="age_groupbox">
+          <property name="title">
+           <string>Age</string>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="QWidget" name="age_legacy_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="age_traditional_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="age_modern_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="age_batlow_placeholder" native="true"/>
+           </item>
+          </layout>
+         </widget>
         </item>
         <item>
-         <widget class="QWidget" name="topo_geo_placeholder" native="true"/>
+         <widget class="QGroupBox" name="topo_groupbox">
+          <property name="title">
+           <string>Topography</string>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_7">
+           <item>
+            <widget class="QWidget" name="topo_etopo1_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="topo_geo_placeholder" native="true"/>
+           </item>
+          </layout>
+         </widget>
         </item>
        </layout>
-      </widget>
-     </item>
-    </layout>
+      </item>
+     </layout>
+    </widget>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="main_buttonbox">

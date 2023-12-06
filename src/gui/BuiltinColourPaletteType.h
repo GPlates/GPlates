@@ -58,6 +58,9 @@ namespace GPlatesGui
 			// This is a small group of topography palettes...
 			TOPOGRAPHY_PALETTE,
 
+			// This is a group of palettes called Scientific Colour Maps by Fabio Crameri...
+			SCM_PALETTE,
+
 			// This is a group of sequential ColorBrewer palettes...
 			COLORBREWER_SEQUENTIAL_PALETTE,
 			// This is a group of diverging ColorBrewer palettes...
@@ -117,6 +120,13 @@ namespace GPlatesGui
 		explicit
 		BuiltinColourPaletteType(
 				BuiltinColourPalettes::Topography::Type topography_type);
+
+		/**
+		 * Construct a SCM type.
+		 */
+		explicit
+		BuiltinColourPaletteType(
+				BuiltinColourPalettes::SCM::Type scm_type);
 
 		/**
 		 * Construct a ColorBrewer sequential palette type.
@@ -188,6 +198,15 @@ namespace GPlatesGui
 		}
 
 		/**
+		 * Return the SCM palette type (if @a get_palette_type returns @a SCM_PALETTE).
+		 */
+		BuiltinColourPalettes::SCM::Type
+		get_scm_type() const
+		{
+			return d_scm_type;
+		}
+
+		/**
 		 * Return the ColorBrewer sequential palette type (if @a get_palette_type returns @a COLORBREWER_SEQUENTIAL_PALETTE).
 		 */
 		BuiltinColourPalettes::ColorBrewer::Sequential::Type
@@ -213,6 +232,8 @@ namespace GPlatesGui
 		BuiltinColourPalettes::Age::Type d_age_type;
 		// This is only used if @a d_palette_type is @a TOPOGRAPHY_PALETTE.
 		BuiltinColourPalettes::Topography::Type d_topography_type;
+		// This is only used if @a d_palette_type is @a SCM_PALETTE.
+		BuiltinColourPalettes::SCM::Type d_scm_type;
 		// These are only used if @a d_palette_type is @a COLORBREWER_SEQUENTIAL_PALETTE or @a COLORBREWER_DIVERGING_PALETTE.
 		BuiltinColourPalettes::ColorBrewer::Sequential::Type d_colorbrewer_sequential_type;
 		BuiltinColourPalettes::ColorBrewer::Diverging::Type d_colorbrewer_diverging_type;
@@ -221,6 +242,7 @@ namespace GPlatesGui
 		static const PaletteType DEFAULT_PALETTE_TYPE;
 		static const BuiltinColourPalettes::Age::Type DEFAULT_AGE_TYPE;
 		static const BuiltinColourPalettes::Topography::Type DEFAULT_TOPOGRAPHY_TYPE;
+		static const BuiltinColourPalettes::SCM::Type DEFAULT_SCM_TYPE;
 		static const BuiltinColourPalettes::ColorBrewer::Sequential::Type DEFAULT_COLORBREWER_SEQUENTIAL_TYPE;
 		static const BuiltinColourPalettes::ColorBrewer::Diverging::Type DEFAULT_COLORBREWER_DIVERGING_TYPE;
 
@@ -233,6 +255,7 @@ namespace GPlatesGui
 				d_palette_type(DEFAULT_PALETTE_TYPE),
 				d_age_type(DEFAULT_AGE_TYPE),
 				d_topography_type(DEFAULT_TOPOGRAPHY_TYPE),
+				d_scm_type(DEFAULT_SCM_TYPE),
 				d_colorbrewer_sequential_type(DEFAULT_COLORBREWER_SEQUENTIAL_TYPE),
 				d_colorbrewer_diverging_type(DEFAULT_COLORBREWER_DIVERGING_TYPE)
 		{  }

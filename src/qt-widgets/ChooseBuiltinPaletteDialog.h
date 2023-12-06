@@ -109,6 +109,10 @@ namespace GPlatesQtWidgets
 
 		GPlatesGui::BuiltinColourPaletteType
 		create_palette_type(
+				GPlatesGui::BuiltinColourPalettes::SCM::Type scm_type);
+
+		GPlatesGui::BuiltinColourPaletteType
+		create_palette_type(
 				GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::Type sequential_type);
 
 		GPlatesGui::BuiltinColourPaletteType
@@ -128,8 +132,26 @@ namespace GPlatesQtWidgets
 		ColourScaleButton *d_age_batlow_button;
 
 		// Topography palettes.
-		ColourScaleButton* d_topography_etopo1_button;
-		ColourScaleButton* d_topography_geo_button;
+		ColourScaleButton *d_topography_etopo1_button;
+		ColourScaleButton *d_topography_geo_button;
+
+		// SCM palettes.
+		ColourScaleButton *d_scm_batlow_button;
+		ColourScaleButton *d_scm_hawaii_button;
+		ColourScaleButton *d_scm_oslo_button;
+		ColourScaleButton *d_scm_lapaz_button;
+		ColourScaleButton *d_scm_lajolla_button;
+		ColourScaleButton *d_scm_buda_button;
+		ColourScaleButton *d_scm_davos_button;
+		ColourScaleButton *d_scm_tokyo_button;
+		ColourScaleButton *d_scm_vik_button;
+		ColourScaleButton *d_scm_roma_button;
+		ColourScaleButton *d_scm_broc_button;
+		ColourScaleButton *d_scm_berlin_button;
+		ColourScaleButton *d_scm_lisbon_button;
+		ColourScaleButton *d_scm_bam_button;
+		ColourScaleButton *d_scm_oleron_button;
+		ColourScaleButton *d_scm_bukavu_button;
 
 		// ColorBrewer sequential multi-hue palettes.
 		ColourScaleButton *d_BuGn_button;

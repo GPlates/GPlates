@@ -210,6 +210,70 @@ namespace GPlatesGui
 
 
 		/**
+		 * Scientific Colour Maps by Fabio Crameri.
+		 *
+		 * Added in GPlates 2.4.
+		 */
+		namespace SCM
+		{
+			enum Type
+			{
+				// Sequential...
+				Batlow,
+				Hawaii,
+				Oslo,
+				Lapaz,
+				Lajolla,
+				Buda,
+				Davos,
+				Tokyo,
+
+				// Diverging...
+				Vik,
+				Roma,
+				Broc,
+				Berlin,
+				Lisbon,
+				Bam,
+
+				// Multi-sequential...
+				Oleron,
+				Bukavu
+			};
+
+			/**
+			 * Returns a name for a SCM colour palette.
+			 *
+			 * This is useful for displaying in the GUI.
+			 */
+			QString
+			get_palette_name(
+					Type type);
+
+			/**
+			 * SCM colour palette.
+			 *
+			 * Subsequently visiting the returned colour palette will visit a @a RegularCptColourPalette
+			 * since the returned palette (which is actually a @a ColourPaletteAdapter) adapts one.
+			 */
+			ColourPalette<double>::non_null_ptr_type
+			create_palette(
+					Type type);
+
+
+			//
+			// Transcribe for sessions/projects.
+			//
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					Type &type,
+					bool transcribed_construct_data);
+		}
+
+
+		/**
 		 * Colors from www.ColorBrewer.org by Cynthia A. Brewer, Geography, Pennsylvania State University.
 		 */
 		namespace ColorBrewer
