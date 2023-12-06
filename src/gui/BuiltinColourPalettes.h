@@ -167,6 +167,50 @@ namespace GPlatesGui
 
 
 		/**
+		 * Topography palettes.
+		 */
+		namespace Topography
+		{
+			enum Type
+			{
+				Etopo1,       // Default palette used in GPlates 2.4
+				Oleron,       // Alternative palette for GPlates 2.4
+				Bukavu        // Alternative palette for GPlates 2.4
+			};
+
+			/**
+			 * Returns a name for a topography colour palette.
+			 *
+			 * This is useful for displaying in the GUI.
+			 */
+			QString
+			get_palette_name(
+					Type type);
+
+			/**
+			 * Topography colour palette.
+			 *
+			 * Subsequently visiting the returned colour palette will visit a @a RegularCptColourPalette
+			 * since the returned palette (which is actually a @a ColourPaletteAdapter) adapts one.
+			 */
+			ColourPalette<double>::non_null_ptr_type
+			create_palette(
+					Type type);
+
+
+			//
+			// Transcribe for sessions/projects.
+			//
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					Type &type,
+					bool transcribed_construct_data);
+		}
+
+
+		/**
 		 * Colors from www.ColorBrewer.org by Cynthia A. Brewer, Geography, Pennsylvania State University.
 		 */
 		namespace ColorBrewer

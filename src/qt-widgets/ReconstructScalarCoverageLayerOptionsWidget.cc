@@ -294,8 +294,9 @@ GPlatesQtWidgets::ReconstructScalarCoverageLayerOptionsWidget::handle_builtin_co
 			GPlatesPresentation::RemappedColourPaletteParameters colour_palette_parameters =
 					params->get_current_colour_palette_parameters();
 			colour_palette_parameters.load_builtin_colour_palette(builtin_colour_palette_type);
-			// If an age palette then don't map the range - the age palettes don't need remapping.
-			if (builtin_colour_palette_type.get_palette_type() == GPlatesGui::BuiltinColourPaletteType::AGE_PALETTE)
+			// If an age or topography palette then don't map the range - these palettes don't need remapping.
+			if (builtin_colour_palette_type.get_palette_type() == GPlatesGui::BuiltinColourPaletteType::AGE_PALETTE ||
+				builtin_colour_palette_type.get_palette_type() == GPlatesGui::BuiltinColourPaletteType::TOPOGRAPHY_PALETTE)
 			{
 				colour_palette_parameters.unmap_palette_range();
 			}

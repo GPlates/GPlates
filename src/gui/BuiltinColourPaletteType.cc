@@ -42,6 +42,12 @@ const GPlatesGui::BuiltinColourPalettes::Age::Type
 GPlatesGui::BuiltinColourPaletteType::DEFAULT_AGE_TYPE =
 GPlatesGui::BuiltinColourPalettes::Age::Traditional;
 
+// GPlates 2.4 added three new topography palettes (etopo1, oleron and bukavu).
+// The default palette is etopo1.
+const GPlatesGui::BuiltinColourPalettes::Topography::Type
+GPlatesGui::BuiltinColourPaletteType::DEFAULT_TOPOGRAPHY_TYPE =
+GPlatesGui::BuiltinColourPalettes::Topography::Etopo1;
+
 const GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::Type
 GPlatesGui::BuiltinColourPaletteType::DEFAULT_COLORBREWER_SEQUENTIAL_TYPE =
 		GPlatesGui::BuiltinColourPalettes::ColorBrewer::Sequential::OrRd/*arbitrary*/;
@@ -55,6 +61,18 @@ GPlatesGui::BuiltinColourPaletteType::BuiltinColourPaletteType(
 		BuiltinColourPalettes::Age::Type age_type) :
 	d_palette_type(AGE_PALETTE),
 	d_age_type(age_type),
+	d_topography_type(DEFAULT_TOPOGRAPHY_TYPE),
+	d_colorbrewer_sequential_type(DEFAULT_COLORBREWER_SEQUENTIAL_TYPE),
+	d_colorbrewer_diverging_type(DEFAULT_COLORBREWER_DIVERGING_TYPE)
+{
+}
+
+
+GPlatesGui::BuiltinColourPaletteType::BuiltinColourPaletteType(
+		BuiltinColourPalettes::Topography::Type topography_type) :
+	d_palette_type(TOPOGRAPHY_PALETTE),
+	d_age_type(DEFAULT_AGE_TYPE),
+	d_topography_type(topography_type),
 	d_colorbrewer_sequential_type(DEFAULT_COLORBREWER_SEQUENTIAL_TYPE),
 	d_colorbrewer_diverging_type(DEFAULT_COLORBREWER_DIVERGING_TYPE)
 {
@@ -67,6 +85,7 @@ GPlatesGui::BuiltinColourPaletteType::BuiltinColourPaletteType(
 	d_palette_type(COLORBREWER_SEQUENTIAL_PALETTE),
 	d_parameters(parameters),
 	d_age_type(DEFAULT_AGE_TYPE),
+	d_topography_type(DEFAULT_TOPOGRAPHY_TYPE),
 	d_colorbrewer_sequential_type(colorbrewer_sequential_type),
 	d_colorbrewer_diverging_type(DEFAULT_COLORBREWER_DIVERGING_TYPE)
 {
@@ -79,6 +98,7 @@ GPlatesGui::BuiltinColourPaletteType::BuiltinColourPaletteType(
 	d_palette_type(COLORBREWER_DIVERGING_PALETTE),
 	d_parameters(parameters),
 	d_age_type(DEFAULT_AGE_TYPE),
+	d_topography_type(DEFAULT_TOPOGRAPHY_TYPE),
 	d_colorbrewer_sequential_type(DEFAULT_COLORBREWER_SEQUENTIAL_TYPE),
 	d_colorbrewer_diverging_type(colorbrewer_diverging_type)
 {
@@ -93,6 +113,10 @@ GPlatesGui::BuiltinColourPaletteType::create_palette() const
 	case AGE_PALETTE:
 		return GPlatesGui::RasterColourPalette::create<double>(
 				BuiltinColourPalettes::Age::create_palette(d_age_type));
+
+	case TOPOGRAPHY_PALETTE:
+		return GPlatesGui::RasterColourPalette::create<double>(
+				BuiltinColourPalettes::Topography::create_palette(d_topography_type));
 
 	case COLORBREWER_SEQUENTIAL_PALETTE:
 		return GPlatesGui::RasterColourPalette::create<double>(
@@ -126,6 +150,9 @@ GPlatesGui::BuiltinColourPaletteType::get_palette_name() const
 	{
 	case AGE_PALETTE:
 		return BuiltinColourPalettes::Age::get_palette_name(d_age_type);
+
+	case TOPOGRAPHY_PALETTE:
+		return BuiltinColourPalettes::Topography::get_palette_name(d_topography_type);
 
 	case COLORBREWER_SEQUENTIAL_PALETTE:
 		return BuiltinColourPalettes::ColorBrewer::Sequential::get_palette_name(d_colorbrewer_sequential_type);
@@ -162,6 +189,12 @@ GPlatesGui::BuiltinColourPaletteType::transcribe(
 	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_age_type, "age_type"))
 	{
 		d_age_type = BuiltinColourPalettes::Age::Legacy;
+	}
+
+	// This is a new field added in GPlates 2.4.
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_topography_type, "topography_type"))
+	{
+		d_topography_type = DEFAULT_TOPOGRAPHY_TYPE;
 	}
 
 	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_colorbrewer_sequential_type, "colorbrewer_sequential_type"))
@@ -227,6 +260,7 @@ GPlatesGui::transcribe(
 	static const GPlatesScribe::EnumValue enum_values[] =
 	{
 		GPlatesScribe::EnumValue("AGE_PALETTE", BuiltinColourPaletteType::AGE_PALETTE),
+		GPlatesScribe::EnumValue("TOPOGRAPHY_PALETTE", BuiltinColourPaletteType::TOPOGRAPHY_PALETTE),
 		GPlatesScribe::EnumValue("COLORBREWER_SEQUENTIAL_PALETTE", BuiltinColourPaletteType::COLORBREWER_SEQUENTIAL_PALETTE),
 		GPlatesScribe::EnumValue("COLORBREWER_DIVERGING_PALETTE", BuiltinColourPaletteType::COLORBREWER_DIVERGING_PALETTE)
 	};

@@ -327,25 +327,44 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="age_groupbox">
-     <property name="title">
-      <string>Age</string>
-     </property>
-     <layout class="QHBoxLayout" name="horizontalLayout">
-      <item>
-       <widget class="QWidget" name="age_legacy_placeholder" native="true"/>
-      </item>
-      <item>
-       <widget class="QWidget" name="age_traditional_placeholder" native="true"/>
-      </item>
-      <item>
-       <widget class="QWidget" name="age_modern_placeholder" native="true"/>
-      </item>
-      <item>
-       <widget class="QWidget" name="age_batlow_placeholder" native="true"/>
-      </item>
-     </layout>
-    </widget>
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <item>
+      <widget class="QGroupBox" name="age_groupbox">
+       <property name="title">
+        <string>Age</string>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout">
+        <item>
+         <widget class="QWidget" name="age_legacy_placeholder" native="true"/>
+        </item>
+        <item>
+         <widget class="QWidget" name="age_traditional_placeholder" native="true"/>
+        </item>
+        <item>
+         <widget class="QWidget" name="age_modern_placeholder" native="true"/>
+        </item>
+        <item>
+         <widget class="QWidget" name="age_batlow_placeholder" native="true"/>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="topo_groupbox">
+       <property name="title">
+        <string>Topography</string>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_7">
+        <item>
+         <widget class="QWidget" name="topo_etopo1_placeholder" native="true"/>
+        </item>
+        <item>
+         <widget class="QWidget" name="topo_geo_placeholder" native="true"/>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="main_buttonbox">

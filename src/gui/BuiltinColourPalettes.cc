@@ -50,6 +50,36 @@ namespace GPlatesGui
 {
 	namespace BuiltinColourPalettes
 	{
+		namespace
+		{
+			/**
+			 * Create a colour palette from a CPT file.
+			 */
+			GPlatesGui::ColourPalette<double>::non_null_ptr_type
+			create_palette(
+					QString palette_filename)
+			{
+				// Don't need to report any read errors - the age CPT file is embedded and should just work.
+				GPlatesFileIO::ReadErrorAccumulation read_errors;
+
+				RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette =
+						ColourPaletteUtils::read_cpt_raster_colour_palette(
+								palette_filename,
+								false/*allow_integer_colour_palette*/,
+								read_errors);
+
+				boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> colour_palette =
+						RasterColourPaletteExtract::get_colour_palette<double>(*raster_colour_palette);
+
+				// Should be a real-valued palette.
+				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+						colour_palette,
+						GPLATES_ASSERTION_SOURCE);
+
+				return colour_palette.get();
+			}
+		}
+
 		namespace Age
 		{
 			namespace
@@ -81,6 +111,37 @@ namespace GPlatesGui
 				}
 			}
 		}
+
+		namespace Topography
+		{
+			namespace
+			{
+				/**
+				 * Returns the filename of the requested topography CPT file (stored internally as a resource).
+				 */
+				QString
+				get_cpt_filename(
+						Type type)
+				{
+					switch (type)
+					{
+					case Etopo1:
+						return ":/topo_etopo1.cpt";
+					case Oleron:
+						return ":/topo_oleron.cpt";
+					case Bukavu:
+						return ":/topo_bukavu.cpt";
+
+					default:
+						break;
+					}
+
+					// Shouldn't be able to get here.
+					GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+				}
+			}
+		}
+
 		namespace ColorBrewer
 		{
 			/*
@@ -1053,13 +1114,13 @@ GPlatesGui::BuiltinColourPalettes::Age::get_palette_name(
 	switch (type)
 	{
 	case Legacy:
-		return "Age (legacy)";
+		return "Legacy";
 	case Traditional:
-		return "Age (traditional)";
+		return "Traditional";
 	case Modern:
-		return "Age (modern)";
+		return "Modern";
 	case Batlow:
-		return "Age (batlow)";
+		return "Batlow";
 
 	default:
 		break;
@@ -1074,24 +1135,7 @@ GPlatesGui::ColourPalette<double>::non_null_ptr_type
 GPlatesGui::BuiltinColourPalettes::Age::create_palette(
 		Type type)
 {
-	// Don't need to report any read errors - the age CPT file is embedded and should just work.
-	GPlatesFileIO::ReadErrorAccumulation read_errors;
-
-	RasterColourPalette::non_null_ptr_to_const_type raster_colour_palette =
-			ColourPaletteUtils::read_cpt_raster_colour_palette(
-					get_cpt_filename(type),
-					false/*allow_integer_colour_palette*/,
-					read_errors);
-
-	boost::optional<GPlatesGui::ColourPalette<double>::non_null_ptr_type> colour_palette =
-			RasterColourPaletteExtract::get_colour_palette<double>(*raster_colour_palette);
-
-	// Should be a real-valued palette.
-	GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
-			colour_palette,
-			GPLATES_ASSERTION_SOURCE);
-
-	return colour_palette.get();
+	return BuiltinColourPalettes::create_palette(get_cpt_filename(type));
 }
 
 
@@ -1109,6 +1153,60 @@ GPlatesGui::BuiltinColourPalettes::Age::transcribe(
 		GPlatesScribe::EnumValue("Traditional", Traditional),
 		GPlatesScribe::EnumValue("Modern", Modern),
 		GPlatesScribe::EnumValue("Batlow", Batlow)
+	};
+
+	return GPlatesScribe::transcribe_enum_protocol(
+			TRANSCRIBE_SOURCE,
+			scribe,
+			type,
+			enum_values,
+			enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
+}
+
+
+QString
+GPlatesGui::BuiltinColourPalettes::Topography::get_palette_name(
+		Type type)
+{
+	switch (type)
+	{
+	case Etopo1:
+		return "Etopo1";
+	case Oleron:
+		return "Oleron";
+	case Bukavu:
+		return "Bukavu";
+
+	default:
+		break;
+	}
+
+	// Shouldn't be able to get here.
+	GPlatesGlobal::Abort(GPLATES_ASSERTION_SOURCE);
+}
+
+
+GPlatesGui::ColourPalette<double>::non_null_ptr_type
+GPlatesGui::BuiltinColourPalettes::Topography::create_palette(
+		Type type)
+{
+	return BuiltinColourPalettes::create_palette(get_cpt_filename(type));
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesGui::BuiltinColourPalettes::Topography::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		Type &type,
+		bool transcribed_construct_data)
+{
+	// WARNING: Changing the string ids will break backward/forward compatibility.
+	//          So don't change the string ids even if the enum name changes.
+	static const GPlatesScribe::EnumValue enum_values[] =
+	{
+		GPlatesScribe::EnumValue("Etopo1", Etopo1),
+		GPlatesScribe::EnumValue("Oleron", Oleron),
+		GPlatesScribe::EnumValue("Bukavu", Bukavu),
 	};
 
 	return GPlatesScribe::transcribe_enum_protocol(
