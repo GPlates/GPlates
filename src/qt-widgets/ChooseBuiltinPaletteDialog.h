@@ -129,8 +129,7 @@ namespace GPlatesQtWidgets
 
 		// Topography palettes.
 		ColourScaleButton* d_topography_etopo1_button;
-		ColourScaleButton* d_topography_oleron_button;
-		ColourScaleButton* d_topography_bukavu_button;
+		ColourScaleButton* d_topography_geo_button;
 
 		// ColorBrewer sequential multi-hue palettes.
 		ColourScaleButton *d_BuGn_button;

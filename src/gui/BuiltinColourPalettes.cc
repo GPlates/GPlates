@@ -127,10 +127,8 @@ namespace GPlatesGui
 					{
 					case Etopo1:
 						return ":/topo_etopo1.cpt";
-					case Oleron:
-						return ":/topo_oleron.cpt";
-					case Bukavu:
-						return ":/topo_bukavu.cpt";
+					case Geo:
+						return ":/topo_geo.cpt";
 
 					default:
 						break;
@@ -1172,10 +1170,8 @@ GPlatesGui::BuiltinColourPalettes::Topography::get_palette_name(
 	{
 	case Etopo1:
 		return "Etopo1";
-	case Oleron:
-		return "Oleron";
-	case Bukavu:
-		return "Bukavu";
+	case Geo:
+		return "Geo";
 
 	default:
 		break;
@@ -1205,8 +1201,7 @@ GPlatesGui::BuiltinColourPalettes::Topography::transcribe(
 	static const GPlatesScribe::EnumValue enum_values[] =
 	{
 		GPlatesScribe::EnumValue("Etopo1", Etopo1),
-		GPlatesScribe::EnumValue("Oleron", Oleron),
-		GPlatesScribe::EnumValue("Bukavu", Bukavu),
+		GPlatesScribe::EnumValue("Geo", Geo),
 	};
 
 	return GPlatesScribe::transcribe_enum_protocol(

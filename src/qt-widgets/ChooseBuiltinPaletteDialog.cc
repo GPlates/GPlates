@@ -48,8 +48,7 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::ChooseBuiltinPaletteDialog(
 	d_age_batlow_button(new ColourScaleButton(this)),
 	// Topography palettes...
 	d_topography_etopo1_button(new ColourScaleButton(this)),
-	d_topography_oleron_button(new ColourScaleButton(this)),
-	d_topography_bukavu_button(new ColourScaleButton(this)),
+	d_topography_geo_button(new ColourScaleButton(this)),
 	// ColorBrewer sequential multi-hue palettes...
 	d_BuGn_button(new ColourScaleButton(this)),
 	d_BuPu_button(new ColourScaleButton(this)),
@@ -91,8 +90,7 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::ChooseBuiltinPaletteDialog(
 
 	// Topography palettes.
 	add_colour_scale_button(d_topography_etopo1_button, topo_etopo1_placeholder);
-	add_colour_scale_button(d_topography_oleron_button, topo_oleron_placeholder);
-	add_colour_scale_button(d_topography_bukavu_button, topo_bukavu_placeholder);
+	add_colour_scale_button(d_topography_geo_button, topo_geo_placeholder);
 
 	// ColorBrewer sequential multi-hue palettes.
 	add_colour_scale_button(d_BuGn_button, BuGn_placeholder);
@@ -208,13 +206,9 @@ GPlatesQtWidgets::ChooseBuiltinPaletteDialog::get_builtin_colour_palette_type(
 	{
 		return create_palette_type(GPlatesGui::BuiltinColourPalettes::Topography::Etopo1);
 	}
-	if (colour_scale_button == d_topography_oleron_button)
+	if (colour_scale_button == d_topography_geo_button)
 	{
-		return create_palette_type(GPlatesGui::BuiltinColourPalettes::Topography::Oleron);
-	}
-	if (colour_scale_button == d_topography_bukavu_button)
-	{
-		return create_palette_type(GPlatesGui::BuiltinColourPalettes::Topography::Bukavu);
+		return create_palette_type(GPlatesGui::BuiltinColourPalettes::Topography::Geo);
 	}
 
 	// ColorBrewer sequential multi-hue palettes.

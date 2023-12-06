@@ -174,8 +174,7 @@ namespace GPlatesGui
 			enum Type
 			{
 				Etopo1,       // Default palette used in GPlates 2.4
-				Oleron,       // Alternative palette for GPlates 2.4
-				Bukavu        // Alternative palette for GPlates 2.4
+				Geo           // Alternative palette for GPlates 2.4
 			};
 
 			/**
