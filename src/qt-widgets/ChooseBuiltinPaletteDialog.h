@@ -81,7 +81,7 @@ namespace GPlatesQtWidgets
 				int state);
 
 		void
-		handle_colorbrewer_invert_check_box_changed(
+		handle_invert_check_box_changed(
 				int state);
 
 		void
@@ -120,7 +120,8 @@ namespace GPlatesQtWidgets
 				GPlatesGui::BuiltinColourPalettes::ColorBrewer::Diverging::Type diverging_type);
 
 		void
-		re_populate_colorbrewer_buttons();
+		re_populate_buttons(
+				GPlatesGui::BuiltinColourPaletteType::PaletteType palette_type);
 
 
 		GPlatesGui::BuiltinColourPaletteType::Parameters d_builtin_parameters;

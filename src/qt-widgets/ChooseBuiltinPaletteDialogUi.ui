@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>311</width>
-    <height>732</height>
+    <height>570</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -228,6 +228,13 @@
              </property>
             </spacer>
            </item>
+           <item>
+            <widget class="QCheckBox" name="colorbrewer_sequential_discrete_checkbox">
+             <property name="text">
+              <string>Discrete</string>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
         </layout>
@@ -326,44 +333,17 @@
              </property>
             </spacer>
            </item>
+           <item>
+            <widget class="QCheckBox" name="colorbrewer_diverging_discrete_checkbox">
+             <property name="text">
+              <string>Discrete</string>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
         </layout>
        </widget>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="colorbrewer_discrete_invert_layout">
-        <property name="spacing">
-         <number>3</number>
-        </property>
-        <item>
-         <widget class="QCheckBox" name="colorbrewer_discrete_checkbox">
-          <property name="text">
-           <string>Discrete</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="horizontalSpacer">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="colorbrewer_invert_checkbox">
-          <property name="text">
-           <string>Invert</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
       </item>
      </layout>
     </widget>
@@ -630,6 +610,33 @@
       </item>
      </layout>
     </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="colorbrewer_invert_layout">
+     <property name="spacing">
+      <number>3</number>
+     </property>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="invert_checkbox">
+       <property name="text">
+        <string>Invert</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="main_buttonbox">

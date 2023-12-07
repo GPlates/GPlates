@@ -73,28 +73,33 @@ namespace GPlatesGui
 		/**
 		 * Parameters that may be related to the palette type.
 		 *
-		 * Currently only ColorBrewer palette parameters are stored here.
+		 * Currently these are mostly ColorBrewer palette parameters.
 		 */
 		struct Parameters
 		{
 			Parameters(
+					bool inverted_ = false,
 					BuiltinColourPalettes::ColorBrewer::Sequential::Classes colorbrewer_sequential_classes_ =
 							BuiltinColourPalettes::ColorBrewer::Sequential::Classes::Nine,
 					BuiltinColourPalettes::ColorBrewer::Diverging::Classes colorbrewer_diverging_classes_ =
 							BuiltinColourPalettes::ColorBrewer::Diverging::Classes::Eleven,
-					bool colorbrewer_continuous_ = true,
-					bool colorbrewer_inverted_ = false) :
+					bool colorbrewer_sequential_continuous_ = true,
+					bool colorbrewer_diverging_continuous_ = true) :
+				inverted(inverted_),
 				colorbrewer_sequential_classes(colorbrewer_sequential_classes_),
 				colorbrewer_diverging_classes(colorbrewer_diverging_classes_),
-				colorbrewer_continuous(colorbrewer_continuous_),
-				colorbrewer_inverted(colorbrewer_inverted_)
+				colorbrewer_sequential_continuous(colorbrewer_sequential_continuous_),
+				colorbrewer_diverging_continuous(colorbrewer_diverging_continuous_)
 			{  }
 
-			// ColorBrewer parameters.
+			// General parameters.
+			bool inverted;
+
+			// ColorBrewer-specific parameters.
 			BuiltinColourPalettes::ColorBrewer::Sequential::Classes colorbrewer_sequential_classes;
 			BuiltinColourPalettes::ColorBrewer::Diverging::Classes colorbrewer_diverging_classes;
-			bool colorbrewer_continuous;
-			bool colorbrewer_inverted;
+			bool colorbrewer_sequential_continuous;
+			bool colorbrewer_diverging_continuous;
 
 		private: // Transcribe for sessions/projects...
 
@@ -112,21 +117,24 @@ namespace GPlatesGui
 		 */
 		explicit
 		BuiltinColourPaletteType(
-				BuiltinColourPalettes::Age::Type age_type);
+				BuiltinColourPalettes::Age::Type age_type,
+				const Parameters &parameters);
 
 		/**
 		 * Construct a topography type.
 		 */
 		explicit
 		BuiltinColourPaletteType(
-				BuiltinColourPalettes::Topography::Type topography_type);
+				BuiltinColourPalettes::Topography::Type topography_type,
+				const Parameters &parameters);
 
 		/**
 		 * Construct a SCM type.
 		 */
 		explicit
 		BuiltinColourPaletteType(
-				BuiltinColourPalettes::SCM::Type scm_type);
+				BuiltinColourPalettes::SCM::Type scm_type,
+				const Parameters &parameters);
 
 		/**
 		 * Construct a ColorBrewer sequential palette type.

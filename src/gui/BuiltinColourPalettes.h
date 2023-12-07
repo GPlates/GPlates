@@ -145,12 +145,15 @@ namespace GPlatesGui
 			 *
 			 * Age colour palettes cover a range of age values starting at 0Ma.
 			 *
+			 * @a invert reverses the ordering of colours.
+			 *
 			 * Subsequently visiting the returned colour palette will visit a @a RegularCptColourPalette
 			 * since the returned palette (which is actually a @a ColourPaletteAdapter) adapts one.
 			 */
 			ColourPalette<double>::non_null_ptr_type
 			create_palette(
-					Type type);
+					Type type,
+					bool invert);
 
 
 			//
@@ -191,12 +194,15 @@ namespace GPlatesGui
 			/**
 			 * Topography colour palette.
 			 *
+			 * @a invert reverses the ordering of colours.
+			 *
 			 * Subsequently visiting the returned colour palette will visit a @a RegularCptColourPalette
 			 * since the returned palette (which is actually a @a ColourPaletteAdapter) adapts one.
 			 */
 			ColourPalette<double>::non_null_ptr_type
 			create_palette(
-					Type type);
+					Type type,
+					bool invert);
 
 
 			//
@@ -255,12 +261,15 @@ namespace GPlatesGui
 			/**
 			 * SCM colour palette.
 			 *
+			 * @a invert reverses the ordering of colours.
+			 *
 			 * Subsequently visiting the returned colour palette will visit a @a RegularCptColourPalette
 			 * since the returned palette (which is actually a @a ColourPaletteAdapter) adapts one.
 			 */
 			ColourPalette<double>::non_null_ptr_type
 			create_palette(
-					Type type);
+					Type type,
+					bool invert);
 
 
 			//

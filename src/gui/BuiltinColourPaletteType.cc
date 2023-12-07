@@ -64,8 +64,10 @@ GPlatesGui::BuiltinColourPaletteType::DEFAULT_COLORBREWER_DIVERGING_TYPE =
 
 
 GPlatesGui::BuiltinColourPaletteType::BuiltinColourPaletteType(
-		BuiltinColourPalettes::Age::Type age_type) :
+		BuiltinColourPalettes::Age::Type age_type,
+		const Parameters &parameters) :
 	d_palette_type(AGE_PALETTE),
+	d_parameters(parameters),
 	d_age_type(age_type),
 	d_topography_type(DEFAULT_TOPOGRAPHY_TYPE),
 	d_scm_type(DEFAULT_SCM_TYPE),
@@ -76,8 +78,10 @@ GPlatesGui::BuiltinColourPaletteType::BuiltinColourPaletteType(
 
 
 GPlatesGui::BuiltinColourPaletteType::BuiltinColourPaletteType(
-		BuiltinColourPalettes::Topography::Type topography_type) :
+		BuiltinColourPalettes::Topography::Type topography_type,
+		const Parameters &parameters) :
 	d_palette_type(TOPOGRAPHY_PALETTE),
+	d_parameters(parameters),
 	d_age_type(DEFAULT_AGE_TYPE),
 	d_topography_type(topography_type),
 	d_scm_type(DEFAULT_SCM_TYPE),
@@ -88,8 +92,10 @@ GPlatesGui::BuiltinColourPaletteType::BuiltinColourPaletteType(
 
 
 GPlatesGui::BuiltinColourPaletteType::BuiltinColourPaletteType(
-		BuiltinColourPalettes::SCM::Type scm_type) :
+		BuiltinColourPalettes::SCM::Type scm_type,
+		const Parameters &parameters) :
 	d_palette_type(SCM_PALETTE),
+	d_parameters(parameters),
 	d_age_type(DEFAULT_AGE_TYPE),
 	d_topography_type(DEFAULT_TOPOGRAPHY_TYPE),
 	d_scm_type(scm_type),
@@ -134,31 +140,37 @@ GPlatesGui::BuiltinColourPaletteType::create_palette() const
 	{
 	case AGE_PALETTE:
 		return GPlatesGui::RasterColourPalette::create<double>(
-				BuiltinColourPalettes::Age::create_palette(d_age_type));
+				BuiltinColourPalettes::Age::create_palette(
+						d_age_type,
+						d_parameters.inverted));
 
 	case TOPOGRAPHY_PALETTE:
 		return GPlatesGui::RasterColourPalette::create<double>(
-				BuiltinColourPalettes::Topography::create_palette(d_topography_type));
+				BuiltinColourPalettes::Topography::create_palette(
+						d_topography_type,
+						d_parameters.inverted));
 
 	case SCM_PALETTE:
 		return GPlatesGui::RasterColourPalette::create<double>(
-				BuiltinColourPalettes::SCM::create_palette(d_scm_type));
+				BuiltinColourPalettes::SCM::create_palette(
+						d_scm_type,
+						d_parameters.inverted));
 
 	case COLORBREWER_SEQUENTIAL_PALETTE:
 		return GPlatesGui::RasterColourPalette::create<double>(
 				BuiltinColourPalettes::ColorBrewer::Sequential::create_palette(
 						d_colorbrewer_sequential_type,
 						d_parameters.colorbrewer_sequential_classes,
-						d_parameters.colorbrewer_continuous,
-						d_parameters.colorbrewer_inverted));
+						d_parameters.colorbrewer_sequential_continuous,
+						d_parameters.inverted));
 
 	case COLORBREWER_DIVERGING_PALETTE:
 		return GPlatesGui::RasterColourPalette::create<double>(
 				BuiltinColourPalettes::ColorBrewer::Diverging::create_palette(
 						d_colorbrewer_diverging_type,
 						d_parameters.colorbrewer_diverging_classes,
-						d_parameters.colorbrewer_continuous,
-						d_parameters.colorbrewer_inverted));
+						d_parameters.colorbrewer_diverging_continuous,
+						d_parameters.inverted));
 
 	default:
 		break;
@@ -242,9 +254,68 @@ GPlatesGui::BuiltinColourPaletteType::transcribe(
 		d_colorbrewer_diverging_type = DEFAULT_COLORBREWER_DIVERGING_TYPE;
 	}
 
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_parameters, "parameters"))
+	const GPlatesScribe::ObjectTag parameters_tag("parameters");
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_parameters, parameters_tag))
 	{
 		d_parameters = Parameters();
+	}
+	// Note: GPlates 2.4 changed a "parameters" sub-tag from "colorbrewer_inverted" to "inverted" since it now
+	//       applies to all palettes (not just the ColorBrewer palettes).
+	if (d_palette_type == COLORBREWER_SEQUENTIAL_PALETTE ||
+		d_palette_type == COLORBREWER_DIVERGING_PALETTE)    // Note: 'd_palette_type' was loaded above (on load path)
+	{
+		if (scribe.is_saving())
+		{
+			// Save "colorbrewer_inverted" for old versions (if we're using a ColorBrewer palette).
+			scribe.save(TRANSCRIBE_SOURCE, d_parameters.inverted, parameters_tag("colorbrewer_inverted"));
+
+			// Save "colorbrewer_continuous" for old versions (if we're using a ColorBrewer sequential palette).
+			if (d_palette_type == COLORBREWER_SEQUENTIAL_PALETTE)
+			{
+				scribe.save(TRANSCRIBE_SOURCE, d_parameters.colorbrewer_sequential_continuous, parameters_tag("colorbrewer_continuous"));
+			}
+			// Save "colorbrewer_continuous" for old versions (if we're using a ColorBrewer diverging palette).
+			if (d_palette_type == COLORBREWER_DIVERGING_PALETTE)
+			{
+				scribe.save(TRANSCRIBE_SOURCE, d_parameters.colorbrewer_diverging_continuous, parameters_tag("colorbrewer_continuous"));
+			}
+		}
+		else // loading...
+		{
+			// If "colorbrewer_inverted" is encountered on loading (and we're using a ColorBrewer palette) and
+			// we don't have an "inverted" value (ie, loading from an old version) then read "colorbrewer_inverted" instead.
+			if (!scribe.is_in_transcription(parameters_tag("inverted")))
+			{
+				bool colorbrewer_inverted;
+				if (scribe.transcribe(TRANSCRIBE_SOURCE, colorbrewer_inverted, parameters_tag("colorbrewer_inverted")))
+				{
+					d_parameters.inverted = colorbrewer_inverted;
+				}
+			}
+
+			// If "colorbrewer_continuous" is encountered on loading (and we're using a ColorBrewer sequential palette) and
+			// we don't have a "colorbrewer_sequential_continuous" value (ie, loading from an old version) then read it instead.
+			if (d_palette_type == COLORBREWER_SEQUENTIAL_PALETTE &&
+				!scribe.is_in_transcription(parameters_tag("colorbrewer_sequential_continuous")))
+			{
+				bool colorbrewer_sequential_continuous;
+				if (scribe.transcribe(TRANSCRIBE_SOURCE, colorbrewer_sequential_continuous, parameters_tag("colorbrewer_continuous")))
+				{
+					d_parameters.colorbrewer_sequential_continuous = colorbrewer_sequential_continuous;
+				}
+			}
+			// If "colorbrewer_continuous" is encountered on loading (and we're using a ColorBrewer diverging palette) and
+			// we don't have a "colorbrewer_diverging_continuous" value (ie, loading from an old version) then read it instead.
+			if (d_palette_type == COLORBREWER_DIVERGING_PALETTE &&
+				!scribe.is_in_transcription(parameters_tag("colorbrewer_diverging_continuous")))
+			{
+				bool colorbrewer_diverging_continuous;
+				if (scribe.transcribe(TRANSCRIBE_SOURCE, colorbrewer_diverging_continuous, parameters_tag("colorbrewer_continuous")))
+				{
+					d_parameters.colorbrewer_diverging_continuous = colorbrewer_diverging_continuous;
+				}
+			}
+		}
 	}
 
 	return GPlatesScribe::TRANSCRIBE_SUCCESS;
@@ -270,14 +341,26 @@ GPlatesGui::BuiltinColourPaletteType::Parameters::transcribe(
 		colorbrewer_diverging_classes = DEFAULT_PARAMS.colorbrewer_diverging_classes;
 	}
 
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, colorbrewer_continuous, "colorbrewer_continuous"))
+	// Note: GPlates 2.4 changed the tag from "colorbrewer_continuous" to "colorbrewer_sequential_continuous"
+	//       and "colorbrewer_diverging_continuous" since it now applies separately to sequential and diverging.
+	//       If "colorbrewer_continuous" is encountered from a previous version then it'll be handled
+	//       one level up (in BuiltinColourPaletteType::transcribe()).
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, colorbrewer_sequential_continuous, "colorbrewer_sequential_continuous"))
 	{
-		colorbrewer_continuous = DEFAULT_PARAMS.colorbrewer_continuous;
+		colorbrewer_sequential_continuous = DEFAULT_PARAMS.colorbrewer_sequential_continuous;
+	}
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, colorbrewer_diverging_continuous, "colorbrewer_diverging_continuous"))
+	{
+		colorbrewer_diverging_continuous = DEFAULT_PARAMS.colorbrewer_diverging_continuous;
 	}
 
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, colorbrewer_inverted, "colorbrewer_inverted"))
+	// Note: GPlates 2.4 changed the tag from "colorbrewer_inverted" to "inverted" since it now
+	//       applies to all palettes (not just the ColorBrewer palettes).
+	//       If "colorbrewer_inverted" is encountered from a previous version then it'll be handled
+	//       one level up (in BuiltinColourPaletteType::transcribe()).
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, inverted, "inverted"))
 	{
-		colorbrewer_inverted = DEFAULT_PARAMS.colorbrewer_inverted;
+		inverted = DEFAULT_PARAMS.inverted;
 	}
 
 	return GPlatesScribe::TRANSCRIBE_SUCCESS;

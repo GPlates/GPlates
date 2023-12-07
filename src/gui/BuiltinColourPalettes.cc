@@ -36,6 +36,7 @@
 
 #include "ColourPaletteAdapter.h"
 #include "ColourPaletteUtils.h"
+#include "ColourPaletteVisitor.h"
 #include "CptColourPalette.h"
 #include "RasterColourPalette.h"
 
@@ -53,11 +54,94 @@ namespace GPlatesGui
 		namespace
 		{
 			/**
+			 * Palette visitor to return a new palette with inverted colours.
+			 */
+			class InvertPaletteVisitor :
+					public ConstColourPaletteVisitor
+			{
+			public:
+
+				boost::optional<ColourPalette<double>::non_null_ptr_type>
+				get_inverted_colour_palette() const
+				{
+					return d_inverted_colour_palette;
+				}
+
+				virtual
+				void
+				visit_regular_cpt_colour_palette(
+						const RegularCptColourPalette &colour_palette)
+				{
+					generate_inverted_colour_palette(colour_palette);
+				}
+
+			private:
+
+				boost::optional<ColourPalette<double>::non_null_ptr_type> d_inverted_colour_palette;
+
+				void
+				generate_inverted_colour_palette(
+						const RegularCptColourPalette &colour_palette)
+				{
+					boost::optional<std::pair<GPlatesMaths::Real, GPlatesMaths::Real>> range = colour_palette.get_range();
+					if (!range)
+					{
+						return;
+					}
+					const GPlatesMaths::Real lower_bound = range->first;
+					const GPlatesMaths::Real upper_bound = range->second;
+
+					RegularCptColourPalette::non_null_ptr_type inverted_colour_palette = RegularCptColourPalette::create();
+
+					// Invert background and foreground colours (but keep NaN colour the same).
+					if (colour_palette.get_background_colour())
+					{
+						inverted_colour_palette->set_foreground_colour(colour_palette.get_background_colour().get());
+					}
+					if (colour_palette.get_foreground_colour())
+					{
+						inverted_colour_palette->set_background_colour(colour_palette.get_foreground_colour().get());
+					}
+					if (colour_palette.get_nan_colour())
+					{
+						inverted_colour_palette->set_nan_colour(colour_palette.get_nan_colour().get());
+					}
+
+					const std::vector<ColourSlice> &colour_slices = colour_palette.get_entries();
+
+					// Add colour slices in reverse order since we're inverting them.
+					// This way they'll be ordered with increasing values.
+					for (int n = colour_slices.size() - 1; n >= 0; --n)
+					{
+						const ColourSlice &colour_slice = colour_slices[n];
+						const ColourSlice::value_type inverted_lower_value = upper_bound - (colour_slice.upper_value() - lower_bound);
+						const ColourSlice::value_type inverted_upper_value = upper_bound - (colour_slice.lower_value() - lower_bound);
+						const boost::optional<Colour> inverted_lower_colour = colour_slice.upper_colour();
+						const boost::optional<Colour> inverted_upper_colour = colour_slice.lower_colour();
+
+						ColourSlice inverted_colour_slice(colour_slice);
+						inverted_colour_slice.set_lower_value(inverted_lower_value);
+						inverted_colour_slice.set_upper_value(inverted_upper_value);
+						inverted_colour_slice.set_lower_colour(inverted_lower_colour);
+						inverted_colour_slice.set_upper_colour(inverted_upper_colour);
+
+						inverted_colour_palette->add_entry(inverted_colour_slice);
+					}
+
+					d_inverted_colour_palette =
+							GPlatesGui::convert_colour_palette<GPlatesMaths::Real, double>(
+									inverted_colour_palette, RealToBuiltInConverter<double>());
+				}
+
+			};
+
+			/**
 			 * Create a colour palette from a CPT file.
 			 */
 			GPlatesGui::ColourPalette<double>::non_null_ptr_type
 			create_palette(
-					QString palette_filename)
+					QString palette_filename,
+					bool invert)
 			{
 				// Don't need to report any read errors - the age CPT file is embedded and should just work.
 				GPlatesFileIO::ReadErrorAccumulation read_errors;
@@ -75,6 +159,19 @@ namespace GPlatesGui
 				GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
 						colour_palette,
 						GPLATES_ASSERTION_SOURCE);
+
+				if (invert)
+				{
+					InvertPaletteVisitor invert_palette_visitor;
+					colour_palette.get()->accept_visitor(invert_palette_visitor);
+
+					colour_palette = invert_palette_visitor.get_inverted_colour_palette();
+
+					// Should be able to invert palette palette (ie, should be a RegularCptColourPalette).
+					GPlatesGlobal::Assert<GPlatesGlobal::AssertionFailureException>(
+							colour_palette,
+							GPLATES_ASSERTION_SOURCE);
+				}
 
 				return colour_palette.get();
 			}
@@ -1190,9 +1287,10 @@ GPlatesGui::BuiltinColourPalettes::Age::get_palette_name(
 
 GPlatesGui::ColourPalette<double>::non_null_ptr_type
 GPlatesGui::BuiltinColourPalettes::Age::create_palette(
-		Type type)
+		Type type,
+		bool invert)
 {
-	return BuiltinColourPalettes::create_palette(get_cpt_filename(type));
+	return BuiltinColourPalettes::create_palette(get_cpt_filename(type), invert);
 }
 
 
@@ -1244,9 +1342,10 @@ GPlatesGui::BuiltinColourPalettes::Topography::get_palette_name(
 
 GPlatesGui::ColourPalette<double>::non_null_ptr_type
 GPlatesGui::BuiltinColourPalettes::Topography::create_palette(
-		Type type)
+		Type type,
+		bool invert)
 {
-	return BuiltinColourPalettes::create_palette(get_cpt_filename(type));
+	return BuiltinColourPalettes::create_palette(get_cpt_filename(type), invert);
 }
 
 
@@ -1329,9 +1428,10 @@ GPlatesGui::BuiltinColourPalettes::SCM::get_palette_name(
 
 GPlatesGui::ColourPalette<double>::non_null_ptr_type
 GPlatesGui::BuiltinColourPalettes::SCM::create_palette(
-		Type type)
+		Type type,
+		bool invert)
 {
-	return BuiltinColourPalettes::create_palette(get_cpt_filename(type));
+	return BuiltinColourPalettes::create_palette(get_cpt_filename(type), invert);
 }
 
 
