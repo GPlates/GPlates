@@ -1,3 +1,28 @@
+GPlates 2.4
+===========
+
+Changes since 2.3:
+
+ * Builtin colour palettes:
+   * Added Scientific Colour Maps by Fabio Crameri.
+   * Added Elevation palettes.
+   * Can invert all palettes.
+ * Bug fixes:
+   * Fixed Net Rotation export when using a non-zero anchor plate ID.
+     * Previously always used zero anchor plate ID (inside non-deforming topologies).
+   * Fixed Shapefile geometries with Z (eg, elevation) or Measure (M) values not loading.
+   * Fixed shortened map background/grid for non-zero central meridians.
+   * Fixed missing pole sequences in Modify Reconstruction Pole tool.
+     * Happened after using Kinematics Tool with a time range exceeding 512 time steps.
+   * Fixed rare crash when modifying rotation with Modify Reconstruction Pole tool.
+   * Added tooltip showing full path of a missing filename when loading project/session.
+   * Emit warning (instead of error) when reading Shapefile feature with no geometry.
+   * Fixed "Failed to install message handler..." startup error message on Windows.
+   * Compile fixes for latest gcc compiler (12/13) and Boost libraries (1.8x).
+   * Build improvements for latest GDAL, PROJ, Python and Qwt libraries:
+     * Copies GDAL plugins (like NetCDF) into package (for recent GDAL versions).
+     * Codesigns all macOS shared libraries when installing Python standard library.
+
 GPlates 2.3
 ===========
 
