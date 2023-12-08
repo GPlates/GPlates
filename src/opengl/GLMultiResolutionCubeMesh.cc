@@ -135,6 +135,7 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::create_mesh_drawables(
 
 
 //for boost assert
+PUSH_GCC_WARNINGS
 DISABLE_GCC_WARNING("-Wold-style-cast")
 
 void
@@ -364,7 +365,7 @@ GPlatesOpenGL::GLMultiResolutionCubeMesh::create_quad_tree_mesh_drawables(
 	return mesh_quad_tree_node;
 }
 
-ENABLE_GCC_WARNING("-Wold-style-cast")
+POP_GCC_WARNINGS
 
 
 void

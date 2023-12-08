@@ -121,7 +121,7 @@ GPlatesGui::Map::set_projection_type(
 double
 GPlatesGui::Map::central_meridian()
 {
-	return d_map_projection->central_llp().longitude();
+	return d_map_projection->central_meridian();
 }
 
 
@@ -129,8 +129,7 @@ void
 GPlatesGui::Map::set_central_meridian(
 		double central_meridian_)
 {
-	GPlatesMaths::LatLonPoint llp(0.0, central_meridian_);
-	d_map_projection->set_central_llp(llp);
+	d_map_projection->set_central_meridian(central_meridian_);
 }
 
 
@@ -157,7 +156,7 @@ GPlatesGui::Map::paint(
 					MapProjection::non_null_ptr_to_const_type(d_map_projection));
 		}
 
-		// Clear the colour and depth buffers of the main framebuffer.
+		// Clear the depth buffer of the framebuffer.
 		//
 		// NOTE: We don't use the depth buffer in the map view but clear it anyway so that we can
 		// use common layer painting code with the 3D globe rendering that enables depth testing.
@@ -165,18 +164,9 @@ GPlatesGui::Map::paint(
 		// in modern graphics hardware so we don't need to optimise it away.
 		// We also clear the stencil buffer in case it is used - also it's usually interleaved
 		// with depth so it's more efficient to clear both depth and stencil.
-		//
-		// Note that we clear the colour to (0,0,0,1) and not (0,0,0,0) because we want any parts of
-		// the scene, that are not rendered, to have *opaque* alpha (=1). This appears to be needed on
-		// Mac with Qt5 (alpha=0 is fine on Qt5 Windows/Ubuntu, and on Qt4 for all platforms). Perhaps because
-		// QGLWidget rendering (on Qt5 Mac) is first done to a framebuffer object which is then blended into the
-		// window framebuffer (where having a source alpha of zero would result in the black background not showing).
-		// Or, more likely, maybe a framebuffer object is used on all platforms but the window framebuffer is
-		// white on Mac but already black on Windows/Ubuntu.
-		renderer.gl_clear_color(0, 0, 0, 1); // Clear colour to opaque black
 		renderer.gl_clear_depth(); // Clear depth to 1.0
 		renderer.gl_clear_stencil();
-		renderer.gl_clear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		renderer.gl_clear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
 		// Set the scale factor.
 		d_rendered_geom_collection_painter.set_scale(scale);

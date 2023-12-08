@@ -141,6 +141,7 @@ GPlatesQtWidgets::ChangePropertyWidget::populate(
 
 
 // For the BOOST_STATIC_ASSERT below with GCC 4.2.
+PUSH_GCC_WARNINGS
 DISABLE_GCC_WARNING("-Wold-style-cast")
 
 void
@@ -196,5 +197,5 @@ GPlatesQtWidgets::ChangePropertyWidget::process(
 	}
 }
 
-ENABLE_GCC_WARNING("-Wold-style-cast")
+POP_GCC_WARNINGS
 

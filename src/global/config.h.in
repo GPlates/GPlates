@@ -6,15 +6,16 @@
 //
 
 
-// Define if this is a public release.
+// Define if this is a public release (GPlates or pyGPlates).
 #cmakedefine GPLATES_PUBLIC_RELEASE
 
 // Define if installing GPlates (or pyGPlates) as a standalone bundle (by copying dependency libraries during installation).
 #cmakedefine GPLATES_INSTALL_STANDALONE
-// The sub-directories of the standalone resource installation directory containing Proj and GDAL resource data (eg, 'proj.db'),
+// The sub-directories of the standalone resource installation directory containing Proj and GDAL resource data/plugins (eg, 'proj.db'),
 // and containing the Python standard library. Only used when GPLATES_INSTALL_STANDALONE is defined.
 #cmakedefine GPLATES_STANDALONE_PROJ_DATA_DIR "@GPLATES_STANDALONE_PROJ_DATA_DIR@"
 #cmakedefine GPLATES_STANDALONE_GDAL_DATA_DIR "@GPLATES_STANDALONE_GDAL_DATA_DIR@"
+#cmakedefine GPLATES_STANDALONE_GDAL_PLUGINS_DIR "@GPLATES_STANDALONE_GDAL_PLUGINS_DIR@"
 #cmakedefine GPLATES_STANDALONE_PYTHON_STDLIB_DIR "@GPLATES_STANDALONE_PYTHON_STDLIB_DIR@"
 
 /*

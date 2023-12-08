@@ -274,6 +274,8 @@ void
 GPlatesPresentation::ReconstructionGeometryRenderer::RenderParamsPopulator::visit_reconstruct_visual_layer_params(
 		const ReconstructVisualLayerParams &params)
 {
+	using namespace boost::placeholders;  // For _1, _2, etc
+
 	d_render_params.show_vgp = boost::bind(&ReconstructVisualLayerParams::show_vgp, &params, _1, _2);
 	d_render_params.vgp_draw_circular_error = params.get_vgp_draw_circular_error();
 	d_render_params.fill_polygons = params.get_fill_polygons();
@@ -1179,6 +1181,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 // The BOOST_FOREACH macro in versions of boost before 1.37 uses the same local
 // variable name in each instantiation. Nested BOOST_FOREACH macros therefore
 // cause GCC to warn about shadowed declarations.
+PUSH_GCC_WARNINGS
 DISABLE_GCC_WARNING("-Wshadow")
 
 
@@ -1228,7 +1231,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 }
 
 // See above
-ENABLE_GCC_WARNING("-Wshadow")
+POP_GCC_WARNINGS
 
 
 void

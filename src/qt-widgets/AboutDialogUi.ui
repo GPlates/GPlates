@@ -77,16 +77,6 @@
       </widget>
      </item>
      <item>
-      <widget class="QLabel" name="label_subversion_info">
-       <property name="text">
-        <string>(Information from Subversion automatically generated)</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item>
       <widget class="QLabel" name="label_GPGIM_version">
        <property name="text">
         <string>(GPGIM version)</string>

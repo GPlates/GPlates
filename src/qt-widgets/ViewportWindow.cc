@@ -326,7 +326,7 @@ GPlatesQtWidgets::ViewportWindow::ViewportWindow(
 			*d_geometry_operation_state_ptr,
 			*d_modify_geometry_state,
 			*d_measure_distance_state_ptr,
-			boost::bind(&canvas_tool_status_message, boost::ref(*this), _1),
+			boost::bind(&canvas_tool_status_message, boost::ref(*this), boost::placeholders::_1),
 			get_view_state(),
 			*this);
 
@@ -1678,7 +1678,7 @@ GPlatesQtWidgets::ViewportWindow::set_window_title(
 {
 	QString window_title("GPlates");
 
-	// Append the GPlates version (including pre-release suffix, eg, 2.3.0-dev.1) if not an official public release.
+	// Append the GPlates version if not an official public release (including pre-release suffix, eg, 2.3.0-dev1).
 	// Otherwise just leave as "GPlates" for official public releases.
 #if !defined(GPLATES_PUBLIC_RELEASE)  // Flag defined by CMake build system (in "global/config.h").
 	const QString FORMAT = " (%1)";
@@ -1905,7 +1905,7 @@ void
 GPlatesQtWidgets::ViewportWindow::open_dataset_webpage()
 {
 	QDesktopServices::openUrl(
-			QUrl("http://www.earthbyte.org/gplates-2-3-software-and-data-sets"));
+			QUrl("http://www.earthbyte.org/gplates-2-4-software-and-data-sets"));
 }
 
 

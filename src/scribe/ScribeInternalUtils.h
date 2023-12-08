@@ -59,8 +59,7 @@ namespace GPlatesScribe
 		 *
 		 * Note that std::type_info is not copy-constructable so we use pointers instead of references.
 		 */
-		struct SortTypeInfoPredicate :
-				public std::binary_function<const std::type_info *, const std::type_info *, bool>
+		struct SortTypeInfoPredicate
 		{
 			SortTypeInfoPredicate()
 			{  }
@@ -134,8 +133,7 @@ namespace GPlatesScribe
 		/**
 		 * Used to order @a ObjectAddress keys in a std::map.
 		 */
-		struct SortObjectAddressPredicate :
-				public std::binary_function<ObjectAddress, ObjectAddress, bool>
+		struct SortObjectAddressPredicate
 		{
 			SortObjectAddressPredicate()
 			{  }

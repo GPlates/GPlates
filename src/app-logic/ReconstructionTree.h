@@ -254,6 +254,25 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type anchor_plate_id);
 
 		/**
+		 * Returns true if the @a other reconstruction tree is equivalent to 'this', in that it was created
+		 * from the same @a ReconstructionGraph using the same reconstruction time and anchor plate.
+		 *
+		 * Note: This is better than comparing reconstruction tree pointers because reconstruction tree creators typically have an internal
+		 *       cache of reconstruction trees, and so it's possible that the cache gets invalidated because some other client requests
+		 *       reconstruction trees at more reconstruction times than fits in the cache thus causing a new reconstruction tree to be
+		 *       created that is equivalent to an original reconstruction tree but does not compare equal (because it's a new instance).
+		 *       So instead it's more robust to see if both reconstruction trees were generated from the same reconstruction graph.
+		 */
+		bool
+		created_from_same_graph_with_same_parameters(
+				const ReconstructionTree &other) const
+		{
+			return d_reconstruction_graph == other.d_reconstruction_graph &&
+					d_reconstruction_time_instant == other.d_reconstruction_time_instant &&
+					d_anchor_plate_id == other.d_anchor_plate_id;
+		}
+
+		/**
 		 * Return the @a ReconstructionGraph that this reconstruction tree was created from.
 		 *
 		 * This enables other reconstruction trees to be created at different reconstruction times.

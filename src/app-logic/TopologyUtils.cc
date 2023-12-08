@@ -381,8 +381,7 @@ namespace GPlatesAppLogic
 		/**
 		 * Predicate to sort @a ResolvedSubSegmentMarker from beginning to end of the section geometry.
 		 */
-		class SortResolvedSubSegmentMarkers :
-				public std::binary_function<ResolvedSubSegmentMarker, ResolvedSubSegmentMarker, bool>
+		class SortResolvedSubSegmentMarkers
 		{
 		public:
 

@@ -39,6 +39,7 @@
 #include <QSize>
 #include <QTransform>
 
+#include "gui/Colour.h"
 #include "gui/ColourScheme.h"
 #include "gui/Map.h"
 
@@ -130,7 +131,8 @@ namespace GPlatesQtWidgets
 		render_to_qimage(
 				QPaintDevice &map_canvas_paint_device,
 				const QTransform &viewport_transform,
-				const QSize &image_size_in_device_independent_pixels);
+				const QSize &image_size_in_device_independent_pixels,
+				const GPlatesGui::Colour &image_clear_colour);
 
 		/**
 		 * Paint the scene, as best as possible, by re-directing OpenGL rendering to the
@@ -241,6 +243,7 @@ namespace GPlatesQtWidgets
 		render_scene_tile_into_image(
 				GPlatesOpenGL::GLRenderer &renderer,
 				const GPlatesOpenGL::GLTileRender &tile_render,
+				const GPlatesGui::Colour &image_clear_colour,
 				QImage &image,
 				const GPlatesOpenGL::GLMatrix &projection_matrix_scene,
 				const GPlatesOpenGL::GLMatrix &projection_matrix_text_overlay,
@@ -252,6 +255,7 @@ namespace GPlatesQtWidgets
 				GPlatesOpenGL::GLRenderer &renderer,
 				const GPlatesOpenGL::GLMatrix &projection_matrix_scene,
 				const GPlatesOpenGL::GLMatrix &projection_matrix_text_overlay,
+				const GPlatesGui::Colour &clear_colour,
 				int paint_device_width_in_device_independent_pixels,
 				int paint_device_height_in_device_independent_pixels,
 				int map_canvas_paint_device_width_in_device_independent_pixels,
