@@ -759,14 +759,6 @@ if (GPLATES_INSTALL_STANDALONE)
             install_qt_plugin(Qt${QT_VERSION_MAJOR}::QICOPlugin)
             install_qt_plugin(Qt${QT_VERSION_MAJOR}::QJpegPlugin)
             install_qt_plugin(Qt${QT_VERSION_MAJOR}::QSvgPlugin)
-            # These are common to Windows and macOS only...
-            if (WIN32 OR APPLE)
-                install_qt_plugin(Qt${QT_VERSION_MAJOR}::QICNSPlugin)
-                install_qt_plugin(Qt${QT_VERSION_MAJOR}::QTgaPlugin)
-                install_qt_plugin(Qt${QT_VERSION_MAJOR}::QTiffPlugin)
-                install_qt_plugin(Qt${QT_VERSION_MAJOR}::QWbmpPlugin)
-                install_qt_plugin(Qt${QT_VERSION_MAJOR}::QWebpPlugin)
-            endif()
 
             # Install platform *dependent* plugins used by GPlates.
             # Note: This list was obtained by running the Qt deployment tool (windeployqt/macdeployqt) on GPlates (to see which plugins it deployed).
