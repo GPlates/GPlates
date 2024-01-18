@@ -50,42 +50,35 @@ elseif (APPLE)
     # Note that Apple also requires notarization.
     #
     # The entire notarization process is currently done outside of CMake/CPack and should follow the procedure outlined here...
-    #   XCode >= 13:
     #     https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/customizing_the_notarization_workflow
-    #   XCode < 13:
-    #     https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution/customizing_the_notarization_workflow/notarizing_apps_when_developing_with_xcode_12_and_earlier
+    #
+    # ...note that Apple (as of 1st Nov 2023) requires XCode 14 or notarytool (which is in XCode 13) for notarization (and no longer supports 'altool').
+    # While XCode 13 requires macOS 11+ (see https://xcodereleases.com), and so cannot be used on macOS 10.15, you can however download
+    # XCode 13 and just copy its 'notarytool' (on macOS 10.15) and use it as "notarytool ..." (instead of "xcrun notarytool ...") according to:
+    #   https://developer.apple.com/documentation/technotes/tn3147-migrating-to-the-latest-notarization-tool#Enable-notarization-on-an-older-version-of-macOS
+    #
     #
     # For GPlates this amounts to uploading the '.dmg' file to Apple for notarization, checking for successful notarization and then stapling the
     # notarization ticket to the '.dmg' file. Once that is all done the '.dmg' file can be distributed to users.
     # For example...
-    #   XCode >= 13:
     #     xcrun notarytool submit gplates_2.3.0-dev1_Darwin-arm64.dmg --keychain-profile "AC_PASSWORD"
     #     xcrun notarytool info <request-identifier> --keychain-profile "AC_PASSWORD"
     #     xcrun stapler staple gplates_2.3.0-dev1_Darwin-arm64.dmg
-    #   XCode < 13:
-    #     xcrun altool --notarize-app --primary-bundle-id org.gplates.gplates-2.3.0-dev1 --username <email-address> --password @keychain:AC_PASSWORD --file gplates_2.3.0-dev1_Darwin-x86_64.dmg
-    #     xcrun altool --notarization-info <request-identifier> -u <email-address> --password @keychain:AC_PASSWORD
-    #     xcrun stapler staple gplates_2.3.0-dev1_Darwin-x86_64.dmg
     # Note however that, if you're only using CMake < 3.19, then you also need to manually code sign the '.dmg' file prior to notarization upload
     # (for CMake >= 3.19 we handle it during the packaging phase using CPACK_POST_BUILD_SCRIPTS). See the "DragNDrop" section below.
     #
     # For pyGPlates this amounts to uploading the zip archive to Apple for notarization and checking for successful notarization
     # (note that Apple's notarization process does not accept the TBZ2 format, which is why we default to ZIP for binary archives).
     # For example:
-    #   XCode >= 13:
     #     xcrun notarytool submit pygplates_0.34.0_Darwin-arm64.zip --keychain-profile "AC_PASSWORD"
     #     xcrun notarytool info <request-identifier> --keychain-profile "AC_PASSWORD"
-    #   XCode < 13:
-    #     xcrun altool --notarize-app --primary-bundle-id org.gplates.pygplates-0.34.0 --username <email-address> --password @keychain:AC_PASSWORD --file pygplates_0.34.0_Darwin-x86_64.zip
-    #     xcrun altool --notarization-info <request-identifier> -u <email-address> --password @keychain:AC_PASSWORD
     # However you cannot staple a notarization ticket to a ZIP archive (you must instead staple each item in the archive and then create a new archive).
     # If an item is not stapled then Gatekeeper finds the ticket online (stapling is so the ticket can be found when the network is offline).
     # So currently we don't staple the items.
     #
-    # Note that soon we will also use Conda to build pyGPlates packages (and we won't need Apple notarization for conda because the Conda package manager
-    # will be responsible for installing pygplates on the user's computer, and so conda will then be responsible for quarantine).
-    # Also the conda build script will likely use only the 'install' phase (ie, not use CPack) with something like:
-    #   cmake --install . --prefix pygplates_installation
+    # Note that we also use Conda to build pyGPlates packages (and we don't need Apple notarization for conda because the Conda package manager
+    # is responsible for installing pygplates on the user's computer, and so conda is responsible for quarantine).
+    # Also the conda build script uses only the 'install' phase (ie, not use CPack) with, eg, "cmake --install . --prefix pygplates_installation".
     # It is interesting to note that, as an alternative to using CPack, these staged install files could be manually archived into a zip file using 'ditto'
     # (which can store extended attributes; and actually appears to be used by CPack):
     #   ditto -c -k --keepParent pygplates_installation pygplates_installation.zip
