@@ -23,9 +23,22 @@
 #ifndef GPLATES_APP_LOGIC_NETROTATIONUTILS_H
 #define GPLATES_APP_LOGIC_NETROTATIONUTILS_H
 
+#include <map>
+#include <utility>  // for std::pair
+#include <vector>
+#include <boost/optional.hpp>
+
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalNetwork.h"
+#include "VelocityDeltaTime.h"
+
+#include "maths/FiniteRotation.h"
+#include "maths/LatLonPoint.h"
 #include "maths/PointOnSphere.h"
 #include "maths/Vector3D.h"
+
 #include "model/types.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -33,83 +46,244 @@ namespace GPlatesAppLogic
 	namespace NetRotationUtils
 	{
 		/**
-		 * @brief The NetRotationResult struct - used for storing intermediate results
-		 * during point-by-point net-rotation calculations. Each point used in the net-rotation
-		 * calculation has its results stored here, which are later summed.
+		 * Used to store and accumulate net rotation point-by-point.
 		 */
-		struct NetRotationResult
+		class NetRotationAccumulator
 		{
-			NetRotationResult(
-					const GPlatesMaths::Vector3D &rotation_component,
-					const double &weighting_factor,
-					const double &plate_area_component,
-					const double &plate_angular_velocity):
-				d_rotation_component(rotation_component),
-				d_weighting_factor(weighting_factor),
-				d_plate_area_component(plate_area_component),
-				d_plate_angular_velocity(plate_angular_velocity){}
+		public:
 
-			NetRotationResult():
-				d_rotation_component(GPlatesMaths::Vector3D()),
-				d_weighting_factor(0.),
-				d_plate_area_component(0.),
-				d_plate_angular_velocity(0.){}
+			/**
+			 * Calculate the contribution to the plate net-rotation for the specified point.
+			 */
+			static
+			NetRotationAccumulator
+			create(
+					const GPlatesMaths::PointOnSphere &point,
+					const GPlatesMaths::FiniteRotation &stage_pole,
+					const double &time_interval,
+					const double &sample_square_length_in_radians);
+
+			/**
+			 * Zero net rotation.
+			 */
+			NetRotationAccumulator():
+				d_weighting_factor(0),
+				d_area_steradians(0)
+			{  }
+
+			/**
+			 * Add a net rotation contribution at a point.
+			 *
+			 * @a sample_square_length_in_radians is area of the sample square surrounding the sample point (in radians).
+			 */
+			void
+			add(
+					const GPlatesMaths::PointOnSphere &point,
+					const GPlatesMaths::FiniteRotation &stage_pole,
+					double time_interval,
+					const double &sample_square_length_in_radians)
+			{
+				add(NetRotationAccumulator::create(point, stage_pole, time_interval, sample_square_length_in_radians));
+			}
+
+			void
+			add(
+					const NetRotationAccumulator &net_rotation);
+
+			/**
+			 * Return the accumulated net rotation as a finite rotation.
+			 *
+			 * Returns identity rotation if there have not been any non-zero net rotation contributions.
+			 */
+			GPlatesMaths::FiniteRotation
+			get_net_rotation() const;
+
+			/**
+			 * Return the accumulated net rotation as a lat-lon pole and angle (in degrees).
+			 *
+			 * Returns none if there have not been any non-zero net rotation contributions.
+			 */
+			boost::optional<std::pair<GPlatesMaths::LatLonPoint, double>>
+			get_net_rotation_lat_lon_pole_and_angle() const;
+
+			/**
+			 * Return the accumulated area in steradians (square radians).
+			 */
+			double
+			get_area_in_steradians() const
+			{
+				return d_area_steradians;
+			}
+
+		private:
+
+			static
+			GPlatesMaths::FiniteRotation
+			convert_rotation_vector_to_finite_rotation(
+					const GPlatesMaths::Vector3D &rotation_vec);
+
+			static
+			GPlatesMaths::Vector3D
+			convert_finite_rotation_to_rotation_vector(
+					const GPlatesMaths::FiniteRotation &finite_rotation);
+
+
+			NetRotationAccumulator(
+					const GPlatesMaths::Vector3D &rotation_component_,
+					const double &weighting_factor_,
+					const double &area_steradians_) :
+				d_rotation_component(rotation_component_),
+				d_weighting_factor(weighting_factor_),
+				d_area_steradians(area_steradians_)
+			{  }
+
 
 			GPlatesMaths::Vector3D d_rotation_component;
 			double d_weighting_factor;
-			double d_plate_area_component;
-			double d_plate_angular_velocity;
+			// Area of accumulated net rotation samples (in steradians, or square radians).
+			double d_area_steradians;
 		};
 
 
-		typedef std::map<GPlatesModel::integer_plate_id_type, NetRotationResult> net_rotation_map_type;
 
 		/**
-		 * @brief calc_net_rotation_components - calculate the contribution to the plate net-rotation for the
-		 * point @a point
-		 * @param point
-		 * @param stage_pole  - stage pole for the plate-id of the polygon which the point belongs to
-		 * @param time_interval - for correcting to degrees/Ma
-		 * @return - Vector3D: the cartesian form of the rotation for the point
-		 *			- double: the weighting factor for the point
+		 * Calculates net rotation from topological rigid plates and deforming networks.
 		 */
-		NetRotationResult
-		calc_net_rotation_contribution(
-				const GPlatesMaths::PointOnSphere &point,
-				const GPlatesMaths::FiniteRotation &stage_pole,
-				double time_interval);
+		class NetRotationCalculator
+		{
+		public:
 
-		/**
-		 * @brief sum_net_rotations - keeps a running total of net-rotation per plate-id.
-		 * @param net_rotation - the net-rotation component and plate-id for a point
-		 * @param net_rotations - the summed net-rotations per plate-id
-		 */
-		void
-		sum_net_rotations(
-				const NetRotationUtils::net_rotation_map_type::value_type &net_rotation,
-				NetRotationUtils::net_rotation_map_type &net_rotations);
+			//! Convenience typedef for sequence of resolved topological boundaries.
+			typedef std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> resolved_topological_boundary_seq_type;
 
-		/**
-		 * @brief display_net_rotation_output - for debug output
-		 * @param results
-		 * @param time
-		 * @param also_by_plate
-		 */
-		void
-		display_net_rotation_output(
-				const GPlatesAppLogic::NetRotationUtils::net_rotation_map_type &results,
-				const double &time,
-				bool also_by_plate = true);
-
-		std::pair<GPlatesMaths::LatLonPoint, double>
-		convert_net_rotation_xyz_to_pole(
-				const GPlatesMaths::Vector3D v);
+			//! Convenience typedef for sequence of resolved topological networks.
+			typedef std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> resolved_topological_network_seq_type;
 
 
-		GPlatesMaths::Vector3D
-		convert_net_rotation_pole_to_xyz(
-				const GPlatesMaths::LatLonPoint &llp, const double &angle);
+			// A map of rigid plates to net rotations.
+			typedef std::map<ResolvedTopologicalBoundary::non_null_ptr_to_const_type, NetRotationAccumulator> topological_boundary_net_rotation_map_type;
 
+			// A map of deforming networks to net rotations.
+			typedef std::map<ResolvedTopologicalNetwork::non_null_ptr_to_const_type, NetRotationAccumulator> topological_network_net_rotation_map_type;
+
+			// A map for storing net rotation per plate ID (with plate ID 'none' used for deforming networks that have no plate ID).
+			typedef std::map<boost::optional<GPlatesModel::integer_plate_id_type>, NetRotationAccumulator> plate_id_net_rotation_map_type;
+
+
+			/**
+			 * Accumulate net rotation of the specified resolved topologies over a uniform grid of lat-lon points.
+			 *
+			 * @a num_samples_along_meridian is the number of grid points along all meridians.
+			 * The same (longitude) spacing is used along parallels.
+			 * The default is 180 x 360 uniform lat-lon samples.
+			 */
+			NetRotationCalculator(
+					const resolved_topological_boundary_seq_type &resolved_topological_boundaries,
+					const resolved_topological_network_seq_type &resolved_topological_networks,
+					const double &time,
+					const double &velocity_delta_time,
+					VelocityDeltaTime::Type velocity_delta_time_type,
+					GPlatesModel::integer_plate_id_type anchor_plate_id = 0,
+					unsigned int num_samples_along_meridian = 180);
+
+			double
+			get_time() const
+			{
+				return d_time;
+			}
+
+			/**
+			 * Return the accumulated net rotation over all input resolved topologies.
+			 */
+			NetRotationAccumulator
+			get_total_net_rotation() const
+			{
+				return d_total_net_rotation;
+			}
+
+			/**
+			 * Return a mapping of rigid plates to their accumulated net rotation.
+			 *
+			 * Note: Topological boundaries (rigid plates) that don't have a plate ID are excluded altogether
+			 *       because we cannot determine a stage rotation from them.
+			 */
+			const topological_boundary_net_rotation_map_type &
+			get_topological_boundary_net_rotation_map() const
+			{
+				return d_topological_boundary_net_rotation_map;
+			}
+
+			/**
+			 * Return a mapping of deforming networks to their accumulated net rotation.
+			 */
+			const topological_network_net_rotation_map_type &
+			get_topological_network_net_rotation_map() const
+			{
+				return d_topological_network_net_rotation_map;
+			}
+
+			/**
+			 * Return a mapping of plate IDs to their accumulated net rotation.
+			 *
+			 * Note: Networks are no longer required to have a plate ID because it doesn't make sense
+			 *       (network is deforming, not rigidly rotated by plate ID). If a deforming network
+			 *       doesn't have a plate ID then it will be grouped under plate ID 'none'.
+			 *       Note that topological boundaries (rigid plates) that don't have a plate ID are excluded altogether.
+			 */
+			const plate_id_net_rotation_map_type &
+			get_plate_id_net_rotation_map() const
+			{
+				return d_plate_id_net_rotation_map;
+			}
+
+		private:
+
+			// A map for storing stage poles (relative to anchor) per plate id.
+			typedef std::map<GPlatesModel::integer_plate_id_type, GPlatesMaths::FiniteRotation> stage_pole_map_type;
+
+
+			bool
+			add_net_rotation_contribution_from_resolved_networks(
+					const GPlatesMaths::PointOnSphere &position,
+					const double &sample_square_length_in_radians);
+
+			bool
+			add_net_rotation_contribution_from_resolved_boundaries(
+					const GPlatesMaths::PointOnSphere &position,
+					const double &sample_square_length_in_radians);
+
+			void
+			add_net_rotation_contribution(
+					ResolvedTopologicalNetwork::non_null_ptr_to_const_type resolved_topological_network,
+					const NetRotationAccumulator &net_rotation_result);
+
+			void
+			add_net_rotation_contribution(
+					ResolvedTopologicalBoundary::non_null_ptr_to_const_type resolved_topological_boundary,
+					const NetRotationAccumulator &net_rotation_result);
+
+			boost::optional<GPlatesMaths::FiniteRotation>
+			get_resolved_boundary_stage_pole(
+					ResolvedTopologicalBoundary::non_null_ptr_to_const_type resolved_topological_boundary) const;
+
+
+			resolved_topological_boundary_seq_type d_resolved_topological_boundaries;
+			resolved_topological_network_seq_type d_resolved_topological_networks;
+
+			double d_time;
+			double d_velocity_delta_time;
+			VelocityDeltaTime::Type d_velocity_delta_time_type;
+			std::pair<double/*older*/, double/*younger*/> d_velocity_time_period;
+			GPlatesModel::integer_plate_id_type d_anchor_plate_id;
+
+			topological_boundary_net_rotation_map_type d_topological_boundary_net_rotation_map;
+			topological_network_net_rotation_map_type d_topological_network_net_rotation_map;
+
+			plate_id_net_rotation_map_type d_plate_id_net_rotation_map;
+			NetRotationAccumulator d_total_net_rotation;
+
+			mutable stage_pole_map_type d_resolved_boundary_stage_pole_map;
+		};
 	}
 }
 #endif // GPLATES_APP_LOGIC_NETROTATIONUTILS_H
