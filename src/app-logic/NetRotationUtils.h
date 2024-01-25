@@ -170,10 +170,13 @@ namespace GPlatesAppLogic
 			typedef std::map<boost::optional<GPlatesModel::integer_plate_id_type>, NetRotationAccumulator> plate_id_net_rotation_map_type;
 
 
+			static const unsigned int DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN = 180;
+
+
 			/**
 			 * Accumulate net rotation of the specified resolved topologies over a uniform grid of lat-lon points.
 			 *
-			 * @a num_samples_along_meridian is the number of grid points along all meridians.
+			 * @a num_samples_along_meridian is the number of grid points along each meridian.
 			 * The same (longitude) spacing is used along parallels.
 			 * The default is 180 x 360 uniform lat-lon samples.
 			 */
@@ -184,13 +187,7 @@ namespace GPlatesAppLogic
 					const double &velocity_delta_time,
 					VelocityDeltaTime::Type velocity_delta_time_type,
 					GPlatesModel::integer_plate_id_type anchor_plate_id = 0,
-					unsigned int num_samples_along_meridian = 180);
-
-			double
-			get_time() const
-			{
-				return d_time;
-			}
+					unsigned int num_samples_along_meridian = DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN);
 
 			/**
 			 * Return the accumulated net rotation over all input resolved topologies.
@@ -236,6 +233,36 @@ namespace GPlatesAppLogic
 				return d_plate_id_net_rotation_map;
 			}
 
+			double
+			get_time() const
+			{
+				return d_time;
+			}
+
+			double
+			get_velocity_delta_time() const
+			{
+				return d_velocity_delta_time;
+			}
+
+			VelocityDeltaTime::Type
+			get_velocity_delta_time_type() const
+			{
+				return d_velocity_delta_time_type;
+			}
+
+			GPlatesModel::integer_plate_id_type
+			get_anchor_plate_id() const
+			{
+				return d_anchor_plate_id;
+			}
+
+			unsigned int
+			get_num_samples_along_meridian() const
+			{
+				return d_num_samples_along_meridian;
+			}
+
 		private:
 
 			// A map for storing stage poles (relative to anchor) per plate id.
@@ -275,6 +302,7 @@ namespace GPlatesAppLogic
 			VelocityDeltaTime::Type d_velocity_delta_time_type;
 			std::pair<double/*older*/, double/*younger*/> d_velocity_time_period;
 			GPlatesModel::integer_plate_id_type d_anchor_plate_id;
+			unsigned int d_num_samples_along_meridian;
 
 			topological_boundary_net_rotation_map_type d_topological_boundary_net_rotation_map;
 			topological_network_net_rotation_map_type d_topological_network_net_rotation_map;

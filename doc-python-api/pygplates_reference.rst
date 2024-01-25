@@ -124,6 +124,7 @@ Rotation
 
 | ``RotationModel`` is the main class for getting finite and stage rotations from rotation models/files.
 | ``FiniteRotation`` is a useful maths class for rotating geometries (and vectors).
+| ``NetRotationModel`` is for calculating net rotation of topological plates and deforming networks.
 
 .. autosummary::
    :nosignatures:
@@ -131,6 +132,8 @@ Rotation
 
    pygplates.RotationModel
    pygplates.FiniteRotation
+   pygplates.NetRotationModel
+   pygplates.NetRotationSnapshot
 
 .. note:: ``ReconstructionTreeEdge`` is only needed for very advanced scenarios.
 

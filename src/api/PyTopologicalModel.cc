@@ -91,7 +91,7 @@ namespace GPlatesApi
 	 * This is called directly from Python via 'TopologicalModel.get_topological_snapshot()'.
 	 */
 	TopologicalSnapshot::non_null_ptr_type
-	topological_model_get_topological_snapshot(
+	topological_model_create_topological_snapshot(
 			TopologicalModel::non_null_ptr_type topological_model,
 			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
 	{
@@ -1530,7 +1530,7 @@ export_topological_model()
 		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
 		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesApi::TopologicalModel::non_null_ptr_type>())
 		.def("topological_snapshot",
-				&GPlatesApi::topological_model_get_topological_snapshot,
+				&GPlatesApi::topological_model_create_topological_snapshot,
 				(bp::arg("reconstruction_time")),
 				"topological_snapshot(reconstruction_time)\n"
 				"  Returns a snapshot of resolved topologies at the requested reconstruction time.\n"

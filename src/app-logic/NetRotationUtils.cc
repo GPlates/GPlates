@@ -160,7 +160,8 @@ GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::NetRotationCalculator(
 	d_velocity_delta_time(velocity_delta_time),
 	d_velocity_delta_time_type(velocity_delta_time_type),
 	d_velocity_time_period(VelocityDeltaTime::get_time_range(velocity_delta_time_type, time, velocity_delta_time)),
-	d_anchor_plate_id(anchor_plate_id)
+	d_anchor_plate_id(anchor_plate_id),
+	d_num_samples_along_meridian(num_samples_along_meridian)
 {
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			num_samples_along_meridian > 0,

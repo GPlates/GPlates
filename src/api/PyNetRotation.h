@@ -1,0 +1,231 @@
+/**
+ * Copyright (C) 2023 The University of Sydney, Australia
+ *
+ * This file is part of GPlates.
+ *
+ * GPlates is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU General Public License, version 2, as published by
+ * the Free Software Foundation.
+ *
+ * GPlates is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+ * for more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program; if not, write to Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+#ifndef GPLATES_API_PYNETROTATION_H
+#define GPLATES_API_PYNETROTATION_H
+
+
+#include <vector>
+#include <boost/optional.hpp>
+#include <QString>
+
+#include "PyTopologicalModel.h"
+#include "PyTopologicalSnapshot.h"
+
+#include "app-logic/NetRotationUtils.h"
+#include "app-logic/VelocityDeltaTime.h"
+
+#include "global/python.h"
+
+#include "scribe/ScribeLoadRef.h"
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
+#include "utils/ReferenceCount.h"
+
+
+namespace GPlatesApi
+{
+	/**
+	 * Net rotation of dynamic plates and deforming networks associated with a topological snapshot (at a specific time).
+	 */
+	class NetRotationSnapshot :
+			public GPlatesUtils::ReferenceCount<NetRotationSnapshot>
+	{
+	public:
+
+		typedef GPlatesUtils::non_null_intrusive_ptr<NetRotationSnapshot> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const NetRotationSnapshot> non_null_ptr_to_const_type;
+
+
+		//! Default number of grid points sampled along each meridian.
+		static const unsigned int DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN = 180;
+
+
+		/**
+		 * Create a net rotation snapshot to be used with the specified topological snapshot.
+		 */
+		static
+		non_null_ptr_type
+		create(
+				TopologicalSnapshot::non_null_ptr_type topological_snapshot,
+				const double &velocity_delta_time,
+				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+				unsigned int num_samples_along_meridian);
+
+
+		/**
+		 * Get the topological snapshot.
+		 */
+		TopologicalSnapshot::non_null_ptr_type
+		get_topological_snapshot() const
+		{
+			return d_topological_snapshot;
+		}
+
+		double
+		get_velocity_delta_time() const
+		{
+			return d_net_rotation_calculator.get_velocity_delta_time();
+		}
+
+		GPlatesAppLogic::VelocityDeltaTime::Type
+		get_velocity_delta_time_type() const
+		{
+			return d_net_rotation_calculator.get_velocity_delta_time_type();
+		}
+
+		unsigned int
+		get_num_samples_along_meridian() const
+		{
+			return d_net_rotation_calculator.get_num_samples_along_meridian();
+		}
+
+	private:
+
+		//! Topological snapshot to obtain net rotation from at requested reconstruction times.
+		TopologicalSnapshot::non_null_ptr_type d_topological_snapshot;
+		//! Calculates net rotation at our reconstruction time.
+		GPlatesAppLogic::NetRotationUtils::NetRotationCalculator d_net_rotation_calculator;
+
+
+		NetRotationSnapshot(
+				TopologicalSnapshot::non_null_ptr_type topological_snapshot,
+				const GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::resolved_topological_boundary_seq_type &resolved_topological_boundaries,
+				const GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::resolved_topological_network_seq_type &resolved_topological_networks,
+				const double &velocity_delta_time,
+				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+				unsigned int num_samples_along_meridian);
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<NetRotationSnapshot> &net_rotation_snapshot);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
+
+		static
+		void
+		save_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				const NetRotationSnapshot &net_rotation_snapshot);
+
+		static
+		bool
+		load_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::LoadRef<TopologicalSnapshot::non_null_ptr_type> &topological_snapshot,
+				GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::resolved_topological_boundary_seq_type &resolved_topological_boundaries,
+				GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::resolved_topological_network_seq_type &resolved_topological_networks,
+				double &velocity_delta_time,
+				GPlatesAppLogic::VelocityDeltaTime::Type &velocity_delta_time_type,
+				unsigned int &num_samples_along_meridian);
+	};
+
+
+	/**
+	 * Net rotation of dynamic plates and deforming networks associated with a topological model (over all times).
+	 */
+	class NetRotationModel :
+			public GPlatesUtils::ReferenceCount<NetRotationModel>
+	{
+	public:
+
+		typedef GPlatesUtils::non_null_intrusive_ptr<NetRotationModel> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const NetRotationModel> non_null_ptr_to_const_type;
+
+
+		/**
+		 * Create a net rotation model to be used with the specified topological model.
+		 */
+		static
+		non_null_ptr_type
+		create(
+				TopologicalModel::non_null_ptr_type topological_model);
+
+
+		/**
+		 * Get the topological model.
+		 */
+		TopologicalModel::non_null_ptr_type
+		get_topological_model() const
+		{
+			return d_topological_model;
+		}
+
+
+		/**
+		 * Get a net rotation snapshot at the specified time.
+		 */
+		NetRotationSnapshot::non_null_ptr_type
+		create_net_rotation_snapshot(
+				const double &reconstruction_time,
+				const double &velocity_delta_time,
+				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+				unsigned int num_samples_along_meridian) const;
+
+	private:
+
+		/**
+		 * Topological model to obtain net rotation from at requested reconstruction times.
+		 */
+		TopologicalModel::non_null_ptr_type d_topological_model;
+
+
+		NetRotationModel(
+				TopologicalModel::non_null_ptr_type topological_model);
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<NetRotationModel> &net_rotation);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
+
+		static
+		void
+		save_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				const NetRotationModel &net_rotation);
+
+		static
+		bool
+		load_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::LoadRef<TopologicalModel::non_null_ptr_type> &topological_model);
+	};
+}
+
+#endif // GPLATES_API_PYNETROTATION_H

@@ -484,6 +484,28 @@ class ReconstructTestCase(unittest.TestCase):
         os.remove(os.path.join(FIXTURES, 'volcanoes_tmp.gpml'))
 
 
+class NetRotationTestCase(unittest.TestCase):
+    def setUp(self):
+        rotation_model = pygplates.RotationModel(pygplates.FeatureCollection(os.path.join(FIXTURES, 'rotations.rot')))
+        topologies = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml'))
+        self.topological_model = pygplates.TopologicalModel(topologies, rotation_model)
+        self.net_rotation_model = pygplates.NetRotationModel(self.topological_model)
+    
+    def test_pickle(self):
+        # Pickle a NetRotationModel.
+        pickled_net_rotation_model = pickle.loads(pickle.dumps(self.net_rotation_model))
+        self.assertTrue(pickled_net_rotation_model.get_topological_model().get_rotation_model().get_rotation(100, 802) ==
+                        self.net_rotation_model.get_topological_model().get_rotation_model().get_rotation(100, 802))
+        # Pickle a NetRotationSnapshot.
+        net_rotation_snapshot = self.net_rotation_model.net_rotation_snapshot(10, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t)
+        pickled_net_rotation_snapshot = pickle.loads(pickle.dumps(net_rotation_snapshot))
+        self.assertTrue(pickled_net_rotation_snapshot.get_topological_snapshot().get_reconstruction_time() ==
+                        net_rotation_snapshot.get_topological_snapshot().get_reconstruction_time())
+        self.assertTrue(pickled_net_rotation_snapshot.get_velocity_delta_time() == net_rotation_snapshot.get_velocity_delta_time())
+        self.assertTrue(pickled_net_rotation_snapshot.get_velocity_delta_time_type() == net_rotation_snapshot.get_velocity_delta_time_type())
+        self.assertTrue(pickled_net_rotation_snapshot.get_num_samples_along_meridian() == net_rotation_snapshot.get_num_samples_along_meridian())
+
+
 class PlatePartitionerTestCase(unittest.TestCase):
     def setUp(self):
         self.topological_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml'))
@@ -2339,6 +2361,7 @@ def suite():
             CalculateVelocitiesTestCase,
             CrossoverTestCase,
             InterpolateTotalReconstructionSequenceTestCase,
+            NetRotationTestCase,
             PlatePartitionerTestCase,
             ReconstructTestCase,
             ReconstructionTreeCase,

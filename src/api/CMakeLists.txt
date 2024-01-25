@@ -50,6 +50,8 @@ set(srcs
     PyInterpolationException.h
     PyLatLonPoint.cc
     PyLocalCartesian.cc
+    PyNetRotation.cc
+    PyNetRotation.h
     PyOldFeature.cc
     PyOldFeature.h
     PyOldFeatureCollection.cc
