@@ -134,6 +134,7 @@ Rotation
    pygplates.FiniteRotation
    pygplates.NetRotationModel
    pygplates.NetRotationSnapshot
+   pygplates.NetRotation
 
 .. note:: ``ReconstructionTreeEdge`` is only needed for very advanced scenarios.
 

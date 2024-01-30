@@ -32,6 +32,8 @@
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
 
+#include "scribe/Scribe.h"
+
 
 GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator
 GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::create(
@@ -145,6 +147,29 @@ GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::convert_finite_rotati
 
 	// Convert angle from radians to radians/Myr, and scale the axis with it.
 	return (params.angle / time_interval) * GPlatesMaths::Vector3D(params.axis);
+}
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_rotation_component, "rotation_component"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_weighting_factor, "weighting_factor"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_area_steradians, "area_steradians"))
+	{
+		return scribe.get_transcribe_result();
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
 

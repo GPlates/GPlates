@@ -75,6 +75,13 @@ namespace GPlatesApi
 				num_samples_along_meridian);
 	}
 
+	GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator
+	net_rotation_snapshot_get_total_net_rotation(
+			NetRotationSnapshot::non_null_ptr_type net_rotation_snapshot)
+	{
+		return net_rotation_snapshot->get_net_rotation_calculator().get_total_net_rotation();
+	}
+
 	NetRotationSnapshot::non_null_ptr_type
 	NetRotationSnapshot::create(
 			TopologicalSnapshot::non_null_ptr_type topological_snapshot,
@@ -442,6 +449,37 @@ export_net_rotation()
 			.value("t_plus_minus_half_delta_t", GPlatesAppLogic::VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T);
 
 
+	//
+	// NetRotation - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator>(
+			"NetRotation",
+			"Net rotation of regional or global crust.\n"
+			"\n"
+			"A *NetRotation* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+			"\n"
+			".. versionadded:: 0.43\n",
+			bp::init<>("__init__()\n")) // Sphinx autosummary complains if signature not present in docstring.
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator>>())
+		.def("get_finite_rotation",
+				&GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::get_net_rotation,
+				"get_finite_rotation()\n"
+				"  Return the accumulated net rotation as a finite rotation.\n"
+				"\n"
+				"  :rtype: :class:`FiniteRotation`\n")
+		// Make unhashable, with no comparison operators...
+		.def(GPlatesApi::NoHashDefVisitor(false, false))
+	;
+
+	// Enable boost::optional<FiniteRotation> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator>();
+
+
 	std::stringstream net_rotation_snapshot_create_docstring_stream;
 	net_rotation_snapshot_create_docstring_stream <<
 			"__init__(topological_snapshot, velocity_delta_time, velocity_delta_time_type, [num_samples_along_meridian="
@@ -508,6 +546,12 @@ export_net_rotation()
 				"  :rtype: :class:`TopologicalSnapshot`\n"
 				"\n"
 				"  .. note:: Parameters such as reconstruction time, anchor plate ID and rotation model can be obtained from the topological snapshot.\n")
+		.def("get_total_net_rotation",
+				&GPlatesApi::net_rotation_snapshot_get_total_net_rotation,
+				"get_total_net_rotation()\n"
+				"  Return the accumulated net rotation over all resolved topologies in this snapshot.\n"
+				"\n"
+				"  :rtype: :class:`NetRotation`\n")
 		.def("get_velocity_delta_time",
 				&GPlatesApi::NetRotationSnapshot::get_velocity_delta_time,
 				"get_velocity_delta_time()\n"
@@ -530,6 +574,9 @@ export_net_rotation()
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesApi::NetRotationSnapshot>();
 
 
 	std::stringstream net_rotation_model_create_topological_snapshot_docstring_stream;

@@ -39,6 +39,9 @@
 
 #include "model/types.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -143,6 +146,15 @@ namespace GPlatesAppLogic
 			double d_weighting_factor;
 			// Area of accumulated net rotation samples (in steradians, or square radians).
 			double d_area_steradians;
+
+		private: // Transcribe...
+
+			friend class GPlatesScribe::Access;
+
+			GPlatesScribe::TranscribeResult
+			transcribe(
+					GPlatesScribe::Scribe &scribe,
+					bool transcribed_construct_data);
 		};
 
 
@@ -193,7 +205,7 @@ namespace GPlatesAppLogic
 			/**
 			 * Return the accumulated net rotation over all input resolved topologies.
 			 */
-			NetRotationAccumulator
+			const NetRotationAccumulator &
 			get_total_net_rotation() const
 			{
 				return d_total_net_rotation;

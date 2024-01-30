@@ -79,6 +79,15 @@ namespace GPlatesApi
 			return d_topological_snapshot;
 		}
 
+		/**
+		 * Return the net rotation calculator.
+		 */
+		const GPlatesAppLogic::NetRotationUtils::NetRotationCalculator &
+		get_net_rotation_calculator() const
+		{
+			return d_net_rotation_calculator;
+		}
+
 		double
 		get_velocity_delta_time() const
 		{
