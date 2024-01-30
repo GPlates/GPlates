@@ -125,7 +125,8 @@ namespace GPlatesAppLogic
 			static
 			GPlatesMaths::Vector3D
 			convert_finite_rotation_to_rotation_vector(
-					const GPlatesMaths::FiniteRotation &finite_rotation);
+					const GPlatesMaths::FiniteRotation &finite_rotation,
+					const double &time_interval);
 
 
 			NetRotationAccumulator(

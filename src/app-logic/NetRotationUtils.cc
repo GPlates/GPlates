@@ -50,7 +50,7 @@ GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::create(
 		return NetRotationAccumulator();
 	}
 
-	const GPlatesMaths::Vector3D stage_pole_vector = convert_finite_rotation_to_rotation_vector(stage_pole);
+	const GPlatesMaths::Vector3D stage_pole_vector = convert_finite_rotation_to_rotation_vector(stage_pole, time_interval);
 
 	const GPlatesMaths::Vector3D v = cross(stage_pole_vector, point.position_vector());
 
@@ -71,7 +71,7 @@ GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::create(
 	// Rotation component is weight by the sample area.
 	const double weighting_factor = cos_latitude_squared * area_steradians;
 
-	return NetRotationAccumulator(omega, weighting_factor, area_steradians);
+	return NetRotationAccumulator(rotation_component, weighting_factor, area_steradians);
 }
 
 void
@@ -136,13 +136,15 @@ GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::convert_rotation_vect
 
 GPlatesMaths::Vector3D
 GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::convert_finite_rotation_to_rotation_vector(
-		const GPlatesMaths::FiniteRotation &finite_rotation)
+		const GPlatesMaths::FiniteRotation &finite_rotation,
+		const double &time_interval)
 {
 	const GPlatesMaths::UnitQuaternion3D &uq = finite_rotation.unit_quat();
 
 	const GPlatesMaths::UnitQuaternion3D::RotationParams params = uq.get_rotation_params(finite_rotation.axis_hint());
 
-	return params.angle * GPlatesMaths::Vector3D(params.axis);
+	// Convert angle from radians to radians/Myr, and scale the axis with it.
+	return (params.angle / time_interval) * GPlatesMaths::Vector3D(params.axis);
 }
 
 
