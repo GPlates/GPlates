@@ -300,6 +300,7 @@ class FeatureCase(unittest.TestCase):
         feature_type = self.feature.get_feature_type()
         self.assertTrue(isinstance(feature_type, pygplates.FeatureType))
         self.assertEqual(feature_type, pygplates.FeatureType.create_gpml('Volcano'))
+        self.assertEqual(feature_type.get_default_geometry_property_name(), pygplates.PropertyName.gpml_position)
         # Since 'gpml:NotAValidFeatureType' is not a (GPGIM) recognised type it should raise an error by default.
         self.assertRaises(pygplates.InformationModelError, pygplates.Feature,
                 pygplates.FeatureType.create_gpml('NotAValidFeatureType'))

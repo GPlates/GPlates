@@ -139,7 +139,8 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertFalse(self.feature.get_geometry(lambda property: True)) # Only succeeds if one geometry.
         # Remove the default geometry property.
         self.feature.remove(pygplates.PropertyName.gpml_unclassified_geometry)
-        self.assertFalse(self.feature.get_geometry())
+        self.assertFalse(self.feature.get_geometry(pygplates.PropertyName.gpml_unclassified_geometry))  # won't find a default geometry
+        self.assertTrue(self.feature.get_geometry())  # won't find a default geometry so will return sole non-default geometry instead
         gml_orientable_curve = pygplates.GmlOrientableCurve(pygplates.GmlLineString(
             pygplates.PolylineOnSphere([pygplates.PointOnSphere(1,0,0), pygplates.PointOnSphere(0,1,0)])))
         self.feature.add(
@@ -208,13 +209,18 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         self.assertTrue(self.feature.set_geometry(
                 multi_point, pygplates.PropertyName.gpml_position, verify_information_model=pygplates.VerifyInformationModel.no))
         
+        # Should have 4 *default* geometries.
+        self.assertTrue(len(self.feature.get_geometries()) == 4)
         # Remove all *default* geometries.
         self.feature.set_geometry([])
         # There are now no *default* geometries.
-        self.assertTrue(len(self.feature.get_geometry(property_return=pygplates.PropertyReturn.all)) == 0)
-        self.assertFalse(self.feature.get_geometry(property_return=pygplates.PropertyReturn.first))
-        self.assertFalse(self.feature.get_geometry())
+        default_geometry_property_name = self.feature.get_feature_type().get_default_geometry_property_name()
+        self.assertFalse(self.feature.get_geometry(default_geometry_property_name, property_return=pygplates.PropertyReturn.all))  # empty list
+        self.assertFalse(self.feature.get_geometry(default_geometry_property_name, property_return=pygplates.PropertyReturn.first))
+        self.assertFalse(self.feature.get_geometry(default_geometry_property_name))
         # However there is still a non-default geometry 'gpml:position' and the original 'gpml:centerLineOf'.
+        self.assertTrue(len(self.feature.get_geometries()) == 2)  # won't find default geometry so will return all non-default geometries
+        self.assertFalse(self.feature.get_geometry())  # should fail since not exactly one geometry (either default or non-default)
         self.assertTrue(self.feature.get_geometry(pygplates.PropertyName.gpml_position) == multi_point)
         # We don't equality test with the original 'gpml:centerLineOf' since it got reverse reconstructed.
         self.assertTrue(len(self.feature.get_geometries(pygplates.PropertyName.gpml_center_line_of)) == 1)
@@ -401,7 +407,10 @@ class GetFeaturePropertiesCase(unittest.TestCase):
                 lambda property: property.get_name() == pygplates.PropertyName.gpml_unclassified_geometry and
                      isinstance(property.get_value(), pygplates.GpmlTopologicalLine))
         # There should now be zero default topological geometry properties.
-        self.assertTrue(len(self.feature.get_topological_geometries()) == 0)
+        default_topological_geometry_property_name = self.feature.get_feature_type().get_default_geometry_property_name()
+        self.assertTrue(len(self.feature.get_topological_geometries(default_topological_geometry_property_name)) == 0)
+        # Since there are now no default topological geometries then the non-default topological geometries are returned instead (topo polygon and network).
+        self.assertTrue(len(self.feature.get_topological_geometries()) == 2)
         # There should now be two topological geometry properties again.
         self.assertTrue(len(self.feature.get_all_topological_geometries()) == 2)
         # This shouldn't have removed the non-topological unclassified geometry though.
@@ -484,13 +493,15 @@ class GetFeaturePropertiesCase(unittest.TestCase):
         # Remove all *default* topological geometries.
         self.feature.set_topological_geometry([])
         # There are now no *default* topological geometries.
-        self.assertTrue(len(self.feature.get_topological_geometry(property_return=pygplates.PropertyReturn.all)) == 0)
-        self.assertFalse(self.feature.get_topological_geometry(property_return=pygplates.PropertyReturn.first))
-        self.assertFalse(self.feature.get_topological_geometry())
-        self.assertTrue(len(self.feature.get_all_topological_geometries()) == 3)
+        default_topological_geometry_property_name = self.feature.get_feature_type().get_default_geometry_property_name()
+        self.assertTrue(len(self.feature.get_topological_geometry(default_topological_geometry_property_name, property_return=pygplates.PropertyReturn.all)) == 0)
         # However there are still two non-default topological network geometries 'gpml:network' and a topological polygon 'gpml:boundary'.
         self.assertTrue(len(self.feature.get_topological_geometries(pygplates.PropertyName.gpml_network)) == 2)
         self.assertTrue(len(self.feature.get_topological_geometries(pygplates.PropertyName.gpml_boundary)) == 1)
+        # Since there are no default topological geometries then the non-default topological geometries are returned instead.
+        self.assertFalse(self.feature.get_topological_geometry())  # there's not exactly one non-default topological geometry
+        self.assertTrue(len(self.feature.get_topological_geometries()) == 3)  # there are 3 non-default topological geometries
+        self.assertTrue(len(self.feature.get_all_topological_geometries()) == 3)
     
     def test_get_and_set_enumeration(self):
         subduction_polarity = self.feature.get_enumeration(pygplates.PropertyName.gpml_subduction_polarity)

@@ -31,6 +31,7 @@
 
 #include "PyQualifiedXmlNames.h"
 
+#include "PyFeature.h"
 #include "PythonConverterUtils.h"
 #include "PythonPickle.h"
 
@@ -481,6 +482,26 @@ export_feature_type()
 			"\n"
 			"    gpml_coastline_feature_type = pygplates.FeatureType.create_gpml('Coastline')\n");
 	feature_type_class.staticmethod("create_gpml");
+
+	feature_type_class.def("get_default_geometry_property_name",
+			&GPlatesApi::get_default_geometry_property_name,
+			"get_default_geometry_property_name()\n"
+			"  Returns the default geometry property name associated with this feature type.\n"
+			"\n"
+			"  Usually a feature type supports *geometry* properties with more than one property name. "
+			"For example, a `coastline <http://www.gplates.org/docs/gpgim/#gpml:Coastline>`_ feature supports both a "
+			"`pygplates.PropertyName.gpml_center_line_of <http://www.gplates.org/docs/gpgim/#gpml:centerLineOf>`_ geometry and a "
+			"`pygplates.PropertyName.gpml_unclassified_geometry <http://www.gplates.org/docs/gpgim/#gpml:unclassifiedGeometry>`_) geometry. "
+			"But only one of them is the default (the default property that geometry data is imported into the feature). "
+			"You can see which is the default by reading the ``Default Geometry Property`` label in the "
+			"`coastline feature model <http://www.gplates.org/docs/gpgim/#gpml:Coastline>`_.\n"
+			"\n"
+			"  :rtype: :class:`PropertyName` or None\n"
+			"\n"
+			"  .. note:: This can return `None` if this feature type represents an abstract feature class "
+			"(ie, those feature classes tagged \"*Class Type: abstract*\" in the `GPGIM <http://www.gplates.org/docs/gpgim>`_).\n"
+			"\n"
+			"  .. versionadded:: 0.43\n");
 
 	// Add the parts common to each GPlatesModel::QualifiedXmlName template instantiation (code re-use).
 	export_qualified_xml_name(
