@@ -503,7 +503,6 @@ class NetRotationTestCase(unittest.TestCase):
                         net_rotation_snapshot.get_topological_snapshot().get_reconstruction_time())
         self.assertTrue(pickled_net_rotation_snapshot.get_velocity_delta_time() == net_rotation_snapshot.get_velocity_delta_time())
         self.assertTrue(pickled_net_rotation_snapshot.get_velocity_delta_time_type() == net_rotation_snapshot.get_velocity_delta_time_type())
-        self.assertTrue(pickled_net_rotation_snapshot.get_num_samples_along_meridian() == net_rotation_snapshot.get_num_samples_along_meridian())
         self.assertTrue(pickled_net_rotation_snapshot.get_total_net_rotation().get_finite_rotation() == net_rotation_snapshot.get_total_net_rotation().get_finite_rotation())
         # Pickle a NetRotation.
         total_net_rotation = net_rotation_snapshot.get_total_net_rotation()
@@ -511,7 +510,30 @@ class NetRotationTestCase(unittest.TestCase):
         self.assertTrue(pickled_total_net_rotation.get_finite_rotation() == total_net_rotation.get_finite_rotation())
     
     def test_net_rotation(self):
+        # Use the default 'num_samples_along_meridian' (180).
         total_net_rotation = self.net_rotation_model.net_rotation_snapshot(0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t).get_total_net_rotation()
+        total_pole_latitude, total_pole_longitude, total_angle_degrees  = total_net_rotation.get_finite_rotation().get_lat_lon_euler_pole_and_angle_degrees()
+        # These values were obtained from the GPlates net rotation export.
+        self.assertAlmostEqual(total_pole_latitude, 15.4673, places=4)
+        self.assertAlmostEqual(total_pole_longitude, -113.761, places=3)
+        self.assertAlmostEqual(total_angle_degrees, 0.109995, places=6)
+    
+    def test_arbitrary_point_distribution(self):
+        # Test an arbitrary point distribution.
+        # We actually use the same uniform lat-lon distribution used internally when explicitly specifying 'num_samples_along_meridian'.
+        # In which case we should get the same total net rotation result.
+        point_distribution = []
+        num_samples_along_meridian = 180  # same as the default 'num_samples_along_meridian' (if 'point_distribution' were not to be specified below)
+        delta_in_degrees = 180.0 / num_samples_along_meridian
+        delta_in_radians = math.radians(delta_in_degrees)
+        for lat_index in range(num_samples_along_meridian):
+            lat = -90.0 + (lat_index + 0.5) * delta_in_degrees
+            sample_area_radians = math.cos(math.radians(lat)) * delta_in_radians * delta_in_radians
+            for lon_index in range(2*num_samples_along_meridian):
+                lon = -180.0 + (lon_index + 0.5) * delta_in_degrees
+                point_distribution.append(((lat, lon), sample_area_radians))
+        
+        total_net_rotation = self.net_rotation_model.net_rotation_snapshot(0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t, point_distribution).get_total_net_rotation()
         total_pole_latitude, total_pole_longitude, total_angle_degrees  = total_net_rotation.get_finite_rotation().get_lat_lon_euler_pole_and_angle_degrees()
         # These values were obtained from the GPlates net rotation export.
         self.assertAlmostEqual(total_pole_latitude, 15.4673, places=4)

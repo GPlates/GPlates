@@ -67,7 +67,7 @@ namespace GPlatesApi
 				TopologicalSnapshot::non_null_ptr_type topological_snapshot,
 				const double &velocity_delta_time,
 				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
-				unsigned int num_samples_along_meridian);
+				const GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type &point_distribution);
 
 
 		/**
@@ -100,12 +100,6 @@ namespace GPlatesApi
 			return d_net_rotation_calculator.get_velocity_delta_time_type();
 		}
 
-		unsigned int
-		get_num_samples_along_meridian() const
-		{
-			return d_net_rotation_calculator.get_num_samples_along_meridian();
-		}
-
 	private:
 
 		//! Topological snapshot to obtain net rotation from at requested reconstruction times.
@@ -120,7 +114,7 @@ namespace GPlatesApi
 				const GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::resolved_topological_network_seq_type &resolved_topological_networks,
 				const double &velocity_delta_time,
 				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
-				unsigned int num_samples_along_meridian);
+				const GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type &point_distribution);
 
 	private: // Transcribe...
 
@@ -152,7 +146,7 @@ namespace GPlatesApi
 				GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::resolved_topological_network_seq_type &resolved_topological_networks,
 				double &velocity_delta_time,
 				GPlatesAppLogic::VelocityDeltaTime::Type &velocity_delta_time_type,
-				unsigned int &num_samples_along_meridian);
+				GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type &point_distribution);
 	};
 
 
@@ -195,7 +189,7 @@ namespace GPlatesApi
 				const double &reconstruction_time,
 				const double &velocity_delta_time,
 				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
-				unsigned int num_samples_along_meridian) const;
+				const GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type &point_distribution) const;
 
 	private:
 

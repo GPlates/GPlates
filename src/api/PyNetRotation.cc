@@ -28,6 +28,7 @@
 #include "PyNetRotation.h"
 
 #include "PythonConverterUtils.h"
+#include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
 #include "PythonPickle.h"
 #include "PythonVariableFunctionArguments.h"
@@ -45,6 +46,97 @@ namespace bp = boost::python;
 namespace GPlatesApi
 {
 	/**
+	 * Extract a point and sample area from a 2-tuple (or sequence of size 2).
+	 */
+	std::pair<GPlatesMaths::PointOnSphere, double/*sample_area_steradians*/>
+	extract_arbitrary_point_and_sample_area(
+			bp::object arbitrary_point_and_sample_area,
+			const char *type_error_string)
+	{
+		// Copy into a vector.
+		std::vector<bp::object> point_and_sample_area_object;
+		PythonExtractUtils::extract_iterable(point_and_sample_area_object, arbitrary_point_and_sample_area, type_error_string);
+
+		if (point_and_sample_area_object.size() != 2)
+		{
+			PyErr_SetString(PyExc_TypeError, type_error_string);
+			bp::throw_error_already_set();
+		}
+
+		// Extract point from 2-tuple.
+		bp::extract<GPlatesMaths::PointOnSphere> extract_point(point_and_sample_area_object[0]);
+		if (!extract_point.check())
+		{
+			PyErr_SetString(PyExc_TypeError, type_error_string);
+			bp::throw_error_already_set();
+		}
+		const GPlatesMaths::PointOnSphere point = extract_point();
+
+		// Extract sample area from 2-tuple.
+		bp::extract<double> extract_sample_area(point_and_sample_area_object[1]);
+		if (!extract_sample_area.check())
+		{
+			PyErr_SetString(PyExc_TypeError, type_error_string);
+			bp::throw_error_already_set();
+		}
+		const double sample_area = extract_sample_area();
+
+		return std::make_pair(point, sample_area);
+	}
+
+	/**
+	 * Extract an integer or a sequence of (point, sample area).
+	 */
+	void
+	extract_point_distribution(
+			GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type &point_distribution,
+			bp::object point_distribution_object)
+	{
+		const char *type_error_string = "Expected either an integer or a sequence of (point, sample_area)";
+
+		//
+		// First see if point distribution is an integer.
+		//
+		bp::extract<unsigned int> extract_num_samples_along_meridian(point_distribution_object);
+		if (extract_num_samples_along_meridian.check())
+		{
+			const unsigned int num_samples_along_meridian = extract_num_samples_along_meridian();
+
+			// Num samples must be positive.
+			if (num_samples_along_meridian <= 0)
+			{
+				PyErr_SetString(PyExc_ValueError, "Number of samples along meridian must be positive.");
+				bp::throw_error_already_set();
+			}
+
+			point_distribution = num_samples_along_meridian;
+			return;
+		}
+
+		//
+		// Point distribution must be an arbitrary sequence of (point, sample area).
+		//
+
+		// Copy into a vector.
+		std::vector<bp::object> arbitrary_points_and_sample_areas;
+		PythonExtractUtils::extract_iterable(
+				arbitrary_points_and_sample_areas,
+				point_distribution_object,
+				type_error_string);
+
+		// Assign an empty arbitrary point distribution.
+		point_distribution = GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::arbitrary_point_distribution_type();
+		GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::arbitrary_point_distribution_type &arbitrary_point_distribution =
+				boost::get<GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::arbitrary_point_distribution_type>(point_distribution);
+		// Add (point, sample area) tuples directly into the caller's 'point_distribution'.
+		for (bp::object arbitrary_point_and_sample_area : arbitrary_points_and_sample_areas)
+		{
+			arbitrary_point_distribution.push_back(
+					extract_arbitrary_point_and_sample_area(arbitrary_point_and_sample_area, type_error_string));
+		}
+	}
+
+	/**
 	 * This is called directly from Python via 'NetRotationSnapshot.__init__()'.
 	 */
 	NetRotationSnapshot::non_null_ptr_type
@@ -52,7 +144,7 @@ namespace GPlatesApi
 			TopologicalSnapshot::non_null_ptr_type topological_snapshot,
 			const double &velocity_delta_time,
 			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
-			int num_samples_along_meridian)
+			bp::object point_distribution_object)
 	{
 		// Velocity delta time must be positive.
 		if (velocity_delta_time <= 0)
@@ -61,18 +153,14 @@ namespace GPlatesApi
 			bp::throw_error_already_set();
 		}
 
-		// Num samples must be positive.
-		if (num_samples_along_meridian <= 0)
-		{
-			PyErr_SetString(PyExc_ValueError, "Number of samples along meridian must be positive.");
-			bp::throw_error_already_set();
-		}
+		GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type point_distribution;
+		extract_point_distribution(point_distribution, point_distribution_object);
 
 		return NetRotationSnapshot::create(
 				topological_snapshot,
 				velocity_delta_time,
 				velocity_delta_time_type,
-				num_samples_along_meridian);
+				point_distribution);
 	}
 
 	GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator
@@ -87,7 +175,7 @@ namespace GPlatesApi
 			TopologicalSnapshot::non_null_ptr_type topological_snapshot,
 			const double &velocity_delta_time,
 			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
-			unsigned int num_samples_along_meridian)
+			const GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type &point_distribution)
 	{
 		GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::resolved_topological_boundary_seq_type resolved_topological_boundaries;
 		for (auto resolved_topological_boundary : topological_snapshot->get_resolved_topological_boundaries())
@@ -108,7 +196,7 @@ namespace GPlatesApi
 						resolved_topological_networks,
 						velocity_delta_time,
 						velocity_delta_time_type,
-						num_samples_along_meridian));
+						point_distribution));
 	}
 
 	NetRotationSnapshot::NetRotationSnapshot(
@@ -117,7 +205,7 @@ namespace GPlatesApi
 			const GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::resolved_topological_network_seq_type &resolved_topological_networks,
 			const double &velocity_delta_time,
 			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
-			unsigned int num_samples_along_meridian) :
+			const GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type &point_distribution) :
 		d_topological_snapshot(topological_snapshot),
 		d_net_rotation_calculator(
 					resolved_topological_boundaries,
@@ -125,8 +213,8 @@ namespace GPlatesApi
 					topological_snapshot->get_reconstruction_time(),
 					velocity_delta_time,
 					velocity_delta_time_type,
-					d_topological_snapshot->get_anchor_plate_id(),
-					num_samples_along_meridian)
+					point_distribution,
+					d_topological_snapshot->get_anchor_plate_id())
 	{
 	}
 
@@ -146,7 +234,7 @@ namespace GPlatesApi
 			GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::resolved_topological_network_seq_type resolved_topological_networks;
 			double velocity_delta_time;
 			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type;
-			unsigned int num_samples_along_meridian;
+			GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type point_distribution;
 			if (!load_construct_data(
 					scribe,
 					topological_snapshot,
@@ -154,19 +242,19 @@ namespace GPlatesApi
 					resolved_topological_networks,
 					velocity_delta_time,
 					velocity_delta_time_type,
-					num_samples_along_meridian))
+					point_distribution))
 			{
 				return scribe.get_transcribe_result();
 			}
 
-			// Create the topological model.
+			// Create the net rotation snapshot.
 			net_rotation_snapshot.construct_object(
 					topological_snapshot,
 					resolved_topological_boundaries,
 					resolved_topological_networks,
 					velocity_delta_time,
 					velocity_delta_time_type,
-					num_samples_along_meridian);
+					point_distribution);
 		}
 
 		return GPlatesScribe::TRANSCRIBE_SUCCESS;
@@ -190,7 +278,7 @@ namespace GPlatesApi
 				GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::resolved_topological_network_seq_type resolved_topological_networks;
 				double velocity_delta_time;
 				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type;
-				unsigned int num_samples_along_meridian;
+				GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type point_distribution;
 				if (!load_construct_data(
 						scribe,
 						topological_snapshot,
@@ -198,7 +286,7 @@ namespace GPlatesApi
 						resolved_topological_networks,
 						velocity_delta_time,
 						velocity_delta_time_type,
-						num_samples_along_meridian))
+						point_distribution))
 				{
 					return scribe.get_transcribe_result();
 				}
@@ -211,8 +299,8 @@ namespace GPlatesApi
 						d_topological_snapshot->get_reconstruction_time(),
 						velocity_delta_time,
 						velocity_delta_time_type,
-						d_topological_snapshot->get_anchor_plate_id(),
-						num_samples_along_meridian);
+						point_distribution,
+						d_topological_snapshot->get_anchor_plate_id());
 			}
 		}
 
@@ -233,8 +321,8 @@ namespace GPlatesApi
 		// Save the velocity delta time type.
 		scribe.save(TRANSCRIBE_SOURCE, net_rotation_snapshot.d_net_rotation_calculator.get_velocity_delta_time_type(), "velocity_delta_time_type");
 
-		// Save the number of samples along meridian.
-		scribe.save(TRANSCRIBE_SOURCE, net_rotation_snapshot.d_net_rotation_calculator.get_num_samples_along_meridian(), "num_samples_along_meridian");
+		// Save the point distribution.
+		scribe.save(TRANSCRIBE_SOURCE, net_rotation_snapshot.d_net_rotation_calculator.get_point_distribution(), "point_distribution");
 	}
 
 	bool
@@ -245,7 +333,7 @@ namespace GPlatesApi
 			GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::resolved_topological_network_seq_type &resolved_topological_networks,
 			double &velocity_delta_time,
 			GPlatesAppLogic::VelocityDeltaTime::Type &velocity_delta_time_type,
-			unsigned int &num_samples_along_meridian)
+			GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type &point_distribution)
 	{
 		// Load the topological snapshot.
 		topological_snapshot = scribe.load<TopologicalSnapshot::non_null_ptr_type>(TRANSCRIBE_SOURCE, "topological_snapshot");
@@ -275,8 +363,8 @@ namespace GPlatesApi
 			return false;
 		}
 
-		// Load the number of samples along meridian.
-		if (!scribe.transcribe(TRANSCRIBE_SOURCE, num_samples_along_meridian, "num_samples_along_meridian"))
+		// Load the point distribution.
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, point_distribution, "point_distribution"))
 		{
 			return false;
 		}
@@ -296,7 +384,7 @@ namespace GPlatesApi
 	}
 
 	/**
-	 * This is called directly from Python via 'NetRotationModel.get_net_rotation_snapshot()'.
+	 * This is called directly from Python via 'NetRotationModel.net_rotation_snapshot()'.
 	 */
 	NetRotationSnapshot::non_null_ptr_type
 	net_rotation_model_create_topological_snapshot(
@@ -304,7 +392,7 @@ namespace GPlatesApi
 			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 			const double &velocity_delta_time,
 			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
-			int num_samples_along_meridian)
+			bp::object point_distribution_object)
 	{
 		// Time must not be distant past/future.
 		if (!reconstruction_time.is_real())
@@ -321,18 +409,14 @@ namespace GPlatesApi
 			bp::throw_error_already_set();
 		}
 
-		// Num samples must be positive.
-		if (num_samples_along_meridian <= 0)
-		{
-			PyErr_SetString(PyExc_ValueError, "Number of samples along meridian must be positive.");
-			bp::throw_error_already_set();
-		}
+		GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type point_distribution;
+		extract_point_distribution(point_distribution, point_distribution_object);
 
 		return net_rotation_model->create_net_rotation_snapshot(
 				reconstruction_time.value(),
 				velocity_delta_time,
 				velocity_delta_time_type,
-				num_samples_along_meridian);
+				point_distribution);
 	}
 
 	NetRotationModel::non_null_ptr_type
@@ -352,7 +436,7 @@ namespace GPlatesApi
 			const double &reconstruction_time,
 			const double &velocity_delta_time,
 			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
-			unsigned int num_samples_along_meridian) const
+			const GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type &point_distribution) const
 	{
 		TopologicalSnapshot::non_null_ptr_type topological_snapshot =
 				d_topological_model->create_topological_snapshot(reconstruction_time);
@@ -361,7 +445,7 @@ namespace GPlatesApi
 				topological_snapshot,
 				velocity_delta_time,
 				velocity_delta_time_type,
-				num_samples_along_meridian);
+				point_distribution);
 	}
 
 	GPlatesScribe::TranscribeResult
@@ -418,7 +502,7 @@ namespace GPlatesApi
 			GPlatesScribe::Scribe &scribe,
 			const NetRotationModel &net_rotation_model)
 	{
-		// Save the topological model.
+		// Save the net rotation model.
 		scribe.save(TRANSCRIBE_SOURCE, net_rotation_model.d_topological_model, "topological_model");
 	}
 
@@ -427,7 +511,7 @@ namespace GPlatesApi
 			GPlatesScribe::Scribe &scribe,
 			GPlatesScribe::LoadRef<TopologicalModel::non_null_ptr_type> &topological_model)
 	{
-		// Load the topological model.
+		// Load the net rotation model.
 		topological_model = scribe.load<TopologicalModel::non_null_ptr_type>(TRANSCRIBE_SOURCE, "topological_model");
 		if (!topological_model.is_valid())
 		{
@@ -467,7 +551,7 @@ export_net_rotation()
 		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
 		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator>>())
 		.def("get_finite_rotation",
-				&GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::get_net_rotation,
+				&GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::get_net_finite_rotation,
 				"get_finite_rotation()\n"
 				"  Return the accumulated net rotation as a finite rotation.\n"
 				"\n"
@@ -482,13 +566,8 @@ export_net_rotation()
 
 	std::stringstream net_rotation_snapshot_create_docstring_stream;
 	net_rotation_snapshot_create_docstring_stream <<
-			"__init__(topological_snapshot, velocity_delta_time, velocity_delta_time_type, [num_samples_along_meridian="
-			<< GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN <<
-			"])\n"
+			"__init__(topological_snapshot, velocity_delta_time, velocity_delta_time_type, [point_distribution])\n"
 			"  Net rotation of the specified topological snapshot, and using the requested parameters.\n"
-			"\n"
-			"  A uniform lat-lon grid of *num_samples_along_meridian* x *2*num_samples_along_meridian* points is used "
-			"to sample velocities of resolved topologies of the topological snapshot.\n"
 			"\n"
 			"  :param topological_snapshot: The topological snapshot to calculate net rotation with.\n"
 			"  :type topological_snapshot: :class:`TopologicalSnapshot`\n"
@@ -498,12 +577,52 @@ export_net_rotation()
 			"This includes [t+dt, t, [t, t-dt] and [t+dt/2, t-dt/2].\n"
 			"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
 			"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
-			"  :param num_samples_along_meridian: The number of grid points sampled along each meridian. Defaults to "
-			<< GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN <<
-			".\n"
-			"  :type num_samples_along_meridian: int\n"
+			"  :param point_distribution: Can be an integer representing the number of uniformly spaced latitute-longitude "
+			"grid points sampled along each meridian. Or can be a sequence of (point, sample_area) tuples where *point* is a "
+			"point that contributes to net rotation and *sample_area* is the surface area around the point in steradians (square radians). "
+			"If nothing specified then defaults to a `"
+			<< GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN << " x " << 2 * GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN <<
+			"` uniformly spaced latitude-longitude points.\n"
+			"  :type point_distribution: int, or sequence of tuple (point, float) where *point* is a "
+			":class:`PointOnSphere` or :class:`LatLonPoint` or tuple (float,float,float) or tuple (float,float)\n"
+			"  :rtype: :class:`NetRotationSnapshot`\n"
 			"  :raises: ValueError if *velocity_delta_time* is negative or zero.\n"
-			"  :raises: ValueError if *num_samples_along_meridian* is negative or zero.\n"
+			"\n"
+			"  If *point_distribution* is an integer `N` then a uniform latitude-longitude grid of `N x 2*N` points is used "
+			"to sample velocities of resolved topologies at the specified reconstruction time. "
+			"Otherwise *point_distribution* can be a sequence of (point, sample area) representing an arbitrary "
+			"user-specified distribution of points (and their sample areas) to calculate net rotation contributions at. "
+			"For example, if you have a distribution that is uniformly spaced on the surface of the sphere then the sample area will be "
+			"the same for each point (ie, `4*pi` steradians divided by the total number of points). "
+			"If nothing is specified then a uniform latitude-longitude grid of `"
+			<< GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN << " x " << 2 * GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN <<
+			"` points is used.\n"
+			"\n"
+			"  To create a net rotation snapshot (of a topological snapshot) at 0Ma calculated with a velocity delta from 1Ma (to 0Ma):"
+			"  ::\n"
+			"\n"
+			"    net_rotation_snapshot = pygplates.NetRotationSnapshot(\n"
+			"        topological_snapshot, 0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t)\n"
+			"\n"
+			"  ...which is equivalent to the following code that explicitly specifies a point distribution:"
+			"  ::\n"
+			"\n"
+			"    point_distribution = []\n"
+			"    num_samples_along_meridian = "
+			<< GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN <<
+			"\n"
+			"    delta_in_degrees = 180.0 / num_samples_along_meridian\n"
+			"    delta_in_radians = math.radians(delta_in_degrees)\n"
+			"    for lat_index in range(num_samples_along_meridian):\n"
+			"        lat = -90.0 + (lat_index + 0.5) * delta_in_degrees\n"
+			"        # The cosine is because points near the North/South poles are closer together (latitude parallel small circle radius).\n"
+			"        sample_area_radians = math.cos(math.radians(lat)) * delta_in_radians * delta_in_radians\n"
+			"        for lon_index in range(2*num_samples_along_meridian):\n"
+			"            lon = -180.0 + (lon_index + 0.5) * delta_in_degrees\n"
+			"            point_distribution.append(((lat, lon), sample_area_radians))\n"
+			"\n"
+			"    net_rotation_snapshot = pygplates.NetRotationSnapshot(\n"
+			"        topological_snapshot, 0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t, point_distribution)\n"
 			"\n"
 			"  .. note:: The anchor plate is that of the specified topological snapshot (see :meth:`TopologicalSnapshot.get_anchor_plate_id`).\n";
 
@@ -530,7 +649,7 @@ export_net_rotation()
 						(bp::arg("topological_snapshot"),
 							bp::arg("velocity_delta_time"),
 							bp::arg("velocity_delta_time_type"),
-							bp::arg("num_samples_along_meridian") = GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN)),
+							bp::arg("point_distribution") = GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN)),
 				net_rotation_snapshot_create_docstring_stream.str().c_str())
 		// Pickle support...
 		//
@@ -565,12 +684,6 @@ export_net_rotation()
 				"\n"
 				"  :rtype: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
 				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n")
-		.def("get_num_samples_along_meridian",
-				&GPlatesApi::NetRotationSnapshot::get_num_samples_along_meridian,
-				"get_num_samples_along_meridian()\n"
-				"  Return the number of grid points sampled along each meridian.\n"
-				"\n"
-				"  :rtype: int\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
@@ -581,13 +694,8 @@ export_net_rotation()
 
 	std::stringstream net_rotation_model_create_topological_snapshot_docstring_stream;
 	net_rotation_model_create_topological_snapshot_docstring_stream <<
-			"net_rotation_snapshot(reconstruction_time, velocity_delta_time, velocity_delta_time_type, [num_samples_along_meridian="
-			<< GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN <<
-			"])\n"
+			"net_rotation_snapshot(reconstruction_time, velocity_delta_time, velocity_delta_time_type, [point_distribution])\n"
 			"  Returns a snapshot of net rotation at the requested reconstruction time, and using the requested parameters.\n"
-			"\n"
-			"  A uniform lat-lon grid of *num_samples_along_meridian* x *2*num_samples_along_meridian* points is used "
-			"to sample velocities of resolved topologies at the specified reconstruction time.\n"
 			"\n"
 			"  :param reconstruction_time: the geological time of the snapshot\n"
 			"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
@@ -597,14 +705,53 @@ export_net_rotation()
 			"This includes [t+dt, t, [t, t-dt] and [t+dt/2, t-dt/2].\n"
 			"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
 			"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
-			"  :param num_samples_along_meridian: The number of grid points sampled along each meridian. Defaults to "
-			<< GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN <<
-			".\n"
-			"  :type num_samples_along_meridian: int\n"
+			"  :param point_distribution: Can be an integer representing the number of uniformly spaced latitute-longitude "
+			"grid points sampled along each meridian. Or can be a sequence of (point, sample_area) tuples where *point* is a "
+			"point that contributes to net rotation and *sample_area* is the surface area around the point in steradians (square radians). "
+			"If nothing specified then defaults to a `"
+			<< GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN << " x " << 2 * GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN <<
+			"` uniformly spaced latitude-longitude points.\n"
+			"  :type point_distribution: int, or sequence of tuple (point, float) where *point* is a "
+			":class:`PointOnSphere` or :class:`LatLonPoint` or tuple (float,float,float) or tuple (float,float)\n"
 			"  :rtype: :class:`NetRotationSnapshot`\n"
 			"  :raises: ValueError if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n"
 			"  :raises: ValueError if *velocity_delta_time* is negative or zero.\n"
-			"  :raises: ValueError if *num_samples_along_meridian* is negative or zero.\n"
+			"\n"
+			"  If *point_distribution* is an integer `N` then a uniform latitude-longitude grid of `N x 2*N` points is used "
+			"to sample velocities of resolved topologies at the specified reconstruction time. "
+			"Otherwise *point_distribution* can be a sequence of (point, sample area) representing an arbitrary "
+			"user-specified distribution of points (and their sample areas) to calculate net rotation contributions at. "
+			"For example, if you have a distribution that is uniformly spaced on the surface of the sphere then the sample area will be "
+			"the same for each point (ie, `4*pi` steradians divided by the total number of points). "
+			"If nothing is specified then a uniform latitude-longitude grid of `"
+			<< GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN << " x " << 2 * GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN <<
+			"` points is used.\n"
+			"\n"
+			"  To create a net rotation snapshot at 0Ma calculated with a velocity delta from 1Ma (to 0Ma):"
+			"  ::\n"
+			"\n"
+			"    net_rotation_snapshot = net_rotation_model.net_rotation_snapshot(\n"
+			"        0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t)\n"
+			"\n"
+			"  ...which is equivalent to the following code that explicitly specifies a point distribution:"
+			"  ::\n"
+			"\n"
+			"    point_distribution = []\n"
+			"    num_samples_along_meridian = "
+			<< GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN <<
+			"\n"
+			"    delta_in_degrees = 180.0 / num_samples_along_meridian\n"
+			"    delta_in_radians = math.radians(delta_in_degrees)\n"
+			"    for lat_index in range(num_samples_along_meridian):\n"
+			"        lat = -90.0 + (lat_index + 0.5) * delta_in_degrees\n"
+			"        # The cosine is because points near the North/South poles are closer together (latitude parallel small circle radius).\n"
+			"        sample_area_radians = math.cos(math.radians(lat)) * delta_in_radians * delta_in_radians\n"
+			"        for lon_index in range(2*num_samples_along_meridian):\n"
+			"            lon = -180.0 + (lon_index + 0.5) * delta_in_degrees\n"
+			"            point_distribution.append(((lat, lon), sample_area_radians))\n"
+			"\n"
+			"    net_rotation_snapshot = net_rotation_model.net_rotation_snapshot(\n"
+			"        0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t, point_distribution)\n"
 			"\n"
 			"  .. note:: The anchor plate is that of the topological model specified in the :meth:`constructor<__init__>` "
 			"(see :meth:`TopologicalModel.get_anchor_plate_id`).\n";

@@ -23,10 +23,12 @@
 #ifndef GPLATES_APP_LOGIC_NETROTATIONUTILS_H
 #define GPLATES_APP_LOGIC_NETROTATIONUTILS_H
 
+#include <cmath>
 #include <map>
 #include <utility>  // for std::pair
 #include <vector>
 #include <boost/optional.hpp>
+#include <boost/variant.hpp>
 
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalNetwork.h"
@@ -56,7 +58,14 @@ namespace GPlatesAppLogic
 		public:
 
 			/**
-			 * Calculate the contribution to the plate net-rotation for the specified point.
+			 * Calculate the contribution to the plate net-rotation for the specified point and stage pole rotation over a time interval.
+			 *
+			 * @a stage_pole should be the stage rotation over the time interval @a time_interval, and @a time_interval should be in Ma.
+			 *
+			 * Also, you'll need to provide the sample area of the point (@a sample_area_steradians) based on how the points are distributed.
+			 * If you have a distribution that is uniformly spaced in latitude-longitude space then use @a calc_lat_lon_point_sample_area_steradians.
+			 * Alternatively, if you have a distribution that is uniformly spaced on the surface of the sphere then this will be the same for all points
+			 * (ie, 4*pi steradians divided by the total number of points).
 			 */
 			static
 			NetRotationAccumulator
@@ -64,42 +73,92 @@ namespace GPlatesAppLogic
 					const GPlatesMaths::PointOnSphere &point,
 					const GPlatesMaths::FiniteRotation &stage_pole,
 					const double &time_interval,
-					const double &sample_square_length_in_radians);
+					const double &sample_area_steradians);
+
+			/**
+			 * Calculate the contribution to the plate net-rotation for the specified point and rotation rate vector.
+			 *
+			 * @a rotation_rate_vector should have a magnitude in radians/myr.
+			 *
+			 * Also, you'll need to provide the sample area of the point (@a sample_area_steradians) based on how the points are distributed.
+			 * If you have a distribution that is uniformly spaced in latitude-longitude space then use @a calc_lat_lon_point_sample_area_steradians.
+			 * Alternatively, if you have a distribution that is uniformly spaced on the surface of the sphere then this will be the same for all points
+			 * (ie, 4*pi steradians divided by the total number of points).
+			 */
+			static
+			NetRotationAccumulator
+			create(
+					const GPlatesMaths::PointOnSphere &point,
+					const GPlatesMaths::Vector3D &rotation_rate_vector,
+					const double &sample_area_steradians);
+
+			/**
+			 * Calculate the sample area (on surface of globe) of the specified point on a uniform latitude/longitude grid.
+			 *
+			 * Since the specified point is expected to be on a uniformly distributed grid of points in latitude-longitude space,
+			 * the sample area is 'cosine(theta) * grid_spacing * grid_spacing' where 'grid_spacing' is the latitude-longitude
+			 * spacing between grid points (in radians) and 'theta' is the latitude of 'point'
+			 * (the cosine is because points near the North/South poles are closer together).
+			 */
+			static
+			double
+			calc_lat_lon_point_sample_area_steradians(
+					const GPlatesMaths::PointOnSphere &point,
+					const double &lat_lon_grid_spacing_radians)
+			{
+				// Calculate the point's sample area based on the uniform lat/lon grid spacing.
+				const double z = point.position_vector().z().dval();
+				const double cos_latitude = std::sqrt(1 - z * z);
+
+				return cos_latitude * lat_lon_grid_spacing_radians * lat_lon_grid_spacing_radians;
+			}
+
+			/**
+			 * Convert a rotation rate vector (with magnitude in radians/myr) to a finite rotation over @a time interval.
+			 */
+			static
+			GPlatesMaths::FiniteRotation
+			convert_rotation_rate_vector_to_finite_rotation(
+					const GPlatesMaths::Vector3D &rotation_vec,
+					const double &time_interval);
+
+			/**
+			 * Convert a finite rotation over @a time interval to a rotation rate vector (with magnitude in radians/myr).
+			 */
+			static
+			GPlatesMaths::Vector3D
+			convert_finite_rotation_to_rotation_rate_vector(
+					const GPlatesMaths::FiniteRotation &finite_rotation,
+					const double &time_interval);
 
 			/**
 			 * Zero net rotation.
 			 */
-			NetRotationAccumulator():
+			NetRotationAccumulator() :
+				d_net_rotation_component(),
 				d_weighting_factor(0),
 				d_area_steradians(0)
 			{  }
-
-			/**
-			 * Add a net rotation contribution at a point.
-			 *
-			 * @a sample_square_length_in_radians is area of the sample square surrounding the sample point (in radians).
-			 */
-			void
-			add(
-					const GPlatesMaths::PointOnSphere &point,
-					const GPlatesMaths::FiniteRotation &stage_pole,
-					double time_interval,
-					const double &sample_square_length_in_radians)
-			{
-				add(NetRotationAccumulator::create(point, stage_pole, time_interval, sample_square_length_in_radians));
-			}
 
 			void
 			add(
 					const NetRotationAccumulator &net_rotation);
 
 			/**
-			 * Return the accumulated net rotation as a finite rotation.
+			 * Return the accumulated net rotation as a finite rotation (over a time interval of 1myr).
 			 *
 			 * Returns identity rotation if there have not been any non-zero net rotation contributions.
 			 */
 			GPlatesMaths::FiniteRotation
-			get_net_rotation() const;
+			get_net_finite_rotation() const;
+
+			/**
+			 * Return the accumulated net rotation as a rotation rate vector with a magnitude of radians/myr.
+			 *
+			 * Returns zero vector if there have not been any non-zero net rotation contributions.
+			 */
+			GPlatesMaths::Vector3D
+			get_net_rotation_rate_vector() const;
 
 			/**
 			 * Return the accumulated net rotation as a lat-lon pole and angle (in degrees).
@@ -120,29 +179,17 @@ namespace GPlatesAppLogic
 
 		private:
 
-			static
-			GPlatesMaths::FiniteRotation
-			convert_rotation_vector_to_finite_rotation(
-					const GPlatesMaths::Vector3D &rotation_vec);
-
-			static
-			GPlatesMaths::Vector3D
-			convert_finite_rotation_to_rotation_vector(
-					const GPlatesMaths::FiniteRotation &finite_rotation,
-					const double &time_interval);
-
-
 			NetRotationAccumulator(
-					const GPlatesMaths::Vector3D &rotation_component_,
+					const GPlatesMaths::Vector3D &net_rotation_component_,
 					const double &weighting_factor_,
 					const double &area_steradians_) :
-				d_rotation_component(rotation_component_),
+				d_net_rotation_component(net_rotation_component_),
 				d_weighting_factor(weighting_factor_),
 				d_area_steradians(area_steradians_)
 			{  }
 
 
-			GPlatesMaths::Vector3D d_rotation_component;
+			GPlatesMaths::Vector3D d_net_rotation_component;
 			double d_weighting_factor;
 			// Area of accumulated net rotation samples (in steradians, or square radians).
 			double d_area_steradians;
@@ -166,6 +213,30 @@ namespace GPlatesAppLogic
 		{
 		public:
 
+			/**
+			 * An arbitrary distribution of points and their sample areas (in steradians).
+			 *
+			 * For example, if you have a distribution that is uniformly spaced on the surface of the sphere then each sample area
+			 * will be the same (a constant) for all points (ie, 4*pi steradians divided by the total number of points).
+			 * However, if the distribution is not quite uniform on the sphere then each sample area will be slightly different.
+			 */
+			typedef std::vector<std::pair<GPlatesMaths::PointOnSphere, double/*sample_area_steradians*/>> arbitrary_point_distribution_type;
+			/**
+			 * How the points, to calculate net rotation, are distributed across the globe.
+			 *
+			 * If a single integer then the points are uniformly distributed in latitude-longitude space and
+			 * it is the number of grid points along each meridian. The same (longitude) spacing is used along parallels.
+			 * The default is 180 x 360 uniform lat-lon samples.
+			 *
+			 * Otherwise it's an arbitrary distribution of points and their sample areas (in steradians).
+			 */
+			typedef boost::variant<
+					// Number of uniform latitude-longitude points along each meridian...
+					unsigned int,
+					// An arbitrary distribution of points and their sample areas (in steradians)...
+					arbitrary_point_distribution_type
+			> point_distribution_type;
+
 			//! Convenience typedef for sequence of resolved topological boundaries.
 			typedef std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> resolved_topological_boundary_seq_type;
 
@@ -187,7 +258,7 @@ namespace GPlatesAppLogic
 
 
 			/**
-			 * Accumulate net rotation of the specified resolved topologies over a uniform grid of lat-lon points.
+			 * Accumulate net rotation of the specified resolved topologies over a uniform grid of latitude-longitude points.
 			 *
 			 * @a num_samples_along_meridian is the number of grid points along each meridian.
 			 * The same (longitude) spacing is used along parallels.
@@ -199,8 +270,39 @@ namespace GPlatesAppLogic
 					const double &time,
 					const double &velocity_delta_time,
 					VelocityDeltaTime::Type velocity_delta_time_type,
-					GPlatesModel::integer_plate_id_type anchor_plate_id = 0,
-					unsigned int num_samples_along_meridian = DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN);
+					unsigned int num_samples_along_meridian = DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN,
+					GPlatesModel::integer_plate_id_type anchor_plate_id = 0);
+
+			/**
+			 * Accumulate net rotation of the specified resolved topologies over an arbitrary distribution of points.
+			 *
+			 * @a points is an arbitrary distribution of points and their sample areas (in steradians).
+			 * For example, if you have a distribution that is uniformly spaced on the surface of the sphere each sample area
+			 * will be the same (a constant) for all points (ie, 4*pi steradians divided by the total number of points).
+			 * However, if the distribution is not quite uniform on the sphere then each sample area will be slightly different.
+			 */
+			NetRotationCalculator(
+					const resolved_topological_boundary_seq_type &resolved_topological_boundaries,
+					const resolved_topological_network_seq_type &resolved_topological_networks,
+					const double &time,
+					const double &velocity_delta_time,
+					VelocityDeltaTime::Type velocity_delta_time_type,
+					const arbitrary_point_distribution_type &arbitrary_points,
+					GPlatesModel::integer_plate_id_type anchor_plate_id = 0);
+
+			/**
+			 * Combination of the other constructors where point distribution is explicitly specified using a @a point_distribution_type.
+			 *
+			 * @a point_distribution is the point distribution (specified as either a uniform lat-lon grid spacing or arbitrary points).
+			 */
+			NetRotationCalculator(
+					const resolved_topological_boundary_seq_type &resolved_topological_boundaries,
+					const resolved_topological_network_seq_type &resolved_topological_networks,
+					const double &time,
+					const double &velocity_delta_time,
+					VelocityDeltaTime::Type velocity_delta_time_type,
+					const point_distribution_type &point_distribution,
+					GPlatesModel::integer_plate_id_type anchor_plate_id = 0);
 
 			/**
 			 * Return the accumulated net rotation over all input resolved topologies.
@@ -264,16 +366,16 @@ namespace GPlatesAppLogic
 				return d_velocity_delta_time_type;
 			}
 
+			const point_distribution_type &
+			get_point_distribution() const
+			{
+				return d_point_distribution;
+			}
+
 			GPlatesModel::integer_plate_id_type
 			get_anchor_plate_id() const
 			{
 				return d_anchor_plate_id;
-			}
-
-			unsigned int
-			get_num_samples_along_meridian() const
-			{
-				return d_num_samples_along_meridian;
 			}
 
 		private:
@@ -281,16 +383,23 @@ namespace GPlatesAppLogic
 			// A map for storing stage poles (relative to anchor) per plate id.
 			typedef std::map<GPlatesModel::integer_plate_id_type, GPlatesMaths::FiniteRotation> stage_pole_map_type;
 
+			void
+			initialise_from_latitude_longitude_points(
+					unsigned int num_samples_along_meridian);
+
+			void
+			initialise_from_arbitrary_points(
+					const arbitrary_point_distribution_type &arbitrary_points);
 
 			bool
 			add_net_rotation_contribution_from_resolved_networks(
 					const GPlatesMaths::PointOnSphere &position,
-					const double &sample_square_length_in_radians);
+					const double &sample_area_steradians);
 
 			bool
 			add_net_rotation_contribution_from_resolved_boundaries(
 					const GPlatesMaths::PointOnSphere &position,
-					const double &sample_square_length_in_radians);
+					const double &sample_area_steradians);
 
 			void
 			add_net_rotation_contribution(
@@ -314,8 +423,9 @@ namespace GPlatesAppLogic
 			double d_velocity_delta_time;
 			VelocityDeltaTime::Type d_velocity_delta_time_type;
 			std::pair<double/*older*/, double/*younger*/> d_velocity_time_period;
+			//! How the points, to calculate net rotation, are distributed across the globe.
+			point_distribution_type d_point_distribution;
 			GPlatesModel::integer_plate_id_type d_anchor_plate_id;
-			unsigned int d_num_samples_along_meridian;
 
 			topological_boundary_net_rotation_map_type d_topological_boundary_net_rotation_map;
 			topological_network_net_rotation_map_type d_topological_network_net_rotation_map;
