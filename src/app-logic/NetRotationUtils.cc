@@ -199,17 +199,13 @@ GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::NetRotationCalculator(
 	const double delta_in_radians = GPlatesMaths::convert_deg_to_rad(delta_in_degrees);
 
 	// Loop over lat-lon grid and calculate the rotation contribution at each point.
-	for (unsigned int latitude_index = 0; latitude_index <= num_samples_along_meridian; ++latitude_index)
+	for (unsigned int latitude_index = 0; latitude_index < num_samples_along_meridian; ++latitude_index)
 	{
-		const double latitude = (latitude_index == num_samples_along_meridian)
-				? 90.0
-				: -90.0 + latitude_index * delta_in_degrees;
+		const double latitude = -90.0 + (latitude_index + 0.5) * delta_in_degrees;
 
-		for (unsigned int longitude_index = 0; longitude_index <= num_samples_along_parallel; ++longitude_index)
+		for (unsigned int longitude_index = 0; longitude_index < num_samples_along_parallel; ++longitude_index)
 		{
-			const double longitude = (longitude_index == num_samples_along_parallel)
-					? 180.0
-					: -180.0 + longitude_index * delta_in_degrees;
+			const double longitude = -180.0 + (longitude_index + 0.5) * delta_in_degrees;
 
 			const GPlatesMaths::PointOnSphere position = GPlatesMaths::make_point_on_sphere(GPlatesMaths::LatLonPoint(latitude, longitude));
 

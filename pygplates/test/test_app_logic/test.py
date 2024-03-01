@@ -514,9 +514,9 @@ class NetRotationTestCase(unittest.TestCase):
         total_net_rotation = self.net_rotation_model.net_rotation_snapshot(0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t).get_total_net_rotation()
         total_pole_latitude, total_pole_longitude, total_angle_degrees  = total_net_rotation.get_finite_rotation().get_lat_lon_euler_pole_and_angle_degrees()
         # These values were obtained from the GPlates net rotation export.
-        self.assertAlmostEqual(total_pole_latitude, 15.4953, places=4)
-        self.assertAlmostEqual(total_pole_longitude, -113.748, places=3)
-        self.assertAlmostEqual(total_angle_degrees, 0.109823, places=6)
+        self.assertAlmostEqual(total_pole_latitude, 15.4673, places=4)
+        self.assertAlmostEqual(total_pole_longitude, -113.761, places=3)
+        self.assertAlmostEqual(total_angle_degrees, 0.109995, places=6)
 
 
 class PlatePartitionerTestCase(unittest.TestCase):
