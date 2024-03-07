@@ -135,9 +135,8 @@ namespace GPlatesAppLogic
 			 * Zero net rotation.
 			 */
 			NetRotationAccumulator() :
-				d_net_rotation_component(),
-				d_weighting_factor(0),
-				d_area_steradians(0)
+				d_net_rotation_component(),  // zero vector
+				d_area_steradians(0)         // zero area
 			{  }
 
 			void
@@ -181,17 +180,21 @@ namespace GPlatesAppLogic
 
 			NetRotationAccumulator(
 					const GPlatesMaths::Vector3D &net_rotation_component_,
-					const double &weighting_factor_,
 					const double &area_steradians_) :
 				d_net_rotation_component(net_rotation_component_),
-				d_weighting_factor(weighting_factor_),
+				d_area_steradians(area_steradians_)
+			{  }
+
+			explicit
+			NetRotationAccumulator(
+					const double &area_steradians_) :
+				d_net_rotation_component(),  // zero vector
 				d_area_steradians(area_steradians_)
 			{  }
 
 
 			GPlatesMaths::Vector3D d_net_rotation_component;
-			double d_weighting_factor;
-			// Area of accumulated net rotation samples (in steradians, or square radians).
+			// Area of accumulated net rotation samples in steradians (square radians).
 			double d_area_steradians;
 
 		private: // Transcribe...

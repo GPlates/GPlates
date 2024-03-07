@@ -71,11 +71,7 @@ GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::create(
 	// Net rotation component is weighted by the sample area.
 	const GPlatesMaths::Vector3D net_rotation_component = omega * sample_area_steradians;
 
-	// Weighting factor is used to normalize net rotation.
-	const double z = point.position_vector().z().dval();
-	const double weighting_factor = (1 - z*z) * sample_area_steradians;
-
-	return NetRotationAccumulator(net_rotation_component, weighting_factor, sample_area_steradians);
+	return NetRotationAccumulator(net_rotation_component, sample_area_steradians);
 }
 
 void
@@ -83,7 +79,6 @@ GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::add(
 		const NetRotationAccumulator &net_rotation)
 {
 	d_net_rotation_component = d_net_rotation_component + net_rotation.d_net_rotation_component;
-	d_weighting_factor += net_rotation.d_weighting_factor;
 	d_area_steradians += net_rotation.d_area_steradians;
 }
 
@@ -103,12 +98,12 @@ GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::get_net_finite_rotati
 GPlatesMaths::Vector3D
 GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::get_net_rotation_rate_vector() const
 {
-	if (GPlatesMaths::are_almost_exactly_equal(d_weighting_factor, 0))
+	if (GPlatesMaths::are_almost_exactly_equal(d_area_steradians, 0))
 	{
 		return GPlatesMaths::Vector3D();  // zero vector
 	}
 
-	return (1.0 / d_weighting_factor) * d_net_rotation_component;
+	return (3 / (2 * d_area_steradians)) * d_net_rotation_component;
 }
 
 boost::optional<std::pair<GPlatesMaths::LatLonPoint, double>>
@@ -173,11 +168,6 @@ GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::transcribe(
 		bool transcribed_construct_data)
 {
 	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_net_rotation_component, "net_rotation_component"))
-	{
-		return scribe.get_transcribe_result();
-	}
-
-	if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_weighting_factor, "weighting_factor"))
 	{
 		return scribe.get_transcribe_result();
 	}
@@ -360,13 +350,13 @@ GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::add_net_rotation_contr
 	// Check which rigid (non-deforming) plate (if any) the position lies in.
 	for (auto boundary_ptr : d_resolved_topological_boundaries)
 	{
-		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type boundary = boundary_ptr->resolved_topology_boundary();
-
 		// Get the stage rotation from the plate ID.
 		// If resolved boundary has no plate ID then the position does not contribute net rotation.
 		const boost::optional<GPlatesMaths::FiniteRotation> boundary_stage_pole = get_resolved_boundary_stage_pole(boundary_ptr);
 		if (boundary_stage_pole)
 		{
+			const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type boundary = boundary_ptr->resolved_topology_boundary();
+
 			if (boundary->is_point_in_polygon(position,GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE))
 			{
 				const NetRotationAccumulator net_rotation_contribution =
