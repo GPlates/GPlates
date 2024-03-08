@@ -508,6 +508,7 @@ class NetRotationTestCase(unittest.TestCase):
         total_net_rotation = net_rotation_snapshot.get_total_net_rotation()
         pickled_total_net_rotation = pickle.loads(pickle.dumps(total_net_rotation))
         self.assertTrue(pickled_total_net_rotation.get_finite_rotation() == total_net_rotation.get_finite_rotation())
+        self.assertTrue(pickled_total_net_rotation.get_rotation_rate_vector() == total_net_rotation.get_rotation_rate_vector())
     
     def test_net_rotation(self):
         # Use the default 'num_samples_along_meridian' (180).
@@ -517,6 +518,23 @@ class NetRotationTestCase(unittest.TestCase):
         self.assertAlmostEqual(total_pole_latitude, 15.4673, places=4)
         self.assertAlmostEqual(total_pole_longitude, -113.761, places=3)
         self.assertAlmostEqual(total_angle_degrees, 0.014637, places=6)
+    
+    def test_net_rotation_conversion(self):
+        total_net_rotation = self.net_rotation_model.net_rotation_snapshot(0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t).get_total_net_rotation()
+        total_net_finite_rotation = total_net_rotation.get_finite_rotation()
+        total_net_rotation_rate_vector = total_net_rotation.get_rotation_rate_vector()
+        # Compare the pole and angle from rotation rate vector with the finite rotation.
+        total_net_finite_rotation_pole, total_net_finite_rotation_angle = total_net_finite_rotation.get_euler_pole_and_angle()
+        total_net_rotation_rate_vector_pole = pygplates.PointOnSphere(total_net_rotation_rate_vector.to_normalized().to_xyz())
+        total_net_rotation_rate_vector_angle = total_net_rotation_rate_vector.get_magnitude()
+        self.assertTrue(total_net_finite_rotation_pole == total_net_rotation_rate_vector_pole)
+        self.assertAlmostEqual(total_net_finite_rotation_angle, total_net_rotation_rate_vector_angle)
+        # Test conversion between rotation rate vector and finite rotation.
+        self.assertTrue(total_net_finite_rotation == pygplates.NetRotation.convert_rotation_rate_vector_to_finite_rotation(total_net_rotation_rate_vector))
+        self.assertTrue(total_net_rotation_rate_vector == pygplates.NetRotation.convert_finite_rotation_to_rotation_rate_vector(total_net_finite_rotation))
+        total_net_finite_rotation_over_10myr = pygplates.FiniteRotation(total_net_finite_rotation_pole, 10 * total_net_finite_rotation_angle)
+        self.assertTrue(total_net_finite_rotation_over_10myr == pygplates.NetRotation.convert_rotation_rate_vector_to_finite_rotation(total_net_rotation_rate_vector, 10))
+        self.assertTrue(total_net_rotation_rate_vector == pygplates.NetRotation.convert_finite_rotation_to_rotation_rate_vector(total_net_finite_rotation_over_10myr, 10))
     
     def test_arbitrary_point_distribution(self):
         # Test an arbitrary point distribution.

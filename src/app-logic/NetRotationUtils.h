@@ -147,7 +147,7 @@ namespace GPlatesAppLogic
 			static
 			GPlatesMaths::FiniteRotation
 			convert_rotation_rate_vector_to_finite_rotation(
-					const GPlatesMaths::Vector3D &rotation_vec,
+					const GPlatesMaths::Vector3D &rotation_rate_vector,
 					const double &time_interval);
 
 			/**
@@ -174,7 +174,7 @@ namespace GPlatesAppLogic
 			/**
 			 * Return the accumulated net rotation as a finite rotation (over a time interval of 1myr).
 			 *
-			 * Returns identity rotation if there have not been any non-zero net rotation contributions.
+			 * Returns identity rotation if all net rotation contributions are zero.
 			 */
 			GPlatesMaths::FiniteRotation
 			get_net_finite_rotation() const;
@@ -182,7 +182,7 @@ namespace GPlatesAppLogic
 			/**
 			 * Return the accumulated net rotation as a rotation rate vector with a magnitude of radians/myr.
 			 *
-			 * Returns zero vector if there have not been any non-zero net rotation contributions.
+			 * Returns zero vector if all net rotation contributions are zero.
 			 */
 			GPlatesMaths::Vector3D
 			get_net_rotation_rate_vector() const;
@@ -190,7 +190,7 @@ namespace GPlatesAppLogic
 			/**
 			 * Return the accumulated net rotation as a lat-lon pole and angle (in degrees).
 			 *
-			 * Returns none if there have not been any non-zero net rotation contributions.
+			 * Returns none if all net rotation contributions are zero.
 			 */
 			boost::optional<std::pair<GPlatesMaths::LatLonPoint, double>>
 			get_net_rotation_lat_lon_pole_and_angle() const;

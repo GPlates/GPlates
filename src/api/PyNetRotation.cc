@@ -553,9 +553,61 @@ export_net_rotation()
 		.def("get_finite_rotation",
 				&GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::get_net_finite_rotation,
 				"get_finite_rotation()\n"
-				"  Return the accumulated net rotation as a finite rotation.\n"
+				"  Return the net rotation as a finite rotation (over a time interval of 1Myr).\n"
 				"\n"
-				"  :rtype: :class:`FiniteRotation`\n")
+				"  :rtype: :class:`FiniteRotation`\n"
+				"\n"
+				"  Returns :meth:`identity rotation<FiniteRotation.create_identity_rotation>` if the net rotation is zero.\n")
+		.def("get_rotation_rate_vector",
+				&GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::get_net_rotation_rate_vector,
+				"get_rotation_rate_vector()\n"
+				"  Return the net rotation as a rotation rate vector with a magnitude of radians per Myr.\n"
+				"\n"
+				"  :rtype: :class:`Vector3D`\n"
+				"\n"
+				"  Returns :class:`zero vector<Vector3D>` if the net rotation is zero.\n")
+		.def("convert_finite_rotation_to_rotation_rate_vector",
+				&GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::convert_finite_rotation_to_rotation_rate_vector,
+				(bp::arg("finite_rotation"),
+					bp::arg("time_interval") = 1.0),
+				"convert_finite_rotation_to_rotation_rate_vector(finite_rotation, [time_interval=1.0])\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Convert a :class:`finite rotation<FiniteRotation>` over a time interval to a rotation rate vector (with magnitude in radians per Myr).\n"
+				"\n"
+				"  :param finite_rotation: The finite rotation over the specified time interval.\n"
+				"  :type finite_rotation: :class:`FiniteRotation`\n"
+				"  :param time_interval: The time interval of the specified finite rotation (defaults to 1Myr).\n"
+				"  :type time_interval: float\n"
+				"  :rtype: :class:`Vector3D`\n"
+				"\n"
+				"  To convert a finite rotation over 10Myr to a rotation rate vector (in radians per Myr):"
+				"  ::\n"
+				"\n"
+				"    net_rotation_rate_vector = pygplates.NetRotation.convert_finite_rotation_to_rotation_rate_vector(net_finite_rotation_over_10myr, 10)\n")
+		.staticmethod("convert_finite_rotation_to_rotation_rate_vector")
+		.def("convert_rotation_rate_vector_to_finite_rotation",
+				&GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::convert_rotation_rate_vector_to_finite_rotation,
+				(bp::arg("rotation_rate_vector"),
+					bp::arg("time_interval") = 1.0),
+				"convert_rotation_rate_vector_to_finite_rotation(rotation_rate_vector, [time_interval=1.0])\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Convert a rotation rate vector (with magnitude in radians per Myr) to a :class:`finite rotation<FiniteRotation>` over a time interval.\n"
+				"\n"
+				"  :param rotation_rate_vector: The rotation rate vector (with magnitude in radians per Myr).\n"
+				"  :type rotation_rate_vector: :class:`Vector3D`\n"
+				"  :param time_interval: The time interval of the returned finite rotation (defaults to 1Myr).\n"
+				"  :type time_interval: float\n"
+				"  :rtype: :class:`FiniteRotation`\n"
+				"\n"
+				"  To convert a rotation rate vector (in radians per Myr) to a finite rotation over 10Myr (ie, having the same pole but with an angle multiplied by 10):"
+				"  ::\n"
+				"\n"
+				"    net_finite_rotation_over_10myr = pygplates.NetRotation.convert_rotation_rate_vector_to_finite_rotation(net_rotation_rate_vector, 10)\n")
+		.staticmethod("convert_rotation_rate_vector_to_finite_rotation")
 		// Make unhashable, with no comparison operators...
 		.def(GPlatesApi::NoHashDefVisitor(false, false))
 	;
@@ -698,9 +750,21 @@ export_net_rotation()
 		.def("get_total_net_rotation",
 				&GPlatesApi::net_rotation_snapshot_get_total_net_rotation,
 				"get_total_net_rotation()\n"
-				"  Return the accumulated net rotation over all resolved topologies in this snapshot.\n"
+				"  Return the total net rotation over all resolved topologies in this snapshot.\n"
 				"\n"
-				"  :rtype: :class:`NetRotation`\n")
+				"  :rtype: :class:`NetRotation`\n"
+				"\n"
+				"  The total net rotation of all resolved topologies in this snapshot is calculated as:\n"
+				"\n"
+				"  .. math::\n"
+				"\n"
+				"     \\boldsymbol \\omega_{net} = \\frac{3}{8\\pi} \\sum_i \\int \\boldsymbol r \\times (\\boldsymbol \\omega_i(\\boldsymbol r) \\times \\boldsymbol r) \\, dS_i\n"
+				"\n"
+				"  ...where :math:`\\sum_i` is the summation over all resolved topologies, and :math:`\\int ... dS_i` is integration over the surface area of resolved topology :math:`i`, and "
+				":math:`\\boldsymbol \\omega_i(\\boldsymbol r)` is the rotation rate vector for resolved topology :math:`i` at location :math:`\\boldsymbol r`. For a rigid plate this is "
+				"just a constant :math:`\\boldsymbol \\omega_i(\\boldsymbol r) = \\boldsymbol \\omega_i`, but for a deforming network this varies spatially across the network "
+				"(hence the dependency on :math:`\\boldsymbol r`). Note that if a deforming network overlaps a rigid plate then only the deforming network contributes to the "
+				"total net rotation (in the overlap region).\n")
 		.def("get_velocity_delta_time",
 				&GPlatesApi::NetRotationSnapshot::get_velocity_delta_time,
 				"get_velocity_delta_time()\n"
