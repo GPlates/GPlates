@@ -516,7 +516,7 @@ class NetRotationTestCase(unittest.TestCase):
         # These values were obtained from the GPlates net rotation export.
         self.assertAlmostEqual(total_pole_latitude, 15.4673, places=4)
         self.assertAlmostEqual(total_pole_longitude, -113.761, places=3)
-        self.assertAlmostEqual(total_angle_degrees, 0.122866, places=6)
+        self.assertAlmostEqual(total_angle_degrees, 0.014637, places=6)
     
     def test_arbitrary_point_distribution(self):
         # Test an arbitrary point distribution.
@@ -538,7 +538,7 @@ class NetRotationTestCase(unittest.TestCase):
         # These values were obtained from the GPlates net rotation export.
         self.assertAlmostEqual(total_pole_latitude, 15.4673, places=4)
         self.assertAlmostEqual(total_pole_longitude, -113.761, places=3)
-        self.assertAlmostEqual(total_angle_degrees, 0.122866, places=6)
+        self.assertAlmostEqual(total_angle_degrees, 0.014637, places=6)
 
 
 class PlatePartitionerTestCase(unittest.TestCase):

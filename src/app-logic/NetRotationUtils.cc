@@ -44,12 +44,14 @@ GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::create(
 {
 	if (GPlatesMaths::are_almost_exactly_equal(time_interval, 0))
 	{
-		return NetRotationAccumulator();
+		// Contributes zero net rotation, but still contributes non-zero area.
+		return NetRotationAccumulator(sample_area_steradians);
 	}
 
 	if (represents_identity_rotation(stage_pole.unit_quat()))
 	{
-		return NetRotationAccumulator();
+		// Contributes zero net rotation, but still contributes non-zero area.
+		return NetRotationAccumulator(sample_area_steradians);
 	}
 
 	// Convert finite rotation (over 'time_interval') to a rotation rate vector (with magnitude in radians/myr).
