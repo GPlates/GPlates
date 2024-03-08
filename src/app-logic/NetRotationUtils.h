@@ -106,10 +106,38 @@ namespace GPlatesAppLogic
 					const GPlatesMaths::PointOnSphere &point,
 					const double &lat_lon_grid_spacing_radians)
 			{
-				// Calculate the point's sample area based on the uniform lat/lon grid spacing.
+				//
+				// The total net rotation is the integral of 'R x (W x R)' over the surface of the globe:
+				//
+				//             /                    /
+				//        3    |                    |
+				//   W = ----  | R x (W x R) dA = k | omega(R) dA
+				//       8 pi  |                    |
+				//            /                    /
+				//
+				// ...which in latitude-longitude space (spherical coordinates) becomes:
+				//
+				//             /2pi      /pi/2
+				//        3    |         |
+				//   W = ----  | d(phi)  | omega(theta, phi) * cos(theta) d(theta)
+				//       8 pi  |         |
+				//            / 0       /-pi/2
+				//
+				//
+				// So that accounts for the cos(latitude) that we are using here.
+				//
 				const double z = point.position_vector().z().dval();
 				const double cos_latitude = std::sqrt(1 - z * z);
 
+				// Calculate the point's sample area based on the uniform lat/lon grid spacing.
+				//
+				// The total net rotation can be approximated as a summation over sample points (multiplied by their sample areas):
+				//
+				//   W ~ (3 / (8 pi)) sum[omega(R_i) dA_i]
+				//     = (3 / (8 pi)) sum[omega(theta_i, phi_i) * cos(theta_i) * d_theta * d_phi]
+				//
+				// ...where the sample area is 'dA_i = cos(theta_i) * d_theta * d_phi' and 'd_theta = d_phi = lat_lon_grid_spacing_radians'.
+				//
 				return cos_latitude * lat_lon_grid_spacing_radians * lat_lon_grid_spacing_radians;
 			}
 

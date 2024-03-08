@@ -64,11 +64,38 @@ GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::create(
 		const GPlatesMaths::Vector3D &rotation_rate_vector,
 		const double &sample_area_steradians)
 {
+	//
+	// The net rotation is the integral of 'R x (W x R)' over a surface (eg, a plate, or the entire the sphere):
+	//
+	//         /
+	//         |
+	//   W = k | R x (W x R) dA
+	//         |
+	//        /
+	//
+	// ...where 'k' is inversely proportional to:
+	//
+	//         /
+	//         |
+	//         | dA
+	//         |
+	//        /
+	//
+	// These two integrals are approximated by summing the net rotation contributions at sample points
+	// (multiplied by their sample areas), and separately summing the sample areas:
+	//
+	//     sum(R_i x (W_i x R_i) dA_i)
+	//
+	//     sum(dA_i)
+	//
+	// So, for the current sample point 'i', we store both:
+	//   net_rotation_component = R_i x (W_i x R_i) dA_i
+	//   sample_area_steradians = dA_i
+	//
+	// And later we sum these individual contributions (see 'add()').
+	//
 	const GPlatesMaths::Vector3D v = cross(rotation_rate_vector, point.position_vector());
-
 	const GPlatesMaths::Vector3D omega = cross(point.position_vector(), v);
-
-	// Net rotation component is weighted by the sample area.
 	const GPlatesMaths::Vector3D net_rotation_component = omega * sample_area_steradians;
 
 	return NetRotationAccumulator(net_rotation_component, sample_area_steradians);
@@ -78,7 +105,9 @@ void
 GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::add(
 		const NetRotationAccumulator &net_rotation)
 {
+	// Sum the area-weighted net rotation contribution.
 	d_net_rotation_component = d_net_rotation_component + net_rotation.d_net_rotation_component;
+	// Sum the area contribution.
 	d_area_steradians += net_rotation.d_area_steradians;
 }
 
@@ -103,6 +132,169 @@ GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::get_net_rotation_rate
 		return GPlatesMaths::Vector3D();  // zero vector
 	}
 
+	//
+	// The net rotation is the integral of 'R x (W x R)' over a surface (eg, a plate, or the entire the sphere):
+	//
+	//         /
+	//         |
+	//   W = k | R x (W x R) dA
+	//         |
+	//        /
+	//
+	//         /
+	//         |
+	//     = k | [W(R.R) - R(R.W)] dA
+	//         |
+	//        /
+	//
+	// ...where "R x (W x R) = [W(R.R) - R(R.W)]" using vector triple product expansion - https://en.wikipedia.org/wiki/Triple_product#Vector_triple_product
+	//
+	// We wish to calculate 'k' which is a normalization factor that ensures, for example, the hypothetical case of a single plate
+	// covering the *entire* globe that is rotating about the z-axis, will return a total net rotation equal to that rotation.
+	// In this example the rotation is 'W = <0, 0, Wz>' and we get a total net rotation using spherical coordinates:
+	//
+	//                  /2pi       /pi/2
+	//                  |          |
+	//          W  =  k | d(phi)   | [W(R.R) - R(R.W)] cos(theta) d(theta)
+	//                  |          |
+	//                 / 0        /-pi/2
+	//
+	//                  /2pi       /pi/2
+	//                  |          |
+	//   <0,0,Wz>  =  k | d(phi)   | [<0,0,Wz> - <x,y,z> Wz sin(theta)] cos(theta) d(theta)
+	//                  |          |
+	//                 / 0        /-pi/2
+	//
+	// ...where we used "R.R = 1" since dot product of a unit vector with itself is the scalar one, and "R.W = <x,y,z>.<0,0,Wz> = Wz z = Wz sin(theta)"
+	//
+	//                  /2pi       /pi/2
+	//                  |          |
+	//   <0,0,Wz>  =  k | d(phi)   | [<0,0,Wz> - <cos(phi) cos(theta), sin(phi) cos(theta), sin(theta)> Wz sin(theta)] cos(theta) d(theta)
+	//                  |          |
+	//                 / 0        /-pi/2
+	//
+	//
+	// ...and noting that...
+	//
+	//    /2pi                 /2pi
+	//    |                    |
+	//    | d(phi) cos(phi) =  | d(phi) sin(phi) =  0
+	//    |                    |
+	//   / 0                  / 0
+	//
+	// ...we get...
+	//
+	//                  /2pi       /pi/2
+	//                  |          |
+	//   <0,0,Wz>  =  k | d(phi)   | [<0,0,Wz> - <0,0,sin(theta)> Wz sin(theta)] cos(theta) d(theta)
+	//                  |          |
+	//                 / 0        /-pi/2
+	//
+	// ...where only the z-component of vector on both sides is non-zero, which we write as...
+	//
+	//                  /2pi       /pi/2
+	//                  |          |
+	//         Wz  =  k | d(phi)   | [Wz - Wz sin(theta)^2] cos(theta) d(theta)
+	//                  |          |
+	//                 / 0        /-pi/2
+	//
+	//                             /pi/2
+	//                             |
+	//             =  k (2 pi) Wz  | [1 - sin(theta)^2] cos(theta) d(theta)
+	//                             |
+	//                            /-pi/2
+	//
+	//                             /pi/2
+	//                             |
+	//             =  k (2 pi) Wz  | cos(theta)^3 d(theta)
+	//                             |
+	//                            /-pi/2
+	//
+	// ...which results in the normalization factor 'k' being...
+	//
+	//                               1
+	//         k =   ------------------------------------
+	//                            /pi/2
+	//                            |
+	//                       2 pi | cos(theta)^3 d(theta)
+	//                            |
+	//                           /-pi/2
+	//
+	// ...hence the weighting factor (the denominator of 'k') is the integral of "cos(latitude)^3"
+	// (when calculating net rotation over the *entire* globe).
+	//
+	// Also note that 'k' evaluates to (using "integral[cos(theta)^3] = sin(theta) - (1/3) sin(theta)^3"):
+	//
+	//         k =      1
+	//             ----------
+	//             (8 pi) / 3
+	//
+	// ...which is normalization factor '3 / (8 pi)' mentioned in the Torsvik 2010 paper:
+	//   "Plate tectonics and net lithosphere rotation over the past 150 My".
+	//
+	// Note that if we had tried to match a rotation of '<Wx, 0, 0>' instead of '<0, 0, Wz>' then the integral
+	// in the denominator of 'k' would have been over 'cos(theta) - 0.5 cos^3(theta)' instead of 'cos^3(theta)'.
+	// But both integrals evaluate to the same result ('4/3'), so 'k' ends up the same.
+	//
+
+	//
+	// The normalized net rotation is:
+	//
+	//        /
+	//        |
+	//   W =  | R x (W x R) dA
+	//        |
+	//       /
+	//      -------------------
+	//             /
+	//             |
+	//       (2/3) | dA
+	//             |
+	//            /
+	//
+	// ...where the surface integrals could be over an individual topology or over the entire globe
+	// (depending on whether the net rotation is for an individual topology or for the *total* net rotation of the globe).
+	//
+	// Note that when integrating over the *entire* globe the denominator equates to the expected '(8 pi) / 3' (ie, denominator of 'k' above)
+	// since 'integral(dA)' is '4 pi'.
+	//
+	// This is approximated by summing the net rotation contributions at sample points (multiplied by their sample areas) and normalizing:
+	//
+	//       sum(R_i x (W_i x R_i) dA_i)
+	//   W ~ ---------------------------
+	//             (2/3) sum(dA_i)
+	//
+	// In our case we have:
+	//
+	//   d_net_rotation_component = sum(R_i x (W_i x R_i) dA_i)
+	//   d_area_steradians        = sum(dA_i)
+	//
+	// ...so we get:
+	//
+	//      d_net_rotation_component
+	//  W ~ ------------------------
+	//      (2/3) d_area_steradians
+	//
+	//
+	// Note: This means the net rotation for a single plate (that doesn't cover the entire globe) will only be normalized by
+	//       the area covered by that plate (not the entire surface of the globe).
+	//
+	// Note: Previously (in GPlates <= 2.4) the denominator was the following (instead of '(2/3) sum(dA_i)'):
+	//               sum(cos^2(latitude_i) dA_i)     = sum(cos^2(latitude_i) cos(latitude_i) d_phi d_theta)
+	//                                               = sum(cos^3(latitude_i) d_phi d_theta)
+	//                                               ~ (8 pi) / 3  # over *entire* surface of globe
+	//       ...in order to emulate the denominator of 'k' above.
+	//       However that was derived using 'W = <0,0,Wz>'. If we had instead used 'W = <Wx,0,0>' then we would have gotten:
+	//         sum((1 - 0.5 cos^2(latitude_i)) dA_i) = sum((1 - 0.5 cos^2(latitude_i)) cos(latitude_i) d_phi d_theta)
+	//                                               = sum((cos(latitude_i) - 0.5 cos^3(latitude_i)) d_phi d_theta)
+	//                                               ~ (8 pi) / 3  # over *entire* surface of globe
+	//       While this gives the same result when integrating over the surface of the *entire* globe,
+	//       it will give different results for individual plates (depending on their latitude).
+	//       Now (in GPlates > 2.4) the normalization is proportional to the area only:
+	//                     (2/3) sum(dA_i)           = (2/3) sum(cos(latitude_i) d_phi d_theta)
+	//                                               = (2/3) (4 pi)  # over *entire* surface of globe
+	//                                               ~ (8 pi) / 3    # over *entire* surface of globe
+	//
 	return (3 / (2 * d_area_steradians)) * d_net_rotation_component;
 }
 
