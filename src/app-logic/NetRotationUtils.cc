@@ -38,9 +38,9 @@
 GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator
 GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::create(
 		const GPlatesMaths::PointOnSphere &point,
+		const double &sample_area_steradians,
 		const GPlatesMaths::FiniteRotation &stage_pole,
-		const double &time_interval,
-		const double &sample_area_steradians)
+		const double &time_interval)
 {
 	if (GPlatesMaths::are_almost_exactly_equal(time_interval, 0))
 	{
@@ -57,14 +57,14 @@ GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::create(
 	// Convert finite rotation (over 'time_interval') to a rotation rate vector (with magnitude in radians/myr).
 	const GPlatesMaths::Vector3D rotation_rate_vector = convert_finite_rotation_to_rotation_rate_vector(stage_pole, time_interval);
 
-	return create(point, rotation_rate_vector, sample_area_steradians);
+	return create(point, sample_area_steradians, rotation_rate_vector);
 }
 
 GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator
 GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::create(
 		const GPlatesMaths::PointOnSphere &point,
-		const GPlatesMaths::Vector3D &rotation_rate_vector,
-		const double &sample_area_steradians)
+		const double &sample_area_steradians,
+		const GPlatesMaths::Vector3D &rotation_rate_vector)
 {
 	//
 	// The net rotation is the integral of 'R x (W x R)' over a surface (eg, a plate, or the entire the sphere):
@@ -103,27 +103,24 @@ GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::create(
 	return NetRotationAccumulator(net_rotation_component, sample_area_steradians);
 }
 
-void
-GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::add(
-		const NetRotationAccumulator &net_rotation)
+GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator &
+GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::operator+=(
+		const NetRotationAccumulator &other)
 {
 	// Sum the area-weighted net rotation contribution.
-	d_net_rotation_component = d_net_rotation_component + net_rotation.d_net_rotation_component;
+	d_net_rotation_component = d_net_rotation_component + other.d_net_rotation_component;
+
 	// Sum the area contribution.
-	d_area_steradians += net_rotation.d_area_steradians;
+	d_area_steradians = d_area_steradians + other.d_area_steradians;
+
+	return *this;
 }
 
 GPlatesMaths::FiniteRotation
 GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::get_net_finite_rotation() const
 {
-	const GPlatesMaths::Vector3D net_rotation_rate_vector = get_net_rotation_rate_vector();
-	if (net_rotation_rate_vector.is_zero_magnitude())
-	{
-		return GPlatesMaths::FiniteRotation::create_identity_rotation();
-	}
-
 	// Extract finite rotation from rotation rate vector.
-	return convert_rotation_rate_vector_to_finite_rotation(net_rotation_rate_vector, 1.0/*time_interval*/);
+	return convert_rotation_rate_vector_to_finite_rotation(get_net_rotation_rate_vector(), 1.0/*time_interval*/);
 }
 
 GPlatesMaths::Vector3D
@@ -374,6 +371,17 @@ GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::transcribe(
 	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
 
+GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator
+GPlatesAppLogic::NetRotationUtils::operator+(
+		const NetRotationAccumulator &net_rotation_accumulator1,
+		const NetRotationAccumulator &net_rotation_accumulator2)
+{
+	NetRotationAccumulator net_rotation_accumulator(net_rotation_accumulator1);
+	net_rotation_accumulator += net_rotation_accumulator2;
+
+	return net_rotation_accumulator;
+}
+
 
 GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::NetRotationCalculator(
 		const resolved_topological_boundary_seq_type &resolved_topological_boundaries,
@@ -523,9 +531,9 @@ GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::add_net_rotation_contr
 			const NetRotationAccumulator net_rotation_contribution =
 					NetRotationAccumulator::create(
 							position,
+							sample_area_steradians,
 							point_stage_rotation->first,
-							d_velocity_delta_time,
-							sample_area_steradians);
+							d_velocity_delta_time);
 
 			add_net_rotation_contribution(network_ptr, net_rotation_contribution);
 
@@ -556,9 +564,9 @@ GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::add_net_rotation_contr
 				const NetRotationAccumulator net_rotation_contribution =
 						NetRotationAccumulator::create(
 							position,
+							sample_area_steradians,
 							boundary_stage_pole.get(),
-							d_velocity_delta_time,
-							sample_area_steradians);
+							d_velocity_delta_time);
 
 				add_net_rotation_contribution(boundary_ptr, net_rotation_contribution);
 
@@ -575,9 +583,9 @@ GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::add_net_rotation_contr
 		ResolvedTopologicalNetwork::non_null_ptr_to_const_type resolved_topological_network,
 		const NetRotationAccumulator &net_rotation_contribution)
 {
-	d_topological_network_net_rotation_map[resolved_topological_network].add(net_rotation_contribution);
-	d_plate_id_net_rotation_map[resolved_topological_network->plate_id()].add(net_rotation_contribution);
-	d_total_net_rotation.add(net_rotation_contribution);
+	d_topological_network_net_rotation_map[resolved_topological_network] += net_rotation_contribution;
+	d_plate_id_net_rotation_map[resolved_topological_network->plate_id()] += net_rotation_contribution;
+	d_total_net_rotation += net_rotation_contribution;
 }
 
 void
@@ -585,9 +593,9 @@ GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::add_net_rotation_contr
 		ResolvedTopologicalBoundary::non_null_ptr_to_const_type resolved_topological_boundary,
 		const NetRotationAccumulator &net_rotation_contribution)
 {
-	d_topological_boundary_net_rotation_map[resolved_topological_boundary].add(net_rotation_contribution);
-	d_plate_id_net_rotation_map[resolved_topological_boundary->plate_id()].add(net_rotation_contribution);
-	d_total_net_rotation.add(net_rotation_contribution);
+	d_topological_boundary_net_rotation_map[resolved_topological_boundary] += net_rotation_contribution;
+	d_plate_id_net_rotation_map[resolved_topological_boundary->plate_id()] += net_rotation_contribution;
+	d_total_net_rotation += net_rotation_contribution;
 }
 
 boost::optional<GPlatesMaths::FiniteRotation>

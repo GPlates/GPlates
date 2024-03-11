@@ -1161,8 +1161,8 @@ export_topological_model()
 				"\n"
 				"  .. note:: Returns ``None`` if point is inside a resolved topological network but is *not* inside one of "
 				"its interior rigid blocks.\n")
-		// Make unhashable, with no comparison operators...
-		.def(GPlatesApi::NoHashDefVisitor(false, false))
+		// Make unhashable, with default comparison operators (based on C++ object identity)...
+		.def(GPlatesApi::NoHashDefVisitor())
 	;
 
 	// Enable boost::optional<TopologyPointLocation> to be passed to and from python.

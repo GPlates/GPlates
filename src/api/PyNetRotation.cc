@@ -45,6 +45,67 @@ namespace bp = boost::python;
 
 namespace GPlatesApi
 {
+	GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator
+	net_rotation_create_sample_from_finite_rotation(
+			const GPlatesMaths::PointOnSphere &point,
+			const double &sample_area,
+			const GPlatesMaths::FiniteRotation &finite_rotation,
+			const double &time_interval)
+	{
+		return GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::create(
+				point, sample_area, finite_rotation, time_interval);
+	}
+
+	GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator
+	net_rotation_create_sample_from_rotation_rate(
+			const GPlatesMaths::PointOnSphere &point,
+			const double &sample_area,
+			const GPlatesMaths::Vector3D &rotation_rate_vector)
+	{
+		return GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::create(
+				point, sample_area, rotation_rate_vector);
+	}
+
+	bp::object
+	net_rotation_eq(
+			const GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator &net_rotation,
+			bp::object other)
+	{
+		bp::extract<const GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator &> extract_other_instance(other);
+		// Prevent equality comparisons.
+		if (extract_other_instance.check())
+		{
+			PyErr_SetString(PyExc_TypeError,
+					"Cannot equality compare (==, !=) NetRotations since they could have equivalent finite rotations "
+					"but cover different areas");
+			bp::throw_error_already_set();
+		}
+
+		// Return NotImplemented so python can continue looking for a match
+		// (eg, in case 'other' is a class that implements relational operators with NetRotation).
+		//
+		// NOTE: This will most likely fall back to python's default handling which uses 'id()'
+		// and hence will compare based on *python* object address rather than *C++* object address.
+		return bp::object(bp::handle<>(bp::borrowed(Py_NotImplemented)));
+	}
+
+	bp::object
+	net_rotation_ne(
+			const GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator &net_rotation,
+			bp::object other)
+	{
+		bp::object ne_result = net_rotation_eq(net_rotation, other);
+		if (ne_result.ptr() == Py_NotImplemented)
+		{
+			// Return NotImplemented.
+			return ne_result;
+		}
+
+		// Invert the result.
+		return bp::object(!bp::extract<bool>(ne_result));
+	}
+
+
 	/**
 	 * Extract a point and sample area from a 2-tuple (or sequence of size 2).
 	 */
@@ -536,14 +597,25 @@ export_net_rotation()
 	//
 	// NetRotation - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
-	bp::class_<GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator>(
-			"NetRotation",
-			"Net rotation of regional or global crust.\n"
-			"\n"
-			"A *NetRotation* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
-			"\n"
-			".. versionadded:: 0.43\n",
-			bp::init<>("__init__()\n")) // Sphinx autosummary complains if signature not present in docstring.
+	bp::class_<
+			GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator,
+			// A pointer holder is required by 'bp::make_constructor'...
+			boost::shared_ptr<GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator>>(
+					"NetRotation",
+					"Net rotation of regional or global crust.\n"
+					"\n"
+					"NetRotations support addition ``net_rotation = net_rotation1 + net_rotation2`` and ``net_rotation += other_net_rotation``.\n"
+					"\n"
+					"NetRotations are *not* equality (``==``, ``!=``) comparable (will raise ``TypeError`` when compared) and "
+					"are not hashable (cannot be used as a key in a ``dict``). This stems from the fact that two NetRotations "
+					"can have equivalent finite rotations but can cover different :meth:`areas<get_area>`.\n"
+					"\n"
+					"A *NetRotation* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionadded:: 0.43\n",
+					bp::init<>(
+							"__init__()\n"
+							"  Creates a zero net rotation.\n"))
 		// Pickle support...
 		//
 		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
@@ -566,6 +638,91 @@ export_net_rotation()
 				"  :rtype: :class:`Vector3D`\n"
 				"\n"
 				"  Returns :class:`zero vector<Vector3D>` if the net rotation is zero.\n")
+		.def("get_area",
+				&GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::get_area_in_steradians,
+				"get_area()\n"
+				"  Return the sample area covered by the :meth:`point samples<NetRotationSnapshot.__init__>` used to calculate this net rotation, in steradians (square radians).\n"
+				"\n"
+				"  :rtype: float\n"
+				"\n"
+				"  For example, if this is the net rotation for a single topological plate then the returned area would be the sum of the sample areas of those "
+				"sample points in the :meth:`point distribution<NetRotationSnapshot.__init__>` that fell within the polygon boundary of the topological plate.\n"
+				"\n"
+				"  To convert from steradians (square radians) to square kms multiply, by the square of the :class:`Earth's radius<Earth>`:\n"
+				"  ::\n"
+				"\n"
+				"    area_in_square_kms = net_rotation.get_area() * pygplates.Earth.mean_radius_in_kms**2\n"
+				"\n"
+				"  .. note:: The accuracy of this area depends on how many :meth:`point samples<NetRotationSnapshot.__init__>` were used to calculate net rotation. "
+				"If you need an accurate area then it's better to explicitly calculate the :meth:`polygon area<PolygonOnSphere.get_area>` "
+				"of the topology (or topologies) that contributed to this net rotation.\n")
+		.def("create_sample_from_finite_rotation",
+				&GPlatesApi::net_rotation_create_sample_from_finite_rotation,
+				(bp::arg("point"),
+					bp::arg("sample_area"),
+					bp::arg("finite_rotation"),
+					bp::arg("time_interval") = 1.0),
+				"create_sample_from_finite_rotation(point, sample_area, finite_rotation, [time_interval=1.0])\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Creates a net rotation contribution from a finite rotation at a point sample.\n"
+				"\n"
+				"  :param point: The point that contributes to net rotation.\n"
+				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (float,float,float) or tuple (float,float)\n"
+				"  :param sample_area: The surface area around the point in steradians (square radians).\n"
+				"  :type sample_area: float\n"
+				"  :param finite_rotation: The finite rotation over the specified time interval.\n"
+				"  :type finite_rotation: :class:`FiniteRotation`\n"
+				"  :param time_interval: The time interval of the specified finite rotation (defaults to 1Myr).\n"
+				"  :type time_interval: float\n"
+				"  :rtype: :class:`NetRotation`\n"
+				"\n"
+				"  In this contrived example we calculate the net rotation of a single plate. "
+				"This is just for demonstration purposes in case you wanted to do your own intersections of point samples with plates "
+				"(otherwise it's easier to just use :class:`NetRotationSnapshot` which does all this for you).\n"
+				"  ::\n"
+				"\n"
+				"    # Let's assume you have a plate and know its finite rotation (over 1Myr), and you have a list of\n"
+				"    # (lat, lon) tuples which are those points on a uniform lat-lon grid that are inside the plate.\n"
+				"    plate_finite_rotation = ...\n"
+				"    lat_lon_tuples_inside_plate = [...]\n"
+				"    lat_lon_grid_spacing_in_degrees = ...\n"
+				"    lat_lon_grid_spacing_in_radians = math.radians(lat_lon_grid_spacing_in_degrees)\n"
+				"\n"
+				"    # We'll accumulate net rotation over the point samples inside the plate.\n"
+				"    plate_net_rotation_accumulator = pygplates.NetRotation()  # start with zero net rotation\n"
+				"\n"
+				"    for lat, lon in lat_lon_tuples_inside_plate:\n"
+				"        # The cosine is because points near the North/South poles are closer together\n"
+				"        # (latitude parallel small circle radius).\n"
+				"        sample_area_radians = math.cos(math.radians(lat)) * lat_lon_grid_spacing_in_radians * lat_lon_grid_spacing_in_radians\n"
+				"        plate_net_rotation_accumulator += pygplates.NetRotation.create_sample_from_finite_rotation(\n"
+				"                pygplates.LatLonPoint(lat, lon), sample_area_radians, plate_finite_rotation)\n"
+				"\n"
+				"    plate_net_rotation = plate_net_rotation_accumulator.get_finite_rotation()\n")
+		.staticmethod("create_sample_from_finite_rotation")
+		.def("create_sample_from_rotation_rate",
+				&GPlatesApi::net_rotation_create_sample_from_rotation_rate,
+				(bp::arg("point"),
+					bp::arg("sample_area"),
+					bp::arg("rotation_rate_vector")),
+				"create_sample_from_rotation_rate(point, sample_area, rotation_rate_vector)\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Creates a net rotation contribution from a rotation rate vector at a point sample.\n"
+				"\n"
+				"  :param point: The point that contributes to net rotation.\n"
+				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or tuple (float,float,float) or tuple (float,float)\n"
+				"  :param sample_area: The surface area around the point in steradians (square radians).\n"
+				"  :type sample_area: float\n"
+				"  :param rotation_rate_vector: The rotation rate vector (with magnitude in radians per Myr).\n"
+				"  :type rotation_rate_vector: :class:`Vector3D`\n"
+				"  :rtype: :class:`NetRotation`\n"
+				"\n"
+				"  .. seealso:: :meth:`create_sample_from_finite_rotation`\n")
+		.staticmethod("create_sample_from_rotation_rate")
 		.def("convert_finite_rotation_to_rotation_rate_vector",
 				&GPlatesAppLogic::NetRotationUtils::NetRotationAccumulator::convert_finite_rotation_to_rotation_rate_vector,
 				(bp::arg("finite_rotation"),
@@ -608,8 +765,16 @@ export_net_rotation()
 				"\n"
 				"    net_finite_rotation_over_10myr = pygplates.NetRotation.convert_rotation_rate_vector_to_finite_rotation(net_rotation_rate_vector, 10)\n")
 		.staticmethod("convert_rotation_rate_vector_to_finite_rotation")
-		// Make unhashable, with no comparison operators...
-		.def(GPlatesApi::NoHashDefVisitor(false, false))
+		.def(bp::self += bp::self) // modify a NetRotation by adding another
+		.def(bp::self + bp::self)  // add two NetRotation's and return a new one
+		// Comparisons...
+		// Due to the fact that two NetRotations can have equivalent finite rotations but can cover different areas
+		// we prevent equality comparisons and also make unhashable since user will expect hashing
+		// to be based on object value and not object identity (address).
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, true))
+		.def("__eq__", &GPlatesApi::net_rotation_eq)
+		.def("__ne__", &GPlatesApi::net_rotation_ne)
 	;
 
 	// Enable boost::optional<FiniteRotation> to be passed to and from python.

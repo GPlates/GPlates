@@ -519,6 +519,31 @@ class NetRotationTestCase(unittest.TestCase):
         self.assertAlmostEqual(total_pole_longitude, -113.761, places=3)
         self.assertAlmostEqual(total_angle_degrees, 0.014637, places=6)
     
+    def test_net_rotation_samples(self):
+        # Create equal net rotation samples from a finite rotation (over 1Myr) and from an equivalent rotation rate vector.
+        net_rotation_sample_from_finite_rotation = pygplates.NetRotation.create_sample_from_finite_rotation((10, 10), 0.01, pygplates.FiniteRotation((15, 15), 0.01))
+        net_rotation_sample_from_rotation_rate = pygplates.NetRotation.create_sample_from_rotation_rate((10, 10), 0.01, 0.01 * pygplates.Vector3D(pygplates.LatLonPoint(15, 15).to_xyz()))
+        self.assertTrue(net_rotation_sample_from_finite_rotation.get_finite_rotation() == net_rotation_sample_from_rotation_rate.get_finite_rotation())
+        # Test addition of net rotation samples - both samples have the same net rotation so adding them results in an unchanged final net rotation.
+        self.assertTrue(net_rotation_sample_from_finite_rotation.get_finite_rotation() ==
+                        (net_rotation_sample_from_finite_rotation + net_rotation_sample_from_rotation_rate).get_finite_rotation())
+        net_rotation_accumulator = pygplates.NetRotation()  # zero net rotation
+        net_rotation_accumulator += net_rotation_sample_from_finite_rotation
+        net_rotation_accumulator += net_rotation_sample_from_rotation_rate
+        self.assertTrue(net_rotation_accumulator.get_finite_rotation() == net_rotation_sample_from_finite_rotation.get_finite_rotation())
+        self.assertTrue(net_rotation_accumulator.get_finite_rotation() == net_rotation_sample_from_rotation_rate.get_finite_rotation())
+        # While the net rotation is unchanged the area is doubled.
+        self.assertTrue(net_rotation_accumulator.get_area() == 2 * net_rotation_sample_from_finite_rotation.get_area())
+        self.assertTrue(net_rotation_accumulator.get_area() == 2 * net_rotation_sample_from_rotation_rate.get_area())
+        # Use the default 'num_samples_along_meridian' (180).
+        total_net_rotation = self.net_rotation_model.net_rotation_snapshot(0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t).get_total_net_rotation()
+        total_net_rotation_clone = self.net_rotation_model.net_rotation_snapshot(0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t).get_total_net_rotation()
+        # Ensure modifying a net rotation changes the original object (ie, doesn't create a new one via addition).
+        total_net_rotation_before_modification = total_net_rotation
+        total_net_rotation += net_rotation_sample_from_finite_rotation
+        self.assertTrue(total_net_rotation_before_modification.get_finite_rotation() == total_net_rotation.get_finite_rotation())
+        self.assertTrue(total_net_rotation.get_finite_rotation() != total_net_rotation_clone.get_finite_rotation())  # make sure net rotation actually changed
+    
     def test_net_rotation_conversion(self):
         total_net_rotation = self.net_rotation_model.net_rotation_snapshot(0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t).get_total_net_rotation()
         total_net_finite_rotation = total_net_rotation.get_finite_rotation()

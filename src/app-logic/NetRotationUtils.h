@@ -71,9 +71,9 @@ namespace GPlatesAppLogic
 			NetRotationAccumulator
 			create(
 					const GPlatesMaths::PointOnSphere &point,
+					const double &sample_area_steradians,
 					const GPlatesMaths::FiniteRotation &stage_pole,
-					const double &time_interval,
-					const double &sample_area_steradians);
+					const double &time_interval);
 
 			/**
 			 * Calculate the contribution to the plate net-rotation for the specified point and rotation rate vector.
@@ -89,8 +89,8 @@ namespace GPlatesAppLogic
 			NetRotationAccumulator
 			create(
 					const GPlatesMaths::PointOnSphere &point,
-					const GPlatesMaths::Vector3D &rotation_rate_vector,
-					const double &sample_area_steradians);
+					const double &sample_area_steradians,
+					const GPlatesMaths::Vector3D &rotation_rate_vector);
 
 			/**
 			 * Calculate the sample area (on surface of globe) of the specified point on a uniform latitude/longitude grid.
@@ -167,9 +167,12 @@ namespace GPlatesAppLogic
 				d_area_steradians(0)         // zero area
 			{  }
 
-			void
-			add(
-					const NetRotationAccumulator &net_rotation);
+			/**
+			 * Accumulate another net rotation accumulator.
+			 */
+			NetRotationAccumulator &
+			operator+=(
+					const NetRotationAccumulator &other);
 
 			/**
 			 * Return the accumulated net rotation as a finite rotation (over a time interval of 1myr).
@@ -234,6 +237,12 @@ namespace GPlatesAppLogic
 					GPlatesScribe::Scribe &scribe,
 					bool transcribed_construct_data);
 		};
+
+		//! Add two net rotation accumulators.
+		NetRotationAccumulator
+		operator+(
+				const NetRotationAccumulator &net_rotation_accumulator1,
+				const NetRotationAccumulator &net_rotation_accumulator2);
 
 
 
