@@ -197,7 +197,6 @@ export_cpp_python_api()
 
 	// app-logic namespace
 	export_calculate_velocities();
-	export_net_rotation();
 	export_plate_partitioner();
 	export_reconstruct();
 	export_reconstruction_geometries();
@@ -207,6 +206,7 @@ export_cpp_python_api()
 	export_rotation_model();
 	export_topological_model();
 	export_topological_snapshot();
+	export_net_rotation(); // Must be called after 'export_reconstruction_geometries()'.
 
 	//export_co_registration();
 	export_colour();

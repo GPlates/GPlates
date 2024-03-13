@@ -512,12 +512,26 @@ class NetRotationTestCase(unittest.TestCase):
     
     def test_net_rotation(self):
         # Use the default 'num_samples_along_meridian' (180).
-        total_net_rotation = self.net_rotation_model.net_rotation_snapshot(0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t).get_total_net_rotation()
+        net_rotation_snapshot = self.net_rotation_model.net_rotation_snapshot(0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t)
+        total_net_rotation = net_rotation_snapshot.get_total_net_rotation()
         total_pole_latitude, total_pole_longitude, total_angle_degrees  = total_net_rotation.get_finite_rotation().get_lat_lon_euler_pole_and_angle_degrees()
         # These values were obtained from the GPlates net rotation export.
         self.assertAlmostEqual(total_pole_latitude, 15.4673, places=4)
         self.assertAlmostEqual(total_pole_longitude, -113.761, places=3)
         self.assertAlmostEqual(total_angle_degrees, 0.014637, places=6)
+        # Test the individual net rotations of resolved topological boundaries and networks.
+        total_net_rotation_accumulator = pygplates.NetRotation()  # zero net rotation
+        for resolved_topology_net_rotation in net_rotation_snapshot.get_net_rotation().values():
+            total_net_rotation_accumulator += resolved_topology_net_rotation
+        self.assertTrue(total_net_rotation.get_finite_rotation() == total_net_rotation_accumulator.get_finite_rotation())
+        # Test again but extracting each resolved topology's net rotation individually.
+        total_net_rotation_accumulator = pygplates.NetRotation()  # zero net rotation
+        for resolved_topology in net_rotation_snapshot.get_topological_snapshot().get_resolved_topologies():
+            resolved_topology_net_rotation = net_rotation_snapshot.get_net_rotation(resolved_topology)
+            # Not all resolved topologies in our topological snapshot will necessarily contribute net rotation.
+            if resolved_topology_net_rotation:
+                total_net_rotation_accumulator += resolved_topology_net_rotation
+        self.assertTrue(total_net_rotation.get_finite_rotation() == total_net_rotation_accumulator.get_finite_rotation())
     
     def test_net_rotation_samples(self):
         # Create equal net rotation samples from a finite rotation (over 1Myr) and from an equivalent rotation rate vector.

@@ -356,6 +356,8 @@ namespace GPlatesAppLogic
 			/**
 			 * Return a mapping of rigid plates to their accumulated net rotation.
 			 *
+			 * Note: Only those rigid plates that contributed net rotation are included.
+			 *
 			 * Note: Topological boundaries (rigid plates) that don't have a plate ID are excluded altogether
 			 *       because we cannot determine a stage rotation from them.
 			 */
@@ -367,6 +369,8 @@ namespace GPlatesAppLogic
 
 			/**
 			 * Return a mapping of deforming networks to their accumulated net rotation.
+			 *
+			 * Note: Only those deforming networks that contributed net rotation are included.
 			 */
 			const topological_network_net_rotation_map_type &
 			get_topological_network_net_rotation_map() const

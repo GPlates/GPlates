@@ -33,6 +33,8 @@
 #include "PythonPickle.h"
 #include "PythonVariableFunctionArguments.h"
 
+#include "app-logic/ReconstructionGeometryUtils.h"
+
 #include "global/GPlatesAssert.h"
 
 #include "property-values/GeoTimeInstant.h"
@@ -229,6 +231,77 @@ namespace GPlatesApi
 			NetRotationSnapshot::non_null_ptr_type net_rotation_snapshot)
 	{
 		return net_rotation_snapshot->get_net_rotation_calculator().get_total_net_rotation();
+	}
+
+	bp::object
+	net_rotation_snapshot_get_net_rotation(
+			NetRotationSnapshot::non_null_ptr_type net_rotation_snapshot,
+			boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type> resolved_topology_boundary_or_network)
+	{
+		const GPlatesAppLogic::NetRotationUtils::NetRotationCalculator &net_rotation_calculator =
+				net_rotation_snapshot->get_net_rotation_calculator();
+
+		// If user specified a resolved topology.
+		if (resolved_topology_boundary_or_network)
+		{
+			// See if a resolved topological boundary.
+			if (boost::optional<GPlatesAppLogic::ResolvedTopologicalBoundary *> rtb =
+					GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+							GPlatesAppLogic::ResolvedTopologicalBoundary *>(resolved_topology_boundary_or_network.get()))
+			{
+				// If resolved topological boundary exists in net rotation map (ie, sample points intersected it) then return its net rotation.
+				auto rtb_iter = net_rotation_calculator.get_topological_boundary_net_rotation_map().find(rtb.get());
+				if (rtb_iter != net_rotation_calculator.get_topological_boundary_net_rotation_map().end())
+				{
+					return bp::object(rtb_iter->second);  // net rotation
+				}
+
+				// Resolved topology does not contribute net rotation.
+				return bp::object()/*Py_None*/;
+			}
+			// else should be a resolved topological network...
+			else if (boost::optional<GPlatesAppLogic::ResolvedTopologicalNetwork *> rtn =
+					GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+							GPlatesAppLogic::ResolvedTopologicalNetwork*>(resolved_topology_boundary_or_network.get()))
+			{
+				// If resolved topological network exists in net rotation map (ie, sample points intersected it) then return its net rotation.
+				auto rtn_iter = net_rotation_calculator.get_topological_network_net_rotation_map().find(rtn.get());
+				if (rtn_iter != net_rotation_calculator.get_topological_network_net_rotation_map().end())
+				{
+					return bp::object(rtn_iter->second);  // net rotation
+				}
+
+				// Resolved topology does not contribute net rotation.
+				return bp::object()/*Py_None*/;
+			}
+			else
+			{
+				PyErr_SetString(PyExc_ValueError, "Should be either a ResolvedTopologicalBoundary or ResolvedTopologicalNetwork.");
+				bp::throw_error_already_set();
+			}
+		}
+
+		//
+		// Return net rotations for all resolved topological boundaries and networks that contribute net rotation (in a dict).
+		//
+
+		bp::dict net_rotation_dict;
+
+		// Iterate over all resolved topological boundaries.
+		for (const auto &rtb_entry : net_rotation_calculator.get_topological_boundary_net_rotation_map())
+		{
+			// Map the current resolved topology to its net rotation.
+			net_rotation_dict[rtb_entry.first] = rtb_entry.second;
+		}
+
+		// Iterate over all resolved topological networks.
+		for (const auto &rtn_entry : net_rotation_calculator.get_topological_network_net_rotation_map())
+		{
+			// Map the current resolved topology to its net rotation.
+			net_rotation_dict[rtn_entry.first] = rtn_entry.second;
+		}
+
+		return net_rotation_dict;
 	}
 
 	NetRotationSnapshot::non_null_ptr_type
@@ -805,7 +878,7 @@ export_net_rotation()
 			"  :rtype: :class:`NetRotationSnapshot`\n"
 			"  :raises: ValueError if *velocity_delta_time* is negative or zero.\n"
 			"\n"
-			"  The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in this snapshot is calculated as:\n"
+			"  The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in this snapshot is:\n"
 			"\n"
 			"  .. math::\n"
 			"\n"
@@ -837,13 +910,6 @@ export_net_rotation()
 			"If nothing is specified for *point_distribution* then a uniform latitude-longitude grid of `"
 			<< GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN << " x " << 2 * GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN <<
 			"` points is used.\n"
-			"\n"
-			"  .. note:: The net rotation for individual topologies (rigid plates and deforming networks) can differ from those exported by GPlates 2.4 and older. "
-			"This is because GPlates <= 2.4 calculated a topology's normalisation factor as :math:`\\frac{1}{\\int \\cos(latitude)^2 \\, dS}` whereas pyGPlates (and GPlates > 2.4) "
-			"calculate it as :math:`\\frac{3}{2 \\int \\, dS}` to avoid any variation with latitude. Both give the same total normalization of :math:`\\frac{3}{8\\pi}` when integrated "
-			"over the *entire* globe and hence result in the same :meth:`total net rotation<NetRotationSnapshot.get_total_net_rotation>` over all topologies. However they will give "
-			"different results for an individual topology (ie, integrated over only a rigid plate or deforming network). Equatorial topologies will now have a higher net rotation "
-			"(and topologies nearer the poles will have a lower net rotation).\n"
 			"\n"
 			"  To create a net rotation snapshot (of a topological snapshot) at 0Ma calculated with a velocity delta from 1Ma (to 0Ma):"
 			"  ::\n"
@@ -919,7 +985,7 @@ export_net_rotation()
 				"\n"
 				"  :rtype: :class:`NetRotation`\n"
 				"\n"
-				"  The total net rotation of all resolved topologies in this snapshot is calculated as:\n"
+				"  The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in this snapshot is:\n"
 				"\n"
 				"  .. math::\n"
 				"\n"
@@ -929,7 +995,76 @@ export_net_rotation()
 				":math:`\\boldsymbol \\omega_i(\\boldsymbol r)` is the rotation rate vector for resolved topology :math:`i` at location :math:`\\boldsymbol r`. For a rigid plate this is "
 				"just a constant :math:`\\boldsymbol \\omega_i(\\boldsymbol r) = \\boldsymbol \\omega_i`, but for a deforming network this varies spatially across the network "
 				"(hence the dependency on :math:`\\boldsymbol r`). Note that if a deforming network overlaps a rigid plate then only the deforming network contributes to the "
-				"total net rotation (in the overlap region).\n")
+				"total net rotation (in the overlap region).\n"
+				"\n"
+				"  ::\n"
+				"\n"
+				"    total_net_rotation = net_rotation_snapshot.get_total_net_rotation()\n"
+				"\n"
+				"  This is equivalent to accumulating the net rotation for each resolved topological boundary and network that contributed to the total net rotation:\n"
+				"  ::\n"
+				"\n"
+				"    total_net_rotation = pygplates.NetRotation()  # zero net rotation\n"
+				"    # Get the net rotation of each resolved topology that contributed to the toal net rotation (extract *values* from dict).\n"
+				"    for resolved_topology_net_rotation in net_rotation_snapshot.get_net_rotation().values():\n"
+				"        total_net_rotation += resolved_topology_net_rotation\n"
+				"\n"
+				"  .. note:: Any :class:`resolved topological boundaries<ResolvedTopologicalBoundary>` that don't have a :meth:`reconstruction plate ID<Feature.get_reconstruction_plate_id>` "
+				"will not contribute to the total net rotation.\n"
+				"\n"
+				"  .. seealso:: :meth:`get_net_rotation`\n")
+		.def("get_net_rotation",
+				&GPlatesApi::net_rotation_snapshot_get_net_rotation,
+				(bp::arg("resolved_topology") = boost::optional<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type>()),
+				"get_net_rotation([resolved_topology])\n"
+				"  Return the net rotation of the specified resolved topology (or a net rotation for each topology as a ``dict``).\n"
+				"\n"
+				"  :param resolved_topology: Optional resolved topology to retrieve net rotation for. If not specified then net rotations for all "
+				"resolved boundaries and networks that **contribute net rotation** are returned (returned as a ``dict``).\n"
+				"  :type resolved_topology: :class:`ResolvedTopologicalBoundary` or :class:`ResolvedTopologicalNetwork`\n"
+				"  :returns: If *resolved_topology* is specified then returns the net rotation of that resolved topology boundary or network "
+				"(or ``None`` if *resolved_topology* does **not contribute net rotation**). Otherwise returns a ``dict`` mapping each "
+				":class:`ResolvedTopologicalBoundary` or :class:`ResolvedTopologicalNetwork` that **contributes net rotation** to its :class:`NetRotation`.\n"
+				"  :rtype: :class:`NetRotation` or ``None``, or ``dict``\n"
+				"  :raises: ValueError if *resolved_topology* is specified but is neither a :class:`ResolvedTopologicalBoundary` nor a :class:`ResolvedTopologicalNetwork`.\n"
+				"\n"
+				"  .. note:: Any resolved boundary or network that did not intersect any sample points (see *point_distribution* in :meth:`__init__`) will **not contribute net rotation**. "
+				"And any :class:`resolved boundary<ResolvedTopologicalBoundary>` that doesn't have a :meth:`reconstruction plate ID<Feature.get_reconstruction_plate_id>` will **not contribute net rotation**.\n"
+				"\n"
+				"  The net rotation of resolved topology :math:`i` (rigid plate or deforming network) is:\n"
+				"\n"
+				"  .. math::\n"
+				"\n"
+				"     \\boldsymbol \\omega_{i \\, net} = \\frac{\\int \\boldsymbol r \\times (\\boldsymbol \\omega_i(\\boldsymbol r) \\times \\boldsymbol r) \\, dS_i}{\\frac{2}{3} \\int \\, dS_i}\n"
+				"\n"
+				"  ...where :math:`\\int ... dS_i` is integration over the surface area of resolved topology :math:`i`, and :math:`\\int dS_i` is its surface area, and :math:`\\boldsymbol \\omega_i(\\boldsymbol r)` "
+				"is its rotation rate vector at location :math:`\\boldsymbol r`. For a rigid plate this is just a constant :math:`\\boldsymbol \\omega_i(\\boldsymbol r) = \\boldsymbol \\omega_i`, "
+				"but for a deforming network this varies spatially across the network (hence the dependency on :math:`\\boldsymbol r`).\n"
+				"\n"
+				"  .. note:: The net rotation for individual topologies (rigid plates and deforming networks) can differ from those exported by GPlates 2.4 and older. "
+				"This is because GPlates <= 2.4 calculated a topology's normalisation factor as :math:`\\frac{1}{\\int \\cos(latitude)^2 \\, dS_i}` whereas pyGPlates (and GPlates > 2.4) "
+				"calculate it as :math:`\\frac{1}{\\frac{2}{3} \\int \\, dS_i}` to avoid any variation with latitude. Both give the same total normalization of :math:`\\frac{3}{8\\pi}` when "
+				"integrated over the *entire* globe and hence result in the same :meth:`total net rotation<NetRotationSnapshot.get_total_net_rotation>` over all topologies. However they will "
+				"give different results for an individual topology (ie, integrated over only the rigid plate or deforming network). Equatorial topologies will now have a higher net rotation "
+				"(and topologies nearer the poles will have a lower net rotation).\n"
+				"\n"
+				"  To iterate over the resolved topologies that **contribute net rotation** in this snapshot and print out their individual net rotations:\n"
+				"  ::\n"
+				"\n"
+				"    net_rotation_dict = net_rotation_snapshot.get_net_rotation()\n"
+				"    for resolved_topology, net_rotation in net_rotation_dict.items():\n"
+				"        print('Topology {} has net rotation {}'.format(resolved_topology.get_feature().get_name(), net_rotation.get_finite_rotation()))\n"
+				"\n"
+				"  ...which is equivalent to the following:\n"
+				"  ::\n"
+				"\n"
+				"    for resolved_topology in net_rotation_snapshot.get_topological_snapshot().get_resolved_topologies():\n"
+				"        net_rotation = net_rotation_snapshot.get_net_rotation(resolved_topology)\n"
+				"        # Not all resolved topologies in our topological snapshot will necessarily contribute net rotation.\n"
+				"        if net_rotation:\n"
+				"            print('Topology {} has net rotation {}'.format(resolved_topology.get_feature().get_name(), net_rotation.get_finite_rotation()))\n"
+				"\n"
+				"  .. seealso:: :meth:`get_total_net_rotation`\n")
 		.def("get_velocity_delta_time",
 				&GPlatesApi::NetRotationSnapshot::get_velocity_delta_time,
 				"get_velocity_delta_time()\n"
@@ -976,7 +1111,7 @@ export_net_rotation()
 			"  :raises: ValueError if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n"
 			"  :raises: ValueError if *velocity_delta_time* is negative or zero.\n"
 			"\n"
-			"  The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in this snapshot is calculated as:\n"
+			"  The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in this snapshot is:\n"
 			"\n"
 			"  .. math::\n"
 			"\n"
@@ -1008,13 +1143,6 @@ export_net_rotation()
 			"If nothing is specified for *point_distribution* then a uniform latitude-longitude grid of `"
 			<< GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN << " x " << 2 * GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN <<
 			"` points is used.\n"
-			"\n"
-			"  .. note:: The net rotation for individual topologies (rigid plates and deforming networks) can differ from those exported by GPlates 2.4 and older. "
-			"This is because GPlates <= 2.4 calculated a topology's normalisation factor as :math:`\\frac{1}{\\int \\cos(latitude)^2 \\, dS}` whereas pyGPlates (and GPlates > 2.4) "
-			"calculate it as :math:`\\frac{3}{2 \\int \\, dS}` to avoid any variation with latitude. Both give the same total normalization of :math:`\\frac{3}{8\\pi}` when integrated "
-			"over the *entire* globe and hence result in the same :meth:`total net rotation<NetRotationSnapshot.get_total_net_rotation>` over all topologies. However they will give "
-			"different results for an individual topology (ie, integrated over only a rigid plate or deforming network). Equatorial topologies will now have a higher net rotation "
-			"(and topologies nearer the poles will have a lower net rotation).\n"
 			"\n"
 			"  To create a net rotation snapshot at 0Ma calculated with a velocity delta from 1Ma (to 0Ma):"
 			"  ::\n"
