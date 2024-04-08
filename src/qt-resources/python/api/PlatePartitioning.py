@@ -123,7 +123,7 @@ def plate_partitioner_partition_features(
     Partitions features into partitioning plates.
     
     :param features: the features to partition
-    :type features: :class:`FeatureCollection`, or string, or :class:`Feature`, \
+    :type features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
         or sequence of :class:`Feature`, or sequence of any combination of those four types
     
     :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features \
@@ -333,6 +333,10 @@ def plate_partitioner_partition_features(
     ...this is useful when the features to be partitioned already have reconstruction plate IDs but
     they are deemed to be incorrect. By resetting them to zero we ensure the unpartitioned features remain stationary
     and do not reconstruct incorrectly over geological time. Any partitioned features will get a new plate ID.
+
+    .. versionchanged:: 0.44
+       Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ \
+    (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
     """
     
     # Turn function argument into something more convenient for extracting features.
@@ -526,16 +530,16 @@ def partition_into_plates(
     Partition features into plates.
     
     :param partitioning_features: the partitioning features
-    :type partitioning_features: :class:`FeatureCollection`, or string, or :class:`Feature`, \
+    :type partitioning_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
         or sequence of :class:`Feature`, or sequence of any combination of those four types
     
     :param rotation_model: A rotation model or a rotation feature collection or a rotation \
         filename or a sequence of rotation feature collections and/or rotation filenames
-    :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string \
-        or sequence of :class:`FeatureCollection` instances and/or strings
+    :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string/``os.PathLike`` \
+        or sequence of :class:`FeatureCollection` instances and/or string/``os.PathLike`` instances
     
     :param features_to_partition: the features to be partitioned
-    :type features_to_partition: :class:`FeatureCollection`, or string, or :class:`Feature`, \
+    :type features_to_partition: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
         or sequence of :class:`Feature`, or sequence of any combination of those four types
     
     :param properties_to_copy: the properties to copy from partitioning plate features to the partitioned features \
@@ -833,6 +837,10 @@ def partition_into_plates(
             plate_partitioner = pygplates.PlatePartitioner(partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates)
             
             return plate_partitioner.partition_features(features_to_partition, properties_to_copy, partition_method, partition_return)
+
+    .. versionchanged:: 0.44
+       Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ \
+    (such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.
     """
     
     plate_partitioner = PlatePartitioner(partitioning_features, rotation_model, reconstruction_time, sort_partitioning_plates)

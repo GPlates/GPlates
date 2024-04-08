@@ -37,6 +37,7 @@
 #include <QString>
 
 #include "PyFeatureCollectionFunctionArgument.h"
+#include "PyFilePathFunctionArgument.h"
 #include "PyRotationModel.h"
 #include "PythonConverterUtils.h"
 #include "PythonUtils.h"
@@ -96,7 +97,7 @@ namespace GPlatesApi
 		 * The argument types for 'reconstructed feature geometries'.
 		 */
 		typedef boost::variant<
-				QString,  // export filename
+				FilePathFunctionArgument,  // export filename
 				bp::list> // list of ReconstructedFeatureGeometry's
 						reconstructed_feature_geometries_argument_type;
 
@@ -130,7 +131,7 @@ namespace GPlatesApi
 					RotationModelFunctionArgument,
 					double, // Note: This is not GPlatesPropertyValues::GeoTimeInstant.
 					boost::optional<GPlatesModel::integer_plate_id_type>,
-					QString> // Only export filename supported (not a python list of RFG's).
+					FilePathFunctionArgument> // Only export filename supported (not a python list of RFG's).
 							reconstruct_args_type;
 
 			// Define the explicit function argument names...
@@ -694,8 +695,10 @@ namespace GPlatesApi
 		// respective features with each feature collection (and the order across feature collections).
 		//
 
-		if (const QString *export_file_name = boost::get<QString>(&reconstructed_feature_geometries_argument))
+		if (const FilePathFunctionArgument *export_file_path = boost::get<FilePathFunctionArgument>(&reconstructed_feature_geometries_argument))
 		{
+			const QString export_file_name = export_file_path->get_file_path();
+
 			// Get the sequence of reconstructable files as File pointers.
 			std::vector<const GPlatesFileIO::File::Reference *> reconstructable_file_ptrs;
 			BOOST_FOREACH(GPlatesFileIO::File::non_null_ptr_type reconstructable_file, reconstructable_files)
@@ -718,7 +721,7 @@ namespace GPlatesApi
 			case ReconstructType::FEATURE_GEOMETRY:
 				export_reconstructed_feature_geometries(
 						rfgs,
-						*export_file_name,
+						export_file_name,
 						reconstructable_file_ptrs,
 						reconstruction_file_ptrs,
 						reconstruction_tree_creator.get_default_anchor_plate_id(),
@@ -729,7 +732,7 @@ namespace GPlatesApi
 			case ReconstructType::MOTION_PATH:
 				export_reconstructed_motion_paths(
 						rfgs,
-						*export_file_name,
+						export_file_name,
 						reconstructable_file_ptrs,
 						reconstruction_file_ptrs,
 						reconstruction_tree_creator.get_default_anchor_plate_id(),
@@ -740,7 +743,7 @@ namespace GPlatesApi
 			case ReconstructType::FLOWLINE:
 				export_reconstructed_flowlines(
 						rfgs,
-						*export_file_name,
+						export_file_name,
 						reconstructable_file_ptrs,
 						reconstruction_file_ptrs,
 						reconstruction_tree_creator.get_default_anchor_plate_id(),
@@ -959,12 +962,12 @@ export_reconstruct()
 			"  :param reconstructable_features: the features to reconstruct as a feature collection, or filename, or "
 			"feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any "
 			"combination of those four types\n"
-			"  :type reconstructable_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
+			"  :type reconstructable_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, "
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
 			"filename or a sequence of rotation feature collections and/or rotation filenames\n"
-			"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string "
-			"or sequence of :class:`FeatureCollection` instances and/or strings\n"
+			"  :type rotation_model: :class:`RotationModel`, or :class:`FeatureCollection`, or string/``os.PathLike``, "
+			"or sequence of :class:`FeatureCollection` instances and/or string/``os.PathLike`` instances\n"
 			"  :param reconstructed_geometries: the "
 			":class:`reconstructed feature geometries<ReconstructedFeatureGeometry>` (default) or "
 			":class:`reconstructed motion paths<ReconstructedMotionPath>` or "
@@ -973,7 +976,7 @@ export_reconstruct()
 			"file (with specified filename) or *appended* to a Python ``list`` (note that the list is *not* "
 			"cleared first and note that the list contents are affected by *group_with_feature* - see "
 			"*output_parameters* table)\n"
-			"  :type reconstructed_geometries: string or ``list``\n"
+			"  :type reconstructed_geometries: string/``os.PathLike`` or ``list``\n"
 			"  :param reconstruction_time: the specific geological time to reconstruct to\n"
 			"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 			"  :param anchor_plate_id: The anchored plate id used during reconstruction. "
@@ -1129,7 +1132,11 @@ export_reconstruct()
 			"\n"
 			"    reconstructed_feature_geometries = []\n"
             "    pygplates.reconstruct(feature, rotation_model, reconstructed_feature_geometries, 10)\n"
-			"    # assert(reconstructed_feature_geometries[0].get_feature().get_feature_id() == feature.get_feature_id())\n";
+			"    # assert(reconstructed_feature_geometries[0].get_feature().get_feature_id() == feature.get_feature_id())\n"
+			"\n"
+			"  .. versionchanged:: 0.44\n"
+			"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+			"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n";
 
 	// Register 'reconstructed feature geometries' variant.
 	GPlatesApi::PythonConverterUtils::register_variant_conversion<
@@ -1148,12 +1155,12 @@ export_reconstruct()
 			"  :param reconstructable_features: A reconstructable feature collection, or filename, or "
 			"feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any "
 			"combination of those four types - all features used as input and output\n"
-			"  :type reconstructable_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
+			"  :type reconstructable_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, "
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param rotation_model: A rotation model or a rotation feature collection or a rotation "
 			"filename or a sequence of rotation feature collections and/or rotation filenames\n"
-			"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string "
-			"or sequence of :class:`FeatureCollection` instances and/or strings\n"
+			"  :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string/``os.PathLike`` "
+			"or sequence of :class:`FeatureCollection` instances and/or string/``os.PathLike`` instances\n"
 			"  :param reconstruction_time: the specific geological time to reverse reconstruct from "
 			"(note that this also :meth:`sets the geometry import time<Feature.set_geometry_import_time>`).\n"
 			"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
@@ -1214,5 +1221,9 @@ export_reconstruct()
             "    pygplates.reconstruct(feature, rotation_model, 10)\n"
 			"\n"
 			"  .. versionchanged:: 0.29\n"
-			"     The :meth:`geometry import time<Feature.set_geometry_import_time>` is set to *reconstruction_time*.\n");
+			"     The :meth:`geometry import time<Feature.set_geometry_import_time>` is set to *reconstruction_time*.\n"
+			"\n"
+			"  .. versionchanged:: 0.44\n"
+			"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+			"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n");
 }

@@ -28,10 +28,10 @@
 #include <vector>
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
-#include <QString>
 
 #include "PyFeatureCollectionFileFormatRegistry.h"
 #include "PyFeatureCollectionFunctionArgument.h"
+#include "PyFilePathFunctionArgument.h"
 #include "PythonConverterUtils.h"
 #include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
@@ -80,7 +80,7 @@ namespace GPlatesApi
 	void
 	feature_collection_handle_write(
 			GPlatesModel::FeatureCollectionHandle::non_null_ptr_type feature_collection,
-			const QString &filename)
+			const FilePathFunctionArgument &filename)
 	{
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry registry;
 
@@ -818,7 +818,11 @@ export_feature_collection()
 					"   Can index a feature in feature collection *fc* with ``fc[i]``.\n"
 					"\n"
 					".. versionchanged:: 0.42\n"
-					"   Added pickle support.\n",
+					"   Added pickle support.\n"
+					"\n"
+					".. versionchanged:: 0.44\n"
+					"   Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+					"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -831,7 +835,7 @@ export_feature_collection()
 				"  Create a new feature collection instance.\n"
 				"\n"
 				"  :param features: an optional filename, or sequence of features, or a single feature\n"
-				"  :type features: string, or a sequence (eg, ``list`` or ``tuple``) of :class:`Feature`, "
+				"  :type features: string/``os.PathLike``, or a sequence (eg, ``list`` or ``tuple``) of :class:`Feature`, "
 				"or a single :class:`Feature`\n"
 				"  :raises: OpenFileForReadingError if file is not readable (if filename specified)\n"
 				"  :raises: FileFormatNotSupportedError if file format (identified by the filename "
@@ -870,7 +874,11 @@ export_feature_collection()
 				"       # since the feature data is shared by both collections...\n"
 				"       for feature in original_feature_collection:\n"
 				"           # Changing the reconstruction plate ID affects both original and shallow copy collections.\n"
-				"           feature.set_reconstruction_plate_id(...)\n")
+				"           feature.set_reconstruction_plate_id(...)\n"
+				"\n"
+				"  .. versionchanged:: 0.44\n"
+				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
 		// Pickle support...
 		//
 		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
@@ -887,7 +895,7 @@ export_feature_collection()
 				"  [*staticmethod*] Reads one or more feature collections (from one or more files).\n"
 				"\n"
 				"  :param filename: the name of the file (or files) to read\n"
-				"  :type filename: string, or sequence of strings\n"
+				"  :type filename: string/``os.PathLike``, or sequence of string/``os.PathLike``\n"
 				"  :rtype: :class:`FeatureCollection`, list of :class:`FeatureCollection`\n"
 				"  :raises: OpenFileForReadingError if any file is not readable\n"
 				"  :raises: FileFormatNotSupportedError if any file format (identified by a filename "
@@ -906,7 +914,11 @@ export_feature_collection()
 				"  ::\n"
 				"\n"
 				"    for feature_collection in pygplates.FeatureCollection.read([filename1, filename2]):\n"
-				"        ...\n")
+				"        ...\n"
+				"\n"
+				"  .. versionchanged:: 0.44\n"
+				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
 		.staticmethod("read")
 		.def("write",
 				&GPlatesApi::feature_collection_handle_write,
@@ -915,14 +927,18 @@ export_feature_collection()
 				"  Writes this feature collection to the file with name *filename*.\n"
 				"\n"
 				"  :param filename: the name of the file to write\n"
-				"  :type filename: string\n"
+				"  :type filename: string/``os.PathLike``\n"
 				"  :raises: OpenFileForWritingError if the file is not writable\n"
 				"  :raises: FileFormatNotSupportedError if the file format (identified by the filename "
 				"extension) does not support writing\n"
 				"\n"
 				"  ::\n"
 				"\n"
-				"    feature_collection.write(filename)\n")
+				"    feature_collection.write(filename)\n"
+				"\n"
+				"  .. versionchanged:: 0.44\n"
+				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
 		.def("clone",
 				&GPlatesApi::feature_collection_handle_clone,
 				"clone()\n"

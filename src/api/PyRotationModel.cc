@@ -678,7 +678,7 @@ export_rotation_model()
 			"  :param rotation_features: A rotation feature collection, or rotation filename, or "
 			"rotation feature, or sequence of rotation features, or a sequence (eg, ``list`` or ``tuple``) "
 			"of any combination of those four types\n"
-			"  :type rotation_features: :class:`FeatureCollection`, or string, or :class:`Feature`, "
+			"  :type rotation_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, "
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
 			"  :param reconstruction_tree_cache_size: Number of reconstruction trees to cache internally. "
 			"Defaults to " << GPlatesApi::RotationModel::DEFAULT_RECONSTRUCTION_TREE_CACHE_SIZE << ".\n"
@@ -711,12 +711,16 @@ export_rotation_model()
 			"    ...\n"
 			"    rotation_model = pygplates.RotationModel(['rotations.rot', rotation_adjustments])\n"
 			"\n"
-			".. versionchanged:: 0.25\n"
+			"  .. versionchanged:: 0.25\n"
 			"     Added *extend_total_reconstruction_poles_to_distant_past* argument and "
 			"removed *clone_rotation_features* argument.\n"
 			"\n"
-			".. versionchanged:: 0.26\n"
+			"  .. versionchanged:: 0.26\n"
 			"     Added *default_anchor_plate_id* argument.\n"
+			"\n"
+			"  .. versionchanged:: 0.44\n"
+			"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
+			"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
 			;
 
 	//

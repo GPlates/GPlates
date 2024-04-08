@@ -4,6 +4,7 @@ Unit tests for the pygplates application logic API.
 
 import math
 import os
+import sys
 import pickle
 import shutil
 import unittest
@@ -45,6 +46,13 @@ class CrossoverTestCase(unittest.TestCase):
     def test_find_crossovers(self):
         crossovers = pygplates.find_crossovers(os.path.join(FIXTURES, 'rotations.rot'))
         self.assertTrue(len(crossovers) == 133)
+
+        # Test PathLike file paths (see PEP 519 and https://docs.python.org/3/library/os.html#os.PathLike).
+        # For example, "pathlib.Path" imported with "from pathlib import Path".
+        if sys.version_info >= (3, 6):  # os.PathLike new in Python 3.6
+            from pathlib import Path
+            crossovers = pygplates.find_crossovers(FIXTURES / Path('rotations.rot'))
+            self.assertTrue(len(crossovers) == 133)
         
         # TODO: Add more tests.
 
@@ -64,6 +72,26 @@ class CrossoverTestCase(unittest.TestCase):
                 crossover_results)
         # Due to filtering of crossover times less than 600Ma we have 123 instead of 134 crossovers.
         self.assertTrue(len(crossover_results) == 123)
+
+        # Test PathLike file paths (see PEP 519 and https://docs.python.org/3/library/os.html#os.PathLike).
+        # For example, "pathlib.Path" imported with "from pathlib import Path".
+        if sys.version_info >= (3, 6):  # os.PathLike new in Python 3.6
+            from pathlib import Path
+            import shutil
+            # Copy 'rotations.rot' to 'tmp.rot'.
+            tmp_rot_filename = FIXTURES / Path('tmp.rot')
+            shutil.copyfile(FIXTURES / Path('rotations.rot'), tmp_rot_filename)
+            # Modify 'tmp.rot' in place.
+            crossover_results = []
+            pygplates.synchronise_crossovers(
+                    tmp_rot_filename,
+                    lambda crossover: crossover.time < 600,
+                    0.01, # 2 decimal places
+                    pygplates.CrossoverType.synch_old_crossover_and_stages,
+                    crossover_results)
+            os.remove(tmp_rot_filename)  # remove 'tmp.rot'
+            # Due to filtering of crossover times less than 600Ma we have 123 instead of 134 crossovers.
+            self.assertTrue(len(crossover_results) == 123)
         
         # TODO: Add more tests.
 
@@ -139,6 +167,23 @@ class ReconstructTestCase(unittest.TestCase):
         
         self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'test.xy')))
         os.remove(os.path.join(FIXTURES, 'test.xy'))
+        self.assertFalse(os.path.isfile(os.path.join(FIXTURES, 'test.xy')))
+
+        # Test PathLike file paths (see PEP 519 and https://docs.python.org/3/library/os.html#os.PathLike).
+        # For example, "pathlib.Path" imported with "from pathlib import Path".
+        if sys.version_info >= (3, 6):  # os.PathLike new in Python 3.6
+            from pathlib import Path
+            
+            output_path = FIXTURES / Path('test.xy')
+            pygplates.reconstruct(
+                FIXTURES / Path('volcanoes.gpml'),
+                FIXTURES / Path('rotations.rot'),
+                output_path,
+                pygplates.GeoTimeInstant(10))
+            
+            self.assertTrue(output_path.exists())
+            output_path.unlink()
+            self.assertFalse(output_path.exists())
         
         feature_collection = pygplates.FeatureCollectionFileFormatRegistry().read(
                 os.path.join(FIXTURES, 'volcanoes.gpml'))
@@ -1050,6 +1095,43 @@ class PlatePartitionerTestCase(unittest.TestCase):
         self.assertTrue(
                 plate_partitioner.partition_point(pygplates.PointOnSphere(0, -60)).get_feature().get_feature_id().get_string() ==
                 'GPlates-4fe56a89-d041-4494-ab07-3abead642b8e')
+    
+    def test_pathlike(self):
+
+        # Test PathLike file paths (see PEP 519 and https://docs.python.org/3/library/os.html#os.PathLike).
+        # For example, "pathlib.Path" imported with "from pathlib import Path".
+        if sys.version_info >= (3, 6):  # os.PathLike new in Python 3.6
+            from pathlib import Path
+
+            # Test first PlatePartitioner.__init__ overload.
+            rotation_model = pygplates.RotationModel(self.rotation_features)
+            resolved_topologies = []
+            pygplates.resolve_topologies(self.topological_features, rotation_model, resolved_topologies, 0)
+            plate_partitioner = pygplates.PlatePartitioner(resolved_topologies, FIXTURES / Path('rotations.rot'))
+            self.assertTrue(plate_partitioner.partition_geometry(pygplates.PointOnSphere(0, -30)))
+
+            # Test second PlatePartitioner.__init__ overload.
+            plate_partitioner = pygplates.PlatePartitioner(FIXTURES / Path('topologies.gpml'), FIXTURES / Path('rotations.rot'))
+            self.assertTrue(plate_partitioner.partition_geometry(pygplates.PointOnSphere(0, -30)))
+
+            # Temporary file containing features to partition.
+            tmp_features_filename = FIXTURES / Path('tmp_features.gpml')
+            point_feature = pygplates.Feature()
+            point_feature.set_geometry(pygplates.PointOnSphere(0, -30))
+            pygplates.FeatureCollection(point_feature).write(tmp_features_filename)
+
+            # Test PlatePartitioner.partition_features().
+            partitioned_features = plate_partitioner.partition_features(tmp_features_filename)
+            self.assertTrue(len(partitioned_features) == 1)
+
+            # Test partition_into_plates().
+            partitioned_features = pygplates.partition_into_plates(
+                    FIXTURES / Path('topologies.gpml'),
+                    FIXTURES / Path('rotations.rot'),
+                    tmp_features_filename)
+            self.assertTrue(len(partitioned_features) == 1)
+
+            tmp_features_filename.unlink()
 
 
 class ResolvedTopologiesTestCase(unittest.TestCase):
@@ -1065,6 +1147,25 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
         os.remove(os.path.join(FIXTURES, 'resolved_topologies.gmt'))
         self.assertTrue(os.path.isfile(os.path.join(FIXTURES, 'resolved_topological_sections.gmt')))
         os.remove(os.path.join(FIXTURES, 'resolved_topological_sections.gmt'))
+
+        # Test PathLike file paths (see PEP 519 and https://docs.python.org/3/library/os.html#os.PathLike).
+        # For example, "pathlib.Path" imported with "from pathlib import Path".
+        if sys.version_info >= (3, 6):  # os.PathLike new in Python 3.6
+            from pathlib import Path
+            
+            resolved_topologies_output_path = FIXTURES / Path('resolved_topologies.gmt')
+            resolved_topological_sections_output_path = FIXTURES / Path('resolved_topological_sections.gmt')
+            pygplates.resolve_topologies(
+                FIXTURES / Path('topologies.gpml'),
+                FIXTURES / Path('rotations.rot'),
+                resolved_topologies_output_path,
+                pygplates.GeoTimeInstant(10),
+                resolved_topological_sections_output_path)
+            
+            self.assertTrue(resolved_topologies_output_path.exists())
+            resolved_topologies_output_path.unlink()
+            self.assertTrue(resolved_topological_sections_output_path.exists())
+            resolved_topological_sections_output_path.unlink()
         
         topological_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml'))
         rotation_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'rotations.rot'))
@@ -1902,6 +2003,13 @@ class RotationModelCase(unittest.TestCase):
         # deprecated (not documented) overload accepting 'clone_rotation_features'.
         rotation_model_extended = pygplates.RotationModel(self.rotations, 100, True)
         self.assertTrue(rotation_model_extended.get_rotation(1000.0, 801, anchor_plate_id=802, use_identity_for_missing_plate_ids=False))
+
+        # Test PathLike file paths (see PEP 519 and https://docs.python.org/3/library/os.html#os.PathLike).
+        # For example, "pathlib.Path" imported with "from pathlib import Path".
+        if sys.version_info >= (3, 6):  # os.PathLike new in Python 3.6
+            from pathlib import Path
+            rotation_model_from_path = pygplates.RotationModel(FIXTURES / Path('rotations.rot'))
+            self.assertTrue(rotation_model_from_path.get_rotation(0.0, 801, use_identity_for_missing_plate_ids=False))
     
     def test_get_reconstruction_tree(self):
         to_reconstruction_tree = self.rotation_model.get_reconstruction_tree(self.to_time)
@@ -2044,6 +2152,15 @@ class TopologicalModelCase(unittest.TestCase):
                 self.rotation_model)
         # Make sure can specify a topological snapshot cache size.
         topological_model = pygplates.TopologicalModel(self.topologies, self.rotation_model, topological_snapshot_cache_size=2)
+
+        # Test PathLike file paths (see PEP 519 and https://docs.python.org/3/library/os.html#os.PathLike).
+        # For example, "pathlib.Path" imported with "from pathlib import Path".
+        if sys.version_info >= (3, 6):  # os.PathLike new in Python 3.6
+            from pathlib import Path
+            
+            topological_model = pygplates.TopologicalModel(
+                FIXTURES / Path('topologies.gpml'),
+                FIXTURES / Path('rotations.rot'))
 
     def test_get_topological_snapshot(self):
         topological_snapshot = self.topological_model.topological_snapshot(10.5)  # note: it should allow a non-integral time
@@ -2358,6 +2475,19 @@ class TopologicalSnapshotCase(unittest.TestCase):
             rotations,
             pygplates.GeoTimeInstant(10))
 
+        # Test PathLike file paths (see PEP 519 and https://docs.python.org/3/library/os.html#os.PathLike).
+        # For example, "pathlib.Path" imported with "from pathlib import Path".
+        if sys.version_info >= (3, 6):  # os.PathLike new in Python 3.6
+            from pathlib import Path
+            
+            snapshot = pygplates.TopologicalSnapshot(
+                FIXTURES / Path('topologies.gpml'),
+                FIXTURES / Path('rotations.rot'),
+                pygplates.GeoTimeInstant(10))
+            
+            self.assertTrue(snapshot.get_anchor_plate_id() == 0)
+            self.assertTrue(snapshot.get_rotation_model())
+
     def test_resolved_export_files(self):
         resolve_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml')) 
         rotation_model = pygplates.RotationModel(os.path.join(FIXTURES, 'rotations.rot'))
@@ -2438,6 +2568,21 @@ class TopologicalSnapshotCase(unittest.TestCase):
         _internal_test_export_files(self, snapshot, 'tmp.gmt', 'tmp_sections.gmt')  # OGRGMT
         _internal_test_export_files(self, snapshot, 'tmp.geojson', 'tmp_sections.geojson')  # GeoJSON
         _internal_test_export_files(self, snapshot, 'tmp.json', 'tmp_sections.json')  # GeoJSON
+
+        # Test PathLike file paths (see PEP 519 and https://docs.python.org/3/library/os.html#os.PathLike).
+        # For example, "pathlib.Path" imported with "from pathlib import Path".
+        if sys.version_info >= (3, 6):  # os.PathLike new in Python 3.6
+            from pathlib import Path
+            
+            tmp_export_resolved_topologies_filename = FIXTURES / Path('tmp_export_resolved_topologies.gmt')
+            snapshot.export_resolved_topologies(tmp_export_resolved_topologies_filename)
+            self.assertTrue(tmp_export_resolved_topologies_filename.exists())
+            tmp_export_resolved_topologies_filename.unlink()
+            
+            tmp_export_resolved_topological_sections_filename = FIXTURES / Path('tmp_export_resolved_topological_sections.gmt')
+            snapshot.export_resolved_topological_sections(tmp_export_resolved_topological_sections_filename)
+            self.assertTrue(tmp_export_resolved_topological_sections_filename.exists())
+            tmp_export_resolved_topological_sections_filename.unlink()
     
     def test_pickle(self):
         snapshot = pygplates.TopologicalSnapshot(

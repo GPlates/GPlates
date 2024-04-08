@@ -31,6 +31,8 @@
 #include <boost/variant.hpp>
 #include <QString>
 
+#include "PyFilePathFunctionArgument.h"
+
 #include "file-io/File.h"
 
 #include "global/python.h"
@@ -61,7 +63,7 @@ namespace GPlatesApi
 		 */
 		typedef boost::variant<
 				GPlatesModel::FeatureCollectionHandle::non_null_ptr_type,
-				QString,
+				FilePathFunctionArgument,
 				GPlatesModel::FeatureHandle::non_null_ptr_type,
 				boost::python::object/*sequence of features*/> function_argument_type;
 
