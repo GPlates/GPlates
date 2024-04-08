@@ -507,15 +507,15 @@ export_version()
 			"| During the lifespan of pyGPlates, the :meth:`imported pyGPlates version<get_imported_version>` "
 			"has been updated for each API change. So it can be used to ensure new API additions are "
 			"present in the imported pyGPlates library.\n"
-			"| For example, if we are using an API function that was added in version ``0.28`` "
-			"(the official beta public release of pyGPlates in 2020, known at the time as revision 28) "
-			"then we can ensure we are using a sufficient API version by checking this at the beginning of our script:\n"
+			"| For example, if we are using an API function that was added in version ``0.36`` "
+			"(the official beta public release of pyGPlates in 2022) then we can ensure we are using a "
+			"sufficient API version by checking this at the beginning of our script:\n"
 			"\n"
 			"::\n"
 			"\n"
-			"  if pygplates.Version.get_imported_version() < pygplates.Version(0, 28):\n"
+			"  if pygplates.Version.get_imported_version() < pygplates.Version(0, 36):\n"
 			"      raise RuntimeError('Using pygplates version {0} but version {1} or greater is required'.format(\n"
-			"          pygplates.Version.get_imported_version(), pygplates.Version(0, 28)))\n"
+			"          pygplates.Version.get_imported_version(), pygplates.Version(0, 36)))\n"
 			"\n"
 			"To print the version string of the imported pyGPlates library:\n"
 			"::\n"
@@ -575,10 +575,12 @@ export_version()
 				"  :type prerelease_suffix: string or None\n"
 				"  :raises: ValueError if *prerelease_suffix* is specified but doesn't match pattern ``(.dev|a|b|rc)N``\n"
 				"\n"
-				"  To create version ``0.28``:\n"
+				"  To create version ``0.34``:\n"
 				"  ::\n"
 				"\n"
-				"    version = pygplates.Version(0, 28)\n"))
+				"    version = pygplates.Version(0, 34)\n"
+				"\n"
+				"  .. versionadded:: 0.34\n"))
 		.def(bp::init<QString>(
 				(bp::arg("version")),
 				// Specific overload signature...
@@ -592,7 +594,9 @@ export_version()
 				"  To create the first development pre-release of version ``0.34``:\n"
 				"  ::\n"
 				"\n"
-				"    version = pygplates.Version('0.34.dev1')\n"))
+				"    version = pygplates.Version('0.34.dev1')\n"
+				"\n"
+				"  .. versionadded:: 0.34\n"))
 		// Deprecated '__init__'...
 		.def("__init__",
 				bp::make_constructor(
@@ -602,7 +606,7 @@ export_version()
 				// Specific overload signature...
 				"__init__(revision)\n"
 				"\n"
-				"  Only supported for versions <= 0.33 (where created version is 0.revision).\n"
+				"  Only supported when *revision* <= 33 (where creates version *0.revision*).\n"
 				"\n"
 				"  :param revision: the revision number\n"
 				"  :type revision: int\n"
@@ -637,21 +641,27 @@ export_version()
 				"\n"
 				"  Return the major version number.\n"
 				"\n"
-				"  :rtype: int\n")
+				"  :rtype: int\n"
+				"\n"
+				"  .. versionadded:: 0.34\n")
 		.def("get_minor",
 				&GPlatesApi::Version::get_minor,
 				"get_minor()\n"
 				"\n"
 				"  Return the minor version number.\n"
 				"\n"
-				"  :rtype: int\n")
+				"  :rtype: int\n"
+				"\n"
+				"  .. versionadded:: 0.34\n")
 		.def("get_patch",
 				&GPlatesApi::Version::get_patch,
 				"get_patch()\n"
 				"\n"
 				"  Return the patch version number.\n"
 				"\n"
-				"  :rtype: int\n")
+				"  :rtype: int\n"
+				"\n"
+				"  .. versionadded:: 0.34\n")
 		.def("get_prerelease_suffix",
 				&GPlatesApi::Version::get_prerelease_suffix_string,
 				"get_prerelease_suffix()\n"
@@ -659,7 +669,9 @@ export_version()
 				"  Return the pre-release PEP440 suffix (matching pattern ``(.dev|a|b|rc)N``), "
 				"or ``None`` if not a pre-release.\n"
 				"\n"
-				"  :rtype: str or None\n")
+				"  :rtype: str or None\n"
+				"\n"
+				"  .. versionadded:: 0.34\n")
 		// Deprecated method...
 		.def("get_revision",
 				&GPlatesApi::deprecated_version_get_revision,
