@@ -99,6 +99,10 @@ namespace GPlatesQtWidgets
 				double value);
 
 		void
+		react_reconstruction_layer_topology_size_multiplier_spinbox_value_changed(
+				double value);
+
+		void
 		handle_rendered_geometry_parameters_changed();
 
 	private:

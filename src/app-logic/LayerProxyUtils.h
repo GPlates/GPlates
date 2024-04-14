@@ -41,6 +41,7 @@
 #include "ReconstructedFeatureGeometry.h"
 #include "ReconstructHandle.h"
 #include "ResolvedTopologicalLine.h"
+#include "ResolvedTopologicalSection.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PointerTraits.h"
@@ -170,6 +171,15 @@ namespace GPlatesAppLogic
 		void
 		find_dependent_topological_sections(
 				std::set<GPlatesModel::FeatureId> &dependent_topological_sections,
+				const Reconstruction &reconstruction);
+
+		/**
+		 * Finds all sub-segments shared by *all* resolved topology boundaries and network boundaries
+		 * in the specified reconstruction.
+		 */
+		void
+		find_resolved_topological_sections(
+				std::vector<ResolvedTopologicalSection::non_null_ptr_type> &resolved_topological_sections,
 				const Reconstruction &reconstruction);
 
 

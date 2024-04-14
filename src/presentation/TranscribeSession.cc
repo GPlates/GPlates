@@ -2227,11 +2227,12 @@ namespace GPlatesPresentation
 						}
 						else
 						{
-							// Unfilled triangulations were previously drawn as a boundary (when colouring by draw style) and
-							// as a mesh (when colouring by strain rate).
+							// Unfilled triangulations were previously:
+							// - drawn as a boundary when colouring by draw style (ie, only boundary was drawn, not triangulation),
+							// - drawn as a mesh when colouring by strain rate.
 							params.set_triangulation_draw_mode(
 									colour_mode == TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE
-									? TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_BOUNDARY
+									? TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_NONE
 									: TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_MESH);
 						}
 					}
@@ -3061,6 +3062,10 @@ namespace GPlatesPresentation
 					reconstruction_layer_geometry_parameters_tag("line_width_hint"));
 			scribe.save(
 					TRANSCRIBE_SOURCE,
+					rendered_geometry_parameters.get_reconstruction_layer_topology_size_multiplier(),
+					reconstruction_layer_geometry_parameters_tag("topology_size_multiplier"));
+			scribe.save(
+					TRANSCRIBE_SOURCE,
 					rendered_geometry_parameters.get_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius(),
 					reconstruction_layer_geometry_parameters_tag("ratio_arrow_unit_vector_direction_to_globe_radius"));
 			scribe.save(
@@ -3095,6 +3100,15 @@ namespace GPlatesPresentation
 					reconstruction_layer_geometry_parameters_tag("line_width_hint")))
 			{
 				rendered_geometry_parameters.set_reconstruction_layer_line_width_hint(reconstruction_layer_line_width_hint);
+			}
+
+			float reconstruction_layer_topology_size_multiplier;
+			if (scribe.transcribe(
+					TRANSCRIBE_SOURCE,
+					reconstruction_layer_topology_size_multiplier,
+					reconstruction_layer_geometry_parameters_tag("topology_size_multiplier")))
+			{
+				rendered_geometry_parameters.set_reconstruction_layer_topology_size_multiplier(reconstruction_layer_topology_size_multiplier);
 			}
 
 			float reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius;

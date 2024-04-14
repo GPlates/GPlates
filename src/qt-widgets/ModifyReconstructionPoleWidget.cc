@@ -920,6 +920,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_initial_geometries()
 			render_style_params,
 			d_view_state_ptr->get_render_settings(),
 			d_application_state_ptr->get_current_topological_sections(),
+			d_application_state_ptr->get_current_reconstruction().get_all_resolved_topological_shared_sub_segments(),
 			white_colour,
 			boost::none,
 			boost::none);
@@ -977,6 +978,7 @@ GPlatesQtWidgets::ModifyReconstructionPoleWidget::draw_dragged_geometries()
 			render_style_params,
 			d_view_state_ptr->get_render_settings(),
 			d_application_state_ptr->get_current_topological_sections(),
+			d_application_state_ptr->get_current_reconstruction().get_all_resolved_topological_shared_sub_segments(),
 			silver_colour,
 			d_accum_orientation->rotation(),
 			boost::none);

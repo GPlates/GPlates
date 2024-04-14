@@ -66,6 +66,8 @@
 
 #include "data-mining/DataTable.h"
 
+#include "feature-visitors/PropertyValueFinder.h"
+
 #include "global/AssertionFailureException.h"
 #include "global/CompilerWarnings.h"
 #include "global/GPlatesAssert.h"
@@ -78,6 +80,12 @@
 
 #include "maths/CalculateVelocity.h"
 #include "maths/MathsUtils.h"
+
+#include "model/FeatureType.h"
+#include "model/PropertyName.h"
+
+#include "property-values/Enumeration.h"
+#include "property-values/EnumerationContent.h"
 
 #include "utils/ComponentManager.h"
 #include "utils/Profile.h"
@@ -190,7 +198,8 @@ namespace
 			const GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams &render_params,
 			const GPlatesGui::ColourProxy &colour_proxy,
 			const boost::optional<GPlatesMaths::Rotation> &rotation = boost::none,
-			boost::optional<const GPlatesGui::symbol_map_type &> feature_type_symbol_map = boost::none)
+			boost::optional<const GPlatesGui::symbol_map_type &> feature_type_symbol_map = boost::none,
+			float line_width_and_point_size_multiplier = 1.0f)
 	{
 		boost::optional<GPlatesGui::Symbol> symbol = get_symbol(
 				feature_type_symbol_map, reconstruction_geometry);
@@ -200,8 +209,8 @@ namespace
 				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_geometry_on_sphere(
 						rotation ? rotation.get() * geometry : geometry,
 						colour_proxy,
-						render_params.reconstruction_point_size_hint,
-						render_params.reconstruction_line_width_hint,
+						render_params.reconstruction_point_size_hint * line_width_and_point_size_multiplier,
+						render_params.reconstruction_line_width_hint * line_width_and_point_size_multiplier,
 						render_params.fill_polygons,
 						render_params.fill_polylines,
 						render_params.fill_modulate_colour,
@@ -228,6 +237,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 		bool fill_polylines_) :
 	reconstruction_line_width_hint(rendered_geometry_parameters_.get_reconstruction_layer_line_width_hint()),
 	reconstruction_point_size_hint(rendered_geometry_parameters_.get_reconstruction_layer_point_size_hint()),
+	reconstruction_topology_size_multiplier(rendered_geometry_parameters_.get_reconstruction_layer_topology_size_multiplier()),
 	fill_polygons(fill_polygons_),
 	fill_polylines(fill_polylines_),
 	fill_modulate_colour(1, 1, 1, 1),
@@ -247,7 +257,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::RenderParams::RenderParams(
 	fill_topological_network_rigid_blocks(false),
 	show_topological_network_segment_velocity(false),
 	topological_network_triangulation_colour_mode(TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE),
-	topological_network_triangulation_draw_mode(TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_BOUNDARY)
+	topological_network_triangulation_draw_mode(TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_NONE)
 {
 }
 
@@ -351,6 +361,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructionGeometryRende
 		const RenderParams &render_params,
 		const GPlatesGui::RenderSettings &render_settings,
 		const std::set<GPlatesModel::FeatureId> &topological_sections,
+		const GPlatesAppLogic::TopologyUtils::resolved_topological_boundaries_networks_to_shared_sub_segments_map_type &all_resolved_topological_shared_sub_segments,
 		const boost::optional<GPlatesGui::Colour> &colour,
 		const boost::optional<GPlatesMaths::Rotation> &reconstruction_adjustment,
 		boost::optional<const GPlatesGui::symbol_map_type &> feature_type_symbol_map,
@@ -358,6 +369,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::ReconstructionGeometryRende
 	d_render_params(render_params),
 	d_render_settings(render_settings),
 	d_topological_sections(topological_sections),
+	d_all_resolved_topological_shared_sub_segments(all_resolved_topological_shared_sub_segments),
 	d_colour(colour),
 	d_reconstruction_adjustment(reconstruction_adjustment),
 	d_feature_type_symbol_map(feature_type_symbol_map),
@@ -373,6 +385,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::begin_render(
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			!d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
+
+	// Clear shared sub-segments of any resolved topological boundaries and networks
+	// that were rendered in the previous rendered geometry layer.
+	d_resolved_topological_shared_sub_segments_map.clear();
 
 	// We've started targeting a rendered geometry layer.
 	d_rendered_geometry_layer = rendered_geometry_layer;
@@ -390,6 +406,10 @@ GPlatesPresentation::ReconstructionGeometryRenderer::end_render()
 	GPlatesGlobal::Assert<GPlatesGlobal::PreconditionViolationError>(
 			d_rendered_geometry_layer,
 			GPLATES_ASSERTION_SOURCE);
+
+	// Render shared sub-segments of any resolved topological boundaries and networks
+	// that were rendered in the current rendered geometry layer.
+	render_topological_shared_sub_segments();
 
 	// We're not targeting a rendered geometry layer anymore.
 	d_rendered_geometry_layer = boost::none;
@@ -833,13 +853,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 			GPLATES_ASSERTION_SOURCE);
 
 	GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type rtg_geometry = rtg->resolved_topology_geometry();
+	const GPlatesMaths::GeometryType::Value rtg_geometry_type = GPlatesAppLogic::GeometryUtils::get_geometry_type(*rtg_geometry);
 
 	if (!d_render_settings.show_topological_sections() ||
 		!d_render_settings.show_topological_lines() ||
 		!d_render_settings.show_topological_polygons())
 	{
-		const GPlatesMaths::GeometryType::Value rtg_geometry_type = GPlatesAppLogic::GeometryUtils::get_geometry_type(*rtg_geometry);
-
 		// If hiding topological sections then avoid rendering resolved topological lines referenced by topologies.
 		if (!d_render_settings.show_topological_sections())
 		{
@@ -861,12 +880,35 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		}
 	}
 
+	// Resolved topological *polygons* are handled differently than resolved topological *lines*.
+	if (rtg_geometry_type == GPlatesMaths::GeometryType::POLYGON)
+	{
+		// Add all shared boundary sub-segments of the resolved topological boundary.
+		// Only resolved topological polygons will have boundary sub-segments (resolved topological lines do not).
+		// These boundary sub-segments will get rendered at the end of the current rendered geometry layer (in 'end_render()').
+		add_topological_shared_sub_segments(rtg, rtg->property());
+
+		// Return early if NOT filling topological polygons.
+		//
+		// Note: The boundary segments of topological polygons are no longer rendered as a polygon *outline* (as they were in GPlates <= 2.4).
+		//       Instead they're now rendered separately as sub-segments shared by topological polygons and networks in a separate post-layer render pass
+		//       (that renders on top of the *filled* polygon, if drawn).
+		if (!d_render_params.fill_polygons)
+		{
+			return;
+		}
+	}
+
 	GPlatesViewOperations::RenderedGeometry rendered_geometry =
 		create_rendered_reconstruction_geometry(
 				rtg_geometry, 
 				rtg, 
 				d_render_params, 
-				get_colour(rtg, d_colour, d_style_adapter));
+				get_colour(rtg, d_colour, d_style_adapter),
+				d_reconstruction_adjustment,
+				d_feature_type_symbol_map,
+				// Topological boundary outlines and topological lines get rendered with a different thickness...
+				d_render_params.reconstruction_topology_size_multiplier/*line_width_and_point_size_multiplier*/);
 
 	// The rendered geometry represents a geometry-on-sphere so render to the spatial partition.
 	render_reconstruction_geometry_on_sphere(rendered_geometry);
@@ -890,20 +932,26 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		return;
 	}
 
+	//
+	// Render the network's triangulation.
+	//
 	if (d_render_params.topological_network_triangulation_colour_mode ==
 		TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE)
 	{
 		if (d_render_params.topological_network_triangulation_draw_mode ==
 			TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_MESH)
 		{
+			// Draw triangulation *edges* using draw style.
 			render_topological_network_delaunay_edges_using_draw_style(rtn);
 		}
-		else // draw boundary (optionally filled) using draw style ...
+		else if (d_render_params.topological_network_triangulation_draw_mode ==
+			TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_FILL)
 		{
-			render_topological_network_boundary_using_draw_style(rtn);
+			// Draw triangulation *fill* using draw style.
+			render_topological_network_fill_using_draw_style(rtn);
 		}
 	}
-	else // colour by dilatation or second invariant strain rate...
+	else // not colouring by draw style (ie, colour by dilatation, second invariant strain rate, etc)...
 	{
 		// If we're using smoothed strain rates then each vertex of a face/edge will have a different colour.
 		// In contrast, a non-smoothed strain rate is constant across each face/edge.
@@ -912,16 +960,12 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 		if (strain_rate_smoothing == GPlatesAppLogic::TopologyNetworkParams::NO_SMOOTHING)
 		{
 			if (d_render_params.topological_network_triangulation_draw_mode ==
-				TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_BOUNDARY)
-			{
-				render_topological_network_delaunay_edges_unsmoothed_strain_rates(rtn, true/*only_boundary_edges*/);
-			}
-			else if (d_render_params.topological_network_triangulation_draw_mode ==
 				TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_MESH)
 			{
 				render_topological_network_delaunay_edges_unsmoothed_strain_rates(rtn);
 			}
-			else // TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_FILL ...
+			else if (d_render_params.topological_network_triangulation_draw_mode ==
+				TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_FILL)
 			{
 				render_topological_network_delaunay_faces_unsmoothed_strain_rates(rtn);
 			}
@@ -934,33 +978,37 @@ GPlatesPresentation::ReconstructionGeometryRenderer::visit(
 							: SUBDIVIDE_TOPOLOGICAL_NETWORK_DELAUNAY_BARYCENTRIC_SMOOTHED_ANGLE;
 
 			if (d_render_params.topological_network_triangulation_draw_mode ==
-				TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_BOUNDARY)
-			{
-				render_topological_network_delaunay_edges_smoothed_strain_rates(rtn, subdivide_threshold_angle, true/*only_boundary_edges*/);
-			}
-			else if (d_render_params.topological_network_triangulation_draw_mode ==
 				TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_MESH)
 			{
 				render_topological_network_delaunay_edges_smoothed_strain_rates(rtn, subdivide_threshold_angle);
 			}
-			else // TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_FILL ...
+			else if (d_render_params.topological_network_triangulation_draw_mode ==
+				TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_FILL)
 			{
 				render_topological_network_delaunay_faces_smoothed_strain_rates(rtn, std::cos(subdivide_threshold_angle));
 			}
 		}
 	}
 
+	// Add all shared boundary sub-segments of the resolved topological network.
+	// These boundary sub-segments will get rendered at the end of the current rendered geometry layer (in 'end_render()').
+	//
+	// Note: The exterior boundary segments of topological networks are no longer rendered as a network outline (as they were in GPlates <= 2.4).
+	//       Instead they're now rendered separately as sub-segments shared by topological polygons and networks in a separate post-layer render pass
+	//       (that renders on top of the network triangulation, if drawn).
+	add_topological_shared_sub_segments(rtn, rtn->property());
+
 	// Render rigid interior blocks.
 	//
-	// Note: We only render interior blocks when they are filled or we are colouring the deforming region by draw style,
-	// otherwise the dilatation or second invariant strain rate colouring is overwritten around the
-	// boundary of the interior blocks.
-	if (d_render_params.fill_topological_network_rigid_blocks ||
-		d_render_params.topological_network_triangulation_colour_mode ==
-			TopologyNetworkVisualLayerParams::TRIANGULATION_COLOUR_DRAW_STYLE)
-	{
-		render_topological_network_rigid_blocks(rtn);
-	}
+	// This is the *interior* boundary equivalent of the *exterior* boundary.
+	// Except we're rendering the *interior* boundary as part of this network
+	// (whereas the *exterior* boundary is drawn in a separate render pass as mentioned above).
+	//
+	// Note: We now *always* render the interior blocks (whether filled or unfilled).
+	//       Previously (in GPlates <= 2.4) we only rendered interior blocks when they were filled or the deforming region was coloured by draw style.
+	//       This prevented the dilatation or second invariant strain rate colouring from being overwritten around the boundary of the interior blocks.
+	//       However it's better to always render interior blocks since this is more consistent with the exterior boundary (that was, and is, *always* rendered).
+	render_topological_network_rigid_blocks(rtn);
 
 	// Check for drawing velocity vectors at vertices of delaunay triangulation.
 	if (d_render_params.show_topological_network_segment_velocity)
@@ -1589,8 +1637,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 void
 GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_delaunay_edges_smoothed_strain_rates(
 		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn,
-		const double &subdivide_edge_threshold_angle,
-		bool only_boundary_edges)
+		const double &subdivide_edge_threshold_angle)
 {
 	const GPlatesAppLogic::ResolvedTriangulation::Network &resolved_triangulation_network =
 			rtn->get_triangulation_network();
@@ -1644,13 +1691,6 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 		// If both triangles adjoining current edge are outside deforming region or are
 		// infinite faces for some reason then the skip the current edge.
 		if (num_valid_faces == 0)
-		{
-			continue;
-		}
-
-		// If we've been requested to only include boundary edges then only include edges with one adjacent face.
-		if (only_boundary_edges &&
-			num_valid_faces != 1)
 		{
 			continue;
 		}
@@ -1774,8 +1814,7 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 
 void
 GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_delaunay_edges_unsmoothed_strain_rates(
-		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn,
-		bool only_boundary_edges)
+		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn)
 {
 	const GPlatesAppLogic::ResolvedTriangulation::Network &resolved_triangulation_network =
 			rtn->get_triangulation_network();
@@ -1858,13 +1897,6 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 		// If both triangles adjoining current edge are outside deforming region or are
 		// infinite faces for some reason then the skip the current edge.
 		if (num_valid_faces == 0)
-		{
-			continue;
-		}
-
-		// If we've been requested to only include boundary edges then only include edges with one adjacent face.
-		if (only_boundary_edges &&
-			num_valid_faces != 1)
 		{
 			continue;
 		}
@@ -2070,18 +2102,15 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 
 
 void
-GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_boundary_using_draw_style(
+GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_fill_using_draw_style(
 		const GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type &rtn)
 {
+	// Make a copy of the render params, but with fill polygons turned on since our network boundary is a polygon.
 	RenderParams render_params(d_render_params);
-	if (d_render_params.topological_network_triangulation_draw_mode == TopologyNetworkVisualLayerParams::TRIANGULATION_DRAW_FILL)
-	{
-		// Make a copy of the render params, but with fill polygons turned on since our network boundary is a polygon.
-		render_params.fill_polygons = true;
-	}
+	render_params.fill_polygons = true;
 
-	// Use the network boundary polygon with rigid block interior holes since, when the triangulation
-	// (ie, deforming region) is filled, we don't want to fill the interior holes (rigid blocks).
+	// Use the network boundary polygon with rigid block interior holes since the triangulation
+	// (ie, deforming region) is filled and we don't want to fill the interior holes (rigid blocks).
 	GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type network_boundary_with_rigid_block_holes =
 			rtn->get_triangulation_network().get_boundary_polygon_with_rigid_block_holes();
 
@@ -2093,7 +2122,8 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 				render_params,
 				get_colour(rtn, d_colour, d_style_adapter),
 				d_reconstruction_adjustment,
-				d_feature_type_symbol_map);
+				d_feature_type_symbol_map,
+				d_render_params.reconstruction_topology_size_multiplier/*line_width_and_point_size_multiplier*/);
 
 	// The rendered geometry is the network boundary, which is on the sphere and is the bounds of the
 	// resolved topological network, so we can render it to the spatial partition (to get view-frustum culling).
@@ -2136,7 +2166,9 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 					render_params,
 					get_colour(rigid_block_rfg, d_colour, d_style_adapter),
 					d_reconstruction_adjustment,
-					d_feature_type_symbol_map);
+					d_feature_type_symbol_map,
+					// Topological network boundaries get rendered with a different thickness...
+					d_render_params.reconstruction_topology_size_multiplier/*line_width_and_point_size_multiplier*/);
 
 		// The rendered geometry is a rigid interior block, which is on the sphere and within the bounds of the
 		// resolved topological network, so we can render it to the spatial partition (to get view-frustum culling).
@@ -2197,6 +2229,155 @@ GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_network_
 	}
 }
 
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::add_topological_shared_sub_segments(
+		const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &resolved_topology,
+		const GPlatesModel::FeatureHandle::iterator &resolved_topology_feature_property)
+{
+	// Find the shared sub-segments associated with the specified resolved topology.
+	auto shared_sub_segment_infos_iter = d_all_resolved_topological_shared_sub_segments.find(resolved_topology_feature_property);
+	if (shared_sub_segment_infos_iter == d_all_resolved_topological_shared_sub_segments.end())
+	{
+		// Resolved topology not found in the map.
+		// This shouldn't happen if the resolved topology is a resolved topological polygon or network.
+		// If it happens then we'll just ignore the resolved topology.
+		return;
+	}
+
+	// Add the shared sub-segments associated with the specified resolved topology.
+	// These will get rendered later (at the end of the current rendered geometry layer).
+	for (const auto &shared_sub_segment_info : shared_sub_segment_infos_iter->second)
+	{
+		const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type shared_sub_segment = shared_sub_segment_info.first;
+
+		d_resolved_topological_shared_sub_segments_map[shared_sub_segment].push_back(resolved_topology);
+	}
+}
+
+
+void
+GPlatesPresentation::ReconstructionGeometryRenderer::render_topological_shared_sub_segments()
+{
+	for (const auto &shared_sub_segment_map_entry : d_resolved_topological_shared_sub_segments_map)
+	{
+		const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type shared_sub_segment =
+				shared_sub_segment_map_entry.first;
+		const std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type> &resolved_topologies =
+				shared_sub_segment_map_entry.second;
+
+		// Shared sub-segment polyline.
+		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type shared_sub_segment_polyline =
+				shared_sub_segment->get_shared_sub_segment_geometry();
+		if (d_reconstruction_adjustment)
+		{
+			shared_sub_segment_polyline = d_reconstruction_adjustment.get() * shared_sub_segment_polyline;
+		}
+
+		// Shared sub-segment reconstruction geometry.
+		//
+		// Note: This is the full reconstruction geometry (not just the shared sub-segment part of it).
+		const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type shared_sub_segment_reconstruction_geometry =
+				shared_sub_segment->get_reconstruction_geometry();
+
+		// The colour is determined by the shared sub-segment (ie, the topological section feature it came from).
+		const GPlatesGui::ColourProxy shared_sub_segment_colour =
+				get_colour(shared_sub_segment_reconstruction_geometry, d_colour, d_style_adapter);
+
+		const boost::optional<SubductionPolarity> subduction_polarity =
+				get_subduction_polarity(shared_sub_segment_reconstruction_geometry);
+
+		// Create a RenderedGeometry for drawing the shared sub-segment.
+		GPlatesViewOperations::RenderedGeometry shared_sub_segment_rendered_geom;
+		if (subduction_polarity)
+		{
+			// Create a polyline with subduction teeth.
+			shared_sub_segment_rendered_geom = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_subduction_teeth_polyline(
+					shared_sub_segment_polyline,
+					subduction_polarity.get() == SubductionPolarity::LEFT,  // subduction_polarity_is_left
+					shared_sub_segment_colour,
+					// Topological plate/network boundaries get rendered with a different thickness...
+					d_render_params.reconstruction_line_width_hint * d_render_params.reconstruction_topology_size_multiplier);
+		}
+		else
+		{
+			// Create an ordinary polyline.
+			shared_sub_segment_rendered_geom = GPlatesViewOperations::RenderedGeometryFactory::create_rendered_polyline_on_sphere(
+					shared_sub_segment_polyline,
+					shared_sub_segment_colour,
+					// Topological plate/network boundaries get rendered with a different thickness...
+					d_render_params.reconstruction_line_width_hint * d_render_params.reconstruction_topology_size_multiplier,
+					d_render_params.fill_polylines,
+					d_render_params.fill_modulate_colour);
+		}
+
+		// Create a RenderedGeometry for storing the sharing resolved topologies (ReconstructionGeometry's) and
+		// a RenderedGeometry associated with them (for the shared sub-segment geometry).
+		//
+		// By storing the resolved topologies (that share the shared sub-segment) instead of the reconstruction geometry
+		// of the shared sub-segment, when the user clicks on the shared sub-segment the resolved topologies will
+		// get added to the selected features list (which is what we want). The user can still click on the
+		// (topological section) feature of the shared sub-segment (provided visibility of topological sections is enabled),
+		// in which case the full topological section feature will get highlighted (including the dangling bits at the ends,
+		// if it's a line, and not just the sub-segments that actually contribute to the resolved topologies).
+		const GPlatesViewOperations::RenderedGeometry rendered_multi_reconstruction_geometry =
+				GPlatesViewOperations::RenderedGeometryFactory::create_rendered_multi_reconstruction_geometry(
+						resolved_topologies,
+						shared_sub_segment_rendered_geom);
+
+		// Render the rendered geometry.
+		//
+		// Note: We don't render using 'render_reconstruction_geometry_on_sphere()' since that requires
+		//       that the rendered geometry match the reconstruction geometry. In our case this is not
+		//       true since the rendered geometry is the shared sub-segment and there are multiple
+		//       reconstruction geometries corresponding to the sharing resolved topologies.
+		render(rendered_multi_reconstruction_geometry);
+	}
+}
+
+
+boost::optional<GPlatesPresentation::ReconstructionGeometryRenderer::SubductionPolarity>
+GPlatesPresentation::ReconstructionGeometryRenderer::get_subduction_polarity(
+		const GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_to_const_type &resolved_topological_section) const
+{
+	// Get the feature.
+	boost::optional<GPlatesModel::FeatureHandle::weak_ref> feature_ref =
+			GPlatesAppLogic::ReconstructionGeometryUtils::get_feature_ref(resolved_topological_section);
+	if (feature_ref)
+	{
+		// See if feature is a subduction zone.
+		static const GPlatesModel::FeatureType subduction_zone_type = GPlatesModel::FeatureType::create_gpml("SubductionZone");
+		if (feature_ref.get()->feature_type() == subduction_zone_type)
+		{
+			// See if has a 'gpml:subductionPolarity' property.
+			static const GPlatesModel::PropertyName subduction_polarity_property_name = GPlatesModel::PropertyName::create_gpml("subductionPolarity");
+			boost::optional<GPlatesPropertyValues::Enumeration::non_null_ptr_to_const_type> subduction_polarity_property_value =
+					GPlatesFeatureVisitors::get_property_value<GPlatesPropertyValues::Enumeration>(feature_ref.get(), subduction_polarity_property_name);
+			if (subduction_polarity_property_value)
+			{
+				// See if property is a 'gpml:SubductionPolarityEnumeration' enumeration.
+				static const GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type =
+						GPlatesPropertyValues::EnumerationType::create_gpml("SubductionPolarityEnumeration");
+				if (subduction_polarity_enumeration_type.is_equal_to(subduction_polarity_property_value.get()->type()))
+				{
+					// See if polarity is 'Left' or 'Right'.
+					static const GPlatesPropertyValues::EnumerationContent subduction_polarity_enumeration_value_left("Left");
+					static const GPlatesPropertyValues::EnumerationContent subduction_polarity_enumeration_value_right("Right");
+					if (subduction_polarity_enumeration_value_left.is_equal_to(subduction_polarity_property_value.get()->value()))
+					{
+						return SubductionPolarity::LEFT;
+					}
+					if (subduction_polarity_enumeration_value_right.is_equal_to(subduction_polarity_property_value.get()->value()))
+					{
+						return SubductionPolarity::RIGHT;
+					}
+				}
+			}
+		}
+	}
+
+	return boost::none;
+}
 
 // Suppress warning with boost::variant with Boost 1.34 and g++ 4.2.
 // This is here at the end of the file because the problem resides in a template

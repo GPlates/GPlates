@@ -41,14 +41,11 @@ namespace GPlatesViewOperations
 		RenderedArrowedPolyline(
 				GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type points,
 				const GPlatesGui::ColourProxy &colour,
-				float arrowhead_projected_size,
-				float max_arrowhead_size,
-				float arrowline_width_hint
-				) :
+				float arrowhead_size_in_pixels,
+				float arrowline_width_hint) :
 		d_points(points),
 		d_colour(colour),
-		d_arrowhead_projected_size(arrowhead_projected_size),
-		d_max_arrowhead_size(max_arrowhead_size),
+		d_arrowhead_size_in_pixels(arrowhead_size_in_pixels),
 		d_arrowline_width_hint(arrowline_width_hint)
 		{  }
 
@@ -89,18 +86,14 @@ namespace GPlatesViewOperations
 			return d_colour;
 		}
 		
+		//! The size of the arrowhead (in device-independent pixels).
 		float
-		get_arrowhead_projected_size() const
+		get_arrowhead_size_in_pixels() const
 		{
-			return d_arrowhead_projected_size;
+			return d_arrowhead_size_in_pixels;
 		}
 		
-		float
-		get_max_arrowhead_size() const
-		{
-			return d_max_arrowhead_size;
-		}
-		
+		//! The arrow line width (in device-independent pixels).
 		float
 		get_arrowline_width_hint() const
 		{
@@ -110,8 +103,7 @@ namespace GPlatesViewOperations
 	private:
 		GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type d_points;
 		const GPlatesGui::ColourProxy d_colour;
-		const float d_arrowhead_projected_size;
-		const float d_max_arrowhead_size;
+		const float d_arrowhead_size_in_pixels;
 		const float d_arrowline_width_hint;		
 	};
 }

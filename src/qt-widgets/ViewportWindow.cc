@@ -755,6 +755,8 @@ GPlatesQtWidgets::ViewportWindow::connect_view_menu_actions()
 			this, SLOT(enable_3d_scalar_field_display()));
 	QObject::connect(action_Show_Scalar_Coverages, SIGNAL(triggered()),
 			this, SLOT(enable_scalar_coverage_display()));
+	QObject::connect(action_Show_All_Geometries, SIGNAL(triggered()),
+			this, SLOT(enable_all_geometries_display()));
 	// Also update the GUI when the RenderSettings change.
 	QObject::connect(&get_view_state().get_render_settings(), SIGNAL(settings_changed()),
 			this, SLOT(handle_render_settings_changed()));
@@ -1412,6 +1414,16 @@ GPlatesQtWidgets::ViewportWindow::enable_scalar_coverage_display()
 }
 
 void
+GPlatesQtWidgets::ViewportWindow::enable_all_geometries_display()
+{
+	const bool show_all = action_Show_All_Geometries->isChecked();
+
+	// This will show/hide all geometries in the render settings which will also
+	// signal 'handle_render_settings_changed()' to change the individual checkboxes.
+	get_view_state().get_render_settings().set_show_all(show_all);
+}
+
+void
 GPlatesQtWidgets::ViewportWindow::handle_render_settings_changed()
 {
 	GPlatesGui::RenderSettings &render_settings = get_view_state().get_render_settings();
@@ -1905,7 +1917,7 @@ void
 GPlatesQtWidgets::ViewportWindow::open_dataset_webpage()
 {
 	QDesktopServices::openUrl(
-			QUrl("http://www.earthbyte.org/gplates-2-4-software-and-data-sets"));
+			QUrl("http://www.earthbyte.org/gplates-2-5-software-and-data-sets"));
 }
 
 

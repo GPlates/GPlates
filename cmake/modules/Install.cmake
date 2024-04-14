@@ -606,6 +606,34 @@ if (GPLATES_INSTALL_STANDALONE)
         install(PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION ${STANDALONE_BASE_INSTALL_DIR})
     endif()
 
+    ##################################
+    # Enable Windows DLL redirection #
+    ##################################
+    #
+    # Ensure our installed dependency DLLs get loaded, not any DLL with the same module name that is already loaded into memory
+    # (due to the DLL search order including something called "Loaded-module list").
+    # See https://learn.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-search-order
+    #
+    # We avoid this by using DLL redirection (which is higher in the DLL search order).
+    # This involves installing an empty file called "gplate.exe.local" in the same folder as "gplate.exe".
+    # See https://learn.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-redirection
+    #
+    # Note: It appears that simply copying "gplate.exe.local" to an existing GPlates installation *after* the installed "gplates.exe"
+    #       has been run will not work (according to https://stackoverflow.com/a/52756644). This was verified by a user on the
+    #       GPlates forum (see https://discourse.gplates.org/t/mouse-cursor-offset-in-gplates/735/9).
+    #
+    if (WIN32)
+        if (GPLATES_BUILD_GPLATES)  # GPlates ...
+            # Create an empty "gplates.exe.local" file.
+            set(GPLATES_EXE_LOCAL_FILE "${CMAKE_CURRENT_BINARY_DIR}/$<TARGET_FILE_NAME:${BUILD_TARGET}>.local")
+            # Note: All configurations generate the same content (empty file) so can have the same output filename.
+            file(GENERATE OUTPUT "${GPLATES_EXE_LOCAL_FILE}" CONTENT "")
+
+            # Install "gplates.exe.local" into same directory as "gplates.exe".
+            install(FILES "${GPLATES_EXE_LOCAL_FILE}" DESTINATION ${STANDALONE_BASE_INSTALL_DIR})
+        endif()
+    endif()
+
     #####################
     # Install "qt.conf" #
     #####################

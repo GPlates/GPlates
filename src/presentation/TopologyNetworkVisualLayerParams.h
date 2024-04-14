@@ -60,7 +60,7 @@ namespace GPlatesPresentation
 
 		enum TriangulationDrawMode
 		{
-			TRIANGULATION_DRAW_BOUNDARY,
+			TRIANGULATION_DRAW_NONE,
 			TRIANGULATION_DRAW_MESH,
 			TRIANGULATION_DRAW_FILL
 		};
@@ -301,7 +301,7 @@ namespace GPlatesPresentation
 		set_fill_triangulation(
 				bool b)
 		{
-			d_triangulation_draw_mode = b ? TRIANGULATION_DRAW_FILL : TRIANGULATION_DRAW_BOUNDARY;
+			d_triangulation_draw_mode = b ? TRIANGULATION_DRAW_FILL : TRIANGULATION_DRAW_NONE;
 			emit_modified();
 		}
 

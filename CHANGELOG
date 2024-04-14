@@ -1,3 +1,16 @@
+GPlates 2.5
+===========
+
+Changes since 2.4:
+
+* Subduction zones have teeth in 3D globe and 2D map views.
+* Topological boundaries coloured by individual boundary line segments.
+  * Instead of each boundary polygon having its own colour.
+  * Eg, subduction zones coloured differently than mid-ocean ridges.
+* Topology line width multiplier (under “Tools > Configure Geometry Rendering”).
+  * So topologies can be thicker than non-topologies.
+* Keyboard shortcuts for show/hide geometry types (see “View > Geometry Visibility”).
+
 GPlates 2.4
 ===========
 

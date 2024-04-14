@@ -30,6 +30,7 @@
 #include "FeatureFocus.h"
 
 #include "app-logic/ApplicationState.h"
+#include "app-logic/Reconstruction.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ScalarCoverageFeatureProperties.h"
 #include "app-logic/TopologyReconstructedFeatureGeometry.h"
@@ -431,6 +432,7 @@ GPlatesGui::FeatureInspectionCanvasToolWorkflow::draw_feature_focus()
 			d_rendered_geometry_parameters,
 			d_render_settings,
 			d_application_state.get_current_topological_sections(),
+			d_application_state.get_current_reconstruction().get_all_resolved_topological_shared_sub_segments(),
 			d_symbol_map);
 }
 

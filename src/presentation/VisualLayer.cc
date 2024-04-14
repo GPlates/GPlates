@@ -35,6 +35,7 @@
 
 #include "app-logic/ApplicationState.h"
 #include "app-logic/Layer.h"
+#include "app-logic/Reconstruction.h"
 
 #include "gui/Symbol.h"
 
@@ -151,8 +152,9 @@ GPlatesPresentation::VisualLayer::create_rendered_geometries()
 			render_params_populator.get_render_params(),
 			d_render_settings,
 			d_application_state.get_current_topological_sections(),
+			d_application_state.get_current_reconstruction().get_all_resolved_topological_shared_sub_segments(),
 			boost::none, // colour 
-            boost::none, // rotation adjustment
+			boost::none, // rotation adjustment
 			d_symbol_map,
 			draw_style_adapter);
 

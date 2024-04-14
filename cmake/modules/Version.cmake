@@ -99,7 +99,7 @@ endfunction()
 # The GPlates version.
 #
 set(GPLATES_VERSION_MAJOR 2)
-set(GPLATES_VERSION_MINOR 4)
+set(GPLATES_VERSION_MINOR 5)
 set(GPLATES_VERSION_PATCH 0)
 
 # The pyGPlates version without the pre-release suffix

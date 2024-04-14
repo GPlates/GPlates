@@ -33,7 +33,7 @@
      <x>0</x>
      <y>0</y>
      <width>780</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menu_Help">
@@ -163,6 +163,8 @@
      <addaction name="action_Show_Rasters"/>
      <addaction name="action_Show_3D_Scalar_Fields"/>
      <addaction name="action_Show_Scalar_Coverages"/>
+     <addaction name="separator"/>
+     <addaction name="action_Show_All_Geometries"/>
     </widget>
     <addaction name="action_Set_Projection"/>
     <addaction name="menu_Move_Camera"/>
@@ -625,6 +627,12 @@
    <property name="toolTip">
     <string>A toggle operation which controls whether non-topological points are shown.</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+V, S, P</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Show_Static_Lines">
    <property name="checkable">
@@ -638,6 +646,12 @@
    </property>
    <property name="toolTip">
     <string>A toggle operation which controls whether non-topological lines are shown.</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+V, S, L</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="action_Show_Static_Polygons">
@@ -653,6 +667,12 @@
    <property name="toolTip">
     <string>A toggle operation which controls whether non-topological polygons are shown.</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+V, S, G</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Show_Static_Multipoints">
    <property name="checkable">
@@ -666,6 +686,12 @@
    </property>
    <property name="toolTip">
     <string>A toggle operation which controls whether non-topological multipoints are shown.</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+V, S, M</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="action_Show_Velocity_Arrows">
@@ -683,6 +709,12 @@
    </property>
    <property name="toolTip">
     <string>A toggle operation which controls whether velocity arrows are shown.</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+V, V, A</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="action_Delete_Feature">
@@ -1249,6 +1281,12 @@
    <property name="toolTip">
     <string>A toggle operation which controls whether features used as topological sections are shown.</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+V, T, S</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Show_Topological_Lines">
    <property name="checkable">
@@ -1262,6 +1300,12 @@
    </property>
    <property name="toolTip">
     <string>A toggle operation which controls whether topological lines are shown.</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+V, T, L</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="action_Show_Topological_Polygons">
@@ -1277,6 +1321,12 @@
    <property name="toolTip">
     <string>A toggle operation which controls whether topological polygons are shown.</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+V, T, P</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Show_Topological_Networks">
    <property name="checkable">
@@ -1290,6 +1340,12 @@
    </property>
    <property name="toolTip">
     <string>A toggle operation which controls whether topological networks are shown.</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+V, T, N</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
   <action name="action_Show_Rasters">
@@ -1305,6 +1361,12 @@
    <property name="toolTip">
     <string>A toggle operation which controls whether rasters are shown.</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+V, R</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Show_3D_Scalar_Fields">
    <property name="checkable">
@@ -1319,6 +1381,12 @@
    <property name="toolTip">
     <string>A toggle operation which controls whether 3D scalar fields are shown.</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+V, S, F</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
   </action>
   <action name="action_Show_Scalar_Coverages">
    <property name="checkable">
@@ -1332,6 +1400,32 @@
    </property>
    <property name="toolTip">
     <string>A toggle operation which controls whether scalar coverages are shown.</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+V, S, C</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+  </action>
+  <action name="action_Show_All_Geometries">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show All</string>
+   </property>
+   <property name="toolTip">
+    <string>A toggle operation which controls whether all geometries are shown.</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+V, A</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
    </property>
   </action>
  </widget>

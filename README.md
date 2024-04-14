@@ -1,12 +1,19 @@
 <p align="center">
-  <img width="350"  src="https://github.com/GPlates/GPlates/assets/2688316/57d378d5-ef43-4185-b282-b7da8f612797" alt="GPlates Logo">
+  <img width="150"  src="https://github.com/GPlates/GPlates/assets/2688316/57d378d5-ef43-4185-b282-b7da8f612797" alt="GPlates Logo">
+</p>
+<p align="center">
+  <strong>GPlates</strong> is a desktop application for the interactive visualisation of plate tectonics.
+</p>
+
+<p align="center">
+  <img width="260" alt="PyGPlates Logo" src="https://github.com/GPlates/GPlates/assets/2688316/8f025d75-7d92-42ce-8818-b2e2aeda0142">
+</p>
+<p align="center">
+  <strong>PyGPlates</strong> is a library for accessing GPlates functionality via the Python programming language.
 </p>
 
 [![Anaconda-Server Badge](https://img.shields.io/conda/vn/conda-forge/pygplates?label=conda%20pygplates)](https://anaconda.org/conda-forge/pygplates)
 
-__GPlates__ is a desktop application for the interactive visualisation of plate tectonics.
-
-__PyGPlates__ is a library for accessing GPlates functionality via the Python programming language.
 
 #### Citations:
 
