@@ -88,18 +88,6 @@ namespace GPlatesApi
 			return d_net_rotation_calculator;
 		}
 
-		double
-		get_velocity_delta_time() const
-		{
-			return d_net_rotation_calculator.get_velocity_delta_time();
-		}
-
-		GPlatesAppLogic::VelocityDeltaTime::Type
-		get_velocity_delta_time_type() const
-		{
-			return d_net_rotation_calculator.get_velocity_delta_time_type();
-		}
-
 	private:
 
 		//! Topological snapshot to obtain net rotation from at requested reconstruction times.
@@ -168,7 +156,10 @@ namespace GPlatesApi
 		static
 		non_null_ptr_type
 		create(
-				TopologicalModel::non_null_ptr_type topological_model);
+				TopologicalModel::non_null_ptr_type topological_model,
+				const double &velocity_delta_time,
+				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+				const GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type &point_distribution);
 
 
 		/**
@@ -186,10 +177,7 @@ namespace GPlatesApi
 		 */
 		NetRotationSnapshot::non_null_ptr_type
 		create_net_rotation_snapshot(
-				const double &reconstruction_time,
-				const double &velocity_delta_time,
-				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
-				const GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type &point_distribution) const;
+				const double &reconstruction_time) const;
 
 	private:
 
@@ -198,9 +186,17 @@ namespace GPlatesApi
 		 */
 		TopologicalModel::non_null_ptr_type d_topological_model;
 
+		double d_velocity_delta_time;
+		GPlatesAppLogic::VelocityDeltaTime::Type d_velocity_delta_time_type;
+		//! How the points, to calculate net rotation, are distributed across the globe.
+		GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type d_point_distribution;
+
 
 		NetRotationModel(
-				TopologicalModel::non_null_ptr_type topological_model);
+				TopologicalModel::non_null_ptr_type topological_model,
+				const double &velocity_delta_time,
+				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+				const GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type &point_distribution);
 
 	private: // Transcribe...
 
@@ -227,7 +223,10 @@ namespace GPlatesApi
 		bool
 		load_construct_data(
 				GPlatesScribe::Scribe &scribe,
-				GPlatesScribe::LoadRef<TopologicalModel::non_null_ptr_type> &topological_model);
+				GPlatesScribe::LoadRef<TopologicalModel::non_null_ptr_type> &topological_model,
+				double &velocity_delta_time,
+				GPlatesAppLogic::VelocityDeltaTime::Type &velocity_delta_time_type,
+				GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type &point_distribution);
 	};
 }
 

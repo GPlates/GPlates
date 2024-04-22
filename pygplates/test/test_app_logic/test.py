@@ -489,20 +489,20 @@ class NetRotationTestCase(unittest.TestCase):
         rotation_model = pygplates.RotationModel(pygplates.FeatureCollection(os.path.join(FIXTURES, 'rotations.rot')))
         topologies = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml'))
         self.topological_model = pygplates.TopologicalModel(topologies, rotation_model)
-        self.net_rotation_model = pygplates.NetRotationModel(self.topological_model)
+        self.net_rotation_model = pygplates.NetRotationModel(self.topological_model, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t)
     
     def test_pickle(self):
         # Pickle a NetRotationModel.
         pickled_net_rotation_model = pickle.loads(pickle.dumps(self.net_rotation_model))
         self.assertTrue(pickled_net_rotation_model.get_topological_model().get_rotation_model().get_rotation(100, 802) ==
                         self.net_rotation_model.get_topological_model().get_rotation_model().get_rotation(100, 802))
+        self.assertTrue(pickled_net_rotation_model.net_rotation_snapshot(10).get_total_net_rotation().get_finite_rotation() ==
+                        self.net_rotation_model.net_rotation_snapshot(10).get_total_net_rotation().get_finite_rotation())
         # Pickle a NetRotationSnapshot.
-        net_rotation_snapshot = self.net_rotation_model.net_rotation_snapshot(10, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t)
+        net_rotation_snapshot = self.net_rotation_model.net_rotation_snapshot(10)
         pickled_net_rotation_snapshot = pickle.loads(pickle.dumps(net_rotation_snapshot))
         self.assertTrue(pickled_net_rotation_snapshot.get_topological_snapshot().get_reconstruction_time() ==
                         net_rotation_snapshot.get_topological_snapshot().get_reconstruction_time())
-        self.assertTrue(pickled_net_rotation_snapshot.get_velocity_delta_time() == net_rotation_snapshot.get_velocity_delta_time())
-        self.assertTrue(pickled_net_rotation_snapshot.get_velocity_delta_time_type() == net_rotation_snapshot.get_velocity_delta_time_type())
         self.assertTrue(pickled_net_rotation_snapshot.get_total_net_rotation().get_finite_rotation() == net_rotation_snapshot.get_total_net_rotation().get_finite_rotation())
         # Pickle a NetRotation.
         total_net_rotation = net_rotation_snapshot.get_total_net_rotation()
@@ -512,7 +512,7 @@ class NetRotationTestCase(unittest.TestCase):
     
     def test_net_rotation(self):
         # Use the default 'num_samples_along_meridian' (180).
-        net_rotation_snapshot = self.net_rotation_model.net_rotation_snapshot(0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t)
+        net_rotation_snapshot = self.net_rotation_model.net_rotation_snapshot(0)
         total_net_rotation = net_rotation_snapshot.get_total_net_rotation()
         total_pole_latitude, total_pole_longitude, total_angle_degrees  = total_net_rotation.get_finite_rotation().get_lat_lon_euler_pole_and_angle_degrees()
         # These values were obtained from the GPlates net rotation export.
@@ -550,8 +550,8 @@ class NetRotationTestCase(unittest.TestCase):
         self.assertTrue(net_rotation_accumulator.get_area() == 2 * net_rotation_sample_from_finite_rotation.get_area())
         self.assertTrue(net_rotation_accumulator.get_area() == 2 * net_rotation_sample_from_rotation_rate.get_area())
         # Use the default 'num_samples_along_meridian' (180).
-        total_net_rotation = self.net_rotation_model.net_rotation_snapshot(0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t).get_total_net_rotation()
-        total_net_rotation_clone = self.net_rotation_model.net_rotation_snapshot(0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t).get_total_net_rotation()
+        total_net_rotation = self.net_rotation_model.net_rotation_snapshot(0).get_total_net_rotation()
+        total_net_rotation_clone = self.net_rotation_model.net_rotation_snapshot(0).get_total_net_rotation()
         # Ensure modifying a net rotation changes the original object (ie, doesn't create a new one via addition).
         total_net_rotation_before_modification = total_net_rotation
         total_net_rotation += net_rotation_sample_from_finite_rotation
@@ -559,7 +559,7 @@ class NetRotationTestCase(unittest.TestCase):
         self.assertTrue(total_net_rotation.get_finite_rotation() != total_net_rotation_clone.get_finite_rotation())  # make sure net rotation actually changed
     
     def test_net_rotation_conversion(self):
-        total_net_rotation = self.net_rotation_model.net_rotation_snapshot(0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t).get_total_net_rotation()
+        total_net_rotation = self.net_rotation_model.net_rotation_snapshot(0).get_total_net_rotation()
         total_net_finite_rotation = total_net_rotation.get_finite_rotation()
         total_net_rotation_rate_vector = total_net_rotation.get_rotation_rate_vector()
         # Compare the pole and angle from rotation rate vector with the finite rotation.
@@ -590,7 +590,8 @@ class NetRotationTestCase(unittest.TestCase):
                 lon = -180.0 + (lon_index + 0.5) * delta_in_degrees
                 point_distribution.append(((lat, lon), sample_area_radians))
         
-        total_net_rotation = self.net_rotation_model.net_rotation_snapshot(0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t, point_distribution).get_total_net_rotation()
+        net_rotation_model = pygplates.NetRotationModel(self.topological_model, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t, point_distribution=point_distribution)
+        total_net_rotation = net_rotation_model.net_rotation_snapshot(0).get_total_net_rotation()
         total_pole_latitude, total_pole_longitude, total_angle_degrees  = total_net_rotation.get_finite_rotation().get_lat_lon_euler_pole_and_angle_degrees()
         # These values were obtained from the GPlates net rotation export.
         self.assertAlmostEqual(total_pole_latitude, 15.4673, places=4)

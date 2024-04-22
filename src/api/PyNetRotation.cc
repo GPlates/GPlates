@@ -512,30 +512,11 @@ namespace GPlatesApi
 	 */
 	NetRotationModel::non_null_ptr_type
 	net_rotation_model_create(
-			TopologicalModel::non_null_ptr_type topological_model)
-	{
-		return NetRotationModel::create(topological_model);
-	}
-
-	/**
-	 * This is called directly from Python via 'NetRotationModel.net_rotation_snapshot()'.
-	 */
-	NetRotationSnapshot::non_null_ptr_type
-	net_rotation_model_create_topological_snapshot(
-			NetRotationModel::non_null_ptr_type net_rotation_model,
-			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+			TopologicalModel::non_null_ptr_type topological_model,
 			const double &velocity_delta_time,
 			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
 			bp::object point_distribution_object)
 	{
-		// Time must not be distant past/future.
-		if (!reconstruction_time.is_real())
-		{
-			PyErr_SetString(PyExc_ValueError,
-					"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
-			bp::throw_error_already_set();
-		}
-
 		// Velocity delta time must be positive.
 		if (velocity_delta_time <= 0)
 		{
@@ -546,40 +527,61 @@ namespace GPlatesApi
 		GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type point_distribution;
 		extract_point_distribution(point_distribution, point_distribution_object);
 
-		return net_rotation_model->create_net_rotation_snapshot(
-				reconstruction_time.value(),
-				velocity_delta_time,
-				velocity_delta_time_type,
-				point_distribution);
+		return NetRotationModel::create(topological_model, velocity_delta_time, velocity_delta_time_type, point_distribution);
+	}
+
+	/**
+	 * This is called directly from Python via 'NetRotationModel.net_rotation_snapshot()'.
+	 */
+	NetRotationSnapshot::non_null_ptr_type
+	net_rotation_model_create_net_rotation_snapshot(
+			NetRotationModel::non_null_ptr_type net_rotation_model,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
+	{
+		// Time must not be distant past/future.
+		if (!reconstruction_time.is_real())
+		{
+			PyErr_SetString(PyExc_ValueError,
+					"Time values cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+			bp::throw_error_already_set();
+		}
+
+		return net_rotation_model->create_net_rotation_snapshot(reconstruction_time.value());
 	}
 
 	NetRotationModel::non_null_ptr_type
 	NetRotationModel::create(
-			TopologicalModel::non_null_ptr_type topological_model)
+			TopologicalModel::non_null_ptr_type topological_model,
+			const double &velocity_delta_time,
+			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+			const GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type &point_distribution)
 	{
-		return non_null_ptr_type(new NetRotationModel(topological_model));
+		return non_null_ptr_type(new NetRotationModel(topological_model, velocity_delta_time, velocity_delta_time_type, point_distribution));
 	}
 
 	NetRotationModel::NetRotationModel(
-			TopologicalModel::non_null_ptr_type topological_model) :
-		d_topological_model(topological_model)
+			TopologicalModel::non_null_ptr_type topological_model,
+			const double &velocity_delta_time,
+			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+			const GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type &point_distribution) :
+		d_topological_model(topological_model),
+		d_velocity_delta_time(velocity_delta_time),
+		d_velocity_delta_time_type(velocity_delta_time_type),
+		d_point_distribution(point_distribution)
 	{  }
 	
 	NetRotationSnapshot::non_null_ptr_type
 	NetRotationModel::create_net_rotation_snapshot(
-			const double &reconstruction_time,
-			const double &velocity_delta_time,
-			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
-			const GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type &point_distribution) const
+			const double &reconstruction_time) const
 	{
 		TopologicalSnapshot::non_null_ptr_type topological_snapshot =
 				d_topological_model->create_topological_snapshot(reconstruction_time);
 
 		return NetRotationSnapshot::create(
 				topological_snapshot,
-				velocity_delta_time,
-				velocity_delta_time_type,
-				point_distribution);
+				d_velocity_delta_time,
+				d_velocity_delta_time_type,
+				d_point_distribution);
 	}
 
 	GPlatesScribe::TranscribeResult
@@ -594,13 +596,25 @@ namespace GPlatesApi
 		else // loading
 		{
 			GPlatesScribe::LoadRef<TopologicalModel::non_null_ptr_type> topological_model;
-			if (!load_construct_data(scribe, topological_model))
+			double velocity_delta_time;
+			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type;
+			GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type point_distribution;
+			if (!load_construct_data(
+					scribe,
+					topological_model,
+					velocity_delta_time,
+					velocity_delta_time_type,
+					point_distribution))
 			{
 				return scribe.get_transcribe_result();
 			}
 
 			// Create the net rotation model.
-			net_rotation_model.construct_object(topological_model);
+			net_rotation_model.construct_object(
+					topological_model,
+					velocity_delta_time,
+					velocity_delta_time_type,
+					point_distribution);
 		}
 
 		return GPlatesScribe::TRANSCRIBE_SUCCESS;
@@ -620,7 +634,12 @@ namespace GPlatesApi
 			else // loading
 			{
 				GPlatesScribe::LoadRef<TopologicalModel::non_null_ptr_type> topological_model;
-				if (!load_construct_data(scribe, topological_model))
+				if (!load_construct_data(
+						scribe,
+						topological_model,
+						d_velocity_delta_time,
+						d_velocity_delta_time_type,
+						d_point_distribution))
 				{
 					return scribe.get_transcribe_result();
 				}
@@ -638,16 +657,46 @@ namespace GPlatesApi
 	{
 		// Save the net rotation model.
 		scribe.save(TRANSCRIBE_SOURCE, net_rotation_model.d_topological_model, "topological_model");
+
+		// Save the velocity delta time.
+		scribe.save(TRANSCRIBE_SOURCE, net_rotation_model.d_velocity_delta_time, "velocity_delta_time");
+
+		// Save the velocity delta time type.
+		scribe.save(TRANSCRIBE_SOURCE, net_rotation_model.d_velocity_delta_time_type, "velocity_delta_time_type");
+
+		// Save the point distribution.
+		scribe.save(TRANSCRIBE_SOURCE, net_rotation_model.d_point_distribution, "point_distribution");
 	}
 
 	bool
 	NetRotationModel::load_construct_data(
 			GPlatesScribe::Scribe &scribe,
-			GPlatesScribe::LoadRef<TopologicalModel::non_null_ptr_type> &topological_model)
+			GPlatesScribe::LoadRef<TopologicalModel::non_null_ptr_type> &topological_model,
+			double &velocity_delta_time,
+			GPlatesAppLogic::VelocityDeltaTime::Type &velocity_delta_time_type,
+			GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::point_distribution_type &point_distribution)
 	{
 		// Load the net rotation model.
 		topological_model = scribe.load<TopologicalModel::non_null_ptr_type>(TRANSCRIBE_SOURCE, "topological_model");
 		if (!topological_model.is_valid())
+		{
+			return false;
+		}
+
+		// Load the velocity delta time.
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, velocity_delta_time, "velocity_delta_time"))
+		{
+			return false;
+		}
+
+		// Load the velocity delta time type.
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, velocity_delta_time_type, "velocity_delta_time_type"))
+		{
+			return false;
+		}
+
+		// Load the point distribution.
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, point_distribution, "point_distribution"))
 		{
 			return false;
 		}
@@ -1065,19 +1114,6 @@ export_net_rotation()
 				"            print('Topology {} has net rotation {}'.format(resolved_topology.get_feature().get_name(), net_rotation.get_finite_rotation()))\n"
 				"\n"
 				"  .. seealso:: :meth:`get_total_net_rotation`\n")
-		.def("get_velocity_delta_time",
-				&GPlatesApi::NetRotationSnapshot::get_velocity_delta_time,
-				"get_velocity_delta_time()\n"
-				"  Return the time delta used to calculate velocities for net rotation.\n"
-				"\n"
-				"  :rtype: float\n")
-		.def("get_velocity_delta_time_type",
-				&GPlatesApi::NetRotationSnapshot::get_velocity_delta_time_type,
-				"get_velocity_delta_time_type()\n"
-				"  Return how the two velocity times are calculated relative to the reconstruction time.\n"
-				"\n"
-				"  :rtype: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
-				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
@@ -1086,13 +1122,13 @@ export_net_rotation()
 	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesApi::NetRotationSnapshot>();
 
 
-	std::stringstream net_rotation_model_create_topological_snapshot_docstring_stream;
-	net_rotation_model_create_topological_snapshot_docstring_stream <<
-			"net_rotation_snapshot(reconstruction_time, velocity_delta_time, velocity_delta_time_type, [point_distribution])\n"
-			"  Returns a snapshot of net rotation at the requested reconstruction time, and using the requested parameters.\n"
+	std::stringstream net_rotation_model_create_docstring_stream;
+	net_rotation_model_create_docstring_stream <<
+			"__init__(topological_model, velocity_delta_time, velocity_delta_time_type, [point_distribution])\n"
+			"  Net rotation snapshots will be calculated from the specified topological model, and using the requested parameters.\n"
 			"\n"
-			"  :param reconstruction_time: the geological time of the snapshot\n"
-			"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+			"  :param topological_model: The topological model to calculate net rotations with.\n"
+			"  :type topological_model: :class:`TopologicalModel`\n"
 			"  :param velocity_delta_time: The time delta used to calculate velocities for net rotation.\n"
 			"  :type velocity_delta_time: float\n"
 			"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
@@ -1107,11 +1143,9 @@ export_net_rotation()
 			"` uniformly spaced latitude-longitude points.\n"
 			"  :type point_distribution: int, or sequence of tuple (point, float) where *point* is a "
 			":class:`PointOnSphere` or :class:`LatLonPoint` or tuple (float,float,float) or tuple (float,float)\n"
-			"  :rtype: :class:`NetRotationSnapshot`\n"
-			"  :raises: ValueError if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n"
 			"  :raises: ValueError if *velocity_delta_time* is negative or zero.\n"
 			"\n"
-			"  The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in this snapshot is:\n"
+			"  The `total net rotation <https://doi.org/10.1016/j.epsl.2009.12.055>`_ of all resolved topologies in a :meth:`snapshot<net_rotation_snapshot>` is:\n"
 			"\n"
 			"  .. math::\n"
 			"\n"
@@ -1144,11 +1178,12 @@ export_net_rotation()
 			<< GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN << " x " << 2 * GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN <<
 			"` points is used.\n"
 			"\n"
-			"  To create a net rotation snapshot at 0Ma calculated with a velocity delta from 1Ma (to 0Ma):"
+			"  To create a net rotation snapshot at 0Ma calculated from a net rotation model with a velocity delta from 1Ma (to 0Ma):"
 			"  ::\n"
 			"\n"
-			"    net_rotation_snapshot = net_rotation_model.net_rotation_snapshot(\n"
-			"        0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t)\n"
+			"    net_rotation_model = pygplates.NetRotationModel(\n"
+			"        topological_model, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t)\n"
+			"    net_rotation_snapshot = net_rotation_model.net_rotation_snapshot(0)\n"
 			"\n"
 			"  ...which is equivalent to the following code that explicitly specifies a point distribution:"
 			"  ::\n"
@@ -1167,11 +1202,11 @@ export_net_rotation()
 			"            lon = -180.0 + (lon_index + 0.5) * delta_in_degrees\n"
 			"            point_distribution.append(((lat, lon), sample_area_radians))\n"
 			"\n"
-			"    net_rotation_snapshot = net_rotation_model.net_rotation_snapshot(\n"
-			"        0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t, point_distribution)\n"
+			"    net_rotation_model = pygplates.NetRotationModel(\n"
+			"        topological_model, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t, point_distribution)\n"
+			"    net_rotation_snapshot = net_rotation_model.net_rotation_snapshot(0)\n"
 			"\n"
-			"  .. note:: The anchor plate is that of the topological model specified in the :meth:`constructor<__init__>` "
-			"(see :meth:`TopologicalModel.get_anchor_plate_id`).\n";
+			"  .. note:: The anchor plate is that of the specified topological model (see :meth:`TopologicalModel.get_anchor_plate_id`).\n";
 
 	//
 	// NetRotationModel - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
@@ -1193,14 +1228,11 @@ export_net_rotation()
 				bp::make_constructor(
 						&GPlatesApi::net_rotation_model_create,
 						bp::default_call_policies(),
-						(bp::arg("topological_model"))),
-				"__init__(topological_model)\n"
-				"  Net rotations will be calculated from the specified topological model.\n"
-				"\n"
-				"  :param topological_model: The topological model to calculate net rotations with.\n"
-				"  :type topological_model: :class:`TopologicalModel`\n"
-				"\n"
-				"  .. note:: The anchor plate is that of the specified topological model (see :meth:`TopologicalModel.get_anchor_plate_id`).\n")
+						(bp::arg("topological_model"),
+							bp::arg("velocity_delta_time"),
+							bp::arg("velocity_delta_time_type"),
+							bp::arg("point_distribution") = GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN)),
+				net_rotation_model_create_docstring_stream.str().c_str())
 		// Pickle support...
 		//
 		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
@@ -1208,12 +1240,15 @@ export_net_rotation()
 		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
 		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesApi::NetRotationModel::non_null_ptr_type>())
 		.def("net_rotation_snapshot",
-				&GPlatesApi::net_rotation_model_create_topological_snapshot,
-				(bp::arg("reconstruction_time"),
-					bp::arg("velocity_delta_time"),
-					bp::arg("velocity_delta_time_type"),
-					bp::arg("num_samples_along_meridian") = GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN),
-				net_rotation_model_create_topological_snapshot_docstring_stream.str().c_str())
+				&GPlatesApi::net_rotation_model_create_net_rotation_snapshot,
+				(bp::arg("reconstruction_time")),
+				"net_rotation_snapshot(reconstruction_time)\n"
+				"  Returns a snapshot of net rotation at the requested reconstruction time.\n"
+				"\n"
+				"  :param reconstruction_time: the geological time of the snapshot\n"
+				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+				"  :rtype: :class:`NetRotationSnapshot`\n"
+				"  :raises: ValueError if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n")
 		.def("get_topological_model",
 				&GPlatesApi::NetRotationModel::get_topological_model,
 				"get_topological_model()\n"

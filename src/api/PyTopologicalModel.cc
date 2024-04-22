@@ -1497,7 +1497,7 @@ export_topological_model()
 			"or sequence of :class:`FeatureCollection` instances and/or strings\n"
 			"  :param anchor_plate_id: The anchored plate id used for all reconstructions "
 			"(resolving topologies, and reconstructing regular features and :meth:`geometries<reconstruct_geometry>`). "
-			"Defaults to the default anchor plate of *rotation_model*.\n"
+			"Defaults to the default anchor plate of *rotation_model* (or zero if *rotation_model* is not a :class:`RotationModel`).\n"
 			"  :type anchor_plate_id: int\n"
 			"  :param default_resolve_topology_parameters: Default parameters used to resolve topologies. "
 			"Note that these can optionally be overridden in *topological_features*. "
