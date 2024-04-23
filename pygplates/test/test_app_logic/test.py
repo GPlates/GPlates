@@ -2086,6 +2086,15 @@ class TopologicalModelCase(unittest.TestCase):
                 youngest_time=10.0,
                 reconstruction_plate_id=802,
                 initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
+        # Create using non-integral initial, oldest, youngest times, and a non-integral time increment.
+        reconstructed_points_time_span = self.topological_model.reconstruct_geometry(
+                [(0, 0), (5, 5)],
+                initial_time=20.5,
+                oldest_time=30.5,
+                youngest_time=10.5,
+                time_increment=0.5,
+                reconstruction_plate_id=802,
+                initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
 
         # Number of scalars must match number of points.
         self.assertRaises(
@@ -2105,6 +2114,27 @@ class TopologicalModelCase(unittest.TestCase):
                 100.0,
                 oldest_time=5,
                 time_increment=2)
+        self.assertRaises(
+                ValueError,
+                self.topological_model.reconstruct_geometry,
+                multipoint,
+                100.0,
+                oldest_time=4.01)
+        self.assertRaises(
+                ValueError,
+                self.topological_model.reconstruct_geometry,
+                multipoint,
+                100.0,
+                oldest_time=4,
+                youngest_time=1.99)
+        self.assertRaises(
+                ValueError,
+                self.topological_model.reconstruct_geometry,
+                multipoint,
+                100.0,
+                oldest_time=4,
+                youngest_time=1,
+                time_increment=0.99)
         # oldest_time later (or same as) youngest_time
         self.assertRaises(
                 ValueError,
@@ -2133,28 +2163,6 @@ class TopologicalModelCase(unittest.TestCase):
                 multipoint,
                 100.0,
                 oldest_time=pygplates.GeoTimeInstant.create_distant_past())
-        # Oldest/youngest times and time increment must have integral values.
-        self.assertRaises(
-                ValueError,
-                self.topological_model.reconstruct_geometry,
-                multipoint,
-                100.0,
-                oldest_time=4.01)
-        self.assertRaises(
-                ValueError,
-                self.topological_model.reconstruct_geometry,
-                multipoint,
-                100.0,
-                oldest_time=4,
-                youngest_time=1.99)
-        self.assertRaises(
-                ValueError,
-                self.topological_model.reconstruct_geometry,
-                multipoint,
-                100.0,
-                oldest_time=4,
-                youngest_time=1,
-                time_increment=0.99)
         # Time increment must be positive.
         self.assertRaises(
                 ValueError,

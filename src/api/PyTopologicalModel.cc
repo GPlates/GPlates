@@ -829,8 +829,8 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 		bp::object geometry_object,
 		const GPlatesPropertyValues::GeoTimeInstant &initial_time,
 		boost::optional<GPlatesPropertyValues::GeoTimeInstant> oldest_time_arg,
-		const GPlatesPropertyValues::GeoTimeInstant &youngest_time_arg,
-		const double &time_increment_arg,
+		const GPlatesPropertyValues::GeoTimeInstant &youngest_time,
+		const double &time_increment,
 		boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
 		bp::object scalar_type_to_initial_scalar_values_mapping_object,
 		boost::optional<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_to_const_type> deactivate_points)
@@ -844,33 +844,17 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 	}
 
 	// Oldest time defaults to initial reconstruction time if not specified.
-	if (!oldest_time_arg)
-	{
-		oldest_time_arg = initial_time;
-	}
+	const GPlatesPropertyValues::GeoTimeInstant oldest_time = oldest_time_arg ? oldest_time_arg.get() : initial_time;
 
-	if (!oldest_time_arg->is_real() ||
-		!youngest_time_arg.is_real())
+	if (!oldest_time.is_real() ||
+		!youngest_time.is_real())
 	{
 		PyErr_SetString(PyExc_ValueError,
 				"Oldest/youngest times cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
 		bp::throw_error_already_set();
 	}
 
-	// We are expecting these to have integral values.
-	const double oldest_time = std::round(oldest_time_arg->value());
-	const double youngest_time = std::round(youngest_time_arg.value());
-	const double time_increment = std::round(time_increment_arg);
-
-	if (!GPlatesMaths::are_almost_exactly_equal(oldest_time, oldest_time_arg->value()) ||
-		!GPlatesMaths::are_almost_exactly_equal(youngest_time, youngest_time_arg.value()) ||
-		!GPlatesMaths::are_almost_exactly_equal(time_increment, time_increment_arg))
-	{
-		PyErr_SetString(PyExc_ValueError, "Oldest/youngest times and time increment must have integral values.");
-		bp::throw_error_already_set();
-	}
-
-	if (oldest_time <= youngest_time)
+	if (oldest_time >= youngest_time)  // note: using GeoTimeInstant comparison where '>' means later (not earlier)
 	{
 		PyErr_SetString(PyExc_ValueError, "Oldest time cannot be later than (or same as) youngest time.");
 		bp::throw_error_already_set();
@@ -883,7 +867,7 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 	}
 
 	const GPlatesAppLogic::TimeSpanUtils::TimeRange time_range(
-			oldest_time/*begin_time*/, youngest_time/*end_time*/, time_increment,
+			oldest_time.value()/*begin_time*/, youngest_time.value()/*end_time*/, time_increment,
 			// If time increment was specified correctly then it shouldn't need to be adjusted...
 			GPlatesAppLogic::TimeSpanUtils::TimeRange::ADJUST_TIME_INCREMENT);
 	if (!GPlatesMaths::are_almost_exactly_equal(time_range.get_time_increment(), time_increment))
@@ -1626,19 +1610,15 @@ export_topological_model()
 				"(where a point can be :class:`PointOnSphere` or (x,y,z) tuple or (latitude,longitude) tuple in degrees)\n"
 				"  :param initial_time: The time that reconstruction by topologies starts at.\n"
 				"  :type initial_time: float or :class:`GeoTimeInstant`\n"
-				"  :param oldest_time: Oldest time in the history of topologies (must have an *integral* value). "
-				"Defaults to *initial_time*.\n"
+				"  :param oldest_time: Oldest time in the history of topologies. Defaults to *initial_time*.\n"
 				"  :type oldest_time: float or :class:`GeoTimeInstant`\n"
-				"  :param youngest_time: Youngest time in the history of topologies (must have an *integral* value). "
-				"Defaults to present day.\n"
-				"  :type youngest_time: float or :class:`GeoTimeInstant`.\n"
-				"  :param time_increment: Time step in the history of topologies (must have an *integral* value, "
-				"and ``oldest_time - youngest_time`` must be an integer multiple of ``time_increment``). "
-				"Defaults to 1My.\n"
+				"  :param youngest_time: Youngest time in the history of topologies. Defaults to present day.\n"
+				"  :type youngest_time: float or :class:`GeoTimeInstant`\n"
+				"  :param time_increment: Time step in the history of topologies ("
+				"``oldest_time - youngest_time`` must be an integer multiple of ``time_increment``). Defaults to 1My.\n"
 				"  :type time_increment: float\n"
-				"  :param reconstruction_plate_id: Used to rotate *geometry* (assumed to be in its present day position) "
-				"to its initial position at time *initial_time*. Defaults to the anchored plate "
-				"(specified in :meth:`constructor<__init__>`).\n"
+				"  :param reconstruction_plate_id: Used to rotate *geometry* (assumed to be in its present day position) to its "
+				"initial position at time *initial_time*. Defaults to the anchored plate (specified in :meth:`constructor<__init__>`).\n"
 				"  :type reconstruction_plate_id: int\n"
 				"  :param initial_scalars: optional mapping of scalar types to sequences of initial scalar values\n"
 				"  :type initial_scalars: ``dict`` mapping each :class:`ScalarType` to a sequence "
@@ -1651,16 +1631,14 @@ export_topological_model()
 				"Defaults to a default-constructed :class:`ReconstructedGeometryTimeSpan.DefaultDeactivatePoints`.\n"
 				"  :type deactivate_points: :class:`ReconstructedGeometryTimeSpan.DeactivatePoints` or None\n"
 				"  :rtype: :class:`ReconstructedGeometryTimeSpan`\n"
-				"  :raises: ValueError if *initial_time* is "
-				":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
-				":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+				"  :raises: ValueError if initial time, oldest time or youngest time is "
+				"distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n"
+				"  :raises: ValueError if oldest time is later than (or same as) youngest time.\n"
+				"  :raises: ValueError if time increment is not positive.\n"
+				"  :raises: ValueError if oldest to youngest time period is not an integer multiple of the time increment.\n"
 				"  :raises: ValueError if *initial_scalars* is specified but: is empty, or each :class:`scalar type<ScalarType>` "
 				"is not mapped to the same number of scalar values, or the number of scalars is not equal to the "
 				"number of points in *geometry*\n"
-				"  :raises: ValueError if oldest or youngest time is distant-past (``float('inf')``) or "
-				"distant-future (``float('-inf')``), or if oldest time is later than (or same as) youngest time, or if "
-				"time increment is not positive, or if oldest to youngest time period is not an integer multiple "
-				"of the time increment, or if oldest time or youngest time or time increment are not *integral* values.\n"
 				"\n"
 				"  The *reconstruction_plate_id* is used for any **rigid** reconstructions of *geometry*. This includes "
 				"the initial rigid rotation of *geometry* (assumed to be in its present day position) to its initial position "
@@ -1699,7 +1677,10 @@ export_topological_model()
 				"    topological_model.reconstruct_geometry(geometry, 0, oldest_time=100, deactivate_points=None)\n"
 				"\n"
 				"  .. versionchanged:: 0.31\n"
-				"     Added *deactivate_points* argument.\n")
+				"     Added *deactivate_points* argument.\n"
+				"\n"
+				"  .. versionchanged:: 0.43\n"
+				"     Oldest time, youngest time and time increment no longer required to be *integral* values.\n")
 		.def("get_rotation_model",
 				&GPlatesApi::TopologicalModel::get_rotation_model,
 				"get_rotation_model()\n"
