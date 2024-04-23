@@ -2042,6 +2042,8 @@ class TopologicalModelCase(unittest.TestCase):
                     topologies_list[4:],  # multiple features without ResolveTopologyParameters
                 ],
                 self.rotation_model)
+        # Make sure can specify a topological snapshot cache size.
+        topological_model = pygplates.TopologicalModel(self.topologies, self.rotation_model, topological_snapshot_cache_size=2)
 
     def test_get_topological_snapshot(self):
         topological_snapshot = self.topological_model.topological_snapshot(10.5)  # note: it should allow a non-integral time

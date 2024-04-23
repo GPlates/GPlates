@@ -61,6 +61,7 @@
  // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
 #include "scribe/Transcribe.h"
 
+#include "utils/KeyValueCache.h"
 #include "utils/ReferenceCount.h"
 
 
@@ -232,14 +233,15 @@ namespace GPlatesApi
 				// just 'RotationModelFunctionArgument' since we want to know if it's an existing RotationModel...
 				const RotationModelFunctionArgument::function_argument_type &rotation_model_argument,
 				boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
-				boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters);
+				boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters,
+				boost::optional<unsigned int> topological_snapshot_cache_size);
 
 
 		/**
-		 * Creates the topological snapshot (resolved topologies) for the specified time.
+		 * Returns the topological snapshot (resolved topologies) for the specified time (creating and caching them if necessary).
 		 */
 		TopologicalSnapshot::non_null_ptr_type
-		create_topological_snapshot(
+		get_topological_snapshot(
 				const double &reconstruction_time);
 
 
@@ -319,6 +321,9 @@ namespace GPlatesApi
 
 	private:
 
+		//! Typedef for a least-recently used cache mapping reconstruction times to topological snapshots (resolved topologies).
+		typedef GPlatesUtils::KeyValueCache<GPlatesMaths::real_t/*time*/, TopologicalSnapshot::non_null_ptr_type> topological_snapshots_type;
+
 		//! Typedef for a sequence of topological features.
 		typedef std::vector<GPlatesModel::FeatureHandle::weak_ref> topological_features_seq_type;
 
@@ -368,18 +373,36 @@ namespace GPlatesApi
 		GPlatesAppLogic::ReconstructContext d_topological_section_reconstruct_context;
 		GPlatesAppLogic::ReconstructContext::context_state_reference_type d_topological_section_reconstruct_context_state;
 
+		/**
+		 * Number of topological snapshots to cache (at different time instants) - none means unlimited.
+		 */
+		boost::optional<unsigned int> d_topological_snapshot_cache_size;
+
+		/**
+		 * Cache of topological snapshots (resolved topologies) at various time instants.
+		 */
+		topological_snapshots_type d_topological_snapshot_cache;
+
 
 		TopologicalModel(
 				const RotationModel::non_null_ptr_type &rotation_model,
 				const std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
 				const std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> &resolve_topology_parameters,
-				ResolveTopologyParameters::non_null_ptr_to_const_type default_resolve_topology_parameters);
+				ResolveTopologyParameters::non_null_ptr_to_const_type default_resolve_topology_parameters,
+				boost::optional<unsigned int> topological_snapshot_cache_size);
 
 		/**
 		 * Set up for topological reconstruction once the topological files/parameters have been constructed.
 		 */
 		void
 		initialise_topological_reconstruction();
+
+		/**
+		 * Resolves topologies for the specified time and returns them as a topological snapshot.
+		 */
+		TopologicalSnapshot::non_null_ptr_type
+		create_topological_snapshot(
+				const GPlatesMaths::real_t &reconstruction_time);
 
 	private: // Transcribe...
 
@@ -409,7 +432,8 @@ namespace GPlatesApi
 				GPlatesScribe::LoadRef<RotationModel::non_null_ptr_type> &rotation_model,
 				std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
 				const std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> &resolve_topology_parameters,
-				GPlatesScribe::LoadRef<ResolveTopologyParameters::non_null_ptr_to_const_type> &default_resolve_topology_parameters);
+				GPlatesScribe::LoadRef<ResolveTopologyParameters::non_null_ptr_to_const_type> &default_resolve_topology_parameters,
+				boost::optional<unsigned int> &topological_snapshot_cache_size);
 	};
 }
 

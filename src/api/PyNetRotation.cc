@@ -575,7 +575,7 @@ namespace GPlatesApi
 			const double &reconstruction_time) const
 	{
 		TopologicalSnapshot::non_null_ptr_type topological_snapshot =
-				d_topological_model->create_topological_snapshot(reconstruction_time);
+				d_topological_model->get_topological_snapshot(reconstruction_time);
 
 		return NetRotationSnapshot::create(
 				topological_snapshot,

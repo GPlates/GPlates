@@ -26,8 +26,10 @@
 #include <cmath>
 #include <cstddef>
 #include <iterator>
+#include <limits>
 #include <sstream>
 #include <vector>
+#include <boost/bind/bind.hpp>
 #include <boost/cast.hpp>
 #include <boost/foreach.hpp>
 #include <boost/noncopyable.hpp>
@@ -78,20 +80,22 @@ namespace GPlatesApi
 			const TopologicalFeatureCollectionSequenceFunctionArgument &topological_features,
 			const RotationModelFunctionArgument::function_argument_type &rotation_model_argument,
 			boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
-			boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters)
+			boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters,
+			boost::optional<unsigned int> topological_snapshot_cache_size)
 	{
 		return TopologicalModel::create(
 				topological_features,
 				rotation_model_argument,
 				anchor_plate_id,
-				default_resolve_topology_parameters);
+				default_resolve_topology_parameters,
+				topological_snapshot_cache_size);
 	}
 
 	/**
 	 * This is called directly from Python via 'TopologicalModel.get_topological_snapshot()'.
 	 */
 	TopologicalSnapshot::non_null_ptr_type
-	topological_model_create_topological_snapshot(
+	topological_model_get_topological_snapshot(
 			TopologicalModel::non_null_ptr_type topological_model,
 			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
 	{
@@ -103,7 +107,7 @@ namespace GPlatesApi
 			bp::throw_error_already_set();
 		}
 
-		return topological_model->create_topological_snapshot(reconstruction_time.value());
+		return topological_model->get_topological_snapshot(reconstruction_time.value());
 	}
 
 
@@ -520,7 +524,8 @@ GPlatesApi::TopologicalModel::create(
 		// just 'RotationModelFunctionArgument' since we want to know if it's an existing RotationModel...
 		const RotationModelFunctionArgument::function_argument_type &rotation_model_argument,
 		boost::optional<GPlatesModel::integer_plate_id_type> anchor_plate_id,
-		boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters)
+		boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters,
+		boost::optional<unsigned int> topological_snapshot_cache_size)
 {
 	boost::optional<RotationModel::non_null_ptr_type> rotation_model;
 
@@ -576,7 +581,8 @@ GPlatesApi::TopologicalModel::create(
 					rotation_model.get(),
 					topological_files,
 					resolve_topology_parameters,
-					default_resolve_topology_parameters.get()));
+					default_resolve_topology_parameters.get(),
+					topological_snapshot_cache_size));
 }
 
 
@@ -584,12 +590,19 @@ GPlatesApi::TopologicalModel::TopologicalModel(
 		const RotationModel::non_null_ptr_type &rotation_model,
 		const std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
 		const std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> &resolve_topology_parameters,
-		ResolveTopologyParameters::non_null_ptr_to_const_type default_resolve_topology_parameters) :
+		ResolveTopologyParameters::non_null_ptr_to_const_type default_resolve_topology_parameters,
+		boost::optional<unsigned int> topological_snapshot_cache_size) :
 	d_rotation_model(rotation_model),
 	d_topological_files(topological_files),
 	d_resolve_topology_parameters(resolve_topology_parameters),
 	d_default_resolve_topology_parameters(default_resolve_topology_parameters),
-	d_topological_section_reconstruct_context(d_reconstruct_method_registry)
+	d_topological_section_reconstruct_context(d_reconstruct_method_registry),
+	d_topological_snapshot_cache_size(topological_snapshot_cache_size),
+	d_topological_snapshot_cache(
+			// Function to create a topological snapshot given a reconstruction time...
+			boost::bind(&TopologicalModel::create_topological_snapshot, this, boost::placeholders::_1),
+			// Initially set cache size to 1 - we'll set it properly in 'initialise_topological_reconstruction()'...
+			1)
 {
 	initialise_topological_reconstruction();
 }
@@ -604,6 +617,23 @@ GPlatesApi::TopologicalModel::initialise_topological_reconstruction()
 	d_topological_boundary_features.clear();
 	d_topological_network_features_map.clear();
 	d_topological_section_regular_features.clear();
+	// Also clear any cached topological snapshots.
+	d_topological_snapshot_cache.clear();
+
+	// Size of topological snapshot cache.
+	const unsigned int topological_snapshot_cache_size = d_topological_snapshot_cache_size
+			? d_topological_snapshot_cache_size.get()
+			// If not specified then default to unlimited - set to a very large value.
+			// But should be *less* than max value so that max value can compare greater than it...
+			: (std::numeric_limits<unsigned int>::max)() - 2;
+	// Set size of topological snapshot cache.
+	d_topological_snapshot_cache.set_maximum_num_values_in_cache(topological_snapshot_cache_size);
+
+	// Size of reconstruction tree cache.
+	//
+	// The +1 accounts for the extra time step used to generate deformed geometries (and velocities).
+	const unsigned int reconstruction_tree_cache_size = topological_snapshot_cache_size + 1;
+	d_rotation_model->get_cached_reconstruction_tree_creator_impl()->set_maximum_cache_size(reconstruction_tree_cache_size);
 
 	// Extract a feature collection from each topological file.
 	for (auto topological_file : d_topological_files)
@@ -684,8 +714,16 @@ GPlatesApi::TopologicalModel::initialise_topological_reconstruction()
 
 
 GPlatesApi::TopologicalSnapshot::non_null_ptr_type
-GPlatesApi::TopologicalModel::create_topological_snapshot(
+GPlatesApi::TopologicalModel::get_topological_snapshot(
 		const double &reconstruction_time)
+{
+	return d_topological_snapshot_cache.get_value(reconstruction_time);
+}
+
+
+GPlatesApi::TopologicalSnapshot::non_null_ptr_type
+GPlatesApi::TopologicalModel::create_topological_snapshot(
+		const GPlatesMaths::real_t &reconstruction_time)
 {
 	// Find the topological section feature IDs referenced by any topological features at current reconstruction time.
 	//
@@ -696,12 +734,12 @@ GPlatesApi::TopologicalModel::create_topological_snapshot(
 			topological_sections_referenced,
 			d_topological_line_features,
 			GPlatesAppLogic::TopologyGeometry::LINE,
-			reconstruction_time);
+			reconstruction_time.dval());
 	GPlatesAppLogic::TopologyInternalUtils::find_topological_sections_referenced(
 			topological_sections_referenced,
 			d_topological_boundary_features,
 			GPlatesAppLogic::TopologyGeometry::BOUNDARY,
-			reconstruction_time);
+			reconstruction_time.dval());
 	for (const auto &topological_network_features_map_entry : d_topological_network_features_map)
 	{
 		const topological_features_seq_type &topological_network_features = topological_network_features_map_entry.second;
@@ -710,7 +748,7 @@ GPlatesApi::TopologicalModel::create_topological_snapshot(
 				topological_sections_referenced,
 				topological_network_features,
 				GPlatesAppLogic::TopologyGeometry::NETWORK,
-				reconstruction_time);
+				reconstruction_time.dval());
 	}
 
 	// Contains the topological section regular geometries referenced by topologies.
@@ -722,7 +760,7 @@ GPlatesApi::TopologicalModel::create_topological_snapshot(
 					reconstructed_feature_geometries,
 					topological_sections_referenced,
 					d_topological_section_reconstruct_context_state,
-					reconstruction_time);
+					reconstruction_time.dval());
 
 	// All reconstruct handles used to find topological sections (referenced by topological boundaries/networks).
 	std::vector<GPlatesAppLogic::ReconstructHandle::type> topological_sections_reconstruct_handles(1, reconstruct_handle);
@@ -738,7 +776,7 @@ GPlatesApi::TopologicalModel::create_topological_snapshot(
 					resolved_lines,
 					d_topological_line_features,
 					d_rotation_model->get_reconstruction_tree_creator(), 
-					reconstruction_time,
+					reconstruction_time.dval(),
 					// Resolved topo lines use the reconstructed non-topo geometries...
 					topological_sections_reconstruct_handles
 	// NOTE: We need to generate all resolved topological lines, not just those referenced by resolved boundaries/networks,
@@ -757,7 +795,7 @@ GPlatesApi::TopologicalModel::create_topological_snapshot(
 			resolved_boundaries,
 			d_topological_boundary_features,
 			d_rotation_model->get_reconstruction_tree_creator(), 
-			reconstruction_time,
+			reconstruction_time.dval(),
 			// Resolved topo boundaries use the resolved topo lines *and* the reconstructed non-topo geometries...
 			topological_sections_reconstruct_handles);
 
@@ -772,7 +810,7 @@ GPlatesApi::TopologicalModel::create_topological_snapshot(
 
 		GPlatesAppLogic::TopologyUtils::resolve_topological_networks(
 				resolved_networks,
-				reconstruction_time,
+				reconstruction_time.dval(),
 				topological_network_features,
 				// Resolved topo networks use the resolved topo lines *and* the reconstructed non-topo geometries...
 				topological_sections_reconstruct_handles,
@@ -782,7 +820,7 @@ GPlatesApi::TopologicalModel::create_topological_snapshot(
 	return TopologicalSnapshot::create(
 			resolved_lines, resolved_boundaries, resolved_networks,
 			d_rotation_model, d_topological_files, d_resolve_topology_parameters, d_default_resolve_topology_parameters,
-			reconstruction_time);
+			reconstruction_time.dval());
 }
 
 
@@ -855,28 +893,21 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 		bp::throw_error_already_set();
 	}
 
-	const unsigned int num_time_slots = time_range.get_num_time_slots();
-
-	// First we want to have a suitably large reconstruction tree cache size in our rotation model to
-	// avoid slowing down our reconstruct-by-topologies (which happens if reconstruction trees are
-	// continually evicted and re-populated as we reconstruct different geometries through time).
-	//
-	// The +1 accounts for the extra time step used to generate deformed geometries (and velocities).
-	d_rotation_model->get_cached_reconstruction_tree_creator_impl()->set_maximum_cache_size(num_time_slots + 1);
-
 	// Create our resolved topology (boundary/network) time spans.
 	GPlatesAppLogic::TopologyReconstruct::resolved_boundary_time_span_type::non_null_ptr_type resolved_boundary_time_span =
 			GPlatesAppLogic::TopologyReconstruct::resolved_boundary_time_span_type::create(time_range);
 	GPlatesAppLogic::TopologyReconstruct::resolved_network_time_span_type::non_null_ptr_type resolved_network_time_span =
 			GPlatesAppLogic::TopologyReconstruct::resolved_network_time_span_type::create(time_range);
 
+	const unsigned int num_time_slots = time_range.get_num_time_slots();
+
 	// Iterate over the time slots and fill in the resolved topological boundaries/networks.
 	for (unsigned int time_slot = 0; time_slot < num_time_slots; ++time_slot)
 	{
 		const double time = time_range.get_time(time_slot);
 
-		// Create a topological snapshot at the current time.
-		TopologicalSnapshot::non_null_ptr_type topological_snapshot = create_topological_snapshot(time);
+		// Get topological snapshot (it'll either be cached or generated on demand).
+		TopologicalSnapshot::non_null_ptr_type topological_snapshot = get_topological_snapshot(time);
 
 		resolved_boundary_time_span->set_sample_in_time_slot(topological_snapshot->get_resolved_topological_boundaries(), time_slot);
 		resolved_network_time_span->set_sample_in_time_slot(topological_snapshot->get_resolved_topological_networks(), time_slot);
@@ -949,12 +980,14 @@ GPlatesApi::TopologicalModel::transcribe_construct_data(
 		std::vector<GPlatesFileIO::File::non_null_ptr_type> topological_files;
 		std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> resolve_topology_parameters;
 		GPlatesScribe::LoadRef<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters;
+		boost::optional<unsigned int> topological_snapshot_cache_size;
 		if (!load_construct_data(
 				scribe,
 				rotation_model,
 				topological_files,
 				resolve_topology_parameters,
-				default_resolve_topology_parameters))
+				default_resolve_topology_parameters,
+				topological_snapshot_cache_size))
 		{
 			return scribe.get_transcribe_result();
 		}
@@ -964,7 +997,8 @@ GPlatesApi::TopologicalModel::transcribe_construct_data(
 				rotation_model,
 				topological_files,
 				resolve_topology_parameters,
-				default_resolve_topology_parameters);
+				default_resolve_topology_parameters,
+				topological_snapshot_cache_size);
 	}
 
 	return GPlatesScribe::TRANSCRIBE_SUCCESS;
@@ -986,17 +1020,20 @@ GPlatesApi::TopologicalModel::transcribe(
 		{
 			GPlatesScribe::LoadRef<RotationModel::non_null_ptr_type> rotation_model;
 			GPlatesScribe::LoadRef<ResolveTopologyParameters::non_null_ptr_to_const_type> default_resolve_topology_parameters;
+			boost::optional<unsigned int> topological_snapshot_cache_size;
 			if (!load_construct_data(
 					scribe,
 					rotation_model,
 					d_topological_files,
 					d_resolve_topology_parameters,
-					default_resolve_topology_parameters))
+					default_resolve_topology_parameters,
+					topological_snapshot_cache_size))
 			{
 				return scribe.get_transcribe_result();
 			}
 			d_rotation_model = rotation_model.get();
 			d_default_resolve_topology_parameters = default_resolve_topology_parameters.get();
+			d_topological_snapshot_cache_size = topological_snapshot_cache_size;
 
 			// Initialise topological reconstruction (based on the construct parameters we just loaded).
 			//
@@ -1042,6 +1079,9 @@ GPlatesApi::TopologicalModel::save_construct_data(
 	// Save the resolved topology parameters.
 	scribe.save(TRANSCRIBE_SOURCE, topological_model.d_resolve_topology_parameters, "resolve_topology_parameters");
 	scribe.save(TRANSCRIBE_SOURCE, topological_model.d_default_resolve_topology_parameters, "default_resolve_topology_parameters");
+
+	// Save the topological snapshot cache size.
+	scribe.save(TRANSCRIBE_SOURCE, topological_model.d_topological_snapshot_cache_size, "topological_snapshot_cache_size");
 }
 
 
@@ -1051,7 +1091,8 @@ GPlatesApi::TopologicalModel::load_construct_data(
 		GPlatesScribe::LoadRef<RotationModel::non_null_ptr_type> &rotation_model,
 		std::vector<GPlatesFileIO::File::non_null_ptr_type> &topological_files,
 		const std::vector<boost::optional<ResolveTopologyParameters::non_null_ptr_to_const_type>> &resolve_topology_parameters,
-		GPlatesScribe::LoadRef<ResolveTopologyParameters::non_null_ptr_to_const_type> &default_resolve_topology_parameters)
+		GPlatesScribe::LoadRef<ResolveTopologyParameters::non_null_ptr_to_const_type> &default_resolve_topology_parameters,
+		boost::optional<unsigned int> &topological_snapshot_cache_size)
 {
 	// Load the rotation model.
 	rotation_model = scribe.load<RotationModel::non_null_ptr_type>(TRANSCRIBE_SOURCE, "rotation_model");
@@ -1096,6 +1137,12 @@ GPlatesApi::TopologicalModel::load_construct_data(
 			TRANSCRIBE_SOURCE, "default_resolve_topology_parameters");
 	if (!default_resolve_topology_parameters.is_valid() ||
 		!scribe.transcribe(TRANSCRIBE_SOURCE, resolve_topology_parameters, "resolve_topology_parameters"))
+	{
+		return false;
+	}
+
+	// Load the topological snapshot cache size.
+	if (!scribe.transcribe(TRANSCRIBE_SOURCE, topological_snapshot_cache_size, "topological_snapshot_cache_size"))
 	{
 		return false;
 	}
@@ -1480,8 +1527,9 @@ export_topological_model()
 							bp::arg("rotation_model"),
 							bp::arg("anchor_plate_id") = boost::optional<GPlatesModel::integer_plate_id_type>(),
 							bp::arg("default_resolve_topology_parameters") =
-								boost::optional<GPlatesApi::ResolveTopologyParameters::non_null_ptr_to_const_type>())),
-			"__init__(topological_features, rotation_model, [anchor_plate_id], [default_resolve_topology_parameters])\n"
+								boost::optional<GPlatesApi::ResolveTopologyParameters::non_null_ptr_to_const_type>(),
+							bp::arg("topological_snapshot_cache_size") = boost::optional<unsigned int>())),
+			"__init__(topological_features, rotation_model, [anchor_plate_id], [default_resolve_topology_parameters], [topological_snapshot_cache_size])\n"
 			"  Create from topological features, a rotation model and a time span.\n"
 			"\n"
 			"  :param topological_features: The topological boundary and/or network features and the "
@@ -1503,6 +1551,8 @@ export_topological_model()
 			"Note that these can optionally be overridden in *topological_features*. "
 			"Defaults to :meth:`default-constructed ResolveTopologyParameters<ResolveTopologyParameters.__init__>`).\n"
 			"  :type default_resolve_topology_parameters: :class:`ResolveTopologyParameters`\n"
+			"  :param topological_snapshot_cache_size: Number of topological snapshots to cache internally. Defaults to unlimited.\n"
+			"  :type topological_snapshot_cache_size: int\n"
 			"\n"
 			"  Load a topological model (and its associated rotation model):\n"
 			"  ::\n"
@@ -1521,8 +1571,20 @@ export_topological_model()
 			"only be done if necessary since each :class:`TopologicalModel` created can consume a reasonable amount of "
 			"CPU and memory (since it caches resolved topologies and reconstructed geometries over geological time).\n"
 			"\n"
+			"  .. note:: The *topological_snapshot_cache_size* parameter controls "
+			"the size of an internal least-recently-used cache of topological snapshots "
+			"(evicts least recently requested topological snapshot when a new reconstruction "
+			"time is requested that does not currently exist in the cache). This enables "
+			"topological snapshots associated with different reconstruction times to be re-used "
+			"instead of re-creating them, provided they have not been evicted from the cache. "
+			"This benefit also applies when reconstructing geometries with :meth:`reconstruct_geometry` "
+			"since it, in turn, requests topological snapshots.\n"
+			"\n"
 			"  .. versionchanged:: 0.31\n"
-			"     Added *default_resolve_topology_parameters* argument.\n")
+			"     Added *default_resolve_topology_parameters* argument.\n"
+			"\n"
+			"  .. versionchanged:: 0.43\n"
+			"     Added *topological_snapshot_cache_size* argument.\n")
 		// Pickle support...
 		//
 		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
@@ -1530,7 +1592,7 @@ export_topological_model()
 		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
 		.def(GPlatesApi::PythonPickle::PickleDefVisitor<GPlatesApi::TopologicalModel::non_null_ptr_type>())
 		.def("topological_snapshot",
-				&GPlatesApi::topological_model_create_topological_snapshot,
+				&GPlatesApi::topological_model_get_topological_snapshot,
 				(bp::arg("reconstruction_time")),
 				"topological_snapshot(reconstruction_time)\n"
 				"  Returns a snapshot of resolved topologies at the requested reconstruction time.\n"
@@ -1647,7 +1709,10 @@ export_topological_model()
 				"\n"
 				"  .. note:: The :meth:`default anchor plate ID<RotationModel.get_default_anchor_plate_id>` of the returned rotation model "
 				"may be different to that of the rotation model passed into the :meth:`constructor<__init__>` if an anchor plate ID was specified "
-				"in the :meth:`constructor<__init__>`.\n")
+				"in the :meth:`constructor<__init__>`.\n"
+				"\n"
+				"  .. note:: The reconstruction tree cache size of the returned rotation model is equal to the *topological_snapshot_cache_size* "
+				"argument specified in the :meth:`constructor<__init__>` plus one (or unlimited if not specified).\n")
 		.def("get_anchor_plate_id",
 				&GPlatesApi::TopologicalModel::get_anchor_plate_id,
 				"get_anchor_plate_id()\n"
