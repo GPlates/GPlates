@@ -330,17 +330,9 @@ else()  # pygplates ...
 	if (TARGET Python3::Python)
 		# We used the Python3 find module.
 		Python3_add_library(pygplates MODULE ScribeExportPyGPlates.cc)
-	elseif (TARGET Python2::Python)
+	else()  # TARGET Python2::Python
 		# We used the Python2 find module.
 		Python2_add_library(pygplates MODULE ScribeExportPyGPlates.cc)
-	else()
-		# We used the PythonLibs find module (which does not have a Python_add_library wrapper).
-		add_library(pygplates MODULE ScribeExportPyGPlates.cc)
-		# Emulate Python_add_library wrapper (which sets pygplates prefix/suffix).
-		set_target_properties(pygplates PROPERTIES PREFIX "")
-		if (WIN32)
-			set_target_properties(pygplates PROPERTIES SUFFIX ".pyd")
-		endif()
 	endif()
 	# All sources files compiled in pygplates need to be position independent and hence compiled differently than 'gplates-lib'.
 	# This is why it's not linked to 'gplates-lib' and why source files get added to both 'pygplates' and 'gplates-lib'.
@@ -774,13 +766,8 @@ target_link_libraries(${SOURCE_TARGET} PUBLIC OpenGL::GL OpenGL::GLU GLEW::GLEW)
 #
 # Set as usage requirements (INTERFACE) on the OpenGL imported library target.
 #
-# Note: Prior to CMake 3.11 none of the 'target_*()' commands could set INTERFACE_ properties on imported targets.
-if (CMAKE_VERSION VERSION_LESS 3.11)
-	# Using 'set_property' since 'set_target_property' cannot append.
-	set_property(TARGET OpenGL::GL APPEND PROPERTY INTERFACE_COMPILE_DEFINITIONS GL_SILENCE_DEPRECATION)
-else()
-	target_compile_definitions(OpenGL::GL INTERFACE GL_SILENCE_DEPRECATION)
-endif()
+# Note: CMake 3.11 is required for the 'target_*()' commands to set INTERFACE_ properties on imported targets.
+target_compile_definitions(OpenGL::GL INTERFACE GL_SILENCE_DEPRECATION)
 
 #
 # ZLIB dependency.
@@ -903,8 +890,8 @@ include(TestPythonEmbedding)
 #
 # Include code to *install* the ${BUILD_TARGET} target (either 'gplates' or 'pygplates').
 #
-# This is done in the same directory scope that the targets were created in since this is required by CMake <= 3.12
-# (once CMake 3.13 or above is our minimum requirement then this will no longer be necessary).
+# This was done in the same directory scope that the targets were created in since this was required by CMake <= 3.12
+# (however this is no longer necessary since our minimum CMake requirement is now above 3.12).
 # Note that, while 'include()' pulls in content from another directory, it pulls it into the *current* directory scope.
 #
 include(Install)

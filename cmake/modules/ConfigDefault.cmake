@@ -271,11 +271,11 @@ if (MSVC)
 		endif()
 	endif()
 
-	# If Visual Studio then enable parallel builds within a project.
+	# If Visual Studio then enable parallel builds WITHIN a project.
 	#
-	# To also enable parallel project builds set
-	# Tools->Options->Programs and Solutions->Build and Run->maximum number of parallel project builds to
-	# the number of cores on your CPU.
+	# Note: To ALSO enable parallel project builds set
+	#       Tools->Options->Projects and Solutions->Build and Run->maximum number of parallel project builds to
+	#       the number of cores on your CPU.
 	#
 	# This is on by default otherwise compilation will take a long time.
 	option(GPLATES_MSVC_PARALLEL_BUILD "Enable parallel builds within each Visual Studio project." true)
