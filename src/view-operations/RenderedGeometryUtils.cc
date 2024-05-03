@@ -35,6 +35,7 @@
 
 #include "RenderedGeometryUtils.h"
 
+#include "RenderedMultiReconstructionGeometry.h"
 #include "RenderedReconstructionGeometry.h"
 #include "RenderedGeometryVisitor.h"
 
@@ -107,7 +108,6 @@ namespace GPlatesViewOperations
 									boost::ref(*this)));
 				}
 
-
 				virtual
 				void
 				visit_rendered_reconstruction_geometry(
@@ -117,6 +117,16 @@ namespace GPlatesViewOperations
 							rendered_recon_geom.get_reconstruction_geometry());
 				}
 
+				virtual
+				void
+				visit_rendered_multi_reconstruction_geometry(
+						const RenderedMultiReconstructionGeometry &rendered_multi_recon_geom)
+				{
+					d_reconstruction_geom_seq.insert(
+							d_reconstruction_geom_seq.end(),
+							rendered_multi_recon_geom.get_reconstruction_geometries().begin(),
+							rendered_multi_recon_geom.get_reconstruction_geometries().end());
+				}
 
 			private:
 				reconstruction_geom_seq_type &d_reconstruction_geom_seq;

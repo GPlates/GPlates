@@ -39,15 +39,19 @@ namespace
 		const GPlatesMaths::PointOnSphere &u2,
 		const GPlatesMaths::PointOnSphere &pivot)
 	{
+		if (GPlatesMaths::collinear(pivot.position_vector(), u1.position_vector()) ||
+			GPlatesMaths::collinear(pivot.position_vector(), u2.position_vector()))
+		{
+			return 0.0;
+		}
 		GPlatesMaths::GreatCircle c1(pivot,u1);
 		GPlatesMaths::GreatCircle c2(pivot,u2);
 
 		GPlatesMaths::Real angle = GPlatesMaths::acos(GPlatesMaths::dot(c1.normal(),c2.normal()));
 
-		GPlatesMaths::UnitVector3D norm_cross_product = 
-			GPlatesMaths::cross(c1.normal(),c2.normal()).get_normalisation();
+		GPlatesMaths::Vector3D cross_product = GPlatesMaths::cross(c1.normal(),c2.normal());
 	
-		if (GPlatesMaths::dot(norm_cross_product,pivot.position_vector()).is_precisely_less_than(0.))
+		if (GPlatesMaths::dot(cross_product, pivot.position_vector()).is_precisely_less_than(0.))
 		{
 			angle = - angle;
 		}			

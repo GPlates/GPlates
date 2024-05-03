@@ -33,6 +33,8 @@
 #include <boost/foreach.hpp>
 
 #include <QDebug>
+#include <QLineF>
+#include <QPointF>
 #include <QTransform>
 
 #include "Colour.h"
@@ -77,6 +79,7 @@
 #include "view-operations/RenderedSmallCircleArc.h"
 #include "view-operations/RenderedSquareSymbol.h"
 #include "view-operations/RenderedString.h"
+#include "view-operations/RenderedSubductionTeethPolyline.h"
 #include "view-operations/RenderedTangentialArrow.h"
 #include "view-operations/RenderedTriangleSymbol.h"
 
@@ -125,6 +128,15 @@ namespace
 
 	// Variables for drawing velocity arrows.
 	const float GLOBE_TO_MAP_SCALE_FACTOR = 180.;
+
+	/**
+	 * Max arrowhead size for arrowed polylines (in post-projection space).
+	 *
+	 * Ensures the arrowheads don't get too big when the map is small in the viewport resulting
+	 * in the vertices of polyline being close together (and causing arrowheads, at each vertex, to clump).
+	 */
+	const double MAX_ARROWED_POLYLINE_ARROWHEAD_SIZE = 0.005 * 180;
+
 	const float MAP_VELOCITY_SCALE_FACTOR = 3.0;
 	const double ARROWHEAD_BASE_HEIGHT_RATIO = 0.5;
 
@@ -274,11 +286,13 @@ GPlatesGui::MapRenderedGeometryLayerPainter::MapRenderedGeometryLayerPainter(
 		const GPlatesViewOperations::RenderedGeometryLayer &rendered_geometry_layer,
 		const GPlatesOpenGL::GLVisualLayers::non_null_ptr_type &gl_visual_layers,
 		const double &inverse_viewport_zoom_factor,
+		const double &device_independent_pixel_to_map_space_ratio,
 		ColourScheme::non_null_ptr_type colour_scheme) :
 	d_map_projection(map_projection),
 	d_rendered_geometry_layer(rendered_geometry_layer),
 	d_gl_visual_layers(gl_visual_layers),
 	d_inverse_zoom_factor(inverse_viewport_zoom_factor),
+	d_device_independent_pixel_to_map_space_ratio(device_independent_pixel_to_map_space_ratio),
 	d_colour_scheme(colour_scheme),
 	d_scale(1.0f),
 	d_dateline_wrapper(
@@ -672,6 +686,148 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_coloured_polyline_on
 			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
 	paint_vertex_coloured_polyline(polyline_on_sphere, vertex_colours, stream);
+}
+
+
+void
+GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_subduction_teeth_polyline(
+		const GPlatesViewOperations::RenderedSubductionTeethPolyline &rendered_subduction_teeth_polyline)
+{
+	boost::optional<Colour> colour = get_vector_geometry_colour(rendered_subduction_teeth_polyline.get_colour());
+	if (!colour)
+	{
+		return;
+	}
+
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline_on_sphere =
+			rendered_subduction_teeth_polyline.get_polyline_on_sphere();
+
+	DatelineWrappedProjectedLineGeometry dateline_wrapped_projected_polyline;
+	dateline_wrap_and_project_line_geometry(dateline_wrapped_projected_polyline, polyline_on_sphere);
+
+	const std::vector<unsigned int> &geometries = dateline_wrapped_projected_polyline.get_geometries();
+	const unsigned int num_geometries = geometries.size();
+	if (num_geometries == 0)
+	{
+		// Return early if there's nothing to paint - shouldn't really be able to get here.
+		return;
+	}
+
+	// Convert colour from floats to bytes to use less vertex memory.
+	const rgba8_t rgba8_colour = Colour::to_rgba8(colour.get());
+
+	// Get the stream for lines of the current line width.
+	const float line_width = rendered_subduction_teeth_polyline.get_line_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
+	stream_primitives_type &lines_stream = d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+
+	// Used to add line strips to the stream.
+	stream_primitives_type::LineStrips stream_line_strips(lines_stream);
+
+	const double teeth_width = d_device_independent_pixel_to_map_space_ratio * d_scale * rendered_subduction_teeth_polyline.get_teeth_width_in_pixels();
+	const double teeth_spacing = teeth_width * rendered_subduction_teeth_polyline.get_teeth_spacing_to_width_ratio();
+	const double teeth_height = teeth_width * rendered_subduction_teeth_polyline.get_teeth_height_to_width_ratio();
+	// Wide lines push the teeth further from the centre of the line by half the line's width
+	// (reduced by half a pixel since the line is typically anti-aliased, so we don't want a tiny gap between the line and teeth).
+	const double teeth_offset = (0.5 * line_width - 0.5) * d_device_independent_pixel_to_map_space_ratio;
+	// If overriding plate is on the left side then need to segment normal (which is on the right - see 'QLineF::normalVector()').
+	const double overriding_normal_factor =
+			(rendered_subduction_teeth_polyline.get_subduction_polarity() == GPlatesViewOperations::RenderedSubductionTeethPolyline::SubductionPolarity::RIGHT)
+			? 1.0
+			: -1.0;
+
+	// Get the stream for triangles (for the subduction teeth).
+	stream_primitives_type &teeth_stream = d_layer_painter->translucent_drawables_on_the_sphere.get_triangles_stream();
+	stream_primitives_type::Triangles stream_teeth(teeth_stream);
+	stream_teeth.begin_triangles();
+
+	unsigned int geometry_part_index = 0;
+	const std::vector<unsigned int> &geometry_parts = dateline_wrapped_projected_polyline.get_geometry_parts();
+
+	unsigned int vertex_index = 0;
+	const std::vector<QPointF> &vertices = dateline_wrapped_projected_polyline.get_vertices();
+
+	// Iterate over the dateline wrapped polylines.
+	for (unsigned int geometry_index = 0; geometry_index < num_geometries; ++geometry_index)
+	{
+		// Iterate over the parts of the current wrapped polyline (there's only one part per wrapped polyline).
+		const unsigned int end_geometry_part_index = geometries[geometry_index];
+		for ( ; geometry_part_index < end_geometry_part_index; ++geometry_part_index)
+		{
+			stream_line_strips.begin_line_strip();
+
+			// Start vertex.
+			const unsigned int start_vertex_index = vertex_index;
+			const QPointF &start_vertex = vertices[start_vertex_index];
+			const coloured_vertex_type coloured_start_vertex(start_vertex.x(), start_vertex.y(), 0/*z*/, rgba8_colour);
+			stream_line_strips.add_vertex(coloured_start_vertex);
+
+			const QPointF *prev_vertex = &start_vertex;
+			++vertex_index;
+			double length_since_last_tooth = 0;
+
+			// Iterate over the segment-end vertices of the current geometry part (current wrapped polyline).
+			const unsigned int end_vertex_index = geometry_parts[geometry_part_index];
+			for ( ; vertex_index < end_vertex_index; ++vertex_index)
+			{
+				// End vertex of current segment.
+				const QPointF &vertex = vertices[vertex_index];
+				const coloured_vertex_type coloured_vertex(vertex.x(), vertex.y(), 0/*z*/, rgba8_colour);
+				stream_line_strips.add_vertex(coloured_vertex);
+
+				// Current segment (from previous vertex to current vertex).
+				const QLineF segment(*prev_vertex, vertex);
+				const double segment_length = segment.length();
+				const double inv_segment_length = 1.0 / segment_length;
+
+				// Paint the teeth at uniform spacings along the polyline.
+				length_since_last_tooth += segment_length;
+				while (length_since_last_tooth > teeth_spacing)
+				{
+					if (GPlatesMaths::are_almost_exactly_equal(segment_length, 0))
+					{
+						continue;
+					}
+
+					// Interpolate between the current segment's start and end points to get the tooth position.
+					const double interp = inv_segment_length * (segment_length - (length_since_last_tooth - teeth_spacing));
+					const QPointF tooth_base_midpoint = segment.pointAt(interp);
+
+					// Direction along the current segment's line.
+					const QPointF tooth_base_direction(
+							inv_segment_length * segment.dx(),
+							inv_segment_length * segment.dy());
+
+					// Unit normal to the current segment.
+					const QLineF segment_normal = segment.normalVector();  // same length as 'segment'
+					const QPointF tooth_normal_direction(  // unit normal
+							overriding_normal_factor * inv_segment_length * segment_normal.dx(),
+							overriding_normal_factor * inv_segment_length * segment_normal.dy());
+
+					// Wide lines push the teeth further from the centre of the line.
+					const QPointF tooth_offset = teeth_offset * tooth_normal_direction;
+
+					const QPointF tooth_triangle_vertices[3] =
+					{
+						tooth_base_midpoint + tooth_offset + teeth_height * tooth_normal_direction,
+						tooth_base_midpoint + tooth_offset - 0.5 * teeth_width * tooth_base_direction,
+						tooth_base_midpoint + tooth_offset + 0.5 * teeth_width * tooth_base_direction,
+					};
+
+					stream_teeth.add_vertex(coloured_vertex_type(tooth_triangle_vertices[0].x(), tooth_triangle_vertices[0].y(), 0/*z*/, rgba8_colour));
+					stream_teeth.add_vertex(coloured_vertex_type(tooth_triangle_vertices[1].x(), tooth_triangle_vertices[1].y(), 0/*z*/, rgba8_colour));
+					stream_teeth.add_vertex(coloured_vertex_type(tooth_triangle_vertices[2].x(), tooth_triangle_vertices[2].y(), 0/*z*/, rgba8_colour));
+
+					length_since_last_tooth -= teeth_spacing;
+				}
+
+				prev_vertex = &vertex;
+			}
+
+			stream_line_strips.end_line_strip();
+		}
+	}
+
+	stream_teeth.end_triangles();
 }
 
 
@@ -1723,21 +1879,16 @@ GPlatesGui::MapRenderedGeometryLayerPainter::visit_rendered_arrowed_polyline(
 	// Convert colour from floats to bytes to use less vertex memory.
 	const rgba8_t rgba8_color = Colour::to_rgba8(colour.get());
 
-	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline =
-			rendered_arrowed_polyline.get_polyline_on_sphere();
+	GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type polyline = rendered_arrowed_polyline.get_polyline_on_sphere();
 
-	double arrowhead_size = d_inverse_zoom_factor * rendered_arrowed_polyline.get_arrowhead_projected_size();
-	if (arrowhead_size > rendered_arrowed_polyline.get_max_arrowhead_size())
+	double arrowhead_size = d_device_independent_pixel_to_map_space_ratio * d_scale * rendered_arrowed_polyline.get_arrowhead_size_in_pixels();
+	if (arrowhead_size > MAX_ARROWED_POLYLINE_ARROWHEAD_SIZE)
 	{
-		arrowhead_size = rendered_arrowed_polyline.get_max_arrowhead_size();
+		arrowhead_size = MAX_ARROWED_POLYLINE_ARROWHEAD_SIZE;
 	}
-	// Adjust the arrow head size for the map view.
-	arrowhead_size *= GLOBE_TO_MAP_SCALE_FACTOR;
 
 	const float line_width = rendered_arrowed_polyline.get_arrowline_width_hint() * LINE_WIDTH_ADJUSTMENT * d_scale;
-
-	stream_primitives_type &lines_stream =
-			d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
+	stream_primitives_type &lines_stream = d_layer_painter->translucent_drawables_on_the_sphere.get_lines_stream(line_width);
 
 	paint_line_geometry<GPlatesMaths::PolylineOnSphere>(polyline, rgba8_color, lines_stream, arrowhead_size);
 }

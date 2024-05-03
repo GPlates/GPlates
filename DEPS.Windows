@@ -120,7 +120,7 @@ Qwt
   6. Then at the command prompt, run:
        nmake install
   7. Add the Qwt *install* directory to the CMAKE_PREFIX_PATH environment variable (eg, C:\SDK\qwt\qwt-6.1.6\msvc2015_64 ).
-  8. Add the Qwt library location (inside the *install* directory) to your PATH environment variable (eg, C:\SDK\qwt\qwt-6.1.6\lib\msvc2015_64 ).
+  8. Add the Qwt library location (inside the *install* directory) to your PATH environment variable (eg, C:\SDK\qwt\qwt-6.1.6\msvc2015_64\lib ).
 
 GLEW
   1. Download and extract glew-2.1.0-win32.zip from: http://glew.sourceforge.net/

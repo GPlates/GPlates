@@ -55,6 +55,12 @@ namespace GPlatesGui
 			// This is a small group of age palettes...
 			AGE_PALETTE,
 
+			// This is a small group of topography palettes...
+			TOPOGRAPHY_PALETTE,
+
+			// This is a group of palettes called Scientific Colour Maps by Fabio Crameri...
+			SCM_PALETTE,
+
 			// This is a group of sequential ColorBrewer palettes...
 			COLORBREWER_SEQUENTIAL_PALETTE,
 			// This is a group of diverging ColorBrewer palettes...
@@ -67,28 +73,33 @@ namespace GPlatesGui
 		/**
 		 * Parameters that may be related to the palette type.
 		 *
-		 * Currently only ColorBrewer palette parameters are stored here.
+		 * Currently these are mostly ColorBrewer palette parameters.
 		 */
 		struct Parameters
 		{
 			Parameters(
+					bool inverted_ = false,
 					BuiltinColourPalettes::ColorBrewer::Sequential::Classes colorbrewer_sequential_classes_ =
 							BuiltinColourPalettes::ColorBrewer::Sequential::Classes::Nine,
 					BuiltinColourPalettes::ColorBrewer::Diverging::Classes colorbrewer_diverging_classes_ =
 							BuiltinColourPalettes::ColorBrewer::Diverging::Classes::Eleven,
-					bool colorbrewer_continuous_ = true,
-					bool colorbrewer_inverted_ = false) :
+					bool colorbrewer_sequential_continuous_ = true,
+					bool colorbrewer_diverging_continuous_ = true) :
+				inverted(inverted_),
 				colorbrewer_sequential_classes(colorbrewer_sequential_classes_),
 				colorbrewer_diverging_classes(colorbrewer_diverging_classes_),
-				colorbrewer_continuous(colorbrewer_continuous_),
-				colorbrewer_inverted(colorbrewer_inverted_)
+				colorbrewer_sequential_continuous(colorbrewer_sequential_continuous_),
+				colorbrewer_diverging_continuous(colorbrewer_diverging_continuous_)
 			{  }
 
-			// ColorBrewer parameters.
+			// General parameters.
+			bool inverted;
+
+			// ColorBrewer-specific parameters.
 			BuiltinColourPalettes::ColorBrewer::Sequential::Classes colorbrewer_sequential_classes;
 			BuiltinColourPalettes::ColorBrewer::Diverging::Classes colorbrewer_diverging_classes;
-			bool colorbrewer_continuous;
-			bool colorbrewer_inverted;
+			bool colorbrewer_sequential_continuous;
+			bool colorbrewer_diverging_continuous;
 
 		private: // Transcribe for sessions/projects...
 
@@ -106,7 +117,24 @@ namespace GPlatesGui
 		 */
 		explicit
 		BuiltinColourPaletteType(
-				BuiltinColourPalettes::Age::Type age_type);
+				BuiltinColourPalettes::Age::Type age_type,
+				const Parameters &parameters);
+
+		/**
+		 * Construct a topography type.
+		 */
+		explicit
+		BuiltinColourPaletteType(
+				BuiltinColourPalettes::Topography::Type topography_type,
+				const Parameters &parameters);
+
+		/**
+		 * Construct a SCM type.
+		 */
+		explicit
+		BuiltinColourPaletteType(
+				BuiltinColourPalettes::SCM::Type scm_type,
+				const Parameters &parameters);
 
 		/**
 		 * Construct a ColorBrewer sequential palette type.
@@ -169,6 +197,24 @@ namespace GPlatesGui
 		}
 
 		/**
+		 * Return the topography palette type (if @a get_palette_type returns @a TOPOGRAPHY_PALETTE).
+		 */
+		BuiltinColourPalettes::Topography::Type
+		get_topography_type() const
+		{
+			return d_topography_type;
+		}
+
+		/**
+		 * Return the SCM palette type (if @a get_palette_type returns @a SCM_PALETTE).
+		 */
+		BuiltinColourPalettes::SCM::Type
+		get_scm_type() const
+		{
+			return d_scm_type;
+		}
+
+		/**
 		 * Return the ColorBrewer sequential palette type (if @a get_palette_type returns @a COLORBREWER_SEQUENTIAL_PALETTE).
 		 */
 		BuiltinColourPalettes::ColorBrewer::Sequential::Type
@@ -190,8 +236,12 @@ namespace GPlatesGui
 		PaletteType d_palette_type;
 		Parameters d_parameters;
 
-		// This is onlky used if @a d_palette_type is @a AGE_PALETTE.
+		// This is only used if @a d_palette_type is @a AGE_PALETTE.
 		BuiltinColourPalettes::Age::Type d_age_type;
+		// This is only used if @a d_palette_type is @a TOPOGRAPHY_PALETTE.
+		BuiltinColourPalettes::Topography::Type d_topography_type;
+		// This is only used if @a d_palette_type is @a SCM_PALETTE.
+		BuiltinColourPalettes::SCM::Type d_scm_type;
 		// These are only used if @a d_palette_type is @a COLORBREWER_SEQUENTIAL_PALETTE or @a COLORBREWER_DIVERGING_PALETTE.
 		BuiltinColourPalettes::ColorBrewer::Sequential::Type d_colorbrewer_sequential_type;
 		BuiltinColourPalettes::ColorBrewer::Diverging::Type d_colorbrewer_diverging_type;
@@ -199,6 +249,8 @@ namespace GPlatesGui
 		
 		static const PaletteType DEFAULT_PALETTE_TYPE;
 		static const BuiltinColourPalettes::Age::Type DEFAULT_AGE_TYPE;
+		static const BuiltinColourPalettes::Topography::Type DEFAULT_TOPOGRAPHY_TYPE;
+		static const BuiltinColourPalettes::SCM::Type DEFAULT_SCM_TYPE;
 		static const BuiltinColourPalettes::ColorBrewer::Sequential::Type DEFAULT_COLORBREWER_SEQUENTIAL_TYPE;
 		static const BuiltinColourPalettes::ColorBrewer::Diverging::Type DEFAULT_COLORBREWER_DIVERGING_TYPE;
 
@@ -210,6 +262,8 @@ namespace GPlatesGui
 		BuiltinColourPaletteType() :
 				d_palette_type(DEFAULT_PALETTE_TYPE),
 				d_age_type(DEFAULT_AGE_TYPE),
+				d_topography_type(DEFAULT_TOPOGRAPHY_TYPE),
+				d_scm_type(DEFAULT_SCM_TYPE),
 				d_colorbrewer_sequential_type(DEFAULT_COLORBREWER_SEQUENTIAL_TYPE),
 				d_colorbrewer_diverging_type(DEFAULT_COLORBREWER_DIVERGING_TYPE)
 		{  }

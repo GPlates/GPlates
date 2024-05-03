@@ -114,8 +114,8 @@ namespace GPlatesViewOperations
 				reconstruction_geom_seq_type;
 
 		/**
-		 * Collects any @a ReconstructionGeometry objects contained in
-		 * @a RenderedReconstructionGeometry objects in the specified main layer.
+		 * Collects any @a ReconstructionGeometry objects contained in @a RenderedReconstructionGeometry
+		 * and @a RenderedMultiReconstructionGeometry objects in the specified main layer.
 		 * Returns true if any found.
 		 *
 		 * NOTE: Before returning, any duplicate @a ReconstructionGeometry objects are removed
@@ -133,8 +133,8 @@ namespace GPlatesViewOperations
 				bool only_if_main_layer_active = true);
 
 		/**
-		 * Collects any @a ReconstructionGeometry objects contained in
-		 * @a RenderedReconstructionGeometry objects in the specified main layers.
+		 * Collects any @a ReconstructionGeometry objects contained in @a RenderedReconstructionGeometry
+		 * and @a RenderedMultiReconstructionGeometry objects in the specified main layers.
 		 * Returns true if any found.
 		 *
 		 * NOTE: Before returning, any duplicate @a ReconstructionGeometry objects are removed
@@ -155,8 +155,7 @@ namespace GPlatesViewOperations
 
 
 		/**
-		 * Collects any @a ReconstructionGeometry objects contained in
-		 * the results of a proximity test.
+		 * Collects any @a ReconstructionGeometry objects contained in the results of a proximity test.
 		 * Returns true if any found.
 		 *
 		 * NOTE: Before returning, any duplicate @a ReconstructionGeometry objects are removed

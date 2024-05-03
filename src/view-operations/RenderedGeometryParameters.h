@@ -53,6 +53,7 @@ namespace GPlatesViewOperations
 		RenderedGeometryParameters() :
 			d_reconstruction_layer_point_size_hint(4.0f),
 			d_reconstruction_layer_line_width_hint(1.5f),
+			d_reconstruction_layer_topology_size_multiplier(1.0f),
 			d_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius(0.05f),
 			d_reconstruction_layer_ratio_arrowhead_size_to_globe_radius(
 					RenderedGeometryFactory::DEFAULT_RATIO_ARROWHEAD_SIZE_TO_GLOBE_RADIUS),
@@ -67,7 +68,6 @@ namespace GPlatesViewOperations
 			d_topology_tool_topological_sections_colour(GPlatesGui::Colour(0.05f, 0.05f, 0.05f, 1.0f)), // dark grey
 			d_topology_tool_topological_sections_point_size_hint(4.0f),
 			d_topology_tool_topological_sections_line_width_hint(2.5f)
-
 		{  }
 
 
@@ -99,6 +99,21 @@ namespace GPlatesViewOperations
 				float reconstruction_layer_line_width_hint)
 		{
 			d_reconstruction_layer_line_width_hint = reconstruction_layer_line_width_hint;
+			Q_EMIT parameters_changed(*this);
+		}
+
+		//! Line width for topologies in reconstruction layer.
+		float
+		get_reconstruction_layer_topology_size_multiplier() const
+		{
+			return d_reconstruction_layer_topology_size_multiplier;
+		}
+
+		void
+		set_reconstruction_layer_topology_size_multiplier(
+				float reconstruction_layer_topology_size_multiplier)
+		{
+			d_reconstruction_layer_topology_size_multiplier = reconstruction_layer_topology_size_multiplier;
 			Q_EMIT parameters_changed(*this);
 		}
 
@@ -333,6 +348,7 @@ namespace GPlatesViewOperations
 
 		float d_reconstruction_layer_point_size_hint;
 		float d_reconstruction_layer_line_width_hint;
+		float d_reconstruction_layer_topology_size_multiplier;
 		float d_reconstruction_layer_ratio_arrow_unit_vector_direction_to_globe_radius;
 		float d_reconstruction_layer_ratio_arrowhead_size_to_globe_radius;
 		float d_reconstruction_layer_arrow_spacing;

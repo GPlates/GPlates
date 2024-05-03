@@ -99,7 +99,7 @@ endfunction()
 # The GPlates version.
 #
 set(GPLATES_VERSION_MAJOR 2)
-set(GPLATES_VERSION_MINOR 4)
+set(GPLATES_VERSION_MINOR 5)
 set(GPLATES_VERSION_PATCH 0)
 
 # The pyGPlates version without the pre-release suffix
@@ -111,7 +111,7 @@ set(GPLATES_VERSION ${GPLATES_VERSION_MAJOR}.${GPLATES_VERSION_MINOR}.${GPLATES_
 #
 # See note about pre-release version suffixes above.
 #
-set(GPLATES_VERSION_PRERELEASE_SUFFIX "4")
+set(GPLATES_VERSION_PRERELEASE_SUFFIX "")
 # Ensure pre-release contains only dot-separated alphanumeric identifiers.
 check_prerelease_suffix("${GPLATES_VERSION_PRERELEASE_SUFFIX}")
 

@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>311</width>
-    <height>555</height>
+    <height>570</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -21,13 +21,37 @@
    <bool>true</bool>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
+   <property name="leftMargin">
+    <number>6</number>
+   </property>
+   <property name="topMargin">
+    <number>6</number>
+   </property>
+   <property name="rightMargin">
+    <number>6</number>
+   </property>
+   <property name="bottomMargin">
+    <number>6</number>
+   </property>
    <item>
     <widget class="QGroupBox" name="colorbrewer_groupbox">
      <property name="title">
       <string>ColorBrewer</string>
      </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
      <layout class="QVBoxLayout" name="verticalLayout">
-      <property name="margin">
+      <property name="leftMargin">
+       <number>3</number>
+      </property>
+      <property name="topMargin">
+       <number>3</number>
+      </property>
+      <property name="rightMargin">
+       <number>3</number>
+      </property>
+      <property name="bottomMargin">
        <number>3</number>
       </property>
       <item>
@@ -36,11 +60,26 @@
          <string>Sequential</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_4">
-         <property name="margin">
-          <number>6</number>
+         <property name="spacing">
+          <number>3</number>
+         </property>
+         <property name="leftMargin">
+          <number>3</number>
+         </property>
+         <property name="topMargin">
+          <number>3</number>
+         </property>
+         <property name="rightMargin">
+          <number>3</number>
+         </property>
+         <property name="bottomMargin">
+          <number>3</number>
          </property>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_2">
+           <property name="spacing">
+            <number>3</number>
+           </property>
            <item>
             <widget class="QGroupBox" name="multi_hue_groupbox">
              <property name="sizePolicy">
@@ -53,7 +92,16 @@
               <string>Multi-hue</string>
              </property>
              <layout class="QGridLayout" name="gridLayout">
-              <property name="margin">
+              <property name="leftMargin">
+               <number>3</number>
+              </property>
+              <property name="topMargin">
+               <number>3</number>
+              </property>
+              <property name="rightMargin">
+               <number>3</number>
+              </property>
+              <property name="bottomMargin">
                <number>3</number>
               </property>
               <item row="1" column="5">
@@ -107,7 +155,16 @@
               <string>Single hue</string>
              </property>
              <layout class="QGridLayout" name="gridLayout_2">
-              <property name="margin">
+              <property name="leftMargin">
+               <number>3</number>
+              </property>
+              <property name="topMargin">
+               <number>3</number>
+              </property>
+              <property name="rightMargin">
+               <number>3</number>
+              </property>
+              <property name="bottomMargin">
                <number>3</number>
               </property>
               <item row="1" column="1">
@@ -171,6 +228,13 @@
              </property>
             </spacer>
            </item>
+           <item>
+            <widget class="QCheckBox" name="colorbrewer_sequential_discrete_checkbox">
+             <property name="text">
+              <string>Discrete</string>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
         </layout>
@@ -182,8 +246,23 @@
          <string>Diverging</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_3">
+         <property name="leftMargin">
+          <number>3</number>
+         </property>
+         <property name="topMargin">
+          <number>3</number>
+         </property>
+         <property name="rightMargin">
+          <number>3</number>
+         </property>
+         <property name="bottomMargin">
+          <number>3</number>
+         </property>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_4">
+           <property name="spacing">
+            <number>3</number>
+           </property>
            <item>
             <widget class="QWidget" name="BrBG_placeholder" native="true"/>
            </item>
@@ -215,6 +294,9 @@
          </item>
          <item>
           <layout class="QHBoxLayout" name="horizontalLayout_5">
+           <property name="spacing">
+            <number>3</number>
+           </property>
            <item>
             <widget class="QLabel" name="colorbrewer_sequential_classes_label">
              <property name="text">
@@ -251,38 +333,177 @@
              </property>
             </spacer>
            </item>
+           <item>
+            <widget class="QCheckBox" name="colorbrewer_diverging_discrete_checkbox">
+             <property name="text">
+              <string>Discrete</string>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
         </layout>
        </widget>
       </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="SCM_groupbox">
+     <property name="title">
+      <string>Scientific Colour Maps</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_5">
+      <property name="leftMargin">
+       <number>3</number>
+      </property>
+      <property name="topMargin">
+       <number>3</number>
+      </property>
+      <property name="rightMargin">
+       <number>3</number>
+      </property>
+      <property name="bottomMargin">
+       <number>3</number>
+      </property>
       <item>
-       <layout class="QHBoxLayout" name="colorbrewer_discrete_invert_layout">
+       <widget class="QGroupBox" name="SCM_sequential_groupbox">
+        <property name="title">
+         <string>Sequential</string>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_10">
+         <property name="spacing">
+          <number>3</number>
+         </property>
+         <property name="leftMargin">
+          <number>3</number>
+         </property>
+         <property name="topMargin">
+          <number>3</number>
+         </property>
+         <property name="rightMargin">
+          <number>3</number>
+         </property>
+         <property name="bottomMargin">
+          <number>3</number>
+         </property>
+         <item>
+          <widget class="QWidget" name="SCM_batlow_placeholder" native="true"/>
+         </item>
+         <item>
+          <widget class="QWidget" name="SCM_hawaii_placeholder" native="true"/>
+         </item>
+         <item>
+          <widget class="QWidget" name="SCM_oslo_placeholder" native="true"/>
+         </item>
+         <item>
+          <widget class="QWidget" name="SCM_lapaz_placeholder" native="true"/>
+         </item>
+         <item>
+          <widget class="QWidget" name="SCM_lajolla_placeholder" native="true"/>
+         </item>
+         <item>
+          <widget class="QWidget" name="SCM_buda_placeholder" native="true"/>
+         </item>
+         <item>
+          <widget class="QWidget" name="SCM_davos_placeholder" native="true"/>
+         </item>
+         <item>
+          <widget class="QWidget" name="SCM_tokyo_placeholder" native="true"/>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_8">
+        <property name="spacing">
+         <number>3</number>
+        </property>
         <item>
-         <widget class="QCheckBox" name="colorbrewer_discrete_checkbox">
-          <property name="text">
-           <string>Discrete</string>
+         <widget class="QGroupBox" name="SCM_diverging_groupbox">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>6</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
           </property>
+          <property name="title">
+           <string>Diverging</string>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_9">
+           <property name="spacing">
+            <number>3</number>
+           </property>
+           <property name="leftMargin">
+            <number>3</number>
+           </property>
+           <property name="topMargin">
+            <number>3</number>
+           </property>
+           <property name="rightMargin">
+            <number>3</number>
+           </property>
+           <property name="bottomMargin">
+            <number>3</number>
+           </property>
+           <item>
+            <widget class="QWidget" name="SCM_vik_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="SCM_roma_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="SCM_broc_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="SCM_berlin_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="SCM_lisbon_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="SCM_bam_placeholder" native="true"/>
+           </item>
+          </layout>
          </widget>
         </item>
         <item>
-         <spacer name="horizontalSpacer">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+         <widget class="QGroupBox" name="SCM_multi_sequential_groupbox">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+            <horstretch>2</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
           </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
+          <property name="title">
+           <string>Multi-sequential</string>
           </property>
-         </spacer>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="colorbrewer_invert_checkbox">
-          <property name="text">
-           <string>Invert</string>
-          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_11">
+           <property name="spacing">
+            <number>3</number>
+           </property>
+           <property name="leftMargin">
+            <number>3</number>
+           </property>
+           <property name="topMargin">
+            <number>3</number>
+           </property>
+           <property name="rightMargin">
+            <number>3</number>
+           </property>
+           <property name="bottomMargin">
+            <number>3</number>
+           </property>
+           <item>
+            <widget class="QWidget" name="SCM_oleron_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="SCM_bukavu_placeholder" native="true"/>
+           </item>
+          </layout>
          </widget>
         </item>
        </layout>
@@ -291,22 +512,131 @@
     </widget>
    </item>
    <item>
-    <widget class="QGroupBox" name="age_groupbox">
+    <widget class="QGroupBox" name="other_groupbox">
      <property name="title">
-      <string>Age</string>
+      <string>Other</string>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout">
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_6">
+      <property name="spacing">
+       <number>3</number>
+      </property>
+      <property name="leftMargin">
+       <number>3</number>
+      </property>
+      <property name="topMargin">
+       <number>3</number>
+      </property>
+      <property name="rightMargin">
+       <number>3</number>
+      </property>
+      <property name="bottomMargin">
+       <number>3</number>
+      </property>
       <item>
-       <widget class="QWidget" name="age_legacy_placeholder" native="true"/>
-      </item>
-      <item>
-       <widget class="QWidget" name="age_traditional_placeholder" native="true"/>
-      </item>
-      <item>
-       <widget class="QWidget" name="age_modern_placeholder" native="true"/>
+       <layout class="QHBoxLayout" name="horizontalLayout_3">
+        <property name="spacing">
+         <number>3</number>
+        </property>
+        <item>
+         <widget class="QGroupBox" name="age_groupbox">
+          <property name="title">
+           <string>Age</string>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <property name="spacing">
+            <number>3</number>
+           </property>
+           <property name="leftMargin">
+            <number>3</number>
+           </property>
+           <property name="topMargin">
+            <number>3</number>
+           </property>
+           <property name="rightMargin">
+            <number>3</number>
+           </property>
+           <property name="bottomMargin">
+            <number>3</number>
+           </property>
+           <item>
+            <widget class="QWidget" name="age_legacy_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="age_traditional_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="age_modern_placeholder" native="true"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="topo_groupbox">
+          <property name="title">
+           <string>Elevation</string>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_7">
+           <property name="spacing">
+            <number>3</number>
+           </property>
+           <property name="leftMargin">
+            <number>3</number>
+           </property>
+           <property name="topMargin">
+            <number>3</number>
+           </property>
+           <property name="rightMargin">
+            <number>3</number>
+           </property>
+           <property name="bottomMargin">
+            <number>3</number>
+           </property>
+           <item>
+            <widget class="QWidget" name="topo_etopo1_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="topo_geo_placeholder" native="true"/>
+           </item>
+           <item>
+            <widget class="QWidget" name="topo_relief_placeholder" native="true"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="colorbrewer_invert_layout">
+     <property name="spacing">
+      <number>3</number>
+     </property>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="invert_checkbox">
+       <property name="text">
+        <string>Invert</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="main_buttonbox">

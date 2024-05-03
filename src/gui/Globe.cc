@@ -152,6 +152,7 @@ GPlatesGui::Globe::cache_handle_type
 GPlatesGui::Globe::paint(
 		GPlatesOpenGL::GLRenderer &renderer,
 		const double &viewport_zoom_factor,
+		const double &device_independent_pixel_to_world_space_ratio,
 		float scale,
 		const GPlatesOpenGL::GLMatrix &projection_transform_include_front_half_globe,
 		const GPlatesOpenGL::GLMatrix &projection_transform_include_rear_half_globe,
@@ -218,6 +219,7 @@ GPlatesGui::Globe::paint(
 				renderer,
 				*cache_handle,
 				viewport_zoom_factor,
+				device_independent_pixel_to_world_space_ratio,
 				projection_transform_include_rear_half_globe,
 				false/*is_front_half_globe*/);
 	}
@@ -280,6 +282,7 @@ GPlatesGui::Globe::paint(
 					renderer,
 					*cache_handle,
 					viewport_zoom_factor,
+					device_independent_pixel_to_world_space_ratio,
 					projection_transform_include_front_half_globe,
 					true/*is_front_half_globe*/);
 
@@ -296,6 +299,7 @@ GPlatesGui::Globe::paint(
 					renderer,
 					*cache_handle,
 					viewport_zoom_factor,
+					device_independent_pixel_to_world_space_ratio,
 					projection_transform_include_full_globe,
 					front_globe_surface_texture);
 
@@ -312,6 +316,7 @@ GPlatesGui::Globe::paint(
 					renderer,
 					*cache_handle,
 					viewport_zoom_factor,
+					device_independent_pixel_to_world_space_ratio,
 					projection_transform_include_full_globe);
 
 			// Render the front half of the globe surface next.
@@ -319,6 +324,7 @@ GPlatesGui::Globe::paint(
 					renderer,
 					*cache_handle,
 					viewport_zoom_factor,
+					device_independent_pixel_to_world_space_ratio,
 					projection_transform_include_front_half_globe,
 					true/*is_front_half_globe*/);
 		}
@@ -330,6 +336,7 @@ GPlatesGui::Globe::paint(
 				renderer,
 				*cache_handle,
 				viewport_zoom_factor,
+				device_independent_pixel_to_world_space_ratio,
 				projection_transform_include_front_half_globe,
 				true/*is_front_half_globe*/);
 	}
@@ -437,6 +444,7 @@ GPlatesGui::Globe::render_globe_hemisphere_surface(
 		GPlatesOpenGL::GLRenderer &renderer,
 		std::vector<cache_handle_type> &cache_handle,
 		const double &viewport_zoom_factor,
+		const double &device_independent_pixel_to_world_space_ratio,
 		const GPlatesOpenGL::GLMatrix &projection_transform,
 		bool is_front_half_globe)
 {
@@ -486,6 +494,7 @@ GPlatesGui::Globe::render_globe_hemisphere_surface(
 			d_rendered_geom_collection_painter.paint_surface(
 					renderer,
 					viewport_zoom_factor,
+					device_independent_pixel_to_world_space_ratio,
 					vector_geometries_override_colour);
 	cache_handle.push_back(rendered_geoms_cache_half_globe);
 
@@ -546,6 +555,7 @@ GPlatesGui::Globe::render_globe_sub_surface(
 		GPlatesOpenGL::GLRenderer &renderer,
 		std::vector<cache_handle_type> &cache_handle,
 		const double &viewport_zoom_factor,
+		const double &device_independent_pixel_to_world_space_ratio,
 		const GPlatesOpenGL::GLMatrix &projection_transform_include_full_globe,
 		boost::optional<GPlatesOpenGL::GLTexture::shared_ptr_to_const_type> surface_occlusion_texture)
 {
@@ -571,6 +581,7 @@ GPlatesGui::Globe::render_globe_sub_surface(
 			d_rendered_geom_collection_painter.paint_sub_surface(
 					renderer,
 					viewport_zoom_factor,
+					device_independent_pixel_to_world_space_ratio,
 					surface_occlusion_texture,
 					d_globe_orientation_changing_during_mouse_drag/*improve_performance_reduce_quality_hint*/);
 	cache_handle.push_back(rendered_geoms_cache_sub_surface_globe);
