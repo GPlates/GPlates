@@ -173,7 +173,7 @@ namespace GPlatesApi
 			GPlatesScribe::TranscribeResult
 			transcribe(
 					GPlatesScribe::Scribe &scribe,
-					Type &type,
+					Type &type_,
 					bool transcribed_construct_data)
 			{
 				// WARNING: Changing the string ids will break backward/forward compatibility.
@@ -189,7 +189,7 @@ namespace GPlatesApi
 				return GPlatesScribe::transcribe_enum_protocol(
 						TRANSCRIBE_SOURCE,
 						scribe,
-						type,
+						type_,
 						enum_values,
 						enum_values + sizeof(enum_values) / sizeof(enum_values[0]));
 			}

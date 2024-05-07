@@ -1024,31 +1024,6 @@ namespace GPlatesMaths
 		return VALID;
 	}
 
-	template<typename PointForwardIter>
-	const PolylineOnSphere::non_null_ptr_to_const_type
-	PolylineOnSphere::create(
-			PointForwardIter begin,
-			PointForwardIter end,
-			bool check_distinct_points)
-	{
-		// NOTE: We ignore determination of insufficient distinct points if we are *not*
-		// throwing an exception for it.
-		const ConstructionParameterValidity v =
-				evaluate_construction_parameter_validity(
-						begin,
-						end,
-						check_distinct_points);
-		if (v != VALID)
-		{
-			throw InvalidPointsForPolylineConstructionError(GPLATES_EXCEPTION_SOURCE, v);
-		}
-
-		// Create a new polyline.
-		non_null_ptr_type ptr(new PolylineOnSphere());
-		generate_segments_and_swap(*ptr, begin, end);
-		return ptr;
-	}
-
 
 	/**
 	 * The exception thrown when an attempt is made to create a polyline using invalid points.
@@ -1093,6 +1068,32 @@ namespace GPlatesMaths
 		const char *d_filename;
 		int d_line_num;
 	};
+
+
+	template<typename PointForwardIter>
+	const PolylineOnSphere::non_null_ptr_to_const_type
+	PolylineOnSphere::create(
+			PointForwardIter begin,
+			PointForwardIter end,
+			bool check_distinct_points)
+	{
+		// NOTE: We ignore determination of insufficient distinct points if we are *not*
+		// throwing an exception for it.
+		const ConstructionParameterValidity v =
+				evaluate_construction_parameter_validity(
+						begin,
+						end,
+						check_distinct_points);
+		if (v != VALID)
+		{
+			throw InvalidPointsForPolylineConstructionError(GPLATES_EXCEPTION_SOURCE, v);
+		}
+
+		// Create a new polyline.
+		non_null_ptr_type ptr(new PolylineOnSphere());
+		generate_segments_and_swap(*ptr, begin, end);
+		return ptr;
+	}
 
 
 	template<typename PointForwardIter>
