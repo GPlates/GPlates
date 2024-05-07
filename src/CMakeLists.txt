@@ -544,9 +544,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES MSVC)
 		target_compile_options(${SOURCE_TARGET} PUBLIC /showIncludes)
 	endif()
 	
-	# Increase pre-compiled header memory allocation limit to avoid compile error.
-	# Error happens on 12-core Windows 8.1 machine (in Visual Studio 2005).
-	target_compile_options(${SOURCE_TARGET} PUBLIC /Zm1000)
 	# Some C++ object files (like "PyPropertyValues.obj") contain a lot of sections (enough to require increasing the limit).
 	target_compile_options(${SOURCE_TARGET} PUBLIC /bigobj)
 	
