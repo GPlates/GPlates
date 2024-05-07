@@ -2358,16 +2358,16 @@ GPlatesPresentation::ReconstructionGeometryRenderer::get_subduction_polarity(
 				// See if property is a 'gpml:SubductionPolarityEnumeration' enumeration.
 				static const GPlatesPropertyValues::EnumerationType subduction_polarity_enumeration_type =
 						GPlatesPropertyValues::EnumerationType::create_gpml("SubductionPolarityEnumeration");
-				if (subduction_polarity_enumeration_type.is_equal_to(subduction_polarity_property_value.get()->type()))
+				if (subduction_polarity_enumeration_type.is_equal_to(subduction_polarity_property_value.get()->get_type()))
 				{
 					// See if polarity is 'Left' or 'Right'.
 					static const GPlatesPropertyValues::EnumerationContent subduction_polarity_enumeration_value_left("Left");
 					static const GPlatesPropertyValues::EnumerationContent subduction_polarity_enumeration_value_right("Right");
-					if (subduction_polarity_enumeration_value_left.is_equal_to(subduction_polarity_property_value.get()->value()))
+					if (subduction_polarity_enumeration_value_left.is_equal_to(subduction_polarity_property_value.get()->get_value()))
 					{
 						return SubductionPolarity::LEFT;
 					}
-					if (subduction_polarity_enumeration_value_right.is_equal_to(subduction_polarity_property_value.get()->value()))
+					if (subduction_polarity_enumeration_value_right.is_equal_to(subduction_polarity_property_value.get()->get_value()))
 					{
 						return SubductionPolarity::RIGHT;
 					}
