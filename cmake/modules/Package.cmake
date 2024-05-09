@@ -118,6 +118,15 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
         # For non-standalone binary packages, default to a Debian package (can be used for GPlates or pyGPlates).
         # Dependencies will then be installed on the target system by the system binary package manager.
         SET(CPACK_GENERATOR DEB)
+        # We want pyGPlates Debian packages (ie, non-standalone) to install into '/usr/lib' (instead of '/usr').
+        # So change the default installation prefix used by CPack.
+        #
+        # Note: We used to instead specify 'lib' in 'LIBRARY DESTINATION' of the pygplates install() command.
+        #       But no longer since that makes installing directly in 'site-packages' difficult (eg, for conda).
+        #       This doesn't apply to GPlates non-standalone packages (they still specify 'bin' in their install() command).
+        if (NOT GPLATES_BUILD_GPLATES)  # pyGPlates ...
+            SET(CPACK_PACKAGING_INSTALL_PREFIX "/usr/lib")
+        endif()
     endif()
     # For source packages default to a bzipped tarball (.tar.bz2).
     SET(CPACK_SOURCE_GENERATOR TBZ2)

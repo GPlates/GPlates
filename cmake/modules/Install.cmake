@@ -102,7 +102,7 @@ if (GPLATES_BUILD_GPLATES)  # GPlates ...
                 DESTINATION ${STANDALONE_BASE_INSTALL_DIR})
     else() # not standalone
         #
-        # When not a standalone installation just use the standard install locations ('bin' and 'lib').
+        # When not a standalone installation just use the standard install location ('bin').
         #
         install(TARGETS gplates
             RUNTIME # Windows and Linux
