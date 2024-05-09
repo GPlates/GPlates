@@ -201,19 +201,17 @@ else()
     endif()
 endif()
 
-#   CPACK_PACKAGE_DESCRIPTION_FILE - A text file used to describe the project.
+#   CPACK_PACKAGE_DESCRIPTION - A description of the project.
 #
 #   Used, for example, the introduction screen of a CPack-generated Windows installer to describe the project.
 #
-# TODO: Once our min CMake requirement is >= 3.12 we can use CPACK_PACKAGE_DESCRIPTION (instead of a description file).
-set(PACKAGE_DESCRIPTION_FILE "${CMAKE_CURRENT_BINARY_DIR}/PackageDescription.txt")
-file(WRITE "${PACKAGE_DESCRIPTION_FILE}" "${GPLATES_PACKAGE_DESCRIPTION}")
-SET(CPACK_PACKAGE_DESCRIPTION_FILE "${PACKAGE_DESCRIPTION_FILE}")
+SET(CPACK_PACKAGE_DESCRIPTION "${GPLATES_PACKAGE_DESCRIPTION}")
 
 #   CPACK_PACKAGE_DESCRIPTION_SUMMARY - Short description of the project (only a few words).
 #
-# TODO: Once our min CMake requirement is >= 3.12 we can instead rely on default value of PROJECT_DESCRIPTION (and specify that in 'project()' command).
-SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${GPLATES_PACKAGE_DESCRIPTION_SUMMARY}")
+# Note: CMake (>= 3.16) uses this as the first line of Debian package description and Debian doesn't want first word to be same name as package name.
+#       So PROJECT_DESCRIPTION (in DESCRIPTION variable of 'project()' command in root 'CMakeLists.txt' file) should not start with 'GPlates' or 'PyGPlates'.
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "${PROJECT_DESCRIPTION}")
 
 #   CPACK_RESOURCE_FILE_LICENSE - License to be embedded in the installer.
 #

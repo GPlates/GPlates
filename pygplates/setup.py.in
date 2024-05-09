@@ -5,8 +5,9 @@ version = '''@PYGPLATES_VERSION_PRERELEASE_PEP440@'''
 
 # Project short description.
 #
-# Note: GPLATES_PACKAGE_DESCRIPTION_SUMMARY will contain the pyGPlates description summary (not GPlates) since GPLATES_BUILD_GPLATES will be false.
-short_description = '''@GPLATES_PACKAGE_DESCRIPTION_SUMMARY@'''
+# Note: PROJECT_DESCRIPTION (in DESCRIPTION variable of 'project()' command in root 'CMakeLists.txt' file)
+#       will contain the pyGPlates description summary (not GPlates) since GPLATES_BUILD_GPLATES will be false.
+short_description = '''@PROJECT_DESCRIPTION@'''
 
 # Project long description.
 #

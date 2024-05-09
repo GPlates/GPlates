@@ -6,17 +6,11 @@
 #
 
 
-# A short description of the GPlates (or pyGPlates) project (only a few words).
 #
-# CMake (>= 3.16) uses this as the first line of Debian package description and Debian doesn't want first word to be same name as package name ('GPlates' or 'PyGPlates').
-if (GPLATES_BUILD_GPLATES) # GPlates ...
-	set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "Desktop software for the interactive visualisation of plate tectonics.")
-else() # pyGPlates ...
-	set(GPLATES_PACKAGE_DESCRIPTION_SUMMARY "Python library for fine-grained access to GPlates functionality.")
-endif()
-
-
 # A longer description of the GPlates (or pyGPlates) project.
+#
+# Note: The short description is now in the 'project()' command in the root 'CMakeLists.txt' file.
+#
 if (GPLATES_BUILD_GPLATES) # GPlates ...
 
 	set(GPLATES_PACKAGE_DESCRIPTION [[
