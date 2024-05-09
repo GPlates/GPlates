@@ -199,6 +199,8 @@ namespace GPlatesApi
 		}
 	}
 
+	const unsigned int NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN = 180;
+
 	/**
 	 * This is called directly from Python via 'NetRotationSnapshot.__init__()'.
 	 */
