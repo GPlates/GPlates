@@ -1,0 +1,134 @@
+#
+# Build system.
+#
+[build-system]
+requires = [
+    # Using scikit-build-core backend build system.
+    "scikit-build-core",
+    # PyGPlates accesses the NumPy C API.
+    "numpy"
+]
+build-backend = "scikit_build_core.build"
+
+#
+# Project.
+#
+[project]
+name = "pygplates"
+description = "Python library for fine-grained access to GPlates functionality."
+version = "0.44"
+readme = "README.md"
+requires-python = ">=3.8"
+license.file = "COPYING"
+authors = [
+  { name = "John Cannon", email = "john.cannon@sydney.edu.au" },
+]
+maintainers = [
+  { name = "John Cannon", email = "john.cannon@sydney.edu.au" },
+]
+keywords = ["pygplates", "gplates", "plate", "tectonics"]
+classifiers = [
+  "Intended Audience :: Developers",
+  "Intended Audience :: Education",
+  "Intended Audience :: End Users/Desktop",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
+  "Operating System :: MacOS :: MacOS X",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.8",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: GIS",
+]
+
+#
+# Project URLs.
+#
+[project.urls]
+Homepage = "https://www.gplates.org"
+Documentation = "https://www.gplates.org/docs/pygplates/index.html"
+Source = "https://github.com/GPlates/GPlates"
+Discussions = "https://discourse.gplates.org/"
+
+#
+# Scikit-build-core.
+#
+[tool.scikit-build]
+
+# Scikit-build-core minimum version required.
+minimum-version = "0.9"
+
+# Optionally specify a build directory (uses temp dir by default).
+# This can give rebuild speedups (eg, during development).
+#build-dir = "dist/build/{wheel_tag}"
+
+# Make release builds.
+cmake.build-type = "Release"
+
+# Build target is 'pygplates'.
+cmake.targets = ["pygplates"]
+
+# Optionally enable CMake verbose output (eg, during development).
+# For example, to show compiler command-line flags/options.
+#cmake.verbose = true
+
+# Our minimum requirement for CMake.
+# Should match 'cmake_minimum_required' in 'CMakeLists.txt' in root source dir.
+cmake.version = ">=3.16"
+
+# Scikit-build-core's internal logging level ("DEBUG", "INFO", "WARNING" or "ERROR").
+logging.level = "WARNING"
+
+# Run CMake before building a wheel.
+wheel.cmake = true
+
+# Disable Python file inclusion entirely, and rely only on CMake’s install mechanism.
+# Our 'install' target will install pyGPlates as a package (complete with __init__.py).
+wheel.packages = []
+
+# License file to include in wheel.
+wheel.license-files = ["COPYING"]
+
+#
+# CMake arguments/defines.
+#
+[tool.scikit-build.cmake.define]
+
+# Build pyGPlates (not GPlates).
+GPLATES_BUILD_GPLATES = "FALSE"
+
+# By default, dependency shared libraries are NOT installed along with the built pygplates shared library.
+#
+# This is because, when building wheels for distribution, it's better to NOT bundle dependencies:
+#    "python -m pip wheel --wheel-dir dist -v <source_dir>"
+# ...since wheels need to be post-processed with auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows) in order to
+# check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
+#
+# When installing locally you *could* bundle dependency shared libraries with something like:
+#    "pip install -v --config-settings cmake.define.GPLATES_INSTALL_STANDALONE=TRUE <source_dir>"
+# ...but there's still the risk of conflicting dependency shared libraries (as mentioned above).
+GPLATES_INSTALL_STANDALONE = "FALSE"
+
+# Build in parallel on Windows (in Visual Studio).
+# It's enabled by default (and only used on Windows platforms).
+#GPLATES_MSVC_PARALLEL_BUILD = "TRUE"
+
+# Optionally set the macOS deployment target to a macOS version earlier than your build machine
+# (so users on older systems can still use the wheel).
+#
+# Note: If you do this then you'll also need the same deployment target set in your dependency libraries.
+#       For example, with Macports you can specify the following in your "/opt/local/etc/macports/macports.conf" file:
+#           buildfromsource            always
+#           macosx_deployment_target   11.0
+#       ...prior to installing the ports.
+#       This will also force all ports to have their source code compiled (not downloaded as binaries) which can be quite slow.
+#       For Apple Silicon targeting 11.0 is sufficient (since M1/arm64 wasn't introduced until macOS 11.0).
+#
+#CMAKE_OSX_DEPLOYMENT_TARGET = "11.0"
+# NOTE: CMAKE_OSX_DEPLOYMENT_TARGET is not actually used (by scikit-build-core) to determine the wheel tag.
+#       Instead you'll need to set the MACOSX_DEPLOYMENT_TARGET environment variable (before building).
+#       CMake will in turn use that to set the default value for CMAKE_OSX_DEPLOYMENT_TARGET (so you don't need to also specify it here).

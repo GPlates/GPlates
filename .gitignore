@@ -63,3 +63,6 @@ __pycache__/
 /src/global/License.cc
 /src/global/Version.cc
 /src/global/config.h
+
+# Python sdist/wheel building.
+/dist/
