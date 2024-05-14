@@ -114,11 +114,22 @@ GPLATES_BUILD_GPLATES = "FALSE"
 GPLATES_INSTALL_STANDALONE = "FALSE"
 
 # Build in parallel on Windows (in Visual Studio).
-# It's enabled by default (and only used on Windows platforms).
+#
+# This is enabled by default (and only used on Windows platforms).
 #GPLATES_MSVC_PARALLEL_BUILD = "TRUE"
+# Specify the number of parallel build processes (default is zero if unspecified, which means use all available CPUs).
+#GPLATES_MSVC_PARALLEL_BUILD_PROCESSES = "0"
+#
+# macOS and Linux: To build in parallel optionally set the CMAKE_BUILD_PARALLEL_LEVEL *environment* variable.
+#                  The 'Unix Makefiles' generator defaults to using a single CPU (if not specified).
+#                  The 'Ninja' generator defaults to using all CPUs (if not specified).
 
 # Optionally set the macOS deployment target to a macOS version earlier than your build machine
 # (so users on older systems can still use the wheel).
+#
+# To do this you'll need to set the MACOSX_DEPLOYMENT_TARGET *environment* variable.
+# Note: The CMAKE_OSX_DEPLOYMENT_TARGET define is not actually used (by scikit-build-core) to determine the wheel tag.
+#       But CMake will use MACOSX_DEPLOYMENT_TARGET to set the default value for CMAKE_OSX_DEPLOYMENT_TARGET.
 #
 # Note: If you do this then you'll also need the same deployment target set in your dependency libraries.
 #       For example, with Macports you can specify the following in your "/opt/local/etc/macports/macports.conf" file:
@@ -126,9 +137,4 @@ GPLATES_INSTALL_STANDALONE = "FALSE"
 #           macosx_deployment_target   11.0
 #       ...prior to installing the ports.
 #       This will also force all ports to have their source code compiled (not downloaded as binaries) which can be quite slow.
-#       For Apple Silicon targeting 11.0 is sufficient (since M1/arm64 wasn't introduced until macOS 11.0).
-#
-#CMAKE_OSX_DEPLOYMENT_TARGET = "11.0"
-# NOTE: CMAKE_OSX_DEPLOYMENT_TARGET is not actually used (by scikit-build-core) to determine the wheel tag.
-#       Instead you'll need to set the MACOSX_DEPLOYMENT_TARGET environment variable (before building).
-#       CMake will in turn use that to set the default value for CMAKE_OSX_DEPLOYMENT_TARGET (so you don't need to also specify it here).
+#       For Apple Silicon, targeting 11.0 is sufficient (since M1/arm64 wasn't introduced until macOS 11.0).

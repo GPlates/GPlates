@@ -1,6 +1,9 @@
+{% set name = "pygplates" %}
+{% set version = "0.44" %}
+
 package:
-  name: pygplates
-  version: 0.39
+  name: {{ name|lower }}
+  version: {{ version }}
 
 source:
   path: ../../
@@ -38,6 +41,7 @@ requirements:
   host:
     - python
     - pip
+    - scikit-build-core
     - numpy
     - cgal-cpp
     - glew
