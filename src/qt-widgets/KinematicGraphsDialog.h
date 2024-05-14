@@ -26,6 +26,7 @@
 
 #include <QDialog>
 #include <QScopedPointer>
+#include "qwt_series_data.h"
 
 #include "maths/LatLonPoint.h"
 
@@ -49,7 +50,6 @@
 
 class QwtPlot;
 class QwtPlotCurve;
-class QwtPointSeriesData;
 
 class QStandardItemModel;
 

@@ -26,12 +26,12 @@
 
 #include "qwt_plot_canvas.h"
 #include "qwt_plot_picker.h"
+#include "qwt_series_data.h"
 #include "qwt_text.h"
 
 #include "KinematicGraphsDialog.h"
 
 class QwtPlotCurve;
-class QwtPointSeriesData;
 
 namespace GPlatesQtWidgets
 {
