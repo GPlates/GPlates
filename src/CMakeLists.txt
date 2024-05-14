@@ -661,6 +661,17 @@ if (CMAKE_CXX_COMPILER_ID MATCHES Clang)
 				-Wno-unused-private-field
 				# We have a lot of boost-python 'bp::list' returned as 'bp::object', for example, which we won't std::move...
 				-Wno-return-std-move)
+
+		# Disable '-Wenum-constexpr-conversion' for clang++ >= 16 and Boost < 1.85.
+		#
+		# It looks like Boost is fixing it, so fix should be in the next release 1.85
+		# (see https://github.com/boostorg/mpl/pull/77).
+		if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16)
+			if (Boost_VERSION VERSION_LESS 1.85.0)
+				list(APPEND _DISABLE_WARNINGS -Wno-enum-constexpr-conversion)
+			endif()
+		endif()
+
 		target_compile_options(${SOURCE_TARGET} PUBLIC ${_DISABLE_WARNINGS})
 		unset(_DISABLE_WARNINGS)
 	endif()
