@@ -16,7 +16,7 @@ build-backend = "scikit_build_core.build"
 [project]
 name = "pygplates"
 description = "Python library for fine-grained access to GPlates functionality."
-version = "0.44"
+dynamic = ["version"]
 readme = "README.md"
 requires-python = ">=3.8"
 license.file = "COPYING"
@@ -138,3 +138,11 @@ GPLATES_INSTALL_STANDALONE = "FALSE"
 #       ...prior to installing the ports.
 #       This will also force all ports to have their source code compiled (not downloaded as binaries) which can be quite slow.
 #       For Apple Silicon, targeting 11.0 is sufficient (since M1/arm64 wasn't introduced until macOS 11.0).
+
+#
+# Extract version from 'PYGPLATES_PEP440_VERSION' variable in 'cmake/modules/Version.cmake'.
+#
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "cmake/modules/Version.cmake"
+regex = 'set\(\s*PYGPLATES_PEP440_VERSION\s*(?P<value>\S+)\s*\)'
