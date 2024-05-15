@@ -607,7 +607,9 @@ if (CMAKE_CXX_COMPILER_ID MATCHES GNU OR
 				# Prefer to keep unused functions available...
 				-Wno-unused-function
 				# Keep unused local typedefs - used by some compilers but not others...
-				-Wno-unused-local-typedefs)
+				-Wno-unused-local-typedefs
+				# Keep variables assigned to but otherwise unused...
+				-Wno-unused-but-set-variable)
 		target_compile_options(${SOURCE_TARGET} PUBLIC ${_DISABLE_WARNINGS})
 		unset(_DISABLE_WARNINGS)
 	endif()
