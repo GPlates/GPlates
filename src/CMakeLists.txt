@@ -197,9 +197,15 @@ if (WIN32)
 	set(Boost_NO_BOOST_CMAKE ON)
 endif()
 
+# Minimum required Boost version.
+#
+# Note: Version 1.55 is when boost::is_copy_constructible<T> was introduced (although can use std version in C++11 compilers now).
+#       Version 1.39 is when <boost/bind/bind.hpp> was added (before that there was just <boost/bind.hpp>).
+set(_GPLATES_MIN_BOOST_VERSION 1.55)
+
 # First find the Boost library version (since the boost python component naming scheme changed in Boost version 1.67).
 # We find the library version by finding Boost without any library components (this just finds the Boost headers).
-find_package(Boost 1.35 REQUIRED)
+find_package(Boost ${_GPLATES_MIN_BOOST_VERSION} REQUIRED)
 
 # We've just found Boost, so check its version.
 if (Boost_VERSION VERSION_LESS 1.67.0)
@@ -219,7 +225,7 @@ else()
 endif()
 
 # Now find the Boost library components.
-find_package(Boost 1.35 REQUIRED
+find_package(Boost ${_GPLATES_MIN_BOOST_VERSION} REQUIRED
 		# These components are required (including boost python)...
 		COMPONENTS program_options thread system ${GPLATES_BOOST_PYTHON_COMPONENT_NAME}
 		# These components are optional...
