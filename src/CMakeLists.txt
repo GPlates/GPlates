@@ -59,9 +59,28 @@ else()
 	set(_PYTHON_MAJOR_VER 2)
 endif()
 
+# CMake version 3.18 introduced 'Development' sub-components:
+# - 'Development.Embed' for Python embedding developments (eg, GPlates), and
+# - 'Development.Module' for Python module developments (eg, pyGPlates).
+#
+# Note: Using 'Development.Module' is necessary when building pyGPlates "manylinux" wheels
+#       (because the manylinux docker image does not have the Python libraries, since you don't link to them on Unix).
+#       See https://scikit-build-core.readthedocs.io/en/latest/faqs.html#finding-python.
+#       So we'll need CMake >= 3.18 when building these wheels.
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.18)
+	if (GPLATES_BUILD_GPLATES)
+		set(GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME Development.Embed)
+	else()  # pygplates ...
+		set(GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME Development.Module)
+	endif()
+else()  # CMake < 3.18
+	# We have to specify the full 'Development' component which includes both embedding and module developments.
+	set(GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME Development)
+endif()
+
 # Note that we don't really need to specify the 'Interpreter' component but we do in case it makes 'Development' more robust.
 # We also specify the optional component NumPy to get access to the numpy C-API header include directories.
-find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter Development OPTIONAL_COMPONENTS NumPy)
+find_package(Python${_PYTHON_MAJOR_VER} REQUIRED COMPONENTS Interpreter ${GPLATES_PYTHON_DEVELOPMENT_COMPONENT_NAME} OPTIONAL_COMPONENTS NumPy)
 
 # Get the Python major/minor versions.
 set(GPLATES_PYTHON_VERSION_MAJOR ${Python${_PYTHON_MAJOR_VER}_VERSION_MAJOR})
@@ -327,10 +346,10 @@ else()  # pygplates ...
 	# Add the 'pygplates' Python extension module.
 	#
 	# Note this is the external Python library that is not embedded inside GPlates.
-	if (TARGET Python3::Python)
+	if (GPLATES_PYTHON_3)
 		# We used the Python3 find module.
 		Python3_add_library(pygplates MODULE ScribeExportPyGPlates.cc)
-	else()  # TARGET Python2::Python
+	else()  # Python2
 		# We used the Python2 find module.
 		Python2_add_library(pygplates MODULE ScribeExportPyGPlates.cc)
 	endif()
@@ -868,14 +887,14 @@ target_link_libraries(${SOURCE_TARGET} PUBLIC PROJ::proj)
 #
 # Python dependency.
 #
-if (TARGET Python3::Python)
+if (GPLATES_PYTHON_3)
 	if (GPLATES_BUILD_GPLATES)
 		# We used the Python3 find module.
 		target_link_libraries(gplates-lib PUBLIC Python3::Python)
 	else()
 		# Note that the Python3_add_library() call above has already linked pygplates to Python3::Module.
 	endif()
-else()  # TARGET Python2::Python
+else()  # Python2
 	if (GPLATES_BUILD_GPLATES)
 		# We used the Python2 find module.
 		target_link_libraries(gplates-lib PUBLIC Python2::Python)
@@ -895,7 +914,12 @@ endif()
 
 # Test whether Python embedding works.
 # This must be run after the include and library paths have all been set.
-include(TestPythonEmbedding)
+#
+# Note: Only test Python embedding for GPlates. PyGPlates is a Python module (to be loaded into the Python interpreter)
+#       and hence shouldn't link to the Python libraries (since Python symbols are already loaded in the interpreter).
+if (GPLATES_BUILD_GPLATES)
+	include(TestPythonEmbedding)
+endif()
 
 #
 # Include code to *install* the ${BUILD_TARGET} target (either 'gplates' or 'pygplates').
