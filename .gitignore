@@ -66,3 +66,8 @@ __pycache__/
 
 # Python sdist/wheel building.
 /dist/
+/wheelhouse/
+
+# Docker.
+/pygplates/docker/*.xz
+/pygplates/docker/*.bz2
