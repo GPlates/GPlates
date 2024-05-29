@@ -15,8 +15,6 @@ ARG NUM_CORES=4
 RUN yum update && yum install -y \
     zlib-devel \
     glew-devel \
-    proj-devel \
-    gdal-devel \
     qt5-qtbase-devel \
     qt5-qtsvg-devel \
     qt5-qtxmlpatterns-devel
@@ -81,6 +79,47 @@ RUN echo "using python : 3.8 : ${PYTHON_38_INSTALL_DIR}/bin/python3 : ${PYTHON_3
 RUN echo "using python : 3.9 : ${PYTHON_39_INSTALL_DIR}/bin/python3 : ${PYTHON_39_INSTALL_DIR}/include/python3.9 : ${PYTHON_39_INSTALL_DIR}/lib ;" >> ./user-config.jam
 RUN ./bootstrap.sh
 RUN ./b2 --user-config=./user-config.jam install -j ${NUM_CORES} --with-program_options --with-thread --with-system --with-python python=3.8,3.9
+
+# SQLite3
+WORKDIR ${DEPS_BASE_BUILD_DIR}
+ARG SQLITE3_VERSION=3460000
+#RUN curl -sSL -o proj-${PROJ_VERSION}.tar.gz https://sqlite.org/2024/sqlite-autoconf-${SQLITE3_VERSION}.tar.gz
+COPY ${DEPS_HOST_DIR}/sqlite-autoconf-${SQLITE3_VERSION}.tar.gz .
+RUN tar xzf sqlite-autoconf-${SQLITE3_VERSION}.tar.gz
+WORKDIR sqlite-autoconf-${SQLITE3_VERSION}
+RUN ./configure
+RUN make -j ${NUM_CORES}
+RUN make install
+
+# PROJ
+WORKDIR ${DEPS_BASE_BUILD_DIR}
+ARG PROJ_VERSION=9.4.0
+RUN curl -sSL -o proj-${PROJ_VERSION}.tar.gz https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz
+##COPY ${DEPS_HOST_DIR}/proj-${PROJ_VERSION}.tar.gz .
+RUN tar xzf proj-${PROJ_VERSION}.tar.gz
+WORKDIR proj-${PROJ_VERSION}/build
+RUN cmake \
+        -DENABLE_CURL:BOOL=OFF \
+        -DENABLE_TIFF:BOOL=OFF \
+        -DBUILD_APPS:BOOL=OFF \
+        -DBUILD_PROJINFO:BOOL=ON \
+        -DBUILD_TESTING:BOOL=OFF \
+        ..
+RUN cmake --build . --config Release --parallel ${NUM_CORES}
+RUN cmake --build . --config Release --target install
+
+# GDAL
+WORKDIR ${DEPS_BASE_BUILD_DIR}
+ARG GDAL_VERSION=3.8.5
+RUN curl -sSL -o gdal-${GDAL_VERSION}.tar.gz https://github.com/OSGeo/gdal/releases/download/v${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz
+#COPY ${DEPS_HOST_DIR}/gdal-${GDAL_VERSION}.tar.gz .
+RUN tar xzf gdal-${GDAL_VERSION}.tar.gz
+WORKDIR gdal-${GDAL_VERSION}/build
+RUN cmake \
+        -DBUILD_PYTHON_BINDINGS:BOOL=OFF \
+        ..
+RUN cmake --build . --config Release --parallel ${NUM_CORES}
+RUN cmake --build . --config Release --target install
 
 # GMP
 WORKDIR ${DEPS_BASE_BUILD_DIR}

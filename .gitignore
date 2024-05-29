@@ -69,5 +69,6 @@ __pycache__/
 /wheelhouse/
 
 # Docker.
-/pygplates/docker/*.xz
 /pygplates/docker/*.bz2
+/pygplates/docker/*.gz
+/pygplates/docker/*.xz
