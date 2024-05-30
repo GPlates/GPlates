@@ -19,6 +19,7 @@ description = "Python library for fine-grained access to GPlates functionality."
 dynamic = ["version"]
 readme = "README.md"
 requires-python = ">=3.8"
+dependencies = ["numpy"]
 license.file = "COPYING"
 authors = [
   { name = "John Cannon", email = "john.cannon@sydney.edu.au" },
