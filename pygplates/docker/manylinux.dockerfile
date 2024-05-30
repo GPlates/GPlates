@@ -66,6 +66,42 @@ RUN ./configure --enable-shared --prefix ${PYTHON_39_INSTALL_DIR}
 RUN make -j ${NUM_CORES}
 RUN make install
 
+# Python 3.10
+WORKDIR ${DEPS_BASE_BUILD_DIR}
+ARG PYTHON_310_VERSION=3.10.14
+RUN curl -sSL -o Python-${PYTHON_310_VERSION}.tar.xz https://www.python.org/ftp/python/${PYTHON_310_VERSION}/Python-${PYTHON_310_VERSION}.tar.xz
+#COPY ${DEPS_HOST_DIR}/Python-${PYTHON_310_VERSION}.tar.xz .
+RUN tar xf Python-${PYTHON_310_VERSION}.tar.xz
+WORKDIR Python-${PYTHON_310_VERSION}
+ARG PYTHON_310_INSTALL_DIR=${DEPS_BASE_INSTALL_DIR}/Python-${PYTHON_310_VERSION}
+RUN ./configure --enable-shared --prefix ${PYTHON_310_INSTALL_DIR}
+RUN make -j ${NUM_CORES}
+RUN make install
+
+# Python 3.11
+WORKDIR ${DEPS_BASE_BUILD_DIR}
+ARG PYTHON_311_VERSION=3.11.9
+RUN curl -sSL -o Python-${PYTHON_311_VERSION}.tar.xz https://www.python.org/ftp/python/${PYTHON_311_VERSION}/Python-${PYTHON_311_VERSION}.tar.xz
+#COPY ${DEPS_HOST_DIR}/Python-${PYTHON_311_VERSION}.tar.xz .
+RUN tar xf Python-${PYTHON_311_VERSION}.tar.xz
+WORKDIR Python-${PYTHON_311_VERSION}
+ARG PYTHON_311_INSTALL_DIR=${DEPS_BASE_INSTALL_DIR}/Python-${PYTHON_311_VERSION}
+RUN ./configure --enable-shared --prefix ${PYTHON_311_INSTALL_DIR}
+RUN make -j ${NUM_CORES}
+RUN make install
+
+# Python 3.12
+WORKDIR ${DEPS_BASE_BUILD_DIR}
+ARG PYTHON_312_VERSION=3.12.3
+RUN curl -sSL -o Python-${PYTHON_312_VERSION}.tar.xz https://www.python.org/ftp/python/${PYTHON_312_VERSION}/Python-${PYTHON_312_VERSION}.tar.xz
+#COPY ${DEPS_HOST_DIR}/Python-${PYTHON_312_VERSION}.tar.xz .
+RUN tar xf Python-${PYTHON_312_VERSION}.tar.xz
+WORKDIR Python-${PYTHON_312_VERSION}
+ARG PYTHON_312_INSTALL_DIR=${DEPS_BASE_INSTALL_DIR}/Python-${PYTHON_312_VERSION}
+RUN ./configure --enable-shared --prefix ${PYTHON_312_INSTALL_DIR}
+RUN make -j ${NUM_CORES}
+RUN make install
+
 # Boost
 WORKDIR ${DEPS_BASE_BUILD_DIR}
 ARG BOOST_VERSION=1.84.0
@@ -77,8 +113,11 @@ WORKDIR boost_${BOOST_VERSION_}
 RUN > ./user-config.jam
 RUN echo "using python : 3.8 : ${PYTHON_38_INSTALL_DIR}/bin/python3 : ${PYTHON_38_INSTALL_DIR}/include/python3.8 : ${PYTHON_38_INSTALL_DIR}/lib ;" >> ./user-config.jam
 RUN echo "using python : 3.9 : ${PYTHON_39_INSTALL_DIR}/bin/python3 : ${PYTHON_39_INSTALL_DIR}/include/python3.9 : ${PYTHON_39_INSTALL_DIR}/lib ;" >> ./user-config.jam
+RUN echo "using python : 3.10 : ${PYTHON_310_INSTALL_DIR}/bin/python3 : ${PYTHON_310_INSTALL_DIR}/include/python3.10 : ${PYTHON_310_INSTALL_DIR}/lib ;" >> ./user-config.jam
+RUN echo "using python : 3.11 : ${PYTHON_311_INSTALL_DIR}/bin/python3 : ${PYTHON_311_INSTALL_DIR}/include/python3.11 : ${PYTHON_311_INSTALL_DIR}/lib ;" >> ./user-config.jam
+RUN echo "using python : 3.12 : ${PYTHON_312_INSTALL_DIR}/bin/python3 : ${PYTHON_312_INSTALL_DIR}/include/python3.12 : ${PYTHON_312_INSTALL_DIR}/lib ;" >> ./user-config.jam
 RUN ./bootstrap.sh
-RUN ./b2 --user-config=./user-config.jam install -j ${NUM_CORES} --with-program_options --with-thread --with-system --with-python python=3.8,3.9
+RUN ./b2 --user-config=./user-config.jam install -j ${NUM_CORES} --with-program_options --with-thread --with-system --with-python python=3.8,3.9,3.10,3.11,3.12
 
 # SQLite3
 WORKDIR ${DEPS_BASE_BUILD_DIR}

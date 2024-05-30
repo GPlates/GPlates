@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e  # exit if any command fails
 
 # Copy the pygplates source code from the host file system (/io) to the local file system (/pygplates).
 # The local file system is typically faster (eg, when using the WSL2 Docker Desktop backend on Windows).
@@ -9,7 +10,7 @@ cp -r pygplates/CMakeLists.txt pygplates/test /pygplates/pygplates
 
 # Build wheels (in the local file system) for each Python version.
 cd /pygplates
-for cp_version in 38 39
+for cp_version in 38 39 310 311 312
 do
     /opt/python/cp${cp_version}-cp${cp_version}/bin/python -m pip wheel --wheel-dir dist -v .
 done
