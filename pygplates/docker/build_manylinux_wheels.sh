@@ -16,7 +16,27 @@ do
 done
 
 # Repair the built wheels so that they're manylinux compatible.
-auditwheel repair dist/pygplates*.whl
+#
+# Note: We need to exclude specific OpenGL-related libraries from being copied into the repaired wheel.
+#       We exclude 'libOpenGL' since it needs to come from the end machine, not the wheel
+#       (see https://github.com/pypa/auditwheel/issues/241). Similarly for 'libGLX' I assume.
+#       If we don't exclude 'libGLdispatch' then we get a segmentation fault during 'import pygplates'.
+#       This is most likely because, according to https://github.com/NVIDIA/libglvnd:
+#         "Note that since all OpenGL functions are dispatched through the same table in libGLdispatch,"
+#         "it doesn't matter which library is used to find the entrypoint".
+#       ...so having some libraries reference '/usr/lib64/libGLdispatch.so.0' and others reference the
+#       'libGLdispatch' copied into the wheel would result in two dispatch tables which could cause problems.
+#       Also note that it appears 'libGL' is automatically whitelisted by auditwheel (not copied into the wheel),
+#       so we don't need to exclude it here.
+# Note: One issue with excluding the above-mentioned OpenGL-related libraries is if they're not installed by default
+#       on a particular Linux distribution. However these libraries should get installed with the 'libglvnd' package,
+#       so as long as that's installed then it should run fine on the end machine.
+#
+auditwheel repair \
+    --exclude libGLdispatch.so.0 \
+    --exclude libGLX.so.0 \
+    --exclude libOpenGL.so.0 \
+    dist/pygplates*.whl
 
 # Copy the manylinux wheels to the host file system.
 if [ ! -d /io/wheelhouse ]

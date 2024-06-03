@@ -14,12 +14,15 @@
 #
 # Note: CMake 3.8 introduced import targets for OpenGL.
 #       So since our min CMake requirement exceeds this we don't need to add imported targets ourself.
+# Note: For CMake >= 3.11 on Linux systems when the *legacy* OpenGL libraries are not found, the default (for OpenGL_GL_PREFERENCE)
+#       is to utilize GLVND - in this case using the OpenGL::GL target will instead use the GLVND targets OpenGL::OpenGL and OpenGL::GLX.
 find_package(OpenGL REQUIRED)
 
 #############
 # Find GLEW #
 #
-# CMake 3.1 introduced import targets for GLEW. Our minimum CMake requirement is higher so we don't need to add the imported target ourself.
+# Note: CMake 3.1 introduced import targets for GLEW.
+#       So since our min CMake requirement exceeds this we don't need to add imported targets ourself.
 find_package(GLEW REQUIRED)
 
 #############
