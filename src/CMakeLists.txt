@@ -9,11 +9,6 @@
 # Find dependencies #
 #####################
 
-# Detect if this build is part of a conda build (eg, a "conda build ..." command).
-if (DEFINED ENV{CONDA_BUILD} AND ("$ENV{CONDA_BUILD}" EQUAL 1))
-    set(GPLATES_CONDA_BUILD TRUE)
-endif()
-
 ###############
 # Find OpenGL #
 #

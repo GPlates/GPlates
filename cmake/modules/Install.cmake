@@ -124,6 +124,18 @@ else()  # pyGPlates ...
     # single pygplates shared library file (such as 'pygplates.so' or 'pygplates.pyd') in the base directory (ie, not in a 'pygplates/' sub-directory).
     #
     set(PYGPLATES_PYTHON_PACKAGE_DIR pygplates)
+    #
+    # When NOT building using scikit-build-core we install the 'pygplates' package into the 'lib/' sub-directory of the install prefix directory.
+    # For example, we want pyGPlates Debian packages (which are non-standalone) to install into '/usr/lib' instead of '/usr' (where '/usr' is the default install prefix).
+    #
+    # Building using scikit-build-core happens when building wheels with pip (eg, 'pip wheel ...' or 'pip install ...').
+    # And conda also builds using scikit-build-core (because conda relies on 'pip install').
+    # In these cases we want to install the 'pygplates' package into the *base* directory (not 'lib/' sub-directory).
+    # This ensures the 'pygplates' package ends up in the 'site-packages' directory of the Python installation (rather than a 'lib/' sub-directory).
+    if (NOT SKBUILD)
+        set(PYGPLATES_PYTHON_PACKAGE_DIR ${CMAKE_INSTALL_LIBDIR}/${PYGPLATES_PYTHON_PACKAGE_DIR})
+    endif()
+
     if (GPLATES_INSTALL_STANDALONE)
         set(STANDALONE_BASE_INSTALL_DIR ${PYGPLATES_PYTHON_PACKAGE_DIR})
     endif()

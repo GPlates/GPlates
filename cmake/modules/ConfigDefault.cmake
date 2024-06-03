@@ -278,6 +278,17 @@ if (MSVC)
 	set(GPLATES_MSVC_PARALLEL_BUILD_PROCESSES 0 CACHE STRING "Number of parallel build processes (if GPLATES_MSVC_PARALLEL_BUILD enabled). Set to zero for max.")
 endif()
 
+# Detect if this build is part of a conda build (eg, a "conda build ..." command).
+#
+# Note: Conda builds use scikit-build-core (because conda relies on 'pip install') which in turn defines the SKBUILD CMake variable.
+#       A side note: Building using scikit-build-core happens when building wheels with pip (eg, 'pip wheel ...' or 'pip install ...').
+#       However there are cases where we'd like to distinguish between scikit-build-core builds that are conda and non-conda.
+#       An example is cross-compiling using conda where it uses the PYTHON environment variable to find the target platform Python (not build platform).
+#       Maybe that'll also be required non-conda cross-compiles but we've not encountered them yet (and they don't set the PYTHON environment variable).
+if (DEFINED ENV{CONDA_BUILD} AND ("$ENV{CONDA_BUILD}" EQUAL 1))
+    set(GPLATES_CONDA_BUILD TRUE)
+endif()
+
 
 # Specify which source directories (relative to the 'doc/' directory) should be scanned by doxygen.
 set(GPLATES_DOXYGEN_INPUT
