@@ -1,3 +1,6 @@
+# The manylinux base image.
+#
+# Note: Change 'x86_64' to 'aarch64' when building on an arm64 architecture (eg, Apple Silicon).
 FROM quay.io/pypa/manylinux2014_x86_64
 
 ARG NUM_CORES=4
@@ -122,8 +125,8 @@ RUN ./b2 --user-config=./user-config.jam install -j ${NUM_CORES} --with-program_
 # SQLite3
 WORKDIR ${DEPS_BASE_BUILD_DIR}
 ARG SQLITE3_VERSION=3460000
-#RUN curl -sSL -o proj-${PROJ_VERSION}.tar.gz https://sqlite.org/2024/sqlite-autoconf-${SQLITE3_VERSION}.tar.gz
-COPY ${DEPS_HOST_DIR}/sqlite-autoconf-${SQLITE3_VERSION}.tar.gz .
+RUN curl -sSL -o sqlite-autoconf-${SQLITE3_VERSION}.tar.gz https://sqlite.org/2024/sqlite-autoconf-${SQLITE3_VERSION}.tar.gz
+#COPY ${DEPS_HOST_DIR}/sqlite-autoconf-${SQLITE3_VERSION}.tar.gz .
 RUN tar xzf sqlite-autoconf-${SQLITE3_VERSION}.tar.gz
 WORKDIR sqlite-autoconf-${SQLITE3_VERSION}
 RUN ./configure
@@ -134,7 +137,7 @@ RUN make install
 WORKDIR ${DEPS_BASE_BUILD_DIR}
 ARG PROJ_VERSION=9.4.0
 RUN curl -sSL -o proj-${PROJ_VERSION}.tar.gz https://download.osgeo.org/proj/proj-${PROJ_VERSION}.tar.gz
-##COPY ${DEPS_HOST_DIR}/proj-${PROJ_VERSION}.tar.gz .
+#COPY ${DEPS_HOST_DIR}/proj-${PROJ_VERSION}.tar.gz .
 RUN tar xzf proj-${PROJ_VERSION}.tar.gz
 WORKDIR proj-${PROJ_VERSION}/build
 RUN cmake \
@@ -215,5 +218,5 @@ ENV LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/usr/local/lib
 
 # Copy the wheel-building script and execute it when the container is run (ie, not when building container).
 WORKDIR ${BASE_DIR}
-COPY ${DEPS_HOST_DIR}/build_manylinux_wheels.sh .
+COPY --chmod=755 ${DEPS_HOST_DIR}/build_manylinux_wheels.sh .
 ENTRYPOINT [ "/pygplates/build_manylinux_wheels.sh" ]
