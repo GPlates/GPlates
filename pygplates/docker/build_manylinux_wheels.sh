@@ -57,11 +57,30 @@ do
 done
 
 # Repair the built wheels so that they're manylinux compatible.
+#
+# This checks the dependency shared libraries are manylinux compatible and copies them into the wheel.
 auditwheel repair dist/pygplates*.whl
 
-# Copy the manylinux wheels to the host file system.
-if [ ! -d /io/wheelhouse ]
-then
-    mkdir /io/wheelhouse
-fi
-\cp wheelhouse/*.whl /io/wheelhouse  # \cp uses unaliased cp (ie, not 'cp -i' which prompts)
+# Install and test each manylinux wheel (one per Python version).
+# And as each test passes, copy the wheel to the host file system.
+for wheel in wheelhouse/*.whl
+do
+    # Extract the Python version from the wheel filename.
+    cp_version=$(echo $wheel | sed -E -e 's/.*cp([0-9]*).*/\1/g')
+
+    # The Python executable depends on the Python version.
+    python_exe=/opt/python/cp${cp_version}-cp${cp_version}/bin/python
+
+    # Install the manylinux wheel for the current Python version.
+    $python_exe -m pip install $wheel
+
+    # Test the manylinux wheel.
+    $python_exe pygplates/test/test.py
+
+    # Copy the manylinux wheel to the host file system.
+    if [ ! -d /io/wheelhouse ]
+    then
+        mkdir /io/wheelhouse
+    fi
+    \cp $wheel /io/wheelhouse  # \cp uses unaliased cp (ie, not 'cp -i' which prompts)
+done

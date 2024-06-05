@@ -11,9 +11,6 @@ ARG NUM_CORES=4
 # Centos cheatsheet:
 # - To list the files installed by a yum package:
 #   rpm -ql <package>
-# - To replace the path to a dependency library:
-#   patchelf --replace-needed DEP_LIB NEW_DEP_LIB LIB
-#   (this was needed for gdal-devel which linked to the wrong sqlite3 library causing "undefined symbol: sqlite3_column_table_name")
 #
 RUN yum update && yum install -y \
     zlib-devel \

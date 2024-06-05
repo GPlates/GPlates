@@ -20,7 +20,7 @@ Using the above Docker image you can then build the manylinux wheels for pyGPlat
 The mount option binds the host directory "$(pwd)/../../" to the Docker container directory "/io/"
 (which is referenced by the wheel-building script "build_manylinux_wheels.sh" within the Docker container).
 
-This will build the wheels for each currently supported Python minor version (eg, 3.8, 3.9, 3.10, 3.11, 3.12) and copy them
+This will build the wheels for each currently supported Python minor version (eg, 3.8, 3.9, 3.10, 3.11, 3.12), test them and then copy them
 to the "wheelhouse" sub-directory of the root source directory (ie, "$(pwd)/../../wheelhouse/") on the host (ie, outside container).
 
 
