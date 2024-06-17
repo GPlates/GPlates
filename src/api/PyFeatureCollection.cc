@@ -1027,7 +1027,7 @@ export_feature_collection()
 		.def("get",
 				&GPlatesApi::feature_collection_handle_get_feature,
 				(bp::arg("feature_query"),
-						bp::arg("feature_query") = GPlatesApi::FeatureReturn::EXACTLY_ONE),
+						bp::arg("feature_return") = GPlatesApi::FeatureReturn::EXACTLY_ONE),
 				"get(feature_query, [feature_return=FeatureReturn.exactly_one])\n"
 				"  Returns one or more features matching a feature type, feature id or predicate.\n"
 				"\n"
