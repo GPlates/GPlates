@@ -8,6 +8,11 @@ by installing the pyGPlates dependency libraries. It can be built using somethin
 
 ...from this directory to produce the docker image 'pygplates-manylinux'.
 
+When building on an Arm64 architecture (eg, Apple Silicon), you'll need to specify a different architecture
+(the default is x86_64). This can be done by adding the ARCH variable (set to 'aarch64'):
+
+    docker build --build-arg ARCH=aarch64 ...
+
 
 Create pyGPlates manylinux wheels
 ---------------------------------
@@ -19,9 +24,15 @@ Using the above Docker image you can then build the manylinux wheels for pyGPlat
 ...from this directory and it will build wheels using this source code (ie, "$(pwd)/../../" is the root source directory).
 The mount option binds the host directory "$(pwd)/../../" to the Docker container directory "/io/"
 (which is referenced by the wheel-building script "build_manylinux_wheels.sh" within the Docker container).
+On Windows this command-line should work in PowerShell (command-line console).
 
 This will build the wheels for each currently supported Python minor version (eg, 3.8, 3.9, 3.10, 3.11, 3.12), test them and then copy them
 to the "wheelhouse" sub-directory of the root source directory (ie, "$(pwd)/../../wheelhouse/") on the host (ie, outside container).
+
+By default pyGPlates will get built using all available CPU cores (when building manylinux wheels). You can change this by
+adding the CMAKE_BUILD_PARALLEL_LEVEL environment variable (set to the desired number of cores to use). For example:
+
+    docker run --env CMAKE_BUILD_PARALLEL_LEVEL=8 ...
 
 
 Updating Python versions

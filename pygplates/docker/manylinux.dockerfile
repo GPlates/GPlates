@@ -1,7 +1,9 @@
 # The manylinux base image.
 #
-# Note: Change 'x86_64' to 'aarch64' when building on an arm64 architecture (eg, Apple Silicon).
-FROM quay.io/pypa/manylinux2014_x86_64
+# Note: When building on an arm64 architecture (eg, Apple Silicon), change ARCH from 'x86_64' to 'aarch64'.
+#       This can be done on the command line with "docker build --build-arg ARCH=aarch64 ...".
+ARG ARCH=x86_64
+FROM quay.io/pypa/manylinux2014_${ARCH}
 
 ARG NUM_CORES=4
 
