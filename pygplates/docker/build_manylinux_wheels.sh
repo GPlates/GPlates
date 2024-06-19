@@ -2,7 +2,7 @@
 set -e  # exit if any command fails
 
 # Copy the pygplates source code from the host file system (/io) to the local file system (/pygplates).
-# The local file system is typically faster (eg, when using the WSL2 Docker Desktop backend on Windows).
+# The local file system is typically faster (eg, much faster when using the WSL2 Docker Desktop backend on Windows).
 cd /io
 cp -r cmake doc-cpp doc-python-api src CMakeLists.txt COPYING pyproject.toml README.md /pygplates
 mkdir /pygplates/pygplates

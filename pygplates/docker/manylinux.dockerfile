@@ -12,17 +12,25 @@ ARG NUM_CORES=4
 # - To list the files installed by a yum package:
 #   rpm -ql <package>
 #
-RUN yum update && yum install -y \
+RUN yum update -y && yum install -y \
     zlib-devel \
     glew-devel \
     qt5-qtbase-devel \
     qt5-qtsvg-devel \
     qt5-qtxmlpatterns-devel
 
-ARG BASE_DIR=/pygplates
-
+# Base directory on the host.
+#
+# Note: This is relative to the build context (ie, the path specified in 'docker build ...').
+ARG HOST_BASE_DIR=.
 # Host directory containing dependency libraries source code and build-wheels script.
-ARG DEPS_HOST_DIR=.
+#
+# Note: Only used during development if you've manually downloaded the dependency libraries (listed below).
+#       Default is to download them during the docker build.
+#ARG DEPS_HOST_DIR=${HOST_BASE_DIR}
+
+# Base directory in the container.
+ARG BASE_DIR=/pygplates
 # Dependency libraries container directories for building and installing dependencies.
 # Note: Only some of the dependencies are installed to this install directory (the rest are installed to standard locations).
 ARG DEPS_BASE_BUILD_DIR=${BASE_DIR}/deps/build
@@ -208,12 +216,21 @@ RUN make install
 # Note: This only saves space when using "docker build --squash".
 #       But this has been removed from the BuildKit backend (which is default backend since Docker 23) and
 #       you'd need to enable the legacy backend with DOCKER_BUILDKIT=0 and also enable experimental features.
-RUN rm -rf ${DEPS_BASE_BUILD_DIR}
+#       So, it's not really worth it. Easier to just build this docker image locally (and have it be larger).
+#RUN rm -rf ${DEPS_BASE_BUILD_DIR}
 
 # Libraries like Boost get installed here.
 ENV LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/usr/local/lib
 
 # Copy the wheel-building script and execute it when the container is run (ie, not when building container).
 WORKDIR ${BASE_DIR}
-COPY --chmod=755 ${DEPS_HOST_DIR}/build_manylinux_wheels.sh .
+COPY --chmod=755 ${HOST_BASE_DIR}/build_manylinux_wheels.sh .
+
+# When the docker container runs it will automatically build the manylinux wheels.
+#
+# Note: During development, if you want to have the wheels already built before running the container
+#       (eg, to then debug the wheels without having to rebuild them each time container is run) then can instead
+#       uncomment the following line and then run 'docker build <...> ../..' (instead of 'docker build <...> .')
+#       so that the entire source tree (in root dir '../../') can be mounted into the container.
+#RUN --mount=type=bind,source=${HOST_BASE_DIR}/../../,target=/io /pygplates/build_manylinux_wheels.sh
 ENTRYPOINT [ "/pygplates/build_manylinux_wheels.sh" ]
