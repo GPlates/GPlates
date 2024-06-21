@@ -183,23 +183,33 @@ set(GPLATES_PYTHON_EXECUTABLE ${GPLATES_PYTHON_EXECUTABLE} PARENT_SCOPE)
 # This includes the optional unit test framework, since it's error prone to switch static linking off and on, and
 # note that we set the compiler flag BOOST_TEST_DYN_LINK later below (required by code using unit test framework).
 set(Boost_USE_STATIC_LIBS FALSE)
-# Starting with version 1.70 Boost provides a CMake package configuration file so that CMake does not have to update
-# its builtin FindBoost module for every Boost release. For backward compatibility CMake still provides FindBoost but
-# it will use a Boost CMake configuration file if it finds one. However, on Windows, the Boost config file gives the error
-# "No suitable build variant has been found" (if you compile GPlates/pyGPlates with a different version of Visual Studio
-# than was used to compile Boost). So we'll disable the search for the Boost config file for now, but just on Windows.
-# This also means that, on Windows, the CMake version should be high enough that it supports the Boost version.
 #
-# TODO: This will need to be removed when FindBoost is eventually deprecated/removed.
-if (WIN32)
-	set(Boost_NO_BOOST_CMAKE ON)
+# Starting with version 1.70 Boost provides a CMake package configuration file so that CMake does not have to update
+# its builtin FindBoost module for every Boost release. For backward compatibility CMake (< 3.30) provides a FindBoost module but
+# it will use a Boost CMake configuration file if it finds one. However, on Windows, the Boost config file can give the error
+# "No suitable build variant has been found" (if you compile GPlates/pyGPlates with a different version of Visual Studio
+# than was used to compile Boost). So we'll disable the search for the Boost config file (for CMake < 3.30) but just on Windows.
+# This also means that, on Windows, the CMake version (when < 3.30) should be high enough that it supports the Boost version
+# (since each CMake version updates the supported Boost versions).
+#
+# CMake 3.30 removed the FindBoost module (thus requiring boost-cmake), which means only CMake < 3.30 can disable search for boost-cmake.
+if (CMAKE_VERSION VERSION_LESS 3.30)
+	if (WIN32)
+		set(Boost_NO_BOOST_CMAKE ON)
+	endif()
 endif()
 
 # Minimum required Boost version.
 #
-# Note: Version 1.55 is when boost::is_copy_constructible<T> was introduced (although can use std version in C++11 compilers now).
-#       Version 1.39 is when <boost/bind/bind.hpp> was added (before that there was just <boost/bind.hpp>).
-set(_GPLATES_MIN_BOOST_VERSION 1.55)
+if (CMAKE_VERSION VERSION_LESS 3.30)
+	# Version 1.55 is when boost::is_copy_constructible<T> was introduced (although can use std version in C++11 compilers now).
+	# Version 1.39 is when <boost/bind/bind.hpp> was added (before that there was just <boost/bind.hpp>).
+	set(_GPLATES_MIN_BOOST_VERSION 1.55)
+else()  # CMake >= 3.30 ...
+	# CMake 3.30 removed the FindBoost module, which means Boost needs to provide a CMake package configuration file and
+	# only Boost >= 1.70 provides that.
+	set(_GPLATES_MIN_BOOST_VERSION 1.70)
+endif()
 
 # First find the Boost library version (since the boost python component naming scheme changed in Boost version 1.67).
 # We find the library version by finding Boost without any library components (this just finds the Boost headers).
