@@ -126,6 +126,18 @@ set(PYGPLATES_DOCS_COPYRIGHT_STRING [[
 ]])
 
 
+# Detect if this build is part of a conda build (eg, a "conda build ..." command).
+#
+# Note: Conda builds use scikit-build-core (because conda relies on 'pip install') which in turn defines the SKBUILD CMake variable.
+#       A side note: Building using scikit-build-core happens when building wheels with pip (eg, 'pip wheel ...' or 'pip install ...').
+#       However there are cases where we'd like to distinguish between scikit-build-core builds that are conda and non-conda.
+#       An example is cross-compiling using conda where it uses the PYTHON environment variable to find the target platform Python (not build platform).
+#       Maybe that'll also be required non-conda cross-compiles but we've not encountered them yet (and they don't set the PYTHON environment variable).
+if (DEFINED ENV{CONDA_BUILD} AND ("$ENV{CONDA_BUILD}" EQUAL 1))
+    set(GPLATES_CONDA_BUILD TRUE)
+endif()
+
+
 # GPLATES_PUBLIC_RELEASE - Official public release (GPlates or pyGPlates depending on GPLATES_BUILD_GPLATES).
 #
 # Official public releases disable all warnings.
@@ -150,21 +162,39 @@ else() # pyGPlates ...
 endif()
 
 
-# Whether to install GPlates (or pyGPlates) as a standalone bundle (by copying dependency libraries during installation).
+# GPLATES_INSTALL_STANDALONE - Whether to install GPlates (or pyGPlates) as a standalone bundle (by copying dependency libraries during installation).
 #
 # When this is true then we install code to fix up GPlates (or pyGPlates) for deployment to another machine
 # (which mainly involves copying dependency libraries into the install location, which subsequently gets packaged).
 # When this is false then we don't install dependencies, instead only installing the GPlates executable (or pyGPlates library) and a few non-dependency items.
-if (WIN32 OR APPLE)
-	# On Windows and Apple this is *enabled* by default since we typically distribute a self-contained package to users on those systems.
-	# However this can be *disabled* for use cases such as creating a conda package (since conda manages dependency installation itself).
-	set(_INSTALL_STANDALONE true)
-else() # Linux
-	# On Linux this is *disabled* by default since we rely on the Linux binary package manager to install dependencies on the user's system
-	# (for example, we create a '.deb' package that only *lists* the dependencies, which are then installed on the target system if not already there).
-	# However this can be *enabled* for use cases such as creating a standalone bundle for upload to a cloud service (where it is simply extracted).
-	set(_INSTALL_STANDALONE false)
+#
+if (SKBUILD)
+	# We're building using scikit-build-core. This happens when building pyGPlates wheels with pip (eg, 'pip wheel ...' or 'pip install ...').
+	# And conda also builds using scikit-build-core (because conda relies on 'pip install').
+	if (GPLATES_CONDA_BUILD)
+		# Conda does NOT need a standalone installation since conda manages binary shared library dependencies itself.
+		set(_INSTALL_STANDALONE false)
+	else()
+		# But a regular Python 'pip install ...' DOES need a standalone installation
+		# (since it does not manage binary shared libraries dependencies, only Python dependencies).
+		set(_INSTALL_STANDALONE true)
+	endif()
+else()
+	# We're NOT building using scikit-build-core (ie, not running 'pip wheel ...' or 'pip install ...' or 'conda install ...').
+	# Which means the user is probably doing a manual CMake build (eg, "cmake ." followed by "cmake --build .").
+	# In this case we'll use reasonable defaults based on the platform.
+	if (WIN32 OR APPLE)
+		# On Windows and Apple this is *enabled* by default since we typically distribute a self-contained package to users on those systems.
+		# However this can be *disabled* for use cases such as creating a conda package (since conda manages dependency installation itself).
+		set(_INSTALL_STANDALONE true)
+	else() # Linux
+		# On Linux this is *disabled* by default since we rely on the Linux binary package manager to install dependencies on the user's system
+		# (for example, we create a '.deb' package that only *lists* the dependencies, which are then installed on the target system if not already there).
+		# However this can be *enabled* for use cases such as creating a standalone bundle for upload to a cloud service (where it is simply extracted).
+		set(_INSTALL_STANDALONE false)
+	endif()
 endif()
+# Make GPLATES_INSTALL_STANDALONE a cache variable, using the "option()" command, so that the user can change it (eg, via command-line, ccmake or cmake-gui).
 option(GPLATES_INSTALL_STANDALONE "Install GPlates (or pyGPlates) as a standalone bundle (copy dependency libraries into the installation)." ${_INSTALL_STANDALONE})
 unset(_INSTALL_STANDALONE)
 
@@ -276,17 +306,6 @@ if (MSVC)
 	#
 	# Allow user to specify the number of parallel build processes (defaults to zero which indicates uses all available CPUs).
 	set(GPLATES_MSVC_PARALLEL_BUILD_PROCESSES 0 CACHE STRING "Number of parallel build processes (if GPLATES_MSVC_PARALLEL_BUILD enabled). Set to zero for max.")
-endif()
-
-# Detect if this build is part of a conda build (eg, a "conda build ..." command).
-#
-# Note: Conda builds use scikit-build-core (because conda relies on 'pip install') which in turn defines the SKBUILD CMake variable.
-#       A side note: Building using scikit-build-core happens when building wheels with pip (eg, 'pip wheel ...' or 'pip install ...').
-#       However there are cases where we'd like to distinguish between scikit-build-core builds that are conda and non-conda.
-#       An example is cross-compiling using conda where it uses the PYTHON environment variable to find the target platform Python (not build platform).
-#       Maybe that'll also be required non-conda cross-compiles but we've not encountered them yet (and they don't set the PYTHON environment variable).
-if (DEFINED ENV{CONDA_BUILD} AND ("$ENV{CONDA_BUILD}" EQUAL 1))
-    set(GPLATES_CONDA_BUILD TRUE)
 endif()
 
 

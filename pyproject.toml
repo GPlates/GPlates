@@ -99,20 +99,25 @@ wheel.license-files = ["COPYING"]
 #
 [tool.scikit-build.cmake.define]
 
+
 # Build pyGPlates (not GPlates).
 GPLATES_BUILD_GPLATES = "FALSE"
 
-# By default, dependency shared libraries are NOT installed along with the built pygplates shared library.
+
+# Optionally determine whether to install binary shared library dependencies of pyGPlates (using the GPLATES_INSTALL_STANDALONE variable).
 #
-# This is because, when building wheels for distribution, it's better to NOT bundle dependencies:
-#    "python -m pip wheel --wheel-dir dist -v <source_dir>"
-# ...since wheels need to be post-processed with auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows) in order to
-# check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
+# By default, dependency shared libraries ARE installed when running 'pip wheel ...' or 'pip install ...' directly, but
+# NOT installed when running 'conda install ...' (note that conda uses 'pip install ...' and so also uses scikit-build-core).
+# This is because conda manages binary shared library dependencies itself, whereas a regular pip install does not.
 #
-# When installing locally you *could* bundle dependency shared libraries with something like:
-#    "pip install -v --config-settings cmake.define.GPLATES_INSTALL_STANDALONE=TRUE <source_dir>"
-# ...but there's still the risk of conflicting dependency shared libraries (as mentioned above).
-GPLATES_INSTALL_STANDALONE = "FALSE"
+# This means if you type 'pip install .' (ie, install directly from the source code) then the binary shared library dependencies
+# of pyGPlates also get installed into Python (site-packages). This is necessary for the Windows platform (for Python >= 3.8)
+# which no longer searches for DLLs using the PATH environment variable.
+# Note that it is better to first build a wheel that has been post-processed with auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows)
+# in order to check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
+# And then install that wheel (using 'pip wheel ...'). This avoids potential issues with binary dependency conflicts from other installed
+# Python packages that have the same dependencies (eg, the GDAL dependency).
+
 
 # Build in parallel on Windows (in Visual Studio).
 #
@@ -124,6 +129,7 @@ GPLATES_INSTALL_STANDALONE = "FALSE"
 # macOS and Linux: To build in parallel optionally set the CMAKE_BUILD_PARALLEL_LEVEL *environment* variable.
 #                  The 'Unix Makefiles' generator defaults to using a single CPU (if not specified).
 #                  The 'Ninja' generator defaults to using all CPUs (if not specified).
+
 
 # Optionally set the macOS deployment target to a macOS version earlier than your build machine
 # (so users on older systems can still use the wheel).
@@ -139,6 +145,7 @@ GPLATES_INSTALL_STANDALONE = "FALSE"
 #       ...prior to installing the ports.
 #       This will also force all ports to have their source code compiled (not downloaded as binaries) which can be quite slow.
 #       For Apple Silicon, targeting 11.0 is sufficient (since M1/arm64 wasn't introduced until macOS 11.0).
+
 
 #
 # Extract version from 'PYGPLATES_PEP440_VERSION' variable in 'cmake/modules/Version.cmake'.

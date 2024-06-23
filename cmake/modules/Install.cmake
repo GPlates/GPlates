@@ -33,11 +33,11 @@ include(GNUInstallDirs)
 #
 # For GPlates, in most cases you wouldn't typically install directly like this. More likely you'd create a package
 # using CPack (see Package.cmake) which will, in turn, install to its own staging area prior to creating a package.
-# However for pyGPlates, we use the install phase to setup our staging area for creating a Python package using setuptools.
+# However for pyGPlates, the install phase is used by scikit-build-core to create a Python wheel (see pyproject.toml).
 #
 
 #
-# Check some requirments for installing targets (such as minimum CMake version required).
+# Check some requirements for installing targets.
 #
 if (GPLATES_INSTALL_STANDALONE)
     #
@@ -117,7 +117,8 @@ else()  # pyGPlates ...
     # For 'pygplates' we install the pygplates module library into a 'pygplates/' sub-directory of the base directory since we are making
     # pygplates a "Python package" (with the pygplates module library in a 'pygplates/' directory as well as an '__init__.py').
     #
-    # For a standalone installation this enables the pygplates module library to find its runtime location (needed to locate the GDAL/PROJ data bundled with pygplates).
+    # For a standalone installation this enables the pygplates module library, via code in '__init__.py', to find its runtime location
+    # (needed to locate the GDAL/PROJ data bundled with pygplates).
     #
     # When not a standalone installation, GDAL/PROJ are installed in a standard location and so GDAL/PROJ are able to find their own data directories, which means
     # we don't need to bundle them up with pygplates. But we'll still retain the 'pygplates/' package directory (and '__init__.py') rather than leaving it as a
@@ -151,7 +152,6 @@ else()  # pyGPlates ...
     #
     # This is because pygplates is a "Python package" where the pygplates module library is in the *base* 'pygplates/' directory as well as '__init__.py'.
     set(PYGPLATES_INIT_PY "${CMAKE_CURRENT_BINARY_DIR}/__init__.py")
-    # Note that we allow no indentation in the file content to avoid Python 'unexpected indent' errors.
     #
     # Notes for the "__init__.py" source code:
     #
@@ -169,6 +169,7 @@ else()  # pyGPlates ...
     # Also GPlates embeds 'pygplates' (not '_pygplates') and so we'd need to use a module name of 'pygplates' when building GPlates
     # and '_pygplates' when building pyGPlates. So it's easier just to keep it as 'pygplates' (instead of '_pygplates').
     #
+    # Note that we allow no indentation in the file content to avoid Python 'unexpected indent' errors.
     file(WRITE "${PYGPLATES_INIT_PY}" [[
 # Import the pygplates shared library (C++).
 from .pygplates import *
