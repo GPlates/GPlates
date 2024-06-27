@@ -300,6 +300,16 @@ BOOST_PYTHON_MODULE(pygplates)
 	namespace bp = boost::python;
 
 	//
+	// Note: Unlike GPlates, pyGPlates does not need to initialize Qt resources that exist in 'src/qt-resources'.
+	//       According to the QtResources documentation, calls to Q_INIT_RESOURCE are not needed if
+	//       the resources are compiled into a shared library. Further, if resources only accessed from
+	//       within shared library then there's also no issue with the shared library not being loaded yet.
+	//       So Q_INIT_RESOURCE is not called for the python (API) shared library, but that's no problem since
+	//       the python shared library is used externally (ie, used by an external python interpreter, not the
+	//       GPlates embedded interpreter) and so the resources are only accessed internally by the shared library.
+	//
+
+	//
 	// Apparently Py_Initialize should be called before initialising numpy.
 	//
 	// According to the docs for Py_Initialize:

@@ -2,13 +2,19 @@
 # Build system.
 #
 [build-system]
+build-backend = "scikit_build_core.build"
 requires = [
     # Using scikit-build-core backend build system.
-    "scikit-build-core",
+    'scikit-build-core',
+
     # PyGPlates accesses the NumPy C API.
-    "numpy"
+    #
+    # Note: We must *build* against NumPy 2.x in order to support both NumPy 1.x and 2.x at *runtime*.
+    #       However the NumPy *runtime* requirement (in 'dependencies' below) needs no version restriction.
+    'numpy>=2.0; python_version>="3.9"',
+    # Note: Python 3.8 is not supported by NumPy 2.0.
+    'numpy; python_version<"3.9"'
 ]
-build-backend = "scikit_build_core.build"
 
 #
 # Project.
