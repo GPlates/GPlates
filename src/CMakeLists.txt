@@ -236,14 +236,33 @@ endif()
 find_package(Boost ${_GPLATES_MIN_BOOST_VERSION} REQUIRED
 		# These components are required (including boost python)...
 		COMPONENTS program_options thread system ${GPLATES_BOOST_PYTHON_COMPONENT_NAME}
+		#
 		# These components are optional...
-		#
-		# Unit test framework is optional because we only need it for the GPlates unit-test executable and
-		# it is possible to compile the GUI version of GPlates without it.
-		#
-		# Boost.Python.Numpy is optional because we actually haven't started using it yet and
-		# it requires Boost >= 1.63 (which is above our current minimum Boost requirement).
-		OPTIONAL_COMPONENTS unit_test_framework ${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME})
+		OPTIONAL_COMPONENTS
+			#
+			# Unit test framework is optional because we only need it for the GPlates unit-test executable and
+			# it is possible to compile the GUI version of GPlates without it.
+			unit_test_framework
+			#
+			# Boost.Python.Numpy is optional because we actually haven't started using it yet and
+			# it requires Boost >= 1.63 (which is above our current minimum Boost requirement).
+			#
+			# UPDATE: Since NumPy 2.0 has been released, and we're not yet using Boost.Python.Numpy, we'll just disable it for now.
+			#
+			#         To support both NumPy 1.x and 2.x at *runtime* we need to build pyGPlates against NumPy 2.0
+			#         (note that pyGPlates accesses the NumPy C API directly - see 'GPLATES_PYTHON_NUMPY_INCLUDE_DIRS').
+			#         For building pyGPlates wheels, that's taken care of in our 'pyproject.toml' (with 'numpy>=2.0').
+			#         But for accessing the NumPy C API via Boost.Python.NumPy (which we don't do yet) it means
+			#         Boost.Python itself must be built against NumPy 2.0. And ensuring this is a bit more work.
+			#         For example, on Windows you'd need to make sure you install NumPy 2.0 into your Python versions
+			#         prior to building Boost from source code. And with MacPorts (on macOS) you'd need to ensure that
+			#         your 'py-numpy' port is updated (to 2.0).
+			#
+			#         So, since we're not yet using Boost.Python.NumPy we'll just disable it to avoid the possible runtime error:
+			#           "A module that was compiled using NumPy 1.x cannot be run in NumPy 2.0.0 as it may crash."
+			#
+			#${GPLATES_BOOST_PYTHON_NUMPY_COMPONENT_NAME}
+		)
 
 ############
 # Find Qt5 #
