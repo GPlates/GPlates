@@ -264,13 +264,6 @@ endif()
 # (which mainly involves copying dependency libraries into the install location, which subsequently gets packaged).
 # When this is false then we don't install dependencies, instead only installing the GPlates executable (or pyGPlates library) and a few non-dependency items.
 #
-# On Windows and Apple this is *enabled* by default since we typically distribute a self-contained package to users on those systems.
-# However this can be *disabled* for use cases such as creating a conda package (since conda manages dependency installation itself).
-#
-# On Linux this is *disabled* by default since we rely on the Linux binary package manager to install dependencies on the user's system
-# (for example, we create a '.deb' package that only *lists* the dependencies, which are then installed on the target system if not already there).
-# However this can be *enabled* for use cases such as creating a standalone bundle for upload to a cloud service (where it is simply extracted).
-#
 if (GPLATES_INSTALL_STANDALONE)
     #
     # Configure install code to fix up GPlates (or pyGPlates) for deployment to another machine.
@@ -562,7 +555,10 @@ if (GPLATES_INSTALL_STANDALONE)
 
         if (NOT EXISTS "${_gdal_plugin_path}")
             # Report message at install time since it's not an error if plugin is compiled into core GDAL library.
-            install(CODE "message(\"GDAL plugin ${_gdal_plugin_path} not found, so not installed (might be compiled into core GDAL library though)\")")
+            #
+            # Update: It's common to have GDAL plugins compiled into the core library.
+            #         So we won't output a message since it tends to look like an error/warning message.
+            #install(CODE "message(\"GDAL plugin ${_gdal_plugin_path} not found, so not installed (might be compiled into core GDAL library though)\")")
             return()
         endif()
 
@@ -594,8 +590,15 @@ if (GPLATES_INSTALL_STANDALONE)
     # And each installed path has ${CMAKE_INSTALL_PREFIX} in it (to be evaluated at install time).
     # Later we will pass GDAL_PLUGINS_INSTALLED to file(GET_RUNTIME_DEPENDENCIES) to find its dependencies and install them also.
     #
-    # NetCDF plugin.
-    install_gdal_plugin(netCDF)
+    # UPDATE: We only install GDAL plugins for GPlates (not pyGPlates).
+    #         This is because deployment for pyGPlates involves creating wheels and using auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows)
+    #         to check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
+    #         And auditwheel/delocate/delvewheel don't copy/fix dependencies of plugins.
+    #         However, fortunately pyGPlates doesn't need the following GDAL drivers (plugins), so we'll leave them out (until/if this changes in the future).
+    if (GPLATES_BUILD_GPLATES)  # GPlates ...
+        # NetCDF plugin.
+        install_gdal_plugin(netCDF)
+    endif()
 
 
     ###############################################
@@ -635,6 +638,11 @@ if (GPLATES_INSTALL_STANDALONE)
     #       has been run will not work (according to https://stackoverflow.com/a/52756644). This was verified by a user on the
     #       GPlates forum (see https://discourse.gplates.org/t/mouse-cursor-offset-in-gplates/735/9).
     #
+    # Note: If this DLL redirection is found to not work then an alternative is to investigate name mangling of DLLs.
+    #       For example, the delvewheel tool for creating Python wheels on Windows will copy dependency DLLs into the wheel
+    #       and name-mangle them (see https://github.com/adang1345/delvewheel?tab=readme-ov-file#name-mangling).
+    #       We currently use that to generate pyGPlates wheels - so pyGPlates is already taken care of.
+    #
     if (WIN32)
         if (GPLATES_BUILD_GPLATES)  # GPlates ...
             # Create an empty "gplates.exe.local" file.
@@ -657,6 +665,13 @@ if (GPLATES_INSTALL_STANDALONE)
     set(QT_PLUGIN_DIR_BASENAME "plugins")
     file(WRITE "${QT_CONF_FILE}" "[Paths]\nPlugins = ${QT_PLUGIN_DIR_BASENAME}\n")
 
+    # UPDATE: We only install Qt plugins for GPlates (not pyGPlates).
+    #         This is because deployment for pyGPlates involves creating wheels and using auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows)
+    #         to check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
+    #         And auditwheel/delocate/delvewheel don't copy/fix dependencies of plugins.
+    #         However, fortunately pyGPlates doesn't need the Qt plugins, so we'll leave them out (until/if this changes in the future).
+    #         Also, it turns out the Qt plugins are not evening loading anyway (I think) because the pyGPlates module initialisation
+    #         (in 'src/api/PyGPlatesModule.cc') does not create a QApplication, which is required to parse 'qt.conf' (via QCoreApplication).
     if (GPLATES_BUILD_GPLATES)  # GPlates ...
         # Install the "qt.conf" file for gplates.
         if (APPLE)
@@ -666,9 +681,6 @@ if (GPLATES_INSTALL_STANDALONE)
             # On Windows and Linux install into same directory as executable.
             install(FILES "${QT_CONF_FILE}" DESTINATION ${STANDALONE_BASE_INSTALL_DIR})
         endif()
-    else()  # pyGPlates ...
-        # Install the "qt.conf" file for pygplates in same directory as pygplates library (on all platforms).
-        install(FILES "${QT_CONF_FILE}" DESTINATION ${STANDALONE_BASE_INSTALL_DIR})
     endif()
 
     ######################
@@ -733,40 +745,49 @@ if (GPLATES_INSTALL_STANDALONE)
     # Each installed plugin (full installed path) is added to QT_PLUGINS_INSTALLED (which is a list variable).
     # And each installed path has ${CMAKE_INSTALL_PREFIX} in it (to be evaluated at install time).
     # Later we will pass QT_PLUGINS_INSTALLED to file(GET_RUNTIME_DEPENDENCIES) to find its dependencies and install them also.
-
-    # Install common platform *independent* plugins (used by GPlates and pyGPlates).
-    # Note: This list was obtained by running the Qt deployment tool (windeployqt/macdeployqt) on GPlates (to see which plugins it deployed).
-    install_qt5_plugin(Qt5::QGenericEnginePlugin)
-    install_qt5_plugin(Qt5::QSvgIconPlugin)
-    install_qt5_plugin(Qt5::QGifPlugin)
-    install_qt5_plugin(Qt5::QICOPlugin)
-    install_qt5_plugin(Qt5::QJpegPlugin)
-    install_qt5_plugin(Qt5::QSvgPlugin)
-    # These are common to Windows and macOS only...
-    if (WIN32 OR APPLE)
-        install_qt5_plugin(Qt5::QICNSPlugin)
-        install_qt5_plugin(Qt5::QTgaPlugin)
-        install_qt5_plugin(Qt5::QTiffPlugin)
-        install_qt5_plugin(Qt5::QWbmpPlugin)
-        install_qt5_plugin(Qt5::QWebpPlugin)
-    endif()
-
-    # Install platform *dependent* plugins used by GPlates.
+    #
+    # UPDATE: We only install Qt plugins for GPlates (not pyGPlates).
+    #         This is because deployment for pyGPlates involves creating wheels and using auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows)
+    #         to check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
+    #         And auditwheel/delocate/delvewheel don't copy/fix dependencies of plugins.
+    #         However, fortunately pyGPlates doesn't need the Qt plugins, so we'll leave them out (until/if this changes in the future).
+    #         Also, it turns out the Qt plugins are not evening loading anyway (I think) because the pyGPlates module initialisation
+    #         (in 'src/api/PyGPlatesModule.cc') does not create a QApplication, which uses 'qt.conf' (via QCoreApplication) to find the plugins.
     if (GPLATES_BUILD_GPLATES)  # GPlates ...
+        # Install common platform *independent* plugins (used by GPlates and pyGPlates).
         # Note: This list was obtained by running the Qt deployment tool (windeployqt/macdeployqt) on GPlates (to see which plugins it deployed).
-        if (WIN32)
-            install_qt5_plugin(Qt5::QWindowsIntegrationPlugin)
-            install_qt5_plugin(Qt5::QWindowsVistaStylePlugin)
-        elseif (APPLE)
-            install_qt5_plugin(Qt5::QCocoaIntegrationPlugin)
-            install_qt5_plugin(Qt5::QMacStylePlugin)
-        else() # Linux
-            install_qt5_plugin(Qt5::QXcbIntegrationPlugin)
-            # The following plugins are needed otherwise GPlates generates the following error and then seg. faults:
-            #  "QXcbIntegration: Cannot create platform OpenGL context, neither GLX nor EGL are enabled"
-            # Actually installing only the Glx plugin solved the issue (on Ubuntu 20.04), but we'll also install Egl in case.
-            install_qt5_plugin(Qt5::QXcbGlxIntegrationPlugin)
-            install_qt5_plugin(Qt5::QXcbEglIntegrationPlugin)
+        install_qt5_plugin(Qt5::QGenericEnginePlugin)
+        install_qt5_plugin(Qt5::QSvgIconPlugin)
+        install_qt5_plugin(Qt5::QGifPlugin)
+        install_qt5_plugin(Qt5::QICOPlugin)
+        install_qt5_plugin(Qt5::QJpegPlugin)
+        install_qt5_plugin(Qt5::QSvgPlugin)
+        # These are common to Windows and macOS only...
+        if (WIN32 OR APPLE)
+            install_qt5_plugin(Qt5::QICNSPlugin)
+            install_qt5_plugin(Qt5::QTgaPlugin)
+            install_qt5_plugin(Qt5::QTiffPlugin)
+            install_qt5_plugin(Qt5::QWbmpPlugin)
+            install_qt5_plugin(Qt5::QWebpPlugin)
+        endif()
+
+        # Install platform *dependent* plugins used by GPlates.
+        if (GPLATES_BUILD_GPLATES)  # GPlates ...
+            # Note: This list was obtained by running the Qt deployment tool (windeployqt/macdeployqt) on GPlates (to see which plugins it deployed).
+            if (WIN32)
+                install_qt5_plugin(Qt5::QWindowsIntegrationPlugin)
+                install_qt5_plugin(Qt5::QWindowsVistaStylePlugin)
+            elseif (APPLE)
+                install_qt5_plugin(Qt5::QCocoaIntegrationPlugin)
+                install_qt5_plugin(Qt5::QMacStylePlugin)
+            else() # Linux
+                install_qt5_plugin(Qt5::QXcbIntegrationPlugin)
+                # The following plugins are needed otherwise GPlates generates the following error and then seg. faults:
+                #  "QXcbIntegration: Cannot create platform OpenGL context, neither GLX nor EGL are enabled"
+                # Actually installing only the Glx plugin solved the issue (on Ubuntu 20.04), but we'll also install Egl in case.
+                install_qt5_plugin(Qt5::QXcbGlxIntegrationPlugin)
+                install_qt5_plugin(Qt5::QXcbEglIntegrationPlugin)
+            endif()
         endif()
     endif()
 
@@ -1309,11 +1330,11 @@ if (GPLATES_INSTALL_STANDALONE)
                         codesign(${_installed_dependency})
                     endforeach()
 
-                    # Fix the dependency install names in each installed Qt plugin.
-                    foreach(_qt_plugin ${QT_PLUGINS_INSTALLED} ${GDAL_PLUGINS_INSTALLED})
-                        fix_dependency_install_names(${_qt_plugin})
+                    # Fix the dependency install names in each installed plugin (Qt and GDAL).
+                    foreach(_plugin ${QT_PLUGINS_INSTALLED} ${GDAL_PLUGINS_INSTALLED})
+                        fix_dependency_install_names(${_plugin})
                         # Sign *after* fixing dependencies (since we cannot modify after signing).
-                        codesign(${_qt_plugin})
+                        codesign(${_plugin})
                     endforeach()
 
                     # And finally fix dependencies and code sign the GPlates application bundle (or the pyGPlates library).
@@ -1449,9 +1470,9 @@ if (GPLATES_INSTALL_STANDALONE)
                         set_rpath(${_installed_dependency})
                     endforeach()
 
-                    # Set the RPATH in each installed Qt plugin.
-                    foreach(_qt_plugin ${QT_PLUGINS_INSTALLED} ${GDAL_PLUGINS_INSTALLED})
-                        set_rpath(${_qt_plugin})
+                    # Set the RPATH in each installed plugin (Qt and GDAL).
+                    foreach(_plugin ${QT_PLUGINS_INSTALLED} ${GDAL_PLUGINS_INSTALLED})
+                        set_rpath(${_plugin})
                     endforeach()
 
                     # Set the RPATH in the installed gplates executable (or pygplates library).
