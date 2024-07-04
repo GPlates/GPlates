@@ -155,6 +155,10 @@ Boost
        where 'msvc-14.0' corresponds to Visual Studio 2015 and 'address-model=64' specifies a 64-bit build.
        This installs only the 'static' library versions (library files with the 'lib' prefix) - note the 'stage' target (instead of 'install').
        These 'static' libraries are used by CGAL.
+     NOTE: If you have multiple installations of Visual Studio then you can repeat the above 'b2' commands with different values for 'toolset'.
+           For example, if you also have Visual Studio 2019 (in addition to 2015) you can repeat with 'toolset=msvc-14.2'.
+           This will produce boost libraries with 'vc142' in their name (in addition to libraries with 'vc140' in their name).
+           And this enables you to compile GPlates/pyGPlates with either version of Visual Studio.
   2. Add the boost root directory to the BOOST_ROOT environment variable (eg, C:\SDK\boost\boost_1_78).
   3. Add the boost 'lib' directory to the PATH environment variable (eg, C:\SDK\boost\boost_1_78\lib).
      
