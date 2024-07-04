@@ -15,6 +15,9 @@ do
     # The Python executable depends on the Python version.
     python_exe=/opt/python/cp${cp_version}-cp${cp_version}/bin/python
 
+    # Upgrade pip.
+    $python_exe -m pip install --upgrade pip
+
     #
     # Build a wheel for the current Python version (and store the wheel in the 'dist/' sub-directory).
     #
