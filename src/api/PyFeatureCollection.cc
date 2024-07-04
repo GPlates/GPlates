@@ -27,6 +27,7 @@
 #include <iterator>
 #include <vector>
 #include <boost/noncopyable.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 #include <boost/optional.hpp>
 
 #include "PyFeatureCollectionFileFormatRegistry.h"
