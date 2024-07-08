@@ -304,69 +304,48 @@ if (GPLATES_INSTALL_STANDALONE)
 
     if (GPLATES_BUILD_GPLATES)  # GPlates ...
 
-        #
-        # Function to install the Python standard library.
+        #######################################
+        # Install the Python standard library #
+        #######################################
         #
         # Note: The Python standard library is only installed for the 'gplates' target which has an embedded Python interpreter
         #       (not 'pygplates' which is imported into a Python interpreter on the user's system via 'import pygplates').
         #
-        function(install_python_standard_library)
-            if (APPLE)
-                # On Apple we're expecting Python to be a framework. Ideally we should already have installed the Python framework
-                # (ie, this function should be called after the frameworks have been installed), but this is not absolutely necessary
-                # (since we could install the Python standard library first and then install the Python framework library/resources second).
-                if (GPLATES_PYTHON_STDLIB_DIR MATCHES "/Python\\.framework/")
-                    # Convert, for example, '/opt/local/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8' to
-                    # 'gplates.app/Contents/Frameworks/Python.framework/Versions/3.8/lib/python3.8'.
-                    string(REGEX REPLACE "^.*/(Python\\.framework/.*)$" "gplates.app/Contents/Frameworks/\\1" _PYTHON_STDLIB_INSTALL_DIR ${GPLATES_PYTHON_STDLIB_DIR})
-                else()
-                    message(FATAL_ERROR "Expected Python to be a framework")
-                endif()
-            else() # Windows or Linux
-                # Find the relative path from the Python prefix directory to the standard library directory.
-                # We'll use this as the standard library install location relative to our install prefix.
-                file(RELATIVE_PATH _PYTHON_STDLIB_INSTALL_DIR ${GPLATES_PYTHON_PREFIX_DIR} ${GPLATES_PYTHON_STDLIB_DIR})
-            endif()
 
-            # Remove the trailing '/', if there is one, so that we can then
-            # append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
-            #
-            #   "The last component of each directory name is appended to the destination directory but
-            #    a trailing slash may be used to avoid this because it leaves the last component empty"
-            #
-            string(REGEX REPLACE "/+$" "" _PYTHON_STDLIB_DIR "${GPLATES_PYTHON_STDLIB_DIR}")
-            # Install the Python standard library.
-            install(DIRECTORY "${_PYTHON_STDLIB_DIR}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR}/${_PYTHON_STDLIB_INSTALL_DIR})
-
-            # On Windows there's also a 'DLLs/' sibling directory of the 'Lib/' directory.
-            if (WIN32)
-                get_filename_component(_PYTHON_DLLS_DIR "${_PYTHON_STDLIB_DIR}" DIRECTORY)
-                set(_PYTHON_DLLS_DIR "${_PYTHON_DLLS_DIR}/DLLs")
-                if (EXISTS "${_PYTHON_DLLS_DIR}")
-                    install(DIRECTORY "${_PYTHON_DLLS_DIR}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR}/DLLs)
-                endif()
+        # Find the relative path from the Python prefix directory to the standard library directory.
+        # We'll use this as the standard library install location relative to our install prefix.
+        if (APPLE)
+            # On Apple we're expecting Python to be a framework. Later on, if we're also installing shared library dependencies, we will also
+            # install the Python framework library itself (and its Resources directory).
+            if (GPLATES_PYTHON_STDLIB_DIR MATCHES "/Python\\.framework/")
+                # Convert, for example, '/opt/local/Library/Frameworks/Python.framework/Versions/3.8/lib/python3.8' to
+                # 'gplates.app/Contents/Frameworks/Python.framework/Versions/3.8/lib/python3.8'.
+                string(REGEX REPLACE "^.*/(Python\\.framework/.*)$" "gplates.app/Contents/Frameworks/\\1" GPLATES_PYTHON_STDLIB_INSTALL_PREFIX ${GPLATES_PYTHON_STDLIB_DIR})
+            else()
+                message(FATAL_ERROR "Expected Python to be a framework")
             endif()
+        else() # Windows or Linux
+            file(RELATIVE_PATH GPLATES_PYTHON_STDLIB_INSTALL_PREFIX ${GPLATES_PYTHON_PREFIX_DIR} ${GPLATES_PYTHON_STDLIB_DIR})
+        endif()
 
-            # On Apple there are some shared '.so' libraries in Python framework that need code signing.
-            #
-            # For example, there's a directory called, , 'Python.framework/Versions/3.8/lib/python3.8/lib-dynload/' that is in 'sys.path' and contains '.so' libraries.
-            # There's also site packages (eg, in 'Python.framework/Versions/3.8/lib/python3.8/site-packages/' like NumPy that contain '.so' libraries.
-            if (APPLE)
-                # We need to codesign and secure timestamp these (otherwise Apple notarization fails).
-                # So we use our codesign() function - it is defined later but that's fine since this code is not executed until after codesign() has been defined.
-                install(
-                    CODE "set(STANDALONE_BASE_INSTALL_DIR [[${STANDALONE_BASE_INSTALL_DIR}]])"
-                    CODE "set(_PYTHON_STDLIB_INSTALL_DIR [[${_PYTHON_STDLIB_INSTALL_DIR}]])"
-                    CODE [[
-                        # Recursively search for '.so' files within the Python standard library.
-                        file(GLOB_RECURSE _python_shared_libs "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${_PYTHON_STDLIB_INSTALL_DIR}/*.so")
-                        foreach(_python_shared_lib ${_python_shared_libs})
-                            codesign(${_python_shared_lib})
-                        endforeach()
-                    ]]
-                )
+        # Remove the trailing '/', if there is one, so that we can then
+        # append a '/' in CMake's 'install(DIRECTORY ...)' which tells us:
+        #
+        #   "The last component of each directory name is appended to the destination directory but
+        #    a trailing slash may be used to avoid this because it leaves the last component empty"
+        #
+        string(REGEX REPLACE "/+$" "" _PYTHON_STDLIB_DIR "${GPLATES_PYTHON_STDLIB_DIR}")
+        # Install the Python standard library.
+        install(DIRECTORY "${_PYTHON_STDLIB_DIR}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR}/${GPLATES_PYTHON_STDLIB_INSTALL_PREFIX})
+
+        # On Windows there's also a 'DLLs/' sibling directory of the 'Lib/' directory.
+        if (WIN32)
+            get_filename_component(_PYTHON_DLLS_DIR "${_PYTHON_STDLIB_DIR}" DIRECTORY)
+            set(_PYTHON_DLLS_DIR "${_PYTHON_DLLS_DIR}/DLLs")
+            if (EXISTS "${_PYTHON_DLLS_DIR}")
+                install(DIRECTORY "${_PYTHON_DLLS_DIR}/" DESTINATION ${STANDALONE_BASE_INSTALL_DIR}/DLLs)
             endif()
-        endfunction()
+        endif()
 
     endif()
 

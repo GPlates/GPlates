@@ -177,14 +177,6 @@ if (WIN32)
             ]]
     )
 
-    # Install the Python standard library.
-    #
-    # Note: The Python standard library is only installed for the 'gplates' target which has an embedded Python interpreter
-    #       (not 'pygplates' which is imported into a Python interpreter on the user's system via 'import pygplates').
-    if (GPLATES_BUILD_GPLATES)  # GPlates ...
-        install_python_standard_library()
-    endif()
-
 elseif (APPLE)
 
     #
@@ -387,14 +379,6 @@ elseif (APPLE)
             ]]
     )
 
-    # Install the Python standard library.
-    #
-    # Note: The Python standard library is only installed for the 'gplates' target which has an embedded Python interpreter
-    #       (not 'pygplates' which is imported into a Python interpreter on the user's system via 'import pygplates').
-    if (GPLATES_BUILD_GPLATES)  # GPlates ...
-        install_python_standard_library()
-    endif()
-
     # Find the 'otool' command.
     find_program(OTOOL "otool")
     if (NOT OTOOL)
@@ -584,6 +568,8 @@ elseif (APPLE)
             CODE "set(QT_PLUGINS_INSTALLED \"${QT_PLUGINS_INSTALLED}\")"
             CODE "set(GDAL_PLUGINS_INSTALLED \"${GDAL_PLUGINS_INSTALLED}\")"
             CODE "set(GPLATES_BUILD_GPLATES [[${GPLATES_BUILD_GPLATES}]])"
+            CODE "set(STANDALONE_BASE_INSTALL_DIR [[${STANDALONE_BASE_INSTALL_DIR}]])"
+            CODE "set(GPLATES_PYTHON_STDLIB_INSTALL_PREFIX [[${GPLATES_PYTHON_STDLIB_INSTALL_PREFIX}]])"
             # The *build* target filename: executable (for gplates) or module library (for pygplates).
             CODE "set(_target_file_name \"$<TARGET_FILE_NAME:${BUILD_TARGET}>\")"
             #
@@ -598,6 +584,24 @@ elseif (APPLE)
                     # Sign *after* fixing dependencies (since we cannot modify after signing).
                     codesign(${_installed_dependency})
                 endforeach()
+
+                if (GPLATES_BUILD_GPLATES)  # GPlates ...
+                    #
+                    # There are some shared '.so' libraries in the Python framework that need code signing.
+                    #
+                    # For example, there's a directory called, 'Python.framework/Versions/3.8/lib/python3.8/lib-dynload/' that is in 'sys.path' and contains '.so' libraries.
+                    # There's also site packages (eg, in 'Python.framework/Versions/3.8/lib/python3.8/site-packages/' like NumPy that contain '.so' libraries.
+                    # We need to codesign and secure timestamp these (otherwise Apple notarization fails).
+                    #
+                    # Note: The Python standard library is only installed for the 'gplates' target which has an embedded Python interpreter
+                    #       (not 'pygplates' which is imported into a Python interpreter on the user's system via 'import pygplates').
+            
+                    # Recursively search for '.so' files within the Python standard library.
+                    file(GLOB_RECURSE _python_shared_libs "${CMAKE_INSTALL_PREFIX}/${STANDALONE_BASE_INSTALL_DIR}/${GPLATES_PYTHON_STDLIB_INSTALL_PREFIX}/*.so")
+                    foreach(_python_shared_lib ${_python_shared_libs})
+                        codesign(${_python_shared_lib})
+                    endforeach()
+                endif()
 
                 # Fix the dependency install names in each installed plugin (Qt and GDAL).
                 foreach(_plugin ${QT_PLUGINS_INSTALLED} ${GDAL_PLUGINS_INSTALLED})
@@ -664,14 +668,6 @@ else()  # Linux
                 endforeach()
             ]]
     )
-
-    # Install the Python standard library.
-    #
-    # Note: The Python standard library is only installed for the 'gplates' target which has an embedded Python interpreter
-    #       (not 'pygplates' which is imported into a Python interpreter on the user's system via 'import pygplates').
-    if (GPLATES_BUILD_GPLATES)  # GPlates ...
-        install_python_standard_library()
-    endif()
 
     # Find the 'patchelf' command.
     find_program(PATCHELF "patchelf")
