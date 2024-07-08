@@ -110,19 +110,23 @@ wheel.license-files = ["COPYING"]
 GPLATES_BUILD_GPLATES = "FALSE"
 
 
-# Optionally determine whether to install binary shared library dependencies of pyGPlates (using the GPLATES_INSTALL_STANDALONE variable).
+# Optionally determine whether to install binary shared library dependencies of pyGPlates
+# (using the GPLATES_INSTALL_STANDALONE and GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES variables).
 #
 # By default, dependency shared libraries ARE installed when running 'pip wheel ...' or 'pip install ...' directly, but
 # NOT installed when running 'conda install ...' (note that conda uses 'pip install ...' and so also uses scikit-build-core).
 # This is because conda manages binary shared library dependencies itself, whereas a regular pip install does not.
 #
 # This means if you type 'pip install .' (ie, install directly from the source code) then the binary shared library dependencies
-# of pyGPlates also get installed into Python (site-packages). This is necessary for the Windows platform (for Python >= 3.8)
+# of pyGPlates also get installed into Python (site-packages). This is necessary, for example, for the Windows platform (for Python >= 3.8)
 # which no longer searches for DLLs using the PATH environment variable.
-# Note that it is better to first build a wheel that has been post-processed with auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows)
+#
+# Note that it is better to first build a wheel and then repair it with auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows)
 # in order to check dependencies (manylinux), copy them into the wheel and (most importantly) give them unique names (to avoid conflicts).
-# And then install that wheel (using 'pip wheel ...'). This avoids potential issues with binary dependency conflicts from other installed
-# Python packages that have the same dependencies (eg, the GDAL dependency).
+# And then install that repaired wheel (using 'pip wheel ...'). This avoids potential issues with binary dependency conflicts from other
+# installed Python packages that have the same dependencies (eg, the GDAL dependency). This means first creating a wheel *without* copying
+# dependency libraries into it. For example, building a wheel that will subsequently be repaired by auditwheel/delocate/delvewheel can be done with:
+#    "python -m pip wheel --wheel-dir dist -v --config-settings cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES=FALSE <source_dir>"
 
 
 # Build in parallel on Windows (in Visual Studio).

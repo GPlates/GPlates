@@ -21,6 +21,12 @@ do
     #
     # Build a wheel for the current Python version (and store the wheel in the 'dist/' sub-directory).
     #
+    # Note: We set the CMake variable GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES to FALSE since
+    #       we don't want to install shared library dependencies into the wheel - they will get installed
+    #       (copied into the wheel) when 'auditwheel' is subsequently run to repair our wheel.
+    #       Note that this variable is only used if GPLATES_INSTALL_STANDALONE is TRUE, which it is
+    #       by default when building using scikit-build-core (eg, 'pip wheel ...') outside of conda.
+    #
     # Note: We set the CMake variable OpenGL_GL_PREFERENCE to LEGACY (instead of the default GLVND).
     #       This causes pyGPlates to prefer to use the 'libGL' LEGACY dependency (instead of the default
     #       'libOpenGL' GLVND dependency). The 'libGL' library is whitelisted by auditwheel (meaning it will
@@ -55,6 +61,7 @@ do
     $python_exe -m pip wheel \
         --wheel-dir dist \
         -v \
+        --config-settings cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES=FALSE \
         --config-settings cmake.define.OpenGL_GL_PREFERENCE=LEGACY \
         .
 done
