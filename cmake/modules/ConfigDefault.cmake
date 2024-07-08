@@ -195,8 +195,19 @@ else()
 	endif()
 endif()
 # Make GPLATES_INSTALL_STANDALONE a cache variable, using the "option()" command, so that the user can change it (eg, via command-line, ccmake or cmake-gui).
-option(GPLATES_INSTALL_STANDALONE "Install GPlates (or pyGPlates) as a standalone bundle (copy dependency libraries into the installation)." ${_INSTALL_STANDALONE})
+option(GPLATES_INSTALL_STANDALONE "Install GPlates (or pyGPlates) as a standalone bundle." ${_INSTALL_STANDALONE})
 unset(_INSTALL_STANDALONE)
+if (GPLATES_INSTALL_STANDALONE)
+	# We're installing standalone, so install shared library dependencies (unless specifically requested not to).
+	#
+	# An example where we explicitly request not to install dependency libraries is when creating a Python wheel for pyGPlates that will be
+	# post-processed using auditwheel(manylinux)/delocate(macOS)/delvewheel(Windows) which handles copying dependency libraries into the wheel.
+	option(GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES "Copy dependency libraries into the GPlates (or pyGPlates) standalone bundle" true)
+	mark_as_advanced(GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES)
+else()
+	# We're not installing standalone, so remove option to install shared library dependencies.
+	unset(GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES CACHE)
+endif()
 
 
 # Only GPlates has option to install geodata (we don't distribute it with pyGPlates).
