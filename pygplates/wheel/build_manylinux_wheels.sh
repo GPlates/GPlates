@@ -12,11 +12,29 @@ cd /pygplates
 # Build wheels (in the local file system) for each Python version.
 for cp_version in 38 39 310 311 312
 do
-    # The Python executable depends on the Python version.
-    python_exe=/opt/python/cp${cp_version}-cp${cp_version}/bin/python
 
-    # Upgrade pip.
-    $python_exe -m pip install --upgrade pip
+    # Remove virtual environment (if leftover from a failed run).
+    if [ -d venv_py${cp_version} ]
+    then
+        rm -r venv_py${cp_version}
+    fi
+    # Create and activate a Python virtual environment.
+    #
+    # Note: The Python executable depends on the Python version.
+    /opt/python/cp${cp_version}-cp${cp_version}/bin/python -m venv venv_py${cp_version}
+    source venv_py${cp_version}/bin/activate
+
+    # Upgrade pip (and wheel).
+    python -m pip install --upgrade pip wheel
+
+    # Temporary directory to store built wheel.
+    tmp_dist_dir=_dist_py${cp_version}
+    if [ -d ${tmp_dist_dir} ]
+    then
+        # Remove directory if exists (eg, due to previous cleanup error).
+        rm -r ${tmp_dist_dir}
+    fi
+    mkdir ${tmp_dist_dir}
 
     #
     # Build a wheel for the current Python version (and store the wheel in the 'dist/' sub-directory).
@@ -58,39 +76,45 @@ do
     #       pyGPlates reference the 'libGLdispatch' copied into the wheel (via 'libOpenGL') would result in *two*
     #       dispatch tables (instead of one central table). And this is likely what caused the segmentation fault.
     #
-    $python_exe -m pip wheel \
-        --wheel-dir dist \
+    python -m pip wheel \
+        --wheel-dir ${tmp_dist_dir} \
         -v \
         --config-settings cmake.define.GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES=FALSE \
         --config-settings cmake.define.OpenGL_GL_PREFERENCE=LEGACY \
         .
-done
 
-# Repair the built wheels so that they're manylinux compatible.
-#
-# This checks the dependency shared libraries are manylinux compatible and copies them into the wheel.
-auditwheel repair dist/pygplates*.whl
+    # Temporary directory to store repaired wheel.
+    tmp_wheelhouse_dir=_wheelhouse_py${cp_version}
+    if [ -d ${tmp_wheelhouse_dir} ]
+    then
+        # Remove directory if exists (eg, due to previous cleanup error).
+        rm -r ${tmp_wheelhouse_dir}
+    fi
+    mkdir ${tmp_wheelhouse_dir}
 
-# Install and test each manylinux wheel (one per Python version).
-# And as each test passes, copy the wheel to the host file system.
-for wheel in wheelhouse/*.whl
-do
-    # Extract the Python version from the wheel filename.
-    cp_version=$(echo $wheel | sed -E -e 's/.*cp([0-9]*).*/\1/g')
+    # Repair the built wheel so that it's manylinux compatible.
+    #
+    # This checks the dependency shared libraries are manylinux compatible and copies them into the wheel.
+    auditwheel repair -w ${tmp_wheelhouse_dir} ${tmp_dist_dir}/pygplates*.whl
 
-    # The Python executable depends on the Python version.
-    python_exe=/opt/python/cp${cp_version}-cp${cp_version}/bin/python
-
-    # Install the manylinux wheel for the current Python version.
-    $python_exe -m pip install $wheel
+    # Install the manylinux wheel.
+    python -m pip install ${tmp_wheelhouse_dir}/pygplates*.whl
 
     # Test the manylinux wheel.
-    $python_exe pygplates/test/test.py
+    python pygplates/test/test.py
 
     # Copy the manylinux wheel to the host file system.
     if [ ! -d /io/wheelhouse ]
     then
         mkdir /io/wheelhouse
     fi
-    \cp $wheel /io/wheelhouse  # \cp uses unaliased cp (ie, not 'cp -i' which prompts)
+    \cp ${tmp_wheelhouse_dir}/pygplates*.whl /io/wheelhouse  # \cp uses unaliased cp (ie, not 'cp -i' which prompts)
+
+    # Remove the temporary dist and wheelhouse directories.
+    rm -r ${tmp_dist_dir} ${tmp_wheelhouse_dir}
+
+    # Deactivate and remove the virtual environment.
+    deactivate
+    rm -r venv_py${cp_version}
+
 done

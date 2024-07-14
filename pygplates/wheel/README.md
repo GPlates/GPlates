@@ -21,12 +21,16 @@ This can be set to a macOS version earlier than your build machine (so users on 
 
 > [!NOTE]
 > If you do this then you'll also need the same deployment target set in your dependency libraries.
-> For example, with Macports you can specify the following in your "/opt/local/etc/macports/macports.conf" file:
+>
+> For example, with Macports you can specify the following in your `/opt/local/etc/macports/macports.conf` file (prior to installing the ports):
+>
+>>```
 >>    buildfromsource            always
 >>    macosx_deployment_target   11.0
-> ...prior to installing the ports.
-> This will also force all ports to have their source code compiled (not downloaded as binaries) which can be quite slow.
-> For Apple Silicon, targeting 11.0 is sufficient (since M1/arm64 wasn't introduced until macOS 11.0).
+>>```
+>
+> This will also force all ports to have their source code compiled (not downloaded as binaries) which can be quite slow.  
+> For Apple Silicon, targeting 11.0 is sufficient (since M1/arm64 wasn't introduced until macOS 11.0).  
 > For Apple Intel, 10.15 (Catalina) is sufficient.
 
 > [!NOTE]

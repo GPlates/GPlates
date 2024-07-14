@@ -27,7 +27,7 @@ do
 	# Upgrade pip (and wheel).
 	python -m pip install --upgrade pip wheel
 
-	# Temporary directory to store build wheel.
+	# Temporary directory to store built wheel.
 	tmp_dist_dir=_dist_py${cp_version}
 	if [ -d ${tmp_dist_dir} ]
 	then
@@ -54,7 +54,7 @@ do
 	# Install delocate to copy pyGPlates shared library dependencies into the wheel.
 	python -m pip install --upgrade delocate
 
-	# Temporary directory to store delocated  wheel.
+	# Temporary directory to store delocated wheel.
 	tmp_wheelhouse_dir=_wheelhouse_py${cp_version}
 	if [ -d ${tmp_wheelhouse_dir} ]
 	then
