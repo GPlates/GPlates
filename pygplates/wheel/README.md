@@ -52,6 +52,20 @@ The final wheels are in the `wheelhouse` sub-directory of the root source direct
 
 ## Building wheels on Windows
 
+Building wheels on Windows involves running the `build_windows_wheels.bat` batch file in a Command Prompt.
+
+This will build the wheels for each currently supported Python minor version, test them and then copy them to the
+`wheelhouse` sub-directory of the root source directory.
+
+The script assumes you've installed the currently supported Python versions (to be accessed using `py -<version> ...`, eg, `py -3.10 ...`)
+and that you've installed the dependencies of pyGPlates.
+
+To build the wheels, run the following in a Command Prompt:
+
+```
+cmd /c build_windows_wheels.bat
+```
+
 ## Building wheels on Linux
 
 Building wheels on Linux generates manylinux2014 wheels that should work on all Linux systems compatible with CentOS 7 (glibc 2.17).
@@ -117,6 +131,11 @@ As those versions change, the Python versions specified in the build scripts wil
 
 The script that builds the pyGPlates wheels is `build_macos_wheels.sh`.
 To update the Python versions just specify them in the line containing `for cp_version in ...` in that script.
+
+### Windows
+
+The batch file that builds the pyGPlates wheels is `build_windows_wheels.bat`.
+To update the Python versions just specify them in the line containing `for %%v in (...)` in that batch file.
 
 ### Linux
 

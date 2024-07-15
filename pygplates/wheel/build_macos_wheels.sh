@@ -41,7 +41,7 @@ do
 	#
 	# Note: We set the CMake variable GPLATES_INSTALL_STANDALONE_SHARED_LIBRARY_DEPENDENCIES to FALSE since
 	#       we don't want to install shared library dependencies into the wheel - they will get installed
-	#       (copied into the wheel) when 'auditwheel' is subsequently run to repair our wheel.
+	#       when 'delocate' is subsequently run to copy them into our wheel.
 	#       Note that this variable is only used if GPLATES_INSTALL_STANDALONE is TRUE, which it is
 	#       by default when building using scikit-build-core (eg, 'pip wheel ...') outside of conda.
 	#
