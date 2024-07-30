@@ -26,6 +26,16 @@
 #ifndef GPLATES_APP_LOGIC_DEFORMATION_STRAIN_RATE_H
 #define GPLATES_APP_LOGIC_DEFORMATION_STRAIN_RATE_H
 
+#include <iosfwd>
+
+#include "maths/MathsUtils.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
+#include "utils/QtStreamable.h"
+
+
 namespace GPlatesAppLogic
 {
 	/**
@@ -35,7 +45,9 @@ namespace GPlatesAppLogic
 	 * 
 	 * Both L and D are in units of (1/second).
 	 */
-	class DeformationStrainRate
+	class DeformationStrainRate :
+			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+			public GPlatesUtils::QtStreamable<DeformationStrainRate>
 	{
 	public:
 
@@ -227,6 +239,25 @@ namespace GPlatesAppLogic
 		get_strain_rate_style() const;
 
 
+		bool
+		operator==(
+				const DeformationStrainRate &other) const
+		{
+			return
+					GPlatesMaths::are_almost_exactly_equal(d_velocity_spatial_gradient.theta_theta, other.d_velocity_spatial_gradient.theta_theta) &&
+					GPlatesMaths::are_almost_exactly_equal(d_velocity_spatial_gradient.theta_phi, other.d_velocity_spatial_gradient.theta_phi) &&
+					GPlatesMaths::are_almost_exactly_equal(d_velocity_spatial_gradient.phi_theta, other.d_velocity_spatial_gradient.phi_theta) &&
+					GPlatesMaths::are_almost_exactly_equal(d_velocity_spatial_gradient.phi_phi, other.d_velocity_spatial_gradient.phi_phi);
+		}
+
+		bool
+		operator!=(
+				const DeformationStrainRate &other)
+		{
+			return !operator==(other);
+		}
+
+
 		friend
 		DeformationStrainRate
 		operator+(
@@ -265,7 +296,27 @@ namespace GPlatesAppLogic
 	private:
 
 		VelocitySpatialGradient d_velocity_spatial_gradient;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<DeformationStrainRate> &deformation_strain_rate);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
+
+	std::ostream &
+	operator<<(
+			std::ostream &os,
+			const DeformationStrainRate &strain_rate);
 }
 
 #endif // GPLATES_APP_LOGIC_DEFORMATION_STRAIN_RATE_H

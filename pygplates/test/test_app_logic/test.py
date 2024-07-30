@@ -2114,6 +2114,23 @@ class RotationModelCase(unittest.TestCase):
                         rotation_model_non_zero_default_anchor.get_rotation(self.to_time, 802))
 
 
+class StrainCase(unittest.TestCase):
+
+    def test_create(self):
+        self.assertTrue(pygplates.StrainRate() == pygplates.StrainRate.zero)
+    
+    def test_compare(self):
+        self.assertTrue(pygplates.StrainRate() == pygplates.StrainRate.zero)
+    
+    def test_constants(self):
+        self.assertTrue(pygplates.StrainRate.zero == pygplates.StrainRate())
+    
+    def test_pickle(self):
+        strain_rate = pygplates.StrainRate()
+        pickled_strain_rate = pickle.loads(pickle.dumps(strain_rate))
+        self.assertTrue(pickled_strain_rate == strain_rate)
+
+
 class TopologicalModelCase(unittest.TestCase):
     def setUp(self):
         self.rotations = pygplates.FeatureCollection(os.path.join(FIXTURES, 'rotations.rot'))
@@ -2615,6 +2632,7 @@ def suite():
             ReconstructionTreeCase,
             ResolvedTopologiesTestCase,
             RotationModelCase,
+            StrainCase,
             TopologicalModelCase,
             TopologicalSnapshotCase
         ]

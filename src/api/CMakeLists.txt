@@ -80,6 +80,7 @@ set(srcs
     PyRevisionedVector.h
     PyRotationModel.cc
     PyRotationModel.h
+    PyStrain.cc
     PyStrings.cc
     PythonConverterUtils.h
     PythonExecutionMonitor.cc
