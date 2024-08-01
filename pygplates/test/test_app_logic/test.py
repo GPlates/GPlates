@@ -2125,6 +2125,22 @@ class StrainCase(unittest.TestCase):
     def test_constants(self):
         self.assertTrue(pygplates.StrainRate.zero == pygplates.StrainRate())
     
+    def test_get_dilatation_rate(self):
+        self.assertTrue(pygplates.StrainRate().get_dilatation_rate() == 0)
+    
+    def test_get_total_strain_rate(self):
+        self.assertTrue(pygplates.StrainRate().get_total_strain_rate() == 0)
+    
+    def test_get_strain_rate_style(self):
+        # Strain rate style should be NaN (zero divided by zero).
+        self.assertTrue(math.isnan(pygplates.StrainRate().get_strain_rate_style()))
+    
+    def test_get_rate_of_deformation(self):
+        self.assertTrue(pygplates.StrainRate().get_rate_of_deformation() == (0, 0, 0, 0))
+    
+    def test_get_velocity_spatial_gradient(self):
+        self.assertTrue(pygplates.StrainRate().get_velocity_spatial_gradient() == (0, 0, 0, 0))
+    
     def test_pickle(self):
         strain_rate = pygplates.StrainRate()
         pickled_strain_rate = pickle.loads(pickle.dumps(strain_rate))

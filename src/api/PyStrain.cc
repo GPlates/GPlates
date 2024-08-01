@@ -35,20 +35,6 @@ namespace GPlatesApi
 	const GPlatesAppLogic::DeformationStrainRate zero_strain_rate;
 
 	bp::tuple
-	strain_rate_get_velocity_spatial_gradient(
-			const GPlatesAppLogic::DeformationStrainRate &strain_rate)
-	{
-		const GPlatesAppLogic::DeformationStrainRate::VelocitySpatialGradient &velocity_spatial_gradient =
-				strain_rate.get_velocity_spatial_gradient();
-
-		return bp::make_tuple(
-				velocity_spatial_gradient.theta_theta,
-				velocity_spatial_gradient.theta_phi,
-				velocity_spatial_gradient.phi_theta,
-				velocity_spatial_gradient.phi_phi);
-	}
-
-	bp::tuple
 	strain_rate_get_rate_of_deformation(
 			const GPlatesAppLogic::DeformationStrainRate &strain_rate)
 	{
@@ -60,6 +46,20 @@ namespace GPlatesApi
 				rate_of_deformation.theta_phi,
 				rate_of_deformation.phi_theta,
 				rate_of_deformation.phi_phi);
+	}
+
+	bp::tuple
+	strain_rate_get_velocity_spatial_gradient(
+			const GPlatesAppLogic::DeformationStrainRate &strain_rate)
+	{
+		const GPlatesAppLogic::DeformationStrainRate::VelocitySpatialGradient &velocity_spatial_gradient =
+				strain_rate.get_velocity_spatial_gradient();
+
+		return bp::make_tuple(
+				velocity_spatial_gradient.theta_theta,
+				velocity_spatial_gradient.theta_phi,
+				velocity_spatial_gradient.phi_theta,
+				velocity_spatial_gradient.phi_phi);
 	}
 }
 
@@ -104,6 +104,88 @@ export_strain()
 		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesAppLogic::DeformationStrainRate>>())
 		// Static property 'pygplates.StrainRate.zero'...
 		.def_readonly("zero", GPlatesApi::zero_strain_rate)
+		.def("get_dilatation_rate",
+				&GPlatesAppLogic::DeformationStrainRate::get_strain_rate_dilatation,
+				"get_dilatation_rate()\n"
+				"  Return the dilatation rate (in units of :math:`second^{-1}`).\n"
+				"\n"
+				"  :rtype: float\n"
+				"\n"
+				"  The dilatation rate is the rate of increase (if positive) or decrease (if negative) of crustal area per unit area at the current location "
+				"(at which this strain rate was calculated).\n"
+				"\n"
+				"  It is defined as the `trace` of the :meth:`rate-of-deformation tensor<get_rate_of_deformation>` (sum of its diagonal elements). "
+				"So if we define :math:`A` as the area of a parcel of crust at the current location, then the dilatation rate is the "
+				"*rate of change of area per unit area*, and is given by:\n"
+				"\n"
+				"  .. math::\n"
+				"\n"
+				"     \\frac{\\dot{A}}{A} = trace(\\boldsymbol D)\n"
+				"\n"
+				"  .. seealso::\n"
+				"\n"
+				"     Chapter 4.11 in `Continuum Mechanics for Engineers <https://doi.org/10.1201/9781420085396>`_ for a derivation of the material derivative of volume. "
+				"We ignore the radial dimension, hence volume becomes area.\n"
+				"\n"
+				"  .. note:: The dilatation rate is *invariant* with respect to the local coordinate axes (South and East) since :math:`trace(\\boldsymbol D)` is "
+				"the *first invariant* of :math:`\\boldsymbol D` (see Chapter 3.6 in `Continuum Mechanics for Engineers <https://doi.org/10.1201/9781420085396>`_).\n"
+				"\n"
+				"  .. note:: As shown for the :meth:`rate-of-deformation tensor<get_rate_of_deformation>` :math:`\\boldsymbol D`, the *rate of stretching per unit stretch* "
+				"along the local coordinate South and East axes are the *diagonal* elements :math:`D_{\\theta\\theta}` and :math:`D_{\\phi\\phi}` "
+				"(which are included in :math:`trace(\\boldsymbol D)`). And the *off-diagonal* elements determine the instantaneous shear rate which does not affect "
+				"expansion/contraction (and is excluded from :math:`trace(\\boldsymbol D))`.\n")
+		.def("get_total_strain_rate",
+				&GPlatesAppLogic::DeformationStrainRate::get_strain_rate_second_invariant,
+				"get_total_strain_rate()\n"
+				"  Return the total strain rate (in units of :math:`second^{-1}`).\n"
+				"\n"
+				"  :rtype: float\n"
+				"\n"
+				"  The total strain rate represents the magnitude, including both the normal (extension/compression) and shear components, of strain rate.\n"
+				"\n"
+				"  It is defined in terms of the :meth:`rate-of-deformation symmetric tensor<get_rate_of_deformation>` :math:`\\boldsymbol D` as:\n"
+				"\n"
+				"  .. math::\n"
+				"\n"
+				"     \\sqrt{trace(\\boldsymbol{D}^2)} = \\sqrt{D_{\\theta\\theta}^2 + D_{\\phi\\phi}^2 + 2 D_{\\phi\\theta}^2}\n"
+				"\n"
+				"  ...where :math:`D_{\\phi\\theta} = D_{\\theta\\phi}` since :math:`\\boldsymbol D` is symmetric\n"
+				"\n"
+				"  .. note:: The total strain rate is *invariant* with respect to the local coordinate axes (South and East) since :math:`\\sqrt{trace(\\boldsymbol{D}^2)}` "
+				"is invariant. This is because it is a function of the *second invariant*: :math:`\\frac{1}{2} \\left[trace(\\boldsymbol{D})^2 - trace(\\boldsymbol{D}^2)\\right]` "
+				"and the *first invariant*: :math:`trace(\\boldsymbol D)` (see Chapter 3.6 in `Continuum Mechanics for Engineers <https://doi.org/10.1201/9781420085396>`_).\n")
+		.def("get_strain_rate_style",
+				&GPlatesAppLogic::DeformationStrainRate::get_strain_rate_style,
+				"get_strain_rate_style()\n"
+				"  Return a measure categorising the type of deformation (in units of :math:`second^{-1}`).\n"
+				"\n"
+				"  :rtype: float\n"
+				"\n"
+				"  The strain rate *style* is a way to represent the type of deformation. The approach used here is from "
+				"*Kreemer, C., G. Blewitt, and E. C. Klein (2014),* `A geodetic plate motion and Global Strain Rate Model <https://10.1002/2014GC005407>`_, "
+				"which defines *strain rate style* as:\n"
+				"\n"
+				"  .. math::\n"
+				"\n"
+				"     \\frac{\\dot{\\varepsilon}_{(1)} + \\dot{\\varepsilon}_{(2)}}{max(\\lvert \\dot{\\varepsilon}_{(1)} \\rvert, \\lvert \\dot{\\varepsilon}_{(2)} \\rvert)}\n"
+				"\n"
+				"  ...and is equivalent to:\n"
+				"\n"
+				"  .. math::\n"
+				"\n"
+				"     \\frac{D_{(1)} + D_{(2)}}{max(\\lvert D_{(1)} \\rvert, \\lvert D_{(2)} \\rvert)}\n"
+				"\n"
+				"  ..where :math:`D_{(1)}` and :math:`D_{(2)}` are the principal values of the :meth:`rate-of-deformation tensor<get_rate_of_deformation>` :math:`\\boldsymbol D`.\n"
+				"\n"
+				"  A value of `-1` represents contraction (eg, pure reverse faulting), `0` represents pure strike-slip faulting and `1` represents extension (eg, pure normal faulting).\n"
+				"\n"
+				"  .. warning:: | If the :meth:`rate-of-deformation tensor<get_rate_of_deformation>` is zero (ie, no deformation) then `NaN` (zero divided by zero) will be returned.\n"
+				"               | Also, the returned value is **not** clamped to the range `[-1, 1]` when *both* principal values are non-zero and have the same sign.\n"
+				"\n"
+				"  .. note:: The strain rate *style* is *invariant* with respect to the local coordinate axes (South and East) since it uses the principal values of :math:`\\boldsymbol D`.\n"
+				"\n"
+				"  .. note:: A similar measure for *style* is to divide :meth:`dilatation rate<get_dilatation_rate>` by :meth:`total strain rate<get_total_strain_rate>`. This is "
+				"equivalent to :math:`\\frac{trace(\\boldsymbol D)}{\\sqrt{trace(\\boldsymbol{D}^2)}}` which is also *invariant* with respect to the local coordinate axes (South and East).\n")
 		.def("get_rate_of_deformation",
 				&GPlatesApi::strain_rate_get_rate_of_deformation,
 				"get_rate_of_deformation()\n"
@@ -126,7 +208,7 @@ export_strain()
 				"\n"
 				"  ...and therefore :math:`D_{\\theta\\phi} = D_{\\phi\\theta}` (since :math:`\\boldsymbol D` is symmetric).\n"
 				"\n"
-				"  If :math:`\\Lambda` is the stretch ratio (since deformation began) along current direction :math:`\\hat{\\boldsymbol n}` then the "
+				"  If :math:`\\Lambda` is the stretch ratio along current direction :math:`\\hat{\\boldsymbol n}` then the "
 				"*rate of stretching per unit stretch* is given by:\n"
 				"\n"
 				"  .. math::\n"
