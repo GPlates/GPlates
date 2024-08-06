@@ -28,8 +28,16 @@
 
 #include <cfloat>
 #include <cmath>
+#include <iosfwd>
 
 #include "DeformationStrainRate.h"
+
+#include "maths/MathsUtils.h"
+
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
+#include "utils/QtStreamable.h"
 
 
 namespace GPlatesAppLogic
@@ -42,7 +50,9 @@ namespace GPlatesAppLogic
 	 * The deformation gradient tensor is F in the case of finite strain.
 	 * The strain tensor E = 0.5 * (F_transpose * F - I).
 	 */
-	class DeformationStrain
+	class DeformationStrain :
+			// Gives us "operator<<" for qDebug(), etc and QTextStream, if we provide for std::ostream...
+			public GPlatesUtils::QtStreamable<DeformationStrain>
 	{
 	public:
 
@@ -125,8 +135,15 @@ namespace GPlatesAppLogic
 
 		explicit
 		DeformationStrain(
-				const DeformationGradient &deformation_gradient) :
-			d_deformation_gradient(deformation_gradient)
+				const double &deformation_gradient_theta_theta,
+				const double &deformation_gradient_theta_phi,
+				const double &deformation_gradient_phi_theta,
+				const double &deformation_gradient_phi_phi) :
+			d_deformation_gradient(
+					deformation_gradient_theta_theta,
+					deformation_gradient_theta_phi,
+					deformation_gradient_phi_theta,
+					deformation_gradient_phi_phi)
 		{  }
 
 
@@ -211,11 +228,50 @@ namespace GPlatesAppLogic
 		const StrainPrincipal
 		get_strain_principal() const;
 
+
+		bool
+		operator==(
+				const DeformationStrain &other) const
+		{
+			return
+					GPlatesMaths::are_almost_exactly_equal(d_deformation_gradient.theta_theta, other.d_deformation_gradient.theta_theta) &&
+					GPlatesMaths::are_almost_exactly_equal(d_deformation_gradient.theta_phi, other.d_deformation_gradient.theta_phi) &&
+					GPlatesMaths::are_almost_exactly_equal(d_deformation_gradient.phi_theta, other.d_deformation_gradient.phi_theta) &&
+					GPlatesMaths::are_almost_exactly_equal(d_deformation_gradient.phi_phi, other.d_deformation_gradient.phi_phi);
+		}
+
+		bool
+		operator!=(
+				const DeformationStrain &other)
+		{
+			return !operator==(other);
+		}
+
 	private:
 
 		DeformationGradient d_deformation_gradient;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<DeformationStrain> &deformation_strain);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
+
+	std::ostream &
+	operator<<(
+			std::ostream &os,
+			const DeformationStrain &strain);
 
 	/**
 	 * Accumulate the previous strain using both the previous and current strain rates (units in 1/second)

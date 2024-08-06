@@ -2117,13 +2117,25 @@ class RotationModelCase(unittest.TestCase):
 class StrainCase(unittest.TestCase):
 
     def test_create(self):
-        self.assertTrue(pygplates.StrainRate() == pygplates.StrainRate.zero)
+        self.assertTrue(pygplates.StrainRate().get_velocity_spatial_gradient() == (0, 0, 0, 0))
+        self.assertTrue(pygplates.StrainRate(1e-15, 1e-16, 2e-15, 5e-16).get_velocity_spatial_gradient() == (1e-15, 1e-16, 2e-15, 5e-16))
+
+        self.assertTrue(pygplates.Strain().get_deformation_gradient() == (1, 0, 0, 1))
+        self.assertTrue(pygplates.Strain(1e-4, 1e-5, 2e-4, 5e-5).get_deformation_gradient() == (1e-4, 1e-5, 2e-4, 5e-5))
     
     def test_compare(self):
         self.assertTrue(pygplates.StrainRate() == pygplates.StrainRate.zero)
+        self.assertTrue(pygplates.StrainRate(1e-15, 1e-16, 2e-15, 5e-16) == pygplates.StrainRate(1e-15, 1e-16, 2e-15, 5e-16))
+        self.assertTrue(pygplates.StrainRate(1e-15, 1e-16, 2e-15, 5e-16) != pygplates.StrainRate(1.01e-15, 1e-16, 2e-15, 5e-16))
+        self.assertTrue(pygplates.Strain() == pygplates.Strain.identity)
+        self.assertTrue(pygplates.Strain(1e-4, 1e-5, 2e-4, 5e-5) == pygplates.Strain(1e-4, 1e-5, 2e-4, 5e-5))
+        self.assertTrue(pygplates.Strain(1e-4, 1e-5, 2e-4, 5e-5) != pygplates.Strain(1.01e-4, 1e-5, 2e-4, 5e-5))
+        # Strains are not typically as small as strain *rates*, so really small strains that are slightly different will compare equal.
+        self.assertTrue(pygplates.Strain(1e-15, 1e-16, 2e-15, 5e-16) == pygplates.Strain(1.01e-15, 1e-16, 2e-15, 5e-16))
     
     def test_constants(self):
         self.assertTrue(pygplates.StrainRate.zero == pygplates.StrainRate())
+        self.assertTrue(pygplates.Strain.identity == pygplates.Strain())
     
     def test_get_dilatation_rate(self):
         self.assertTrue(pygplates.StrainRate().get_dilatation_rate() == 0)
@@ -2141,10 +2153,28 @@ class StrainCase(unittest.TestCase):
     def test_get_velocity_spatial_gradient(self):
         self.assertTrue(pygplates.StrainRate().get_velocity_spatial_gradient() == (0, 0, 0, 0))
     
+    def test_get_dilatation(self):
+        self.assertTrue(pygplates.Strain().get_dilatation() == 0)
+    
+    def test_get_deformation_gradient(self):
+        self.assertTrue(pygplates.Strain().get_deformation_gradient() == (1, 0, 0, 1))
+    
+    def test_accumulate_strain(self):
+        strain = pygplates.Strain.accumulate(pygplates.Strain.identity, pygplates.StrainRate.zero, pygplates.StrainRate(1e-15, 1e-16, 2e-15, 5e-16), 100)
+        deformation_gradient = strain.get_deformation_gradient()
+        self.assertAlmostEqual(deformation_gradient[0], 1.00000000000005, places=15)
+        self.assertAlmostEqual(deformation_gradient[1], 5.0000000000003755e-15, places=15)
+        self.assertAlmostEqual(deformation_gradient[2], 1.0000000000000751e-13, places=15)
+        self.assertAlmostEqual(deformation_gradient[3], 1.000000000000025, places=15)
+    
     def test_pickle(self):
-        strain_rate = pygplates.StrainRate()
+        strain_rate = pygplates.StrainRate(1e-15, 1e-16, 2e-15, 5e-16)
         pickled_strain_rate = pickle.loads(pickle.dumps(strain_rate))
         self.assertTrue(pickled_strain_rate == strain_rate)
+
+        strain = pygplates.Strain(1e-4, 1e-5, 2e-4, 5e-5)
+        pickled_strain = pickle.loads(pickle.dumps(strain))
+        self.assertTrue(pickled_strain == strain)
 
 
 class TopologicalModelCase(unittest.TestCase):

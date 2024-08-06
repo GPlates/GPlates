@@ -243,11 +243,14 @@ namespace GPlatesAppLogic
 		operator==(
 				const DeformationStrainRate &other) const
 		{
+			// Strain rates are typically very small (< 5e-15) so we should scale them before comparing differences with GPlatesMaths::EPSILON (1e-12).
+			static const double COMPARE_SCALE = 1e10;
+
 			return
-					GPlatesMaths::are_almost_exactly_equal(d_velocity_spatial_gradient.theta_theta, other.d_velocity_spatial_gradient.theta_theta) &&
-					GPlatesMaths::are_almost_exactly_equal(d_velocity_spatial_gradient.theta_phi, other.d_velocity_spatial_gradient.theta_phi) &&
-					GPlatesMaths::are_almost_exactly_equal(d_velocity_spatial_gradient.phi_theta, other.d_velocity_spatial_gradient.phi_theta) &&
-					GPlatesMaths::are_almost_exactly_equal(d_velocity_spatial_gradient.phi_phi, other.d_velocity_spatial_gradient.phi_phi);
+					GPlatesMaths::are_almost_exactly_equal(COMPARE_SCALE * d_velocity_spatial_gradient.theta_theta, COMPARE_SCALE * other.d_velocity_spatial_gradient.theta_theta) &&
+					GPlatesMaths::are_almost_exactly_equal(COMPARE_SCALE * d_velocity_spatial_gradient.theta_phi, COMPARE_SCALE * other.d_velocity_spatial_gradient.theta_phi) &&
+					GPlatesMaths::are_almost_exactly_equal(COMPARE_SCALE * d_velocity_spatial_gradient.phi_theta, COMPARE_SCALE * other.d_velocity_spatial_gradient.phi_theta) &&
+					GPlatesMaths::are_almost_exactly_equal(COMPARE_SCALE * d_velocity_spatial_gradient.phi_phi, COMPARE_SCALE * other.d_velocity_spatial_gradient.phi_phi);
 		}
 
 		bool

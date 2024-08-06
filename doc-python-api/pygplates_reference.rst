@@ -125,6 +125,7 @@ The following classes represent strain rate and strain (at a particular surface 
    :nosignatures:
    :toctree: generated
 
+   pygplates.Strain
    pygplates.StrainRate
 
 Rotation

@@ -30,6 +30,8 @@
 
 #include "maths/MathsUtils.h"
 
+#include "scribe/Scribe.h"
+
 
 const GPlatesAppLogic::DeformationStrain::StrainPrincipal
 GPlatesAppLogic::DeformationStrain::get_strain_principal() const
@@ -169,6 +171,80 @@ GPlatesAppLogic::DeformationStrain::get_strain_principal() const
 }
 
 
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::DeformationStrain::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<DeformationStrain> &deformation_strain)
+{
+	const GPlatesScribe::ObjectTag deformation_gradient_tag("deformation_gradient");
+
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, deformation_strain->d_deformation_gradient.theta_theta, deformation_gradient_tag("theta_theta"));
+		scribe.save(TRANSCRIBE_SOURCE, deformation_strain->d_deformation_gradient.theta_phi, deformation_gradient_tag("theta_phi"));
+		scribe.save(TRANSCRIBE_SOURCE, deformation_strain->d_deformation_gradient.phi_theta, deformation_gradient_tag("phi_theta"));
+		scribe.save(TRANSCRIBE_SOURCE, deformation_strain->d_deformation_gradient.phi_phi, deformation_gradient_tag("phi_phi"));
+	}
+	else // loading
+	{
+		double deformation_gradient_theta_theta;
+		double deformation_gradient_theta_phi;
+		double deformation_gradient_phi_theta;
+		double deformation_gradient_phi_phi;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, deformation_gradient_theta_theta, deformation_gradient_tag("theta_theta")) ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, deformation_gradient_theta_phi, deformation_gradient_tag("theta_phi")) ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, deformation_gradient_phi_theta, deformation_gradient_tag("phi_theta")) ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, deformation_gradient_phi_phi, deformation_gradient_tag("phi_phi")))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		deformation_strain.construct_object(
+				deformation_gradient_theta_theta,
+				deformation_gradient_theta_phi,
+				deformation_gradient_phi_theta,
+				deformation_gradient_phi_phi);
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::DeformationStrain::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	const GPlatesScribe::ObjectTag deformation_gradient_tag("deformation_gradient");
+
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_deformation_gradient.theta_theta, deformation_gradient_tag("theta_theta")) ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_deformation_gradient.theta_phi, deformation_gradient_tag("theta_phi")) ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_deformation_gradient.phi_theta, deformation_gradient_tag("phi_theta")) ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_deformation_gradient.phi_phi, deformation_gradient_tag("phi_phi")))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+std::ostream &
+GPlatesAppLogic::operator<<(
+		std::ostream &os,
+		const DeformationStrain &strain)
+{
+	const DeformationStrain::DeformationGradient &dg = strain.get_deformation_gradient();
+
+	os << "(" << dg.theta_theta << ", " << dg.theta_phi << ", " << dg.phi_theta << ", " << dg.phi_phi << ")";
+
+	return os;
+}
+
+
 const GPlatesAppLogic::DeformationStrain
 GPlatesAppLogic::accumulate_strain(
 		const DeformationStrain &previous_strain,
@@ -237,7 +313,7 @@ GPlatesAppLogic::accumulate_strain(
 	{
 		// Unable to invert matrix - this shouldn't happen for well-behaved values of velocity spatial gradient.
 		// Return the previous strain.
-		return DeformationStrain(prev_f);
+		return previous_strain;
 	}
 	const double inv_d = 1.0 / d;
 
@@ -281,7 +357,7 @@ GPlatesAppLogic::accumulate_strain(
 		}
 	}
 
-	return DeformationStrain(DeformationStrain::DeformationGradient(curr_f[0][0], curr_f[0][1], curr_f[1][0], curr_f[1][1]));
+	return DeformationStrain(curr_f[0][0], curr_f[0][1], curr_f[1][0], curr_f[1][1]);
 }
 
 
@@ -299,5 +375,5 @@ GPlatesAppLogic::interpolate_strain(
 	const double f_phi_theta = (1 - position) * first_deformation_gradient.phi_theta + position * second_deformation_gradient.phi_theta;
 	const double f_phi_phi = (1 - position) * first_deformation_gradient.phi_phi + position * second_deformation_gradient.phi_phi;
 
-	return DeformationStrain(DeformationStrain::DeformationGradient(f_theta_theta, f_theta_phi, f_phi_theta, f_phi_phi));
+	return DeformationStrain(f_theta_theta, f_theta_phi, f_phi_theta, f_phi_phi);
 }

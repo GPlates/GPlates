@@ -21,6 +21,7 @@
 #include "PythonHashDefVisitor.h"
 #include "PythonPickle.h"
 
+#include "app-logic/DeformationStrain.h"
 #include "app-logic/DeformationStrainRate.h"
 
 #include "global/python.h"
@@ -61,6 +62,23 @@ namespace GPlatesApi
 				velocity_spatial_gradient.phi_theta,
 				velocity_spatial_gradient.phi_phi);
 	}
+
+
+	const GPlatesAppLogic::DeformationStrain identity_strain;
+
+	bp::tuple
+	strain_get_deformation_gradient(
+			const GPlatesAppLogic::DeformationStrain &strain)
+	{
+		const GPlatesAppLogic::DeformationStrain::DeformationGradient &deformation_gradient =
+				strain.get_deformation_gradient();
+
+		return bp::make_tuple(
+				deformation_gradient.theta_theta,
+				deformation_gradient.theta_phi,
+				deformation_gradient.phi_theta,
+				deformation_gradient.phi_phi);
+	}
 }
 
 
@@ -72,13 +90,88 @@ export_strain()
 	//
 	bp::class_<GPlatesAppLogic::DeformationStrainRate>(
 					"StrainRate",
-					"Represents the surface (2D) strain rate (in units of :math:`second^{-1}`). Strain rates are equality (``==``, ``!=``) comparable "
-					"(but not hashable - cannot be used as a key in a ``dict``).\n"
+					"The strain rate at a particular location (parcel of crust) represents the rate at which deformation occurs at that parcel of crust.\n"
+					"\n"
+					"The strain rate is represented internally by the spatial gradients of velocity :math:`\\boldsymbol L` (in units of :math:`second^{-1}`) calculated in "
+					"`spherical polar coordinates <https://www.brown.edu/Departments/Engineering/Courses/En221/Notes/Polar_Coords/Polar_Coords.htm>`_ (ignoring radial dimension):\n"
+					"\n"
+					".. math::\n"
+					"\n"
+					"   \\boldsymbol L &= \\boldsymbol v \\boldsymbol \\nabla\\\\\n"
+					"   \\begin{bmatrix} L_{\\theta\\theta} & L_{\\theta\\phi} \\\\ L_{\\phi\\theta} & L_{\\phi\\phi} \\end{bmatrix} &= "
+					"\\begin{bmatrix} \\frac{1}{R} \\frac{\\partial v_\\theta}{\\partial \\theta} & "
+					"\\frac{1}{R \\, sin(\\theta)} \\frac{\\partial v_\\theta}{\\partial \\phi} - cot(\\theta) \\frac{v_\\phi}{R}\\\\ "
+					"\\frac{1}{R} \\frac{\\partial v_\\phi}{\\partial \\theta} & "
+					"\\frac{1}{R \\, sin(\\theta)} \\frac{\\partial v_\\phi}{\\partial \\phi} + cot(\\theta) \\frac{v_\\theta}{R}\\end{bmatrix}\n"
+					"\n"
+					"...where :math:`\\boldsymbol v = (v_\\theta, v_\\phi)` is the velocity (in :math:`m / s`) in the local South-East coordinate system "
+					"at a location (:math:`\\theta, \\phi`), and :math:`R` is the :class:`Earth mean radius<Earth>` (in :math:`m`).\n"
+					"\n"
+					".. note:: The spatial gradients of velocity are calculated at an arbitrary location in a deforming network using the following procedure: "
+					"For each triangle in a deforming network's triangulation, a velocity gradient is calculated using velocities at the triangle's three vertices. "
+					"And, in the above gradient calculation, :math:`cot(\\theta)`, :math:`v_\\theta` and :math:`v_\\phi` are calculated at the triangle's centroid location. "
+					"Then each vertex in the entire triangulation is assigned a velocity spatial gradient that is an area-weighted average of the faces incident to the vertex. "
+					"Finally, the velocity spatial gradient at an arbitrary location is calculated using natural neighbour interpolation of its nearby vertices.\n"
+					"\n"
+					"The spatial gradients of velocity tensor (:math:`\\boldsymbol L`) can be decomposed into the rate-of-deformation tensor (:math:`\\boldsymbol D`) "
+					"and the vorticity (or spin) tensor (:math:`\\boldsymbol W`):\n"
+					"\n"
+					".. math::\n"
+					"\n"
+					"   \\boldsymbol L &= \\boldsymbol D + \\boldsymbol W\\\\\n"
+					"   \\boldsymbol D &= \\frac{\\boldsymbol L + \\boldsymbol{L}^T}{2}\\\\\n"
+					"   \\boldsymbol W &= \\frac{\\boldsymbol L - \\boldsymbol{L}^T}{2}\n"
+					"\n"
+					"...where :math:`D_{\\theta\\phi} = D_{\\phi\\theta}` (since the rate-of-deformation tensor :math:`\\boldsymbol D` is symmetric).\n"
+					"\n"
+					"If :math:`\\Lambda` is the stretch factor along current direction :math:`\\hat{\\boldsymbol n}` then the *rate of stretching per unit stretch* is given by:\n"
+					"\n"
+					".. math::\n"
+					"\n"
+					"   \\frac{\\dot{\\Lambda}}{\\Lambda} = \\hat{\\boldsymbol n} \\cdot \\boldsymbol D \\cdot \\hat{\\boldsymbol n}\n"
+					"\n"
+					"...where :math:`\\hat{\\boldsymbol n}` is a 2D unit vector in the local South-East coordinate system at a location (:math:`\\theta, \\phi`).\n"
+					"\n"
+					"So that means, in the local South direction (ie, :math:`\\hat{\\boldsymbol n} = (1,0)`) the *rate of stretching per unit stretch* is :math:`D_{\\theta\\theta}`, and "
+					" in the local East direction (ie, :math:`\\hat{\\boldsymbol n} = (0,1)`) it is :math:`D_{\\phi\\phi}`. These are the *diagonal* elements of :math:`\\boldsymbol D`.\n"
+					"\n"
+					"The *rate of change of angle* :math:`\\alpha` between two current directions :math:`\\hat{\\boldsymbol n}_1` and :math:`\\hat{\\boldsymbol n}_2` is given by:\n"
+					"\n"
+					".. math::\n"
+					"\n"
+					"   -\\dot{\\alpha} = \\hat{\\boldsymbol n}_1 \\cdot 2 \\boldsymbol D \\cdot \\hat{\\boldsymbol n}_2\n"
+					"\n"
+					"The *shear rate* is commonly defined as half the *rate of change of angle* between two directions that are currently *perpendicular*. "
+					"And if those directions are aligned with the local coordinate system (ie, :math:`\\hat{\\boldsymbol n}_1 = (1,0)` and :math:`\\hat{\\boldsymbol n}_2 = (0,1)`) then "
+					"the *shear rate* is :math:`D_{\\phi\\theta}` (which is the same as :math:`D_{\\theta\\phi}` since :math:`\\boldsymbol D` is symmetric). "
+					"So the symmetric *off-diagonal* elements represent the shear rate between the local coordinate axes (between South and East).\n"
+					"\n"
+					".. note:: The derivative of the Lagrangian finite strain tensor :math:`\\boldsymbol E` (see :class:`Strain`) is related to the rate-of-deformation tensor "
+					":math:`\\boldsymbol D` (and the deformation gradient tensor :math:`\\boldsymbol F` - see :class:`Strain`):\n"
+					"\n"
+					"          .. math::\n"
+					"\n"
+					"             \\dot{\\boldsymbol E} = \\boldsymbol{F}^T \\cdot \\boldsymbol D \\cdot \\boldsymbol F\n"
+					"\n"
+					"          And so the *rate of stretching per unit stretch* :math:`\\frac{\\dot{\\Lambda}_{(\\hat{\\boldsymbol N})}}{\\Lambda_{(\\hat{\\boldsymbol N})}}` "
+					"can be specified using a direction :math:`\\hat{\\boldsymbol N}` in the *initial* configuration (eg, at a time before deformation began):.\n"
+					"\n"
+					"          .. math::\n"
+					"\n"
+					"             \\frac{\\dot{\\Lambda}_{(\\hat{\\boldsymbol N})}}{\\Lambda_{(\\hat{\\boldsymbol N})}} = "
+					"\\frac{\\hat{\\boldsymbol N} \\cdot \\dot{\\boldsymbol E} \\cdot \\hat{\\boldsymbol N}}{\\hat{\\boldsymbol N} \\cdot \\boldsymbol C \\cdot \\hat{\\boldsymbol N}}\n"
+					"\n"
+					"          ...rather than using a direction :math:`\\hat{\\boldsymbol n}` in the *current* configuration with "
+					":math:`\\frac{\\dot{\\Lambda}_{(\\hat{\\boldsymbol n})}}{\\Lambda_{(\\hat{\\boldsymbol n})}} = "
+					"\\hat{\\boldsymbol n} \\cdot \\boldsymbol D \\cdot \\hat{\\boldsymbol n}`. "
+					"Note that :math:`\\boldsymbol C` is the Lagrangian deformation tensor (see :class:`Strain`).\n"
 					"\n"
 					"References:\n"
 					"\n"
 					"- Malvern, L. E. (1969). `Introduction to the mechanics of a continuous medium. <http://books.google.com/books?id=IIMpAQAAMAAJ>`_ Prentice-Hall.\n"
 					"- Mase, G.T., Smelser, R.E., & Mase, G.E. (2010). `Continuum Mechanics for Engineers <https://doi.org/10.1201/9781420085396>`_ (3rd ed.). CRC Press.\n"
+					"\n"
+					"Strain rates are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).\n"
 					"\n"
 					"Convenience class static data is available for the zero strain rate:\n"
 					"\n"
@@ -88,6 +181,11 @@ export_strain()
 					"\n"
 					".. versionadded:: 0.46\n",
 					bp::init<>(
+							// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
+							"__init__(...)\n"
+							"A *StrainRate* object can be constructed in more than one way...\n"
+							"\n"
+							// Specific overload signature...
 							"__init__()\n"
 							"  Construct a zero strain rate (non-deforming).\n"
 							"\n"
@@ -96,6 +194,26 @@ export_strain()
 							"    zero_strain_rate = pygplates.StrainRate()\n"
 							"\n"
 							"  .. note:: Alternatively you can use ``zero_strain_rate = pygplates.StrainRate.zero``.\n"))
+		.def(bp::init<double,double,double,double>(
+				(bp::arg("velocity_gradient_theta_theta"), bp::arg("velocity_gradient_theta_phi"), bp::arg("velocity_gradient_phi_theta"), bp::arg("velocity_gradient_phi_phi")),
+				// Specific overload signature...
+				"__init__(velocity_gradient_theta_theta,, velocity_gradient_theta_phi, velocity_gradient_phi_theta, velocity_gradient_phi_phi)\n"
+				"  Create from the spatial gradients of velocity :math:`\\boldsymbol L` (in units of :math:`second^{-1}`) in spherical polar coordinates (ignoring radial dimension).\n"
+				"\n"
+				"  .. math::\n"
+				"\n"
+				"     \\boldsymbol L = \\begin{bmatrix} L_{\\theta\\theta} & L_{\\theta\\phi} \\\\ L_{\\phi\\theta} & L_{\\phi\\phi} \\end{bmatrix}\n"
+				"\n"
+				"  :param velocity_gradient_theta_theta: :math:`L_{\\theta\\theta}`\n"
+				"  :type velocity_gradient_theta_theta: float\n"
+				"  :param velocity_gradient_theta_phi: :math:`L_{\\theta\\phi}`\n"
+				"  :type velocity_gradient_theta_phi: float\n"
+				"  :param velocity_gradient_phi_theta: :math:`L_{\\phi\\theta}`\n"
+				"  :type velocity_gradient_phi_theta: float\n"
+				"  :param velocity_gradient_phi_phi: :math:`L_{\\phi\\phi}`\n"
+				"  :type velocity_gradient_phi_phi: float\n"
+				"\n"
+				"  .. seealso:: :meth:`get_velocity_spatial_gradient` for the spatial gradients of velocity in spherical polar coordinates\n"))
 		// Pickle support...
 		//
 		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
@@ -107,14 +225,14 @@ export_strain()
 		.def("get_dilatation_rate",
 				&GPlatesAppLogic::DeformationStrainRate::get_strain_rate_dilatation,
 				"get_dilatation_rate()\n"
-				"  Return the dilatation rate (in units of :math:`second^{-1}`).\n"
+				"  Return the rate of change of crustal area per unit area (in units of :math:`second^{-1}`).\n"
 				"\n"
 				"  :rtype: float\n"
 				"\n"
 				"  The dilatation rate is the rate of increase (if positive) or decrease (if negative) of crustal area per unit area at the current location "
 				"(at which this strain rate was calculated).\n"
 				"\n"
-				"  It is defined as the `trace` of the :meth:`rate-of-deformation tensor<get_rate_of_deformation>` (sum of its diagonal elements). "
+				"  The dilatation rate is defined as the `trace` of the :meth:`rate-of-deformation tensor<get_rate_of_deformation>` :math:`\\boldsymbol D` (sum of its diagonal elements). "
 				"So if we define :math:`A` as the area of a parcel of crust at the current location, then the dilatation rate is the "
 				"*rate of change of area per unit area*, and is given by:\n"
 				"\n"
@@ -130,7 +248,7 @@ export_strain()
 				"  .. note:: The dilatation rate is *invariant* with respect to the local coordinate axes (South and East) since :math:`trace(\\boldsymbol D)` is "
 				"the *first invariant* of :math:`\\boldsymbol D` (see Chapter 3.6 in `Continuum Mechanics for Engineers <https://doi.org/10.1201/9781420085396>`_).\n"
 				"\n"
-				"  .. note:: As shown for the :meth:`rate-of-deformation tensor<get_rate_of_deformation>` :math:`\\boldsymbol D`, the *rate of stretching per unit stretch* "
+				"  .. note:: As :class:`shown for the rate-of-deformation tensor<StrainRate>` :math:`\\boldsymbol D`, the *rate of stretching per unit stretch* "
 				"along the local coordinate South and East axes are the *diagonal* elements :math:`D_{\\theta\\theta}` and :math:`D_{\\phi\\phi}` "
 				"(which are included in :math:`trace(\\boldsymbol D)`). And the *off-diagonal* elements determine the instantaneous shear rate which does not affect "
 				"expansion/contraction (and is excluded from :math:`trace(\\boldsymbol D))`.\n")
@@ -143,7 +261,7 @@ export_strain()
 				"\n"
 				"  The total strain rate represents the magnitude, including both the normal (extension/compression) and shear components, of strain rate.\n"
 				"\n"
-				"  It is defined in terms of the :meth:`rate-of-deformation symmetric tensor<get_rate_of_deformation>` :math:`\\boldsymbol D` as:\n"
+				"  The total strain rate is defined in terms of the :meth:`rate-of-deformation symmetric tensor<get_rate_of_deformation>` :math:`\\boldsymbol D` as:\n"
 				"\n"
 				"  .. math::\n"
 				"\n"
@@ -198,43 +316,7 @@ export_strain()
 				"  :returns: the tuple of :math:`(D_{\\theta\\theta}, D_{\\theta\\phi}, D_{\\phi\\theta}, D_{\\phi\\phi})`\n"
 				"  :rtype: tuple (float, float, float, float)\n"
 				"\n"
-				"  .. note:: :math:`\\theta` is **co**-latitude and hence increases from North to South (and :math:`\\phi` increases from West to East, as expected).\n"
-				"\n"
-				"  The rate-of-deformation tensor (:math:`\\boldsymbol D`) is related to the spatial gradients of velocity tensor (:math:`\\boldsymbol L`):\n"
-				"\n"
-				"  .. math::\n"
-				"\n"
-				"     \\boldsymbol D = \\frac{\\boldsymbol L + \\boldsymbol{L}^T}{2}\n"
-				"\n"
-				"  ...and therefore :math:`D_{\\theta\\phi} = D_{\\phi\\theta}` (since :math:`\\boldsymbol D` is symmetric).\n"
-				"\n"
-				"  If :math:`\\Lambda` is the stretch ratio along current direction :math:`\\hat{\\boldsymbol n}` then the "
-				"*rate of stretching per unit stretch* is given by:\n"
-				"\n"
-				"  .. math::\n"
-				"\n"
-				"     \\frac{\\dot{\\Lambda}}{\\Lambda} = \\hat{\\boldsymbol n} \\cdot \\boldsymbol D \\cdot \\hat{\\boldsymbol n}\n"
-				"\n"
-				"  ...where :math:`\\hat{\\boldsymbol n}` is a 2D unit vector in the local South-East (:math:`\\theta, \\phi`) coordinate system "
-				"at the current location (at which this strain rate was calculated).\n"
-				"\n"
-				"  So that means, in the local South direction (ie, :math:`\\hat{\\boldsymbol n} = (1,0)`) the *rate of stretching per unit stretch* is :math:`D_{\\theta\\theta}`, and "
-				" in the local East direction (ie, :math:`\\hat{\\boldsymbol n} = (0,1)`) it is :math:`D_{\\phi\\phi}`. These are the *diagonal* elements of :math:`\\boldsymbol D`.\n"
-				"\n"
-				"  The *rate of change of angle* :math:`\\alpha` between two current directions :math:`\\hat{\\boldsymbol n_1}` and :math:`\\hat{\\boldsymbol n_2}` is given by:\n"
-				"\n"
-				"  .. math::\n"
-				"\n"
-				"     -\\dot{\\alpha} = \\hat{\\boldsymbol n_1} \\cdot 2 \\boldsymbol D \\cdot \\hat{\\boldsymbol n_2}\n"
-				"\n"
-				"  The *shear rate* is commonly defined as half the *rate of change of angle* between two directions that are currently *perpendicular*. "
-				"And if those directions are aligned with the local coordinate system (ie, :math:`\\hat{\\boldsymbol n_1} = (1,0)` and :math:`\\hat{\\boldsymbol n_2} = (0,1)`) then "
-				"the *shear rate* is :math:`D_{\\phi\\theta}` (which is the same as :math:`D_{\\theta\\phi}` since :math:`\\boldsymbol D` is symmetric). "
-				"So the symmetric *off-diagonal* elements represent the shear rate between the local coordinate axes (between South and East).\n"
-				"\n"
-				"  .. seealso::\n"
-				"\n"
-				"     Chapter 4.10 in `Continuum Mechanics for Engineers <https://doi.org/10.1201/9781420085396>`_ for a derivation of these equations.\n")
+				"  .. note:: :math:`\\theta` is **co**-latitude and hence increases from North to South (and :math:`\\phi` increases from West to East, as expected).\n")
 		.def("get_velocity_spatial_gradient",
 				&GPlatesApi::strain_rate_get_velocity_spatial_gradient,
 				"get_velocity_spatial_gradient()\n"
@@ -247,16 +329,7 @@ export_strain()
 				"  :returns: the tuple of :math:`(L_{\\theta\\theta}, L_{\\theta\\phi}, L_{\\phi\\theta}, L_{\\phi\\phi})`\n"
 				"  :rtype: tuple (float, float, float, float)\n"
 				"\n"
-				"  .. note:: :math:`\\theta` is **co**-latitude and hence increases from North to South (and :math:`\\phi` increases from West to East, as expected).\n"
-				"\n"
-				"  The spatial gradients of velocity tensor (:math:`\\boldsymbol L`) can be decomposed into the rate-of-deformation tensor (:math:`\\boldsymbol D`) "
-				"and the vorticity (or spin) tensor (:math:`\\boldsymbol W`):\n"
-				"\n"
-				"  .. math::\n"
-				"\n"
-				"     \\boldsymbol L &= \\boldsymbol D + \\boldsymbol W\\\\\n"
-				"     \\boldsymbol D &= \\frac{\\boldsymbol L + \\boldsymbol{L}^T}{2}\\\\\n"
-				"     \\boldsymbol W &= \\frac{\\boldsymbol L - \\boldsymbol{L}^T}{2}\n")
+				"  .. note:: :math:`\\theta` is **co**-latitude and hence increases from North to South (and :math:`\\phi` increases from West to East, as expected).\n")
 		// Comparisons...
 		// Due to the numerical tolerance in comparisons we cannot make hashable.
 		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
@@ -270,4 +343,277 @@ export_strain()
 
 	// Enable boost::optional<StrainRate> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesAppLogic::DeformationStrainRate>();
+
+
+	//
+	// Strain - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<GPlatesAppLogic::DeformationStrain>(
+					"Strain",
+					"\n"
+					"The strain at a particular location (parcel of crust) is tracked over time and represents the accumulated deformation undergone by that parcel of crust.\n"
+					"\n"
+					"The strain is represented internally by the deformation *gradient* :math:`\\boldsymbol F`, which is a tensor that transforms a direction :math:`\\hat{\\boldsymbol N}` "
+					"in the initial configuration (eg, at a time before deformation began) to a direction :math:`\\hat{\\boldsymbol n}` in the current configuration "
+					"(eg, at a time during or after deformation), and stretches it by a factor of :math:`\\Lambda`:\n"
+					"\n"
+					".. math::\n"
+					"\n"
+					"   \\hat{\\boldsymbol n} \\Lambda = \\boldsymbol F \\cdot \\hat{\\boldsymbol N}\n"
+					"\n"
+					"The *Lagrangian* deformation tensor :math:`\\boldsymbol C` is defined in terms of the deformation gradient tensor :math:`\\boldsymbol F`:\n"
+					"\n"
+					".. math::\n"
+					"\n"
+					"   \\boldsymbol C = \\boldsymbol{F}^T \\cdot \\boldsymbol F\n"
+					"\n"
+					"...and determines the stretch factor :math:`\\Lambda_{(\\hat{\\boldsymbol N})}` given a direction :math:`\\hat{\\boldsymbol N}` in the *initial* configuration:\n"
+					"\n"
+					".. math::\n"
+					"\n"
+					"   \\Lambda_{(\\hat{\\boldsymbol N})} = \\sqrt{\\hat{\\boldsymbol N} \\cdot \\boldsymbol C \\cdot \\hat{\\boldsymbol N}}\n"
+					"\n"
+					"The *Eulerian* deformation tensor :math:`\\boldsymbol c` is also defined in terms of the deformation gradient tensor :math:`\\boldsymbol F`:\n"
+					"\n"
+					".. math::\n"
+					"\n"
+					"   \\boldsymbol c = (\\boldsymbol{F}^{-1})^T \\cdot \\boldsymbol{F}^{-1}\n"
+					"\n"
+					"...and determines the stretch factor :math:`\\Lambda_{(\\hat{\\boldsymbol n})}` given a direction :math:`\\hat{\\boldsymbol n}` in the *current* configuration:\n"
+					"\n"
+					".. math::\n"
+					"\n"
+					"   \\frac{1}{\\Lambda_{(\\hat{\\boldsymbol n})}} = \\sqrt{\\hat{\\boldsymbol n} \\cdot \\boldsymbol c \\cdot \\hat{\\boldsymbol n}}\n"
+					"\n"
+					".. note:: These stretch factors (:math:`\\Lambda_{(\\hat{\\boldsymbol N})}` and :math:`\\Lambda_{(\\hat{\\boldsymbol n})}`) are stretches along "
+					"the surface direction, not the depth direction (as is the case with crustal thinning). Although surface stretch is used to determine crustal thinning "
+					"(obtained by passing ``pygplates.ScalarType.gpml_crustal_stretching_factor`` to :meth:`ReconstructedGeometryTimeSpan.get_scalar_values` returned by "
+					":meth:`TopologicalModel.reconstruct_geometry`).\n"
+					"\n"
+					"The *normal* strain is the change in length per unit *initial* length in a given direction, and is the stretch factor minus one. "
+					"For a direction :math:`\\hat{\\boldsymbol N}` in the *initial* configuration, the normal strain is:\n"
+					"\n"
+					".. math::\n"
+					"\n"
+					"   e_{(\\hat{\\boldsymbol N})} &= \\Lambda_{(\\hat{\\boldsymbol N})} - 1\\\\\n"
+					"                               &= \\sqrt{\\hat{\\boldsymbol N} \\cdot \\boldsymbol C \\cdot \\hat{\\boldsymbol N}} - 1\n"
+					"\n"
+					"And for a direction :math:`\\hat{\\boldsymbol n}` in the *current* configuration, the normal strain is:\n"
+					"\n"
+					".. math::\n"
+					"\n"
+					"   e_{(\\hat{\\boldsymbol n})} &= \\Lambda_{(\\hat{\\boldsymbol n})} - 1\\\\\n"
+					"                               &= \\frac{1}{\\sqrt{\\hat{\\boldsymbol n} \\cdot \\boldsymbol c \\cdot \\hat{\\boldsymbol n}}} - 1\n"
+					"\n"
+					"The *Lagrangian* finite strain tensor :math:`\\boldsymbol E` is defined in terms of the *Lagrangian* deformation tensor :math:`\\boldsymbol C`:\n"
+					"\n"
+					".. math::\n"
+					"\n"
+					"   \\boldsymbol E = \\frac{1}{2} (\\boldsymbol C - \\boldsymbol I)\n"
+					"\n"
+					"...and it's called a *strain tensor* because for very small strains the normal strain :math:`e_{(\\hat{\\boldsymbol N})}` can be approximated as:\n"
+					"\n"
+					".. math::\n"
+					"\n"
+					"   e_{(\\hat{\\boldsymbol N})} \\simeq \\hat{\\boldsymbol N} \\cdot \\boldsymbol E \\cdot \\hat{\\boldsymbol N}\n"
+					"\n"
+					"The for the *Eulerian* finite strain tensor :math:`\\boldsymbol e`:\n"
+					"\n"
+					".. math::\n"
+					"\n"
+					"   \\boldsymbol e = \\frac{1}{2} (\\boldsymbol I - \\boldsymbol c)\n"
+					"\n"
+					"...and for very small strains the normal strain :math:`e_{(\\hat{\\boldsymbol n})}` can be approximated as:\n"
+					"\n"
+					".. math::\n"
+					"\n"
+					"   e_{(\\hat{\\boldsymbol n})} \\simeq \\frac{\\hat{\\boldsymbol n} \\cdot \\boldsymbol e \\cdot \\hat{\\boldsymbol n}}"
+					"{\\hat{\\boldsymbol n} \\cdot \\boldsymbol c \\cdot \\hat{\\boldsymbol n}}\n"
+					"\n"
+					"The *angle* :math:`\\alpha` between two directions in the *current* configuration that were originally in the directions "
+					":math:`\\hat{\\boldsymbol N}_1` and :math:`\\hat{\\boldsymbol N}_2` in the *initial* configuration is given by:\n"
+					"\n"
+					".. math::\n"
+					"\n"
+					"   \\cos{\\alpha} = \\frac{\\hat{\\boldsymbol N}_1 \\cdot \\boldsymbol C \\cdot \\hat{\\boldsymbol N}_2}"
+					"{\\Lambda_{(\\hat{\\boldsymbol N}_1)} \\Lambda_{(\\hat{\\boldsymbol N}_2)}}\n"
+					"\n"
+					"...and the *angle* :math:`A` between two directions in the *initial* configuration that are currently in the directions "
+					":math:`\\hat{\\boldsymbol n}_1` and :math:`\\hat{\\boldsymbol n}_2` in the *current* configuration is given by:\n"
+					"\n"
+					".. math::\n"
+					"\n"
+					"   \\cos{A} = \\Lambda_{(\\hat{\\boldsymbol n}_1)} \\Lambda_{(\\hat{\\boldsymbol n}_2)} "
+					"(\\hat{\\boldsymbol n}_1 \\cdot \\boldsymbol c \\cdot \\hat{\\boldsymbol n}_2)\n"
+					"\n"
+					"References:\n"
+					"\n"
+					"- Malvern, L. E. (1969). `Introduction to the mechanics of a continuous medium. <http://books.google.com/books?id=IIMpAQAAMAAJ>`_ Prentice-Hall.\n"
+					"- Mase, G.T., Smelser, R.E., & Mase, G.E. (2010). `Continuum Mechanics for Engineers <https://doi.org/10.1201/9781420085396>`_ (3rd ed.). CRC Press.\n"
+					"\n"
+					"Strains are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).\n"
+					"\n"
+					"Convenience class static data is available for the identity strain:\n"
+					"\n"
+					"* ``pygplates.Strain.identity``\n"
+					"\n"
+					"A *Strain* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionadded:: 0.46\n",
+					bp::init<>(
+							// General overloaded signature (must be in first overloaded 'def' - used by Sphinx)...
+							"__init__(...)\n"
+							"A *Strain* object can be constructed in more than one way...\n"
+							"\n"
+							// Specific overload signature...
+							"__init__()\n"
+							"  Construct an identity strain (no deformation).\n"
+							"\n"
+							"  ::\n"
+							"\n"
+							"    identity_strain = pygplates.Strain()\n"
+							"\n"
+							"  .. note:: Alternatively you can use ``identity_strain = pygplates.Strain.identity``.\n"))
+		.def(bp::init<double,double,double,double>(
+				(bp::arg("deformation_gradient_theta_theta"), bp::arg("deformation_gradient_theta_phi"), bp::arg("deformation_gradient_phi_theta"), bp::arg("deformation_gradient_phi_phi")),
+				// Specific overload signature...
+				"__init__(deformation_gradient_theta_theta,, deformation_gradient_theta_phi, deformation_gradient_phi_theta, deformation_gradient_phi_phi)\n"
+				"  Create from the deformation gradient :math:`\\boldsymbol F` in spherical polar coordinates (ignoring radial dimension).\n"
+				"\n"
+				"  .. math::\n"
+				"\n"
+				"     \\boldsymbol F = \\begin{bmatrix} F_{\\theta\\theta} & F_{\\theta\\phi} \\\\ F_{\\phi\\theta} & F_{\\phi\\phi} \\end{bmatrix}\n"
+				"\n"
+				"  :param deformation_gradient_theta_theta: :math:`F_{\\theta\\theta}`\n"
+				"  :type deformation_gradient_theta_theta: float\n"
+				"  :param deformation_gradient_theta_phi: :math:`F_{\\theta\\phi}`\n"
+				"  :type deformation_gradient_theta_phi: float\n"
+				"  :param deformation_gradient_phi_theta: :math:`F_{\\phi\\theta}`\n"
+				"  :type deformation_gradient_phi_theta: float\n"
+				"  :param deformation_gradient_phi_phi: :math:`F_{\\phi\\phi}`\n"
+				"  :type deformation_gradient_phi_phi: float\n"
+				"\n"
+				"  .. seealso:: :meth:`get_deformation_gradient`\n"
+				"\n"
+				"  .. note:: Typically you wouldn't need this since you can start with no deformation (``pygplates.Strain.identity``) at the initial time "
+				"and use :meth:`accumulate` to incrementally update strain over time using your own calculations of :class:`strain rate <StrainRate>`.\n"))
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesAppLogic::DeformationStrain>>())
+		// Static property 'pygplates.Strain.identity'...
+		.def_readonly("identity", GPlatesApi::identity_strain)
+		.def("get_dilatation",
+				&GPlatesAppLogic::DeformationStrain::get_strain_dilatation,
+				"get_dilatation()\n"
+				"  Return the change in crustal area with respect to the original area.\n"
+				"\n"
+				"  :rtype: float\n"
+				"\n"
+				"  The dilatation is the increase (if positive) or decrease (if negative) of crustal area with respect to the original area in the initial configuration "
+				"(eg, at a time before deformation began).\n"
+				"\n"
+				"  The dilatation is defined as the determinant of the :meth:`deformation gradient tensor <get_deformation_gradient>` :math:`\\boldsymbol F` minus one. "
+				"So if we define :math:`A` as the original area of a parcel of crust in the initial configuration, then the dilatation is given by:\n"
+				"\n"
+				"  .. math::\n"
+				"\n"
+				"     \\frac{\\Delta A}{A} = \\det \\boldsymbol F - 1\n"
+				"\n"
+				"  .. seealso::\n"
+				"\n"
+				"     Chapter 4.11 in `Continuum Mechanics for Engineers <https://doi.org/10.1201/9781420085396>`_ for a derivation of the change in volume. "
+				"We ignore the radial dimension, hence volume becomes area.\n"
+				"\n"
+				"  .. note:: The dilatation is *invariant* with respect to the local coordinate axes (South and East) since :math:`\\det \\boldsymbol F` is "
+				"the *third invariant* of :math:`\\boldsymbol F` (see Chapter 3.6 in `Continuum Mechanics for Engineers <https://doi.org/10.1201/9781420085396>`_).\n")
+		.def("get_deformation_gradient",
+				&GPlatesApi::strain_get_deformation_gradient,
+				"get_deformation_gradient()\n"
+				"  Return the deformation gradient tensor :math:`\\boldsymbol F` in spherical polar coordinates (ignoring radial dimension).\n"
+				"\n"
+				"  .. math::\n"
+				"\n"
+				"     \\boldsymbol F = \\begin{bmatrix} F_{\\theta\\theta} & F_{\\theta\\phi} \\\\ F_{\\phi\\theta} & F_{\\phi\\phi} \\end{bmatrix}\n"
+				"\n"
+				"  :returns: the tuple of :math:`(F_{\\theta\\theta}, F_{\\theta\\phi}, F_{\\phi\\theta}, F_{\\phi\\phi})`\n"
+				"  :rtype: tuple (float, float, float, float)\n"
+				"\n"
+				"  .. note:: :math:`\\theta` is **co**-latitude and hence increases from North to South (and :math:`\\phi` increases from West to East, as expected).\n")
+		.def("accumulate",
+				&GPlatesAppLogic::accumulate_strain,
+				(bp::arg("previous_strain"), bp::arg("previous_strain_rate"), bp::arg("current_strain_rate"), bp::arg("time_increment")),
+				"accumulate(previous_strain, previous_strain_rate, current_strain_rate, time_increment)\n"
+				// Documenting 'staticmethod' here since Sphinx cannot introspect boost-python function
+				// (like it can a pure python function) and we cannot document it in first (signature) line
+				// because it messes up Sphinx's signature recognition...
+				"  [*staticmethod*] Accumulate previous strain using both previous and current strain rates (in units of :math:`second^{-1}`) "
+				"over a time increment (in units of :math:`second`).\n"
+				"\n"
+				"  :param previous_strain: the *previous* strain\n"
+				"  :type previous_strain: :class:`Strain`\n"
+				"  :param previous_strain_rate: the *previous* strain rate\n"
+				"  :type previous_strain_rate: :class:`StrainRate`\n"
+				"  :param current_strain_rate: the *current* strain rate\n"
+				"  :type current_strain_rate: :class:`StrainRate`\n"
+				"  :param time_increment: the time increment to accumulate strain over (in units of :math:`second^{-1}`)\n"
+				"  :type time_increment: float\n"
+				"  :returns: the *current* strain (accumulated from *previous* strain)\n"
+				"  :rtype: :class:`Strain`\n"
+				"\n"
+				"  To accumulate strain from an initial undeformed state at 100Ma to its final deformed strain at present day:\n"
+				"  ::\n"
+				"\n"
+				"    time_increment_1myr_in_seconds = 1e6 * 365 * 24 * 60 * 60\n"
+				"    previous_strain = pygplates.Strain.identity\n"
+				"    previous_strain_rate = pygplates.StrainRate.zero\n"
+				"\n"
+				"    for time in range(100, -1, -1):\n"
+				"        current_strain_rate = pygplates.StrainRate(...)\n"
+				"        current_strain = pygplates.Strain.accumulate(previous_strain,\n"
+				"            previous_strain_rate, current_strain_rate, time_increment_1myr_in_seconds)\n"
+				"\n"
+				"        previous_strain = current_strain\n"
+				"        previous_strain_rate = current_strain_rate\n"
+				"\n"
+				"  Strain is accumulated by integrating the ordinary differential equation defining the rate of change of the deformation gradient "
+				":math:`\\boldsymbol F` in terms of the :meth:`spatial gradients of velocity <StrainRate.get_velocity_spatial_gradient>` :math:`\\boldsymbol L`:\n"
+				"\n"
+				"  .. math::\n"
+				"\n"
+				"     \\dot{\\boldsymbol F} = \\boldsymbol L \\cdot \\boldsymbol F\n"
+				"\n"
+				"  ...which is approximated using the central differencing scheme over a time increment :math:`\\Delta t`:\n"
+				"\n"
+				"  .. math::\n"
+				"\n"
+				"     \\frac{\\boldsymbol{F}_{t + \\Delta t} - \\boldsymbol{F}}{\\Delta t} = "
+				"\\frac{\\boldsymbol{L}_{t + \\Delta t} \\boldsymbol{F}_{t + \\Delta t} + \\boldsymbol{L}_{t} \\boldsymbol{F}_{t}}{2}\n"
+				"\n"
+				"  ...which rearranges to become (in matrix form, with identity matrix :math:`\\boldsymbol I`):\n"
+				"\n"
+				"  .. math::\n"
+				"\n"
+				"     \\boldsymbol{F}_{t + \\Delta t} = (\\boldsymbol I - \\boldsymbol{L}_{t + \\Delta t} \\frac{\\Delta t}{2})^{-1} "
+				"(\\boldsymbol I + \\boldsymbol{L}_{t} \\frac{\\Delta t}{2}) \\boldsymbol{F}_{t}\n"
+				"\n"
+				"  ...where :math:`\\Delta t` is *time_increment*, "
+				":math:`\\boldsymbol{L}_{t}` is *previous_strain_rate*, :math:`\\boldsymbol{L}_{t + \\Delta t}` is *current_strain_rate*, "
+				":math:`\\boldsymbol{F}_{t}` is *previous_strain* and :math:`\\boldsymbol{F}_{t + \\Delta t}` is returned by this function.\n")
+		.staticmethod("accumulate")
+		// Comparisons...
+		// Due to the numerical tolerance in comparisons we cannot make hashable.
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, true))
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
+		// Generate '__str__' from 'operator<<'...
+		// Note: Seems we need to qualify with 'self_ns::' to avoid MSVC compile error.
+		.def(bp::self_ns::str(bp::self))
+	;
+
+	// Enable boost::optional<Strain> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesAppLogic::DeformationStrain>();
 }
