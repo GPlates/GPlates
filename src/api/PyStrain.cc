@@ -24,6 +24,8 @@
 #include "app-logic/DeformationStrain.h"
 #include "app-logic/DeformationStrainRate.h"
 
+#include "maths/MathsUtils.h"
+
 #include "global/python.h"
 
 
@@ -64,7 +66,71 @@ namespace GPlatesApi
 	}
 
 
+	/**
+	 * How to define a principal angle relative to the local spherical polar coordinate system.
+	 */
+	enum class PrincipalAngleType
+	{
+		//! -180 to +180 degrees anti-clockwise from North; 0 is South.
+		MAJOR_SOUTH,
+
+		//! -180 to +180 degrees anti-clockwise from West; 0 is East.
+		MAJOR_EAST,
+
+		//! 0 to 360 degrees clockwise from North; 0 is North.
+		MAJOR_AZIMUTH
+	};
+
 	const GPlatesAppLogic::DeformationStrain identity_strain;
+
+	bp::tuple
+	strain_get_principal_strain(
+			const GPlatesAppLogic::DeformationStrain &strain,
+			PrincipalAngleType principal_angle_type)
+	{
+		const GPlatesAppLogic::DeformationStrain::StrainPrincipal &strain_principal =
+				strain.get_strain_principal();
+
+		double major_principal_angle;
+		switch (principal_angle_type)
+		{
+		case PrincipalAngleType::MAJOR_SOUTH:
+			// Angle remains unchanged.
+			major_principal_angle = strain_principal.angle;
+			break;
+		case PrincipalAngleType::MAJOR_EAST:
+			// Convert angle such that -pi to +pi radians is counter-clockwise from West and 0 is East.
+			major_principal_angle = strain_principal.angle - GPlatesMaths::HALF_PI;
+			// Make sure in range [-pi, pi].
+			if (major_principal_angle > GPlatesMaths::PI)
+			{
+				major_principal_angle -= 2 * GPlatesMaths::PI;
+			}
+			else if (major_principal_angle < -GPlatesMaths::PI)
+			{
+				major_principal_angle += 2 * GPlatesMaths::PI;
+			}
+			break;
+		case PrincipalAngleType::MAJOR_AZIMUTH:
+			// Convert angle such that 0 to 2pi radians clockwise from North and 0 is North.
+			major_principal_angle = GPlatesMaths::PI - strain_principal.angle;
+			// Make sure in range [0, 2pi].
+			if (major_principal_angle > 2 * GPlatesMaths::PI)
+			{
+				major_principal_angle -= 2 * GPlatesMaths::PI;
+			}
+			else if (major_principal_angle < 0.0)
+			{
+				major_principal_angle += 2 * GPlatesMaths::PI;
+			}
+			break;
+		}
+
+		return bp::make_tuple(
+				strain_principal.principal1,
+				strain_principal.principal2,
+				major_principal_angle);
+	}
 
 	bp::tuple
 	strain_get_deformation_gradient(
@@ -85,6 +151,16 @@ namespace GPlatesApi
 void
 export_strain()
 {
+	// An enumeration for the type of principal angle.
+	bp::enum_<GPlatesApi::PrincipalAngleType>("PrincipalAngleType")
+			.value("major_south", GPlatesApi::PrincipalAngleType::MAJOR_SOUTH)
+			.value("major_east", GPlatesApi::PrincipalAngleType::MAJOR_EAST)
+			.value("major_azimuth", GPlatesApi::PrincipalAngleType::MAJOR_AZIMUTH);
+
+	// Enable boost::optional<GPlatesApi::PrincipalAngleType> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::PrincipalAngleType>();
+
+
 	//
 	// StrainRate - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
@@ -100,18 +176,19 @@ export_strain()
 					"   \\boldsymbol L &= \\boldsymbol v \\boldsymbol \\nabla\\\\\n"
 					"   \\begin{bmatrix} L_{\\theta\\theta} & L_{\\theta\\phi} \\\\ L_{\\phi\\theta} & L_{\\phi\\phi} \\end{bmatrix} &= "
 					"\\begin{bmatrix} \\frac{1}{R} \\frac{\\partial v_\\theta}{\\partial \\theta} & "
-					"\\frac{1}{R \\, sin(\\theta)} \\frac{\\partial v_\\theta}{\\partial \\phi} - cot(\\theta) \\frac{v_\\phi}{R}\\\\ "
+					"\\frac{1}{R \\, \\sin{\\theta}} \\frac{\\partial v_\\theta}{\\partial \\phi} - \\cot{\\theta} \\frac{v_\\phi}{R}\\\\ "
 					"\\frac{1}{R} \\frac{\\partial v_\\phi}{\\partial \\theta} & "
-					"\\frac{1}{R \\, sin(\\theta)} \\frac{\\partial v_\\phi}{\\partial \\phi} + cot(\\theta) \\frac{v_\\theta}{R}\\end{bmatrix}\n"
+					"\\frac{1}{R \\, \\sin{\\theta}} \\frac{\\partial v_\\phi}{\\partial \\phi} + \\cot{\\theta} \\frac{v_\\theta}{R}\\end{bmatrix}\n"
 					"\n"
 					"...where :math:`\\boldsymbol v = (v_\\theta, v_\\phi)` is the velocity (in :math:`m / s`) in the local South-East coordinate system "
 					"at a location (:math:`\\theta, \\phi`), and :math:`R` is the :class:`Earth mean radius<Earth>` (in :math:`m`).\n"
 					"\n"
-					".. note:: The spatial gradients of velocity are calculated at an arbitrary location in a deforming network using the following procedure: "
-					"For each triangle in a deforming network's triangulation, a velocity gradient is calculated using velocities at the triangle's three vertices. "
-					"And, in the above gradient calculation, :math:`cot(\\theta)`, :math:`v_\\theta` and :math:`v_\\phi` are calculated at the triangle's centroid location. "
-					"Then each vertex in the entire triangulation is assigned a velocity spatial gradient that is an area-weighted average of the faces incident to the vertex. "
-					"Finally, the velocity spatial gradient at an arbitrary location is calculated using natural neighbour interpolation of its nearby vertices.\n"
+					".. note:: | The velocity spatial gradient :math:`\\boldsymbol L` is calculated at an arbitrary location in a deforming network using the following procedure:\n"
+					"\n"
+					"          | For each triangle in a deforming network's triangulation, an :math:`\\boldsymbol L` is calculated using velocities at the triangle's three vertices "
+					"(and, in the above gradient calculation, :math:`\\cot{\\theta}`, :math:`v_\\theta` and :math:`v_\\phi` are calculated at the triangle's centroid location). "
+					"Then each vertex in the entire triangulation is assigned an :math:`\\boldsymbol L` that is an area-weighted average of :math:`\\boldsymbol L`'s from faces incident to the vertex. "
+					"Finally, :math:`\\boldsymbol L` at the arbitrary location is calculated using natural neighbour interpolation of :math:`\\boldsymbol L`'s from its nearby vertices.\n"
 					"\n"
 					"The spatial gradients of velocity tensor (:math:`\\boldsymbol L`) can be decomposed into the rate-of-deformation tensor (:math:`\\boldsymbol D`) "
 					"and the vorticity (or spin) tensor (:math:`\\boldsymbol W`):\n"
@@ -529,6 +606,71 @@ export_strain()
 				"\n"
 				"  .. note:: The dilatation is *invariant* with respect to the local coordinate axes (South and East) since :math:`\\det \\boldsymbol F` is "
 				"the *third invariant* of :math:`\\boldsymbol F` (see Chapter 3.6 in `Continuum Mechanics for Engineers <https://doi.org/10.1201/9781420085396>`_).\n")
+		.def("get_principal_strain",
+				&GPlatesApi::strain_get_principal_strain,
+				(bp::arg("principal_angle_type") = GPlatesApi::PrincipalAngleType::MAJOR_SOUTH),
+				"get_principal_strain([principal_angle_type=PrincipalAngleType.major_south])\n"
+				"  Return the maximum and minimum strains (along principal axes), and the angle of the major principal axis.\n"
+				"\n"
+				"  :param principal_angle_type: how the angle of the major principal axis is defined relative to the local coordinate system "
+				"(defaults to *PrincipalAngleType.major_south*)\n"
+				"  :type principal_angle_type: *PrincipalAngleType.major_south*, *PrincipalAngleType.major_east* or *PrincipalAngleType.major_azimuth*\n"
+				"  :returns: the tuple of maximum strain, minimum strain and major axis angle :math:`(e_{(1)}, e_{(2)}, \\alpha)`\n"
+				"  :rtype: tuple (float, float, float)\n"
+				"\n"
+				"  *principal_angle_type* supports the following enumeration types:\n"
+				"\n"
+				"  ================================= ==============\n"
+				"  Value                              Description\n"
+				"  ================================= ==============\n"
+				"  PrincipalAngleType.major_south    The major principal axis points South when the angle is zero. "
+				"The angle ranges from :math:`-\\pi` to :math:`\\pi` radians **anti**-clockwise (observed from above the globe).\n"
+				"  PrincipalAngleType.major_east     The major principal axis points East when the angle is zero. "
+				"The angle ranges from :math:`-\\pi` to :math:`\\pi` radians **anti**-clockwise (observed from above the globe). "
+				"This is equiavlent to *MajorAngle* in the GPlates deformation export.\n"
+				"  PrincipalAngleType.major_azimuth  The major principal axis points North when the angle is zero. "
+				"The angle ranges from :math:`0` to :math:`2\\pi` radians **clockwise** (observed from above the globe). "
+				"This is equiavlent to *MajorAzimuth* in the GPlates deformation export.\n"
+				"  ================================= ==============\n"
+				"\n"
+				"  .. note:: Regardless of the value of *principal_angle_type*, the direction of the *minimum* principal axis is always an **anti-clockwise** rotation "
+				"of :math:`\\frac{\\pi}{2}` radians (90 degrees) of the *major* principal axis (observed from above the globe).\n"
+				"\n"
+				"  The principal strains are the maximum and minimum strains that occur along the principal axes (where shear strain is zero). "
+				"The principal axes are the coordinate axes rotated anti-clockwise (when observed from above the globe) by an angle :math:`\\alpha` "
+				"which is defined in terms of the *Eulerian* deformation tensor :math:`\\boldsymbol c` (see :class:`Strain`):\n"
+				"\n"
+				"  .. math::\n"
+				"\n"
+				"     \\tan{2 \\alpha} = \\frac{2 c_{\\theta\\phi}}{c_{\\theta\\theta} - c_{\\phi\\phi}}\n"
+				"\n"
+				"  Then the two perpendicular principal strain directions are (in the local South-East coordinate system):\n"
+				"\n"
+				"  .. math::\n"
+				"\n"
+				"     \\hat{\\boldsymbol n}_{(1)} &= (\\cos \\alpha, \\sin \\alpha)\\\\\n"
+				"     \\hat{\\boldsymbol n}_{(2)} &= (-\\sin \\alpha, \\cos \\alpha)\n"
+				"\n"
+				"  ...and the two principal strains are determined by (see :class:`Strain`):\n"
+				"\n"
+				"  .. math::\n"
+				"\n"
+				"     e_{(1)} &= \\Lambda_{(1)} - 1 &= \\frac{1}{\\sqrt{\\hat{\\boldsymbol n}_{(1)} \\cdot \\boldsymbol c \\cdot \\hat{\\boldsymbol n}_{(1)}}} - 1\\\\\n"
+				"     e_{(2)} &= \\Lambda_{(2)} - 1 &= \\frac{1}{\\sqrt{\\hat{\\boldsymbol n}_{(2)} \\cdot \\boldsymbol c \\cdot \\hat{\\boldsymbol n}_{(2)}}} - 1\n"
+				"\n"
+				"  .. note:: This function returns principal *strains*. To get the principal *stretches* simply add one since :math:`\\Lambda_{(i)} = 1 + e_{(i)}` (see :class:`Strain`).\n"
+				"\n"
+				"  To get the principal *stretches* (ie, *strains* plus one) with the angle (in degrees) of the major principal axis clockwise relative to North (ie, azimuth):\n"
+				"  ::\n"
+				"\n"
+				"    import math\n"
+				"    ...\n"
+				"    max_strain, min_strain, major_azimuth_radians = strain.get_principal_strain(\n"
+				"        principal_angle_type=pygplates.PrincipalAngleType.major_azimuth)\n"
+				"\n"
+				"    max_stretch = 1 + max_strain\n"
+				"    min_stretch = 1 + min_strain\n"
+				"    major_azimuth_degrees = math.degrees(major_azimuth_radians)\n")
 		.def("get_deformation_gradient",
 				&GPlatesApi::strain_get_deformation_gradient,
 				"get_deformation_gradient()\n"

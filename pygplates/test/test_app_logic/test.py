@@ -2121,17 +2121,17 @@ class StrainCase(unittest.TestCase):
         self.assertTrue(pygplates.StrainRate(1e-15, 1e-16, 2e-15, 5e-16).get_velocity_spatial_gradient() == (1e-15, 1e-16, 2e-15, 5e-16))
 
         self.assertTrue(pygplates.Strain().get_deformation_gradient() == (1, 0, 0, 1))
-        self.assertTrue(pygplates.Strain(1e-4, 1e-5, 2e-4, 5e-5).get_deformation_gradient() == (1e-4, 1e-5, 2e-4, 5e-5))
+        self.assertTrue(pygplates.Strain(1+1e-4, 1e-5, 2e-4, 1+5e-5).get_deformation_gradient() == (1+1e-4, 1e-5, 2e-4, 1+5e-5))
     
     def test_compare(self):
         self.assertTrue(pygplates.StrainRate() == pygplates.StrainRate.zero)
         self.assertTrue(pygplates.StrainRate(1e-15, 1e-16, 2e-15, 5e-16) == pygplates.StrainRate(1e-15, 1e-16, 2e-15, 5e-16))
         self.assertTrue(pygplates.StrainRate(1e-15, 1e-16, 2e-15, 5e-16) != pygplates.StrainRate(1.01e-15, 1e-16, 2e-15, 5e-16))
         self.assertTrue(pygplates.Strain() == pygplates.Strain.identity)
-        self.assertTrue(pygplates.Strain(1e-4, 1e-5, 2e-4, 5e-5) == pygplates.Strain(1e-4, 1e-5, 2e-4, 5e-5))
-        self.assertTrue(pygplates.Strain(1e-4, 1e-5, 2e-4, 5e-5) != pygplates.Strain(1.01e-4, 1e-5, 2e-4, 5e-5))
+        self.assertTrue(pygplates.Strain(1+1e-4, 1e-5, 2e-4, 1+5e-5) == pygplates.Strain(1+1e-4, 1e-5, 2e-4, 1+5e-5))
+        self.assertTrue(pygplates.Strain(1+1e-4, 1e-5, 2e-4, 1+5e-5) != pygplates.Strain(1+1.01e-4, 1e-5, 2e-4, 1+5e-5))
         # Strains are not typically as small as strain *rates*, so really small strains that are slightly different will compare equal.
-        self.assertTrue(pygplates.Strain(1e-15, 1e-16, 2e-15, 5e-16) == pygplates.Strain(1.01e-15, 1e-16, 2e-15, 5e-16))
+        self.assertTrue(pygplates.Strain(1+1e-15, 1e-16, 2e-15, 5e-16) == pygplates.Strain(1+1.01e-15, 1e-16, 2e-15, 5e-16))
     
     def test_constants(self):
         self.assertTrue(pygplates.StrainRate.zero == pygplates.StrainRate())
@@ -2139,40 +2139,79 @@ class StrainCase(unittest.TestCase):
     
     def test_get_dilatation_rate(self):
         self.assertTrue(pygplates.StrainRate().get_dilatation_rate() == 0)
+        self.assertAlmostEqual(pygplates.StrainRate(1e-15, 1e-16, 2e-15, 5e-16).get_dilatation_rate(), 1.5e-15, places=16)
     
     def test_get_total_strain_rate(self):
         self.assertTrue(pygplates.StrainRate().get_total_strain_rate() == 0)
+        self.assertAlmostEqual(pygplates.StrainRate(1e-15, 1e-16, 2e-15, 5e-16).get_total_strain_rate(), 1.8587630295441107e-15, places=16)
     
     def test_get_strain_rate_style(self):
         # Strain rate style should be NaN (zero divided by zero).
         self.assertTrue(math.isnan(pygplates.StrainRate().get_strain_rate_style()))
+        self.assertAlmostEqual(pygplates.StrainRate(1e-15, 1e-16, 2e-15, 5e-16).get_strain_rate_style(), 0.8199626321480792)
     
     def test_get_rate_of_deformation(self):
         self.assertTrue(pygplates.StrainRate().get_rate_of_deformation() == (0, 0, 0, 0))
+
+        rate_of_deformation = pygplates.StrainRate(1e-15, 1e-16, 2e-15, 5e-16).get_rate_of_deformation()
+        self.assertAlmostEqual(rate_of_deformation[0], 1e-15, places=16)
+        self.assertAlmostEqual(rate_of_deformation[1], 1.05e-15, places=16)
+        self.assertAlmostEqual(rate_of_deformation[2], 1.05e-15, places=16)
+        self.assertAlmostEqual(rate_of_deformation[3], 5e-16, places=16)
     
     def test_get_velocity_spatial_gradient(self):
         self.assertTrue(pygplates.StrainRate().get_velocity_spatial_gradient() == (0, 0, 0, 0))
+
+        velocity_spatial_gradient = pygplates.StrainRate(1e-15, 1e-16, 2e-15, 5e-16).get_velocity_spatial_gradient()
+        self.assertAlmostEqual(velocity_spatial_gradient[0], 1e-15, places=16)
+        self.assertAlmostEqual(velocity_spatial_gradient[1], 1e-16, places=16)
+        self.assertAlmostEqual(velocity_spatial_gradient[2], 2e-15, places=16)
+        self.assertAlmostEqual(velocity_spatial_gradient[3], 5e-16, places=16)
     
     def test_get_dilatation(self):
         self.assertTrue(pygplates.Strain().get_dilatation() == 0)
+        self.assertTrue(pygplates.Strain(1+1e-4, 1e-5, 2e-4, 1+5e-5).get_dilatation(), 0.000150003)
+    
+    def test_get_principal_strain(self):
+        self.assertTrue(pygplates.Strain().get_principal_strain() == (0, 0, 0))
+
+        strain = pygplates.Strain(1+1e-15, 1e-16, 2e-15, 1+5e-16)
+        principal_strain = strain.get_principal_strain()
+        self.assertAlmostEqual(principal_strain[0], 1.9984014443252818e-15, places=16)
+        self.assertAlmostEqual(principal_strain[1], -2.220446049250313e-16, places=16)
+        self.assertAlmostEqual(principal_strain[2], 0.6318146893398876)
+        principal_strain = strain.get_principal_strain(principal_angle_type=pygplates.PrincipalAngleType.major_east)
+        self.assertAlmostEqual(principal_strain[0], 1.9984014443252818e-15, places=16)
+        self.assertAlmostEqual(principal_strain[1], -2.220446049250313e-16, places=16)
+        self.assertAlmostEqual(principal_strain[2], 0.6318146893398876 - math.pi/2)
+        principal_strain = strain.get_principal_strain(principal_angle_type=pygplates.PrincipalAngleType.major_azimuth)
+        self.assertAlmostEqual(principal_strain[0], 1.9984014443252818e-15, places=16)
+        self.assertAlmostEqual(principal_strain[1], -2.220446049250313e-16, places=16)
+        self.assertAlmostEqual(principal_strain[2], math.pi - 0.6318146893398876)
     
     def test_get_deformation_gradient(self):
         self.assertTrue(pygplates.Strain().get_deformation_gradient() == (1, 0, 0, 1))
+
+        deformation_gradient = pygplates.Strain(1+1e-15, 1e-16, 2e-15, 1+5e-16).get_deformation_gradient()
+        self.assertAlmostEqual(deformation_gradient[0], 1+1e-15, places=16)
+        self.assertAlmostEqual(deformation_gradient[1], 1e-16, places=16)
+        self.assertAlmostEqual(deformation_gradient[2], 2e-15, places=16)
+        self.assertAlmostEqual(deformation_gradient[3], 1+5e-16, places=16)
     
     def test_accumulate_strain(self):
         strain = pygplates.Strain.accumulate(pygplates.Strain.identity, pygplates.StrainRate.zero, pygplates.StrainRate(1e-15, 1e-16, 2e-15, 5e-16), 100)
         deformation_gradient = strain.get_deformation_gradient()
-        self.assertAlmostEqual(deformation_gradient[0], 1.00000000000005, places=15)
-        self.assertAlmostEqual(deformation_gradient[1], 5.0000000000003755e-15, places=15)
-        self.assertAlmostEqual(deformation_gradient[2], 1.0000000000000751e-13, places=15)
-        self.assertAlmostEqual(deformation_gradient[3], 1.000000000000025, places=15)
+        self.assertAlmostEqual(deformation_gradient[0], 1.00000000000005, places=16)
+        self.assertAlmostEqual(deformation_gradient[1], 5.0000000000003755e-15, places=16)
+        self.assertAlmostEqual(deformation_gradient[2], 1.0000000000000751e-13, places=16)
+        self.assertAlmostEqual(deformation_gradient[3], 1.000000000000025, places=16)
     
     def test_pickle(self):
         strain_rate = pygplates.StrainRate(1e-15, 1e-16, 2e-15, 5e-16)
         pickled_strain_rate = pickle.loads(pickle.dumps(strain_rate))
         self.assertTrue(pickled_strain_rate == strain_rate)
 
-        strain = pygplates.Strain(1e-4, 1e-5, 2e-4, 5e-5)
+        strain = pygplates.Strain(1+1e-4, 1e-5, 2e-4, 1+5e-5)
         pickled_strain = pickle.loads(pickle.dumps(strain))
         self.assertTrue(pickled_strain == strain)
 
