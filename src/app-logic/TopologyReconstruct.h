@@ -470,6 +470,23 @@ namespace GPlatesAppLogic
 					boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> domain_points = boost::none,
 					boost::optional< std::vector<TopologyPointLocation> &> domain_point_locations = boost::none) const;
 
+			/**
+			 * Same as @a get_velocities but includes inactive points (which have null velocity).
+			 *
+			 * The sizes of @a velocities, @a domain_points and @a domain_point_locations are the same and match the number
+			 * of original geometry points.
+			 *
+			 * Returns false if @a is_valid returns false.
+			 */
+			bool
+			get_all_velocities(
+					std::vector< boost::optional<GPlatesMaths::Vector3D> > &velocities,
+					const double &reconstruction_time,
+					const double &velocity_delta_time,
+					VelocityDeltaTime::Type velocity_delta_time_type,
+					boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> domain_points = boost::none,
+					boost::optional< std::vector< boost::optional<TopologyPointLocation> > &> domain_point_locations = boost::none) const;
+
 
 			//
 			// Interface used by ScalarCoverageTimeSpan...
@@ -1079,12 +1096,12 @@ namespace GPlatesAppLogic
 			void
 			calc_velocities(
 					const GeometrySample::non_null_ptr_type &domain_geometry_sample,
-					std::vector<GPlatesMaths::Vector3D> &velocities,
+					std::vector< boost::optional<GPlatesMaths::Vector3D> > &velocities,
 					const double &reconstruction_time,
 					const double &velocity_delta_time,
 					VelocityDeltaTime::Type velocity_delta_time_type,
-					boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> domain_points,
-					boost::optional< std::vector<TopologyPointLocation> &> domain_point_locations) const;
+					boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> domain_points,
+					boost::optional< std::vector< boost::optional<TopologyPointLocation> > &> domain_point_locations) const;
 
 			/**
 			 * Returns the geometry sample at the specified time (which can be any time).
