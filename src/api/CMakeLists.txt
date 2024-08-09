@@ -22,6 +22,7 @@ set(srcs
     DeferredApiCallImpl.h
     PyApplication.cc
     PyCalculateVelocities.cc
+    PyCalculateVelocities.h
     PyColour.cc
     PyCoregistrationLayerProxy.cc
     PyCoregistrationLayerProxy.h

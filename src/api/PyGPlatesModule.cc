@@ -199,7 +199,7 @@ export_cpp_python_api()
 	export_top_level_property();
 
 	// app-logic namespace
-	export_calculate_velocities();
+	export_calculate_velocities();  // Must be called before 'export_strain' and 'export_net_rotation'.
 	export_strain();
 	export_plate_partitioner();
 	export_reconstruct();

@@ -711,13 +711,6 @@ namespace GPlatesApi
 void
 export_net_rotation()
 {
-	// An enumeration nested within 'pygplates' (ie, current) module.
-	bp::enum_<GPlatesAppLogic::VelocityDeltaTime::Type>("VelocityDeltaTimeType")
-			.value("t_plus_delta_t_to_t", GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T)
-			.value("t_to_t_minus_delta_t", GPlatesAppLogic::VelocityDeltaTime::T_TO_T_MINUS_DELTA_T)
-			.value("t_plus_minus_half_delta_t", GPlatesAppLogic::VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T);
-
-
 	//
 	// NetRotation - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//

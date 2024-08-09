@@ -2468,6 +2468,33 @@ class TopologicalModelCase(unittest.TestCase):
         topology_point_locations = reconstructed_multipoint_time_span.get_topology_point_locations(20, return_inactive_points=True)
         self.assertTrue(len(topology_point_locations) == 3)
         
+        # Strain rates.
+        strain_rates = reconstructed_multipoint_time_span.get_strain_rates(20)
+        self.assertTrue(len(strain_rates) == 3)
+        self.assertTrue(strain_rates[0] == pygplates.StrainRate.zero)
+        self.assertTrue(strain_rates[1] == pygplates.StrainRate.zero)
+        self.assertTrue(strain_rates[2] == pygplates.StrainRate.zero)
+        strain_rates = reconstructed_multipoint_time_span.get_strain_rates(20, return_inactive_points=True)
+        self.assertTrue(len(strain_rates) == 3)
+        
+        # Strains.
+        strains = reconstructed_multipoint_time_span.get_strains(20)
+        self.assertTrue(len(strains) == 3)
+        self.assertTrue(strains[0] == pygplates.Strain.identity)
+        self.assertTrue(strains[1] == pygplates.Strain.identity)
+        self.assertTrue(strains[2] == pygplates.Strain.identity)
+        strains = reconstructed_multipoint_time_span.get_strains(20, return_inactive_points=True)
+        self.assertTrue(len(strains) == 3)
+        
+        # Velocities.
+        velocities = reconstructed_multipoint_time_span.get_velocities(20, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t, pygplates.VelocityUnits.cms_per_yr)
+        self.assertTrue(len(velocities) == 3)
+        self.assertTrue(velocities[0] == pygplates.Vector3D.zero)
+        self.assertTrue(velocities[1] == pygplates.Vector3D.zero)
+        self.assertTrue(velocities[2] == pygplates.Vector3D.zero)
+        velocities = reconstructed_multipoint_time_span.get_velocities(20, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t, pygplates.VelocityUnits.cms_per_yr, return_inactive_points=True)
+        self.assertTrue(len(velocities) == 3)
+        
         # Scalars.
         scalars_dict = reconstructed_multipoint_time_span.get_scalar_values(20)
         # Should be at least the 2 scalar types we supplied initial values for.
@@ -2507,6 +2534,8 @@ class TopologicalModelCase(unittest.TestCase):
                 reconstruction_plate_id=802,
                 initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
         self.assertTrue(pickled_reconstructed_time_span.get_geometry_points(10.0) == reconstructed_time_span.get_geometry_points(10.0))
+        self.assertTrue(pickled_reconstructed_time_span.get_strains(10.0) == reconstructed_time_span.get_strains(10.0))
+        self.assertTrue(pickled_reconstructed_time_span.get_strain_rates(10.0) == reconstructed_time_span.get_strain_rates(10.0))
         self.assertTrue(pickled_reconstructed_time_span.get_scalar_values(10.0) == reconstructed_time_span.get_scalar_values(10.0))
         # Check the topology point locations explicitly (since resolved topologies are not equality comparable).
         pickled_topology_point_locations = pickled_reconstructed_time_span.get_topology_point_locations(10.0)
