@@ -352,7 +352,7 @@ export_strain()
 		.def("get_strain_rate_style",
 				&GPlatesAppLogic::DeformationStrainRate::get_strain_rate_style,
 				"get_strain_rate_style()\n"
-				"  Return a measure categorising the type of deformation (in units of :math:`second^{-1}`).\n"
+				"  Return a measure categorising the type of deformation.\n"
 				"\n"
 				"  :rtype: float\n"
 				"\n"

@@ -2253,10 +2253,6 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_velocities(
 
 		domain_points->reserve(num_domain_geometry_points);
 
-		// Check that the number of active points matches the number of active velocities.
-		unsigned int num_active_domain_points = 0;
-		unsigned int num_active_velocity_points = 0;
-
 		// Return the interpolated domain positions.
 		for (unsigned int domain_geometry_point_index = 0;
 			domain_geometry_point_index < num_domain_geometry_points;
