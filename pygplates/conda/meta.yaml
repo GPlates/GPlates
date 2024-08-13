@@ -19,6 +19,9 @@ requirements:
     - cmake
     - make  # [unix]
     - {{ compiler('c') }}
+    # Note: stdlib("c") should only be specified in the conda-forge feedstock (not for local conda builds).
+    #       Otherwise local conda builds will give a dependency error that "c_win-64 does not exist".
+    #- {{ stdlib("c") }}
     - {{ compiler('cxx') }}
     - {{ cdt('xorg-x11-proto-devel') }}  # [linux]
     - {{ cdt('libx11-devel') }}          # [linux]
