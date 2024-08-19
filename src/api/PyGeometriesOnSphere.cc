@@ -2644,7 +2644,7 @@ export_polyline_on_sphere()
 				&GPlatesApi::polyline_on_sphere_to_tessellated,
 				(bp::arg("tessellate_radians")),
 				"to_tessellated(tessellate_radians)\n"
-				"  Returns a new polyline that is tessellated version of this polyline.\n"
+				"  Returns a new polyline that is a tessellated version of this polyline.\n"
 				"\n"
 				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
 				"  :type tessellate_radians: float\n"
@@ -4256,7 +4256,7 @@ export_polygon_on_sphere()
 				&GPlatesApi::polygon_on_sphere_to_tessellated,
 				(bp::arg("tessellate_radians")),
 				"to_tessellated(tessellate_radians)\n"
-				"  Returns a new polygon that is tessellated version of this polygon.\n"
+				"  Returns a new polygon that is a tessellated version of this polygon.\n"
 				"\n"
 				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
 				"  :type tessellate_radians: float\n"

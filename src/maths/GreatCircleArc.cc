@@ -505,7 +505,7 @@ GPlatesMaths::GreatCircleArc::point_on_arc(
 }
 
 
-GPlatesMaths::Vector3D
+GPlatesMaths::UnitVector3D
 GPlatesMaths::GreatCircleArc::direction_on_arc(
 		const real_t &normalised_distance_from_start_point) const
 {
@@ -514,7 +514,7 @@ GPlatesMaths::GreatCircleArc::direction_on_arc(
 	// Get unit-magnitude direction at the arc point towards the end point (from start point).
 	//
 	// NOTE: 'rotation_axis()' will throw 'IndeterminateArcRotationAxisException' if arc is zero length.
-	return Vector3D(cross(rotation_axis(), arc_point.position_vector()).get_normalisation());
+	return cross(rotation_axis(), arc_point.position_vector()).get_normalisation();
 }
 
 

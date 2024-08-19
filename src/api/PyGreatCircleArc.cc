@@ -126,7 +126,7 @@ namespace GPlatesApi
 				!great_circle_arc.is_zero_length(),
 				GPLATES_ASSERTION_SOURCE);
 
-		return great_circle_arc.direction_on_arc(normalised_distance_from_start_point);
+		return GPlatesMaths::Vector3D(great_circle_arc.direction_on_arc(normalised_distance_from_start_point));
 	}
 
 	bp::list
@@ -354,6 +354,7 @@ export_great_circle_arc()
 				"zero is the start point, one is the end point and between zero and one are points "
 				"along the arc\n"
 				"  :type normalised_distance_from_start_point: float\n"
+				"  :returns: the unit-length 3D vector\n"
 				"  :rtype: :class:`Vector3D`\n"
 				"  :raises: ValueError if arc *normalised_distance_from_start_point* is not in the "
 				"range [0,1]\n"
@@ -379,14 +380,17 @@ export_great_circle_arc()
 				&GPlatesApi::great_circle_arc_to_tessellated,
 				(bp::arg("tessellate_radians")),
 				"to_tessellated(tessellate_radians)\n"
-				"  Returns a list of :class:`points<PointOnSphere>` new polyline that is tessellated version of this polyline.\n"
+				"  Returns a list of :class:`points<PointOnSphere>` tessellated from this great circle arc such that "
+				"adjacent points are separated by no more than *tessellate_radians* on the globe.\n"
 				"\n"
 				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
 				"  :type tessellate_radians: float\n"
 				"  :rtype: list :class:`points<PointOnSphere>`\n"
 				"\n"
-				"  Adjacent points (in the returned list of points) are separated by no more than "
-				"*tessellate_radians* on the globe.\n"
+				"  .. note:: If this great circle arc subtends an angle less than *tessellate_radians* then "
+				"only its :meth:`start point <get_start_point>` and :meth:`end point <get_end_point>` are returned. "
+				"For example, this applies to a :meth:`zero length <is_zero_length>` arc. Otherwise tessellated "
+				"points *within* this arc are *also* returned.\n"
 				"\n"
 				"  Tessellate a great circle arc to 2 degrees:\n"
 				"  ::\n"

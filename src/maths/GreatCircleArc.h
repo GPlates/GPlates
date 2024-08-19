@@ -232,7 +232,7 @@ namespace GPlatesMaths
 		 *
 		 * @throws IndeterminateArcRotationAxisException if this arc is zero length (@a is_zero_length).
 		 */
-		Vector3D
+		UnitVector3D
 		direction_on_arc(
 				const real_t &normalised_distance_from_start_point) const;
 
