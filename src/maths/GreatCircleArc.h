@@ -463,6 +463,31 @@ namespace GPlatesMaths
 			const GreatCircleArc &great_circle_arc,
 			const real_t &max_segment_angular_extent);
 
+	/**
+	 * Generates a sequence of uniformly-spaced points along the specified great circle arc
+	 * (returned in @a uniform_points).
+	 *
+	 * The first point is located @a first_uniform_point_spacing radians from the arc's start point.
+	 * And each subsequent point is separated by @a uniform_point_spacing radians.
+	 *
+	 * Note: If @a first_uniform_point_spacing is greater than the arc's length then no uniform points will be generated.
+	 *
+	 * Note: If the arc is zero length and @a first_uniform_point_spacing is zero then a single uniform point will be generated.
+	 *
+	 * Note: The spacing between the last uniform point and the arc's end point can be less than
+	 *       @a uniform_point_spacing (since the length of the arc minus @a first_uniform_point_spacing
+	 *       might not be an integer multiple of @a uniform_point_spacing).
+	 *
+	 * Note: Ideally @a first_uniform_point_spacing is non-negative, but if it's negative then extra uniformly-spaced points
+	 *       will be extrapolated off the arc from its start point (along its great circle).
+	 */
+	void
+	uniformly_spaced_points(
+			std::vector<GPlatesMaths::PointOnSphere> &uniform_points,
+			const GreatCircleArc &great_circle_arc,
+			const double &uniform_point_spacing,
+			const double &first_uniform_point_spacing = 0.0);
+
 
 	/**
 	 * Determine whether the two great-circle arcs @a arc1 and @a arc2 are

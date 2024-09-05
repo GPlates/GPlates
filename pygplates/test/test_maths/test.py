@@ -459,6 +459,16 @@ class GreatCircleArcCase(unittest.TestCase):
         self.assertTrue(tessellation_points[2] == pygplates.FiniteRotation((1,0,0), 2 * math.pi / 6) * self.gca.get_start_point())
         self.assertTrue(tessellation_points[3] == self.gca.get_end_point())
     
+    def test_uniform_points(self):
+        uniform_points = self.gca.to_uniform_points(math.radians(10), first_point_spacing_radians=math.radians(5))
+        self.assertTrue(len(uniform_points) == 9)
+        for i in range(len(uniform_points)):
+            self.assertTrue(uniform_points[i] == pygplates.PointOnSphere(5 + i * 10, 90))
+
+        # Last point very near North pole should get included.
+        uniform_points = self.gca.to_uniform_points(math.radians(10 - 1e-6))
+        self.assertTrue(len(uniform_points) == 10)
+    
     def test_pickle(self):
         self.assertTrue(self.gca == pickle.loads(pickle.dumps(self.gca)))
 

@@ -1935,6 +1935,33 @@ namespace GPlatesMaths
 	tessellate(
 			const PolygonOnSphere &polygon,
 			const real_t &max_angular_extent);
+
+	/**
+	 * Generates a sequence of uniformly-spaced points *along* each ring (exterior and interior) of the polygon (returned in @a uniform_points).
+	 *
+	 * The first point in each ring is located @a first_uniform_point_spacing radians from the ring's first vertex.
+	 * And each subsequent point is separated by @a uniform_point_spacing radians.
+	 *
+	 * Note: If @a first_uniform_point_spacing is greater than a ring's length then no uniform points will be generated for that ring.
+	 *
+	 * Note: If a ring is zero length and @a first_uniform_point_spacing is zero then a single uniform point will be generated for that ring.
+	 *
+	 * Note: The spacing between the last uniform point in a ring and the ring's last vertex (also its first vertex) can be less than
+	 *       @a uniform_point_spacing (since the length of the ring minus @a first_uniform_point_spacing
+	 *       might not be an integer multiple of @a uniform_point_spacing).
+	 *
+	 * Note: If the first uniform point of a ring was added at the ring's first vertex location and the last uniform point of the ring was added at
+	 *       the same location (ie, the ring's first/last vertex location) then the duplicate point (ie, last uniform point of the ring) is removed.
+	 *
+	 * Note: Ideally @a first_uniform_point_spacing is non-negative, but if it's negative then extra uniformly-spaced points
+	 *       will be extrapolated off each ring's first arc from its start point (along its great circle).
+	 */
+	void
+	uniformly_spaced_points(
+			std::vector<GPlatesMaths::PointOnSphere> &uniform_points,
+			const PolygonOnSphere &polygon,
+			const double &uniform_point_spacing,
+			const double &first_uniform_point_spacing);
 }
 
 //

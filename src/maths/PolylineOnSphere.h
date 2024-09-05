@@ -41,6 +41,7 @@
 #include "AngularExtent.h"
 #include "GeometryOnSphere.h"
 #include "GreatCircleArc.h"
+#include "PointOnSphere.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -929,6 +930,30 @@ namespace GPlatesMaths
 	tessellate(
 			const PolylineOnSphere &polyline,
 			const real_t &max_angular_extent);
+
+	/**
+	 * Generates a sequence of uniformly-spaced points *along* a polyline (returned in @a uniform_points).
+	 *
+	 * The first point is located @a first_uniform_point_spacing radians from the polyline's first vertex.
+	 * And each subsequent point is separated by @a uniform_point_spacing radians.
+	 *
+	 * Note: If @a first_uniform_point_spacing is greater than the polyline's length then no uniform points will be generated.
+	 *
+	 * Note: If the polyline is zero length and @a first_uniform_point_spacing is zero then a single uniform point will be generated.
+	 *
+	 * Note: The spacing between the last uniform point and the polyline's last vertex can be less than
+	 *       @a uniform_point_spacing (since the length of the polyline minus @a first_uniform_point_spacing
+	 *       might not be an integer multiple of @a uniform_point_spacing).
+	 *
+	 * Note: Ideally @a first_uniform_point_spacing is non-negative, but if it's negative then extra uniformly-spaced points
+	 *       will be extrapolated off the polyline's first arc from its start point (along its great circle).
+	 */
+	void
+	uniformly_spaced_points(
+			std::vector<GPlatesMaths::PointOnSphere> &uniform_points,
+			const PolylineOnSphere &polyline,
+			const double &uniform_point_spacing,
+			const double &first_uniform_point_spacing = 0.0);
 
 
 	/**

@@ -759,6 +759,40 @@ GPlatesMaths::tessellate(
 	tessellation_points.push_back(end_point);
 }
 
+
+void
+GPlatesMaths::uniformly_spaced_points(
+		std::vector<GPlatesMaths::PointOnSphere> &uniform_points,
+		const GreatCircleArc &great_circle_arc,
+		const double &uniform_point_spacing,
+		const double &first_uniform_point_spacing)
+{
+	const double length_of_arc = great_circle_arc.arc_length().dval();
+
+	// Distance from start of the arc to the first uniform point.
+	double distance_from_start_to_next_uniform_point = first_uniform_point_spacing;
+
+	// Generate points at uniform spacings along the arc while the distance from start of arc to
+	// the next uniform point does not exceed the arc's length.
+	//
+	// Note: This works for a zero-length arc. For example, a zero-length arc will emit a single uniform point
+	//       (if 'first_uniform_point_spacing' is zero). If we had instead skipped zero-length arcs then the arc
+	//       would not have generated any uniform points.
+	while (distance_from_start_to_next_uniform_point <= length_of_arc)
+	{
+		// Rotate the current the arc's start point (towards its end point) to get the uniform point position.
+		const GPlatesMaths::Rotation uniform_point_rotation = GPlatesMaths::Rotation::create(
+				great_circle_arc.rotation_axis(),
+				distance_from_start_to_next_uniform_point);
+
+		const GPlatesMaths::PointOnSphere uniform_point(uniform_point_rotation * great_circle_arc.start_point().position_vector());
+		uniform_points.push_back(uniform_point);
+
+		distance_from_start_to_next_uniform_point += uniform_point_spacing;
+	}
+}
+
+
 bool
 GPlatesMaths::arcs_are_near_each_other(
 		const GreatCircleArc &arc1,

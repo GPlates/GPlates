@@ -134,6 +134,12 @@ namespace GPlatesApi
 			const GPlatesMaths::GreatCircleArc &great_circle_arc,
 			const double &tessellate_radians)
 	{
+		if (tessellate_radians <= 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "'tessellate_radians' should be positive");
+			bp::throw_error_already_set();
+		}
+
 		std::vector<GPlatesMaths::PointOnSphere> tessellation_points;
 		tessellate(tessellation_points, great_circle_arc, tessellate_radians);
 
@@ -145,6 +151,31 @@ namespace GPlatesApi
 		}
 
 		return tessellation_points_list;
+	}
+
+	bp::list
+	great_circle_arc_to_uniform_points(
+			const GPlatesMaths::GreatCircleArc &great_circle_arc,
+			const double &point_spacing_radians,
+			const double &first_point_spacing_radians)
+	{
+		if (point_spacing_radians <= 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "'point_spacing_radians' should be positive");
+			bp::throw_error_already_set();
+		}
+
+		std::vector<GPlatesMaths::PointOnSphere> uniform_points;
+		uniformly_spaced_points(uniform_points, great_circle_arc, point_spacing_radians, first_point_spacing_radians);
+
+		bp::list uniform_points_list;
+
+		for (const auto &point : uniform_points)
+		{
+			uniform_points_list.append(point);
+		}
+
+		return uniform_points_list;
 	}
 }
 
@@ -386,6 +417,7 @@ export_great_circle_arc()
 				"  :param tessellate_radians: maximum tessellation angle (in radians)\n"
 				"  :type tessellate_radians: float\n"
 				"  :rtype: list :class:`points<PointOnSphere>`\n"
+				"  :raises: ValueError if *tessellate_radians* is not positive\n"
 				"\n"
 				"  .. note:: If this great circle arc subtends an angle less than *tessellate_radians* then "
 				"only its :meth:`start point <get_start_point>` and :meth:`end point <get_end_point>` are returned. "
@@ -400,7 +432,38 @@ export_great_circle_arc()
 				"  .. note:: Since a *GreatCircleArc* is immutable it cannot be modified. Which is why a "
 				"tessellated list of *PointOnSphere* is returned.\n"
 				"\n"
-				"  .. seealso:: :meth:`PolylineOnSphere.to_tessellated` and :meth:`PolygonOnSphere.to_tessellated`\n")
+				"  .. seealso:: :meth:`to_uniform_points`\n")
+		.def("to_uniform_points",
+				&GPlatesApi::great_circle_arc_to_uniform_points,
+				(bp::arg("point_spacing_radians"), bp::arg("first_point_spacing_radians") = 0.0),
+				"to_uniform_points(point_spacing_radians, [first_point_spacing_radians=0.0])\n"
+				"  Returns a sequence of points uniformly spaced along this great circle arc.\n"
+				"\n"
+				"  :param point_spacing_radians: spacing between points (in radians)\n"
+				"  :type point_spacing_radians: float\n"
+				"  :param first_point_spacing_radians: Spacing of first uniform point from this arc's start point (in radians). "
+				"By default the first uniform point *coincides* with this arc's start point. "
+				"Ideally this is non-negative (but, for example, if it's slightly negative then the first uniform point will be slightly off "
+				"this arc near its start point but still on its great circle).\n"
+				"  :type first_point_spacing_radians: float\n"
+				"  :rtype: list of :class:`PointOnSphere`\n"
+				"  :raises: ValueError if *point_spacing_radians* is not positive\n"
+				"\n"
+				"  .. note:: The distance (along the arc) between the last uniform point and the arc's end point "
+				"can be less than *point_spacing_radians* (since the length of the arc minus *first_point_spacing_radians* "
+				"might not be an integer multiple of *point_spacing_radians*).\n"
+				"\n"
+				"  .. note:: | If *first_point_spacing_radians* is greater than the :meth:`arc's length <get_arc_length>` then no uniform points will be generated.\n"
+				"            | And if the arc is :meth:`zero length <is_zero_length>` and *first_point_spacing_radians* is zero then a single uniform point will be generated.\n"
+				"\n"
+				"  Create points uniformly spaced by 1 degree along a great circle arc starting 0.5 degrees from its start point:\n"
+				"  ::\n"
+				"\n"
+				"    uniform_points = arc.to_uniform_points(\n"
+				"        math.radians(1),\n"
+				"        first_point_spacing_radians = math.radians(0.5))\n"
+				"\n"
+				"  .. seealso:: :meth:`to_tessellated`\n")
 		// Due to the numerical tolerance in comparisons we cannot make hashable.
 		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
 		.def(GPlatesApi::NoHashDefVisitor(false, true))
