@@ -153,11 +153,12 @@ namespace GPlatesApi
 		return tessellation_points_list;
 	}
 
-	bp::list
+	bp::object
 	great_circle_arc_to_uniform_points(
 			const GPlatesMaths::GreatCircleArc &great_circle_arc,
 			const double &point_spacing_radians,
-			const double &first_point_spacing_radians)
+			const double &first_point_spacing_radians,
+			bool return_segment_interpolations)
 	{
 		if (point_spacing_radians <= 0)
 		{
@@ -165,14 +166,39 @@ namespace GPlatesApi
 			bp::throw_error_already_set();
 		}
 
+		// Whether to query the segment interpolation for each uniform point, or not.
+		boost::optional<std::vector<double> &> segment_interpolations_ref;
+		std::vector<double> segment_interpolations;
+		if (return_segment_interpolations)
+		{
+			segment_interpolations_ref = segment_interpolations;
+		}
+
 		std::vector<GPlatesMaths::PointOnSphere> uniform_points;
-		uniformly_spaced_points(uniform_points, great_circle_arc, point_spacing_radians, first_point_spacing_radians);
+		uniformly_spaced_points(
+				uniform_points,
+				great_circle_arc,
+				point_spacing_radians,
+				first_point_spacing_radians,
+				segment_interpolations_ref);
 
 		bp::list uniform_points_list;
-
 		for (const auto &point : uniform_points)
 		{
 			uniform_points_list.append(point);
+		}
+
+		if (return_segment_interpolations)
+		{
+			// List of segment interpolations.
+			// One for each uniform point.
+			bp::list segment_interpolations_list;
+			for (const auto &segment_interpolation : segment_interpolations)
+			{
+				segment_interpolations_list.append(segment_interpolation);
+			}
+
+			return bp::make_tuple(uniform_points_list, segment_interpolations_list);
 		}
 
 		return uniform_points_list;
@@ -435,8 +461,10 @@ export_great_circle_arc()
 				"  .. seealso:: :meth:`to_uniform_points`\n")
 		.def("to_uniform_points",
 				&GPlatesApi::great_circle_arc_to_uniform_points,
-				(bp::arg("point_spacing_radians"), bp::arg("first_point_spacing_radians") = 0.0),
-				"to_uniform_points(point_spacing_radians, [first_point_spacing_radians=0.0])\n"
+				(bp::arg("point_spacing_radians"),
+						bp::arg("first_point_spacing_radians") = 0.0,
+						bp::arg("return_segment_interpolations") = false),
+				"to_uniform_points(point_spacing_radians, [first_point_spacing_radians=0.0], [return_segment_interpolations=False])\n"
 				"  Returns a sequence of points uniformly spaced along this great circle arc.\n"
 				"\n"
 				"  :param point_spacing_radians: spacing between points (in radians)\n"
@@ -446,7 +474,11 @@ export_great_circle_arc()
 				"Ideally this is non-negative (but, for example, if it's slightly negative then the first uniform point will be slightly off "
 				"this arc near its start point but still on its great circle).\n"
 				"  :type first_point_spacing_radians: float\n"
-				"  :rtype: list of :class:`PointOnSphere`\n"
+				"  :param return_segment_interpolations: whether to also return information about the polyline segment that each uniform point is on - default is ``False``\n"
+				"  :type return_segment_interpolations: bool\n"
+				"  :returns: list of points, or (if *return_segment_interpolations* is ``True``) a 2-tuple containing a list of points and "
+				"a list of segment interpolations (where each uniform point is located, *on* this great circle arc, in the range [0,1])\n"
+				"  :rtype: list of :class:`PointOnSphere`, or tuple (list of :class:`PointOnSphere`, list of float) if *return_segment_interpolations* is ``True``\n"
 				"  :raises: ValueError if *point_spacing_radians* is not positive\n"
 				"\n"
 				"  .. note:: The distance (along the arc) between the last uniform point and the arc's end point "
@@ -463,7 +495,21 @@ export_great_circle_arc()
 				"        math.radians(1),\n"
 				"        first_point_spacing_radians = math.radians(0.5))\n"
 				"\n"
-				"  .. seealso:: :meth:`to_tessellated`\n")
+				"  Next, we extend the above example by associating an arc direction, tangential to the globe, at each uniform point:\n"
+				"  ::\n"
+				"\n"
+				"    uniform_points, uniform_point_segment_interpolations = arc.to_uniform_points(\n"
+				"        math.radians(1),\n"
+				"        first_point_spacing_radians = math.radians(0.5))\n"
+				"        return_segment_interpolations = True)\n"
+				"\n"
+				"    # We end up with a list of 3D direction vectors (with a list length equal to the number of uniform points).\n"
+				"    uniform_point_arc_directions = [arc.get_arc_direction(segment_interpolation)\n"
+				"        for segment_interpolation in uniform_point_segment_interpolations]\n"
+				"\n"
+				"  .. seealso:: :meth:`to_tessellated`\n"
+				"\n"
+				"  .. versionadded:: 0.47\n")
 		// Due to the numerical tolerance in comparisons we cannot make hashable.
 		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
 		.def(GPlatesApi::NoHashDefVisitor(false, true))

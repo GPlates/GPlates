@@ -468,6 +468,15 @@ class GreatCircleArcCase(unittest.TestCase):
         # Last point very near North pole should get included.
         uniform_points = self.gca.to_uniform_points(math.radians(10 - 1e-6))
         self.assertTrue(len(uniform_points) == 10)
+
+        # Check segment interpolations.
+        uniform_points, segment_interpolations = self.gca.to_uniform_points(
+            math.radians(40), first_point_spacing_radians=math.radians(5), return_segment_interpolations=True)
+        self.assertTrue(len(uniform_points) == 3)
+        self.assertTrue(len(segment_interpolations) == 3)
+        self.assertAlmostEqual(segment_interpolations[0], (0 + 5) / 90.0)
+        self.assertAlmostEqual(segment_interpolations[1], (40 + 5) / 90.0)
+        self.assertAlmostEqual(segment_interpolations[2], (2*40 + 5) / 90.0)
     
     def test_pickle(self):
         self.assertTrue(self.gca == pickle.loads(pickle.dumps(self.gca)))

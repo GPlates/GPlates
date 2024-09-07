@@ -394,18 +394,35 @@ GPlatesMaths::uniformly_spaced_points(
 		std::vector<GPlatesMaths::PointOnSphere> &uniform_points,
 		const PolylineOnSphere &polyline,
 		const double &uniform_point_spacing,
-		const double &first_uniform_point_spacing)
+		const double &first_uniform_point_spacing,
+		boost::optional<
+				std::vector<std::pair<unsigned int/*segment index*/, double/*segment interpolation*/>> &
+			> segment_informations)
 {
 	// Distance from start of first arc to the first uniform point.
 	double first_uniform_point_spacing_in_arc = first_uniform_point_spacing;
 
 	// Iterate over the segments (arcs) of the polyline.
+	unsigned int segment_index = 0;
 	for (const auto &gca : polyline)
 	{
+		// Get a segment interpolation factor for each uniform point (if requested).
+		boost::optional<std::vector<double> &> current_segment_interpolations_ref;
+		std::vector<double> current_segment_interpolations;
+		if (segment_informations)
+		{
+			current_segment_interpolations_ref = current_segment_interpolations;
+		}
+
 		// Generate points at uniform spacings along the current arc starting at
 		// an offset of 'first_uniform_point_spacing_in_arc' from the arc's start point.
 		const unsigned int num_uniform_points_before_arc = uniform_points.size();
-		uniformly_spaced_points(uniform_points, gca, uniform_point_spacing, first_uniform_point_spacing_in_arc);
+		uniformly_spaced_points(
+				uniform_points,
+				gca,
+				uniform_point_spacing,
+				first_uniform_point_spacing_in_arc,
+				current_segment_interpolations_ref);
 		const unsigned int num_uniform_points_in_arc = uniform_points.size() - num_uniform_points_before_arc;
 
 		// The first uniform point offset in the *next* arc (if any) depends on the offset of the first point
@@ -417,6 +434,18 @@ GPlatesMaths::uniformly_spaced_points(
 		//       In this case the next arc will not generate a uniform point at its start point
 		//       (because its 'first_uniform_point_spacing_in_arc' will be 'point_spacing', not zero).
 		first_uniform_point_spacing_in_arc += num_uniform_points_in_arc * uniform_point_spacing - gca.arc_length().dval();
+
+		// If segment information was requested (one for each uniform point on the current segment).
+		if (segment_informations)
+		{
+			for (auto segment_interpolation : current_segment_interpolations)
+			{
+				// Segment information is segment index and interpolation within segment (of uniform point).
+				segment_informations->push_back({segment_index, segment_interpolation});
+			}
+		}
+
+		++segment_index;
 	}
 }
 

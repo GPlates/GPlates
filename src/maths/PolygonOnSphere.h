@@ -29,14 +29,15 @@
 #define GPLATES_MATHS_POLYGONONSPHERE_H
 
 #include <cstddef>  // For std::size_t
-#include <vector>
 #include <algorithm> 
 #include <utility>  // std::pair
+#include <vector>
 #include <boost/function.hpp>
 #include <boost/bind/bind.hpp>
 #include <boost/intrusive_ptr.hpp>
 #include <boost/iterator/iterator_adaptor.hpp>
 #include <boost/iterator/iterator_facade.hpp>
+#include <boost/optional.hpp>
 
 #include "GeometryOnSphere.h"
 #include "GreatCircleArc.h"
@@ -1942,6 +1943,10 @@ namespace GPlatesMaths
 	 * The first point in each ring is located @a first_uniform_point_spacing radians from the ring's first vertex.
 	 * And each subsequent point is separated by @a uniform_point_spacing radians.
 	 *
+	 * Can optionally return segment information for each uniform point.
+	 * Segment information is a segment index (into @a get_segment) and an interpolation within the segment (of a uniform point).
+	 * The interpolation is in the range [0,1] where 0.0 means the arc start point and 1.0 means the arc end point.
+	 *
 	 * Note: If @a first_uniform_point_spacing is greater than a ring's length then no uniform points will be generated for that ring.
 	 *
 	 * Note: If a ring is zero length and @a first_uniform_point_spacing is zero then a single uniform point will be generated for that ring.
@@ -1961,7 +1966,10 @@ namespace GPlatesMaths
 			std::vector<GPlatesMaths::PointOnSphere> &uniform_points,
 			const PolygonOnSphere &polygon,
 			const double &uniform_point_spacing,
-			const double &first_uniform_point_spacing);
+			const double &first_uniform_point_spacing,
+			boost::optional<
+					std::vector<std::pair<unsigned int/*segment index*/, double/*segment interpolation*/>> &
+				> segment_informations = boost::none);
 }
 
 //

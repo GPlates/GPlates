@@ -216,7 +216,10 @@ namespace GPlatesMaths
 				const PolygonOnSphere::ring_const_iterator &ring_begin,
 				const PolygonOnSphere::ring_const_iterator &ring_end,
 				const double &uniform_point_spacing,
-				const double &first_uniform_point_spacing)
+				const double &first_uniform_point_spacing,
+				boost::optional<
+						std::vector<std::pair<unsigned int/*segment index*/, double/*segment interpolation*/>> &
+					> segment_informations)
 		{
 			const unsigned int num_initial_uniform_points = uniform_points.size();
 
@@ -225,14 +228,27 @@ namespace GPlatesMaths
 
 			// Iterate over the arcs in the ring.
 			PolygonOnSphere::ring_const_iterator ring_iter = ring_begin;
-			for ( ; ring_iter != ring_end; ++ring_iter)
+			for (unsigned int segment_index = 0; ring_iter != ring_end; ++ring_iter, ++segment_index)
 			{
 				const GreatCircleArc &gca = *ring_iter;
+
+				// Get a segment interpolation factor for each uniform point (if requested).
+				boost::optional<std::vector<double> &> current_segment_interpolations_ref;
+				std::vector<double> current_segment_interpolations;
+				if (segment_informations)
+				{
+					current_segment_interpolations_ref = current_segment_interpolations;
+				}
 
 				// Generate points at uniform spacings along the current arc starting at
 				// an offset of 'first_uniform_point_spacing_in_arc' from the arc's start point.
 				const unsigned int num_uniform_points_before_arc = uniform_points.size();
-				uniformly_spaced_points(uniform_points, gca, uniform_point_spacing, first_uniform_point_spacing_in_arc);
+				uniformly_spaced_points(
+						uniform_points,
+						gca,
+						uniform_point_spacing,
+						first_uniform_point_spacing_in_arc,
+						current_segment_interpolations_ref);
 				const unsigned int num_uniform_points_in_arc = uniform_points.size() - num_uniform_points_before_arc;
 
 				// The first uniform point offset in the *next* arc (if any) depends on the offset of the first point
@@ -244,6 +260,16 @@ namespace GPlatesMaths
 				//       In this case the next arc will not generate a uniform point at its start point
 				//       (because its 'first_uniform_point_spacing_in_arc' will be 'point_spacing', not zero).
 				first_uniform_point_spacing_in_arc += num_uniform_points_in_arc * uniform_point_spacing - gca.arc_length().dval();
+
+				// If segment information was requested (one for each uniform point on the current segment).
+				if (segment_informations)
+				{
+					for (auto segment_interpolation : current_segment_interpolations)
+					{
+						// Segment information is segment index and interpolation within segment (of uniform point).
+						segment_informations->push_back({segment_index, segment_interpolation});
+					}
+				}
 			}
 
 			// If we added the first uniform point at the ring's first vertex location and we added the last uniform point
@@ -253,6 +279,10 @@ namespace GPlatesMaths
 				uniform_points.back() == uniform_points[num_initial_uniform_points])
 			{
 				uniform_points.pop_back();
+				if (segment_informations)
+				{
+					segment_informations->pop_back();
+				}
 			}
 		}
 	}
@@ -1240,7 +1270,10 @@ GPlatesMaths::uniformly_spaced_points(
 		std::vector<GPlatesMaths::PointOnSphere> &uniform_points,
 		const PolygonOnSphere &polygon,
 		const double &uniform_point_spacing,
-		const double &first_uniform_point_spacing)
+		const double &first_uniform_point_spacing,
+		boost::optional<
+				std::vector<std::pair<unsigned int/*segment index*/, double/*segment interpolation*/>> &
+			> segment_informations)
 {
 	// Generate uniform points for the exterior ring.
 	uniformly_spaced_points_in_ring(
@@ -1248,7 +1281,8 @@ GPlatesMaths::uniformly_spaced_points(
 			polygon.exterior_ring_begin(),
 			polygon.exterior_ring_end(),
 			uniform_point_spacing,
-			first_uniform_point_spacing);
+			first_uniform_point_spacing,
+			segment_informations);
 
 	// Generate uniform points for each interior ring (if any).
 	//
@@ -1263,7 +1297,8 @@ GPlatesMaths::uniformly_spaced_points(
 				interior_rings_iter->begin(),
 				interior_rings_iter->end(),
 				uniform_point_spacing,
-				first_uniform_point_spacing);
+				first_uniform_point_spacing,
+				segment_informations);
 	}
 }
 

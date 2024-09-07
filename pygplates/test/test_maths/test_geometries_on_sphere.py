@@ -743,6 +743,16 @@ class PolylineOnSphereCase(unittest.TestCase):
         # Last point very near last vertex of polyline should get included.
         uniform_points = self.polyline.to_uniform_points(math.radians(30 - 1e-6))
         self.assertTrue(len(uniform_points) == 10)
+
+        # Check segment informations.
+        uniform_points, segment_informations = self.polyline.to_uniform_points(
+            math.radians(70), first_point_spacing_radians=math.radians(5), return_segment_informations=True)
+        self.assertTrue(len(uniform_points) == 4)
+        self.assertTrue(len(segment_informations) == 4)
+        self.assertTrue(segment_informations[0][0] == 0); self.assertAlmostEqual(segment_informations[0][1], (0 + 5) / 90.0)
+        self.assertTrue(segment_informations[1][0] == 0); self.assertAlmostEqual(segment_informations[1][1], (70 + 5) / 90.0)
+        self.assertTrue(segment_informations[2][0] == 1); self.assertAlmostEqual(segment_informations[2][1], (2*70 + 5 - 90) / 90.0)
+        self.assertTrue(segment_informations[3][0] == 2); self.assertAlmostEqual(segment_informations[3][1], (3*70 + 5 - 180) / 90.0)
     
     def test_pickle(self):
         self.assertTrue(self.polyline == pickle.loads(pickle.dumps(self.polyline)))
@@ -1185,6 +1195,23 @@ class PolygonOnSphereCase(unittest.TestCase):
                 [[(0, 0), (0, 90), (90, 0), (0, -90)], [(0, 0), (0, 90), (90, 0), (0, -90)]])  # 2 interior rings each same as exterior ring
         uniform_points = polygon_with_interior.to_uniform_points(math.radians(20), first_point_spacing_radians=math.radians(5))
         self.assertTrue(len(uniform_points) == 3 * 18)  # each ring has 18 uniform points
+
+        # Check segment informations.
+        uniform_points, segment_informations = self.polygon.to_uniform_points(
+            math.radians(70), first_point_spacing_radians=math.radians(5), return_segment_informations=True)
+        self.assertTrue(len(uniform_points) == 6)
+        self.assertTrue(len(segment_informations) == 6)
+        self.assertTrue(segment_informations[0][0] == 0); self.assertAlmostEqual(segment_informations[0][1], (0 + 5) / 90.0)
+        self.assertTrue(segment_informations[1][0] == 0); self.assertAlmostEqual(segment_informations[1][1], (70 + 5) / 90.0)
+        self.assertTrue(segment_informations[2][0] == 1); self.assertAlmostEqual(segment_informations[2][1], (2*70 + 5 - 90) / 90.0)
+        self.assertTrue(segment_informations[3][0] == 2); self.assertAlmostEqual(segment_informations[3][1], (3*70 + 5 - 180) / 90.0)
+        self.assertTrue(segment_informations[4][0] == 3); self.assertAlmostEqual(segment_informations[4][1], (4*70 + 5 - 270) / 90.0)
+        self.assertTrue(segment_informations[5][0] == 3); self.assertAlmostEqual(segment_informations[5][1], (5*70 + 5 - 270) / 90.0)
+
+        uniform_points, segment_informations = polygon_with_interior.to_uniform_points(
+            math.radians(20), first_point_spacing_radians=math.radians(5), return_segment_informations=True)
+        self.assertTrue(len(uniform_points) == 3 * 18)        # each ring has 18 uniform points
+        self.assertTrue(len(segment_informations) == 3 * 18)  # each ring has 18 uniform points
 
     def test_pickle(self):
         self.assertTrue(self.polygon == pickle.loads(pickle.dumps(self.polygon)))

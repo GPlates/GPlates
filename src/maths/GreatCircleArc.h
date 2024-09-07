@@ -470,6 +470,9 @@ namespace GPlatesMaths
 	 * The first point is located @a first_uniform_point_spacing radians from the arc's start point.
 	 * And each subsequent point is separated by @a uniform_point_spacing radians.
 	 *
+	 * Can optionally return a segment interpolation factor (in range [0,1]) for each uniform point
+	 * (where 0.0 means the arc start point and 1.0 means the arc end point).
+	 *
 	 * Note: If @a first_uniform_point_spacing is greater than the arc's length then no uniform points will be generated.
 	 *
 	 * Note: If the arc is zero length and @a first_uniform_point_spacing is zero then a single uniform point will be generated.
@@ -486,7 +489,8 @@ namespace GPlatesMaths
 			std::vector<GPlatesMaths::PointOnSphere> &uniform_points,
 			const GreatCircleArc &great_circle_arc,
 			const double &uniform_point_spacing,
-			const double &first_uniform_point_spacing = 0.0);
+			const double &first_uniform_point_spacing = 0.0,
+			boost::optional<std::vector<double> &> segment_interpolations = boost::none);
 
 
 	/**

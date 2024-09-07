@@ -34,6 +34,7 @@
 #include "FiniteRotation.h"
 #include "IndeterminateResultException.h"
 #include "IndeterminateArcRotationAxisException.h"
+#include "MathsUtils.h"
 #include "PolylineOnSphere.h"
 #include "Rotation.h"
 #include "Vector3D.h"
@@ -765,8 +766,25 @@ GPlatesMaths::uniformly_spaced_points(
 		std::vector<GPlatesMaths::PointOnSphere> &uniform_points,
 		const GreatCircleArc &great_circle_arc,
 		const double &uniform_point_spacing,
-		const double &first_uniform_point_spacing)
+		const double &first_uniform_point_spacing,
+		boost::optional<std::vector<double> &> segment_interpolations)
 {
+	// If it's a zero length arc then we can generate a single uniform point if 'first_uniform_point_spacing' is zero.
+	if (great_circle_arc.is_zero_length())
+	{
+		if (are_almost_exactly_equal(first_uniform_point_spacing, 0))
+		{
+			uniform_points.push_back(great_circle_arc.start_point());
+			if (segment_interpolations)
+			{
+				segment_interpolations->push_back(0.0);
+			}
+		}
+
+		return;
+	}
+
+	// Length of arc is non-zero, so can divide by arc length, and also calculate arc's rotation axis.
 	const double length_of_arc = great_circle_arc.arc_length().dval();
 
 	// Distance from start of the arc to the first uniform point.
@@ -787,6 +805,13 @@ GPlatesMaths::uniformly_spaced_points(
 
 		const GPlatesMaths::PointOnSphere uniform_point(uniform_point_rotation * great_circle_arc.start_point().position_vector());
 		uniform_points.push_back(uniform_point);
+
+		if (segment_interpolations)
+		{
+			// Interpolation factor in range [0,1] (where 0.0 means arc start point and 1.0 means arc end point).
+			const double segment_interpolation = distance_from_start_to_next_uniform_point / length_of_arc;
+			segment_interpolations->push_back(segment_interpolation);
+		}
 
 		distance_from_start_to_next_uniform_point += uniform_point_spacing;
 	}
