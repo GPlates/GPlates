@@ -127,11 +127,14 @@ namespace GPlatesMaths
 		 *
 		 * The rotated arc has the same arc length but it's end points (and rotation axis) are
 		 * rotated versions of those in @a arc.
+		 *
+		 * Note: 'RotationType' can be @a FiniteRotation or @a Rotation.
 		 */
+		template <class RotationType>
 		static
 		const GreatCircleArc
 		create_rotated_arc(
-				const FiniteRotation &rot,
+				const RotationType &rot,
 				const GreatCircleArc &arc);
 
 
@@ -767,6 +770,39 @@ namespace GPlatesMaths
 	calculate_angle_between_adjacent_non_zero_length_arcs(
 			const GreatCircleArc &first_gca,
 			const GreatCircleArc &second_gca);
+}
+
+
+namespace GPlatesMaths
+{
+	template <class RotationType>
+	const GPlatesMaths::GreatCircleArc
+	GreatCircleArc::create_rotated_arc(
+			const RotationType &rotation,
+			const GreatCircleArc &arc)
+	{
+		// Copy the arc (and any cached-on-demand quantities).
+		GreatCircleArc rotated_arc(arc);
+
+		// Rotate the start/end points.
+		rotated_arc.d_start_point = rotation * rotated_arc.d_start_point;
+		rotated_arc.d_end_point = rotation * rotated_arc.d_end_point;
+
+		// Note: The dot product of the start/end points remains unchanged by rotation.
+		//       As does the arc length (if it was calculated/cached).
+
+		// If the rotation axis has been cached (ie, rotation info calculated and not zero length)
+		// then rotate the cached rotation axis.
+		if (rotated_arc.d_cached_on_demand.d_have_calculated_rotation_info)
+		{
+			if (!rotated_arc.d_cached_on_demand.d_is_zero_length)
+			{
+				rotated_arc.d_cached_on_demand.d_rotation_axis = rotation * rotated_arc.d_cached_on_demand.d_rotation_axis;
+			}
+		}
+
+		return rotated_arc;
+	}
 }
 
 #endif  // GPLATES_MATHS_GREATCIRCLEARC_H

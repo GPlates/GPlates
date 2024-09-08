@@ -387,35 +387,6 @@ GPlatesMaths::GreatCircleArc::create(
 
 
 const GPlatesMaths::GreatCircleArc
-GPlatesMaths::GreatCircleArc::create_rotated_arc(
-		const FiniteRotation &rotation,
-		const GreatCircleArc &arc)
-{
-	// Copy the arc (and any cached-on-demand quantities).
-	GreatCircleArc rotated_arc(arc);
-
-	// Rotate the start/end points.
-	rotated_arc.d_start_point = rotation * rotated_arc.d_start_point;
-	rotated_arc.d_end_point = rotation * rotated_arc.d_end_point;
-
-	// Note: The dot product of the start/end points remains unchanged by rotation.
-	//       As does the arc length (if it was calculated/cached).
-
-	// If the rotation axis has been cached (ie, rotation info calculated and not zero length)
-	// then rotate the cached rotation axis.
-	if (rotated_arc.d_cached_on_demand.d_have_calculated_rotation_info)
-	{
-		if (!rotated_arc.d_cached_on_demand.d_is_zero_length)
-		{
-			rotated_arc.d_cached_on_demand.d_rotation_axis = rotation * rotated_arc.d_cached_on_demand.d_rotation_axis;
-		}
-	}
-
-	return rotated_arc;
-}
-
-
-const GPlatesMaths::GreatCircleArc
 GPlatesMaths::GreatCircleArc::create_antipodal_arc(
 		const GreatCircleArc &arc)
 {
