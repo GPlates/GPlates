@@ -41,6 +41,7 @@
 #include "TopologyPointLocation.h"
 #include "TopologyReconstruct.h"
 #include "VelocityDeltaTime.h"
+#include "VelocityUnits.h"
 
 #include "global/GPlatesAssert.h"
 #include "global/PreconditionViolationError.h"
@@ -59,6 +60,7 @@
 
 #include "property-values/GeoTimeInstant.h"
 
+#include "utils/Earth.h"
 #include "utils/ReferenceCount.h"
 
 
@@ -467,6 +469,8 @@ namespace GPlatesAppLogic
 					const double &reconstruction_time,
 					const double &velocity_delta_time,
 					VelocityDeltaTime::Type velocity_delta_time_type,
+					VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+					const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
 					boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> domain_points = boost::none,
 					boost::optional< std::vector<TopologyPointLocation> &> domain_point_locations = boost::none) const;
 
@@ -484,6 +488,8 @@ namespace GPlatesAppLogic
 					const double &reconstruction_time,
 					const double &velocity_delta_time,
 					VelocityDeltaTime::Type velocity_delta_time_type,
+					VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+					const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
 					boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> domain_points = boost::none,
 					boost::optional< std::vector< boost::optional<TopologyPointLocation> > &> domain_point_locations = boost::none) const;
 
@@ -1100,6 +1106,8 @@ namespace GPlatesAppLogic
 					const double &reconstruction_time,
 					const double &velocity_delta_time,
 					VelocityDeltaTime::Type velocity_delta_time_type,
+					VelocityUnits::Value velocity_units,
+					const double &earth_radius_in_kms,
 					boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> domain_points,
 					boost::optional< std::vector< boost::optional<TopologyPointLocation> > &> domain_point_locations) const;
 

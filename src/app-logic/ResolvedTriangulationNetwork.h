@@ -45,6 +45,7 @@
 #include "ResolvedVertexSourceInfo.h"
 #include "TopologyNetworkParams.h"
 #include "VelocityDeltaTime.h"
+#include "VelocityUnits.h"
 
 #include "maths/AngularExtent.h"
 #include "maths/AzimuthalEqualAreaProjection.h"
@@ -727,6 +728,8 @@ namespace GPlatesAppLogic
 					const GPlatesMaths::PointOnSphere &point,
 					const double &velocity_delta_time = 1.0,
 					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+					const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
 					boost::optional<PointLocation> point_location = boost::none) const;
 
 			//! Convenient overload for 2D projected point.
@@ -736,12 +739,16 @@ namespace GPlatesAppLogic
 					const Point2Type &point_2,
 					const double &velocity_delta_time = 1.0,
 					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+					const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
 					boost::optional<PointLocation> point_location = boost::none) const
 			{
 				return calculate_velocity(
 						d_projection.unproject_to_point_on_sphere(point_2),
 						velocity_delta_time,
 						velocity_delta_time_type,
+						velocity_units,
+						earth_radius_in_kms,
 						point_location);
 			}
 
@@ -1212,7 +1219,9 @@ namespace GPlatesAppLogic
 					const GPlatesMaths::PointOnSphere &point,
 					const RigidBlock &rigid_block,
 					const double &velocity_delta_time,
-					VelocityDeltaTime::Type velocity_delta_time_type) const;
+					VelocityDeltaTime::Type velocity_delta_time_type,
+					VelocityUnits::Value velocity_units,
+					const double &earth_radius_in_kms) const;
 		};
 	}
 }

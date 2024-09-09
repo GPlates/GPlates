@@ -2061,6 +2061,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_velocities(
 		const double &reconstruction_time,
 		const double &velocity_delta_time,
 		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms,
 		boost::optional< std::vector<GPlatesMaths::PointOnSphere> &> domain_points,
 		boost::optional< std::vector<TopologyPointLocation> &> domain_point_locations) const
 {
@@ -2086,6 +2088,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_velocities(
 			reconstruction_time,
 			velocity_delta_time,
 			velocity_delta_time_type,
+			velocity_units,
+			earth_radius_in_kms,
 			all_domain_points_reference,
 			all_domain_point_locations_reference))
 	{
@@ -2164,6 +2168,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_velocities(
 		const double &reconstruction_time,
 		const double &velocity_delta_time,
 		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms,
 		boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> domain_points,
 		boost::optional< std::vector< boost::optional<TopologyPointLocation> > &> domain_point_locations) const
 {
@@ -2193,6 +2199,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_velocities(
 				reconstruction_time,
 				velocity_delta_time,
 				velocity_delta_time_type,
+				velocity_units,
+				earth_radius_in_kms,
 				domain_points,
 				domain_point_locations);
 
@@ -2238,6 +2246,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_velocities(
 			initial_time,
 			velocity_delta_time,
 			velocity_delta_time_type,
+			velocity_units,
+			earth_radius_in_kms,
 			boost::none/*domain_points*/,
 			domain_point_locations);
 
@@ -2295,6 +2305,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 		const double &reconstruction_time,
 		const double &velocity_delta_time,
 		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms,
 		boost::optional< std::vector< boost::optional<GPlatesMaths::PointOnSphere> > &> domain_points,
 		boost::optional< std::vector< boost::optional<TopologyPointLocation> > &> domain_point_locations) const
 {
@@ -2374,6 +2386,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 							domain_point,
 							velocity_delta_time,
 							velocity_delta_time_type,
+							velocity_units,
+							earth_radius_in_kms,
 							point_location);
 			if (velocity)
 			{
@@ -2405,10 +2419,12 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 
 				// Calculate the velocity of the point inside the resolved boundary.
 				const GPlatesMaths::Vector3D velocity_vector =
-						GPlatesMaths::calculate_velocity_vector(
+						PlateVelocityUtils::calculate_velocity_vector(
 								domain_point,
 								resolved_boundary_stage_rotation,
-								velocity_delta_time);
+								velocity_delta_time,
+								velocity_units,
+								earth_radius_in_kms);
 
 				velocities.push_back(velocity_vector);
 
@@ -2435,10 +2451,12 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 
 		// Calculate the velocity.
 		const GPlatesMaths::Vector3D velocity_vector =
-				GPlatesMaths::calculate_velocity_vector(
+				PlateVelocityUtils::calculate_velocity_vector(
 						domain_point,
 						rigid_stage_rotation.get(),
-						velocity_delta_time);
+						velocity_delta_time,
+						velocity_units,
+						earth_radius_in_kms);
 
 		// Add the velocity - there was no surface (ie, resolved boundary/network) intersection though.
 		velocities.push_back(velocity_vector);
@@ -3035,6 +3053,8 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 						time_increment,
 						// Note the use of delta-time is the same as if we had calculated velocity normally at the current time...
 						reverse_reconstruct ? VelocityDeltaTime::T_PLUS_DELTA_T_TO_T : VelocityDeltaTime::T_TO_T_MINUS_DELTA_T,
+						VelocityUnits::CMS_PER_YR,
+						GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
 						current_network_location->second);
 		// Should get a result because we know point is inside the network.
 		// If we don't, for some reason, then leave velocity as zero.
@@ -3231,6 +3251,8 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 					time_increment,
 					// Note the normal use of delta-time (since network is already at the previous time)...
 					reverse_reconstruct ? VelocityDeltaTime::T_TO_T_MINUS_DELTA_T : VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					VelocityUnits::CMS_PER_YR,
+					GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
 					prev_network_location->second);
 	// Should get a result because we know point is inside the network.
 	// If we don't, for some reason, then leave velocity as zero.

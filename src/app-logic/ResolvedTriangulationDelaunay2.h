@@ -75,6 +75,7 @@ POP_MSVC_WARNINGS
 #include "DeformationStrainRate.h"
 #include "ResolvedVertexSourceInfo.h"
 #include "VelocityDeltaTime.h"
+#include "VelocityUnits.h"
 
 #include "maths/AzimuthalEqualAreaProjection.h"
 #include "maths/CalculateVelocity.h"
@@ -85,6 +86,7 @@ POP_MSVC_WARNINGS
 #include "maths/PointOnSphere.h"
 #include "maths/Real.h"
 
+#include "utils/Earth.h"
 #include "utils/Profile.h"
 #include "utils/ReferenceCount.h"
 
@@ -333,7 +335,11 @@ namespace GPlatesAppLogic
 						velocity_delta_time_type);
 			}
 
-			//! Calculates the velocity vector of this vertex.
+			/**
+			 * Calculates the velocity vector of this vertex.
+			 *
+			 * Note: Velocity units are cms/yr (calculated using GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS).
+			 */
 			GPlatesMaths::Vector3D
 			calc_velocity_vector(
 					const double &velocity_delta_time = 1.0,
@@ -343,10 +349,16 @@ namespace GPlatesAppLogic
 						get_point_on_sphere(),
 						get_reconstruction_time(),
 						velocity_delta_time,
-						velocity_delta_time_type);
+						velocity_delta_time_type,
+						VelocityUnits::CMS_PER_YR,
+						GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
 			}
 
-			//! Calculates the velocity colat/lon of this vertex.
+			/**
+			 * Calculates the velocity colat / lon of this vertex.
+			 *
+			 * Note: Velocity units are cms/yr (calculated using GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS).
+			 */
 			GPlatesMaths::VectorColatitudeLongitude
 			calc_velocity_colat_lon(
 					const double &velocity_delta_time = 1.0,

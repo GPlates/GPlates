@@ -64,14 +64,18 @@ GPlatesAppLogic::ResolvedVertexSourceInfo::get_velocity_vector(
 		const GPlatesMaths::PointOnSphere &point,
 		const double &reconstruction_time,
 		const double &velocity_delta_time,
-		VelocityDeltaTime::Type velocity_delta_time_type) const
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms) const
 {
 	CalcVelocityVectorVisitor visitor(
 			*this,
 			point,
 			reconstruction_time,
 			velocity_delta_time,
-			velocity_delta_time_type);
+			velocity_delta_time_type,
+			velocity_units,
+			earth_radius_in_kms);
 
 	return boost::apply_visitor(visitor, d_source);
 }
@@ -196,6 +200,81 @@ GPlatesAppLogic::ResolvedVertexSourceInfo::CalcStageRotationVisitor::operator()(
 					velocity_delta_time,
 					velocity_delta_time_type),
 			source.interpolate_ratio);
+}
+
+
+//
+// When *not* interpolating, just calculate from the stage rotation.
+//
+template <typename SourceType>
+GPlatesMaths::Vector3D
+GPlatesAppLogic::ResolvedVertexSourceInfo::CalcVelocityVectorVisitor::operator()(
+		const SourceType &source) const
+{
+	// Calculate the velocity from the stage rotation.
+	return PlateVelocityUtils::calculate_velocity_vector(
+			point,
+			source_info.get_stage_rotation(
+					reconstruction_time,
+					velocity_delta_time,
+					velocity_delta_time_type),
+			velocity_delta_time,
+			velocity_units,
+			earth_radius_in_kms);
+}
+
+
+GPlatesMaths::Vector3D
+GPlatesAppLogic::ResolvedVertexSourceInfo::CalcVelocityVectorVisitor::operator()(
+		const FixedPointVelocityAdapter &source) const
+{
+	return source.source_info->get_velocity_vector(
+			// Use the fixed point instead of the caller's point...
+			source.fixed_point,
+			reconstruction_time,
+			velocity_delta_time,
+			velocity_delta_time_type,
+			velocity_units,
+			earth_radius_in_kms);
+}
+
+
+GPlatesMaths::Vector3D
+GPlatesAppLogic::ResolvedVertexSourceInfo::CalcVelocityVectorVisitor::operator()(
+		const InterpolateVertexSourceInfos &source) const
+{
+	/*
+	 * When interpolating, avoid interpolating the stage rotations, instead interpolate the velocity vectors.
+	 *
+	 * It either source info is a @a FixedPointVelocityAdapter then 'point' should actually be ignored
+	 * (in preference to the source info's fixed point). However if we interpolated stage rotations and
+	 * then calculated velocity (at 'point') we would not be using either source info's fixed point.
+	 *
+	 * Conversely if neither source info is a @a FixedPointVelocityAdapter then 'point' should be used.
+	 * In this case since the point position does not change during interpolation we would get pretty much
+	 * the same result interpolating stage rotations versus interpolating velocities.
+	 *
+	 * See ResolvedTriangulation::Network::calculate_stage_rotation() for more reasons.
+	 */
+	const GPlatesMaths::Vector3D velocity1 =
+			source.source_info1->get_velocity_vector(
+					point,
+					reconstruction_time,
+					velocity_delta_time,
+					velocity_delta_time_type,
+					velocity_units,
+					earth_radius_in_kms);
+	const GPlatesMaths::Vector3D velocity2 =
+			source.source_info2->get_velocity_vector(
+					point,
+					reconstruction_time,
+					velocity_delta_time,
+					velocity_delta_time_type,
+					velocity_units,
+					earth_radius_in_kms);
+
+	// Interpolate the velocity vectors from both sources.
+	return (1.0 - source.interpolate_ratio) * velocity1 + source.interpolate_ratio * velocity2;
 }
 
 

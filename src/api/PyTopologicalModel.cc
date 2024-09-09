@@ -39,7 +39,6 @@
 
 #include "PyTopologicalModel.h"
 
-#include "PyCalculateVelocities.h"
 #include "PyFeature.h"
 #include "PyFeatureCollectionFunctionArgument.h"
 #include "PyPropertyValues.h"
@@ -55,6 +54,7 @@
 #include "app-logic/TopologyPointLocation.h"
 #include "app-logic/TopologyUtils.h"
 #include "app-logic/VelocityDeltaTime.h"
+#include "app-logic/VelocityUnits.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -67,6 +67,8 @@
 #include "model/types.h"
 
 #include "scribe/Scribe.h"
+
+#include "utils/Earth.h"
 
 
 namespace bp = boost::python;
@@ -360,7 +362,8 @@ namespace GPlatesApi
 				const double &reconstruction_time,
 				const double &velocity_delta_time,
 				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
-				VelocityUnits::Value velocity_units,
+				GPlatesAppLogic::VelocityUnits::Value velocity_units,
+				const double &earth_radius_in_kms,
 				bool return_inactive_points)
 		{
 			// Put the velocities in a Python list object.
@@ -374,18 +377,12 @@ namespace GPlatesApi
 						all_velocities,
 						reconstruction_time,
 						velocity_delta_time,
-						velocity_delta_time_type);
+						velocity_delta_time_type,
+						velocity_units,
+						earth_radius_in_kms);
 
-				for (auto velocity : all_velocities)
+				for (const auto &velocity : all_velocities)
 				{
-					// Units are currently in cms/yr so change if need kms/my.
-					if (velocity &&
-						velocity_units == VelocityUnits::KMS_PER_MY)
-					{
-						// cm/yr -> kms/my...
-						velocity.get() = 1e+1 * velocity.get();
-					}
-
 					// Note that boost::none gets translated to Python 'None'.
 					velocities_list_object.append(velocity);
 				}
@@ -397,17 +394,12 @@ namespace GPlatesApi
 						velocities,
 						reconstruction_time,
 						velocity_delta_time,
-						velocity_delta_time_type);
+						velocity_delta_time_type,
+						velocity_units,
+						earth_radius_in_kms);
 
-				for (auto velocity : velocities)
+				for (const auto &velocity : velocities)
 				{
-					// Units are currently in cms/yr so change if need kms/my.
-					if (velocity_units == VelocityUnits::KMS_PER_MY)
-					{
-						// cm/yr -> kms/my...
-						velocity = 1e+1 * velocity;
-					}
-
 					velocities_list_object.append(velocity);
 				}
 			}
@@ -592,7 +584,8 @@ namespace GPlatesApi
 			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
 			const double &velocity_delta_time,
 			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
-			VelocityUnits::Value velocity_units,
+			GPlatesAppLogic::VelocityUnits::Value velocity_units,
+			const double &earth_radius_in_kms,
 			bool return_inactive_points)
 	{
 		// Reconstruction time must not be distant past/future.
@@ -619,7 +612,14 @@ namespace GPlatesApi
 		GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::non_null_ptr_type geometry_time_span =
 				reconstructed_geometry_time_span->get_geometry_time_span();
 
-		return add_velocities_to_list(geometry_time_span, reconstruction_time.value(), velocity_delta_time, velocity_delta_time_type, velocity_units, return_inactive_points);
+		return add_velocities_to_list(
+				geometry_time_span,
+				reconstruction_time.value(),
+				velocity_delta_time,
+				velocity_delta_time_type,
+				velocity_units,
+				earth_radius_in_kms,
+				return_inactive_points);
 	}
 
 	/**
@@ -1562,9 +1562,11 @@ export_topological_model()
 					(bp::arg("reconstruction_time"),
 						bp::arg("velocity_delta_time"),
 						bp::arg("velocity_delta_time_type"),
-						bp::arg("velocity_units") = GPlatesApi::VelocityUnits::KMS_PER_MY,
+						bp::arg("velocity_units") = GPlatesAppLogic::VelocityUnits::KMS_PER_MY,
+						bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS,
 						bp::arg("return_inactive_points") = false),
-					"get_velocities(reconstruction_time, velocity_delta_time, velocity_delta_time_type, [velocity_units=pygplates.VelocityUnits.kms_per_my], [return_inactive_points=False])\n"
+					"get_velocities(reconstruction_time, velocity_delta_time, velocity_delta_time_type, "
+					"[velocity_units=pygplates.VelocityUnits.kms_per_my], [earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms], [return_inactive_points=False])\n"
 					"  Returns the velocities at geometry points in resolved topologies at a specific reconstruction time.\n"
 					"\n"
 					"  :param reconstruction_time: Time to extract velocities. Can be any non-negative time "
@@ -1579,6 +1581,8 @@ export_topological_model()
 					"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
 					"*centimetres per year* (defaults to *kilometres per million years*)\n"
 					"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+					"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
+					"  :type earth_radius_in_kms: float\n"
 					"  :param return_inactive_points: Whether to return velocities associated with inactive points. "
 					"If ``True`` then each velocity corresponding to an inactive point stores ``None`` instead of a "
 					"velocity and hence the size of each ``list`` of velocities is equal to the number of points "
@@ -1591,7 +1595,11 @@ export_topological_model()
 					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
 					"  :raises: ValueError if *velocity_delta_time* is negative or zero.\n"
 					"\n"
-					"  .. versionadded:: 0.46\n")
+					"  .. versionadded:: 0.46\n"
+					"\n"
+					"  .. versionchanged:: 0.47\n"
+					"     Added *earth_radius_in_kms* argument (that defaults to *pygplates.Earth.mean_radius_in_kms* "
+					"instead of *pygplates.Earth.equatorial_radius_in_kms*).\n")
 			.def("get_scalar_values",
 					&GPlatesApi::reconstructed_geometry_time_span_get_scalar_values,
 					(bp::arg("reconstruction_time"),

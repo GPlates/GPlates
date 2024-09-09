@@ -38,6 +38,7 @@
 #include "ReconstructionTreeCreator.h"
 #include "ResolvedTopologicalBoundary.h"
 #include "VelocityDeltaTime.h"
+#include "VelocityUnits.h"
 
 #include "file-io/FileInfo.h"
 
@@ -52,6 +53,7 @@
 #include "model/FeatureCollectionHandle.h"
 #include "model/types.h"
 
+#include "utils/Earth.h"
 #include "utils/ReferenceCount.h"
 
 
@@ -176,6 +178,8 @@ namespace GPlatesAppLogic
 				const std::vector<GPlatesGlobal::PointerTraits<ResolvedTopologicalNetwork>::non_null_ptr_type> &velocity_surface_resolved_topological_networks,
 				const double &velocity_delta_time = 1.0,
 				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
 				const boost::optional<VelocitySmoothingOptions> &velocity_smoothing_options = boost::none);
 
 
@@ -195,7 +199,9 @@ namespace GPlatesAppLogic
 				const GPlatesMaths::PointOnSphere &point,
 				const GPlatesMaths::FiniteRotation &finite_rotation1,
 				const GPlatesMaths::FiniteRotation &finite_rotation2,
-				const double &delta_time);
+				const double &delta_time,
+				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
 
 		/**
 		 * Calculates velocity at @a point by using the rotation between two nearby reconstruction times.
@@ -223,8 +229,9 @@ namespace GPlatesAppLogic
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &reconstruction_time,
 				const double &velocity_delta_time,
-				VelocityDeltaTime::Type velocity_delta_time_type);
-
+				VelocityDeltaTime::Type velocity_delta_time_type,
+				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
 
 		/**
 		 * Calculates velocity at @a point by using the rotation between the two specified rotations.
@@ -232,16 +239,25 @@ namespace GPlatesAppLogic
 		 * @a delta_time should be t2-t1.
 		 * For example: t1 = 10 Ma, t2 = 11 Ma, delta_time = 1 My.
 		 */
-		inline
 		GPlatesMaths::Vector3D
 		calculate_velocity_vector(
 				const GPlatesMaths::PointOnSphere &point,
 				const GPlatesMaths::FiniteRotation &finite_rotation1,
 				const GPlatesMaths::FiniteRotation &finite_rotation2,
-				const double &delta_time)
-		{
-			return GPlatesMaths::calculate_velocity_vector(point, finite_rotation1, finite_rotation2, delta_time);
-		}
+				const double &delta_time,
+				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
+
+		/**
+		 * Calculates velocity at @a point by using the specified stage rotation.
+		 */
+		GPlatesMaths::Vector3D
+		calculate_velocity_vector(
+				const GPlatesMaths::PointOnSphere &point,
+				const GPlatesMaths::FiniteRotation &stage_rotation,
+				const double &velocity_delta_time,
+				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
 
 		/**
 		 * Calculates velocity at @a point by using the rotation between two nearby reconstruction times.
@@ -270,7 +286,9 @@ namespace GPlatesAppLogic
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &reconstruction_time,
 				const double &velocity_delta_time,
-				VelocityDeltaTime::Type velocity_delta_time_type);
+				VelocityDeltaTime::Type velocity_delta_time_type,
+				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
 
 
 		/**
@@ -319,7 +337,9 @@ namespace GPlatesAppLogic
 			calculate_velocity(
 					const GPlatesMaths::PointOnSphere &point,
 					const double &velocity_delta_time = 1.0,
-					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T) const;
+					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+					const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS) const;
 
 		private:
 
