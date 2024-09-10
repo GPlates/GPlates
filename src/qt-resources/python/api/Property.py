@@ -32,7 +32,7 @@ def get_value(property, time=0):
     
     .. note:: This method never returns a time-dependent property value (:class:`GpmlConstantValue`,
        :class:`GpmlIrregularSampling` or :class:`GpmlPiecewiseAggregation`).
-       You can use :meth:`get_time_dependent_container` for that.
+       You can use :meth:`get_time_dependent_value` for that.
     
     .. seealso:: :meth:`PropertyValue.get_value`
     """

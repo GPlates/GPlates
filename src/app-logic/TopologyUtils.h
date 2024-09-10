@@ -264,12 +264,14 @@ namespace GPlatesAppLogic
 		 * Finds all sub-segments shared by resolved topology boundaries and network boundaries.
 		 *
 		 * These sub-segments are separated into non-overlapping sections.
-		 * This is in contrast to simply gathering all sub-segments of these resolved boundaries/networks
-		 * which will overlap each other (eg, two plate polygons share parts of their boundary
-		 * leading to duplication).
+		 * This is in contrast to simply gathering all sub-segments of these resolved boundaries/networks which
+		 * will overlap each other (eg, two plate polygons share parts of their boundary leading to duplication).
 		 *
-		 * Each @a ResolvedTopologicalSection gathers the shared sub-segments associated with a
-		 * single topological section.
+		 * Each @a ResolvedTopologicalSection gathers the shared sub-segments associated with a single topological section.
+		 *
+		 * Note: The order of shared sub-segments within a resolved topological section is from its *start* to its *end*
+		 *       In other words, the *first* sub-segment will be at (or near) the *start* of the section geometry and
+		 *       the *last* sub-segment will be at (or near) the *end* of the section geometry.
 		 */
 		void
 		find_resolved_topological_sections(

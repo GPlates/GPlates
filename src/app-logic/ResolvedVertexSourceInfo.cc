@@ -246,7 +246,7 @@ GPlatesAppLogic::ResolvedVertexSourceInfo::CalcVelocityVectorVisitor::operator()
 	/*
 	 * When interpolating, avoid interpolating the stage rotations, instead interpolate the velocity vectors.
 	 *
-	 * It either source info is a @a FixedPointVelocityAdapter then 'point' should actually be ignored
+	 * If either source info is a @a FixedPointVelocityAdapter then 'point' should actually be ignored
 	 * (in preference to the source info's fixed point). However if we interpolated stage rotations and
 	 * then calculated velocity (at 'point') we would not be using either source info's fixed point.
 	 *

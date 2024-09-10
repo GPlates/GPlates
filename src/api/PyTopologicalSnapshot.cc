@@ -538,8 +538,8 @@ namespace GPlatesApi
 		// Array index zero corresponds to an empty 'resolve_topological_section_types' where no sections are returned.
 		unsigned int array_index = 0;
 
-		if ((resolve_topological_section_types & (ResolveTopologyType::BOUNDARY | ResolveTopologyType::NETWORK)) ==
-			(ResolveTopologyType::BOUNDARY | ResolveTopologyType::NETWORK))
+		if ((resolve_topological_section_types & ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES) ==
+			ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES)
 		{
 			// BOUNDARY and NETWORK
 			array_index = 1;
