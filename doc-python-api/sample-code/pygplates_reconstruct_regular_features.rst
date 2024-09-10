@@ -99,22 +99,12 @@ Sample code
     # A function to return the centroid of the geometry (point/multipoint/polyline/polygon).
     def get_geometry_centroid(geometry):
         
-        # See if geometry is a polygon.
         try:
-            return geometry.get_interior_centroid()
-        except AttributeError:
-            # Not a polygon so keeping going.
-            pass
-        
-        # See if geometry is a polyline or multipoint.
-        try:
+            # See if geometry is a polygon, polyline or multipoint.
             return geometry.get_centroid()
         except AttributeError:
-            # Not a polyline or multipoint so keeping going.
-            pass
-        
-        # Geometry must be a point - it is already its own centroid.
-        return geometry
+            # Geometry must be a point - it is already its own centroid.
+            return geometry
 
 
     # Load one or more rotation files into a rotation model.
@@ -152,27 +142,18 @@ Details
 """""""
 
 | We define a function to return the centroid of a geometry.
-| We don't necessarily know whether the geometry is a :class:`pygplates.PointOnSphere`,
-  :class:`pygplates.MultiPointOnSphere`, :class:`pygplates.PolylineOnSphere` or :class:`pygplates.PolygonOnSphere`.
-| Each geometry type requires a different method for obtaining its centroid.
-  We use the standard Python approach of attempting to use a method and if it fails try something else.
-| So first we see if it's a polygon and call :meth:`pygplates.PolygonOnSphere.get_interior_centroid`.
-  Then we see if it's a polyline or multipoint - both of which have a ``get_centroid()`` method
-  (:meth:`pygplates.PolylineOnSphere.get_centroid` and :meth:`pygplates.MultiPointOnSphere.get_centroid`).
-  If they all fail then it must be a point geometry so we just return that as the centroid.
+| If the geometry is a :class:`pygplates.MultiPointOnSphere`, :class:`pygplates.PolylineOnSphere` or :class:`pygplates.PolygonOnSphere`
+  then we can call ``get_centroid()`` on it (since those geometry types all have that method).
+  However, if it's a :class:`pygplates.PointOnSphere` then it does not have that method, in which case we just return
+  the point since it's already its own centroid.
 
 ::
 
     def get_geometry_centroid(geometry):
         try:
-            return geometry.get_interior_centroid()
-        except AttributeError:
-            pass
-        try:
             return geometry.get_centroid()
         except AttributeError:
-            pass
-        return geometry
+            return geometry
 
 The rotations are loaded from a rotation file into a :class:`pygplates.RotationModel`.
 ::
