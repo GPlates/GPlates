@@ -42,15 +42,38 @@ namespace GPlatesAppLogic
 	public:
 		PlateBoundaryStat(
 				const GPlatesMaths::PointOnSphere &point_,
-				const GPlatesMaths::Vector3D &absolute_velocity_) :
+				const GPlatesMaths::Vector3D &absolute_velocity_,
+				const double &distance_from_start_of_topological_section_) :
 			point(point_),
-			absolute_velocity(absolute_velocity_)
+			absolute_velocity(absolute_velocity_),
+			distance_from_start_of_topological_section(distance_from_start_of_topological_section_),
+			distance_to_end_of_topological_section(0)  // not yet known - must be set after construction
 		{  }
 
 		//! Point location on a plate boundary.
 		GPlatesMaths::PointOnSphere point;
+
 		//! Velocity of the plate boundary itself (at the point location).
 		GPlatesMaths::Vector3D absolute_velocity;
+
+		/**
+		 * Distance (in radians) from the *start* of the *first* shared sub-segment (in a resolved topological section)
+		 * to the current location (along the geometry of the resolved topological section).
+		 *
+		 * A resolved topological section represents a distinct feature used as part of the boundary of a plate.
+		 * So, depending on how the topological model is built, this could be considered the distance to the start
+		 * of a trench if the topological section is a subduction zone, for example.
+		 *
+		 * This distance can include gaps (between consecutive shared sub-segments) that no plate uses as part of its boundary
+		 * (these don't typically exist for a *global* topological model where plates cover the entire globe).
+		 */
+		double distance_from_start_of_topological_section;
+
+		/**
+		 * Similar to @a distance_from_start_of_topological_section, but it's distance to the *end* of the *last* shared sub-segment
+		 * (instead of distance from the *start* of the *first* shared sub-segment).
+		 */
+		double distance_to_end_of_topological_section;
 	};
 
 	/**
