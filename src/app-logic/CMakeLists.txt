@@ -89,6 +89,8 @@ set(srcs
     PartitionFeatureTask.h
     PartitionFeatureUtils.cc
     PartitionFeatureUtils.h
+    PlateBoundaryStats.cc
+    PlateBoundaryStats.h
     PlateVelocityUtils.cc
     PlateVelocityUtils.h
     PropertyExtractors.cc
