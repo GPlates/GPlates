@@ -614,7 +614,7 @@ namespace GPlatesAppLogic
 		ReconstructHandle::type
 		get_reconstructed_feature_velocities(
 				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
-				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
 				const double &velocity_delta_time = 1.0)
 		{
 			return get_reconstructed_feature_velocities(
@@ -634,7 +634,7 @@ namespace GPlatesAppLogic
 		get_reconstructed_feature_velocities(
 				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
 				const ReconstructParams &reconstruct_params,
-				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
 				const double &velocity_delta_time = 1.0)
 		{
 			return get_reconstructed_feature_velocities(
@@ -654,7 +654,7 @@ namespace GPlatesAppLogic
 		get_reconstructed_feature_velocities(
 				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
 				const double &reconstruction_time,
-				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
 				const double &velocity_delta_time = 1.0)
 		{
 			return get_reconstructed_feature_velocities(
@@ -677,7 +677,7 @@ namespace GPlatesAppLogic
 				std::vector<MultiPointVectorField::non_null_ptr_type> &reconstructed_feature_velocities,
 				const ReconstructParams &reconstruct_params,
 				const double &reconstruction_time,
-				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
 				const double &velocity_delta_time = 1.0);
 
 

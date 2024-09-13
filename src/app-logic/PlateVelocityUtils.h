@@ -177,7 +177,7 @@ namespace GPlatesAppLogic
 				// and we are avoiding that due to a cyclic header dependency with "ResolvedTopologicalNetwork.h"...
 				const std::vector<GPlatesGlobal::PointerTraits<ResolvedTopologicalNetwork>::non_null_ptr_type> &velocity_surface_resolved_topological_networks,
 				const double &velocity_delta_time = 1.0,
-				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_MINUS_HALF_DELTA_T,
+				VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
 				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
 				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
 				const boost::optional<VelocitySmoothingOptions> &velocity_smoothing_options = boost::none);
