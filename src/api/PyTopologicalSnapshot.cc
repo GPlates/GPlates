@@ -309,6 +309,14 @@ namespace GPlatesApi
 		return plate_boundary_stats_list;
 	}
 
+	// Convert UnitVector3D to Vector3D.
+	GPlatesMaths::Vector3D
+	plate_boundary_statistic_get_boundary_normal(
+			const GPlatesAppLogic::PlateBoundaryStat &plate_boundary_statistic)
+	{
+		return GPlatesMaths::Vector3D(plate_boundary_statistic.get_boundary_normal());
+	}
+
 
 	TopologicalSnapshot::non_null_ptr_type
 	TopologicalSnapshot::create(
@@ -1169,9 +1177,18 @@ export_topological_snapshot()
 				"Point location on a plate boundary.\n"
 				"\n"
 				"  :type: :class:`PointOnSphere`\n")
+		.add_property("boundary_normal",
+				&GPlatesApi::plate_boundary_statistic_get_boundary_normal,
+				"Normal to the plate boundary (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: :class:`Vector3D`\n"
+				"\n"
+				"  .. note:: This is the normal of the :class:`great circle arc <GreatCircleArc>` segment (that the :attr:`point <point_location>` is located on). "
+				"And the normal is to the *left* of the segment (when following the vertices of the :class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` "
+				"that the :attr:`point <point_location>` is located on).\n")
 		.add_property("boundary_velocity",
 				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_boundary_velocity, bp::return_value_policy<bp::copy_const_reference>()),
-				"Velocity of the plate boundary (at the point location).\n"
+				"Velocity of the plate boundary (at the :attr:`point location <point_location>`).\n"
 				"\n"
 				"  :type: :class:`Vector3D`\n")
 		.add_property("signed_distance_from_start_of_topological_section",

@@ -2726,6 +2726,15 @@ class TopologicalSnapshotCase(unittest.TestCase):
         plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), include_network_boundaries=True)
         self.assertTrue(len(plate_boundary_stats) == 60)
 
+        # Access PlateBoundaryStatistic attributes - just to make sure they can be queried.
+        plate_boundary_stats[0].point_location
+        self.assertAlmostEqual(plate_boundary_stats[0].boundary_normal.get_magnitude(), 1.0)
+        self.assertTrue(plate_boundary_stats[0].boundary_velocity == pygplates.Vector3D.zero)
+        plate_boundary_stats[0].distance_from_start_of_topological_section
+        plate_boundary_stats[0].signed_distance_from_start_of_topological_section
+        plate_boundary_stats[0].distance_to_end_of_topological_section
+        plate_boundary_stats[0].signed_distance_to_end_of_topological_section
+
         # Return a dict mapping each shared sub-segment to its statistics.
         plate_boundary_stats_dict = snapshot.calculate_plate_boundary_statistics(math.radians(10), include_network_boundaries=True, return_shared_sub_segment_dict=True)
         self.assertTrue(len(plate_boundary_stats_dict) == 32)

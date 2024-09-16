@@ -34,6 +34,50 @@ namespace GPlatesAppLogic
 	namespace
 	{
 		/**
+		 * Get the normal to the specified (great circle arc) segment.
+		 *
+		 * This is to the left of the segment.
+		 */
+		GPlatesMaths::UnitVector3D
+		get_boundary_normal(
+				const GPlatesMaths::PolylineOnSphere &shared_sub_segment_polyline,
+				unsigned int segment_index)
+		{
+			// If requested segment is NOT zero length then return its normal.
+			const GPlatesMaths::GreatCircleArc &segment = shared_sub_segment_polyline.get_segment(segment_index);
+			if (!segment.is_zero_length())
+			{
+				return segment.rotation_axis();
+			}
+
+			// Search through *previous* segments for a non-zero length segment and use its normal.
+			for (int prev_segment_index = segment_index - 1; prev_segment_index >= 0; --prev_segment_index)
+			{
+				const GPlatesMaths::GreatCircleArc &prev_segment = shared_sub_segment_polyline.get_segment(prev_segment_index);
+				if (!prev_segment.is_zero_length())
+				{
+					return prev_segment.rotation_axis();
+				}
+			}
+
+			// Search through *next* segments for a non-zero length segment and use its normal.
+			const unsigned int num_segments = shared_sub_segment_polyline.number_of_segments();
+			for (unsigned int next_segment_index = segment_index + 1; next_segment_index < num_segments; ++next_segment_index)
+			{
+				const GPlatesMaths::GreatCircleArc &next_segment = shared_sub_segment_polyline.get_segment(next_segment_index);
+				if (!next_segment.is_zero_length())
+				{
+					return next_segment.rotation_axis();
+				}
+			}
+
+			// The entire polyline is zero length, so just return an arbitrary normal.
+			//
+			// Zero length shared sub-segments (polyline) shouldn't get generated in the first place though.
+			return GPlatesMaths::UnitVector3D::zBasis();
+		}
+
+		/**
 		 * Calculate plate boundary statistics at uniformly spaced points along a shared sub-segment.
 		 *
 		 * Note: Here we consider the start/end of the topological section to be the start/end of ALL its
@@ -76,10 +120,6 @@ namespace GPlatesAppLogic
 			GPlatesMaths::Vector3D segment_start_boundary_velocity;
 			GPlatesMaths::Vector3D segment_end_boundary_velocity;
 
-			//qDebug() << "(" << GPlatesMaths::convert_rad_to_deg(signed_distance_from_start_of_topological_section_to_start_of_shared_sub_segment) << ","
-			//		<< GPlatesMaths::convert_rad_to_deg(signed_distance_from_end_of_topological_section_to_start_of_shared_sub_segment) << ")"
-			//		<< "first_uniform_point_spacing:" << GPlatesMaths::convert_rad_to_deg(first_uniform_point_spacing);
-
 			// Calculate statistics for each uniform point.
 			const unsigned int num_uniform_points = uniform_points.size();
 			for (unsigned int uniform_point_index = 0; uniform_point_index < num_uniform_points; ++uniform_point_index)
@@ -88,6 +128,8 @@ namespace GPlatesAppLogic
 
 				const unsigned int segment_index = segment_informations[uniform_point_index].first;
 				const double &segment_interpolation = segment_informations[uniform_point_index].second;
+
+				const GPlatesMaths::UnitVector3D boundary_normal = get_boundary_normal(*shared_sub_segment_polyline, segment_index);
 
 				// If encountering a new segment (arc) of shared sub-segment, then calculate boundary velocities at its start/end points.
 				if (segment_index != last_segment_index)
@@ -126,12 +168,10 @@ namespace GPlatesAppLogic
 				shared_sub_segment_plate_boundary_stats.push_back(
 						PlateBoundaryStat(
 								point,
+								boundary_normal,
 								boundary_velocity,
 								signed_distance_from_start_of_topological_section,
 								signed_distance_to_end_of_topological_section));
-				//qDebug() << "  (" << GPlatesMaths::convert_rad_to_deg(signed_distance_from_start_of_topological_section) << ","
-				//		<< GPlatesMaths::convert_rad_to_deg(signed_distance_to_end_of_topological_section) << ")"
-				//		<< make_lat_lon_point(point);
 			}
 		}
 
@@ -259,9 +299,6 @@ namespace GPlatesAppLogic
 						boost::none,
 						ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(start_intersection_of_shared_sub_segment.get()));
 
-				//qDebug() << "start int:" << make_lat_lon_point(from_start_of_topological_section_range.get_geometry()->start_point())
-				//		<< "end int:" << make_lat_lon_point(from_start_of_topological_section_range.get_geometry()->end_point());
-
 				// Distance is positive since it's an intersection.
 				return from_start_of_topological_section_range.get_geometry()->get_arc_length().dval();
 			}
@@ -279,9 +316,6 @@ namespace GPlatesAppLogic
 						ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(
 								ResolvedSubSegmentRangeInSection::Intersection::create_at_section_start_or_end(
 										*shared_sub_segment->get_section_geometry(), true/*at_start*/)));
-
-				//qDebug() << "start rb:" << make_lat_lon_point(to_start_of_topological_section_range.get_geometry()->start_point())
-				//		<< "end rb:" << make_lat_lon_point(to_start_of_topological_section_range.get_geometry()->end_point());
 
 				// Distance is negative since it's a rubber band.
 				return -to_start_of_topological_section_range.get_geometry()->get_arc_length().dval();
@@ -439,6 +473,7 @@ GPlatesAppLogic::PlateBoundaryStat::transcribe_construct_data(
 	if (scribe.is_saving())
 	{
 		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_point, "point");
+		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_boundary_normal, "boundary_normal");
 		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_boundary_velocity, "boundary_velocity");
 		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_signed_distance_from_start_of_topological_section, "signed_distance_from_start_of_topological_section");
 		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_signed_distance_to_end_of_topological_section, "signed_distance_to_end_of_topological_section");
@@ -447,6 +482,12 @@ GPlatesAppLogic::PlateBoundaryStat::transcribe_construct_data(
 	{
 		GPlatesScribe::LoadRef<GPlatesMaths::PointOnSphere> point_ = scribe.load<GPlatesMaths::PointOnSphere>(TRANSCRIBE_SOURCE, "point");
 		if (!point_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesScribe::LoadRef<GPlatesMaths::UnitVector3D> boundary_normal_ = scribe.load<GPlatesMaths::UnitVector3D>(TRANSCRIBE_SOURCE, "boundary_normal");
+		if (!boundary_normal_.is_valid())
 		{
 			return scribe.get_transcribe_result();
 		}
@@ -463,6 +504,7 @@ GPlatesAppLogic::PlateBoundaryStat::transcribe_construct_data(
 
 		plate_boundary_stat.construct_object(
 				point_,
+				boundary_normal_,
 				boundary_velocity_,
 				signed_distance_from_start_of_topological_section_.dval(),
 				signed_distance_to_end_of_topological_section_.dval());
@@ -480,6 +522,7 @@ GPlatesAppLogic::PlateBoundaryStat::transcribe(
 	if (!transcribed_construct_data)
 	{
 		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_point, "point") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_boundary_normal, "boundary_normal") ||
 			!scribe.transcribe(TRANSCRIBE_SOURCE, d_boundary_velocity, "boundary_velocity") ||
 			!scribe.transcribe(TRANSCRIBE_SOURCE, d_signed_distance_from_start_of_topological_section, "signed_distance_from_start_of_topological_section") ||
 			!scribe.transcribe(TRANSCRIBE_SOURCE, d_signed_distance_to_end_of_topological_section, "signed_distance_to_end_of_topological_section"))

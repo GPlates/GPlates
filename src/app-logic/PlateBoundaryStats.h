@@ -31,6 +31,7 @@
 
 #include "maths/MathsUtils.h"
 #include "maths/Real.h"
+#include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
 
 // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
@@ -49,10 +50,12 @@ namespace GPlatesAppLogic
 	public:
 		PlateBoundaryStat(
 				const GPlatesMaths::PointOnSphere &point_,
+				const GPlatesMaths::UnitVector3D &boundary_normal_,
 				const GPlatesMaths::Vector3D &boundary_velocity_,
 				const double &signed_distance_from_start_of_topological_section_,
 				const double &signed_distance_to_end_of_topological_section_) :
 			d_point(point_),
+			d_boundary_normal(boundary_normal_),
 			d_boundary_velocity(boundary_velocity_),
 			d_signed_distance_from_start_of_topological_section(signed_distance_from_start_of_topological_section_),
 			d_signed_distance_to_end_of_topological_section(signed_distance_to_end_of_topological_section_)
@@ -63,6 +66,18 @@ namespace GPlatesAppLogic
 		get_point_location() const
 		{
 			return d_point;
+		}
+
+		/**
+		 * Get the normal to the plate boundary (at the point location).
+		 *
+		 * This is the normal of the great circle arc segment the point is located on
+		 * (which is to the left of the segment).
+		 */
+		const GPlatesMaths::UnitVector3D &
+		get_boundary_normal() const
+		{
+			return d_boundary_normal;
 		}
 
 		//! Get the velocity of the plate boundary itself (at the point location).
@@ -154,6 +169,9 @@ namespace GPlatesAppLogic
 	private:
 		//! Point location on a plate boundary.
 		GPlatesMaths::PointOnSphere d_point;
+
+		//! Normal to the plate boundary (at the point location).
+		GPlatesMaths::UnitVector3D d_boundary_normal;
 
 		//! Velocity of the plate boundary itself (at the point location).
 		GPlatesMaths::Vector3D d_boundary_velocity;
