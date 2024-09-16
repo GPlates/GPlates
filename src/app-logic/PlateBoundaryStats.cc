@@ -31,11 +31,18 @@ namespace GPlatesAppLogic
 {
 	namespace
 	{
+		/**
+		 * Calculate plate boundary statistics at uniformly spaced points along a shared sub-segment.
+		 *
+		 * Note: Here we consider the start/end of the topological section to be the start/end of ALL its
+		 *       shared sub-segments (not the actual start/end of the topological section geometry).
+		 */
 		void
 		calculate_plate_boundary_stats_for_shared_sub_segment(
 				std::vector<PlateBoundaryStat> &shared_sub_segment_plate_boundary_stats,
 				const ResolvedTopologicalSharedSubSegment::non_null_ptr_type &shared_sub_segment,
-				const double &distance_from_start_of_topological_section_to_start_of_shared_sub_segment,
+				const double &signed_distance_from_start_of_topological_section_to_start_of_shared_sub_segment,
+				const double &signed_distance_from_end_of_topological_section_to_start_of_shared_sub_segment,
 				const double &reconstruction_time,
 				const double &uniform_point_spacing,
 				const double &first_uniform_point_spacing,
@@ -64,8 +71,12 @@ namespace GPlatesAppLogic
 
 			// Avoid unnecessary re-calculations for uniform points on the same segment (arc) of shared sub-segment polyline.
 			boost::optional<unsigned int> last_segment_index;
-			GPlatesMaths::Vector3D segment_start_absolute_velocity;
-			GPlatesMaths::Vector3D segment_end_absolute_velocity;
+			GPlatesMaths::Vector3D segment_start_boundary_velocity;
+			GPlatesMaths::Vector3D segment_end_boundary_velocity;
+
+			//qDebug() << "(" << GPlatesMaths::convert_rad_to_deg(signed_distance_from_start_of_topological_section_to_start_of_shared_sub_segment) << ","
+			//		<< GPlatesMaths::convert_rad_to_deg(signed_distance_from_end_of_topological_section_to_start_of_shared_sub_segment) << ")"
+			//		<< "first_uniform_point_spacing:" << GPlatesMaths::convert_rad_to_deg(first_uniform_point_spacing);
 
 			// Calculate statistics for each uniform point.
 			const unsigned int num_uniform_points = uniform_points.size();
@@ -76,7 +87,7 @@ namespace GPlatesAppLogic
 				const unsigned int segment_index = segment_informations[uniform_point_index].first;
 				const double &segment_interpolation = segment_informations[uniform_point_index].second;
 
-				// If encountering a new segment (arc) of shared sub-segment, then calculate absolute velocities at its start/end points.
+				// If encountering a new segment (arc) of shared sub-segment, then calculate boundary velocities at its start/end points.
 				if (segment_index != last_segment_index)
 				{
 					const GPlatesMaths::PointOnSphere &segment_start_point = shared_sub_segment_polyline->get_vertex(segment_index);
@@ -85,10 +96,10 @@ namespace GPlatesAppLogic
 					const ResolvedVertexSourceInfo &segment_start_resolved_vertex_source = *shared_sub_segment_vertex_source_infos[segment_index];
 					const ResolvedVertexSourceInfo &segment_end_resolved_vertex_source = *shared_sub_segment_vertex_source_infos[segment_index + 1];
 
-					segment_start_absolute_velocity = segment_start_resolved_vertex_source.get_velocity_vector(
+					segment_start_boundary_velocity = segment_start_resolved_vertex_source.get_velocity_vector(
 							segment_start_point,
 							reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms);
-					segment_end_absolute_velocity = segment_end_resolved_vertex_source.get_velocity_vector(
+					segment_end_boundary_velocity = segment_end_resolved_vertex_source.get_velocity_vector(
 							segment_end_point,
 							reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms);
 
@@ -96,73 +107,237 @@ namespace GPlatesAppLogic
 				}
 
 				// Interpolate the segment start and end velocity vectors.
-				const GPlatesMaths::Vector3D absolute_velocity =
-						(1.0 - segment_interpolation) * segment_start_absolute_velocity + segment_interpolation * segment_end_absolute_velocity;
+				const GPlatesMaths::Vector3D boundary_velocity =
+						(1.0 - segment_interpolation) * segment_start_boundary_velocity + segment_interpolation * segment_end_boundary_velocity;
+
+				// Distance from start of shared sub-segment to current point (along shared sub-segment).
+				const double distance_from_start_of_shared_sub_segment = first_uniform_point_spacing + uniform_point_index * uniform_point_spacing;
 
 				// Distance from start of topological section to the current location.
-				//
-				// This include distance from start of shared sub-segment to current point (along shared sub-segment).
-				const double distance_from_start_of_topological_section = distance_from_start_of_topological_section_to_start_of_shared_sub_segment +
-						first_uniform_point_spacing + uniform_point_index * uniform_point_spacing;
+				const double signed_distance_from_start_of_topological_section =
+						signed_distance_from_start_of_topological_section_to_start_of_shared_sub_segment + distance_from_start_of_shared_sub_segment;
+				// Distance from the current location to end of topological section.
+				const double signed_distance_to_end_of_topological_section =
+						signed_distance_from_end_of_topological_section_to_start_of_shared_sub_segment - distance_from_start_of_shared_sub_segment;
 
 				// Record the statistics for the current uniform point.
 				shared_sub_segment_plate_boundary_stats.push_back(
 						PlateBoundaryStat(
 								point,
-								absolute_velocity,
-								distance_from_start_of_topological_section));
+								boundary_velocity,
+								signed_distance_from_start_of_topological_section,
+								signed_distance_to_end_of_topological_section));
+				//qDebug() << "  (" << GPlatesMaths::convert_rad_to_deg(signed_distance_from_start_of_topological_section) << ","
+				//		<< GPlatesMaths::convert_rad_to_deg(signed_distance_to_end_of_topological_section) << ")"
+				//		<< make_lat_lon_point(point);
 			}
 		}
 
-		double
-		distance_from_start_of_previous_shared_sub_segment(
-				const ResolvedTopologicalSharedSubSegment::non_null_ptr_type &prev_shared_sub_segment,
-				const ResolvedTopologicalSharedSubSegment::non_null_ptr_type &curr_shared_sub_segment,
-				bool &is_gap_since_previous_shared_sub_segment)
+		/**
+		 * Calculate distances from the start of the topological section geometry to the start and end of the span of shared sub-segments.
+		 *
+		 * Note: This excludes any rubber-band parts of shared sub-segments.
+		 *       We're only considering the actual topological section geometry itself.
+		 */
+		void
+		calculate_distances_from_start_of_topological_section_to_start_and_end_of_shared_sub_segments(
+				const ResolvedTopologicalSection::non_null_ptr_type &resolved_topological_section,
+				double &distance_to_start_of_topological_section,
+				double &distance_to_end_of_topological_section)
 		{
-			double distance = 0;
-			
-			// Polyline geometry of the *previous* shared sub-segment.
-			const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type prev_shared_sub_segment_polyline =
-					prev_shared_sub_segment->get_shared_sub_segment_geometry();
+			// All shared sub-segments reference the same section geometry.
+			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type section_geometry =
+					resolved_topological_section->get_shared_sub_segments().front()->get_section_geometry();
 
-			// Accumulate length of *previous* shared sub-segment.
-			distance += prev_shared_sub_segment_polyline->get_arc_length().dval();
+			boost::optional<ResolvedSubSegmentRangeInSection::Intersection> start_of_topological_section;
+			boost::optional<ResolvedSubSegmentRangeInSection::Intersection> end_of_topological_section;
 
-			//
-			// If there's a gap between the current and previous shared sub-segments then accumulate the length of that gap.
-			//
-
-			// Last vertex of *previous* shared sub-segment.
-			const GPlatesMaths::PointOnSphere &prev_shared_sub_segment_end_point =
-					prev_shared_sub_segment_polyline->get_vertex(prev_shared_sub_segment_polyline->number_of_vertices() - 1);
-
-			// Polyline geometry of the *current* shared sub-segment.
-			const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type curr_shared_sub_segment_polyline =
-					curr_shared_sub_segment->get_shared_sub_segment_geometry();
-
-			// First vertex of *current* shared sub-segment.
-			const GPlatesMaths::PointOnSphere &curr_shared_sub_segment_start_point = curr_shared_sub_segment_polyline->get_vertex(0);
-
-			if (curr_shared_sub_segment_start_point != prev_shared_sub_segment_end_point)
+			// Find the closest start (and closest end) of the shared sub-segments to the start (and end) of the topological section geometry.
+			for (const auto &shared_sub_segment : resolved_topological_section->get_shared_sub_segments())
 			{
-				// The gap between the end of the *previous* sub-segment and the start of the *current* sub-segment.
-				const ResolvedSubSegmentRangeInSection gap_between_shared_sub_segments(
-						curr_shared_sub_segment->get_section_geometry(),  // all shared sub-segments reference the same section geometry
-						prev_shared_sub_segment->get_shared_sub_segment().get_end_intersection_or_rubber_band(),
-						curr_shared_sub_segment->get_shared_sub_segment().get_start_intersection_or_rubber_band());
+				const ResolvedSubSegmentRangeInSection &shared_sub_segment_range = shared_sub_segment->get_shared_sub_segment();
 
-				// Accumulate the length of the gap between previous and current shared sub-segments (along the section geometry).
-				distance += gap_between_shared_sub_segments.get_geometry()->get_arc_length().dval();
+				// Look at *start* of shared sub-segment.
+				if (const boost::optional<ResolvedSubSegmentRangeInSection::Intersection> &start_of_shared_sub_segment =
+					shared_sub_segment_range.get_start_intersection())
+				{
+					if (start_of_topological_section)
+					{
+						// See if start of current shared sub-segment is closer to the start of topological section geometry.
+						if (start_of_shared_sub_segment.get() < start_of_topological_section.get())
+						{
+							start_of_topological_section = start_of_shared_sub_segment;
+						}
+					}
+					else
+					{
+						// First shared sub-segment encountered.
+						start_of_topological_section = shared_sub_segment_range.get_start_intersection();
+					}
+				}
+				else
+				{
+					// Else the start of shared sub-segment is either a rubber band or exactly at start of topological section geometry.
+					//
+					// In this case we consider the start of the topological section to be the start of its section geometry
+					// (because we're not considering rubber band sections to be part of a topological section for our purposes here).
+					start_of_topological_section = ResolvedSubSegmentRangeInSection::Intersection::create_at_section_start_or_end(
+							*section_geometry, true/*at_start*/);
+				}
 
-				is_gap_since_previous_shared_sub_segment = true;
+				// Look at *end* of shared sub-segment.
+				if (const boost::optional<ResolvedSubSegmentRangeInSection::Intersection> &end_of_shared_sub_segment =
+					shared_sub_segment_range.get_end_intersection())
+				{
+					if (end_of_topological_section)
+					{
+						// See if end of current shared sub-segment is closer to the end of topological section geometry.
+						if (end_of_shared_sub_segment.get() > end_of_topological_section.get())
+						{
+							end_of_topological_section = end_of_shared_sub_segment;
+						}
+					}
+					else
+					{
+						// First shared sub-segment encountered.
+						end_of_topological_section = shared_sub_segment_range.get_end_intersection();
+					}
+				}
+				else
+				{
+					// Else the end of shared sub-segment is either a rubber band or exactly at end of topological section geometry.
+					//
+					// In this case we consider the end of the topological section to be the end of its section geometry
+					// (because we're not considering rubber band sections to be part of a topological section for our purposes here).
+					end_of_topological_section = ResolvedSubSegmentRangeInSection::Intersection::create_at_section_start_or_end(
+							*section_geometry, false/*at_start*/);
+				}
 			}
-			else
+
+			// Range of topological section geometry from its first vertex to the closest start point of the shared sub-segments.
+			const ResolvedSubSegmentRangeInSection range_to_start_of_shared_sub_segments(
+					section_geometry,
+					// No start intersection (or rubber band) means beginning of topological section geometry...
+					boost::none,
+					ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(start_of_topological_section.get()));
+			distance_to_start_of_topological_section = range_to_start_of_shared_sub_segments.get_geometry()->get_arc_length().dval();
+
+			// Range of topological section geometry from its first vertex to the farthest end point of the shared sub-segments.
+			const ResolvedSubSegmentRangeInSection range_to_end_of_shared_sub_segments(
+					section_geometry,
+					// No start intersection (or rubber band) means beginning of topological section geometry...
+					boost::none,
+					ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(end_of_topological_section.get()));
+			distance_to_end_of_topological_section = range_to_end_of_shared_sub_segments.get_geometry()->get_arc_length().dval();
+		}
+
+		/**
+		 * Calculate the *signed* distance from the start of the shared sub-segment to the start of topological section geometry.
+		 *
+		 * It is negative if start of shared sub-segment is a rubber-band. That is, it's not on
+		 * the actual resolved topological section geometry but on the part that rubber-bands (joins)
+		 * the *start* of the resolved topological section geometry with an adjacent resolved topological section
+		 * (that's also part of a plate boundary).
+		 */
+		double
+		calculate_signed_distance_from_start_of_topological_section_to_start_of_shared_sub_segment(
+				const ResolvedTopologicalSharedSubSegment::non_null_ptr_type &shared_sub_segment)
+		{
+			const ResolvedSubSegmentRangeInSection &shared_sub_segment_range = shared_sub_segment->get_shared_sub_segment();
+
+			// See if start of shared sub-segment is an intersection.
+			const boost::optional<ResolvedSubSegmentRangeInSection::Intersection> &start_intersection_of_shared_sub_segment =
+					shared_sub_segment_range.get_start_intersection();
+			if (start_intersection_of_shared_sub_segment)
 			{
-				is_gap_since_previous_shared_sub_segment = false;
+				// Range from start of topological section geometry to start intersection of shared sub-segment.
+				const ResolvedSubSegmentRangeInSection from_start_of_topological_section_range(
+						shared_sub_segment->get_section_geometry(),
+						// No start intersection (or rubber band) means beginning of topological section geometry...
+						boost::none,
+						ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(start_intersection_of_shared_sub_segment.get()));
+
+				//qDebug() << "start int:" << make_lat_lon_point(from_start_of_topological_section_range.get_geometry()->start_point())
+				//		<< "end int:" << make_lat_lon_point(from_start_of_topological_section_range.get_geometry()->end_point());
+
+				// Distance is positive since it's an intersection.
+				return from_start_of_topological_section_range.get_geometry()->get_arc_length().dval();
 			}
 
-			return distance;
+			// See if start of shared sub-segment is a rubber band.
+			const boost::optional<ResolvedSubSegmentRangeInSection::RubberBand> &start_rubber_band_of_shared_sub_segment =
+					shared_sub_segment_range.get_start_rubber_band();
+			if (start_rubber_band_of_shared_sub_segment)
+			{
+				// Range from start rubber band of shared sub-segment to start of topological section geometry.
+				const ResolvedSubSegmentRangeInSection to_start_of_topological_section_range(
+						shared_sub_segment->get_section_geometry(),
+						ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(start_rubber_band_of_shared_sub_segment.get()),
+						// Start intersection at beginning of topological section geometry...
+						ResolvedSubSegmentRangeInSection::IntersectionOrRubberBand(
+								ResolvedSubSegmentRangeInSection::Intersection::create_at_section_start_or_end(
+										*shared_sub_segment->get_section_geometry(), true/*at_start*/)));
+
+				//qDebug() << "start rb:" << make_lat_lon_point(to_start_of_topological_section_range.get_geometry()->start_point())
+				//		<< "end rb:" << make_lat_lon_point(to_start_of_topological_section_range.get_geometry()->end_point());
+
+				// Distance is negative since it's a rubber band.
+				return -to_start_of_topological_section_range.get_geometry()->get_arc_length().dval();
+			}
+
+			// Shared sub-segment has no start intersection or start rubber band, which means it starts exactly at the
+			// start of the topological section geometry.
+			return 0.0;
+		}
+
+		/**
+		 * Returns true if the end of previous shared sub-segment is coincident with the start of the current shared sub-segment and
+		 * they're both intersections that are *inside* the topological section geometry (ie, not *on* the geometry end points which
+		 * would imply that one of the shared sub-segments is has rubber banding, or is zero length).
+		 */
+		bool
+		adjacent_shared_sub_segments_join_inside_topological_section(
+				const ResolvedTopologicalSharedSubSegment::non_null_ptr_type &prev_shared_sub_segment,
+				const ResolvedTopologicalSharedSubSegment::non_null_ptr_type &curr_shared_sub_segment)
+		{
+			// See if end of previous shared sub-segment is an intersection.
+			const boost::optional<ResolvedSubSegmentRangeInSection::Intersection> &end_intersection_of_prev_shared_sub_segment =
+					prev_shared_sub_segment->get_shared_sub_segment().get_end_intersection();
+			if (!end_intersection_of_prev_shared_sub_segment)
+			{
+				return false;
+			}
+
+			// See if start of current shared sub-segment is an intersection.
+			const boost::optional<ResolvedSubSegmentRangeInSection::Intersection> &start_intersection_of_curr_shared_sub_segment =
+					curr_shared_sub_segment->get_shared_sub_segment().get_start_intersection();
+			if (!start_intersection_of_curr_shared_sub_segment)
+			{
+				return false;
+			}
+
+			// See if both intersections coincide.
+			if (end_intersection_of_prev_shared_sub_segment->position != start_intersection_of_curr_shared_sub_segment->position)
+			{
+				return false;
+			}
+
+			// Both shared sub-segments reference the same section geometry.
+			const GPlatesMaths::GeometryOnSphere::non_null_ptr_to_const_type section_geometry = curr_shared_sub_segment->get_section_geometry();
+
+			// See if both intersections are *inside* the section geometry (ie, not coincident with topological section geometry end points).
+			if (start_intersection_of_curr_shared_sub_segment.get() <=
+				ResolvedSubSegmentRangeInSection::Intersection::create_at_section_start_or_end(*section_geometry, true/*at_start*/))
+			{
+				return false;
+			}
+			if (end_intersection_of_prev_shared_sub_segment.get() >=
+				ResolvedSubSegmentRangeInSection::Intersection::create_at_section_start_or_end(*section_geometry, false/*at_start*/))
+			{
+				return false;
+			}
+
+			return true;
 		}
 	}
 }
@@ -182,44 +357,63 @@ GPlatesAppLogic::calculate_plate_boundary_stats(
 {
 	for (const auto &resolved_topological_section : resolved_topological_sections)
 	{
+		// Distances from the start of the topological section geometry to the start and end of the span of shared sub-segments
+		// (the minimum/maximum range of topological section covered by its shared sub-segments, including any gaps between them).
+		double distance_from_start_of_topological_section_to_start_of_shared_sub_segments;
+		double distance_from_start_of_topological_section_to_end_of_shared_sub_segments;
+		calculate_distances_from_start_of_topological_section_to_start_and_end_of_shared_sub_segments(
+				resolved_topological_section,
+				distance_from_start_of_topological_section_to_start_of_shared_sub_segments,
+				distance_from_start_of_topological_section_to_end_of_shared_sub_segments);
+
 		// Distance from the start of a shared sub-segment to the first uniform point in it.
 		double first_uniform_point_spacing_in_shared_sub_segment = first_uniform_point_spacing;
-
-		// Track the distance from the *start* of the *first* shared sub-segment along the current resolved topological section.
-		//
-		// Note: This is NOT from the start of the *entire* topological section geometry.
-		//       It only considers those parts (ie, the shared sub-segments) that contribute to resolved topological boundaries.
-		//       Although gaps *between* shared sub-segments ARE considered.
-		double distance_from_start_of_topological_section = 0;
 
 		// Generate statistics at uniformly spaced points along the shared sub-segments of the current resolved topological section.
 		boost::optional<ResolvedTopologicalSharedSubSegment::non_null_ptr_type> prev_shared_sub_segment;
 		for (const auto &shared_sub_segment : resolved_topological_section->get_shared_sub_segments())
 		{
-			// Accumulate distance from start of previous sub-segment to start of current sub-segment.
-			//
-			// This can include a gap if the end of previous sub-segment is not coincident with the start of current sub-segment.
 			if (prev_shared_sub_segment)
 			{
-				bool is_gap_since_previous_shared_sub_segment;
-				distance_from_start_of_topological_section += distance_from_start_of_previous_shared_sub_segment(
-						prev_shared_sub_segment.get(),
-						shared_sub_segment,
-						is_gap_since_previous_shared_sub_segment);
-
-				// If there was a gap then reset the first uniform point spacing (to the default).
-				if (is_gap_since_previous_shared_sub_segment)
+				// If the previous shared sub-segment joins the current shared sub-segment and the join point is
+				// *inside* the topological section then continue the uniform spacing of points.
+				// Otherwise there was either a gap between them or one (or both) shared sub-segments included rubber banding.
+				if (adjacent_shared_sub_segments_join_inside_topological_section(prev_shared_sub_segment.get(), shared_sub_segment))
+				{
+					// Continue the uniform spacing of points from the previous shared sub-segment.
+					//
+					// The first uniform point offset in the *current* sub-segment depends on the offset of the first point in the
+					// *previous* sub-segment and the number of uniform points added to the *previous* sub-segment (and its sub-segment length).
+					first_uniform_point_spacing_in_shared_sub_segment += plate_boundary_stats[prev_shared_sub_segment.get()].size() * uniform_point_spacing -
+							prev_shared_sub_segment.get()->get_shared_sub_segment_geometry()->get_arc_length().dval();
+				}
+				else
 				{
 					first_uniform_point_spacing_in_shared_sub_segment = first_uniform_point_spacing;
 				}
 			}
+
+			// Signed distance from start of topological section geometry to the start of the current shared sub-segment.
+			const double signed_distance_from_start_of_topological_section =
+					calculate_signed_distance_from_start_of_topological_section_to_start_of_shared_sub_segment(shared_sub_segment);
+
+			// Distance from the *start* of ALL shared sub-segments to the *start* of the CURRENT shared sub-segment.
+			//
+			// Note: This is NOT from the start of the *entire* topological section geometry.
+			//       It only considers those parts (ie, the shared sub-segments) that contribute to resolved topological boundaries.
+			//       Although gaps *between* shared sub-segments ARE considered.
+			const double signed_distance_from_start_of_shared_sub_segments = signed_distance_from_start_of_topological_section -
+					distance_from_start_of_topological_section_to_start_of_shared_sub_segments;
+			const double signed_distance_to_end_of_shared_sub_segments = distance_from_start_of_topological_section_to_end_of_shared_sub_segments -
+					signed_distance_from_start_of_topological_section;
 
 			// Calculate plate boundary statistics for the current shared sub-segment.
 			std::vector<PlateBoundaryStat> &shared_sub_segment_plate_boundary_stats = plate_boundary_stats[shared_sub_segment];
 			calculate_plate_boundary_stats_for_shared_sub_segment(
 					shared_sub_segment_plate_boundary_stats,
 					shared_sub_segment,
-					distance_from_start_of_topological_section,
+					signed_distance_from_start_of_shared_sub_segments,
+					signed_distance_to_end_of_shared_sub_segments,
 					reconstruction_time,
 					uniform_point_spacing,
 					first_uniform_point_spacing_in_shared_sub_segment,
@@ -228,33 +422,8 @@ GPlatesAppLogic::calculate_plate_boundary_stats(
 					velocity_units,
 					earth_radius_in_kms);
 
-			// Continue the uniform spacing of points *across* shared sub-segments (unless there's a gap - handled above).
-			//
-			// The first uniform point offset in the *next* sub-segment (if any) depends on the offset of the first point in the
-			// *current* sub-segment and the number of uniform points added to the *current* sub-segment (and the sub-segment length).
-			first_uniform_point_spacing_in_shared_sub_segment += shared_sub_segment_plate_boundary_stats.size() * uniform_point_spacing -
-					shared_sub_segment->get_shared_sub_segment_geometry()->get_arc_length().dval();
-
 			// Update previous shared sub-segment for next loop iteration.
 			prev_shared_sub_segment = shared_sub_segment;
-		}
-
-		// Distance from the *start* of the *first* shared sub-segment to the *end* of the *last* shared sub-segment
-		// (this includes any gaps between shared sub-segments).
-		const double distance_from_start_of_first_to_end_of_last_shared_sub_segment = distance_from_start_of_topological_section +
-				resolved_topological_section->get_shared_sub_segments().back()->get_shared_sub_segment_geometry()->get_arc_length().dval();
-
-		// Now that we know the total distance from start of first to end of last shared sub-segments, go back through the uniformly
-		// spaced points and set their distance to the *end* of the topological section (using their distance to *start*).
-		for (const auto &shared_sub_segment : resolved_topological_section->get_shared_sub_segments())
-		{
-			// Plate boundary statistics for the current shared sub-segment.
-			std::vector<PlateBoundaryStat> &shared_sub_segment_plate_boundary_stats = plate_boundary_stats[shared_sub_segment];
-			for (auto &plate_boundary_stat : shared_sub_segment_plate_boundary_stats)
-			{
-				plate_boundary_stat.distance_to_end_of_topological_section = distance_from_start_of_first_to_end_of_last_shared_sub_segment -
-						plate_boundary_stat.distance_from_start_of_topological_section;
-			}
 		}
 	}
 }

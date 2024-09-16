@@ -29,6 +29,8 @@
 #include "VelocityDeltaTime.h"
 #include "VelocityUnits.h"
 
+#include "maths/MathsUtils.h"
+#include "maths/Real.h"
 #include "maths/Vector3D.h"
 
 
@@ -42,23 +44,38 @@ namespace GPlatesAppLogic
 	public:
 		PlateBoundaryStat(
 				const GPlatesMaths::PointOnSphere &point_,
-				const GPlatesMaths::Vector3D &absolute_velocity_,
-				const double &distance_from_start_of_topological_section_) :
-			point(point_),
-			absolute_velocity(absolute_velocity_),
-			distance_from_start_of_topological_section(distance_from_start_of_topological_section_),
-			distance_to_end_of_topological_section(0)  // not yet known - must be set after construction
+				const GPlatesMaths::Vector3D &boundary_velocity_,
+				const double &signed_distance_from_start_of_topological_section_,
+				const double &signed_distance_to_end_of_topological_section_) :
+			d_point(point_),
+			d_boundary_velocity(boundary_velocity_),
+			d_signed_distance_from_start_of_topological_section(signed_distance_from_start_of_topological_section_),
+			d_signed_distance_to_end_of_topological_section(signed_distance_to_end_of_topological_section_)
 		{  }
 
-		//! Point location on a plate boundary.
-		GPlatesMaths::PointOnSphere point;
+		//! Get the point location on a plate boundary.
+		const GPlatesMaths::PointOnSphere &
+		get_point_location() const
+		{
+			return d_point;
+		}
 
-		//! Velocity of the plate boundary itself (at the point location).
-		GPlatesMaths::Vector3D absolute_velocity;
+		//! Get the velocity of the plate boundary itself (at the point location).
+		const GPlatesMaths::Vector3D &
+		get_boundary_velocity() const
+		{
+			return d_boundary_velocity;
+		}
 
 		/**
-		 * Distance (in radians) from the *start* of the *first* shared sub-segment (in a resolved topological section)
-		 * to the current location (along the geometry of the resolved topological section).
+		 * Get the signed distance (in radians) from the *start* of the resolved topological section geometry
+		 * (the part spanned by its shared sub-segments) to the current location
+		 * (along the geometry of the resolved topological section).
+		 *
+		 * It is negative if point is on a rubber-band part of a plate boundary. That is, it's not on
+		 * the actual resolved topological section geometry but on the part that rubber-bands (joins)
+		 * the *start* of the resolved topological section geometry with an adjacent resolved topological section
+		 * (that's also part of a plate boundary).
 		 *
 		 * A resolved topological section represents a distinct feature used as part of the boundary of a plate.
 		 * So, depending on how the topological model is built, this could be considered the distance to the start
@@ -67,14 +84,89 @@ namespace GPlatesAppLogic
 		 * This distance can include gaps (between consecutive shared sub-segments) that no plate uses as part of its boundary
 		 * (these don't typically exist for a *global* topological model where plates cover the entire globe).
 		 */
-		double distance_from_start_of_topological_section;
+		double
+		get_signed_distance_from_start_of_topological_section() const
+		{
+			return d_signed_distance_from_start_of_topological_section.dval();
+		}
 
 		/**
-		 * Similar to @a distance_from_start_of_topological_section, but it's distance to the *end* of the *last* shared sub-segment
-		 * (instead of distance from the *start* of the *first* shared sub-segment).
+		 * Same as @a get_signed_distance_from_start_of_topological_section but returns its absolute value.
+		 *
+		 * This is the *absolute* distance (in radians) from the *start* of the resolved topological section geometry.
+		 * So for points on a rubber-band part of the shared sub-segment the distance will be positive (instead of negative).
 		 */
-		double distance_to_end_of_topological_section;
+		double
+		get_distance_from_start_of_topological_section() const
+		{
+			return abs(d_signed_distance_from_start_of_topological_section).dval();
+		}
+
+
+		/**
+		 * Similar to @a get_signed_distance_from_start_of_topological_section, but it's the distance to the *end*
+		 * of the resolved topological section geometry (the part spanned by its shared sub-segments).
+		 *
+		 * And, similarly, it is negative if point is on a rubber-band part of a plate boundary connecting
+		 * to the *end* of the resolved topological section geometry.
+		 */
+		double
+		get_signed_distance_to_end_of_topological_section() const
+		{
+			return d_signed_distance_to_end_of_topological_section.dval();
+		}
+
+		/**
+		 * Same as @a get_signed_distance_to_end_of_topological_section but returns its absolute value.
+		 *
+		 * This is the *absolute* distance (in radians) to the *end* of the resolved topological section geometry.
+		 * So for points on a rubber-band part of the shared sub-segment the distance will be positive (instead of negative).
+		 */
+		double
+		get_distance_to_end_of_topological_section() const
+		{
+			return abs(d_signed_distance_to_end_of_topological_section).dval();
+		}
+
+
+		bool
+		operator==(
+				const PlateBoundaryStat &other) const
+		{
+			return d_point == other.d_point &&
+					d_boundary_velocity == other.d_boundary_velocity &&
+					d_signed_distance_from_start_of_topological_section == other.d_signed_distance_from_start_of_topological_section &&
+					d_signed_distance_to_end_of_topological_section == other.d_signed_distance_to_end_of_topological_section;
+		}
+
+		bool
+		operator!=(
+				const PlateBoundaryStat &other) const
+		{
+			return !operator==(other);
+		}
+
+	private:
+		//! Point location on a plate boundary.
+		GPlatesMaths::PointOnSphere d_point;
+
+		//! Velocity of the plate boundary itself (at the point location).
+		GPlatesMaths::Vector3D d_boundary_velocity;
+
+		/**
+		 * Signed distance (in radians) from the *start* of the resolved topological section geometry
+		 * (the part spanned by its shared sub-segments) to the current location
+		 * (along the geometry of the resolved topological section).
+		 */
+		GPlatesMaths::Real d_signed_distance_from_start_of_topological_section;
+
+		/**
+		 * Similar to @a distance_from_start_of_topological_section, but it's the distance to the *end*
+		 * of the resolved topological section geometry (the part spanned by its shared sub-segments).
+		 */
+		GPlatesMaths::Real d_signed_distance_to_end_of_topological_section;
 	};
+
 
 	/**
 	 * Calculates statistics along the plate boundaries specified by the resolved topological sections
