@@ -33,6 +33,9 @@
 #include "maths/Real.h"
 #include "maths/Vector3D.h"
 
+// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
+#include "scribe/Transcribe.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -165,6 +168,21 @@ namespace GPlatesAppLogic
 		 * of the resolved topological section geometry (the part spanned by its shared sub-segments).
 		 */
 		GPlatesMaths::Real d_signed_distance_to_end_of_topological_section;
+
+	private: // Transcribe...
+
+		friend class GPlatesScribe::Access;
+
+		static
+		GPlatesScribe::TranscribeResult
+		transcribe_construct_data(
+				GPlatesScribe::Scribe &scribe,
+				GPlatesScribe::ConstructObject<PlateBoundaryStat> &plate_boundary_stat);
+
+		GPlatesScribe::TranscribeResult
+		transcribe(
+				GPlatesScribe::Scribe &scribe,
+				bool transcribed_construct_data);
 	};
 
 

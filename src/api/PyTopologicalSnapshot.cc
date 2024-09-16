@@ -40,6 +40,7 @@
 #include "PythonUtils.h"
 #include "PythonVariableFunctionArguments.h"
 
+#include "app-logic/PlateBoundaryStats.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructContext.h"
 #include "app-logic/ReconstructHandle.h"
@@ -214,6 +215,98 @@ namespace GPlatesApi
 				resolve_topological_section_types,
 				export_topological_line_sub_segments,
 				wrap_to_dateline);
+	}
+
+	/**
+	 * Calculate plate boundary stats at uniformly spaced points along resolved topological sections.
+	 */
+	bp::object
+	topological_snapshot_calculate_plate_boundary_statistics(
+			TopologicalSnapshot::non_null_ptr_type topological_snapshot,
+			const double &uniform_point_spacing_radians,
+			const double &first_uniform_point_spacing_radians,
+			const double &velocity_delta_time,
+			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+			GPlatesAppLogic::VelocityUnits::Value velocity_units,
+			const double &earth_radius_in_kms,
+			bool include_network_boundaries,
+			bool return_shared_sub_segment_dict)
+	{
+		if (uniform_point_spacing_radians <= 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "'uniform_point_spacing_radians' should be positive");
+			bp::throw_error_already_set();
+		}
+
+		// Velocity delta time must be positive.
+		if (velocity_delta_time <= 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
+		// Get the resolved topological sections.
+		ResolveTopologyType::flags_type resolve_topological_section_types = ResolveTopologyType::BOUNDARY;
+		// Plate boundary statistics do not include network boundaries by default (unless they happen to also
+		// be a plate boundary), but the user can include them if they want.
+		//
+		// Note: Networks are always included when calculating plate convergence/divergence though.
+		//       This is because networks typically overlay rigid plates and we need to sample their velocities.
+		if (include_network_boundaries)
+		{
+			resolve_topological_section_types |= ResolveTopologyType::NETWORK;
+		}
+		const std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> resolved_topological_sections =
+				topological_snapshot->get_resolved_topological_sections(resolve_topological_section_types);
+
+		// Calculate the plate boundary statistics.
+		std::map<
+				GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type,
+				std::vector<GPlatesAppLogic::PlateBoundaryStat>
+		> plate_boundary_stats;
+		GPlatesAppLogic::calculate_plate_boundary_stats(
+				plate_boundary_stats,
+				resolved_topological_sections,
+				topological_snapshot->get_reconstruction_time(),
+				uniform_point_spacing_radians,
+				first_uniform_point_spacing_radians,
+				velocity_delta_time,
+				velocity_delta_time_type,
+				velocity_units,
+				earth_radius_in_kms);
+		
+		// If we should group plate boundary stats (dict value) by their shared sub-segments (dict key).
+		if (return_shared_sub_segment_dict)
+		{
+			bp::dict shared_sub_segment_dict;
+
+			// Add a list of plate boundary stats for each shared sub-segment to the dict.
+			for (const auto &shared_sub_segment_plate_boundary_stats : plate_boundary_stats)
+			{
+				bp::list shared_sub_segment_plate_boundary_stats_list;
+				for (const auto &plate_boundary_stat : shared_sub_segment_plate_boundary_stats.second)
+				{
+					shared_sub_segment_plate_boundary_stats_list.append(plate_boundary_stat);
+				}
+
+				shared_sub_segment_dict[shared_sub_segment_plate_boundary_stats.first] =
+						shared_sub_segment_plate_boundary_stats_list;
+			}
+
+			return shared_sub_segment_dict;
+		}
+
+		// One big list of plate boundary stats (not grouped by shared sub-segment).
+		bp::list plate_boundary_stats_list;
+		for (const auto &shared_sub_segment_plate_boundary_stats : plate_boundary_stats)
+		{
+			for (const auto &plate_boundary_stat : shared_sub_segment_plate_boundary_stats.second)
+			{
+				plate_boundary_stats_list.append(plate_boundary_stat);
+			}
+		}
+
+		return plate_boundary_stats_list;
 	}
 
 
@@ -1050,6 +1143,69 @@ export_topological_snapshot()
 
 
 	//
+	// PlateBoundaryStatistic - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+	//
+	bp::class_<GPlatesAppLogic::PlateBoundaryStat>(
+					"PlateBoundaryStatistic",
+					"Statistic at a point *on* a plate boundary.\n"
+					"\n"
+					"PlateBoundaryStatistics are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).\n"
+					"\n"
+					"A *PlateBoundaryStatistic* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
+					"\n"
+					".. versionadded:: 0.47\n",
+					bp::no_init)
+		// Pickle support...
+		//
+		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
+		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
+		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
+		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesAppLogic::PlateBoundaryStat>>(
+				// Since we are providing the only constructor (__init__ for pickling) we need its
+				// docstring to document that this class cannot be instantiated from Python...
+				true/*document_class_as_non_instantiable*/))
+		.add_property("point_location",
+				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_point_location, bp::return_value_policy<bp::copy_const_reference>()),
+				"Point location on a plate boundary.\n"
+				"\n"
+				"  :type: :class:`PointOnSphere`\n")
+		.add_property("boundary_velocity",
+				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_boundary_velocity, bp::return_value_policy<bp::copy_const_reference>()),
+				"Velocity of the plate boundary (at the point location).\n"
+				"\n"
+				"  :type: :class:`Vector3D`\n")
+		.add_property("signed_distance_from_start_of_topological_section",
+				&GPlatesAppLogic::PlateBoundaryStat::get_signed_distance_from_start_of_topological_section,
+				"Signed distance (in radians) from the *start* of the resolved topological section geometry.\n"
+				"\n"
+				"  :type: float\n")
+		.add_property("distance_from_start_of_topological_section",
+				&GPlatesAppLogic::PlateBoundaryStat::get_distance_from_start_of_topological_section,
+				"Absolute distance (in radians) from the *start* of the resolved topological section geometry.\n"
+				"\n"
+				"  :type: float\n")
+		.add_property("signed_distance_to_end_of_topological_section",
+				&GPlatesAppLogic::PlateBoundaryStat::get_signed_distance_to_end_of_topological_section,
+				"Signed distance (in radians) to the *end* of the resolved topological section geometry.\n"
+				"\n"
+				"  :type: float\n")
+		.add_property("distance_to_end_of_topological_section",
+				&GPlatesAppLogic::PlateBoundaryStat::get_distance_to_end_of_topological_section,
+				"Absolute distance (in radians) to the *end* of the resolved topological section geometry.\n"
+				"\n"
+				"  :type: float\n")
+		// Due to the numerical tolerance in comparisons we cannot make hashable.
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, true))
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
+	;
+
+	// Enable boost::optional<PlateBoundaryStat> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesAppLogic::PlateBoundaryStat>();
+
+
+	//
 	// TopologicalSnapshot - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
 	bp::class_<
@@ -1273,6 +1429,61 @@ export_topological_snapshot()
 				"  .. versionchanged:: 0.44\n"
 				"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "
 				"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n")
+		.def("calculate_plate_boundary_statistics",
+				&GPlatesApi::topological_snapshot_calculate_plate_boundary_statistics,
+				(bp::arg("uniform_point_spacing_radians"),
+					bp::arg("first_uniform_point_spacing_radians"),
+					bp::arg("velocity_delta_time"),
+					bp::arg("velocity_delta_time_type"),
+					bp::arg("velocity_units") = GPlatesAppLogic::VelocityUnits::KMS_PER_MY,
+					bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS,
+					bp::arg("include_network_boundaries") = false,
+					bp::arg("return_shared_sub_segment_dict") = false),
+				"calculate_plate_boundary_statistics(uniform_point_spacing_radians, first_uniform_point_spacing_radians, "
+				"velocity_delta_time, velocity_delta_time_type, "
+				"[velocity_units=pygplates.VelocityUnits.kms_per_my], [earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms], "
+				"[include_network_boundaries=False], [return_shared_sub_segment_dict=False])\n"
+				"Calculate statistics at uniformly spaced points along plate boundaries.\n"
+				"\n"
+				"  :param uniform_point_spacing_radians: Spacing between uniform points along plate boundaries (in radians). "
+				"See :meth:`PolylineOnSphere.to_uniform_points`.\n"
+				"  :type uniform_point_spacing_radians: float\n"
+				"  :param first_uniform_point_spacing_radians: Spacing of first uniform point in each "
+				":class:`resolved topological section <ResolvedTopologicalSection>` (in radians). "
+				"Each resolved topological section represents a specific boundary :class:`Feature` and has a list of "
+				":meth:`shared sub-segments <ResolvedTopologicalSection.get_shared_sub_segments>` that are the parts of it that actually "
+				"contribute to plate boundaries. So, this parameter is the distance from the *first* vertex of the *first* shared sub-segment "
+				"(*along* the sub-segment). And note that the uniform spacing is continuous across adjacent shared sub-segments, unless there's a "
+				"gap between them (that no plate uses as part of its boundary), in which case the spacing is reset to *first_uniform_point_spacing_radians* "
+				"for the next shared sub-segment (after the gap). "
+				"See :meth:`PolylineOnSphere.to_uniform_points`.\n"
+				"  :type first_uniform_point_spacing_radians: float\n"
+				"  :param velocity_delta_time: The time delta used to calculate velocities.\n"
+				"  :type velocity_delta_time: float\n"
+				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
+				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2].\n"
+				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
+				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
+				"*centimetres per year* (defaults to *kilometres per million years*)\n"
+				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
+				"  :type earth_radius_in_kms: float\n"
+				"  :param include_network_boundaries: Whether to calculate statistics along network boundaries "
+				"that are **not** also rigid plate boundaries (defaults to ``False``). If a deforming network shares a "
+				"boundary with a rigid plate then it'll get included regardless of this option.\n"
+				"  :type include_network_boundaries: bool\n"
+				"  :param return_shared_sub_segment_dict: Whether to return a ``dict`` mapping each :class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` "
+				"(ie, a boundary section shared by one or more plates) to a ``list`` of :class:`PlateBoundaryStatistic` associated with it. "
+				"If ``False`` then just returns one large ``list`` of :class:`PlateBoundaryStatistic` for all plate boundaries. Defaults to ``False``.\n"
+				"  :type return_shared_sub_segment_dict: bool\n"
+				"  :returns: list of :class:`PlateBoundaryStatistic` for all uniform points, or (if *return_shared_sub_segment_dict* is ``True``) a "
+				"``dict`` mapping each :class:`ResolvedTopologicalSharedSubSegment` to a list of :class:`PlateBoundaryStatistic`\n"
+				"  :rtype: ``list`` or ``dict``\n"
+				"  :raises: ValueError if *uniform_point_spacing_radians* is negative or zero\n"
+				"  :raises: ValueError if *velocity_delta_time* is negative or zero.\n"
+				"\n"
+				"  .. versionadded:: 0.47\n")
 		.def("get_rotation_model",
 				&GPlatesApi::TopologicalSnapshot::get_rotation_model,
 				"get_rotation_model()\n"

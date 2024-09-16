@@ -26,6 +26,8 @@
 
 #include "maths/PolylineOnSphere.h"
 
+#include "scribe/Scribe.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -426,4 +428,65 @@ GPlatesAppLogic::calculate_plate_boundary_stats(
 			prev_shared_sub_segment = shared_sub_segment;
 		}
 	}
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::PlateBoundaryStat::transcribe_construct_data(
+		GPlatesScribe::Scribe &scribe,
+		GPlatesScribe::ConstructObject<PlateBoundaryStat> &plate_boundary_stat)
+{
+	if (scribe.is_saving())
+	{
+		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_point, "point");
+		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_boundary_velocity, "boundary_velocity");
+		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_signed_distance_from_start_of_topological_section, "signed_distance_from_start_of_topological_section");
+		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_signed_distance_to_end_of_topological_section, "signed_distance_to_end_of_topological_section");
+	}
+	else // loading
+	{
+		GPlatesScribe::LoadRef<GPlatesMaths::PointOnSphere> point_ = scribe.load<GPlatesMaths::PointOnSphere>(TRANSCRIBE_SOURCE, "point");
+		if (!point_.is_valid())
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		GPlatesMaths::Vector3D boundary_velocity_;
+		GPlatesMaths::Real signed_distance_from_start_of_topological_section_;
+		GPlatesMaths::Real signed_distance_to_end_of_topological_section_;
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, boundary_velocity_, "boundary_velocity") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, signed_distance_from_start_of_topological_section_, "signed_distance_from_start_of_topological_section") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, signed_distance_to_end_of_topological_section_, "signed_distance_to_end_of_topological_section"))
+		{
+			return scribe.get_transcribe_result();
+		}
+
+		plate_boundary_stat.construct_object(
+				point_,
+				boundary_velocity_,
+				signed_distance_from_start_of_topological_section_.dval(),
+				signed_distance_to_end_of_topological_section_.dval());
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
+}
+
+
+GPlatesScribe::TranscribeResult
+GPlatesAppLogic::PlateBoundaryStat::transcribe(
+		GPlatesScribe::Scribe &scribe,
+		bool transcribed_construct_data)
+{
+	if (!transcribed_construct_data)
+	{
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_point, "point") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_boundary_velocity, "boundary_velocity") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_signed_distance_from_start_of_topological_section, "signed_distance_from_start_of_topological_section") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_signed_distance_to_end_of_topological_section, "signed_distance_to_end_of_topological_section"))
+		{
+			return scribe.get_transcribe_result();
+		}
+	}
+
+	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }
