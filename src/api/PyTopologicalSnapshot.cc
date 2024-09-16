@@ -1432,15 +1432,15 @@ export_topological_snapshot()
 		.def("calculate_plate_boundary_statistics",
 				&GPlatesApi::topological_snapshot_calculate_plate_boundary_statistics,
 				(bp::arg("uniform_point_spacing_radians"),
-					bp::arg("first_uniform_point_spacing_radians"),
-					bp::arg("velocity_delta_time"),
-					bp::arg("velocity_delta_time_type"),
+					bp::arg("first_uniform_point_spacing_radians") = 0.0,
+					bp::arg("velocity_delta_time") = 1.0,
+					bp::arg("velocity_delta_time_type") = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
 					bp::arg("velocity_units") = GPlatesAppLogic::VelocityUnits::KMS_PER_MY,
 					bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS,
 					bp::arg("include_network_boundaries") = false,
 					bp::arg("return_shared_sub_segment_dict") = false),
-				"calculate_plate_boundary_statistics(uniform_point_spacing_radians, first_uniform_point_spacing_radians, "
-				"velocity_delta_time, velocity_delta_time_type, "
+				"calculate_plate_boundary_statistics(uniform_point_spacing_radians, [first_uniform_point_spacing_radians=0.0], "
+				"[velocity_delta_time=1.0], [velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t], "
 				"[velocity_units=pygplates.VelocityUnits.kms_per_my], [earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms], "
 				"[include_network_boundaries=False], [return_shared_sub_segment_dict=False])\n"
 				"Calculate statistics at uniformly spaced points along plate boundaries.\n"
@@ -1456,12 +1456,12 @@ export_topological_snapshot()
 				"(*along* the sub-segment). And note that the uniform spacing is continuous across adjacent shared sub-segments, unless there's a "
 				"gap between them (that no plate uses as part of its boundary), in which case the spacing is reset to *first_uniform_point_spacing_radians* "
 				"for the next shared sub-segment (after the gap). "
-				"See :meth:`PolylineOnSphere.to_uniform_points`.\n"
+				"See :meth:`PolylineOnSphere.to_uniform_points`. Defaults to zero.\n"
 				"  :type first_uniform_point_spacing_radians: float\n"
-				"  :param velocity_delta_time: The time delta used to calculate velocities.\n"
+				"  :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).\n"
 				"  :type velocity_delta_time: float\n"
 				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
-				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2].\n"
+				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
 				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
 				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
 				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "

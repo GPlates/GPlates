@@ -36,6 +36,8 @@
 // Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
 #include "scribe/Transcribe.h"
 
+#include "utils/Earth.h"
+
 
 namespace GPlatesAppLogic
 {
@@ -207,11 +209,11 @@ namespace GPlatesAppLogic
 			const std::vector<ResolvedTopologicalSection::non_null_ptr_type> &resolved_topological_sections,
 			const double &reconstruction_time,
 			const double &uniform_point_spacing,
-			const double &first_uniform_point_spacing,
-			const double &velocity_delta_time,
-			VelocityDeltaTime::Type velocity_delta_time_type,
-			VelocityUnits::Value velocity_units,
-			const double &earth_radius_in_kms);
+			const double &first_uniform_point_spacing = 0.0,
+			const double &velocity_delta_time = 1.0,
+			VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+			VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+			const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
 }
 
 #endif // GPLATES_APP_LOGIC_PLATE_BOUNDARY_STATS_H

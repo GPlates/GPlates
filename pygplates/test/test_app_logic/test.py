@@ -2721,13 +2721,13 @@ class TopologicalSnapshotCase(unittest.TestCase):
             os.path.join(FIXTURES, 'rotations.rot'),
             pygplates.GeoTimeInstant(10))
 
-        plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), 0.0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t)
+        plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10))
         self.assertTrue(len(plate_boundary_stats) == 46)
-        plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), 0.0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t, include_network_boundaries=True)
+        plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), include_network_boundaries=True)
         self.assertTrue(len(plate_boundary_stats) == 60)
 
         # Return a dict mapping each shared sub-segment to its statistics.
-        plate_boundary_stats_dict = snapshot.calculate_plate_boundary_statistics(math.radians(10), 0.0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t, include_network_boundaries=True, return_shared_sub_segment_dict=True)
+        plate_boundary_stats_dict = snapshot.calculate_plate_boundary_statistics(math.radians(10), include_network_boundaries=True, return_shared_sub_segment_dict=True)
         self.assertTrue(len(plate_boundary_stats_dict) == 32)
         self.assertTrue(sum(len(shared_sub_segment_stats) for _, shared_sub_segment_stats in plate_boundary_stats_dict.items()) == 60)
     
@@ -2748,7 +2748,7 @@ class TopologicalSnapshotCase(unittest.TestCase):
             self.assertTrue(pickled_resolved_topologies[index].get_resolved_geometry() == resolved_topologies[index].get_resolved_geometry())
         
         # Pickle some PlateBoundaryStatistic objects (but can't pickle ResolvedTopologicalSharedSubSegment's, so don't return as a dict of them).
-        plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), 0.0, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t, include_network_boundaries=True)
+        plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), include_network_boundaries=True)
         picked_plate_boundary_stats = pickle.loads(pickle.dumps(plate_boundary_stats))
         self.assertTrue(picked_plate_boundary_stats == plate_boundary_stats)
 

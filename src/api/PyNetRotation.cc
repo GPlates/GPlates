@@ -900,15 +900,15 @@ export_net_rotation()
 
 	std::stringstream net_rotation_snapshot_create_docstring_stream;
 	net_rotation_snapshot_create_docstring_stream <<
-			"__init__(topological_snapshot, velocity_delta_time, velocity_delta_time_type, [point_distribution])\n"
+			"__init__(topological_snapshot, [velocity_delta_time=1.0], [velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t], [point_distribution])\n"
 			"  Create a net rotation snapshot from the specified topological snapshot, and using the requested parameters.\n"
 			"\n"
 			"  :param topological_snapshot: The topological snapshot to calculate net rotation with.\n"
 			"  :type topological_snapshot: :class:`TopologicalSnapshot`\n"
-			"  :param velocity_delta_time: The time delta used to calculate velocities for net rotation.\n"
+			"  :param velocity_delta_time: The time delta used to calculate velocities for net rotation (defaults to 1 Myr).\n"
 			"  :type velocity_delta_time: float\n"
 			"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
-			"This includes [t+dt, t, [t, t-dt] and [t+dt/2, t-dt/2].\n"
+			"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
 			"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
 			"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
 			"  :param point_distribution: Can be an integer `N` representing the number of uniformly spaced latitude-longitude grid points "
@@ -1003,8 +1003,8 @@ export_net_rotation()
 						&GPlatesApi::net_rotation_snapshot_create,
 						bp::default_call_policies(),
 						(bp::arg("topological_snapshot"),
-							bp::arg("velocity_delta_time"),
-							bp::arg("velocity_delta_time_type"),
+							bp::arg("velocity_delta_time") = 1.0,
+							bp::arg("velocity_delta_time_type") = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
 							bp::arg("point_distribution") = GPlatesApi::NetRotationSnapshot::DEFAULT_NUM_SAMPLES_ALONG_MERIDIAN)),
 				net_rotation_snapshot_create_docstring_stream.str().c_str())
 		// Pickle support...
@@ -1118,15 +1118,15 @@ export_net_rotation()
 
 	std::stringstream net_rotation_model_create_docstring_stream;
 	net_rotation_model_create_docstring_stream <<
-			"__init__(topological_model, velocity_delta_time, velocity_delta_time_type, [point_distribution])\n"
+			"__init__(topological_model, [velocity_delta_time=1.0], [velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t], [point_distribution])\n"
 			"  Net rotation snapshots will be calculated from the specified topological model, and using the requested parameters.\n"
 			"\n"
 			"  :param topological_model: The topological model to calculate net rotations with.\n"
 			"  :type topological_model: :class:`TopologicalModel`\n"
-			"  :param velocity_delta_time: The time delta used to calculate velocities for net rotation.\n"
+			"  :param velocity_delta_time: The time delta used to calculate velocities for net rotation (defaults to 1 Myr).\n"
 			"  :type velocity_delta_time: float\n"
 			"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
-			"This includes [t+dt, t, [t, t-dt] and [t+dt/2, t-dt/2].\n"
+			"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
 			"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
 			"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
 			"  :param point_distribution: Can be an integer `N` representing the number of uniformly spaced latitude-longitude grid points "

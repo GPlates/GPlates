@@ -1488,6 +1488,7 @@ export_topological_model()
 					"If ``True`` then each inactive point stores ``None`` instead of a point and hence the size of each ``list`` "
 					"of points is equal to the number of points in the initial geometry (which are all initially active). "
 					"By default only active points are returned.\n"
+					"  :type return_inactive_points: bool\n"
 					"  :returns: list of :class:`PointOnSphere`, or ``None`` if no points are active at *reconstruction_time*\n"
 					"  :rtype: ``list`` or ``None``\n"
 					"  :raises: ValueError if *reconstruction_time* is "
@@ -1508,6 +1509,7 @@ export_topological_model()
 					"topology location and hence the size of each ``list`` of topology locations is equal to the number of points "
 					"in the initial geometry (which are all initially active). "
 					"By default only topology locations for active points are returned.\n"
+					"  :type return_inactive_points: bool\n"
 					"  :returns: list of :class:`TopologyPointLocation`, or ``None`` if no points are active at *reconstruction_time*\n"
 					"  :rtype: ``list`` or ``None``\n"
 					"  :raises: ValueError if *reconstruction_time* is "
@@ -1528,6 +1530,7 @@ export_topological_model()
 					"strain and hence the size of each ``list`` of strains is equal to the number of points "
 					"in the initial geometry (which are all initially active). "
 					"By default only strains for active points are returned.\n"
+					"  :type return_inactive_points: bool\n"
 					"  :returns: list of :class:`Strain`, or ``None`` if no points are active at *reconstruction_time*\n"
 					"  :rtype: ``list`` or ``None``\n"
 					"  :raises: ValueError if *reconstruction_time* is "
@@ -1550,6 +1553,7 @@ export_topological_model()
 					"strain rate and hence the size of each ``list`` of strain rates is equal to the number of points "
 					"in the initial geometry (which are all initially active). "
 					"By default only strain rates for active points are returned.\n"
+					"  :type return_inactive_points: bool\n"
 					"  :returns: list of :class:`StrainRate`, or ``None`` if no points are active at *reconstruction_time*\n"
 					"  :rtype: ``list`` or ``None``\n"
 					"  :raises: ValueError if *reconstruction_time* is "
@@ -1565,17 +1569,17 @@ export_topological_model()
 						bp::arg("velocity_units") = GPlatesAppLogic::VelocityUnits::KMS_PER_MY,
 						bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS,
 						bp::arg("return_inactive_points") = false),
-					"get_velocities(reconstruction_time, velocity_delta_time, velocity_delta_time_type, "
+					"get_velocities(reconstruction_time, [velocity_delta_time=1.0], [velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t], "
 					"[velocity_units=pygplates.VelocityUnits.kms_per_my], [earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms], [return_inactive_points=False])\n"
 					"  Returns the velocities at geometry points in resolved topologies at a specific reconstruction time.\n"
 					"\n"
 					"  :param reconstruction_time: Time to extract velocities. Can be any non-negative time "
 					"(doesn't have to be an integer and can be outside the time span specified in :meth:`TopologicalModel.reconstruct_geometry`).\n"
 					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
-					"  :param velocity_delta_time: The time delta used to calculate velocities (in Myr).\n"
+					"  :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).\n"
 					"  :type velocity_delta_time: float\n"
 					"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
-					"This includes [t+dt, t, [t, t-dt] and [t+dt/2, t-dt/2].\n"
+					"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
 					"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
 					"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
 					"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
@@ -1589,6 +1593,7 @@ export_topological_model()
 					"in the initial geometry (which are all initially active). "
 					"By default only velocities for active points are returned.\n"
 					"  :returns: list of :class:`Vector3D`, or ``None`` if no points are active at *reconstruction_time*\n"
+					"  :type return_inactive_points: bool\n"
 					"  :rtype: ``list`` or ``None``\n"
 					"  :raises: ValueError if *reconstruction_time* is "
 					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
@@ -1598,8 +1603,8 @@ export_topological_model()
 					"  .. versionadded:: 0.46\n"
 					"\n"
 					"  .. versionchanged:: 0.47\n"
-					"     Added *earth_radius_in_kms* argument (that defaults to *pygplates.Earth.mean_radius_in_kms* "
-					"instead of *pygplates.Earth.equatorial_radius_in_kms*).\n")
+					"     Added *earth_radius_in_kms* argument (that defaults to *pygplates.Earth.mean_radius_in_kms*). "
+					"Previously *pygplates.Earth.equatorial_radius_in_kms* was hardwired internally).\n")
 			.def("get_scalar_values",
 					&GPlatesApi::reconstructed_geometry_time_span_get_scalar_values,
 					(bp::arg("reconstruction_time"),
@@ -1620,6 +1625,7 @@ export_topological_model()
 					"the size of each ``list`` of scalars is equal to the number of points (and scalars) in the initial geometry "
 					"(which are all initially active). "
 					"By default only scalars for active points are returned.\n"
+					"  :type return_inactive_points: bool\n"
 					"  :returns: If *scalar_type* is specified then a ``list`` of scalar values associated with *scalar_type* "
 					"at *reconstruction_time* (or ``None`` if no matching scalar type), otherwise a ``dict`` mapping available "
 					"scalar types with their associated scalar values ``list`` at *reconstruction_time* (or ``None`` if no scalar types "
@@ -1985,7 +1991,7 @@ export_topological_model()
 				"  :raises: ValueError if initial time, oldest time or youngest time is "
 				"distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n"
 				"  :raises: ValueError if oldest time is later than (or same as) youngest time.\n"
-				"  :raises: ValueError if time increment is not positive.\n"
+				"  :raises: ValueError if time increment is negative or zero.\n"
 				"  :raises: ValueError if oldest to youngest time period is not an integer multiple of the time increment.\n"
 				"  :raises: ValueError if *initial_scalars* is specified but: is empty, or each :class:`scalar type<ScalarType>` "
 				"is not mapped to the same number of scalar values, or the number of scalars is not equal to the "
