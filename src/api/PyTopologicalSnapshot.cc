@@ -1500,6 +1500,9 @@ export_topological_snapshot()
 				"  :raises: ValueError if *uniform_point_spacing_radians* is negative or zero\n"
 				"  :raises: ValueError if *velocity_delta_time* is negative or zero.\n"
 				"\n"
+				"  .. note:: If *return_shared_sub_segment_dict* is ``True`` then any shared sub-segments that are not long enough to contain any uniform points "
+				"will be missing from the returned ``dict``.\n"
+				"\n"
 				"  .. versionadded:: 0.47\n")
 		.def("get_rotation_model",
 				&GPlatesApi::TopologicalSnapshot::get_rotation_model,

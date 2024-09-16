@@ -210,8 +210,9 @@ namespace GPlatesAppLogic
 	 * Calculates statistics along the plate boundaries specified by the resolved topological sections
 	 * (each is a list of sub-segments shared by resolved topology boundaries, optionally including networks).
 	 *
-	 * Generates a sequence of uniformly-spaced points along each resolved topological section and
-	 * calculates plate boundary statistics at each point.
+	 * Generates a sequence of uniformly-spaced points along each resolved topological section and calculates
+	 * plate boundary statistics at each point. If a shared sub-segment of a resolved topological section
+	 * is not long enough to contain any uniform points then it will be missing from the returned mapping.
 	 *
 	 * For each resolved topological section, its first point is located @a first_uniform_point_spacing radians
 	 * from its first vertex and each subsequent point is separated by @a uniform_point_spacing radians.
