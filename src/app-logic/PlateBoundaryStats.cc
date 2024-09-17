@@ -696,6 +696,13 @@ GPlatesAppLogic::calculate_plate_boundary_stats(
 {
 	for (const auto &resolved_topological_section : resolved_topological_sections)
 	{
+		// Each ResolvedTopologicalSection should have at least one shared sub-segment.
+		// But check just in case, and skip if empty.
+		if (resolved_topological_section->get_shared_sub_segments().empty())
+		{
+			continue;
+		}
+
 		// Distances from the start of the topological section geometry to the start and end of the span of shared sub-segments
 		// (the minimum/maximum range of topological section covered by its shared sub-segments, including any gaps between them).
 		double distance_from_start_of_topological_section_to_start_of_shared_sub_segments;

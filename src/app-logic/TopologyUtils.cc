@@ -1881,12 +1881,18 @@ GPlatesAppLogic::TopologyUtils::find_resolved_topological_sections(
 
 		// Now that we've gathered all the shared sub-segments for the current section,
 		// add them to a ResolvedTopologicalSection.
-		resolved_topological_sections.push_back(
-				ResolvedTopologicalSection::create(
-						shared_sub_segments.begin(),
-						shared_sub_segments.end(),
-						section_rg,
-						section_feature_ref));
+		//
+		// Note: It's possible to have no shared sub-segments.
+		//       We only create a ResolvedTopologicalSection if it has shared sub-segments.
+		if (!shared_sub_segments.empty())
+		{
+			resolved_topological_sections.push_back(
+					ResolvedTopologicalSection::create(
+							shared_sub_segments.begin(),
+							shared_sub_segments.end(),
+							section_rg,
+							section_feature_ref));
+		}
 	}
 }
 
