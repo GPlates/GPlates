@@ -18,11 +18,16 @@
  */
 
 #include <boost/optional.hpp>
+#include <map>
 #include <vector>
 
 #include "PlateBoundaryStats.h"
 
+#include "PlateVelocityUtils.h"
+#include "ReconstructionGeometryUtils.h"
 #include "ResolvedSubSegmentRangeInSection.h"
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalNetwork.h"
 
 #include "maths/PolylineOnSphere.h"
 
@@ -33,6 +38,34 @@ namespace GPlatesAppLogic
 {
 	namespace
 	{
+		/**
+		 * Get the resolved topological boundaries/networks sharing a shared sub-segment.
+		 */
+		void
+		get_resolved_topologies_sharing_shared_sub_segment(
+				const ResolvedTopologicalSharedSubSegment::non_null_ptr_type &shared_sub_segment,
+				std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &resolved_topological_boundaries,
+				std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &resolved_topological_networks)
+		{
+			for (const auto &resolved_topology_info : shared_sub_segment->get_sharing_resolved_topologies())
+			{
+				// See if a resolved topological boundary.
+				if (boost::optional<const ResolvedTopologicalBoundary *> resolved_topological_boundary =
+						ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+								const ResolvedTopologicalBoundary *>(resolved_topology_info.resolved_topology))
+				{
+					resolved_topological_boundaries.push_back(resolved_topological_boundary.get());
+				}
+				// Else it should be a resolved topological network.
+				else if (boost::optional<const ResolvedTopologicalNetwork *> resolved_topological_network =
+						ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
+								const ResolvedTopologicalNetwork *>(resolved_topology_info.resolved_topology))
+				{
+					resolved_topological_networks.push_back(resolved_topological_network.get());
+				}
+			}
+		}
+
 		/**
 		 * Get the normal to the *previous* (great circle arc) segment.
 		 *
@@ -138,6 +171,152 @@ namespace GPlatesAppLogic
 			return boundary_normal;
 		}
 
+
+		//! Typedef for map used to keep track of stage rotations by plate ID.
+		typedef std::map<GPlatesModel::integer_plate_id_type, GPlatesMaths::FiniteRotation> plate_id_to_stage_rotation_map_type;
+
+		const GPlatesMaths::FiniteRotation &
+		get_or_create_velocity_stage_rotation(
+				GPlatesModel::integer_plate_id_type reconstruction_plate_id,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const double &reconstruction_time,
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type,
+				plate_id_to_stage_rotation_map_type &stage_rotation_map)
+		{
+			// See if already exists.
+			plate_id_to_stage_rotation_map_type::const_iterator stage_rotation_iter =
+					stage_rotation_map.find(reconstruction_plate_id);
+			if (stage_rotation_iter != stage_rotation_map.end())
+			{
+				return stage_rotation_iter->second;
+			}
+
+			// Calculate stage rotation and insert into the map.
+			const std::pair<plate_id_to_stage_rotation_map_type::iterator, bool> insert_result =
+					stage_rotation_map.insert(
+							plate_id_to_stage_rotation_map_type::value_type(
+									reconstruction_plate_id,
+									PlateVelocityUtils::calculate_stage_rotation(
+											reconstruction_plate_id,
+											reconstruction_tree_creator,
+											reconstruction_time,
+											velocity_delta_time,
+											velocity_delta_time_type)));
+
+			return insert_result.first->second;
+		}
+
+		boost::optional<GPlatesMaths::Vector3D>
+		get_plate_velocity(
+				const GPlatesMaths::PointOnSphere &point_off_boundary,
+				const double &reconstruction_time,
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type,
+				VelocityUnits::Value velocity_units,
+				const double &earth_radius_in_kms,
+				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &resolved_topological_boundaries,
+				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &resolved_topological_networks,
+				plate_id_to_stage_rotation_map_type &resolved_boundary_stage_rotation_map)
+		{
+			// Search topological networks first (deforming regions).
+			for (const auto &resolved_topological_network : resolved_topological_networks)
+			{
+				// See if point is inside polygon boundary of deforming network and, if so, calculate its velocity.
+				boost::optional<
+						std::pair<
+								GPlatesMaths::Vector3D,
+								ResolvedTriangulation::Network::PointLocation> >
+						velocity = resolved_topological_network->get_triangulation_network().calculate_velocity(
+								point_off_boundary,
+								velocity_delta_time,
+								velocity_delta_time_type,
+								velocity_units,
+								earth_radius_in_kms);
+				if (velocity)
+				{
+					return velocity->first;
+				}
+			}
+
+			// Then search topological boundaries (rigid plates).
+			for (const auto &resolved_topological_boundary : resolved_topological_boundaries)
+			{
+				// See if point is inside polygon boundary of rigid plate.
+				if (resolved_topological_boundary->resolved_topology_boundary()->is_point_in_polygon(
+						point_off_boundary,
+						GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE))
+				{
+					// Get the plate ID from resolved boundary.
+					const boost::optional<GPlatesModel::integer_plate_id_type> resolved_boundary_plate_id =
+							resolved_topological_boundary->plate_id();
+					if (resolved_boundary_plate_id)
+					{
+						// Get the stage rotation of the rigid plate.
+						const GPlatesMaths::FiniteRotation &resolved_boundary_stage_rotation =
+								get_or_create_velocity_stage_rotation(
+										resolved_boundary_plate_id.get(),
+										resolved_topological_boundary->get_reconstruction_tree_creator(),
+										reconstruction_time,
+										velocity_delta_time,
+										velocity_delta_time_type,
+										resolved_boundary_stage_rotation_map);
+
+						// Calculate the velocity of the point inside the resolved boundary.
+						const GPlatesMaths::Vector3D velocity =
+								PlateVelocityUtils::calculate_velocity_vector(
+										point_off_boundary,
+										resolved_boundary_stage_rotation,
+										velocity_delta_time,
+										velocity_units,
+										earth_radius_in_kms);
+
+						return velocity;
+					}
+				}
+			}
+
+			return boost::none;
+		}
+
+		void
+		get_left_and_right_plate_velocities(
+				const GPlatesMaths::PointOnSphere &point,
+				const GPlatesMaths::UnitVector3D &boundary_normal,
+				const double &reconstruction_time,
+				const double &velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type,
+				VelocityUnits::Value velocity_units,
+				const double &earth_radius_in_kms,
+				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &resolved_topological_boundaries,
+				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &resolved_topological_networks,
+				plate_id_to_stage_rotation_map_type &resolved_boundary_stage_rotation_map,
+				boost::optional<GPlatesMaths::Vector3D> &left_plate_velocity,
+				boost::optional<GPlatesMaths::Vector3D> &right_plate_velocity)
+		{
+			// Move the point a very small distance to the left and to the right.
+			// This helps ensure that we don't accidentally sample the right plate when sampling the left plate (and vice versa).
+			//
+			// Note: The rigid plates and deforming networks have polygon boundaries with a tiny threshold for detecting if a
+			//       point is ON the outline of the polygon. So we want a distance that exceeds that threshold.
+			//       That threshold is about 1.4e-6 radians (about 9 metres).
+			const double offset_distance = 1e-4;  // ~600 metres
+			const GPlatesMaths::PointOnSphere left_point(
+					(GPlatesMaths::Vector3D(point.position_vector()) + offset_distance * boundary_normal).get_normalisation());
+			const GPlatesMaths::PointOnSphere right_point(
+					(GPlatesMaths::Vector3D(point.position_vector()) - offset_distance * boundary_normal).get_normalisation());
+
+			left_plate_velocity = get_plate_velocity(
+					left_point,
+					reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
+					resolved_topological_boundaries, resolved_topological_networks, resolved_boundary_stage_rotation_map);
+			right_plate_velocity = get_plate_velocity(
+					right_point,
+					reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
+					resolved_topological_boundaries, resolved_topological_networks, resolved_boundary_stage_rotation_map);
+		}
+
+
 		/**
 		 * Calculate plate boundary statistics at uniformly spaced points along a shared sub-segment.
 		 *
@@ -169,6 +348,12 @@ namespace GPlatesAppLogic
 			resolved_vertex_source_info_seq_type shared_sub_segment_vertex_source_infos;
 			shared_sub_segment->get_shared_sub_segment_point_source_infos(shared_sub_segment_vertex_source_infos);
 
+			// The resolved topological boundaries/networks sharing the shared sub-segment.
+			std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> sharing_resolved_topological_boundaries;
+			std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> sharing_resolved_topological_networks;
+			get_resolved_topologies_sharing_shared_sub_segment(
+					shared_sub_segment, sharing_resolved_topological_boundaries, sharing_resolved_topological_networks);
+
 			// Generate uniformly spaced points along the shared sub-segment.
 			std::vector<GPlatesMaths::PointOnSphere> uniform_points;
 			std::vector<std::pair<unsigned int/*segment index*/, double/*segment interpolation*/>> segment_informations;
@@ -193,10 +378,35 @@ namespace GPlatesAppLogic
 			boost::optional<GPlatesMaths::UnitVector3D> prev_boundary_normal;
 			boost::optional<GPlatesMaths::UnitVector3D> next_boundary_normal;
 
+			// Avoid re-calculating stage rotations for resolved topological boundaries with the same plate ID.
+			plate_id_to_stage_rotation_map_type resolved_boundary_stage_rotation_map;
+
 			// Calculate statistics for each uniform point.
 			for (unsigned int uniform_point_index = 0; uniform_point_index < num_uniform_points; ++uniform_point_index)
 			{
 				const GPlatesMaths::PointOnSphere &point = uniform_points[uniform_point_index];
+
+				// The length of the shared sub-segment polyline represented by the current point.
+				double point_length;
+				if (num_uniform_points == 1)  // first and last point
+				{
+					point_length = shared_sub_segment_polyline->get_arc_length().dval();  // entire length
+				}
+				else if (uniform_point_index == 0)  // first point
+				{
+					point_length = first_uniform_point_spacing + 0.5 * uniform_point_spacing;
+				}
+				else if (uniform_point_index == num_uniform_points - 1)  // last point
+				{
+					point_length = 0.5 * uniform_point_spacing +
+							shared_sub_segment_polyline->get_arc_length().dval() -
+							(first_uniform_point_spacing + (num_uniform_points - 1) * uniform_point_spacing);
+				}
+				else  // neither first nor last point
+				{
+					// Points other than the first and last have the same length (uniform point spacing).
+					point_length = uniform_point_spacing;
+				}
 
 				const unsigned int segment_index = segment_informations[uniform_point_index].first;
 				const double &segment_interpolation = segment_informations[uniform_point_index].second;
@@ -234,6 +444,16 @@ namespace GPlatesAppLogic
 				const GPlatesMaths::Vector3D boundary_velocity =
 						(1.0 - segment_interpolation) * segment_start_boundary_velocity + segment_interpolation * segment_end_boundary_velocity;
 
+				// Get the velocities on the plates to the left and right of the current point
+				// (that's left and right when following the order or points in the shared sub-segment).
+				boost::optional<GPlatesMaths::Vector3D> left_plate_velocity;
+				boost::optional<GPlatesMaths::Vector3D> right_plate_velocity;
+				get_left_and_right_plate_velocities(
+						point, boundary_normal.get(),
+						reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
+						sharing_resolved_topological_boundaries, sharing_resolved_topological_networks, resolved_boundary_stage_rotation_map,
+						left_plate_velocity, right_plate_velocity);
+
 				// Distance from start of shared sub-segment to current point (along shared sub-segment).
 				const double distance_from_start_of_shared_sub_segment = first_uniform_point_spacing + uniform_point_index * uniform_point_spacing;
 
@@ -248,10 +468,11 @@ namespace GPlatesAppLogic
 				shared_sub_segment_plate_boundary_stats.push_back(
 						PlateBoundaryStat(
 								point,
+								point_length,
 								boundary_normal.get(),
 								boundary_velocity,
-								signed_distance_from_start_of_topological_section,
-								signed_distance_to_end_of_topological_section));
+								left_plate_velocity, right_plate_velocity,
+								signed_distance_from_start_of_topological_section, signed_distance_to_end_of_topological_section));
 			}
 
 			return true;
@@ -264,7 +485,7 @@ namespace GPlatesAppLogic
 		 *       We're only considering the actual topological section geometry itself.
 		 */
 		void
-		calculate_distances_from_start_of_topological_section_to_start_and_end_of_shared_sub_segments(
+		get_distances_from_start_of_topological_section_to_start_and_end_of_shared_sub_segments(
 				const ResolvedTopologicalSection::non_null_ptr_type &resolved_topological_section,
 				double &distance_to_start_of_topological_section,
 				double &distance_to_end_of_topological_section)
@@ -364,7 +585,7 @@ namespace GPlatesAppLogic
 		 * (that's also part of a plate boundary).
 		 */
 		double
-		calculate_signed_distance_from_start_of_topological_section_to_start_of_shared_sub_segment(
+		get_signed_distance_from_start_of_topological_section_to_start_of_shared_sub_segment(
 				const ResolvedTopologicalSharedSubSegment::non_null_ptr_type &shared_sub_segment)
 		{
 			const ResolvedSubSegmentRangeInSection &shared_sub_segment_range = shared_sub_segment->get_shared_sub_segment();
@@ -479,7 +700,7 @@ GPlatesAppLogic::calculate_plate_boundary_stats(
 		// (the minimum/maximum range of topological section covered by its shared sub-segments, including any gaps between them).
 		double distance_from_start_of_topological_section_to_start_of_shared_sub_segments;
 		double distance_from_start_of_topological_section_to_end_of_shared_sub_segments;
-		calculate_distances_from_start_of_topological_section_to_start_and_end_of_shared_sub_segments(
+		get_distances_from_start_of_topological_section_to_start_and_end_of_shared_sub_segments(
 				resolved_topological_section,
 				distance_from_start_of_topological_section_to_start_of_shared_sub_segments,
 				distance_from_start_of_topological_section_to_end_of_shared_sub_segments);
@@ -513,7 +734,7 @@ GPlatesAppLogic::calculate_plate_boundary_stats(
 
 			// Signed distance from start of topological section geometry to the start of the current shared sub-segment.
 			const double signed_distance_from_start_of_topological_section =
-					calculate_signed_distance_from_start_of_topological_section_to_start_of_shared_sub_segment(shared_sub_segment);
+					get_signed_distance_from_start_of_topological_section_to_start_of_shared_sub_segment(shared_sub_segment);
 
 			// Distance from the *start* of ALL shared sub-segments to the *start* of the CURRENT shared sub-segment.
 			//
@@ -559,8 +780,11 @@ GPlatesAppLogic::PlateBoundaryStat::transcribe_construct_data(
 	if (scribe.is_saving())
 	{
 		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_point, "point");
+		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_length, "length");
 		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_boundary_normal, "boundary_normal");
 		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_boundary_velocity, "boundary_velocity");
+		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_left_plate_velocity, "left_plate_velocity");
+		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_right_plate_velocity, "right_plate_velocity");
 		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_signed_distance_from_start_of_topological_section, "signed_distance_from_start_of_topological_section");
 		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_signed_distance_to_end_of_topological_section, "signed_distance_to_end_of_topological_section");
 	}
@@ -578,10 +802,16 @@ GPlatesAppLogic::PlateBoundaryStat::transcribe_construct_data(
 			return scribe.get_transcribe_result();
 		}
 
+		GPlatesMaths::Real length_;
 		GPlatesMaths::Vector3D boundary_velocity_;
+		boost::optional<GPlatesMaths::Vector3D> left_plate_velocity_;
+		boost::optional<GPlatesMaths::Vector3D> right_plate_velocity_;
 		GPlatesMaths::Real signed_distance_from_start_of_topological_section_;
 		GPlatesMaths::Real signed_distance_to_end_of_topological_section_;
-		if (!scribe.transcribe(TRANSCRIBE_SOURCE, boundary_velocity_, "boundary_velocity") ||
+		if (!scribe.transcribe(TRANSCRIBE_SOURCE, length_, "length") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, boundary_velocity_, "boundary_velocity") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, left_plate_velocity_, "left_plate_velocity") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, right_plate_velocity_, "right_plate_velocity") ||
 			!scribe.transcribe(TRANSCRIBE_SOURCE, signed_distance_from_start_of_topological_section_, "signed_distance_from_start_of_topological_section") ||
 			!scribe.transcribe(TRANSCRIBE_SOURCE, signed_distance_to_end_of_topological_section_, "signed_distance_to_end_of_topological_section"))
 		{
@@ -590,8 +820,11 @@ GPlatesAppLogic::PlateBoundaryStat::transcribe_construct_data(
 
 		plate_boundary_stat.construct_object(
 				point_,
+				length_.dval(),
 				boundary_normal_,
 				boundary_velocity_,
+				left_plate_velocity_,
+				right_plate_velocity_,
 				signed_distance_from_start_of_topological_section_.dval(),
 				signed_distance_to_end_of_topological_section_.dval());
 	}
@@ -608,8 +841,11 @@ GPlatesAppLogic::PlateBoundaryStat::transcribe(
 	if (!transcribed_construct_data)
 	{
 		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_point, "point") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_length, "length") ||
 			!scribe.transcribe(TRANSCRIBE_SOURCE, d_boundary_normal, "boundary_normal") ||
 			!scribe.transcribe(TRANSCRIBE_SOURCE, d_boundary_velocity, "boundary_velocity") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_left_plate_velocity, "left_plate_velocity") ||
+			!scribe.transcribe(TRANSCRIBE_SOURCE, d_right_plate_velocity, "right_plate_velocity") ||
 			!scribe.transcribe(TRANSCRIBE_SOURCE, d_signed_distance_from_start_of_topological_section, "signed_distance_from_start_of_topological_section") ||
 			!scribe.transcribe(TRANSCRIBE_SOURCE, d_signed_distance_to_end_of_topological_section, "signed_distance_to_end_of_topological_section"))
 		{

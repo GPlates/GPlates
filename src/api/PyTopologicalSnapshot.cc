@@ -1177,6 +1177,11 @@ export_topological_snapshot()
 				"Point location on a plate boundary.\n"
 				"\n"
 				"  :type: :class:`PointOnSphere`\n")
+		.add_property("length",
+				&GPlatesAppLogic::PlateBoundaryStat::get_length,
+				"Length (in radians) subtended on the plate boundary (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: float\n")
 		.add_property("boundary_normal",
 				&GPlatesApi::plate_boundary_statistic_get_boundary_normal,
 				"Normal to the plate boundary (at the :attr:`point location <point_location>`).\n"
@@ -1191,6 +1196,45 @@ export_topological_snapshot()
 				"Velocity of the plate boundary (at the :attr:`point location <point_location>`).\n"
 				"\n"
 				"  :type: :class:`Vector3D`\n")
+		.add_property("left_plate_velocity",
+				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_left_plate_velocity, bp::return_value_policy<bp::copy_const_reference>()),
+				"Velocity of the left plate (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: :class:`Vector3D` or ``None``\n"
+				"\n"
+				"  .. note:: This can be ``None`` if there is no plate to the left (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n")
+		.add_property("right_plate_velocity",
+				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_right_plate_velocity, bp::return_value_policy<bp::copy_const_reference>()),
+				"Velocity of the right plate (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: :class:`Vector3D` or ``None``\n"
+				"\n"
+				"  .. note:: This can be ``None`` if there is no plate to the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n")
+		.add_property("convergence_velocity",
+				&GPlatesAppLogic::PlateBoundaryStat::get_convergence_velocity,
+				"Convergence velocity (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: :class:`Vector3D`\n"
+				"\n"
+				"  This is the velocity of the right plate relative to the left plate.\n"
+				"\n"
+				"  .. note:: Returns zero velocity (``pygplates.Vector3D.zero``) if there is no plate on the left or no plate on the right.\n")
+		.add_property("convergence_obliquity",
+				&GPlatesAppLogic::PlateBoundaryStat::get_convergence_obliquity,
+				"Convergence obliquity in radians (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  This is the angle of the :attr:`convergence velocity <convergence_velocity>` relative to the :attr:`boundary normal <boundary_normal>`.\n"
+				"\n"
+				"  Since the :attr:`boundary normal <boundary_normal>` is to the left and the :attr:`convergence velocity <convergence_velocity>` is the "
+				"velocity of the right plate relative to the left plate, an angle in the range ``[0, pi/2]`` represents convergence and "
+				"an angle in the range ``[pi/2, pi]`` represents divergence.\n"
+				"\n"
+				"  .. note:: Returns zero angle if the :attr:`convergence velocity <convergence_velocity>` is zero "
+				"(eg, if there is no plate on the left or no plate on the right).\n")
 		.add_property("signed_distance_from_start_of_topological_section",
 				&GPlatesAppLogic::PlateBoundaryStat::get_signed_distance_from_start_of_topological_section,
 				"Signed distance (in radians) from the *start* of the resolved topological section geometry.\n"

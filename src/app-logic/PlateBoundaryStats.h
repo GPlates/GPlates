@@ -20,6 +20,7 @@
 #ifndef GPLATES_APP_LOGIC_PLATE_BOUNDARY_STATS_H
 #define GPLATES_APP_LOGIC_PLATE_BOUNDARY_STATS_H
 
+#include <boost/optional.hpp>
 #include <map>
 #include <vector>
 
@@ -50,13 +51,19 @@ namespace GPlatesAppLogic
 	public:
 		PlateBoundaryStat(
 				const GPlatesMaths::PointOnSphere &point_,
+				const double &length_,
 				const GPlatesMaths::UnitVector3D &boundary_normal_,
 				const GPlatesMaths::Vector3D &boundary_velocity_,
+				const boost::optional<GPlatesMaths::Vector3D> &left_plate_velocity_,
+				const boost::optional<GPlatesMaths::Vector3D> &right_plate_velocity_,
 				const double &signed_distance_from_start_of_topological_section_,
 				const double &signed_distance_to_end_of_topological_section_) :
 			d_point(point_),
+			d_length(length_),
 			d_boundary_normal(boundary_normal_),
 			d_boundary_velocity(boundary_velocity_),
+			d_left_plate_velocity(left_plate_velocity_),
+			d_right_plate_velocity(right_plate_velocity_),
 			d_signed_distance_from_start_of_topological_section(signed_distance_from_start_of_topological_section_),
 			d_signed_distance_to_end_of_topological_section(signed_distance_to_end_of_topological_section_)
 		{  }
@@ -66,6 +73,13 @@ namespace GPlatesAppLogic
 		get_point_location() const
 		{
 			return d_point;
+		}
+
+		//! Get the length (in radians) of the plate boundary represented by the point location.
+		double
+		get_length() const
+		{
+			return d_length.dval();
 		}
 
 		/**
@@ -85,6 +99,68 @@ namespace GPlatesAppLogic
 		get_boundary_velocity() const
 		{
 			return d_boundary_velocity;
+		}
+
+		/**
+		 * Get the plate velocity of the left plate (at the point location).
+		 *
+		 * The left plate is with respect to the direction of the shared sub-segment (that this point is on).
+		 *
+		 * Returns none if there is no plate on the left.
+		 */
+		const boost::optional<GPlatesMaths::Vector3D> &
+		get_left_plate_velocity() const
+		{
+			return d_left_plate_velocity;
+		}
+
+		/**
+		 * Get the plate velocity of the right plate (at the point location).
+		 *
+		 * The right plate is with respect to the direction of the shared sub-segment (that this point is on).
+		 *
+		 * Retursn none if there is no plate on the right.
+		 */
+		const boost::optional<GPlatesMaths::Vector3D> &
+		get_right_plate_velocity() const
+		{
+			return d_right_plate_velocity;
+		}
+
+		/**
+		 * Get the velocity of the right plate relative to the left plate (at the point location).
+		 *
+		 * Returns zero velocity if there is no plate on the left or no plate on the right.
+		 */
+		GPlatesMaths::Vector3D
+		get_convergence_velocity() const
+		{
+			if (!d_left_plate_velocity || !d_right_plate_velocity)
+			{
+				return GPlatesMaths::Vector3D();
+			}
+
+			return d_right_plate_velocity.get() - d_left_plate_velocity.get();
+		}
+
+		/**
+		 * Get the angle of the convergence velocity relative to the boundary normal (at the point location).
+		 *
+		 * Since the boundary normal is to the left, an angle in the range [0, pi/2] represents convergence and
+		 * an angle in the range [pi/2, pi] represents divergence.
+		 *
+		 * Returns zero angle if the convergence velocity is zero (eg, if there is no plate on the left or no plate on the right).
+		 */
+		double
+		get_convergence_obliquity() const
+		{
+			const GPlatesMaths::Vector3D convergence_velocity = get_convergence_velocity();
+			if (convergence_velocity.is_zero_magnitude())
+			{
+				return 0.0;
+			}
+
+			return acos(dot(convergence_velocity.get_normalisation(), d_boundary_normal)).dval();
 		}
 
 		/**
@@ -154,7 +230,11 @@ namespace GPlatesAppLogic
 				const PlateBoundaryStat &other) const
 		{
 			return d_point == other.d_point &&
+					d_length == other.d_length &&
+					d_boundary_normal == other.d_boundary_normal &&
 					d_boundary_velocity == other.d_boundary_velocity &&
+					d_left_plate_velocity == other.d_left_plate_velocity &&
+					d_right_plate_velocity == other.d_right_plate_velocity &&
 					d_signed_distance_from_start_of_topological_section == other.d_signed_distance_from_start_of_topological_section &&
 					d_signed_distance_to_end_of_topological_section == other.d_signed_distance_to_end_of_topological_section;
 		}
@@ -170,11 +250,20 @@ namespace GPlatesAppLogic
 		//! Point location on a plate boundary.
 		GPlatesMaths::PointOnSphere d_point;
 
+		//! Length (in radians) of the plate boundary represented by the point location.
+		GPlatesMaths::Real d_length;
+
 		//! Normal to the plate boundary (at the point location).
 		GPlatesMaths::UnitVector3D d_boundary_normal;
 
 		//! Velocity of the plate boundary itself (at the point location).
 		GPlatesMaths::Vector3D d_boundary_velocity;
+
+		//! Plate velocity of the left plate (at point location), or none if no left plate.
+		boost::optional<GPlatesMaths::Vector3D> d_left_plate_velocity;
+
+		//! Plate velocity of the right plate (at point location), or none if no right plate.
+		boost::optional<GPlatesMaths::Vector3D> d_right_plate_velocity;
 
 		/**
 		 * Signed distance (in radians) from the *start* of the resolved topological section geometry
