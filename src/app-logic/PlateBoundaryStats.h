@@ -21,6 +21,7 @@
 #define GPLATES_APP_LOGIC_PLATE_BOUNDARY_STATS_H
 
 #include <boost/optional.hpp>
+#include <cmath>
 #include <map>
 #include <vector>
 
@@ -94,11 +95,57 @@ namespace GPlatesAppLogic
 			return d_boundary_normal;
 		}
 
+		/**
+		 * Get the clockwise (East-wise) angle from North to the plate boundary normal (at the point location).
+		 *
+		 * The angle is in the range [0, 2*pi].
+		 */
+		double
+		get_boundary_normal_azimuth() const;
+
 		//! Get the velocity of the plate boundary itself (at the point location).
 		const GPlatesMaths::Vector3D &
 		get_boundary_velocity() const
 		{
 			return d_boundary_velocity;
+		}
+
+		//! Get the magnitude of velocity of the plate boundary (at the point location).
+		double
+		get_boundary_velocity_magnitude() const
+		{
+			return get_velocity_magnitude(d_boundary_velocity);
+		}
+
+		/**
+		 * Get the angle of the plate boundary velocity relative to the boundary normal (at the point location).
+		 *
+		 * Clockwise angles are positive (anti-clockwise angles are negative).
+		 *
+		 * Returns zero if the plate boundary velocity vector has zero magnitude.
+		 */
+		double
+		get_boundary_velocity_obliquity() const
+		{
+			return get_velocity_obliquity(d_boundary_velocity);
+		}
+
+		/**
+		 * Get the orthogonal component (in direction of boundary normal) of the plate boundary velocity (at the point location).
+		 */
+		double
+		get_boundary_velocity_orthogonal() const
+		{
+			return get_velocity_magnitude(d_boundary_velocity) * std::cos(get_velocity_obliquity(d_boundary_velocity));
+		}
+
+		/**
+		 * Get the parallel component (in direction along boundary line) of the plate boundary velocity (at the point location).
+		 */
+		double
+		get_boundary_velocity_parallel() const
+		{
+			return get_velocity_magnitude(d_boundary_velocity) * std::sin(get_velocity_obliquity(d_boundary_velocity));
 		}
 
 		/**
@@ -115,11 +162,63 @@ namespace GPlatesAppLogic
 		}
 
 		/**
+		 * Get the magnitude of plate velocity of the left plate (at the point location).
+		 *
+		 * Returns NaN if no left plate velocity.
+		 */
+		double
+		get_left_plate_velocity_magnitude() const
+		{
+			return d_left_plate_velocity ? get_velocity_magnitude(d_left_plate_velocity.get()) : GPlatesMaths::quiet_nan<double>();
+		}
+
+		/**
+		 * Get the angle of the left plate velocity relative to the boundary normal (at the point location).
+		 *
+		 * Clockwise angles are positive (anti-clockwise angles are negative).
+		 *
+		 * Returns NaN if no left plate velocity.
+		 *
+		 * Returns zero if the left plate velocity vector has zero magnitude.
+		 */
+		double
+		get_left_plate_velocity_obliquity() const
+		{
+			return d_left_plate_velocity ? get_velocity_obliquity(d_left_plate_velocity.get()) : GPlatesMaths::quiet_nan<double>();
+		}
+
+		/**
+		 * Get the orthogonal component (in direction of boundary normal) of the left plate velocity (at the point location).
+		 *
+		 * Returns NaN if no left plate velocity.
+		 */
+		double
+		get_left_plate_velocity_orthogonal() const
+		{
+			return d_left_plate_velocity
+					? get_velocity_magnitude(d_left_plate_velocity.get()) * std::cos(get_velocity_obliquity(d_left_plate_velocity.get()))
+					: GPlatesMaths::quiet_nan<double>();
+		}
+
+		/**
+		 * Get the parallel component (in direction along boundary line) of the left plate velocity (at the point location).
+		 *
+		 * Returns NaN if no left plate velocity.
+		 */
+		double
+		get_left_plate_velocity_parallel() const
+		{
+			return d_left_plate_velocity
+					? get_velocity_magnitude(d_left_plate_velocity.get()) * std::sin(get_velocity_obliquity(d_left_plate_velocity.get()))
+					: GPlatesMaths::quiet_nan<double>();
+		}
+
+		/**
 		 * Get the plate velocity of the right plate (at the point location).
 		 *
 		 * The right plate is with respect to the direction of the shared sub-segment (that this point is on).
 		 *
-		 * Retursn none if there is no plate on the right.
+		 * Returns none if there is no plate on the right.
 		 */
 		const boost::optional<GPlatesMaths::Vector3D> &
 		get_right_plate_velocity() const
@@ -128,39 +227,121 @@ namespace GPlatesAppLogic
 		}
 
 		/**
+		 * Get the magnitude of plate velocity of the right plate (at the point location).
+		 *
+		 * Returns NaN if no right plate velocity.
+		 */
+		double
+		get_right_plate_velocity_magnitude() const
+		{
+			return d_right_plate_velocity ? get_velocity_magnitude(d_right_plate_velocity.get()) : GPlatesMaths::quiet_nan<double>();
+		}
+
+		/**
+		 * Get the angle of the right plate velocity relative to the boundary normal (at the point location).
+		 *
+		 * Clockwise angles are positive (anti-clockwise angles are negative).
+		 *
+		 * Returns NaN if no right plate velocity.
+		 *
+		 * Returns zero if the right plate velocity vector has zero magnitude.
+		 */
+		double
+		get_right_plate_velocity_obliquity() const
+		{
+			return d_right_plate_velocity ? get_velocity_obliquity(d_right_plate_velocity.get()) : GPlatesMaths::quiet_nan<double>();
+		}
+
+		/**
+		 * Get the orthogonal component (in direction of boundary normal) of the right plate velocity (at the point location).
+		 *
+		 * Returns NaN if no right plate velocity.
+		 */
+		double
+		get_right_plate_velocity_orthogonal() const
+		{
+			return d_right_plate_velocity
+					? get_velocity_magnitude(d_right_plate_velocity.get()) * std::cos(get_velocity_obliquity(d_right_plate_velocity.get()))
+					: GPlatesMaths::quiet_nan<double>();
+		}
+
+		/**
+		 * Get the parallel component (in direction along boundary line) of the right plate velocity (at the point location).
+		 *
+		 * Returns NaN if no right plate velocity.
+		 */
+		double
+		get_right_plate_velocity_parallel() const
+		{
+			return d_right_plate_velocity
+					? get_velocity_magnitude(d_right_plate_velocity.get()) * std::sin(get_velocity_obliquity(d_right_plate_velocity.get()))
+					: GPlatesMaths::quiet_nan<double>();
+		}
+
+		/**
 		 * Get the velocity of the right plate relative to the left plate (at the point location).
 		 *
-		 * Returns zero velocity if there is no plate on the left or no plate on the right.
+		 * Returns none if there is no plate on the left or no plate on the right.
 		 */
-		GPlatesMaths::Vector3D
-		get_convergence_velocity() const
-		{
-			if (!d_left_plate_velocity || !d_right_plate_velocity)
-			{
-				return GPlatesMaths::Vector3D();
-			}
+		boost::optional<GPlatesMaths::Vector3D>
+		get_convergence_velocity() const;
 
-			return d_right_plate_velocity.get() - d_left_plate_velocity.get();
-		}
+		/**
+		 * Get the magnitude of convergence velocity (at the point location).
+		 *
+		 * If @a return_signed_magnitude is true then negate magnitude if plates are *diverging*.
+		 *
+		 * Returns NaN if there is no plate on the left or no plate on the right (ie, convergence velocity is none).
+		 *
+		 * Returns zero if the convergence velocity vector has zero magnitude.
+		 */
+		double
+		get_convergence_velocity_magnitude(
+				bool return_signed_magnitude = false) const;
 
 		/**
 		 * Get the angle of the convergence velocity relative to the boundary normal (at the point location).
 		 *
-		 * Since the boundary normal is to the left, an angle in the range [0, pi/2] represents convergence and
-		 * an angle in the range [pi/2, pi] represents divergence.
+		 * Clockwise angles are positive (anti-clockwise angles are negative).
 		 *
-		 * Returns zero angle if the convergence velocity is zero (eg, if there is no plate on the left or no plate on the right).
+		 * Since the boundary normal is to the left, an angle in the range [-pi/2, pi/2] represents convergence and
+		 * an angle in the range [-pi, -pi/2] or [pi/2, pi] represents divergence.
+		 *
+		 * Returns NaN if there is no plate on the left or no plate on the right (ie, convergence velocity is none).
+		 *
+		 * Returns zero if the convergence velocity vector has zero magnitude.
 		 */
 		double
-		get_convergence_obliquity() const
-		{
-			const GPlatesMaths::Vector3D convergence_velocity = get_convergence_velocity();
-			if (convergence_velocity.is_zero_magnitude())
-			{
-				return 0.0;
-			}
+		get_convergence_velocity_obliquity() const;
 
-			return acos(dot(convergence_velocity.get_normalisation(), d_boundary_normal)).dval();
+		/**
+		 * Get the orthogonal component (in direction of boundary normal) of the convergence velocity (at the point location).
+		 *
+		 * Returns NaN if there is no plate on the left or no plate on the right (ie, convergence velocity is none).
+		 */
+		double
+		get_convergence_velocity_orthogonal() const
+		{
+			const boost::optional<GPlatesMaths::Vector3D> convergence_velocity = get_convergence_velocity();
+
+			return convergence_velocity
+					? get_velocity_magnitude(convergence_velocity.get()) * std::cos(get_velocity_obliquity(convergence_velocity.get()))
+					: GPlatesMaths::quiet_nan<double>();
+		}
+
+		/**
+		 * Get the parallel component (in direction along boundary line) of the convergence velocity (at the point location).
+		 *
+		 * Returns NaN if there is no plate on the left or no plate on the right (ie, convergence velocity is none).
+		 */
+		double
+		get_convergence_velocity_parallel() const
+		{
+			const boost::optional<GPlatesMaths::Vector3D> convergence_velocity = get_convergence_velocity();
+
+			return convergence_velocity
+					? get_velocity_magnitude(convergence_velocity.get()) * std::sin(get_velocity_obliquity(convergence_velocity.get()))
+					: GPlatesMaths::quiet_nan<double>();
 		}
 
 		/**
@@ -247,6 +428,16 @@ namespace GPlatesAppLogic
 		}
 
 	private:
+
+		double
+		get_velocity_magnitude(
+				const GPlatesMaths::Vector3D &velocity) const;
+
+		double
+		get_velocity_obliquity(
+				const GPlatesMaths::Vector3D &velocity) const;
+
+
 		//! Point location on a plate boundary.
 		GPlatesMaths::PointOnSphere d_point;
 

@@ -317,6 +317,20 @@ namespace GPlatesApi
 		return GPlatesMaths::Vector3D(plate_boundary_statistic.get_boundary_normal());
 	}
 
+	double
+	plate_boundary_statistic_get_convergence_velocity_magnitude(
+			const GPlatesAppLogic::PlateBoundaryStat &plate_boundary_statistic)
+	{
+		return plate_boundary_statistic.get_convergence_velocity_magnitude(false/*return_signed_magnitude*/);
+	}
+
+	double
+	plate_boundary_statistic_get_convergence_velocity_signed_magnitude(
+			const GPlatesAppLogic::PlateBoundaryStat &plate_boundary_statistic)
+	{
+		return plate_boundary_statistic.get_convergence_velocity_magnitude(true/*return_signed_magnitude*/);
+	}
+
 
 	TopologicalSnapshot::non_null_ptr_type
 	TopologicalSnapshot::create(
@@ -1188,53 +1202,360 @@ export_topological_snapshot()
 				"\n"
 				"  :type: :class:`Vector3D`\n"
 				"\n"
-				"  .. note:: This is the normal of the :class:`great circle arc <GreatCircleArc>` segment (that the :attr:`point <point_location>` is located on). "
-				"And the normal is to the *left* of the segment (when following the vertices of the :class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` "
-				"that the :attr:`point <point_location>` is located on).\n")
-		.add_property("boundary_velocity",
-				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_boundary_velocity, bp::return_value_policy<bp::copy_const_reference>()),
-				"Velocity of the plate boundary (at the :attr:`point location <point_location>`).\n"
-				"\n"
-				"  :type: :class:`Vector3D`\n")
-		.add_property("left_plate_velocity",
-				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_left_plate_velocity, bp::return_value_policy<bp::copy_const_reference>()),
-				"Velocity of the left plate (at the :attr:`point location <point_location>`).\n"
-				"\n"
-				"  :type: :class:`Vector3D` or ``None``\n"
-				"\n"
-				"  .. note:: This can be ``None`` if there is no plate to the left (when following the vertices of the "
+				"  .. note:: This is the unit-length normal of the :class:`great circle arc <GreatCircleArc>` segment (that the :attr:`point <point_location>` is located on). "
+				"And, as such, the normal is to the *left* of the segment (when following the vertices of the "
 				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n")
-		.add_property("right_plate_velocity",
-				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_right_plate_velocity, bp::return_value_policy<bp::copy_const_reference>()),
-				"Velocity of the right plate (at the :attr:`point location <point_location>`).\n"
-				"\n"
-				"  :type: :class:`Vector3D` or ``None``\n"
-				"\n"
-				"  .. note:: This can be ``None`` if there is no plate to the right (when following the vertices of the "
-				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n")
-		.add_property("convergence_velocity",
-				&GPlatesAppLogic::PlateBoundaryStat::get_convergence_velocity,
-				"Convergence velocity (at the :attr:`point location <point_location>`).\n"
-				"\n"
-				"  :type: :class:`Vector3D`\n"
-				"\n"
-				"  This is the velocity of the right plate relative to the left plate.\n"
-				"\n"
-				"  .. note:: Returns zero velocity (``pygplates.Vector3D.zero``) if there is no plate on the left or no plate on the right.\n")
-		.add_property("convergence_obliquity",
-				&GPlatesAppLogic::PlateBoundaryStat::get_convergence_obliquity,
-				"Convergence obliquity in radians (at the :attr:`point location <point_location>`).\n"
+		.add_property("boundary_normal_azimuth",
+				&GPlatesAppLogic::PlateBoundaryStat::get_boundary_normal_azimuth,
+				"Clockwise (East-wise) angle (in radians) from North to the :attr:`plate boundary normal <boundary_normal>` (at the :attr:`point location <point_location>`).\n"
 				"\n"
 				"  :type: float\n"
 				"\n"
-				"  This is the angle of the :attr:`convergence velocity <convergence_velocity>` relative to the :attr:`boundary normal <boundary_normal>`.\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
 				"\n"
-				"  Since the :attr:`boundary normal <boundary_normal>` is to the left and the :attr:`convergence velocity <convergence_velocity>` is the "
-				"velocity of the right plate relative to the left plate, an angle in the range ``[0, pi/2]`` represents convergence and "
-				"an angle in the range ``[pi/2, pi]`` represents divergence.\n"
+				"    local_cartesian = pygplates.LocalCartesian(plate_boundary_stat.point_location)\n"
+				"    _, azimuth, _ = local_cartesian.from_geocentric_to_magnitude_azimuth_inclination(plate_boundary_stat.boundary_normal)\n")
+		.add_property("boundary_velocity",
+				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_boundary_velocity, bp::return_value_policy<bp::copy_const_reference>()),
+				"Velocity vector of the plate boundary (at the :attr:`point location <point_location>`).\n"
 				"\n"
-				"  .. note:: Returns zero angle if the :attr:`convergence velocity <convergence_velocity>` is zero "
-				"(eg, if there is no plate on the left or no plate on the right).\n")
+				"  :type: :class:`Vector3D`\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n")
+		.add_property("boundary_velocity_magnitude",
+				&GPlatesAppLogic::PlateBoundaryStat::get_boundary_velocity_magnitude,
+				"Magnitude of velocity vector of the plate boundary (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    plate_boundary_stat.boundary_velocity.get_magnitude()\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n")
+		.add_property("boundary_velocity_obliquity",
+				&GPlatesAppLogic::PlateBoundaryStat::get_boundary_velocity_obliquity,
+				"Obliquity (in radians) of velocity vector of the plate boundary (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns zero if the :attr:`boundary velocity magnitude <boundary_velocity_magnitude>` is zero.\n"
+				"\n"
+				"  This is the angle of the :attr:`boundary velocity vector <boundary_velocity>` relative to the :attr:`boundary normal <boundary_normal>`. "
+				"It is in the range :math:`[-\\pi, \\pi]` with positive values representing clockwise angles (and negative representing counter-clockwise).\n"
+				"\n"
+				"  Since the :attr:`boundary normal <boundary_normal>` is to the *left*, an obliquity angle satisfying :math:`\\lvert obliquity \\rvert < \\frac{\\pi}{2}` "
+				"represents movement towards the *left* plate and an angle satisfying :math:`\\lvert obliquity \\rvert > \\frac{\\pi}{2}` represents movement towards *right* plate.\n")
+		.add_property("boundary_velocity_orthogonal",
+				&GPlatesAppLogic::PlateBoundaryStat::get_boundary_velocity_orthogonal,
+				"Orthogonal component (in direction of boundary normal) of velocity vector of the plate boundary (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    boundary_velocity_orthogonal = (plate_boundary_stat.boundary_velocity_magnitude *\n"
+				"                                    math.cos(plate_boundary_stat.boundary_velocity_obliquity))\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n")
+		.add_property("boundary_velocity_parallel",
+				&GPlatesAppLogic::PlateBoundaryStat::get_boundary_velocity_parallel,
+				"Parallel component (in direction along boundary line) of velocity vector of the plate boundary (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    boundary_velocity_parallel = (plate_boundary_stat.boundary_velocity_magnitude *\n"
+				"                                  math.sin(plate_boundary_stat.boundary_velocity_obliquity))\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n")
+		.add_property("left_plate_velocity",
+				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_left_plate_velocity, bp::return_value_policy<bp::copy_const_reference>()),
+				"Velocity vector of the left plate (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: :class:`Vector3D` or ``None``\n"
+				"\n"
+				"  .. note:: Returns ``None`` if there is no plate to the left (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n")
+		.add_property("left_plate_velocity_magnitude",
+				&GPlatesAppLogic::PlateBoundaryStat::get_left_plate_velocity_magnitude,
+				"Magnitude of velocity vector of the left plate (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate to the left (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if plate_boundary_stat.left_plate_velocity:\n"
+				"        left_plate_velocity_magnitude = plate_boundary_stat.left_plate_velocity.get_magnitude()\n"
+				"    else:\n"
+				"        left_plate_velocity_magnitude = float('nan')\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n")
+		.add_property("left_plate_velocity_obliquity",
+				&GPlatesAppLogic::PlateBoundaryStat::get_left_plate_velocity_obliquity,
+				"Obliquity (in radians) of velocity vector of the left plate (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate to the left (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n"
+				"\n"
+				"  .. note:: Returns zero if the :attr:`left plate velocity magnitude <left_plate_velocity_magnitude>` is zero.\n"
+				"\n"
+				"  This is the angle of the :attr:`left plate velocity vector <left_plate_velocity>` relative to the :attr:`boundary normal <boundary_normal>`. "
+				"It is in the range :math:`[-\\pi, \\pi]` with positive values representing clockwise angles (and negative representing counter-clockwise).\n"
+				"\n"
+				"  Since the :attr:`boundary normal <boundary_normal>` is to the *left*, an obliquity angle satisfying :math:`\\lvert obliquity \\rvert < \\frac{\\pi}{2}` "
+				"represents movement of the left plate *away* from the boundary and an angle satisfying :math:`\\lvert obliquity \\rvert > \\frac{\\pi}{2}` represents "
+				"movement *towards* the boundary.\n")
+		.add_property("left_plate_velocity_orthogonal",
+				&GPlatesAppLogic::PlateBoundaryStat::get_left_plate_velocity_orthogonal,
+				"Orthogonal component (in direction of boundary normal) of velocity vector of the left plate (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate to the left (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if plate_boundary_stat.left_plate_velocity:\n"
+				"        left_plate_velocity_orthogonal = (plate_boundary_stat.left_plate_velocity_magnitude *\n"
+				"                                          math.cos(plate_boundary_stat.left_plate_velocity_obliquity))\n"
+				"    else:\n"
+				"        left_plate_velocity_orthogonal = float('nan')\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n")
+		.add_property("left_plate_velocity_parallel",
+				&GPlatesAppLogic::PlateBoundaryStat::get_left_plate_velocity_parallel,
+				"Parallel component (in direction along boundary line) of velocity vector of the left plate (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate to the left (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if plate_boundary_stat.left_plate_velocity:\n"
+				"        left_plate_velocity_parallel = (plate_boundary_stat.left_plate_velocity_magnitude *\n"
+				"                                        math.sin(plate_boundary_stat.left_plate_velocity_obliquity))\n"
+				"    else:\n"
+				"        left_plate_velocity_parallel = float('nan')\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n")
+		.add_property("right_plate_velocity",
+				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_right_plate_velocity, bp::return_value_policy<bp::copy_const_reference>()),
+				"Velocity vector of the right plate (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: :class:`Vector3D` or ``None``\n"
+				"\n"
+				"  .. note:: Returns ``None`` if there is no plate to the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n")
+		.add_property("right_plate_velocity_magnitude",
+				&GPlatesAppLogic::PlateBoundaryStat::get_right_plate_velocity_magnitude,
+				"Magnitude of velocity vector of the right plate (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate to the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if plate_boundary_stat.right_plate_velocity:\n"
+				"        right_plate_velocity_magnitude = plate_boundary_stat.right_plate_velocity.get_magnitude()\n"
+				"    else:\n"
+				"        right_plate_velocity_magnitude = float('nan')\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n")
+		.add_property("right_plate_velocity_obliquity",
+				&GPlatesAppLogic::PlateBoundaryStat::get_right_plate_velocity_obliquity,
+				"Obliquity (in radians) of velocity vector of the right plate (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate to the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n"
+				"\n"
+				"  .. note:: Returns zero if the :attr:`right plate velocity magnitude <right_plate_velocity_magnitude>` is zero.\n"
+				"\n"
+				"  This is the angle of the :attr:`right plate velocity vector <right_plate_velocity>` relative to the :attr:`boundary normal <boundary_normal>`. "
+				"It is in the range :math:`[-\\pi, \\pi]` with positive values representing clockwise angles (and negative representing counter-clockwise).\n"
+				"\n"
+				"  Since the :attr:`boundary normal <boundary_normal>` is to the *left*, an obliquity angle satisfying :math:`\\lvert obliquity \\rvert < \\frac{\\pi}{2}` "
+				"represents movement of the right plate *towards* the boundary and an angle satisfying :math:`\\lvert obliquity \\rvert > \\frac{\\pi}{2}` represents "
+				"movement *away* from the boundary.\n")
+		.add_property("right_plate_velocity_orthogonal",
+				&GPlatesAppLogic::PlateBoundaryStat::get_right_plate_velocity_orthogonal,
+				"Orthogonal component (in direction of boundary normal) of velocity vector of the right plate (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate to the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if plate_boundary_stat.right_plate_velocity:\n"
+				"        right_plate_velocity_orthogonal = (plate_boundary_stat.right_plate_velocity_magnitude *\n"
+				"                                           math.cos(plate_boundary_stat.right_plate_velocity_obliquity))\n"
+				"    else:\n"
+				"        right_plate_velocity_orthogonal = float('nan')\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n")
+		.add_property("right_plate_velocity_parallel",
+				&GPlatesAppLogic::PlateBoundaryStat::get_right_plate_velocity_parallel,
+				"Parallel component (in direction along boundary line) of velocity vector of the right plate (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate to the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if plate_boundary_stat.right_plate_velocity:\n"
+				"        right_plate_velocity_parallel = (plate_boundary_stat.right_plate_velocity_magnitude *\n"
+				"                                         math.sin(plate_boundary_stat.right_plate_velocity_obliquity))\n"
+				"    else:\n"
+				"        right_plate_velocity_parallel = float('nan')\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n")
+		.add_property("convergence_velocity",
+				&GPlatesAppLogic::PlateBoundaryStat::get_convergence_velocity,
+				"Convergence velocity vector (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: :class:`Vector3D` or ``None``\n"
+				"\n"
+				"  This is the velocity of the *right* plate relative to the *left* plate.\n"
+				"\n"
+				"  .. note:: Returns ``None`` if there is no plate on the left or no plate on the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n")
+		.add_property("convergence_velocity_magnitude",
+				&GPlatesApi::plate_boundary_statistic_get_convergence_velocity_magnitude,
+				"Magnitude of convergence velocity vector (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate on the left or no plate on the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n"
+				"\n"
+				"  .. note:: Returns zero if the :attr:`convergence velocity <convergence_velocity>` has :meth:`zero magnitude <Vector3D.is_zero_magnitude>`.\n"
+				"\n"
+				"  The magnitude is always positive (or zero or ``float('nan')``).\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if plate_boundary_stat.convergence_velocity:\n"
+				"        if plate_boundary_stat.convergence_velocity.is_zero_magnitude():\n"
+				"            convergence_velocity_magnitude = 0.0\n"
+				"        else:\n"
+				"            convergence_velocity_magnitude = plate_boundary_stat.convergence_velocity.get_magnitude()\n"
+				"    else:\n"
+				"        convergence_velocity_magnitude = float('nan')\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n"
+				"\n"
+				"  .. seealso:: :attr:`convergence_velocity_signed_magnitude`\n")
+		.add_property("convergence_velocity_signed_magnitude",
+				&GPlatesApi::plate_boundary_statistic_get_convergence_velocity_signed_magnitude,
+				"Signed magnitude of convergence velocity vector (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate on the left or no plate on the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n"
+				"\n"
+				"  .. note:: Returns zero if the :attr:`convergence velocity <convergence_velocity>` has :meth:`zero magnitude <Vector3D.is_zero_magnitude>`.\n"
+				"\n"
+				"  The *signed* magnitude is positive if the plates are *converging* and negative if they're *diverging*. Otherwise it's zero or ``float('nan')``.\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    convergence_velocity_signed_magnitude = plate_boundary_stat.convergence_velocity_magnitude\n"
+				"    if (not math.isnan(convergence_velocity_signed_magnitude) and\n"
+				"        abs(plate_boundary_stat.convergence_obliquity) > math.pi/2):\n"
+				"        convergence_velocity_signed_magnitude = -convergence_velocity_signed_magnitude\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n")
+		.add_property("convergence_velocity_obliquity",
+				&GPlatesAppLogic::PlateBoundaryStat::get_convergence_velocity_obliquity,
+				"Obliquity (in radians) of the convergence velocity vector (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate on the left or no plate on the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n"
+				"\n"
+				"  .. note:: Returns zero if the :attr:`convergence velocity magnitude <convergence_velocity_magnitude>` is zero.\n"
+				"\n"
+				"  This is the angle of the :attr:`convergence velocity vector <convergence_velocity>` relative to the :attr:`boundary normal <boundary_normal>`. "
+				"It is in the range :math:`[-\\pi, \\pi]` with positive values representing clockwise angles (and negative representing counter-clockwise).\n"
+				"\n"
+				"  Since the :attr:`boundary normal <boundary_normal>` is to the *left* and the :attr:`convergence velocity <convergence_velocity>` is the "
+				"velocity of the *right* plate relative to the *left* plate, an obliquity angle satisfying :math:`\\lvert obliquity \\rvert < \\frac{\\pi}{2}` "
+				"represents *convergence* and an angle satisfying :math:`\\lvert obliquity \\rvert > \\frac{\\pi}{2}` represents *divergence*.\n")
+		.add_property("convergence_velocity_orthogonal",
+				&GPlatesAppLogic::PlateBoundaryStat::get_convergence_velocity_orthogonal,
+				"Orthogonal component (in direction of boundary normal) of convergence velocity vector (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate on the left or no plate on the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if plate_boundary_stat.convergence_velocity:\n"
+				"        convergence_velocity_orthogonal = (plate_boundary_stat.convergence_velocity_magnitude *\n"
+				"                                           math.cos(plate_boundary_stat.convergence_velocity_obliquity))\n"
+				"    else:\n"
+				"        convergence_velocity_orthogonal = float('nan')\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n")
+		.add_property("convergence_velocity_parallel",
+				&GPlatesAppLogic::PlateBoundaryStat::get_convergence_velocity_parallel,
+				"Parallel component (in direction along boundary line) of convergence velocity vector (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: float\n"
+				"\n"
+				"  .. note:: Returns ``float('nan')`` if there is no plate on the left or no plate on the right (when following the vertices of the "
+				":class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the :attr:`point <point_location>` is located on).\n"
+				"\n"
+				"  This is the equivalent of:\n"
+				"  ::\n"
+				"\n"
+				"    if plate_boundary_stat.convergence_velocity:\n"
+				"        convergence_velocity_parallel = (plate_boundary_stat.convergence_velocity_magnitude *\n"
+				"                                         math.sin(plate_boundary_stat.convergence_velocity_obliquity))\n"
+				"    else:\n"
+				"        convergence_velocity_parallel = float('nan')\n"
+				"\n"
+				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n")
 		.add_property("signed_distance_from_start_of_topological_section",
 				&GPlatesAppLogic::PlateBoundaryStat::get_signed_distance_from_start_of_topological_section,
 				"Signed distance (in radians) from the *start* of the resolved topological section geometry.\n"

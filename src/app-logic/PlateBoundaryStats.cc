@@ -29,6 +29,7 @@
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalNetwork.h"
 
+#include "maths/CartesianConvMatrix3D.h"
 #include "maths/PolylineOnSphere.h"
 
 #include "scribe/Scribe.h"
@@ -776,6 +777,120 @@ GPlatesAppLogic::calculate_plate_boundary_stats(
 			prev_shared_sub_segment = shared_sub_segment;
 		}
 	}
+}
+
+
+double
+GPlatesAppLogic::PlateBoundaryStat::get_boundary_normal_azimuth() const
+{
+	const boost::tuple<GPlatesMaths::Real, GPlatesMaths::Real, GPlatesMaths::Real> coords =
+			GPlatesMaths::convert_from_geocentric_to_magnitude_azimuth_inclination(
+					GPlatesMaths::CartesianConvMatrix3D(d_point),
+					GPlatesMaths::Vector3D(d_boundary_normal));
+
+	return boost::get<1>(coords).dval();
+}
+
+
+boost::optional<GPlatesMaths::Vector3D>
+GPlatesAppLogic::PlateBoundaryStat::get_convergence_velocity() const
+{
+	if (!d_left_plate_velocity || !d_right_plate_velocity)
+	{
+		return boost::none;
+	}
+
+	return d_right_plate_velocity.get() - d_left_plate_velocity.get();
+}
+
+
+double
+GPlatesAppLogic::PlateBoundaryStat::get_convergence_velocity_magnitude(
+		bool return_signed_magnitude) const
+{
+	const boost::optional<GPlatesMaths::Vector3D> convergence_velocity = get_convergence_velocity();
+
+	// Return NaN if there is no plate on the left or no plate on the right.
+	if (!convergence_velocity)
+	{
+		return GPlatesMaths::quiet_nan<double>();
+	}
+
+	// Return zero if the convergence velocity magnitude is zero.
+	//
+	// This is to match the behaviour of the convergence obliquity.
+	if (convergence_velocity->is_zero_magnitude())
+	{
+		return 0;
+	}
+
+	double convergence_velocity_magnitude = convergence_velocity->magnitude().dval();
+
+	// Negate magnitude if returning *signed* magnitude and plates are *diverging*.
+	if (return_signed_magnitude &&
+		dot(convergence_velocity.get(), d_boundary_normal).dval() < 0)
+	{
+		convergence_velocity_magnitude = -convergence_velocity_magnitude;
+	}
+
+	return convergence_velocity_magnitude;
+}
+
+
+double
+GPlatesAppLogic::PlateBoundaryStat::get_convergence_velocity_obliquity() const
+{
+	const boost::optional<GPlatesMaths::Vector3D> convergence_velocity = get_convergence_velocity();
+
+	// Return NaN if there is no plate on the left or no plate on the right.
+	if (!convergence_velocity)
+	{
+		return GPlatesMaths::quiet_nan<double>();
+	}
+
+	return get_velocity_obliquity(convergence_velocity.get());
+}
+
+
+double
+GPlatesAppLogic::PlateBoundaryStat::get_velocity_magnitude(
+		const GPlatesMaths::Vector3D &velocity) const
+{
+	// Return zero if the velocity magnitude is zero.
+	//
+	// This is to match the behaviour of the velocity obliquity.
+	if (velocity.is_zero_magnitude())
+	{
+		return 0;
+	}
+
+	return velocity.magnitude().dval();
+}
+
+
+double
+GPlatesAppLogic::PlateBoundaryStat::get_velocity_obliquity(
+		const GPlatesMaths::Vector3D &velocity) const
+{
+	// Return zero if the velocity is zero.
+	if (velocity.is_zero_magnitude())
+	{
+		return 0;
+	}
+
+	// Direction towards which we rotate from the boundary normal in a clockwise fashion.
+	const GPlatesMaths::Vector3D clockwise_direction = cross(d_boundary_normal, d_point.position_vector());
+
+	// Angle of the velocity relative to the boundary normal.
+	double obliquity = acos(dot(velocity.get_normalisation(), d_boundary_normal)).dval();
+
+	// Anti-clockwise direction is negative.
+	if (dot(velocity, clockwise_direction).dval() < 0)
+	{
+		obliquity = -obliquity;
+	}
+
+	return obliquity;
 }
 
 
