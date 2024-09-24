@@ -25,6 +25,8 @@
 #include <map>
 #include <vector>
 
+#include "ResolvedTopologicalBoundary.h"
+#include "ResolvedTopologicalNetwork.h"
 #include "ResolvedTopologicalSection.h"
 #include "ResolvedTopologicalSharedSubSegment.h"
 
@@ -551,11 +553,20 @@ namespace GPlatesAppLogic
 	 * in which case the spacing is reset to @a first_uniform_point_spacing for the next shared sub-segment).
 	 *
 	 * Returns a mapping of shared sub-segments to their plate boundary statistics (at uniform points along them).
+	 *
+	 * Note: @a all_resolved_topological_boundaries and @a all_resolved_topological_networks are used to calculate
+	 *       left/right plate velocities when a uniformly spaced point on a shared sub-segment does not intersect any
+	 *       of that shared sub-segment's sharing resolved topologies. This can happen when there are duplicate topological
+	 *       sections where two adjacent plates each connect to a separate topological section (instead of sharing the same one),
+	 *       thus causing each topological section to connect only to a single plate (rather than both plates).
+	 *       In this case a second intersection test is performed on all available resolved topological boundaries and networks.
 	 */
 	void
 	calculate_plate_boundary_stats(
 			std::map<ResolvedTopologicalSharedSubSegment::non_null_ptr_type, std::vector<PlateBoundaryStat>> &plate_boundary_stats,
 			const std::vector<ResolvedTopologicalSection::non_null_ptr_type> &resolved_topological_sections,
+			const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &all_resolved_topological_boundaries,
+			const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &all_resolved_topological_networks,
 			const double &reconstruction_time,
 			const double &uniform_point_spacing,
 			const double &first_uniform_point_spacing = 0.0,

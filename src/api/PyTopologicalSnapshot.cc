@@ -259,6 +259,19 @@ namespace GPlatesApi
 		const std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> resolved_topological_sections =
 				topological_snapshot->get_resolved_topological_sections(resolve_topological_section_types);
 
+		// Get the resolved topological boundaries (rigid plates).
+		//
+		// Need to convert pointers-to-non-const to pointers-to-const.
+		const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_to_const_type> resolved_topological_boundaries(
+				topological_snapshot->get_resolved_topological_boundaries().begin(),
+				topological_snapshot->get_resolved_topological_boundaries().end());
+		// Get the resolved topological networks (deforming regions).
+		//
+		// Need to convert pointers-to-non-const to pointers-to-const.
+		const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type> resolved_topological_networks(
+				topological_snapshot->get_resolved_topological_networks().begin(),
+				topological_snapshot->get_resolved_topological_networks().end());
+
 		// Calculate the plate boundary statistics.
 		std::map<
 				GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type,
@@ -267,6 +280,8 @@ namespace GPlatesApi
 		GPlatesAppLogic::calculate_plate_boundary_stats(
 				plate_boundary_stats,
 				resolved_topological_sections,
+				resolved_topological_boundaries,
+				resolved_topological_networks,
 				topological_snapshot->get_reconstruction_time(),
 				uniform_point_spacing_radians,
 				first_uniform_point_spacing_radians,

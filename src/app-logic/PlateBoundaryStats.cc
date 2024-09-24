@@ -289,8 +289,10 @@ namespace GPlatesAppLogic
 				VelocityDeltaTime::Type velocity_delta_time_type,
 				VelocityUnits::Value velocity_units,
 				const double &earth_radius_in_kms,
-				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &resolved_topological_boundaries,
-				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &resolved_topological_networks,
+				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &sharing_resolved_topological_boundaries,
+				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &sharing_resolved_topological_networks,
+				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &all_resolved_topological_boundaries,
+				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &all_resolved_topological_networks,
 				plate_id_to_stage_rotation_map_type &resolved_boundary_stage_rotation_map,
 				boost::optional<GPlatesMaths::Vector3D> &left_plate_velocity,
 				boost::optional<GPlatesMaths::Vector3D> &right_plate_velocity)
@@ -307,14 +309,33 @@ namespace GPlatesAppLogic
 			const GPlatesMaths::PointOnSphere right_point(
 					(GPlatesMaths::Vector3D(point.position_vector()) - offset_distance * boundary_normal).get_normalisation());
 
+			// Attempt to calculate left plate velocity using the resolved topologies that *share* the shared sub-segment.
 			left_plate_velocity = get_plate_velocity(
 					left_point,
 					reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
-					resolved_topological_boundaries, resolved_topological_networks, resolved_boundary_stage_rotation_map);
+					sharing_resolved_topological_boundaries, sharing_resolved_topological_networks, resolved_boundary_stage_rotation_map);
+			// If that failed then use *all* resolved topologies (eg, the full global set of topologies).
+			if (!left_plate_velocity)
+			{
+				left_plate_velocity = get_plate_velocity(
+						left_point,
+						reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
+						all_resolved_topological_boundaries, all_resolved_topological_networks, resolved_boundary_stage_rotation_map);
+			}
+
+			// Attempt to calculate right plate velocity using the resolved topologies that *share* the shared sub-segment.
 			right_plate_velocity = get_plate_velocity(
 					right_point,
 					reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
-					resolved_topological_boundaries, resolved_topological_networks, resolved_boundary_stage_rotation_map);
+					sharing_resolved_topological_boundaries, sharing_resolved_topological_networks, resolved_boundary_stage_rotation_map);
+			// If that failed then use *all* resolved topologies (eg, the full global set of topologies).
+			if (!right_plate_velocity)
+			{
+				right_plate_velocity = get_plate_velocity(
+						right_point,
+						reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
+						all_resolved_topological_boundaries, all_resolved_topological_networks, resolved_boundary_stage_rotation_map);
+			}
 		}
 
 
@@ -330,6 +351,8 @@ namespace GPlatesAppLogic
 		bool
 		calculate_plate_boundary_stats_for_shared_sub_segment(
 				std::vector<PlateBoundaryStat> &shared_sub_segment_plate_boundary_stats,
+				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &all_resolved_topological_boundaries,
+				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &all_resolved_topological_networks,
 				const ResolvedTopologicalSharedSubSegment::non_null_ptr_type &shared_sub_segment,
 				const double &signed_distance_from_start_of_topological_section_to_start_of_shared_sub_segment,
 				const double &signed_distance_from_end_of_topological_section_to_start_of_shared_sub_segment,
@@ -454,7 +477,9 @@ namespace GPlatesAppLogic
 				get_left_and_right_plate_velocities(
 						point, boundary_normal.get(),
 						reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
-						sharing_resolved_topological_boundaries, sharing_resolved_topological_networks, resolved_boundary_stage_rotation_map,
+						sharing_resolved_topological_boundaries, sharing_resolved_topological_networks,
+						all_resolved_topological_boundaries, all_resolved_topological_networks,
+						resolved_boundary_stage_rotation_map,
 						left_plate_velocity, right_plate_velocity);
 
 				//
@@ -698,6 +723,8 @@ void
 GPlatesAppLogic::calculate_plate_boundary_stats(
 		std::map<ResolvedTopologicalSharedSubSegment::non_null_ptr_type, std::vector<PlateBoundaryStat>> &plate_boundary_stats,
 		const std::vector<ResolvedTopologicalSection::non_null_ptr_type> &resolved_topological_sections,
+		const std::vector<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &all_resolved_topological_boundaries,
+		const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &all_resolved_topological_networks,
 		const double &reconstruction_time,
 		const double &uniform_point_spacing,
 		const double &first_uniform_point_spacing,
@@ -769,6 +796,8 @@ GPlatesAppLogic::calculate_plate_boundary_stats(
 			std::vector<PlateBoundaryStat> shared_sub_segment_plate_boundary_stats;
 			if (calculate_plate_boundary_stats_for_shared_sub_segment(
 					shared_sub_segment_plate_boundary_stats,
+					all_resolved_topological_boundaries,
+					all_resolved_topological_networks,
 					shared_sub_segment,
 					signed_distance_from_start_of_shared_sub_segments,
 					signed_distance_to_end_of_shared_sub_segments,
