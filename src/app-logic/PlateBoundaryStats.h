@@ -57,6 +57,8 @@ namespace GPlatesAppLogic
 				const GPlatesMaths::Vector3D &boundary_velocity_,
 				const boost::optional<GPlatesMaths::Vector3D> &left_plate_velocity_,
 				const boost::optional<GPlatesMaths::Vector3D> &right_plate_velocity_,
+				const double &distance_from_start_of_shared_sub_segment_,
+				const double &distance_to_end_of_shared_sub_segment_,
 				const double &signed_distance_from_start_of_topological_section_,
 				const double &signed_distance_to_end_of_topological_section_) :
 			d_point(point_),
@@ -65,6 +67,8 @@ namespace GPlatesAppLogic
 			d_boundary_velocity(boundary_velocity_),
 			d_left_plate_velocity(left_plate_velocity_),
 			d_right_plate_velocity(right_plate_velocity_),
+			d_distance_from_start_of_shared_sub_segment(distance_from_start_of_shared_sub_segment_),
+			d_distance_to_end_of_shared_sub_segment(distance_to_end_of_shared_sub_segment_),
 			d_signed_distance_from_start_of_topological_section(signed_distance_from_start_of_topological_section_),
 			d_signed_distance_to_end_of_topological_section(signed_distance_to_end_of_topological_section_)
 		{  }
@@ -344,6 +348,38 @@ namespace GPlatesAppLogic
 					: GPlatesMaths::quiet_nan<double>();
 		}
 
+
+		/**
+		 * Get the distance (in radians) from the *start* of the shared sub-segment to the current location
+		 * (along the geometry of the shared sub-segment).
+		 *
+		 * The shared sub-segment geometry *includes* any rubber banding. So if the shared sub-segment (containing the current location)
+		 * is the first shared sub-segment of the topological section, and the start of the topological section has rubber banding, then
+		 * the *start* of the shared sub-segment will be halfway along the rubber band (line segment joining start of topological section
+		 * with adjacent topological section in a plate boundary).
+		 *
+		 * A shared sub-segment represents a part of a resolved topological section that *uniquely* contributes
+		 * to the boundaries of one or more resolved topologies.
+		 */
+		double
+		get_distance_from_start_of_shared_sub_segment() const
+		{
+			return d_distance_from_start_of_shared_sub_segment.dval();
+		}
+
+		/**
+		 * Similar to @a get_distance_from_start_of_shared_sub_segment, but it's the distance to the *end*
+		 * of the shared sub-segment (along the geometry of the shared sub-segment).
+		 *
+		 * And, similarly, this distance is positive (unlike the *signed* distances to start/end of topological section).
+		 */
+		double
+		get_distance_to_end_of_shared_sub_segment() const
+		{
+			return d_distance_to_end_of_shared_sub_segment.dval();
+		}
+
+
 		/**
 		 * Get the signed distance (in radians) from the *start* of the resolved topological section geometry
 		 * (the part spanned by its shared sub-segments) to the current location
@@ -416,6 +452,8 @@ namespace GPlatesAppLogic
 					d_boundary_velocity == other.d_boundary_velocity &&
 					d_left_plate_velocity == other.d_left_plate_velocity &&
 					d_right_plate_velocity == other.d_right_plate_velocity &&
+					d_distance_from_start_of_shared_sub_segment == other.d_distance_from_start_of_shared_sub_segment &&
+					d_distance_to_end_of_shared_sub_segment == other.d_distance_to_end_of_shared_sub_segment &&
 					d_signed_distance_from_start_of_topological_section == other.d_signed_distance_from_start_of_topological_section &&
 					d_signed_distance_to_end_of_topological_section == other.d_signed_distance_to_end_of_topological_section;
 		}
@@ -457,6 +495,18 @@ namespace GPlatesAppLogic
 		boost::optional<GPlatesMaths::Vector3D> d_right_plate_velocity;
 
 		/**
+		 * Distance (in radians) from the *start* of the shared sub-segment to the current location
+		 * (along the geometry of the shared sub-segment).
+		 */
+		GPlatesMaths::Real d_distance_from_start_of_shared_sub_segment;
+
+		/**
+		 * Similar to @a d_distance_from_start_of_shared_sub_segment, but it's the distance to the *end*
+		 * of the shared sub-segment geometry.
+		 */
+		GPlatesMaths::Real d_distance_to_end_of_shared_sub_segment;
+
+		/**
 		 * Signed distance (in radians) from the *start* of the resolved topological section geometry
 		 * (the part spanned by its shared sub-segments) to the current location
 		 * (along the geometry of the resolved topological section).
@@ -464,7 +514,7 @@ namespace GPlatesAppLogic
 		GPlatesMaths::Real d_signed_distance_from_start_of_topological_section;
 
 		/**
-		 * Similar to @a distance_from_start_of_topological_section, but it's the distance to the *end*
+		 * Similar to @a d_signed_distance_from_start_of_topological_section, but it's the distance to the *end*
 		 * of the resolved topological section geometry (the part spanned by its shared sub-segments).
 		 */
 		GPlatesMaths::Real d_signed_distance_to_end_of_topological_section;

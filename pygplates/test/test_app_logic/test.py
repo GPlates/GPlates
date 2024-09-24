@@ -2731,11 +2731,30 @@ class TopologicalSnapshotCase(unittest.TestCase):
             plate_boundary_stat.point_location
             self.assertTrue(plate_boundary_stat.length <= 2*math.radians(10) and plate_boundary_stat.length >= 0)
             self.assertAlmostEqual(plate_boundary_stat.boundary_normal.get_magnitude(), 1.0)
+            self.assertTrue(plate_boundary_stat.boundary_normal_azimuth <= 2*math.pi and plate_boundary_stat.boundary_normal_azimuth >= 0)
             self.assertTrue(plate_boundary_stat.boundary_velocity == pygplates.Vector3D.zero)
+            plate_boundary_stat.boundary_velocity_magnitude
+            plate_boundary_stat.boundary_velocity_obliquity
+            plate_boundary_stat.boundary_velocity_orthogonal
+            plate_boundary_stat.boundary_velocity_parallel
             plate_boundary_stat.left_plate_velocity
+            plate_boundary_stat.left_plate_velocity_magnitude
+            plate_boundary_stat.left_plate_velocity_obliquity
+            plate_boundary_stat.left_plate_velocity_orthogonal
+            plate_boundary_stat.left_plate_velocity_parallel
             plate_boundary_stat.right_plate_velocity
+            plate_boundary_stat.right_plate_velocity_magnitude
+            plate_boundary_stat.right_plate_velocity_obliquity
+            plate_boundary_stat.right_plate_velocity_orthogonal
+            plate_boundary_stat.right_plate_velocity_parallel
             plate_boundary_stat.convergence_velocity
-            plate_boundary_stat.convergence_obliquity
+            plate_boundary_stat.convergence_velocity_signed_magnitude
+            plate_boundary_stat.convergence_velocity_magnitude
+            plate_boundary_stat.convergence_velocity_obliquity
+            plate_boundary_stat.convergence_velocity_orthogonal
+            plate_boundary_stat.convergence_velocity_parallel
+            plate_boundary_stat.distance_from_start_of_shared_sub_segment
+            plate_boundary_stat.distance_to_end_of_shared_sub_segment
             plate_boundary_stat.distance_from_start_of_topological_section
             plate_boundary_stat.signed_distance_from_start_of_topological_section
             plate_boundary_stat.distance_to_end_of_topological_section
