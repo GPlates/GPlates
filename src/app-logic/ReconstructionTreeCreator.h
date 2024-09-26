@@ -117,6 +117,24 @@ namespace GPlatesAppLogic
 		GPlatesModel::integer_plate_id_type
 		get_default_anchor_plate_id() const;
 
+
+		/**
+		 * Enables ReconstructionTreeCreator to be used as a key in a 'std::map'.
+		 *
+		 * For example, std::map<ReconstructionTreeCreator, mapped_type, ReconstructionTreeCreator::MapPredicate>.
+		 */
+		class MapPredicate
+		{
+		public:
+			bool
+			operator()(
+					const ReconstructionTreeCreator &lhs,
+					const ReconstructionTreeCreator &rhs) const
+			{
+				return lhs.d_impl < rhs.d_impl;
+			}
+		};
+
 	private:
 		GPlatesUtils::non_null_intrusive_ptr<ReconstructionTreeCreatorImpl> d_impl;
 	};

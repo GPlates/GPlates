@@ -1330,39 +1330,6 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_or_create_stage_rota
 }
 
 
-const GPlatesMaths::FiniteRotation &
-GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_or_create_velocity_stage_rotation(
-		GPlatesModel::integer_plate_id_type reconstruction_plate_id,
-		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		const double &reconstruction_time,
-		const double &velocity_delta_time,
-		VelocityDeltaTime::Type velocity_delta_time_type,
-		plate_id_to_stage_rotation_map_type &stage_rotation_map) const
-{
-	// See if already exists.
-	plate_id_to_stage_rotation_map_type::const_iterator stage_rotation_iter =
-			stage_rotation_map.find(reconstruction_plate_id);
-	if (stage_rotation_iter != stage_rotation_map.end())
-	{
-		return stage_rotation_iter->second;
-	}
-
-	// Calculate stage rotation and insert into the map.
-	const std::pair<plate_id_to_stage_rotation_map_type::iterator, bool> insert_result =
-			stage_rotation_map.insert(
-					plate_id_to_stage_rotation_map_type::value_type(
-							reconstruction_plate_id,
-							PlateVelocityUtils::calculate_stage_rotation(
-									reconstruction_plate_id,
-									reconstruction_tree_creator,
-									reconstruction_time,
-									velocity_delta_time,
-									velocity_delta_time_type)));
-
-	return insert_result.first->second;
-}
-
-
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::GeometrySample::non_null_ptr_type
 GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::rigid_reconstruct(
 		const GeometrySample::non_null_ptr_type &geometry_sample,
@@ -2334,7 +2301,8 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 
 	// Keep track of the stage rotations of resolved boundaries as we encounter them.
 	// This is an optimisation since many points can be inside the same resolved boundary.
-	plate_id_to_stage_rotation_map_type resolved_boundary_stage_rotation_map;
+	const PlateVelocityUtils::StageRotationCalculator resolved_boundary_stage_rotation_calculator(
+			reconstruction_time, velocity_delta_time, velocity_delta_time_type);
 
 	// Iterate over the domain points and calculate their velocities (and surfaces).
 	for (unsigned int domain_geometry_point_index = 0;
@@ -2408,21 +2376,13 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 					resolved_boundary.get()->plate_id();
 			if (resolved_boundary_plate_id)
 			{
-				const GPlatesMaths::FiniteRotation &resolved_boundary_stage_rotation =
-						get_or_create_velocity_stage_rotation(
-								resolved_boundary_plate_id.get(),
-								resolved_boundary.get()->get_reconstruction_tree_creator(),
-								reconstruction_time,
-								velocity_delta_time,
-								velocity_delta_time_type,
-								resolved_boundary_stage_rotation_map);
-
 				// Calculate the velocity of the point inside the resolved boundary.
 				const GPlatesMaths::Vector3D velocity_vector =
 						PlateVelocityUtils::calculate_velocity_vector(
 								domain_point,
-								resolved_boundary_stage_rotation,
-								velocity_delta_time,
+								resolved_boundary_plate_id.get(),
+								resolved_boundary.get()->get_reconstruction_tree_creator(),
+								resolved_boundary_stage_rotation_calculator,
 								velocity_units,
 								earth_radius_in_kms);
 
@@ -3334,7 +3294,7 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::is_delta_velocity_
 }
 
 
-const GPlatesMaths::FiniteRotation &
+GPlatesMaths::FiniteRotation
 GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::get_or_create_velocity_stage_rotation(
 		GPlatesModel::integer_plate_id_type reconstruction_plate_id,
 		const ReconstructionTreeCreator &reconstruction_tree_creator,
@@ -3344,28 +3304,16 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::get_or_create_velo
 {
 	// Only cache stage rotations for a specific reconstruction time.
 	// We clear it when we move onto a different reconstruction time.
-	if (reconstruction_time != d_velocity_stage_rotation_time)
+	if (!d_velocity_stage_rotation_calculator ||
+		reconstruction_time != d_velocity_stage_rotation_time)
 	{
-		d_velocity_stage_rotation_map.clear();
+		d_velocity_stage_rotation_calculator = PlateVelocityUtils::StageRotationCalculator(
+				reconstruction_time, velocity_delta_time, velocity_delta_time_type);
+
+		d_velocity_stage_rotation_time = reconstruction_time;
 	}
 
-	// See if already exists.
-	auto stage_rotation_iter = d_velocity_stage_rotation_map.find(reconstruction_plate_id);
-	if (stage_rotation_iter != d_velocity_stage_rotation_map.end())
-	{
-		return stage_rotation_iter->second;
-	}
-
-	// Calculate stage rotation and insert into the map.
-	auto insert_result = d_velocity_stage_rotation_map.insert(
-			plate_id_to_stage_rotation_map_type::value_type(
-					reconstruction_plate_id,
-					PlateVelocityUtils::calculate_stage_rotation(
-							reconstruction_plate_id,
-							reconstruction_tree_creator,
-							reconstruction_time,
-							velocity_delta_time,
-							velocity_delta_time_type)));
-
-	return insert_result.first->second;
+	return d_velocity_stage_rotation_calculator->calculate_stage_rotation(
+			reconstruction_plate_id,
+			reconstruction_tree_creator);
 }

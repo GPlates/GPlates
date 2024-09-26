@@ -34,6 +34,7 @@
 
 #include "DeformationStrain.h"
 #include "DeformationStrainRate.h"
+#include "PlateVelocityUtils.h"
 #include "ReconstructionTreeCreator.h"
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalNetwork.h"
@@ -187,7 +188,7 @@ namespace GPlatesAppLogic
 			// Keep track of the stage rotations of resolved boundaries as we encounter them.
 			// This is an optimisation that saves a few seconds (for a large number of points in geometry)
 			// since many points will be inside the same resolved boundary.
-			mutable plate_id_to_stage_rotation_map_type d_velocity_stage_rotation_map;
+			mutable boost::optional<PlateVelocityUtils::StageRotationCalculator> d_velocity_stage_rotation_calculator;
 			// Only cache stage rotations for a specific reconstruction time.
 			// We clear it when we move onto a different reconstruction time.
 			mutable GPlatesMaths::real_t d_velocity_stage_rotation_time;
@@ -219,7 +220,7 @@ namespace GPlatesAppLogic
 			 *
 			 * This avoids re-calculating the stage rotation for the same plate ID.
 			 */
-			const GPlatesMaths::FiniteRotation &
+			GPlatesMaths::FiniteRotation
 			get_or_create_velocity_stage_rotation(
 					GPlatesModel::integer_plate_id_type reconstruction_plate_id,
 					const ReconstructionTreeCreator &reconstruction_tree_creator,
@@ -1037,21 +1038,6 @@ namespace GPlatesAppLogic
 					const ReconstructionTreeCreator &reconstruction_tree_creator,
 					const double &initial_time,
 					const double &final_time,
-					plate_id_to_stage_rotation_map_type &stage_rotation_map) const;
-
-			/**
-			 * Similar to @a get_or_create_stage_rotation except returns a *forward* rotation
-			 * used for velocity calculations.
-			 *
-			 * Note that the stage rotation is going forward in time (old to young).
-			 */
-			const GPlatesMaths::FiniteRotation &
-			get_or_create_velocity_stage_rotation(
-					GPlatesModel::integer_plate_id_type reconstruction_plate_id,
-					const ReconstructionTreeCreator &reconstruction_tree_creator,
-					const double &reconstruction_time,
-					const double &velocity_delta_time,
-					VelocityDeltaTime::Type velocity_delta_time_type,
 					plate_id_to_stage_rotation_map_type &stage_rotation_map) const;
 
 			/**

@@ -173,41 +173,6 @@ namespace GPlatesAppLogic
 		}
 
 
-		//! Typedef for map used to keep track of stage rotations by plate ID.
-		typedef std::map<GPlatesModel::integer_plate_id_type, GPlatesMaths::FiniteRotation> plate_id_to_stage_rotation_map_type;
-
-		const GPlatesMaths::FiniteRotation &
-		get_or_create_velocity_stage_rotation(
-				GPlatesModel::integer_plate_id_type reconstruction_plate_id,
-				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const double &reconstruction_time,
-				const double &velocity_delta_time,
-				VelocityDeltaTime::Type velocity_delta_time_type,
-				plate_id_to_stage_rotation_map_type &stage_rotation_map)
-		{
-			// See if already exists.
-			plate_id_to_stage_rotation_map_type::const_iterator stage_rotation_iter =
-					stage_rotation_map.find(reconstruction_plate_id);
-			if (stage_rotation_iter != stage_rotation_map.end())
-			{
-				return stage_rotation_iter->second;
-			}
-
-			// Calculate stage rotation and insert into the map.
-			const std::pair<plate_id_to_stage_rotation_map_type::iterator, bool> insert_result =
-					stage_rotation_map.insert(
-							plate_id_to_stage_rotation_map_type::value_type(
-									reconstruction_plate_id,
-									PlateVelocityUtils::calculate_stage_rotation(
-											reconstruction_plate_id,
-											reconstruction_tree_creator,
-											reconstruction_time,
-											velocity_delta_time,
-											velocity_delta_time_type)));
-
-			return insert_result.first->second;
-		}
-
 		boost::optional<GPlatesMaths::Vector3D>
 		get_plate_velocity(
 				const GPlatesMaths::PointOnSphere &point_off_boundary,
@@ -218,7 +183,7 @@ namespace GPlatesAppLogic
 				const double &earth_radius_in_kms,
 				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &resolved_topological_boundaries,
 				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &resolved_topological_networks,
-				plate_id_to_stage_rotation_map_type &resolved_boundary_stage_rotation_map)
+				const PlateVelocityUtils::StageRotationCalculator &resolved_boundary_stage_rotation_calculator)
 		{
 			// Search topological networks first (deforming regions).
 			for (const auto &resolved_topological_network : resolved_topological_networks)
@@ -253,22 +218,13 @@ namespace GPlatesAppLogic
 							resolved_topological_boundary->plate_id();
 					if (resolved_boundary_plate_id)
 					{
-						// Get the stage rotation of the rigid plate.
-						const GPlatesMaths::FiniteRotation &resolved_boundary_stage_rotation =
-								get_or_create_velocity_stage_rotation(
-										resolved_boundary_plate_id.get(),
-										resolved_topological_boundary->get_reconstruction_tree_creator(),
-										reconstruction_time,
-										velocity_delta_time,
-										velocity_delta_time_type,
-										resolved_boundary_stage_rotation_map);
-
 						// Calculate the velocity of the point inside the resolved boundary.
 						const GPlatesMaths::Vector3D velocity =
 								PlateVelocityUtils::calculate_velocity_vector(
 										point_off_boundary,
-										resolved_boundary_stage_rotation,
-										velocity_delta_time,
+										resolved_boundary_plate_id.get(),
+										resolved_topological_boundary->get_reconstruction_tree_creator(),
+										resolved_boundary_stage_rotation_calculator,
 										velocity_units,
 										earth_radius_in_kms);
 
@@ -293,7 +249,7 @@ namespace GPlatesAppLogic
 				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &sharing_resolved_topological_networks,
 				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &all_resolved_topological_boundaries,
 				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &all_resolved_topological_networks,
-				plate_id_to_stage_rotation_map_type &resolved_boundary_stage_rotation_map,
+				const PlateVelocityUtils::StageRotationCalculator &resolved_boundary_stage_rotation_calculator,
 				boost::optional<GPlatesMaths::Vector3D> &left_plate_velocity,
 				boost::optional<GPlatesMaths::Vector3D> &right_plate_velocity)
 		{
@@ -313,28 +269,28 @@ namespace GPlatesAppLogic
 			left_plate_velocity = get_plate_velocity(
 					left_point,
 					reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
-					sharing_resolved_topological_boundaries, sharing_resolved_topological_networks, resolved_boundary_stage_rotation_map);
+					sharing_resolved_topological_boundaries, sharing_resolved_topological_networks, resolved_boundary_stage_rotation_calculator);
 			// If that failed then use *all* resolved topologies (eg, the full global set of topologies).
 			if (!left_plate_velocity)
 			{
 				left_plate_velocity = get_plate_velocity(
 						left_point,
 						reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
-						all_resolved_topological_boundaries, all_resolved_topological_networks, resolved_boundary_stage_rotation_map);
+						all_resolved_topological_boundaries, all_resolved_topological_networks, resolved_boundary_stage_rotation_calculator);
 			}
 
 			// Attempt to calculate right plate velocity using the resolved topologies that *share* the shared sub-segment.
 			right_plate_velocity = get_plate_velocity(
 					right_point,
 					reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
-					sharing_resolved_topological_boundaries, sharing_resolved_topological_networks, resolved_boundary_stage_rotation_map);
+					sharing_resolved_topological_boundaries, sharing_resolved_topological_networks, resolved_boundary_stage_rotation_calculator);
 			// If that failed then use *all* resolved topologies (eg, the full global set of topologies).
 			if (!right_plate_velocity)
 			{
 				right_plate_velocity = get_plate_velocity(
 						right_point,
 						reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
-						all_resolved_topological_boundaries, all_resolved_topological_networks, resolved_boundary_stage_rotation_map);
+						all_resolved_topological_boundaries, all_resolved_topological_networks, resolved_boundary_stage_rotation_calculator);
 			}
 		}
 
@@ -405,7 +361,8 @@ namespace GPlatesAppLogic
 			boost::optional<GPlatesMaths::UnitVector3D> next_boundary_normal;
 
 			// Avoid re-calculating stage rotations for resolved topological boundaries with the same plate ID.
-			plate_id_to_stage_rotation_map_type resolved_boundary_stage_rotation_map;
+			const PlateVelocityUtils::StageRotationCalculator resolved_boundary_stage_rotation_calculator(
+					reconstruction_time, velocity_delta_time, velocity_delta_time_type);
 
 			// Calculate statistics for each uniform point.
 			for (unsigned int uniform_point_index = 0; uniform_point_index < num_uniform_points; ++uniform_point_index)
@@ -479,7 +436,7 @@ namespace GPlatesAppLogic
 						reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
 						sharing_resolved_topological_boundaries, sharing_resolved_topological_networks,
 						all_resolved_topological_boundaries, all_resolved_topological_networks,
-						resolved_boundary_stage_rotation_map,
+						resolved_boundary_stage_rotation_calculator,
 						left_plate_velocity, right_plate_velocity);
 
 				//

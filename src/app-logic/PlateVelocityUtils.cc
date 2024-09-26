@@ -1075,78 +1075,33 @@ GPlatesAppLogic::PlateVelocityUtils::solve_velocities_on_surfaces(
 }
 
 
-GPlatesMaths::Vector3D
-GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
-		const GPlatesMaths::PointOnSphere &point,
-		const GPlatesMaths::FiniteRotation &finite_rotation1,
-		const GPlatesMaths::FiniteRotation &finite_rotation2,
-		const double &delta_time,
-		VelocityUnits::Value velocity_units,
-		const double &earth_radius_in_kms)
-{
-	const GPlatesMaths::Vector3D velocity_cms_yr = GPlatesMaths::calculate_velocity_vector(
-			point,
-			finite_rotation1,
-			finite_rotation2,
-			delta_time,
-			earth_radius_in_kms);
-
-	if (velocity_units == VelocityUnits::CMS_PER_YR)
-	{
-		return velocity_cms_yr;
-	}
-
-	return 10/*cms/yr -> kms/myr*/ * velocity_cms_yr;
-}
-
-
-GPlatesMaths::Vector3D
-GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
-		const GPlatesMaths::PointOnSphere &point,
-		const GPlatesMaths::FiniteRotation &stage_rotation,
-		const double & velocity_delta_time,
-		VelocityUnits::Value velocity_units,
-		const double &earth_radius_in_kms)
-{
-	const GPlatesMaths::Vector3D velocity_cms_yr = GPlatesMaths::calculate_velocity_vector(
-			point,
-			stage_rotation,
-			velocity_delta_time,
-			earth_radius_in_kms);
-
-	if (velocity_units == VelocityUnits::CMS_PER_YR)
-	{
-		return velocity_cms_yr;
-	}
-
-	return 10/*cms/yr -> kms/myr*/ * velocity_cms_yr;
-}
-
-
-GPlatesMaths::Vector3D
-GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
-		const GPlatesMaths::PointOnSphere &point,
+GPlatesMaths::FiniteRotation
+GPlatesAppLogic::PlateVelocityUtils::StageRotationCalculator::calculate_stage_rotation(
 		const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
-		const ReconstructionTreeCreator &reconstruction_tree_creator,
-		const double &reconstruction_time,
-		const double &velocity_delta_time,
-		VelocityDeltaTime::Type velocity_delta_time_type,
-		VelocityUnits::Value velocity_units,
-		const double &earth_radius_in_kms)
+		const ReconstructionTreeCreator &reconstruction_tree_creator) const
 {
-	const GPlatesMaths::FiniteRotation stage_rotation = calculate_stage_rotation(
-			reconstruction_plate_id,
-			reconstruction_tree_creator,
-			reconstruction_time,
-			velocity_delta_time,
-			velocity_delta_time_type);
+	const plate_id_to_stage_rotation_map_type::key_type map_key(reconstruction_plate_id, reconstruction_tree_creator);
 
-	return calculate_velocity_vector(
-			point,
-			stage_rotation,
-			velocity_delta_time,
-			velocity_units,
-			earth_radius_in_kms);
+	// See if we've already calculated a finite rotation.
+	plate_id_to_stage_rotation_map_type::const_iterator stage_rotation_iter = d_stage_rotation_map.find(map_key);
+	if (stage_rotation_iter != d_stage_rotation_map.end())
+	{
+		return stage_rotation_iter->second;
+	}
+
+	// Calculate stage rotation and insert into the map.
+	const std::pair<plate_id_to_stage_rotation_map_type::iterator, bool> insert_result =
+			d_stage_rotation_map.insert(
+					plate_id_to_stage_rotation_map_type::value_type(
+							map_key,
+							PlateVelocityUtils::calculate_stage_rotation(
+									reconstruction_plate_id,
+									reconstruction_tree_creator,
+									reconstruction_time,
+									velocity_delta_time,
+									velocity_delta_time_type)));
+
+	return insert_result.first->second;
 }
 
 
@@ -1239,6 +1194,103 @@ GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
 }
 
 
+GPlatesMaths::Vector3D
+GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
+		const GPlatesMaths::PointOnSphere &point,
+		const GPlatesMaths::FiniteRotation &finite_rotation1,
+		const GPlatesMaths::FiniteRotation &finite_rotation2,
+		const double &delta_time,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms)
+{
+	const GPlatesMaths::Vector3D velocity_cms_yr = GPlatesMaths::calculate_velocity_vector(
+			point,
+			finite_rotation1,
+			finite_rotation2,
+			delta_time,
+			earth_radius_in_kms);
+
+	if (velocity_units == VelocityUnits::CMS_PER_YR)
+	{
+		return velocity_cms_yr;
+	}
+
+	return 10/*cms/yr -> kms/myr*/ * velocity_cms_yr;
+}
+
+
+GPlatesMaths::Vector3D
+GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
+		const GPlatesMaths::PointOnSphere &point,
+		const GPlatesMaths::FiniteRotation &stage_rotation,
+		const double &velocity_delta_time,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms)
+{
+	const GPlatesMaths::Vector3D velocity_cms_yr = GPlatesMaths::calculate_velocity_vector(
+			point,
+			stage_rotation,
+			velocity_delta_time,
+			earth_radius_in_kms);
+
+	if (velocity_units == VelocityUnits::CMS_PER_YR)
+	{
+		return velocity_cms_yr;
+	}
+
+	return 10/*cms/yr -> kms/myr*/ * velocity_cms_yr;
+}
+
+
+GPlatesMaths::Vector3D
+GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
+		const GPlatesMaths::PointOnSphere &point,
+		const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const double &reconstruction_time,
+		const double &velocity_delta_time,
+		VelocityDeltaTime::Type velocity_delta_time_type,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms)
+{
+	const GPlatesMaths::FiniteRotation stage_rotation = calculate_stage_rotation(
+			reconstruction_plate_id,
+			reconstruction_tree_creator,
+			reconstruction_time,
+			velocity_delta_time,
+			velocity_delta_time_type);
+
+	return calculate_velocity_vector(
+			point,
+			stage_rotation,
+			velocity_delta_time,
+			velocity_units,
+			earth_radius_in_kms);
+}
+
+
+GPlatesMaths::Vector3D
+GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
+		const GPlatesMaths::PointOnSphere &point,
+		const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const StageRotationCalculator &stage_rotation_calculator,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms)
+{
+	const GPlatesMaths::FiniteRotation stage_rotation = stage_rotation_calculator.calculate_stage_rotation(
+			reconstruction_plate_id,
+			reconstruction_tree_creator);
+
+	return calculate_velocity_vector(
+			point,
+			stage_rotation,
+			stage_rotation_calculator.velocity_delta_time,
+			velocity_units,
+			earth_radius_in_kms);
+}
+
+
 GPlatesMaths::VectorColatitudeLongitude
 GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_colat_lon(
 		const GPlatesMaths::PointOnSphere &point,
@@ -1278,6 +1330,27 @@ GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_colat_lon(
 			reconstruction_time,
 			velocity_delta_time,
 			velocity_delta_time_type,
+			velocity_units,
+			earth_radius_in_kms);
+
+	return GPlatesMaths::convert_vector_from_xyz_to_colat_lon(point, vector_xyz);
+}
+
+
+GPlatesMaths::VectorColatitudeLongitude
+GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_colat_lon(
+		const GPlatesMaths::PointOnSphere &point,
+		const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
+		const ReconstructionTreeCreator &reconstruction_tree_creator,
+		const StageRotationCalculator &stage_rotation_calculator,
+		VelocityUnits::Value velocity_units,
+		const double &earth_radius_in_kms)
+{
+	const GPlatesMaths::Vector3D vector_xyz = calculate_velocity_vector(
+			point,
+			reconstruction_plate_id,
+			reconstruction_tree_creator,
+			stage_rotation_calculator,
 			velocity_units,
 			earth_radius_in_kms);
 

@@ -189,22 +189,7 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Calculates velocity at @a point by using the rotation between the two specified rotations.
-		 *
-		 * @a delta_time should be t2-t1.
-		 * For example: t1 = 10 Ma, t2 = 11 Ma, delta_time = 1 My.
-		 */
-		GPlatesMaths::VectorColatitudeLongitude
-		calculate_velocity_colat_lon(
-				const GPlatesMaths::PointOnSphere &point,
-				const GPlatesMaths::FiniteRotation &finite_rotation1,
-				const GPlatesMaths::FiniteRotation &finite_rotation2,
-				const double &delta_time,
-				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
-				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
-
-		/**
-		 * Calculates velocity at @a point by using the rotation between two nearby reconstruction times.
+		 * Calculates the stage rotation at @a point by using the rotation between two nearby reconstruction times.
 		 *
 		 * If the plate ID is not found in a reconstruction tree at either time then the zero vector is returned.
 		 * This avoids extraneously large velocities when plate ID is found at one time but not the other.
@@ -221,17 +206,78 @@ namespace GPlatesAppLogic
 		 * [reconstruction_time, reconstruction_time - velocity_delta_time] and retried.
 		 * This handles the case where the rotation file contains a finite rotation sequence (for the plate ID)
 		 * with the oldest time at the younger time (and hence the older time is not in the sequence).
+		 *
+		 * Note that the stage rotation is also going forward in time (most old to young).
 		 */
-		GPlatesMaths::VectorColatitudeLongitude
-		calculate_velocity_colat_lon(
-				const GPlatesMaths::PointOnSphere &point,
+		GPlatesMaths::FiniteRotation
+		calculate_stage_rotation(
 				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
-				const double &reconstruction_time,
-				const double &velocity_delta_time,
-				VelocityDeltaTime::Type velocity_delta_time_type,
-				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
-				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
+				const double& reconstruction_time,
+				const double& velocity_delta_time,
+				VelocityDeltaTime::Type velocity_delta_time_type);
+
+		/**
+		 * Calculate stage rotations and *cache* them by reconstruction plate ID (and rotation model) to avoid re-calculations.
+		 *
+		 * The cache is for a specific reconstruction time and velocity delta time/type.
+		 *
+		 * Note: This does the same thing as the non-member @a calculate_stage_rotation, but caches finite rotations.
+		 */
+		class StageRotationCalculator
+		{
+		public:
+			StageRotationCalculator(
+					const double &reconstruction_time_,
+					const double &velocity_delta_time_,
+					VelocityDeltaTime::Type velocity_delta_time_type_) :
+				reconstruction_time(reconstruction_time_),
+				velocity_delta_time(velocity_delta_time_),
+				velocity_delta_time_type(velocity_delta_time_type_)
+			{  }
+
+			/**
+			 * Same as non-member @a calculate_stage_rotation, but caches finite rotations.
+			 */
+			GPlatesMaths::FiniteRotation
+			calculate_stage_rotation(
+					const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
+					const ReconstructionTreeCreator &reconstruction_tree_creator) const;
+
+
+			double reconstruction_time;
+			double velocity_delta_time;
+			VelocityDeltaTime::Type velocity_delta_time_type;
+
+		private:
+
+			//! Typedef for map *key* used to keep track of stage rotations by plate ID (and rotation model).
+			typedef std::pair<GPlatesModel::integer_plate_id_type, ReconstructionTreeCreator>
+					plate_id_to_stage_rotation_map_key_type;
+
+			//! Map predicate for a map key that is a pair of plate ID and rotation model.
+			class MapPredicate
+			{
+			public:
+				bool
+				operator()(
+						const plate_id_to_stage_rotation_map_key_type &lhs,
+						const plate_id_to_stage_rotation_map_key_type &rhs) const
+				{
+					return lhs.first < rhs.first ||
+							(lhs.first == rhs.first && reconstruction_tree_creator_map_predicate(lhs.second, rhs.second));
+				}
+
+				ReconstructionTreeCreator::MapPredicate reconstruction_tree_creator_map_predicate;
+			};
+
+			//! Typedef for map used to keep track of stage rotations by plate ID (and rotation model).
+			typedef std::map<plate_id_to_stage_rotation_map_key_type, GPlatesMaths::FiniteRotation, MapPredicate>
+					plate_id_to_stage_rotation_map_type;
+
+			mutable plate_id_to_stage_rotation_map_type d_stage_rotation_map;
+		};
+
 
 		/**
 		 * Calculates velocity at @a point by using the rotation between the two specified rotations.
@@ -260,24 +306,7 @@ namespace GPlatesAppLogic
 				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
 
 		/**
-		 * Calculates velocity at @a point by using the rotation between two nearby reconstruction times.
-		 *
-		 * If the plate ID is not found in a reconstruction tree at either time then the zero vector is returned
-		 * (aside from the exceptions mentioned below). This avoids extraneously large velocities when plate ID
-		 * is found at one time but not the other.
-		 *
-		 * Except if the younger time is negative (and the older time non-negative) and the plate ID is *not*
-		 * found at the younger time (but is found at the older time) then the velocity delta time interval is
-		 * moved to (old_time - young_time, 0) and retried.
-		 * This enables rare users to support negative (future) times in rotation files if they wish
-		 * but also supports most users having only non-negative rotations yet still supplying a valid
-		 * velocity at/near present day when using a delta time interval such as (T-dt, T) instead of (T+dt, T).
-		 *
-		 * Another exception is when the plate ID is found for the younger time but *not* for the older time,
-		 * in which case the velocity delta time interval is moved to
-		 * [reconstruction_time, reconstruction_time - velocity_delta_time] and retried.
-		 * This handles the case where the rotation file contains a finite rotation sequence (for the plate ID)
-		 * with the oldest time at the younger time (and hence the older time is not in the sequence).
+		 * Same as @a calculate_stage_rotation, but calculates velocity (instead of a stage rotation).
 		 */
 		GPlatesMaths::Vector3D
 		calculate_velocity_vector(
@@ -290,19 +319,61 @@ namespace GPlatesAppLogic
 				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
 				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
 
+		/**
+		 * Same as the other overload of @a calculate_velocity_vector, but can re-use a stage rotation
+		 * cached for @a reconstruction_plate_id.
+		 */
+		GPlatesMaths::Vector3D
+		calculate_velocity_vector(
+				const GPlatesMaths::PointOnSphere &point,
+				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const StageRotationCalculator &stage_rotation_calculator,
+				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
+
 
 		/**
-		 * Similar to @a calculate_velocity_vector but returns the stage rotation.
+		 * Calculates velocity at @a point by using the rotation between the two specified rotations.
 		 *
-		 * Note that the stage rotation is also going forward in time (most old to young).
+		 * @a delta_time should be t2-t1.
+		 * For example: t1 = 10 Ma, t2 = 11 Ma, delta_time = 1 My.
 		 */
-		GPlatesMaths::FiniteRotation
-		calculate_stage_rotation(
+		GPlatesMaths::VectorColatitudeLongitude
+		calculate_velocity_colat_lon(
+				const GPlatesMaths::PointOnSphere &point,
+				const GPlatesMaths::FiniteRotation &finite_rotation1,
+				const GPlatesMaths::FiniteRotation &finite_rotation2,
+				const double &delta_time,
+				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
+
+		/**
+		 * Same as @a calculate_velocity_vector, but calculates velocity colatitude/longitude (instead of a 3D vector).
+		 */
+		GPlatesMaths::VectorColatitudeLongitude
+		calculate_velocity_colat_lon(
+				const GPlatesMaths::PointOnSphere &point,
 				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
 				const ReconstructionTreeCreator &reconstruction_tree_creator,
 				const double &reconstruction_time,
 				const double &velocity_delta_time,
-				VelocityDeltaTime::Type velocity_delta_time_type);
+				VelocityDeltaTime::Type velocity_delta_time_type,
+				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
+
+		/**
+		 * Same as the other overload of @a calculate_velocity_colat_lon, but can re-use a stage rotation
+		 * cached for @a reconstruction_plate_id.
+		 */
+		GPlatesMaths::VectorColatitudeLongitude
+		calculate_velocity_colat_lon(
+				const GPlatesMaths::PointOnSphere &point,
+				const GPlatesModel::integer_plate_id_type &reconstruction_plate_id,
+				const ReconstructionTreeCreator &reconstruction_tree_creator,
+				const StageRotationCalculator &stage_rotation_calculator,
+				VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
 
 
 		////////////////////////////////////////////////
