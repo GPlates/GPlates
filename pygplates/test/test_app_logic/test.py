@@ -2721,9 +2721,9 @@ class TopologicalSnapshotCase(unittest.TestCase):
             os.path.join(FIXTURES, 'rotations.rot'),
             pygplates.GeoTimeInstant(10))
 
-        plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10))
+        plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), first_uniform_point_spacing_radians=0.0)
         self.assertTrue(len(plate_boundary_stats) == 46)
-        plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), include_network_boundaries=True)
+        plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), first_uniform_point_spacing_radians=0.0, include_network_boundaries=True)
         self.assertTrue(len(plate_boundary_stats) == 60)
 
         # Access PlateBoundaryStatistic attributes - just to make sure they can be queried.
@@ -2761,7 +2761,10 @@ class TopologicalSnapshotCase(unittest.TestCase):
             plate_boundary_stat.signed_distance_to_end_of_topological_section
 
         # Return a dict mapping each shared sub-segment to its statistics.
-        plate_boundary_stats_dict = snapshot.calculate_plate_boundary_statistics(math.radians(10), include_network_boundaries=True, return_shared_sub_segment_dict=True)
+        plate_boundary_stats_dict = snapshot.calculate_plate_boundary_statistics(math.radians(10),
+                                                                                 first_uniform_point_spacing_radians=0.0,
+                                                                                 include_network_boundaries=True,
+                                                                                 return_shared_sub_segment_dict=True)
         self.assertTrue(len(plate_boundary_stats_dict) == 32)
         self.assertTrue(sum(len(shared_sub_segment_stats) for _, shared_sub_segment_stats in plate_boundary_stats_dict.items()) == 60)
     

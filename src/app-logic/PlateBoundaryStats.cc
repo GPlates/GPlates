@@ -684,12 +684,18 @@ GPlatesAppLogic::calculate_plate_boundary_stats(
 		const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &all_resolved_topological_networks,
 		const double &reconstruction_time,
 		const double &uniform_point_spacing,
-		const double &first_uniform_point_spacing,
+		boost::optional<double> first_uniform_point_spacing,
 		const double &velocity_delta_time,
 		VelocityDeltaTime::Type velocity_delta_time_type,
 		VelocityUnits::Value velocity_units,
 		const double &earth_radius_in_kms)
 {
+	// If the *first* uniform point spacing was not specified then set it to half the uniform point spacing.
+	if (!first_uniform_point_spacing)
+	{
+		first_uniform_point_spacing = 0.5 * uniform_point_spacing;
+	}
+
 	for (const auto &resolved_topological_section : resolved_topological_sections)
 	{
 		// Each ResolvedTopologicalSection should have at least one shared sub-segment.
@@ -709,7 +715,7 @@ GPlatesAppLogic::calculate_plate_boundary_stats(
 				distance_from_start_of_topological_section_to_end_of_shared_sub_segments);
 
 		// Distance from the start of a shared sub-segment to the first uniform point in it.
-		double first_uniform_point_spacing_in_shared_sub_segment = first_uniform_point_spacing;
+		double first_uniform_point_spacing_in_shared_sub_segment = first_uniform_point_spacing.get();
 
 		// Generate statistics at uniformly spaced points along the shared sub-segments of the current resolved topological section.
 		boost::optional<ResolvedTopologicalSharedSubSegment::non_null_ptr_type> prev_shared_sub_segment;
@@ -731,7 +737,7 @@ GPlatesAppLogic::calculate_plate_boundary_stats(
 				}
 				else
 				{
-					first_uniform_point_spacing_in_shared_sub_segment = first_uniform_point_spacing;
+					first_uniform_point_spacing_in_shared_sub_segment = first_uniform_point_spacing.get();
 				}
 			}
 

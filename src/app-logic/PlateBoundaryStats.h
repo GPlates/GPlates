@@ -552,6 +552,8 @@ namespace GPlatesAppLogic
 	 * is continuous across boundaries between shared sub-segments (unless there's a gap between them,
 	 * in which case the spacing is reset to @a first_uniform_point_spacing for the next shared sub-segment).
 	 *
+	 * If @a first_uniform_point_spacing is not specified then it is set to half of @a uniform_point_spacing.
+	 *
 	 * Returns a mapping of shared sub-segments to their plate boundary statistics (at uniform points along them).
 	 *
 	 * Note: @a all_resolved_topological_boundaries and @a all_resolved_topological_networks are used to calculate
@@ -569,7 +571,7 @@ namespace GPlatesAppLogic
 			const std::vector<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &all_resolved_topological_networks,
 			const double &reconstruction_time,
 			const double &uniform_point_spacing,
-			const double &first_uniform_point_spacing = 0.0,
+			boost::optional<double> first_uniform_point_spacing = boost::none,  // defaults to half of 'uniform_point_spacing'
 			const double &velocity_delta_time = 1.0,
 			VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
 			VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
