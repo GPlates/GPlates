@@ -40,13 +40,16 @@ namespace GPlatesAppLogic
 	namespace
 	{
 		/**
-		 * Get the resolved topological boundaries/networks sharing a shared sub-segment.
+		 * Get the resolved topological boundaries/networks sharing a shared sub-segment separated into
+		 * those on the left and right of the shared sub-segment.
 		 */
 		void
 		get_resolved_topologies_sharing_shared_sub_segment(
 				const ResolvedTopologicalSharedSubSegment::non_null_ptr_type &shared_sub_segment,
-				std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &resolved_topological_boundaries,
-				std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &resolved_topological_networks)
+				std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &left_resolved_topological_boundaries,
+				std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &left_resolved_topological_networks,
+				std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &right_resolved_topological_boundaries,
+				std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &right_resolved_topological_networks)
 		{
 			for (const auto &resolved_topology_info : shared_sub_segment->get_sharing_resolved_topologies())
 			{
@@ -55,14 +58,28 @@ namespace GPlatesAppLogic
 						ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
 								const ResolvedTopologicalBoundary *>(resolved_topology_info.resolved_topology))
 				{
-					resolved_topological_boundaries.push_back(resolved_topological_boundary.get());
+					if (resolved_topology_info.is_resolved_topology_on_left())
+					{
+						left_resolved_topological_boundaries.push_back(resolved_topological_boundary.get());
+					}
+					else
+					{
+						right_resolved_topological_boundaries.push_back(resolved_topological_boundary.get());
+					}
 				}
 				// Else it should be a resolved topological network.
 				else if (boost::optional<const ResolvedTopologicalNetwork *> resolved_topological_network =
 						ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type<
 								const ResolvedTopologicalNetwork *>(resolved_topology_info.resolved_topology))
 				{
-					resolved_topological_networks.push_back(resolved_topological_network.get());
+					if (resolved_topology_info.is_resolved_topology_on_left())
+					{
+						left_resolved_topological_networks.push_back(resolved_topological_network.get());
+					}
+					else
+					{
+						right_resolved_topological_networks.push_back(resolved_topological_network.get());
+					}
 				}
 			}
 		}
@@ -173,9 +190,12 @@ namespace GPlatesAppLogic
 		}
 
 
-		boost::optional<GPlatesMaths::Vector3D>
+		/**
+		 * Return the velocity of the plate or network that @a point intersects.
+		 */
+		bool
 		get_plate_velocity(
-				const GPlatesMaths::PointOnSphere &point_off_boundary,
+				const GPlatesMaths::PointOnSphere &point,
 				const double &reconstruction_time,
 				const double &velocity_delta_time,
 				VelocityDeltaTime::Type velocity_delta_time_type,
@@ -183,7 +203,8 @@ namespace GPlatesAppLogic
 				const double &earth_radius_in_kms,
 				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &resolved_topological_boundaries,
 				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &resolved_topological_networks,
-				const PlateVelocityUtils::StageRotationCalculator &resolved_boundary_stage_rotation_calculator)
+				const PlateVelocityUtils::StageRotationCalculator &resolved_boundary_stage_rotation_calculator,
+				boost::optional<GPlatesMaths::Vector3D> &plate_velocity)
 		{
 			// Search topological networks first (deforming regions).
 			for (const auto &resolved_topological_network : resolved_topological_networks)
@@ -194,14 +215,16 @@ namespace GPlatesAppLogic
 								GPlatesMaths::Vector3D,
 								ResolvedTriangulation::Network::PointLocation> >
 						velocity = resolved_topological_network->get_triangulation_network().calculate_velocity(
-								point_off_boundary,
+								point,
 								velocity_delta_time,
 								velocity_delta_time_type,
 								velocity_units,
 								earth_radius_in_kms);
 				if (velocity)
 				{
-					return velocity->first;
+					plate_velocity = velocity->first;
+
+					return true;
 				}
 			}
 
@@ -210,7 +233,7 @@ namespace GPlatesAppLogic
 			{
 				// See if point is inside polygon boundary of rigid plate.
 				if (resolved_topological_boundary->resolved_topology_boundary()->is_point_in_polygon(
-						point_off_boundary,
+						point,
 						GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE))
 				{
 					// Get the plate ID from resolved boundary.
@@ -221,76 +244,108 @@ namespace GPlatesAppLogic
 						// Calculate the velocity of the point inside the resolved boundary.
 						const GPlatesMaths::Vector3D velocity =
 								PlateVelocityUtils::calculate_velocity_vector(
-										point_off_boundary,
+										point,
 										resolved_boundary_plate_id.get(),
 										resolved_topological_boundary->get_reconstruction_tree_creator(),
 										resolved_boundary_stage_rotation_calculator,
 										velocity_units,
 										earth_radius_in_kms);
 
-						return velocity;
+						plate_velocity = velocity;
+
+						return true;
 					}
 				}
 			}
 
-			return boost::none;
+			return false;
 		}
 
+		/**
+		 * Return the velocities of the left and right plates at the specified point on the plate boundary.
+		 *
+		 * First the plates/networks sharing the shared sub-segment (that the boundary point is on) are tested for intersection
+		 * for the boundary point. Then (if no intersection) the boundary point is moved slightly onto the plate and tested
+		 * for intersection with ALL plates/networks - the point is moved slightly such that it doesn't land ON the plate/network outline
+		 * (ie, we don't want it to land on a plate that's on the right when we're looking for the left plate velocity).
+		 *
+		 * Note: Could fail to find either left or right (or both) plate velocities.
+		 */
 		void
 		get_left_and_right_plate_velocities(
-				const GPlatesMaths::PointOnSphere &point,
+				const GPlatesMaths::PointOnSphere &boundary_point,
 				const GPlatesMaths::UnitVector3D &boundary_normal,
 				const double &reconstruction_time,
 				const double &velocity_delta_time,
 				VelocityDeltaTime::Type velocity_delta_time_type,
 				VelocityUnits::Value velocity_units,
 				const double &earth_radius_in_kms,
-				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &sharing_resolved_topological_boundaries,
-				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &sharing_resolved_topological_networks,
+				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &left_sharing_resolved_topological_boundaries,
+				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &left_sharing_resolved_topological_networks,
+				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &right_sharing_resolved_topological_boundaries,
+				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &right_sharing_resolved_topological_networks,
 				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &all_resolved_topological_boundaries,
 				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &all_resolved_topological_networks,
 				const PlateVelocityUtils::StageRotationCalculator &resolved_boundary_stage_rotation_calculator,
 				boost::optional<GPlatesMaths::Vector3D> &left_plate_velocity,
 				boost::optional<GPlatesMaths::Vector3D> &right_plate_velocity)
 		{
-			// Move the point a very small distance to the left and to the right.
-			// This helps ensure that we don't accidentally sample the right plate when sampling the left plate (and vice versa).
-			//
-			// Note: The rigid plates and deforming networks have polygon boundaries with a tiny threshold for detecting if a
-			//       point is ON the outline of the polygon. So we want a distance that exceeds that threshold.
-			//       That threshold is about 1.4e-6 radians (about 9 metres).
-			const double offset_distance = 1e-4;  // ~600 metres
-			const GPlatesMaths::PointOnSphere left_point(
-					(GPlatesMaths::Vector3D(point.position_vector()) + offset_distance * boundary_normal).get_normalisation());
-			const GPlatesMaths::PointOnSphere right_point(
-					(GPlatesMaths::Vector3D(point.position_vector()) - offset_distance * boundary_normal).get_normalisation());
-
-			// Attempt to calculate left plate velocity using the resolved topologies that *share* the shared sub-segment.
-			left_plate_velocity = get_plate_velocity(
-					left_point,
+			// Attempt to calculate left plate velocity using the *left* resolved topologies that *share* the shared sub-segment.
+			if (!get_plate_velocity(
+					// Note: Can use point ON the boundary because resolved plates/networks use a point-in-polygon boundary test that, in turn,
+					//       includes points ON the polygon outline (if they're within a very small threshold distance from the polygon's outline).
+					//       And we're only testing resolved plates/networks that are on the *left*...
+					boundary_point,
 					reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
-					sharing_resolved_topological_boundaries, sharing_resolved_topological_networks, resolved_boundary_stage_rotation_calculator);
-			// If that failed then use *all* resolved topologies (eg, the full global set of topologies).
-			if (!left_plate_velocity)
+					left_sharing_resolved_topological_boundaries, left_sharing_resolved_topological_networks, resolved_boundary_stage_rotation_calculator,
+					left_plate_velocity))
 			{
-				left_plate_velocity = get_plate_velocity(
+				// That failed, so use *all* resolved topologies (eg, the full global set of topologies).
+				//
+				// Move the point a very small distance to the left.
+				// This helps ensure that we don't accidentally sample the right plate when we only want to sample the left plate.
+				//
+				// Note: The rigid plates and deforming networks have polygon boundaries with a tiny threshold for detecting if a
+				//       point is ON the outline of the polygon. So we want a distance that exceeds that threshold.
+				//       That threshold is about 1.4e-6 radians (about 9 metres).
+				const double offset_distance = 1e-4;  // ~600 metres
+				const GPlatesMaths::PointOnSphere left_point(
+						(GPlatesMaths::Vector3D(boundary_point.position_vector()) + offset_distance * boundary_normal).get_normalisation());
+
+				get_plate_velocity(
 						left_point,
 						reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
-						all_resolved_topological_boundaries, all_resolved_topological_networks, resolved_boundary_stage_rotation_calculator);
+						all_resolved_topological_boundaries, all_resolved_topological_networks, resolved_boundary_stage_rotation_calculator,
+						left_plate_velocity);
 			}
 
-			// Attempt to calculate right plate velocity using the resolved topologies that *share* the shared sub-segment.
-			right_plate_velocity = get_plate_velocity(
-					right_point,
+			// Attempt to calculate right plate velocity using the *right* resolved topologies that *share* the shared sub-segment.
+			if (!get_plate_velocity(
+					// Note: Can use point ON the boundary because resolved plates/networks use a point-in-polygon boundary test that, in turn,
+					//       includes points ON the polygon outline (if they're within a very small threshold distance from the polygon's outline)...
+					//       And we're only testing resolved plates/networks that are on the *right*...
+					boundary_point,
 					reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
-					sharing_resolved_topological_boundaries, sharing_resolved_topological_networks, resolved_boundary_stage_rotation_calculator);
-			// If that failed then use *all* resolved topologies (eg, the full global set of topologies).
-			if (!right_plate_velocity)
+					right_sharing_resolved_topological_boundaries, right_sharing_resolved_topological_networks, resolved_boundary_stage_rotation_calculator,
+					right_plate_velocity))
 			{
-				right_plate_velocity = get_plate_velocity(
+				// That failed, so use *all* resolved topologies (eg, the full global set of topologies).
+				//
+				// Move the point a very small distance to the right.
+				// This helps ensure that we don't accidentally sample the left plate when we only want to sample the right plate.
+				//
+				// Note: The rigid plates and deforming networks have polygon boundaries with a tiny threshold for detecting if a
+				//       point is ON the outline of the polygon. So we want a distance that exceeds that threshold.
+				//       That threshold is about 1.4e-6 radians (about 9 metres).
+				const double offset_distance = 1e-4;  // ~600 metres
+				const GPlatesMaths::PointOnSphere right_point(
+						(GPlatesMaths::Vector3D(boundary_point.position_vector()) - offset_distance * boundary_normal).get_normalisation());
+
+				get_plate_velocity(
 						right_point,
 						reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
-						all_resolved_topological_boundaries, all_resolved_topological_networks, resolved_boundary_stage_rotation_calculator);
+						all_resolved_topological_boundaries, all_resolved_topological_networks, resolved_boundary_stage_rotation_calculator,
+						right_plate_velocity);
 			}
 		}
 
@@ -331,10 +386,13 @@ namespace GPlatesAppLogic
 			shared_sub_segment->get_shared_sub_segment_point_source_infos(shared_sub_segment_vertex_source_infos);
 
 			// The resolved topological boundaries/networks sharing the shared sub-segment.
-			std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> sharing_resolved_topological_boundaries;
-			std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> sharing_resolved_topological_networks;
-			get_resolved_topologies_sharing_shared_sub_segment(
-					shared_sub_segment, sharing_resolved_topological_boundaries, sharing_resolved_topological_networks);
+			std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> left_sharing_resolved_topological_boundaries;
+			std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> left_sharing_resolved_topological_networks;
+			std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> right_sharing_resolved_topological_boundaries;
+			std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> right_sharing_resolved_topological_networks;
+			get_resolved_topologies_sharing_shared_sub_segment(shared_sub_segment,
+					left_sharing_resolved_topological_boundaries, left_sharing_resolved_topological_networks,
+					right_sharing_resolved_topological_boundaries, right_sharing_resolved_topological_networks);
 
 			// Generate uniformly spaced points along the shared sub-segment.
 			std::vector<GPlatesMaths::PointOnSphere> uniform_points;
@@ -428,13 +486,14 @@ namespace GPlatesAppLogic
 						(1.0 - segment_interpolation) * segment_start_boundary_velocity + segment_interpolation * segment_end_boundary_velocity;
 
 				// Get the velocities on the plates to the left and right of the current point
-				// (that's left and right when following the order or points in the shared sub-segment).
+				// (when following the order or points in the shared sub-segment).
 				boost::optional<GPlatesMaths::Vector3D> left_plate_velocity;
 				boost::optional<GPlatesMaths::Vector3D> right_plate_velocity;
 				get_left_and_right_plate_velocities(
 						point, boundary_normal.get(),
 						reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
-						sharing_resolved_topological_boundaries, sharing_resolved_topological_networks,
+						left_sharing_resolved_topological_boundaries, left_sharing_resolved_topological_networks,
+						right_sharing_resolved_topological_boundaries, right_sharing_resolved_topological_networks,
 						all_resolved_topological_boundaries, all_resolved_topological_networks,
 						resolved_boundary_stage_rotation_calculator,
 						left_plate_velocity, right_plate_velocity);
