@@ -85,60 +85,7 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Get the normal to the *previous* (great circle arc) segment.
-		 *
-		 * If the previous segment is zero length then search its previous segment, etc, until a non-zero length
-		 * segment is found (with found segment index returned in 'segment_index), or none are found.
-		 */
-		boost::optional<GPlatesMaths::UnitVector3D>
-		get_prev_boundary_normal(
-				const GPlatesMaths::PolylineOnSphere &shared_sub_segment_polyline,
-				unsigned int &segment_index)
-		{
-			// Search through *previous* segments for a non-zero length segment and use its normal.
-			for (int prev_segment_index = segment_index - 1; prev_segment_index >= 0; --prev_segment_index)
-			{
-				const GPlatesMaths::GreatCircleArc &prev_segment = shared_sub_segment_polyline.get_segment(prev_segment_index);
-				if (!prev_segment.is_zero_length())
-				{
-					segment_index = prev_segment_index;
-
-					return prev_segment.rotation_axis();
-				}
-			}
-
-			return boost::none;
-		}
-
-		/**
-		 * Get the normal to the *next* (great circle arc) segment.
-		 *
-		 * If the next segment is zero length then search its next segment, etc, until a non-zero length
-		 * segment is found (with found segment index returned in 'segment_index), or none are found.
-		 */
-		boost::optional<GPlatesMaths::UnitVector3D>
-		get_next_boundary_normal(
-				const GPlatesMaths::PolylineOnSphere &shared_sub_segment_polyline,
-				unsigned int &segment_index)
-		{
-			// Search through *next* segments for a non-zero length segment and use its normal.
-			const unsigned int num_segments = shared_sub_segment_polyline.number_of_segments();
-			for (unsigned int next_segment_index = segment_index + 1; next_segment_index < num_segments; ++next_segment_index)
-			{
-				const GPlatesMaths::GreatCircleArc &next_segment = shared_sub_segment_polyline.get_segment(next_segment_index);
-				if (!next_segment.is_zero_length())
-				{
-					segment_index = next_segment_index;
-
-					return next_segment.rotation_axis();
-				}
-			}
-
-			return boost::none;
-		}
-
-		/**
-		 * Get the normal to the specified (great circle arc) segment, and its adjacent normals.
+		 * Get the normal to the specified (great circle arc) segment.
 		 *
 		 * If the specified segment is zero length then search adjacent segments until a non-zero length
 		 * segment is found. Otherwise returns none (since polyline is zero length).
@@ -146,9 +93,7 @@ namespace GPlatesAppLogic
 		boost::optional<GPlatesMaths::UnitVector3D>
 		get_boundary_normal(
 				const GPlatesMaths::PolylineOnSphere &shared_sub_segment_polyline,
-				unsigned int segment_index,
-				boost::optional<GPlatesMaths::UnitVector3D> &prev_boundary_normal,
-				boost::optional<GPlatesMaths::UnitVector3D> &next_boundary_normal)
+				unsigned int segment_index)
 		{
 			boost::optional<GPlatesMaths::UnitVector3D> boundary_normal;
 
@@ -156,39 +101,40 @@ namespace GPlatesAppLogic
 			const GPlatesMaths::GreatCircleArc &segment = shared_sub_segment_polyline.get_segment(segment_index);
 			if (!segment.is_zero_length())
 			{
-				boundary_normal = segment.rotation_axis();
+				return segment.rotation_axis();
 			}
-			else
+
+			//
+			// Requested segment is zero length, so get a normal from a previous (or next) non-zero-length segment.
+			//
+
+			// Search through *previous* segments for a non-zero length segment and use its normal.
+			for (int prev_segment_index = segment_index - 1; prev_segment_index >= 0; --prev_segment_index)
 			{
-				// Requested segment is zero length, so get a normal from a previous non-zero-length segment.
-				boundary_normal = get_prev_boundary_normal(shared_sub_segment_polyline, segment_index);
-				if (!boundary_normal)
+				const GPlatesMaths::GreatCircleArc &prev_segment = shared_sub_segment_polyline.get_segment(prev_segment_index);
+				if (!prev_segment.is_zero_length())
 				{
-					// All previous segments are zero length (or there are no previous segments),
-					// so get a normal from a next (subsequent) non-zero-length segment.
-					boundary_normal = get_next_boundary_normal(shared_sub_segment_polyline, segment_index);
-					if (!boundary_normal)
-					{
-						// Couldn't get any non-zero segments.
-						// The entire polyline is zero length, so we can't find a normal.
-						return boost::none;
-					}
+					return prev_segment.rotation_axis();
 				}
-				//
-				// Note that 'segment_index' has been modified (to match the non-zero-length segment found).
 			}
 
-			// Get the previous and next normals (if any).
+			// All previous segments are zero length (or there are no previous segments),
+			// so get a normal from a next (subsequent) non-zero-length segment.
+			// Search through *next* segments for a non-zero length segment and use its normal.
+			const unsigned int num_segments = shared_sub_segment_polyline.number_of_segments();
+			for (unsigned int next_segment_index = segment_index + 1; next_segment_index < num_segments; ++next_segment_index)
+			{
+				const GPlatesMaths::GreatCircleArc &next_segment = shared_sub_segment_polyline.get_segment(next_segment_index);
+				if (!next_segment.is_zero_length())
+				{
+					return next_segment.rotation_axis();
+				}
+			}
 
-			unsigned int prev_segment_index = segment_index;
-			prev_boundary_normal = get_prev_boundary_normal(shared_sub_segment_polyline, prev_segment_index);
-
-			unsigned int next_segment_index = segment_index;
-			next_boundary_normal = get_next_boundary_normal(shared_sub_segment_polyline, next_segment_index);
-
-			return boundary_normal;
+			// Couldn't get any non-zero segments.
+			// The entire polyline is zero length, so we can't find a normal.
+			return boost::none;
 		}
-
 
 		/**
 		 * Return the velocity of the plate or network that @a point intersects.
@@ -415,8 +361,6 @@ namespace GPlatesAppLogic
 			GPlatesMaths::Vector3D segment_start_boundary_velocity;
 			GPlatesMaths::Vector3D segment_end_boundary_velocity;
 			boost::optional<GPlatesMaths::UnitVector3D> boundary_normal;
-			boost::optional<GPlatesMaths::UnitVector3D> prev_boundary_normal;
-			boost::optional<GPlatesMaths::UnitVector3D> next_boundary_normal;
 
 			// Avoid re-calculating stage rotations for resolved topological boundaries with the same plate ID.
 			const PlateVelocityUtils::StageRotationCalculator resolved_boundary_stage_rotation_calculator(
@@ -456,12 +400,11 @@ namespace GPlatesAppLogic
 				// and boundary velocities at segment start/end points.
 				if (segment_index != last_segment_index)
 				{
-					// Get the boundary normal of current segment (and adjacent normals, if available).
-					boundary_normal = get_boundary_normal(
-							*shared_sub_segment_polyline, segment_index, prev_boundary_normal, next_boundary_normal);
+					// Get the boundary normal of current segment (or adjacent segments if current segment is zero length).
+					boundary_normal = get_boundary_normal(*shared_sub_segment_polyline, segment_index);
 					if (!boundary_normal)
 					{
-						// The shared sub-segment geometry is zero length.
+						// The entire shared sub-segment geometry is zero length.
 						return false;
 					}
 
