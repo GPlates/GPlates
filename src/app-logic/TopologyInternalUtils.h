@@ -329,6 +329,22 @@ namespace GPlatesAppLogic
 		bool
 		can_use_as_resolved_network_topological_section(
 				const ReconstructionGeometry::non_null_ptr_to_const_type &recon_geom);
+
+
+		/**
+		 * Returns true if the specified @a ResolvedTopologicalBoundary or @a ResolvedTopologicalNetwork
+		 * is on the *left* of one of its boundary sub-segments.
+		 *
+		 * Whether the boundary sub-segment is reversed or not (when contributing to the resolved topological boundary/network)
+		 * is determined by @a is_sub_segment_geometry_reversed.
+		 *
+		 * Throws @a PreconditionViolationError if @a resolved_topology_boundary_or_network is not a
+		 * @a ResolvedTopologicalBoundary or @a ResolvedTopologicalNetwork.
+		 */
+		bool
+		is_resolved_topology_on_left_of_boundary_sub_segment(
+				const ReconstructionGeometry::non_null_ptr_to_const_type &resolved_topology_boundary_or_network,
+				bool is_sub_segment_geometry_reversed);
 	}
 }
 

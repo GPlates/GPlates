@@ -28,6 +28,7 @@
 
 #include "ResolvedTopologicalSharedSubSegment.h"
 
+#include "TopologyInternalUtils.h"
 #include "ResolvedTopologicalSubSegmentImpl.h"
 
 
@@ -138,4 +139,13 @@ GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::get_sub_sub_segments() con
 	}
 
 	return d_sub_sub_segments;
+}
+
+
+bool
+GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::ResolvedTopologyInfo::is_resolved_topology_on_left() const
+{
+	return TopologyInternalUtils::is_resolved_topology_on_left_of_boundary_sub_segment(
+			resolved_topology,
+			is_sub_segment_geometry_reversed);
 }

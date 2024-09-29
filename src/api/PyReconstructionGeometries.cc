@@ -2107,6 +2107,23 @@ namespace GPlatesApi
 		return geometry_reversal_flags_list;
 	}
 
+	/**
+	 * Get the flags indicating whether each shared resolved topology is on left of the sub-segment (for passing to Python).
+	 */
+	bp::list
+	resolved_topological_shared_sub_segment_get_sharing_resolved_topology_on_left_flags(
+			const GPlatesAppLogic::ResolvedTopologicalSharedSubSegment::non_null_ptr_type &resolved_topological_shared_sub_segment)
+	{
+		bp::list on_left_flags_list;
+
+		for (const auto &sharing_resolved_topology : resolved_topological_shared_sub_segment->get_sharing_resolved_topologies())
+		{
+			on_left_flags_list.append(sharing_resolved_topology.is_resolved_topology_on_left());
+		}
+
+		return on_left_flags_list;
+	}
+
 
 	/**
 	 * Get the sub-sub-segments if this sub-segment is a topological line (for passing to Python), or None.
@@ -2384,6 +2401,7 @@ export_resolved_topological_shared_sub_segment()
 				"  :rtype: list of bool\n"
 				"\n"
 				"  .. seealso:: :meth:`ResolvedTopologicalSubSegment.was_geometry_reversed_in_topology`\n"
+				"\n"
 				"  .. note::\n"
 				"     The returned list is in the same order (and has the same number of elements) as the "
 				"list of sharing resolved topologies returned in :meth:`get_sharing_resolved_topologies`.\n"
@@ -2397,6 +2415,31 @@ export_resolved_topological_shared_sub_segment()
 				"           geometry_reversal_flag = geometry_reversal_flags[index]\n"
 				"\n"
 				"  .. seealso:: :meth:`get_sharing_resolved_topologies`\n")
+		.def("get_sharing_resolved_topology_on_left_flags",
+				&GPlatesApi::resolved_topological_shared_sub_segment_get_sharing_resolved_topology_on_left_flags,
+				"get_sharing_resolved_topology_on_left_flags()\n"
+				"  Returns a list of flags indicating whether each resolved topology (sharing this sub-segment) is on left of this sub-segment.\n"
+				"\n"
+				"  :rtype: list of bool\n"
+				"\n"
+				"  The direction of this sub-segment (from which the *left* side can be determined) follows the order of points from the start to "
+				"the end of the sub-segment. These are the *unreversed* points returned by :meth:`get_resolved_geometry`.\n"
+				"\n"
+				"  .. note::\n"
+				"     The returned list is in the same order (and has the same number of elements) as the "
+				"list of sharing resolved topologies returned in :meth:`get_sharing_resolved_topologies`.\n"
+				"\n"
+				"     ::\n"
+				"\n"
+				"       sharing_resolved_topologies = shared_sub_segment.get_sharing_resolved_topologies()\n"
+				"       topology_on_left_flags = shared_sub_segment.get_sharing_resolved_topology_on_left_flags()\n"
+				"       for index in range(len(sharing_resolved_topologies)):\n"
+				"           sharing_resolved_topology = sharing_resolved_topologies[index]\n"
+				"           topology_on_left_flag = topology_on_left_flags[index]\n"
+				"\n"
+				"  .. seealso:: :meth:`get_sharing_resolved_topologies`\n"
+				"\n"
+				"  .. versionadded:: 0.47\n")
 		.def("get_sub_segments",
 				&GPlatesApi::resolved_topological_shared_sub_segment_get_sub_segments,
 				"get_sub_segments()\n"

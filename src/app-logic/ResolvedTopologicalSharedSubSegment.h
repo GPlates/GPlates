@@ -74,6 +74,12 @@ namespace GPlatesAppLogic
 			{  }
 
 			/**
+			 * Returns true if the resolved topology is on the *left* of the boundary sub-segment.
+			 */
+			bool
+			is_resolved_topology_on_left() const;
+
+			/**
 			 * A resolved topology can be a @a ResolvedTopologicalBoundary (the boundary of a plate polygon)
 			 * or a @a ResolvedTopologicalNetwork (the boundary of a deforming network).
 			 */
