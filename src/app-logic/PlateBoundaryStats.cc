@@ -904,3 +904,25 @@ GPlatesAppLogic::PlateBoundaryStat::get_velocity_obliquity(
 
 	return obliquity;
 }
+
+
+GPlatesAppLogic::DeformationStrainRate
+GPlatesAppLogic::PlateBoundaryStat::get_strain_rate(
+		const TopologyPointLocation &topology_point_location) const
+{
+	boost::optional<TopologyPointLocation::network_location_type> network_location =
+			topology_point_location.located_in_resolved_network();
+	if (!network_location)
+	{
+		return DeformationStrainRate();  // zero deformation
+	}
+
+	boost::optional<ResolvedTriangulation::DeformationInfo> deformation_info = network_location->first->
+			get_triangulation_network().calculate_deformation(d_point, network_location->second);
+	if (!deformation_info)
+	{
+		return DeformationStrainRate();  // zero deformation
+	}
+
+	return deformation_info->get_strain_rate();
+}

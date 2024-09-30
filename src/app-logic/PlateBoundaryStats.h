@@ -25,6 +25,7 @@
 #include <map>
 #include <vector>
 
+#include "DeformationStrainRate.h"
 #include "ResolvedTopologicalBoundary.h"
 #include "ResolvedTopologicalNetwork.h"
 #include "ResolvedTopologicalSection.h"
@@ -312,6 +313,30 @@ namespace GPlatesAppLogic
 		}
 
 		/**
+		 * Get the strain rate of the left plate (at the point location).
+		 *
+		 * Returns zero deformation (default-constructed @a DeformationStrainRate) if there's no left deforming network
+		 * (or if inside an interior rigid block of the left deforming network).
+		 */
+		DeformationStrainRate
+		get_left_plate_strain_rate() const
+		{
+			return get_strain_rate(d_left_plate_location);
+		}
+
+		/**
+		 * Get the strain rate of the right plate (at the point location).
+		 *
+		 * Returns zero deformation (default-constructed @a DeformationStrainRate) if there's no right deforming network
+		 * (or if inside an interior rigid block of the right deforming network).
+		 */
+		DeformationStrainRate
+		get_right_plate_strain_rate() const
+		{
+			return get_strain_rate(d_right_plate_location);
+		}
+
+		/**
 		 * Get the velocity of the right plate relative to the left plate (at the point location).
 		 *
 		 * Returns none if there is no plate on the left or no plate on the right.
@@ -505,6 +530,10 @@ namespace GPlatesAppLogic
 		double
 		get_velocity_obliquity(
 				const GPlatesMaths::Vector3D &velocity) const;
+
+		DeformationStrainRate
+		get_strain_rate(
+				const TopologyPointLocation &topology_point_location) const;
 
 
 		//! Point location on a plate boundary.

@@ -2798,12 +2798,14 @@ class TopologicalSnapshotCase(unittest.TestCase):
             plate_boundary_stat.left_plate_velocity_obliquity
             plate_boundary_stat.left_plate_velocity_orthogonal
             plate_boundary_stat.left_plate_velocity_parallel
+            self.assertTrue(plate_boundary_stat.left_plate_strain_rate == pygplates.StrainRate.zero)
             plate_boundary_stat.right_plate_location
             plate_boundary_stat.right_plate_velocity
             plate_boundary_stat.right_plate_velocity_magnitude
             plate_boundary_stat.right_plate_velocity_obliquity
             plate_boundary_stat.right_plate_velocity_orthogonal
             plate_boundary_stat.right_plate_velocity_parallel
+            self.assertTrue(plate_boundary_stat.right_plate_strain_rate == pygplates.StrainRate.zero)
             plate_boundary_stat.convergence_velocity
             plate_boundary_stat.convergence_velocity_signed_magnitude
             plate_boundary_stat.convergence_velocity_magnitude
