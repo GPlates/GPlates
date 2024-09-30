@@ -2792,11 +2792,13 @@ class TopologicalSnapshotCase(unittest.TestCase):
             plate_boundary_stat.boundary_velocity_obliquity
             plate_boundary_stat.boundary_velocity_orthogonal
             plate_boundary_stat.boundary_velocity_parallel
+            plate_boundary_stat.left_plate_location
             plate_boundary_stat.left_plate_velocity
             plate_boundary_stat.left_plate_velocity_magnitude
             plate_boundary_stat.left_plate_velocity_obliquity
             plate_boundary_stat.left_plate_velocity_orthogonal
             plate_boundary_stat.left_plate_velocity_parallel
+            plate_boundary_stat.right_plate_location
             plate_boundary_stat.right_plate_velocity
             plate_boundary_stat.right_plate_velocity_magnitude
             plate_boundary_stat.right_plate_velocity_obliquity
@@ -2814,6 +2816,9 @@ class TopologicalSnapshotCase(unittest.TestCase):
             plate_boundary_stat.signed_distance_from_start_of_topological_section
             plate_boundary_stat.distance_to_end_of_topological_section
             plate_boundary_stat.signed_distance_to_end_of_topological_section
+            
+            # Test equality.
+            self.assertTrue(plate_boundary_stat == plate_boundary_stat)
 
         # Return a dict mapping each shared sub-segment to its statistics.
         plate_boundary_stats_dict = snapshot.calculate_plate_boundary_statistics(math.radians(10),
@@ -2838,11 +2843,6 @@ class TopologicalSnapshotCase(unittest.TestCase):
         self.assertTrue(len(pickled_resolved_topologies) == len(resolved_topologies))
         for index in range(len(pickled_resolved_topologies)):
             self.assertTrue(pickled_resolved_topologies[index].get_resolved_geometry() == resolved_topologies[index].get_resolved_geometry())
-        
-        # Pickle some PlateBoundaryStatistic objects (but can't pickle ResolvedTopologicalSharedSubSegment's, so don't return as a dict of them).
-        plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), include_network_boundaries=True)
-        picked_plate_boundary_stats = pickle.loads(pickle.dumps(plate_boundary_stats))
-        self.assertTrue(picked_plate_boundary_stats == plate_boundary_stats)
 
 
 def suite():

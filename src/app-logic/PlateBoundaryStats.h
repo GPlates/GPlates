@@ -29,7 +29,7 @@
 #include "ResolvedTopologicalNetwork.h"
 #include "ResolvedTopologicalSection.h"
 #include "ResolvedTopologicalSharedSubSegment.h"
-
+#include "TopologyPointLocation.h"
 #include "VelocityDeltaTime.h"
 #include "VelocityUnits.h"
 
@@ -37,9 +37,6 @@
 #include "maths/Real.h"
 #include "maths/UnitVector3D.h"
 #include "maths/Vector3D.h"
-
-// Try to only include the heavyweight "Scribe.h" in '.cc' files where possible.
-#include "scribe/Transcribe.h"
 
 #include "utils/Earth.h"
 
@@ -57,6 +54,8 @@ namespace GPlatesAppLogic
 				const double &length_,
 				const GPlatesMaths::UnitVector3D &boundary_normal_,
 				const GPlatesMaths::Vector3D &boundary_velocity_,
+				const TopologyPointLocation &left_plate_location_,
+				const TopologyPointLocation &right_plate_location_,
 				const boost::optional<GPlatesMaths::Vector3D> &left_plate_velocity_,
 				const boost::optional<GPlatesMaths::Vector3D> &right_plate_velocity_,
 				const double &distance_from_start_of_shared_sub_segment_,
@@ -67,6 +66,8 @@ namespace GPlatesAppLogic
 			d_length(length_),
 			d_boundary_normal(boundary_normal_),
 			d_boundary_velocity(boundary_velocity_),
+			d_left_plate_location(left_plate_location_),
+			d_right_plate_location(right_plate_location_),
 			d_left_plate_velocity(left_plate_velocity_),
 			d_right_plate_velocity(right_plate_velocity_),
 			d_distance_from_start_of_shared_sub_segment(distance_from_start_of_shared_sub_segment_),
@@ -152,6 +153,32 @@ namespace GPlatesAppLogic
 		get_boundary_velocity_parallel() const
 		{
 			return get_velocity_magnitude(d_boundary_velocity) * std::sin(get_velocity_obliquity(d_boundary_velocity));
+		}
+
+		/**
+		 * Get the left plate or network (at the point location).
+		 *
+		 * The left plate is with respect to the direction of the shared sub-segment (that this point is on).
+		 *
+		 * Returns default-constructed @a TopologyPointLocation if there is no plate on the left.
+		 */
+		const TopologyPointLocation &
+		get_left_plate_location() const
+		{
+			return d_left_plate_location;
+		}
+
+		/**
+		 * Get the right plate or network (at the point location).
+		 *
+		 * The right plate is with respect to the direction of the shared sub-segment (that this point is on).
+		 *
+		 * Returns default-constructed @a TopologyPointLocation if there is no plate on the right.
+		 */
+		const TopologyPointLocation &
+		get_right_plate_location() const
+		{
+			return d_right_plate_location;
 		}
 
 		/**
@@ -452,6 +479,8 @@ namespace GPlatesAppLogic
 					d_length == other.d_length &&
 					d_boundary_normal == other.d_boundary_normal &&
 					d_boundary_velocity == other.d_boundary_velocity &&
+					d_left_plate_location == other.d_left_plate_location &&
+					d_right_plate_location == other.d_right_plate_location &&
 					d_left_plate_velocity == other.d_left_plate_velocity &&
 					d_right_plate_velocity == other.d_right_plate_velocity &&
 					d_distance_from_start_of_shared_sub_segment == other.d_distance_from_start_of_shared_sub_segment &&
@@ -490,6 +519,12 @@ namespace GPlatesAppLogic
 		//! Velocity of the plate boundary itself (at the point location).
 		GPlatesMaths::Vector3D d_boundary_velocity;
 
+		//! Location of point in the left plate (or network), or none if no left plate/network.
+		TopologyPointLocation d_left_plate_location;
+
+		//! Location of point in the right plate (or network), or none if no right plate/network.
+		TopologyPointLocation d_right_plate_location;
+
 		//! Plate velocity of the left plate (at point location), or none if no left plate.
 		boost::optional<GPlatesMaths::Vector3D> d_left_plate_velocity;
 
@@ -520,21 +555,6 @@ namespace GPlatesAppLogic
 		 * of the resolved topological section geometry (the part spanned by its shared sub-segments).
 		 */
 		GPlatesMaths::Real d_signed_distance_to_end_of_topological_section;
-
-	private: // Transcribe...
-
-		friend class GPlatesScribe::Access;
-
-		static
-		GPlatesScribe::TranscribeResult
-		transcribe_construct_data(
-				GPlatesScribe::Scribe &scribe,
-				GPlatesScribe::ConstructObject<PlateBoundaryStat> &plate_boundary_stat);
-
-		GPlatesScribe::TranscribeResult
-		transcribe(
-				GPlatesScribe::Scribe &scribe,
-				bool transcribed_construct_data);
 	};
 
 

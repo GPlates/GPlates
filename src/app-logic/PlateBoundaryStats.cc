@@ -32,8 +32,6 @@
 #include "maths/CartesianConvMatrix3D.h"
 #include "maths/PolylineOnSphere.h"
 
-#include "scribe/Scribe.h"
-
 
 namespace GPlatesAppLogic
 {
@@ -137,7 +135,7 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Return the velocity of the plate or network that @a point intersects.
+		 * Return the velocity of the plate or network (and associated plate/network) that @a point intersects.
 		 */
 		bool
 		get_plate_velocity(
@@ -150,7 +148,8 @@ namespace GPlatesAppLogic
 				const std::vector<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> &resolved_topological_boundaries,
 				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &resolved_topological_networks,
 				const PlateVelocityUtils::StageRotationCalculator &resolved_boundary_stage_rotation_calculator,
-				boost::optional<GPlatesMaths::Vector3D> &plate_velocity)
+				boost::optional<GPlatesMaths::Vector3D> &plate_velocity,
+				TopologyPointLocation &plate_location)  // location in plate (or network), if any
 		{
 			// Search topological networks first (deforming regions).
 			for (const auto &resolved_topological_network : resolved_topological_networks)
@@ -169,6 +168,7 @@ namespace GPlatesAppLogic
 				if (velocity)
 				{
 					plate_velocity = velocity->first;
+					plate_location = TopologyPointLocation(resolved_topological_network, velocity->second);
 
 					return true;
 				}
@@ -198,6 +198,7 @@ namespace GPlatesAppLogic
 										earth_radius_in_kms);
 
 						plate_velocity = velocity;
+						plate_location = TopologyPointLocation(resolved_topological_boundary);
 
 						return true;
 					}
@@ -234,7 +235,9 @@ namespace GPlatesAppLogic
 				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &all_resolved_topological_networks,
 				const PlateVelocityUtils::StageRotationCalculator &resolved_boundary_stage_rotation_calculator,
 				boost::optional<GPlatesMaths::Vector3D> &left_plate_velocity,
-				boost::optional<GPlatesMaths::Vector3D> &right_plate_velocity)
+				boost::optional<GPlatesMaths::Vector3D> &right_plate_velocity,
+				TopologyPointLocation &left_plate_location,   // left plate (or network), if any
+				TopologyPointLocation &right_plate_location)  // right plate (or network), if any
 		{
 			// Attempt to calculate left plate velocity using the *left* resolved topologies that *share* the shared sub-segment.
 			if (!get_plate_velocity(
@@ -244,7 +247,7 @@ namespace GPlatesAppLogic
 					boundary_point,
 					reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
 					left_sharing_resolved_topological_boundaries, left_sharing_resolved_topological_networks, resolved_boundary_stage_rotation_calculator,
-					left_plate_velocity))
+					left_plate_velocity, left_plate_location))
 			{
 				// That failed, so use *all* resolved topologies (eg, the full global set of topologies).
 				//
@@ -262,7 +265,7 @@ namespace GPlatesAppLogic
 						left_point,
 						reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
 						all_resolved_topological_boundaries, all_resolved_topological_networks, resolved_boundary_stage_rotation_calculator,
-						left_plate_velocity);
+						left_plate_velocity, left_plate_location);
 			}
 
 			// Attempt to calculate right plate velocity using the *right* resolved topologies that *share* the shared sub-segment.
@@ -273,7 +276,7 @@ namespace GPlatesAppLogic
 					boundary_point,
 					reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
 					right_sharing_resolved_topological_boundaries, right_sharing_resolved_topological_networks, resolved_boundary_stage_rotation_calculator,
-					right_plate_velocity))
+					right_plate_velocity, right_plate_location))
 			{
 				// That failed, so use *all* resolved topologies (eg, the full global set of topologies).
 				//
@@ -291,7 +294,7 @@ namespace GPlatesAppLogic
 						right_point,
 						reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
 						all_resolved_topological_boundaries, all_resolved_topological_networks, resolved_boundary_stage_rotation_calculator,
-						right_plate_velocity);
+						right_plate_velocity, right_plate_location);
 			}
 		}
 
@@ -432,6 +435,8 @@ namespace GPlatesAppLogic
 				// (when following the order or points in the shared sub-segment).
 				boost::optional<GPlatesMaths::Vector3D> left_plate_velocity;
 				boost::optional<GPlatesMaths::Vector3D> right_plate_velocity;
+				TopologyPointLocation left_plate_location;   // default is not located inside any plate/network
+				TopologyPointLocation right_plate_location;  // default is not located inside any plate/network
 				get_left_and_right_plate_velocities(
 						point, boundary_normal.get(),
 						reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
@@ -439,7 +444,8 @@ namespace GPlatesAppLogic
 						right_sharing_resolved_topological_boundaries, right_sharing_resolved_topological_networks,
 						all_resolved_topological_boundaries, all_resolved_topological_networks,
 						resolved_boundary_stage_rotation_calculator,
-						left_plate_velocity, right_plate_velocity);
+						left_plate_velocity, right_plate_velocity,
+						left_plate_location, right_plate_location);
 
 				//
 				// Note: Distances to start/end of shared sub-segment include rubber banding since we're considering the entire shared sub-segment polyline.
@@ -466,6 +472,7 @@ namespace GPlatesAppLogic
 								point_length,
 								boundary_normal.get(),
 								boundary_velocity,
+								left_plate_location, right_plate_location,
 								left_plate_velocity, right_plate_velocity,
 								distance_from_start_of_shared_sub_segment, distance_to_end_of_shared_sub_segment,
 								signed_distance_from_start_of_topological_section, signed_distance_to_end_of_topological_section));
@@ -896,99 +903,4 @@ GPlatesAppLogic::PlateBoundaryStat::get_velocity_obliquity(
 	}
 
 	return obliquity;
-}
-
-
-GPlatesScribe::TranscribeResult
-GPlatesAppLogic::PlateBoundaryStat::transcribe_construct_data(
-		GPlatesScribe::Scribe &scribe,
-		GPlatesScribe::ConstructObject<PlateBoundaryStat> &plate_boundary_stat)
-{
-	if (scribe.is_saving())
-	{
-		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_point, "point");
-		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_length, "length");
-		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_boundary_normal, "boundary_normal");
-		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_boundary_velocity, "boundary_velocity");
-		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_left_plate_velocity, "left_plate_velocity");
-		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_right_plate_velocity, "right_plate_velocity");
-		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_distance_from_start_of_shared_sub_segment, "distance_from_start_of_shared_sub_segment");
-		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_distance_to_end_of_shared_sub_segment, "distance_to_end_of_shared_sub_segment");
-		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_signed_distance_from_start_of_topological_section, "signed_distance_from_start_of_topological_section");
-		scribe.save(TRANSCRIBE_SOURCE, plate_boundary_stat->d_signed_distance_to_end_of_topological_section, "signed_distance_to_end_of_topological_section");
-	}
-	else // loading
-	{
-		GPlatesScribe::LoadRef<GPlatesMaths::PointOnSphere> point_ = scribe.load<GPlatesMaths::PointOnSphere>(TRANSCRIBE_SOURCE, "point");
-		if (!point_.is_valid())
-		{
-			return scribe.get_transcribe_result();
-		}
-
-		GPlatesScribe::LoadRef<GPlatesMaths::UnitVector3D> boundary_normal_ = scribe.load<GPlatesMaths::UnitVector3D>(TRANSCRIBE_SOURCE, "boundary_normal");
-		if (!boundary_normal_.is_valid())
-		{
-			return scribe.get_transcribe_result();
-		}
-
-		GPlatesMaths::Real length_;
-		GPlatesMaths::Vector3D boundary_velocity_;
-		boost::optional<GPlatesMaths::Vector3D> left_plate_velocity_;
-		boost::optional<GPlatesMaths::Vector3D> right_plate_velocity_;
-		GPlatesMaths::Real distance_from_start_of_shared_sub_segment_;
-		GPlatesMaths::Real distance_to_end_of_shared_sub_segment_;
-		GPlatesMaths::Real signed_distance_from_start_of_topological_section_;
-		GPlatesMaths::Real signed_distance_to_end_of_topological_section_;
-		if (!scribe.transcribe(TRANSCRIBE_SOURCE, length_, "length") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, boundary_velocity_, "boundary_velocity") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, left_plate_velocity_, "left_plate_velocity") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, right_plate_velocity_, "right_plate_velocity") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, distance_from_start_of_shared_sub_segment_, "distance_from_start_of_shared_sub_segment") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, distance_to_end_of_shared_sub_segment_, "distance_to_end_of_shared_sub_segment") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, signed_distance_from_start_of_topological_section_, "signed_distance_from_start_of_topological_section") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, signed_distance_to_end_of_topological_section_, "signed_distance_to_end_of_topological_section"))
-		{
-			return scribe.get_transcribe_result();
-		}
-
-		plate_boundary_stat.construct_object(
-				point_,
-				length_.dval(),
-				boundary_normal_,
-				boundary_velocity_,
-				left_plate_velocity_,
-				right_plate_velocity_,
-				distance_from_start_of_shared_sub_segment_.dval(),
-				distance_to_end_of_shared_sub_segment_.dval(),
-				signed_distance_from_start_of_topological_section_.dval(),
-				signed_distance_to_end_of_topological_section_.dval());
-	}
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
-}
-
-
-GPlatesScribe::TranscribeResult
-GPlatesAppLogic::PlateBoundaryStat::transcribe(
-		GPlatesScribe::Scribe &scribe,
-		bool transcribed_construct_data)
-{
-	if (!transcribed_construct_data)
-	{
-		if (!scribe.transcribe(TRANSCRIBE_SOURCE, d_point, "point") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, d_length, "length") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, d_boundary_normal, "boundary_normal") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, d_boundary_velocity, "boundary_velocity") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, d_left_plate_velocity, "left_plate_velocity") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, d_right_plate_velocity, "right_plate_velocity") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, d_distance_from_start_of_shared_sub_segment, "distance_from_start_of_shared_sub_segment") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, d_distance_to_end_of_shared_sub_segment, "distance_to_end_of_shared_sub_segment") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, d_signed_distance_from_start_of_topological_section, "signed_distance_from_start_of_topological_section") ||
-			!scribe.transcribe(TRANSCRIBE_SOURCE, d_signed_distance_to_end_of_topological_section, "signed_distance_to_end_of_topological_section"))
-		{
-			return scribe.get_transcribe_result();
-		}
-	}
-
-	return GPlatesScribe::TRANSCRIBE_SUCCESS;
 }

@@ -1188,19 +1188,8 @@ export_topological_snapshot()
 					"\n"
 					"PlateBoundaryStatistics are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).\n"
 					"\n"
-					"A *PlateBoundaryStatistic* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
-					"\n"
 					".. versionadded:: 0.47\n",
 					bp::no_init)
-		// Pickle support...
-		//
-		// Note: This adds an __init__ method accepting a single argument (of type 'bytes') that supports pickling.
-		//       So we define this *after* (higher priority) the other __init__ methods in case one of them accepts a single argument
-		//       of type bp::object (which, being more general, would otherwise obscure the __init__ that supports pickling).
-		.def(GPlatesApi::PythonPickle::PickleDefVisitor<boost::shared_ptr<GPlatesAppLogic::PlateBoundaryStat>>(
-				// Since we are providing the only constructor (__init__ for pickling) we need its
-				// docstring to document that this class cannot be instantiated from Python...
-				true/*document_class_as_non_instantiable*/))
 		.add_property("point_location",
 				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_point_location, bp::return_value_policy<bp::copy_const_reference>()),
 				"Point location on a plate boundary.\n"
@@ -1290,6 +1279,48 @@ export_topological_snapshot()
 				"                                  math.sin(plate_boundary_stat.boundary_velocity_obliquity))\n"
 				"\n"
 				"  .. note:: The velocity units are determined by the call to :meth:`TopologicalSnapshot.calculate_plate_boundary_statistics`.\n")
+		.add_property("left_plate_location",
+				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_left_plate_location, bp::return_value_policy<bp::copy_const_reference>()),
+				"The left plate (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: :class:`TopologyPointLocation`\n"
+				"\n"
+				"  .. note:: :meth:`TopologyPointLocation.not_located_in_resolved_topology` will return ``True`` if there is no plate to the left "
+				"(when following the vertices of the :class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the "
+				":attr:`point <point_location>` is located on).\n"
+				"\n"
+				"  To get the polygon boundary of the left resolved topological :class:`plate <ResolvedTopologicalBoundary>` or "
+				":class:`network <ResolvedTopologicalNetwork>` (or ``None`` if neither):\n"
+				"  ::\n"
+				"\n"
+				"    left_plate_location = plate_boundary_stat.left_plate_location\n"
+				"    if left_plate_location.located_in_resolved_boundary():\n"
+				"        left_topology_boundary = left_plate_location.located_in_resolved_boundary().get_resolved_boundary()\n"
+				"    elif left_plate_location.located_in_resolved_network():\n"
+				"        left_topology_boundary = left_plate_location.located_in_resolved_network().get_resolved_boundary()\n"
+				"    else:\n"
+				"        left_topology_boundary = None\n")
+		.add_property("right_plate_location",
+				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_right_plate_location, bp::return_value_policy<bp::copy_const_reference>()),
+				"The right plate (at the :attr:`point location <point_location>`).\n"
+				"\n"
+				"  :type: :class:`TopologyPointLocation`\n"
+				"\n"
+				"  .. note:: :meth:`TopologyPointLocation.not_located_in_resolved_topology` will return ``True`` if there is no plate to the right "
+				"(when following the vertices of the :class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` that the "
+				":attr:`point <point_location>` is located on).\n"
+				"\n"
+				"  To get the polygon boundary of the right resolved topological :class:`plate <ResolvedTopologicalBoundary>` or "
+				":class:`network <ResolvedTopologicalNetwork>` (or ``None`` if neither):\n"
+				"  ::\n"
+				"\n"
+				"    right_plate_location = plate_boundary_stat.right_plate_location\n"
+				"    if right_plate_location.located_in_resolved_boundary():\n"
+				"        right_topology_boundary = right_plate_location.located_in_resolved_boundary().get_resolved_boundary()\n"
+				"    elif right_plate_location.located_in_resolved_network():\n"
+				"        right_topology_boundary = right_plate_location.located_in_resolved_network().get_resolved_boundary()\n"
+				"    else:\n"
+				"        right_topology_boundary = None\n")
 		.add_property("left_plate_velocity",
 				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_left_plate_velocity, bp::return_value_policy<bp::copy_const_reference>()),
 				"Velocity vector of the left plate (at the :attr:`point location <point_location>`).\n"
