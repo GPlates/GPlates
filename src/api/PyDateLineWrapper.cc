@@ -552,7 +552,7 @@ export_date_line_wrapper()
 				"     - get_is_original_interior_point_flags(interior_ring_index)\n"
 				"\n"
 				".. versionchanged:: 0.41\n"
-					"   tessellation threshold is clamped to the range [0, 180] to avoid an exception.\n")
+				"   tessellation threshold is clamped to the range [0, 180] to avoid an exception.\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

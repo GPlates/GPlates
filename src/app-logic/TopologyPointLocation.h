@@ -111,6 +111,21 @@ namespace GPlatesAppLogic
 			return boost::apply_visitor(NetworkLocationVisitor(), d_location);
 		}
 
+
+		bool
+		operator==(
+				const TopologyPointLocation &other) const
+		{
+			return boost::apply_visitor(EqualityVisitor(), d_location, other.d_location);
+		}
+
+		bool
+		operator!=(
+				const TopologyPointLocation &other) const
+		{
+			return !operator==(other);
+		}
+
 	private:
 
 		struct NoLocation
@@ -257,6 +272,55 @@ namespace GPlatesAppLogic
 					const LocationType &) const
 			{
 				return boost::none;
+			}
+		};
+
+		//! Compare for equality.
+		struct EqualityVisitor :
+				public boost::static_visitor<bool>
+		{
+			template <typename LHSType, typename RHSType>
+			bool
+			operator()(
+					const LHSType &,
+					const RHSType &) const
+			{
+				return false; // Different types compare unequal.
+			}
+
+			bool
+			EqualityVisitor::operator()(
+					const NoLocation &lhs,
+					const NoLocation &rhs) const
+			{
+				return true;
+			}
+
+			bool
+			EqualityVisitor::operator()(
+					const BoundaryLocation &lhs,
+					const BoundaryLocation &rhs) const
+			{
+				return lhs.boundary == rhs.boundary;
+			}
+
+			bool
+			EqualityVisitor::operator()(
+					const NetworkDelaunayFaceLocation &lhs,
+					const NetworkDelaunayFaceLocation &rhs) const
+			{
+				return lhs.network == rhs.network &&
+						lhs.delaunay_face == rhs.delaunay_face;
+			}
+
+			bool
+			EqualityVisitor::operator()(
+					const NetworkRigidBlockLocation &lhs,
+					const NetworkRigidBlockLocation &rhs) const
+			{
+				return lhs.network == rhs.network &&
+						lhs.rigid_block.get().get_reconstructed_feature_geometry() ==
+						rhs.rigid_block.get().get_reconstructed_feature_geometry();
 			}
 		};
 

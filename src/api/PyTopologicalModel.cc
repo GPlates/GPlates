@@ -1405,7 +1405,12 @@ export_topological_model()
 					"TopologyPointLocation",
 					"Locates a point in a specific resolved topological boundary or network (deforming region or interior rigid block).\n"
 					"\n"
-					"  .. versionadded:: 0.29\n",
+					"TopologyPointLocations are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).\n"
+					"\n"
+					"  .. versionadded:: 0.29\n"
+					"\n"
+					"  .. versionchanged:: 0.47\n"
+					"     Equality compares object *state* instead of object *identity*.\n",
 					// Don't allow creation from python side...
 					bp::no_init)
 		.def("not_located_in_resolved_topology",
@@ -1452,8 +1457,11 @@ export_topological_model()
 				"\n"
 				"  .. note:: Returns ``None`` if point is inside a resolved topological network but is *not* inside one of "
 				"its interior rigid blocks.\n")
-		// Make unhashable, with default comparison operators (based on C++ object identity)...
-		.def(GPlatesApi::NoHashDefVisitor())
+		// Due to the numerical tolerance in comparisons we cannot make hashable.
+		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+		.def(GPlatesApi::NoHashDefVisitor(false, true))
+		.def(bp::self == bp::self)
+		.def(bp::self != bp::self)
 	;
 
 	// Enable boost::optional<TopologyPointLocation> to be passed to and from python.
