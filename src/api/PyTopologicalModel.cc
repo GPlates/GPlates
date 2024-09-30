@@ -701,7 +701,7 @@ namespace GPlatesApi
 	/**
 	 * Returns resolved topological boundary containing point, otherwise boost::none.
 	 */
-	boost::optional<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type>
+	boost::optional<GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_to_const_type>
 	topology_point_located_in_resolved_boundary(
 			const GPlatesAppLogic::TopologyPointLocation &topology_point_location)
 	{
@@ -711,7 +711,7 @@ namespace GPlatesApi
 	/**
 	 * Returns resolved topological network if it contains point, otherwise None.
 	 */
-	boost::optional<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type>
+	boost::optional<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type>
 	topology_point_located_in_resolved_network(
 			const GPlatesAppLogic::TopologyPointLocation &topology_point_location)
 	{
@@ -719,7 +719,7 @@ namespace GPlatesApi
 				network_location = topology_point_location.located_in_resolved_network();
 		if (network_location)
 		{
-			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type resolved_network = network_location->first;
+			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type resolved_network = network_location->first;
 			return resolved_network;
 		}
 
@@ -729,7 +729,7 @@ namespace GPlatesApi
 	/**
 	 * Returns resolved topological network if its deforming region (excludes rigid blocks) contains point, otherwise None.
 	 */
-	boost::optional<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type>
+	boost::optional<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type>
 	topology_point_located_in_resolved_network_deforming_region(
 			const GPlatesAppLogic::TopologyPointLocation &topology_point_location)
 	{
@@ -737,7 +737,7 @@ namespace GPlatesApi
 				network_location = topology_point_location.located_in_resolved_network();
 		if (network_location)
 		{
-			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type resolved_network = network_location->first;
+			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type resolved_network = network_location->first;
 			const GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation &point_location = network_location->second;
 
 			if (point_location.located_in_deforming_region())
@@ -761,7 +761,7 @@ namespace GPlatesApi
 				network_location = topology_point_location.located_in_resolved_network();
 		if (network_location)
 		{
-			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type resolved_network = network_location->first;
+			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type resolved_network = network_location->first;
 			const GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation &point_location = network_location->second;
 
 			// Is located in one of resolved network's rigid blocks?

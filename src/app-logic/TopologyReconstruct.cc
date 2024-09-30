@@ -2343,7 +2343,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 		if (const boost::optional<TopologyPointLocation::network_location_type> network_point_location =
 			domain_point_location.located_in_resolved_network())
 		{
-			const ResolvedTopologicalNetwork::non_null_ptr_type &resolved_network = network_point_location->first;
+			const ResolvedTopologicalNetwork::non_null_ptr_to_const_type &resolved_network = network_point_location->first;
 			const ResolvedTriangulation::Network::PointLocation &point_location = network_point_location->second;
 
 			boost::optional<
@@ -2368,7 +2368,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::calc_velocities(
 		}
 
 		// Get the resolved boundary point location that the current point lies within (if any).
-		if (const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_type> resolved_boundary =
+		if (const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> resolved_boundary =
 			domain_point_location.located_in_resolved_boundary())
 		{
 			// Get the plate ID from resolved boundary.
@@ -2544,7 +2544,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::interpolate_geometry_sam
 				initial_point_location.located_in_resolved_network();
 		if (network_point_location)
 		{
-			const ResolvedTopologicalNetwork::non_null_ptr_type &resolved_network = network_point_location->first;
+			const ResolvedTopologicalNetwork::non_null_ptr_to_const_type &resolved_network = network_point_location->first;
 			const ResolvedTriangulation::Network::PointLocation &point_location = network_point_location->second;
 
 			// Deform the initial point by the interpolate time increment.
@@ -2574,7 +2574,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::interpolate_geometry_sam
 			//
 
 			// Get the resolved boundary point location that the initial point lies within (if any).
-			const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_type> resolved_boundary =
+			const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> resolved_boundary =
 					initial_point_location.located_in_resolved_boundary();
 			if (resolved_boundary)
 			{
@@ -2877,7 +2877,7 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::GeometrySample::calc_def
 		{
 			const GPlatesMaths::PointOnSphere point(geometry_point->position);
 
-			const ResolvedTopologicalNetwork::non_null_ptr_type &resolved_network = network_point_location->first;
+			const ResolvedTopologicalNetwork::non_null_ptr_to_const_type &resolved_network = network_point_location->first;
 			const ResolvedTriangulation::Network::PointLocation &point_location = network_point_location->second;
 
 			boost::optional<ResolvedTriangulation::DeformationInfo> face_deformation_info =
@@ -2988,7 +2988,7 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 			current_location.located_in_resolved_network();
 	if (current_network_location)
 	{
-		const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_type> prev_boundary =
+		const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> prev_boundary =
 				prev_location.located_in_resolved_boundary();
 		if (!prev_boundary)
 		{
@@ -3002,7 +3002,7 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 		// Point currently in a deforming network and previously in a rigid plate...
 		//
 
-		const ResolvedTopologicalNetwork::non_null_ptr_type &current_resolved_network = current_network_location->first;
+		const ResolvedTopologicalNetwork::non_null_ptr_to_const_type &current_resolved_network = current_network_location->first;
 
 		boost::optional<
 				std::pair<
@@ -3070,7 +3070,7 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 		return true;
 	}
 
-	const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_type> current_boundary =
+	const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> current_boundary =
 			current_location.located_in_resolved_boundary();
 	if (!current_boundary)
 	{
@@ -3084,7 +3084,7 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 	// Point currently in a rigid plate...
 	//
 
-	const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_type> prev_boundary =
+	const boost::optional<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> prev_boundary =
 			prev_location.located_in_resolved_boundary();
 	if (prev_boundary)
 	{
@@ -3196,7 +3196,7 @@ GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::deactivate(
 				time_increment);
 	}
 
-	const ResolvedTopologicalNetwork::non_null_ptr_type &prev_resolved_network = prev_network_location->first;
+	const ResolvedTopologicalNetwork::non_null_ptr_to_const_type &prev_resolved_network = prev_network_location->first;
 
 	// Calculate the velocity of the *previous* point using the previous resolved network.
 	//

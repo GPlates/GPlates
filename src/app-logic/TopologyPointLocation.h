@@ -54,7 +54,7 @@ namespace GPlatesAppLogic
 	 *             // resolved network...
 	 *             std::pair<
 	 *                 ResolvedTriangulation::Network::PointLocation,
-	 *                 ResolvedTopologicalNetwork::non_null_ptr_type>
+	 *                 ResolvedTopologicalNetwork::non_null_ptr_to_const_type>
 	 *             >
 	 *         >
 	 *     >
@@ -65,7 +65,7 @@ namespace GPlatesAppLogic
 
 		//! Location in a network (delaunay face or rigid block).
 		typedef std::pair<
-				ResolvedTopologicalNetwork::non_null_ptr_type,
+				ResolvedTopologicalNetwork::non_null_ptr_to_const_type,
 				ResolvedTriangulation::Network::PointLocation>
 						network_location_type;
 
@@ -78,13 +78,13 @@ namespace GPlatesAppLogic
 		//! Point located inside resolved boundary.
 		explicit
 		TopologyPointLocation(
-				const ResolvedTopologicalBoundary::non_null_ptr_type &boundary) :
+				const ResolvedTopologicalBoundary::non_null_ptr_to_const_type &boundary) :
 			d_location(BoundaryLocation(boundary))
 		{  }
 
 		//! Point located inside resolved network.
 		TopologyPointLocation(
-				const ResolvedTopologicalNetwork::non_null_ptr_type &network,
+				const ResolvedTopologicalNetwork::non_null_ptr_to_const_type &network,
 				const ResolvedTriangulation::Network::PointLocation &network_point_location) :
 			d_location(boost::apply_visitor(ConstructNetworkVisitor(network), network_point_location.get_location()))
 		{  }
@@ -98,7 +98,7 @@ namespace GPlatesAppLogic
 		}
 
 		//! Returns resolved boundary that point is located in (otherwise returns none).
-		boost::optional<ResolvedTopologicalBoundary::non_null_ptr_type>
+		boost::optional<ResolvedTopologicalBoundary::non_null_ptr_to_const_type>
 		located_in_resolved_boundary() const
 		{
 			return boost::apply_visitor(BoundaryLocationVisitor(), d_location);
@@ -120,36 +120,36 @@ namespace GPlatesAppLogic
 		{
 			explicit
 			BoundaryLocation(
-					const ResolvedTopologicalBoundary::non_null_ptr_type &boundary_) :
+					const ResolvedTopologicalBoundary::non_null_ptr_to_const_type &boundary_) :
 				boundary(boundary_)
 			{  }
 
-			ResolvedTopologicalBoundary::non_null_ptr_type boundary;
+			ResolvedTopologicalBoundary::non_null_ptr_to_const_type boundary;
 		};
 
 		struct NetworkDelaunayFaceLocation
 		{
 			NetworkDelaunayFaceLocation(
-					const ResolvedTopologicalNetwork::non_null_ptr_type &network_,
+					const ResolvedTopologicalNetwork::non_null_ptr_to_const_type &network_,
 					const ResolvedTriangulation::Delaunay_2::Face_handle &delaunay_face_) :
 				network(network_),
 				delaunay_face(delaunay_face_)
 			{  }
 
-			ResolvedTopologicalNetwork::non_null_ptr_type network;
+			ResolvedTopologicalNetwork::non_null_ptr_to_const_type network;
 			ResolvedTriangulation::Delaunay_2::Face_handle delaunay_face;
 		};
 
 		struct NetworkRigidBlockLocation
 		{
 			NetworkRigidBlockLocation(
-					const ResolvedTopologicalNetwork::non_null_ptr_type &network_,
+					const ResolvedTopologicalNetwork::non_null_ptr_to_const_type &network_,
 					const ResolvedTriangulation::Network::RigidBlock &rigid_block_) :
 				network(network_),
 				rigid_block(rigid_block_)
 			{  }
 
-			ResolvedTopologicalNetwork::non_null_ptr_type network;
+			ResolvedTopologicalNetwork::non_null_ptr_to_const_type network;
 			boost::reference_wrapper<const ResolvedTriangulation::Network::RigidBlock> rigid_block; // behaves like 'const RigidBlock &'
 		};
 
@@ -168,7 +168,7 @@ namespace GPlatesAppLogic
 		{
 			explicit
 			ConstructNetworkVisitor(
-					const ResolvedTopologicalNetwork::non_null_ptr_type &network) :
+					const ResolvedTopologicalNetwork::non_null_ptr_to_const_type &network) :
 				d_network(network)
 			{  }
 
@@ -186,7 +186,7 @@ namespace GPlatesAppLogic
 				return location_type(NetworkRigidBlockLocation(d_network, rigid_block_location.rigid_block));
 			}
 
-			ResolvedTopologicalNetwork::non_null_ptr_type d_network;
+			ResolvedTopologicalNetwork::non_null_ptr_to_const_type d_network;
 		};
 
 		//! Returns true if point not located in resolved boundaries/networks.
@@ -211,9 +211,9 @@ namespace GPlatesAppLogic
 
 		//! Returns resolved boundary that point is located in (otherwise returns none).
 		struct BoundaryLocationVisitor :
-				public boost::static_visitor< boost::optional<ResolvedTopologicalBoundary::non_null_ptr_type> >
+				public boost::static_visitor< boost::optional<ResolvedTopologicalBoundary::non_null_ptr_to_const_type> >
 		{
-			boost::optional<ResolvedTopologicalBoundary::non_null_ptr_type>
+			boost::optional<ResolvedTopologicalBoundary::non_null_ptr_to_const_type>
 			operator()(
 					const BoundaryLocation &boundary_location) const
 			{
@@ -221,7 +221,7 @@ namespace GPlatesAppLogic
 			}
 
 			template <class LocationType>
-			boost::optional<ResolvedTopologicalBoundary::non_null_ptr_type>
+			boost::optional<ResolvedTopologicalBoundary::non_null_ptr_to_const_type>
 			operator()(
 					const LocationType &) const
 			{
