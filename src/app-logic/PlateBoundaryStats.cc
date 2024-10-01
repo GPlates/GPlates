@@ -30,6 +30,7 @@
 #include "ResolvedTopologicalNetwork.h"
 
 #include "maths/CartesianConvMatrix3D.h"
+#include "maths/PointInPolygon.h"
 #include "maths/PolylineOnSphere.h"
 
 
@@ -257,7 +258,8 @@ namespace GPlatesAppLogic
 				// Note: The rigid plates and deforming networks have polygon boundaries with a tiny threshold for detecting if a
 				//       point is ON the outline of the polygon. So we want a distance that exceeds that threshold.
 				//       That threshold is about 1.4e-6 radians (about 9 metres).
-				const double offset_distance = 1e-4;  // ~600 metres
+				//       So we multiply that by 10 to ensure enough clearance.
+				const double offset_distance = 10 * GPlatesMaths::PointInPolygon::get_point_on_polygon_threshold_sine();  // ~90 metres
 				const GPlatesMaths::PointOnSphere left_point(
 						(GPlatesMaths::Vector3D(boundary_point.position_vector()) + offset_distance * boundary_normal).get_normalisation());
 
@@ -286,7 +288,8 @@ namespace GPlatesAppLogic
 				// Note: The rigid plates and deforming networks have polygon boundaries with a tiny threshold for detecting if a
 				//       point is ON the outline of the polygon. So we want a distance that exceeds that threshold.
 				//       That threshold is about 1.4e-6 radians (about 9 metres).
-				const double offset_distance = 1e-4;  // ~600 metres
+				//       So we multiply that by 10 to ensure enough clearance.
+				const double offset_distance = 10 * GPlatesMaths::PointInPolygon::get_point_on_polygon_threshold_sine();  // ~90 metres
 				const GPlatesMaths::PointOnSphere right_point(
 						(GPlatesMaths::Vector3D(boundary_point.position_vector()) - offset_distance * boundary_normal).get_normalisation());
 

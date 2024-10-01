@@ -289,7 +289,7 @@ namespace GPlatesAppLogic
 			}
 
 			bool
-			EqualityVisitor::operator()(
+			operator()(
 					const NoLocation &lhs,
 					const NoLocation &rhs) const
 			{
@@ -297,7 +297,7 @@ namespace GPlatesAppLogic
 			}
 
 			bool
-			EqualityVisitor::operator()(
+			operator()(
 					const BoundaryLocation &lhs,
 					const BoundaryLocation &rhs) const
 			{
@@ -305,7 +305,7 @@ namespace GPlatesAppLogic
 			}
 
 			bool
-			EqualityVisitor::operator()(
+			operator()(
 					const NetworkDelaunayFaceLocation &lhs,
 					const NetworkDelaunayFaceLocation &rhs) const
 			{
@@ -314,7 +314,7 @@ namespace GPlatesAppLogic
 			}
 
 			bool
-			EqualityVisitor::operator()(
+			operator()(
 					const NetworkRigidBlockLocation &lhs,
 					const NetworkRigidBlockLocation &rhs) const
 			{
