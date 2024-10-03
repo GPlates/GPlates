@@ -35,9 +35,6 @@
 #include "PythonVariableFunctionArguments.h"
 
 #include "app-logic/ReconstructContext.h"
-#include "app-logic/ReconstructedFeatureGeometry.h"
-#include "app-logic/ReconstructedFlowline.h"
-#include "app-logic/ReconstructedMotionPath.h"
 #include "app-logic/ReconstructHandle.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructMethodInterface.h"
@@ -287,6 +284,11 @@ namespace GPlatesApi
 		const GPlatesAppLogic::ReconstructHandle::type reconstruct_handle =
 				GPlatesAppLogic::ReconstructHandle::get_next_reconstruct_handle();
 
+		// For motion paths and flowlines we reconstruct into ReconstructedFeatureGeometry arrays,
+		// and later downcast to ReconstructedMotionPath and ReconstructedFlowline arrays.
+		std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_motion_paths;
+		std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> reconstructed_flowlines;
+
 		// Iterate over the files and reconstruct their features.
 		for (const auto &reconstruct_file : d_reconstructable_files)
 		{
@@ -306,21 +308,6 @@ namespace GPlatesApi
 					continue;
 				}
 
-				// Target reconstructed feature geometries or motion paths or flowlines depending on the reconstruct type.
-				boost::optional<std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &> reconstructed_geometries;
-				if (reconstruct_method_type.get() == GPlatesAppLogic::ReconstructMethod::FLOWLINE)  // ReconstructType::FLOWLINE
-				{
-					reconstructed_geometries = d_reconstructed_flowlines;
-				}
-				else if (reconstruct_method_type.get() == GPlatesAppLogic::ReconstructMethod::MOTION_PATH)  // ReconstructType::MOTION_PATH
-				{
-					reconstructed_geometries = d_reconstructed_motion_paths;
-				}
-				else  // ReconstructType::FEATURE_GEOMETRY
-				{
-					reconstructed_geometries = d_reconstructed_feature_geometries;
-				}
-
 				GPlatesAppLogic::ReconstructMethodInterface::non_null_ptr_type reconstruct_method =
 						reconstruct_method_registry.create_reconstruct_method(
 								reconstruct_method_type.get(),
@@ -328,13 +315,56 @@ namespace GPlatesApi
 								reconstruct_method_context);
 
 				// Reconstruct the current feature and append to the target reconstructed geometries array.
-				reconstruct_method->reconstruct_feature_geometries(
-						reconstructed_geometries.get(),
-						reconstruct_handle,
-						reconstruct_method_context,
-						d_reconstruction_time);
+				//
+				// Target reconstructed feature geometries or motion paths or flowlines depending on the reconstruct type.
+				if (reconstruct_method_type.get() == GPlatesAppLogic::ReconstructMethod::MOTION_PATH)  // ReconstructType::MOTION_PATH
+				{
+					reconstruct_method->reconstruct_feature_geometries(
+							reconstructed_motion_paths,
+							reconstruct_handle,
+							reconstruct_method_context,
+							d_reconstruction_time);
+				}
+				else if (reconstruct_method_type.get() == GPlatesAppLogic::ReconstructMethod::FLOWLINE)  // ReconstructType::FLOWLINE
+				{
+					reconstruct_method->reconstruct_feature_geometries(
+							reconstructed_flowlines,
+							reconstruct_handle,
+							reconstruct_method_context,
+							d_reconstruction_time);
+				}
+				else  // ReconstructType::FEATURE_GEOMETRY
+				{
+					// Note we don't need to downcast like we do for reconstructed motion paths and flowlines.
+					// So we reconstruct directly into the final ReconstructedFeatureGeometry array.
+					reconstruct_method->reconstruct_feature_geometries(
+							d_reconstructed_feature_geometries,
+							reconstruct_handle,
+							reconstruct_method_context,
+							d_reconstruction_time);
+				}
 			}
 		}
+
+		// From the ReconstructedFeatureGeometry's generated when reconstructing motion paths,
+		// downcast those that are ReconstructedMotionPath's.
+		//
+		// Note that, when motion paths are reconstructed, both ReconstructedMotionPath's and
+		// ReconstructedFeatureGeometry's are generated. So this ensures that the concrete ReconstructedFeatureGeometry's
+		// are ignored (noting that ReconstructedMotionPath is derived from ReconstructedFeatureGeometry).
+		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
+						reconstructed_motion_paths.begin(),
+						reconstructed_motion_paths.end(),
+						d_reconstructed_motion_paths);
+
+		// Downcast the ReconstructedFeatureGeometry's generated when reconstructing flowlines to ReconstructedFlowline's.
+		//
+		// Note that, unlike motion paths, all ReconstructedFeatureGeometry's generated when reconstructing flowlines
+		// are actually ReconstructedFlowline's.
+		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
+						reconstructed_flowlines.begin(),
+						reconstructed_flowlines.end(),
+						d_reconstructed_flowlines);
 	}
 
 	std::list<ReconstructSnapshot::feature_geometry_group_type>
@@ -435,12 +465,6 @@ namespace GPlatesApi
 	{
 		const QString export_file_name = export_file_path.get_file_path();
 
-		// Get the reconstructed geometries.
-		//
-		// Note: We don't need to sort the reconstructed geometries because the following export will do that...
-		const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type>
-				reconstructed_geometries = get_reconstructed_geometries(reconstruct_type);
-
 		// Get the sequence of reconstructable files as File pointers.
 		std::vector<const GPlatesFileIO::File::Reference *> reconstructable_file_ptrs;
 		for (const auto &reconstructable_file : d_reconstructable_files)
@@ -460,11 +484,12 @@ namespace GPlatesApi
 		}
 
 		// Export based on the reconstructed type requested by the caller.
+		//
+		// Note: We don't need to sort the reconstructed geometries because the following exports will do that.
 		switch (reconstruct_type)
 		{
 		case ReconstructType::FEATURE_GEOMETRY:
 			export_reconstructed_feature_geometries(
-					reconstructed_geometries,
 					export_file_name,
 					reconstructable_file_ptrs,
 					reconstruction_file_ptrs,
@@ -476,7 +501,6 @@ namespace GPlatesApi
 
 		case ReconstructType::MOTION_PATH:
 			export_reconstructed_motion_paths(
-					reconstructed_geometries,
 					export_file_name,
 					reconstructable_file_ptrs,
 					reconstruction_file_ptrs,
@@ -488,7 +512,6 @@ namespace GPlatesApi
 
 		case ReconstructType::FLOWLINE:
 			export_reconstructed_flowlines(
-					reconstructed_geometries,
 					export_file_name,
 					reconstructable_file_ptrs,
 					reconstruction_file_ptrs,
@@ -506,7 +529,6 @@ namespace GPlatesApi
 
 	void
 	ReconstructSnapshot::export_reconstructed_feature_geometries(
-			const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_geometries,
 			const QString &export_file_name,
 			const std::vector<const GPlatesFileIO::File::Reference *> &reconstructable_file_ptrs,
 			const std::vector<const GPlatesFileIO::File::Reference *> &reconstruction_file_ptrs,
@@ -516,11 +538,11 @@ namespace GPlatesApi
 			boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_boundary_orientation) const
 	{
 		// Converts to raw pointers.
-		std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *> reconstructed_feature_geometries;
-		reconstructed_feature_geometries.reserve(reconstructed_geometries.size());
-		for (auto rfg : reconstructed_geometries)
+		std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *> reconstructed_feature_geometry_ptrs;
+		reconstructed_feature_geometry_ptrs.reserve(d_reconstructed_feature_geometries.size());
+		for (auto rfg : d_reconstructed_feature_geometries)
 		{
-			reconstructed_feature_geometries.push_back(rfg.get());
+			reconstructed_feature_geometry_ptrs.push_back(rfg.get());
 		}
 
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry file_format_registry;
@@ -542,7 +564,7 @@ namespace GPlatesApi
 		GPlatesFileIO::ReconstructedFeatureGeometryExport::export_reconstructed_feature_geometries(
 					export_file_name,
 					format,
-					reconstructed_feature_geometries,
+					reconstructed_feature_geometry_ptrs,
 					reconstructable_file_ptrs,
 					reconstruction_file_ptrs,
 					anchor_plate_id,
@@ -557,7 +579,6 @@ namespace GPlatesApi
 
 	void
 	ReconstructSnapshot::export_reconstructed_motion_paths(
-			const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_geometries,
 			const QString &export_file_name,
 			const std::vector<const GPlatesFileIO::File::Reference *> &reconstructable_file_ptrs,
 			const std::vector<const GPlatesFileIO::File::Reference *> &reconstruction_file_ptrs,
@@ -566,16 +587,13 @@ namespace GPlatesApi
 			bool export_wrap_to_dateline,
 			boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_boundary_orientation) const
 	{
-		// Get any ReconstructedFeatureGeometry objects that are of type ReconstructedMotionPath.
-		//
-		// Note that, when motion paths are reconstructed, both ReconstructedMotionPath's and
-		// ReconstructedFeatureGeometry's are generated - so this also ensures that the
-		// ReconstructedFeatureGeometry's are ignored when outputting reconstructed motion paths.
-		std::vector<const GPlatesAppLogic::ReconstructedMotionPath *> reconstructed_motion_paths;
-		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
-				reconstructed_geometries.begin(),
-				reconstructed_geometries.end(),
-				reconstructed_motion_paths);
+		// Converts to raw pointers.
+		std::vector<const GPlatesAppLogic::ReconstructedMotionPath *> reconstructed_motion_path_ptrs;
+		reconstructed_motion_path_ptrs.reserve(d_reconstructed_motion_paths.size());
+		for (auto rmp : d_reconstructed_motion_paths)
+		{
+			reconstructed_motion_path_ptrs.push_back(rmp.get());
+		}
 
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry file_format_registry;
 		const GPlatesFileIO::ReconstructedMotionPathExport::Format format =
@@ -596,7 +614,7 @@ namespace GPlatesApi
 		GPlatesFileIO::ReconstructedMotionPathExport::export_reconstructed_motion_paths(
 					export_file_name,
 					format,
-					reconstructed_motion_paths,
+					reconstructed_motion_path_ptrs,
 					reconstructable_file_ptrs,
 					reconstruction_file_ptrs,
 					anchor_plate_id,
@@ -609,7 +627,6 @@ namespace GPlatesApi
 
 	void
 	ReconstructSnapshot::export_reconstructed_flowlines(
-			const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_geometries,
 			const QString &export_file_name,
 			const std::vector<const GPlatesFileIO::File::Reference *> &reconstructable_file_ptrs,
 			const std::vector<const GPlatesFileIO::File::Reference *> &reconstruction_file_ptrs,
@@ -618,13 +635,13 @@ namespace GPlatesApi
 			bool export_wrap_to_dateline,
 			boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_boundary_orientation) const
 	{
-		// Get any ReconstructedFeatureGeometry objects that are of type ReconstructedFlowline.
-		// In fact they should all be ReconstructedFlowlines.
-		std::vector<const GPlatesAppLogic::ReconstructedFlowline *> reconstructed_flowlines;
-		GPlatesAppLogic::ReconstructionGeometryUtils::get_reconstruction_geometry_derived_type_sequence(
-						reconstructed_geometries.begin(),
-						reconstructed_geometries.end(),
-						reconstructed_flowlines);
+		// Converts to raw pointers.
+		std::vector<const GPlatesAppLogic::ReconstructedFlowline *> reconstructed_flowline_ptrs;
+		reconstructed_flowline_ptrs.reserve(d_reconstructed_flowlines.size());
+		for (auto rf : d_reconstructed_flowlines)
+		{
+			reconstructed_flowline_ptrs.push_back(rf.get());
+		}
 
 		GPlatesFileIO::FeatureCollectionFileFormat::Registry file_format_registry;
 		const GPlatesFileIO::ReconstructedFlowlineExport::Format format =
@@ -645,7 +662,7 @@ namespace GPlatesApi
 		GPlatesFileIO::ReconstructedFlowlineExport::export_reconstructed_flowlines(
 				export_file_name,
 				format,
-				reconstructed_flowlines,
+				reconstructed_flowline_ptrs,
 				reconstructable_file_ptrs,
 				reconstruction_file_ptrs,
 				anchor_plate_id,

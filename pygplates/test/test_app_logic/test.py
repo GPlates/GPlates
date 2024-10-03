@@ -382,11 +382,12 @@ class ReconstructTestCase(unittest.TestCase):
                 valid_time=(30, 0),
                 relative_plate=201,
                 reconstruction_plate_id=801)
-        reconstructed_motion_paths = []
         # First without specifying motion paths.
+        reconstructed_motion_paths = []
         pygplates.reconstruct(motion_path_feature, rotation_model, reconstructed_motion_paths, reconstruction_time)
         self.assertEqual(len(reconstructed_motion_paths), 0)
         # Now specify motion paths.
+        reconstructed_motion_paths = []
         pygplates.reconstruct(
                 motion_path_feature, rotation_model, reconstructed_motion_paths, reconstruction_time,
                 reconstruct_type=pygplates.ReconstructType.motion_path)

@@ -751,8 +751,9 @@ export_reconstruct()
 			"(such as `pathlib.Path <https://docs.python.org/3/library/pathlib.html>`_) in addition to strings.\n"
 			"\n"
 			"  .. versionchanged:: 0.48\n"
-			"     | Added *export_force_boundary_orientation* argument.\n"
-			"     | *ReconstructType.feature_geometry*, *ReconstructType.motion_path* and *ReconstructType.flowline* have different underlying bit values.\n";
+			"\n"
+			"     * Added *export_force_boundary_orientation* argument.\n"
+			"     * Changed underlying bit values for *ReconstructType.feature_geometry*, *ReconstructType.motion_path* and *ReconstructType.flowline*.\n";
 
 	// Register 'reconstructed feature geometries' variant.
 	GPlatesApi::PythonConverterUtils::register_variant_conversion<

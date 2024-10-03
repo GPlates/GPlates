@@ -30,6 +30,8 @@
 #include "PyFeatureCollectionFunctionArgument.h"
 
 #include "app-logic/ReconstructedFeatureGeometry.h"
+#include "app-logic/ReconstructedFlowline.h"
+#include "app-logic/ReconstructedMotionPath.h"
 
 #include "file-io/File.h"
 #include "file-io/ReconstructionGeometryExportImpl.h"
@@ -144,7 +146,7 @@ namespace GPlatesApi
 		/**
 		 * Get reconstructed motion paths.
 		 */
-		const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &
+		const std::vector<GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type> &
 		get_reconstructed_motion_paths() const
 		{
 			return d_reconstructed_motion_paths;
@@ -153,7 +155,7 @@ namespace GPlatesApi
 		/**
 		 * Get reconstructed flowlines.
 		 */
-		const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &
+		const std::vector<GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type> &
 		get_reconstructed_flowlines() const
 		{
 			return d_reconstructed_flowlines;
@@ -254,8 +256,8 @@ namespace GPlatesApi
 		double d_reconstruction_time;
 
 		std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> d_reconstructed_feature_geometries;
-		std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> d_reconstructed_motion_paths;
-		std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> d_reconstructed_flowlines;
+		std::vector<GPlatesAppLogic::ReconstructedMotionPath::non_null_ptr_type> d_reconstructed_motion_paths;
+		std::vector<GPlatesAppLogic::ReconstructedFlowline::non_null_ptr_type> d_reconstructed_flowlines;
 
 
 		ReconstructSnapshot(
@@ -281,7 +283,6 @@ namespace GPlatesApi
 
 		void
 		export_reconstructed_feature_geometries(
-				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_geometries,
 				const QString &export_file_name,
 				const std::vector<const GPlatesFileIO::File::Reference *> &reconstructable_file_ptrs,
 				const std::vector<const GPlatesFileIO::File::Reference *> &reconstruction_file_ptrs,
@@ -292,7 +293,6 @@ namespace GPlatesApi
 
 		void
 		export_reconstructed_motion_paths(
-				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_geometries,
 				const QString &export_file_name,
 				const std::vector<const GPlatesFileIO::File::Reference *> &reconstructable_file_ptrs,
 				const std::vector<const GPlatesFileIO::File::Reference *> &reconstruction_file_ptrs,
@@ -303,7 +303,6 @@ namespace GPlatesApi
 
 		void
 		export_reconstructed_flowlines(
-				const std::vector<GPlatesAppLogic::ReconstructedFeatureGeometry::non_null_ptr_type> &reconstructed_geometries,
 				const QString &export_file_name,
 				const std::vector<const GPlatesFileIO::File::Reference *> &reconstructable_file_ptrs,
 				const std::vector<const GPlatesFileIO::File::Reference *> &reconstruction_file_ptrs,
