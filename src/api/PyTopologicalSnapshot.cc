@@ -1846,7 +1846,8 @@ export_topological_snapshot()
 				&GPlatesApi::topological_snapshot_get_resolved_topologies,
 				(bp::arg("resolve_topology_types") = GPlatesApi::ResolveTopologyType::DEFAULT_RESOLVE_TOPOLOGY_TYPES,
 					bp::arg("same_order_as_topological_features") = false),
-				"get_resolved_topologies([resolve_topology_types], [same_order_as_topological_features=False])\n"
+				"get_resolved_topologies([resolve_topology_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)], "
+				"[same_order_as_topological_features=False])\n"
 				"  Returns the resolved topologies of the requested type(s).\n"
 				"\n"
 				"  :param resolve_topology_types: specifies the resolved topology types to return - defaults "
@@ -1873,8 +1874,9 @@ export_topological_snapshot()
 					bp::arg("resolve_topology_types") = GPlatesApi::ResolveTopologyType::DEFAULT_RESOLVE_TOPOLOGY_TYPES,
 					bp::arg("wrap_to_dateline") = true,
 					bp::arg("force_boundary_orientation") = boost::optional<GPlatesMaths::PolygonOrientation::Orientation>()),
-				"export_resolved_topologies(export_filename, [resolve_topology_types], [wrap_to_dateline=True], [force_boundary_orientation])\n"
-				"  Exports the resolved topologies to a file.\n"
+				"export_resolved_topologies(export_filename, [resolve_topology_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)], "
+				"[wrap_to_dateline=True], [force_boundary_orientation])\n"
+				"  Exports the resolved topologies of the requested type(s) to a file.\n"
 				"\n"
 				"  :param export_filename: the name of the export file\n"
 				"  :type export_filename: string/``os.PathLike``\n"
@@ -1919,7 +1921,8 @@ export_topological_snapshot()
 				&GPlatesApi::topological_snapshot_get_resolved_topological_sections,
 				(bp::arg("resolve_topological_section_types") = GPlatesApi::ResolveTopologyType::DEFAULT_RESOLVE_TOPOLOGICAL_SECTION_TYPES,
 					bp::arg("same_order_as_topological_features") = false),
-				"get_resolved_topological_sections([resolve_topological_section_types], [same_order_as_topological_features=False])\n"
+				"get_resolved_topological_sections([resolve_topological_section_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)], "
+				"[same_order_as_topological_features=False])\n"
 				"  Returns the resolved topological sections of the requested type(s).\n"
 				"\n"
 				"  :param resolve_topological_section_types: Determines whether :class:`ResolvedTopologicalBoundary` or "
@@ -1942,9 +1945,10 @@ export_topological_snapshot()
 					bp::arg("resolve_topological_section_types") = GPlatesApi::ResolveTopologyType::DEFAULT_RESOLVE_TOPOLOGY_TYPES,
 					bp::arg("export_topological_line_sub_segments") = true,
 					bp::arg("wrap_to_dateline") = true),
-				"export_resolved_topological_sections(export_filename, [resolve_topological_section_types], "
+				"export_resolved_topological_sections(export_filename, "
+				"[resolve_topological_section_types=(pygplates.ResolveTopologyType.boundary|pygplates.ResolveTopologyType.network)], "
 				"[export_topological_line_sub_segments=True], [wrap_to_dateline=True])\n"
-				"  Exports the resolved topological sections to a file.\n"
+				"  Exports the resolved topological sections of the requested type(s) to a file.\n"
 				"\n"
 				"  :param export_filename: the name of the export file\n"
 				"  :type export_filename: string/``os.PathLike``\n"

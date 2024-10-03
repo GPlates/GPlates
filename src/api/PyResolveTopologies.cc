@@ -295,7 +295,7 @@ namespace GPlatesApi
 		else // list of resolved topologies...
 		{
 			// Gather all the resolved topologies to output (limited to the resolve types requested).
-			std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type> resolved_topologies =
+			const std::vector<GPlatesAppLogic::ReconstructionGeometry::non_null_ptr_type> resolved_topologies =
 					topological_snapshot->get_resolved_topologies(
 							resolve_topology_types,
 							// Sort the resolved topologies in the order of the features in the
