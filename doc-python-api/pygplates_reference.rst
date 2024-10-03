@@ -17,6 +17,15 @@ This document lists the Python functions and classes that make up the GPlates Py
 Reconstruction
 --------------
 
+Classes to query the history of reconstructions:
+
+.. autosummary::
+   :nosignatures:
+   :toctree: generated
+
+   pygplates.ReconstructModel
+   pygplates.ReconstructSnapshot
+
 Function to reconstruct backward and forward in time:
 
 .. autosummary::

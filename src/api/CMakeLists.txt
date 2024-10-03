@@ -69,10 +69,14 @@ set(srcs
     PyQualifiedXmlNames.h
     PyReal.cc
     PyReconstruct.cc
+    PyReconstructModel.cc
+    PyReconstructModel.h
     PyReconstructionGeometries.cc
     PyReconstructionGeometries.h
     PyReconstructionTree.cc
     PyReconstructionTree.h
+    PyReconstructSnapshot.cc
+    PyReconstructSnapshot.h
     PyResolveTopologies.cc
     PyResolveTopologyParameters.h
     PyResolveTopologyParameters.cc
