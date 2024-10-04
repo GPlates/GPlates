@@ -194,7 +194,7 @@ namespace GPlatesApi
 			const FilePathFunctionArgument &export_file_name,
 			ReconstructType::Value reconstruct_type,
 			bool wrap_to_dateline,
-			boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_boundary_orientation)
+			boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation)
 	{
 		// Reconstruct type flag must correspond to an existing flag.
 		if ((reconstruct_type & ~ReconstructType::ALL_RECONSTRUCT_TYPES) != 0)
@@ -216,7 +216,7 @@ namespace GPlatesApi
 				export_file_name,
 				reconstruct_type,
 				wrap_to_dateline,
-				force_boundary_orientation);
+				force_polygon_orientation);
 	}
 
 
@@ -461,7 +461,7 @@ namespace GPlatesApi
 			const FilePathFunctionArgument &export_file_path,
 			ReconstructType::Value reconstruct_type,
 			bool wrap_to_dateline,
-			boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_boundary_orientation) const
+			boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation) const
 	{
 		const QString export_file_name = export_file_path.get_file_path();
 
@@ -496,7 +496,7 @@ namespace GPlatesApi
 					d_rotation_model->get_reconstruction_tree_creator().get_default_anchor_plate_id(),
 					d_reconstruction_time,
 					wrap_to_dateline,
-					force_boundary_orientation);
+					force_polygon_orientation);
 			break;
 
 		case ReconstructType::MOTION_PATH:
@@ -506,8 +506,7 @@ namespace GPlatesApi
 					reconstruction_file_ptrs,
 					d_rotation_model->get_reconstruction_tree_creator().get_default_anchor_plate_id(),
 					d_reconstruction_time,
-					wrap_to_dateline,
-					force_boundary_orientation);
+					wrap_to_dateline);
 			break;
 
 		case ReconstructType::FLOWLINE:
@@ -517,8 +516,7 @@ namespace GPlatesApi
 					reconstruction_file_ptrs,
 					d_rotation_model->get_reconstruction_tree_creator().get_default_anchor_plate_id(),
 					d_reconstruction_time,
-					wrap_to_dateline,
-					force_boundary_orientation);
+					wrap_to_dateline);
 			break;
 
 		default:
@@ -535,7 +533,7 @@ namespace GPlatesApi
 			const GPlatesModel::integer_plate_id_type &anchor_plate_id,
 			const double &reconstruction_time,
 			bool export_wrap_to_dateline,
-			boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_boundary_orientation) const
+			boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_polygon_orientation) const
 	{
 		// Converts to raw pointers.
 		std::vector<const GPlatesAppLogic::ReconstructedFeatureGeometry *> reconstructed_feature_geometry_ptrs;
@@ -574,6 +572,7 @@ namespace GPlatesApi
 					true/*export_single_output_file*/,
 					false/*export_per_input_file*/, // We only generate a single output file.
 					false/*export_output_directory_per_input_file*/, // We only generate a single output file.
+					force_polygon_orientation,
 					export_wrap_to_dateline);
 	}
 
@@ -584,8 +583,7 @@ namespace GPlatesApi
 			const std::vector<const GPlatesFileIO::File::Reference *> &reconstruction_file_ptrs,
 			const GPlatesModel::integer_plate_id_type &anchor_plate_id,
 			const double &reconstruction_time,
-			bool export_wrap_to_dateline,
-			boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_boundary_orientation) const
+			bool export_wrap_to_dateline) const
 	{
 		// Converts to raw pointers.
 		std::vector<const GPlatesAppLogic::ReconstructedMotionPath *> reconstructed_motion_path_ptrs;
@@ -632,8 +630,7 @@ namespace GPlatesApi
 			const std::vector<const GPlatesFileIO::File::Reference *> &reconstruction_file_ptrs,
 			const GPlatesModel::integer_plate_id_type &anchor_plate_id,
 			const double &reconstruction_time,
-			bool export_wrap_to_dateline,
-			boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_boundary_orientation) const
+			bool export_wrap_to_dateline) const
 	{
 		// Converts to raw pointers.
 		std::vector<const GPlatesAppLogic::ReconstructedFlowline *> reconstructed_flowline_ptrs;
@@ -905,8 +902,8 @@ export_reconstruct_snapshot()
 				"get_reconstructed_features([reconstruct_types=pygplates.ReconstructType.feature_geometry])\n"
 				"  Returns the reconstructed geometries of the requested type(s) grouped by their feature.\n"
 				"\n"
-				"  :param reconstruct_types: specifies the reconstructed geometry types to return - defaults "
-				"to :class:`reconstructed feature geometries <ReconstructedFeatureGeometry>`\n"
+				"  :param reconstruct_types: specifies which types of features to reconstruct - defaults "
+				"to reconstructing only regular features (not motion paths or flowlines)\n"
 				"  :type reconstruct_types: a bitwise combination of any of ``pygplates.ReconstructType.feature_geometry``, "
 				"``pygplates.ReconstructType.motion_path`` or ``pygplates.ReconstructType.flowline``\n"
 				"  :returns: a list of tuples, where each tuple contains a :class:`Feature` and a ``list`` of reconstructed geometries "
@@ -918,7 +915,8 @@ export_reconstruct_snapshot()
 				"is not one of ``pygplates.ReconstructType.feature_geometry``, ``pygplates.ReconstructType.motion_path`` or "
 				"``pygplates.ReconstructType.flowline``\n"
 				"\n"
-				"  This can be useful when a :class:`feature <Feature>` has more than one geometry and hence more than one reconstructed geometry.\n"
+				"  This can be useful (compared to :meth:`get_reconstructed_geometries`) when a :class:`feature <Feature>` has "
+				"more than one (present day) geometry and hence more than one reconstructed geometry.\n"
 				"\n"
 				"  .. note:: The returned features (and associated reconstructed geometries) are sorted in the order of the reconstructable features "
 				"(including order across reconstructable files, if there were any).\n"
@@ -932,7 +930,7 @@ export_reconstruct_snapshot()
 				"        for feature_reconstructed_geometry in feature_reconstructed_geometries:\n"
 				"            ...\n"
 				"\n"
-				"  .. seealso:: get_reconstructed_geometries\n")
+				"  .. seealso:: :meth:`get_reconstructed_geometries`\n")
 		.def("get_reconstructed_geometries",
 				&GPlatesApi::reconstruct_snapshot_get_reconstructed_geometries,
 				(bp::arg("reconstruct_types") = GPlatesApi::ReconstructType::DEFAULT_RECONSTRUCT_TYPES,
@@ -940,8 +938,8 @@ export_reconstruct_snapshot()
 				"get_reconstructed_geometries([reconstruct_types=pygplates.ReconstructType.feature_geometry], [same_order_as_reconstructable_features=False])\n"
 				"  Returns the reconstructed geometries of the requested type(s).\n"
 				"\n"
-				"  :param reconstruct_types: specifies the reconstructed geometry types to return - defaults "
-				"to :class:`reconstructed feature geometries <ReconstructedFeatureGeometry>`\n"
+				"  :param reconstruct_types: specifies which types of features to reconstruct - defaults "
+				"to reconstructing only regular features (not motion paths or flowlines)\n"
 				"  :type reconstruct_types: a bitwise combination of any of ``pygplates.ReconstructType.feature_geometry``, "
 				"``pygplates.ReconstructType.motion_path`` or ``pygplates.ReconstructType.flowline``\n"
 				"  :param same_order_as_reconstructable_features: whether the returned reconstructed geometries are sorted in "
@@ -957,32 +955,32 @@ export_reconstruct_snapshot()
 				"is not one of ``pygplates.ReconstructType.feature_geometry``, ``pygplates.ReconstructType.motion_path`` or "
 				"``pygplates.ReconstructType.flowline``\n"
 				"\n"
-				"  .. seealso:: get_reconstructed_features\n")
+				"  .. seealso:: :meth:`get_reconstructed_features`\n")
 		.def("export_reconstructed_geometries",
 				&GPlatesApi::reconstruct_snapshot_export_reconstructed_geometries,
 				(bp::arg("export_filename"),
 					bp::arg("reconstruct_type") = GPlatesApi::ReconstructType::DEFAULT_RECONSTRUCT_TYPE,
 					bp::arg("wrap_to_dateline") = true,
-					bp::arg("force_boundary_orientation") = boost::optional<GPlatesMaths::PolygonOrientation::Orientation>()),
+					bp::arg("force_polygon_orientation") = boost::optional<GPlatesMaths::PolygonOrientation::Orientation>()),
 				"export_reconstructed_geometries(export_filename, [reconstruct_type=pygplates.ReconstructType.feature_geometry], "
-				"[wrap_to_dateline=True], [force_boundary_orientation])\n"
+				"[wrap_to_dateline=True], [force_polygon_orientation])\n"
 				"  Exports the reconstructed geometries of the requested type(s) to a file.\n"
 				"\n"
 				"  :param export_filename: the name of the export file\n"
 				"  :type export_filename: string/``os.PathLike``\n"
-				"  :param reconstruct_type: specifies the **single** reconstructed geometry type to export - defaults "
-				"to :class:`reconstructed feature geometries <ReconstructedFeatureGeometry>`\n"
+				"  :param reconstruct_type: specifies which type of features to export - defaults "
+				"to exporting only regular features (not motion paths or flowlines)\n"
 				"  :type reconstruct_type: ``pygplates.ReconstructType.feature_geometry``, "
 				"``pygplates.ReconstructType.motion_path`` or ``pygplates.ReconstructType.flowline``\n"
 				"  :param wrap_to_dateline: Whether to wrap/clip reconstructed geometries to the dateline "
 				"(currently ignored unless exporting to an ESRI Shapefile format *file*). Defaults to ``True``.\n"
 				"  :type wrap_to_dateline: bool\n"
-				"  :param force_boundary_orientation: Optionally force boundary orientation to "
+				"  :param force_polygon_orientation: Optionally force boundary orientation to "
 				"clockwise (``PolygonOnSphere.Orientation.clockwise``) or "
 				"counter-clockwise (``PolygonOnSphere.Orientation.counter_clockwise``). "
-				"Only applies to reconstructed feature geometries (excludes *motion paths* and *flowlines*). "
+				"Only applies to reconstructed feature geometries (excludes *motion paths* and *flowlines*) that are polygons. "
 				"Note that ESRI Shapefiles always use *clockwise* orientation (and so ignore this parameter).\n"
-				"  :type force_boundary_orientation: int\n"
+				"  :type force_polygon_orientation: int\n"
 				"  :raises: ValueError if *reconstruct_type* (if specified) is not **one** of ``pygplates.ReconstructType.feature_geometry``, "
 				"``pygplates.ReconstructType.motion_path`` or ``pygplates.ReconstructType.flowline``\n"
 				"\n"

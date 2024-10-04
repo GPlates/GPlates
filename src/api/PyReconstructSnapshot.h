@@ -190,7 +190,8 @@ namespace GPlatesApi
 		 * (currently ignored unless exporting to an ESRI Shapefile format file). Defaults to true.
 		 *
 		 * If @a force_boundary_orientation is not none then force boundary orientation (clockwise or counter-clockwise)
-		 * of those reconstructed geometries that are polygons. Currently ignored by ESRI Shapefile which always uses clockwise.
+		 * of those reconstructed feature geometries (excludes *motion paths* and *flowlines*) that are polygons.
+		 * Currently ignored by ESRI Shapefile which always uses clockwise.
 		 *
 		 * By default exports only reconstructed feature geometries (excludes motion paths and flowlines).
 		 */
@@ -298,8 +299,7 @@ namespace GPlatesApi
 				const std::vector<const GPlatesFileIO::File::Reference *> &reconstruction_file_ptrs,
 				const GPlatesModel::integer_plate_id_type &anchor_plate_id,
 				const double &reconstruction_time,
-				bool export_wrap_to_dateline,
-				boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_boundary_orientation) const;
+				bool export_wrap_to_dateline) const;
 
 		void
 		export_reconstructed_flowlines(
@@ -308,8 +308,7 @@ namespace GPlatesApi
 				const std::vector<const GPlatesFileIO::File::Reference *> &reconstruction_file_ptrs,
 				const GPlatesModel::integer_plate_id_type &anchor_plate_id,
 				const double &reconstruction_time,
-				bool export_wrap_to_dateline,
-				boost::optional<GPlatesMaths::PolygonOrientation::Orientation> force_boundary_orientation) const;
+				bool export_wrap_to_dateline) const;
 
 	private: // Transcribe...
 
