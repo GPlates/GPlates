@@ -124,7 +124,7 @@ namespace GPlatesApi
 			bp::list reconstructed_geometries_list;
 			for (auto reconstructed_geometry : reconstructed_feature.recon_geoms)
 			{
-				reconstructed_geometries_list.append(reconstructed_geometry);
+				reconstructed_geometries_list.append(reconstructed_geometry->get_non_null_pointer_to_const());
 			}
 
 			reconstructed_features_list.append(
@@ -165,7 +165,7 @@ namespace GPlatesApi
 			{
 				for (auto reconstructed_geometry : reconstructed_feature.recon_geoms)
 				{
-					reconstructed_geometries_list.append(reconstructed_geometry);
+					reconstructed_geometries_list.append(reconstructed_geometry->get_non_null_pointer_to_const());
 				}
 			}
 		}
@@ -178,7 +178,7 @@ namespace GPlatesApi
 			// Output the reconstructed geometries.
 			for (auto reconstructed_geometry : reconstructed_geometries)
 			{
-				reconstructed_geometries_list.append(reconstructed_geometry);
+				reconstructed_geometries_list.append(reconstructed_geometry->get_non_null_pointer_to_const());
 			}
 		}
 
