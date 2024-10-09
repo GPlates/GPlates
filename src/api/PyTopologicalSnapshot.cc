@@ -1776,7 +1776,7 @@ export_topological_snapshot()
 			GPlatesApi::TopologicalSnapshot::non_null_ptr_type,
 			boost::noncopyable>(
 					"TopologicalSnapshot",
-					"A snapshot of topologies at a specific geological time.\n"
+					"A snapshot of resolved topological features (lines, boundaries and networks) at a specific geological time.\n"
 					"\n"
 					"A *TopologicalSnapshot* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
 					"\n"

@@ -2810,8 +2810,8 @@ class TopologicalModelTestCase(unittest.TestCase):
 class TopologicalSnapshotTestCase(unittest.TestCase):
     def test(self):
         #
-        # Class pygplates.TopologicalSnapshot is used internally by pygplates.resolved_topologies()
-        # so most of its testing is already done by testing pygplates.resolved_topologies().
+        # Class pygplates.TopologicalSnapshot is used internally by pygplates.resolve_topologies()
+        # so most of its testing is already done by testing pygplates.resolve_topologies().
         #
         # Here we're just making sure we can access the pygplates.TopologicalSnapshot methods.
         #

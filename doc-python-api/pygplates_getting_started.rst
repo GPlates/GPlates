@@ -310,7 +310,7 @@ input and output if the function first reads from it (input) and then writes to 
 An example pyGPlates function call is reconstructing coastlines to 10Ma:
 ::
 
-  pygplates.reconstruct('coastlines.gpml', 'rotations.rot', 'reconstructed_coastlines_10Ma.shp', 10)
+  pygplates.reconstruct('coastlines.gpmlz', 'rotations.rot', 'reconstructed_coastlines_10Ma.shp', 10)
 
 .. note:: The ``pygplates.`` in front of ``reconstruct()`` means the ``reconstruct()`` function belongs to the ``pygplates`` module.
           Also this particular function doesn't need to a return value.
@@ -318,18 +318,18 @@ An example pyGPlates function call is reconstructing coastlines to 10Ma:
 All four parameters are input parameters since they only pass data *to* the function
 (even though ``'reconstructed_coastlines_10Ma.shp'`` specifies the filename to *write* the output to).
 
-A similar use of the ``pygplates.reconstruct()`` function appends the reconstructed output to a
+A similar use of the ``pygplates.reconstruct()`` function appends the reconstructed coastlines to a
 Python list (instead of writing to a file):
 ::
 
-  reconstructed_feature_geometries = []
-  pygplates.reconstruct('coastlines.gpml', 'rotations.rot', reconstructed_feature_geometries, 10)
+  reconstructed_coastline_geometries = []
+  pygplates.reconstruct('coastlines.gpmlz', 'rotations.rot', reconstructed_coastline_geometries, 10)
   
   # Do something with the reconstructed output.
-  for reconstructed_feature_geometry in reconstructed_feature_geometries:
+  for reconstructed_geometry in reconstructed_coastline_geometries:
     ...
 
-The parameter ``reconstructed_feature_geometries`` is now an *output* parameter because it is used
+The parameter ``reconstructed_coastline_geometries`` is now an *output* parameter because it is used
 to pass data from the function back to the caller so that the caller can do something with it.
 
 Classes
@@ -338,30 +338,50 @@ Classes
 Primarily a class is a way to group some data together as a single entity.
 
 An object can be created (instantiated) from a class by providing a specific initial state.
-For example, a point object can be created (instantiated) from the :class:`pygplates.PointOnSphere` class
-by giving it a specific latitude and longitude:
+For example, a *reconstruct model* object can be created (instantiated) from the :class:`pygplates.ReconstructModel` class
+by giving it the features to reconstruct and the rotations used to reconstruct them:
 ::
 
-  point = pygplates.PointOnSphere(latitude, longitude)
+  reconstruct_coastlines_model = pyglates.ReconstructModel('coastlines.gpmlz', 'rotations.rot')
 
 .. note:: This looks like a regular ``pygplates`` function call (such as ``pygplates.reconstruct()``)
    but this is just how you create (instantiate) an object from a class with a specific initial state.
    Python uses the special method name ``__init__()`` for this and you will see these special methods
    documented in the classes listed in the :ref:`reference section<pygplates_reference>`.
 
-You can then call functions (methods) on the *point* object such as querying its latitude and longitude
-(this particular method returns a Python tuple):
+You can then call functions (methods) on the *reconstruct model* object such as reconstructing to a specific reconstruction time
+(this particular method returns a :class:`reconstruct snapshot <pygplates.ReconstructSnapshot>` object):
 ::
 
-  latitude, longitude = point.to_lat_lon()
+  reconstruct_coastlines_snapshot = reconstruct_coastlines_model.reconstruct_snapshot(10)
 
-The ``point.`` before the ``to_lat_lon()`` means the ``to_lat_lon()`` function (method) applies to the ``point`` object.
-And :meth:`to_lat_lon()<pygplates.PointOnSphere.to_lat_lon>` will be one of several functions (methods)
-documented in the :class:`pygplates.PointOnSphere` class.
+The ``reconstruct_coastlines_model.`` before the ``reconstruct_snapshot(10)`` means the ``reconstruct_snapshot()`` function (method)
+applies to the ``reconstruct_coastlines_model`` object.
+And :meth:`reconstruct_snapshot()<pygplates.ReconstructModel.reconstruct_snapshot>` will be one of several functions (methods)
+documented in the :class:`pygplates.ReconstructModel` class.
 
 These class *methods* behave similarly to top-level functions (such as ``pygplates.reconstruct()``) except
 they operate on an instance of class. Hence a class *method* has an implicit first function
-argument that is the object itself (for example, ``point`` is the implicit argument in ``point.to_lat_lon()``).
+argument that is the object itself (for example, ``reconstruct_coastlines_model`` is the implicit argument in
+``reconstruct_coastlines_snapshot = reconstruct_coastlines_model.reconstruct_snapshot(10)``).
+
+Since the returned :class:`reconstruct snapshot <pygplates.ReconstructSnapshot>` is another object, you can in turn
+call one of its *methods*. For example:
+::
+
+  reconstruct_coastlines_snapshot.export_reconstructed_geometries('reconstructed_coastlines_10Ma.shp')
+
+...to save the reconstructed snapshot (at 10 Ma) to the Shapefile ``reconstructed_coastlines_10Ma.shp``.
+
+A similar use of the :class:`reconstruct snapshot <pygplates.ReconstructSnapshot>` class returns the
+reconstructed coastlines as a Python list (instead of writing to a file):
+::
+
+  reconstructed_coastline_geometries = reconstruct_coastlines_snapshot.get_reconstructed_geometries()
+  
+  # Do something with the reconstructed output.
+  for reconstructed_geometry in reconstructed_coastline_geometries:
+    ...
 
 .. note:: A complete list of pyGPlates functions and classes can be found in the :ref:`reference section<pygplates_reference>`.
 
@@ -381,7 +401,10 @@ Our introductory pyGPlates Python script will contain the following lines of sou
 
   import pygplates
   
-  pygplates.reconstruct('coastlines.gpmlz', 'rotations.rot', 'reconstructed_coastlines_10Ma.shp', 10)
+  reconstruct_coastlines_model = pyglates.ReconstructModel('coastlines.gpmlz', 'rotations.rot')
+
+  reconstruct_coastlines_snapshot = reconstruct_coastlines_model.reconstruct_snapshot(10)
+  reconstruct_coastlines_snapshot.export_reconstructed_geometries('reconstructed_coastlines_10Ma.shp')
 
 The first statement...
 ::
@@ -393,10 +416,13 @@ The first statement...
 
 .. note:: There are other ways to import pyGPlates but this is the simplest and most common way.
 
-The second statement...
+The remaining statements...
 ::
   
-  pygplates.reconstruct('coastlines.gpmlz', 'rotations.rot', 'reconstructed_coastlines_10Ma.shp', 10)
+  reconstruct_coastlines_model = pyglates.ReconstructModel('coastlines.gpmlz', 'rotations.rot')
+
+  reconstruct_coastlines_snapshot = reconstruct_coastlines_model.reconstruct_snapshot(10)
+  reconstruct_coastlines_snapshot.export_reconstructed_geometries('reconstructed_coastlines_10Ma.shp')
 
 ...will reconstruct coastlines (loaded from the ``coastlines.gpmlz`` file) to their location
 10 million years ago (Ma) using the plate rotations in the ``rotations.rot`` file, and then save those
@@ -413,8 +439,8 @@ Setting up the script
 
 | Next we need the data files containing the coastlines and rotations.
 | This data is available in the `GPlates geodata <http://www.gplates.org/download.html#download-gplates-compatible-data>`_.
-| For example, in the GPlates 2.3 geodata, the coastlines file is called ``Global_EarthByte_GPlates_PresentDay_Coastlines.gpmlz``
-  and the rotations file is called ``Muller2019-Young2019-Cao2020_CombinedRotations.rot``.
+| For example, in the GPlates 2.5 geodata, the coastlines file is called ``Global_EarthByte_GPlates_PresentDay_Coastlines.gpmlz``
+  and the rotations file is called ``Zahirovic_etal_2022_OptimisedMantleRef_and_NNRMantleRef.rot``.
 | Copy those files to the ``pygplates_tutorial`` directory and rename them as ``coastlines.gpmlz`` and ``rotations.rot``.
   Alternatively the filenames (and paths) could be changed in the ``tutorials.py`` script to match the geodata.
 

@@ -558,7 +558,7 @@ export_reconstruct()
 	bp::scope().attr(reconstruct_function_name).attr("__doc__") =
 			"reconstruct(reconstructable_features, rotation_model, reconstructed_geometries, "
 			"reconstruction_time, [anchor_plate_id], [**output_parameters])\n"
-			"  Reconstruct regular geological features, motion paths or flowlines to a specific geological time.\n"
+			"  Reconstruct regular geological features (including motion paths and flowlines) to a specific geological time.\n"
 			"\n"
 			"  :param reconstructable_features: the features to reconstruct as a feature collection, or filename, or "
 			"feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) of any "
@@ -745,6 +745,8 @@ export_reconstruct()
 			"    reconstructed_feature_geometries = []\n"
             "    pygplates.reconstruct(feature, rotation_model, reconstructed_feature_geometries, 10)\n"
 			"    # assert(reconstructed_feature_geometries[0].get_feature().get_feature_id() == feature.get_feature_id())\n"
+			"\n"
+			"  .. seealso:: :class:`ReconstructModel` and :class:`ReconstructSnapshot`\n"
 			"\n"
 			"  .. versionchanged:: 0.44\n"
 			"     Filenames can be `os.PathLike <https://docs.python.org/3/library/os.html#os.PathLike>`_ "

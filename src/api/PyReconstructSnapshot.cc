@@ -849,7 +849,7 @@ export_reconstruct_snapshot()
 			GPlatesApi::ReconstructSnapshot::non_null_ptr_type,
 			boost::noncopyable>(
 					"ReconstructSnapshot",
-					"A snapshot of reconstructed geometries at a specific geological time.\n"
+					"A snapshot of reconstructed regular features (including motion paths and flowlines) at a specific geological time.\n"
 					"\n"
 					"A *ReconstructSnapshot* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
 					"\n"

@@ -36,8 +36,8 @@ Sample code
     # Load one or more rotation files into a rotation model.
     rotation_model = pygplates.RotationModel('rotations.rot')
 
-    # Load some flowline features.
-    flowline_features = pygplates.FeatureCollection('flowline_features.gpml')
+    # Create a reconstruct model from some flowline features and the rotation model.
+    reconstruct_model = pygplates.ReconstructModel('flowline_features.gpml', rotation_model)
 
     # Reconstruct features to this geological time.
     reconstruction_time = 50
@@ -47,7 +47,8 @@ Sample code
     export_filename = 'flowline_output_{0}Ma.shp'.format(reconstruction_time)
 
     # Reconstruct the flowlines to the reconstruction time and export them to a shapefile.
-    pygplates.reconstruct(flowline_features, rotation_model, export_filename, reconstruction_time,
+    reconstruct_snapshot = reconstruct_model.reconstruct_snapshot(reconstruction_time)
+    reconstruct_snapshot.export_reconstructed_geometries(export_filename,
         reconstruct_type=pygplates.ReconstructType.flowline)
 
 Details
@@ -58,24 +59,25 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
 
     rotation_model = pygplates.RotationModel('rotations.rot')
 
-The flowline features are loaded into a :class:`pygplates.FeatureCollection`.
+Create a :class:`reconstruct model <pygplates.ReconstructModel>` from the flowline features and the rotation model.
 ::
 
-    flowline_features = pygplates.FeatureCollection('flowline_features.gpml')
+    reconstruct_model = pygplates.ReconstructModel('flowline_features.gpml', rotation_model)
 
 The flowline features will be reconstructed to their 50Ma positions.
 ::
 
     reconstruction_time = 50
 
-| All flowline features are reconstructed to 50Ma using :func:`pygplates.reconstruct`.
+| All flowline features are :meth:`reconstructed <pygplates.ReconstructModel.reconstruct_snapshot>` to 50Ma.
+| We then :meth:`export the reconstructed geometries <pygplates.ReconstructSnapshot.export_reconstructed_geometries>` to a file.
 | We specify we only want to reconstruct flowline features by specifying
   ``pygplates.ReconstructType.flowline`` for the *reconstruct_type* argument.
-| We specify a filename to export the reconstructed geometries to.
 
 ::
 
-    pygplates.reconstruct(flowline_features, rotation_model, export_filename, reconstruction_time,
+    reconstruct_snapshot = reconstruct_model.reconstruct_snapshot(reconstruction_time)
+    reconstruct_snapshot.export_reconstructed_geometries(export_filename,
         reconstruct_type=pygplates.ReconstructType.flowline)
 
 Output
@@ -121,13 +123,16 @@ Sample code
     # Load one or more rotation files into a rotation model.
     rotation_model = pygplates.RotationModel('rotations.rot')
 
+    # Create a reconstruct model from the flowline feature and the rotation model.
+    reconstruct_model = pygplates.ReconstructModel(flowline_feature, rotation_model)
+
     # Reconstruct features to this geological time.
     reconstruction_time = 50
 
     # Reconstruct the flowline feature to the reconstruction time.
-    reconstructed_flowlines = []
-    pygplates.reconstruct(flowline_feature, rotation_model, reconstructed_flowlines, reconstruction_time,
-        reconstruct_type=pygplates.ReconstructType.flowline)
+    reconstruct_snapshot = reconstruct_model.reconstruct_snapshot(reconstruction_time)
+    reconstructed_flowlines = reconstruct_snapshot.get_reconstructed_geometries(
+        reconstruct_types=pygplates.ReconstructType.flowline)
 
     # Iterate over all reconstructed flowlines.
     # There will be two (one for each seed point).
@@ -199,22 +204,26 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
 
     rotation_model = pygplates.RotationModel('rotations.rot')
 
-The features will be reconstructed to their 50Ma positions.
+Create a :class:`reconstruct model <pygplates.ReconstructModel>` from the flowline feature and the rotation model.
+::
+
+    reconstruct_model = pygplates.ReconstructModel(flowline_feature, rotation_model)
+
+The flowline feature will be reconstructed to its 50Ma position.
 ::
 
     reconstruction_time = 50
 
-| The flowline feature is reconstructed to 50Ma using :func:`pygplates.reconstruct`.
-| We specify a ``list`` for *reconstructed_flowlines* instead of a filename so that we
-  can query the reconstructed flowlines easily.
+| The flowline feature is :meth:`reconstructed <pygplates.ReconstructModel.reconstruct_snapshot>` to 50Ma.
+| We then :meth:`query the reconstructed geometries <pygplates.ReconstructSnapshot.get_reconstructed_geometries>`.
 | We also specify we only want to reconstruct flowline features by specifying
-  ``pygplates.ReconstructType.flowline`` for the *reconstruct_type* argument.
+  ``pygplates.ReconstructType.flowline`` for the *reconstruct_types* argument.
 
 ::
 
-    reconstructed_flowlines = []
-    pygplates.reconstruct(flowline_feature, rotation_model, reconstructed_flowlines, reconstruction_time,
-        reconstruct_type=pygplates.ReconstructType.flowline)
+    reconstruct_snapshot = reconstruct_model.reconstruct_snapshot(reconstruction_time)
+    reconstructed_flowlines = reconstruct_snapshot.get_reconstructed_geometries(
+        reconstruct_types=pygplates.ReconstructType.flowline)
 
 | We iterate over the points in the :meth:`reconstructed left flowline<pygplates.ReconstructedFlowline.get_left_flowline>`
   and print each point location and its associated time.

@@ -589,6 +589,8 @@ export_resolve_topologies()
 			"        'plate_polygons_and_networks.gpml', 'rotations.rot', resolved_topologies, 10,\n"
 			"         resolved_topological_sections)\n"
 			"\n"
+			"  .. seealso:: :class:`TopologicalModel` and :class:`TopologicalSnapshot`\n"
+			"\n"
 			"  .. versionchanged:: 0.29\n"
 			"     The output order of *resolved_topological_sections* is now same as that of their "
 			"respective features in *topological_features* (the order across feature collections is also retained). "

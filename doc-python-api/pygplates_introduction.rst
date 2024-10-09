@@ -46,18 +46,20 @@ There are two ways to interact with GPlates functionality:
      # Import the pyGPlates library.
      import pygplates
      
-     # Load the coastline features and rotation model.
-     coastline_features = pygplates.FeatureCollection('coastlines.gpml')
-     rotation_model = pygplates.RotationModel('rotations.rot')
+     # Load the coastline features and rotation file(s) into a reconstruct model.
+     reconstruct_coastlines_model = pyglates.ReconstructModel('coastlines.gpml', 'rotations.rot')
 
      # Iterate from 200Ma to 0Ma inclusive in steps of 10My.
      for reconstruction_time in range(200,-1,-10):
+
+         # Reconstruct the coastlines to the current reconstruction time.
+         reconstruct_coastlines_snapshot = reconstruct_coastlines_model.reconstruct_snapshot(reconstruction_time)
          
-         # Create the output filename using the current reconstruction time.
+         # The filename of the output file to contain the reconstructed coastlines at the current reconstruction time.
          reconstructed_coastlines_filename = 'reconstructed_coastlines_{0:0.2f}Ma.shp'.format(reconstruction_time)
          
-         # Reconstruct the coastlines to the current reconstruction time and save to the output file.
-         pygplates.reconstruct(coastline_features, rotation_model, reconstructed_coastlines_filename, reconstruction_time)
+         # Save the reconstructed coastlines to the output file.
+         reconstruct_coastlines_snapshot.export_reconstructed_geometries(reconstructed_coastlines_filename)
 
 .. _pygplates_introduction_why_use_pygplates:
 
@@ -71,13 +73,15 @@ in their functions and classes to enable this kind of flexibility.
 
 High-level functionality enables common tasks (such as reconstructing entire files of geological data)
 and is typically easier to use but more restrictive in what it can do.
-For example, :func:`pygplates.reconstruct` is a high-level function that can reconstruct geological data
-to a past geological time:
+For example, :class:`pygplates.ReconstructModel` and :class:`pygplates.ReconstructSnapshot` are high-level
+classes that can reconstruct geological data to a past geological time (such as 10 Ma):
 ::
 
-  pygplates.reconstruct('coastlines.gpml', 'rotations.rot', 'reconstructed_coastlines_10Ma.shp', 10)
+  reconstruct_coastlines_model = pyglates.ReconstructModel('coastlines.gpml', 'rotations.rot')
+  reconstruct_coastlines_snapshot = reconstruct_coastlines_model.reconstruct_snapshot(10)
+  reconstruct_coastlines_snapshot.export_reconstructed_geometries('reconstructed_coastlines_10Ma.shp')
 
-...but it cannot restrict reconstructed data to a specific region on the globe.
+...but they cannot restrict reconstructed data to a specific region on the globe.
 To achieve that, some more Python code needs to be written that accesses lower-level pyGPlates functionality
 as shown in the sample code :ref:`pygplates_find_features_overlapping_a_polygon`.
 
