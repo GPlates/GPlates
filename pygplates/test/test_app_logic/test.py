@@ -2853,13 +2853,16 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
             topologies,
             rotations,
             pygplates.GeoTimeInstant(10),
-            default_resolve_topology_parameters=pygplates.ResolveTopologyParameters())
+            default_resolve_topology_parameters=pygplates.ResolveTopologyParameters(
+                    enable_strain_rate_clamping=True,
+                    strain_rate_smoothing=pygplates.StrainRateSmoothing.barycentric))
         # Make sure can specify ResolveTopologyParameters with the topological features.
         snapshot = pygplates.TopologicalSnapshot(
             (topologies, pygplates.ResolveTopologyParameters()),
             rotations,
             pygplates.GeoTimeInstant(10),
-            default_resolve_topology_parameters=pygplates.ResolveTopologyParameters())
+            default_resolve_topology_parameters=pygplates.ResolveTopologyParameters(
+                    strain_rate_smoothing=pygplates.StrainRateSmoothing.none))
         snapshot = pygplates.TopologicalSnapshot(
             [
                 (topologies[0], pygplates.ResolveTopologyParameters()),  # single feature with ResolveTopologyParameters
@@ -2882,6 +2885,29 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
             
             self.assertTrue(snapshot.get_anchor_plate_id() == 0)
             self.assertTrue(snapshot.get_rotation_model())
+    
+    def test_resolve_topology_parameters(self):
+        default_resolve_topology_parameters=pygplates.ResolveTopologyParameters()
+        self.assertFalse(default_resolve_topology_parameters.enable_strain_rate_clamping)
+        self.assertAlmostEqual(default_resolve_topology_parameters.max_clamped_strain_rate, 5e-15, 19)
+        self.assertTrue(default_resolve_topology_parameters.strain_rate_smoothing == pygplates.StrainRateSmoothing.natural_neighbour)
+        self.assertAlmostEqual(default_resolve_topology_parameters.rift_exponential_stretching_constant, 1.0)
+        self.assertAlmostEqual(default_resolve_topology_parameters.rift_strain_rate_resolution, 5e-17, 19)
+        self.assertAlmostEqual(default_resolve_topology_parameters.rift_edge_length_threshold_degrees, 0.1)
+
+        resolve_topology_parameters=pygplates.ResolveTopologyParameters(
+                enable_strain_rate_clamping=True,
+                max_clamped_strain_rate=1e-14,
+                strain_rate_smoothing=pygplates.StrainRateSmoothing.barycentric,
+                rift_exponential_stretching_constant=1.5,
+                rift_strain_rate_resolution=1e-16,
+                rift_edge_length_threshold_degrees=0.2)
+        self.assertTrue(resolve_topology_parameters.enable_strain_rate_clamping)
+        self.assertAlmostEqual(resolve_topology_parameters.max_clamped_strain_rate, 1e-14, 19)
+        self.assertTrue(resolve_topology_parameters.strain_rate_smoothing == pygplates.StrainRateSmoothing.barycentric)
+        self.assertAlmostEqual(resolve_topology_parameters.rift_exponential_stretching_constant, 1.5)
+        self.assertAlmostEqual(resolve_topology_parameters.rift_strain_rate_resolution, 1e-16, 19)
+        self.assertAlmostEqual(resolve_topology_parameters.rift_edge_length_threshold_degrees, 0.2)
 
     def test_resolved_export_files(self):
         resolve_features = pygplates.FeatureCollection(os.path.join(FIXTURES, 'topologies.gpml')) 

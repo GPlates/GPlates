@@ -282,6 +282,8 @@ namespace GPlatesAppLogic
 				GPlatesModel::integer_plate_id_type left_plate_id;
 				GPlatesModel::integer_plate_id_type right_plate_id;
 
+				// Any parameters not specified will instead use equivalents from TopologyNetworkParams::RiftParams
+				// passed to Network::create.
 				boost::optional<double> exponential_stretching_constant;
 				boost::optional<double> strain_rate_resolution;
 				boost::optional<GPlatesMaths::AngularExtent> edge_length_threshold;

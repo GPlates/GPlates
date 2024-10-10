@@ -1476,7 +1476,7 @@ export_topological_model()
 				GPlatesApi::ReconstructedGeometryTimeSpan::non_null_ptr_type,
 				boost::noncopyable>(
 						"ReconstructedGeometryTimeSpan",
-						"A history of geometries reconstructed using topologies over geological time.\n"
+						"A history of geometries :meth:`reconstructed using topologies <TopologicalModel.reconstruct_geometry>` over geological time.\n"
 						"\n"
 						"  .. versionadded:: 0.29\n",
 						// Don't allow creation from python side...
