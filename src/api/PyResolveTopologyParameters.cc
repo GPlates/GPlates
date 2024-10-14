@@ -343,11 +343,11 @@ export_resolve_topology_parameters()
 				"\n"
 				"  .. math::\n"
 				"\n"
-				"     strain\\_rate(x) = strain\\_rate\\_constant \\times e^{C x} \\frac{C}{e^C - 1}\n"
+				"     strain\\_rate(x) = strain\\_rate \\times e^{C x} \\frac{C}{e^C - 1}\n"
 				"\n"
-				"  ...where :math:`strain\\_rate\\_constant` is the un-subdivided strain rate, :math:`C` is the *exponential stretching constant* and :math:`x = 0` at the un-stretched side and "
-				":math:`x = 1` at the stretched point. Therefore :math:`strain\\_rate(0) < strain\\_rate\\_constant < strain\\_rate(1)`. For example, when :math:`C = 1.0` then "
-				":math:`strain\\_rate(0) = 0.58 \\times strain\\_rate\\_constant` and :math:`strain\\_rate(1) = 1.58 \\times strain\\_rate\\_constant`.\n")
+				"  ...where :math:`strain\\_rate` is the un-subdivided, original (constant) strain rate, :math:`C` is the *exponential stretching constant* and :math:`x = 0` "
+				"at the un-stretched side and :math:`x = 1` at the stretched point. Therefore :math:`strain\\_rate(0) < strain\\_rate < strain\\_rate(1)`. For example, "
+				"when :math:`C = 1.0` then :math:`strain\\_rate(0) = 0.58 \\times strain\\_rate` and :math:`strain\\_rate(1) = 1.58 \\times strain\\_rate`.\n")
 		//! Default stretching profile is exp(exponential_stretching_constant * x).
 		.add_property("rift_strain_rate_resolution",
 				&GPlatesApi::ResolveTopologyParameters::get_rift_strain_rate_resolution,
