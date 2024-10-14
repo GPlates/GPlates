@@ -1,16 +1,16 @@
-.. _pygplates_foundations:
+.. _pygplates_primer:
 
-Foundations
-===========
+Primer
+======
 
-This document covers some plate tectonic foundations of pyGPlates.
+This document covers the main areas of pyGPlates functionality, and some plate tectonic foundations.
 
 .. contents::
    :local:
    :depth: 3
 
 
-.. _pygplates_foundations_plate_reconstruction_hierarchy:
+.. _pygplates_primer_plate_reconstruction_hierarchy:
 
 Plate reconstruction hierarchy
 ------------------------------
@@ -82,7 +82,7 @@ A *stage* rotation is a rotation at a time in the past relative to *another* tim
 in the past.
 
 
-.. _pygplates_foundations_working_with_finite_rotations:
+.. _pygplates_primer_working_with_finite_rotations:
 
 Working with finite rotations
 -----------------------------
@@ -95,15 +95,15 @@ In pyGPlates, finite rotations are represented by :class:`pygplates.FiniteRotati
 In the following sections we will first cover some rotation maths and then derive the four
 fundamental finite rotation categories:
 
-* :ref:`pygplates_foundations_equivalent_total_rotation`
-* :ref:`pygplates_foundations_relative_total_rotation`
-* :ref:`pygplates_foundations_equivalent_stage_rotation`
-* :ref:`pygplates_foundations_relative_stage_rotation`
+* :ref:`pygplates_primer_equivalent_total_rotation`
+* :ref:`pygplates_primer_relative_total_rotation`
+* :ref:`pygplates_primer_equivalent_stage_rotation`
+* :ref:`pygplates_primer_relative_stage_rotation`
 
 In pyGPlates, these can be obtained from a :class:`pygplates.RotationModel`.
 
 
-.. _pygplates_foundations_composing_finite_rotations:
+.. _pygplates_primer_composing_finite_rotations:
 
 Composing finite rotations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -149,7 +149,7 @@ For example, the above geometry rotation can be written as either:
   geometry_final = pygplates.FiniteRotation.compose(R2, R1) * geometry_initial
 
 
-.. _pygplates_foundations_plate_circuit_paths:
+.. _pygplates_primer_plate_circuit_paths:
 
 Plate circuit paths
 ^^^^^^^^^^^^^^^^^^^
@@ -234,7 +234,7 @@ poles which are always relative to present day.
           | Such that :math:`R \times R^{-1} = R^{-1} \times R = I` where :math:`I` is the :meth:`identify rotation<pygplates.FiniteRotation.represents_identity_rotation>`.
 
 
-.. _pygplates_foundations_equivalent_total_rotation:
+.. _pygplates_primer_equivalent_total_rotation:
 
 Equivalent total rotation
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -254,7 +254,7 @@ In pyGPlates, the equivalent total rotation can be obtained :meth:`pygplates.Rot
   equivalent_total_rotation = rotation_model.get_rotation(to_time, moving_plate)
 
 
-.. _pygplates_foundations_relative_total_rotation:
+.. _pygplates_primer_relative_total_rotation:
 
 Relative total rotation
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -278,7 +278,7 @@ In pyGPlates, the relative total rotation can be obtained from :meth:`pygplates.
   relative_total_rotation = rotation_model.get_rotation(to_time, moving_plate, fixed_plate_id=fixed_plate)
 
 
-.. _pygplates_foundations_equivalent_stage_rotation:
+.. _pygplates_primer_equivalent_stage_rotation:
 
 Equivalent stage rotation
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -300,7 +300,7 @@ In pyGPlates, the equivalent stage rotation can be obtained :meth:`pygplates.Rot
   equivalent_stage_rotation = rotation_model.get_rotation(to_time, moving_plate, from_time)
 
 
-.. _pygplates_foundations_relative_stage_rotation:
+.. _pygplates_primer_relative_stage_rotation:
 
 Relative stage rotation
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -325,3 +325,145 @@ In pyGPlates, the relative stage rotation can be obtained :meth:`pygplates.Rotat
   rotation_model = pygplates.RotationModel(...)
   ...
   relative_stage_rotation = rotation_model.get_rotation(to_time, moving_plate, from_time, fixed_plate)
+
+
+
+.. _pygplates_deformation:
+
+Deformation
+-----------
+
+This section covers deformation in pyGPlates.
+
+.. contents::
+   :local:
+   :depth: 2
+
+.. _pygplates_deformation_network_trianguation:
+
+Network triangulation
+^^^^^^^^^^^^^^^^^^^^^
+
+.. _pygplates_deformation_strain_rates_in_triangulation:
+
+Strain rates in triangulation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Each triangle in a :class:`deforming network's <pygplates.ResolvedTopologicalNetwork>` triangulation is assigned a :class:`strain rate <pygplates.StrainRate>` that is constant across the triangle.
+Furthermore, the strain rate of each triangle can optionally be :ref:`clamped to a maximum strain rate <pygplates_deformation_strain_rate_clamping>`.
+Then each vertex in the entire triangulation is assigned a strain rate that is an area-weighted average of the (potentially clamped) strain rates from triangles incident to the vertex.
+
+Finally, the strain rate that is queried at an *arbitrary* location (within the deforming network) is either assigned the strain rate of the triangle containing that location,
+or calculated by interpolating the strain rates of nearby vertices if :ref:`strain rates are smoothed <pygplates_deformation_strain_rate_smoothing>`.
+
+.. note:: Both strain rate :ref:`clamping <pygplates_deformation_strain_rate_clamping>` and :ref:`smoothing <pygplates_deformation_strain_rate_smoothing>` affect strain *rate* queries
+   (such as :meth:`pygplates.ReconstructedGeometryTimeSpan.get_strain_rates`). They also affects *strain* queries (such as :meth:`pygplates.ReconstructedGeometryTimeSpan.get_strains`),
+   since strain is :meth:`accumulated <pygplates.Strain.accumulate>` from strain rate.
+
+.. _pygplates_deformation_strain_rate_clamping:
+
+Strain rate clamping
+""""""""""""""""""""
+
+Strain rates can optionally be clamped to a maximum strain rate to avoid excessive or spurious extension/compression in some triangles of a deforming network triangulation.
+This can happen in some deforming networks depending on how they were built.
+
+It is the :meth:`total strain rate <pygplates.StrainRate.get_total_strain_rate>` that is clamped, since it includes both the normal and shear components of deformation.
+When clamped, all :class:`strain rate components <pygplates.StrainRate>` are scaled equally such that the total strain rate equals the maximum total strain rate.
+
+.. note:: Clamping the total strain rate also limits quantities derived from strain rate such as crustal thinning and tectonic subsidence.
+
+Strain rate clamping is determined by :attr:`pygplates.ResolveTopologyParameters.enable_strain_rate_clamping` when deforming networks are resolved at a reconstruction time
+(using :class:`pygplates.TopologicalModel`, :class:`pygplates.TopologicalSnapshot` or :func:`pygplates.resolve_topologies`).
+And the maximum strain rate is :attr:`pygplates.ResolveTopologyParameters.max_clamped_strain_rate`.
+
+.. _pygplates_deformation_strain_rate_smoothing:
+
+Strain rate smoothing
+"""""""""""""""""""""
+
+Strain rates can optionally be smoothed to help reduce the faceted (piecewise constant) strain rate across a deforming network triangulation (due to each triangle having a *constant* strain rate across its face).
+
+.. note:: Smoothing the strain rate also affects quantities derived from strain rate such as crustal thinning and tectonic subsidence.
+
+Strain rate smoothing is determined by :attr:`pygplates.ResolveTopologyParameters.strain_rate_smoothing` when deforming networks are resolved at a reconstruction time
+(using :class:`pygplates.TopologicalModel`, :class:`pygplates.TopologicalSnapshot` or :func:`pygplates.resolve_topologies`).
+The strain rate at an arbitrary location within a deforming network triangulation is affected by the smoothing value:
+
+* ``pygplates.StrainRateSmoothing.none`` - No smoothing. The strain rate is equal to the (constant) strain rate of the triangle containing the query location.
+* ``pygplates.StrainRateSmoothing.barycentric`` - Use linear interpolation of the strain rates of the 3 vertices of the triangle containing the query location.
+* ``pygplates.StrainRateSmoothing.natural_neighbour`` - Use natural neighbour interpolation of the strain rates of triangulation vertices near the query location.
+
+.. _pygplates_deformation_exponential_rift_stretching_profile:
+
+Exponential rift stretching profile
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A rift is typically modeled using two deforming networks, one on each side of the rift axis. Each side of the rift axis typically has a single row of triangles (between the un-stretched side and the rift axis).
+As a result, the strain rate at any location within the rift will essentially be *constant*, even when the :ref:`strain rates are smoothed <pygplates_deformation_strain_rate_smoothing>`.
+This is because triangulation vertices, along both the un-stretched boundary line and the rift axis, will effectively end up with the strain rate of the triangles (which is constant across each triangle).
+
+To avoid the problem of *constant* stretching across the rift, an *exponential* rift stretching profile can be activated by adding rift left/right plate ID properties to a deforming network feature.
+
+Internally the exponential strain rate profile is implemented by automatically adding more points to the interior of a deforming network and distributing the velocities
+at these points such that the strain rate varies exponentially (along the stretching direction) from the un-stretched side of the rift towards the rift axis.
+
+.. note:: This works reasonably well for regular rifts (like AFR-SAM), but not as well for oblique rifts (like AUS-ANT).
+
+.. note:: The exponential rift stretching profile affects quantities derived from strain rate such as crustal thinning and tectonic subsidence.
+
+Rift left/right plate IDs
+"""""""""""""""""""""""""
+
+An *exponential* rift stretching profile is activated by adding a ``gpml:riftLeftPlate``/``gpml:riftRightPlate`` pair of conjugate plate ID properties to a deforming network :class:`pygplates.Feature`.
+This can be done, for example, by using the *rift_parameters* argument of :meth:`pygplates.Feature.create_topological_network_feature`.
+The presence of these plate IDs triggers the internal generation of an exponential strain rate rift profile when the deforming networks are resolved at a reconstruction time
+(using :class:`pygplates.TopologicalModel`, :class:`pygplates.TopologicalSnapshot` or :func:`pygplates.resolve_topologies`).
+
+.. note:: If the rift left/right plate ID properties are not present in a deforming network feature then it is *not* considered a *rift*.
+
+There are also three other parameters, in addition to the rift left/right plate IDs, that are optional and can either be set individually in each a deforming network feature
+(eg, using the *rift_parameters* argument of :meth:`pygplates.Feature.create_topological_network_feature`) or as default values for all deforming network features
+(using :class:`pygplates.ResolveTopologyParameters`).
+
+.. note:: If these parameters are set in both places, then the feature properties have precedence.
+
+When set on a deforming network feature they become feature properties named:
+
+* ``gpml:riftExponentialStretchingConstant``
+* ``gpml:riftStrainRateResolutionLog10`` (note that this is :math:`\log_{10}` of the rift strain rate resolution)
+* ``gpml:riftEdgeLengthThresholdDegrees``
+
+...and for features missing these properties these parameters are instead obtained from :class:`pygplates.ResolveTopologyParameters` attributes:
+
+* :attr:`pygplates.ResolveTopologyParameters.rift_exponential_stretching_constant`
+* :attr:`pygplates.ResolveTopologyParameters.rift_strain_rate_resolution`
+* :attr:`pygplates.ResolveTopologyParameters.rift_edge_length_threshold_degrees`
+
+...when the deforming networks are resolved at a reconstruction time
+(using :class:`pygplates.TopologicalModel`, :class:`pygplates.TopologicalSnapshot` or :func:`pygplates.resolve_topologies`).
+
+Rift exponential stretching constant
+""""""""""""""""""""""""""""""""""""
+
+The strain rate in the rift stretching direction varies exponentially from the un-stretched side of the rift towards the rift axis.
+The spatial variation in strain rate is:
+
+  .. math::
+
+     strain\_rate(x) = strain\_rate \times e^{C x} \frac{C}{e^C - 1}
+
+...where :math:`strain\_rate` is the un-subdivided, original (constant) strain rate, :math:`C` is the *rift exponential stretching constant*
+and :math:`x = 0` at the un-stretched side and :math:`x = 1` at the stretched point. Therefore :math:`strain\_rate(0) < strain\_rate < strain\_rate(1)`.
+For example, when :math:`C = 1.0` then :math:`strain\_rate(0) = 0.58 \times strain\_rate` and :math:`strain\_rate(1) = 1.58 \times strain\_rate`.
+
+Rift strain rate resolution
+"""""""""""""""""""""""""""
+
+The *rift strain rate resolution* controls how accurately the actual strain rate curve (across rift profile) matches the exponential curve (in units of :math:`second^{-1}`).
+Rift edges in the network triangulation are sub-divided until the strain rate matches the exponential curve (within this tolerance).
+
+Rift edge length threshold
+""""""""""""""""""""""""""
+
+Rift edges in network triangulation shorter than the *rift edge length threshold* (in degrees) will not be further sub-divided.

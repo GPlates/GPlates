@@ -383,6 +383,8 @@ reconstructed coastlines as a Python list (instead of writing to a file):
   for reconstructed_geometry in reconstructed_coastline_geometries:
     ...
 
+.. note:: The above example (using *classes*) demonstrates the alternative to using the ``pygplates.reconstruct()`` *function*.
+
 .. note:: A complete list of pyGPlates functions and classes can be found in the :ref:`reference section<pygplates_reference>`.
 
 

@@ -148,7 +148,7 @@ The time period and conjugate plate IDs are obtained using :meth:`pygplates.Feat
   the geometry. Since we will be extracting the geometry directly from the :class:`pygplates.Feature`
   the geometry will be in present day coordinates.
 | To find out which reference frame the stage pole is in we start with the equation for
-  :ref:`pygplates_foundations_relative_stage_rotation` which shows the relative stage rotation of
+  :ref:`pygplates_primer_relative_stage_rotation` which shows the relative stage rotation of
   moving plate :math:`P_{M}` relative to fixed plate :math:`P_{F}`, and from time :math:`t_{from}`
   to time :math:`t_{to}` is:
 
@@ -164,7 +164,7 @@ Rearranging this gives us the rotation of moving plate :math:`P_{M}` from presen
 
    R(0 \rightarrow t_{to},P_{A} \rightarrow P_{M}) = R(0 \rightarrow t_{to},P_{A} \rightarrow P_{F}) \times R(t_{from} \rightarrow t_{to},P_{F} \rightarrow P_{M}) \times R(0 \rightarrow t_{from},P_{F} \rightarrow P_{M})
 
-Using the approach in :ref:`pygplates_foundations_composing_finite_rotations` we can write the transformation of a
+Using the approach in :ref:`pygplates_primer_composing_finite_rotations` we can write the transformation of a
 present day geometry on moving plate :math:`P_{M}` to time :math:`t_{to}` via the stage pole reference frame:
 
 .. math::

@@ -3,7 +3,7 @@
 Hierarchy of plate rotations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-This example traverses the :ref:`plate rotation hierarchy<pygplates_foundations_plate_reconstruction_hierarchy>`
+This example traverses the :ref:`plate rotation hierarchy<pygplates_primer_plate_reconstruction_hierarchy>`
 (for a particular reconstruction time) and prints the equivalent and relative total rotations at each plate.
 
 The output of this example is similar to the output of the ``Total Reconstruction Poles`` dialog
@@ -77,7 +77,7 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
 
     rotation_model = pygplates.RotationModel('rotations.rot')
 
-| The :ref:`plate rotation hierarchy<pygplates_foundations_plate_reconstruction_hierarchy>`
+| The :ref:`plate rotation hierarchy<pygplates_primer_plate_reconstruction_hierarchy>`
   is encapsulated in a :class:`reconstruction tree<pygplates.ReconstructionTree>` which we obtain
   from the :class:`rotation model<pygplates.RotationModel>` using
   :meth:`pygplates.RotationModel.get_reconstruction_tree` and the desired reconstruction time.
@@ -88,7 +88,7 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
 
     reconstruction_tree = rotation_model.get_reconstruction_tree(reconstruction_time)
 
-| An edge in a :ref:`plate rotation hierarchy<pygplates_foundations_plate_reconstruction_hierarchy>`
+| An edge in a :ref:`plate rotation hierarchy<pygplates_primer_plate_reconstruction_hierarchy>`
   represents the rotation of a moving plate relative to a fixed plate. These edges are arranged in
   a tree-like structure (hierarchy) rooted at the anchor plate (usually plate ID zero).
 | The anchor plate edges represent those edges emanating from the anchor plate and are obtained
@@ -119,8 +119,8 @@ The rotations are loaded from a rotation file into a :class:`pygplates.RotationM
     def traverse_sub_tree(edge, depth):
         ...
 
-| Get the :ref:`relative<pygplates_foundations_relative_total_rotation>` and
-  :ref:`equivalent<pygplates_foundations_equivalent_total_rotation>` total rotations of an edge
+| Get the :ref:`relative<pygplates_primer_relative_total_rotation>` and
+  :ref:`equivalent<pygplates_primer_equivalent_total_rotation>` total rotations of an edge
   in the reconstruction tree using :meth:`pygplates.ReconstructionTreeEdge.get_relative_total_rotation`
   and :meth:`pygplates.ReconstructionTreeEdge.get_equivalent_total_rotation`.
 | The relative rotation is the total rotation of the edge's moving plate relative to its fixed plate.

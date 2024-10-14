@@ -179,32 +179,32 @@ export_resolve_topology_parameters()
 			"\n"
 			"  :param enable_strain_rate_clamping: Whether to enable clamping of strain rate. Defaults to ``"
 			<< (GPlatesApi::ResolveTopologyParameters::DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_strain_rate_clamping().enable_clamping ? "True" : "False")
-			<< "``. See :attr:`enable_strain_rate_clamping` for more details. \n"
+			<< "``. See :attr:`enable_strain_rate_clamping`. \n"
 			"  :type enable_strain_rate_clamping: bool\n"
 			"  :param max_clamped_strain_rate: Maximum :meth:`total strain rate <StrainRate.get_total_strain_rate>` (in units of :math:`second^{-1}`). "
 			"This is only used if *enable_strain_rate_clamping* is true. Default value is ``"
 			<< GPlatesApi::ResolveTopologyParameters::DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_strain_rate_clamping().max_total_strain_rate
-			<< "`` :math:`second^{-1}`. See :attr:`max_clamped_strain_rate` for more details.\n"
+			<< "`` :math:`second^{-1}`. See :attr:`max_clamped_strain_rate`.\n"
 			"  :type max_clamped_strain_rate: float\n"
 			"  :param strain_rate_smoothing: How deformation strain rates are smoothed (if at all). "
 			"This can be no smoothing, barycentric smoothing or natural neighbour smoothing. Default value is ``"
-			<< default_strain_rate_smoothing_string << "``. See :attr:`strain_rate_smoothing` for more details.\n"
+			<< default_strain_rate_smoothing_string << "``. See :attr:`strain_rate_smoothing`.\n"
 			"  :type strain_rate_smoothing: ``pygplates.StrainRateSmoothing.none``, "
 			"``pygplates.StrainRateSmoothing.barycentric`` or ``pygplates.StrainRateSmoothing.natural_neighbour``\n"
-			"  :param rift_exponential_stretching_constant: Controls exponential variation of stretching across a rift profile in a network triangulation. "
+			"  :param rift_exponential_stretching_constant: Controls the curvature of the exponential variation of stretching across a rift profile in a network triangulation. "
 			"Default value is ``"
 			<< GPlatesApi::ResolveTopologyParameters::DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_rift_params().exponential_stretching_constant
-			<< "``. See :attr:`rift_exponential_stretching_constant` for more details.\n"
+			<< "``. See :attr:`rift_exponential_stretching_constant`.\n"
 			"  :type rift_exponential_stretching_constant: float\n"
 			"  :param rift_strain_rate_resolution: Controls how accurately the strain rate curve (across rift profile) matches exponential curve (in units of :math:`second^{-1}`). "
 			"Default value is ``"
 			<< GPlatesApi::ResolveTopologyParameters::DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_rift_params().strain_rate_resolution
-			<< "``. See :attr:`rift_strain_rate_resolution` for more details.\n"
+			<< "``. See :attr:`rift_strain_rate_resolution`.\n"
 			"  :type rift_strain_rate_resolution: float\n"
 			"  :param rift_edge_length_threshold_degrees: Rift edges in network triangulation shorter than this length (in degrees) will not be further sub-divided. "
 			"Default value is ``"
 			<< GPlatesApi::ResolveTopologyParameters::DEFAULT_TOPOLOGY_NETWORK_PARAMS.get_rift_params().edge_length_threshold_degrees
-			<< "``. See :attr:`rift_edge_length_threshold_degrees` for more details.\n"
+			<< "``. See :attr:`rift_edge_length_threshold_degrees`.\n"
 			"  :type rift_edge_length_threshold_degrees: float\n"
 			"\n"
 			"  To enable strain rate clamping for a topological model to avoid excessive crustal stretching factors:\n"
@@ -229,11 +229,11 @@ export_resolve_topology_parameters()
 					"\n"
 					"These parameters affect how topologies are resolved (when using :class:`TopologicalModel`, :class:`TopologicalSnapshot` and :func:`resolve_topologies`).\n"
 					"\n"
-					"Currently these parameters only affect :class:`resolved topological networks <ResolvedTopologicalNetwork>`. These parameters include *strain rate clamping* "
-					"(see :attr:`max_clamped_strain_rate`), *strain rate smoothing* (see :attr:`strain_rate_smoothing`) and *rift exponential strain rate profiles* "
-					"(see :attr:`rift_exponential_stretching_constant`).\n"
+					"Currently these parameters only affect :class:`resolved topological networks <ResolvedTopologicalNetwork>`. These parameters include:\n"
 					"\n"
-					""
+					"* *strain rate clamping* (see :attr:`enable_strain_rate_clamping` and :attr:`max_clamped_strain_rate`)\n"
+					"* *strain rate smoothing* (see :attr:`strain_rate_smoothing`)\n"
+					"* *rift exponential strain rate profiles* (see :attr:`rift_exponential_stretching_constant`, :attr:`rift_strain_rate_resolution` and :attr:`rift_edge_length_threshold_degrees`).\n"
 					"\n"
 					"ResolveTopologyParameters are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).\n"
 					"\n"
@@ -279,11 +279,9 @@ export_resolve_topology_parameters()
 				"\n"
 				"  :type: bool\n"
 				"\n"
-				"  This is useful to avoid excessive extension/compression in deforming networks "
-				"(depending on how the deforming networks were built).\n"
+				"  This is useful to avoid excessive extension/compression in deforming networks (depending on how the deforming networks were built).\n"
 				"\n"
-				"  .. note:: This affects strain *rate* queries (such as :meth:`ReconstructedGeometryTimeSpan.get_strain_rates`). "
-				"It also affects *strain* queries (such as :meth:`ReconstructedGeometryTimeSpan.get_strains`) since strain is :meth:`accumulated <Strain.accumulate>` from strain rate.\n")
+				"  .. seealso:: :ref:`pygplates_deformation_strain_rate_clamping`.\n")
 		.add_property("max_clamped_strain_rate",
 				&GPlatesApi::ResolveTopologyParameters::get_max_clamped_strain_rate,
 				"The maximum value that the :meth:`total strain rate <StrainRate.get_total_strain_rate>` is clamped to (in units of :math:`second^{-1}`).\n"
@@ -292,16 +290,7 @@ export_resolve_topology_parameters()
 				"\n"
 				"  .. note:: This only applies if :attr:`enable_strain_rate_clamping` is ``True``.\n"
 				"\n"
-				"  Each triangle in a :class:`deforming network's <ResolvedTopologicalNetwork>` triangulation is assigned a :class:`strain rate <StrainRate>` that is constant across the triangle. "
-				"Then each vertex in the entire triangulation is assigned a strain rate that is an area-weighted average of the strain rates from triangles incident to the vertex. "
-				"So it is the total strain rate of each triangle that is clamped which in turn affects each vertex in the triangulation, and also affects strain rate queries "
-				"(as described in :attr:`strain_rate_smoothing`).\n"
-				"\n"
-				"  The *total* strain rate includes both the normal and shear components of deformation. "
-				"And clamping the total strain rate also limits derived quantities such as crustal thinning and tectonic subsidence.\n"
-				"\n"
-				"  .. note:: This clamping affects strain *rate* queries (such as :meth:`ReconstructedGeometryTimeSpan.get_strain_rates`). "
-				"It also affects *strain* queries (such as :meth:`ReconstructedGeometryTimeSpan.get_strains`) since strain is :meth:`accumulated <Strain.accumulate>` from strain rate.\n")
+				"  .. seealso:: :ref:`pygplates_deformation_strain_rate_clamping`.\n")
 		.add_property("strain_rate_smoothing",
 				&GPlatesApi::ResolveTopologyParameters::get_strain_rate_smoothing,
 				"How deformation strain rates are smoothed (if at all) when queried at arbitrary locations (in deforming network).\n"
@@ -310,44 +299,15 @@ export_resolve_topology_parameters()
 				"\n"
 				"  This can be no smoothing, barycentric smoothing or natural neighbour smoothing.\n"
 				"\n"
-				"  Each triangle in a :class:`deforming network's <ResolvedTopologicalNetwork>` triangulation is assigned a :class:`strain rate <StrainRate>` that is constant across the triangle. "
-				"Then each vertex in the entire triangulation is assigned a strain rate that is an area-weighted average of the strain rates from triangles incident to the vertex. "
-				"Finally, the strain rate that is queried at an *arbitrary* location (within the deforming network) is either assigned the strain rate of the triangle containing that location "
-				"(``pygplates.StrainRateSmoothing.none``), or calculated by interpolating the strain rates of nearby vertices (``pygplates.StrainRateSmoothing.barycentric`` and "
-				"``pygplates.StrainRateSmoothing.natural_neighbour``). Barycentric interpolation involves only the 3 vertices of the containing triangle, whereas natural neighbour "
-				"interpolation involves more neighbouring vertices.\n"
-				"\n"
-				"  .. note:: This affects strain *rate* queries (such as :meth:`ReconstructedGeometryTimeSpan.get_strain_rates`). "
-				"It also affects *strain* queries (such as :meth:`ReconstructedGeometryTimeSpan.get_strains`) since strain is :meth:`accumulated <Strain.accumulate>` from strain rate.\n")
+				"  .. seealso:: :ref:`pygplates_deformation_strain_rate_smoothing`.\n")
 		//! An edge should not be subdivided if it is shorter than this length.
 		.add_property("rift_exponential_stretching_constant",
 				&GPlatesApi::ResolveTopologyParameters::get_rift_exponential_stretching_constant,
-				"Controls exponential variation of stretching across a rift profile in a network triangulation.\n"
+				"Controls the curvature of the exponential variation of stretching across a rift profile in a network triangulation.\n"
 				"\n"
 				"  :type: float\n"
 				"\n"
-				"  A typical deforming network that models one side of a rift has a single row of triangles between the un-stretched side and the rift axis. "
-				"As a result, the strain rate at any location within the rift will essentially be *constant*, even when the :attr:`strain rates are smoothed <strain_rate_smoothing>` "
-				"(because triangulation vertices, along both the un-stretched side and the rift axis, will effectively end up with the strain rate of the triangles, "
-				"which is constant across each triangle - see :attr:`strain_rate_smoothing`).\n"
-				"\n"
-				"  To avoid the problem of *constant* stretching across the rift, *exponential* stretching can be activated by adding a ``gpml:riftLeftPlate``/``gpml:riftRightPlate`` "
-				"pair of conjugate plate ID properties to the deforming network :class:`Feature`. The presence of these plate IDs triggers the generation of an exponential "
-				"strain rate rift profile, wherein these rift parameters (like *rift_exponential_stretching_constant*) can take effect. Internally the exponential strain rate profile "
-				"is implemented by automatically adding more points to the interior of a deforming network and distributing the velocities at these points such that the strain rate varies "
-				"exponentially (along the stretching direction) from the un-stretched side of the rift towards the rift axis. Note that this works reasonably well for regular rifts "
-				"(like AFR-SAM), but not as well for oblique rifts (like AUS-ANT).\n"
-				"\n"
-				"  The strain rate in the rift stretching direction varies exponentially from the un-stretched side of the rift towards the rift axis. "
-				"The spatial variation in strain rate is:\n"
-				"\n"
-				"  .. math::\n"
-				"\n"
-				"     strain\\_rate(x) = strain\\_rate \\times e^{C x} \\frac{C}{e^C - 1}\n"
-				"\n"
-				"  ...where :math:`strain\\_rate` is the un-subdivided, original (constant) strain rate, :math:`C` is the *exponential stretching constant* and :math:`x = 0` "
-				"at the un-stretched side and :math:`x = 1` at the stretched point. Therefore :math:`strain\\_rate(0) < strain\\_rate < strain\\_rate(1)`. For example, "
-				"when :math:`C = 1.0` then :math:`strain\\_rate(0) = 0.58 \\times strain\\_rate` and :math:`strain\\_rate(1) = 1.58 \\times strain\\_rate`.\n")
+				"  .. seealso:: :ref:`pygplates_deformation_exponential_rift_stretching_profile`.\n")
 		//! Default stretching profile is exp(exponential_stretching_constant * x).
 		.add_property("rift_strain_rate_resolution",
 				&GPlatesApi::ResolveTopologyParameters::get_rift_strain_rate_resolution,
@@ -355,10 +315,11 @@ export_resolve_topology_parameters()
 				"\n"
 				"  :type: float\n"
 				"\n"
-				"  Rift edges in the network triangulation are sub-divided until the strain rate matches the exponential curve (within this tolerance). "
-				"See :attr:`rift_exponential_stretching_constant` for a description of exponential rift stretching.\n"
+				"  Rift edges in the network triangulation are sub-divided until the strain rate matches the exponential curve (within this tolerance).\n"
 				"\n"
-				"  .. Note:: Sub-division is also limited by :attr:`rift_edge_length_threshold_degrees`.\n")
+				"  .. Note:: Sub-division is also limited by :attr:`rift_edge_length_threshold_degrees`.\n"
+				"\n"
+				"  .. seealso:: :ref:`pygplates_deformation_exponential_rift_stretching_profile`.\n")
 		//! Adjacent strain rates samples should resolved within this tolerance (in units 1/sec).
 		.add_property("rift_edge_length_threshold_degrees",
 				&GPlatesApi::ResolveTopologyParameters::get_rift_edge_length_threshold_degrees,
@@ -366,10 +327,11 @@ export_resolve_topology_parameters()
 				"\n"
 				"  :type: float\n"
 				"\n"
-				"  Rifts edges in network triangulation are sub-divided to fit an exponential strain rate profile in the rift stretching direction. "
-				"See :attr:`rift_exponential_stretching_constant` for a description of exponential rift stretching.\n"
+				"  Rifts edges in network triangulation are sub-divided to fit an exponential strain rate profile in the rift stretching direction.\n"
 				"\n"
-				"  .. note:: Sub-division is also limited by :attr:`rift_strain_rate_resolution`.\n")
+				"  .. note:: Sub-division is also limited by :attr:`rift_strain_rate_resolution`.\n"
+				"\n"
+				"  .. seealso:: :ref:`pygplates_deformation_exponential_rift_stretching_profile`.\n")
 		// Due to the numerical tolerance in comparisons we cannot make hashable.
 		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
 		.def(GPlatesApi::NoHashDefVisitor(false, true))

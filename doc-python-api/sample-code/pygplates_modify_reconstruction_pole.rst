@@ -239,7 +239,7 @@ The filenames of one or more rotation files. We'll be writing modifications back
 
 | Next we iterate over all the rotation features to find those whose moving plate ID matches the plate ID
   of our point feature. This is because we only want to our rotation adjustment to affect the plate on
-  which our point lies (and all :ref:`child plates<pygplates_foundations_plate_reconstruction_hierarchy>`
+  which our point lies (and all :ref:`child plates<pygplates_primer_plate_reconstruction_hierarchy>`
   at the reconstruction time).
 | We obtain the moving/fixed plate IDs and the time-varying total reconstruction poles from the rotation feature
   using :meth:`pygplates.Feature.get_total_reconstruction_pole`.
@@ -299,14 +299,14 @@ The filenames of one or more rotation files. We'll be writing modifications back
 Now that we have the original rotation from the rotation feature we need to calculate a rotation adjustment such that the new rotation
 will result in the *present day position* reconstructing to the *desired reconstructed position*.
 
-The reconstruction of the present day point position is given by the equation for the :ref:`pygplates_foundations_equivalent_total_rotation`
+The reconstruction of the present day point position is given by the equation for the :ref:`pygplates_primer_equivalent_total_rotation`
 which shows the equivalent total rotation of  moving plate :math:`P_{M}` (relative to anchored plate :math:`P_{A}`) at time :math:`t` (relative to present day) is:
 
 .. math::
 
    \text{reconstructed_position} = R(0 \rightarrow t,P_{A} \rightarrow P_{M}) \times \text{present_day_position}
 
-Using the approach in :ref:`pygplates_foundations_composing_finite_rotations` we write the *desired reconstructed position*
+Using the approach in :ref:`pygplates_primer_composing_finite_rotations` we write the *desired reconstructed position*
 in terms of the *actual reconstructed position*:
 
 .. math::
@@ -328,7 +328,7 @@ The composed rotation from *present day position* to *desired reconstructed posi
 | However we want to adjust a total rotation pole in a rotation feature. But a rotation feature represents a *relative* rotation between a moving and fixed plate pair.
 | So we need to rewrite the adjusted *equivalent* rotation (which is relative to the anchored plate) as an adjusted *relative* rotation (relative to the fixed plate
   :math:`P_{F}` of the rotation feature/pole) using the result :math:`R(P_{A} \rightarrow P_{M}) = R(P_{A} \rightarrow P_{F}) \times R(P_{F} \rightarrow P_{M})`
-  from :ref:`pygplates_foundations_plate_circuit_paths`:
+  from :ref:`pygplates_primer_plate_circuit_paths`:
 
 .. math::
 
