@@ -1502,9 +1502,17 @@ namespace GPlatesApi
 	 */
 	GPlatesAppLogic::ResolvedTopologicalNetwork::boundary_polygon_ptr_type
 	resolved_topological_network_get_resolved_boundary(
-			const GPlatesAppLogic::ResolvedTopologicalNetwork &resolved_topological_network)
+			const GPlatesAppLogic::ResolvedTopologicalNetwork &resolved_topological_network,
+			bool include_rigid_blocks_as_interior_holes)
 	{
-		return resolved_topological_network.boundary_polygon();
+		if (include_rigid_blocks_as_interior_holes)
+		{
+			return resolved_topological_network.boundary_polygon_with_rigid_block_holes();
+		}
+		else
+		{
+			return resolved_topological_network.boundary_polygon();
+		}
 	}
 
 	bp::list
@@ -1523,6 +1531,20 @@ namespace GPlatesApi
 		}
 
 		return boundary_sub_segments_list;
+	}
+
+	bp::list
+	resolved_topological_network_get_rigid_blocks(
+			const GPlatesAppLogic::ResolvedTopologicalNetwork &resolved_topological_network)
+	{
+		bp::list rigid_blocks_list;
+
+		for (const auto &rigid_block : resolved_topological_network.get_triangulation_network().get_rigid_blocks())
+		{
+			rigid_blocks_list.append(rigid_block.get_reconstructed_feature_geometry());
+		}
+
+		return rigid_blocks_list;
 	}
 
 	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>::ReconstructionGeometryTypeWrapper(
@@ -1638,14 +1660,27 @@ export_resolved_topological_network()
 				"  This is the :class:`Property` that the :meth:`get_resolved_boundary` is obtained from.\n")
 		.def("get_resolved_boundary",
 				&GPlatesApi::resolved_topological_network_get_resolved_boundary,
-				"get_resolved_boundary()\n"
+				(bp::arg("include_rigid_blocks_as_interior_holes") = false),
+				"get_resolved_boundary([include_rigid_blocks_as_interior_holes=False])\n"
 				"  Returns the resolved boundary of this network.\n"
 				"\n"
-				"  :rtype: :class:`PolygonOnSphere`\n")
+				"  :param include_rigid_blocks_as_interior_holes: Whether include :meth:`interior rigid blocks <get_rigid_blocks>` (if any) as "
+				":meth:`interior rings <PolygonOnSphere.get_interior_ring_points>` in the returned boundary polygon. "
+				"Defaults to ``False``.\n"
+				"  :type include_rigid_blocks_as_interior_holes: bool\n"
+				"\n"
+				"  :rtype: :class:`PolygonOnSphere`\n"
+				"\n"
+				"  .. versionchanged:: 0.49\n"
+				"     Added *include_rigid_blocks_as_interior_holes* argument.\n")
 		.def("get_resolved_geometry",
 				&GPlatesApi::resolved_topological_network_get_resolved_boundary,
-				"get_resolved_geometry()\n"
-				"  Same as :meth:`get_resolved_boundary`.\n")
+				(bp::arg("include_rigid_blocks_as_interior_holes") = false),
+				"get_resolved_geometry([include_rigid_blocks_as_interior_holes=False])\n"
+				"  Same as :meth:`get_resolved_boundary`.\n"
+				"\n"
+				"  .. versionchanged:: 0.49\n"
+				"     Added *include_rigid_blocks_as_interior_holes* argument.\n")
 		.def("get_resolved_feature",
 				&GPlatesApi::resolved_topological_network_get_resolved_feature,
 				"get_resolved_feature()\n"
@@ -1706,6 +1741,26 @@ export_resolved_topological_network()
 				"            resolved_boundary_points.extend(sub_segment_points)\n"
 				"\n"
 				"        return pygplates.PolygonOnSphere(resolved_boundary_points)\n")
+		.def("get_rigid_blocks",
+				&GPlatesApi::resolved_topological_network_get_rigid_blocks,
+				"get_rigid_blocks()\n"
+				"Returns the interior rigid blocks (if any) inside this resolved topological network.\n"
+				"\n"
+				"  :rtype: list of :class:`ReconstructedFeatureGeometry`\n"
+				"\n"
+				"  Each rigid block represents a rigid interior island within the deforming region. And as such, each rigid block will have a "
+				":meth:`reconstructed geometry <ReconstructedFeatureGeometry.get_reconstructed_geometry>` that is a :class:`polygon <PolygonOnSphere>`.\n"
+				"\n"
+				"  To get the plate ID and boundary polygon of each interior rigid block (if any):\n"
+				"  ::\n"
+				"\n"
+				"    rigid_block_plate_ids = []\n"
+				"    rigid_block_boundaries = []\n"
+				"    for rigid_block in resolved_topological_network.get_rigid_blocks():\n"
+				"        rigid_block_plate_ids.append(rigid_block.get_feature().get_reconstruction_plate_id())\n"
+				"        rigid_block_boundaries.append(rigid_block.get_reconstructed_geometry())\n"
+				"\n"
+				"  .. versionadded:: 0.49\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

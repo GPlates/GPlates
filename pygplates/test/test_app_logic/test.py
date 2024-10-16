@@ -2885,6 +2885,20 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
             
             self.assertTrue(snapshot.get_anchor_plate_id() == 0)
             self.assertTrue(snapshot.get_rotation_model())
+
+    def test_resolved_topological_networks(self):
+        snapshot = pygplates.TopologicalSnapshot(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10))
+        resolved_topological_networks = snapshot.get_resolved_topologies(pygplates.ResolveTopologyType.network)
+        self.assertTrue(len(resolved_topological_networks) > 0)
+        for resolved_topological_network in resolved_topological_networks:
+            boundary_with_holes = resolved_topological_network.get_resolved_boundary(True)
+            self.assertTrue(boundary_with_holes == resolved_topological_network.get_resolved_geometry(include_rigid_blocks_as_interior_holes=True))
+
+            interior_rigid_blocks = resolved_topological_network.get_rigid_blocks()
+            self.assertTrue(len(interior_rigid_blocks) == 0)
     
     def test_resolve_topology_parameters(self):
         default_resolve_topology_parameters=pygplates.ResolveTopologyParameters()
