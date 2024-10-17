@@ -740,7 +740,7 @@ export_reconstruction_tree()
 					"Represents the plate-reconstruction hierarchy of total reconstruction poles at "
 					"an instant in geological time.\n"
 					"\n"
-					"See :ref:`pygplates_primer_plate_reconstruction_hierarchy`.\n"
+					"See :ref:`pygplates_primer_plate_reconstruction_hierarchy` in the *Primer* documentation.\n"
 					"\n"
 					"Total rotations are handled by the methods :meth:`get_equivalent_total_rotation` and "
 					":meth:`get_relative_total_rotation`.\n"
@@ -1123,8 +1123,8 @@ export_reconstruction_tree()
 	bp::class_<
 			GPlatesApi::ReconstructionTreeEdge>(
 					"ReconstructionTreeEdge",
-					"A reconstruction tree edge represents a moving/fixed plate pair in the graph of "
-					"the plate-reconstruction hierarchy. See :ref:`pygplates_primer_plate_reconstruction_hierarchy`.\n",
+					"A reconstruction tree edge represents a moving/fixed plate pair in the graph of the plate-reconstruction hierarchy. "
+					"See :ref:`pygplates_primer_plate_reconstruction_hierarchy` in the *Primer* documentation.\n",
 					bp::no_init)
 		.def("get_fixed_plate_id",
 				&GPlatesApi::ReconstructionTreeEdge::get_fixed_plate_id,

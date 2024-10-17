@@ -4510,6 +4510,8 @@ export_feature()
 				"        rift_parameters=(201, 701, None, 1e-16))\n"
 				"    AFR_rift_feature.set_reconstruction_plate_id(701)\n"
 				"\n"
+				"  .. seealso:: :ref:`pygplates_primer_deformation_exponential_rift_stretching_profile` in the *Primer* documentation."
+				"\n"
 				"  .. seealso:: :meth:`create_topological_feature`\n"
 				"\n"
 				"  .. versionadded:: 0.49\n")

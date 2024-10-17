@@ -215,6 +215,10 @@ export_resolve_topology_parameters()
 			"        rotation_filenames,\n"
 			"        default_resolve_topology_parameters = pygplates.ResolveTopologyParameters(\n"
 			"            enable_strain_rate_clamping = True))\n"
+			"\n"
+			"  .. versionchanged:: 0.49\n"
+			"     Added arguments *strain_rate_smoothing*, *rift_exponential_stretching_constant*, "
+			"*rift_strain_rate_resolution* and *rift_edge_length_threshold*\n"
 			;
 
 	//
@@ -245,8 +249,7 @@ export_resolve_topology_parameters()
 					"   Added pickle support.\n"
 					"\n"
 					".. versionchanged:: 0.49\n"
-					"   Added parameters *strain_rate_smoothing*, *rift_exponential_stretching_constant*, "
-					"*rift_strain_rate_resolution* and *rift_edge_length_threshold*\n",
+					"   Added a class attribute for each parameter.\n",
 					// We need this (even though "__init__" is defined) since
 					// there is no publicly-accessible default constructor...
 					bp::no_init)
@@ -281,7 +284,9 @@ export_resolve_topology_parameters()
 				"\n"
 				"  This is useful to avoid excessive extension/compression in deforming networks (depending on how the deforming networks were built).\n"
 				"\n"
-				"  .. seealso:: :ref:`pygplates_deformation_strain_rate_clamping`.\n")
+				"  .. seealso:: :ref:`pygplates_primer_deformation_strain_rate_clamping` in the *Primer* documentation.\n"
+				"\n"
+				"  .. versionadded:: 0.49\n")
 		.add_property("max_clamped_strain_rate",
 				&GPlatesApi::ResolveTopologyParameters::get_max_clamped_strain_rate,
 				"The maximum value that the :meth:`total strain rate <StrainRate.get_total_strain_rate>` is clamped to (in units of :math:`second^{-1}`).\n"
@@ -290,7 +295,9 @@ export_resolve_topology_parameters()
 				"\n"
 				"  .. note:: This only applies if :attr:`enable_strain_rate_clamping` is ``True``.\n"
 				"\n"
-				"  .. seealso:: :ref:`pygplates_deformation_strain_rate_clamping`.\n")
+				"  .. seealso:: :ref:`pygplates_primer_deformation_strain_rate_clamping` in the *Primer* documentation.\n"
+				"\n"
+				"  .. versionadded:: 0.49\n")
 		.add_property("strain_rate_smoothing",
 				&GPlatesApi::ResolveTopologyParameters::get_strain_rate_smoothing,
 				"How deformation strain rates are smoothed (if at all) when queried at arbitrary locations (in deforming network).\n"
@@ -299,7 +306,9 @@ export_resolve_topology_parameters()
 				"\n"
 				"  This can be no smoothing, barycentric smoothing or natural neighbour smoothing.\n"
 				"\n"
-				"  .. seealso:: :ref:`pygplates_deformation_strain_rate_smoothing`.\n")
+				"  .. seealso:: :ref:`pygplates_primer_deformation_strain_rate_smoothing` in the *Primer* documentation.\n"
+				"\n"
+				"  .. versionadded:: 0.49\n")
 		//! An edge should not be subdivided if it is shorter than this length.
 		.add_property("rift_exponential_stretching_constant",
 				&GPlatesApi::ResolveTopologyParameters::get_rift_exponential_stretching_constant,
@@ -307,7 +316,9 @@ export_resolve_topology_parameters()
 				"\n"
 				"  :type: float\n"
 				"\n"
-				"  .. seealso:: :ref:`pygplates_deformation_exponential_rift_stretching_profile`.\n")
+				"  .. seealso:: :ref:`pygplates_primer_deformation_exponential_rift_stretching_profile` in the *Primer* documentation.\n"
+				"\n"
+				"  .. versionadded:: 0.49\n")
 		//! Default stretching profile is exp(exponential_stretching_constant * x).
 		.add_property("rift_strain_rate_resolution",
 				&GPlatesApi::ResolveTopologyParameters::get_rift_strain_rate_resolution,
@@ -319,7 +330,9 @@ export_resolve_topology_parameters()
 				"\n"
 				"  .. Note:: Sub-division is also limited by :attr:`rift_edge_length_threshold_degrees`.\n"
 				"\n"
-				"  .. seealso:: :ref:`pygplates_deformation_exponential_rift_stretching_profile`.\n")
+				"  .. seealso:: :ref:`pygplates_primer_deformation_exponential_rift_stretching_profile` in the *Primer* documentation.\n"
+				"\n"
+				"  .. versionadded:: 0.49\n")
 		//! Adjacent strain rates samples should resolved within this tolerance (in units 1/sec).
 		.add_property("rift_edge_length_threshold_degrees",
 				&GPlatesApi::ResolveTopologyParameters::get_rift_edge_length_threshold_degrees,
@@ -331,7 +344,9 @@ export_resolve_topology_parameters()
 				"\n"
 				"  .. note:: Sub-division is also limited by :attr:`rift_strain_rate_resolution`.\n"
 				"\n"
-				"  .. seealso:: :ref:`pygplates_deformation_exponential_rift_stretching_profile`.\n")
+				"  .. seealso:: :ref:`pygplates_primer_deformation_exponential_rift_stretching_profile` in the *Primer* documentation.\n"
+				"\n"
+				"  .. versionadded:: 0.49\n")
 		// Due to the numerical tolerance in comparisons we cannot make hashable.
 		// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
 		.def(GPlatesApi::NoHashDefVisitor(false, true))

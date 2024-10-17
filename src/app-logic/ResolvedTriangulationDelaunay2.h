@@ -338,35 +338,39 @@ namespace GPlatesAppLogic
 			/**
 			 * Calculates the velocity vector of this vertex.
 			 *
-			 * Note: Velocity units are cms/yr (calculated using GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS).
+			 * Note: Velocity units default to cms/yr (calculated using GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS).
 			 */
 			GPlatesMaths::Vector3D
 			calc_velocity_vector(
 					const double &velocity_delta_time = 1.0,
-					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T) const
+					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+					const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS) const
 			{
 				return get_shared_source_info().get_velocity_vector(
 						get_point_on_sphere(),
 						get_reconstruction_time(),
 						velocity_delta_time,
 						velocity_delta_time_type,
-						VelocityUnits::CMS_PER_YR,
-						GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
+						velocity_units,
+						earth_radius_in_kms);
 			}
 
 			/**
 			 * Calculates the velocity colat / lon of this vertex.
 			 *
-			 * Note: Velocity units are cms/yr (calculated using GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS).
+			 * Note: Velocity units default to cms/yr (calculated using GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS).
 			 */
 			GPlatesMaths::VectorColatitudeLongitude
 			calc_velocity_colat_lon(
 					const double &velocity_delta_time = 1.0,
-					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T) const
+					VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+					VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
+					const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS) const
 			{
 				return GPlatesMaths::convert_vector_from_xyz_to_colat_lon(
 						get_point_on_sphere(),
-						calc_velocity_vector(velocity_delta_time, velocity_delta_time_type));
+						calc_velocity_vector(velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms));
 			}
 
 

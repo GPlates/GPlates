@@ -2742,7 +2742,7 @@ class TopologicalModelTestCase(unittest.TestCase):
         self.assertTrue(len(strains) == 3)
         
         # Velocities.
-        velocities = reconstructed_multipoint_time_span.get_velocities(20, 1.0, pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t, pygplates.VelocityUnits.cms_per_yr)
+        velocities = reconstructed_multipoint_time_span.get_velocities(20)
         self.assertTrue(len(velocities) == 3)
         self.assertTrue(velocities[0] == pygplates.Vector3D.zero)
         self.assertTrue(velocities[1] == pygplates.Vector3D.zero)
@@ -2892,13 +2892,35 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
             os.path.join(FIXTURES, 'rotations.rot'),
             pygplates.GeoTimeInstant(10))
         resolved_topological_networks = snapshot.get_resolved_topologies(pygplates.ResolveTopologyType.network)
-        self.assertTrue(len(resolved_topological_networks) > 0)
-        for resolved_topological_network in resolved_topological_networks:
-            boundary_with_holes = resolved_topological_network.get_resolved_boundary(True)
-            self.assertTrue(boundary_with_holes == resolved_topological_network.get_resolved_geometry(include_rigid_blocks_as_interior_holes=True))
+        self.assertTrue(len(resolved_topological_networks) == 1)
+        resolved_topological_network = resolved_topological_networks[0]
 
-            interior_rigid_blocks = resolved_topological_network.get_rigid_blocks()
-            self.assertTrue(len(interior_rigid_blocks) == 0)
+        # Test interior rigid blocks.
+        boundary_with_holes = resolved_topological_network.get_resolved_boundary(True)
+        self.assertTrue(boundary_with_holes == resolved_topological_network.get_resolved_geometry(include_rigid_blocks_as_interior_holes=True))
+        interior_rigid_blocks = resolved_topological_network.get_rigid_blocks()
+        self.assertTrue(len(interior_rigid_blocks) == 0)
+
+        # Test deforming triangulation.
+        deforming_triangulation = resolved_topological_network.get_deforming_triangulation()
+        triangles = deforming_triangulation.get_triangles()
+        self.assertTrue(len(triangles) == 13)
+        vertices = deforming_triangulation.get_vertices()
+        self.assertTrue(len(vertices) == 15)
+        for triangle_index, triangle in enumerate(triangles):
+            self.assertTrue(triangle == triangles[triangle_index])
+            for index in range(3):
+                self.assertTrue(triangle.get_vertex_index(index) < len(vertices))
+            self.assertTrue(triangle.strain_rate == pygplates.StrainRate.zero)
+        for vertex_index, vertex in enumerate(vertices):
+            self.assertTrue(vertex == vertices[vertex_index])
+            vertex.position  # just access
+            self.assertTrue(vertex.velocity == pygplates.Vector3D.zero)
+            self.assertTrue(vertex.strain_rate == pygplates.StrainRate.zero)
+        # Test with parameters.
+        deforming_triangulation = resolved_topological_network.get_deforming_triangulation(
+            velocity_delta_time=1.0, velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t,
+            velocity_units=pygplates.VelocityUnits.kms_per_my, earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms)
     
     def test_resolve_topology_parameters(self):
         default_resolve_topology_parameters=pygplates.ResolveTopologyParameters()

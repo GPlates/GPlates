@@ -657,7 +657,11 @@ export_property_name()
 			"A *PropertyName* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
 			"\n"
 			".. versionchanged:: 0.42\n"
-			"   Added pickle support.\n",
+			"   Added pickle support.\n"
+			"\n"
+			".. versionchanged:: 0.49\n"
+			"   Added attributes *gpml_rift_edgeLength_threshold_degrees*, *gpml_rift_exponential_stretching_constant*, "
+			"*gpml_rift_left_plate*, *gpml_rift_right_plate* and *gpml_rift_strain_rate_resolution_log10*.\n",
 			bp::no_init/*force usage of create functions*/);
 
 	// Some common property names...

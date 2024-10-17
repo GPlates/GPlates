@@ -23,8 +23,11 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 
+#include <map>
 #include <vector>
+#include <boost/cast.hpp>
 #include <boost/foreach.hpp>
+#include <boost/operators.hpp>
 #include <boost/optional.hpp>
 
 #include "PyReconstructionGeometries.h"
@@ -34,6 +37,7 @@
 #include "PythonConverterUtils.h"
 #include "PythonHashDefVisitor.h"
 
+#include "app-logic/DeformationStrainRate.h"
 #include "app-logic/GeometryUtils.h"
 #include "app-logic/ReconstructedFeatureGeometry.h"
 #include "app-logic/ReconstructedFlowline.h"
@@ -41,6 +45,9 @@
 #include "app-logic/ReconstructionGeometry.h"
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionGeometryVisitor.h"
+#include "app-logic/ResolvedTriangulationNetwork.h"
+#include "app-logic/VelocityDeltaTime.h"
+#include "app-logic/VelocityUnits.h"
 
 #include "global/AssertionFailureException.h"
 #include "global/GPlatesAssert.h"
@@ -53,6 +60,8 @@
 #include "model/PropertyName.h"
 #include "model/TopLevelProperty.h"
 
+#include "utils/Earth.h"
+#include "utils/ReferenceCount.h"
 
 namespace bp = boost::python;
 
@@ -1547,6 +1556,310 @@ namespace GPlatesApi
 		return rigid_blocks_list;
 	}
 
+
+	/**
+	 * Information contained in Delaunay triangulation of a deforming network.
+	 */
+	class DeformingTriangulation :
+			public GPlatesUtils::ReferenceCount<DeformingTriangulation>
+	{
+	public:
+
+		typedef GPlatesUtils::non_null_intrusive_ptr<DeformingTriangulation> non_null_ptr_type;
+		typedef GPlatesUtils::non_null_intrusive_ptr<const DeformingTriangulation> non_null_ptr_to_const_type;
+
+
+		class Triangle :
+				public boost::equality_comparable<Triangle>
+		{
+		public:
+			Triangle(
+					unsigned int vertex_index_0,
+					unsigned int vertex_index_1,
+					unsigned int vertex_index_2,
+					const GPlatesAppLogic::DeformationStrainRate &strain_rate_) :
+				strain_rate(strain_rate_)
+			{
+				vertex_indices[0] = vertex_index_0;
+				vertex_indices[1] = vertex_index_1;
+				vertex_indices[2] = vertex_index_2;
+			}
+
+			bool
+			operator==(
+					const Triangle &other) const
+			{
+				return vertex_indices[0] == other.vertex_indices[0] &&
+						vertex_indices[1] == other.vertex_indices[1] &&
+						vertex_indices[2] == other.vertex_indices[2] &&
+						strain_rate == other.strain_rate;
+			}
+
+			unsigned int vertex_indices[3];
+			GPlatesAppLogic::DeformationStrainRate strain_rate;
+		};
+
+		class Vertex :
+				public boost::equality_comparable<Vertex>
+		{
+		public:
+			Vertex(
+					const GPlatesMaths::PointOnSphere &position_,
+					const GPlatesMaths::Vector3D &velocity_,
+					const GPlatesAppLogic::DeformationStrainRate &strain_rate_) :
+				position(position_),
+				velocity(velocity_),
+				strain_rate(strain_rate_)
+			{  }
+
+			bool
+			operator==(
+					const Vertex &other) const
+			{
+				return position == other.position && velocity == other.velocity && strain_rate == other.strain_rate;
+			}
+
+			GPlatesMaths::PointOnSphere position;
+			GPlatesMaths::Vector3D velocity;
+			GPlatesAppLogic::DeformationStrainRate strain_rate;
+		};
+
+
+		/**
+		 * Wrapper class for functions accessing the items (triangles or vertices) of a deforming triangulation.
+		 */
+		template <class ItemType>
+		class ItemsView
+		{
+		public:
+
+			typedef std::vector<ItemType> item_seq_type;
+			typedef typename item_seq_type::const_iterator const_iterator;
+
+			ItemsView(
+					DeformingTriangulation::non_null_ptr_type deforming_triangulation,
+					const item_seq_type &items) :
+				d_deforming_triangulation(deforming_triangulation),
+				d_items(items)
+			{  }
+
+			const_iterator
+			begin() const
+			{
+				return d_items.begin();
+			}
+
+			const_iterator
+			end() const
+			{
+				return d_items.end();
+			}
+
+			unsigned int
+			get_number_of_items() const
+			{
+				return d_items.size();
+			}
+
+			//
+			// Support for "__getitem__".
+			//
+			ItemType
+			get_item(
+					long index) const
+			{
+				if (index < 0)
+				{
+					index += d_items.size();
+				}
+
+				if (index >= boost::numeric_cast<long>(d_items.size()) ||
+					index < 0)
+				{
+					PyErr_SetString(PyExc_IndexError, "Index out of range");
+					bp::throw_error_already_set();
+				}
+
+				return d_items[index];
+			}
+
+		private:
+			DeformingTriangulation::non_null_ptr_type d_deforming_triangulation;  // just to keep items reference valid
+			const item_seq_type &d_items;
+		};
+
+		typedef ItemsView<Triangle> triangles_view_type;
+		typedef ItemsView<Vertex> vertices_view_type;
+
+
+		static
+		non_null_ptr_type
+		create(
+				const GPlatesAppLogic::ResolvedTopologicalNetwork &resolved_topological_network,
+				const double &velocity_delta_time = 1.0,
+				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+				GPlatesAppLogic::VelocityUnits::Value velocity_units = GPlatesAppLogic::VelocityUnits::CMS_PER_YR,
+				const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS)
+		{
+			non_null_ptr_type deforming_triangulation(new DeformingTriangulation());
+
+			const GPlatesAppLogic::ResolvedTriangulation::Delaunay_2 &delaunay_triangulation_2 =
+					resolved_topological_network.get_triangulation_network().get_delaunay_2();
+
+			// Track Delaunay vertices by their location.
+			// Each unique location maps to a unique vertex *index*.
+			point_to_vertex_index_map_type point_to_vertex_index_map;
+
+			// Iterate over the individual faces of the delaunay triangulation.
+			GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_faces_iterator
+					finite_faces_2_iter = delaunay_triangulation_2.finite_faces_begin();
+			GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Finite_faces_iterator
+					finite_faces_2_end = delaunay_triangulation_2.finite_faces_end();
+			for ( ; finite_faces_2_iter != finite_faces_2_end; ++finite_faces_2_iter)
+			{
+				if (!finite_faces_2_iter->is_in_deforming_region())
+				{
+					// Face centroid is outside deforming region.
+					continue;
+				}
+
+				// Add the triangle.
+				const Triangle triangle(
+						deforming_triangulation->add_vertex(finite_faces_2_iter->vertex(0), point_to_vertex_index_map,
+								velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms),
+						deforming_triangulation->add_vertex(finite_faces_2_iter->vertex(1), point_to_vertex_index_map,
+								velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms),
+						deforming_triangulation->add_vertex(finite_faces_2_iter->vertex(2), point_to_vertex_index_map,
+								velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms),
+						finite_faces_2_iter->get_deformation_info().get_strain_rate());
+				deforming_triangulation->d_triangles.push_back(triangle);
+			}
+
+			return deforming_triangulation;
+		}
+
+		const std::vector<Triangle> &
+		get_triangles() const
+		{
+			return d_triangles;
+		}
+
+		const std::vector<Vertex> &
+		get_vertices() const
+		{
+			return d_vertices;
+		}
+
+	private:
+
+		typedef std::map<GPlatesMaths::PointOnSphere, unsigned int, GPlatesMaths::PointOnSphereMapPredicate> point_to_vertex_index_map_type;
+
+		DeformingTriangulation()
+		{  }
+
+		/**
+		 * Adds a new @a Vertex if position of @a delaunay_vertex has not yet been encountered (and returns index),
+		 * otherwise returns index of existing @a Vertex.
+		 */
+		template <typename DelaunayVertexType>
+		unsigned int
+		add_vertex(
+				const DelaunayVertexType &delaunay_vertex,
+				point_to_vertex_index_map_type &point_to_vertex_index_map,
+				const double &velocity_delta_time,
+				GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+				GPlatesAppLogic::VelocityUnits::Value velocity_units,
+				const double &earth_radius_in_kms)
+		{
+			// Attempt to insert the vertex position into the map.
+			std::pair<typename point_to_vertex_index_map_type::iterator, bool> vertex_insert_result =
+					point_to_vertex_index_map.insert(
+							typename point_to_vertex_index_map_type::value_type(
+									delaunay_vertex->get_point_on_sphere(),
+									boost::numeric_cast<unsigned int>(d_vertices.size()/*index*/)));
+			if (vertex_insert_result.second)
+			{
+				// Insertion successful - first time seen vertex - add a new Vertex to the sequence.
+				d_vertices.push_back(
+						Vertex(
+							delaunay_vertex->get_point_on_sphere(),
+							delaunay_vertex->calc_velocity_vector(velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms),
+							delaunay_vertex->get_deformation_info().get_strain_rate()
+						));
+			}
+
+			return vertex_insert_result.first->second;
+		}
+
+		std::vector<Triangle> d_triangles;
+		std::vector<Vertex> d_vertices;
+	};
+
+	unsigned int
+	resolved_topological_network_deforming_triangulation_triangle_get_vertex_index(
+			const DeformingTriangulation::Triangle &triangle,
+			int index)
+	{
+		if (index < 0 || index >= 3)
+		{
+			PyErr_SetString(PyExc_ValueError, "*index* should be in the range [0, 2]");
+			bp::throw_error_already_set();
+		}
+
+		return triangle.vertex_indices[index];
+	}
+
+	// Need this since ".def_readonly(..., Vertex::position, ...)" does not work
+	// (because GPlatesMaths::PointGeometryOnSphere wrapped in bp::class_ instead of GPlatesMaths::PointOnSphere).
+	GPlatesMaths::PointOnSphere
+	resolved_topological_network_deforming_triangulation_vertex_get_position(
+			const DeformingTriangulation::Vertex &vertex)
+	{
+		return vertex.position;
+	}
+
+	DeformingTriangulation::triangles_view_type
+	resolved_topological_network_deforming_triangulation_get_triangles(
+			DeformingTriangulation::non_null_ptr_type deforming_triangulation)
+	{
+		return DeformingTriangulation::triangles_view_type(
+				deforming_triangulation,
+				deforming_triangulation->get_triangles());
+	}
+
+	DeformingTriangulation::vertices_view_type
+	resolved_topological_network_deforming_triangulation_get_vertices(
+			DeformingTriangulation::non_null_ptr_type deforming_triangulation)
+	{
+		return DeformingTriangulation::vertices_view_type(
+				deforming_triangulation,
+				deforming_triangulation->get_vertices());
+	}
+
+	DeformingTriangulation::non_null_ptr_type
+	resolved_topological_network_get_deforming_triangulation(
+			const GPlatesAppLogic::ResolvedTopologicalNetwork &resolved_topological_network,
+			const double &velocity_delta_time,
+			GPlatesAppLogic::VelocityDeltaTime::Type velocity_delta_time_type,
+			GPlatesAppLogic::VelocityUnits::Value velocity_units,
+			const double &earth_radius_in_kms)
+	{
+		// Velocity delta time must be positive.
+		if (velocity_delta_time <= 0)
+		{
+			PyErr_SetString(PyExc_ValueError, "Velocity delta time must be positive.");
+			bp::throw_error_already_set();
+		}
+
+		return DeformingTriangulation::create(
+				resolved_topological_network,
+				velocity_delta_time,
+				velocity_delta_time_type,
+				velocity_units,
+				earth_radius_in_kms);
+	}
+
+
 	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>::ReconstructionGeometryTypeWrapper(
 			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type resolved_topological_network) :
 		d_resolved_topological_network(
@@ -1623,6 +1936,212 @@ namespace GPlatesApi
 void
 export_resolved_topological_network()
 {
+	{
+		//
+		// DeformingTriangulation - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+		//
+		bp::scope deforming_triangulation_wrapper_class = bp::class_<
+				GPlatesApi::DeformingTriangulation,
+				GPlatesApi::DeformingTriangulation::non_null_ptr_type,
+				boost::noncopyable>(
+						"DeformingTriangulation",
+						"Triangulation of the deforming region within a :class:`resolved topological network <ResolvedTopologicalNetwork>`.\n"
+						"\n"
+						".. seealso:: :ref:`pygplates_primer_deformation_deforming_triangulation` in the *Primer* documentation."
+						"\n"
+						".. versionadded:: 0.49\n",
+						bp::no_init)
+			.def("get_triangles",
+					&GPlatesApi::resolved_topological_network_deforming_triangulation_get_triangles,
+					"get_triangles\n"
+					"  Returns a read-only sequence of the triangles in this triangulation.\n"
+					"\n"
+					"  :rtype: a read-only sequence of :class:`DeformingTriangulation.Triangle`\n"
+					"\n"
+					"  The following operations for accessing the triangles in the returned read-only sequence are supported:\n"
+					"\n"
+					"  =========================== =======================================================================\n"
+					"  Operation                   Result\n"
+					"  =========================== =======================================================================\n"
+					"  ``len(seq)``                number of triangles in the triangulation\n"
+					"  ``for t in seq``            iterates over the triangles *t* in the triangulation\n"
+					"  ``seq[i]``                  the triangle in the triangulation at index *i*\n"
+					"  =========================== =======================================================================\n"
+					"\n"
+					"  The following example demonstrates some uses of the above operations:\n"
+					"  ::\n"
+					"\n"
+					"    deforming_triangulation = resolved_topological_network.get_deforming_triangulation()\n"
+					"    triangles = deforming_triangulation.get_triangles()\n"
+					"    vertices = deforming_triangulation.get_vertices()\n"
+					"    for triangle in triangles:\n"
+					"        triangle_vertex_0 = vertices[triangle.get_vertex_index(0)]\n"
+					"        triangle_vertex_1 = vertices[triangle.get_vertex_index(1)]\n"
+					"        triangle_vertex_2 = vertices[triangle.get_vertex_index(2)]\n"
+					"        triangle_strain_rate = triangle.strain_rate\n"
+					"\n"
+					"  .. note:: The returned sequence is *read-only* and cannot be modified.\n")
+			.def("get_vertices",
+					&GPlatesApi::resolved_topological_network_deforming_triangulation_get_vertices,
+					"get_vertices\n"
+					"  Returns a read-only sequence of the vertices in this triangulation.\n"
+					"\n"
+					"  :rtype: a read-only sequence of :class:`DeformingTriangulation.Vertex`\n"
+					"\n"
+					"  The following operations for accessing the vertices in the returned read-only sequence are supported:\n"
+					"\n"
+					"  =========================== =======================================================================\n"
+					"  Operation                   Result\n"
+					"  =========================== =======================================================================\n"
+					"  ``len(seq)``                number of vertices in the triangulation\n"
+					"  ``for v in seq``            iterates over the vertices *v* in the triangulation\n"
+					"  ``seq[i]``                  the vertex in the triangulation at index *i*\n"
+					"  =========================== =======================================================================\n"
+					"\n"
+					"  The following example demonstrates some uses of the above operations:\n"
+					"  ::\n"
+					"\n"
+					"    deforming_triangulation = resolved_topological_network.get_deforming_triangulation()\n"
+					"    vertices = deforming_triangulation.get_vertices()\n"
+					"    for vertex in vertices:\n"
+					"        vertex_position = vertex.position\n"
+					"        vertex_velocity = vertex.velocity\n"
+					"        vertex_strain_rate = vertex.strain_rate\n"
+					"\n"
+					"  .. note:: The returned sequence is *read-only* and cannot be modified.\n")
+		;
+
+		//
+		// DeformingTriangulation.Triangle - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+		//
+		// A class nested within python class DeformingTriangulation (due to above 'bp::scope').
+		bp::class_<GPlatesApi::DeformingTriangulation::Triangle>(
+						"Triangle",
+						"A triangle in a :class:`deforming triangulation <DeformingTriangulation>`.\n"
+						"\n"
+						"Triangles are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).\n"
+						"\n"
+						".. seealso:: :ref:`pygplates_primer_deformation_deforming_triangulation` in the *Primer* documentation."
+						"\n"
+						".. versionadded:: 0.49\n",
+						bp::no_init)
+			.def("get_vertex_index",
+					&GPlatesApi::resolved_topological_network_deforming_triangulation_triangle_get_vertex_index,
+					(bp::arg("index")),
+					"get_vertex_index(index)\n"
+					"  Returns the vertex index into :meth:`DeformingTriangulation.get_vertices` of one of this triangle's three vertices.\n"
+					"\n"
+					"  :param index: the index of this triangle's vertex (in the range [0, 2])\n"
+					"  :type index: int\n"
+					"  :rtype: int\n"
+					"  :raises: ValueError if *index* is not in the range [0, 2]\n"
+					"\n"
+					"  The following example demonstrates how to access the :meth:`triangulation vertices <DeformingTriangulation.get_vertices>` "
+					"from a triangle's vertex indices:\n"
+					"  ::\n"
+					"\n"
+					"    deforming_triangulation = resolved_topological_network.get_deforming_triangulation()\n"
+					"    triangles = deforming_triangulation.get_triangles()\n"
+					"    vertices = deforming_triangulation.get_vertices()\n"
+					"    for triangle in triangles:\n"
+					"        triangle_vertex_0 = vertices[triangle.get_vertex_index(0)]\n"
+					"        triangle_vertex_1 = vertices[triangle.get_vertex_index(1)]\n"
+					"        triangle_vertex_2 = vertices[triangle.get_vertex_index(2)]\n")
+			.def_readonly("strain_rate",
+					&GPlatesApi::DeformingTriangulation::Triangle::strain_rate,
+					"Return the constant strain rate across this triangle.\n"
+					"\n"
+					"  :type: :class:`StrainRate`\n")
+			// Due to the numerical tolerance in comparisons we cannot make hashable.
+			// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+			.def(GPlatesApi::NoHashDefVisitor(false, true))
+			.def(bp::self == bp::self)
+			.def(bp::self != bp::self)
+		;
+
+		//
+		// A wrapper around view access to the *triangles* of a deforming triangulation.
+		//
+		// We don't document this wrapper (using docstrings) since it's documented in "DeformingTriangulation".
+		bp::class_<GPlatesApi::DeformingTriangulation::triangles_view_type>(
+				// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+				"_TrianglesView",
+				bp::no_init)
+			.def("__iter__",
+					bp::iterator<const GPlatesApi::DeformingTriangulation::triangles_view_type>())
+			.def("__len__",
+					&GPlatesApi::DeformingTriangulation::triangles_view_type::get_number_of_items)
+			.def("__getitem__",
+					&GPlatesApi::DeformingTriangulation::triangles_view_type::get_item)
+		;
+
+		//
+		// DeformingTriangulation.Vertex - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
+		//
+		// A class nested within python class DeformingTriangulation (due to above 'bp::scope').
+		bp::class_<GPlatesApi::DeformingTriangulation::Vertex>(
+						"Vertex",
+						"A vertex in a :class:`deforming triangulation <DeformingTriangulation>`.\n"
+						"\n"
+						"Vertices are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).\n"
+						"\n"
+						".. seealso:: :ref:`pygplates_primer_deformation_deforming_triangulation` in the *Primer* documentation."
+						"\n"
+						".. versionadded:: 0.49\n",
+						bp::no_init)
+			.add_property("position",
+					&GPlatesApi::resolved_topological_network_deforming_triangulation_vertex_get_position,
+					"Return the position of this vertex.\n"
+					"\n"
+					"  :type: :class:`PointOnSphere`\n")
+			.def_readonly("velocity",
+					&GPlatesApi::DeformingTriangulation::Vertex::velocity,
+					"Return the velocity at this vertex.\n"
+					"\n"
+					"  :type: :class:`Vector3D`\n"
+					"\n"
+					"  .. note:: The velocity units are determined by the call to :meth:`ResolvedTopologicalNetwork.get_deforming_triangulation`.\n")
+			.def_readonly("strain_rate",
+					&GPlatesApi::DeformingTriangulation::Vertex::strain_rate,
+					"Return the strain rate at this vertex.\n"
+					"\n"
+					"  :type: :class:`StrainRate`\n"
+					"\n"
+					"  .. note:: This is the area-averaged strain rate of triangles incident to this vertex.\n")
+			// Due to the numerical tolerance in comparisons we cannot make hashable.
+			// Make unhashable, with no *equality* comparison operators (we explicitly define them)...
+			.def(GPlatesApi::NoHashDefVisitor(false, true))
+			.def(bp::self == bp::self)
+			.def(bp::self != bp::self)
+		;
+
+		//
+		// A wrapper around view access to the *vertices* of a deforming triangulation.
+		//
+		// We don't document this wrapper (using docstrings) since it's documented in "DeformingTriangulation".
+		bp::class_<GPlatesApi::DeformingTriangulation::vertices_view_type>(
+				// Prefix with '_' so users know it's an implementation detail (they should not be accessing it directly).
+				"_VerticesView",
+				bp::no_init)
+			.def("__iter__",
+					bp::iterator<const GPlatesApi::DeformingTriangulation::vertices_view_type>())
+			.def("__len__",
+					&GPlatesApi::DeformingTriangulation::vertices_view_type::get_number_of_items)
+			.def("__getitem__",
+					&GPlatesApi::DeformingTriangulation::vertices_view_type::get_item)
+		;
+	}
+
+	// Register to/from Python conversions of non_null_intrusive_ptr<> including const/non-const and boost::optional.
+	GPlatesApi::PythonConverterUtils::register_all_conversions_for_non_null_intrusive_ptr<GPlatesApi::DeformingTriangulation>();
+
+	// Enable boost::optional<DeformingTriangulation::Triangle> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::DeformingTriangulation::Triangle>();
+
+	// Enable boost::optional<DeformingTriangulation::Vertex> to be passed to and from python.
+	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesApi::DeformingTriangulation::Vertex>();
+
+
 	//
 	// ResolvedTopologicalNetwork - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
 	//
@@ -1751,14 +2270,34 @@ export_resolved_topological_network()
 				"  Each rigid block represents a rigid interior island within the deforming region. And as such, each rigid block will have a "
 				":meth:`reconstructed geometry <ReconstructedFeatureGeometry.get_reconstructed_geometry>` that is a :class:`polygon <PolygonOnSphere>`.\n"
 				"\n"
-				"  To get the plate ID and boundary polygon of each interior rigid block (if any):\n"
-				"  ::\n"
+				"  .. seealso:: :ref:`pygplates_primer_deformation_rigid_blocks` in the *Primer* documentation."
 				"\n"
-				"    rigid_block_plate_ids = []\n"
-				"    rigid_block_boundaries = []\n"
-				"    for rigid_block in resolved_topological_network.get_rigid_blocks():\n"
-				"        rigid_block_plate_ids.append(rigid_block.get_feature().get_reconstruction_plate_id())\n"
-				"        rigid_block_boundaries.append(rigid_block.get_reconstructed_geometry())\n"
+				"  .. versionadded:: 0.49\n")
+		.def("get_deforming_triangulation",
+				&GPlatesApi::resolved_topological_network_get_deforming_triangulation,
+				(bp::arg("velocity_delta_time") = 1.0,
+						bp::arg("velocity_delta_time_type") = GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
+						bp::arg("velocity_units") = GPlatesAppLogic::VelocityUnits::KMS_PER_MY,
+						bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS),
+				"get_deforming_triangulation([velocity_delta_time=1.0], [velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t], "
+				"[velocity_units=pygplates.VelocityUnits.kms_per_my], [earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms])\n"
+				"Returns the triangulation of the deforming region within this resolved topological network.\n"
+				"\n"
+				"  :param velocity_delta_time: The time delta used to calculate velocities (defaults to 1 Myr).\n"
+				"  :type velocity_delta_time: float\n"
+				"  :param velocity_delta_time_type: How the two velocity times are calculated relative to the reconstruction time. "
+				"This includes [t+dt, t], [t, t-dt] and [t+dt/2, t-dt/2]. Defaults to [t+dt, t].\n"
+				"  :type velocity_delta_time_type: *VelocityDeltaTimeType.t_plus_delta_t_to_t*, "
+				"*VelocityDeltaTimeType.t_to_t_minus_delta_t* or *VelocityDeltaTimeType.t_plus_minus_half_delta_t*\n"
+				"  :param velocity_units: whether to return velocities as *kilometres per million years* or "
+				"*centimetres per year* (defaults to *kilometres per million years*)\n"
+				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
+				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
+				"  :type earth_radius_in_kms: float\n"
+				"  :rtype: :class:`DeformingTriangulation`\n"
+				"  :raises: ValueError if *velocity_delta_time* is negative or zero.\n"
+				"\n"
+				"  .. seealso:: :ref:`pygplates_primer_deformation_deforming_triangulation` in the *Primer* documentation."
 				"\n"
 				"  .. versionadded:: 0.49\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
