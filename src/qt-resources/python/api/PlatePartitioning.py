@@ -533,10 +533,10 @@ def partition_into_plates(
     :type partitioning_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
         or sequence of :class:`Feature`, or sequence of any combination of those four types
     
-    :param rotation_model: A rotation model or a rotation feature collection or a rotation \
-        filename or a sequence of rotation feature collections and/or rotation filenames
-    :type rotation_model: :class:`RotationModel` or :class:`FeatureCollection` or string/``os.PathLike`` \
-        or sequence of :class:`FeatureCollection` instances and/or string/``os.PathLike`` instances
+    :param rotation_model: A rotation model. Or a rotation feature collection, or a rotation filename, \
+        or a rotation feature, or a sequence of rotation features, or a sequence of any combination of those four types.
+    :type rotation_model: :class:`RotationModel`. Or :class:`FeatureCollection`, or string/``os.PathLike``, \
+        or :class:`Feature`, or sequence of :class:`Feature`, or sequence of any combination of those four types
     
     :param features_to_partition: the features to be partitioned
     :type features_to_partition: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, \
