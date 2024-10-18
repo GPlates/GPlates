@@ -1855,6 +1855,8 @@ export_topological_model()
 					"TopologicalModel",
 					"A history of topologies over geological time.\n"
 					"\n"
+					".. seealso:: :ref:`pygplates_primer_topological_model` in the *Primer* documentation.\n"
+					"\n"
 					"A *TopologicalModel* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
 					"\n"
 					".. versionadded:: 0.30\n"
@@ -1950,6 +1952,8 @@ export_topological_model()
 				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 				"  :rtype: :class:`TopologicalSnapshot`\n"
 				"  :raises: ValueError if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n"
+				"\n"
+				".. seealso:: :ref:`pygplates_primer_topological_model` in the *Primer* documentation.\n"
 				"\n"
 				"  .. versionchanged:: 0.43\n"
 				"     *reconstruction_time* no longer required to be integral.\n")

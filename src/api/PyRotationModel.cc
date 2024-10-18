@@ -734,7 +734,7 @@ export_rotation_model()
 					"Query a finite rotation of a moving plate relative to any other plate, optionally "
 					"between two instants in geological time.\n"
 					"\n"
-					"See :ref:`pygplates_primer_plate_reconstruction_hierarchy` in the *Primer* documentation.\n"
+					".. seealso:: :ref:`pygplates_primer_plate_reconstruction_hierarchy` in the *Primer* documentation.\n"
 					"\n"
 					"This class provides an easy way to query rotations in any of the four combinations of "
 					"total/stage and equivalent/relative rotations using :meth:`get_rotation`. "

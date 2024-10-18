@@ -35,6 +35,7 @@
 #include "PyFeatureCollectionFunctionArgument.h"
 #include "PyRotationModel.h"
 #include "PythonConverterUtils.h"
+#include "PythonExtractUtils.h"
 #include "PythonHashDefVisitor.h"
 #include "PythonPickle.h"
 #include "PythonUtils.h"
@@ -230,6 +231,7 @@ namespace GPlatesApi
 			GPlatesAppLogic::VelocityUnits::Value velocity_units,
 			const double &earth_radius_in_kms,
 			bool include_network_boundaries,
+			bp::object boundary_section_filter_object,
 			bool return_shared_sub_segment_dict)
 	{
 		if (uniform_point_spacing_radians <= 0)
@@ -256,8 +258,77 @@ namespace GPlatesApi
 		{
 			resolve_topological_section_types |= ResolveTopologyType::NETWORK;
 		}
-		const std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> resolved_topological_sections =
+		std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> resolved_topological_sections =
 				topological_snapshot->get_resolved_topological_sections(resolve_topological_section_types);
+
+		// If a boundary section filter object was specified then filter the resolved topological sections,
+		// otherwise accept them all.
+		if (boundary_section_filter_object != bp::object()/*Py_None*/)
+		{
+			std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> filtered_resolved_topological_sections;
+
+			// See if filter object is a feature type.
+			bp::extract<GPlatesModel::FeatureType> extract_feature_type(boundary_section_filter_object);
+			if (extract_feature_type.check())
+			{
+				// Extract the allowed feature type.
+				const GPlatesModel::FeatureType allowed_feature_type = extract_feature_type();
+
+				// Filter the resolved topological sections.
+				for (const auto &resolved_topological_section : resolved_topological_sections)
+				{
+					// Should be valid due to GPlatesApi::ResolvedTopologicalSectionWrapper.
+					if (resolved_topological_section->get_feature_ref().is_valid())
+					{
+						const GPlatesModel::FeatureType feature_type = resolved_topological_section->get_feature_ref()->feature_type();
+
+						// See if the feature type matches the allowed feature type.
+						if (feature_type == allowed_feature_type)
+						{
+							filtered_resolved_topological_sections.push_back(resolved_topological_section);
+						}
+					}
+				}
+			}
+			// Else attempt to extract a sequence of feature types...
+			else if (PythonExtractUtils::check_sequence<GPlatesModel::FeatureType>(boundary_section_filter_object))
+			{
+				// Extract the allowed feature types.
+				std::vector<GPlatesModel::FeatureType> allowed_feature_types;
+				PythonExtractUtils::extract_sequence(allowed_feature_types, boundary_section_filter_object);
+
+				// Filter the resolved topological sections.
+				for (const auto &resolved_topological_section : resolved_topological_sections)
+				{
+					// Should be valid due to GPlatesApi::ResolvedTopologicalSectionWrapper.
+					if (resolved_topological_section->get_feature_ref().is_valid())
+					{
+						const GPlatesModel::FeatureType feature_type = resolved_topological_section->get_feature_ref()->feature_type();
+
+						// See if the feature type matches one of the allowed feature types.
+						if (std::find(allowed_feature_types.begin(), allowed_feature_types.end(), feature_type) !=
+							allowed_feature_types.end())
+						{
+							filtered_resolved_topological_sections.push_back(resolved_topological_section);
+						}
+					}
+				}
+			}
+			else  // Filter must be a callable predicate...
+			{
+				// Filter the resolved topological sections.
+				for (const auto &resolved_topological_section : resolved_topological_sections)
+				{
+					// Pass the resolved topological section to the callable predicate.
+					if (bp::extract<bool>(boundary_section_filter_object(resolved_topological_section)))
+					{
+						filtered_resolved_topological_sections.push_back(resolved_topological_section);
+					}
+				}
+			}
+
+			resolved_topological_sections.swap(filtered_resolved_topological_sections);
+		}
 
 		// Get the resolved topological boundaries (rigid plates).
 		//
@@ -1184,7 +1255,9 @@ export_topological_snapshot()
 	//
 	bp::class_<GPlatesAppLogic::PlateBoundaryStat>(
 					"PlateBoundaryStatistic",
-					"Statistic at a point *on* a plate boundary.\n"
+					"Statistics at a point *on* a plate boundary.\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_topological_snapshot_plate_boundary_statistics` in the *Primer* documentation.\n"
 					"\n"
 					"PlateBoundaryStatistics are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).\n"
 					"\n"
@@ -1778,6 +1851,8 @@ export_topological_snapshot()
 					"TopologicalSnapshot",
 					"A snapshot of resolved topological features (lines, boundaries and networks) at a specific geological time.\n"
 					"\n"
+					".. seealso:: :ref:`pygplates_primer_topological_snapshot` in the *Primer* documentation.\n"
+					"\n"
 					"A *TopologicalSnapshot* can also be `pickled <https://docs.python.org/3/library/pickle.html>`_.\n"
 					"\n"
 					".. versionadded:: 0.30\n"
@@ -2005,11 +2080,12 @@ export_topological_snapshot()
 					bp::arg("velocity_units") = GPlatesAppLogic::VelocityUnits::KMS_PER_MY,
 					bp::arg("earth_radius_in_kms") = GPlatesUtils::Earth::MEAN_RADIUS_KMS,
 					bp::arg("include_network_boundaries") = false,
+					bp::arg("boundary_section_filter") = bp::object()/*Py_None*/,
 					bp::arg("return_shared_sub_segment_dict") = false),
 				"calculate_plate_boundary_statistics(uniform_point_spacing_radians, [first_uniform_point_spacing_radians], "
 				"[velocity_delta_time=1.0], [velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t], "
 				"[velocity_units=pygplates.VelocityUnits.kms_per_my], [earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms], "
-				"[include_network_boundaries=False], [return_shared_sub_segment_dict=False])\n"
+				"[include_network_boundaries=False], [boundary_section_filter], [return_shared_sub_segment_dict=False])\n"
 				"Calculate statistics at uniformly spaced points along plate boundaries.\n"
 				"\n"
 				"  :param uniform_point_spacing_radians: Spacing between uniform points along plate boundaries (in radians). "
@@ -2036,10 +2112,14 @@ export_topological_snapshot()
 				"  :type velocity_units: *VelocityUnits.kms_per_my* or *VelocityUnits.cms_per_yr*\n"
 				"  :param earth_radius_in_kms: the radius of the Earth in *kilometres* (defaults to ``pygplates.Earth.mean_radius_in_kms``)\n"
 				"  :type earth_radius_in_kms: float\n"
-				"  :param include_network_boundaries: Whether to calculate statistics along network boundaries "
-				"that are **not** also rigid plate boundaries (defaults to ``False``). If a deforming network shares a "
-				"boundary with a rigid plate then it'll get included regardless of this option.\n"
+				"  :param include_network_boundaries: Whether to calculate statistics along *network* boundaries "
+				"that are **not** also plate boundaries (defaults to ``False``). If a deforming network shares a "
+				"boundary with a plate then it'll get included regardless of this option.\n"
 				"  :type include_network_boundaries: bool\n"
+				"  :param boundary_section_filter: Optionally restrict boundary sections to those that match a feature type, "
+				"or match one of several feature types, or match a filter function. Defaults to ``None`` (meaning accept all boundary sections).\n"
+				"  :type boundary_section_filter: :class:`FeatureType`, or list of :class:`FeatureType`, or callable "
+				"(accepting a single :class:`ResolvedTopologicalSection`)\n"
 				"  :param return_shared_sub_segment_dict: Whether to return a ``dict`` mapping each :class:`shared sub-segment <ResolvedTopologicalSharedSubSegment>` "
 				"(ie, a boundary section shared by one or more plates) to a ``list`` of :class:`PlateBoundaryStatistic` associated with it. "
 				"If ``False`` then just returns one large ``list`` of :class:`PlateBoundaryStatistic` for all plate boundaries. Defaults to ``False``.\n"
@@ -2052,6 +2132,16 @@ export_topological_snapshot()
 				"\n"
 				"  .. note:: If *return_shared_sub_segment_dict* is ``True`` then any shared sub-segments that are not long enough to contain any uniform points "
 				"will be missing from the returned ``dict``.\n"
+				"\n"
+				"  Uniform points are **not** generated along *network* boundaries by default (unless they happen to also be a plate boundary) since "
+				"not all parts of a network's boundary are necessarily along plate boundaries. But you can optionally generate points along them by setting "
+				"*include_network_boundaries* to ``True``. Note that, regardless of this option, networks are always used when *calculating* plate statistics. "
+				"This is because networks typically *overlay* rigid plates, and so need to be queried (at uniform points along plate boundaries) with a "
+				"higher priority than the *underlying* rigid plate.\n"
+				"\n"
+				"  .. note:: The plate boundaries, *along* which uniform points are generated, can be further restricted using *boundary_section_filter*.\n"
+				"\n"
+				"  .. seealso:: :ref:`pygplates_primer_topological_snapshot_plate_boundary_statistics` in the *Primer* documentation.\n"
 				"\n"
 				"  .. versionadded:: 0.47\n")
 		.def("get_rotation_model",

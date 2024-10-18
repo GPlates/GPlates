@@ -327,6 +327,108 @@ In pyGPlates, the relative stage rotation can be obtained :meth:`pygplates.Rotat
   relative_stage_rotation = rotation_model.get_rotation(to_time, moving_plate, from_time, fixed_plate)
 
 
+.. _pygplates_primer_topologies:
+
+Topologies
+----------
+
+This section covers topologies in pyGPlates.
+
+.. contents::
+   :local:
+   :depth: 2
+
+.. _pygplates_primer_topological_model:
+
+Topological model
+^^^^^^^^^^^^^^^^^
+
+A topological model is represented by a :class:`pygplates.TopologicalModel`.
+It can be created from topological features (in files, :class:`features <pygplates.Feature>` or
+:class:`feature collections <pygplates.FeatureCollection>`) and a rotation model (created from rotation files,
+:class:`features <pygplates.Feature>` or :class:`feature collections <pygplates.FeatureCollection>`):
+::
+
+   rotation_model = pygplates.RotationModel('rotations.rot')
+   topological_model = pygplates.TopologicalModel('topologies.gpml', rotation_model)
+
+.. _pygplates_primer_topological_snapshot:
+
+Topological snapshot
+^^^^^^^^^^^^^^^^^^^^
+
+A topological snapshot is represented by a :class:`pygplates.TopologicalSnapshot`.
+It can be created by resolving a :class:`pygplates.TopologicalModel` to a specific reconstruction time.
+For example, to create a topological snapshot for each reconstruction time from 0 to 1000Ma in 1Myr increments:
+::
+
+   for reconstruction_time in range(1000):
+      topological_snapshot = topological_model.topological_snapshot(reconstruction_time)
+
+Alternatively, a topological snapshot can be created directly from topological features and a rotation model
+(similar to :ref:`how a topological model is created <pygplates_primer_topological_model>`) and a reconstruction time:
+::
+
+   for reconstruction_time in range(1000):
+      topological_snapshot = pygplates.TopologicalSnapshot('topologies.gpml', rotation_model, reconstruction_time)
+
+...but it's more efficient to generate snapshots from a :class:`pygplates.TopologicalModel`.
+
+A topological snapshot can:
+
+* :ref:`Generate statistics <pygplates_primer_topological_snapshot_plate_boundary_statistics>` (like convergence/divergence) along plate boundaries.
+
+.. _pygplates_primer_topological_snapshot_plate_boundary_statistics:
+
+Plate boundary statistics
+"""""""""""""""""""""""""
+
+Statistics at uniformly spaced points along plate boundaries can be generated from a topological snapshot using
+:meth:`pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics`.
+For example, to generate statistics at points spaced 1 degree apart (along all plate boundaries):
+::
+
+   uniform_point_spacing_radians = math.radians(1)
+   plate_boundary_stats = topological_snapshot.calculate_plate_boundary_statistics(uniform_point_spacing_radians)
+
+You can also restrict which plate boundaries to generate points along.
+For example, to generate points only along subduction zones and mid-ocean ridges:
+::
+
+   plate_boundary_stats = topological_snapshot.calculate_plate_boundary_statistics(
+         uniform_point_spacing_radians,
+         boundary_section_filter = [pygplates.FeatureType.gpml_subduction_zone,
+                                    pygplates.FeatureType.gpml_mid_ocean_ridge])
+
+...or even define your own criteria as a filter function accepting a single argument of type :class:`pygplates.ResolvedTopologicalSection`
+and returning ``True`` if uniform points should be generated along that boundary section. For example, the equivalent of the above
+example (generating points only along subduction zones and mid-ocean ridges) would be:
+::
+
+   def boundary_section_filter_function(resolved_topological_section):
+      feature_type = resolved_topological_section.get_feature().get_feature_type()
+      return (feature_type == pygplates.FeatureType.gpml_subduction_zone or
+              feature_type == pygplates.FeatureType.gpml_mid_ocean_ridge)
+   
+   plate_boundary_stats = topological_snapshot.calculate_plate_boundary_statistics(
+         uniform_point_spacing_radians,
+         boundary_section_filter = boundary_section_filter_function)
+
+.. note:: You can also group uniform points with the :class:`shared sub-segment <pygplates.ResolvedTopologicalSharedSubSegment>`
+   they came from by setting :meth:`return_shared_sub_segment_dict <pygplates.TopologicalSnapshot.calculate_plate_boundary_statistics>` to ``True``.
+
+Each point gets its own statistic represented by a :class:`pygplates.PlateBoundaryStatistic`.
+For example, to query the uniformly spaced point locations and their convergence velocity magnitudes and obliquities:
+::
+
+   for stat in plate_boundary_stats:
+      point_location = stat.point_location
+      convergence_velocity_magnitude = stat.convergence_velocity_magnitude
+      convergence_velocity_obliquity = stat.convergence_velocity_obliquity
+
+There are many other :class:`statistics <pygplates.PlateBoundaryStatistic>` such as plate *boundary* velocity, plate boundary *normal* direction,
+left and right plate velocities, left and right plate identifiers (ie, which plate, or deforming network, is left and right of the point)
+and distance to the ends of the boundary section (containing the point).
 
 .. _pygplates_primer_deformation:
 
@@ -460,6 +562,14 @@ are scaled equally to ensure its total strain rate equals the maximum total stra
 Strain rate clamping is determined by :attr:`pygplates.ResolveTopologyParameters.enable_strain_rate_clamping` when topological networks are resolved at a reconstruction time
 (using :class:`pygplates.TopologicalModel`, :class:`pygplates.TopologicalSnapshot` or :func:`pygplates.resolve_topologies`).
 And the maximum strain rate is :attr:`pygplates.ResolveTopologyParameters.max_clamped_strain_rate`.
+For example, to enable strain rate clamping (which is disabled by default) for a topological model, but keep the default maximum strain rate:
+::
+
+   topological_model = pygplates.TopologicalModel(
+      'topologies.gpml',
+      'rotations.rot',
+      default_resolve_topology_parameters = pygplates.ResolveTopologyParameters(
+         enable_strain_rate_clamping = True))
 
 .. _pygplates_primer_deformation_strain_rate_smoothing:
 
@@ -470,14 +580,23 @@ Strain rates can optionally be smoothed to help reduce the faceted (piecewise co
 
 .. note:: Smoothing the strain rate also affects quantities derived from strain rate such as crustal thinning and tectonic subsidence.
 
-Strain rate smoothing is determined by :attr:`pygplates.ResolveTopologyParameters.strain_rate_smoothing` when topological networks are resolved at a reconstruction time
-(using :class:`pygplates.TopologicalModel`, :class:`pygplates.TopologicalSnapshot` or :func:`pygplates.resolve_topologies`).
 The strain rate at an arbitrary location within a deforming triangulation is affected by the smoothing value:
 
 * ``pygplates.StrainRateSmoothing.none`` - No smoothing. The strain rate is equal to the (constant) strain rate of the :class:`triangle <pygplates.DeformingTriangulation.Triangle>` containing the query location.
 * ``pygplates.StrainRateSmoothing.barycentric`` - Use linear interpolation of the strain rates of the 3 :class:`vertices <pygplates.DeformingTriangulation.Vertex>` of the
   :class:`triangle <pygplates.DeformingTriangulation.Triangle>` containing the query location.
 * ``pygplates.StrainRateSmoothing.natural_neighbour`` - Use natural neighbour interpolation of the strain rates of triangulation :class:`vertices <pygplates.DeformingTriangulation.Vertex>` near the query location.
+
+Strain rate smoothing is determined by :attr:`pygplates.ResolveTopologyParameters.strain_rate_smoothing` when topological networks are resolved at a reconstruction time
+(using :class:`pygplates.TopologicalModel`, :class:`pygplates.TopologicalSnapshot` or :func:`pygplates.resolve_topologies`).
+For example, to disable strain rate smoothing (which is natural neighbour smoothing by default) for a topological model:
+::
+
+   topological_model = pygplates.TopologicalModel(
+      'topologies.gpml',
+      'rotations.rot',
+      default_resolve_topology_parameters = pygplates.ResolveTopologyParameters(
+         strain_rate_smoothing = pygplates.StrainRateSmoothing.none))
 
 .. _pygplates_primer_deformation_exponential_rift_stretching_profile:
 
@@ -546,6 +665,19 @@ When set on a topological network feature they become feature properties named:
 
 ...when the topological networks are resolved at a reconstruction time
 (using :class:`pygplates.TopologicalModel`, :class:`pygplates.TopologicalSnapshot` or :func:`pygplates.resolve_topologies`).
+
+The default values (in :meth:`pygplates.ResolveTopologyParameters.__init__`) should be fine for resolving rift features that
+do not contain the associated rift feature properties. But you can change the defaults as needed.
+For example, new default values can be specified for a topological model:
+::
+
+   topological_model = pygplates.TopologicalModel(
+      'topologies.gpml',
+      'rotations.rot',
+      default_resolve_topology_parameters = pygplates.ResolveTopologyParameters(
+         rift_exponential_stretching_constant = 1.5,  # default is 1.0
+         rift_strain_rate_resolution = 1e-16,         # default is 5e-17
+         rift_edge_length_threshold_degrees = 0.2))   # default is 0.1
 
 Rift exponential stretching constant
 """"""""""""""""""""""""""""""""""""

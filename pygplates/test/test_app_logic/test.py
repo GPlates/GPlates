@@ -3100,6 +3100,31 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
                                                                                  return_shared_sub_segment_dict=True)
         self.assertTrue(len(plate_boundary_stats_dict) == 32)
         self.assertTrue(sum(len(shared_sub_segment_stats) for _, shared_sub_segment_stats in plate_boundary_stats_dict.items()) == 60)
+
+        # Filter boundary sections by feature type.
+        plate_boundary_stats_filtered = snapshot.calculate_plate_boundary_statistics(math.radians(10),
+                                                                                 first_uniform_point_spacing_radians=0.0,
+                                                                                 include_network_boundaries=True,
+                                                                                 # All boundary sections are this feature type...
+                                                                                 boundary_section_filter=pygplates.FeatureType.gpml_unclassified_feature,
+                                                                                 return_shared_sub_segment_dict=True)
+        self.assertTrue(len(plate_boundary_stats_filtered) == 32)
+        plate_boundary_stats_filtered = snapshot.calculate_plate_boundary_statistics(math.radians(10),
+                                                                                 first_uniform_point_spacing_radians=0.0,
+                                                                                 include_network_boundaries=True,
+                                                                                 # None of the boundary sections include these feature types...
+                                                                                 boundary_section_filter=[pygplates.FeatureType.gpml_subduction_zone, pygplates.FeatureType.gpml_mid_ocean_ridge],
+                                                                                 return_shared_sub_segment_dict=True)
+        self.assertTrue(len(plate_boundary_stats_filtered) == 0)
+        plate_boundary_stats_filtered = snapshot.calculate_plate_boundary_statistics(math.radians(10),
+                                                                                 first_uniform_point_spacing_radians=0.0,
+                                                                                 include_network_boundaries=True,
+                                                                                 # Filter boundary sections that are resolved topological lines...
+                                                                                 boundary_section_filter=lambda rts: isinstance(rts.get_topological_section(), pygplates.ResolvedTopologicalLine),
+                                                                                 return_shared_sub_segment_dict=True)
+        # There is only one resolved topological line, but it has multiple shared sub-segments.
+        topological_sections = set(shared_sub_segment.get_topological_section() for shared_sub_segment in plate_boundary_stats_filtered.keys())
+        self.assertTrue(len(topological_sections) == 1)
     
     def test_pickle(self):
         snapshot = pygplates.TopologicalSnapshot(
