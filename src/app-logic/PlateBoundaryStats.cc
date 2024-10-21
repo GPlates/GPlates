@@ -308,8 +308,10 @@ namespace GPlatesAppLogic
 		 * Note: Here we consider the start/end of the topological section to be the start/end of ALL its
 		 *       shared sub-segments (not the actual start/end of the topological section geometry).
 		 *
-		 * Returns false if the shared sub-segment geometry is zero length or if it's not long enough
-		 * to contain any uniform points.
+		 * Returns false:
+		 * - if the shared sub-segment geometry is zero length, or
+		 * - if the shared sub-segment geometry is not long enough to contain any uniform points, or
+		 * - if the shared sub-segment is shared *only* by networks and we're not including those boundaries.
 		 */
 		bool
 		calculate_plate_boundary_stats_for_shared_sub_segment(
@@ -325,7 +327,8 @@ namespace GPlatesAppLogic
 				const double &velocity_delta_time,
 				VelocityDeltaTime::Type velocity_delta_time_type,
 				VelocityUnits::Value velocity_units,
-				const double &earth_radius_in_kms)
+				const double &earth_radius_in_kms,
+				bool include_network_boundaries)
 		{
 			// Polyline geometry of the shared sub-segment.
 			const GPlatesMaths::PolylineOnSphere::non_null_ptr_to_const_type shared_sub_segment_polyline =
@@ -345,6 +348,14 @@ namespace GPlatesAppLogic
 			get_resolved_topologies_sharing_shared_sub_segment(shared_sub_segment,
 					left_sharing_resolved_topological_boundaries, left_sharing_resolved_topological_networks,
 					right_sharing_resolved_topological_boundaries, right_sharing_resolved_topological_networks);
+
+			// If this shared sub-segment is shared *only* by networks and we're not including those boundaries then return false.
+			if (!include_network_boundaries &&
+				left_sharing_resolved_topological_boundaries.empty() &&
+				right_sharing_resolved_topological_boundaries.empty())
+			{
+				return false;
+			}
 
 			// Generate uniformly spaced points along the shared sub-segment.
 			std::vector<GPlatesMaths::PointOnSphere> uniform_points;
@@ -700,7 +711,8 @@ GPlatesAppLogic::calculate_plate_boundary_stats(
 		const double &velocity_delta_time,
 		VelocityDeltaTime::Type velocity_delta_time_type,
 		VelocityUnits::Value velocity_units,
-		const double &earth_radius_in_kms)
+		const double &earth_radius_in_kms,
+		bool include_network_boundaries)
 {
 	// If the *first* uniform point spacing was not specified then set it to half the uniform point spacing.
 	if (!first_uniform_point_spacing)
@@ -735,10 +747,11 @@ GPlatesAppLogic::calculate_plate_boundary_stats(
 		{
 			if (prev_shared_sub_segment)
 			{
-				// If the previous shared sub-segment joins the current shared sub-segment and the join point is
-				// *inside* the topological section then continue the uniform spacing of points.
-				// Otherwise there was either a gap between them or one (or both) shared sub-segments included rubber banding.
-				if (adjacent_shared_sub_segments_join_inside_topological_section(prev_shared_sub_segment.get(), shared_sub_segment))
+				// If the previous shared sub-segment generated uniform points and it joins the current shared sub-segment and
+				// the join point is *inside* the topological section then continue the uniform spacing of points.
+				// Otherwise there was either a gap between the two shared sub-segments or one (or both) included rubber banding.
+				if (plate_boundary_stats.find(prev_shared_sub_segment.get()) != plate_boundary_stats.end() &&
+					adjacent_shared_sub_segments_join_inside_topological_section(prev_shared_sub_segment.get(), shared_sub_segment))
 				{
 					// Continue the uniform spacing of points from the previous shared sub-segment.
 					//
@@ -782,7 +795,8 @@ GPlatesAppLogic::calculate_plate_boundary_stats(
 					velocity_delta_time,
 					velocity_delta_time_type,
 					velocity_units,
-					earth_radius_in_kms))
+					earth_radius_in_kms,
+					include_network_boundaries))
 			{
 				// Successfully calculated statistics for the current shared sub-segment, so record them in the mapping.
 				plate_boundary_stats[shared_sub_segment].swap(shared_sub_segment_plate_boundary_stats);

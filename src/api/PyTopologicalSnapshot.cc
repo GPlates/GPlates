@@ -248,18 +248,14 @@ namespace GPlatesApi
 		}
 
 		// Get the resolved topological sections.
-		ResolveTopologyType::flags_type resolve_topological_section_types = ResolveTopologyType::BOUNDARY;
-		// Plate boundary statistics do not include network boundaries by default (unless they happen to also
-		// be a plate boundary), but the user can include them if they want.
 		//
-		// Note: Networks are always included when calculating plate convergence/divergence though.
-		//       This is because networks typically overlay rigid plates and we need to sample their velocities.
-		if (include_network_boundaries)
-		{
-			resolve_topological_section_types |= ResolveTopologyType::NETWORK;
-		}
+		// Note: We include networks in the resolved topological sections regardless of the value of
+		//       *include_network_boundaries* because we still need to discover the left/right networks
+		//       sharing a plate boundary (and our first attempt at doing this is via the resolved topologies
+		//       sharing the resolved topological section).
 		std::vector<GPlatesAppLogic::ResolvedTopologicalSection::non_null_ptr_type> resolved_topological_sections =
-				topological_snapshot->get_resolved_topological_sections(resolve_topological_section_types);
+				topological_snapshot->get_resolved_topological_sections(
+						ResolveTopologyType::BOUNDARY_AND_NETWORK_RESOLVE_TOPOLOGY_TYPES);
 
 		// If a boundary section filter object was specified then filter the resolved topological sections,
 		// otherwise accept them all.
@@ -359,7 +355,8 @@ namespace GPlatesApi
 				velocity_delta_time,
 				velocity_delta_time_type,
 				velocity_units,
-				earth_radius_in_kms);
+				earth_radius_in_kms,
+				include_network_boundaries);
 		
 		// If we should group plate boundary stats (dict value) by their shared sub-segments (dict key).
 		if (return_shared_sub_segment_dict)
@@ -1395,6 +1392,13 @@ export_topological_snapshot()
 				"    else:\n"
 				"        left_topology_boundary = None\n"
 				"\n"
+				"  If both a left :class:`plate <ResolvedTopologicalBoundary>` and a left :class:`network <ResolvedTopologicalNetwork>` share the plate boundary "
+				"(at the :attr:`boundary point <boundary_point>`) then the :class:`network <ResolvedTopologicalNetwork>` is returned. This is because a network "
+				"typically overlays its underlying plate. The same applies if there are *multiple* left plates and a single overlayed left network. However, if there are "
+				"multiple overlaying left networks then it is undefined which network is returned (the topological model was likely constructed incorrectly in this case). "
+				"Furthermore, if a left plate shares the plate boundary but an overlaying network does not (eg, the network crosses the plate boundary rather than sharing "
+				"a boundary with it) then the left plate is returned (the network is not discovered in this case).\n"
+				"\n"
 				"  .. seealso:: :attr:`right_plate`\n")
 		.add_property("right_plate",
 				bp::make_function(&GPlatesAppLogic::PlateBoundaryStat::get_right_plate, bp::return_value_policy<bp::copy_const_reference>()),
@@ -1417,6 +1421,13 @@ export_topological_snapshot()
 				"        right_topology_boundary = right_plate.located_in_resolved_network().get_resolved_boundary()\n"
 				"    else:\n"
 				"        right_topology_boundary = None\n"
+				"\n"
+				"  If both a right :class:`plate <ResolvedTopologicalBoundary>` and a right :class:`network <ResolvedTopologicalNetwork>` share the plate boundary "
+				"(at the :attr:`boundary point <boundary_point>`) then the :class:`network <ResolvedTopologicalNetwork>` is returned. This is because a network "
+				"typically overlays its underlying plate. The same applies if there are *multiple* right plates and a single overlayed right network. However, if there are "
+				"multiple overlaying right networks then it is undefined which network is returned (the topological model was likely constructed incorrectly in this case). "
+				"Furthermore, if a right plate shares the plate boundary but an overlaying network does not (eg, the network crosses the plate boundary rather than sharing "
+				"a boundary with it) then the right plate is returned (the network is not discovered in this case).\n"
 				"\n"
 				"  .. seealso:: :attr:`left_plate`\n")
 		.add_property("left_plate_velocity",
@@ -2164,7 +2175,7 @@ export_topological_snapshot()
 				":meth:`shared sub-segments <ResolvedTopologicalSection.get_shared_sub_segments>` that are the parts of it that actually "
 				"contribute to plate boundaries. So, this parameter is the distance from the *first* vertex of the *first* shared sub-segment "
 				"(*along* the sub-segment). And note that the uniform spacing is continuous across adjacent shared sub-segments, unless there's a "
-				"gap between them (that no plate uses as part of its boundary), in which case the spacing is reset to *first_uniform_point_spacing_radians* "
+				"gap between them (eg, that no plate uses as part of its boundary), in which case the spacing is reset to *first_uniform_point_spacing_radians* "
 				"for the next shared sub-segment (after the gap). "
 				"See :meth:`PolylineOnSphere.to_uniform_points`. Defaults to half of *uniform_point_spacing_radians*.\n"
 				"  :type first_uniform_point_spacing_radians: float\n"

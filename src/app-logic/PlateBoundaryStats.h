@@ -603,6 +603,13 @@ namespace GPlatesAppLogic
 	 *
 	 * If @a first_uniform_point_spacing is not specified then it is set to half of @a uniform_point_spacing.
 	 *
+	 * @a include_network_boundaries determines whether to calculate statistics along *network* boundaries
+	 * that are **not** also plate boundaries (defaults to false). If a deforming network shares a
+	 * boundary with a plate then it'll get included regardless of this option.
+	 * Note that networks are always included when *calculating* plate statistics (eg, convergence/divergence) because
+	 * networks typically overlay rigid plates and so need to be queried (at uniform points along plate boundaries)
+	 * with a higher priority than the underlying rigid plate.
+	 *
 	 * Returns a mapping of shared sub-segments to their plate boundary statistics (at uniform points along them).
 	 *
 	 * Note: @a all_resolved_topological_boundaries and @a all_resolved_topological_networks are used to calculate
@@ -624,7 +631,8 @@ namespace GPlatesAppLogic
 			const double &velocity_delta_time = 1.0,
 			VelocityDeltaTime::Type velocity_delta_time_type = VelocityDeltaTime::T_PLUS_DELTA_T_TO_T,
 			VelocityUnits::Value velocity_units = VelocityUnits::CMS_PER_YR,
-			const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS);
+			const double &earth_radius_in_kms = GPlatesUtils::Earth::EQUATORIAL_RADIUS_KMS,
+			bool include_network_boundaries = false);
 }
 
 #endif // GPLATES_APP_LOGIC_PLATE_BOUNDARY_STATS_H
