@@ -51,24 +51,24 @@ namespace GPlatesAppLogic
 	{
 	public:
 		PlateBoundaryStat(
-				const GPlatesMaths::PointOnSphere &point_,
-				const double &length_,
+				const GPlatesMaths::PointOnSphere &boundary_point_,
+				const double &boundary_length_,
 				const GPlatesMaths::UnitVector3D &boundary_normal_,
 				const GPlatesMaths::Vector3D &boundary_velocity_,
-				const TopologyPointLocation &left_plate_location_,
-				const TopologyPointLocation &right_plate_location_,
+				const TopologyPointLocation &left_plate_,
+				const TopologyPointLocation &right_plate_,
 				const boost::optional<GPlatesMaths::Vector3D> &left_plate_velocity_,
 				const boost::optional<GPlatesMaths::Vector3D> &right_plate_velocity_,
 				const double &distance_from_start_of_shared_sub_segment_,
 				const double &distance_to_end_of_shared_sub_segment_,
 				const double &signed_distance_from_start_of_topological_section_,
 				const double &signed_distance_to_end_of_topological_section_) :
-			d_point(point_),
-			d_length(length_),
+			d_boundary_point(boundary_point_),
+			d_boundary_length(boundary_length_),
 			d_boundary_normal(boundary_normal_),
 			d_boundary_velocity(boundary_velocity_),
-			d_left_plate_location(left_plate_location_),
-			d_right_plate_location(right_plate_location_),
+			d_left_plate(left_plate_),
+			d_right_plate(right_plate_),
 			d_left_plate_velocity(left_plate_velocity_),
 			d_right_plate_velocity(right_plate_velocity_),
 			d_distance_from_start_of_shared_sub_segment(distance_from_start_of_shared_sub_segment_),
@@ -77,22 +77,22 @@ namespace GPlatesAppLogic
 			d_signed_distance_to_end_of_topological_section(signed_distance_to_end_of_topological_section_)
 		{  }
 
-		//! Get the point location on a plate boundary.
+		//! Get the point on a plate boundary.
 		const GPlatesMaths::PointOnSphere &
-		get_point_location() const
+		get_boundary_point() const
 		{
-			return d_point;
+			return d_boundary_point;
 		}
 
-		//! Get the length (in radians) of the plate boundary represented by the point location.
+		//! Get the length (in radians) of the plate boundary represented by the boundary point.
 		double
-		get_length() const
+		get_boundary_length() const
 		{
-			return d_length.dval();
+			return d_boundary_length.dval();
 		}
 
 		/**
-		 * Get the normal to the plate boundary (at the point location).
+		 * Get the normal to the plate boundary (at the boundary point).
 		 *
 		 * This is the normal of the great circle arc segment the point is located on
 		 * (which is to the left of the segment).
@@ -104,21 +104,21 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Get the clockwise (East-wise) angle from North to the plate boundary normal (at the point location).
+		 * Get the clockwise (East-wise) angle from North to the plate boundary normal (at the boundary point).
 		 *
 		 * The angle is in the range [0, 2*pi].
 		 */
 		double
 		get_boundary_normal_azimuth() const;
 
-		//! Get the velocity of the plate boundary itself (at the point location).
+		//! Get the velocity of the plate boundary itself (at the boundary point).
 		const GPlatesMaths::Vector3D &
 		get_boundary_velocity() const
 		{
 			return d_boundary_velocity;
 		}
 
-		//! Get the magnitude of velocity of the plate boundary (at the point location).
+		//! Get the magnitude of velocity of the plate boundary (at the boundary point).
 		double
 		get_boundary_velocity_magnitude() const
 		{
@@ -126,7 +126,7 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Get the angle of the plate boundary velocity relative to the boundary normal (at the point location).
+		 * Get the angle of the plate boundary velocity relative to the boundary normal (at the boundary point).
 		 *
 		 * Clockwise angles are positive (anti-clockwise angles are negative).
 		 *
@@ -139,7 +139,7 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Get the orthogonal component (in direction of boundary normal) of the plate boundary velocity (at the point location).
+		 * Get the orthogonal component (in direction of boundary normal) of the plate boundary velocity (at the boundary point).
 		 */
 		double
 		get_boundary_velocity_orthogonal() const
@@ -148,7 +148,7 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Get the parallel component (in direction along boundary line) of the plate boundary velocity (at the point location).
+		 * Get the parallel component (in direction along boundary line) of the plate boundary velocity (at the boundary point).
 		 */
 		double
 		get_boundary_velocity_parallel() const
@@ -157,33 +157,33 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Get the left plate or network (at the point location).
+		 * Get the left plate or network (at the boundary point).
 		 *
 		 * The left plate is with respect to the direction of the shared sub-segment (that this point is on).
 		 *
 		 * Returns default-constructed @a TopologyPointLocation if there is no plate on the left.
 		 */
 		const TopologyPointLocation &
-		get_left_plate_location() const
+		get_left_plate() const
 		{
-			return d_left_plate_location;
+			return d_left_plate;
 		}
 
 		/**
-		 * Get the right plate or network (at the point location).
+		 * Get the right plate or network (at the boundary point).
 		 *
 		 * The right plate is with respect to the direction of the shared sub-segment (that this point is on).
 		 *
 		 * Returns default-constructed @a TopologyPointLocation if there is no plate on the right.
 		 */
 		const TopologyPointLocation &
-		get_right_plate_location() const
+		get_right_plate() const
 		{
-			return d_right_plate_location;
+			return d_right_plate;
 		}
 
 		/**
-		 * Get the plate velocity of the left plate (at the point location).
+		 * Get the plate velocity of the left plate (at the boundary point).
 		 *
 		 * The left plate is with respect to the direction of the shared sub-segment (that this point is on).
 		 *
@@ -196,7 +196,7 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Get the magnitude of plate velocity of the left plate (at the point location).
+		 * Get the magnitude of plate velocity of the left plate (at the boundary point).
 		 *
 		 * Returns NaN if no left plate velocity.
 		 */
@@ -207,7 +207,7 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Get the angle of the left plate velocity relative to the boundary normal (at the point location).
+		 * Get the angle of the left plate velocity relative to the boundary normal (at the boundary point).
 		 *
 		 * Clockwise angles are positive (anti-clockwise angles are negative).
 		 *
@@ -222,7 +222,7 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Get the orthogonal component (in direction of boundary normal) of the left plate velocity (at the point location).
+		 * Get the orthogonal component (in direction of boundary normal) of the left plate velocity (at the boundary point).
 		 *
 		 * Returns NaN if no left plate velocity.
 		 */
@@ -235,7 +235,7 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Get the parallel component (in direction along boundary line) of the left plate velocity (at the point location).
+		 * Get the parallel component (in direction along boundary line) of the left plate velocity (at the boundary point).
 		 *
 		 * Returns NaN if no left plate velocity.
 		 */
@@ -248,7 +248,7 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Get the plate velocity of the right plate (at the point location).
+		 * Get the plate velocity of the right plate (at the boundary point).
 		 *
 		 * The right plate is with respect to the direction of the shared sub-segment (that this point is on).
 		 *
@@ -261,7 +261,7 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Get the magnitude of plate velocity of the right plate (at the point location).
+		 * Get the magnitude of plate velocity of the right plate (at the boundary point).
 		 *
 		 * Returns NaN if no right plate velocity.
 		 */
@@ -272,7 +272,7 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Get the angle of the right plate velocity relative to the boundary normal (at the point location).
+		 * Get the angle of the right plate velocity relative to the boundary normal (at the boundary point).
 		 *
 		 * Clockwise angles are positive (anti-clockwise angles are negative).
 		 *
@@ -287,7 +287,7 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Get the orthogonal component (in direction of boundary normal) of the right plate velocity (at the point location).
+		 * Get the orthogonal component (in direction of boundary normal) of the right plate velocity (at the boundary point).
 		 *
 		 * Returns NaN if no right plate velocity.
 		 */
@@ -300,7 +300,7 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Get the parallel component (in direction along boundary line) of the right plate velocity (at the point location).
+		 * Get the parallel component (in direction along boundary line) of the right plate velocity (at the boundary point).
 		 *
 		 * Returns NaN if no right plate velocity.
 		 */
@@ -313,7 +313,7 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Get the strain rate of the left plate (at the point location).
+		 * Get the strain rate of the left plate (at the boundary point).
 		 *
 		 * Returns zero deformation (default-constructed @a DeformationStrainRate) if there's no left deforming network
 		 * (or if inside an interior rigid block of the left deforming network).
@@ -321,11 +321,11 @@ namespace GPlatesAppLogic
 		DeformationStrainRate
 		get_left_plate_strain_rate() const
 		{
-			return get_strain_rate(d_left_plate_location);
+			return get_strain_rate(d_left_plate);
 		}
 
 		/**
-		 * Get the strain rate of the right plate (at the point location).
+		 * Get the strain rate of the right plate (at the boundary point).
 		 *
 		 * Returns zero deformation (default-constructed @a DeformationStrainRate) if there's no right deforming network
 		 * (or if inside an interior rigid block of the right deforming network).
@@ -333,11 +333,11 @@ namespace GPlatesAppLogic
 		DeformationStrainRate
 		get_right_plate_strain_rate() const
 		{
-			return get_strain_rate(d_right_plate_location);
+			return get_strain_rate(d_right_plate);
 		}
 
 		/**
-		 * Get the velocity of the right plate relative to the left plate (at the point location).
+		 * Get the velocity of the right plate relative to the left plate (at the boundary point).
 		 *
 		 * Returns none if there is no plate on the left or no plate on the right.
 		 */
@@ -345,7 +345,7 @@ namespace GPlatesAppLogic
 		get_convergence_velocity() const;
 
 		/**
-		 * Get the magnitude of convergence velocity (at the point location).
+		 * Get the magnitude of convergence velocity (at the boundary point).
 		 *
 		 * If @a return_signed_magnitude is true then negate magnitude if plates are *diverging*.
 		 *
@@ -358,7 +358,7 @@ namespace GPlatesAppLogic
 				bool return_signed_magnitude = false) const;
 
 		/**
-		 * Get the angle of the convergence velocity relative to the boundary normal (at the point location).
+		 * Get the angle of the convergence velocity relative to the boundary normal (at the boundary point).
 		 *
 		 * Clockwise angles are positive (anti-clockwise angles are negative).
 		 *
@@ -373,7 +373,7 @@ namespace GPlatesAppLogic
 		get_convergence_velocity_obliquity() const;
 
 		/**
-		 * Get the orthogonal component (in direction of boundary normal) of the convergence velocity (at the point location).
+		 * Get the orthogonal component (in direction of boundary normal) of the convergence velocity (at the boundary point).
 		 *
 		 * Returns NaN if there is no plate on the left or no plate on the right (ie, convergence velocity is none).
 		 */
@@ -388,7 +388,7 @@ namespace GPlatesAppLogic
 		}
 
 		/**
-		 * Get the parallel component (in direction along boundary line) of the convergence velocity (at the point location).
+		 * Get the parallel component (in direction along boundary line) of the convergence velocity (at the boundary point).
 		 *
 		 * Returns NaN if there is no plate on the left or no plate on the right (ie, convergence velocity is none).
 		 */
@@ -404,10 +404,10 @@ namespace GPlatesAppLogic
 
 
 		/**
-		 * Get the distance (in radians) from the *start* of the shared sub-segment to the current location
+		 * Get the distance (in radians) from the *start* of the shared sub-segment to the boundary point
 		 * (along the geometry of the shared sub-segment).
 		 *
-		 * The shared sub-segment geometry *includes* any rubber banding. So if the shared sub-segment (containing the current location)
+		 * The shared sub-segment geometry *includes* any rubber banding. So if the shared sub-segment (containing the boundary point)
 		 * is the first shared sub-segment of the topological section, and the start of the topological section has rubber banding, then
 		 * the *start* of the shared sub-segment will be halfway along the rubber band (line segment joining start of topological section
 		 * with adjacent topological section in a plate boundary).
@@ -436,7 +436,7 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Get the signed distance (in radians) from the *start* of the resolved topological section geometry
-		 * (the part spanned by its shared sub-segments) to the current location
+		 * (the part spanned by its shared sub-segments) to the boundary point
 		 * (along the geometry of the resolved topological section).
 		 *
 		 * It is negative if point is on a rubber-band part of a plate boundary. That is, it's not on
@@ -500,12 +500,12 @@ namespace GPlatesAppLogic
 		operator==(
 				const PlateBoundaryStat &other) const
 		{
-			return d_point == other.d_point &&
-					d_length == other.d_length &&
+			return d_boundary_point == other.d_boundary_point &&
+					d_boundary_length == other.d_boundary_length &&
 					d_boundary_normal == other.d_boundary_normal &&
 					d_boundary_velocity == other.d_boundary_velocity &&
-					d_left_plate_location == other.d_left_plate_location &&
-					d_right_plate_location == other.d_right_plate_location &&
+					d_left_plate == other.d_left_plate &&
+					d_right_plate == other.d_right_plate &&
 					d_left_plate_velocity == other.d_left_plate_velocity &&
 					d_right_plate_velocity == other.d_right_plate_velocity &&
 					d_distance_from_start_of_shared_sub_segment == other.d_distance_from_start_of_shared_sub_segment &&
@@ -537,31 +537,31 @@ namespace GPlatesAppLogic
 
 
 		//! Point location on a plate boundary.
-		GPlatesMaths::PointOnSphere d_point;
+		GPlatesMaths::PointOnSphere d_boundary_point;
 
-		//! Length (in radians) of the plate boundary represented by the point location.
-		GPlatesMaths::Real d_length;
+		//! Length (in radians) of the plate boundary represented by the boundary point.
+		GPlatesMaths::Real d_boundary_length;
 
-		//! Normal to the plate boundary (at the point location).
+		//! Normal to the plate boundary (at the boundary point).
 		GPlatesMaths::UnitVector3D d_boundary_normal;
 
-		//! Velocity of the plate boundary itself (at the point location).
+		//! Velocity of the plate boundary itself (at the boundary point).
 		GPlatesMaths::Vector3D d_boundary_velocity;
 
 		//! Location of point in the left plate (or network), or none if no left plate/network.
-		TopologyPointLocation d_left_plate_location;
+		TopologyPointLocation d_left_plate;
 
 		//! Location of point in the right plate (or network), or none if no right plate/network.
-		TopologyPointLocation d_right_plate_location;
+		TopologyPointLocation d_right_plate;
 
-		//! Plate velocity of the left plate (at point location), or none if no left plate.
+		//! Plate velocity of the left plate (at boundary point), or none if no left plate.
 		boost::optional<GPlatesMaths::Vector3D> d_left_plate_velocity;
 
-		//! Plate velocity of the right plate (at point location), or none if no right plate.
+		//! Plate velocity of the right plate (at boundary point), or none if no right plate.
 		boost::optional<GPlatesMaths::Vector3D> d_right_plate_velocity;
 
 		/**
-		 * Distance (in radians) from the *start* of the shared sub-segment to the current location
+		 * Distance (in radians) from the *start* of the shared sub-segment to the boundary point
 		 * (along the geometry of the shared sub-segment).
 		 */
 		GPlatesMaths::Real d_distance_from_start_of_shared_sub_segment;
@@ -574,7 +574,7 @@ namespace GPlatesAppLogic
 
 		/**
 		 * Signed distance (in radians) from the *start* of the resolved topological section geometry
-		 * (the part spanned by its shared sub-segments) to the current location
+		 * (the part spanned by its shared sub-segments) to the boundary point
 		 * (along the geometry of the resolved topological section).
 		 */
 		GPlatesMaths::Real d_signed_distance_from_start_of_topological_section;

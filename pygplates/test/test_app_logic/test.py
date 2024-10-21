@@ -3054,8 +3054,8 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
 
         # Access PlateBoundaryStatistic attributes - just to make sure they can be queried.
         for plate_boundary_stat in plate_boundary_stats:
-            plate_boundary_stat.point_location
-            self.assertTrue(plate_boundary_stat.length <= 2*math.radians(10) and plate_boundary_stat.length >= 0)
+            plate_boundary_stat.boundary_point
+            self.assertTrue(plate_boundary_stat.boundary_length <= 2*math.radians(10) and plate_boundary_stat.boundary_length >= 0)
             self.assertAlmostEqual(plate_boundary_stat.boundary_normal.get_magnitude(), 1.0)
             self.assertTrue(plate_boundary_stat.boundary_normal_azimuth <= 2*math.pi and plate_boundary_stat.boundary_normal_azimuth >= 0)
             self.assertTrue(plate_boundary_stat.boundary_velocity == pygplates.Vector3D.zero)
@@ -3063,14 +3063,14 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
             plate_boundary_stat.boundary_velocity_obliquity
             plate_boundary_stat.boundary_velocity_orthogonal
             plate_boundary_stat.boundary_velocity_parallel
-            plate_boundary_stat.left_plate_location
+            plate_boundary_stat.left_plate
             plate_boundary_stat.left_plate_velocity
             plate_boundary_stat.left_plate_velocity_magnitude
             plate_boundary_stat.left_plate_velocity_obliquity
             plate_boundary_stat.left_plate_velocity_orthogonal
             plate_boundary_stat.left_plate_velocity_parallel
             self.assertTrue(plate_boundary_stat.left_plate_strain_rate == pygplates.StrainRate.zero)
-            plate_boundary_stat.right_plate_location
+            plate_boundary_stat.right_plate
             plate_boundary_stat.right_plate_velocity
             plate_boundary_stat.right_plate_velocity_magnitude
             plate_boundary_stat.right_plate_velocity_obliquity

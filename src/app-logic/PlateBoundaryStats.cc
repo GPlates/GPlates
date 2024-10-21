@@ -150,7 +150,7 @@ namespace GPlatesAppLogic
 				const std::vector<ResolvedTopologicalNetwork::non_null_ptr_to_const_type> &resolved_topological_networks,
 				const PlateVelocityUtils::StageRotationCalculator &resolved_boundary_stage_rotation_calculator,
 				boost::optional<GPlatesMaths::Vector3D> &plate_velocity,
-				TopologyPointLocation &plate_location)  // location in plate (or network), if any
+				TopologyPointLocation &plate)  // location in plate (or network), if any
 		{
 			// Search topological networks first (deforming regions).
 			for (const auto &resolved_topological_network : resolved_topological_networks)
@@ -169,7 +169,7 @@ namespace GPlatesAppLogic
 				if (velocity)
 				{
 					plate_velocity = velocity->first;
-					plate_location = TopologyPointLocation(resolved_topological_network, velocity->second);
+					plate = TopologyPointLocation(resolved_topological_network, velocity->second);
 
 					return true;
 				}
@@ -199,7 +199,7 @@ namespace GPlatesAppLogic
 										earth_radius_in_kms);
 
 						plate_velocity = velocity;
-						plate_location = TopologyPointLocation(resolved_topological_boundary);
+						plate = TopologyPointLocation(resolved_topological_boundary);
 
 						return true;
 					}
@@ -237,8 +237,8 @@ namespace GPlatesAppLogic
 				const PlateVelocityUtils::StageRotationCalculator &resolved_boundary_stage_rotation_calculator,
 				boost::optional<GPlatesMaths::Vector3D> &left_plate_velocity,
 				boost::optional<GPlatesMaths::Vector3D> &right_plate_velocity,
-				TopologyPointLocation &left_plate_location,   // left plate (or network), if any
-				TopologyPointLocation &right_plate_location)  // right plate (or network), if any
+				TopologyPointLocation &left_plate,   // left plate (or network), if any
+				TopologyPointLocation &right_plate)  // right plate (or network), if any
 		{
 			// Attempt to calculate left plate velocity using the *left* resolved topologies that *share* the shared sub-segment.
 			if (!get_plate_velocity(
@@ -248,7 +248,7 @@ namespace GPlatesAppLogic
 					boundary_point,
 					reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
 					left_sharing_resolved_topological_boundaries, left_sharing_resolved_topological_networks, resolved_boundary_stage_rotation_calculator,
-					left_plate_velocity, left_plate_location))
+					left_plate_velocity, left_plate))
 			{
 				// That failed, so use *all* resolved topologies (eg, the full global set of topologies).
 				//
@@ -267,7 +267,7 @@ namespace GPlatesAppLogic
 						left_point,
 						reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
 						all_resolved_topological_boundaries, all_resolved_topological_networks, resolved_boundary_stage_rotation_calculator,
-						left_plate_velocity, left_plate_location);
+						left_plate_velocity, left_plate);
 			}
 
 			// Attempt to calculate right plate velocity using the *right* resolved topologies that *share* the shared sub-segment.
@@ -278,7 +278,7 @@ namespace GPlatesAppLogic
 					boundary_point,
 					reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
 					right_sharing_resolved_topological_boundaries, right_sharing_resolved_topological_networks, resolved_boundary_stage_rotation_calculator,
-					right_plate_velocity, right_plate_location))
+					right_plate_velocity, right_plate))
 			{
 				// That failed, so use *all* resolved topologies (eg, the full global set of topologies).
 				//
@@ -297,7 +297,7 @@ namespace GPlatesAppLogic
 						right_point,
 						reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
 						all_resolved_topological_boundaries, all_resolved_topological_networks, resolved_boundary_stage_rotation_calculator,
-						right_plate_velocity, right_plate_location);
+						right_plate_velocity, right_plate);
 			}
 		}
 
@@ -375,28 +375,28 @@ namespace GPlatesAppLogic
 			// Calculate statistics for each uniform point.
 			for (unsigned int uniform_point_index = 0; uniform_point_index < num_uniform_points; ++uniform_point_index)
 			{
-				const GPlatesMaths::PointOnSphere &point = uniform_points[uniform_point_index];
+				const GPlatesMaths::PointOnSphere &boundary_point = uniform_points[uniform_point_index];
 
 				// The length of the shared sub-segment polyline represented by the current point.
-				double point_length;
+				double point_boundary_length;
 				if (num_uniform_points == 1)  // first and last point
 				{
-					point_length = shared_sub_segment_polyline_arc_length;  // entire length
+					point_boundary_length = shared_sub_segment_polyline_arc_length;  // entire length
 				}
 				else if (uniform_point_index == 0)  // first point
 				{
-					point_length = first_uniform_point_spacing + 0.5 * uniform_point_spacing;
+					point_boundary_length = first_uniform_point_spacing + 0.5 * uniform_point_spacing;
 				}
 				else if (uniform_point_index == num_uniform_points - 1)  // last point
 				{
-					point_length = 0.5 * uniform_point_spacing +
+					point_boundary_length = 0.5 * uniform_point_spacing +
 							shared_sub_segment_polyline_arc_length -
 							(first_uniform_point_spacing + (num_uniform_points - 1) * uniform_point_spacing);
 				}
 				else  // neither first nor last point
 				{
 					// Points other than the first and last have the same length (uniform point spacing).
-					point_length = uniform_point_spacing;
+					point_boundary_length = uniform_point_spacing;
 				}
 
 				const unsigned int segment_index = segment_informations[uniform_point_index].first;
@@ -438,17 +438,17 @@ namespace GPlatesAppLogic
 				// (when following the order or points in the shared sub-segment).
 				boost::optional<GPlatesMaths::Vector3D> left_plate_velocity;
 				boost::optional<GPlatesMaths::Vector3D> right_plate_velocity;
-				TopologyPointLocation left_plate_location;   // default is not located inside any plate/network
-				TopologyPointLocation right_plate_location;  // default is not located inside any plate/network
+				TopologyPointLocation left_plate;   // default is not located inside any plate/network
+				TopologyPointLocation right_plate;  // default is not located inside any plate/network
 				get_left_and_right_plate_velocities(
-						point, boundary_normal.get(),
+						boundary_point, boundary_normal.get(),
 						reconstruction_time, velocity_delta_time, velocity_delta_time_type, velocity_units, earth_radius_in_kms,
 						left_sharing_resolved_topological_boundaries, left_sharing_resolved_topological_networks,
 						right_sharing_resolved_topological_boundaries, right_sharing_resolved_topological_networks,
 						all_resolved_topological_boundaries, all_resolved_topological_networks,
 						resolved_boundary_stage_rotation_calculator,
 						left_plate_velocity, right_plate_velocity,
-						left_plate_location, right_plate_location);
+						left_plate, right_plate);
 
 				//
 				// Note: Distances to start/end of shared sub-segment include rubber banding since we're considering the entire shared sub-segment polyline.
@@ -461,21 +461,21 @@ namespace GPlatesAppLogic
 				// Distance from current point to end of shared sub-segment (along shared sub-segment).
 				const double distance_to_end_of_shared_sub_segment = shared_sub_segment_polyline_arc_length - distance_from_start_of_shared_sub_segment;
 
-				// Signed distance from start of topological section to the current location.
+				// Signed distance from start of topological section to the boundary point.
 				const double signed_distance_from_start_of_topological_section =
 						signed_distance_from_start_of_topological_section_to_start_of_shared_sub_segment + distance_from_start_of_shared_sub_segment;
-				// Signed distance from the current location to end of topological section.
+				// Signed distance from the boundary point to end of topological section.
 				const double signed_distance_to_end_of_topological_section =
 						signed_distance_from_end_of_topological_section_to_start_of_shared_sub_segment - distance_from_start_of_shared_sub_segment;
 
 				// Record the statistics for the current uniform point.
 				shared_sub_segment_plate_boundary_stats.push_back(
 						PlateBoundaryStat(
-								point,
-								point_length,
+								boundary_point,
+								point_boundary_length,
 								boundary_normal.get(),
 								boundary_velocity,
-								left_plate_location, right_plate_location,
+								left_plate, right_plate,
 								left_plate_velocity, right_plate_velocity,
 								distance_from_start_of_shared_sub_segment, distance_to_end_of_shared_sub_segment,
 								signed_distance_from_start_of_topological_section, signed_distance_to_end_of_topological_section));
@@ -800,7 +800,7 @@ GPlatesAppLogic::PlateBoundaryStat::get_boundary_normal_azimuth() const
 {
 	const boost::tuple<GPlatesMaths::Real, GPlatesMaths::Real, GPlatesMaths::Real> coords =
 			GPlatesMaths::convert_from_geocentric_to_magnitude_azimuth_inclination(
-					GPlatesMaths::CartesianConvMatrix3D(d_point),
+					GPlatesMaths::CartesianConvMatrix3D(d_boundary_point),
 					GPlatesMaths::Vector3D(d_boundary_normal));
 
 	return boost::get<1>(coords).dval();
@@ -894,7 +894,7 @@ GPlatesAppLogic::PlateBoundaryStat::get_velocity_obliquity(
 	}
 
 	// Direction towards which we rotate from the boundary normal in a clockwise fashion.
-	const GPlatesMaths::Vector3D clockwise_direction = cross(d_boundary_normal, d_point.position_vector());
+	const GPlatesMaths::Vector3D clockwise_direction = cross(d_boundary_normal, d_boundary_point.position_vector());
 
 	// Angle of the velocity relative to the boundary normal.
 	double obliquity = acos(dot(velocity.get_normalisation(), d_boundary_normal)).dval();
@@ -921,7 +921,7 @@ GPlatesAppLogic::PlateBoundaryStat::get_strain_rate(
 	}
 
 	boost::optional<ResolvedTriangulation::DeformationInfo> deformation_info = network_location->first->
-			get_triangulation_network().calculate_deformation(d_point, network_location->second);
+			get_triangulation_network().calculate_deformation(d_boundary_point, network_location->second);
 	if (!deformation_info)
 	{
 		return DeformationStrainRate();  // zero deformation

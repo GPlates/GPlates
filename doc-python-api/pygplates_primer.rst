@@ -422,9 +422,10 @@ For example, to query the uniformly spaced point locations and their convergence
 ::
 
    for stat in plate_boundary_stats:
-      point_location = stat.point_location
-      convergence_velocity_magnitude = stat.convergence_velocity_magnitude
-      convergence_velocity_obliquity = stat.convergence_velocity_obliquity
+      boundary_point = stat.boundary_point
+      if convergence_velocity is not None:  # make sure the left and right plates exist
+         convergence_velocity_magnitude = stat.convergence_velocity_magnitude
+         convergence_velocity_obliquity = stat.convergence_velocity_obliquity
 
 There are many other :class:`statistics <pygplates.PlateBoundaryStatistic>` such as plate *boundary* velocity, plate boundary *normal* direction,
 left and right plate velocities, left and right plate identifiers (ie, which plate, or deforming network, is left and right of the point)
