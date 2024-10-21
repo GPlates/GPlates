@@ -3051,6 +3051,63 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         self.assertTrue(len(plate_boundary_stats) == 46)
         plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), first_uniform_point_spacing_radians=0.0, include_network_boundaries=True)
         self.assertTrue(len(plate_boundary_stats) == 60)
+        plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10))
+        self.assertTrue(len(plate_boundary_stats) == 35)
+        plate_boundary_stats = snapshot.calculate_plate_boundary_statistics(math.radians(10), include_network_boundaries=True)
+        self.assertTrue(len(plate_boundary_stats) == 47)
+        # Test the boundary point locations are what we expect.
+        plate_boundary_point_lat_lons = [
+                (-21.946252475914736, -19.346293200343844),
+                (-22.263605990417016, -30.091019489088392),
+                (-14.129996291084824, -11.506734532892487),
+                (-14.430381668646307, -21.821783377601868),
+                (-14.283044764886622, -32.143886500299004),
+                (-13.693316402918944, -42.432420981802544),
+                (18.326889205210314, -14.998878874263106),
+                (18.554579148162833, -25.522685963030952),
+                (-22.764772155019195, -39.71273543910178),
+                (16.70728652671387, -48.89580498731181),
+                (-31.732842469635937, -17.51643377293209),
+                (39.50030441441998, -22.582837115784884),
+                (33.23157851662342, -12.915515099055257),
+                (-31.83922723518894, -29.204913960315768),
+                (-30.99540328138162, -44.876248571709745),
+                (-32.054485342279214, -34.08499535394857),
+                (0.39052799774844704, -46.19246934095273),
+                (-9.581073246488833, -45.50253053612027),
+                (-21.756972872766777, -6.76622067408889),
+                (40.06528806134546, -50.33794799230483),
+                (42.35195077531569, -37.38298913948155),
+                (10.312560528313567, -47.43561181664631),
+                (16.077431034728548, -9.688752704075124),
+                (6.098016658202067, -9.074482704326721),
+                (-3.8880946684713225, -8.822690073188438),
+                (-13.885676744359461, -9.045558108663817),
+                (-21.39194690061765, -1.4036247206911152),
+                (21.92609237556592, -89.59715591286103),
+                (11.926266099667044, -89.53544210807405),
+                (1.9264273486903765, -89.47815991774948),
+                (-8.073412629307109, -89.42143354345046),
+                (-18.073244242729142, -89.36176938774878),
+                (29.430057905628797, -84.72043539544897),
+                (33.843078259328216, -74.17084500284454),
+                (37.26900636827229, -62.61183577799688),
+                (-25.926603811980286, -83.74805508707956),
+                (-25.827966619343684, -72.6707317363454),
+                (-26.05969135338931, -61.55260351765192),
+                (-26.04527471565717, -50.43015875739786),
+                (-31.73370294004206, -5.992946229710096),
+                (-19.57764637188272, -45.231632684686),
+                (19.068459681220613, -36.06969403649895),
+                (19.399001381324304, -46.65673771463496),
+                (35.68660277464262, -48.1785066964556),
+                (27.47040397496536, -41.474010277625624),
+                (26.07532695910801, -9.908990918811437),
+                (-13.392730536929992, -1.2383560708492212)
+        ]
+        plate_boundary_points = [pygplates.PointOnSphere(lat, lon) for lat, lon in plate_boundary_point_lat_lons]
+        for stat in plate_boundary_stats:
+            self.assertTrue(stat.boundary_point in plate_boundary_points)
 
         # Access PlateBoundaryStatistic attributes - just to make sure they can be queried.
         for plate_boundary_stat in plate_boundary_stats:
@@ -3095,29 +3152,25 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
 
         # Return a dict mapping each shared sub-segment to its statistics.
         plate_boundary_stats_dict = snapshot.calculate_plate_boundary_statistics(math.radians(10),
-                                                                                 first_uniform_point_spacing_radians=0.0,
                                                                                  include_network_boundaries=True,
                                                                                  return_shared_sub_segment_dict=True)
-        self.assertTrue(len(plate_boundary_stats_dict) == 32)
-        self.assertTrue(sum(len(shared_sub_segment_stats) for _, shared_sub_segment_stats in plate_boundary_stats_dict.items()) == 60)
+        self.assertTrue(len(plate_boundary_stats_dict) == 26)
+        self.assertTrue(sum(len(shared_sub_segment_stats) for _, shared_sub_segment_stats in plate_boundary_stats_dict.items()) == 47)
 
         # Filter boundary sections by feature type.
         plate_boundary_stats_filtered = snapshot.calculate_plate_boundary_statistics(math.radians(10),
-                                                                                 first_uniform_point_spacing_radians=0.0,
                                                                                  include_network_boundaries=True,
                                                                                  # All boundary sections are this feature type...
                                                                                  boundary_section_filter=pygplates.FeatureType.gpml_unclassified_feature,
                                                                                  return_shared_sub_segment_dict=True)
-        self.assertTrue(len(plate_boundary_stats_filtered) == 32)
+        self.assertTrue(len(plate_boundary_stats_filtered) == 26)
         plate_boundary_stats_filtered = snapshot.calculate_plate_boundary_statistics(math.radians(10),
-                                                                                 first_uniform_point_spacing_radians=0.0,
                                                                                  include_network_boundaries=True,
                                                                                  # None of the boundary sections include these feature types...
                                                                                  boundary_section_filter=[pygplates.FeatureType.gpml_subduction_zone, pygplates.FeatureType.gpml_mid_ocean_ridge],
                                                                                  return_shared_sub_segment_dict=True)
         self.assertTrue(len(plate_boundary_stats_filtered) == 0)
         plate_boundary_stats_filtered = snapshot.calculate_plate_boundary_statistics(math.radians(10),
-                                                                                 first_uniform_point_spacing_radians=0.0,
                                                                                  include_network_boundaries=True,
                                                                                  # Filter boundary sections that are resolved topological lines...
                                                                                  boundary_section_filter=lambda rts: isinstance(rts.get_topological_section(), pygplates.ResolvedTopologicalLine),
