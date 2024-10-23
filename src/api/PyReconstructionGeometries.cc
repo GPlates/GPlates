@@ -46,6 +46,7 @@
 #include "app-logic/ReconstructionGeometryUtils.h"
 #include "app-logic/ReconstructionGeometryVisitor.h"
 #include "app-logic/ResolvedTriangulationNetwork.h"
+#include "app-logic/TopologyPointLocation.h"
 #include "app-logic/VelocityDeltaTime.h"
 #include "app-logic/VelocityUnits.h"
 
@@ -1358,6 +1359,21 @@ namespace GPlatesApi
 	{
 		return resolved_topological_boundary.get_resolved_feature();
 	}
+
+	GPlatesAppLogic::TopologyPointLocation
+	resolved_topological_boundary_get_point_location(
+			GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type resolved_topological_boundary,
+			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
+			const GPlatesMaths::PointOnSphere &point)
+	{
+		if (!resolved_topological_boundary->resolved_topology_boundary()->is_point_in_polygon(point))
+		{
+			return GPlatesAppLogic::TopologyPointLocation();
+		}
+
+		return GPlatesAppLogic::TopologyPointLocation(resolved_topological_boundary);
+	}
 }
 
 
@@ -1474,6 +1490,41 @@ export_resolved_topological_boundary()
 				&GPlatesApi::resolved_topological_boundary_get_boundary_sub_segments,
 				"get_geometry_sub_segments()\n"
 				"  Same as :meth:`get_boundary_sub_segments`.\n")
+		.def("get_point_location",
+				&GPlatesApi::resolved_topological_boundary_get_point_location,
+				(bp::arg("point")),
+				"get_point_location(point)\n"
+				"  Determines whether the specified point lies within this resolved topological boundary.\n"
+				"\n"
+				"  :param point: the point to be tested\n"
+				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or (latitude,longitude), in degrees, or (x,y,z)\n"
+				"  :rtype: :class:`TopologyPointLocation`\n"
+				"\n"
+				"  If the point lies within this resolved topological boundary then :meth:`TopologyPointLocation.located_in_resolved_boundary` will return this "
+				"resolved topological boundary, otherwise it will return ``None`` (in addition to :meth:`TopologyPointLocation.not_located_in_resolved_topology` "
+				"returning ``True``).\n"
+				"\n"
+				"  To test if a (latitude, longitude) point is inside a resolved topological boundary:\n"
+				"  ::\n"
+				"\n"
+				"    if resolved_topological_boundary.get_point_location((latitude, longitude)).located_in_resolved_boundary():\n"
+				"      ...\n"
+				"\n"
+				"  .. note:: :meth:`TopologyPointLocation.located_in_resolved_network` will always return ``None`` since this is a rigid plate (not a network). "
+				":class:`TopologyPointLocation` is just returned for consistency with :meth:`ResolvedTopologicalNetwork.get_point_location`.\n"
+				"\n"
+				"  This method is *essentially* equivalent to:\n"
+				"  ::\n"
+				"\n"
+				"    def get_point_location(resolved_topological_boundary, point):\n"
+				"        # See if point is located within the resolved topological boundary polygon.\n"
+				"        if resolved_topological_boundary.get_resolved_boundary().is_point_in_polygon(point):\n"
+				"            return resolved_topological_boundary\n"
+				"\n"
+				"        # Point is *not* located in the resolved topological boundary.\n"
+				"        return None\n"
+				"\n"
+				"  .. versionadded:: 0.49\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
@@ -1859,6 +1910,25 @@ namespace GPlatesApi
 				earth_radius_in_kms);
 	}
 
+	GPlatesAppLogic::TopologyPointLocation
+	resolved_topological_network_get_point_location(
+			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type resolved_topological_network,
+			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
+			const GPlatesMaths::PointOnSphere &point)
+	{
+		boost::optional<GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation>
+				point_location = resolved_topological_network->get_triangulation_network().get_point_location(point);
+		if (!point_location)
+		{
+			return GPlatesAppLogic::TopologyPointLocation();
+		}
+
+		return GPlatesAppLogic::TopologyPointLocation(
+				resolved_topological_network,
+				point_location.get());
+	}
+
 
 	ReconstructionGeometryTypeWrapper<GPlatesAppLogic::ResolvedTopologicalNetwork>::ReconstructionGeometryTypeWrapper(
 			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type resolved_topological_network) :
@@ -2183,7 +2253,7 @@ export_resolved_topological_network()
 				"get_resolved_boundary([include_rigid_blocks_as_interior_holes=False])\n"
 				"  Returns the resolved boundary of this network.\n"
 				"\n"
-				"  :param include_rigid_blocks_as_interior_holes: Whether include :meth:`interior rigid blocks <get_rigid_blocks>` (if any) as "
+				"  :param include_rigid_blocks_as_interior_holes: Whether to include :meth:`interior rigid blocks <get_rigid_blocks>` (if any) as "
 				":meth:`interior rings <PolygonOnSphere.get_interior_ring_points>` in the returned boundary polygon. "
 				"Defaults to ``False``.\n"
 				"  :type include_rigid_blocks_as_interior_holes: bool\n"
@@ -2298,6 +2368,62 @@ export_resolved_topological_network()
 				"  :raises: ValueError if *velocity_delta_time* is negative or zero.\n"
 				"\n"
 				"  .. seealso:: :ref:`pygplates_primer_deformation_deforming_triangulation` in the *Primer* documentation."
+				"\n"
+				"  .. versionadded:: 0.49\n")
+		.def("get_point_location",
+				&GPlatesApi::resolved_topological_network_get_point_location,
+				(bp::arg("point")),
+				"get_point_location(point)\n"
+				"  Determines whether the specified point lies within this resolved topological network.\n"
+				"\n"
+				"  :param point: the point to be tested\n"
+				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or (latitude,longitude), in degrees, or (x,y,z)\n"
+				"  :rtype: :class:`TopologyPointLocation`\n"
+				"\n"
+				"  If the point lies within this resolved topological network then :meth:`TopologyPointLocation.located_in_resolved_network` will return this "
+				"resolved topological network, otherwise it will return ``None`` (in addition to :meth:`TopologyPointLocation.not_located_in_resolved_topology` "
+				"returning ``True``).\n"
+				"\n"
+				"  To test if a (latitude, longitude) point is inside a resolved topological network:\n"
+				"  ::\n"
+				"\n"
+				"    if resolved_topological_network.get_point_location((latitude, longitude)).located_in_resolved_network():\n"
+				"      ...\n"
+				"\n"
+				"  Furthermore, if the point lies within this resolved topological network then it will either be in the "
+				":meth:`deforming region <TopologyPointLocation.located_in_resolved_network_deforming_region>` or in a "
+				":meth:`rigid block <TopologyPointLocation.located_in_resolved_network_rigid_block>` (if any).\n"
+				"\n"
+				"  To test if a (latitude, longitude) point is inside a resolved topological network's deforming region or inside a rigid block:\n"
+				"  ::\n"
+				"\n"
+				"    point_location = resolved_topological_network.get_point_location((latitude, longitude))\n"
+				"    if point_location.located_in_resolved_network_deforming_region():\n"
+				"      ...\n"
+				"    elif point_location.located_in_resolved_network_rigid_block():\n"
+				"      _, rigid_block = point_location.located_in_resolved_network_rigid_block()\n"
+				"      ...\n"
+				"    else:  # point is outside resolved topological network\n"
+				"      ...\n"
+				"\n"
+				"  .. note:: :meth:`TopologyPointLocation.located_in_resolved_boundary` will always return ``None`` since this is a network (not a rigid plate). "
+				":class:`TopologyPointLocation` is just returned for consistency with :meth:`ResolvedTopologicalBoundary.get_point_location`.\n"
+				"\n"
+				"  This method is *essentially* equivalent to:\n"
+				"  ::\n"
+				"\n"
+				"    def get_point_location(resolved_topological_network, point):\n"
+				"        # See if point is located within the resolved topological network boundary.\n"
+				"        if resolved_topological_network.get_resolved_boundary().is_point_in_polygon(point):\n"
+				"            # See if point is located in a rigid block (if any) of the resolved topological network.\n"
+				"            for rigid_block in resolved_topological_network.get_rigid_blocks():\n"
+				"                if rigid_block.get_reconstructed_geometry().is_point_in_polygon(point):\n"
+				"                    return resolved_topological_network, rigid_block\n"
+				"            # Point must therefore be located in the deforming region of the resolved topological network.\n"
+				"            return resolved_topological_network\n"
+				"\n"
+				"        # Point is *not* located in the resolved topological network.\n"
+				"        return None\n"
 				"\n"
 				"  .. versionadded:: 0.49\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...

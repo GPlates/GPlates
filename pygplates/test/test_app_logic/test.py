@@ -2886,6 +2886,24 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
             self.assertTrue(snapshot.get_anchor_plate_id() == 0)
             self.assertTrue(snapshot.get_rotation_model())
 
+    def test_resolved_topological_boundaries(self):
+        snapshot = pygplates.TopologicalSnapshot(
+            os.path.join(FIXTURES, 'topologies.gpml'),
+            os.path.join(FIXTURES, 'rotations.rot'),
+            pygplates.GeoTimeInstant(10))
+        resolved_topological_boundaries = snapshot.get_resolved_topologies(pygplates.ResolveTopologyType.boundary)
+        self.assertTrue(len(resolved_topological_boundaries) >= 1)
+
+        # Test point location.
+        for resolved_topological_boundary in resolved_topological_boundaries:
+            point_location = resolved_topological_boundary.get_point_location((0, -30)).located_in_resolved_boundary()
+            if resolved_topological_boundary.get_feature().get_name() == 'topology2':
+                self.assertTrue(point_location == resolved_topological_boundary)  # only 'topology2' contains the point
+            else:
+                self.assertTrue(point_location is None)
+            
+            self.assertTrue(resolved_topological_boundary.get_point_location((0, -60)).located_in_resolved_network() is None)  # point is in a network
+
     def test_resolved_topological_networks(self):
         snapshot = pygplates.TopologicalSnapshot(
             os.path.join(FIXTURES, 'topologies.gpml'),
@@ -2921,6 +2939,11 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         deforming_triangulation = resolved_topological_network.get_deforming_triangulation(
             velocity_delta_time=1.0, velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t,
             velocity_units=pygplates.VelocityUnits.kms_per_my, earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms)
+
+        # Test point location.
+        self.assertTrue(resolved_topological_network.get_point_location((0, -60)).located_in_resolved_network() == resolved_topological_network)
+        self.assertTrue(resolved_topological_network.get_point_location((0, -60)).located_in_resolved_network_deforming_region() == resolved_topological_network)
+        self.assertTrue(resolved_topological_network.get_point_location((0, -30)).located_in_resolved_boundary() is None)
     
     def test_resolve_topology_parameters(self):
         default_resolve_topology_parameters=pygplates.ResolveTopologyParameters()
