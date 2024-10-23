@@ -2880,14 +2880,14 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::GeometrySample::calc_def
 			const ResolvedTopologicalNetwork::non_null_ptr_to_const_type &resolved_network = network_point_location->first;
 			const ResolvedTriangulation::Network::PointLocation &point_location = network_point_location->second;
 
-			boost::optional<ResolvedTriangulation::DeformationInfo> face_deformation_info =
-					resolved_network->get_triangulation_network().calculate_deformation(point, point_location);
+			boost::optional< std::pair<ResolvedTriangulation::DeformationInfo, ResolvedTriangulation::Network::PointLocation> >
+					face_deformation_info = resolved_network->get_triangulation_network().calculate_deformation(point, point_location);
 			if (face_deformation_info)
 			{
 				// Set the instantaneous strain rate.
 				// The accumulated strain will subsequently depend on the instantaneous strain rate.
 				geometry_point->strain_rate = d_pool_allocator->deformation_strain_rate_pool.construct(
-						face_deformation_info->get_strain_rate());
+						face_deformation_info->first.get_strain_rate());
 			}
 		}
 	}

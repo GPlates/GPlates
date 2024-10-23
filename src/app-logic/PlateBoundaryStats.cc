@@ -934,12 +934,14 @@ GPlatesAppLogic::PlateBoundaryStat::get_strain_rate(
 		return DeformationStrainRate();  // zero deformation
 	}
 
-	boost::optional<ResolvedTriangulation::DeformationInfo> deformation_info = network_location->first->
-			get_triangulation_network().calculate_deformation(d_boundary_point, network_location->second);
+	boost::optional< std::pair<ResolvedTriangulation::DeformationInfo, ResolvedTriangulation::Network::PointLocation> >
+			deformation_info = network_location->first->get_triangulation_network().calculate_deformation(
+					d_boundary_point,
+					network_location->second);
 	if (!deformation_info)
 	{
 		return DeformationStrainRate();  // zero deformation
 	}
 
-	return deformation_info->get_strain_rate();
+	return deformation_info->first.get_strain_rate();
 }

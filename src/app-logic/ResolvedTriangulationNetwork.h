@@ -537,14 +537,14 @@ namespace GPlatesAppLogic
 			 *
 			 * Returns boost::none if the point is outside the network (if @a is_point_in_network returns false).
 			 */
-			boost::optional<DeformationInfo>
+			boost::optional< std::pair<DeformationInfo, PointLocation> >
 			calculate_deformation(
 					const GPlatesMaths::PointOnSphere &point,
 					boost::optional<PointLocation> point_location = boost::none) const;
 
 			//! Convenient overload for 2D projected point.
 			template <class Point2Type>
-			boost::optional<DeformationInfo>
+			boost::optional< std::pair<DeformationInfo, PointLocation> >
 			calculate_deformation(
 					const Point2Type &point_2,
 					boost::optional<PointLocation> point_location = boost::none) const

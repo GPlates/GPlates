@@ -422,39 +422,56 @@ GPlatesAppLogic::ResolvedTriangulation::Network::calc_delaunay_barycentric_coord
 }
 
 
-boost::optional<GPlatesAppLogic::ResolvedTriangulation::DeformationInfo>
+boost::optional<
+		std::pair<GPlatesAppLogic::ResolvedTriangulation::DeformationInfo,
+		GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> >
 GPlatesAppLogic::ResolvedTriangulation::Network::calculate_deformation(
 		const GPlatesMaths::PointOnSphere &point,
 		boost::optional<PointLocation> point_location) const
 {
-	// If already know the location of point.
-	if (point_location)
-	{
-		boost::optional<Delaunay_2::Face_handle> delaunay_face = point_location->located_in_deforming_region();
-		if (!delaunay_face)
-		{
-			return boost::none;
-		}
-
-		// Return zero strain rates for interior rigid blocks since no deformation there.
-		return calculate_deformation_in_deforming_region(point, delaunay_face.get());
-	}
-
-	// We always classify points using 3D on-sphere tests.
-	// This makes the boundary line up much better with adjacent topological polygons and also is a
-	// faster test and can also prevent creation of triangulation if the point is outside the network.
-	if (!is_point_in_network(point))
+	if (!point_location &&
+		!is_point_in_network(point))
 	{
 		return boost::none;
 	}
 
-	if (is_point_in_a_rigid_block(point))
+	// See if the point is inside any interior rigid blocks.
+	boost::optional<const RigidBlock &> rigid_block;
+	if (point_location)
+	{
+		rigid_block = point_location->located_in_rigid_block();
+	}
+	else
+	{
+		rigid_block = is_point_in_a_rigid_block(point);
+	}
+	if (rigid_block)
 	{
 		// Return zero strain rates for interior rigid blocks since no deformation there.
-		return DeformationInfo();
+		return std::make_pair(DeformationInfo(), PointLocation(rigid_block.get()));
 	}
 
-	return calculate_deformation_in_deforming_region(point);
+	// If we get here then the point must be in the deforming region.
+
+	// Project into the 2D triangulation space.
+	const Delaunay_2::Point point_2 = d_projection.project_from_point_on_sphere<Delaunay_2::Point>(point);
+
+	Delaunay_2::Face_handle delaunay_face;
+	if (point_location)
+	{
+		delaunay_face = point_location->located_in_deforming_region().get();
+	}
+	else
+	{
+		// Find the delaunay face containing the point.
+		// We need to return a network position (delaunay face) and the natural neighbour interpolation
+		// doesn't provide that. However it can use our delaunay face to find the coordinates faster.
+		delaunay_face = get_delaunay_face_in_deforming_region(point_2);
+	}
+
+	return std::make_pair(
+			calculate_deformation_in_deforming_region(point_2, delaunay_face),
+			PointLocation(delaunay_face));
 }
 
 
