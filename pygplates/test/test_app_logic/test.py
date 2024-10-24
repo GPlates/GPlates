@@ -2894,15 +2894,19 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         resolved_topological_boundaries = snapshot.get_resolved_topologies(pygplates.ResolveTopologyType.boundary)
         self.assertTrue(len(resolved_topological_boundaries) >= 1)
 
-        # Test point location.
+        # Test point location/velocity.
         for resolved_topological_boundary in resolved_topological_boundaries:
-            point_location = resolved_topological_boundary.get_point_location((0, -30)).located_in_resolved_boundary()
+            point_in_topology2 = pygplates.PointOnSphere(0, -30)  # only 'topology2' contains this point
+            point_location = resolved_topological_boundary.get_point_location(point_in_topology2)
+            point_velocity = resolved_topological_boundary.get_point_velocity(point_in_topology2)
             if resolved_topological_boundary.get_feature().get_name() == 'topology2':
-                self.assertTrue(point_location == resolved_topological_boundary)  # only 'topology2' contains the point
+                self.assertTrue(point_location.located_in_resolved_boundary() == resolved_topological_boundary)
+                self.assertTrue(point_velocity == pygplates.Vector3D.zero)
             else:
-                self.assertTrue(point_location is None)
-            
-            self.assertTrue(resolved_topological_boundary.get_point_location((0, -60)).located_in_resolved_network() is None)  # point is in a network
+                self.assertTrue(point_location.located_in_resolved_boundary() is None)
+                self.assertTrue(point_velocity is None)
+            point_in_network = pygplates.PointOnSphere(0, -60)
+            self.assertTrue(resolved_topological_boundary.get_point_location(point_in_network).located_in_resolved_network() is None)  # no networks resolved
 
     def test_resolved_topological_networks(self):
         snapshot = pygplates.TopologicalSnapshot(
@@ -2940,10 +2944,15 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
             velocity_delta_time=1.0, velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t,
             velocity_units=pygplates.VelocityUnits.kms_per_my, earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms)
 
-        # Test point location.
-        self.assertTrue(resolved_topological_network.get_point_location((0, -60)).located_in_resolved_network() == resolved_topological_network)
-        self.assertTrue(resolved_topological_network.get_point_location((0, -60)).located_in_resolved_network_deforming_region() == resolved_topological_network)
-        self.assertTrue(resolved_topological_network.get_point_location((0, -30)).located_in_resolved_boundary() is None)
+        # Test point location/velocity.
+        point_inside_network = pygplates.PointOnSphere(0, -60)  # point is inside network
+        self.assertTrue(resolved_topological_network.get_point_location(point_inside_network).located_in_resolved_network() == resolved_topological_network)
+        self.assertTrue(resolved_topological_network.get_point_location(point_inside_network).located_in_resolved_network_deforming_region() == resolved_topological_network)
+        self.assertTrue(resolved_topological_network.get_point_velocity(point_inside_network) == pygplates.Vector3D.zero)
+        point_in_boundary = pygplates.PointOnSphere(0, -30)  # point is outside network
+        self.assertTrue(resolved_topological_network.get_point_location(point_in_boundary).located_in_resolved_network() is None)
+        self.assertTrue(resolved_topological_network.get_point_location(point_in_boundary).located_in_resolved_boundary() is None)
+        self.assertTrue(resolved_topological_network.get_point_velocity(point_in_boundary) is None)
     
     def test_resolve_topology_parameters(self):
         default_resolve_topology_parameters=pygplates.ResolveTopologyParameters()
