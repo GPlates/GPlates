@@ -1414,6 +1414,23 @@ namespace GPlatesApi
 				velocity_units,
 				earth_radius_in_kms);
 	}
+
+	boost::optional<GPlatesAppLogic::DeformationStrainRate>
+	resolved_topological_boundary_get_point_strain_rate(
+			GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type resolved_topological_boundary,
+			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
+			const GPlatesMaths::PointOnSphere &point)
+	{
+		// See if point is inside the resolved topological boundary.
+		if (!resolved_topological_boundary->resolved_topology_boundary()->is_point_in_polygon(point))
+		{
+			return boost::none;
+		}
+
+		// Return zero deformation (since inside a rigid plate).
+		return GPlatesAppLogic::DeformationStrainRate();
+	}
 }
 
 
@@ -1613,6 +1630,33 @@ export_resolved_topological_boundary()
 				"            plate_id = resolved_topological_boundary.get_feature().get_reconstruction_plate_id()\n"
 				"            velocity = ...  # calculate velocity using 'point' and 'plate_id'\n"
 				"            return velocity\n"
+				"\n"
+				"        # Point is *not* located in the resolved topological boundary.\n"
+				"        return None\n"
+				"\n"
+				"  .. versionadded:: 0.49\n")
+		.def("get_point_strain_rate",
+				&GPlatesApi::resolved_topological_boundary_get_point_strain_rate,
+				(bp::arg("point")),
+				"get_point_strain_rate(point)\n"
+				"  Returns zero strain rate (if the specified point lies within this resolved topological boundary).\n"
+				"\n"
+				"  :param point: the point to calculate strain rate at\n"
+				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or (latitude,longitude), in degrees, or (x,y,z)\n"
+				"  :rtype: :class:`StrainRate` or ``None``\n"
+				"\n"
+				"  If the point lies within this resolved topological boundary then ``pygplates.StrainRate.zero`` will be returned (since this is a *rigid* plate), "
+				"otherwise ``None`` will be returned (to indicate the *point* is outside this resolved topological boundary).\n"
+				"\n"
+				"  .. note:: This method is only provided for consistency with :meth:`ResolvedTopologicalNetwork.get_point_strain_rate`.\n"
+				"\n"
+				"  This method is *essentially* equivalent to:\n"
+				"  ::\n"
+				"\n"
+				"    def get_point_strain_rate(resolved_topological_boundary, point):\n"
+				"        # See if point is located within the resolved topological boundary.\n"
+				"        if resolved_topological_boundary.get_resolved_boundary().is_point_in_polygon(point):\n"
+				"            return pygplates.StrainRate.zero\n"
 				"\n"
 				"        # Point is *not* located in the resolved topological boundary.\n"
 				"        return None\n"
@@ -2046,6 +2090,25 @@ namespace GPlatesApi
 		}
 
 		return velocity->first;
+	}
+
+	boost::optional<GPlatesAppLogic::DeformationStrainRate>
+	resolved_topological_network_get_point_strain_rate(
+			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type resolved_topological_network,
+			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
+			const GPlatesMaths::PointOnSphere &point)
+	{
+		boost::optional<std::pair<
+				GPlatesAppLogic::ResolvedTriangulation::DeformationInfo,
+				GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> >
+						deformation_info = resolved_topological_network->get_triangulation_network().calculate_deformation(point);
+		if (!deformation_info)
+		{
+			return boost::none;
+		}
+
+		return deformation_info->first.get_strain_rate();
 	}
 
 
@@ -2598,8 +2661,48 @@ export_resolved_topological_network()
 				"                    rigid_block_velocity = ...  # calculate velocity using 'point' and 'rigid_block_plate_id'\n"
 				"                    return rigid_block_velocity\n"
 				"            # Point must therefore be located in the deforming region of the resolved topological network.\n"
-				"            deforming_velocity = ...  # calculate velocity using 'point' and deforming triangulation\n"
+				"            deforming_velocity = ...  # calculate velocity using 'point' and the deforming triangulation\n"
 				"            return deforming_velocity\n"
+				"\n"
+				"        # Point is *not* located in the resolved topological network.\n"
+				"        return None\n"
+				"\n"
+				"  .. versionadded:: 0.49\n")
+		.def("get_point_strain_rate",
+				&GPlatesApi::resolved_topological_network_get_point_strain_rate,
+				(bp::arg("point")),
+				"get_point_strain_rate(point)\n"
+				"  Returns the strain rate of the specified point (if it lies within this resolved topological network).\n"
+				"\n"
+				"  :param point: the point to calculate strain rate at\n"
+				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or (latitude,longitude), in degrees, or (x,y,z)\n"
+				"  :rtype: :class:`StrainRate` or ``None``\n"
+				"\n"
+				"  If the point lies within this resolved topological network (which can be either its deforming region or one of its rigid blocks) "
+				"then a strain rate will be returned, otherwise ``None`` will be returned.\n"
+				"\n"
+				"  .. note:: If *point* is inside a rigid block (of this resolved topological network) then ``pygplates.StrainRate.zero`` will be returned.\n"
+				"\n"
+				"  To calculate the strain rate of a (latitude, longitude) point (if it is inside a resolved topological network):\n"
+				"  ::\n"
+				"\n"
+				"    point_strain_rate = resolved_topological_network.get_point_strain_rate((latitude, longitude))\n"
+				"    if point_strain_rate is not None:\n"
+				"      ...\n"
+				"\n"
+				"  This method is *essentially* equivalent to:\n"
+				"  ::\n"
+				"\n"
+				"    def get_point_strain_rate(resolved_topological_network, point):\n"
+				"        # See if point is located within the resolved topological network.\n"
+				"        if resolved_topological_network.get_resolved_boundary().is_point_in_polygon(point):\n"
+				"            # See if point is located in a rigid block (if any) of the resolved topological network.\n"
+				"            for rigid_block in resolved_topological_network.get_rigid_blocks():\n"
+				"                if rigid_block.get_reconstructed_geometry().is_point_in_polygon(point):\n"
+				"                    return pygplates.StrainRate.zero\n"
+				"            # Point must therefore be located in the deforming region of the resolved topological network.\n"
+				"            strain_rate = ...  # calculate strain rate using 'point' and the deforming triangulation\n"
+				"            return strain_rate\n"
 				"\n"
 				"        # Point is *not* located in the resolved topological network.\n"
 				"        return None\n"
