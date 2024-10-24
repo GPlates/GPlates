@@ -552,26 +552,24 @@ GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::add_net_rotation_contr
 	// Check which rigid (non-deforming) plate (if any) the position lies in.
 	for (auto boundary_ptr : d_resolved_topological_boundaries)
 	{
-		// Get the stage rotation from the plate ID.
-		// If resolved boundary has no plate ID then the position does not contribute net rotation.
-		const boost::optional<GPlatesMaths::FiniteRotation> boundary_stage_pole = get_resolved_boundary_stage_pole(boundary_ptr);
-		if (boundary_stage_pole)
+		const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type boundary = boundary_ptr->resolved_topology_boundary();
+
+		if (boundary->is_point_in_polygon(position,GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE))
 		{
-			const GPlatesMaths::PolygonOnSphere::non_null_ptr_to_const_type boundary = boundary_ptr->resolved_topology_boundary();
+			// Get the stage rotation from the plate ID.
+			// If resolved boundary has no plate ID then 0 will be used (for the plate ID).
+			const GPlatesMaths::FiniteRotation boundary_stage_pole = get_resolved_boundary_stage_pole(boundary_ptr);
 
-			if (boundary->is_point_in_polygon(position,GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE))
-			{
-				const NetRotationAccumulator net_rotation_contribution =
-						NetRotationAccumulator::create(
-							position,
-							sample_area_steradians,
-							boundary_stage_pole.get(),
-							d_velocity_delta_time);
+			const NetRotationAccumulator net_rotation_contribution =
+					NetRotationAccumulator::create(
+						position,
+						sample_area_steradians,
+						boundary_stage_pole,
+						d_velocity_delta_time);
 
-				add_net_rotation_contribution(boundary_ptr, net_rotation_contribution);
+			add_net_rotation_contribution(boundary_ptr, net_rotation_contribution);
 
-				return true;
-			}
+			return true;
 		}
 	}
 
@@ -598,14 +596,18 @@ GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::add_net_rotation_contr
 	d_total_net_rotation += net_rotation_contribution;
 }
 
-boost::optional<GPlatesMaths::FiniteRotation>
+GPlatesMaths::FiniteRotation
 GPlatesAppLogic::NetRotationUtils::NetRotationCalculator::get_resolved_boundary_stage_pole(
 		ResolvedTopologicalBoundary::non_null_ptr_to_const_type resolved_topological_boundary) const
 {
-	const boost::optional<GPlatesModel::integer_plate_id_type> boundary_plate_id = resolved_topological_boundary->plate_id();
+	// Get the resolved boundary plate id.
+	//
+	// If we can't get a reconstruction plate ID then we'll just use plate id zero (spin axis)
+	// which can still give a non-identity rotation if the anchor plate id is non-zero.
+	boost::optional<GPlatesModel::integer_plate_id_type> boundary_plate_id = resolved_topological_boundary->plate_id();
 	if (!boundary_plate_id)
 	{
-		return boost::none;
+		boundary_plate_id = 0;
 	}
 
 	// See if plate ID is already in the map. If not then calculate and insert into map.

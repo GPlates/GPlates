@@ -1394,11 +1394,14 @@ namespace GPlatesApi
 		}
 
 		// Get the plate ID from resolved boundary.
-		const boost::optional<GPlatesModel::integer_plate_id_type> resolved_boundary_plate_id =
+		//
+		// If we can't get a reconstruction plate ID then we'll just use plate id zero (spin axis)
+		// which can still give a non-identity rotation if the anchor plate id is non-zero.
+		boost::optional<GPlatesModel::integer_plate_id_type> resolved_boundary_plate_id =
 				resolved_topological_boundary->plate_id();
 		if (!resolved_boundary_plate_id)
 		{
-			return boost::none;
+			resolved_boundary_plate_id = 0;
 		}
 
 		return GPlatesAppLogic::PlateVelocityUtils::calculate_velocity_vector(
@@ -1588,8 +1591,9 @@ export_resolved_topological_boundary()
 				"  :type earth_radius_in_kms: float\n"
 				"  :rtype: :class:`Vector3D` or ``None``\n"
 				"\n"
-				"  If the point lies within this resolved topological boundary (and this resolved topological boundary has a reconstruction plate ID) "
-				"then a velocity vector will be returned, otherwise ``None`` will be returned.\n"
+				"  If the point lies within this resolved topological boundary then a velocity vector will be returned, otherwise ``None`` will be returned.\n"
+				"\n"
+				"  .. note:: If this resolved topological boundary does *not* have a reconstruction plate ID then ``0`` will be used.\n"
 				"\n"
 				"  To calculate the velocity of a (latitude, longitude) point (if it is inside a resolved topological boundary):\n"
 				"  ::\n"
@@ -1604,14 +1608,13 @@ export_resolved_topological_boundary()
 				"    def get_point_velocity(resolved_topological_boundary, point):\n"
 				"        # See if point is located within the resolved topological boundary polygon.\n"
 				"        if resolved_topological_boundary.get_resolved_boundary().is_point_in_polygon(point):\n"
-				"            # See if resolved topological boundary has a reconstruction plate ID.\n"
-				"            plate_id = resolved_topological_boundary.get_feature().get_reconstruction_plate_id(None)\n"
-				"            if plate_id is not None:\n"
-				"                velocity = ...  # calculate velocity using 'point' and 'plate_id'\n"
-				"                return velocity\n"
+				"            # Get the reconstruction plate ID of this resolved topological boundary.\n"
+				"            # If it doesn't have one then zero will be used instead.\n"
+				"            plate_id = resolved_topological_boundary.get_feature().get_reconstruction_plate_id()\n"
+				"            velocity = ...  # calculate velocity using 'point' and 'plate_id'\n"
+				"            return velocity\n"
 				"\n"
 				"        # Point is *not* located in the resolved topological boundary.\n"
-				"        # Or the resolved topological boundary doesn't have a reconstruction plate ID.\n"
 				"        return None\n"
 				"\n"
 				"  .. versionadded:: 0.49\n")

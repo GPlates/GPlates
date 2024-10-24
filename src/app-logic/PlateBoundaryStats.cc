@@ -184,25 +184,30 @@ namespace GPlatesAppLogic
 						GPlatesMaths::PolygonOnSphere::HIGH_SPEED_HIGH_SETUP_HIGH_MEMORY_USAGE))
 				{
 					// Get the plate ID from resolved boundary.
-					const boost::optional<GPlatesModel::integer_plate_id_type> resolved_boundary_plate_id =
+					//
+					// If we can't get a reconstruction plate ID then we'll just use plate id zero (spin axis)
+					// which can still give a non-identity rotation if the anchor plate id is non-zero.
+					boost::optional<GPlatesModel::integer_plate_id_type> resolved_boundary_plate_id =
 							resolved_topological_boundary->plate_id();
-					if (resolved_boundary_plate_id)
+					if (!resolved_boundary_plate_id)
 					{
-						// Calculate the velocity of the point inside the resolved boundary.
-						const GPlatesMaths::Vector3D velocity =
-								PlateVelocityUtils::calculate_velocity_vector(
-										point,
-										resolved_boundary_plate_id.get(),
-										resolved_topological_boundary->get_reconstruction_tree_creator(),
-										resolved_boundary_stage_rotation_calculator,
-										velocity_units,
-										earth_radius_in_kms);
-
-						plate_velocity = velocity;
-						plate = TopologyPointLocation(resolved_topological_boundary);
-
-						return true;
+						resolved_boundary_plate_id = 0;
 					}
+
+					// Calculate the velocity of the point inside the resolved boundary.
+					const GPlatesMaths::Vector3D velocity =
+							PlateVelocityUtils::calculate_velocity_vector(
+									point,
+									resolved_boundary_plate_id.get(),
+									resolved_topological_boundary->get_reconstruction_tree_creator(),
+									resolved_boundary_stage_rotation_calculator,
+									velocity_units,
+									earth_radius_in_kms);
+
+					plate_velocity = velocity;
+					plate = TopologyPointLocation(resolved_topological_boundary);
+
+					return true;
 				}
 			}
 

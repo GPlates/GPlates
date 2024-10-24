@@ -455,7 +455,7 @@ namespace GPlatesAppLogic
 					ResolvedTopologicalBoundary::non_null_ptr_to_const_type resolved_topological_boundary,
 					const NetRotationAccumulator &net_rotation_result);
 
-			boost::optional<GPlatesMaths::FiniteRotation>
+			GPlatesMaths::FiniteRotation
 			get_resolved_boundary_stage_pole(
 					ResolvedTopologicalBoundary::non_null_ptr_to_const_type resolved_topological_boundary) const;
 

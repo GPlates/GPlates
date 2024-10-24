@@ -716,9 +716,9 @@ namespace GPlatesAppLogic
 			 * Calculates the velocity at @a point in the network interpolated using natural neighbour coordinates.
 			 *
 			 * If the point is inside the deforming region it will be interpolated using the delaunay triangulation.
-			 * And if the point is inside an interior rigid block then the velocity will be
-			 * calculated according to the rigid motion of that block (and the rigid block will be
-			 * returned along with the velocity).
+			 * And if the point is inside an interior rigid block then the velocity will be calculated according to
+			 * the rigid motion of that block (and the rigid block will be returned along with the velocity) -
+			 * noting that if a rigid block has no plate ID then plate ID 0 will be used to calculate its velocity.
 			 *
 			 * @a point_location is an optional optimisation if you already know the location of @a point
 			 * (delaunay face or rigid block containing the point).
