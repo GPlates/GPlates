@@ -431,6 +431,10 @@ There are many other :class:`statistics <pygplates.PlateBoundaryStatistic>` such
 left and right plate velocities, left and right plate identifiers (ie, which plate, or deforming network, is left and right of the point)
 and distance to the ends of the boundary section (containing the point).
 
+The following sample codes use plate boundary statistics:
+
+* :ref:`pygplates_find_divergence_at_subduction_zones_and_convergence_at_ridges`
+
 .. _pygplates_primer_deformation:
 
 Deformation
