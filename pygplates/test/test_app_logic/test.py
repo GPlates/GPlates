@@ -2543,7 +2543,8 @@ class TopologicalModelTestCase(unittest.TestCase):
                 oldest_time=30.0,
                 youngest_time=10.0,
                 reconstruction_plate_id=802,
-                initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]})
+                initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0]},
+                deformation_uses_natural_neighbour_interpolation=False)
         # Create from a point.
         reconstructed_point_time_span = self.topological_model.reconstruct_geometry(
                 pygplates.PointOnSphere(0, 0),
@@ -2894,20 +2895,25 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         resolved_topological_boundaries = snapshot.get_resolved_topologies(pygplates.ResolveTopologyType.boundary)
         self.assertTrue(len(resolved_topological_boundaries) >= 1)
 
-        # Test point location/velocity/strain-rate.
+        # Test point location/velocity/strain-rate and reconstructed point.
         for resolved_topological_boundary in resolved_topological_boundaries:
             point_in_topology2 = pygplates.PointOnSphere(0, -30)  # only 'topology2' contains this point
             point_location = resolved_topological_boundary.get_point_location(point_in_topology2)
             point_velocity = resolved_topological_boundary.get_point_velocity(point_in_topology2)
             point_strain_rate = resolved_topological_boundary.get_point_strain_rate(point_in_topology2)
+            reconstructed_point = resolved_topological_boundary.reconstruct_point(
+                    point_in_topology2,
+                    resolved_topological_boundary.get_reconstruction_time() + 1.0)
             if resolved_topological_boundary.get_feature().get_name() == 'topology2':
                 self.assertTrue(point_location.located_in_resolved_boundary() == resolved_topological_boundary)
                 self.assertTrue(point_velocity == pygplates.Vector3D.zero)
                 self.assertTrue(point_strain_rate == pygplates.StrainRate.zero)
+                self.assertTrue(reconstructed_point == point_in_topology2)  # plates don't actually move
             else:
                 self.assertTrue(point_location.located_in_resolved_boundary() is None)
                 self.assertTrue(point_velocity is None)
                 self.assertTrue(point_strain_rate is None)
+                self.assertTrue(reconstructed_point is None)
             point_in_network = pygplates.PointOnSphere(0, -60)
             self.assertTrue(resolved_topological_boundary.get_point_location(point_in_network).located_in_resolved_network() is None)  # no networks resolved
 
@@ -2947,17 +2953,26 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
             velocity_delta_time=1.0, velocity_delta_time_type=pygplates.VelocityDeltaTimeType.t_plus_delta_t_to_t,
             velocity_units=pygplates.VelocityUnits.kms_per_my, earth_radius_in_kms=pygplates.Earth.mean_radius_in_kms)
 
-        # Test point location/velocity/strain-rate.
+        # Test point location/velocity/strain-rate and reconstructed point.
         point_inside_network = pygplates.PointOnSphere(0, -60)  # point is inside network
         self.assertTrue(resolved_topological_network.get_point_location(point_inside_network).located_in_resolved_network() == resolved_topological_network)
         self.assertTrue(resolved_topological_network.get_point_location(point_inside_network).located_in_resolved_network_deforming_region() == resolved_topological_network)
         self.assertTrue(resolved_topological_network.get_point_velocity(point_inside_network) == pygplates.Vector3D.zero)
         self.assertTrue(resolved_topological_network.get_point_strain_rate(point_inside_network) == pygplates.StrainRate.zero)
+        self.assertTrue(resolved_topological_network.reconstruct_point(
+                point_inside_network,
+                resolved_topological_network.get_reconstruction_time() + 1.0,
+                use_natural_neighbour_interpolation=False)
+                        == point_inside_network)  # network doesn't rotate/deform
         point_in_boundary = pygplates.PointOnSphere(0, -30)  # point is outside network
         self.assertTrue(resolved_topological_network.get_point_location(point_in_boundary).located_in_resolved_network() is None)
         self.assertTrue(resolved_topological_network.get_point_location(point_in_boundary).located_in_resolved_boundary() is None)  # no boundaries resolved
         self.assertTrue(resolved_topological_network.get_point_velocity(point_in_boundary) is None)
         self.assertTrue(resolved_topological_network.get_point_strain_rate(point_in_boundary) is None)
+        self.assertTrue(resolved_topological_network.reconstruct_point(
+                point_in_boundary,
+                resolved_topological_network.get_reconstruction_time() + 1.0)
+                        is None)
     
     def test_resolve_topology_parameters(self):
         default_resolve_topology_parameters=pygplates.ResolveTopologyParameters()

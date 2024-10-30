@@ -62,6 +62,8 @@
 #include "model/PropertyName.h"
 #include "model/TopLevelProperty.h"
 
+#include "property-values/GeoTimeInstant.h"
+
 #include "utils/Earth.h"
 #include "utils/ReferenceCount.h"
 
@@ -1431,6 +1433,81 @@ namespace GPlatesApi
 		// Return zero deformation (since inside a rigid plate).
 		return GPlatesAppLogic::DeformationStrainRate();
 	}
+
+	boost::optional<GPlatesMaths::PointOnSphere>
+	resolved_topological_boundary_reconstruct_point(
+			GPlatesAppLogic::ResolvedTopologicalBoundary::non_null_ptr_type resolved_topological_boundary,
+			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
+			const GPlatesMaths::PointOnSphere &point,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time)
+	{
+		// Reconstruction reconstruction time must not be distant past/future.
+		if (!reconstruction_time.is_real())
+		{
+			PyErr_SetString(PyExc_ValueError,
+					"Reconstruction time cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+			bp::throw_error_already_set();
+		}
+
+		// See if point is inside the resolved topological boundary.
+		if (!resolved_topological_boundary->resolved_topology_boundary()->is_point_in_polygon(point))
+		{
+			return boost::none;
+		}
+
+		// Get the plate ID from resolved boundary.
+		//
+		// If we can't get a reconstruction plate ID then we'll just use plate id zero (spin axis)
+		// which can still give a non-identity rotation if the anchor plate id is non-zero.
+		boost::optional<GPlatesModel::integer_plate_id_type> resolved_boundary_plate_id =
+				resolved_topological_boundary->plate_id();
+		if (!resolved_boundary_plate_id)
+		{
+			resolved_boundary_plate_id = 0;
+		}
+
+		// The initial time is the time we're reconstructing *from*.
+		const double initial_time = resolved_topological_boundary->get_reconstruction_time();
+		// The final time is the time we're reconstructing *to*.
+		const double final_time = reconstruction_time.value();
+
+		//
+		// Delegate to 'PlateVelocityUtils::calculate_stage_rotation()' since it adjusts the
+		// stage rotation time interval if one of the times goes negative or if the rotation
+		// file only has rotations up to time 't', but not time 't+dt'.
+		//
+
+		boost::optional<GPlatesMaths::FiniteRotation> stage_rotation;
+		if (initial_time > final_time) // forward in time ...
+		{
+			// Forward stage rotation from 'initial_time' to 'final_time'.
+			stage_rotation = GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
+					resolved_boundary_plate_id.get(),
+					resolved_topological_boundary->get_reconstruction_tree_creator(),
+					initial_time,
+					// Must be positive...
+					initial_time - final_time/*velocity_delta_time*/,
+					GPlatesAppLogic::VelocityDeltaTime::T_TO_T_MINUS_DELTA_T/*velocity_delta_time_type*/);
+		}
+		else // backward in time ...
+		{
+			// Backward stage rotation from 'initial_time' to 'final_time'.
+			//
+			// Note: Need to reverse rotation from forward-in-time to backward-in-time.
+			stage_rotation = GPlatesMaths::get_reverse(
+					GPlatesAppLogic::PlateVelocityUtils::calculate_stage_rotation(
+							resolved_boundary_plate_id.get(),
+							resolved_topological_boundary->get_reconstruction_tree_creator(),
+							initial_time,
+							// Must be positive...
+							final_time - initial_time/*velocity_delta_time*/,
+							GPlatesAppLogic::VelocityDeltaTime::T_PLUS_DELTA_T_TO_T/*velocity_delta_time_type*/));
+		}
+
+		// Return reconstructed point.
+		return stage_rotation.get() * point;
+	}
 }
 
 
@@ -1662,6 +1739,59 @@ export_resolved_topological_boundary()
 				"        return None\n"
 				"\n"
 				"  .. versionadded:: 0.49\n")
+		.def("reconstruct_point",
+				&GPlatesApi::resolved_topological_boundary_reconstruct_point,
+				(bp::arg("point"),
+					bp::arg("reconstruction_time")),
+				"reconstruct_point(point, reconstruction_time)\n"
+				"  Incrementally reconstruct the specified point (if it lies within this resolved topological boundary) to the specified reconstruction time.\n"
+				"\n"
+				"  :param point: The point to reconstruct. It is the position at the "
+				":meth:`reconstruction time of this resolved topological boundary <ReconstructionGeometry.get_reconstruction_time>`.\n"
+				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or (latitude,longitude), in degrees, or (x,y,z)\n"
+				"  :param reconstruction_time: The time to reconstruct *to*. This can be older or younger than the "
+				":meth:`reconstruction time of this resolved topological boundary <ReconstructionGeometry.get_reconstruction_time>`.\n"
+				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+				"  :rtype: :class:`PointOnSphere` or ``None``\n"
+				"  :raises: ValueError if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n"
+				"\n"
+				"  If the point lies within this resolved topological boundary then it is reconstructed **from** the "
+				":meth:`reconstruction time of this resolved topological boundary <ReconstructionGeometry.get_reconstruction_time>` "
+				"**to** the specified reconstruction time, and the reconstructed point is returned (otherwise ``None`` will be returned).\n"
+				"\n"
+				"  The specified reconstruction time can be older or younger than the :meth:`reconstruction time of this resolved topological boundary <ReconstructionGeometry.get_reconstruction_time>`. "
+				"If it's *older* then the point is reconstructed *backward* in time, and if it's *younger* then the point is reconstructed *forward* in time.\n"
+				"\n"
+				"  .. note:: The reconstruction involves calculating a stage rotation (using the reconstruction plate ID of this resolved topological boundary) from the "
+				":meth:`reconstruction time of this resolved topological boundary <ReconstructionGeometry.get_reconstruction_time>` to *reconstruction_time*. "
+				"So ideally a small time increment (such as 1 Myr) should be used since the plate boundaries and rotations typically change over small time intervals.\n"
+				"\n"
+				"  To reconstruct a point located at (latitude, longitude) to a new position at a time 1 Myr older than the current time "
+				"(if point is inside a resolved topological boundary):\n"
+				"  ::\n"
+				"\n"
+				"    reconstructed_point = resolved_topological_boundary.reconstruct_point(\n"
+				"            (latitude, longitude),\n"
+				"            resolved_topological_boundary.get_reconstruction_time() + 1.0)\n"
+				"    if reconstructed_point is not None:\n"
+				"      ...\n"
+				"\n"
+				"  This method is *essentially* equivalent to:\n"
+				"  ::\n"
+				"\n"
+				"    def reconstruct_point(resolved_topological_boundary, point, reconstruction_time, use_natural_neighbour_interpolation):\n"
+				"        # See if point is located within the resolved topological boundary polygon.\n"
+				"        if resolved_topological_boundary.get_resolved_boundary().is_point_in_polygon(point):\n"
+				"            # Get the reconstruction plate ID of this resolved topological boundary.\n"
+				"            # If it doesn't have one then zero will be used instead.\n"
+				"            plate_id = resolved_topological_boundary.get_feature().get_reconstruction_plate_id()\n"
+				"            reconstructed_point = ...  # rigidly rotate 'point' using 'plate_id'\n"
+				"            return reconstructed_point\n"
+				"\n"
+				"        # Point is *not* located in the resolved topological boundary.\n"
+				"        return None\n"
+				"\n"
+				"  .. versionadded:: 0.50\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;
@@ -2109,6 +2239,63 @@ namespace GPlatesApi
 		}
 
 		return deformation_info->first.get_strain_rate();
+	}
+
+	boost::optional<GPlatesMaths::PointOnSphere>
+	resolved_topological_network_reconstruct_point(
+			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_type resolved_topological_network,
+			// There are from-python converters from LatLonPoint and sequence(latitude,longitude) and
+			// sequence(x,y,z) to PointOnSphere so they will also get matched by this...
+			const GPlatesMaths::PointOnSphere &point,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+			bool use_natural_neighbour_interpolation)
+	{
+		// Reconstruction reconstruction time must not be distant past/future.
+		if (!reconstruction_time.is_real())
+		{
+			PyErr_SetString(PyExc_ValueError,
+					"Reconstruction time cannot be distant-past (float('inf')) or distant-future (float('-inf')).");
+			bp::throw_error_already_set();
+		}
+
+		// The initial time is the time we're reconstructing *from*.
+		const double initial_time = resolved_topological_network->get_reconstruction_time();
+		// The final time is the time we're reconstructing *to*.
+		const double final_time = reconstruction_time.value();
+
+		bool reverse_reconstruct;
+		double time_increment;
+		if (initial_time > final_time)
+		{
+			// Final time is *younger* than the initial time.
+			// So we are reverse reconstructing (going forward in time).
+			reverse_reconstruct = true;
+			// The time increment should always be positive.
+			time_increment = initial_time - final_time;
+		}
+		else
+		{
+			// Final time is *older* than the initial time.
+			// So we are reconstructing (going backward in time).
+			reverse_reconstruct = false;
+			// The time increment should always be positive.
+			time_increment = final_time - initial_time;
+		}
+
+		boost::optional<std::pair<
+				GPlatesMaths::PointOnSphere,
+				GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation> >
+						deformed_point_result = resolved_topological_network->get_triangulation_network().calculate_deformed_point(
+								point,
+								time_increment,
+								reverse_reconstruct,
+								use_natural_neighbour_interpolation);
+		if (!deformed_point_result)
+		{
+			return boost::none;
+		}
+
+		return deformed_point_result->first;
 	}
 
 
@@ -2708,6 +2895,72 @@ export_resolved_topological_network()
 				"        return None\n"
 				"\n"
 				"  .. versionadded:: 0.49\n")
+		.def("reconstruct_point",
+				&GPlatesApi::resolved_topological_network_reconstruct_point,
+				(bp::arg("point"),
+					bp::arg("reconstruction_time"),
+					bp::arg("use_natural_neighbour_interpolation") = true),
+				"reconstruct_point(point, reconstruction_time, [use_natural_neighbour_interpolation=True])\n"
+				"  Incrementally reconstruct the specified point (if it lies within this resolved topological network) to the specified reconstruction time.\n"
+				"\n"
+				"  :param point: The point to reconstruct. It is the position at the "
+				":meth:`reconstruction time of this resolved topological network <ReconstructionGeometry.get_reconstruction_time>`.\n"
+				"  :type point: :class:`PointOnSphere` or :class:`LatLonPoint` or (latitude,longitude), in degrees, or (x,y,z)\n"
+				"  :param reconstruction_time: The time to reconstruct *to*. This can be older or younger than the "
+				":meth:`reconstruction time of this resolved topological network <ReconstructionGeometry.get_reconstruction_time>`.\n"
+				"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+				"  :param use_natural_neighbour_interpolation: If ``True`` and *point* lies within the deforming region, then the reconstructed point is the interpolation of "
+				"the natural neighbour deformed triangulation vertex positions (otherwise barycentric interpolation is used). Defaults to ``True``.\n"
+				"  :type use_natural_neighbour_interpolation: bool\n"
+				"  :rtype: :class:`PointOnSphere` or ``None``\n"
+				"  :raises: ValueError if *reconstruction_time* is distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n"
+				"\n"
+				"  If the point lies within this resolved topological network (which can be either its deforming region or one of its rigid blocks) "
+				"then it is reconstructed **from** the :meth:`reconstruction time of this resolved topological network <ReconstructionGeometry.get_reconstruction_time>` "
+				"**to** the specified reconstruction time, and the reconstructed point is returned (otherwise ``None`` will be returned).\n"
+				"\n"
+				"  The specified reconstruction time can be older or younger than the :meth:`reconstruction time of this resolved topological network <ReconstructionGeometry.get_reconstruction_time>`. "
+				"If it's *older* then the point is reconstructed *backward* in time, and if it's *younger* then the point is reconstructed *forward* in time.\n"
+				"\n"
+				"  .. note:: The reconstruction involves calculating a stage rotation (for each nearby vertex of the deforming triangulation) from the "
+				":meth:`reconstruction time of this resolved topological network <ReconstructionGeometry.get_reconstruction_time>` to *reconstruction_time*. "
+				"So ideally a small time increment (such as 1 Myr) should be used since the plate boundaries and rotations typically change over small time intervals.\n"
+				"\n"
+				"  To deform (reconstruct) a point located at (latitude, longitude) to a new position at a time 1 Myr older than the current time "
+				"(if point is inside a resolved topological network):\n"
+				"  ::\n"
+				"\n"
+				"    reconstructed_point = resolved_topological_network.reconstruct_point(\n"
+				"            (latitude, longitude),\n"
+				"            resolved_topological_network.get_reconstruction_time() + 1.0)\n"
+				"    if reconstructed_point is not None:\n"
+				"      ...\n"
+				"\n"
+				"  This method is *essentially* equivalent to:\n"
+				"  ::\n"
+				"\n"
+				"    def reconstruct_point(resolved_topological_network, point, reconstruction_time, use_natural_neighbour_interpolation):\n"
+				"        # See if point is located within the resolved topological network.\n"
+				"        if resolved_topological_network.get_resolved_boundary().is_point_in_polygon(point):\n"
+				"            # See if point is located in a rigid block (if any) of the resolved topological network.\n"
+				"            for rigid_block in resolved_topological_network.get_rigid_blocks():\n"
+				"                if rigid_block.get_reconstructed_geometry().is_point_in_polygon(point):\n"
+				"                    # Get the reconstruction plate ID of the rigid block.\n"
+				"                    # If it doesn't have one then zero will be used instead.\n"
+				"                    rigid_block_plate_id = rigid_block.get_feature().get_reconstruction_plate_id()\n"
+				"                    reconstructed_point = ...  # rigidly rotate 'point' using 'rigid_block_plate_id'\n"
+				"                    return reconstructed_point\n"
+				"            # Point must therefore be located in the deforming region of the resolved topological network.\n"
+				"            deformed_point = ...  # deform 'point' using the deforming triangulation and 'use_natural_neighbour_interpolation'\n"
+				"            return deformed_point\n"
+				"\n"
+				"        # Point is *not* located in the resolved topological network.\n"
+				"        return None\n"
+				"\n"
+				"  .. note:: If *point* is inside a rigid block (of this resolved topological network) that does *not* have a reconstruction plate ID "
+				"then ``0`` will be used to reconstruct the point.\n"
+				"\n"
+				"  .. versionadded:: 0.50\n")
 		// Make hash and comparisons based on C++ object identity (not python object identity)...
 		.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 	;

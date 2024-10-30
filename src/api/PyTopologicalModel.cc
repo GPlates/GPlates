@@ -1093,7 +1093,8 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 		const double &time_increment,
 		boost::optional<GPlatesModel::integer_plate_id_type> reconstruction_plate_id,
 		bp::object scalar_type_to_initial_scalar_values_mapping_object,
-		boost::optional<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_to_const_type> deactivate_points)
+		boost::optional<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_to_const_type> deactivate_points,
+		bool deformation_uses_natural_neighbour_interpolation)
 {
 	// Initial reconstruction time must not be distant past/future.
 	if (!initial_time.is_real())
@@ -1177,7 +1178,8 @@ GPlatesApi::TopologicalModel::reconstruct_geometry(
 							? reconstruction_plate_id.get()
 							: d_rotation_model->get_reconstruction_tree_creator().get_default_anchor_plate_id(),
 					initial_time.value(),
-					deactivate_points);
+					deactivate_points,
+					deformation_uses_natural_neighbour_interpolation);
 
 	// Extract the optional initial scalar values.
 	GPlatesAppLogic::ScalarCoverageTimeSpan::initial_scalar_coverage_type initial_scalar_coverage;
@@ -1968,9 +1970,11 @@ export_topological_model()
 					bp::arg("initial_scalars") = bp::object()/*Py_None*/,
 					bp::arg("deactivate_points") = boost::optional<GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_to_const_type>(
 							GPlatesUtils::static_pointer_cast<const GPlatesAppLogic::TopologyReconstruct::DeactivatePoint>(
-									GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create()))),
+									GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::create())),
+					bp::arg("deformation_uses_natural_neighbour_interpolation") = true),
 				"reconstruct_geometry(geometry, initial_time, [oldest_time], [youngest_time=0], [time_increment=1], "
-				"[reconstruction_plate_id], [initial_scalars], [deactivate_points=ReconstructedGeometryTimeSpan.DefaultDeactivatePoints()])\n"
+				"[reconstruction_plate_id], [initial_scalars], [deactivate_points=ReconstructedGeometryTimeSpan.DefaultDeactivatePoints()], "
+				"[deformation_uses_natural_neighbour_interpolation=True])\n"
 				"  Reconstruct a geometry (and optional scalars) over a time span.\n"
 				"\n"
 				"  :param geometry: The geometry to reconstruct (using topologies). Currently limited to a "
@@ -1999,6 +2003,10 @@ export_topological_model()
 				"use the provided class :class:`ReconstructedGeometryTimeSpan.DefaultDeactivatePoints`. "
 				"Defaults to a default-constructed :class:`ReconstructedGeometryTimeSpan.DefaultDeactivatePoints`.\n"
 				"  :type deactivate_points: :class:`ReconstructedGeometryTimeSpan.DeactivatePoints` or None\n"
+				"  :param deformation_uses_natural_neighbour_interpolation: If ``True`` then any point that lies (at any time) within a deforming region of a "
+				"resolved topological network will be reconstructed using natural neighbour interpolation (otherwise barycentric interpolation will be used) - "
+				"see :meth:`ResolvedTopologicalNetwork.reconstruct_point`. Defaults to ``True``.\n"
+				"  :type deformation_uses_natural_neighbour_interpolation: bool\n"
 				"  :rtype: :class:`ReconstructedGeometryTimeSpan`\n"
 				"  :raises: ValueError if initial time, oldest time or youngest time is "
 				"distant-past (``float('inf')``) or distant-future (``float('-inf')``).\n"
@@ -2049,7 +2057,10 @@ export_topological_model()
 				"     Added *deactivate_points* argument.\n"
 				"\n"
 				"  .. versionchanged:: 0.43\n"
-				"     Oldest time, youngest time and time increment no longer required to be *integral* values.\n")
+				"     Oldest time, youngest time and time increment no longer required to be *integral* values.\n"
+				"\n"
+				"  .. versionchanged:: 0.50\n"
+				"     Added *deformation_uses_natural_neighbour_interpolation* argument. Previously it was hardwired to ``True``.\n")
 		.def("get_rotation_model",
 				&GPlatesApi::TopologicalModel::get_rotation_model,
 				"get_rotation_model()\n"
