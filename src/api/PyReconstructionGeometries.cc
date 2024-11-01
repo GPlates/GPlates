@@ -2386,7 +2386,7 @@ export_resolved_topological_network()
 						"DeformingTriangulation",
 						"Triangulation of the deforming region within a :class:`resolved topological network <ResolvedTopologicalNetwork>`.\n"
 						"\n"
-						".. seealso:: :ref:`pygplates_primer_deformation_deforming_triangulation` in the *Primer* documentation."
+						".. seealso:: :ref:`pygplates_primer_deforming_triangulation` in the *Primer* documentation."
 						"\n"
 						".. versionadded:: 0.49\n",
 						bp::no_init)
@@ -2460,7 +2460,7 @@ export_resolved_topological_network()
 						"\n"
 						"Triangles are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).\n"
 						"\n"
-						".. seealso:: :ref:`pygplates_primer_deformation_deforming_triangulation` in the *Primer* documentation."
+						".. seealso:: :ref:`pygplates_primer_deforming_triangulation` in the *Primer* documentation."
 						"\n"
 						".. versionadded:: 0.49\n",
 						bp::no_init)
@@ -2524,7 +2524,7 @@ export_resolved_topological_network()
 						"\n"
 						"Vertices are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).\n"
 						"\n"
-						".. seealso:: :ref:`pygplates_primer_deformation_deforming_triangulation` in the *Primer* documentation."
+						".. seealso:: :ref:`pygplates_primer_deforming_triangulation` in the *Primer* documentation."
 						"\n"
 						".. versionadded:: 0.49\n",
 						bp::no_init)
@@ -2709,7 +2709,7 @@ export_resolved_topological_network()
 				"  Each rigid block represents a rigid interior island within the deforming region. And as such, each rigid block will have a "
 				":meth:`reconstructed geometry <ReconstructedFeatureGeometry.get_reconstructed_geometry>` that is a :class:`polygon <PolygonOnSphere>`.\n"
 				"\n"
-				"  .. seealso:: :ref:`pygplates_primer_deformation_rigid_blocks` in the *Primer* documentation."
+				"  .. seealso:: :ref:`pygplates_primer_rigid_blocks` in the *Primer* documentation."
 				"\n"
 				"  .. versionadded:: 0.49\n")
 		.def("get_deforming_triangulation",
@@ -2736,7 +2736,7 @@ export_resolved_topological_network()
 				"  :rtype: :class:`DeformingTriangulation`\n"
 				"  :raises: ValueError if *velocity_delta_time* is negative or zero.\n"
 				"\n"
-				"  .. seealso:: :ref:`pygplates_primer_deformation_deforming_triangulation` in the *Primer* documentation."
+				"  .. seealso:: :ref:`pygplates_primer_deforming_triangulation` in the *Primer* documentation."
 				"\n"
 				"  .. versionadded:: 0.49\n")
 		.def("get_point_location",

@@ -284,7 +284,7 @@ export_resolve_topology_parameters()
 				"\n"
 				"  This is useful to avoid excessive extension/compression in deforming networks (depending on how the deforming networks were built).\n"
 				"\n"
-				"  .. seealso:: :ref:`pygplates_primer_deformation_strain_rate_clamping` in the *Primer* documentation.\n"
+				"  .. seealso:: :ref:`pygplates_primer_strain_rate_clamping` in the *Primer* documentation.\n"
 				"\n"
 				"  .. versionadded:: 0.49\n")
 		.add_property("max_clamped_strain_rate",
@@ -295,7 +295,7 @@ export_resolve_topology_parameters()
 				"\n"
 				"  .. note:: This only applies if :attr:`enable_strain_rate_clamping` is ``True``.\n"
 				"\n"
-				"  .. seealso:: :ref:`pygplates_primer_deformation_strain_rate_clamping` in the *Primer* documentation.\n"
+				"  .. seealso:: :ref:`pygplates_primer_strain_rate_clamping` in the *Primer* documentation.\n"
 				"\n"
 				"  .. versionadded:: 0.49\n")
 		.add_property("strain_rate_smoothing",
@@ -306,7 +306,7 @@ export_resolve_topology_parameters()
 				"\n"
 				"  This can be no smoothing, barycentric smoothing or natural neighbour smoothing.\n"
 				"\n"
-				"  .. seealso:: :ref:`pygplates_primer_deformation_strain_rate_smoothing` in the *Primer* documentation.\n"
+				"  .. seealso:: :ref:`pygplates_primer_strain_rate_smoothing` in the *Primer* documentation.\n"
 				"\n"
 				"  .. versionadded:: 0.49\n")
 		//! An edge should not be subdivided if it is shorter than this length.
@@ -316,7 +316,7 @@ export_resolve_topology_parameters()
 				"\n"
 				"  :type: float\n"
 				"\n"
-				"  .. seealso:: :ref:`pygplates_primer_deformation_exponential_rift_stretching_profile` in the *Primer* documentation.\n"
+				"  .. seealso:: :ref:`pygplates_primer_exponential_rift_stretching_profile` in the *Primer* documentation.\n"
 				"\n"
 				"  .. versionadded:: 0.49\n")
 		//! Default stretching profile is exp(exponential_stretching_constant * x).
@@ -330,7 +330,7 @@ export_resolve_topology_parameters()
 				"\n"
 				"  .. Note:: Sub-division is also limited by :attr:`rift_edge_length_threshold_degrees`.\n"
 				"\n"
-				"  .. seealso:: :ref:`pygplates_primer_deformation_exponential_rift_stretching_profile` in the *Primer* documentation.\n"
+				"  .. seealso:: :ref:`pygplates_primer_exponential_rift_stretching_profile` in the *Primer* documentation.\n"
 				"\n"
 				"  .. versionadded:: 0.49\n")
 		//! Adjacent strain rates samples should resolved within this tolerance (in units 1/sec).
@@ -344,7 +344,7 @@ export_resolve_topology_parameters()
 				"\n"
 				"  .. note:: Sub-division is also limited by :attr:`rift_strain_rate_resolution`.\n"
 				"\n"
-				"  .. seealso:: :ref:`pygplates_primer_deformation_exponential_rift_stretching_profile` in the *Primer* documentation.\n"
+				"  .. seealso:: :ref:`pygplates_primer_exponential_rift_stretching_profile` in the *Primer* documentation.\n"
 				"\n"
 				"  .. versionadded:: 0.49\n")
 		// Due to the numerical tolerance in comparisons we cannot make hashable.

@@ -2185,6 +2185,13 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::get_all_velocities(
 	// 'get_geometry_sample(reconstruction_time)' above). This is important because we then calculate
 	// velocities using the same geometry sample and hence the number of active points will match.
 	//
+	// Actually the number of active points will probably still match (due to interpolating of geometry
+	// samples taking the active status of nearest time slot closer to the geometry import time), but
+	// the topologies are only resolved at the time slots and the interpolated geometry points are
+	// reconstructed away from the time slot. And so might have moved *off* their respective resolved
+	// topologies, leading to velocity calculations falling back to the reconstruction plate ID.
+	// So it's best to use a geometry sample *at* a time slot.
+	//
 
 	const double initial_time = d_time_range.get_time(
 			(reconstruction_time > d_geometry_import_time)

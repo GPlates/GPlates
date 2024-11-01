@@ -2705,6 +2705,10 @@ class TopologicalModelTestCase(unittest.TestCase):
                 youngest_time=10.0,
                 initial_scalars={pygplates.ScalarType.gpml_crustal_thickness : [10.0, 10.0, 10.0], pygplates.ScalarType.gpml_crustal_stretching_factor : [1.0, 1.0, 1.0]})
         
+        # Time range.
+        oldest_time, youngest_time, time_increment, num_time_slots = reconstructed_multipoint_time_span.get_time_span()
+        self.assertTrue(oldest_time == 30 and youngest_time == 10 and time_increment == 1 and num_time_slots == 21)
+        
         # Points.
         reconstructed_points = reconstructed_multipoint_time_span.get_geometry_points(20)
         self.assertTrue(len(reconstructed_points) == 3)

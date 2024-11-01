@@ -1254,7 +1254,7 @@ export_topological_snapshot()
 					"PlateBoundaryStatistic",
 					"Statistics at a point *on* a plate boundary.\n"
 					"\n"
-					"  .. seealso:: :ref:`pygplates_primer_topological_snapshot_plate_boundary_statistics` in the *Primer* documentation.\n"
+					"  .. seealso:: :ref:`pygplates_primer_plate_boundary_statistics` in the *Primer* documentation.\n"
 					"\n"
 					"PlateBoundaryStatistics are equality (``==``, ``!=``) comparable (but not hashable - cannot be used as a key in a ``dict``).\n"
 					"\n"
@@ -2219,7 +2219,7 @@ export_topological_snapshot()
 				"\n"
 				"  .. note:: The plate boundaries, *along* which uniform points are generated, can be further restricted using *boundary_section_filter*.\n"
 				"\n"
-				"  .. seealso:: :ref:`pygplates_primer_topological_snapshot_plate_boundary_statistics` in the *Primer* documentation.\n"
+				"  .. seealso:: :ref:`pygplates_primer_plate_boundary_statistics` in the *Primer* documentation.\n"
 				"\n"
 				"  .. versionadded:: 0.47\n")
 		.def("get_rotation_model",
