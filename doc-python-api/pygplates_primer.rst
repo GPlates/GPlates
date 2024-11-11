@@ -352,6 +352,20 @@ It can be created from topological features (in files, :class:`features <pygplat
    rotation_model = pygplates.RotationModel('rotations.rot')
    topological_model = pygplates.TopologicalModel('topologies.gpml', rotation_model)
 
+.. note:: Alternatively you can just pass the rotation filenames (or features) directly into the topological model:
+   ::
+
+      topological_model = pygplates.TopologicalModel('topologies.gpml', 'rotations.rot')
+
+You can also control *how* topologies are resolved using :class:`pygplates.ResolveTopologyParameters` -
+currently these parameters only affect deforming networks.
+This is done by specifying the ``default_resolve_topology_parameters`` - see
+:ref:`pygplates_primer_strain_rate_clamping`, :ref:`pygplates_primer_strain_rate_smoothing` and
+:ref:`pygplates_primer_exponential_rift_stretching_profile` for more details.
+
+.. note:: You can also override the default parameters for each topological entry (eg, each file, feature collection or feature)
+   by specifying a 2-tuple (topological entry, :class:`pygplates.ResolveTopologyParameters`) instead of just the topological entry.
+
 A topological model can:
 
 * Create a :ref:`pygplates_primer_topological_snapshot` at a reconstruction time.
@@ -488,10 +502,10 @@ Reconstruction plate ID
 
 Since topological reconstruction is peformed using topologies, no feature properties are needed (in contrast with non-topological reconstruction
 using :class:`pygplates.ReconstructModel`). However, if a geometry point does not intersect any resolved topologies during a time interval then an
-optional reconstruction plate ID is used to *rigidly* reconstruct it over the time interval. And if a reconstruction plate ID was not provided then
-the point does not move over the time interval.
+optional reconstruction plate ID is used to *rigidly* reconstruct it over that time interval. And if a reconstruction plate ID was not provided then
+the point does not move over that time interval.
 
-.. note:: Some geometry points can fail to intersect topologies if the topologies are regional (instead of global), or if there are tiny cracks
+.. note:: Some geometry points can fail to intersect topologies if the topologies are regional (instead of global), or if there are cracks
    between adjacent topologies (due to the way they were built).
 
 .. _pygplates_primer_what_is_topological_reconstruction_deactivating_points:
@@ -504,8 +518,8 @@ initial time (that can be inside or outside that time range). Hence an initial g
 backward in time, or both, depending on where the initial time is in relation to the oldest and youngest times.
 
 Initially all geometry points are active at the *initial time*, but can get progressively deactivated as they are topologically reconstructed
-*away* from the initial time. When a point is deactivated it is no longer topologically reconstructed (and hence remains inactive for all subsequent
-time slots *further* from the initial time). When reconstructed *forward* in time, points on oceanic crust get deactivated when they are subducted.
+*away* from the initial time. When a point is deactivated it becomes inactive and is no longer topologically reconstructed for subsequent
+time slots (*further* from the initial time). When reconstructed *forward* in time, points on oceanic crust get deactivated as they are subducted.
 And when reconstructed *backward* in time, they get deactivated as they reach their time of appearance (at a mid-ocean ridge).
 
 .. _pygplates_primer_using_topological_reconstruction:
@@ -584,29 +598,14 @@ For example, if the initial points are at 50 Ma but you want a time range of sna
 In this case, the initial points are reconstructed both *forward* in time from 50 Ma to present day **and** *backward* in time from 50 Ma to 100 Ma
 (in order to generate all snapshots from 100 Ma to present day).
 
-.. note:: You can also choose the time interval between reconstruction snapshots using the ``time_increment`` argument.  
-   However, if you choose a large time increment then the snapshots will be spaced farther apart and the resulting reconstruction accuracy will suffer.
-   Another source of inaccuracy is due to the initial time of the initial geometry being internally snapped to the nearest time slot.
-   For these reasons the time increment defaults to 1 Myr (which is typically the smallest time resolution used in topological models).
+You can also choose the time interval between reconstruction snapshots using the ``time_increment`` argument (which defaults to 1 Myr).
+The time increment, along with the oldest and youngest times, determine the time slots.
 
-.. _pygplates_primer_using_topological_reconstruction_deactivating_points:
+.. note:: ``oldest_time - youngest_time`` must be an integer multiple of ``time_increment``.
 
-Deactivating points
-*******************
-
-By default, geometry points can get progressively deactivated when they are topologically reconstructed away from the initial time.
-This is useful for points on *oceanic* crust because that crust can get subducted, and it is typically younger than continental crust.
-Therefore, oceanic points will get deactivated as they are subducted going *forward* in time and deactivated as they reach their time of appearance
-(at mid-ocean ridges) going *backward* in time. This is the default behaviour and works for both oceanic and continental crust.
-To disable this ability you can explicitly set the ``deactivate_points`` argument to ``None``. Then points can never become inactive.
-This can be used (but is not necessary) when the points are all within the interior of *continents* (where crust exists at present day and has existed
-for a long time). For example, to reconstruct *continental* points forward in time from 100 Ma to present day (without attempting to deactivate any):
-::
-
-   reconstructed_geometry_time_span = topological_model.reconstruct_geometry(
-         points,
-         initial_time=100,
-         deactivate_points=None)
+If you choose a large time increment then the snapshots will be spaced farther apart and the resulting reconstruction accuracy will suffer.
+Another source of inaccuracy is due to the initial time of the initial geometry being internally snapped to the nearest time slot.
+For these reasons the time increment defaults to 1 Myr (which is typically the smallest time resolution used in topological models).
 
 .. _pygplates_primer_using_topological_reconstruction_reconstruction_plate_id:
 
@@ -615,10 +614,12 @@ Reconstruction plate ID
 
 In the above cases, the geometry is already in the correct position at the initial time. In other words, the geometry is a snapshot at the initial time.
 For example, it could be uniform points spread across the entire globe at the initial time (and we want to see where they end up at other times).
-So we did **not** specify the ``reconstruction_plate_id`` argument. However if the geometry is a *present day* geometry localised to a specific plate
-(and the initial time is in the past) then specifying a reconstruction plate ID will reconstruct it to the initial time (to become the snapshot at the
-initial time, before topologically reconstruction into the other snapshots proceeds). For example, if the geometry represents its present day position
-on plate 701 (and we're reconstructing *forward* in time from 100 Ma to present day) then:
+So we did **not** specify the ``reconstruction_plate_id`` argument.
+
+However if the geometry is a *present day* geometry localised to a specific plate (and the initial time is in the past) then specifying a
+reconstruction plate ID will reconstruct it to the initial time (to become the snapshot at the initial time, before topologically reconstruction into
+the other snapshots proceeds). For example, if the geometry represents its present day position on plate 701 (and we're reconstructing *forward* in time
+from 100 Ma to present day) then:
 ::
 
    reconstructed_geometry_time_span = topological_model.reconstruct_geometry(
@@ -633,6 +634,72 @@ from 100 Ma to present day (generating snapshots at 1 Myr intervals).
    :ref:`generating the history of snapshots <pygplates_primer_what_is_topological_reconstruction_reconstruction_plate_id>` and when
    :ref:`querying geometry points <pygplates_primer_reconstructed_geometry_time_span_geometry_points>`.
 
+.. _pygplates_primer_using_topological_reconstruction_deactivating_points:
+
+Deactivating points
+*******************
+
+By default, geometry points can get progressively deactivated when they are topologically reconstructed away from the initial time.
+This is useful for points on *oceanic* crust because that crust can get subducted, and it is typically younger than continental crust.
+Therefore, oceanic points will get deactivated as they are subducted going *forward* in time and deactivated as they reach their time of appearance
+(at mid-ocean ridges) going *backward* in time. This is the default behaviour and works for both oceanic and continental crust.
+
+To disable this ability you can explicitly set the ``deactivate_points`` argument to ``None``. Then the points will always remain active.
+This can be used (but is not necessary) when the points are all within the interior of *continents* (where crust exists at present day and has existed
+for a long time). For example, to reconstruct *continental* points forward in time from 100 Ma to present day (without attempting to deactivate any):
+::
+
+   reconstructed_geometry_time_span = topological_model.reconstruct_geometry(
+         points,
+         initial_time=100,
+         deactivate_points=None)
+
+You can also change *how* points are deactivated, by either:
+
+* changing the parameters of the *default* deactivation algorithm, or
+* implementing your own deactivation algorithm.
+
+The *default* deactivation algorithm is implemented in :class:`pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints`.
+
+To use the *default* parameters of the *default* deactivation algorithm you don't need to specify the ``deactivate_points`` argument.
+For example, you can just call:
+::
+
+   topological_model.reconstruct_geometry(
+         points,
+         initial_time=100)
+
+...since that is equivalent to calling:
+::
+
+   topological_model.reconstruct_geometry(
+         points,
+         initial_time=100,
+         deactivate_points=pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints())
+
+However, you can change the parameters of the *default* deactivation algorithm.
+For example, when reconstructing *oceanic* points (forward in time from 100 Ma to present day):
+::
+
+   reconstructed_geometry_time_span = topological_model.reconstruct_geometry(
+         points,
+         initial_time=100,
+         deactivate_points=pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints(
+               # Choose our own parameters that are different than the defaults...
+               threshold_velocity_delta = 0.9, # cms/yr
+               threshold_distance_to_boundary = 15, # kms/myr
+               deactivate_points_that_fall_outside_a_network = True))
+
+You can also implement your own deactivation algorithm by implementing your own class that inherits from
+:class:`pygplates.ReconstructedGeometryTimeSpan.DeactivatePoints` and overrides its
+:meth:`deactivate method <pygplates.ReconstructedGeometryTimeSpan.DeactivatePoints.deactivate>`.
+
+.. note:: This is what the *default* deactivation algorithm does.
+   In other words, the :class:`DefaultDeactivatePoints <pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints>` class
+   inherits from the :class:`DeactivatePoints <pygplates.ReconstructedGeometryTimeSpan.DeactivatePoints>` class.
+
+.. seealso:: :class:`pygplates.ReconstructedGeometryTimeSpan.DeactivatePoints` for more details.
+
 .. _pygplates_primer_reconstructed_geometry_time_span:
 
 Reconstructed geometry time span
@@ -644,6 +711,9 @@ Each snapshot stores the following quantities:
 
 * :ref:`pygplates_primer_reconstructed_geometry_time_span_geometry_points`
 * :ref:`pygplates_primer_reconstructed_geometry_time_span_velocities`
+* :ref:`pygplates_primer_reconstructed_geometry_time_span_topology_locations`
+* :ref:`pygplates_primer_reconstructed_geometry_time_span_strain_rates`
+* :ref:`pygplates_primer_reconstructed_geometry_time_span_strains`
 
 The history of snapshots is stored in time slots defined by :meth:`pygplates.ReconstructedGeometryTimeSpan.get_time_span` whose time range is
 determined by the *oldest_time* and *youngest_time* arguments of :meth:`pygplates.TopologicalModel.reconstruct_geometry`.
@@ -745,8 +815,8 @@ If the requested reconstruction time matches a time slot in the :meth:`time span
 the geometry points of the snapshot in that time slot are returned.
 
 If the requested reconstruction time is *within* the :meth:`time range <pygplates.ReconstructedGeometryTimeSpan.get_time_span>` of the snapshots,
-but does not match a time slot, then the geometry points in one of the two time slots nearest the reconstruction time (the time slot closest to the
-initial time specified in :meth:`pygplates.TopologicalModel.reconstruct_geometry`) will be incrementally reconstructed (away from the initial time)
+but does not match a time slot, then the geometry points in the time slot (of the two time slots nearest the reconstruction time) that is closest
+to the initial time (specified in :meth:`pygplates.TopologicalModel.reconstruct_geometry`) will be incrementally reconstructed (away from the initial time)
 to the requested reconstruction time using :meth:`pygplates.ResolvedTopologicalBoundary.reconstruct_point` or :meth:`pygplates.ResolvedTopologicalNetwork.reconstruct_point`
 (depending on which plate/network in the time slot each active point lies within). And those reconstructed points will be returned.
 
@@ -766,9 +836,41 @@ to the requested reconstruction time. And those reconstructed points will be ret
 
 .. note:: The reconstruction plate ID can also be used when the requested reconstruction time is *inside* the time range and some geometry points are
    *outside* all resolved topologies (and hence cannot be reconstructed by the topologies). This can happen if the topologies are regional (instead of global)
-   or if there are tiny cracks between adjacent topologies (due to the way they were built).
+   or if there are cracks between adjacent topologies (due to the way they were built).
 
 In all cases, if *none* of the geometry points are active at the reconstruction time then ``None`` will be returned.
+
+.. _pygplates_primer_reconstructed_geometry_time_span_topology_locations:
+
+Topology locations
+******************
+
+A :class:`topology location <pygplates.TopologyPointLocation>` identifies the resolved topology boundary or network that contains a reconstructed geometry point,
+or identifies no resolved topologies if the point does not intersect any.
+
+The topology location of each reconstructed geometry point at a reconstruction time can be queried using :meth:`pygplates.ReconstructedGeometryTimeSpan.get_topology_point_locations`:
+::
+
+   reconstructed_topology_locations = reconstructed_geometry_time_span.get_topology_point_locations(reconstruction_time)
+
+   # If none of the points are active at 'reconstruction_time' then this will be 'None'.
+   if reconstructed_topology_locations:
+      ...
+
+A topology location is returned for each geometry point that is *active at the requested reconstruction time*
+(see :ref:`pygplates_primer_reconstructed_geometry_time_span_geometry_points`). If *none* of the points are active then ``None`` will be returned. 
+
+If the requested reconstruction time is *within* the :meth:`time range <pygplates.ReconstructedGeometryTimeSpan.get_time_span>` of the snapshots
+then the returned topology locations are those of the geometry points in the time slot (of the two time slots nearest the reconstruction time)
+that is closest to the initial time (specified in :meth:`pygplates.TopologicalModel.reconstruct_geometry`).
+
+.. note:: The topology locations are at the time of the time slot (rather than the reconstruction time) because topologies are only resolved at the time slots.
+
+If the requested reconstruction time is *outside* the :meth:`time range <pygplates.ReconstructedGeometryTimeSpan.get_time_span>` of the snapshots then the returned
+topology locations identify no resolved topologies. In other words, :meth:`pygplates.TopologyPointLocation.not_located_in_resolved_topology` will return ``True``
+for each geometry point. This is because topologies are *not* resolved outside the time range.
+
+.. seealso:: :meth:`pygplates.ResolvedTopologicalBoundary.get_point_location` and :meth:`pygplates.ResolvedTopologicalNetwork.get_point_location`
 
 .. _pygplates_primer_reconstructed_geometry_time_span_velocities:
 
@@ -784,15 +886,12 @@ The velocities of reconstructed geometry points at a reconstruction time can be 
    if reconstructed_velocities:
       ...
 
-The velocities are calculated at geometry points that are *active at the requested reconstruction time*
+A velocity is calculated for each geometry point that is *active at the requested reconstruction time*
 (see :ref:`pygplates_primer_reconstructed_geometry_time_span_geometry_points`). If *none* of the points are active then ``None`` will be returned. 
 
 If the requested reconstruction time is *within* the :meth:`time range <pygplates.ReconstructedGeometryTimeSpan.get_time_span>` of the snapshots
-then the velocities are calculated at the geometry points in one of the two time slots nearest the reconstruction time
-(the time slot closest to the initial time specified in :meth:`pygplates.TopologicalModel.reconstruct_geometry`).
-The velocities are determined by the topologies (rigid plates and deforming networks) resolved at the time of the time slot (of the snapshot) using
-:meth:`pygplates.ResolvedTopologicalBoundary.get_point_velocity` or :meth:`pygplates.ResolvedTopologicalNetwork.get_point_velocity`
-(depending on which plate/network in the time slot each active point lies within).
+then the returned velocities are calculated at the geometry points in the time slot (of the two time slots nearest the reconstruction time)
+that is closest to the initial time (specified in :meth:`pygplates.TopologicalModel.reconstruct_geometry`).
 
 .. note:: The velocities are calculated at the time of the time slot (rather than the reconstruction time), and at the positions of the active geometry points
    in the time slot (rather than the geometry points at the reconstruction time - see :ref:`pygplates_primer_reconstructed_geometry_time_span_geometry_points`).
@@ -800,15 +899,88 @@ The velocities are determined by the topologies (rigid plates and deforming netw
    This is done since velocities are calculated using topologies, which are only resolved at the time slots, and the active status of velocities
    needs to be synchronised with the geometry points.
 
+The velocities are determined by the topologies (rigid plates and deforming networks) resolved at the time of the time slot using
+:meth:`pygplates.ResolvedTopologicalBoundary.get_point_velocity` or :meth:`pygplates.ResolvedTopologicalNetwork.get_point_velocity`
+(depending on which plate/network in the time slot each active point lies within).
+
 If the requested reconstruction time is *outside* the :meth:`time range <pygplates.ReconstructedGeometryTimeSpan.get_time_span>` of the snapshots then the
-velocities are determined by the reconstruction plate ID specified in :meth:`pygplates.TopologicalModel.reconstruct_geometry`, and they're calculated at the
-positions of the active geometry points at the reconstruction time (see :ref:`pygplates_primer_reconstructed_geometry_time_span_geometry_points`).
+returned velocities are determined by the reconstruction plate ID specified in :meth:`pygplates.TopologicalModel.reconstruct_geometry`, and they're calculated
+at the positions of the active geometry points at the reconstruction time (see :ref:`pygplates_primer_reconstructed_geometry_time_span_geometry_points`).
 
 .. note:: If no reconstruction plate ID was specified then the velocities will be zero.
 
 .. note:: The reconstruction plate ID can also be used when the requested reconstruction time is *inside* the time range and some geometry points are
    *outside* all resolved topologies (and hence their velocities cannot be determined by the topologies). This can happen if the topologies are regional
-   (instead of global) or if there are tiny cracks between adjacent topologies (due to the way they were built).
+   (instead of global) or if there are cracks between adjacent topologies (due to the way they were built).
+
+.. _pygplates_primer_reconstructed_geometry_time_span_strain_rates:
+
+Strain rates
+************
+
+The :class:`strain rates <pygplates.StrainRate>` of reconstructed geometry points at a reconstruction time can be queried using
+:meth:`pygplates.ReconstructedGeometryTimeSpan.get_strain_rates`:
+::
+
+   reconstructed_strain_rates = reconstructed_geometry_time_span.get_strain_rates(reconstruction_time)
+
+   # If none of the points are active at 'reconstruction_time' then this will be 'None'.
+   if reconstructed_strain_rates:
+      ...
+
+A strain rate is returned for each geometry point that is *active at the requested reconstruction time*
+(see :ref:`pygplates_primer_reconstructed_geometry_time_span_geometry_points`). If *none* of the points are active then ``None`` will be returned. 
+
+If the requested reconstruction time is *within* the :meth:`time range <pygplates.ReconstructedGeometryTimeSpan.get_time_span>` of the snapshots
+then the returned strain rates are interpolated between the two time slots nearest the reconstruction time.
+
+.. note:: The time slot *further* from the initial time (specified in :meth:`pygplates.TopologicalModel.reconstruct_geometry`) might have deactivated
+   some points from the time slot *closer* to the initial time (see :ref:`pygplates_primer_what_is_topological_reconstruction_deactivating_points`).
+   For these points the strain rate is not interpolated (instead it's obtained from the time slot *closer* to the initial time).
+
+The strain rates in time slots are determined by the topologies (rigid plates and deforming networks) resolved at the time of the time slot using
+:meth:`pygplates.ResolvedTopologicalBoundary.get_point_strain_rate` or :meth:`pygplates.ResolvedTopologicalNetwork.get_point_strain_rate`
+(depending on which plate/network in the time slot each active point lies within). And the strain rate will be zero for each geometry point (in a time slot)
+that is *not* within a deforming network.
+
+If the requested reconstruction time is *outside* the :meth:`time range <pygplates.ReconstructedGeometryTimeSpan.get_time_span>` of the snapshots then the
+returned strain rates will be zero (no deformation).
+
+.. _pygplates_primer_reconstructed_geometry_time_span_strains:
+
+Strains
+*******
+
+The :class:`strains <pygplates.Strain>` of reconstructed geometry points at a reconstruction time can be queried using
+:meth:`pygplates.ReconstructedGeometryTimeSpan.get_strains`:
+::
+
+   reconstructed_strains = reconstructed_geometry_time_span.get_strains(reconstruction_time)
+
+   # If none of the points are active at 'reconstruction_time' then this will be 'None'.
+   if reconstructed_strains:
+      ...
+
+A strain is returned for each geometry point that is *active at the requested reconstruction time*
+(see :ref:`pygplates_primer_reconstructed_geometry_time_span_geometry_points`). If *none* of the points are active then ``None`` will be returned. 
+
+If the requested reconstruction time is *within* the :meth:`time range <pygplates.ReconstructedGeometryTimeSpan.get_time_span>` of the snapshots
+then the returned strains are interpolated between the two time slots nearest the reconstruction time.
+
+.. note:: The time slot *further* from the initial time (specified in :meth:`pygplates.TopologicalModel.reconstruct_geometry`) might have deactivated
+   some points from the time slot *closer* to the initial time (see :ref:`pygplates_primer_what_is_topological_reconstruction_deactivating_points`).
+   For these points the strain is not interpolated (instead it's obtained from the time slot *closer* to the initial time).
+
+The strain of each geometry point is generated (in the time slots) by accumulating its strain rates *forward* in time, over the
+:meth:`time range <pygplates.ReconstructedGeometryTimeSpan.get_time_span>` of the snapshots, using :meth:`pygplates.Strain.accumulate`.
+The initial strain of each active geometry point in the oldest time slot will be the *identity* strain (since deformation has not yet occurred).
+And the accumulated strain of a geometry point will only change (going forward in time) if the point undergoes deformation
+(ie, is in a deforming network in one or more time slots).
+
+If the requested reconstruction time is *outside* the :meth:`time range <pygplates.ReconstructedGeometryTimeSpan.get_time_span>` of the snapshots then the
+returned strains will be identity strains (no deformation) if the requested reconstruction time is older than the oldest time slot, and will be the
+accumulated strains of the youngest time slot if the requested reconstruction time is younger than the youngest time slot (since strains do not accumulate
+outside the time range of the snapshots because strain rates are zero there).
 
 .. _pygplates_primer_deformation:
 
@@ -1046,8 +1218,8 @@ When set on a topological network feature they become feature properties named:
 ...when the topological networks are resolved at a reconstruction time
 (using :class:`pygplates.TopologicalModel`, :class:`pygplates.TopologicalSnapshot` or :func:`pygplates.resolve_topologies`).
 
-The default values (in :meth:`pygplates.ResolveTopologyParameters.__init__`) should be fine for resolving rift features that
-do not contain the associated rift feature properties. But you can change the defaults as needed.
+The default values (in :meth:`pygplates.ResolveTopologyParameters() <pygplates.ResolveTopologyParameters.__init__>`) should be fine
+for resolving rift features that do not contain the associated rift feature properties. But you can change the defaults as needed.
 For example, new default values can be specified for a topological model:
 ::
 

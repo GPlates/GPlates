@@ -372,7 +372,7 @@ export_resolve_topologies()
 			"  :param topological_features: The topological boundary and network features and the "
 			"topological section features they reference (regular and topological lines) as a feature collection, "
 			"or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) "
-			"of any combination of those four types. Note: Each sequence entry can optionally be a 2-tuple "
+			"of any combination of those four types. **Note**: Each entry can optionally be a 2-tuple "
 			"(entry, :class:`ResolveTopologyParameters`) to override *default_resolve_topology_parameters* for that entry.\n"
 			"  :type topological_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, "
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"

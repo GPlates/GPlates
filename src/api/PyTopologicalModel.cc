@@ -1560,7 +1560,9 @@ export_topological_model()
 					"  :rtype: ``list`` or ``None``\n"
 					"  :raises: ValueError if *reconstruction_time* is "
 					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
-					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n")
+					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_topology_locations` in the *Primer* documentation.\n")
 			.def("get_strains",
 					&GPlatesApi::reconstructed_geometry_time_span_get_strains,
 					(bp::arg("reconstruction_time"),
@@ -1582,6 +1584,8 @@ export_topological_model()
 					"  :raises: ValueError if *reconstruction_time* is "
 					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
 					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_strains` in the *Primer* documentation.\n"
 					"\n"
 					"  .. versionadded:: 0.46\n")
 			.def("get_strain_rates",
@@ -1605,6 +1609,8 @@ export_topological_model()
 					"  :raises: ValueError if *reconstruction_time* is "
 					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
 					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_strain_rates` in the *Primer* documentation.\n"
 					"\n"
 					"  .. versionadded:: 0.46\n")
 			.def("get_velocities",
@@ -1726,6 +1732,8 @@ export_topological_model()
 						"in your derived class then Python will call the base class *__init__* (so you don't have to do anything). "
 						"However if you do define *__init__* in your derived class then it must explicitly call the base class *__init__*.\n"
 						"\n"
+						".. seealso:: :ref:`pygplates_primer_using_topological_reconstruction_deactivating_points` in the *Primer* documentation.\n"
+						"\n"
 						".. versionadded:: 0.31\n"
 						"\n"
 						"__init__()\n"
@@ -1772,7 +1780,9 @@ export_topological_model()
 					"at each time step.\n"
 					"\n"
 					// For some reason Sphinx (tested version 3.4.3) seems to repeat this docstring twice (not sure why, so we'll let users know)...
-					"  .. note:: This function might be inadvertently documented twice.\n")
+					"  .. note:: This function might be inadvertently documented twice.\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_using_topological_reconstruction_deactivating_points` in the *Primer* documentation.\n")
 		;
 
 		// Enable GPlatesAppLogic::TopologyReconstruct::DeactivatePoint::non_null_ptr_type to be stored in a Python object.
@@ -1801,6 +1811,8 @@ export_topological_model()
 		std::stringstream default_deactivate_points_class_docstring_stream;
 		default_deactivate_points_class_docstring_stream <<
 				"The default algorithm for deactivating geometry points as they are reconstructed forward and/or backward in time.\n"
+				"\n"
+				".. seealso:: :ref:`pygplates_primer_using_topological_reconstruction_deactivating_points` in the *Primer* documentation.\n"
 				"\n"
 				".. versionadded:: 0.31\n"
 				"\n"
@@ -1837,21 +1849,7 @@ export_topological_model()
 				<< (GPlatesAppLogic::TopologyReconstruct::DefaultDeactivatePoint::DEFAULT_DEACTIVATE_POINTS_THAT_FALL_OUTSIDE_A_NETWORK ? "True" : "False")
 				<< "``.\n"
 				"\n"
-				"  .. note:: This is the default algorithm used internally.\n"
-				"\n"
-				"  To use the default deactivation algorithm (this class) but with some non-default parameters, and then use that "
-				"when :meth:`reconstructing a geometry using topologies <TopologicalModel.reconstruct_geometry>`:\n"
-				"  ::\n"
-				"\n"
-				"    # Reconstruct points in 'geometry' from 100Ma to present day using this class to deactivate them (in this case subduct).\n"
-				"    topological_model.reconstruct_geometry(\n"
-				"        geometry,\n"
-				"        100,\n"
-				"        deactivate_points = pygplates.ReconstructedGeometryTimeSpan.DefaultDeactivatePoints(\n"
-				"            # Choose our own parameters that are different than the defaults.\n"
-				"            threshold_velocity_delta = 0.9, # cms/yr\n"
-				"            threshold_distance_to_boundary = 15, # kms/myr\n"
-				"            deactivate_points_that_fall_outside_a_network = True))\n"
+				"  .. seealso:: :ref:`pygplates_primer_using_topological_reconstruction_deactivating_points` in the *Primer* documentation.\n"
 				;
 
 		//
@@ -1922,7 +1920,7 @@ export_topological_model()
 			"  :param topological_features: The topological boundary and/or network features and the "
 			"topological section features they reference (regular and topological lines) as a feature collection, "
 			"or filename, or feature, or sequence of features, or a sequence (eg, ``list`` or ``tuple``) "
-			"of any combination of those four types. Note: Each sequence entry can optionally be a 2-tuple "
+			"of any combination of those four types. **Note**: Each entry can optionally be a 2-tuple "
 			"(entry, :class:`ResolveTopologyParameters`) to override *default_resolve_topology_parameters* for that entry.\n"
 			"  :type topological_features: :class:`FeatureCollection`, or string/``os.PathLike``, or :class:`Feature`, "
 			"or sequence of :class:`Feature`, or sequence of any combination of those four types\n"
@@ -1941,16 +1939,7 @@ export_topological_model()
 			"  :param topological_snapshot_cache_size: Number of topological snapshots to cache internally. Defaults to unlimited.\n"
 			"  :type topological_snapshot_cache_size: int\n"
 			"\n"
-			"  Load a topological model (and its associated rotation model):\n"
-			"  ::\n"
-			"\n"
-			"    rotation_model = pygplates.RotationModel('rotations.rot')\n"
-			"    topological_model = pygplates.TopologicalModel('topologies.gpml', rotation_model)\n"
-			"\n"
-			"  ...or alternatively just:"
-			"  ::\n"
-			"\n"
-			"    topological_model = pygplates.TopologicalModel('topologies.gpml', 'rotations.rot')\n"
+			"  .. seealso:: :ref:`pygplates_primer_topological_model` in the *Primer* documentation.\n"
 			"\n"
 			"  .. note:: All reconstructions (including resolving topologies and reconstructing regular features and "
 			":meth:`geometries<reconstruct_geometry>`) use *anchor_plate_id*. So if you need to use a different "
