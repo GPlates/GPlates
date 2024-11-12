@@ -714,6 +714,10 @@ Each snapshot stores the following quantities:
 * :ref:`pygplates_primer_reconstructed_geometry_time_span_topology_locations`
 * :ref:`pygplates_primer_reconstructed_geometry_time_span_strain_rates`
 * :ref:`pygplates_primer_reconstructed_geometry_time_span_strains`
+* :ref:`pygplates_primer_reconstructed_geometry_time_span_scalar_values`
+
+  * :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors`
+  * :ref:`pygplates_primer_reconstructed_geometry_time_span_tectonic_subsidence`
 
 The history of snapshots is stored in time slots defined by :meth:`pygplates.ReconstructedGeometryTimeSpan.get_time_span` whose time range is
 determined by the *oldest_time* and *youngest_time* arguments of :meth:`pygplates.TopologicalModel.reconstruct_geometry`.
@@ -981,6 +985,283 @@ If the requested reconstruction time is *outside* the :meth:`time range <pygplat
 returned strains will be identity strains (no deformation) if the requested reconstruction time is older than the oldest time slot, and will be the
 accumulated strains of the youngest time slot if the requested reconstruction time is younger than the youngest time slot (since strains do not accumulate
 outside the time range of the snapshots because strain rates are zero there).
+
+.. _pygplates_primer_reconstructed_geometry_time_span_scalar_values:
+
+Scalar values
+*************
+
+Each geometry point can have one or more scalar values.
+And each scalar value (per point) is associated with a :class:`scalar type <pygplates.ScalarType>`.
+
+Each scalar *type* belongs to one of two categories:
+
+*  *Built-in scalar types*: whose scalar values *change* over time due to deformation
+
+   These are:
+
+   * ``pygplates.ScalarType.gpml_crustal_thickness`` - see :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors`
+   * ``pygplates.ScalarType.gpml_crustal_stretching_factor`` - see :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors`
+   * ``pygplates.ScalarType.gpml_crustal_thinning_factor`` - see :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors`
+   * ``pygplates.ScalarType.gpml_tectonic_subsidence`` - see :ref:`pygplates_primer_reconstructed_geometry_time_span_tectonic_subsidence`
+
+   Scalar values for these scalar types are always available.
+   
+   And their initial scalar values have default values (at the initial time).
+   Hence the *initial_scalars* argument of :meth:`pygplates.TopologicalModel.reconstruct_geometry` does not need to be specified.
+
+*  *User-defined scalar types*: whose scalar values are *constant* over time
+
+   .. note:: Even though these scalar values are constant (over time) they still get deactivated when their associated
+      geometry points get deactivated.
+
+   These can be any :class:`pygplates.ScalarType` that you define.
+   They are simply a way to associate your own data with the reconstructed geometry points.
+
+   Scalar values for these scalar types are *only* available if you define them
+   (using the *initial_scalars* argument of :meth:`pygplates.TopologicalModel.reconstruct_geometry`).
+   For example:
+   ::
+
+      # Define your own scalar types.
+      my_scalar_type_0 = pygplates.ScalarType.create_gpml('MyScalarType_0')
+      my_scalar_type_1 = pygplates.ScalarType.create_gpml('MyScalarType_1')
+
+      # Define associated scalar values (one per geometry point per scalar type).
+      my_scalar_type_0_values = [...]
+      my_scalar_type_1_values = [...]
+
+      reconstructed_geometry_time_span = topological_model.reconstruct_geometry(
+            initial_points,
+            initial_time = 100,
+            # dict with two entries (each entry mapping a scalar type to its scalar values)...
+            initial_scalars = { my_scalar_type_0 : my_scalar_type_0_values, my_scalar_type_1 : my_scalar_type_1_values })
+
+   .. note:: The *built-in scalar types* are still available when *user-defined scalar types* are defined.
+
+The scalar values of each reconstructed geometry point at a reconstruction time can be queried using
+:meth:`pygplates.ReconstructedGeometryTimeSpan.get_scalar_values`. By default this will return a ``dict`` mapping *all* scalar types
+(built-in and any user-defined) to their scalar values. For example:
+::
+
+   # Get all active scalar values (associated with all built-in and user-defined scalar types).
+   active_scalar_values = reconstructed_geometry_time_span.get_scalar_values(reconstruction_time)
+
+   # If none of the points are active at 'reconstruction_time' then this will be 'None'.
+   if active_scalar_values:
+      
+      # Extract the scalar values associated with the built-in scalar types.
+      crustal_thicknesses_in_kms = active_scalar_values[pygplates.ScalarType.gpml_crustal_thickness]
+      crustal_stretching_factors = active_scalar_values[pygplates.ScalarType.gpml_crustal_stretching_factor]
+      crustal_thinning_factors = active_scalar_values[pygplates.ScalarType.gpml_crustal_thinning_factor]
+      tectonic_subsidences = active_scalar_values[pygplates.ScalarType.gpml_tectonic_subsidence]
+
+      # Extract the scalar values associated with the user-defined scalar types.
+      my_active_scalar_values_0 = active_scalar_values[my_scalar_type_0]
+      my_active_scalar_values_1 = active_scalar_values[my_scalar_type_1]
+
+.. note:: Alternatively, you can specify a scalar type directly to :meth:`pygplates.ReconstructedGeometryTimeSpan.get_scalar_values`.
+   For example:
+   ::
+   
+      my_active_scalar_values_0 = reconstructed_geometry_time_span.get_scalar_values(
+            reconstruction_time,
+            my_scalar_type_0)
+
+A scalar value (per scalar type) is returned for each geometry point that is *active at the requested reconstruction time*
+(see :ref:`pygplates_primer_reconstructed_geometry_time_span_geometry_points`). If *none* of the points are active then ``None`` will be returned. 
+
+If the requested reconstruction time is *within* the :meth:`time range <pygplates.ReconstructedGeometryTimeSpan.get_time_span>` of the snapshots
+then the returned scalar values are those of the geometry points in the time slot (of the two time slots nearest the reconstruction time)
+that is closest to the initial time (specified in :meth:`pygplates.TopologicalModel.reconstruct_geometry`).
+
+.. note:: This is at the time of the time slot (rather than the reconstruction time), so this is more like a nearest neighbour interpolation
+   (rather than a linear interpolation) of the two nearest time slots. This only matters for built-in scalar types since user-defined
+   scalar types are constant over time.
+
+If the requested reconstruction time is *outside* the :meth:`time range <pygplates.ReconstructedGeometryTimeSpan.get_time_span>` of the snapshots then the
+returned scalar values will be from the oldest time slot (if the requested reconstruction time is older) or from the youngest time slot
+(if the requested reconstruction time is younger).
+
+.. _pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors:
+
+Crustal thickness factors
+*************************
+
+The crustal thickness factor :math:`F(t) = \frac{T(t)}{T(t_{initial})}` measures the ratio of the crustal thickness
+at a reconstruction time :math:`T(t)` to the initial crustal thickness at the initial time :math:`T(t_{initial})`.
+It is only calculated internally, and always has a value of ``1.0`` at the initial time (:math:`F(t_{initial}) = 1.0`).
+
+Publicly, there are three built-in :ref:`scalar values <pygplates_primer_reconstructed_geometry_time_span_scalar_values>`
+that depend on the internal crustal thickness factor :math:`F(t)`:
+
+*  *Crustal thickness* (in kms): :math:`T(t)`
+
+   The crustal thickness is calculated as:
+
+   :math:`T(t) = F(t) \, T(t_{initial})`
+
+   By default, the initial crustal thickness :math:`T(t_{initial})` is ``40`` kms.
+   But you can specify a different value for each initial geometry point:
+   ::
+
+      # Specify one initial crustal thickness (in kms) per initial point.
+      initial_crustal_thicknesses_in_kms = [...]
+
+      reconstructed_geometry_time_span = topological_model.reconstruct_geometry(
+            initial_points,
+            initial_time = 100,
+            # dict with a single entry that maps the crustal thickness scalar type to initial values...
+            initial_scalars = { pygplates.ScalarType.gpml_crustal_thickness : initial_crustal_thicknesses_in_kms })
+   
+   The crustal thicknesses can be queried at any reconstruction time using
+   :meth:`pygplates.ReconstructedGeometryTimeSpan.get_crustal_thicknesses`:
+   ::
+
+      reconstructed_crustal_thicknesses_in_kms = reconstructed_geometry_time_span.get_crustal_thicknesses(
+            reconstruction_time)
+
+      # If none of the points are active at 'reconstruction_time' then this will be 'None'.
+      if reconstructed_crustal_thicknesses_in_kms:
+         ...
+
+   .. note:: This is the equivalent of:
+      ::
+      
+         reconstructed_crustal_thicknesses_in_kms = reconstructed_geometry_time_span.get_scalar_values(
+               reconstruction_time,
+               pygplates.ScalarType.gpml_crustal_thickness)
+         ...
+
+*  *Crustal stretching factor*: :math:`\beta(t) = \frac{T(t_{initial})}{T(t)}`
+
+   By default, the initial crustal stretching factor :math:`\beta(t_{initial})` is ``1``.
+   And so the crustal stretching factor is calculated as:
+
+   :math:`\beta(t) = \frac{1}{F(t)}`
+
+   But you can specify a different :math:`\beta(t_{initial})` value for *each* initial geometry point:
+   ::
+
+      # Specify one initial crustal stretching factor per initial point.
+      initial_crustal_stretching_factors = [...]
+
+      reconstructed_geometry_time_span = topological_model.reconstruct_geometry(
+            initial_points,
+            initial_time = 100,
+            # dict with a single entry that maps the crustal stretching factor scalar type to initial values...
+            initial_scalars = { pygplates.ScalarType.gpml_crustal_stretching_factor : initial_crustal_stretching_factors })
+
+   ...where each crustal stretching factor is then calculated as:
+
+   :math:`\beta(t) = \frac{\beta(t_{initial})}{F(t)}`
+   
+   The crustal stretching factors can be queried at any reconstruction time using
+   :meth:`pygplates.ReconstructedGeometryTimeSpan.get_crustal_stretching_factors`:
+   ::
+
+      reconstructed_crustal_stretching_factors = reconstructed_geometry_time_span.get_crustal_stretching_factors(
+            reconstruction_time)
+
+      # If none of the points are active at 'reconstruction_time' then this will be 'None'.
+      if reconstructed_crustal_stretching_factors:
+         ...
+
+   .. note:: This is the equivalent of:
+      ::
+      
+         reconstructed_crustal_stretching_factors = reconstructed_geometry_time_span.get_scalar_values(
+               reconstruction_time,
+               pygplates.ScalarType.gpml_crustal_stretching_factor)
+         ...
+
+*  *Crustal thinning factor*: :math:`\gamma(t) = 1 - \frac{T(t)}{T(t_{initial})}`
+
+   By default, the initial crustal thinning factor :math:`\gamma(t_{initial})` is ``0``.
+   And so the crustal thinning factor is calculated as:
+
+   :math:`\gamma(t) = 1 - F(t)`
+
+   But you can specify a different :math:`\gamma(t_{initial})` value for *each* initial geometry point:
+   ::
+
+      # Specify one initial crustal thinning factor per initial point.
+      initial_crustal_thinning_factors = [...]
+
+      reconstructed_geometry_time_span = topological_model.reconstruct_geometry(
+            initial_points,
+            initial_time = 100,
+            # dict with a single entry that maps the crustal thinning factor scalar type to initial values...
+            initial_scalars = { pygplates.ScalarType.gpml_crustal_thinning_factor : initial_crustal_thinning_factors })
+
+   ...where each crustal thinning factor is then calculated as:
+
+   :math:`\gamma(t) = 1 - (1 - \gamma(t_{initial})) \, F(t)`
+   
+   The crustal thinning factors can be queried at any reconstruction time using
+   :meth:`pygplates.ReconstructedGeometryTimeSpan.get_crustal_thinning_factors`:
+   ::
+
+      reconstructed_crustal_thinning_factors = reconstructed_geometry_time_span.get_crustal_thinning_factors(
+            reconstruction_time)
+
+      # If none of the points are active at 'reconstruction_time' then this will be 'None'.
+      if reconstructed_crustal_thinning_factors:
+         ...
+
+   .. note:: This is the equivalent of:
+      ::
+      
+         reconstructed_crustal_thinning_factors = reconstructed_geometry_time_span.get_scalar_values(
+               reconstruction_time,
+               pygplates.ScalarType.gpml_crustal_thinning_factor)
+         ...
+
+.. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_scalar_values`, for more details on how scalar values are queried when the
+   requested reconstruction time is *inside* or *outside* the :meth:`time range <pygplates.ReconstructedGeometryTimeSpan.get_time_span>` of the snapshots.
+
+.. _pygplates_primer_reconstructed_geometry_time_span_tectonic_subsidence:
+
+Tectonic subsidence
+*******************
+
+Tectonic subsidence is one of the built-in :ref:`scalar values <pygplates_primer_reconstructed_geometry_time_span_scalar_values>` that evolves over time due to deformation.
+By default, the initial tectonic subsidence (at the initial time) is zero for each geometry point.
+However you can optionally specify your own initial tectonic subsidence values (using the *initial_scalars* argument of :meth:`pygplates.TopologicalModel.reconstruct_geometry`):
+::
+
+   # Specify one initial tectonic subsidence value (in kms) per initial point.
+   initial_tectonic_subsidences_in_kms = [...]
+
+   reconstructed_geometry_time_span = topological_model.reconstruct_geometry(
+         initial_points,
+         initial_time = 100,
+         # dict with a single entry that maps the tectonic subsidence scalar type to initial values...
+         initial_scalars = { pygplates.ScalarType.gpml_tectonic_subsidence : initial_tectonic_subsidences_in_kms })
+
+.. note:: The default (zero tectonic subsidence at the initial time) does not require the ``initial_scalars`` argument to be specified.
+
+The tectonic subsidence of each reconstructed geometry point at any reconstruction time can then be queried using
+:meth:`pygplates.ReconstructedGeometryTimeSpan.get_tectonic_subsidences`:
+::
+
+   reconstructed_tectonic_subsidences_in_kms = reconstructed_geometry_time_span.get_tectonic_subsidences(
+         reconstruction_time)
+
+   # If none of the points are active at 'reconstruction_time' then this will be 'None'.
+   if reconstructed_tectonic_subsidences_in_kms:
+      ...
+
+.. note:: This is the equivalent of:
+   ::
+   
+      reconstructed_tectonic_subsidences_in_kms = reconstructed_geometry_time_span.get_scalar_values(
+            reconstruction_time,
+            pygplates.ScalarType.gpml_tectonic_subsidence)
+      ...
+
+.. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_scalar_values`, for more details on how scalar values are queried when the
+   requested reconstruction time is *inside* or *outside* the :meth:`time range <pygplates.ReconstructedGeometryTimeSpan.get_time_span>` of the snapshots.
 
 .. _pygplates_primer_deformation:
 

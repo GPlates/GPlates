@@ -2757,16 +2757,56 @@ class TopologicalModelTestCase(unittest.TestCase):
         
         # Scalars.
         scalars_dict = reconstructed_multipoint_time_span.get_scalar_values(20)
-        # Should be at least the 2 scalar types we supplied initial values for.
-        # There will be more since other *evolved* scalar types are reconstructed (such as crustal thinning factor) even if we did not provide initial values.
-        self.assertTrue(len(scalars_dict) >= 2)
+        # Although we only supplied initial values for 2 scalar types, there will be more since other *evolved* scalar types are reconstructed
+        # (such as crustal thinning factor) that we did not provide initial values for.
+        self.assertTrue(len(scalars_dict) == 4)
         self.assertTrue(scalars_dict[pygplates.ScalarType.gpml_crustal_thickness] == [10.0, 10.0, 10.0])
         self.assertTrue(scalars_dict[pygplates.ScalarType.gpml_crustal_stretching_factor] == [1.0, 1.0, 1.0])
+        self.assertTrue(scalars_dict[pygplates.ScalarType.gpml_crustal_thinning_factor] == [0.0, 0.0, 0.0])
+        self.assertTrue(scalars_dict[pygplates.ScalarType.gpml_tectonic_subsidence] == [0.0, 0.0, 0.0])
         self.assertTrue(reconstructed_multipoint_time_span.get_scalar_values(20, pygplates.ScalarType.gpml_crustal_thickness) == [10.0, 10.0, 10.0])
         self.assertTrue(reconstructed_multipoint_time_span.get_scalar_values(20, pygplates.ScalarType.gpml_crustal_stretching_factor) == [1.0, 1.0, 1.0])
+        self.assertTrue(reconstructed_multipoint_time_span.get_scalar_values(20, pygplates.ScalarType.gpml_crustal_thinning_factor) == [0.0, 0.0, 0.0])
+        self.assertTrue(reconstructed_multipoint_time_span.get_scalar_values(20, pygplates.ScalarType.gpml_tectonic_subsidence) == [0.0, 0.0, 0.0])
         scalars_dict = reconstructed_multipoint_time_span.get_scalar_values(20, return_inactive_points=True)
-        self.assertTrue(len(scalars_dict) >= 2)
-    
+        self.assertTrue(len(scalars_dict) == 4)
+         
+        # Crustal thicknesses.
+        crustal_thickness = reconstructed_multipoint_time_span.get_crustal_thicknesses(20)
+        self.assertTrue(len(crustal_thickness) == 3)
+        self.assertTrue(crustal_thickness[0] == 10.0)
+        self.assertTrue(crustal_thickness[1] == 10.0)
+        self.assertTrue(crustal_thickness[2] == 10.0)
+        crustal_thickness = reconstructed_multipoint_time_span.get_crustal_thicknesses(20, return_inactive_points=True)
+        self.assertTrue(len(crustal_thickness) == 3)
+         
+        # Crustal stretching factors.
+        crustal_stretching_factors = reconstructed_multipoint_time_span.get_crustal_stretching_factors(20)
+        self.assertTrue(len(crustal_stretching_factors) == 3)
+        self.assertTrue(crustal_stretching_factors[0] == 1.0)
+        self.assertTrue(crustal_stretching_factors[1] == 1.0)
+        self.assertTrue(crustal_stretching_factors[2] == 1.0)
+        crustal_stretching_factors = reconstructed_multipoint_time_span.get_crustal_stretching_factors(20, return_inactive_points=True)
+        self.assertTrue(len(crustal_stretching_factors) == 3)
+         
+        # Crustal thinning factors.
+        crustal_thinning_factors = reconstructed_multipoint_time_span.get_crustal_thinning_factors(20)
+        self.assertTrue(len(crustal_thinning_factors) == 3)
+        self.assertTrue(crustal_thinning_factors[0] == 0.0)
+        self.assertTrue(crustal_thinning_factors[1] == 0.0)
+        self.assertTrue(crustal_thinning_factors[2] == 0.0)
+        crustal_thinning_factors = reconstructed_multipoint_time_span.get_crustal_thinning_factors(20, return_inactive_points=True)
+        self.assertTrue(len(crustal_thinning_factors) == 3)
+         
+        # Tectonic subsidence.
+        tectonic_subsidences = reconstructed_multipoint_time_span.get_tectonic_subsidences(20)
+        self.assertTrue(len(tectonic_subsidences) == 3)
+        self.assertTrue(tectonic_subsidences[0] == 0.0)
+        self.assertTrue(tectonic_subsidences[1] == 0.0)
+        self.assertTrue(tectonic_subsidences[2] == 0.0)
+        tectonic_subsidences = reconstructed_multipoint_time_span.get_tectonic_subsidences(20, return_inactive_points=True)
+        self.assertTrue(len(tectonic_subsidences) == 3)
+   
     def test_pickle(self):
         # Pickle a TopologicalModel.
         pickled_topological_model = pickle.loads(pickle.dumps(self.topological_model))

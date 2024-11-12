@@ -189,7 +189,10 @@ namespace GPlatesApi
 			if (return_inactive_points)
 			{
 				std::vector<boost::optional<GPlatesMaths::PointOnSphere>> all_geometry_points;
-				geometry_time_span->get_all_geometry_data(reconstruction_time, all_geometry_points);
+				if (!geometry_time_span->get_all_geometry_data(reconstruction_time, all_geometry_points))
+				{
+					all_geometry_points.resize(geometry_time_span->get_num_all_geometry_points());
+				}
 
 				for (auto geometry_point : all_geometry_points)
 				{
@@ -228,10 +231,13 @@ namespace GPlatesApi
 			if (return_inactive_points)
 			{
 				std::vector<boost::optional<GPlatesAppLogic::TopologyPointLocation>> all_topology_point_locations;
-				geometry_time_span->get_all_geometry_data(
+				if (!geometry_time_span->get_all_geometry_data(
 						reconstruction_time,
 						boost::none/*points*/,
-						all_topology_point_locations);
+						all_topology_point_locations))
+				{
+					all_topology_point_locations.resize(geometry_time_span->get_num_all_geometry_points());
+				}
 
 				for (auto topology_point_location : all_topology_point_locations)
 				{
@@ -273,12 +279,15 @@ namespace GPlatesApi
 			if (return_inactive_points)
 			{
 				std::vector<boost::optional<GPlatesAppLogic::DeformationStrain>> all_strains;
-				geometry_time_span->get_all_geometry_data(
+				if (!geometry_time_span->get_all_geometry_data(
 						reconstruction_time,
 						boost::none/*points*/,
 						boost::none/*point_locations*/,
 						boost::none/*strain_rates*/,
-						all_strains);
+						all_strains))
+				{
+					all_strains.resize(geometry_time_span->get_num_all_geometry_points());
+				}
 
 				for (auto strain : all_strains)
 				{
@@ -322,11 +331,14 @@ namespace GPlatesApi
 			if (return_inactive_points)
 			{
 				std::vector<boost::optional<GPlatesAppLogic::DeformationStrainRate>> all_strain_rates;
-				geometry_time_span->get_all_geometry_data(
+				if (!geometry_time_span->get_all_geometry_data(
 						reconstruction_time,
 						boost::none/*points*/,
 						boost::none/*point_locations*/,
-						all_strain_rates);
+						all_strain_rates))
+				{
+					all_strain_rates.resize(geometry_time_span->get_num_all_geometry_points());
+				}
 
 				for (auto strain_rate : all_strain_rates)
 				{
@@ -373,13 +385,16 @@ namespace GPlatesApi
 			if (return_inactive_points)
 			{
 				std::vector<boost::optional<GPlatesMaths::Vector3D>> all_velocities;
-				geometry_time_span->get_all_velocities(
+				if (!geometry_time_span->get_all_velocities(
 						all_velocities,
 						reconstruction_time,
 						velocity_delta_time,
 						velocity_delta_time_type,
 						velocity_units,
-						earth_radius_in_kms);
+						earth_radius_in_kms))
+				{
+					all_velocities.resize(geometry_time_span->get_num_all_geometry_points());
+				}
 
 				for (const auto &velocity : all_velocities)
 				{
@@ -440,6 +455,14 @@ namespace GPlatesApi
 
 						// Note that boost::none gets translated to Python 'None'.
 						scalar_values_list_object.append(scalar_value);
+					}
+				}
+				else
+				{
+					const unsigned int num_all_scalar_values = scalar_coverage_time_span->get_num_all_scalar_values();
+					for (unsigned int scalar_value_index = 0; scalar_value_index < num_all_scalar_values; ++scalar_value_index)
+					{
+						scalar_values_list_object.append(bp::object()/*Py_None*/);
 					}
 				}
 			}
@@ -703,6 +726,86 @@ namespace GPlatesApi
 		}
 
 		return scalar_values_dict;
+	}
+
+	/**
+	 * Returns the list of reconstructed crustal thicknesses (in kms) at reconstruction time.
+	 */
+	bp::object
+	reconstructed_geometry_time_span_get_crustal_thicknesses(
+			ReconstructedGeometryTimeSpan::non_null_ptr_type reconstructed_geometry_time_span,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+			bool return_inactive_points)
+	{
+		static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_THICKNESS =
+				GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThickness");
+
+		return reconstructed_geometry_time_span_get_scalar_values(
+				reconstructed_geometry_time_span,
+				reconstruction_time,
+				GPML_CRUSTAL_THICKNESS,
+				return_inactive_points);
+	}
+
+	/**
+	 * Returns the list of reconstructed crustal stretching factors at reconstruction time.
+	 *
+	 * Stretching (beta) factor is 'beta = Ti/T'.
+	 */
+	bp::object
+	reconstructed_geometry_time_span_get_crustal_stretching_factors(
+			ReconstructedGeometryTimeSpan::non_null_ptr_type reconstructed_geometry_time_span,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+			bool return_inactive_points)
+	{
+		static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_STRETCHING_FACTOR =
+				GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalStretchingFactor");
+
+		return reconstructed_geometry_time_span_get_scalar_values(
+				reconstructed_geometry_time_span,
+				reconstruction_time,
+				GPML_CRUSTAL_STRETCHING_FACTOR,
+				return_inactive_points);
+	}
+
+	/**
+	 * Returns the list of reconstructed crustal thinning factors at reconstruction time.
+	 *
+	 * Thinning (gamma) factor is 'gamma = (1 - T/Ti)'.
+	 */
+	bp::object
+	reconstructed_geometry_time_span_get_crustal_thinning_factors(
+			ReconstructedGeometryTimeSpan::non_null_ptr_type reconstructed_geometry_time_span,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+			bool return_inactive_points)
+	{
+		static const GPlatesPropertyValues::ValueObjectType GPML_CRUSTAL_THINNING_FACTOR =
+				GPlatesPropertyValues::ValueObjectType::create_gpml("CrustalThinningFactor");
+
+		return reconstructed_geometry_time_span_get_scalar_values(
+				reconstructed_geometry_time_span,
+				reconstruction_time,
+				GPML_CRUSTAL_THINNING_FACTOR,
+				return_inactive_points);
+	}
+
+	/**
+	 * Returns the list of reconstructed tectonic subsidences (at reconstruction time).
+	 */
+	bp::object
+	reconstructed_geometry_time_span_get_tectonic_subsidences(
+			ReconstructedGeometryTimeSpan::non_null_ptr_type reconstructed_geometry_time_span,
+			const GPlatesPropertyValues::GeoTimeInstant &reconstruction_time,
+			bool return_inactive_points)
+	{
+		static const GPlatesPropertyValues::ValueObjectType GPML_TECTONIC_SUBSIDENCE =
+				GPlatesPropertyValues::ValueObjectType::create_gpml("TectonicSubsidence");
+
+		return reconstructed_geometry_time_span_get_scalar_values(
+				reconstructed_geometry_time_span,
+				reconstruction_time,
+				GPML_TECTONIC_SUBSIDENCE,
+				return_inactive_points);
 	}
 
 	/**
@@ -1486,6 +1589,7 @@ export_topological_model()
 	// Enable boost::optional<TopologyPointLocation> to be passed to and from python.
 	GPlatesApi::PythonConverterUtils::register_optional_conversion<GPlatesAppLogic::TopologyPointLocation>();
 
+
 	{
 		//
 		// ReconstructedGeometryTimeSpan - docstrings in reStructuredText (see http://sphinx-doc.org/rest.html).
@@ -1529,7 +1633,7 @@ export_topological_model()
 					"Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).\n"
 					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 					"  :param return_inactive_points: Whether to return inactive geometry points. "
-					"If ``True`` then each inactive point stores ``None`` instead of a point and hence the size of each ``list`` "
+					"If ``True`` then each inactive point stores ``None`` instead of a point and hence the size of the ``list`` "
 					"of points is equal to the number of points in the initial geometry (which are all initially active). "
 					"By default only active points are returned.\n"
 					"  :type return_inactive_points: bool\n"
@@ -1552,7 +1656,7 @@ export_topological_model()
 					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 					"  :param return_inactive_points: Whether to return topology locations associated with inactive points. "
 					"If ``True`` then each topology location corresponding to an inactive point stores ``None`` instead of a "
-					"topology location and hence the size of each ``list`` of topology locations is equal to the number of points "
+					"topology location and hence the size of the ``list`` of topology locations is equal to the number of points "
 					"in the initial geometry (which are all initially active). "
 					"By default only topology locations for active points are returned.\n"
 					"  :type return_inactive_points: bool\n"
@@ -1575,7 +1679,7 @@ export_topological_model()
 					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 					"  :param return_inactive_points: Whether to return strains associated with inactive points. "
 					"If ``True`` then each strain corresponding to an inactive point stores ``None`` instead of a "
-					"strain and hence the size of each ``list`` of strains is equal to the number of points "
+					"strain and hence the size of the ``list`` of strains is equal to the number of points "
 					"in the initial geometry (which are all initially active). "
 					"By default only strains for active points are returned.\n"
 					"  :type return_inactive_points: bool\n"
@@ -1600,7 +1704,7 @@ export_topological_model()
 					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
 					"  :param return_inactive_points: Whether to return strain rates associated with inactive points. "
 					"If ``True`` then each strain rate corresponding to an inactive point stores ``None`` instead of a "
-					"strain rate and hence the size of each ``list`` of strain rates is equal to the number of points "
+					"strain rate and hence the size of the ``list`` of strain rates is equal to the number of points "
 					"in the initial geometry (which are all initially active). "
 					"By default only strain rates for active points are returned.\n"
 					"  :type return_inactive_points: bool\n"
@@ -1641,11 +1745,11 @@ export_topological_model()
 					"  :type earth_radius_in_kms: float\n"
 					"  :param return_inactive_points: Whether to return velocities associated with inactive points. "
 					"If ``True`` then each velocity corresponding to an inactive point stores ``None`` instead of a "
-					"velocity and hence the size of each ``list`` of velocities is equal to the number of points "
+					"velocity and hence the size of the ``list`` of velocities is equal to the number of points "
 					"in the initial geometry (which are all initially active). "
 					"By default only velocities for active points are returned.\n"
-					"  :returns: list of :class:`Vector3D`, or ``None`` if no points are active at *reconstruction_time*\n"
 					"  :type return_inactive_points: bool\n"
+					"  :returns: list of :class:`Vector3D`, or ``None`` if no points are active at *reconstruction_time*\n"
 					"  :rtype: ``list`` or ``None``\n"
 					"  :raises: ValueError if *reconstruction_time* is "
 					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
@@ -1687,7 +1791,105 @@ export_topological_model()
 					"  :rtype: ``list`` or ``dict`` or ``None``\n"
 					"  :raises: ValueError if *reconstruction_time* is "
 					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
-					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n")
+					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_scalar_values` in the *Primer* documentation.\n")
+			.def("get_tectonic_subsidences",
+					&GPlatesApi::reconstructed_geometry_time_span_get_tectonic_subsidences,
+					(bp::arg("reconstruction_time"),
+						bp::arg("return_inactive_points") = false),
+					"get_tectonic_subsidences(reconstruction_time, [return_inactive_points=False])\n"
+					"  Returns tectonic subsidence values (in kms) at a specific reconstruction time.\n"
+					"\n"
+					"  :param reconstruction_time: Time to extract reconstructed tectonic subsidence values. "
+					"Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).\n"
+					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+					"  :param return_inactive_points: Whether to return tectonic subsidence values associated with inactive points. "
+					"If ``True`` then each tectonic subsidence value corresponding to an inactive point stores ``None`` and hence "
+					"the size of the returned ``list`` is equal to the number of points in the initial geometry (which are all initially active). "
+					"By default only tectonic subsidence values for active points are returned.\n"
+					"  :type return_inactive_points: bool\n"
+					"  :returns: list of float, or ``None`` if no points are active at *reconstruction_time*\n"
+					"  :rtype: ``list`` or ``None``\n"
+					"  :raises: ValueError if *reconstruction_time* is "
+					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_tectonic_subsidence` in the *Primer* documentation.\n"
+					"\n"
+					"  .. versionadded:: 0.50\n")
+			.def("get_crustal_thicknesses",
+					&GPlatesApi::reconstructed_geometry_time_span_get_crustal_thicknesses,
+					(bp::arg("reconstruction_time"),
+						bp::arg("return_inactive_points") = false),
+					"get_crustal_thicknesses(reconstruction_time, [return_inactive_points=False])\n"
+					"  Returns crustal thicknesses (in kms) at a specific reconstruction time.\n"
+					"\n"
+					"  :param reconstruction_time: Time to extract reconstructed crustal thicknesses. "
+					"Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).\n"
+					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+					"  :param return_inactive_points: Whether to return crustal thicknesses associated with inactive points. "
+					"If ``True`` then each crustal thickness corresponding to an inactive point stores ``None`` and hence "
+					"the size of the returned ``list`` is equal to the number of points in the initial geometry (which are all initially active). "
+					"By default only crustal thicknesses for active points are returned.\n"
+					"  :type return_inactive_points: bool\n"
+					"  :returns: list of float, or ``None`` if no points are active at *reconstruction_time*\n"
+					"  :rtype: ``list`` or ``None``\n"
+					"  :raises: ValueError if *reconstruction_time* is "
+					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors` in the *Primer* documentation.\n"
+					"\n"
+					"  .. versionadded:: 0.50\n")
+			.def("get_crustal_stretching_factors",
+					&GPlatesApi::reconstructed_geometry_time_span_get_crustal_stretching_factors,
+					(bp::arg("reconstruction_time"),
+						bp::arg("return_inactive_points") = false),
+					"get_crustal_stretching_factors(reconstruction_time, [return_inactive_points=False])\n"
+					"  Returns crustal stretching factors at a specific reconstruction time.\n"
+					"\n"
+					"  :param reconstruction_time: Time to extract reconstructed crustal stretching factors. "
+					"Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).\n"
+					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+					"  :param return_inactive_points: Whether to return crustal stretching factors associated with inactive points. "
+					"If ``True`` then each crustal stretching factor corresponding to an inactive point stores ``None`` and hence "
+					"the size of the returned ``list`` is equal to the number of points in the initial geometry (which are all initially active). "
+					"By default only crustal stretching factors for active points are returned.\n"
+					"  :type return_inactive_points: bool\n"
+					"  :returns: list of float, or ``None`` if no points are active at *reconstruction_time*\n"
+					"  :rtype: ``list`` or ``None``\n"
+					"  :raises: ValueError if *reconstruction_time* is "
+					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors` in the *Primer* documentation.\n"
+					"\n"
+					"  .. versionadded:: 0.50\n")
+			.def("get_crustal_thinning_factors",
+					&GPlatesApi::reconstructed_geometry_time_span_get_crustal_thinning_factors,
+					(bp::arg("reconstruction_time"),
+						bp::arg("return_inactive_points") = false),
+					"get_crustal_thinning_factors(reconstruction_time, [return_inactive_points=False])\n"
+					"  Returns crustal thinning factors at a specific reconstruction time.\n"
+					"\n"
+					"  :param reconstruction_time: Time to extract reconstructed crustal thinning factors. "
+					"Can be any non-negative time (doesn't have to be an integer and can be outside the :meth:`time span <get_time_span>`).\n"
+					"  :type reconstruction_time: float or :class:`GeoTimeInstant`\n"
+					"  :param return_inactive_points: Whether to return crustal thinning factors associated with inactive points. "
+					"If ``True`` then each crustal thinning factor corresponding to an inactive point stores ``None`` and hence "
+					"the size of the returned ``list`` is equal to the number of points in the initial geometry (which are all initially active). "
+					"By default only crustal thinning factors for active points are returned.\n"
+					"  :type return_inactive_points: bool\n"
+					"  :returns: list of float, or ``None`` if no points are active at *reconstruction_time*\n"
+					"  :rtype: ``list`` or ``None``\n"
+					"  :raises: ValueError if *reconstruction_time* is "
+					":meth:`distant past<GeoTimeInstant.is_distant_past>` or "
+					":meth:`distant future<GeoTimeInstant.is_distant_future>`\n"
+					"\n"
+					"  .. seealso:: :ref:`pygplates_primer_reconstructed_geometry_time_span_crustal_thickness_factors` in the *Primer* documentation.\n"
+					"\n"
+					"  .. versionadded:: 0.50\n")
 			// Make hash and comparisons based on C++ object identity (not python object identity)...
 			.def(GPlatesApi::ObjectIdentityHashDefVisitor())
 		;

@@ -227,7 +227,7 @@ namespace GPlatesAppLogic
 		 * returned by 'TopologyReconstruct::GeometryTimeSpan::get_all_geometry_data()'.
 		 *
 		 * Returns false if @a is_valid returns false or @a scalar_type is not in the scalar coverage
-		 * (in which case @a scalar_values is unmodified).
+		 * (in which case @a scalar_values and @a scalar_values_are_active are unmodified).
 		 */
 		bool
 		get_all_scalar_values(
