@@ -2648,57 +2648,65 @@ GPlatesAppLogic::TopologyReconstruct::GeometryTimeSpan::interpolate_geometry_sam
 			{
 				if (d_accessing_strain_rates)
 				{
-					if (initial_geometry_point->strain_rate &&
+					// If both initial or final point have a strain rate then interpolate.
+					// If only one has a strain rate then the other has zero strain rate (but still interpolate).
+					//
+					// If neither has a strain rate then both are zero strain rate (so no need to interpolate).
+					if (initial_geometry_point->strain_rate ||
 						final_geometry_point->strain_rate)
 					{
+						DeformationStrainRate initial_strain_rate; // Default to zero strain rate.
+						DeformationStrainRate final_strain_rate;   // Default to zero strain rate.
+
+						if (initial_geometry_point->strain_rate)
+						{
+							initial_strain_rate = *initial_geometry_point->strain_rate;
+						}
+						if (final_geometry_point->strain_rate)
+						{
+							final_strain_rate = *final_geometry_point->strain_rate;
+						}
+
 						const DeformationStrainRate interpolated_strain_rate =
-								(1 - interpolate_initial_to_final_position) * *initial_geometry_point->strain_rate +
-									interpolate_initial_to_final_position * *final_geometry_point->strain_rate;
+								(1 - interpolate_initial_to_final_position) * initial_strain_rate +
+									interpolate_initial_to_final_position * final_strain_rate;
 
 						interpolated_geometry_point->strain_rate = pool_allocator->deformation_strain_rate_pool.construct(interpolated_strain_rate);
 					}
-					else if (initial_geometry_point->strain_rate)
-					{
-						// Copy into a new strain object since we can't share the same object (because using our own allocator).
-						interpolated_geometry_point->strain_rate =
-								pool_allocator->deformation_strain_rate_pool.construct(*initial_geometry_point->strain_rate);
-					}
-					else if (final_geometry_point->strain_rate)
-					{
-						// Copy into a new strain object since we can't share the same object (because using our own allocator).
-						interpolated_geometry_point->strain_rate =
-								pool_allocator->deformation_strain_rate_pool.construct(*final_geometry_point->strain_rate);
-					}
-					// ...else leave as NULL.
 				}
+				// ...else leave as NULL.
 
 				if (d_accessing_strains)
 				{
-					if (initial_geometry_point->strain &&
+					// If both initial or final point have a strain then interpolate.
+					// If only one has a strain then the other has identity strain (but still interpolate).
+					// 
+					// If neither has a strain then both are identity strain (so no need to interpolate).
+					if (initial_geometry_point->strain ||
 						final_geometry_point->strain)
 					{
+						DeformationStrain initial_strain; // Default to identity strain.
+						DeformationStrain final_strain;   // Default to identity strain.
+
+						if (initial_geometry_point->strain)
+						{
+							initial_strain = *initial_geometry_point->strain;
+						}
+						if (final_geometry_point->strain)
+						{
+							final_strain = *final_geometry_point->strain;
+						}
+
 						const DeformationStrain interpolated_strain =
 								interpolate_strain(
-										*initial_geometry_point->strain,
-										*final_geometry_point->strain,
+										initial_strain,
+										final_strain,
 										interpolate_initial_to_final_position);
 
 						interpolated_geometry_point->strain = pool_allocator->deformation_strain_pool.construct(interpolated_strain);
 					}
-					else if (initial_geometry_point->strain)
-					{
-						// Copy into a new strain object since we can't share the same object (because using our own allocator).
-						interpolated_geometry_point->strain =
-								pool_allocator->deformation_strain_pool.construct(*initial_geometry_point->strain);
-					}
-					else if (final_geometry_point->strain)
-					{
-						// Copy into a new strain object since we can't share the same object (because using our own allocator).
-						interpolated_geometry_point->strain =
-								pool_allocator->deformation_strain_pool.construct(*final_geometry_point->strain);
-					}
-					// ...else leave as NULL.
 				}
+				// ...else leave as NULL.
 			}
 			else
 			{
