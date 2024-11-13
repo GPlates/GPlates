@@ -22,14 +22,17 @@ def get_overriding_and_subducting_plates(shared_sub_segment, return_subduction_p
     
     :param return_subduction_polarity: whether to also return the subduction polarity
     :type return_subduction_polarity: bool
-    :returns: a 2-tuple containing the overriding and subducting resolved boundaries/networks, or
-              a 3-tuple that also contains the subduction polarity (eg, 'Left', 'Right', 'Unknown') if
-              *return_subduction_polarity* is ``True``, or ``None`` if the subduction polarity is not properly set or
-              there are not exactly 2 topologies sharing this sub-segment
+    :returns: a 2-tuple containing the overriding and subducting resolved
+              :class:`boundaries <ResolvedTopologicalBoundary>`/:class:`networks <ResolvedTopologicalNetwork>`,
+              or a 3-tuple that also contains the subduction polarity ('Left' or 'Right') if
+              *return_subduction_polarity* is ``True``, or ``None`` if the subduction polarity is not 'Left' or 'Right'
+              (or doesn't exist) or there is not exactly one overriding plate or one overriding network or one overriding
+              plate and network attached to this sub-segment or there is not exactly one subducting plate or one subducting
+              network or one subducting plate and network attached to this sub-segment
     :rtype: 2-tuple of :class:`ReconstructionGeometry`, or 3-tuple appending a str, or ``None``
     
-    .. note:: Returns ``None`` if either the subduction polarity is not properly set or
-       there are not exactly 2 topologies sharing the sub-segment.
+    .. note:: If there is one overriding plate and one overriding network attached to this sub-segment then the
+       overriding network is returned (since networks overlay plates). The same applies to *subducting* plates and networks.
     
     To find the overriding and subducting plate IDs of all subduction zone lines:
     ::
@@ -59,40 +62,83 @@ def get_overriding_and_subducting_plates(shared_sub_segment, return_subduction_p
                     subducting_plate_id = subducting_plate.get_feature().get_reconstruction_plate_id()
     
     .. versionadded:: 0.23
+
+    .. versionchanged:: 0.50
+       Allow one overriding plate and one overriding network (latter is then returned).
+       Allow one subducting plate and one subducting network (latter is then returned).
     """
-    
     # Get the subduction polarity of the subduction zone line.
     subduction_polarity = shared_sub_segment.get_feature().get_enumeration(PropertyName.gpml_subduction_polarity)
-    if (not subduction_polarity) or (subduction_polarity == 'Unknown'):
-        return None
-
-    # There should be two sharing topologies - one is the overriding plate and the other the subducting plate.
-    sharing_resolved_topologies = shared_sub_segment.get_sharing_resolved_topologies()
-    if len(sharing_resolved_topologies) != 2:
-        return None
-
-    overriding_plate = None
-    subducting_plate = None
+    if not subduction_polarity:
+        return
     
+    # Ensure the subduction polarity is known (and set properly).
+    if subduction_polarity == 'Left':
+        overriding_plate_is_on_left = True
+    elif subduction_polarity == 'Right':
+        overriding_plate_is_on_left = False
+    else:
+        return
+
+    # Can have a resolved topological network that overlays a resolved topological boundary.
+    overriding_boundary = None
+    overriding_network = None
+    subducting_boundary = None
+    subducting_network = None
+    
+    sharing_resolved_topologies = shared_sub_segment.get_sharing_resolved_topologies()
     resolved_topology_on_left_flags = shared_sub_segment.get_sharing_resolved_topology_on_left_flags()
-    for index in range(2):
+    for index in range(len(sharing_resolved_topologies)):
 
         sharing_resolved_topology = sharing_resolved_topologies[index]
         resolved_topology_is_on_left = resolved_topology_on_left_flags[index]
 
         # If the current topology is on the same side of the subduction polarity then it's the overriding plate
         # (otherwise it's the subducting plate).
-        if ((resolved_topology_is_on_left and subduction_polarity == 'Left') or
-            (not resolved_topology_is_on_left and subduction_polarity == 'Right')):
-            overriding_plate = sharing_resolved_topology
+        if ((resolved_topology_is_on_left and overriding_plate_is_on_left) or
+            (not resolved_topology_is_on_left and not overriding_plate_is_on_left)):
+            if isinstance(sharing_resolved_topology, ResolvedTopologicalBoundary):
+                # Return None if previously found a ResolvedTopologicalBoundary (since it's ambiguous).
+                if overriding_boundary:
+                    return
+                overriding_boundary = sharing_resolved_topology
+            else:  # ResolvedTopologicalNetwork...
+                # Return None if previously found a ResolvedTopologicalNetwork (since it's ambiguous).
+                if overriding_network:
+                    return
+                overriding_network = sharing_resolved_topology
         else:
-            subducting_plate = sharing_resolved_topology
+            if isinstance(sharing_resolved_topology, ResolvedTopologicalBoundary):
+                # Return None if previously found a ResolvedTopologicalBoundary (since it's ambiguous).
+                if subducting_boundary:
+                    return
+                subducting_boundary = sharing_resolved_topology
+            else:  # ResolvedTopologicalNetwork...
+                # Return None if previously found a ResolvedTopologicalNetwork (since it's ambiguous).
+                if subducting_network:
+                    return
+                subducting_network = sharing_resolved_topology
     
-    if overriding_plate is None:
-        return None
+    # If unable to find overriding boundary or network then return None.
+    if not (overriding_boundary or overriding_network):
+        return
     
-    if subducting_plate is None:
-        return None
+    # If unable to find subducting boundary or network then return None.
+    if not (subducting_boundary or subducting_network):
+        return
+
+    # Resolved topological networks will higher preference than resolved topological boundaries
+    # (since former can overlay the latter).
+    #
+    if overriding_network:
+        overriding_plate = overriding_network
+    else:
+        overriding_plate = overriding_boundary
+    #
+    if subducting_network:
+        subducting_plate = subducting_network
+    else:
+        subducting_plate = subducting_boundary
     
     if return_subduction_polarity:
         return overriding_plate, subducting_plate, subduction_polarity
@@ -107,18 +153,18 @@ del get_overriding_and_subducting_plates
 
 def get_subducting_plate(shared_sub_segment, return_subduction_polarity=False):
     """get_subducting_plate([return_subduction_polarity=False])
-    Returns the subducting plate at this subduction zone.
+    Returns the subducting plate (or network) at this subduction zone.
     
     :param return_subduction_polarity: whether to also return the subduction polarity
     :type return_subduction_polarity: bool
-    :returns: subducting resolved boundary/network, or
-              a 2-tuple that also contains the subduction polarity (eg, 'Left', 'Right', 'Unknown') if
-              *return_subduction_polarity* is ``True``, or ``None`` if the subduction polarity is not properly set or
-              there is not exactly one subducting plate attached to this sub-segment
+    :returns: subducting resolved :class:`boundary <ResolvedTopologicalBoundary>`/:class:`network <ResolvedTopologicalNetwork>`,
+              or a 2-tuple that also contains the subduction polarity ('Left' or 'Right') if *return_subduction_polarity*
+              is ``True``, or ``None`` if the subduction polarity is not 'Left' or 'Right' (or doesn't exist) or there is not exactly
+              one subducting plate or one subducting network or one subducting plate and network attached to this sub-segment
     :rtype: :class:`ReconstructionGeometry`, or 2-tuple appending a str, or ``None``
     
-    .. note:: Returns ``None`` if either the subduction polarity is not properly set or
-       there is not exactly one subducting plate attached to this sub-segment.
+    .. note:: If there is one subducting plate and one subducting network attached to this sub-segment then the
+       subducting network is returned (since networks overlay plates).
     
     To find the plate ID of each subducting plate attached to each subduction zone line sub-segment:
     ::
@@ -147,17 +193,30 @@ def get_subducting_plate(shared_sub_segment, return_subduction_polarity=False):
                     subducting_plate_id = subducting_plate.get_feature().get_reconstruction_plate_id()
     
     .. versionadded:: 0.30
+
+    .. versionchanged:: 0.50
+       Allow one subducting plate and one subducting network (latter is returned).
     """
     
     # Get the subduction polarity of the subducting line.
     subduction_polarity = shared_sub_segment.get_feature().get_enumeration(PropertyName.gpml_subduction_polarity)
-    if (not subduction_polarity) or (subduction_polarity == 'Unknown'):
+    if not subduction_polarity:
+        return
+    
+    # Ensure the subduction polarity is known (and set properly).
+    if subduction_polarity == 'Left':
+        overriding_plate_is_on_left = True
+    elif subduction_polarity == 'Right':
+        overriding_plate_is_on_left = False
+    else:
         return
 
-    subducting_plate = None
+    # Can have a resolved topological network that overlays a resolved topological boundary.
+    subducting_boundary = None
+    subducting_network = None
     
     # Iterate over the resolved topologies sharing the subduction sub-segment.
-    # We are looking for exactly one subducting plate.
+    # We are looking for exactly one subducting plate, or one subducting network, or one subducting plate and network.
     #
     # There can be zero, one or more overriding plates but that does not affect us (since only looking for subducting plate).
     # This actually makes things more robust because it's possible the topologies were built in such a way that a subduction line
@@ -175,16 +234,30 @@ def get_subducting_plate(shared_sub_segment, return_subduction_polarity=False):
         resolved_topology_is_on_left = resolved_topology_on_left_flags[index]
 
         # If the current topology is on the opposite side of the subduction polarity (overriding plate) then it's the subducting plate.
-        if ((resolved_topology_is_on_left and subduction_polarity == 'Right') or
-            (not resolved_topology_is_on_left and subduction_polarity == 'Left')):
-            # If we've already previously found the subducting plate then it's ambiguous, so return None.
-            if subducting_plate is not None:
-                return
-            subducting_plate = sharing_resolved_topology
+        if ((resolved_topology_is_on_left and not overriding_plate_is_on_left) or
+            (not resolved_topology_is_on_left and overriding_plate_is_on_left)):
+
+            if isinstance(sharing_resolved_topology, ResolvedTopologicalBoundary):
+                # Return None if previously found a ResolvedTopologicalBoundary (since it's ambiguous).
+                if subducting_boundary:
+                    return
+                subducting_boundary = sharing_resolved_topology
+            else:  # ResolvedTopologicalNetwork...
+                # Return None if previously found a ResolvedTopologicalNetwork (since it's ambiguous).
+                if subducting_network:
+                    return
+                subducting_network = sharing_resolved_topology
     
-    # Unable to find subducting plate, so return None.
-    if subducting_plate is None:
+    # If unable to find subducting boundary or network then return None.
+    if not (subducting_boundary or subducting_network):
         return
+
+    # Resolved topological networks will higher preference than resolved topological boundaries
+    # (since former can overlay the latter).
+    if subducting_network:
+        subducting_plate = subducting_network
+    else:
+        subducting_plate = subducting_boundary
     
     if return_subduction_polarity:
         return subducting_plate, subduction_polarity
