@@ -74,32 +74,19 @@ def get_overriding_and_subducting_plates(shared_sub_segment, return_subduction_p
     overriding_plate = None
     subducting_plate = None
     
-    geometry_reversal_flags = shared_sub_segment.get_sharing_resolved_topology_geometry_reversal_flags()
+    resolved_topology_on_left_flags = shared_sub_segment.get_sharing_resolved_topology_on_left_flags()
     for index in range(2):
 
         sharing_resolved_topology = sharing_resolved_topologies[index]
-        geometry_reversal_flag = geometry_reversal_flags[index]
+        resolved_topology_is_on_left = resolved_topology_on_left_flags[index]
 
-        if sharing_resolved_topology.get_resolved_boundary().get_orientation() == PolygonOnSphere.Orientation.clockwise:
-            # The current topology sharing the subducting line has clockwise orientation (when viewed from above the Earth).
-            # If the overriding plate is to the 'left' of the subducting line (when following its vertices in order) and
-            # the subducting line is reversed when contributing to the topology then that topology is the overriding plate.
-            # A similar test applies to the 'right' but with the subducting line not reversed in the topology.
-            if ((subduction_polarity == 'Left' and geometry_reversal_flag) or
-                (subduction_polarity == 'Right' and not geometry_reversal_flag)):
-                overriding_plate = sharing_resolved_topology
-            else:
-                subducting_plate = sharing_resolved_topology
+        # If the current topology is on the same side of the subduction polarity then it's the overriding plate
+        # (otherwise it's the subducting plate).
+        if ((resolved_topology_is_on_left and subduction_polarity == 'Left') or
+            (not resolved_topology_is_on_left and subduction_polarity == 'Right')):
+            overriding_plate = sharing_resolved_topology
         else:
-            # The current topology sharing the subducting line has counter-clockwise orientation (when viewed from above the Earth).
-            # If the overriding plate is to the 'left' of the subducting line (when following its vertices in order) and
-            # the subducting line is not reversed when contributing to the topology then that topology is the overriding plate.
-            # A similar test applies to the 'right' but with the subducting line reversed in the topology.
-            if ((subduction_polarity == 'Left' and not geometry_reversal_flag) or
-                (subduction_polarity == 'Right' and geometry_reversal_flag)):
-                overriding_plate = sharing_resolved_topology
-            else:
-                subducting_plate = sharing_resolved_topology
+            subducting_plate = sharing_resolved_topology
     
     if overriding_plate is None:
         return None
@@ -181,34 +168,19 @@ def get_subducting_plate(shared_sub_segment, return_subduction_polarity=False):
     # So all these overriding cases do not affect us, which means we are more likely to find the subducting plate than if we were asked to find
     # both the subducting and overriding plates. However we will still have a problem if not exactly one subducting plate is found.
     sharing_resolved_topologies = shared_sub_segment.get_sharing_resolved_topologies()
-    geometry_reversal_flags = shared_sub_segment.get_sharing_resolved_topology_geometry_reversal_flags()
+    resolved_topology_on_left_flags = shared_sub_segment.get_sharing_resolved_topology_on_left_flags()
     for index in range(len(sharing_resolved_topologies)):
 
         sharing_resolved_topology = sharing_resolved_topologies[index]
-        geometry_reversal_flag = geometry_reversal_flags[index]
+        resolved_topology_is_on_left = resolved_topology_on_left_flags[index]
 
-        if sharing_resolved_topology.get_resolved_boundary().get_orientation() == PolygonOnSphere.Orientation.clockwise:
-            # The current topology sharing the subducting line has clockwise orientation (when viewed from above the Earth).
-            # If the overriding plate (subduction polarity) is to the 'left' of the subducting line (when following its vertices in order)
-            # and the subducting line is not reversed when contributing to the topology then that topology is the subducting plate.
-            # A similar test applies to the 'right' but with the subducting line reversed in the topology.
-            if ((subduction_polarity == 'Left' and not geometry_reversal_flag) or
-                (subduction_polarity == 'Right' and geometry_reversal_flag)):
-                # If we've already previously found the subducting plate then it's ambiguous, so return None.
-                if subducting_plate is not None:
-                    return
-                subducting_plate = sharing_resolved_topology
-        else:
-            # The current topology sharing the subducting line has counter-clockwise orientation (when viewed from above the Earth).
-            # If the overriding plate (subduction polarity) is to the 'left' of the subducting line (when following its vertices in order)
-            # and the subducting line is reversed when contributing to the topology then that topology is the subducting plate.
-            # A similar test applies to the 'right' but with the subducting line not reversed in the topology.
-            if ((subduction_polarity == 'Left' and geometry_reversal_flag) or
-                (subduction_polarity == 'Right' and not geometry_reversal_flag)):
-                # If we've already previously found the subducting plate then it's ambiguous, so return None.
-                if subducting_plate is not None:
-                    return
-                subducting_plate = sharing_resolved_topology
+        # If the current topology is on the opposite side of the subduction polarity (overriding plate) then it's the subducting plate.
+        if ((resolved_topology_is_on_left and subduction_polarity == 'Right') or
+            (not resolved_topology_is_on_left and subduction_polarity == 'Left')):
+            # If we've already previously found the subducting plate then it's ambiguous, so return None.
+            if subducting_plate is not None:
+                return
+            subducting_plate = sharing_resolved_topology
     
     # Unable to find subducting plate, so return None.
     if subducting_plate is None:
