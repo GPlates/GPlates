@@ -1503,11 +1503,19 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
             self.assertFalse(sss.get_sub_segments()) # Not from a topological line.
             if sharing_topologies == set(['topology5']):
                 self.assertFalse(sss.get_overriding_and_subducting_plates()) # Only one adjacent plate (subducting)
-                self.assertFalse(sss.get_overriding_plate())
+                overriding_plate, subducting_plate = sss.get_overriding_and_subducting_plates(enforce_single_plates=False)
+                self.assertTrue(overriding_plate is None)
+                self.assertTrue(subducting_plate.get_feature().get_name() == 'topology5')
+                self.assertFalse(sss.get_overriding_plate(return_subduction_polarity=True)) # Only one adjacent plate (subducting)
+                overriding_plate, subduction_polarity = sss.get_overriding_plate(return_subduction_polarity=True, enforce_single_plate=False)
+                self.assertTrue(overriding_plate is None)
             else:
                 self.assertTrue(sss.get_overriding_and_subducting_plates()) # Two adjacent plates.
                 overriding_plate = sss.get_overriding_plate()
+                self.assertTrue(overriding_plate == sss.get_overriding_plate(enforce_single_plate=False))
                 self.assertTrue(overriding_plate.get_feature().get_name() == 'topology2')
+                subducting_plate = sss.get_subducting_plate()
+                self.assertTrue(subducting_plate == sss.get_subducting_plate(enforce_single_plate=False))
             subducting_plate = sss.get_subducting_plate()
             # Can always find just the subducting plate though.
             self.assertTrue(subducting_plate.get_feature().get_name() == 'topology4' or
@@ -1650,6 +1658,9 @@ class ResolvedTopologiesTestCase(unittest.TestCase):
                 self.assertTrue(len(sss.get_sub_segments()[0].get_resolved_geometry()) == 3)
                 self.assertTrue(len(sss.get_resolved_geometry()) == 3)
                 self.assertFalse(sss.get_overriding_and_subducting_plates()) # Don't have two sharing plates (only one).
+                overriding_plate, subducting_plate = sss.get_overriding_and_subducting_plates(enforce_single_plates=False)
+                self.assertTrue(overriding_plate is None)
+                self.assertTrue(subducting_plate.get_feature().get_name() == 'topology7')
             elif sharing_topologies == set(['topology7', 'topology3']):
                 self.assertTrue(sub_sub_segments == set(['section13']))
                 # The one shared sub-segment happens to have 2 vertices (from resolved line).
