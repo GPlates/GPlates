@@ -848,10 +848,13 @@ namespace GPlatesApi
 
 	/**
 	 * Returns resolved topological network if its deforming region (excludes rigid blocks) contains point, otherwise None.
+	 *
+	 * Also returns network triangulation face index (in a 2-tuple) if 'return_network_triangle_index' is true.
 	 */
-	boost::optional<GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type>
+	bp::object
 	topology_point_located_in_resolved_network_deforming_region(
-			const GPlatesAppLogic::TopologyPointLocation &topology_point_location)
+			const GPlatesAppLogic::TopologyPointLocation &topology_point_location,
+			bool return_network_triangle_index)
 	{
 		boost::optional<GPlatesAppLogic::TopologyPointLocation::network_location_type>
 				network_location = topology_point_location.located_in_resolved_network();
@@ -860,13 +863,21 @@ namespace GPlatesApi
 			GPlatesAppLogic::ResolvedTopologicalNetwork::non_null_ptr_to_const_type resolved_network = network_location->first;
 			const GPlatesAppLogic::ResolvedTriangulation::Network::PointLocation &point_location = network_location->second;
 
-			if (point_location.located_in_deforming_region())
+			if (boost::optional<GPlatesAppLogic::ResolvedTriangulation::Delaunay_2::Face_handle> deforming_face =
+				point_location.located_in_deforming_region())
 			{
-				return resolved_network;
+				if (return_network_triangle_index)
+				{
+					return bp::make_tuple(resolved_network, deforming_face.get()->get_face_index());
+				}
+				else
+				{
+					return bp::object(resolved_network);
+				}
 			}
 		}
 
-		return boost::none;
+		return bp::object()/*Py_None*/;
 	}
 
 	/**
@@ -1561,14 +1572,49 @@ export_topological_model()
 				"or inside any one of its interior rigid blocks (if it has any).\n")
 		.def("located_in_resolved_network_deforming_region",
 				&GPlatesApi::topology_point_located_in_resolved_network_deforming_region,
-				"located_in_resolved_network_deforming_region()\n"
+				(bp::arg("return_network_triangle_index") = false),
+				"located_in_resolved_network_deforming_region([return_network_triangle_index=False])\n"
 				"  Query if point is located in the deforming region of a :class:`resolved topological network<ResolvedTopologicalNetwork>`.\n"
 				"\n"
-				"  :returns: the resolved topological network whose deforming region contains the point, otherwise ``None``\n"
-				"  :rtype: :class:`ResolvedTopologicalNetwork` or ``None``\n"
+				"  :param return_network_triangle_index: Whether to also return the index of the triangle in the "
+				":class:`network triangulation <NetworkTriangulation>` containing the point. "
+				"Defaults to ``False``.\n"
+				"  :type return_network_triangle_index: bool\n"
+				"  :returns: the resolved topological network whose deforming region contains the point (and the index of the triangle in "
+				"the network triangulation containing the point if *return_network_triangle_index* is ``True``), otherwise ``None``\n"
+				"  :rtype: :class:`ResolvedTopologicalNetwork`, or 2-tuple (:class:`ResolvedTopologicalNetwork`, int) "
+				"if *return_network_triangle_index* is ``True``, or ``None``\n"
 				"\n"
 				"  .. note:: Returns ``None`` if point is inside a resolved topological network but is also inside one of "
-				"its interior rigid blocks (and hence not inside its deforming region).\n")
+				"its interior rigid blocks (and hence not inside its deforming region).\n"
+				"\n"
+				"  To locate the triangle (in the network triangulation) that contains the point:\n"
+				"  ::\n"
+				"\n"
+				"    resolved_topological_network_and_triangle_index = topology_point_location.located_in_resolved_network_deforming_region(\n"
+				"        return_network_triangle_index=True)\n"
+				"    if resolved_topological_network_and_triangle_index:\n"
+				"        resolved_topological_network, triangle_index = resolved_topological_network_and_triangle_index\n"
+				"        network_triangulation = resolved_topological_network.get_network_triangulation()\n"
+				"        network_triangles = network_triangulation.get_triangles()\n"
+				"        network_triangle_containing_point = network_triangles[triangle_index]\n"
+				"\n"
+				"  .. note:: | When a point location is queried, for example with :meth:`ResolvedTopologicalNetwork.get_point_location`, the point "
+				"is first projected from 3D space into 2D projection space using the Lambert azimuthal equal-area projection (with projection centre "
+				"at the centroid of the network's polygon boundary). Only then is the point tested against the triangles of the network's 2D Delaunay "
+				"triangulation (also in the same 2D projection) to locate the containing 2D triangle.\n"
+				"            | This means the original 3D point might not be contained by the 3D version of that triangle (ie, the 2D triangle with vertices unprojected back to 3D). "
+				"For example, if you took the :class:`network triangle <NetworkTriangulation.Triangle>` (containing the 2D point) and created a :class:`polygon <PolygonOnSphere>` "
+				"from its :attr:`3D vertices <NetworkTriangulation.Vertex.position>` and then did a :meth:`point-in-polygon test <PolygonOnSphere.is_point_in_polygon>` "
+				"using the original 3D point then it could potentially be *outside* the polygon (3D triangle). This is because the triangle boundary lines in 2D space do not map "
+				"to the triangle boundary lines in 3D space (since the projection is not gnomonic, ie, doesn't project 3D great circle arcs as *straight* 2D lines).\n"
+				"            | This also means the network triangle containing the point might be :attr:`marked <NetworkTriangulation.Triangle.is_in_deforming_region>` "
+				"as *outside* the deforming region. However the point is still considered to be *inside* the deforming region since it is inside the network's polygon boundary "
+				"(and outside the network's interior rigid blocks, if any). And it can still have a *non-zero* :meth:`strain rate <ResolvedTopologicalNetwork.get_point_strain_rate>` "
+				"due to :ref:`strain rate smoothing <pygplates_primer_strain_rate_smoothing>`.\n"
+				"\n"
+				"  .. versionchanged:: 0.50\n"
+				"     Added *return_network_triangle_index* argument.\n")
 		.def("located_in_resolved_network_rigid_block",
 				&GPlatesApi::topology_point_located_in_resolved_network_rigid_block,
 				"located_in_resolved_network_rigid_block()\n"

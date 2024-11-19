@@ -3028,7 +3028,23 @@ class TopologicalSnapshotTestCase(unittest.TestCase):
         # Test point location/velocity/strain-rate and reconstructed point.
         point_inside_network = pygplates.PointOnSphere(0, -60)  # point is inside network
         self.assertTrue(resolved_topological_network.get_point_location(point_inside_network).located_in_resolved_network() == resolved_topological_network)
+
+        # Check that point is in correct triangle of network triangulation.
         self.assertTrue(resolved_topological_network.get_point_location(point_inside_network).located_in_resolved_network_deforming_region() == resolved_topological_network)
+        _, network_triangle_index = resolved_topological_network.get_point_location(point_inside_network).located_in_resolved_network_deforming_region(return_network_triangle_index=True)
+        network_triangulation = resolved_topological_network.get_network_triangulation()
+        network_vertices = network_triangulation.get_vertices()
+        network_triangles = network_triangulation.get_triangles()
+        network_triangle = network_triangles[network_triangle_index]
+        # Point should be in the triangle with these vertices - so check they match the network triangle.
+        network_triangle_vertex_lat_lons = set((
+            (1.9190404608408473, -46.33105360687644),
+            (0.1281258847639748, -89.46803133550394),
+            (-25.92674267168927, -67.49384878759929)))
+        for index in range(3):
+            self.assertTrue(network_vertices[network_triangle.get_vertex_index(index)].position.to_lat_lon() in network_triangle_vertex_lat_lons)
+        self.assertTrue(network_triangle.is_in_deforming_region)
+        
         self.assertTrue(resolved_topological_network.get_point_velocity(point_inside_network) == pygplates.Vector3D.zero)
         self.assertTrue(resolved_topological_network.get_point_strain_rate(point_inside_network) == pygplates.StrainRate.zero)
         self.assertTrue(resolved_topological_network.reconstruct_point(
